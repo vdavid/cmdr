@@ -349,6 +349,10 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "c8cff01"
   },
+  "fileOperations.transferDialog.namedFolderHint": "”{target}” är en befintlig mapp, så ”{name}” skulle få mappens namn. Vill du lägga ”{name}” i mappen avslutar du sökvägen med ”/”.",
+  "@fileOperations.transferDialog.namedFolderHint": {
+    "sourceHash": "41dc88c"
+  },
   "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, one {mapp slås samman med en befintlig mapp} other {mappar slås samman med befintliga mappar}}",
   "@fileOperations.transferDialog.mergeInfoMany": {
     "sourceHash": "73c4dfd"

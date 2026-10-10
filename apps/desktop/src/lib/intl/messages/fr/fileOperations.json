@@ -350,6 +350,10 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "c8cff01"
   },
+  "fileOperations.transferDialog.namedFolderHint": "« {target} » est un dossier existant, donc « {name} » prendrait le nom de ce dossier. Pour placer « {name} » dans ce dossier, terminez le chemin par « / ».",
+  "@fileOperations.transferDialog.namedFolderHint": {
+    "sourceHash": "41dc88c"
+  },
   "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, one {dossier sera fusionné avec un dossier existant} many {dossiers seront fusionnés avec des dossiers existants} other {dossiers seront fusionnés avec des dossiers existants}}",
   "@fileOperations.transferDialog.mergeInfoMany": {
     "sourceHash": "73c4dfd"

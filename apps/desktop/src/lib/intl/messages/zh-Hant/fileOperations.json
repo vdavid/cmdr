@@ -347,6 +347,10 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "c8cff01"
   },
+  "fileOperations.transferDialog.namedFolderHint": "「{target}」是現有的資料夾，所以「{name}」會改用這個資料夾的名稱。若要把「{name}」放進這個資料夾，請在路徑結尾加上「/」。",
+  "@fileOperations.transferDialog.namedFolderHint": {
+    "sourceHash": "41dc88c"
+  },
   "fileOperations.transferDialog.mergeInfoMany": "有 {countText} 個{count, plural, other {資料夾}}會和現有的資料夾合併",
   "@fileOperations.transferDialog.mergeInfoMany": {
     "sourceHash": "73c4dfd"

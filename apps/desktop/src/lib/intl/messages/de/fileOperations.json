@@ -349,6 +349,10 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "c8cff01"
   },
+  "fileOperations.transferDialog.namedFolderHint": "„{target}“ ist ein bestehender Ordner, also bekäme „{name}“ den Namen dieses Ordners. Um „{name}“ in den Ordner zu legen, lass den Pfad auf „/“ enden.",
+  "@fileOperations.transferDialog.namedFolderHint": {
+    "sourceHash": "41dc88c"
+  },
   "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, one {Ordner wird mit einem bestehenden Ordner zusammengeführt} other {Ordner werden mit bestehenden Ordnern zusammengeführt}}",
   "@fileOperations.transferDialog.mergeInfoMany": {
     "sourceHash": "73c4dfd"

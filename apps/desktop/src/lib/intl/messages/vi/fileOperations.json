@@ -348,6 +348,10 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "c8cff01"
   },
+  "fileOperations.transferDialog.namedFolderHint": "“{target}” là một thư mục hiện có, nên “{name}” sẽ mang tên của thư mục này. Để đặt “{name}” vào trong thư mục, hãy kết thúc đường dẫn bằng “/”.",
+  "@fileOperations.transferDialog.namedFolderHint": {
+    "sourceHash": "41dc88c"
+  },
   "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, other {thư mục}} sẽ hòa trộn với các thư mục hiện có",
   "@fileOperations.transferDialog.mergeInfoMany": {
     "sourceHash": "73c4dfd"

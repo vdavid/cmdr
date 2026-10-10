@@ -348,6 +348,10 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "c8cff01"
   },
+  "fileOperations.transferDialog.namedFolderHint": "“{target}” es una carpeta existente, así que “{name}” tomaría el nombre de esa carpeta. Para poner “{name}” dentro de la carpeta, termina la ruta con “/”.",
+  "@fileOperations.transferDialog.namedFolderHint": {
+    "sourceHash": "41dc88c"
+  },
   "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, one {carpeta se fusionará con carpetas existentes} many {carpetas se fusionarán con carpetas existentes} other {carpetas se fusionarán con carpetas existentes}}",
   "@fileOperations.transferDialog.mergeInfoMany": {
     "sourceHash": "73c4dfd"

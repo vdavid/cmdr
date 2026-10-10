@@ -349,6 +349,10 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "c8cff01"
   },
+  "fileOperations.transferDialog.namedFolderHint": "‘{target}’ is een bestaande map, dus ‘{name}’ zou de naam van die map krijgen. Om ‘{name}’ in de map te zetten, laat je het pad eindigen op ‘/’.",
+  "@fileOperations.transferDialog.namedFolderHint": {
+    "sourceHash": "41dc88c"
+  },
   "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, one {map wordt} other {mappen worden}} samengevoegd met bestaande mappen",
   "@fileOperations.transferDialog.mergeInfoMany": {
     "sourceHash": "73c4dfd"

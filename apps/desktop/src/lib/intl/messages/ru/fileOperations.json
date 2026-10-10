@@ -348,6 +348,10 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "c8cff01"
   },
+  "fileOperations.transferDialog.namedFolderHint": "«{target}» — существующая папка, поэтому «{name}» получит имя этой папки. Чтобы поместить «{name}» внутрь папки, добавьте «/» в конец пути.",
+  "@fileOperations.transferDialog.namedFolderHint": {
+    "sourceHash": "41dc88c"
+  },
   "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, one {папка будет объединена с существующей папкой} few {папки будут объединены с существующими папками} many {папок будут объединены с существующими папками} other {папки будут объединены с существующими папками}}",
   "@fileOperations.transferDialog.mergeInfoMany": {
     "sourceHash": "73c4dfd"

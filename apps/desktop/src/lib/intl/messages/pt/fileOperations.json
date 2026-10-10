@@ -349,6 +349,10 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "c8cff01"
   },
+  "fileOperations.transferDialog.namedFolderHint": "“{target}” é uma pasta existente, então “{name}” ficaria com o nome dessa pasta. Para colocar “{name}” dentro da pasta, termine o caminho com “/”.",
+  "@fileOperations.transferDialog.namedFolderHint": {
+    "sourceHash": "41dc88c"
+  },
   "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, one {pasta será mesclada} many {pastas serão mescladas} other {pastas serão mescladas}} com pastas existentes",
   "@fileOperations.transferDialog.mergeInfoMany": {
     "sourceHash": "73c4dfd"

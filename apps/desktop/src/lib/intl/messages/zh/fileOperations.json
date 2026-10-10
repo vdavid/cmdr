@@ -347,6 +347,10 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "c8cff01"
   },
+  "fileOperations.transferDialog.namedFolderHint": "“{target}”是现有文件夹，所以“{name}”会改用这个文件夹的名称。要把“{name}”放进这个文件夹，请在路径末尾加上“/”。",
+  "@fileOperations.transferDialog.namedFolderHint": {
+    "sourceHash": "41dc88c"
+  },
   "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, other {个文件夹}}将与现有文件夹合并",
   "@fileOperations.transferDialog.mergeInfoMany": {
     "sourceHash": "73c4dfd"

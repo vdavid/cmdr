@@ -349,6 +349,10 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "c8cff01"
   },
+  "fileOperations.transferDialog.namedFolderHint": "„{target}” egy meglévő mappa, így „{name}” a mappa nevét kapná. Ha a mappába szeretnéd tenni, az útvonal végére írj egy „/” jelet.",
+  "@fileOperations.transferDialog.namedFolderHint": {
+    "sourceHash": "41dc88c"
+  },
   "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, one {mappa} other {mappa}} egyesül meglévő mappákkal",
   "@fileOperations.transferDialog.mergeInfoMany": {
     "sourceHash": "73c4dfd"
