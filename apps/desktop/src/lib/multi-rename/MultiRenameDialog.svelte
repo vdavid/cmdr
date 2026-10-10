@@ -458,6 +458,9 @@
         </div>
 
         <PreviewList rows={tool.source} />
+
+        <!-- Inside the dialog, so it portals into the modal's layer (above the scrim, inside its focus trap). -->
+        <Menu menu={fieldHistory.menu} ariaLabel={tString('multiRename.history')} minWidth={240} />
     </div>
 
     {#snippet footerLeading()}
@@ -502,8 +505,6 @@
         </Button>
     {/snippet}
 </ModalDialog>
-
-<Menu menu={fieldHistory.menu} ariaLabel={tString('multiRename.history')} minWidth={240} />
 
 <!-- "N problems" in the summary: a toggle that lists the problem rows alone while there are any. -->
 {#snippet problemsToggle(children: Snippet)}

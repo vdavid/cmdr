@@ -108,6 +108,8 @@ describe('MultiRenameDialog field history', () => {
     await settle()
     expect(event.defaultPrevented).toBe(true)
     expect(menuRows()).toEqual(['IMG', 'DSC'])
+    // Regression: portaled to body it sat under the modal's layer, invisible.
+    expect(document.querySelector('[data-menu]')?.parentElement).not.toBe(document.body)
 
     document.querySelector<HTMLElement>('[data-menu] [role="menuitem"]')?.click()
     await new Promise((resolve) => setTimeout(resolve, 150))
