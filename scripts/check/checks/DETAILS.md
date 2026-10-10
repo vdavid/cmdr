@@ -2216,6 +2216,15 @@ positive rate). Most of cmdr's Go modules are dep-free tooling scripts but still
 own CVEs; the check found 7 real reachable stdlib vulns the first time it ran (fixed by bumping mise's Go pin). Mirrors
 the cargo-audit role on the Rust side.
 
+**Decision**: a `govulncheck` advisory whose fix is under three days old warns instead of failing, locally and in CI.
+**Why**: the repo holds every dependency to a three-day release-age window (pnpm's `minimum-release-age`, Renovate's
+`minimumReleaseAge`), so failing on day zero demands an upgrade the policy forbids, and turned `slow-checks` red for
+everyone (go1.27.2, 2026-10-08). A stdlib fix is dated by its advisory's `published` (the Go team publishes them with
+the point release); the proxy's `golang.org/toolchain` times can't stand in, since they predate the release by days. A
+module fix is dated by the proxy's `.info` for the fixed version. No fix, or one the check can't date, still fails.
+Warnings are never cached, so the lane turns red by itself on the first run after the window closes. It reads the
+`-format json` stream and counts only findings whose innermost frame names a function, the same bar text mode fails on.
+
 **Decision**: `cfg-gate` check to catch ungated macOS-only imports. **Why**: Rust code naming something absent from the
 Linux build compiles fine on macOS and fails on Linux if the `use` isn't wrapped in `#[cfg(target_os = "macos")]`. CI
 catches this after push, but the check catches it locally and instantly. It detects module-level gating (for example,
