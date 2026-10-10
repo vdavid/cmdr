@@ -1,12 +1,13 @@
 /**
  * Tier 3 a11y tests for `MultiRenameDialog.svelte`: the sheet with a preview of
  * ready, unchanged, blocked, and missing rows, with a mask error showing, and with
- * every whole-name option on and Undo rename in the footer; and
+ * every whole-name option on and Undo rename in the footer, and with names typed in
+ * Results (a marked row, the notice and its links); and
  * its tooltip bodies, `SearchOptionChips` (chips on and off, a tooltip showing) and
  * `PlaceholderTip`, with examples rendered.
  */
 
-import { describe, it, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import MultiRenameDialog from './MultiRenameDialog.svelte'
 import SearchOptionChips from './SearchOptionChips.svelte'
@@ -36,7 +37,12 @@ vi.mock('$lib/tauri-commands', () => ({
   getMultiRenameLastSettings,
   rollbackOperation: vi.fn(() => Promise.resolve({ inverseOpId: 'inv' })),
   saveMultiRenameLastSettings: vi.fn(() => Promise.resolve()),
+  getMultiRenameHistory: vi.fn(() => Promise.resolve([])),
+  writeMultiRenameNames: vi.fn(() => Promise.resolve({ ok: true, value: '/tmp/S.txt' })),
+  readMultiRenameNames: vi.fn(() => Promise.resolve({ ok: true, value: 1 })),
 }))
+
+vi.mock('$lib/text-editor/open-file-in-editor', () => ({ openFileInEditor: vi.fn(() => Promise.resolve(true)) }))
 
 const ROWS = [
   { row: 0, oldName: 'Žádost o přezkum.pdf', newName: 'Zadost o prezkum.pdf', status: { type: 'ready' } },
@@ -98,6 +104,27 @@ describe('MultiRenameDialog a11y', () => {
     setLastMultiRenameRun({ operationId: 'op1', renaming: 2 })
     await expectNoA11yViolations(await mountSheet())
     setLastMultiRenameRun(null)
+  })
+
+  it('with a name typed in Results, marked in its row, and the notice showing has no violations', async () => {
+    const edited = [{ ...ROWS[0], edited: true }, ...ROWS.slice(1)]
+    previewMultiRename.mockResolvedValue({
+      ok: true,
+      value: { previewId: 1, counts: { ready: 1, unchanged: 1, problems: 3 }, rows: edited },
+    })
+    const root = await mountSheet()
+    root
+      .querySelector<HTMLInputElement>('input')
+      ?.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', altKey: true, bubbles: true, cancelable: true }),
+      )
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    window.dispatchEvent(new FocusEvent('focus'))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await tick()
+    expect(root.querySelector('.results-notice')).not.toBeNull()
+    expect(root.querySelector('.edited-mark')).not.toBeNull()
+    await expectNoA11yViolations(root)
   })
 
   it('search option chips, some on, with a tooltip showing, have no violations', async () => {

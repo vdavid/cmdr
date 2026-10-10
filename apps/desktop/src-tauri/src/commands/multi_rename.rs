@@ -104,6 +104,47 @@ pub async fn apply_multi_rename(
     apply(events, session_id, preview_id).await
 }
 
+/// Results (⌥⏎): writes preview `preview_id`'s rows as `old<TAB>new` lines to a
+/// text file and returns its path, for the user's editor.
+#[tauri::command]
+#[specta::specta]
+pub async fn write_multi_rename_names(session_id: String, preview_id: u64) -> Result<String, MultiRenameError> {
+    blocking_typed_result_with_timeout(
+        Duration::from_secs(5),
+        || MultiRenameError::TimedOut,
+        |detail| MultiRenameError::Internal { detail },
+        move || session::write_names(&session_id, preview_id).map(|path| path.to_string_lossy().into_owned()),
+    )
+    .await
+}
+
+/// Reads the session's Results file back. Returns how many rows now carry a name
+/// the user typed; the next preview shows them.
+#[tauri::command]
+#[specta::specta]
+pub async fn read_multi_rename_names(session_id: String) -> Result<usize, MultiRenameError> {
+    blocking_typed_result_with_timeout(
+        Duration::from_secs(2),
+        || MultiRenameError::TimedOut,
+        |detail| MultiRenameError::Internal { detail },
+        move || session::read_names(&session_id),
+    )
+    .await
+}
+
+/// Drops the names typed in Results, and its file: every row follows the settings again.
+#[tauri::command]
+#[specta::specta]
+pub async fn clear_multi_rename_names(session_id: String) -> Result<(), MultiRenameError> {
+    blocking_typed_result_with_timeout(
+        Duration::from_secs(2),
+        || MultiRenameError::TimedOut,
+        |detail| MultiRenameError::Internal { detail },
+        move || session::clear_names(&session_id),
+    )
+    .await
+}
+
 /// Ends the session when the sheet closes. No-op when it's already gone.
 #[tauri::command]
 #[specta::specta]

@@ -16,7 +16,7 @@ use crate::file_system::write_operations::CollectorEventSink;
 use crate::ignore_poison::{IgnorePoison, RwLockIgnorePoison};
 use crate::test_support::{TestDir, wait_until_async};
 
-fn strip_diacritics() -> MultiRenameSpec {
+pub(super) fn strip_diacritics() -> MultiRenameSpec {
     MultiRenameSpec {
         name_mask: "[N]".to_string(),
         extension_mask: "[E]".to_string(),
@@ -35,7 +35,7 @@ fn strip_diacritics() -> MultiRenameSpec {
 }
 
 /// A scratch folder holding `names`, and a cached listing of it that shows every row.
-fn folder(tag: &str, names: &[&str]) -> (TestDir, TestListingGuard) {
+pub(super) fn folder(tag: &str, names: &[&str]) -> (TestDir, TestListingGuard) {
     let dir = TestDir::new(tag);
     for name in names {
         std::fs::write(dir.join(name), b"x").expect("scratch dir is writable");
@@ -48,7 +48,7 @@ fn folder(tag: &str, names: &[&str]) -> (TestDir, TestListingGuard) {
     (dir, listing)
 }
 
-fn names_on_disk(dir: &Path) -> Vec<String> {
+pub(super) fn names_on_disk(dir: &Path) -> Vec<String> {
     let mut names: Vec<String> = std::fs::read_dir(dir)
         .expect("the dir reads")
         .map(|e| e.expect("an entry").file_name().to_string_lossy().into_owned())
@@ -81,7 +81,7 @@ fn remove_file(listing: &TestListingGuard, dir: &Path, name: &str) {
     cached.advance_sequence();
 }
 
-async fn settled(events: &CollectorEventSink) {
+pub(super) async fn settled(events: &CollectorEventSink) {
     wait_until_async(std::time::Duration::from_secs(10), "the rename to settle", || {
         !events.settled.lock_ignore_poison().is_empty()
     })

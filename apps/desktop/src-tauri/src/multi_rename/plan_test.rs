@@ -4,7 +4,8 @@ use std::cell::Cell;
 use std::path::Path;
 
 use super::plan::{
-    Compiled, FOLDS, InvalidNameReason, MultiRenameSpec, RenameExample, RowStatus, SpecError, preview, render_examples,
+    Compiled, FOLDS, InvalidNameReason, MultiRenameSpec, NameEdits, RenameExample, RowStatus, SpecError, preview,
+    render_examples,
 };
 use super::transform::{CaseChange, SEARCH_BUILDS};
 use crate::file_system::listing::metadata::FileEntry;
@@ -44,7 +45,7 @@ fn run(spec: &MultiRenameSpec, folder: &[FileEntry], batch: &[&str]) -> Vec<(Str
         .enumerate()
         .filter(|(_, e)| batch.contains(&e.name.as_str()))
         .collect();
-    preview(&compiled, Path::new(DIR), &rows, folder)
+    preview(&compiled, Path::new(DIR), &rows, folder, &NameEdits::default())
         .into_iter()
         .map(|p| (p.new_name, p.status))
         .collect()
@@ -253,7 +254,7 @@ fn a_row_carries_its_file_icon_and_whether_it_is_a_folder() {
     ];
     let compiled = Compiled::new(&spec("[N]")).expect("a valid spec");
     let rows: Vec<(usize, &FileEntry)> = folder.iter().enumerate().collect();
-    let out = preview(&compiled, Path::new(DIR), &rows, &folder);
+    let out = preview(&compiled, Path::new(DIR), &rows, &folder, &NameEdits::default());
     assert_eq!(out[0].icon_id.as_deref(), Some(folder[0].icon_id.as_str()));
     assert!(!out[0].is_directory);
     assert_eq!(out[1].icon_id.as_deref(), Some(folder[1].icon_id.as_str()));
@@ -382,4 +383,47 @@ fn greek_to_latin_runs_through_the_spec() {
     };
     let folder = [file("Ρόδος 01.jpg")];
     assert_eq!(run(&s, &folder, &["Ρόδος 01.jpg"])[0].0, "Rodos 01.jpg");
+}
+
+/// Previews all of `folder` with names the user typed in Results.
+fn run_edited(spec: &MultiRenameSpec, folder: &[FileEntry], edits: &[(&str, &str)]) -> Vec<(String, RowStatus, bool)> {
+    let compiled = Compiled::new(spec).expect("a valid spec");
+    let rows: Vec<(usize, &FileEntry)> = folder.iter().enumerate().collect();
+    preview(&compiled, Path::new(DIR), &rows, folder, &NameEdits::new(edits))
+        .into_iter()
+        .map(|p| (p.new_name, p.status, p.edited))
+        .collect()
+}
+
+#[test]
+fn a_typed_name_replaces_the_computed_one_by_old_name() {
+    let folder = [file("a.txt"), file("b.txt"), file("c.txt")];
+    let out = run_edited(&spec("[N]-x"), &folder, &[("b.txt", "bee.txt"), ("gone.txt", "z.txt")]);
+    assert_eq!(out[0], ("a-x.txt".to_string(), RowStatus::Ready, false));
+    assert_eq!(out[1], ("bee.txt".to_string(), RowStatus::Ready, true));
+    assert_eq!(out[2].0, "c-x.txt", "a line for a name that isn't here touches nothing");
+}
+
+#[test]
+fn a_typed_name_is_checked_like_any_other() {
+    let folder = [file("a.txt"), file("b.txt"), file("keep.txt")];
+    let out = run_edited(
+        &spec("[N]"),
+        &folder,
+        &[
+            ("a.txt", "same.txt"),
+            ("b.txt", "same.txt"),
+            ("keep.txt", "bad/name.txt"),
+        ],
+    );
+    assert_eq!(out[0].1, RowStatus::Duplicate);
+    assert_eq!(out[1].1, RowStatus::Duplicate);
+    assert!(matches!(out[2].1, RowStatus::InvalidName { .. }));
+}
+
+#[test]
+fn a_typed_name_matches_an_old_name_in_either_unicode_form() {
+    let folder = [file("Z\u{030C}adost.pdf")];
+    let out = run_edited(&spec("[N]"), &folder, &[("\u{017D}adost.pdf", "Zadost.pdf")]);
+    assert_eq!(out[0], ("Zadost.pdf".to_string(), RowStatus::Ready, true));
 }

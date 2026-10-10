@@ -260,6 +260,34 @@
   "@multiRename.undoStarted": {
     "sourceHash": "b6bd565"
   },
+  "multiRename.results": "Ergebnisliste",
+  "@multiRename.results": {
+    "sourceHash": "219c4a6"
+  },
+  "multiRename.results.editing": "Bearbeite die neuen Namen in deinem Text-Editor und sichere die Datei. Die Namen erscheinen hier, sobald du zu diesem Fenster zurückkehrst.",
+  "@multiRename.results.editing": {
+    "sourceHash": "0a54cdc"
+  },
+  "multiRename.results.edited": "{count, plural, one {# Name stammt aus deiner bearbeiteten Liste} other {# Namen stammen aus deiner bearbeiteten Liste}}.",
+  "@multiRename.results.edited": {
+    "sourceHash": "9899216"
+  },
+  "multiRename.results.readNow": "Namen jetzt einlesen",
+  "@multiRename.results.readNow": {
+    "sourceHash": "aaa6bd2"
+  },
+  "multiRename.results.discard": "Wieder die Einstellungen verwenden",
+  "@multiRename.results.discard": {
+    "sourceHash": "dc20f4f"
+  },
+  "multiRename.results.gone": "Die Namensliste ist nicht mehr da. Öffne „Ergebnisliste“ erneut, um eine neue Liste zu schreiben.",
+  "@multiRename.results.gone": {
+    "sourceHash": "8aa255a"
+  },
+  "multiRename.error.couldntWriteNames": "Die Namensliste ließ sich nicht schreiben. Prüfe, ob auf deinem Startvolume noch Speicherplatz frei ist.",
+  "@multiRename.error.couldntWriteNames": {
+    "sourceHash": "bb5e415"
+  },
   "multiRename.rename": "{count, plural, =0 {Umbenennen} one {# Datei umbenennen} other {# Dateien umbenennen}}",
   "@multiRename.rename": {
     "sourceHash": "9789ca5"

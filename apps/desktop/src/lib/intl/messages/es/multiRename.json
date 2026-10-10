@@ -259,6 +259,34 @@
   "@multiRename.undoStarted": {
     "sourceHash": "b6bd565"
   },
+  "multiRename.results": "Resultados",
+  "@multiRename.results": {
+    "sourceHash": "219c4a6"
+  },
+  "multiRename.results.editing": "Edita los nombres nuevos en tu editor de texto y guarda el archivo. Aparecerán aquí cuando vuelvas a esta ventana.",
+  "@multiRename.results.editing": {
+    "sourceHash": "0a54cdc"
+  },
+  "multiRename.results.edited": "{count, plural, one {# nombre viene de tu lista editada} many {# nombres vienen de tu lista editada} other {# nombres vienen de tu lista editada}}.",
+  "@multiRename.results.edited": {
+    "sourceHash": "9899216"
+  },
+  "multiRename.results.readNow": "Leer los nombres ahora",
+  "@multiRename.results.readNow": {
+    "sourceHash": "aaa6bd2"
+  },
+  "multiRename.results.discard": "Volver a usar los ajustes",
+  "@multiRename.results.discard": {
+    "sourceHash": "dc20f4f"
+  },
+  "multiRename.results.gone": "La lista de nombres ya no existe. Vuelve a abrir “Resultados” para escribir una nueva.",
+  "@multiRename.results.gone": {
+    "sourceHash": "8aa255a"
+  },
+  "multiRename.error.couldntWriteNames": "No se ha podido escribir la lista de nombres. Comprueba que tu disco de arranque tiene espacio libre.",
+  "@multiRename.error.couldntWriteNames": {
+    "sourceHash": "bb5e415"
+  },
   "multiRename.rename": "{count, plural, =0 {Renombrar} one {Renombrar # archivo} many {Renombrar # archivos} other {Renombrar # archivos}}",
   "@multiRename.rename": {
     "sourceHash": "9789ca5"

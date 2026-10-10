@@ -57,6 +57,8 @@ export const EXEMPT_IDS = [
   'multiRename.regex',
   'multiRename.replaceWholeName',
   'multiRename.undoRename',
+  'multiRename.results',
+  'multiRename.fieldHistory',
   'network.selectHost',
   'share.back',
   'share.selectShare',

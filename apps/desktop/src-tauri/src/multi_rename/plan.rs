@@ -66,6 +66,8 @@ pub struct PreviewRow {
     /// `None` for a file that's gone.
     pub icon_id: Option<String>,
     pub is_directory: bool,
+    /// The new name is one the user typed in Results, not the settings' (`names_file.rs`).
+    pub edited: bool,
 }
 
 /// Whether a row can be renamed to its new name.
@@ -108,6 +110,46 @@ impl RowStatus {
     /// Every status but ready and unchanged: the rows the sheet flags.
     pub fn is_problem(&self) -> bool {
         !matches!(self, Self::Ready | Self::Unchanged)
+    }
+}
+
+/// The names the user typed in Results (`names_file.rs`), by composed old name, as
+/// the preview looks them up.
+#[derive(Debug, Default, Clone)]
+pub struct NameEdits(HashMap<String, String>);
+
+impl NameEdits {
+    /// `(old name, new name)` pairs.
+    #[cfg(test)]
+    pub fn new(edits: &[(&str, &str)]) -> Self {
+        Self(
+            edits
+                .iter()
+                .map(|(old, new)| (old.nfc().collect(), (*new).to_string()))
+                .collect(),
+        )
+    }
+
+    /// The name the user typed for `old_name`, if any.
+    pub fn get(&self, old_name: &str) -> Option<&str> {
+        if self.is_empty() {
+            return None;
+        }
+        let key: String = old_name.nfc().collect();
+        self.0.get(&key).map(String::as_str)
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    /// Names the row whose composed old name is `key`.
+    pub(crate) fn insert(&mut self, key: String, new_name: String) {
+        self.0.insert(key, new_name);
     }
 }
 
@@ -182,7 +224,7 @@ impl Compiled {
         })
     }
 
-    /// The last step every new name takes: composed when the spec normalizes.
+    /// The last step every new name takes, a typed one too: composed when the spec normalizes.
     fn finish(&self, name: String) -> String {
         if self.normalize_unicode {
             name.nfc().collect()
@@ -247,18 +289,24 @@ fn local_time(unix_seconds: u64) -> Option<NaiveDateTime> {
 }
 
 /// The preview for `rows` (in rename order) of the folder at `dir`, whose every
-/// entry, hidden ones included, is in `siblings`.
+/// entry, hidden ones included, is in `siblings`. A row the user named by hand in
+/// Results (`edits`) takes that name instead of the computed one, and every check.
 pub(crate) fn preview(
     compiled: &Compiled,
     dir: &Path,
     rows: &[(usize, &FileEntry)],
     siblings: &[FileEntry],
+    edits: &NameEdits,
 ) -> Vec<PreviewRow> {
     let mut preview: Vec<PreviewRow> = rows
         .iter()
         .enumerate()
         .map(|(position, (row, entry))| {
-            let new_name = compiled.new_name(entry, dir, position);
+            let typed = edits.get(&entry.name);
+            let new_name = match typed {
+                Some(typed) => compiled.finish(typed.to_string()),
+                None => compiled.new_name(entry, dir, position),
+            };
             let status = match invalid(&new_name) {
                 Some(reason) => RowStatus::InvalidName { reason },
                 None if compiled.same_name(&new_name, &entry.name) => RowStatus::Unchanged,
@@ -271,6 +319,7 @@ pub(crate) fn preview(
                 status,
                 icon_id: Some(entry.icon_id.clone()),
                 is_directory: entry.is_directory,
+                edited: typed.is_some(),
             }
         })
         .collect();

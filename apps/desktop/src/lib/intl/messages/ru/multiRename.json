@@ -259,6 +259,34 @@
   "@multiRename.undoStarted": {
     "sourceHash": "b6bd565"
   },
+  "multiRename.results": "Список имен",
+  "@multiRename.results": {
+    "sourceHash": "219c4a6"
+  },
+  "multiRename.results.editing": "Измените новые имена в текстовом редакторе и сохраните файл. Они появятся здесь, когда вы вернетесь в это окно.",
+  "@multiRename.results.editing": {
+    "sourceHash": "0a54cdc"
+  },
+  "multiRename.results.edited": "{count, plural, one {# имя взято из вашего измененного списка} few {# имени взяты из вашего измененного списка} many {# имен взято из вашего измененного списка} other {# имени взято из вашего измененного списка}}.",
+  "@multiRename.results.edited": {
+    "sourceHash": "9899216"
+  },
+  "multiRename.results.readNow": "Прочитать имена сейчас",
+  "@multiRename.results.readNow": {
+    "sourceHash": "aaa6bd2"
+  },
+  "multiRename.results.discard": "Снова использовать настройки",
+  "@multiRename.results.discard": {
+    "sourceHash": "dc20f4f"
+  },
+  "multiRename.results.gone": "Список имен пропал. Откройте «Список имен» снова, чтобы записать новый.",
+  "@multiRename.results.gone": {
+    "sourceHash": "8aa255a"
+  },
+  "multiRename.error.couldntWriteNames": "Не удалось записать список имен. Проверьте, есть ли свободное место на загрузочном диске.",
+  "@multiRename.error.couldntWriteNames": {
+    "sourceHash": "bb5e415"
+  },
   "multiRename.rename": "{count, plural, =0 {Переименовать} one {Переименовать # файл} few {Переименовать # файла} many {Переименовать # файлов} other {Переименовать # файла}}",
   "@multiRename.rename": {
     "sourceHash": "9789ca5"

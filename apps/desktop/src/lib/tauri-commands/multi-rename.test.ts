@@ -17,20 +17,34 @@ vi.mock('$lib/ipc/bindings', () => ({
     getMultiRenamePresets: vi.fn(),
     saveMultiRenamePreset: vi.fn(),
     deleteMultiRenamePreset: vi.fn(),
+    renameMultiRenamePreset: vi.fn(),
+    updateMultiRenamePreset: vi.fn(),
+    getMultiRenameLastSettings: vi.fn(),
+    saveMultiRenameLastSettings: vi.fn(),
+    writeMultiRenameNames: vi.fn(),
+    readMultiRenameNames: vi.fn(),
+    clearMultiRenameNames: vi.fn(),
   },
 }))
 
 import { commands, type MultiRenameSpec } from '$lib/ipc/bindings'
 import {
   applyMultiRename,
+  clearMultiRenameNames,
   closeMultiRename,
   deleteMultiRenamePreset,
+  getMultiRenameLastSettings,
   getMultiRenamePresets,
   getMultiRenamePreviewRows,
   openMultiRename,
   previewMultiRename,
+  readMultiRenameNames,
+  renameMultiRenamePreset,
   renderMultiRenameExamples,
+  saveMultiRenameLastSettings,
   saveMultiRenamePreset,
+  updateMultiRenamePreset,
+  writeMultiRenameNames,
 } from './multi-rename'
 
 const spec = { nameMask: '[N]', extensionMask: '[E]' } as unknown as MultiRenameSpec
@@ -84,6 +98,37 @@ describe('multi-rename wrappers', () => {
       error: { type: 'previewOutOfDate' },
     } as never)
     expect(await applyMultiRename('S', 3)).toEqual({ ok: false, error: { type: 'previewOutOfDate' } })
+  })
+
+  it('writes the Results names, reads them back, and clears them, or says why not', async () => {
+    vi.mocked(commands.writeMultiRenameNames).mockResolvedValueOnce({ status: 'ok', data: '/tmp/S.txt' } as never)
+    expect(await writeMultiRenameNames('S', 4)).toEqual({ ok: true, value: '/tmp/S.txt' })
+    expect(commands.writeMultiRenameNames).toHaveBeenCalledWith('S', 4)
+
+    vi.mocked(commands.readMultiRenameNames).mockResolvedValueOnce({ status: 'ok', data: 2 } as never)
+    expect(await readMultiRenameNames('S')).toEqual({ ok: true, value: 2 })
+    vi.mocked(commands.readMultiRenameNames).mockResolvedValueOnce({
+      status: 'error',
+      error: { type: 'namesFileGone', detail: 'x' },
+    } as never)
+    expect(await readMultiRenameNames('S')).toEqual({ ok: false, error: { type: 'namesFileGone', detail: 'x' } })
+
+    vi.mocked(commands.clearMultiRenameNames).mockResolvedValueOnce({ status: 'ok', data: null } as never)
+    expect(await clearMultiRenameNames('S')).toEqual({ ok: true, value: null })
+    expect(commands.clearMultiRenameNames).toHaveBeenCalledWith('S')
+  })
+
+  it('renames and updates a preset in place, and keeps the last settings', async () => {
+    await renameMultiRenamePreset('p', 'New')
+    expect(commands.renameMultiRenamePreset).toHaveBeenCalledWith('p', 'New')
+    await updateMultiRenamePreset('p', spec)
+    expect(commands.updateMultiRenamePreset).toHaveBeenCalledWith('p', spec)
+
+    const last = { spec, preset: { kind: 'saved', id: 'p' } }
+    vi.mocked(commands.getMultiRenameLastSettings).mockResolvedValueOnce(last as never)
+    expect(await getMultiRenameLastSettings()).toEqual(last)
+    await saveMultiRenameLastSettings(spec, null)
+    expect(commands.saveMultiRenameLastSettings).toHaveBeenCalledWith(spec, null)
   })
 
   it('closes the session', async () => {

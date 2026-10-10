@@ -22,7 +22,8 @@ use crate::file_system::listing::metadata::FileEntry;
 use crate::ignore_poison::{IgnorePoison, RwLockIgnorePoison};
 
 use super::error::MultiRenameError;
-use super::plan::{Compiled, MultiRenameSpec, PreviewRow, RowStatus, preview};
+use super::names_file::{self, Written};
+use super::plan::{Compiled, MultiRenameSpec, NameEdits, PreviewRow, RowStatus, preview};
 
 /// How many sessions live at once. A sheet is modal, so more than one or two is
 /// a window that closed without saying so. Tests share the store and run in
@@ -97,6 +98,8 @@ pub struct MultiRenamePreview {
 struct StoredPreview {
     id: u64,
     spec: MultiRenameSpec,
+    /// The Results names it showed, so apply renames with exactly those.
+    edits: Arc<NameEdits>,
     rows: Vec<PreviewRow>,
 }
 
@@ -106,6 +109,10 @@ struct Session {
     dir: PathBuf,
     /// The files, in rename order. A row's `row` is its index here.
     names: Arc<[String]>,
+    /// Names the user typed in Results, which every preview from now on takes.
+    edits: Arc<NameEdits>,
+    /// The Results file this session wrote last, the only one it reads back.
+    written: Option<Written>,
     next_preview: u64,
     latest: Option<Arc<StoredPreview>>,
     last_used: Instant,
@@ -157,6 +164,8 @@ pub(crate) fn open(
             volume_id,
             dir,
             names: names.into(),
+            edits: Arc::default(),
+            written: None,
             next_preview: 1,
             latest: None,
             last_used: Instant::now(),
@@ -180,7 +189,7 @@ fn evict_to(sessions: &mut HashMap<String, Session>, now: Instant, cap: usize) {
     }
 }
 
-/// Ends a session. No-op when it's already gone.
+/// Ends a session, and with it its Results file. No-op when it's already gone.
 pub(crate) fn close(session_id: &str) {
     SESSIONS.lock_ignore_poison().remove(session_id);
 }
@@ -192,6 +201,7 @@ struct Inputs {
     volume_id: String,
     dir: PathBuf,
     names: Arc<[String]>,
+    edits: Arc<NameEdits>,
 }
 
 fn with_session<R>(session_id: &str, f: impl FnOnce(&mut Session) -> R) -> Result<R, MultiRenameError> {
@@ -201,8 +211,9 @@ fn with_session<R>(session_id: &str, f: impl FnOnce(&mut Session) -> R) -> Resul
     Ok(f(session))
 }
 
-/// Every row of `names`' preview against the folder as the listing holds it now.
-fn compute(inputs: &Inputs, compiled: &Compiled) -> Result<Vec<PreviewRow>, MultiRenameError> {
+/// Every row of `names`' preview against the folder as the listing holds it now,
+/// with the Results names in `edits`.
+fn compute(inputs: &Inputs, compiled: &Compiled, edits: &NameEdits) -> Result<Vec<PreviewRow>, MultiRenameError> {
     let (present, missing, siblings) = {
         let cache = LISTING_CACHE.read_ignore_poison();
         let listing = cache.get(&inputs.listing_id).ok_or_else(|| MultiRenameError::Gone {
@@ -221,7 +232,7 @@ fn compute(inputs: &Inputs, compiled: &Compiled) -> Result<Vec<PreviewRow>, Mult
         (present, missing, listing.entries().to_vec())
     };
     let rows: Vec<(usize, &FileEntry)> = present.iter().map(|(row, entry)| (*row, entry)).collect();
-    let mut previewed = preview(compiled, &inputs.dir, &rows, &siblings);
+    let mut previewed = preview(compiled, &inputs.dir, &rows, &siblings, edits);
     previewed.extend(missing.into_iter().map(|row| PreviewRow {
         row,
         old_name: inputs.names[row].clone(),
@@ -229,6 +240,7 @@ fn compute(inputs: &Inputs, compiled: &Compiled) -> Result<Vec<PreviewRow>, Mult
         status: RowStatus::Missing,
         icon_id: None,
         is_directory: false,
+        edited: false,
     }));
     previewed.sort_by_key(|r| r.row);
     Ok(previewed)
@@ -246,7 +258,7 @@ pub(crate) fn preview_session(
         s.next_preview += 1;
         (id, inputs_of(s))
     })?;
-    let rows = compute(&inputs, &compiled)?;
+    let rows = compute(&inputs, &compiled, &inputs.edits)?;
     let answer = MultiRenamePreview {
         preview_id,
         counts: PreviewCounts::of(&rows),
@@ -259,6 +271,7 @@ pub(crate) fn preview_session(
             s.latest = Some(Arc::new(StoredPreview {
                 id: preview_id,
                 spec: spec.clone(),
+                edits: Arc::clone(&inputs.edits),
                 rows,
             }));
         }
@@ -272,6 +285,7 @@ fn inputs_of(s: &Session) -> Inputs {
         volume_id: s.volume_id.clone(),
         dir: s.dir.clone(),
         names: Arc::clone(&s.names),
+        edits: Arc::clone(&s.edits),
     }
 }
 
@@ -317,7 +331,7 @@ pub(crate) struct Prepared {
 pub(crate) fn prepare(session_id: &str, preview_id: u64) -> Result<Prepared, MultiRenameError> {
     let (seen, inputs) = stored(session_id, preview_id)?;
     let compiled = Compiled::new(&seen.spec).map_err(|error| MultiRenameError::Spec { error })?;
-    let ready: Vec<PreviewRow> = compute(&inputs, &compiled)?
+    let ready: Vec<PreviewRow> = compute(&inputs, &compiled, &seen.edits)?
         .into_iter()
         .filter(|row| row.status.is_ready())
         .collect();
@@ -332,6 +346,49 @@ pub(crate) fn prepare(session_id: &str, preview_id: u64) -> Result<Prepared, Mul
         volume_id: inputs.volume_id,
         dir: inputs.dir,
         ready,
+    })
+}
+
+/// Results (⌥⏎): writes preview `preview_id`'s rows as `old<TAB>new` lines for
+/// the user's editor, and returns the file's path. The session reads back only
+/// this file (`read_names`).
+pub(crate) fn write_names(session_id: &str, preview_id: u64) -> Result<PathBuf, MultiRenameError> {
+    let (latest, _) = stored(session_id, preview_id)?;
+    // The old file first: it has the same path, and dropping it deletes it.
+    with_session(session_id, |s| s.written = None)?;
+    let path = names_file::path_for(session_id);
+    let written = names_file::write(&path, &latest.rows)
+        .map_err(|e| MultiRenameError::CouldntWriteNames { detail: e.to_string() })?;
+    with_session(session_id, |s| s.written = Some(written))?;
+    Ok(path)
+}
+
+/// Reads the session's Results file back: a line the user changed names its row
+/// from now on. Returns how many rows carry a typed name; the next preview shows them.
+pub(crate) fn read_names(session_id: &str) -> Result<usize, MultiRenameError> {
+    let gone = |detail: String| MultiRenameError::NamesFileGone { detail };
+    let path = with_session(session_id, |s| s.written.as_ref().map(|w| w.path.clone()))?
+        .ok_or_else(|| gone("no Results file was written".to_string()))?;
+    // Read outside the lock; the merge below checks the file is still this session's.
+    let text = std::fs::read_to_string(&path).map_err(|e| gone(e.to_string()))?;
+    with_session(session_id, |s| {
+        let written = s
+            .written
+            .as_ref()
+            .filter(|w| w.path == path)
+            .ok_or_else(|| gone("Results was cleared meanwhile".to_string()))?;
+        let edits = written.merge(&text, &s.edits);
+        let count = edits.len();
+        s.edits = Arc::new(edits);
+        Ok(count)
+    })?
+}
+
+/// Drops the typed names and the Results file: every row follows the settings again.
+pub(crate) fn clear_names(session_id: &str) -> Result<(), MultiRenameError> {
+    with_session(session_id, |s| {
+        s.edits = Arc::default();
+        s.written = None;
     })
 }
 
@@ -350,6 +407,8 @@ mod tests {
             volume_id: "root".to_string(),
             dir: PathBuf::new(),
             names: Vec::new().into(),
+            edits: Arc::default(),
+            written: None,
             next_preview: 1,
             latest: None,
             last_used,

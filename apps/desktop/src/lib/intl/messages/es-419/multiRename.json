@@ -58,5 +58,13 @@
   "multiRename.reason.missing": "Este archivo se movió o eliminó después de abrir “Renombrado múltiple”, así que queda fuera.",
   "@multiRename.reason.missing": {
     "sourceHash": "01f75b3"
+  },
+  "multiRename.results.discard": "Volver a usar la configuración",
+  "@multiRename.results.discard": {
+    "sourceHash": "3f96e0a"
+  },
+  "multiRename.error.couldntWriteNames": "No se pudo escribir la lista de nombres. Comprueba que tu disco de arranque tiene espacio libre.",
+  "@multiRename.error.couldntWriteNames": {
+    "sourceHash": "2057912"
   }
 }

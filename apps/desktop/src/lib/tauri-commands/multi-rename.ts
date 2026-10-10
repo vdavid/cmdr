@@ -1,4 +1,4 @@
-// Multi-Rename Tool (⌃M): the session, its preview pages, apply, presets, and the last settings. The
+// Multi-Rename Tool (⌃M): the session, its preview pages, apply, Results, presets, and the last settings. The
 // work and the file names are the backend's (`src-tauri/src/multi_rename/`); these
 // are pass-throughs.
 
@@ -95,6 +95,21 @@ export async function applyMultiRename(
   previewId: number,
 ): Promise<MultiRenameResult<MultiRenameStarted>> {
   return result(await commands.applyMultiRename(sessionId, previewId))
+}
+
+/** Results (⌥⏎): writes preview `previewId`'s rows as `old<TAB>new` lines and returns the file's path, for the editor. */
+export async function writeMultiRenameNames(sessionId: string, previewId: number): Promise<MultiRenameResult<string>> {
+  return result(await commands.writeMultiRenameNames(sessionId, previewId))
+}
+
+/** Reads the session's Results file back; answers how many rows now carry a typed name. */
+export async function readMultiRenameNames(sessionId: string): Promise<MultiRenameResult<number>> {
+  return result(await commands.readMultiRenameNames(sessionId))
+}
+
+/** Drops the names typed in Results, and its file: every row follows the settings again. */
+export async function clearMultiRenameNames(sessionId: string): Promise<MultiRenameResult<null>> {
+  return result(await commands.clearMultiRenameNames(sessionId))
 }
 
 /** Ends the session (the sheet closed). */

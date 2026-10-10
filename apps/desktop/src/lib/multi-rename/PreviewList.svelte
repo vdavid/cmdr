@@ -2,7 +2,8 @@
     /**
      * The Multi-Rename sheet's preview: the house `ColumnList` over the state's windowed
      * source, one row per file (its icon, old name → new name, and a status glyph on a
-     * problem). The rows come a page at a time, and it draws only the ones in view.
+     * problem). A name the user typed in Results carries a pencil where the arrow is. The
+     * rows come a page at a time, and it draws only the ones in view.
      */
     import StatusGlyph from '$lib/ui/StatusGlyph.svelte'
     import ColumnList from '$lib/ui/ColumnList.svelte'
@@ -16,6 +17,7 @@
     import { getCachedIcon, iconCacheVersion } from '$lib/icon-cache'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import { tString } from '$lib/intl/messages.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import type { PreviewRow } from '$lib/tauri-commands'
     import { rowStatusView, type StatusMessage } from './row-status'
 
@@ -109,8 +111,15 @@
     ></span>
 {/snippet}
 
-{#snippet arrowCell()}
-    <span class="arrow" aria-hidden="true"><Icon name="arrow-right" size={12} /></span>
+{#snippet arrowCell({ row }: ColumnListCellContext<PreviewRow>)}
+    {#if row.edited}
+        <span class="arrow edited-mark" use:tooltip={{ text: tString('multiRename.editedName') }}>
+            <Icon name="pencil" size={12} aria-hidden="true" />
+            <span class="sr-only">{tString('multiRename.editedName')}</span>
+        </span>
+    {:else}
+        <span class="arrow" aria-hidden="true"><Icon name="arrow-right" size={12} /></span>
+    {/if}
 {/snippet}
 
 {#snippet newNameCell({ row }: ColumnListCellContext<PreviewRow>)}
@@ -181,6 +190,11 @@
     .arrow {
         display: flex;
         align-items: center;
+    }
+
+    /* The typed name's mark stands out from the quiet arrows it replaces, but stays a hint. */
+    .edited-mark {
+        color: var(--color-accent-text);
     }
 
     .problem-glyph {

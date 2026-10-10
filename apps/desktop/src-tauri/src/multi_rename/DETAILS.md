@@ -84,6 +84,18 @@ subfolders (the executor's one-parent rule refuses it today), "next step" chaini
   exactly the stored ones (same row, names, status, icon, and kind). Why: the folder can change between the preview and Start.
 - Sessions live in a process-wide map, at most `MAX_SESSIONS`; opening one drops sessions idle past `IDLE_LIMIT`,
   then the least recently used. The sheet closes its session (`close_multi_rename`) when it closes.
+- **Results (⌥⏎, TC's "edit names", `names_file.rs`)**: `write_multi_rename_names(session, previewId)` writes that
+  preview's rows (a `Missing` one gets no line) as `old<TAB>new` lines to `$TMPDIR/cmdr-multi-rename/<session>.txt`;
+  the sheet opens it in the user's editor and calls `read_multi_rename_names` when its window gets focus again. A line
+  counts only when its new name differs from what was written, so an untouched row keeps following the settings and
+  an earlier edit stays; the merged names (`NameEdits`, by composed old name) become the session's, and every preview
+  from then on puts them through `Compiled::finish` and all the status checks (`PreviewRow::edited` marks them).
+  `clear_multi_rename_names` drops them. **Decision/Why:** by old name, never line number, so a file appearing
+  meanwhile can't shift a name onto the wrong row; the new name is after the LAST tab, so an old name holding a tab
+  still splits. Only the path the session wrote is read (`Written`), so the frontend never names a file to read.
+  `StoredPreview` keeps the edits it showed, and apply recomputes with those: an edit read back after the preview on
+  screen never sneaks into its rename. Dropping a `Written` deletes the file, so close, eviction, and clear tidy up.
+  The file is read outside the sessions lock. Ported from PR #386 (Jiri Slovacek), whose read-back was process-wide.
 - Plain search: a `*` is lazy (`IMG_*_` ends at the first `_`) except a trailing one, which runs to the end. Search
   and names are composed (NFC) first, so `é` typed finds the decomposed `é` an SMB share stores.
 - A single search takes its replacement literally (`|` included); only a list pairs with a list. A list of nothing

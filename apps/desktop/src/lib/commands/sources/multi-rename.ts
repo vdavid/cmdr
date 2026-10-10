@@ -120,4 +120,24 @@ export const multiRenameCommands: CommandSource[] = [
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
+  {
+    // TC's Results button (⌥R there, a menu mnemonic); ⌥Enter, beside Enter's Rename, as the PR had it.
+    id: 'multiRename.results',
+    nameKey: 'commands.multiRenameResults.label',
+    scope: 'Main window/Multi-rename',
+    showInPalette: false,
+    shortcuts: ['⌥Enter'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+    fixedKey: true,
+  },
+  {
+    // In a text field: TC's field history. Plain ↓ stays MaskInput's (into a `[C…]` token's editor).
+    id: 'multiRename.fieldHistory',
+    nameKey: 'commands.multiRenameFieldHistory.label',
+    scope: 'Main window/Multi-rename',
+    showInPalette: false,
+    shortcuts: ['⌥⇧↓'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+    fixedKey: true,
+  },
 ]

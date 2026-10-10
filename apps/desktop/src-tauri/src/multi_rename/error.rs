@@ -30,6 +30,11 @@ pub enum MultiRenameError {
     PreviewOutOfDate,
     /// The folder is read-only (inside an archive or a `.git` portal).
     ReadOnly,
+    /// Results couldn't write its names file; `detail` is log text only.
+    CouldntWriteNames { detail: String },
+    /// There's no Results file to read back: none was written, or it's gone or
+    /// unreadable. `detail` is log text only.
+    NamesFileGone { detail: String },
     /// The work didn't finish within its deadline.
     TimedOut,
     /// The worker failed; `detail` is log text only.

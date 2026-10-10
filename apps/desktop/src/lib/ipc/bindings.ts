@@ -1375,6 +1375,21 @@ export const commands = {
     typedError<MultiRenameStarted, MultiRenameError>(__TAURI_INVOKE('apply_multi_rename', { sessionId, previewId })),
   // Ends the session when the sheet closes. No-op when it's already gone.
   closeMultiRename: (sessionId: string) => __TAURI_INVOKE<void>('close_multi_rename', { sessionId }),
+  /**
+   *  Results (⌥⏎): writes preview `preview_id`'s rows as `old<TAB>new` lines to a
+   *  text file and returns its path, for the user's editor.
+   */
+  writeMultiRenameNames: (sessionId: string, previewId: number) =>
+    typedError<string, MultiRenameError>(__TAURI_INVOKE('write_multi_rename_names', { sessionId, previewId })),
+  /**
+   *  Reads the session's Results file back. Returns how many rows now carry a name
+   *  the user typed; the next preview shows them.
+   */
+  readMultiRenameNames: (sessionId: string) =>
+    typedError<number, MultiRenameError>(__TAURI_INVOKE('read_multi_rename_names', { sessionId })),
+  // Drops the names typed in Results, and its file: every row follows the settings again.
+  clearMultiRenameNames: (sessionId: string) =>
+    typedError<null, MultiRenameError>(__TAURI_INVOKE('clear_multi_rename_names', { sessionId })),
   // The saved presets, newest first.
   getMultiRenamePresets: () => __TAURI_INVOKE<MultiRenamePreset[]>('get_multi_rename_presets'),
   // Saves a preset; one with the same name is replaced.
@@ -11284,6 +11299,13 @@ export type MultiRenameError =
   | { type: 'previewOutOfDate' }
   // The folder is read-only (inside an archive or a `.git` portal).
   | { type: 'readOnly' }
+  // Results couldn't write its names file; `detail` is log text only.
+  | { type: 'couldntWriteNames'; detail: string }
+  /**
+   *  There's no Results file to read back: none was written, or it's gone or
+   *  unreadable. `detail` is log text only.
+   */
+  | { type: 'namesFileGone'; detail: string }
   // The work didn't finish within its deadline.
   | { type: 'timedOut' }
   // The worker failed; `detail` is log text only.
@@ -12418,6 +12440,8 @@ export type PreviewRow = {
    */
   iconId: string | null
   isDirectory: boolean
+  // The new name is one the user typed in Results, not the settings' (`names_file.rs`).
+  edited: boolean
 }
 
 /**

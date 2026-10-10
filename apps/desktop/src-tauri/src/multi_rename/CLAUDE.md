@@ -11,7 +11,9 @@ Greek to Latin, removing diacritics, Unicode normalization, a counter, presets, 
 - `plan.rs` the preview over a folder's entries: each row's new name and status; `render_examples` runs the sheet's
   tooltip examples (a spec on a made-up file in `Trips/Lisbon 2026`, last changed 2026-07-14 09:05:30) through the
   same `Compiled::render`. Pure.
-- `session.rs` one open sheet's files (resolved once from the pane's selection), its latest preview, and paging.
+- `session.rs` one open sheet's files (resolved once from the pane's selection), its latest preview, paging, and its
+  Results names.
+- `names_file.rs` Results (⌥⏎): the preview as `old<TAB>new` lines, and the user's edits merged back by old name.
 - `run.rs` apply: proves the ready rows against the preview shown, then runs `start_renames` (Ask Cmdr's executor).
 - `error.rs` `MultiRenameError`, shared by `session` and `run` so neither imports the other (`module-cycles`).
 - `presets.rs` named presets on `crate::recents`; rename and update edit one in place (`rename_in`, `update_spec_in`).
@@ -24,6 +26,8 @@ Greek to Latin, removing diacritics, Unicode normalization, a counter, presets, 
   rows, and the preview and Start would rename files the user never picked. A session file that's gone is `Missing`.
 - **Names stay in the backend.** The sheet gets counts and the page of rows it draws; apply takes `(session, preview)`
   ids, recomputes, and refuses with `PreviewOutOfDate` unless its ready rows are EXACTLY that preview's.
+- **A Results name is matched by its OLD name, never its line**, and goes through every status check. The session
+  reads back only the file it wrote; a stored preview keeps the edits it showed, so apply renames with exactly those.
 - **Sessions are bounded** (`MAX_SESSIONS`, idle eviction on open): a sheet that never closed can't hold a big
   folder's names for long.
 - **`a|b` → `x|y` replaces in ONE pass** (`Replacement::Pairs`): `a|b` → `b|c` turns `a` into `b`, `one|two` →

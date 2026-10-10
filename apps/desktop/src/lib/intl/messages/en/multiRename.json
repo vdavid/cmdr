@@ -269,6 +269,42 @@
   "@multiRename.undoStarted": {
     "description": "Toast after Undo started reversing the last multi-rename. {count} is how many files."
   },
+  "multiRename.results": "Results",
+  "@multiRename.results": {
+    "description": "Footer link (Total Commander’s name) that opens the list of old and new names in the user’s text editor, so they can edit the new names by hand."
+  },
+  "multiRename.results.editing": "Edit the new names in your text editor and save the file. They show here when you come back to this window.",
+  "@multiRename.results.editing": {
+    "description": "Shown under the sheet’s fields while the names list is open in the text editor. Each line is an old name, a tab, and the new name."
+  },
+  "multiRename.results.edited": "{count, plural, one {# name comes from your edited list} other {# names come from your edited list}}.",
+  "@multiRename.results.edited": {
+    "description": "Shown under the sheet’s fields when the preview uses names the user typed in the text editor (Results). {count} is how many files carry such a name."
+  },
+  "multiRename.results.readNow": "Read names now",
+  "@multiRename.results.readNow": {
+    "description": "Link that reads the edited names list back right away, instead of waiting for the user to come back to the window."
+  },
+  "multiRename.results.discard": "Use the settings again",
+  "@multiRename.results.discard": {
+    "description": "Link that drops the names typed in the text editor, so every file shows the name the settings give it."
+  },
+  "multiRename.results.gone": "The names list is gone. Open Results again to write a new one.",
+  "@multiRename.results.gone": {
+    "description": "Shown when the edited names list can’t be read back (it was deleted or moved)."
+  },
+  "multiRename.error.couldntWriteNames": "Couldn’t write the names list. Check that your startup disk has free space.",
+  "@multiRename.error.couldntWriteNames": {
+    "description": "Shown when Results couldn’t create its text file in the temporary folder."
+  },
+  "multiRename.resultsTooltip": "Edit the new names in your text editor, then come back here",
+  "@multiRename.resultsTooltip": {
+    "description": "Tooltip of the Results footer link (multiRename.results): it opens the list of old and new names in the user's text editor, one file per line, to change any new name by hand; the sheet reads the list back when the user returns to the window."
+  },
+  "multiRename.editedName": "You typed this name in Results",
+  "@multiRename.editedName": {
+    "description": "Tooltip and screen-reader text of a small pencil mark beside a row of the preview whose new name the user typed by hand in the Results list (multiRename.results) rather than one the settings made."
+  },
   "multiRename.rename": "{count, plural, =0 {Rename} one {Rename # file} other {Rename # files}}",
   "@multiRename.rename": {
     "description": "Primary button that renames the files that are ready. {count} is how many."

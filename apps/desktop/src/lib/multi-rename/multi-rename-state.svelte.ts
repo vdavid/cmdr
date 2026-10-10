@@ -9,6 +9,8 @@
  * a preview answers its id, the counts, and the first rows, and the list pages in
  * the rows it scrolls to (`show`, which `source` hands `ColumnList`), from every row
  * or from the problem rows alone. Start sends the session and preview ids, never names.
+ * Results (⌥⏎) is the backend's too: it writes the shown preview to a file, reads the
+ * user's edits back into the session, and the next preview shows them.
  *
  * The preview reruns 120 ms after the last edit, and a generation counter drops
  * an answer a newer edit overtook, so fast typing never shows an older preview.
@@ -16,15 +18,18 @@
 
 import {
   applyMultiRename,
+  clearMultiRenameNames,
   deleteMultiRenamePreset,
   getMultiRenameLastSettings,
   getMultiRenamePresets,
   getMultiRenamePreviewRows,
   previewMultiRename,
+  readMultiRenameNames,
   renameMultiRenamePreset,
   saveMultiRenameLastSettings,
   saveMultiRenamePreset,
   updateMultiRenamePreset,
+  writeMultiRenameNames,
   type LoadedPreset,
   type MultiRenameError,
   type MultiRenamePreset,
@@ -81,6 +86,8 @@ export interface MultiRenameState {
   /** A field differs from the loaded preset. Always `false` with nothing loaded. */
   readonly edited: boolean
   readonly applying: boolean
+  /** How many rows carry a name the user typed in Results; every preview from now on shows them. */
+  readonly editedCount: number
   /** Row `index` of the list (of the problem rows, with `problemsOnly`), or `undefined` while its page is on its way. */
   rowAt: (index: number) => PreviewRow | undefined
   /** The list shows rows `start..end`: fetch the ones missing, drop the far ones. */
@@ -104,6 +111,12 @@ export interface MultiRenameState {
   deletePreset: (id: string) => Promise<void>
   /** Remembers the fields and the loaded preset for the next sheet. */
   persist: () => Promise<void>
+  /** Results: writes the shown preview's names to a file and resolves with its path, or `null` (`applyError` says why). */
+  writeNames: () => Promise<string | null>
+  /** Reads the Results file back and re-previews. Resolves with why it couldn't, or `null`. */
+  readNames: () => Promise<MultiRenameError | null>
+  /** Drops the typed names: every row follows the settings again. */
+  clearNames: () => Promise<void>
   /** Starts the rename. Resolves with the operation, or `null` when it didn't start (`applyError` says why). */
   apply: () => Promise<MultiRenameStarted | null>
   dispose: () => void
@@ -122,6 +135,7 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
   let loaded = $state.raw<LoadedPreset | null>(null)
   let applying = $state(false)
   let applyError = $state<MultiRenameError | null>(null)
+  let editedCount = $state(0)
   let waiting = $state(0)
   let generation = 0
   let timer: ReturnType<typeof setTimeout> | null = null
@@ -276,6 +290,9 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
     get applyError() {
       return applyError
     },
+    get editedCount() {
+      return editedCount
+    },
     get pending() {
       return waiting > 0
     },
@@ -340,6 +357,26 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
     async persist() {
       // A preset deleted meanwhile isn't remembered: `loaded` reads it from the list.
       await saveMultiRenameLastSettings($state.snapshot(spec), loadedSpec ? loaded : null)
+    },
+    async writeNames() {
+      const id = previewId
+      if (waiting > 0 || id === null) return null
+      const answer = await writeMultiRenameNames(sessionId, id)
+      if (answer.ok) return answer.value
+      applyError = answer.error
+      return null
+    },
+    async readNames() {
+      const answer = await readMultiRenameNames(sessionId)
+      if (!answer.ok) return answer.error
+      editedCount = answer.value
+      schedule()
+      return null
+    },
+    async clearNames() {
+      editedCount = 0
+      await clearMultiRenameNames(sessionId)
+      schedule()
     },
     async apply() {
       const id = previewId

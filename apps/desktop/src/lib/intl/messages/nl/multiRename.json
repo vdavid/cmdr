@@ -260,6 +260,34 @@
   "@multiRename.undoStarted": {
     "sourceHash": "b6bd565"
   },
+  "multiRename.results": "Resultatenlijst",
+  "@multiRename.results": {
+    "sourceHash": "219c4a6"
+  },
+  "multiRename.results.editing": "Bewerk de nieuwe namen in je teksteditor en bewaar het bestand. Ze verschijnen hier zodra je terugkomt in dit venster.",
+  "@multiRename.results.editing": {
+    "sourceHash": "0a54cdc"
+  },
+  "multiRename.results.edited": "{count, plural, one {# naam komt} other {# namen komen}} uit je bewerkte lijst.",
+  "@multiRename.results.edited": {
+    "sourceHash": "9899216"
+  },
+  "multiRename.results.readNow": "Lees namen nu in",
+  "@multiRename.results.readNow": {
+    "sourceHash": "aaa6bd2"
+  },
+  "multiRename.results.discard": "Gebruik de instellingen weer",
+  "@multiRename.results.discard": {
+    "sourceHash": "dc20f4f"
+  },
+  "multiRename.results.gone": "De namenlijst is weg. Open ‘Resultatenlijst’ opnieuw om een nieuwe te schrijven.",
+  "@multiRename.results.gone": {
+    "sourceHash": "8aa255a"
+  },
+  "multiRename.error.couldntWriteNames": "Kon de namenlijst niet schrijven. Controleer of je opstartschijf nog vrije ruimte heeft.",
+  "@multiRename.error.couldntWriteNames": {
+    "sourceHash": "bb5e415"
+  },
   "multiRename.rename": "{count, plural, =0 {Wijzig naam} one {Wijzig # bestandsnaam} other {Wijzig # bestandsnamen}}",
   "@multiRename.rename": {
     "sourceHash": "9789ca5"

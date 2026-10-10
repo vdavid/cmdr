@@ -530,6 +530,14 @@
   "@commands.multiRenameUndoRename.label": {
     "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). It renames every file of the last multi-rename back to its old name, in one go."
   },
+  "commands.multiRenameResults.label": "Edit the new names in your text editor",
+  "@commands.multiRenameResults.label": {
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). It opens the list of new names in the user's text editor, where they can change any of them by hand."
+  },
+  "commands.multiRenameFieldHistory.label": "Show the field’s earlier values",
+  "@commands.multiRenameFieldHistory.label": {
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). In one of the tool's text fields, it lists what that field held in earlier renames, to pick one."
+  },
   "commands.fileView.label": "View",
   "@commands.fileView.label": {
     "description": "Command name that opens the built-in viewer for the selected file. Appears in the command palette. A terse control label.",

@@ -5,7 +5,8 @@
      * removing diacritics, Unicode normalization, a counter, presets, and a live
      * preview of every row. Start renames the rows that are ready as one operation
      * (the queue shows it), and Undo rename (⌘⌥Z) rolls the session's last one back.
-     * The preview list is `PreviewList.svelte`.
+     * Results (⌥⏎) opens the new names in the user's text editor to change by hand
+     * (`results.svelte.ts`). The preview list is `PreviewList.svelte`.
      *
      * Keyboard-first: the name mask has focus on open, Tab walks the fields, the
      * preview follows every keystroke, Enter starts, Esc closes, F2 opens the Presets
@@ -35,7 +36,7 @@
     import { getBadgeStatus } from '$lib/feature-status'
     import { getAppLogger } from '$lib/logging/logger'
     import type { MultiRenameError, MultiRenameOpened, MultiRenameStarted } from '$lib/tauri-commands'
-    import type { CaseChange } from '$lib/ipc/bindings'
+    import type { CaseChange, SpecError } from '$lib/ipc/bindings'
     import { createMultiRenameState } from './multi-rename-state.svelte'
     import MaskInput from './MaskInput.svelte'
     import { TOGGLE_COMMANDS, WHOLE_NAME_TOGGLES, optionKeyOf, type ToggleField, type WholeNameField } from './option-keys'
@@ -49,6 +50,7 @@
     import { SEARCH_OPTIONS, searchOptionExamples } from './search-option-help'
     import SearchOptionChips from './SearchOptionChips.svelte'
     import { getLastMultiRenameRun, setLastMultiRenameRun, type MultiRenameRun } from './last-run.svelte'
+    import { createResults } from './results.svelte'
 
     interface Props {
         session: MultiRenameOpened
@@ -67,6 +69,7 @@
 
     // One sheet renames one session; a new session remounts it.
     const tool = createMultiRenameState(session.sessionId)
+    const results = createResults(tool)
 
     let nameMaskInput = $state<HTMLInputElement>()
     /** Holds the Letter case `Select`, so ⌘⌥U can open it through its trigger. */
@@ -104,8 +107,10 @@
     let undoNotice = $state<MessageKey | null>(null)
 
     const canStart = $derived(tool.counts.ready > 0 && tool.error === null && !tool.pending && !tool.applying)
-    const shownError = $derived(tool.error ?? tool.applyError)
-    /** The error line's words: the preview's or Start's error, else why Undo rename didn't go. */
+    /** Results writes what the preview shows, so it waits for the same settled preview Start does. */
+    const canResults = $derived(tool.error === null && !tool.pending && !tool.applying)
+    const shownError = $derived(tool.error ?? tool.applyError ?? results.error)
+    /** The error line's words: the preview's, Start's, or Results' error, else why Undo rename didn't go. */
     const shownMessage = $derived(shownError ? errorText(shownError) : undoNotice ? tString(undoNotice) : '')
 
     onMount(() => {
@@ -157,6 +162,10 @@
         }
     }
 
+    function openResults(): void {
+        if (canResults) void results.start()
+    }
+
     /** Hands the last run's reversal to the queue, as the operation log's Roll back does. */
     async function undoLastRun(): Promise<void> {
         const run = lastRun
@@ -195,6 +204,12 @@
             else openCaseMenu()
             return true
         }
+        // ⌥⏎ opens Results; claimed always, so it never falls through to Enter's Rename.
+        if (!e.isComposing && eventMatchesCommand(e, 'multiRename.results')) {
+            claimKey(e)
+            openResults()
+            return true
+        }
         // ⌘⌥Z rolls back the last run; claimed even with none, so ⌥ never types `Ω` into a field.
         if (!e.isComposing && eventMatchesCommand(e, 'multiRename.undoRename')) {
             claimKey(e)
@@ -213,13 +228,17 @@
         void start()
     }
 
+    function specErrorText(error: SpecError): string {
+        if (error.type === 'badRegex') return tString('multiRename.error.badRegex')
+        return error.error.type === 'unclosed'
+            ? tString('multiRename.error.unclosed')
+            : tString('multiRename.error.unknown', { placeholder: error.error.placeholder })
+    }
+
     function errorText(error: MultiRenameError): string {
         switch (error.type) {
             case 'spec':
-                if (error.error.type === 'badRegex') return tString('multiRename.error.badRegex')
-                return error.error.error.type === 'unclosed'
-                    ? tString('multiRename.error.unclosed')
-                    : tString('multiRename.error.unknown', { placeholder: error.error.error.placeholder })
+                return specErrorText(error.error)
             case 'gone':
             case 'sessionClosed':
                 return tString('multiRename.error.gone')
@@ -235,12 +254,19 @@
                 return tString('multiRename.error.readOnly')
             case 'timedOut':
                 return tString('multiRename.error.timedOut')
+            case 'couldntWriteNames':
+                return tString('multiRename.error.couldntWriteNames')
+            case 'namesFileGone':
+                return tString('multiRename.results.gone')
             case 'couldntStart':
             case 'internal':
                 return tString('multiRename.error.couldntStart')
         }
     }
 </script>
+
+<!-- Back from the text editor: Results reads the names it wrote (a no-op with no file out). -->
+<svelte:window onfocus={() => { void results.readBack() }} />
 
 <ModalDialog
     titleId="multi-rename-title"
@@ -357,14 +383,36 @@
             </div>
         </div>
 
-        <!-- Always there, one line tall, so a message coming or going never moves the preview. -->
-        <p
-            class="error"
-            role="alert"
-            use:tooltip={shownMessage ? { text: shownMessage, overflowOnly: true } : undefined}
-        >
-            {shownMessage}
-        </p>
+        <!-- Always there, one line tall, so a message coming or going never moves the preview. An
+             error wins; with none, Results says what it's doing, quietly. -->
+        <div class="message-line">
+            <p
+                class="error"
+                role="alert"
+                use:tooltip={shownMessage ? { text: shownMessage, overflowOnly: true } : undefined}
+            >
+                {shownMessage}
+            </p>
+            {#if !shownMessage && (results.open || tool.editedCount > 0)}
+                <p class="results-notice" role="status">
+                    <span class="results-words">
+                        {tool.editedCount > 0
+                            ? tString('multiRename.results.edited', { count: tool.editedCount })
+                            : tString('multiRename.results.editing')}
+                    </span>
+                    {#if results.open}
+                        <LinkButton onclick={() => { void results.readBack() }}>
+                            {tString('multiRename.results.readNow')}
+                        </LinkButton>
+                    {/if}
+                    {#if tool.editedCount > 0}
+                        <LinkButton onclick={() => { void results.discard() }}>
+                            {tString('multiRename.results.discard')}
+                        </LinkButton>
+                    {/if}
+                </p>
+            {/if}
+        </div>
 
         <PreviewList rows={tool.source} />
     </div>
@@ -385,7 +433,7 @@
         {#if lastRun}
             <!-- Quiet: a way back, not the sheet's next step. Only there while there's a run to undo. -->
             <span
-                class="undo"
+                class="footer-link"
                 use:tooltip={{ text: tString('multiRename.undoTooltip', { count: lastRun.renaming }) }}
             >
                 <LinkButton disabled={undoing} onclick={() => { void undoLastRun() }}>
@@ -396,6 +444,15 @@
                 </span>
             </span>
         {/if}
+        <!-- Quiet too: a side road to the names, never the sheet's next step. -->
+        <span class="footer-link" use:tooltip={{ text: tString('multiRename.resultsTooltip') }}>
+            <LinkButton disabled={!canResults} onclick={openResults}>
+                {tString('multiRename.results')}
+            </LinkButton>
+            <span class="option-key" aria-hidden="true">
+                <ShortcutChip commandId="multiRename.results" clickable={false} size="sm" />
+            </span>
+        </span>
         <Button onclick={onClose}>{tString('multiRename.cancel')}</Button>
         <Button variant="primary" onclick={() => { void start() }} disabled={!canStart}>
             {tString('multiRename.rename', { count: tool.counts.ready })}
@@ -508,7 +565,15 @@
 
     /* One reserved line under the search row: a long message ends in an ellipsis (the whole of it
        on hover) rather than growing the line. */
+    .message-line {
+        display: flex;
+        gap: var(--spacing-sm);
+        min-width: 0;
+    }
+
     .error {
+        flex: 0 1 auto;
+        min-width: 0;
         margin: 0;
         min-height: calc(var(--font-size-sm) * var(--font-line-height-normal));
         overflow: hidden;
@@ -519,7 +584,24 @@
         line-height: var(--font-line-height-normal);
     }
 
-    .undo {
+    /* A status, not a warning: secondary words, its links inline, the line's one line kept. */
+    .results-notice {
+        display: flex;
+        align-items: baseline;
+        gap: var(--spacing-sm);
+        min-width: 0;
+        margin: 0;
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-sm);
+        white-space: nowrap;
+    }
+
+    .results-words {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .footer-link {
         display: flex;
         align-items: center;
         gap: var(--spacing-xs);
