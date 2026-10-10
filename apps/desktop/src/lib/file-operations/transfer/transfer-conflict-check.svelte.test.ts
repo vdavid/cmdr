@@ -226,7 +226,7 @@ describe('a named target that is an existing folder', () => {
         sourceModified: null,
         destModified: null,
       },
-    ] as unknown as VolumeConflictInfo[]
+    ]
   }
 
   function namedCheck(destinationName: string | undefined) {

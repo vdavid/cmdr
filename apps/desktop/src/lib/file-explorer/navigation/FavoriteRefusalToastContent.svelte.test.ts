@@ -24,7 +24,7 @@ async function render(actionLabel: string | null, onAction: () => void): Promise
 }
 
 afterEach(() => {
-  if (mounted) unmount(mounted)
+  if (mounted) void unmount(mounted)
   mounted = null
   document.body.innerHTML = ''
   dismissToast.mockReset()

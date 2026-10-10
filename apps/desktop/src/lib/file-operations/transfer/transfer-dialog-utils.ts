@@ -239,8 +239,17 @@ export function resolveTransferFilename(
   const entered = trimmed.endsWith('/') && intoFolderName ? `${trimmed}${intoFolderName}` : trimmed
   const leaf = entered.split('/').at(-1)
   if (!leaf || leaf === '.' || leaf === '..' || entered === '~') return null
+  return splitNormalizedPath(toAbsoluteTarget(entered, sourceFolder, homePath))
+}
+
+/** `~/` expands from home; anything not absolute resolves from the source folder. */
+function toAbsoluteTarget(entered: string, sourceFolder: string, homePath: string): string {
   const expanded = entered.startsWith('~/') && homePath ? `${homePath}/${entered.slice(2)}` : entered
-  const absolute = expanded.startsWith('/') ? expanded : `${sourceFolder}/${expanded}`
+  return expanded.startsWith('/') ? expanded : `${sourceFolder}/${expanded}`
+}
+
+/** Collapse `.` / `..` and split off the leaf. */
+function splitNormalizedPath(absolute: string): { parent: string; name: string } | null {
   // Dot segments cannot obscure a destination inside the source subtree.
   const parts: string[] = []
   for (const part of absolute.split('/')) {

@@ -111,14 +111,18 @@ describe('a target path that names an existing folder', () => {
 
   it("hints at the trailing slash when the item would take the folder's name", async () => {
     const target = await mountWithFolderAtTarget('/Users/test/Documents', '/Users/test/src/Photos')
-    await vi.waitFor(() => expect(target.querySelector('.named-folder-hint')?.textContent).toContain('/'))
+    await vi.waitFor(() => {
+      expect(target.querySelector('.named-folder-hint')?.textContent).toContain('/')
+    })
     expect(target.querySelector('.named-folder-hint')?.textContent).toContain('Documents')
     expect(target.querySelector('.named-folder-hint')?.textContent).toContain('Photos')
   })
 
   it('stays quiet when the item keeps its own name, an ordinary merge', async () => {
     const target = await mountWithFolderAtTarget('/Users/test/Documents', '/Users/test/src/Documents')
-    await vi.waitFor(() => expect(target.querySelector('.merge-info')).not.toBeNull())
+    await vi.waitFor(() => {
+      expect(target.querySelector('.merge-info')).not.toBeNull()
+    })
     expect(target.querySelector('.named-folder-hint')).toBeNull()
   })
 })
