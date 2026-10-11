@@ -539,7 +539,7 @@
             {#if footer}
                 <div class="modal-footer">
                     {#if footerLeading}<div class="modal-footer-leading">{@render footerLeading()}</div>{/if}
-                    {@render footer()}
+                    <div class="modal-footer-actions">{@render footer()}</div>
                 </div>
             {/if}
         </div>
@@ -871,6 +871,7 @@
        Owns the dialog's bottom padding so callers don't repeat per-dialog button-row CSS. */
     .modal-footer {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
         justify-content: flex-end;
         gap: var(--spacing-md);
@@ -882,5 +883,21 @@
     .modal-footer-leading {
         margin-right: auto;
         min-width: 0;
+    }
+
+    /* The buttons are one unit that never shrinks and never wraps a label: when the
+       row can't hold the leading control beside them (a longer translation, a third
+       button), the whole button group drops to a row of its own, still hard right,
+       rather than squeezing each label onto two lines. */
+    .modal-footer-actions {
+        display: flex;
+        flex-shrink: 0;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        max-width: 100%;
+        align-items: center;
+        gap: var(--spacing-md);
+        margin-left: auto;
+        white-space: nowrap;
     }
 </style>
