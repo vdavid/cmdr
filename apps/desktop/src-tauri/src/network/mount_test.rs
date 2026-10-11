@@ -248,6 +248,7 @@ struct NetfsFixtureLock {
 #[cfg(target_os = "macos")]
 impl NetfsFixtureLock {
     fn acquire() -> Self {
+        // allowed-fixed-temp-dir: the lock must be shared by every process and sibling worktree on the machine, see above
         let path = std::env::temp_dir().join("cmdr-netfs-fixture-tests.lock");
         let file = std::fs::File::options()
             .create(true)
