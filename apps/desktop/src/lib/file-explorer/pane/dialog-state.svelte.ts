@@ -356,7 +356,9 @@ export function createDialogState(deps: DialogStateDeps) {
       log.info('{op} archive-password prompt closed with no retry', { op: transferOpLabel(op) })
 
       paneEffects.refreshPanesAfterTransfer()
-      paneEffects.clearSourcePaneAfterTransfer()
+      // A background job dropped its selection when it started; the selection
+      // there now is one the person made since, and isn't this job's to clear.
+      if (!transferProgressProps?.startInBackground) paneEffects.clearSourcePaneAfterTransfer()
 
       showTransferProgressDialog = false
       transferProgressProps = null

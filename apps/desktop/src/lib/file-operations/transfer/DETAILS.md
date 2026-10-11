@@ -1164,8 +1164,9 @@ smaller change, but it holds the slot until the id lands and can flash a frame.
 - **Archive password**: the backend doesn't retain `archive_needs_password` as a failure, so with no dialog nobody would
   ask. The background module holds the session until the outcome lands and hands that one stop back; `dialog-state`
   borrows the birth slot for the prompt (once the window is free, above), and a person's submit re-dispatches in the
-  background again (fresh scan). A job sent to the background from the progress dialog gets the same watch, which closed
-  the same gap there. While Show has the job in the progress dialog, that view stays quiet about the stop
+  background again (fresh scan); a cancel settles it without clearing the source selection a second time, since the one
+  there now is the person's. A job sent to the background from the progress dialog gets the same watch, which closed the
+  same gap there. While Show has the job in the progress dialog, that view stays quiet about the stop
   (`background.watches(id)` filters its error dialog), and the prompt follows once that view has closed.
 - **Errors after the start**: the retained failure, the failure toast
   (`$lib/status-corner/operation-failure-watch.svelte.ts`, which speaks for any failure no foreground slot claims, so a

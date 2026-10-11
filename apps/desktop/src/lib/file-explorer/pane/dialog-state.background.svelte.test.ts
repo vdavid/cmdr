@@ -87,7 +87,7 @@ function makeState() {
     skipsConfirmations: () => false,
     onOpenInEditor: vi.fn(),
   })
-  return { dialogs, onRefocus }
+  return { dialogs, onRefocus, left }
 }
 
 function transferDialogProps(): TransferDialogPropsData {
@@ -371,6 +371,20 @@ describe('an archive password, for a job with no dialog', () => {
 
     expect(dialogs.showArchivePasswordDialog).toBe(true)
     expect(dialogs.archivePasswordProps?.archivePath).toBe('/Users/me/secret.zip')
+  })
+
+  it('leaves the selection the person made since alone when the prompt is cancelled', async () => {
+    const { dialogs, left } = await startCopyInBackground()
+    // Dropped once, at the background start, like a Queue press.
+    expect(left.clearSelection).toHaveBeenCalledOnce()
+
+    listeners.error?.({ operationId: 'op-1', operationType: 'copy', error: needsPassword, progressAtStop: null })
+    await settle()
+    dialogs.handleArchivePasswordCancel()
+    await settle()
+
+    expect(left.clearSelection).toHaveBeenCalledOnce()
+    expect(dialogs.transferProgressProps).toBeNull()
   })
 
   it('never stacks the prompt over a setup dialog the person opened meanwhile', async () => {
