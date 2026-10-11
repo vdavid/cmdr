@@ -159,10 +159,24 @@ fn service_address(server: &str) -> Option<String> {
 /// For IPs, the mDNS name discovery last paired it with (a stale pairing is fine for a
 /// label), else the raw string.
 pub(crate) fn friendly_server_name(server: &str) -> String {
+    friendly_name_in(server, &cached_discovered_hosts())
+}
+
+/// [`friendly_server_name`] over `hosts`. ❗ The host half of a discovery name only: a
+/// typed server off 445 is discovered as `host:port`, and a caller that adds the port
+/// itself read "public on [127.0.0.1:11480]:11480".
+fn friendly_name_in(server: &str, hosts: &[NetworkHost]) -> String {
     if is_service_name(server) {
         return server.split("._").next().unwrap_or(server).to_string();
     }
-    name_for_ip_in(server, &cached_discovered_hosts()).unwrap_or_else(|| server.to_string())
+    name_for_ip_in(server, hosts).map_or_else(
+        || server.to_string(),
+        |name| {
+            crate::network::server_identity::SmbServer::from_name(&name)
+                .host()
+                .to_string()
+        },
+    )
 }
 
 /// The server-name forms another app (Finder) might have keyed an SMB password under for

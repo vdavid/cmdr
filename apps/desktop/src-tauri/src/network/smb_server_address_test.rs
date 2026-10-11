@@ -26,6 +26,16 @@ fn system_keychain_aliases_include_the_mdns_service_form_for_an_ip() {
     assert!(aliases.contains(&"Naspolya".to_string()));
 }
 
+/// A server typed as an IP off 445 joins discovery under its discovery name, port and
+/// all (`127.0.0.1:11480`). Its friendly name is the host half: the share row adds the
+/// port itself, and taking both read "public on [127.0.0.1:11480]:11480".
+#[test]
+fn a_typed_ip_off_445_is_friendly_named_without_its_port() {
+    let hosts = [crate::network::manual_servers::create_network_host("127.0.0.1", 11480)];
+    assert_eq!(friendly_name_in("127.0.0.1", &hosts), "127.0.0.1");
+    assert_eq!(friendly_name_in("Naspolya._smb._tcp.local", &hosts), "Naspolya");
+}
+
 #[test]
 fn system_keychain_aliases_empty_for_an_unknown_server() {
     assert!(system_keychain_aliases_from("10.9.9.9", &[]).is_empty());
