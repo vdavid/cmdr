@@ -25,11 +25,11 @@
 
 use crate::favorites::store::FavoriteVolume;
 use crate::file_system::volume::ConnectionState;
-use crate::network::connect_wiring;
 use crate::network::keychain::{self, KeychainError};
 use crate::network::known_shares::{self, CompletedMove, KnownNetworkShare};
 use crate::network::saved_server_fields::SavedServerOutcome;
 use crate::network::server_identity::{self, SmbServer, credential_key, smb_server};
+use crate::network::{connect_wiring, smb_saved_shares};
 use crate::volume_broadcast::{self, MovedPlace, ServerPlaceMoved};
 
 use super::{SECRET_STORE_BUDGET, SecretCopy, copy_secret_with, leave_behind, operations_need_any};
@@ -88,6 +88,8 @@ pub async fn move_host(
     }
     known_shares::move_host_rows(&host.rows, &host.server, &to);
     leave_behind(&mut moving, &places);
+    // A share-list mount names no place until it's up, so it lands on the server.
+    moving.moved_away(&smb_saved_shares::server_place(host.server.host(), host.server.port()));
     drop(moving);
     announce_redial(&places);
     for share in copied {

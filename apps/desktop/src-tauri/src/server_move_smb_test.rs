@@ -197,6 +197,41 @@ async fn an_operation_on_a_share_refuses_the_move() {
     assert_eq!(outcome, SavedServerOutcome::OperationRunning);
 }
 
+/// ❗ **A share-list mount of the OLD address that set out before Save isn't remembered**:
+/// it would save the old address again, a second host beside the moved one. That mount
+/// names no saved place up front, so the move marks the SERVER it left.
+#[tokio::test]
+async fn a_share_list_mount_of_the_old_address_that_lands_after_the_move_is_not_remembered() {
+    use crate::network::connect_wiring::DialTicket;
+    use crate::network::smb_saved_shares::{MountedShare, remember_mount_since};
+
+    let _secrets = crate::test_support::isolate_secrets();
+    let host = saved_host(mounted_row("198.18.0.60", 445, "listed-test", "smb-198-18-0-60-listed"));
+    let set_out = DialTicket::now();
+    let outcome = move_host(host, SmbServer::new("198.18.0.61", 445), &[], no_manual_entry).await;
+    assert_eq!(outcome, SavedServerOutcome::Saved);
+
+    let mounted = |share: &'static str| MountedShare {
+        host_name: "198.18.0.60",
+        address: "198.18.0.60",
+        port: 445,
+        share,
+        username: None,
+        mount_path: "/nonexistent/listed-test",
+    };
+    remember_mount_since(mounted("other-share"), set_out).await;
+    let saved_at_old = |share: &str| {
+        known_shares::saved_shares()
+            .into_iter()
+            .any(|row| row.share_name == share && row.address.as_deref() == Some("198.18.0.60"))
+    };
+    assert!(!saved_at_old("other-share"), "the old address isn't saved again");
+
+    // A mount the person starts AFTER the move is their own request, and saves.
+    remember_mount_since(mounted("after-share"), DialTicket::now()).await;
+    assert!(saved_at_old("after-share"));
+}
+
 /// ❗ Two spellings of one Keychain key (`nas.local` → `nas`) are one entry: the move
 /// must leave it in place rather than copy it onto itself and delete it.
 #[tokio::test]

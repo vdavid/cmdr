@@ -173,7 +173,11 @@ the new ids up front: re-keying favorites and tabs to a guessed id would be over
 `connect_saved_share` files its place id with the `DialTicket` `connect_saved_place` took before reading the row, and
 lands through `AttemptGuard::land`; a refused landing answers `Cancelled` and remembers nothing, so it can't save the
 old address again as a second row. ❗ The kernel mount it made stays (NetFS can't take one back): the share is then
-mounted from the old address, and its move completes at a later mount at the new one.
+mounted from the old address, and its move completes at a later mount at the new one. The share-list mount
+(`mount_network_share`, opening a share from a host's list) names no saved place until it's up, so the move also marks
+the old SERVER (`smb_saved_shares::server_place`, keyed by `credential_key`), and that mount lands through
+`connect_wiring::land_since` on it with a ticket taken before the mount (`remember_mount_since`). One that set out
+before Save isn't remembered; one the person starts after Save is their own request and saves as usual.
 
 **Edits and Forget while a move is pending.** Editing again just moves the rows again: the pending entry still holds the
 original id, so a move back to the old address completes like any other (a mount minting the same id ends the wait).

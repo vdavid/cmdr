@@ -91,6 +91,26 @@ pub async fn remember_mount(mounted: MountedShare<'_>) -> Option<String> {
     volume_id
 }
 
+/// The landing key a moved SMB SERVER leaves behind (`server_move::smb`), for a mount that
+/// names no saved place until it's up: the share-list mount. Keyed by the server's
+/// `credential_key`, so the spellings a password already pairs (`nas.local`, `nas`) pair here too.
+pub fn server_place(host: &str, port: u16) -> String {
+    use crate::network::server_identity::{credential_key, smb_server};
+    format!("smb-server:{}", credential_key(&smb_server(host, port)))
+}
+
+/// [`remember_mount`] for a mount that set out at `set_out` from a share list: one of a
+/// server that moved away since is NOT remembered, since that would save the old
+/// address again beside the moved host. The kernel mount itself stays; it's the person's.
+pub async fn remember_mount_since(mounted: MountedShare<'_>, set_out: DialTicket) -> Option<String> {
+    let place = server_place(mounted.address, mounted.port);
+    let Some(_landing) = crate::network::connect_wiring::land_since(&[place], set_out).await else {
+        log::info!(target: "volume", "a share-list mount landed after its server moved; not saving the old address");
+        return None;
+    };
+    remember_mount(mounted).await
+}
+
 /// Records a share an ADD named (`smb://sven@host/Container`), before anything
 /// mounted it: a row in the hub with no place yet.
 ///

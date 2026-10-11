@@ -1146,8 +1146,9 @@ the passwords, and each saved share KEEPS its old id, filed in `known_shares::pe
 at the new address completes it: `remember_share` answers a `CompletedMove`, and `remember_mount` hands it to
 `server_move::smb::complete`, which re-keys favorites by id and emits `server-place-moved` with the new id's live state.
 ❗ Refused while a saved share is still mounted from the old address (`ShareMounted`): ❌ Cmdr never unmounts an OS mount
-for a move. `connect_saved_share` lands through the same `AttemptGuard::land`, so a mount at the old address that
-finishes after Save isn't remembered. Why each piece: `docs/notes/server-address-move.md` § "SMB: a pending move".
+for a move. `connect_saved_share` lands through the same `AttemptGuard::land`, and the share-list mount
+(`mount_network_share` → `remember_mount_since`) through `land_since` on the moved SERVER's key (`server_place`), so a
+mount at the old address that finishes after Save isn't remembered. Why each piece: `docs/notes/server-address-move.md` § "SMB: a pending move".
 
 ### A secret used for one dial and never stored
 

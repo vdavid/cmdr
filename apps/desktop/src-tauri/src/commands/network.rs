@@ -402,6 +402,9 @@ pub async fn mount_network_share(
     host_name: Option<String>,
 ) -> Result<MountResult, MountError> {
     let actual_port = port.unwrap_or(445);
+    // ❗ Before the mount: a move of this server landing while the mount is out must
+    // keep it from saving the old address again (`remember_mount_since`).
+    let set_out = crate::network::connect_wiring::DialTicket::now();
     let result = crate::network::mount_share(
         server.clone(),
         share.clone(),
@@ -427,14 +430,17 @@ pub async fn mount_network_share(
     )
     .await;
 
-    crate::network::smb_saved_shares::remember_mount(crate::network::smb_saved_shares::MountedShare {
-        host_name: host_name.as_deref().unwrap_or(&server),
-        address: &server,
-        port: actual_port,
-        share: &share,
-        username: username.as_deref(),
-        mount_path: &result.mount_path,
-    })
+    crate::network::smb_saved_shares::remember_mount_since(
+        crate::network::smb_saved_shares::MountedShare {
+            host_name: host_name.as_deref().unwrap_or(&server),
+            address: &server,
+            port: actual_port,
+            share: &share,
+            username: username.as_deref(),
+            mount_path: &result.mount_path,
+        },
+        set_out,
+    )
     .await;
 
     Ok(result)

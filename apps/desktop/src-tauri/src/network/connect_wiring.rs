@@ -183,17 +183,23 @@ impl AttemptGuard {
     /// On `None`, let the volume go ([`let_go`]) and answer `Cancelled`: the
     /// pane that asked followed the place to its new address and dials it there.
     pub async fn land(&self) -> Option<Landing> {
-        let moved = MOVED_AWAY.read().await;
-        let moved_since = self
-            .places
-            .iter()
-            .any(|place| moved.get(place).is_some_and(|&at| at > self.set_out_at));
-        if moved_since {
+        let landing = land_since(&self.places, DialTicket(self.set_out_at)).await;
+        if landing.is_none() {
             log::info!(target: "volume", "{} connect landed after its place moved; letting it go", self.table.backend);
-            return None;
         }
-        Some(Landing { _moved: moved })
+        landing
     }
+}
+
+/// [`AttemptGuard::land`] for a dial no attempt table files: holds the landing open, or
+/// `None` when one of `places` moved away after `set_out`. The SMB share-list mount
+/// uses it, since it names no saved place until its mount does.
+pub async fn land_since(places: &[String], set_out: DialTicket) -> Option<Landing> {
+    let moved = MOVED_AWAY.read().await;
+    let moved_since = places
+        .iter()
+        .any(|place| moved.get(place).is_some_and(|&at| at > set_out.0));
+    (!moved_since).then_some(Landing { _moved: moved })
 }
 
 impl Drop for AttemptGuard {
