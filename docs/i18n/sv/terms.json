@@ -282,7 +282,8 @@
     "confidence": "high",
     "decision": "Queue button with an empty queue",
     "forms": "button I bakgrunden; Håll igång den här i bakgrunden; the pane's backdrop is panelens bakgrund",
-    "sources": "Total Commander sv (4004=\"I &bakgrunden\"); MS terminology"
+    "sources": "Total Commander sv (4004=\"I &bakgrunden\"); MS terminology",
+    "note": "fileOperations.backgroundStart.background (I bakgrunden) must stay a verbatim substring of backgroundAria (Starta i bakgrunden)."
   },
   "badge": {
     "accept": ["symbol"],
@@ -1946,7 +1947,8 @@
     "confidence": "high",
     "decision": "Operation queue",
     "forms": "title and menu label Åtgärdskö (indefinite); prose åtgärdskön; the dialog button Kö; queued status Väntar",
-    "sources": "MS terminology (kö compounds), Total Commander (4005=\"Kö\")"
+    "sources": "MS terminology (kö compounds), Total Commander (4005=\"Kö\")",
+    "note": "fileOperations.backgroundStart.queue (Kö) must stay a verbatim substring of queueAria (Starta i åtgärdskön)."
   },
   "options": {
     "accept": ["val", "inställning"],

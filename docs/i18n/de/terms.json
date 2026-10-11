@@ -340,7 +340,8 @@
     "confidence": "high",
     "decision": "The progress dialog's empty-queue button",
     "forms": "keep running in the background → im Hintergrund weiterlaufen lassen; the empty-queue button → Im Hintergrund (dative, a prefix of its aria Im Hintergrund weiterlaufen lassen)",
-    "sources": "macOS (Synchronisierung im Hintergrund); Total Commander de (Im &Hintergrund laden); Double Commander de (Im Hintergrund ausführen)"
+    "sources": "macOS (Synchronisierung im Hintergrund); Total Commander de (Im &Hintergrund laden); Double Commander de (Im Hintergrund ausführen)",
+    "note": "fileOperations.backgroundStart.background (Im Hintergrund) must stay a verbatim substring of backgroundAria (Im Hintergrund starten)."
   },
   "badge": {
     "accept": ["Statussymbole", "Hinweis"],
@@ -2094,7 +2095,8 @@
     "confidence": "high",
     "decision": "Operation queue: the queue window's rename",
     "forms": "the window, View menu item, and palette entry → Vorgangswarteschlange (closed compound, byte-identical across all three); the progress dialog's Queue button → Warteschlange; queued status → Wartet",
-    "sources": "MS terminology (queue → Warteschlange, Übertragungswarteschlange); Double Commander de (Vorgänge in Warteschlange)"
+    "sources": "MS terminology (queue → Warteschlange, Übertragungswarteschlange); Double Commander de (Vorgänge in Warteschlange)",
+    "note": "fileOperations.backgroundStart.queue (Warteschlange) must stay a verbatim substring of queueAria (In der Vorgangswarteschlange starten)."
   },
   "options": {
     "accept": ["Option"],

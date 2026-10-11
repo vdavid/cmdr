@@ -314,7 +314,8 @@
     "confidence": "high",
     "decision": "Empty-queue state of the progress dialog's F2 button",
     "forms": "在后台运行 / 在后台继续运行; the F2 button's empty-queue label 后台运行; its aria 让它继续在后台运行 (the label must stay a verbatim substring)",
-    "sources": "Total Commander; MS terminology"
+    "sources": "Total Commander; MS terminology",
+    "note": "fileOperations.backgroundStart.background (后台运行) must stay a verbatim substring of backgroundAria (在后台运行这项操作)."
   },
   "badge": {
     "avoid": [
@@ -2044,7 +2045,8 @@
     "confidence": "high",
     "decision": "Operation queue catalog",
     "forms": "the window 操作队列; bare queue 队列 (加入队列, 队列中没有任务); Show in operation queue → 在操作队列中显示",
-    "sources": "Total Commander; Double Commander"
+    "sources": "Total Commander; Double Commander",
+    "note": "fileOperations.backgroundStart.queue (加入队列) must stay a verbatim substring of queueAria (加入队列，在“操作队列”中开始)."
   },
   "options": {
     "chosen": "选项",

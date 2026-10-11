@@ -772,6 +772,34 @@
   "@fileOperations.transferProgress.backgroundedToast": {
     "sourceHash": "7c79c9a"
   },
+  "fileOperations.backgroundStart.background": "В фоне",
+  "@fileOperations.backgroundStart.background": {
+    "sourceHash": "ea2b8a8"
+  },
+  "fileOperations.backgroundStart.queue": "В очередь",
+  "@fileOperations.backgroundStart.queue": {
+    "sourceHash": "3b2fe03"
+  },
+  "fileOperations.backgroundStart.backgroundAria": "Запустить в фоне",
+  "@fileOperations.backgroundStart.backgroundAria": {
+    "sourceHash": "c062b85"
+  },
+  "fileOperations.backgroundStart.queueAria": "Поставить в очередь операций",
+  "@fileOperations.backgroundStart.queueAria": {
+    "sourceHash": "82ed630"
+  },
+  "fileOperations.backgroundStart.tooltip": "Запустить без окна хода выполнения и следить за операцией в очереди операций (F2)",
+  "@fileOperations.backgroundStart.tooltip": {
+    "sourceHash": "06543f5"
+  },
+  "fileOperations.backgroundStart.startedToast": "Отправлено в фон. Найдите операцию в очереди операций.",
+  "@fileOperations.backgroundStart.startedToast": {
+    "sourceHash": "2ac1316"
+  },
+  "fileOperations.backgroundStart.needsPasswordToast": "Для архива «{archiveName}» нужен пароль. Cmdr запросит его, как только закроется открытое диалоговое окно.",
+  "@fileOperations.backgroundStart.needsPasswordToast": {
+    "sourceHash": "d802c26"
+  },
   "fileOperations.transferProgress.foregroundBusyToast": "Здесь открыто другое окно. Закройте его, затем откройте эту операцию.",
   "@fileOperations.transferProgress.foregroundBusyToast": {
     "sourceHash": "80d4d61"

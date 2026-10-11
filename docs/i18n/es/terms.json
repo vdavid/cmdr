@@ -248,7 +248,8 @@
     ],
     "confidence": "high",
     "sources": "MS terminology (background adj. → segundo plano), Double Commander, Dolphin, Total Commander; absent from macOS es",
-    "decision": "El botón con la cola vacía: \"Background\""
+    "decision": "El botón con la cola vacía: \"Background\"",
+    "note": "fileOperations.backgroundStart.background (En segundo plano) must stay a verbatim substring of backgroundAria (Iniciarla en segundo plano)."
   },
   "badge": {
     "chosen": "insignia",
@@ -1852,7 +1853,8 @@
     ],
     "confidence": "high",
     "sources": "Double Commander (Cola nueva, Añadir a cola); macOS print cola",
-    "decision": "Cola de operaciones: el cambio de nombre de la ventana"
+    "decision": "Cola de operaciones: el cambio de nombre de la ventana",
+    "note": "fileOperations.backgroundStart.queue (Cola) must stay a verbatim substring of queueAria (Iniciarla en la cola de operaciones)."
   },
   "options": {
     "chosen": "opciones",

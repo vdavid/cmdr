@@ -286,7 +286,8 @@
     "confidence": "high",
     "decision": "De knop voor een lege wachtrij: \"Background\"",
     "forms": "button Op de achtergrond; aria Op de achtergrond laten doorlopen; a running operation keeps going with doorlopen (Loopt nog op de achtergrond); send to the queue → Naar de bewerkingenwachtrij sturen",
-    "sources": "Double Commander (Werk op de achtergrond)"
+    "sources": "Double Commander (Werk op de achtergrond)",
+    "note": "fileOperations.backgroundStart.background (Op de achtergrond) must stay a verbatim substring of backgroundAria (Start dit op de achtergrond)."
   },
   "badge": {
     "accept": ["statusmarkering", "markeringen"],
@@ -2002,7 +2003,8 @@
     "confidence": "high",
     "decision": "Operation queue: de hernoeming van Overdrachtswachtrij",
     "forms": "the window, View-menu item, and palette command are exactly Bewerkingenwachtrij; mid-sentence with article in de bewerkingenwachtrij; queue (noun) → wachtrij",
-    "sources": "Double Commander, Total Commander, Thunar, MS (queue → wachtrij)"
+    "sources": "Double Commander, Total Commander, Thunar, MS (queue → wachtrij)",
+    "note": "fileOperations.backgroundStart.queue (Wachtrij) must stay a verbatim substring of queueAria (Start dit in de bewerkingenwachtrij)."
   },
   "options": {
     "accept": ["opties", "optie"],

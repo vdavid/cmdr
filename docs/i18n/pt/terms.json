@@ -217,7 +217,8 @@
     ],
     "confidence": "confirmed",
     "sources": "Total Commander pt-BR (Download em segundo plano); MS terminology pt-BR (background adj → em segundo plano)",
-    "decision": "Background button"
+    "decision": "Background button",
+    "note": "fileOperations.backgroundStart.background (Em segundo plano) must stay a verbatim substring of backgroundAria (Iniciar isto em segundo plano)."
   },
   "badge": {
     "chosen": "selo",
@@ -1804,7 +1805,8 @@
     ],
     "confidence": "confirmed",
     "sources": "Total Commander, Double Commander pt-BR (Fila); MS (fila de impressão)",
-    "decision": "Operation queue"
+    "decision": "Operation queue",
+    "note": "fileOperations.backgroundStart.queue (Fila) must stay a verbatim substring of queueAria (Iniciar isto na fila de operações)."
   },
   "options": {
     "chosen": "Opções",

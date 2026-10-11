@@ -481,7 +481,8 @@
       }
     ],
     "confidence": "high",
-    "sources": "TC 5275 (в фоновом режиме); macOS Finder ViewOptionsWindow 103.title (Background: → Фон:, the picture sense)"
+    "sources": "TC 5275 (в фоновом режиме); macOS Finder ViewOptionsWindow 103.title (Background: → Фон:, the picture sense)",
+    "note": "fileOperations.backgroundStart.background (В фоне) must stay a verbatim substring of backgroundAria (Запустить в фоне)."
   },
   "badge": {
     "chosen": "значок",
@@ -3233,7 +3234,8 @@
     "accept": ["очеред"],
     "forms": "the window and command → «Очередь операций»; Queue (button: send to the queue) → «В очередь»; waiting in the queue → в очереди",
     "confidence": "high",
-    "sources": "MS queue → «очередь», «поставить в очередь»; macOS live Queue → «Очередь», «Поставить в очередь»; Double Commander Queue → «Очередь»"
+    "sources": "MS queue → «очередь», «поставить в очередь»; macOS live Queue → «Очередь», «Поставить в очередь»; Double Commander Queue → «Очередь»",
+    "note": "fileOperations.backgroundStart.queue (В очередь) must stay a verbatim substring of queueAria (Поставить в очередь операций)."
   },
   "options": {
     "chosen": "Параметры",

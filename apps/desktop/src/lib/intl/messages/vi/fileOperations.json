@@ -772,6 +772,34 @@
   "@fileOperations.transferProgress.backgroundedToast": {
     "sourceHash": "7c79c9a"
   },
+  "fileOperations.backgroundStart.background": "Chạy nền",
+  "@fileOperations.backgroundStart.background": {
+    "sourceHash": "ea2b8a8"
+  },
+  "fileOperations.backgroundStart.queue": "Hàng đợi",
+  "@fileOperations.backgroundStart.queue": {
+    "sourceHash": "3b2fe03"
+  },
+  "fileOperations.backgroundStart.backgroundAria": "Bắt đầu chạy nền",
+  "@fileOperations.backgroundStart.backgroundAria": {
+    "sourceHash": "c062b85"
+  },
+  "fileOperations.backgroundStart.queueAria": "Bắt đầu trong hàng đợi thao tác",
+  "@fileOperations.backgroundStart.queueAria": {
+    "sourceHash": "82ed630"
+  },
+  "fileOperations.backgroundStart.tooltip": "Bắt đầu mà không mở cửa sổ tiến trình và theo dõi trong hàng đợi thao tác (F2)",
+  "@fileOperations.backgroundStart.tooltip": {
+    "sourceHash": "06543f5"
+  },
+  "fileOperations.backgroundStart.startedToast": "Đã chuyển sang chế độ nền. Tìm nó trong hàng đợi thao tác.",
+  "@fileOperations.backgroundStart.startedToast": {
+    "sourceHash": "2ac1316"
+  },
+  "fileOperations.backgroundStart.needsPasswordToast": "“{archiveName}” cần mật khẩu. Cmdr sẽ hỏi bạn ngay khi hộp thoại đang mở đóng lại.",
+  "@fileOperations.backgroundStart.needsPasswordToast": {
+    "sourceHash": "d802c26"
+  },
   "fileOperations.transferProgress.foregroundBusyToast": "Ở đây đang mở một thứ khác. Hãy đóng nó rồi hiện thao tác này lên.",
   "@fileOperations.transferProgress.foregroundBusyToast": {
     "sourceHash": "80d4d61"

@@ -771,6 +771,34 @@
   "@fileOperations.transferProgress.backgroundedToast": {
     "sourceHash": "7c79c9a"
   },
+  "fileOperations.backgroundStart.background": "背景執行",
+  "@fileOperations.backgroundStart.background": {
+    "sourceHash": "ea2b8a8"
+  },
+  "fileOperations.backgroundStart.queue": "加入佇列",
+  "@fileOperations.backgroundStart.queue": {
+    "sourceHash": "3b2fe03"
+  },
+  "fileOperations.backgroundStart.backgroundAria": "背景執行這項操作",
+  "@fileOperations.backgroundStart.backgroundAria": {
+    "sourceHash": "c062b85"
+  },
+  "fileOperations.backgroundStart.queueAria": "加入佇列，在「操作佇列」中開始",
+  "@fileOperations.backgroundStart.queueAria": {
+    "sourceHash": "82ed630"
+  },
+  "fileOperations.backgroundStart.tooltip": "不開進度視窗直接開始，並在「操作佇列」裡查看進度（F2）",
+  "@fileOperations.backgroundStart.tooltip": {
+    "sourceHash": "06543f5"
+  },
+  "fileOperations.backgroundStart.startedToast": "已移到背景。可以在「操作佇列」裡找到它。",
+  "@fileOperations.backgroundStart.startedToast": {
+    "sourceHash": "2ac1316"
+  },
+  "fileOperations.backgroundStart.needsPasswordToast": "「{archiveName}」需要密碼。目前開啟的對話方塊一關閉，Cmdr 就會問你密碼。",
+  "@fileOperations.backgroundStart.needsPasswordToast": {
+    "sourceHash": "d802c26"
+  },
   "fileOperations.transferProgress.foregroundBusyToast": "這裡已經開著別的東西。先把它關掉，再叫出這一項。",
   "@fileOperations.transferProgress.foregroundBusyToast": {
     "sourceHash": "80d4d61"

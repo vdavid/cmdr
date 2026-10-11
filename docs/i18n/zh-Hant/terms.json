@@ -336,7 +336,7 @@
   "background": {
     "chosen": "背景",
     "confidence": "high",
-    "note": "fileOperations.transferProgress.background (背景執行) must stay a verbatim substring of backgroundAria (讓它繼續在背景執行).",
+    "note": "fileOperations.transferProgress.background (背景執行) must stay a verbatim substring of backgroundAria (讓它繼續在背景執行). fileOperations.backgroundStart.background (背景執行) must stay a verbatim substring of backgroundAria (背景執行這項操作).",
     "sources": "MS, AP-TW AppKit"
   },
   "badge": {
@@ -2326,7 +2326,8 @@
     "chosen": "佇列",
     "confidence": "high",
     "forms": "the window → 操作佇列; the send-to-queue button → 加入佇列 (must stay a substring of queueAria); status Queued → 等待中",
-    "sources": "MS, DC"
+    "sources": "MS, DC",
+    "note": "fileOperations.backgroundStart.queue (加入佇列) must stay a verbatim substring of queueAria (加入佇列，在「操作佇列」中開始)."
   },
   "options": {
     "chosen": "選項",

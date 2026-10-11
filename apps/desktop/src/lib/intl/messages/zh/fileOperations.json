@@ -771,6 +771,34 @@
   "@fileOperations.transferProgress.backgroundedToast": {
     "sourceHash": "7c79c9a"
   },
+  "fileOperations.backgroundStart.background": "后台运行",
+  "@fileOperations.backgroundStart.background": {
+    "sourceHash": "ea2b8a8"
+  },
+  "fileOperations.backgroundStart.queue": "加入队列",
+  "@fileOperations.backgroundStart.queue": {
+    "sourceHash": "3b2fe03"
+  },
+  "fileOperations.backgroundStart.backgroundAria": "在后台运行这项操作",
+  "@fileOperations.backgroundStart.backgroundAria": {
+    "sourceHash": "c062b85"
+  },
+  "fileOperations.backgroundStart.queueAria": "加入队列，在“操作队列”中开始",
+  "@fileOperations.backgroundStart.queueAria": {
+    "sourceHash": "82ed630"
+  },
+  "fileOperations.backgroundStart.tooltip": "不打开进度窗口直接开始，并在操作队列中查看进度（F2）",
+  "@fileOperations.backgroundStart.tooltip": {
+    "sourceHash": "06543f5"
+  },
+  "fileOperations.backgroundStart.startedToast": "已转到后台。可以在操作队列中找到它。",
+  "@fileOperations.backgroundStart.startedToast": {
+    "sourceHash": "2ac1316"
+  },
+  "fileOperations.backgroundStart.needsPasswordToast": "“{archiveName}”需要密码。当前打开的对话框一关闭，Cmdr 就会问你要密码。",
+  "@fileOperations.backgroundStart.needsPasswordToast": {
+    "sourceHash": "d802c26"
+  },
   "fileOperations.transferProgress.foregroundBusyToast": "这里已经打开了别的东西。先把它关掉，再显示这一项。",
   "@fileOperations.transferProgress.foregroundBusyToast": {
     "sourceHash": "80d4d61"

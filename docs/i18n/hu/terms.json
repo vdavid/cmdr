@@ -322,7 +322,8 @@
     ],
     "confidence": "high",
     "sources": "Total Commander (4004 Háttérben beside 4005 Sorba állít); Double Commander (Háttérben futtatás); ms (background task → háttérben futó feladat)",
-    "decision": "A progress-párbeszéd gombja üres sornál"
+    "decision": "A progress-párbeszéd gombja üres sornál",
+    "note": "fileOperations.backgroundStart.background (Háttérben) must stay a verbatim substring of backgroundAria (Indítás a háttérben)."
   },
   "badge": {
     "chosen": "jelvény",
@@ -2386,7 +2387,8 @@
     ],
     "confidence": "high",
     "sources": "Double Commander (Queue = Sor, New queue = Új sor); ms (print queue → nyomtatási sor)",
-    "decision": "A műveleti sor: a Transfer queue átnevezése"
+    "decision": "A műveleti sor: a Transfer queue átnevezése",
+    "note": "fileOperations.backgroundStart.queue (Sorba) must stay a verbatim substring of queueAria (Küldés a műveleti sorba)."
   },
   "options": {
     "chosen": "beállítás",
@@ -2641,7 +2643,10 @@
     "accept": ["folyamatban"],
     "forms": "No progress for {duration} → {duration} óta nincs előrehaladás; aria Méret-előrehaladás, Fájl-előrehaladás",
     "confidence": "high",
-    "sources": "macOS Finder (Előrehaladás paraméterei); Xfce Thunar (Fájlművelet előrehaladása)"
+    "sources": "macOS Finder (Előrehaladás paraméterei); Xfce Thunar (Fájlművelet előrehaladása)",
+    "exceptions": {
+      "fileOperations.backgroundStart.tooltip": "a progress window → folyamatjelző ablak: the window is named after its indicator; előrehaladási ablak reads as a calque."
+    }
   },
   "properties": {
     "chosen": "tulajdonságai",

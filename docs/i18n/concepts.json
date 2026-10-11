@@ -2854,7 +2854,7 @@
     "en": "Send",
     "match": ["send", "sends", "sending", "sent"],
     "note": "A button, a dialog title, and a verb in prose can take different forms.",
-    "notMatch": ["whoever sent it", "start sending"],
+    "notMatch": ["whoever sent it", "start sending", "sent to the background"],
     "sense": "Sending a report, feedback, or data to the developer or an AI provider."
   },
   "server": {

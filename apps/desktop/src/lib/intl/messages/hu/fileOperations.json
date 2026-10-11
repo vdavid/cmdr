@@ -773,6 +773,34 @@
   "@fileOperations.transferProgress.backgroundedToast": {
     "sourceHash": "7c79c9a"
   },
+  "fileOperations.backgroundStart.background": "Háttérben",
+  "@fileOperations.backgroundStart.background": {
+    "sourceHash": "ea2b8a8"
+  },
+  "fileOperations.backgroundStart.queue": "Sorba",
+  "@fileOperations.backgroundStart.queue": {
+    "sourceHash": "3b2fe03"
+  },
+  "fileOperations.backgroundStart.backgroundAria": "Indítás a háttérben",
+  "@fileOperations.backgroundStart.backgroundAria": {
+    "sourceHash": "c062b85"
+  },
+  "fileOperations.backgroundStart.queueAria": "Küldés a műveleti sorba",
+  "@fileOperations.backgroundStart.queueAria": {
+    "sourceHash": "82ed630"
+  },
+  "fileOperations.backgroundStart.tooltip": "Indítsd el folyamatjelző ablak nélkül, és kövesd a műveleti sorban (F2)",
+  "@fileOperations.backgroundStart.tooltip": {
+    "sourceHash": "06543f5"
+  },
+  "fileOperations.backgroundStart.startedToast": "A háttérben intézi a Cmdr. Megtalálod a műveleti sorban.",
+  "@fileOperations.backgroundStart.startedToast": {
+    "sourceHash": "2ac1316"
+  },
+  "fileOperations.backgroundStart.needsPasswordToast": "„{archiveName}” jelszót kér. A Cmdr elkéri tőled, amint bezárul a nyitott párbeszédablak.",
+  "@fileOperations.backgroundStart.needsPasswordToast": {
+    "sourceHash": "d802c26"
+  },
   "fileOperations.transferProgress.foregroundBusyToast": "Itt valami más van nyitva. Zárd be, aztán hozd elő ezt.",
   "@fileOperations.transferProgress.foregroundBusyToast": {
     "sourceHash": "80d4d61"

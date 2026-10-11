@@ -285,7 +285,8 @@
     "confidence": "high",
     "decision": "Le bouton du dialogue de progression quand la file est vide",
     "forms": "in the background → en arrière-plan; the progress dialog’s empty-queue button → En arrière-plan (elliptical, must fit the Queue button’s width); its aria → Garder ce transfert en cours en arrière-plan; the bare noun Arrière-plan is the backdrop sense; pane background → arrière-plan du panneau",
-    "sources": "MS terminology FRA id 18761 (background → en arrière-plan); Double Commander; Total Commander"
+    "sources": "MS terminology FRA id 18761 (background → en arrière-plan); Double Commander; Total Commander",
+    "note": "fileOperations.backgroundStart.background (En arrière-plan) must stay a verbatim substring of backgroundAria (Démarrer en arrière-plan)."
   },
   "badge": {
     "chosen": "pastille",
@@ -2018,7 +2019,8 @@
     "confidence": "high",
     "decision": "Le renommage de la file d'attente des opérations",
     "forms": "the window, the View menu item, and the command read identically; the standalone Queue button stays File d’attente; pairs with Historique des opérations",
-    "sources": "Double Commander (File d'attente); MS terminology FRA (queue → file d'attente)"
+    "sources": "Double Commander (File d'attente); MS terminology FRA (queue → file d'attente)",
+    "note": "fileOperations.backgroundStart.queue (File d’attente) must stay a verbatim substring of queueAria (Démarrer dans la file d’attente des opérations)."
   },
   "options": {
     "accept": ["option"],

@@ -245,3 +245,8 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
 - `commands.multiRenameFieldHistory.label`: say that "values" means the text the user typed into the field earlier.
 - Process: add a button's own key in the same batch as any string that quotes it (`multiRename.results.gone` quoted a
   Results label each locale had to invent).
+- `commands.dialogConfirm.label` ("Confirm open dialog"): "open" reads as the File > Open dialog, and de, fr, hu, nl,
+  vi, and zh translated it that way. Say "Confirm the dialog on screen", or note that "open" is an adjective.
+- No `start` concept: starting an operation now reads `starten`, `Iniciar`, `Démarrer`, `Indítás`, `Start`, `Запустить`,
+  `Starta`, `Bắt đầu`, `开始` (`fileOperations.backgroundStart.*Aria`, `.tooltip`). Mine the pile and add a ruled
+  concept.

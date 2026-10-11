@@ -255,7 +255,8 @@
     "confidence": "high",
     "decision": "Nút \"Chạy nền\": trạng thái hàng đợi trống của nút Hàng đợi",
     "forms": "a sentence says chạy ở chế độ nền / ở chế độ nền; a control label says Chạy nền (button-length compression)",
-    "sources": "MS terminology (background task → tác vụ nền); catalog (nine strings on ở chế độ nền); Total Commander (Nền beside Hàng đợi)"
+    "sources": "MS terminology (background task → tác vụ nền); catalog (nine strings on ở chế độ nền); Total Commander (Nền beside Hàng đợi)",
+    "note": "fileOperations.backgroundStart.background (Chạy nền) must stay a verbatim substring of backgroundAria (Bắt đầu chạy nền)."
   },
   "badge": {
     "chosen": "huy hiệu",
@@ -1905,7 +1906,8 @@
     "confidence": "high",
     "decision": "Hàng đợi thao tác: \"operation queue\"",
     "forms": "the window, View menu item, and palette entry → Hàng đợi thao tác; send to the queue → Đưa vào hàng đợi thao tác; a queued status → Đang chờ",
-    "sources": "MS terminology (queue → hàng đợi), GNOME Nautilus (trong hàng đợi)"
+    "sources": "MS terminology (queue → hàng đợi), GNOME Nautilus (trong hàng đợi)",
+    "note": "fileOperations.backgroundStart.queue (Hàng đợi) must stay a verbatim substring of queueAria (Bắt đầu trong hàng đợi thao tác)."
   },
   "options": {
     "chosen": "tùy chọn",
