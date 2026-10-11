@@ -120,7 +120,7 @@ pub struct KnownSharesStore {
 /// A share whose server moved, at the first mount that reported its id at the new
 /// address: what a pending move re-keys from and to (`server_move::smb::complete`).
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CompletedMove {
+pub(crate) struct CompletedMove {
     /// The id the share had before its server moved, which favorites and tabs still name.
     pub old_volume_id: String,
     /// Where the share's last mount before the move sat, which tabs on the old id spell.

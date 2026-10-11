@@ -219,24 +219,26 @@ A typed secret is the account's either way (`saveS3Credentials`).
 
 **Edit mode MOVES an address, ❌ never an account.** The protocol toggle and the username are locked, and
 `servers.sheet.accountLocked` sits under the username saying to Add instead: another account is another place, since two
-accounts on one server see different files. An SFTP or WebDAV address stays editable (`addressEditable`, with
-`servers.sheet.addressMoveHelp` under it), as does an "Other S3-compatible" account's endpoint (§ "An S3 edit is the
-ACCOUNT's or a PLACE's"), because a server that moved (a NAS's new IP, `nas.local` → its Tailscale name) must keep its
-favorites, tabs, pin, and password. ❗ The sheet never decides whether an edit is a move: Save passes the id it opened
-on (`updateSavedServer(target, editing)`), and the backend saves in place or moves the server
-(`apps/desktop/src-tauri/src/server_move.rs`), refusing an address another saved server holds (`address_taken`, under
-the address, naming that server). A save that moved it leaves the place under a NEW id, which the sheet reads back
-(`savedServerId`) for the Remember flip and any Save again (`savedAs`). Typing an address in edit mode never steers the
-username or the root, as it does in add mode. An SMB host's address stays locked (`servers.sheet.addressLocked`): its
-share ids come off the mount (`docs/notes/server-address-move.md` § "SMB, deferred"). ❗ This is `ServerFormFields`' own
-rule and says nothing about sign-in mode, where username editability is the SHAPE VARIANT's property (§ "The renderer
-table").
+accounts on one server see different files. An SFTP, WebDAV, or SMB address stays editable (`addressEditable`, with
+`servers.sheet.addressMoveHelp` under it, SMB's own `servers.sheet.smbAddressMoveHelp`), as does an "Other
+S3-compatible" account's endpoint (§ "An S3 edit is the ACCOUNT's or a PLACE's"), because a server that moved (a NAS's
+new IP, `nas.local` → its Tailscale name) must keep its favorites, tabs, pin, and password. ❗ The sheet never decides
+whether an edit is a move: Save passes the id it opened on (`updateSavedServer(target, editing)`), and the backend saves
+in place or moves the server (`apps/desktop/src-tauri/src/server_move.rs`), refusing an address another saved server
+holds (`address_taken`, under the address, naming that server). A save that moved it leaves the place under a NEW id,
+which the sheet reads back (`savedServerId`) for the Remember flip and any Save again (`savedAs`). Typing an address in
+edit mode never steers the username or the root, as it does in add mode. An SMB host's Save sends what the address field
+holds (`updateSavedSmbHost(id, name, username, address)`, through `smbAddressFrom`), and the backend moves the host when
+it names another server: its shares and password move at once, and each share's favorites and tabs follow at its first
+mount there (`docs/notes/server-address-move.md` § "SMB: a pending move"). A share still mounted from the old address
+refuses it (`share_mounted`, under the address, naming the share to eject). ❗ This is `ServerFormFields`' own rule and
+says nothing about sign-in mode, where username editability is the SHAPE VARIANT's property (§ "The renderer table").
 
-**Edit mode opens on the first field it lets a person change** (`focusFirstEditableField`), which for an SFTP or WebDAV
-server and an "Other S3-compatible" account is the address. Decision (David, 2026-10-11): keep it there, since with the
-address unlocked, fixing a server that moved is the likely reason to open Edit. Where the address is locked (an SMB
-host, an S3 preset), focus falls through to the name. ❌ Never `addressInput.focus()`: focusing a disabled field is a
-silent no-op, and the sheet then opened with nothing taking keys (QA 2026-09-25).
+**Edit mode opens on the first field it lets a person change** (`focusFirstEditableField`), which for an SFTP, WebDAV,
+or SMB server and an "Other S3-compatible" account is the address. Decision (David, 2026-10-11): keep it there, since
+with the address unlocked, fixing a server that moved is the likely reason to open Edit. Where the address is locked (an
+S3 preset), focus falls through to the name. ❌ Never `addressInput.focus()`: focusing a disabled field is a silent
+no-op, and the sheet then opened with nothing taking keys (QA 2026-09-25).
 
 **Edit mode's password field writes what it shows.** A non-empty value on Save goes through `saveSftpCredentials` /
 `saveWebdavCredentials` keyed on the target's tuple, and the Remember box then reports on, because the store holds one.
@@ -252,9 +254,9 @@ was contacted, and Save again re-saves the same edit and retries the write.
 
 **Edit mode's name field holds what the user TYPED.** The store row's raw name opens it, empty for a server nobody named
 (`nameSource: 'fallback'`), with the same "Leave empty to use …" placeholder add mode shows; the sheet's title uses the
-listing's label. An SMB host's edit is a RENAME and nothing else (`update_saved_smb_host`, reached from the host row's
-native menu, "Edit server…"): the address is its identity and stays locked, and there is no secret to write. Naming a
-host only the share history knew saves it as a manual entry (`network/manual_servers.rs` § `name_server_entry_at_path`).
+listing's label. An SMB host's edit (`update_saved_smb_host`, reached from the host row's native menu, "Edit server…")
+renames it, sets its account, and moves it when the address changed; there is no secret to write. Naming a host only the
+share history knew saves it as a manual entry (`network/manual_servers.rs` § `name_server_entry_at_path`).
 `serverTargetFrom` sends an empty name as empty and ❌ never falls back to the address. ❗ A name that repeated the
 typed address left it as the sheet's only URL-shaped field, and a root got "widened" through the name
 (`apps/desktop/src-tauri/src/network/DETAILS.md` § "An unnamed server's label, and names that only repeat the address").
@@ -372,6 +374,9 @@ token is the only sane state, and a revoked token surfaces as `needs_sign_in` be
 - `operation_running`: edit mode, a move while a copy, move, or delete on the server is queued, running, or paused.
   Nothing was saved: the move drops the old session, which would cut that work off. Under `form`, since no field fixes
   it; letting the work finish or canceling it does.
+- `share_mounted` (SMB): edit mode, a move while one of the host's saved shares is still mounted from the old address.
+  Under `address`, naming the share (`RefusalSubject.share`): Cmdr doesn't eject an OS mount for a move, so the person
+  ejects it and saves again.
 - `access_denied` (S3): the bucket refused the key, which a bodyless 403 can't split into a wrong secret and a key with
   no rights here (Garage answers a wrong secret this way too), so it asks about both. Under `secret`, and it opens the
   sheet (`needsAHuman`), since a wrong secret is one thing it means.

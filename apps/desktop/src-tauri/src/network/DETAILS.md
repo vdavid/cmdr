@@ -678,6 +678,8 @@ the migration, and what Forget does). What the code has to defend:
   rows on other ports of the same machine.
 - **The volume id is stored as the mount reported it, ❌ never re-derived** from `server_name`: only the mount knows
   which spelling of the server it got. `commands/servers.rs::saved_by_id` looks SMB ids up in the store for that reason.
+  So a host that MOVED keeps each share's old id until a mount at the new address reports the real one
+  (`pending_moves`, § "Moving a saved server to a new address").
 - **The volume list** (`server_volumes::fold_saved_smb_shares`) gives an unmounted share a `saved` row at its last
   mount path and annotates a mounted, PINNED one with `pinned: Some(true)`. ❌ Never `Some(false)` on a mount row: a
   Linux mount row has no connection state, and the switcher's "live or pinned" rule would drop it.
@@ -1135,8 +1137,17 @@ old id. Resolving the target from the store by place id at that moment is the gu
 `NoSuchServer`, and one read just before the move is refused at landing by its ticket); the frontend also closes that
 sheet on `server-place-moved` (`dismissSignInForPlaces`), so the approval never asks the old machine at all. The pane ignores a dial's late answer once it stands on another place or dialed again
 (`place-connect.svelte.ts`), and a move that keeps the id (a WebDAV base path) bumps the place's move count
-(`place-moves.svelte.ts`), which redials it at the new URL on its own. The protocol and the account never move (`AccountChanged`). SMB stays locked: a share's id comes off
-its mount. The inventory behind each step and why: `docs/notes/server-address-move.md`.
+(`place-moves.svelte.ts`), which redials it at the new URL on its own. The protocol and the account never move (`AccountChanged`). The inventory behind each step and why: `docs/notes/server-address-move.md`.
+
+**An SMB host's move is a PENDING one** (`src-tauri/src/server_move_smb.rs`, from `update_saved_smb_host` when the typed
+address names another `(host, port)`): a share's id comes off its mount's `statfs`, so Save can't know the new ids.
+Save moves the manual entry (`manual_servers::relocate_manual_server`), the rows (`known_shares::move_host_rows`), and
+the passwords, and each saved share KEEPS its old id, filed in `known_shares::pending_moves` (on disk). The first mount
+at the new address completes it: `remember_share` answers a `CompletedMove`, and `remember_mount` hands it to
+`server_move::smb::complete`, which re-keys favorites by id and emits `server-place-moved` with the new id's live state.
+❗ Refused while a saved share is still mounted from the old address (`ShareMounted`): ❌ Cmdr never unmounts an OS mount
+for a move. `connect_saved_share` lands through the same `AttemptGuard::land`, so a mount at the old address that
+finishes after Save isn't remembered. Why each piece: `docs/notes/server-address-move.md` § "SMB: a pending move".
 
 ### A secret used for one dial and never stored
 

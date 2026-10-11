@@ -139,10 +139,6 @@
   "@servers.sheet.addAnywayHelp": {
     "sourceHash": "00de0eb"
   },
-  "servers.sheet.addressLocked": "La dirección es lo que identifica este servidor. Para usar otra, olvida el servidor y vuelve a agregarlo.",
-  "@servers.sheet.addressLocked": {
-    "sourceHash": "bffb190"
-  },
   "servers.sheet.addedToast": "{name} se guardó en tu lista Servidores.",
   "@servers.sheet.addedToast": {
     "sourceHash": "7c4642f"

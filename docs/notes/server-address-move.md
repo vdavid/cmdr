@@ -22,7 +22,8 @@ the inventory behind it, with the why of each decision.
   bucket lives in one region (`region_mismatch` exists for that), and an R2 account ID is another Cloudflare account. A
   self-hosted MinIO or Garage on a new IP is the real case. The endpoint is the account's, so every place under the key
   moves together, with the one secret they share; a place's own edit keeps the endpoint locked.
-- **SMB**: ❌ not in this change. See § "SMB, deferred".
+- **SMB**: the host's address and port, on the HOST's edit (`update_saved_smb_host`). Its shares, password, and settings
+  move at Save; each share's favorites and tabs follow at its first mount there. See § "SMB: a pending move".
 
 ## The inventory, and what each holder does
 
@@ -101,13 +102,77 @@ broken caller sends one, and ❌ never a silent rewrite of the account.
 
 S3's account edit (`update_saved_s3_account`) takes the account's endpoint beside its name for the same reason.
 
-## SMB, deferred
+## SMB: a pending move
 
-An SMB share's volume id is not ours to mint: it comes off the MOUNT's `statfs` (`smb_upgrade::identity_from_statfs`),
-which may spell the server as an IP, a hostname, or an mDNS service name, and `KnownNetworkShare::volume_id` is "never
-re-derived from `server_name`" for exactly that reason. So a move can't know the new ids up front: re-keying favorites
-and tabs to a guessed id would be overwritten by the first real mount (`remember_mount` rewrites the stored id), and the
-guess would orphan them a second time. A kernel mount from the old address may also still be up and serving. The sound
-shape is a pending move that the first mount at the new address completes (the mount reports its id, and the re-key runs
-then), which belongs in `smb_saved_shares.rs` beside `remember_mount`. Until then the SMB address stays locked with its
-own sentence.
+Decided 2026-10-11. Code: `apps/desktop/src-tauri/src/server_move_smb.rs` (the move and its completion),
+`network/known_shares.rs` (`move_host_rows`, `pending_moves`, `remember_share` answering a `CompletedMove`).
+
+**Why SMB can't move like the others.** An SMB share's volume id is not ours to mint: it comes off the MOUNT's `statfs`
+(`smb_upgrade::identity_from_statfs`), which may spell the server as an IP, a hostname, or an mDNS service name, and
+`KnownNetworkShare::volume_id` is "never re-derived from `server_name`" for exactly that reason. So a move can't know
+the new ids up front: re-keying favorites and tabs to a guessed id would be overwritten by the first real mount
+(`remember_mount` rewrites the stored id), and the guess would orphan them a second time.
+
+**So the move is in two halves.**
+
+1. **Save** (`server_move::smb::move_host`, from `update_saved_smb_host` when the typed address names another
+   `(host, port)`): refusals first, then the passwords COPIED (the host's server-level entry and each saved share's,
+   keyed by `smb_server(host, port)`), the manual entry relocated in one write
+   (`manual_servers::relocate_manual_server`, which also saves a host only the share history knew, and swaps it in the
+   discovery list), the host's rows pointed at the new address (`known_shares::move_host_rows`), and the old passwords
+   deleted LAST. ❗ Each saved share KEEPS its old volume id, filed in `known_shares::pending_moves`. Favorites, tabs,
+   and the share's `saved` switcher row keep naming that id, and it now dials the new address, so picking a favorite
+   connects there and completes the move. ❌ Never `Forgotten`: the id still names a saved share.
+2. **First mount** (`server_move::smb::complete`, from `smb_saved_shares::remember_mount` whenever `remember_share`
+   answers a `CompletedMove`): the mount reports the real id, the pending entry goes, favorites re-key BY ID and rebase
+   onto the new mount path (`favorites::store::follow_share_move`, ❌ never by path prefix: a share's paths are OS
+   paths, and another server's same-named share may hold the old mount point now), and `ServerPlaceMoved` takes tabs,
+   history, and `lastUsedPaths` along. ❗ The event carries the new id's LIVE `connection_state`, since the share just
+   mounted: a row re-keyed as `saved` would make the following pane dial a share that's up. A mount that minted the same
+   id ends the wait and re-keys nothing.
+
+**What each holder does, beside the inventory above:**
+
+- **The rows.** A row with an address dials the new one. Its `server_name` follows when it spelled the old address (same
+  `credential_key`), and a row with no address (the host's sign-in history, a share an Add named) always takes the new
+  discovery name, since its name is all that says which host it is. ❗ A Bonjour name (`Naspolya`) stays: it still names
+  the machine, and the password filed under it stays reachable.
+- **The passwords.** Only the entries keyed by the old address move. Two spellings of one key (`nas.local` → `nas`) are
+  one entry, so nothing is copied or deleted. A port-less legacy entry (`note_found_under_portless`) is left alone, for
+  the same reason Forget leaves it: it may be the 445 server's.
+- **The direct-connection opt-out** is COPIED to the new address, ❌ not moved: an opt-out names a machine without a
+  port, and another server on the old machine may share it.
+- **Go to path's recents** stay: an SMB path is an OS path under the mount, which names no server.
+- **The drive index and the media index's per-volume choices** (`settings.mediaIndex.alwaysIndexVolumes`): keyed by
+  volume id, so the new id starts a fresh index and loses an "always index" choice. Not carried yet: an open question.
+
+**Refusals**, each writing nothing:
+
+- `AddressTaken`: another saved SMB host is that server (`SmbServer::is`, same port and machine), or a manual entry
+  holds the new id.
+- `OperationRunning`: an operation names one of the host's share places.
+- `ShareMounted` (SMB only): a saved share is still mounted from the old address, registered under its place id or in
+  the kernel's mount table from the old server. Decision: ❌ Cmdr doesn't unmount it. It's an OS mount Finder or another
+  app may be using, which Cmdr may not have made, and a share mounted at the old address keeps answering under the old
+  id, so its first mount at the new one could never happen. The sentence names the share; the person ejects it and saves
+  again.
+
+**A dial to the old address that lands after Save** is let go, the same guarantee as the other protocols':
+`connect_saved_share` files its place id with the `DialTicket` `connect_saved_place` took before reading the row, and
+lands through `AttemptGuard::land`; a refused landing answers `Cancelled` and remembers nothing, so it can't save the
+old address again as a second row. ❗ The kernel mount it made stays (NetFS can't take one back): the share is then
+mounted from the old address, and its move completes at a later mount at the new one.
+
+**Edits and Forget while a move is pending.** Editing again just moves the rows again: the pending entry still holds the
+original id, so a move back to the old address completes like any other (a mount minting the same id ends the wait).
+Forget drops the rows, and `forget_in` drops pending entries no row is left to complete; favorites then read
+`Forgotten`, as for any forgotten share.
+
+**Save redials a pane standing on a moved share.** Each moved share gets a `ServerPlaceMoved` with the same id on both
+sides, so `place-moves.svelte.ts` bumps its move count and a pane on its `saved` row (reading "unreachable" at the old
+address, say) dials the new one. Same reasoning as the other protocols' redial.
+
+**Linux.** A GVFS mount's id comes off its folder name, which carries the server and port
+(`volumes_linux::get_smb_mount_info`), so a mount at the new address mints a new id there too and completes the move the
+same way. `ShareMounted` finds a GVFS mount through the registry only: `smb_mounts` reads CIFS, and GVFS's own gap
+(#348, an outside unmount goes unnoticed) applies.

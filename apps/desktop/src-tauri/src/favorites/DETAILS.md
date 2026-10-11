@@ -97,6 +97,11 @@ All in `store.rs`, unit-tested without disk or an `AppHandle`:
 - `set_shortcut(id, shortcut)`: accepts one ASCII letter or `None` to clear. Letters are stored
   uppercase. Assigning one already owned by another favorite transfers it, keeping keyboard picks
   unambiguous. No-op if the id is absent.
+- `follow_share_move(old_id, moved)`: an SMB share whose server moved, at its first mount at the new
+  address (`../server_move_smb.rs`). Re-keyed BY VOLUME ID, with the path rebased from the favorite's
+  own root onto the new mount path. ❌ Never by path prefix: a share's paths are OS paths, and another
+  server's same-named share may hold the old mount point by then. Until that mount, the favorite keeps
+  the old id, which still names the saved share and dials its new address.
 - `follow_server_move(old_prefix, new_prefix, moved)`: a saved server moved to a new address
   (`../server_move.rs`), so a favorite on one of its places takes the place's new `FavoriteVolume`
   (id and name), and every `root` and `path` spelled under the old app prefix is respelled under the
