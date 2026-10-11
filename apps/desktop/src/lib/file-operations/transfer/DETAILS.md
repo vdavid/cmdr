@@ -1133,6 +1133,9 @@ other work is live, "Background" otherwise, `../queue/queue-backlog.ts` with no 
 in `../StartInBackgroundButton.svelte`; the plain-F2 matcher in `../start-in-background-key.ts`. Dialog-scoped exactly
 like the progress dialog's F2: `ModalDialog`'s overlay stops every keydown, so F2 is `file.rename` again once the dialog
 closes (negative tests in `TransferDialog.background.test.ts` and `../delete/DeleteDialog.background.svelte.test.ts`).
+**A held F2 must not rename the cursor file**: with no modal mounting, the dialog is gone while the key is still down,
+and its auto-repeat would reach `file.rename`. The F2 press arms `swallowHeldKeyRepeat`, a capture listener on `window`
+that eats that key's repeats until it comes up.
 
 **Trash only, ❌ never a permanent delete.** The delete dialog offers the button and F2 only while its FINAL
 `isPermanent` is false, so the switch, a held Shift, online-only content (up front or found by the walk mid-confirm), an

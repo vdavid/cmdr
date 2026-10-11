@@ -170,6 +170,31 @@ describe('F2 in the transfer dialog', () => {
     queueRows.rows = []
   })
 
+  it('swallows the held F2’s auto-repeat until the key comes up, so it never renames the cursor file', async () => {
+    const target = mountDialog()
+    await flushMicrotasks()
+    // Stand-in for the app's global key handler, where F2 is `file.rename`.
+    const globalRename = vi.fn()
+    const onGlobalKeydown = (event: KeyboardEvent): void => {
+      if (event.key === 'F2') globalRename()
+    }
+    window.addEventListener('keydown', onGlobalKeydown)
+    try {
+      pressKey(target, { key: 'F2' })
+      // The dialog is gone (no modal mounts), and the key is still down: its
+      // repeats land on whatever has focus now, and bubble.
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'F2', repeat: true, bubbles: true }))
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'F2', repeat: true, bubbles: true }))
+      expect(globalRename, 'the held key’s repeats stay with the press that started the job').not.toHaveBeenCalled()
+
+      document.body.dispatchEvent(new KeyboardEvent('keyup', { key: 'F2', bubbles: true }))
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'F2', bubbles: true }))
+      expect(globalRename, 'a fresh press is file.rename again').toHaveBeenCalledOnce()
+    } finally {
+      window.removeEventListener('keydown', onGlobalKeydown)
+    }
+  })
+
   it('stops at the dialog while it is up, and is file.rename again once it closes', async () => {
     const { mount } = await import('svelte')
     const TransferDialog = (await import('./TransferDialog.svelte')).default

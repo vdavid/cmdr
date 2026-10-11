@@ -38,7 +38,7 @@
     import { t, tString } from '$lib/intl/messages.svelte'
     import type { ConfirmOptions, DeleteConfirmer } from '$lib/file-explorer/pane/dialog-props'
     import StartInBackgroundButton from '../StartInBackgroundButton.svelte'
-    import { isStartInBackgroundKey } from '../start-in-background-key'
+    import { isStartInBackgroundKey, swallowHeldKeyRepeat } from '../start-in-background-key'
 
     const log = getAppLogger('deleteDialog')
 
@@ -469,6 +469,7 @@
         // this is open, and is that again once it closes. No binding to leak.
         if (isStartInBackgroundKey(event)) {
             event.preventDefault()
+            swallowHeldKeyRepeat(event.key)
             void handleConfirm({ startInBackground: true })
         }
     }

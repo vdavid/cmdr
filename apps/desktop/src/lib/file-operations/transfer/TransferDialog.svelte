@@ -6,7 +6,7 @@
     import type { SortColumn, SortOrder, ConflictResolution, TransferOperationType } from '$lib/file-explorer/types'
     import type { ConfirmOptions, TransferConfirmPayload, TransferConfirmer } from '$lib/file-explorer/pane/dialog-props'
     import StartInBackgroundButton from '../StartInBackgroundButton.svelte'
-    import { isStartInBackgroundKey } from '../start-in-background-key'
+    import { isStartInBackgroundKey, swallowHeldKeyRepeat } from '../start-in-background-key'
     import {
         validateDirectoryPath,
         validateDisallowedChars,
@@ -737,6 +737,7 @@
         // closes. No binding to leak.
         if (isStartInBackgroundKey(event)) {
             event.preventDefault()
+            swallowHeldKeyRepeat(event.key)
             confirmFromUser({ startInBackground: true })
         }
     }
