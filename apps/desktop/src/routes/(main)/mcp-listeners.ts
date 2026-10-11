@@ -702,8 +702,11 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const raw = asRecord(event.payload)
     const type = parseConfirmDialogType(raw.type)
     const onConflict = typeof raw.onConflict === 'string' ? raw.onConflict : undefined
+    // A background confirm is a round-trip, so it carries a request id to answer on.
+    const startInBackground = raw.startInBackground === true ? true : undefined
+    const mcpRequestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
     if (!type) return
-    void dispatch(dialogConfirmCommand, { type, onConflict })
+    void dispatch(dialogConfirmCommand, { type, onConflict, startInBackground, mcpRequestId })
   })
 
   await listenTauri('mcp-tab', (event) => {

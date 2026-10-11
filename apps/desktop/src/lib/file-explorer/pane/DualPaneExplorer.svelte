@@ -79,6 +79,7 @@
     import { createDialogState } from './dialog-state.svelte'
     import type {
         AdoptedOperationData,
+        ConfirmOptions,
         ForegroundOperationVerdict,
         TransferConfirmPayload,
         TransferConfirmer,
@@ -817,8 +818,8 @@
     })
 
     /** Programmatically confirms an already-open dialog (for MCP). */
-    export function confirmDialog(dialogType: ConfirmDialogType, onConflict?: string) {
-        paneCommands.confirmDialog(dialogType, onConflict)
+    export function confirmDialog(dialogType: ConfirmDialogType, onConflict?: string, options?: ConfirmOptions) {
+        return paneCommands.confirmDialog(dialogType, onConflict, options)
     }
 
     /**

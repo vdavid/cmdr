@@ -45,8 +45,8 @@ use crate::window_events::{
 };
 
 use super::{
-    AckSignal, DEFAULT_ACK_TIMEOUT, ToolError, ToolResult, expand_user_path, snapshot_window_count,
-    validate_conflict_policy, validate_path_exists, wait_for_ack,
+    AckSignal, DEFAULT_ACK_TIMEOUT, ToolError, ToolResult, expand_user_path, mcp_round_trip_parsed,
+    snapshot_window_count, validate_conflict_policy, validate_path_exists, wait_for_ack,
 };
 use crate::mcp::dialog_state::SoftDialogTracker;
 
@@ -74,11 +74,13 @@ pub async fn execute_dialog_command<R: Runtime>(app: &AppHandle<R>, params: &Val
     let path = params.get("path").and_then(|v| v.as_str()).map(expand_user_path);
     let path = path.as_deref();
     let on_conflict = params.get("onConflict").and_then(|v| v.as_str());
+    let background = params.get("background").and_then(|v| v.as_bool()).unwrap_or(false);
 
     match action {
         "open" => execute_dialog_open(app, dialog_type, section, path).await,
         "focus" => execute_dialog_focus(app, dialog_type, path).await,
         "close" => execute_dialog_close(app, dialog_type, path).await,
+        "confirm" if background => execute_dialog_confirm_in_background(app, dialog_type, on_conflict).await,
         "confirm" => execute_dialog_confirm(app, dialog_type, on_conflict).await,
         _ => Err(ToolError::invalid_params(format!("Invalid action: {action}"))),
     }
@@ -359,6 +361,21 @@ async fn execute_generic_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_typ
     Ok(json!(format!("OK: Closed {dialog_type} dialog")))
 }
 
+/// Refuses up front when `dialog_type` isn't open: `SoftDialogDisappeared` is true
+/// of a dialog that was never there, so a confirm of nothing would otherwise ack.
+fn require_open_dialog<R: Runtime>(app: &AppHandle<R>, dialog_type: &str) -> Result<(), ToolError> {
+    let is_open = app
+        .try_state::<SoftDialogTracker>()
+        .is_some_and(|tracker| tracker.get_open_types().iter().any(|open| open == dialog_type));
+    if is_open {
+        Ok(())
+    } else {
+        Err(ToolError::invalid_params(format!(
+            "No {dialog_type} dialog is open to confirm. Read cmdr://state dialogs for what is open."
+        )))
+    }
+}
+
 /// Asks the frontend to confirm the open `dialog_type`, and waits for that dialog
 /// to go away: a confirm the frontend acted on takes the dialog down in the same
 /// tick it starts the operation, whatever the panes do afterwards.
@@ -370,14 +387,7 @@ async fn confirm_open_dialog<R: Runtime>(
     dialog_type: &str,
     payload: Value,
 ) -> Result<(), ToolError> {
-    let is_open = app
-        .try_state::<SoftDialogTracker>()
-        .is_some_and(|tracker| tracker.get_open_types().iter().any(|open| open == dialog_type));
-    if !is_open {
-        return Err(ToolError::invalid_params(format!(
-            "No {dialog_type} dialog is open to confirm. Read cmdr://state dialogs for what is open."
-        )));
-    }
+    require_open_dialog(app, dialog_type)?;
     app.emit("mcp-confirm-dialog", payload)?;
     wait_for_ack(
         app,
@@ -386,6 +396,99 @@ async fn confirm_open_dialog<R: Runtime>(
     )
     .await
 }
+
+/// What the frontend says a background confirm's press did. Mirrors the
+/// `ProgrammaticConfirmVerdict` in `src/lib/file-explorer/pane/programmatic-confirm.ts`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum BackgroundConfirmAck {
+    /// The dialog pressed its Background button: the operation is starting with no
+    /// progress dialog, and the confirmation is on its way down.
+    Pressed,
+    /// The delete dialog would delete PERMANENTLY, which never starts out of sight.
+    /// The dialog stays open, untouched.
+    RefusedPermanentDelete,
+}
+
+/// Parse an `mcp-response` for a background confirm. Same `requestId`
+/// correlation as the other round-trips; a refusal keeps its typed identity in
+/// `refusal`, ❌ never in the message text. A missing `ok` is a failure.
+fn parse_background_confirm_response(payload: &str, expected_id: &str) -> Option<Result<BackgroundConfirmAck, String>> {
+    let resp = serde_json::from_str::<Value>(payload).ok()?;
+    if resp.get("requestId").and_then(|v| v.as_str()) != Some(expected_id) {
+        return None;
+    }
+    if resp.get("ok").and_then(|v| v.as_bool()).unwrap_or(false) {
+        return Some(Ok(BackgroundConfirmAck::Pressed));
+    }
+    if resp.get("refusal").and_then(|v| v.as_str()) == Some("permanentDelete") {
+        return Some(Ok(BackgroundConfirmAck::RefusedPermanentDelete));
+    }
+    let err = resp
+        .get("error")
+        .and_then(|v| v.as_str())
+        .unwrap_or("Unknown error")
+        .to_string();
+    Some(Err(err))
+}
+
+/// `dialog confirm` with `background: true`: press the open dialog's Background
+/// button (F2) instead of Confirm, so the operation starts with no progress
+/// dialog. Transfer and trash only, under the dialog's own rules.
+///
+/// Two steps, because the second can't tell the first's outcomes apart: the
+/// frontend first ANSWERS whether it pressed (a permanent delete refuses, and the
+/// dialog stays up), then the confirmation goes away like any confirm's does.
+async fn execute_dialog_confirm_in_background<R: Runtime>(
+    app: &AppHandle<R>,
+    dialog_type: &str,
+    on_conflict: Option<&str>,
+) -> ToolResult {
+    let payload = match dialog_type {
+        "transfer-confirmation" => {
+            let conflict_policy = on_conflict.unwrap_or("skip_all");
+            validate_conflict_policy(conflict_policy)?;
+            json!({"type": dialog_type, "onConflict": conflict_policy, "startInBackground": true})
+        }
+        "delete-confirmation" => json!({"type": dialog_type, "startInBackground": true}),
+        _ => {
+            return Err(ToolError::invalid_params(format!(
+                "Cannot confirm '{dialog_type}' in the background. Only 'transfer-confirmation' and a trashing \
+                 'delete-confirmation' have a background start."
+            )));
+        }
+    };
+    require_open_dialog(app, dialog_type)?;
+    let ack = mcp_round_trip_parsed(
+        app,
+        "mcp-confirm-dialog",
+        payload,
+        BACKGROUND_CONFIRM_TIMEOUT_SECS,
+        parse_background_confirm_response,
+    )
+    .await?;
+    match ack {
+        BackgroundConfirmAck::RefusedPermanentDelete => Err(ToolError::invalid_params(
+            "The delete dialog would delete permanently, which never runs in the background. Confirm it without \
+             background, switch it to trash, or close it.",
+        )
+        .with_data(json!({ "refusal": "permanentDelete" }))),
+        BackgroundConfirmAck::Pressed => {
+            wait_for_ack(
+                app,
+                AckSignal::SoftDialogDisappeared(dialog_type.to_string()),
+                DEFAULT_ACK_TIMEOUT,
+            )
+            .await?;
+            Ok(json!(
+                "OK: Started in the background. Find it in cmdr://state operations, or await operation_complete."
+            ))
+        }
+    }
+}
+
+/// The frontend answers a background press synchronously, so this only has to
+/// outlast a busy main thread, like any other round-trip.
+const BACKGROUND_CONFIRM_TIMEOUT_SECS: u64 = 5;
 
 /// Execute dialog confirm action.
 /// Programmatically confirms an already-open dialog.
@@ -498,106 +601,5 @@ fn is_registered_soft_dialog(known: &[crate::mcp::dialog_state::KnownDialog], di
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::mcp::dialog_state::KnownDialog;
-
-    fn known(ids: &[&str]) -> Vec<KnownDialog> {
-        ids.iter()
-            .map(|id| KnownDialog {
-                id: (*id).to_string(),
-                description: None,
-                blocks_operations: true,
-            })
-            .collect()
-    }
-
-    #[test]
-    fn is_registered_soft_dialog_matches_only_known_ids() {
-        let dialogs = known(&["whats-new", "search", "delete-confirmation"]);
-        assert!(is_registered_soft_dialog(&dialogs, "whats-new"));
-        assert!(is_registered_soft_dialog(&dialogs, "search"));
-        // An id the FE never registered can't be closed generically.
-        assert!(!is_registered_soft_dialog(&dialogs, "not-a-dialog"));
-        // Empty registry (e.g. FE hasn't registered yet) rejects everything.
-        assert!(!is_registered_soft_dialog(&[], "whats-new"));
-    }
-
-    /// A mock app carrying the two stores the ack signals read.
-    fn app_with_stores() -> tauri::App<tauri::test::MockRuntime> {
-        let app = tauri::test::mock_app();
-        app.manage(crate::mcp::pane_state::PaneStateStore::new());
-        app.manage(SoftDialogTracker::new());
-        app
-    }
-
-    /// Stands in for the frontend: a confirm takes the dialog down, and nothing
-    /// in either pane changes until the operation's first file lands.
-    fn close_dialog_on_confirm(app: &AppHandle<tauri::test::MockRuntime>, dialog_type: &'static str) {
-        use tauri::Listener;
-        let handle = app.clone();
-        app.listen("mcp-confirm-dialog", move |_| {
-            handle.state::<SoftDialogTracker>().close(dialog_type);
-        });
-    }
-
-    #[tokio::test]
-    async fn a_confirm_acks_once_its_dialog_is_gone_with_no_pane_change() {
-        for dialog_type in ["transfer-confirmation", "delete-confirmation"] {
-            let app = app_with_stores();
-            let handle = app.handle().clone();
-            handle.state::<SoftDialogTracker>().open(dialog_type.to_string());
-            close_dialog_on_confirm(&handle, dialog_type);
-
-            // Pre-fix this waited for a pane-state push, which a compress or a copy
-            // onto a slow volume doesn't make for seconds: the tool answered "not
-            // acknowledged" about an operation that had started.
-            let outcome = execute_dialog_command(&handle, &json!({ "action": "confirm", "type": dialog_type })).await;
-            assert!(outcome.is_ok(), "{dialog_type}: {:?}", outcome.err().map(|e| e.message));
-        }
-    }
-
-    #[tokio::test]
-    async fn a_confirm_with_no_such_dialog_open_is_refused_up_front() {
-        let app = app_with_stores();
-        let handle = app.handle().clone();
-        let started = std::time::Instant::now();
-        let outcome = execute_dialog_command(
-            &handle,
-            &json!({ "action": "confirm", "type": "transfer-confirmation" }),
-        )
-        .await;
-        let error = outcome.expect_err("nothing is open to confirm");
-        assert_eq!(error.code, ToolError::invalid_params("").code);
-        assert!(
-            started.elapsed() < DEFAULT_ACK_TIMEOUT,
-            "it must not wait out the ack budget"
-        );
-    }
-
-    #[tokio::test]
-    async fn focusing_an_open_settings_window_answers_ok() {
-        let app = app_with_stores();
-        let handle = app.handle().clone();
-        tauri::WebviewWindowBuilder::new(&handle, "settings", tauri::WebviewUrl::default())
-            .build()
-            .expect("a mock settings window");
-
-        let outcome = execute_dialog_command(&handle, &json!({ "action": "focus", "type": "settings" })).await;
-        assert!(outcome.is_ok(), "{:?}", outcome.err().map(|e| e.message));
-    }
-
-    #[tokio::test]
-    async fn focusing_settings_when_it_isnt_open_is_refused_up_front() {
-        let app = app_with_stores();
-        let handle = app.handle().clone();
-        let started = std::time::Instant::now();
-        let outcome = execute_dialog_command(&handle, &json!({ "action": "focus", "type": "settings" })).await;
-        let error = outcome.expect_err("there's no settings window to focus");
-        assert_eq!(error.code, ToolError::invalid_params("").code);
-        assert!(
-            started.elapsed() < DEFAULT_ACK_TIMEOUT,
-            "it must not wait out the ack budget"
-        );
-    }
-}
+#[path = "dialogs_test.rs"]
+mod tests;

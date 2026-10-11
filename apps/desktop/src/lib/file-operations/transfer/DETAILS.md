@@ -1176,7 +1176,7 @@ smaller change, but it holds the slot until the id lands and can flash a frame.
 - **Cancel and rollback**: from the queue window's row, like any background job. **Quit gate**: backend-owned, it sees
   the registry, so nothing to do here. **Foreground claim**: none, on purpose (above).
 
-**MCP.** Both confirmers take `{ startInBackground }` (`../../file-explorer/pane/dialog-props.ts::ConfirmOptions`) and
-press the Background button under the same guards, trash-only included.
-`../../file-explorer/pane/programmatic-confirm.ts::confirmOpenDialog` is where a background option on `dialog confirm`
-passes it through.
+**MCP.** `dialog confirm` with `background: true` presses the same button: both confirmers take `{ startInBackground }`
+(`../../file-explorer/pane/dialog-props.ts::ConfirmOptions`), and the delete one answers `refusedPermanentDelete`
+instead of pressing, which reaches the agent as `data.refusal`. Flow and contract:
+`apps/desktop/src-tauri/src/mcp/DETAILS.md` (the dialogs entry).

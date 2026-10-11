@@ -23,6 +23,10 @@ pub fn dialog_schema() -> Value {
                 "type": "string",
                 "description": "For file-viewer: file path. On open without path, uses cursor file. On close without path, closes all."
             },
+            "background": {
+                "type": "boolean",
+                "description": "For confirm on transfer-confirmation or delete-confirmation: press the dialog's Background button (F2) instead of Confirm, so the operation starts with no progress dialog. A delete only runs in the background as a trash: a dialog set to delete permanently refuses with data.refusal = 'permanentDelete' and stays open. Default: false"
+            },
             "onConflict": {
                 "type": "string",
                 "enum": ["stop", "skip_all", "overwrite_all", "rename_all", "overwrite_smaller_all", "overwrite_older_all"],

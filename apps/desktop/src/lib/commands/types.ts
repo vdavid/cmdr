@@ -94,7 +94,9 @@ export interface CommandArgsOverrides {
   'cursor.scrollTo': { pane: PaneId; index: number }
   'volume.selectByName': { pane: PaneId; name?: string; volumeId?: string; mcpRequestId?: string }
   'tab.mcpAction': { pane: PaneId; action: McpTabAction; tabId?: string; pinned?: boolean } | McpTabMoveArgs
-  'dialog.confirm': { type: ConfirmDialogType; onConflict?: string }
+  /** `startInBackground` presses the dialog's Background button (F2); `mcpRequestId`
+   *  rides along so the handler can answer what the press did. */
+  'dialog.confirm': { type: ConfirmDialogType; onConflict?: string; startInBackground?: boolean; mcpRequestId?: string }
 }
 
 /**

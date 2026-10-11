@@ -10,7 +10,12 @@ import type { TabMoveRequest } from '$lib/file-explorer/pane/tab-operations'
 import type { MoveTabResult } from '$lib/file-explorer/tabs/tab-state-manager.svelte'
 import type { QuickLookKeyEventPayload } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
 import type { FileEntry, FriendlyError, NetworkHost, TransferOperationType } from '$lib/file-explorer/types'
-import type { AdoptedOperationData, ForegroundOperationVerdict } from '$lib/file-explorer/pane/dialog-props'
+import type {
+  AdoptedOperationData,
+  ConfirmOptions,
+  ForegroundOperationVerdict,
+} from '$lib/file-explorer/pane/dialog-props'
+import type { ProgrammaticConfirmVerdict } from '$lib/file-explorer/pane/programmatic-confirm'
 import type { NavigateIntent, NavigateResult } from '$lib/file-explorer/pane/navigate'
 import type { VolumeSelectOutcome } from '$lib/file-explorer/pane/volume-selection'
 import type { FavoriteOpenedEvent } from '$lib/file-explorer/navigation/favorites-analytics'
@@ -244,7 +249,11 @@ export interface ExplorerAPI {
    */
   foregroundOperation: (operation: AdoptedOperationData) => ForegroundOperationVerdict
   closeConfirmationDialog: () => void
-  confirmDialog: (dialogType: ConfirmDialogType, onConflict?: string) => void
+  confirmDialog: (
+    dialogType: ConfirmDialogType,
+    onConflict?: string,
+    options?: ConfirmOptions,
+  ) => ProgrammaticConfirmVerdict
   isConfirmationDialogOpen: () => boolean
   isRenaming: () => boolean
   /**

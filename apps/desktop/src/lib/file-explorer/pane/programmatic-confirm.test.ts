@@ -10,6 +10,19 @@ function makeDeps(open: 'transfer' | 'delete' | 'none'): ProgrammaticConfirmDeps
   }
 }
 
+describe('confirmOpenDialog on the transfer dialog, in the background', () => {
+  it('presses the Background button under the named policy', () => {
+    const confirmer = createProgrammaticConfirm(makeDeps('transfer'))
+    const press = vi.fn()
+    confirmer.registerTransferConfirmer(press)
+
+    const verdict = confirmer.confirmOpenDialog('transfer-confirmation', 'overwrite_all', { startInBackground: true })
+
+    expect(press).toHaveBeenCalledWith('overwrite', { startInBackground: true })
+    expect(verdict).toEqual({ pressed: true })
+  })
+})
+
 describe('confirmOpenDialog on the delete dialog', () => {
   it('presses the mounted dialog’s own confirm', () => {
     const confirmer = createProgrammaticConfirm(makeDeps('delete'))
@@ -41,6 +54,35 @@ describe('confirmOpenDialog on the delete dialog', () => {
 
     expect(older).not.toHaveBeenCalled()
     expect(newer).toHaveBeenCalledOnce()
+  })
+
+  it('presses the Background button when asked, and says it pressed', () => {
+    const confirmer = createProgrammaticConfirm(makeDeps('delete'))
+    const press = vi.fn(() => 'pressed' as const)
+    confirmer.registerDeleteConfirmer(press)
+
+    const verdict = confirmer.confirmOpenDialog('delete-confirmation', undefined, { startInBackground: true })
+
+    expect(press).toHaveBeenCalledWith({ startInBackground: true })
+    expect(verdict).toEqual({ pressed: true })
+  })
+
+  it('carries the dialog’s typed refusal of a permanent delete in the background', () => {
+    const confirmer = createProgrammaticConfirm(makeDeps('delete'))
+    confirmer.registerDeleteConfirmer(() => 'refusedPermanentDelete')
+
+    const verdict = confirmer.confirmOpenDialog('delete-confirmation', undefined, { startInBackground: true })
+
+    expect(verdict).toEqual({ pressed: false, refusal: 'permanentDelete' })
+  })
+
+  it('says nothing was pressed when the dialog is open but not mounted yet', () => {
+    const confirmer = createProgrammaticConfirm(makeDeps('delete'))
+
+    expect(confirmer.confirmOpenDialog('delete-confirmation', undefined, { startInBackground: true })).toEqual({
+      pressed: false,
+      refusal: 'notReady',
+    })
   })
 
   it('presses nothing when the delete dialog is closed', () => {

@@ -63,9 +63,13 @@ export type TransferConfirmer = (conflictResolution: ConflictResolution, options
  * The delete dialog's own confirm, as something a caller outside it can press
  * (the MCP `dialog confirm`): the same function its button runs.
  * `startInBackground` presses the Background button instead, which exists only
- * for a TRASH: on a permanent delete it does nothing, as F2 does.
+ * for a TRASH: on a permanent delete it does nothing, as F2 does, and says so.
  */
-export type DeleteConfirmer = (options?: ConfirmOptions) => void
+export type DeleteConfirmer = (options?: ConfirmOptions) => DeleteConfirmPress
+
+/** What a delete dialog's press did: pressed, or a background press refused
+ *  because the dialog would delete permanently. */
+export type DeleteConfirmPress = 'pressed' | 'refusedPermanentDelete'
 
 /**
  * What a transfer operation reports when it finishes: `TransferProgressDialog`'s

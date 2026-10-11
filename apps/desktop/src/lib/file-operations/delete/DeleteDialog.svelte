@@ -444,7 +444,9 @@
     // starting finds it and waits for the id like a fast Enter does. Asking for
     // the background presses the Background button, under the same trash-only rule.
     const unregisterConfirmer = registerConfirmer?.((options) => {
+        if (options?.startInBackground && !canTrashInBackground) return 'refusedPermanentDelete'
         void handleConfirm(options)
+        return 'pressed'
     })
 
     function handleCancel() {

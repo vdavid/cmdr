@@ -19,9 +19,26 @@
 
 import { conflictPolicyFromMcpName } from '$lib/file-operations/transfer/conflict-policy'
 import { getAppLogger } from '$lib/logging/logger'
-import type { DeleteConfirmer, TransferConfirmer } from './dialog-props'
+import type { ConfirmOptions, DeleteConfirmer, TransferConfirmer } from './dialog-props'
 
 const log = getAppLogger('fileExplorer')
+
+/**
+ * What a programmatic confirm did, for the MCP reply. Mirrored by
+ * `BackgroundConfirmAck` in `src-tauri/src/mcp/executor/dialogs.rs`: the refusal
+ * crosses as this typed field, ❌ never as message text.
+ */
+export type ProgrammaticConfirmVerdict =
+  | { pressed: true }
+  | {
+      pressed: false
+      /** `permanentDelete`: a background press on a dialog that would delete
+       *  permanently. `notReady`: no such dialog is open and mounted. */
+      refusal: 'permanentDelete' | 'notReady'
+    }
+
+const PRESSED: ProgrammaticConfirmVerdict = { pressed: true }
+const NOT_READY: ProgrammaticConfirmVerdict = { pressed: false, refusal: 'notReady' }
 
 export interface ProgrammaticConfirmDeps {
   /** Whether the transfer confirmation is on screen. */
@@ -61,8 +78,15 @@ export function createProgrammaticConfirm(deps: ProgrammaticConfirmDeps) {
     registerTransferConfirmer: transfer.register,
     registerDeleteConfirmer: deletion.register,
 
-    /** Programmatically confirm an open dialog (for MCP confirm action). */
-    confirmOpenDialog(dialogType: string, onConflict?: string) {
+    /** Programmatically confirm an open dialog (for MCP confirm action). With
+     *  `startInBackground` it presses the dialog's Background button (F2)
+     *  instead, under the same rules, and the verdict says whether it did: the
+     *  MCP tool answers the agent from it (`mcp/executor/dialogs.rs`). */
+    confirmOpenDialog(
+      dialogType: string,
+      onConflict?: string,
+      options: ConfirmOptions = {},
+    ): ProgrammaticConfirmVerdict {
       if (dialogType === 'transfer-confirmation' && deps.isTransferDialogOpen()) {
         // A policy the backend accepted but the map doesn't know would quietly
         // become `skip`, so an agent that asked to be asked per file would
@@ -77,9 +101,10 @@ export function createProgrammaticConfirm(deps: ProgrammaticConfirmDeps) {
         const press = transfer.current
         if (!press) {
           log.warn('A programmatic confirm found the transfer dialog open but not mounted yet; nothing confirmed')
-          return
+          return NOT_READY
         }
-        press(mapped ?? 'skip')
+        press(mapped ?? 'skip', options)
+        return PRESSED
       } else if (dialogType === 'delete-confirmation' && deps.isDeleteDialogOpen()) {
         // Same press as the button: the scan preview the dialog started and the
         // mode it shows now, including a trash the walk turned into a delete (then
@@ -87,15 +112,19 @@ export function createProgrammaticConfirm(deps: ProgrammaticConfirmDeps) {
         const press = deletion.current
         if (!press) {
           log.warn('A programmatic confirm found the delete dialog open but not mounted yet; nothing confirmed')
-          return
+          return NOT_READY
         }
-        press()
+        // A background press on a dialog that would delete permanently is refused by
+        // the dialog itself (it's the one operation nothing undoes), typed.
+        return press(options) === 'refusedPermanentDelete' ? { pressed: false, refusal: 'permanentDelete' } : PRESSED
       } else if (dialogType === 'archive-password' && deps.isArchivePasswordOpen()) {
         // The `unlock_archive` tool already stored the password on the backend;
         // this is the follow-up. ⚠️ It settles a transfer rather than
         // re-dispatching it — see `supplyStoredPassword`.
         deps.supplyStoredPassword()
+        return PRESSED
       }
+      return NOT_READY
     },
   }
 }

@@ -149,6 +149,9 @@ fn test_dialog_tool_schema() {
     assert!(props.get("section").is_some());
     assert!(props.get("path").is_some());
     assert!(props.get("onConflict").is_some());
+    assert_eq!(props["background"]["type"], json!("boolean"));
+    // Optional: a plain confirm is still Enter's.
+    assert!(!schema["required"].as_array().unwrap().contains(&json!("background")));
 
     let action_enum = props.get("action").unwrap().get("enum").unwrap().as_array().unwrap();
     assert!(action_enum.contains(&json!("open")));

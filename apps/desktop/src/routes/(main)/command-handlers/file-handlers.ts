@@ -32,6 +32,7 @@ import { trackEvent } from '$lib/tauri-commands'
 import { editServerInView } from '$lib/file-explorer/network/servers-hub-actions'
 import type { CommandArgs } from '$lib/commands'
 import { detached } from './detached'
+import { confirmDialogForMcp } from '../mcp-dialog-confirm'
 import type { CommandHandlerContext, CommandHandlerRecord } from './types'
 
 /** The file entry the focused pane's cursor sits on (path + filename). */
@@ -186,8 +187,10 @@ export const fileHandlers = {
   'dialog.confirm': ({ explorerRef, dispatchArgs }) => {
     // MCP `dialog confirm` tool: programmatically confirm an already-open
     // transfer/delete dialog.
-    const { type, onConflict } = dispatchArgs as CommandArgs['dialog.confirm']
-    explorerRef?.confirmDialog(type, onConflict)
+    const { type, onConflict, startInBackground, mcpRequestId } = dispatchArgs as CommandArgs['dialog.confirm']
+    detached(
+      confirmDialogForMcp({ explorer: explorerRef, type, onConflict, startInBackground, requestId: mcpRequestId }),
+    )
   },
 
   'file.showInFinder': (hctx) => withEntryUnderCursor(hctx, (entry) => showInFinder(entry.path)),

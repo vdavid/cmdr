@@ -8,6 +8,8 @@ import type { SelectionActionArgs } from '../../../routes/(main)/explorer-api'
 import type { FilePaneAPI } from './types'
 import type { FileEntry, FriendlyError } from '../types'
 import type { createDialogState } from './dialog-state.svelte'
+import type { ConfirmOptions } from './dialog-props'
+import type { ProgrammaticConfirmVerdict } from './programmatic-confirm'
 import type { PaneAccess } from './pane-access'
 import { toBackendIndices } from '$lib/file-operations/transfer/transfer-dialog-utils'
 
@@ -33,8 +35,12 @@ export interface MultiRenameSelection {
  * callbacks, which is the explorer-store phase's job, not this factoring.
  */
 export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
-  function confirmDialog(dialogType: ConfirmDialogType, onConflict?: string) {
-    dialogs.confirmOpenDialog(dialogType, onConflict)
+  function confirmDialog(
+    dialogType: ConfirmDialogType,
+    onConflict?: string,
+    options?: ConfirmOptions,
+  ): ProgrammaticConfirmVerdict {
+    return dialogs.confirmOpenDialog(dialogType, onConflict, options)
   }
 
   /**
