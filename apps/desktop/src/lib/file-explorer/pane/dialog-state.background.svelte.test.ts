@@ -49,6 +49,7 @@ import { copyBetweenVolumes, deleteFiles, listOperations, trashFiles } from '$li
 import { dispatchTransferOperation } from '$lib/file-operations/transfer/transfer-dispatch'
 import { addToast } from '$lib/ui/toast'
 import { setForegroundOperationId } from '$lib/file-operations/foreground-operation.svelte'
+import TrashCompleteToastContent from '$lib/file-operations/delete/TrashCompleteToastContent.svelte'
 import {
   destroyOperationSessions,
   initOperationSessions,
@@ -151,6 +152,7 @@ async function startCopyInBackground() {
 beforeEach(async () => {
   vi.clearAllMocks()
   listeners.error = null
+  listeners.complete = null
   vi.mocked(listOperations).mockResolvedValue([snapshot('op-1', 'running')])
   await initOperationSessions()
 })
@@ -216,6 +218,63 @@ describe('F2 in the delete dialog', () => {
     expect(deleteFiles).not.toHaveBeenCalled()
     expect(dialogs.showDeleteDialog).toBe(false)
     expect(dialogs.showTransferProgressDialog).toBe(false)
+  })
+})
+
+describe('a background job that finishes', () => {
+  function complete(operationType: 'trash' | 'copy', refused: { itemCount: number; reason: 'notPermitted' } | null) {
+    listeners.complete?.({
+      operationId: 'op-1',
+      operationType,
+      filesProcessed: 1,
+      filesSkipped: 0,
+      bytesProcessed: 10,
+      refused,
+    })
+  }
+
+  it('says so for a trash, with the toast that carries Undo and Go to trash', async () => {
+    const { dialogs } = makeState()
+    dialogs.showDeleteConfirmation(deleteDialogProps())
+    dialogs.handleTrashInBackground('preview-9')
+    await settle()
+    vi.mocked(addToast).mockClear()
+
+    complete('trash', null)
+    await settle()
+
+    expect(addToast).toHaveBeenCalledOnce()
+    const [content, options] = vi.mocked(addToast).mock.calls[0] ?? []
+    expect(content).toBe(TrashCompleteToastContent)
+    expect(options).toMatchObject({
+      level: 'success',
+      props: { message: 'Moved 1 file to trash', operationId: 'op-1', sourceFolderPath: SOURCE_FOLDER },
+    })
+  })
+
+  it('names what a partly refused background trash left behind, beside the Undo toast', async () => {
+    const { dialogs } = makeState()
+    dialogs.showDeleteConfirmation(deleteDialogProps())
+    dialogs.handleTrashInBackground('preview-9')
+    await settle()
+    vi.mocked(addToast).mockClear()
+
+    complete('trash', { itemCount: 1, reason: 'notPermitted' })
+    await settle()
+
+    expect(addToast).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(addToast).mock.calls[0]?.[0]).toBe(TrashCompleteToastContent)
+    expect(vi.mocked(addToast).mock.calls[1]?.[1]).toMatchObject({ level: 'warn' })
+  })
+
+  it('stays quiet for a copy, as a job sent off with Queue does', async () => {
+    await startCopyInBackground()
+    vi.mocked(addToast).mockClear()
+
+    complete('copy', null)
+    await settle()
+
+    expect(addToast).not.toHaveBeenCalled()
   })
 })
 

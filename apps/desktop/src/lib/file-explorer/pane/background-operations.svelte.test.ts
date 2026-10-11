@@ -89,6 +89,7 @@ function makeBackground() {
     getRightPaneRef: () => right.ref,
     onStartRefused: vi.fn(),
     onNeedsPassword: vi.fn(),
+    onCompleted: vi.fn(),
   } satisfies BackgroundOperationsDeps
   return { background: createBackgroundOperations(deps), deps, left }
 }

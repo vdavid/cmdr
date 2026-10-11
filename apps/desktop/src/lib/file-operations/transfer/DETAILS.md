@@ -1164,10 +1164,15 @@ smaller change, but it holds the slot until the id lands and can flash a frame.
   watch, which closed the same gap there. While Show has the job in the progress dialog, that view stays quiet about the
   stop (`background.watches(id)` filters its error dialog) and the prompt replaces it, whichever hears the outcome
   first.
-- **Errors after the start**: the retained failure, the failure toast, and the corner chip, as for any backgrounded job.
-- **Completion toast, pane refresh, cancel's selection restore, duplicate rename editor**: deliberately absent, matching
-  a job sent to the background from the progress dialog (the file watcher updates the panes). F5, F2 and F5, Enter, F2
-  end the same way.
+- **Errors after the start**: the retained failure, the failure toast
+  (`$lib/status-corner/operation-failure-watch.svelte.ts`, which speaks for any failure no foreground slot claims, so a
+  background start is covered without a second toast), and the corner chip. The two `write-error`s the backend doesn't
+  retain are a cancel (the person did it) and the password stop (above).
+- **A trash's completion toast, Undo and "Go to trash" included**: raised when a background trash completes, through the
+  same `announceCompletion` the progress dialog uses (`onCompleted` from the background module). Trash is offered here
+  because it's the reversible delete, and that toast is how it's reversed.
+- **Copy / move / compress success, pane refresh, cancel's selection restore, duplicate rename editor**: deliberately
+  absent, matching a job sent to the background from the progress dialog (the file watcher updates the panes).
 - **Cancel and rollback**: from the queue window's row, like any background job. **Quit gate**: backend-owned, it sees
   the registry, so nothing to do here. **Foreground claim**: none, on purpose (above).
 

@@ -195,6 +195,7 @@ export function createDialogState(deps: DialogStateDeps) {
     message: string,
     level: ToastLevel,
     refusedMessage: string | null,
+    sourceFolderPath: string | undefined,
   ): void {
     if (op === 'trash' && settledOperationId) {
       addToast(TrashCompleteToastContent, {
@@ -207,7 +208,7 @@ export function createDialogState(deps: DialogStateDeps) {
           // WHICH volume's trash to open. The focused pane is the honest
           // stand-in for a birth context that went missing: it's the pane the
           // trash was started from.
-          sourceFolderPath: transferProgressProps?.sourceFolderPath ?? deps.getFocusedPaneRef()?.getCurrentPath() ?? '',
+          sourceFolderPath: sourceFolderPath ?? deps.getFocusedPaneRef()?.getCurrentPath() ?? '',
           explorer: deps.getExplorer(),
         },
       })
@@ -218,6 +219,55 @@ export function createDialogState(deps: DialogStateDeps) {
     if (refusedMessage !== null) {
       addToast(refusedMessage, { level: 'warn', timeoutMs: 10000 })
     }
+  }
+
+  /** Logs a finished operation and raises what it leaves on screen, for the
+   *  progress dialog's completion and a background trash's alike. */
+  function announceCompletion(
+    props: TransferProgressPropsData | null,
+    {
+      filesProcessed,
+      filesSkipped,
+      bytesProcessed,
+      appearedDuringMove,
+      topLevelSkipped,
+      refused,
+    }: TransferCompletePayload,
+    settledOperationId: string | null,
+  ): void {
+    const op = props?.operationType ?? 'copy'
+    // ❌ No search-snapshot purge here. A dialog knows what the operation was
+    // ASKED to do, which is the wrong input: it misses a skip, misses a cancel,
+    // and isn't available at all to a window watching an operation it never
+    // started. `$lib/search/snapshot-purge.ts` reads the per-path outcome
+    // stream instead, for every window and every ending.
+    log.info(
+      `${transferOpLabel(op)} complete: ${String(filesProcessed)} files (${String(filesSkipped)} skipped, ${String(refused?.itemCount ?? 0)} refused, ${formatByteSize(bytesProcessed)})`,
+    )
+    // Top-level counts for the per-type split ("Moved 1 file and 3 folders").
+    // F5/F6, drag-and-drop, and clipboard paste all supply these now; absent
+    // only when a kind probe came back partial → composer falls back.
+    const toastMessage = composeTransferCompleteToast({
+      operationType: op,
+      filesProcessed,
+      filesSkipped,
+      fileCount: props?.fileCount,
+      folderCount: props?.folderCount,
+      appearedDuringMove,
+      topLevelSkipped,
+    })
+    // A trash the OS refused part of still ends as a completion, so without
+    // this it said "Moved 1 file to trash" in success green and the item still
+    // in the pane went unmentioned. It takes the level down with it: nothing
+    // about a partly refused batch may read as a clean success.
+    //
+    // `info` for the all-skipped case (nothing actually moved/copied — neutral
+    // outcome, not a success). `success` everywhere else, including mixed: the
+    // user's intent landed at the target.
+    const refusedMessage = composeTrashRefusedToast(refused)
+    const allSkipped = filesSkipped > 0 && filesSkipped === filesProcessed
+    const completeLevel: ToastLevel = refusedMessage !== null ? 'warn' : allSkipped ? 'info' : 'success'
+    raiseCompletionToasts(op, settledOperationId, toastMessage, completeLevel, refusedMessage, props?.sourceFolderPath)
   }
 
   /** Opens the error dialog, claiming the failure so the corner chip and the
@@ -374,6 +424,12 @@ export function createDialogState(deps: DialogStateDeps) {
       openTransferError(props.operationType, error, null, null, retryPropsFrom(props))
     },
     onNeedsPassword: promptBackgroundPassword,
+    onCompleted: (props, payload, operationId) => {
+      // A trash keeps its Undo toast wherever it ran: it's the safe, reversible
+      // delete, and the toast is how it's reversed. Everything else finishing in
+      // the background stays quiet, as a job sent off with Queue does.
+      if (props.operationType === 'trash') announceCompletion(props, payload, operationId)
+    },
   })
 
   const adopted = createAdoptedOperation({
@@ -663,55 +719,15 @@ export function createDialogState(deps: DialogStateDeps) {
       deps.onRefocus()
     },
 
-    handleTransferComplete({
-      filesProcessed,
-      filesSkipped,
-      bytesProcessed,
-      appearedDuringMove,
-      topLevelSkipped,
-      refused,
-    }: TransferCompletePayload) {
+    handleTransferComplete(payload: TransferCompletePayload) {
       const props = transferProgressProps
-      const op = props?.operationType ?? 'copy'
-      const opLabel = transferOpLabel(op)
       // Read the foreground slot NOW, while the progress dialog still holds it:
       // it releases the slot as it unmounts, below. The operation's journal is
       // where the duplicate's generated name comes from, so an id read too late
       // costs the rename editor.
       const settledOperationId = getForegroundOperationId()
 
-      // ❌ No search-snapshot purge here. A dialog knows what the operation was
-      // ASKED to do, which is the wrong input: it misses a skip, misses a cancel,
-      // and isn't available at all to a window watching an operation it never
-      // started. `$lib/search/snapshot-purge.ts` reads the per-path outcome
-      // stream instead, for every window and every ending.
-      log.info(
-        `${opLabel} complete: ${String(filesProcessed)} files (${String(filesSkipped)} skipped, ${String(refused?.itemCount ?? 0)} refused, ${formatByteSize(bytesProcessed)})`,
-      )
-      // Top-level counts for the per-type split ("Moved 1 file and 3 folders").
-      // F5/F6, drag-and-drop, and clipboard paste all supply these now; absent
-      // only when a kind probe came back partial → composer falls back.
-      const toastMessage = composeTransferCompleteToast({
-        operationType: op,
-        filesProcessed,
-        filesSkipped,
-        fileCount: props?.fileCount,
-        folderCount: props?.folderCount,
-        appearedDuringMove,
-        topLevelSkipped,
-      })
-      // A trash the OS refused part of still ends as a completion, so without
-      // this it said "Moved 1 file to trash" in success green and the item still
-      // in the pane went unmentioned. It takes the level down with it: nothing
-      // about a partly refused batch may read as a clean success.
-      //
-      // `info` for the all-skipped case (nothing actually moved/copied — neutral
-      // outcome, not a success). `success` everywhere else, including mixed: the
-      // user's intent landed at the target.
-      const refusedMessage = composeTrashRefusedToast(refused)
-      const allSkipped = filesSkipped > 0 && filesSkipped === filesProcessed
-      const completeLevel: ToastLevel = refusedMessage !== null ? 'warn' : allSkipped ? 'info' : 'success'
-      raiseCompletionToasts(op, settledOperationId, toastMessage, completeLevel, refusedMessage)
+      announceCompletion(props, payload, settledOperationId)
 
       paneEffects.refreshPanesAfterTransfer()
       paneEffects.clearSourcePaneAfterTransfer()

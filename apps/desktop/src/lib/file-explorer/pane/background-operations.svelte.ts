@@ -20,10 +20,12 @@
  *   is a question, and the progress dialog is normally who asks it. With no
  *   dialog, this module keeps the operation's session until its outcome lands
  *   and hands that one outcome to the owner, which raises the prompt.
+ * - **A completion** goes to the owner too, which raises a trash's Undo toast
+ *   (the reason trash is offered here at all) and stays quiet for the rest.
  * - **Everything else is ambient**, as for any backgrounded job: the queue
  *   window and the corner chip show it, a retained failure raises the failure
- *   toast, and the file watcher updates the panes. No completion toast, no
- *   rename editor for a duplicate, no selection restore on cancel.
+ *   toast, and the file watcher updates the panes. No rename editor for a
+ *   duplicate, no selection restore on cancel.
  */
 
 import { untrack } from 'svelte'
@@ -37,7 +39,7 @@ import type { OperationOutcome } from '$lib/file-operations/operation-session/op
 import { createTransferPaneEffects, type TransferPaneEffectsDeps } from './transfer-pane-effects'
 import { transferOpLabel } from './transfer-op-label'
 import type { WriteOperationError } from '../types'
-import type { TransferProgressPropsData } from './dialog-props'
+import type { TransferCompletePayload, TransferProgressPropsData } from './dialog-props'
 
 const log = getAppLogger('fileExplorer')
 
@@ -49,6 +51,8 @@ export interface BackgroundOperationsDeps extends TransferPaneEffectsDeps {
   onStartRefused: (props: TransferProgressPropsData, error: WriteOperationError) => void
   /** A background job stopped to ask for its archive's password. */
   onNeedsPassword: (props: TransferProgressPropsData, error: ArchiveNeedsPasswordError, operationId: string) => void
+  /** A background job finished. The owner decides what, if anything, it says. */
+  onCompleted: (props: TransferProgressPropsData, payload: TransferCompletePayload, operationId: string) => void
 }
 
 export function createBackgroundOperations(deps: BackgroundOperationsDeps) {
@@ -87,6 +91,20 @@ export function createBackgroundOperations(deps: BackgroundOperationsDeps) {
       })
       if (outcome.kind === 'error' && outcome.event.error.type === 'archive_needs_password') {
         deps.onNeedsPassword(props, outcome.event.error, operationId)
+      } else if (outcome.kind === 'complete') {
+        const event = outcome.event
+        deps.onCompleted(
+          props,
+          {
+            filesProcessed: event.filesProcessed,
+            filesSkipped: event.filesSkipped,
+            bytesProcessed: event.bytesProcessed,
+            appearedDuringMove: event.appearedDuringMove ?? null,
+            topLevelSkipped: event.topLevelSkipped ?? null,
+            refused: event.refused ?? null,
+          },
+          operationId,
+        )
       }
     }
 
