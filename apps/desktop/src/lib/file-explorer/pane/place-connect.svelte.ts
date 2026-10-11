@@ -23,6 +23,7 @@ import type { RemoteConnectState } from './remote-connect-state'
 import type { VolumeInfo } from '../types'
 import type { VolumeChangePayload } from './types'
 import { isLiveSession } from '../navigation/connection-state'
+import { placeMoveCount } from './place-moves.svelte'
 
 const log = getAppLogger('servers')
 
@@ -75,14 +76,20 @@ export function createPlaceConnect(deps: PlaceConnectDeps): PlaceConnect {
   let state = $state<RemoteConnectState | null>(null)
   /** The attempt a Cancel aims at. Plain, not `$state`: nothing renders it. */
   let attemptId: string | null = null
-  /** The volume this factory has already dialed, so landing doesn't loop. */
+  /**
+   * The landing this factory has already dialed, so a refresh doesn't loop: the
+   * volume, and how many times it moved (a move that keeps the id is a new landing).
+   */
   let dialed: string | null = null
+  /** The dial whose answer the pane is waiting for. A newer dial makes an older one's answer stale. */
+  let currentDial: object | null = null
   /** The mount path last followed, so a volume-list refresh before the pane's root catches up doesn't enter twice. */
   let followed: string | null = null
 
   $effect(() => {
     const info = deps.getCurrentVolumeInfo()
     const volumeId = deps.getVolumeId()
+    const landing = `${volumeId}#${String(placeMoveCount(volumeId))}`
     // ❗ A live share is followed to wherever its mount IS. Its next mount can land
     // on another `/Volumes` path than the one the pane was entered at, and a pane
     // whose root and volume disagree lists one server under another's path, where
@@ -117,12 +124,14 @@ export function createPlaceConnect(deps: PlaceConnectDeps): PlaceConnect {
       dialed = null
       return
     }
-    if (dialed === volumeId) return
-    dialed = volumeId
+    if (dialed === landing) return
+    dialed = landing
     void dial(volumeId, info)
   })
 
   async function dial(volumeId: string, info: VolumeInfo) {
+    const thisDial = {}
+    currentDial = thisDial
     state = {
       kind: 'connecting',
       cancel: () => {
@@ -139,10 +148,11 @@ export function createPlaceConnect(deps: PlaceConnectDeps): PlaceConnect {
       // It owns the rounds from there and stays open across them.
       openSignIn: openSignInForPlace,
     })
-    // ❗ The pane left this place while the dial was out (a server move followed it to
-    // the new address, which the backend answers with `cancelled`): the answer is
-    // about a place it no longer shows, so it neither words a view nor enters.
-    if (deps.getVolumeId() !== volumeId) return
+    // ❗ The pane left this place while the dial was out, or dialed it again (a server
+    // move followed it to the new address, or moved it under the same id, and the
+    // backend answers the old dial `cancelled`): the answer is about a landing the
+    // pane no longer shows, so it neither words a view nor enters.
+    if (currentDial !== thisDial || deps.getVolumeId() !== volumeId) return
     attemptId = null
     switch (result.kind) {
       case 'connected':

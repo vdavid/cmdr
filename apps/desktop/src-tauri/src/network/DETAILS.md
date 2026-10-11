@@ -1133,8 +1133,9 @@ saves them the trip.
 A host-key prompt open for the old place is the same race stretched out: its approval runs `connect_saved_place` for the
 old id. Resolving the target from the store by place id at that moment is the guarantee (a moved place answers
 `NoSuchServer`, and one read just before the move is refused at landing by its ticket); the frontend also closes that
-sheet on `server-place-moved` (`dismissSignInForPlaces`), so the approval never asks the old machine at all. The pane ignores a dial's late answer once it stands on another place
-(`place-connect.svelte.ts`). The protocol and the account never move (`AccountChanged`). SMB stays locked: a share's id comes off
+sheet on `server-place-moved` (`dismissSignInForPlaces`), so the approval never asks the old machine at all. The pane ignores a dial's late answer once it stands on another place or dialed again
+(`place-connect.svelte.ts`), and a move that keeps the id (a WebDAV base path) bumps the place's move count
+(`place-moves.svelte.ts`), which redials it at the new URL on its own. The protocol and the account never move (`AccountChanged`). SMB stays locked: a share's id comes off
 its mount. The inventory behind each step and why: `docs/notes/server-address-move.md`.
 
 ### A secret used for one dial and never stored

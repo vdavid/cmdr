@@ -66,6 +66,9 @@ function harness(opts: HarnessOpts) {
     applyToVolumeList: () => {
       order.push('store')
     },
+    notePlacesMoved: (newVolumeIds) => {
+      order.push(`moved:${newVolumeIds.join(',')}`)
+    },
     getTabMgr: (pane) => managers[pane],
     navigate,
     saveTabs,
@@ -101,7 +104,7 @@ describe('followServerMove: the panes', () => {
       source: 'fallback',
       pushHistory: false,
     })
-    expect(h.order).toEqual([`sign-in:${OLD_ID}`, 'store', 'navigate:left'])
+    expect(h.order).toEqual([`sign-in:${OLD_ID}`, 'store', `moved:${NEW_ID}`, 'navigate:left'])
   })
 
   it('redials a pane whose place kept its id without navigating it (a WebDAV base path that moved)', async () => {
@@ -118,8 +121,9 @@ describe('followServerMove: the panes', () => {
       h.deps,
     )
 
-    // The row went `saved` in the store patch, which is what makes the pane dial again.
-    expect(h.order).toEqual([`sign-in:${id}`, 'store'])
+    // ❗ The row was `saved` before the move too (the dial to the old URL was still
+    // out), so the move count is what makes the pane dial again.
+    expect(h.order).toEqual([`sign-in:${id}`, 'store', `moved:${id}`])
   })
 })
 

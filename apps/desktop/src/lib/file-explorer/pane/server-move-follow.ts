@@ -15,15 +15,17 @@
  *    OLD address. First, so the pane's redial below can open a sheet of its own.
  * 1. ❗ The volume store's row is re-keyed FIRST (`applyServerPlaceMoved`), and
  *    reads `saved`. The event beats the debounced `volumes-changed`, and
- *    `navigate()` looks the new id up in the list.
+ *    `navigate()` looks the new id up in the list. Then each new id's move count
+ *    goes up (`place-moves.svelte.ts`).
  * 2. Every tab's history is respelled in place, so Back from the moved place
  *    lands on it rather than on an id nothing knows.
  * 3. Each pane's active tab moves through `navigate()`, as a terminal
  *    `'fallback'` select with no history push. It lands on the `saved` row, and
  *    `place-connect` dials it there: the ordinary first open, so a new host's key
  *    or a missing password asks in the usual place. A place that kept its id
- *    (a WebDAV base path that moved) needs no navigate: its row going `saved` is
- *    what makes the pane dial again.
+ *    (a WebDAV base path that moved) needs no navigate: its move count is what
+ *    makes the pane dial again, ❗ since its row may have read `saved` all along
+ *    (a dial to the old URL still out, which the move called off).
  * 4. A tab no pane is showing is respelled in place and its pane's tabs saved.
  * 5. `lastUsedPaths` moves to the new id.
  *
@@ -39,6 +41,8 @@ import type { NavigateIntent, NavigateResult } from './navigate'
 export interface ServerMoveFollowDeps {
   /** Closes a sign-in sheet open for one of the old place ids. */
   dismissSignIn: (oldVolumeIds: string[]) => void
+  /** Bumps each new id's move count (`place-moves.svelte.ts`), which redials a pane already on it. */
+  notePlacesMoved: (newVolumeIds: string[]) => void
   /** Re-keys the volume store's rows to the new ids, roots, and names. */
   applyToVolumeList: (moved: ServerPlaceMoved) => void
   getTabMgr: (pane: 'left' | 'right') => TabManager
@@ -54,6 +58,7 @@ export interface ServerMoveFollowDeps {
 export async function followServerMove(moved: ServerPlaceMoved, deps: ServerMoveFollowDeps): Promise<void> {
   deps.dismissSignIn(moved.places.map((place) => place.oldVolumeId))
   deps.applyToVolumeList(moved)
+  deps.notePlacesMoved(moved.places.map((place) => place.newVolumeId))
   const newIdOf = new Map(moved.places.map((place) => [place.oldVolumeId, place.newVolumeId]))
   const respell = (location: Location): Location | null => {
     const volumeId = newIdOf.get(location.volumeId)

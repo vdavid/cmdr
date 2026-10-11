@@ -33,6 +33,7 @@ import { pathAfterRootChange } from '../navigation/root-change-follow'
 import { getActiveTab, type TabManager } from '../tabs/tab-state-manager.svelte'
 import type { NavigateIntent, NavigateResult } from './navigate'
 import { followServerMove, type ServerMoveFollowDeps } from './server-move-follow'
+import { notePlacesMoved } from './place-moves.svelte'
 
 const log = getAppLogger('fileExplorer')
 
@@ -116,6 +117,7 @@ export function createVolumeRootFollow(
     dismissSignIn: (oldVolumeIds) => {
       dismissSignInForPlaces(oldVolumeIds)
     },
+    notePlacesMoved,
   }
   let unlisteners: UnlistenFn[] = []
   return {

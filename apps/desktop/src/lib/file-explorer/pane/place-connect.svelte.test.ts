@@ -30,6 +30,7 @@ vi.mock('$lib/logging/logger', () => ({
 }))
 
 import { createPlaceConnect, type PlaceConnect } from './place-connect.svelte'
+import { notePlacesMoved } from './place-moves.svelte'
 
 const savedPlace: VolumeInfo = {
   id: 'sftp-nas-local-22-ada',
@@ -315,6 +316,31 @@ describe('createPlaceConnect', () => {
       expect(enter).not.toHaveBeenCalled()
     })
   }
+
+  /**
+   * ❗ A WebDAV server whose base PATH moved keeps its id, so the pane never leaves
+   * the place: its row was `saved` before and after. The move calls the dial to the
+   * old URL off, and the pane dials again on its own, at the new one.
+   */
+  it('dials again when the place it is dialing moves and keeps its id, and ignores the old dial', async () => {
+    let answerOldDial!: (result: { kind: 'cancelled' }) => void
+    connectPlace.mockReturnValueOnce(
+      new Promise((resolve) => {
+        answerOldDial = resolve
+      }),
+    )
+    connectPlace.mockReturnValueOnce(new Promise(() => {}))
+    const { sub } = create()
+
+    notePlacesMoved([savedPlace.id])
+    flushSync()
+    expect(connectPlace).toHaveBeenCalledTimes(2)
+
+    answerOldDial({ kind: 'cancelled' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    flushSync()
+    expect(sub.state?.kind).toBe('connecting')
+  })
 
   it('keeps the spinner while the reconnect manager owns the recovery', async () => {
     connectPlace.mockResolvedValue({ kind: 'reconnecting' })
