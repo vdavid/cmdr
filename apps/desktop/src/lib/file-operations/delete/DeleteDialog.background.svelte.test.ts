@@ -20,6 +20,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount, tick, unmount } from 'svelte'
 import type { OperationSnapshot } from '$lib/ipc/bindings'
 import type { DeleteConfirmer } from '$lib/file-explorer/pane/dialog-props'
+import { startScanPreview } from '$lib/tauri-commands'
 import DeleteDialog from './DeleteDialog.svelte'
 
 const { scanProgress, queueRows } = vi.hoisted(() => ({
@@ -253,8 +254,32 @@ describe('never a permanent delete', () => {
     await expectNoBackground(mountDialog({ isPermanent: true }))
   })
 
-  it('not for online-only cloud content', async () => {
-    await expectNoBackground(mountDialog({ isPermanent: true, supportsTrash: false, cloudOnlineOnly: 'all' }))
+  it('not for online-only cloud content, even on a dialog that opened as a trash', async () => {
+    // Opens as a trash on a volume that has one, so only the online-only routing
+    // can take the background away: drop it from the gate and this goes red.
+    await expectNoBackground(mountDialog({ isPermanent: false, supportsTrash: true, cloudOnlineOnly: 'all' }))
+  })
+
+  it('neither backgrounds nor confirms when Shift goes down while the press waits for the scan to start', async () => {
+    let startScan: (value: { previewId: string }) => void = () => {}
+    vi.mocked(startScanPreview).mockReturnValueOnce(
+      new Promise((resolve) => {
+        startScan = resolve
+      }),
+    )
+    const dialog = mountDialog()
+    await tick()
+
+    typeKey(dialog.target, { key: 'F2' })
+    await tick()
+    // The press is waiting on the scan start; Shift turns the dialog permanent.
+    typeKey(dialog.target, { key: 'Shift', shiftKey: true })
+    await tick()
+    startScan({ previewId: 'preview-late' })
+    await settle()
+
+    expect(dialog.backgrounds).toEqual([])
+    expect(dialog.confirms).toEqual([])
   })
 
   it('not inside an archive', async () => {
