@@ -143,8 +143,20 @@ the new ids up front: re-keying favorites and tabs to a guessed id would be over
 - **The direct-connection opt-out** is COPIED to the new address, ❌ not moved: an opt-out names a machine without a
   port, and another server on the old machine may share it.
 - **Go to path's recents** stay: an SMB path is an OS path under the mount, which names no server.
-- **The drive index and the media index's per-volume choices** (`settings.mediaIndex.alwaysIndexVolumes`): keyed by
-  volume id, so the new id starts a fresh index and loses an "always index" choice. Not carried yet: an open question.
+- **The media index's per-volume choices** (`mediaIndex.networkVolumes`, the network opt-in, and
+  `mediaIndex.alwaysIndexVolumes`): carried to the new id by the frontend's follow of the completing
+  `server-place-moved` (`media-index/network-volume-prefs.ts::followVolumeMove`, persisted and live-applied, new id set
+  before the old one clears). They're FE-owned settings, which is why the frontend carries them. Folder overrides
+  (`alwaysIndexFolders`, `excludedFolders`) are OS paths under the mount, which a move normally keeps, so they stay.
+- **The index stores** (`index-{id}.db`, `importance-{id}.db`, `media-{id}.db` with its vector index,
+  `cmdr-index/src/volume_files.rs`): ❌ not re-keyed; the new id starts fresh. Decision (2026-10-11): renaming them
+  isn't safe at completion. The new volume is registered (and its indexing may open `index-{new}.db`) BEFORE
+  `remember_mount` learns the move completed, so a rename would race a live SQLite + WAL file set, and the media store
+  has holders outside the lifecycle registry (`register_holder`). Rows also hold mount-rooted paths, which differ when
+  the share remounts at `/Volumes/public-1`. A fresh drive scan is cheap; the old files stay on disk under the old id
+  (the media store is never dropped for a merely absent volume). ❗ What's lost is the share's media enrichment (OCR,
+  embeddings) and its folder-visit importance: worth a dedicated re-key if a moved NAS with a big photo library shows
+  up.
 
 **Refusals**, each writing nothing:
 

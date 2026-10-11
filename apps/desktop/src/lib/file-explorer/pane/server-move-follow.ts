@@ -28,6 +28,8 @@
  *    (a dial to the old URL still out, which the move called off).
  * 4. A tab no pane is showing is respelled in place and its pane's tabs saved.
  * 5. `lastUsedPaths` moves to the new id.
+ * 6. Per-volume settings keyed by id (the media index's network opt-in and "always
+ *    index" choice) move to the new id.
  *
  * Each window's explorer subscribes on its own. Every step is idempotent, so two
  * windows following one move agree.
@@ -52,6 +54,8 @@ export interface ServerMoveFollowDeps {
   getLastUsedPath: (volumeId: string) => Promise<string | undefined>
   saveLastUsedPath: (record: Location) => Promise<void>
   forgetLastUsedPath: (volumeId: string) => Promise<void>
+  /** Carries per-volume settings keyed by id (the media index's choices) to a place's new id. */
+  followVolumePrefs: (ids: { oldVolumeId: string; newVolumeId: string }) => Promise<void>
 }
 
 /** Moves every id and path held on the moved server's places to its new address. */
@@ -89,14 +93,25 @@ export async function followServerMove(moved: ServerPlaceMoved, deps: ServerMove
     if (movedBehind) deps.saveTabs(pane)
   }
 
-  for (const place of moved.places) {
-    const remembered = await deps.getLastUsedPath(place.oldVolumeId)
-    if (remembered === undefined) continue
+  for (const place of moved.places) await followRememberedState(place, moved, deps)
+}
+
+/** Steps 5 and 6 for one place: what's remembered under its id moves to the new one. */
+async function followRememberedState(
+  place: ServerPlaceMoved['places'][number],
+  moved: ServerPlaceMoved,
+  deps: ServerMoveFollowDeps,
+): Promise<void> {
+  const rekeyed = place.newVolumeId !== place.oldVolumeId
+  const remembered = await deps.getLastUsedPath(place.oldVolumeId)
+  if (remembered !== undefined) {
     const path = pathAfterServerMove(remembered, moved.oldPrefix, moved.newPrefix)
-    if (place.newVolumeId === place.oldVolumeId && path === remembered) continue
-    await deps.saveLastUsedPath({ volumeId: place.newVolumeId, path })
-    if (place.newVolumeId !== place.oldVolumeId) await deps.forgetLastUsedPath(place.oldVolumeId)
+    if (rekeyed || path !== remembered) {
+      await deps.saveLastUsedPath({ volumeId: place.newVolumeId, path })
+      if (rekeyed) await deps.forgetLastUsedPath(place.oldVolumeId)
+    }
   }
+  if (rekeyed) await deps.followVolumePrefs({ oldVolumeId: place.oldVolumeId, newVolumeId: place.newVolumeId })
 }
 
 /**

@@ -594,12 +594,13 @@ is respelled by whole components (`pathAfterServerMove`), in one order: the stor
 first (`applyServerPlaceMoved`); every tab's back/forward history is respelled in place; each pane's active tab moves
 through `navigate()` (terminal `'fallback'`, no history push) onto the `saved` row, where `place-connect` dials it like
 any first open, so a new host's key or a missing password asks in the usual place; a background tab is respelled in
-place, keeping its cursor row (the same folder), and saved; `lastUsedPaths` moves to the new id. A place that kept its
-id (a WebDAV base path that moved, or an SMB share at Save) isn't navigated: its row going `saved` is what redials the
-pane. ❗ An SMB share's re-key comes later, at its first MOUNT at the new address, so its event carries the new id's
-live `connectionState` and the row keeps it (or the old row just goes, when the mount's own row is already listed): a
-row re-keyed as `saved` would make the pane dial a share that's up (`docs/notes/server-address-move.md` § "SMB: a
-pending move").
+place, keeping its cursor row (the same folder), and saved; `lastUsedPaths` moves to the new id, and so do the media
+index's per-volume choices (`followVolumeMove`, idempotent across windows: the second finds nothing under the old id). A
+place that kept its id (a WebDAV base path that moved, or an SMB share at Save) isn't navigated: its row going `saved`
+is what redials the pane. ❗ An SMB share's re-key comes later, at its first MOUNT at the new address, so its event
+carries the new id's live `connectionState` and the row keeps it (or the old row just goes, when the mount's own row is
+already listed): a row re-keyed as `saved` would make the pane dial a share that's up
+(`docs/notes/server-address-move.md` § "SMB: a pending move").
 
 ### A pane on a phone
 

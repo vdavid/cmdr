@@ -28,6 +28,7 @@ import { onServerPlaceMoved, onVolumeRootChanged, type Location } from '$lib/tau
 import { forgetLastUsedPathForVolume, getLastUsedPathForVolume, saveLastUsedPathForVolume } from '$lib/app-status-store'
 import { applyServerPlaceMoved, applyVolumeRootChanged } from '$lib/stores/volume-store.svelte'
 import { dismissSignInForPlaces } from '$lib/servers/sign-in-sheet-state.svelte'
+import { followVolumeMove } from '$lib/media-index/network-volume-prefs'
 import { getAppLogger } from '$lib/logging/logger'
 import { pathAfterRootChange } from '../navigation/root-change-follow'
 import { getActiveTab, type TabManager } from '../tabs/tab-state-manager.svelte'
@@ -118,6 +119,7 @@ export function createVolumeRootFollow(
       dismissSignInForPlaces(oldVolumeIds)
     },
     notePlacesMoved,
+    followVolumePrefs: ({ oldVolumeId, newVolumeId }) => followVolumeMove(oldVolumeId, newVolumeId),
   }
   let unlisteners: UnlistenFn[] = []
   return {

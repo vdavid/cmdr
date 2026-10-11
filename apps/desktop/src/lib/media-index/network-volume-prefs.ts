@@ -114,4 +114,29 @@ export async function setVolumeAlwaysIndexed(volumeId: string, always: boolean):
   }
 }
 
+// ── A volume whose id changed ───────────────────────────────────────────────
+
+/**
+ * Carries every per-VOLUME choice above from `oldId` to `newId`: a saved server moved,
+ * so its place has a new id (an SMB share at its first mount at the new address,
+ * `src-tauri/src/server_move_smb.rs`). Without it the share's photos quietly stop
+ * enriching. The new id is set before the old one is cleared, so a failure between the
+ * two leaves the choice doubled rather than lost. A choice the volume didn't have, or a
+ * move that kept the id, touches nothing.
+ *
+ * Folder overrides are OS paths under the mount, which a move normally keeps; they
+ * stay as they are.
+ */
+export async function followVolumeMove(oldId: string, newId: string): Promise<void> {
+  if (oldId === newId) return
+  if (isNetworkVolumeOptedIn(oldId)) {
+    await setNetworkVolumeOptedIn(newId, true)
+    await setNetworkVolumeOptedIn(oldId, false)
+  }
+  if (isVolumeAlwaysIndexed(oldId)) {
+    await setVolumeAlwaysIndexed(newId, true)
+    await setVolumeAlwaysIndexed(oldId, false)
+  }
+}
+
 // The per-folder "always index" override lives in `always-index-folders.ts`.

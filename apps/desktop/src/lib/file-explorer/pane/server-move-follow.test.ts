@@ -82,9 +82,36 @@ function harness(opts: HarnessOpts) {
       delete remembered[volumeId]
       return Promise.resolve()
     },
+    followVolumePrefs: ({ oldVolumeId, newVolumeId }) => {
+      prefsMoved.push(`${oldVolumeId}>${newVolumeId}`)
+      return Promise.resolve()
+    },
   }
-  return { managers, deps, navigate, saveTabs, remembered, order }
+  const prefsMoved: string[] = []
+  return { managers, deps, navigate, saveTabs, remembered, order, prefsMoved }
 }
+
+describe('followServerMove: per-volume settings', () => {
+  /** A media-index choice keyed by the old id would quietly switch off for the moved place. */
+  it('carries per-volume settings to a place whose id changed, and only that place', async () => {
+    const h = harness({ left: ['root', '/Users/ada'], right: ['root', '/Users/ada'] })
+    const kept = 'webdav-cloud-443-ada'
+
+    await followServerMove(MOVED, h.deps)
+    await followServerMove(
+      {
+        oldPrefix: 'webdav://ada@cloud:443',
+        newPrefix: 'webdav://ada@cloud:443',
+        places: [
+          { oldVolumeId: kept, newVolumeId: kept, newRoot: '', newLanding: '', name: 'Cloud', connectionState: null },
+        ],
+      },
+      h.deps,
+    )
+
+    expect(h.prefsMoved).toEqual([`${OLD_ID}>${NEW_ID}`])
+  })
+})
 
 describe('followServerMove: the panes', () => {
   /**

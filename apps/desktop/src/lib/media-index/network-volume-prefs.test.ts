@@ -101,4 +101,35 @@ describe('network-volume-prefs', () => {
     await expect(prefs.setVolumeAlwaysIndexed('smb-1', true)).rejects.toThrow('nope')
     expect(store.get('mediaIndex.alwaysIndexVolumes')).toEqual(['smb-1'])
   })
+
+  /**
+   * ❗ A server that moved gives its place a new id (an SMB share at its first mount at the new address), and a
+   * per-volume choice keyed by the old id would quietly switch off: the share's photos stop enriching.
+   */
+  describe('followVolumeMove', () => {
+    it('carries the opt-in and the always-index choice to the new id, both persisted and live', async () => {
+      store.set('mediaIndex.networkVolumes', ['smb-other', 'smb-old'])
+      store.set('mediaIndex.alwaysIndexVolumes', ['smb-old'])
+
+      await prefs.followVolumeMove('smb-old', 'smb-new')
+
+      expect(store.get('mediaIndex.networkVolumes')).toEqual(['smb-other', 'smb-new'])
+      expect(store.get('mediaIndex.alwaysIndexVolumes')).toEqual(['smb-new'])
+      expect(setNetworkVolumeEnabled).toHaveBeenCalledWith('smb-new', true)
+      expect(setNetworkVolumeEnabled).toHaveBeenCalledWith('smb-old', false)
+      expect(setAlwaysIndexVolume).toHaveBeenCalledWith('smb-new', true)
+      expect(setAlwaysIndexVolume).toHaveBeenCalledWith('smb-old', false)
+    })
+
+    it('touches nothing for a volume with no choice, or a move that kept its id', async () => {
+      store.set('mediaIndex.networkVolumes', ['smb-other'])
+
+      await prefs.followVolumeMove('smb-old', 'smb-new')
+      await prefs.followVolumeMove('smb-other', 'smb-other')
+
+      expect(store.get('mediaIndex.networkVolumes')).toEqual(['smb-other'])
+      expect(setNetworkVolumeEnabled).not.toHaveBeenCalled()
+      expect(setAlwaysIndexVolume).not.toHaveBeenCalled()
+    })
+  })
 })
