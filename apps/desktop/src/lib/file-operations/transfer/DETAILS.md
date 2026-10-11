@@ -1154,16 +1154,19 @@ smaller change, but it holds the slot until the id lands and can flash a frame.
 
 - **Conflict prompts**: no foreground claim and no foreground id, so `../operation-conflict.svelte.ts` owns any clash
   and asks on the main window, as for any backgrounded job. F2 never means "overwrite silently".
+- **Late dialogs never stack.** A background job's archive-password prompt and a refused start's error dialog wait in
+  `../../file-explorer/pane/when-dialogs-clear.svelte.ts` until nothing else is on screen (no dialog, no progress slot
+  held), then show, one per free moment. The person may be typing in a new setup dialog by then: a stacked prompt would
+  steal their keys, and its close would refocus the pane under the dialog still up. A held password prompt says so in a
+  quiet toast, so the wait is never silent.
 - **A refused start** (the backend says no before anything runs): the error dialog, with no failure to claim. Its Retry
   (and "Copy anyway") starts in the background again, because `startInBackground` rides on the retry props.
 - **Archive password**: the backend doesn't retain `archive_needs_password` as a failure, so with no dialog nobody would
   ask. The background module holds the session until the outcome lands and hands that one stop back; `dialog-state`
-  borrows the birth slot for the prompt, and a person's submit re-dispatches in the background again (fresh scan). With
-  the slot taken by a foreground operation, another progress dialog up, or a password prompt already open (a browse one
-  included), a warn toast says to start it again. A job sent to the background from the progress dialog gets the same
-  watch, which closed the same gap there. While Show has the job in the progress dialog, that view stays quiet about the
-  stop (`background.watches(id)` filters its error dialog) and the prompt replaces it, whichever hears the outcome
-  first.
+  borrows the birth slot for the prompt (once the window is free, above), and a person's submit re-dispatches in the
+  background again (fresh scan). A job sent to the background from the progress dialog gets the same watch, which closed
+  the same gap there. While Show has the job in the progress dialog, that view stays quiet about the stop
+  (`background.watches(id)` filters its error dialog), and the prompt follows once that view has closed.
 - **Errors after the start**: the retained failure, the failure toast
   (`$lib/status-corner/operation-failure-watch.svelte.ts`, which speaks for any failure no foreground slot claims, so a
   background start is covered without a second toast), and the corner chip. The two `write-error`s the backend doesn't

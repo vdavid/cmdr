@@ -44,6 +44,7 @@ import { createTransferPaneEffects } from './transfer-pane-effects'
 import { createAdoptedOperation } from './adopted-operation.svelte'
 import { createArchivePasswordFlow } from './archive-password-flow.svelte'
 import { createBackgroundOperations, type ArchiveNeedsPasswordError } from './background-operations.svelte'
+import { createWhenDialogsClear } from './when-dialogs-clear.svelte'
 import { createProgrammaticConfirm } from './programmatic-confirm'
 import { skippedDeleteConfirmation, skippedTransferConfirmation } from './confirmation-skip'
 import { getVolumes } from '$lib/stores/volume-store.svelte'
@@ -367,44 +368,43 @@ export function createDialogState(deps: DialogStateDeps) {
   })
 
   /**
+   * A background job's late dialogs (its archive-password prompt, a refused
+   * start's error dialog) wait here until nothing else is on screen. The person
+   * may be in a new setup dialog by now: stacking over it would steal their keys,
+   * and dropping it would lose the question. `when-dialogs-clear.svelte.ts`.
+   */
+  const whenDialogsClear = createWhenDialogsClear(() => anyDialogOpen() || progressSlotHolder() !== null)
+
+  /**
    * A background job stopped for its archive's password. The prompt needs the
    * birth slot (the submit re-dispatches from it), so it borrows the slot for as
-   * long as the prompt is up, with nothing mounted. A slot already held by a
-   * foreground operation, another operation's progress dialog, or a prompt
-   * already up can't be borrowed: the job has already ended (a password stop
-   * settles it), so a toast says how to get it back rather than overwriting what
-   * the person is looking at. The one dialog it may replace is this same job's,
-   * shown through Show: that view is closing on this very stop.
+   * long as the prompt is up, with nothing mounted. It asks once the window is
+   * free; held, a quiet toast says so, so the wait is never silent.
    */
   function promptBackgroundPassword(
     props: TransferProgressPropsData,
     error: ArchiveNeedsPasswordError,
     operationId: string | null,
   ): void {
-    const watchingThisJob = operationId !== null && adopted.props?.operationId === operationId
-    if (
-      progressSlotHolder() !== null ||
-      archivePassword.showDialog ||
-      (showTransferProgressDialog && !watchingThisJob)
-    ) {
-      log.info('{op} in the background needs an archive password, but the progress slot is taken', {
+    const askedNow = whenDialogsClear.run(() => {
+      transferProgressProps = props
+      archivePassword.promptForTransfer({
+        operationType: props.operationType,
+        parentVolumeId: props.sourceVolumeId,
+        archivePath: error.path,
+        wrongAttempt: error.wrongAttempt,
+        operationId,
+      })
+    })
+    if (!askedNow) {
+      log.info('{op} in the background needs an archive password; asking once the open dialog closes', {
         op: transferOpLabel(props.operationType),
       })
       addToast(
         tString('fileOperations.backgroundStart.needsPasswordToast', { archiveName: archiveNameFromPath(error.path) }),
-        { level: 'warn', timeoutMs: 10000 },
+        { level: 'info', timeoutMs: 10000 },
       )
-      return
     }
-    if (watchingThisJob) adopted.release()
-    transferProgressProps = props
-    archivePassword.promptForTransfer({
-      operationType: props.operationType,
-      parentVolumeId: props.sourceVolumeId,
-      archivePath: error.path,
-      wrongAttempt: error.wrongAttempt,
-      operationId,
-    })
   }
 
   const background = createBackgroundOperations({
@@ -420,8 +420,11 @@ export function createDialogState(deps: DialogStateDeps) {
         detail: getTechnicalDetails(error).replaceAll('\n', '; '),
       })
       // Nothing ran, so there is no retained failure to claim, and nothing to
-      // refresh. The Retry starts it in the background again.
-      openTransferError(props.operationType, error, null, null, retryPropsFrom(props))
+      // refresh. The Retry starts it in the background again. Held while another
+      // dialog is up, like the password prompt.
+      whenDialogsClear.run(() => {
+        openTransferError(props.operationType, error, null, null, retryPropsFrom(props))
+      })
     },
     onNeedsPassword: promptBackgroundPassword,
     onCompleted: (props, payload, operationId) => {

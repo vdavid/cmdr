@@ -279,6 +279,32 @@ describe('a background job that finishes', () => {
 })
 
 describe('a refused background start', () => {
+  it('holds the error dialog while another dialog is up, and opens it once that closes', async () => {
+    let refuse: (reason: unknown) => void = () => {}
+    vi.mocked(copyBetweenVolumes).mockImplementationOnce(
+      () =>
+        new Promise((_, reject) => {
+          refuse = reject
+        }),
+    )
+    const { dialogs } = makeState()
+    dialogs.showTransfer(transferDialogProps())
+    dialogs.handleTransferConfirm(confirmPayload({ startInBackground: true }))
+    // The person moves on to F8 before the backend answers.
+    dialogs.showDeleteConfirmation(deleteDialogProps())
+
+    refuse(Object.assign(new Error('inside'), { type: 'destination_inside_source', path: '/src' }))
+    await settle()
+
+    expect(dialogs.showTransferErrorDialog).toBe(false)
+    expect(dialogs.showDeleteDialog).toBe(true)
+
+    dialogs.handleDeleteCancel()
+    await settle()
+
+    expect(dialogs.showTransferErrorDialog).toBe(true)
+  })
+
   it('opens the error dialog, and its Retry starts in the background again', async () => {
     const refusal = Object.assign(new Error('inside'), { type: 'destination_inside_source', path: '/src' })
     vi.mocked(copyBetweenVolumes).mockImplementationOnce(() => Promise.reject(refusal))
@@ -317,7 +343,7 @@ describe('an archive password, for a job with no dialog', () => {
     expect(dialogs.transferProgressProps).toBeNull()
   })
 
-  it('says so in a toast when a foreground operation holds the slot, and leaves that one alone', async () => {
+  it('holds the prompt while a foreground operation has the slot, says so, and asks once it ends', async () => {
     const { dialogs } = await startCopyInBackground()
     dialogs.showTransfer(transferDialogProps())
     dialogs.handleTransferConfirm(confirmPayload({ destination: '/Users/me/other' }))
@@ -329,9 +355,40 @@ describe('an archive password, for a job with no dialog', () => {
     expect(dialogs.showArchivePasswordDialog).toBe(false)
     expect(dialogs.transferProgressProps).toBe(foreground)
     expect(addToast).toHaveBeenCalledWith(
-      '“secret.zip” needs its password. Start the operation again to type it in.',
-      expect.objectContaining({ level: 'warn' }),
+      '“secret.zip” needs its password. You’ll be asked as soon as the open dialog closes.',
+      expect.objectContaining({ level: 'info' }),
     )
+
+    dialogs.handleTransferComplete({
+      filesProcessed: 1,
+      filesSkipped: 0,
+      bytesProcessed: 1,
+      appearedDuringMove: null,
+      topLevelSkipped: null,
+      refused: null,
+    })
+    await settle()
+
+    expect(dialogs.showArchivePasswordDialog).toBe(true)
+    expect(dialogs.archivePasswordProps?.archivePath).toBe('/Users/me/secret.zip')
+  })
+
+  it('never stacks the prompt over a setup dialog the person opened meanwhile', async () => {
+    const { dialogs, onRefocus } = await startCopyInBackground()
+    dialogs.showTransfer(transferDialogProps())
+    onRefocus.mockClear()
+
+    listeners.error?.({ operationId: 'op-1', operationType: 'copy', error: needsPassword, progressAtStop: null })
+    await settle()
+
+    expect(dialogs.showArchivePasswordDialog).toBe(false)
+    expect(dialogs.showTransferDialog).toBe(true)
+    expect(onRefocus).not.toHaveBeenCalled()
+
+    dialogs.handleTransferCancel()
+    await settle()
+
+    expect(dialogs.showArchivePasswordDialog).toBe(true)
   })
 
   it.each([
@@ -379,6 +436,12 @@ describe('an archive password, for a job with no dialog', () => {
 
     expect(dialogs.archivePasswordProps?.archivePath).toBe('/Users/me/other.zip')
     expect(dialogs.transferProgressProps).toBeNull()
+
+    // Once that prompt is answered, the held one asks.
+    dialogs.handleArchivePasswordCancel()
+    await settle()
+
+    expect(dialogs.archivePasswordProps?.archivePath).toBe('/Users/me/secret.zip')
   })
 
   it('reaches a job sent to the background from the progress dialog, too', async () => {

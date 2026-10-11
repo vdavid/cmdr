@@ -536,10 +536,12 @@ describe('moveCursorByNameInFileListing parent offset', () => {
 })
 
 describe('delegating commands', () => {
-  it('confirmDialog forwards dialogType + onConflict to the dialog state', () => {
+  it('confirmDialog forwards dialogType, onConflict, and the background option to the dialog state', () => {
     const cmds = create(buildAccess())
-    cmds.confirmDialog('transfer-confirmation', 'overwrite')
-    expect(dialogsStub.confirmOpenDialog).toHaveBeenCalledWith('transfer-confirmation', 'overwrite')
+    cmds.confirmDialog('transfer-confirmation', 'overwrite', { startInBackground: true })
+    expect(dialogsStub.confirmOpenDialog).toHaveBeenCalledWith('transfer-confirmation', 'overwrite', {
+      startInBackground: true,
+    })
   })
 
   it('toggleVolumeChooser closes the other pane and toggles the target', () => {

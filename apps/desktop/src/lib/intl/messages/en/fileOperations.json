@@ -1401,9 +1401,9 @@
     "description": "Quiet toast shown after the user starts a copy, move, compress, or move to trash in the background from its confirmation dialog (F2 or the Background / Queue button). No progress window opens; the operation queue window shows up behind the main window, which keeps the keyboard. It may be running already or waiting its turn behind other operations, so the wording must not claim either. \"Operation queue\" is that window’s name; keep it identical to queue.windowTitle."
   },
 
-  "fileOperations.backgroundStart.needsPasswordToast": "“{archiveName}” needs its password. Start the operation again to type it in.",
+  "fileOperations.backgroundStart.needsPasswordToast": "“{archiveName}” needs its password. You’ll be asked as soon as the open dialog closes.",
   "@fileOperations.backgroundStart.needsPasswordToast": {
-    "description": "Warning toast for an operation that was running in the background and stopped because it reads from a password-protected archive (zip). Normally a password prompt appears; this toast shows instead when another operation’s progress window is on screen and the prompt can’t. Nothing was copied from the archive. \"Start the operation again\" means repeat the copy or move, which then asks for the password.",
+    "description": "Quiet toast for an operation that was running in the background and stopped because it reads from a password-protected archive (zip). It needs a password prompt, but another dialog is on screen, so the prompt waits and appears by itself the moment that dialog closes. Nothing is lost and the user doesn’t need to do anything now; the toast only says why the prompt isn’t up yet.",
     "placeholders": {
       "archiveName": "file name of the archive, for example \"photos.zip\""
     }

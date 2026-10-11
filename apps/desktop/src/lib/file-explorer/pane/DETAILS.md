@@ -1016,8 +1016,9 @@ retry to a full re-walk); that lives in `dialog-state.svelte.ts`'s `redispatchBi
 operation running with no progress dialog, so a background start never occupies the slot and the next F5 opens at once.
 The slot is BORROWED only for that job's archive-password prompt (the submit re-dispatches from it, back into the
 background because `startInBackground` rides on the props), and only when it's free: a slot held by a foreground
-operation is never overwritten, which is the same wrong-write hazard as above. Then a toast says to start the job again.
-Whole flow: `$lib/file-operations/transfer/DETAILS.md` § "Starting in the background".
+operation is never overwritten, which is the same wrong-write hazard as above. The prompt waits for that
+(`when-dialogs-clear.svelte.ts`), as it waits for any other dialog on screen. Whole flow:
+`$lib/file-operations/transfer/DETAILS.md` § "Starting in the background".
 
 **A refusal is the honest answer to an occupied slot**, and it is a toast in the main window rather than silence: the
 listener focuses this window whatever the verdict, because a refusal behind the queue window reads as a dead button.
