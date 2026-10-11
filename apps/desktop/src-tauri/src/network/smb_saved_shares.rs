@@ -15,7 +15,7 @@
 use std::time::Duration;
 
 use crate::commands::servers::ServerConnectOutcome;
-use crate::network::connect_wiring::AttemptTable;
+use crate::network::connect_wiring::{AttemptTable, DialTicket};
 use crate::network::known_shares::{self, AuthOptions, ConnectionMode, KnownNetworkShare};
 use crate::network::mount::MountError;
 use crate::network::one_shot_credentials::SecretOffer;
@@ -33,6 +33,13 @@ static ATTEMPTS: AttemptTable = AttemptTable::new("an smb share");
 /// finish, and then the share simply shows up mounted.
 pub fn cancel_connect(attempt_id: &str) -> bool {
     ATTEMPTS.cancel(attempt_id)
+}
+
+/// Calls off every saved-share connect to `place`, a share whose server just moved
+/// (`server_move::smb`). A courtesy only: [`connect_saved_share`]'s landing check is
+/// what keeps one from saving the old address again.
+pub fn cancel_dials_to(place: &str) -> usize {
+    ATTEMPTS.cancel_dials_to(place)
 }
 
 /// What a mount through Cmdr went through with, for [`remember_mount`].
@@ -53,9 +60,12 @@ pub struct MountedShare<'a> {
 /// A mount that doesn't say which volume it is (not an SMB mount, or one whose
 /// `statfs` didn't answer in time) is still recorded, without a place: the hub
 /// can list it, and the next mount fills the id in.
+///
+/// ❗ The first mount of a share whose server MOVED completes the move: its id is the
+/// one favorites and tabs re-key to (`server_move::smb::complete`).
 pub async fn remember_mount(mounted: MountedShare<'_>) -> Option<String> {
     let volume_id = smb_upgrade::mounted_volume_id(mounted.mount_path).await;
-    known_shares::remember_share(KnownNetworkShare {
+    let completed = known_shares::remember_share(KnownNetworkShare {
         server_name: mounted.host_name.to_string(),
         share_name: mounted.share.to_string(),
         protocol: "smb".to_string(),
@@ -75,6 +85,9 @@ pub async fn remember_mount(mounted: MountedShare<'_>) -> Option<String> {
         mount_path: volume_id.as_ref().map(|_| mounted.mount_path.to_string()),
         pinned: false,
     });
+    if let Some(completed) = completed {
+        crate::server_move::smb::complete(completed).await;
+    }
     volume_id
 }
 
@@ -182,13 +195,20 @@ fn favorited_share_row(
 /// ❗ A password is remembered only once the mount went through, SMB's rule
 /// everywhere (`servers/DETAILS.md` § "Remember, and who decides where it
 /// starts").
+///
+/// ❗ A mount to an address the share's server moved away from while it was out is
+/// neither remembered nor answered as connected (`set_out` is when the caller read the
+/// row, `connect_wiring::DialTicket`): remembering it would save the old address again
+/// beside the moved one. The kernel mount itself can't be taken back.
 pub async fn connect_saved_share(
     row: KnownNetworkShare,
+    set_out: DialTicket,
     attempt_id: &str,
     secret: Option<SecretOffer>,
     username: Option<String>,
 ) -> ServerConnectOutcome {
-    let (cancel, _attempt) = ATTEMPTS.register(attempt_id);
+    let place = known_shares::place_id(&row);
+    let (cancel, attempt) = ATTEMPTS.register_dialing(attempt_id, vec![place], set_out);
     let mut row = row;
     if let Some(username) = username.filter(|u| !u.trim().is_empty()) {
         row.username = Some(username.trim().to_string());
@@ -238,6 +258,9 @@ pub async fn connect_saved_share(
     )
     .await;
 
+    let Some(_landing) = attempt.land().await else {
+        return ServerConnectOutcome::Cancelled;
+    };
     if let (Some(username), Some(offer)) = (&row.username, &secret)
         && offer.remember
     {

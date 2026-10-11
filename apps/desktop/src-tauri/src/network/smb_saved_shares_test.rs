@@ -64,7 +64,7 @@ async fn a_share_that_never_mounted_has_nothing_to_dial() {
         mount_path: None,
         pinned: false,
     };
-    let answer = connect_saved_share(row, "never-mounted", None, None).await;
+    let answer = connect_saved_share(row, DialTicket::now(), "never-mounted", None, None).await;
     assert!(matches!(answer, ServerConnectOutcome::Unreachable), "got {answer:?}");
 }
 

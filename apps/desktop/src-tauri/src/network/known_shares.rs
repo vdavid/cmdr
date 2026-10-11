@@ -5,6 +5,7 @@
 
 use crate::ignore_poison::IgnorePoison;
 use crate::network::NetworkHost;
+use crate::network::server_identity::SmbServer;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -104,6 +105,33 @@ pub struct KnownSharesStore {
     /// [`direct_connection_enabled`].
     #[serde(default)]
     direct_connection_opt_outs: Vec<ShareRef>,
+    /// Saved shares whose server moved to a new address since their last mount, by the
+    /// volume id their row still carries (`server_move::smb`).
+    ///
+    /// ❗ The id stays the OLD one until a mount at the new address reports the real one,
+    /// since only the mount knows which spelling of the server it got. Meanwhile favorites
+    /// and tabs keep naming the old id, which now reaches the share at its new address;
+    /// the first mount there completes the move ([`remember_share`] answers it). On disk,
+    /// so a move survives a restart.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pending_moves: Vec<String>,
+}
+
+/// A share whose server moved, at the first mount that reported its id at the new
+/// address: what a pending move re-keys from and to (`server_move::smb::complete`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CompletedMove {
+    /// The id the share had before its server moved, which favorites and tabs still name.
+    pub old_volume_id: String,
+    /// Where the share's last mount before the move sat, which tabs on the old id spell.
+    pub old_mount_path: Option<String>,
+    /// The id the mount at the new address reported.
+    pub new_volume_id: String,
+    /// Where that mount sits.
+    pub new_mount_path: String,
+    pub share_name: String,
+    /// The name the row files the server under.
+    pub server_name: String,
 }
 
 /// In-memory cache of known shares, synchronized with disk.
@@ -303,12 +331,20 @@ fn same_share_row(a: &KnownNetworkShare, b: &KnownNetworkShare, hosts: &[Network
 /// add is the row with no address (every mount records the address it dialed), and
 /// `smb://host/share` typed with no user says nothing about who opens it: filing it
 /// "as nobody" made the next open ask for a password that was stored all along.
-fn upsert_share_row(rows: &mut Vec<KnownNetworkShare>, mut row: KnownNetworkShare, hosts: &[NetworkHost]) {
+///
+/// Answers the volume id and mount path the replaced row had, `None` for a new row or
+/// one with no id.
+fn upsert_share_row(
+    rows: &mut Vec<KnownNetworkShare>,
+    mut row: KnownNetworkShare,
+    hosts: &[NetworkHost],
+) -> Option<(String, Option<String>)> {
     match rows
         .iter_mut()
         .find(|existing| existing.is_share() && same_share_row(existing, &row, hosts))
     {
         Some(existing) => {
+            let previous = existing.volume_id.clone().map(|id| (id, existing.mount_path.clone()));
             let first_mount = existing.volume_id.is_none() && row.volume_id.is_some();
             row.pinned = existing.pinned || first_mount;
             row.volume_id = row.volume_id.or(existing.volume_id.take());
@@ -321,24 +357,123 @@ fn upsert_share_row(rows: &mut Vec<KnownNetworkShare>, mut row: KnownNetworkShar
             }
             row.address = row.address.or(existing.address.take());
             *existing = row;
+            previous
         }
         None => {
             row.pinned = row.volume_id.is_some();
             rows.push(row);
+            None
         }
     }
 }
 
+/// Files `row` in `store` ([`upsert_share_row`]), and completes the pending move of the
+/// share it replaced when the row brings the id a mount reported. Answers the move only
+/// when the id changed: a mount that minted the same id just ends the wait.
+fn remember_in(store: &mut KnownSharesStore, row: KnownNetworkShare, hosts: &[NetworkHost]) -> Option<CompletedMove> {
+    let reported = row.volume_id.clone().zip(row.mount_path.clone());
+    let (share_name, server_name) = (row.share_name.clone(), row.server_name.clone());
+    let (previous, old_mount_path) = upsert_share_row(&mut store.known_network_shares, row, hosts)?;
+    let (new_volume_id, new_mount_path) = reported?;
+    let pending = store.pending_moves.iter().position(|id| *id == previous)?;
+    store.pending_moves.remove(pending);
+    (previous != new_volume_id).then_some(CompletedMove {
+        old_volume_id: previous,
+        old_mount_path,
+        new_volume_id,
+        new_mount_path,
+        share_name,
+        server_name,
+    })
+}
+
 /// Records a saved share, or refreshes the one it already is. See
 /// [`upsert_share_row`], and `docs/specs/saved-smb-shares.md` for who may call it.
-pub fn remember_share(row: KnownNetworkShare) {
+///
+/// Answers a pending move the row just completed: the share's server moved, and this
+/// is its first mount at the new address (`server_move::smb::complete` follows it).
+pub fn remember_share(row: KnownNetworkShare) -> Option<CompletedMove> {
     debug_assert!(row.is_share(), "a share row names its share");
     let hosts = crate::network::fresh_discovered_hosts();
-    {
+    let completed = {
         let mut store = get_known_shares_mutex().lock_ignore_poison();
-        upsert_share_row(&mut store.known_network_shares, row, &hosts);
-    }
+        remember_in(&mut store, row, &hosts)
+    };
     save_known_shares();
+    completed
+}
+
+/// Points `rows` (a host's, as the servers listing filed them) at the server `to`,
+/// answering how many it found. See [`move_host_rows_in`].
+pub fn move_host_rows(rows: &[KnownNetworkShare], from: &SmbServer, to: &SmbServer) -> usize {
+    let hosts = crate::network::fresh_discovered_hosts();
+    let moved = {
+        let mut store = get_known_shares_mutex().lock_ignore_poison();
+        move_host_rows_in(&mut store, rows, from, to, &hosts)
+    };
+    if moved > 0 {
+        save_known_shares();
+    }
+    moved
+}
+
+/// Points `rows` at `to` in one pass under the lock: each row with an address dials the
+/// new one, a name that spelled the old address spells the new one, and each saved share
+/// with a volume id waits for its first mount there (`pending_moves`). A share's
+/// direct-connection opt-out is copied to the new address.
+///
+/// ❗ The volume id and mount path STAY: only a mount knows the new id, and the old one
+/// is what favorites, tabs, and the share's `saved` row name until then.
+///
+/// ❗ A name that ISN'T the old address (a Bonjour name, `Naspolya`) stays: it still names
+/// the server, and the password filed under it stays reachable. A row with no address
+/// (the host's sign-in history, or a share an Add named) has only its name to say which
+/// host it is, so it always takes the new one.
+fn move_host_rows_in(
+    store: &mut KnownSharesStore,
+    rows: &[KnownNetworkShare],
+    from: &SmbServer,
+    to: &SmbServer,
+    hosts: &[NetworkHost],
+) -> usize {
+    use crate::network::server_identity::{credential_key, smb_server};
+
+    let old_key = credential_key(&smb_server(from.host(), from.port()));
+    let new_name = crate::network::manual_servers::discovery_name(to.host(), to.port());
+    let mut moved = 0;
+    let mut shares = Vec::new();
+    for row in &mut store.known_network_shares {
+        if !rows.iter().any(|other| is_same_row(row, other)) {
+            continue;
+        }
+        if row.address.is_none() || credential_key(&row.server_name) == old_key {
+            row.server_name = new_name.clone();
+        }
+        if row.address.is_some() {
+            row.address = Some(to.host().to_string());
+            row.port = (to.port() != 445).then_some(to.port());
+        }
+        if let Some(id) = row.volume_id.clone().filter(|_| row.is_share())
+            && !store.pending_moves.contains(&id)
+        {
+            store.pending_moves.push(id);
+        }
+        if row.is_share() {
+            shares.push(row.share_name.clone());
+        }
+        moved += 1;
+    }
+    for share in shares {
+        if is_opted_out(&store.direct_connection_opt_outs, &[from.host()], &share, hosts)
+            && !is_opted_out(&store.direct_connection_opt_outs, &[to.host()], &share, hosts)
+        {
+            store.direct_connection_opt_outs.push(ShareRef {
+                server_name: to.host().to_string(),
+                share_name: share,
+            });
+        }
+    }
+    moved
 }
 
 /// Files `row` (a share row) in `rows` only when no row holds that share yet, answering whether it
@@ -437,6 +572,16 @@ fn forget_rows_in(rows: &mut Vec<KnownNetworkShare>, gone: &[KnownNetworkShare])
     before - rows.len()
 }
 
+/// [`forget_rows_in`] on the store, plus the pending moves no row is left to complete.
+fn forget_in(store: &mut KnownSharesStore, gone: &[KnownNetworkShare]) -> usize {
+    let removed = forget_rows_in(&mut store.known_network_shares, gone);
+    let rows = &store.known_network_shares;
+    store
+        .pending_moves
+        .retain(|id| rows.iter().any(|row| row.volume_id.as_deref() == Some(id)));
+    removed
+}
+
 /// Drops exactly the rows `gone` holds, as a caller read them from this store,
 /// answering how many went. ❗ Rows only: mounts and passwords stay.
 ///
@@ -447,7 +592,7 @@ fn forget_rows_in(rows: &mut Vec<KnownNetworkShare>, gone: &[KnownNetworkShare])
 pub fn forget_rows(gone: &[KnownNetworkShare]) -> usize {
     let removed = {
         let mut store = get_known_shares_mutex().lock_ignore_poison();
-        forget_rows_in(&mut store.known_network_shares, gone)
+        forget_in(&mut store, gone)
     };
     if removed > 0 {
         save_known_shares();

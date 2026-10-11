@@ -108,8 +108,12 @@ export function applyVolumeRootChanged(change: VolumeRootChanged): void {
  * (`server-place-moved`), ahead of the republish, the same way
  * `applyVolumeRootChanged` moves a root: a pane following the move navigates to
  * the NEW id, and `navigate()` needs a row to land on. Each row reads `saved`,
- * since the session at the old address is gone and the pane dials the new one.
- * The republish then lands the same values.
+ * since the session at the old address is gone and the pane dials the new one,
+ * ❗ except an SMB share's, whose move completes at its first MOUNT there: it
+ * carries its live state, so the pane following it doesn't dial a share that's
+ * up. When the new id already has a row (the mount's own republish landed
+ * first), the old row just goes: one id, one row. The republish then lands the
+ * same values.
  */
 export function applyServerPlaceMoved(moved: ServerPlaceMoved): void {
   let next = volumes
@@ -117,6 +121,10 @@ export function applyServerPlaceMoved(moved: ServerPlaceMoved): void {
     const idx = next.findIndex((v) => v.id === place.oldVolumeId)
     if (idx < 0) continue
     if (next === volumes) next = [...volumes]
+    if (place.newVolumeId !== place.oldVolumeId && next.some((v) => v.id === place.newVolumeId)) {
+      next.splice(idx, 1)
+      continue
+    }
     const landingPath = place.newLanding === place.newRoot ? null : place.newLanding
     next[idx] = {
       ...next[idx],
@@ -124,7 +132,7 @@ export function applyServerPlaceMoved(moved: ServerPlaceMoved): void {
       name: place.name,
       path: place.newRoot,
       landingPath,
-      connectionState: 'saved',
+      connectionState: place.connectionState ?? 'saved',
     }
   }
   volumes = next

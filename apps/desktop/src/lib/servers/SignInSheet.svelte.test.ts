@@ -26,7 +26,7 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   forgetServerSecret: vi.fn(() => Promise.resolve(true)),
   updateSavedServer: vi.fn(() => Promise.resolve({ outcome: 'saved' })),
   savedServerId: vi.fn(() => Promise.resolve('sftp-nas-local-22-ada')),
-  updateSavedSmbHost: vi.fn(() => Promise.resolve(true)),
+  updateSavedSmbHost: vi.fn(() => Promise.resolve({ outcome: 'saved' })),
   saveSftpCredentials: vi.fn(() => Promise.resolve()),
   saveWebdavCredentials: vi.fn(() => Promise.resolve()),
   approveSftpHostKey: vi.fn(() => Promise.resolve({ outcome: 'recorded' })),
@@ -1047,7 +1047,7 @@ describe('SignInSheet: edit mode', () => {
 
 /**
  * An SMB host is a manual-server entry, not an account with a place: its edit
- * renames it, and its address stays (it mints the entry's id).
+ * renames it, and a new address MOVES it (`src-tauri/src/server_move_smb.rs`).
  */
 describe('SignInSheet: editing an SMB host', () => {
   const SMB_HOST = {
@@ -1069,36 +1069,72 @@ describe('SignInSheet: editing an SMB host', () => {
     vi.mocked(commands.updateSavedServer).mockClear()
   })
 
-  it('opens on the name a person typed, with the address locked', async () => {
+  it('opens on the name a person typed, with the address open to a move', async () => {
     await renderSheet({ mode: 'edit', server: SMB_HOST })
 
     expect(document.body.querySelector<HTMLInputElement>('#server-name')?.value).toBe("Sven's NAS")
     const address = document.body.querySelector<HTMLInputElement>('#server-address')
     expect(address?.value).toBe('192.168.0.153')
-    expect(address?.disabled).toBe(true)
+    expect(address?.disabled).toBe(false)
     expect(document.body.querySelector('#server-secret')).toBeNull()
   })
 
   /**
-   * ❗ "Edit server…" from a row menu has to be typeable at once. The sheet used to
-   * focus Address, which Edit locks, so focus fell to the scrim and nothing took keys
-   * (QA 2026-09-25). The first field a person can type in is Name.
+   * ❗ "Edit server…" from a row menu has to be typeable at once, on the first field Edit
+   * lets a person change: the address, the likely reason to open Edit now that a host
+   * can move (`DETAILS.md` § "Edit mode opens on the first field it lets a person change").
    */
-  it('opens with the keyboard on Name, the first field Edit lets a person change', async () => {
+  it('opens with the keyboard on the address, the first field Edit lets a person change', async () => {
     await renderSheet({ mode: 'edit', server: SMB_HOST })
-    expect(document.activeElement).toBe(document.body.querySelector('#server-name'))
+    expect(document.activeElement).toBe(document.body.querySelector('#server-address'))
   })
 
-  /** A locked field says why it's locked: the Edit sheet greyed the address out with no word (QA round 2). */
-  it('says under the locked address why it can’t change here', async () => {
+  /** The address says what typing a new one does, SMB's own way: each share follows at its first open there. */
+  it('says under the address that typing a new one moves the server', async () => {
     await renderSheet({ mode: 'edit', server: SMB_HOST })
-    const why = document.body.querySelector('#server-address-locked')
-    expect(why?.textContent.trim()).toBe(
-      'The address is what identifies this server. To use another one, forget this server and add it again.',
+    const help = document.body.querySelector('#server-address-help')
+    expect(help?.textContent.trim()).toBe(
+      'Did the server move? Type its new address. Its shares and saved password come along, and each share’s favorites and open tabs follow it the first time it opens there.',
     )
-    expect(document.body.querySelector('#server-address')?.getAttribute('aria-describedby')).toBe(
-      'server-address-locked',
+    expect(document.body.querySelector('#server-address')?.getAttribute('aria-describedby')).toBe('server-address-help')
+  })
+
+  it('sends a new address to the SMB host writer, which moves the host', async () => {
+    const commands = await import('$lib/tauri-commands')
+    const { done } = await renderSheet({ mode: 'edit', server: SMB_HOST })
+    typeInto(
+      document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement,
+      'nas.tail1234.ts.net',
     )
+    await tick()
+
+    buttonSaying('Save').click()
+    await flush()
+
+    expect(commands.updateSavedSmbHost).toHaveBeenCalledWith(
+      'manual-192-168-0-153-445',
+      "Sven's NAS",
+      null,
+      'smb://nas.tail1234.ts.net',
+    )
+    expect(done).toEqual([{ kind: 'saved' }])
+  })
+
+  /** ❗ A share still mounted from the old address refuses the move, naming the share, and nothing closes. */
+  it('names the share to eject when one is still mounted from the old address', async () => {
+    const commands = await import('$lib/tauri-commands')
+    vi.mocked(commands.updateSavedSmbHost).mockResolvedValueOnce({ outcome: 'share_mounted', name: 'Photos' })
+    const { done } = await renderSheet({ mode: 'edit', server: SMB_HOST })
+    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, '192.168.0.200')
+    await tick()
+
+    buttonSaying('Save').click()
+    await flush()
+
+    expect(document.body.querySelector('#server-address-refusal')?.textContent.trim()).toBe(
+      'Photos is still mounted from the old address. Eject it, then save again.',
+    )
+    expect(done).toEqual([])
   })
 
   it('opens an unnamed host with an empty name and the address as its placeholder', async () => {
@@ -1122,7 +1158,12 @@ describe('SignInSheet: editing an SMB host', () => {
     buttonSaying('Save').click()
     await flush()
 
-    expect(commands.updateSavedSmbHost).toHaveBeenCalledWith('manual-192-168-0-153-445', 'Attic NAS', 'bob')
+    expect(commands.updateSavedSmbHost).toHaveBeenCalledWith(
+      'manual-192-168-0-153-445',
+      'Attic NAS',
+      'bob',
+      'smb://192.168.0.153',
+    )
     expect(commands.updateSavedServer).not.toHaveBeenCalled()
     expect(done).toEqual([{ kind: 'saved' }])
   })

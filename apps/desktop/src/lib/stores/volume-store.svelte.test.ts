@@ -253,6 +253,7 @@ describe('applyServerPlaceMoved', () => {
           newRoot: 'sftp://ada@10.0.0.5:22/srv/data',
           newLanding: 'sftp://ada@10.0.0.5:22/srv/data',
           name: 'Naspolya',
+          connectionState: null,
         },
       ],
     })
@@ -283,11 +284,71 @@ describe('applyServerPlaceMoved', () => {
           newRoot: 'sftp://ada@10.0.0.6:22/',
           newLanding: 'sftp://ada@10.0.0.6:22/',
           name: 'Elsewhere',
+          connectionState: null,
         },
       ],
     })
 
     expect(getVolumes()).toBe(before)
+  })
+
+  /**
+   * ❗ An SMB share's move completes at its first MOUNT at the new address, so the new
+   * id is already live: a row read as `saved` would make the pane following it dial a
+   * share that's up.
+   */
+  describe('an SMB share that just mounted at its new address', () => {
+    const saved: VolumeInfo = {
+      id: 'smb-localhost-11480-public',
+      name: 'public on localhost:11480',
+      path: '/Volumes/public',
+      category: 'network',
+      isEjectable: false,
+      connectionState: 'saved',
+    }
+    const moved = (path: string) => ({
+      oldPrefix: '/Volumes/public',
+      newPrefix: path,
+      places: [
+        {
+          oldVolumeId: saved.id,
+          newVolumeId: 'smb-127-0-0-1-11480-public',
+          newRoot: path,
+          newLanding: path,
+          name: 'public on 127.0.0.1:11480',
+          connectionState: 'direct' as const,
+        },
+      ],
+    })
+
+    it('reads the re-keyed row as live', async () => {
+      mockListVolumes.mockResolvedValue({ data: [saved], timedOut: false })
+      await initVolumeStore()
+
+      applyServerPlaceMoved(moved('/Volumes/public-1'))
+
+      expect(getVolumes()).toEqual([
+        {
+          ...saved,
+          id: 'smb-127-0-0-1-11480-public',
+          name: 'public on 127.0.0.1:11480',
+          path: '/Volumes/public-1',
+          landingPath: null,
+          connectionState: 'direct',
+        },
+      ])
+    })
+
+    /** The mount's own row may have landed first (`volumes-changed`): one id, one row. */
+    it('drops the old row when the new id already has one', async () => {
+      const live: VolumeInfo = { ...saved, id: 'smb-127-0-0-1-11480-public', connectionState: 'direct' }
+      mockListVolumes.mockResolvedValue({ data: [saved, live], timedOut: false })
+      await initVolumeStore()
+
+      applyServerPlaceMoved(moved('/Volumes/public'))
+
+      expect(getVolumes()).toEqual([live])
+    })
   })
 })
 

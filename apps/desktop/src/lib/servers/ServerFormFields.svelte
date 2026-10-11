@@ -187,8 +187,7 @@
     const addressDescribedBy = $derived.by(() => {
         if (addressRefusal) return addressRefusalHint ? 'server-address-refusal server-address-hint' : 'server-address-refusal'
         if (addressWarning) return 'server-address-warning'
-        if (addressEditable) return 'server-address-help'
-        return asksForCredentials ? undefined : 'server-address-locked'
+        return addressEditable ? 'server-address-help' : undefined
     })
     const isSftp = $derived(form.protocol === 'sftp')
     /** An empty start folder opens the root, so the root is what the empty field shows. */
@@ -285,9 +284,6 @@
         <p id="server-address-warning" class="field-warning" role="status">{addressWarning}</p>
     {:else if addressEditable && form.protocol !== 's3'}
         <p id="server-address-help" class="field-help">{addressHelp ?? tString(ADDRESS_HELP_KEY[form.protocol])}</p>
-    {:else if !asksForCredentials}
-        <!-- SMB: the account stays editable, so the address is the one locked field and says why here. -->
-        <p id="server-address-locked" class="field-help">{tString('servers.sheet.addressLocked')}</p>
     {/if}
     <!-- ❗ No "paste whatever you have" line under a field nobody can type in. In edit
          mode SFTP's and WebDAV's address says what typing a new one does (`addressHelp`),

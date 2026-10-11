@@ -307,6 +307,10 @@
   "@servers.refusal.operationRunning": {
     "sourceHash": "86e3a4d"
   },
+  "servers.refusal.shareMounted": "{name} is still mounted from the old address. Eject it, then save again.",
+  "@servers.refusal.shareMounted": {
+    "sourceHash": "74b3fbb"
+  },
   "servers.sheet.addTitle": "加入伺服器",
   "@servers.sheet.addTitle": {
     "sourceHash": "1099b2a"
@@ -407,10 +411,6 @@
   "@servers.sheet.addressLooksLikeWebdav": {
     "sourceHash": "a1185f1"
   },
-  "servers.sheet.addressLocked": "位址決定了這是哪個伺服器。要改用其他位址，先忘記這個伺服器，再重新加入。",
-  "@servers.sheet.addressLocked": {
-    "sourceHash": "b476060"
-  },
   "servers.sheet.accountLocked": "通訊協定和帳號決定了這是哪個伺服器。要改用其他帳號，就把它加入成新的伺服器。",
   "@servers.sheet.accountLocked": {
     "sourceHash": "248d279"
@@ -422,6 +422,10 @@
   "servers.sheet.addressMoveHelp": "伺服器搬家了嗎？輸入它的新位址。它的喜好項目、開著的分頁和已儲存的密碼都會跟著過去。",
   "@servers.sheet.addressMoveHelp": {
     "sourceHash": "210ff1c"
+  },
+  "servers.sheet.smbAddressMoveHelp": "Did the server move? Type its new address. Its shares and saved password come along, and each share’s favorites and open tabs follow it the first time it opens there.",
+  "@servers.sheet.smbAddressMoveHelp": {
+    "sourceHash": "df20723"
   },
   "servers.sheet.username": "使用者名稱",
   "@servers.sheet.username": {

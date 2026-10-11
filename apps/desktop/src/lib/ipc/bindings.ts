@@ -4571,9 +4571,10 @@ export const commands = {
    */
   savedServerId: (server: ServerTarget) => __TAURI_INVOKE<string | null>('saved_server_id', { server }),
   /**
-   *  Names the saved SMB host the listing calls `id` and sets the account it's used
-   *  with, answering whether there was one to name. An empty name unnames it, so
-   *  the UI calls it by its address again; no `username` clears the account.
+   *  Names the saved SMB host the listing calls `id`, sets the account it's used
+   *  with, and moves it to `address` when that names another server. An empty name
+   *  unnames it, so the UI calls it by its address again; no `username` clears the
+   *  account. A host nobody saved any more answers `unreachable`.
    *
    *  ❗ By the listing's id ALONE: the host's address and port come from the same
    *  listing the row was drawn from ([`smb_hosts::smb_host_group`]), so an edit can
@@ -4581,15 +4582,19 @@ export const commands = {
    *  saved where its mount dialed (naming it is what saves it: `manual_servers` §
    *  `name_server_entry_at_path`).
    *
+   *  ❗ A new address MOVES the host, its saved shares, and its passwords, and each
+   *  share's favorites and tabs follow at its first mount there
+   *  (`server_move_smb.rs`). The backend decides whether it's a move; the sheet
+   *  sends what the field holds.
+   *
    *  ❗ Its own command rather than a [`ServerTarget`] arm: an SMB host is a
-   *  manual-server entry, not an account with a place to dial, and the address
-   *  stays put (it mints the entry's id and the host the discovery list carries).
+   *  manual-server entry, not an account with a place to dial.
    *
    *  ❗ Emits `volumes-changed`, which is what makes an open servers hub re-read
    *  the saved list.
    */
-  updateSavedSmbHost: (id: string, name: string, username: string | null) =>
-    __TAURI_INVOKE<boolean>('update_saved_smb_host', { id, name, username }),
+  updateSavedSmbHost: (id: string, name: string, username: string | null, address: string | null) =>
+    __TAURI_INVOKE<SavedServerOutcome>('update_saved_smb_host', { id, name, username, address }),
   /**
    *  Names the saved S3 account the listing calls `id`, and moves it to `endpoint`
    *  when that names a new one. An empty name unnames it, so the UI calls it
@@ -10980,6 +10985,13 @@ export type MovedPlace = {
   newLanding: string
   // What it's called now.
   name: string
+  /**
+   *  How live the place is at its new id: `None` for a place the move left `saved`
+   *  (an SFTP, WebDAV, or S3 move drops the session, so the pane dials it there).
+   *  An SMB share's move completes at its first MOUNT at the new address, so its new
+   *  id is already live and a pane following it must not dial it again.
+   */
+  connectionState: ConnectionState | null
 }
 
 /**
@@ -13680,6 +13692,18 @@ export type SavedServerOutcome =
    *  would stop it like a Disconnect. Nothing was saved.
    */
   | { outcome: 'operation_running' }
+  /**
+   *  The edit moves an SMB host to a new address while one of its saved shares is
+   *  still mounted from the old one. Refused: that's an OS mount anyone may be using
+   *  (Finder, another app), so Cmdr doesn't take it down behind the person's back, and
+   *  a share mounted at the old address can't learn its id at the new one. Nothing
+   *  was saved.
+   */
+  | {
+      outcome: 'share_mounted'
+      // The mounted share's name, so the sentence can say which to eject.
+      name: string
+    }
   /**
    *  The edit names another protocol or account than the saved server it was
    *  raised on. Another account is another place, so it's an Add, ❌ never an

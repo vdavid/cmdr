@@ -17,6 +17,7 @@
 
 use super::{SavedPlace, SavedServer, ServerNameSource, ServerProtocol};
 use crate::network::known_shares::KnownNetworkShare;
+use crate::network::saved_server_fields::SavedServerOutcome;
 use crate::network::{NetworkHost, manual_servers};
 
 /// SMB's port when a store row names none.
@@ -94,6 +95,60 @@ pub(super) fn smb_hosts(
         .into_iter()
         .map(|group| group.server)
         .collect()
+}
+
+/// Saves an edit to the SMB host the listing calls `id`: its name and account in
+/// place, or, when `address` names another server, a move there
+/// (`server_move::smb::move_host`).
+///
+/// ❗ An address that doesn't parse answers `Unreachable`, the save nobody could
+/// confirm: the sheet refuses one before it gets here.
+pub(super) async fn edit_host(
+    id: &str,
+    edit: manual_servers::HostEdit,
+    address: Option<&str>,
+    app: &tauri::AppHandle,
+) -> SavedServerOutcome {
+    use crate::network::server_identity::SmbServer;
+
+    let manual = manual_servers::all(app);
+    let groups = smb_host_groups(
+        manual,
+        crate::network::known_shares::get_all_known_shares(),
+        &crate::network::fresh_discovered_hosts(),
+    );
+    let Some(at) = groups.iter().position(|group| group.server.id == id) else {
+        return SavedServerOutcome::Unreachable;
+    };
+    let to = match address.map(manual_servers::parse_server_address) {
+        None => None,
+        Some(Ok(parsed)) => Some(SmbServer::new(&parsed.host, parsed.port)),
+        Some(Err(_)) => return SavedServerOutcome::Unreachable,
+    };
+    let group = &groups[at];
+    let Some(to) = to.filter(|to| !(to.host().eq_ignore_ascii_case(&group.host) && to.port() == group.port)) else {
+        return if manual_servers::name_manual_server(id, &group.host, group.port, &edit, app) {
+            SavedServerOutcome::Saved
+        } else {
+            SavedServerOutcome::Unreachable
+        };
+    };
+    let others: Vec<(SmbServer, String)> = groups
+        .iter()
+        .filter(|other| other.server.id != id)
+        .map(|other| {
+            (
+                SmbServer::new(&other.host, other.port),
+                other.server.display_name.clone(),
+            )
+        })
+        .collect();
+    let host = crate::server_move::smb::SmbHost {
+        server: SmbServer::new(&group.host, group.port),
+        rows: group.rows.clone(),
+    };
+    let relocate = || manual_servers::relocate_manual_server(id, &to, &edit, app).map(|_| ());
+    crate::server_move::smb::move_host(host, to.clone(), &others, relocate).await
 }
 
 /// The saved SMB host the listing calls `id`, read from the stores as they are now.

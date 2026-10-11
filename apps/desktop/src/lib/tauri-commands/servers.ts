@@ -227,12 +227,17 @@ export async function forgetSavedSmbHostPassword(id: string): Promise<boolean> {
 
 /**
  * Names the saved SMB host the listing calls `id` and sets the account it's used
- * with; an empty name unnames it and a `null` account clears it. Answers whether
- * there was a host to name. The address never changes here, and it isn't passed:
- * the backend reads it off the same listing the row came from.
+ * with; an empty name unnames it and a `null` account clears it. An `address` that
+ * names another server MOVES the host there (`src-tauri/src/server_move_smb.rs`);
+ * the backend decides, so pass what the field holds.
  */
-export async function updateSavedSmbHost(id: string, name: string, username: string | null): Promise<boolean> {
-  return await commands.updateSavedSmbHost(id, name, username)
+export async function updateSavedSmbHost(
+  id: string,
+  name: string,
+  username: string | null,
+  address: string | null,
+): Promise<SavedServerOutcome> {
+  return await commands.updateSavedSmbHost(id, name, username, address)
 }
 
 /**

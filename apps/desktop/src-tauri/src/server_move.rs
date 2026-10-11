@@ -1,5 +1,6 @@
 //! A saved SFTP, WebDAV, or S3 server moving to a new address, and everything
-//! that follows it there.
+//! that follows it there. An SMB host's move waits for its shares' first mounts:
+//! `server_move_smb.rs`.
 //!
 //! A server that MOVED (a NAS on a new IP, `nas.local` → its Tailscale name, a new
 //! port) keeps its pin, its settings, its password, its favorites, and the tabs
@@ -332,7 +333,8 @@ fn leave_behind(moving: &mut connect_wiring::PlaceMove, places: &[String]) {
         moving.moved_away(place);
         let called_off = sftp_volume_wiring::cancel_dials_to(place)
             + webdav_volume_wiring::cancel_dials_to(place)
-            + s3_volume_wiring::cancel_dials_to(place);
+            + s3_volume_wiring::cancel_dials_to(place)
+            + crate::network::smb_saved_shares::cancel_dials_to(place);
         if called_off > 0 {
             log::info!(target: "volume", "called off {called_off} dial(s) to {place} at its old address");
         }
@@ -373,6 +375,7 @@ async fn follow(moved: Move) {
             new_root: place.app_root.clone(),
             new_landing: place.landing_path.clone().unwrap_or_else(|| place.app_root.clone()),
             name: place.name.clone(),
+            connection_state: None,
         });
         favorites.push((
             old_id.clone(),
@@ -479,6 +482,9 @@ async fn delete_secret(key: SecretKey) {
         log::warn!(target: "volume", "a moved server's password stays at its old address: kind={}", e.kind());
     }
 }
+
+#[path = "server_move_smb.rs"]
+pub mod smb;
 
 #[cfg(test)]
 #[path = "server_move_test.rs"]

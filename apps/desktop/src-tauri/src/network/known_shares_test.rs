@@ -203,6 +203,7 @@ fn test_store_serialization() {
             },
         ],
         direct_connection_opt_outs: Vec::new(),
+        pending_moves: Vec::new(),
     };
 
     let json = serde_json::to_string_pretty(&store).unwrap();
@@ -829,4 +830,232 @@ fn a_favorited_share_already_saved_is_left_alone() {
     assert!(rows[0].pinned);
     assert_eq!(rows[0].username.as_deref(), Some("david"));
     assert_eq!(rows[0].server_name, "Naspolya");
+}
+
+// -- A host that moved to a new address (`server_move::smb`) --
+
+fn store_of(rows: Vec<KnownNetworkShare>) -> KnownSharesStore {
+    KnownSharesStore {
+        known_network_shares: rows,
+        ..KnownSharesStore::default()
+    }
+}
+
+fn on_port(port: u16, row: KnownNetworkShare) -> KnownNetworkShare {
+    KnownNetworkShare {
+        port: (port != 445).then_some(port),
+        ..row
+    }
+}
+
+/// ❗ **A move rewrites where the host's rows dial, and KEEPS each share's volume id**,
+/// marking it pending: only the first mount at the new address knows the id it gets, so
+/// favorites and tabs keep naming the old one, which now reaches the share at its new address.
+#[test]
+fn a_host_move_points_its_rows_at_the_new_address_and_marks_mounted_shares_pending() {
+    let history = KnownNetworkShare {
+        share_name: String::new(),
+        address: None,
+        volume_id: None,
+        mount_path: None,
+        ..mounted("localhost:11480", "localhost", "x", Some("ada"), "unused")
+    };
+    let public = on_port(
+        11480,
+        mounted("localhost:11480", "localhost", "public", None, "smb-public"),
+    );
+    let named = added("localhost:11480", "later", None);
+    let other_server = on_port(
+        11482,
+        mounted("localhost:11482", "localhost", "public", None, "smb-other"),
+    );
+    let mut store = store_of(vec![history.clone(), public.clone(), named.clone(), other_server]);
+    let from = SmbServer::new("localhost", 11480);
+    let to = SmbServer::new("127.0.0.1", 11490);
+
+    let moved = move_host_rows_in(&mut store, &[history, public, named], &from, &to, &[]);
+
+    assert_eq!(moved, 3);
+    let rows = &store.known_network_shares;
+    for row in &rows[..3] {
+        assert_eq!(
+            row.server_name, "127.0.0.1:11490",
+            "{:?} files under the new address",
+            row.share_name
+        );
+    }
+    assert_eq!(rows[1].address.as_deref(), Some("127.0.0.1"));
+    assert_eq!(rows[1].port, Some(11490));
+    assert_eq!(
+        rows[1].volume_id.as_deref(),
+        Some("smb-public"),
+        "the id waits for a mount"
+    );
+    assert_eq!(rows[1].mount_path.as_deref(), Some("/Volumes/public"));
+    assert_eq!(rows[2].address, None, "an Add's row still names no mount");
+    assert_eq!(
+        store.pending_moves,
+        vec!["smb-public".to_string()],
+        "only a share with an id waits"
+    );
+    assert_eq!(
+        rows[3].server_name, "localhost:11482",
+        "another server on the machine stays"
+    );
+    assert_eq!(rows[3].address.as_deref(), Some("localhost"));
+}
+
+/// A mounted row filed under a name the person knows (a Bonjour name) keeps it: that
+/// name still names the server, and the password filed under it stays reachable.
+#[test]
+fn a_host_move_keeps_a_rows_bonjour_name() {
+    let row = mounted("Naspolya", "192.168.1.111", "naspi", Some("david"), "smb-n");
+    let mut store = store_of(vec![row.clone()]);
+
+    move_host_rows_in(
+        &mut store,
+        &[row],
+        &SmbServer::new("192.168.1.111", 445),
+        &SmbServer::new("nas.tail1234.ts.net", 445),
+        &[naspolya()],
+    );
+
+    let row = &store.known_network_shares[0];
+    assert_eq!(row.server_name, "Naspolya");
+    assert_eq!(row.address.as_deref(), Some("nas.tail1234.ts.net"));
+    assert_eq!(row.port, None, "445 stays unsaid");
+}
+
+/// ❗ **The first mount at the new address completes the move**: it reports the id the
+/// share really has now, the store files it, and the caller learns which id to re-key.
+#[test]
+fn the_first_mount_at_the_new_address_completes_a_pending_move() {
+    let public = on_port(
+        11480,
+        mounted("localhost:11480", "localhost", "public", None, "smb-old"),
+    );
+    let mut store = store_of(vec![public.clone()]);
+    let to = SmbServer::new("127.0.0.1", 11480);
+    move_host_rows_in(&mut store, &[public], &SmbServer::new("localhost", 11480), &to, &[]);
+
+    let completed = remember_in(
+        &mut store,
+        KnownNetworkShare {
+            mount_path: Some("/Volumes/public-1".to_string()),
+            ..on_port(
+                11480,
+                mounted("127.0.0.1:11480", "127.0.0.1", "public", None, "smb-new"),
+            )
+        },
+        &[],
+    );
+
+    let completed = completed.expect("the mount completes the move");
+    assert_eq!(completed.old_volume_id, "smb-old");
+    assert_eq!(completed.old_mount_path.as_deref(), Some("/Volumes/public"));
+    assert_eq!(completed.new_volume_id, "smb-new");
+    assert_eq!(completed.new_mount_path, "/Volumes/public-1");
+    assert_eq!(completed.share_name, "public");
+    assert_eq!(store.known_network_shares.len(), 1, "the same row, not a second one");
+    assert_eq!(store.known_network_shares[0].volume_id.as_deref(), Some("smb-new"));
+    assert!(store.pending_moves.is_empty());
+}
+
+/// A mount at the new address that minted the same id (the server spelled alike) has
+/// nothing to re-key: it just ends the wait. One that couldn't read its id keeps waiting.
+#[test]
+fn a_mount_that_minted_the_same_id_or_none_reports_no_move() {
+    let row = mounted("nas", "10.0.0.2", "photos", None, "smb-p");
+    let mut store = store_of(vec![row.clone()]);
+    move_host_rows_in(
+        &mut store,
+        &[row],
+        &SmbServer::new("10.0.0.2", 445),
+        &SmbServer::new("10.0.0.3", 445),
+        &[],
+    );
+
+    let unread = KnownNetworkShare {
+        volume_id: None,
+        mount_path: None,
+        ..mounted("10.0.0.3", "10.0.0.3", "photos", None, "unused")
+    };
+    assert!(remember_in(&mut store, unread, &[]).is_none());
+    assert_eq!(
+        store.pending_moves,
+        vec!["smb-p".to_string()],
+        "still waiting for an id"
+    );
+
+    assert!(
+        remember_in(
+            &mut store,
+            mounted("10.0.0.3", "10.0.0.3", "photos", None, "smb-p"),
+            &[]
+        )
+        .is_none()
+    );
+    assert!(store.pending_moves.is_empty());
+}
+
+/// ❗ **A pending move survives a restart**: it's in the store file, so a share moved
+/// today and first mounted next week still takes its favorites along.
+#[test]
+fn a_pending_move_is_written_to_the_store_file() {
+    let mut store = store_of(Vec::new());
+    store.pending_moves.push("smb-p".to_string());
+
+    let read: KnownSharesStore = serde_json::from_str(&serde_json::to_string(&store).unwrap()).unwrap();
+
+    assert_eq!(read.pending_moves, vec!["smb-p".to_string()]);
+}
+
+/// Forgetting a pending share forgets its wait too: nothing could complete it.
+#[test]
+fn forgetting_a_pending_share_drops_its_pending_move() {
+    let row = mounted("nas", "10.0.0.2", "photos", None, "smb-p");
+    let mut store = store_of(vec![row.clone()]);
+    move_host_rows_in(
+        &mut store,
+        std::slice::from_ref(&row),
+        &SmbServer::new("10.0.0.2", 445),
+        &SmbServer::new("10.0.0.3", 445),
+        &[],
+    );
+    let moved = store.known_network_shares.clone();
+
+    forget_in(&mut store, &moved);
+
+    assert!(store.pending_moves.is_empty());
+}
+
+/// The per-share direct-connection switch follows the share: an opt-out filed under the
+/// old address is copied to the new one (the old stays, since an opt-out names a machine,
+/// ❌ not a port, and another server there may share it).
+#[test]
+fn a_host_move_carries_a_shares_direct_connection_opt_out() {
+    let row = mounted("nas", "10.0.0.2", "photos", None, "smb-p");
+    let mut store = store_of(vec![row.clone()]);
+    apply_choice(&mut store.direct_connection_opt_outs, "10.0.0.2", "photos", false, &[]);
+
+    move_host_rows_in(
+        &mut store,
+        &[row],
+        &SmbServer::new("10.0.0.2", 445),
+        &SmbServer::new("10.0.0.3", 445),
+        &[],
+    );
+
+    assert!(is_opted_out(
+        &store.direct_connection_opt_outs,
+        &["10.0.0.3"],
+        "photos",
+        &[]
+    ));
+    assert!(is_opted_out(
+        &store.direct_connection_opt_outs,
+        &["10.0.0.2"],
+        "photos",
+        &[]
+    ));
 }

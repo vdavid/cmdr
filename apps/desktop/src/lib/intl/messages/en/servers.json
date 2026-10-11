@@ -397,6 +397,13 @@
   "@servers.refusal.operationRunning": {
     "description": "Above the buttons of the edit server sheet, when the user changed a saved server's address while a copy, move, or delete on that server is still running, paused, or waiting its turn. Moving the server would cut that work off, so nothing was saved. The user can let it finish, or cancel it from its progress window, then press Save again. Keep the opening the same as fileExplorer.navigation.disconnectBusyTooltip (“Cmdr is still working with files on this server”), which says the same thing about Disconnect."
   },
+  "servers.refusal.shareMounted": "{name} is still mounted from the old address. Eject it, then save again.",
+  "@servers.refusal.shareMounted": {
+    "description": "Under the Address field of the edit server sheet, when the user changed a saved SMB server's address while one of its shares (shared folders) is still mounted (connected as a disk) from the OLD address. Cmdr won't disconnect it on its own, since other apps may be using it, so nothing was saved. The user ejects the share (the same “Eject” as on the sidebar and in Finder), then presses Save again.",
+    "placeholders": {
+      "name": "the share's name, like \"Photos\" or \"public\""
+    }
+  },
   "servers.sheet.addTitle": "Add server",
   "@servers.sheet.addTitle": {
     "description": "Title of the sheet where the user types a new server. VERB phrase, imperative.",
@@ -518,11 +525,6 @@
   "@servers.sheet.addressLooksLikeWebdav": {
     "description": "Warning under the address field in the \"Add server\" form, shown while the user types an address that looks like it's for WebDAV (for example it starts with https://) but a different protocol is selected in the SMB / SFTP / WebDAV picker right above the field. Nothing changes on its own; the user decides. “WebDAV” is a protocol name; keep it as-is."
   },
-  "servers.sheet.addressLocked": "The address is what identifies this server. To use another one, forget this server and add it again.",
-  "@servers.sheet.addressLocked": {
-    "description": "Under the greyed-out Address field when editing a saved SMB server: why it can't be changed there. \"Forget\" matches the menu item \"Forget server\".",
-    "screenshot": "server-sign-in-edit.png"
-  },
   "servers.sheet.accountLocked": "The protocol and the account are what name this server. To use another account, add it as a new server.",
   "@servers.sheet.accountLocked": {
     "description": "Under the greyed-out Username field when the user is EDITING a saved SFTP or WebDAV server, explaining why the protocol (the SMB / SFTP / WebDAV / S3 picker) and the account can't be changed there, and what to do instead. The address above them CAN be changed, so don't say it can't. “Add” refers to adding a server from the Servers list."
@@ -534,6 +536,10 @@
   "servers.sheet.addressMoveHelp": "Did the server move? Type its new address. Its favorites, open tabs, and saved password come along.",
   "@servers.sheet.addressMoveHelp": {
     "description": "One line under the Address field when the user is EDITING a saved SFTP or WebDAV server, saying they can type the server's new address (for example after a NAS got a new IP address) and that nothing tied to the server is lost: favorites pointing into it, tabs open on it, and the password stored for it all follow it to the new address."
+  },
+  "servers.sheet.smbAddressMoveHelp": "Did the server move? Type its new address. Its shares and saved password come along, and each share’s favorites and open tabs follow it the first time it opens there.",
+  "@servers.sheet.smbAddressMoveHelp": {
+    "description": "One line under the Address field when the user is EDITING a saved SMB server (a NAS or a Windows PC whose shared folders, called “shares”, the user opens), saying they can type the server's new address (for example after the NAS got a new IP address) and that nothing tied to it is lost: its saved shares and stored password move right away, while favorites and tabs pointing into a share move over the first time that share is opened at the new address. Keep the wording of the opening the same as servers.sheet.addressMoveHelp. “Shares” is the SMB term for a server's shared folders; use the same word your translation uses elsewhere in the Servers list."
   },
   "servers.sheet.username": "Username",
   "@servers.sheet.username": {

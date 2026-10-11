@@ -35,6 +35,7 @@ const MOVED: ServerPlaceMoved = {
       newRoot: `${NEW_PREFIX}/srv/data`,
       newLanding: `${NEW_PREFIX}/srv/data`,
       name: 'Naspolya',
+      connectionState: null,
     },
   ],
 }
@@ -116,7 +117,16 @@ describe('followServerMove: the panes', () => {
       {
         oldPrefix: prefix,
         newPrefix: prefix,
-        places: [{ oldVolumeId: id, newVolumeId: id, newRoot: prefix, newLanding: prefix, name: 'Cloud' }],
+        places: [
+          {
+            oldVolumeId: id,
+            newVolumeId: id,
+            newRoot: prefix,
+            newLanding: prefix,
+            name: 'Cloud',
+            connectionState: null,
+          },
+        ],
       },
       h.deps,
     )

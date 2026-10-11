@@ -263,6 +263,11 @@ pub struct MovedPlace {
     pub new_landing: String,
     /// What it's called now.
     pub name: String,
+    /// How live the place is at its new id: `None` for a place the move left `saved`
+    /// (an SFTP, WebDAV, or S3 move drops the session, so the pane dials it there).
+    /// An SMB share's move completes at its first MOUNT at the new address, so its new
+    /// id is already live and a pane following it must not dial it again.
+    pub connection_state: Option<crate::file_system::volume::ConnectionState>,
 }
 
 /// The `ServerPlaceMoved` events emitted so far. Test-only, like

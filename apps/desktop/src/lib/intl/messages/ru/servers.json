@@ -307,6 +307,10 @@
   "@servers.refusal.operationRunning": {
     "sourceHash": "86e3a4d"
   },
+  "servers.refusal.shareMounted": "{name} is still mounted from the old address. Eject it, then save again.",
+  "@servers.refusal.shareMounted": {
+    "sourceHash": "74b3fbb"
+  },
   "servers.sheet.addTitle": "Добавить сервер",
   "@servers.sheet.addTitle": {
     "sourceHash": "1099b2a"
@@ -407,10 +411,6 @@
   "@servers.sheet.addressLooksLikeWebdav": {
     "sourceHash": "a1185f1"
   },
-  "servers.sheet.addressLocked": "Адрес определяет этот сервер. Чтобы использовать другой адрес, забудьте сервер и добавьте заново.",
-  "@servers.sheet.addressLocked": {
-    "sourceHash": "b476060"
-  },
   "servers.sheet.accountLocked": "Протокол и учетная запись определяют этот сервер. Чтобы использовать другую учетную запись, добавьте ее как новый сервер.",
   "@servers.sheet.accountLocked": {
     "sourceHash": "248d279"
@@ -422,6 +422,10 @@
   "servers.sheet.addressMoveHelp": "Сервер переехал? Введите его новый адрес. Избранное, открытые вкладки и сохраненный пароль перейдут вместе с ним.",
   "@servers.sheet.addressMoveHelp": {
     "sourceHash": "210ff1c"
+  },
+  "servers.sheet.smbAddressMoveHelp": "Did the server move? Type its new address. Its shares and saved password come along, and each share’s favorites and open tabs follow it the first time it opens there.",
+  "@servers.sheet.smbAddressMoveHelp": {
+    "sourceHash": "df20723"
   },
   "servers.sheet.username": "Имя пользователя",
   "@servers.sheet.username": {

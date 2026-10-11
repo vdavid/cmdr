@@ -550,6 +550,51 @@ fn a_server_move_leaves_a_lookalike_address_alone_and_reports_no_change() {
     assert_eq!(store.favorites[0].path, "sftp://ada@nas.local:2222/srv");
 }
 
+/// An SMB share's favorites live at OS paths under its mount, so a share whose server moved
+/// re-keys by volume id and rebases from the favorite's own root.
+#[test]
+fn a_share_move_re_keys_its_favorites_and_rebases_them_onto_the_new_mount() {
+    let mut store = FavoritesStore::default();
+    let share = |id: &str, root: &str| FavoriteVolume {
+        id: id.to_string(),
+        root: root.to_string(),
+        name: "public on localhost:11480".to_string(),
+    };
+    let id = add_to_store(
+        &mut store,
+        "/Volumes/public/docs",
+        Some("Docs".to_string()),
+        Some(share("smb-old", "/Volumes/public")),
+    );
+    // Another server's `public` that took the old mount point keeps its own path.
+    add_to_store(
+        &mut store,
+        "/Volumes/public/other",
+        None,
+        Some(share("smb-elsewhere", "/Volumes/public")),
+    );
+    let moved = share("smb-new", "/Volumes/public-1");
+
+    assert!(follow_share_move_in_store(&mut store, "smb-old", &moved));
+
+    let favorite = &store.favorites[0];
+    assert_eq!(favorite.id, id, "the same favorite");
+    assert_eq!(favorite.path, "/Volumes/public-1/docs");
+    assert_eq!(favorite.volume, Some(moved));
+    assert_eq!(
+        store.favorites[1].path, "/Volumes/public/other",
+        "❌ never by path prefix"
+    );
+    assert_eq!(
+        store.favorites[1].volume.as_ref().map(|v| v.id.as_str()),
+        Some("smb-elsewhere")
+    );
+    assert!(
+        !follow_share_move_in_store(&mut store, "smb-old", &share("smb-new", "/Volumes/public-1")),
+        "a second follow finds nothing left on the old id"
+    );
+}
+
 /// A move is the person editing a SERVER, ❌ not a favorites gesture.
 #[test]
 fn a_server_move_is_not_an_analytics_event() {

@@ -582,8 +582,9 @@ pub async fn add_manual_server<R: Runtime>(
 /// `server_id`, since such a pair would disagree about which host it is.
 ///
 /// ❗ The name and account only, on an entry that exists: the address and port are its
-/// identity (they mint the id and the host the discovery list carries), so an
-/// edit that wants another address is a Forget and an Add.
+/// identity (they mint the id and the host the discovery list carries), so an edit that
+/// wants another address MOVES the host instead (`relocate_manual_server`, from
+/// `server_move::smb`).
 fn name_server_entry_at_path(
     path: &Path,
     server_id: &str,
@@ -738,6 +739,10 @@ pub fn load_manual_servers<R: Runtime>(app_handle: &AppHandle<R>) {
 #[path = "manual_servers_account.rs"]
 mod account;
 pub use account::set_account;
+
+#[path = "manual_servers_relocate.rs"]
+mod relocate;
+pub use relocate::relocate_manual_server;
 
 #[path = "manual_servers_reachability.rs"]
 mod reachability;

@@ -111,6 +111,11 @@ export type ConnectRefusalKind =
    * would drop the session under it. Nothing was saved.
    */
   | 'operation_running'
+  /**
+   * Edit mode, SMB: one of the host's saved shares is still mounted from the old address (`RefusalSubject.share`
+   * names it). Cmdr doesn't eject an OS mount behind the person's back, so they eject it and save again.
+   */
+  | 'share_mounted'
 
 const REFUSAL_KEYS: Record<ConnectRefusalKind, MessageKey> = {
   authentication_rejected: 'servers.refusal.authenticationRejected',
@@ -143,6 +148,7 @@ const REFUSAL_KEYS: Record<ConnectRefusalKind, MessageKey> = {
   secret_not_moved: 'servers.refusal.secretNotMoved',
   account_changed: 'servers.refusal.accountChanged',
   operation_running: 'servers.refusal.operationRunning',
+  share_mounted: 'servers.refusal.shareMounted',
 }
 
 /**
@@ -171,6 +177,8 @@ export interface RefusalSubject {
   region?: string | null
   /** `address_taken` only: what the saved server already at that address is called. */
   takenBy?: string | null
+  /** `share_mounted` only: the share still mounted from the old address. */
+  share?: string | null
 }
 
 /** The one sentence a refusal says. */
@@ -180,6 +188,9 @@ export function wordConnectRefusal(kind: ConnectRefusalKind, subject: RefusalSub
   }
   if (kind === 'address_taken') {
     return tString('servers.refusal.addressTaken', { name: subject.takenBy ?? subject.host })
+  }
+  if (kind === 'share_mounted') {
+    return tString('servers.refusal.shareMounted', { name: subject.share ?? subject.host })
   }
   const key = (subject.protocol === 's3' ? S3_REFUSAL_KEYS[kind] : undefined) ?? REFUSAL_KEYS[kind]
   return tString(key, { host: subject.host, username: subject.username })
@@ -292,6 +303,8 @@ const REFUSAL_FIELDS: Record<ConnectRefusalKind, RefusalField> = {
   account_changed: 'form',
   // No field fixes a copy that's still running: letting it finish or canceling it does.
   operation_running: 'form',
+  // Under the address it's about: the move to it waits on the eject.
+  share_mounted: 'address',
 }
 
 /** Where `kind`'s sentence goes. */

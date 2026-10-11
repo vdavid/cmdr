@@ -40,6 +40,14 @@ describe('readSavedServerOutcome', () => {
       takenBy: 'Naspolya',
     })
   })
+
+  it('names the share still mounted from the old address an SMB move waits on', () => {
+    expect(readSavedServerOutcome({ outcome: 'share_mounted', name: 'Photos' })).toEqual({
+      kind: 'refused',
+      refusal: 'share_mounted',
+      share: 'Photos',
+    })
+  })
 })
 
 describe('readConnectOutcome', () => {

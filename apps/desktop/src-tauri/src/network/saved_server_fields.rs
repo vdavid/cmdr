@@ -77,6 +77,15 @@ pub enum SavedServerOutcome {
     /// as source or destination. Refused: the move drops the old session, which
     /// would stop it like a Disconnect. Nothing was saved.
     OperationRunning,
+    /// The edit moves an SMB host to a new address while one of its saved shares is
+    /// still mounted from the old one. Refused: that's an OS mount anyone may be using
+    /// (Finder, another app), so Cmdr doesn't take it down behind the person's back, and
+    /// a share mounted at the old address can't learn its id at the new one. Nothing
+    /// was saved.
+    ShareMounted {
+        /// The mounted share's name, so the sentence can say which to eject.
+        name: String,
+    },
     /// The edit names another protocol or account than the saved server it was
     /// raised on. Another account is another place, so it's an Add, ❌ never an
     /// edit; the sheet locks both fields, so only a broken caller sends one.

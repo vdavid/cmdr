@@ -283,6 +283,27 @@ fn follow_server_move_in_store(
     changed
 }
 
+/// Points every favorite on the SMB share `old_id` at the share's new volume, once the first mount
+/// at its server's new address reported its id (`server_move::smb`): the volume is replaced, and the
+/// path is rebased from the favorite's own root onto the new one. Returns whether anything changed.
+///
+/// ❗ By volume id, ❌ never by path prefix: a share's paths are OS paths under its mount point, and
+/// another server's same-named share may have taken the old mount point meanwhile.
+fn follow_share_move_in_store(store: &mut FavoritesStore, old_id: &str, moved: &FavoriteVolume) -> bool {
+    let mut changed = false;
+    for favorite in &mut store.favorites {
+        let Some(volume) = favorite.volume.as_mut().filter(|volume| volume.id == old_id) else {
+            continue;
+        };
+        if let Some(path) = rebase(&favorite.path, &volume.root, &moved.root) {
+            favorite.path = path;
+        }
+        *volume = moved.clone();
+        changed = true;
+    }
+    changed
+}
+
 /// Removes a favorite by id. Returns `true` if an entry was removed.
 fn remove_from_store(store: &mut FavoritesStore, id: &str) -> bool {
     let before = store.favorites.len();
@@ -660,6 +681,14 @@ pub fn claim_volumes(claims: &[(String, FavoriteVolume)]) {
 pub fn follow_server_move(old_prefix: &str, new_prefix: &str, moved: &[(String, FavoriteVolume)]) {
     mutate_and_persist(StoreChange::FollowedServerMove, |store| {
         follow_server_move_in_store(store, old_prefix, new_prefix, moved)
+    });
+}
+
+/// Persists [`follow_share_move_in_store`]: an SMB share whose server moved, at its first mount
+/// there. Reports nothing to analytics, like [`follow_server_move`].
+pub fn follow_share_move(old_id: &str, moved: &FavoriteVolume) {
+    mutate_and_persist(StoreChange::FollowedServerMove, |store| {
+        follow_share_move_in_store(store, old_id, moved)
     });
 }
 

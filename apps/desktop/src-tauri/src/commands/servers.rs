@@ -236,7 +236,9 @@ pub async fn connect_saved_place(
             .await,
         ),
         // A saved SMB share: mounted as its account, then connected the usual way.
-        SavedEntry::Smb(row) => smb_saved_shares::connect_saved_share(row, &attempt_id, secret, username).await,
+        SavedEntry::Smb(row) => {
+            smb_saved_shares::connect_saved_share(row, set_out, &attempt_id, secret, username).await
+        }
     })
 }
 
@@ -651,9 +653,10 @@ pub async fn update_saved_s3_account(
     outcome
 }
 
-/// Names the saved SMB host the listing calls `id` and sets the account it's used
-/// with, answering whether there was one to name. An empty name unnames it, so
-/// the UI calls it by its address again; no `username` clears the account.
+/// Names the saved SMB host the listing calls `id`, sets the account it's used
+/// with, and moves it to `address` when that names another server. An empty name
+/// unnames it, so the UI calls it by its address again; no `username` clears the
+/// account. A host nobody saved any more answers `unreachable`.
 ///
 /// ❗ By the listing's id ALONE: the host's address and port come from the same
 /// listing the row was drawn from ([`smb_hosts::smb_host_group`]), so an edit can
@@ -661,24 +664,31 @@ pub async fn update_saved_s3_account(
 /// saved where its mount dialed (naming it is what saves it: `manual_servers` §
 /// `name_server_entry_at_path`).
 ///
+/// ❗ A new address MOVES the host, its saved shares, and its passwords, and each
+/// share's favorites and tabs follow at its first mount there
+/// (`server_move_smb.rs`). The backend decides whether it's a move; the sheet
+/// sends what the field holds.
+///
 /// ❗ Its own command rather than a [`ServerTarget`] arm: an SMB host is a
-/// manual-server entry, not an account with a place to dial, and the address
-/// stays put (it mints the entry's id and the host the discovery list carries).
+/// manual-server entry, not an account with a place to dial.
 ///
 /// ❗ Emits `volumes-changed`, which is what makes an open servers hub re-read
 /// the saved list.
 #[tauri::command]
 #[specta::specta]
-pub fn update_saved_smb_host(id: String, name: String, username: Option<String>, app: tauri::AppHandle) -> bool {
-    let Some(group) = smb_hosts::smb_host_group(&id, manual_servers::all(&app)) else {
-        return false;
-    };
+pub async fn update_saved_smb_host(
+    id: String,
+    name: String,
+    username: Option<String>,
+    address: Option<String>,
+    app: tauri::AppHandle,
+) -> SavedServerOutcome {
     let edit = manual_servers::HostEdit { name, username };
-    let named = manual_servers::name_manual_server(&id, &group.host, group.port, &edit, &app);
-    if named {
+    let outcome = smb_hosts::edit_host(&id, edit, address.as_deref(), &app).await;
+    if outcome == SavedServerOutcome::Saved {
         crate::volume_broadcast::emit_volumes_changed();
     }
-    named
+    outcome
 }
 
 /// Forgets the saved SMB host the listing calls `id`: its manual entry, its

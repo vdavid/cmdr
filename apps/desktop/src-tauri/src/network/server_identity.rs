@@ -111,6 +111,18 @@ pub fn smb_mounts_from(targets: &[SmbServer]) -> Vec<String> {
         .collect()
 }
 
+/// The share of every SMB mount from one of `targets`, off the same mount-table snapshot
+/// as [`smb_mounts_from`].
+pub fn smb_shares_mounted_from(targets: &[SmbServer]) -> Vec<String> {
+    let hosts = super::fresh_discovered_hosts();
+    smb_mounts()
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|(_, info)| mount_is_from(info, targets, &hosts))
+        .map(|(_, info)| info.share)
+        .collect()
+}
+
 /// Lowercases, NFC-folds, and strips the trailing dot of a fully qualified name.
 ///
 /// The NFC fold pairs the spellings one accented server name arrives in: composed

@@ -70,9 +70,12 @@ export function readConnectOutcome(outcome: ServerConnectOutcome): ServerDialOut
 
 /**
  * How saving an edit ended: written, or refused with nothing written. `takenBy` names the saved server that
- * already holds the address an edit tried to move to (`address_taken`).
+ * already holds the address an edit tried to move to (`address_taken`); `share` names an SMB host's share still
+ * mounted from its old address (`share_mounted`).
  */
-export type SaveOutcome = { kind: 'saved' } | { kind: 'refused'; refusal: ConnectRefusalKind; takenBy?: string }
+export type SaveOutcome =
+  | { kind: 'saved' }
+  | { kind: 'refused'; refusal: ConnectRefusalKind; takenBy?: string; share?: string }
 
 /**
  * One save's answer, in the app's own vocabulary.
@@ -100,6 +103,8 @@ export function readSavedServerOutcome(outcome: SavedServerOutcome): SaveOutcome
       return { kind: 'refused', refusal: 'account_changed' }
     case 'operation_running':
       return { kind: 'refused', refusal: 'operation_running' }
+    case 'share_mounted':
+      return { kind: 'refused', refusal: 'share_mounted', share: outcome.name }
   }
 }
 

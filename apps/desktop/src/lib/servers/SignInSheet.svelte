@@ -100,6 +100,8 @@
     let refusalRegion = $state<string | null>(null)
     /** `address_taken`: what the saved server already at the typed address is called. */
     let refusalTakenBy = $state<string | null>(null)
+    /** `share_mounted`: the SMB host's share still mounted from its old address. */
+    let refusalShare = $state<string | null>(null)
     /**
      * Edit mode: the id the place has since a save that landed, which differs from the one the
      * sheet opened on once the save moved its address. Plain, not `$state`: nothing renders it.
@@ -191,17 +193,20 @@
         return 'servers.sheet.accountLocked'
     })
     /**
-     * Whether the address takes typing. ❗ In edit mode too for SFTP and WebDAV: a server
-     * that MOVED keeps its favorites, tabs, and password, because Save moves it
-     * (`src-tauri/src/server_move.rs`). ❌ Not an SMB host, whose share ids come off the
-     * mount (`docs/notes/server-address-move.md` § "SMB, deferred").
+     * Whether the address takes typing. ❗ In edit mode too: a server that MOVED keeps its
+     * favorites, tabs, and password, because Save moves it (`src-tauri/src/server_move.rs`;
+     * an SMB host's shares follow at their first mount there, `server_move_smb.rs`). An S3
+     * preset's endpoint stays locked: another region is other storage.
      */
     const addressEditable = $derived(
-        !isEdit ||
-            editedServer?.protocol === 'sftp' ||
-            editedServer?.protocol === 'webdav' ||
-            (s3EditScope === 'account' && form.s3.provider === 'other'),
+        !isEdit || editedServer?.protocol !== 's3' || (s3EditScope === 'account' && form.s3.provider === 'other'),
     )
+    /** The line under an edit's address: what typing a new one moves along, in each protocol's terms. */
+    const addressMoveHelpKey = $derived.by((): MessageKey => {
+        if (form.protocol === 's3') return 'servers.sheet.s3EndpointMoveHelp'
+        if (form.protocol === 'smb') return 'servers.sheet.smbAddressMoveHelp'
+        return 'servers.sheet.addressMoveHelp'
+    })
     const storeId = $derived.by(() => {
         if (request.mode !== 'edit') return null
         if (s3EditScope === 'account') return request.server.places[0]?.volumeId ?? request.server.id
@@ -282,6 +287,7 @@
             protocol: form.protocol,
             region: refusalRegion,
             takenBy: refusalTakenBy,
+            share: refusalShare,
         }
     })
 
@@ -732,23 +738,34 @@
     }
 
     /**
-     * Edit mode on an SMB host: its name and the account it's used with. ❗
-     * Nothing else is written, since the address is the entry's identity and SMB
-     * keeps its password per share mount, not here. A host that went away meanwhile (a Forget in another
-     * pane) reads as the save nobody could confirm.
+     * Edit mode on an SMB host: its name, the account it's used with, and its address,
+     * which MOVES the host when it names another server (`src-tauri/src/server_move_smb.rs`;
+     * the backend decides). No password is written here: SMB keeps it per share mount. A
+     * host that went away meanwhile (a Forget in another pane) reads as the save nobody
+     * could confirm.
      */
     async function saveSmbHost(id: string) {
         busy = true
         refusal = null
-        let found = false
+        refusalTakenBy = null
+        refusalShare = null
+        let answer: SaveOutcome = { kind: 'refused', refusal: 'save_unconfirmed' }
         try {
-            found = await updateSavedSmbHost(id, form.displayName.trim(), typedAccount(form.username))
+            const address = smbAddressFrom(form.address)
+            answer = readSavedServerOutcome(
+                await updateSavedSmbHost(id, form.displayName.trim(), typedAccount(form.username), address),
+            )
         } catch (e) {
             log.warn('Saving the edited SMB host broke down: {error}', { error: String(e) })
         }
         busy = false
-        if (found) close({ kind: 'saved' })
-        else await refuse('save_unconfirmed')
+        if (answer.kind === 'saved') {
+            close({ kind: 'saved' })
+            return
+        }
+        refusalTakenBy = answer.takenBy ?? null
+        refusalShare = answer.share ?? null
+        await refuse(answer.refusal)
     }
 
     /**
@@ -837,9 +854,7 @@
                 protocolEditable={!isEdit}
                 identityEditable={!isEdit}
                 {addressEditable}
-                addressHelp={isEdit
-                    ? tString(form.protocol === 's3' ? 'servers.sheet.s3EndpointMoveHelp' : 'servers.sheet.addressMoveHelp')
-                    : undefined}
+                addressHelp={isEdit ? tString(addressMoveHelpKey) : undefined}
                 identityHint={isEdit ? tString(identityHintKey) : undefined}
                 s3EditScope={s3EditScope ?? undefined}
                 addressRefusal={refusalWhere === 'address' ? refusalText : undefined}

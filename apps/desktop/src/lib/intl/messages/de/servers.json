@@ -309,6 +309,10 @@
   "@servers.refusal.operationRunning": {
     "sourceHash": "86e3a4d"
   },
+  "servers.refusal.shareMounted": "{name} is still mounted from the old address. Eject it, then save again.",
+  "@servers.refusal.shareMounted": {
+    "sourceHash": "74b3fbb"
+  },
   "servers.sheet.addTitle": "Server hinzufügen",
   "@servers.sheet.addTitle": {
     "sourceHash": "1099b2a"
@@ -409,10 +413,6 @@
   "@servers.sheet.addressLooksLikeWebdav": {
     "sourceHash": "a1185f1"
   },
-  "servers.sheet.addressLocked": "Die Adresse macht diesen Server aus. Um eine andere zu verwenden, vergiss diesen Server und füge ihn erneut hinzu.",
-  "@servers.sheet.addressLocked": {
-    "sourceHash": "b476060"
-  },
   "servers.sheet.accountLocked": "Protokoll und Konto machen diesen Server aus. Um ein anderes Konto zu verwenden, füge es als neuen Server hinzu.",
   "@servers.sheet.accountLocked": {
     "sourceHash": "248d279"
@@ -424,6 +424,10 @@
   "servers.sheet.addressMoveHelp": "Ist der Server umgezogen? Gib seine neue Adresse ein. Seine Favoriten, offenen Tabs und das gespeicherte Passwort kommen mit.",
   "@servers.sheet.addressMoveHelp": {
     "sourceHash": "210ff1c"
+  },
+  "servers.sheet.smbAddressMoveHelp": "Did the server move? Type its new address. Its shares and saved password come along, and each share’s favorites and open tabs follow it the first time it opens there.",
+  "@servers.sheet.smbAddressMoveHelp": {
+    "sourceHash": "df20723"
   },
   "servers.sheet.username": "Benutzername",
   "@servers.sheet.username": {
