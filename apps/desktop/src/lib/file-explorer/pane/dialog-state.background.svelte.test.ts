@@ -376,6 +376,7 @@ describe('an archive password, for a job with no dialog', () => {
   it('leaves the selection the person made since alone when the prompt is cancelled', async () => {
     const { dialogs, left } = await startCopyInBackground()
     // Dropped once, at the background start, like a Queue press.
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- vitest mock, no `this` binding
     expect(left.clearSelection).toHaveBeenCalledOnce()
 
     listeners.error?.({ operationId: 'op-1', operationType: 'copy', error: needsPassword, progressAtStop: null })
@@ -383,6 +384,7 @@ describe('an archive password, for a job with no dialog', () => {
     dialogs.handleArchivePasswordCancel()
     await settle()
 
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- vitest mock, no `this` binding
     expect(left.clearSelection).toHaveBeenCalledOnce()
     expect(dialogs.transferProgressProps).toBeNull()
   })
