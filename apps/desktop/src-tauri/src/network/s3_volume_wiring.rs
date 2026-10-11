@@ -99,10 +99,34 @@ pub async fn connect_and_register(
         access_key_id: access_key_id.trim().to_string(),
         bucket: bucket.map(str::trim).filter(|b| !b.is_empty()).map(str::to_string),
         auto_reconnect,
+        pinned: true,
+        last_connected_at: String::new(),
+    };
+    connect_and_register_since(
+        connect_wiring::DialTicket::now(),
+        display_name,
+        place,
+        attempt_id,
+        secret,
+    )
+    .await
+}
+
+/// [`connect_and_register`] for `place` as the store holds it, read at
+/// `set_out`, which was taken BEFORE that read (`connect_wiring::DialTicket`).
+pub async fn connect_and_register_since(
+    set_out: connect_wiring::DialTicket,
+    display_name: &str,
+    place: KnownS3Place,
+    attempt_id: &str,
+    secret: Option<SecretOffer>,
+) -> S3Connection {
+    let place = KnownS3Place {
         // A first connect pins the new place; `remember` keeps the stored pin
         // for a place already saved.
         pinned: true,
         last_connected_at: chrono::Utc::now().to_rfc3339(),
+        ..place
     };
     let Ok(params) = place.params() else {
         return S3Connection::InvalidProvider;
@@ -113,7 +137,7 @@ pub async fn connect_and_register(
     let places = vec![volume_id.clone(), s3_known_places::account_id(&params)];
     let (host, offer) =
         one_shot_credentials::host_for_dial(&params.credential_service(), params.access_key_id(), secret).await;
-    let (cancel, attempt) = ATTEMPTS.register_dialing(attempt_id, places);
+    let (cancel, attempt) = ATTEMPTS.register_dialing(attempt_id, places, set_out);
     // The root reads as its account, so a name typed in this very add is its label already.
     let label = match place.bucket {
         None if super::saved_server_fields::is_named(display_name) => display_name.trim().to_string(),

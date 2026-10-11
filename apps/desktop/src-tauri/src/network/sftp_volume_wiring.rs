@@ -126,11 +126,32 @@ pub async fn connect_and_register(
     attempt_id: &str,
     secret: Option<SecretOffer>,
 ) -> SftpConnection {
+    connect_and_register_since(
+        connect_wiring::DialTicket::now(),
+        display_name,
+        start_folder,
+        params,
+        attempt_id,
+        secret,
+    )
+    .await
+}
+
+/// [`connect_and_register`] for a dial whose target was read from the store
+/// at `set_out`, taken BEFORE that read (`connect_wiring::DialTicket`).
+pub async fn connect_and_register_since(
+    set_out: connect_wiring::DialTicket,
+    display_name: &str,
+    start_folder: Option<String>,
+    params: SftpConnectionParams,
+    attempt_id: &str,
+    secret: Option<SecretOffer>,
+) -> SftpConnection {
     let volume_id = cmdr_fs::volume::sftp_volume_id(&params.host, params.port, &params.username);
     let start_folder = saved_server_fields::start_folder_for_root(&params.remote_root.to_string_lossy(), start_folder);
     let (host, offer) =
         one_shot_credentials::host_for_dial(&params.credential_service(), &params.username, secret).await;
-    let (cancel, attempt) = ATTEMPTS.register_dialing(attempt_id, vec![volume_id.clone()]);
+    let (cancel, attempt) = ATTEMPTS.register_dialing(attempt_id, vec![volume_id.clone()], set_out);
     let label = saved_server_fields::server_label(display_name, &params.username, &params.host);
     let outcome = cmdr_sftp::connect_sftp_volume(&label, &volume_id, params.clone(), host, cancel).await;
 

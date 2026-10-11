@@ -94,11 +94,32 @@ async fn a_dial_whose_place_moved_while_it_was_out_cannot_land() {
     // ❗ The race the landing exists for: a dial to the OLD address that set out
     // before Save and succeeds after it would remember the old entry again, a
     // second saved server beside the moved one.
-    let (_cancel, attempt) = TABLE.register_dialing("dial-out-during-move", vec!["moved-while-out".to_string()]);
+    let (_cancel, attempt) = TABLE.register_dialing(
+        "dial-out-during-move",
+        vec!["moved-while-out".to_string()],
+        DialTicket::now(),
+    );
 
     let mut moving = start_move().await;
     moving.moved_away("moved-while-out");
     drop(moving);
+
+    assert!(attempt.land().await.is_none());
+}
+
+#[tokio::test]
+async fn a_dial_that_read_its_target_before_a_move_cannot_land_however_late_it_filed() {
+    // ❗ A saved place's dial reads its address from the store, THEN files its
+    // attempt. A move landing between the two would otherwise look older than the
+    // dial, and a host-key approval answered after a move would save the old
+    // address again. The ticket is taken before the read.
+    let set_out = DialTicket::now();
+    let mut moving = start_move().await;
+    moving.moved_away("read-before-move");
+    drop(moving);
+
+    let (_cancel, attempt) =
+        TABLE.register_dialing("dial-read-before-move", vec!["read-before-move".to_string()], set_out);
 
     assert!(attempt.land().await.is_none());
 }
@@ -109,7 +130,11 @@ async fn a_dial_that_set_out_after_the_move_lands() {
     moving.moved_away("moved-before-dial");
     drop(moving);
 
-    let (_cancel, attempt) = TABLE.register_dialing("dial-after-move", vec!["moved-before-dial".to_string()]);
+    let (_cancel, attempt) = TABLE.register_dialing(
+        "dial-after-move",
+        vec!["moved-before-dial".to_string()],
+        DialTicket::now(),
+    );
 
     assert!(
         attempt.land().await.is_some(),
@@ -121,7 +146,8 @@ async fn a_dial_that_set_out_after_the_move_lands() {
 async fn a_move_waits_for_a_dial_that_is_landing() {
     use futures_util::FutureExt;
 
-    let (_cancel, attempt) = TABLE.register_dialing("landing-now", vec!["landing-place".to_string()]);
+    let (_cancel, attempt) =
+        TABLE.register_dialing("landing-now", vec!["landing-place".to_string()], DialTicket::now());
     let landing = attempt.land().await.expect("nothing moved");
 
     assert!(
@@ -134,8 +160,10 @@ async fn a_move_waits_for_a_dial_that_is_landing() {
 
 #[test]
 fn a_move_calls_off_the_dials_to_its_place_and_only_those() {
-    let (to_moved, _guard) = TABLE.register_dialing("dial-to-moved", vec!["calls-off-this".to_string()]);
-    let (elsewhere, _other) = TABLE.register_dialing("dial-elsewhere", vec!["leaves-this".to_string()]);
+    let (to_moved, _guard) =
+        TABLE.register_dialing("dial-to-moved", vec!["calls-off-this".to_string()], DialTicket::now());
+    let (elsewhere, _other) =
+        TABLE.register_dialing("dial-elsewhere", vec!["leaves-this".to_string()], DialTicket::now());
 
     assert_eq!(TABLE.cancel_dials_to("calls-off-this"), 1);
 

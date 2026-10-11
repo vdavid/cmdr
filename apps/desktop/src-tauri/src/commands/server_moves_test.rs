@@ -212,8 +212,11 @@ async fn a_dial_to_the_old_address_that_was_out_during_the_move_is_called_off_an
     let _secrets = crate::test_support::isolate_secrets();
     let (old_host, new_host) = ("203.0.113.140", "203.0.113.141");
     sftp_known_servers::remember(sftp_entry(old_host, 22));
-    let (cancel, attempt) =
-        sftp_volume_wiring::attempts().register_dialing("server-move-dial-out", vec![sftp_id(old_host, 22)]);
+    let (cancel, attempt) = sftp_volume_wiring::attempts().register_dialing(
+        "server-move-dial-out",
+        vec![sftp_id(old_host, 22)],
+        crate::network::connect_wiring::DialTicket::now(),
+    );
 
     let outcome = update_saved_server(sftp_target(new_host, 22, "ada"), Some(sftp_id(old_host, 22))).await;
 

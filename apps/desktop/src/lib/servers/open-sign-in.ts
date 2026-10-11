@@ -199,6 +199,7 @@ export async function openSignInForPlace(request: SignInSeamRequest): Promise<Si
     shape,
     remembered,
     hostKey: firstOutcome?.outcome === 'needs_host_key_approval' ? firstOutcome : undefined,
+    placeId: volumeId,
     // Why the person is being asked. ❗ Read off the dial that sent them here
     // rather than assumed, so `needs_credentials` (nothing was ever offered) and
     // `authentication_rejected` (something was, and was refused) keep their own

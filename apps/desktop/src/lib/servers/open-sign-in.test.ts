@@ -25,7 +25,7 @@ let liveVolumes: { id: string; connectionState: string }[] = []
 vi.mock('$lib/stores/volume-store.svelte', () => ({ getVolumes: () => liveVolumes }))
 
 import { openAddServerSheet, openSignInForPlace } from './open-sign-in'
-import { closeSignInSheet, currentSignInRequest } from './sign-in-sheet-state.svelte'
+import { closeSignInSheet, currentSignInRequest, dismissSignInForPlaces } from './sign-in-sheet-state.svelte'
 import type { SignInAttempt, SignInSheetRequest } from './sign-in-contract'
 
 const VOLUME_ID = 'sftp-nas-local-22-ada'
@@ -200,6 +200,23 @@ describe('a place that is asking, with nothing registered', () => {
     const seam = openSignInForPlace({ volumeId: VOLUME_ID, registered: false })
     await parkedRequest()
     closeSignInSheet({ kind: 'cancelled' })
+    expect(await seam).toEqual({ signedIn: false })
+  })
+
+  /**
+   * ❗ A place that moved to a new address takes its open sheet down with it: a
+   * host key approved there afterwards would dial the OLD address. The pane
+   * follows the place and asks again at the new one.
+   */
+  it('closes as not signed in when its place moves, and leaves another place’s sheet open', async () => {
+    const seam = openSignInForPlace({ volumeId: VOLUME_ID, registered: false })
+    await parkedRequest()
+
+    dismissSignInForPlaces(['sftp-somewhere-else-22-ada'])
+    expect(currentSignInRequest()).not.toBeNull()
+    dismissSignInForPlaces([VOLUME_ID])
+
+    expect(currentSignInRequest()).toBeNull()
     expect(await seam).toEqual({ signedIn: false })
   })
 })

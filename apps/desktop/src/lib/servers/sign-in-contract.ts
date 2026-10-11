@@ -157,6 +157,11 @@ export type SignInSheetRequest =
       /** Opens on the key step instead of the fields, when a key is what's in the way. */
       hostKey?: HostKeyPrompt
       /**
+       * The saved place asking, when it's one (`openSignInForPlace`). A move of that place
+       * closes the sheet (`dismissSignInForPlaces`): its attempt would dial the OLD address.
+       */
+      placeId?: string
+      /**
        * Where the Remember box starts.
        *
        * ❗ The OPENER decides, ❌ never the sheet: an SFTP place is asked

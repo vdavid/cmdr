@@ -182,6 +182,10 @@ pub async fn connect_saved_place(
     {
         return Err(SavedPlaceRefusal::AlreadyConnected { volume_id });
     }
+    // ❗ Before the store read: a move landing between the read and the dial's
+    // landing must still refuse it, or a dial to the old address (a host-key
+    // approval answered after the move) saves it again (`connect_wiring::DialTicket`).
+    let set_out = crate::network::connect_wiring::DialTicket::now();
     let Some(saved) = saved_by_id(&volume_id) else {
         return Err(SavedPlaceRefusal::NoSuchServer { volume_id });
     };
@@ -192,7 +196,8 @@ pub async fn connect_saved_place(
             params.use_agent = entry.use_agent;
             params.auto_reconnect = entry.auto_reconnect;
             outcome_from_sftp(
-                sftp_volume_wiring::connect_and_register(
+                sftp_volume_wiring::connect_and_register_since(
+                    set_out,
                     &entry.display_name,
                     entry.start_folder,
                     params,
@@ -208,7 +213,8 @@ pub async fn connect_saved_place(
             };
             params.auto_reconnect = entry.auto_reconnect;
             outcome_from_webdav(
-                webdav_volume_wiring::connect_and_register(
+                webdav_volume_wiring::connect_and_register_since(
+                    set_out,
                     &entry.display_name,
                     entry.start_folder,
                     params,
@@ -219,13 +225,11 @@ pub async fn connect_saved_place(
             )
         }
         SavedEntry::S3(entry) => outcome_from_s3(
-            s3_volume_wiring::connect_and_register(
+            s3_volume_wiring::connect_and_register_since(
+                set_out,
                 // Nothing typed: the account keeps the name it has.
                 "",
-                entry.provider,
-                &entry.access_key_id,
-                entry.bucket.as_deref(),
-                entry.auto_reconnect,
+                entry,
                 &attempt_id,
                 secret,
             )

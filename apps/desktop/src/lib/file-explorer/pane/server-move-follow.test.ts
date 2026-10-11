@@ -60,6 +60,9 @@ function harness(opts: HarnessOpts) {
   const saveTabs = vi.fn()
   const remembered = { ...opts.remembered }
   const deps: ServerMoveFollowDeps = {
+    dismissSignIn: (oldVolumeIds) => {
+      order.push(`sign-in:${oldVolumeIds.join(',')}`)
+    },
     applyToVolumeList: () => {
       order.push('store')
     },
@@ -80,6 +83,10 @@ function harness(opts: HarnessOpts) {
 }
 
 describe('followServerMove: the panes', () => {
+  /**
+   * ❗ The old place's sign-in sheet goes FIRST: its host-key step would dial the old
+   * address, and the pane's redial at the new one may open a sheet of its own.
+   */
   it('moves a pane on the old address to the same folder at the new one, after the store patch', async () => {
     const h = harness({ left: [OLD_ID, `${OLD_PREFIX}/srv/data/photos`], right: ['root', '/Users/ada'] })
 
@@ -94,7 +101,7 @@ describe('followServerMove: the panes', () => {
       source: 'fallback',
       pushHistory: false,
     })
-    expect(h.order).toEqual(['store', 'navigate:left'])
+    expect(h.order).toEqual([`sign-in:${OLD_ID}`, 'store', 'navigate:left'])
   })
 
   it('redials a pane whose place kept its id without navigating it (a WebDAV base path that moved)', async () => {
@@ -112,7 +119,7 @@ describe('followServerMove: the panes', () => {
     )
 
     // The row went `saved` in the store patch, which is what makes the pane dial again.
-    expect(h.order).toEqual(['store'])
+    expect(h.order).toEqual([`sign-in:${id}`, 'store'])
   })
 })
 

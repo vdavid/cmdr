@@ -1120,13 +1120,20 @@ on its first dial.
 **A dial to the old address can't land after the move.** One that set out before Save and succeeded after it would
 `remember` the old entry again, a second saved server beside the moved one. Decision: the guarantee is a landing check
 under a lock, ❌ not cancellation. Each SFTP/WebDAV/S3 dial files its place ids (`register_dialing`, S3 adds the
-account id) and notes a move generation when it sets out; the move holds `connect_wiring::start_move` (a write lock) from
+account id) with a `DialTicket`, the move generation when it set out. ❗ A saved place's ticket is taken BEFORE
+`connect_saved_place` reads its address from the store: taken at filing, a move landing between the read and the filing
+would look older than the dial. The move holds `connect_wiring::start_move` (a write lock) from
 the secret copy to the session drop and marks each place it left behind; a dial that succeeded takes the read side
 (`AttemptGuard::land`) across went-through, install, and remember, and lets go of its volume as `Cancelled` when a place
 moved after it set out. So a dial lands wholly before a move (which takes it along) or wholly after (and is refused). Why
 not cancellation alone: a dial past its last token check lands anyway, and a store-lock check at remember time can't see
 the session it already installed. The move also calls off in-flight dials to the old ids (`cancel_dials_to`), which only
-saves them the trip. The pane ignores a dial's late answer once it stands on another place
+saves them the trip.
+
+A host-key prompt open for the old place is the same race stretched out: its approval runs `connect_saved_place` for the
+old id. Resolving the target from the store by place id at that moment is the guarantee (a moved place answers
+`NoSuchServer`, and one read just before the move is refused at landing by its ticket); the frontend also closes that
+sheet on `server-place-moved` (`dismissSignInForPlaces`), so the approval never asks the old machine at all. The pane ignores a dial's late answer once it stands on another place
 (`place-connect.svelte.ts`). The protocol and the account never move (`AccountChanged`). SMB stays locked: a share's id comes off
 its mount. The inventory behind each step and why: `docs/notes/server-address-move.md`.
 

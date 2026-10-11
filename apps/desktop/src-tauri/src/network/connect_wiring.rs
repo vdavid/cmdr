@@ -64,19 +64,23 @@ impl AttemptTable {
     /// ❗ Hold the guard for the whole dial. Dropping it early leaves the
     /// connect running with nothing able to stop it.
     pub fn register(&'static self, attempt_id: &str) -> (CancellationToken, AttemptGuard) {
-        self.register_dialing(attempt_id, Vec::new())
+        self.register_dialing(attempt_id, Vec::new(), DialTicket::now())
     }
 
     /// [`Self::register`] for a dial to a saved server's `places` (its volume
     /// id, and for S3 the account's too), which a move can call off
     /// ([`Self::cancel_dials_to`]) and which lands through
-    /// [`AttemptGuard::land`].
-    pub fn register_dialing(&'static self, attempt_id: &str, places: Vec<String>) -> (CancellationToken, AttemptGuard) {
+    /// [`AttemptGuard::land`]. `set_out` is when the dial read its target
+    /// ([`DialTicket`]): a move that landed after it refuses the landing.
+    pub fn register_dialing(
+        &'static self,
+        attempt_id: &str,
+        places: Vec<String>,
+        set_out: DialTicket,
+    ) -> (CancellationToken, AttemptGuard) {
         let cancel = CancellationToken::new();
         let serial = self.next_serial.fetch_add(1, Ordering::Relaxed);
-        // Before the entry is filed: a move that lands from here on is one this
-        // dial set out before, so its landing must see it.
-        let set_out_at = MOVE_GENERATION.load(Ordering::SeqCst);
+        let set_out_at = set_out.0;
         self.entries.lock_ignore_poison().insert(
             attempt_id.to_string(),
             Attempt {
@@ -212,8 +216,26 @@ impl Drop for AttemptGuard {
 // ============================================================================
 
 /// Bumped once per place a move takes away from its address. A dial notes it
-/// when it sets out ([`AttemptTable::register_dialing`]).
+/// when it sets out ([`DialTicket`]).
 static MOVE_GENERATION: AtomicU64 = AtomicU64::new(0);
+
+/// When a dial set out, measured in moves: every move that lands after it
+/// refuses the dial's landing ([`AttemptGuard::land`]).
+///
+/// ❗ Take it BEFORE reading the address the dial will use. A saved place's dial
+/// reads its entry from the store, then files its attempt; a move landing
+/// between the two would look older than a ticket taken at filing, and the dial
+/// (a host-key approval answered after the move, say) would save the old
+/// address again (`commands::servers::connect_saved_place`).
+#[derive(Debug, Clone, Copy)]
+pub struct DialTicket(u64);
+
+impl DialTicket {
+    /// A dial setting out now.
+    pub fn now() -> Self {
+        Self(MOVE_GENERATION.load(Ordering::SeqCst))
+    }
+}
 
 /// Each place id a move took away from its address, with the generation it
 /// moved at. One entry per move for the life of the process, so it stays tiny.

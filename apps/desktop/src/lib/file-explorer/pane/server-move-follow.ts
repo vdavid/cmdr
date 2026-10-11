@@ -10,6 +10,9 @@
  * and every path on it is respelled from the old address prefix to the new one,
  * by whole components. Applied in one order:
  *
+ * 0. ❗ A sign-in sheet open for an old place closes as cancelled
+ *    (`dismissSignInForPlaces`): its host-key step and its attempt would dial the
+ *    OLD address. First, so the pane's redial below can open a sheet of its own.
  * 1. ❗ The volume store's row is re-keyed FIRST (`applyServerPlaceMoved`), and
  *    reads `saved`. The event beats the debounced `volumes-changed`, and
  *    `navigate()` looks the new id up in the list.
@@ -34,6 +37,8 @@ import { getActiveTab, type TabManager } from '../tabs/tab-state-manager.svelte'
 import type { NavigateIntent, NavigateResult } from './navigate'
 
 export interface ServerMoveFollowDeps {
+  /** Closes a sign-in sheet open for one of the old place ids. */
+  dismissSignIn: (oldVolumeIds: string[]) => void
   /** Re-keys the volume store's rows to the new ids, roots, and names. */
   applyToVolumeList: (moved: ServerPlaceMoved) => void
   getTabMgr: (pane: 'left' | 'right') => TabManager
@@ -47,6 +52,7 @@ export interface ServerMoveFollowDeps {
 
 /** Moves every id and path held on the moved server's places to its new address. */
 export async function followServerMove(moved: ServerPlaceMoved, deps: ServerMoveFollowDeps): Promise<void> {
+  deps.dismissSignIn(moved.places.map((place) => place.oldVolumeId))
   deps.applyToVolumeList(moved)
   const newIdOf = new Map(moved.places.map((place) => [place.oldVolumeId, place.newVolumeId]))
   const respell = (location: Location): Location | null => {

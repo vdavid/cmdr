@@ -51,6 +51,21 @@ export function openSignInSheet(request: SignInSheetRequest): Promise<SignInShee
   })
 }
 
+/**
+ * Closes, as `cancelled`, a sign-in sheet open for one of `placeIds`: those places
+ * just moved to a new address (`server-place-moved`).
+ *
+ * ❗ Its host-key step and its attempt both dial the OLD address, so an approval
+ * answered after the move would ask the old machine to vouch for itself. The pane
+ * follows the place and asks again at the new one. The backend refuses such a
+ * dial's landing anyway (`connect_wiring::DialTicket`); this keeps it from dialing.
+ */
+export function dismissSignInForPlaces(placeIds: readonly string[]): void {
+  const request = sheet.open?.request
+  if (request?.mode !== 'sign-in' || request.placeId === undefined) return
+  if (placeIds.includes(request.placeId)) closeSignInSheet(CANCELLED)
+}
+
 /** Closes the sheet with `result`. Closing one that isn't open is a no-op. */
 export function closeSignInSheet(result: SignInSheetResult): void {
   const open = sheet.open

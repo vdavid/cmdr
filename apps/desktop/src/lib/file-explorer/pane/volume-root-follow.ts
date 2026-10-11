@@ -27,6 +27,7 @@ import type { VolumeRootChanged } from '$lib/ipc/bindings'
 import { onServerPlaceMoved, onVolumeRootChanged, type Location } from '$lib/tauri-commands'
 import { forgetLastUsedPathForVolume, getLastUsedPathForVolume, saveLastUsedPathForVolume } from '$lib/app-status-store'
 import { applyServerPlaceMoved, applyVolumeRootChanged } from '$lib/stores/volume-store.svelte'
+import { dismissSignInForPlaces } from '$lib/servers/sign-in-sheet-state.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { pathAfterRootChange } from '../navigation/root-change-follow'
 import { getActiveTab, type TabManager } from '../tabs/tab-state-manager.svelte'
@@ -112,6 +113,9 @@ export function createVolumeRootFollow(
       applyServerPlaceMoved(moved)
     },
     forgetLastUsedPath: (volumeId) => forgetLastUsedPathForVolume(volumeId),
+    dismissSignIn: (oldVolumeIds) => {
+      dismissSignInForPlaces(oldVolumeIds)
+    },
   }
   let unlisteners: UnlistenFn[] = []
   return {
