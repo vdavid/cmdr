@@ -1138,7 +1138,9 @@ closes (negative tests in `TransferDialog.background.test.ts` and `../delete/Del
 `isPermanent` is false, so the switch, a held Shift, online-only content (up front or found by the walk mid-confirm), an
 archive, and a volume with no trash all take them away, and `⇧F2` matches nothing. The confirm re-checks after its
 awaits (Shift can go down meanwhile), and the background callback `onConfirmInBackground(previewId)` carries no mode, so
-`dialog-state`'s `handleTrashInBackground` can only build a `trash`.
+`dialog-state`'s `handleTrashInBackground` can only build a `trash`. Two more locks behind it: `background.start`
+refuses a `delete` outright, and a permanent delete sent off with Queue isn't tagged `startInBackground`, so its
+password re-dispatch reopens the progress dialog.
 
 **No modal, ever.** `../../file-explorer/pane/dialog-state.svelte.ts` hands the birth props to
 `../../file-explorer/pane/background-operations.svelte.ts`, which starts them through

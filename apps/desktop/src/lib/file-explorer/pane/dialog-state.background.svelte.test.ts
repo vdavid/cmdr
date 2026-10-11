@@ -458,6 +458,31 @@ describe('an archive password, for a job with no dialog', () => {
     expect(dialogs.archivePasswordProps?.archivePath).toBe('/Users/me/secret.zip')
   })
 
+  it('restarts a permanent delete sent off with Queue in the progress dialog, never out of sight', async () => {
+    const { dialogs } = makeState()
+    dialogs.startTransferProgress({
+      operationType: 'delete',
+      sourcePaths: [`${SOURCE_FOLDER}/a.jpg`],
+      sourceFolderPath: SOURCE_FOLDER,
+      sourcePaneSide: 'left',
+      sortColumn: 'name',
+      sortOrder: 'ascending',
+      previewId: 'preview-1',
+      sourceVolumeId: 'root',
+      duplicateFollowUp: 'nothing',
+    })
+
+    dialogs.handleTransferQueue('op-1')
+    listeners.error?.({ operationId: 'op-1', operationType: 'delete', error: needsPassword, progressAtStop: null })
+    await settle()
+    dialogs.handleArchivePasswordSubmit('hunter2')
+    await settle()
+
+    expect(deleteFiles).not.toHaveBeenCalled()
+    expect(dialogs.showTransferProgressDialog).toBe(true)
+    expect(dialogs.transferProgressProps?.startInBackground).toBeUndefined()
+  })
+
   it('reaches a job sent to the background from the progress dialog, too', async () => {
     const { dialogs } = makeState()
     dialogs.showTransfer(transferDialogProps())

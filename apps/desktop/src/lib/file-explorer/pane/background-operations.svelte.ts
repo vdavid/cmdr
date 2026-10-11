@@ -125,6 +125,13 @@ export function createBackgroundOperations(deps: BackgroundOperationsDeps) {
    * job went, and the source pane's selection is dropped, as a Queue press does.
    */
   async function start(props: TransferProgressPropsData): Promise<void> {
+    // A permanent delete is the one operation nothing undoes, so it never starts
+    // where nobody watches it. No caller sends one (the delete dialog's background
+    // path builds a trash, Queue doesn't flag a delete); this holds the line.
+    if (props.operationType === 'delete') {
+      log.error('Refused to start a permanent delete in the background; it needs its progress dialog')
+      return
+    }
     log.info('{op} starting in the background', { op: transferOpLabel(props.operationType) })
     const result = await startTransferOperation(props)
     if (!result.started) {

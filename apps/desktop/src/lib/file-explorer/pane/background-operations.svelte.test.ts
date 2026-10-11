@@ -168,6 +168,17 @@ describe('starting in the background', () => {
     expect(deleteFiles).not.toHaveBeenCalled()
   })
 
+  it('never starts a permanent delete out of sight, whatever it is handed', async () => {
+    const { background, deps } = makeBackground()
+
+    await background.start(copyProps({ operationType: 'delete', destinationPath: undefined }))
+
+    expect(deleteFiles).not.toHaveBeenCalled()
+    expect(trashFiles).not.toHaveBeenCalled()
+    expect(openQueueWindow).not.toHaveBeenCalled()
+    expect(deps.onStartRefused).not.toHaveBeenCalled()
+  })
+
   it('hands a refused start back with its typed error, and touches nothing else', async () => {
     const refusal = Object.assign(new Error('inside'), { type: 'destination_inside_source', path: '/src' })
     vi.mocked(copyBetweenVolumes).mockImplementationOnce(() => Promise.reject(refusal))

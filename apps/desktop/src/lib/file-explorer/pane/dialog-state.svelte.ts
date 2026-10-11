@@ -783,7 +783,15 @@ export function createDialogState(deps: DialogStateDeps) {
       const op = transferProgressProps?.operationType ?? 'copy'
       log.info('{op} sent to the background (managed in the queue window)', { op: transferOpLabel(op) })
 
-      if (transferProgressProps) background.watch({ ...transferProgressProps, startInBackground: true }, operationId)
+      if (transferProgressProps) {
+        // It lives in the background now, so a password re-dispatch starts it there
+        // again. ❌ Except a permanent delete: that one restarts in its dialog.
+        const lives =
+          transferProgressProps.operationType === 'delete'
+            ? transferProgressProps
+            : { ...transferProgressProps, startInBackground: true }
+        background.watch(lives, operationId)
+      }
       paneEffects.clearSourcePaneAfterTransfer()
 
       showTransferProgressDialog = false
