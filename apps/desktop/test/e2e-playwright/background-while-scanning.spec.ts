@@ -170,4 +170,59 @@ test.describe('Backgrounding a transfer that is still counting', () => {
     await dismissAllToasts(main)
     await closeScopedWindow(main, queuePage, QUEUE_LABEL)
   })
+
+  // Total Commander's F5, F2 (#381): the copy dialog's F2 starts the copy in the
+  // background with NO progress dialog, not even for a frame. The held scan is
+  // what makes "never" checkable: a progress dialog would sit on screen for the
+  // whole delay.
+  test('F2 in the copy dialog starts the copy in the background without a progress dialog', async ({ tauriPage }) => {
+    const main = tauriPage as TauriPage
+    const fixtureRoot = getFixtureRoot()
+
+    await moveCursorToFile(main, SOURCE)
+    await pressKey(main, 'F5')
+    await main.waitForSelector(TRANSFER_DIALOG, 5000)
+    await main.evaluate(`(function() {
+      window.__progressDialogSeen = false;
+      var observer = new MutationObserver(function() {
+        if (document.querySelector(${JSON.stringify(PROGRESS_DIALOG)})) window.__progressDialogSeen = true;
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+      window.__progressDialogObserver = observer;
+    })()`)
+
+    await pressKey(main, 'F2')
+
+    // The operation exists while the dialog that started it is gone.
+    await expect
+      .poll(
+        async () =>
+          main.evaluate<boolean>(`(async function() {
+            var ops = await window.__TAURI_INTERNALS__.invoke('list_operations');
+            return ops.length > 0 && !document.querySelector(${JSON.stringify(TRANSFER_DIALOG)});
+          })()`),
+        { timeout: waitBudget(8000) },
+      )
+      .toBe(true)
+
+    const queuePage = await main.waitForWindow((w) => w.label === QUEUE_LABEL, { timeout: waitBudget(10_000) })
+    await expect
+      .poll(async () => queuePage.evaluate<number>(`document.querySelectorAll('.queue-row').length`), {
+        timeout: waitBudget(10_000),
+      })
+      .toBeGreaterThan(0)
+
+    await expect
+      .poll(() => fs.existsSync(path.join(fixtureRoot, 'right', SOURCE, 'file-0.txt')), { timeout: waitBudget(30_000) })
+      .toBe(true)
+
+    const progressDialogSeen = await main.evaluate<boolean>(`(function() {
+      if (window.__progressDialogObserver) window.__progressDialogObserver.disconnect();
+      return window.__progressDialogSeen === true;
+    })()`)
+    expect(progressDialogSeen, 'a background start never mounts the progress dialog').toBe(false)
+
+    await dismissAllToasts(main)
+    await closeScopedWindow(main, queuePage, QUEUE_LABEL)
+  })
 })

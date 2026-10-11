@@ -1,6 +1,7 @@
 /**
  * Tier 3 a11y tests for the file-operations chrome: the conflict dialog, the
- * rollback confirmation, the progress readout, the new-entry name field, and the
+ * rollback confirmation, the progress readout, the new-entry name field, the setup
+ * dialogs' Background button, and the
  * slow-create notice.
  *
  * One file per component would cost about three times as much: `svelte-tests`
@@ -59,6 +60,7 @@ import TransferProgressReadout from './TransferProgressReadout.svelte'
 import NewEntryNameField from './NewEntryNameField.svelte'
 import S3CostLine from './S3CostLine.svelte'
 import StillCreatingNotice from './StillCreatingNotice.svelte'
+import StartInBackgroundButton from './StartInBackgroundButton.svelte'
 import { NewEntryNameCheck } from './new-entry-name-check.svelte'
 
 // These components share one jsdom document, the dialogs portal into
@@ -309,5 +311,29 @@ describe('StillCreatingNotice a11y', () => {
     await tick()
     expect(host.querySelector('[role="status"]')).not.toBeNull()
     await expectNoA11yViolations(host)
+  })
+})
+
+/**
+ * Tier 3 a11y test for `StartInBackgroundButton.svelte`: the setup dialogs'
+ * Background / Queue button. Its spoken name must carry the visible word, so
+ * someone using both sight and a screen reader hears what they see.
+ */
+describe('StartInBackgroundButton a11y', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('has no a11y violations, enabled or disabled, and its name carries the visible word', async () => {
+    for (const disabled of [false, true]) {
+      document.body.innerHTML = ''
+      const host = document.createElement('div')
+      document.body.appendChild(host)
+      mount(StartInBackgroundButton, { target: host, props: { onclick: () => {}, disabled } })
+      await tick()
+      const button = host.querySelector('button')
+      expect(button?.getAttribute('aria-label')).toContain(button?.textContent.trim().toLowerCase())
+      await expectNoA11yViolations(host)
+    }
   })
 })
