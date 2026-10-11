@@ -154,5 +154,13 @@
   "servers.sheet.addressMoveHelp": "¿Se mudó el servidor? Escribe su nueva dirección. Sus favoritos, sus pestañas abiertas y su contraseña guardada pasan a la nueva dirección.",
   "@servers.sheet.addressMoveHelp": {
     "sourceHash": "92104e5"
+  },
+  "servers.refusal.operationRunning": "Cmdr sigue trabajando con archivos en este servidor, así que no se guardó nada. Deja que termine o cancélalo, y luego guarda la nueva dirección.",
+  "@servers.refusal.operationRunning": {
+    "sourceHash": "e3fa116"
+  },
+  "servers.sheet.smbAddressMoveHelp": "¿Se mudó el servidor? Escribe su nueva dirección. Sus recursos compartidos y su contraseña guardada pasan a la nueva dirección, y los favoritos y las pestañas abiertas de cada recurso compartido lo siguen la primera vez que se abra allí.",
+  "@servers.sheet.smbAddressMoveHelp": {
+    "sourceHash": "26f974b"
   }
 }

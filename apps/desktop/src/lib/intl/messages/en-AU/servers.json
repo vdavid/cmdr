@@ -6,5 +6,9 @@
   "servers.sheet.addressMoveHelp": "Did the server move? Type its new address. Its favourites, open tabs, and saved password come along.",
   "@servers.sheet.addressMoveHelp": {
     "sourceHash": "210ff1c"
+  },
+  "servers.sheet.smbAddressMoveHelp": "Did the server move? Type its new address. Its shares and saved password come along, and each share’s favourites and open tabs follow it the first time it opens there.",
+  "@servers.sheet.smbAddressMoveHelp": {
+    "sourceHash": "df20723"
   }
 }

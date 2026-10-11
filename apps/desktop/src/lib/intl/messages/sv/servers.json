@@ -304,11 +304,11 @@
   "@servers.refusal.accountChanged": {
     "sourceHash": "a0cf23d"
   },
-  "servers.refusal.operationRunning": "Cmdr is still working with files on this server, so nothing was saved. Let that finish or cancel it, then save the new address.",
+  "servers.refusal.operationRunning": "Cmdr arbetar fortfarande med filer på den här servern, så ingenting sparades. Låt det bli klart eller avbryt det, och spara sedan den nya adressen.",
   "@servers.refusal.operationRunning": {
     "sourceHash": "86e3a4d"
   },
-  "servers.refusal.shareMounted": "{name} is still mounted from the old address. Eject it, then save again.",
+  "servers.refusal.shareMounted": "Den delade mappen {name} är fortfarande monterad från den gamla adressen. Mata ut den och spara sedan igen.",
   "@servers.refusal.shareMounted": {
     "sourceHash": "74b3fbb"
   },
@@ -424,7 +424,7 @@
   "@servers.sheet.addressMoveHelp": {
     "sourceHash": "210ff1c"
   },
-  "servers.sheet.smbAddressMoveHelp": "Did the server move? Type its new address. Its shares and saved password come along, and each share’s favorites and open tabs follow it the first time it opens there.",
+  "servers.sheet.smbAddressMoveHelp": "Har servern flyttat? Skriv in den nya adressen. De delade mapparna och det sparade lösenordet följer med, och favoriterna och de öppna flikarna i varje delad mapp följer med första gången mappen öppnas där.",
   "@servers.sheet.smbAddressMoveHelp": {
     "sourceHash": "df20723"
   },

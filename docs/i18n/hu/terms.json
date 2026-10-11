@@ -3052,7 +3052,7 @@
   },
   "save": {
     "chosen": "Mentés",
-    "accept": ["mentve", "mentett", "menteni", "mentés", "elment", "mentsd", "megmarad", "menti el"],
+    "accept": ["mentve", "mentett", "menteni", "mentés", "elment", "mentsd", "ments", "megmarad", "menti el"],
     "forms": "button Mentés, quoted in prose as a Mentés gombot; state Saved → Mentve; attributive Mentett",
     "confidence": "high",
     "sources": "macOS Finder (AL2 Mentés, 171×); Preview (SignatureSaved Mentve)",

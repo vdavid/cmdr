@@ -303,11 +303,11 @@
   "@servers.refusal.accountChanged": {
     "sourceHash": "a0cf23d"
   },
-  "servers.refusal.operationRunning": "Cmdr is still working with files on this server, so nothing was saved. Let that finish or cancel it, then save the new address.",
+  "servers.refusal.operationRunning": "A Cmdr még fájlokkal dolgozik ezen a szerveren, ezért nem mentett semmit. Várd meg, amíg befejeződik, vagy szakítsd meg, aztán mentsd el az új címet.",
   "@servers.refusal.operationRunning": {
     "sourceHash": "86e3a4d"
   },
-  "servers.refusal.shareMounted": "{name} is still mounted from the old address. Eject it, then save again.",
+  "servers.refusal.shareMounted": "Ez a megosztás még a régi címről van csatolva: „{name}”. Add ki, aztán ments újra.",
   "@servers.refusal.shareMounted": {
     "sourceHash": "74b3fbb"
   },
@@ -423,7 +423,7 @@
   "@servers.sheet.addressMoveHelp": {
     "sourceHash": "210ff1c"
   },
-  "servers.sheet.smbAddressMoveHelp": "Did the server move? Type its new address. Its shares and saved password come along, and each share’s favorites and open tabs follow it the first time it opens there.",
+  "servers.sheet.smbAddressMoveHelp": "Elköltözött a szerver? Írd be az új címét. A megosztásai és a mentett jelszava is átkerülnek az új címre, az egyes megosztások kedvencei és nyitott lapjai pedig akkor kerülnek át, amikor a megosztás először megnyílik ott.",
   "@servers.sheet.smbAddressMoveHelp": {
     "sourceHash": "df20723"
   },

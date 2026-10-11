@@ -250,3 +250,7 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
 - No `start` concept: starting an operation now reads `starten`, `Iniciar`, `Démarrer`, `Indítás`, `Start`, `Запустить`,
   `Starta`, `Bắt đầu`, `开始` (`fileOperations.backgroundStart.*Aria`, `.tooltip`). Mine the pile and add a ruled
   concept.
+- `servers.sheet.smbAddressMoveHelp`: in "follow it the first time it opens there", both `it`s could be the server or
+  the share, and `there` is vague. Say "…follow once that share opens at the new address". (all locales named the share)
+- `servers.refusal.shareMounted`: "{name} is still mounted" makes gendered locales agree with an insert; most named the
+  type first ("The share {name}…"). Consider "The share {name} is still mounted…" in English too. (es, fr, pt, ru, sv)
