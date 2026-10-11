@@ -320,16 +320,23 @@ export function createDialogState(deps: DialogStateDeps) {
    * A background job stopped for its archive's password. The prompt needs the
    * birth slot (the submit re-dispatches from it), so it borrows the slot for as
    * long as the prompt is up, with nothing mounted. A slot already held by a
-   * foreground operation, or a progress dialog on screen, can't be borrowed: the
-   * job has already ended (a password stop settles it), so a toast says how to
-   * get it back rather than overwriting the operation the person is watching.
+   * foreground operation, another operation's progress dialog, or a prompt
+   * already up can't be borrowed: the job has already ended (a password stop
+   * settles it), so a toast says how to get it back rather than overwriting what
+   * the person is looking at. The one dialog it may replace is this same job's,
+   * shown through Show: that view is closing on this very stop.
    */
   function promptBackgroundPassword(
     props: TransferProgressPropsData,
     error: ArchiveNeedsPasswordError,
     operationId: string | null,
   ): void {
-    if (progressSlotHolder() !== null || showTransferProgressDialog) {
+    const watchingThisJob = operationId !== null && adopted.props?.operationId === operationId
+    if (
+      progressSlotHolder() !== null ||
+      archivePassword.showDialog ||
+      (showTransferProgressDialog && !watchingThisJob)
+    ) {
       log.info('{op} in the background needs an archive password, but the progress slot is taken', {
         op: transferOpLabel(props.operationType),
       })
@@ -339,6 +346,7 @@ export function createDialogState(deps: DialogStateDeps) {
       )
       return
     }
+    if (watchingThisJob) adopted.release()
     transferProgressProps = props
     archivePassword.promptForTransfer({
       operationType: props.operationType,
@@ -374,7 +382,19 @@ export function createDialogState(deps: DialogStateDeps) {
     setProgressDialogShown: (shown) => {
       showTransferProgressDialog = shown
     },
-    openTransferError,
+    openTransferError: (operationType, error, failedOperationId, progressAtStop) => {
+      // A background job's password stop is asked by its prompt
+      // (`promptBackgroundPassword`), so the view watching it through Show
+      // reports nothing of its own: it's a question, not a failure.
+      if (
+        error.type === 'archive_needs_password' &&
+        failedOperationId !== null &&
+        background.watches(failedOperationId)
+      ) {
+        return
+      }
+      openTransferError(operationType, error, failedOperationId, progressAtStop)
+    },
     onRefocus: deps.onRefocus,
   })
 

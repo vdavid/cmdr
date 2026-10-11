@@ -1159,8 +1159,11 @@ smaller change, but it holds the slot until the id lands and can flash a frame.
 - **Archive password**: the backend doesn't retain `archive_needs_password` as a failure, so with no dialog nobody would
   ask. The background module holds the session until the outcome lands and hands that one stop back; `dialog-state`
   borrows the birth slot for the prompt, and a person's submit re-dispatches in the background again (fresh scan). With
-  the slot taken by a foreground operation, a warn toast says to start it again. A job sent to the background from the
-  progress dialog gets the same watch, which closed the same gap there.
+  the slot taken by a foreground operation, another progress dialog up, or a password prompt already open (a browse one
+  included), a warn toast says to start it again. A job sent to the background from the progress dialog gets the same
+  watch, which closed the same gap there. While Show has the job in the progress dialog, that view stays quiet about the
+  stop (`background.watches(id)` filters its error dialog) and the prompt replaces it, whichever hears the outcome
+  first.
 - **Errors after the start**: the retained failure, the failure toast, and the corner chip, as for any backgrounded job.
 - **Completion toast, pane refresh, cancel's selection restore, duplicate rename editor**: deliberately absent, matching
   a job sent to the background from the progress dialog (the file watcher updates the panes). F5, F2 and F5, Enter, F2

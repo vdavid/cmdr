@@ -52,6 +52,12 @@ export interface BackgroundOperationsDeps extends TransferPaneEffectsDeps {
 }
 
 export function createBackgroundOperations(deps: BackgroundOperationsDeps) {
+  /** Operations this module is watching, until a beat after their outcome: long
+   *  enough for any other view of the same operation (Show) reacting to that
+   *  outcome to ask `watches` and leave the password stop to this module. */
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- bookkeeping read on demand by `watches`, never rendered or tracked
+  const watched = new Set<string>()
+
   /**
    * Holds `operationId`'s session until its outcome lands, then lets go. Only an
    * archive-password stop is passed on; every other ending already has its
@@ -67,14 +73,17 @@ export function createBackgroundOperations(deps: BackgroundOperationsDeps) {
       return
     }
     const session = registry.acquire(operationId)
+    watched.add(operationId)
     let done = false
 
     const finish = (outcome: OperationOutcome): void => {
       done = true
-      // Let the effect run finish before tearing its root down.
+      // Let the effect run finish, and every other view's reaction to the same
+      // outcome, before tearing the root down and forgetting the id.
       queueMicrotask(() => {
         stopWatching()
         registry.release(operationId)
+        watched.delete(operationId)
       })
       if (outcome.kind === 'error' && outcome.event.error.type === 'archive_needs_password') {
         deps.onNeedsPassword(props, outcome.event.error, operationId)
@@ -110,5 +119,12 @@ export function createBackgroundOperations(deps: BackgroundOperationsDeps) {
     watch(props, result.operationId)
   }
 
-  return { start, watch }
+  return {
+    start,
+    watch,
+    /** Whether `operationId` is a background job this module asks for, so a view
+     *  adopted onto it (Show) reports its password stop through the prompt
+     *  rather than as a failure. */
+    watches: (operationId: string): boolean => watched.has(operationId),
+  }
 }

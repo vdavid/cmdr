@@ -19,6 +19,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { flushSync } from 'svelte'
 import type { WriteOperationError } from '../types'
 
 vi.mock('$lib/tauri-commands', async () => ({
@@ -47,6 +48,7 @@ import { listeners, settle, snapshot } from '$lib/file-operations/transfer/test-
 import { copyBetweenVolumes, deleteFiles, listOperations, trashFiles } from '$lib/tauri-commands'
 import { dispatchTransferOperation } from '$lib/file-operations/transfer/transfer-dispatch'
 import { addToast } from '$lib/ui/toast'
+import { setForegroundOperationId } from '$lib/file-operations/foreground-operation.svelte'
 import {
   destroyOperationSessions,
   initOperationSessions,
@@ -155,6 +157,7 @@ beforeEach(async () => {
 
 afterEach(() => {
   destroyOperationSessions()
+  setForegroundOperationId(null)
 })
 
 describe('F2 in the transfer dialog', () => {
@@ -270,6 +273,53 @@ describe('an archive password, for a job with no dialog', () => {
       '“secret.zip” needs its password. Start the operation again to type it in.',
       expect.objectContaining({ level: 'warn' }),
     )
+  })
+
+  it.each([
+    ['the Show view reports first', false],
+    ['the background watch hears it first', true],
+  ])(
+    'asks with the prompt, not an error dialog, when the job is being watched through Show (%s)',
+    async (_, watchFirst) => {
+      const { dialogs } = await startCopyInBackground()
+      dialogs.foregroundOperation({
+        operationId: 'op-1',
+        operationType: 'copy',
+        sourcePath: SOURCE_FOLDER,
+        destinationPath: '/Users/me/backup',
+        reverses: null,
+      })
+      expect(dialogs.showTransferProgressDialog).toBe(true)
+      // What the adopted view does as it mounts.
+      setForegroundOperationId('op-1')
+
+      listeners.error?.({ operationId: 'op-1', operationType: 'copy', error: needsPassword, progressAtStop: null })
+      if (watchFirst) flushSync()
+      // The adopted view reports the same stop through its own outcome callback.
+      dialogs.handleAdoptedError(needsPassword, null)
+      await settle()
+
+      expect(dialogs.showArchivePasswordDialog).toBe(true)
+      expect(dialogs.showTransferErrorDialog).toBe(false)
+      expect(dialogs.showTransferProgressDialog).toBe(false)
+    },
+  )
+
+  it('leaves a browse password prompt that is already up alone', async () => {
+    const { dialogs } = await startCopyInBackground()
+    const retry = vi.fn()
+    dialogs.showArchivePasswordForBrowse({
+      volumeId: 'root',
+      archivePath: '/Users/me/other.zip',
+      wrongAttempt: false,
+      retry,
+    })
+
+    listeners.error?.({ operationId: 'op-1', operationType: 'copy', error: needsPassword, progressAtStop: null })
+    await settle()
+
+    expect(dialogs.archivePasswordProps?.archivePath).toBe('/Users/me/other.zip')
+    expect(dialogs.transferProgressProps).toBeNull()
   })
 
   it('reaches a job sent to the background from the progress dialog, too', async () => {

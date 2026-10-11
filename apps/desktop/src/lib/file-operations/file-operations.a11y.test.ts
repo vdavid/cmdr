@@ -1,8 +1,7 @@
 /**
  * Tier 3 a11y tests for the file-operations chrome: the conflict dialog, the
- * rollback confirmation, the progress readout, the new-entry name field, the setup
- * dialogs' Background button, and the
- * slow-create notice.
+ * rollback confirmation, the progress readout, the new-entry name field, the
+ * slow-create notice, and the setup dialogs' Background button.
  *
  * One file per component would cost about three times as much: `svelte-tests`
  * charges per test FILE, not per test (`docs/testing.md` § "What a test actually
