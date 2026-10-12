@@ -115,8 +115,8 @@ RUN corepack enable pnpm
 # Rust (needed to compile the Tauri binary with --features playwright-e2e). The bind-mounted
 # registry cache in `e2e-linux.sh` lives under /root/.cargo, so the toolchain moves there too.
 # `rust-toolchain.toml` still picks the compiler; matching the image to its pin saves the download.
-COPY --from=rust:1.97.1-slim-trixie@sha256:8e8cf8f7fd54a2d23d5a743b3a03f56e26b6c774276c33fa0595111704ebb15c /usr/local/cargo /root/.cargo
-COPY --from=rust:1.97.1-slim-trixie@sha256:8e8cf8f7fd54a2d23d5a743b3a03f56e26b6c774276c33fa0595111704ebb15c /usr/local/rustup /root/.rustup
+COPY --from=rust:1.98.1-slim-trixie@sha256:4cd829461bd5c4d511c32e269da9cb8929223b666519d8004e35fc8d1d771ab7 /usr/local/cargo /root/.cargo
+COPY --from=rust:1.98.1-slim-trixie@sha256:4cd829461bd5c4d511c32e269da9cb8929223b666519d8004e35fc8d1d771ab7 /usr/local/rustup /root/.rustup
 ENV CARGO_HOME=/root/.cargo RUSTUP_HOME=/root/.rustup
 ENV PATH="/root/.cargo/bin:${PATH}"
 
