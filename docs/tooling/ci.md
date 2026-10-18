@@ -16,7 +16,7 @@ How the GitHub workflows fit together, and the invariants that keep them honest.
 | `release-pipeline.yml`  | Called by `release.yml`                 | Builds, signs, and publishes the desktop app on macOS runners. `docs/guides/releasing.md`            |
 | `scorecard.yml`         | Push to main, weekly, rule edits        | OpenSSF Scorecard: publishes the score (README badge) and SARIF to code scanning. § below            |
 | `codeql.yml`            | PRs, push to main, weekly, manual       | CodeQL (Actions, JS/TS, Rust); a high or critical finding fails it and blocks releases. § below      |
-| `gradle-wrapper.yml`    | Push to main, weekly, manual            | Checks the IntelliJ plugin's `gradle-wrapper.jar` against Gradle's published checksums. § Scorecard  |
+| `gradle-wrapper.yml`    | Push to main, wrapper PRs, weekly       | Checks the IntelliJ plugin's `gradle-wrapper.jar` against Gradle's published checksums. § Scorecard  |
 
 `slow-checks.yml` also runs the fuzz smoke job (120 s per target, findings uploaded as `fuzz-artifacts`;
 `fuzz/CLAUDE.md`). `ci.yml`'s `Full run (run_all)` job runs only on a `run_all` dispatch: both release gates match it by
@@ -75,6 +75,7 @@ server).
    against the filter sets (the filter ↔ app ↔ check mapping isn't 1:1, so a strict reconciliation would be flaky). The
    cache's real correctness backstop is that `--ci` always runs fresh. See the input-fingerprint cache section in
    `scripts/check/CLAUDE.md`.
+5. The `CI OK` gate sees every job and always reports (§ Branch protection).
 
 Practical consequence: **when you add a check, CI fails until you either add a workflow step for it or set `NotInCI`
 with a reason.** When you rename one, CI fails until every workflow catches up. That's the point.
@@ -250,6 +251,28 @@ off, through `CODEQL_EXTRACTOR_RUST_OPTION_*` env vars.
 
 ## Branch protection
 
-`ci-ok` is the single required status check. It needs every first-class job and fails if any needed job failed or was
-cancelled; skipped jobs (change detection said "not affected") count as OK. `desktop-rust-macos` isn't one of them yet
-(see § macOS lane).
+`ci-ok` is the single required status check, and `main`'s ruleset names it by its check-run name, **`CI OK`** (❌ don't
+rename the job's `name:`). It needs every job in `ci.yml` except `deploy-website` (a post-land deploy), `changes`
+included, and passes only when each result is `success` or `skipped` and `changes` is `success`. A lane skipped by
+change detection passes; a failed `changes`, which skips every lane, is red.
+
+It must report on EVERY run, because GitHub counts a skipped required check as passing and a missing one waits forever:
+
+- `if: always()`, never `!cancelled()`, so a cancelled run reports red instead of skipped.
+- The `pull_request` trigger takes no `paths` / `paths-ignore`: a docs-only PR still runs `changes`, `hygiene`, and the
+  gate. Lanes gate on the `changes` filter instead.
+
+`ci-coverage` rule 5 (`scripts/check/checks/ci-ok-gate.go`) enforces all three; a job that genuinely shouldn't gate goes
+in its `ciOKGateExempt` map with a reason.
+
+## Triggers and concurrency
+
+Feature branches run CI through their PR (the land script opens it on the first push), as `pull_request`; `push` covers
+only `main`, for the post-land deploy and the release gates. So a branch push runs CI once, and landing runs it again on
+`main`. On a PR, `dorny/paths-filter` lists the PR's files through the API (the whole branch delta against the base, no
+history needed; verified in run 38431502003, 2026-10-13: "Fetching list of changed files for PR#402 from GitHub API").
+
+`ci.yml` and `codeql.yml` share one `concurrency` shape: a PR's new push cancels its older run, while `main` pushes and
+dispatches each get their own group (the run ID). A shared group with `cancel-in-progress: false` still isn't safe for
+`main`: GitHub cancels a QUEUED run when a newer one joins the group, which would drop a deploy or leave a release
+commit without its run. `gradle-wrapper.yml` runs on PRs only when they touch the wrapper.

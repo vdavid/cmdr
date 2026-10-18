@@ -9,10 +9,16 @@ name: Gradle wrapper
 # `gradle/actions/wrapper-validation` has a SUCCESSFUL run on the latest commit of `main`
 # (`gradleWrapperValidated` in Scorecard's `checks/raw/binary_artifact.go`, verified against
 # Scorecard v5.5.0, 2026-10-08). A path filter would leave most commits without a run.
+# PRs run it only when they touch the wrapper, so a bad jar is caught before it lands (Scorecard
+# reads only the `main` runs, and this isn't a required check, so the filter can't hang a PR).
 on:
   push:
     branches:
       - main
+  pull_request:
+    paths:
+      - 'tools/intellij-plugin/gradle/wrapper/**'
+      - '.github/workflows/gradle-wrapper.yml'
   schedule:
     - cron: '7 5 * * 1' # weekly, Monday 5:07 AM UTC, ahead of the 5:23 Scorecard run
   workflow_dispatch:

@@ -27,6 +27,14 @@ on:
 permissions:
   contents: read
 
+# Same shape as `ci.yml`: a new push to a PR cancels that PR's older analysis (Scorecard's SAST
+# scores the PR's final head, which always finishes), and every other run gets a group of its own.
+concurrency:
+  group:
+    codeql-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) ||
+    github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   languages:
     name: Pick languages
