@@ -15,6 +15,17 @@ on:
 permissions:
   contents: read
 
+# Feature branches reach CI through their PR (the land script opens one on the first push), so a
+# branch push runs this once, as `pull_request`; `push` covers only `main`, for the post-land deploy
+# and the release gates. A new push to a PR cancels that PR's older run. `main` pushes and dispatches
+# each get a group of their own (the run ID): a shared group would queue them, and GitHub cancels a QUEUED run
+# when a newer one joins even without `cancel-in-progress`, which would drop a deploy or leave a
+# release commit without its run.
+concurrency:
+  group:
+    ci-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   # ===========================================
   # Determine which jobs to run based on changed files
@@ -1148,12 +1159,22 @@ jobs:
   # ===========================================
   # Summary job for branch protection
   # ===========================================
+  # `main`'s ruleset requires this job's check by its NAME, `CI OK`, so ❌ don't rename it. It must
+  # report on every run, never be skipped: GitHub counts a skipped required check as passing.
+  # - `needs` lists every job but `deploy-website` (`ci-coverage` enforces it). `changes` belongs
+  #   here too: when it fails, every lane is skipped, and the gate used to read that as green.
+  # - `always()`, not `!cancelled()`, so a cancelled run reports red instead of skipped.
+  # - Only `success` and `skipped` pass. A lane skipped by change detection is fine; `changes`
+  #   itself never legitimately skips, so it must be `success`.
+  # `docs/tooling/ci.md` § Branch protection.
   ci-ok:
     name: CI OK
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs:
       [
+        changes,
+        full-run,
         desktop-rust,
         desktop-rust-macos,
         desktop-svelte,
@@ -1167,13 +1188,17 @@ jobs:
     if: always()
     steps:
       - name: Check all jobs passed
+        env:
+          NEEDS: ${{ toJSON(needs) }}
         run: |
-          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
-            echo "Some jobs failed"
+          bad=$(jq -r 'to_entries[] | select(.value.result != "success" and .value.result != "skipped") | "\(.key): \(.value.result)"' <<<"$NEEDS")
+          if [[ -n "$bad" ]]; then
+            echo "These jobs didn't pass:"
+            echo "$bad"
             exit 1
           fi
-          if [[ "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
-            echo "Some jobs were cancelled"
+          if [[ "$(jq -r '.changes.result' <<<"$NEEDS")" != "success" ]]; then
+            echo "Change detection didn't run, so the skipped lanes prove nothing."
             exit 1
           fi
-          echo "All jobs passed or were skipped"
+          echo "All jobs passed or were skipped by change detection"

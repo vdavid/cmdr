@@ -29,6 +29,10 @@ import (
 //     GlobalInputs) must exist. A dead Inputs glob would silently cache-skip a
 //     check whose real sources moved. Same robust file-existence shape as rule
 //     3; it deliberately does NOT reconcile Inputs against the filter sets.
+//  5. `ci-ok` (the required `CI OK` check) needs every ci.yml job bar a named
+//     few, runs with `always()`, and the `pull_request` trigger has no path
+//     filter (`ci-ok-gate.go`). (`changes` sat outside its needs, so a failed
+//     change detection skipped every lane and `CI OK` went green.)
 //
 // Scope notes: rule 1 only scans lines that invoke the check tool (the line
 // must mention `scripts/check`), so prose in workflow comments doesn't count
@@ -69,6 +73,9 @@ func RunCICoverage(ctx *CheckContext) (CheckResult, error) {
 	violations = append(violations, validateRegistryIsCovered(referenced)...)
 	violations = append(violations, validateFilterPathsExist(ctx.RootDir, filepath.Join(wfDir, "ci.yml"))...)
 	violations = append(violations, validateCheckInputsExist(ctx.RootDir)...)
+	if ciYml, readErr := os.ReadFile(filepath.Join(wfDir, "ci.yml")); readErr == nil {
+		violations = append(violations, validateCIOKGate(string(ciYml))...)
+	}
 
 	if len(violations) > 0 {
 		return CheckResult{}, fmt.Errorf("registry/CI contract violations:\n  %s", strings.Join(violations, "\n  "))
