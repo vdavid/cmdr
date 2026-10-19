@@ -29,6 +29,9 @@
     "chosen": "диакритический знак",
     "accept": ["диакрит"],
     "forms": "a letter with an accent → буква с диакритическим знаком; pl. диакритические знаки",
+    "exceptions": {
+      "settings.appearance.appColor.keywords": "Search keywords for the app color: here accent is the accent color, which macOS ru calls «Акцент»."
+    },
     "avoid": [
       {
         "form": "акцент",
@@ -477,6 +480,9 @@
     "chosen": "в фоновом режиме",
     "accept": ["в фон", "фонов"],
     "forms": "the transfer button Background → В фоне; continue in the background → продолжить в фоновом режиме (or в фоне); background indexing → фоновая индексация",
+    "exceptions": {
+      "settings.behavior.doubleClickPaneNavigatesToParent.keywords": "Search keywords: the pane's empty background area («фон», «пустое место»), not background work."
+    },
     "avoid": [
       {
         "form": "Фон (bare noun)",
@@ -3188,7 +3194,8 @@
     "sources": "MS notification → «уведомление»; macOS live Notification → «Уведомление»",
     "exceptions": {
       "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Internal setting; the toast is a warning, so «предупреждение» names it.",
-      "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Internal setting; the toast is a warning, so «предупреждение» names it."
+      "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": "Internal setting; the toast is a warning, so «предупреждение» names it.",
+      "settings.askCmdr.proactive.keywords": "Search keywords: «notice» is the verb (Cmdr notices things, «замечать»), not a toast."
     }
   },
   "offline": {
@@ -4158,6 +4165,9 @@
     "chosen": "Повернуть",
     "accept": ["поверн", "поворот"],
     "forms": "Rotate left / right → Повернуть влево / вправо; rotation → поворот",
+    "exceptions": {
+      "settings.advanced.maxLogStorageMb.keywords": "Search keywords: log rotation (old log files replaced), not turning an image; «ротация» is the term there."
+    },
     "confidence": "high",
     "sources": "macOS Finder LocalizableMerged N271 and MenuBar YCr-yX-4Sv Rotate Left → «Повернуть влево»; macOS live Rotate → «Повернуть», «Поворот»"
   },
@@ -5966,6 +5976,9 @@
     "chosen": "перенос строк",
     "accept": ["перенос"],
     "forms": "setting and menu «Перенос строк»; badge «перенос»; prose «Строки переносятся у края окна»",
+    "exceptions": {
+      "settings.listing.briefColumnWidthMode.keywords": "Search keywords: «shrink-wrap» means a column sized to its content («по содержимому»), not text wrapping."
+    },
     "avoid": [
       {
         "form": "обертка",

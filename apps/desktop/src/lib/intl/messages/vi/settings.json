@@ -15,7 +15,7 @@
   "@settings.appearance.language.opt.systemWithLanguage": {
     "sourceHash": "ab10534"
   },
-  "settings.appearance.language.keywords": "language, locale, translation, region, english",
+  "settings.appearance.language.keywords": "ngôn ngữ, tiếng, bản địa hóa, dịch, bản dịch, vùng, khu vực, tiếng Anh, tiếng Việt",
   "@settings.appearance.language.keywords": {
     "sourceHash": "c1b9ab9"
   },
@@ -39,7 +39,7 @@
   "@settings.theme.mode.opt.system": {
     "sourceHash": "6725e7b"
   },
-  "settings.theme.mode.keywords": "theme, dark, light, mode, appearance, color",
+  "settings.theme.mode.keywords": "giao diện, chủ đề, tối, sáng, chế độ tối, chế độ sáng, nền tối, màu sắc, hệ thống",
   "@settings.theme.mode.keywords": {
     "sourceHash": "8a95116"
   },
@@ -59,7 +59,7 @@
   "@settings.appearance.appColor.opt.cmdrGold": {
     "sourceHash": "3ae5711"
   },
-  "settings.appearance.appColor.keywords": "color, accent, theme, gold, system, brand",
+  "settings.appearance.appColor.keywords": "màu, màu sắc, màu nhấn, chủ đề, vàng, hệ thống, thương hiệu",
   "@settings.appearance.appColor.keywords": {
     "sourceHash": "dd5ef83"
   },
@@ -83,7 +83,7 @@
   "@settings.appearance.sizeColors.opt.rainbow": {
     "sourceHash": "b1f7b2e"
   },
-  "settings.appearance.sizeColors.keywords": "size, color, tier, rainbow, app, highlight",
+  "settings.appearance.sizeColors.keywords": "kích cỡ, kích thước, màu, màu sắc, cấp, cầu vồng, ứng dụng, tô sáng, làm nổi bật",
   "@settings.appearance.sizeColors.keywords": {
     "sourceHash": "8eb9856"
   },
@@ -107,7 +107,7 @@
   "@settings.appearance.dateColors.opt.wilting": {
     "sourceHash": "2aa30f1"
   },
-  "settings.appearance.dateColors.keywords": "date, color, age, modified, wilting, app, fresh, old",
+  "settings.appearance.dateColors.keywords": "ngày, màu, màu sắc, tuổi, cũ, mới, sửa đổi, ngày sửa đổi, héo, phai màu, ứng dụng",
   "@settings.appearance.dateColors.keywords": {
     "sourceHash": "cc85453"
   },
@@ -144,7 +144,7 @@
   "@settings.appearance.dateTimeFormat.opt.custom": {
     "sourceHash": "c4e69d5"
   },
-  "settings.appearance.dateTimeFormat.keywords": "date, time, format, custom, timestamp",
+  "settings.appearance.dateTimeFormat.keywords": "ngày, giờ, thời gian, định dạng, tùy chỉnh, dấu thời gian",
   "@settings.appearance.dateTimeFormat.keywords": {
     "sourceHash": "8fb735b"
   },
@@ -156,7 +156,7 @@
   "@settings.appearance.customDateTimeFormat.description": {
     "sourceHash": "577dee6"
   },
-  "settings.appearance.customDateTimeFormat.keywords": "custom, format, date, time, placeholder",
+  "settings.appearance.customDateTimeFormat.keywords": "tùy chỉnh, định dạng, ngày, giờ, thời gian, mẫu, ký hiệu",
   "@settings.appearance.customDateTimeFormat.keywords": {
     "sourceHash": "1be6452"
   },
@@ -168,7 +168,7 @@
   "@settings.listing.stripedRows.description": {
     "sourceHash": "e95776a"
   },
-  "settings.listing.stripedRows.keywords": "stripe, zebra, alternate, row, shading, accessibility",
+  "settings.listing.stripedRows.keywords": "sọc, sọc ngựa vằn, xen kẽ, hàng, dòng, tô nền, trợ năng",
   "@settings.listing.stripedRows.keywords": {
     "sourceHash": "3a8c62d"
   },
@@ -180,7 +180,7 @@
   "@settings.appearance.tintLocal.description": {
     "sourceHash": "3c86b48"
   },
-  "settings.appearance.tintLocal.keywords": "tint, pane, color, volume, local, background, highlight",
+  "settings.appearance.tintLocal.keywords": "phủ màu, tô màu, khung, màu, ổ đĩa, cục bộ, nền, làm nổi bật",
   "@settings.appearance.tintLocal.keywords": {
     "sourceHash": "955fcd6"
   },
@@ -192,7 +192,7 @@
   "@settings.appearance.tintSmb.description": {
     "sourceHash": "bddee40"
   },
-  "settings.appearance.tintSmb.keywords": "tint, pane, color, volume, server, network, background, highlight",
+  "settings.appearance.tintSmb.keywords": "phủ màu, tô màu, khung, màu, ổ đĩa, máy chủ, mạng, nền, làm nổi bật",
   "@settings.appearance.tintSmb.keywords": {
     "sourceHash": "880947f"
   },
@@ -204,7 +204,7 @@
   "@settings.appearance.tintMtp.description": {
     "sourceHash": "d70512d"
   },
-  "settings.appearance.tintMtp.keywords": "tint, pane, color, volume, phone, device, camera, background, highlight",
+  "settings.appearance.tintMtp.keywords": "phủ màu, tô màu, khung, màu, ổ đĩa, điện thoại, thiết bị, máy ảnh, nền, làm nổi bật",
   "@settings.appearance.tintMtp.keywords": {
     "sourceHash": "332d7b6"
   },
@@ -216,7 +216,7 @@
   "@settings.appearance.textSize.description": {
     "sourceHash": "49a0a6b"
   },
-  "settings.appearance.textSize.keywords": "text, size, font, larger, smaller, accessibility, zoom, scale",
+  "settings.appearance.textSize.keywords": "chữ, văn bản, cỡ chữ, kích cỡ, phông chữ, to hơn, nhỏ hơn, phóng to, thu nhỏ, tỷ lệ, trợ năng",
   "@settings.appearance.textSize.keywords": {
     "sourceHash": "d5080b3"
   },
@@ -240,7 +240,7 @@
   "@settings.appearance.uiDensity.opt.spacious": {
     "sourceHash": "57edf23"
   },
-  "settings.appearance.uiDensity.keywords": "compact, comfortable, spacious, size, spacing, dense",
+  "settings.appearance.uiDensity.keywords": "mật độ, gọn, thu gọn, thoải mái, rộng rãi, kích cỡ, khoảng cách, dày đặc",
   "@settings.appearance.uiDensity.keywords": {
     "sourceHash": "26f3879"
   },
@@ -264,7 +264,7 @@
   "@settings.listing.sizeDisplay.opt.physical": {
     "sourceHash": "00ca4da"
   },
-  "settings.listing.sizeDisplay.keywords": "size, display, logical, physical, smart, disk, content, sparse",
+  "settings.listing.sizeDisplay.keywords": "kích cỡ, kích thước, hiển thị, logic, vật lý, thông minh, đĩa, nội dung, tệp thưa, dung lượng",
   "@settings.listing.sizeDisplay.keywords": {
     "sourceHash": "b975b7d"
   },
@@ -284,7 +284,7 @@
   "@settings.listing.sizeUnit.opt.bytes": {
     "sourceHash": "4d80003"
   },
-  "settings.listing.sizeUnit.keywords": "size, human, bytes, unit, format, raw, precise, dynamic",
+  "settings.listing.sizeUnit.keywords": "kích cỡ, đơn vị, byte, định dạng, thô, chính xác, dễ đọc, linh hoạt",
   "@settings.listing.sizeUnit.keywords": {
     "sourceHash": "63c1aed"
   },
@@ -304,7 +304,7 @@
   "@settings.appearance.fileSizeFormat.opt.si": {
     "sourceHash": "4dcc22e"
   },
-  "settings.appearance.fileSizeFormat.keywords": "size, bytes, binary, decimal",
+  "settings.appearance.fileSizeFormat.keywords": "kích cỡ, kích thước, byte, nhị phân, thập phân, đơn vị",
   "@settings.appearance.fileSizeFormat.keywords": {
     "sourceHash": "ce11b1b"
   },
@@ -316,7 +316,7 @@
   "@settings.listing.sizeMismatchWarning.description": {
     "sourceHash": "1b232eb"
   },
-  "settings.listing.sizeMismatchWarning.keywords": "size, mismatch, warning, alert, disk, content, difference",
+  "settings.listing.sizeMismatchWarning.keywords": "kích cỡ, lệch, chênh lệch, khác nhau, cảnh báo, đĩa, nội dung",
   "@settings.listing.sizeMismatchWarning.keywords": {
     "sourceHash": "3f332ce"
   },
@@ -328,7 +328,7 @@
   "@settings.appearance.useAppIconsForDocuments.description": {
     "sourceHash": "9651182"
   },
-  "settings.appearance.useAppIconsForDocuments.keywords": "icon, document, file, app, colorful",
+  "settings.appearance.useAppIconsForDocuments.keywords": "biểu tượng, tài liệu, tệp, ứng dụng, nhiều màu, màu sắc",
   "@settings.appearance.useAppIconsForDocuments.keywords": {
     "sourceHash": "b039472"
   },
@@ -340,7 +340,7 @@
   "@settings.appearance.showFunctionKeyBar.description": {
     "sourceHash": "138b56b"
   },
-  "settings.appearance.showFunctionKeyBar.keywords": "function, key, bar, shortcut, buttons, bottom, toolbar",
+  "settings.appearance.showFunctionKeyBar.keywords": "phím chức năng, phím, thanh, thanh công cụ, phím tắt, nút, dưới cùng",
   "@settings.appearance.showFunctionKeyBar.keywords": {
     "sourceHash": "c42e176"
   },
@@ -352,7 +352,7 @@
   "@settings.listing.showHiddenFiles.description": {
     "sourceHash": "8e77c67"
   },
-  "settings.listing.showHiddenFiles.keywords": "hidden, dotfile, dotfiles, invisible, system, show",
+  "settings.listing.showHiddenFiles.keywords": "ẩn, tệp ẩn, tệp chấm, vô hình, hệ thống, hiển thị",
   "@settings.listing.showHiddenFiles.keywords": {
     "sourceHash": "16c608d"
   },
@@ -364,7 +364,7 @@
   "@settings.listing.showExtensionInName.description": {
     "sourceHash": "e7c361c"
   },
-  "settings.listing.showExtensionInName.keywords": "extension, ext, filename, name, column, full, split, suffix",
+  "settings.listing.showExtensionInName.keywords": "đuôi tệp, đuôi, phần mở rộng, tên tệp, tên, cột, đầy đủ, tách, hậu tố",
   "@settings.listing.showExtensionInName.keywords": {
     "sourceHash": "b71b4fa"
   },
@@ -376,7 +376,7 @@
   "@settings.listing.showTags.description": {
     "sourceHash": "005f3b0"
   },
-  "settings.listing.showTags.keywords": "tag, tags, label, labels, color, colour, dot, dots",
+  "settings.listing.showTags.keywords": "thẻ, nhãn, màu, màu sắc, chấm, chấm màu",
   "@settings.listing.showTags.keywords": {
     "sourceHash": "70fc801"
   },
@@ -388,7 +388,7 @@
   "@settings.listing.foldersFirst.description": {
     "sourceHash": "8505ff3"
   },
-  "settings.listing.foldersFirst.keywords": "sort, directory, directories, folder, folders, first, top, mixed, order, listing",
+  "settings.listing.foldersFirst.keywords": "sắp xếp, thư mục, lên đầu, trước, trên cùng, trộn lẫn, thứ tự, danh sách",
   "@settings.listing.foldersFirst.keywords": {
     "sourceHash": "c4f9de2"
   },
@@ -400,7 +400,7 @@
   "@settings.listing.spaceCalculatesFolderSize.description": {
     "sourceHash": "38d64c1"
   },
-  "settings.listing.spaceCalculatesFolderSize.keywords": "space, size, folder, folders, directory, calculate, count, select",
+  "settings.listing.spaceCalculatesFolderSize.keywords": "phím dấu cách, dấu cách, kích cỡ, thư mục, tính toán, tính, đếm, chọn, dung lượng",
   "@settings.listing.spaceCalculatesFolderSize.keywords": {
     "sourceHash": "5c24b62"
   },
@@ -424,7 +424,7 @@
   "@settings.listing.directorySortMode.opt.alwaysByName": {
     "sourceHash": "7687e38"
   },
-  "settings.listing.directorySortMode.keywords": "sort, directory, directories, folder, folders, order, listing, name, size",
+  "settings.listing.directorySortMode.keywords": "sắp xếp, thư mục, thứ tự, danh sách, tên, kích cỡ",
   "@settings.listing.directorySortMode.keywords": {
     "sourceHash": "de850c4"
   },
@@ -444,7 +444,7 @@
   "@settings.listing.briefColumnWidthMode.opt.limited": {
     "sourceHash": "01a089f"
   },
-  "settings.listing.briefColumnWidthMode.keywords": "brief, column, width, max, maximum, limit, pane, shrink-wrap",
+  "settings.listing.briefColumnWidthMode.keywords": "rút gọn, cột, độ rộng, chiều rộng, tối đa, giới hạn, khung, co lại, vừa khít",
   "@settings.listing.briefColumnWidthMode.keywords": {
     "sourceHash": "6d84686"
   },
@@ -452,7 +452,7 @@
   "@settings.listing.briefColumnWidthMaxPx.label": {
     "sourceHash": "9d045cd"
   },
-  "settings.listing.briefColumnWidthMaxPx.keywords": "brief, column, width, max, maximum, limit, pixel",
+  "settings.listing.briefColumnWidthMaxPx.keywords": "rút gọn, cột, độ rộng, chiều rộng, tối đa, giới hạn, điểm ảnh",
   "@settings.listing.briefColumnWidthMaxPx.keywords": {
     "sourceHash": "3b64be6"
   },
@@ -476,7 +476,7 @@
   "@settings.fileOperations.allowFileExtensionChanges.opt.ask": {
     "sourceHash": "3c42771"
   },
-  "settings.fileOperations.allowFileExtensionChanges.keywords": "extension, rename, file, change, ask, confirm",
+  "settings.fileOperations.allowFileExtensionChanges.keywords": "đuôi tệp, phần mở rộng, đổi tên, tệp, thay đổi, hỏi, xác nhận",
   "@settings.fileOperations.allowFileExtensionChanges.keywords": {
     "sourceHash": "1a87d27"
   },
@@ -500,7 +500,7 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.fileOperations.pasteClipboardAsFile.keywords": "paste, clipboard, image, text, screenshot, file, create",
+  "settings.fileOperations.pasteClipboardAsFile.keywords": "dán, bảng nhớ tạm, hình ảnh, ảnh, văn bản, chữ, ảnh chụp màn hình, tệp, tạo",
   "@settings.fileOperations.pasteClipboardAsFile.keywords": {
     "sourceHash": "3e077e3"
   },
@@ -512,7 +512,7 @@
   "@settings.fileOperations.skipConfirmation.description": {
     "sourceHash": "086379d"
   },
-  "settings.fileOperations.skipConfirmation.keywords": "confirm, confirmation, dialog, ask, copy, move, trash, delete, skip, clicks",
+  "settings.fileOperations.skipConfirmation.keywords": "xác nhận, hộp thoại, hỏi, sao chép, di chuyển, thùng rác, xóa, bỏ qua, lượt bấm",
   "@settings.fileOperations.skipConfirmation.keywords": {
     "sourceHash": "9f61258"
   },
@@ -528,7 +528,7 @@
   "@settings.archives.zip.label": {
     "sourceHash": "ec0fd54"
   },
-  "settings.behavior.archiveEnter.zip.keywords": "archive, browse, open, extract, enter, compressed",
+  "settings.behavior.archiveEnter.zip.keywords": "tệp nén, nén, tệp lưu trữ, duyệt, mở, giải nén, vào trong",
   "@settings.behavior.archiveEnter.zip.keywords": {
     "sourceHash": "493848e"
   },
@@ -540,7 +540,7 @@
   "@settings.archives.ooxml.label": {
     "sourceHash": "76c4431"
   },
-  "settings.behavior.archiveEnter.ooxml.keywords": "document, package",
+  "settings.behavior.archiveEnter.ooxml.keywords": "tài liệu, gói",
   "@settings.behavior.archiveEnter.ooxml.keywords": {
     "sourceHash": "19e7eca"
   },
@@ -552,7 +552,7 @@
   "@settings.archives.bundle.label": {
     "sourceHash": "4a5e902"
   },
-  "settings.behavior.archiveEnter.bundle.keywords": "bundle, app, application, framework, browse, open, enter, launch",
+  "settings.behavior.archiveEnter.bundle.keywords": "gói, gói ứng dụng, ứng dụng, duyệt, mở, vào trong, khởi chạy",
   "@settings.behavior.archiveEnter.bundle.keywords": {
     "sourceHash": "fa1c3b6"
   },
@@ -576,7 +576,7 @@
   "@settings.archives.compressionLevel.label": {
     "sourceHash": "9889378"
   },
-  "settings.behavior.archiveCompressionLevel.keywords": "compression, level, archive, size, faster, smaller",
+  "settings.behavior.archiveCompressionLevel.keywords": "nén, mức nén, mức, tệp nén, kích cỡ, nhanh hơn, nhỏ hơn",
   "@settings.behavior.archiveCompressionLevel.keywords": {
     "sourceHash": "4597a15"
   },
@@ -600,7 +600,7 @@
   "@settings.indexing.enabled.description": {
     "sourceHash": "32966c5"
   },
-  "settings.indexing.enabled.keywords": "index, drive, scan, size, directory, folder, background",
+  "settings.indexing.enabled.keywords": "chỉ mục, lập chỉ mục, ổ đĩa, quét, kích cỡ, thư mục, nền",
   "@settings.indexing.enabled.keywords": {
     "sourceHash": "186f2f6"
   },
@@ -676,7 +676,7 @@
   "@settings.mediaIndex.semanticSearch.label": {
     "sourceHash": "8cbf6af"
   },
-  "settings.mediaIndex.semanticSearch.enabled.keywords": "image, photo, semantic, search, describe, description, natural language, ai",
+  "settings.mediaIndex.semanticSearch.enabled.keywords": "hình ảnh, ảnh, tìm kiếm, mô tả, ngữ nghĩa, ngôn ngữ tự nhiên, trí tuệ nhân tạo",
   "@settings.mediaIndex.semanticSearch.enabled.keywords": {
     "sourceHash": "c5380b3"
   },
@@ -692,7 +692,7 @@
   "@settings.mediaIndex.enabled.description": {
     "sourceHash": "118fc8d"
   },
-  "settings.mediaIndex.enabled.keywords": "image, photo, text, search, index, picture, screenshot, content",
+  "settings.mediaIndex.enabled.keywords": "hình ảnh, ảnh, văn bản, chữ, tìm kiếm, chỉ mục, lập chỉ mục, ảnh chụp màn hình, nội dung",
   "@settings.mediaIndex.enabled.keywords": {
     "sourceHash": "a451d8e"
   },
@@ -704,7 +704,7 @@
   "@settings.mediaIndex.showFileStatusIcons.description": {
     "sourceHash": "1a725aa"
   },
-  "settings.mediaIndex.showFileStatusIcons.keywords": "image, photo, badge, icon, overlay, indicator, status, indexed",
+  "settings.mediaIndex.showFileStatusIcons.keywords": "hình ảnh, ảnh, huy hiệu, biểu tượng, lớp phủ, chỉ báo, trạng thái, đã lập chỉ mục",
   "@settings.mediaIndex.showFileStatusIcons.keywords": {
     "sourceHash": "e8ddefc"
   },
@@ -716,7 +716,7 @@
   "@settings.mediaIndex.showInSearch.description": {
     "sourceHash": "143a4e7"
   },
-  "settings.mediaIndex.showInSearch.keywords": "image, photo, search, results, grid, semantic, show, hide",
+  "settings.mediaIndex.showInSearch.keywords": "hình ảnh, ảnh, tìm kiếm, kết quả, lưới, ngữ nghĩa, hiển thị, ẩn",
   "@settings.mediaIndex.showInSearch.keywords": {
     "sourceHash": "069d69d"
   },
@@ -808,7 +808,7 @@
   "@settings.mediaIndex.parallelism.description": {
     "sourceHash": "8a42808"
   },
-  "settings.mediaIndex.parallelism.keywords": "image, photo, index, parallel, workers, speed, performance, cores",
+  "settings.mediaIndex.parallelism.keywords": "hình ảnh, ảnh, chỉ mục, song song, tiến trình, luồng, tốc độ, hiệu năng, lõi, nhân",
   "@settings.mediaIndex.parallelism.keywords": {
     "sourceHash": "c01971c"
   },
@@ -868,7 +868,7 @@
   "@settings.mediaIndex.importanceThreshold.floor": {
     "sourceHash": "8839d14"
   },
-  "settings.mediaIndex.importanceThreshold.keywords": "image, photo, index, importance, folders, coverage, depth",
+  "settings.mediaIndex.importanceThreshold.keywords": "hình ảnh, ảnh, chỉ mục, mức độ quan trọng, quan trọng, thư mục, phạm vi, độ sâu, bao nhiêu",
   "@settings.mediaIndex.importanceThreshold.keywords": {
     "sourceHash": "419756c"
   },
@@ -928,7 +928,7 @@
   "@settings.indexing.askForEachDrive.description": {
     "sourceHash": "189552c"
   },
-  "settings.indexing.askForEachDrive.keywords": "drive, index, ask, prompt, notification, connect, network",
+  "settings.indexing.askForEachDrive.keywords": "ổ đĩa, chỉ mục, hỏi, lời nhắc, thông báo, kết nối, mạng",
   "@settings.indexing.askForEachDrive.keywords": {
     "sourceHash": "1aa1446"
   },
@@ -940,7 +940,7 @@
   "@settings.indexing.staleNotify.description": {
     "sourceHash": "03af10e"
   },
-  "settings.indexing.staleNotify.keywords": "drive, index, stale, outdated, notify, notification, disconnect, network",
+  "settings.indexing.staleNotify.keywords": "ổ đĩa, ổ đĩa ngoài, chỉ mục, cũ, lỗi thời, báo, thông báo, ngắt kết nối, mạng",
   "@settings.indexing.staleNotify.keywords": {
     "sourceHash": "12276c3"
   },
@@ -968,7 +968,7 @@
   "@settings.indexing.reEnableNotifications.disabledTooltip": {
     "sourceHash": "e7702a8"
   },
-  "settings.indexing.reEnableNotifications.keywords": "re-enable, notifications, drives, silenced, ask again",
+  "settings.indexing.reEnableNotifications.keywords": "bật lại, thông báo, ổ đĩa, tắt tiếng, im lặng, hỏi lại",
   "@settings.indexing.reEnableNotifications.keywords": {
     "sourceHash": "54baf63"
   },
@@ -1013,7 +1013,7 @@
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.neither": {
     "sourceHash": "9957d09"
   },
-  "settings.behavior.fileSystemWatching.downloadsNotifications.keywords": "download, downloads, notification, toast, notify",
+  "settings.behavior.fileSystemWatching.downloadsNotifications.keywords": "tải về, tải xuống, bản tải về, thông báo, báo",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.keywords": {
     "sourceHash": "955d46c"
   },
@@ -1025,7 +1025,7 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
     "sourceHash": "ed2f65d"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "shortcut, hotkey, global, download, downloads, jump, go to, goto",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "phím tắt, tổ hợp phím, toàn cục, tải về, bản tải về, nhảy tới, đi tới, mới nhất",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
     "sourceHash": "1fd8c2f"
   },
@@ -1037,7 +1037,7 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.description": {
     "sourceHash": "77e5c31"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": "shortcut, hotkey, global, binding, combo",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": "phím tắt, tổ hợp phím, toàn cục, gán phím, phím nóng",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
@@ -1065,7 +1065,7 @@
   "@settings.behavior.notifications.keepUntilClosed.description": {
     "sourceHash": "53890bf"
   },
-  "settings.behavior.notifications.keepUntilClosed.keywords": "toast, notification, timeout, time, disappear, dismiss, close, keep, accessibility",
+  "settings.behavior.notifications.keepUntilClosed.keywords": "thông báo, thời gian chờ, thời gian, biến mất, bỏ qua, đóng, giữ, trợ năng",
   "@settings.behavior.notifications.keepUntilClosed.keywords": {
     "sourceHash": "f681b77"
   },
@@ -1090,7 +1090,7 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": {
     "sourceHash": "ca7981b"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.keywords": "disk, space, low, free, storage, full, warning, notification, boot, startup",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.keywords": "đĩa, ổ đĩa, dung lượng, thiếu, sắp đầy, còn trống, bộ nhớ, lưu trữ, đầy, cảnh báo, thông báo, ổ khởi động, khởi động",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.keywords": {
     "sourceHash": "733f2ee"
   },
@@ -1102,7 +1102,7 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": {
     "sourceHash": "9ed41b8"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": "disk, space, threshold, percent, low, free, warning",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": "đĩa, dung lượng, ngưỡng, phần trăm, thiếu, còn trống, cảnh báo",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": {
     "sourceHash": "7a0df93"
   },
@@ -1114,7 +1114,7 @@
   "@settings.search.autoApply.description": {
     "sourceHash": "19fcaf7"
   },
-  "settings.search.autoApply.keywords": "search, auto, apply, live, debounce, filename, instant",
+  "settings.search.autoApply.keywords": "tìm kiếm, tự động, áp dụng, trực tiếp, tức thì, ngay lập tức, tên tệp, độ trễ",
   "@settings.search.autoApply.keywords": {
     "sourceHash": "2e0e223"
   },
@@ -1138,7 +1138,7 @@
   "@settings.ai.provider.opt.local": {
     "sourceHash": "6689271"
   },
-  "settings.ai.provider.keywords": "ai, artificial intelligence, provider, cloud, local, off, model",
+  "settings.ai.provider.keywords": "trí tuệ nhân tạo, nhà cung cấp, đám mây, cục bộ, tắt, mô hình",
   "@settings.ai.provider.keywords": {
     "sourceHash": "ff6248d"
   },
@@ -1154,7 +1154,7 @@
   "@settings.ai.cloudConsent.lockedHint": {
     "sourceHash": "8a24685"
   },
-  "settings.ai.cloudConsent.keywords": "consent, privacy, allow, send, data, cloud, ai",
+  "settings.ai.cloudConsent.keywords": "đồng ý, quyền riêng tư, cho phép, gửi, dữ liệu, đám mây, trí tuệ nhân tạo",
   "@settings.ai.cloudConsent.keywords": {
     "sourceHash": "c0a0566"
   },
@@ -1162,7 +1162,7 @@
   "@settings.ai.cloudProvider.description": {
     "sourceHash": "3300ce9"
   },
-  "settings.ai.cloudProvider.keywords": "cloud, provider, service, custom",
+  "settings.ai.cloudProvider.keywords": "đám mây, nhà cung cấp, dịch vụ, tùy chỉnh",
   "@settings.ai.cloudProvider.keywords": {
     "sourceHash": "0ccf0ad"
   },
@@ -1182,7 +1182,7 @@
   "@settings.ai.localContextSize.description": {
     "sourceHash": "14256da"
   },
-  "settings.ai.localContextSize.keywords": "context, window, tokens, memory, size, local",
+  "settings.ai.localContextSize.keywords": "ngữ cảnh, cửa sổ ngữ cảnh, token, bộ nhớ, kích cỡ, cục bộ",
   "@settings.ai.localContextSize.keywords": {
     "sourceHash": "cf1e449"
   },
@@ -1194,7 +1194,7 @@
   "@settings.network.enabled.description": {
     "sourceHash": "72a0854"
   },
-  "settings.network.enabled.keywords": "network, enable, enabled, discovery, local, permission",
+  "settings.network.enabled.keywords": "mạng, kết nối mạng, bật, khám phá, mạng cục bộ, cục bộ, quyền",
   "@settings.network.enabled.keywords": {
     "sourceHash": "a2d95a0"
   },
@@ -1218,7 +1218,7 @@
   "@settings.network.directSmbConnection.description": {
     "sourceHash": "44a5a6d"
   },
-  "settings.network.directSmbConnection.keywords": "direct, fast, connection, network, performance",
+  "settings.network.directSmbConnection.keywords": "trực tiếp, nhanh, kết nối, mạng, hiệu năng, tốc độ, mục chia sẻ",
   "@settings.network.directSmbConnection.keywords": {
     "sourceHash": "6043806"
   },
@@ -1250,7 +1250,7 @@
   "@settings.network.shareCacheDuration.opt.days30": {
     "sourceHash": "ffd7280"
   },
-  "settings.network.shareCacheDuration.keywords": "cache, share, network, refresh",
+  "settings.network.shareCacheDuration.keywords": "bộ đệm, mục chia sẻ, chia sẻ, mạng, làm mới, thời lượng",
   "@settings.network.shareCacheDuration.keywords": {
     "sourceHash": "df14578"
   },
@@ -1282,7 +1282,7 @@
   "@settings.network.timeoutMode.opt.custom": {
     "sourceHash": "494ca78"
   },
-  "settings.network.timeoutMode.keywords": "timeout, network, slow, connection, latency",
+  "settings.network.timeoutMode.keywords": "thời gian chờ, hết thời gian, mạng, chậm, kết nối, độ trễ",
   "@settings.network.timeoutMode.keywords": {
     "sourceHash": "a00bb47"
   },
@@ -1294,7 +1294,7 @@
   "@settings.network.customTimeout.description": {
     "sourceHash": "28a8d46"
   },
-  "settings.network.customTimeout.keywords": "timeout, custom, seconds",
+  "settings.network.customTimeout.keywords": "thời gian chờ, tùy chỉnh, giây",
   "@settings.network.customTimeout.keywords": {
     "sourceHash": "cf816c7"
   },
@@ -1306,7 +1306,7 @@
   "@settings.network.smbConcurrency.description": {
     "sourceHash": "49a590b"
   },
-  "settings.network.smbConcurrency.keywords": "concurrency, parallel, copy, batch, performance, transfer, speed",
+  "settings.network.smbConcurrency.keywords": "đồng thời, song song, sao chép, theo lô, hiệu năng, truyền, tốc độ, thao tác",
   "@settings.network.smbConcurrency.keywords": {
     "sourceHash": "8a4675f"
   },
@@ -1318,7 +1318,7 @@
   "@settings.fileOperations.mtpEnabled.description": {
     "sourceHash": "c66df04"
   },
-  "settings.fileOperations.mtpEnabled.keywords": "device, phone, mobile",
+  "settings.fileOperations.mtpEnabled.keywords": "thiết bị, điện thoại, di động, máy ảnh, máy đọc sách",
   "@settings.fileOperations.mtpEnabled.keywords": {
     "sourceHash": "ce40ecb"
   },
@@ -1330,7 +1330,7 @@
   "@settings.fileOperations.adbEnabled.description": {
     "sourceHash": "a89c957"
   },
-  "settings.fileOperations.adbEnabled.keywords": "usb debugging, developer options, phone, device",
+  "settings.fileOperations.adbEnabled.keywords": "gỡ lỗi qua USB, tùy chọn cho nhà phát triển, nhà phát triển, điện thoại, thiết bị",
   "@settings.fileOperations.adbEnabled.keywords": {
     "sourceHash": "95bcc86"
   },
@@ -1342,7 +1342,7 @@
   "@settings.fileOperations.adbBinaryPath.description": {
     "sourceHash": "940ff29"
   },
-  "settings.fileOperations.adbBinaryPath.keywords": "path, binary, location",
+  "settings.fileOperations.adbBinaryPath.keywords": "đường dẫn, tệp thực thi, nhị phân, vị trí",
   "@settings.fileOperations.adbBinaryPath.keywords": {
     "sourceHash": "646719a"
   },
@@ -1354,7 +1354,7 @@
   "@settings.fileOperations.mtpConnectionWarning.description": {
     "sourceHash": "9c7a648"
   },
-  "settings.fileOperations.mtpConnectionWarning.keywords": "warning, notification, connect, toast",
+  "settings.fileOperations.mtpConnectionWarning.keywords": "cảnh báo, thông báo, kết nối, cắm",
   "@settings.fileOperations.mtpConnectionWarning.keywords": {
     "sourceHash": "4f395e7"
   },
@@ -1366,7 +1366,7 @@
   "@settings.fileExplorer.git.showRepoChip.description": {
     "sourceHash": "7b8a9ba"
   },
-  "settings.fileExplorer.git.showRepoChip.keywords": "chip, branch, breadcrumb, repo, status, ahead, behind, dirty",
+  "settings.fileExplorer.git.showRepoChip.keywords": "huy hiệu, nhánh, đường dẫn, kho, kho mã, trạng thái, đi trước, đi sau, có thay đổi, thay đổi chưa commit",
   "@settings.fileExplorer.git.showRepoChip.keywords": {
     "sourceHash": "15fb963"
   },
@@ -1378,7 +1378,7 @@
   "@settings.fileExplorer.git.showStatusColumn.description": {
     "sourceHash": "7ff07e4"
   },
-  "settings.fileExplorer.git.showStatusColumn.keywords": "status, column, modified, untracked, ignored, added, deleted",
+  "settings.fileExplorer.git.showStatusColumn.keywords": "trạng thái, cột, đã sửa đổi, chưa theo dõi, bị bỏ qua, đã thêm, đã xóa",
   "@settings.fileExplorer.git.showStatusColumn.keywords": {
     "sourceHash": "ce0481d"
   },
@@ -1390,7 +1390,7 @@
   "@settings.fileExplorer.git.showVirtualGitPortal.description": {
     "sourceHash": "70eae72"
   },
-  "settings.fileExplorer.git.showVirtualGitPortal.keywords": "portal, virtual, branches, tags, commits, worktrees, history",
+  "settings.fileExplorer.git.showVirtualGitPortal.keywords": "cổng, ảo, nhánh, tag, commit, worktree, lịch sử",
   "@settings.fileExplorer.git.showVirtualGitPortal.keywords": {
     "sourceHash": "25c1d2c"
   },
@@ -1402,7 +1402,7 @@
   "@settings.viewer.wordWrap.description": {
     "sourceHash": "8a87bd2"
   },
-  "settings.viewer.wordWrap.keywords": "viewer, wrap, word, line, horizontal, scroll",
+  "settings.viewer.wordWrap.keywords": "trình xem, ngắt dòng, xuống dòng, từ, dòng, ngang, cuộn",
   "@settings.viewer.wordWrap.keywords": {
     "sourceHash": "5d0a24b"
   },
@@ -1414,7 +1414,7 @@
   "@settings.viewer.showTextCursor.description": {
     "sourceHash": "b5e542e"
   },
-  "settings.viewer.showTextCursor.keywords": "viewer, cursor, caret, text, insertion, point, blink, selection",
+  "settings.viewer.showTextCursor.keywords": "trình xem, con trỏ, con trỏ văn bản, dấu nháy, văn bản, điểm chèn, nhấp nháy, vùng chọn, lựa chọn",
   "@settings.viewer.showTextCursor.keywords": {
     "sourceHash": "1214804"
   },
@@ -1426,7 +1426,7 @@
   "@settings.developer.mcpEnabled.description": {
     "sourceHash": "10f4102"
   },
-  "settings.developer.mcpEnabled.keywords": "server, ai, assistant, protocol, model",
+  "settings.developer.mcpEnabled.keywords": "máy chủ, trí tuệ nhân tạo, trợ lý, giao thức, mô hình",
   "@settings.developer.mcpEnabled.keywords": {
     "sourceHash": "410be68"
   },
@@ -1438,7 +1438,7 @@
   "@settings.developer.mcpPort.description": {
     "sourceHash": "174e807"
   },
-  "settings.developer.mcpPort.keywords": "port, network, ephemeral",
+  "settings.developer.mcpPort.keywords": "cổng, mạng, tạm thời, ngẫu nhiên",
   "@settings.developer.mcpPort.keywords": {
     "sourceHash": "2b54226"
   },
@@ -1450,7 +1450,7 @@
   "@settings.developer.verboseLogging.description": {
     "sourceHash": "5c69c0d"
   },
-  "settings.developer.verboseLogging.keywords": "log, debug, verbose, troubleshoot, performance, console",
+  "settings.developer.verboseLogging.keywords": "nhật ký, gỡ lỗi, chi tiết, khắc phục sự cố, hiệu năng, bảng điều khiển, console, nhà phát triển",
   "@settings.developer.verboseLogging.keywords": {
     "sourceHash": "2bdf9aa"
   },
@@ -1462,7 +1462,7 @@
   "@settings.updates.autoCheck.description": {
     "sourceHash": "1ff0b1a"
   },
-  "settings.updates.autoCheck.keywords": "update, auto, check, version, background",
+  "settings.updates.autoCheck.keywords": "cập nhật, tự động, kiểm tra, phiên bản, nền",
   "@settings.updates.autoCheck.keywords": {
     "sourceHash": "091ca30"
   },
@@ -1474,7 +1474,7 @@
   "@settings.whatsNew.showOnUpdate.description": {
     "sourceHash": "4d4d7e6"
   },
-  "settings.whatsNew.showOnUpdate.keywords": "changelog, release notes, what’s new, update notes",
+  "settings.whatsNew.showOnUpdate.keywords": "nhật ký thay đổi, ghi chú phát hành, có gì mới, điểm mới, ghi chú cập nhật",
   "@settings.whatsNew.showOnUpdate.keywords": {
     "sourceHash": "ef19c9d"
   },
@@ -1494,7 +1494,7 @@
   "@settings.analytics.enabled.description": {
     "sourceHash": "f5534ee"
   },
-  "settings.analytics.enabled.keywords": "analytics, usage, stats, privacy, telemetry, beta, tracking, opt-out",
+  "settings.analytics.enabled.keywords": "phân tích, sử dụng, thống kê, quyền riêng tư, đo từ xa, thử nghiệm, theo dõi, từ chối",
   "@settings.analytics.enabled.keywords": {
     "sourceHash": "85d82ce"
   },
@@ -1506,7 +1506,7 @@
   "@settings.analytics.email.description": {
     "sourceHash": "03574f9"
   },
-  "settings.analytics.email.keywords": "email, beta, contact, newsletter, updates, survey",
+  "settings.analytics.email.keywords": "email, thư điện tử, thử nghiệm, liên hệ, bản tin, cập nhật, khảo sát",
   "@settings.analytics.email.keywords": {
     "sourceHash": "61438eb"
   },
@@ -1518,7 +1518,7 @@
   "@settings.updates.crashReports.description": {
     "sourceHash": "e726766"
   },
-  "settings.updates.crashReports.keywords": "crash, report, privacy, telemetry, bug, error",
+  "settings.updates.crashReports.keywords": "sự cố, báo cáo sự cố, báo cáo, thoát bất ngờ, quyền riêng tư, đo từ xa, lỗi",
   "@settings.updates.crashReports.keywords": {
     "sourceHash": "5fbf552"
   },
@@ -1530,7 +1530,7 @@
   "@settings.updates.errorReports.description": {
     "sourceHash": "f3e41eb"
   },
-  "settings.updates.errorReports.keywords": "error, report, auto, send, privacy, telemetry, bug, log, snippet, diagnostics",
+  "settings.updates.errorReports.keywords": "trục trặc, báo cáo trục trặc, báo cáo, tự động, gửi, quyền riêng tư, đo từ xa, lỗi, nhật ký, đoạn trích, chẩn đoán",
   "@settings.updates.errorReports.keywords": {
     "sourceHash": "271aae6"
   },
@@ -1542,7 +1542,7 @@
   "@settings.updates.attachEmailToReports.description": {
     "sourceHash": "dd23637"
   },
-  "settings.updates.attachEmailToReports.keywords": "email, report, crash, error, contact, attach, reply, beta",
+  "settings.updates.attachEmailToReports.keywords": "email, báo cáo, sự cố, trục trặc, lỗi, liên hệ, đính kèm, trả lời, thử nghiệm",
   "@settings.updates.attachEmailToReports.keywords": {
     "sourceHash": "6fba4e5"
   },
@@ -1554,7 +1554,7 @@
   "@settings.advanced.prefetchBufferSize.description": {
     "sourceHash": "39f13c9"
   },
-  "settings.advanced.prefetchBufferSize.keywords": "prefetch, buffer, scroll, performance",
+  "settings.advanced.prefetchBufferSize.keywords": "nạp trước, tải trước, bộ đệm, cuộn, hiệu năng",
   "@settings.advanced.prefetchBufferSize.keywords": {
     "sourceHash": "8e07ea0"
   },
@@ -1566,7 +1566,7 @@
   "@settings.advanced.virtualizationBufferRows.description": {
     "sourceHash": "82a0e9a"
   },
-  "settings.advanced.virtualizationBufferRows.keywords": "virtualization, buffer, row, render",
+  "settings.advanced.virtualizationBufferRows.keywords": "ảo hóa, bộ đệm, hàng, dòng, kết xuất, vẽ",
   "@settings.advanced.virtualizationBufferRows.keywords": {
     "sourceHash": "2342517"
   },
@@ -1578,7 +1578,7 @@
   "@settings.advanced.virtualizationBufferColumns.description": {
     "sourceHash": "a1cbd98"
   },
-  "settings.advanced.virtualizationBufferColumns.keywords": "virtualization, buffer, column, brief",
+  "settings.advanced.virtualizationBufferColumns.keywords": "ảo hóa, bộ đệm, cột, rút gọn",
   "@settings.advanced.virtualizationBufferColumns.keywords": {
     "sourceHash": "f4c112b"
   },
@@ -1590,7 +1590,7 @@
   "@settings.advanced.fileWatcherDebounce.description": {
     "sourceHash": "084a2a7"
   },
-  "settings.advanced.fileWatcherDebounce.keywords": "watcher, debounce, refresh, delay",
+  "settings.advanced.fileWatcherDebounce.keywords": "bộ theo dõi, theo dõi tệp, gộp, trễ gộp, làm mới, độ trễ",
   "@settings.advanced.fileWatcherDebounce.keywords": {
     "sourceHash": "a389923"
   },
@@ -1602,7 +1602,7 @@
   "@settings.advanced.diskSpaceChangeThreshold.description": {
     "sourceHash": "f09c3cb"
   },
-  "settings.advanced.diskSpaceChangeThreshold.keywords": "disk, space, threshold, poll, refresh, status, bar",
+  "settings.advanced.diskSpaceChangeThreshold.keywords": "đĩa, dung lượng, ngưỡng, thăm dò, làm mới, trạng thái, thanh trạng thái",
   "@settings.advanced.diskSpaceChangeThreshold.keywords": {
     "sourceHash": "74628c1"
   },
@@ -1614,7 +1614,7 @@
   "@settings.fileViewer.suppressBinaryWarning.description": {
     "sourceHash": "a93b4cb"
   },
-  "settings.fileViewer.suppressBinaryWarning.keywords": "viewer, binary, image, raw, warning, banner, quick, look",
+  "settings.fileViewer.suppressBinaryWarning.keywords": "trình xem, nhị phân, hình ảnh, thô, xem thô, cảnh báo, biểu ngữ, xem nhanh",
   "@settings.fileViewer.suppressBinaryWarning.keywords": {
     "sourceHash": "12a2ca0"
   },
@@ -1626,7 +1626,7 @@
   "@settings.fileExplorer.suppressQuickLookHint.description": {
     "sourceHash": "10357b4"
   },
-  "settings.fileExplorer.suppressQuickLookHint.keywords": "quick, look, preview, space, hint, toast, reminder",
+  "settings.fileExplorer.suppressQuickLookHint.keywords": "xem nhanh, xem trước, phím dấu cách, dấu cách, gợi ý, thông báo, lời nhắc",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "d3a493e"
   },
@@ -1638,7 +1638,7 @@
   "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
     "sourceHash": "e53df3a"
   },
-  "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "tab, closed, reopen, history, undo, pane",
+  "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "tab, đã đóng, mở lại, lịch sử, hoàn tác, khung",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {
     "sourceHash": "bb60e7b"
   },
@@ -1650,7 +1650,7 @@
   "@settings.advanced.dragThreshold.description": {
     "sourceHash": "7704bfa"
   },
-  "settings.advanced.dragThreshold.keywords": "drag, threshold, pixel, distance",
+  "settings.advanced.dragThreshold.keywords": "kéo, kéo thả, ngưỡng, điểm ảnh, khoảng cách",
   "@settings.advanced.dragThreshold.keywords": {
     "sourceHash": "1dec520"
   },
@@ -1662,7 +1662,7 @@
   "@settings.advanced.exitFullScreenOnEscape.description": {
     "sourceHash": "a862b71"
   },
-  "settings.advanced.exitFullScreenOnEscape.keywords": "escape, full screen, fullscreen, maximize, window, restore, exit",
+  "settings.advanced.exitFullScreenOnEscape.keywords": "phím Escape, thoát, toàn màn hình, phóng to, cửa sổ, khôi phục",
   "@settings.advanced.exitFullScreenOnEscape.keywords": {
     "sourceHash": "592c454"
   },
@@ -1682,7 +1682,7 @@
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
   },
-  "settings.fileExplorer.typeToJump.resetDelay.keywords": "type, jump, reset, delay, fuzzy, search, navigation, keystroke, buffer",
+  "settings.fileExplorer.typeToJump.resetDelay.keywords": "gõ, nhảy, gõ để nhảy, đặt lại, độ trễ, trễ, tìm kiếm mờ, tìm kiếm, điều hướng, phím bấm, bộ đệm",
   "@settings.fileExplorer.typeToJump.resetDelay.keywords": {
     "sourceHash": "179755f"
   },
@@ -1702,7 +1702,7 @@
   "@settings.fileExplorer.typeToJump.mode.opt.filter": {
     "sourceHash": "638e249"
   },
-  "settings.fileExplorer.typeToJump.mode.keywords": "type, jump, filter, quick filter, quick search, narrow, keystroke",
+  "settings.fileExplorer.typeToJump.mode.keywords": "gõ, nhảy, gõ để nhảy, lọc, bộ lọc nhanh, tìm kiếm nhanh, thu hẹp, phím bấm",
   "@settings.fileExplorer.typeToJump.mode.keywords": {
     "sourceHash": "039893a"
   },
@@ -1714,7 +1714,7 @@
   "@settings.fileOperations.maxConflictsToShow.description": {
     "sourceHash": "1f6bcb9"
   },
-  "settings.fileOperations.maxConflictsToShow.keywords": "conflict, max, limit, preview, operation",
+  "settings.fileOperations.maxConflictsToShow.keywords": "xung đột, trùng tên, tối đa, giới hạn, xem trước, thao tác",
   "@settings.fileOperations.maxConflictsToShow.keywords": {
     "sourceHash": "3b64816"
   },
@@ -1726,7 +1726,7 @@
   "@settings.fileOperations.progressUpdateInterval.description": {
     "sourceHash": "84e4876"
   },
-  "settings.fileOperations.progressUpdateInterval.keywords": "progress, update, interval, refresh, performance",
+  "settings.fileOperations.progressUpdateInterval.keywords": "tiến độ, cập nhật, khoảng thời gian, làm mới, hiệu năng",
   "@settings.fileOperations.progressUpdateInterval.keywords": {
     "sourceHash": "49c3811"
   },
@@ -1738,7 +1738,7 @@
   "@settings.advanced.maxLogStorageMb.description": {
     "sourceHash": "725bb26"
   },
-  "settings.advanced.maxLogStorageMb.keywords": "log, storage, disk, cap, rotation, error, report, privacy",
+  "settings.advanced.maxLogStorageMb.keywords": "nhật ký, lưu trữ, dung lượng, đĩa, giới hạn, xoay vòng, lỗi, báo cáo, quyền riêng tư",
   "@settings.advanced.maxLogStorageMb.keywords": {
     "sourceHash": "328d0cc"
   },
@@ -1750,7 +1750,7 @@
   "@settings.advanced.mountTimeout.description": {
     "sourceHash": "3da30e1"
   },
-  "settings.advanced.mountTimeout.keywords": "mount, timeout, network, share",
+  "settings.advanced.mountTimeout.keywords": "gắn kết, thời gian chờ, mạng, mục chia sẻ",
   "@settings.advanced.mountTimeout.keywords": {
     "sourceHash": "3327884"
   },
@@ -1762,7 +1762,7 @@
   "@settings.advanced.showSafeSaveFiles.description": {
     "sourceHash": "b371701"
   },
-  "settings.advanced.showSafeSaveFiles.keywords": "safe-save, temp, temporary, preview, autosave",
+  "settings.advanced.showSafeSaveFiles.keywords": "lưu an toàn, tệp tạm, tạm thời, xem trước, tự động lưu",
   "@settings.advanced.showSafeSaveFiles.keywords": {
     "sourceHash": "a56607a"
   },
@@ -1774,7 +1774,7 @@
   "@settings.advanced.showStagingTempFiles.description": {
     "sourceHash": "a562689"
   },
-  "settings.advanced.showStagingTempFiles.keywords": "temp, temporary, staging, copy, transfer, partial",
+  "settings.advanced.showStagingTempFiles.keywords": "tệp tạm, tạm thời, sao chép, truyền, dở dang, chưa xong",
   "@settings.advanced.showStagingTempFiles.keywords": {
     "sourceHash": "3b07cc3"
   },
@@ -1786,7 +1786,7 @@
   "@settings.advanced.logLlmCalls.description": {
     "sourceHash": "86b3d34"
   },
-  "settings.advanced.logLlmCalls.keywords": "ai, log, debug, request, response, prompt",
+  "settings.advanced.logLlmCalls.keywords": "trí tuệ nhân tạo, nhật ký, gỡ lỗi, yêu cầu, phản hồi, câu lệnh, lời nhắc, mô hình",
   "@settings.advanced.logLlmCalls.keywords": {
     "sourceHash": "6d0a3a0"
   },
@@ -1798,7 +1798,7 @@
   "@settings.advanced.serviceResolveTimeout.description": {
     "sourceHash": "5cf231d"
   },
-  "settings.advanced.serviceResolveTimeout.keywords": "resolve, timeout",
+  "settings.advanced.serviceResolveTimeout.keywords": "phân giải, thời gian chờ, dịch vụ",
   "@settings.advanced.serviceResolveTimeout.keywords": {
     "sourceHash": "7f5c11b"
   },
@@ -1810,7 +1810,7 @@
   "@settings.search.recentSearches.maxCount.description": {
     "sourceHash": "d21b038"
   },
-  "settings.search.recentSearches.maxCount.keywords": "search, recent, history, cap, limit, max, count",
+  "settings.search.recentSearches.maxCount.keywords": "tìm kiếm, gần đây, lịch sử, giới hạn, tối đa, số lượng",
   "@settings.search.recentSearches.maxCount.keywords": {
     "sourceHash": "e5cef7d"
   },
@@ -1822,7 +1822,7 @@
   "@settings.selection.recentSelections.maxCount.description": {
     "sourceHash": "ae04ef0"
   },
-  "settings.selection.recentSelections.maxCount.keywords": "selection, select, recent, history, cap, limit, max, count",
+  "settings.selection.recentSelections.maxCount.keywords": "lựa chọn, chọn, gần đây, lịch sử, giới hạn, tối đa, số lượng",
   "@settings.selection.recentSelections.maxCount.keywords": {
     "sourceHash": "2986d5f"
   },
@@ -1874,7 +1874,7 @@
   "@settings.advanced.updateCheckInterval.description": {
     "sourceHash": "2bdd38a"
   },
-  "settings.advanced.updateCheckInterval.keywords": "update, interval, background, check",
+  "settings.advanced.updateCheckInterval.keywords": "cập nhật, khoảng thời gian, nền, kiểm tra, tần suất",
   "@settings.advanced.updateCheckInterval.keywords": {
     "sourceHash": "2952cdc"
   },
@@ -1983,7 +1983,7 @@
   "@settings.revealHandler.label": {
     "sourceHash": "8c39a2f"
   },
-  "settings.behavior.revealHandler.keywords": "show in finder, find in finder, reveal, reveal in finder, default file manager, browser, downloads",
+  "settings.behavior.revealHandler.keywords": "hiển thị trong Finder, tìm trong Finder, làm nổi bật, trình quản lý tệp mặc định, trình quản lý tệp, mặc định, trình duyệt, tải về",
   "@settings.behavior.revealHandler.keywords": {
     "sourceHash": "ad680cd"
   },
@@ -2035,7 +2035,7 @@
   "@settings.behavior.textEditorApp.checking": {
     "sourceHash": "0d6957f"
   },
-  "settings.behavior.textEditorApp.keywords": "editor, text editor, edit",
+  "settings.behavior.textEditorApp.keywords": "trình soạn thảo, trình soạn thảo văn bản, sửa, chỉnh sửa",
   "@settings.behavior.textEditorApp.keywords": {
     "sourceHash": "2e247fe"
   },
@@ -2067,7 +2067,7 @@
   "@settings.behavior.openTerminalHereApp.checking": {
     "sourceHash": "0d6957f"
   },
-  "settings.behavior.openTerminalHereApp.keywords": "terminal, shell, console, command line",
+  "settings.behavior.openTerminalHereApp.keywords": "terminal, dòng lệnh, giao diện dòng lệnh, shell, bảng điều khiển, console",
   "@settings.behavior.openTerminalHereApp.keywords": {
     "sourceHash": "4e548b8"
   },
@@ -2099,7 +2099,7 @@
   "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
     "sourceHash": "cae047d"
   },
-  "settings.behavior.doubleClickPaneNavigatesToParent.keywords": "double-click, doubleclick, double click, pane, background, empty, parent, folder, up, navigate, navigation",
+  "settings.behavior.doubleClickPaneNavigatesToParent.keywords": "bấm đúp, nhấp đúp, khung, nền, trống, chỗ trống, thư mục cha, thư mục, lên, đi lên, điều hướng",
   "@settings.behavior.doubleClickPaneNavigatesToParent.keywords": {
     "sourceHash": "091f9e9"
   },
@@ -2206,7 +2206,7 @@
   "@settings.askCmdr.enabled.description": {
     "sourceHash": "a1116db"
   },
-  "settings.askCmdr.enabled.keywords": "ai, chat, assistant, enable, disable, turn on, turn off",
+  "settings.askCmdr.enabled.keywords": "trí tuệ nhân tạo, trò chuyện, trợ lý, bật, tắt, chat",
   "@settings.askCmdr.enabled.keywords": {
     "sourceHash": "3ca6b54"
   },
@@ -2242,7 +2242,7 @@
   "@settings.askCmdr.interactiveModel.placeholder": {
     "sourceHash": "2631f3d"
   },
-  "settings.askCmdr.interactiveModel.keywords": "ai, chat, assistant, model, interactive, slot",
+  "settings.askCmdr.interactiveModel.keywords": "trí tuệ nhân tạo, trò chuyện, trợ lý, mô hình, tương tác, khe",
   "@settings.askCmdr.interactiveModel.keywords": {
     "sourceHash": "2e3c2d7"
   },
@@ -2262,7 +2262,7 @@
   "@settings.askCmdr.chatMemorySize.overWindow": {
     "sourceHash": "0dc68ac"
   },
-  "settings.askCmdr.chatMemorySize.keywords": "chat, memory, context, window, tokens, size, budget, history",
+  "settings.askCmdr.chatMemorySize.keywords": "trò chuyện, bộ nhớ, ngữ cảnh, cửa sổ ngữ cảnh, token, kích cỡ, ngân sách, lịch sử",
   "@settings.askCmdr.chatMemorySize.keywords": {
     "sourceHash": "7efd03c"
   },
@@ -2278,7 +2278,7 @@
   "@settings.askCmdr.proactive.description": {
     "sourceHash": "556f155"
   },
-  "settings.askCmdr.proactive.keywords": "proactive, suggestions, automatic, notice, watch, wake, ai",
+  "settings.askCmdr.proactive.keywords": "chủ động, đề xuất, gợi ý, tự động, để ý, theo dõi, thức dậy, trí tuệ nhân tạo",
   "@settings.askCmdr.proactive.keywords": {
     "sourceHash": "3be12a4"
   },
@@ -2294,7 +2294,7 @@
   "@settings.askCmdr.wakeDelay.summary": {
     "sourceHash": "ad03c00"
   },
-  "settings.askCmdr.wakeDelay.keywords": "delay, cadence, wait, often, frequency, calm, quiet, proactive",
+  "settings.askCmdr.wakeDelay.keywords": "độ trễ, trễ, nhịp, chờ, thường xuyên, tần suất, bình tĩnh, yên tĩnh, chủ động",
   "@settings.askCmdr.wakeDelay.keywords": {
     "sourceHash": "800df1b"
   },
@@ -2306,7 +2306,7 @@
   "@settings.askCmdr.wakeToast.description": {
     "sourceHash": "dd04b0a"
   },
-  "settings.askCmdr.wakeToast.keywords": "toast, notice, notification, suggestion, proactive, alert",
+  "settings.askCmdr.wakeToast.keywords": "thông báo, đề xuất, gợi ý, chủ động, cảnh báo",
   "@settings.askCmdr.wakeToast.keywords": {
     "sourceHash": "6ed1b7d"
   },
@@ -2322,7 +2322,7 @@
   "@settings.askCmdr.memory.open": {
     "sourceHash": "cffe1da"
   },
-  "settings.askCmdr.openMemoryFolder.keywords": "memory, folder, notes, remember, open",
+  "settings.askCmdr.openMemoryFolder.keywords": "bộ nhớ, thư mục, ghi chú, ghi nhớ, nhớ, mở",
   "@settings.askCmdr.openMemoryFolder.keywords": {
     "sourceHash": "fcd353e"
   },
@@ -2392,7 +2392,7 @@
   "@settings.operationLog.enabled.description": {
     "sourceHash": "78571fc"
   },
-  "settings.operationLog.enabled.keywords": "operation, log, history, record, recording, undo, journal, privacy, turn off",
+  "settings.operationLog.enabled.keywords": "thao tác, nhật ký, nhật ký thao tác, lịch sử, ghi lại, ghi, hoàn tác, quyền riêng tư, tắt",
   "@settings.operationLog.enabled.keywords": {
     "sourceHash": "25f39cc"
   },
@@ -2420,7 +2420,7 @@
   "@settings.operationLog.maxAge.opt.year1": {
     "sourceHash": "91647ba"
   },
-  "settings.operationLog.maxAge.keywords": "operation, log, history, retention, age, keep, prune, forever, days, undo",
+  "settings.operationLog.maxAge.keywords": "thao tác, nhật ký, lịch sử, lưu giữ, thời hạn, tuổi, giữ, dọn dẹp, mãi mãi, ngày, hoàn tác",
   "@settings.operationLog.maxAge.keywords": {
     "sourceHash": "cc6f4ec"
   },
@@ -2432,7 +2432,7 @@
   "@settings.operationLog.maxSize.description": {
     "sourceHash": "ad5152a"
   },
-  "settings.operationLog.maxSize.keywords": "operation, log, history, retention, size, disk, space, limit, megabytes, gigabytes",
+  "settings.operationLog.maxSize.keywords": "thao tác, nhật ký, lịch sử, lưu giữ, kích cỡ, đĩa, dung lượng, giới hạn, megabyte, gigabyte",
   "@settings.operationLog.maxSize.keywords": {
     "sourceHash": "2ea4edc"
   },
@@ -2762,7 +2762,7 @@
   "@settings.fileSystemWatching.indexSize": {
     "sourceHash": "adbb92c"
   },
-  "settings.indexing.indexSize.keywords": "clear index, index database, disk space, delete",
+  "settings.indexing.indexSize.keywords": "xóa chỉ mục, chỉ mục, cơ sở dữ liệu chỉ mục, dung lượng đĩa, xóa",
   "@settings.indexing.indexSize.keywords": {
     "sourceHash": "2a99f52"
   },
@@ -2886,7 +2886,7 @@
   "@settings.securityLog.enabled.description": {
     "sourceHash": "11361eb"
   },
-  "settings.securityLog.enabled.keywords": "security, log, audit, record, events, access, privacy",
+  "settings.securityLog.enabled.keywords": "bảo mật, an ninh, nhật ký, kiểm toán, ghi lại, sự kiện, truy cập, quyền riêng tư",
   "@settings.securityLog.enabled.keywords": {
     "sourceHash": "6f113c0"
   },
@@ -2894,7 +2894,7 @@
   "@settings.securityLog.showInFinder": {
     "sourceHash": "c2a9c77"
   },
-  "settings.updates.showSecurityLog.keywords": "security, log, audit, events, file, open",
+  "settings.updates.showSecurityLog.keywords": "bảo mật, nhật ký, kiểm toán, sự kiện, tệp, mở",
   "@settings.updates.showSecurityLog.keywords": {
     "sourceHash": "9ce9447"
   },
@@ -2943,7 +2943,7 @@
   "@settings.updates.checkForUpdates": {
     "sourceHash": "f26f327"
   },
-  "settings.updates.checkForUpdates.keywords": "update, upgrade, check, version, new version",
+  "settings.updates.checkForUpdates.keywords": "cập nhật, nâng cấp, kiểm tra, phiên bản, phiên bản mới, bản mới",
   "@settings.updates.checkForUpdates.keywords": {
     "sourceHash": "8381c6a"
   },
@@ -2963,7 +2963,7 @@
   "@settings.logging.openLogFile": {
     "sourceHash": "ec1bc04"
   },
-  "settings.advanced.openLogFile.keywords": "log, logs, file, folder, reveal",
+  "settings.advanced.openLogFile.keywords": "nhật ký, tệp nhật ký, tệp, thư mục, hiển thị",
   "@settings.advanced.openLogFile.keywords": {
     "sourceHash": "25e0c5a"
   },
@@ -2975,7 +2975,7 @@
   "@settings.logging.copyDiagnostics": {
     "sourceHash": "b8e7644"
   },
-  "settings.advanced.copyDiagnostics.keywords": "diagnostics, copy, version, support, clipboard",
+  "settings.advanced.copyDiagnostics.keywords": "chẩn đoán, sao chép, phiên bản, hỗ trợ, bảng nhớ tạm",
   "@settings.advanced.copyDiagnostics.keywords": {
     "sourceHash": "d7ce56b"
   },
@@ -3023,7 +3023,7 @@
   "@settings.advanced.resetAll": {
     "sourceHash": "a04d9be"
   },
-  "settings.advanced.resetAll.keywords": "reset, defaults, restore, factory",
+  "settings.advanced.resetAll.keywords": "đặt lại, mặc định, khôi phục, cài đặt gốc",
   "@settings.advanced.resetAll.keywords": {
     "sourceHash": "05b1de6"
   },
@@ -3071,7 +3071,7 @@
   "@settings.mediaIndex.scope.opt.importance": {
     "sourceHash": "0a66efe"
   },
-  "settings.mediaIndex.scope.keywords": "image, photo, index, folders, scope, coverage, which, choose",
+  "settings.mediaIndex.scope.keywords": "hình ảnh, ảnh, chỉ mục, thư mục, phạm vi, độ bao phủ, thư mục nào, chọn",
   "@settings.mediaIndex.scope.keywords": {
     "sourceHash": "39010c3"
   },
@@ -3111,7 +3111,7 @@
   "@settings.servers.card.trustedHostKeys": {
     "sourceHash": "46c5c9d"
   },
-  "settings.network.trustedHostKeys.keywords": "host key, fingerprint, trust, trusted, known hosts, server, forget",
+  "settings.network.trustedHostKeys.keywords": "khóa máy chủ, dấu vân tay, tin cậy, được tin cậy, máy chủ đã biết, máy chủ, quên",
   "@settings.network.trustedHostKeys.keywords": {
     "sourceHash": "d111f38"
   },
@@ -3159,7 +3159,7 @@
   "@settings.adb.status.notWatching": {
     "sourceHash": "6e1936c"
   },
-  "settings.adb.status.keywords": "status, re-check, recheck, found, watching, install",
+  "settings.adb.status.keywords": "trạng thái, kiểm tra lại, tìm thấy, đã tìm thấy, theo dõi, cài đặt",
   "@settings.adb.status.keywords": {
     "sourceHash": "32678b7"
   },
@@ -3203,7 +3203,7 @@
   "@settings.dataWipe.button": {
     "sourceHash": "fbb253f"
   },
-  "settings.updates.deleteAllData.keywords": "delete, erase, remove, wipe, reset, uninstall, privacy, data, forget, gdpr",
+  "settings.updates.deleteAllData.keywords": "xóa, xóa sạch, gỡ bỏ, đặt lại, gỡ cài đặt, quyền riêng tư, dữ liệu, quên",
   "@settings.updates.deleteAllData.keywords": {
     "sourceHash": "0ffb0f6"
   },
@@ -3331,23 +3331,23 @@
   "@settings.dataWipe.quit": {
     "sourceHash": "b3455b4"
   },
-  "settings.askCmdr.forgetMemory.keywords": "forget, memory, erase, delete, remembers, privacy",
+  "settings.askCmdr.forgetMemory.keywords": "quên, bộ nhớ, xóa, ghi nhớ, quyền riêng tư",
   "@settings.askCmdr.forgetMemory.keywords": {
     "sourceHash": "e653535"
   },
-  "settings.shortcuts.resetAll.keywords": "reset, shortcuts, defaults, restore, keyboard",
+  "settings.shortcuts.resetAll.keywords": "đặt lại, phím tắt, mặc định, khôi phục, bàn phím",
   "@settings.shortcuts.resetAll.keywords": {
     "sourceHash": "ccbedb0"
   },
-  "settings.license.manageKey.keywords": "license, key, manage, activate, activation, change",
+  "settings.license.manageKey.keywords": "giấy phép, khóa, khóa giấy phép, quản lý, kích hoạt, thay đổi, bản quyền",
   "@settings.license.manageKey.keywords": {
     "sourceHash": "3e2241e"
   },
-  "settings.license.enterKey.keywords": "license, key, enter, activate, activation, redeem",
+  "settings.license.enterKey.keywords": "giấy phép, khóa, khóa giấy phép, nhập, kích hoạt, đổi mã, bản quyền",
   "@settings.license.enterKey.keywords": {
     "sourceHash": "ebb9475"
   },
-  "settings.license.getLicense.keywords": "license, buy, purchase, pricing, commercial, personal, upgrade",
+  "settings.license.getLicense.keywords": "giấy phép, mua, giá, bảng giá, thương mại, cá nhân, nâng cấp, bản quyền",
   "@settings.license.getLicense.keywords": {
     "sourceHash": "5454f6d"
   }

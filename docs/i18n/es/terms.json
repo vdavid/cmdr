@@ -330,6 +330,12 @@
     "confidence": "high",
     "sources": "decisions.md \"S3\" (AWS console and docs in this language (outside the pile, not verified live)); catalog servers.sheet.s3Bucket"
   },
+  "buffer": {
+    "chosen": "búfer",
+    "accept": ["búferes", "buffer"],
+    "confidence": "high",
+    "sources": "MS terminology (buffer → búfer); Double Commander es (búfer)"
+  },
   "byte": {
     "chosen": "byte",
     "accept": ["bytes", "Bytes"],
@@ -449,6 +455,13 @@
     "confidence": "high",
     "sources": "MS terminology (Lista de tareas, Kaizala)",
     "decision": "Las 23 claves del rediseño de la introducción"
+  },
+  "chip": {
+    "chosen": "chip",
+    "accept": ["chips"],
+    "forms": "el chip del repo",
+    "confidence": "tentative",
+    "sources": "no pile hit for the UI-pill sense (2026-10-19); the loanword is the everyday Spanish UI word, and etiqueta is taken by tag"
   },
   "choose": {
     "chosen": "elegir",
@@ -771,6 +784,12 @@
     "chosen": "panel",
     "confidence": "tentative",
     "sources": "catalog (settings.askCmdr.spend.disclaimer)"
+  },
+  "debounce": {
+    "chosen": "retardo",
+    "accept": ["demora", "espera"],
+    "confidence": "tentative",
+    "sources": "no pile hit for debounce (2026-10-19); retardo names the wait itself, which is what the setting tunes"
   },
   "debugging": {
     "chosen": "depuración",

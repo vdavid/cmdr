@@ -3599,6 +3599,9 @@
     ],
     "chosen": "retour à la ligne",
     "confidence": "high",
+    "exceptions": {
+      "settings.listing.briefColumnWidthMode.keywords": "English \"shrink-wrap\" (fit the column to its content) isn’t word wrap; the French keyword is « ajuster »"
+    },
     "forms": "the setting and menu → Retour à la ligne automatique; the tight badge → retour ligne",
     "sources": "MS terminology FRA id 134158"
   },

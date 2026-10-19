@@ -15,7 +15,7 @@
   "@settings.appearance.language.opt.systemWithLanguage": {
     "sourceHash": "ab10534"
   },
-  "settings.appearance.language.keywords": "language, locale, translation, region, english",
+  "settings.appearance.language.keywords": "språk, språkval, översättning, region, engelska, svenska",
   "@settings.appearance.language.keywords": {
     "sourceHash": "c1b9ab9"
   },
@@ -40,7 +40,7 @@
     "sourceHash": "6725e7b",
     "sameAsSourceJustification": "'System' is the same word in Swedish - Apple Swedish uses 'System' standalone for the follow-system appearance (verified in pile macOS). Deliberately identical."
   },
-  "settings.theme.mode.keywords": "theme, dark, light, mode, appearance, color",
+  "settings.theme.mode.keywords": "tema, mörkt, ljust, mörkt läge, ljust läge, nattläge, läge, utseende, färg",
   "@settings.theme.mode.keywords": {
     "sourceHash": "8a95116"
   },
@@ -60,7 +60,7 @@
   "@settings.appearance.appColor.opt.cmdrGold": {
     "sourceHash": "3ae5711"
   },
-  "settings.appearance.appColor.keywords": "color, accent, theme, gold, system, brand",
+  "settings.appearance.appColor.keywords": "färg, accentfärg, tema, guld, system, varumärke",
   "@settings.appearance.appColor.keywords": {
     "sourceHash": "dd5ef83"
   },
@@ -85,7 +85,7 @@
   "@settings.appearance.sizeColors.opt.rainbow": {
     "sourceHash": "b1f7b2e"
   },
-  "settings.appearance.sizeColors.keywords": "size, color, tier, rainbow, app, highlight",
+  "settings.appearance.sizeColors.keywords": "storlek, färg, färgkodning, nivå, regnbåge, app, markering",
   "@settings.appearance.sizeColors.keywords": {
     "sourceHash": "8eb9856"
   },
@@ -110,7 +110,7 @@
   "@settings.appearance.dateColors.opt.wilting": {
     "sourceHash": "2aa30f1"
   },
-  "settings.appearance.dateColors.keywords": "date, color, age, modified, wilting, app, fresh, old",
+  "settings.appearance.dateColors.keywords": "datum, färg, ålder, ändrad, vissna, vissnande, app, färsk, ny, gammal",
   "@settings.appearance.dateColors.keywords": {
     "sourceHash": "cc85453"
   },
@@ -147,7 +147,7 @@
   "@settings.appearance.dateTimeFormat.opt.custom": {
     "sourceHash": "c4e69d5"
   },
-  "settings.appearance.dateTimeFormat.keywords": "date, time, format, custom, timestamp",
+  "settings.appearance.dateTimeFormat.keywords": "datum, tid, klockslag, format, datumformat, anpassad, tidsstämpel",
   "@settings.appearance.dateTimeFormat.keywords": {
     "sourceHash": "8fb735b"
   },
@@ -159,7 +159,7 @@
   "@settings.appearance.customDateTimeFormat.description": {
     "sourceHash": "577dee6"
   },
-  "settings.appearance.customDateTimeFormat.keywords": "custom, format, date, time, placeholder",
+  "settings.appearance.customDateTimeFormat.keywords": "anpassad, format, datum, tid, platshållare, mönster",
   "@settings.appearance.customDateTimeFormat.keywords": {
     "sourceHash": "1be6452"
   },
@@ -171,7 +171,7 @@
   "@settings.listing.stripedRows.description": {
     "sourceHash": "e95776a"
   },
-  "settings.listing.stripedRows.keywords": "stripe, zebra, alternate, row, shading, accessibility",
+  "settings.listing.stripedRows.keywords": "rand, ränder, randig, zebra, växlande, rad, rader, skuggning, hjälpmedel",
   "@settings.listing.stripedRows.keywords": {
     "sourceHash": "3a8c62d"
   },
@@ -183,7 +183,7 @@
   "@settings.appearance.tintLocal.description": {
     "sourceHash": "3c86b48"
   },
-  "settings.appearance.tintLocal.keywords": "tint, pane, color, volume, local, background, highlight",
+  "settings.appearance.tintLocal.keywords": "ton, tona, panel, färg, volym, lokal, bakgrund, markering",
   "@settings.appearance.tintLocal.keywords": {
     "sourceHash": "955fcd6"
   },
@@ -195,7 +195,7 @@
   "@settings.appearance.tintSmb.description": {
     "sourceHash": "bddee40"
   },
-  "settings.appearance.tintSmb.keywords": "tint, pane, color, volume, server, network, background, highlight",
+  "settings.appearance.tintSmb.keywords": "ton, tona, panel, färg, volym, server, nätverk, bakgrund, markering",
   "@settings.appearance.tintSmb.keywords": {
     "sourceHash": "880947f"
   },
@@ -207,7 +207,7 @@
   "@settings.appearance.tintMtp.description": {
     "sourceHash": "d70512d"
   },
-  "settings.appearance.tintMtp.keywords": "tint, pane, color, volume, phone, device, camera, background, highlight",
+  "settings.appearance.tintMtp.keywords": "ton, tona, panel, färg, volym, telefon, mobil, enhet, kamera, bakgrund, markering",
   "@settings.appearance.tintMtp.keywords": {
     "sourceHash": "332d7b6"
   },
@@ -219,7 +219,7 @@
   "@settings.appearance.textSize.description": {
     "sourceHash": "49a0a6b"
   },
-  "settings.appearance.textSize.keywords": "text, size, font, larger, smaller, accessibility, zoom, scale",
+  "settings.appearance.textSize.keywords": "text, storlek, textstorlek, typsnitt, teckensnitt, större, mindre, hjälpmedel, zoom, skala",
   "@settings.appearance.textSize.keywords": {
     "sourceHash": "d5080b3"
   },
@@ -243,7 +243,7 @@
   "@settings.appearance.uiDensity.opt.spacious": {
     "sourceHash": "57edf23"
   },
-  "settings.appearance.uiDensity.keywords": "compact, comfortable, spacious, size, spacing, dense",
+  "settings.appearance.uiDensity.keywords": "kompakt, bekväm, luftig, rymlig, storlek, avstånd, tät, täthet",
   "@settings.appearance.uiDensity.keywords": {
     "sourceHash": "26f3879"
   },
@@ -268,7 +268,7 @@
   "@settings.listing.sizeDisplay.opt.physical": {
     "sourceHash": "00ca4da"
   },
-  "settings.listing.sizeDisplay.keywords": "size, display, logical, physical, smart, disk, content, sparse",
+  "settings.listing.sizeDisplay.keywords": "storlek, visning, logisk, fysisk, smart, disk, innehåll, gles",
   "@settings.listing.sizeDisplay.keywords": {
     "sourceHash": "b975b7d"
   },
@@ -288,7 +288,7 @@
   "@settings.listing.sizeUnit.opt.bytes": {
     "sourceHash": "4d80003"
   },
-  "settings.listing.sizeUnit.keywords": "size, human, bytes, unit, format, raw, precise, dynamic",
+  "settings.listing.sizeUnit.keywords": "storlek, läsbar, byte, enhet, format, rå, exakt, dynamisk",
   "@settings.listing.sizeUnit.keywords": {
     "sourceHash": "63c1aed"
   },
@@ -308,7 +308,7 @@
   "@settings.appearance.fileSizeFormat.opt.si": {
     "sourceHash": "4dcc22e"
   },
-  "settings.appearance.fileSizeFormat.keywords": "size, bytes, binary, decimal",
+  "settings.appearance.fileSizeFormat.keywords": "storlek, filstorlek, byte, binär, decimal",
   "@settings.appearance.fileSizeFormat.keywords": {
     "sourceHash": "ce11b1b"
   },
@@ -320,7 +320,7 @@
   "@settings.listing.sizeMismatchWarning.description": {
     "sourceHash": "1b232eb"
   },
-  "settings.listing.sizeMismatchWarning.keywords": "size, mismatch, warning, alert, disk, content, difference",
+  "settings.listing.sizeMismatchWarning.keywords": "storlek, avvikelse, skillnad, stämmer inte, varning, disk, innehåll",
   "@settings.listing.sizeMismatchWarning.keywords": {
     "sourceHash": "3f332ce"
   },
@@ -332,7 +332,7 @@
   "@settings.appearance.useAppIconsForDocuments.description": {
     "sourceHash": "9651182"
   },
-  "settings.appearance.useAppIconsForDocuments.keywords": "icon, document, file, app, colorful",
+  "settings.appearance.useAppIconsForDocuments.keywords": "symbol, ikon, appsymbol, dokument, fil, app, färgglad",
   "@settings.appearance.useAppIconsForDocuments.keywords": {
     "sourceHash": "b039472"
   },
@@ -344,7 +344,7 @@
   "@settings.appearance.showFunctionKeyBar.description": {
     "sourceHash": "138b56b"
   },
-  "settings.appearance.showFunctionKeyBar.keywords": "function, key, bar, shortcut, buttons, bottom, toolbar",
+  "settings.appearance.showFunctionKeyBar.keywords": "funktionstangent, funktionstangenter, tangent, fält, list, genväg, knappar, nederkant, verktygsfält",
   "@settings.appearance.showFunctionKeyBar.keywords": {
     "sourceHash": "c42e176"
   },
@@ -356,7 +356,7 @@
   "@settings.listing.showHiddenFiles.description": {
     "sourceHash": "8e77c67"
   },
-  "settings.listing.showHiddenFiles.keywords": "hidden, dotfile, dotfiles, invisible, system, show",
+  "settings.listing.showHiddenFiles.keywords": "dold, dolda filer, osynlig, punktfil, punktfiler, system, visa",
   "@settings.listing.showHiddenFiles.keywords": {
     "sourceHash": "16c608d"
   },
@@ -368,7 +368,7 @@
   "@settings.listing.showExtensionInName.description": {
     "sourceHash": "e7c361c"
   },
-  "settings.listing.showExtensionInName.keywords": "extension, ext, filename, name, column, full, split, suffix",
+  "settings.listing.showExtensionInName.keywords": "filtillägg, tillägg, ändelse, filnamn, namn, kolumn, hela, dela, suffix",
   "@settings.listing.showExtensionInName.keywords": {
     "sourceHash": "b71b4fa"
   },
@@ -380,7 +380,7 @@
   "@settings.listing.showTags.description": {
     "sourceHash": "005f3b0"
   },
-  "settings.listing.showTags.keywords": "tag, tags, label, labels, color, colour, dot, dots",
+  "settings.listing.showTags.keywords": "tagg, taggar, etikett, etiketter, färg, prick, prickar",
   "@settings.listing.showTags.keywords": {
     "sourceHash": "70fc801"
   },
@@ -392,7 +392,7 @@
   "@settings.listing.foldersFirst.description": {
     "sourceHash": "8505ff3"
   },
-  "settings.listing.foldersFirst.keywords": "sort, directory, directories, folder, folders, first, top, mixed, order, listing",
+  "settings.listing.foldersFirst.keywords": "sortera, sortering, katalog, kataloger, mapp, mappar, först, överst, blandat, ordning, lista",
   "@settings.listing.foldersFirst.keywords": {
     "sourceHash": "c4f9de2"
   },
@@ -404,7 +404,7 @@
   "@settings.listing.spaceCalculatesFolderSize.description": {
     "sourceHash": "38d64c1"
   },
-  "settings.listing.spaceCalculatesFolderSize.keywords": "space, size, folder, folders, directory, calculate, count, select",
+  "settings.listing.spaceCalculatesFolderSize.keywords": "mellanslag, storlek, mappstorlek, mapp, mappar, katalog, beräkna, räkna, markera",
   "@settings.listing.spaceCalculatesFolderSize.keywords": {
     "sourceHash": "5c24b62"
   },
@@ -428,7 +428,7 @@
   "@settings.listing.directorySortMode.opt.alwaysByName": {
     "sourceHash": "7687e38"
   },
-  "settings.listing.directorySortMode.keywords": "sort, directory, directories, folder, folders, order, listing, name, size",
+  "settings.listing.directorySortMode.keywords": "sortera, sortering, katalog, kataloger, mapp, mappar, ordning, lista, namn, storlek",
   "@settings.listing.directorySortMode.keywords": {
     "sourceHash": "de850c4"
   },
@@ -448,7 +448,7 @@
   "@settings.listing.briefColumnWidthMode.opt.limited": {
     "sourceHash": "01a089f"
   },
-  "settings.listing.briefColumnWidthMode.keywords": "brief, column, width, max, maximum, limit, pane, shrink-wrap",
+  "settings.listing.briefColumnWidthMode.keywords": "kortfattad, kolumn, bredd, kolumnbredd, max, maximal, gräns, panel, krymp",
   "@settings.listing.briefColumnWidthMode.keywords": {
     "sourceHash": "6d84686"
   },
@@ -456,7 +456,7 @@
   "@settings.listing.briefColumnWidthMaxPx.label": {
     "sourceHash": "9d045cd"
   },
-  "settings.listing.briefColumnWidthMaxPx.keywords": "brief, column, width, max, maximum, limit, pixel",
+  "settings.listing.briefColumnWidthMaxPx.keywords": "kortfattad, kolumn, bredd, kolumnbredd, max, maximal, gräns, pixel, pixlar",
   "@settings.listing.briefColumnWidthMaxPx.keywords": {
     "sourceHash": "3b64be6"
   },
@@ -480,7 +480,7 @@
   "@settings.fileOperations.allowFileExtensionChanges.opt.ask": {
     "sourceHash": "3c42771"
   },
-  "settings.fileOperations.allowFileExtensionChanges.keywords": "extension, rename, file, change, ask, confirm",
+  "settings.fileOperations.allowFileExtensionChanges.keywords": "filtillägg, tillägg, ändelse, byt namn, fil, ändra, fråga, bekräfta",
   "@settings.fileOperations.allowFileExtensionChanges.keywords": {
     "sourceHash": "1a87d27"
   },
@@ -504,7 +504,7 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.fileOperations.pasteClipboardAsFile.keywords": "paste, clipboard, image, text, screenshot, file, create",
+  "settings.fileOperations.pasteClipboardAsFile.keywords": "klistra in, urklipp, bild, text, skärmbild, fil, skapa",
   "@settings.fileOperations.pasteClipboardAsFile.keywords": {
     "sourceHash": "3e077e3"
   },
@@ -516,7 +516,7 @@
   "@settings.fileOperations.skipConfirmation.description": {
     "sourceHash": "086379d"
   },
-  "settings.fileOperations.skipConfirmation.keywords": "confirm, confirmation, dialog, ask, copy, move, trash, delete, skip, clicks",
+  "settings.fileOperations.skipConfirmation.keywords": "bekräfta, bekräftelse, dialog, fråga, kopiera, flytta, papperskorg, radera, hoppa över, klick",
   "@settings.fileOperations.skipConfirmation.keywords": {
     "sourceHash": "9f61258"
   },
@@ -532,7 +532,7 @@
   "@settings.archives.zip.label": {
     "sourceHash": "ec0fd54"
   },
-  "settings.behavior.archiveEnter.zip.keywords": "archive, browse, open, extract, enter, compressed",
+  "settings.behavior.archiveEnter.zip.keywords": "arkiv, bläddra, öppna, extrahera, packa upp, gå in, komprimerad",
   "@settings.behavior.archiveEnter.zip.keywords": {
     "sourceHash": "493848e"
   },
@@ -544,7 +544,7 @@
   "@settings.archives.ooxml.label": {
     "sourceHash": "76c4431"
   },
-  "settings.behavior.archiveEnter.ooxml.keywords": "document, package",
+  "settings.behavior.archiveEnter.ooxml.keywords": "dokument, paket",
   "@settings.behavior.archiveEnter.ooxml.keywords": {
     "sourceHash": "19e7eca"
   },
@@ -556,7 +556,7 @@
   "@settings.archives.bundle.label": {
     "sourceHash": "4a5e902"
   },
-  "settings.behavior.archiveEnter.bundle.keywords": "bundle, app, application, framework, browse, open, enter, launch",
+  "settings.behavior.archiveEnter.bundle.keywords": "paket, apppaket, paketinnehåll, app, program, ramverk, bläddra, öppna, gå in, starta",
   "@settings.behavior.archiveEnter.bundle.keywords": {
     "sourceHash": "fa1c3b6"
   },
@@ -580,7 +580,7 @@
   "@settings.archives.compressionLevel.label": {
     "sourceHash": "9889378"
   },
-  "settings.behavior.archiveCompressionLevel.keywords": "compression, level, archive, size, faster, smaller",
+  "settings.behavior.archiveCompressionLevel.keywords": "komprimering, komprimera, nivå, arkiv, storlek, snabbare, mindre",
   "@settings.behavior.archiveCompressionLevel.keywords": {
     "sourceHash": "4597a15"
   },
@@ -604,7 +604,7 @@
   "@settings.indexing.enabled.description": {
     "sourceHash": "32966c5"
   },
-  "settings.indexing.enabled.keywords": "index, drive, scan, size, directory, folder, background",
+  "settings.indexing.enabled.keywords": "index, indexering, indexera, enhet, genomsökning, sök igenom, storlek, katalog, mapp, bakgrund",
   "@settings.indexing.enabled.keywords": {
     "sourceHash": "186f2f6"
   },
@@ -680,7 +680,7 @@
   "@settings.mediaIndex.semanticSearch.label": {
     "sourceHash": "8cbf6af"
   },
-  "settings.mediaIndex.semanticSearch.enabled.keywords": "image, photo, semantic, search, describe, description, natural language, ai",
+  "settings.mediaIndex.semanticSearch.enabled.keywords": "bild, bilder, foto, semantisk, sök, sökning, beskriv, beskrivning, naturligt språk, ai",
   "@settings.mediaIndex.semanticSearch.enabled.keywords": {
     "sourceHash": "c5380b3"
   },
@@ -696,7 +696,7 @@
   "@settings.mediaIndex.enabled.description": {
     "sourceHash": "118fc8d"
   },
-  "settings.mediaIndex.enabled.keywords": "image, photo, text, search, index, picture, screenshot, content",
+  "settings.mediaIndex.enabled.keywords": "bild, bilder, foto, text, sök, sökning, index, indexering, skärmbild, innehåll",
   "@settings.mediaIndex.enabled.keywords": {
     "sourceHash": "a451d8e"
   },
@@ -708,7 +708,7 @@
   "@settings.mediaIndex.showFileStatusIcons.description": {
     "sourceHash": "1a725aa"
   },
-  "settings.mediaIndex.showFileStatusIcons.keywords": "image, photo, badge, icon, overlay, indicator, status, indexed",
+  "settings.mediaIndex.showFileStatusIcons.keywords": "bild, bilder, märke, symbol, ikon, överlägg, indikator, status, indexerad",
   "@settings.mediaIndex.showFileStatusIcons.keywords": {
     "sourceHash": "e8ddefc"
   },
@@ -720,7 +720,7 @@
   "@settings.mediaIndex.showInSearch.description": {
     "sourceHash": "143a4e7"
   },
-  "settings.mediaIndex.showInSearch.keywords": "image, photo, search, results, grid, semantic, show, hide",
+  "settings.mediaIndex.showInSearch.keywords": "bild, bilder, sök, sökning, resultat, rutnät, semantisk, visa, göm, dölj",
   "@settings.mediaIndex.showInSearch.keywords": {
     "sourceHash": "069d69d"
   },
@@ -812,7 +812,7 @@
   "@settings.mediaIndex.parallelism.description": {
     "sourceHash": "8a42808"
   },
-  "settings.mediaIndex.parallelism.keywords": "image, photo, index, parallel, workers, speed, performance, cores",
+  "settings.mediaIndex.parallelism.keywords": "bild, bilder, index, parallell, parallella, arbetare, trådar, hastighet, prestanda, kärnor",
   "@settings.mediaIndex.parallelism.keywords": {
     "sourceHash": "c01971c"
   },
@@ -872,7 +872,7 @@
   "@settings.mediaIndex.importanceThreshold.floor": {
     "sourceHash": "8839d14"
   },
-  "settings.mediaIndex.importanceThreshold.keywords": "image, photo, index, importance, folders, coverage, depth",
+  "settings.mediaIndex.importanceThreshold.keywords": "bild, bilder, index, vikt, viktig, mappar, täckning, djup, hur mycket",
   "@settings.mediaIndex.importanceThreshold.keywords": {
     "sourceHash": "419756c"
   },
@@ -932,7 +932,7 @@
   "@settings.indexing.askForEachDrive.description": {
     "sourceHash": "189552c"
   },
-  "settings.indexing.askForEachDrive.keywords": "drive, index, ask, prompt, notification, connect, network",
+  "settings.indexing.askForEachDrive.keywords": "enhet, index, fråga, avisering, ansluta, anslut, nätverk",
   "@settings.indexing.askForEachDrive.keywords": {
     "sourceHash": "1aa1446"
   },
@@ -944,7 +944,7 @@
   "@settings.indexing.staleNotify.description": {
     "sourceHash": "03af10e"
   },
-  "settings.indexing.staleNotify.keywords": "drive, index, stale, outdated, notify, notification, disconnect, network",
+  "settings.indexing.staleNotify.keywords": "enhet, index, inaktuell, föråldrad, avisera, avisering, koppla från, frånkopplad, nätverk",
   "@settings.indexing.staleNotify.keywords": {
     "sourceHash": "12276c3"
   },
@@ -972,7 +972,7 @@
   "@settings.indexing.reEnableNotifications.disabledTooltip": {
     "sourceHash": "e7702a8"
   },
-  "settings.indexing.reEnableNotifications.keywords": "re-enable, notifications, drives, silenced, ask again",
+  "settings.indexing.reEnableNotifications.keywords": "aktivera igen, återaktivera, aviseringar, enheter, tystad, tystade, fråga igen",
   "@settings.indexing.reEnableNotifications.keywords": {
     "sourceHash": "54baf63"
   },
@@ -1017,7 +1017,7 @@
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.neither": {
     "sourceHash": "9957d09"
   },
-  "settings.behavior.fileSystemWatching.downloadsNotifications.keywords": "download, downloads, notification, toast, notify",
+  "settings.behavior.fileSystemWatching.downloadsNotifications.keywords": "hämta, hämtning, hämtade filer, nedladdning, nedladdningar, avisering, avisera, notis",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.keywords": {
     "sourceHash": "955d46c"
   },
@@ -1029,7 +1029,7 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
     "sourceHash": "ed2f65d"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "shortcut, hotkey, global, download, downloads, jump, go to, goto",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "genväg, kortkommando, snabbtangent, global, hämtade filer, hämtning, nedladdning, senaste, hoppa, gå till",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
     "sourceHash": "1fd8c2f"
   },
@@ -1041,7 +1041,7 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.description": {
     "sourceHash": "77e5c31"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": "shortcut, hotkey, global, binding, combo",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": "genväg, kortkommando, snabbtangent, global, tangentkombination, kombination",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
     "sourceHash": "a90591b"
   },
@@ -1069,7 +1069,7 @@
   "@settings.behavior.notifications.keepUntilClosed.description": {
     "sourceHash": "53890bf"
   },
-  "settings.behavior.notifications.keepUntilClosed.keywords": "toast, notification, timeout, time, disappear, dismiss, close, keep, accessibility",
+  "settings.behavior.notifications.keepUntilClosed.keywords": "avisering, notis, tidsgräns, tid, försvinna, avfärda, stäng, behåll, hjälpmedel",
   "@settings.behavior.notifications.keepUntilClosed.keywords": {
     "sourceHash": "f681b77"
   },
@@ -1094,7 +1094,7 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": {
     "sourceHash": "ca7981b"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.keywords": "disk, space, low, free, storage, full, warning, notification, boot, startup",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.keywords": "disk, utrymme, diskutrymme, lite, ledigt, lagring, lagringsutrymme, full, varning, avisering, startskiva, start",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.keywords": {
     "sourceHash": "733f2ee"
   },
@@ -1106,7 +1106,7 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": {
     "sourceHash": "9ed41b8"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": "disk, space, threshold, percent, low, free, warning",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": "disk, utrymme, diskutrymme, tröskel, procent, lite, ledigt, varning",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": {
     "sourceHash": "7a0df93"
   },
@@ -1118,7 +1118,7 @@
   "@settings.search.autoApply.description": {
     "sourceHash": "19fcaf7"
   },
-  "settings.search.autoApply.keywords": "search, auto, apply, live, debounce, filename, instant",
+  "settings.search.autoApply.keywords": "sök, sökning, automatiskt, tillämpa, direkt, live, fördröjning, filnamn, omedelbart",
   "@settings.search.autoApply.keywords": {
     "sourceHash": "2e0e223"
   },
@@ -1142,7 +1142,7 @@
   "@settings.ai.provider.opt.local": {
     "sourceHash": "6689271"
   },
-  "settings.ai.provider.keywords": "ai, artificial intelligence, provider, cloud, local, off, model",
+  "settings.ai.provider.keywords": "ai, artificiell intelligens, leverantör, moln, lokal, av, modell",
   "@settings.ai.provider.keywords": {
     "sourceHash": "ff6248d"
   },
@@ -1158,7 +1158,7 @@
   "@settings.ai.cloudConsent.lockedHint": {
     "sourceHash": "8a24685"
   },
-  "settings.ai.cloudConsent.keywords": "consent, privacy, allow, send, data, cloud, ai",
+  "settings.ai.cloudConsent.keywords": "samtycke, integritet, tillåt, skicka, data, moln, ai",
   "@settings.ai.cloudConsent.keywords": {
     "sourceHash": "c0a0566"
   },
@@ -1166,7 +1166,7 @@
   "@settings.ai.cloudProvider.description": {
     "sourceHash": "3300ce9"
   },
-  "settings.ai.cloudProvider.keywords": "cloud, provider, service, custom",
+  "settings.ai.cloudProvider.keywords": "moln, leverantör, tjänst, anpassad",
   "@settings.ai.cloudProvider.keywords": {
     "sourceHash": "0ccf0ad"
   },
@@ -1186,7 +1186,7 @@
   "@settings.ai.localContextSize.description": {
     "sourceHash": "14256da"
   },
-  "settings.ai.localContextSize.keywords": "context, window, tokens, memory, size, local",
+  "settings.ai.localContextSize.keywords": "kontext, kontextfönster, fönster, token, tokens, minne, storlek, lokal",
   "@settings.ai.localContextSize.keywords": {
     "sourceHash": "cf1e449"
   },
@@ -1198,7 +1198,7 @@
   "@settings.network.enabled.description": {
     "sourceHash": "72a0854"
   },
-  "settings.network.enabled.keywords": "network, enable, enabled, discovery, local, permission",
+  "settings.network.enabled.keywords": "nätverk, aktivera, aktiverad, nätverkssökning, upptäckt, lokal, lokalt nätverk, behörighet",
   "@settings.network.enabled.keywords": {
     "sourceHash": "a2d95a0"
   },
@@ -1222,7 +1222,7 @@
   "@settings.network.directSmbConnection.description": {
     "sourceHash": "44a5a6d"
   },
-  "settings.network.directSmbConnection.keywords": "direct, fast, connection, network, performance",
+  "settings.network.directSmbConnection.keywords": "direkt, snabb, anslutning, nätverk, prestanda",
   "@settings.network.directSmbConnection.keywords": {
     "sourceHash": "6043806"
   },
@@ -1254,7 +1254,7 @@
   "@settings.network.shareCacheDuration.opt.days30": {
     "sourceHash": "ffd7280"
   },
-  "settings.network.shareCacheDuration.keywords": "cache, share, network, refresh",
+  "settings.network.shareCacheDuration.keywords": "cache, cachetid, delad mapp, delning, nätverk, uppdatera",
   "@settings.network.shareCacheDuration.keywords": {
     "sourceHash": "df14578"
   },
@@ -1286,7 +1286,7 @@
   "@settings.network.timeoutMode.opt.custom": {
     "sourceHash": "494ca78"
   },
-  "settings.network.timeoutMode.keywords": "timeout, network, slow, connection, latency",
+  "settings.network.timeoutMode.keywords": "tidsgräns, nätverk, långsam, anslutning, fördröjning, latens",
   "@settings.network.timeoutMode.keywords": {
     "sourceHash": "a00bb47"
   },
@@ -1298,7 +1298,7 @@
   "@settings.network.customTimeout.description": {
     "sourceHash": "28a8d46"
   },
-  "settings.network.customTimeout.keywords": "timeout, custom, seconds",
+  "settings.network.customTimeout.keywords": "tidsgräns, anpassad, sekunder",
   "@settings.network.customTimeout.keywords": {
     "sourceHash": "cf816c7"
   },
@@ -1310,7 +1310,7 @@
   "@settings.network.smbConcurrency.description": {
     "sourceHash": "49a590b"
   },
-  "settings.network.smbConcurrency.keywords": "concurrency, parallel, copy, batch, performance, transfer, speed",
+  "settings.network.smbConcurrency.keywords": "samtidighet, samtidiga, parallell, kopiera, omgång, prestanda, överföring, hastighet",
   "@settings.network.smbConcurrency.keywords": {
     "sourceHash": "8a4675f"
   },
@@ -1322,7 +1322,7 @@
   "@settings.fileOperations.mtpEnabled.description": {
     "sourceHash": "c66df04"
   },
-  "settings.fileOperations.mtpEnabled.keywords": "device, phone, mobile",
+  "settings.fileOperations.mtpEnabled.keywords": "enhet, telefon, mobil, mobiltelefon, kamera",
   "@settings.fileOperations.mtpEnabled.keywords": {
     "sourceHash": "ce40ecb"
   },
@@ -1334,7 +1334,7 @@
   "@settings.fileOperations.adbEnabled.description": {
     "sourceHash": "a89c957"
   },
-  "settings.fileOperations.adbEnabled.keywords": "usb debugging, developer options, phone, device",
+  "settings.fileOperations.adbEnabled.keywords": "usb-felsökning, utvecklaralternativ, telefon, mobil, enhet",
   "@settings.fileOperations.adbEnabled.keywords": {
     "sourceHash": "95bcc86"
   },
@@ -1346,7 +1346,7 @@
   "@settings.fileOperations.adbBinaryPath.description": {
     "sourceHash": "940ff29"
   },
-  "settings.fileOperations.adbBinaryPath.keywords": "path, binary, location",
+  "settings.fileOperations.adbBinaryPath.keywords": "sökväg, binärfil, program, plats",
   "@settings.fileOperations.adbBinaryPath.keywords": {
     "sourceHash": "646719a"
   },
@@ -1358,7 +1358,7 @@
   "@settings.fileOperations.mtpConnectionWarning.description": {
     "sourceHash": "9c7a648"
   },
-  "settings.fileOperations.mtpConnectionWarning.keywords": "warning, notification, connect, toast",
+  "settings.fileOperations.mtpConnectionWarning.keywords": "varning, avisering, notis, ansluta, anslut",
   "@settings.fileOperations.mtpConnectionWarning.keywords": {
     "sourceHash": "4f395e7"
   },
@@ -1370,7 +1370,7 @@
   "@settings.fileExplorer.git.showRepoChip.description": {
     "sourceHash": "7b8a9ba"
   },
-  "settings.fileExplorer.git.showRepoChip.keywords": "chip, branch, breadcrumb, repo, status, ahead, behind, dirty",
+  "settings.fileExplorer.git.showRepoChip.keywords": "chip, gren, sökvägsfält, brödsmulor, repo, status, före, efter, ändringar",
   "@settings.fileExplorer.git.showRepoChip.keywords": {
     "sourceHash": "15fb963"
   },
@@ -1382,7 +1382,7 @@
   "@settings.fileExplorer.git.showStatusColumn.description": {
     "sourceHash": "7ff07e4"
   },
-  "settings.fileExplorer.git.showStatusColumn.keywords": "status, column, modified, untracked, ignored, added, deleted",
+  "settings.fileExplorer.git.showStatusColumn.keywords": "status, kolumn, ändrad, ospårad, ignorerad, tillagd, raderad, borttagen",
   "@settings.fileExplorer.git.showStatusColumn.keywords": {
     "sourceHash": "ce0481d"
   },
@@ -1394,7 +1394,7 @@
   "@settings.fileExplorer.git.showVirtualGitPortal.description": {
     "sourceHash": "70eae72"
   },
-  "settings.fileExplorer.git.showVirtualGitPortal.keywords": "portal, virtual, branches, tags, commits, worktrees, history",
+  "settings.fileExplorer.git.showVirtualGitPortal.keywords": "portal, virtuell, gren, grenar, taggar, incheckningar, commits, worktrees, historik",
   "@settings.fileExplorer.git.showVirtualGitPortal.keywords": {
     "sourceHash": "25c1d2c"
   },
@@ -1406,7 +1406,7 @@
   "@settings.viewer.wordWrap.description": {
     "sourceHash": "8a87bd2"
   },
-  "settings.viewer.wordWrap.keywords": "viewer, wrap, word, line, horizontal, scroll",
+  "settings.viewer.wordWrap.keywords": "förhandsvisning, radbyte, automatiskt radbyte, ord, rad, vågrät, horisontell, rulla",
   "@settings.viewer.wordWrap.keywords": {
     "sourceHash": "5d0a24b"
   },
@@ -1418,7 +1418,7 @@
   "@settings.viewer.showTextCursor.description": {
     "sourceHash": "b5e542e"
   },
-  "settings.viewer.showTextCursor.keywords": "viewer, cursor, caret, text, insertion, point, blink, selection",
+  "settings.viewer.showTextCursor.keywords": "förhandsvisning, markör, textmarkör, text, insättningspunkt, blinka, markering",
   "@settings.viewer.showTextCursor.keywords": {
     "sourceHash": "1214804"
   },
@@ -1430,7 +1430,7 @@
   "@settings.developer.mcpEnabled.description": {
     "sourceHash": "10f4102"
   },
-  "settings.developer.mcpEnabled.keywords": "server, ai, assistant, protocol, model",
+  "settings.developer.mcpEnabled.keywords": "server, ai, assistent, protokoll, modell",
   "@settings.developer.mcpEnabled.keywords": {
     "sourceHash": "410be68"
   },
@@ -1443,7 +1443,7 @@
   "@settings.developer.mcpPort.description": {
     "sourceHash": "174e807"
   },
-  "settings.developer.mcpPort.keywords": "port, network, ephemeral",
+  "settings.developer.mcpPort.keywords": "port, nätverk, tillfällig, dynamisk",
   "@settings.developer.mcpPort.keywords": {
     "sourceHash": "2b54226"
   },
@@ -1455,7 +1455,7 @@
   "@settings.developer.verboseLogging.description": {
     "sourceHash": "5c69c0d"
   },
-  "settings.developer.verboseLogging.keywords": "log, debug, verbose, troubleshoot, performance, console",
+  "settings.developer.verboseLogging.keywords": "logg, loggning, felsökning, utförlig, detaljerad, prestanda, konsol",
   "@settings.developer.verboseLogging.keywords": {
     "sourceHash": "2bdf9aa"
   },
@@ -1467,7 +1467,7 @@
   "@settings.updates.autoCheck.description": {
     "sourceHash": "1ff0b1a"
   },
-  "settings.updates.autoCheck.keywords": "update, auto, check, version, background",
+  "settings.updates.autoCheck.keywords": "uppdatering, uppdateringar, automatiskt, kontrollera, sök efter, version, bakgrund",
   "@settings.updates.autoCheck.keywords": {
     "sourceHash": "091ca30"
   },
@@ -1479,7 +1479,7 @@
   "@settings.whatsNew.showOnUpdate.description": {
     "sourceHash": "4d4d7e6"
   },
-  "settings.whatsNew.showOnUpdate.keywords": "changelog, release notes, what’s new, update notes",
+  "settings.whatsNew.showOnUpdate.keywords": "nyheter, ändringslogg, versionsinformation, vad är nytt, uppdatering",
   "@settings.whatsNew.showOnUpdate.keywords": {
     "sourceHash": "ef19c9d"
   },
@@ -1499,7 +1499,7 @@
   "@settings.analytics.enabled.description": {
     "sourceHash": "f5534ee"
   },
-  "settings.analytics.enabled.keywords": "analytics, usage, stats, privacy, telemetry, beta, tracking, opt-out",
+  "settings.analytics.enabled.keywords": "analys, användning, statistik, användningsstatistik, integritet, telemetri, beta, spårning, avstå",
   "@settings.analytics.enabled.keywords": {
     "sourceHash": "85d82ce"
   },
@@ -1511,7 +1511,7 @@
   "@settings.analytics.email.description": {
     "sourceHash": "03574f9"
   },
-  "settings.analytics.email.keywords": "email, beta, contact, newsletter, updates, survey",
+  "settings.analytics.email.keywords": "e-post, mejl, e-postadress, beta, kontakt, nyhetsbrev, uppdateringar, enkät",
   "@settings.analytics.email.keywords": {
     "sourceHash": "61438eb"
   },
@@ -1523,7 +1523,7 @@
   "@settings.updates.crashReports.description": {
     "sourceHash": "e726766"
   },
-  "settings.updates.crashReports.keywords": "crash, report, privacy, telemetry, bug, error",
+  "settings.updates.crashReports.keywords": "krasch, kraschrapport, rapport, integritet, telemetri, bugg, fel",
   "@settings.updates.crashReports.keywords": {
     "sourceHash": "5fbf552"
   },
@@ -1535,7 +1535,7 @@
   "@settings.updates.errorReports.description": {
     "sourceHash": "f3e41eb"
   },
-  "settings.updates.errorReports.keywords": "error, report, auto, send, privacy, telemetry, bug, log, snippet, diagnostics",
+  "settings.updates.errorReports.keywords": "fel, felrapport, rapport, automatiskt, skicka, integritet, telemetri, bugg, logg, utdrag, diagnostik",
   "@settings.updates.errorReports.keywords": {
     "sourceHash": "271aae6"
   },
@@ -1547,7 +1547,7 @@
   "@settings.updates.attachEmailToReports.description": {
     "sourceHash": "dd23637"
   },
-  "settings.updates.attachEmailToReports.keywords": "email, report, crash, error, contact, attach, reply, beta",
+  "settings.updates.attachEmailToReports.keywords": "e-post, mejl, rapport, krasch, fel, kontakt, bifoga, svar, svara, beta",
   "@settings.updates.attachEmailToReports.keywords": {
     "sourceHash": "6fba4e5"
   },
@@ -1559,7 +1559,7 @@
   "@settings.advanced.prefetchBufferSize.description": {
     "sourceHash": "39f13c9"
   },
-  "settings.advanced.prefetchBufferSize.keywords": "prefetch, buffer, scroll, performance",
+  "settings.advanced.prefetchBufferSize.keywords": "förhämtning, buffert, rulla, prestanda",
   "@settings.advanced.prefetchBufferSize.keywords": {
     "sourceHash": "8e07ea0"
   },
@@ -1571,7 +1571,7 @@
   "@settings.advanced.virtualizationBufferRows.description": {
     "sourceHash": "82a0e9a"
   },
-  "settings.advanced.virtualizationBufferRows.keywords": "virtualization, buffer, row, render",
+  "settings.advanced.virtualizationBufferRows.keywords": "virtualisering, buffert, rad, rader, rendering",
   "@settings.advanced.virtualizationBufferRows.keywords": {
     "sourceHash": "2342517"
   },
@@ -1583,7 +1583,7 @@
   "@settings.advanced.virtualizationBufferColumns.description": {
     "sourceHash": "a1cbd98"
   },
-  "settings.advanced.virtualizationBufferColumns.keywords": "virtualization, buffer, column, brief",
+  "settings.advanced.virtualizationBufferColumns.keywords": "virtualisering, buffert, kolumn, kolumner, kortfattad",
   "@settings.advanced.virtualizationBufferColumns.keywords": {
     "sourceHash": "f4c112b"
   },
@@ -1595,7 +1595,7 @@
   "@settings.advanced.fileWatcherDebounce.description": {
     "sourceHash": "084a2a7"
   },
-  "settings.advanced.fileWatcherDebounce.keywords": "watcher, debounce, refresh, delay",
+  "settings.advanced.fileWatcherDebounce.keywords": "bevakning, filbevakning, fördröjning, uppdatera",
   "@settings.advanced.fileWatcherDebounce.keywords": {
     "sourceHash": "a389923"
   },
@@ -1607,7 +1607,7 @@
   "@settings.advanced.diskSpaceChangeThreshold.description": {
     "sourceHash": "f09c3cb"
   },
-  "settings.advanced.diskSpaceChangeThreshold.keywords": "disk, space, threshold, poll, refresh, status, bar",
+  "settings.advanced.diskSpaceChangeThreshold.keywords": "disk, utrymme, diskutrymme, tröskel, kontroll, uppdatera, status, statusfält",
   "@settings.advanced.diskSpaceChangeThreshold.keywords": {
     "sourceHash": "74628c1"
   },
@@ -1619,7 +1619,7 @@
   "@settings.fileViewer.suppressBinaryWarning.description": {
     "sourceHash": "a93b4cb"
   },
-  "settings.fileViewer.suppressBinaryWarning.keywords": "viewer, binary, image, raw, warning, banner, quick, look",
+  "settings.fileViewer.suppressBinaryWarning.keywords": "förhandsvisning, binär, binärfil, bild, rå, varning, banderoll, överblick",
   "@settings.fileViewer.suppressBinaryWarning.keywords": {
     "sourceHash": "12a2ca0"
   },
@@ -1631,7 +1631,7 @@
   "@settings.fileExplorer.suppressQuickLookHint.description": {
     "sourceHash": "10357b4"
   },
-  "settings.fileExplorer.suppressQuickLookHint.keywords": "quick, look, preview, space, hint, toast, reminder",
+  "settings.fileExplorer.suppressQuickLookHint.keywords": "överblick, förhandsvisning, mellanslag, tips, påminnelse, notis",
   "@settings.fileExplorer.suppressQuickLookHint.keywords": {
     "sourceHash": "d3a493e"
   },
@@ -1643,7 +1643,7 @@
   "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
     "sourceHash": "e53df3a"
   },
-  "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "tab, closed, reopen, history, undo, pane",
+  "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "flik, flikar, stängd, öppna igen, återöppna, historik, ångra, panel",
   "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {
     "sourceHash": "bb60e7b"
   },
@@ -1655,7 +1655,7 @@
   "@settings.advanced.dragThreshold.description": {
     "sourceHash": "7704bfa"
   },
-  "settings.advanced.dragThreshold.keywords": "drag, threshold, pixel, distance",
+  "settings.advanced.dragThreshold.keywords": "dra, dra och släpp, tröskel, pixel, avstånd",
   "@settings.advanced.dragThreshold.keywords": {
     "sourceHash": "1dec520"
   },
@@ -1667,7 +1667,7 @@
   "@settings.advanced.exitFullScreenOnEscape.description": {
     "sourceHash": "a862b71"
   },
-  "settings.advanced.exitFullScreenOnEscape.keywords": "escape, full screen, fullscreen, maximize, window, restore, exit",
+  "settings.advanced.exitFullScreenOnEscape.keywords": "escape, esc, helskärm, helskärmsläge, maximera, fönster, återställ, lämna, avsluta",
   "@settings.advanced.exitFullScreenOnEscape.keywords": {
     "sourceHash": "592c454"
   },
@@ -1687,7 +1687,7 @@
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
   },
-  "settings.fileExplorer.typeToJump.resetDelay.keywords": "type, jump, reset, delay, fuzzy, search, navigation, keystroke, buffer",
+  "settings.fileExplorer.typeToJump.resetDelay.keywords": "skriv, hoppa, återställ, fördröjning, ungefärlig, sök, navigering, tangenttryckning, buffert",
   "@settings.fileExplorer.typeToJump.resetDelay.keywords": {
     "sourceHash": "179755f"
   },
@@ -1707,7 +1707,7 @@
   "@settings.fileExplorer.typeToJump.mode.opt.filter": {
     "sourceHash": "638e249"
   },
-  "settings.fileExplorer.typeToJump.mode.keywords": "type, jump, filter, quick filter, quick search, narrow, keystroke",
+  "settings.fileExplorer.typeToJump.mode.keywords": "skriv, hoppa, filtrera, snabbfilter, snabbsök, snabbsökning, begränsa, tangenttryckning",
   "@settings.fileExplorer.typeToJump.mode.keywords": {
     "sourceHash": "039893a"
   },
@@ -1719,7 +1719,7 @@
   "@settings.fileOperations.maxConflictsToShow.description": {
     "sourceHash": "1f6bcb9"
   },
-  "settings.fileOperations.maxConflictsToShow.keywords": "conflict, max, limit, preview, operation",
+  "settings.fileOperations.maxConflictsToShow.keywords": "konflikt, konflikter, max, gräns, förhandsvisning, åtgärd",
   "@settings.fileOperations.maxConflictsToShow.keywords": {
     "sourceHash": "3b64816"
   },
@@ -1731,7 +1731,7 @@
   "@settings.fileOperations.progressUpdateInterval.description": {
     "sourceHash": "84e4876"
   },
-  "settings.fileOperations.progressUpdateInterval.keywords": "progress, update, interval, refresh, performance",
+  "settings.fileOperations.progressUpdateInterval.keywords": "förlopp, uppdatering, intervall, uppdatera, prestanda",
   "@settings.fileOperations.progressUpdateInterval.keywords": {
     "sourceHash": "49c3811"
   },
@@ -1743,7 +1743,7 @@
   "@settings.advanced.maxLogStorageMb.description": {
     "sourceHash": "725bb26"
   },
-  "settings.advanced.maxLogStorageMb.keywords": "log, storage, disk, cap, rotation, error, report, privacy",
+  "settings.advanced.maxLogStorageMb.keywords": "logg, loggfil, lagring, disk, tak, gräns, rotation, fel, rapport, integritet",
   "@settings.advanced.maxLogStorageMb.keywords": {
     "sourceHash": "328d0cc"
   },
@@ -1755,7 +1755,7 @@
   "@settings.advanced.mountTimeout.description": {
     "sourceHash": "3da30e1"
   },
-  "settings.advanced.mountTimeout.keywords": "mount, timeout, network, share",
+  "settings.advanced.mountTimeout.keywords": "montera, montering, tidsgräns, nätverk, delad mapp",
   "@settings.advanced.mountTimeout.keywords": {
     "sourceHash": "3327884"
   },
@@ -1767,7 +1767,7 @@
   "@settings.advanced.showSafeSaveFiles.description": {
     "sourceHash": "b371701"
   },
-  "settings.advanced.showSafeSaveFiles.keywords": "safe-save, temp, temporary, preview, autosave",
+  "settings.advanced.showSafeSaveFiles.keywords": "säker sparning, tillfällig, temporär, temp, förhandsvisning, spara automatiskt, autospara",
   "@settings.advanced.showSafeSaveFiles.keywords": {
     "sourceHash": "a56607a"
   },
@@ -1779,7 +1779,7 @@
   "@settings.advanced.showStagingTempFiles.description": {
     "sourceHash": "a562689"
   },
-  "settings.advanced.showStagingTempFiles.keywords": "temp, temporary, staging, copy, transfer, partial",
+  "settings.advanced.showStagingTempFiles.keywords": "tillfällig, temporär, temp, mellanlagring, kopiera, överföring, ofullständig, delvis",
   "@settings.advanced.showStagingTempFiles.keywords": {
     "sourceHash": "3b07cc3"
   },
@@ -1791,7 +1791,7 @@
   "@settings.advanced.logLlmCalls.description": {
     "sourceHash": "86b3d34"
   },
-  "settings.advanced.logLlmCalls.keywords": "ai, log, debug, request, response, prompt",
+  "settings.advanced.logLlmCalls.keywords": "ai, logg, felsökning, förfrågan, svar, prompt",
   "@settings.advanced.logLlmCalls.keywords": {
     "sourceHash": "6d0a3a0"
   },
@@ -1803,7 +1803,7 @@
   "@settings.advanced.serviceResolveTimeout.description": {
     "sourceHash": "5cf231d"
   },
-  "settings.advanced.serviceResolveTimeout.keywords": "resolve, timeout",
+  "settings.advanced.serviceResolveTimeout.keywords": "uppslagning, slå upp, tidsgräns, tjänst",
   "@settings.advanced.serviceResolveTimeout.keywords": {
     "sourceHash": "7f5c11b"
   },
@@ -1815,7 +1815,7 @@
   "@settings.search.recentSearches.maxCount.description": {
     "sourceHash": "d21b038"
   },
-  "settings.search.recentSearches.maxCount.keywords": "search, recent, history, cap, limit, max, count",
+  "settings.search.recentSearches.maxCount.keywords": "sök, sökning, senaste, historik, tak, gräns, max, antal",
   "@settings.search.recentSearches.maxCount.keywords": {
     "sourceHash": "e5cef7d"
   },
@@ -1827,7 +1827,7 @@
   "@settings.selection.recentSelections.maxCount.description": {
     "sourceHash": "ae04ef0"
   },
-  "settings.selection.recentSelections.maxCount.keywords": "selection, select, recent, history, cap, limit, max, count",
+  "settings.selection.recentSelections.maxCount.keywords": "markering, markera, senaste, historik, tak, gräns, max, antal",
   "@settings.selection.recentSelections.maxCount.keywords": {
     "sourceHash": "2986d5f"
   },
@@ -1879,7 +1879,7 @@
   "@settings.advanced.updateCheckInterval.description": {
     "sourceHash": "2bdd38a"
   },
-  "settings.advanced.updateCheckInterval.keywords": "update, interval, background, check",
+  "settings.advanced.updateCheckInterval.keywords": "uppdatering, intervall, bakgrund, kontrollera, sök efter",
   "@settings.advanced.updateCheckInterval.keywords": {
     "sourceHash": "2952cdc"
   },
@@ -1992,7 +1992,7 @@
   "@settings.revealHandler.label": {
     "sourceHash": "8c39a2f"
   },
-  "settings.behavior.revealHandler.keywords": "show in finder, find in finder, reveal, reveal in finder, default file manager, browser, downloads",
+  "settings.behavior.revealHandler.keywords": "visa i finder, visa, standardfilhanterare, filhanterare, webbläsare, hämtade filer, nedladdningar",
   "@settings.behavior.revealHandler.keywords": {
     "sourceHash": "ad680cd"
   },
@@ -2044,7 +2044,7 @@
   "@settings.behavior.textEditorApp.checking": {
     "sourceHash": "0d6957f"
   },
-  "settings.behavior.textEditorApp.keywords": "editor, text editor, edit",
+  "settings.behavior.textEditorApp.keywords": "redigerare, textredigerare, redigera",
   "@settings.behavior.textEditorApp.keywords": {
     "sourceHash": "2e247fe"
   },
@@ -2076,7 +2076,7 @@
   "@settings.behavior.openTerminalHereApp.checking": {
     "sourceHash": "0d6957f"
   },
-  "settings.behavior.openTerminalHereApp.keywords": "terminal, shell, console, command line",
+  "settings.behavior.openTerminalHereApp.keywords": "terminal, skal, konsol, kommandorad",
   "@settings.behavior.openTerminalHereApp.keywords": {
     "sourceHash": "4e548b8"
   },
@@ -2108,7 +2108,7 @@
   "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
     "sourceHash": "cae047d"
   },
-  "settings.behavior.doubleClickPaneNavigatesToParent.keywords": "double-click, doubleclick, double click, pane, background, empty, parent, folder, up, navigate, navigation",
+  "settings.behavior.doubleClickPaneNavigatesToParent.keywords": "dubbelklick, dubbelklicka, panel, bakgrund, tom, överordnad, föräldermapp, mapp, upp, gå till, navigera, navigering",
   "@settings.behavior.doubleClickPaneNavigatesToParent.keywords": {
     "sourceHash": "091f9e9"
   },
@@ -2215,7 +2215,7 @@
   "@settings.askCmdr.enabled.description": {
     "sourceHash": "a1116db"
   },
-  "settings.askCmdr.enabled.keywords": "ai, chat, assistant, enable, disable, turn on, turn off",
+  "settings.askCmdr.enabled.keywords": "ai, chatt, chatta, assistent, aktivera, stäng av, slå på, slå av",
   "@settings.askCmdr.enabled.keywords": {
     "sourceHash": "3ca6b54"
   },
@@ -2251,7 +2251,7 @@
   "@settings.askCmdr.interactiveModel.placeholder": {
     "sourceHash": "2631f3d"
   },
-  "settings.askCmdr.interactiveModel.keywords": "ai, chat, assistant, model, interactive, slot",
+  "settings.askCmdr.interactiveModel.keywords": "ai, chatt, assistent, modell, interaktiv, plats",
   "@settings.askCmdr.interactiveModel.keywords": {
     "sourceHash": "2e3c2d7"
   },
@@ -2271,7 +2271,7 @@
   "@settings.askCmdr.chatMemorySize.overWindow": {
     "sourceHash": "0dc68ac"
   },
-  "settings.askCmdr.chatMemorySize.keywords": "chat, memory, context, window, tokens, size, budget, history",
+  "settings.askCmdr.chatMemorySize.keywords": "chatt, minne, kontext, kontextfönster, fönster, token, storlek, budget, historik",
   "@settings.askCmdr.chatMemorySize.keywords": {
     "sourceHash": "7efd03c"
   },
@@ -2287,7 +2287,7 @@
   "@settings.askCmdr.proactive.description": {
     "sourceHash": "556f155"
   },
-  "settings.askCmdr.proactive.keywords": "proactive, suggestions, automatic, notice, watch, wake, ai",
+  "settings.askCmdr.proactive.keywords": "proaktiv, förslag, automatiskt, lägga märke till, bevaka, vakna, ai",
   "@settings.askCmdr.proactive.keywords": {
     "sourceHash": "3be12a4"
   },
@@ -2303,7 +2303,7 @@
   "@settings.askCmdr.wakeDelay.summary": {
     "sourceHash": "ad03c00"
   },
-  "settings.askCmdr.wakeDelay.keywords": "delay, cadence, wait, often, frequency, calm, quiet, proactive",
+  "settings.askCmdr.wakeDelay.keywords": "fördröjning, takt, vänta, hur ofta, frekvens, lugn, tyst, proaktiv",
   "@settings.askCmdr.wakeDelay.keywords": {
     "sourceHash": "800df1b"
   },
@@ -2315,7 +2315,7 @@
   "@settings.askCmdr.wakeToast.description": {
     "sourceHash": "dd04b0a"
   },
-  "settings.askCmdr.wakeToast.keywords": "toast, notice, notification, suggestion, proactive, alert",
+  "settings.askCmdr.wakeToast.keywords": "avisering, notis, meddelande, förslag, proaktiv, varning",
   "@settings.askCmdr.wakeToast.keywords": {
     "sourceHash": "6ed1b7d"
   },
@@ -2331,7 +2331,7 @@
   "@settings.askCmdr.memory.open": {
     "sourceHash": "cffe1da"
   },
-  "settings.askCmdr.openMemoryFolder.keywords": "memory, folder, notes, remember, open",
+  "settings.askCmdr.openMemoryFolder.keywords": "minne, mapp, anteckningar, komma ihåg, öppna",
   "@settings.askCmdr.openMemoryFolder.keywords": {
     "sourceHash": "fcd353e"
   },
@@ -2401,7 +2401,7 @@
   "@settings.operationLog.enabled.description": {
     "sourceHash": "78571fc"
   },
-  "settings.operationLog.enabled.keywords": "operation, log, history, record, recording, undo, journal, privacy, turn off",
+  "settings.operationLog.enabled.keywords": "åtgärd, åtgärder, logg, åtgärdslogg, historik, registrera, spela in, inspelning, ångra, journal, integritet, stäng av",
   "@settings.operationLog.enabled.keywords": {
     "sourceHash": "25f39cc"
   },
@@ -2429,7 +2429,7 @@
   "@settings.operationLog.maxAge.opt.year1": {
     "sourceHash": "91647ba"
   },
-  "settings.operationLog.maxAge.keywords": "operation, log, history, retention, age, keep, prune, forever, days, undo",
+  "settings.operationLog.maxAge.keywords": "åtgärd, logg, historik, lagringstid, ålder, behåll, rensa, för alltid, dagar, ångra",
   "@settings.operationLog.maxAge.keywords": {
     "sourceHash": "cc6f4ec"
   },
@@ -2441,7 +2441,7 @@
   "@settings.operationLog.maxSize.description": {
     "sourceHash": "ad5152a"
   },
-  "settings.operationLog.maxSize.keywords": "operation, log, history, retention, size, disk, space, limit, megabytes, gigabytes",
+  "settings.operationLog.maxSize.keywords": "åtgärd, logg, historik, lagringstid, storlek, disk, utrymme, gräns, megabyte, gigabyte",
   "@settings.operationLog.maxSize.keywords": {
     "sourceHash": "2ea4edc"
   },
@@ -2771,7 +2771,7 @@
   "@settings.fileSystemWatching.indexSize": {
     "sourceHash": "adbb92c"
   },
-  "settings.indexing.indexSize.keywords": "clear index, index database, disk space, delete",
+  "settings.indexing.indexSize.keywords": "rensa index, indexdatabas, diskutrymme, radera, ta bort",
   "@settings.indexing.indexSize.keywords": {
     "sourceHash": "2a99f52"
   },
@@ -2895,7 +2895,7 @@
   "@settings.securityLog.enabled.description": {
     "sourceHash": "11361eb"
   },
-  "settings.securityLog.enabled.keywords": "security, log, audit, record, events, access, privacy",
+  "settings.securityLog.enabled.keywords": "säkerhet, logg, granskning, registrera, händelser, åtkomst, integritet",
   "@settings.securityLog.enabled.keywords": {
     "sourceHash": "6f113c0"
   },
@@ -2903,7 +2903,7 @@
   "@settings.securityLog.showInFinder": {
     "sourceHash": "c2a9c77"
   },
-  "settings.updates.showSecurityLog.keywords": "security, log, audit, events, file, open",
+  "settings.updates.showSecurityLog.keywords": "säkerhet, logg, granskning, händelser, fil, öppna",
   "@settings.updates.showSecurityLog.keywords": {
     "sourceHash": "9ce9447"
   },
@@ -2952,7 +2952,7 @@
   "@settings.updates.checkForUpdates": {
     "sourceHash": "f26f327"
   },
-  "settings.updates.checkForUpdates.keywords": "update, upgrade, check, version, new version",
+  "settings.updates.checkForUpdates.keywords": "uppdatering, uppdatera, uppgradera, uppgradering, kontrollera, sök efter, version, ny version",
   "@settings.updates.checkForUpdates.keywords": {
     "sourceHash": "8381c6a"
   },
@@ -2972,7 +2972,7 @@
   "@settings.logging.openLogFile": {
     "sourceHash": "ec1bc04"
   },
-  "settings.advanced.openLogFile.keywords": "log, logs, file, folder, reveal",
+  "settings.advanced.openLogFile.keywords": "logg, loggar, loggfil, fil, mapp, visa",
   "@settings.advanced.openLogFile.keywords": {
     "sourceHash": "25e0c5a"
   },
@@ -2984,7 +2984,7 @@
   "@settings.logging.copyDiagnostics": {
     "sourceHash": "b8e7644"
   },
-  "settings.advanced.copyDiagnostics.keywords": "diagnostics, copy, version, support, clipboard",
+  "settings.advanced.copyDiagnostics.keywords": "diagnostik, kopiera, version, support, hjälp, urklipp",
   "@settings.advanced.copyDiagnostics.keywords": {
     "sourceHash": "d7ce56b"
   },
@@ -3032,7 +3032,7 @@
   "@settings.advanced.resetAll": {
     "sourceHash": "a04d9be"
   },
-  "settings.advanced.resetAll.keywords": "reset, defaults, restore, factory",
+  "settings.advanced.resetAll.keywords": "återställ, standard, förval, standardvärden, fabriksinställningar",
   "@settings.advanced.resetAll.keywords": {
     "sourceHash": "05b1de6"
   },
@@ -3080,7 +3080,7 @@
   "@settings.mediaIndex.scope.opt.importance": {
     "sourceHash": "0a66efe"
   },
-  "settings.mediaIndex.scope.keywords": "image, photo, index, folders, scope, coverage, which, choose",
+  "settings.mediaIndex.scope.keywords": "bild, bilder, index, mappar, omfattning, täckning, vilka, välj",
   "@settings.mediaIndex.scope.keywords": {
     "sourceHash": "39010c3"
   },
@@ -3120,7 +3120,7 @@
   "@settings.servers.card.trustedHostKeys": {
     "sourceHash": "46c5c9d"
   },
-  "settings.network.trustedHostKeys.keywords": "host key, fingerprint, trust, trusted, known hosts, server, forget",
+  "settings.network.trustedHostKeys.keywords": "värdnyckel, värdnycklar, fingeravtryck, lita på, betrodd, betrodda, kända värdar, server, glöm",
   "@settings.network.trustedHostKeys.keywords": {
     "sourceHash": "d111f38"
   },
@@ -3169,7 +3169,7 @@
   "@settings.adb.status.notWatching": {
     "sourceHash": "6e1936c"
   },
-  "settings.adb.status.keywords": "status, re-check, recheck, found, watching, install",
+  "settings.adb.status.keywords": "status, kontrollera igen, hittad, hittades, bevakar, installera",
   "@settings.adb.status.keywords": {
     "sourceHash": "32678b7"
   },
@@ -3213,7 +3213,7 @@
   "@settings.dataWipe.button": {
     "sourceHash": "fbb253f"
   },
-  "settings.updates.deleteAllData.keywords": "delete, erase, remove, wipe, reset, uninstall, privacy, data, forget, gdpr",
+  "settings.updates.deleteAllData.keywords": "radera, ta bort, rensa, töm, återställ, avinstallera, integritet, data, dataskydd, glöm, gdpr",
   "@settings.updates.deleteAllData.keywords": {
     "sourceHash": "0ffb0f6"
   },
@@ -3341,23 +3341,23 @@
   "@settings.dataWipe.quit": {
     "sourceHash": "b3455b4"
   },
-  "settings.askCmdr.forgetMemory.keywords": "forget, memory, erase, delete, remembers, privacy",
+  "settings.askCmdr.forgetMemory.keywords": "glöm, minne, radera, ta bort, kommer ihåg, minns, integritet",
   "@settings.askCmdr.forgetMemory.keywords": {
     "sourceHash": "e653535"
   },
-  "settings.shortcuts.resetAll.keywords": "reset, shortcuts, defaults, restore, keyboard",
+  "settings.shortcuts.resetAll.keywords": "återställ, genvägar, kortkommandon, standard, förval, tangentbord",
   "@settings.shortcuts.resetAll.keywords": {
     "sourceHash": "ccbedb0"
   },
-  "settings.license.manageKey.keywords": "license, key, manage, activate, activation, change",
+  "settings.license.manageKey.keywords": "licens, licensnyckel, nyckel, hantera, aktivera, aktivering, ändra, byt",
   "@settings.license.manageKey.keywords": {
     "sourceHash": "3e2241e"
   },
-  "settings.license.enterKey.keywords": "license, key, enter, activate, activation, redeem",
+  "settings.license.enterKey.keywords": "licens, licensnyckel, nyckel, ange, skriv in, aktivera, aktivering, lös in",
   "@settings.license.enterKey.keywords": {
     "sourceHash": "ebb9475"
   },
-  "settings.license.getLicense.keywords": "license, buy, purchase, pricing, commercial, personal, upgrade",
+  "settings.license.getLicense.keywords": "licens, köp, köpa, pris, priser, kommersiell, personlig, uppgradera",
   "@settings.license.getLicense.keywords": {
     "sourceHash": "5454f6d"
   }
