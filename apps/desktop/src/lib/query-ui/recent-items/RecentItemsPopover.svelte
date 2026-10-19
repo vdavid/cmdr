@@ -29,8 +29,7 @@
      *     is left alone, so the filter field behaves like any other text field.
      *   - Esc closes, via the `Popover` wrapper.
      */
-    import uFuzzy from '@leeoniya/ufuzzy'
-    import { INTRA_MODE_SINGLE_ERROR } from '#lib/utils/ufuzzy-modes.js'
+    import { foldForSearch, fuzzySearch } from '#lib/utils/unicode-fuzzy.js'
     import { tString } from '#lib/intl/messages.svelte.js'
     import Trans from '#lib/intl/Trans.svelte'
     import Popover from '#lib/ui/Popover.svelte'
@@ -77,9 +76,6 @@
         ariaListboxLabel = tString('queryUi.recent.listboxAria'),
     }: Props = $props()
 
-    // Tuned the same way as the command palette's fuzzy search.
-    const fuzzy = new uFuzzy({ intraMode: INTRA_MODE_SINGLE_ERROR, interIns: 3 })
-
     let query = $state('')
     let cursor = $state(0)
 
@@ -95,6 +91,9 @@
     // speed and lets the haystack + row UI share one source of truth.
     const views = $derived<RecentItemView[]>(entries.map((e) => adapter(e)))
     const haystack = $derived(views.map((v) => `${modeBadge(v.mode)} ${v.label}`))
+    // The same engine as the command palette (any script, accents optional). Folding keeps every
+    // offset, so the match ranges still highlight `haystack`.
+    const foldedHaystack = $derived(haystack.map(foldForSearch))
 
     interface Match {
         entry: E
@@ -114,7 +113,7 @@
                 haystackText: haystack[i],
             }))
         }
-        const [idxs, info, order] = fuzzy.search(haystack, trimmed)
+        const [idxs, info, order] = fuzzySearch(foldedHaystack, trimmed)
         if (!idxs || !order) return []
         return order.map((orderIdx) => {
             const haystackIdx = idxs[orderIdx]

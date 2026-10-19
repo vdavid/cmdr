@@ -806,7 +806,8 @@ both are out of redesign scope.
 - `#lib/ui/ToggleGroup.svelte` — segmented-control primitive used by `ModeChips`
 - `#lib/tauri-commands` — `getRecentSearches` (Search) / future `getRecentSelections` (Selection) via the recent-items
   factory; `showFileContextMenu` (row context menu)
-- `@leeoniya/ufuzzy` — fuzzy filtering inside `RecentItemsPopover`
+- `#lib/utils/unicode-fuzzy` — fuzzy filtering inside `RecentItemsPopover` (the palette's engine: any script, accents
+  optional)
 - `#lib/settings` — `getSetting('ai.provider')` (AI chip visibility, ⌘ shortcut numbering)
 - `#lib/tooltip/tooltip` — chip tooltips (Content chip's "Coming soon" copy, recent-items chip tooltips)
 - CSS variables from `app.css` (`--z-modal`, `--color-accent-subtle`, `--color-bg-secondary`, etc.)

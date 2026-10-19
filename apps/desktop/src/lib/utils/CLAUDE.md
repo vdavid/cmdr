@@ -10,7 +10,8 @@ Small stateless helpers. Pure, no Svelte state, safe to import from plain `.ts` 
 `confirm-dialog.ts`, `pluralize.ts`, `text-input-focus.ts`, `reactivity.ts` (`dependOn`), `version.ts` (semver
 `major.minor.patch` ordering), `inline-size-action.ts` (the container-query stand-in), `scroll-box-size-action.ts` (a
 scroller's client box, scrollbars included), `boot-guard-keys.ts` (the three catalog keys the `app.html` boot guard
-shows). Per-file export catalogs: `DETAILS.md`.
+shows), `unicode-fuzzy.ts` (the shared fuzzy matcher: any script, accent folding, exact CJK). Per-file export catalogs:
+`DETAILS.md`.
 
 ## Must-knows
 

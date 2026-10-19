@@ -103,6 +103,28 @@ version it last showed, and `#lib/updates` asks whether the build the manifest o
 staged in the bundle. A comparator that disagreed with itself would let one surface call a release an upgrade while the
 other called it a downgrade.
 
+## unicode-fuzzy.ts / ufuzzy-modes.js
+
+The one fuzzy matcher for short user-typed lookups: Settings search, the command palette (and the Keyboard shortcuts
+section through `searchAllCommands`), and the recent-items dropdown. `foldForSearch(text)` returns a branded
+`FoldedText`; `fuzzySearch(haystack: FoldedText[], query)` folds the query and returns uFuzzy's own result.
+
+- **Every script is a letter.** uFuzzy's default config knows only `a-z`, so `язык` and `语言` found nothing. The engine
+  uses uFuzzy's documented universal (`unicode: true`, `\p{L}`) options, plus `\p{M}` in the letter class so a script
+  whose vowels are combining marks doesn't split words mid-letter.
+- **Accent folding, one code unit in, one out**, applied to both sides so a match range indexes the original text and
+  highlighting keeps working. Lowercases, then NFD-strips marks from Latin, Greek, and Cyrillic letters only (`ő` → `o`,
+  `ё` → `е`, `Tiếng Việt` → `tieng viet`), plus a small table for letters that aren't base + mark (`ø`, `ł`, `đ`, `æ`,
+  `œ`). Hangul and kana fold to themselves: NFD splits a Hangul syllable into jamo (letters, not marks) and turns `が`
+  into `か`. `ß` and `İ` stay (their foldings are two code units). ❌ Not `uFuzzy.latinize`: a fixed table that misses
+  `ő`, Vietnamese stacked diacritics, `ø`, `ß`, `đ`, and `æ` (verified on uFuzzy 1.0.19, 2026-10-13).
+- **No typos in a CJK query.** A Han/kana/Hangul term is a few characters, and single-error mode lets a five-character
+  term differ in one place, which in Chinese is a different word (`使用的语文` matched `使用的语言`). A query containing
+  CJK runs through an exact-terms instance instead.
+- `ufuzzy-modes.js` + `.d.ts` exist only to type uFuzzy's ambient `const enum IntraMode` values (the `.d.ts` says why).
+
+Pinned by `unicode-fuzzy.test.ts`.
+
 ## shorten-middle.ts
 
 `shortenMiddle()` truncates text in the middle with an ellipsis, using pixel-accurate width measurement via an injected

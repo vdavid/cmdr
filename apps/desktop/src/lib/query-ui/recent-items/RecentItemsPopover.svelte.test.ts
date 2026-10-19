@@ -142,6 +142,51 @@ describe('RecentSearchesPopover', () => {
     anchor.remove()
   })
 
+  it('filters entries in any script, accents optional', async () => {
+    const anchor = setupAnchor()
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const entries = [
+      makeEntry({ query: 'годовой отчёт', id: 'r' }),
+      makeEntry({ query: '发票', id: 'z' }),
+      makeEntry({ query: 'invoice', id: 'i' }),
+    ]
+    mount(RecentSearchesPopover, {
+      target,
+      props: {
+        anchor,
+        open: true,
+        entries,
+        adapter: searchAdapter,
+        keyFn: searchKey,
+        onClose: () => {},
+        onPick: () => {},
+        onRemove: () => {},
+        onExitTop: () => {},
+      },
+    })
+    await tick()
+
+    const input = document.querySelector('.recent-popover input.text-field-control') as HTMLInputElement
+    const rowTexts = async (filter: string): Promise<string[]> => {
+      input.value = filter
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      await tick()
+      return Array.from(document.querySelectorAll('.result-row')).map((r) => r.textContent)
+    }
+
+    // `ё` folds to `е`, so the reader needn't type it.
+    const cyrillic = await rowTexts('отчет')
+    expect(cyrillic).toHaveLength(1)
+    expect(cyrillic[0]).toContain('годовой отчёт')
+    const chinese = await rowTexts('发票')
+    expect(chinese).toHaveLength(1)
+    expect(chinese[0]).toContain('发票')
+
+    target.remove()
+    anchor.remove()
+  })
+
   it('shows the empty message when no entry matches the filter', async () => {
     const anchor = setupAnchor()
     const target = document.createElement('div')

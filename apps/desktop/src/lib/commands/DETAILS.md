@@ -199,16 +199,21 @@ maintained dynamic-label path that happens to track the same license state. Gene
 
 ## Fuzzy search
 
-`searchCommands(query, recentCommandIds?)` wraps `@leeoniya/ufuzzy`:
+`searchCommands(query, recentCommandIds?)` wraps `@leeoniya/ufuzzy` through the shared engine in
+`#lib/utils/unicode-fuzzy.ts` (`foldForSearch` + `fuzzySearch`, also used by Settings search and the recent-items
+dropdown):
 
 - Empty query: recents first (filtered through `getPaletteCommands` to drop stale ids), then the rest of
   `getPaletteCommands()` in registry order.
-- Non-empty query: haystack is `paletteCommands.map(c => c.name)`; `fuzzy.search(haystack, query)` yields ranked
-  `CommandMatch[]` (the `recents` argument is ignored).
+- Non-empty query: the haystack is each command's folded `displayName` plus its keywords; `fuzzySearch(haystack, query)`
+  yields ranked `CommandMatch[]` (the `recents` argument is ignored).
 
-uFuzzy config: `intraMode: 1` (typo-tolerant within-word fuzzy, "tyoe" → "type"), `interIns: 3` (max 3 inserted chars
-between matched chars, to avoid nonsensical matches on a short list). `info.ranges` is a flat
-`[start, end, start, end, …]` array with exclusive `end`, unpacked into per-char indices for `matchedIndices`.
+The engine's config: every script counts as letters (a Russian or Chinese command name is findable), accents fold on
+both sides (`tema` finds `Téma`), `intraMode: 1` (typo-tolerant within-word fuzzy, "tyoe" → "type") except for a CJK
+query, which must match exactly, and `interIns: 3` (max 3 inserted chars between matched chars, to avoid nonsensical
+matches on a short list). Folding is one code unit in, one out, so `info.ranges` index `displayName` directly: a flat
+`[start, end, start, end, …]` array with exclusive `end`, unpacked into per-char indices for `matchedIndices`. Pinned by
+`fuzzy-search.unicode.test.ts`.
 
 `searchAllCommands(query)` runs the same matcher over the FULL registry (including `showInPalette: false` entries), with
 no recents handling (empty query → everything in registry order). It exists for surfaces whose result set is the whole
@@ -251,8 +256,8 @@ other way, `on_menu_event` → `settings-changed` → the `listener-setup.ts` li
 - **uFuzzy over Fuse.js / fzf-for-js.** uFuzzy is optimized for short query phrases against short-to-medium phrases,
   pure TypeScript with no dependencies, handles typos, and returns match ranges for highlighting. Fuse.js is heavier and
   slower at this scale.
-- **uFuzzy instance is a module-level singleton.** Creating an instance compiles regex from config; doing it once at
-  import avoids repeated setup per search. The config never changes at runtime.
+- **uFuzzy instances are module-level singletons** (in `unicode-fuzzy.ts`). Creating an instance compiles regex from
+  config; doing it once at import avoids repeated setup per search. The config never changes at runtime.
 - **`commands` is a plain array, not a `Map`.** It's ~110 items; `getPaletteCommands()` filters on each call and uFuzzy
   needs an array of strings anyway. Indexing by id would add complexity for no measurable gain at this scale. There's no
   `getCommandById()`: lookup by id happens in the shortcuts system (its own reverse map) and in `handleCommandExecute`

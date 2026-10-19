@@ -1,20 +1,14 @@
 /**
- * Fuzzy search for commands using uFuzzy.
+ * Fuzzy search for commands using uFuzzy, through the shared `#lib/utils/unicode-fuzzy` engine
+ * (any script, accents optional, typo-tolerant outside CJK).
  *
  * uFuzzy is optimized for short search phrases against lists of short-to-medium phrases,
  * making it ideal for command palette use cases. It handles typos and out-of-order matches.
  */
 
-import uFuzzy from '@leeoniya/ufuzzy'
-import { INTRA_MODE_SINGLE_ERROR } from '#lib/utils/ufuzzy-modes.js'
+import { foldForSearch, fuzzySearch } from '#lib/utils/unicode-fuzzy.js'
 import type { Command, CommandMatch, PaletteCondition } from './types'
 import { commands, getPaletteCommands } from './command-registry'
-
-// Configure uFuzzy for command palette behavior
-const fuzzy = new uFuzzy({
-  intraMode: INTRA_MODE_SINGLE_ERROR, // Allow fuzzy matching within words (handles typos like "tyoe" → "type")
-  interIns: 3, // Max 3 insertions between matched characters
-})
 
 /**
  * Search commands with fuzzy matching.
@@ -74,13 +68,13 @@ function fuzzyMatchCommands(commandList: Command[], query: string): CommandMatch
   // Build the haystack from what the palette RENDERS (`displayName`, which falls back to `name`)
   // plus any extra keywords. A keyword match still ranks and returns the command, but its indices
   // land past the label's length and get clamped out below so the visible label never shows a
-  // bogus highlight.
+  // bogus highlight. Folding keeps every offset, so the indices still land on `displayName`.
   const haystack = commandList.map((c) =>
-    c.keywords?.length ? `${c.displayName} ${c.keywords.join(' ')}` : c.displayName,
+    foldForSearch(c.keywords?.length ? `${c.displayName} ${c.keywords.join(' ')}` : c.displayName),
   )
 
   // Perform fuzzy search
-  const [idxs, info, order] = fuzzy.search(haystack, query)
+  const [idxs, info, order] = fuzzySearch(haystack, query)
 
   // No matches
   if (!idxs || !order) {

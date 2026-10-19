@@ -11,8 +11,8 @@ Centralized command registry and fuzzy search engine for the command palette.
 - **`command-registry.ts`**: the `commands` array, `getPaletteCommands()`, `updateLicenseCommandName()`, and the
   `NATIVE_SHORTCUT_COMMAND_IDS` / `FIXED_KEY_COMMAND_IDS` lists. Registry DATA is in **`sources/*.ts`** (add commands
   there, not inline).
-- **`fuzzy-search.ts`**: `searchCommands()` (palette set) + `searchAllCommands()` (full registry), via
-  `@leeoniya/ufuzzy`.
+- **`fuzzy-search.ts`**: `searchCommands()` (palette set) + `searchAllCommands()` (full registry), via the shared
+  `#lib/utils/unicode-fuzzy.ts` engine (any script, accents optional).
 - Tests: `fuzzy-search.test.ts`, `command-registry.test.ts` (set-equality + palette pin), `command-types.test.ts`
   (arg-shape guards), `rust-command-id-drift.test.ts` (Rust ids ∈ `COMMAND_IDS`), `command-reachability.test.ts` (a key,
   a palette row, or a reasoned exemption).
@@ -43,7 +43,7 @@ Centralized command registry and fuzzy search engine for the command palette.
   `DISPATCH_EXEMPT_IDS`'s native family.
 - **`scope` is documentation-only, not runtime-enforced** (keyboard routing is each UI component's job; scope drives
   conflict detection and Settings display). A NEW scope is three places: `DETAILS.md` § "Adding a command".
-- **The uFuzzy instance is a module-level singleton**; `info.ranges` is a flat `[start, end, …]` array (`end`
+- **The haystack is `foldForSearch`ed** (typed `FoldedText`); `info.ranges` is a flat `[start, end, …]` array (`end`
   exclusive), unpacked into per-char `matchedIndices`. Read `DETAILS.md` before changing highlighting.
 
 ## Gotchas

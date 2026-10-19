@@ -11,3 +11,6 @@ import type uFuzzy from '@leeoniya/ufuzzy'
 
 /** One substitution, transposition, insertion, or deletion per term: catches typos like "tyoe" → "type". */
 export const INTRA_MODE_SINGLE_ERROR: uFuzzy.IntraMode.SingleError
+
+/** Insertions only, never a substitution; with `intraIns: 0`, each term must appear exactly as typed. */
+export const INTRA_MODE_MULTI_INSERT: uFuzzy.IntraMode.MultiInsert
