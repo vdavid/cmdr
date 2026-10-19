@@ -23,6 +23,9 @@ resolves user-facing text from JSON catalogs under `messages/<locale>/`, reading
 - **`tStringIn(locale, key, params?)`** is `tString` in a locale OTHER than the UI's, down that locale's own chain. A
   non-reactive snapshot for the rare reader that needs text the user isn't reading: Settings search indexes English as a
   fallback and the Language label from every catalog (`../settings/DETAILS.md` § Search). ❌ Never for markup.
+- **`uiCatalogLocale()`** is `resolvedCatalogLocale(getUiLocale())` read REACTIVELY (it reads the version rune, like
+  `t()`). For a cache keyed by the language on screen: Settings search's index reads it on every search, so a `$derived`
+  over a search re-runs on a switch even when it hits the cache and resolves no message.
 
 This is the **error-pipeline boundary**: error literals migrate INTO the catalog as `errors.*` keys (plain strings,
 possibly markdown), but they keep rendering through the existing snarkdown + `{@html}` + param-escaper pipeline via

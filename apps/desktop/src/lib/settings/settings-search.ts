@@ -4,8 +4,7 @@
  */
 
 import { foldForSearch, fuzzySearch, type FoldedText } from '#lib/utils/unicode-fuzzy.js'
-import { availableLocales, resolvedCatalogLocale, tStringIn } from '#lib/intl/messages.svelte.js'
-import { getUiLocale } from '#lib/intl/locale.js'
+import { availableLocales, tStringIn, uiCatalogLocale } from '#lib/intl/messages.svelte.js'
 import { localeDisplayName } from '#lib/intl/locale-display-names.js'
 import type { SearchableEntry, SettingSearchResult } from './types'
 import { settingsRegistry } from './settings-registry'
@@ -35,11 +34,6 @@ interface SearchIndex {
 }
 
 let searchIndex: SearchIndex | null = null
-
-/** The catalog the UI reads right now: `pt-PT` → `pt`, `ja-JP` → `en`. Keys the index. */
-function currentCatalogLocale(): string {
-  return resolvedCatalogLocale(getUiLocale())
-}
 
 /** English and its overlays (`en-GB`, `en-AU`, and the `en-XA` pseudolocale) get no English fallback. */
 function isEnglish(locale: string): boolean {
@@ -73,7 +67,10 @@ function splitKeywordList(list: string): string[] {
  * language. Rebuilt lazily whenever that language changed since the last build.
  */
 function buildSearchIndex(): SearchIndex {
-  const locale = currentCatalogLocale()
+  // The catalog on screen (`pt-PT` → `pt`, `ja-JP` → `en`), read REACTIVELY: every search here
+  // goes through this line, cache hits included, so a `$derived` or markup over any of them
+  // re-runs on a language switch.
+  const locale = uiCatalogLocale()
   if (searchIndex?.locale === locale) return searchIndex
 
   // The index covers the WHOLE registry, including the Advanced section

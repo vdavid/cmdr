@@ -174,6 +174,17 @@ export function resolvedCatalogLocale(locale: string): string {
 }
 
 /**
+ * `resolvedCatalogLocale(getUiLocale())`, read reactively: a `$derived` or markup that calls it
+ * re-runs on a language switch, like one that calls `t()`. For a cache keyed by the language on
+ * screen (Settings search's index), whose cache hits would otherwise read no message at all.
+ */
+export function uiCatalogLocale(): string {
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- load-bearing rune read: tracks the reactive dependency; see header.
+  localeVersion
+  return resolvedCatalogLocale(getUiLocale())
+}
+
+/**
  * Resolves a key's raw catalog string down the fallback chain, ending at the key
  * itself (so a missing key is visible, never a crash). Does NOT read the version
  * rune; callers must read it first.

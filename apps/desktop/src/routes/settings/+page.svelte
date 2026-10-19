@@ -33,7 +33,9 @@
     const log = getAppLogger('settings')
 
     let searchQuery = $state('')
-    let matchingSections = $state<Set<string>>(new Set())
+    // Derived, not set per keystroke: the search reads the UI language reactively, so a language
+    // switch mid-search re-lights the sidebar for the new language.
+    const matchingSections = $derived(searchQuery.trim() ? getMatchingSections(searchQuery) : new Set<string>())
     let selectedSection = $state<string[]>(['Appearance', 'Colors and formats'])
     let initialized = $state(false)
     let contentElement: HTMLElement | null = $state(null)
@@ -117,11 +119,6 @@
     function handleSearch(query: string) {
         log.debug('Search query changed: {query}', { query })
         searchQuery = query
-        if (query.trim()) {
-            matchingSections = getMatchingSections(query)
-        } else {
-            matchingSections = new Set()
-        }
     }
 
     /** `'auto'` when the user prefers reduced motion, else `'smooth'`. */
