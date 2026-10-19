@@ -20,6 +20,9 @@ resolves user-facing text from JSON catalogs under `messages/<locale>/`, reading
   and must not hit ICU's brace/apostrophe grammar, specifically the error pipeline (`#lib/error-messages` `compose.ts` +
   `expandSystemStrings` + snarkdown). Its `{system_settings}` tokens and `esc()` HTML entities would collide with ICU
   placeholders. Same fallback chain as `t()`, just no `format()`.
+- **`tStringIn(locale, key, params?)`** is `tString` in a locale OTHER than the UI's, down that locale's own chain. A
+  non-reactive snapshot for the rare reader that needs text the user isn't reading: Settings search indexes English as a
+  fallback and the Language label from every catalog (`../settings/DETAILS.md` § Search). ❌ Never for markup.
 
 This is the **error-pipeline boundary**: error literals migrate INTO the catalog as `errors.*` keys (plain strings,
 possibly markdown), but they keep rendering through the existing snarkdown + `{@html}` + param-escaper pipeline via
