@@ -15,7 +15,7 @@ export const driveIndexingRows: SearchableRow[] = [
     section: ['Indexing', 'Drive indexing'],
     labelKey: 'settings.fileSystemWatching.indexSize',
     cardKey: 'settings.indexing.enabled.label',
-    keywords: ['clear index', 'index database', 'disk space', 'delete'],
+    keywordsKey: 'settings.indexing.indexSize.keywords',
   },
   {
     // "Re-enable notifications for all drives", the button that clears
@@ -25,6 +25,6 @@ export const driveIndexingRows: SearchableRow[] = [
     section: ['Indexing', 'Drive indexing'],
     labelKey: 'settings.indexing.reEnableNotifications.label',
     cardKey: 'settings.indexing.enabled.label',
-    keywords: ['re-enable', 'notifications', 'drives', 'silenced', 'ask again'],
+    keywordsKey: 'settings.indexing.reEnableNotifications.keywords',
   },
 ]

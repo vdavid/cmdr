@@ -15,7 +15,7 @@ export const updatesRows: SearchableRow[] = [
     section: ['Updates & privacy'],
     labelKey: 'settings.updates.checkForUpdates',
     cardKey: 'settings.updates.card.updates',
-    keywords: ['update', 'upgrade', 'check', 'version', 'new version'],
+    keywordsKey: 'settings.updates.checkForUpdates.keywords',
   },
   {
     // The "Show in Finder" button under the security events switch.
@@ -23,7 +23,8 @@ export const updatesRows: SearchableRow[] = [
     section: ['Updates & privacy'],
     labelKey: 'settings.securityLog.showInFinder',
     cardKey: 'settings.updates.card.securityEvents',
-    keywords: ['security', 'log', 'audit', 'events', 'file', 'finder', 'open'],
+    keywordsKey: 'settings.updates.showSecurityLog.keywords',
+    terms: ['finder'],
   },
   {
     // The "Delete all Cmdr data" button, alone in its card.
@@ -31,6 +32,6 @@ export const updatesRows: SearchableRow[] = [
     section: ['Updates & privacy'],
     labelKey: 'settings.dataWipe.button',
     cardKey: 'settings.dataWipe.card',
-    keywords: ['delete', 'erase', 'remove', 'wipe', 'reset', 'uninstall', 'privacy', 'data', 'forget', 'gdpr'],
+    keywordsKey: 'settings.updates.deleteAllData.keywords',
   },
 ]

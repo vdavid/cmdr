@@ -16,6 +16,6 @@ export const keyboardShortcutsRows: SearchableRow[] = [
     id: 'row:shortcuts.resetAll',
     section: ['Keyboard shortcuts'],
     labelKey: 'shortcuts.section.resetAll',
-    keywords: ['reset', 'shortcuts', 'defaults', 'restore', 'keyboard'],
+    keywordsKey: 'settings.shortcuts.resetAll.keywords',
   },
 ]

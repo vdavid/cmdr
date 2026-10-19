@@ -46,14 +46,15 @@ export const searchableRows: SearchableRow[] = [
  * same trick `resolveDefinition` plays for settings).
  */
 function resolveRow(row: SearchableRow): SearchableEntry {
-  const { labelKey, cardKey } = row
+  const { labelKey, cardKey, keywordsKey, terms } = row
   const entry: SearchableEntry = {
     id: row.id,
     section: row.section,
     description: '',
-    keywords: row.keywords ?? [],
     labelKey,
     ...(cardKey !== undefined && { cardKey }),
+    ...(keywordsKey !== undefined && { keywordsKey }),
+    ...(terms !== undefined && { terms }),
     get label() {
       return tString(labelKey)
     },

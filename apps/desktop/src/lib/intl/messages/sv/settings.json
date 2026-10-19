@@ -15,6 +15,10 @@
   "@settings.appearance.language.opt.systemWithLanguage": {
     "sourceHash": "ab10534"
   },
+  "settings.appearance.language.keywords": "language, locale, translation, region, english",
+  "@settings.appearance.language.keywords": {
+    "sourceHash": "c1b9ab9"
+  },
   "settings.theme.mode.label": "Temaläge",
   "@settings.theme.mode.label": {
     "sourceHash": "0f79f19"
@@ -36,6 +40,10 @@
     "sourceHash": "6725e7b",
     "sameAsSourceJustification": "'System' is the same word in Swedish - Apple Swedish uses 'System' standalone for the follow-system appearance (verified in pile macOS). Deliberately identical."
   },
+  "settings.theme.mode.keywords": "theme, dark, light, mode, appearance, color",
+  "@settings.theme.mode.keywords": {
+    "sourceHash": "8a95116"
+  },
   "settings.appearance.appColor.label": "Appfärg",
   "@settings.appearance.appColor.label": {
     "sourceHash": "b1107c8"
@@ -51,6 +59,10 @@
   "settings.appearance.appColor.opt.cmdrGold": "Cmdr-guld",
   "@settings.appearance.appColor.opt.cmdrGold": {
     "sourceHash": "3ae5711"
+  },
+  "settings.appearance.appColor.keywords": "color, accent, theme, gold, system, brand",
+  "@settings.appearance.appColor.keywords": {
+    "sourceHash": "dd5ef83"
   },
   "settings.appearance.sizeColors.label": "Storleksfärger",
   "@settings.appearance.sizeColors.label": {
@@ -73,6 +85,10 @@
   "@settings.appearance.sizeColors.opt.rainbow": {
     "sourceHash": "b1f7b2e"
   },
+  "settings.appearance.sizeColors.keywords": "size, color, tier, rainbow, app, highlight",
+  "@settings.appearance.sizeColors.keywords": {
+    "sourceHash": "8eb9856"
+  },
   "settings.appearance.dateColors.label": "Datumfärger",
   "@settings.appearance.dateColors.label": {
     "sourceHash": "25e5672"
@@ -93,6 +109,10 @@
   "settings.appearance.dateColors.opt.wilting": "Vissnande",
   "@settings.appearance.dateColors.opt.wilting": {
     "sourceHash": "2aa30f1"
+  },
+  "settings.appearance.dateColors.keywords": "date, color, age, modified, wilting, app, fresh, old",
+  "@settings.appearance.dateColors.keywords": {
+    "sourceHash": "cc85453"
   },
   "settings.appearance.dateTimeFormat.label": "Datum- och tidsformat",
   "@settings.appearance.dateTimeFormat.label": {
@@ -127,6 +147,10 @@
   "@settings.appearance.dateTimeFormat.opt.custom": {
     "sourceHash": "c4e69d5"
   },
+  "settings.appearance.dateTimeFormat.keywords": "date, time, format, custom, timestamp",
+  "@settings.appearance.dateTimeFormat.keywords": {
+    "sourceHash": "8fb735b"
+  },
   "settings.appearance.customDateTimeFormat.label": "Anpassat datum-/tidsformat",
   "@settings.appearance.customDateTimeFormat.label": {
     "sourceHash": "620b7a0"
@@ -134,6 +158,10 @@
   "settings.appearance.customDateTimeFormat.description": "Formatsträng för anpassad datum-/tidsvisning. Använd platshållare som YYYY, MM, DD, HH, mm, ss.",
   "@settings.appearance.customDateTimeFormat.description": {
     "sourceHash": "577dee6"
+  },
+  "settings.appearance.customDateTimeFormat.keywords": "custom, format, date, time, placeholder",
+  "@settings.appearance.customDateTimeFormat.keywords": {
+    "sourceHash": "1be6452"
   },
   "settings.listing.stripedRows.label": "Randiga rader",
   "@settings.listing.stripedRows.label": {
@@ -143,6 +171,10 @@
   "@settings.listing.stripedRows.description": {
     "sourceHash": "e95776a"
   },
+  "settings.listing.stripedRows.keywords": "stripe, zebra, alternate, row, shading, accessibility",
+  "@settings.listing.stripedRows.keywords": {
+    "sourceHash": "3a8c62d"
+  },
   "settings.appearance.tintLocal.label": "Tona paneler med lokala volymer",
   "@settings.appearance.tintLocal.label": {
     "sourceHash": "d907724"
@@ -150,6 +182,10 @@
   "settings.appearance.tintLocal.description": "Bakgrundston som läggs på paneler som visar en lokal enhet.",
   "@settings.appearance.tintLocal.description": {
     "sourceHash": "3c86b48"
+  },
+  "settings.appearance.tintLocal.keywords": "tint, pane, color, volume, local, background, highlight",
+  "@settings.appearance.tintLocal.keywords": {
+    "sourceHash": "955fcd6"
   },
   "settings.appearance.tintSmb.label": "Tona serverpaneler (SMB, SFTP, WebDAV, S3)",
   "@settings.appearance.tintSmb.label": {
@@ -159,6 +195,10 @@
   "@settings.appearance.tintSmb.description": {
     "sourceHash": "bddee40"
   },
+  "settings.appearance.tintSmb.keywords": "tint, pane, color, volume, server, network, background, highlight",
+  "@settings.appearance.tintSmb.keywords": {
+    "sourceHash": "880947f"
+  },
   "settings.appearance.tintMtp.label": "Tona enhetspaneler (MTP, ADB)",
   "@settings.appearance.tintMtp.label": {
     "sourceHash": "c50c536"
@@ -167,6 +207,10 @@
   "@settings.appearance.tintMtp.description": {
     "sourceHash": "d70512d"
   },
+  "settings.appearance.tintMtp.keywords": "tint, pane, color, volume, phone, device, camera, background, highlight",
+  "@settings.appearance.tintMtp.keywords": {
+    "sourceHash": "332d7b6"
+  },
   "settings.appearance.textSize.label": "Textstorlek",
   "@settings.appearance.textSize.label": {
     "sourceHash": "d68761c"
@@ -174,6 +218,10 @@
   "settings.appearance.textSize.description": "Skalar text och gränssnitt i hela appen. Kombineras med macOS textstorlek för hjälpmedel, där 100 % betyder ”exakt systemstorleken”.",
   "@settings.appearance.textSize.description": {
     "sourceHash": "49a0a6b"
+  },
+  "settings.appearance.textSize.keywords": "text, size, font, larger, smaller, accessibility, zoom, scale",
+  "@settings.appearance.textSize.keywords": {
+    "sourceHash": "d5080b3"
   },
   "settings.appearance.uiDensity.label": "Gränssnittstäthet",
   "@settings.appearance.uiDensity.label": {
@@ -194,6 +242,10 @@
   "settings.appearance.uiDensity.opt.spacious": "Luftig",
   "@settings.appearance.uiDensity.opt.spacious": {
     "sourceHash": "57edf23"
+  },
+  "settings.appearance.uiDensity.keywords": "compact, comfortable, spacious, size, spacing, dense",
+  "@settings.appearance.uiDensity.keywords": {
+    "sourceHash": "26f3879"
   },
   "settings.listing.sizeDisplay.label": "Storleksvisning",
   "@settings.listing.sizeDisplay.label": {
@@ -216,6 +268,10 @@
   "@settings.listing.sizeDisplay.opt.physical": {
     "sourceHash": "00ca4da"
   },
+  "settings.listing.sizeDisplay.keywords": "size, display, logical, physical, smart, disk, content, sparse",
+  "@settings.listing.sizeDisplay.keywords": {
+    "sourceHash": "b975b7d"
+  },
   "settings.listing.sizeUnit.label": "Storleksenhet",
   "@settings.listing.sizeUnit.label": {
     "sourceHash": "2a817d3"
@@ -231,6 +287,10 @@
   "settings.listing.sizeUnit.opt.bytes": "Byte",
   "@settings.listing.sizeUnit.opt.bytes": {
     "sourceHash": "4d80003"
+  },
+  "settings.listing.sizeUnit.keywords": "size, human, bytes, unit, format, raw, precise, dynamic",
+  "@settings.listing.sizeUnit.keywords": {
+    "sourceHash": "63c1aed"
   },
   "settings.appearance.fileSizeFormat.label": "Filstorleksformat",
   "@settings.appearance.fileSizeFormat.label": {
@@ -248,6 +308,10 @@
   "@settings.appearance.fileSizeFormat.opt.si": {
     "sourceHash": "4dcc22e"
   },
+  "settings.appearance.fileSizeFormat.keywords": "size, bytes, binary, decimal",
+  "@settings.appearance.fileSizeFormat.keywords": {
+    "sourceHash": "ce11b1b"
+  },
   "settings.listing.sizeMismatchWarning.label": "Varning vid storleksavvikelse",
   "@settings.listing.sizeMismatchWarning.label": {
     "sourceHash": "791c344"
@@ -255,6 +319,10 @@
   "settings.listing.sizeMismatchWarning.description": "Visar en varningssymbol på mappar där innehålls- och diskstorlek skiljer sig med mer än 50 % och 200 MB.",
   "@settings.listing.sizeMismatchWarning.description": {
     "sourceHash": "1b232eb"
+  },
+  "settings.listing.sizeMismatchWarning.keywords": "size, mismatch, warning, alert, disk, content, difference",
+  "@settings.listing.sizeMismatchWarning.keywords": {
+    "sourceHash": "3f332ce"
   },
   "settings.appearance.useAppIconsForDocuments.label": "Använd appsymboler för dokument",
   "@settings.appearance.useAppIconsForDocuments.label": {
@@ -264,6 +332,10 @@
   "@settings.appearance.useAppIconsForDocuments.description": {
     "sourceHash": "9651182"
   },
+  "settings.appearance.useAppIconsForDocuments.keywords": "icon, document, file, app, colorful",
+  "@settings.appearance.useAppIconsForDocuments.keywords": {
+    "sourceHash": "b039472"
+  },
   "settings.appearance.showFunctionKeyBar.label": "Visa funktionstangentsraden",
   "@settings.appearance.showFunctionKeyBar.label": {
     "sourceHash": "e80f18d"
@@ -271,6 +343,10 @@
   "settings.appearance.showFunctionKeyBar.description": "Visa raden med knappar för F-tangentskommandon (Byt namn, Visa, Kopiera och så vidare) längst ner i fönstret.",
   "@settings.appearance.showFunctionKeyBar.description": {
     "sourceHash": "138b56b"
+  },
+  "settings.appearance.showFunctionKeyBar.keywords": "function, key, bar, shortcut, buttons, bottom, toolbar",
+  "@settings.appearance.showFunctionKeyBar.keywords": {
+    "sourceHash": "c42e176"
   },
   "settings.listing.showHiddenFiles.label": "Visa dolda filer",
   "@settings.listing.showHiddenFiles.label": {
@@ -280,6 +356,10 @@
   "@settings.listing.showHiddenFiles.description": {
     "sourceHash": "8e77c67"
   },
+  "settings.listing.showHiddenFiles.keywords": "hidden, dotfile, dotfiles, invisible, system, show",
+  "@settings.listing.showHiddenFiles.keywords": {
+    "sourceHash": "16c608d"
+  },
   "settings.listing.showExtensionInName.label": "Visa filtillägg i namnkolumnen",
   "@settings.listing.showExtensionInName.label": {
     "sourceHash": "cce9a4d"
@@ -287,6 +367,10 @@
   "settings.listing.showExtensionInName.description": "Visa hela filnamnet (som launch.json) i kolumnen Namn och göm den separata kolumnen Tillägg. Påverkar endast Fullständig vy.",
   "@settings.listing.showExtensionInName.description": {
     "sourceHash": "e7c361c"
+  },
+  "settings.listing.showExtensionInName.keywords": "extension, ext, filename, name, column, full, split, suffix",
+  "@settings.listing.showExtensionInName.keywords": {
+    "sourceHash": "b71b4fa"
   },
   "settings.listing.showTags.label": "Visa taggar",
   "@settings.listing.showTags.label": {
@@ -296,6 +380,10 @@
   "@settings.listing.showTags.description": {
     "sourceHash": "005f3b0"
   },
+  "settings.listing.showTags.keywords": "tag, tags, label, labels, color, colour, dot, dots",
+  "@settings.listing.showTags.keywords": {
+    "sourceHash": "70fc801"
+  },
   "settings.listing.foldersFirst.label": "Visa mappar först",
   "@settings.listing.foldersFirst.label": {
     "sourceHash": "a61d73e"
@@ -304,6 +392,10 @@
   "@settings.listing.foldersFirst.description": {
     "sourceHash": "8505ff3"
   },
+  "settings.listing.foldersFirst.keywords": "sort, directory, directories, folder, folders, first, top, mixed, order, listing",
+  "@settings.listing.foldersFirst.keywords": {
+    "sourceHash": "c4f9de2"
+  },
   "settings.listing.spaceCalculatesFolderSize.label": "Beräkna mappstorlek med Mellanslag",
   "@settings.listing.spaceCalculatesFolderSize.label": {
     "sourceHash": "1a403eb"
@@ -311,6 +403,10 @@
   "settings.listing.spaceCalculatesFolderSize.description": "När Mellanslag markerar en mapp vars storlek inte är känd ännu räknar Cmdr ihop innehållet och visar totalen. Escape stoppar beräkningen.",
   "@settings.listing.spaceCalculatesFolderSize.description": {
     "sourceHash": "38d64c1"
+  },
+  "settings.listing.spaceCalculatesFolderSize.keywords": "space, size, folder, folders, directory, calculate, count, select",
+  "@settings.listing.spaceCalculatesFolderSize.keywords": {
+    "sourceHash": "5c24b62"
   },
   "settings.listing.directorySortMode.label": "Sortera mappar",
   "@settings.listing.directorySortMode.label": {
@@ -332,6 +428,10 @@
   "@settings.listing.directorySortMode.opt.alwaysByName": {
     "sourceHash": "7687e38"
   },
+  "settings.listing.directorySortMode.keywords": "sort, directory, directories, folder, folders, order, listing, name, size",
+  "@settings.listing.directorySortMode.keywords": {
+    "sourceHash": "de850c4"
+  },
   "settings.listing.briefColumnWidthMode.label": "Största kolumnbredd i Kortfattat läge",
   "@settings.listing.briefColumnWidthMode.label": {
     "sourceHash": "bbcab33"
@@ -348,9 +448,17 @@
   "@settings.listing.briefColumnWidthMode.opt.limited": {
     "sourceHash": "01a089f"
   },
+  "settings.listing.briefColumnWidthMode.keywords": "brief, column, width, max, maximum, limit, pane, shrink-wrap",
+  "@settings.listing.briefColumnWidthMode.keywords": {
+    "sourceHash": "6d84686"
+  },
   "settings.listing.briefColumnWidthMaxPx.label": "Kolumnbreddsgräns i Kortfattat läge",
   "@settings.listing.briefColumnWidthMaxPx.label": {
     "sourceHash": "9d045cd"
+  },
+  "settings.listing.briefColumnWidthMaxPx.keywords": "brief, column, width, max, maximum, limit, pixel",
+  "@settings.listing.briefColumnWidthMaxPx.keywords": {
+    "sourceHash": "3b64be6"
   },
   "settings.fileOperations.allowFileExtensionChanges.label": "Tillåt ändring av filtillägg",
   "@settings.fileOperations.allowFileExtensionChanges.label": {
@@ -372,6 +480,10 @@
   "@settings.fileOperations.allowFileExtensionChanges.opt.ask": {
     "sourceHash": "3c42771"
   },
+  "settings.fileOperations.allowFileExtensionChanges.keywords": "extension, rename, file, change, ask, confirm",
+  "@settings.fileOperations.allowFileExtensionChanges.keywords": {
+    "sourceHash": "1a87d27"
+  },
   "settings.fileOperations.pasteClipboardAsFile.label": "Klistra in urklippsinnehåll som en fil",
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
@@ -392,6 +504,10 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
+  "settings.fileOperations.pasteClipboardAsFile.keywords": "paste, clipboard, image, text, screenshot, file, create",
+  "@settings.fileOperations.pasteClipboardAsFile.keywords": {
+    "sourceHash": "3e077e3"
+  },
   "settings.fileOperations.skipConfirmation.label": "Hoppa över bekräftelse vid kopiering, flytt och flytt till papperskorgen",
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
@@ -399,6 +515,10 @@
   "settings.fileOperations.skipConfirmation.description": "F5 och F6 kopierar och flyttar till den andra panelen direkt, och F8 flyttar till papperskorgen utan att fråga. Lite riskabelt, eftersom ett enda tangenttryck räcker. Permanent radering frågar alltid först.",
   "@settings.fileOperations.skipConfirmation.description": {
     "sourceHash": "086379d"
+  },
+  "settings.fileOperations.skipConfirmation.keywords": "confirm, confirmation, dialog, ask, copy, move, trash, delete, skip, clicks",
+  "@settings.fileOperations.skipConfirmation.keywords": {
+    "sourceHash": "9f61258"
   },
   "settings.archives.card.archives": "Arkiv",
   "@settings.archives.card.archives": {
@@ -412,6 +532,10 @@
   "@settings.archives.zip.label": {
     "sourceHash": "ec0fd54"
   },
+  "settings.behavior.archiveEnter.zip.keywords": "archive, browse, open, extract, enter, compressed",
+  "@settings.behavior.archiveEnter.zip.keywords": {
+    "sourceHash": "493848e"
+  },
   "settings.archives.zip.description": "Vad Retur gör med en zip-fil.",
   "@settings.archives.zip.description": {
     "sourceHash": "70c3cb1"
@@ -420,6 +544,10 @@
   "@settings.archives.ooxml.label": {
     "sourceHash": "76c4431"
   },
+  "settings.behavior.archiveEnter.ooxml.keywords": "document, package",
+  "@settings.behavior.archiveEnter.ooxml.keywords": {
+    "sourceHash": "19e7eca"
+  },
   "settings.archives.ooxml.description": "Vad Retur gör med en .docx, .xlsx, .pptx, .jar eller .apk.",
   "@settings.archives.ooxml.description": {
     "sourceHash": "af6bd7d"
@@ -427,6 +555,10 @@
   "settings.archives.bundle.label": "Appaket",
   "@settings.archives.bundle.label": {
     "sourceHash": "4a5e902"
+  },
+  "settings.behavior.archiveEnter.bundle.keywords": "bundle, app, application, framework, browse, open, enter, launch",
+  "@settings.behavior.archiveEnter.bundle.keywords": {
+    "sourceHash": "fa1c3b6"
   },
   "settings.archives.bundle.description": "Vad Retur gör med en .app, .bundle eller .framework.",
   "@settings.archives.bundle.description": {
@@ -448,6 +580,10 @@
   "@settings.archives.compressionLevel.label": {
     "sourceHash": "9889378"
   },
+  "settings.behavior.archiveCompressionLevel.keywords": "compression, level, archive, size, faster, smaller",
+  "@settings.behavior.archiveCompressionLevel.keywords": {
+    "sourceHash": "4597a15"
+  },
   "settings.archives.compressionLevel.description": "Hur hårt Cmdr komprimerar när en zip skapas. Högre nivåer ger en mindre fil men tar längre tid att packa. Gäller för kommandot Komprimera och för att kopiera eller flytta filer till en zip.",
   "@settings.archives.compressionLevel.description": {
     "sourceHash": "0ebedaf"
@@ -467,6 +603,10 @@
   "settings.indexing.enabled.description": "Indexera din enhet i bakgrunden, så syns mappstorlekarna direkt.",
   "@settings.indexing.enabled.description": {
     "sourceHash": "32966c5"
+  },
+  "settings.indexing.enabled.keywords": "index, drive, scan, size, directory, folder, background",
+  "@settings.indexing.enabled.keywords": {
+    "sourceHash": "186f2f6"
   },
   "settings.mediaIndex.privacyNote": "Det här körs helt på din Mac med Apples inbyggda Vision-ramverk. Dina bilder lämnar aldrig din dator, och ingen AI-leverantör eller API-nyckel är inblandad.",
   "@settings.mediaIndex.privacyNote": {
@@ -540,6 +680,10 @@
   "@settings.mediaIndex.semanticSearch.label": {
     "sourceHash": "8cbf6af"
   },
+  "settings.mediaIndex.semanticSearch.enabled.keywords": "image, photo, semantic, search, describe, description, natural language, ai",
+  "@settings.mediaIndex.semanticSearch.enabled.keywords": {
+    "sourceHash": "c5380b3"
+  },
   "settings.mediaIndex.progressSummary.title": "Indexeras nu",
   "@settings.mediaIndex.progressSummary.title": {
     "sourceHash": "44501db"
@@ -552,6 +696,10 @@
   "@settings.mediaIndex.enabled.description": {
     "sourceHash": "118fc8d"
   },
+  "settings.mediaIndex.enabled.keywords": "image, photo, text, search, index, picture, screenshot, content",
+  "@settings.mediaIndex.enabled.keywords": {
+    "sourceHash": "a451d8e"
+  },
   "settings.mediaIndex.showFileStatusIcons.label": "Visa statussymboler på bildfiler",
   "@settings.mediaIndex.showFileStatusIcons.label": {
     "sourceHash": "a0a2372"
@@ -560,6 +708,10 @@
   "@settings.mediaIndex.showFileStatusIcons.description": {
     "sourceHash": "1a725aa"
   },
+  "settings.mediaIndex.showFileStatusIcons.keywords": "image, photo, badge, icon, overlay, indicator, status, indexed",
+  "@settings.mediaIndex.showFileStatusIcons.keywords": {
+    "sourceHash": "e8ddefc"
+  },
   "settings.mediaIndex.showInSearch.label": "Visa bildresultat i Sök",
   "@settings.mediaIndex.showInSearch.label": {
     "sourceHash": "45dd528"
@@ -567,6 +719,10 @@
   "settings.mediaIndex.showInSearch.description": "Sök lägger till en rad matchande bilder ovanför dina filer. Matchningen är fortfarande grov, så det är avstängt tills du vill ha det.",
   "@settings.mediaIndex.showInSearch.description": {
     "sourceHash": "143a4e7"
+  },
+  "settings.mediaIndex.showInSearch.keywords": "image, photo, search, results, grid, semantic, show, hide",
+  "@settings.mediaIndex.showInSearch.keywords": {
+    "sourceHash": "069d69d"
   },
   "settings.mediaIndex.networkVolumes.label": "Bildindexering för nätverksenheter",
   "@settings.mediaIndex.networkVolumes.label": {
@@ -656,6 +812,10 @@
   "@settings.mediaIndex.parallelism.description": {
     "sourceHash": "8a42808"
   },
+  "settings.mediaIndex.parallelism.keywords": "image, photo, index, parallel, workers, speed, performance, cores",
+  "@settings.mediaIndex.parallelism.keywords": {
+    "sourceHash": "c01971c"
+  },
   "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "Bara mina mest använda mappar",
   "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
     "sourceHash": "1db4208"
@@ -711,6 +871,10 @@
   "settings.mediaIndex.importanceThreshold.floor": "Skräp som node_modules och systemcachar hoppas alltid över.",
   "@settings.mediaIndex.importanceThreshold.floor": {
     "sourceHash": "8839d14"
+  },
+  "settings.mediaIndex.importanceThreshold.keywords": "image, photo, index, importance, folders, coverage, depth",
+  "@settings.mediaIndex.importanceThreshold.keywords": {
+    "sourceHash": "419756c"
   },
   "settings.mediaIndex.progress.local": "Den här Macen",
   "@settings.mediaIndex.progress.local": {
@@ -768,6 +932,10 @@
   "@settings.indexing.askForEachDrive.description": {
     "sourceHash": "189552c"
   },
+  "settings.indexing.askForEachDrive.keywords": "drive, index, ask, prompt, notification, connect, network",
+  "@settings.indexing.askForEachDrive.keywords": {
+    "sourceHash": "1aa1446"
+  },
   "settings.indexing.staleNotify.label": "Meddela mig om något externt enhetsindex blir inaktuellt",
   "@settings.indexing.staleNotify.label": {
     "sourceHash": "690692a"
@@ -775,6 +943,10 @@
   "settings.indexing.staleNotify.description": "Du ser fortfarande den gula statusen om du stänger av det här.",
   "@settings.indexing.staleNotify.description": {
     "sourceHash": "03af10e"
+  },
+  "settings.indexing.staleNotify.keywords": "drive, index, stale, outdated, notify, notification, disconnect, network",
+  "@settings.indexing.staleNotify.keywords": {
+    "sourceHash": "12276c3"
   },
   "settings.indexing.masterOffNote": "Enhetsindexering är avstängd, så ingen enhet indexeras och mappstorlekar förblir dolda. Varje enhet behåller sitt eget val, på eller av, så att allt är redo när du slår på det här igen.",
   "@settings.indexing.masterOffNote": {
@@ -799,6 +971,10 @@
   "settings.indexing.reEnableNotifications.disabledTooltip": "Du har inte stängt av frågan för någon enhet ännu.",
   "@settings.indexing.reEnableNotifications.disabledTooltip": {
     "sourceHash": "e7702a8"
+  },
+  "settings.indexing.reEnableNotifications.keywords": "re-enable, notifications, drives, silenced, ask again",
+  "@settings.indexing.reEnableNotifications.keywords": {
+    "sourceHash": "54baf63"
   },
   "settings.indexing.silencedDrives.label": "Tystade enhetsfrågor",
   "@settings.indexing.silencedDrives.label": {
@@ -841,6 +1017,10 @@
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.neither": {
     "sourceHash": "9957d09"
   },
+  "settings.behavior.fileSystemWatching.downloadsNotifications.keywords": "download, downloads, notification, toast, notify",
+  "@settings.behavior.fileSystemWatching.downloadsNotifications.keywords": {
+    "sourceHash": "955d46c"
+  },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Gå till senaste hämtning",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
@@ -849,6 +1029,10 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
     "sourceHash": "ed2f65d"
   },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "shortcut, hotkey, global, download, downloads, jump, go to, goto",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
+    "sourceHash": "1fd8c2f"
+  },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.label": "Genväg för global gå-till-senaste-hämtning",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.label": {
     "sourceHash": "cf811fe"
@@ -856,6 +1040,10 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.description": "Den systemövergripande kombinationen som utlöser gå-till-senaste-hämtning. Redigeras under Tangentbordsgenvägar.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.description": {
     "sourceHash": "77e5c31"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": "shortcut, hotkey, global, binding, combo",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
+    "sourceHash": "a90591b"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Varningsavisering för global gå-till-senaste-hämtning bekräftad",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
@@ -881,6 +1069,10 @@
   "@settings.behavior.notifications.keepUntilClosed.description": {
     "sourceHash": "53890bf"
   },
+  "settings.behavior.notifications.keepUntilClosed.keywords": "toast, notification, timeout, time, disappear, dismiss, close, keep, accessibility",
+  "@settings.behavior.notifications.keepUntilClosed.keywords": {
+    "sourceHash": "f681b77"
+  },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": "Varning vid lågt diskutrymme",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": {
     "sourceHash": "911b74b"
@@ -902,6 +1094,10 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": {
     "sourceHash": "ca7981b"
   },
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.keywords": "disk, space, low, free, storage, full, warning, notification, boot, startup",
+  "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.keywords": {
+    "sourceHash": "733f2ee"
+  },
   "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": "Varningströskel",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": {
     "sourceHash": "fd1382f"
@@ -910,6 +1106,10 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": {
     "sourceHash": "9ed41b8"
   },
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": "disk, space, threshold, percent, low, free, warning",
+  "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": {
+    "sourceHash": "7a0df93"
+  },
   "settings.search.autoApply.label": "Tillämpa sökningar automatiskt",
   "@settings.search.autoApply.label": {
     "sourceHash": "06b0f9f"
@@ -917,6 +1117,10 @@
   "settings.search.autoApply.description": "Kör filnamns- och regex-sökningar automatiskt medan du skriver (1 sekund efter att du slutat). AI-sökningar väntar alltid på Retur, eftersom de kostar pengar. När det är av trycker du på Retur eller klickar på körknappen för att söka.",
   "@settings.search.autoApply.description": {
     "sourceHash": "19fcaf7"
+  },
+  "settings.search.autoApply.keywords": "search, auto, apply, live, debounce, filename, instant",
+  "@settings.search.autoApply.keywords": {
+    "sourceHash": "2e0e223"
   },
   "settings.ai.provider.label": "Leverantör",
   "@settings.ai.provider.label": {
@@ -938,6 +1142,10 @@
   "@settings.ai.provider.opt.local": {
     "sourceHash": "6689271"
   },
+  "settings.ai.provider.keywords": "ai, artificial intelligence, provider, cloud, local, off, model",
+  "@settings.ai.provider.keywords": {
+    "sourceHash": "ff6248d"
+  },
   "settings.ai.cloudProvider.label": "Tjänst",
   "@settings.ai.cloudProvider.label": {
     "sourceHash": "d677190"
@@ -950,9 +1158,17 @@
   "@settings.ai.cloudConsent.lockedHint": {
     "sourceHash": "8a24685"
   },
+  "settings.ai.cloudConsent.keywords": "consent, privacy, allow, send, data, cloud, ai",
+  "@settings.ai.cloudConsent.keywords": {
+    "sourceHash": "c0a0566"
+  },
   "settings.ai.cloudProvider.description": "Vilken moln-AI-tjänst som ska användas.",
   "@settings.ai.cloudProvider.description": {
     "sourceHash": "3300ce9"
+  },
+  "settings.ai.cloudProvider.keywords": "cloud, provider, service, custom",
+  "@settings.ai.cloudProvider.keywords": {
+    "sourceHash": "0ccf0ad"
   },
   "settings.ai.cloudProviderConfigs.label": "Leverantörskonfigurationer",
   "@settings.ai.cloudProviderConfigs.label": {
@@ -970,6 +1186,10 @@
   "@settings.ai.localContextSize.description": {
     "sourceHash": "14256da"
   },
+  "settings.ai.localContextSize.keywords": "context, window, tokens, memory, size, local",
+  "@settings.ai.localContextSize.keywords": {
+    "sourceHash": "cf1e449"
+  },
   "settings.network.enabled.label": "Aktivera nätverk",
   "@settings.network.enabled.label": {
     "sourceHash": "10f5de9"
@@ -977,6 +1197,10 @@
   "settings.network.enabled.description": "Upptäck SMB-servrar i ditt lokala nätverk och anslut till dem. När det är av kan Cmdr fortfarande läsa och skriva filer i redan monterade delade mappar, men ber inte macOS om åtkomst till Lokalt nätverk.",
   "@settings.network.enabled.description": {
     "sourceHash": "72a0854"
+  },
+  "settings.network.enabled.keywords": "network, enable, enabled, discovery, local, permission",
+  "@settings.network.enabled.keywords": {
+    "sourceHash": "a2d95a0"
   },
   "settings.network.firstTriggerDone.label": "Nätverkssökning startad",
   "@settings.network.firstTriggerDone.label": {
@@ -997,6 +1221,10 @@
   "settings.network.directSmbConnection.description": "När det är aktiverat ansluter Cmdr direkt till SMB-resurser för snabbare filåtgärder. Systemmonteringen finns kvar för Finder och andra appar.",
   "@settings.network.directSmbConnection.description": {
     "sourceHash": "44a5a6d"
+  },
+  "settings.network.directSmbConnection.keywords": "direct, fast, connection, network, performance",
+  "@settings.network.directSmbConnection.keywords": {
+    "sourceHash": "6043806"
   },
   "settings.network.shareCacheDuration.label": "Cachetid för delade mappar",
   "@settings.network.shareCacheDuration.label": {
@@ -1026,6 +1254,10 @@
   "@settings.network.shareCacheDuration.opt.days30": {
     "sourceHash": "ffd7280"
   },
+  "settings.network.shareCacheDuration.keywords": "cache, share, network, refresh",
+  "@settings.network.shareCacheDuration.keywords": {
+    "sourceHash": "df14578"
+  },
   "settings.network.timeoutMode.label": "Läge för nätverkstidsgräns",
   "@settings.network.timeoutMode.label": {
     "sourceHash": "5d1c989"
@@ -1054,6 +1286,10 @@
   "@settings.network.timeoutMode.opt.custom": {
     "sourceHash": "494ca78"
   },
+  "settings.network.timeoutMode.keywords": "timeout, network, slow, connection, latency",
+  "@settings.network.timeoutMode.keywords": {
+    "sourceHash": "a00bb47"
+  },
   "settings.network.customTimeout.label": "Anpassad tidsgräns",
   "@settings.network.customTimeout.label": {
     "sourceHash": "ea49e01"
@@ -1061,6 +1297,10 @@
   "settings.network.customTimeout.description": "Anpassad tidsgräns i sekunder för nätverksåtgärder.",
   "@settings.network.customTimeout.description": {
     "sourceHash": "28a8d46"
+  },
+  "settings.network.customTimeout.keywords": "timeout, custom, seconds",
+  "@settings.network.customTimeout.keywords": {
+    "sourceHash": "cf816c7"
   },
   "settings.network.smbConcurrency.label": "Samtidiga åtgärder per SMB-anslutning",
   "@settings.network.smbConcurrency.label": {
@@ -1070,6 +1310,10 @@
   "@settings.network.smbConcurrency.description": {
     "sourceHash": "49a590b"
   },
+  "settings.network.smbConcurrency.keywords": "concurrency, parallel, copy, batch, performance, transfer, speed",
+  "@settings.network.smbConcurrency.keywords": {
+    "sourceHash": "8a4675f"
+  },
   "settings.fileOperations.mtpEnabled.label": "Stöd för Android/Kindle/kamera (PTP och MTP)",
   "@settings.fileOperations.mtpEnabled.label": {
     "sourceHash": "6a315a8"
@@ -1077,6 +1321,10 @@
   "settings.fileOperations.mtpEnabled.description": "Upptäck och anslut till Android och andra enheter via en USB-kabel för att bläddra och överföra filer. På en Android-telefon ansluter du USB-kabeln och går sedan på telefonen till något i stil med Inställningar > USB-inställningar och ställer in anslutningen på ”Filöverföring”, ”Android Auto” eller liknande. (Varierar mellan enheter.)",
   "@settings.fileOperations.mtpEnabled.description": {
     "sourceHash": "c66df04"
+  },
+  "settings.fileOperations.mtpEnabled.keywords": "device, phone, mobile",
+  "@settings.fileOperations.mtpEnabled.keywords": {
+    "sourceHash": "ce40ecb"
   },
   "settings.fileOperations.adbEnabled.label": "Åtkomst till Android-filer via ADB",
   "@settings.fileOperations.adbEnabled.label": {
@@ -1086,6 +1334,10 @@
   "@settings.fileOperations.adbEnabled.description": {
     "sourceHash": "a89c957"
   },
+  "settings.fileOperations.adbEnabled.keywords": "usb debugging, developer options, phone, device",
+  "@settings.fileOperations.adbEnabled.keywords": {
+    "sourceHash": "95bcc86"
+  },
   "settings.fileOperations.adbBinaryPath.label": "Sökväg till adb",
   "@settings.fileOperations.adbBinaryPath.label": {
     "sourceHash": "a67fbbd"
@@ -1093,6 +1345,10 @@
   "settings.fileOperations.adbBinaryPath.description": "Lämna det tomt, så letar Cmdr efter adb på vanligt sätt, bland annat i Android SDK och Homebrew. Ange en annan sökväg om du har platform tools på en egen plats.",
   "@settings.fileOperations.adbBinaryPath.description": {
     "sourceHash": "940ff29"
+  },
+  "settings.fileOperations.adbBinaryPath.keywords": "path, binary, location",
+  "@settings.fileOperations.adbBinaryPath.keywords": {
+    "sourceHash": "646719a"
   },
   "settings.fileOperations.mtpConnectionWarning.label": "Varna när en enhet ansluter",
   "@settings.fileOperations.mtpConnectionWarning.label": {
@@ -1102,6 +1358,10 @@
   "@settings.fileOperations.mtpConnectionWarning.description": {
     "sourceHash": "9c7a648"
   },
+  "settings.fileOperations.mtpConnectionWarning.keywords": "warning, notification, connect, toast",
+  "@settings.fileOperations.mtpConnectionWarning.keywords": {
+    "sourceHash": "4f395e7"
+  },
   "settings.fileExplorer.git.showRepoChip.label": "Visa repository-bricka",
   "@settings.fileExplorer.git.showRepoChip.label": {
     "sourceHash": "7504b23"
@@ -1109,6 +1369,10 @@
   "settings.fileExplorer.git.showRepoChip.description": "Visa aktuell gren, före/efter och ändringsstatus ovanför fillistan när du är inne i ett git-repository.",
   "@settings.fileExplorer.git.showRepoChip.description": {
     "sourceHash": "7b8a9ba"
+  },
+  "settings.fileExplorer.git.showRepoChip.keywords": "chip, branch, breadcrumb, repo, status, ahead, behind, dirty",
+  "@settings.fileExplorer.git.showRepoChip.keywords": {
+    "sourceHash": "15fb963"
   },
   "settings.fileExplorer.git.showStatusColumn.label": "Visa git-statuskolumn",
   "@settings.fileExplorer.git.showStatusColumn.label": {
@@ -1118,6 +1382,10 @@
   "@settings.fileExplorer.git.showStatusColumn.description": {
     "sourceHash": "7ff07e4"
   },
+  "settings.fileExplorer.git.showStatusColumn.keywords": "status, column, modified, untracked, ignored, added, deleted",
+  "@settings.fileExplorer.git.showStatusColumn.keywords": {
+    "sourceHash": "ce0481d"
+  },
   "settings.fileExplorer.git.showVirtualGitPortal.label": "Visa virtuell git-portal",
   "@settings.fileExplorer.git.showVirtualGitPortal.label": {
     "sourceHash": "40d9fa1"
@@ -1125,6 +1393,10 @@
   "settings.fileExplorer.git.showVirtualGitPortal.description": "När du går in i `.git`, visa grenar, taggar, incheckningar och worktrees som bläddringsbara virtuella mappar. Stäng av för att i stället se det råa innehållet i `.git`.",
   "@settings.fileExplorer.git.showVirtualGitPortal.description": {
     "sourceHash": "70eae72"
+  },
+  "settings.fileExplorer.git.showVirtualGitPortal.keywords": "portal, virtual, branches, tags, commits, worktrees, history",
+  "@settings.fileExplorer.git.showVirtualGitPortal.keywords": {
+    "sourceHash": "25c1d2c"
   },
   "settings.viewer.wordWrap.label": "Automatiskt radbyte",
   "@settings.viewer.wordWrap.label": {
@@ -1134,6 +1406,10 @@
   "@settings.viewer.wordWrap.description": {
     "sourceHash": "8a87bd2"
   },
+  "settings.viewer.wordWrap.keywords": "viewer, wrap, word, line, horizontal, scroll",
+  "@settings.viewer.wordWrap.keywords": {
+    "sourceHash": "5d0a24b"
+  },
   "settings.viewer.showTextCursor.label": "Visa textmarkör",
   "@settings.viewer.showTextCursor.label": {
     "sourceHash": "9e4b4ba"
@@ -1142,6 +1418,10 @@
   "@settings.viewer.showTextCursor.description": {
     "sourceHash": "b5e542e"
   },
+  "settings.viewer.showTextCursor.keywords": "viewer, cursor, caret, text, insertion, point, blink, selection",
+  "@settings.viewer.showTextCursor.keywords": {
+    "sourceHash": "1214804"
+  },
   "settings.developer.mcpEnabled.label": "Aktivera MCP-server",
   "@settings.developer.mcpEnabled.label": {
     "sourceHash": "32b62ff"
@@ -1149,6 +1429,10 @@
   "settings.developer.mcpEnabled.description": "Starta en Model Context Protocol-server för integration med AI-assistenter.",
   "@settings.developer.mcpEnabled.description": {
     "sourceHash": "10f4102"
+  },
+  "settings.developer.mcpEnabled.keywords": "server, ai, assistant, protocol, model",
+  "@settings.developer.mcpEnabled.keywords": {
+    "sourceHash": "410be68"
   },
   "settings.developer.mcpPort.label": "Port",
   "@settings.developer.mcpPort.label": {
@@ -1159,6 +1443,10 @@
   "@settings.developer.mcpPort.description": {
     "sourceHash": "174e807"
   },
+  "settings.developer.mcpPort.keywords": "port, network, ephemeral",
+  "@settings.developer.mcpPort.keywords": {
+    "sourceHash": "2b54226"
+  },
   "settings.developer.verboseLogging.label": "Utförlig konsolutdata (utvecklare)",
   "@settings.developer.verboseLogging.label": {
     "sourceHash": "036a824"
@@ -1166,6 +1454,10 @@
   "settings.developer.verboseLogging.description": "Höjer dev-terminalen och webbläsarens devtools-konsol till felsökningsnivå. Loggfilen på disk fångar alltid felsökningsdetaljer oavsett, så felrapporter påverkas inte av den här inställningen. RUST_LOG vinner alltid för terminalen.",
   "@settings.developer.verboseLogging.description": {
     "sourceHash": "5c69c0d"
+  },
+  "settings.developer.verboseLogging.keywords": "log, debug, verbose, troubleshoot, performance, console",
+  "@settings.developer.verboseLogging.keywords": {
+    "sourceHash": "2bdf9aa"
   },
   "settings.updates.autoCheck.label": "Sök efter uppdateringar automatiskt",
   "@settings.updates.autoCheck.label": {
@@ -1175,6 +1467,10 @@
   "@settings.updates.autoCheck.description": {
     "sourceHash": "1ff0b1a"
   },
+  "settings.updates.autoCheck.keywords": "update, auto, check, version, background",
+  "@settings.updates.autoCheck.keywords": {
+    "sourceHash": "091ca30"
+  },
   "settings.whatsNew.showOnUpdate.label": "Visa vad som är nytt efter uppdateringar",
   "@settings.whatsNew.showOnUpdate.label": {
     "sourceHash": "991a90b"
@@ -1182,6 +1478,10 @@
   "settings.whatsNew.showOnUpdate.description": "När Cmdr uppdaterar sig själv, visa en snabb sammanfattning av vad som ändrats.",
   "@settings.whatsNew.showOnUpdate.description": {
     "sourceHash": "4d4d7e6"
+  },
+  "settings.whatsNew.showOnUpdate.keywords": "changelog, release notes, what’s new, update notes",
+  "@settings.whatsNew.showOnUpdate.keywords": {
+    "sourceHash": "ef19c9d"
   },
   "settings.whatsNew.lastSeenVersion.label": "Senast sedda ändringsloggsversion",
   "@settings.whatsNew.lastSeenVersion.label": {
@@ -1199,6 +1499,10 @@
   "@settings.analytics.enabled.description": {
     "sourceHash": "f5534ee"
   },
+  "settings.analytics.enabled.keywords": "analytics, usage, stats, privacy, telemetry, beta, tracking, opt-out",
+  "@settings.analytics.enabled.keywords": {
+    "sourceHash": "85d82ce"
+  },
   "settings.analytics.email.label": "Kontakt-e-post för beta",
   "@settings.analytics.email.label": {
     "sourceHash": "71e5c9a"
@@ -1206,6 +1510,10 @@
   "settings.analytics.email.description": "Exempel: du@exempel.se",
   "@settings.analytics.email.description": {
     "sourceHash": "03574f9"
+  },
+  "settings.analytics.email.keywords": "email, beta, contact, newsletter, updates, survey",
+  "@settings.analytics.email.keywords": {
+    "sourceHash": "61438eb"
   },
   "settings.updates.crashReports.label": "Skicka kraschrapporter",
   "@settings.updates.crashReports.label": {
@@ -1215,6 +1523,10 @@
   "@settings.updates.crashReports.description": {
     "sourceHash": "e726766"
   },
+  "settings.updates.crashReports.keywords": "crash, report, privacy, telemetry, bug, error",
+  "@settings.updates.crashReports.keywords": {
+    "sourceHash": "5fbf552"
+  },
   "settings.updates.errorReports.label": "Skicka felrapporter automatiskt",
   "@settings.updates.errorReports.label": {
     "sourceHash": "471575d"
@@ -1222,6 +1534,10 @@
   "settings.updates.errorReports.description": "Skicka en liten loggsnutt till utvecklaren när ett fel uppstår. Hjälper till att åtgärda buggar snabbare. Av som standard. Du kan alltid skicka en manuell rapport från Hjälp-menyn.",
   "@settings.updates.errorReports.description": {
     "sourceHash": "f3e41eb"
+  },
+  "settings.updates.errorReports.keywords": "error, report, auto, send, privacy, telemetry, bug, log, snippet, diagnostics",
+  "@settings.updates.errorReports.keywords": {
+    "sourceHash": "271aae6"
   },
   "settings.updates.attachEmailToReports.label": "Bifoga min e-post till rapporter som standard",
   "@settings.updates.attachEmailToReports.label": {
@@ -1231,6 +1547,10 @@
   "@settings.updates.attachEmailToReports.description": {
     "sourceHash": "dd23637"
   },
+  "settings.updates.attachEmailToReports.keywords": "email, report, crash, error, contact, attach, reply, beta",
+  "@settings.updates.attachEmailToReports.keywords": {
+    "sourceHash": "6fba4e5"
+  },
   "settings.advanced.prefetchBufferSize.label": "Storlek på förhämtningsbuffert",
   "@settings.advanced.prefetchBufferSize.label": {
     "sourceHash": "4043154"
@@ -1238,6 +1558,10 @@
   "settings.advanced.prefetchBufferSize.description": "Antal objekt att förhämta runt det synliga området för smidigare rullning.",
   "@settings.advanced.prefetchBufferSize.description": {
     "sourceHash": "39f13c9"
+  },
+  "settings.advanced.prefetchBufferSize.keywords": "prefetch, buffer, scroll, performance",
+  "@settings.advanced.prefetchBufferSize.keywords": {
+    "sourceHash": "8e07ea0"
   },
   "settings.advanced.virtualizationBufferRows.label": "Virtualiseringsbuffert (rader)",
   "@settings.advanced.virtualizationBufferRows.label": {
@@ -1247,6 +1571,10 @@
   "@settings.advanced.virtualizationBufferRows.description": {
     "sourceHash": "82a0e9a"
   },
+  "settings.advanced.virtualizationBufferRows.keywords": "virtualization, buffer, row, render",
+  "@settings.advanced.virtualizationBufferRows.keywords": {
+    "sourceHash": "2342517"
+  },
   "settings.advanced.virtualizationBufferColumns.label": "Virtualiseringsbuffert (kolumner)",
   "@settings.advanced.virtualizationBufferColumns.label": {
     "sourceHash": "a9e8dba"
@@ -1254,6 +1582,10 @@
   "settings.advanced.virtualizationBufferColumns.description": "Extra kolumner att rendera i Kortfattad vy.",
   "@settings.advanced.virtualizationBufferColumns.description": {
     "sourceHash": "a1cbd98"
+  },
+  "settings.advanced.virtualizationBufferColumns.keywords": "virtualization, buffer, column, brief",
+  "@settings.advanced.virtualizationBufferColumns.keywords": {
+    "sourceHash": "f4c112b"
   },
   "settings.advanced.fileWatcherDebounce.label": "Fördröjning för filbevakning",
   "@settings.advanced.fileWatcherDebounce.label": {
@@ -1263,6 +1595,10 @@
   "@settings.advanced.fileWatcherDebounce.description": {
     "sourceHash": "084a2a7"
   },
+  "settings.advanced.fileWatcherDebounce.keywords": "watcher, debounce, refresh, delay",
+  "@settings.advanced.fileWatcherDebounce.keywords": {
+    "sourceHash": "a389923"
+  },
   "settings.advanced.diskSpaceChangeThreshold.label": "Tröskel för ändring av diskutrymme (MB)",
   "@settings.advanced.diskSpaceChangeThreshold.label": {
     "sourceHash": "1d95fc6"
@@ -1270,6 +1606,10 @@
   "settings.advanced.diskSpaceChangeThreshold.description": "Minsta ändring i tillgängligt diskutrymme innan statusfältet uppdateras. Statusfältet kontrollerar diskutrymmet med några sekunders mellanrum; små ändringar under den här tröskeln ignoreras för att minska visuellt brus.",
   "@settings.advanced.diskSpaceChangeThreshold.description": {
     "sourceHash": "f09c3cb"
+  },
+  "settings.advanced.diskSpaceChangeThreshold.keywords": "disk, space, threshold, poll, refresh, status, bar",
+  "@settings.advanced.diskSpaceChangeThreshold.keywords": {
+    "sourceHash": "74628c1"
   },
   "settings.fileViewer.suppressBinaryWarning.label": "Dölj råvisningsvarningen för binärfiler",
   "@settings.fileViewer.suppressBinaryWarning.label": {
@@ -1279,6 +1619,10 @@
   "@settings.fileViewer.suppressBinaryWarning.description": {
     "sourceHash": "a93b4cb"
   },
+  "settings.fileViewer.suppressBinaryWarning.keywords": "viewer, binary, image, raw, warning, banner, quick, look",
+  "@settings.fileViewer.suppressBinaryWarning.keywords": {
+    "sourceHash": "12a2ca0"
+  },
   "settings.fileExplorer.suppressQuickLookHint.label": "Dölj tipset om Överblick med mellanslag",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
@@ -1286,6 +1630,10 @@
   "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr använder Mellanslag för att växla filmarkering och ⇧Mellanslag för Överblick (Finder använder vanligt Mellanslag för Överblick). Varje gång du trycker på Mellanslag i fillistan visar Cmdr en kort påminnelse om den här skillnaden. Aktivera detta (eller klicka på ”Visa inte igen” i aviseringen) för att dölja påminnelsen för gott.",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
     "sourceHash": "10357b4"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.keywords": "quick, look, preview, space, hint, toast, reminder",
+  "@settings.fileExplorer.suppressQuickLookHint.keywords": {
+    "sourceHash": "d3a493e"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Antal stängda flikar att komma ihåg per panel",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
@@ -1295,6 +1643,10 @@
   "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
     "sourceHash": "e53df3a"
   },
+  "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "tab, closed, reopen, history, undo, pane",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {
+    "sourceHash": "bb60e7b"
+  },
   "settings.advanced.dragThreshold.label": "Dragtröskel",
   "@settings.advanced.dragThreshold.label": {
     "sourceHash": "d624e2a"
@@ -1303,6 +1655,10 @@
   "@settings.advanced.dragThreshold.description": {
     "sourceHash": "7704bfa"
   },
+  "settings.advanced.dragThreshold.keywords": "drag, threshold, pixel, distance",
+  "@settings.advanced.dragThreshold.keywords": {
+    "sourceHash": "1dec520"
+  },
   "settings.advanced.exitFullScreenOnEscape.label": "Lämna helskärmsläge med Escape",
   "@settings.advanced.exitFullScreenOnEscape.label": {
     "sourceHash": "f98be5e"
@@ -1310,6 +1666,10 @@
   "settings.advanced.exitFullScreenOnEscape.description": "När huvudfönstret är i helskärmsläge lämnar Escape helskärmsläget. I en dialog eller meny stänger Escape bara den.",
   "@settings.advanced.exitFullScreenOnEscape.description": {
     "sourceHash": "a862b71"
+  },
+  "settings.advanced.exitFullScreenOnEscape.keywords": "escape, full screen, fullscreen, maximize, window, restore, exit",
+  "@settings.advanced.exitFullScreenOnEscape.keywords": {
+    "sourceHash": "592c454"
   },
   "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Tips om Escape och helskärmsläge visat",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.label": {
@@ -1327,6 +1687,10 @@
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
   },
+  "settings.fileExplorer.typeToJump.resetDelay.keywords": "type, jump, reset, delay, fuzzy, search, navigation, keystroke, buffer",
+  "@settings.fileExplorer.typeToJump.resetDelay.keywords": {
+    "sourceHash": "179755f"
+  },
   "settings.fileExplorer.typeToJump.mode.label": "När du skriver i en panel",
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
@@ -1343,6 +1707,10 @@
   "@settings.fileExplorer.typeToJump.mode.opt.filter": {
     "sourceHash": "638e249"
   },
+  "settings.fileExplorer.typeToJump.mode.keywords": "type, jump, filter, quick filter, quick search, narrow, keystroke",
+  "@settings.fileExplorer.typeToJump.mode.keywords": {
+    "sourceHash": "039893a"
+  },
   "settings.fileOperations.maxConflictsToShow.label": "Högsta antal konflikter att visa",
   "@settings.fileOperations.maxConflictsToShow.label": {
     "sourceHash": "d9cdb0c"
@@ -1350,6 +1718,10 @@
   "settings.fileOperations.maxConflictsToShow.description": "Högsta antal filkonflikter att visa i förhandsvisningen före en åtgärd.",
   "@settings.fileOperations.maxConflictsToShow.description": {
     "sourceHash": "1f6bcb9"
+  },
+  "settings.fileOperations.maxConflictsToShow.keywords": "conflict, max, limit, preview, operation",
+  "@settings.fileOperations.maxConflictsToShow.keywords": {
+    "sourceHash": "3b64816"
   },
   "settings.fileOperations.progressUpdateInterval.label": "Uppdateringsintervall för förlopp",
   "@settings.fileOperations.progressUpdateInterval.label": {
@@ -1359,6 +1731,10 @@
   "@settings.fileOperations.progressUpdateInterval.description": {
     "sourceHash": "84e4876"
   },
+  "settings.fileOperations.progressUpdateInterval.keywords": "progress, update, interval, refresh, performance",
+  "@settings.fileOperations.progressUpdateInterval.keywords": {
+    "sourceHash": "49c3811"
+  },
   "settings.advanced.maxLogStorageMb.label": "Högsta diskutrymme för loggfiler (MB)",
   "@settings.advanced.maxLogStorageMb.label": {
     "sourceHash": "d6af6b4"
@@ -1366,6 +1742,10 @@
   "settings.advanced.maxLogStorageMb.description": "Högsta diskutrymme för loggfiler. Ställ in på 0 för att stänga av lagring av loggar; felrapporter kan inte skickas utan loggar. Ändringar till ett värde över noll träder i kraft vid nästa appstart.",
   "@settings.advanced.maxLogStorageMb.description": {
     "sourceHash": "725bb26"
+  },
+  "settings.advanced.maxLogStorageMb.keywords": "log, storage, disk, cap, rotation, error, report, privacy",
+  "@settings.advanced.maxLogStorageMb.keywords": {
+    "sourceHash": "328d0cc"
   },
   "settings.advanced.mountTimeout.label": "Tidsgräns för montering",
   "@settings.advanced.mountTimeout.label": {
@@ -1375,6 +1755,10 @@
   "@settings.advanced.mountTimeout.description": {
     "sourceHash": "3da30e1"
   },
+  "settings.advanced.mountTimeout.keywords": "mount, timeout, network, share",
+  "@settings.advanced.mountTimeout.keywords": {
+    "sourceHash": "3327884"
+  },
   "settings.advanced.showSafeSaveFiles.label": "Visa andra appars tillfälliga filer",
   "@settings.advanced.showSafeSaveFiles.label": {
     "sourceHash": "c43c6af"
@@ -1382,6 +1766,10 @@
   "settings.advanced.showSafeSaveFiles.description": "När appar som TextEdit och Förhandsvisning sparar en fil skriver macOS den nya versionen bredvid under ett tillfälligt namn (som slutar på ”.sb-”) och byter sedan ut den. Stäng av det här för att hålla dem borta från fillistan.",
   "@settings.advanced.showSafeSaveFiles.description": {
     "sourceHash": "b371701"
+  },
+  "settings.advanced.showSafeSaveFiles.keywords": "safe-save, temp, temporary, preview, autosave",
+  "@settings.advanced.showSafeSaveFiles.keywords": {
+    "sourceHash": "a56607a"
   },
   "settings.advanced.showStagingTempFiles.label": "Visa Cmdrs tillfälliga filer",
   "@settings.advanced.showStagingTempFiles.label": {
@@ -1391,6 +1779,10 @@
   "@settings.advanced.showStagingTempFiles.description": {
     "sourceHash": "a562689"
   },
+  "settings.advanced.showStagingTempFiles.keywords": "temp, temporary, staging, copy, transfer, partial",
+  "@settings.advanced.showStagingTempFiles.keywords": {
+    "sourceHash": "3b07cc3"
+  },
   "settings.advanced.logLlmCalls.label": "Logga AI-modellanrop",
   "@settings.advanced.logLlmCalls.label": {
     "sourceHash": "f865b3e"
@@ -1398,6 +1790,10 @@
   "settings.advanced.logLlmCalls.description": "Spara varje AI-förfrågan och -svar i en lokal mapp (llm-logs) för felsökning. De här filerna stannar på din Mac och innehåller filnamnen och sökvägarna som Cmdr skickar till din leverantör.",
   "@settings.advanced.logLlmCalls.description": {
     "sourceHash": "86b3d34"
+  },
+  "settings.advanced.logLlmCalls.keywords": "ai, log, debug, request, response, prompt",
+  "@settings.advanced.logLlmCalls.keywords": {
+    "sourceHash": "6d0a3a0"
   },
   "settings.advanced.serviceResolveTimeout.label": "Tidsgräns för tjänstuppslag",
   "@settings.advanced.serviceResolveTimeout.label": {
@@ -1407,6 +1803,10 @@
   "@settings.advanced.serviceResolveTimeout.description": {
     "sourceHash": "5cf231d"
   },
+  "settings.advanced.serviceResolveTimeout.keywords": "resolve, timeout",
+  "@settings.advanced.serviceResolveTimeout.keywords": {
+    "sourceHash": "7f5c11b"
+  },
   "settings.search.recentSearches.maxCount.label": "Senaste sökningar att komma ihåg",
   "@settings.search.recentSearches.maxCount.label": {
     "sourceHash": "51ad13d"
@@ -1415,6 +1815,10 @@
   "@settings.search.recentSearches.maxCount.description": {
     "sourceHash": "d21b038"
   },
+  "settings.search.recentSearches.maxCount.keywords": "search, recent, history, cap, limit, max, count",
+  "@settings.search.recentSearches.maxCount.keywords": {
+    "sourceHash": "e5cef7d"
+  },
   "settings.selection.recentSelections.maxCount.label": "Senaste markeringar att komma ihåg",
   "@settings.selection.recentSelections.maxCount.label": {
     "sourceHash": "e8a5d37"
@@ -1422,6 +1826,10 @@
   "settings.selection.recentSelections.maxCount.description": "Hur många senaste markeringar som behålls för sidfoten i dialogen Markera/avmarkera filer och historikpopovern. Äldre poster faller bort när nya kommer till. 0 stänger av historiken (sidfoten och popovern göms och inga nya poster registreras).",
   "@settings.selection.recentSelections.maxCount.description": {
     "sourceHash": "ae04ef0"
+  },
+  "settings.selection.recentSelections.maxCount.keywords": "selection, select, recent, history, cap, limit, max, count",
+  "@settings.selection.recentSelections.maxCount.keywords": {
+    "sourceHash": "2986d5f"
   },
   "settings.advanced.oldMacosNoticeShown.label": "Avisering om gammal macOS visad",
   "@settings.advanced.oldMacosNoticeShown.label": {
@@ -1470,6 +1878,10 @@
   "settings.advanced.updateCheckInterval.description": "Hur ofta Cmdr söker efter uppdateringar i bakgrunden.",
   "@settings.advanced.updateCheckInterval.description": {
     "sourceHash": "2bdd38a"
+  },
+  "settings.advanced.updateCheckInterval.keywords": "update, interval, background, check",
+  "@settings.advanced.updateCheckInterval.keywords": {
+    "sourceHash": "2952cdc"
   },
   "settings.tint.none": "Ingen ton",
   "@settings.tint.none": {
@@ -1580,6 +1992,10 @@
   "@settings.revealHandler.label": {
     "sourceHash": "8c39a2f"
   },
+  "settings.behavior.revealHandler.keywords": "show in finder, find in finder, reveal, reveal in finder, default file manager, browser, downloads",
+  "@settings.behavior.revealHandler.keywords": {
+    "sourceHash": "ad680cd"
+  },
   "settings.revealHandler.description": "När en annan app kör ”Visa i Finder” öppnar Cmdr den mappen med filen under markören. I övrigt är Finder fortfarande din förvalda filhanterare.",
   "@settings.revealHandler.description": {
     "sourceHash": "9522e41"
@@ -1628,6 +2044,10 @@
   "@settings.behavior.textEditorApp.checking": {
     "sourceHash": "0d6957f"
   },
+  "settings.behavior.textEditorApp.keywords": "editor, text editor, edit",
+  "@settings.behavior.textEditorApp.keywords": {
+    "sourceHash": "2e247fe"
+  },
   "settings.behavior.textEditorHintSeen.label": "Tips om textredigerare visat",
   "@settings.behavior.textEditorHintSeen.label": {
     "sourceHash": "4d2a7fc"
@@ -1656,6 +2076,10 @@
   "@settings.behavior.openTerminalHereApp.checking": {
     "sourceHash": "0d6957f"
   },
+  "settings.behavior.openTerminalHereApp.keywords": "terminal, shell, console, command line",
+  "@settings.behavior.openTerminalHereApp.keywords": {
+    "sourceHash": "4e548b8"
+  },
   "settings.fileExplorer.git.portalIntroSeen.label": "Introduktion till git-mappen visad",
   "@settings.fileExplorer.git.portalIntroSeen.label": {
     "sourceHash": "8c1ae20"
@@ -1683,6 +2107,10 @@
   "settings.behavior.doubleClickPaneNavigatesToParent.description": "Det är den tomma ytan runt fillistan, inte en filrad.",
   "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
     "sourceHash": "cae047d"
+  },
+  "settings.behavior.doubleClickPaneNavigatesToParent.keywords": "double-click, doubleclick, double click, pane, background, empty, parent, folder, up, navigate, navigation",
+  "@settings.behavior.doubleClickPaneNavigatesToParent.keywords": {
+    "sourceHash": "091f9e9"
   },
   "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Tips om dubbelklick till överordnad mapp visat",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
@@ -1787,6 +2215,10 @@
   "@settings.askCmdr.enabled.description": {
     "sourceHash": "a1116db"
   },
+  "settings.askCmdr.enabled.keywords": "ai, chat, assistant, enable, disable, turn on, turn off",
+  "@settings.askCmdr.enabled.keywords": {
+    "sourceHash": "3ca6b54"
+  },
   "settings.askCmdr.cloudOffHint": "Ask Cmdr använder din moln-AI-tjänst. Tillåt moln-AI i AI-inställningarna för att börja chatta.",
   "@settings.askCmdr.cloudOffHint": {
     "sourceHash": "1d3ec5d"
@@ -1819,6 +2251,10 @@
   "@settings.askCmdr.interactiveModel.placeholder": {
     "sourceHash": "2631f3d"
   },
+  "settings.askCmdr.interactiveModel.keywords": "ai, chat, assistant, model, interactive, slot",
+  "@settings.askCmdr.interactiveModel.keywords": {
+    "sourceHash": "2e3c2d7"
+  },
   "settings.askCmdr.chatMemorySize.label": "Chattens minnesstorlek",
   "@settings.askCmdr.chatMemorySize.label": {
     "sourceHash": "fad1ff1"
@@ -1835,6 +2271,10 @@
   "@settings.askCmdr.chatMemorySize.overWindow": {
     "sourceHash": "0dc68ac"
   },
+  "settings.askCmdr.chatMemorySize.keywords": "chat, memory, context, window, tokens, size, budget, history",
+  "@settings.askCmdr.chatMemorySize.keywords": {
+    "sourceHash": "7efd03c"
+  },
   "settings.askCmdr.proactive.title": "På eget initiativ",
   "@settings.askCmdr.proactive.title": {
     "sourceHash": "42e696a"
@@ -1846,6 +2286,10 @@
   "settings.askCmdr.proactive.description": "Cmdr håller koll på mapparna du arbetar i och startar en chatt när den har något att föreslå. Inget körs förrän du godkänner det.",
   "@settings.askCmdr.proactive.description": {
     "sourceHash": "556f155"
+  },
+  "settings.askCmdr.proactive.keywords": "proactive, suggestions, automatic, notice, watch, wake, ai",
+  "@settings.askCmdr.proactive.keywords": {
+    "sourceHash": "3be12a4"
   },
   "settings.askCmdr.wakeDelay.label": "Hur snabbt Cmdr tittar",
   "@settings.askCmdr.wakeDelay.label": {
@@ -1859,6 +2303,10 @@
   "@settings.askCmdr.wakeDelay.summary": {
     "sourceHash": "ad03c00"
   },
+  "settings.askCmdr.wakeDelay.keywords": "delay, cadence, wait, often, frequency, calm, quiet, proactive",
+  "@settings.askCmdr.wakeDelay.keywords": {
+    "sourceHash": "800df1b"
+  },
   "settings.askCmdr.wakeToast.label": "Visa en avisering när ett förslag dyker upp",
   "@settings.askCmdr.wakeToast.label": {
     "sourceHash": "58b4167"
@@ -1866,6 +2314,10 @@
   "settings.askCmdr.wakeToast.description": "Ett litet meddelande i hörnet när Cmdr lägger fram något att granska.",
   "@settings.askCmdr.wakeToast.description": {
     "sourceHash": "dd04b0a"
+  },
+  "settings.askCmdr.wakeToast.keywords": "toast, notice, notification, suggestion, proactive, alert",
+  "@settings.askCmdr.wakeToast.keywords": {
+    "sourceHash": "6ed1b7d"
   },
   "settings.askCmdr.memory.title": "Vad Cmdr minns",
   "@settings.askCmdr.memory.title": {
@@ -1878,6 +2330,10 @@
   "settings.askCmdr.memory.open": "Öppna anteckningsmappen",
   "@settings.askCmdr.memory.open": {
     "sourceHash": "cffe1da"
+  },
+  "settings.askCmdr.openMemoryFolder.keywords": "memory, folder, notes, remember, open",
+  "@settings.askCmdr.openMemoryFolder.keywords": {
+    "sourceHash": "fcd353e"
   },
   "settings.askCmdr.memory.forgotten": "Cmdrs anteckningar är borta. Den börjar om härifrån.",
   "@settings.askCmdr.memory.forgotten": {
@@ -1945,6 +2401,10 @@
   "@settings.operationLog.enabled.description": {
     "sourceHash": "78571fc"
   },
+  "settings.operationLog.enabled.keywords": "operation, log, history, record, recording, undo, journal, privacy, turn off",
+  "@settings.operationLog.enabled.keywords": {
+    "sourceHash": "25f39cc"
+  },
   "settings.operationLog.maxAge.label": "Behåll historik i",
   "@settings.operationLog.maxAge.label": {
     "sourceHash": "ca05015"
@@ -1969,6 +2429,10 @@
   "@settings.operationLog.maxAge.opt.year1": {
     "sourceHash": "91647ba"
   },
+  "settings.operationLog.maxAge.keywords": "operation, log, history, retention, age, keep, prune, forever, days, undo",
+  "@settings.operationLog.maxAge.keywords": {
+    "sourceHash": "cc6f4ec"
+  },
   "settings.operationLog.maxSize.label": "Maximal storlek",
   "@settings.operationLog.maxSize.label": {
     "sourceHash": "5a9f1ff"
@@ -1976,6 +2440,10 @@
   "settings.operationLog.maxSize.description": "Det mesta diskutrymme som åtgärdsloggen får använda. När det blir fullt tar Cmdr bort de äldsta åtgärderna först.",
   "@settings.operationLog.maxSize.description": {
     "sourceHash": "ad5152a"
+  },
+  "settings.operationLog.maxSize.keywords": "operation, log, history, retention, size, disk, space, limit, megabytes, gigabytes",
+  "@settings.operationLog.maxSize.keywords": {
+    "sourceHash": "2ea4edc"
   },
   "settings.section.mcpServer": "MCP-server",
   "@settings.section.mcpServer": {
@@ -2303,6 +2771,10 @@
   "@settings.fileSystemWatching.indexSize": {
     "sourceHash": "adbb92c"
   },
+  "settings.indexing.indexSize.keywords": "clear index, index database, disk space, delete",
+  "@settings.indexing.indexSize.keywords": {
+    "sourceHash": "2a99f52"
+  },
   "settings.fileSystemWatching.clearing": "Rensar…",
   "@settings.fileSystemWatching.clearing": {
     "sourceHash": "9a81378"
@@ -2423,9 +2895,17 @@
   "@settings.securityLog.enabled.description": {
     "sourceHash": "11361eb"
   },
+  "settings.securityLog.enabled.keywords": "security, log, audit, record, events, access, privacy",
+  "@settings.securityLog.enabled.keywords": {
+    "sourceHash": "6f113c0"
+  },
   "settings.securityLog.showInFinder": "Visa i Finder",
   "@settings.securityLog.showInFinder": {
     "sourceHash": "c2a9c77"
+  },
+  "settings.updates.showSecurityLog.keywords": "security, log, audit, events, file, open",
+  "@settings.updates.showSecurityLog.keywords": {
+    "sourceHash": "9ce9447"
   },
   "settings.fileSystemWatching.globalShortcutHint": "Ändra genvägen under Tangentbordsgenvägar → Gå till senaste hämtning (global).",
   "@settings.fileSystemWatching.globalShortcutHint": {
@@ -2472,6 +2952,10 @@
   "@settings.updates.checkForUpdates": {
     "sourceHash": "f26f327"
   },
+  "settings.updates.checkForUpdates.keywords": "update, upgrade, check, version, new version",
+  "@settings.updates.checkForUpdates.keywords": {
+    "sourceHash": "8381c6a"
+  },
   "settings.updates.emailConfirmHint": "Kolla din inkorg för att bekräfta din e-postadress. Tack för att du hjälper till!",
   "@settings.updates.emailConfirmHint": {
     "sourceHash": "b96010e"
@@ -2488,6 +2972,10 @@
   "@settings.logging.openLogFile": {
     "sourceHash": "ec1bc04"
   },
+  "settings.advanced.openLogFile.keywords": "log, logs, file, folder, reveal",
+  "@settings.advanced.openLogFile.keywords": {
+    "sourceHash": "25e0c5a"
+  },
   "settings.logging.copied": "Kopierat!",
   "@settings.logging.copied": {
     "sourceHash": "ea61bc1"
@@ -2495,6 +2983,10 @@
   "settings.logging.copyDiagnostics": "Kopiera diagnostikinformation",
   "@settings.logging.copyDiagnostics": {
     "sourceHash": "b8e7644"
+  },
+  "settings.advanced.copyDiagnostics.keywords": "diagnostics, copy, version, support, clipboard",
+  "@settings.advanced.copyDiagnostics.keywords": {
+    "sourceHash": "d7ce56b"
   },
   "settings.mcp.checkPort": "Kontrollera port",
   "@settings.mcp.checkPort": {
@@ -2540,6 +3032,10 @@
   "@settings.advanced.resetAll": {
     "sourceHash": "a04d9be"
   },
+  "settings.advanced.resetAll.keywords": "reset, defaults, restore, factory",
+  "@settings.advanced.resetAll.keywords": {
+    "sourceHash": "05b1de6"
+  },
   "settings.advanced.resetAllConfirm": "Återställ alla avancerade inställningar till sina förval? Det går inte att ångra.",
   "@settings.advanced.resetAllConfirm": {
     "sourceHash": "be08f2a"
@@ -2584,6 +3080,10 @@
   "@settings.mediaIndex.scope.opt.importance": {
     "sourceHash": "0a66efe"
   },
+  "settings.mediaIndex.scope.keywords": "image, photo, index, folders, scope, coverage, which, choose",
+  "@settings.mediaIndex.scope.keywords": {
+    "sourceHash": "39010c3"
+  },
   "settings.mediaIndex.chosenFolders.title": "Mappar att indexera",
   "@settings.mediaIndex.chosenFolders.title": {
     "sourceHash": "1aa33d2"
@@ -2619,6 +3119,10 @@
   "settings.servers.card.trustedHostKeys": "Betrodda värdnycklar",
   "@settings.servers.card.trustedHostKeys": {
     "sourceHash": "46c5c9d"
+  },
+  "settings.network.trustedHostKeys.keywords": "host key, fingerprint, trust, trusted, known hosts, server, forget",
+  "@settings.network.trustedHostKeys.keywords": {
+    "sourceHash": "d111f38"
   },
   "settings.servers.trustedHostKeys.description": "Cmdr frågar innan den litar på nyckeln från en server första gången du ansluter, och kommer ihåg ditt svar här. Sparade servrar finns i listan Servrar, inte på den här sidan.",
   "@settings.servers.trustedHostKeys.description": {
@@ -2665,6 +3169,10 @@
   "@settings.adb.status.notWatching": {
     "sourceHash": "6e1936c"
   },
+  "settings.adb.status.keywords": "status, re-check, recheck, found, watching, install",
+  "@settings.adb.status.keywords": {
+    "sourceHash": "32678b7"
+  },
   "settings.adb.recheck": "Leta igen",
   "@settings.adb.recheck": {
     "sourceHash": "24fcca0"
@@ -2704,6 +3212,10 @@
   "settings.dataWipe.button": "Radera all Cmdr-data",
   "@settings.dataWipe.button": {
     "sourceHash": "fbb253f"
+  },
+  "settings.updates.deleteAllData.keywords": "delete, erase, remove, wipe, reset, uninstall, privacy, data, forget, gdpr",
+  "@settings.updates.deleteAllData.keywords": {
+    "sourceHash": "0ffb0f6"
   },
   "settings.dataWipe.title": "Radera all Cmdr-data på den här Macen?",
   "@settings.dataWipe.title": {
@@ -2828,5 +3340,25 @@
   "settings.dataWipe.quit": "Avsluta Cmdr",
   "@settings.dataWipe.quit": {
     "sourceHash": "b3455b4"
+  },
+  "settings.askCmdr.forgetMemory.keywords": "forget, memory, erase, delete, remembers, privacy",
+  "@settings.askCmdr.forgetMemory.keywords": {
+    "sourceHash": "e653535"
+  },
+  "settings.shortcuts.resetAll.keywords": "reset, shortcuts, defaults, restore, keyboard",
+  "@settings.shortcuts.resetAll.keywords": {
+    "sourceHash": "ccbedb0"
+  },
+  "settings.license.manageKey.keywords": "license, key, manage, activate, activation, change",
+  "@settings.license.manageKey.keywords": {
+    "sourceHash": "3e2241e"
+  },
+  "settings.license.enterKey.keywords": "license, key, enter, activate, activation, redeem",
+  "@settings.license.enterKey.keywords": {
+    "sourceHash": "ebb9475"
+  },
+  "settings.license.getLicense.keywords": "license, buy, purchase, pricing, commercial, personal, upgrade",
+  "@settings.license.getLicense.keywords": {
+    "sourceHash": "5454f6d"
   }
 }

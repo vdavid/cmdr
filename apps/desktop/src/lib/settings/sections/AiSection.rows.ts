@@ -13,6 +13,6 @@ export const aiRows: SearchableRow[] = [
     id: 'row:ai.cloudConsent',
     section: ['AI', 'Provider'],
     labelKey: 'ai.cloudConsent.label',
-    keywords: ['consent', 'privacy', 'allow', 'send', 'data', 'cloud', 'ai'],
+    keywordsKey: 'settings.ai.cloudConsent.keywords',
   },
 ]

@@ -237,12 +237,10 @@ describe('search.autoApply', () => {
   })
 
   it('is reachable via canonical search keywords', () => {
-    const def = getSettingDefinition('search.autoApply')
-    const keywords = def?.keywords ?? []
     // The plan's keyword set covers the natural lookup terms (search, auto, apply, debounce,
     // filename, regex). One assertion per term so a typo failure points right at the gap.
     for (const term of ['search', 'auto', 'apply', 'debounce', 'filename', 'regex']) {
-      expect(keywords).toContain(term)
+      expect(searchSettings(term).map((r) => r.entry.id)).toContain('search.autoApply')
     }
   })
 
@@ -322,9 +320,8 @@ describe('appearance.showFunctionKeyBar', () => {
   })
 
   it('is reachable via natural lookup keywords', () => {
-    const keywords = getSettingDefinition('appearance.showFunctionKeyBar')?.keywords ?? []
     for (const term of ['function', 'key', 'bar', 'f-key', 'shortcut']) {
-      expect(keywords).toContain(term)
+      expect(searchSettings(term).map((r) => r.entry.id)).toContain('appearance.showFunctionKeyBar')
     }
   })
 

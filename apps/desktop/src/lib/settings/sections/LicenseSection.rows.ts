@@ -21,19 +21,19 @@ export const licenseRows: SearchableRow[] = [
     id: 'row:license.manageKey',
     section: ['License'],
     labelKey: 'licensing.section.manageKey',
-    keywords: ['license', 'key', 'manage', 'activate', 'activation', 'change'],
+    keywordsKey: 'settings.license.manageKey.keywords',
   },
   {
     // The same button unlicensed, where it reads "Enter license key".
     id: 'row:license.enterKey',
     section: ['License'],
     labelKey: 'licensing.section.enterKey',
-    keywords: ['license', 'key', 'enter', 'activate', 'activation', 'redeem'],
+    keywordsKey: 'settings.license.enterKey.keywords',
   },
   {
     id: 'row:license.getLicense',
     section: ['License'],
     labelKey: 'licensing.section.getLicense',
-    keywords: ['license', 'buy', 'purchase', 'pricing', 'commercial', 'personal', 'upgrade'],
+    keywordsKey: 'settings.license.getLicense.keywords',
   },
 ]

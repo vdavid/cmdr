@@ -15,6 +15,10 @@
   "@settings.appearance.language.opt.systemWithLanguage": {
     "sourceHash": "ab10534"
   },
+  "settings.appearance.language.keywords": "language, locale, translation, region, english",
+  "@settings.appearance.language.keywords": {
+    "sourceHash": "c1b9ab9"
+  },
   "settings.theme.mode.label": "Modo do tema",
   "@settings.theme.mode.label": {
     "sourceHash": "0f79f19"
@@ -35,6 +39,10 @@
   "@settings.theme.mode.opt.system": {
     "sourceHash": "6725e7b"
   },
+  "settings.theme.mode.keywords": "theme, dark, light, mode, appearance, color",
+  "@settings.theme.mode.keywords": {
+    "sourceHash": "8a95116"
+  },
   "settings.appearance.appColor.label": "Cor do app",
   "@settings.appearance.appColor.label": {
     "sourceHash": "b1107c8"
@@ -50,6 +58,10 @@
   "settings.appearance.appColor.opt.cmdrGold": "Dourado Cmdr",
   "@settings.appearance.appColor.opt.cmdrGold": {
     "sourceHash": "3ae5711"
+  },
+  "settings.appearance.appColor.keywords": "color, accent, theme, gold, system, brand",
+  "@settings.appearance.appColor.keywords": {
+    "sourceHash": "dd5ef83"
   },
   "settings.appearance.sizeColors.label": "Cores por tamanho",
   "@settings.appearance.sizeColors.label": {
@@ -72,6 +84,10 @@
   "@settings.appearance.sizeColors.opt.rainbow": {
     "sourceHash": "b1f7b2e"
   },
+  "settings.appearance.sizeColors.keywords": "size, color, tier, rainbow, app, highlight",
+  "@settings.appearance.sizeColors.keywords": {
+    "sourceHash": "8eb9856"
+  },
   "settings.appearance.dateColors.label": "Cores por data",
   "@settings.appearance.dateColors.label": {
     "sourceHash": "25e5672"
@@ -92,6 +108,10 @@
   "settings.appearance.dateColors.opt.wilting": "Murchar",
   "@settings.appearance.dateColors.opt.wilting": {
     "sourceHash": "2aa30f1"
+  },
+  "settings.appearance.dateColors.keywords": "date, color, age, modified, wilting, app, fresh, old",
+  "@settings.appearance.dateColors.keywords": {
+    "sourceHash": "cc85453"
   },
   "settings.appearance.dateTimeFormat.label": "Formato de data e hora",
   "@settings.appearance.dateTimeFormat.label": {
@@ -126,6 +146,10 @@
   "@settings.appearance.dateTimeFormat.opt.custom": {
     "sourceHash": "c4e69d5"
   },
+  "settings.appearance.dateTimeFormat.keywords": "date, time, format, custom, timestamp",
+  "@settings.appearance.dateTimeFormat.keywords": {
+    "sourceHash": "8fb735b"
+  },
   "settings.appearance.customDateTimeFormat.label": "Formato de data/hora personalizado",
   "@settings.appearance.customDateTimeFormat.label": {
     "sourceHash": "620b7a0"
@@ -133,6 +157,10 @@
   "settings.appearance.customDateTimeFormat.description": "String de formato para exibição de data/hora personalizada. Use marcadores como YYYY, MM, DD, HH, mm, ss.",
   "@settings.appearance.customDateTimeFormat.description": {
     "sourceHash": "577dee6"
+  },
+  "settings.appearance.customDateTimeFormat.keywords": "custom, format, date, time, placeholder",
+  "@settings.appearance.customDateTimeFormat.keywords": {
+    "sourceHash": "1be6452"
   },
   "settings.listing.stripedRows.label": "Linhas listradas",
   "@settings.listing.stripedRows.label": {
@@ -142,6 +170,10 @@
   "@settings.listing.stripedRows.description": {
     "sourceHash": "e95776a"
   },
+  "settings.listing.stripedRows.keywords": "stripe, zebra, alternate, row, shading, accessibility",
+  "@settings.listing.stripedRows.keywords": {
+    "sourceHash": "3a8c62d"
+  },
   "settings.appearance.tintLocal.label": "Matizar painéis de volume local",
   "@settings.appearance.tintLocal.label": {
     "sourceHash": "d907724"
@@ -149,6 +181,10 @@
   "settings.appearance.tintLocal.description": "Matiz de fundo aplicado a painéis que mostram um disco local.",
   "@settings.appearance.tintLocal.description": {
     "sourceHash": "3c86b48"
+  },
+  "settings.appearance.tintLocal.keywords": "tint, pane, color, volume, local, background, highlight",
+  "@settings.appearance.tintLocal.keywords": {
+    "sourceHash": "955fcd6"
   },
   "settings.appearance.tintSmb.label": "Matizar painéis de servidor (SMB, SFTP, WebDAV, S3)",
   "@settings.appearance.tintSmb.label": {
@@ -158,6 +194,10 @@
   "@settings.appearance.tintSmb.description": {
     "sourceHash": "bddee40"
   },
+  "settings.appearance.tintSmb.keywords": "tint, pane, color, volume, server, network, background, highlight",
+  "@settings.appearance.tintSmb.keywords": {
+    "sourceHash": "880947f"
+  },
   "settings.appearance.tintMtp.label": "Matizar painéis de dispositivo (MTP, ADB)",
   "@settings.appearance.tintMtp.label": {
     "sourceHash": "c50c536"
@@ -166,6 +206,10 @@
   "@settings.appearance.tintMtp.description": {
     "sourceHash": "d70512d"
   },
+  "settings.appearance.tintMtp.keywords": "tint, pane, color, volume, phone, device, camera, background, highlight",
+  "@settings.appearance.tintMtp.keywords": {
+    "sourceHash": "332d7b6"
+  },
   "settings.appearance.textSize.label": "Tamanho do texto",
   "@settings.appearance.textSize.label": {
     "sourceHash": "d68761c"
@@ -173,6 +217,10 @@
   "settings.appearance.textSize.description": "Dimensiona o texto e a interface em todo o app. Combina com o tamanho de texto da Acessibilidade do macOS, onde 100% significa “exatamente o tamanho do sistema”.",
   "@settings.appearance.textSize.description": {
     "sourceHash": "49a0a6b"
+  },
+  "settings.appearance.textSize.keywords": "text, size, font, larger, smaller, accessibility, zoom, scale",
+  "@settings.appearance.textSize.keywords": {
+    "sourceHash": "d5080b3"
   },
   "settings.appearance.uiDensity.label": "Densidade da interface",
   "@settings.appearance.uiDensity.label": {
@@ -194,6 +242,10 @@
   "@settings.appearance.uiDensity.opt.spacious": {
     "sourceHash": "57edf23"
   },
+  "settings.appearance.uiDensity.keywords": "compact, comfortable, spacious, size, spacing, dense",
+  "@settings.appearance.uiDensity.keywords": {
+    "sourceHash": "26f3879"
+  },
   "settings.listing.sizeDisplay.label": "Exibição de tamanho",
   "@settings.listing.sizeDisplay.label": {
     "sourceHash": "114b4a5"
@@ -214,6 +266,10 @@
   "@settings.listing.sizeDisplay.opt.physical": {
     "sourceHash": "00ca4da"
   },
+  "settings.listing.sizeDisplay.keywords": "size, display, logical, physical, smart, disk, content, sparse",
+  "@settings.listing.sizeDisplay.keywords": {
+    "sourceHash": "b975b7d"
+  },
   "settings.listing.sizeUnit.label": "Unidade de tamanho",
   "@settings.listing.sizeUnit.label": {
     "sourceHash": "2a817d3"
@@ -231,6 +287,10 @@
     "sourceHash": "4d80003",
     "sameAsSourceJustification": "'Bytes' is identical in pt-BR. The unit word is unchanged in pt-BR (Microsoft pt-BR 'byte' to 'byte'; double-commander/total-commander pt-BR keep 'Bytes')."
   },
+  "settings.listing.sizeUnit.keywords": "size, human, bytes, unit, format, raw, precise, dynamic",
+  "@settings.listing.sizeUnit.keywords": {
+    "sourceHash": "63c1aed"
+  },
   "settings.appearance.fileSizeFormat.label": "Formato de tamanho de arquivo",
   "@settings.appearance.fileSizeFormat.label": {
     "sourceHash": "355c89b"
@@ -247,6 +307,10 @@
   "@settings.appearance.fileSizeFormat.opt.si": {
     "sourceHash": "4dcc22e"
   },
+  "settings.appearance.fileSizeFormat.keywords": "size, bytes, binary, decimal",
+  "@settings.appearance.fileSizeFormat.keywords": {
+    "sourceHash": "ce11b1b"
+  },
   "settings.listing.sizeMismatchWarning.label": "Aviso de divergência de tamanho",
   "@settings.listing.sizeMismatchWarning.label": {
     "sourceHash": "791c344"
@@ -254,6 +318,10 @@
   "settings.listing.sizeMismatchWarning.description": "Mostra um ícone de aviso em pastas onde o tamanho do conteúdo e o tamanho em disco diferem em mais de 50% e 200 MB.",
   "@settings.listing.sizeMismatchWarning.description": {
     "sourceHash": "1b232eb"
+  },
+  "settings.listing.sizeMismatchWarning.keywords": "size, mismatch, warning, alert, disk, content, difference",
+  "@settings.listing.sizeMismatchWarning.keywords": {
+    "sourceHash": "3f332ce"
   },
   "settings.appearance.useAppIconsForDocuments.label": "Usar ícones dos apps para documentos",
   "@settings.appearance.useAppIconsForDocuments.label": {
@@ -263,6 +331,10 @@
   "@settings.appearance.useAppIconsForDocuments.description": {
     "sourceHash": "9651182"
   },
+  "settings.appearance.useAppIconsForDocuments.keywords": "icon, document, file, app, colorful",
+  "@settings.appearance.useAppIconsForDocuments.keywords": {
+    "sourceHash": "b039472"
+  },
   "settings.appearance.showFunctionKeyBar.label": "Mostrar barra de teclas de função",
   "@settings.appearance.showFunctionKeyBar.label": {
     "sourceHash": "e80f18d"
@@ -270,6 +342,10 @@
   "settings.appearance.showFunctionKeyBar.description": "Mostra a linha de botões de comando das teclas F (Renomear, Visualizar, Copiar e assim por diante) na parte de baixo da janela.",
   "@settings.appearance.showFunctionKeyBar.description": {
     "sourceHash": "138b56b"
+  },
+  "settings.appearance.showFunctionKeyBar.keywords": "function, key, bar, shortcut, buttons, bottom, toolbar",
+  "@settings.appearance.showFunctionKeyBar.keywords": {
+    "sourceHash": "c42e176"
   },
   "settings.listing.showHiddenFiles.label": "Mostrar arquivos ocultos",
   "@settings.listing.showHiddenFiles.label": {
@@ -279,6 +355,10 @@
   "@settings.listing.showHiddenFiles.description": {
     "sourceHash": "8e77c67"
   },
+  "settings.listing.showHiddenFiles.keywords": "hidden, dotfile, dotfiles, invisible, system, show",
+  "@settings.listing.showHiddenFiles.keywords": {
+    "sourceHash": "16c608d"
+  },
   "settings.listing.showExtensionInName.label": "Mostrar extensões de arquivo na coluna de nome",
   "@settings.listing.showExtensionInName.label": {
     "sourceHash": "cce9a4d"
@@ -286,6 +366,10 @@
   "settings.listing.showExtensionInName.description": "Mostra o nome completo do arquivo (como launch.json) na coluna Nome e oculta a coluna Ext separada. Afeta só a exibição Completa.",
   "@settings.listing.showExtensionInName.description": {
     "sourceHash": "e7c361c"
+  },
+  "settings.listing.showExtensionInName.keywords": "extension, ext, filename, name, column, full, split, suffix",
+  "@settings.listing.showExtensionInName.keywords": {
+    "sourceHash": "b71b4fa"
   },
   "settings.listing.showTags.label": "Mostrar etiquetas",
   "@settings.listing.showTags.label": {
@@ -295,6 +379,10 @@
   "@settings.listing.showTags.description": {
     "sourceHash": "005f3b0"
   },
+  "settings.listing.showTags.keywords": "tag, tags, label, labels, color, colour, dot, dots",
+  "@settings.listing.showTags.keywords": {
+    "sourceHash": "70fc801"
+  },
   "settings.listing.foldersFirst.label": "Mostrar pastas primeiro",
   "@settings.listing.foldersFirst.label": {
     "sourceHash": "a61d73e"
@@ -303,6 +391,10 @@
   "@settings.listing.foldersFirst.description": {
     "sourceHash": "8505ff3"
   },
+  "settings.listing.foldersFirst.keywords": "sort, directory, directories, folder, folders, first, top, mixed, order, listing",
+  "@settings.listing.foldersFirst.keywords": {
+    "sourceHash": "c4f9de2"
+  },
   "settings.listing.spaceCalculatesFolderSize.label": "Calcular o tamanho da pasta com Espaço",
   "@settings.listing.spaceCalculatesFolderSize.label": {
     "sourceHash": "1a403eb"
@@ -310,6 +402,10 @@
   "settings.listing.spaceCalculatesFolderSize.description": "Quando você seleciona com Espaço uma pasta cujo tamanho ainda não é conhecido, o Cmdr soma o conteúdo dela e mostra o total. Esc interrompe o cálculo.",
   "@settings.listing.spaceCalculatesFolderSize.description": {
     "sourceHash": "38d64c1"
+  },
+  "settings.listing.spaceCalculatesFolderSize.keywords": "space, size, folder, folders, directory, calculate, count, select",
+  "@settings.listing.spaceCalculatesFolderSize.keywords": {
+    "sourceHash": "5c24b62"
   },
   "settings.listing.directorySortMode.label": "Ordenar pastas",
   "@settings.listing.directorySortMode.label": {
@@ -331,6 +427,10 @@
   "@settings.listing.directorySortMode.opt.alwaysByName": {
     "sourceHash": "7687e38"
   },
+  "settings.listing.directorySortMode.keywords": "sort, directory, directories, folder, folders, order, listing, name, size",
+  "@settings.listing.directorySortMode.keywords": {
+    "sourceHash": "de850c4"
+  },
   "settings.listing.briefColumnWidthMode.label": "Largura máxima de coluna no modo Resumido",
   "@settings.listing.briefColumnWidthMode.label": {
     "sourceHash": "bbcab33"
@@ -347,9 +447,17 @@
   "@settings.listing.briefColumnWidthMode.opt.limited": {
     "sourceHash": "01a089f"
   },
+  "settings.listing.briefColumnWidthMode.keywords": "brief, column, width, max, maximum, limit, pane, shrink-wrap",
+  "@settings.listing.briefColumnWidthMode.keywords": {
+    "sourceHash": "6d84686"
+  },
   "settings.listing.briefColumnWidthMaxPx.label": "Limite de largura de coluna no Resumido",
   "@settings.listing.briefColumnWidthMaxPx.label": {
     "sourceHash": "9d045cd"
+  },
+  "settings.listing.briefColumnWidthMaxPx.keywords": "brief, column, width, max, maximum, limit, pixel",
+  "@settings.listing.briefColumnWidthMaxPx.keywords": {
+    "sourceHash": "3b64be6"
   },
   "settings.fileOperations.allowFileExtensionChanges.label": "Permitir mudanças de extensão de arquivo",
   "@settings.fileOperations.allowFileExtensionChanges.label": {
@@ -371,6 +479,10 @@
   "@settings.fileOperations.allowFileExtensionChanges.opt.ask": {
     "sourceHash": "3c42771"
   },
+  "settings.fileOperations.allowFileExtensionChanges.keywords": "extension, rename, file, change, ask, confirm",
+  "@settings.fileOperations.allowFileExtensionChanges.keywords": {
+    "sourceHash": "1a87d27"
+  },
   "settings.fileOperations.pasteClipboardAsFile.label": "Colar o conteúdo da área de transferência como arquivo",
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
@@ -391,6 +503,10 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
+  "settings.fileOperations.pasteClipboardAsFile.keywords": "paste, clipboard, image, text, screenshot, file, create",
+  "@settings.fileOperations.pasteClipboardAsFile.keywords": {
+    "sourceHash": "3e077e3"
+  },
   "settings.fileOperations.skipConfirmation.label": "Copiar, mover e mandar para o Lixo sem pedir confirmação",
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
@@ -398,6 +514,10 @@
   "settings.fileOperations.skipConfirmation.description": "F5 e F6 copiam e movem para o outro painel na hora, e F8 move para o Lixo sem perguntar. É um pouco arriscado, já que uma tecla age de imediato. Apagar permanentemente sempre pergunta antes.",
   "@settings.fileOperations.skipConfirmation.description": {
     "sourceHash": "086379d"
+  },
+  "settings.fileOperations.skipConfirmation.keywords": "confirm, confirmation, dialog, ask, copy, move, trash, delete, skip, clicks",
+  "@settings.fileOperations.skipConfirmation.keywords": {
+    "sourceHash": "9f61258"
   },
   "settings.archives.card.archives": "Arquivos compactados",
   "@settings.archives.card.archives": {
@@ -411,6 +531,10 @@
   "@settings.archives.zip.label": {
     "sourceHash": "ec0fd54"
   },
+  "settings.behavior.archiveEnter.zip.keywords": "archive, browse, open, extract, enter, compressed",
+  "@settings.behavior.archiveEnter.zip.keywords": {
+    "sourceHash": "493848e"
+  },
   "settings.archives.zip.description": "O que pressionar Enter faz em um arquivo zip.",
   "@settings.archives.zip.description": {
     "sourceHash": "70c3cb1"
@@ -419,6 +543,10 @@
   "@settings.archives.ooxml.label": {
     "sourceHash": "76c4431"
   },
+  "settings.behavior.archiveEnter.ooxml.keywords": "document, package",
+  "@settings.behavior.archiveEnter.ooxml.keywords": {
+    "sourceHash": "19e7eca"
+  },
   "settings.archives.ooxml.description": "O que pressionar Enter faz em um .docx, .xlsx, .pptx, .jar ou .apk.",
   "@settings.archives.ooxml.description": {
     "sourceHash": "af6bd7d"
@@ -426,6 +554,10 @@
   "settings.archives.bundle.label": "Pacotes de aplicativo",
   "@settings.archives.bundle.label": {
     "sourceHash": "4a5e902"
+  },
+  "settings.behavior.archiveEnter.bundle.keywords": "bundle, app, application, framework, browse, open, enter, launch",
+  "@settings.behavior.archiveEnter.bundle.keywords": {
+    "sourceHash": "fa1c3b6"
   },
   "settings.archives.bundle.description": "O que pressionar Enter faz em um .app, .bundle ou .framework.",
   "@settings.archives.bundle.description": {
@@ -447,6 +579,10 @@
   "@settings.archives.compressionLevel.label": {
     "sourceHash": "9889378"
   },
+  "settings.behavior.archiveCompressionLevel.keywords": "compression, level, archive, size, faster, smaller",
+  "@settings.behavior.archiveCompressionLevel.keywords": {
+    "sourceHash": "4597a15"
+  },
   "settings.archives.compressionLevel.description": "Quanto o Cmdr comprime ao criar um zip. Níveis mais altos geram um arquivo menor, mas demoram mais para comprimir. Vale para o comando Comprimir e para a cópia ou movimentação de arquivos para um zip.",
   "@settings.archives.compressionLevel.description": {
     "sourceHash": "0ebedaf"
@@ -466,6 +602,10 @@
   "settings.indexing.enabled.description": "Indexa seu disco em segundo plano para tamanhos de pasta instantâneos.",
   "@settings.indexing.enabled.description": {
     "sourceHash": "32966c5"
+  },
+  "settings.indexing.enabled.keywords": "index, drive, scan, size, directory, folder, background",
+  "@settings.indexing.enabled.keywords": {
+    "sourceHash": "186f2f6"
   },
   "settings.mediaIndex.privacyNote": "Isto roda inteiramente no seu Mac usando o framework Vision integrado da Apple. Suas imagens nunca saem do seu computador e nenhum provedor de IA ou chave de API está envolvido.",
   "@settings.mediaIndex.privacyNote": {
@@ -539,6 +679,10 @@
   "@settings.mediaIndex.semanticSearch.label": {
     "sourceHash": "8cbf6af"
   },
+  "settings.mediaIndex.semanticSearch.enabled.keywords": "image, photo, semantic, search, describe, description, natural language, ai",
+  "@settings.mediaIndex.semanticSearch.enabled.keywords": {
+    "sourceHash": "c5380b3"
+  },
   "settings.mediaIndex.progressSummary.title": "Indexando agora",
   "@settings.mediaIndex.progressSummary.title": {
     "sourceHash": "44501db"
@@ -551,6 +695,10 @@
   "@settings.mediaIndex.enabled.description": {
     "sourceHash": "118fc8d"
   },
+  "settings.mediaIndex.enabled.keywords": "image, photo, text, search, index, picture, screenshot, content",
+  "@settings.mediaIndex.enabled.keywords": {
+    "sourceHash": "a451d8e"
+  },
   "settings.mediaIndex.showFileStatusIcons.label": "Mostrar selos de status nos arquivos de imagem",
   "@settings.mediaIndex.showFileStatusIcons.label": {
     "sourceHash": "a0a2372"
@@ -559,6 +707,10 @@
   "@settings.mediaIndex.showFileStatusIcons.description": {
     "sourceHash": "1a725aa"
   },
+  "settings.mediaIndex.showFileStatusIcons.keywords": "image, photo, badge, icon, overlay, indicator, status, indexed",
+  "@settings.mediaIndex.showFileStatusIcons.keywords": {
+    "sourceHash": "e8ddefc"
+  },
   "settings.mediaIndex.showInSearch.label": "Mostrar resultados de imagens em Buscar",
   "@settings.mediaIndex.showInSearch.label": {
     "sourceHash": "45dd528"
@@ -566,6 +718,10 @@
   "settings.mediaIndex.showInSearch.description": "Buscar adiciona uma linha de imagens correspondentes acima dos seus arquivos. A correspondência ainda é imprecisa, então a opção fica desativada até você querer.",
   "@settings.mediaIndex.showInSearch.description": {
     "sourceHash": "143a4e7"
+  },
+  "settings.mediaIndex.showInSearch.keywords": "image, photo, search, results, grid, semantic, show, hide",
+  "@settings.mediaIndex.showInSearch.keywords": {
+    "sourceHash": "069d69d"
   },
   "settings.mediaIndex.networkVolumes.label": "Indexação de imagens em disco de rede",
   "@settings.mediaIndex.networkVolumes.label": {
@@ -655,6 +811,10 @@
   "@settings.mediaIndex.parallelism.description": {
     "sourceHash": "8a42808"
   },
+  "settings.mediaIndex.parallelism.keywords": "image, photo, index, parallel, workers, speed, performance, cores",
+  "@settings.mediaIndex.parallelism.keywords": {
+    "sourceHash": "c01971c"
+  },
   "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "Somente minhas pastas mais usadas",
   "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
     "sourceHash": "1db4208"
@@ -710,6 +870,10 @@
   "settings.mediaIndex.importanceThreshold.floor": "Itens descartáveis como node_modules e caches do sistema são sempre ignorados.",
   "@settings.mediaIndex.importanceThreshold.floor": {
     "sourceHash": "8839d14"
+  },
+  "settings.mediaIndex.importanceThreshold.keywords": "image, photo, index, importance, folders, coverage, depth",
+  "@settings.mediaIndex.importanceThreshold.keywords": {
+    "sourceHash": "419756c"
   },
   "settings.mediaIndex.progress.local": "Este Mac",
   "@settings.mediaIndex.progress.local": {
@@ -767,6 +931,10 @@
   "@settings.indexing.askForEachDrive.description": {
     "sourceHash": "189552c"
   },
+  "settings.indexing.askForEachDrive.keywords": "drive, index, ask, prompt, notification, connect, network",
+  "@settings.indexing.askForEachDrive.keywords": {
+    "sourceHash": "1aa1446"
+  },
   "settings.indexing.staleNotify.label": "Avisar se o índice de algum disco externo ficar desatualizado",
   "@settings.indexing.staleNotify.label": {
     "sourceHash": "690692a"
@@ -774,6 +942,10 @@
   "settings.indexing.staleNotify.description": "Você ainda verá o status amarelo se desativar isso.",
   "@settings.indexing.staleNotify.description": {
     "sourceHash": "03af10e"
+  },
+  "settings.indexing.staleNotify.keywords": "drive, index, stale, outdated, notify, notification, disconnect, network",
+  "@settings.indexing.staleNotify.keywords": {
+    "sourceHash": "12276c3"
   },
   "settings.indexing.masterOffNote": "A indexação de disco está desativada, então nenhum disco é indexado e os tamanhos das pastas ficam ocultos. Cada disco mantém a própria escolha de ativado ou desativado, pronta para quando você reativar isto.",
   "@settings.indexing.masterOffNote": {
@@ -798,6 +970,10 @@
   "settings.indexing.reEnableNotifications.disabledTooltip": "Você ainda não desativou o aviso para nenhum disco.",
   "@settings.indexing.reEnableNotifications.disabledTooltip": {
     "sourceHash": "e7702a8"
+  },
+  "settings.indexing.reEnableNotifications.keywords": "re-enable, notifications, drives, silenced, ask again",
+  "@settings.indexing.reEnableNotifications.keywords": {
+    "sourceHash": "54baf63"
   },
   "settings.indexing.silencedDrives.label": "Avisos de disco silenciados",
   "@settings.indexing.silencedDrives.label": {
@@ -840,6 +1016,10 @@
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.neither": {
     "sourceHash": "9957d09"
   },
+  "settings.behavior.fileSystemWatching.downloadsNotifications.keywords": "download, downloads, notification, toast, notify",
+  "@settings.behavior.fileSystemWatching.downloadsNotifications.keywords": {
+    "sourceHash": "955d46c"
+  },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Ir para o último download",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
@@ -848,6 +1028,10 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
     "sourceHash": "ed2f65d"
   },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "shortcut, hotkey, global, download, downloads, jump, go to, goto",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
+    "sourceHash": "1fd8c2f"
+  },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.label": "Atalho global de ir para o download mais recente",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.label": {
     "sourceHash": "cf811fe"
@@ -855,6 +1039,10 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.description": "A combinação global que aciona ir para o download mais recente. Editada em Atalhos de teclado.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.description": {
     "sourceHash": "77e5c31"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": "shortcut, hotkey, global, binding, combo",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
+    "sourceHash": "a90591b"
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Aviso do atalho global de ir para o download mais recente confirmado",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
@@ -880,6 +1068,10 @@
   "@settings.behavior.notifications.keepUntilClosed.description": {
     "sourceHash": "53890bf"
   },
+  "settings.behavior.notifications.keepUntilClosed.keywords": "toast, notification, timeout, time, disappear, dismiss, close, keep, accessibility",
+  "@settings.behavior.notifications.keepUntilClosed.keywords": {
+    "sourceHash": "f681b77"
+  },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": "Aviso de pouco espaço em disco",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": {
     "sourceHash": "911b74b"
@@ -901,6 +1093,10 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": {
     "sourceHash": "ca7981b"
   },
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.keywords": "disk, space, low, free, storage, full, warning, notification, boot, startup",
+  "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.keywords": {
+    "sourceHash": "733f2ee"
+  },
   "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": "Limite de aviso",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": {
     "sourceHash": "fd1382f"
@@ -909,6 +1105,10 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": {
     "sourceHash": "9ed41b8"
   },
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": "disk, space, threshold, percent, low, free, warning",
+  "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": {
+    "sourceHash": "7a0df93"
+  },
   "settings.search.autoApply.label": "Aplicar buscas automaticamente",
   "@settings.search.autoApply.label": {
     "sourceHash": "06b0f9f"
@@ -916,6 +1116,10 @@
   "settings.search.autoApply.description": "Executa buscas por nome de arquivo e regex automaticamente conforme você digita (1 segundo depois de parar). Buscas de IA sempre esperam o Enter, já que custam dinheiro. Quando desativado, pressione Enter ou clique no botão de executar para buscar.",
   "@settings.search.autoApply.description": {
     "sourceHash": "19fcaf7"
+  },
+  "settings.search.autoApply.keywords": "search, auto, apply, live, debounce, filename, instant",
+  "@settings.search.autoApply.keywords": {
+    "sourceHash": "2e0e223"
   },
   "settings.ai.provider.label": "Provedor",
   "@settings.ai.provider.label": {
@@ -937,6 +1141,10 @@
   "@settings.ai.provider.opt.local": {
     "sourceHash": "6689271"
   },
+  "settings.ai.provider.keywords": "ai, artificial intelligence, provider, cloud, local, off, model",
+  "@settings.ai.provider.keywords": {
+    "sourceHash": "ff6248d"
+  },
   "settings.ai.cloudProvider.label": "Serviço",
   "@settings.ai.cloudProvider.label": {
     "sourceHash": "d677190"
@@ -949,9 +1157,17 @@
   "@settings.ai.cloudConsent.lockedHint": {
     "sourceHash": "8a24685"
   },
+  "settings.ai.cloudConsent.keywords": "consent, privacy, allow, send, data, cloud, ai",
+  "@settings.ai.cloudConsent.keywords": {
+    "sourceHash": "c0a0566"
+  },
   "settings.ai.cloudProvider.description": "Qual serviço de IA na nuvem usar.",
   "@settings.ai.cloudProvider.description": {
     "sourceHash": "3300ce9"
+  },
+  "settings.ai.cloudProvider.keywords": "cloud, provider, service, custom",
+  "@settings.ai.cloudProvider.keywords": {
+    "sourceHash": "0ccf0ad"
   },
   "settings.ai.cloudProviderConfigs.label": "Configurações de provedor",
   "@settings.ai.cloudProviderConfigs.label": {
@@ -969,6 +1185,10 @@
   "@settings.ai.localContextSize.description": {
     "sourceHash": "14256da"
   },
+  "settings.ai.localContextSize.keywords": "context, window, tokens, memory, size, local",
+  "@settings.ai.localContextSize.keywords": {
+    "sourceHash": "cf1e449"
+  },
   "settings.network.enabled.label": "Ativar rede",
   "@settings.network.enabled.label": {
     "sourceHash": "10f5de9"
@@ -976,6 +1196,10 @@
   "settings.network.enabled.description": "Descobre servidores SMB na sua rede local e conecta a eles. Quando desativado, o Cmdr ainda consegue ler e gravar arquivos em compartilhamentos já montados, mas não pedirá ao macOS o acesso à Rede Local.",
   "@settings.network.enabled.description": {
     "sourceHash": "72a0854"
+  },
+  "settings.network.enabled.keywords": "network, enable, enabled, discovery, local, permission",
+  "@settings.network.enabled.keywords": {
+    "sourceHash": "a2d95a0"
   },
   "settings.network.firstTriggerDone.label": "Descoberta de rede iniciada",
   "@settings.network.firstTriggerDone.label": {
@@ -996,6 +1220,10 @@
   "settings.network.directSmbConnection.description": "Quando ativado, o Cmdr estabelece uma conexão direta com compartilhamentos SMB para operações de arquivo mais rápidas. A montagem do sistema continua para o Finder e outros apps.",
   "@settings.network.directSmbConnection.description": {
     "sourceHash": "44a5a6d"
+  },
+  "settings.network.directSmbConnection.keywords": "direct, fast, connection, network, performance",
+  "@settings.network.directSmbConnection.keywords": {
+    "sourceHash": "6043806"
   },
   "settings.network.shareCacheDuration.label": "Duração do cache de compartilhamentos",
   "@settings.network.shareCacheDuration.label": {
@@ -1024,6 +1252,10 @@
   "settings.network.shareCacheDuration.opt.days30": "30 dias",
   "@settings.network.shareCacheDuration.opt.days30": {
     "sourceHash": "ffd7280"
+  },
+  "settings.network.shareCacheDuration.keywords": "cache, share, network, refresh",
+  "@settings.network.shareCacheDuration.keywords": {
+    "sourceHash": "df14578"
   },
   "settings.network.timeoutMode.label": "Modo de tempo limite de rede",
   "@settings.network.timeoutMode.label": {
@@ -1054,6 +1286,10 @@
   "@settings.network.timeoutMode.opt.custom": {
     "sourceHash": "494ca78"
   },
+  "settings.network.timeoutMode.keywords": "timeout, network, slow, connection, latency",
+  "@settings.network.timeoutMode.keywords": {
+    "sourceHash": "a00bb47"
+  },
   "settings.network.customTimeout.label": "Tempo limite personalizado",
   "@settings.network.customTimeout.label": {
     "sourceHash": "ea49e01"
@@ -1061,6 +1297,10 @@
   "settings.network.customTimeout.description": "Tempo limite personalizado em segundos para operações de rede.",
   "@settings.network.customTimeout.description": {
     "sourceHash": "28a8d46"
+  },
+  "settings.network.customTimeout.keywords": "timeout, custom, seconds",
+  "@settings.network.customTimeout.keywords": {
+    "sourceHash": "cf816c7"
   },
   "settings.network.smbConcurrency.label": "Operações simultâneas por conexão SMB",
   "@settings.network.smbConcurrency.label": {
@@ -1070,6 +1310,10 @@
   "@settings.network.smbConcurrency.description": {
     "sourceHash": "49a590b"
   },
+  "settings.network.smbConcurrency.keywords": "concurrency, parallel, copy, batch, performance, transfer, speed",
+  "@settings.network.smbConcurrency.keywords": {
+    "sourceHash": "8a4675f"
+  },
   "settings.fileOperations.mtpEnabled.label": "Suporte a Android/Kindle/câmera (PTP e MTP)",
   "@settings.fileOperations.mtpEnabled.label": {
     "sourceHash": "6a315a8"
@@ -1077,6 +1321,10 @@
   "settings.fileOperations.mtpEnabled.description": "Detecta e conecta a dispositivos Android e outros por um cabo USB para navegação e transferência de arquivos. Para usar este recurso em um celular Android, use um cabo USB e, no seu celular, vá a algo como Ajustes > Preferências de USB e defina a conexão como “Transferência de arquivos”, “Android Auto” ou similar. (Varia conforme o dispositivo.)",
   "@settings.fileOperations.mtpEnabled.description": {
     "sourceHash": "c66df04"
+  },
+  "settings.fileOperations.mtpEnabled.keywords": "device, phone, mobile",
+  "@settings.fileOperations.mtpEnabled.keywords": {
+    "sourceHash": "ce40ecb"
   },
   "settings.fileOperations.adbEnabled.label": "Acesso aos arquivos do Android por ADB",
   "@settings.fileOperations.adbEnabled.label": {
@@ -1086,6 +1334,10 @@
   "@settings.fileOperations.adbEnabled.description": {
     "sourceHash": "a89c957"
   },
+  "settings.fileOperations.adbEnabled.keywords": "usb debugging, developer options, phone, device",
+  "@settings.fileOperations.adbEnabled.keywords": {
+    "sourceHash": "95bcc86"
+  },
   "settings.fileOperations.adbBinaryPath.label": "Localização do adb",
   "@settings.fileOperations.adbBinaryPath.label": {
     "sourceHash": "a67fbbd"
@@ -1093,6 +1345,10 @@
   "settings.fileOperations.adbBinaryPath.description": "Deixe em branco e o Cmdr procura o adb nos lugares de sempre, incluindo o Android SDK e o Homebrew. Aponte para outro lugar se você guarda as ferramentas de plataforma em um lugar separado.",
   "@settings.fileOperations.adbBinaryPath.description": {
     "sourceHash": "940ff29"
+  },
+  "settings.fileOperations.adbBinaryPath.keywords": "path, binary, location",
+  "@settings.fileOperations.adbBinaryPath.keywords": {
+    "sourceHash": "646719a"
   },
   "settings.fileOperations.mtpConnectionWarning.label": "Avisar quando um dispositivo se conectar",
   "@settings.fileOperations.mtpConnectionWarning.label": {
@@ -1102,6 +1358,10 @@
   "@settings.fileOperations.mtpConnectionWarning.description": {
     "sourceHash": "9c7a648"
   },
+  "settings.fileOperations.mtpConnectionWarning.keywords": "warning, notification, connect, toast",
+  "@settings.fileOperations.mtpConnectionWarning.keywords": {
+    "sourceHash": "4f395e7"
+  },
   "settings.fileExplorer.git.showRepoChip.label": "Mostrar selo do repositório",
   "@settings.fileExplorer.git.showRepoChip.label": {
     "sourceHash": "7504b23"
@@ -1109,6 +1369,10 @@
   "settings.fileExplorer.git.showRepoChip.description": "Mostra o branch atual, as mudanças à frente/atrás e o estado modificado acima da lista de arquivos quando você está dentro de um repositório git.",
   "@settings.fileExplorer.git.showRepoChip.description": {
     "sourceHash": "7b8a9ba"
+  },
+  "settings.fileExplorer.git.showRepoChip.keywords": "chip, branch, breadcrumb, repo, status, ahead, behind, dirty",
+  "@settings.fileExplorer.git.showRepoChip.keywords": {
+    "sourceHash": "15fb963"
   },
   "settings.fileExplorer.git.showStatusColumn.label": "Mostrar coluna de status do git",
   "@settings.fileExplorer.git.showStatusColumn.label": {
@@ -1118,6 +1382,10 @@
   "@settings.fileExplorer.git.showStatusColumn.description": {
     "sourceHash": "7ff07e4"
   },
+  "settings.fileExplorer.git.showStatusColumn.keywords": "status, column, modified, untracked, ignored, added, deleted",
+  "@settings.fileExplorer.git.showStatusColumn.keywords": {
+    "sourceHash": "ce0481d"
+  },
   "settings.fileExplorer.git.showVirtualGitPortal.label": "Mostrar portal git virtual",
   "@settings.fileExplorer.git.showVirtualGitPortal.label": {
     "sourceHash": "40d9fa1"
@@ -1125,6 +1393,10 @@
   "settings.fileExplorer.git.showVirtualGitPortal.description": "Ao entrar em `.git`, mostra branches, tags, commits e worktrees como pastas virtuais navegáveis. Desative para ver o conteúdo bruto de `.git`.",
   "@settings.fileExplorer.git.showVirtualGitPortal.description": {
     "sourceHash": "70eae72"
+  },
+  "settings.fileExplorer.git.showVirtualGitPortal.keywords": "portal, virtual, branches, tags, commits, worktrees, history",
+  "@settings.fileExplorer.git.showVirtualGitPortal.keywords": {
+    "sourceHash": "25c1d2c"
   },
   "settings.viewer.wordWrap.label": "Quebra automática de linha",
   "@settings.viewer.wordWrap.label": {
@@ -1134,6 +1406,10 @@
   "@settings.viewer.wordWrap.description": {
     "sourceHash": "8a87bd2"
   },
+  "settings.viewer.wordWrap.keywords": "viewer, wrap, word, line, horizontal, scroll",
+  "@settings.viewer.wordWrap.keywords": {
+    "sourceHash": "5d0a24b"
+  },
   "settings.viewer.showTextCursor.label": "Mostrar cursor de texto",
   "@settings.viewer.showTextCursor.label": {
     "sourceHash": "9e4b4ba"
@@ -1141,6 +1417,10 @@
   "settings.viewer.showTextCursor.description": "Mostra um cursor piscando no visualizador de arquivos, marcando de onde uma seleção feita pelo teclado se expande.",
   "@settings.viewer.showTextCursor.description": {
     "sourceHash": "b5e542e"
+  },
+  "settings.viewer.showTextCursor.keywords": "viewer, cursor, caret, text, insertion, point, blink, selection",
+  "@settings.viewer.showTextCursor.keywords": {
+    "sourceHash": "1214804"
   },
   "settings.developer.mcpEnabled.label": "Ativar servidor MCP",
   "@settings.developer.mcpEnabled.label": {
@@ -1150,6 +1430,10 @@
   "@settings.developer.mcpEnabled.description": {
     "sourceHash": "10f4102"
   },
+  "settings.developer.mcpEnabled.keywords": "server, ai, assistant, protocol, model",
+  "@settings.developer.mcpEnabled.keywords": {
+    "sourceHash": "410be68"
+  },
   "settings.developer.mcpPort.label": "Porta",
   "@settings.developer.mcpPort.label": {
     "sourceHash": "72e9a59"
@@ -1157,6 +1441,10 @@
   "settings.developer.mcpPort.description": "Porta preferida para o servidor MCP. Deixe em 0 para o sistema escolher uma porta efêmera (recomendado; a porta real aparece abaixo quando em execução). Fixe uma porta específica se um software externo precisar dela.",
   "@settings.developer.mcpPort.description": {
     "sourceHash": "174e807"
+  },
+  "settings.developer.mcpPort.keywords": "port, network, ephemeral",
+  "@settings.developer.mcpPort.keywords": {
+    "sourceHash": "2b54226"
   },
   "settings.developer.verboseLogging.label": "Saída detalhada no console (desenvolvedor)",
   "@settings.developer.verboseLogging.label": {
@@ -1166,6 +1454,10 @@
   "@settings.developer.verboseLogging.description": {
     "sourceHash": "5c69c0d"
   },
+  "settings.developer.verboseLogging.keywords": "log, debug, verbose, troubleshoot, performance, console",
+  "@settings.developer.verboseLogging.keywords": {
+    "sourceHash": "2bdf9aa"
+  },
   "settings.updates.autoCheck.label": "Verificar atualizações automaticamente",
   "@settings.updates.autoCheck.label": {
     "sourceHash": "409e6a1"
@@ -1174,6 +1466,10 @@
   "@settings.updates.autoCheck.description": {
     "sourceHash": "1ff0b1a"
   },
+  "settings.updates.autoCheck.keywords": "update, auto, check, version, background",
+  "@settings.updates.autoCheck.keywords": {
+    "sourceHash": "091ca30"
+  },
   "settings.whatsNew.showOnUpdate.label": "Mostrar novidades após atualizações",
   "@settings.whatsNew.showOnUpdate.label": {
     "sourceHash": "991a90b"
@@ -1181,6 +1477,10 @@
   "settings.whatsNew.showOnUpdate.description": "Depois que o Cmdr se atualiza, mostra um resumo rápido do que mudou.",
   "@settings.whatsNew.showOnUpdate.description": {
     "sourceHash": "4d4d7e6"
+  },
+  "settings.whatsNew.showOnUpdate.keywords": "changelog, release notes, what’s new, update notes",
+  "@settings.whatsNew.showOnUpdate.keywords": {
+    "sourceHash": "ef19c9d"
   },
   "settings.whatsNew.lastSeenVersion.label": "Última versão de novidades vista",
   "@settings.whatsNew.lastSeenVersion.label": {
@@ -1198,6 +1498,10 @@
   "@settings.analytics.enabled.description": {
     "sourceHash": "f5534ee"
   },
+  "settings.analytics.enabled.keywords": "analytics, usage, stats, privacy, telemetry, beta, tracking, opt-out",
+  "@settings.analytics.enabled.keywords": {
+    "sourceHash": "85d82ce"
+  },
   "settings.analytics.email.label": "E-mail de contato do beta",
   "@settings.analytics.email.label": {
     "sourceHash": "71e5c9a"
@@ -1205,6 +1509,10 @@
   "settings.analytics.email.description": "Exemplo: voce@exemplo.com",
   "@settings.analytics.email.description": {
     "sourceHash": "03574f9"
+  },
+  "settings.analytics.email.keywords": "email, beta, contact, newsletter, updates, survey",
+  "@settings.analytics.email.keywords": {
+    "sourceHash": "61438eb"
   },
   "settings.updates.crashReports.label": "Enviar relatórios de falha",
   "@settings.updates.crashReports.label": {
@@ -1214,6 +1522,10 @@
   "@settings.updates.crashReports.description": {
     "sourceHash": "e726766"
   },
+  "settings.updates.crashReports.keywords": "crash, report, privacy, telemetry, bug, error",
+  "@settings.updates.crashReports.keywords": {
+    "sourceHash": "5fbf552"
+  },
   "settings.updates.errorReports.label": "Enviar relatórios de problema automaticamente",
   "@settings.updates.errorReports.label": {
     "sourceHash": "471575d"
@@ -1221,6 +1533,10 @@
   "settings.updates.errorReports.description": "Envia um pequeno trecho de registro ao desenvolvedor quando algo dá errado. Ajuda a corrigir bugs mais rápido. Desativado por padrão. Você sempre pode enviar um relatório manual pelo menu Ajuda.",
   "@settings.updates.errorReports.description": {
     "sourceHash": "f3e41eb"
+  },
+  "settings.updates.errorReports.keywords": "error, report, auto, send, privacy, telemetry, bug, log, snippet, diagnostics",
+  "@settings.updates.errorReports.keywords": {
+    "sourceHash": "271aae6"
   },
   "settings.updates.attachEmailToReports.label": "Anexar meu e-mail aos relatórios por padrão",
   "@settings.updates.attachEmailToReports.label": {
@@ -1230,6 +1546,10 @@
   "@settings.updates.attachEmailToReports.description": {
     "sourceHash": "dd23637"
   },
+  "settings.updates.attachEmailToReports.keywords": "email, report, crash, error, contact, attach, reply, beta",
+  "@settings.updates.attachEmailToReports.keywords": {
+    "sourceHash": "6fba4e5"
+  },
   "settings.advanced.prefetchBufferSize.label": "Tamanho do buffer de pré-carregamento",
   "@settings.advanced.prefetchBufferSize.label": {
     "sourceHash": "4043154"
@@ -1237,6 +1557,10 @@
   "settings.advanced.prefetchBufferSize.description": "Número de itens a pré-carregar ao redor da faixa visível para uma rolagem mais suave.",
   "@settings.advanced.prefetchBufferSize.description": {
     "sourceHash": "39f13c9"
+  },
+  "settings.advanced.prefetchBufferSize.keywords": "prefetch, buffer, scroll, performance",
+  "@settings.advanced.prefetchBufferSize.keywords": {
+    "sourceHash": "8e07ea0"
   },
   "settings.advanced.virtualizationBufferRows.label": "Buffer de virtualização (linhas)",
   "@settings.advanced.virtualizationBufferRows.label": {
@@ -1246,6 +1570,10 @@
   "@settings.advanced.virtualizationBufferRows.description": {
     "sourceHash": "82a0e9a"
   },
+  "settings.advanced.virtualizationBufferRows.keywords": "virtualization, buffer, row, render",
+  "@settings.advanced.virtualizationBufferRows.keywords": {
+    "sourceHash": "2342517"
+  },
   "settings.advanced.virtualizationBufferColumns.label": "Buffer de virtualização (colunas)",
   "@settings.advanced.virtualizationBufferColumns.label": {
     "sourceHash": "a9e8dba"
@@ -1253,6 +1581,10 @@
   "settings.advanced.virtualizationBufferColumns.description": "Colunas extras a renderizar na exibição resumida.",
   "@settings.advanced.virtualizationBufferColumns.description": {
     "sourceHash": "a1cbd98"
+  },
+  "settings.advanced.virtualizationBufferColumns.keywords": "virtualization, buffer, column, brief",
+  "@settings.advanced.virtualizationBufferColumns.keywords": {
+    "sourceHash": "f4c112b"
   },
   "settings.advanced.fileWatcherDebounce.label": "Atraso do monitor de arquivos",
   "@settings.advanced.fileWatcherDebounce.label": {
@@ -1262,6 +1594,10 @@
   "@settings.advanced.fileWatcherDebounce.description": {
     "sourceHash": "084a2a7"
   },
+  "settings.advanced.fileWatcherDebounce.keywords": "watcher, debounce, refresh, delay",
+  "@settings.advanced.fileWatcherDebounce.keywords": {
+    "sourceHash": "a389923"
+  },
   "settings.advanced.diskSpaceChangeThreshold.label": "Limite de mudança de espaço em disco (MB)",
   "@settings.advanced.diskSpaceChangeThreshold.label": {
     "sourceHash": "1d95fc6"
@@ -1269,6 +1605,10 @@
   "settings.advanced.diskSpaceChangeThreshold.description": "Mudança mínima no espaço em disco disponível antes de atualizar a barra de status. A barra de status verifica o espaço em disco a cada poucos segundos; mudanças pequenas abaixo deste limite são ignoradas para reduzir o ruído visual.",
   "@settings.advanced.diskSpaceChangeThreshold.description": {
     "sourceHash": "f09c3cb"
+  },
+  "settings.advanced.diskSpaceChangeThreshold.keywords": "disk, space, threshold, poll, refresh, status, bar",
+  "@settings.advanced.diskSpaceChangeThreshold.keywords": {
+    "sourceHash": "74628c1"
   },
   "settings.fileViewer.suppressBinaryWarning.label": "Ocultar o aviso de visualização bruta para arquivos binários",
   "@settings.fileViewer.suppressBinaryWarning.label": {
@@ -1278,6 +1618,10 @@
   "@settings.fileViewer.suppressBinaryWarning.description": {
     "sourceHash": "a93b4cb"
   },
+  "settings.fileViewer.suppressBinaryWarning.keywords": "viewer, binary, image, raw, warning, banner, quick, look",
+  "@settings.fileViewer.suppressBinaryWarning.keywords": {
+    "sourceHash": "12a2ca0"
+  },
   "settings.fileExplorer.suppressQuickLookHint.label": "Ocultar a dica da Visualização rápida com a tecla Espaço",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
@@ -1285,6 +1629,10 @@
   "settings.fileExplorer.suppressQuickLookHint.description": "O Cmdr usa Espaço para alternar a seleção de arquivos e ⇧Espaço para a Visualização rápida (o Finder usa só Espaço para a Visualização rápida). Cada vez que você pressiona Espaço na lista de arquivos, o Cmdr mostra um lembrete de um parágrafo sobre essa diferença. Ative isto (ou clique em “Não mostrar novamente” na notificação) para ocultar o lembrete de vez.",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
     "sourceHash": "10357b4"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.keywords": "quick, look, preview, space, hint, toast, reminder",
+  "@settings.fileExplorer.suppressQuickLookHint.keywords": {
+    "sourceHash": "d3a493e"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Número de abas fechadas a lembrar por painel",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
@@ -1294,6 +1642,10 @@
   "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
     "sourceHash": "e53df3a"
   },
+  "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "tab, closed, reopen, history, undo, pane",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {
+    "sourceHash": "bb60e7b"
+  },
   "settings.advanced.dragThreshold.label": "Limite de arrasto",
   "@settings.advanced.dragThreshold.label": {
     "sourceHash": "d624e2a"
@@ -1302,6 +1654,10 @@
   "@settings.advanced.dragThreshold.description": {
     "sourceHash": "7704bfa"
   },
+  "settings.advanced.dragThreshold.keywords": "drag, threshold, pixel, distance",
+  "@settings.advanced.dragThreshold.keywords": {
+    "sourceHash": "1dec520"
+  },
   "settings.advanced.exitFullScreenOnEscape.label": "Sair da tela cheia com Esc",
   "@settings.advanced.exitFullScreenOnEscape.label": {
     "sourceHash": "f98be5e"
@@ -1309,6 +1665,10 @@
   "settings.advanced.exitFullScreenOnEscape.description": "Quando a janela principal está em tela cheia, Esc tira a janela da tela cheia. Em um diálogo ou menu, Esc só fecha esse diálogo ou menu.",
   "@settings.advanced.exitFullScreenOnEscape.description": {
     "sourceHash": "a862b71"
+  },
+  "settings.advanced.exitFullScreenOnEscape.keywords": "escape, full screen, fullscreen, maximize, window, restore, exit",
+  "@settings.advanced.exitFullScreenOnEscape.keywords": {
+    "sourceHash": "592c454"
   },
   "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Dica de Esc na tela cheia exibida",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.label": {
@@ -1326,6 +1686,10 @@
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
   },
+  "settings.fileExplorer.typeToJump.resetDelay.keywords": "type, jump, reset, delay, fuzzy, search, navigation, keystroke, buffer",
+  "@settings.fileExplorer.typeToJump.resetDelay.keywords": {
+    "sourceHash": "179755f"
+  },
   "settings.fileExplorer.typeToJump.mode.label": "Ao digitar em um painel",
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
@@ -1342,6 +1706,10 @@
   "@settings.fileExplorer.typeToJump.mode.opt.filter": {
     "sourceHash": "638e249"
   },
+  "settings.fileExplorer.typeToJump.mode.keywords": "type, jump, filter, quick filter, quick search, narrow, keystroke",
+  "@settings.fileExplorer.typeToJump.mode.keywords": {
+    "sourceHash": "039893a"
+  },
   "settings.fileOperations.maxConflictsToShow.label": "Máximo de conflitos a mostrar",
   "@settings.fileOperations.maxConflictsToShow.label": {
     "sourceHash": "d9cdb0c"
@@ -1349,6 +1717,10 @@
   "settings.fileOperations.maxConflictsToShow.description": "Número máximo de conflitos de arquivo a exibir na pré-visualização antes de uma operação.",
   "@settings.fileOperations.maxConflictsToShow.description": {
     "sourceHash": "1f6bcb9"
+  },
+  "settings.fileOperations.maxConflictsToShow.keywords": "conflict, max, limit, preview, operation",
+  "@settings.fileOperations.maxConflictsToShow.keywords": {
+    "sourceHash": "3b64816"
   },
   "settings.fileOperations.progressUpdateInterval.label": "Intervalo de atualização de progresso",
   "@settings.fileOperations.progressUpdateInterval.label": {
@@ -1358,6 +1730,10 @@
   "@settings.fileOperations.progressUpdateInterval.description": {
     "sourceHash": "84e4876"
   },
+  "settings.fileOperations.progressUpdateInterval.keywords": "progress, update, interval, refresh, performance",
+  "@settings.fileOperations.progressUpdateInterval.keywords": {
+    "sourceHash": "49c3811"
+  },
   "settings.advanced.maxLogStorageMb.label": "Espaço máximo em disco para arquivos de registro (MB)",
   "@settings.advanced.maxLogStorageMb.label": {
     "sourceHash": "d6af6b4"
@@ -1365,6 +1741,10 @@
   "settings.advanced.maxLogStorageMb.description": "Espaço máximo em disco para arquivos de registro. Defina como 0 para desativar o armazenamento de registros; relatórios de erro não podem ser enviados sem registros. Mudanças para um valor diferente de zero valem na próxima inicialização do app.",
   "@settings.advanced.maxLogStorageMb.description": {
     "sourceHash": "725bb26"
+  },
+  "settings.advanced.maxLogStorageMb.keywords": "log, storage, disk, cap, rotation, error, report, privacy",
+  "@settings.advanced.maxLogStorageMb.keywords": {
+    "sourceHash": "328d0cc"
   },
   "settings.advanced.mountTimeout.label": "Tempo limite de montagem",
   "@settings.advanced.mountTimeout.label": {
@@ -1374,6 +1754,10 @@
   "@settings.advanced.mountTimeout.description": {
     "sourceHash": "3da30e1"
   },
+  "settings.advanced.mountTimeout.keywords": "mount, timeout, network, share",
+  "@settings.advanced.mountTimeout.keywords": {
+    "sourceHash": "3327884"
+  },
   "settings.advanced.showSafeSaveFiles.label": "Mostrar os arquivos temporários de outros apps",
   "@settings.advanced.showSafeSaveFiles.label": {
     "sourceHash": "c43c6af"
@@ -1381,6 +1765,10 @@
   "settings.advanced.showSafeSaveFiles.description": "Quando apps como o Editor de Texto e a Pré-Visualização salvam um arquivo, o macOS grava a nova versão ao lado com um nome temporário (terminado em “.sb-”) e depois faz a troca. Desative isto para mantê-los fora da lista de arquivos.",
   "@settings.advanced.showSafeSaveFiles.description": {
     "sourceHash": "b371701"
+  },
+  "settings.advanced.showSafeSaveFiles.keywords": "safe-save, temp, temporary, preview, autosave",
+  "@settings.advanced.showSafeSaveFiles.keywords": {
+    "sourceHash": "a56607a"
   },
   "settings.advanced.showStagingTempFiles.label": "Mostrar os arquivos temporários do Cmdr",
   "@settings.advanced.showStagingTempFiles.label": {
@@ -1390,6 +1778,10 @@
   "@settings.advanced.showStagingTempFiles.description": {
     "sourceHash": "a562689"
   },
+  "settings.advanced.showStagingTempFiles.keywords": "temp, temporary, staging, copy, transfer, partial",
+  "@settings.advanced.showStagingTempFiles.keywords": {
+    "sourceHash": "3b07cc3"
+  },
   "settings.advanced.logLlmCalls.label": "Registrar chamadas do modelo de IA",
   "@settings.advanced.logLlmCalls.label": {
     "sourceHash": "f865b3e"
@@ -1397,6 +1789,10 @@
   "settings.advanced.logLlmCalls.description": "Salva cada solicitação e resposta de IA em uma pasta local (llm-logs) para depuração. Esses arquivos ficam no seu Mac e incluem os nomes e caminhos de arquivo que o Cmdr envia ao seu provedor.",
   "@settings.advanced.logLlmCalls.description": {
     "sourceHash": "86b3d34"
+  },
+  "settings.advanced.logLlmCalls.keywords": "ai, log, debug, request, response, prompt",
+  "@settings.advanced.logLlmCalls.keywords": {
+    "sourceHash": "6d0a3a0"
   },
   "settings.advanced.serviceResolveTimeout.label": "Tempo limite de resolução de serviço",
   "@settings.advanced.serviceResolveTimeout.label": {
@@ -1406,6 +1802,10 @@
   "@settings.advanced.serviceResolveTimeout.description": {
     "sourceHash": "5cf231d"
   },
+  "settings.advanced.serviceResolveTimeout.keywords": "resolve, timeout",
+  "@settings.advanced.serviceResolveTimeout.keywords": {
+    "sourceHash": "7f5c11b"
+  },
   "settings.search.recentSearches.maxCount.label": "Buscas recentes a lembrar",
   "@settings.search.recentSearches.maxCount.label": {
     "sourceHash": "51ad13d"
@@ -1414,6 +1814,10 @@
   "@settings.search.recentSearches.maxCount.description": {
     "sourceHash": "d21b038"
   },
+  "settings.search.recentSearches.maxCount.keywords": "search, recent, history, cap, limit, max, count",
+  "@settings.search.recentSearches.maxCount.keywords": {
+    "sourceHash": "e5cef7d"
+  },
   "settings.selection.recentSelections.maxCount.label": "Seleções recentes a lembrar",
   "@settings.selection.recentSelections.maxCount.label": {
     "sourceHash": "e8a5d37"
@@ -1421,6 +1825,10 @@
   "settings.selection.recentSelections.maxCount.description": "Quantas seleções recentes manter para o rodapé do diálogo Selecionar / Desmarcar arquivos e o histórico em pop-over. As entradas mais antigas saem conforme as novas chegam. 0 desativa o histórico (o rodapé e o pop-over somem e nenhuma nova entrada é registrada).",
   "@settings.selection.recentSelections.maxCount.description": {
     "sourceHash": "ae04ef0"
+  },
+  "settings.selection.recentSelections.maxCount.keywords": "selection, select, recent, history, cap, limit, max, count",
+  "@settings.selection.recentSelections.maxCount.keywords": {
+    "sourceHash": "2986d5f"
   },
   "settings.advanced.oldMacosNoticeShown.label": "Aviso de macOS antigo exibido",
   "@settings.advanced.oldMacosNoticeShown.label": {
@@ -1469,6 +1877,10 @@
   "settings.advanced.updateCheckInterval.description": "Com que frequência verificar atualizações em segundo plano.",
   "@settings.advanced.updateCheckInterval.description": {
     "sourceHash": "2bdd38a"
+  },
+  "settings.advanced.updateCheckInterval.keywords": "update, interval, background, check",
+  "@settings.advanced.updateCheckInterval.keywords": {
+    "sourceHash": "2952cdc"
   },
   "settings.tint.none": "Sem matiz",
   "@settings.tint.none": {
@@ -1575,6 +1987,10 @@
   "@settings.revealHandler.label": {
     "sourceHash": "8c39a2f"
   },
+  "settings.behavior.revealHandler.keywords": "show in finder, find in finder, reveal, reveal in finder, default file manager, browser, downloads",
+  "@settings.behavior.revealHandler.keywords": {
+    "sourceHash": "ad680cd"
+  },
   "settings.revealHandler.description": "Quando outro app executa “Mostrar no Finder”, o Cmdr abre essa pasta com o arquivo sob o cursor. No resto, o Finder continua sendo seu gerenciador de arquivos padrão.",
   "@settings.revealHandler.description": {
     "sourceHash": "9522e41"
@@ -1623,6 +2039,10 @@
   "@settings.behavior.textEditorApp.checking": {
     "sourceHash": "0d6957f"
   },
+  "settings.behavior.textEditorApp.keywords": "editor, text editor, edit",
+  "@settings.behavior.textEditorApp.keywords": {
+    "sourceHash": "2e247fe"
+  },
   "settings.behavior.textEditorHintSeen.label": "Dica do editor de texto exibida",
   "@settings.behavior.textEditorHintSeen.label": {
     "sourceHash": "4d2a7fc"
@@ -1651,6 +2071,10 @@
   "@settings.behavior.openTerminalHereApp.checking": {
     "sourceHash": "0d6957f"
   },
+  "settings.behavior.openTerminalHereApp.keywords": "terminal, shell, console, command line",
+  "@settings.behavior.openTerminalHereApp.keywords": {
+    "sourceHash": "4e548b8"
+  },
   "settings.fileExplorer.git.portalIntroSeen.label": "Introdução à pasta do Git exibida",
   "@settings.fileExplorer.git.portalIntroSeen.label": {
     "sourceHash": "8c1ae20"
@@ -1678,6 +2102,10 @@
   "settings.behavior.doubleClickPaneNavigatesToParent.description": "É o espaço vazio ao redor da lista de arquivos, não uma linha de arquivo.",
   "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
     "sourceHash": "cae047d"
+  },
+  "settings.behavior.doubleClickPaneNavigatesToParent.keywords": "double-click, doubleclick, double click, pane, background, empty, parent, folder, up, navigate, navigation",
+  "@settings.behavior.doubleClickPaneNavigatesToParent.keywords": {
+    "sourceHash": "091f9e9"
   },
   "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Dica de clique duplo para a pasta superior exibida",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
@@ -1781,6 +2209,10 @@
   "@settings.askCmdr.enabled.description": {
     "sourceHash": "a1116db"
   },
+  "settings.askCmdr.enabled.keywords": "ai, chat, assistant, enable, disable, turn on, turn off",
+  "@settings.askCmdr.enabled.keywords": {
+    "sourceHash": "3ca6b54"
+  },
   "settings.askCmdr.cloudOffHint": "O Ask Cmdr usa seu serviço de IA na nuvem. Ative “Permitir IA na nuvem” nos ajustes de IA para começar a conversar.",
   "@settings.askCmdr.cloudOffHint": {
     "sourceHash": "1d3ec5d"
@@ -1813,6 +2245,10 @@
   "@settings.askCmdr.interactiveModel.placeholder": {
     "sourceHash": "2631f3d"
   },
+  "settings.askCmdr.interactiveModel.keywords": "ai, chat, assistant, model, interactive, slot",
+  "@settings.askCmdr.interactiveModel.keywords": {
+    "sourceHash": "2e3c2d7"
+  },
   "settings.askCmdr.chatMemorySize.label": "Tamanho da memória do chat",
   "@settings.askCmdr.chatMemorySize.label": {
     "sourceHash": "fad1ff1"
@@ -1829,6 +2265,10 @@
   "@settings.askCmdr.chatMemorySize.overWindow": {
     "sourceHash": "0dc68ac"
   },
+  "settings.askCmdr.chatMemorySize.keywords": "chat, memory, context, window, tokens, size, budget, history",
+  "@settings.askCmdr.chatMemorySize.keywords": {
+    "sourceHash": "7efd03c"
+  },
   "settings.askCmdr.proactive.title": "Por conta própria",
   "@settings.askCmdr.proactive.title": {
     "sourceHash": "42e696a"
@@ -1840,6 +2280,10 @@
   "settings.askCmdr.proactive.description": "O Cmdr acompanha as pastas em que você trabalha e abre um chat quando tem algo a sugerir. Nada é executado até você aprovar.",
   "@settings.askCmdr.proactive.description": {
     "sourceHash": "556f155"
+  },
+  "settings.askCmdr.proactive.keywords": "proactive, suggestions, automatic, notice, watch, wake, ai",
+  "@settings.askCmdr.proactive.keywords": {
+    "sourceHash": "3be12a4"
   },
   "settings.askCmdr.wakeDelay.label": "Com que rapidez o Cmdr olha",
   "@settings.askCmdr.wakeDelay.label": {
@@ -1853,6 +2297,10 @@
   "@settings.askCmdr.wakeDelay.summary": {
     "sourceHash": "ad03c00"
   },
+  "settings.askCmdr.wakeDelay.keywords": "delay, cadence, wait, often, frequency, calm, quiet, proactive",
+  "@settings.askCmdr.wakeDelay.keywords": {
+    "sourceHash": "800df1b"
+  },
   "settings.askCmdr.wakeToast.label": "Mostrar um aviso quando surgir uma sugestão",
   "@settings.askCmdr.wakeToast.label": {
     "sourceHash": "58b4167"
@@ -1860,6 +2308,10 @@
   "settings.askCmdr.wakeToast.description": "Uma mensagem pequena no canto quando o Cmdr deixa algo pronto para você revisar.",
   "@settings.askCmdr.wakeToast.description": {
     "sourceHash": "dd04b0a"
+  },
+  "settings.askCmdr.wakeToast.keywords": "toast, notice, notification, suggestion, proactive, alert",
+  "@settings.askCmdr.wakeToast.keywords": {
+    "sourceHash": "6ed1b7d"
   },
   "settings.askCmdr.memory.title": "O que o Cmdr lembra",
   "@settings.askCmdr.memory.title": {
@@ -1872,6 +2324,10 @@
   "settings.askCmdr.memory.open": "Abrir pasta de anotações",
   "@settings.askCmdr.memory.open": {
     "sourceHash": "cffe1da"
+  },
+  "settings.askCmdr.openMemoryFolder.keywords": "memory, folder, notes, remember, open",
+  "@settings.askCmdr.openMemoryFolder.keywords": {
+    "sourceHash": "fcd353e"
   },
   "settings.askCmdr.memory.forgotten": "As anotações do Cmdr foram apagadas. Ele começa do zero a partir daqui.",
   "@settings.askCmdr.memory.forgotten": {
@@ -1939,6 +2395,10 @@
   "@settings.operationLog.enabled.description": {
     "sourceHash": "78571fc"
   },
+  "settings.operationLog.enabled.keywords": "operation, log, history, record, recording, undo, journal, privacy, turn off",
+  "@settings.operationLog.enabled.keywords": {
+    "sourceHash": "25f39cc"
+  },
   "settings.operationLog.maxAge.label": "Manter o histórico por",
   "@settings.operationLog.maxAge.label": {
     "sourceHash": "ca05015"
@@ -1963,6 +2423,10 @@
   "@settings.operationLog.maxAge.opt.year1": {
     "sourceHash": "91647ba"
   },
+  "settings.operationLog.maxAge.keywords": "operation, log, history, retention, age, keep, prune, forever, days, undo",
+  "@settings.operationLog.maxAge.keywords": {
+    "sourceHash": "cc6f4ec"
+  },
   "settings.operationLog.maxSize.label": "Tamanho máximo",
   "@settings.operationLog.maxSize.label": {
     "sourceHash": "5a9f1ff"
@@ -1970,6 +2434,10 @@
   "settings.operationLog.maxSize.description": "O máximo de espaço em disco que o registro de operações pode usar. Quando fica cheio, o Cmdr remove primeiro as operações mais antigas.",
   "@settings.operationLog.maxSize.description": {
     "sourceHash": "ad5152a"
+  },
+  "settings.operationLog.maxSize.keywords": "operation, log, history, retention, size, disk, space, limit, megabytes, gigabytes",
+  "@settings.operationLog.maxSize.keywords": {
+    "sourceHash": "2ea4edc"
   },
   "settings.section.mcpServer": "Servidor MCP",
   "@settings.section.mcpServer": {
@@ -2296,6 +2764,10 @@
   "@settings.fileSystemWatching.indexSize": {
     "sourceHash": "adbb92c"
   },
+  "settings.indexing.indexSize.keywords": "clear index, index database, disk space, delete",
+  "@settings.indexing.indexSize.keywords": {
+    "sourceHash": "2a99f52"
+  },
   "settings.fileSystemWatching.clearing": "Limpando…",
   "@settings.fileSystemWatching.clearing": {
     "sourceHash": "9a81378"
@@ -2417,9 +2889,17 @@
   "@settings.securityLog.enabled.description": {
     "sourceHash": "11361eb"
   },
+  "settings.securityLog.enabled.keywords": "security, log, audit, record, events, access, privacy",
+  "@settings.securityLog.enabled.keywords": {
+    "sourceHash": "6f113c0"
+  },
   "settings.securityLog.showInFinder": "Mostrar no Finder",
   "@settings.securityLog.showInFinder": {
     "sourceHash": "c2a9c77"
+  },
+  "settings.updates.showSecurityLog.keywords": "security, log, audit, events, file, open",
+  "@settings.updates.showSecurityLog.keywords": {
+    "sourceHash": "9ce9447"
   },
   "settings.fileSystemWatching.globalShortcutHint": "Mude o atalho em Atalhos de teclado → Ir para o download mais recente (global).",
   "@settings.fileSystemWatching.globalShortcutHint": {
@@ -2466,6 +2946,10 @@
   "@settings.updates.checkForUpdates": {
     "sourceHash": "f26f327"
   },
+  "settings.updates.checkForUpdates.keywords": "update, upgrade, check, version, new version",
+  "@settings.updates.checkForUpdates.keywords": {
+    "sourceHash": "8381c6a"
+  },
   "settings.updates.emailConfirmHint": "Confira sua caixa de entrada para confirmar seu e-mail. Obrigado pela ajuda!",
   "@settings.updates.emailConfirmHint": {
     "sourceHash": "b96010e"
@@ -2482,6 +2966,10 @@
   "@settings.logging.openLogFile": {
     "sourceHash": "ec1bc04"
   },
+  "settings.advanced.openLogFile.keywords": "log, logs, file, folder, reveal",
+  "@settings.advanced.openLogFile.keywords": {
+    "sourceHash": "25e0c5a"
+  },
   "settings.logging.copied": "Copiado!",
   "@settings.logging.copied": {
     "sourceHash": "ea61bc1"
@@ -2489,6 +2977,10 @@
   "settings.logging.copyDiagnostics": "Copiar informações de diagnóstico",
   "@settings.logging.copyDiagnostics": {
     "sourceHash": "b8e7644"
+  },
+  "settings.advanced.copyDiagnostics.keywords": "diagnostics, copy, version, support, clipboard",
+  "@settings.advanced.copyDiagnostics.keywords": {
+    "sourceHash": "d7ce56b"
   },
   "settings.mcp.checkPort": "Verificar porta",
   "@settings.mcp.checkPort": {
@@ -2534,6 +3026,10 @@
   "@settings.advanced.resetAll": {
     "sourceHash": "a04d9be"
   },
+  "settings.advanced.resetAll.keywords": "reset, defaults, restore, factory",
+  "@settings.advanced.resetAll.keywords": {
+    "sourceHash": "05b1de6"
+  },
   "settings.advanced.resetAllConfirm": "Restaurar todos os ajustes avançados para os padrões? Isso não pode ser desfeito.",
   "@settings.advanced.resetAllConfirm": {
     "sourceHash": "be08f2a"
@@ -2578,6 +3074,10 @@
   "@settings.mediaIndex.scope.opt.importance": {
     "sourceHash": "0a66efe"
   },
+  "settings.mediaIndex.scope.keywords": "image, photo, index, folders, scope, coverage, which, choose",
+  "@settings.mediaIndex.scope.keywords": {
+    "sourceHash": "39010c3"
+  },
   "settings.mediaIndex.chosenFolders.title": "Pastas para indexar",
   "@settings.mediaIndex.chosenFolders.title": {
     "sourceHash": "1aa33d2"
@@ -2613,6 +3113,10 @@
   "settings.servers.card.trustedHostKeys": "Chaves de host confiáveis",
   "@settings.servers.card.trustedHostKeys": {
     "sourceHash": "46c5c9d"
+  },
+  "settings.network.trustedHostKeys.keywords": "host key, fingerprint, trust, trusted, known hosts, server, forget",
+  "@settings.network.trustedHostKeys.keywords": {
+    "sourceHash": "d111f38"
   },
   "settings.servers.trustedHostKeys.description": "O Cmdr pergunta antes de confiar na chave de um servidor na primeira vez que você conecta, e guarda sua resposta aqui. Os servidores salvos ficam na lista Servidores, e não nesta página.",
   "@settings.servers.trustedHostKeys.description": {
@@ -2659,6 +3163,10 @@
   "@settings.adb.status.notWatching": {
     "sourceHash": "6e1936c"
   },
+  "settings.adb.status.keywords": "status, re-check, recheck, found, watching, install",
+  "@settings.adb.status.keywords": {
+    "sourceHash": "32678b7"
+  },
   "settings.adb.recheck": "Verificar novamente",
   "@settings.adb.recheck": {
     "sourceHash": "24fcca0"
@@ -2698,6 +3206,10 @@
   "settings.dataWipe.button": "Apagar todos os dados do Cmdr",
   "@settings.dataWipe.button": {
     "sourceHash": "fbb253f"
+  },
+  "settings.updates.deleteAllData.keywords": "delete, erase, remove, wipe, reset, uninstall, privacy, data, forget, gdpr",
+  "@settings.updates.deleteAllData.keywords": {
+    "sourceHash": "0ffb0f6"
   },
   "settings.dataWipe.title": "Apagar todos os dados do Cmdr neste Mac?",
   "@settings.dataWipe.title": {
@@ -2822,5 +3334,25 @@
   "settings.dataWipe.quit": "Encerrar Cmdr",
   "@settings.dataWipe.quit": {
     "sourceHash": "b3455b4"
+  },
+  "settings.askCmdr.forgetMemory.keywords": "forget, memory, erase, delete, remembers, privacy",
+  "@settings.askCmdr.forgetMemory.keywords": {
+    "sourceHash": "e653535"
+  },
+  "settings.shortcuts.resetAll.keywords": "reset, shortcuts, defaults, restore, keyboard",
+  "@settings.shortcuts.resetAll.keywords": {
+    "sourceHash": "ccbedb0"
+  },
+  "settings.license.manageKey.keywords": "license, key, manage, activate, activation, change",
+  "@settings.license.manageKey.keywords": {
+    "sourceHash": "3e2241e"
+  },
+  "settings.license.enterKey.keywords": "license, key, enter, activate, activation, redeem",
+  "@settings.license.enterKey.keywords": {
+    "sourceHash": "ebb9475"
+  },
+  "settings.license.getLicense.keywords": "license, buy, purchase, pricing, commercial, personal, upgrade",
+  "@settings.license.getLicense.keywords": {
+    "sourceHash": "5454f6d"
   }
 }

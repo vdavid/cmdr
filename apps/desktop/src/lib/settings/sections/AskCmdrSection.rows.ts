@@ -13,13 +13,13 @@ export const askCmdrRows: SearchableRow[] = [
     id: 'row:askCmdr.openMemoryFolder',
     section: ['AI', 'Ask Cmdr'],
     labelKey: 'settings.askCmdr.memory.open',
-    keywords: ['memory', 'folder', 'notes', 'remember', 'open'],
+    keywordsKey: 'settings.askCmdr.openMemoryFolder.keywords',
   },
   {
     // "Forget everything", under the "What Cmdr remembers" heading.
     id: 'row:askCmdr.forgetMemory',
     section: ['AI', 'Ask Cmdr'],
     labelKey: 'askCmdr.forget.confirm',
-    keywords: ['forget', 'memory', 'erase', 'delete', 'remembers', 'privacy'],
+    keywordsKey: 'settings.askCmdr.forgetMemory.keywords',
   },
 ]

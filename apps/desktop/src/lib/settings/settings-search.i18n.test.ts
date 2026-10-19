@@ -4,8 +4,9 @@
  * Language setting is findable from any language.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { setLocale, _clearCompiledCacheForTests } from '#lib/intl/messages.svelte.js'
+import { setLocale, _clearCompiledCacheForTests, _setCatalogForTests } from '#lib/intl/messages.svelte.js'
 import {
+  clearSearchIndex,
   getMatchIndicesForLabel,
   getMatchingSections,
   getMatchingSettingIdsInSection,
@@ -93,13 +94,73 @@ describe('English as a fallback', () => {
 
   it('finds a row by its English keyword in another language', () => {
     setLocale('hu')
-    expect(ids('i18n')).toContain('appearance.language')
+    expect(ids('locale')).toContain('appearance.language')
   })
 
   it('leaves the English description out, since long common-word sentences make short queries noisy', () => {
     expect(ids('compounds')).toContain('appearance.textSize')
     setLocale('hu')
     expect(ids('compounds')).not.toContain('appearance.textSize')
+  })
+})
+
+describe('keywords from the catalog, terms from TS', () => {
+  // A stand-in Hungarian catalog: the shipped one may not translate these keys yet, and the test
+  // must not depend on what a translator wrote. Every key it lacks falls back to English.
+  // The index is keyed by locale, and swapping a catalog's contents keeps the tag, so drop any
+  // index built from the other catalog, on the way in and on the way out.
+  beforeEach(() => {
+    clearSearchIndex()
+  })
+  afterEach(() => {
+    _setCatalogForTests('hu', null)
+    clearSearchIndex()
+  })
+
+  function textOf(id: string, query: string): string {
+    const hit = searchSettings(query).find((r) => r.entry.id === id)
+    if (!hit) throw new Error(`${id} not found by "${query}"`)
+    return hit.searchableText
+  }
+
+  /** Theme mode in Hungarian, so an English word in its text can only come from the keywords. */
+  const huThemeMode = {
+    'settings.theme.mode.label': 'Témamód',
+    'settings.theme.mode.description': 'Válassz a világos, sötét vagy rendszer szerinti téma közül.',
+  }
+
+  it('finds a row by a keyword the UI language wrote for it', () => {
+    _setCatalogForTests('hu', { ...huThemeMode, 'settings.theme.mode.keywords': 'éjszakai mód , kontraszt,,' })
+    setLocale('hu')
+    expect(ids('éjszakai')).toContain('theme.mode')
+    expect(ids('kontraszt')).toContain('theme.mode')
+    // Split on the commas, trimmed, and the empty ones dropped: no stray separators or gaps.
+    expect(textOf('theme.mode', 'kontraszt')).toMatch(/ejszakai mod kontraszt \S/)
+  })
+
+  it('keeps the English keywords as a fallback', () => {
+    _setCatalogForTests('hu', { ...huThemeMode, 'settings.theme.mode.keywords': 'éjszakai mód' })
+    setLocale('hu')
+    expect(ids('dark')).toContain('theme.mode')
+  })
+
+  it('indexes an untranslated keyword list once, through the fallback alone', () => {
+    // A key the language hasn't translated resolves to English; indexing that as the
+    // language's own keywords too would put every English word in twice.
+    _setCatalogForTests('hu', huThemeMode)
+    setLocale('hu')
+    expect(textOf('theme.mode', 'témamód').match(/\bdark\b/g)).toHaveLength(1)
+  })
+
+  it.each(['en', 'hu', 'zh', 'ru'])('matches language-neutral terms in %s', (locale) => {
+    setLocale(locale)
+    expect(ids('openai')).toContain('ai.cloudProvider')
+    expect(ids('ssh')).toContain('row:network.trustedHostKeys')
+  })
+
+  it('indexes the terms once, outside English too', () => {
+    setLocale('hu')
+    expect(textOf('ai.cloudProvider', 'openrouter').match(/\bopenrouter\b/g)).toHaveLength(1)
   })
 })
 

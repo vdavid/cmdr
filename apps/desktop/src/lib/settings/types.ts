@@ -33,6 +33,9 @@ export interface EnumOption {
 // `MessageKey` so a typo is a compile error and `keys.gen.ts` stays the contract.
 // ============================================================================
 
+/** A catalog key holding a comma-separated list of Settings search keywords. */
+export type SearchKeywordsKey = Extract<MessageKey, `settings.${string}.keywords`>
+
 /** An enum option as authored in the registry: a value plus message keys. */
 export interface EnumOptionSource {
   value: string | number
@@ -102,8 +105,10 @@ export interface SearchableRow {
   labelKey: MessageKey
   /** i18n KEY of the `SectionCard` title the row sits in (the key that card renders). */
   cardKey?: MessageKey
-  /** Extra English search terms, like a setting's `keywords`. */
-  keywords?: string[]
+  /** See `SettingDefinition.keywordsKey`. */
+  keywordsKey?: SearchKeywordsKey
+  /** See `SettingDefinition.terms`. */
+  terms?: string[]
   /**
    * The row renders only on macOS, so it joins the search index only there. Off
    * macOS a hit would land on a page with nothing to show for it.
@@ -136,11 +141,13 @@ export interface SearchableEntry {
   section: string[]
   label: string
   description: string
-  keywords: string[]
   card?: string
   /** The keys behind `label` / `card`, so search can index them in another language (the English fallback). */
   labelKey: MessageKey
   cardKey?: MessageKey
+  /** See `SettingDefinition.keywordsKey` / `.terms`. */
+  keywordsKey?: SearchKeywordsKey
+  terms?: string[]
   /** See `SettingDefinition.searchAllLocales`. */
   searchAllLocales?: true
 }
@@ -187,7 +194,6 @@ export interface SettingDefinition {
   // Display
   label: string
   description: string
-  keywords: string[]
   /**
    * Resolved in-page SectionCard group title this setting belongs to (from `cardKey`).
    * Descriptive/searchable only: it feeds the search index so a card title is findable,
@@ -199,6 +205,17 @@ export interface SettingDefinition {
   /** The keys behind `label` / `card`, kept so search can index them in another language. */
   labelKey: MessageKey
   cardKey?: MessageKey
+  /**
+   * The setting's search keywords in the catalog (`settings.<id>.keywords`): a comma-separated
+   * list each language writes for itself, so a Hungarian user finds it by Hungarian words.
+   */
+  keywordsKey?: SearchKeywordsKey
+  /**
+   * Language-neutral search terms (brand and product names, protocols, file formats, key names:
+   * `openai`, `ssh`, `kb`, `F4`), matched in every language. ❌ Never a translatable word: that
+   * belongs in `keywordsKey`, or no other language can ever find it by its own word.
+   */
+  terms?: string[]
   /**
    * Index this setting's label under EVERY loaded catalog, plus every locale's own name
    * ("Svenska", "Magyar", "Русский"), so it's findable whatever the UI speaks. For the Language

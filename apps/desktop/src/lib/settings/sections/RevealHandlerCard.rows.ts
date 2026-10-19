@@ -17,21 +17,8 @@ export const revealHandlerRows: SearchableRow[] = [
     cardKey: 'settings.navigationAndFileOps.card.showInFinder',
     // How people look for it: the Finder command by name (plus the "Find in Finder"
     // misremembering), and the apps whose downloads list runs that command.
-    keywords: [
-      'finder',
-      'show in finder',
-      'find in finder',
-      'reveal',
-      'reveal in finder',
-      'default file manager',
-      'google',
-      'chrome',
-      'safari',
-      'firefox',
-      'slack',
-      'browser',
-      'downloads',
-    ],
+    keywordsKey: 'settings.behavior.revealHandler.keywords',
+    terms: ['finder', 'google', 'chrome', 'safari', 'firefox', 'slack'],
     macOSOnly: true,
   },
 ]

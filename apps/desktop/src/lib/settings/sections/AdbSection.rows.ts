@@ -15,6 +15,7 @@ export const adbRows: SearchableRow[] = [
     id: 'row:adb.status',
     section: ['File systems', 'Android (ADB)'],
     labelKey: 'settings.adb.status.label',
-    keywords: ['adb', 'android', 'status', 're-check', 'recheck', 'found', 'watching', 'platform-tools', 'install'],
+    keywordsKey: 'settings.adb.status.keywords',
+    terms: ['adb', 'android', 'platform-tools'],
   },
 ]

@@ -47,13 +47,25 @@ function isEnglish(locale: string): boolean {
 }
 
 /**
- * The entry's search terms in `locale`.
+ * The entry's catalog keywords as `locale` wrote them: its `keywordsKey` message, split on commas.
  *
- * The ONE place keywords enter the index. Today's `keywords` arrays are English, so they count as
- * the terms of English only; another language reaches them through the English fallback.
+ * The ONE place keywords enter the index. A list the language hasn't translated resolves to the
+ * English one, which the English fallback indexes already, so it counts as no keywords here.
+ * Language-neutral `terms` are not keywords: `indexEntry` adds them once, in every language.
  */
 function keywordsIn(locale: string, entry: SearchableEntry): string[] {
-  return isEnglish(locale) ? entry.keywords : []
+  if (entry.keywordsKey === undefined) return []
+  const list = tStringIn(locale, entry.keywordsKey)
+  if (!isEnglish(locale) && list === tStringIn('en', entry.keywordsKey)) return []
+  return splitKeywordList(list)
+}
+
+/** Splits on the comma of any script a translator may reach for (`,` `，` `、` `،`), trimmed. */
+function splitKeywordList(list: string): string[] {
+  return list
+    .split(/[,，、،]/)
+    .map((word) => word.trim())
+    .filter((word) => word !== '')
 }
 
 /**
@@ -92,7 +104,8 @@ function buildSearchIndex(): SearchIndex {
  * One entry's searchable text, in this order:
  *
  * 1. The localized part: translated section titles (like "Megjelenés › Színek és formátumok"),
- *    label, description, keywords, and card-group title, so searching a card title surfaces its rows.
+ *    label, description, keywords, the language-neutral `terms`, and card-group title, so searching
+ *    a card title surfaces its rows.
  * 2. Outside English, the English fallback: label, keywords, card title, and section path. Not the
  *    description: long common-word sentences make short queries noisy.
  * 3. For a `searchAllLocales` entry, its label in every loaded catalog plus every locale's own name.
@@ -104,7 +117,7 @@ function buildSearchIndex(): SearchIndex {
 function indexEntry(entry: SearchableEntry, locale: string): SearchIndexEntry {
   const sectionPath = entry.section.map(sectionTitle).join(' › ')
   const label = entry.label
-  const parts = [sectionPath, label, entry.description, ...keywordsIn(locale, entry)]
+  const parts = [sectionPath, label, entry.description, ...keywordsIn(locale, entry), ...(entry.terms ?? [])]
   if (entry.card !== undefined) parts.push(entry.card)
 
   if (!isEnglish(locale)) {

@@ -23,6 +23,10 @@
     "screenshot": "settings-appearance.png",
     "screenshotNote": "Settings > Appearance, pictured here. Your string is a choice in its language picker."
   },
+  "settings.appearance.language.keywords": "language, locale, translation, region, english",
+  "@settings.appearance.language.keywords": {
+    "description": "Search keywords for the “Language” setting (settings.appearance.language.label) in Settings > Appearance > Colors and formats. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.theme.mode.label": "Theme mode",
   "@settings.theme.mode.label": {
     "description": "Label for the theme picker in Settings > Appearance > Colors and formats. Lets the user choose light, dark, or follow-the-system appearance.",
@@ -48,6 +52,10 @@
     "description": "Theme-mode option: follow the macOS system appearance. The UI renders a monitor icon before this label; the label itself is text-only. Short toggle-button label, keep it brief.",
     "screenshot": "settings-appearance.png"
   },
+  "settings.theme.mode.keywords": "theme, dark, light, mode, appearance, color",
+  "@settings.theme.mode.keywords": {
+    "description": "Search keywords for the “Theme mode” setting (settings.theme.mode.label) in Settings > Appearance > Colors and formats. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.appearance.appColor.label": "App color",
   "@settings.appearance.appColor.label": {
     "description": "Label for the app accent-color picker in Settings > Appearance > Colors and formats.",
@@ -66,6 +74,10 @@
   "@settings.appearance.appColor.opt.cmdrGold": {
     "description": "App-color option: use Cmdr's own gold brand color. \"Cmdr\" is the product name; do not translate it. Radio-button label.",
     "screenshot": "settings-appearance.png"
+  },
+  "settings.appearance.appColor.keywords": "color, accent, theme, gold, system, brand",
+  "@settings.appearance.appColor.keywords": {
+    "description": "Search keywords for the “App color” setting (settings.appearance.appColor.label) in Settings > Appearance > Colors and formats. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.appearance.sizeColors.label": "Size colors",
   "@settings.appearance.sizeColors.label": {
@@ -92,6 +104,10 @@
     "description": "Size-colors option: tint sizes across a green-to-purple rainbow by tier. Short toggle-button label.",
     "screenshot": "settings-appearance.png"
   },
+  "settings.appearance.sizeColors.keywords": "size, color, tier, rainbow, app, highlight",
+  "@settings.appearance.sizeColors.keywords": {
+    "description": "Search keywords for the “Size colors” setting (settings.appearance.sizeColors.label) in Settings > Appearance > Colors and formats. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.appearance.dateColors.label": "Date colors",
   "@settings.appearance.dateColors.label": {
     "description": "Label for the modified-date coloring setting in Settings > Appearance > Colors and formats.",
@@ -116,6 +132,10 @@
   "@settings.appearance.dateColors.opt.wilting": {
     "description": "Date-colors option: a plant-wilting metaphor, green for fresh files through brown for old. Short toggle-button label.",
     "screenshot": "settings-appearance.png"
+  },
+  "settings.appearance.dateColors.keywords": "date, color, age, modified, wilting, app, fresh, old",
+  "@settings.appearance.dateColors.keywords": {
+    "description": "Search keywords for the “Date colors” setting (settings.appearance.dateColors.label) in Settings > Appearance > Colors and formats. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.appearance.dateTimeFormat.label": "Date and time format",
   "@settings.appearance.dateTimeFormat.label": {
@@ -163,6 +183,10 @@
     "screenshot": "settings-appearance.png",
     "screenshotNote": "Settings > Appearance, pictured here. Your string is one of the date and time format choices, or the example shown under one of them."
   },
+  "settings.appearance.dateTimeFormat.keywords": "date, time, format, custom, timestamp",
+  "@settings.appearance.dateTimeFormat.keywords": {
+    "description": "Search keywords for the “Date and time format” setting (settings.appearance.dateTimeFormat.label) in Settings > Appearance > Colors and formats. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.appearance.customDateTimeFormat.label": "Custom date/time format",
   "@settings.appearance.customDateTimeFormat.label": {
     "description": "Label for the text field where the user types a custom date/time format string. Shown only when the date/time format setting is set to Custom."
@@ -170,6 +194,10 @@
   "settings.appearance.customDateTimeFormat.description": "Format string for custom date/time display. Use placeholders like YYYY, MM, DD, HH, mm, ss.",
   "@settings.appearance.customDateTimeFormat.description": {
     "description": "Help text for the custom date/time format field. The tokens YYYY, MM, DD, HH, mm, ss are literal format placeholders the user types; do NOT translate them (case matters)."
+  },
+  "settings.appearance.customDateTimeFormat.keywords": "custom, format, date, time, placeholder",
+  "@settings.appearance.customDateTimeFormat.keywords": {
+    "description": "Search keywords for the “Custom date/time format” setting (settings.appearance.customDateTimeFormat.label) in Settings > Appearance > Colors and formats. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.listing.stripedRows.label": "Striped rows",
   "@settings.listing.stripedRows.label": {
@@ -181,6 +209,10 @@
     "description": "Help text for the striped-rows toggle. \"Full\" and \"Brief\" are Cmdr file-list view-mode names; translate them consistently with how those view modes are named elsewhere in the app.",
     "screenshot": "settings-appearance.png"
   },
+  "settings.listing.stripedRows.keywords": "stripe, zebra, alternate, row, shading, accessibility",
+  "@settings.listing.stripedRows.keywords": {
+    "description": "Search keywords for the “Striped rows” setting (settings.listing.stripedRows.label) in Settings > Appearance > Colors and formats. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.appearance.tintLocal.label": "Tint local-volume panes",
   "@settings.appearance.tintLocal.label": {
     "description": "Label for the color-tint picker applied to panes showing a local drive. \"pane\" is one of Cmdr's two side-by-side file lists. Sits in Settings > Appearance > Colors and formats under the \"Tint volume types\" group.",
@@ -190,6 +222,10 @@
   "@settings.appearance.tintLocal.description": {
     "description": "Help text for the local-volume tint. A pane is one of the two file lists; a local drive is internal/external disk storage (not network).",
     "screenshot": "settings-appearance.png"
+  },
+  "settings.appearance.tintLocal.keywords": "tint, pane, color, volume, local, background, highlight",
+  "@settings.appearance.tintLocal.keywords": {
+    "description": "Search keywords for the “Tint local-volume panes” setting (settings.appearance.tintLocal.label) in Settings > Appearance > Colors and formats. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.appearance.tintSmb.label": "Tint server panes (SMB, SFTP, WebDAV, S3)",
   "@settings.appearance.tintSmb.label": {
@@ -201,6 +237,10 @@
     "description": "Help text for the server tint. \"SMB\", \"SFTP\", \"WebDAV\", and \"S3\" are protocol names; keep them. A pane is one of the two file lists.",
     "screenshot": "settings-appearance.png"
   },
+  "settings.appearance.tintSmb.keywords": "tint, pane, color, volume, server, network, background, highlight",
+  "@settings.appearance.tintSmb.keywords": {
+    "description": "Search keywords for the “Tint server panes (SMB, SFTP, WebDAV, S3)” setting (settings.appearance.tintSmb.label) in Settings > Appearance > Colors and formats. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.appearance.tintMtp.label": "Tint device panes (MTP, ADB)",
   "@settings.appearance.tintMtp.label": {
     "description": "Label for the color-tint picker applied to panes showing a USB-connected device: a phone, Kindle, or camera. \"MTP\" and \"ADB\" are the two connection protocol names (MTP for phones, Kindles, and cameras; ADB for Android phones in developer mode); keep both as-is. Mirrors the server tint label's \"(SMB, SFTP, …)\" shape.",
@@ -211,6 +251,10 @@
     "description": "Help text for the device tint. \"Kindle\" is a product name; keep it. \"MTP\" and \"ADB\" are protocol names; keep them. These are USB-connected devices shown in a pane, and one tint covers both connection kinds.",
     "screenshot": "settings-appearance.png"
   },
+  "settings.appearance.tintMtp.keywords": "tint, pane, color, volume, phone, device, camera, background, highlight",
+  "@settings.appearance.tintMtp.keywords": {
+    "description": "Search keywords for the “Tint device panes (MTP, ADB)” setting (settings.appearance.tintMtp.label) in Settings > Appearance > Colors and formats. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.appearance.textSize.label": "Text size",
   "@settings.appearance.textSize.label": {
     "description": "Label for the text-size slider in Settings > Appearance > Zoom and density.",
@@ -220,6 +264,10 @@
   "@settings.appearance.textSize.description": {
     "description": "Help text for the text-size slider. Notes it multiplies with the macOS Accessibility text-size setting, so 100% equals the current system size. \"100%\" is a literal value; keep the percent sign.",
     "screenshot": "settings-appearance-zoom.png"
+  },
+  "settings.appearance.textSize.keywords": "text, size, font, larger, smaller, accessibility, zoom, scale",
+  "@settings.appearance.textSize.keywords": {
+    "description": "Search keywords for the “Text size” setting (settings.appearance.textSize.label) in Settings > Appearance > Zoom and density. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.appearance.uiDensity.label": "UI density",
   "@settings.appearance.uiDensity.label": {
@@ -246,6 +294,10 @@
     "description": "UI-density option: loosest spacing, most breathing room. Short toggle-button label.",
     "screenshot": "settings-appearance-zoom.png"
   },
+  "settings.appearance.uiDensity.keywords": "compact, comfortable, spacious, size, spacing, dense",
+  "@settings.appearance.uiDensity.keywords": {
+    "description": "Search keywords for the “UI density” setting (settings.appearance.uiDensity.label) in Settings > Appearance > Zoom and density. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.listing.sizeDisplay.label": "Size display",
   "@settings.listing.sizeDisplay.label": {
     "description": "Label for the which-size-to-show picker in Settings > Appearance > File and folder sizes.",
@@ -271,6 +323,10 @@
     "description": "Size-display option: show the physical on-disk size (space actually used on the drive). Short toggle-button label.",
     "screenshot": "settings-appearance-sizes.png"
   },
+  "settings.listing.sizeDisplay.keywords": "size, display, logical, physical, smart, disk, content, sparse",
+  "@settings.listing.sizeDisplay.keywords": {
+    "description": "Search keywords for the “Size display” setting (settings.listing.sizeDisplay.label) in Settings > Appearance > File and folder sizes. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.listing.sizeUnit.label": "Size unit",
   "@settings.listing.sizeUnit.label": {
     "description": "Label for the size-unit picker in Settings > Appearance > File and folder sizes (how file sizes are unit-formatted).",
@@ -290,6 +346,10 @@
   "@settings.listing.sizeUnit.opt.bytes": {
     "description": "Size-unit option: always show the exact byte count. Short toggle-button label.",
     "screenshot": "settings-appearance-sizes.png"
+  },
+  "settings.listing.sizeUnit.keywords": "size, human, bytes, unit, format, raw, precise, dynamic",
+  "@settings.listing.sizeUnit.keywords": {
+    "description": "Search keywords for the “Size unit” setting (settings.listing.sizeUnit.label) in Settings > Appearance > File and folder sizes. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.appearance.fileSizeFormat.label": "File size format",
   "@settings.appearance.fileSizeFormat.label": {
@@ -311,6 +371,10 @@
     "description": "File-size-format option: SI decimal base (powers of 1000). \"SI\" is the metric-standard abbreviation. The unit symbols in parentheses are the SI decimal ones (lowercase k); write them exactly as your translations of common.sizeUnit.kilobyte, common.sizeUnit.megabyte, and common.sizeUnit.gigabyte do. \"decimal\" may be translated.",
     "screenshot": "settings-appearance-sizes.png"
   },
+  "settings.appearance.fileSizeFormat.keywords": "size, bytes, binary, decimal",
+  "@settings.appearance.fileSizeFormat.keywords": {
+    "description": "Search keywords for the “File size format” setting (settings.appearance.fileSizeFormat.label) in Settings > Appearance > File and folder sizes. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.listing.sizeMismatchWarning.label": "Size mismatch warning",
   "@settings.listing.sizeMismatchWarning.label": {
     "description": "Label for the toggle that warns when a folder's content and on-disk sizes diverge. In Settings > Appearance > File and folder sizes.",
@@ -320,6 +384,10 @@
   "@settings.listing.sizeMismatchWarning.description": {
     "description": "Help text for the size-mismatch-warning toggle. \"50%\" and \"200 MB\" are literal thresholds; keep the percent sign. \"MB\" is the decimal (base 1000) megabyte: write it as your translation of common.sizeUnit.megabyte.",
     "screenshot": "settings-appearance-sizes.png"
+  },
+  "settings.listing.sizeMismatchWarning.keywords": "size, mismatch, warning, alert, disk, content, difference",
+  "@settings.listing.sizeMismatchWarning.keywords": {
+    "description": "Search keywords for the “Size mismatch warning” setting (settings.listing.sizeMismatchWarning.label) in Settings > Appearance > File and folder sizes. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.appearance.useAppIconsForDocuments.label": "Use app icons for documents",
   "@settings.appearance.useAppIconsForDocuments.label": {
@@ -331,6 +399,10 @@
     "description": "Help text for the app-icons-for-documents toggle. \"app\" here means the application that opens a given document.",
     "screenshot": "settings-appearance-listing.png"
   },
+  "settings.appearance.useAppIconsForDocuments.keywords": "icon, document, file, app, colorful",
+  "@settings.appearance.useAppIconsForDocuments.keywords": {
+    "description": "Search keywords for the “Use app icons for documents” setting (settings.appearance.useAppIconsForDocuments.label) in Settings > Appearance > Listing. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.appearance.showFunctionKeyBar.label": "Show function key bar",
   "@settings.appearance.showFunctionKeyBar.label": {
     "description": "Label for the toggle that shows the row of F-key command buttons at the bottom of the window. In Settings > Appearance > Listing.",
@@ -340,6 +412,10 @@
   "@settings.appearance.showFunctionKeyBar.description": {
     "description": "Help text for the function-key-bar toggle. \"F-key\" means a keyboard function key (F1-F12). \"Rename\", \"View\", and \"Copy\" are Cmdr command names; translate them consistently with those commands elsewhere.",
     "screenshot": "settings-appearance-listing.png"
+  },
+  "settings.appearance.showFunctionKeyBar.keywords": "function, key, bar, shortcut, buttons, bottom, toolbar",
+  "@settings.appearance.showFunctionKeyBar.keywords": {
+    "description": "Search keywords for the “Show function key bar” setting (settings.appearance.showFunctionKeyBar.label) in Settings > Appearance > Listing. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.listing.showHiddenFiles.label": "Show hidden files",
   "@settings.listing.showHiddenFiles.label": {
@@ -351,6 +427,10 @@
     "description": "Help text for the show-hidden-files toggle. \".zshrc\" is a literal example filename; keep it. \"panes\" are Cmdr's two side-by-side file lists; translate consistently with the pane wording elsewhere.",
     "screenshot": "settings-appearance-listing.png"
   },
+  "settings.listing.showHiddenFiles.keywords": "hidden, dotfile, dotfiles, invisible, system, show",
+  "@settings.listing.showHiddenFiles.keywords": {
+    "description": "Search keywords for the “Show hidden files” setting (settings.listing.showHiddenFiles.label) in Settings > Appearance > Listing. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.listing.showExtensionInName.label": "Show file extensions in the name column",
   "@settings.listing.showExtensionInName.label": {
     "description": "Label for the toggle that keeps the file extension in the Name column instead of a separate Ext column. In Settings > Appearance > Listing.",
@@ -360,6 +440,10 @@
   "@settings.listing.showExtensionInName.description": {
     "description": "Help text for the show-extension-in-name toggle. \"launch.json\" is a literal example filename; keep it. \"Name\", \"Ext\", and \"Full\" are Cmdr column/view names; translate consistently with their use elsewhere.",
     "screenshot": "settings-appearance-listing.png"
+  },
+  "settings.listing.showExtensionInName.keywords": "extension, ext, filename, name, column, full, split, suffix",
+  "@settings.listing.showExtensionInName.keywords": {
+    "description": "Search keywords for the “Show file extensions in the name column” setting (settings.listing.showExtensionInName.label) in Settings > Appearance > Listing. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.listing.showTags.label": "Show tags",
   "@settings.listing.showTags.label": {
@@ -371,6 +455,10 @@
     "description": "Help text for the show-tags toggle. \"Finder tags\" are macOS's colored file labels; keep \"Finder\" as the macOS app name.",
     "screenshot": "settings-appearance-listing.png"
   },
+  "settings.listing.showTags.keywords": "tag, tags, label, labels, color, colour, dot, dots",
+  "@settings.listing.showTags.keywords": {
+    "description": "Search keywords for the “Show tags” setting (settings.listing.showTags.label) in Settings > Appearance > Listing. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.listing.foldersFirst.label": "Show folders first",
   "@settings.listing.foldersFirst.label": {
     "description": "Label for the on/off switch that lists folders above files in every file list. On by default. In Settings > Appearance > Listing, right above \"Sort folders\".",
@@ -381,6 +469,10 @@
     "description": "Help text under the \"Show folders first\" switch. \"Mix folders and files\" means that with the switch off, folders and files sort together by the active column (name, size, date, and so on) instead of folders coming first.",
     "screenshot": "settings-appearance-listing.png"
   },
+  "settings.listing.foldersFirst.keywords": "sort, directory, directories, folder, folders, first, top, mixed, order, listing",
+  "@settings.listing.foldersFirst.keywords": {
+    "description": "Search keywords for the “Show folders first” setting (settings.listing.foldersFirst.label) in Settings > Appearance > Listing. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.listing.spaceCalculatesFolderSize.label": "Calculate folder size with Space",
   "@settings.listing.spaceCalculatesFolderSize.label": {
     "description": "Settings > Appearance > Listing switch: pressing the Space key to select a folder also calculates the folder's total size, like Total Commander. \"Space\" is the key name.",
@@ -390,6 +482,10 @@
   "@settings.listing.spaceCalculatesFolderSize.description": {
     "description": "Help text for the Space-calculates-folder-size switch. Esc is the key name.",
     "screenshot": "settings-appearance-listing.png"
+  },
+  "settings.listing.spaceCalculatesFolderSize.keywords": "space, size, folder, folders, directory, calculate, count, select",
+  "@settings.listing.spaceCalculatesFolderSize.keywords": {
+    "description": "Search keywords for the “Calculate folder size with Space” setting (settings.listing.spaceCalculatesFolderSize.label) in Settings > Appearance > Listing. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.listing.directorySortMode.label": "Sort folders",
   "@settings.listing.directorySortMode.label": {
@@ -415,6 +511,10 @@
     "description": "Directory-sort option: always sort folders by name regardless of the active column. Short toggle-button label.",
     "screenshot": "settings-appearance-listing.png"
   },
+  "settings.listing.directorySortMode.keywords": "sort, directory, directories, folder, folders, order, listing, name, size",
+  "@settings.listing.directorySortMode.keywords": {
+    "description": "Search keywords for the “Sort folders” setting (settings.listing.directorySortMode.label) in Settings > Appearance > Listing. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.listing.briefColumnWidthMode.label": "Maximum column width in Brief mode",
   "@settings.listing.briefColumnWidthMode.label": {
     "description": "Label for the picker limiting column width in Brief view. \"Brief\" is a Cmdr view-mode name; translate consistently. In Settings > Appearance > Listing.",
@@ -437,9 +537,17 @@
     "screenshot": "settings-appearance-listing.png",
     "screenshotNote": "Settings > Appearance > Listing, pictured here. Your string is one of the choices for how wide columns in the Brief view may grow."
   },
+  "settings.listing.briefColumnWidthMode.keywords": "brief, column, width, max, maximum, limit, pane, shrink-wrap",
+  "@settings.listing.briefColumnWidthMode.keywords": {
+    "description": "Search keywords for the “Maximum column width in Brief mode” setting (settings.listing.briefColumnWidthMode.label) in Settings > Appearance > Listing. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.listing.briefColumnWidthMaxPx.label": "Brief column width limit",
   "@settings.listing.briefColumnWidthMaxPx.label": {
     "description": "Label for the number field setting the maximum Brief-mode column width in pixels. It sits on the same line as the \"Limit to\" option and is only active while that option is picked. \"Brief\" is a view-mode name."
+  },
+  "settings.listing.briefColumnWidthMaxPx.keywords": "brief, column, width, max, maximum, limit, pixel",
+  "@settings.listing.briefColumnWidthMaxPx.keywords": {
+    "description": "Search keywords for the “Brief column width limit” setting (settings.listing.briefColumnWidthMaxPx.label) in Settings > Appearance > Listing. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.fileOperations.allowFileExtensionChanges.label": "Allow file extension changes",
   "@settings.fileOperations.allowFileExtensionChanges.label": {
@@ -466,6 +574,10 @@
     "description": "Extension-change option: prompt for confirmation each time the extension would change. Radio-button label.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
+  "settings.fileOperations.allowFileExtensionChanges.keywords": "extension, rename, file, change, ask, confirm",
+  "@settings.fileOperations.allowFileExtensionChanges.keywords": {
+    "description": "Search keywords for the “Allow file extension changes” setting (settings.fileOperations.allowFileExtensionChanges.label) in Settings > Behavior > Navigation & file ops. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.fileOperations.pasteClipboardAsFile.label": "Paste clipboard content as a file",
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "description": "Settings label for what ⌘V (paste) does in a folder when the clipboard holds pasteable content (text, an image, or a PDF) rather than copied files. \"⌘V\" is the macOS paste shortcut glyph; keep it.",
@@ -491,6 +603,10 @@
     "description": "Paste-as-file option: pressing ⌘V creates a new file from the clipboard content and immediately starts an inline rename so the user can name it. Radio-button label. This is the default.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
+  "settings.fileOperations.pasteClipboardAsFile.keywords": "paste, clipboard, image, text, screenshot, file, create",
+  "@settings.fileOperations.pasteClipboardAsFile.keywords": {
+    "description": "Search keywords for the “Paste clipboard content as a file” setting (settings.fileOperations.pasteClipboardAsFile.label) in Settings > Behavior > Navigation & file ops. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.fileOperations.skipConfirmation.label": "Skip confirmation for copy, move, and trash",
   "@settings.fileOperations.skipConfirmation.label": {
     "description": "Settings switch label. When on, Copy, Move, and Move to Trash start right away without their confirmation dialog. \"trash\" is the macOS Trash (use the OS's localized name for it).",
@@ -500,6 +616,10 @@
   "@settings.fileOperations.skipConfirmation.description": {
     "description": "Help text under the skip-confirmation switch. \"F5\", \"F6\", and \"F8\" are keyboard keys (Copy, Move, Delete); keep them. \"A bit risky\" is a gentle, friendly caution, not an alarm: keep the tone light. \"the other pane\" = the second file list of the two-pane window. \"trash\" is the macOS Trash (use the OS's localized name).",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
+  },
+  "settings.fileOperations.skipConfirmation.keywords": "confirm, confirmation, dialog, ask, copy, move, trash, delete, skip, clicks",
+  "@settings.fileOperations.skipConfirmation.keywords": {
+    "description": "Search keywords for the “Skip confirmation for copy, move, and trash” setting (settings.fileOperations.skipConfirmation.label) in Settings > Behavior > Navigation & file ops. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.archives.card.archives": "Archives",
   "@settings.archives.card.archives": {
@@ -516,6 +636,10 @@
     "description": "Row label in Settings > Behavior > Archives for the .zip format. \".zip\" is a file extension; do not translate it.",
     "screenshot": "settings-behavior-archives.png"
   },
+  "settings.behavior.archiveEnter.zip.keywords": "archive, browse, open, extract, enter, compressed",
+  "@settings.behavior.archiveEnter.zip.keywords": {
+    "description": "Search keywords for the “Zip archives” setting (settings.archives.zip.label) in Settings > Behavior > Archives. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.archives.zip.description": "What pressing Enter does on a zip file.",
   "@settings.archives.zip.description": {
     "description": "Help text under the zip row in Settings > Behavior > Archives. \"Enter\" is the Return/Enter key.",
@@ -526,6 +650,10 @@
     "description": "Row label in Settings > Behavior > Archives for zip-based documents and app packages (.docx, .xlsx, .pptx, .jar, .apk): files that are archives underneath, but that people think of as one document or one app.",
     "screenshot": "settings-behavior-archives.png"
   },
+  "settings.behavior.archiveEnter.ooxml.keywords": "document, package",
+  "@settings.behavior.archiveEnter.ooxml.keywords": {
+    "description": "Search keywords for the “Documents and packages” setting (settings.archives.ooxml.label) in Settings > Behavior > Archives. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.archives.ooxml.description": "What pressing Enter does on a .docx, .xlsx, .pptx, .jar, or .apk.",
   "@settings.archives.ooxml.description": {
     "description": "Help text under the documents-and-packages row in Settings > Behavior > Archives. The five names are file extensions; do not translate them. \"Enter\" is the Return/Enter key.",
@@ -535,6 +663,10 @@
   "@settings.archives.bundle.label": {
     "description": "Row label in Settings > Behavior > Archives for macOS app bundles (.app, .bundle, .framework).",
     "screenshot": "settings-behavior-archives.png"
+  },
+  "settings.behavior.archiveEnter.bundle.keywords": "bundle, app, application, framework, browse, open, enter, launch",
+  "@settings.behavior.archiveEnter.bundle.keywords": {
+    "description": "Search keywords for the “App bundles” setting (settings.archives.bundle.label) in Settings > Behavior > Archives. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.archives.bundle.description": "What pressing Enter does on a .app, .bundle, or .framework.",
   "@settings.archives.bundle.description": {
@@ -561,6 +693,10 @@
     "description": "Row label in Settings > Behavior > Archives for a 1-to-9 slider that sets how hard Cmdr compresses when it makes a zip (the Compress command, and copying or moving files into an existing zip). Higher means a smaller file but slower packing. \"Cmdr\" is the product name; do not translate it.",
     "screenshot": "settings-behavior-archives.png"
   },
+  "settings.behavior.archiveCompressionLevel.keywords": "compression, level, archive, size, faster, smaller",
+  "@settings.behavior.archiveCompressionLevel.keywords": {
+    "description": "Search keywords for the “Compression level” setting (settings.archives.compressionLevel.label) in Settings > Behavior > Archives. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.archives.compressionLevel.description": "How hard to compress when Cmdr makes a zip. Higher levels make a smaller file but take longer to pack. This applies to the Compress command and to copying or moving files into a zip.",
   "@settings.archives.compressionLevel.description": {
     "description": "Help text under the compression-level slider in Settings > Behavior > Archives. \"Cmdr\" is the product name; do not translate it. \"zip\" is a file format; do not translate it.",
@@ -585,6 +721,10 @@
   "@settings.indexing.enabled.description": {
     "description": "Help text for the drive-indexing toggle. Indexing precomputes each folder's total size so it shows instantly. \"Folder\" is the user-facing word for this all over the app (indexing.step.computeFolderSizes, the drive-index tooltips); \"directory\" is the internal term and never appears in UI copy.",
     "screenshot": "settings-indexing-drive-indexing.png"
+  },
+  "settings.indexing.enabled.keywords": "index, drive, scan, size, directory, folder, background",
+  "@settings.indexing.enabled.keywords": {
+    "description": "Search keywords for the “Drive indexing” setting (settings.indexing.enabled.label) in Settings > Indexing > Drive indexing. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.mediaIndex.privacyNote": "This runs entirely on your Mac using Apple’s built-in Vision framework. Your images never leave your computer, and no AI provider or API key is involved.",
   "settings.mediaIndex.clip.title": "Semantic search",
@@ -665,6 +805,10 @@
   "@settings.mediaIndex.semanticSearch.label": {
     "description": "Label for the on/off toggle that enables semantic search: finding a photo by describing what’s in it. In the Semantic search card, Settings > Indexing > Image indexing."
   },
+  "settings.mediaIndex.semanticSearch.enabled.keywords": "image, photo, semantic, search, describe, description, natural language, ai",
+  "@settings.mediaIndex.semanticSearch.enabled.keywords": {
+    "description": "Search keywords for the “Search photos by description” setting (settings.mediaIndex.semanticSearch.label) in Settings > Indexing > Image indexing. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.mediaIndex.progressSummary.title": "Indexing now",
   "@settings.mediaIndex.progressSummary.title": {
     "description": "Heading above the live per-drive image-indexing progress shown in the Enable indexing card while a pass is running (each drive lists how many images are done, plus a rate and time estimate)."
@@ -683,6 +827,10 @@
     "description": "Help text under the \"Index image contents\" toggle. Reassures the user this is on-device (nothing is uploaded) and scopes it to local drives (network drives come later). \"OCR\" is not used in the copy on purpose; keep it plain.",
     "screenshot": "settings-indexing-image-indexing.png"
   },
+  "settings.mediaIndex.enabled.keywords": "image, photo, text, search, index, picture, screenshot, content",
+  "@settings.mediaIndex.enabled.keywords": {
+    "description": "Search keywords for the “Index image contents” setting (settings.mediaIndex.enabled.label) in Settings > Indexing > Image indexing. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.mediaIndex.showFileStatusIcons.label": "Show status badges on image files",
   "@settings.mediaIndex.showFileStatusIcons.label": {
     "description": "Label for the toggle that shows a small badge on each image file in the file list, marking whether it’s indexed for image search. On by default. In Settings > Indexing > Image indexing, under the \"Index image contents\" toggle."
@@ -691,6 +839,10 @@
   "@settings.mediaIndex.showFileStatusIcons.description": {
     "description": "Help text under the \"Show status badges on image files\" toggle. Explains the badge marks each image’s indexing state (indexed, waiting, and so on) right in the file list."
   },
+  "settings.mediaIndex.showFileStatusIcons.keywords": "image, photo, badge, icon, overlay, indicator, status, indexed",
+  "@settings.mediaIndex.showFileStatusIcons.keywords": {
+    "description": "Search keywords for the “Show status badges on image files” setting (settings.mediaIndex.showFileStatusIcons.label) in Settings > Indexing > Image indexing. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.mediaIndex.showInSearch.label": "Show image results in Search",
   "@settings.mediaIndex.showInSearch.label": {
     "description": "Label for the toggle that lets the Search dialog show a row of matching images above the file results. Off by default. In Settings > Indexing > Image indexing, under the \"Show status badges on image files\" toggle. \"Search\" names Cmdr’s Search dialog, so use the same word your translation gives that dialog."
@@ -698,6 +850,10 @@
   "settings.mediaIndex.showInSearch.description": "Search adds a row of matching images above your files. Matching is still rough, so it’s off until you want it.",
   "@settings.mediaIndex.showInSearch.description": {
     "description": "Help text under the \"Show image results in Search\" toggle. Says what turning it on does (a row of matching images sits above the file results) and admits image matching isn’t accurate yet, which is why it starts off. The tone is candid and relaxed, owning the limitation without apologizing for it. \"Search\" names Cmdr’s Search dialog; keep it consistent with the label above."
+  },
+  "settings.mediaIndex.showInSearch.keywords": "image, photo, search, results, grid, semantic, show, hide",
+  "@settings.mediaIndex.showInSearch.keywords": {
+    "description": "Search keywords for the “Show image results in Search” setting (settings.mediaIndex.showInSearch.label) in Settings > Indexing > Image indexing. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.mediaIndex.networkVolumes.label": "Network drive image indexing",
   "@settings.mediaIndex.networkVolumes.label": {
@@ -797,6 +953,10 @@
   "@settings.mediaIndex.parallelism.description": {
     "description": "Help text under the \"Parallel workers\" slider. Sets expectations honestly: parallelism helps only modestly on Apple silicon (the Neural Engine serializes the work), and the app reduces workers automatically under thermal pressure. Keep \"Mac\" as-is. \"Apple silicon\" is Apple’s name for its own M-series Mac chips: use the form your language’s termbase settles, since Apple frames it in its own words in some languages."
   },
+  "settings.mediaIndex.parallelism.keywords": "image, photo, index, parallel, workers, speed, performance, cores",
+  "@settings.mediaIndex.parallelism.keywords": {
+    "description": "Search keywords for the “Parallel workers” setting (settings.mediaIndex.parallelism.label) in Settings > Indexing > Image indexing. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "Only my most-used folders",
   "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
     "description": "Slider position (most restrictive, far left): index only the folders the user opens most often."
@@ -866,6 +1026,10 @@
   "settings.mediaIndex.importanceThreshold.floor": "Junk like node_modules and system caches is always skipped.",
   "@settings.mediaIndex.importanceThreshold.floor": {
     "description": "Quiet reassurance under the slider that build/cache folders are never indexed at any level. Do not translate \"node_modules\" (a fixed folder name developers recognize)."
+  },
+  "settings.mediaIndex.importanceThreshold.keywords": "image, photo, index, importance, folders, coverage, depth",
+  "@settings.mediaIndex.importanceThreshold.keywords": {
+    "description": "Search keywords for the “How much to index” setting (settings.mediaIndex.importanceThreshold.label) in Settings > Indexing > Image indexing. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.mediaIndex.progress.local": "This Mac",
   "@settings.mediaIndex.progress.local": {
@@ -953,6 +1117,10 @@
     "description": "Help text for the \"Ask for each drive\" toggle. Indexing of external drives is off by default; this asks per drive the first time you open it.",
     "screenshot": "settings-indexing-drive-indexing.png"
   },
+  "settings.indexing.askForEachDrive.keywords": "drive, index, ask, prompt, notification, connect, network",
+  "@settings.indexing.askForEachDrive.keywords": {
+    "description": "Search keywords for the “Ask for each drive” setting (settings.indexing.askForEachDrive.label) in Settings > Indexing > Drive indexing. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.indexing.staleNotify.label": "Notify me if any external drive index goes stale",
   "@settings.indexing.staleNotify.label": {
     "description": "Label for the toggle that controls whether Cmdr shows a one-time explanation the first time an external drive’s index may be out of date (because the drive was disconnected). In Settings > Behavior > File system watching.",
@@ -962,6 +1130,10 @@
   "@settings.indexing.staleNotify.description": {
     "description": "Help text under the stale-notification toggle, reassuring that the yellow drive-index status dot stays visible even with the notification turned off.",
     "screenshot": "settings-indexing-drive-indexing.png"
+  },
+  "settings.indexing.staleNotify.keywords": "drive, index, stale, outdated, notify, notification, disconnect, network",
+  "@settings.indexing.staleNotify.keywords": {
+    "description": "Search keywords for the “Notify me if any external drive index goes stale” setting (settings.indexing.staleNotify.label) in Settings > Indexing > Drive indexing. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.indexing.masterOffNote": "Drive indexing is off, so no drive is indexed and folder sizes stay hidden. Each drive keeps its own on or off choice, ready for when you turn this back on.",
   "@settings.indexing.masterOffNote": {
@@ -994,6 +1166,10 @@
   "@settings.indexing.reEnableNotifications.disabledTooltip": {
     "description": "Tooltip on the disabled \"Re-enable\" button, shown when the user hasn’t silenced the first-connect prompt for any drive (so there’s nothing to re-enable).",
     "screenshot": "settings-indexing-drive-indexing.png"
+  },
+  "settings.indexing.reEnableNotifications.keywords": "re-enable, notifications, drives, silenced, ask again",
+  "@settings.indexing.reEnableNotifications.keywords": {
+    "description": "Search keywords for the “Re-enable notifications for all drives” row (settings.indexing.reEnableNotifications.label) in Settings > Indexing > Drive indexing. Never shown: Settings search matches them, so typing one of these finds the row. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.indexing.silencedDrives.label": "Silenced drive prompts",
   "@settings.indexing.silencedDrives.label": {
@@ -1041,6 +1217,10 @@
     "description": "Downloads-notification option: no download notifications at all. Short toggle-button label.",
     "screenshot": "settings-behavior-notifications.png"
   },
+  "settings.behavior.fileSystemWatching.downloadsNotifications.keywords": "download, downloads, notification, toast, notify",
+  "@settings.behavior.fileSystemWatching.downloadsNotifications.keywords": {
+    "description": "Search keywords for the “Notify on downloads” setting (settings.behavior.fileSystemWatching.downloadsNotifications.label) in Settings > Behavior > Notifications. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": "Go to latest download",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "description": "Label for the toggle enabling a system-wide hotkey that jumps to the newest download. On the \"Downloads\" card in Settings > Behavior > File system watching.",
@@ -1050,6 +1230,10 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
     "description": "Help text for the global go-to-latest-download toggle. \"⌃⌥⌘J\" is a macOS keyboard-shortcut glyph string (Control-Option-Command-J); keep the glyphs as-is. \"Full Disk Access\" is the macOS permission name; use the OS's localized name for it."
   },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": "shortcut, hotkey, global, download, downloads, jump, go to, goto",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords": {
+    "description": "Search keywords for the “Go to latest download” setting (settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label) in Settings > Behavior > Notifications. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.label": "Global go-to-latest-download binding",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.label": {
     "description": "Internal label for the stored key combo of the global go-to-latest-download shortcut. Not shown as its own row (the combo is edited under Keyboard shortcuts); surfaces mainly in settings search. \"binding\" = the assigned key combination."
@@ -1057,6 +1241,10 @@
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.description": "The system-wide combo that triggers go-to-latest-download. Edited under Keyboard shortcuts.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.description": {
     "description": "Help text for the stored global-shortcut binding. \"Keyboard shortcuts\" is the Cmdr settings section name; translate consistently with that section's title."
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": "shortcut, hotkey, global, binding, combo",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords": {
+    "description": "Search keywords for the “Global go-to-latest-download binding” setting (settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.label) in Settings > Behavior > Notifications. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": "Global go-to-latest-download warn-toast acknowledged",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.label": {
@@ -1084,6 +1272,10 @@
     "description": "Help text under the \"Keep notifications until I close them\" switch.",
     "screenshot": "settings-behavior-notifications.png"
   },
+  "settings.behavior.notifications.keepUntilClosed.keywords": "toast, notification, timeout, time, disappear, dismiss, close, keep, accessibility",
+  "@settings.behavior.notifications.keepUntilClosed.keywords": {
+    "description": "Search keywords for the “Keep notifications until I close them” setting (settings.behavior.notifications.keepUntilClosed.label) in Settings > Behavior > Notifications. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": "Low disk space warning",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": {
     "description": "Label for the picker controlling how a low-free-space warning is shown. On the \"Low disk space\" card in Settings > Behavior > File system watching.",
@@ -1109,6 +1301,10 @@
     "description": "Low-disk-space option: no warning. Short toggle-button label.",
     "screenshot": "settings-behavior-notifications.png"
   },
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.keywords": "disk, space, low, free, storage, full, warning, notification, boot, startup",
+  "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.keywords": {
+    "description": "Search keywords for the “Low disk space warning” setting (settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label) in Settings > Behavior > Notifications. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": "Warning threshold",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": {
     "description": "Label for the number input setting the free-space percentage that triggers the low-disk warning. On the \"Low disk space\" card.",
@@ -1119,6 +1315,10 @@
     "description": "Help text for the low-disk-space threshold. \"startup disk\" is the macOS boot-drive term; use the OS's localized term.",
     "screenshot": "settings-behavior-notifications.png"
   },
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": "disk, space, threshold, percent, low, free, warning",
+  "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": {
+    "description": "Search keywords for the “Warning threshold” setting (settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label) in Settings > Behavior > Notifications. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.search.autoApply.label": "Auto-apply searches",
   "@settings.search.autoApply.label": {
     "description": "Label for the toggle that runs searches automatically as you type. In Settings > Behavior > Search.",
@@ -1128,6 +1328,10 @@
   "@settings.search.autoApply.description": {
     "description": "Help text for the auto-apply-searches toggle. \"regex\" = regular-expression search; keep the term or use the locale's standard equivalent. \"AI\" = artificial intelligence. \"Enter\" is the keyboard key name; use the locale's key name. \"1 second\" is a literal delay.",
     "screenshot": "settings-behavior-search.png"
+  },
+  "settings.search.autoApply.keywords": "search, auto, apply, live, debounce, filename, instant",
+  "@settings.search.autoApply.keywords": {
+    "description": "Search keywords for the “Auto-apply searches” setting (settings.search.autoApply.label) in Settings > Behavior > Search. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.ai.provider.label": "Provider",
   "@settings.ai.provider.label": {
@@ -1154,6 +1358,10 @@
     "description": "AI provider option: run a model locally on-device. \"LLM\" = large language model; keep the abbreviation or use the locale's standard equivalent. Short toggle-button label.",
     "screenshot": "settings-ai-provider.png"
   },
+  "settings.ai.provider.keywords": "ai, artificial intelligence, provider, cloud, local, off, model",
+  "@settings.ai.provider.keywords": {
+    "description": "Search keywords for the “Provider” setting (settings.ai.provider.label) in Settings > AI > Provider. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.ai.cloudProvider.label": "Service",
   "@settings.ai.cloudProvider.label": {
     "description": "Label for the cloud-AI service picker (which provider, e.g. OpenAI). Shown when AI provider is Cloud AI. Short label."
@@ -1169,9 +1377,17 @@
   "@settings.ai.cloudConsent.lockedHint": {
     "description": "Hint above the dimmed, locked service setup in Settings > AI > Provider while the Allow cloud AI switch is off. “Allow cloud AI” is the switch label (ai.cloudConsent.label); translate it the same way."
   },
+  "settings.ai.cloudConsent.keywords": "consent, privacy, allow, send, data, cloud, ai",
+  "@settings.ai.cloudConsent.keywords": {
+    "description": "Search keywords for the “Allow cloud AI” row (ai.cloudConsent.label) in Settings > AI > Provider. Never shown: Settings search matches them, so typing one of these finds the row. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.ai.cloudProvider.description": "Which cloud AI service to use.",
   "@settings.ai.cloudProvider.description": {
     "description": "Help text for the cloud-AI service picker. \"AI\" = artificial intelligence."
+  },
+  "settings.ai.cloudProvider.keywords": "cloud, provider, service, custom",
+  "@settings.ai.cloudProvider.keywords": {
+    "description": "Search keywords for the “Service” setting (settings.ai.cloudProvider.label) in Settings > AI > Provider. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.ai.cloudProviderConfigs.label": "Provider configurations",
   "@settings.ai.cloudProviderConfigs.label": {
@@ -1189,6 +1405,10 @@
   "@settings.ai.localContextSize.description": {
     "description": "Help text for the local context-window setting. \"tokens\" are the units a language model processes (keep the AI term); larger windows need more RAM."
   },
+  "settings.ai.localContextSize.keywords": "context, window, tokens, memory, size, local",
+  "@settings.ai.localContextSize.keywords": {
+    "description": "Search keywords for the “Context window” setting (settings.ai.localContextSize.label) in Settings > AI > Provider. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.network.enabled.label": "Enable networking",
   "@settings.network.enabled.label": {
     "description": "Label for the master networking toggle (SMB discovery and connection). In Settings > File systems > SMB/Network shares.",
@@ -1198,6 +1418,10 @@
   "@settings.network.enabled.description": {
     "description": "Help text for the enable-networking toggle. \"SMB\" is a protocol name (keep it); \"Cmdr\" is the product name (keep it); \"macOS\" is a brand name (keep it). \"Local Network\" is the macOS permission name; use the OS's localized name. \"mounted shares\" = network folders already attached to the system.",
     "screenshot": "settings-file-systems-smb.png"
+  },
+  "settings.network.enabled.keywords": "network, enable, enabled, discovery, local, permission",
+  "@settings.network.enabled.keywords": {
+    "description": "Search keywords for the “Enable networking” setting (settings.network.enabled.label) in Settings > File systems > SMB/Network shares. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.network.firstTriggerDone.label": "Network discovery started",
   "@settings.network.firstTriggerDone.label": {
@@ -1220,6 +1444,10 @@
   "@settings.network.directSmbConnection.description": {
     "description": "Help text for the direct-SMB toggle. \"Cmdr\" is the product name and \"SMB\" a protocol name (keep both); \"Finder\" is the macOS file-manager name; use the OS's localized name. \"mount\" = the system-attached network share.",
     "screenshot": "settings-file-systems-smb.png"
+  },
+  "settings.network.directSmbConnection.keywords": "direct, fast, connection, network, performance",
+  "@settings.network.directSmbConnection.keywords": {
+    "description": "Search keywords for the “Connect directly to SMB shares” setting (settings.network.directSmbConnection.label) in Settings > File systems > SMB/Network shares. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.network.shareCacheDuration.label": "Share cache duration",
   "@settings.network.shareCacheDuration.label": {
@@ -1255,6 +1483,10 @@
   "@settings.network.shareCacheDuration.opt.days30": {
     "description": "Share-cache-duration option: 30 days. \"30\" is literal.",
     "screenshot": "settings-file-systems-smb.png"
+  },
+  "settings.network.shareCacheDuration.keywords": "cache, share, network, refresh",
+  "@settings.network.shareCacheDuration.keywords": {
+    "description": "Search keywords for the “Share cache duration” setting (settings.network.shareCacheDuration.label) in Settings > File systems > SMB/Network shares. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.network.timeoutMode.label": "Network timeout mode",
   "@settings.network.timeoutMode.label": {
@@ -1296,6 +1528,10 @@
     "screenshot": "settings-file-systems-smb.png",
     "screenshotNote": "Settings > File systems > SMB, pictured here. Your string is one of the network timeout choices, or the line under one of them."
   },
+  "settings.network.timeoutMode.keywords": "timeout, network, slow, connection, latency",
+  "@settings.network.timeoutMode.keywords": {
+    "description": "Search keywords for the “Network timeout mode” setting (settings.network.timeoutMode.label) in Settings > File systems > SMB/Network shares. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.network.customTimeout.label": "Custom timeout",
   "@settings.network.customTimeout.label": {
     "description": "Label for the number input setting a custom network timeout in seconds. Shown when timeout mode is Custom."
@@ -1303,6 +1539,10 @@
   "settings.network.customTimeout.description": "Custom timeout in seconds for network operations.",
   "@settings.network.customTimeout.description": {
     "description": "Help text for the custom-timeout field."
+  },
+  "settings.network.customTimeout.keywords": "timeout, custom, seconds",
+  "@settings.network.customTimeout.keywords": {
+    "description": "Search keywords for the “Custom timeout” setting (settings.network.customTimeout.label) in Settings > File systems > SMB/Network shares. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.network.smbConcurrency.label": "Concurrent operations per SMB connection",
   "@settings.network.smbConcurrency.label": {
@@ -1314,6 +1554,10 @@
     "description": "Help text for the SMB-concurrency setting. \"Cmdr\" is the product name and \"SMB\" a protocol name (keep both). \"NAS\" = network-attached storage; keep the abbreviation. \"10\" is a literal default value.",
     "screenshot": "settings-advanced.png"
   },
+  "settings.network.smbConcurrency.keywords": "concurrency, parallel, copy, batch, performance, transfer, speed",
+  "@settings.network.smbConcurrency.keywords": {
+    "description": "Search keywords for the “Concurrent operations per SMB connection” setting (settings.network.smbConcurrency.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.fileOperations.mtpEnabled.label": "Android/Kindle/camera support (PTP and MTP)",
   "@settings.fileOperations.mtpEnabled.label": {
     "description": "Label for the toggle enabling USB device support. \"Kindle\" is a product name; \"PTP\" and \"MTP\" are USB device protocol abbreviations; keep all three as-is. In Settings > File systems > MTP.",
@@ -1324,6 +1568,10 @@
     "description": "Help text for the MTP toggle. \"Android\" and “Android Auto” are product names; keep them. \"Settings > USB Preferences\", “File transfer”, and “Android Auto” are on-phone Android menu labels quoted as examples; translate the descriptive parts but note these vary by device. \"USB\" is a connector name; keep it.",
     "screenshot": "settings-file-systems-mtp.png"
   },
+  "settings.fileOperations.mtpEnabled.keywords": "device, phone, mobile",
+  "@settings.fileOperations.mtpEnabled.keywords": {
+    "description": "Search keywords for the “Android/Kindle/camera support (PTP and MTP)” setting (settings.fileOperations.mtpEnabled.label) in Settings > File systems > MTP (Android/Kindle/cameras). Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.fileOperations.adbEnabled.label": "Android file access over ADB",
   "@settings.fileOperations.adbEnabled.label": {
     "description": "Label for the toggle enabling Android Debug Bridge support. \"Android\" is a product name and \"ADB\" is the abbreviation for Android Debug Bridge; keep both as-is. In Settings > File systems > Android (ADB)."
@@ -1332,6 +1580,10 @@
   "@settings.fileOperations.adbEnabled.description": {
     "description": "Help text for the ADB toggle. \"USB debugging\" and \"platform tools\" are labels the reader has to find on their own phone and in Google’s own docs, so render them the way the vendor’s localized Android shows them in your language, ❌ never keep the English. \"Android\", \"MTP\", and the command name “adb” stay as-is."
   },
+  "settings.fileOperations.adbEnabled.keywords": "usb debugging, developer options, phone, device",
+  "@settings.fileOperations.adbEnabled.keywords": {
+    "description": "Search keywords for the “Android file access over ADB” setting (settings.fileOperations.adbEnabled.label) in Settings > File systems > Android (ADB). Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.fileOperations.adbBinaryPath.label": "Location of adb",
   "@settings.fileOperations.adbBinaryPath.label": {
     "description": "Label for the text field naming where the \"adb\" command lives on disk. \"adb\" is a command name; keep it lowercase and as-is. In Settings > File systems > Android (ADB)."
@@ -1339,6 +1591,10 @@
   "settings.fileOperations.adbBinaryPath.description": "Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and Homebrew. Point it somewhere else if you keep the platform tools in their own place.",
   "@settings.fileOperations.adbBinaryPath.description": {
     "description": "Help text for the adb location field. \"adb\", \"Android SDK\", \"Homebrew\", and \"Cmdr\" are product and command names; keep them as-is."
+  },
+  "settings.fileOperations.adbBinaryPath.keywords": "path, binary, location",
+  "@settings.fileOperations.adbBinaryPath.keywords": {
+    "description": "Search keywords for the “Location of adb” setting (settings.fileOperations.adbBinaryPath.label) in Settings > File systems > Android (ADB). Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.fileOperations.mtpConnectionWarning.label": "Warn when a device connects",
   "@settings.fileOperations.mtpConnectionWarning.label": {
@@ -1350,6 +1606,10 @@
     "description": "Help text for the device-connect-warning toggle. \"Android\" is a product name (keep it); \"USB\" is a connector name (keep it).",
     "screenshot": "settings-file-systems-mtp.png"
   },
+  "settings.fileOperations.mtpConnectionWarning.keywords": "warning, notification, connect, toast",
+  "@settings.fileOperations.mtpConnectionWarning.keywords": {
+    "description": "Search keywords for the “Warn when a device connects” setting (settings.fileOperations.mtpConnectionWarning.label) in Settings > File systems > MTP (Android/Kindle/cameras). Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.fileExplorer.git.showRepoChip.label": "Show repository chip",
   "@settings.fileExplorer.git.showRepoChip.label": {
     "description": "Label for the toggle showing a git repository status badge above the file list. \"chip\" = a small badge/pill UI element. In Settings > File systems > Git.",
@@ -1359,6 +1619,10 @@
   "@settings.fileExplorer.git.showRepoChip.description": {
     "description": "Help text for the repo-chip toggle. \"git\", \"branch\", \"ahead/behind\", and \"dirty state\" are git version-control terms; use the locale's standard git terminology. \"dirty\" means having uncommitted changes.",
     "screenshot": "settings-file-systems-git.png"
+  },
+  "settings.fileExplorer.git.showRepoChip.keywords": "chip, branch, breadcrumb, repo, status, ahead, behind, dirty",
+  "@settings.fileExplorer.git.showRepoChip.keywords": {
+    "description": "Search keywords for the “Show repository chip” setting (settings.fileExplorer.git.showRepoChip.label) in Settings > File systems > Git. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.fileExplorer.git.showStatusColumn.label": "Show git status column",
   "@settings.fileExplorer.git.showStatusColumn.label": {
@@ -1370,6 +1634,10 @@
     "description": "Help text for the git-status-column toggle. \"git\", \"modified\", and \"untracked\" are git terms; use standard git terminology. \"Full\" is a Cmdr view-mode name; translate consistently.",
     "screenshot": "settings-file-systems-git.png"
   },
+  "settings.fileExplorer.git.showStatusColumn.keywords": "status, column, modified, untracked, ignored, added, deleted",
+  "@settings.fileExplorer.git.showStatusColumn.keywords": {
+    "description": "Search keywords for the “Show git status column” setting (settings.fileExplorer.git.showStatusColumn.label) in Settings > File systems > Git. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.fileExplorer.git.showVirtualGitPortal.label": "Show virtual git portal",
   "@settings.fileExplorer.git.showVirtualGitPortal.label": {
     "description": "Label for the toggle that turns the .git folder into browsable virtual folders. \"git\" is the version-control tool name; keep it. \"portal\" here is Cmdr's name for the virtual-folder view. In Settings > File systems > Git.",
@@ -1379,6 +1647,10 @@
   "@settings.fileExplorer.git.showVirtualGitPortal.description": {
     "description": "Help text for the virtual-git-portal toggle. \"`.git`\" is a literal folder name; keep it exactly (it stays in backticks in the source). \"branches\", \"tags\", \"commits\", and \"worktrees\" are git terms; use standard git terminology.",
     "screenshot": "settings-file-systems-git.png"
+  },
+  "settings.fileExplorer.git.showVirtualGitPortal.keywords": "portal, virtual, branches, tags, commits, worktrees, history",
+  "@settings.fileExplorer.git.showVirtualGitPortal.keywords": {
+    "description": "Search keywords for the “Show virtual git portal” setting (settings.fileExplorer.git.showVirtualGitPortal.label) in Settings > File systems > Git. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.viewer.wordWrap.label": "Word wrap",
   "@settings.viewer.wordWrap.label": {
@@ -1390,6 +1662,10 @@
     "description": "Help text for the viewer word-wrap toggle.",
     "screenshot": "settings-viewer.png"
   },
+  "settings.viewer.wordWrap.keywords": "viewer, wrap, word, line, horizontal, scroll",
+  "@settings.viewer.wordWrap.keywords": {
+    "description": "Search keywords for the “Word wrap” setting (settings.viewer.wordWrap.label) in Settings > Viewer. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.viewer.showTextCursor.label": "Show text cursor",
   "@settings.viewer.showTextCursor.label": {
     "description": "Label for the toggle that paints a blinking text cursor (the thin insertion-point bar an editor shows) in the file viewer. In Settings > Viewer. Off by default. \"Text cursor\" is the visible bar, not the mouse pointer; use whatever your language's text editors call the insertion point.",
@@ -1399,6 +1675,10 @@
   "@settings.viewer.showTextCursor.description": {
     "description": "Help text for the viewer text-cursor toggle. The cursor sits at the moving end of the selection, so pressing Shift with an arrow key extends the selection from there. \"Keyboard selection\" = selecting text with Shift plus the arrow keys, as opposed to dragging with the mouse.",
     "screenshot": "settings-viewer.png"
+  },
+  "settings.viewer.showTextCursor.keywords": "viewer, cursor, caret, text, insertion, point, blink, selection",
+  "@settings.viewer.showTextCursor.keywords": {
+    "description": "Search keywords for the “Show text cursor” setting (settings.viewer.showTextCursor.label) in Settings > Viewer. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.developer.mcpEnabled.label": "Enable MCP server",
   "@settings.developer.mcpEnabled.label": {
@@ -1410,6 +1690,10 @@
     "description": "Help text for the MCP-server toggle. \"Model Context Protocol\" is a standard name; keep it (it is what MCP abbreviates). \"AI\" = artificial intelligence.",
     "screenshot": "settings-ai-mcp-server.png"
   },
+  "settings.developer.mcpEnabled.keywords": "server, ai, assistant, protocol, model",
+  "@settings.developer.mcpEnabled.keywords": {
+    "description": "Search keywords for the “Enable MCP server” setting (settings.developer.mcpEnabled.label) in Settings > AI > MCP server. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.developer.mcpPort.label": "Port",
   "@settings.developer.mcpPort.label": {
     "description": "Label for the MCP-server network port number input. \"Port\" is a networking term. In Settings > Developer > MCP server. Short label.",
@@ -1419,6 +1703,10 @@
   "@settings.developer.mcpPort.description": {
     "description": "Help text for the MCP-port input. \"MCP\" = Model Context Protocol (keep it). \"port\" and \"ephemeral port\" are networking terms; \"0\" is a literal value meaning auto-pick. \"OS\" = operating system.",
     "screenshot": "settings-ai-mcp-server.png"
+  },
+  "settings.developer.mcpPort.keywords": "port, network, ephemeral",
+  "@settings.developer.mcpPort.keywords": {
+    "description": "Search keywords for the “Port” setting (settings.developer.mcpPort.label) in Settings > AI > MCP server. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.developer.verboseLogging.label": "Verbose console output (developer)",
   "@settings.developer.verboseLogging.label": {
@@ -1430,6 +1718,10 @@
     "description": "Help text for the verbose-logging toggle, aimed at developers. \"RUST_LOG\" is a literal environment-variable name; keep it exactly. \"devtools\", \"debug level\", and \"terminal\" are developer terms. \"wins\" here means takes precedence over this toggle.",
     "screenshot": "settings-advanced.png"
   },
+  "settings.developer.verboseLogging.keywords": "log, debug, verbose, troubleshoot, performance, console",
+  "@settings.developer.verboseLogging.keywords": {
+    "description": "Search keywords for the “Verbose console output (developer)” setting (settings.developer.verboseLogging.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.updates.autoCheck.label": "Automatically check for updates",
   "@settings.updates.autoCheck.label": {
     "description": "Label for the toggle that periodically checks for app updates. In Settings > Updates & privacy.",
@@ -1440,6 +1732,10 @@
     "description": "Help text for the auto-update-check toggle.",
     "screenshot": "settings-updates.png"
   },
+  "settings.updates.autoCheck.keywords": "update, auto, check, version, background",
+  "@settings.updates.autoCheck.keywords": {
+    "description": "Search keywords for the “Automatically check for updates” setting (settings.updates.autoCheck.label) in Settings > Updates & privacy. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.whatsNew.showOnUpdate.label": "Show what’s new after updates",
   "@settings.whatsNew.showOnUpdate.label": {
     "description": "Label for the toggle that shows a changelog summary after the app updates. In Settings > Updates & privacy. The apostrophe in \"what’s\" is a curly typographic apostrophe (U+2019); match the locale's preferred apostrophe style.",
@@ -1449,6 +1745,10 @@
   "@settings.whatsNew.showOnUpdate.description": {
     "description": "Help text for the what's-new toggle. \"Cmdr\" is the product name; keep it.",
     "screenshot": "settings-updates.png"
+  },
+  "settings.whatsNew.showOnUpdate.keywords": "changelog, release notes, what’s new, update notes",
+  "@settings.whatsNew.showOnUpdate.keywords": {
+    "description": "Search keywords for the “Show what’s new after updates” setting (settings.whatsNew.showOnUpdate.label) in Settings > Updates & privacy. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.whatsNew.lastSeenVersion.label": "Last seen changelog version",
   "@settings.whatsNew.lastSeenVersion.label": {
@@ -1468,6 +1768,10 @@
     "description": "Help text for the usage-stats toggle, written in a reassuring privacy-first voice. It asks the user to leave the toggle on, then says what the stats are tied to and what is never sent. \"open beta\" = the public testing phase. \"random id\" = a randomly generated identifier stored on the user's Mac, not linked to their identity; keep it plain rather than reaching for a technical term like \"pseudonymous\". \"Cmdr\" is the product name; keep it. \"prompts\" = AI prompts.",
     "screenshot": "settings-updates.png"
   },
+  "settings.analytics.enabled.keywords": "analytics, usage, stats, privacy, telemetry, beta, tracking, opt-out",
+  "@settings.analytics.enabled.keywords": {
+    "description": "Search keywords for the “Send usage stats” setting (settings.analytics.enabled.label) in Settings > Updates & privacy. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.analytics.email.label": "Beta contact email",
   "@settings.analytics.email.label": {
     "description": "Label for the beta-program contact email text field. In Settings > Updates & privacy. \"Beta\" = the testing program.",
@@ -1477,6 +1781,10 @@
   "@settings.analytics.email.description": {
     "description": "Placeholder/help showing the email-field format. \"you@example.com\" is a literal example email address; keep it as-is. Only translate \"Example:\".",
     "screenshot": "settings-updates.png"
+  },
+  "settings.analytics.email.keywords": "email, beta, contact, newsletter, updates, survey",
+  "@settings.analytics.email.keywords": {
+    "description": "Search keywords for the “Beta contact email” setting (settings.analytics.email.label) in Settings > Updates & privacy. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.updates.crashReports.label": "Send crash reports",
   "@settings.updates.crashReports.label": {
@@ -1488,6 +1796,10 @@
     "description": "Help text for the crash-reports toggle, in a privacy-reassuring voice. The setting covers BOTH cases that send a report: Cmdr going down with a crash, and a problem in a background task the app kept running through. So the first sentence must not scope it to the app quitting, the same split as crashReporter.dialog.body.ended vs .keptRunning. \"a report\" rather than \"a crash report\" for the same reason. \"Cmdr\" is the product name and \"macOS\" a brand name; keep both.",
     "screenshot": "settings-updates.png"
   },
+  "settings.updates.crashReports.keywords": "crash, report, privacy, telemetry, bug, error",
+  "@settings.updates.crashReports.keywords": {
+    "description": "Search keywords for the “Send crash reports” setting (settings.updates.crashReports.label) in Settings > Updates & privacy. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.updates.errorReports.label": "Send error reports automatically",
   "@settings.updates.errorReports.label": {
     "description": "Label for the automatic-error-report opt-in toggle. In Settings > Updates & privacy.",
@@ -1497,6 +1809,10 @@
   "@settings.updates.errorReports.description": {
     "description": "Help text for the error-reports toggle. \"log snippet\" = a short excerpt of the diagnostic log. \"Help menu\" is the macOS app menu name; use the OS's localized menu name.",
     "screenshot": "settings-updates.png"
+  },
+  "settings.updates.errorReports.keywords": "error, report, auto, send, privacy, telemetry, bug, log, snippet, diagnostics",
+  "@settings.updates.errorReports.keywords": {
+    "description": "Search keywords for the “Send error reports automatically” setting (settings.updates.errorReports.label) in Settings > Updates & privacy. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.updates.attachEmailToReports.label": "Attach my email to reports by default",
   "@settings.updates.attachEmailToReports.label": {
@@ -1508,6 +1824,10 @@
     "description": "Help text for the attach-email-to-reports toggle. \"beta contact email\" ties to the analytics.email setting; keep the wording aligned with that label's translation.",
     "screenshot": "settings-advanced.png"
   },
+  "settings.updates.attachEmailToReports.keywords": "email, report, crash, error, contact, attach, reply, beta",
+  "@settings.updates.attachEmailToReports.keywords": {
+    "description": "Search keywords for the “Attach my email to reports by default” setting (settings.updates.attachEmailToReports.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.advanced.prefetchBufferSize.label": "Prefetch buffer size",
   "@settings.advanced.prefetchBufferSize.label": {
     "description": "Advanced-section label for the prefetch buffer size number input. \"Prefetch\" = loading items ahead of time for smooth scrolling.",
@@ -1517,6 +1837,10 @@
   "@settings.advanced.prefetchBufferSize.description": {
     "description": "Help text for the prefetch-buffer-size setting (advanced/performance). \"prefetch\" = load ahead of time.",
     "screenshot": "settings-advanced.png"
+  },
+  "settings.advanced.prefetchBufferSize.keywords": "prefetch, buffer, scroll, performance",
+  "@settings.advanced.prefetchBufferSize.keywords": {
+    "description": "Search keywords for the “Prefetch buffer size” setting (settings.advanced.prefetchBufferSize.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.advanced.virtualizationBufferRows.label": "Virtualization buffer (rows)",
   "@settings.advanced.virtualizationBufferRows.label": {
@@ -1528,6 +1852,10 @@
     "description": "Help text for the row-virtualization-buffer setting (advanced/performance).",
     "screenshot": "settings-advanced.png"
   },
+  "settings.advanced.virtualizationBufferRows.keywords": "virtualization, buffer, row, render",
+  "@settings.advanced.virtualizationBufferRows.keywords": {
+    "description": "Search keywords for the “Virtualization buffer (rows)” setting (settings.advanced.virtualizationBufferRows.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.advanced.virtualizationBufferColumns.label": "Virtualization buffer (columns)",
   "@settings.advanced.virtualizationBufferColumns.label": {
     "description": "Advanced-section label for the column-virtualization buffer number input. \"(columns)\" specifies the unit; applies to Brief view's columns.",
@@ -1537,6 +1865,10 @@
   "@settings.advanced.virtualizationBufferColumns.description": {
     "description": "Help text for the column-virtualization-buffer setting (advanced/performance). \"brief view\" is a Cmdr view-mode name; translate consistently.",
     "screenshot": "settings-advanced.png"
+  },
+  "settings.advanced.virtualizationBufferColumns.keywords": "virtualization, buffer, column, brief",
+  "@settings.advanced.virtualizationBufferColumns.keywords": {
+    "description": "Search keywords for the “Virtualization buffer (columns)” setting (settings.advanced.virtualizationBufferColumns.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.advanced.fileWatcherDebounce.label": "File watcher debounce",
   "@settings.advanced.fileWatcherDebounce.label": {
@@ -1548,6 +1880,10 @@
     "description": "Help text for the file-watcher-debounce setting (advanced/performance).",
     "screenshot": "settings-advanced.png"
   },
+  "settings.advanced.fileWatcherDebounce.keywords": "watcher, debounce, refresh, delay",
+  "@settings.advanced.fileWatcherDebounce.keywords": {
+    "description": "Search keywords for the “File watcher debounce” setting (settings.advanced.fileWatcherDebounce.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.advanced.diskSpaceChangeThreshold.label": "Disk space change threshold (MB)",
   "@settings.advanced.diskSpaceChangeThreshold.label": {
     "description": "Advanced-section label for the disk-space change threshold number input. \"(MB)\" is the decimal (base 1000) megabyte symbol: write it as your translation of common.sizeUnit.megabyte.",
@@ -1557,6 +1893,10 @@
   "@settings.advanced.diskSpaceChangeThreshold.description": {
     "description": "Help text for the disk-space-change-threshold setting (advanced/performance). \"status bar\" is the strip at the window bottom showing disk info.",
     "screenshot": "settings-advanced.png"
+  },
+  "settings.advanced.diskSpaceChangeThreshold.keywords": "disk, space, threshold, poll, refresh, status, bar",
+  "@settings.advanced.diskSpaceChangeThreshold.keywords": {
+    "description": "Search keywords for the “Disk space change threshold (MB)” setting (settings.advanced.diskSpaceChangeThreshold.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.fileViewer.suppressBinaryWarning.label": "Suppress the raw-view warning for binary files",
   "@settings.fileViewer.suppressBinaryWarning.label": {
@@ -1568,6 +1908,10 @@
     "description": "Help text for the suppress-binary-warning toggle. \"F3\", \"⇧Space\" (Shift-Space), and \"Enter\" are keyboard keys/glyphs; keep the glyphs and use the locale's key names. \"Cmdr\" is the product name (keep it); \"Quick Look\" is the macOS preview feature name (use the OS's localized name). \"UTF-8\" and \"PDF\" are standard names; keep them. The quoted “Never show this warning again” must match the file viewer's actual banner button copy; translate it consistently with that button.",
     "screenshot": "settings-advanced.png"
   },
+  "settings.fileViewer.suppressBinaryWarning.keywords": "viewer, binary, image, raw, warning, banner, quick, look",
+  "@settings.fileViewer.suppressBinaryWarning.keywords": {
+    "description": "Search keywords for the “Suppress the raw-view warning for binary files” setting (settings.fileViewer.suppressBinaryWarning.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.fileExplorer.suppressQuickLookHint.label": "Suppress the Space-key Quick Look hint",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "description": "Advanced-section label for the toggle that hides the Space-vs-Quick-Look reminder. \"Space-key\" is the keyboard spacebar; \"Quick Look\" is the macOS preview feature (use the OS's localized name).",
@@ -1577,6 +1921,10 @@
   "@settings.fileExplorer.suppressQuickLookHint.description": {
     "description": "Help text for the suppress-Quick-Look-hint toggle. \"Space\" and \"⇧Space\" (Shift-Space) are keyboard keys/glyphs; keep glyphs, use the locale's key names. \"Cmdr\" is the product name (keep it); \"Finder\" and \"Quick Look\" are macOS feature names (use the OS's localized names). \"toast\" = a small transient notification. The quoted “Don't show again” must match the actual toast button copy; translate it consistently with that button.",
     "screenshot": "settings-advanced.png"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.keywords": "quick, look, preview, space, hint, toast, reminder",
+  "@settings.fileExplorer.suppressQuickLookHint.keywords": {
+    "description": "Search keywords for the “Suppress the Space-key Quick Look hint” setting (settings.fileExplorer.suppressQuickLookHint.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Number of closed tabs to remember per pane",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
@@ -1588,6 +1936,10 @@
     "description": "Help text for the closed-tab-history-size setting. “Reopen closed tab” is a Cmdr command name; translate consistently with that command. \"⌘⇧T\" is a macOS shortcut glyph string (Command-Shift-T); keep the glyphs as-is. \"pane\" is one of the two file lists.",
     "screenshot": "settings-advanced.png"
   },
+  "settings.fileExplorer.tabs.closedTabHistorySize.keywords": "tab, closed, reopen, history, undo, pane",
+  "@settings.fileExplorer.tabs.closedTabHistorySize.keywords": {
+    "description": "Search keywords for the “Number of closed tabs to remember per pane” setting (settings.fileExplorer.tabs.closedTabHistorySize.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.advanced.dragThreshold.label": "Drag threshold",
   "@settings.advanced.dragThreshold.label": {
     "description": "Advanced-section label for the drag-distance threshold number input (how far the pointer must move before a drag starts).",
@@ -1598,6 +1950,10 @@
     "description": "Help text for the drag-threshold setting (advanced). \"pixels\" is the unit.",
     "screenshot": "settings-advanced.png"
   },
+  "settings.advanced.dragThreshold.keywords": "drag, threshold, pixel, distance",
+  "@settings.advanced.dragThreshold.keywords": {
+    "description": "Search keywords for the “Drag threshold” setting (settings.advanced.dragThreshold.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.advanced.exitFullScreenOnEscape.label": "Exit full screen on Escape",
   "@settings.advanced.exitFullScreenOnEscape.label": {
     "description": "Advanced-section label for a switch: when on, pressing the Escape key in the main window (with no dialog or menu open) takes the window out of macOS full screen. \"Escape\" is the keyboard key; \"full screen\" is macOS's full-screen window mode (the window gets its own Space).",
@@ -1607,6 +1963,10 @@
   "@settings.advanced.exitFullScreenOnEscape.description": {
     "description": "Help text for the \"Exit full screen on Escape\" switch (advanced). Explains that the switch never affects closing dialogs or menus with Escape.",
     "screenshot": "settings-advanced.png"
+  },
+  "settings.advanced.exitFullScreenOnEscape.keywords": "escape, full screen, fullscreen, maximize, window, restore, exit",
+  "@settings.advanced.exitFullScreenOnEscape.keywords": {
+    "description": "Search keywords for the “Exit full screen on Escape” setting (settings.advanced.exitFullScreenOnEscape.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Escape full-screen hint shown",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.label": {
@@ -1625,6 +1985,10 @@
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "description": "Help text for the type-to-jump-reset-delay setting (advanced). \"type-to-jump\" is the feature name; \"buffer\" = the accumulated typed characters.",
     "screenshot": "settings-advanced.png"
+  },
+  "settings.fileExplorer.typeToJump.resetDelay.keywords": "type, jump, reset, delay, fuzzy, search, navigation, keystroke, buffer",
+  "@settings.fileExplorer.typeToJump.resetDelay.keywords": {
+    "description": "Search keywords for the “Type-to-jump reset delay” setting (settings.fileExplorer.typeToJump.resetDelay.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.fileExplorer.typeToJump.mode.label": "When you type in a pane",
   "@settings.fileExplorer.typeToJump.mode.label": {
@@ -1646,6 +2010,10 @@
     "description": "Option in the type-in-pane mode toggle: typing narrows the list to matching files. Short verb.",
     "screenshot": "settings-appearance-listing.png"
   },
+  "settings.fileExplorer.typeToJump.mode.keywords": "type, jump, filter, quick filter, quick search, narrow, keystroke",
+  "@settings.fileExplorer.typeToJump.mode.keywords": {
+    "description": "Search keywords for the “When you type in a pane” setting (settings.fileExplorer.typeToJump.mode.label) in Settings > Appearance > Listing. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.fileOperations.maxConflictsToShow.label": "Maximum conflicts to show",
   "@settings.fileOperations.maxConflictsToShow.label": {
     "description": "Label for the picker limiting how many file conflicts are previewed before an operation. In Settings > Behavior > File operations (also in Advanced). \"conflicts\" = name clashes at the destination.",
@@ -1655,6 +2023,10 @@
   "@settings.fileOperations.maxConflictsToShow.description": {
     "description": "Help text for the max-conflicts-to-show setting. \"conflicts\" = files that would clash with existing names at the destination.",
     "screenshot": "settings-advanced.png"
+  },
+  "settings.fileOperations.maxConflictsToShow.keywords": "conflict, max, limit, preview, operation",
+  "@settings.fileOperations.maxConflictsToShow.keywords": {
+    "description": "Search keywords for the “Maximum conflicts to show” setting (settings.fileOperations.maxConflictsToShow.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.fileOperations.progressUpdateInterval.label": "Progress update interval",
   "@settings.fileOperations.progressUpdateInterval.label": {
@@ -1666,6 +2038,10 @@
     "description": "Help text for the progress-update-interval setting. \"CPU\" = the processor; keep the abbreviation.",
     "screenshot": "settings-advanced.png"
   },
+  "settings.fileOperations.progressUpdateInterval.keywords": "progress, update, interval, refresh, performance",
+  "@settings.fileOperations.progressUpdateInterval.keywords": {
+    "description": "Search keywords for the “Progress update interval” setting (settings.fileOperations.progressUpdateInterval.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.advanced.maxLogStorageMb.label": "Maximum disk space for log files (MB)",
   "@settings.advanced.maxLogStorageMb.label": {
     "description": "Advanced-section label for the number input capping log-file disk usage. \"(MB)\" is the decimal (base 1000) megabyte symbol: write it as your translation of common.sizeUnit.megabyte.",
@@ -1675,6 +2051,10 @@
   "@settings.advanced.maxLogStorageMb.description": {
     "description": "Help text for the max-log-storage setting (advanced). \"0\" is a literal value meaning disable. Notes that disabling logs blocks error reports and that increases apply on next launch.",
     "screenshot": "settings-advanced.png"
+  },
+  "settings.advanced.maxLogStorageMb.keywords": "log, storage, disk, cap, rotation, error, report, privacy",
+  "@settings.advanced.maxLogStorageMb.keywords": {
+    "description": "Search keywords for the “Maximum disk space for log files (MB)” setting (settings.advanced.maxLogStorageMb.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.advanced.mountTimeout.label": "Mount timeout",
   "@settings.advanced.mountTimeout.label": {
@@ -1686,6 +2066,10 @@
     "description": "Help text for the mount-timeout setting (advanced). \"mounting\" = attaching a network share to the system.",
     "screenshot": "settings-advanced.png"
   },
+  "settings.advanced.mountTimeout.keywords": "mount, timeout, network, share",
+  "@settings.advanced.mountTimeout.keywords": {
+    "description": "Search keywords for the “Mount timeout” setting (settings.advanced.mountTimeout.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.advanced.showSafeSaveFiles.label": "Show other apps’ temporary files",
   "@settings.advanced.showSafeSaveFiles.label": {
     "description": "Advanced-section label for the toggle that shows macOS safe-save scratch files other apps leave while saving.",
@@ -1695,6 +2079,10 @@
   "@settings.advanced.showSafeSaveFiles.description": {
     "description": "Help text for the show-safe-save-files toggle (advanced). \"macOS\" is a brand name (keep it), and \".sb-\" is a literal filename fragment (keep it exactly). \"TextEdit\" and \"Preview\" are Apple’s apps, and macOS localizes their names (for example fr \"Aperçu\", zh \"文本编辑\" and \"预览\"): use the names your language’s macOS shows (check the reference pile or the app bundle).",
     "screenshot": "settings-advanced.png"
+  },
+  "settings.advanced.showSafeSaveFiles.keywords": "safe-save, temp, temporary, preview, autosave",
+  "@settings.advanced.showSafeSaveFiles.keywords": {
+    "description": "Search keywords for the “Show other apps’ temporary files” setting (settings.advanced.showSafeSaveFiles.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.advanced.showStagingTempFiles.label": "Show Cmdr’s temporary files",
   "@settings.advanced.showStagingTempFiles.label": {
@@ -1706,6 +2094,10 @@
     "description": "Help text for the show-temporary-files toggle (advanced). Explains why the temporary names exist, and that leftovers stay visible regardless of this setting. \"Cmdr\" is the app name; keep it.",
     "screenshot": "settings-advanced.png"
   },
+  "settings.advanced.showStagingTempFiles.keywords": "temp, temporary, staging, copy, transfer, partial",
+  "@settings.advanced.showStagingTempFiles.keywords": {
+    "description": "Search keywords for the “Show Cmdr’s temporary files” setting (settings.advanced.showStagingTempFiles.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.advanced.logLlmCalls.label": "Log AI model calls",
   "@settings.advanced.logLlmCalls.label": {
     "description": "Advanced-section label for the toggle that writes every AI model request and response to a local folder for debugging. \"AI model\" refers to the LLM (large language model) the user's AI features talk to.",
@@ -1715,6 +2107,10 @@
   "@settings.advanced.logLlmCalls.description": {
     "description": "Help text for the log-AI-model-calls toggle (advanced). \"llm-logs\" is a literal folder name, keep it exactly. \"Cmdr\" is the app name, keep it. \"provider\" = the AI provider the user chose (OpenAI, Anthropic, etc.). The point is that logging is local-only and never transmitted.",
     "screenshot": "settings-advanced.png"
+  },
+  "settings.advanced.logLlmCalls.keywords": "ai, log, debug, request, response, prompt",
+  "@settings.advanced.logLlmCalls.keywords": {
+    "description": "Search keywords for the “Log AI model calls” setting (settings.advanced.logLlmCalls.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.advanced.serviceResolveTimeout.label": "Service resolve timeout",
   "@settings.advanced.serviceResolveTimeout.label": {
@@ -1726,6 +2122,10 @@
     "description": "Help text for the service-resolve-timeout setting (advanced). \"Bonjour\" is Apple's network service-discovery technology name; keep it. \"resolving\" = looking up the address of a discovered service.",
     "screenshot": "settings-advanced.png"
   },
+  "settings.advanced.serviceResolveTimeout.keywords": "resolve, timeout",
+  "@settings.advanced.serviceResolveTimeout.keywords": {
+    "description": "Search keywords for the “Service resolve timeout” setting (settings.advanced.serviceResolveTimeout.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.search.recentSearches.maxCount.label": "Recent searches to remember",
   "@settings.search.recentSearches.maxCount.label": {
     "description": "Advanced-section label for the number input capping stored recent searches.",
@@ -1736,6 +2136,10 @@
     "description": "Help text for the recent-searches-max-count setting (advanced). \"0\" is a literal value meaning disable. \"footer\" and \"popover\" are UI element terms; \"roll off\" means the oldest are dropped.",
     "screenshot": "settings-advanced.png"
   },
+  "settings.search.recentSearches.maxCount.keywords": "search, recent, history, cap, limit, max, count",
+  "@settings.search.recentSearches.maxCount.keywords": {
+    "description": "Search keywords for the “Recent searches to remember” setting (settings.search.recentSearches.maxCount.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.selection.recentSelections.maxCount.label": "Recent selections to remember",
   "@settings.selection.recentSelections.maxCount.label": {
     "description": "Advanced-section label for the number input capping stored recent selections. \"selections\" here are saved file-select patterns from the Select/Deselect dialog.",
@@ -1745,6 +2149,10 @@
   "@settings.selection.recentSelections.maxCount.description": {
     "description": "Help text for the recent-selections-max-count setting (advanced). \"Select / Deselect files\" is a Cmdr dialog name; translate consistently with that dialog. \"0\" is a literal value meaning disable. \"roll off\" means the oldest are dropped.",
     "screenshot": "settings-advanced.png"
+  },
+  "settings.selection.recentSelections.maxCount.keywords": "selection, select, recent, history, cap, limit, max, count",
+  "@settings.selection.recentSelections.maxCount.keywords": {
+    "description": "Search keywords for the “Recent selections to remember” setting (settings.selection.recentSelections.maxCount.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.advanced.oldMacosNoticeShown.label": "Old macOS notice shown",
   "@settings.advanced.oldMacosNoticeShown.label": {
@@ -1797,6 +2205,10 @@
   "@settings.advanced.updateCheckInterval.description": {
     "description": "Help text for the update-check-interval setting (advanced).",
     "screenshot": "settings-advanced.png"
+  },
+  "settings.advanced.updateCheckInterval.keywords": "update, interval, background, check",
+  "@settings.advanced.updateCheckInterval.keywords": {
+    "description": "Search keywords for the “Update check interval” setting (settings.advanced.updateCheckInterval.label) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.tint.none": "No tint",
   "@settings.tint.none": {
@@ -1928,6 +2340,10 @@
     "description": "Label of the switch that hands the macOS \"Show in Finder\" command to Cmdr, in Settings > Behavior > Navigation & file ops. \"Cmdr\" is the product name; keep it. Addressed to the user, describing what turning the switch on allows.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
+  "settings.behavior.revealHandler.keywords": "show in finder, find in finder, reveal, reveal in finder, default file manager, browser, downloads",
+  "@settings.behavior.revealHandler.keywords": {
+    "description": "Search keywords for the “Let other apps show files in Cmdr” row (settings.revealHandler.label) in Settings > Behavior > Navigation & file ops. Never shown: Settings search matches them, so typing one of these finds the row. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.revealHandler.description": "When another app runs “Show in Finder”, Cmdr opens that folder with the file under the cursor. Finder stays your default file manager everywhere else.",
   "@settings.revealHandler.description": {
     "description": "Help text under the \"Let other apps show files in Cmdr\" switch in Settings > Behavior > Navigation & file ops. Two sentences: what the switch does, then the honest limit (this does NOT make Cmdr replace Finder; double-clicking a folder still opens Finder). “Show in Finder” is the macOS command name and \"Finder\" the macOS file manager; use your locale's macOS wording for both. \"Cmdr\" is the product name; keep it. \"cursor\" = the highlighted row in a Cmdr file pane.",
@@ -1992,6 +2408,10 @@
     "description": "Placeholder shown in the \"Edit files in\" dropdown for the moment before Cmdr has finished asking macOS which text editors are on this Mac. The dropdown is disabled while it reads this. \"your apps\" = the apps on this Mac. Usually gone within a few milliseconds. Same wording as the terminal dropdown's settings.behavior.openTerminalHereApp.checking key; translate it identically.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
+  "settings.behavior.textEditorApp.keywords": "editor, text editor, edit",
+  "@settings.behavior.textEditorApp.keywords": {
+    "description": "Search keywords for the “Edit files in” setting (settings.behavior.textEditorApp.label) in Settings > Behavior > Navigation & file ops. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.behavior.textEditorHintSeen.label": "Text editor hint shown",
   "@settings.behavior.textEditorHintSeen.label": {
     "description": "Internal, never shown in the UI: tracks whether the one-time hint about picking a text editor has appeared after F4 (edit)."
@@ -2023,6 +2443,10 @@
   "@settings.behavior.openTerminalHereApp.checking": {
     "description": "Placeholder shown in the \"Open terminal here uses\" dropdown for the moment before Cmdr has finished asking macOS which terminal apps are installed. The dropdown is disabled while it reads this. \"your apps\" = the apps on this Mac. Usually gone within a few milliseconds."
   },
+  "settings.behavior.openTerminalHereApp.keywords": "terminal, shell, console, command line",
+  "@settings.behavior.openTerminalHereApp.keywords": {
+    "description": "Search keywords for the “Open terminal here uses” setting (settings.behavior.openTerminalHereApp.label) in Settings > Behavior > Navigation & file ops. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.fileExplorer.git.portalIntroSeen.label": "Git folder intro shown",
   "@settings.fileExplorer.git.portalIntroSeen.label": {
     "description": "Internal, never shown in the UI: tracks whether the one-time notification introducing the browsable .git folder has appeared."
@@ -2053,6 +2477,10 @@
   "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
     "description": "Helper text under the double-click-to-parent switch in Settings > Behavior > Navigation & file ops. Clarifies what \"pane background\" (named in the switch label just above) means: the blank area around the file list, as opposed to a row representing a file. \"That’s\" refers back to \"the pane background\" in the label.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
+  },
+  "settings.behavior.doubleClickPaneNavigatesToParent.keywords": "double-click, doubleclick, double click, pane, background, empty, parent, folder, up, navigate, navigation",
+  "@settings.behavior.doubleClickPaneNavigatesToParent.keywords": {
+    "description": "Search keywords for the “Double-click the pane background to go up a folder” setting (settings.behavior.doubleClickPaneNavigatesToParent.label) in Settings > Behavior > Navigation & file ops. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Double-click-to-parent hint shown",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
@@ -2165,6 +2593,10 @@
     "description": "Description under the Turn on Ask Cmdr switch (settings.askCmdr.enabled.label). \"Cmdr\" is the product name.",
     "screenshot": "settings-ai-ask-cmdr.png"
   },
+  "settings.askCmdr.enabled.keywords": "ai, chat, assistant, enable, disable, turn on, turn off",
+  "@settings.askCmdr.enabled.keywords": {
+    "description": "Search keywords for the “Ask Cmdr” setting (settings.askCmdr.enabled.label) in Settings > AI > Ask Cmdr. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.askCmdr.cloudOffHint": "Ask Cmdr uses your cloud AI service. Allow cloud AI in AI settings to start chatting.",
   "@settings.askCmdr.cloudOffHint": {
     "description": "Shown under the Ask Cmdr switch in Settings > AI > Ask Cmdr when it's on, the AI mode is Cloud, and the Allow cloud AI switch is off. A button to open the AI settings follows it.",
@@ -2211,6 +2643,10 @@
     "description": "Placeholder text in the empty Ask Cmdr model field, signaling that blank means the shared AI model is used. The apostrophe is U+2019.",
     "screenshot": "settings-ai-ask-cmdr.png"
   },
+  "settings.askCmdr.interactiveModel.keywords": "ai, chat, assistant, model, interactive, slot",
+  "@settings.askCmdr.interactiveModel.keywords": {
+    "description": "Search keywords for the “Ask Cmdr model” setting (settings.askCmdr.interactiveModel.label) in Settings > AI > Ask Cmdr. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.askCmdr.chatMemorySize.label": "Chat memory size",
   "@settings.askCmdr.chatMemorySize.label": {
     "description": "Label for the picker that sets how much of an Ask Cmdr conversation is sent to the model with each message. Sentence case.",
@@ -2232,6 +2668,10 @@
     "screenshot": "settings-ai-ask-cmdr.png",
     "screenshotNote": "Settings > AI > Ask Cmdr, pictured here. Your string belongs to a state this screenshot doesn’t show (off, or asking you to review changed wording), a confirmation or empty state in one of its panels, or a note under one of its controls."
   },
+  "settings.askCmdr.chatMemorySize.keywords": "chat, memory, context, window, tokens, size, budget, history",
+  "@settings.askCmdr.chatMemorySize.keywords": {
+    "description": "Search keywords for the “Chat memory size” setting (settings.askCmdr.chatMemorySize.label) in Settings > AI > Ask Cmdr. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.askCmdr.proactive.title": "On its own",
   "@settings.askCmdr.proactive.title": {
     "description": "Heading of the group in Ask Cmdr settings that controls whether Ask Cmdr may notice changes and open a chat by itself, without being asked. Sentence case, no period.",
@@ -2246,6 +2686,10 @@
   "@settings.askCmdr.proactive.description": {
     "description": "Help text under the switch that lets Ask Cmdr start conversations. Says what it watches and reassures the reader that a suggestion is only ever a proposal. The second sentence matches the Suggested ops dialog's wording, so keep the two consistent.",
     "screenshot": "settings-ai-ask-cmdr.png"
+  },
+  "settings.askCmdr.proactive.keywords": "proactive, suggestions, automatic, notice, watch, wake, ai",
+  "@settings.askCmdr.proactive.keywords": {
+    "description": "Search keywords for the “Let Cmdr start conversations” setting (settings.askCmdr.proactive.label) in Settings > AI > Ask Cmdr. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.askCmdr.wakeDelay.label": "How soon Cmdr looks",
   "@settings.askCmdr.wakeDelay.label": {
@@ -2267,6 +2711,10 @@
     },
     "screenshot": "settings-ai-ask-cmdr.png"
   },
+  "settings.askCmdr.wakeDelay.keywords": "delay, cadence, wait, often, frequency, calm, quiet, proactive",
+  "@settings.askCmdr.wakeDelay.keywords": {
+    "description": "Search keywords for the “How soon Cmdr looks” setting (settings.askCmdr.wakeDelay.label) in Settings > AI > Ask Cmdr. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.askCmdr.wakeToast.label": "Show a notice when a suggestion appears",
   "@settings.askCmdr.wakeToast.label": {
     "description": "Label for the switch that controls whether a small corner message appears when Ask Cmdr has staged a suggestion. Starts with a verb. Sentence case.",
@@ -2276,6 +2724,10 @@
   "@settings.askCmdr.wakeToast.description": {
     "description": "Help text under the suggestion-notice switch, describing the corner message (a toast).",
     "screenshot": "settings-ai-ask-cmdr.png"
+  },
+  "settings.askCmdr.wakeToast.keywords": "toast, notice, notification, suggestion, proactive, alert",
+  "@settings.askCmdr.wakeToast.keywords": {
+    "description": "Search keywords for the “Show a notice when a suggestion appears” setting (settings.askCmdr.wakeToast.label) in Settings > AI > Ask Cmdr. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.askCmdr.memory.title": "What Cmdr remembers",
   "@settings.askCmdr.memory.title": {
@@ -2291,6 +2743,10 @@
   "@settings.askCmdr.memory.open": {
     "description": "Button in Ask Cmdr settings that shows the assistant's notes folder in Cmdr's own file pane. Starts with a verb. Sentence case.",
     "screenshot": "settings-ai-ask-cmdr.png"
+  },
+  "settings.askCmdr.openMemoryFolder.keywords": "memory, folder, notes, remember, open",
+  "@settings.askCmdr.openMemoryFolder.keywords": {
+    "description": "Search keywords for the “Open memory folder” row (settings.askCmdr.memory.open) in Settings > AI > Ask Cmdr. Never shown: Settings search matches them, so typing one of these finds the row. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.askCmdr.memory.forgotten": "Cmdr’s notes are gone. It starts over from here.",
   "@settings.askCmdr.memory.forgotten": {
@@ -2373,6 +2829,10 @@
   "@settings.operationLog.enabled.description": {
     "description": "Help text under the switch that turns the operation log on or off (settings.operationLog.enabled.label). It must say plainly that undo stops working for new operations while the switch is off, and that the history already recorded is kept. The apostrophes are curly typographic apostrophes (U+2019)."
   },
+  "settings.operationLog.enabled.keywords": "operation, log, history, record, recording, undo, journal, privacy, turn off",
+  "@settings.operationLog.enabled.keywords": {
+    "description": "Search keywords for the “Record file operations” setting (settings.operationLog.enabled.label) in Settings > Behavior > Navigation & file ops. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.operationLog.maxAge.label": "Keep history for",
   "@settings.operationLog.maxAge.label": {
     "description": "Label for the picker that sets how long operation-log history is kept, in Settings > Operation log.",
@@ -2403,6 +2863,10 @@
     "description": "Retention-age option: 1 year. The numeral is literal.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
+  "settings.operationLog.maxAge.keywords": "operation, log, history, retention, age, keep, prune, forever, days, undo",
+  "@settings.operationLog.maxAge.keywords": {
+    "description": "Search keywords for the “Keep history for” setting (settings.operationLog.maxAge.label) in Settings > Behavior > Navigation & file ops. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.operationLog.maxSize.label": "Maximum size",
   "@settings.operationLog.maxSize.label": {
     "description": "Label for the picker that sets the operation log's maximum size on disk, in Settings > Operation log.",
@@ -2412,6 +2876,10 @@
   "@settings.operationLog.maxSize.description": {
     "description": "Help text under the size-limit picker (settings.operationLog.maxSize.label).",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
+  },
+  "settings.operationLog.maxSize.keywords": "operation, log, history, retention, size, disk, space, limit, megabytes, gigabytes",
+  "@settings.operationLog.maxSize.keywords": {
+    "description": "Search keywords for the “Maximum size” setting (settings.operationLog.maxSize.label) in Settings > Behavior > Navigation & file ops. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.section.mcpServer": "MCP server",
   "@settings.section.mcpServer": {
@@ -2815,6 +3283,10 @@
     "description": "Label for how much disk every drive index takes up together, shown on the indexing card in Settings > Behavior > File system watching.",
     "screenshot": "settings-indexing-drive-indexing.png"
   },
+  "settings.indexing.indexSize.keywords": "clear index, index database, disk space, delete",
+  "@settings.indexing.indexSize.keywords": {
+    "description": "Search keywords for the “Index size” row (settings.fileSystemWatching.indexSize) in Settings > Indexing > Drive indexing. Never shown: Settings search matches them, so typing one of these finds the row. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.fileSystemWatching.clearing": "Clearing…",
   "@settings.fileSystemWatching.clearing": {
     "description": "Button text shown while the drive indexes are being deleted. The trailing ellipsis signals an in-progress action; keep it. Pairs with \"Clear index\"."
@@ -2951,9 +3423,17 @@
   "@settings.securityLog.enabled.description": {
     "description": "Help text under the 'Record security events' switch. 'MCP server' is a technical feature name (Model Context Protocol): keep it untranslated. 'turned away' = refused access. Reassures that the file stays local and holds nothing private."
   },
+  "settings.securityLog.enabled.keywords": "security, log, audit, record, events, access, privacy",
+  "@settings.securityLog.enabled.keywords": {
+    "description": "Search keywords for the “Record security events” setting (settings.securityLog.enabled.label) in Settings > Updates & privacy. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.securityLog.showInFinder": "Show in Finder",
   "@settings.securityLog.showInFinder": {
     "description": "Button under the 'Record security events' switch that opens Finder at the security event log file (or its folder when there's no file yet). 'Finder' is the macOS file manager: use the name macOS shows in your language."
+  },
+  "settings.updates.showSecurityLog.keywords": "security, log, audit, events, file, open",
+  "@settings.updates.showSecurityLog.keywords": {
+    "description": "Search keywords for the “Show in Finder” row (settings.securityLog.showInFinder) in Settings > Updates & privacy. Never shown: Settings search matches them, so typing one of these finds the row. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.fileSystemWatching.globalShortcutHint": "Change the shortcut under Keyboard shortcuts → Go to latest download (global).",
   "@settings.fileSystemWatching.globalShortcutHint": {
@@ -3020,6 +3500,10 @@
     "description": "Button that manually triggers an update check. In Settings > Updates & privacy.",
     "screenshot": "settings-updates.png"
   },
+  "settings.updates.checkForUpdates.keywords": "update, upgrade, check, version, new version",
+  "@settings.updates.checkForUpdates.keywords": {
+    "description": "Search keywords for the “Check for updates” row (settings.updates.checkForUpdates) in Settings > Updates & privacy. Never shown: Settings search matches them, so typing one of these finds the row. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.updates.emailConfirmHint": "Check your inbox to confirm your email. Thanks for helping out!",
   "@settings.updates.emailConfirmHint": {
     "description": "Friendly confirmation shown after the user submits their beta email, asking them to confirm via the inbox link. Warm, appreciative voice."
@@ -3038,6 +3522,10 @@
     "description": "Button that reveals the folder holding the app's log files. In Settings > Advanced, in the \"Logging and diagnostics\" card.",
     "screenshot": "settings-advanced.png"
   },
+  "settings.advanced.openLogFile.keywords": "log, logs, file, folder, reveal",
+  "@settings.advanced.openLogFile.keywords": {
+    "description": "Search keywords for the “Open log file” row (settings.logging.openLogFile) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the row. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.logging.copied": "Copied!",
   "@settings.logging.copied": {
     "description": "Brief confirmation shown after diagnostic info is copied to the clipboard. Pairs with \"Copy diagnostic info\". Keep the exclamation if it suits the locale."
@@ -3046,6 +3534,10 @@
   "@settings.logging.copyDiagnostics": {
     "description": "Button that copies diagnostic information to the clipboard. Briefly becomes \"Copied!\" after use.",
     "screenshot": "settings-advanced.png"
+  },
+  "settings.advanced.copyDiagnostics.keywords": "diagnostics, copy, version, support, clipboard",
+  "@settings.advanced.copyDiagnostics.keywords": {
+    "description": "Search keywords for the “Copy diagnostic info” row (settings.logging.copyDiagnostics) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the row. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.mcp.checkPort": "Check port",
   "@settings.mcp.checkPort": {
@@ -3115,6 +3607,10 @@
     "description": "Button that resets every advanced setting to its default value. In the Advanced section.",
     "screenshot": "settings-advanced.png"
   },
+  "settings.advanced.resetAll.keywords": "reset, defaults, restore, factory",
+  "@settings.advanced.resetAll.keywords": {
+    "description": "Search keywords for the “Reset all to defaults” row (settings.advanced.resetAll) in Settings > Advanced. Never shown: Settings search matches them, so typing one of these finds the row. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.advanced.resetAllConfirm": "Reset all advanced settings to their defaults? This cannot be undone.",
   "@settings.advanced.resetAllConfirm": {
     "description": "Confirmation-dialog body shown before resetting all advanced settings. Warns the action is irreversible."
@@ -3173,6 +3669,10 @@
   "@settings.mediaIndex.scope.opt.importance": {
     "description": "The second choice for which folders to image-index: Cmdr ranks folders by how much the user works with them and indexes the ones above the slider. 'importance' is the app's ranking of how much a folder matters to this user."
   },
+  "settings.mediaIndex.scope.keywords": "image, photo, index, folders, scope, coverage, which, choose",
+  "@settings.mediaIndex.scope.keywords": {
+    "description": "Search keywords for the “Which folders to index” setting (settings.mediaIndex.scope.label) in Settings > Indexing > Image indexing. Never shown: Settings search matches them, so typing one of these finds the setting. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.mediaIndex.chosenFolders.title": "Folders to index",
   "@settings.mediaIndex.chosenFolders.title": {
     "description": "Title above the list of folders the user picked for image indexing. In Settings > Indexing > Image indexing."
@@ -3212,6 +3712,10 @@
   "settings.servers.card.trustedHostKeys": "Trusted host keys",
   "@settings.servers.card.trustedHostKeys": {
     "description": "Title of the only card on Settings > File systems > Servers: the list of SSH server keys this Mac has accepted. A host key is what a server proves its identity with, and \"trusted\" means the user said yes to it once. Three or four words."
+  },
+  "settings.network.trustedHostKeys.keywords": "host key, fingerprint, trust, trusted, known hosts, server, forget",
+  "@settings.network.trustedHostKeys.keywords": {
+    "description": "Search keywords for the “Trusted host keys” row (settings.servers.card.trustedHostKeys) in Settings > File systems > Servers (SFTP, WebDAV). Never shown: Settings search matches them, so typing one of these finds the row. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.servers.trustedHostKeys.description": "Cmdr asks before it trusts a server’s key the first time you connect, and remembers your answer here. Saved servers live in the Servers list, not on this page.",
   "@settings.servers.trustedHostKeys.description": {
@@ -3263,6 +3767,10 @@
   "@settings.adb.status.notWatching": {
     "description": "The same line when Cmdr is not subscribed, which is the normal state when the switch is off or the tools are missing. Factual, no blame, no alarm."
   },
+  "settings.adb.status.keywords": "status, re-check, recheck, found, watching, install",
+  "@settings.adb.status.keywords": {
+    "description": "Search keywords for the “Status” row (settings.adb.status.label) in Settings > File systems > Android (ADB). Never shown: Settings search matches them, so typing one of these finds the row. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
   "settings.adb.recheck": "Re-check",
   "@settings.adb.recheck": {
     "description": "VERB (imperative), the button beside the status: look for the \"adb\" command again, which is what a person presses right after installing the Android tools. One or two words; the button is small."
@@ -3302,6 +3810,10 @@
   "settings.dataWipe.button": "Delete all Cmdr data",
   "@settings.dataWipe.button": {
     "description": "Button in Settings > Updates & privacy that opens a confirmation dialog about deleting all of the app's data on this computer. VERB phrase, sentence case. \"Cmdr\" is the app's name."
+  },
+  "settings.updates.deleteAllData.keywords": "delete, erase, remove, wipe, reset, uninstall, privacy, data, forget, gdpr",
+  "@settings.updates.deleteAllData.keywords": {
+    "description": "Search keywords for the “Delete all Cmdr data” row (settings.dataWipe.button) in Settings > Updates & privacy. Never shown: Settings search matches them, so typing one of these finds the row. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   },
   "settings.dataWipe.title": "Delete all Cmdr data on this Mac?",
   "@settings.dataWipe.title": {
@@ -3444,5 +3956,25 @@
   "settings.dataWipe.quit": "Quit Cmdr",
   "@settings.dataWipe.quit": {
     "description": "The only button after the delete finished: quits the app. VERB phrase, sentence case. \"Cmdr\" is the app's name."
+  },
+  "settings.askCmdr.forgetMemory.keywords": "forget, memory, erase, delete, remembers, privacy",
+  "@settings.askCmdr.forgetMemory.keywords": {
+    "description": "Search keywords for the “Forget everything” row (askCmdr.forget.confirm) in Settings > AI > Ask Cmdr. Never shown: Settings search matches them, so typing one of these finds the row. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
+  "settings.shortcuts.resetAll.keywords": "reset, shortcuts, defaults, restore, keyboard",
+  "@settings.shortcuts.resetAll.keywords": {
+    "description": "Search keywords for the “Reset all to defaults” row (shortcuts.section.resetAll) in Settings > Keyboard shortcuts. Never shown: Settings search matches them, so typing one of these finds the row. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
+  "settings.license.manageKey.keywords": "license, key, manage, activate, activation, change",
+  "@settings.license.manageKey.keywords": {
+    "description": "Search keywords for the “Manage license key” row (licensing.section.manageKey) in Settings > License. Never shown: Settings search matches them, so typing one of these finds the row. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
+  "settings.license.enterKey.keywords": "license, key, enter, activate, activation, redeem",
+  "@settings.license.enterKey.keywords": {
+    "description": "Search keywords for the “Enter license key” row (licensing.section.enterKey) in Settings > License. Never shown: Settings search matches them, so typing one of these finds the row. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
+  },
+  "settings.license.getLicense.keywords": "license, buy, purchase, pricing, commercial, personal, upgrade",
+  "@settings.license.getLicense.keywords": {
+    "description": "Search keywords for the “Get a license” row (licensing.section.getLicense) in Settings > License. Never shown: Settings search matches them, so typing one of these finds the row. Write the words a user of your language might type when looking for it: synonyms and everyday words welcome, any count, NOT a 1:1 translation of this list. Separate them with commas. Leave out brand and product names, protocols, and file formats: those are matched in every language already."
   }
 }

@@ -15,7 +15,7 @@ export const advancedRows: SearchableRow[] = [
     id: 'row:advanced.resetAll',
     section: ['Advanced'],
     labelKey: 'settings.advanced.resetAll',
-    keywords: ['reset', 'defaults', 'restore', 'factory'],
+    keywordsKey: 'settings.advanced.resetAll.keywords',
   },
   {
     // The two action buttons trailing the "Logging and diagnostics" card. Their
@@ -25,13 +25,14 @@ export const advancedRows: SearchableRow[] = [
     section: ['Advanced'],
     labelKey: 'settings.logging.openLogFile',
     cardKey: 'settings.advanced.card.loggingAndDiagnostics',
-    keywords: ['log', 'logs', 'file', 'folder', 'reveal', 'finder'],
+    keywordsKey: 'settings.advanced.openLogFile.keywords',
+    terms: ['finder'],
   },
   {
     id: 'row:advanced.copyDiagnostics',
     section: ['Advanced'],
     labelKey: 'settings.logging.copyDiagnostics',
     cardKey: 'settings.advanced.card.loggingAndDiagnostics',
-    keywords: ['diagnostics', 'copy', 'version', 'support', 'clipboard'],
+    keywordsKey: 'settings.advanced.copyDiagnostics.keywords',
   },
 ]
