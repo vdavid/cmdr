@@ -11,7 +11,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { _setLocaleForTests } from '#lib/intl/locale.js'
 import { tString } from '#lib/intl/messages.svelte.js'
-import { SEARCH_RESULTS_NOT_A_FOLDER_TOAST } from './capabilities'
+import { searchResultsNotAFolderToast } from './capabilities'
 import { resolveSearchScope } from './searchable-folder'
 import { buildSnapshotLabel } from './snapshot-label'
 
@@ -46,7 +46,7 @@ describe('search dialog config copy parity (en)', () => {
 
 describe('search toast and tooltip parity (en)', () => {
   it('preserves the not-a-folder toast (apostrophe hazard)', () => {
-    expect(SEARCH_RESULTS_NOT_A_FOLDER_TOAST).toBe('Search results aren’t a folder. Paste into a real folder instead.')
+    expect(searchResultsNotAFolderToast()).toBe('Search results aren’t a folder. Paste into a real folder instead.')
   })
 
   it('preserves the unavailable-current-folder tooltip', () => {

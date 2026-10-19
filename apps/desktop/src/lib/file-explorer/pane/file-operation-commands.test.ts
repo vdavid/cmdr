@@ -39,7 +39,7 @@ vi.mock('#lib/search/snapshot-store.svelte.js', async () => {
 vi.mock('#lib/stores/volume-store.svelte.js', () => ({ getVolumes: () => [] }))
 
 vi.mock('#lib/search/capabilities.js', () => ({
-  SEARCH_RESULTS_NOT_A_FOLDER_TOAST: 'Search results aren’t a folder. Pick a real destination.',
+  searchResultsNotAFolderToast: () => 'Search results aren’t a folder. Pick a real destination.',
 }))
 
 vi.mock('#lib/file-viewer/open-viewer.js', async () => ({

@@ -15,7 +15,7 @@
  * they're unit-testable without a running app.
  */
 import { DEFAULT_VOLUME_ID } from '#lib/tauri-commands/index.js'
-import { SEARCH_RESULTS_NOT_A_FOLDER_TOAST } from '#lib/search/capabilities.js'
+import { searchResultsNotAFolderToast } from '#lib/search/capabilities.js'
 import { findVolumeIdForPath } from '../drag/drop-operation'
 import { getCommonParentPath, getDestinationVolumeInfo } from './transfer-operations'
 import { capabilitiesForPane } from './volume-capabilities'
@@ -80,7 +80,7 @@ export function checkTransferDestinationGuard(
 ): TransferGuardResult {
   const destCaps = capabilitiesForPane(destVolumeId, destPath)
   if (!destCaps.canWrite && destCaps.kind === 'search-results') {
-    return { ok: false, toast: { message: SEARCH_RESULTS_NOT_A_FOLDER_TOAST, level: 'warn' } }
+    return { ok: false, toast: { message: searchResultsNotAFolderToast(), level: 'warn' } }
   }
   // A read-only archive (tar / 7z) can't accept a paste/move-in: browse + extract
   // only. Refuse up front rather than routing to the archive-edit flow that the

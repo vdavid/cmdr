@@ -500,7 +500,7 @@ volume-id string. The record has two halves, and which half answers is the whole
 Consumers read the record directly: `SearchResultsView.svelte` reads `capabilitiesForKind('search-results')` (it always
 renders a search-results pane), and every capability-GUARD consumer reads it for a PANE via `capabilitiesForPane`.
 There's no Search-specific capabilities shim — `lib/search/capabilities.ts` keeps only the
-`SEARCH_RESULTS_NOT_A_FOLDER_TOAST` string. The guards:
+`searchResultsNotAFolderToast()` string. The guards:
 
 - **Dispatch** (`command-dispatch.ts::blockedByCapabilities`) + **F-bar** (`FunctionKeyBar.svelte`): paste, mkdir,
   mkfile, and rename all off `!canWrite`. One flag, because it's one question — Rust answers it with one

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { checkTransferDestinationGuard, resolveSourceVolumeId } from './transfer-entry'
-import { SEARCH_RESULTS_NOT_A_FOLDER_TOAST } from '#lib/search/capabilities.js'
+import { searchResultsNotAFolderToast } from '#lib/search/capabilities.js'
 import type { VolumeInfo } from '../types'
 import type { PathVolumeResolution } from '#lib/tauri-commands/index.js'
 
@@ -90,7 +90,7 @@ describe('checkTransferDestinationGuard', () => {
     const result = checkTransferDestinationGuard('search-results', [ROOT, searchResults])
     expect(result.ok).toBe(false)
     if (result.ok) throw new Error('expected a block')
-    expect(result.toast).toEqual({ message: SEARCH_RESULTS_NOT_A_FOLDER_TOAST, level: 'warn' })
+    expect(result.toast).toEqual({ message: searchResultsNotAFolderToast(), level: 'warn' })
     expect(result.alert).toBeUndefined()
   })
 

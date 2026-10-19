@@ -9,8 +9,9 @@ User-facing copy born in this area lives in the `search.*` catalog (`#lib/intl/m
 `tString()` (the `SearchDialogConfig` title/actions/tooltips, the recent-search aria label, the system-dir-exclude
 tooltip, snapshot labels). `cmdr/no-raw-user-facing-string` is enforced on `/lib/search/`. Most of the dialog's
 on-screen copy is owned by the shared `lib/query-ui/` primitives (the `queryUi.*` catalog), not here.
-`SEARCH_RESULTS_NOT_A_FOLDER_TOAST` stays a string const (resolved from the catalog at module load) because out-of-scope
-consumers (`command-dispatch.ts`, `transfer-entry.ts`) import it by name. Parity net: `search-i18n-parity.test.ts`.
+`searchResultsNotAFolderToast()` (imported by `command-dispatch.ts` and `transfer-entry.ts`) resolves per call, ❌ never
+at module load: a const would keep the language the app started in after a switch in Settings. Parity net:
+`search-i18n-parity.test.ts`.
 
 Backend: `src-tauri/src/search/` (index, engine, query, AI pipeline), `src-tauri/src/commands/search.rs` (thin IPC
 wrappers).
@@ -38,9 +39,9 @@ and the `recent-items/` family) lives in `../query-ui/CLAUDE.md`, over the app-w
 - **`SearchResultsView.svelte` does NOT live in this directory.** It sits in `lib/file-explorer/pane/` with the other
   pane views even though it's conceptually a Search consumer, because it renders as a pane for `search-results://`
   snapshot panes.
-- **`capabilities.ts` owns only the `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` string.** The capabilities themselves come from
-  the per-kind table in `lib/file-explorer/pane/volume-capabilities.ts`; there is deliberately no Search-specific
-  capability shim, so don't add one.
+- **`capabilities.ts` owns only the `searchResultsNotAFolderToast()` string.** The capabilities themselves come from the
+  per-kind table in `lib/file-explorer/pane/volume-capabilities.ts`; there is deliberately no Search-specific capability
+  shim, so don't add one.
 - **`snapshot-sort.svelte.ts` owns the ROUND TRIP, `snapshot-store.svelte.ts` owns the MUTATION.** The store stays free
   of the IPC layer and its `applySnapshotSort` stays synchronous; the sorter holds the request bookkeeping and the
   tri-state cycle. § "The snapshot pane's row order".
@@ -706,8 +707,8 @@ off `!hasBackendListing`), MCP sync (`!syncsToMcp`), and `has-parent` (`hasParen
 - **Keyboard shortcut dispatch** (`routes/(main)/command-dispatch.ts::blockedByCapabilities`): catches `⌘V`, `⌘⌥V`,
   `F7`, Shift+F4, `F2` / `file.rename` when the focused pane's capabilities can't satisfy the destination op
   (`!canWrite`). Surfaces the friendly toast `"Search results aren't a folder. Paste into a real folder instead."`
-  (canonical string `SEARCH_RESULTS_NOT_A_FOLDER_TOAST`) — for the `search-results` kind only; a `network` pane keeps
-  its prior silence.
+  (canonical string `searchResultsNotAFolderToast()`) — for the `search-results` kind only; a `network` pane keeps its
+  prior silence.
 
 ### Cross-snapshot purge
 
@@ -818,7 +819,7 @@ Both that and the header rule below are cells on the per-kind capability table; 
 index against `snapshot.entries[i]`, and that array is what moves. § "The snapshot pane's row order" below.
 
 Destination-side write ops are still blocked: pasting INTO a search-results pane shows the canonical
-`SEARCH_RESULTS_NOT_A_FOLDER_TOAST` (via the F-bar disablement, the menu item omission, and the dispatcher's
+`searchResultsNotAFolderToast()` (via the F-bar disablement, the menu item omission, and the dispatcher's
 `blockedByCapabilities` guard). `openTransferDialog` also blocks F5/F6 when the OPPOSITE pane is a snapshot, so the
 shortcut path can't accidentally route a copy/move INTO a snapshot.
 

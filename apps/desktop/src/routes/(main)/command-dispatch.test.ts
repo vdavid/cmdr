@@ -47,7 +47,7 @@ import { handleCommandExecute, type CommandDispatchContext } from './command-dis
 import { _resetDedupForTests } from './dispatch-dedup'
 import { claimMenuCommand } from '#lib/commands/menu-claims.js'
 import type { DialogsOnScreen, DispatchSource } from './command-dispatch-context'
-import { SEARCH_RESULTS_NOT_A_FOLDER_TOAST } from '#lib/search/capabilities.js'
+import { searchResultsNotAFolderToast } from '#lib/search/capabilities.js'
 import type { ExplorerAPI } from './explorer-api'
 
 const NOTHING_OPEN: DialogsOnScreen = { dialogOpen: false, paletteOpen: false }
@@ -240,10 +240,9 @@ describe('handleCommandExecute — blockedByCapabilities (search-results / netwo
 
       expect(ranBy, `${id} must be blocked before the explorer call`).not.toHaveBeenCalled()
       // The exact string, byte-for-byte.
-      expect(addToast, `${id} must surface the toast`).toHaveBeenCalledExactlyOnceWith(
-        SEARCH_RESULTS_NOT_A_FOLDER_TOAST,
-        { level: 'info' },
-      )
+      expect(addToast, `${id} must surface the toast`).toHaveBeenCalledExactlyOnceWith(searchResultsNotAFolderToast(), {
+        level: 'info',
+      })
     }
   })
 
@@ -307,7 +306,7 @@ describe('handleCommandExecute — blockedByCapabilities (search-results / netwo
     await handleCommandExecute('edit.pasteAsMove', g.ctx)
 
     expect(g.pasteFromClipboard).not.toHaveBeenCalled()
-    expect(addToast).toHaveBeenCalledExactlyOnceWith(SEARCH_RESULTS_NOT_A_FOLDER_TOAST, { level: 'info' })
+    expect(addToast).toHaveBeenCalledExactlyOnceWith(searchResultsNotAFolderToast(), { level: 'info' })
     input.remove()
   })
 

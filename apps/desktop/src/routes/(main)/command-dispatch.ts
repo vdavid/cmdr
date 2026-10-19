@@ -13,7 +13,7 @@
  */
 import { recordBreadcrumb } from '#lib/error-reporter/breadcrumbs.js'
 import { addToast } from '#lib/ui/toast/index.js'
-import { SEARCH_RESULTS_NOT_A_FOLDER_TOAST } from '#lib/search/capabilities.js'
+import { searchResultsNotAFolderToast } from '#lib/search/capabilities.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 import { getFocusedPanePath, getFocusedPaneVolumeId } from '#lib/file-explorer/pane/focused-pane-reads.js'
 import { capabilitiesForPane } from '#lib/file-explorer/pane/volume-capabilities.js'
@@ -100,7 +100,7 @@ function blockedByCapabilities(commandId: CommandId, explorer: ExplorerAPI | und
       commandId === 'file.rename')
   if (!isBlocked) return false
 
-  addToast(SEARCH_RESULTS_NOT_A_FOLDER_TOAST, { level: 'info' })
+  addToast(searchResultsNotAFolderToast(), { level: 'info' })
   return true
 }
 

@@ -10,7 +10,7 @@
  *
  * This module keeps one Search-specific thing:
  *
- *  - `SEARCH_RESULTS_NOT_A_FOLDER_TOAST`: the L10 user-facing toast string shown
+ *  - `searchResultsNotAFolderToast()`: the L10 user-facing toast string shown
  *    when a keyboard shortcut tries a destination-side action (paste / mkdir /
  *    rename) on a search-results pane. Imported by the dispatcher, the transfer
  *    opener, and tests; it stays here so the wording lives next to its other
@@ -30,9 +30,9 @@ import { tString } from '#lib/intl/messages.svelte.js'
  * the search-results pane doesn't support (paste, mkdir, rename). Kept here so the
  * wording stays consistent between the dispatcher and tests.
  *
- * Resolved from the message catalog at module load (English-only ships today, no
- * locale picker). It stays a string const because out-of-scope consumers
- * (`command-dispatch.ts`, `transfer-entry.ts`) import it by name; a future locale
- * switch would turn this into a getter alongside those call sites.
+ * A function, resolved per call, so it speaks the language picked in Settings
+ * after this module loaded.
  */
-export const SEARCH_RESULTS_NOT_A_FOLDER_TOAST = tString('search.notAFolderToast')
+export function searchResultsNotAFolderToast(): string {
+  return tString('search.notAFolderToast')
+}
