@@ -11,7 +11,13 @@ Add an entry to `settings-registry.ts`. Name the id after the UI vocabulary (`wh
 
 - `id`, `section` (the sidebar path, for example `['Updates & privacy']` or `['Appearance', 'Listing']`)
 - `label`, `description`: sentence case, friendly, per the style guide
-- `keywords`: extra search terms so the setting is findable (for example `['changelog', 'release notes']`)
+- `keywordsKey`: extra search words so the setting is findable, as a catalog message `settings.<id>.keywords` in
+  `en/settings.json` (comma-separated, for example `"changelog, release notes, what’s new"`). Give it a `@key`
+  description like its siblings': each language writes its own list, synonyms welcome, not a 1:1 translation. Then
+  `pnpm intl:keys` and `node apps/desktop/scripts/sync-locale-keys.ts`, and hand the key to the translators.
+- `terms`: language-neutral tokens no language translates (brand and product names, protocols, file formats, key names:
+  `['openai', 'ssh', 'pdf', 'F4']`). They match in every language. ❌ A translatable word goes in `keywordsKey` instead,
+  or nobody outside English can find the setting by their own word for it.
 - `type` + `default` + `component` (`switch`, `number`, `select`, `slider`, `radio`, `toggle-group`, `checkbox`,
   `color`, `text-input`)
 - `hidden: true` for internal state with no UI (for example a "last seen version" stamp). Hidden settings live in the
@@ -112,7 +118,8 @@ the three and the easiest to reach for wrongly, so before building one read `lib
 1. Add a `SearchableRow` to the `<Component>.rows.ts` beside the section component (create the file and add it to
    `lib/settings/sections/searchable-rows.ts` if the section has none yet). Give it a `row:`-prefixed id, the hosting
    page's `section`, the `labelKey` the row ALREADY renders (no new copy), the `cardKey` of its `SectionCard` if it sits
-   in a titled one, and `keywords`.
+   in a titled one, and `keywordsKey` / `terms` as for a setting (§ 1; the key is
+   `settings.<id without row:>.keywords`).
 2. Gate the markup on `shouldShow('row:…')`, and add the id to the card's `anyVisible(...)` guard. Skip the guard and a
    hit on the row opens the page with every card filtered away.
 3. Nothing else: no `SettingsValues` key, no `SCHEMA_VERSION` bump, no applier case.

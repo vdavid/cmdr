@@ -452,7 +452,8 @@ exactly, since one typo in a two-to-five-character term is a different word. The
 
 **One entry's text**, built by `indexEntry`, in this order:
 
-1. **The localized part**: translated section titles (`sectionTitle`), label, description, keywords, card title.
+1. **The localized part**: translated section titles (`sectionTitle`), label, description, keywords, `terms`, card
+   title.
 2. **The English fallback**, outside English only (`en-GB`, `en-AU`, and `en-XA` count as English): English label,
    keywords, card title, and the English section path. A row matched only through English shows no highlight; that's
    intended. ❌ Not the English description: long common-word sentences make short queries noisy.
@@ -461,21 +462,36 @@ exactly, since one typo in a two-to-five-character term is a different word. The
    `magyar` finds it with French on screen, and a new locale joins with no edit. ❌ Not for other settings: their
    foreign labels would be noise.
 
-**Keywords enter through `keywordsIn(locale, entry)` alone.** Today's `keywords` arrays are English, so they count as
-English's terms and reach other languages through the fallback.
+**Keywords live in the catalog; language-neutral tokens in TS.**
 
-**The index is keyed by the catalog on screen** (`resolvedCatalogLocale(getUiLocale())`) and rebuilds lazily when that
-changes, so a language switch needs no invalidation call (`clearSearchIndex()` is for tests that flip the platform). The
-label's offsets are recorded at build time from the same strings, so `getMatchIndicesForLabel` never measures a live
-label against stale text, and folding keeps every offset, so they index the label as rendered. The last query's results
-are reused, because every visible `SettingRow` asks for its highlight with the same query.
+- `keywordsKey` names a `settings.<id>.keywords` message (rows: the id without `row:`), typed `SearchKeywordsKey` so it
+  can only point at a keywords message. Its value is a comma-separated list each language writes for itself (the `@key`
+  description tells translators: synonyms welcome, any count, not a 1:1 translation).
+- `terms: string[]` holds what no language translates: brand and product names, protocols, file formats, key names
+  (`openai`, `ssh`, `pdf`, `F4`). Indexed once, in every language.
+- **Decision / why:** an English `keywords` array could never be found by a Hungarian word, and putting brand names in
+  the catalog would hand translators 11 copies of `openai` to leave alone. There's no `keywords` field left, so an
+  English list can't creep back in.
+- Keywords enter through `keywordsIn(locale, entry)` alone: split on any script's comma (`,` `，` `、` `،`) and trimmed.
+  A list the language hasn't translated resolves to English (`tStringIn` walks the fallback chain, and
+  `sync-locale-keys.ts` seeds English skeletons), so `keywordsIn` treats a value equal to the English one as no
+  keywords; the English fallback indexes it once.
+
+**The index is keyed by the catalog on screen** (`uiCatalogLocale()`) and rebuilds lazily when that changes, so a
+language switch needs no invalidation call (`clearSearchIndex()` is for tests that flip the platform or swap a catalog's
+contents under the same tag). That read is reactive, and every search goes through it, cache hits included, so a
+`$derived` or markup over any search (the sidebar's `matchingSections`, `SettingsContent`'s page gates, row highlights)
+re-runs on a switch (`settings-search.reactivity.svelte.test.ts`). The label's offsets are recorded at build time from
+the same strings, so `getMatchIndicesForLabel` never measures a live label against stale text, and folding keeps every
+offset, so they index the label as rendered. The last query's results are reused, because every visible `SettingRow`
+asks for its highlight with the same query.
 
 **A section lights up through its entries alone** (`getMatchingSections`), plus Keyboard shortcuts through the command
 search. ❌ No hardcoded keyword list: License and AI once had one, which lit the sidebar while the page showed nothing
 (`settings-search.i18n.test.ts` § "sections a hit lights up" pins that each old keyword reaches a real row).
 
 Tests: `settings-search.test.ts` (index shape, cards, rows) and `settings-search.i18n.test.ts` (the real catalogs:
-language switch, scripts, accents, the fallback, the Language setting).
+language switch, scripts, accents, the fallback, catalog keywords and terms, the Language setting).
 
 ## Card groups (in-page SectionCard grouping)
 
@@ -505,7 +521,7 @@ nothing structural enforces either:
 case there when a page grows a card.
 
 **Decision / why: card titles are catalog keys, not literals.** With the i18n runtime in place,
-`no-raw-user-facing-string` forbids literal UI strings, and `card` must be translation-aware (untranslated `keywords`
+`no-raw-user-facing-string` forbids literal UI strings, and `card` must be translation-aware (an English literal
 couldn't make a card title findable in another locale). So the field is a `MessageKey`, resolved through `tString` at
 read time — the same shape as `labelKey`. The search index is keyed by the UI catalog and rebuilds on a language switch,
 so card titles search in the language on screen (§ "Search").
@@ -561,8 +577,8 @@ couldn't know to show for one — searching "index size" produced a blank pane.
 A `SearchableRow` (`types.ts`) gives such a row a searchable identity without modelling it as a setting:
 
 - **Shape**: a `row:`-prefixed `id`, the hosting page's `section`, the `labelKey` the row already renders, an optional
-  `cardKey` (the key its `SectionCard` title displays) and `keywords`. No `SettingsValues` key, no default, nothing read
-  or written.
+  `cardKey` (the key its `SectionCard` title displays), `keywordsKey`, and `terms`. No `SettingsValues` key, no default,
+  nothing read or written.
 - **Where they live**: a `<Component>.rows.ts` beside the markup, aggregated by `sections/searchable-rows.ts`, which
   resolves each into a getter-backed `SearchableEntry` (the same lazy-`tString` trick `resolveDefinition` plays).
 - **How search sees them**: `buildSearchIndex` concatenates `settingsRegistry` and the row entries, so `shouldShow(id)`,

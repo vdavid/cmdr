@@ -13,7 +13,8 @@ Registry-based user settings: defined once in `settings-registry.ts`, accessed u
 ## Must-knows
 
 - **The registry stores i18n message KEYS, not English** (`labelKey` / `descriptionKey`, enum options too); copy lives
-  in `messages/en/settings.json`. `section: string[]` stays English: routing and search identity, not a title.
+  in `messages/en/settings.json`. Search keywords too (`keywordsKey`); only untranslatable tokens (`openai`, `ssh`) sit
+  in TS `terms`. `section: string[]` stays English: routing and search identity, not a title.
 - **A registry entry alone does NOT render, and its `section` is its ONE home**: hand-render a `SettingRow` on the
   feature page, OR auto-render in Advanced (`section[0] === 'Advanced'` + a `cardKey`), never both.
   [Checklist](../../../../../docs/guides/adding-a-new-setting.md).
