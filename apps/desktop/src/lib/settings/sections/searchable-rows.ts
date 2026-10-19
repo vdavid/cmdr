@@ -52,6 +52,8 @@ function resolveRow(row: SearchableRow): SearchableEntry {
     section: row.section,
     description: '',
     keywords: row.keywords ?? [],
+    labelKey,
+    ...(cardKey !== undefined && { cardKey }),
     get label() {
       return tString(labelKey)
     },

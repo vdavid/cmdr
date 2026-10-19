@@ -95,7 +95,9 @@ function resolveConstraints(c: SettingConstraintsSource | undefined): SettingCon
 
 /** Turns an authored source into a `SettingDefinition` with resolved copy. */
 function resolveDefinition(src: SettingDefinitionSource): SettingDefinition {
-  const { labelKey, descriptionKey, cardKey, constraints, ...rest } = src
+  // `labelKey` / `cardKey` stay on the definition (in `rest`): search indexes them in other languages.
+  const { descriptionKey, constraints, ...rest } = src
+  const { labelKey, cardKey } = rest
   const def = {
     ...rest,
     constraints: resolveConstraints(constraints),

@@ -1,24 +1,18 @@
 /**
- * Settings search functionality using uFuzzy.
- * Same search engine and configuration as the command palette.
+ * Settings search, in the UI language with English as a fallback, through the shared
+ * `#lib/utils/unicode-fuzzy` engine (the command palette's: any script, accents optional).
  */
 
-import uFuzzy from '@leeoniya/ufuzzy'
-import { INTRA_MODE_SINGLE_ERROR } from '#lib/utils/ufuzzy-modes.js'
+import { foldForSearch, fuzzySearch, type FoldedText } from '#lib/utils/unicode-fuzzy.js'
+import { availableLocales, resolvedCatalogLocale, tStringIn } from '#lib/intl/messages.svelte.js'
+import { getUiLocale } from '#lib/intl/locale.js'
+import { localeDisplayName } from '#lib/intl/locale-display-names.js'
 import type { SearchableEntry, SettingSearchResult } from './types'
 import { settingsRegistry } from './settings-registry'
 import { searchableRowEntries } from './sections/searchable-rows'
+import { sectionTitle } from './section-i18n'
 import { searchAllCommands } from '#lib/commands/fuzzy-search.js'
 import { isMacOS } from '#lib/shortcuts/key-capture.js'
-
-// ============================================================================
-// Search Configuration (same as command palette)
-// ============================================================================
-
-const fuzzy = new uFuzzy({
-  intraMode: INTRA_MODE_SINGLE_ERROR, // Fuzzy matching within words (catches typos)
-  interIns: 3, // Max 3 insertions between matched characters
-})
 
 // ============================================================================
 // Search Index
@@ -26,17 +20,49 @@ const fuzzy = new uFuzzy({
 
 interface SearchIndexEntry {
   entry: SearchableEntry
-  searchableText: string
+  /** The folded text uFuzzy searches; match ranges index it and the unfolded original alike. */
+  searchableText: FoldedText
+  /** Where the localized label sits in `searchableText`, `[start, end)`, from the SAME snapshot. */
+  labelStart: number
+  labelEnd: number
 }
 
-let searchIndex: SearchIndexEntry[] | null = null
+interface SearchIndex {
+  /** The catalog the text was built from; a different one means the UI language changed. */
+  locale: string
+  entries: SearchIndexEntry[]
+  haystack: FoldedText[]
+}
+
+let searchIndex: SearchIndex | null = null
+
+/** The catalog the UI reads right now: `pt-PT` → `pt`, `ja-JP` → `en`. Keys the index. */
+function currentCatalogLocale(): string {
+  return resolvedCatalogLocale(getUiLocale())
+}
+
+/** English and its overlays (`en-GB`, `en-AU`, and the `en-XA` pseudolocale) get no English fallback. */
+function isEnglish(locale: string): boolean {
+  return locale.split('-')[0] === 'en'
+}
 
 /**
- * Build the search index from the settings registry plus the searchable rows.
- * Lazily initialized on first search.
+ * The entry's search terms in `locale`.
+ *
+ * The ONE place keywords enter the index. Today's `keywords` arrays are English, so they count as
+ * the terms of English only; another language reaches them through the English fallback.
  */
-function buildSearchIndex(): SearchIndexEntry[] {
-  if (searchIndex) return searchIndex
+function keywordsIn(locale: string, entry: SearchableEntry): string[] {
+  return isEnglish(locale) ? entry.keywords : []
+}
+
+/**
+ * Build the search index from the settings registry plus the searchable rows, in the current UI
+ * language. Rebuilt lazily whenever that language changed since the last build.
+ */
+function buildSearchIndex(): SearchIndex {
+  const locale = currentCatalogLocale()
+  if (searchIndex?.locale === locale) return searchIndex
 
   // The index covers the WHOLE registry, including the Advanced section
   // (`section: ['Advanced']`): the Advanced page renders those grouped into cards
@@ -56,30 +82,57 @@ function buildSearchIndex(): SearchIndexEntry[] {
   // rather than at import, so a test can flip the platform.
   const onMacOS = isMacOS()
   const settings = settingsRegistry.filter((setting) => onMacOS || setting.macOSOnly !== true)
-  searchIndex = [...settings, ...searchableRowEntries()].map((entry) => ({
-    entry,
-    searchableText: buildSearchableText(entry),
-  }))
+  const entries = [...settings, ...searchableRowEntries()].map((entry) => indexEntry(entry, locale))
+  searchIndex = { locale, entries, haystack: entries.map((e) => e.searchableText) }
 
   return searchIndex
 }
 
 /**
- * Build searchable text for an entry by concatenating:
- * - Section path (like "Appearance > Colors and formats")
- * - Label
- * - Description
- * - Keywords
- * - Card-group title (resolved from `cardKey`), so searching a card title surfaces its rows
+ * One entry's searchable text, in this order:
  *
- * The resolved `card` MUST stay LAST. `getMatchIndicesForLabel` reconstructs label-highlight
- * offsets assuming `section › … + ' ' + label` at the front; inserting `card` earlier would
- * silently mis-highlight labels. Appending is offset-safe.
+ * 1. The localized part: translated section titles (like "Megjelenés › Színek és formátumok"),
+ *    label, description, keywords, and card-group title, so searching a card title surfaces its rows.
+ * 2. Outside English, the English fallback: label, keywords, card title, and section path. Not the
+ *    description: long common-word sentences make short queries noisy.
+ * 3. For a `searchAllLocales` entry, its label in every loaded catalog plus every locale's own name.
+ *
+ * The label's offsets are recorded here, from the same strings, so a highlight never measures a
+ * live label against stale text. Anything matched past the label (English included) shows no
+ * highlight, by design.
  */
-function buildSearchableText(entry: SearchableEntry): string {
-  const parts = [entry.section.join(' › '), entry.label, entry.description, ...entry.keywords]
+function indexEntry(entry: SearchableEntry, locale: string): SearchIndexEntry {
+  const sectionPath = entry.section.map(sectionTitle).join(' › ')
+  const label = entry.label
+  const parts = [sectionPath, label, entry.description, ...keywordsIn(locale, entry)]
   if (entry.card !== undefined) parts.push(entry.card)
-  return parts.join(' ').toLowerCase()
+
+  if (!isEnglish(locale)) {
+    parts.push(tStringIn('en', entry.labelKey), ...keywordsIn('en', entry))
+    if (entry.cardKey !== undefined) parts.push(tStringIn('en', entry.cardKey))
+    parts.push(entry.section.join(' › '))
+  }
+
+  if (entry.searchAllLocales === true) parts.push(...everyLocaleTerms(entry))
+
+  const labelStart = sectionPath.length + 1
+  return {
+    entry,
+    searchableText: foldForSearch(parts.join(' ')),
+    labelStart,
+    labelEnd: labelStart + label.length,
+  }
+}
+
+/** The entry's label in every loaded catalog, plus each locale's name in its own language, deduplicated. */
+function everyLocaleTerms(entry: SearchableEntry): string[] {
+  const locales = availableLocales()
+  const terms = new Set<string>()
+  for (const tag of locales) {
+    terms.add(tStringIn(tag, entry.labelKey))
+    terms.add(localeDisplayName(tag, locales))
+  }
+  return [...terms]
 }
 
 // ============================================================================
@@ -91,28 +144,47 @@ function buildSearchableText(entry: SearchableEntry): string {
  * Returns the entries that match, with match indices for highlighting.
  */
 export function searchSettings(query: string): SettingSearchResult[] {
-  const index = buildSearchIndex()
+  return searchIndexed(query).map(({ indexed, matchedIndices }) => ({
+    entry: indexed.entry,
+    matchedIndices,
+    searchableText: indexed.searchableText,
+  }))
+}
 
+interface IndexedMatch {
+  indexed: SearchIndexEntry
+  /** Character indices into `indexed.searchableText`. */
+  matchedIndices: number[]
+}
+
+/** The last search, reused: every visible `SettingRow` asks for its highlight with the same query. */
+let lastSearch: { index: SearchIndex; query: string; matches: IndexedMatch[] } | null = null
+
+/** Runs `query` over the current index, ranked, keeping each hit's index entry. */
+function searchIndexed(query: string): IndexedMatch[] {
+  const index = buildSearchIndex()
+  if (lastSearch?.index === index && lastSearch.query === query) return lastSearch.matches
+  const matches = runSearch(index, query)
+  lastSearch = { index, query, matches }
+  return matches
+}
+
+function runSearch(index: SearchIndex, query: string): IndexedMatch[] {
   // Empty query returns everything
   if (!query.trim()) {
-    return index.map((indexed) => ({
-      entry: indexed.entry,
-      matchedIndices: [],
-      searchableText: indexed.searchableText,
-    }))
+    return index.entries.map((indexed) => ({ indexed, matchedIndices: [] }))
   }
 
-  const haystack = index.map((e) => e.searchableText)
   // A null idxs/order is uFuzzy's "no matches" shape; the guard also narrows the
   // result to the ranked case, so `info` is non-null in the map below.
-  const [matchedIndices, info, order] = fuzzy.search(haystack, query.toLowerCase())
+  const [matchedIndices, info, order] = fuzzySearch(index.haystack, query)
   if (!matchedIndices || !order) {
     return []
   }
 
   // Build results with match information
   return order.map((idx) => {
-    const indexed = index[matchedIndices[idx]]
+    const indexed = index.entries[matchedIndices[idx]]
     // ranges is a flat array of [start, end) pairs (end exclusive)
     const ranges = info.ranges[idx]
 
@@ -126,11 +198,7 @@ export function searchSettings(query: string): SettingSearchResult[] {
       }
     }
 
-    return {
-      entry: indexed.entry,
-      matchedIndices: indices,
-      searchableText: indexed.searchableText,
-    }
+    return { indexed, matchedIndices: indices }
   })
 }
 
@@ -159,25 +227,8 @@ export function getMatchingSections(query: string): Set<string> {
     }
   }
 
-  // Check if query matches license-related terms
-  if (query.trim()) {
-    const licenseKeywords = 'license key activation commercial personal upgrade buy purchase pricing'
-    const lowerQuery = query.toLowerCase()
-    if (licenseKeywords.includes(lowerQuery) || 'license'.includes(lowerQuery)) {
-      sections.add('License')
-    }
-  }
-
-  // Check if query matches AI-related terms
-  if (query.trim()) {
-    const aiKeywords =
-      'ai artificial intelligence llm model openai api key local llama server provider context memory cloud anthropic groq together fireworks mistral ollama deepseek xai perplexity openrouter gemini azure lm-studio custom service'
-    const lowerQuery = query.toLowerCase()
-    if (aiKeywords.split(' ').some((kw) => kw.startsWith(lowerQuery)) || lowerQuery === 'ai') {
-      sections.add('AI')
-    }
-  }
-
+  // Every other section lights up through its entries alone: a page with nothing to show for a
+  // hit (License and AI once had hardcoded keyword lists here) must not light up at all.
   return sections
 }
 
@@ -247,10 +298,12 @@ export function anyVisible(shouldShow: (id: string) => boolean, ...ids: string[]
 }
 
 /**
- * Clear the search index (for testing or when settings change).
+ * Clear the search index. A language change needs no call (the index is keyed by catalog); this
+ * is for tests that flip the platform.
  */
 export function clearSearchIndex(): void {
   searchIndex = null
+  lastSearch = null
 }
 
 /**
@@ -286,19 +339,11 @@ export function getMatchingSettingIdsInSection(query: string, sectionPath: strin
 export function getMatchIndicesForLabel(query: string, settingId: string): number[] {
   if (!query.trim()) return []
 
-  const results = searchSettings(query)
-  const result = results.find((r) => r.entry.id === settingId)
-  if (!result) return []
+  const match = searchIndexed(query).find((m) => m.indexed.entry.id === settingId)
+  if (!match) return []
 
-  // The matchedIndices are relative to searchableText which includes section path
-  // We need to find where the label starts in searchableText and adjust indices
-  const entry = result.entry
-  // Match the format used in buildSearchableText: section.join(' › ') + ' ' + label
-  const sectionText = entry.section.join(' › ') + ' '
-  // searchableText is lowercased, so we need to work with the lowercased label length
-  const labelStart = sectionText.toLowerCase().length
-  const labelEnd = labelStart + entry.label.toLowerCase().length
-
-  // Filter indices that fall within the label range and adjust them
-  return result.matchedIndices.filter((idx) => idx >= labelStart && idx < labelEnd).map((idx) => idx - labelStart)
+  // The indices run over the whole searchable text; keep the ones inside the label, measured
+  // when the text was built (folding keeps every offset, so they index the label as rendered).
+  const { labelStart, labelEnd } = match.indexed
+  return match.matchedIndices.filter((idx) => idx >= labelStart && idx < labelEnd).map((idx) => idx - labelStart)
 }

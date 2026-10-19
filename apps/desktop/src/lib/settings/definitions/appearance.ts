@@ -117,6 +117,8 @@ export const appearanceSettings: SettingDefinitionSource[] = [
     descriptionKey: 'settings.appearance.language.description',
     cardKey: 'settings.appearance.card.language',
     keywords: ['language', 'locale', 'translation', 'i18n', 'region', 'english'],
+    // Findable by "språk" or "Magyar" whatever the UI speaks: the way back from a language you can't read.
+    searchAllLocales: true,
     type: 'enum',
     default: 'system',
     component: 'select',

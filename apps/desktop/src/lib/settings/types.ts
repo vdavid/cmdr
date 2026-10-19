@@ -138,6 +138,11 @@ export interface SearchableEntry {
   description: string
   keywords: string[]
   card?: string
+  /** The keys behind `label` / `card`, so search can index them in another language (the English fallback). */
+  labelKey: MessageKey
+  cardKey?: MessageKey
+  /** See `SettingDefinition.searchAllLocales`. */
+  searchAllLocales?: true
 }
 
 export interface SettingConstraints {
@@ -191,6 +196,16 @@ export interface SettingDefinition {
    * rows). Distinct from `section` (the nav tree / routing identity).
    */
   card?: string
+  /** The keys behind `label` / `card`, kept so search can index them in another language. */
+  labelKey: MessageKey
+  cardKey?: MessageKey
+  /**
+   * Index this setting's label under EVERY loaded catalog, plus every locale's own name
+   * ("Svenska", "Magyar", "Русский"), so it's findable whatever the UI speaks. For the Language
+   * setting alone: the way back for someone who can't read the current language. ❌ Not for
+   * other settings: their foreign labels would be search noise.
+   */
+  searchAllLocales?: true
 
   // Type and constraints
   type: SettingType

@@ -387,6 +387,20 @@ export function tString(key: MessageKey, params?: TranslationParams): string {
 }
 
 /**
+ * `tString` in a locale OTHER than the UI's, down that locale's own fallback chain. For the rare
+ * reader that needs text the user isn't currently reading: Settings search indexes English as a
+ * fallback, and the Language setting under every loaded catalog's label. A snapshot, never
+ * reactive: markup always wants the UI locale, through `t()`.
+ */
+export function tStringIn(locale: string, key: MessageKey, params?: TranslationParams): string {
+  const result = getCompiled(locale, key).format(params)
+  if (typeof result !== 'string') {
+    throw new Error(`Message "${key}" produced rich-text output; use <Trans> or t() and read the array`)
+  }
+  return result
+}
+
+/**
  * The language-switch seam, driven by the Settings > Appearance > Language
  * picker (and by tests). Writes the value into the `getUiLocale()` source AND
  * bumps the version rune so open `t()`/`<Trans>` usages re-render. Pass `null`

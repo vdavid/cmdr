@@ -73,9 +73,10 @@ right reactivity semantics for free: a `t()` read in markup re-renders on a loca
 a snapshot (the same semantics the transfer pilot uses). An empty description (no `descriptionKey`) resolves to `''`.
 
 **Why `section` stays English.** The `section: string[]` array is a STRUCTURAL identity used for routing
-(`SettingsContent`), the section tree (`buildSectionTree`), section matching (`getSettingsInSection`), and the search
-haystack — not a render path. Translating it would couple identity to copy. The rendered section TITLES are separate:
-the section components and `SectionSummary` resolve them through `sectionTitle(name)` in `section-i18n.ts` (the single
+(`SettingsContent`), the section tree (`buildSectionTree`), section matching (`getSettingsInSection`), and search's
+section match set — not a render path. The search TEXT indexes the translated titles, with the English path only as a
+fallback (§ "Search"). Translating it would couple identity to copy. The rendered section TITLES are separate: the
+section components and `SectionSummary` resolve them through `sectionTitle(name)` in `section-i18n.ts` (the single
 English-name → title-key map), and `SettingsSidebar` does the same for the nav list.
 
 **Catalog key shape.** `settings.<id>.label` / `.description` (the setting id's dots preserved),
@@ -351,7 +352,8 @@ split-layout rule, and the `SettingPasswordInput` store-driven vs controlled mod
   flow in `+layout.svelte` to resolve the effective base URL and model. Custom is an API-key-backed OpenAI-compatible
   provider with an editable base URL; Qwen presets DashScope's compatible endpoint. API keys never appear here: the
   backend reads them from the OS secret store when `configureAi` hands it the provider id.
-- **settings-search.ts**: Fuzzy search over setting definitions; returns ranked matches with highlight ranges
+- **settings-search.ts**: Fuzzy search over setting definitions and searchable rows, in the UI language with an English
+  fallback; returns ranked matches with highlight ranges. § "Search" below.
 - **settings-applier.ts**: Listens for setting changes and applies side effects (CSS vars, backend config sync). The
   `passthroughBackendHandlers` table includes three entries for `ai.provider` / `ai.cloudProvider` /
   `ai.cloudProviderConfigs` that all call `ai-config.ts::pushConfigToBackend()`. The helper re-reads every relevant
@@ -440,6 +442,41 @@ The E2E `openSettingsWindowViaProd` helper emits the same `open-settings` event 
 - Platform-specific display strings (macOS: `⌘⇧P`, Windows: `Ctrl+Shift+P`)
 - Scope hierarchy determines conflict detection
 
+## Search (`settings-search.ts`)
+
+The index covers the whole registry (Advanced and `hidden` included, `macOSOnly` dropped off macOS) plus the searchable
+rows, and runs through the shared engine in `#lib/utils/unicode-fuzzy.ts` (the command palette's): every script counts
+as letters, accents fold on both sides (`tema` finds `Téma`, `ngon ngu` finds `Ngôn ngữ`), and a CJK query matches
+exactly, since one typo in a two-to-five-character term is a different word. The engine's rules and why:
+`../utils/DETAILS.md` § unicode-fuzzy.ts.
+
+**One entry's text**, built by `indexEntry`, in this order:
+
+1. **The localized part**: translated section titles (`sectionTitle`), label, description, keywords, card title.
+2. **The English fallback**, outside English only (`en-GB`, `en-AU`, and `en-XA` count as English): English label,
+   keywords, card title, and the English section path. A row matched only through English shows no highlight; that's
+   intended. ❌ Not the English description: long common-word sentences make short queries noisy.
+3. **Every language, for the Language setting alone** (`searchAllLocales: true` on `appearance.language`): its label
+   from every loaded catalog plus every locale's own name (`localeDisplayName`: Svenska, Magyar, Русский), so `språk` or
+   `magyar` finds it with French on screen, and a new locale joins with no edit. ❌ Not for other settings: their
+   foreign labels would be noise.
+
+**Keywords enter through `keywordsIn(locale, entry)` alone.** Today's `keywords` arrays are English, so they count as
+English's terms and reach other languages through the fallback.
+
+**The index is keyed by the catalog on screen** (`resolvedCatalogLocale(getUiLocale())`) and rebuilds lazily when that
+changes, so a language switch needs no invalidation call (`clearSearchIndex()` is for tests that flip the platform). The
+label's offsets are recorded at build time from the same strings, so `getMatchIndicesForLabel` never measures a live
+label against stale text, and folding keeps every offset, so they index the label as rendered. The last query's results
+are reused, because every visible `SettingRow` asks for its highlight with the same query.
+
+**A section lights up through its entries alone** (`getMatchingSections`), plus Keyboard shortcuts through the command
+search. ❌ No hardcoded keyword list: License and AI once had one, which lit the sidebar while the page showed nothing
+(`settings-search.i18n.test.ts` § "sections a hit lights up" pins that each old keyword reaches a real row).
+
+Tests: `settings-search.test.ts` (index shape, cards, rows) and `settings-search.i18n.test.ts` (the real catalogs:
+language switch, scripts, accents, the fallback, the Language setting).
+
 ## Card groups (in-page SectionCard grouping)
 
 A page (a level-2 nav leaf, e.g. `Notifications`) can group its rows into one or more `SectionCard`s — the macOS System
@@ -448,8 +485,8 @@ subsection). The mechanism:
 
 - A setting names its card via **`cardKey?: MessageKey`** on `SettingDefinitionSource`, resolved to a lazy
   `card?: string` getter on `SettingDefinition` (parallel to `labelKey`→`label`). Reuse the SAME catalog key the card's
-  `<SectionCard label=…>` displays, so the title is findable. `buildSearchableText` appends the resolved `card` LAST in
-  the parts array.
+  `<SectionCard label=…>` displays, so the title is findable. `indexEntry` puts the resolved `card` at the end of the
+  localized part (§ "Search").
 
 **A `cardKey` naming a title no card renders fails SILENTLY, and has.** The Image indexing rows pointed at
 `settings.mediaIndex.card` ("Image search") long enough for a user to hit it, while the card renders
@@ -470,9 +507,8 @@ case there when a page grows a card.
 **Decision / why: card titles are catalog keys, not literals.** With the i18n runtime in place,
 `no-raw-user-facing-string` forbids literal UI strings, and `card` must be translation-aware (untranslated `keywords`
 couldn't make a card title findable in another locale). So the field is a `MessageKey`, resolved through `tString` at
-read time — the same shape as `labelKey`. Caveat: the search index snapshots resolved strings at build time and isn't
-invalidated on locale change (`setLocale()` doesn't call `clearSearchIndex()`); harmless today (no in-app locale
-picker), but card titles don't re-translate live in search. Don't claim they do.
+read time — the same shape as `labelKey`. The search index is keyed by the UI catalog and rebuilds on a language switch,
+so card titles search in the language on screen (§ "Search").
 
 **Decision / why: card visibility is section-owned, never registry-derived.** The section keeps hand-rendering its rows
 and owns each row's visibility via `shouldShow(id)`. There is NO wrapper component: each card is an inline
