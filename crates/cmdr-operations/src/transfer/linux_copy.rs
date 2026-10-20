@@ -44,7 +44,7 @@ pub(crate) fn copy_single_file_linux(
 
     let src_metadata = src_file.metadata().map_err(|e| WriteOperationError::ReadError {
         path: source.display().to_string(),
-        message: format!("Failed to read source metadata: {}", e),
+        message: format!("Failed to read source metadata: {}", e).into(),
     })?;
     let total_size = src_metadata.len();
 
@@ -83,7 +83,7 @@ pub(crate) fn copy_single_file_linux(
             drop(dst_file);
             let _ = fs::remove_file(destination);
             return Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
+                message: "Operation cancelled by user".to_string().into(),
             });
         }
 

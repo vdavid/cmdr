@@ -486,11 +486,11 @@ pub(in crate::transfer) fn copy_single_item(
             {
                 let link_target = fs::read_link(&source_for_symlink).map_err(|e| WriteOperationError::IoError {
                     path: source_for_symlink.display().to_string(),
-                    message: format!("Failed to read symlink: {}", e),
+                    message: format!("Failed to read symlink: {}", e).into(),
                 })?;
                 std::os::unix::fs::symlink(&link_target, target).map_err(|e| WriteOperationError::IoError {
                     path: target.display().to_string(),
-                    message: format!("Failed to create symlink: {}", e),
+                    message: format!("Failed to create symlink: {}", e).into(),
                 })?;
             }
             Ok(())
