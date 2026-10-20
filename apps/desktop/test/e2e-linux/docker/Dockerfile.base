@@ -93,6 +93,10 @@ RUN apt-get update && apt-get install -y \
     gvfs-fuse \
     gvfs-common \
     gvfs-libs \
+    # Every app thread's stack when a run fails or runs long (`e2e-linux.sh`'s
+    # `dump_app_stacks`), so an intermittent hang names its blocked call in one run
+    # (GitHub issue #564). Needs `--cap-add SYS_PTRACE` on the test container.
+    gdb \
     # Useful utilities
     ca-certificates \
     # Clean up

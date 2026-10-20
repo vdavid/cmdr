@@ -173,6 +173,24 @@ per network on the same `docker run` (Docker 25+, API 1.44). Inside, compose's s
 read by `../e2e-shared/server-fixtures.ts` for both what the sheet is told and the side door. The side door needs `ssh`
 and `curl` in the image, and `Dockerfile.base` names both (`openssh-client`, `curl`).
 
+## App thread stacks on a failed or runaway run
+
+`dump_app_stacks` (inside the test container's `bash -c` in `../../scripts/e2e-linux.sh`) runs
+`gdb -p <app pid> -batch -ex "thread apply all bt"` into `/e2e-stacks`, a bind mount of the host's
+`CMDR_E2E_STACK_DUMP_DIR` (default `/tmp/cmdr-e2e-stacks`, emptied at the start of each run). It fires twice at most:
+
+- `app-stacks-after-failure.txt`: Playwright exited non-zero. The app is still alive then, so a hang that failed tests
+  is still in place to read.
+- `app-stacks-still-running.txt`: the tests have run `E2E_STACK_DUMP_AFTER_SECS` (default 900, against about 8.5 min on
+  a green run). The job's 40-min timeout kills the step before any on-failure hook runs, so a runaway needs a dump taken
+  from inside.
+
+CI uploads the folder as the `e2e-app-stacks` artifact on failure. Why it's permanent: the drive index hang (GitHub
+issue #564) struck one run in two to seven and logged nothing at INFO, so only a dump already in place catches the next
+hang. The container runs with `--cap-add SYS_PTRACE`: the runner kernel's Yama policy lets only an ancestor, or a holder
+of that capability, attach, and gdb is the app's sibling. `gdb` comes from `Dockerfile.base`. The `e2e` profile keeps
+the symbol table, so frames carry function names.
+
 ## webkit2gtk caret bug (why the base is `ubuntu:26.04`)
 
 webkit2gtk 2.50.4 (ships with Ubuntu 24.04) returns `startOffset: 0` from `document.caretRangeFromPoint(x, y)` for ALL

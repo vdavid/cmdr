@@ -506,6 +506,17 @@ else
     CONTAINER_E2E_JSON_REPORT="/e2e-report/cmdr-e2e-report-linux.json"
     : > "$LINUX_E2E_JSON_REPORT"
 
+    # Where the in-container `dump_app_stacks` writes every app thread's stack when
+    # the run fails or runs long. CI uploads it as an artifact on failure. An
+    # intermittent hang (GitHub issue #564: the drive index writer wedged, logging
+    # nothing at INFO) is otherwise undiagnosable, so the dump names the blocked call
+    # in the one run that hits it. `--cap-add SYS_PTRACE` below is what lets gdb
+    # attach: the runner's Yama policy only lets an ancestor or a holder of that
+    # capability trace, and gdb is the app's sibling.
+    E2E_STACK_DUMP_DIR="${CMDR_E2E_STACK_DUMP_DIR:-/tmp/cmdr-e2e-stacks}"
+    rm -rf "$E2E_STACK_DUMP_DIR"
+    mkdir -p "$E2E_STACK_DUMP_DIR"
+
     # Capture the test exit code so we can run a post-flight diagnostic
     # regardless of pass/fail, then re-propagate it as the script's status.
     #
@@ -525,8 +536,10 @@ else
     set +e
     docker_test_status=0
     docker run --rm \
+        --cap-add SYS_PTRACE \
         $FIXTURE_DOCKER_ARGS \
         -v "$REPO_ROOT:/app" \
+        -v "$E2E_STACK_DUMP_DIR:/e2e-stacks" \
         -v "$TARGET_VOLUME:/target" \
         -v "$ROOT_NODE_MODULES_VOLUME:/app/node_modules" \
         -v "$DESKTOP_NODE_MODULES_VOLUME:/app/apps/desktop/node_modules" \
@@ -645,11 +658,31 @@ else
             fi
             echo "Socket ready."
 
+            # Every app thread stack, into the host-mounted /e2e-stacks. Never fails
+            # the run: a dump is evidence, not a verdict. The argument names why it
+            # was taken and becomes the file name.
+            dump_app_stacks() {
+                dump_file="/e2e-stacks/app-stacks-$1.txt"
+                if kill -0 $APP_PID 2>/dev/null; then
+                    echo "Dumping every app thread stack ($1) to $dump_file"
+                    timeout 120 gdb -p $APP_PID -batch -ex "set pagination off" -ex "thread apply all bt" > "$dump_file" 2>&1 || true
+                else
+                    echo "The app had already exited, so there is no stack to dump ($1)" > "$dump_file"
+                fi
+            }
+
+            # A run still going this long is a runaway (a green run takes about 8.5
+            # min of tests), and the job timeout would end it before any on-failure
+            # step ran, so take a dump while the app is still alive.
+            ( sleep "${E2E_STACK_DUMP_AFTER_SECS:-900}" && dump_app_stacks still-running ) &
+            DUMP_TIMER_PID=$!
+
             # Run Playwright tests. We deliberately do NOT pass --reporter
             # here — the config (`playwright.config.ts`) declares both
             # `list` (for human-readable progress in the check output) and
             # `json` (for `scripts/e2e-test-timings/`). Passing `--reporter=list`
             # would override that pair and drop the json output.
+            set +e
             if [ -n "${E2E_GREP:-}" ]; then
                 npx playwright test \
                     --config test/e2e-playwright/playwright.config.ts \
@@ -660,6 +693,15 @@ else
                     --config test/e2e-playwright/playwright.config.ts \
                     --project tauri ${E2E_REPEAT_EACH:+--repeat-each "$E2E_REPEAT_EACH"}
             fi
+            playwright_status=$?
+            set -e
+            kill $DUMP_TIMER_PID 2>/dev/null || true
+            # The app is still running here, so a hang that failed tests is still
+            # in place to be read.
+            if [ "$playwright_status" -ne 0 ]; then
+                dump_app_stacks after-failure
+            fi
+            exit "$playwright_status"
         '
     docker_test_status=$?
     set -e
