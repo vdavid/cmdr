@@ -84,6 +84,21 @@ impl FileEncoding {
         }
     }
 
+    /// The bytes a `\n` takes in this encoding.
+    pub fn newline_bytes(self) -> &'static [u8] {
+        match self {
+            Self::Utf16Le => &[0x0A, 0x00],
+            Self::Utf16Be => &[0x00, 0x0A],
+            _ => b"\n",
+        }
+    }
+
+    /// True for the encodings whose decoded text IS the source's bytes wherever the
+    /// decode is clean.
+    pub fn is_utf8_family(self) -> bool {
+        matches!(self, Self::Utf8 | Self::Utf8WithBom | Self::UsAscii)
+    }
+
     /// Sentence-case display label for the dropdown.
     pub fn label(self) -> &'static str {
         match self {
@@ -425,10 +440,7 @@ impl NewlineScanner {
 /// which is correct because the line bytes don't contain the BOM (the BOM lives
 /// at the file head, not in the per-line slice).
 pub fn decode_line(bytes: &[u8], encoding: FileEncoding) -> String {
-    if matches!(
-        encoding,
-        FileEncoding::Utf8 | FileEncoding::Utf8WithBom | FileEncoding::UsAscii
-    ) {
+    if encoding.is_utf8_family() {
         return String::from_utf8_lossy(bytes).into_owned();
     }
     if matches!(encoding, FileEncoding::Iso8859_1) {
@@ -445,4 +457,19 @@ pub fn decode_line(bytes: &[u8], encoding: FileEncoding) -> String {
     }
     let (cow, _had_errors) = encoding.as_static().decode_without_bom_handling(bytes);
     cow.into_owned()
+}
+
+/// True when [`decode_line`] reads every byte of `bytes`, so any U+FFFD in its output is
+/// one the source really holds.
+pub fn decodes_cleanly(bytes: &[u8], encoding: FileEncoding) -> bool {
+    if encoding.is_utf8_family() {
+        return std::str::from_utf8(bytes).is_ok();
+    }
+    if matches!(encoding, FileEncoding::Iso8859_1) {
+        return true; // a 1:1 table: every byte is a character
+    }
+    encoding
+        .as_static()
+        .decode_without_bom_handling_and_without_replacement(bytes)
+        .is_some()
 }

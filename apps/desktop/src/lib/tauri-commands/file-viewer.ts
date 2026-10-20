@@ -14,6 +14,7 @@ import {
   type MediaDimensions,
   type RangeEnd,
   type RowText,
+  type SavedAs,
   type SearchMatch as ViewerSearchMatch,
   type SearchMode as ViewerSearchMode,
   type SearchPollResult,
@@ -34,6 +35,7 @@ export type {
   MediaDimensions,
   RangeEnd,
   RowText,
+  SavedAs,
   SearchPollResult,
   TotalRows,
   ViewerContentKind,
@@ -334,7 +336,9 @@ export async function viewerCancelRead(
 /**
  * Reads a range and writes it to `destPath` atomically. Used by the "Save as file..."
  * action in the copy-confirm and copy-refuse dialogs. Returns a typed result; the same
- * `Cancelled` / `TimedOut` / other variants surface as for `viewerReadRange`.
+ * `Cancelled` / `TimedOut` / other variants surface as for `viewerReadRange`. On success,
+ * `savedAs` says whether the file is UTF-8 text or the source's own encoding (when the
+ * selection held characters the decode lost).
  */
 export async function viewerWriteRangeToFile(
   sessionId: string,
@@ -342,9 +346,9 @@ export async function viewerWriteRangeToFile(
   anchor: RangeEnd,
   focus: RangeEnd,
   destPath: string,
-): Promise<{ ok: true } | { ok: false; error: ViewerError }> {
+): Promise<{ ok: true; savedAs: SavedAs } | { ok: false; error: ViewerError }> {
   const res = await commands.viewerWriteRangeToFile(sessionId, readId, anchor, focus, destPath)
-  if (res.status === 'ok') return { ok: true }
+  if (res.status === 'ok') return { ok: true, savedAs: res.data }
   return { ok: false, error: res.error }
 }
 

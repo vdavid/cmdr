@@ -456,7 +456,9 @@ pub fn viewer_cancel_read(session_id: String, read_id: u64) -> Result<(), Viewer
 
 /// Streams a logical range to `dest_path` and writes it atomically (temp+rename). Used
 /// by the "Save as file…" action in the > 100 MB refuse dialog and the 10 to 100 MB
-/// confirm dialog. Cancellation works the same as `viewer_read_range`.
+/// confirm dialog. Cancellation works the same as `viewer_read_range`. Answers
+/// `SavedAs::SourceEncoding` when the range was written in the source's own encoding
+/// because its decode lost characters, so the FE can say so.
 ///
 /// Watched for silence (`SAVE_STALL_LIMIT`) rather than held to a total deadline: this
 /// is the way out of the clipboard's size refusal, so it has to be allowed to take as
@@ -469,7 +471,7 @@ pub async fn viewer_write_range_to_file(
     anchor: RangeEnd,
     focus: RangeEnd,
     dest_path: String,
-) -> Result<(), ViewerError> {
+) -> Result<file_viewer::SavedAs, ViewerError> {
     // The source may be a routed preview temp (it writes fine via `std::fs` off the
     // open session), but the DESTINATION must not be a path a ROUTE serves: inside a
     // `.zip`, or inside a repo's virtual `.git` trees. Neither has a directory on
@@ -493,7 +495,7 @@ async fn write_range_watched(
     focus: RangeEnd,
     dest_path: String,
     stall_limit: Duration,
-) -> Result<(), ViewerError> {
+) -> Result<file_viewer::SavedAs, ViewerError> {
     let progress = Arc::new(file_viewer::SaveProgress::new());
     let mut watch = SaveWatch {
         progress: Arc::clone(&progress),

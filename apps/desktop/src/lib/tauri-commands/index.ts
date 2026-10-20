@@ -113,6 +113,7 @@ export type {
   SearchPollResult,
   RangeEnd,
   RowText,
+  SavedAs,
   ViewerError,
 } from './file-viewer'
 

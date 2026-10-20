@@ -16,6 +16,7 @@ import {
   viewerReadRange,
   viewerWriteRangeToFile,
   type RangeEnd,
+  type SavedAs,
   type ViewerError,
 } from '#lib/tauri-commands/index.js'
 import { save as showSavePanel } from '@tauri-apps/plugin-dialog'
@@ -34,9 +35,13 @@ export type CopyOutcome =
   | { kind: 'empty' }
   | { kind: 'busy' }
 
-export type CopyResult =
-  | { ok: true; text: string }
-  | { ok: false; reason: 'cancelled' | 'timedOut' | 'other'; error?: ViewerError }
+/** A range IPC that didn't finish, with the typed reason the caller words. */
+export type RangeFailure = { ok: false; reason: 'cancelled' | 'timedOut' | 'other'; error?: ViewerError }
+
+export type CopyResult = { ok: true; text: string } | RangeFailure
+
+/** A finished save says how it wrote the file: UTF-8, or the source's own encoding. */
+export type SaveResult = { ok: true; savedAs: SavedAs } | RangeFailure
 
 /** The resolved arguments every range IPC takes (one payload, since the two ends share a type). */
 interface RangeCall {
@@ -82,9 +87,9 @@ export function createViewerCopy(deps: CopyDeps) {
    * the busy flag and in-flight `read_id` for the duration, and maps the typed
    * `ViewerError` to a `CopyResult` reason.
    */
-  async function runRangeIpc(
-    call: (range: RangeCall) => Promise<{ ok: true; text: string } | { ok: false; error: ViewerError }>,
-  ): Promise<CopyResult> {
+  async function runRangeIpc<Done extends { ok: true }>(
+    call: (range: RangeCall) => Promise<Done | { ok: false; error: ViewerError }>,
+  ): Promise<Done | RangeFailure> {
     const sessionId = deps.getSessionId()
     const ends = deps.getRangeEnds()
     if (!sessionId || ends === null) {
@@ -95,7 +100,7 @@ export function createViewerCopy(deps: CopyDeps) {
     busy = true
     try {
       const res = await call({ sessionId, readId, anchor: ends.anchor, focus: ends.focus })
-      if (res.ok) return { ok: true, text: res.text }
+      if (res.ok) return res
       if (res.error.kind === 'cancelled') return { ok: false, reason: 'cancelled', error: res.error }
       if (res.error.kind === 'timedOut') return { ok: false, reason: 'timedOut', error: res.error }
       return { ok: false, reason: 'other', error: res.error }
@@ -155,14 +160,13 @@ export function createViewerCopy(deps: CopyDeps) {
 
   /**
    * Writes the selection to a file at `destPath`. Same band-agnostic API as `runCopy`,
-   * but the result is the typed write outcome rather than the read text. Uses the
-   * same busy / cancel plumbing.
+   * but the result is the typed write outcome (including how the file was encoded)
+   * rather than the read text. Uses the same busy / cancel plumbing.
    */
-  function saveAs(destPath: string): Promise<CopyResult> {
-    return runRangeIpc(async ({ sessionId, readId, anchor, focus }) => {
-      const res = await viewerWriteRangeToFile(sessionId, readId, anchor, focus, destPath)
-      return res.ok ? { ok: true, text: '' } : res
-    })
+  function saveAs(destPath: string): Promise<SaveResult> {
+    return runRangeIpc(({ sessionId, readId, anchor, focus }) =>
+      viewerWriteRangeToFile(sessionId, readId, anchor, focus, destPath),
+    )
   }
 
   return {
@@ -334,7 +338,10 @@ export function createViewerCopyOrchestrator(deps: CopyOrchestratorDeps) {
 
     const res = await copy.saveAs(chosen)
     if (res.ok) {
-      addToast(tString('viewer.saveAs.saved', { name: chosen.split('/').pop() ?? chosen }), { level: 'info' })
+      const name = chosen.split('/').pop() ?? chosen
+      // A save in the source's own encoding isn't the UTF-8 text the user may expect, so say why.
+      const key = res.savedAs.kind === 'sourceEncoding' ? 'viewer.saveAs.savedInSourceEncoding' : 'viewer.saveAs.saved'
+      addToast(tString(key, { name }), { level: 'info' })
     } else if (res.reason === 'cancelled') {
       // No toast; the user pressed Escape.
     } else if (res.reason === 'timedOut') {

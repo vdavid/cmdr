@@ -30,7 +30,8 @@ use super::media;
 use super::media_session;
 use super::origin::{SourceOrigin, open_for_viewer};
 use super::range_read::{
-    RangeEnd, RawBytes, STREAM_CHUNK_BYTES, read_range as do_read_range, read_range_streamed as stream_range,
+    RangeEnd, RawSource, RowForm, STREAM_CHUNK_BYTES, Walked, read_range as do_read_range,
+    read_range_streamed as stream_range,
 };
 use super::row_text::RowText;
 use super::search_matcher::{Matcher, SearchMode};
@@ -953,6 +954,19 @@ impl SaveProgress {
     }
 }
 
+/// What a finished save wrote, so the viewer can say so when it isn't the UTF-8 text
+/// the user would expect.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum SavedAs {
+    /// UTF-8 text: the range decoded cleanly, or the source is UTF-8 and the bytes its
+    /// decode couldn't read are kept as they are.
+    Utf8,
+    /// The source's own bytes, in its own encoding (plus its BOM), because some
+    /// characters in the range couldn't be decoded and UTF-8 would have replaced them.
+    SourceEncoding { encoding: FileEncoding },
+}
+
 /// Streams a range to `dest_path`, decoded to UTF-8 and written atomically. Uses the
 /// same `read_id` cancellation plumbing as `read_range`. Write is temp+rename for
 /// crash-safety: if the process dies mid-write, the user keeps their original file (if
@@ -965,11 +979,14 @@ impl SaveProgress {
 ///
 /// The bytes go through the same decode as an on-screen read, so a UTF-16 (or any
 /// other non-UTF-8) source saves as UTF-8 text. Chunks break on line boundaries, so no
-/// character is ever split across two writes. A UTF-8 source's row whose decode
-/// replaced a byte with U+FFFD saves the source's own bytes instead (`RawBytes`), so a
-/// stray Latin-1 or binary byte past the detection head reaches the copy unchanged.
+/// character is ever split across two writes. Where the selection holds a character
+/// the decode lost (U+FFFD for bytes it couldn't read), the save keeps the source's
+/// bytes instead: a UTF-8 source writes them in place, so a stray Latin-1 or binary
+/// byte past the detection head reaches the copy unchanged; any other source starts
+/// over and writes the whole range in its own encoding, answering
+/// [`SavedAs::SourceEncoding`]. `DETAILS.md` § "A save keeps bytes the decode lost".
 ///
-/// On success, returns `Ok(())`. On `Cancelled`, and on any other error, the partial
+/// On success, returns how the range was written. On `Cancelled`, and on any other error, the partial
 /// temp file is best-effort removed and the typed error is returned, so a stopped save
 /// leaves nothing behind. The cancel flag is read once more right before the rename:
 /// a stall watch that gave up (and said so) while the last write hung must not see the
@@ -985,7 +1002,7 @@ pub fn write_range_to_file(
     focus: RangeEnd,
     dest_path: &Path,
     progress: &SaveProgress,
-) -> Result<(), ViewerError> {
+) -> Result<SavedAs, ViewerError> {
     let result = write_range_to_file_inner(session_id, read_id, anchor, focus, dest_path, progress);
     progress.note_done();
     result
@@ -998,7 +1015,7 @@ fn write_range_to_file_inner(
     focus: RangeEnd,
     dest_path: &Path,
     progress: &SaveProgress,
-) -> Result<(), ViewerError> {
+) -> Result<SavedAs, ViewerError> {
     // Atomic write: write to a `<dest>.cmdr-tmp-<uuid>` sibling, then rename. The
     // same-FS rename gives us atomicity on local volumes (and is best-effort
     // elsewhere). The house mint names it, so a name at the filesystem's limit
@@ -1007,42 +1024,72 @@ fn write_range_to_file_inner(
     let tmp_path = staged.path();
 
     let source = SaveSource::of(session_id)?;
-    let raw_bytes = |start: u64, end: u64| source.read(start, end);
-    let raw: Option<RawBytes<'_>> = source.is_utf8.then_some(&raw_bytes);
+    let read = |start: u64, end: u64| source.read(start, end);
+    let raw = RawSource {
+        read: &read,
+        encoding: source.encoding,
+    };
 
     let landed = with_registered_read(session_id, read_id, |backend, cancel| {
-        // Unbuffered on purpose: each piece the reader hands over is already a chunk, so
-        // a `BufWriter` would only copy it a second time.
-        let mut file = std::fs::File::create(tmp_path)?;
-        let mut sink = |piece: &[u8]| {
-            file.write_all(piece)?;
-            progress.note_written(piece.len());
-            Ok(())
+        // Text first, watching for lost characters. A walk that meets one in a
+        // non-UTF-8 source starts over writing the source's own bytes, and one whose
+        // source bytes stopped matching its rows starts over as plain text: at most
+        // three walks, each streamed, so memory stays one chunk.
+        let mut form = RowForm::TextKeepingLoss(raw);
+        let saved = loop {
+            // Unbuffered on purpose: each piece the reader hands over is already a
+            // chunk, so a `BufWriter` would only copy it a second time. `create`
+            // truncates, so a walk that starts over starts on an empty temp.
+            let mut file = std::fs::File::create(tmp_path)?;
+            if let RowForm::Source(_) = form {
+                // The rows start past the BOM; without it, a UTF-16 copy reads as noise.
+                file.write_all(source.encoding.bom_bytes())?;
+            }
+            let mut sink = |piece: &[u8]| {
+                file.write_all(piece)?;
+                progress.note_written(piece.len());
+                Ok(())
+            };
+            let walked = stream_range(
+                backend,
+                anchor.clone(),
+                focus.clone(),
+                cancel,
+                STREAM_CHUNK_BYTES,
+                form,
+                &mut sink,
+            )?;
+            form = match (walked, form) {
+                (Walked::Finished, RowForm::Source(_)) => {
+                    break SavedAs::SourceEncoding {
+                        encoding: source.encoding,
+                    };
+                }
+                (Walked::Finished, _) => break SavedAs::Utf8,
+                (Walked::Lossy, _) => RowForm::Source(raw),
+                (Walked::SourceChanged, _) => RowForm::Text,
+            };
         };
-        stream_range(backend, anchor, focus, cancel, STREAM_CHUNK_BYTES, raw, &mut sink)?;
-        drop(file);
         // Still registered, so a `cancel_read` that raced the last write lands here.
         if cancel.load(Ordering::Relaxed) {
             return Err(ViewerError::Cancelled);
         }
-        std::fs::rename(tmp_path, dest_path).map_err(|e| ViewerError::Io { message: e.to_string() })
+        std::fs::rename(tmp_path, dest_path).map_err(|e| ViewerError::Io { message: e.to_string() })?;
+        Ok(saved)
     });
 
-    if let Err(e) = landed {
+    if landed.is_err() {
         // Best-effort cleanup; ignore secondary errors.
         let _ = std::fs::remove_file(tmp_path);
-        return Err(e);
     }
-    Ok(())
+    landed
 }
 
-/// Where a save reads a row's own bytes from, opened only if a row asks: most saves
-/// never need it.
+/// Where a save reads the source's own bytes from, opened only if a row asks: a save
+/// whose decode is clean never does.
 struct SaveSource {
     session_id: String,
-    /// Whether the session decodes as UTF-8, the one family whose raw bytes ARE the
-    /// saved text's encoding. Any other source is transcoded on purpose.
-    is_utf8: bool,
+    encoding: FileEncoding,
     opened: std::cell::OnceCell<Result<OpenedFile, ViewerError>>,
 }
 
@@ -1052,13 +1099,9 @@ impl SaveSource {
         let session = sessions.get(session_id).ok_or_else(|| ViewerError::SessionNotFound {
             session_id: session_id.to_string(),
         })?;
-        let encoding = *session.encoding.lock_ignore_poison();
         Ok(Self {
             session_id: session_id.to_string(),
-            is_utf8: matches!(
-                encoding,
-                FileEncoding::Utf8 | FileEncoding::Utf8WithBom | FileEncoding::UsAscii
-            ),
+            encoding: *session.encoding.lock_ignore_poison(),
             opened: std::cell::OnceCell::new(),
         })
     }

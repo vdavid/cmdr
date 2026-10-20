@@ -21,12 +21,14 @@
 //! backends already cap line length implicitly through `MAX_BACKWARD_SCAN`). When the
 //! flag is set, the function returns `ViewerError::Cancelled`.
 
+use std::borrow::Cow;
+use std::ops::ControlFlow;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use encoding_rs::DecoderResult;
 use serde::Deserialize;
 
-use std::borrow::Cow;
-
+use super::encoding::{FileEncoding, decode_line, decodes_cleanly};
 use super::{ChunkEnd, FileViewerBackend, SeekTarget, ViewerError, ViewerRow};
 
 /// One endpoint of a selection: a ROW index plus a UTF-16 offset into that row. For the
@@ -94,14 +96,15 @@ pub(crate) const STREAM_CHUNK_BYTES: usize = 1024 * 1024;
 /// Collects range text and hands it to `sink` in pieces of at most `chunk_bytes` plus
 /// the tail of the line that crossed the threshold.
 ///
-/// The `\n` that joins two lines is held back until the next line arrives, so the
-/// range's final newline (which half-open semantics drop) never has to be taken back
-/// out of a piece that already left for the sink.
+/// The newline that joins two lines (`\n`, or the source's own in [`RowForm::Source`])
+/// is held back until the next line arrives, so the range's final newline (which
+/// half-open semantics drop) never has to be taken back out of a piece that already
+/// left for the sink.
 struct ChunkedSink<'a, S: FnMut(&[u8]) -> Result<(), ViewerError>> {
     buf: Vec<u8>,
     chunk_bytes: usize,
     sink: &'a mut S,
-    newline_owed: bool,
+    newline_owed: Option<&'static [u8]>,
 }
 
 impl<'a, S: FnMut(&[u8]) -> Result<(), ViewerError>> ChunkedSink<'a, S> {
@@ -110,7 +113,7 @@ impl<'a, S: FnMut(&[u8]) -> Result<(), ViewerError>> ChunkedSink<'a, S> {
             buf: Vec::new(),
             chunk_bytes,
             sink,
-            newline_owed: false,
+            newline_owed: None,
         }
     }
 
@@ -124,25 +127,25 @@ impl<'a, S: FnMut(&[u8]) -> Result<(), ViewerError>> ChunkedSink<'a, S> {
         Ok(())
     }
 
-    /// Ends a line: the `\n` lands only once something follows it.
-    fn end_line(&mut self) {
-        self.newline_owed = true;
+    /// Ends a line: its `newline` lands only once something follows it.
+    fn end_line(&mut self, newline: &'static [u8]) {
+        self.newline_owed = Some(newline);
     }
 
     fn pay_newline(&mut self) {
-        if self.newline_owed {
-            self.buf.push(b'\n');
-            self.newline_owed = false;
+        if let Some(newline) = self.newline_owed.take() {
+            self.buf.extend_from_slice(newline);
         }
     }
 
-    /// Hands what's left to the sink. `keep_trailing_newline` pays a newline still
-    /// owed, which only the "ran past the end line" exit wants.
-    fn finish(mut self, keep_trailing_newline: bool) -> Result<(), ViewerError> {
+    /// Hands what's left to the sink, ending the walk. `keep_trailing_newline` pays a
+    /// newline still owed, which only the "ran past the end line" exit wants.
+    fn finish(mut self, keep_trailing_newline: bool) -> Result<Walked, ViewerError> {
         if keep_trailing_newline {
             self.pay_newline();
         }
-        self.flush()
+        self.flush()?;
+        Ok(Walked::Finished)
     }
 
     fn flush(&mut self) -> Result<(), ViewerError> {
@@ -169,64 +172,242 @@ pub fn read_range(
         out.extend_from_slice(piece);
         Ok(())
     };
-    read_range_streamed(backend, anchor, focus, cancel, STREAM_CHUNK_BYTES, None, &mut sink)?;
-    // Decoded rows only (no raw source), so the pieces are UTF-8 by construction.
+    // `Text` never stops early, so the walk always answers `Finished`.
+    let walked = read_range_streamed(
+        backend,
+        anchor,
+        focus,
+        cancel,
+        STREAM_CHUNK_BYTES,
+        RowForm::Text,
+        &mut sink,
+    )?;
+    debug_assert_eq!(walked, Walked::Finished);
+    // Decoded rows only, so the pieces are UTF-8 by construction.
     String::from_utf8(out).map_err(|e| ViewerError::Io { message: e.to_string() })
 }
 
-/// Reads the source's own bytes in `[start, end)`. The save hands one to the walk for a
-/// UTF-8 source, so a row whose decode replaced a byte keeps that byte.
-pub(crate) type RawBytes<'a> = &'a dyn Fn(u64, u64) -> Result<Vec<u8>, ViewerError>;
+/// Reads the source's own bytes in `[start, end)`.
+pub(crate) type ReadSource<'a> = &'a dyn Fn(u64, u64) -> Result<Vec<u8>, ViewerError>;
 
-/// What the walk emits for `row.text[lo..hi]`: the decoded text, or, given `raw`, the
-/// row's own source bytes when its decode replaced any with U+FFFD. `row_end` is where
-/// the row's bytes stop (its newline included).
-fn row_piece<'r>(
-    row: &'r ViewerRow,
-    row_end: u64,
-    lo: usize,
-    hi: usize,
-    raw: Option<RawBytes<'_>>,
-) -> Result<Cow<'r, [u8]>, ViewerError> {
-    let decoded = Cow::Borrowed(&row.text.as_bytes()[lo..hi]);
-    let Some(raw) = raw.filter(|_| row.text.contains(char::REPLACEMENT_CHARACTER)) else {
-        return Ok(decoded);
-    };
-    let bytes = raw(row.byte_offset, row_end)?;
-    if std::str::from_utf8(&bytes).is_ok() {
-        return Ok(decoded); // the file holds a real U+FFFD
-    }
-    // `raw_index` holds only for the bytes the row was decoded from. A file that changed
-    // under a backend holding it in memory reads back different ones, which would splice
-    // bytes from the wrong place into the selection.
-    if !String::from_utf8_lossy(&bytes).starts_with(row.text.as_str()) {
-        return Ok(decoded);
-    }
-    let (from, to) = (raw_index(&bytes, lo), raw_index(&bytes, hi));
-    Ok(Cow::Owned(bytes[from..to].to_vec()))
+/// Where a save reads the source's own bytes, and the encoding they're in.
+#[derive(Clone, Copy)]
+pub(crate) struct RawSource<'a> {
+    pub read: ReadSource<'a>,
+    pub encoding: FileEncoding,
 }
 
-/// Where byte `decoded` of `String::from_utf8_lossy(raw)` sits in `raw`. The lossy
-/// decode swaps each invalid run `utf8_chunks` reports for one U+FFFD, which is the
-/// whole mapping; `decoded` is a char boundary, so it never lands inside one.
-fn raw_index(raw: &[u8], decoded: usize) -> usize {
-    let (mut at_decoded, mut at_raw) = (0, 0);
-    for chunk in raw.utf8_chunks() {
-        let valid = chunk.valid().len();
-        if decoded <= at_decoded + valid {
-            return at_raw + (decoded - at_decoded);
-        }
-        at_decoded += valid;
-        at_raw += valid;
-        if !chunk.invalid().is_empty() {
-            if decoded <= at_decoded {
-                return at_raw;
+/// What the walk writes for each row.
+#[derive(Clone, Copy)]
+pub(crate) enum RowForm<'a> {
+    /// The decoded text, as UTF-8: the clipboard, and a save's fallback.
+    Text,
+    /// The decoded text, watching the selection for characters the decode lost. A
+    /// UTF-8-family row that lost some writes its own bytes instead (clean text IS its
+    /// bytes, so the output stays one encoding); any other source stops the walk with
+    /// [`Walked::Lossy`], so the save can start over in [`RowForm::Source`].
+    TextKeepingLoss(RawSource<'a>),
+    /// Every row's own bytes: the range exactly as the source holds it.
+    Source(RawSource<'a>),
+}
+
+/// How a walk ended.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Walked {
+    Finished,
+    /// [`RowForm::TextKeepingLoss`] met a selected character the decode lost, in a
+    /// source whose bytes aren't UTF-8.
+    Lossy,
+    /// [`RowForm::Source`] read bytes that don't decode to the rows the walk holds: the
+    /// file changed under a backend that keeps it in memory.
+    SourceChanged,
+}
+
+/// What the walk writes for one row: the selected part, and the newline it owes the
+/// next row (if one follows).
+enum Piece<'r> {
+    Row {
+        body: Cow<'r, [u8]>,
+        newline: &'static [u8],
+    },
+    Stop(Walked),
+}
+
+impl RowForm<'_> {
+    /// The piece for `row.text[lo..hi]`. `row_end` is where the row's bytes stop (its
+    /// newline included); `chunk_raw` is the source's bytes from `.0` on, which only
+    /// [`RowForm::Source`] reads, once per chunk.
+    fn piece<'r>(
+        &self,
+        row: &'r ViewerRow,
+        row_end: u64,
+        chunk_raw: Option<(u64, &'r [u8])>,
+        lo: usize,
+        hi: usize,
+    ) -> Result<Piece<'r>, ViewerError> {
+        let text = Piece::Row {
+            body: Cow::Borrowed(&row.text.as_bytes()[lo..hi]),
+            newline: b"\n",
+        };
+        match *self {
+            Self::Text => Ok(text),
+            Self::TextKeepingLoss(source) => {
+                if !row.text[lo..hi].contains(char::REPLACEMENT_CHARACTER) {
+                    return Ok(text);
+                }
+                let raw = (source.read)(row.byte_offset, row_end)?;
+                let encoding = source.encoding;
+                // The mapping holds only for the bytes the row was decoded from. A file
+                // that changed under a backend holding it in memory reads back other
+                // ones, which would splice bytes from the wrong place into the selection.
+                let Some((body, _)) = row_body(row, &raw, encoding) else {
+                    return Ok(text);
+                };
+                let selected = select(body, &row.text, lo, hi, encoding);
+                if decodes_cleanly(selected, encoding) {
+                    return Ok(text); // the file holds a real U+FFFD
+                }
+                if !encoding.is_utf8_family() {
+                    return Ok(Piece::Stop(Walked::Lossy));
+                }
+                Ok(Piece::Row {
+                    body: Cow::Owned(selected.to_vec()),
+                    newline: b"\n",
+                })
             }
-            at_decoded += char::REPLACEMENT_CHARACTER.len_utf8();
-            at_raw += chunk.invalid().len();
+            Self::Source(source) => {
+                let raw = chunk_raw.and_then(|(base, raw)| {
+                    let from = usize::try_from(row.byte_offset.checked_sub(base)?).ok()?;
+                    let to = usize::try_from(row_end.checked_sub(base)?).ok()?;
+                    raw.get(from..to)
+                });
+                let Some((body, newline)) = raw.and_then(|raw| row_body(row, raw, source.encoding)) else {
+                    return Ok(Piece::Stop(Walked::SourceChanged));
+                };
+                Ok(Piece::Row {
+                    body: Cow::Borrowed(select(body, &row.text, lo, hi, source.encoding)),
+                    newline,
+                })
+            }
         }
     }
-    at_raw
+
+    /// The source's bytes in `[start, end)` when this form writes them for every row.
+    fn chunk_raw(&self, start: u64, end: u64) -> Result<Option<Vec<u8>>, ViewerError> {
+        match self {
+            Self::Source(source) => (source.read)(start, end).map(Some),
+            Self::Text | Self::TextKeepingLoss(_) => Ok(None),
+        }
+    }
+}
+
+/// A row's own bytes `raw` split into its text and its newline, or `None` when the text
+/// part doesn't decode to the row the walk holds.
+fn row_body<'b>(row: &ViewerRow, raw: &'b [u8], encoding: FileEncoding) -> Option<(&'b [u8], &'static [u8])> {
+    let newline = encoding.newline_bytes();
+    let (body, newline) = match raw.strip_suffix(newline) {
+        Some(body) if !row.continues => (body, newline),
+        _ => (raw, &b""[..]),
+    };
+    let matches = body == row.text.as_bytes() || decode_line(body, encoding) == row.text;
+    matches.then_some((body, newline))
+}
+
+/// The bytes of `body` (a row's text part, which decodes to `text`) that decode to
+/// `text[lo..hi]`.
+fn select<'b>(body: &'b [u8], text: &str, lo: usize, hi: usize, encoding: FileEncoding) -> &'b [u8] {
+    let at = |decoded: usize| match decoded {
+        0 => 0,
+        d if d == text.len() => body.len(),
+        d => raw_index(body, d, encoding),
+    };
+    &body[at(lo)..at(hi)]
+}
+
+/// Where byte `decoded` of `decode_line(raw, encoding)` sits in `raw`. The decode swaps
+/// each malformed run for one U+FFFD and spends a fixed number of bytes on every other
+/// character in the encodings the viewer offers, which is the whole mapping; `decoded`
+/// is a char boundary, so it never lands inside one.
+fn raw_index(raw: &[u8], decoded: usize, encoding: FileEncoding) -> usize {
+    let (mut at_decoded, mut at_raw) = (0, 0);
+    let walk = for_each_source_char(raw, encoding, |decoded_len, raw_len| {
+        if decoded <= at_decoded {
+            return ControlFlow::Break(());
+        }
+        at_decoded += decoded_len;
+        at_raw += raw_len;
+        ControlFlow::Continue(())
+    });
+    match walk {
+        ControlFlow::Break(()) => at_raw,       // stopped on the char that starts at `decoded`
+        ControlFlow::Continue(()) => raw.len(), // `decoded` is the end
+    }
+}
+
+/// Calls `f(decoded_len, source_len)` for each character `decode_line(raw, encoding)`
+/// yields, in order, a U+FFFD for a malformed run counting that run's bytes.
+fn for_each_source_char(
+    raw: &[u8],
+    encoding: FileEncoding,
+    mut f: impl FnMut(usize, usize) -> ControlFlow<()>,
+) -> ControlFlow<()> {
+    const FFFD_LEN: usize = char::REPLACEMENT_CHARACTER.len_utf8();
+    if encoding.is_utf8_family() {
+        // `from_utf8_lossy` swaps each invalid run `utf8_chunks` reports for one U+FFFD.
+        for chunk in raw.utf8_chunks() {
+            for ch in chunk.valid().chars() {
+                f(ch.len_utf8(), ch.len_utf8())?;
+            }
+            if !chunk.invalid().is_empty() {
+                f(FFFD_LEN, chunk.invalid().len())?;
+            }
+        }
+        return ControlFlow::Continue(());
+    }
+    if matches!(encoding, FileEncoding::Iso8859_1) {
+        for &byte in raw {
+            f(char::from(byte).len_utf8(), 1)?;
+        }
+        return ControlFlow::Continue(());
+    }
+    let width = |ch: char| match encoding {
+        FileEncoding::Utf16Le | FileEncoding::Utf16Be => ch.len_utf16() * 2,
+        FileEncoding::Windows1252 | FileEncoding::Iso8859_1 | FileEncoding::MacRoman => 1,
+        FileEncoding::Utf8 | FileEncoding::Utf8WithBom | FileEncoding::UsAscii => ch.len_utf8(),
+    };
+    // Decode a clean run at a time. A malformed report names the bad run's length and
+    // how many bytes past it the decoder already took (a UTF-16 unit after a lone high
+    // surrogate); those are re-read by a fresh decoder, which is what the replacing
+    // decode makes of them too.
+    let mut at = 0;
+    let mut run = String::new();
+    loop {
+        let rest = &raw[at..];
+        let mut decoder = encoding.as_static().new_decoder_without_bom_handling();
+        run.clear();
+        run.reserve(
+            decoder
+                .max_utf8_buffer_length_without_replacement(rest.len())
+                .unwrap_or(rest.len() * 3 + 4),
+        );
+        let (result, read) = decoder.decode_to_string_without_replacement(rest, &mut run, true);
+        for ch in run.chars() {
+            f(ch.len_utf8(), width(ch))?;
+        }
+        match result {
+            DecoderResult::Malformed(bad, past) => {
+                f(FFFD_LEN, usize::from(bad))?;
+                let advance = read.saturating_sub(usize::from(past));
+                if advance == 0 {
+                    return ControlFlow::Continue(()); // can't happen: a bad run is at least one byte
+                }
+                at += advance;
+            }
+            // The reserve fits the whole decode, so a full buffer can't happen; stop
+            // rather than loop if it ever does.
+            DecoderResult::InputEmpty | DecoderResult::OutputFull => return ControlFlow::Continue(()),
+        }
+    }
 }
 
 /// Reads the selected range and hands it to `sink` in pieces of at most `chunk_bytes`
@@ -239,7 +420,8 @@ fn raw_index(raw: &[u8], decoded: usize) -> usize {
 /// Returns `ViewerError::Cancelled` if `cancel` is flipped during the read, and
 /// `ViewerError::OutOfRange` if the requested line is past the file's last line (with
 /// the exception that `Eof` is always valid). A `sink` that fails stops the read with
-/// its own error, and nothing further is read.
+/// its own error, and nothing further is read. `form` says what each row writes; a walk
+/// that stops early says why in its [`Walked`], having handed over only part of the range.
 ///
 /// Streaming: after the initial seek by line number, the function advances by **byte
 /// offset** rather than line number. This is mandatory for the ByteSeek backend, which
@@ -252,9 +434,9 @@ pub fn read_range_streamed<S: FnMut(&[u8]) -> Result<(), ViewerError>>(
     focus: RangeEnd,
     cancel: &AtomicBool,
     chunk_bytes: usize,
-    raw: Option<RawBytes<'_>>,
+    form: RowForm<'_>,
     sink: &mut S,
-) -> Result<(), ViewerError> {
+) -> Result<Walked, ViewerError> {
     let (start, end) = if compare_ends(&anchor, &focus).is_le() {
         (anchor, focus)
     } else {
@@ -265,7 +447,7 @@ pub fn read_range_streamed<S: FnMut(&[u8]) -> Result<(), ViewerError>>(
     // empty selection at end of file.
     let (start_row, start_offset_utf16) = match start {
         RangeEnd::Row { row, offset } => (row as usize, offset),
-        RangeEnd::Eof => return Ok(()),
+        RangeEnd::Eof => return Ok(Walked::Finished),
     };
 
     // Validate the start row against the backend's row count. Only an EXACT count can
@@ -293,7 +475,12 @@ pub fn read_range_streamed<S: FnMut(&[u8]) -> Result<(), ViewerError>>(
         let end_byte = clamp_utf16_offset_to_byte(&row.text, end_offset_utf16);
         let lo = start_byte.min(end_byte);
         let hi = start_byte.max(end_byte);
-        emit.push(&row_piece(row, chunk.end_byte_offset, lo, hi, raw)?)?;
+        let raw = form.chunk_raw(row.byte_offset, chunk.end_byte_offset)?;
+        let chunk_raw = raw.as_deref().map(|raw| (row.byte_offset, raw));
+        match form.piece(row, chunk.end_byte_offset, chunk_raw, lo, hi)? {
+            Piece::Row { body, .. } => emit.push(&body)?,
+            Piece::Stop(walked) => return Ok(walked),
+        }
         if cancel.load(Ordering::Relaxed) {
             return Err(ViewerError::Cancelled);
         }
@@ -354,6 +541,11 @@ pub fn read_range_streamed<S: FnMut(&[u8]) -> Result<(), ViewerError>>(
             row_number = chunk.first_row_number;
         }
 
+        // One read per chunk, sliced per row, for a form that writes every row's bytes.
+        let chunk_start = chunk.rows.first().map_or(chunk_end_offset, |row| row.byte_offset);
+        let raw = form.chunk_raw(chunk_start, chunk_end_offset)?;
+        let chunk_raw = raw.as_deref().map(|raw| (chunk_start, raw));
+
         for (index, row) in chunk.rows.iter().enumerate() {
             let line = &row.text;
             let row_end = chunk
@@ -390,22 +582,28 @@ pub fn read_range_streamed<S: FnMut(&[u8]) -> Result<(), ViewerError>>(
                 // no trailing delimiter (the range is half-open). Exits the walk here, so
                 // it never reaches the `end_line()` below.
                 let end_byte = clamp_utf16_offset_to_byte(line, end_offset_utf16);
-                emit.push(&row_piece(row, row_end, 0, end_byte, raw)?)?;
+                match form.piece(row, row_end, chunk_raw, 0, end_byte)? {
+                    Piece::Row { body, .. } => emit.push(&body)?,
+                    Piece::Stop(walked) => return Ok(walked),
+                }
                 return emit.finish(/*keep_trailing_newline=*/ false);
             } else {
                 0
             };
-            let text = row_piece(row, row_end, from, line.len(), raw)?;
-            emit.push(&text)?;
+            let (body, newline) = match form.piece(row, row_end, chunk_raw, from, line.len())? {
+                Piece::Row { body, newline } => (body, newline),
+                Piece::Stop(walked) => return Ok(walked),
+            };
+            emit.push(&body)?;
             // The one place the walk decides a row carries its delimiter, and the one
             // line that had to change for rows: ❗ a break Cmdr made is NOT a newline,
             // so joining a continuing row to the next would put a line break in the
             // clipboard and in save-as that the file never contained.
             if !row.continues {
-                emit.end_line();
+                emit.end_line(newline);
             }
             lines_since_cancel_check += 1;
-            bytes_since_cancel_check += text.len() + 1;
+            bytes_since_cancel_check += body.len() + 1;
         }
 
         first_chunk = false;
@@ -429,152 +627,5 @@ pub fn read_range_streamed<S: FnMut(&[u8]) -> Result<(), ViewerError>>(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::pluralize::pluralize;
-
-    #[test]
-    fn clamp_offset_inside_ascii() {
-        assert_eq!(clamp_utf16_offset_to_byte("hello world", 0), 0);
-        assert_eq!(clamp_utf16_offset_to_byte("hello world", 5), 5);
-        assert_eq!(clamp_utf16_offset_to_byte("hello world", 11), 11);
-        // Past the end: clamps to byte length.
-        assert_eq!(clamp_utf16_offset_to_byte("hello world", 99), 11);
-    }
-
-    #[test]
-    fn clamp_offset_in_surrogate_pair() {
-        // "👋hello" — emoji is 2 UTF-16 units (a high + low surrogate) and 4 UTF-8 bytes.
-        let s = "👋hello";
-        assert_eq!(clamp_utf16_offset_to_byte(s, 0), 0);
-        // Offset 1: lands inside the surrogate pair; clamp down to codepoint start (0).
-        assert_eq!(clamp_utf16_offset_to_byte(s, 1), 0);
-        // Offset 2: end of the emoji, start of 'h' (byte 4).
-        assert_eq!(clamp_utf16_offset_to_byte(s, 2), 4);
-        // Offset 3: end of 'h' (byte 5).
-        assert_eq!(clamp_utf16_offset_to_byte(s, 3), 5);
-    }
-
-    #[test]
-    fn clamp_offset_in_multi_byte_utf8_but_single_utf16() {
-        // "café" — 'é' is 2 UTF-8 bytes but 1 UTF-16 unit.
-        let s = "café";
-        assert_eq!(clamp_utf16_offset_to_byte(s, 0), 0);
-        assert_eq!(clamp_utf16_offset_to_byte(s, 1), 1);
-        assert_eq!(clamp_utf16_offset_to_byte(s, 2), 2);
-        assert_eq!(clamp_utf16_offset_to_byte(s, 3), 3); // start of 'é'
-        assert_eq!(clamp_utf16_offset_to_byte(s, 4), 5); // end of 'é', byte 5
-    }
-
-    /// The streamed read's peak memory is one chunk, whatever the range's size: no
-    /// piece handed to the sink exceeds the chunk budget plus the line that crossed it.
-    #[test]
-    fn streamed_read_hands_out_bounded_pieces() {
-        // 20 MB of range through a 64 KiB budget.
-        let line_len = 999;
-        let line_count = 20_000;
-        let backend = crate::file_viewer::session::ScriptedBackend::new(&"z".repeat(line_len), line_count, |_| {});
-        let chunk_bytes = 64 * 1024;
-
-        let mut max_piece = 0usize;
-        let mut total = 0usize;
-        let mut sink = |piece: &[u8]| {
-            max_piece = max_piece.max(piece.len());
-            total += piece.len();
-            Ok(())
-        };
-        read_range_streamed(
-            &backend,
-            RangeEnd::Row { row: 0, offset: 0 },
-            RangeEnd::Eof,
-            &AtomicBool::new(false),
-            chunk_bytes,
-            None,
-            &mut sink,
-        )
-        .unwrap();
-
-        // Every line plus its joining newline, minus the newline past the last line.
-        assert_eq!(total, line_count * (line_len + 1) - 1);
-        assert!(
-            max_piece <= chunk_bytes + line_len + 1,
-            "peak piece was {} against a {chunk_bytes}-byte budget",
-            pluralize(max_piece as u64, "byte")
-        );
-    }
-
-    #[test]
-    fn compare_ends_orders_eof_greatest() {
-        let a = RangeEnd::Row { row: 5, offset: 3 };
-        let b = RangeEnd::Row { row: 5, offset: 7 };
-        let c = RangeEnd::Eof;
-        assert!(compare_ends(&a, &b).is_lt());
-        assert!(compare_ends(&b, &a).is_gt());
-        assert!(compare_ends(&a, &c).is_lt());
-        assert!(compare_ends(&c, &c).is_eq());
-    }
-
-    fn row_of(raw: &[u8]) -> ViewerRow {
-        let text_end = raw.iter().position(|&b| b == b'\n').unwrap_or(raw.len());
-        ViewerRow {
-            text: String::from_utf8_lossy(&raw[..text_end]).into_owned(),
-            byte_offset: 0,
-            continues: false,
-            line_number: Some(0),
-        }
-    }
-
-    /// `row.text[lo..hi]` as the save writes it, the row's raw bytes being `raw`.
-    fn saved(raw: &[u8], lo: usize, hi: usize) -> Vec<u8> {
-        let row = row_of(raw);
-        let read = |start: u64, end: u64| Ok(raw[start as usize..end as usize].to_vec());
-        row_piece(&row, raw.len() as u64, lo, hi, Some(&read))
-            .unwrap()
-            .into_owned()
-    }
-
-    /// Selection edges on either side of a replaced byte map to the bytes around it,
-    /// with nothing dropped or doubled, however the invalid run is shaped.
-    #[test]
-    fn a_replaced_row_saves_its_own_bytes_between_the_selection_edges() {
-        // "caf" + one U+FFFD (3 decoded bytes) for 0xE9 + " ok", CRLF-ended.
-        let raw = b"caf\xE9 ok\r\n";
-        let decoded_len = row_of(raw).text.len();
-        assert_eq!(saved(raw, 0, decoded_len), b"caf\xE9 ok\r");
-        assert_eq!(saved(raw, 3, 6), b"\xE9", "exactly the replaced byte");
-        assert_eq!(saved(raw, 0, 3), b"caf", "up to the replaced byte, not into it");
-        assert_eq!(saved(raw, 6, 9), b" ok", "from just past it");
-
-        // A multibyte char cut short (0xE2 0x82, no third byte), then a lone 0xFF: two
-        // invalid runs, two U+FFFD, back to back.
-        let raw = b"a\xE2\x82\xFFb\n";
-        assert_eq!(row_of(raw).text, "a\u{FFFD}\u{FFFD}b");
-        assert_eq!(saved(raw, 1, 4), b"\xE2\x82", "the first run alone");
-        assert_eq!(saved(raw, 4, 7), b"\xFF", "the second run alone");
-        assert_eq!(saved(raw, 0, 8), b"a\xE2\x82\xFFb");
-        // A valid multibyte char beside an invalid run keeps its bytes whole.
-        let raw = b"\xE2\x82\xAC\xE9\xC3\xA9\n";
-        assert_eq!(row_of(raw).text, "\u{20AC}\u{FFFD}\u{E9}");
-        assert_eq!(saved(raw, 0, 3), b"\xE2\x82\xAC");
-        assert_eq!(saved(raw, 6, 8), b"\xC3\xA9");
-    }
-
-    /// A file that holds a real U+FFFD has nothing to restore: its bytes ARE the text.
-    #[test]
-    fn a_real_replacement_character_saves_as_decoded() {
-        let raw = "x\u{FFFD}y\n".as_bytes();
-        assert_eq!(saved(raw, 0, 5), "x\u{FFFD}y".as_bytes());
-    }
-
-    /// Raw bytes that don't decode to the row on screen (the file changed under a
-    /// backend that holds it in memory) can't be mapped onto the selection, so the save
-    /// keeps the decoded text rather than splice in bytes from the wrong place.
-    #[test]
-    fn raw_bytes_that_no_longer_match_the_row_save_as_decoded() {
-        let row = row_of(b"caf\xE9 au lait\n");
-        let changed = b"XYZ\xFFwholly different\n".to_vec();
-        let read = move |_: u64, _: u64| Ok(changed.clone());
-        let piece = row_piece(&row, 15, 0, row.text.len(), Some(&read)).unwrap();
-        assert_eq!(&*piece, row.text.as_bytes());
-    }
-}
+#[path = "range_read_test.rs"]
+mod tests;

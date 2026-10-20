@@ -13,10 +13,14 @@ import { createViewerCopyOrchestrator } from './viewer-copy.svelte'
 import { formatByteSize } from '#lib/units/index.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { _setLocaleForTests } from '#lib/intl/locale.js'
-import type { CopyOutcome } from './viewer-copy.svelte'
+import type { CopyOutcome, SaveResult } from './viewer-copy.svelte'
 
-const { addToast } = vi.hoisted(() => ({ addToast: vi.fn<(message: string) => string>() }))
+const { addToast, showSavePanel } = vi.hoisted(() => ({
+  addToast: vi.fn<(message: string) => string>(),
+  showSavePanel: vi.fn<() => Promise<string | null>>(),
+}))
 vi.mock('#lib/ui/toast/toast-store.svelte.js', () => ({ addToast }))
+vi.mock('@tauri-apps/plugin-dialog', () => ({ save: showSavePanel }))
 
 const writeText = vi.fn<(text: string) => Promise<void>>()
 
@@ -33,14 +37,17 @@ beforeEach(() => {
   writeText.mockResolvedValue(undefined)
 })
 
-/** An orchestrator over a copy composable whose `runCopy` answers with `outcome`. */
-function wire(outcome: CopyOutcome) {
+/**
+ * An orchestrator over a copy composable whose `runCopy` answers with `outcome`, and
+ * whose `saveAs` with `saved`.
+ */
+function wire(outcome: CopyOutcome, saved: SaveResult = { ok: true, savedAs: { kind: 'utf8' } }) {
   const copy = {
     busy: false,
     inFlightReadId: null,
     runCopy: () => Promise.resolve(outcome),
     cancelInFlight: () => Promise.resolve(),
-    saveAs: () => Promise.resolve({ ok: true as const, text: '' }),
+    saveAs: () => Promise.resolve(saved),
   }
   return createViewerCopyOrchestrator({ copy, getFileName: () => 'notes.txt' })
 }
@@ -68,5 +75,34 @@ describe('the "on clipboard" toast', () => {
     await orchestrator.handleCopy()
 
     expect(addToast).toHaveBeenCalledWith(tString('viewer.copy.clipboardUnreachable'), { level: 'warn' })
+  })
+})
+
+describe('the "saved" toast', () => {
+  beforeEach(() => {
+    showSavePanel.mockResolvedValue('/Users/someone/notes.selection.txt')
+  })
+
+  it('names the file for a save that wrote UTF-8 text', async () => {
+    const orchestrator = wire({ kind: 'empty' })
+
+    await orchestrator.handleSaveAs()
+
+    expect(addToast).toHaveBeenCalledWith(tString('viewer.saveAs.saved', { name: 'notes.selection.txt' }), {
+      level: 'info',
+    })
+  })
+
+  it('says the file kept its original encoding when the selection held characters the decode lost', async () => {
+    // A UTF-8 copy would have swapped those characters for U+FFFD, so the backend wrote
+    // the source's own bytes; the user should hear why the file isn't UTF-8.
+    const orchestrator = wire({ kind: 'empty' }, { ok: true, savedAs: { kind: 'sourceEncoding', encoding: 'utf16Le' } })
+
+    await orchestrator.handleSaveAs()
+
+    expect(addToast).toHaveBeenCalledWith(
+      tString('viewer.saveAs.savedInSourceEncoding', { name: 'notes.selection.txt' }),
+      { level: 'info' },
+    )
   })
 })

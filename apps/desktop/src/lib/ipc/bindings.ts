@@ -1691,14 +1691,16 @@ export const commands = {
   /**
    *  Streams a logical range to `dest_path` and writes it atomically (temp+rename). Used
    *  by the "Save as file…" action in the > 100 MB refuse dialog and the 10 to 100 MB
-   *  confirm dialog. Cancellation works the same as `viewer_read_range`.
+   *  confirm dialog. Cancellation works the same as `viewer_read_range`. Answers
+   *  `SavedAs::SourceEncoding` when the range was written in the source's own encoding
+   *  because its decode lost characters, so the FE can say so.
    *
    *  Watched for silence (`SAVE_STALL_LIMIT`) rather than held to a total deadline: this
    *  is the way out of the clipboard's size refusal, so it has to be allowed to take as
    *  long as the selection honestly takes.
    */
   viewerWriteRangeToFile: (sessionId: string, readId: number, anchor: RangeEnd, focus: RangeEnd, destPath: string) =>
-    typedError<null, ViewerError>(
+    typedError<SavedAs, ViewerError>(
       __TAURI_INVOKE('viewer_write_range_to_file', { sessionId, readId, anchor, focus, destPath }),
     ),
   /**
@@ -14446,6 +14448,22 @@ export type S3UnattendedReconnect =
   | 'no_stored_secret'
 
 /**
+ *  What a finished save wrote, so the viewer can say so when it isn't the UTF-8 text
+ *  the user would expect.
+ */
+export type SavedAs =
+  /**
+   *  UTF-8 text: the range decoded cleanly, or the source is UTF-8 and the bytes its
+   *  decode couldn't read are kept as they are.
+   */
+  | { kind: 'utf8' }
+  /**
+   *  The source's own bytes, in its own encoding (plus its BOM), because some
+   *  characters in the range couldn't be decoded and UTF-8 would have replaced them.
+   */
+  | { kind: 'sourceEncoding'; encoding: FileEncoding }
+
+/**
  *  One mountable thing under an account: an SFTP or WebDAV root, later an S3
  *  bucket or a shared drive. What a tab, a favorite, and a path point at.
  */
@@ -19290,10 +19308,11 @@ export type WriteOperationError =
    */
   | { type: 'archive_duplicate_entry_name'; path: string; name: string | null }
   /**
-   *  The edit would have to keep a password-protected entry of the zip, and
-   *  the rewrite can't copy one without losing its encrypted flag (the bytes
-   *  would read back as garbage). Refused before anything is written; deleting
-   *  the entry is fine. `path` is the zip, `name` the entry.
+   *  The edit would have to keep a password-protected entry of the zip in a
+   *  scheme the rewrite can't copy intact (ZipCrypto and WinZip AES copy fine;
+   *  see `cmdr_archive`'s `MutationError::EncryptedEntryRetained`). Refused
+   *  before anything is written; deleting the entry is fine. `path` is the
+   *  zip, `name` the entry.
    */
   | { type: 'archive_encrypted_entry'; path: string; name: string }
   /**

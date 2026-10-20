@@ -4615,6 +4615,7 @@ export type MessageKey =
   | 'viewer.saveAs.panelFailed'
   | 'viewer.saveAs.saveFailed'
   | 'viewer.saveAs.saved'
+  | 'viewer.saveAs.savedInSourceEncoding'
   | 'viewer.saveAs.title'
   | 'viewer.saveAs.tooLong'
   | 'viewer.search.ariaLabel'

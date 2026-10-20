@@ -45,9 +45,9 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
   cross-line regex** (`(?s)`, literal `\n`, `\n` escape) at build time; `(?m)` is fine.
 - **CRLF: a row keeps its `\r`**.
 - **Cancellation is per-read / per-search, never session-wide**, and checked inside the per-row loop.
-- **`write_range_to_file` streams; `read_range` buffers.** The save is the way out of the 100 MiB clipboard refusal, so
-  it walks `read_range_streamed` in 1 MiB chunks under a stall watch. ❌ Never `read_range` + `fs::write`, and ❌ never
-  a total deadline over it.
+- **`write_range_to_file` streams; `read_range` buffers.** The save is the 100 MiB clipboard refusal's way out: 1 MiB
+  chunks under a stall watch, ❌ never `read_range` + `fs::write` or a total deadline. Lossy selections save source
+  bytes: `DETAILS.md`.
 - **Never `std::fs`-open a path the OS can't open**: a ROUTED one (`/…/foo.zip/inner`) or one whose volume's
   `paths_are_os_visible()` is false (`adb://…`); `open_session` sends both through `materialize_for_viewer`, after
   `volume_source` (SMB: smb2, no temp). ❌ Never an archive-only check, nor `supports_local_fs_access`.

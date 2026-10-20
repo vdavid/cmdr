@@ -672,7 +672,9 @@ that the scan opener finds a line exactly with no index).
   cancel flag; the read itself iterates outside the lock so other commands stay responsive.
 - `viewer_cancel_read(session_id, read_id)` → flips the per-read cancel flag. No-op if the read already finished.
 - `viewer_write_range_to_file(session_id, read_id, anchor, focus, dest_path)` → streams a logical range to `dest_path`,
-  decoded to UTF-8 and written atomically (temp+rename). Used by "Save as file…" in the copy dialogs. Same cancellation
+  decoded to UTF-8 and written atomically (temp+rename), and answers a `SavedAs`: `Utf8`, or
+  `SourceEncoding { encoding }` when the selection held characters the decode lost and the save kept the source's own
+  bytes (§ "A save keeps bytes the decode lost"). Used by "Save as file…" in the copy dialogs. Same cancellation
   plumbing as `viewer_read_range`. The temp comes from `cmdr_fs::staging::StagingTemp::mint`, so the pane hides it while
   it's written and a name at the filesystem's limit still gets one that fits. Peak memory is one
   `STREAM_CHUNK_BYTES` buffer whatever the selection's size, and a cancel or any error removes the partial temp. No
@@ -979,19 +981,39 @@ timeout shape. Why every family owns its error type: `docs/guides/error-handling
   watch's `cancel_read` that raced the last write lands there and the temp goes instead), and every failure path
   removes the partial temp. Pinned by `write_range_to_file_streams_as_it_reads` (a scripted backend watches the
   destination temp from inside the read loop, so a buffering save is caught by the temp still being empty at chunk two),
-  `range_read::tests::streamed_read_hands_out_bounded_pieces`, and
+  `streamed_read_hands_out_bounded_pieces` (`range_read_test.rs`), and
   `write_range_to_file_cancelled_after_its_last_read_leaves_the_destination_alone`.
-- **A UTF-8 save keeps bytes the decode replaced.** Gotcha/Why: detection reads only the 64 KiB head, so a log with a
-  stray Latin-1 or binary byte past it decodes as UTF-8, and `from_utf8_lossy` swaps that byte for U+FFFD; saving the
-  decoded text quietly altered the copy and reported success. For a UTF-8-family session (`Utf8`, `Utf8WithBom`,
-  `UsAscii`), the save hands the walk a `RawBytes` reader, and a row whose text holds U+FFFD and whose source bytes
-  aren't valid UTF-8 emits those bytes (`range_read::row_piece`). The selection's ends map into the raw bytes through
-  `utf8_chunks` (`raw_index`): the lossy decode replaces each invalid run it reports with one U+FFFD, so the mapping is
-  exact, but only for the bytes the row was decoded from: raw bytes whose lossy decode doesn't start with the row's text
-  (the file changed under a backend holding it in memory) fall back to the decoded text. Clean rows still emit their
-  text, so a lossless save is unchanged. Other encodings stay transcoded on purpose, and the clipboard (`read_range`)
-  passes no reader. Pinned by `write_range_to_file_keeps_the_source_bytes_a_utf8_decode_would_replace` and the
-  `row_piece` edge tests in `range_read::tests` (CRLF, back-to-back invalid runs, a changed file).
+- **A save keeps bytes the decode lost.** Gotcha/Why: a decode swaps
+  bytes it can't read for U+FFFD, so saving the decoded text quietly altered the copy and reported success. In UTF-8
+  that's a stray Latin-1 or binary byte past the 64 KiB detection head; in UTF-16, a lone surrogate or an odd final
+  byte. (The other offered encodings are single-byte tables that read every byte.) The walk's `RowForm` says what each
+  row writes (`range_read.rs`):
+  - `Text`: the decoded text. The clipboard (`read_range`) always, and a save's last resort.
+  - `TextKeepingLoss`: the save's first walk. A row whose SELECTED text holds U+FFFD reads its own bytes, and if those
+    don't decode cleanly (`decodes_cleanly`; a real U+FFFD in the file does), the selection is lossy. A UTF-8-family
+    row (`Utf8`, `Utf8WithBom`, `UsAscii`) then writes those bytes in place: clean UTF-8 text IS its bytes, so the
+    output stays one encoding, and the save answers `SavedAs::Utf8`. Any other source stops the walk with
+    `Walked::Lossy`.
+  - `Source`: every row's own bytes, read once per chunk and sliced per row, with the source's own newline. The save
+    writes the encoding's BOM first (rows start past it, and a BOM-less UTF-16 copy reads as noise) and answers
+    `SavedAs::SourceEncoding`, which the FE words as the `viewer.saveAs.savedInSourceEncoding` toast.
+
+  **Decision/Why: decide as you go, and restart on loss, over a separate scan pass.** Lossiness can't be known before
+  reading the range, and the save may not buffer it. A scan pass would read every save twice; restarting reads twice
+  only the saves that hit a loss, and only up to the first lossy row. The restart reopens the temp (`File::create`
+  truncates), so memory stays one chunk, the stall watch keeps seeing bytes move, and cancellation is unchanged. A
+  UTF-8 source never restarts, since its in-place bytes don't change the output's encoding.
+
+  The selection's ends map into a row's bytes through `raw_index`: the decode replaces each malformed run with one
+  U+FFFD and spends a fixed width on every other character (`for_each_source_char`; for non-UTF-8 sources it re-runs
+  `encoding_rs` without replacement, re-reading the bytes a malformed report says it took past the bad run, as the
+  replacing decode does). That holds only for the bytes the row was decoded from, so every row's bytes are checked to
+  decode to its text first (`row_body`). A mismatch means the file changed under a backend holding it in memory:
+  `TextKeepingLoss` writes that row's text, and `Source` stops with `Walked::SourceChanged`, so the save starts over
+  as `Text`. At most three walks, each streamed. Pinned by `a_lossy_utf16_range_saves_in_its_own_encoding_and_says_so`,
+  `a_utf16_range_beside_a_lost_character_still_saves_as_utf8`,
+  `write_range_to_file_keeps_the_source_bytes_a_utf8_decode_would_replace` (`session_range_test.rs`), and
+  `raw_index_lands_where_the_decoded_prefix_ends` plus the row-piece edge tests in `range_read_test.rs`.
 - **A save is watched for silence, ❌ never held to a total deadline.** A selection's size is unbounded by
   construction (the save is what the > 100 MiB clipboard refusal offers instead), so a total budget would kill exactly
   the saves the button exists for: at a realistic 200 MB/s, the old shared `READ_RANGE_TIMEOUT` cut off anything past
@@ -1013,7 +1035,7 @@ timeout shape. Why every family owns its error type: `docs/guides/error-handling
   `full_load.rs:43`, `line_index.rs:172`) split only on `\n` and slice up to the `\n` byte; the `\r` stays with the
   line. So `line.len()` already includes the `\r` for CRLF files, and `range_read`'s `chunk_end_offset += line.len()
   + 1` accounts only for the single `\n` delimiter byte. No drift on LF or CRLF. Pinned by
-  `read_range_full_load_crlf_preserves_carriage_returns` in `session_test.rs`. If a future change makes line readers
+  `read_range_full_load_crlf_preserves_carriage_returns` in `session_range_test.rs`. If a future change makes line readers
   strip `\r`, the byte-offset arithmetic in `range_read.rs` needs the same change.
 
 ## Performance targets

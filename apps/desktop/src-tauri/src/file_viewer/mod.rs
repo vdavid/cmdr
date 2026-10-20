@@ -79,7 +79,11 @@ mod search_cancel_test_support;
 #[cfg(test)]
 mod search_matcher_test;
 #[cfg(test)]
+mod session_range_test;
+#[cfg(test)]
 mod session_test;
+#[cfg(test)]
+mod session_test_support;
 #[cfg(test)]
 mod volume_source_test;
 #[cfg(test)]
@@ -98,7 +102,7 @@ pub use row_walk::{CHUNK_BUDGET_BYTES, ChunkEnd, TotalRows, ViewerRow};
 pub use rows::SEGMENT_BYTES;
 pub use search_matcher::{Matcher, SearchMode};
 pub use session::{
-    EncodingOptions, SaveProgress, SearchPollResult, ViewerSessionStatus, cancel_read, close_session,
+    EncodingOptions, SaveProgress, SavedAs, SearchPollResult, ViewerSessionStatus, cancel_read, close_session,
     close_session_for_window, get_bytes, get_encoding_options, get_lines, get_session_status, init_app_handle,
     open_for_window, open_session, open_session_as_text, read_range, register_window_session, reload, search_cancel,
     search_poll, search_start, set_encoding, set_tail_mode, write_range_to_file,
