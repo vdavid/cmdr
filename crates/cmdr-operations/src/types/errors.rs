@@ -325,10 +325,11 @@ pub enum WriteOperationError {
         path: String,
         name: Option<String>,
     },
-    /// The edit would have to keep a password-protected entry of the zip, and
-    /// the rewrite can't copy one without losing its encrypted flag (the bytes
-    /// would read back as garbage). Refused before anything is written; deleting
-    /// the entry is fine. `path` is the zip, `name` the entry.
+    /// The edit would have to keep a password-protected entry of the zip in a
+    /// scheme the rewrite can't copy intact (ZipCrypto and WinZip AES copy fine;
+    /// see `cmdr_archive`'s `MutationError::EncryptedEntryRetained`). Refused
+    /// before anything is written; deleting the entry is fine. `path` is the
+    /// zip, `name` the entry.
     ArchiveEncryptedEntry {
         path: String,
         name: String,

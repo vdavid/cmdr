@@ -649,6 +649,7 @@ impl<W: Write + Seek> ZipWriter<W> {
             compressed_size: 0,
             uncompressed_size: 0,
             language_encoding: None,
+            encrypted_with_descriptor: None,
         });
         #[cfg(not(feature = "unreserved"))]
         {
@@ -711,6 +712,12 @@ impl<W: Write + Seek> ZipWriter<W> {
                 .is_some_and(|p| p & ffi::S_IFDIR != ffi::S_IFDIR)
         {
             file.flags |= ZipFlags::UsingDataDescriptor.as_u16();
+        }
+        // After the data descriptor default above: a raw copy knows its sizes up
+        // front, and an encrypted one must keep the descriptor flag it was read with.
+        if let Some(descriptor) = raw_values.encrypted_with_descriptor {
+            file.flags.set(ZipFlags::Encrypted, true);
+            file.flags.set(ZipFlags::UsingDataDescriptor, descriptor);
         }
         file.version_made_by = file.version_made_by.max(file.version_needed() as u8);
         let index = self.insert_file_data(file_name_raw, file)?;
@@ -1136,6 +1143,13 @@ impl<W: Write + Seek> ZipWriter<W> {
             options = options.with_file_comment(file.comment());
         }
         for one_extra in file.extra_data_fields() {
+            // `options()` carries an AES entry's settings, from which the writer
+            // writes its AES extra field, so copying the stored one too would
+            // write it twice.
+            #[cfg(feature = "aes-crypto")]
+            if matches!(one_extra, ExtraField::AeXEncryption(_)) {
+                continue;
+            }
             let mut buff = Cursor::new(Vec::new());
             one_extra.write(&mut buff, false)?;
             let buff = buff.into_inner();
@@ -1152,6 +1166,11 @@ impl<W: Write + Seek> ZipWriter<W> {
 
     /// `language_encoding` is the copied entry's own flag when `name` is its
     /// stored name, or `None` for a new name, which derives the flag from it.
+    ///
+    /// An encrypted entry keeps its encrypted and data descriptor flags, and
+    /// gets a data descriptor after its bytes when it had one, so it decrypts as
+    /// before: the ZipCrypto header (or AES salt, verifier, and MAC) is in those
+    /// bytes, and neither scheme binds the name.
     fn raw_copy_file_rename_internal<R: Read, T: FileOptionExtension>(
         &mut self,
         mut file: ZipFile<'_, R>,
@@ -1164,6 +1183,9 @@ impl<W: Write + Seek> ZipWriter<W> {
             compressed_size: file.compressed_size(),
             uncompressed_size: file.size(),
             language_encoding,
+            encrypted_with_descriptor: file
+                .encrypted()
+                .then(|| file.flags().is_using_data_descriptor()),
         };
 
         self.start_entry(name, options, Some(raw_values))?;
@@ -1171,6 +1193,18 @@ impl<W: Write + Seek> ZipWriter<W> {
         self.writing_raw = true;
 
         io::copy(&mut file.take_raw_reader()?, self)?;
+        // `finish_file` writes no data descriptor for a raw entry.
+        let auto_large_file = self.auto_large_file;
+        let result = (|| -> ZipResult<()> {
+            let writer = self.inner.try_inner_mut()?;
+            if let Some((_, file)) = self.files.last()
+                && file.is_using_data_descriptor()
+            {
+                file.write_data_descriptor(writer, auto_large_file)?;
+            }
+            Ok(())
+        })();
+        self.ok_or_abort_file(result)?;
         self.finish_file()
     }
 
@@ -1407,6 +1441,7 @@ impl<W: Write + Seek> ZipWriter<W> {
             compressed_size,
             uncompressed_size,
             language_encoding: None,
+            encrypted_with_descriptor: None,
         };
 
         self.start_entry(&file_name, options, Some(raw_values))?;
@@ -4669,6 +4704,66 @@ mod tests {
                 .matching(crate::format::flags::ZipFlags::LanguageEncoding);
             assert_eq!(flagged, language_encoding, "{name}");
         }
+        Ok(())
+    }
+
+    fn decrypted(bytes: Vec<u8>, password: &[u8]) -> ZipResult<Vec<u8>> {
+        let mut archive = ZipArchive::new(Cursor::new(bytes))?;
+        let mut file = archive.by_index_decrypt(0, password)?;
+        let mut contents = Vec::new();
+        file.read_to_end(&mut contents)?;
+        Ok(contents)
+    }
+
+    #[test]
+    fn raw_copy_file_keeps_a_zipcrypto_entry_decryptable() -> ZipResult<()> {
+        // The writer gives ZipCrypto a data descriptor and checks the password
+        // against the DOS time's high byte, the shape Info-ZIP's `zip -e` writes.
+        let mut writer = ZipWriter::new(Cursor::new(Vec::new()));
+        let options = SimpleFileOptions::default()
+            .last_modified_time(DateTime::from_date_and_time(2024, 5, 6, 13, 26, 52)?)
+            .with_deprecated_encryption(b"Password");
+        writer.start_file("secret.txt", options)?;
+        writer.write_all(RT_TEST_TEXT.as_bytes())?;
+        let source = ZipArchive::new(Cursor::new(writer.finish()?.into_inner()))?;
+        for rename in [false, true] {
+            let bytes = copied(source.clone(), |writer, file| {
+                if rename {
+                    writer.raw_copy_file_rename(file, "moved.txt")
+                } else {
+                    writer.raw_copy_file(file)
+                }
+            })?;
+            let mut archive = ZipArchive::new(Cursor::new(bytes.clone()))?;
+            let flags = archive.by_index_raw(0)?.flags();
+            assert!(flags.is_encrypted(), "rename: {rename}");
+            assert!(flags.is_using_data_descriptor(), "rename: {rename}");
+            assert_eq!(
+                decrypted(bytes, b"Password")?,
+                RT_TEST_TEXT.as_bytes(),
+                "rename: {rename}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    #[cfg(feature = "aes-crypto")]
+    fn raw_copy_file_writes_an_aes_entrys_extra_field_once() -> ZipResult<()> {
+        let mut writer = ZipWriter::new(Cursor::new(Vec::new()));
+        let options =
+            SimpleFileOptions::default().with_aes_encryption(crate::AesMode::Aes256, "Password");
+        writer.start_file("secret.txt", options)?;
+        writer.write_all(RT_TEST_TEXT.as_bytes())?;
+        let source = ZipArchive::new(Cursor::new(writer.finish()?.into_inner()))?;
+        let bytes = copied(source, |writer, file| writer.raw_copy_file(file))?;
+        // The field's ID (0x9901) and data length (7), once per header.
+        let aes_fields = bytes
+            .windows(4)
+            .filter(|window| *window == [0x01, 0x99, 0x07, 0x00])
+            .count();
+        assert_eq!(aes_fields, 2);
+        assert_eq!(decrypted(bytes, b"Password")?, RT_TEST_TEXT.as_bytes());
         Ok(())
     }
 

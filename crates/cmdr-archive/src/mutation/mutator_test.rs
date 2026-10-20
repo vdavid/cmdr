@@ -2,8 +2,9 @@
 //!
 //! Data-safety-critical, so these are the red-first TDD anchors for every
 //! invariant: round-trips (verified via OUR reader AND external `unzip -t`),
-//! cancel-leaves-original-intact, the merge invariant, metadata preservation,
-//! and encrypted-entry byte-for-byte retention.
+//! cancel-leaves-original-intact, the merge invariant, and metadata
+//! preservation. Encrypted entries have their own file,
+//! `mutator_encrypted_test.rs`.
 
 use std::collections::HashMap;
 use std::io::Read;
@@ -481,84 +482,6 @@ mod archive_file_metadata {
 
         assert_eq!(flags(&path) & HIDDEN_FLAG, HIDDEN_FLAG);
     }
-}
-
-// ---- Data-safety: encrypted-entry handling -----------------------------------
-//
-// `zip`'s raw copy reconstructs an entry's options from `ZipFile::options()`,
-// which does NOT carry the traditional-PKWARE encryption GP flag. So a retained
-// encrypted entry would keep its ciphertext bytes but lose the "encrypted"
-// header bit — semantically corrupt (a reader would hand back ciphertext as
-// plaintext). The mutator refuses any edit that would RETAIN an encrypted entry,
-// leaving the original untouched. Deleting an encrypted entry is fine (it isn't
-// retained). This is a deviation from the plan's "raw_copy retains encrypted
-// entries byte-for-byte" assumption, resolved in favor of data safety.
-
-#[test]
-fn an_edit_that_would_retain_an_encrypted_entry_is_refused_and_leaves_the_original_intact() {
-    use crate::test_fixtures::set_first_entry_encrypted;
-
-    let tmp = tempfile::tempdir().expect("tempdir");
-    let mut bytes = build_zip(&[
-        stored("secret.bin", b"pretend-encrypted-payload".to_vec()),
-        stored("plain.txt", b"plain".to_vec()),
-    ]);
-    set_first_entry_encrypted(&mut bytes);
-    let path = write_zip(tmp.path(), "a", &bytes);
-    let original_on_disk = std::fs::read(&path).expect("read original");
-
-    // An unrelated add would retain the encrypted entry -> refused.
-    let result = apply(
-        &path,
-        &Changeset {
-            adds: vec![add_bytes("note.txt", b"note")],
-            ..Default::default()
-        },
-        &NoHooks,
-    );
-    assert!(
-        matches!(result, Err(MutationError::EncryptedEntryRetained { .. })),
-        "got {result:?}"
-    );
-    // The original archive is byte-for-byte untouched, and no temp lingers.
-    assert_eq!(
-        std::fs::read(&path).expect("re-read"),
-        original_on_disk,
-        "original untouched by a refused edit"
-    );
-    let leftovers = std::fs::read_dir(tmp.path())
-        .expect("read dir")
-        .flatten()
-        .any(|e| e.file_name().to_string_lossy().contains(".cmdr-tmp-"));
-    assert!(!leftovers, "a refused edit creates no temp");
-}
-
-#[test]
-fn deleting_an_encrypted_entry_is_allowed() {
-    use crate::test_fixtures::set_first_entry_encrypted;
-
-    let tmp = tempfile::tempdir().expect("tempdir");
-    let mut bytes = build_zip(&[
-        stored("secret.bin", b"pretend-encrypted-payload".to_vec()),
-        stored("plain.txt", b"plain".to_vec()),
-    ]);
-    set_first_entry_encrypted(&mut bytes);
-    let path = write_zip(tmp.path(), "a", &bytes);
-
-    // Deleting the encrypted entry doesn't retain it, so the edit proceeds.
-    apply(
-        &path,
-        &Changeset {
-            deletes: vec!["secret.bin".to_string()],
-            ..Default::default()
-        },
-        &NoHooks,
-    )
-    .expect("delete of an encrypted entry is allowed");
-
-    let back = read_back(&path);
-    assert!(!back.contains_key("secret.bin"), "encrypted entry removed");
-    assert_eq!(back.get("plain.txt").map(|v| v.as_slice()), Some(b"plain".as_slice()));
 }
 
 // ---- Data-safety: pause reaches mid-add --------------------------------------

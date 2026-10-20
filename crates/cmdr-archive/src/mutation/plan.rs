@@ -85,7 +85,7 @@ pub(super) fn plan_retained(
         let original_name = planned_name(&file, shown_names.take(header_start))?;
         let tree_path = tree_paths.as_mut().map(|paths| paths.take(header_start).flatten());
         let compressed_size = file.compressed_size();
-        let encrypted = file.encrypted();
+        let uncarriable = !carries_its_encryption(&file);
         // A folder by its name's trailing slash or by its recorded mode (a
         // Unix `S_IFDIR` or the DOS directory bit), as the reader decides.
         let is_dir = file.is_dir() || file.unix_mode().is_some_and(|mode| mode & 0o170000 == 0o040000);
@@ -100,10 +100,10 @@ pub(super) fn plan_retained(
         };
         match (!deleted).then(|| renamed_name(&original_name, &renames)) {
             Some(new_name) => {
-                // Refuse before creating any temp: a retained encrypted entry can't
-                // be copied verbatim (the flag is lost), so touching this archive at
-                // all would corrupt it. Bailing here keeps the original untouched.
-                if encrypted {
+                // Refuse before creating any temp: keeping an encrypted entry whose
+                // scheme the raw copy can't carry could leave it undecryptable.
+                // Bailing here keeps the original untouched.
+                if uncarriable {
                     return Err(MutationError::EncryptedEntryRetained { name: original_name });
                 }
                 let renamed = new_name != original_name;
@@ -128,6 +128,34 @@ pub(super) fn plan_retained(
     }
     refuse_an_entry_under_a_file(&kept, changeset)?;
     Ok(plan)
+}
+
+/// General-purpose bit 6: PKWARE Strong Encryption.
+const STRONG_ENCRYPTION_FLAG: u16 = 1 << 6;
+/// General-purpose bit 13: the local header's values are masked (an encrypted
+/// central directory).
+const MASKED_HEADER_FLAG: u16 = 1 << 13;
+
+/// Whether a raw copy keeps `file` decryptable with its password: always for
+/// an unencrypted entry; for WinZip AES, whose framing (salt, verifier, MAC)
+/// sits in the stored bytes and whose extra field the copy rewrites as read;
+/// for ZipCrypto, whose 12-byte header is in the stored bytes and whose flags,
+/// CRC, and DOS time the copy keeps (the vendored `zip` patch), except under
+/// bit 3 with a DOS time the `zip` crate couldn't parse: the password's check
+/// byte is that time's, and the crate keeps no raw copy of it to write back.
+/// PKWARE Strong Encryption and masked headers carry state the `zip` crate
+/// doesn't model, so nothing vouches for a copy of those.
+fn carries_its_encryption<R: Read>(file: &ZipFile<'_, R>) -> bool {
+    use zip::read::HasZipMetadata as _;
+    if !file.encrypted() {
+        return true;
+    }
+    let flags = file.flags();
+    if flags.as_u16() & (STRONG_ENCRYPTION_FLAG | MASKED_HEADER_FLAG) != 0 {
+        return false;
+    }
+    let aes = file.get_metadata().aes_settings().is_some();
+    aes || !flags.is_using_data_descriptor() || file.last_modified().is_some()
 }
 
 /// Refuses an edit that would write an entry under a FILE entry: an add or

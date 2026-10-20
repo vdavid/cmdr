@@ -244,11 +244,29 @@ const GP_ENCRYPTED: u16 = 1 << 0;
 /// The ZipCrypto encryption header prepended to each encrypted entry's data.
 const ZIPCRYPTO_HEADER_LEN: usize = 12;
 
+/// General-purpose bit-flag 3 (CRC and sizes follow the data, in a data descriptor).
+const GP_DATA_DESCRIPTOR: u16 = 1 << 3;
+/// The DOS time (13:26:52) each encrypted entry of [`build_zipcrypto_zip_streamed`]
+/// carries. Its high byte is that shape's check byte.
+const STREAMED_DOS_TIME: u16 = 0x6B5A;
+
 /// Serializes a minimal STORED-entry zip, ZipCrypto-encrypting the flagged
 /// entries with `password`. Entry order is preserved, so the central-directory
 /// ordinal of each entry is its index here — exactly what the ordinal-alignment
 /// test relies on.
 pub fn build_zipcrypto_zip(entries: &[CryptoFixtureFile], password: &str) -> Vec<u8> {
+    zipcrypto_zip(entries, password, false)
+}
+
+/// [`build_zipcrypto_zip`] in the shape Info-ZIP's `zip -e` writes: each
+/// encrypted entry sets bit 3 and is followed by a data descriptor, and its
+/// check byte is the high byte of its DOS time rather than of its CRC, which is
+/// what a reader validates the password against for such an entry.
+pub fn build_zipcrypto_zip_streamed(entries: &[CryptoFixtureFile], password: &str) -> Vec<u8> {
+    zipcrypto_zip(entries, password, true)
+}
+
+fn zipcrypto_zip(entries: &[CryptoFixtureFile], password: &str, streamed: bool) -> Vec<u8> {
     let mut body = Vec::new();
     let mut central = Vec::new();
     let pw = password.as_bytes();
@@ -257,16 +275,28 @@ pub fn build_zipcrypto_zip(entries: &[CryptoFixtureFile], password: &str) -> Vec
         let name = entry.name.as_bytes();
         let crc = crc32(&entry.content);
         let local_offset = body.len() as u32;
-        let flags = if entry.encrypted { GP_ENCRYPTED } else { 0 };
+        let descriptor = streamed && entry.encrypted;
+        let flags = match (entry.encrypted, descriptor) {
+            (true, true) => GP_ENCRYPTED | GP_DATA_DESCRIPTOR,
+            (true, false) => GP_ENCRYPTED,
+            (false, _) => 0,
+        };
+        let mod_time = if descriptor { STREAMED_DOS_TIME } else { 0 };
 
         // The stored bytes: for an encrypted entry, the 12-byte ZipCrypto header
-        // (11 arbitrary bytes + a check byte = the CRC's high byte) followed by the
-        // encrypted content, all run through the same keystream.
+        // (11 arbitrary bytes + a check byte: the CRC's high byte, or under a data
+        // descriptor the DOS time's) followed by the encrypted content, all run
+        // through the same keystream.
         let stored = if entry.encrypted {
             let mut cipher = ZipCrypto::new(pw);
             let mut header = [0u8; ZIPCRYPTO_HEADER_LEN];
             header[..11].copy_from_slice(&[0x41; 11]); // deterministic "random" prefix
-            header[11] = (crc >> 24) as u8; // check byte the reader validates
+            // The check byte the reader validates.
+            header[11] = if descriptor {
+                (mod_time >> 8) as u8
+            } else {
+                (crc >> 24) as u8
+            };
             let mut out = Vec::with_capacity(ZIPCRYPTO_HEADER_LEN + entry.content.len());
             for &b in header.iter().chain(entry.content.iter()) {
                 out.push(cipher.encrypt(b));
@@ -278,21 +308,32 @@ pub fn build_zipcrypto_zip(entries: &[CryptoFixtureFile], password: &str) -> Vec
         let compressed_size = stored.len() as u32;
         let uncompressed_size = entry.content.len() as u32;
 
-        // Local file header (signature PK\x03\x04), method 0 (stored), no data
-        // descriptor (so the reader validates the check byte against the CRC).
+        // Local file header (signature PK\x03\x04), method 0 (stored). Under a
+        // data descriptor its CRC and sizes are zero and follow the data instead.
+        let (local_crc, local_compressed, local_uncompressed) = if descriptor {
+            (0, 0, 0)
+        } else {
+            (crc, compressed_size, uncompressed_size)
+        };
         body.extend_from_slice(&[0x50, 0x4b, 0x03, 0x04]);
         body.extend_from_slice(&20u16.to_le_bytes()); // version needed
         body.extend_from_slice(&flags.to_le_bytes());
         body.extend_from_slice(&0u16.to_le_bytes()); // method: stored
-        body.extend_from_slice(&0u16.to_le_bytes()); // mod time
+        body.extend_from_slice(&mod_time.to_le_bytes());
         body.extend_from_slice(&0x21u16.to_le_bytes()); // mod date (1980-01-01, valid)
-        body.extend_from_slice(&crc.to_le_bytes());
-        body.extend_from_slice(&compressed_size.to_le_bytes());
-        body.extend_from_slice(&uncompressed_size.to_le_bytes());
+        body.extend_from_slice(&local_crc.to_le_bytes());
+        body.extend_from_slice(&local_compressed.to_le_bytes());
+        body.extend_from_slice(&local_uncompressed.to_le_bytes());
         body.extend_from_slice(&(name.len() as u16).to_le_bytes());
         body.extend_from_slice(&0u16.to_le_bytes()); // extra len
         body.extend_from_slice(name);
         body.extend_from_slice(&stored);
+        if descriptor {
+            body.extend_from_slice(&[0x50, 0x4b, 0x07, 0x08]); // data descriptor signature
+            body.extend_from_slice(&crc.to_le_bytes());
+            body.extend_from_slice(&compressed_size.to_le_bytes());
+            body.extend_from_slice(&uncompressed_size.to_le_bytes());
+        }
 
         // Central-directory header (signature PK\x01\x02).
         central.extend_from_slice(&[0x50, 0x4b, 0x01, 0x02]);
@@ -300,7 +341,7 @@ pub fn build_zipcrypto_zip(entries: &[CryptoFixtureFile], password: &str) -> Vec
         central.extend_from_slice(&20u16.to_le_bytes()); // version needed
         central.extend_from_slice(&flags.to_le_bytes());
         central.extend_from_slice(&0u16.to_le_bytes()); // method
-        central.extend_from_slice(&0u16.to_le_bytes()); // mod time
+        central.extend_from_slice(&mod_time.to_le_bytes());
         central.extend_from_slice(&0x21u16.to_le_bytes()); // mod date
         central.extend_from_slice(&crc.to_le_bytes());
         central.extend_from_slice(&compressed_size.to_le_bytes());

@@ -20,8 +20,10 @@ and error types both speak; `plan.rs` decides which original entries an edit kee
   replaces** (`apply` resolves a linked archive first). An archive with a duplicate entry name is refused: the `zip`
   crate folds the twins into one. DETAILS § "The rewrite keeps the archive's own shape". So is an edit that would write
   an entry under a FILE entry, which every reader hides (`EntryUnderFile`).
-- **An edit that would RETAIN an encrypted entry is refused** (`zip`'s raw copy drops the PKWARE flag → silent
-  corruption). Deleting an encrypted entry is fine.
+- **A kept ZipCrypto or WinZip AES entry raw-copies byte-identical and still decrypts**: the vendored `zip` patch keeps
+  its encrypted and data-descriptor flags (bit 3 picks ZipCrypto's check byte). A scheme it can't carry (Strong
+  Encryption, masked headers, bit 3 with an unparseable DOS time) refuses the edit (`carries_its_encryption`). DETAILS §
+  "Encrypted entries".
 - **`Changeset::compression_level` applies to ADDED entries only, clamped 1..=9 in `add_entry_options`.** The `zip`
   crate HARD-ERRORS on an out-of-range Deflated level (it doesn't clamp), failing the whole edit at the first entry — so
   keep the clamp; don't set a raw level on `FileOptions` elsewhere. `None` = crate default (level 6). See `DETAILS.md` §

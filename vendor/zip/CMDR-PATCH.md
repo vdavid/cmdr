@@ -23,6 +23,18 @@ and that copy only reads update bundles.
   rather than re-deriving it from the name bytes at write time; every path that gives an entry a name sets it
   (`needs_language_encoding`, `ZipFileData::set_language_encoding_for`). `ZipRawValues` carries a raw copy's own flag
   into `start_entry`. `src/format/flags.rs`: `ZipFileFlags::set`.
+- `src/write.rs` and `src/types.rs`, encrypted entries (#592): a raw copy of an encrypted entry keeps its encrypted
+  flag (bit 0) and its data descriptor flag (bit 3), carried by `ZipRawValues::encrypted_with_descriptor`, and
+  `raw_copy_file_rename_internal` writes a data descriptor after the copied bytes when bit 3 is set (`finish_file`
+  skips it for raw entries, as `add_prepared_file` already works around). Upstream dropped both flags, because
+  `ZipFile::options()` carries no ZipCrypto state, so a kept ZipCrypto entry read back as ciphertext. Bit 3 matters on
+  its own: it picks ZipCrypto's password check byte (the DOS time's high byte under it, which is how Info-ZIP's
+  `zip -e` writes, else the CRC's). `raw_copy_options` also skips the stored AES extra field (`0x9901`), which
+  `options()` already carries and the writer writes from, so an AES entry no longer gets it twice. Known limit:
+  `raw_copy_file_touch` on a bit-3 ZipCrypto entry changes the time its check byte encrypts, which no copy can fix
+  without the password; Cmdr never touches. Tests: `raw_copy_file_keeps_a_zipcrypto_entry_decryptable` and
+  `raw_copy_file_writes_an_aes_entrys_extra_field_once` here, and Cmdr's
+  `crates/cmdr-archive/src/mutation/mutator_encrypted_test.rs`.
 - `src/read/zip_archive.rs`: `ZipArchive::central_directory_len()`, the number of central-directory records counted
   before same-named ones fold into one `IndexMap` entry (`ZipArchiveMetadata::central_directory_len`). More than `len()`
   means a duplicate name whose earlier record no index reaches, which a rewrite through this reader would drop, so Cmdr
@@ -44,10 +56,14 @@ upstream `master` at `f8a0fdb6`, 2026-10-20). Re-deriving the flag from the byte
 or GBK name can be valid UTF-8 by accident, and old Info-ZIP writes UTF-8 without the flag. Cmdr's tests for the
 property: `crates/cmdr-archive/src/mutation/mutator_raw_names_test.rs`.
 
-The same change is drafted for upstream on a `preserve-raw-names-in-raw-copy` branch off `master`.
+The names change is drafted for upstream on a `preserve-raw-names-in-raw-copy` branch off `master`. The
+encrypted-entry change isn't drafted yet; upstream `master` drops both flags the same way (verified by reading
+`raw_copy_file_rename_internal` at `15639ba6`, 2026-10-20). Cmdr's tests for it:
+`crates/cmdr-archive/src/mutation/mutator_encrypted_test.rs`.
 
 ## Dropping it
 
-When upstream ships a raw copy that keeps the stored name, delete this folder, its `[patch.crates-io]` line, and its
+When upstream ships a raw copy that keeps the stored name and an encrypted entry's flags, plus
+`central_directory_len()` or another way to see the fold, delete this folder, its `[patch.crates-io]` line, and its
 `exclude` entry, and keep the tests. `desktop-rust-vendor-patch-applied` fails as soon as a bump past 9.0.1 makes cargo
 resolve crates.io again.

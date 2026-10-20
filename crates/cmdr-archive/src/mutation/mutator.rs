@@ -19,9 +19,9 @@
 //! (abandon the temp, no rollback ledger). Retained entries copy verbatim via
 //! `raw_copy_file` (name bytes and UTF-8 flag as stored) or, when renamed,
 //! `raw_copy_file_rename` (no decompress/recompress — byte-for-byte); only newly
-//! added files are compressed. An edit that would RETAIN an encrypted entry is
-//! refused instead: `zip`'s raw copy drops the traditional-PKWARE encryption flag,
-//! which would silently corrupt the entry (see `MutationError::EncryptedEntryRetained`).
+//! added files are compressed. An encrypted entry raw-copies with its flags and
+//! still decrypts; one in a scheme the copy can't carry refuses the edit (see
+//! `MutationError::EncryptedEntryRetained`).
 
 use cmdr_fs::log_error::{ErrorLogText, ErrorText, write_plain};
 use std::collections::HashMap;
@@ -612,3 +612,7 @@ mod mutator_raw_names_test;
 #[cfg(test)]
 #[path = "mutator_archive_shape_test.rs"]
 mod mutator_archive_shape_test;
+
+#[cfg(test)]
+#[path = "mutator_encrypted_test.rs"]
+mod mutator_encrypted_test;

@@ -99,14 +99,22 @@ sink, pause gate, cancel intent via the `MutationHooks` seam, and the remote pul
   mutator's atomic rename, that outside write is simply overwritten by our temp (and vice-versa — a rename that lands
   after ours wins). This is acceptable for the single-user local model Cmdr targets; there's no cross-process lock. It's
   stated here so a future multi-writer scenario revisits it deliberately rather than assuming a guard exists.
-- **Decision — refuse to retain an encrypted entry (data-safety, deviates from the plan).** `zip`'s raw copy
-  reconstructs an entry's options from `ZipFile::options()`, which does NOT carry the traditional-PKWARE encryption GP
-  flag. So a retained encrypted entry would keep its ciphertext bytes but lose the "encrypted" header bit — semantically
-  corrupt (a reader hands back ciphertext as plaintext). `apply` therefore returns `EncryptedEntryRetained` for any edit
-  that would KEEP an encrypted entry, leaving the original untouched (the host maps it to the typed
-  `WriteOperationError::ArchiveEncryptedEntry`). Deleting an encrypted entry is allowed (it isn't retained). Editing
-  encrypted archives is out of scope in v1. The plan's "raw_copy retains encrypted entries byte-for-byte" claim is false
-  against `zip` 8.6 (verified by `mutator_test.rs`); this refusal is the resolution.
+- **Encrypted entries: a kept one raw-copies and still decrypts with its password (#592).** An edit never needs an
+  encrypted entry's plaintext: a kept entry, renamed or not, is a raw copy, and an overwrite deletes it. So the copy
+  only has to keep what a reader decrypts with, and the vendored `zip` patch (`vendor/zip/CMDR-PATCH.md`) makes it:
+  - ZipCrypto: the 12-byte encryption header sits in the stored bytes. The copy keeps bit 0 (encrypted) and bit 3 (data
+    descriptor), and writes a descriptor after the bytes when bit 3 is set. Bit 3 is load-bearing: it picks the
+    password's check byte, the DOS time's high byte under it (Info-ZIP's `zip -e` shape) and the CRC's without. Upstream
+    9.0.1 dropped both bits, so the entry read back as ciphertext-as-plaintext, and keeping bit 0 alone would fail every
+    Info-ZIP zip's password check. The CRC and DOS time ride the options as before.
+  - WinZip AES (AE-1/AE-2): the salt, verifier, and MAC sit in the stored bytes, and `ZipFile::options()` already
+    carries the mode and vendor version, from which the writer writes the `0x9901` extra field and method 99. The patch
+    stops the copy also writing the stored field a second time.
+  - Neither scheme binds the entry's name, so a rename is safe too.
+  - Still refused (`EncryptedEntryRetained`, before any temp exists; `plan.rs` `carries_its_encryption`): PKWARE Strong
+    Encryption (bit 6) and masked headers (bit 13), whose state the `zip` crate doesn't model, and a bit-3 ZipCrypto
+    entry whose DOS time the crate couldn't parse (it keeps none to write back, so the check byte would break). Deleting
+    such an entry works. The host maps the refusal to `WriteOperationError::ArchiveEncryptedEntry`.
 - **The rewrite keeps the archive's own shape, not just its entries** (#542, pinned by `mutator_archive_shape_test.rs`):
   - The archive comment, set raw from `src.comment()`. A fresh `ZipWriter` writes none.
   - Every byte ahead of the first local header (a self-extractor stub, or whatever a tool prepended): `plan.rs`'s
@@ -162,10 +170,12 @@ sink, pause gate, cancel intent via the `MutationHooks` seam, and the remote pul
 (add/delete/rename/mkdir/mkfile verified via our reader AND external `unzip -t`),
 cancel-midway-leaves-the-original-intact-with-no-temp, a leftover temp reaped on the next edit, the merge invariant (a
 delete keeps siblings' raw compressed bytes byte-identical), metadata (mode/mtime/xattr) survival,
-pause-parks-mid-add-then-completes-on-resume, and the encrypted-entry refusal. `mutator_raw_names_test.rs` pins the
-entry-name rules: a Shift-JIS name and an unflagged UTF-8 one keep their bytes and flags through an edit, and a delete
-or rename finds a Shift-JIS entry by its shown name. `mutator_archive_shape_test.rs` pins the archive-level shape: the
-comment, a self-extractor prefix, a symlinked archive, the duplicate-name refusal, two names sharing one local header
-each deleting alone, and the entry-under-a-file refusal.
+pause-parks-mid-add-then-completes-on-resume. `mutator_encrypted_test.rs` pins encrypted entries for ZipCrypto (both
+check-byte shapes, plus a real `zip -e` archive where the tool exists), AES-128, and AES-256: every stored fact
+byte-identical, decrypting through the `zip` crate and `unzip -P`, and the refusals. `mutator_raw_names_test.rs` pins
+the entry-name rules: a Shift-JIS name and an unflagged UTF-8 one keep their bytes and flags through an edit, and a
+delete or rename finds a Shift-JIS entry by its shown name. `mutator_archive_shape_test.rs` pins the archive-level
+shape: the comment, a self-extractor prefix, a symlinked archive, the duplicate-name refusal, two names sharing one
+local header each deleting alone, and the entry-under-a-file refusal.
 `crates/cmdr-operations/src/archive_edit/routing_tests.rs::ensure_zip_writable_allows_zip_and_refuses_read_only_formats`
 pins the non-zip-refuses-typed matrix.

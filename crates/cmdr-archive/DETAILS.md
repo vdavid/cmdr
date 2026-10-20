@@ -7,7 +7,7 @@ non-trivial work here: editing, planning, reorganizing, or advising.
 The reading engine, the zip write side, and the live content watch each carry their own docs:
 
 - Reading core (parse → tree, Zip Slip, DoS caps, sans-IO fsm, codecs, multi-format): `src/read/DETAILS.md`.
-- Zip mutation (temp+rename, encrypted-entry refusal, metadata preservation): `src/mutation/DETAILS.md`.
+- Zip mutation (temp+rename, encrypted entries, metadata preservation): `src/mutation/DETAILS.md`.
 - Live content watch (parent-dir watch, notification identity, remote-no-watch): `src/watch/DETAILS.md`.
 
 Measured build-time effect of this extraction, and what it says about extracting another backend:

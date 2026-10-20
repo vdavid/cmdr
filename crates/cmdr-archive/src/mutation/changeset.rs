@@ -72,12 +72,13 @@ pub enum MutationError {
     OpenOriginal(io::Error),
     /// The `zip` crate rejected the original or a write into the temp.
     Zip(zip::result::ZipError),
-    /// The archive holds an encrypted entry the edit would have to keep, and the
-    /// `zip` crate's raw copy can't preserve the traditional-PKWARE encryption
-    /// flag — so retaining it would silently corrupt the entry (ciphertext under
-    /// a header that no longer says "encrypted"). We refuse the whole edit rather
-    /// than risk that. Deleting the encrypted entry instead is allowed (it isn't
-    /// retained). Editing encrypted archives is out of scope in v1.
+    /// The archive holds an encrypted entry the edit would have to keep, in a
+    /// scheme the raw copy can't carry intact: PKWARE Strong Encryption, masked
+    /// headers, or a time-checked ZipCrypto entry whose DOS time the `zip` crate
+    /// couldn't parse. ZipCrypto and WinZip AES entries otherwise carry fine
+    /// (`plan.rs`, `carries_its_encryption`). We refuse the whole edit rather
+    /// than leave an entry no password opens. Deleting the entry is allowed (it
+    /// isn't kept).
     EncryptedEntryRetained {
         /// The entry's inner path, so the host can name it.
         name: String,
