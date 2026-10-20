@@ -8,10 +8,6 @@
     "scripts/check/checks/registry.go": "append-only check registry (one CheckDefinition entry per check); line count tracks the number of checks, not splittable logic"
   },
   "files": {
-    "apps/desktop/src/lib/file-operations/transfer/transfer-error-messages.parity.test.ts": {
-      "lines": 1218,
-      "reason": "One table: every `WriteOperationError` variant's en wording per operation, pinned case by case so a copy edit lands in the catalog AND here. It grows by one case per new refusal wording; splitting by variant would scatter the table a reviewer reads top to bottom."
-    },
     "apps/desktop/src-tauri/src/ai/client.rs": {
       "lines": 800,
       "reason": "TODO: two seams sit beside the request path and only share imports with it. Move the policy-guarded HTTP client (`policy_guarded_http_client`, `policy_guarded_redirects`, `follow_allowed_hop`, `remote_destination`, `remote_endpoint`, `parse_endpoint`) into `client_policy.rs`, and the provider-error mapping (`AiError` with its `Display`, `ai_error_for_status`, `provider_error_detail`, `map_genai_error`) into `client_errors.rs`, about 140 lines out together. What stays is `AiBackend`, the three `chat_completion*` entry points, the model-specific option tweaks, and the response logging, which is what callers mean by the AI client."
@@ -111,6 +107,10 @@
     "apps/desktop/src/lib/file-operations/transfer/TransferDialog.svelte": {
       "lines": 1208,
       "reason": "TODO: Script 680 / markup 282 / style 246, with the script already orchestration only (`transfer-scan-state.svelte.ts`, `transfer-conflict-check.svelte.ts`, `transfer-dest-exists.svelte.ts`, and `transfer-dialog-logic.ts` hold the logic). Two presentational blocks can follow the `ScanPhaseBody.svelte` and `CompressEstimateLine.svelte` precedent in the same directory: a `TransferScanTallies.svelte` for the `.scan-stats` row plus the `scan.scanFailure` retry notice (about 45 markup and 50 style), and a `TransferConflictsSection.svelte` for the `isCheckingConflicts` to `conflictCheckUnknown` to merge-info, summary, `RadioGroup`, and type-mismatch chain (about 70 markup and 55 style). That is roughly 220 lines out, leaving `handleConfirm` and `handleCancel`, whose dense rationale comments are the part of this file worth protecting."
+    },
+    "apps/desktop/src/lib/file-operations/transfer/transfer-error-messages.parity.test.ts": {
+      "lines": 1218,
+      "reason": "One table: every `WriteOperationError` variant's en wording per operation, pinned case by case so a copy edit lands in the catalog AND here. It grows by one case per new refusal wording; splitting by variant would scatter the table a reviewer reads top to bottom."
     },
     "apps/desktop/src/lib/file-operations/transfer/transfer-progress-state.svelte.ts": {
       "lines": 884,
@@ -255,14 +255,6 @@
     "crates/cmdr-operations/src/transfer/transfer_probe.rs": {
       "lines": 983,
       "reason": "TODO: the file holds a recorder and the watchdog that reads it, and they part cleanly. Move the watchdog into a `transfer_probe/watchdog.rs` child (a child module still reaches the parent's private fields, the way `mod vocabulary` already works here): `WatchdogState`, `spawn_watchdog`, the `STALL_TICK` / `STALL_AFTER` / `STALL_ABORT_AFTER` / `HEARTBEAT_AFTER_SECS` constants with `stall_abort_after`, `stall_abort_override`, and `StallAbortGuard`, plus an `impl OperationProbe` block carrying `watchdog_step`, `connection_proven_dead`, `restart_task_stillness`, `track_and_abort_wedged_tasks`, and `emit_heartbeat`. That is about 345 lines, most of the file's heaviest prose (the four-guard rationale, the QNAP keepalive false-positive measurement, the `ERR-AYVM4` note) included. What stays is about 570 lines of `TaskProbe`, `OperationProbe`, `TaskProbeHandle`, the `CURRENT_TASK_PROBE` task-local accessors, and the `render_dump` reporting the incident doc points at; the engine's probe table (`Probes`), `register_operation`, and its guard already live in `transfer_probe_registry.rs`."
-    },
-    "crates/cmdr-operations/src/transfer/staged_write_tests.rs": {
-      "lines": 1222,
-      "reason": "TODO: split along the same seam as `staged_write_landing.rs`'s TODO. The cut-off landing's cells (`RenamesThenLosesTheReply` with `a_given_up_rename_onto_a_cleared_name_that_went_through_counts_as_landed`, `ReadsForever` / `NeverAnswers` with the #577 cell `a_cancel_during_a_cut_off_landings_byte_compare_stops_it_and_keeps_the_landing_recorded`, and `a_landing_cut_off_after_clearing_the_way_is_finished_by_the_next_launch`) move to a `staged_write_cut_off_tests.rs` beside the planned `staged_write_landing_cut_off.rs`, with the shared `size_of`, `state_recording_into`, `records_landing`, and `LEDGER_VOLUME_ID` lifted into a `staged_write_test_support.rs`. That is about 230 lines out, leaving about 990. It crossed 1,200 with the #577 cell."
-    },
-    "crates/cmdr-operations/src/transfer/staged_write_landing.rs": {
-      "lines": 833,
-      "reason": "TODO: the landing and the settle of a cut-off one are two jobs. Move `CutOffLanding` with its `resume`, `give_up`, `give_up_onto_cleared`, `resume_with_a_whole_temp`, `Resumed`, `LandingSource`, and `holds_our_size` (about 260 lines) into a `staged_write_landing_cut_off.rs` child, the way `staged_write_landing_aside.rs` already holds the swap's steps, leaving `Landing`, `land`, and the refusal rules here at about 560 lines. It crossed 800 when a give-up at the rename onto a cleared name started asking the temp first, beside a claimed name's placeholder check."
     },
     "crates/cmdr-operations/src/transfer/volume/copy.rs": {
       "lines": 1316,

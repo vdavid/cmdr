@@ -16,7 +16,7 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 2902 / 4679 keys have a screenshot (62%):** 1595 direct (34%) and 1307 representative (28%). 1588 remain
+**Total: 2910 / 4691 keys have a screenshot (62%):** 1595 direct (34%) and 1315 representative (28%). 1592 remain
 uncoupled, and 189 are native surfaces a webview capture cannot reach.
 
 | Area            | Direct | Representative | Uncoupled | Native | Total | Any % |
@@ -30,10 +30,10 @@ uncoupled, and 189 are native surfaces a webview capture cannot reach.
 | crashReporter   |     12 |             11 |         0 |      0 |    23 |  100% |
 | downloads       |     10 |              5 |        21 |      0 |    36 |   42% |
 | errorReporter   |     16 |              0 |        42 |      0 |    58 |   28% |
-| errors          |    116 |            472 |         0 |      0 |   588 |  100% |
+| errors          |    116 |            480 |         0 |      0 |   596 |  100% |
 | feedback        |      7 |              5 |         1 |      0 |    13 |   92% |
 | fileExplorer    |    122 |             66 |       316 |      0 |   504 |   37% |
-| fileOperations  |    124 |             75 |       109 |      0 |   308 |   65% |
+| fileOperations  |    124 |             75 |       111 |      0 |   310 |   64% |
 | goToPath        |      5 |              6 |         2 |      0 |    13 |   85% |
 | indexing        |     34 |             17 |        20 |      0 |    71 |   72% |
 | licensing       |     49 |             35 |        25 |      0 |   109 |   77% |
@@ -41,7 +41,7 @@ uncoupled, and 189 are native surfaces a webview capture cannot reach.
 | main            |      7 |              0 |        46 |      2 |    55 |   13% |
 | menu            |      4 |              0 |         0 |    187 |   191 |    2% |
 | mtp             |     18 |              2 |         0 |      0 |    20 |  100% |
-| multiRename     |      0 |              0 |       123 |      0 |   123 |    0% |
+| multiRename     |      0 |              0 |       125 |      0 |   125 |    0% |
 | notifications   |      0 |              0 |         1 |      0 |     1 |    0% |
 | onboarding      |     96 |             39 |        25 |      0 |   160 |   84% |
 | operationLog    |     26 |             30 |         0 |      0 |    56 |  100% |
