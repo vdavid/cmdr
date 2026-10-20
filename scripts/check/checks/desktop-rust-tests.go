@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // RunRustTests runs Rust tests using cargo-nextest.
@@ -37,7 +38,9 @@ func RunRustTests(ctx *CheckContext) (CheckResult, error) {
 	baseArgs := append([]string{"--locked"}, laneArgs...)
 	cmd := exec.Command("cargo", append([]string{"nextest", "run"}, baseArgs...)...)
 	cmd.Dir = ctx.RootDir
+	started := time.Now()
 	output, err := RunCommand(cmd, true)
+	wall := time.Since(started)
 	// nextest colours its output under a forced-colour environment (`FORCE_COLOR` /
 	// `CLICOLOR_FORCE`), and everything below reads it with line-anchored patterns, so
 	// normalise once at the boundary rather than trusting "not a TTY" to mean "no colour".
@@ -46,7 +49,8 @@ func RunRustTests(ctx *CheckContext) (CheckResult, error) {
 	// first run is recorded: the contention re-run below re-executes a named subset
 	// under a different profile, and logging those as extra results would make a
 	// starved test look like it ran twice as often as it did.
-	ctx.RecordTests(ParseNextestResults(output)...)
+	records := ParseNextestResults(output)
+	ctx.RecordTests(records...)
 	if err != nil {
 		// Trim the per-test PASS/SKIP lines (the Linux lane already does): on a 4 800-test
 		// suite they bury the diagnosis and the actual panics under thousands of lines.
@@ -65,6 +69,13 @@ func RunRustTests(ctx *CheckContext) (CheckResult, error) {
 		message = fmt.Sprintf("%d %s passed", count, Pluralize(count, "test", "tests"))
 	}
 
+	// CI only: there the timings would otherwise die with the runner, and locally the
+	// check runner's test log already keeps every slow test.
+	details := ""
+	if ctx.CI {
+		details = RustTimingProfile(output, wall, records, rustTimingTopN)
+	}
+
 	// A retry-rescued run still exits 0. Report it as a warning rather than a pass:
 	// the retry budget in `.config/nextest.toml` is a tolerance for real-FSEvents
 	// lossiness, not a licence to hide flakes.
@@ -72,6 +83,7 @@ func RunRustTests(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{
 			Code:    ResultWarning,
 			Message: message + "; " + FlakySummary(flaky),
+			Details: details,
 			Total:   count,
 			Issues:  len(flaky),
 			Changes: -1,
@@ -80,6 +92,7 @@ func RunRustTests(ctx *CheckContext) (CheckResult, error) {
 
 	result := Success(message)
 	result.Total = count
+	result.Details = details
 	return result, nil
 }
 

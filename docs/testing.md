@@ -42,7 +42,9 @@ Consequences for anyone tuning a lane:
   speed lever here.
 - **The levers that do move a lane** are: fewer test FILES (frontend), and the handful of tests that wait on real time.
   Rank the latter with `~/.local/share/check-runner/cmdr/test-log.csv`; a test that appears there on nearly every run is
-  consistently slow, one that appears a few times only goes slow under load.
+  consistently slow, one that appears a few times only goes slow under load. That log stays on the machine that ran it,
+  so in CI `rust-tests` prints a timing profile under its result line instead: the step split into building and listing
+  against running tests, the tests' summed time, and the 25 slowest (`scripts/check/checks/rust-test-timing.go`).
 - **A slow test that waits out a production constant is not waste.** `busy_db_is_retried_not_deleted` (5.5 s) waits out
   SQLite's real 5 s `busy_timeout` and `a_slow_first_attempt_spends_the_retry_budget` (2.1 s) waits out the real
   `CONNECT_RETRY_BUDGET`; the duration IS the assertion. Only a sleep the TEST invented (a fake slow closure) is fair
