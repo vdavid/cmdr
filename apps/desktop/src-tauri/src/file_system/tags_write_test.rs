@@ -133,7 +133,7 @@ fn plist_with_non_string_element() -> Vec<u8> {
         plist::Value::Integer(42.into()),
     ])
     .to_writer_binary(&mut buf)
-    .unwrap();
+    .expect("an in-memory plist write can't fail");
     buf
 }
 
