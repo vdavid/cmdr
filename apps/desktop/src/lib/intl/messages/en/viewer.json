@@ -675,7 +675,9 @@
     "description": "Toast confirming the selection was saved, when the selection held characters the viewer couldn't decode (it shows them as �). Instead of converting to UTF-8 text, which would have replaced them, the save kept the file's own bytes in its own encoding (for example UTF-16), so nothing was lost. Do not use the words \"error\" or \"failed\".",
     "placeholders": {
       "name": "the saved file's name (e.g. notes.txt)"
-    }
+    },
+    "screenshot": "viewer-search.png",
+    "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
   "viewer.saveAs.tooLong": "Saving took too long. Try a smaller selection?",
   "@viewer.saveAs.tooLong": {
