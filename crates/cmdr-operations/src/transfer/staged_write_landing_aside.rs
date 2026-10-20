@@ -2,7 +2,8 @@
 //! ([`swap_through_an_aside`]): the original renamed aside under a record, the
 //! temp renamed onto its name, the aside deleted last, and how a swap the
 //! transport cut off settles. Split out of `staged_write_landing.rs`, whose
-//! [`Landing`], cut-off, and rescue rules it shares.
+//! [`Landing`] and rescue rules it shares, and whose cut-off settle
+//! (`staged_write_landing_cut_off.rs`) calls its resume and give-up steps.
 
 use std::path::Path;
 use std::sync::Arc;
