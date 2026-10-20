@@ -198,7 +198,7 @@
   "@servers.refusal.localNetworkHint": {
     "sourceHash": "baa1753"
   },
-  "servers.refusal.certificateUnapproved": "Cmdr hasn’t trusted the certificate for {host} yet.",
+  "servers.refusal.certificateUnapproved": "Cmdr vertrouwt het certificaat van {host} nog niet.",
   "@servers.refusal.certificateUnapproved": {
     "sourceHash": "e65f6af"
   },
@@ -704,35 +704,35 @@
   "@servers.hostKey.trustNewKey": {
     "sourceHash": "772baac"
   },
-  "servers.certificate.firstContactTitle": "macOS doesn’t know the certificate for {host}",
+  "servers.certificate.firstContactTitle": "macOS kent het certificaat van {host} niet",
   "@servers.certificate.firstContactTitle": {
     "sourceHash": "ca0b44a"
   },
-  "servers.certificate.firstContactBody": "Home servers often make their own certificate. Check the fingerprint below against the one your server shows, then trust it.",
+  "servers.certificate.firstContactBody": "Thuisservers maken vaak hun eigen certificaat. Vergelijk de vingerafdruk hieronder met wat je server toont en vertrouw het certificaat daarna.",
   "@servers.certificate.firstContactBody": {
     "sourceHash": "270cbf1"
   },
-  "servers.certificate.changedTitle": "The certificate for {host} changed",
+  "servers.certificate.changedTitle": "Het certificaat van {host} is gewijzigd",
   "@servers.certificate.changedTitle": {
     "sourceHash": "fc682be"
   },
-  "servers.certificate.changedBody": "This can mean the server got a new certificate, or that something is sitting between you and it. Check the fingerprint with the server’s owner before trusting it.",
+  "servers.certificate.changedBody": "Dat kan betekenen dat de server een nieuw certificaat heeft gekregen, of dat er iets tussen jou en de server zit. Controleer de vingerafdruk bij de servereigenaar voordat je het certificaat vertrouwt.",
   "@servers.certificate.changedBody": {
     "sourceHash": "07a58b8"
   },
-  "servers.certificate.changedDisclosure": "I’ve checked it",
+  "servers.certificate.changedDisclosure": "Ik heb het gecontroleerd",
   "@servers.certificate.changedDisclosure": {
     "sourceHash": "4051d39"
   },
-  "servers.certificate.fingerprintLabel": "Certificate fingerprint (SHA-256)",
+  "servers.certificate.fingerprintLabel": "Vingerafdruk van het certificaat (SHA-256)",
   "@servers.certificate.fingerprintLabel": {
     "sourceHash": "f965130"
   },
-  "servers.certificate.trustAndConnect": "Trust and connect",
+  "servers.certificate.trustAndConnect": "Vertrouw en verbind",
   "@servers.certificate.trustAndConnect": {
     "sourceHash": "0cce535"
   },
-  "servers.certificate.trustNewCertificate": "Trust the new certificate",
+  "servers.certificate.trustNewCertificate": "Vertrouw het nieuwe certificaat",
   "@servers.certificate.trustNewCertificate": {
     "sourceHash": "4553830"
   },

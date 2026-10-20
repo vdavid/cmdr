@@ -419,6 +419,7 @@
     "sources": "standard NL; macOS (Negeer hoofdletters)"
   },
   "certificate": {
+    "accept": ["certificaten"],
     "chosen": "certificaat",
     "confidence": "high",
     "sources": "Keychain Access InfoPlist.loctable (certificate → certificaat)"
@@ -2201,6 +2202,12 @@
     "confidence": "high",
     "forms": "button Overschrijf; in a sentence Met ‘Overschrijf’ vervang je …",
     "sources": "macOS (Overschrijf), Double Commander (Overschrijven, Overschrijf alles)"
+  },
+  "owner": {
+    "chosen": "eigenaar",
+    "confidence": "high",
+    "forms": "the person who runs a server → servereigenaar (servers.*.changedBody)",
+    "sources": "macOS Finder (Je bent geen eigenaar van het bestand; Kies nieuwe eigenaar…)"
   },
   "package": {
     "accept": ["pakketten"],

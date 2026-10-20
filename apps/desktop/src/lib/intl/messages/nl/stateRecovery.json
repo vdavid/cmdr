@@ -95,7 +95,7 @@
   "@stateRecovery.sftpHostKeys.title": {
     "sourceHash": "5f3d270"
   },
-  "stateRecovery.webdavCertificates.title": "Cmdr couldn’t read all the server certificates you trusted, so it may ask about some of them again",
+  "stateRecovery.webdavCertificates.title": "Cmdr kon niet alle servercertificaten lezen die je vertrouwt, dus Cmdr vraagt bij sommige misschien opnieuw of je ze vertrouwt",
   "@stateRecovery.webdavCertificates.title": {
     "sourceHash": "ca138aa"
   },
