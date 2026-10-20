@@ -798,6 +798,13 @@
     "forms": "Keep working (calls the quit off) → Weiterarbeiten; carries on → läuft weiter; continue meaning proceed → ausgeführt werden kann, never the resume verb",
     "sources": "catalog (Weiter umbenennen, Läuft weiter im Hintergrund)"
   },
+  "convert": {
+    "accept": ["konvertiert", "Konvertieren"],
+    "chosen": "konvertieren",
+    "confidence": "high",
+    "forms": "couldn’t be converted → ließen sich nicht konvertieren",
+    "sources": "macOS (Finder MR23 Konvertieren …; AppKit Text in volle Breite konvertieren); catalog (Der Dateiinhalt wird nicht konvertiert)"
+  },
   "copy": {
     "accept": ["Kopie", "kopiert"],
     "chosen": "kopieren",

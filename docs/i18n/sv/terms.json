@@ -2113,6 +2113,9 @@
     "chosen": "original",
     "confidence": "high",
     "decision": "Drive disconnected mid-work",
+    "exceptions": {
+      "viewer.saveAs.savedInSourceEncoding": "English sense: “the file’s original encoding” is an adjective on teckenkodning, not the source files of a copy; Swedish says filens ursprungliga teckenkodning, and a compound originalteckenkodning would be clunky."
+    },
     "forms": "neuter, plural unchanged: originalet, originalen",
     "sources": "macOS Finder (originalet ligger i papperskorgen)"
   },

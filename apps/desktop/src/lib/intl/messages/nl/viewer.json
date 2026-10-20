@@ -435,6 +435,10 @@
   "@viewer.saveAs.saved": {
     "sourceHash": "5083c12"
   },
+  "viewer.saveAs.savedInSourceEncoding": "Selectie bewaard in {name} met de originele codering van het bestand, omdat sommige tekens niet te converteren waren.",
+  "@viewer.saveAs.savedInSourceEncoding": {
+    "sourceHash": "9ac85a1"
+  },
   "viewer.saveAs.tooLong": "Het bewaren duurde te lang. Probeer een kleinere selectie?",
   "@viewer.saveAs.tooLong": {
     "sourceHash": "f31d7f4"

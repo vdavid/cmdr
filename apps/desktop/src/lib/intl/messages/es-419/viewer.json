@@ -59,6 +59,10 @@
   "@viewer.saveAs.panelFailed": {
     "sourceHash": "2c56d19"
   },
+  "viewer.saveAs.savedInSourceEncoding": "Selección guardada en {name} con la codificación original del archivo, porque algunos caracteres no se pudieron convertir.",
+  "@viewer.saveAs.savedInSourceEncoding": {
+    "sourceHash": "89b71d2"
+  },
   "viewer.saveAs.tooLong": "Guardar tardó demasiado. ¿Probar con una selección más pequeña?",
   "@viewer.saveAs.tooLong": {
     "sourceHash": "512d75c"

@@ -782,7 +782,7 @@
     "sources": "macOS PE79/PE80/PE81 (« continuer à copier les autres »); Thunar"
   },
   "convert": {
-    "accept": ["convertit", "conversion"],
+    "accept": ["convertit", "converti", "conversion"],
     "chosen": "convertir",
     "confidence": "high",
     "sources": "MS terminology FRA"

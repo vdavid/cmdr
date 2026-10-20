@@ -435,6 +435,10 @@
   "@viewer.saveAs.saved": {
     "sourceHash": "5083c12"
   },
+  "viewer.saveAs.savedInSourceEncoding": "Auswahl in {name} in der Originalcodierung der Datei gesichert, da sich einige Zeichen nicht konvertieren ließen.",
+  "@viewer.saveAs.savedInSourceEncoding": {
+    "sourceHash": "9ac85a1"
+  },
   "viewer.saveAs.tooLong": "Das Sichern hat zu lange gedauert. Eine kleinere Auswahl versuchen?",
   "@viewer.saveAs.tooLong": {
     "sourceHash": "f31d7f4"

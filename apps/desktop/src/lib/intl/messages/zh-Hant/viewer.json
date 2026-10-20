@@ -431,6 +431,10 @@
   "@viewer.saveAs.saved": {
     "sourceHash": "5083c12"
   },
+  "viewer.saveAs.savedInSourceEncoding": "選取內容已儲存到 {name}，並沿用檔案的原始編碼，因為有些字元無法轉換。",
+  "@viewer.saveAs.savedInSourceEncoding": {
+    "sourceHash": "9ac85a1"
+  },
   "viewer.saveAs.tooLong": "儲存花的時間太久了。要不要選少一點？",
   "@viewer.saveAs.tooLong": {
     "sourceHash": "f31d7f4"

@@ -432,6 +432,10 @@
   "@viewer.saveAs.saved": {
     "sourceHash": "5083c12"
   },
+  "viewer.saveAs.savedInSourceEncoding": "A kijelölés ide mentve: {name}. Néhány karaktert nem sikerült átalakítani, ezért a fájl eredeti kódolása maradt.",
+  "@viewer.saveAs.savedInSourceEncoding": {
+    "sourceHash": "9ac85a1"
+  },
   "viewer.saveAs.tooLong": "A mentés túl sokáig tartott. Kipróbálsz egy kisebb kijelölést?",
   "@viewer.saveAs.tooLong": {
     "sourceHash": "f31d7f4"

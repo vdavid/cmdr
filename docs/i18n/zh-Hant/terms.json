@@ -834,6 +834,11 @@
     "forms": "context size → 上下文大小; the head noun context → 上下文",
     "sources": "MS zh-Hant TBX id 38882; Apple has no LLM sense (脈絡 and 上下文 both 0)"
   },
+  "convert": {
+    "chosen": "轉換",
+    "confidence": "high",
+    "sources": "macOS zh-TW (Finder MR23 正在轉換⋯; AppKit 轉換成全寬文字); catalog (檔案內容不會跟著轉換)"
+  },
   "copy": {
     "accept": ["副本"],
     "avoid": [

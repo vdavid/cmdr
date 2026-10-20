@@ -432,6 +432,10 @@
   "@viewer.saveAs.saved": {
     "sourceHash": "5083c12"
   },
+  "viewer.saveAs.savedInSourceEncoding": "Đã lưu vùng chọn vào {name} theo mã hóa gốc của tệp, vì một số ký tự không chuyển đổi được.",
+  "@viewer.saveAs.savedInSourceEncoding": {
+    "sourceHash": "9ac85a1"
+  },
   "viewer.saveAs.tooLong": "Việc lưu mất quá lâu. Thử vùng chọn nhỏ hơn?",
   "@viewer.saveAs.tooLong": {
     "sourceHash": "f31d7f4"

@@ -2177,10 +2177,10 @@
     "sources": "MS terminology (organization → organisatie; managed → beheerd); catalog (licensing.about.fallbackOrg = je organisatie); macOS (degene die je computer beheert)"
   },
   "original": {
-    "accept": ["originelen"],
+    "accept": ["originelen", "originele"],
     "chosen": "origineel",
     "confidence": "high",
-    "forms": "the originals → de originelen",
+    "forms": "the originals → de originelen; attributive adjective → de originele codering",
     "sources": "macOS Finder PE117 (…the original could not be deleted): het origineel; catalog (errors.write.destinationNotFound.message.copy, errors.write.deviceDisconnected.sided.destination.copy)"
   },
   "outdated": {
