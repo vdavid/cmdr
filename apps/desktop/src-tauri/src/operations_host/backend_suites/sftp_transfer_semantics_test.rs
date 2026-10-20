@@ -45,9 +45,9 @@ use super::sftp_test_support::{SftpFixture, connect, fixture, fixture_on};
 use crate::operations_host::app_engine;
 use crate::test_support::TestDir;
 use cmdr_local::LocalPosixVolume;
-use cmdr_operations::VolumeCopyConfig;
 use cmdr_operations::testing::new_operation_state;
 use cmdr_operations::testing::{CollectorEventSink, move_volumes_with_progress};
+use cmdr_operations::{VolumeCopyConfig, WriteOperationError};
 
 // ── Merges and policies ──────────────────────────────────────────────
 
@@ -164,6 +164,53 @@ async fn sftp_integration_a_link_in_a_folder_moved_off_the_server_leaves_its_tar
         Some(&b"outside the selection"[..]),
         "the move went through the link and took its target's file (move ended {outcome:?})"
     );
+
+    clean_deep(remote.as_ref(), &dir).await;
+}
+
+/// A SELECTED link moved off the server is refused before anything moves
+/// (#570): the link can't go along (its target is a server path), and copying
+/// the folder it points at, then removing the link, would hand the person a
+/// copy of a folder they never selected. Link, target, and destination stay.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn sftp_integration_a_selected_link_moved_off_the_server_is_refused() {
+    let sftp = connect(SftpFixture::Stock).await;
+    let dir = PathBuf::from(scratch_dir("move-off-selected-link"));
+    seed(&sftp, &dir, &[("outside/keep.txt", b"outside the selection")]).await;
+    sftp.create_symlink(&dir.join("ln"), &dir.join("outside"))
+        .await
+        .expect("the fixture makes links");
+    let remote: Arc<dyn Volume> = Arc::new(sftp);
+    let (local_dir, local) = local_volume("move-off-selected-link");
+
+    let outcome = move_volumes_with_progress(
+        Arc::new(CollectorEventSink::new()),
+        "move-off-selected-link",
+        &Arc::new(new_operation_state(app_engine(), Duration::from_millis(200))),
+        Arc::clone(&remote),
+        &[dir.join("ln")],
+        local,
+        Path::new(""),
+        &VolumeCopyConfig::default(),
+    )
+    .await;
+
+    assert!(
+        matches!(&outcome, Err(f) if matches!(f.error, WriteOperationError::LinkCantMoveAcrossVolumes { .. })),
+        "a cross-volume move of a selected link must be refused, got {outcome:?}"
+    );
+    assert!(
+        matches!(remote.entry_kind(&dir.join("ln")).await, Ok(EntryKind::Symlink)),
+        "the link stays on the server"
+    );
+    assert_eq!(
+        try_read(remote.as_ref(), &dir.join("outside/keep.txt"))
+            .await
+            .as_deref(),
+        Some(&b"outside the selection"[..]),
+    );
+    assert!(!local_dir.join("ln").exists(), "nothing lands on the local side");
 
     clean_deep(remote.as_ref(), &dir).await;
 }

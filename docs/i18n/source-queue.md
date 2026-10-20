@@ -466,3 +466,5 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
   which reads odd in English; consider "this compression" (most languages used their compression noun). The `en-GB` /
   `en-AU` overlays fork `errors.write.cancelled.title.*` ("cancelled"), but not these two new keys, so British readers
   get "canceled" here only. (all)
+- `errors.write.linkCantMoveAcrossVolumes.*`: bare "link" means a symlink, but the matcher maps it to hyperlink `link`
+  (de, nl logged exceptions). Say "symbolic link" once in the message, or teach the matcher this sense. (de, nl, all)

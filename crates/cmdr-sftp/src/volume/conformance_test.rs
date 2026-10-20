@@ -204,6 +204,36 @@ async fn delete_of_a_link_to_a_folder_removes_the_link_alone() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn a_link_to_a_folder_moves_as_the_link() {
+    let (volume, dir) = stock_server_with_scratch("move-a-link").await;
+    let real = format!("{dir}/real");
+    let link = format!("{dir}/link");
+    let moved = format!("{dir}/moved");
+    volume.create_directory(Path::new(&real)).await.expect(FIXTURE);
+    volume
+        .create_file(Path::new(&format!("{real}/keep.txt")), b"keep")
+        .await
+        .expect(FIXTURE);
+    volume.create_directory(Path::new(&moved)).await.expect(FIXTURE);
+    volume
+        .create_symlink(Path::new(&link), Path::new(&real))
+        .await
+        .expect(FIXTURE);
+
+    conformance::assert_a_link_to_a_folder_moves_as_the_link(
+        &volume,
+        Path::new(&link),
+        Path::new(&format!("{moved}/link")),
+        Path::new(&real),
+        "keep.txt",
+    )
+    .await;
+
+    clean_scratch_deep(&volume, &dir).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
 async fn delete_leaves_a_non_empty_directory_intact() {
     let (volume, dir) = stock_server_with_scratch("delete-non-recursive").await;
     let album = format!("{dir}/album");

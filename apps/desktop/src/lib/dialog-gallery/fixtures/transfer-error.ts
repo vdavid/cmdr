@@ -174,6 +174,10 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'copy',
     error: { type: 'symlink_loop', path: '/Users/david/dev/node_modules/.pnpm/self/node_modules/self' },
   },
+  link_cant_move_across_volumes: {
+    operationType: 'move',
+    error: { type: 'link_cant_move_across_volumes', path: 'adb://R58M/sdcard/Camera' },
+  },
   cancelled: {
     operationType: 'copy',
     error: { type: 'cancelled', message: 'Cancelled after 1,284 of 12,900 files' },

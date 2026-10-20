@@ -718,6 +718,9 @@ everywhere, which is the point.
   removes the link and never its target: the volume delete walker treats a link as a leaf on that promise (#505). ADB
   broke it (its `probe` follows a link, so a link to a folder met `rmdir`). Run by local, ADB, and SFTP; backends with
   no links (SMB, WebDAV, S3, MTP) have nothing to run it against.
+- `assert_a_link_to_a_folder_moves_as_the_link` — the parent's listing reports a link AS a link, and `rename` moves the
+  link, target untouched: a cross-volume move refuses a selected link off that listing, and a same-volume move renames
+  it (#570). Run by local, ADB, and SFTP.
 - `assert_rename_refuses_an_existing_destination` — `force` is the only thing between a move and the file it would
   replace, and each backend earns the refusal differently (`renamex_np(RENAME_EXCL)`, an SMB `stat` plus the server's
   `ReplaceIfExists == false`, an MTP `exists` probe, a map lookup). No shared mechanism to trust, only a shared promise.

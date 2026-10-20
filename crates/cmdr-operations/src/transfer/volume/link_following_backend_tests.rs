@@ -23,7 +23,7 @@ use crate::event_sinks::{CollectorEventSink, OperationEventSink};
 use crate::state::WriteOperationState;
 use crate::testing::TestOperations;
 use crate::transfer_tree::test_support::row_states;
-use crate::types::{ConflictResolution, VolumeCopyConfig};
+use crate::types::{ConflictResolution, VolumeCopyConfig, WriteOperationError};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::volume::scan_walk::{self, ScanSource, Walking};
@@ -303,11 +303,46 @@ async fn move_across(
     dest
 }
 
-/// A selected link moved to another volume lands there as a copy of what it
-/// points at (the destination can't hold a link), and the source sweep removes
-/// the LINK. The target keeps every byte.
+/// Moves `sources` to a fresh in-memory volume, expecting the move to refuse a
+/// selected link before anything moves (#570). Returns the destination, for
+/// the caller to check that nothing landed.
+async fn move_across_refused(
+    engine: &TestOperations,
+    source: &Arc<dyn Volume>,
+    op_id: &str,
+    sources: &[PathBuf],
+    link: &str,
+) -> Arc<dyn Volume> {
+    let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest").with_space_info(10_000_000, 10_000_000));
+    let result = move_volumes_with_progress(
+        Arc::new(CollectorEventSink::new()),
+        op_id,
+        &make_state(engine),
+        Arc::clone(source),
+        sources,
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config(ConflictResolution::Skip),
+    )
+    .await;
+    match result {
+        Err(failure) => assert!(
+            matches!(&failure.error, WriteOperationError::LinkCantMoveAcrossVolumes { path } if path == link),
+            "{op_id}: expected a refusal naming {link}, got {:?}",
+            failure.error
+        ),
+        Ok(()) => panic!("{op_id}: a cross-volume move of a selected link must be refused"),
+    }
+    dest
+}
+
+/// A selected link moved to ANOTHER volume is refused before anything moves
+/// (#570): a link's target is a path on its own volume, so the link can't go
+/// along, and copying what it points at then removing the link isn't a move of
+/// what the person selected. The link, its target, and the destination stay
+/// exactly as they were.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn a_cross_volume_move_of_a_dir_link_removes_the_link_never_the_target() {
+async fn a_cross_volume_move_of_a_dir_link_is_refused_and_moves_nothing() {
     let engine = TestOperations::new();
     let (source, dir) = following_volume();
     let root = dir.path();
@@ -315,27 +350,46 @@ async fn a_cross_volume_move_of_a_dir_link_removes_the_link_never_the_target() {
     mkdir(root, "src");
     link(root, "src/album", "outside/target");
 
-    let dest = move_across(
+    let dest = move_across_refused(
         &engine,
         &source,
         "op-follow-cross-top-link",
         &[PathBuf::from("src/album")],
+        "src/album",
     )
     .await;
 
-    assert_eq!(
-        read(root, "outside/target/inside.txt"),
-        b"OUTSIDE THE SELECTION",
-        "the source sweep must delete the link, never walk into its target"
-    );
+    assert_eq!(read(root, "outside/target/inside.txt"), b"OUTSIDE THE SELECTION");
+    assert!(is_link(root, "src/album"), "the selected link stays where it was");
     assert!(
-        !is_link(root, "src/album") && !exists(root, "src/album"),
-        "the moved link is gone"
+        !dest.exists(Path::new("/album")).await,
+        "nothing of the link's target lands at the destination"
     );
-    assert!(
-        dest.exists(Path::new("/album/inside.txt")).await,
-        "the destination got the copy"
-    );
+}
+
+/// One link among plain items refuses the WHOLE move up front, so no item has
+/// moved by the time the person reads why.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_selected_link_among_plain_items_refuses_the_whole_move() {
+    let engine = TestOperations::new();
+    let (source, dir) = following_volume();
+    let root = dir.path();
+    plant_target(root);
+    write_file(root, "src/notes.txt", b"NOTES");
+    link(root, "src/album", "outside/target");
+
+    let dest = move_across_refused(
+        &engine,
+        &source,
+        "op-follow-cross-mixed",
+        &[PathBuf::from("src/notes.txt"), PathBuf::from("src/album")],
+        "src/album",
+    )
+    .await;
+
+    assert_eq!(read(root, "src/notes.txt"), b"NOTES", "the plain file stays home");
+    assert!(is_link(root, "src/album"));
+    assert!(!dest.exists(Path::new("/notes.txt")).await, "nothing moved");
 }
 
 /// The same sweep one level down: a moved folder holding a link to a folder.
@@ -414,7 +468,7 @@ fn plain_volume() -> (Arc<dyn Volume>, TempDir) {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn on_an_lstat_backend_a_moved_dir_link_goes_as_the_link() {
+async fn on_an_lstat_backend_a_cross_volume_move_of_a_dir_link_is_refused() {
     let engine = TestOperations::new();
     let (source, dir) = plain_volume();
     let root = dir.path();
@@ -422,16 +476,18 @@ async fn on_an_lstat_backend_a_moved_dir_link_goes_as_the_link() {
     mkdir(root, "src");
     link(root, "src/album", "outside/target");
 
-    move_across(
+    let dest = move_across_refused(
         &engine,
         &source,
         "op-plain-cross-top-link",
         &[PathBuf::from("src/album")],
+        "src/album",
     )
     .await;
 
     assert_eq!(read(root, "outside/target/inside.txt"), b"OUTSIDE THE SELECTION");
-    assert!(!is_link(root, "src/album"), "the moved link is gone");
+    assert!(is_link(root, "src/album"), "the selected link stays where it was");
+    assert!(!dest.exists(Path::new("/album")).await);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

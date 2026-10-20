@@ -965,6 +965,11 @@ describe('getErrorDisplayMeta', () => {
     },
     { error: { type: 'symlink_loop', path: '/p' }, category: 'serious', retryHint: false },
     {
+      error: { type: 'link_cant_move_across_volumes', path: '/p' },
+      category: 'needs_action',
+      retryHint: false,
+    },
+    {
       error: { type: 'read_only_device', path: '/p', deviceName: null, side: 'destination' },
       category: 'needs_action',
       retryHint: false,

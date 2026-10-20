@@ -1249,6 +1249,18 @@
   "@errors.write.symlinkLoop.suggestion": {
     "sourceHash": "87ddbca"
   },
+  "errors.write.linkCantMoveAcrossVolumes.title": "No se puede mover este enlace ahí",
+  "@errors.write.linkCantMoveAcrossVolumes.title": {
+    "sourceHash": "38b0b06"
+  },
+  "errors.write.linkCantMoveAcrossVolumes.message": "{path} es un enlace, y un enlace solo funciona en la unidad, el teléfono o el servidor que lo contiene. En cualquier otro lugar no apuntaría a ninguna parte, así que Cmdr no ha movido nada.",
+  "@errors.write.linkCantMoveAcrossVolumes.message": {
+    "sourceHash": "e97a8f6"
+  },
+  "errors.write.linkCantMoveAcrossVolumes.suggestion": "Copia el enlace en su lugar para llevarte también aquello a lo que apunta, o muévelo a una carpeta de la misma unidad, el mismo teléfono o el mismo servidor.",
+  "@errors.write.linkCantMoveAcrossVolumes.suggestion": {
+    "sourceHash": "a71f267"
+  },
   "errors.write.cancelled.title.copy": "Copia cancelada",
   "@errors.write.cancelled.title.copy": {
     "sourceHash": "7edfd40"

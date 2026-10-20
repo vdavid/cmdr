@@ -116,6 +116,10 @@
       "lines": 1208,
       "reason": "TODO: Script 680 / markup 282 / style 246, with the script already orchestration only (`transfer-scan-state.svelte.ts`, `transfer-conflict-check.svelte.ts`, `transfer-dest-exists.svelte.ts`, and `transfer-dialog-logic.ts` hold the logic). Two presentational blocks can follow the `ScanPhaseBody.svelte` and `CompressEstimateLine.svelte` precedent in the same directory: a `TransferScanTallies.svelte` for the `.scan-stats` row plus the `scan.scanFailure` retry notice (about 45 markup and 50 style), and a `TransferConflictsSection.svelte` for the `isCheckingConflicts` to `conflictCheckUnknown` to merge-info, summary, `RadioGroup`, and type-mismatch chain (about 70 markup and 55 style). That is roughly 220 lines out, leaving `handleConfirm` and `handleCancel`, whose dense rationale comments are the part of this file worth protecting."
     },
+    "apps/desktop/src/lib/file-operations/transfer/transfer-error-messages.parity.test.ts": {
+      "lines": 1202,
+      "reason": "One flat table: a pinned English title, message, and suggestion per `WriteOperationError` variant and operation, so it grows by one case with every new variant. Splitting it would scatter the one place that proves every variant renders, and the cases share no logic to extract."
+    },
     "apps/desktop/src/lib/file-operations/transfer/transfer-progress-state.svelte.ts": {
       "lines": 884,
       "reason": "One closure over shared mutable teardown flags (`operationId`, `backgrounded`, `destroyed`, `closed`, `cancelRequestedBeforeId`, and the two wind-down timers) that birth, the four outcome effects, and the command handlers all read and write, plus about 90 lines of pass-through getters over `bound.current` that are the dialog's read surface; splitting `beginOperation` out would mean threading eight callbacks back in. The plain-`let` staleness hazard and the settle contract that hold the halves together are argued in the module header and in `transfer/CLAUDE.md`."

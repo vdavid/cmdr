@@ -398,6 +398,18 @@ const cases: Case[] = [
     },
   },
   {
+    name: 'link_cant_move_across_volumes (escapes HTML)',
+    error: { type: 'link_cant_move_across_volumes', path: '/sdcard/<Camera>' },
+    op: 'move',
+    expected: {
+      title: 'This link can’t move there',
+      message:
+        '/sdcard/&lt;Camera&gt; is a link, and a link only works on the drive, phone, or server that holds it. Anywhere else it would point nowhere, so Cmdr didn’t move anything.',
+      suggestion:
+        'Copy it instead to bring along what it points to, or move it to a folder on the same drive, phone, or server.',
+    },
+  },
+  {
     name: 'io_error (delete)',
     error: { type: 'io_error', path: '/p', message: 'm' },
     op: 'delete',

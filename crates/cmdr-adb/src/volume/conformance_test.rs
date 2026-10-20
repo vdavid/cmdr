@@ -255,6 +255,27 @@ async fn delete_of_a_link_to_a_folder_removes_the_link_alone() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_link_to_a_folder_moves_as_the_link() {
+    // A same-volume move renames a selected link, and a move to another volume
+    // refuses one by its parent's listing (#570): both lean on the phone
+    // answering for the link, never for the folder it points at.
+    let mut tree = seeded_tree();
+    tree.add_symlink("/sdcard/link", "/sdcard/album");
+    tree.add_dir("/sdcard/moved");
+    let server = FakeAdbServer::start(tree).await;
+    let (volume, _) = connect_fake(&server, FIXTURE_SERIAL).await;
+
+    conformance::assert_a_link_to_a_folder_moves_as_the_link(
+        volume.as_ref(),
+        &fixture_path("/sdcard/link"),
+        &fixture_path("/sdcard/moved/link"),
+        &fixture_path("/sdcard/album"),
+        "keep.txt",
+    )
+    .await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn delete_leaves_a_non_empty_directory_intact() {
     let (_server, volume) = seeded().await;
     conformance::assert_delete_leaves_a_non_empty_dir_intact(

@@ -744,6 +744,10 @@
   "link": {
     "chosen": "Link",
     "confidence": "high",
+    "exceptions": {
+      "errors.write.linkCantMoveAcrossVolumes.message": "the English link here is a symbolic link, so it takes the symlink short form Verknüpfung (as errors.write.symlinkLoop.title does)",
+      "errors.write.linkCantMoveAcrossVolumes.title": "the English link here is a symbolic link, so it takes the symlink short form Verknüpfung (as errors.write.symlinkLoop.title does)"
+    },
     "forms": "web link → Weblink; compounds Freigabelink, Google-Drive-Link",
     "sources": "catalog (share-link and Google Drive link commands, viewer.markdown.link.*); MS terminology; macOS „Als Link kopieren“"
   },

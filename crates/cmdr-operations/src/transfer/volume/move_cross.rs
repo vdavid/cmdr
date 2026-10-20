@@ -94,6 +94,16 @@ pub async fn move_volumes_with_progress(
         .await
         .map_err(WriteFailure::synthetic)?;
 
+    // A selected link can't move to another volume, so the move is refused
+    // before anything changes, the destination folder's creation included
+    // (`selected_link.rs`). A same-volume move whose renames copy hands off to
+    // this engine too, and there the link stays on its own volume.
+    if !Arc::ptr_eq(&source_volume, &dest_volume) {
+        super::selected_link::refuse_a_selected_link(&*source_volume, source_paths)
+            .await
+            .map_err(WriteFailure::synthetic)?;
+    }
+
     // Phase 0: Ensure the destination directory exists, creating it and any
     // missing ancestors on the dest volume (local, SMB, MTP, in-memory), so a
     // cross-volume move into a not-yet-existing folder just works on every

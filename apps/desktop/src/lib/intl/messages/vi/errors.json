@@ -1249,6 +1249,18 @@
   "@errors.write.symlinkLoop.suggestion": {
     "sourceHash": "87ddbca"
   },
+  "errors.write.linkCantMoveAcrossVolumes.title": "Không thể di chuyển liên kết này tới đó",
+  "@errors.write.linkCantMoveAcrossVolumes.title": {
+    "sourceHash": "38b0b06"
+  },
+  "errors.write.linkCantMoveAcrossVolumes.message": "{path} là một liên kết, và liên kết chỉ hoạt động trên ổ đĩa, điện thoại hoặc máy chủ đang chứa nó. Ở bất kỳ chỗ nào khác, liên kết sẽ không trỏ tới đâu cả, nên Cmdr không di chuyển thứ gì.",
+  "@errors.write.linkCantMoveAcrossVolumes.message": {
+    "sourceHash": "e97a8f6"
+  },
+  "errors.write.linkCantMoveAcrossVolumes.suggestion": "Thay vào đó, hãy sao chép liên kết để mang theo cả thứ mà nó trỏ tới, hoặc di chuyển liên kết vào một thư mục trên cùng ổ đĩa, điện thoại hoặc máy chủ.",
+  "@errors.write.linkCantMoveAcrossVolumes.suggestion": {
+    "sourceHash": "a71f267"
+  },
   "errors.write.cancelled.title.copy": "Đã hủy sao chép",
   "@errors.write.cancelled.title.copy": {
     "sourceHash": "7edfd40"

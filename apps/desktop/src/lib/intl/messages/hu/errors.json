@@ -1249,6 +1249,18 @@
   "@errors.write.symlinkLoop.suggestion": {
     "sourceHash": "87ddbca"
   },
+  "errors.write.linkCantMoveAcrossVolumes.title": "Ez a link nem helyezhető át oda",
+  "@errors.write.linkCantMoveAcrossVolumes.title": {
+    "sourceHash": "38b0b06"
+  },
+  "errors.write.linkCantMoveAcrossVolumes.message": "{path} egy link, és egy link csak azon a meghajtón, telefonon vagy szerveren működik, amelyen van. Bárhol máshol a semmibe mutatna, ezért a Cmdr semmit sem helyezett át.",
+  "@errors.write.linkCantMoveAcrossVolumes.message": {
+    "sourceHash": "e97a8f6"
+  },
+  "errors.write.linkCantMoveAcrossVolumes.suggestion": "Másold inkább, így az is vele jön, amire mutat, vagy helyezd át egy mappába ugyanezen a meghajtón, telefonon vagy szerveren.",
+  "@errors.write.linkCantMoveAcrossVolumes.suggestion": {
+    "sourceHash": "a71f267"
+  },
   "errors.write.cancelled.title.copy": "A másolás megszakítva",
   "@errors.write.cancelled.title.copy": {
     "sourceHash": "7edfd40"

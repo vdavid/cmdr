@@ -1816,6 +1816,29 @@
     "description": "Recovery suggestion when symbolic links form an infinite loop. Plain text.",
     "screenshot": "transfer-error-symlink_loop.png"
   },
+  "errors.write.linkCantMoveAcrossVolumes.title": "This link can’t move there",
+  "errors.write.linkCantMoveAcrossVolumes.message": "{path} is a link, and a link only works on the drive, phone, or server that holds it. Anywhere else it would point nowhere, so Cmdr didn’t move anything.",
+  "errors.write.linkCantMoveAcrossVolumes.suggestion": "Copy it instead to bring along what it points to, or move it to a folder on the same drive, phone, or server.",
+  "@errors.write.linkCantMoveAcrossVolumes.title": {
+    "description": "Title of the move error dialog when the user moves a selection that holds a link (a symbolic link: a small item that points to another folder or file) to a different drive, phone, or server. A link points to a place on its own drive, so Cmdr refuses the whole move before anything moves. Plain text. This is a raw errors.* string (no ICU).",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.write.linkCantMoveAcrossVolumes.message": {
+    "description": "Body of that dialog. Plain text, raw errors.* string (no ICU): keep {path} spelled exactly. \"Didn’t move anything\" matters: none of the selected items moved, not even the ones that aren't links.",
+    "placeholders": {
+      "path": {
+        "description": "The full path of the selected link, for example /sdcard/Camera on a phone. Inserted verbatim. Do not translate or reformat it."
+      }
+    },
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.write.linkCantMoveAcrossVolumes.suggestion": {
+    "description": "Recovery suggestion for that dialog. It offers two ways out: copy the link (a copy brings along the folder or file the link points to), or move it to a folder on the same drive, phone, or server it's on now. Plain text. This is a raw errors.* string (no ICU).",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "errors.write.cancelled.title.copy": "Copy canceled",
   "errors.write.cancelled.title.move": "Move canceled",
   "errors.write.cancelled.title.delete": "Delete canceled",

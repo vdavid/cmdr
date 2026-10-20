@@ -1249,6 +1249,18 @@
   "@errors.write.symlinkLoop.suggestion": {
     "sourceHash": "87ddbca"
   },
+  "errors.write.linkCantMoveAcrossVolumes.title": "Kan deze koppeling niet daarheen verplaatsen",
+  "@errors.write.linkCantMoveAcrossVolumes.title": {
+    "sourceHash": "38b0b06"
+  },
+  "errors.write.linkCantMoveAcrossVolumes.message": "{path} is een koppeling, en een koppeling werkt alleen op de schijf, telefoon of server waar die op staat. Op elke andere plek zou de koppeling nergens naar wijzen, dus Cmdr heeft niets verplaatst.",
+  "@errors.write.linkCantMoveAcrossVolumes.message": {
+    "sourceHash": "e97a8f6"
+  },
+  "errors.write.linkCantMoveAcrossVolumes.suggestion": "Kopieer de koppeling in plaats daarvan, zodat ook meekomt waar die naar wijst, of verplaats de koppeling naar een map op dezelfde schijf, telefoon of server.",
+  "@errors.write.linkCantMoveAcrossVolumes.suggestion": {
+    "sourceHash": "a71f267"
+  },
   "errors.write.cancelled.title.copy": "Kopiëren geannuleerd",
   "@errors.write.cancelled.title.copy": {
     "sourceHash": "7edfd40"

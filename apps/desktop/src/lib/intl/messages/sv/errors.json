@@ -1249,6 +1249,18 @@
   "@errors.write.symlinkLoop.suggestion": {
     "sourceHash": "87ddbca"
   },
+  "errors.write.linkCantMoveAcrossVolumes.title": "Det går inte att flytta den här länken dit",
+  "@errors.write.linkCantMoveAcrossVolumes.title": {
+    "sourceHash": "38b0b06"
+  },
+  "errors.write.linkCantMoveAcrossVolumes.message": "{path} är en länk, och en länk fungerar bara på den enhet, telefon eller server där den finns. Någon annanstans skulle länken peka ingenstans, så Cmdr flyttade ingenting.",
+  "@errors.write.linkCantMoveAcrossVolumes.message": {
+    "sourceHash": "e97a8f6"
+  },
+  "errors.write.linkCantMoveAcrossVolumes.suggestion": "Kopiera länken i stället för att få med det den pekar på, eller flytta länken till en mapp på samma enhet, telefon eller server.",
+  "@errors.write.linkCantMoveAcrossVolumes.suggestion": {
+    "sourceHash": "a71f267"
+  },
   "errors.write.cancelled.title.copy": "Kopiering avbruten",
   "@errors.write.cancelled.title.copy": {
     "sourceHash": "7edfd40"

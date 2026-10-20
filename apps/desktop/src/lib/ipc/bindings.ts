@@ -19360,6 +19360,14 @@ export type WriteOperationError =
    */
   | { type: 'archive_entry_under_file'; path: string; entry: string; file: string }
   | { type: 'symlink_loop'; path: string }
+  /**
+   *  A move to ANOTHER volume was asked to carry a selected symbolic link.
+   *  A link's target is a path on the volume that holds it, so recreated
+   *  elsewhere it would point nowhere, and moving what it points at would
+   *  take a folder the person never selected. Refused before anything moves.
+   *  `path` is the selected link.
+   */
+  | { type: 'link_cant_move_across_volumes'; path: string }
   | { type: 'cancelled'; message: string }
   /**
    *  Device was disconnected during the operation (USB, MTP, etc.).

@@ -297,6 +297,28 @@ async fn delete_of_a_link_to_a_folder_honors_the_shared_contract() {
     .await;
 }
 
+/// The shared link-move assertion: a link to a folder lists as a link and
+/// renames as one, its target left alone (#570).
+#[tokio::test]
+async fn a_link_to_a_folder_moves_as_the_link_per_the_shared_contract() {
+    let test_dir = TestDir::new("link_move_conformance_test");
+    let volume = LocalPosixVolume::local_folder("Test", &*test_dir, VolumeHost::detached());
+
+    volume.create_directory(Path::new("real")).await.unwrap();
+    volume.create_file(Path::new("real/keep.txt"), b"keep").await.unwrap();
+    volume.create_directory(Path::new("moved")).await.unwrap();
+    std::os::unix::fs::symlink(test_dir.join("real"), test_dir.join("link")).unwrap();
+
+    cmdr_fs::volume::conformance::assert_a_link_to_a_folder_moves_as_the_link(
+        &volume,
+        Path::new("link"),
+        Path::new("moved/link"),
+        Path::new("real"),
+        "keep.txt",
+    )
+    .await;
+}
+
 /// The shared writability-declaration assertion: `is_writable()` and the
 /// mutations LocalPosix offers say the same thing.
 #[tokio::test]

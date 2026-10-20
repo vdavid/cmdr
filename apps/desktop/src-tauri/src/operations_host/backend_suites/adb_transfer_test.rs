@@ -41,7 +41,8 @@ use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_local::LocalPosixVolume;
 use cmdr_operation_log::types::Initiator;
 use cmdr_operations::testing::{
-    CollectorEventSink, create_directory_core_on, delete_volume_files_for_test, new_operation_state,
+    CollectorEventSink, create_directory_core_on, delete_volume_files_for_test, move_volumes_with_progress,
+    new_operation_state,
 };
 use cmdr_operations::{
     MutationError, OperationEventSink, VolumeCopyConfig, VolumeScanError, WriteOperationConfig, WriteOperationError,
@@ -250,6 +251,55 @@ async fn a_folder_tree_lands_intact_on_a_phone() {
 async fn a_folder_tree_lands_intact_off_a_phone() {
     let phone = dialed_phone("R58M-Tree-Off", "tree-off").await;
     a_directory_tree_lands_intact_off_the_server(Arc::clone(&phone.volume), phone.dir.clone()).await;
+}
+
+/// A SELECTED folder link moved off a phone is refused before anything moves
+/// (#570). The phone's stat follows a link, so the scan reads it as the folder
+/// it points at, and the move used to copy that folder, then remove the link.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn a_selected_link_moved_off_a_phone_is_refused() {
+    let mut tree = FakeTree::new();
+    tree.add_dir("/sdcard")
+        .add_dir("/sdcard/DCIM")
+        .add_file("/sdcard/DCIM/photo.jpg", b"the user's photo")
+        .add_symlink("/sdcard/Camera", "/sdcard/DCIM");
+    let phone = dialed_phone_with("R58M-Link-Off", "link-off", tree).await;
+    let root = PathBuf::from(cmdr_fs::volume::adb_app_root("R58M-Link-Off"));
+    let link = root.join("sdcard/Camera");
+    let local = TestDir::new("adb_move_off_selected_link");
+    let local_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder(
+        "Local",
+        &*local,
+        crate::volume_host::host(),
+    ));
+
+    let outcome = move_volumes_with_progress(
+        Arc::new(CollectorEventSink::new()),
+        "move-off-phone-selected-link",
+        &Arc::new(new_operation_state(app_engine(), Duration::from_millis(200))),
+        Arc::clone(&phone.volume),
+        std::slice::from_ref(&link),
+        local_volume,
+        Path::new(""),
+        &VolumeCopyConfig::default(),
+    )
+    .await;
+
+    assert!(
+        matches!(&outcome, Err(f) if matches!(f.error, WriteOperationError::LinkCantMoveAcrossVolumes { .. })),
+        "a cross-volume move of a selected link must be refused, got {outcome:?}"
+    );
+    let tree = phone.fake.tree();
+    let tree = tree.lock_ignore_poison();
+    assert!(
+        matches!(tree.get("/sdcard/Camera"), Some(FakeNode::Symlink { .. })),
+        "the link stays on the phone"
+    );
+    assert!(
+        matches!(tree.get("/sdcard/DCIM/photo.jpg"), Some(FakeNode::File { .. })),
+        "and so does what it points at"
+    );
+    assert!(!local.join("Camera").exists(), "nothing lands on local disk");
 }
 
 /// ❗ The fake creates a file at `SEND` open, as a device does, so a cancel

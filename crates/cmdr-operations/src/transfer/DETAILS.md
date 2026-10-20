@@ -728,6 +728,18 @@ at every depth, and meets a same-named destination folder as a merge. That's del
 destinations can't hold a link, and it destroys nothing, because a copy never touches the source and a move's sweep then
 removes the LINK (above). Local-to-local transfers never get here; the local engines copy a link as a link.
 
+**A cross-volume MOVE refuses a SELECTED link, before anything moves** (#570). A move treats a link as one item, the
+link itself, and across volumes that has no honest shape: materializing it copies a folder the person never selected and
+then removes the link they did select, and recreating it elsewhere leaves a link whose target is a path on the volume it
+came from, so on a phone-to-Mac or server-to-disk move it points nowhere (the `Volume` trait has no way to make one
+anyway). So `volume/selected_link.rs::refuse_a_selected_link` lists each selected item's parent once and refuses the
+whole move with the typed `WriteOperationError::LinkCantMoveAcrossVolumes` when any of them is a link; its copy offers a
+Copy (which brings along what the link points to) or a destination on the link's own volume. A same-volume move renames
+the link, and a backend without links (`BackendKind::has_symlinks`) pays nothing. A link DEEPER in a moved folder still
+materializes as above. Pinned by `volume/link_following_backend_tests.rs`, `volume/copy_selected_link_tests.rs`, the
+ADB and SFTP backend-suite cells (`a_selected_link_moved_off_*`), and the per-backend listing-and-rename promise
+`cmdr_fs::volume::conformance::assert_a_link_to_a_folder_moves_as_the_link`.
+
 **So a local preview can't answer for a SELECTED link.** The copy dialog's local preview walks with the local engines'
 stance (`scan_walker.rs`): a selected link is one leaf worth its own few bytes. Trusted by a cross-volume transfer, that
 hint said "file" for `~/Dropbox -> ~/Library/CloudStorage/Dropbox`, the engine streamed it as one, and the read stream,
@@ -735,7 +747,7 @@ which follows the link, refused ("Cannot stream a directory"); the totals missed
 `volume/preflight.rs::counted_a_selected_link_as_a_link` spots such a preview and rescans through the source volume,
 whose scan follows a selected link. The dialog's pre-confirm numbers still show the link's stance, since the preview
 doesn't know the destination. Pinned by `volume/copy_selected_link_tests.rs`, which runs the real walker and covers the
-move's sweep (it removes the link, never the target).
+move through the same preview (refused, above).
 
 A link that loops back to its own ancestor fails a cross-volume copy of the folder holding it, cleanly, with `ELOOP`
 after the merge walk has descended about 16 levels through it (verified 2026-10-11 on macOS with a throwaway cell in
