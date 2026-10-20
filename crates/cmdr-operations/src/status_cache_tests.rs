@@ -10,6 +10,7 @@ use crate::test_support::placeholder_conflict;
 use crate::testing::{RegisteredOperation, TestOperations};
 use crate::types::{LifecycleStatus, TransferWaitReason, WriteOperationPhase, WriteOperationType};
 use cmdr_fs::volume::LaneKey;
+use cmdr_operation_log::types::OperationId;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
