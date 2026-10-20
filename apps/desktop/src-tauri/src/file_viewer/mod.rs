@@ -109,6 +109,7 @@ pub use session::{
 };
 pub use session_store::{MediaDimensions, ViewerOpenResult};
 
+use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::log_error::{ErrorLogText, ErrorText, write_plain};
 use serde::{Deserialize, Serialize};
 
@@ -245,8 +246,10 @@ pub enum ArchiveFailureKind {
 #[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum ViewerError {
+    // The detail stays typed when a volume error caused it, so a log line marks the path it
+    // names; over IPC it's that error's text.
     Io {
-        message: String,
+        message: ErrorDetail,
     },
     NotFound {
         path: String,
@@ -285,7 +288,7 @@ pub enum ViewerError {
     /// the message; the FE still renders one generic archive message.
     Archive {
         failure: ArchiveFailureKind,
-        message: String,
+        message: ErrorDetail,
     },
     /// The file is archived in cold storage (S3 Glacier Flexible Retrieval or
     /// Deep Archive) and can't be read until someone restores it, so there's
@@ -308,7 +311,7 @@ impl ErrorLogText for ViewerError {
     fn write_log_text(&self, out: &mut ErrorText<'_>) -> std::fmt::Result {
         use std::fmt::Write as _;
         match self {
-            Self::Io { message } => write!(out, "{}", message),
+            Self::Io { message } => out.error(message),
             Self::NotFound { path } => {
                 out.write_str("File not found: ")?;
                 out.value(cmdr_fs::log_private::LogPrivate::file_path(path))
@@ -333,7 +336,7 @@ impl ErrorLogText for ViewerError {
             // (`viewer.saveAs.destinationReadOnly`). Names no namespace, because
             // both a `.zip` and a `.git` snapshot reach it.
             Self::DestinationIsReadOnly => write!(out, "Can't save into a read-only location"),
-            Self::Archive { message, .. } => write!(out, "{message}"),
+            Self::Archive { message, .. } => out.error(message),
             Self::ColdStorage => write!(out, "The file is archived and needs a restore before it can be read"),
             Self::NotEnoughSpace { needed, available } => {
                 write!(
@@ -347,7 +350,9 @@ impl ErrorLogText for ViewerError {
 
 impl From<std::io::Error> for ViewerError {
     fn from(e: std::io::Error) -> Self {
-        Self::Io { message: e.to_string() }
+        Self::Io {
+            message: e.to_string().into(),
+        }
     }
 }
 
@@ -378,7 +383,7 @@ pub trait FileViewerBackend: Send + Sync {
         _cancel: &std::sync::atomic::AtomicBool,
     ) -> Result<Box<dyn FileViewerBackend>, ViewerError> {
         Err(ViewerError::Io {
-            message: "backend does not support extend_to".to_string(),
+            message: "backend does not support extend_to".into(),
         })
     }
 

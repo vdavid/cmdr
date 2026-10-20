@@ -751,3 +751,24 @@ fn an_archived_file_says_so_whatever_route_it_came_through() {
         );
     }
 }
+
+/// A refusal the viewer has no twin for keeps the volume error typed, so a log line marks the
+/// path it names; its plain text, the technical details, stays the volume error's own words.
+#[test]
+fn a_read_failure_marks_the_path_its_volume_error_names() {
+    use cmdr_fs::log_error::LogError;
+    use cmdr_fs::log_private::LogPrivate;
+
+    let path = "Trips/Summer (Lake House) 2026/IMG 0001.jpg";
+    let span = LogPrivate::path(path).to_string();
+    for routed in [None, Some(RoutedKind::Archive), Some(RoutedKind::GitPortal)] {
+        let cause = VolumeError::PermissionDenied {
+            path: path.to_string(),
+            raw_os_error: Some(13),
+        };
+        let error = map_volume_error(cause.clone(), routed);
+        let logged = LogError(&error).to_string();
+        assert!(logged.contains(&span), "routed: {routed:?}: {logged:?}");
+        assert_eq!(error.to_string(), cause.to_string(), "routed: {routed:?}");
+    }
+}

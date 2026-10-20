@@ -1074,7 +1074,9 @@ fn write_range_to_file_inner(
         if cancel.load(Ordering::Relaxed) {
             return Err(ViewerError::Cancelled);
         }
-        std::fs::rename(tmp_path, dest_path).map_err(|e| ViewerError::Io { message: e.to_string() })?;
+        std::fs::rename(tmp_path, dest_path).map_err(|e| ViewerError::Io {
+            message: e.to_string().into(),
+        })?;
         Ok(saved)
     });
 

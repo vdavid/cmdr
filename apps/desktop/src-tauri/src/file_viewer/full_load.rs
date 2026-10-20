@@ -158,7 +158,7 @@ impl FileViewerBackend for FullLoadBackend {
         // here means the caller skipped that; surface a typed error rather than
         // panicking inside a watcher thread.
         Err(ViewerError::Io {
-            message: "FullLoadBackend cannot extend in place; session must escalate first".to_string(),
+            message: "FullLoadBackend cannot extend in place; session must escalate first".into(),
         })
     }
 

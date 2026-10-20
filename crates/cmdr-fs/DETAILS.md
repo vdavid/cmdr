@@ -74,11 +74,12 @@ the next section.
   own key, which the drive index stores and the write engine matches sources under), `log_rollup`, `log_private` +
   `log_detail` (`LogPrivate`, the wrapper a log site marks a user-derived value with, over the ONE marker table and
   lexer the app's span pass reads too; `LogDetail` for external OS/server/CLI text as one Debug-quoted, 1 KiB-capped
-  field, and `LoggedText` for our own; `log_error`, the `LogError` a path-carrying error logs through; § "Marked log
-  values"), `tcc_paths`, `ignore_poison`, `pluralize`, `tilde` (`expand_tilde`, for a path a person typed on THIS
-  machine), `byte_size` (`format_size`, the IEC byte count log lines and model-facing answers read), `thread_qos`,
-  `thread_cpu`, `process_memory`, `utility_pool.rs` (`UtilityPool`, a keep-alive pool of `Utility`-QoS threads, so
-  background work that comes in streams, like index walks, reuses threads instead of creating one per job).
+  field, and `LoggedText` for our own; `log_error`, the `LogError` a path-carrying error logs through, and
+  `error_detail`, the message field that keeps its cause typed for it; § "Marked log values"), `tcc_paths`,
+  `ignore_poison`, `pluralize`, `tilde` (`expand_tilde`, for a path a person typed on THIS machine), `byte_size`
+  (`format_size`, the IEC byte count log lines and model-facing answers read), `thread_qos`, `thread_cpu`,
+  `process_memory`, `utility_pool.rs` (`UtilityPool`, a keep-alive pool of `Utility`-QoS threads, so background work
+  that comes in streams, like index walks, reuses threads instead of creating one per job).
 - `mapped_file_faults/`: the SIGBUS recovery that turns a read of a mapped file whose disk went away into zeros, and the
   generation a reader checks to distrust what it read meanwhile. § "Mapped-file faults".
 - `testing/`: behind the `testing` feature. `TestDir`, the two waits, and `unique_test_id` (a pid-and-counter key for a
@@ -551,17 +552,23 @@ both sides read (`LogKind`, `CLOSER`, `RESERVED`, and `markers`, the lexer).
   `IsADirectory` a dir, `ColdStorage` and `SourceChanged` a file, the rest neutral; `ReadOnly` too, since some backends
   put a message there; the message variants stay text), `FriendlyGitError`, `cmdr-index`'s `VolumeScanError` (whose
   `ConsecutiveFailures` keeps the last error typed for this), `ScanError`, `WatcherError`, `NotWalkable`, and
-  `SizeError` (a root outside the index or a refused watch rides as a typed path, ❌ never a `format!`), `cmdr-operations`'
-  `MutationError`, conflict `VolumeScanError`, and `FlushFailure`, `MtpConnectionError`, `cmdr-archive`'s `ArchiveError`
-  and `MutationError`, and the app's `ReconnectError` and `ViewerError`. A log site formats them through `LogError`; the
-  type system refuses `LogError` of anything else. `WriteOperationError` (~50 variants, all IPC) logs as
-  `error.log_detail()` instead: the frontend's JSON in a `detail=` field, whose camelCase keys a report tokenizes.
+  `SizeError` (a root outside the index or a refused watch rides as a typed path, ❌ never a `format!`),
+  `cmdr-operations`' `MutationError`, conflict `VolumeScanError`, and `FlushFailure`, `MtpConnectionError`,
+  `cmdr-archive`'s `ArchiveError` and `MutationError`, and the app's `ReconnectError` and `ViewerError`. A log site
+  formats them through `LogError`; the type system refuses `LogError` of anything else. `WriteOperationError` (~50
+  variants, all IPC) logs as `error.log_detail()` instead: the frontend's JSON in a `detail=` field, whose camelCase
+  keys a report tokenizes.
 - **Finding the sites**: compile the workspace with a converted type's `Display` (and `Error`) removed; every error left
   is a site that formats it plainly. A log site switches to `LogError`; a site building IPC or technical-detail text
   stays plain on purpose.
+- **`ErrorDetail` (`error_detail.rs`) is the message field that stays typed**: an error wrapping another one's text
+  holds `ErrorDetail::of(cause)` where it held `cause.to_string()`. Its `Display`, `Debug`, JSON, and specta type are
+  that plain string (a stored one deserializes as text), so IPC and bindings don't change; its `ErrorLogText` writes the
+  cause's own, values marked. Text from the OS or a third-party crate goes in with `.into()` and stays foreign text.
+  `ViewerError`'s `Io` and `Archive` carry one.
 - **The known gap**: an error flattened into a `String` before a log macro sees it (`io::Error::other(e.to_string())` in
-  a backend's byte stream, a `format!` into another error's message) prints plain and gets only the report's regex
-  fallback. Nothing here walks `source()`: no converted type has one.
+  a backend's byte stream, a `format!` into another error's message, and every `VolumeError` message variant) prints
+  plain and gets only the report's regex fallback. Nothing here walks `source()`: no converted type has one.
 
 ## `ScanBoundary`: one seam, so a walk can't count without asking
 
@@ -719,8 +726,8 @@ everywhere, which is the point.
   broke it (its `probe` follows a link, so a link to a folder met `rmdir`). Run by local, ADB, and SFTP; backends with
   no links (SMB, WebDAV, S3, MTP) have nothing to run it against.
 - `assert_a_link_to_a_folder_moves_as_the_link` — the parent's listing reports a link AS a link, and `rename` moves the
-  link, target untouched: a cross-volume move refuses a selected link off that listing, and a same-volume move renames
-  it (#570). Run by local, ADB, and SFTP.
+  link, target untouched: a same-volume move renames a selected link as one item on that promise (#570). Run by local,
+  ADB, and SFTP.
 - `assert_rename_refuses_an_existing_destination` — `force` is the only thing between a move and the file it would
   replace, and each backend earns the refusal differently (`renamex_np(RENAME_EXCL)`, an SMB `stat` plus the server's
   `ReplaceIfExists == false`, an MTP `exists` probe, a map lookup). No shared mechanism to trust, only a shared promise.

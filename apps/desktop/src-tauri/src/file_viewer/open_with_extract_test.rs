@@ -180,7 +180,7 @@ fn a_file_in_a_locked_archive_is_refused_as_needing_its_password() {
 fn every_other_pull_failure_lands_on_a_refusal_the_toast_can_word() {
     let archive = |failure| ViewerError::Archive {
         failure,
-        message: "zip says no".to_string(),
+        message: "zip says no".into(),
     };
     let cases = [
         (
@@ -200,9 +200,7 @@ fn every_other_pull_failure_lands_on_a_refusal_the_toast_can_word() {
             OpenWithCopyRefusal::ArchiveUnreadable,
         ),
         (
-            ViewerError::Io {
-                message: "EIO".to_string(),
-            },
+            ViewerError::Io { message: "EIO".into() },
             OpenWithCopyRefusal::Unreadable,
         ),
         (

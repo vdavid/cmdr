@@ -56,6 +56,7 @@ use super::pending_open::PendingOpen;
 use super::{ArchiveFailureKind, ViewerError};
 use crate::file_system::volume::RoutedKind;
 use crate::file_system::volume::manager::{get_volume_manager, path_routes_over_its_parent};
+use cmdr_fs::error_detail::ErrorDetail;
 
 /// Max bytes to materialize for a single preview. Above this the open is refused
 /// (typed) before any extraction, which doubles as the zip-bomb guard.
@@ -625,10 +626,10 @@ pub(super) fn map_volume_error(err: VolumeError, routed: Option<RoutedKind>) -> 
                     VolumeError::NeedsPassword { .. } => ArchiveFailureKind::NeedsPassword,
                     _ => ArchiveFailureKind::Unreadable,
                 },
-                message: other.to_string(),
+                message: ErrorDetail::of(other),
             },
             Some(RoutedKind::GitPortal) | None => ViewerError::Io {
-                message: other.to_string(),
+                message: ErrorDetail::of(other),
             },
         },
     }

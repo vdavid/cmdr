@@ -43,7 +43,7 @@ fn failure_tokens_carry_no_payload() {
         ),
         (
             ViewerError::Io {
-                message: "Permission denied (os error 13)".to_string(),
+                message: "Permission denied (os error 13)".into(),
             },
             "io",
         ),
@@ -51,7 +51,7 @@ fn failure_tokens_carry_no_payload() {
         (
             ViewerError::Archive {
                 failure: ArchiveFailureKind::Unsupported,
-                message: "unsupported codec".to_string(),
+                message: "unsupported codec".into(),
             },
             "archive",
         ),

@@ -131,7 +131,9 @@ async fn open_viewer(app_handle: tauri::AppHandle, request: OpenRequest) -> Resu
         let result = blocking_typed_result_with_timeout(
             VIEWER_TIMEOUT,
             || ViewerError::TimedOut,
-            |message| ViewerError::Io { message },
+            |message| ViewerError::Io {
+                message: message.into(),
+            },
             move || request.open(&work_open),
         )
         .await;
@@ -163,7 +165,9 @@ async fn open_pulling(
     blocking_typed_result_until_stalled(
         stall_limit,
         &mut watch,
-        |message| ViewerError::Io { message },
+        |message| ViewerError::Io {
+            message: message.into(),
+        },
         move || request.open(&work_open),
     )
     .await
@@ -298,7 +302,9 @@ async fn get_lines_within(
     let result = blocking_typed_result_with_timeout(
         deadline,
         || ViewerError::TimedOut,
-        |message| ViewerError::Io { message },
+        |message| ViewerError::Io {
+            message: message.into(),
+        },
         move || fetch(&work_cancel),
     )
     .await;
@@ -320,7 +326,9 @@ pub async fn viewer_render_markdown(session_id: String) -> Result<file_viewer::M
     blocking_typed_result_with_timeout(
         MARKDOWN_RENDER_TIMEOUT,
         || ViewerError::TimedOut,
-        |message| ViewerError::Io { message },
+        |message| ViewerError::Io {
+            message: message.into(),
+        },
         move || file_viewer::render_markdown_session(&session_id),
     )
     .await
@@ -351,7 +359,9 @@ pub fn viewer_follow_markdown_link(
         app_handle
             .opener()
             .open_url(url, None::<&str>)
-            .map_err(|e| ViewerError::Io { message: e.to_string() })?;
+            .map_err(|e| ViewerError::Io {
+                message: e.to_string().into(),
+            })?;
     }
     Ok(link)
 }
@@ -363,7 +373,9 @@ pub async fn viewer_get_bytes(session_id: String, offset: u64, count: usize) -> 
     blocking_typed_result_with_timeout(
         VIEWER_TIMEOUT,
         || ViewerError::TimedOut,
-        |message| ViewerError::Io { message },
+        |message| ViewerError::Io {
+            message: message.into(),
+        },
         move || file_viewer::get_bytes(&session_id, offset, count),
     )
     .await
@@ -439,7 +451,7 @@ pub async fn viewer_read_range(
     {
         Ok(Ok(result)) => result,
         Ok(Err(join_err)) => Err(ViewerError::Io {
-            message: join_err.to_string(),
+            message: join_err.to_string().into(),
         }),
         Err(_) => Err(ViewerError::TimedOut),
     }
@@ -507,7 +519,9 @@ async fn write_range_watched(
     blocking_typed_result_until_stalled(
         stall_limit,
         &mut watch,
-        |message| ViewerError::Io { message },
+        |message| ViewerError::Io {
+            message: message.into(),
+        },
         move || {
             file_viewer::write_range_to_file(
                 &session_id,
