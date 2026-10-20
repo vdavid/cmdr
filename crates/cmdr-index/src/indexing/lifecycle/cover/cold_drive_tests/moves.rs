@@ -124,8 +124,10 @@ fn the_drive_keeps_indexing_at_its_new_mount_point(drive: &ColdDrive, patience: 
     let followed = drive.index.follow_volume_move(drive.volume_id);
     assert!(holds(drive, PROOF), "following the move deletes nothing it held");
 
-    // No redo possible: the gap file has to predate the move. A completed drive's
-    // restart catches up through the JOURNAL from the id it stored at the old root.
+    // No redo possible: the gap file has to predate the move. The test doesn't wait
+    // for the first index to complete, so either restart can catch it: a completed
+    // drive's reconciles by LISTING its new root, and one still in phases replays
+    // the JOURNAL from the id it stored at the old root.
     cmdr_fs::testing::wait_until(
         patience,
         "the restart at the new mount point to replay what arrived in the gap",
@@ -139,6 +141,47 @@ fn the_drive_keeps_indexing_at_its_new_mount_point(drive: &ColdDrive, patience: 
         "and what it held before the rename is all still there"
     );
     assert!(state::is_active(drive.volume_id), "and the drive is still indexing");
+}
+
+/// A rename landing after a walk wrote its rows but before it told the branch set
+/// it ended keeps the index: the restart resumes it, ❌ never rebuilds it.
+///
+/// The walk's rows were on disk while the record of the ground they describe was
+/// still waiting on the walk's release, which a volume in its drain window never
+/// hears. The restart then read rows with no record behind them as a legacy
+/// partial and threw the whole index away (#582).
+#[test]
+fn a_rename_between_a_walks_last_row_and_its_release_keeps_the_index() {
+    let drive = ColdDrive::new("cover-move-before-the-release-test");
+    std::fs::create_dir_all(drive.tree.path().join("scope")).expect("dirs");
+    std::fs::write(drive.tree.path().join(PROOF), "x").expect("file");
+    let unannounced = drive.tree.path().join("scope/gone-unannounced.txt");
+    std::fs::write(&unannounced, "x").expect("file");
+    let gate = finish_gate::arm(drive.volume_id);
+    turn_on(&drive);
+    gate.wait_until_parked();
+    cmdr_fs::testing::wait_until(LANDS_WITHIN, "the walk's rows and marks to land", || {
+        holds(&drive, PROOF) && drive.coverage(&drive.path("")).frontier.is_empty()
+    });
+    // Its row is one only a re-walk drops: nothing tells the journal it went.
+    std::fs::remove_file(&unannounced).expect("remove it behind the index's back");
+
+    let (new_root, _put_back) = rename_the_drive(&drive);
+    create_a_file(&drive, &new_root.join("scope/in-the-gap.txt"));
+    assert!(
+        drive.index.follow_volume_move(drive.volume_id),
+        "the index follows the drive"
+    );
+    gate.release();
+
+    cmdr_fs::testing::wait_until(LANDS_WITHIN, "the restart to replay what arrived in the gap", || {
+        holds(&drive, "scope/in-the-gap.txt")
+    });
+    assert!(
+        holds(&drive, "scope/gone-unannounced.txt"),
+        "the restart resumed the index the walk wrote rather than rebuilding it"
+    );
+    assert!(holds(&drive, PROOF), "and kept what it held");
 }
 
 /// Wait for a file created at `root` to land through the watcher: the proof the

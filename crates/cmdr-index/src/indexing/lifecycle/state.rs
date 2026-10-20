@@ -475,9 +475,24 @@ pub(crate) fn cover_context_for(
 /// event that lands in the covered ground waits for the walk instead of racing
 /// it. A volume with no live index (a vetoed drive, a share) has nothing to tell,
 /// and the walk runs exactly as it did.
+///
+/// ⚠️ **The set is written down HERE, ahead of every row the walk sends**, not
+/// only when it ends. One writer carries both, so a database holding the walk's
+/// rows holds the record of the ground they describe. The walk's release can
+/// land after a stop took the manager out of the registry, which writes nothing
+/// down, and a restart that found rows with no record behind them read them as an
+/// interrupted bulk build and threw the index away (#582).
 pub(crate) fn begin_branch_coverage(volume_id: &str, paths: &[String]) {
     let mut planned = None;
-    with_running_manager(volume_id, |mgr| planned = mgr.begin_branch_coverage(paths));
+    let mut record = None;
+    with_running_manager(volume_id, |mgr| {
+        planned = mgr.begin_branch_coverage(paths);
+        (_, record) = mgr.after_walk();
+    });
+    // Off the registry lock, as `finish_branch_coverage` does it.
+    if let Some((space, writer)) = record {
+        branches::live_for(volume_id).persist(&space, &writer);
+    }
     start_the_branch_watch(volume_id, planned);
 }
 
@@ -538,8 +553,9 @@ fn start_the_branch_watch(volume_id: &str, planned: Option<BranchWatchStart>) {
 pub(crate) fn finish_branch_coverage(volume_id: &str, paths: &[String]) {
     let branches = branches::live_for(volume_id);
     // What the volume wants remembered is still the manager's answer, when it has
-    // one. A volume whose manager is momentarily out of the registry keeps nothing
-    // written down: the rescan that took it out retires the branch set anyway.
+    // one. A volume whose manager is momentarily out of the registry writes nothing
+    // more down: `begin_branch_coverage` already recorded this ground, and the
+    // rescan that took it out retires the branch set anyway.
     let mut after = AfterWalk::Forget;
     let mut record = None;
     with_running_manager(volume_id, |mgr| (after, record) = mgr.after_walk());

@@ -145,11 +145,16 @@ its stored position until the next launch's replay gap is too wide to be worth r
 from every event SEEN, and returns `None` while anything is buffered (advancing past a held event would let a restart
 skip it).
 
-⚠️ Two limits left standing there, both self-healing through the frontier. `process_live_batch` sends its own
+⚠️ One limit left standing there, self-healing through the frontier. `process_live_batch` sends its own
 `UpdateLastEventId` for what it processed, so a processed event with a higher id than a HELD one can still carry the
-position past it — a crash in that window loses that one change from the journal replay. And a branch is persisted when
-its walk FINISHES, so a crash mid-walk leaves covered rows with no branch entry: they stay covered and served (Decision
-5's covered-but-stale) but unwatched until something walks that ground again.
+position past it — a crash in that window loses that one change from the journal replay.
+
+**A branch is written down when its walk BEGINS** (`state::begin_branch_coverage`), through the writer that carries the
+walk's rows and ahead of them, and again when the walk finishes. So a database holding a walk's rows holds the record of
+the ground they describe however the walk ended: a crash mid-walk, or a stop or a drive rename that took the manager out
+of the registry before the walk's release, which then writes nothing. Written at the finish alone, that last window left
+rows with no record behind them, and the restart threw the whole index away as an interrupted bulk build (#582, pinned
+by `moves::a_rename_between_a_walks_last_row_and_its_release_keeps_the_index`).
 
 **Where the set lives, and how it comes back.** In memory per volume (`live_for`), and on the volume's own database as
 `meta.walk_covered_branches` — index-relative, so a drive that returns at a different mount point still finds its

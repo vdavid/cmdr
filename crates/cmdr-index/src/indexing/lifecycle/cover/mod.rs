@@ -351,6 +351,8 @@ pub(crate) fn start(context: CoverContext, frontier: Vec<String>, dimension: Cov
             // The context's share of the volume's hold drops with this closure,
             // after the walk's last read.
             let outcome = walk_frontier(&context, claim.mine(), &sender, &walk_cancel, &walk_heartbeat);
+            #[cfg(test)]
+            finish_gate::arrive(&context.volume_id);
             release_ground(&context.volume_id, claim);
             outcome
         })
@@ -589,6 +591,8 @@ pub(in crate::indexing) use live::{
 mod bench;
 #[cfg(test)]
 mod cold_drive_tests;
+#[cfg(test)]
+pub(in crate::indexing) mod finish_gate;
 #[cfg(test)]
 mod network_give_up_tests;
 #[cfg(test)]
