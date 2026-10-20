@@ -184,7 +184,9 @@ pub fn read_range(
     )?;
     debug_assert_eq!(walked, Walked::Finished);
     // Decoded rows only, so the pieces are UTF-8 by construction.
-    String::from_utf8(out).map_err(|e| ViewerError::Io { message: e.to_string() })
+    String::from_utf8(out).map_err(|e| ViewerError::Io {
+        message: e.to_string().into(),
+    })
 }
 
 /// Reads the source's own bytes in `[start, end)`.
