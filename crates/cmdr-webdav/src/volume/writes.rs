@@ -295,9 +295,9 @@ impl PutFailure {
                     target = LogPrivate::file_path(&target)
                 );
                 if pause.should_stop().await {
-                    VolumeError::Cancelled(volume_id.to_string())
+                    VolumeError::Cancelled(volume_id.to_string().into())
                 } else {
-                    VolumeError::ConnectionTimeout(target.to_string())
+                    VolumeError::ConnectionTimeout(target.to_string().into())
                 }
             }
         }
