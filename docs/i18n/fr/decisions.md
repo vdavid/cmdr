@@ -513,7 +513,8 @@ values write the catalog's `’`.
 
 - `Protocole`; SMB / SFTP / WebDAV stay (Apple keeps them). passphrase → `phrase secrète` (`Phrase secrète de la clé`),
   distinct from the account’s `mot de passe`.
-- fingerprint → `empreinte` (feminine, so `Je l’ai vérifiée` agrees with it); trusting a key is `approuver` (above).
+- fingerprint → `empreinte` (feminine); both `*.changedDisclosure` say `J’ai vérifié`, one value for key and
+  certificate; trusting a key is `approuver` (above).
 - remote → `distant`, postposed (`Dossier distant`). Key file → `Fichier de clé`.
 - Connect to server… → `Se connecter au serveur…` (the Go menu item) on every action surface; `Connexion au serveur` is
   only Apple’s window title.

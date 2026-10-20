@@ -1332,7 +1332,7 @@
     "chosen": "empreinte",
     "confidence": "high",
     "decision": "Le hub des serveurs : la feuille de connexion et la clé d'hôte SSH",
-    "forms": "feminine (Je l’ai vérifiée); Key fingerprint → Empreinte de la clé",
+    "forms": "feminine; Key fingerprint → Empreinte de la clé; certificate → Empreinte du certificat (SHA-256)",
     "sources": "macOS Security Certificate.loctable (Fingerprints → Empreintes); Safari (empreinte numérique)"
   },
   "folder": {

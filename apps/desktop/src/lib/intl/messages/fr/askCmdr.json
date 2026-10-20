@@ -606,9 +606,9 @@
   "@askCmdr.renameUndo.undoJob": {
     "sourceHash": "f84acd2"
   },
-  "askCmdr.renameUndo.undoJobLabel": "Annuler tous les renommages de cette série : {filesText} {files, plural, one {fichier} many {fichiers} other {fichiers}} dans {batches, plural, one {# lot} many {# lots} other {# lots}}",
+  "askCmdr.renameUndo.undoJobLabel": "Annuler les {batches, plural, one {# lot} many {# lots} other {# lots}}, {filesText} {files, plural, one {fichier renommé} many {fichiers renommés} other {fichiers renommés}} dans cette série",
   "@askCmdr.renameUndo.undoJobLabel": {
-    "sourceHash": "9d2e84e"
+    "sourceHash": "544447d"
   },
   "askCmdr.renameUndo.undoing": "Restauration des anciens noms…",
   "@askCmdr.renameUndo.undoing": {
