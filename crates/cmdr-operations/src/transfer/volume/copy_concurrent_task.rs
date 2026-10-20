@@ -134,10 +134,8 @@ pub(super) struct CopyTask {
     /// What the write does to a file at the name: under `Swap`, its landing
     /// replaces the original after a successful write.
     pub(super) replaces: Replaces,
-    /// Whether conflict resolution PICKED `dest_path` (a `Rename` pick, an
-    /// Overwrite that cleared it) rather than it being the plain
-    /// `dest_root.join(name)` nothing has looked at. The landing needs it to
-    /// tell its own placeholder from a file nobody answered for
+    /// Whether `dest_path` holds the placeholder a `Rename` pick reserved on
+    /// disk, which is all the landing may clear there
     /// (`staged_write.rs::LandingName`).
     pub(super) dest_name_claimed: bool,
     /// The operation's one file-copy window, shared with every merge walker.

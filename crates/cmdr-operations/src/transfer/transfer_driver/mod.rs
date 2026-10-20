@@ -222,15 +222,16 @@ pub(super) struct TransferContext<'a> {
     /// landing (`staged_write.rs`). Only the async driver sets anything but
     /// `Nothing`, from `ConflictDecision::Proceed`.
     pub replaces: &'a Replaces,
-    /// Whether `dest_path` is a name conflict resolution PICKED (a `Rename`
-    /// pick, an Overwrite whose destination it cleared) rather than the plain
-    /// `dest_root.join(name)` nothing has looked at.
+    /// Whether `dest_path` holds a placeholder this operation put on disk: a
+    /// `Rename` pick that reserved its name (`O_EXCL`, local destinations only).
     ///
     /// The streaming closures pass it to the staging layer, which needs it to
-    /// tell its own `Rename` placeholder from a file nobody resolved a conflict
-    /// for when the landing rename says `AlreadyExists`
-    /// (`staged_write.rs::LandingName`). `false` for the sync driver, which
-    /// resolves no conflicts of its own.
+    /// tell its own `Rename` placeholder from someone else's file when the
+    /// landing rename says `AlreadyExists` (`staged_write.rs::LandingName`).
+    /// ❗ A pick that reserved nothing (every remote backend), or a cross-type
+    /// Overwrite that moved the destination aside, saw a FREE name, so `false`:
+    /// whatever is there at landing is someone else's. `false` for the sync
+    /// driver, which resolves no conflicts of its own.
     pub dest_name_claimed: bool,
     /// Cumulative files processed BEFORE this iteration. Lets the closure
     /// compute `effective_bytes_done` for intra-file progress callbacks
@@ -491,7 +492,16 @@ pub(super) enum ConflictDecision {
     /// destination. The driver passes both through `TransferContext`
     /// unchanged; only the closure acts on them, so the driver stays agnostic
     /// to the replace mechanism.
-    Proceed { dest_path: PathBuf, replaces: Replaces },
+    ///
+    /// `dest_name_claimed`: `dest_path` holds a placeholder THIS operation put
+    /// on disk (a `Rename` pick's reservation, `ResolvedConflict::
+    /// reserved_placeholder`), which is all a landing may ever clear there
+    /// (`TransferContext::dest_name_claimed`).
+    Proceed {
+        dest_path: PathBuf,
+        replaces: Replaces,
+        dest_name_claimed: bool,
+    },
 }
 
 // The test files stay at the `transfer/` level (one is large and tracked in the

@@ -373,14 +373,14 @@ async fn commit_lands_the_bytes_and_stops_tracking_them() {
     assert!(state.in_flight_temps.lock_ignore_poison().is_empty());
 }
 
-/// Landing onto a name the CALLER claimed — a `Rename` pick's placeholder,
-/// a cross-type Overwrite's cleared destination — is the case the second
-/// attempt exists for: clear the way, then rename again.
+/// Landing onto a name the CALLER claimed, a `Rename` pick's empty
+/// placeholder, is the case the second attempt exists for: clear the way, then
+/// rename again.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn landing_clears_a_claimed_name_that_is_genuinely_in_the_way() {
     let inner = Arc::new(InMemoryVolume::new("dest"));
     let dest: Arc<dyn Volume> = Arc::clone(&inner) as Arc<dyn Volume>;
-    inner.create_file(Path::new("/notes.txt"), b"OLD").await.unwrap();
+    inner.create_file(Path::new("/notes.txt"), b"").await.unwrap();
     inner.create_file(Path::new("/temp"), b"NEW").await.unwrap();
 
     land_unrecorded(
@@ -555,7 +555,8 @@ async fn land_with_a_rename_that_fails(failure: VolumeError) -> (Arc<InMemoryVol
 async fn a_landing_that_cleared_the_way_and_then_could_not_rename_rescues_the_new_bytes() {
     let inner = Arc::new(InMemoryVolume::new("dest"));
     let dest: Arc<dyn Volume> = Arc::clone(&inner) as Arc<dyn Volume>;
-    inner.create_file(Path::new("/notes.txt"), b"CLAIMED").await.unwrap();
+    // A `Rename` pick's placeholder: the name this write claimed.
+    inner.create_file(Path::new("/notes.txt"), b"").await.unwrap();
     inner
         .create_file(Path::new("/notes.txt.cmdr-tmp-abc"), b"THE NEW BYTES")
         .await

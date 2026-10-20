@@ -29,8 +29,8 @@
 //!
 //! **Whose name it is.** The landing rename can answer `AlreadyExists`, and
 //! what that means is the CALLER's to say ([`LandingName`]): a name it claimed
-//! (a `Rename` pick's `O_EXCL` placeholder, a cross-type Overwrite's cleared
-//! destination) may be cleared, a name it believed FREE may not. Without the
+//! with a placeholder of its own (a `Rename` pick's empty `O_EXCL` file) may be
+//! cleared of that placeholder, a name it believed FREE may not. Without the
 //! distinction a clash nobody resolved — a case-insensitive destination
 //! answering for `Report.docx` with the user's `report.docx` — read as "clear
 //! the way" and replaced a file under a Skip.
@@ -69,10 +69,10 @@ pub(super) enum WriteStaging {
     /// destination writes it with [`WriteMode::CreateNewInFreshFolder`], which
     /// lets an object store skip its per-object no-overwrite HEAD.
     StageInFreshFolder,
-    /// Stage as [`WriteStaging::Stage`], but the final name is one the CALLER
-    /// claimed or cleared: a `Rename` resolution's `O_EXCL` placeholder, or a
-    /// cross-type Overwrite that removed what was there. Whatever the landing
-    /// finds in the way is the caller's own doing, so it may clear it.
+    /// Stage as [`WriteStaging::Stage`], but the final name holds a placeholder
+    /// the CALLER put there: a `Rename` resolution's empty `O_EXCL` file. The
+    /// landing may clear that placeholder, and only it
+    /// ([`LandingName::ClaimedByTheCaller`]).
     StageOntoClaimedName,
     /// A file→file Overwrite ([`Replaces::Swap`]): the final name holds the
     /// user's ORIGINAL, which survives the whole write. Staged exactly like
@@ -120,9 +120,15 @@ pub(super) enum LandingName {
     /// nobody answered); only the write mode differs
     /// ([`WriteMode::CreateNewInFreshFolder`]).
     FreeInFreshFolder,
-    /// The caller claimed or cleared this name and is entitled to what's in the
-    /// way: a `Rename` pick reserved with an `O_EXCL` placeholder, a cross-type
-    /// Overwrite whose destination delete has already run.
+    /// The caller reserved this name with a placeholder of its own: a `Rename`
+    /// pick's empty `O_EXCL` file (local destinations only). The landing may
+    /// clear THAT, ❗ and nothing else: anything in the way that isn't an
+    /// empty file is someone else's, and the landing refuses as for
+    /// [`ExpectedFree`](Self::ExpectedFree). ❌ Never for a pick that reserved
+    /// nothing (every remote backend) or a cross-type Overwrite that moved the
+    /// destination aside: both saw a FREE name, so they land as
+    /// [`ExpectedFree`](Self::ExpectedFree), and a file someone put there before
+    /// the landing used to be deleted as "in the way".
     ClaimedByTheCaller,
     /// The name holds the user's original, which this write replaces (a
     /// file→file Overwrite). The original is known to be in the way, so the
@@ -548,7 +554,7 @@ pub(super) fn staging_for(replaces: &Replaces, landing: LandingName) -> WriteSta
 ///   meets it (`stream_pipe_file` falls back to it and cleans up after it).
 /// - `StageOntoClaimedName`: ❗ **never ours either**, though the caller claimed
 ///   the name. The bytes went to a temp sibling, so all that's ours at the name
-///   is a `Rename` pick's `O_EXCL` placeholder, which `ClaimedNames` takes back
+///   is the `Rename` pick's `O_EXCL` placeholder, which `ClaimedNames` takes back
 ///   while it's still empty (`volume/naming.rs::take_back_unfilled_reservations`).
 ///   Once the landing cleared the name, what stands there is someone's save
 ///   after our delete, or our own landed file (a kept landing the reconnect

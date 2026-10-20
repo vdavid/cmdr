@@ -372,6 +372,7 @@ pub async fn move_volumes_with_progress(
                             ConflictDecision::Proceed {
                                 dest_path: rc.write_path,
                                 replaces: rc.replaces,
+                                dest_name_claimed: rc.reserved_placeholder,
                             }
                         }
                     })

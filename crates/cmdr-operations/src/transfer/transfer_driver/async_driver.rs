@@ -249,7 +249,11 @@ where
                         }
                         continue;
                     }
-                    Ok(ConflictDecision::Proceed { dest_path, replaces }) => (dest_path, replaces, true),
+                    Ok(ConflictDecision::Proceed {
+                        dest_path,
+                        replaces,
+                        dest_name_claimed,
+                    }) => (dest_path, replaces, dest_name_claimed),
                     // A cancel pressed while the clash was on screen drops the
                     // slot's sender, so the resolver comes back `Cancelled`.
                     Err(e) => {

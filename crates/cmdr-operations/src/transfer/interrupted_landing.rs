@@ -138,6 +138,13 @@ impl NameHeld {
             inode: entry.inode,
         }
     }
+
+    /// Whether it's a regular file of exactly zero bytes: the only shape a
+    /// `Rename` pick's `O_EXCL` placeholder has, and so the only thing a
+    /// claimed name's landing may clear.
+    pub(super) fn is_an_empty_file(&self) -> bool {
+        !self.is_directory && !self.is_symlink && self.size == Some(0)
+    }
 }
 
 /// Settles a single-shot create of `size` bytes at `final_path` whose reply never

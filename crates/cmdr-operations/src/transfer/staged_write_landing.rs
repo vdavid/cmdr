@@ -250,9 +250,9 @@ enum CutOffAt {
 /// Renames FIRST, and only clears the final name if that rename said something
 /// is in the way: it usually isn't (a fresh copy, or a conflict the resolver
 /// already cleared), and a speculative delete would spend one extra round trip
-/// per file on SMB and MTP for nothing. The name can still be taken — a
-/// `Rename` resolution's `O_EXCL` placeholder, a cross-type Overwrite whose
-/// dest delete failed, a racing writer — so the second attempt covers it.
+/// per file on SMB and MTP for nothing. The name can still be taken: a
+/// `Rename` resolution's `O_EXCL` placeholder, which the second attempt clears
+/// ([`clear_the_way`]), or another writer, whose file the landing refuses.
 ///
 /// ❗ **A swap is the other way round** ([`LandingName::ReplacesOriginal`], a
 /// file→file Overwrite): the original is known to be in the way. Where the
@@ -281,7 +281,8 @@ enum CutOffAt {
 ///
 /// ❗ **And only a name the CALLER claimed**, which is the other half of the
 /// same question. `AlreadyExists` says something is in the way; only
-/// [`LandingName`] says whose it is. Under
+/// [`LandingName`] says whose it is, and a claimed name is cleared only of the
+/// empty placeholder the caller put there. Under
 /// [`LandingName::ExpectedFree`] nothing resolved a conflict for this write, so
 /// what's in the way is the user's file and a policy nobody applied to it: the
 /// landing reports the clash and leaves both sides alone. A case-insensitive
@@ -419,11 +420,11 @@ async fn temp_is_gone(dest_volume: &Arc<dyn Volume>, landing: &Landing) -> bool 
 /// it. `first` is the first rename's `AlreadyExists`, the error to report if the
 /// way can't be cleared.
 ///
-/// ❗ The note ([`NameHeld`], one stat before anything moves) is what lets a
-/// resume after a lost delete reply clear the name again only while it holds
-/// the same entry: anything else there is a file someone saved after our delete
-/// went through (`#576`). A stat the transport cuts off cuts the landing off
-/// as a first rename, since nothing was cleared yet.
+/// ❗ **Only our own EMPTY placeholder is cleared**: anything else in the way,
+/// or a name one stat can't describe, is someone else's, and the landing
+/// refuses as for a clash nobody resolved. That stat's note ([`NameHeld`]) also
+/// lets a resume clear again only the same entry (`#576`). A stat the transport
+/// cuts off cuts the landing off as a first rename: nothing was cleared yet.
 async fn clear_the_way(
     dest_volume: &Arc<dyn Volume>,
     mut landing: Landing,
@@ -431,13 +432,24 @@ async fn clear_the_way(
     patience: Patience,
 ) -> Result<(), LandingError> {
     landing.in_the_way = match dest_volume.get_metadata(&landing.final_path).await {
-        Ok(entry) => Some(NameHeld::of(&entry)),
+        Ok(entry) if NameHeld::of(&entry).is_an_empty_file() => Some(NameHeld::of(&entry)),
+        // Gone already: nothing to clear, and nothing a resume could match, so
+        // a resume never clears the name again.
+        Err(VolumeError::NotFound(_)) => None,
         Err(error) if patience == Patience::Waits && error.transport_fault().is_some() => {
             return Err(cut_off(landing, CutOffAt::FirstRename, error));
         }
-        // Gone already, or unreadable: nothing a resume could match, so a
-        // resume never clears the name again.
-        Err(_) => None,
+        _ => {
+            log::warn!(
+                target: "copy",
+                "staged write: {} holds something that isn't our empty placeholder; \
+                 leaving it alone and taking our temp {} away.",
+                LogPrivate::file_path(&landing.final_path),
+                LogPrivate::file_path(landing.temp()),
+            );
+            landing.discard(dest_volume).await;
+            return Err(LandingError::Failed(first.into()));
+        }
     };
     if !landing.hold().await {
         log::warn!(

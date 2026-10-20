@@ -436,3 +436,234 @@ async fn concurrent_a_save_at_a_claimed_name_the_landing_cleared_survives_the_fa
     let (dest, outcome) = copy_onto_a_claimed_name_someone_saves_over(&engine, &["a.jpg", "photo.jpg", "z.jpg"]).await;
     assert_their_save_and_our_bytes_both_stay(dest.path(), &outcome).await;
 }
+
+// ── A name a `Rename` pick chose ────────────────────────────────────────────
+
+/// Copies `sources` (seeded from `seed`) into `/dest`, which already holds
+/// `existing`, under Rename, on a destination (like SMB) that reserves no
+/// placeholder, where another writer takes the ` (1)` name the pick chose the
+/// moment our landing rename arrives for it.
+async fn rename_pick_whose_name_is_taken_at_landing(
+    engine: &TestOperations,
+    seed: &[(&str, &[u8])],
+    sources: &[&str],
+    existing: &[&str],
+    taken: &'static str,
+) -> (Arc<TakenAtLanding>, WriteOperationError) {
+    let source = Arc::new(InMemoryVolume::new("Source"));
+    for (path, bytes) in seed {
+        let path = Path::new(path);
+        if let Some(parent) = path.parent().filter(|p| *p != Path::new("/")) {
+            source.create_directory_all(parent).await.expect("seeding the source");
+        }
+        source.create_file(path, bytes).await.expect("seeding the source");
+    }
+    let dest = Arc::new(TakenAtLanding {
+        inner: InMemoryVolume::new("Dest"),
+        taken,
+    });
+    for path in existing {
+        let path = Path::new(path);
+        dest.inner
+            .create_directory_all(path.parent().unwrap())
+            .await
+            .expect("the destination folder");
+        dest.inner.create_file(path, b"the user's own file").await.unwrap();
+    }
+
+    let sources: Vec<PathBuf> = sources.iter().map(PathBuf::from).collect();
+    let result = copy_volumes_with_progress(
+        Arc::new(CollectorEventSink::new()),
+        "test-op-rename-pick-taken-at-landing",
+        &make_state(engine),
+        source as Arc<dyn Volume>,
+        &sources,
+        Arc::clone(&dest) as Arc<dyn Volume>,
+        Path::new("/dest"),
+        &VolumeCopyConfig {
+            conflict_resolution: ConflictResolution::Rename,
+            ..VolumeCopyConfig::default()
+        },
+    )
+    .await;
+    let Err(failure) = result else {
+        panic!("a copy whose Rename pick met someone else's file at landing must not report success");
+    };
+    (dest, failure.error)
+}
+
+/// ❗ A `Rename` pick deletes nothing it didn't create. On a destination that
+/// reserves no placeholder the pick only saw ` (1)` free; a file someone puts
+/// there before our landing is theirs, and the landing used to delete it as
+/// "in the way" and land ours over it.
+#[tokio::test]
+async fn serial_a_rename_picks_name_taken_at_landing_is_never_deleted() {
+    let engine = TestOperations::new();
+    let (dest, error) = rename_pick_whose_name_is_taken_at_landing(
+        &engine,
+        &[("/photo.jpg", b"SRC-photo.jpg")],
+        &["/photo.jpg"],
+        &["/dest/photo.jpg"],
+        "photo (1).jpg",
+    )
+    .await;
+    assert_theirs_survives(&dest, &error, "photo (1).jpg").await;
+}
+
+/// The same in the concurrent window.
+#[tokio::test]
+async fn concurrent_a_rename_picks_name_taken_at_landing_is_never_deleted() {
+    let engine = TestOperations::new();
+    let (dest, error) = rename_pick_whose_name_is_taken_at_landing(
+        &engine,
+        &[
+            ("/a.jpg", b"SRC-a"),
+            ("/photo.jpg", b"SRC-photo.jpg"),
+            ("/z.jpg", b"SRC-z"),
+        ],
+        &["/a.jpg", "/photo.jpg", "/z.jpg"],
+        &["/dest/photo.jpg"],
+        "photo (1).jpg",
+    )
+    .await;
+    assert_theirs_survives(&dest, &error, "photo (1).jpg").await;
+}
+
+/// The same for a deep merge child the pick renamed.
+#[tokio::test]
+async fn a_merge_childs_rename_pick_taken_at_landing_is_never_deleted() {
+    let engine = TestOperations::new();
+    let (dest, error) = rename_pick_whose_name_is_taken_at_landing(
+        &engine,
+        &[("/album/photo.jpg", b"SRC-photo.jpg")],
+        &["/album"],
+        &["/dest/album/photo.jpg"],
+        "photo (1).jpg",
+    )
+    .await;
+    assert!(
+        matches!(error, WriteOperationError::DestinationExists { .. }),
+        "the copy fails naming the clash, got {error:?}"
+    );
+    assert_eq!(
+        dest.inner
+            .get_metadata(Path::new("/dest/album/photo (1).jpg"))
+            .await
+            .ok()
+            .and_then(|m| m.size),
+        Some(THEIRS.len() as u64),
+        "❗ the other writer's file survives the merge child's landing"
+    );
+}
+
+/// A local destination where someone writes into the ` (1)` placeholder our
+/// `Rename` pick reserved, right before our landing comes for it.
+struct WrittenIntoOurPlaceholder {
+    inner: LocalPosixVolume,
+    root: PathBuf,
+    taken: &'static str,
+}
+
+impl Volume for WrittenIntoOurPlaceholder {
+    forward_volume_methods!(
+        inner => name,
+        root,
+        lane_key,
+        list_directory,
+        get_metadata,
+        exists,
+        is_directory,
+        create_file,
+        create_directory,
+        create_directory_all,
+        delete,
+        get_space_info,
+        local_path,
+        supports_streaming,
+        supports_export,
+        supports_local_fs_access,
+        operations_are_local,
+        max_concurrent_ops,
+        create_directory_errors_on_existing_dir,
+        scan_for_copy,
+        scan_for_copy_batch,
+        scan_for_conflicts,
+        open_read_stream,
+        supports_unknown_length_writes,
+        write_from_stream,
+        write_is_single_shot,
+    );
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn rename<'a>(
+        &'a self,
+        from: &'a Path,
+        to: &'a Path,
+        force: bool,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            if to.file_name().is_some_and(|n| n == self.taken) {
+                std::fs::write(self.root.join(self.taken), THEIRS).unwrap();
+            }
+            self.inner.rename(from, to, force).await
+        })
+    }
+}
+
+/// ❗ Where the pick DID reserve its name (a local destination's empty `O_EXCL`
+/// placeholder), the landing clears only that empty file: one someone wrote
+/// into is theirs.
+#[tokio::test]
+async fn a_rename_placeholder_someone_wrote_into_is_never_cleared() {
+    let engine = TestOperations::new();
+    let source = Arc::new(InMemoryVolume::new("Source"));
+    source
+        .create_file(Path::new("/photo.jpg"), b"SRC-photo.jpg")
+        .await
+        .unwrap();
+    let dest_dir = tempfile::tempdir().expect("tempdir");
+    std::fs::write(dest_dir.path().join("photo.jpg"), b"the user's photo").unwrap();
+    let dest = Arc::new(WrittenIntoOurPlaceholder {
+        inner: LocalPosixVolume::local_folder(
+            "Dest",
+            dest_dir.path().to_path_buf(),
+            crate::host::testing::pane_order_host(),
+        ),
+        root: dest_dir.path().to_path_buf(),
+        taken: "photo (1).jpg",
+    });
+
+    let outcome = copy_volumes_with_progress(
+        Arc::new(CollectorEventSink::new()),
+        "test-op-rename-placeholder-written-into",
+        &make_state(&engine),
+        source as Arc<dyn Volume>,
+        &[PathBuf::from("/photo.jpg")],
+        dest as Arc<dyn Volume>,
+        Path::new("/"),
+        &VolumeCopyConfig {
+            conflict_resolution: ConflictResolution::Rename,
+            ..VolumeCopyConfig::default()
+        },
+    )
+    .await;
+
+    assert!(
+        matches!(&outcome, Err(f) if matches!(f.error, WriteOperationError::DestinationExists { .. })),
+        "the copy fails naming the clash"
+    );
+    assert_eq!(
+        std::fs::read(dest_dir.path().join("photo (1).jpg")).ok().as_deref(),
+        Some(THEIRS),
+        "❗ what they wrote into the name stays"
+    );
+    let leftovers: Vec<String> = std::fs::read_dir(dest_dir.path())
+        .unwrap()
+        .map(|e| e.unwrap().file_name().to_string_lossy().to_string())
+        .filter(|n| n.contains(".cmdr-tmp-"))
+        .collect();
+    assert!(leftovers.is_empty(), "no staging left behind: {leftovers:?}");
+}

@@ -139,9 +139,12 @@ impl ConcurrentCopy<'_> {
                 Some(rc) => {
                     dest_item_path = rc.write_path;
                     replaces = rc.replaces;
-                    // The resolver picked this name: a `Rename` reserved it, an
-                    // Overwrite across types already cleared it.
-                    dest_name_claimed = true;
+                    // ❗ Claimed only when the pick put a placeholder of ours
+                    // there. A pick that reserved nothing (every remote
+                    // backend), or a cross-type Overwrite that moved the
+                    // destination aside, saw a FREE name: what's there at
+                    // landing is someone else's, ❌ never cleared.
+                    dest_name_claimed = rc.reserved_placeholder;
                 }
             }
         }

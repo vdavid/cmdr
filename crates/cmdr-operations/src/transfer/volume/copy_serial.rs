@@ -273,6 +273,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                             ConflictDecision::Proceed {
                                 dest_path: rc.write_path,
                                 replaces: rc.replaces,
+                                dest_name_claimed: rc.reserved_placeholder,
                             }
                         }
                     })
@@ -345,10 +346,9 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                 // `Swap` ⇒ `dest_item_path` is the user's original, which the
                 // write's landing replaces once its staged bytes are whole.
                 let replaces = ctx.replaces.clone();
-                // Whether the driver's conflict resolution PICKED this
-                // destination name (a `Rename`, an Overwrite that cleared it),
-                // which is what the landing needs to tell its own placeholder
-                // from a file nobody answered for.
+                // Whether this destination name holds the placeholder the
+                // driver's `Rename` pick reserved, which is all the landing may
+                // clear there.
                 let landing = if ctx.dest_name_claimed {
                     super::strategy::LandingName::ClaimedByTheCaller
                 } else {

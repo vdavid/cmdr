@@ -364,6 +364,7 @@ async fn async_driver_proceed_with_rewritten_dest_reaches_closure() {
                 Ok(ConflictDecision::Proceed {
                     dest_path: PathBuf::from("/dest/a (1).txt"),
                     replaces: Replaces::Nothing,
+                    dest_name_claimed: false,
                 })
             })
         },
@@ -506,6 +507,7 @@ async fn async_driver_no_conflict_skips_resolver_entirely() {
                 Ok(ConflictDecision::Proceed {
                     dest_path: PathBuf::new(),
                     replaces: Replaces::Nothing,
+                    dest_name_claimed: false,
                 })
             })
         },
@@ -666,6 +668,7 @@ async fn async_driver_skip_counters_zero_when_nothing_skipped() {
                 Ok(ConflictDecision::Proceed {
                     dest_path: PathBuf::from("/never"),
                     replaces: Replaces::Nothing,
+                    dest_name_claimed: false,
                 })
             })
         },

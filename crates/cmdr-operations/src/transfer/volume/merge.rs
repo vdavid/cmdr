@@ -760,10 +760,13 @@ async fn merge_level<'a>(
                     write_dest = write_path;
                     replaces = replace;
                     reserved_placeholder = reserved;
-                    // The resolver picked this name: a `Rename` reserved it with
-                    // a placeholder, an Overwrite across types already cleared
-                    // it. Either way what the landing may find there is ours.
-                    landing = LandingName::ClaimedByTheCaller;
+                    // ❗ Ours to clear only when the pick put a placeholder
+                    // there; one that reserved nothing (every remote backend),
+                    // or a cross-type Overwrite that moved the destination
+                    // aside, saw a FREE name, and keeps the free landing.
+                    if reserved {
+                        landing = LandingName::ClaimedByTheCaller;
+                    }
                 }
             }
         }

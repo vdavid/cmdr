@@ -620,6 +620,7 @@ pub async fn move_within_same_volume_with_progress(
                                     ConflictDecision::Proceed {
                                         dest_path: orig,
                                         replaces: Replaces::Nothing,
+                                        dest_name_claimed: false,
                                     }
                                 }
                                 None => {
@@ -627,20 +628,16 @@ pub async fn move_within_same_volume_with_progress(
                                     // new name with a zero-byte placeholder
                                     // (`naming.rs`), which `rename(force=false)`
                                     // would refuse. It's this op's own file, so it
-                                    // goes; the rename lands on the freed name.
+                                    // goes, ❗ only while it's still EMPTY: one
+                                    // someone wrote into is theirs, stays, and
+                                    // the no-replace rename refuses it as a clash.
                                     if rc.reserved_placeholder {
-                                        // Cleared here, so not the op's to take back.
-                                        state.claimed_names.release_placeholder(&rc.write_path);
-                                        match volume.delete(&rc.write_path).await {
-                                            Ok(()) | Err(VolumeError::NotFound(_)) => {}
-                                            Err(e) => {
-                                                return Err(map_volume_error(
-                                                    &rc.write_path.display().to_string(),
-                                                    PathRole::Destination,
-                                                    e,
-                                                ));
-                                            }
-                                        }
+                                        super::naming::take_back_reservation(
+                                            &volume,
+                                            &rc.write_path,
+                                            &state.claimed_names,
+                                        )
+                                        .await;
                                     }
                                     // A cross-type Overwrite's aside: the rename
                                     // in the closure answers for it too.
@@ -655,6 +652,7 @@ pub async fn move_within_same_volume_with_progress(
                                     ConflictDecision::Proceed {
                                         dest_path: rc.write_path,
                                         replaces: Replaces::Nothing,
+                                        dest_name_claimed: false,
                                     }
                                 }
                             }

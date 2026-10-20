@@ -1178,17 +1178,24 @@ landing that fails with nothing cleared takes its temp away" below). Pinned by
 `staged_write.rs::a_landing_that_cleared_the_way_and_then_could_not_rename_rescues_the_new_bytes`.
 
 ❗ **And only for a name the CALLER claimed** (`LandingName`). `AlreadyExists` says something is in the way; only the
-caller knows whose it is, because only the caller knows whether a conflict resolution put this write at this name. A
-`Rename` pick reserved its name with a placeholder and a cross-type Overwrite already set its destination aside, so both
-answer `ClaimedByTheCaller` and the delete-then-rename stands. A write nothing resolved answers `ExpectedFree`, and its
-landing REPORTS the clash instead: the file in the way is the user's, under a policy (Skip, an unanswered Stop) that
-never touched it, and our temp is taken away (below). Where each caller's answer comes from: the deep merge from whether
-`resolve_merge_child` decided the child, the two top-level drivers from `TransferContext::dest_name_claimed` and
-`CopyTask::dest_name_claimed`, the one-shot cross-volume file move from "the destination is assumed CLEAR"
-(`move_file.rs`). Pinned by
-`staged_write.rs::{landing_clears_a_claimed_name_that_is_genuinely_in_the_way, landing_onto_a_name_believed_free_leaves_it_alone}`
-and, end to end,
-`volume/merge_case_fold_tests.rs::a_name_that_fills_up_after_the_listing_is_not_cleared_by_the_landing`.
+caller knows whose it is, because only the caller knows whether it put something of its own at this name. ❗ **A name is
+claimed only when a placeholder of ours sits there**: a `Rename` pick that reserved its name with an empty `O_EXCL` file
+(`ResolvedConflict::reserved_placeholder`, local destinations only) answers `ClaimedByTheCaller`, and the landing clears
+that placeholder and nothing else: `clear_the_way` stats the name first and refuses, taking the temp away, unless it's an
+empty regular file (`interrupted_landing::NameHeld::is_an_empty_file`). A pick that reserved nothing (every remote
+backend: SMB, SFTP, WebDAV, MTP, ADB, S3) and a cross-type Overwrite that moved the destination aside both saw a FREE
+name, so they answer `ExpectedFree`: a file someone put there before the landing is theirs, and the landing used to
+delete it as "in the way". A same-volume move's Rename clears its own placeholder the same empty-only way
+(`naming.rs::take_back_reservation`). A write nothing resolved answers `ExpectedFree` too, and its landing REPORTS the
+clash instead: the file in the way is the user's, under a policy (Skip, an unanswered Stop) that never touched it, and
+our temp is taken away (below). Where each caller's answer comes from: the deep merge from whether `resolve_merge_child`
+reserved the child's name, the two top-level drivers from `TransferContext::dest_name_claimed` (set from
+`ConflictDecision::Proceed`) and `CopyTask::dest_name_claimed`, the one-shot cross-volume file move from "the
+destination is assumed CLEAR" (`move_file.rs`). Pinned by
+`staged_write.rs::{landing_clears_a_claimed_name_that_is_genuinely_in_the_way, landing_onto_a_name_believed_free_leaves_it_alone}`,
+end to end by
+`volume/copy_landing_race_tests.rs::{serial_a_rename_picks_name_taken_at_landing_is_never_deleted, concurrent_a_rename_picks_name_taken_at_landing_is_never_deleted, a_merge_childs_rename_pick_taken_at_landing_is_never_deleted, a_rename_placeholder_someone_wrote_into_is_never_cleared}`
+and `volume/merge_case_fold_tests.rs::a_name_that_fills_up_after_the_listing_is_not_cleared_by_the_landing`.
 
 ❗ **A `SingleShot` write has no landing, so the guard travels with the write instead.** `resolve_staging` keeps the
 `LandingName` on the upgrade (`WriteStaging::SingleShot(landing)`), and `StagedWrite::write_mode` turns an
