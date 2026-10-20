@@ -19,6 +19,7 @@ use super::{CachedScanResult, ScanCostFacts, ScanResult};
 use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::ScannedFile;
+use cmdr_operation_log::types::OperationId;
 
 // ============================================================================
 // Scan preview state
@@ -70,7 +71,7 @@ struct PreviewEntry {
     /// second operation naming the same `preview_id` is refused and falls back
     /// to its own walk, because `take_cached_scan_result` REMOVES what it reads
     /// and two claimants would race for one consumable result.
-    claim: Option<String>,
+    claim: Option<OperationId>,
 }
 
 /// How long a settled preview entry lives before the TTL safety net evicts it.
@@ -267,14 +268,14 @@ pub(crate) enum PreviewClaim {
 
 impl ScanPreviews {
     /// Claims `preview_id` for `operation_id`, at most one owner ever.
-    pub(crate) fn claim_preview(&self, preview_id: &str, operation_id: &str) -> PreviewClaim {
+    pub(crate) fn claim_preview(&self, preview_id: &str, operation_id: &OperationId) -> PreviewClaim {
         let mut previews = self.write();
         let Some(entry) = previews.get_mut(preview_id) else {
             return PreviewClaim::Unknown;
         };
         match &entry.claim {
             Some(owner) if owner != operation_id => return PreviewClaim::Refused,
-            _ => entry.claim = Some(operation_id.to_string()),
+            _ => entry.claim = Some(operation_id.clone()),
         }
         match &entry.phase {
             PreviewPhase::InFlight(_) => PreviewClaim::Waiting,
@@ -298,7 +299,7 @@ impl ScanPreviews {
 
     /// The operation that owns `preview_id`, if any. The progress bridge reads it
     /// to decide whether a walk's counts also belong under an operation's id.
-    pub(crate) fn claimed_operation(&self, preview_id: &str) -> Option<String> {
+    pub(crate) fn claimed_operation(&self, preview_id: &str) -> Option<OperationId> {
         self.read().get(preview_id)?.claim.clone()
     }
 

@@ -19,7 +19,7 @@ use super::kept_after_queue_on;
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::testing::{TestDir, wait_until_async};
 use cmdr_fs::volume::{InMemoryVolume, LaneKey, Volume};
-use cmdr_operation_log::types::Initiator;
+use cmdr_operation_log::types::{Initiator, OperationId};
 
 const WAIT: Duration = Duration::from_secs(5);
 
@@ -31,7 +31,7 @@ struct LaneHolder {
 
 impl LaneHolder {
     fn hold(engine: &TestOperations, lane: &LaneKey) -> Self {
-        let id = "holder".to_string();
+        let id = OperationId::from("holder");
         let (release, released) = oneshot::channel::<()>();
         let settle_id = id.clone();
         engine.manager().spawn_managed(
@@ -141,7 +141,7 @@ async fn a_queued_move_whose_sources_partly_left_asks_then_moves_the_rest() {
     let lane = LaneKey::new("lane");
     let mut holder = LaneHolder::hold(&engine, &lane);
     let collector = Arc::new(CollectorEventSink::new());
-    let op_id = start_move(&engine, &collector, &fx, &lane).await;
+    let op_id = OperationId::from(start_move(&engine, &collector, &fx, &lane).await);
     assert_eq!(engine.manager().lifecycle_status(&op_id), Some(LifecycleStatus::Queued));
 
     // The person moves one of the files away while the move waits its turn.
@@ -194,7 +194,7 @@ async fn cancelling_a_queued_move_while_it_asks_ends_it_as_cancelled() {
     let lane = LaneKey::new("lane");
     let mut holder = LaneHolder::hold(&engine, &lane);
     let collector = Arc::new(CollectorEventSink::new());
-    let op_id = start_move(&engine, &collector, &fx, &lane).await;
+    let op_id = OperationId::from(start_move(&engine, &collector, &fx, &lane).await);
 
     std::fs::remove_file(&fx.sources[0]).expect("move a away");
     holder.release();
@@ -229,7 +229,7 @@ async fn a_queued_move_whose_sources_all_left_completes_and_says_why() {
     let lane = LaneKey::new("lane");
     let mut holder = LaneHolder::hold(&engine, &lane);
     let collector = Arc::new(CollectorEventSink::new());
-    let op_id = start_move(&engine, &collector, &fx, &lane).await;
+    let op_id = OperationId::from(start_move(&engine, &collector, &fx, &lane).await);
 
     for source in &fx.sources {
         std::fs::remove_file(source).expect("move it away");
@@ -284,7 +284,7 @@ fn an_answer_to_an_operation_that_is_not_asking_changes_nothing() {
         SourcesGoneAnswerOutcome::NotAsking
     );
     assert_eq!(
-        engine.continue_without_gone_sources("never-registered"),
+        engine.continue_without_gone_sources(&OperationId::from("never-registered")),
         SourcesGoneAnswerOutcome::UnknownOperation
     );
 }
@@ -309,11 +309,11 @@ async fn on_a_volume_only_a_source_that_is_really_missing_counts_as_gone() {
     op.state().note_waited_in_queue();
     let collector = CollectorEventSink::new();
 
-    let op_id = op.id().to_string();
+    let op_id = op.id().clone();
     let check = kept_after_queue_on(
         &volume as &dyn Volume,
         &collector,
-        &op_id,
+        op_id.as_str(),
         WriteOperationType::Copy,
         op.state(),
         &sources,

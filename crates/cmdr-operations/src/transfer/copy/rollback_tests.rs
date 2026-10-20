@@ -36,7 +36,7 @@ fn reverse(
     let tally = rollback_with_progress(
         &mut transaction,
         &*events,
-        _guard.id(),
+        _guard.id().as_str(),
         &WindDown::of(&state),
         WriteOperationType::Copy,
         files,

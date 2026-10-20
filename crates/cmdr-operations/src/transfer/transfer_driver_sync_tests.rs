@@ -25,6 +25,7 @@ use super::test_support::{CallLog, copy_config, make_state, paths};
 use super::{PostLoopIntent, TransferContext, TransferOutcome, drive_transfer_serial_sync};
 use crate::testing::TestOperations;
 use cmdr_fs::testing::wait_until_async;
+use cmdr_operation_log::types::OperationId;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -473,10 +474,12 @@ fn sync_driver_status_cache_matches_emitted_progress() {
     // Every progress event the driver emits must come paired with an
     // `update_operation_status` call so query APIs (the menu-bar overlay,
     // the global progress list) see the same numbers as the dialog.
-    let op_id = "sync-status-cache".to_string();
+    let op_id = OperationId::from("sync-status-cache");
     let state = make_state(&engine);
-    engine.register_state(&op_id, Arc::clone(&state));
-    engine.status().register(&op_id, WriteOperationType::Copy, vec![]);
+    engine.register_state(op_id.as_str(), Arc::clone(&state));
+    engine
+        .status()
+        .register(op_id.as_str(), WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
     let mut pre_skip = HashSet::new();
@@ -484,7 +487,7 @@ fn sync_driver_status_cache_matches_emitted_progress() {
     let outcome = drive_transfer_serial_sync(
         &sink,
         &state,
-        &op_id,
+        op_id.as_str(),
         &paths(&["/a", "/b"]),
         2,
         200,
@@ -603,10 +606,12 @@ async fn sync_driver_parks_while_paused_then_resumes_to_completion() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn sync_driver_cancel_while_paused_unblocks_and_cancels() {
     let engine = TestOperations::new();
-    let op_id = "sync-pause-cancel".to_string();
+    let op_id = OperationId::from("sync-pause-cancel");
     let state = make_state(&engine);
-    engine.register_state(&op_id, Arc::clone(&state));
-    engine.status().register(&op_id, WriteOperationType::Copy, vec![]);
+    engine.register_state(op_id.as_str(), Arc::clone(&state));
+    engine
+        .status()
+        .register(op_id.as_str(), WriteOperationType::Copy, vec![]);
 
     let sources = paths(&["/a", "/b", "/c", "/d"]);
     let transferred = Arc::new(AtomicUsize::new(0));
@@ -622,7 +627,7 @@ async fn sync_driver_cancel_while_paused_unblocks_and_cancels() {
         drive_transfer_serial_sync(
             &sink,
             &state_drv,
-            &op,
+            op.as_str(),
             &sources,
             4,
             0,

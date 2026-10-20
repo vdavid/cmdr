@@ -30,7 +30,7 @@ use cmdr_archive::mutator::Changeset;
 use cmdr_fs::log_error::LogError;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::{RenameWork, Volume};
-use cmdr_operation_log::types::{Initiator, OpKind};
+use cmdr_operation_log::types::{Initiator, OpKind, OperationId};
 
 mod bulk;
 mod validity;
@@ -230,7 +230,15 @@ async fn rename_managed_inner(
     // The op's own scope on the engine, which journals it: an instant op has no
     // state to carry one.
     let scope = engine.op_scope();
-    super::journal::open_volume_op(&scope, &op_id, OpKind::Rename, initiator, &journal_volume_id, None, 1);
+    super::journal::open_volume_op(
+        &scope,
+        op_id.as_str(),
+        OpKind::Rename,
+        initiator,
+        &journal_volume_id,
+        None,
+        1,
+    );
     let journal_snapshot = Some((from.clone(), to.clone(), local_meta, volume_is_dir));
 
     let result = engine
@@ -523,7 +531,7 @@ fn rename_descriptor(from: &Path, to: &Path, volume_id: &str) -> OperationDescri
         vec![volume_id.to_string()]
     };
     OperationDescriptor {
-        operation_id: cmdr_operation_log::new_operation_id(),
+        operation_id: OperationId::from(cmdr_operation_log::new_operation_id()),
         operation_type: WriteOperationType::Rename,
         lanes: vec![],
         volume_ids,

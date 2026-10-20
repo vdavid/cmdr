@@ -28,7 +28,7 @@ use super::network_transfer_test_support::{budget, read_all, run_copy, sha256};
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::operations_host::app_engine;
 use cmdr_fs::ignore_poison::IgnorePoison;
-use cmdr_operation_log::types::Initiator;
+use cmdr_operation_log::types::{Initiator, OperationId};
 use cmdr_operations::testing::CollectorEventSink;
 use cmdr_operations::{VolumeCopyConfig, WriteOperationType};
 
@@ -58,7 +58,7 @@ fn at(volume: &S3Volume, key: &str) -> PathBuf {
 
 /// Starts `from` → `new_name` in its own folder through the rename route,
 /// returning the sink and the operation id.
-async fn start(volume_id: &str, from: PathBuf, new_name: &str) -> (Arc<CollectorEventSink>, String) {
+async fn start(volume_id: &str, from: PathBuf, new_name: &str) -> (Arc<CollectorEventSink>, OperationId) {
     let events = Arc::new(CollectorEventSink::new());
     let parent = from.parent().expect("a parent").display().to_string();
     let started = app_engine()
@@ -74,7 +74,7 @@ async fn start(volume_id: &str, from: PathBuf, new_name: &str) -> (Arc<Collector
         .await
         .expect("the rename starts");
     assert_eq!(started.operation_type, WriteOperationType::Move);
-    (events, started.operation_id)
+    (events, OperationId::from(started.operation_id))
 }
 
 async fn settle(events: &CollectorEventSink, what: &str) {

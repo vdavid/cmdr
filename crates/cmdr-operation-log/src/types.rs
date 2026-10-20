@@ -280,6 +280,15 @@ impl From<&str> for OperationId {
     }
 }
 
+/// Lets a map keyed by `OperationId` answer a lookup by the `&str` a wire row
+/// or a progress path carries, without minting an id to ask. Sound because the
+/// id hashes and compares exactly as its text does.
+impl std::borrow::Borrow<str> for OperationId {
+    fn borrow(&self) -> &str {
+        &self.0
+    }
+}
+
 impl std::fmt::Display for OperationId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.0)

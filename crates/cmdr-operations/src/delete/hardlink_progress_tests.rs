@@ -51,7 +51,7 @@ fn delete_hardlinked_files_does_not_overshoot_progress() {
     let sources = vec![dir.to_path_buf()];
     let config = WriteOperationConfig::default();
 
-    let result = delete_files_with_progress_inner(&sink, op.id(), op.state(), &sources, &config);
+    let result = delete_files_with_progress_inner(&sink, op.id().as_str(), op.state(), &sources, &config);
 
     assert!(result.is_ok(), "delete must succeed; got {result:?}");
 

@@ -19,7 +19,7 @@ use super::types::{WriteOperationConfig, WriteOperationType};
 
 use crate::testing::{TestOperationLog, TestOperations};
 use cmdr_operation_log::store::{open_read_connection, operation_log_db_path, read_operation, read_operation_items};
-use cmdr_operation_log::types::{EntryType, ExecutionStatus, Initiator, OpKind, RollbackState, RowRole};
+use cmdr_operation_log::types::{EntryType, ExecutionStatus, Initiator, OpKind, OperationId, RollbackState, RowRole};
 use cmdr_operation_log::writer::OperationLogWriter;
 
 /// An engine journaling into a fresh temp-DB log, and the log (kept alive by
@@ -154,7 +154,9 @@ fn local_copy_header_carries_planned_count_items_done_and_dest_volume() {
     let events = CollectorEventSink::new();
     let cfg = WriteOperationConfig::default();
     copy_files_with_progress_inner(&events, op_id, &st, std::slice::from_ref(&src), &dst, &cfg).expect("copy");
-    let status = engine.get_operation_status(op_id).expect("status present after copy");
+    let status = engine
+        .get_operation_status(&OperationId::from(op_id))
+        .expect("status present after copy");
     journal::finalize_op(st.scope(), OpKind::Copy, ExecutionStatus::Done);
     engine.status().unregister(op_id);
 

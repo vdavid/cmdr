@@ -520,7 +520,7 @@ async fn cancel_reaches_a_direct_write_held_by_a_gated_destination() {
     let engine = TestOperations::new();
     let run = GatedRun::start(&engine, true, AfterFirstChunk::HoldThenReport).await;
     run.wait_at_gate().await;
-    engine.cancel_operation(&run.operation_id);
+    engine.cancel_operation(&OperationId::from(run.operation_id.as_str()));
     run.open_gate();
     wait_for_terminal(&run.events).await;
 
@@ -561,10 +561,10 @@ async fn an_upload_failure_while_paused_reports_without_waiting_for_resume() {
     let engine = TestOperations::new();
     let run = GatedRun::start(&engine, false, AfterFirstChunk::HoldThenFail).await;
     run.wait_at_gate().await;
-    let _ = engine.pause_operation(&run.operation_id);
+    let _ = engine.pause_operation(&OperationId::from(run.operation_id.as_str()));
     run.open_gate();
     wait_for_terminal(&run.events).await;
-    let _ = engine.resume_operation(&run.operation_id);
+    let _ = engine.resume_operation(&OperationId::from(run.operation_id.as_str()));
 
     assert_eq!(
         run.events.errors.lock_ignore_poison().len(),
@@ -616,7 +616,7 @@ async fn cancel_reaches_a_producer_waiting_on_a_hung_remote_source() {
         reading.load(Ordering::SeqCst)
     })
     .await;
-    engine.cancel_operation(&start.operation_id);
+    engine.cancel_operation(&OperationId::from(start.operation_id.as_str()));
     wait_for_terminal(&events).await;
 
     assert_eq!(events.cancelled.lock_ignore_poison().len(), 1, "the op ends cancelled");

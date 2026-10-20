@@ -48,6 +48,7 @@ use super::types::{
     WriteLockedSourcesEvent, WriteOperationType,
 };
 use super::validation::is_real_directory;
+use cmdr_operation_log::types::OperationId;
 
 /// How many Locked items the question names. The count beside it is the whole
 /// truth; the names only help the person recognize them.
@@ -56,7 +57,11 @@ const LOCKED_SAMPLE_LEN: usize = 5;
 impl Operations {
     /// Resumes a move parked on "these items are Locked" with the person's
     /// answer. Cancelling is the ordinary `cancel_operation`.
-    pub fn answer_locked_sources(&self, operation_id: &str, answer: LockedSourcesAnswer) -> LockedSourcesAnswerOutcome {
+    pub fn answer_locked_sources(
+        &self,
+        operation_id: &OperationId,
+        answer: LockedSourcesAnswer,
+    ) -> LockedSourcesAnswerOutcome {
         let Some(state) = self.registry().get(operation_id) else {
             log::info!(target: "locked_sources", "answer for op={operation_id}: no such operation");
             return LockedSourcesAnswerOutcome::UnknownOperation;
@@ -72,7 +77,7 @@ impl Operations {
 
     /// The Locked-items question `operation_id` is parked on, if any. For a
     /// surface that arrives after the broadcast.
-    pub fn pending_locked_sources(&self, operation_id: &str) -> Option<WriteLockedSourcesEvent> {
+    pub fn pending_locked_sources(&self, operation_id: &OperationId) -> Option<WriteLockedSourcesEvent> {
         self.registry().get(operation_id)?.locked_sources.pending()
     }
 }

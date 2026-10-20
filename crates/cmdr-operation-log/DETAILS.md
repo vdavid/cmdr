@@ -900,8 +900,9 @@ caller. By module:
   the IPC commands, the MCP tools, the dump tool, and the planner's app-side cells use.
 - **`query`**: the paged history read and indexed name search behind the IPC commands and MCP tools.
 - **`writer`** and **`capture`**: the writer thread and the journal the write engine records through.
-- **`types`**: the typed classification tokens, which cross IPC, and `OperationId` (with its `as_str`), which the
-  journal API takes: `OpenOperation`, the `OperationJournal` seam, and `OpJournal::op_id`.
+- **`types`**: the typed classification tokens, which cross IPC, and `OperationId` (with its `as_str`, and a
+  `Borrow<str>` so an id-keyed map answers a wire row's text), which the journal API and the write engine's public verbs
+  take: `OpenOperation`, the `OperationJournal` seam, and `OpJournal::op_id`.
 - **`rollback`**: the planner (`check_rollbackable`, `rollback_operation`, `execute_rollback`, `undo_order`, the
   reconcile), its `RollbackRunner` / `VolumeLookup` seams, and the fail-safe verdicts the engine's in-flight reversals
   share (`verify_snapshot`, `SnapshotVerdict`, `ItemResult`, `SkipTally`).

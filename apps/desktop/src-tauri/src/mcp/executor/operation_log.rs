@@ -21,7 +21,7 @@ use tauri::{AppHandle, Runtime};
 use super::{ToolError, ToolResult};
 use cmdr_operation_log::query::{self, NameFilter, NameMatch, OperationSearchFilters};
 use cmdr_operation_log::store::{OperationLogStoreError, open_read_connection, operation_log_db_path};
-use cmdr_operation_log::types::{ExecutionStatus, Initiator, OpKind, RollbackState};
+use cmdr_operation_log::types::{ExecutionStatus, Initiator, OpKind, OperationId, RollbackState};
 
 /// Default op page for `operations_list`.
 const DEFAULT_LIST_LIMIT: u32 = 50;
@@ -126,9 +126,11 @@ pub async fn execute_operations_rollback<R: Runtime>(_app: &AppHandle<R>, params
         .host()
         .operation_sink()
         .ok_or_else(|| ToolError::internal("the app isn't wired up to report operation progress yet"))?;
-    let outcome = tokio::task::spawn_blocking(move || engine.dispatch_rollback(&op_id, Initiator::AiClient, events))
-        .await
-        .map_err(|e| ToolError::internal(e.to_string()))?;
+    let outcome = tokio::task::spawn_blocking(move || {
+        engine.dispatch_rollback(&OperationId::from(op_id), Initiator::AiClient, events)
+    })
+    .await
+    .map_err(|e| ToolError::internal(e.to_string()))?;
 
     match outcome {
         Ok(dispatch) => Ok(json!({

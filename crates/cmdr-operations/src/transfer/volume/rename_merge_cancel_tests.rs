@@ -12,6 +12,7 @@ use super::rename_merge_test_support::{exists, make_state, mkdir, write_file};
 use crate::Operations;
 use crate::event_sinks::CollectorEventSink;
 use crate::testing::TestOperations;
+use cmdr_operation_log::types::OperationId;
 
 use crate::types::{ConflictResolution, VolumeCopyConfig, WriteOperationError};
 use cmdr_fs::entry::FileEntry;
@@ -35,7 +36,7 @@ use tempfile::TempDir;
 struct CancelOnFirstRenameVolume {
     inner: Arc<LocalPosixVolume>,
     engine: Operations,
-    operation_id: String,
+    operation_id: OperationId,
     renames: AtomicUsize,
 }
 
@@ -124,7 +125,7 @@ async fn rename_merge_cancel_keeps_moved_children_and_preserves_source() {
             root.to_path_buf(),
             crate::host::testing::pane_order_host(),
         )),
-        operation_id: op.id().to_string(),
+        operation_id: op.id().clone(),
         renames: AtomicUsize::new(0),
     });
 
@@ -137,7 +138,7 @@ async fn rename_merge_cancel_keeps_moved_children_and_preserves_source() {
 
     let result = move_within_same_volume_with_progress(
         events.clone(),
-        op.id(),
+        op.id().as_str(),
         op.state(),
         Arc::clone(&volume),
         &[PathBuf::from("src/album")],

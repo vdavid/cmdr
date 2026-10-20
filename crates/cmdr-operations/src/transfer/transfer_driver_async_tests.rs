@@ -35,6 +35,7 @@ use super::{
 };
 use crate::testing::TestOperations;
 use cmdr_fs::testing::wait_until_async;
+use cmdr_operation_log::types::OperationId;
 use std::collections::HashSet;
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -684,16 +685,18 @@ async fn async_driver_skip_counters_zero_when_nothing_skipped() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn async_driver_status_cache_matches_emitted_progress() {
     let engine = TestOperations::new();
-    let op_id = "async-status-cache".to_string();
+    let op_id = OperationId::from("async-status-cache");
     let state = make_state(&engine);
-    engine.register_state(&op_id, Arc::clone(&state));
-    engine.status().register(&op_id, WriteOperationType::Copy, vec![]);
+    engine.register_state(op_id.as_str(), Arc::clone(&state));
+    engine
+        .status()
+        .register(op_id.as_str(), WriteOperationType::Copy, vec![]);
     let sink = CollectorEventSink::new();
 
     let outcome = drive_transfer_serial_async(
         &sink,
         &state,
-        &op_id,
+        op_id.as_str(),
         &paths(&["/a"]),
         Path::new("/dest"),
         1,
@@ -1133,10 +1136,12 @@ async fn async_driver_parks_while_paused_then_resumes_to_completion() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn async_driver_cancel_while_paused_unblocks_and_cancels() {
     let engine = TestOperations::new();
-    let op_id = "async-pause-cancel".to_string();
+    let op_id = OperationId::from("async-pause-cancel");
     let state = make_state(&engine);
-    engine.register_state(&op_id, Arc::clone(&state));
-    engine.status().register(&op_id, WriteOperationType::Copy, vec![]);
+    engine.register_state(op_id.as_str(), Arc::clone(&state));
+    engine
+        .status()
+        .register(op_id.as_str(), WriteOperationType::Copy, vec![]);
 
     let sources = paths(&["/a", "/b", "/c", "/d"]);
     let transferred = Arc::new(AtomicUsize::new(0));
@@ -1157,7 +1162,7 @@ async fn async_driver_cancel_while_paused_unblocks_and_cancels() {
         drive_transfer_serial_async(
             &sink,
             &state_drv,
-            &op,
+            op.as_str(),
             &srcs,
             Path::new("/dest"),
             4,

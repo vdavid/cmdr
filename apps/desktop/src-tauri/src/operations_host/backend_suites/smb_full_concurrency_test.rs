@@ -29,6 +29,7 @@ use cmdr_smb::volume::*;
 use std::sync::atomic::AtomicBool;
 
 use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_operation_log::types::OperationId;
 use cmdr_operations::Operations;
 use cmdr_operations::testing::{CollectorEventSink, TestOperations, WriteOperationState, copy_volumes_with_progress};
 use cmdr_operations::{
@@ -134,7 +135,7 @@ fn expected_content(index: usize, len: usize) -> Vec<u8> {
 async fn await_copy_or_probe_dump<T>(
     engine: &Operations,
     copy: &mut tokio::task::JoinHandle<T>,
-    operation_id: &str,
+    operation_id: &OperationId,
     deadline: Duration,
 ) -> Result<T, String> {
     match tokio::time::timeout(deadline, &mut *copy).await {
@@ -353,7 +354,7 @@ async fn smb_integration_many_files_at_full_concurrency_land_intact() {
         async move {
             copy_volumes_with_progress(
                 events,
-                &operation_id,
+                operation_id.as_str(),
                 &state,
                 source_vol,
                 &source_paths,
@@ -543,7 +544,7 @@ async fn smb_integration_a_wedged_copy_is_caught_and_names_its_phase() {
         async move {
             copy_volumes_with_progress(
                 events,
-                &operation_id,
+                operation_id.as_str(),
                 &state,
                 source_vol,
                 &source_paths,
@@ -570,7 +571,7 @@ async fn smb_integration_a_wedged_copy_is_caught_and_names_its_phase() {
     // and what every in-flight task was doing. `parked(pause)` is this wedge's
     // answer; a silent server's would be `streaming` or `opening-source`.
     assert!(
-        dump.contains(&operation_id),
+        dump.contains(operation_id.as_str()),
         "the dump must name the operation:\n{dump}"
     );
     assert!(

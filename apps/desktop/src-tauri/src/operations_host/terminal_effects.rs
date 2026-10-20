@@ -14,6 +14,7 @@
 
 use super::analytics::emit_completion_analytics;
 use crate::mcp::terminal_ops::{self, TerminalStatus};
+use cmdr_operation_log::types::OperationId;
 use cmdr_operations::{
     Operations, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationType, WriteSettledEvent,
 };
@@ -76,7 +77,11 @@ impl TerminalEffects for AppTerminalEffects<'_> {
         // The engine's `retain_failure` itself decides what counts as a failure
         // and emits nothing while the op's record is live.
         if let Some(operations) = self.operations {
-            operations.retain_failure(&event.operation_id, event.operation_type, &event.error);
+            operations.retain_failure(
+                &OperationId::from(event.operation_id.as_str()),
+                event.operation_type,
+                &event.error,
+            );
         }
     }
 

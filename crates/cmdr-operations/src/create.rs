@@ -22,6 +22,8 @@
 
 use std::path::{Path, PathBuf};
 
+use cmdr_operation_log::types::OperationId;
+
 use super::Operations;
 use super::archive_edit::{self, ArchiveEditRequest};
 use super::host::{EngineHost, InstantMutationFact, InstantOp, InstantTarget};
@@ -148,7 +150,7 @@ async fn create_directory_managed_inner(
     let scope = engine.op_scope();
     super::journal::open_volume_op(
         &scope,
-        &op_id,
+        op_id.as_str(),
         cmdr_operation_log::types::OpKind::CreateFolder,
         initiator,
         &journal_volume_id,
@@ -224,7 +226,7 @@ async fn create_file_managed_inner(
     let scope = engine.op_scope();
     super::journal::open_volume_op(
         &scope,
-        &op_id,
+        op_id.as_str(),
         cmdr_operation_log::types::OpKind::CreateFile,
         initiator,
         &journal_volume_id,
@@ -354,7 +356,7 @@ pub(super) fn instant_descriptor(
         Some(id) => vec![id.to_string()],
     };
     OperationDescriptor {
-        operation_id: cmdr_operation_log::new_operation_id(),
+        operation_id: OperationId::from(cmdr_operation_log::new_operation_id()),
         operation_type: op_type,
         lanes: vec![],
         volume_ids,

@@ -15,6 +15,7 @@ use serde_json::{Value, json};
 
 use super::{ToolError, ToolResult};
 use crate::pluralize::pluralize;
+use cmdr_operation_log::types::OperationId;
 use cmdr_operations::{
     LifecycleStatus, LockedSourcesAnswer, LockedSourcesAnswerOutcome, OperationSnapshot, Operations, PauseAllOutcome,
     PauseOutcome, SourcesGoneAnswerOutcome,
@@ -98,7 +99,7 @@ pub async fn execute_queue(params: &Value) -> ToolResult {
 /// nothing changed and nothing is remembered: a `Queued` operation is the
 /// everyday case (pause is documented to leave one alone), and an agent told
 /// "OK: Paused …" for one goes on to act on a queue that never stopped.
-fn pause_reply(operation_id: &str, outcome: PauseOutcome) -> ToolResult {
+fn pause_reply(operation_id: &OperationId, outcome: PauseOutcome) -> ToolResult {
     match outcome {
         PauseOutcome::Applied => Ok(json!(format!("OK: Paused operation {operation_id}."))),
         PauseOutcome::AlreadyInState => Ok(json!(format!("OK: Operation {operation_id} was already paused."))),
@@ -206,7 +207,7 @@ fn it_them(count: usize) -> &'static str {
 /// The mirror of [`pause_reply`] for resume. An operation parked mid-scan
 /// resumes exactly like one parked mid-write; anything that isn't parked has
 /// nothing to resume.
-fn resume_reply(operation_id: &str, outcome: PauseOutcome) -> ToolResult {
+fn resume_reply(operation_id: &OperationId, outcome: PauseOutcome) -> ToolResult {
     match outcome {
         PauseOutcome::Applied => Ok(json!(format!("OK: Resumed operation {operation_id}."))),
         PauseOutcome::AlreadyInState => Ok(json!(format!("OK: Operation {operation_id} was already running."))),
@@ -218,7 +219,7 @@ fn resume_reply(operation_id: &str, outcome: PauseOutcome) -> ToolResult {
 
 /// The agent-facing answer to "carry on without the sources that left". Only the
 /// answer that reached the operation earns an `OK`.
-fn continue_reply(operation_id: &str, outcome: SourcesGoneAnswerOutcome) -> ToolResult {
+fn continue_reply(operation_id: &OperationId, outcome: SourcesGoneAnswerOutcome) -> ToolResult {
     match outcome {
         SourcesGoneAnswerOutcome::Continued => Ok(json!(format!(
             "OK: Operation {operation_id} is carrying on with the sources that are still there."
@@ -234,7 +235,11 @@ fn continue_reply(operation_id: &str, outcome: SourcesGoneAnswerOutcome) -> Tool
 
 /// The agent-facing answer to "these items are Locked: move them anyway, or skip
 /// them?". Only the answer that reached the operation earns an `OK`.
-fn locked_reply(operation_id: &str, answer: LockedSourcesAnswer, outcome: LockedSourcesAnswerOutcome) -> ToolResult {
+fn locked_reply(
+    operation_id: &OperationId,
+    answer: LockedSourcesAnswer,
+    outcome: LockedSourcesAnswerOutcome,
+) -> ToolResult {
     match outcome {
         LockedSourcesAnswerOutcome::Answered => Ok(json!(match answer {
             LockedSourcesAnswer::MoveAnyway => format!(
@@ -262,9 +267,9 @@ fn execute_cancel(params: &Value) -> ToolResult {
     // batch rollback backend), so combining the two is an honest error, not a
     // silent partial.
     if let Some(ids_value) = params.get("operationIds") {
-        let ids: Vec<String> = ids_value
+        let ids: Vec<OperationId> = ids_value
             .as_array()
-            .map(|arr| arr.iter().filter_map(|v| v.as_str().map(str::to_string)).collect())
+            .map(|arr| arr.iter().filter_map(|v| v.as_str().map(OperationId::from)).collect())
             .unwrap_or_default();
         if ids.is_empty() {
             return Err(ToolError::invalid_params(
@@ -302,11 +307,11 @@ fn execute_cancel(params: &Value) -> ToolResult {
     }
 }
 
-fn require_operation_id(params: &Value) -> Result<String, ToolError> {
+fn require_operation_id(params: &Value) -> Result<OperationId, ToolError> {
     params
         .get("operationId")
         .and_then(|v| v.as_str())
-        .map(str::to_string)
+        .map(OperationId::from)
         .ok_or_else(|| ToolError::invalid_params("This action requires an 'operationId' parameter"))
 }
 
@@ -314,9 +319,9 @@ fn require_operation_id(params: &Value) -> Result<String, ToolError> {
 /// instead of a silent no-op (the backend treats an unknown id as a no-op).
 /// Benign race: an op that settles between this check and the call would have
 /// been a no-op anyway.
-fn require_operation_exists(operation_id: &str) -> Result<(), ToolError> {
+fn require_operation_exists(operation_id: &OperationId) -> Result<(), ToolError> {
     let operations = engine().map(Operations::list_operations).unwrap_or_default();
-    if is_controllable(&operations, operation_id) {
+    if is_controllable(&operations, operation_id.as_str()) {
         Ok(())
     } else {
         Err(ToolError::invalid_params(format!(
@@ -363,19 +368,20 @@ mod tests {
     /// A retained failure parked in the app's engine (the one the `queue` tool asks,
     /// which every app-side cell shares), dropped again on `Drop` so a failing
     /// assertion can't leave it behind for a sibling test.
-    struct RetainedFailureGuard(String);
+    struct RetainedFailureGuard(OperationId);
 
     impl RetainedFailureGuard {
         fn record(operation_id: &str) -> Self {
+            let operation_id = OperationId::from(operation_id);
             app_engine().retain_failure(
-                operation_id,
+                &operation_id,
                 WriteOperationType::Copy,
                 &WriteOperationError::IoError {
                     path: "/Users/me/photos/a.raw".to_string(),
                     message: "disk went away".to_string(),
                 },
             );
-            Self(operation_id.to_string())
+            Self(operation_id)
         }
     }
 
@@ -392,7 +398,7 @@ mod tests {
         let fixture = QueuedOperationFixture::park_on(app_engine(), "mcp-queue-continue");
         let result = execute_queue(&json!({
             "action": "continue_without_gone",
-            "operationId": fixture.queued_id(),
+            "operationId": fixture.queued_id().as_str(),
         }))
         .await;
         assert!(result.is_err(), "nothing was asked, so nothing carried on: {result:?}");
@@ -405,7 +411,7 @@ mod tests {
         for action in ["move_locked", "skip_locked"] {
             let result = execute_queue(&json!({
                 "action": action,
-                "operationId": fixture.queued_id(),
+                "operationId": fixture.queued_id().as_str(),
             }))
             .await;
             assert!(result.is_err(), "{action}: nothing was asked: {result:?}");
@@ -439,7 +445,7 @@ mod tests {
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn pausing_a_queued_operation_is_never_reported_as_paused() {
         let fixture = QueuedOperationFixture::park_on(app_engine(), "mcp-queue-pause");
-        let result = execute_queue(&json!({ "action": "pause", "operationId": fixture.queued_id() })).await;
+        let result = execute_queue(&json!({ "action": "pause", "operationId": fixture.queued_id().as_str() })).await;
 
         assert!(
             result.is_err(),
@@ -458,12 +464,12 @@ mod tests {
             (PauseOutcome::NotApplicable, false),
         ] {
             assert_eq!(
-                pause_reply("op-1", outcome).is_ok(),
+                pause_reply(&OperationId::from("op-1"), outcome).is_ok(),
                 expected_ok,
                 "pause reply for {outcome:?}"
             );
             assert_eq!(
-                resume_reply("op-1", outcome).is_ok(),
+                resume_reply(&OperationId::from("op-1"), outcome).is_ok(),
                 expected_ok,
                 "resume reply for {outcome:?}"
             );
@@ -475,7 +481,7 @@ mod tests {
     /// hedged version told users a pause was coming that never arrived.
     #[test]
     fn a_pause_that_happened_says_so_without_hedging() {
-        let reply = pause_reply("op-1", PauseOutcome::Applied).expect("an applied pause is an OK");
+        let reply = pause_reply(&OperationId::from("op-1"), PauseOutcome::Applied).expect("an applied pause is an OK");
         let text = reply.as_str().expect("the reply is a string");
         assert_eq!(text, "OK: Paused operation op-1.");
     }
@@ -589,6 +595,9 @@ mod tests {
             app_engine().list_operations().iter().any(|op| op.operation_id == id),
             "the retained failure should be on the snapshot"
         );
-        assert!(require_operation_exists(&id).is_err(), "the guard must refuse it");
+        assert!(
+            require_operation_exists(&OperationId::from(id.as_str())).is_err(),
+            "the guard must refuse it"
+        );
     }
 }

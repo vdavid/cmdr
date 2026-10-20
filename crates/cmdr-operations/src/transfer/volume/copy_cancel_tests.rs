@@ -79,7 +79,7 @@ async fn cancel_reaches_a_driver_parked_on_its_in_flight_tasks() {
 
     let copy = copy_volumes_with_progress(
         events.clone(),
-        op.id(),
+        op.id().as_str(),
         op.state(),
         Arc::clone(&fx.source),
         &sources,
@@ -129,7 +129,7 @@ async fn rollback_reaches_a_parked_driver_and_undoes_what_landed() {
 
     let copy = copy_volumes_with_progress(
         events.clone(),
-        op.id(),
+        op.id().as_str(),
         op.state(),
         Arc::clone(&fx.source),
         &sources,
@@ -189,7 +189,7 @@ async fn a_task_that_never_winds_down_is_abandoned_at_the_deadline() {
 
     let copy = copy_volumes_with_progress(
         events.clone(),
-        op.id(),
+        op.id().as_str(),
         op.state(),
         Arc::clone(&fx.source),
         &sources,
@@ -265,7 +265,7 @@ async fn an_abort_shortens_the_drain_window_a_cancel_already_armed() {
 
     let copy = copy_volumes_with_progress(
         events.clone(),
-        op.id(),
+        op.id().as_str(),
         op.state(),
         Arc::clone(&fx.source),
         &sources,
@@ -361,7 +361,7 @@ async fn refusing_a_conflict_prompt_mid_copy_sweeps_the_partials_and_reports_can
     let events = Arc::new({
         let dest_inner = Arc::clone(&fx.dest_inner);
         let dest_at_prompt = Arc::clone(&dest_at_prompt);
-        ConflictResponderSink::cancelling(&engine, op.state(), op.id()).on_prompt(move || {
+        ConflictResponderSink::cancelling(&engine, op.state(), op.id().as_str()).on_prompt(move || {
             // The in-memory volume answers without awaiting anything.
             let names = dest_inner
                 .list_directory(Path::new("/"), None)
@@ -377,7 +377,7 @@ async fn refusing_a_conflict_prompt_mid_copy_sweeps_the_partials_and_reports_can
         RETURN_WITHIN,
         copy_volumes_with_progress(
             events.clone(),
-            op.id(),
+            op.id().as_str(),
             op.state(),
             Arc::clone(&fx.source),
             &sources,
@@ -463,7 +463,7 @@ async fn rollback_undoes_what_an_abandoned_folder_task_already_landed() {
 
     let copy = copy_volumes_with_progress(
         events.clone(),
-        op.id(),
+        op.id().as_str(),
         op.state(),
         Arc::clone(&fx.source),
         &sources,

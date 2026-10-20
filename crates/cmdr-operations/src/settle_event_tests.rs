@@ -17,7 +17,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use cmdr_operation_log::store::{open_read_connection, read_operation};
-use cmdr_operation_log::types::{ExecutionStatus, RollbackState};
+use cmdr_operation_log::types::{ExecutionStatus, OperationId, RollbackState};
 use tokio::sync::oneshot;
 
 use super::event_sinks::{CollectorEventSink, OperationEventSink};
@@ -326,7 +326,7 @@ fn recording_pair(
         log.lock_ignore_poison().push(Seen {
             moment,
             journal,
-            record_live: manager.lifecycle_status(op_id).is_some(),
+            record_live: manager.lifecycle_status(&OperationId::from(op_id)).is_some(),
             lane_held: manager.lane_use_snapshot().contains_key(&lane),
         });
     });
@@ -379,7 +379,7 @@ async fn a_completed_op_emits_complete_then_finalizes_then_frees_then_settles() 
     let lane = "settle-order-ok".to_string();
     let (sink, collector, seen) = recording_pair(&engine, journal.db().to_path_buf(), lane.clone());
 
-    let op_id = start_copy(&engine, sink, dir.join("a.txt"), &dir.join("dst"), &lane).await;
+    let op_id = OperationId::from(start_copy(&engine, sink, dir.join("a.txt"), &dir.join("dst"), &lane).await);
     wait_settled(&collector).await;
 
     assert_eq!(
@@ -404,7 +404,10 @@ async fn a_completed_op_emits_complete_then_finalizes_then_frees_then_settles() 
         1,
         "write-settled fires once"
     );
-    assert_eq!(execution_status(journal.db(), &op_id), Some(ExecutionStatus::Done));
+    assert_eq!(
+        execution_status(journal.db(), op_id.as_str()),
+        Some(ExecutionStatus::Done)
+    );
 }
 
 /// A handler that returns an error without emitting one gets the safety net's
@@ -460,20 +463,20 @@ async fn an_op_queued_behind_a_copy_reads_its_row_finalized_when_admitted() {
     let lane = "settle-order-queue".to_string();
 
     // A blocker holds the lane so the copy queues; the reader queues behind it.
-    let blocker = "settle-order-blocker".to_string();
+    let blocker = OperationId::from("settle-order-blocker");
     let (release_blocker, blocker_released) = oneshot::channel::<()>();
     spawn_on_lane(&engine, &blocker, &lane, || {}, async move {
         let _ = blocker_released.await;
     });
 
     let (sink, collector) = pair();
-    let copy_id = start_copy(&engine, sink, dir.join("a.txt"), &dir.join("dst"), &lane).await;
+    let copy_id = OperationId::from(start_copy(&engine, sink, dir.join("a.txt"), &dir.join("dst"), &lane).await);
     assert_eq!(
         engine.manager().lifecycle_status(&copy_id),
         Some(LifecycleStatus::Queued)
     );
 
-    let reader = "settle-order-reader".to_string();
+    let reader = OperationId::from("settle-order-reader");
     let (row_tx, row_rx) = oneshot::channel::<Option<(ExecutionStatus, RollbackState)>>();
     let db = journal.db().to_path_buf();
     let read_id = copy_id.clone();
@@ -481,7 +484,7 @@ async fn an_op_queued_behind_a_copy_reads_its_row_finalized_when_admitted() {
     // finalize that ran after `on_settled` can't win a race to the row.
     let at_admission = move || {
         let conn = open_read_connection(&db).expect("read conn");
-        let row = read_operation(&conn, &read_id).expect("read");
+        let row = read_operation(&conn, read_id.as_str()).expect("read");
         let _ = row_tx.send(row.map(|r| (r.execution_status, r.rollback_state)));
     };
     spawn_on_lane(&engine, &reader, &lane, at_admission, async {});
@@ -508,13 +511,13 @@ async fn an_op_queued_behind_a_copy_reads_its_row_finalized_when_admitted() {
 /// admission pass that admits it, where its deferred start is built.
 fn spawn_on_lane(
     engine: &TestOperations,
-    op_id: &str,
+    op_id: &OperationId,
     lane: &str,
     at_admission: impl FnOnce() + Send + 'static,
     work: impl Future<Output = ()> + Send + 'static,
 ) {
     let descriptor = OperationDescriptor {
-        operation_id: op_id.to_string(),
+        operation_id: op_id.clone(),
         operation_type: WriteOperationType::Copy,
         lanes: vec![LaneKey::new(lane)],
         volume_ids: vec![],
@@ -523,7 +526,7 @@ fn spawn_on_lane(
         preview_id: None,
         reverses: None,
     };
-    let id = op_id.to_string();
+    let id = op_id.clone();
     engine.manager().spawn_managed(
         descriptor,
         Arc::new(engine.new_operation_state(Duration::from_millis(200))),

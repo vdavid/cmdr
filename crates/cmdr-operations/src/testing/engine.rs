@@ -15,6 +15,7 @@ use std::time::Duration;
 use cmdr_operation_log::OperationLog;
 use cmdr_operation_log::capture::WriterJournal;
 use cmdr_operation_log::store::operation_log_db_path;
+use cmdr_operation_log::types::OperationId;
 use cmdr_operation_log::writer::OperationLogWriter;
 
 use super::super::host::testing::{
@@ -133,11 +134,9 @@ impl TestOperations {
     /// `operation_id`. Build it on this engine (`new_operation_state`), so its
     /// scope reports to the same recorders.
     pub fn register_state(&self, operation_id: &str, state: Arc<WriteOperationState>) -> RegisteredOperation {
-        self.registry().insert(operation_id.to_string(), Arc::clone(&state));
-        RegisteredOperation {
-            id: operation_id.to_string(),
-            state,
-        }
+        let id = OperationId::from(operation_id);
+        self.registry().insert(id.clone(), Arc::clone(&state));
+        RegisteredOperation { id, state }
     }
 }
 
@@ -153,13 +152,13 @@ impl std::ops::Deref for TestOperations {
 /// entry lives as long as the engine does; `forget` it from the registry to
 /// settle it early.
 pub struct RegisteredOperation {
-    id: String,
+    id: OperationId,
     state: Arc<WriteOperationState>,
 }
 
 impl RegisteredOperation {
     /// The id it's registered under.
-    pub fn id(&self) -> &str {
+    pub fn id(&self) -> &OperationId {
         &self.id
     }
 

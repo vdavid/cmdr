@@ -335,7 +335,7 @@ async fn run_copy(
     };
     copy_volumes_with_progress(
         events,
-        guard.id(),
+        guard.id().as_str(),
         &state,
         Arc::clone(source) as Arc<dyn Volume>,
         paths,

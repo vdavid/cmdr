@@ -43,7 +43,7 @@ use cmdr_operation_log::rollback::{
     RollbackRunner, SkipBreakdown, execute_rollback, inverse_kind, rollback_operation, undo_order,
 };
 use cmdr_operation_log::store::{open_read_connection, read_operation};
-use cmdr_operation_log::types::{Initiator, OpKind, RollbackState};
+use cmdr_operation_log::types::{Initiator, OpKind, OperationId, RollbackState};
 use cmdr_operation_log::writer::OperationLogWriter;
 
 use super::event_sinks::OperationEventSink;
@@ -291,11 +291,11 @@ impl crate::Operations {
     /// pipeline in here never constructs one (see `mod.rs`).
     pub fn dispatch_rollback(
         &self,
-        op_id: &str,
+        op_id: &OperationId,
         initiator: Initiator,
         events: Arc<dyn OperationEventSink>,
     ) -> Result<RollbackDispatch, RollbackRefusal> {
-        self.dispatch_inverse(op_id, initiator, events, None)
+        self.dispatch_inverse(op_id.as_str(), initiator, events, None)
     }
 
     /// [`Self::dispatch_rollback`] plus a channel that resolves with the inverse's
@@ -350,7 +350,7 @@ impl crate::Operations {
     ) -> Result<(), RollbackRefusal> {
         let vm = self.host().volumes();
         let original = plan.original.clone();
-        let inverse_op_id = plan.inverse_op_id.clone();
+        let inverse_op_id = OperationId::from(plan.inverse_op_id.clone());
 
         // Resolve the lanes + ejectable volume ids from the volumes the op touches.
         // A missing volume here is the sync spawn failure.
@@ -419,9 +419,10 @@ impl crate::Operations {
                 // The engine's hands and its three live answers. The reversal is its OWN
                 // managed operation, opened `Running`, so any move off `Running` is
                 // somebody stopping the reversal itself.
-                let runner = ReversalRunner::new(inverse_op_id.clone(), op_type, state_for_op, events);
+                let runner = ReversalRunner::new(inverse_op_id.to_string(), op_type, state_for_op, events);
                 let vm = ops.host().volumes();
-                let outcome = execute_rollback(vm, &writer, &original, &inverse_op_id, initiator, &runner).await;
+                let outcome =
+                    execute_rollback(vm, &writer, &original, inverse_op_id.as_str(), initiator, &runner).await;
                 // Hand the tally to a caller awaiting it (a multi-operation undo). A
                 // dropped receiver (the caller went away) is not a problem: the reversal
                 // already happened and is journaled.
@@ -481,9 +482,12 @@ pub struct UndoReport {
 impl UndoReport {
     /// Every one of `operation_ids` refused for `refusal`, nothing reversed: what
     /// a host with no engine to undo on answers.
-    pub fn all_refused(operation_ids: &[String], refusal: RollbackRefusal) -> Self {
+    pub fn all_refused(operation_ids: &[OperationId], refusal: RollbackRefusal) -> Self {
         Self {
-            operations: operation_ids.iter().map(|id| refused(id, refusal.clone())).collect(),
+            operations: operation_ids
+                .iter()
+                .map(|id| refused(id.as_str(), refusal.clone()))
+                .collect(),
             restored: 0,
             skipped: 0,
         }
@@ -506,7 +510,7 @@ impl crate::Operations {
     /// operations always matches what came back (invariant 9).
     pub async fn undo_operations(
         &self,
-        operation_ids: &[String],
+        operation_ids: &[OperationId],
         initiator: Initiator,
         events: Arc<dyn OperationEventSink>,
     ) -> UndoReport {
@@ -564,28 +568,28 @@ impl crate::Operations {
     /// Anything unreadable becomes an `UnknownOperation` outcome instead of vanishing.
     fn read_undoable_rows(
         &self,
-        operation_ids: &[String],
+        operation_ids: &[OperationId],
     ) -> (Vec<cmdr_operation_log::store::OperationRow>, Vec<OperationUndoOutcome>) {
         let Some(writer) = self.operation_log().writer() else {
             let missing = operation_ids
                 .iter()
-                .map(|id| refused(id, RollbackRefusal::UnknownOperation))
+                .map(|id| refused(id.as_str(), RollbackRefusal::UnknownOperation))
                 .collect();
             return (Vec::new(), missing);
         };
         let Ok(conn) = open_read_connection(writer.db_path()) else {
             let missing = operation_ids
                 .iter()
-                .map(|id| refused(id, RollbackRefusal::UnknownOperation))
+                .map(|id| refused(id.as_str(), RollbackRefusal::UnknownOperation))
                 .collect();
             return (Vec::new(), missing);
         };
         let mut rows = Vec::with_capacity(operation_ids.len());
         let mut unknown = Vec::new();
         for op_id in operation_ids {
-            match read_operation(&conn, op_id) {
+            match read_operation(&conn, op_id.as_str()) {
                 Ok(Some(row)) => rows.push(row),
-                _ => unknown.push(refused(op_id, RollbackRefusal::UnknownOperation)),
+                _ => unknown.push(refused(op_id.as_str(), RollbackRefusal::UnknownOperation)),
             }
         }
         (rows, unknown)
@@ -608,7 +612,7 @@ impl crate::Operations {
 pub struct Reversal {
     /// The engine its state is registered in, which the controls ask.
     engine: super::Operations,
-    operation_id: String,
+    operation_id: OperationId,
     events: Arc<super::CollectorEventSink>,
     runner: ReversalRunner,
 }
@@ -631,7 +635,7 @@ impl Reversal {
     /// [`Self::on`] with an explicit progress interval.
     pub(crate) fn emitting_every(engine: &super::Operations, tag: &str, progress_interval: Duration) -> Self {
         let state = Arc::new(engine.new_operation_state(progress_interval));
-        engine.registry().insert(tag.to_string(), Arc::clone(&state));
+        engine.registry().insert(tag.into(), Arc::clone(&state));
         Self::running(super::Operations::clone(engine), tag.to_string(), state)
     }
 
@@ -645,7 +649,7 @@ impl Reversal {
         );
         Reversal {
             engine,
-            operation_id,
+            operation_id: operation_id.into(),
             events,
             runner,
         }
@@ -658,7 +662,7 @@ impl Reversal {
 
     /// The id the reversal is registered under: what a test hands to
     /// `cancel_write_operation`, `pause_operation`, or `resume_operation`.
-    pub fn op_id(&self) -> &str {
+    pub fn op_id(&self) -> &OperationId {
         &self.operation_id
     }
 

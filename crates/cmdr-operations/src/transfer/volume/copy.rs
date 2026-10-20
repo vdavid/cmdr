@@ -43,7 +43,7 @@ use super::preflight::{scan_volume_sources, sources_in_tree_order};
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::{DirectoryCreation, SpaceInfo, Volume, VolumeError};
-use cmdr_operation_log::types::OpKind;
+use cmdr_operation_log::types::{OpKind, OperationId};
 
 use super::super::super::ledger::WrittenFile;
 use super::cleanup::{clean_partial_writes, volume_rollback_with_progress};
@@ -220,7 +220,7 @@ impl crate::Operations {
                 .await;
         }
 
-        let operation_id = cmdr_operation_log::new_operation_id();
+        let operation_id = OperationId::from(cmdr_operation_log::new_operation_id());
         log::info!(
             "copy_between_volumes: operation_id={}, source_volume_id={}, dest_volume_id={}, {} sources, dest={}",
             operation_id,
@@ -283,7 +283,7 @@ impl crate::Operations {
                 // terminal write-* event and after `on_settled`'s cache cleanup.
                 let _settled_guard = crate::state::WriteSettledGuard::new(
                     Arc::clone(&events),
-                    op_id.clone(),
+                    op_id.to_string(),
                     WriteOperationType::Copy,
                     Some(source_volume_name),
                 );
@@ -304,7 +304,7 @@ impl crate::Operations {
                 // `copy_volumes_with_progress`; this brackets the op.
                 journal::open_volume_op(
                     state.scope(),
-                    &op_id,
+                    op_id.as_str(),
                     OpKind::Copy,
                     initiator,
                     &journal_source_volume_id,
@@ -319,7 +319,7 @@ impl crate::Operations {
                 let bound = retain_bound_sources_on(
                     source_volume.as_ref(),
                     &*events,
-                    &op_id,
+                    op_id.as_str(),
                     WriteOperationType::Copy,
                     &state,
                     expected_sources.as_ref(),
@@ -335,7 +335,7 @@ impl crate::Operations {
                     Some(source_paths) => {
                         copy_volumes_with_progress(
                             Arc::clone(&events),
-                            &op_id,
+                            op_id.as_str(),
                             &state,
                             source_volume,
                             &source_paths,
@@ -375,7 +375,7 @@ impl crate::Operations {
                         );
                         events.emit_error(write_error_event_from(
                             &state,
-                            op_id.clone(),
+                            op_id.to_string(),
                             WriteOperationType::Copy,
                             failure,
                         ));
@@ -387,12 +387,12 @@ impl crate::Operations {
                             .host()
                             .events()
                             .error_report(OperationErrorReport::VolumeCopyFailed {
-                                operation_id: op_id.clone().into(),
+                                operation_id: op_id.clone(),
                                 error: failure.error.clone(),
                             });
                         events.emit_error(write_error_event_from(
                             &state,
-                            op_id.clone(),
+                            op_id.to_string(),
                             WriteOperationType::Copy,
                             failure,
                         ));
@@ -407,7 +407,7 @@ impl crate::Operations {
         self.manager().spawn_managed(descriptor, state, Box::new(deferred));
 
         Ok(WriteOperationStartResult {
-            operation_id,
+            operation_id: operation_id.to_string(),
             operation_type: WriteOperationType::Copy,
         })
     }

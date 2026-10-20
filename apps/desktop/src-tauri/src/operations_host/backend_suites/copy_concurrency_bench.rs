@@ -464,7 +464,7 @@ async fn timed_copy(corpus: &Corpus, dest: &Arc<dyn Volume>, dir: &str, window: 
         async move {
             copy_volumes_with_progress(
                 events,
-                &operation_id,
+                operation_id.as_str(),
                 &state,
                 source_vol,
                 &source_paths,

@@ -379,7 +379,7 @@ async fn deep_prompts_keep_listing_order_while_the_copies_overlap() {
     };
     let result = copy_volumes_with_progress(
         Arc::clone(&events) as Arc<dyn OperationEventSink>,
-        guard.id(),
+        guard.id().as_str(),
         &state,
         source,
         &[PathBuf::from("/album")],
@@ -432,7 +432,7 @@ async fn a_cancel_mid_subtree_leaves_no_leaf_still_writing() {
         async move {
             copy_volumes_with_progress(
                 events,
-                &operation_id,
+                operation_id.as_str(),
                 &state,
                 source,
                 &[PathBuf::from("/album")],

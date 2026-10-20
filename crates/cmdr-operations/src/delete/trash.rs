@@ -8,6 +8,8 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
 
+use cmdr_operation_log::types::OperationId;
+
 use super::super::event_sinks::OperationEventSink;
 use super::super::mutation_error::MutationError;
 use super::super::state::WriteOperationState;
@@ -195,10 +197,10 @@ impl super::super::Operations {
             None
         };
 
-        let op_id = cmdr_operation_log::new_operation_id();
+        let op_id = OperationId::from(cmdr_operation_log::new_operation_id());
         // A single trash has no destination volume (the in-trash location rides on the
         // item row, not the header); one top-level item.
-        super::super::journal::open_local_op(&scope, &op_id, OpKind::Trash, initiator, 1, None);
+        super::super::journal::open_local_op(&scope, op_id.as_str(), OpKind::Trash, initiator, 1, None);
 
         match move_to_trash_sync(source) {
             Ok(in_trash) => {

@@ -68,7 +68,7 @@ fn dump_names_driver_phase_intent_and_every_parked_task() {
     let engine = TestOperations::new();
     let guard = engine.register("probe-dump");
     let state = guard.state();
-    let probe = probe_for(guard.id(), state);
+    let probe = probe_for(guard.id().as_str(), state);
 
     let a = probe.begin_task(
         TaskRow::source(9),
@@ -105,7 +105,7 @@ fn dump_marks_every_path_it_names() {
     let engine = TestOperations::new();
     let guard = engine.register("probe-dump-marks");
     let state = guard.state();
-    let probe = probe_for(guard.id(), state);
+    let probe = probe_for(guard.id().as_str(), state);
     let (source, dest) = ("/src/Summer (Lake House)/a.jpg", "/dst/Summer (Lake House)/a.jpg");
 
     probe.set_driver_phase_at(DriverPhase::ResolvingConflict, None, Path::new(dest));
@@ -127,7 +127,7 @@ fn a_walker_row_is_counted_apart_from_the_window() {
     let engine = TestOperations::new();
     let guard = engine.register("probe-walker");
     let state = guard.state();
-    let probe = probe_for(guard.id(), state);
+    let probe = probe_for(guard.id().as_str(), state);
 
     let walker = probe.begin_task(TaskRow::source(0), TaskRole::Walker, "/src/album", "/dst/album");
     walker.probe().set_phase(TaskPhase::Walking);
@@ -170,7 +170,7 @@ fn a_leaf_row_is_numbered_under_the_source_producing_it() {
     let engine = TestOperations::new();
     let guard = engine.register("probe-row-numbers");
     let state = guard.state();
-    let probe = probe_for(guard.id(), state);
+    let probe = probe_for(guard.id().as_str(), state);
 
     let _first = probe.begin_task(TaskRow::source(0), TaskRole::Walker, "/src/album", "/dst/album");
     let _first_leaf = probe.begin_task(
@@ -233,7 +233,7 @@ fn dropping_a_task_handle_removes_it_from_the_table() {
     let engine = TestOperations::new();
     let guard = engine.register("probe-drop");
     let state = guard.state();
-    let probe = probe_for(guard.id(), state);
+    let probe = probe_for(guard.id().as_str(), state);
 
     let a = probe.begin_task(TaskRow::source(0), TaskRole::File, "/src/a", "/dst/a");
     {
@@ -263,7 +263,7 @@ fn activity_names_what_the_transfer_is_waiting_on() {
     let engine = TestOperations::new();
     let guard = engine.register("probe-activity");
     let state = guard.state();
-    let probe = probe_for(guard.id(), state);
+    let probe = probe_for(guard.id().as_str(), state);
     // Stand in for the watchdog having seen 12 s with no byte movement.
     probe.still_for_seconds.store(12, Ordering::Relaxed);
 
@@ -296,12 +296,12 @@ fn a_wedged_transfer_keeps_telling_the_ui_it_is_wedged() {
     let guard = engine.register("probe-heartbeat");
     let state = guard.state();
     let sink = Arc::new(CollectorEventSink::new());
-    let probe = probe_for(guard.id(), state);
+    let probe = probe_for(guard.id().as_str(), state);
     probe.set_sink(Arc::clone(&sink) as Arc<dyn OperationEventSink>);
 
     // The operation emitted one progress event while it was still moving.
     let mut event = WriteProgressEvent::new(
-        guard.id().to_owned(),
+        guard.id().to_string().to_owned(),
         WriteOperationType::Copy,
         WriteOperationPhase::Copying,
         Some("sms-0726.xml".to_owned()),
@@ -355,7 +355,7 @@ fn a_transfer_publishing_progress_across_file_boundaries_is_never_called_still()
     let guard = engine.register("probe-leaf-progress");
     let state = guard.state();
     let sink = Arc::new(CollectorEventSink::new());
-    let probe = probe_for(guard.id(), state);
+    let probe = probe_for(guard.id().as_str(), state);
     probe.set_sink(Arc::clone(&sink) as Arc<dyn OperationEventSink>);
 
     // One operation-wide ledger and one throttle cell, shared across every leaf,
@@ -363,7 +363,7 @@ fn a_transfer_publishing_progress_across_file_boundaries_is_never_called_still()
     let ledger = LeafProgressLedger::new(
         Arc::clone(&sink) as Arc<dyn OperationEventSink>,
         Arc::clone(state),
-        guard.id().to_owned(),
+        guard.id().to_string().to_owned(),
         WriteOperationType::Copy,
         Arc::new(AtomicUsize::new(0)),
         119_204,
@@ -409,14 +409,14 @@ fn a_moving_transfer_gets_no_heartbeat() {
     let guard = engine.register("probe-no-heartbeat");
     let state = guard.state();
     let sink = Arc::new(CollectorEventSink::new());
-    let probe = probe_for(guard.id(), state);
+    let probe = probe_for(guard.id().as_str(), state);
     probe.set_sink(Arc::clone(&sink) as Arc<dyn OperationEventSink>);
     let mut watchdog = WatchdogState::new();
     // Bytes keep moving on every tick, published the way a driver publishes
     // them: one more progress event carrying a higher total.
     for tick in 1..=(HEARTBEAT_AFTER_SECS + 5) {
         let mut event = WriteProgressEvent::new(
-            guard.id().to_owned(),
+            guard.id().to_string().to_owned(),
             WriteOperationType::Copy,
             WriteOperationPhase::Copying,
             None,
@@ -442,7 +442,7 @@ fn a_paused_transfer_reports_paused_not_stuck() {
     let engine = TestOperations::new();
     let guard = engine.register("probe-paused");
     let state = guard.state();
-    let probe = probe_for(guard.id(), state);
+    let probe = probe_for(guard.id().as_str(), state);
     let a = probe.begin_task(TaskRow::source(0), TaskRole::File, "/src/a", "/dst/a");
     a.probe().set_phase(TaskPhase::ParkedPause);
     probe.still_for_seconds.store(30, Ordering::Relaxed);
@@ -462,7 +462,7 @@ async fn a_read_resumed_from_a_pause_reads_as_streaming_again() {
     let engine = TestOperations::new();
     let guard = engine.register("probe-resumed");
     let state = Arc::clone(guard.state());
-    let probe = probe_for(guard.id(), &state);
+    let probe = probe_for(guard.id().as_str(), &state);
     let task = probe.begin_task(TaskRow::source(0), TaskRole::File, "/src/a", "/dst/a");
     let volume: Arc<dyn Volume> = Arc::new(cmdr_fs::volume::InMemoryVolume::new("Source"));
     volume
@@ -510,7 +510,7 @@ fn a_transfer_waiting_on_a_conflict_answer_is_not_stalled() {
     let engine = TestOperations::new();
     let guard = engine.register("probe-conflict");
     let state = guard.state();
-    let probe = probe_for(guard.id(), state);
+    let probe = probe_for(guard.id().as_str(), state);
     // A task streaming normally: nothing here says "asking the human".
     let a = probe.begin_task(TaskRow::source(0), TaskRole::File, "/src/a", "/dst/a");
     a.probe().set_phase(TaskPhase::Streaming);
@@ -538,7 +538,7 @@ fn the_watchdog_does_not_accrue_stall_time_behind_a_conflict_prompt() {
     let engine = TestOperations::new();
     let guard = engine.register("probe-conflict-watchdog");
     let state = guard.state();
-    let probe = probe_for(guard.id(), state);
+    let probe = probe_for(guard.id().as_str(), state);
     let (tx, _rx) = tokio::sync::oneshot::channel();
     state.conflict_slot.arm(tx, placeholder_conflict);
 
@@ -565,7 +565,7 @@ fn the_watchdog_ends_the_wait_on_a_task_that_stopped_moving() {
     let engine = TestOperations::new();
     let guard = engine.register("probe-abort");
     let state = guard.state();
-    let probe = probe_with_abort_window(guard.id(), state, Duration::from_secs(5));
+    let probe = probe_with_abort_window(guard.id().as_str(), state, Duration::from_secs(5));
 
     let task = probe.begin_task(TaskRow::source(0), TaskRole::File, "/src/a", "/dst/a");
     task.probe().set_phase(TaskPhase::Streaming);
@@ -606,7 +606,7 @@ fn a_task_that_keeps_moving_is_never_aborted() {
     let engine = TestOperations::new();
     let guard = engine.register("probe-abort-moving");
     let state = guard.state();
-    let probe = probe_with_abort_window(guard.id(), state, Duration::from_secs(2));
+    let probe = probe_with_abort_window(guard.id().as_str(), state, Duration::from_secs(2));
 
     let task = probe.begin_task(TaskRow::source(0), TaskRole::File, "/src/a", "/dst/a");
     task.probe().set_phase(TaskPhase::Streaming);
@@ -638,7 +638,7 @@ fn a_deliberately_parked_task_is_never_aborted() {
     ] {
         let guard = engine.register("probe-abort-parked");
         let state = guard.state();
-        let probe = probe_with_abort_window(guard.id(), state, Duration::from_secs(2));
+        let probe = probe_with_abort_window(guard.id().as_str(), state, Duration::from_secs(2));
         let task = probe.begin_task(TaskRow::source(0), TaskRole::File, "/src/a", "/dst/a");
         task.probe().set_phase(phase);
         let signal = task.probe().arm_stall_abort();
@@ -663,7 +663,7 @@ fn time_spent_paused_does_not_count_toward_the_abort() {
     let engine = TestOperations::new();
     let guard = engine.register("probe-abort-paused");
     let state = guard.state();
-    let probe = probe_with_abort_window(guard.id(), state, Duration::from_secs(5));
+    let probe = probe_with_abort_window(guard.id().as_str(), state, Duration::from_secs(5));
     let task = probe.begin_task(TaskRow::source(0), TaskRole::File, "/src/a", "/dst/a");
     task.probe().set_phase(TaskPhase::Streaming);
     let signal = task.probe().arm_stall_abort();
@@ -688,7 +688,7 @@ fn the_watchdog_stands_down_once_the_operation_is_cancelling() {
     let engine = TestOperations::new();
     let guard = engine.register("probe-abort-cancelling");
     let state = guard.state();
-    let probe = probe_with_abort_window(guard.id(), state, Duration::from_secs(2));
+    let probe = probe_with_abort_window(guard.id().as_str(), state, Duration::from_secs(2));
     let task = probe.begin_task(TaskRow::source(0), TaskRole::File, "/src/a", "/dst/a");
     task.probe().set_phase(TaskPhase::Streaming);
     let signal = task.probe().arm_stall_abort();
@@ -710,7 +710,7 @@ fn a_new_attempt_gets_a_fresh_signal_and_a_fresh_budget() {
     let engine = TestOperations::new();
     let guard = engine.register("probe-abort-rearm");
     let state = guard.state();
-    let probe = probe_with_abort_window(guard.id(), state, Duration::from_secs(5));
+    let probe = probe_with_abort_window(guard.id().as_str(), state, Duration::from_secs(5));
     let task = probe.begin_task(TaskRow::source(0), TaskRole::File, "/src/a", "/dst/a");
     task.probe().set_phase(TaskPhase::Streaming);
     let first = task.probe().arm_stall_abort();
@@ -742,7 +742,7 @@ fn two_rows_keep_their_own_stall_abort_signal_and_byte_count() {
     let engine = TestOperations::new();
     let guard = engine.register("probe-two-rows");
     let state = guard.state();
-    let probe = probe_for(guard.id(), state);
+    let probe = probe_for(guard.id().as_str(), state);
 
     let wedged = probe.begin_task(TaskRow::source(0), TaskRole::File, "/src/a.bin", "/dst/a.bin");
     let healthy = probe.begin_task(TaskRow::source(1), TaskRole::File, "/src/b.bin", "/dst/b.bin");
@@ -797,7 +797,7 @@ fn a_connection_with_no_liveness_verdict_is_never_aborted() {
     let _window = StallAbortGuard::set(Duration::from_secs(1));
     // No volumes ⇒ nobody answers `connection_liveness`, exactly like every
     // backend with no keepalive.
-    let probe = probe_for(guard.id(), state);
+    let probe = probe_for(guard.id().as_str(), state);
     let task = probe.begin_task(TaskRow::source(0), TaskRole::File, "/src/a", "/dst/a");
     task.probe().set_phase(TaskPhase::Streaming);
     let signal = task.probe().arm_stall_abort();
@@ -833,7 +833,7 @@ fn a_live_connection_with_a_flat_byte_bar_is_never_aborted() {
     let source = ScriptedConnectionVolume::new();
     source.set_liveness(Some(ConnectionLiveness::Alive));
     let probe = probe_with(
-        guard.id(),
+        guard.id().as_str(),
         state,
         TransferEnds::source_only(Arc::clone(&source) as Arc<dyn Volume>),
     );
@@ -869,7 +869,7 @@ fn the_watchdog_acts_once_a_still_task_s_connection_reads_dead() {
     let source = ScriptedConnectionVolume::new();
     source.set_liveness(Some(ConnectionLiveness::Alive));
     let probe = probe_with(
-        guard.id(),
+        guard.id().as_str(),
         state,
         TransferEnds::source_only(Arc::clone(&source) as Arc<dyn Volume>),
     );
@@ -959,7 +959,7 @@ fn a_moving_transfer_reports_moving() {
     let engine = TestOperations::new();
     let guard = engine.register("probe-moving");
     let state = guard.state();
-    let probe = probe_for(guard.id(), state);
+    let probe = probe_for(guard.id().as_str(), state);
     let a = probe.begin_task(TaskRow::source(0), TaskRole::File, "/src/a", "/dst/a");
     a.probe().set_phase(TaskPhase::ParkedDestYield);
     // The watchdog hasn't observed a still period, so bytes are moving.

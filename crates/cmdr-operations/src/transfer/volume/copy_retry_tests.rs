@@ -245,7 +245,7 @@ async fn a_retried_merge_child_still_leaves_dest_only_files_alone() {
 
     copy_volumes_with_progress(
         events,
-        op.id(),
+        op.id().as_str(),
         &state,
         Arc::clone(&source),
         &[PathBuf::from("/album")],
@@ -309,7 +309,7 @@ async fn a_retried_file_never_re_asks_the_conflict_the_user_already_answered() {
 
     copy_volumes_with_progress(
         events.clone(),
-        op.id(),
+        op.id().as_str(),
         &state,
         Arc::clone(&source),
         &[PathBuf::from("/album")],

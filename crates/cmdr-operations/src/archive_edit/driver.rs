@@ -11,6 +11,8 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
 
+use cmdr_operation_log::types::OperationId;
+
 use super::super::OperationEventSink;
 use super::super::manager::{ManagedTaskGuard, OperationDescriptor, OperationSummaryText};
 use super::super::state::WriteSettledGuard;
@@ -108,7 +110,7 @@ impl crate::Operations {
         request: ArchiveEditRequest,
         progress_interval_ms: u64,
     ) -> Result<WriteOperationStartResult, WriteOperationError> {
-        let operation_id = cmdr_operation_log::new_operation_id();
+        let operation_id = OperationId::from(cmdr_operation_log::new_operation_id());
         let state = Arc::new(self.new_operation_state(Duration::from_millis(progress_interval_ms)));
 
         // Share the parent drive's lane so the op serializes against other work on
@@ -160,7 +162,7 @@ impl crate::Operations {
                 let settle_volume = (parent_volume_id != "root").then(|| parent_volume_id.clone());
                 let _settled = WriteSettledGuard::new(
                     Arc::clone(&events),
-                    op_id.clone(),
+                    op_id.to_string(),
                     WriteOperationType::ArchiveEdit,
                     settle_volume,
                 );
@@ -185,7 +187,7 @@ impl crate::Operations {
                 let hooks = Arc::new(MutatorHooks::new(
                     Arc::clone(&state),
                     Arc::clone(&events),
-                    op_id.clone(),
+                    op_id.to_string(),
                     WriteOperationType::ArchiveEdit,
                     progress_interval,
                 ));
@@ -208,7 +210,7 @@ impl crate::Operations {
                 let final_progress = hooks.latest_progress();
                 emit_archive_terminal(
                     events.as_ref(),
-                    &op_id,
+                    op_id.as_str(),
                     WriteOperationType::ArchiveEdit,
                     result,
                     skipped_count,
@@ -224,7 +226,7 @@ impl crate::Operations {
         self.manager().spawn_managed(descriptor, state, Box::new(deferred));
 
         Ok(WriteOperationStartResult {
-            operation_id,
+            operation_id: operation_id.to_string(),
             operation_type: WriteOperationType::ArchiveEdit,
         })
     }

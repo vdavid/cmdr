@@ -6,6 +6,7 @@
 //! what the walk listed first, a `NotFound` after a wait counts as deleted (and
 //! only after one), and an outage that ends the delete names the server.
 
+use cmdr_operation_log::types::OperationId;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -279,7 +280,7 @@ async fn a_cancel_during_the_wait_ends_the_delete_at_once() {
     nas.drop_at_delete_of(Path::new("/dir/b.txt"), RenameDrop::BeforeTheServerSeesIt);
     let canceller = crate::Operations::clone(&engine);
     when_waited_for(&state, async move {
-        canceller.cancel_write_operation("delete-cancel-wait", false);
+        canceller.cancel_write_operation(&OperationId::from("delete-cancel-wait"), false);
     });
 
     let run = delete(&engine, "delete-cancel-wait", &state, nas.clone(), &["/dir"]).await;

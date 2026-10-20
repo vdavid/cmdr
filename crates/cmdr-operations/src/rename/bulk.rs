@@ -27,7 +27,7 @@ use super::super::types::{
 };
 use cmdr_fs::volume::{LaneKey, Volume};
 use cmdr_local::rename_local_exclusive;
-use cmdr_operation_log::types::{ExecutionStatus, Initiator, OpKind};
+use cmdr_operation_log::types::{ExecutionStatus, Initiator, OpKind, OperationId};
 
 mod by_move;
 mod plan;
@@ -146,7 +146,7 @@ impl crate::Operations {
             )
         };
 
-        let operation_id = cmdr_operation_log::new_operation_id();
+        let operation_id = OperationId::from(cmdr_operation_log::new_operation_id());
         let summary = OperationSummaryText {
             source: Some(format!("{} files", rows.len())),
             destination: None,
@@ -176,13 +176,13 @@ impl crate::Operations {
                 let task_guard = manager::ManagedTaskGuard::new(ops.manager(), operation_id_for_task.clone());
                 let _settled_guard = WriteSettledGuard::new(
                     Arc::clone(&events_for_task),
-                    operation_id_for_task.clone(),
+                    operation_id_for_task.to_string(),
                     WriteOperationType::Rename,
                     settled_volume,
                 );
                 super::super::journal::open_volume_op(
                     state_for_task.scope(),
-                    &operation_id_for_task,
+                    operation_id_for_task.as_str(),
                     OpKind::Rename,
                     initiator,
                     &volume_id_for_task,
@@ -230,13 +230,13 @@ impl crate::Operations {
                 emit_bulk_rename_progress(
                     events_for_task.as_ref(),
                     &state_for_task,
-                    &operation_id_for_task,
+                    operation_id_for_task.as_str(),
                     &rows_for_task,
                     &run.outcomes,
                 );
                 if run.cancelled {
                     events_for_task.emit_cancelled(WriteCancelledEvent {
-                        operation_id: operation_id_for_task.clone(),
+                        operation_id: operation_id_for_task.to_string(),
                         operation_type: WriteOperationType::Rename,
                         files_processed: run.processed(),
                         rollback: CancelRollback::none(),
@@ -248,7 +248,7 @@ impl crate::Operations {
                     );
                 } else {
                     events_for_task.emit_complete(WriteCompleteEvent {
-                        operation_id: operation_id_for_task.clone(),
+                        operation_id: operation_id_for_task.to_string(),
                         operation_type: WriteOperationType::Rename,
                         files_processed: rows_for_task.len(),
                         files_skipped: run.skipped(),
@@ -270,7 +270,7 @@ impl crate::Operations {
 
         self.manager().spawn_managed(descriptor, state, Box::new(deferred));
         Ok(WriteOperationStartResult {
-            operation_id,
+            operation_id: operation_id.to_string(),
             operation_type: WriteOperationType::Rename,
         })
     }

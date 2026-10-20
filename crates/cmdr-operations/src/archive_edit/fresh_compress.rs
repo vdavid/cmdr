@@ -32,7 +32,7 @@ use cmdr_fs::volume::{
     WriteMode,
 };
 use cmdr_local::LocalPosixVolume;
-use cmdr_operation_log::types::{ArchiveSubkind, ExecutionStatus, Initiator};
+use cmdr_operation_log::types::{ArchiveSubkind, ExecutionStatus, Initiator, OperationId};
 
 struct PausableSpoolStream {
     inner: Box<dyn VolumeReadStream>,
@@ -122,7 +122,7 @@ pub(super) async fn start(
     )
     .await?;
 
-    let operation_id = cmdr_operation_log::new_operation_id();
+    let operation_id = OperationId::from(cmdr_operation_log::new_operation_id());
     let registered_source = engine
         .host()
         .volumes()
@@ -189,7 +189,7 @@ pub(super) async fn start(
             let settle_volume = (parent_volume_id != "root").then(|| parent_volume_id.clone());
             let _settled = WriteSettledGuard::new(
                 Arc::clone(&events),
-                op_id.clone(),
+                op_id.to_string(),
                 WriteOperationType::Compress,
                 settle_volume,
             );
@@ -211,7 +211,7 @@ pub(super) async fn start(
 
             super::super::journal::open_compress_op(
                 state.scope(),
-                &op_id,
+                op_id.as_str(),
                 initiator,
                 &source_volume_id,
                 &parent_volume_id,
@@ -220,7 +220,7 @@ pub(super) async fn start(
             let hooks = Arc::new(MutatorHooks::new(
                 Arc::clone(&state),
                 Arc::clone(&events),
-                op_id.clone(),
+                op_id.to_string(),
                 WriteOperationType::Compress,
                 Duration::from_millis(progress_interval_ms),
             ));
@@ -235,7 +235,7 @@ pub(super) async fn start(
                 Arc::clone(&hooks),
                 compression_level,
                 events.as_ref(),
-                &op_id,
+                op_id.as_str(),
             )
             .await;
             let execution_status = match &outcome {
@@ -286,7 +286,7 @@ pub(super) async fn start(
             );
             emit_archive_terminal(
                 events.as_ref(),
-                &op_id,
+                op_id.as_str(),
                 WriteOperationType::Compress,
                 outcome.map(|_| ()),
                 skipped,
@@ -299,7 +299,7 @@ pub(super) async fn start(
     };
     engine.manager().spawn_managed(descriptor, state, Box::new(deferred));
     Ok(WriteOperationStartResult {
-        operation_id,
+        operation_id: operation_id.to_string(),
         operation_type: WriteOperationType::Compress,
     })
 }

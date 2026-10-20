@@ -17,6 +17,7 @@ use super::manager::{OperationDescriptor, OperationSummaryText};
 use super::types::{ConflictId, WriteConflictEvent};
 use super::types::{LifecycleStatus, WriteOperationType};
 use cmdr_fs::volume::LaneKey;
+use cmdr_operation_log::types::OperationId;
 
 #[cfg(test)]
 /// A stand-in `write-conflict` event for a test that arms the conflict slot only
@@ -97,8 +98,8 @@ fn unique_op_id(tag: &str) -> String {
 /// to leave alone. Two synthetic operations on one private lane reproduce the
 /// state exactly, with no I/O and no reach into another test's operations.
 pub struct QueuedOperationFixture {
-    holder_id: String,
-    queued_id: String,
+    holder_id: OperationId,
+    queued_id: OperationId,
     /// Releases, holder first. `Drop` sends both so each operation settles and
     /// the lane frees for the rest of the process.
     releases: Vec<oneshot::Sender<()>>,
@@ -125,8 +126,8 @@ impl QueuedOperationFixture {
     pub fn park_naming_on(engine: &Operations, tag: &str, holder: Vec<String>, queued: Vec<String>) -> Self {
         let manager = engine.manager();
         let lane = LaneKey::new(unique_op_id(&format!("{tag}-lane")));
-        let holder_id = unique_op_id(&format!("{tag}-holder"));
-        let queued_id = unique_op_id(&format!("{tag}-queued"));
+        let holder_id = OperationId::from(unique_op_id(&format!("{tag}-holder")));
+        let queued_id = OperationId::from(unique_op_id(&format!("{tag}-queued")));
 
         let mut releases = Vec::new();
         for (id, volume_ids) in [(&holder_id, holder), (&queued_id, queued)] {
@@ -173,12 +174,12 @@ impl QueuedOperationFixture {
     }
 
     /// The id of the operation holding the lane, `Running` until this drops.
-    pub fn holder_id(&self) -> &str {
+    pub fn holder_id(&self) -> &OperationId {
         &self.holder_id
     }
 
     /// The id of the operation sitting `Queued`.
-    pub fn queued_id(&self) -> &str {
+    pub fn queued_id(&self) -> &OperationId {
         &self.queued_id
     }
 }

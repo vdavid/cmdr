@@ -20,7 +20,7 @@ use tokio::time::Duration;
 use crate::file_system::Volume;
 use crate::file_system::volume::manager::get_volume_manager;
 use cmdr_fs::deadline::{DeadlineError, blocking_with_timeout, timeout_detached_typed};
-use cmdr_operation_log::types::Initiator;
+use cmdr_operation_log::types::{Initiator, OperationId};
 
 use super::expand_tilde;
 use crate::file_system::volume::manager::path_routes_over_its_parent;
@@ -373,7 +373,7 @@ pub async fn trash_routing_for_paths(sources: Vec<String>) -> TrashRoutingAnswer
 pub fn cancel_write_operation(operation_id: String, rollback: bool) {
     // Before `install` nothing is registered to cancel.
     if let Ok(engine) = operations() {
-        engine.cancel_write_operation(&operation_id, rollback);
+        engine.cancel_write_operation(&OperationId::from(operation_id), rollback);
     }
 }
 
@@ -455,7 +455,7 @@ pub fn resolve_write_conflict(
     apply_to_all: bool,
 ) -> ConflictResolutionOutcome {
     operations().map_or(ConflictResolutionOutcome::UnknownOperation, |engine| {
-        engine.resolve_write_conflict(&operation_id, conflict_id, resolution, apply_to_all)
+        engine.resolve_write_conflict(&OperationId::from(operation_id), conflict_id, resolution, apply_to_all)
     })
 }
 
@@ -467,7 +467,7 @@ pub fn resolve_write_conflict(
 #[specta::specta]
 pub fn continue_without_gone_sources(operation_id: String) -> SourcesGoneAnswerOutcome {
     operations().map_or(SourcesGoneAnswerOutcome::UnknownOperation, |engine| {
-        engine.continue_without_gone_sources(&operation_id)
+        engine.continue_without_gone_sources(&OperationId::from(operation_id))
     })
 }
 
@@ -479,7 +479,7 @@ pub fn continue_without_gone_sources(operation_id: String) -> SourcesGoneAnswerO
 #[specta::specta]
 pub fn answer_locked_sources(operation_id: String, answer: LockedSourcesAnswer) -> LockedSourcesAnswerOutcome {
     operations().map_or(LockedSourcesAnswerOutcome::UnknownOperation, |engine| {
-        engine.answer_locked_sources(&operation_id, answer)
+        engine.answer_locked_sources(&OperationId::from(operation_id), answer)
     })
 }
 
@@ -526,7 +526,7 @@ pub async fn get_transfer_tree_view(
 ) -> Result<TransferTreeView, TransferTreeViewError> {
     operations()
         .map_err(|_| TransferTreeViewError::UnknownOperation)?
-        .transfer_tree_view(&operation_id, &request)
+        .transfer_tree_view(&OperationId::from(operation_id), &request)
 }
 
 /// Cancels one operation, keeping already-copied files. A Queued op is dropped
@@ -536,7 +536,7 @@ pub async fn get_transfer_tree_view(
 #[specta::specta]
 pub fn cancel_operation(operation_id: String) {
     if let Ok(engine) = operations() {
-        engine.cancel_operation(&operation_id);
+        engine.cancel_operation(&OperationId::from(operation_id));
     }
 }
 
@@ -546,6 +546,7 @@ pub fn cancel_operation(operation_id: String) {
 #[specta::specta]
 pub fn cancel_operations(operation_ids: Vec<String>) {
     if let Ok(engine) = operations() {
+        let operation_ids: Vec<OperationId> = operation_ids.into_iter().map(OperationId::from).collect();
         engine.cancel_operations(&operation_ids);
     }
 }
@@ -559,7 +560,7 @@ pub fn cancel_operations(operation_ids: Vec<String>) {
 #[specta::specta]
 pub fn pause_operation(operation_id: String) -> PauseOutcome {
     operations().map_or(PauseOutcome::NotApplicable, |engine| {
-        engine.pause_operation(&operation_id)
+        engine.pause_operation(&OperationId::from(operation_id))
     })
 }
 
@@ -571,7 +572,7 @@ pub fn pause_operation(operation_id: String) -> PauseOutcome {
 #[specta::specta]
 pub fn resume_operation(operation_id: String) -> PauseOutcome {
     operations().map_or(PauseOutcome::NotApplicable, |engine| {
-        engine.resume_operation(&operation_id)
+        engine.resume_operation(&OperationId::from(operation_id))
     })
 }
 
@@ -606,7 +607,7 @@ pub fn resume_all() -> PauseAllOutcome {
 #[specta::specta]
 pub fn move_queued_operation(operation_id: String, direction: QueueMoveDirection) -> QueueMoveOutcome {
     operations().map_or(QueueMoveOutcome::NotQueued, |engine| {
-        engine.move_queued_operation(&operation_id, direction)
+        engine.move_queued_operation(&OperationId::from(operation_id), direction)
     })
 }
 
@@ -620,7 +621,7 @@ pub fn move_queued_operation(operation_id: String, direction: QueueMoveDirection
 #[specta::specta]
 pub fn place_queued_operation(operation_id: String, position: u32) -> QueueMoveOutcome {
     operations().map_or(QueueMoveOutcome::NotQueued, |engine| {
-        engine.place_queued_operation(&operation_id, position)
+        engine.place_queued_operation(&OperationId::from(operation_id), position)
     })
 }
 
@@ -631,7 +632,7 @@ pub fn place_queued_operation(operation_id: String, position: u32) -> QueueMoveO
 #[specta::specta]
 pub fn dismiss_failed_operation(operation_id: String) {
     if let Ok(engine) = operations() {
-        engine.dismiss_failed_operation(&operation_id);
+        engine.dismiss_failed_operation(&OperationId::from(operation_id));
     }
 }
 
@@ -644,7 +645,7 @@ pub fn dismiss_failed_operation(operation_id: String) {
 pub async fn retry_failed_operation(operation_id: String) -> Result<RetryOutcome, WriteOperationError> {
     // Before `install` no failure is retained, so there's nothing to retry.
     match operations() {
-        Ok(engine) => engine.retry_failed_operation(&operation_id).await,
+        Ok(engine) => engine.retry_failed_operation(&OperationId::from(operation_id)).await,
         Err(_) => Ok(RetryOutcome::NothingToRetry),
     }
 }

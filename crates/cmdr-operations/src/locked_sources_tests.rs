@@ -130,10 +130,13 @@ fn a_cancel_while_asking_ends_the_move_with_its_cancel_event() {
 fn the_question_is_answered_through_the_registered_operation() {
     let engine = TestOperations::new();
     assert_eq!(
-        engine.answer_locked_sources("never-registered", LockedSourcesAnswer::Skip),
+        engine.answer_locked_sources(&OperationId::from("never-registered"), LockedSourcesAnswer::Skip),
         LockedSourcesAnswerOutcome::UnknownOperation
     );
-    assert_eq!(engine.pending_locked_sources("never-registered"), None);
+    assert_eq!(
+        engine.pending_locked_sources(&OperationId::from("never-registered")),
+        None
+    );
 }
 
 #[test]

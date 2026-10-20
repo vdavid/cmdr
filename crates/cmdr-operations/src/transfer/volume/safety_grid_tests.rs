@@ -65,6 +65,7 @@
 //! - **permission-denied and quota faults.** The backend decides those, not the
 //!   driver; injecting them tests `FaultyVolume`, not the code under it.
 
+use cmdr_operation_log::types::OperationId;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU8, Ordering};
@@ -249,7 +250,7 @@ const TIER_A_UNTOUCHED_DEST: &[(&str, &[u8])] = &[("/keep.txt", b"DEST-keep"), (
 struct CancelOnFirstProgressSink {
     inner: CollectorEventSink,
     engine: Operations,
-    op_id: String,
+    op_id: OperationId,
     fired: AtomicU8,
 }
 
@@ -359,13 +360,15 @@ async fn run_tier_a_copy(engine: &TestOperations, cache: CacheState, cell: &str,
     let events = Arc::new(CancelOnFirstProgressSink {
         inner: CollectorEventSink::new(),
         engine: Operations::clone(engine),
-        op_id: guard.as_ref().map_or_else(|| op_id.clone(), |g| g.id().to_string()),
+        op_id: guard
+            .as_ref()
+            .map_or_else(|| OperationId::from(op_id.as_str()), |g| g.id().clone()),
         fired: AtomicU8::new(if cancel { 0 } else { 1 }),
     });
 
     let result = copy_volumes_with_progress(
         events,
-        guard.as_ref().map_or(op_id.as_str(), |g| g.id()),
+        guard.as_ref().map_or(op_id.as_str(), |g| g.id().as_str()),
         &state,
         Arc::clone(&source),
         &[PathBuf::from("/album")],
@@ -445,13 +448,15 @@ async fn run_tier_a_move(engine: &TestOperations, cache: CacheState, cell: &str,
     let events = Arc::new(CancelOnFirstProgressSink {
         inner: CollectorEventSink::new(),
         engine: Operations::clone(engine),
-        op_id: guard.as_ref().map_or_else(|| op_id.clone(), |g| g.id().to_string()),
+        op_id: guard
+            .as_ref()
+            .map_or_else(|| OperationId::from(op_id.as_str()), |g| g.id().clone()),
         fired: AtomicU8::new(if cancel { 0 } else { 1 }),
     });
 
     let result = move_volumes_with_progress(
         events,
-        guard.as_ref().map_or(op_id.as_str(), |g| g.id()),
+        guard.as_ref().map_or(op_id.as_str(), |g| g.id().as_str()),
         &state,
         Arc::clone(&source),
         &[PathBuf::from("/album")],
@@ -562,7 +567,9 @@ async fn run_tier_a_delete(engine: &TestOperations, cache: CacheState, cell: &st
     let events = Arc::new(CancelOnFirstProgressSink {
         inner: CollectorEventSink::new(),
         engine: Operations::clone(engine),
-        op_id: guard.as_ref().map_or_else(|| op_id.clone(), |g| g.id().to_string()),
+        op_id: guard
+            .as_ref()
+            .map_or_else(|| OperationId::from(op_id.as_str()), |g| g.id().clone()),
         fired: AtomicU8::new(if cancel { 0 } else { 1 }),
     });
 
@@ -570,7 +577,7 @@ async fn run_tier_a_delete(engine: &TestOperations, cache: CacheState, cell: &st
         Arc::clone(&volume),
         &volume_id,
         events.as_ref(),
-        guard.as_ref().map_or(op_id.as_str(), |g| g.id()),
+        guard.as_ref().map_or(op_id.as_str(), |g| g.id().as_str()),
         &state,
         &[PathBuf::from("/requested")],
         &config,

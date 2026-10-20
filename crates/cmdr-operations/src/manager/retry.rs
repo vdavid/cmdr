@@ -14,6 +14,7 @@ use super::super::Operations;
 use super::super::types::{RetryOutcome, WriteOperationError, WriteOperationStartResult};
 use super::{OperationManager, OperationSnapshot};
 use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_operation_log::types::OperationId;
 
 /// Starts a failed operation again, as a NEW operation. Implemented by the
 /// routing that started the original (`routing/retry.rs`), which says what
@@ -90,14 +91,14 @@ impl OperationManager {
     pub(super) async fn retry_failure(
         &self,
         engine: &Operations,
-        operation_id: &str,
+        operation_id: &OperationId,
     ) -> Result<RetryOutcome, WriteOperationError> {
         let retry = {
             let mut inner = self.inner.lock_ignore_poison();
             let Some(failure) = inner
                 .failures
                 .iter_mut()
-                .find(|failure| failure.snapshot.operation_id == operation_id)
+                .find(|failure| failure.snapshot.operation_id == operation_id.as_str())
             else {
                 return Ok(RetryOutcome::NothingToRetry);
             };
@@ -124,7 +125,7 @@ impl OperationManager {
                     .lock_ignore_poison()
                     .failures
                     .iter_mut()
-                    .find(|failure| failure.snapshot.operation_id == operation_id)
+                    .find(|failure| failure.snapshot.operation_id == operation_id.as_str())
                 {
                     failure.retrying = false;
                 }
@@ -142,7 +143,10 @@ impl Operations {
     /// with no way to start again, or one already starting; a refused start (a
     /// volume that is gone) comes back as the typed error and leaves the row as it
     /// was.
-    pub async fn retry_failed_operation(&self, operation_id: &str) -> Result<RetryOutcome, WriteOperationError> {
+    pub async fn retry_failed_operation(
+        &self,
+        operation_id: &OperationId,
+    ) -> Result<RetryOutcome, WriteOperationError> {
         self.manager().retry_failure(self, operation_id).await
     }
 }

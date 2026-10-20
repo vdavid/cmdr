@@ -213,7 +213,7 @@ async fn test_streaming_copy_cancel_mid_file() {
     // is what carries the stop down to the backend so it drops its own partial.
     let op = engine.register_state("copy-cancel-mid-file", make_state(&engine));
     let state = Arc::clone(op.state());
-    let progress = ObservedProgress::new(&state, op.id());
+    let progress = ObservedProgress::new(&state, op.id().as_str());
 
     let created = CreatedPaths::default();
     let copy = copy_single_path(

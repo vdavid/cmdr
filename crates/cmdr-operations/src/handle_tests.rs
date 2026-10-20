@@ -1,6 +1,7 @@
 //! Two engines share nothing: the proof the engine's state is its own and no
 //! longer process-wide.
 
+use cmdr_operation_log::types::OperationId;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -19,7 +20,7 @@ use cmdr_fs::testing::wait_until_async;
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn an_operation_registered_in_one_engine_is_invisible_to_another() {
     let (a, b) = (Operations::detached(), Operations::detached());
-    let op = format!("side-by-side-{}", uuid::Uuid::new_v4());
+    let op = OperationId::from(format!("side-by-side-{}", uuid::Uuid::new_v4()));
     let (started_tx, started_rx) = oneshot::channel();
     let (release_tx, release_rx) = oneshot::channel::<()>();
     let id = op.clone();
@@ -49,7 +50,7 @@ async fn an_operation_registered_in_one_engine_is_invisible_to_another() {
 
     assert_eq!(a.manager().lifecycle_status(&op), Some(LifecycleStatus::Running));
     assert_eq!(b.manager().lifecycle_status(&op), None, "not in the other queue");
-    assert!(a.manager().list().iter().any(|row| row.operation_id == op));
+    assert!(a.manager().list().iter().any(|row| row.operation_id == op.as_str()));
     assert!(b.manager().list().is_empty(), "the other engine lists nothing");
     assert!(a.registry().get(&op).is_some());
     assert!(b.registry().get(&op).is_none(), "not in the other registry");

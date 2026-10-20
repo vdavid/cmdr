@@ -147,7 +147,7 @@ async fn streaming_copy_cancel_while_paused_mid_file_unblocks() {
 
     // Install into the global state cache so the production cancel API reaches it.
     let op = engine.register_state("test-midchunk-cancel", make_state(&engine));
-    let op_id = op.id().to_string();
+    let op_id = op.id().clone();
     let state = Arc::clone(op.state());
 
     // Watches the bytes the copy REPORTS, which is the number the transfer
@@ -347,7 +347,7 @@ async fn paused_mtp_copy_cancel_while_paused_keeps_no_partial() {
     ));
 
     let op = engine.register_state("test-relpause-cancel", make_state(&engine));
-    let op_id = op.id().to_string();
+    let op_id = op.id().clone();
     let state = Arc::clone(op.state());
 
     // Watches the bytes the copy REPORTS, which is the number the transfer

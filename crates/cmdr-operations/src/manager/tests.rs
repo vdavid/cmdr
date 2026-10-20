@@ -23,9 +23,9 @@ mod reorder;
 /// hang burns the budget.
 const WAIT: Duration = Duration::from_secs(5);
 
-fn descriptor(op_id: &str, lanes: Vec<&str>) -> OperationDescriptor {
+fn descriptor(op_id: &OperationId, lanes: Vec<&str>) -> OperationDescriptor {
     OperationDescriptor {
-        operation_id: op_id.to_string(),
+        operation_id: op_id.clone(),
         operation_type: WriteOperationType::Copy,
         lanes: lanes.into_iter().map(LaneKey::new).collect(),
         volume_ids: vec![],
@@ -38,9 +38,13 @@ fn descriptor(op_id: &str, lanes: Vec<&str>) -> OperationDescriptor {
 
 /// A descriptor for an instant op (`run_instant`): no lanes, the given op type
 /// and busy `volume_ids`.
-fn instant_descriptor(op_id: &str, op_type: WriteOperationType, volume_ids: Vec<String>) -> OperationDescriptor {
+fn instant_descriptor(
+    op_id: &OperationId,
+    op_type: WriteOperationType,
+    volume_ids: Vec<String>,
+) -> OperationDescriptor {
     OperationDescriptor {
-        operation_id: op_id.to_string(),
+        operation_id: op_id.clone(),
         operation_type: op_type,
         lanes: vec![],
         volume_ids,
@@ -55,7 +59,7 @@ fn instant_descriptor(op_id: &str, op_type: WriteOperationType, volume_ids: Vec<
 /// for `release`, then settles the op (frees lanes + admits next) on the engine
 /// that admitted it. Lets a test hold an op "running" while it asserts the
 /// state of a second op.
-fn gated_deferred(op_id: String, started: oneshot::Sender<()>, release: oneshot::Receiver<()>) -> DeferredStart {
+fn gated_deferred(op_id: OperationId, started: oneshot::Sender<()>, release: oneshot::Receiver<()>) -> DeferredStart {
     Box::new(move |ops: crate::Operations| {
         Box::pin(async move {
             let guard = ManagedTaskGuard::new(ops.manager(), op_id.clone());
@@ -70,7 +74,7 @@ fn gated_deferred(op_id: String, started: oneshot::Sender<()>, release: oneshot:
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn admits_immediately_when_lanes_free() {
     let engine = TestOperations::new();
-    let op = "admit-free".to_string();
+    let op = OperationId::from("admit-free");
     let lane = "lane".to_string();
     let (started_tx, started_rx) = oneshot::channel();
     let (rel_tx, rel_rx) = oneshot::channel();
@@ -95,8 +99,8 @@ async fn admits_immediately_when_lanes_free() {
 async fn queues_when_a_needed_lane_is_busy() {
     let engine = TestOperations::new();
     let lane = "lane".to_string();
-    let op_a = "busy-a".to_string();
-    let op_b = "busy-b".to_string();
+    let op_a = OperationId::from("busy-a");
+    let op_b = OperationId::from("busy-b");
     let (a_started_tx, a_started_rx) = oneshot::channel();
     let (a_rel_tx, a_rel_rx) = oneshot::channel();
 
@@ -136,8 +140,8 @@ async fn queues_when_a_needed_lane_is_busy() {
 async fn fifo_dequeue_on_settle_serializes_same_lane_ops() {
     let engine = TestOperations::new();
     let lane = "lane".to_string();
-    let op_a = "serial-a".to_string();
-    let op_b = "serial-b".to_string();
+    let op_a = OperationId::from("serial-a");
+    let op_b = OperationId::from("serial-b");
 
     let (a_started_tx, a_started_rx) = oneshot::channel();
     let (a_rel_tx, a_rel_rx) = oneshot::channel();
@@ -174,8 +178,8 @@ async fn disjoint_lane_ops_both_run_in_parallel() {
     let engine = TestOperations::new();
     let lane_a = "lane-a".to_string();
     let lane_b = "lane-b".to_string();
-    let op_a = "par-a".to_string();
-    let op_b = "par-b".to_string();
+    let op_a = OperationId::from("par-a");
+    let op_b = OperationId::from("par-b");
 
     let (a_started_tx, a_started_rx) = oneshot::channel();
     let (a_rel_tx, a_rel_rx) = oneshot::channel();
@@ -211,9 +215,9 @@ async fn two_lane_op_waits_until_both_lanes_free_and_does_not_starve() {
     let engine = TestOperations::new();
     let lane_x = "lane-x".to_string();
     let lane_y = "lane-y".to_string();
-    let op_a = "two-a".to_string(); // holds X
-    let op_c = "two-c".to_string(); // holds Y
-    let op_b = "two-b".to_string(); // needs X + Y
+    let op_a = OperationId::from("two-a"); // holds X
+    let op_c = OperationId::from("two-c"); // holds Y
+    let op_b = OperationId::from("two-b"); // needs X + Y
 
     let (a_started_tx, a_started_rx) = oneshot::channel();
     let (a_rel_tx, a_rel_rx) = oneshot::channel();
@@ -273,8 +277,8 @@ async fn cancel_queued_op_removes_it_without_spawning() {
 
     let engine = TestOperations::new();
     let lane = "lane".to_string();
-    let op_a = "cancelq-a".to_string();
-    let op_b = "cancelq-b".to_string();
+    let op_a = OperationId::from("cancelq-a");
+    let op_b = OperationId::from("cancelq-b");
 
     let (a_started_tx, a_started_rx) = oneshot::channel();
     let (a_rel_tx, a_rel_rx) = oneshot::channel();
@@ -336,7 +340,7 @@ async fn cancel_if_queued_returns_false_for_running_op() {
     // caller routes through the existing intent-based cancel path.
     let engine = TestOperations::new();
     let lane = "lane".to_string();
-    let op = "cancel-running".to_string();
+    let op = OperationId::from("cancel-running");
     let (started_tx, started_rx) = oneshot::channel();
     let (rel_tx, rel_rx) = oneshot::channel();
     engine.manager().spawn_managed(
@@ -364,8 +368,8 @@ async fn panicking_op_releases_its_lane_without_spawning_next() {
     // direct result of the panic.
     let engine = TestOperations::new();
     let lane = "lane".to_string();
-    let op_a = "panic-a".to_string();
-    let op_b = "panic-b".to_string();
+    let op_a = OperationId::from("panic-a");
+    let op_b = OperationId::from("panic-b");
 
     // A: a deferred that panics WITHOUT calling on_settled (guard armed).
     let a_id = op_a.clone();
@@ -416,7 +420,7 @@ async fn set_paused_flips_running_op_to_paused_and_keeps_its_lane() {
     // back and still holds the lane.
     let engine = TestOperations::new();
     let lane = "lane".to_string();
-    let op = "pause-op".to_string();
+    let op = OperationId::from("pause-op");
     let (started_tx, started_rx) = oneshot::channel();
     let (rel_tx, rel_rx) = oneshot::channel();
     engine.manager().spawn_managed(
@@ -466,8 +470,8 @@ async fn paused_running_op_does_not_admit_a_queued_same_lane_op() {
     // must NOT start (it would fight the paused op on resume).
     let engine = TestOperations::new();
     let lane = "lane".to_string();
-    let op_a = "paused-holder".to_string();
-    let op_b = "waiting".to_string();
+    let op_a = OperationId::from("paused-holder");
+    let op_b = OperationId::from("waiting");
 
     let (a_started_tx, a_started_rx) = oneshot::channel();
     let (a_rel_tx, a_rel_rx) = oneshot::channel();
@@ -510,8 +514,8 @@ async fn set_paused_is_noop_for_queued_or_absent_ops() {
     // above (queue window, IPC, the MCP `queue` tool) turns into an honest answer.
     let engine = TestOperations::new();
     let lane = "lane".to_string();
-    let op_a = "holder".to_string();
-    let op_b = "queued".to_string();
+    let op_a = OperationId::from("holder");
+    let op_b = OperationId::from("queued");
 
     let (a_started_tx, a_started_rx) = oneshot::channel();
     let (a_rel_tx, a_rel_rx) = oneshot::channel();
@@ -542,7 +546,9 @@ async fn set_paused_is_noop_for_queued_or_absent_ops() {
         "a Queued op stays Queued (not Paused)"
     );
     assert_eq!(
-        engine.manager().set_paused("does-not-exist-zzz", true),
+        engine
+            .manager()
+            .set_paused(&OperationId::from("does-not-exist-zzz"), true),
         PauseOutcome::NotApplicable
     );
 
@@ -597,7 +603,7 @@ async fn single_op_with_free_lanes_behaves_like_immediate_spawn() {
     // The common case: nothing else running, the op spawns at once and settles
     // cleanly, leaving the registry empty.
     let engine = TestOperations::new();
-    let op = "solo".to_string();
+    let op = OperationId::from("solo");
     let lane = "lane".to_string();
     let (started_tx, started_rx) = oneshot::channel();
     let (rel_tx, rel_rx) = oneshot::channel();
@@ -637,7 +643,7 @@ async fn admitted_op_runs_even_if_the_admitting_runtime_is_dropped() {
 
     let engine = TestOperations::new();
 
-    let op = "survives-runtime-drop".to_string();
+    let op = OperationId::from("survives-runtime-drop");
     let lane = "lane".to_string();
     let ran = Arc::new(AtomicBool::new(false));
 
@@ -700,7 +706,7 @@ async fn run_instant_marks_volume_busy_and_registers_record_for_op_duration() {
     // whole duration, then both clear once it finishes; the result is returned.
     let engine = TestOperations::new();
     let vol = "inst-vol".to_string();
-    let op = "inst-busy".to_string();
+    let op = OperationId::from("inst-busy");
     let started = Arc::new(tokio::sync::Notify::new());
     let release = Arc::new(tokio::sync::Notify::new());
     let started_in = Arc::clone(&started);
@@ -730,7 +736,7 @@ async fn run_instant_marks_volume_busy_and_registers_record_for_op_duration() {
             .manager()
             .list()
             .iter()
-            .any(|o| o.operation_id == op_id && o.status == LifecycleStatus::Running),
+            .any(|o| o.operation_id == op_id.as_str() && o.status == LifecycleStatus::Running),
         "the instant op must show as a Running record mid-flight"
     );
 
@@ -744,7 +750,7 @@ async fn run_instant_marks_volume_busy_and_registers_record_for_op_duration() {
         "volume must no longer be busy after the op finishes"
     );
     assert!(
-        !engine.manager().list().iter().any(|o| o.operation_id == op),
+        !engine.manager().list().iter().any(|o| o.operation_id == op.as_str()),
         "the record must be removed after the op finishes"
     );
 }
@@ -757,7 +763,7 @@ async fn run_instant_marks_only_nonroot_volumes_busy() {
     let engine = TestOperations::new();
     // Non-root volume → busy while running.
     let vol = "inst-nonroot".to_string();
-    let op = "inst-nonroot-op".to_string();
+    let op = OperationId::from("inst-nonroot-op");
     let started = Arc::new(tokio::sync::Notify::new());
     let release = Arc::new(tokio::sync::Notify::new());
     let (s_in, r_in) = (Arc::clone(&started), Arc::clone(&release));
@@ -781,7 +787,7 @@ async fn run_instant_marks_only_nonroot_volumes_busy() {
     assert!(!engine.busy_volume_ids().contains(&vol));
 
     // Root volume → never in the busy set (root is excluded from the busy set).
-    let op_root = "inst-root-op".to_string();
+    let op_root = OperationId::from("inst-root-op");
     let started2 = Arc::new(tokio::sync::Notify::new());
     let release2 = Arc::new(tokio::sync::Notify::new());
     let (s2, r2) = (Arc::clone(&started2), Arc::clone(&release2));
@@ -805,7 +811,11 @@ async fn run_instant_marks_only_nonroot_volumes_busy() {
         "the root volume must be excluded from the busy set even for an instant op"
     );
     assert!(
-        engine.manager().list().iter().any(|o| o.operation_id == op_root),
+        engine
+            .manager()
+            .list()
+            .iter()
+            .any(|o| o.operation_id == op_root.as_str()),
         "the root instant op still registers a Running record"
     );
     release2.notify_one();
@@ -819,8 +829,8 @@ async fn run_instant_does_not_reserve_a_lane() {
     // Queued).
     let engine = TestOperations::new();
     let lane = "inst-lane".to_string();
-    let inst = "inst-op".to_string();
-    let xfer = "xfer-op".to_string();
+    let inst = OperationId::from("inst-op");
+    let xfer = OperationId::from("xfer-op");
 
     let started = Arc::new(tokio::sync::Notify::new());
     let release = Arc::new(tokio::sync::Notify::new());
@@ -878,7 +888,7 @@ async fn run_instant_releases_busy_and_record_when_dropped_midflight() {
     // the eject guard sticks ON forever and a phantom row lingers.
     let engine = TestOperations::new();
     let vol = "drop-vol".to_string();
-    let op = "inst-drop".to_string();
+    let op = OperationId::from("inst-drop");
     let started = Arc::new(tokio::sync::Notify::new());
     let parked = Arc::new(tokio::sync::Notify::new()); // never fired → op parks forever
     let (s_in, p_in) = (Arc::clone(&started), Arc::clone(&parked));
@@ -897,7 +907,7 @@ async fn run_instant_releases_busy_and_record_when_dropped_midflight() {
     }
     assert!(engine.busy_volume_ids().contains(&vol), "volume busy while the op runs");
     assert!(
-        engine.manager().list().iter().any(|o| o.operation_id == op),
+        engine.manager().list().iter().any(|o| o.operation_id == op.as_str()),
         "record present while running"
     );
 
@@ -909,7 +919,7 @@ async fn run_instant_releases_busy_and_record_when_dropped_midflight() {
         "B1: a mid-flight drop must release the busy status (else eject stays disabled forever)"
     );
     assert!(
-        !engine.manager().list().iter().any(|o| o.operation_id == op),
+        !engine.manager().list().iter().any(|o| o.operation_id == op.as_str()),
         "B1: a mid-flight drop must remove the phantom record"
     );
 }
@@ -920,7 +930,7 @@ async fn run_instant_releases_busy_and_record_when_op_panics() {
     // remove the record on unwind.
     let engine = TestOperations::new();
     let vol = "panic-vol".to_string();
-    let op = "inst-panic".to_string();
+    let op = OperationId::from("inst-panic");
     let desc = instant_descriptor(&op, WriteOperationType::CreateFile, vec![vol.clone()]);
 
     let manager = Arc::clone(engine.manager());
@@ -936,7 +946,7 @@ async fn run_instant_releases_busy_and_record_when_op_panics() {
         "B1: a panicking instant op must release the busy status on unwind"
     );
     assert!(
-        !engine.manager().list().iter().any(|o| o.operation_id == op),
+        !engine.manager().list().iter().any(|o| o.operation_id == op.as_str()),
         "B1: a panicking instant op must remove its record on unwind"
     );
 }
@@ -946,7 +956,7 @@ async fn run_instant_returns_the_ops_result_unchanged() {
     // (e) Both Ok and Err propagate to the caller verbatim, and the record is
     // cleaned up either way.
     let engine = TestOperations::new();
-    let op_ok = "inst-ok".to_string();
+    let op_ok = OperationId::from("inst-ok");
     let ok: Result<u32, String> = engine
         .manager()
         .run_instant(
@@ -956,11 +966,11 @@ async fn run_instant_returns_the_ops_result_unchanged() {
         .await;
     assert_eq!(ok, Ok(11), "Ok result propagates unchanged");
     assert!(
-        !engine.manager().list().iter().any(|o| o.operation_id == op_ok),
+        !engine.manager().list().iter().any(|o| o.operation_id == op_ok.as_str()),
         "record removed after a successful instant op"
     );
 
-    let op_err = "inst-err".to_string();
+    let op_err = OperationId::from("inst-err");
     let err: Result<u32, String> = engine
         .manager()
         .run_instant(instant_descriptor(&op_err, WriteOperationType::Rename, vec![]), async {
@@ -969,7 +979,11 @@ async fn run_instant_returns_the_ops_result_unchanged() {
         .await;
     assert_eq!(err, Err("boom".to_string()), "Err result propagates unchanged");
     assert!(
-        !engine.manager().list().iter().any(|o| o.operation_id == op_err),
+        !engine
+            .manager()
+            .list()
+            .iter()
+            .any(|o| o.operation_id == op_err.as_str()),
         "record removed after a failed instant op"
     );
 }
@@ -984,7 +998,7 @@ async fn operations_changed_fires_on_register_admit_and_settle_with_todays_count
     let engine = TestOperations::new();
     let mgr = engine.manager();
     let lane = "lane".to_string();
-    let (a, b) = ("emits-a".to_string(), "emits-b".to_string());
+    let (a, b) = (OperationId::from("emits-a"), OperationId::from("emits-b"));
     let (a_started_tx, a_started_rx) = oneshot::channel();
     let (a_release_tx, a_release_rx) = oneshot::channel();
     let (b_started_tx, b_started_rx) = oneshot::channel();
@@ -1021,7 +1035,7 @@ async fn operations_changed_fires_on_register_admit_and_settle_with_todays_count
     assert_eq!(mgr.lifecycle_status(&b), None);
     assert_eq!(mgr.emit_count(), base + 4, "B's settle");
 
-    let instant = "emits-instant".to_string();
+    let instant = OperationId::from("emits-instant");
     mgr.run_instant(
         instant_descriptor(&instant, WriteOperationType::Rename, vec![]),
         async {},

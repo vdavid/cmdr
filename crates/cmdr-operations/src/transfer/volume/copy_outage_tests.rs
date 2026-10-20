@@ -97,7 +97,7 @@ async fn a_folder_copy_waits_out_a_dropped_share_and_finishes() {
 
     copy_volumes_with_progress(
         Arc::new(CollectorEventSink::new()),
-        op.id(),
+        op.id().as_str(),
         &state,
         source,
         &[PathBuf::from("/batch")],
@@ -129,7 +129,7 @@ async fn a_multi_file_copy_waits_out_a_dropped_share_and_finishes() {
     let sources: Vec<PathBuf> = (0..5).map(|n| PathBuf::from(format!("/f{n}.txt"))).collect();
     copy_volumes_with_progress(
         Arc::new(CollectorEventSink::new()),
-        op.id(),
+        op.id().as_str(),
         &state,
         source,
         &sources,
@@ -168,7 +168,7 @@ async fn a_download_waits_out_a_source_share_that_drops_at_the_open() {
     let sources: Vec<PathBuf> = (0..3).map(|n| PathBuf::from(format!("/f{n}.txt"))).collect();
     copy_volumes_with_progress(
         Arc::new(CollectorEventSink::new()),
-        op.id(),
+        op.id().as_str(),
         &state,
         source,
         &sources,
@@ -211,7 +211,7 @@ async fn a_late_error_from_a_replaced_session_is_run_again_and_every_file_lands(
     let sources: Vec<PathBuf> = (0..5).map(|n| PathBuf::from(format!("/f{n}.txt"))).collect();
     copy_volumes_with_progress(
         Arc::new(CollectorEventSink::new()),
-        op.id(),
+        op.id().as_str(),
         &state,
         source,
         &sources,
@@ -263,7 +263,7 @@ async fn copy_that_the_share_stops(
 
     let failure = copy_volumes_with_progress(
         Arc::new(CollectorEventSink::new()),
-        op.id(),
+        op.id().as_str(),
         &state,
         source,
         &[PathBuf::from("/batch")],
@@ -273,7 +273,12 @@ async fn copy_that_the_share_stops(
     )
     .await
     .expect_err("a share that never comes back still fails the copy");
-    let event = write_error_event_from(&state, op.id().to_owned(), WriteOperationType::Copy, failure);
+    let event = write_error_event_from(
+        &state,
+        op.id().to_string().to_owned(),
+        WriteOperationType::Copy,
+        failure,
+    );
     (inner, nas, event.error)
 }
 
@@ -367,7 +372,7 @@ async fn a_deep_clash_that_outlasts_its_outage_says_it_lost_the_connection() {
 
     let failure = copy_volumes_with_progress(
         Arc::new(CollectorEventSink::new()),
-        op.id(),
+        op.id().as_str(),
         &state,
         source,
         &[PathBuf::from("/batch")],
@@ -377,7 +382,13 @@ async fn a_deep_clash_that_outlasts_its_outage_says_it_lost_the_connection() {
     )
     .await
     .expect_err("a share that never comes back fails the copy");
-    let error = write_error_event_from(&state, op.id().to_owned(), WriteOperationType::Copy, failure).error;
+    let error = write_error_event_from(
+        &state,
+        op.id().to_string().to_owned(),
+        WriteOperationType::Copy,
+        failure,
+    )
+    .error;
 
     assert!(
         matches!(
@@ -411,7 +422,7 @@ async fn a_cancel_during_the_wait_cancels_the_copy() {
     let started = Instant::now();
     let failure = copy_volumes_with_progress(
         Arc::new(CollectorEventSink::new()),
-        op.id(),
+        op.id().as_str(),
         &state,
         source,
         &[PathBuf::from("/batch")],
@@ -465,7 +476,7 @@ async fn a_cancel_while_the_share_is_out_reports_at_once_and_cleans_up_once_it_i
         Duration::from_secs(5),
         copy_volumes_with_progress(
             Arc::clone(&events) as Arc<dyn OperationEventSink>,
-            op.id(),
+            op.id().as_str(),
             &state,
             source,
             &[PathBuf::from("/batch")],
@@ -525,7 +536,7 @@ async fn a_copy_that_starts_while_the_share_is_gone_waits_for_it() {
 
     copy_volumes_with_progress(
         Arc::clone(&events) as Arc<dyn OperationEventSink>,
-        op.id(),
+        op.id().as_str(),
         &state,
         source,
         &[PathBuf::from("/batch")],
@@ -585,7 +596,7 @@ async fn copy_through_a_drop_at_landing(
 
     let outcome = copy_volumes_with_progress(
         Arc::new(CollectorEventSink::new()),
-        op.id(),
+        op.id().as_str(),
         &state,
         source,
         &[PathBuf::from("/batch")],
@@ -757,7 +768,7 @@ async fn copy_through_a_swallowed_single_shot_write(
 
     let outcome = copy_volumes_with_progress(
         Arc::new(CollectorEventSink::new()),
-        op.id(),
+        op.id().as_str(),
         &state,
         source,
         &[PathBuf::from("/batch")],

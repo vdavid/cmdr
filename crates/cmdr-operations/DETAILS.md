@@ -1266,8 +1266,12 @@ An entry point production reaches only from inside the engine (a routed start li
 `copy_between_volumes`, the raw pause gate) stays `pub(crate)`; an app-side cell drives it through a `testing`-gated
 door that forwards to it (`testing::copy_between_volumes`, or the gated `Operations::route_archive_copy_into`).
 
-An operation id is a bare `&str` on the public verbs. `OperationId` types it on the journal API, in
-`OperationErrorReport`, and on the external-op pair; typing the rest is #470.
+Every public verb that names an operation takes `&OperationId` (or `&[OperationId]`), so a volume id, a preview id, or a
+path can't pass for one. The IPC commands and MCP tools wrap the incoming `String` once, so the wire (`bindings.ts`)
+still carries plain text. Inside, the control plane holds the type too: the manager's records, line, and guards, the
+state registry, a preview's claim, and the scan bridge. The progress path below it (the drivers, the status cache's
+`update`, the probe registry) speaks the same `&str` its events carry, and a start site mints the id typed and lowers it
+there.
 
 `host` (25 items): the seam traits the app answers (`OperationVolumes`, `EngineEvents`, `OwnWrites`, `OperationIndex`,
 `Pacing`, `NameOrder`, and the two event sinks, re-exported there too), their value types (`OperationErrorReport`,

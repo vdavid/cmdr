@@ -36,7 +36,7 @@ use super::super::super::types::{
 use super::transfer_error::{WriteFailure, write_error_event_from};
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::Volume;
-use cmdr_operation_log::types::OpKind;
+use cmdr_operation_log::types::{OpKind, OperationId};
 
 impl crate::Operations {
     /// Unified move across volume types.
@@ -166,7 +166,7 @@ impl crate::Operations {
             source_paths.len()
         );
 
-        let operation_id = cmdr_operation_log::new_operation_id();
+        let operation_id = OperationId::from(cmdr_operation_log::new_operation_id());
 
         // The per-leaf record points inside `move_volumes_with_progress` journal under
         // these REAL volume ids (carried on the op state so the test call sites stay
@@ -221,7 +221,7 @@ impl crate::Operations {
                 // terminal event and after `on_settled`'s cache cleanup.
                 let _settled_guard = crate::state::WriteSettledGuard::new(
                     Arc::clone(&events),
-                    op_id.clone(),
+                    op_id.to_string(),
                     WriteOperationType::Move,
                     Some(source_volume_name),
                 );
@@ -241,7 +241,7 @@ impl crate::Operations {
                 // rows land inside `move_volumes_with_progress`; this brackets the op).
                 journal::open_volume_op(
                     state.scope(),
-                    &op_id,
+                    op_id.as_str(),
                     OpKind::Move,
                     initiator,
                     &journal_source_volume_id,
@@ -256,7 +256,7 @@ impl crate::Operations {
                 let bound = retain_bound_sources_on(
                     source_volume.as_ref(),
                     &*events,
-                    &op_id,
+                    op_id.as_str(),
                     WriteOperationType::Move,
                     &state,
                     expected_sources.as_ref(),
@@ -271,7 +271,7 @@ impl crate::Operations {
                     Some(source_paths) => {
                         move_volumes_with_progress(
                             Arc::clone(&events),
-                            &op_id,
+                            op_id.as_str(),
                             &state,
                             source_volume,
                             &source_paths,
@@ -298,7 +298,7 @@ impl crate::Operations {
                         log::warn!(target: "move", "move operation {} failed: {:?}", op_id, failure.error);
                         events.emit_error(write_error_event_from(
                             &state,
-                            op_id.clone(),
+                            op_id.to_string(),
                             WriteOperationType::Move,
                             failure,
                         ));
@@ -313,7 +313,7 @@ impl crate::Operations {
         self.manager().spawn_managed(descriptor, state, Box::new(deferred));
 
         Ok(WriteOperationStartResult {
-            operation_id,
+            operation_id: operation_id.to_string(),
             operation_type: WriteOperationType::Move,
         })
     }

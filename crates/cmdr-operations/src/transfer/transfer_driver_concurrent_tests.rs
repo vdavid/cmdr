@@ -12,6 +12,7 @@ use super::super::super::event_sinks::CollectorEventSink;
 use super::super::super::types::WriteOperationType;
 use super::test_support::make_state;
 use crate::testing::TestOperations;
+use cmdr_operation_log::types::OperationId;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -27,16 +28,18 @@ async fn concurrent_per_file_callback_is_cancel_only_not_pause_aware() {
     use super::LeafProgressLedger;
     use std::sync::atomic::AtomicUsize;
 
-    let op_id = "concurrent-pause-noop".to_string();
+    let op_id = OperationId::from("concurrent-pause-noop");
     let state = make_state(&engine);
-    engine.register_state(&op_id, Arc::clone(&state));
-    engine.status().register(&op_id, WriteOperationType::Copy, vec![]);
+    engine.register_state(op_id.as_str(), Arc::clone(&state));
+    engine
+        .status()
+        .register(op_id.as_str(), WriteOperationType::Copy, vec![]);
     let sink: Arc<dyn super::super::super::event_sinks::OperationEventSink> = Arc::new(CollectorEventSink::new());
 
     let ledger = LeafProgressLedger::new(
         Arc::clone(&sink),
         Arc::clone(&state),
-        op_id.clone(),
+        op_id.to_string(),
         WriteOperationType::Copy,
         Arc::new(AtomicUsize::new(0)),
         1,

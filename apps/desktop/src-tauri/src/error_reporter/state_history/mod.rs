@@ -12,6 +12,7 @@ use crate::mcp::pane_state::PaneState;
 use crate::mcp::resources::volumes::VolumeSummary;
 use crate::redact::RedactionContext;
 use chrono::{DateTime, Utc};
+use cmdr_operation_log::types::OperationId;
 use cmdr_operations::{LifecycleStatus, WriteOperationPhase, WriteOperationType};
 use std::collections::VecDeque;
 use std::sync::{LazyLock, Mutex};
@@ -262,7 +263,7 @@ fn capture_operations() -> Vec<RawOperationSnapshot> {
         .list_operations()
         .into_iter()
         .map(|operation| {
-            let progress = engine.get_operation_status(&operation.operation_id);
+            let progress = engine.get_operation_status(&OperationId::from(operation.operation_id.as_str()));
             RawOperationSnapshot {
                 operation_id: keep_operation_id(&operation.operation_id),
                 operation_type: operation.operation_type,

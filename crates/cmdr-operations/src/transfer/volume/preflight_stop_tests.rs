@@ -21,6 +21,7 @@ use crate::testing::TestOperations;
 use crate::types::{ConflictResolution, VolumeCopyConfig, WriteOperationError, WriteOperationType};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::{BatchScanResult, ScanBoundary, Volume, VolumeError};
+use cmdr_operation_log::types::OperationId;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -55,7 +56,7 @@ enum TripAction {
 struct BoundaryWalkingVolume {
     engine: Operations,
     state: Arc<WriteOperationState>,
-    operation_id: String,
+    operation_id: OperationId,
     action: TripAction,
     walked: AtomicUsize,
 }
@@ -65,7 +66,7 @@ impl BoundaryWalkingVolume {
         Arc::new(Self {
             engine: engine.clone(),
             state: Arc::clone(state),
-            operation_id: operation_id.to_string(),
+            operation_id: OperationId::from(operation_id),
             action,
             walked: AtomicUsize::new(0),
         })
@@ -168,7 +169,7 @@ async fn a_cancel_during_the_operations_own_scan_stops_the_walk() {
     let engine = TestOperations::new();
     let state = make_state(&engine);
     let op = engine.register_state("preflight-scan-cancel", Arc::clone(&state));
-    let volume = BoundaryWalkingVolume::new(&engine, &state, op.id(), TripAction::Cancel);
+    let volume = BoundaryWalkingVolume::new(&engine, &state, op.id().as_str(), TripAction::Cancel);
     let as_volume: Arc<dyn Volume> = Arc::clone(&volume) as Arc<dyn Volume>;
     let events = CollectorEventSink::new();
 
@@ -176,7 +177,7 @@ async fn a_cancel_during_the_operations_own_scan_stops_the_walk() {
         &as_volume,
         &[PathBuf::from("/src")],
         &config(),
-        op.id(),
+        op.id().as_str(),
         WriteOperationType::Copy,
         &state,
         &events,
@@ -209,7 +210,7 @@ async fn a_pause_during_the_operations_own_scan_holds_it_until_resume() {
     let engine = TestOperations::new();
     let state = make_state(&engine);
     let op = engine.register_state("preflight-scan-pause", Arc::clone(&state));
-    let volume = BoundaryWalkingVolume::new(&engine, &state, op.id(), TripAction::Pause);
+    let volume = BoundaryWalkingVolume::new(&engine, &state, op.id().as_str(), TripAction::Pause);
     let as_volume: Arc<dyn Volume> = Arc::clone(&volume) as Arc<dyn Volume>;
     let events = CollectorEventSink::new();
 
@@ -230,7 +231,7 @@ async fn a_pause_during_the_operations_own_scan_holds_it_until_resume() {
         &as_volume,
         &[PathBuf::from("/src")],
         &config(),
-        op.id(),
+        op.id().as_str(),
         WriteOperationType::Copy,
         &state,
         &events,

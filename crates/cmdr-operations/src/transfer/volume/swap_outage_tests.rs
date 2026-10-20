@@ -18,6 +18,7 @@
 //! The landing alone, without a wait, is `swap_landing_tests.rs`; the same
 //! sites without an outage are `safe_replace_grid_tests.rs`.
 
+use cmdr_operation_log::types::OperationId;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
@@ -235,7 +236,7 @@ async fn run_on(site: Site, cut: Cut, meanwhile: Meanwhile, replace: Replace) ->
             }),
     );
     let op = engine.register_state(&op_id, Arc::clone(&state));
-    let during = act_once_it_waits(&engine, &state, &nas, &dest_inner, site, meanwhile, op.id());
+    let during = act_once_it_waits(&engine, &state, &nas, &dest_inner, site, meanwhile, op.id().as_str());
 
     let config = VolumeCopyConfig {
         conflict_resolution: ConflictResolution::Overwrite,
@@ -249,7 +250,7 @@ async fn run_on(site: Site, cut: Cut, meanwhile: Meanwhile, replace: Replace) ->
             Site::Move => {
                 super::move_cross::move_volumes_with_progress(
                     events,
-                    op.id(),
+                    op.id().as_str(),
                     &state,
                     Arc::clone(&source),
                     &sources,
@@ -262,7 +263,7 @@ async fn run_on(site: Site, cut: Cut, meanwhile: Meanwhile, replace: Replace) ->
             _ => {
                 super::copy::copy_volumes_with_progress(
                     events,
-                    op.id(),
+                    op.id().as_str(),
                     &state,
                     Arc::clone(&source),
                     &sources,
@@ -309,7 +310,7 @@ fn act_once_it_waits(
     let nas = Arc::clone(nas);
     let dest_inner = Arc::clone(dest_inner);
     let engine = crate::Operations::clone(engine);
-    let op_id = op_id.to_owned();
+    let op_id = OperationId::from(op_id);
     tokio::spawn(async move {
         wait_until_async(WAIT, "the copy to wait for the share", || {
             state.outage.waiting_for().is_some()

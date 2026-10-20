@@ -385,7 +385,7 @@ async fn the_operation_names_the_volume_while_it_waits() {
     let control = Arc::clone(&nas);
     let observed = tokio::spawn(async move {
         wait_until_async(WAIT, "the wait to start", || state.outage.waiting_for().is_some()).await;
-        let activity = state.activity(&op_id, None);
+        let activity = state.activity(op_id.as_str(), None);
         control.become_reachable();
         activity
     });
@@ -420,7 +420,7 @@ async fn a_paused_wait_stops_dialing_and_resumes_with_a_fresh_budget() {
     assert!(!waiter.is_finished(), "a paused wait never times out");
     assert_eq!(nas.reconnect_attempts(), 0, "and dials nothing while paused");
     assert_eq!(
-        state.activity(op.id(), None).map(|a| a.waiting_on),
+        state.activity(op.id().as_str(), None).map(|a| a.waiting_on),
         Some(TransferWaitReason::Paused),
         "the pause is what the operation says"
     );

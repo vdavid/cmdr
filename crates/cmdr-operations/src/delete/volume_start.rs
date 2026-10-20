@@ -23,7 +23,7 @@ use super::super::types::{
 use super::super::{journal, path_summary, scan_bridge};
 use super::delete_volume_files_with_progress_inner;
 use cmdr_fs::volume::LaneKey;
-use cmdr_operation_log::types::{ExecutionStatus, Initiator, OpKind};
+use cmdr_operation_log::types::{ExecutionStatus, Initiator, OpKind, OperationId};
 
 /// Registers a volume-aware delete with the manager and hands it a deferred
 /// async start.
@@ -42,7 +42,7 @@ impl super::super::Operations {
         initiator: Initiator,
         expected_sources: Option<ExpectedSources>,
     ) -> WriteOperationStartResult {
-        let operation_id = cmdr_operation_log::new_operation_id();
+        let operation_id = OperationId::from(cmdr_operation_log::new_operation_id());
         let state = Arc::new(self.new_operation_state(Duration::from_millis(config.progress_interval_ms)));
 
         // Plain `get`: the drive's lane and how it names the items; `delete_files_start`
@@ -93,7 +93,7 @@ impl super::super::Operations {
         self.manager().spawn_managed(descriptor, state, Box::new(deferred));
 
         WriteOperationStartResult {
-            operation_id,
+            operation_id: operation_id.to_string(),
             operation_type: WriteOperationType::Delete,
         }
     }
@@ -104,7 +104,7 @@ impl super::super::Operations {
 struct DeferredDelete {
     ops: crate::Operations,
     events: Arc<dyn OperationEventSink>,
-    operation_id: String,
+    operation_id: OperationId,
     state: Arc<WriteOperationState>,
     volume_id: String,
     sources: Vec<std::path::PathBuf>,
@@ -133,7 +133,7 @@ async fn drive_volume_delete(op: DeferredDelete) {
     // contract depends on it.
     let _settled_guard = WriteSettledGuard::new(
         Arc::clone(&events),
-        operation_id.clone(),
+        operation_id.to_string(),
         WriteOperationType::Delete,
         Some(volume_id.clone()),
     );
@@ -153,7 +153,7 @@ async fn drive_volume_delete(op: DeferredDelete) {
     // helpers bake in). Per-leaf rows are recorded inside the walker.
     journal::open_volume_op(
         state.scope(),
-        &operation_id,
+        operation_id.as_str(),
         OpKind::Delete,
         initiator,
         &volume_id,
@@ -163,7 +163,7 @@ async fn drive_volume_delete(op: DeferredDelete) {
 
     let execution_status = run_volume_delete(
         &*events,
-        &operation_id,
+        operation_id.as_str(),
         &state,
         &volume_id,
         sources,

@@ -364,7 +364,7 @@ async fn the_watchdog_ends_a_wedged_write_and_the_file_runs_again() {
     // thread-local while the watchdog itself runs elsewhere.
     let _window = transfer_probe::StallAbortGuard::set(Duration::from_secs(1));
     let op_probe = transfer_probe::register_operation(
-        guard.id(),
+        guard.id().as_str(),
         1,
         1,
         // A proven-dead verdict, which only a live SMB session can give for
@@ -407,7 +407,7 @@ async fn a_retry_shows_up_in_the_in_flight_table() {
     let dest: Arc<dyn Volume> = Arc::clone(&flaky) as Arc<dyn Volume>;
 
     let op_probe = transfer_probe::register_operation(
-        guard.id(),
+        guard.id().as_str(),
         1,
         1,
         // No liveness verdict: this test is about the retry being VISIBLE, not

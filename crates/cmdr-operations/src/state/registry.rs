@@ -8,6 +8,7 @@ use std::sync::{Arc, RwLock};
 
 use super::{WriteOperationState, WriteProgressEvent};
 use cmdr_fs::ignore_poison::RwLockIgnorePoison;
+use cmdr_operation_log::types::OperationId;
 
 /// The live [`WriteOperationState`] of every registered operation, keyed by
 /// operation id.
@@ -18,7 +19,7 @@ use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 /// the process-global one from a test cancels whatever operations OTHER tests
 /// have in flight at that moment. DETAILS § "Test isolation".
 pub(crate) struct WriteOperationRegistry {
-    entries: RwLock<HashMap<String, Arc<WriteOperationState>>>,
+    entries: RwLock<HashMap<OperationId, Arc<WriteOperationState>>>,
 }
 
 impl WriteOperationRegistry {
@@ -30,14 +31,14 @@ impl WriteOperationRegistry {
 
     /// Registers `state` under `operation_id`, so cancel / pause / conflict
     /// resolution can reach it by id.
-    pub(crate) fn insert(&self, operation_id: String, state: Arc<WriteOperationState>) {
+    pub(crate) fn insert(&self, operation_id: OperationId, state: Arc<WriteOperationState>) {
         self.entries.write_ignore_poison().insert(operation_id, state);
     }
 
     /// The live state for `operation_id`, if it's still registered. Returns an
     /// `Arc` rather than a guard so callers don't hold the registry lock while
     /// they touch the operation.
-    pub(crate) fn get(&self, operation_id: &str) -> Option<Arc<WriteOperationState>> {
+    pub(crate) fn get(&self, operation_id: &OperationId) -> Option<Arc<WriteOperationState>> {
         Some(Arc::clone(self.entries.read_ignore_poison().get(operation_id)?))
     }
 
@@ -49,7 +50,7 @@ impl WriteOperationRegistry {
     /// both backwards. `manager().lifecycle_status()` is that answer; the tests
     /// here use this to pin the difference.
     #[cfg(test)]
-    pub(crate) fn contains(&self, operation_id: &str) -> bool {
+    pub(crate) fn contains(&self, operation_id: &OperationId) -> bool {
         self.entries
             .read()
             .is_ok_and(|entries| entries.contains_key(operation_id))
@@ -61,7 +62,7 @@ impl WriteOperationRegistry {
     /// wedged operation's staged temps hidden forever (a task the driver
     /// abandoned still holds an `Arc` to the state, so the map entry going away
     /// doesn't drop it): `WriteOperationState::end_liveness`.
-    pub(crate) fn forget(&self, operation_id: &str) {
+    pub(crate) fn forget(&self, operation_id: &OperationId) {
         let removed = self.entries.write_ignore_poison().remove(operation_id);
         if let Some(state) = removed {
             state.end_liveness();
@@ -70,7 +71,7 @@ impl WriteOperationRegistry {
 
     /// Every registered operation, copied out, so a walk takes no operation's
     /// own locks (and writes no log line) under the registry's.
-    fn snapshot(&self) -> Vec<(String, Arc<WriteOperationState>)> {
+    fn snapshot(&self) -> Vec<(OperationId, Arc<WriteOperationState>)> {
         self.entries
             .read_ignore_poison()
             .iter()
@@ -86,7 +87,7 @@ impl WriteOperationRegistry {
             .into_iter()
             .filter_map(|(id, state)| {
                 let mut event = state.last_progress()?;
-                event.activity = state.activity(&id, Some(&event));
+                event.activity = state.activity(id.as_str(), Some(&event));
                 Some(event)
             })
             .collect()

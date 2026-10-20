@@ -4,6 +4,7 @@
 //! dir-vs-dir merges without prompting.
 
 use super::test_support::*;
+use cmdr_operation_log::types::OperationId;
 
 /// The clash the operation is parked on, read off the `write-conflict` event a
 /// surface just observed. Answering names it, exactly as the frontend does.
@@ -24,7 +25,7 @@ async fn start_interactive_copy_into(
     archive: &Path,
     src_root: &Path,
     src_rel: &str,
-) -> (Arc<CollectorEventSink>, String) {
+) -> (Arc<CollectorEventSink>, OperationId) {
     use cmdr_local::LocalPosixVolume;
 
     let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder(
@@ -48,7 +49,7 @@ async fn start_interactive_copy_into(
         )
         .await
         .expect("start interactive copy-into");
-    (events, start.operation_id)
+    (events, OperationId::from(start.operation_id))
 }
 
 #[tokio::test]
@@ -282,7 +283,7 @@ async fn interactive_move_into_with_a_skipped_collision_keeps_the_source() {
     })
     .await;
     engine.resolve_write_conflict(
-        &start.operation_id,
+        &OperationId::from(start.operation_id.as_str()),
         pending_clash(&events),
         ConflictResolution::Skip,
         false,

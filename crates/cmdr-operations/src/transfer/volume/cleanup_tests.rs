@@ -450,7 +450,7 @@ async fn a_stopped_volume_reversal_leaves_the_ledger_claiming_what_is_still_ther
         &mut ledger,
         &[],
         &events,
-        guard.id(),
+        guard.id().as_str(),
         &WindDown::of(&state),
         4,
         28,

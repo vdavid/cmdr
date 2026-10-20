@@ -231,7 +231,7 @@ async fn an_ordinary_cancel_still_routes_through_tier_one_and_the_backend_delete
     // cancel down to the backend so the backend tears down its own partial. The
     // test watches the bytes that callback reports rather than standing in for
     // it, so what it drives is production's path and not a copy of it.
-    let progress = ObservedProgress::new(op.state(), op.id());
+    let progress = ObservedProgress::new(op.state(), op.id().as_str());
     let bytes_seen = Arc::clone(&progress.bytes);
     let copy = copy_one(&source, "/big.bin", &dest, op.state(), &progress.source);
     tokio::pin!(copy);

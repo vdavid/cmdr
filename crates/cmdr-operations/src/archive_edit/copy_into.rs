@@ -29,7 +29,7 @@ use cmdr_fs::log_error::LogError;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::{LaneKey, Volume, VolumeError};
 use cmdr_local::LocalPosixVolume;
-use cmdr_operation_log::types::{ArchiveSubkind, ExecutionStatus};
+use cmdr_operation_log::types::{ArchiveSubkind, ExecutionStatus, OperationId};
 
 impl crate::Operations {
     /// Routes a copy/move INTO a zip (a source dropped onto an archive destination)
@@ -359,7 +359,7 @@ impl crate::Operations {
         prov: super::super::journal::ArchiveProvenance,
         destination_name: Option<String>,
     ) -> Result<WriteOperationStartResult, WriteOperationError> {
-        let operation_id = cmdr_operation_log::new_operation_id();
+        let operation_id = OperationId::from(cmdr_operation_log::new_operation_id());
         let operation_type = if prov.subkind == ArchiveSubkind::Compress {
             WriteOperationType::Compress
         } else {
@@ -408,7 +408,7 @@ impl crate::Operations {
                 let task_guard = ManagedTaskGuard::new(ops.manager(), op_id.clone());
                 let settle_volume = (parent_volume_id != "root").then(|| parent_volume_id.clone());
                 let _settled =
-                    WriteSettledGuard::new(Arc::clone(&events), op_id.clone(), operation_type, settle_volume);
+                    WriteSettledGuard::new(Arc::clone(&events), op_id.to_string(), operation_type, settle_volume);
 
                 // Wait out the confirming dialog's scan. The changeset planner
                 // walks the sources itself, so this buys serialization rather than
@@ -426,12 +426,17 @@ impl crate::Operations {
                 // Open the journal row when the op actually starts. Archive edits
                 // spawn directly (not through `start_write_operation`), so this is
                 // their own open/finalize bracket, mirroring the generic one.
-                super::super::journal::open_archive_op(state.scope(), &op_id, prov.initiator, &parent_volume_id);
+                super::super::journal::open_archive_op(
+                    state.scope(),
+                    op_id.as_str(),
+                    prov.initiator,
+                    &parent_volume_id,
+                );
 
                 let hooks = Arc::new(MutatorHooks::new(
                     Arc::clone(&state),
                     Arc::clone(&events),
-                    op_id.clone(),
+                    op_id.to_string(),
                     operation_type,
                     progress_interval,
                 ));
@@ -468,7 +473,7 @@ impl crate::Operations {
                                         &dest_inner,
                                         destination_name.as_deref(),
                                         &*events_for_blocking,
-                                        &op_id_for_blocking,
+                                        op_id_for_blocking.as_str(),
                                         &state_for_blocking,
                                     )?
                                 } else {
@@ -520,7 +525,7 @@ impl crate::Operations {
                     .unwrap_or((0, None));
                 emit_archive_terminal(
                     events.as_ref(),
-                    &op_id,
+                    op_id.as_str(),
                     operation_type,
                     outcome.map(|_| ()),
                     skipped_count,
@@ -566,7 +571,7 @@ impl crate::Operations {
         self.manager().spawn_managed(descriptor, state, Box::new(deferred));
 
         Ok(WriteOperationStartResult {
-            operation_id,
+            operation_id: operation_id.to_string(),
             operation_type,
         })
     }

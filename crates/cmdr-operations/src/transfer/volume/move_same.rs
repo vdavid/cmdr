@@ -45,7 +45,7 @@ use super::transfer_error::{PathRole, map_volume_error};
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::{EntryKind, RenameWork, Volume, VolumeError};
-use cmdr_operation_log::types::OpKind;
+use cmdr_operation_log::types::{OpKind, OperationId};
 
 /// One item's rename landed: its row is done, and its verdict says whether the
 /// source is gone. The caller answers that: a plain rename that returned `Ok`
@@ -85,7 +85,7 @@ impl crate::Operations {
         initiator: cmdr_operation_log::types::Initiator,
         expected_sources: Option<crate::source_binding::ExpectedSources>,
     ) -> Result<WriteOperationStartResult, WriteOperationError> {
-        let operation_id = cmdr_operation_log::new_operation_id();
+        let operation_id = OperationId::from(cmdr_operation_log::new_operation_id());
 
         log::info!(
             "move_within_same_volume: operation_id={}, volume={}, {} sources, dest={}",
@@ -145,7 +145,7 @@ impl crate::Operations {
                 let task_guard = manager::ManagedTaskGuard::new(ops.manager(), op_id.clone());
                 let _settled_guard = crate::state::WriteSettledGuard::new(
                     Arc::clone(&events),
-                    op_id.clone(),
+                    op_id.to_string(),
                     WriteOperationType::Move,
                     Some(volume_name),
                 );
@@ -165,7 +165,7 @@ impl crate::Operations {
                 // rename rows + search leaves land inside `_with_progress`.
                 journal::open_volume_op(
                     state.scope(),
-                    &op_id,
+                    op_id.as_str(),
                     OpKind::Move,
                     initiator,
                     &journal_volume_id,
@@ -180,7 +180,7 @@ impl crate::Operations {
                 let bound = crate::source_binding::retain_bound_sources_on(
                     volume.as_ref(),
                     &*events,
-                    &op_id,
+                    op_id.as_str(),
                     WriteOperationType::Move,
                     &state,
                     expected_sources.as_ref(),
@@ -195,7 +195,7 @@ impl crate::Operations {
                     Some(source_paths) => {
                         move_within_same_volume_with_progress(
                             Arc::clone(&events),
-                            &op_id,
+                            op_id.as_str(),
                             &state,
                             volume,
                             &source_paths,
@@ -220,7 +220,7 @@ impl crate::Operations {
                     Err(e) => {
                         log::warn!(target: "move", "move operation {} failed: detail={:?}", op_id, e.log_detail());
                         state.transfer_tree.note_failure(&e);
-                        events.emit_error(WriteErrorEvent::new(op_id.clone(), WriteOperationType::Move, e));
+                        events.emit_error(WriteErrorEvent::new(op_id.to_string(), WriteOperationType::Move, e));
                     }
                 }
 
@@ -232,7 +232,7 @@ impl crate::Operations {
         self.manager().spawn_managed(descriptor, state, Box::new(deferred));
 
         Ok(WriteOperationStartResult {
-            operation_id,
+            operation_id: operation_id.to_string(),
             operation_type: WriteOperationType::Move,
         })
     }

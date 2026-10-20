@@ -10,7 +10,7 @@ use std::time::Duration;
 
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::LaneKey;
-use cmdr_operation_log::types::Initiator;
+use cmdr_operation_log::types::{Initiator, OperationId};
 
 use super::delete::delete_files_with_progress_inner;
 use super::delete::trash::trash_files_with_progress;
@@ -71,7 +71,7 @@ impl Operations {
             + Send
             + 'static,
     {
-        let operation_id = cmdr_operation_log::new_operation_id();
+        let operation_id = OperationId::from(cmdr_operation_log::new_operation_id());
         let state = Arc::new(
             self.new_operation_state(Duration::from_millis(progress_interval_ms))
                 .with_sides(sides),
@@ -108,7 +108,8 @@ impl Operations {
                 // how (handler success, error, cancel, or panic via JoinError). FE
                 // gates the "Cancelling…" dialog close on this event so the user
                 // can't dispatch a new op against a still-tearing-down volume.
-                let _settled_guard = WriteSettledGuard::new(Arc::clone(&events), op_id.clone(), operation_type, None);
+                let _settled_guard =
+                    WriteSettledGuard::new(Arc::clone(&events), op_id.to_string(), operation_type, None);
 
                 // Wait out the confirming dialog's scan before any journal row or
                 // any I/O: an op that never got past its scan wrote nothing, so
@@ -131,9 +132,16 @@ impl Operations {
                     WriteOperationType::Copy | WriteOperationType::Move => Some(cmdr_fs::volume::DEFAULT_VOLUME_ID),
                     _ => None,
                 };
-                journal::open_local_op(state.scope(), &op_id, op_kind, initiator, item_count, dest_volume_id);
+                journal::open_local_op(
+                    state.scope(),
+                    op_id.as_str(),
+                    op_kind,
+                    initiator,
+                    item_count,
+                    dest_volume_id,
+                );
 
-                let op_id_for_blocking = op_id.clone();
+                let op_id_for_blocking = op_id.to_string();
                 let events_for_handler = Arc::clone(&events);
                 // Kept out of the handler's move so the safety net below can still
                 // read the operation's captured sides: a transfer that returned an
@@ -167,7 +175,7 @@ impl Operations {
                     Ok(Err(e)) => {
                         // Handler error (validation, I/O, etc.): emit write-error as safety net
                         events.emit_error(transfer_sides::transfer_stop_event(
-                            &op_id,
+                            op_id.as_str(),
                             operation_type,
                             &state_for_net,
                             e,
@@ -177,7 +185,7 @@ impl Operations {
                     Err(join_error) => {
                         // Panic/abort in spawn_blocking
                         events.emit_error(WriteErrorEvent::new(
-                            op_id.clone(),
+                            op_id.to_string(),
                             operation_type,
                             WriteOperationError::IoError {
                                 path: String::new(),
@@ -199,7 +207,7 @@ impl Operations {
         self.manager().spawn_managed(descriptor, state, Box::new(deferred));
 
         Ok(WriteOperationStartResult {
-            operation_id,
+            operation_id: operation_id.to_string(),
             operation_type,
         })
     }

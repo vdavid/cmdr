@@ -316,7 +316,7 @@ async fn a_merge_child_abandoned_at_the_drain_deadline_takes_its_rename_placehol
     };
     let copy = copy_volumes_with_progress(
         events.clone(),
-        op.id(),
+        op.id().as_str(),
         op.state(),
         Arc::clone(&gated.source),
         &sources,

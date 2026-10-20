@@ -10,6 +10,7 @@ use serde::Serialize;
 use super::Operations;
 use super::transfer_tree::{TransferTreeView, TransferTreeViewRequest};
 use super::types::{ProgressAxis, WriteOperationType};
+use cmdr_operation_log::types::OperationId;
 
 /// Why there's no tree view to answer with.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
@@ -32,7 +33,7 @@ impl Operations {
     /// there was one.
     pub fn transfer_tree_view(
         &self,
-        operation_id: &str,
+        operation_id: &OperationId,
         request: &TransferTreeViewRequest,
     ) -> Result<TransferTreeView, TransferTreeViewError> {
         let operation_type = self

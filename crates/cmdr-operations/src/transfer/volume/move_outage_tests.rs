@@ -95,7 +95,7 @@ async fn move_from(
     let op = engine.register_state(op, Arc::clone(state));
     move_volumes_with_progress(
         Arc::new(CollectorEventSink::new()),
-        op.id(),
+        op.id().as_str(),
         state,
         source,
         &[PathBuf::from(path)],

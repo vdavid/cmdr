@@ -15,6 +15,7 @@ use super::{
     ConflictId, ConflictResolution, ConflictResolutionOutcome, ConflictResolutionResponse, OperationIntent,
     StopRequest, WriteConflictEvent,
 };
+use cmdr_operation_log::types::OperationId;
 
 impl Operations {
     /// Cancels an in-progress write operation.
@@ -26,7 +27,7 @@ impl Operations {
     /// # Arguments
     /// * `operation_id` - The operation ID to cancel
     /// * `rollback` - If true, roll back (delete created files). If false, stop and keep partial files.
-    pub fn cancel_write_operation(&self, operation_id: &str, rollback: bool) {
+    pub fn cancel_write_operation(&self, operation_id: &OperationId, rollback: bool) {
         // Every exit from here logs. When Rollback appeared to do nothing in the
         // 2026-07-31 incident, the two silent no-op exits below (unknown operation,
         // invalid transition) were indistinguishable from "the intent was set and the
@@ -104,7 +105,7 @@ impl Operations {
     /// operation's wait is worth ending and its neighbour's isn't. The per-op form
     /// stays because the tier-2 suites drive one operation at a time.
     #[cfg(test)]
-    pub(crate) fn abort_write_operation(&self, operation_id: &str) {
+    pub(crate) fn abort_write_operation(&self, operation_id: &OperationId) {
         self.cancel_write_operation(operation_id, false);
         let Some(state) = self.registry().get(operation_id) else {
             log::warn!("abort_write_operation: op={operation_id}: no such operation, ignoring");
@@ -146,7 +147,7 @@ impl Operations {
     /// between-files boundary. Cancellation still wins: a paused op that's then
     /// cancelled unblocks immediately. The manager record's `LifecycleStatus` is
     /// flipped separately (see `manager::set_paused`).
-    pub(crate) fn pause_write_operation(&self, operation_id: &str) -> bool {
+    pub(crate) fn pause_write_operation(&self, operation_id: &OperationId) -> bool {
         if let Some(state) = self.registry().get(operation_id) {
             state.pause_gate.pause();
             return true;
@@ -157,7 +158,7 @@ impl Operations {
     /// Clears the pause flag on the live state for `operation_id`, waking the gate.
     /// Returns `true` if a state existed. Resuming a not-paused op is a harmless
     /// no-op.
-    pub(crate) fn resume_write_operation(&self, operation_id: &str) -> bool {
+    pub(crate) fn resume_write_operation(&self, operation_id: &OperationId) -> bool {
         if let Some(state) = self.registry().get(operation_id) {
             state.pause_gate.resume();
             return true;
@@ -188,7 +189,7 @@ impl Operations {
     /// * `apply_to_all` - If true, apply this resolution to all future conflicts in this operation
     pub fn resolve_write_conflict(
         &self,
-        operation_id: &str,
+        operation_id: &OperationId,
         conflict_id: ConflictId,
         resolution: ConflictResolution,
         apply_to_all: bool,
@@ -217,7 +218,7 @@ impl Operations {
     /// when it went out. This is the pull side of the same question, for a reader
     /// that arrives afterwards: `cmdr://state` renders it so an agent can see WHICH
     /// clash is owed an answer, and answer that one by id rather than guessing.
-    pub fn pending_write_conflict(&self, operation_id: &str) -> Option<WriteConflictEvent> {
+    pub fn pending_write_conflict(&self, operation_id: &OperationId) -> Option<WriteConflictEvent> {
         self.registry().get(operation_id)?.conflict_slot.pending()
     }
 }

@@ -3,6 +3,7 @@
 //! clean extract. The data-safety core: a dest failure, a skipped collision, or a
 //! cancel must delete NOTHING from the archive.
 
+use cmdr_operation_log::types::OperationId;
 use std::future::Future;
 use std::pin::Pin;
 
@@ -318,7 +319,7 @@ async fn move_out_cancel_leaves_the_archive_untouched() {
     // Cancel synchronously before yielding, so the extract observes Stopped at
     // its first cancellation check (the deferred can't run until this task
     // awaits). `false` = keep already-copied files, no rollback.
-    engine.cancel_write_operation(&start.operation_id, false);
+    engine.cancel_write_operation(&OperationId::from(start.operation_id.as_str()), false);
 
     wait_until_async(
         Duration::from_secs(5),
@@ -658,7 +659,7 @@ async fn move_out_rollback_deletes_nothing_from_the_archive() {
 
     // `true` = rollback (delete already-copied files). The archive must stay intact
     // regardless: a rolled-back extraction leaves nothing durable to move out.
-    engine.cancel_write_operation(&start.operation_id, true);
+    engine.cancel_write_operation(&OperationId::from(start.operation_id.as_str()), true);
 
     wait_until_async(
         Duration::from_secs(5),

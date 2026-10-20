@@ -260,7 +260,7 @@ async fn a_rollback_during_the_drain_ends_as_one_rollback() {
 
     let copy = copy_volumes_with_progress(
         events.clone(),
-        op.id(),
+        op.id().as_str(),
         op.state(),
         Arc::clone(&fx.source),
         &sources,

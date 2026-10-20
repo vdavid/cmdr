@@ -228,13 +228,13 @@ async fn merge_cancel_mid_stream_preserves_unshadowed_dest_files() {
     // public path) can find and transition it — exercising the real cancel
     // machinery, not a direct intent store.
     let op = engine.register_state("merge-cancel-public", Arc::clone(&state));
-    let op_id = op.id();
+    let op_id = op.id().clone();
 
     // A sink that cancels (public path) once any byte has been copied.
     struct CancelOnByteSink {
         inner: CollectorEventSink,
         engine: Operations,
-        op_id: String,
+        op_id: OperationId,
         fired: AtomicU8,
     }
     impl OperationEventSink for CancelOnByteSink {
@@ -275,7 +275,7 @@ async fn merge_cancel_mid_stream_preserves_unshadowed_dest_files() {
     let events = Arc::new(CancelOnByteSink {
         inner: CollectorEventSink::new(),
         engine: Operations::clone(&engine),
-        op_id: op_id.to_string(),
+        op_id: op_id.clone(),
         fired: AtomicU8::new(0),
     });
     let config = VolumeCopyConfig {
@@ -286,7 +286,7 @@ async fn merge_cancel_mid_stream_preserves_unshadowed_dest_files() {
 
     let result = copy_volumes_with_progress(
         events.clone(),
-        op_id,
+        op_id.as_str(),
         &state,
         Arc::clone(&source),
         &[PathBuf::from("/album")],

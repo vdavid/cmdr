@@ -14,6 +14,7 @@ use crate::types::{
     ConflictId, ConflictResolution, ConflictResolutionOutcome, TransferActivity, TransferWaitReason,
     WriteOperationPhase, WriteOperationType, WriteProgressEvent,
 };
+use cmdr_operation_log::types::OperationId;
 use std::sync::atomic::Ordering;
 
 // ---- the wait classifier ----
@@ -40,7 +41,7 @@ fn enrich_progress_keeps_an_activity_the_caller_already_decided() {
     // operation keeps no in-flight table, so the lookup answers nothing.
     let engine = TestOperations::new();
     let op = install_state(&engine, "keeps-callers-activity", OperationIntent::Running);
-    let mut event = copying_event(op.id());
+    let mut event = copying_event(op.id().as_str());
     let wedged = TransferActivity {
         in_flight: 3,
         still_for_seconds: 310,
@@ -60,7 +61,7 @@ fn enrich_progress_keeps_an_activity_the_caller_already_decided() {
 fn enrich_progress_classifies_a_wait_the_caller_left_open() {
     let engine = TestOperations::new();
     let op = install_state(&engine, "classifies-open-wait", OperationIntent::Running);
-    let mut event = copying_event(op.id());
+    let mut event = copying_event(op.id().as_str());
     let (tx, _rx) = tokio::sync::oneshot::channel();
     op.state().conflict_slot.arm(tx, placeholder_conflict);
 
@@ -78,7 +79,7 @@ fn an_operation_with_nothing_to_say_reports_no_activity() {
     // answer; a stand-in `moving` is an invention a poller would act on.
     let engine = TestOperations::new();
     let op = install_state(&engine, "nothing-to-say", OperationIntent::Running);
-    let mut event = copying_event(op.id());
+    let mut event = copying_event(op.id().as_str());
 
     op.state().enrich_progress(&mut event);
 
@@ -97,7 +98,7 @@ fn a_poisoned_estimator_still_rates_and_keeps_the_event() {
         panic!("an estimator update panicked, on purpose");
     }));
     assert!(poisoned.is_err() && op.state().estimator.is_poisoned());
-    let mut event = copying_event(op.id());
+    let mut event = copying_event(op.id().as_str());
 
     op.state().enrich_progress(&mut event);
 
@@ -315,8 +316,8 @@ fn a_rollback_click_racing_a_cancel_click_leaves_the_cancel_standing() {
 fn cancel_unknown_operation_is_a_silent_noop() {
     // No installed state; must not panic, must not affect anything.
     let engine = TestOperations::new();
-    engine.cancel_write_operation("does-not-exist-xyzzy", true);
-    engine.cancel_write_operation("does-not-exist-xyzzy", false);
+    engine.cancel_write_operation(&OperationId::from("does-not-exist-xyzzy"), true);
+    engine.cancel_write_operation(&OperationId::from("does-not-exist-xyzzy"), false);
 }
 
 // ---- cancel_all: the frontend-teardown safety net -------------------------
@@ -529,7 +530,7 @@ fn abort_reaches_an_operation_that_was_already_cancelled() {
 #[test]
 fn abort_unknown_operation_is_a_silent_noop() {
     let engine = TestOperations::new();
-    engine.abort_write_operation("does-not-exist-xyzzy");
+    engine.abort_write_operation(&OperationId::from("does-not-exist-xyzzy"));
 }
 
 #[test]
@@ -666,7 +667,12 @@ fn resolve_write_conflict_on_an_unknown_operation_says_so() {
     // same thing as a live operation that isn't asking anything.
     let engine = TestOperations::new();
     assert_eq!(
-        engine.resolve_write_conflict("resolve-gone", ConflictId(1), ConflictResolution::Skip, false),
+        engine.resolve_write_conflict(
+            &OperationId::from("resolve-gone"),
+            ConflictId(1),
+            ConflictResolution::Skip,
+            false
+        ),
         ConflictResolutionOutcome::UnknownOperation
     );
 }
@@ -816,8 +822,8 @@ fn pause_resume_write_operation_flip_the_live_gate() {
 #[test]
 fn pause_resume_unknown_operation_returns_false() {
     let engine = TestOperations::new();
-    assert!(!engine.pause_write_operation("does-not-exist-pause"));
-    assert!(!engine.resume_write_operation("does-not-exist-pause"));
+    assert!(!engine.pause_write_operation(&OperationId::from("does-not-exist-pause")));
+    assert!(!engine.resume_write_operation(&OperationId::from("does-not-exist-pause")));
 }
 
 // ---- the newest tick, for a window that opens late -------------------------
@@ -830,14 +836,14 @@ fn latest_progress_hands_a_late_window_the_tick_a_paused_operation_last_emitted(
     // stored tick was measured while the copy was still moving.
     let engine = TestOperations::new();
     let op = install_state(&engine, "latest-progress-paused", OperationIntent::Running);
-    let mut event = copying_event(op.id());
+    let mut event = copying_event(op.id().as_str());
     op.state().enrich_progress(&mut event);
     op.state().pause_gate.pause();
 
     let latest = engine.registry().latest_progress();
     let tick = latest
         .iter()
-        .find(|tick| tick.operation_id == op.id())
+        .find(|tick| tick.operation_id == op.id().as_str())
         .expect("a paused operation that emitted a tick hands it over");
 
     assert_eq!(
@@ -860,7 +866,7 @@ fn latest_progress_skips_an_operation_that_has_emitted_nothing_yet() {
     let latest = engine.registry().latest_progress();
 
     assert!(
-        latest.iter().all(|tick| tick.operation_id != op.id()),
+        latest.iter().all(|tick| tick.operation_id != op.id().as_str()),
         "no tick, no row to seed"
     );
 }

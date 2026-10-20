@@ -328,7 +328,7 @@ async fn cancel_while_queued_unblocks_both_no_hang() {
     // drops the oneshot sender (unblocking A) and flips intent (so B's in-resolver
     // cancel-check bails). Neither re-emits.
     let state_for_cancel = Arc::clone(&state);
-    let op_id_for_cancel = op_id.to_string();
+    let op_id_for_cancel = op_id.clone();
     let canceller = tokio::spawn(async move {
         // A sender is installed while task A awaits the prompt (task B is then
         // queued behind it on the dispatch mutex).
@@ -356,7 +356,7 @@ async fn cancel_while_queued_unblocks_both_no_hang() {
         Duration::from_secs(20),
         copy_volumes_with_progress(
             events.clone(),
-            op_id,
+            op_id.as_str(),
             &state,
             Arc::clone(&source),
             &[
@@ -460,7 +460,7 @@ async fn cancel_frees_a_driver_queued_behind_a_deep_prompt() {
 
     let canceller = tokio::spawn({
         let events = Arc::clone(&events);
-        let op_id = op_id.clone();
+        let op_id = OperationId::from(op_id.clone());
         async move {
             await_prompted_clash(&events).await;
             until_the_driver_queues_behind_the_deep_prompt(&events).await;

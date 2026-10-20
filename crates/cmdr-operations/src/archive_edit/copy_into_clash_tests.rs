@@ -5,6 +5,7 @@
 //! policy skips it, and a skip keeps a move's source.
 
 use super::test_support::*;
+use cmdr_operation_log::types::OperationId;
 
 /// Runs a copy/move INTO `archive` of local dir `src_rel` under `policy`,
 /// landing at the archive root, and waits for the terminal complete event.
@@ -185,7 +186,7 @@ async fn stop_prompts_for_the_folder_and_an_answered_overwrite_replaces_the_file
         let conflict = &conflicts[0];
         assert!(conflict.source_is_directory, "the prompt names the incoming folder");
         assert!(!conflict.destination_is_directory, "and the archive file it meets");
-        (conflict.operation_id.clone(), conflict.conflict_id)
+        (OperationId::from(conflict.operation_id.as_str()), conflict.conflict_id)
     };
     engine.resolve_write_conflict(&op_id, conflict_id, ConflictResolution::Overwrite, false);
     let skipped = wait_complete(&events).await;
@@ -223,7 +224,10 @@ async fn an_answered_overwrite_on_a_move_lands_the_folder_and_removes_the_source
     .await;
     let (op_id, conflict_id) = {
         let conflicts = events.conflicts.lock_ignore_poison();
-        (conflicts[0].operation_id.clone(), conflicts[0].conflict_id)
+        (
+            OperationId::from(conflicts[0].operation_id.as_str()),
+            conflicts[0].conflict_id,
+        )
     };
     engine.resolve_write_conflict(&op_id, conflict_id, ConflictResolution::Overwrite, false);
     assert_eq!(wait_complete(&events).await, 0);

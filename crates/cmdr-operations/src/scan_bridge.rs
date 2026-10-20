@@ -30,6 +30,8 @@
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, OnceLock};
 
+use cmdr_operation_log::types::OperationId;
+
 use super::Operations;
 use super::event_sinks::OperationEventSink;
 use super::manager::OperationManager;
@@ -79,7 +81,7 @@ impl ScanWait {
 pub(super) async fn await_claimed_preview(
     engine: &Operations,
     events: &dyn OperationEventSink,
-    operation_id: &str,
+    operation_id: &OperationId,
     operation_type: WriteOperationType,
     state: &WriteOperationState,
 ) -> ScanWait {
@@ -372,7 +374,7 @@ pub(super) struct ScanCounts {
 /// progress event picks the wrong noun in the UI. An id the manager no longer
 /// knows emits nothing, which is how a walk that outlives its cancelled owner
 /// goes quiet.
-pub(super) fn emit_scan_progress(manager: &OperationManager, operation_id: &str, counts: ScanCounts) {
+pub(super) fn emit_scan_progress(manager: &OperationManager, operation_id: &OperationId, counts: ScanCounts) {
     let Some(operation_type) = manager.operation_type_of(operation_id) else {
         return;
     };
@@ -415,7 +417,7 @@ pub(super) fn emit_scan_progress(manager: &OperationManager, operation_id: &str,
 /// snapshot yet, so a tick that beats its own snapshot is dropped and the row
 /// stays blank until the next real preview event — which on a preview near its
 /// end may never come, and that is precisely the case this tick exists for.
-pub(super) fn emit_initial_scan_tick(manager: &OperationManager, operation_id: &str) {
+pub(super) fn emit_initial_scan_tick(manager: &OperationManager, operation_id: &OperationId) {
     emit_scan_progress(manager, operation_id, ScanCounts::default());
 }
 

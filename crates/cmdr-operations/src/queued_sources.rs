@@ -40,6 +40,7 @@ use super::types::{
     WriteCompleteEvent, WriteOperationType, WriteSourceItemDoneEvent, WriteSourcesGoneEvent,
 };
 use cmdr_fs::volume::{Volume, VolumeError};
+use cmdr_operation_log::types::OperationId;
 
 /// How many gone sources the question names. The count beside it is the whole
 /// truth; the names only help the person recognize what moved.
@@ -49,7 +50,7 @@ impl Operations {
     /// Carries a queued operation on with the sources that are still there. The
     /// person's "Move the rest" (or "Copy the rest", …); cancelling is the
     /// ordinary `cancel_operation`.
-    pub fn continue_without_gone_sources(&self, operation_id: &str) -> SourcesGoneAnswerOutcome {
+    pub fn continue_without_gone_sources(&self, operation_id: &OperationId) -> SourcesGoneAnswerOutcome {
         let Some(state) = self.registry().get(operation_id) else {
             log::info!(target: "queued_sources", "continue for op={operation_id}: no such operation");
             return SourcesGoneAnswerOutcome::UnknownOperation;
@@ -65,7 +66,7 @@ impl Operations {
 
     /// The question `operation_id` is parked on, if any. For a surface that
     /// arrives after the broadcast.
-    pub fn pending_sources_gone(&self, operation_id: &str) -> Option<WriteSourcesGoneEvent> {
+    pub fn pending_sources_gone(&self, operation_id: &OperationId) -> Option<WriteSourcesGoneEvent> {
         self.registry().get(operation_id)?.sources_gone.pending()
     }
 }

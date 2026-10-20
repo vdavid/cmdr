@@ -36,6 +36,7 @@
 
 use crate::pluralize::pluralize;
 use crate::search::query::format_size;
+use cmdr_operation_log::types::OperationId;
 use cmdr_operations::{
     LifecycleStatus, OperationSnapshot, OperationStatus, TransferActivity, TransferTreeRow, TransferTreeView,
     TransferTreeViewRequest, TreeRowKind, TreeRowState, WriteConflictEvent, WriteLockedSourcesEvent,
@@ -70,17 +71,18 @@ pub(crate) fn snapshot_operations() -> Vec<OperationRow> {
         .list_operations()
         .into_iter()
         .map(|snapshot| {
-            let progress = engine.get_operation_status(&snapshot.operation_id);
-            let pending_conflict = engine.pending_write_conflict(&snapshot.operation_id);
-            let pending_sources_gone = engine.pending_sources_gone(&snapshot.operation_id);
-            let pending_locked_sources = engine.pending_locked_sources(&snapshot.operation_id);
+            let operation_id = OperationId::from(snapshot.operation_id.as_str());
+            let progress = engine.get_operation_status(&operation_id);
+            let pending_conflict = engine.pending_write_conflict(&operation_id);
+            let pending_sources_gone = engine.pending_sources_gone(&operation_id);
+            let pending_locked_sources = engine.pending_locked_sources(&operation_id);
             // Only while it runs or is paused: a queued or failed op has no tree to
             // show, and asking would take a lock for nothing.
             let tree = progress
                 .is_some()
                 .then(|| {
                     engine
-                        .transfer_tree_view(&snapshot.operation_id, &TransferTreeViewRequest::following_the_work())
+                        .transfer_tree_view(&operation_id, &TransferTreeViewRequest::following_the_work())
                         .ok()
                 })
                 .flatten();

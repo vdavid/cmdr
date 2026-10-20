@@ -129,10 +129,14 @@ impl super::super::super::Operations {
     /// the caller must keep the copy alive — awaiting a `JoinHandle`, not the
     /// copy future itself, which would drop the guard before the dump could be
     /// taken.
-    pub fn render_live_transfer_dump(&self, operation_id: &str, reason: &str) -> Option<String> {
+    pub fn render_live_transfer_dump(
+        &self,
+        operation_id: &cmdr_operation_log::types::OperationId,
+        reason: &str,
+    ) -> Option<String> {
         self.stores()
             .probes()
-            .get(operation_id)
+            .get(operation_id.as_str())
             .map(|probe| probe.render_dump(reason))
     }
 }

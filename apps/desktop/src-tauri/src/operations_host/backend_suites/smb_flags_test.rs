@@ -230,7 +230,7 @@ async fn smb_integration_a_rollback_removes_a_locked_copy_on_the_share() {
 
     let writer = journal.writer();
     writer.flush_blocking().expect("the journal flushes");
-    let plan = rollback_operation(&vm, writer, &running.operation_id, |_plan| Ok(()))
+    let plan = rollback_operation(&vm, writer, running.operation_id.as_str(), |_plan| Ok(()))
         .unwrap_or_else(|refusal| panic!("the finished copy must be reversible, got {refusal:?}"));
     let reversal = Reversal::on(&engine, "smb-flags-rollback");
     let report = execute_rollback(

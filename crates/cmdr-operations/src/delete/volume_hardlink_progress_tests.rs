@@ -69,7 +69,7 @@ async fn volume_delete_hardlinked_files_reports_dedup_d_bytes() {
         Arc::clone(&volume) as Arc<dyn Volume>,
         volume_id,
         &sink,
-        op.id(),
+        op.id().as_str(),
         op.state(),
         &sources,
         &config,

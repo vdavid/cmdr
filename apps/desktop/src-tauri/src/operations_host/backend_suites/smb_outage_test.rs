@@ -272,7 +272,7 @@ async fn copy_through_a_cut(conflict_resolution: ConflictResolution) {
     let copy = tokio::spawn(async move {
         copy_volumes_with_progress(
             sink,
-            &op_id,
+            op_id.as_str(),
             &copy_state,
             source,
             &[PathBuf::from("batch")],
@@ -422,7 +422,7 @@ async fn smb_integration_a_cancel_while_the_share_is_out_reports_at_once_and_rem
     let mut copy = tokio::spawn(async move {
         copy_volumes_with_progress(
             sink,
-            &op_id,
+            op_id.as_str(),
             &copy_state,
             source,
             &[PathBuf::from("big.bin")],
@@ -761,7 +761,7 @@ async fn smb_integration_an_overwrite_copy_rides_out_a_share_that_keeps_going_aw
     let copy = tokio::spawn(async move {
         copy_volumes_with_progress(
             sink,
-            &op_id,
+            op_id.as_str(),
             &copy_state,
             source,
             &[PathBuf::from("batch")],

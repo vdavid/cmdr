@@ -5,6 +5,7 @@
 
 use super::super::Operations;
 use super::{OperationSnapshot, PauseAllOutcome, PauseOutcome, QueueMoveDirection, QueueMoveOutcome};
+use cmdr_operation_log::types::OperationId;
 
 impl Operations {
     /// The thin registry snapshot (membership + lifecycle status) for the queue
@@ -31,7 +32,7 @@ impl Operations {
     /// `rollback=false` path). A Queued op is dropped from the registry without
     /// ever spawning; a Running/Paused op routes through the intent state
     /// machine. Backs the `cancel_operation(id)` IPC command.
-    pub fn cancel_operation(&self, operation_id: &str) {
+    pub fn cancel_operation(&self, operation_id: &OperationId) {
         if !self.manager().cancel_if_queued(operation_id) {
             self.cancel_write_operation(operation_id, false);
         }
@@ -40,7 +41,7 @@ impl Operations {
     /// Cancels several operations (keep-partials each). Backs the
     /// `cancel_operations(ids)` IPC command (the queue window's "Cancel
     /// selected").
-    pub fn cancel_operations(&self, operation_ids: &[String]) {
+    pub fn cancel_operations(&self, operation_ids: &[OperationId]) {
         for id in operation_ids {
             self.cancel_operation(id);
         }
@@ -56,7 +57,7 @@ impl Operations {
     /// The [`PauseOutcome`] rides all the way out to the IPC command and the MCP
     /// `queue` tool: a surface that reports a pause it didn't get sends its user
     /// (or its agent) off believing the device is free.
-    pub fn pause_operation(&self, operation_id: &str) -> PauseOutcome {
+    pub fn pause_operation(&self, operation_id: &OperationId) -> PauseOutcome {
         // Flip the live gate (so the driver parks) and the record status (so the
         // UI shows Paused). `set_paused` only flips a Running record, so a Queued
         // op's gate is intentionally left untouched: parking a not-yet-spawned op
@@ -73,7 +74,7 @@ impl Operations {
     /// never freed its lanes. Resuming a non-paused op is a no-op. Backs
     /// `resume_operation(id)`, and reports what it did for the same reason
     /// [`Self::pause_operation`] does.
-    pub fn resume_operation(&self, operation_id: &str) -> PauseOutcome {
+    pub fn resume_operation(&self, operation_id: &OperationId) -> PauseOutcome {
         let outcome = self.manager().set_paused(operation_id, false);
         if outcome == PauseOutcome::Applied {
             self.resume_write_operation(operation_id);
@@ -113,7 +114,7 @@ impl Operations {
     /// direction)`, the queue window's ⌥↑ / ⌥↓. Reports what it did, so the
     /// window announces the operation's real place rather than the one it asked
     /// for.
-    pub fn move_queued_operation(&self, operation_id: &str, direction: QueueMoveDirection) -> QueueMoveOutcome {
+    pub fn move_queued_operation(&self, operation_id: &OperationId, direction: QueueMoveDirection) -> QueueMoveOutcome {
         self.manager().move_queued(operation_id, direction)
     }
 
@@ -121,7 +122,7 @@ impl Operations {
     /// operations only), shifting the ones in between. Backs
     /// `place_queued_operation(id, position)`, the queue window's
     /// drag-to-reorder.
-    pub fn place_queued_operation(&self, operation_id: &str, position: u32) -> QueueMoveOutcome {
+    pub fn place_queued_operation(&self, operation_id: &OperationId, position: u32) -> QueueMoveOutcome {
         self.manager().place_queued(operation_id, position)
     }
 
@@ -130,7 +131,7 @@ impl Operations {
     /// foreground error dialog's close path for the operation it was showing.
     /// Dismissal is ALWAYS explicit — ❌ never a timer, a window close, or the
     /// next operation starting. Unknown id: a no-op.
-    pub fn dismiss_failed_operation(&self, operation_id: &str) {
+    pub fn dismiss_failed_operation(&self, operation_id: &OperationId) {
         self.manager().dismiss_failure(operation_id);
     }
 

@@ -23,6 +23,7 @@ use std::time::Duration;
 
 use cmdr_fs::staging::is_staging_temp_name;
 use cmdr_fs::volume::Volume;
+use cmdr_operation_log::types::OperationId;
 use sha2::{Digest, Sha256};
 
 use super::network_gated_source_test_support::{CANCEL_PAYLOAD_BYTES, gated_upload};
@@ -192,7 +193,7 @@ pub(super) struct RunningCopy {
     /// The engine the copy runs on, which its controls ask.
     pub(super) engine: Operations,
     pub(super) events: Arc<CollectorEventSink>,
-    pub(super) operation_id: String,
+    pub(super) operation_id: OperationId,
     label: String,
 }
 
@@ -307,7 +308,7 @@ pub(super) async fn start_copy_on(
     RunningCopy {
         engine: Operations::clone(engine),
         events: collector,
-        operation_id: started.operation_id,
+        operation_id: OperationId::from(started.operation_id),
         label: label.to_string(),
     }
 }
@@ -343,7 +344,7 @@ pub(super) async fn start_copy_by_id(
     RunningCopy {
         engine: app_engine().clone(),
         events: collector,
-        operation_id: started.operation_id,
+        operation_id: OperationId::from(started.operation_id),
         label: label.to_string(),
     }
 }

@@ -663,7 +663,7 @@ async fn a_server_side_copy_names_its_own_phase_in_the_probe() {
     let guard = engine.register_state("server-copy-phase", make_state(&engine));
     let state = Arc::clone(guard.state());
     let op_probe = transfer_probe::register_operation(
-        guard.id(),
+        guard.id().as_str(),
         1,
         1,
         transfer_probe::TransferEnds::none(),

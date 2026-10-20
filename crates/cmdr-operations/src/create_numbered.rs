@@ -64,7 +64,15 @@ impl super::Operations {
         // The op's own scope on the engine, which journals it: an instant op has no
         // state to carry one.
         let scope = self.op_scope();
-        super::journal::open_volume_op(&scope, &op_id, OpKind::CreateFile, initiator, &volume_id_str, None, 1);
+        super::journal::open_volume_op(
+            &scope,
+            op_id.as_str(),
+            OpKind::CreateFile,
+            initiator,
+            &volume_id_str,
+            None,
+            1,
+        );
 
         // Atomic O_EXCL create+write, retrying the shared `<stem> (N).<ext>` names on
         // the typed AlreadyExists (no pre-scan TOCTOU; works on any writable volume).

@@ -6,6 +6,7 @@
 use super::test_support::*;
 use crate::WriteOperationPhase;
 use cmdr_fs::volume::InMemoryVolume;
+use cmdr_operation_log::types::OperationId;
 use uuid::Uuid;
 
 /// Registers a NON-local `InMemoryVolume` (the remote-parent stand-in) with `dir`
@@ -209,7 +210,7 @@ async fn cancel_during_remote_close_does_not_publish_or_complete() {
         || events.entered(),
     )
     .await;
-    engine.cancel_operation(&start.operation_id);
+    engine.cancel_operation(&OperationId::from(start.operation_id.as_str()));
     events.release();
 
     wait_until_async(Duration::from_secs(5), "cancelled terminal event", || {

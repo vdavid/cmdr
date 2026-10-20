@@ -2,6 +2,7 @@
 
 use super::test_support::*;
 use crate::WriteOperationPhase;
+use cmdr_operation_log::types::OperationId;
 
 /// End-to-end: compress two local files into a new ZIP and read both entries back.
 #[tokio::test]
@@ -230,7 +231,12 @@ async fn stop_policy_prompts_for_duplicate_source_names_and_honors_overwrite() {
     .await;
     assert!(events.errors.lock_ignore_poison().is_empty());
     let clash = events.conflicts.lock_ignore_poison()[0].conflict_id;
-    engine.resolve_write_conflict(&started.operation_id, clash, ConflictResolution::Overwrite, false);
+    engine.resolve_write_conflict(
+        &OperationId::from(started.operation_id.as_str()),
+        clash,
+        ConflictResolution::Overwrite,
+        false,
+    );
     wait_until_async(Duration::from_secs(5), "duplicate-name compress completion", || {
         !events.complete.lock_ignore_poison().is_empty()
     })

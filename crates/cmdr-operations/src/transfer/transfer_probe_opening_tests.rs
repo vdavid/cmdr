@@ -63,7 +63,7 @@ fn last_heartbeat(sink: &CollectorEventSink) -> TransferActivity {
 fn an_opening_task_is_waiting_on_the_source() {
     let engine = TestOperations::new();
     let guard = engine.register("opening-waits-on-source");
-    let probe = probe_over(guard.id(), guard.state(), TransferEnds::none());
+    let probe = probe_over(guard.id().as_str(), guard.state(), TransferEnds::none());
     probe.still_for_seconds.store(12, Ordering::Relaxed);
 
     let a = probe.begin_task(TaskRow::source(0), TaskRole::File, "/naspi/a.png", "/tmp/a.png");
@@ -86,9 +86,9 @@ fn a_first_file_still_opening_says_so_from_the_first_still_second() {
     let guard = engine.register("opening-says-so");
     let state = guard.state();
     let sink = Arc::new(CollectorEventSink::new());
-    let probe = probe_over(guard.id(), state, TransferEnds::none());
+    let probe = probe_over(guard.id().as_str(), state, TransferEnds::none());
     probe.set_sink(Arc::clone(&sink) as Arc<dyn OperationEventSink>);
-    publish(state, guard.id(), 0, 0);
+    publish(state, guard.id().as_str(), 0, 0);
 
     let task = probe.begin_task(TaskRow::source(0), TaskRole::File, "/naspi/a.png", "/tmp/a.png");
     task.probe().set_phase(TaskPhase::OpeningSource);
@@ -112,8 +112,8 @@ fn a_walker_does_not_hide_the_files_it_is_opening() {
     let engine = TestOperations::new();
     let guard = engine.register("opening-with-walker");
     let state = guard.state();
-    let probe = probe_over(guard.id(), state, TransferEnds::none());
-    publish(state, guard.id(), 0, 0);
+    let probe = probe_over(guard.id().as_str(), state, TransferEnds::none());
+    publish(state, guard.id().as_str(), 0, 0);
 
     let walker = probe.begin_task(TaskRow::source(0), TaskRole::Walker, "/naspi/album", "/tmp/album");
     walker.probe().set_phase(TaskPhase::Walking);
@@ -138,8 +138,8 @@ fn opening_ends_once_anything_has_landed() {
     let engine = TestOperations::new();
     let guard = engine.register("opening-ends");
     let state = guard.state();
-    let probe = probe_over(guard.id(), state, TransferEnds::none());
-    publish(state, guard.id(), 1, 377_436);
+    let probe = probe_over(guard.id().as_str(), state, TransferEnds::none());
+    publish(state, guard.id().as_str(), 1, 377_436);
 
     let task = probe.begin_task(TaskRow::source(1), TaskRole::File, "/naspi/b.png", "/tmp/b.png");
     task.probe().set_phase(TaskPhase::OpeningSource);
@@ -158,12 +158,12 @@ fn the_source_s_receive_rate_rides_the_heartbeat_while_nothing_lands() {
     let source = ScriptedConnectionVolume::new();
     source.receive(0);
     let probe = probe_over(
-        guard.id(),
+        guard.id().as_str(),
         state,
         TransferEnds::source_only(Arc::clone(&source) as Arc<dyn Volume>),
     );
     probe.set_sink(Arc::clone(&sink) as Arc<dyn OperationEventSink>);
-    publish(state, guard.id(), 0, 0);
+    publish(state, guard.id().as_str(), 0, 0);
     let task = probe.begin_task(TaskRow::source(0), TaskRole::File, "/naspi/a.png", "/tmp/a.png");
     task.probe().set_phase(TaskPhase::OpeningSource);
 
@@ -194,7 +194,7 @@ fn a_transfer_landing_bytes_reports_no_receive_rate() {
     let source = ScriptedConnectionVolume::new();
     source.receive(0);
     let probe = probe_over(
-        guard.id(),
+        guard.id().as_str(),
         state,
         TransferEnds::source_only(Arc::clone(&source) as Arc<dyn Volume>),
     );
@@ -204,7 +204,7 @@ fn a_transfer_landing_bytes_reports_no_receive_rate() {
     let mut watchdog = WatchdogState::new();
     for tick in 1..=6 {
         source.receive(1_000_000);
-        publish(state, guard.id(), 0, tick * 1_000_000);
+        publish(state, guard.id().as_str(), 0, tick * 1_000_000);
         probe.watchdog_step(&mut watchdog, Duration::from_secs(tick));
     }
 
@@ -221,11 +221,11 @@ fn a_paused_transfer_reports_no_receive_rate() {
     let source = ScriptedConnectionVolume::new();
     source.receive(0);
     let probe = probe_over(
-        guard.id(),
+        guard.id().as_str(),
         state,
         TransferEnds::source_only(Arc::clone(&source) as Arc<dyn Volume>),
     );
-    publish(state, guard.id(), 0, 0);
+    publish(state, guard.id().as_str(), 0, 0);
 
     let mut watchdog = WatchdogState::new();
     for tick in 1..=4 {
@@ -248,16 +248,20 @@ fn an_event_that_moved_the_counters_goes_out_as_moving() {
     let engine = TestOperations::new();
     let guard = engine.register("event-moved");
     let state = guard.state();
-    let probe = probe_over(guard.id(), state, TransferEnds::none());
-    state.scope().stores().probes().insert(guard.id(), Arc::clone(&probe));
-    publish(state, guard.id(), 0, 0);
+    let probe = probe_over(guard.id().as_str(), state, TransferEnds::none());
+    state
+        .scope()
+        .stores()
+        .probes()
+        .insert(guard.id().as_str(), Arc::clone(&probe));
+    publish(state, guard.id().as_str(), 0, 0);
     let task = probe.begin_task(TaskRow::source(0), TaskRole::File, "/naspi/a.png", "/tmp/a.png");
     task.probe().set_phase(TaskPhase::OpeningSource);
     probe.still_for_seconds.store(12, Ordering::Relaxed);
     probe.publish_inbound_rate(Some(19_000));
 
-    let landed = publish(state, guard.id(), 1, 377_436);
-    state.scope().stores().probes().remove(guard.id());
+    let landed = publish(state, guard.id().as_str(), 1, 377_436);
+    state.scope().stores().probes().remove(guard.id().as_str());
 
     let activity = landed.activity.expect("a probed operation always classifies");
     assert_eq!(activity.still_for_seconds, 0);

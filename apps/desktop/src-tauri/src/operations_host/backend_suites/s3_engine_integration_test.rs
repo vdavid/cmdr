@@ -294,7 +294,7 @@ pub(super) async fn a_finished_copy_onto_a_bucket_rolls_back(target: &S3Target) 
 
     let writer = journal.writer();
     writer.flush_blocking().expect("the journal flushes");
-    let plan = rollback_operation(&vm, writer, &running.operation_id, |_plan| Ok(()))
+    let plan = rollback_operation(&vm, writer, running.operation_id.as_str(), |_plan| Ok(()))
         .unwrap_or_else(|refusal| panic!("the finished copy must be reversible, got {refusal:?}"));
     let reversal = Reversal::on(&engine, "s3-rollback-finished");
     let report = execute_rollback(

@@ -219,11 +219,11 @@ async fn cross_volume_move_cancelled_at_a_conflict_prompt_emits_cancelled_event(
         .unwrap();
 
     let op = engine.register_state("move-cancel-at-prompt", make_state(&engine));
-    let events = Arc::new(ConflictResponderSink::cancelling(&engine, op.state(), op.id()));
+    let events = Arc::new(ConflictResponderSink::cancelling(&engine, op.state(), op.id().as_str()));
 
     let result = move_volumes_with_progress(
         events.clone(),
-        op.id(),
+        op.id().as_str(),
         op.state(),
         Arc::clone(&source),
         &[PathBuf::from("/a.txt")],
@@ -291,11 +291,11 @@ async fn same_volume_move_cancelled_at_a_conflict_prompt_emits_cancelled_event()
         .unwrap();
 
     let op = engine.register_state("same-move-cancel-at-prompt", make_state(&engine));
-    let events = Arc::new(ConflictResponderSink::cancelling(&engine, op.state(), op.id()));
+    let events = Arc::new(ConflictResponderSink::cancelling(&engine, op.state(), op.id().as_str()));
 
     let result = move_within_same_volume_with_progress(
         events.clone(),
-        op.id(),
+        op.id().as_str(),
         op.state(),
         Arc::clone(&volume),
         &[PathBuf::from("/a.txt")],

@@ -28,11 +28,11 @@ fn install_state(engine: &TestOperations, label: &str, initial: OperationIntent)
 fn register_then_get_status_roundtrip() {
     let engine = TestOperations::new();
     let op = install_state(&engine, "reg-get", OperationIntent::Running);
-    let id = op.id().to_string();
-    engine.status().register(&id, WriteOperationType::Copy, vec![]);
+    let id = op.id().clone();
+    engine.status().register(id.as_str(), WriteOperationType::Copy, vec![]);
 
     let status = engine.get_operation_status(&id).expect("operation should be in cache");
-    assert_eq!(status.operation_id, id);
+    assert_eq!(status.operation_id, id.as_str());
     assert_eq!(status.operation_type, WriteOperationType::Copy);
     assert_eq!(status.phase, WriteOperationPhase::Scanning);
     // This op was never registered with the MANAGER, only with the state map, so
@@ -45,7 +45,7 @@ fn register_then_get_status_roundtrip() {
     assert_eq!(status.bytes_total, 0);
 
     engine.registry().forget(&id);
-    engine.status().unregister(&id);
+    engine.status().unregister(id.as_str());
     assert!(engine.get_operation_status(&id).is_none());
 }
 
@@ -55,7 +55,7 @@ fn register_then_get_status_roundtrip() {
 ///
 /// Dropping it drops `_release`, which lets the operation settle.
 struct ManagedOperationFixture {
-    id: String,
+    id: OperationId,
     lane: LaneKey,
     _release: oneshot::Sender<()>,
 }
@@ -69,7 +69,7 @@ impl ManagedOperationFixture {
     /// Same, on a caller-supplied lane, so a second operation can be made to
     /// queue behind the first.
     fn start_on_lane(engine: &TestOperations, tag: &str, lane: LaneKey) -> Self {
-        let id = tag.to_string();
+        let id = OperationId::from(tag);
         let (release_tx, release_rx) = oneshot::channel::<()>();
         let settle_id = id.clone();
         engine.manager().spawn_managed(
@@ -91,7 +91,7 @@ impl ManagedOperationFixture {
                 })
             }),
         );
-        engine.status().register(&id, WriteOperationType::Copy, vec![]);
+        engine.status().register(id.as_str(), WriteOperationType::Copy, vec![]);
         Self {
             id,
             lane,
@@ -154,10 +154,10 @@ fn a_queued_operation_reports_queued() {
 #[test]
 fn update_operation_status_overwrites_fields() {
     let engine = TestOperations::new();
-    let id = "update".to_string();
-    engine.status().register(&id, WriteOperationType::Move, vec![]);
+    let id = OperationId::from("update");
+    engine.status().register(id.as_str(), WriteOperationType::Move, vec![]);
     engine.status().update(
-        &id,
+        id.as_str(),
         WriteOperationPhase::Copying,
         Some("a.txt".into()),
         3,
@@ -172,7 +172,7 @@ fn update_operation_status_overwrites_fields() {
     assert_eq!(status.files_total, 10);
     assert_eq!(status.bytes_done, 500);
     assert_eq!(status.bytes_total, 1000);
-    engine.status().unregister(&id);
+    engine.status().unregister(id.as_str());
 }
 
 // ---- activity on the snapshot (why isn't this moving?) ----
@@ -185,8 +185,8 @@ fn a_parked_operation_names_its_wait_on_a_status_read() {
     // clash, and that it is a clash rather than a dead mount.
     let engine = TestOperations::new();
     let op = install_state(&engine, "parked-conflict", OperationIntent::Running);
-    let id = op.id().to_string();
-    engine.status().register(&id, WriteOperationType::Copy, vec![]);
+    let id = op.id().clone();
+    engine.status().register(id.as_str(), WriteOperationType::Copy, vec![]);
 
     // Nobody is being asked anything, and this operation keeps no in-flight
     // table, so it has nothing to claim. Absent, ❌ never a made-up `moving`.
@@ -210,15 +210,15 @@ fn a_parked_operation_names_its_wait_on_a_status_read() {
         "a parked operation has been still for nobody's time but the answerer's"
     );
 
-    engine.status().unregister(&id);
+    engine.status().unregister(id.as_str());
 }
 
 #[test]
 fn a_paused_operation_reads_as_paused_rather_than_stalled() {
     let engine = TestOperations::new();
     let op = install_state(&engine, "parked-pause", OperationIntent::Running);
-    let id = op.id().to_string();
-    engine.status().register(&id, WriteOperationType::Copy, vec![]);
+    let id = op.id().clone();
+    engine.status().register(id.as_str(), WriteOperationType::Copy, vec![]);
 
     op.state().pause_gate.pause();
 
@@ -229,7 +229,7 @@ fn a_paused_operation_reads_as_paused_rather_than_stalled() {
         .expect("paused is a wait");
     assert_eq!(activity.waiting_on, TransferWaitReason::Paused);
 
-    engine.status().unregister(&id);
+    engine.status().unregister(id.as_str());
 }
 
 #[test]
@@ -238,8 +238,8 @@ fn a_settled_operation_reports_no_activity() {
     // is gone there is nothing left to classify.
     let engine = TestOperations::new();
     let op = install_state(&engine, "settled", OperationIntent::Running);
-    let id = op.id().to_string();
-    engine.status().register(&id, WriteOperationType::Copy, vec![]);
+    let id = op.id().clone();
+    engine.status().register(id.as_str(), WriteOperationType::Copy, vec![]);
     let (tx, _rx) = oneshot::channel();
     op.state().conflict_slot.arm(tx, placeholder_conflict);
     engine.registry().forget(&id);
@@ -249,7 +249,7 @@ fn a_settled_operation_reports_no_activity() {
         .expect("the cache row outlives the state");
     assert!(status.activity.is_none(), "a settled operation waits on nothing");
 
-    engine.status().unregister(&id);
+    engine.status().unregister(id.as_str());
 }
 
 #[test]
@@ -265,18 +265,20 @@ fn update_unknown_id_is_a_silent_noop() {
 #[test]
 fn indeterminate_compress_phases_clear_both_percent_fallback_axes() {
     let engine = TestOperations::new();
-    let id = "compress-finishing".to_string();
-    engine.status().register(&id, WriteOperationType::Compress, vec![]);
+    let id = OperationId::from("compress-finishing");
+    engine
+        .status()
+        .register(id.as_str(), WriteOperationType::Compress, vec![]);
     for phase in [
         WriteOperationPhase::FinishingCompression,
         WriteOperationPhase::FinishingTransfer,
     ] {
-        engine.status().update(&id, phase, None, 0, 0, 0, 0);
+        engine.status().update(id.as_str(), phase, None, 0, 0, 0, 0);
         let status = engine.get_operation_status(&id).expect("operation status");
         assert_eq!((status.files_done, status.files_total), (0, 0));
         assert_eq!((status.bytes_done, status.bytes_total), (0, 0));
     }
-    engine.status().unregister(&id);
+    engine.status().unregister(id.as_str());
 }
 
 // ---- `volumes-busy-changed` and the transfer gauge ----
@@ -489,7 +491,7 @@ async fn a_panicking_op_task_finishes_its_transfer_start_exactly_once() {
 
     let engine = TestOperations::new();
     let volume = vec!["gauge-panic-volume".to_string()];
-    let op = "gauge-panic-op".to_string();
+    let op = OperationId::from("gauge-panic-op");
     let id = op.clone();
     engine.manager().spawn_managed(
         OperationDescriptor {

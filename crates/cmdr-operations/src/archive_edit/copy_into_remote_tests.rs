@@ -7,6 +7,7 @@
 //! the zip intact, and a cancel before the pull leaves the zip untouched.
 
 use super::test_support::*;
+use cmdr_operation_log::types::OperationId;
 
 #[tokio::test]
 async fn copy_into_from_a_remote_source_lands_the_file() {
@@ -320,7 +321,7 @@ async fn copy_into_from_a_remote_source_cancelled_before_the_pull_leaves_the_zip
         .expect("start remote-source copy-into");
 
     // Cancel before yielding to the spawned op.
-    engine.cancel_write_operation(&start.operation_id, false);
+    engine.cancel_write_operation(&OperationId::from(start.operation_id.as_str()), false);
 
     wait_until_async(
         Duration::from_secs(5),

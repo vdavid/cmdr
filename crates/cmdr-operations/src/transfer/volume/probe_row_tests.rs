@@ -27,6 +27,7 @@
 //!
 //! Shared fixtures live in `volume/move_test_support.rs` (`super::test_support`).
 
+use cmdr_operation_log::types::OperationId;
 use std::pin::Pin;
 use std::sync::Mutex;
 use std::time::Duration;
@@ -52,7 +53,7 @@ const LEAF_BYTES: usize = 4_096;
 struct TablePhotographingDest {
     inner: Arc<InMemoryVolume>,
     engine: Operations,
-    operation_id: String,
+    operation_id: OperationId,
     /// A real transport limit, so `transfer_concurrency` reads it as the binding
     /// cap for the pair (the `InMemoryVolume` source declares itself local).
     cap: usize,
@@ -67,7 +68,7 @@ impl TablePhotographingDest {
         Arc::new(Self {
             inner: Arc::new(InMemoryVolume::new("Dest").with_space_info(10_000_000, 10_000_000)),
             engine: engine.clone(),
-            operation_id: operation_id.to_owned(),
+            operation_id: OperationId::from(operation_id),
             cap,
             rendezvous,
             live: Arc::new(AtomicUsize::new(0)),

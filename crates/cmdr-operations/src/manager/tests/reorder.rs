@@ -9,20 +9,23 @@
 use super::*;
 
 /// The ids of `mgr`'s live rows, in snapshot (= admission) order.
-fn order_of(mgr: &OperationManager) -> Vec<String> {
-    mgr.list().into_iter().map(|row| row.operation_id).collect()
+fn order_of(mgr: &OperationManager) -> Vec<OperationId> {
+    mgr.list()
+        .into_iter()
+        .map(|row| OperationId::from(row.operation_id))
+        .collect()
 }
 
 /// A held operation on `engine`: registered, and released (settled) when the
 /// returned sender fires. Whether it runs or queues depends on its lanes.
 struct Held {
-    id: String,
+    id: OperationId,
     started: oneshot::Receiver<()>,
     release: oneshot::Sender<()>,
 }
 
 fn hold(engine: &TestOperations, label: &str, lanes: Vec<&str>) -> Held {
-    let id = label.to_string();
+    let id = OperationId::from(label);
     let (started_tx, started_rx) = oneshot::channel();
     let (release_tx, release_rx) = oneshot::channel();
     engine.manager().spawn_managed(
@@ -89,7 +92,7 @@ async fn moving_a_waiting_op_later_trades_places_with_the_one_after_it() {
     let engine = TestOperations::new();
     let mgr = engine.manager();
     let (running, queued) = line(&engine, 3).await;
-    let ids: Vec<String> = queued.iter().map(|h| h.id.clone()).collect();
+    let ids: Vec<OperationId> = queued.iter().map(|h| h.id.clone()).collect();
 
     let outcome = mgr.move_queued(&ids[0], QueueMoveDirection::Later);
 
@@ -150,7 +153,7 @@ async fn a_running_or_unknown_op_does_not_move() {
         QueueMoveOutcome::NotQueued
     );
     assert_eq!(
-        mgr.move_queued("no-such-op", QueueMoveDirection::Earlier),
+        mgr.move_queued(&OperationId::from("no-such-op"), QueueMoveDirection::Earlier),
         QueueMoveOutcome::NotQueued
     );
     assert_eq!(order_of(mgr), before);
@@ -231,7 +234,7 @@ async fn placing_the_last_waiting_op_first_shifts_the_others_back() {
     let engine = TestOperations::new();
     let mgr = engine.manager();
     let (running, queued) = line(&engine, 3).await;
-    let ids: Vec<String> = queued.iter().map(|h| h.id.clone()).collect();
+    let ids: Vec<OperationId> = queued.iter().map(|h| h.id.clone()).collect();
 
     let outcome = mgr.place_queued(&ids[2], 1);
 
@@ -254,7 +257,7 @@ async fn placing_the_first_waiting_op_last_shifts_the_others_forward() {
     let engine = TestOperations::new();
     let mgr = engine.manager();
     let (running, queued) = line(&engine, 3).await;
-    let ids: Vec<String> = queued.iter().map(|h| h.id.clone()).collect();
+    let ids: Vec<OperationId> = queued.iter().map(|h| h.id.clone()).collect();
 
     let outcome = mgr.place_queued(&ids[0], 3);
 
@@ -277,7 +280,7 @@ async fn a_place_past_the_end_lands_last() {
     let engine = TestOperations::new();
     let mgr = engine.manager();
     let (running, queued) = line(&engine, 2).await;
-    let ids: Vec<String> = queued.iter().map(|h| h.id.clone()).collect();
+    let ids: Vec<OperationId> = queued.iter().map(|h| h.id.clone()).collect();
 
     let outcome = mgr.place_queued(&ids[0], 99);
 
@@ -320,7 +323,10 @@ async fn placing_a_running_or_unknown_op_does_nothing() {
     let before = order_of(mgr);
 
     assert_eq!(mgr.place_queued(&running.id, 1), QueueMoveOutcome::NotQueued);
-    assert_eq!(mgr.place_queued("no-such-op", 1), QueueMoveOutcome::NotQueued);
+    assert_eq!(
+        mgr.place_queued(&OperationId::from("no-such-op"), 1),
+        QueueMoveOutcome::NotQueued
+    );
     assert_eq!(order_of(mgr), before);
     finish(&engine, running, queued);
 }

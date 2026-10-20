@@ -30,7 +30,7 @@ use super::types::{
 use super::{OperationEventSink, Operations};
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::testing::{TestDir, wait_until_async};
-use cmdr_operation_log::types::Initiator;
+use cmdr_operation_log::types::{Initiator, OperationId};
 
 /// Deadline for every wait here. Generous on purpose: each wait has a real
 /// condition, so a healthy run satisfies it in microseconds.
@@ -57,7 +57,7 @@ fn unique(label: &str) -> String {
 struct PauseOnFirstTick {
     /// The engine the operation runs on, which the pause goes to.
     engine: Operations,
-    operation_id: String,
+    operation_id: OperationId,
     fired: AtomicBool,
     progress: std::sync::Mutex<Vec<ScanPreviewProgressEvent>>,
     complete: std::sync::Mutex<Vec<ScanPreviewCompleteEvent>>,
@@ -65,7 +65,7 @@ struct PauseOnFirstTick {
 }
 
 impl PauseOnFirstTick {
-    fn new(engine: Operations, operation_id: String) -> Self {
+    fn new(engine: Operations, operation_id: OperationId) -> Self {
         Self {
             engine,
             operation_id,
@@ -128,7 +128,7 @@ fn build_tree(root: &std::path::Path) {
 /// Returns the operation id, the preview id, the sink, and the walk's thread
 /// handle so a test can prove the walk actually ended.
 struct RunningScan {
-    operation_id: String,
+    operation_id: OperationId,
     preview_id: String,
     sink: Arc<PauseOnFirstTick>,
     walk: std::thread::JoinHandle<()>,
@@ -174,7 +174,7 @@ async fn start_copy_with_a_real_scan(engine: &TestOperations, label: &str) -> Ru
         )
         .await
         .expect("copy starts");
-    let operation_id = start.operation_id.clone();
+    let operation_id = OperationId::from(start.operation_id.clone());
 
     let sink = Arc::new(PauseOnFirstTick::new(Operations::clone(engine), operation_id.clone()));
     let events: Arc<dyn ScanPreviewEventSink> = Arc::clone(&sink) as Arc<dyn ScanPreviewEventSink>;
@@ -385,7 +385,11 @@ impl OperationEventSink for PauseOnFirstScanTick {
         }
         self.scanned.lock_ignore_poison().push(event.files_done);
         if !self.fired.swap(true, Ordering::SeqCst) {
-            assert_eq!(self.engine.pause_operation(&event.operation_id), PauseOutcome::Applied);
+            assert_eq!(
+                self.engine
+                    .pause_operation(&OperationId::from(event.operation_id.as_str())),
+                PauseOutcome::Applied
+            );
         }
     }
     fn emit_complete(&self, _event: super::types::WriteCompleteEvent) {
@@ -436,7 +440,7 @@ async fn an_operations_own_scan_parks_too() {
         )
         .await
         .expect("copy starts");
-    let op_id = start.operation_id.clone();
+    let op_id = OperationId::from(start.operation_id.clone());
 
     // The walk stops climbing: two reads of the same count with a beat between
     // them, which a walk over 400 files would blow past in microseconds.

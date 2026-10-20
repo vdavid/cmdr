@@ -12,6 +12,7 @@
 //! manual smoke test; these unit tests pin the wiring so the prompt-cancel behaviour
 //! is regression-safe.
 
+use cmdr_operation_log::types::OperationId;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -245,7 +246,7 @@ async fn mtp_listing_cancels_promptly_when_intent_flips() {
 
     // Spawn the delete; once the listing is genuinely in-flight (several entries
     // fetched), fire cancel from another task so it lands mid-listing.
-    let op_id_for_cancel = op_id.clone();
+    let op_id_for_cancel = OperationId::from(op_id.clone());
     let engine_for_cancel = Operations::clone(&engine);
     let vol_for_cancel = Arc::clone(&vol);
     let canceller = tokio::spawn(async move {
@@ -392,7 +393,7 @@ async fn volume_cancel_emits_write_settled_event() {
     let op = engine.register_state(&op_id, Arc::new(engine.new_operation_state(Duration::from_millis(50))));
     let state = Arc::clone(op.state());
 
-    let op_id_for_cancel = op_id.clone();
+    let op_id_for_cancel = OperationId::from(op_id.clone());
     let engine_for_cancel = Operations::clone(&engine);
     let vol_for_cancel = Arc::clone(&vol);
     let canceller = tokio::spawn(async move {
@@ -633,8 +634,11 @@ async fn volume_error_emits_write_settled_event() {
 #[test]
 fn cancel_flag_adapter_links_intent_to_backend_cancel() {
     let engine = TestOperations::new();
-    let op_id = unique("adapter");
-    let op = engine.register_state(&op_id, Arc::new(engine.new_operation_state(Duration::from_millis(50))));
+    let op_id = OperationId::from(unique("adapter"));
+    let op = engine.register_state(
+        op_id.as_str(),
+        Arc::new(engine.new_operation_state(Duration::from_millis(50))),
+    );
     let state = Arc::clone(op.state());
 
     assert!(!state.backend_cancel.is_cancelled(), "backend_cancel must start unset");

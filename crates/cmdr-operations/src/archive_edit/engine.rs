@@ -555,7 +555,9 @@ mod tests {
 
     /// What a query API (the MCP `cmdr://state` resource) reads for this op.
     fn cached(engine: &TestOperations, id: &str) -> (WriteOperationPhase, usize, usize, u64, u64) {
-        let status = engine.get_operation_status(id).expect("the op is registered");
+        let status = engine
+            .get_operation_status(&cmdr_operation_log::types::OperationId::from(id))
+            .expect("the op is registered");
         (
             status.phase,
             status.files_done,

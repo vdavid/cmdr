@@ -20,6 +20,7 @@ use super::{
     BulkRenameRow, ConflictResolution, ExpectedSources, OperationEventSink, Operations, RenameStartError,
     VolumeCopyConfig, WriteOperationError, WriteOperationStartResult,
 };
+use cmdr_operation_log::types::OperationId;
 
 // An engine a test builds for itself, over fakes it reads back, and a journal
 // it reads rows back from.
@@ -210,13 +211,13 @@ pub fn start_bulk_rename(
 
 /// Sets the live pause gate of `operation_id` on `engine`, without the queue's
 /// record flip: `true` when the operation was live.
-pub fn pause_write_operation(engine: &Operations, operation_id: &str) -> bool {
+pub fn pause_write_operation(engine: &Operations, operation_id: &OperationId) -> bool {
     engine.pause_write_operation(operation_id)
 }
 
 /// Clears the live pause gate of `operation_id` on `engine`: `true` when the
 /// operation was live.
-pub fn resume_write_operation(engine: &Operations, operation_id: &str) -> bool {
+pub fn resume_write_operation(engine: &Operations, operation_id: &OperationId) -> bool {
     engine.resume_write_operation(operation_id)
 }
 

@@ -293,7 +293,7 @@ async fn copy_onto_a_share(
     });
     let result = copy_volumes_with_progress(
         Arc::new(CollectorEventSink::new()),
-        registered.id(),
+        registered.id().as_str(),
         &state,
         Arc::clone(&source) as Arc<dyn Volume>,
         &[album],

@@ -11,6 +11,7 @@
 use super::*;
 use crate::Operations;
 use crate::testing::TestOperations;
+use cmdr_operation_log::types::OperationId;
 // Named here rather than inherited through the glob above: the engine module
 // beside this one uses neither, so a `use` there would be dead in a release build.
 use std::pin::Pin;
@@ -93,7 +94,7 @@ impl OperationEventSink for CancelAfterFirstSink {
 pub(super) struct SampleInFlightTableSink {
     pub(super) inner: CollectorEventSink,
     engine: Operations,
-    operation_id: String,
+    operation_id: OperationId,
     dump: std::sync::Mutex<Option<String>>,
 }
 
@@ -102,7 +103,7 @@ impl SampleInFlightTableSink {
         Self {
             inner: CollectorEventSink::new(),
             engine: engine.clone(),
-            operation_id: operation_id.to_owned(),
+            operation_id: OperationId::from(operation_id),
             dump: std::sync::Mutex::new(None),
         }
     }

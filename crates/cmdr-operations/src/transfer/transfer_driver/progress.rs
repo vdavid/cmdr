@@ -589,7 +589,7 @@ mod tests {
         let ledger = LeafProgressLedger::new(
             Arc::clone(sink) as Arc<dyn OperationEventSink>,
             Arc::clone(guard.state()),
-            guard.id().to_owned(),
+            guard.id().to_string().to_owned(),
             WriteOperationType::Copy,
             Arc::new(AtomicUsize::new(0)),
             10,

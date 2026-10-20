@@ -11,6 +11,7 @@ use crate::event_sinks::CollectorEventSink;
 use crate::ledger::{WrittenFile, WrittenIdentity};
 use crate::testing::TestOperations;
 use crate::transfer_tree::TreeLeaf;
+use cmdr_operation_log::types::OperationId;
 
 fn make_state(engine: &TestOperations, progress_interval_ms: u64) -> Arc<WriteOperationState> {
     Arc::new(engine.new_operation_state(Duration::from_millis(progress_interval_ms)))
@@ -694,12 +695,12 @@ fn a_stopped_reversal_leaves_the_ledger_claiming_what_is_still_on_disk() {
     let events = StopTheReversalSink {
         inner: CollectorEventSink::new(),
         engine: Operations::clone(&engine),
-        operation_id: guard.id().to_string(),
+        operation_id: guard.id().clone(),
     };
     let completed = rollback_with_progress(
         &mut transaction,
         &events,
-        guard.id(),
+        guard.id().as_str(),
         &WindDown::of(&state),
         WriteOperationType::Copy,
         files.len(),
@@ -744,7 +745,7 @@ fn a_stopped_reversal_leaves_the_ledger_claiming_what_is_still_on_disk() {
 struct StopTheReversalSink {
     inner: CollectorEventSink,
     engine: Operations,
-    operation_id: String,
+    operation_id: OperationId,
 }
 
 impl OperationEventSink for StopTheReversalSink {

@@ -26,7 +26,7 @@ use crate::operations_host::{TauriEventSink, operations};
 use cmdr_operation_log::query::{self, OperationDetail};
 use cmdr_operation_log::rollback::{RollbackDispatch, RollbackRefusal};
 use cmdr_operation_log::store::{OperationLogStoreError, OperationRow, open_read_connection, operation_log_db_path};
-use cmdr_operation_log::types::Initiator;
+use cmdr_operation_log::types::{Initiator, OperationId};
 use cmdr_operations::{OperationEventSink, UndoReport};
 
 /// Resolve the `operation-log.db` path and run `read` on a read-only connection,
@@ -104,13 +104,15 @@ pub async fn rollback_operation(app: AppHandle, operation_id: String) -> Result<
     // Before `install` there's no journal, so every operation is unknown.
     let engine = operations().map_err(|_| RollbackRefusal::UnknownOperation)?;
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
-    tauri::async_runtime::spawn_blocking(move || engine.dispatch_rollback(&operation_id, Initiator::User, events))
-        .await
-        // The gate panicked, so nothing was dispatched and nothing changed on disk.
-        // `UnknownOperation` is already this module's answer for "we couldn't
-        // establish this operation" (an absent writer and an unopenable journal both
-        // return it), which is exactly what happened.
-        .unwrap_or(Err(RollbackRefusal::UnknownOperation))
+    tauri::async_runtime::spawn_blocking(move || {
+        engine.dispatch_rollback(&OperationId::from(operation_id), Initiator::User, events)
+    })
+    .await
+    // The gate panicked, so nothing was dispatched and nothing changed on disk.
+    // `UnknownOperation` is already this module's answer for "we couldn't
+    // establish this operation" (an absent writer and an unopenable journal both
+    // return it), which is exactly what happened.
+    .unwrap_or(Err(RollbackRefusal::UnknownOperation))
 }
 
 /// Undo the given operations as one action, **newest first** (a multi-batch rename
@@ -127,6 +129,7 @@ pub async fn rollback_operation(app: AppHandle, operation_id: String) -> Result<
 #[tauri::command]
 #[specta::specta]
 pub async fn undo_operations(app: AppHandle, operation_ids: Vec<String>) -> Result<UndoReport, String> {
+    let operation_ids: Vec<OperationId> = operation_ids.into_iter().map(OperationId::from).collect();
     let Ok(engine) = operations() else {
         return Ok(UndoReport::all_refused(
             &operation_ids,

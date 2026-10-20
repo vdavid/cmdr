@@ -68,7 +68,7 @@ use std::sync::{Arc, Mutex, Weak};
 
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::volume::LaneKey;
-use cmdr_operation_log::types::OpKind;
+use cmdr_operation_log::types::{OpKind, OperationId};
 
 use super::host::{EngineHost, OperationErrorReport};
 use super::scan_cache::{self, ScanPreviews};
@@ -97,7 +97,7 @@ mod queue_api;
 /// surface it. The deferred start is held separately so the descriptor stays
 /// cheaply cloneable for the `operations-changed` snapshot.
 pub(crate) struct OperationDescriptor {
-    pub operation_id: String,
+    pub operation_id: OperationId,
     pub operation_type: WriteOperationType,
     /// Lanes this op occupies while running (deduped; usually 1 or 2). Source
     /// and destination volume lanes.
@@ -167,11 +167,11 @@ struct OpRecord {
 
 struct ManagerInner {
     /// id → record. Active ops only (removed on settle).
-    records: HashMap<String, OpRecord>,
+    records: HashMap<OperationId, OpRecord>,
     /// Admission order: every active op's id, in registration order unless the
     /// user moved a waiting op (`move_queued`). Walked front to back on each
     /// admission pass.
-    order: Vec<String>,
+    order: Vec<OperationId>,
     /// lane key → in-use count. Budget 1 per lane in v1, so a lane is free iff
     /// its count is 0. A `HashMap` (not a set) keeps the door open for budgets
     /// > 1 in v2 without reshaping the reservation logic.
@@ -223,7 +223,7 @@ impl ManagerInner {
             .iter()
             .filter_map(|id| self.records.get(id))
             .map(|rec| OperationSnapshot {
-                operation_id: rec.descriptor.operation_id.clone(),
+                operation_id: rec.descriptor.operation_id.to_string(),
                 operation_type: rec.descriptor.operation_type,
                 status: rec.status,
                 source: rec.descriptor.summary.source.clone(),
@@ -237,7 +237,7 @@ impl ManagerInner {
         let settled_failures = self
             .failures
             .iter()
-            .filter(|failure| !self.records.contains_key(&failure.snapshot.operation_id))
+            .filter(|failure| !self.records.contains_key(failure.snapshot.operation_id.as_str()))
             .map(RetainedFailure::row);
         live.chain(settled_failures).collect()
     }
@@ -402,7 +402,7 @@ impl OperationManager {
                 // without a nested borrow of `inner` (the iterator borrows
                 // `order`; `records`/`lane_use` are read through `inner` in the
                 // body), so resolve the id in a plain loop.
-                let mut admit_id: Option<String> = None;
+                let mut admit_id: Option<OperationId> = None;
                 for id in &inner.order {
                     if let Some(rec) = inner.records.get(id)
                         && rec.status == LifecycleStatus::Queued
@@ -439,7 +439,7 @@ impl OperationManager {
             // Mark the volumes busy now that the op is actually running (a
             // Queued op isn't touching the device). The external drag-out seam
             // registers directly; together they form the busy-set union.
-            self.status.register(&admit_id, op_type, volume_ids);
+            self.status.register(admit_id.as_str(), op_type, volume_ids);
             log::info!(target: "op_manager", "admit op={admit_id}");
 
             match deferred {
@@ -473,7 +473,7 @@ impl OperationManager {
                     self.host
                         .events()
                         .error_report(OperationErrorReport::AdmittedWithoutStart {
-                            operation_id: admit_id.clone().into(),
+                            operation_id: admit_id.clone(),
                         });
                     self.on_settled(&admit_id);
                 }
@@ -487,7 +487,7 @@ impl OperationManager {
     /// op). Called by the spawned task on its NORMAL exit, sequenced after the
     /// terminal event like the old cache cleanup. Idempotent: a later `Drop`
     /// safety net for the same op is a no-op.
-    pub(crate) fn on_settled(self: &Arc<Self>, operation_id: &str) {
+    pub(crate) fn on_settled(self: &Arc<Self>, operation_id: &OperationId) {
         self.free_and_remove(operation_id);
         self.run_admission_pass();
         self.emit_changed();
@@ -549,7 +549,7 @@ impl OperationManager {
             );
             inner.order.push(operation_id.clone());
         }
-        self.status.register(&operation_id, op_type, volume_ids);
+        self.status.register(operation_id.as_str(), op_type, volume_ids);
         self.emit_changed();
         log::info!(target: "op_manager", "run instant op={operation_id}");
 
@@ -573,7 +573,7 @@ impl OperationManager {
     /// Frees lanes + cleans caches + removes the record for `operation_id`,
     /// without admitting anything. The shared core of `on_settled` (happy
     /// path) and the `Drop` safety net. Idempotent.
-    fn free_and_remove(&self, operation_id: &str) {
+    fn free_and_remove(&self, operation_id: &OperationId) {
         let (removed, claimed_preview) = {
             let mut inner = self.inner.lock_ignore_poison();
             match inner.records.remove(operation_id) {
@@ -595,7 +595,7 @@ impl OperationManager {
                 self.previews.abandon_claim(&preview_id);
             }
             self.registry.forget(operation_id);
-            self.status.unregister(operation_id);
+            self.status.unregister(operation_id.as_str());
         }
     }
 
@@ -603,7 +603,7 @@ impl OperationManager {
     /// frees its (unreserved) state. Returns `true` if it removed a Queued op,
     /// `false` if the op was Running/Paused/absent (the caller then routes
     /// through the existing `cancel_write_operation` intent path).
-    pub(crate) fn cancel_if_queued(&self, operation_id: &str) -> bool {
+    pub(crate) fn cancel_if_queued(&self, operation_id: &OperationId) -> bool {
         let (was_queued, claimed_preview) = {
             let mut inner = self.inner.lock_ignore_poison();
             match inner.records.get(operation_id) {
@@ -657,7 +657,7 @@ impl OperationManager {
     /// Pause on a queued row, and `pause_all` walks `running_ids()` only. If
     /// "don't start this one" ever becomes a thing to offer, it wants a
     /// deliberate design, not a pause that means something else here.
-    pub(crate) fn set_paused(&self, operation_id: &str, paused: bool) -> PauseOutcome {
+    pub(crate) fn set_paused(&self, operation_id: &OperationId, paused: bool) -> PauseOutcome {
         let outcome = {
             let mut inner = self.inner.lock_ignore_poison();
             match inner.records.get_mut(operation_id) {
@@ -692,7 +692,7 @@ impl OperationManager {
     /// A pause issued during the wait needs nothing from here: it already set
     /// the op's `PauseGate`, so the driver that takes over from the walk parks
     /// at its first boundary the same way the walk did.
-    pub(super) fn end_scan_wait(&self, operation_id: &str) {
+    pub(super) fn end_scan_wait(&self, operation_id: &OperationId) {
         let mut inner = self.inner.lock_ignore_poison();
         if let Some(rec) = inner.records.get_mut(operation_id) {
             rec.in_scan_wait = false;
@@ -707,7 +707,7 @@ impl OperationManager {
     }
 
     /// The preview this op claimed, if it still holds one.
-    pub(super) fn claimed_preview_of(&self, operation_id: &str) -> Option<String> {
+    pub(super) fn claimed_preview_of(&self, operation_id: &OperationId) -> Option<String> {
         self.inner
             .lock_ignore_poison()
             .records
@@ -718,7 +718,7 @@ impl OperationManager {
 
     /// This op's type, for a surface that has only its id. `None` once the
     /// record is gone.
-    pub(super) fn operation_type_of(&self, operation_id: &str) -> Option<WriteOperationType> {
+    pub(super) fn operation_type_of(&self, operation_id: &OperationId) -> Option<WriteOperationType> {
         self.inner
             .lock_ignore_poison()
             .records
@@ -729,7 +729,7 @@ impl OperationManager {
     /// Whether the op is parked on its scan preview. The progress bridge reads
     /// it so a tick that raced the end of the wait can't land afterwards and
     /// drag the phase back to `scanning`.
-    pub(crate) fn is_in_scan_wait(&self, operation_id: &str) -> bool {
+    pub(crate) fn is_in_scan_wait(&self, operation_id: &OperationId) -> bool {
         self.inner
             .lock_ignore_poison()
             .records
@@ -752,7 +752,7 @@ impl OperationManager {
     ///   duplicate is possible, and nothing else would broadcast the row.
     pub(crate) fn retain_failure(
         &self,
-        operation_id: &str,
+        operation_id: &OperationId,
         operation_type: WriteOperationType,
         error: &WriteOperationError,
     ) {
@@ -768,7 +768,11 @@ impl OperationManager {
         // and a logger doing file I/O must never hold up admission.
         let record_gone = {
             let mut inner = self.inner.lock_ignore_poison();
-            if inner.failures.iter().any(|f| f.snapshot.operation_id == operation_id) {
+            if inner
+                .failures
+                .iter()
+                .any(|f| f.snapshot.operation_id == operation_id.as_str())
+            {
                 return;
             }
 
@@ -821,11 +825,13 @@ impl OperationManager {
 
     /// Drops one retained failure and re-broadcasts. Unknown id: a no-op that
     /// doesn't broadcast either.
-    pub(crate) fn dismiss_failure(&self, operation_id: &str) {
+    pub(crate) fn dismiss_failure(&self, operation_id: &OperationId) {
         let removed = {
             let mut inner = self.inner.lock_ignore_poison();
             let before = inner.failures.len();
-            inner.failures.retain(|f| f.snapshot.operation_id != operation_id);
+            inner
+                .failures
+                .retain(|f| f.snapshot.operation_id != operation_id.as_str());
             inner.failures.len() != before
         };
         if removed {
@@ -848,7 +854,7 @@ impl OperationManager {
     }
 
     /// Ids of all currently `Running` (not Paused) ops, for `pause_all`.
-    pub(super) fn running_ids(&self) -> Vec<String> {
+    pub(super) fn running_ids(&self) -> Vec<OperationId> {
         let inner = self.inner.lock_ignore_poison();
         inner
             .order
@@ -864,7 +870,7 @@ impl OperationManager {
     }
 
     /// Ids of all currently `Paused` ops, for `resume_all`.
-    fn paused_ids(&self) -> Vec<String> {
+    fn paused_ids(&self) -> Vec<OperationId> {
         let inner = self.inner.lock_ignore_poison();
         inner
             .order
@@ -922,7 +928,7 @@ impl OperationManager {
     /// cleanup that unregisters the status-cache row, so the one caller that
     /// joins by id (`status_cache::get_operation_status`) has already returned
     /// `None` by then. `snapshot()` is where the two sources are joined.
-    pub(crate) fn lifecycle_status(&self, operation_id: &str) -> Option<LifecycleStatus> {
+    pub(crate) fn lifecycle_status(&self, operation_id: &OperationId) -> Option<LifecycleStatus> {
         self.inner
             .lock_ignore_poison()
             .records
@@ -955,16 +961,16 @@ impl OperationManager {
 /// `write-settled` event) is separate and still lives inside each op's body.
 pub(crate) struct ManagedTaskGuard {
     manager: Arc<OperationManager>,
-    operation_id: String,
+    operation_id: OperationId,
     armed: bool,
 }
 
 impl ManagedTaskGuard {
     /// The net for `operation_id`, an op `manager` admitted.
-    pub(crate) fn new(manager: &Arc<OperationManager>, operation_id: impl Into<String>) -> Self {
+    pub(crate) fn new(manager: &Arc<OperationManager>, operation_id: OperationId) -> Self {
         Self {
             manager: Arc::clone(manager),
-            operation_id: operation_id.into(),
+            operation_id,
             armed: true,
         }
     }
@@ -998,15 +1004,15 @@ impl Drop for ManagedTaskGuard {
 /// + `emit_changed`, making the Drop a no-op.
 struct InstantTaskGuard {
     manager: Arc<OperationManager>,
-    operation_id: String,
+    operation_id: OperationId,
     armed: bool,
 }
 
 impl InstantTaskGuard {
-    fn new(manager: Arc<OperationManager>, operation_id: impl Into<String>) -> Self {
+    fn new(manager: Arc<OperationManager>, operation_id: OperationId) -> Self {
         Self {
             manager,
-            operation_id: operation_id.into(),
+            operation_id,
             armed: true,
         }
     }

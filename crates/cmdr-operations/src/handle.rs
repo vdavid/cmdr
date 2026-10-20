@@ -21,6 +21,7 @@ use super::state::WriteOperationState;
 use super::status_cache::StatusCache;
 use super::types::OperationStatus;
 use super::{EngineStores, Inner, Operations};
+use cmdr_operation_log::types::OperationId;
 
 /// The seams an [`Operations`] is built with. From [`Operations::builder`].
 pub struct OperationsBuilder {
@@ -218,7 +219,7 @@ impl Operations {
     /// [`OperationManager::retain_failure`].
     pub fn retain_failure(
         &self,
-        operation_id: &str,
+        operation_id: &OperationId,
         operation_type: super::types::WriteOperationType,
         error: &super::types::WriteOperationError,
     ) {
@@ -227,13 +228,13 @@ impl Operations {
 
     /// Gets the detailed status of a specific operation, or `None` once it's
     /// gone (or if it never existed).
-    pub fn get_operation_status(&self, operation_id: &str) -> Option<OperationStatus> {
+    pub fn get_operation_status(&self, operation_id: &OperationId) -> Option<OperationStatus> {
         // Asked BEFORE the cache lock, never inside it: this is the only place the
         // two locks meet, and taking them in one order here means there is no order
         // to get wrong. The busy-volume recompute already walks the other way (cache
         // lock, then out), so nesting would close a cycle through data-safety code.
         let lifecycle = self.manager().lifecycle_status(operation_id);
-        let mut snapshot = self.status().snapshot(operation_id, lifecycle)?;
+        let mut snapshot = self.status().snapshot(operation_id.as_str(), lifecycle)?;
 
         // The counters above are a cached echo of the last progress tick; the WAIT is
         // classified live, off the same `WriteOperationState::activity` the event
@@ -247,7 +248,7 @@ impl Operations {
         snapshot.activity = self
             .registry()
             .get(operation_id)
-            .and_then(|state| state.activity(operation_id, None));
+            .and_then(|state| state.activity(operation_id.as_str(), None));
         Some(snapshot)
     }
 }

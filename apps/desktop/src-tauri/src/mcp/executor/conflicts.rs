@@ -24,6 +24,7 @@
 use serde_json::{Value, json};
 
 use super::{ToolError, ToolResult};
+use cmdr_operation_log::types::OperationId;
 use cmdr_operations::{ConflictId, ConflictResolution, ConflictResolutionOutcome};
 
 pub async fn execute_resolve_conflict(params: &Value) -> ToolResult {
@@ -50,7 +51,7 @@ pub async fn execute_resolve_conflict(params: &Value) -> ToolResult {
 
     // Before `install` nothing is registered, so the id is unknown.
     let outcome = crate::operations_host::operations().map_or(ConflictResolutionOutcome::UnknownOperation, |ops| {
-        ops.resolve_write_conflict(operation_id, conflict_id, resolution, apply_to_all)
+        ops.resolve_write_conflict(&OperationId::from(operation_id), conflict_id, resolution, apply_to_all)
     });
     report(operation_id, conflict_id, outcome)
 }

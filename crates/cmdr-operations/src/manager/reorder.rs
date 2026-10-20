@@ -3,6 +3,7 @@
 //! admits the one the user put in front. `../../DETAILS.md` § "Reordering the line".
 
 use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_operation_log::types::OperationId;
 
 use super::super::types::LifecycleStatus;
 use super::{OperationManager, QueueMoveDirection, QueueMoveOutcome};
@@ -18,13 +19,13 @@ enum Target {
 impl OperationManager {
     /// Moves a waiting op one place earlier or later in line, past every running
     /// or paused op between it and the nearest WAITING one on that side.
-    pub(crate) fn move_queued(&self, operation_id: &str, direction: QueueMoveDirection) -> QueueMoveOutcome {
+    pub(crate) fn move_queued(&self, operation_id: &OperationId, direction: QueueMoveDirection) -> QueueMoveOutcome {
         self.reorder(operation_id, Target::Step(direction))
     }
 
     /// Puts a waiting op at `position` (1-based, among waiting ops), shifting the
     /// waiting ops in between by one: the drop of a drag in the queue window.
-    pub(crate) fn place_queued(&self, operation_id: &str, position: u32) -> QueueMoveOutcome {
+    pub(crate) fn place_queued(&self, operation_id: &OperationId, position: u32) -> QueueMoveOutcome {
         let place = usize::try_from(position.saturating_sub(1)).unwrap_or(usize::MAX);
         self.reorder(operation_id, Target::Place(place))
     }
@@ -37,7 +38,7 @@ impl OperationManager {
     /// and the pass that ran when the line last changed left none, so a reorder
     /// can't make one admittable; it only decides who goes FIRST when a lane
     /// frees. Broadcasts only when something moved.
-    fn reorder(&self, operation_id: &str, target: Target) -> QueueMoveOutcome {
+    fn reorder(&self, operation_id: &OperationId, target: Target) -> QueueMoveOutcome {
         let outcome = {
             let mut inner = self.inner.lock_ignore_poison();
             let waiting_slots: Vec<usize> = inner
@@ -52,7 +53,10 @@ impl OperationManager {
                 })
                 .map(|(slot, _)| slot)
                 .collect();
-            let Some(index) = waiting_slots.iter().position(|&slot| inner.order[slot] == operation_id) else {
+            let Some(index) = waiting_slots
+                .iter()
+                .position(|&slot| inner.order[slot] == *operation_id)
+            else {
                 return QueueMoveOutcome::NotQueued;
             };
             // The line is the waiting ops, and it's never anywhere near u32::MAX long.
@@ -73,7 +77,8 @@ impl OperationManager {
                     waiting,
                 },
                 Some(to) => {
-                    let mut line: Vec<String> = waiting_slots.iter().map(|&slot| inner.order[slot].clone()).collect();
+                    let mut line: Vec<OperationId> =
+                        waiting_slots.iter().map(|&slot| inner.order[slot].clone()).collect();
                     let moved = line.remove(index);
                     line.insert(to, moved);
                     for (&slot, id) in waiting_slots.iter().zip(line) {

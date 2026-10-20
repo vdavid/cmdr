@@ -20,6 +20,7 @@
 //! file/folder flags too, so assertions derive from the sink, not a side-channel
 //! `AtomicUsize`. See [`file_conflict_count`].
 
+use cmdr_operation_log::types::OperationId;
 use std::sync::Arc;
 
 use super::super::Operations;
@@ -61,7 +62,10 @@ enum Answer {
     },
     /// Refuses the prompt: the dialog's Cancel, which stops the whole operation
     /// (keeping what landed) rather than answering the clash.
-    CancelOperation { engine: Operations, operation_id: String },
+    CancelOperation {
+        engine: Operations,
+        operation_id: OperationId,
+    },
 }
 
 impl ConflictResponderSink {
@@ -86,7 +90,7 @@ impl ConflictResponderSink {
             state: Arc::clone(state),
             answer: Answer::CancelOperation {
                 engine: engine.clone(),
-                operation_id: operation_id.to_string(),
+                operation_id: OperationId::from(operation_id),
             },
             on_prompt: None,
         }

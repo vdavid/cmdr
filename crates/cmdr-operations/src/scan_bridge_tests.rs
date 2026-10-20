@@ -20,7 +20,7 @@ use super::scan_cache::{CachedScanResult, ScanOutcome, ScanPreviewState};
 use super::types::{LifecycleStatus, WriteOperationConfig, WriteOperationError, WriteOperationType};
 use cmdr_fs::testing::{TestDir, wait_until_async};
 use cmdr_fs::volume::CopyScanResult;
-use cmdr_operation_log::types::Initiator;
+use cmdr_operation_log::types::{Initiator, OperationId};
 
 /// Deadline for every wait here. Generous on purpose: each wait has a real
 /// condition, so a healthy run satisfies it in microseconds.
@@ -129,11 +129,11 @@ async fn a_transfer_confirmed_mid_scan_is_registered_before_its_preview_settles(
         .await
         .expect("copy starts");
 
-    let op_id = start.operation_id.clone();
+    let op_id = OperationId::from(start.operation_id.clone());
     let snapshot = engine.list_operations();
     let row = snapshot
         .iter()
-        .find(|op| op.operation_id == op_id)
+        .find(|op| op.operation_id == op_id.as_str())
         .expect("the confirmed transfer must be a queue row while its preview still walks");
     assert_eq!(
         row.status,
@@ -198,7 +198,7 @@ async fn an_operation_consumes_its_previews_result_rather_than_re_walking() {
         )
         .await
         .expect("copy starts");
-    let op_id = start.operation_id.clone();
+    let op_id = OperationId::from(start.operation_id.clone());
 
     // The operation is parked: nothing copied yet, because nothing has told it
     // what to copy.
@@ -255,7 +255,7 @@ async fn a_failed_preview_fails_its_operation() {
     .await;
     let errors = events.errors.lock().expect("collector mutex");
     let error = errors.first().expect("one error");
-    assert_eq!(error.operation_id, op_id);
+    assert_eq!(error.operation_id, op_id.as_str());
     assert!(
         matches!(&error.error, WriteOperationError::IoError { path, message }
             if path == "/src/locked.bin" && message == "Permission denied"),
@@ -293,7 +293,7 @@ async fn a_cancelled_preview_cancels_its_operation_rather_than_failing_it() {
             .expect("collector mutex")
             .first()
             .map(|e| e.operation_id.clone()),
-        Some(op_id),
+        Some(op_id.to_string()),
     );
     assert!(
         events.errors.lock().expect("collector mutex").is_empty(),
@@ -333,7 +333,9 @@ async fn an_unknown_preview_id_falls_back_to_the_operations_own_walk() {
         .expect("copy starts");
 
     assert!(
-        !engine.manager().is_in_scan_wait(&start.operation_id),
+        !engine
+            .manager()
+            .is_in_scan_wait(&OperationId::from(start.operation_id.as_str())),
         "there is nothing to wait for"
     );
     wait_until_async(WAIT, "the copy to complete on its own walk", || {
@@ -354,8 +356,8 @@ async fn a_second_operation_naming_a_claimed_preview_is_refused() {
     let preview_id = unique("shared-preview");
     register_in_flight(&engine, &preview_id);
 
-    let first = unique("owner");
-    let second = unique("interloper");
+    let first = OperationId::from(unique("owner"));
+    let second = OperationId::from(unique("interloper"));
     assert!(
         matches!(
             engine.stores().previews().claim_preview(&preview_id, &first),
@@ -388,7 +390,7 @@ async fn a_claimed_result_survives_a_ttl_sweep() {
     std::fs::write(&file, b"a").expect("write a");
 
     let claimed = unique("claimed");
-    let owner = unique("owner");
+    let owner = OperationId::from(unique("owner"));
     register_in_flight(&engine, &claimed);
     engine.stores().previews().claim_preview(&claimed, &owner);
     engine.stores().previews().settle_preview(
@@ -441,7 +443,7 @@ async fn the_bridge_ticks_after_the_snapshot_that_first_carries_the_row() {
     let emits_before_registration = engine.manager().emit_count();
     let (events, op_id, preview_id, dir) = start_copy_awaiting_preview(&engine, "scanwait-bridge").await;
 
-    let ticks = observed_scan_ticks(&op_id);
+    let ticks = observed_scan_ticks(op_id.as_str());
     let first = ticks.first().expect("the row must get its opening tick");
     assert!(
         first.emits_before > emits_before_registration,
@@ -462,7 +464,7 @@ async fn the_bridge_ticks_after_the_snapshot_that_first_carries_the_row() {
             ..Default::default()
         },
     );
-    let ticks = observed_scan_ticks(&op_id);
+    let ticks = observed_scan_ticks(op_id.as_str());
     assert_eq!(
         ticks.last().map(|t| (t.files_done, t.bytes_done)),
         Some((12, 4_096)),
@@ -482,7 +484,7 @@ async fn the_bridge_ticks_after_the_snapshot_that_first_carries_the_row() {
     .await;
 
     // The claim is gone, so the bridge has nothing to forward to.
-    let before = observed_scan_ticks(&op_id).len();
+    let before = observed_scan_ticks(op_id.as_str()).len();
     super::scan_bridge::forward_scan_progress(
         &engine,
         &preview_id,
@@ -492,7 +494,7 @@ async fn the_bridge_ticks_after_the_snapshot_that_first_carries_the_row() {
         },
     );
     assert_eq!(
-        observed_scan_ticks(&op_id).len(),
+        observed_scan_ticks(op_id.as_str()).len(),
         before,
         "the bridge must go quiet once the wait is over"
     );
@@ -640,12 +642,17 @@ async fn a_trash_frees_its_preview_instead_of_waiting_on_it() {
         .expect("trash starts");
 
     assert!(
-        !engine.manager().is_in_scan_wait(&start.operation_id),
+        !engine
+            .manager()
+            .is_in_scan_wait(&OperationId::from(start.operation_id.as_str())),
         "a trash must not park on a scan it will never read"
     );
     assert!(
         matches!(
-            engine.stores().previews().claim_preview(&preview_id, &unique("anyone")),
+            engine
+                .stores()
+                .previews()
+                .claim_preview(&preview_id, &OperationId::from(unique("anyone"))),
             super::scan_cache::PreviewClaim::Unknown
         ),
         "the preview must be freed, not left walking for an operation that ignores it"
@@ -709,7 +716,9 @@ async fn a_compress_confirmed_mid_scan_awaits_its_preview() {
         .expect("start compress");
 
     assert!(
-        engine.manager().is_in_scan_wait(&start.operation_id),
+        engine
+            .manager()
+            .is_in_scan_wait(&OperationId::from(start.operation_id.as_str())),
         "the compress must be parked on its preview, not planning its changeset alongside it"
     );
 
@@ -745,7 +754,7 @@ async fn cancelling_a_queued_operation_frees_the_preview_it_claimed() {
     // deferred start never runs.
     let (blocker_started, blocker_started_rx) = tokio::sync::oneshot::channel();
     let (release, release_rx) = tokio::sync::oneshot::channel();
-    let blocker_id = unique("blocker");
+    let blocker_id = OperationId::from(unique("blocker"));
     engine.manager().spawn_managed(
         descriptor_on_lane(&blocker_id, &lane, None),
         Arc::new(engine.new_operation_state(Duration::from_millis(10))),
@@ -764,7 +773,7 @@ async fn cancelling_a_queued_operation_frees_the_preview_it_claimed() {
     );
     blocker_started_rx.await.expect("the blocker holds the lane");
 
-    let queued_id = unique("queued");
+    let queued_id = OperationId::from(unique("queued"));
     engine.manager().spawn_managed(
         descriptor_on_lane(&queued_id, &lane, Some(preview_id.clone())),
         Arc::new(engine.new_operation_state(Duration::from_millis(10))),
@@ -777,7 +786,10 @@ async fn cancelling_a_queued_operation_frees_the_preview_it_claimed() {
     );
     assert!(
         matches!(
-            engine.stores().previews().claim_preview(&preview_id, "someone-else"),
+            engine
+                .stores()
+                .previews()
+                .claim_preview(&preview_id, &OperationId::from("someone-else")),
             super::scan_cache::PreviewClaim::Refused
         ),
         "the queued op owns the preview while it waits"
@@ -787,7 +799,10 @@ async fn cancelling_a_queued_operation_frees_the_preview_it_claimed() {
 
     assert!(
         matches!(
-            engine.stores().previews().claim_preview(&preview_id, "someone-else"),
+            engine
+                .stores()
+                .previews()
+                .claim_preview(&preview_id, &OperationId::from("someone-else")),
             super::scan_cache::PreviewClaim::Unknown
         ),
         "cancelling a queued op must free its preview, not leave the walk running for nobody"
@@ -795,7 +810,10 @@ async fn cancelling_a_queued_operation_frees_the_preview_it_claimed() {
 
     let _ = release.send(());
     wait_until_async(WAIT, "the blocker to settle", || {
-        engine.list_operations().iter().all(|op| op.operation_id != blocker_id)
+        engine
+            .list_operations()
+            .iter()
+            .all(|op| op.operation_id != blocker_id.as_str())
     })
     .await;
 }
@@ -816,7 +834,10 @@ async fn a_scanning_transfer_holds_a_quit() {
     let (events, op_id, preview_id, dir) = start_copy_awaiting_preview(&engine, "scanwait-quit").await;
 
     let snapshot = engine.list_operations();
-    let row = snapshot.iter().find(|op| op.operation_id == op_id).expect("the row");
+    let row = snapshot
+        .iter()
+        .find(|op| op.operation_id == op_id.as_str())
+        .expect("the row");
     assert!(
         row.status == LifecycleStatus::Running && row.operation_type == WriteOperationType::Copy,
         "confirmed work a user is watching must hold a quit, even while it is only counting: \
@@ -844,9 +865,13 @@ async fn a_scanning_transfer_holds_a_quit() {
 
 /// A minimal copy descriptor on one lane, for the admission-level tests that
 /// don't need a real transfer behind them.
-fn descriptor_on_lane(op_id: &str, lane: &str, preview_id: Option<String>) -> super::manager::OperationDescriptor {
+fn descriptor_on_lane(
+    op_id: &OperationId,
+    lane: &str,
+    preview_id: Option<String>,
+) -> super::manager::OperationDescriptor {
     super::manager::OperationDescriptor {
-        operation_id: op_id.to_string(),
+        operation_id: op_id.clone(),
         operation_type: WriteOperationType::Copy,
         lanes: vec![cmdr_fs::volume::LaneKey::new(lane)],
         volume_ids: vec![],
@@ -862,7 +887,7 @@ fn descriptor_on_lane(op_id: &str, lane: &str, preview_id: Option<String>) -> su
 pub(super) async fn start_copy_awaiting_preview(
     engine: &TestOperations,
     label: &str,
-) -> (Arc<CollectorEventSink>, String, String, TestDir) {
+) -> (Arc<CollectorEventSink>, OperationId, String, TestDir) {
     let dir = TestDir::new(label);
     let src = dir.join("src");
     let dst = dir.join("dst");
@@ -892,7 +917,7 @@ pub(super) async fn start_copy_awaiting_preview(
         .await
         .expect("copy starts");
 
-    let op_id = start.operation_id.clone();
+    let op_id = OperationId::from(start.operation_id.clone());
     assert_eq!(start.operation_type, WriteOperationType::Copy);
     assert!(
         engine.manager().is_in_scan_wait(&op_id),

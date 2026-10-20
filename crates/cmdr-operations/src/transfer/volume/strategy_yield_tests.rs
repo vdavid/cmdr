@@ -381,7 +381,7 @@ async fn auto_yield_cancel_while_yielding_keeps_no_partial() {
     ));
 
     let op = engine.register_state("test-autoyield-cancel", make_state(&engine));
-    let op_id = op.id().to_string();
+    let op_id = op.id().clone();
     let state = Arc::clone(op.state());
     // Watches the bytes the copy REPORTS, which is the number the transfer
     // dialog shows: the engine owns the per-chunk callback now.

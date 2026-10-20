@@ -11,6 +11,8 @@ use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use cmdr_operation_log::types::OperationId;
+
 use super::super::manager::{ManagedTaskGuard, OperationDescriptor, OperationSummaryText};
 use super::super::state::WriteSettledGuard;
 use super::super::summary::volume_items;
@@ -101,7 +103,7 @@ impl crate::Operations {
             inner_by_source.push((source.clone(), normalize_inner_path(&inner)));
         }
 
-        let operation_id = cmdr_operation_log::new_operation_id();
+        let operation_id = OperationId::from(cmdr_operation_log::new_operation_id());
         let progress_interval_ms = config.progress_interval_ms;
         let state = Arc::new(self.new_operation_state(Duration::from_millis(progress_interval_ms)));
 
@@ -146,7 +148,7 @@ impl crate::Operations {
                 let settle_volume = (source_volume_id != "root").then(|| source_volume_id.clone());
                 let _settled = WriteSettledGuard::new(
                     Arc::clone(&events),
-                    op_id.clone(),
+                    op_id.to_string(),
                     WriteOperationType::Move,
                     settle_volume,
                 );
@@ -169,7 +171,7 @@ impl crate::Operations {
                 let suppress = Arc::new(SuppressTerminalsSink::over(Arc::clone(&events)));
                 let extract = crate::copy_volumes_with_progress(
                     Arc::clone(&suppress) as Arc<dyn OperationEventSink>,
-                    &op_id,
+                    op_id.as_str(),
                     &state,
                     Arc::clone(&source_volume),
                     &source_paths,
@@ -195,7 +197,7 @@ impl crate::Operations {
                     || matches!(&extract, Err(f) if matches!(f.error, WriteOperationError::Cancelled { .. }));
                 if cancelled {
                     events.emit_cancelled(WriteCancelledEvent {
-                        operation_id: op_id.clone(),
+                        operation_id: op_id.to_string(),
                         operation_type: WriteOperationType::Move,
                         files_processed: files_extracted,
                         rollback: CancelRollback::none(),
@@ -231,7 +233,7 @@ impl crate::Operations {
                 if inner_deletes.is_empty() {
                     match extract_error {
                         None => events.emit_complete(WriteCompleteEvent {
-                            operation_id: op_id.clone(),
+                            operation_id: op_id.to_string(),
                             operation_type: WriteOperationType::Move,
                             files_processed: files_extracted,
                             files_skipped,
@@ -239,12 +241,12 @@ impl crate::Operations {
                             appeared_during_move: None,
                             top_level_skipped: None,
                             refused: None,
-                            metadata_left_behind: state.metadata_losses.left_behind(&op_id),
+                            metadata_left_behind: state.metadata_losses.left_behind(op_id.as_str()),
                             durability_unconfirmed: None,
                             locked_kept: None,
                         }),
                         Some(err) => {
-                            events.emit_error(WriteErrorEvent::new(op_id.clone(), WriteOperationType::Move, err))
+                            events.emit_error(WriteErrorEvent::new(op_id.to_string(), WriteOperationType::Move, err))
                         }
                     }
                     task_guard.disarm();
@@ -266,7 +268,7 @@ impl crate::Operations {
                 let hooks = Arc::new(MutatorHooks::new(
                     Arc::clone(&state),
                     Arc::clone(&events),
-                    op_id.clone(),
+                    op_id.to_string(),
                     WriteOperationType::Move,
                     progress_interval,
                 ));
@@ -289,7 +291,7 @@ impl crate::Operations {
                         // Fully clean, or a partial converge (some sources skipped):
                         // the moved entries are gone from the archive.
                         None => events.emit_complete(WriteCompleteEvent {
-                            operation_id: op_id.clone(),
+                            operation_id: op_id.to_string(),
                             operation_type: WriteOperationType::Move,
                             files_processed: files_extracted,
                             files_skipped,
@@ -297,7 +299,7 @@ impl crate::Operations {
                             appeared_during_move: None,
                             top_level_skipped: None,
                             refused: None,
-                            metadata_left_behind: state.metadata_losses.left_behind(&op_id),
+                            metadata_left_behind: state.metadata_losses.left_behind(op_id.as_str()),
                             durability_unconfirmed: None,
                             locked_kept: None,
                         }),
@@ -305,7 +307,7 @@ impl crate::Operations {
                         // extract — surface the failure. A retry moves the rest (it
                         // CONVERGES: the prefix is already gone from the archive).
                         Some(err) => {
-                            events.emit_error(WriteErrorEvent::new(op_id.clone(), WriteOperationType::Move, err))
+                            events.emit_error(WriteErrorEvent::new(op_id.to_string(), WriteOperationType::Move, err))
                         }
                     },
                     Err(EditError::Cancelled) => {
@@ -313,7 +315,7 @@ impl crate::Operations {
                         // landed and the archive is intact (temp abandoned) —
                         // effectively a completed copy.
                         events.emit_cancelled(WriteCancelledEvent {
-                            operation_id: op_id.clone(),
+                            operation_id: op_id.to_string(),
                             operation_type: WriteOperationType::Move,
                             files_processed: files_extracted,
                             rollback: CancelRollback::none(),
@@ -323,7 +325,7 @@ impl crate::Operations {
                         // The extract landed but the archive couldn't be rewritten. The
                         // originals are intact and the copies are at the destination (no
                         // data loss), so surface the failure — the move degraded to a copy.
-                        events.emit_error(WriteErrorEvent::new(op_id.clone(), WriteOperationType::Move, err));
+                        events.emit_error(WriteErrorEvent::new(op_id.to_string(), WriteOperationType::Move, err));
                     }
                 }
 
@@ -335,7 +337,7 @@ impl crate::Operations {
         self.manager().spawn_managed(descriptor, state, Box::new(deferred));
 
         Ok(WriteOperationStartResult {
-            operation_id,
+            operation_id: operation_id.to_string(),
             operation_type: WriteOperationType::Move,
         })
     }
