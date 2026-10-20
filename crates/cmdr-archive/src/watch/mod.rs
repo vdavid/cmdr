@@ -60,6 +60,10 @@ pub fn active_watch_count() -> usize {
 /// live-count slot. Crate-private: `ArchiveVolume::start_content_watch` is the
 /// one caller, and the host reaches the watch only through the volume.
 pub(crate) struct ArchiveContentWatch {
+    #[allow(
+        dead_code,
+        reason = "held to keep the stream alive; read only by the test-build `has_os_stream`"
+    )]
     stream: WatchStream,
 }
 
