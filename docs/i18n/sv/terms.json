@@ -3205,7 +3205,7 @@
     "chosen": "lita på",
     "confidence": "high",
     "decision": "Server hub: connection state",
-    "forms": "button Lita på nyckeln och anslut; trusted → betrodd / betrott / betrodda",
+    "forms": "button Lita på nyckeln och anslut / Lita på certifikatet och anslut (Trust and connect always names its object, since lita på needs one); trusted → betrodd / betrott / betrodda",
     "sources": "macOS SecurityInterface.framework (Lita på), Certificate Assistant (Betrodd rot)"
   },
   "type": {
