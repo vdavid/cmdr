@@ -79,6 +79,19 @@ impl WatchedArchive {
         std::fs::rename(&tmp, &self.zip_path).expect("rename temp over zip");
     }
 
+    /// Starts the content watch on a REAL OS stream: the two rewrite cells below are
+    /// this watch's only proof that FSEvents delivers, so they opt out of the test
+    /// build's scripted arm.
+    fn start_watch_for_real(&self) {
+        crate::watch::watch_for_real(&self.zip_path);
+        self.volume
+            .start_content_watch(PARENT_DRIVE, WatchCoverage::EveryWriter);
+        assert!(
+            self.volume.content_watch_has_os_stream(),
+            "this cell needs a real FSEvents stream"
+        );
+    }
+
     /// Redoes `rewrite` on a fixed cadence until the host is asked to refresh,
     /// then asserts the refresh named this archive on its parent drive. All of it
     /// sits inside ONE 15 s budget, deliberately under the 20 s nextest cap, so a
@@ -122,9 +135,7 @@ async fn a_rewrite_asks_the_host_to_refresh_the_archive_listings() {
         "a volume with no watch must not claim its listings are watched"
     );
 
-    fixture
-        .volume
-        .start_content_watch(PARENT_DRIVE, WatchCoverage::EveryWriter);
+    fixture.start_watch_for_real();
     assert_eq!(
         fixture.volume.listing_watch_coverage(&fixture.zip_path),
         WatchCoverage::EveryWriter,
@@ -153,9 +164,7 @@ async fn a_rewrite_asks_the_host_to_refresh_the_archive_listings() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_temp_rename_swap_still_asks_for_a_refresh() {
     let fixture = WatchedArchive::new(&[stored("a.txt", b"a".to_vec())]);
-    fixture
-        .volume
-        .start_content_watch(PARENT_DRIVE, WatchCoverage::EveryWriter);
+    fixture.start_watch_for_real();
 
     fixture
         .drive_until_refreshed("a temp+rename inode swap", || {

@@ -112,6 +112,15 @@ the post-rename read re-parses the new file.
 The pure event filter (`event_path_targets_archive`: exact match, the `/private` firmlink normalization, sibling and
 prefix-similar rejection) is unit-tested inline.
 
+**Tests arm no OS stream.** `start_watch` splits into the bookkeeping (the live count, the handle the volume holds, the
+coverage it reports) and `arm_stream`, the OS half. A test build arms `WatchStream::Scripted` there unless the archive
+path opted in with `watch::watch_for_real`, and `ArchiveVolume::content_watch_has_os_stream` says which one a watch got.
+Both are gated on `any(test, feature = "testing")`, because the app's test build compiles this crate without `cfg(test)`
+(the crate must-know). Same split, and same why, as the listing watcher
+(`apps/desktop/src-tauri/src/file_system/DETAILS.md` § "Tests arm no OS stream"): the app's LRU-eviction cell armed a
+real stream only to assert bookkeeping, and needed a 20 s cap for `fseventsd`'s arm and teardown under load. The two
+rewrite cells below are the only ones that opt in.
+
 `host_seam_test.rs` owns everything that depends on FSEvents: a real on-disk rewrite reaching
 `host.listings().refresh_archive_listings` with the PARENT drive id and the archive path, the same across a temp+rename
 inode swap (the case a file-pinned watch would miss), and a remote parent establishing no watch and claiming no
@@ -120,7 +129,7 @@ freshness. It asserts against a `RecordingListings` host, so it needs no listing
 The app-side companion (`listing_host/tests/archive_watch_integration_test.rs`) owns what a refresh DOES: a refresh
 through `AppListings` reflected in an open listing while an outside listing is left untouched (scoping), a truncated
 mid-write keeping the previous listing, and LRU eviction releasing the archive's watch (`Arc::strong_count` drops to the
-test's own after eviction). It drives refreshes directly, so no FSEvents timing lives there.
+test's own after eviction). It drives refreshes directly and its watch is scripted, so no FSEvents timing lives there.
 
 The FSEvents-driven tests are **self-healing** under a saturated suite, not retry-dependent: each redoes the zip rewrite
 on a 750 ms cadence until the watch delivers, inside one 15 s budget. This defeats both the just-registered arming

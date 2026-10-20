@@ -28,16 +28,20 @@ use cmdr_listing::testing::{TestListing, TestListingGuard};
 
 use cmdr_archive::test_fixtures::{FixtureFile, build_zip, stored};
 
-/// Starts the content watch on a resolved archive volume. `VolumeManager::resolve`
-/// only auto-starts the watch when an app handle is registered (production); a
-/// headless test has none, so it starts the watch directly on the registered
-/// `ArchiveVolume` (the same instance the registry and future re-resolves see).
-fn start_watch_on(volume: &Arc<dyn Volume>, parent_volume_id: &str) {
+fn archive_volume(volume: &Arc<dyn Volume>) -> &ArchiveVolume {
     volume
         .as_any()
         .downcast_ref::<ArchiveVolume>()
         .expect("resolved volume is an ArchiveVolume")
-        .start_content_watch(parent_volume_id, WatchCoverage::EveryWriter);
+}
+
+/// Starts the content watch on a resolved archive volume. `VolumeManager::resolve`
+/// only auto-starts the watch when an app handle is registered (production); a
+/// headless test has none, so it starts the watch directly on the registered
+/// `ArchiveVolume` (the same instance the registry and future re-resolves see).
+/// A test build arms it with no OS stream (`cmdr-archive`'s `watch/DETAILS.md`).
+fn start_watch_on(volume: &Arc<dyn Volume>, parent_volume_id: &str) {
+    archive_volume(volume).start_content_watch(parent_volume_id, WatchCoverage::EveryWriter);
 }
 
 /// A temp directory with a `.zip` inside, cleaned up on drop. The zip lives in
@@ -206,6 +210,10 @@ async fn lru_eviction_releases_the_archive_and_its_watch() {
         a.listing_watch_coverage(&zip_a),
         WatchCoverage::EveryWriter,
         "A's watch must be live while registered"
+    );
+    assert!(
+        !archive_volume(&a).content_watch_has_os_stream(),
+        "a test-build content watch must not open an OS stream: this cell asserts bookkeeping, not delivery"
     );
     assert_eq!(Arc::strong_count(&a), 2, "the registry and the test each hold one Arc");
 

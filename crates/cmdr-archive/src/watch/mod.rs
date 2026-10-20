@@ -35,6 +35,8 @@ use notify_debouncer_full::{
 
 use super::ArchiveIndexCache;
 use cmdr_fs::firmlinks;
+#[cfg(any(test, feature = "testing"))]
+use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::host::VolumeHost;
 
@@ -58,8 +60,29 @@ pub fn active_watch_count() -> usize {
 /// live-count slot. Crate-private: `ArchiveVolume::start_content_watch` is the
 /// one caller, and the host reaches the watch only through the volume.
 pub(crate) struct ArchiveContentWatch {
-    #[allow(dead_code, reason = "held only to keep the debouncer (and its OS watch) alive")]
-    debouncer: Debouncer<RecommendedWatcher, RecommendedCache>,
+    stream: WatchStream,
+}
+
+/// What keeps a content watch delivering: the OS stream, which disarms when dropped.
+enum WatchStream {
+    Notify(
+        #[allow(dead_code, reason = "held only to keep the debouncer (and its OS watch) alive")]
+        Debouncer<RecommendedWatcher, RecommendedCache>,
+    ),
+    /// A test build's watch: the volume's bookkeeping (coverage, the live count, the
+    /// drop on eviction) without an OS stream, so a test that asserts arming or
+    /// eviction never waits on `fseventsd`. Gated on `testing` as well as `test`,
+    /// because the app's test build compiles this crate without `cfg(test)`.
+    #[cfg(any(test, feature = "testing"))]
+    Scripted,
+}
+
+impl ArchiveContentWatch {
+    /// Whether this watch holds an OS stream.
+    #[cfg(any(test, feature = "testing"))]
+    pub(crate) fn has_os_stream(&self) -> bool {
+        matches!(self.stream, WatchStream::Notify(_))
+    }
 }
 
 impl Drop for ArchiveContentWatch {
@@ -88,6 +111,52 @@ pub(crate) fn start_watch(
     cache: Arc<ArchiveIndexCache>,
     host: VolumeHost,
 ) -> Option<ArchiveContentWatch> {
+    let stream = arm_stream(archive_path, parent_volume_id, cache, host)?;
+    ACTIVE_ARCHIVE_WATCHES.fetch_add(1, Ordering::SeqCst);
+    Some(ArchiveContentWatch { stream })
+}
+
+/// The OS half of a content watch. A test build arms `WatchStream::Scripted` unless
+/// the archive opted in with `watch_for_real`; it still refuses an archive with no
+/// parent directory to watch, as `notify` would. (Plain backticks: both are gated on
+/// `testing`, so rustdoc can't always resolve a link.)
+fn arm_stream(
+    archive_path: PathBuf,
+    parent_volume_id: String,
+    cache: Arc<ArchiveIndexCache>,
+    host: VolumeHost,
+) -> Option<WatchStream> {
+    #[cfg(any(test, feature = "testing"))]
+    if !REAL_STREAMS.lock_ignore_poison().contains(&archive_path) {
+        return archive_path
+            .parent()
+            .is_some_and(Path::is_dir)
+            .then_some(WatchStream::Scripted);
+    }
+    arm_notify_stream(archive_path, parent_volume_id, cache, host).map(WatchStream::Notify)
+}
+
+/// Archive paths whose content watch arms a real OS stream in a test build.
+#[cfg(any(test, feature = "testing"))]
+static REAL_STREAMS: std::sync::LazyLock<std::sync::Mutex<std::collections::HashSet<PathBuf>>> =
+    std::sync::LazyLock::new(Default::default);
+
+/// Makes `archive_path`'s content watch arm a real OS stream in this test build. Only
+/// for a test that blocks on the OS delivering an event; keyed by path, not a global
+/// switch, so it holds when every test shares one process.
+#[cfg(any(test, feature = "testing"))]
+pub fn watch_for_real(archive_path: &Path) {
+    REAL_STREAMS.lock_ignore_poison().insert(archive_path.to_path_buf());
+}
+
+/// A debounced `notify` stream on the archive's parent directory, refreshing the
+/// archive's listings whenever a batch touches the archive file.
+fn arm_notify_stream(
+    archive_path: PathBuf,
+    parent_volume_id: String,
+    cache: Arc<ArchiveIndexCache>,
+    host: VolumeHost,
+) -> Option<Debouncer<RecommendedWatcher, RecommendedCache>> {
     let watch_dir = archive_path.parent()?.to_path_buf();
 
     let mut debouncer = new_debouncer(ARCHIVE_WATCH_DEBOUNCE, None, move |result: DebounceEventResult| {
@@ -133,9 +202,7 @@ pub(crate) fn start_watch(
             )
         })
         .ok()?;
-
-    ACTIVE_ARCHIVE_WATCHES.fetch_add(1, Ordering::SeqCst);
-    Some(ArchiveContentWatch { debouncer })
+    Some(debouncer)
 }
 
 /// Whether a directory-watch event path refers to the archive file.

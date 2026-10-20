@@ -52,8 +52,11 @@
 #
 # ❌ Membership is "blocks on a delivery", NOT "touches a watcher". A test that
 # merely ARMS a watch and then asserts on lifecycle has no event to starve on, so
-# putting it here only serializes something fast; give it a cap-only override
-# instead (see the arming-only block below).
+# putting it here only serializes something fast. It needs no override at all:
+# arm it without an OS stream, which runs in milliseconds. The listing, file-viewer,
+# and archive-content watchers do that by default in a test build (a real-delivery
+# cell opts in with `watch_for_real`); git, downloads, and the cold drive through
+# their scripted constructors.
 real-notify = { max-threads = 1 }
 # Real disk-image tests (macOS-only, `#[ignore]`d — run via `--run-ignored`): the
 # FAT32/exFAT fixtures (`indexing::tests::external_drive_fixture`), and the APFS/HFS+
@@ -424,27 +427,6 @@ filter = '''
 slow-timeout = { period = "20s", terminate-after = 1 }
 
 [[profile.default.overrides]]
-# Tests that ARM a real OS watch without blocking on a specific delivery: today
-# the archive LRU eviction releasing its content watch (`cmdr-archive`'s watch has
-# no scripted backend yet). There's no event to
-# wait for, so they need neither retries nor the group — ❌ don't add them to
-# `real-notify`, which is for delivery-blocking tests and would serialize a pile of
-# fast ones for nothing. What they DO need is headroom over the global 8 s cap,
-# because arming and tearing down a real FSEvents stream (or standing up an index
-# on a real tree) is itself slow on a saturated host.
-#
-# All of these timed out together on 2026-08-10 during a full run that overlapped a
-# release benchmark in another worktree (host load ~30). Every one passed when the
-# check runner re-ran it alone at the SAME deadline, which is the contention
-# signature rather than a defect, and each takes well under a second when idle.
-#
-# ❌ Don't add a LISTING-watcher test here. A test build arms that watcher with no OS
-# stream (`file_system/DETAILS.md` § "Tests arm no OS stream"), so its arming tests
-# (the reaper, coverage, lifecycle order, detached arm) run in ~0.03 s and need no cap.
-filter = 'test(listing_host::tests::archive_watch_integration_test::lru_eviction_releases_the_archive_and_its_watch)'
-slow-timeout = { period = "20s", terminate-after = 1 }
-
-[[profile.default.overrides]]
 # The git portal's ONE real-`.git/*` watcher cell. It arms a real `notify` debouncer on a
 # repository's gitdir (one recursive watch), writes two bursts of five commits plus a
 # branch switch, redoing each burst on a fresh branch until it's delivered (a saturated
@@ -568,7 +550,7 @@ slow-timeout = { period = "30s", terminate-after = 1 }
 # The sabre/dav cells (`crates/cmdr-webdav/src/volume/nextcloud_test.rs`), which
 # `desktop-rust-webdav-nextcloud` runs against a real Nextcloud in Docker.
 #
-# Same contention signature as the arming-only block above: on 2026-09-02 they
+# The contention signature: on 2026-09-02 they
 # timed out together during a run that overlapped four other worktrees' Rust
 # builds, and the check runner cleared two of them by re-running alone at the
 # SAME 8 s deadline — starvation, not a defect. What makes this class slower than

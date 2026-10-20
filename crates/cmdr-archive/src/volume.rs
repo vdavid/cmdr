@@ -212,6 +212,17 @@ impl ArchiveVolume {
         .map(|watch| LiveContentWatch { watch, coverage });
     }
 
+    /// Whether this volume's content watch is live AND holds an OS stream. A test build
+    /// arms a scripted one unless the archive opted in with
+    /// [`watch_for_real`](crate::watch::watch_for_real).
+    #[cfg(any(test, feature = "testing"))]
+    pub fn content_watch_has_os_stream(&self) -> bool {
+        self.watch
+            .lock_ignore_poison()
+            .as_ref()
+            .is_some_and(|live| live.watch.has_os_stream())
+    }
+
     /// Maps a path from the volume's namespace to the archive-inner path the
     /// index keys on (`/`-separated, no surrounding slashes, root is `""`).
     ///
