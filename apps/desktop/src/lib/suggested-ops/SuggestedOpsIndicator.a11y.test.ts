@@ -51,12 +51,15 @@ describe('the indicator', () => {
     expect(host.textContent).toContain('3')
   })
 
-  it('carries an accessible name, since the glyph and number alone say nothing', () => {
+  // The glyph and number alone say nothing, so a screen-reader-only sentence comes with the number.
+  // Named by content, never an `aria-label`: that would have to hold the visible number too (WCAG 2.5.3).
+  it('is named by what it means, then the number it shows', () => {
     badge.state.pendingGroupCount = 2
     const host = mountIndicator()
 
     const button = host.querySelector('button')
-    expect((button?.getAttribute('aria-label') ?? '').length).toBeGreaterThan(0)
+    expect(button?.hasAttribute('aria-label')).toBe(false)
+    expect(button?.textContent.replace(/\s+/g, ' ').trim()).toBe('AI suggestions are waiting. Click to review them. 2')
   })
 
   it('opens the review when clicked', () => {
@@ -72,6 +75,6 @@ describe('the indicator', () => {
     badge.state.pendingGroupCount = 4
     const host = mountIndicator()
 
-    await expectNoA11yViolations(host, { skipLabelInName: '#450' })
+    await expectNoA11yViolations(host)
   })
 })

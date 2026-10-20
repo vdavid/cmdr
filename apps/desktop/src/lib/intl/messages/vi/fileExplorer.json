@@ -357,10 +357,6 @@
   "@fileExplorer.network.browser.refresh": {
     "sourceHash": "0e91610"
   },
-  "fileExplorer.network.browser.refreshAriaLabel": "Làm mới các máy chủ mạng",
-  "@fileExplorer.network.browser.refreshAriaLabel": {
-    "sourceHash": "73966bd"
-  },
   "fileExplorer.network.browser.refreshHint": "Nhấn <key></key> hoặc bấm vào đây để làm mới",
   "@fileExplorer.network.browser.refreshHint": {
     "sourceHash": "7f65c7d"

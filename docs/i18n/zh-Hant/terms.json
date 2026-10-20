@@ -2224,8 +2224,8 @@
   "main-window": {
     "chosen": "主視窗",
     "confidence": "high",
-    "forms": "in the main window → 在主視窗中 (queue.row.foregroundAria, commands.queueShowInMainWindow.label)",
-    "sources": "TC 2083=主視窗, DC, Thunar zh-TW, MS zh-Hant; shipped catalog (shortcuts.scope.mainWindow, queue.row.foregroundAria, queue.row.awaitingAnswerTooltip)"
+    "forms": "in the main window → 在主視窗中 (commands.queueShowInMainWindow.label)",
+    "sources": "TC 2083=主視窗, DC, Thunar zh-TW, MS zh-Hant; shipped catalog (shortcuts.scope.mainWindow, queue.row.awaitingAnswerTooltip)"
   },
   "manifest": {
     "chosen": "資訊清單",

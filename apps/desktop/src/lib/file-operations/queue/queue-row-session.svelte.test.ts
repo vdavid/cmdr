@@ -257,7 +257,7 @@ describe('a row commands its operation through the session', () => {
     emitSnapshot([snapshot('op-a')])
     mountRow('op-a')
 
-    button('Pause this operation').click()
+    button('Pause').click()
     expect(commandMocks.pauseOperation).toHaveBeenCalledWith('op-a')
     // Let the pause round-trip finish; until it does, the session refuses the
     // next press on the same button.
@@ -266,7 +266,7 @@ describe('a row commands its operation through the session', () => {
     // Which way the one button goes is decided from the lifecycle status, and
     // the session learns it from the same snapshot the row renders.
     emitSnapshot([snapshot('op-a', 'paused')])
-    button('Resume this operation').click()
+    button('Resume').click()
 
     expect(commandMocks.resumeOperation).toHaveBeenCalledWith('op-a')
   })
@@ -275,7 +275,7 @@ describe('a row commands its operation through the session', () => {
     emitSnapshot([snapshot('op-a', 'queued')])
     mountRow('op-a')
 
-    button('Cancel this operation').click()
+    button('Cancel').click()
 
     expect(commandMocks.cancelOperation).toHaveBeenCalledWith('op-a')
   })
@@ -313,9 +313,9 @@ describe('a row commands its operation through the session', () => {
     emitSnapshot([snapshot('op-a')])
     mountRow('op-a')
 
-    button('Cancel this operation').click()
+    button('Cancel').click()
     await Promise.resolve()
-    button('Cancel this operation').click()
+    button('Cancel').click()
 
     expect(commandMocks.cancelOperation).toHaveBeenCalledTimes(1)
   })

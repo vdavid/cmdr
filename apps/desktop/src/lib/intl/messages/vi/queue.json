@@ -87,25 +87,9 @@
   "@queue.row.foregroundTooltip": {
     "sourceHash": "88c52de"
   },
-  "queue.row.foregroundAria": "Hiển thị thao tác này trong cửa sổ chính",
-  "@queue.row.foregroundAria": {
-    "sourceHash": "ece64ad"
-  },
   "queue.row.cancel": "Hủy",
   "@queue.row.cancel": {
     "sourceHash": "19766ed"
-  },
-  "queue.row.pauseAria": "Tạm dừng thao tác này",
-  "@queue.row.pauseAria": {
-    "sourceHash": "a836434"
-  },
-  "queue.row.resumeAria": "Tiếp tục thao tác này",
-  "@queue.row.resumeAria": {
-    "sourceHash": "be841fc"
-  },
-  "queue.row.cancelAria": "Hủy thao tác này",
-  "@queue.row.cancelAria": {
-    "sourceHash": "236ec68"
   },
   "queue.row.dismiss": "Bỏ qua",
   "@queue.row.dismiss": {

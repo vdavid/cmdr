@@ -355,10 +355,6 @@
   "@fileExplorer.network.browser.refresh": {
     "sourceHash": "0e91610"
   },
-  "fileExplorer.network.browser.refreshAriaLabel": "刷新网络主机",
-  "@fileExplorer.network.browser.refreshAriaLabel": {
-    "sourceHash": "73966bd"
-  },
   "fileExplorer.network.browser.refreshHint": "按 <key></key> 或点按这里刷新",
   "@fileExplorer.network.browser.refreshHint": {
     "sourceHash": "7f65c7d"

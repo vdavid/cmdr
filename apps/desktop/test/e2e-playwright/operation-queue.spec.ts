@@ -153,14 +153,19 @@ async function readFailureReason(queuePage: TauriPage): Promise<string> {
   return text as string
 }
 
-async function clickRowButton(queuePage: TauriPage, operationId: string, ariaLabel: string): Promise<void> {
+/** Clicks a row button by the visible word that names it (a keyed button carries no aria-label). */
+async function clickRowButton(queuePage: TauriPage, operationId: string, word: string): Promise<void> {
   const idJson = JSON.stringify(operationId)
-  const labelJson = JSON.stringify(ariaLabel)
+  const wordJson = JSON.stringify(word)
   await queuePage.evaluate(`(function() {
     var row = document.querySelector('.queue-row[data-operation-id=' + JSON.stringify(${idJson}) + ']');
     if (!row) throw new Error('row not found: ' + ${idJson});
-    var btn = row.querySelector('[aria-label=' + JSON.stringify(${labelJson}) + ']');
-    if (!btn) throw new Error('button not found: ' + ${labelJson});
+    var btn = Array.prototype.find.call(row.querySelectorAll('.actions-cell button'), function(b) {
+      var copy = b.cloneNode(true);
+      copy.querySelectorAll('[aria-hidden="true"]').forEach(function(h) { h.remove(); });
+      return copy.textContent.trim() === ${wordJson};
+    });
+    if (!btn) throw new Error('button not found: ' + ${wordJson});
     btn.click();
   })()`)
 }
@@ -332,7 +337,7 @@ test.describe('Operation queue window', () => {
     const queuedId = rowsBefore.find((r) => r.status === 'queued')?.id
     expect(queuedId, 'a queued row exists').toBeTruthy()
     if (!queuedId) throw new Error('no queued row')
-    await clickRowButton(queuePage, queuedId, 'Cancel this operation')
+    await clickRowButton(queuePage, queuedId, 'Cancel')
 
     await expect
       .poll(
@@ -348,7 +353,7 @@ test.describe('Operation queue window', () => {
     const runningId = (await readRows(queuePage)).find((r) => r.status === 'running')?.id
     expect(runningId, 'a running row exists').toBeTruthy()
     if (!runningId) throw new Error('no running row')
-    await clickRowButton(queuePage, runningId, 'Pause this operation')
+    await clickRowButton(queuePage, runningId, 'Pause')
 
     await expect
       .poll(
@@ -361,7 +366,7 @@ test.describe('Operation queue window', () => {
       .toBe('paused')
 
     // Resume it → status flips back to Running.
-    await clickRowButton(queuePage, runningId, 'Resume this operation')
+    await clickRowButton(queuePage, runningId, 'Resume')
 
     await expect
       .poll(
@@ -533,7 +538,7 @@ test.describe('Operation queue window', () => {
     const failedId = (await readRows(queuePage)).find((r) => r.status === 'failed')?.id
     expect(failedId, 'a failed row exists').toBeTruthy()
     if (!failedId) throw new Error('no failed row')
-    await clickRowButton(queuePage, failedId, 'Dismiss this operation')
+    await clickRowButton(queuePage, failedId, 'Dismiss')
     await expect.poll(async () => (await readRows(queuePage)).length, { timeout: waitBudget(10000) }).toBe(0)
   })
 
@@ -565,7 +570,7 @@ test.describe('Operation queue window', () => {
     const mainProbe = await installShowProbe(main)
     const queueProbe = await installShowProbe(queuePage)
     try {
-      await clickRowButton(queuePage, runningId, 'Show this operation in the main window')
+      await clickRowButton(queuePage, runningId, 'Show')
 
       // The main window shows it, with its live readout rather than an empty
       // frame: the window's fan-out hands a late session the last tick it saw.

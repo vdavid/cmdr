@@ -137,6 +137,6 @@ describe('queue window a11y', () => {
       }),
     ])
     expect(target.querySelector('[role="grid"]')).not.toBeNull()
-    await expectNoA11yViolations(target, { skipLabelInName: '#450' })
+    await expectNoA11yViolations(target)
   })
 })

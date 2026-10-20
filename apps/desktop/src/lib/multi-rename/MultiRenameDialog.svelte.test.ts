@@ -560,7 +560,16 @@ describe('MultiRenameDialog', () => {
         'Regular expression',
         'Replace whole name',
       ])
-      expect(chips.map((chip) => chip.textContent.trim())).toEqual(['Aa', '1×', '.ext', '.*', '^$'])
+      // Each face is a glyph painted from `data-glyph`, not text: "1×" in the text would be a
+      // visible word "First match only" doesn't hold (WCAG 2.5.3).
+      expect(chips.map((chip) => chip.querySelector('[data-glyph]')?.getAttribute('data-glyph'))).toEqual([
+        'Aa',
+        '1×',
+        '.ext',
+        '.*',
+        '^$',
+      ])
+      expect(chips.map((chip) => chip.textContent.trim())).toEqual(['', '', '', '', ''])
       expect(chips.every((chip) => chip.getAttribute('aria-pressed') === 'false')).toBe(true)
     })
 

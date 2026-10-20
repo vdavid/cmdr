@@ -75,15 +75,17 @@
 
 {#if value}
     {#if isClickable}
+        <!-- Named by its content: the key it shows, then what clicking does. An `aria-label`
+             would have to hold the visible key too (WCAG 2.5.3), so the purpose rides an
+             `sr-only` span instead. -->
         <button
             type="button"
             class="shortcut-chip clickable"
             class:sm={size === 'sm'}
-            aria-label={tString('ui.shortcutChip.customizeAria', { commandName })}
             onclick={handleClick}
             use:tooltip={tString('ui.shortcutChip.customizeTooltip')}
         >
-            <kbd>{value}</kbd>
+            <kbd>{value}</kbd> <span class="sr-only">{tString('ui.shortcutChip.customizeAria', { commandName })}</span>
         </button>
     {:else}
         <kbd class="shortcut-chip" class:sm={size === 'sm'}>{value}</kbd>

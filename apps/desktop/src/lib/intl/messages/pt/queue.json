@@ -87,25 +87,9 @@
   "@queue.row.foregroundTooltip": {
     "sourceHash": "88c52de"
   },
-  "queue.row.foregroundAria": "Mostrar esta operação na janela principal",
-  "@queue.row.foregroundAria": {
-    "sourceHash": "ece64ad"
-  },
   "queue.row.cancel": "Cancelar",
   "@queue.row.cancel": {
     "sourceHash": "19766ed"
-  },
-  "queue.row.pauseAria": "Pausar esta operação",
-  "@queue.row.pauseAria": {
-    "sourceHash": "a836434"
-  },
-  "queue.row.resumeAria": "Retomar esta operação",
-  "@queue.row.resumeAria": {
-    "sourceHash": "be841fc"
-  },
-  "queue.row.cancelAria": "Cancelar esta operação",
-  "@queue.row.cancelAria": {
-    "sourceHash": "236ec68"
   },
   "queue.row.dismiss": "Dispensar",
   "@queue.row.dismiss": {

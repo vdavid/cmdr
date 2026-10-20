@@ -1257,14 +1257,19 @@ unset Size or Modified slot, and a user reported search as broken when it was on
 style hook is `.is-filled`, ❌ never re-derive it from `configured`.
 
 - `toggle`: an on/off option. `aria-pressed={pressed}`, the tint while pressed (`.is-pressed`, a hook of its own so
-  `.is-filled` keeps meaning "a filter carrying a value"). Give a glyph label its full name as `ariaLabel`. The
-  multi-rename search options are the consumer.
+  `.is-filled` keeps meaning "a filter carrying a value"). A glyph face (`Aa`, `1×`, `.ext`) is `glyph`, and the type
+  then requires its full name as `ariaLabel`. The multi-rename search options are the consumer.
 - `insert`: a momentary action (insert this text): a plain button, no `aria-pressed`, no popover ARIA, never tinted. The
   multi-rename placeholders are the consumer.
 - `recent`: a denser history pill with a leading mode badge (via the `leading` snippet) and a middle-truncated label.
   Activates on click; `onContextMenu` handles right-click "remove from history". No popover ARIA, no clear.
 
 **`mono`** sets the label in `--font-mono`, for literal syntax (`[N]`, `Aa`, `.*`, `^$`, `.ext`, `1×`); words stay sans.
+
+**`glyph` paints the label from CSS `content: attr(data-glyph)`, not a text node.** A chip named by an `ariaLabel` must
+hold its visible words (WCAG 2.5.3, label in name), and "1×" or ".ext" are words "First match only" doesn't contain. As
+a glyph the face is an icon whose words are the name. The same goes for the `leading` snippet: a text badge ("Aa") is a
+visible word too, so draw it from `data-glyph` (the Debug catalog's `demo-badge` does).
 
 **`size="field"`** stands a chip as tall as the text fields beside it, by their frame's own recipe (`app-field.css`:
 font × tight leading + two input paddings + the border), and at least square. Only for a chip in a row of fields (the
@@ -1278,11 +1283,11 @@ it. The `recent` variant keeps its own tighter padding on purpose: it stacks in 
 controls.
 
 Props (see the tint/`×` split above before touching `value` or `configured`): `variant?`, `size?`, `mono?`, `pressed?`,
-`label` (required), `value?`, `configured?`, `isOpen?`, `disabled?`, `highlighted?`, `onActivate` (required),
-`onClear?`, `onContextMenu?`, `ariaLabel?`, `tooltipContent?` (a `TooltipParam`), `leading?` (Snippet), `chipElement?`
-(bindable button ref). Variant and size classes render through `class:` directives (`chip-filter`, `chip-recent`,
-`chip-field`) (not a `chip--{variant}` interpolation, which the `css-unused` checker can't resolve, and the `--` form
-trips its var-definition regex against `:not(...)`).
+`label` (required), `glyph?` (then `ariaLabel` is required), `value?`, `configured?`, `isOpen?`, `disabled?`,
+`highlighted?`, `onActivate` (required), `onClear?`, `onContextMenu?`, `ariaLabel?`, `tooltipContent?` (a
+`TooltipParam`), `leading?` (Snippet), `chipElement?` (bindable button ref). Variant and size classes render through
+`class:` directives (`chip-filter`, `chip-recent`, `chip-field`) (not a `chip--{variant}` interpolation, which the
+`css-unused` checker can't resolve, and the `--` form trips its var-definition regex against `:not(...)`).
 
 ## LinkButton
 
@@ -1800,11 +1805,13 @@ in one component is what guarantees the uniform look, while the prop split keeps
 `commandId`; fixed → `key`.
 
 **Clickable variant.** In `commandId` mode (and `clickable` not set to `false`) the chip is a real
-`<button type="button">` wrapping the `<kbd>`, with `aria-label="Customize the {command name} shortcut"` and a
-"Customize this shortcut" tooltip. Clicking deep-links to Settings > Keyboard shortcuts (`openShortcutCustomization`).
-Set `clickable={false}` when the chip sits inside another interactive control (palette rows, F-key bar buttons) where a
-nested click target would double-activate (it's a competing click target, not a focus-nesting problem — don't "fix" it
-with focus management; the non-clickable chip is the fix). Non-clickable chips render a bare `<kbd>`.
+`<button type="button">` wrapping the `<kbd>` and an `sr-only` "Customize the {command name} shortcut", so its name is
+"⌃J Customize the … shortcut", and a "Customize this shortcut" tooltip. ❌ No `aria-label`: it would have to hold the
+visible key too (WCAG 2.5.3, label in name). Clicking deep-links to Settings > Keyboard shortcuts
+(`openShortcutCustomization`). Set `clickable={false}` when the chip sits inside another interactive control (palette
+rows, F-key bar buttons) where a nested click target would double-activate (it's a competing click target, not a
+focus-nesting problem — don't "fix" it with focus management; the non-clickable chip is the fix). Non-clickable chips
+render a bare `<kbd>`.
 
 **Lazy-import constraint (load-bearing, don't break it).** The chip must NOT statically import
 `openShortcutCustomization`. That helper pulls in `@tauri-apps/api/webviewWindow` and window-positioning, which (1) must
@@ -2149,6 +2156,11 @@ and `region` (both misfire in jsdom; see the helper's comments).
   glyphs read as text for the audit, since the unit DOM's canvas returns no pixels and the rule's icon-ligature probe
   threw into `incomplete`, passing for free while E2E failed the same markup. A `aria-label` must contain the element's
   visible words in order (axe drops punctuation and parentheticals before comparing).
+- **Fixing a mismatch, in order of preference**: name by content (drop the `aria-label`; an `sr-only` span carries any
+  purpose the visible text lacks, as `ShortcutChip` and `SuggestedOpsIndicator` do), start the label with the visible
+  words ("Undo all 3 batches, 2,500 files renamed in this run"), or paint a glyph face from `data-glyph` (`Chip`'s
+  `glyph`). ❗ axe counts `aria-hidden` text that's on screen, so `Button`'s `keyHint` chip is a visible word: a keyed
+  `Button` with a letter key takes no `aria-label` at all (the queue rows, the Background button).
 - **A known gap opts out per audit**, naming its issue: `expectNoA11yViolations(el, { skipLabelInName: '#450' })`.
   Remove the opt-out with the fix.
 

@@ -37,7 +37,9 @@
          * The key that presses this button, drawn as a chip after the label in its own slot:
          * centered on the button, never wrapping away from the label, and `aria-hidden` (read
          * into the name it garbles it: "Skip S"). ❌ Never a `ShortcutChip` in `children`
-         * (`cmdr/key-hint-via-button-prop`). Pair a fixed key with `aria-keyshortcuts`.
+         * (`cmdr/key-hint-via-button-prop`). Pair a fixed key with `aria-keyshortcuts`. ❌ No
+         * `aria-label` beside a letter key: axe counts the on-screen chip as visible text, so no
+         * label can contain it (WCAG 2.5.3); the visible word is the name.
          */
         keyHint?: KeyHint
         /** The key that presses this button, for a screen reader, in ARIA's spelling (`"Alt+C"`, `"S Enter"`). */

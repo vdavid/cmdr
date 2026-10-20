@@ -88,22 +88,22 @@ async function mountRow(
 describe('QueueRow a11y', () => {
   it('a running copy row has no a11y violations', async () => {
     const list = await mountRow(row('running', 'copy', runningProgress))
-    await expectNoA11yViolations(list, { skipLabelInName: '#450' })
+    await expectNoA11yViolations(list)
   })
 
   it('a paused row has no a11y violations', async () => {
     const list = await mountRow(row('paused', 'copy', runningProgress))
-    await expectNoA11yViolations(list, { skipLabelInName: '#450' })
+    await expectNoA11yViolations(list)
   })
 
   it('a queued move row has no a11y violations', async () => {
     const list = await mountRow(row('queued', 'move'))
-    await expectNoA11yViolations(list, { skipLabelInName: '#450' })
+    await expectNoA11yViolations(list)
   })
 
   it('a selected delete row has no a11y violations', async () => {
     const list = await mountRow(row('running', 'delete', runningProgress), true)
-    await expectNoA11yViolations(list, { skipLabelInName: '#450' })
+    await expectNoA11yViolations(list)
   })
 
   // The cursor row is the grid's Tab stop: focusable, named by its summary and
@@ -113,27 +113,28 @@ describe('QueueRow a11y', () => {
     const gridRow = list.querySelector('[role="row"]')
     expect(gridRow?.getAttribute('tabindex')).toBe('0')
     expect(gridRow?.getAttribute('aria-selected')).toBe('true')
-    await expectNoA11yViolations(list, { skipLabelInName: '#450' })
+    await expectNoA11yViolations(list)
   })
 
   // The Rollback button is the row's one danger-styled control, and the only
   // one whose accessible name comes from its label rather than an aria-label.
   it('a rollbackable copy row has no a11y violations', async () => {
     const list = await mountRow(row('running', 'copy', runningProgress, true))
-    await expectNoA11yViolations(list, { skipLabelInName: '#450' })
+    await expectNoA11yViolations(list)
   })
 
   // Show is the row's one control that acts on a WINDOW rather than on the
-  // operation, so its spoken name has to say where it goes. WCAG 2.5.3 also
-  // wants the visible word inside the accessible name, or "click Show" doesn't
-  // reach the control a speech user is looking at.
-  it('names the Show button so it says where the operation goes', async () => {
+  // operation. WCAG 2.5.3 wants its name to be what a speech user sees, so
+  // "click Show" reaches it: the visible word, with no `aria-label` (one would
+  // have to hold the `S` chip too). Where it goes is its tooltip's to say.
+  it('names the Show button by its visible word', async () => {
     const list = await mountRow(row('running', 'copy', runningProgress))
-    const button = list.querySelector('[aria-label="Show this operation in the main window"]')
+    const button = list.querySelector('[aria-keyshortcuts="S Enter"]')
     expect(button, 'the running row offers Show').not.toBeNull()
+    expect(button?.hasAttribute('aria-label')).toBe(false)
     // The visible word, without the `S` chip (`aria-hidden`, so it's no part of the name).
-    expect(button?.getAttribute('aria-label')).toContain(button && buttonLabel(button))
-    await expectNoA11yViolations(list, { skipLabelInName: '#450' })
+    expect(button && buttonLabel(button)).toBe('Show')
+    await expectNoA11yViolations(list)
   })
 
   // The live tree sits inside the row as a gridcell (a `row` owns only cells), and on
@@ -143,7 +144,7 @@ describe('QueueRow a11y', () => {
     await vi.waitFor(() => {
       expect(list.querySelector('[role="gridcell"] [role="tree"] [role="treeitem"]')).not.toBeNull()
     })
-    await expectNoA11yViolations(list, { skipLabelInName: '#450' })
+    await expectNoA11yViolations(list)
   })
 
   // Two trees in the list: each gets a disclosure button, which must name what it
@@ -155,12 +156,12 @@ describe('QueueRow a11y', () => {
     await vi.waitFor(() => {
       expect(list.querySelector('[role="treeitem"]')).not.toBeNull()
     })
-    await expectNoA11yViolations(list, { skipLabelInName: '#450' })
+    await expectNoA11yViolations(list)
 
     toggle?.click()
     await tick()
     expect(toggle?.getAttribute('aria-expanded')).toBe('false')
-    await expectNoA11yViolations(list, { skipLabelInName: '#450' })
+    await expectNoA11yViolations(list)
   })
 
   // The failed row is the only one carrying prose, and its explanation is

@@ -87,25 +87,9 @@
   "@queue.row.foregroundTooltip": {
     "sourceHash": "88c52de"
   },
-  "queue.row.foregroundAria": "Показать эту операцию в главном окне",
-  "@queue.row.foregroundAria": {
-    "sourceHash": "ece64ad"
-  },
   "queue.row.cancel": "Отменить",
   "@queue.row.cancel": {
     "sourceHash": "19766ed"
-  },
-  "queue.row.pauseAria": "Приостановить эту операцию",
-  "@queue.row.pauseAria": {
-    "sourceHash": "a836434"
-  },
-  "queue.row.resumeAria": "Возобновить эту операцию",
-  "@queue.row.resumeAria": {
-    "sourceHash": "be841fc"
-  },
-  "queue.row.cancelAria": "Отменить эту операцию",
-  "@queue.row.cancelAria": {
-    "sourceHash": "236ec68"
   },
   "queue.row.dismiss": "Скрыть",
   "@queue.row.dismiss": {

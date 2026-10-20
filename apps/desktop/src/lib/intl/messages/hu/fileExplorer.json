@@ -356,10 +356,6 @@
   "@fileExplorer.network.browser.refresh": {
     "sourceHash": "0e91610"
   },
-  "fileExplorer.network.browser.refreshAriaLabel": "Hálózati gépek frissítése",
-  "@fileExplorer.network.browser.refreshAriaLabel": {
-    "sourceHash": "73966bd"
-  },
   "fileExplorer.network.browser.refreshHint": "A frissítéshez nyomd meg ezt: <key></key>, vagy kattints ide",
   "@fileExplorer.network.browser.refreshHint": {
     "sourceHash": "7f65c7d"

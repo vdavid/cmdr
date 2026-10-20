@@ -98,7 +98,10 @@ describe('ShortcutChip', () => {
     const { target } = setupTracked({ commandId: 'downloads.goToLatest' })
     const button = target.querySelector('button')
     expect(button).not.toBeNull()
-    expect(button?.getAttribute('aria-label')).toBe('Customize the Go to latest download shortcut')
+    // Named by its content, the visible key first, so speech control can say what it sees (WCAG 2.5.3).
+    expect(button?.hasAttribute('aria-label')).toBe(false)
+    const key = button?.querySelector('kbd')?.textContent ?? ''
+    expect(button?.textContent.trim()).toBe(`${key} Customize the Go to latest download shortcut`)
 
     button?.click()
     // The dynamic import resolves on a microtask; let the event loop drain.

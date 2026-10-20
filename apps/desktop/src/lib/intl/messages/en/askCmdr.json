@@ -716,9 +716,9 @@
       "count": "The same number of batches (decides whether the noun is singular or plural)."
     }
   },
-  "askCmdr.renameUndo.undoJobLabel": "Undo every rename in this run: {filesText} {files, plural, one {file} other {files}} across {batches, plural, one {# batch} other {# batches}}",
+  "askCmdr.renameUndo.undoJobLabel": "Undo all {batches, plural, one {# batch} other {# batches}}, {filesText} {files, plural, one {file} other {files}} renamed in this run",
   "@askCmdr.renameUndo.undoJobLabel": {
-    "description": "Accessible name (aria-label) for the 'Undo all N batches' button, naming both totals so a screen reader conveys the scale of what would be undone. A 'batch' is one reviewed group of renames the user approved. Never shown on screen.",
+    "description": "Accessible name (aria-label) for the 'Undo all N batches' button, naming both totals so a screen reader conveys the scale of what would be undone. A 'batch' is one reviewed group of renames the user approved. Never shown on screen. It must START with the button's visible label (askCmdr.renameUndo.undoJob) word for word, so speech-control users can say what they see; the file count follows it.",
     "placeholders": {
       "filesText": "Total files across every batch, ready to drop into the sentence (e.g. 1,234).",
       "files": "The same number of files (decides whether the noun is singular or plural).",

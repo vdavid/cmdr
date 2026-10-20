@@ -529,11 +529,6 @@
     "description": "Button in the empty network browser that re-scans the network for hosts.",
     "screenshot": "servers-hub.png"
   },
-  "fileExplorer.network.browser.refreshAriaLabel": "Refresh network hosts",
-  "@fileExplorer.network.browser.refreshAriaLabel": {
-    "description": "Accessibility label for the status-bar button that re-scans the network for hosts.",
-    "screenshot": "servers-hub.png"
-  },
   "fileExplorer.network.browser.refreshHint": "Press <key></key> or click here to refresh",
   "@fileExplorer.network.browser.refreshHint": {
     "description": "Hint in the network status bar telling the user how to refresh the host list. The empty <key></key> marks where a keyboard-shortcut chip (showing the refresh key, ⌘R unless the user rebinds it) is rendered inline; keep the tag in the sentence and reorder the surrounding words for natural grammar.",

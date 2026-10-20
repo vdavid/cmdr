@@ -27,11 +27,9 @@
         size="sm"
     />{/snippet}
 
-<button
-    class="hub-status-bar"
-    onclick={onRefresh}
-    aria-label={tString('fileExplorer.network.browser.refreshAriaLabel')}
->
+<!-- Named by what it shows ("4 servers Press ⌘R or click here to refresh"), ❌ no `aria-label`: one
+     would have to hold every visible word, count and hint, to pass WCAG 2.5.3 (label in name). -->
+<button class="hub-status-bar" onclick={onRefresh}>
     <span class="status-text"
         >{tString('servers.hub.rowCount', {
             count: serverCount,

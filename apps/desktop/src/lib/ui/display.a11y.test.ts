@@ -147,7 +147,8 @@ describe('ColumnList a11y', () => {
  * Backspace), so axe shouldn't flag a nested-interactive pattern.
  */
 describe('Chip a11y', () => {
-  type Props = ComponentProps<typeof Chip>
+  // The text-face half of Chip's props; the glyph case below mounts its own.
+  type Props = ComponentProps<typeof Chip> & { glyph?: false }
 
   function baseProps(overrides: Partial<Props> = {}): Props {
     return {
@@ -198,6 +199,26 @@ describe('Chip a11y', () => {
     )
   })
 
+  // A glyph face paints from `data-glyph`, so "1×" is no visible word the full name lacks (WCAG 2.5.3).
+  it('glyph toggle, named in full, has no a11y violations', async () => {
+    const target = container()
+    mount(Chip, {
+      target,
+      props: {
+        variant: 'toggle',
+        mono: true,
+        glyph: true,
+        label: '1×',
+        ariaLabel: 'First match only',
+        onActivate: () => {},
+      },
+    })
+    await tick()
+    expect(target.querySelector('[data-glyph]')?.getAttribute('data-glyph')).toBe('1×')
+    await expectNoA11yViolations(target)
+    target.remove()
+  })
+
   it('insert variant has no a11y violations', async () => {
     await mountAndAudit(baseProps({ variant: 'insert', label: '[N]', mono: true }))
   })
@@ -208,9 +229,10 @@ describe('Chip a11y', () => {
         variant: 'recent',
         label: '*.log',
         ariaLabel: 'Run recent filename search: *.log',
-        leading: createRawSnippet(() => ({ render: () => '<span>Aa</span>' })),
+        // The mode badge is a glyph, painted from `data-glyph`: a text "Aa" would be a visible
+        // word the name doesn't hold (WCAG 2.5.3).
+        leading: createRawSnippet(() => ({ render: () => '<span data-glyph="Aa"></span>' })),
       }),
-      { skipLabelInName: '#450' },
     )
   })
 })
@@ -514,7 +536,7 @@ describe('ShortcutChip a11y', () => {
 
   it('clickable commandId chip has no a11y violations', async () => {
     const target = await mountChip({ commandId: 'downloads.goToLatest' })
-    await expectNoA11yViolations(target, { skipLabelInName: '#450' })
+    await expectNoA11yViolations(target)
   })
 
   it('non-clickable commandId chip has no a11y violations', async () => {

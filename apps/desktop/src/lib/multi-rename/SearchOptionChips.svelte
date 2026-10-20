@@ -2,7 +2,7 @@
     /**
      * The five search options as toggle chips beside the search fields, the way code editors
      * draw their find options: a few mono characters each (`Aa`, `.*`), tinted when on. Each is a
-     * house `Chip` toggle (`aria-pressed`, its full name as `aria-label`), as tall as the fields
+     * house `Chip` toggle (`aria-pressed`, a `glyph` face named by its full name), as tall as the fields
      * (`size="field"`). Its tooltip gives the name, its ⌘⌥ key, and a tiny replace on a made-up
      * file with the option on and off, the text the replace put in set apart
      * (`search-option-help.ts`).
@@ -42,6 +42,7 @@
             variant="toggle"
             size="field"
             mono
+            glyph
             label={option.glyph}
             ariaLabel={tString(option.label)}
             pressed={spec[option.field]}

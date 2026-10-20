@@ -357,10 +357,6 @@
   "@fileExplorer.network.browser.refresh": {
     "sourceHash": "0e91610"
   },
-  "fileExplorer.network.browser.refreshAriaLabel": "Actualizar los hosts de red",
-  "@fileExplorer.network.browser.refreshAriaLabel": {
-    "sourceHash": "73966bd"
-  },
   "fileExplorer.network.browser.refreshHint": "Pulsa <key></key> o haz clic aquí para actualizar",
   "@fileExplorer.network.browser.refreshHint": {
     "sourceHash": "7f65c7d"

@@ -2512,8 +2512,7 @@
     "confidence": "high",
     "sources": "macOS (A művelet nem hajtható végre., Ez a művelet nem vonható vissza.); ms; Double Commander (Aktuális művelet:)",
     "exceptions": {
-      "errors.write.cancelled.message.trash": "The move to trash operation was canceled → A Kukába helyezést megszakítottad: the action noun names the operation.",
-      "queue.row.foregroundAria": "Show this operation in the main window → Megjelenítés a főablakban: the aria of a row button already scoped to that operation."
+      "errors.write.cancelled.message.trash": "The move to trash operation was canceled → A Kukába helyezést megszakítottad: the action noun names the operation."
     },
     "decision": "A műveleti sor: a Transfer queue átnevezése"
   },

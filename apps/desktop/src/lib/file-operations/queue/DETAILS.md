@@ -471,11 +471,16 @@ The issue left it open: a listbox whose buttons only have keys, or a grid whose 
   Pause, Cancel, Dismiss, and Rollback would be audible only as words, reachable only through shortcuts nothing on
   screen announces. Every new row action (#398's Retry, #399's "Send error report…") would then need a key of its own,
   or be mouse-only.
-- **A grid keeps every button a button.** → lands VoiceOver on a real, named `button` ("Pause this operation"), and a
-  new button in `.actions-cell` joins the walk with no key work at all. The row is the focus target (`role="row"`,
-  roving `tabindex`), named by its summary and status cells (`aria-labelledby`), described by its failure reason, and
-  carries `aria-selected` for "Cancel selected" (`aria-multiselectable` on the grid). Each button's letter (plus Enter
-  on Show and ⌫ on Cancel) rides `aria-keyshortcuts`, since the chip itself is `aria-hidden`.
+- **A grid keeps every button a button.** → lands VoiceOver on a real, named `button` ("Pause"), and a new button in
+  `.actions-cell` joins the walk with no key work at all. The row is the focus target (`role="row"`, roving `tabindex`),
+  named by its summary and status cells (`aria-labelledby`), described by its failure reason, and carries
+  `aria-selected` for "Cancel selected" (`aria-multiselectable` on the grid). Each button's letter (plus Enter on Show
+  and ⌫ on Cancel) rides `aria-keyshortcuts`, since the chip itself is `aria-hidden`.
+- **A keyed button is named by its visible word alone** (Show, Pause, Resume, Cancel, Rollback), ❌ no `aria-label`.
+  WCAG 2.5.3 (label in name) wants the visible text inside the name, and axe counts the `aria-hidden` key chip as
+  visible text, so "Pause this operation" fails against "Pause P" while "Pause" is never checked. The row already says
+  which operation, and Show's tooltip says where it goes. Retry and Dismiss have no chip, so their "… this operation"
+  labels pass.
 - **The checkbox stays for the pointer** but leaves the Tab order and the → walk: Space does its job from the row, and
   the row's `aria-selected` already says it.
 

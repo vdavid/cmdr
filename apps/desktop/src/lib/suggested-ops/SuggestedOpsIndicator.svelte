@@ -28,8 +28,12 @@
 </script>
 
 {#if visible}
-    <button class="indicator" onclick={() => void openSuggestedOps()} use:tooltip={label} aria-label={label}>
+    <!-- Named by its content, the sentence and then the number: an `aria-label` would have to
+         hold the visible number too (WCAG 2.5.3, label in name). The sentence goes first because
+         it has no plural, so "1 AI suggestions" would be the other order's price. -->
+    <button class="indicator" onclick={() => void openSuggestedOps()} use:tooltip={label}>
         <Icon name="sparkles" size={14} />
+        <span class="sr-only">{label}</span>
         <span class="count">{formatInteger(count)}</span>
     </button>
 {/if}

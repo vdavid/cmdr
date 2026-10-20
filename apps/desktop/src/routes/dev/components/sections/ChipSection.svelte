@@ -41,10 +41,10 @@
         <div class="cell">
             <p class="caption">Toggle variant &mdash; mono glyphs, one on; strip size, then field size</p>
             <div class="row">
-                <Chip variant="toggle" mono label="Aa" ariaLabel="Match case" pressed={matchCase} onActivate={() => { matchCase = !matchCase }} />
-                <Chip variant="toggle" mono label=".*" ariaLabel="Regular expression" pressed={regex} onActivate={() => { regex = !regex }} />
-                <Chip variant="toggle" size="field" mono label="Aa" ariaLabel="Match case" pressed={matchCase} onActivate={() => { matchCase = !matchCase }} />
-                <Chip variant="toggle" size="field" mono label=".*" ariaLabel="Regular expression" pressed={regex} onActivate={() => { regex = !regex }} />
+                <Chip variant="toggle" mono glyph label="Aa" ariaLabel="Match case" pressed={matchCase} onActivate={() => { matchCase = !matchCase }} />
+                <Chip variant="toggle" mono glyph label=".*" ariaLabel="Regular expression" pressed={regex} onActivate={() => { regex = !regex }} />
+                <Chip variant="toggle" size="field" mono glyph label="Aa" ariaLabel="Match case" pressed={matchCase} onActivate={() => { matchCase = !matchCase }} />
+                <Chip variant="toggle" size="field" mono glyph label=".*" ariaLabel="Regular expression" pressed={regex} onActivate={() => { regex = !regex }} />
             </div>
         </div>
 
@@ -61,16 +61,16 @@
             <p class="caption">Recent variant &mdash; mode badge + truncating label</p>
             <div class="row">
                 <Chip variant="recent" label="*.jpg" onActivate={() => {}} onContextMenu={() => {}}>
-                    {#snippet leading()}<span class="demo-badge">Aa</span>{/snippet}
+                    {#snippet leading()}<span class="demo-badge" data-glyph="Aa"></span>{/snippet}
                 </Chip>
                 <Chip variant="recent" label="all my very long screenshot file names from last week" onActivate={() => {}}>
-                    {#snippet leading()}<span class="demo-badge">AI</span>{/snippet}
+                    {#snippet leading()}<span class="demo-badge" data-glyph="AI"></span>{/snippet}
                 </Chip>
                 <Chip variant="recent" label="^temp.*\.log$" onActivate={() => {}}>
-                    {#snippet leading()}<span class="demo-badge">.*</span>{/snippet}
+                    {#snippet leading()}<span class="demo-badge" data-glyph=".*"></span>{/snippet}
                 </Chip>
                 <Chip variant="recent" label="*.bak" disabled onActivate={() => {}}>
-                    {#snippet leading()}<span class="demo-badge">Aa</span>{/snippet}
+                    {#snippet leading()}<span class="demo-badge" data-glyph="Aa"></span>{/snippet}
                 </Chip>
             </div>
         </div>
@@ -107,5 +107,10 @@
         color: var(--color-text-primary);
         border-radius: var(--radius-xs);
         line-height: var(--font-line-height-flat);
+    }
+
+    /* A glyph, not text, so it isn't a visible word the pill's name lacks (WCAG 2.5.3). */
+    .demo-badge::before {
+        content: attr(data-glyph);
     }
 </style>

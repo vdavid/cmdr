@@ -10,7 +10,7 @@
      *     Carries `aria-haspopup="dialog"` + `aria-expanded`. Backspace on a focused configured
      *     chip clears it.
      *   - Toggle chip (`variant="toggle"`): an on/off option. Carries `aria-pressed`, and tints
-     *     while `pressed`. A short glyph label wants the full name as `ariaLabel`.
+     *     while `pressed`. A short glyph face (`1×`, `.ext`) is a `glyph`, named by `ariaLabel`.
      *   - Insert chip (`variant="insert"`): a momentary action (insert this text). A plain button
      *     that never shows an "on" state.
      *   - Recent pill (`variant="recent"`): a denser pill with a leading mode badge and a
@@ -35,7 +35,20 @@
     import type { Snippet } from 'svelte'
     import { tooltip, type TooltipParam } from '#lib/tooltip/tooltip.js'
 
-    interface Props {
+    /**
+     * A glyph face is an icon, so its words come from `ariaLabel`, which a glyph can't go without.
+     * It paints from CSS `content`, not a text node: a speech user says the name, and a "1×" or
+     * ".ext" in the text would be visible words the name doesn't contain (WCAG 2.5.3).
+     */
+    type Face =
+        | { glyph: true; ariaLabel: string }
+        | {
+              glyph?: false
+              /** Optional aria-label override. Defaults to label + value when configured. */
+              ariaLabel?: string
+          }
+
+    interface BaseProps {
         /** Bindable ref to the chip button (so the parent can focus it after Esc, etc.). */
         chipElement?: HTMLButtonElement
         /**
@@ -71,13 +84,13 @@
         onClear?: () => void
         /** Fired on right-click (recent pill's "remove from history"). */
         onContextMenu?: (e: MouseEvent) => void
-        /** Optional aria-label override. Defaults to label + value when configured. */
-        ariaLabel?: string
         /** Optional tooltip (string or config). */
         tooltipContent?: TooltipParam
         /** Optional leading slot, e.g. a tiny icon or a mode badge. */
         leading?: Snippet
     }
+
+    type Props = BaseProps & Face
 
     /* eslint-disable prefer-const -- $bindable() requires `let` destructuring */
     let {
@@ -87,6 +100,7 @@
         mono = false,
         pressed = false,
         label,
+        glyph = false,
         value = '',
         configured = false,
         isOpen = false,
@@ -163,9 +177,13 @@
     use:tooltip={tooltipContent ?? ''}
 >
     {#if leading}<span class="chip-leading">{@render leading()}</span>{/if}
-    <span class="chip-label">
-        {#if value}{label}: {value}{:else}{label}{/if}
-    </span>
+    {#if glyph}
+        <span class="chip-label is-glyph" data-glyph={label}></span>
+    {:else}
+        <span class="chip-label">
+            {#if value}{label}: {value}{:else}{label}{/if}
+        </span>
+    {/if}
     {#if haspopup && configured && onClear}
         <!--
           Decorative clear marker (no role, no tabindex). The keyboard path is Backspace on the
@@ -271,6 +289,10 @@
 
     .chip-label {
         line-height: var(--font-line-height-flat);
+    }
+
+    .chip-label.is-glyph::before {
+        content: attr(data-glyph);
     }
 
     /* The recent pill truncates its (potentially long) query text. */

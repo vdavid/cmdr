@@ -6,6 +6,7 @@ import type { OperationRow } from './operations-store.svelte'
 import type { OperationSnapshot, WriteOperationError, WriteProgressEvent } from '#lib/ipc/bindings.js'
 import type { TransferTreeAnswer, TransferTreeViewRequest } from '#lib/tauri-commands/index.js'
 import { oneCopyingFile } from '../transfer-tree/fixtures/one-copying-file'
+import { buttonLabel } from '../test-button-label'
 import type { QueueRowMenuSource } from './queue-row-menu'
 import { requestForegroundOperation, retryFailedOperation } from '#lib/tauri-commands/index.js'
 
@@ -123,6 +124,13 @@ function render(props: Partial<ComponentProps<typeof QueueRow>> & { row: Operati
   flushSync()
 }
 
+/** A row button, found by the visible word that names it (a keyed button carries no aria-label). */
+function rowButton(word: string): HTMLButtonElement | null {
+  return (
+    [...target.querySelectorAll<HTMLButtonElement>('.actions-cell button')].find((b) => buttonLabel(b) === word) ?? null
+  )
+}
+
 /** The Rollback button, found by its label (it carries no aria-label). */
 function rollbackButton(): HTMLButtonElement | null {
   return [...target.querySelectorAll('button')].find((b) => b.textContent.includes('Rollback')) ?? null
@@ -138,36 +146,39 @@ beforeEach(() => {
 describe('QueueRow', () => {
   it('shows Pause for a running op and Resume for a paused op', () => {
     render({ row: buildRow('running') })
-    expect(target.querySelector('[aria-label="Pause this operation"]')).not.toBeNull()
-    expect(target.querySelector('[aria-label="Resume this operation"]')).toBeNull()
+    expect(rowButton('Pause')).not.toBeNull()
+    expect(rowButton('Resume')).toBeNull()
     if (instance) void unmount(instance)
 
     render({ row: buildRow('paused') })
-    expect(target.querySelector('[aria-label="Resume this operation"]')).not.toBeNull()
-    expect(target.querySelector('[aria-label="Pause this operation"]')).toBeNull()
+    expect(rowButton('Resume')).not.toBeNull()
+    expect(rowButton('Pause')).toBeNull()
   })
 
   // The buttons take no Tab stop, so each shows the letter that presses it on the cursor row.
-  it('shows each button’s letter in a chip and names it for a screen reader', () => {
+  // Named by the visible word alone, so speech control can say what it sees (WCAG 2.5.3):
+  // axe counts the `aria-hidden` chip as visible text, so no `aria-label` could hold it.
+  it('shows each button’s letter in a chip and names it by its visible word', () => {
     render({ row: buildRow('running', 'copy', null, true) })
     const keyed = [...target.querySelectorAll('.actions-cell button')].map((button) => [
       button.getAttribute('aria-label'),
+      buttonLabel(button),
       button.querySelector('kbd')?.textContent,
       button.getAttribute('aria-keyshortcuts'),
     ])
     expect(keyed).toEqual([
-      ['Show this operation in the main window', 'S', 'S Enter'],
-      ['Pause this operation', 'P', 'P'],
-      ['Cancel this operation', 'C', 'C Backspace'],
-      [null, 'B', 'B'],
+      [null, 'Show', 'S', 'S Enter'],
+      [null, 'Pause', 'P', 'P'],
+      [null, 'Cancel', 'C', 'C Backspace'],
+      [null, 'Rollback', 'B', 'B'],
     ])
   })
 
   it('a queued op has Cancel but no Pause/Resume', () => {
     render({ row: buildRow('queued') })
-    expect(target.querySelector('[aria-label="Cancel this operation"]')).not.toBeNull()
-    expect(target.querySelector('[aria-label="Pause this operation"]')).toBeNull()
-    expect(target.querySelector('[aria-label="Resume this operation"]')).toBeNull()
+    expect(rowButton('Cancel')).not.toBeNull()
+    expect(rowButton('Pause')).toBeNull()
+    expect(rowButton('Resume')).toBeNull()
   })
 
   it('the select checkbox reflects `selected` and fires onToggleSelect', () => {
@@ -280,7 +291,7 @@ describe('QueueRow', () => {
 
   it('a queued op has no Rollback: nothing has been written to undo', () => {
     render({ row: buildRow('queued', 'copy', null, true) })
-    expect(target.querySelector('[aria-label="Cancel this operation"]')).not.toBeNull()
+    expect(rowButton('Cancel')).not.toBeNull()
     expect(rollbackButton()).toBeNull()
   })
 
@@ -300,7 +311,7 @@ describe('QueueRow', () => {
     render({ row: buildRow('running', 'copy', progress, true) })
     expect(target.querySelector('.status-text')?.textContent.trim()).toBe('Rolling back…')
     expect(rollbackButton()).toBeNull()
-    expect(target.querySelector('[aria-label="Cancel this operation"]')).not.toBeNull()
+    expect(rowButton('Cancel')).not.toBeNull()
   })
 
   it('names a reversal by what it does to the files, not by the op type it runs as', () => {
@@ -433,9 +444,9 @@ describe('QueueRow', () => {
     })
 
     expect(target.querySelector('.status-text')?.textContent.trim()).toBe('Couldn’t finish')
-    expect(target.querySelector('[aria-label="Pause this operation"]')).toBeNull()
-    expect(target.querySelector('[aria-label="Resume this operation"]')).toBeNull()
-    expect(target.querySelector('[aria-label="Cancel this operation"]')).toBeNull()
+    expect(rowButton('Pause')).toBeNull()
+    expect(rowButton('Resume')).toBeNull()
+    expect(rowButton('Cancel')).toBeNull()
     expect(rollbackButton()).toBeNull()
     // Nothing to cancel in bulk, so the row leaves the multi-select out.
     expect(target.querySelector('input[type="checkbox"]')).toBeNull()
@@ -619,11 +630,8 @@ describe('QueueRow while the operation is still counting', () => {
   it('offers Pause during the scan: the walk parks on the same gate the write does', () => {
     render({ row: buildRow('running', 'copy', scanning()) })
 
-    expect(target.querySelector('[aria-label="Pause this operation"]')).not.toBeNull()
-    expect(
-      target.querySelector('[aria-label="Cancel this operation"]'),
-      'Cancel stays: it is the control that works during a scan',
-    ).not.toBeNull()
+    expect(rowButton('Pause')).not.toBeNull()
+    expect(rowButton('Cancel'), 'Cancel stays: it is the control that works during a scan').not.toBeNull()
   })
 
   it('offers Resume on a paused scan, and stops claiming it is counting', () => {
@@ -631,7 +639,7 @@ describe('QueueRow while the operation is still counting', () => {
     // Cancel, which throws the scan away.
     render({ row: buildRow('paused', 'copy', scanning()) })
 
-    expect(target.querySelector('[aria-label="Resume this operation"]')).not.toBeNull()
+    expect(rowButton('Resume')).not.toBeNull()
     expect(
       target.querySelector('[aria-label="Scanning\u2026"]'),
       'the spinner claims the walk is moving, and it is parked',
@@ -683,10 +691,7 @@ describe('QueueRow: a move on its last stage', () => {
     render({ row: sweeping('deleting') })
 
     expect(rollbackButton()).toBeNull()
-    expect(
-      target.querySelector('[aria-label="Cancel this operation"]'),
-      'Cancel stays: it still spares the originals the sweep has not reached',
-    ).not.toBeNull()
+    expect(rowButton('Cancel'), 'Cancel stays: it still spares the originals the sweep has not reached').not.toBeNull()
   })
 
   it('offers Rollback during the copy stage of the same move', () => {
@@ -697,7 +702,7 @@ describe('QueueRow: a move on its last stage', () => {
 })
 
 describe('QueueRow: Show (back to the main window)', () => {
-  const showButton = () => target.querySelector('[aria-label="Show this operation in the main window"]')
+  const showButton = () => rowButton('Show')
 
   /** A row mid-scan: still counting, no totals yet. */
   function scanningRow(): OperationRow {

@@ -359,10 +359,6 @@
   "@fileExplorer.network.browser.refresh": {
     "sourceHash": "0e91610"
   },
-  "fileExplorer.network.browser.refreshAriaLabel": "Ververs netwerkhosts",
-  "@fileExplorer.network.browser.refreshAriaLabel": {
-    "sourceHash": "73966bd"
-  },
   "fileExplorer.network.browser.refreshHint": "Druk op <key></key> of klik hier om te verversen",
   "@fileExplorer.network.browser.refreshHint": {
     "sourceHash": "7f65c7d"

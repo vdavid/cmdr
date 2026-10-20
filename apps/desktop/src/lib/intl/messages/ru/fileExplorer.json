@@ -356,10 +356,6 @@
   "@fileExplorer.network.browser.refresh": {
     "sourceHash": "0e91610"
   },
-  "fileExplorer.network.browser.refreshAriaLabel": "Обновить сетевые хосты",
-  "@fileExplorer.network.browser.refreshAriaLabel": {
-    "sourceHash": "73966bd"
-  },
   "fileExplorer.network.browser.refreshHint": "Чтобы обновить, нажмите <key></key> или сюда",
   "@fileExplorer.network.browser.refreshHint": {
     "sourceHash": "7f65c7d"

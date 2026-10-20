@@ -1947,7 +1947,7 @@
   "main-window": {
     "chosen": "Hauptfenster",
     "confidence": "high",
-    "sources": "catalog (shortcuts.scope.mainWindow, queue.row.foregroundAria, search.action.showAll.label; 6 uses); Double/Total Commander de (Hauptfenster)"
+    "sources": "catalog (shortcuts.scope.mainWindow, search.action.showAll.label; 5 uses); Double/Total Commander de (Hauptfenster)"
   },
   "memory": {
     "accept": ["RAM", "Notiz"],

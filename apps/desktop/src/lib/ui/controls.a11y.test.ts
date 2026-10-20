@@ -138,14 +138,15 @@ describe('LinkButton a11y', () => {
     await expectNoA11yViolations(target)
   })
 
+  // An override still holds the visible words, unbroken and in order (WCAG 2.5.3).
   it('aria-label override has no a11y violations', async () => {
     const target = container()
     mount(LinkButton, {
       target,
-      props: { 'aria-label': 'Open system appearance settings', children: snip('System Settings > Appearance') },
+      props: { 'aria-label': 'Open System Settings > Appearance', children: snip('System Settings > Appearance') },
     })
     await tick()
-    await expectNoA11yViolations(target, { skipLabelInName: '#450' })
+    await expectNoA11yViolations(target)
   })
 
   it('href mode (renders <a>) has no a11y violations', async () => {

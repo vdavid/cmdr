@@ -84,7 +84,7 @@ describe('MultiRenameDialog a11y', () => {
       ok: true,
       value: { previewId: 1, counts: { ready: 1, unchanged: 1, problems: 3 }, rows: ROWS },
     })
-    await expectNoA11yViolations(await mountSheet(), { skipLabelInName: '#450' })
+    await expectNoA11yViolations(await mountSheet())
   })
 
   it('with a mask error showing has no violations', async () => {
@@ -92,7 +92,7 @@ describe('MultiRenameDialog a11y', () => {
       ok: false,
       error: { type: 'spec', error: { type: 'nameMask', error: { type: 'unclosed', at: 0 } } },
     })
-    await expectNoA11yViolations(await mountSheet(), { skipLabelInName: '#450' })
+    await expectNoA11yViolations(await mountSheet())
   })
 
   it('with every whole-name option on and Undo rename offered has no violations', async () => {
@@ -105,7 +105,7 @@ describe('MultiRenameDialog a11y', () => {
       preset: null,
     })
     setLastMultiRenameRun({ operationId: 'op1', renaming: 2 })
-    await expectNoA11yViolations(await mountSheet(), { skipLabelInName: '#450' })
+    await expectNoA11yViolations(await mountSheet())
     setLastMultiRenameRun(null)
   })
 
@@ -127,7 +127,7 @@ describe('MultiRenameDialog a11y', () => {
     await tick()
     expect(root.querySelector('.results-notice')).not.toBeNull()
     expect(root.querySelector('.edited-mark')).not.toBeNull()
-    await expectNoA11yViolations(root, { skipLabelInName: '#450' })
+    await expectNoA11yViolations(root)
   })
 
   it('with the history chevrons and a field’s list open has no violations', async () => {
@@ -154,7 +154,7 @@ describe('MultiRenameDialog a11y', () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(root.querySelectorAll('.history-chevron')).toHaveLength(4)
     expect(document.querySelector('[data-menu]')).not.toBeNull()
-    await expectNoA11yViolations(document.body, { skipLabelInName: '#450' })
+    await expectNoA11yViolations(document.body)
   })
 
   it('search option chips, some on, with a tooltip showing, have no violations', async () => {
@@ -172,7 +172,7 @@ describe('MultiRenameDialog a11y', () => {
     await tick()
     target.querySelector<HTMLButtonElement>('button')?.focus()
     await new Promise((resolve) => setTimeout(resolve, 450))
-    await expectNoA11yViolations(document.body, { skipLabelInName: '#450' })
+    await expectNoA11yViolations(document.body)
   })
 
   it('a placeholder tooltip body with its examples has no violations', async () => {

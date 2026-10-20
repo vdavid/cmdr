@@ -200,12 +200,11 @@ values write the catalog's `’`.
 - `Chemin copié, il est maintenant dans le presse-papiers :` with the definite article like macOS, never `votre`; the
   path shows on its own line, so the sentence stands without it.
 
-## Le renommage de la file d'attente des opérations (`queue.windowTitle`, `queue.heading`, `queue.list.aria`, `queue.row.pauseAria`, `.resumeAria`, `.cancelAria`, `.selectAria`, `commands.queueShow.*`, `fileOperations.transferProgress.queue*`, `.backgroundedToast`)
+## Le renommage de la file d'attente des opérations (`queue.windowTitle`, `queue.heading`, `queue.list.aria`, `queue.row.selectAria`, `commands.queueShow.*`, `fileOperations.transferProgress.queue*`, `.backgroundedToast`)
 
 - operation → `opération` (feminine, Finder); the queue → `File d’attente des opérations`, verbatim in every string that
   names the window, and `commands.queueShow.label` is the bare window name.
-- Per-row aria labels share one family: `Mettre cette opération en pause`, `Reprendre…`, `Annuler…`, `Sélectionner…`,
-  `Ignorer cette opération`.
+- Per-row aria labels share one family: `Sélectionner cette opération`, `Ignorer cette opération`.
 - `queuedToast` refers back in the feminine (`celle-ci`, `elle attend`), since `opération` is on screen.
 - `queueTooltip` keeps `transfert`: that tooltip really describes a transfer.
 

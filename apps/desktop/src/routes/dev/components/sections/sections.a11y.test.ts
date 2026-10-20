@@ -85,7 +85,7 @@ describe('ShortcutChipSection a11y', () => {
     document.body.appendChild(target)
     mount(ShortcutChipSection, { target })
     await tick()
-    await expectNoA11yViolations(target, { skipLabelInName: '#450' })
+    await expectNoA11yViolations(target)
   })
 })
 

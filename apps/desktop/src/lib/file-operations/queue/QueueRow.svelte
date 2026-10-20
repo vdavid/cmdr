@@ -310,9 +310,6 @@
     const pauseResumeLabel = $derived(
         isPaused ? tString('queue.row.resume') : tString('queue.row.pause'),
     )
-    const pauseResumeAria = $derived(
-        isPaused ? tString('queue.row.resumeAria') : tString('queue.row.pauseAria'),
-    )
 
     /** Rollback is one click from unrecoverable (a file it overwrote has no
      *  backup), and it sits beside a Cancel that keeps everything. So the click
@@ -511,6 +508,10 @@
         <span class="status-text">{statusLabel}</span>
     </span>
 
+    <!-- A keyed button (Show, Pause / Resume, Cancel, Rollback) has no `aria-label`: its name
+         is the visible word (WCAG 2.5.3, label in name; axe counts the `aria-hidden` key chip as
+         visible text, so no longer sentence could hold it), the key rides `aria-keyshortcuts`,
+         and Show's tooltip says where it goes. -->
     <div class="actions-cell" role="gridcell">
         {#if canForeground}
             <!-- ❌ Not a command on the operation: nothing about it changes, only
@@ -520,7 +521,6 @@
                 variant="secondary"
                 size="mini"
                 onclick={() => void showInMainWindow()}
-                aria-label={tString('queue.row.foregroundAria')}
                 tooltipContent={tString('queue.row.foregroundTooltip')}
                 keyHint={QUEUE_ROW_KEYS.show}
                 aria-keyshortcuts="{QUEUE_ROW_KEYS.show} Enter"
@@ -541,7 +541,6 @@
                 variant="secondary"
                 size="mini"
                 onclick={() => void op?.togglePause()}
-                aria-label={pauseResumeAria}
                 keyHint={QUEUE_ROW_KEYS.pauseOrResume}
                 aria-keyshortcuts={QUEUE_ROW_KEYS.pauseOrResume}
                 tabindex={-1}
@@ -557,7 +556,6 @@
                 variant="secondary"
                 size="mini"
                 onclick={() => void op?.cancel()}
-                aria-label={tString('queue.row.cancelAria')}
                 keyHint={QUEUE_ROW_KEYS.cancel}
                 aria-keyshortcuts="{QUEUE_ROW_KEYS.cancel} Backspace"
                 tabindex={-1}

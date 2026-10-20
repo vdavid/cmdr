@@ -95,9 +95,8 @@ describe('a completed batch', () => {
 
     const labels = buttons(target).map((b) => b.textContent.trim())
     expect(labels).toEqual(['Undo', 'Undo all 3 batches'])
-    expect(buttons(target)[1].getAttribute('aria-label')).toBe(
-      'Undo every rename in this run: 2,500 files across 3 batches',
-    )
+    // The name starts with the visible label, so speech control can say what it sees (WCAG 2.5.3).
+    expect(buttons(target)[1].getAttribute('aria-label')).toBe('Undo all 3 batches, 2,500 files renamed in this run')
   })
 })
 
@@ -185,7 +184,7 @@ describe('a11y', () => {
     const target = render(line({ status: 'undoable' }, { jobOperationIds: ['op-1', 'op-2'], jobFileCount: 1500 }))
     await tick()
 
-    await expectNoA11yViolations(target, { skipLabelInName: '#450' })
+    await expectNoA11yViolations(target)
   })
 
   it('has no violations reporting a partial result', async () => {

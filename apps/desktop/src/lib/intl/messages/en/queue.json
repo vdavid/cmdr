@@ -180,34 +180,9 @@
     "screenshot": "queue.png"
   },
 
-  "queue.row.foregroundAria": "Show this operation in the main window",
-  "@queue.row.foregroundAria": {
-    "description": "Screen-reader label for the per-row Show button (the visible button shows only \"Show\"). It must contain the visible label word for word, so translate \"Show\" the same way in both.",
-    "screenshot": "queue.png"
-  },
-
   "queue.row.cancel": "Cancel",
   "@queue.row.cancel": {
     "description": "Button on an operation row that stops that operation. Files already copied are kept; only the half-written file is removed.",
-    "screenshot": "queue.png"
-  },
-
-  "queue.row.pauseAria": "Pause this operation",
-  "@queue.row.pauseAria": {
-    "description": "Screen-reader label for the per-row Pause button (the visible button shows only \"Pause\").",
-    "screenshot": "queue.png"
-  },
-
-  "queue.row.resumeAria": "Resume this operation",
-  "@queue.row.resumeAria": {
-    "description": "Screen-reader label for the per-row Resume button (the visible button shows only \"Resume\").",
-    "screenshot": "queue.png",
-    "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
-  },
-
-  "queue.row.cancelAria": "Cancel this operation",
-  "@queue.row.cancelAria": {
-    "description": "Screen-reader label for the per-row Cancel button (the visible button shows only \"Cancel\").",
     "screenshot": "queue.png"
   },
 

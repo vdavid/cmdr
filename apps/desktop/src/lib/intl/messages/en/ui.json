@@ -57,7 +57,7 @@
 
   "ui.shortcutChip.customizeAria": "Customize the {commandName} shortcut",
   "@ui.shortcutChip.customizeAria": {
-    "description": "aria-label for a clickable keyboard-shortcut pill that opens shortcut customization for one command.",
+    "description": "Screen-reader text inside a clickable keyboard-shortcut pill that opens shortcut customization for one command. It's read right after the key the pill shows (\"⌘C Customize the Copy shortcut\"), so keep it a phrase that follows the key naturally.",
     "placeholders": {
       "commandName": "the name of the command whose shortcut this pill shows (for example Copy, Rename)"
     }
