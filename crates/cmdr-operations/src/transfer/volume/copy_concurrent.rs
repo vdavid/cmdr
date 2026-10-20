@@ -39,7 +39,6 @@ use std::time::{Duration, Instant};
 
 use tokio::task::{Id as TaskId, JoinError, JoinSet};
 
-use super::super::super::conflict::ApplyToAll;
 use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::host::OperationErrorReport;
 use super::super::super::journal;
@@ -49,9 +48,9 @@ use super::super::super::types::{SourceItemOutcome, VolumeCopyConfig, WriteOpera
 use super::super::dest_name_index::DestNameIndex;
 use super::super::transfer_driver::{LeafProgressLedger, emit_source_outcome};
 use super::super::transfer_probe::OperationProbe;
+use super::copy::CopyCells;
 use super::copy::drain_deadline as drain_deadline_for;
 use super::copy_concurrent_task::{CopyTask, CopyTaskFailure, CopyTaskSuccess, run_copy_task};
-use super::displaced_destination::DisplacedLedger;
 use super::merge_ctx::CreatedPaths;
 use super::preflight::SourceHint;
 use super::transfer_error::WriteFailure;
@@ -100,13 +99,7 @@ pub(super) struct ConcurrentCopy<'a> {
     pub(super) files_skipped_atomic: Arc<AtomicUsize>,
     pub(super) bytes_skipped_atomic: Arc<AtomicU64>,
     pub(super) last_progress_mutex: Arc<std::sync::Mutex<Instant>>,
-    pub(super) apply_to_all_cell: Arc<std::sync::Mutex<ApplyToAll>>,
-    pub(super) copied_paths: Arc<std::sync::Mutex<Vec<WrittenFile>>>,
-    pub(super) created_dirs: Arc<std::sync::Mutex<Vec<PathBuf>>>,
-    /// What cross-type Overwrites set aside, for the post-loop to settle.
-    pub(super) displaced: Arc<DisplacedLedger>,
-    pub(super) deep_skipped_files: Arc<AtomicUsize>,
-    pub(super) deep_skipped_bytes: Arc<AtomicU64>,
+    pub(super) cells: CopyCells,
 }
 
 /// What the driver leaves for the caller's post-loop bookkeeping. The counters
@@ -549,8 +542,8 @@ impl UnsettledSource {
                 self.created.any_overwrote(),
             );
         }
-        ctx.copied_paths.lock_ignore_poison().extend(files);
-        ctx.created_dirs.lock_ignore_poison().extend(dirs);
+        ctx.cells.copied_paths.lock_ignore_poison().extend(files);
+        ctx.cells.created_dirs.lock_ignore_poison().extend(dirs);
     }
 }
 
@@ -604,14 +597,18 @@ impl Settlements {
         // Fold this source's deep-merge skips into the op-wide tally, and — when
         // the source landed with ZERO skips — record it as fully extracted so
         // the out-of-zip move op may drop it.
-        ctx.deep_skipped_files.fetch_add(task_skipped_count, Ordering::Relaxed);
-        ctx.deep_skipped_bytes.fetch_add(task_skipped_bytes, Ordering::Relaxed);
+        ctx.cells
+            .deep_skipped_files
+            .fetch_add(task_skipped_count, Ordering::Relaxed);
+        ctx.cells
+            .deep_skipped_bytes
+            .fetch_add(task_skipped_bytes, Ordering::Relaxed);
         if task_skipped_count == 0 {
             ctx.events.note_source_landed_clean(&done_source);
         }
         // Record what the op wrote for rollback.
         // Whatever this source set aside is now fully replaced.
-        ctx.displaced.landed_under(&recorded_path);
+        ctx.cells.displaced.landed_under(&recorded_path);
         let file_name_done = recorded_path.file_name().map(|n| n.to_string_lossy().to_string());
         // Journal the per-leaf `rollback_unit` rows under the REAL volume ids (a
         // file source → one leaf at `recorded_path`; a dir source → one leaf per
@@ -639,10 +636,11 @@ impl Settlements {
         // dest-only files. For a FILE source, record the landed path;
         // `created_*` are empty.
         if source_is_dir {
-            ctx.copied_paths.lock_ignore_poison().extend(created_files);
-            ctx.created_dirs.lock_ignore_poison().extend(task_created_dirs);
+            ctx.cells.copied_paths.lock_ignore_poison().extend(created_files);
+            ctx.cells.created_dirs.lock_ignore_poison().extend(task_created_dirs);
         } else {
-            ctx.copied_paths
+            ctx.cells
+                .copied_paths
                 .lock_ignore_poison()
                 .push(WrittenFile::volume(recorded_path, bytes));
         }
@@ -707,8 +705,8 @@ impl Settlements {
                     overwrote,
                 );
             }
-            ctx.copied_paths.lock_ignore_poison().extend(created_files);
-            ctx.created_dirs.lock_ignore_poison().extend(task_created_dirs);
+            ctx.cells.copied_paths.lock_ignore_poison().extend(created_files);
+            ctx.cells.created_dirs.lock_ignore_poison().extend(task_created_dirs);
         }
         // `PathedVolumeError`'s conversion owns the branch: the side it carries
         // picks the wording, and `new_data_at` says where the user's new file is.

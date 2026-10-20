@@ -81,7 +81,7 @@ pub(super) struct Landing {
     /// What stood at a claimed name as [`clear_the_way`] set out to delete it,
     /// from one stat right before the delete; `None` until then, or when that
     /// stat didn't answer. Only the same entry may be cleared again on a resume
-    /// ([`cut_off_landing::resume_with_a_whole_temp`]).
+    /// (a [`CutOffLanding::resume`] with the temp still whole).
     in_the_way: Option<NameHeld>,
 }
 

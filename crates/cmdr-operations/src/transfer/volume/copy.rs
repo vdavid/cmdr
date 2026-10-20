@@ -76,6 +76,42 @@ const CANCEL_DRAIN_DEADLINE: Duration = Duration::from_secs(15);
 /// exactly as before, which staging makes safe.
 const ABORT_DRAIN_DEADLINE: Duration = Duration::from_secs(1);
 
+/// The op-wide cells `copy_volumes_with_progress` shares with whichever driver
+/// runs (`copy_concurrent.rs` or `copy_serial.rs`). Each driver gets a clone,
+/// so the post-loop keeps reading what the driver recorded.
+// DEFAULT-OK: an operation starts with nothing written, created, set aside, or
+// skipped, and no "…all" choice made, so every cell's zero value is the truth.
+#[derive(Clone, Default)]
+pub(super) struct CopyCells {
+    /// "Apply to all" for conflicts, shared between the top-level conflict
+    /// dispatch and every deep merge level (via `MergeCtx`), so a "…all" choice
+    /// from any prompt applies everywhere.
+    pub(super) apply_to_all_cell: Arc<std::sync::Mutex<ApplyToAll>>,
+    /// The destination FILES the copy wrote, for rollback and cleanup. For a
+    /// directory source these are the individual files streamed into the
+    /// (possibly pre-existing) dest directory, NOT the directory root, so
+    /// rollback never recursively deletes a merged directory and destroys
+    /// dest-only files the user already had there.
+    pub(super) copied_paths: Arc<std::sync::Mutex<Vec<WrittenFile>>>,
+    /// Destination directories this operation NEWLY created (create_directory
+    /// returned Ok, not AlreadyExists), in creation order (shallowest first).
+    /// Rollback removes these AFTER the files, deepest first, with a
+    /// non-recursive empty-only delete, so a dir we created but which still
+    /// holds a pre-existing sibling (or a kept-partial under cancel) survives.
+    pub(super) created_dirs: Arc<std::sync::Mutex<Vec<PathBuf>>>,
+    /// What a cross-type Overwrite renamed aside to free a name, at any depth.
+    /// Settled once the operation knows how it ended: dropped on success, put
+    /// back by a rollback, and by a stop or a failure put back or kept beside
+    /// the name (`displaced_destination.rs`).
+    pub(super) displaced: Arc<DisplacedLedger>,
+    /// Deep-merge skips (children a merge resolved to Skip), invisible to the
+    /// driver's top-level skip accounting: both drivers fold each source's
+    /// `CreatedPaths::skipped_file_count` in here, and the post-loop adds the
+    /// totals to the op-wide `files_skipped` / `bytes_skipped`.
+    pub(super) deep_skipped_files: Arc<AtomicUsize>,
+    pub(super) deep_skipped_bytes: Arc<AtomicU64>,
+}
+
 /// How long a wind-down waits for its in-flight tasks, chosen by whoever asked
 /// for it rather than by a constant: `aborting` is the hard-abort tier being
 /// live. Honors a test override.
@@ -924,37 +960,7 @@ pub async fn copy_volumes_with_progress(
         );
     }
 
-    // Track "apply to all" resolution for conflicts. Shared op-wide between the
-    // top-level conflict dispatch and every deep merge level (via `MergeCtx`), so
-    // a "…all" choice from any prompt applies everywhere. Both the concurrent and
-    // serial paths reuse this one cell.
-    let apply_to_all_cell: Arc<std::sync::Mutex<ApplyToAll>> = Arc::new(std::sync::Mutex::new(ApplyToAll::default()));
-
-    // Track successfully copied destination FILE paths for rollback/cleanup.
-    // Wrapped in Arc<Mutex> so concurrent tasks can push independently. The
-    // sequential path uses the same container for a uniform post-loop flow.
-    // For a directory source these are the individual files the op streamed
-    // into the (possibly pre-existing) dest directory — NOT the directory root
-    // — so rollback never recursively deletes a merged directory and destroys
-    // dest-only files the user already had there.
-    let copied_paths: Arc<std::sync::Mutex<Vec<WrittenFile>>> = Arc::new(std::sync::Mutex::new(Vec::new()));
-    // Destination directories this operation NEWLY created (create_directory
-    // returned Ok, not AlreadyExists), in creation order (shallowest first).
-    // Rollback removes these AFTER the files, deepest first, with a
-    // non-recursive empty-only delete — so a dir we created but which still
-    // holds a pre-existing sibling (or a kept-partial under cancel) survives.
-    let created_dirs: Arc<std::sync::Mutex<Vec<PathBuf>>> = Arc::new(std::sync::Mutex::new(Vec::new()));
-    // What a cross-type Overwrite renamed aside to free a name, at any depth
-    // and from either driver. Settled below, once the operation knows how it
-    // ended: dropped on success, put back by a rollback, and by a stop or a
-    // failure put back or kept beside the name (`displaced_destination.rs`).
-    let displaced = Arc::new(DisplacedLedger::default());
-    // Deep-merge skips (children a merge resolved to Skip) are invisible to the
-    // driver's top-level skip accounting, so both paths fold each source's
-    // `CreatedPaths::skipped_file_count` in here; the totals are added to the
-    // op-wide `files_skipped` / `bytes_skipped` after the loop.
-    let deep_skipped_files = Arc::new(AtomicUsize::new(0));
-    let deep_skipped_bytes = Arc::new(AtomicU64::new(0));
+    let cells = CopyCells::default();
     let mut copy_error: Option<WriteFailure>;
 
     // Live in-flight table + stall watchdog, for BOTH paths. The concurrent
@@ -1009,12 +1015,7 @@ pub async fn copy_volumes_with_progress(
             files_skipped_atomic: Arc::clone(&files_skipped_atomic),
             bytes_skipped_atomic: Arc::clone(&bytes_skipped_atomic),
             last_progress_mutex: Arc::clone(&last_progress_mutex),
-            apply_to_all_cell: Arc::clone(&apply_to_all_cell),
-            copied_paths: Arc::clone(&copied_paths),
-            created_dirs: Arc::clone(&created_dirs),
-            displaced: Arc::clone(&displaced),
-            deep_skipped_files: Arc::clone(&deep_skipped_files),
-            deep_skipped_bytes: Arc::clone(&deep_skipped_bytes),
+            cells: cells.clone(),
         })
         .await;
         copy_error = outcome.copy_error;
@@ -1045,12 +1046,7 @@ pub async fn copy_volumes_with_progress(
             progress_interval,
             journal_volumes: &journal_volumes,
             op_probe: &op_probe,
-            apply_to_all_cell: Arc::clone(&apply_to_all_cell),
-            copied_paths: Arc::clone(&copied_paths),
-            created_dirs: Arc::clone(&created_dirs),
-            displaced: Arc::clone(&displaced),
-            deep_skipped_files: Arc::clone(&deep_skipped_files),
-            deep_skipped_bytes: Arc::clone(&deep_skipped_bytes),
+            cells: cells.clone(),
         })
         .await;
         files_done = outcome.files_done;
@@ -1059,6 +1055,14 @@ pub async fn copy_volumes_with_progress(
         bytes_skipped = outcome.bytes_skipped;
         copy_error = outcome.copy_error;
     }
+    let CopyCells {
+        copied_paths,
+        created_dirs,
+        displaced,
+        deep_skipped_files,
+        deep_skipped_bytes,
+        ..
+    } = cells;
 
     // Fold the deep-merge skips (invisible to the driver's top-level accounting)
     // into the op-wide skip tally so the terminal `files_skipped` is honest.

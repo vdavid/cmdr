@@ -177,7 +177,7 @@ impl ConcurrentCopy<'_> {
             source_volume: Arc::clone(&self.source_volume),
             dest_volume: Arc::clone(&self.dest_volume),
             config: self.config.clone(),
-            apply_to_all: Arc::clone(&self.apply_to_all_cell),
+            apply_to_all: Arc::clone(&self.cells.apply_to_all_cell),
             source_path: source_path.to_path_buf(),
             source_is_dir,
             source_facts: SourceFileFacts::from_hint(source_hint),
@@ -185,7 +185,7 @@ impl ConcurrentCopy<'_> {
             replaces,
             dest_name_claimed,
             window: self.file_window.clone(),
-            displaced: Arc::clone(&self.displaced),
+            displaced: Arc::clone(&self.cells.displaced),
             created: Arc::new(super::merge_ctx::CreatedPaths::default()),
             // Every leaf of a directory source's subtree numbers itself under
             // this source's own row.
@@ -333,7 +333,7 @@ impl ConcurrentCopy<'_> {
             &*self.events,
             self.operation_id,
             self.state,
-            &self.apply_to_all_cell,
+            &self.cells.apply_to_all_cell,
             source_size_hint,
             dest_size_hint,
             Some(source_is_dir),
@@ -345,7 +345,7 @@ impl ConcurrentCopy<'_> {
         resolved.map(|resolved| {
             resolved.map(|mut rc| {
                 if let Some(displaced) = rc.displaced.take() {
-                    self.displaced.hold(displaced);
+                    self.cells.displaced.hold(displaced);
                 }
                 rc
             })

@@ -19,10 +19,9 @@
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
-use super::super::super::conflict::ApplyToAll;
 use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::journal;
 use super::super::super::ledger::WrittenFile;
@@ -34,7 +33,7 @@ use super::super::transfer_driver::{
 };
 use super::super::transfer_probe::{DriverPhase, OperationProbe, TaskRole, TaskRow};
 use super::conflict::resolve_volume_conflict;
-use super::displaced_destination::DisplacedLedger;
+use super::copy::CopyCells;
 use super::preflight::SourceFileFacts;
 use super::preflight::SourceHint;
 use super::strategy::copy_single_path;
@@ -75,13 +74,7 @@ pub(super) struct SerialCopy<'a> {
     /// the both-local shortcut and in tests that install no journal.
     pub(super) journal_volumes: &'a Option<(String, String)>,
     pub(super) op_probe: &'a Option<Arc<OperationProbe>>,
-    pub(super) apply_to_all_cell: Arc<std::sync::Mutex<ApplyToAll>>,
-    pub(super) copied_paths: Arc<std::sync::Mutex<Vec<WrittenFile>>>,
-    pub(super) created_dirs: Arc<std::sync::Mutex<Vec<PathBuf>>>,
-    /// What cross-type Overwrites set aside, for the post-loop to settle.
-    pub(super) displaced: Arc<DisplacedLedger>,
-    pub(super) deep_skipped_files: Arc<AtomicUsize>,
-    pub(super) deep_skipped_bytes: Arc<AtomicU64>,
+    pub(super) cells: CopyCells,
 }
 
 /// What the driver leaves for the caller's post-loop bookkeeping.
@@ -115,12 +108,15 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
         progress_interval,
         journal_volumes,
         op_probe,
-        apply_to_all_cell,
-        copied_paths,
-        created_dirs,
-        displaced,
-        deep_skipped_files,
-        deep_skipped_bytes,
+        cells:
+            CopyCells {
+                apply_to_all_cell,
+                copied_paths,
+                created_dirs,
+                displaced,
+                deep_skipped_files,
+                deep_skipped_bytes,
+            },
     } = ctx;
 
     let mut copy_error: Option<WriteFailure> = None;

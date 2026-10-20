@@ -147,9 +147,7 @@ struct Harness {
     files_skipped: Arc<AtomicUsize>,
     bytes_skipped: Arc<AtomicU64>,
     last_progress: Arc<std::sync::Mutex<Instant>>,
-    apply_to_all: Arc<std::sync::Mutex<ApplyToAll>>,
-    copied_paths: Arc<std::sync::Mutex<Vec<WrittenFile>>>,
-    created_dirs: Arc<std::sync::Mutex<Vec<PathBuf>>>,
+    cells: CopyCells,
 }
 
 impl Harness {
@@ -181,9 +179,7 @@ impl Harness {
             files_skipped: Arc::new(AtomicUsize::new(0)),
             bytes_skipped: Arc::new(AtomicU64::new(0)),
             last_progress: Arc::new(std::sync::Mutex::new(Instant::now())),
-            apply_to_all: Arc::new(std::sync::Mutex::new(ApplyToAll::default())),
-            copied_paths: Arc::new(std::sync::Mutex::new(Vec::new())),
-            created_dirs: Arc::new(std::sync::Mutex::new(Vec::new())),
+            cells: CopyCells::default(),
         }
     }
 
@@ -210,12 +206,7 @@ impl Harness {
             files_skipped_atomic: Arc::clone(&self.files_skipped),
             bytes_skipped_atomic: Arc::clone(&self.bytes_skipped),
             last_progress_mutex: Arc::clone(&self.last_progress),
-            apply_to_all_cell: Arc::clone(&self.apply_to_all),
-            copied_paths: Arc::clone(&self.copied_paths),
-            created_dirs: Arc::clone(&self.created_dirs),
-            displaced: Arc::new(DisplacedLedger::default()),
-            deep_skipped_files: Arc::new(AtomicUsize::new(0)),
-            deep_skipped_bytes: Arc::new(AtomicU64::new(0)),
+            cells: self.cells.clone(),
         }
     }
 
@@ -225,8 +216,8 @@ impl Harness {
         let outcome = drive_transfer_concurrent(self.ctx(source, dest, concurrency)).await;
         DriverRun {
             outcome,
-            copied: self.copied_paths.lock_ignore_poison().clone(),
-            created_dirs: self.created_dirs.lock_ignore_poison().clone(),
+            copied: self.cells.copied_paths.lock_ignore_poison().clone(),
+            created_dirs: self.cells.created_dirs.lock_ignore_poison().clone(),
         }
     }
 
