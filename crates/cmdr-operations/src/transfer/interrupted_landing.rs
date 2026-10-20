@@ -49,6 +49,13 @@
 //! loosen the checks into "something is at the name": a file claimed by mistake
 //! goes into the rollback ledger as ours, and an undo would delete it.
 //!
+//! **A compare races the work's stop.** Re-reading a multi-GB file on both
+//! sides takes minutes, so every byte compare here ends the moment
+//! `stop_work` fires (#577), answering [`CompareStopped`]: ❌ never "the bytes
+//! match", and ❌ never "they differ" either, which would run the file again
+//! or put a swap's original back. The caller ends as the stop it is, and what
+//! the landing left stays recorded for the volume's next arrival.
+//!
 //! **A write with no temp.** A SINGLE-SHOT write (`WriteMode::CreateNew` at the
 //! final name: SMB's compound CREATE+WRITE+FLUSH+CLOSE for a small file, an
 //! object store's PUT) has the same ambiguity and no temp to read it from. Run
@@ -71,6 +78,7 @@ use std::sync::Arc;
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::metadata::CarriedMetadata;
 use cmdr_fs::volume::{StreamWritten, Volume, VolumeError, VolumeReadStream, WriteMode};
+use tokio_util::sync::CancellationToken;
 
 /// Whether this attempt's write, made in `write_mode` (`StagedWrite::write_mode`),
 /// was a create at the FINAL name (a single-shot `CreateNew`) that failed on the
@@ -147,38 +155,66 @@ impl NameHeld {
     }
 }
 
+/// The work stopped (`WriteOperationState::stop_work`: a Cancel, or a
+/// sibling's failure) before a byte compare finished. A compare cut short
+/// proves nothing, so this is its own answer, ❌ never folded into "the bytes
+/// match": the caller ends without acting on it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) struct CompareStopped;
+
 /// Settles a single-shot create of `size` bytes at `final_path` whose reply never
 /// came: `Some` only when the file there is exactly the source's bytes, with the
 /// [`WriteStamp`] the write may not have put on (its stamp is a later request,
 /// and the drop may have cut it off). `None` leaves the name alone, so a file
 /// that isn't provably ours meets the next attempt's `CreateNew` refusal.
+/// `Err` when `stop` fired first (see [`holds_the_source`]).
 pub(super) async fn settle_unanswered_create(
     source_volume: &Arc<dyn Volume>,
     source_path: &Path,
     size: u64,
     dest_volume: &Arc<dyn Volume>,
     final_path: &Path,
-) -> Option<WriteStamp> {
-    let (ours, at_the_name) = same_size_streams(source_volume, source_path, size, dest_volume, final_path).await?;
-    // Read before the compare consumes the stream: the open already holds it.
-    let stamp = WriteStamp::of(&*ours, &**dest_volume);
-    same_bytes(ours, at_the_name).await.then_some(stamp)
+    stop: &CancellationToken,
+) -> Result<Option<WriteStamp>, CompareStopped> {
+    unless_stopped(stop, async {
+        let (ours, at_the_name) = same_size_streams(source_volume, source_path, size, dest_volume, final_path).await?;
+        // Read before the compare consumes the stream: the open already holds it.
+        let stamp = WriteStamp::of(&*ours, &**dest_volume);
+        same_bytes(ours, at_the_name).await.then_some(stamp)
+    })
+    .await
 }
 
 /// Whether `final_path` holds exactly the `size` bytes of `source_path`,
 /// compared in full by re-reading both: the proof a landing whose temp is gone
 /// after the way was cleared put our file there. A read that fails on either
 /// side is "can't prove it".
+///
+/// ❗ Races `stop`: re-reading a multi-GB file twice takes minutes, and a Cancel
+/// must not wait for it (#577). `Err` when the work stopped first.
 pub(super) async fn holds_the_source(
     source_volume: &Arc<dyn Volume>,
     source_path: &Path,
     size: u64,
     dest_volume: &Arc<dyn Volume>,
     final_path: &Path,
-) -> bool {
-    match same_size_streams(source_volume, source_path, size, dest_volume, final_path).await {
-        Some((ours, at_the_name)) => same_bytes(ours, at_the_name).await,
-        None => false,
+    stop: &CancellationToken,
+) -> Result<bool, CompareStopped> {
+    unless_stopped(stop, async {
+        match same_size_streams(source_volume, source_path, size, dest_volume, final_path).await {
+            Some((ours, at_the_name)) => same_bytes(ours, at_the_name).await,
+            None => false,
+        }
+    })
+    .await
+}
+
+/// `compare`, ended where it is the moment `stop` fires (its streams drop).
+async fn unless_stopped<T>(stop: &CancellationToken, compare: impl Future<Output = T>) -> Result<T, CompareStopped> {
+    tokio::select! {
+        biased;
+        () = stop.cancelled() => Err(CompareStopped),
+        answer = compare => Ok(answer),
     }
 }
 

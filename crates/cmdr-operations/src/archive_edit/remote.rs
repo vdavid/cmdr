@@ -398,6 +398,7 @@ async fn swap_into_place(
             Resumed::Landed => return Swapped::Landed,
             Resumed::RunAgain(_) => return Swapped::UploadAgain,
             Resumed::Failed(failure) => return Swapped::Ended(landing_failure(archive_path, failure, None)),
+            Resumed::Stopped => return Swapped::Ended(EditError::Cancelled),
             Resumed::CutOff(again) => cut_off = again,
         }
     }

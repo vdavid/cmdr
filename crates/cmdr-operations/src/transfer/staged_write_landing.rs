@@ -168,6 +168,21 @@ impl Landing {
         }
     }
 
+    /// The work stopped before a settle could prove the gone temp landed: ❌
+    /// nothing counts as landed and ❌ nothing is discarded. A landing record
+    /// and a swap's aside stay for the volume's next arrival, whose sweep
+    /// settles them from what the share shows; a temp recorded as a temp is
+    /// gone, so nothing of it is left to protect.
+    fn stopped_unproven(&mut self) {
+        if matches!(self.recorded, Recorded::Temp) {
+            self.settled();
+        }
+        self.keep_landing();
+        if let Some(aside) = self.aside.take() {
+            aside.keep_for_arrival();
+        }
+    }
+
     /// Nothing was cleared after all and the temp couldn't be taken away, so
     /// it's a removable copy of ours again: recorded as a temp (before the
     /// landing record goes) for the sweeps to remove.
@@ -607,6 +622,11 @@ pub(crate) enum Resumed {
     Failed(FinalizeFailure),
     /// Cut off again: wait once more.
     CutOff(Box<CutOffLanding>),
+    /// The work stopped (a Cancel, or a sibling's failure) while the settle
+    /// compared the name against the source. A compare cut short proves
+    /// nothing, so ❌ nothing counts as landed and ❌ nothing is discarded:
+    /// what the landing left stays recorded for the volume's next arrival.
+    Stopped,
 }
 
 impl From<Result<(), LandingError>> for Resumed {
@@ -650,7 +670,9 @@ impl CutOffLanding {
     ///   original, possibly at the same size), ❗ the name must hold exactly the
     ///   SOURCE's bytes, compared in full, and with no `source` to compare
     ///   against (a one-pass extract) it never counts as landed. A landed swap's
-    ///   aside goes; an unproven one's original goes back to its name first.
+    ///   aside goes; an unproven one's original goes back to its name first. A
+    ///   compare the work's stop cut short is [`Resumed::Stopped`]: its records
+    ///   stay for the volume's next arrival, ❌ nothing put back or discarded.
     /// - **Anything else** (a temp that isn't whole, a name that doesn't prove
     ///   it): run the file again, a swap's original back at its name first.
     ///
@@ -680,23 +702,33 @@ impl CutOffLanding {
                 run_again_with_the_original_home(dest_volume, landing, error).await
             }
             Err(VolumeError::NotFound(_)) => {
-                let landed = !landing.discard_asked
-                    && match (&at, source) {
-                        (CutOffAt::FirstRename, _) => {
-                            holds_our_size(dest_volume, &landing.final_path, landing.size).await
-                        }
-                        (_, Some(source)) => {
-                            holds_the_source(
-                                source.volume,
-                                source.path,
-                                landing.size,
-                                dest_volume,
-                                &landing.final_path,
-                            )
-                            .await
-                        }
-                        (_, None) => false,
-                    };
+                let proof = match (&at, source) {
+                    _ if landing.discard_asked => Ok(false),
+                    (CutOffAt::FirstRename, _) => {
+                        Ok(holds_our_size(dest_volume, &landing.final_path, landing.size).await)
+                    }
+                    (_, Some(source)) => {
+                        holds_the_source(
+                            source.volume,
+                            source.path,
+                            landing.size,
+                            dest_volume,
+                            &landing.final_path,
+                            &landing.state.stop_work,
+                        )
+                        .await
+                    }
+                    (_, None) => Ok(false),
+                };
+                let Ok(landed) = proof else {
+                    log::info!(
+                        target: "copy",
+                        "landing: the work stopped while {} was compared against its source; leaving it for the volume's next arrival",
+                        LogPrivate::file_path(&landing.final_path),
+                    );
+                    landing.stopped_unproven();
+                    return Resumed::Stopped;
+                };
                 // The temp is gone either way: nothing left to protect.
                 landing.settled();
                 if landed {

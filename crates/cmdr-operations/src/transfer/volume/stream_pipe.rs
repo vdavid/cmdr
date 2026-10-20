@@ -338,7 +338,7 @@ impl FileRun<'_> {
     /// One pass over the checkpoints, in order. `Ok` is the landed file's byte
     /// count.
     async fn checkpoints(&mut self) -> Result<u64, Stop> {
-        if let Some(bytes) = self.settle_unanswered_create().await {
+        if let Some(bytes) = self.settle_unanswered_create().await? {
             return Ok(bytes);
         }
         if let Some(bytes) = self.resume_landing().await? {

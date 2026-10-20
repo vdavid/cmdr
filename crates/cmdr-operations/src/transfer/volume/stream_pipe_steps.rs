@@ -17,7 +17,7 @@ use crate::transfer::transfer_probe::{TaskPhase, arm_current_task_stall_abort, s
 use crate::transfer::volume::source_reads::{self, SourceReads};
 use crate::transfer::volume::transfer_error::{AtPath, PathedVolumeError, hard_abort_error};
 use crate::transfer::volume::{extract_quarantine, landed_flags};
-use crate::transfer::volume_outage::StartedOn;
+use crate::transfer::volume_outage::{self, StartedOn};
 use cmdr_fs::log_error::LogError;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::metadata::{CarriedMetadata, MetadataClasses};
@@ -45,17 +45,29 @@ pub(super) struct Written {
 
 impl FileRun<'_> {
     /// Checkpoint zero: a single-shot create whose reply the transport lost
-    /// settles BEFORE the next open. `Some` when the server had completed it.
-    pub(super) async fn settle_unanswered_create(&mut self) -> Option<u64> {
-        let (size, lost) = self.unanswered_create.take()?;
-        let stamp = settle_unanswered_create(
+    /// settles BEFORE the next open. `Some` when the server had completed it;
+    /// a stop during its byte compare ends the file as the stop it is.
+    pub(super) async fn settle_unanswered_create(&mut self) -> Result<Option<u64>, Stop> {
+        let Some((size, lost)) = self.unanswered_create.take() else {
+            return Ok(None);
+        };
+        let settled = settle_unanswered_create(
             self.source_volume,
             self.source_path,
             size,
             self.dest_volume,
             self.dest_path,
+            &self.state.stop_work,
         )
-        .await?;
+        .await;
+        let Ok(settled) = settled else {
+            return Err(volume_outage::cancelled())
+                .at_destination(self.dest_path)
+                .map_err(Stop::Over);
+        };
+        let Some(stamp) = settled else {
+            return Ok(None);
+        };
         log::info!(target: "copy", "stream_pipe_file: {} was written whole before the reply was lost", LogPrivate::file_path(self.dest_path));
         self.state.claimed_names.release_placeholder(self.dest_path);
         // The write's own stamp may be what the drop cut off (SMB stamps a
@@ -69,7 +81,7 @@ impl FileRun<'_> {
         self.state
             .metadata_losses
             .note_file(lost.union(report.refused_classes()));
-        Some(size)
+        Ok(Some(size))
     }
 
     /// Opens the source. A device round-trip on MTP / SMB that can hang on its
@@ -368,6 +380,9 @@ impl FileRun<'_> {
                 Ok(None)
             }
             Resumed::Failed(failure) => Err(Stop::Over(PathedVolumeError::from_landing(failure, self.dest_path))),
+            Resumed::Stopped => Err(volume_outage::cancelled())
+                .at_destination(self.dest_path)
+                .map_err(Stop::Over),
             Resumed::CutOff(cut_off) => Err(Stop::Faulted(Box::new(Fault::Land {
                 cut_off,
                 started_on,

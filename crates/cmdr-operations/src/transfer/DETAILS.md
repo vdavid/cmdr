@@ -2083,6 +2083,11 @@ shows (`CutOffLanding::resume`):
   nothing, and ❗ exactly the SOURCE's bytes, compared in full (`holds_the_source`), after a cleared way or any swap,
   since a swap whose temp someone removed can leave the user's OLD file at the name, maybe at the same size. With no
   source to compare against (the one-pass extract), that case ❌ never counts as landed. A landed swap's aside goes.
+  The compare races `stop_work` (#577): a Cancel mid-compare ends the settle as `Resumed::Stopped`, which proves
+  nothing, so ❌ nothing counts as landed, ❌ nothing is put back or discarded, and the landing record and any aside stay
+  for the volume's next arrival (pinned by
+  `staged_write_tests.rs::a_cancel_during_a_cut_off_landings_byte_compare_stops_it_and_keeps_the_landing_recorded`).
+  A single-shot create's settle (below) races it the same way.
 - **Anything else** (a temp that isn't whole, a name that doesn't prove it) runs the file again, a swap's original put
   back at its name first (`run_again_with_the_original_home`), and a name someone else took meets the ordinary
   late-clash refusal (`DestinationExists`, their file untouched).

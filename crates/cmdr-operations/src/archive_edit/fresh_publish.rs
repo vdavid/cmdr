@@ -141,6 +141,7 @@ impl CutOff {
                     Settled::Done(Published::Ended(landing_failure(archive_path, failure, None)))
                 }
                 Resumed::CutOff(again) => Settled::CutOff(Self::Landing(again)),
+                Resumed::Stopped => Settled::Done(Published::Ended(EditError::Cancelled)),
             },
             Self::Publish(cut_off) => match cut_off.resume(dest_volume).await {
                 Republished::Published => Settled::Done(Published::Yes),

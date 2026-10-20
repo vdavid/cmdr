@@ -261,6 +261,7 @@ async fn land_member(
             Resumed::Landed => return Ok(()),
             Resumed::RunAgain(error) => return Err(error).at_destination(dest_path),
             Resumed::Failed(failure) => return Err(PathedVolumeError::from_landing(failure, dest_path)),
+            Resumed::Stopped => return Err(volume_outage::cancelled()).at_destination(dest_path),
             Resumed::CutOff(again) => cut_off = again,
         }
     }
