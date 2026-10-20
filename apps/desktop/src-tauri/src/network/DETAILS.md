@@ -410,7 +410,8 @@ follow the error-copy rules).
 `network::mount_share` waits on `mount_share_sync` until the timeout or the caller's `CancellationToken`, whichever
 comes first. Neither stops the NetFS call: its blocking thread stays inside `NetFSMountURLSync`. That matters because of
 the wedge in § Gotchas ("A wedged `NetAuthSysAgent` hangs every NetFS mount"): every call queues on the stuck daemon,
-so a retry only stacks another thread behind the first. `netfs_wedge.rs` owns both answers (#604, ERR-PRTPK).
+so a retry only stacks another thread behind the first. `netfs_wedge.rs` owns both answers (#604, ERR-PRTPK); the
+`warn` lines a stuck call leaves in the log come from `mount_watch.rs` (§ Module map), which rides the same thread.
 
 - **Reading a mount it gave up on** (`read_given_up`): waited at least `SUSPECT_AFTER` (10 s; a healthy mount takes
   1–2 s) AND the server's SMB port accepts a TCP connect within 2 s AND the call is still running →
