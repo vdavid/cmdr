@@ -3116,6 +3116,30 @@
   "@settings.network.trustedHostKeys.keywords": {
     "sourceHash": "d111f38"
   },
+  "settings.servers.card.trustedCertificates": "Trusted certificates",
+  "@settings.servers.card.trustedCertificates": {
+    "sourceHash": "3259d5c"
+  },
+  "settings.network.trustedCertificates.keywords": "certificate, self-signed, fingerprint, trust, trusted, NAS, server, forget",
+  "@settings.network.trustedCertificates.keywords": {
+    "sourceHash": "554a965"
+  },
+  "settings.servers.trustedCertificates.description": "When macOS doesn’t trust a server’s certificate, Cmdr asks before it trusts it for you, and remembers your answer here. Home servers often make their own.",
+  "@settings.servers.trustedCertificates.description": {
+    "sourceHash": "0b00c1e"
+  },
+  "settings.servers.trustedCertificates.empty": "Nothing trusted yet. When you connect to a WebDAV server macOS doesn’t trust, Cmdr shows you its certificate’s fingerprint and asks.",
+  "@settings.servers.trustedCertificates.empty": {
+    "sourceHash": "a3c2089"
+  },
+  "settings.servers.trustedCertificates.confirmTitle": "Forget this certificate?",
+  "@settings.servers.trustedCertificates.confirmTitle": {
+    "sourceHash": "848e837"
+  },
+  "settings.servers.trustedCertificates.confirm": "The next time you connect to {host}, Cmdr will show you its certificate’s fingerprint and ask whether to trust it.",
+  "@settings.servers.trustedCertificates.confirm": {
+    "sourceHash": "d1e2c68"
+  },
   "settings.servers.trustedHostKeys.description": "第一次连接某台服务器时，Cmdr 会先问你要不要信任它的密钥，并把你的答复记在这里。保存过的服务器在“服务器”列表里，不在这个页面。",
   "@settings.servers.trustedHostKeys.description": {
     "sourceHash": "b3a8900"
