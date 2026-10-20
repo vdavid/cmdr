@@ -375,7 +375,9 @@ var surfaceGuardedCrates = []struct {
 		// Measured 2026-10-16, at the extraction, and re-measured 2026-10-17, when
 		// the journal API took `OperationId`; both times set to exactly what the
 		// crate exposes, with no headroom (David approved the rule, and that one
-		// re-measure, in the #415 plan).
+		// re-measure, in the #415 plan). Tightened to 71 items on 2026-10-20, when
+		// four accessors only the crate's own tests call went behind `cfg(test)`
+		// (#467).
 		//
 		// The 11 root promises are `OperationLog`, `OpJournal`, `OpenError`,
 		// `new_operation_id`, and the seven public modules: `store` and `query` (the
@@ -394,7 +396,7 @@ var surfaceGuardedCrates = []struct {
 			RootPromises:   11,
 			HandleMethods:  6,
 			PublicModules:  7,
-			SubsystemItems: 75,
+			SubsystemItems: 71,
 		},
 	},
 	{

@@ -782,7 +782,7 @@ surface is two thin pass-throughs (`commands/operation_log.rs`): `get_recent_ope
   subtree's `search_only` leaves (§ "Per-kind record points and granularity"), so "when did I trash `dog.jpg`" hits even
   when `dog.jpg` sat inside a trashed folder — the asymmetry a uniform-granularity design would leave as a silent miss.
   The one uncovered case (a subtree that couldn't be enumerated) is flagged `search_coverage = top_level_only`, a
-  queryable known gap (`coverage_is_complete`), not a false negative.
+  queryable known gap on the row, not a false negative.
 - **Names repeat, so they're NOT interned.** Item names duplicate massively across a 1M-file op; a b-tree index handles
   duplicate keys fine, and (unlike dirs) names must stay directly queryable. Prefix match is a folded-range scan on the
   same index (`>= prefix AND < prefix⁺`), never `LIKE` (which wouldn't use the index).
@@ -886,9 +886,12 @@ the write engine, whose `OperationVolumes` is its supertrait.
 
 ### The public surface is capped
 
-`index-crate-isolation` holds the surface to 11 root promises, 6 `OperationLog` methods, seven public modules, and 75
-items in them, with no headroom: measured at the extraction and re-measured once, when the journal API took
-`OperationId` (`scripts/check/checks/index-crate-isolation-ceilings.go`). By module:
+`index-crate-isolation` holds the surface to 11 root promises, 6 `OperationLog` methods, seven public modules, and 71
+items in them, with no headroom: measured at the extraction, re-measured when the journal API took `OperationId`, and
+tightened when the test-only accessors went behind `cfg(test)`
+(`scripts/check/checks/index-crate-isolation-ceilings.go`). A helper only this crate's tests call stays `#[cfg(test)]`
+(`OperationLogStore::conn` and `schema_version`, `query::coverage_is_complete`), so the count promises nothing to no
+caller. By module:
 
 - **Root**: `OperationLog` (the handle), `OpJournal`, `OpenError`, `new_operation_id`, and the seven modules below. The
   handle's methods are `detached`, `open`, `set_recording`, `writer`, `spawn_retention`, and `journal_open`; an

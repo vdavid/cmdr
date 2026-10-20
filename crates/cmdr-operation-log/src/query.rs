@@ -34,9 +34,7 @@ use super::store::{
     ITEM_COLUMNS, OPERATION_COLUMNS, OperationItemRow, OperationLogStoreError, OperationRow, fill_inverse_op_ids,
     join_leaf, map_item_row, map_operation_row, resolve_dir,
 };
-use super::types::{
-    EntryType, ExecutionStatus, Initiator, ItemOutcome, OpKind, RollbackState, RowRole, SearchCoverage, SkipReason,
-};
+use super::types::{EntryType, ExecutionStatus, Initiator, ItemOutcome, OpKind, RollbackState, RowRole, SkipReason};
 
 /// How a name filter matches the folded name column.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -373,8 +371,9 @@ fn next_char(c: char) -> Option<char> {
 /// Whether an operation's search coverage is complete — a convenience for
 /// consumers that want to flag a known gap (`top_level_only`) without matching on
 /// the enum. Kept here so the flag's meaning lives beside the search API.
+#[cfg(test)]
 pub fn coverage_is_complete(op: &OperationRow) -> bool {
-    op.search_coverage == SearchCoverage::Full
+    op.search_coverage == super::types::SearchCoverage::Full
 }
 
 #[cfg(test)]

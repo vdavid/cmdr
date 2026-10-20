@@ -199,7 +199,7 @@ pub struct OperationItemRow {
 /// A handle to `operation-log.db`, owning a connection for direct reads and the
 /// schema lifecycle. The writer thread opens its OWN write connection.
 pub struct OperationLogStore {
-    db_path: PathBuf,
+    #[cfg_attr(not(test), allow(dead_code, reason = "read only by the test-gated accessors"))]
     conn: Connection,
 }
 
@@ -233,10 +233,7 @@ impl OperationLogStore {
 
     fn try_open(db_path: &Path) -> Result<Self, OperationLogStoreError> {
         let conn = open_write_connection(db_path)?;
-        Ok(Self {
-            db_path: db_path.to_path_buf(),
-            conn,
-        })
+        Ok(Self { conn })
     }
 
     fn set_aside_and_recreate(
@@ -257,17 +254,14 @@ impl OperationLogStore {
         Self::try_open(db_path)
     }
 
-    /// The DB file path.
-    pub fn db_path(&self) -> &Path {
-        &self.db_path
-    }
-
-    /// Borrow the connection for direct reads (tests, the dump bin path).
+    /// Borrow the connection for direct reads.
+    #[cfg(test)]
     pub fn conn(&self) -> &Connection {
         &self.conn
     }
 
     /// The current on-disk schema version.
+    #[cfg(test)]
     pub fn schema_version(&self) -> Result<u32, OperationLogStoreError> {
         migrations::read_schema_version(&self.conn)
     }
