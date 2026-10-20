@@ -11,8 +11,7 @@ use std::sync::Arc;
 
 use super::test_support::*;
 use cmdr_fs::volume::InMemoryVolume;
-use cmdr_operation_log::types::{EntryType, OpKind, RollbackState, SkipReason};
-use cmdr_operation_log::writer::JournalItem;
+use cmdr_operation_log::types::{OpKind, RollbackState, SkipReason};
 
 /// The batch-lowercase case from #511: `IMG_0001.JPG` was renamed to `img_0001.jpg`,
 /// then a different file landed at `IMG_0001.JPG` (a camera re-import). Undoing the
@@ -114,6 +113,8 @@ async fn undoing_a_move_between_case_twin_folders_skips_when_the_old_path_is_tak
 #[tokio::test]
 async fn undoing_a_case_only_rename_on_a_case_insensitive_volume_restores_it() {
     use cmdr_fs::volume::Volume;
+    use cmdr_operation_log::types::EntryType;
+    use cmdr_operation_log::writer::JournalItem;
 
     let work = tempfile::tempdir().expect("work");
     let root = work.path();
