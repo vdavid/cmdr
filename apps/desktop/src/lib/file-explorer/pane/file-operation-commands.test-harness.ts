@@ -60,6 +60,7 @@ export function buildPaneRef(
     selectedIndices: number[]
     cursorIndex: number
     currentPath: string
+    pathUnderCursor: string
     startRename: () => void
     cancelRename: () => void
     isRenaming: () => boolean
@@ -82,6 +83,7 @@ export function buildPaneRef(
     getSelectedIndices: () => overrides.selectedIndices ?? [],
     getCursorIndex: () => overrides.cursorIndex ?? 0,
     getCurrentPath: () => overrides.currentPath ?? '/Users/x/dir',
+    getPathUnderCursor: () => overrides.pathUnderCursor,
     startRename: overrides.startRename ?? vi.fn(),
     cancelRename: overrides.cancelRename ?? vi.fn(),
     isRenaming: overrides.isRenaming ?? (() => false),

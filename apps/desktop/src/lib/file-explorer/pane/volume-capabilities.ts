@@ -548,7 +548,18 @@ export function capabilitiesForInfo(info: VolumeInfo): VolumeCapabilities {
 export function rowIsOsVisible(volumeId: string, rowPath: string): boolean {
   if (!paneRowsAreOsVisible(capabilitiesFor(volumeId).kind)) return false
   if (pathInsideArchive(rowPath)) return false
-  return !(getShowVirtualGitPortal() && isVirtualGitPath(rowPath))
+  return !rowIsServedByGitPortal(rowPath)
+}
+
+/**
+ * Whether the virtual `.git` portal serves ONE row, so it's read-only whatever
+ * the pane says. A repo's `.git/` pane is writable, yet its `worktrees` and
+ * `branches` rows stand in for git's real folders at the same path: renaming
+ * one would rename git's own folder and break every linked worktree. Only while
+ * the portal is ON, since with it off the same path is whatever is on disk.
+ */
+export function rowIsServedByGitPortal(rowPath: string): boolean {
+  return getShowVirtualGitPortal() && isVirtualGitPath(rowPath)
 }
 
 /**

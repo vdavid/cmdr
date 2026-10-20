@@ -8,6 +8,12 @@
 //! inside the repository's `.git` folder or treats an archive path as a plain
 //! folder. The frontend refuses these in a routed pane; this holds the line for
 //! every other caller (Ask Cmdr, MCP).
+//!
+//! The app routes a category folder ITSELF too (`cmdr_git::portal_route`), so a
+//! `.git/` listing's `worktrees` row, whose path is git's real folder, can't be
+//! renamed out from under every linked worktree (#529). The app-side cells in
+//! `operations_host/portal_rename_tests.rs` pin that; `FakeVolumes` routes only
+//! strictly under its prefix.
 
 use std::path::Path;
 use std::sync::Arc;

@@ -13,6 +13,7 @@ use tokio::time::Duration;
 
 use crate::file_system::volume::Volume;
 use crate::file_system::volume::io_budget_for_volume;
+use crate::file_system::volume::manager::path_routes_over_its_parent;
 use cmdr_fs::deadline::{Deadline, blocking_typed_result_with_timeout, timeout_detached_within};
 use cmdr_operation_log::types::Initiator;
 use cmdr_operations::{BulkRenameRow, RenameStartError, SourceFingerprint};
@@ -102,11 +103,18 @@ pub(crate) async fn apply(
     )
     .await?;
 
-    // An archive or a `.git` portal serves its folder read-only.
+    // An archive or a `.git` portal serves its folder read-only. A ROW of a repo's
+    // `.git/` listing can be the portal's too: its `worktrees` and `branches` rows
+    // stand in for git's real folders at the same path, which the batch would rename.
     let resolved = crate::file_system::volume::manager::get_volume_manager()
         .resolve(&prepared.volume_id, &prepared.dir)
         .await;
-    if resolved.routed.is_some() {
+    let a_row_is_routed = prepared.ready.iter().any(|row| {
+        [&row.old_name, &row.new_name]
+            .into_iter()
+            .any(|name| path_routes_over_its_parent(&prepared.dir.join(name)))
+    });
+    if resolved.routed.is_some() || a_row_is_routed {
         return Err(MultiRenameError::ReadOnly);
     }
 

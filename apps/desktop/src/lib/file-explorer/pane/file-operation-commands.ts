@@ -18,7 +18,7 @@ import type { CloudOnlineOnlyExtent, DeleteSourceItem } from '#lib/file-operatio
 import type { TrashRouting } from '#lib/ipc/bindings.js'
 import { getCommonParentPath, getDestinationVolumeInfo } from './transfer-operations'
 import { createTransferDialogOpener } from './transfer-dialog-opener'
-import { capabilitiesFor, capabilitiesForPane } from './volume-capabilities'
+import { capabilitiesFor, capabilitiesForPane, rowIsServedByGitPortal } from './volume-capabilities'
 import { pathCrossesArchiveBoundary } from './archive-paths'
 import { paneOffersTrash } from './trash-availability'
 import { checkTransferDestinationGuard } from './transfer-entry'
@@ -148,15 +148,28 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     return null
   }
 
-  /** Activates inline rename on the focused pane's cursor item. */
+  /**
+   * Activates inline rename on the focused pane's cursor item. Beyond the pane's
+   * own refusal, a ROW the `.git` portal serves refuses too: a repo's `.git/`
+   * pane is writable, but its `worktrees` row is git's real folder at the same
+   * path. The rename flow refuses it again for every other activation.
+   */
   function startRename(options?: StartRenameOptions) {
-    const refusal = readOnlyRefusal('rename')
+    const paneRef = access.getPaneRef(access.getFocusedPane())
+    const rowPath = paneRef?.getPathUnderCursor()
+    const refusal =
+      readOnlyRefusal('rename') ??
+      (rowPath !== undefined && rowIsServedByGitPortal(rowPath)
+        ? {
+            title: tString('fileExplorer.readOnly.gitPortalTitle'),
+            message: tString('fileExplorer.readOnly.gitPortalMessage'),
+          }
+        : null)
     if (refusal) {
       dialogs.showAlert(refusal.title, refusal.message)
       return
     }
 
-    const paneRef = access.getPaneRef(access.getFocusedPane())
     paneRef?.startRename(options)
   }
 

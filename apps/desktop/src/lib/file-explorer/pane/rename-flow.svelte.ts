@@ -10,6 +10,7 @@ import type { RenameConflictResolution } from '../rename/rename-operations'
 import { addToastForPane, dismissTransientToastsForPane, type ToastOriginPane } from '#lib/ui/toast/index.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { pathInsideArchive } from './archive-paths'
+import { rowIsServedByGitPortal } from './volume-capabilities'
 import { paneOffersTrash } from './trash-availability'
 import { getVolumes } from '#lib/stores/volume-store.svelte.js'
 import type { FileEntry } from '../types'
@@ -174,8 +175,19 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     }
   }
 
-  /** Activates the inline rename editor on `entry` (the real activation body). */
-  function activateRename(entry: Pick<FileEntry, 'path' | 'name' | 'isDirectory'>, initialName?: string): void {
+  /**
+   * Activates the inline rename editor on `entry` (the real activation body).
+   * Every activation comes through here (F2, click-to-rename, a chained step,
+   * the Move dialog's in-place rename), so this is where a row the `.git` portal
+   * serves is refused. Returns whether the editor opened.
+   */
+  function activateRename(entry: Pick<FileEntry, 'path' | 'name' | 'isDirectory'>, initialName?: string): boolean {
+    if (rowIsServedByGitPortal(entry.path)) {
+      if (rename.active) closeEditor()
+      addToast(tString('fileExplorer.readOnly.gitPortalMessage'), { level: 'info' })
+      restoreFocus()
+      return false
+    }
     const target = {
       path: entry.path,
       originalName: entry.name,
@@ -227,6 +239,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
         }
       })
     }
+    return true
   }
 
   /**
@@ -517,7 +530,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
       const commitTarget = options?.commitTarget
       if (commitTarget && initialName !== undefined) {
         const name = commitTarget.path.slice(commitTarget.path.lastIndexOf('/') + 1)
-        activateRename({ ...commitTarget, name }, initialName)
+        if (!activateRename({ ...commitTarget, name }, initialName)) return
         if (rename.severity === 'error') {
           // Nobody is typing into an editor here, so the reason goes out and the session ends.
           addToast(rename.validation.message, { level: 'error' })

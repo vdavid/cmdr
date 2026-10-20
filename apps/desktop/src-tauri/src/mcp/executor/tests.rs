@@ -242,6 +242,27 @@ async fn validate_path_exists_lets_a_routed_path_through() {
     git::wiring::set_virtual_portal_enabled(true);
 }
 
+/// An `autoConfirm` rename does only what a person's F2 could (#529): no rename
+/// inside the read-only `.git/worktrees/` portal pane, none of a `.git/` listing's
+/// category rows (they stand in for git's real folders), and none onto one.
+#[test]
+fn an_auto_confirmed_rename_refuses_what_the_git_portal_serves() {
+    use crate::file_system::git;
+
+    git::wiring::set_virtual_portal_enabled(true);
+    for (from, to) in [
+        ("/r/.git/worktrees/feature", "/r/.git/worktrees/renamed"),
+        ("/r/.git/worktrees", "/r/.git/worktrees-old"),
+        ("/r/.git/staging", "/r/.git/branches"),
+    ] {
+        let err = file_ops::refuse_portal_rename(from, to).expect_err(from);
+        assert_eq!(err.code, INVALID_PARAMS, "{from}");
+    }
+    // The real entries under `.git/` are ordinary files a person renames too.
+    assert!(file_ops::refuse_portal_rename("/r/.git/description", "/r/.git/description.old").is_ok());
+    assert!(file_ops::refuse_portal_rename("/r/src/a.rs", "/r/src/b.rs").is_ok());
+}
+
 #[test]
 fn test_path_exists_validation() {
     // Test that Path::new().exists() works as expected for our validation

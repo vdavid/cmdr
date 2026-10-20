@@ -343,6 +343,7 @@ pub async fn execute_rename<R: Runtime>(app: &AppHandle<R>, params: &Value) -> T
             .parent()
             .ok_or_else(|| ToolError::internal(format!("Couldn't derive the parent of {from_path}")))?;
         let to_path = parent.join(&new_name).to_string_lossy().into_owned();
+        refuse_portal_rename(&from_path, &to_path)?;
         let volume_id = state.volume_id.clone();
         let reply = crate::commands::rename::rename_file_replying(
             from_path,
@@ -380,6 +381,22 @@ pub async fn execute_rename<R: Runtime>(app: &AppHandle<R>, params: &Value) -> T
         )
         .await
     }
+}
+
+/// Refuses an `autoConfirm` rename a person's F2 refuses: one whose source or
+/// target the `.git` portal serves. That's every row of a read-only portal pane
+/// (`.git/worktrees/`), and a `.git/` listing's category rows, which stand in for
+/// git's real `worktrees/` and `branches/` folders at the same path. The engine
+/// refuses these too; this answers first, in the agent's terms.
+pub(super) fn refuse_portal_rename(from: &str, to: &str) -> Result<(), ToolError> {
+    use crate::file_system::git::wiring::portal_serves;
+
+    if portal_serves(std::path::Path::new(from)) || portal_serves(std::path::Path::new(to)) {
+        return Err(ToolError::invalid_params(format!(
+            "Can't rename '{from}': it's in the read-only git portal (branches, tags, commits, stash, worktrees, and submodules are snapshots, and a person can't rename them either)"
+        )));
+    }
+    Ok(())
 }
 
 /// Resolve the single rename target to its `(current_name, path)`: the named item

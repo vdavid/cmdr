@@ -42,6 +42,8 @@ mod copy_snapshot_out_tests;
 #[cfg(test)]
 mod log_redaction_tests;
 #[cfg(test)]
+mod portal_rename_tests;
+#[cfg(test)]
 mod registry_routing_tests;
 #[cfg(test)]
 mod terminal_effects_tests;

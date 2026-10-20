@@ -157,6 +157,29 @@ describe('startRename', () => {
     expect(startRename).toHaveBeenCalledTimes(1)
   })
 
+  it("refuses a .git listing's worktrees row with the portal alert, though the pane is writable (#529)", () => {
+    // The row stands in for git's REAL `.git/worktrees/` folder at the same path.
+    const startRename = vi.fn()
+    const paneRef = buildPaneRef({ startRename, pathUnderCursor: '/left/repo/.git/worktrees' })
+    const access = buildAccess({ paneRefs: { left: paneRef }, volumes: [volume()], paths: { left: '/left/repo/.git' } })
+    const dialogs = buildDialogs()
+
+    create(access, dialogs).startRename()
+
+    expect(dialogs.showAlert.mock.calls[0]?.[0]).toBe('Read-only git portal')
+    expect(startRename).not.toHaveBeenCalled()
+  })
+
+  it('starts rename on a real entry under .git', () => {
+    const startRename = vi.fn()
+    const paneRef = buildPaneRef({ startRename, pathUnderCursor: '/left/repo/.git/description' })
+    const access = buildAccess({ paneRefs: { left: paneRef }, volumes: [volume()], paths: { left: '/left/repo/.git' } })
+
+    create(access, buildDialogs()).startRename()
+
+    expect(startRename).toHaveBeenCalledTimes(1)
+  })
+
   it('still refuses rename inside a zip that lives on a read-only volume', () => {
     // A writable-archive path doesn't override a read-only parent VolumeInfo: the
     // zip can't be rewritten in place on a read-only mount, so the volume refusal

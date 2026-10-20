@@ -330,3 +330,39 @@ async fn normalizing_renames_a_decomposed_name_to_its_composed_spelling_on_disk(
     );
     close(&session.session_id);
 }
+
+/// A repo's `.git/` lists git's real `worktrees/` folder as the portal's
+/// `worktrees` row (#529): Start refuses the batch as read-only, ❌ never renames
+/// git's own folder (which breaks every linked worktree).
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_batch_holding_a_dot_git_category_row_is_refused_as_read_only() {
+    let repo = TestDir::new("multi-rename-dot-git");
+    let dot_git = repo.join(".git");
+    std::fs::create_dir_all(dot_git.join("worktrees/feature")).expect("the worktree admin folder");
+    std::fs::write(dot_git.join("description"), b"x").expect("a real file beside it");
+    let listing = TestListing::new()
+        .volume("root")
+        .path(dot_git.clone())
+        .entries(list_directory_core(&dot_git, &crate::listing_host::backends::AppListings).expect("the dir lists"))
+        .insert(crate::listing_host::listings(), "multi-rename-dot-git");
+    crate::file_system::git::wiring::set_virtual_portal_enabled(true);
+    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let spec = MultiRenameSpec {
+        name_mask: "[N]-old".to_string(),
+        remove_diacritics: false,
+        ..strip_diacritics()
+    };
+    let preview = preview_session(&session.session_id, &spec).expect("a preview");
+    assert_eq!(preview.counts.ready, 2, "{preview:?}");
+
+    let outcome = apply(
+        Arc::new(CollectorEventSink::new()),
+        session.session_id.clone(),
+        preview.preview_id,
+    )
+    .await;
+
+    assert!(matches!(outcome, Err(MultiRenameError::ReadOnly)), "{outcome:?}");
+    assert_eq!(names_on_disk(&dot_git), vec!["description", "worktrees"]);
+    close(&session.session_id);
+}

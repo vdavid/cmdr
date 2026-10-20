@@ -659,3 +659,44 @@ describe('a superseded rename session may speak, never steer', () => {
     await landSave({ type: 'success', newName: 'notes.md' })
   })
 })
+
+describe('a row the .git portal serves never opens the editor (#529)', () => {
+  // A repo's `.git/` pane is writable, but its `worktrees` row stands in for git's
+  // REAL `.git/worktrees/` folder: renaming it breaks every linked worktree. Every
+  // activation (F2, click-to-rename, a chained step) comes through here.
+  const WORKTREES: Entry = { name: 'worktrees', path: '/repo/.git/worktrees', isDirectory: true }
+
+  it('refuses the worktrees row with the portal wording and sends nothing', () => {
+    const { rename, flow } = buildFlow(() => WORKTREES)
+
+    flow.startRename()
+
+    expect(rename.active).toBe(false)
+    expect(addToastSpy).toHaveBeenCalledWith('left', 'fileExplorer.readOnly.gitPortalMessage', { level: 'info' })
+    expect(checkPermissionSpy).not.toHaveBeenCalled()
+  })
+
+  it('refuses a row inside a read-only portal pane too', () => {
+    const { rename, flow } = buildFlow(() => ({
+      name: 'feature',
+      path: '/repo/.git/worktrees/feature',
+      isDirectory: true,
+    }))
+
+    flow.startRename()
+
+    expect(rename.active).toBe(false)
+  })
+
+  it('still opens on a real entry under .git', () => {
+    const { rename, flow } = buildFlow(() => ({
+      name: 'description',
+      path: '/repo/.git/description',
+      isDirectory: false,
+    }))
+
+    flow.startRename()
+
+    expect(rename.active).toBe(true)
+  })
+})
