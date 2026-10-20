@@ -12,8 +12,8 @@ The WebDAV backend: a `Volume` over one `reqwest` client with one account's cred
 - `transport.rs`: `WebdavClient`, PROPFIND, connect probe. `propfind.rs`: `multistatus` parsing. `urls.rs`: remote paths
   as percent-encoded URLs. `chunking.rs`: Nextcloud's chunked-upload URLs and plan.
 - `volume/`: `mod.rs` (the volume, `connect_webdav_volume`, `send`), `paths.rs`, `query.rs`, `streams.rs` (GET),
-  `writes.rs` (the PUT), `chunked_upload.rs`, `mutation.rs`, `copy.rs`, `scan.rs`, `reconnect.rs` (`http_session`
-  hooks), `volume_impl.rs`, `testing.rs` (fixtures, `testing` feature).
+  `writes.rs` (the PUT), `chunked_upload.rs`, `mutation.rs`, `delete_aside.rs`, `copy.rs`, `scan.rs`, `reconnect.rs`
+  (`http_session` hooks), `volume_impl.rs`, `testing.rs` (fixtures, `testing` feature).
 
 ## Must-knows
 
@@ -46,9 +46,9 @@ The WebDAV backend: a `Volume` over one `reqwest` client with one account's cred
   non-standard properties; `DETAILS.md` § "What a real server answers" sets the bar for a third.
 - ❗ **Dates beyond the mtime only where the connect probe saw `nc:creation_time`**; ❌ never a PROPPATCH of dates on
   `mod_dav`, which keeps them as dead properties. `DETAILS.md` § "Dates".
-- ❗ **DELETE and a forced MOVE are recursive; the trait's verbs aren't.** Both refuse a held collection, ❌ never by
-  `If` ETag (`DETAILS.md` § "A folder's DELETE").
+- ❗ **DELETE and a forced MOVE are recursive; the trait's verbs aren't.** Both refuse a held collection; DELETE moves
+  it aside, ❌ no ETag (`DETAILS.md` § "A folder's DELETE").
 - ❌ Never `root_anchored`, never a stat per child in a scan, never `authoritative_listing` (coverage is `None`).
 - Digest-only servers are a typed `AuthMethodUnsupported`, by the `WWW-Authenticate` scheme token.
 
-Decisions and the full tables: `DETAILS.md`. Read it before any non-trivial work here.
+Decisions and full tables: `DETAILS.md`; read it before non-trivial work here.

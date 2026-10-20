@@ -474,8 +474,38 @@ stays up for it (`apps/desktop/src/lib/servers/DETAILS.md`).
 is deleted first). The trait's verbs are one node (`Volume::delete`) and never a held folder (`Volume::rename`), so both
 refuse with `ENOTEMPTY` when a `Depth: 1` PROPFIND counts anything under the target (`mutation.rs::refuse_if_held`).
 
-The window: a child landing between the PROPFIND and the verb (one round trip, 20–150 ms on Nextcloud) goes with the
-folder, and the call reports success. Neither protocol guard closes it on the fixture servers:
+That count alone leaves a window: a child landing between the PROPFIND and the `DELETE` (one round trip, 20–150 ms on
+Nextcloud) would go with the folder, and the call would report success. So a folder the count found empty is deleted by
+moving it aside first (`delete_aside.rs`, the same-volume move's source sweep included, via `delete_directory`):
+
+1. `MOVE` it to `<name>.cmdr-deleting-<uuid>` beside it (`Overwrite: F`). Nobody else knows that name, so nothing new
+   can land in it; a writer aiming at the old path gets a 409 instead of losing a file.
+2. Count it there (`Depth: 1`). Empty: `DELETE` it, which can no longer race. A 404 there counts as done.
+3. Held, or the `DELETE` refused: `MOVE` it back (`Overwrite: F`) and answer `ENOTEMPTY` (or the refusal). When the
+   original name was taken meanwhile, it goes to `<name> (kept by Cmdr)` (then `… 2`, up to 20) and the error says
+   where; when even that fails, the error names the aside. Nothing is lost in any branch.
+4. A server that refuses the first `MOVE` (403, 405, 501) gets the plain `DELETE`, with the window above still open
+   there. A Nextcloud share's root is the case in mind; its `MOVE` renames the mount point, so it likely takes the main
+   path (not verified on a share).
+
+Why it holds up:
+
+- **It runs on a task of its own.** Once the folder is aside, only finishing puts it right, so a caller that stops
+  waiting (the silence watch's cut, a dropped future) doesn't strand it. Each request keeps its `MUTATION_BUDGET`.
+- **The aside hides by ownership** (`StagingTemp::adopt`, `cmdr_fs::staging`), so a pane doesn't flash it while the
+  delete holds it, and a leftover nobody holds shows under a name that still says which folder it was.
+- **A crash between the steps leaves an EMPTY aside at worst**, and the next listing of its parent deletes it
+  (`tidied_leftover`). Only an empty one with the strict name (`is_deleting_aside_name`), never one in flight here: a
+  held leftover is a folder whose move back didn't happen. Another device's Cmdr mid-delete can lose that race to the
+  tidy; its delete then reports the 404 of a folder that's gone, which is what it was doing anyway.
+- **Files are still deleted one by one under their real names first**, so Nextcloud's trash only ever receives the empty
+  aside, as `<name>.cmdr-deleting-<uuid>` (verified on Nextcloud 35.0.0 `webdav-fixture-nextcloud`, trashbin PROPFIND,
+  2026-10-20).
+
+Cells: `volume/delete_aside_test.rs` scripts the race on the fake server (`FakeDav::after`); its
+`assert_delete_moves_aside_on_a_real_server` runs on Apache (`integration_test.rs`) and Nextcloud (`nextcloud_test.rs`).
+
+Why not a protocol guard: neither closes the window on the fixture servers.
 
 - **An `If` ETag precondition**: `mod_dav` gives a collection no `getetag` at all, and sabre/dav (Nextcloud) answers 412
   to ANY etag condition on a collection, its current one included, though the etag itself does change when a child lands
@@ -484,10 +514,9 @@ folder, and the call reports success. Neither protocol guard closes it on the fi
   the lock and still takes the foreign `PUT` (201), then deletes it with the folder.
 
 (verified on httpd 2.4.69 `webdav-fixture-apache` and Nextcloud 35.0.0 `webdav-fixture-nextcloud`, by hand with `curl`,
-2026-10-20.) What would close it is moving the folder aside first (`MOVE` to a staging name, `Overwrite: F`), counting
-it there, and deleting or moving it back; a writer aiming at the old path then gets a 409 instead of losing a file. It
-costs a request per folder and has open questions (Nextcloud share mount points, the trash showing the staging name), so
-it waits on a decision: GitHub issue #521.
+2026-10-20.)
+
+The forced `MOVE` in `rename` still only counts first: the window stays open there, for one replaced EMPTY folder.
 
 ## Which side a test lives on
 

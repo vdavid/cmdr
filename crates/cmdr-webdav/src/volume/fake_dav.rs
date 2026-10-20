@@ -15,9 +15,16 @@
 //!
 //! [`Mode`] switches what it does right now: hold listings, ignore the silence
 //! watch's probes, or go silent altogether.
+//!
+//! Under `/dav/tree/` it is a small writable server instead ([`Tree`]):
+//! PROPFIND, MKCOL, PUT, DELETE (recursive, as the protocol's is), and MOVE
+//! with `Overwrite`. A cell scripts ANOTHER client into it with
+//! [`FakeDav::after`]: something that lands the moment a given request has been
+//! answered, which is the race a Docker server can't be timed into.
 
-use std::sync::Arc;
+use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use cmdr_fs::volume::host::VolumeHost;
@@ -66,6 +73,7 @@ pub(super) struct FakeDav {
     port: u16,
     mode: watch::Sender<Mode>,
     probes: Arc<AtomicUsize>,
+    tree: Arc<Mutex<Tree>>,
 }
 
 impl FakeDav {
@@ -76,17 +84,72 @@ impl FakeDav {
         let port = listener.local_addr().expect("the fake server's address").port();
         let (mode, _) = watch::channel(SERVING);
         let probes = Arc::new(AtomicUsize::new(0));
-        let (serving, answered) = (mode.clone(), Arc::clone(&probes));
+        let tree = Arc::new(Mutex::new(Tree::default()));
+        let (serving, answered, shared) = (mode.clone(), Arc::clone(&probes), Arc::clone(&tree));
         tokio::spawn(async move {
             while let Ok((socket, _)) = listener.accept().await {
-                tokio::spawn(answer(socket, serving.subscribe(), Arc::clone(&answered)));
+                let served = Served {
+                    mode: serving.subscribe(),
+                    probes: Arc::clone(&answered),
+                    tree: Arc::clone(&shared),
+                };
+                tokio::spawn(answer(socket, served));
             }
         });
-        Self { port, mode, probes }
+        Self {
+            port,
+            mode,
+            probes,
+            tree,
+        }
     }
 
     pub(super) fn set(&self, mode: Mode) {
         self.mode.send_replace(mode);
+    }
+
+    /// Puts a node at `rel` under `/dav/tree/`, a collection when `collection`.
+    pub(super) fn put_node(&self, rel: &str, collection: bool) {
+        self.tree().nodes.insert(tree_key(rel), collection);
+    }
+
+    /// Every node under `/dav/tree/`, as `rel` paths, collections with a
+    /// trailing slash.
+    pub(super) fn nodes(&self) -> Vec<String> {
+        self.tree()
+            .nodes
+            .iter()
+            .filter_map(|(key, &collection)| {
+                let rel = key.strip_prefix(TREE)?.strip_prefix('/')?;
+                Some(if collection { format!("{rel}/") } else { rel.to_string() })
+            })
+            .collect()
+    }
+
+    /// Another client's doing: right after the server answers the next
+    /// `method` at `rel`, each of `lands` appears (`(rel, collection)`). Once.
+    pub(super) fn after(&self, method: &str, rel: &str, lands: &[(&str, bool)]) {
+        let lands = lands
+            .iter()
+            .map(|(path, collection)| (tree_key(path), *collection))
+            .collect();
+        self.tree().after.push(Landing {
+            method: method.to_string(),
+            at: tree_key(rel),
+            lands,
+        });
+    }
+
+    /// Every MOVE under `/dav/tree/` is answered `status` from now on, the way
+    /// a server that won't rename a folder answers.
+    pub(super) fn refuse_moves(&self, status: &'static str) {
+        self.tree().refuse_moves = Some(status);
+    }
+
+    fn tree(&self) -> std::sync::MutexGuard<'_, Tree> {
+        self.tree
+            .lock()
+            .expect("fake tree poisoned: a cell panicked holding it")
     }
 
     pub(super) fn probes_answered(&self) -> usize {
@@ -136,10 +199,20 @@ struct Request {
     path: String,
     depth: Option<String>,
     range_start: Option<usize>,
+    destination: Option<String>,
+    overwrite: Option<String>,
+}
+
+/// What one connection's handler shares with the server.
+struct Served {
+    mode: watch::Receiver<Mode>,
+    probes: Arc<AtomicUsize>,
+    tree: Arc<Mutex<Tree>>,
 }
 
 /// One connection, one request, `Connection: close`.
-async fn answer(mut socket: TcpStream, mut mode: watch::Receiver<Mode>, probes: Arc<AtomicUsize>) {
+async fn answer(mut socket: TcpStream, served: Served) {
+    let Served { mut mode, probes, tree } = served;
     let Some(request) = read_request(&mut socket).await else {
         return;
     };
@@ -147,6 +220,14 @@ async fn answer(mut socket: TcpStream, mut mode: watch::Receiver<Mode>, probes: 
     if now.silent || (request.method == "OPTIONS" && !now.answer_probes) {
         // Hold the socket open and say nothing, for as long as the client waits.
         std::future::pending::<()>().await;
+    }
+    if decoded(&request.path).starts_with(TREE) {
+        let (status, body) = tree
+            .lock()
+            .expect("fake tree poisoned: a cell panicked holding it")
+            .answer(&request);
+        respond(&mut socket, status, &body).await;
+        return;
     }
     match (request.method.as_str(), request.depth.as_deref()) {
         ("OPTIONS", _) => {
@@ -233,6 +314,8 @@ async fn read_request(socket: &mut TcpStream) -> Option<Request> {
         path,
         depth: header("depth"),
         range_start,
+        destination: header("destination"),
+        overwrite: header("overwrite"),
     })
 }
 
@@ -256,5 +339,166 @@ fn multistatus(with_children: bool) -> String {
         "<?xml version=\"1.0\" encoding=\"utf-8\"?><D:multistatus xmlns:D=\"DAV:\">\
          <D:response><D:href>/dav/</D:href><D:propstat><D:prop><D:resourcetype><D:collection/></D:resourcetype>\
          </D:prop><D:status>HTTP/1.1 200 OK</D:status></D:propstat></D:response>{child}</D:multistatus>"
+    )
+}
+
+/// Where the writable tree lives, decoded and with no trailing slash.
+const TREE: &str = "/dav/tree";
+
+/// `rel` under the tree, as a node key.
+fn tree_key(rel: &str) -> String {
+    format!("{TREE}/{}", rel.trim_matches('/'))
+}
+
+/// A request path as a node key: percent-decoded, trailing slash dropped.
+fn decoded(path: &str) -> String {
+    percent_encoding::percent_decode_str(path)
+        .decode_utf8_lossy()
+        .trim_end_matches('/')
+        .to_string()
+}
+
+/// The writable tree: what's on the "disk", and what another client does to it.
+struct Tree {
+    /// Every node by key, `true` for a collection.
+    nodes: BTreeMap<String, bool>,
+    /// What lands after which request, each once.
+    after: Vec<Landing>,
+    /// What every MOVE is answered instead, when set.
+    refuse_moves: Option<&'static str>,
+}
+
+/// Once the next `method` at the node `at` is answered, `lands` appear
+/// (`(key, collection)`).
+struct Landing {
+    method: String,
+    at: String,
+    lands: Vec<(String, bool)>,
+}
+
+impl Default for Tree {
+    fn default() -> Self {
+        Self {
+            nodes: BTreeMap::from([(TREE.to_string(), true)]),
+            after: Vec::new(),
+            refuse_moves: None,
+        }
+    }
+}
+
+impl Tree {
+    /// Answers `request`, then lets whatever was scripted to land after it land.
+    fn answer(&mut self, request: &Request) -> (&'static str, String) {
+        let at = decoded(&request.path);
+        let answered = match request.method.as_str() {
+            "PROPFIND" => self.propfind(&at, request.depth.as_deref() == Some("1")),
+            "MKCOL" if self.nodes.contains_key(&at) => ("405 Method Not Allowed", String::new()),
+            "MKCOL" | "PUT" if !self.nodes.contains_key(parent(&at)) => ("409 Conflict", String::new()),
+            "MKCOL" | "PUT" => {
+                self.nodes.insert(at.clone(), request.method == "MKCOL");
+                ("201 Created", String::new())
+            }
+            "DELETE" if self.take(&at).is_empty() => ("404 Not Found", String::new()),
+            "DELETE" => ("204 No Content", String::new()),
+            "MOVE" => (self.move_node(&at, request), String::new()),
+            _ => ("405 Method Not Allowed", String::new()),
+        };
+        if let Some(index) = self
+            .after
+            .iter()
+            .position(|landing| landing.method == request.method && landing.at == at)
+        {
+            self.nodes.extend(self.after.remove(index).lands);
+        }
+        answered
+    }
+
+    fn propfind(&self, at: &str, with_children: bool) -> (&'static str, String) {
+        let Some(&collection) = self.nodes.get(at) else {
+            return ("404 Not Found", String::new());
+        };
+        let mut rows = vec![row(at, collection)];
+        if collection && with_children {
+            let inside = format!("{at}/");
+            rows.extend(
+                self.nodes
+                    .iter()
+                    .filter(|(key, _)| key.strip_prefix(&inside).is_some_and(|rest| !rest.contains('/')))
+                    .map(|(key, &collection)| row(key, collection)),
+            );
+        }
+        let body = format!(
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?><D:multistatus xmlns:D=\"DAV:\">{}</D:multistatus>",
+            rows.concat()
+        );
+        ("207 Multi-Status", body)
+    }
+
+    /// Removes `at` and everything under it, and hands them back.
+    fn take(&mut self, at: &str) -> Vec<(String, bool)> {
+        let inside = format!("{at}/");
+        let keys: Vec<String> = self
+            .nodes
+            .keys()
+            .filter(|key| *key == at || key.starts_with(&inside))
+            .cloned()
+            .collect();
+        keys.into_iter()
+            .filter_map(|key| self.nodes.remove(&key).map(|collection| (key, collection)))
+            .collect()
+    }
+
+    fn move_node(&mut self, at: &str, request: &Request) -> &'static str {
+        if let Some(status) = self.refuse_moves {
+            return status;
+        }
+        let Some(to) = request
+            .destination
+            .as_deref()
+            .and_then(|destination| Url::parse(destination).ok())
+            .map(|url| decoded(url.path()))
+        else {
+            return "400 Bad Request";
+        };
+        if !self.nodes.contains_key(at) {
+            return "404 Not Found";
+        }
+        if !self.nodes.contains_key(parent(&to)) {
+            return "409 Conflict";
+        }
+        let replaced = self.nodes.contains_key(&to);
+        if replaced {
+            if request.overwrite.as_deref() == Some("F") {
+                return "412 Precondition Failed";
+            }
+            self.take(&to);
+        }
+        for (key, collection) in self.take(at) {
+            self.nodes.insert(format!("{to}{}", &key[at.len()..]), collection);
+        }
+        if replaced { "204 No Content" } else { "201 Created" }
+    }
+}
+
+fn parent(key: &str) -> &str {
+    key.rsplit_once('/').map_or("", |(parent, _)| parent)
+}
+
+/// One `response` element for the node at `key`, its href percent-encoded the
+/// way a server sends it.
+fn row(key: &str, collection: bool) -> String {
+    let href: Vec<String> = key
+        .split('/')
+        .map(|segment| percent_encoding::utf8_percent_encode(segment, percent_encoding::NON_ALPHANUMERIC).to_string())
+        .collect();
+    let (slash, kind) = if collection {
+        ("/", "<D:resourcetype><D:collection/></D:resourcetype>")
+    } else {
+        ("", "<D:resourcetype/><D:getcontentlength>0</D:getcontentlength>")
+    };
+    format!(
+        "<D:response><D:href>{}{slash}</D:href><D:propstat><D:prop>{kind}</D:prop>\
+         <D:status>HTTP/1.1 200 OK</D:status></D:propstat></D:response>",
+        href.join("/")
     )
 }

@@ -33,6 +33,7 @@ use crate::transport::WebdavClient;
 
 mod chunked_upload;
 mod copy;
+mod delete_aside;
 mod mapping;
 mod mutation;
 mod paths;
@@ -327,6 +328,8 @@ mod cancel_test;
 mod conformance_test;
 #[cfg(test)]
 mod connection_drop_test;
+#[cfg(test)]
+mod delete_aside_test;
 #[cfg(test)]
 mod integration_test;
 #[cfg(test)]

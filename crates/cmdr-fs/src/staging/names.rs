@@ -37,7 +37,7 @@ use std::path::{Path, PathBuf};
 
 use unicode_segmentation::UnicodeSegmentation;
 
-use super::{STAGING_TEMP_MARKER, UUID_TEXT_LEN};
+use super::{STAGING_DELETING_MARKER, STAGING_TEMP_MARKER, UUID_TEXT_LEN};
 
 /// The longest scratch file name Cmdr creates, in UTF-8 bytes: eCryptfs's
 /// 143-byte name limit (Synology encrypted shares), the strictest a write meets.
@@ -54,6 +54,12 @@ pub const MAX_SCRATCH_NAME_BYTES: usize = 143;
 /// and registers it.
 pub fn temp_sibling_name(file_name: &str) -> String {
     scratch_name(file_name, STAGING_TEMP_MARKER, uuid::Uuid::new_v4())
+}
+
+/// The name a delete moves the folder `folder_name` aside to, with a fresh
+/// UUID: `album.cmdr-deleting-<uuid>`, shortened the same way.
+pub fn deleting_sibling_name(folder_name: &str) -> String {
+    scratch_name(folder_name, STAGING_DELETING_MARKER, uuid::Uuid::new_v4())
 }
 
 /// [`temp_sibling_name`] as a path in `final_path`'s directory.

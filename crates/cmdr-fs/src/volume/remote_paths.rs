@@ -40,6 +40,7 @@ use super::{sftp_volume_id, webdav_volume_id};
 ///
 /// Built once per volume and held by it, so the translation costs no allocation
 /// per call beyond the answer itself.
+#[derive(Clone)]
 pub struct RemoteRoot {
     /// `sftp://<user>@<host>:<port>`: what every app path on this volume starts
     /// with. From [`sftp_app_root`] or one of its twins, ❌ never

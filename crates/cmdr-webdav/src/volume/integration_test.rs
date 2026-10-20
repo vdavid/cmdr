@@ -746,6 +746,14 @@ async fn delete_refuses_a_directory_that_still_holds_something() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
+async fn a_folder_delete_moves_it_aside_first_on_mod_dav() {
+    let (volume, dir) = stock_with_scratch().await;
+    super::delete_aside_test::assert_delete_moves_aside_on_a_real_server(&volume, &dir).await;
+    clean(&volume, &dir).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
 async fn copy_within_uses_the_servers_copy_verb() {
     // ❗ `NotSupported` here is a FAIL, not a fallback: Apache implements `COPY`,
     // and a same-server copy that streams every byte through the client is the

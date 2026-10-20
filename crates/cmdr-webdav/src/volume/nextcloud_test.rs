@@ -349,6 +349,16 @@ async fn a_file_in_the_way_of_a_new_folder_is_named_on_sabre_dav() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[ignore = "needs the Nextcloud WebDAV fixture: apps/desktop/test/webdav-servers/start.sh nextcloud (webdav-fixture-nextcloud)"]
+async fn a_folder_delete_moves_it_aside_first_on_sabre_dav() {
+    // sabre/dav is the server the ETag and LOCK guards failed on, and the one
+    // with a trash: the folder it receives is the empty aside.
+    let (volume, dir) = nextcloud_with_scratch().await;
+    super::delete_aside_test::assert_delete_moves_aside_on_a_real_server(&volume, &dir).await;
+    clean(&volume, &dir).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the Nextcloud WebDAV fixture: apps/desktop/test/webdav-servers/start.sh nextcloud (webdav-fixture-nextcloud)"]
 async fn a_put_with_no_content_length_is_accepted_rather_than_refused() {
     // ❗ THE reason `writes.rs` sends `Content-Length` from `size`: sabre/dav
     // (Nextcloud, ownCloud) was believed to answer 411 to a body of unknown

@@ -5,6 +5,7 @@
 //! a stat-then-write would be a TOCTOU window.
 
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use cmdr_fs::entry::FileEntry;
@@ -117,19 +118,24 @@ impl WebdavVolume {
         Ok(made.leaf)
     }
 
-    /// One DELETE. ❗ A collection that still holds something is refused with
-    /// `ENOTEMPTY` before the request goes out, because the protocol's DELETE is
-    /// recursive and the trait's is not.
+    /// One DELETE for a file. ❗ A collection that still holds something is
+    /// refused with `ENOTEMPTY` before anything changes, because the protocol's
+    /// DELETE is recursive and the trait's is not, and an empty one is moved
+    /// aside before its DELETE so nothing can land in it on the way
+    /// (`delete_aside.rs`).
     pub(super) async fn delete_impl(&self, path: &Path) -> Result<(), VolumeError> {
         let remote = self.to_remote_path(path)?;
         let client = self.clone_client().await?;
         let listing = self.propfind(&client, &remote, false, Depth::One).await?;
         refuse_if_held(&listing, &remote)?;
-        let is_collection = listing.first().is_some_and(|p| p.is_collection);
-        let request = client
-            .request(Method::DELETE, client.url_for(&remote, is_collection))
-            .timeout(MUTATION_BUDGET);
-        self.send(&client, request, &remote, Attempted::Reaching).await?;
+        if listing.first().is_some_and(|p| p.is_collection) {
+            self.delete_collection(Arc::clone(&client), &remote).await?;
+        } else {
+            let request = client
+                .request(Method::DELETE, client.url_for(&remote, false))
+                .timeout(MUTATION_BUDGET);
+            self.send(&client, request, &remote, Attempted::Reaching).await?;
+        }
         patch_deleted(self, path).await;
         Ok(())
     }
@@ -139,8 +145,9 @@ impl WebdavVolume {
     ///
     /// ❗ A forced MOVE deletes a destination collection, tree and all, before
     /// it moves anything (RFC 4918 § 9.9.3), so one that holds something is
-    /// refused with `ENOTEMPTY` first (`Volume::rename`). Judged like `delete`'s,
-    /// with the same window: a child landing between the two requests goes too.
+    /// refused with `ENOTEMPTY` first (`Volume::rename`). Judged by the same
+    /// count as `delete`'s, but with the window `delete` closes still open: a
+    /// child landing between the two requests goes too.
     pub(super) async fn rename_impl(&self, from: &Path, to: &Path, force: bool) -> Result<(), VolumeError> {
         let remote_from = self.to_remote_path(from)?;
         let remote_to = self.to_remote_path(to)?;
@@ -185,13 +192,18 @@ fn refuse_if_held(listing: &[PropfindEntry], remote: &str) -> Result<(), VolumeE
     if listing.len() <= 1 {
         return Ok(());
     }
-    Err(VolumeError::IoError {
+    Err(still_holds(remote, listing.len() - 1))
+}
+
+/// The `ENOTEMPTY` a recursive verb is refused with, `held` entries counted.
+pub(super) fn still_holds(remote: &str, held: usize) -> VolumeError {
+    VolumeError::IoError {
         message: format!(
             "{remote} still holds {}",
-            pluralize_with((listing.len() - 1) as u64, "entry", "entries")
+            pluralize_with(held as u64, "entry", "entries")
         ),
         raw_os_error: Some(ENOTEMPTY),
-    })
+    }
 }
 
 /// What the shared `mkdir -p` walk needs from this backend: MKCOL, and this

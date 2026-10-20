@@ -74,6 +74,10 @@ impl WebdavVolume {
             if name.is_empty() {
                 continue;
             }
+            // A delete's empty leftover aside goes the moment a listing sees it.
+            if prop.is_collection && self.tidied_leftover(&client, &child_of(&remote, name), name).await {
+                continue;
+            }
             // An entry a misbehaving server names off the root (`..`, say) is
             // dropped, ❌ never listed under a path this volume would refuse.
             let Some(app_path) = self.root.to_app_path(&child_of(&remote, name)) else {

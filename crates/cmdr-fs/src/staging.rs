@@ -19,6 +19,10 @@
 //! rule, but a sweep only ever `remove_dir`s it — the tree inside can be the
 //! user's only copy.
 //!
+//! And one more folder shape, [`STAGING_DELETING_MARKER`]
+//! (`album.cmdr-deleting-<uuid>`): a folder a WebDAV delete moved aside to count
+//! it where nothing new can land, held by the same mint while it's there.
+//!
 //! The two markers are infixes, not prefixes: the temp for `photo.jpg` is
 //! `photo.jpg.cmdr-tmp-<uuid>`, keeping the original name legible in a crash
 //! leftover. A leading dot would have hidden them from the dotfile filter for
@@ -56,7 +60,7 @@
 //! stage their saves too (`file.txt.sb-1e64c894-…`), so a listing has two kinds
 //! of other people's scratch to deal with.
 //!
-//! **Cmdr's own** (`.cmdr-tmp-*`, `.cmdr-temp-*`, `.cmdr-staging-*`) hides by
+//! **Cmdr's own** (`.cmdr-tmp-*`, `.cmdr-temp-*`, `.cmdr-staging-*`, `.cmdr-deleting-*`) hides by
 //! OWNERSHIP. One a running operation put there is noise that'll be gone in
 //! moments; one nobody owns is a LEFTOVER from an interrupted transfer, and
 //! hiding that would be lying about what's on disk — and about a Cmdr bug worth
@@ -86,7 +90,9 @@ use crate::ignore_poison::IgnorePoison;
 
 mod names;
 
-pub use names::{MAX_SCRATCH_NAME_BYTES, temp_sibling_name, temp_sibling_path, temp_sibling_prefix};
+pub use names::{
+    MAX_SCRATCH_NAME_BYTES, deleting_sibling_name, temp_sibling_name, temp_sibling_path, temp_sibling_prefix,
+};
 
 /// Marks a file holding bytes on their way IN: the staging sibling a write
 /// streams into before the rename that gives it its real name.
@@ -103,6 +109,12 @@ pub const STAGING_ASIDE_MARKER: &str = ".cmdr-temp-";
 /// A prefix, not an infix like the two markers above: the folder carries no
 /// user-chosen name to keep legible, only the operation's own id.
 pub const STAGING_DIR_PREFIX: &str = ".cmdr-staging-";
+
+/// Marks a FOLDER a delete moved aside to count it where nobody else can write,
+/// before deleting it or moving it back (`crates/cmdr-webdav/DETAILS.md`
+/// § "A folder's DELETE"). An infix like the file markers, so a leftover still
+/// says which folder it was: `album.cmdr-deleting-<uuid>`.
+pub const STAGING_DELETING_MARKER: &str = ".cmdr-deleting-";
 
 /// Whether `name` is one of Cmdr's scratch files.
 ///
@@ -131,19 +143,30 @@ pub fn is_staging_dir_name(name: &str) -> bool {
         .is_some_and(|id| id.len() == UUID_TEXT_LEN && uuid::Uuid::parse_str(id).is_ok())
 }
 
+/// Whether `name` is a folder a delete moved aside ([`STAGING_DELETING_MARKER`]).
+///
+/// Strict like [`is_staging_dir_name`], for the same reason: the tidy that acts
+/// on one deletes it. So the name has to END in the marker plus a hyphenated
+/// UUID; whatever stands in front is the original folder's name.
+pub fn is_deleting_aside_name(name: &str) -> bool {
+    name.rsplit_once(STAGING_DELETING_MARKER)
+        .is_some_and(|(_, id)| id.len() == UUID_TEXT_LEN && uuid::Uuid::parse_str(id).is_ok())
+}
+
 /// The length of a hyphenated UUID, which is what `Uuid::to_string` writes, the
 /// only form [`is_staging_dir_name`] accepts, and the room every scratch file
 /// name keeps for its unique suffix (`staging/names.rs`).
 const UUID_TEXT_LEN: usize = 36;
 
 /// Whether `name` is scratch Cmdr itself left there, of any shape: a staged
-/// write, a safe-overwrite aside, or a move's staging directory.
+/// write, a safe-overwrite aside, a move's staging directory, or a folder a
+/// delete moved aside.
 ///
 /// The question the listing layer asks. ❌ Never the question a SWEEP asks: a
 /// sweep acts per kind, under that kind's own rules, and needs the strict test
 /// for the kind it holds a record for (`cmdr_operations::in_flight_sweep`).
 pub fn is_cmdr_scratch_name(name: &str) -> bool {
-    is_staging_temp_name(name) || is_staging_dir_name(name)
+    is_staging_temp_name(name) || is_staging_dir_name(name) || is_deleting_aside_name(name)
 }
 
 /// Who a registration belongs to: `Some` weak handle to the minting operation's
@@ -252,8 +275,8 @@ impl Drop for StagingTemp {
     }
 }
 
-/// Whether `name` is scratch a LIVE operation currently owns, of any of the
-/// three shapes.
+/// Whether `name` is scratch a LIVE operation currently owns, of any shape
+/// [`is_cmdr_scratch_name`] knows.
 ///
 /// `false` for a leftover nobody owns: that's a real file the user should see
 /// and be able to delete. An ownerless claim (`None`) counts as live; see the
@@ -499,5 +522,25 @@ mod tests {
         assert!(!is_staging_temp_name(&dir), "got {dir}");
         assert!(!is_staging_dir_name("photo.jpg.cmdr-tmp-3f2a"));
         assert!(!is_cmdr_scratch_name("photo.jpg"));
+    }
+
+    /// A tidy deletes an empty one of these, so a folder a person named to look
+    /// like ours must not be one.
+    #[test]
+    fn a_deleting_aside_is_recognized_strictly() {
+        let name = deleting_sibling_name("album");
+        assert!(name.starts_with("album.cmdr-deleting-"), "got {name}");
+        assert!(
+            is_deleting_aside_name(&name) && is_cmdr_scratch_name(&name),
+            "got {name}"
+        );
+        let real = uuid::Uuid::new_v4();
+        for impostor in [
+            "album.cmdr-deleting-notes".to_string(),
+            format!("album.cmdr-deleting-{real}x"),
+            format!("album.cmdr-deleting-{}", &real.to_string()[1..]),
+        ] {
+            assert!(!is_deleting_aside_name(&impostor), "got {impostor}");
+        }
     }
 }
