@@ -27,10 +27,24 @@ pub(super) fn directory_entry_to_file_entry(
         format!("{}/{}", parent_path, entry.name)
     };
 
-    let mut fe = FileEntry::new(entry.name.clone(), path, entry.is_directory, false);
+    // `is_link` is mount points and symlinks (name surrogates) only: a dedup
+    // file or cloud placeholder carries the reparse bit too, and as a "link" a
+    // delete would refuse its folder and a copy would skip its contents.
+    let mut fe = FileEntry::new(entry.name.clone(), path, entry.is_directory, entry.is_link());
     fe.size = if entry.is_directory { None } else { Some(entry.size) };
     fe.modified_at = filetime_to_unix_secs(entry.modified);
     fe.created_at = filetime_to_unix_secs(entry.created);
+    fe
+}
+
+/// Converts a `stat`'s `smb2::FileInfo` to a `FileEntry` named `name` at the
+/// display path `path`. smb2's `stat` describes a link itself, never its
+/// target, so a link reads as one, the answer `Volume::entry_kind` needs.
+pub(super) fn file_info_to_file_entry(info: &smb2::client::tree::FileInfo, name: String, path: String) -> FileEntry {
+    let mut fe = FileEntry::new(name, path, info.is_directory, info.is_link());
+    fe.size = if info.is_directory { None } else { Some(info.size) };
+    fe.modified_at = filetime_to_unix_secs(info.modified);
+    fe.created_at = filetime_to_unix_secs(info.created);
     fe
 }
 

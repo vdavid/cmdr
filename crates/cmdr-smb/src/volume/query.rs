@@ -6,7 +6,7 @@
 //! [`SmbVolume::handle_smb_result`]. The `Volume` methods in `volume_impl.rs`
 //! are thin wrappers over these.
 
-use super::mapping::{directory_entry_to_file_entry, filetime_to_unix_secs, fs_info_to_space_info};
+use super::mapping::{directory_entry_to_file_entry, file_info_to_file_entry, fs_info_to_space_info};
 use super::session::SessionLease;
 use super::{SmbVolume, slow_calls};
 use cmdr_fs::entry::FileEntry;
@@ -208,11 +208,7 @@ impl SmbVolume {
             .unwrap_or_else(|| smb_path.clone());
         let display_path = self.to_display_path(&smb_path);
 
-        let mut fe = FileEntry::new(name, display_path, info.is_directory, false);
-        fe.size = if info.is_directory { None } else { Some(info.size) };
-        fe.modified_at = filetime_to_unix_secs(info.modified);
-        fe.created_at = filetime_to_unix_secs(info.created);
-        Ok(fe)
+        Ok(file_info_to_file_entry(&info, name, display_path))
     }
 
     /// Whether `path` is there, as a plain yes/no: anything that can't be asked

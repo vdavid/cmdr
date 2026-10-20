@@ -260,10 +260,12 @@ impl BackendKind {
     #[must_use]
     pub fn has_symlinks(self) -> bool {
         match self {
-            Self::Local | Self::Sftp | Self::Adb | Self::Archive => true,
-            // SMB reports no links (a reparse point reads as what it is), and
+            // SMB: a Windows share's junctions and symlinks, and on Samba 4.23
+            // a Unix symlink a `stat` reports (`crates/cmdr-smb/DETAILS.md`
+            // § "Junctions and symlinks").
+            Self::Local | Self::Sftp | Self::Adb | Self::Archive | Self::Smb => true,
             // WebDAV, S3, MTP, and the `.git` trees have none.
-            Self::Smb | Self::Webdav | Self::S3 | Self::Mtp | Self::GitPortal => false,
+            Self::Webdav | Self::S3 | Self::Mtp | Self::GitPortal => false,
         }
     }
 }

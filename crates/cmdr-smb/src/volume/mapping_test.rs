@@ -4,6 +4,7 @@
 //! protocol handed us.
 
 use super::*;
+use cmdr_fs::volume::EntryKind;
 
 #[test]
 fn filetime_to_unix_secs_known_date() {
@@ -49,12 +50,74 @@ fn directory_entry_to_file_entry_directory() {
     assert_eq!(fe.name, "Photos");
     assert_eq!(fe.path, "/Volumes/Share/Photos");
     assert!(fe.is_directory);
-    // smb2 reports no links, so a share's folder is never one, and the index walk's
-    // "never descend a link" rule (`Volume::index_walk`) never skips a share's folder.
+    // An untagged folder is a real one, so every walk descends it.
     assert!(!fe.is_symlink);
     assert_eq!(fe.size, None);
     assert_eq!(fe.modified_at, None);
     assert_eq!(fe.icon_id, "dir");
+}
+
+/// A listed folder carrying `reparse_tag`, with the `REPARSE_POINT` bit beside it.
+fn tagged_folder(tag: smb2::ReparseTag) -> smb2::client::tree::DirectoryEntry {
+    let mut entry = smb2::client::tree::DirectoryEntry::default();
+    entry.name = "Games".to_string();
+    entry.is_directory = true;
+    entry.attributes = FileAttributes::new(FileAttributes::DIRECTORY | FileAttributes::REPARSE_POINT);
+    entry.reparse_tag = Some(tag);
+    entry
+}
+
+#[test]
+fn a_junction_maps_to_a_link_so_no_walk_descends_into_its_target() {
+    // A junction lists as a folder; a delete that walked into it deleted the
+    // folder it points to, outside the selection (#516).
+    let fe = directory_entry_to_file_entry(&tagged_folder(smb2::ReparseTag::MOUNT_POINT), "/Volumes/Share");
+    assert!(fe.is_symlink);
+    assert!(
+        fe.is_directory,
+        "a link to a folder still lists as one, like a local symlink"
+    );
+    assert_eq!(EntryKind::of(&fe), EntryKind::Symlink);
+}
+
+#[test]
+fn a_windows_symlink_maps_to_a_link() {
+    let fe = directory_entry_to_file_entry(&tagged_folder(smb2::ReparseTag::SYMLINK), "/Volumes/Share");
+    assert!(fe.is_symlink);
+    assert_eq!(EntryKind::of(&fe), EntryKind::Symlink);
+}
+
+#[test]
+fn dedup_and_cloud_placeholders_stay_ordinary_entries() {
+    // They carry the reparse bit too, but they are real files and folders: as
+    // links, a delete would refuse their folder and a copy would skip its contents.
+    for tag in [
+        smb2::ReparseTag::DEDUP,
+        smb2::ReparseTag::CLOUD,
+        smb2::ReparseTag(0x9000_101A),
+    ] {
+        let fe = directory_entry_to_file_entry(&tagged_folder(tag), "/Volumes/Share");
+        assert!(!fe.is_symlink, "{tag:?} must not map to a link");
+        assert_eq!(EntryKind::of(&fe), EntryKind::Directory, "{tag:?}");
+    }
+}
+
+#[test]
+fn a_stat_of_a_link_reports_the_link() {
+    let mut info = smb2::client::tree::FileInfo::default();
+    info.is_directory = true;
+    info.reparse_tag = Some(smb2::ReparseTag::MOUNT_POINT);
+    let fe = file_info_to_file_entry(&info, "Games".to_string(), "/Volumes/Share/Games".to_string());
+    assert!(fe.is_symlink);
+    assert!(fe.is_directory);
+
+    info.reparse_tag = Some(smb2::ReparseTag::CLOUD);
+    let fe = file_info_to_file_entry(&info, "Games".to_string(), "/Volumes/Share/Games".to_string());
+    assert!(!fe.is_symlink);
+
+    info.reparse_tag = None;
+    let fe = file_info_to_file_entry(&info, "Games".to_string(), "/Volumes/Share/Games".to_string());
+    assert!(!fe.is_symlink);
 }
 
 #[test]
