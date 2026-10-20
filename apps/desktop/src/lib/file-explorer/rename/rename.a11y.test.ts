@@ -13,10 +13,11 @@
  * anything, still sees every un-stubbed export.
  */
 
-import { describe, it, vi, afterEach } from 'vitest'
-import { mount, tick } from 'svelte'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { createRawSnippet, mount, tick } from 'svelte'
 import ExtensionChangeDialog from './ExtensionChangeDialog.svelte'
 import InlineRenameEditor from './InlineRenameEditor.svelte'
+import RenameOverlay from './RenameOverlay.svelte'
 import RenameConflictDialog from './RenameConflictDialog.svelte'
 import { expectNoA11yViolations } from '#lib/test-a11y.js'
 
@@ -260,5 +261,36 @@ describe('RenameConflictDialog a11y', () => {
     })
     await tick()
     await expectNoA11yViolations(target)
+  })
+})
+
+/**
+ * Tier 3 a11y tests for `RenameOverlay.svelte`.
+ *
+ * Mounted the way both views mount it: inside the list's scroller, as the listbox's
+ * sibling, over a row's empty name slot. The field it holds is a real text field, never an
+ * option's child (`nested-interactive`) nor a listbox's (`aria-required-children`).
+ */
+describe('RenameOverlay a11y', () => {
+  it('a field laid over its row from beside the listbox has no a11y violations', async () => {
+    const scroller = document.createElement('div')
+    scroller.innerHTML =
+      '<div role="listbox" tabindex="-1" aria-label="Files"><div role="option" aria-selected="false" aria-label="report.md"><span class="rename-slot"></span></div></div>'
+    document.body.appendChild(scroller)
+    const anchor = scroller.querySelector<HTMLElement>('.rename-slot')
+    if (!anchor) throw new Error('no slot')
+    mount(RenameOverlay, {
+      target: scroller,
+      props: {
+        anchor,
+        scroller,
+        children: createRawSnippet(() => ({ render: () => '<input type="text" aria-label="Rename report.md">' })),
+      },
+    })
+    await tick()
+
+    const input = scroller.querySelector('input')
+    expect(input?.closest('[role="listbox"]')).toBeNull()
+    await expectNoA11yViolations(scroller)
   })
 })
