@@ -93,6 +93,7 @@ function deleteFixture(
       isDirectory: entry.isDirectory,
       isSymlink: entry.isSymlink,
       recursiveSize: entry.recursiveSize,
+      recursiveSizeComplete: entry.recursiveSizeComplete,
       recursiveFileCount: entry.recursiveFileCount,
     })),
     sourcePaths: entries.map((entry) => entry.path),

@@ -18,13 +18,15 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::super::state::WriteOperationState;
-use super::super::types::{ConflictResolution, WriteConflictEvent, WriteOperationConfig};
+use super::super::types::{ConflictResolution, KnownSize, WriteConflictEvent, WriteOperationConfig};
 use super::conflict_responder_test_support::ConflictResponderSink;
 use super::copy::copy_files_with_progress_inner;
 use super::move_op::move_files_with_progress_inner;
+use crate::host::{BufferedLeaves, ExpectedTotals, OperationIndex};
 use crate::testing::TestOperations;
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::testing::TestDir;
+use cmdr_operation_log::types::SearchCoverageReason;
 
 fn temp(name: &str) -> TestDir {
     TestDir::new(&format!("conflict_prompt_sides_{}_{}", name, uuid::Uuid::new_v4()))
@@ -105,7 +107,9 @@ fn a_copied_folder_meeting_a_file_is_described_as_the_folder() {
     assert_eq!(prompt.destination_path, dst_root.join("thing").display().to_string());
     assert_eq!(
         prompt.destination_size,
-        Some("precious user bytes".len() as u64),
+        Some(KnownSize::Exact {
+            bytes: "precious user bytes".len() as u64
+        }),
         "the existing side is still the file"
     );
 }
@@ -172,7 +176,49 @@ fn a_copied_file_meeting_a_folder_is_described_as_a_file() {
     assert!(!prompt.source_is_directory, "{prompt:#?}");
     assert!(prompt.destination_is_directory, "{prompt:#?}");
     assert_eq!(prompt.source_path, src_root.join("notes").display().to_string());
-    assert_eq!(prompt.source_size, Some("incoming file".len() as u64));
+    assert_eq!(
+        prompt.source_size,
+        Some(KnownSize::Exact {
+            bytes: "incoming file".len() as u64
+        })
+    );
+}
+
+/// An index that has counted only part of every folder: what a drive mid-first-
+/// index answers.
+struct PartlyCountedIndex;
+
+impl OperationIndex for PartlyCountedIndex {
+    fn expected_totals(&self, _sources: &[std::path::PathBuf]) -> Option<ExpectedTotals> {
+        None
+    }
+
+    fn recursive_size(&self, _path: &Path) -> Option<KnownSize> {
+        Some(KnownSize::AtLeast { bytes: 12_288 })
+    }
+
+    fn search_leaves(&self, _volume_id: &str, _abs_source: &Path, _cap: usize) -> BufferedLeaves {
+        BufferedLeaves::downgraded(SearchCoverageReason::VolumeNotLive)
+    }
+}
+
+/// The folder an Overwrite would delete must never be sized from a partial
+/// count as if it were whole: the prompt carries the floor as a floor, and no
+/// "(larger)" comparison is made against it (#528).
+#[test]
+fn a_partly_counted_folder_is_sized_as_a_lower_bound() {
+    let engine = TestOperations::with(|builder| builder.index(Arc::new(PartlyCountedIndex)));
+    let dir = temp("copy_file_over_partly_counted_folder");
+    let (src_root, dst_root) = file_over_folder_fixture(&dir);
+
+    let prompt = the_one_prompt(prompts_for(&engine, Engine::Copy, &[src_root.join("notes")], &dst_root));
+
+    assert!(prompt.destination_is_directory, "{prompt:#?}");
+    assert_eq!(prompt.destination_size, Some(KnownSize::AtLeast { bytes: 12_288 }));
+    assert_eq!(
+        prompt.size_difference, None,
+        "no difference against a floor: {prompt:#?}"
+    );
 }
 
 #[test]

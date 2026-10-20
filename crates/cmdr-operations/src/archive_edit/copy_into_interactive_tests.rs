@@ -227,8 +227,16 @@ async fn interactive_conflict_event_carries_both_sides_metadata() {
     {
         let conflicts = events.conflicts.lock_ignore_poison();
         let ev = &conflicts[0];
-        assert_eq!(ev.source_size, Some(2), "source size = incoming file length");
-        assert_eq!(ev.destination_size, Some(5), "destination size = archive entry length");
+        assert_eq!(
+            ev.source_size,
+            Some(crate::types::KnownSize::Exact { bytes: 2 }),
+            "source size = incoming file length"
+        );
+        assert_eq!(
+            ev.destination_size,
+            Some(crate::types::KnownSize::Exact { bytes: 5 }),
+            "destination size = archive entry length"
+        );
         assert_eq!(ev.size_difference, Some(3), "size_difference = dest - source (5 - 2)");
         assert!(!ev.source_is_directory, "the incoming side is a file");
         assert!(

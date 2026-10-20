@@ -16,6 +16,10 @@ export interface DeleteSourceItem {
   isDirectory: boolean
   isSymlink: boolean
   recursiveSize?: number | null
+  /** Whether `recursiveSize` is the drive index's exact total (`true`) or only a
+   *  lower bound (`false`, a subtree not fully counted yet). The row renders the
+   *  listing's `≥` for a lower bound. Absent ⇒ exact, as in the listing. */
+  recursiveSizeComplete?: boolean | null
   recursiveFileCount?: number | null
 }
 

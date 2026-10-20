@@ -10,7 +10,8 @@ use super::super::state::WriteOperationState;
 use super::super::transfer::volume_outage::OutageAnnounce;
 use super::super::transfer_tree::TreeOrder;
 use super::super::types::{
-    ConflictResolution, WriteConflictEvent, WriteConflictResolvedEvent, WriteOperationError, WriteOperationType,
+    ConflictResolution, KnownSize, WriteConflictEvent, WriteConflictResolvedEvent, WriteOperationError,
+    WriteOperationType,
 };
 use super::edit_error::EditError;
 use super::fresh_zip::{FreshZipEntry, FreshZipSource, RemoteZipFeeder, remote_source_bridge};
@@ -424,8 +425,8 @@ async fn prompt_duplicate_source(
         conflict_id,
         source_path: incoming.display().to_string(),
         destination_path: context.archive_path.join(name).display().to_string(),
-        source_size,
-        destination_size,
+        source_size: source_size.map(|bytes| KnownSize::Exact { bytes }),
+        destination_size: destination_size.map(|bytes| KnownSize::Exact { bytes }),
         source_modified,
         destination_modified,
         destination_is_newer: matches!((source_modified, destination_modified), (Some(source), Some(dest)) if dest > source),

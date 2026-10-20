@@ -23,8 +23,8 @@ function conflict(destinationPath: string): WriteConflictEvent {
     conflictId: 1,
     sourcePath: '/Users/test/set-0417/f001',
     destinationPath,
-    sourceSize: 2048,
-    destinationSize: 1024,
+    sourceSize: { kind: 'exact', bytes: 2048 },
+    destinationSize: { kind: 'exact', bytes: 1024 },
     sourceModified: 1_700_000_000,
     destinationModified: 1_699_000_000,
     destinationIsNewer: false,
@@ -126,5 +126,45 @@ describe('a clash between a file and a folder', () => {
   it('warns about neither for two files', async () => {
     const target = await mountDialog(conflict(path))
     expect(target.querySelector('.conflict-warning')).toBeNull()
+  })
+})
+
+describe('a folder whose size the drive index has only partly counted', () => {
+  // A folder mid-first-index can hold 40 GB while the index has counted 12 KB of
+  // it. A plain Overwrite deletes that whole tree, so the prompt must never
+  // present the partial count as the folder's size (#528).
+  const path = '/Volumes/Backup/2026/report'
+  const fileOverPartlyCountedFolder: WriteConflictEvent = {
+    ...conflict(path),
+    sourceIsDirectory: false,
+    destinationIsDirectory: true,
+    sourceSize: { kind: 'exact', bytes: 2048 },
+    destinationSize: { kind: 'atLeast', bytes: 1024 },
+    sizeDifference: null,
+  }
+
+  function existingSize(target: HTMLElement): string | undefined {
+    return target.querySelectorAll('.conflict-file')[0]?.querySelector('.conflict-file-size')?.textContent.trim()
+  }
+
+  it('marks the folder size as a lower bound, the way the listing does', async () => {
+    const target = await mountDialog(fileOverPartlyCountedFolder)
+    expect(existingSize(target)).toBe('≥1.00 KiB')
+  })
+
+  it('never badges the incoming file larger against a lower bound', async () => {
+    const target = await mountDialog(fileOverPartlyCountedFolder)
+    expect(target.querySelector('.conflict-annotation.larger')).toBeNull()
+  })
+
+  it('offers no "Overwrite all smaller", which would compare against the floor', async () => {
+    const target = await mountDialog(fileOverPartlyCountedFolder)
+    const button = [...target.querySelectorAll('button')].find((b) => b.textContent.includes('Overwrite all smaller'))
+    expect(button?.disabled).toBe(true)
+  })
+
+  it('shows an exact size bare', async () => {
+    const target = await mountDialog(conflict(path))
+    expect(existingSize(target)).toBe('1.00 KiB')
   })
 })

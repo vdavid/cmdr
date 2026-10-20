@@ -1198,12 +1198,12 @@ the optional seams), what each seam's contract is, and where Cmdr answers it: `s
 
 ## The public surface is capped
 
-`index-crate-isolation` holds this crate to 86 root promises, 58 `Operations` methods, one public module (`host`), and
+`index-crate-isolation` holds this crate to 87 root promises, 58 `Operations` methods, one public module (`host`), and
 25 public items inside it (`scripts/check/checks/index-crate-isolation-ceilings.go`). The numbers are exactly what the
 crate exposes, measured with no headroom, so an addition has to be argued for. Everything counted exists for a named
 caller.
 
-Root promises (86), by who needs them:
+Root promises (87), by who needs them:
 
 - **The handle** (3): `Operations`, `OperationsBuilder` (from `Operations::builder`), and `AlreadyClaimed` (a second
   `claim_ledger`'s refusal).
@@ -1228,12 +1228,15 @@ Root promises (86), by who needs them:
   open-with reaper's changed copies, which no undo should list; a second objc trash call app-side would fork the refusal
   classification), `held_in_another_spelling` (`destination_exists`'s look-alike half), `same_local_file` (rename's
   case-only check), and `resolve_dest_path` (anchoring a volume-relative destination).
-- **The wire vocabulary** (40): the payloads, configs, and typed outcomes from `types` that cross IPC unchanged
+- **The wire vocabulary** (41): the payloads, configs, and typed outcomes from `types` that cross IPC unchanged
   (`WriteOperationConfig`, `VolumeCopyConfig`, `WriteOperationError`, the `Write*Event` and `ScanPreview*Event`
   payloads, `ConflictResolution`, `LifecycleStatus`, `OperationStatus`, …). The Locked-items question added three (its
   event, `LockedSourcesAnswer`, and `LockedSourcesAnswerOutcome`), the same shape as the sources-gone question's.
-  `ipc.rs` registers them; `bindings.ts` is generated from them, so none can go private without the frontend losing a
-  type.
+  `KnownSize` (exact, or only a floor) is `WriteConflictEvent`'s two sizes and `OperationIndex::recursive_size`'s
+  answer, so the app's index adapter and the MCP state resource name it; a bare `u64` plus a flag would let a reader
+  take a partly counted folder's floor for its size, which is how a 40 GB folder read as 12 KB on the replace prompt
+  (#528). `ipc.rs` registers them; `bindings.ts` is generated from them, so none can go private without the frontend
+  losing a type.
 - **`host`** (1): the public module below.
 
 `Operations` methods (58), grouped by caller below. The two `testing`-gated ones (`render_live_transfer_dump` and

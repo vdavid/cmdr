@@ -666,12 +666,14 @@ async fn deep_merge_clash_reports_the_real_destination_size() {
     };
     assert_eq!(
         dest_size,
-        Some("DEST-is-much-bigger".len() as u64),
+        Some(crate::types::KnownSize::Exact {
+            bytes: "DEST-is-much-bigger".len() as u64
+        }),
         "the deep clash must report the destination's real size, not 0"
     );
     assert_eq!(
         source_size,
-        Some(3),
+        Some(crate::types::KnownSize::Exact { bytes: 3 }),
         "the deep clash must report the source's real size"
     );
 }

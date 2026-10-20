@@ -10,6 +10,8 @@ use std::path::{Path, PathBuf};
 
 use cmdr_operation_log::types::{EntryType, SearchCoverage, SearchCoverageReason};
 
+use crate::types::KnownSize;
+
 /// The drive index's questions.
 ///
 /// ❗ Each answer is a read of an in-process index, called per operation or per
@@ -19,9 +21,12 @@ pub trait OperationIndex: Send + Sync {
     /// before the scan has counted them. `None` when any source isn't covered.
     fn expected_totals(&self, sources: &[PathBuf]) -> Option<ExpectedTotals>;
 
-    /// A folder's recursive size, `None` when the index doesn't cover it. The
-    /// engine never walks a tree to compute one.
-    fn recursive_size(&self, path: &Path) -> Option<u64>;
+    /// A folder's recursive size: [`KnownSize::Exact`] only when the index has
+    /// counted the whole subtree and nothing has changed it since,
+    /// [`KnownSize::AtLeast`] when it has counted only part of it, `None` when
+    /// it can't vouch for a number at all (not covered, stale, or a write still
+    /// in flight under it). The engine never walks a tree to compute one.
+    fn recursive_size(&self, path: &Path) -> Option<KnownSize>;
 
     /// The leaves under `abs_source` on the index volume `volume_id`, at most
     /// `cap` of them, or a downgraded verdict with the honest reason. Read
@@ -95,7 +100,7 @@ impl OperationIndex for NoOperationIndex {
         None
     }
 
-    fn recursive_size(&self, _path: &Path) -> Option<u64> {
+    fn recursive_size(&self, _path: &Path) -> Option<KnownSize> {
         None
     }
 

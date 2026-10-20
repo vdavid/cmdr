@@ -5,11 +5,12 @@
 //! `cmdr-operations`, and a single upward import welds eleven modules into
 //! one cycle. `DETAILS.md` § "Why `types` imports nothing".
 //!
-//! The event payloads, the error family, the queue row's summary, and what a
-//! stopped write left behind live one level down in `types/events.rs`,
-//! `types/errors.rs`, `types/queue_row.rs`, and `types/leftovers.rs` (a leaf
-//! both events and errors carry, so neither imports the other) and are
-//! re-exported here, so every caller keeps its `types::WriteProgressEvent` /
+//! The event payloads, the error family, the queue row's summary, `KnownSize`,
+//! and what a stopped write left behind live one level down in
+//! `types/events.rs`, `types/errors.rs`, `types/queue_row.rs`,
+//! `types/known_size.rs`, and `types/leftovers.rs` (a leaf both events and
+//! errors carry, so neither imports the other) and are re-exported here, so
+//! every caller keeps its `types::WriteProgressEvent` /
 //! `types::WriteOperationError` path.
 
 use cmdr_operation_log::types::OpKind;
@@ -17,10 +18,12 @@ use serde::{Deserialize, Serialize};
 
 mod errors;
 mod events;
+mod known_size;
 mod leftovers;
 mod queue_row;
 pub use errors::*;
 pub use events::*;
+pub use known_size::KnownSize;
 pub(crate) use leftovers::*;
 pub use queue_row::*;
 

@@ -561,6 +561,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       isDirectory: e.isDirectory,
       isSymlink: e.isSymlink,
       recursiveSize: e.recursiveSize,
+      recursiveSizeComplete: e.recursiveSizeComplete,
       recursiveFileCount: e.recursiveFileCount,
     }))
     const sourcePaths = validEntries.map((e) => e.path)

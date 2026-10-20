@@ -269,12 +269,12 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
     assert_eq!(conflicts.len(), 1);
     assert_eq!(
         conflicts[0].source_size,
-        Some(15),
+        Some(crate::types::KnownSize::Exact { bytes: 15 }),
         "conflict event must carry the hint's size",
     );
     assert_eq!(
         conflicts[0].destination_size,
-        Some(3),
+        Some(crate::types::KnownSize::Exact { bytes: 3 }),
         "conflict event must carry the dest_meta size",
     );
 }

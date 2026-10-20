@@ -32,7 +32,7 @@ use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::look_alike::is_look_alike_clash;
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::{
-    ConflictResolution, VolumeCopyConfig, WriteConflictEvent, WriteConflictResolvedEvent,
+    ConflictResolution, KnownSize, VolumeCopyConfig, WriteConflictEvent, WriteConflictResolvedEvent,
 };
 use super::super::staged_write::Replaces;
 use super::super::volume_outage::through_outages;
@@ -312,8 +312,8 @@ pub(super) async fn resolve_volume_conflict(
                 conflict_id,
                 source_path: source_path.display().to_string(),
                 destination_path: dest_path.display().to_string(),
-                source_size,
-                destination_size: dest_size,
+                source_size: source_size.map(|bytes| KnownSize::Exact { bytes }),
+                destination_size: dest_size.map(|bytes| KnownSize::Exact { bytes }),
                 source_modified,
                 destination_modified,
                 destination_is_newer,

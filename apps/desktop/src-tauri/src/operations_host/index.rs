@@ -11,8 +11,9 @@ use std::path::{Path, PathBuf};
 use rusqlite::Connection;
 
 use crate::index_host::index;
-use cmdr_index::store::{IndexStore, resolve_path};
+use cmdr_index::store::{DirStats, IndexStore, resolve_path};
 use cmdr_operation_log::types::{EntryType, SearchCoverageReason};
+use cmdr_operations::KnownSize;
 use cmdr_operations::host::{BufferedLeaves, ExpectedTotals, Leaf, OperationIndex};
 
 /// The app's drive index, asked per call: it's built in `setup()` and its
@@ -27,12 +28,12 @@ impl OperationIndex for AppOperationIndex {
         })
     }
 
-    fn recursive_size(&self, path: &Path) -> Option<u64> {
+    fn recursive_size(&self, path: &Path) -> Option<KnownSize> {
         index()
             .dir_stats(&path.to_string_lossy())
             .ok()
             .flatten()
-            .map(|s| s.recursive_size)
+            .and_then(|stats| prompt_size(&stats))
     }
 
     /// Applies the Live gate (the volume's index must be active AND `Fresh`),
@@ -55,6 +56,29 @@ impl OperationIndex for AppOperationIndex {
             _ => BufferedLeaves::downgraded(SearchCoverageReason::IndexAbsent),
         })
         .unwrap_or_else(|_| BufferedLeaves::downgraded(SearchCoverageReason::IndexAbsent))
+    }
+}
+
+/// What a folder's index stats can vouch for, read the way the listing reads
+/// them (`getDirSizeDisplayState`), because the conflict prompt shows it to a
+/// person deciding whether to replace that folder:
+/// - a write in flight under it (`pending`): the number is moving, maybe down,
+///   so nothing (the listing's hourglass, which drops its `≥` too);
+/// - a partial count (`!complete`): a floor, or nothing when nothing is
+///   counted yet (the listing's `<dir>`);
+/// - a complete count from an older epoch (`stale`): the tree may have changed
+///   either way since, so nothing;
+/// - otherwise the exact total.
+fn prompt_size(stats: &DirStats) -> Option<KnownSize> {
+    let bytes = stats.recursive_size;
+    if stats.recursive_size_pending {
+        None
+    } else if !stats.recursive_size_complete {
+        (bytes > 0).then_some(KnownSize::AtLeast { bytes })
+    } else if stats.recursive_size_stale {
+        None
+    } else {
+        Some(KnownSize::Exact { bytes })
     }
 }
 
@@ -176,6 +200,56 @@ mod tests {
 
         let rconn = IndexStore::open_read_connection(&db).expect("read conn");
         (dir, rconn, photos_id)
+    }
+
+    fn stats(size: u64, complete: bool, stale: bool, pending: bool) -> DirStats {
+        DirStats {
+            path: "/photos".to_string(),
+            recursive_size: size,
+            recursive_physical_size: size,
+            recursive_file_count: 1,
+            recursive_dir_count: 0,
+            recursive_has_symlinks: false,
+            recursive_size_pending: pending,
+            recursive_size_pending_changes_in: None,
+            recursive_size_complete: complete,
+            recursive_size_stale: stale,
+        }
+    }
+
+    /// A folder mid-first-index holds 40 GB but the index has only counted 12 KB
+    /// of it. Handing the conflict prompt that 12 KB as exact makes an Overwrite
+    /// that deletes the whole tree look like replacing a tiny folder (#528).
+    #[test]
+    fn an_incomplete_folder_size_is_never_reported_as_exact() {
+        assert_eq!(
+            prompt_size(&stats(12_288, false, false, false)),
+            Some(KnownSize::AtLeast { bytes: 12_288 })
+        );
+    }
+
+    #[test]
+    fn a_complete_settled_folder_size_is_exact() {
+        assert_eq!(
+            prompt_size(&stats(12_288, true, false, false)),
+            Some(KnownSize::Exact { bytes: 12_288 })
+        );
+    }
+
+    /// The listing's `<dir>`: a partial count with nothing counted yet says
+    /// nothing, ❌ never "at least 0 bytes".
+    #[test]
+    fn an_incomplete_folder_with_nothing_counted_is_unknown() {
+        assert_eq!(prompt_size(&stats(0, false, false, false)), None);
+    }
+
+    /// A complete count from an older epoch can be off in either direction, and
+    /// a write in flight can move the number down, so neither is a floor.
+    #[test]
+    fn a_stale_or_pending_folder_size_is_unknown() {
+        assert_eq!(prompt_size(&stats(12_288, true, true, false)), None);
+        assert_eq!(prompt_size(&stats(12_288, true, false, true)), None);
+        assert_eq!(prompt_size(&stats(12_288, false, false, true)), None);
     }
 
     #[test]

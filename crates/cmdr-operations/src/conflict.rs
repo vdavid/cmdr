@@ -19,8 +19,8 @@ use super::look_alike::is_look_alike_clash;
 use super::overwrite::ResolvedDestination;
 use super::state::WriteOperationState;
 use super::types::{
-    ConflictId, ConflictInfo, ConflictResolution, WriteConflictEvent, WriteConflictResolvedEvent, WriteOperationConfig,
-    WriteOperationError,
+    ConflictId, ConflictInfo, ConflictResolution, KnownSize, WriteConflictEvent, WriteConflictResolvedEvent,
+    WriteOperationConfig, WriteOperationError,
 };
 use super::unique_name::find_unique_name;
 use cmdr_fs::log_private::LogPrivate;
@@ -575,11 +575,12 @@ struct ClashSide<'a> {
     /// link is a leaf whatever it points at, so this is never read off `meta`
     /// (which follows links).
     is_directory: bool,
-    /// Recursive size when `is_directory`, from the drive index. `None` means
-    /// the index doesn't cover this path (network mount, MTP, paths outside the
-    /// index scope) and surfaces to the FE as the `(unknown)` rendering.
-    /// Ignored for a leaf, which uses `meta.len()`.
-    size_for_dir: Option<u64>,
+    /// Recursive size when `is_directory`, from the drive index: exact, a
+    /// floor, or `None` when the index can't vouch for one (not covered, stale,
+    /// a write in flight), which surfaces to the FE as `(unknown)`
+    /// (`OperationIndex::recursive_size`). Ignored for a leaf, which uses
+    /// `meta.len()`.
+    size_for_dir: Option<KnownSize>,
 }
 
 /// Builds a `WriteConflictEvent` from the two sides of a clash. Extracted from
@@ -605,19 +606,24 @@ fn build_conflict_event(
 
     // Files: use `metadata.len()` directly. Directories: use the caller-
     // supplied recursive total (the BE never walks a tree for a prompt).
-    let source_size: Option<u64> = if source.is_directory {
+    let file_size = |m: Option<&fs::Metadata>| m.map(|m| KnownSize::Exact { bytes: m.len() });
+    let source_size = if source.is_directory {
         source.size_for_dir
     } else {
-        source_meta.map(|m| m.len())
+        file_size(source_meta)
     };
     let destination_size = if destination.is_directory {
         destination.size_for_dir
     } else {
-        dest_meta.map(|m| m.len())
+        file_size(dest_meta)
     };
-    // Collapse to `None` when either side is unknown — the FE can't render a
-    // meaningful "(larger)" annotation without both numbers.
-    let size_difference = match (destination_size, source_size) {
+    // Collapse to `None` unless both sides are exact: a "(larger)" badge
+    // against a floor would be a guess, and a 40 GB folder counted to 12 KB
+    // would wear it.
+    let size_difference = match (
+        destination_size.and_then(KnownSize::exact),
+        source_size.and_then(KnownSize::exact),
+    ) {
         (Some(d), Some(s)) => Some(d as i64 - s as i64),
         _ => None,
     };

@@ -17,7 +17,7 @@ use super::super::conflict::{
 };
 use super::super::look_alike::is_look_alike_clash;
 use super::super::state::{ConflictResolutionResponse, WriteOperationState};
-use super::super::types::{ConflictResolution, WriteConflictEvent, WriteConflictResolvedEvent};
+use super::super::types::{ConflictResolution, KnownSize, WriteConflictEvent, WriteConflictResolvedEvent};
 use super::edit_error::EditError;
 use cmdr_archive::ArchiveIndex;
 use cmdr_fs::log_private::LogPrivate;
@@ -148,8 +148,8 @@ fn prompt_archive_conflict(
         conflict_id,
         source_path: src_path.display().to_string(),
         destination_path: archive_path.join(inner).display().to_string(),
-        source_size,
-        destination_size: dest_size,
+        source_size: source_size.map(|bytes| KnownSize::Exact { bytes }),
+        destination_size: dest_size.map(|bytes| KnownSize::Exact { bytes }),
         source_modified,
         destination_modified: dest_modified,
         destination_is_newer,

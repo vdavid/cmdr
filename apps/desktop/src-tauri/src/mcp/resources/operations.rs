@@ -38,8 +38,8 @@ use crate::pluralize::pluralize;
 use crate::search::query::format_size;
 use cmdr_operation_log::types::OperationId;
 use cmdr_operations::{
-    LifecycleStatus, OperationSnapshot, OperationStatus, TransferActivity, TransferTreeRow, TransferTreeView,
-    TransferTreeViewRequest, TreeRowKind, TreeRowState, WriteConflictEvent, WriteLockedSourcesEvent,
+    KnownSize, LifecycleStatus, OperationSnapshot, OperationStatus, TransferActivity, TransferTreeRow,
+    TransferTreeView, TransferTreeViewRequest, TreeRowKind, TreeRowState, WriteConflictEvent, WriteLockedSourcesEvent,
     WriteSourcesGoneEvent,
 };
 
@@ -306,8 +306,15 @@ fn pending_locked_sources_yaml(question: &WriteLockedSourcesEvent) -> String {
 
 /// A size the backend couldn't determine reads as `unknown`, ❌ never as a `0`
 /// an agent would compare against.
-fn optional_size(size: Option<u64>) -> String {
-    size.map_or_else(|| "unknown".to_string(), format_size)
+/// A clash side's size, with its strength: `≥` for a floor (a folder the index
+/// has counted only part of), the same qualifier a directory size wears
+/// everywhere else in this resource.
+fn optional_size(size: Option<KnownSize>) -> String {
+    match size {
+        None => "unknown".to_string(),
+        Some(KnownSize::Exact { bytes }) => format_size(bytes),
+        Some(KnownSize::AtLeast { bytes }) => format!("≥{}", format_size(bytes)),
+    }
 }
 
 /// One human line: bytes and file counters, with a percent when totals are known.

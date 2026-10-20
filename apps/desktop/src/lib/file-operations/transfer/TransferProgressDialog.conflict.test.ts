@@ -167,8 +167,8 @@ function makeEvent(overrides: Partial<WriteConflictEvent> = {}): WriteConflictEv
     conflictId: 1,
     sourcePath: '/Users/test/things/report.pdf',
     destinationPath: '/Users/test/dest/report.pdf',
-    sourceSize: 2048,
-    destinationSize: 1024,
+    sourceSize: { kind: 'exact', bytes: 2048 },
+    destinationSize: { kind: 'exact', bytes: 1024 },
     sourceModified: 1_710_000_000,
     destinationModified: 1_700_000_000,
     destinationIsNewer: false,
@@ -358,7 +358,7 @@ describe('TransferProgressDialog conflict — file → folder, destinationSize k
   const event = makeEvent({
     sourceIsDirectory: false,
     destinationIsDirectory: true,
-    destinationSize: 4096,
+    destinationSize: { kind: 'exact', bytes: 4096 },
     sizeDifference: 2048,
   })
 
@@ -431,7 +431,7 @@ describe('TransferProgressDialog conflict — folder → file, sourceSize null',
     sourceIsDirectory: true,
     destinationIsDirectory: false,
     sourceSize: null,
-    destinationSize: 1024,
+    destinationSize: { kind: 'exact', bytes: 1024 },
     sizeDifference: null,
   })
 

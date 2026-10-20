@@ -9980,6 +9980,31 @@ export type KnownSftpServer = {
   lastConnectedAt: string
 }
 
+/**
+ *  A size, and how far it can be trusted: the whole total, or only a floor.
+ *
+ *  A folder's recursive size comes from the drive index, which knows when it
+ *  has counted only part of the subtree (a first index still running, an
+ *  unreadable subfolder). That count is a lower bound, and a person deciding
+ *  whether to replace the folder must never see it as the folder's size: a
+ *  40 GB tree would read as 12 KB. Two variants, so no reader can take the
+ *  floor for the total without naming it. A size nothing can vouch for is
+ *  `None` around this, ❌ never a variant.
+ */
+export type KnownSize =
+  // The whole size.
+  | {
+      kind: 'exact'
+      // Bytes.
+      bytes: number
+    }
+  // At least this much; the real size may be larger. Rendered with `≥`.
+  | {
+      kind: 'atLeast'
+      // Bytes counted so far.
+      bytes: number
+    }
+
 // One WebDAV server the user has connected to, and how to reach it again.
 export type KnownWebdavServer = {
   /**
@@ -19071,31 +19096,35 @@ export type WriteConflictEvent = {
   sourcePath: string
   destinationPath: string
   /**
-   *  Source size in bytes. Files use `metadata.len()`; folder sources use
-   *  their recursive total when known: the pre-flight scan's on a
-   *  cross-volume transfer, the drive index's on a local one. `None`
-   *  ("unknown") for a folder source with neither (the same-volume move fast
-   *  path runs no pre-flight scan; the index may not cover the path), which
-   *  the FE renders as `(unknown)`, mirroring `destination_size`.
+   *  Source size. Files are always `Exact` (`metadata.len()`); folder
+   *  sources use their recursive total when known: the pre-flight scan's on
+   *  a cross-volume transfer (`Exact`), the drive index's on a local one
+   *  (`Exact`, or `AtLeast` while the index has counted only part of the
+   *  subtree). `None` ("unknown") for a folder source with neither (the
+   *  same-volume move fast path runs no pre-flight scan; the index may not
+   *  cover the path, or can't vouch for its number right now), which the FE
+   *  renders as `(unknown)`, mirroring `destination_size`.
    */
-  sourceSize: number | null
+  sourceSize: KnownSize | null
   /**
-   *  Destination size in bytes. `Some` for files (always from
-   *  `metadata.len()`) and for folders covered by the drive index;
-   *  `None` ("unknown") for folders the index doesn't cover (network mounts,
-   *  MTP, paths outside the index scope). The FE renders `(unknown)` for
-   *  `None` and disables the "Overwrite all smaller" bulk action.
+   *  Destination size. Files are always `Exact` (`metadata.len()`). A local
+   *  folder's comes from the drive index: `Exact` only when the whole subtree
+   *  is counted and settled, `AtLeast` (rendered `≥`) when only part of it
+   *  is, `None` ("unknown") when the index doesn't cover it (network mounts,
+   *  MTP, paths outside the index scope) or can't vouch for its number (stale,
+   *  or a write still in flight under it). The FE renders `(unknown)` for
+   *  `None` and enables "Overwrite all smaller" only for an `Exact` size.
    */
-  destinationSize: number | null
+  destinationSize: KnownSize | null
   // Unix timestamp in seconds.
   sourceModified: number | null
   // Unix timestamp in seconds.
   destinationModified: number | null
   destinationIsNewer: boolean
   /**
-   *  `destination_size - source_size` when both are known. `None` collapses
-   *  the difference when either `destination_size` or `source_size` is
-   *  unknown.
+   *  `destination_size - source_size` when both are `Exact`. `None` when
+   *  either is unknown or only a floor: a difference against a lower bound
+   *  would badge a partly counted folder "(larger)" or not on a guess.
    */
   sizeDifference: number | null
   /**

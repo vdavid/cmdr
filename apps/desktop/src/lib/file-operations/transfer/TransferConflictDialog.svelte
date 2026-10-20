@@ -11,9 +11,10 @@
     import { getFileSizeFormat } from '#lib/settings/reactive-settings.svelte.js'
     import { sizeTierClasses } from '#lib/file-explorer/selection/selection-info-utils.js'
     import { formatDate } from '#lib/file-explorer/selection/selection-info-utils.js'
+    import { LOWER_BOUND_GLYPH } from '#lib/file-explorer/views/full-list-utils.js'
     import type { WriteConflictEvent } from '#lib/tauri-commands/index.js'
     import type { ConflictResolution } from '#lib/file-explorer/types.js'
-    import type { RollbackSupport } from '#lib/ipc/bindings.js'
+    import type { KnownSize, RollbackSupport } from '#lib/ipc/bindings.js'
     import { answerDecisionKey, CONFLICT_KEYS, DECISION_KEYS_ARM_MS, type DecisionChoice } from '../decision-keys'
     import { rollbackBlockedTooltipKey } from '../reversal-wording'
 
@@ -99,21 +100,38 @@
             ? tString('fileOperations.transferProgress.conflictOverwriteFoldersWithFiles')
             : tString('fileOperations.transferProgress.conflictOverwriteAll'),
     )
-    // Size renders normally when known and substitutes `(unknown)` in muted color
-    // when the BE could not look the destination folder size up. The color class
-    // and formatted text are precomputed here (guarding the null) so the markup's
-    // `{:else}` branch needs no cross-variable narrowing.
+    // Size renders normally when exact, with the listing's `≥` when the drive
+    // index has counted only part of a folder, and substitutes `(unknown)` in
+    // muted color when the BE could not vouch for a folder's size. ❌ A floor
+    // never renders bare: a 40 GB folder counted to 12 KB would read as 12 KB
+    // right where an Overwrite deletes it. The color class and formatted text are
+    // precomputed here (guarding the null) so the markup's `{:else}` branch needs
+    // no cross-variable narrowing.
     const destSize = $derived(conflictEvent.destinationSize)
     const destSizeUnknown = $derived(destSize === null)
-    const destSizeClass = $derived(destSize === null ? '' : getSizeColorClass(destSize))
-    const destSizeText = $derived(destSize === null ? '' : formatByteSize(destSize))
+    const destSizeIsFloor = $derived(destSize?.kind === 'atLeast')
+    const destSizeClass = $derived(sizeClass(destSize))
+    const destSizeText = $derived(sizeText(destSize))
     const srcSize = $derived(conflictEvent.sourceSize)
     const srcSizeUnknown = $derived(srcSize === null)
-    const srcSizeClass = $derived(srcSize === null ? '' : getSizeColorClass(srcSize))
-    const srcSizeText = $derived(srcSize === null ? '' : formatByteSize(srcSize))
+    const srcSizeIsFloor = $derived(srcSize?.kind === 'atLeast')
+    const srcSizeClass = $derived(sizeClass(srcSize))
+    const srcSizeText = $derived(sizeText(srcSize))
+    /** "Overwrite all smaller" compares against the existing side, so it needs
+     *  that side's whole size: a floor can't say which is smaller. */
+    const destSizeComparable = $derived(destSize?.kind === 'exact')
     const smallerDisabledTooltip = $derived(
-        destSizeUnknown ? tString('fileOperations.transferProgress.smallerDisabledTooltip') : undefined,
+        destSizeComparable ? undefined : tString('fileOperations.transferProgress.smallerDisabledTooltip'),
     )
+    const lowerBoundTooltip = $derived(tString('fileExplorer.dirSize.lowerBoundLine'))
+
+    function sizeClass(size: KnownSize | null): string {
+        return size === null ? '' : getSizeColorClass(size.bytes)
+    }
+
+    function sizeText(size: KnownSize | null): string {
+        return size === null ? '' : formatByteSize(size.bytes)
+    }
 
     // One function per answer, shared by the button and its letter key.
     const skip = () => { onResolve('skip', false) }
@@ -141,7 +159,7 @@
         { key: CONFLICT_KEYS.overwriteAll, enabled: !isResolvingConflict, run: overwriteAll },
         {
             key: CONFLICT_KEYS.overwriteAllSmaller,
-            enabled: !isResolvingConflict && !destSizeUnknown,
+            enabled: !isResolvingConflict && destSizeComparable,
             run: overwriteAllSmaller,
         },
         { key: CONFLICT_KEYS.overwriteAllOlder, enabled: !isResolvingConflict, run: overwriteAllOlder },
@@ -236,6 +254,10 @@
                 <span class="conflict-file-size unknown"
                     >{tString('fileOperations.transferProgress.sizeUnknown')}</span
                 >
+            {:else if destSizeIsFloor}
+                <span class="conflict-file-size {destSizeClass}" use:tooltip={lowerBoundTooltip}
+                    ><span class="size-lower-bound-prefix">{LOWER_BOUND_GLYPH}</span>{destSizeText}</span
+                >
             {:else}
                 <span class="conflict-file-size {destSizeClass}">{destSizeText}</span>
             {/if}
@@ -256,6 +278,10 @@
             {#if srcSizeUnknown}
                 <span class="conflict-file-size unknown"
                     >{tString('fileOperations.transferProgress.sizeUnknown')}</span
+                >
+            {:else if srcSizeIsFloor}
+                <span class="conflict-file-size {srcSizeClass}" use:tooltip={lowerBoundTooltip}
+                    ><span class="size-lower-bound-prefix">{LOWER_BOUND_GLYPH}</span>{srcSizeText}</span
                 >
             {:else}
                 <span class="conflict-file-size {srcSizeClass}">{srcSizeText}</span>
@@ -339,7 +365,7 @@
                 <Button
                     variant="secondary"
                     onclick={overwriteAllSmaller}
-                    disabled={isResolvingConflict || destSizeUnknown}
+                    disabled={isResolvingConflict || !destSizeComparable}
                     keyHint={CONFLICT_KEYS.overwriteAllSmaller}
                     aria-keyshortcuts={CONFLICT_KEYS.overwriteAllSmaller}
                 >
@@ -502,6 +528,13 @@
     .conflict-file-size.unknown {
         color: var(--color-text-tertiary);
         font-style: italic;
+    }
+
+    /* The listing's `≥` lower-bound prefix (`FullList.svelte`): a qualifier on the
+       number, not a digit. */
+    .size-lower-bound-prefix {
+        color: var(--color-text-secondary);
+        margin-right: 1px;
     }
 
     /* Wrap so the tooltip has a host element when the inner Button is

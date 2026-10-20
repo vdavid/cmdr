@@ -130,7 +130,10 @@ announce reaches the hook. The engine's own announce order is pinned against its
 
 `AppOperationIndex` answers `OperationIndex` from `index_host::index()`, reached per call (the index is built in
 `setup()`, and an adapter that captured it could win its slot with an unconfigured one). `expected_totals` maps the
-index's count onto the engine's own `ExpectedTotals`; `recursive_size` is `dir_stats`' `recursive_size`; `search_leaves`
+index's count onto the engine's own `ExpectedTotals`; `recursive_size` reads `dir_stats` the way the listing does
+(`prompt_size`): `Exact` only for a complete, fresh, not-pending total, `AtLeast` for a partial count, `None` for a stale
+or in-flux one or nothing counted yet, because the conflict prompt shows it to a person deciding whether to replace that
+folder (a 40 GB tree counted to 12 KB must never read as 12 KB, #528); `search_leaves`
 is the honest-coverage read behind the operation log's search leaves (`crates/cmdr-operation-log/DETAILS.md` §
 "Search-leaf enumeration"): the Live gate, path resolution, the epoch gate (`enumerate_from_id`), and the cap, each miss
 a typed downgrade. Its cells (the coverage honesty, the cap's edges, an ignored latency bench) run against a hand-built

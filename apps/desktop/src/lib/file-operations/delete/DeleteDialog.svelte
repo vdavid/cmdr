@@ -12,6 +12,7 @@
         type DeleteSourceItem,
     } from './delete-dialog-utils'
     import { formatNumber } from '#lib/file-explorer/selection/selection-info-utils.js'
+    import { getDirSizeDisplayState, LOWER_BOUND_GLYPH } from '#lib/file-explorer/views/full-list-utils.js'
     import Size from '#lib/ui/Size.svelte'
     import Icon from '#lib/ui/Icon.svelte'
     import Spinner from '#lib/ui/Spinner.svelte'
@@ -325,7 +326,17 @@
      *  through the delete dialog infrastructure for a transient confirmation dialog). */
     function itemSizeBytes(item: DeleteSourceItem): number | null {
         // Group A wire-format: IPC sends `null` for absent fields, not `undefined`.
-        return item.isDirectory ? (item.recursiveSize ?? null) : (item.size ?? null)
+        if (!item.isDirectory) return item.size ?? null
+        // A folder's size is the drive index's, so it reads the way the listing
+        // reads it: nothing counted yet is no size at all, and a partial count is
+        // a `≥` floor (`itemSizeIsLowerBound`), ❌ never a bare number someone
+        // decides a delete on.
+        const state = getDirSizeDisplayState(item.recursiveSize, item.recursiveSizeComplete)
+        return state === 'dir' ? null : (item.recursiveSize ?? null)
+    }
+
+    function itemSizeIsLowerBound(item: DeleteSourceItem): boolean {
+        return item.isDirectory && getDirSizeDisplayState(item.recursiveSize, item.recursiveSizeComplete) === 'lower-bound'
     }
 
     function itemFileCountLabel(item: DeleteSourceItem): string {
@@ -415,7 +426,9 @@
                             use:tooltip={{ text: sourcePaths[index] ?? item.name, overflowOnly: true }}>{item.name}</span
                         >
                         <span class="item-size">
-                            {#if itemSizeBytes(item) != null}<Size bytes={itemSizeBytes(item)} />{/if}
+                            {#if itemSizeBytes(item) != null}{#if itemSizeIsLowerBound(item)}<span
+                                        class="size-lower-bound-prefix">{LOWER_BOUND_GLYPH}</span
+                                    >{/if}<Size bytes={itemSizeBytes(item)} />{/if}
                             {#if itemFileCountLabel(item)}{#if itemSizeBytes(item) != null}&nbsp;&nbsp;&nbsp;{/if}{itemFileCountLabel(
                                     item,
                                 )}{/if}
@@ -617,6 +630,13 @@
         color: var(--color-text-tertiary);
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
+    }
+
+    /* The listing's `≥` lower-bound prefix (`FullList.svelte`): a qualifier on the
+       number, not a digit. */
+    .size-lower-bound-prefix {
+        color: var(--color-text-secondary);
+        margin-right: 1px;
     }
 
     .file-list-overflow {

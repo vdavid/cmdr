@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 use cmdr_operation_log::rollback::SkipBreakdown;
 
 use super::{
-    ConflictId, OperationSnapshot, ProgressAxis, RecoveredOriginal, StagedLeftovers, TransferActivity,
+    ConflictId, KnownSize, OperationSnapshot, ProgressAxis, RecoveredOriginal, StagedLeftovers, TransferActivity,
     TrashRefusalKind, WriteOperationError, WriteOperationPhase, WriteOperationType,
 };
 
@@ -742,27 +742,31 @@ pub struct WriteConflictEvent {
     pub conflict_id: ConflictId,
     pub source_path: String,
     pub destination_path: String,
-    /// Source size in bytes. Files use `metadata.len()`; folder sources use
-    /// their recursive total when known: the pre-flight scan's on a
-    /// cross-volume transfer, the drive index's on a local one. `None`
-    /// ("unknown") for a folder source with neither (the same-volume move fast
-    /// path runs no pre-flight scan; the index may not cover the path), which
-    /// the FE renders as `(unknown)`, mirroring `destination_size`.
-    pub source_size: Option<u64>,
-    /// Destination size in bytes. `Some` for files (always from
-    /// `metadata.len()`) and for folders covered by the drive index;
-    /// `None` ("unknown") for folders the index doesn't cover (network mounts,
-    /// MTP, paths outside the index scope). The FE renders `(unknown)` for
-    /// `None` and disables the "Overwrite all smaller" bulk action.
-    pub destination_size: Option<u64>,
+    /// Source size. Files are always `Exact` (`metadata.len()`); folder
+    /// sources use their recursive total when known: the pre-flight scan's on
+    /// a cross-volume transfer (`Exact`), the drive index's on a local one
+    /// (`Exact`, or `AtLeast` while the index has counted only part of the
+    /// subtree). `None` ("unknown") for a folder source with neither (the
+    /// same-volume move fast path runs no pre-flight scan; the index may not
+    /// cover the path, or can't vouch for its number right now), which the FE
+    /// renders as `(unknown)`, mirroring `destination_size`.
+    pub source_size: Option<KnownSize>,
+    /// Destination size. Files are always `Exact` (`metadata.len()`). A local
+    /// folder's comes from the drive index: `Exact` only when the whole subtree
+    /// is counted and settled, `AtLeast` (rendered `≥`) when only part of it
+    /// is, `None` ("unknown") when the index doesn't cover it (network mounts,
+    /// MTP, paths outside the index scope) or can't vouch for its number (stale,
+    /// or a write still in flight under it). The FE renders `(unknown)` for
+    /// `None` and enables "Overwrite all smaller" only for an `Exact` size.
+    pub destination_size: Option<KnownSize>,
     /// Unix timestamp in seconds.
     pub source_modified: Option<i64>,
     /// Unix timestamp in seconds.
     pub destination_modified: Option<i64>,
     pub destination_is_newer: bool,
-    /// `destination_size - source_size` when both are known. `None` collapses
-    /// the difference when either `destination_size` or `source_size` is
-    /// unknown.
+    /// `destination_size - source_size` when both are `Exact`. `None` when
+    /// either is unknown or only a floor: a difference against a lower bound
+    /// would badge a partly counted folder "(larger)" or not on a guess.
     pub size_difference: Option<i64>,
     /// `true` when the source side is a directory. Lets the FE render the
     /// distinct "replace a folder with a file" / "replace a file with a folder"
@@ -998,17 +1002,18 @@ mod write_conflict_event_serde_tests {
     use super::*;
 
     fn sample_event(source_size: Option<u64>) -> WriteConflictEvent {
+        let source_size = source_size.map(|bytes| KnownSize::Exact { bytes });
         WriteConflictEvent {
             operation_id: "op-1".to_string(),
             conflict_id: ConflictId(3),
             source_path: "/src/photos".to_string(),
             destination_path: "/dst/photos".to_string(),
             source_size,
-            destination_size: Some(4_096),
+            destination_size: Some(KnownSize::Exact { bytes: 4_096 }),
             source_modified: Some(1_700_000_000),
             destination_modified: Some(1_700_000_001),
             destination_is_newer: true,
-            size_difference: source_size.map(|s| 4_096_i64 - s as i64),
+            size_difference: source_size.and_then(KnownSize::exact).map(|s| 4_096_i64 - s as i64),
             source_is_directory: true,
             destination_is_directory: true,
             destination_is_look_alike: false,
@@ -1020,9 +1025,12 @@ mod write_conflict_event_serde_tests {
         let event = sample_event(Some(1_024));
         let json = serde_json::to_string(&event).unwrap();
         // camelCase on the wire (matches the FE binding).
-        assert!(json.contains("\"sourceSize\":1024"), "json was: {json}");
+        assert!(
+            json.contains("\"sourceSize\":{\"kind\":\"exact\",\"bytes\":1024}"),
+            "json was: {json}"
+        );
         let back: WriteConflictEvent = serde_json::from_str(&json).unwrap();
-        assert_eq!(back.source_size, Some(1_024));
+        assert_eq!(back.source_size, Some(KnownSize::Exact { bytes: 1_024 }));
         assert_eq!(back.size_difference, Some(4_096 - 1_024));
         assert!(back.source_is_directory);
         assert!(back.destination_is_directory);
@@ -1037,5 +1045,12 @@ mod write_conflict_event_serde_tests {
         let back: WriteConflictEvent = serde_json::from_str(&json).unwrap();
         assert_eq!(back.source_size, None);
         assert_eq!(back.size_difference, None);
+    }
+
+    /// The `≥` the FE renders hangs off this spelling.
+    #[test]
+    fn a_lower_bound_size_names_itself_on_the_wire() {
+        let json = serde_json::to_string(&KnownSize::AtLeast { bytes: 12_288 }).unwrap();
+        assert_eq!(json, "{\"kind\":\"atLeast\",\"bytes\":12288}");
     }
 }

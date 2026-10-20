@@ -10,7 +10,7 @@ use tempfile::TempDir;
 
 /// One side of a clash, typed from the entry on disk (`symlink_metadata`, so
 /// the tests never stat through a link).
-fn side<'a>(path: &'a Path, meta: &'a fs::Metadata, size_for_dir: Option<u64>) -> ClashSide<'a> {
+fn side<'a>(path: &'a Path, meta: &'a fs::Metadata, size_for_dir: Option<KnownSize>) -> ClashSide<'a> {
     ClashSide {
         path,
         meta: Some(meta),
@@ -32,7 +32,7 @@ fn file_over_directory_marks_destination_is_directory() {
         "op-1",
         ConflictId(1),
         &side(&source, &source_meta, None),
-        &side(&dest, &dest_meta, Some(12345)),
+        &side(&dest, &dest_meta, Some(KnownSize::Exact { bytes: 12345 })),
     );
 
     assert!(!event.source_is_directory, "source is a file");
@@ -51,7 +51,7 @@ fn directory_over_file_marks_source_is_directory() {
     let event = build_conflict_event(
         "op-2",
         ConflictId(1),
-        &side(&source, &source_meta, Some(67890)),
+        &side(&source, &source_meta, Some(KnownSize::Exact { bytes: 67890 })),
         &side(&dest, &dest_meta, None),
     );
 
@@ -120,12 +120,12 @@ fn file_dest_uses_metadata_len_ignoring_override() {
     let event = build_conflict_event(
         "op",
         ConflictId(1),
-        &side(&source, &source_meta, Some(99999)),
-        &side(&dest, &dest_meta, Some(99999)),
+        &side(&source, &source_meta, Some(KnownSize::Exact { bytes: 99999 })),
+        &side(&dest, &dest_meta, Some(KnownSize::Exact { bytes: 99999 })),
     );
 
-    assert_eq!(event.source_size, Some(5));
-    assert_eq!(event.destination_size, Some(6));
+    assert_eq!(event.source_size, Some(KnownSize::Exact { bytes: 5 }));
+    assert_eq!(event.destination_size, Some(KnownSize::Exact { bytes: 6 }));
     assert_eq!(event.size_difference, Some(1));
 }
 
@@ -145,12 +145,35 @@ fn folder_dest_uses_override_size() {
         "op",
         ConflictId(1),
         &side(&source, &source_meta, None),
-        &side(&dest, &dest_meta, Some(4_096_000)),
+        &side(&dest, &dest_meta, Some(KnownSize::Exact { bytes: 4_096_000 })),
     );
 
-    assert_eq!(event.source_size, Some(1));
-    assert_eq!(event.destination_size, Some(4_096_000));
+    assert_eq!(event.source_size, Some(KnownSize::Exact { bytes: 1 }));
+    assert_eq!(event.destination_size, Some(KnownSize::Exact { bytes: 4_096_000 }));
     assert_eq!(event.size_difference, Some(4_095_999));
+}
+
+/// A folder the index has only partly counted reaches the prompt as a floor,
+/// and no difference is computed against it: the incoming 1-byte file must not
+/// read as the smaller side of a folder that may hold 40 GB (#528).
+#[test]
+fn folder_dest_with_a_lower_bound_size_computes_no_difference() {
+    let temp = TempDir::new().unwrap();
+    let source = temp.path().join("notes.txt");
+    let dest = temp.path().join("conflicting");
+    fs::write(&source, b"a").unwrap();
+    fs::create_dir(&dest).unwrap();
+    let (source_meta, dest_meta) = (fs::metadata(&source).unwrap(), fs::metadata(&dest).unwrap());
+
+    let event = build_conflict_event(
+        "op",
+        ConflictId(1),
+        &side(&source, &source_meta, None),
+        &side(&dest, &dest_meta, Some(KnownSize::AtLeast { bytes: 12_288 })),
+    );
+
+    assert_eq!(event.destination_size, Some(KnownSize::AtLeast { bytes: 12_288 }));
+    assert_eq!(event.size_difference, None);
 }
 
 #[test]
@@ -172,7 +195,7 @@ fn folder_dest_with_unknown_size_surfaces_none() {
         &side(&dest, &dest_meta, None),
     );
 
-    assert_eq!(event.source_size, Some(1));
+    assert_eq!(event.source_size, Some(KnownSize::Exact { bytes: 1 }));
     assert_eq!(event.destination_size, None);
     assert_eq!(event.size_difference, None);
 }
@@ -191,12 +214,12 @@ fn folder_source_uses_override_size() {
     let event = build_conflict_event(
         "op",
         ConflictId(1),
-        &side(&source, &source_meta, Some(123_456)),
+        &side(&source, &source_meta, Some(KnownSize::Exact { bytes: 123_456 })),
         &side(&dest, &dest_meta, None),
     );
 
-    assert_eq!(event.source_size, Some(123_456));
-    assert_eq!(event.destination_size, Some(2));
+    assert_eq!(event.source_size, Some(KnownSize::Exact { bytes: 123_456 }));
+    assert_eq!(event.destination_size, Some(KnownSize::Exact { bytes: 2 }));
     assert_eq!(event.size_difference, Some(2 - 123_456));
 }
 
@@ -220,6 +243,6 @@ fn folder_source_with_unknown_size_surfaces_none() {
     );
 
     assert_eq!(event.source_size, None);
-    assert_eq!(event.destination_size, Some(2));
+    assert_eq!(event.destination_size, Some(KnownSize::Exact { bytes: 2 }));
     assert_eq!(event.size_difference, None);
 }

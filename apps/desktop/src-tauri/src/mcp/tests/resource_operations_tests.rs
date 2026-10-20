@@ -4,17 +4,17 @@
 use crate::mcp::resources::operations::{OperationRow, build_operations_yaml};
 use cmdr_operations::testing::{SourcesGoneNext, TransferWaitReason};
 use cmdr_operations::{
-    ConflictId, LifecycleStatus, OperationSnapshot, OperationStatus, TransferActivity, WriteConflictEvent,
+    ConflictId, KnownSize, LifecycleStatus, OperationSnapshot, OperationStatus, TransferActivity, WriteConflictEvent,
     WriteLockedSourcesEvent, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteSourcesGoneEvent,
 };
 
-fn clash(conflict_id: u64, destination_size: Option<u64>) -> WriteConflictEvent {
+fn clash(conflict_id: u64, destination_size: Option<KnownSize>) -> WriteConflictEvent {
     WriteConflictEvent {
         operation_id: "op-1".to_string(),
         conflict_id: ConflictId(conflict_id),
         source_path: "/src/photos/dsc-1.raw".to_string(),
         destination_path: "/dst/photos/dsc-1.raw".to_string(),
-        source_size: Some(2_048),
+        source_size: Some(KnownSize::Exact { bytes: 2_048 }),
         destination_size,
         source_modified: Some(1_700_000_000),
         destination_modified: Some(1_700_000_500),
@@ -239,7 +239,7 @@ fn an_operation_parked_on_a_clash_says_which_clash_and_how_to_answer_it() {
     let rows = vec![OperationRow {
         snapshot: snapshot("op-1", LifecycleStatus::Running),
         progress: Some(progress("op-1", LifecycleStatus::Running, 50 * mb, 100 * mb, 2, 4)),
-        pending_conflict: Some(clash(3, Some(4_096))),
+        pending_conflict: Some(clash(3, Some(KnownSize::Exact { bytes: 4_096 }))),
         tree: None,
         pending_sources_gone: None,
         pending_locked_sources: None,
@@ -260,7 +260,7 @@ fn an_operation_parked_on_a_clash_says_which_clash_and_how_to_answer_it() {
 fn a_look_alike_clash_says_the_names_only_look_the_same() {
     // The two paths print identically, so without the flag an agent can't tell
     // that an overwrite lands on an entry spelled another way.
-    let mut conflict = clash(4, Some(4_096));
+    let mut conflict = clash(4, Some(KnownSize::Exact { bytes: 4_096 }));
     conflict.source_path = "/src/cafe\u{301}.txt".to_string();
     conflict.destination_path = "/dst/caf\u{e9}.txt".to_string();
     conflict.destination_is_look_alike = true;
@@ -291,6 +291,22 @@ fn a_size_the_backend_could_not_read_says_unknown_rather_than_zero() {
     let yaml = build_operations_yaml(&rows, 12_000);
     assert!(yaml.contains("destinationSize: unknown"), "yaml: {yaml}");
     assert!(!yaml.contains("destinationSize: 0 B"), "yaml: {yaml}");
+}
+
+#[test]
+fn a_partly_counted_folder_size_reads_as_a_floor() {
+    // An agent deciding whether to overwrite a folder must not read a partial
+    // count as its size: 12 KB counted of a 40 GB tree (#528).
+    let rows = vec![OperationRow {
+        snapshot: snapshot("op-1", LifecycleStatus::Running),
+        progress: None,
+        pending_conflict: Some(clash(1, Some(KnownSize::AtLeast { bytes: 12_288 }))),
+        tree: None,
+        pending_sources_gone: None,
+        pending_locked_sources: None,
+    }];
+    let yaml = build_operations_yaml(&rows, 12_000);
+    assert!(yaml.contains("destinationSize: ≥"), "yaml: {yaml}");
 }
 
 #[test]
@@ -473,7 +489,7 @@ fn an_operation_parked_on_a_clash_names_the_wait_and_the_clash_together() {
     // which one, and carries the `conflictId` an answer has to name. One read,
     // both halves.
     let mut rows = stalled_row(TransferWaitReason::Conflict, 0, 0);
-    rows[0].pending_conflict = Some(clash(7, Some(4_096)));
+    rows[0].pending_conflict = Some(clash(7, Some(KnownSize::Exact { bytes: 4_096 })));
     let yaml = build_operations_yaml(&rows, 12_000);
     assert!(yaml.contains("waitingOn: conflict"), "yaml: {yaml}");
     assert!(yaml.contains("conflictId: 7"), "yaml: {yaml}");
