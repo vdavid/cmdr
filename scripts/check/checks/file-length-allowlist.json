@@ -213,7 +213,7 @@
       "reason": "TODO: move the hand-run stall repro out. `test_listings_complete_under_reconciler_load_and_rapid_navigation` plus the 48-line iteration-log comment above it is roughly 390 lines, is `#[ignore]`d, and asserts a listing-latency SLA rather than a concurrency invariant, so it belongs in a sibling `stress_tests_listing_sla.rs` (it builds its own `EntryRow` values, so it takes no helper with it). The five real scenarios (`concurrent_scan_with_buffered_events_and_replay`, `concurrent_batch_inserts_with_aggregation`, `concurrent_scan_with_enrichment_reads`, `live_event_storm_with_concurrent_reads`, `mixed_storm_reaches_consistent_fixed_point`) each drive actor threads against one writer with locals they can't share, and stay at roughly 900 lines, under the test budget."
     },
     "crates/cmdr-index/src/indexing/writer/mod.rs": {
-      "lines": 1625,
+      "lines": 1813,
       "reason": "TODO: split; the area already runs 12 one-job siblings and `mod.rs` carries four things that aren't the loop. Move `WriteMessage` + `AggSource` + `WRITER_CHANNEL_CAPACITY` (roughly 280 lines, mostly per-variant rationale) to `message.rs`, `MutationTracker` + `WRITER_GENERATION` (roughly 130) to `mutation_tracker.rs`, the `IndexWriter` handle with `spawn` / `spawn_for` / the test-observable accessors / `flush_blocking` / `shutdown` (roughly 405) to `handle.rs`, and `WriterStats` + `StatsSnapshot` + `AccumulatorMaps` (roughly 195) to `stats.rs`. That leaves `writer_loop` and `process_message`, the one state machine whose ambient locals (`batch`, `repairs`, `rollups`, `probe`, `heal_latch`, `propagate_deltas`) are genuinely shared, at roughly 630 lines."
     },
     "crates/cmdr-index/src/media_index/scheduler/enrich_tests.rs": {
