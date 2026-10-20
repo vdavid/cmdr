@@ -7,6 +7,12 @@ on:
         description: 'Run all checks (bypass change detection)'
         type: boolean
         default: true
+      # `pnpm land` dispatches this on a branch it's about to land (with `run_all` off): only the
+      # macOS lane runs, and `CI OK` also needs the PR run's lanes green on the same SHA.
+      land:
+        description: 'Land run: the macOS lane plus the PR run on this commit (pnpm land sets it)'
+        type: boolean
+        default: false
   pull_request:
   push:
     branches:
@@ -58,15 +64,32 @@ jobs:
     # is the same), so a `main` push that finds a green `CI OK` on its SHA sets `verified` and
     # every lane output reads `false`: the lanes skip, `CI OK` reports green, and the post-land
     # jobs still run off the raw `*-changed` filter. `ci-coverage` keeps every lane on this gate.
+    #
+    # The macOS lane has its own output: the five macOS runners are the queue's bottleneck, so a
+    # PR run that changed Rust defers it (`macos-deferred`) to the land run `pnpm land`
+    # dispatches, which runs only that lane. A Renovate PR keeps it, since it automerges without
+    # `pnpm land`. A deferred run names its gate `CI OK without macOS`, so it never reports the
+    # `CI OK` the ruleset requires.
     outputs:
       verified: ${{ steps.verified.outputs.verified }}
-      rust: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.rust || 'false' }}
-      svelte: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.svelte || 'false' }}
-      desktop: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.desktop || 'false' }}
-      website: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.website || 'false' }}
-      api-server: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.api-server || 'false' }}
-      dashboard: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.dashboard || 'false' }}
-      scripts: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.scripts || 'false' }}
+      rust: ${{ steps.verified.outputs.verified != 'true' && !inputs.land && steps.filter.outputs.rust || 'false' }}
+      svelte: ${{ steps.verified.outputs.verified != 'true' && !inputs.land && steps.filter.outputs.svelte || 'false' }}
+      desktop:
+        ${{ steps.verified.outputs.verified != 'true' && !inputs.land && steps.filter.outputs.desktop || 'false' }}
+      website:
+        ${{ steps.verified.outputs.verified != 'true' && !inputs.land && steps.filter.outputs.website || 'false' }}
+      api-server:
+        ${{ steps.verified.outputs.verified != 'true' && !inputs.land && steps.filter.outputs.api-server || 'false' }}
+      dashboard:
+        ${{ steps.verified.outputs.verified != 'true' && !inputs.land && steps.filter.outputs.dashboard || 'false' }}
+      scripts:
+        ${{ steps.verified.outputs.verified != 'true' && !inputs.land && steps.filter.outputs.scripts || 'false' }}
+      macos:
+        ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.rust == 'true' && (github.event_name !=
+        'pull_request' || github.event.pull_request.user.login == 'renovate[bot]') && 'true' || 'false' }}
+      macos-deferred:
+        ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.rust == 'true' && github.event_name ==
+        'pull_request' && github.event.pull_request.user.login != 'renovate[bot]' && 'true' || 'false' }}
       website-changed: ${{ steps.filter.outputs.website }}
       playwright-image: ${{ steps.playwright-image.outputs.image }}
     steps:
@@ -480,6 +503,9 @@ jobs:
   #   has a green track record.
   # - The Docker fixture lanes: GitHub's macOS runners have no Docker.
   #
+  # Only on the commit about to land: a PR run defers it to the land run (`macos-deferred` on
+  # `changes`), so milestone pushes and superseded commits don't queue for the five macOS runners.
+  #
   # Required: in `ci-ok`'s `needs`, so a red macOS job fails the run and both release gates.
   # `docs/tooling/ci.md` § macOS lane.
   desktop-rust-macos:
@@ -491,7 +517,7 @@ jobs:
     # the suite, and a cold cargo-modules install (~6 min) plus its analysis (~7 min cold).
     timeout-minutes: 90
     needs: changes
-    if: inputs.run_all || needs.changes.outputs.rust == 'true'
+    if: inputs.run_all || needs.changes.outputs.macos == 'true'
 
     steps:
       - name: Checkout code
@@ -1336,9 +1362,10 @@ jobs:
     name: Repo hygiene
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Every run but an already-verified `main` push (see `changes`).
+    # Every run but an already-verified `main` push (see `changes`) and a land run, whose PR run
+    # ran it on the same SHA.
     needs: changes
-    if: needs.changes.outputs.verified != 'true'
+    if: needs.changes.outputs.verified != 'true' && !inputs.land
 
     steps:
       - name: Checkout code
@@ -1556,11 +1583,18 @@ jobs:
   # - `always()`, not `!cancelled()`, so a cancelled run reports red instead of skipped.
   # - Only `success` and `skipped` pass. A lane skipped by change detection is fine; `changes`
   #   itself never legitimately skips, so it must be `success`.
+  # - A PR run that deferred the macOS lane names it `CI OK without macOS`, so that run can't
+  #   satisfy the ruleset; the land run's `CI OK` does, once its macOS lane AND the PR run on the
+  #   same SHA (every other lane) are green.
   # `docs/tooling/ci.md` § Branch protection.
   ci-ok:
-    name: CI OK
+    name: ${{ needs.changes.outputs.macos-deferred == 'true' && 'CI OK without macOS' || 'CI OK' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # A land run waits here for its PR run, which usually finished while the macOS lane ran.
+    timeout-minutes: 75
+    # A job-level block replaces the workflow-level one; this job reads no code.
+    permissions:
+      actions: read # a land run reads its PR run's verdict
     needs:
       [
         changes,
@@ -1593,3 +1627,35 @@ jobs:
             exit 1
           fi
           echo "All jobs passed or were skipped by change detection"
+
+      # By the PR run's conclusion, not a check name: an earlier land attempt's red `CI OK` sits on
+      # the same SHA. The newest PR run decides, as a new push cancels the older one.
+      - name: Wait for the PR run on this commit (land run)
+        if: inputs.land
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          for attempt in $(seq 1 140); do
+            run=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$SHA&event=pull_request&per_page=20" \
+              --jq '.workflow_runs | sort_by(.created_at) | last // empty | "\(.status) \(.conclusion) \(.html_url)"')
+            read -r status conclusion url <<<"$run"
+            if [[ -z "$run" ]]; then
+              if [[ "$attempt" -gt 10 ]]; then
+                echo "No PR run on $SHA, so nothing ran its Linux lanes. Open the PR (pnpm land does), then re-run this job."
+                exit 1
+              fi
+            elif [[ "$status" == "completed" ]]; then
+              if [[ "$conclusion" == "success" ]]; then
+                echo "The PR run passed every other lane on $SHA: $url"
+                exit 0
+              fi
+              echo "The PR run on $SHA ended '$conclusion': $url"
+              echo "Re-run its failed jobs (or fix and push), then re-run this land run's failed jobs."
+              exit 1
+            fi
+            sleep 30
+          done
+          echo "The PR run on $SHA is still going after 70 min: $url"
+          exit 1

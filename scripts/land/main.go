@@ -167,6 +167,9 @@ func landOnce(r runner, cfg config) error {
 		say("CI is on it: %s\nLand it when you're ready: pnpm land", pr.URL)
 		return nil
 	}
+	if err := ensureLandRun(r, state.branch, head); err != nil {
+		return err
+	}
 	if err := waitForCI(r, head, cfg.timeout); err != nil {
 		return err
 	}
@@ -300,26 +303,53 @@ func ensurePR(r runner, branch string, commits []commit) (pullRequest, error) {
 	return pullRequest{Number: number, State: "OPEN", URL: url}, nil
 }
 
+// ciRuns lists the `ci.yml` runs on a SHA, PR and dispatched alike.
+func ciRuns(r runner, head string) ([]workflowRun, error) {
+	var runs struct {
+		WorkflowRuns []workflowRun `json:"workflow_runs"`
+	}
+	err := r.ghAPI(&runs, fmt.Sprintf("repos/%s/actions/workflows/%s/runs?head_sha=%s&per_page=20", repo, ciWorkflow, head))
+	return runs.WorkflowRuns, err
+}
+
+// ensureLandRun dispatches the land run on the head unless one exists: the macOS lane, which a
+// PR run defers to save the five macOS runners for commits about to land, plus a `CI OK` that
+// also needs the PR run's Linux lanes green on the same SHA. `-no-wait` milestone pushes never
+// get one.
+func ensureLandRun(r runner, branch, head string) error {
+	runs, err := ciRuns(r, head)
+	if err != nil {
+		return err
+	}
+	if len(landRuns(runs)) > 0 {
+		return nil
+	}
+	say("Starting the land run (the macOS lane, then the gate) on %s...", head[:12])
+	if _, err := r.gh("workflow", "run", ciWorkflow, "-R", repo, "--ref", branch, "-f", "land=true", "-f", "run_all=false"); err != nil {
+		return fmt.Errorf("couldn't start the land run; land again: pnpm land\n%w", err)
+	}
+	return nil
+}
+
 func waitForCI(r runner, head string, timeout time.Duration) error {
 	start := time.Now()
 	announced := false
 	for {
 		// One REST call per poll; the `CI OK` check runs only matter once the run finished.
-		var runs struct {
-			WorkflowRuns []workflowRun `json:"workflow_runs"`
-		}
-		if err := r.ghAPI(&runs, fmt.Sprintf("repos/%s/actions/workflows/%s/runs?head_sha=%s&per_page=20", repo, ciWorkflow, head)); err != nil {
+		all, err := ciRuns(r, head)
+		if err != nil {
 			return err
 		}
+		runs := landRuns(all)
 		var checks struct {
 			CheckRuns []checkRun `json:"check_runs"`
 		}
-		if v, _ := ciVerdict(runs.WorkflowRuns, nil); v != verdictMissing && v != verdictPending {
+		if v, _ := ciVerdict(runs, nil); v != verdictMissing && v != verdictPending {
 			if err := r.ghAPI(&checks, fmt.Sprintf("repos/%s/commits/%s/check-runs?check_name=%s&filter=all", repo, head, url.PathEscape(ciCheck))); err != nil {
 				return err
 			}
 		}
-		v, run := ciVerdict(runs.WorkflowRuns, checks.CheckRuns)
+		v, run := ciVerdict(runs, checks.CheckRuns)
 		switch v {
 		case verdictGreen:
 			say("%s is green.", ciCheck)
@@ -328,7 +358,7 @@ func waitForCI(r runner, head string, timeout time.Duration) error {
 			return ciFailure(r, run)
 		case verdictMissing:
 			if time.Since(start) > appearWithin {
-				return fmt.Errorf("no CI run on %s after %s. Check the PR's Checks tab, then land again: pnpm land", head[:12], appearWithin)
+				return fmt.Errorf("no land run on %s after %s. Check the Actions tab, then land again: pnpm land", head[:12], appearWithin)
 			}
 		case verdictPending:
 			if !announced {

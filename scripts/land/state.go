@@ -160,6 +160,7 @@ func needsSquash(commits []commit, msg string) bool {
 // workflowRun is one of `repos/{repo}/actions/workflows/{file}/runs`' `workflow_runs`.
 type workflowRun struct {
 	ID             int64     `json:"id"`
+	Event          string    `json:"event"`
 	Status         string    `json:"status"`
 	Conclusion     string    `json:"conclusion"`
 	CreatedAt      time.Time `json:"created_at"`
@@ -175,6 +176,20 @@ func leftoverRuns(runs []workflowRun) []workflowRun {
 	var out []workflowRun
 	for _, run := range runs {
 		if run.Status != "completed" && run.HeadRepository.FullName == repo {
+			out = append(out, run)
+		}
+	}
+	return out
+}
+
+// landRuns keeps the dispatched runs, the only ones that can gate a land. A PR run that changed
+// Rust defers the macOS lane and never reports `CI OK`; the land run (`ci.yml`'s `land` input)
+// runs that lane and confirms the PR run's Linux lanes, so waiting on a PR run would read its
+// missing `CI OK` as red.
+func landRuns(runs []workflowRun) []workflowRun {
+	var out []workflowRun
+	for _, run := range runs {
+		if run.Event == "workflow_dispatch" {
 			out = append(out, run)
 		}
 	}

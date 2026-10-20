@@ -183,7 +183,22 @@ Every other `ci.yml` job runs on ubuntu, so code under `cfg(target_os = "macos")
 Mac last ran `pnpm check`. This job runs on `macos-26` (the release builder's image, so it lints against the shipping
 SDK; free for a public repo) and asks the three questions Linux can't answer for that code: `desktop-rust-clippy`,
 `desktop-rust-rustdoc`, and `desktop-rust-tests`, in that order. The other platform-blind scanners stay in
-`desktop-rust` alone. Gated on the `rust` filter like `desktop-rust`, so it runs in parallel with it.
+`desktop-rust` alone.
+
+**It runs only on the commit about to land.** The account runs at most five macOS jobs at once, and with ~15 PRs in
+flight that was the queue: over 48 h (2026-10-18 to 10-20) 33 merged PRs took 175 macOS jobs and ~4,400 macOS minutes,
+29 of them cancelled by a newer push after up to 51 min, and ~89 green ones on commits that never landed. So:
+
+- **A PR run defers it** when the `rust` filter matches (`changes`' `macos-deferred` output), and names its gate
+  `CI OK without macOS`, so it can't satisfy the ruleset (§ Branch protection). `pnpm land -no-wait` milestone pushes
+  therefore run the Linux lanes only.
+- **The land run runs it.** A blocking `pnpm land` dispatches `ci.yml` with `land: true` (and `run_all: false`) on the
+  head: every Linux lane and `hygiene` skip, the macOS lane runs when Rust changed against `main`'s merge-base
+  (paths-filter's feature-branch mode), and `ci-ok` also waits for the newest PR run on the same SHA to succeed, judged
+  by that run's conclusion. Only that run reports `CI OK`, and the land script waits on dispatched runs only
+  (`scripts/land/DETAILS.md`).
+- **Renovate PRs keep it** in their PR run: they automerge on green without `pnpm land`.
+- `main` pushes (verified or not) and `run_all` dispatches are unchanged.
 
 Last, it runs `desktop-rust-module-cycles`, whose baseline is a macOS module graph (`scripts/check/checks/DETAILS.md` §
 "Rust module cycles"), so it can't move to ubuntu. It first installs the cargo-modules version the check pins;
@@ -283,9 +298,10 @@ through `CODEQL_EXTRACTOR_RUST_OPTION_*` env vars.
 ## Branch protection
 
 `ci-ok` is the single required status check, and `main`'s ruleset names it by its check-run name, **`CI OK`** (❌ don't
-rename the job's `name:`). It needs every job in `ci.yml` except `deploy-website` (a post-land deploy), `changes`
-included, and passes only when each result is `success` or `skipped` and `changes` is `success`. A lane skipped by
-change detection passes; a failed `changes`, which skips every lane, is red.
+rename the job's `name:`). A PR run that deferred the macOS lane renames it `CI OK without macOS` on purpose, so only a
+run that ran that lane can report `CI OK` (§ macOS lane). It needs every job in `ci.yml` except `deploy-website` (a
+post-land deploy), `changes` included, and passes only when each result is `success` or `skipped` and `changes` is
+`success`. A lane skipped by change detection passes; a failed `changes`, which skips every lane, is red.
 
 It must report on EVERY run, because GitHub counts a skipped required check as passing and a missing one waits forever:
 
@@ -317,8 +333,8 @@ minute, and `deploy-website` runs off the raw `website-changed` filter. A commit
 Renovate merge GitHub rebases into a new SHA, an admin push) has no green `CI OK` and runs in full; so does a failed
 lookup. (Verified on the first real land, run 39137865939, 2026-10-18: every lane skipped.)
 
-- **Dispatches always run in full**, so the release gate's `run_all` run (`scripts/release-ci-gate.sh`) is unaffected:
-  the lookup is push-only.
+- **A `run_all` dispatch always runs in full**, so the release gate's run (`scripts/release-ci-gate.sh`) is unaffected:
+  the lookup is push-only. A land dispatch runs only the macOS lane (§ macOS lane).
 - **Trust**: it trusts any `CI OK` from GitHub Actions on the SHA, which is exactly what ruleset B trusts when it lets
   the push land.
 - `ci-coverage` rule 5 keeps it whole: every lane's `if:` reads `needs.changes.outputs`, and every filter-derived

@@ -169,6 +169,29 @@ func TestLeftoverRuns(t *testing.T) {
 	}
 }
 
+func TestLandRuns(t *testing.T) {
+	pr := workflowRun{ID: 1, Event: "pull_request"}
+	land := workflowRun{ID: 2, Event: "workflow_dispatch"}
+	cases := []struct {
+		name string
+		runs []workflowRun
+		want []int64
+	}{
+		{"none yet", nil, nil},
+		{"a PR run never gates a land", []workflowRun{pr}, nil},
+		{"the land run does", []workflowRun{pr, land}, []int64{2}},
+	}
+	for _, c := range cases {
+		var got []int64
+		for _, run := range landRuns(c.runs) {
+			got = append(got, run.ID)
+		}
+		if !slices.Equal(got, c.want) {
+			t.Errorf("%s: got %v, want %v", c.name, got, c.want)
+		}
+	}
+}
+
 func TestPollDelay(t *testing.T) {
 	cases := []struct {
 		name   string
