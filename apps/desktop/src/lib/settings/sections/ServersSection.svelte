@@ -1,14 +1,14 @@
 <script lang="ts">
     /**
-     * `File systems > Servers (SFTP, WebDAV)`: one card, the SSH host keys this
-     * Mac has trusted, each with a Forget button.
+     * `File systems > Servers (SFTP, WebDAV)`: two cards, the SSH host keys and
+     * the server certificates this Mac has trusted, each with a Forget button.
      *
      * ❗ **Saved servers are NOT here.** They live in the hub, the switcher's
      * "Servers" row, which is a pane state so a person can navigate, sort, and act
      * on them the way they do files. This page keeps only what the hub can't show.
      *
-     * ❗ The page has no CONTROL of its own, so both its sidebar row and its
-     * "host key" search hit come from the anchoring `SearchableRow` in
+     * ❗ The page has no CONTROL of its own, so its sidebar row and its "host
+     * key" and "certificate" search hits come from the `SearchableRow`s in
      * `ServersSection.rows.ts`, never a registry entry.
      */
     import { onMount } from 'svelte'
@@ -18,8 +18,13 @@
     import DateLabel from '#lib/ui/DateLabel.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
     import { createShouldShow } from '#lib/settings/settings-search.js'
-    import { listTrustedSftpHostKeys, forgetSftpHostKey } from '#lib/tauri-commands/index.js'
-    import type { TrustedHostKey } from '#lib/ipc/bindings.js'
+    import {
+        forgetSftpHostKey,
+        forgetWebdavCertificate,
+        listTrustedSftpHostKeys,
+        listTrustedWebdavCertificates,
+    } from '#lib/tauri-commands/index.js'
+    import type { TrustedCertificate, TrustedHostKey } from '#lib/ipc/bindings.js'
     import { confirmDialog } from '#lib/utils/confirm-dialog.js'
     import { getAppLogger } from '#lib/logging/logger.js'
 
@@ -36,11 +41,17 @@
     // `null` until the store has answered, so the empty sentence never flashes in
     // front of someone who does have trusted keys.
     let keys = $state<TrustedHostKey[] | null>(null)
+    let certificates = $state<TrustedCertificate[] | null>(null)
     let forgetting = $state<string | null>(null)
 
     /** What a key is filed under: host, port, and algorithm together. */
     function keyId(key: TrustedHostKey): string {
         return `${key.host}:${String(key.port)}/${key.algorithm}`
+    }
+
+    /** What a certificate is pinned under: host and port, one per server. */
+    function certificateId(certificate: TrustedCertificate): string {
+        return `certificate:${certificate.host}:${String(certificate.port)}`
     }
 
     async function load(): Promise<void> {
@@ -52,8 +63,18 @@
         }
     }
 
+    async function loadCertificates(): Promise<void> {
+        try {
+            certificates = await listTrustedWebdavCertificates()
+        } catch (error) {
+            log.warn('Could not read the trusted certificates: {error}', { error })
+            certificates = []
+        }
+    }
+
     onMount(() => {
         void load()
+        void loadCertificates()
     })
 
     // Confirmed, because the next connection to that server stops being routine:
@@ -75,9 +96,27 @@
         }
     }
 
+    // Confirmed for the same reason: the next connection there asks again.
+    async function handleForgetCertificate(certificate: TrustedCertificate): Promise<void> {
+        const confirmed = await confirmDialog(
+            tString('settings.servers.trustedCertificates.confirm', { host: certificate.host }),
+            tString('settings.servers.trustedCertificates.confirmTitle'),
+        )
+        if (!confirmed) return
+        forgetting = certificateId(certificate)
+        try {
+            await forgetWebdavCertificate(certificate.host, certificate.port)
+            await loadCertificates()
+        } catch (error) {
+            log.warn('Could not forget a trusted certificate: {error}', { error })
+        } finally {
+            forgetting = null
+        }
+    }
+
     /** `approvedAt` is ISO 8601; `DateLabel` speaks seconds. */
-    function approvedSeconds(key: TrustedHostKey): number | null {
-        const parsed = Date.parse(key.approvedAt)
+    function approvedSeconds(entry: { approvedAt: string }): number | null {
+        const parsed = Date.parse(entry.approvedAt)
         return Number.isNaN(parsed) ? null : Math.floor(parsed / 1000)
     }
 </script>
@@ -112,6 +151,44 @@
                                     disabled={forgetting === keyId(key)}
                                     aria-describedby="host-key-{keyId(key)}"
                                     onclick={() => void handleForget(key)}
+                                >
+                                    {tString('settings.servers.trustedHostKeys.forget')}
+                                </Button>
+                            </li>
+                        {/each}
+                    </ul>
+                {/if}
+            {/if}
+        </SectionCard>
+    {/if}
+
+    {#if shouldShow('row:network.trustedCertificates')}
+        <SectionCard label={tString('settings.servers.card.trustedCertificates')}>
+            <p class="card-description">{tString('settings.servers.trustedCertificates.description')}</p>
+
+            {#if certificates !== null}
+                {#if certificates.length === 0}
+                    <p class="empty">{tString('settings.servers.trustedCertificates.empty')}</p>
+                {:else}
+                    <ul class="key-list" data-testid="trusted-certificates">
+                        {#each certificates as certificate (certificateId(certificate))}
+                            <li class="key-row">
+                                <div class="key-facts">
+                                    <span class="key-host" id={certificateId(certificate)}
+                                        >{certificate.host}:{certificate.port}</span
+                                    >
+                                    <span class="key-fingerprint">{certificate.fingerprint}</span>
+                                    <span class="key-approved">
+                                        {tString('settings.servers.trustedHostKeys.approvedPrefix')}
+                                        <DateLabel modifiedAt={approvedSeconds(certificate)} />
+                                    </span>
+                                </div>
+                                <Button
+                                    variant="secondary"
+                                    size="mini"
+                                    disabled={forgetting === certificateId(certificate)}
+                                    aria-describedby={certificateId(certificate)}
+                                    onclick={() => void handleForgetCertificate(certificate)}
                                 >
                                     {tString('settings.servers.trustedHostKeys.forget')}
                                 </Button>

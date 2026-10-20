@@ -11,6 +11,7 @@ pub(crate) mod errors;
 pub(crate) mod https_first;
 pub(crate) mod params;
 pub(crate) mod propfind;
+pub(crate) mod tls_trust;
 pub(crate) mod transport;
 pub(crate) mod urls;
 pub mod volume;

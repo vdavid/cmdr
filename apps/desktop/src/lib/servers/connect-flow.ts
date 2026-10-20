@@ -204,6 +204,8 @@ function readOutcome(outcome: ServerDialOutcome): ConnectFlowResult {
       return { kind: 'cancelled' }
     case 'needs_host_key':
       return { kind: 'refused', refusal: 'host_key_untrusted' }
+    case 'needs_certificate':
+      return { kind: 'refused', refusal: 'certificate_unapproved' }
     case 'host_key_revoked':
       return { kind: 'refused', refusal: 'host_key_revoked' }
     case 'refused':

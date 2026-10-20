@@ -1,4 +1,4 @@
-//! The IPC surface for WebDAV servers: secrets and the server list. Connecting
+//! The IPC surface for WebDAV servers: certificate pins, secrets, and the server list. Connecting
 //! itself goes through the protocol-agnostic `commands::servers` facade now;
 //! this file keeps only what that facade has no reason to widen.
 //!
@@ -15,6 +15,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::network::keychain::{self, KeychainError};
+use crate::network::webdav_certificates::{self, TrustedCertificate};
 use crate::network::webdav_known_servers::{self, KnownWebdavServer};
 use crate::network::webdav_volume_wiring;
 use cmdr_webdav::UnattendedReconnect;
@@ -53,6 +54,48 @@ impl From<UnattendedReconnect> for WebdavUnattendedReconnect {
             UnattendedReconnect::NoStoredSecret => Self::NoStoredSecret,
         }
     }
+}
+
+// ============================================================================
+// Certificate trust
+// ============================================================================
+
+/// Pins the certificate a person approved for `(host, port)`: the fingerprint
+/// the connect's `NeedsCertificateApproval` showed, exactly as shown.
+///
+/// After it, dial again (`connectServer` / `connectSavedPlace`). ❗ No re-check
+/// here, unlike `approve_sftp_host_key`: only this exact fingerprint is ever
+/// trusted, so a pin of a certificate the server has since replaced trusts
+/// nothing, and the next dial shows the new one as CHANGED
+/// (`network::webdav_certificates`).
+///
+/// ❗ On a blocking task: the write is a durable temp-and-rename.
+#[tauri::command]
+#[specta::specta]
+pub async fn approve_webdav_certificate(host: String, port: u16, fingerprint: String) {
+    cmdr_fs::deadline::blocking_with_timeout(std::time::Duration::from_secs(5), (), move || {
+        webdav_certificates::pin(&host, port, &fingerprint);
+    })
+    .await;
+}
+
+/// Drops the pin for `(host, port)`, so the next connection there is first
+/// contact again. Answers whether anything was there, `false` also when the
+/// write didn't finish in time.
+#[tauri::command]
+#[specta::specta]
+pub async fn forget_webdav_certificate(host: String, port: u16) -> bool {
+    cmdr_fs::deadline::blocking_with_timeout(std::time::Duration::from_secs(5), false, move || {
+        webdav_certificates::forget(&host, port)
+    })
+    .await
+}
+
+/// Every certificate this machine has pinned, for a settings screen.
+#[tauri::command]
+#[specta::specta]
+pub fn list_trusted_webdav_certificates() -> Vec<TrustedCertificate> {
+    webdav_certificates::list()
 }
 
 // ============================================================================

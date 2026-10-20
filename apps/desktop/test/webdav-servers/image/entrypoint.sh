@@ -5,6 +5,7 @@
 # Env, all optional:
 #   AUTH        basic | digest      (default: basic)
 #   RANGES      honour | ignore     (default: honour)
+#   TLS         off | self-signed   (default: off)
 #   LARGE_MB    size of `large.bin` in MiB (default: 4)
 set -e
 
@@ -12,6 +13,7 @@ USER_NAME="${USER_NAME:-ada}"
 USER_PASSWORD="${USER_PASSWORD:-openthedoor}"
 AUTH="${AUTH:-basic}"
 RANGES="${RANGES:-honour}"
+TLS="${TLS:-off}"
 REALM="cmdr"
 EXPORT_DIR=/srv/data
 HTTPD_PREFIX=/usr/local/apache2
@@ -88,6 +90,45 @@ case "$RANGES" in
     *) echo "unknown RANGES: $RANGES" >&2; exit 1 ;;
 esac
 
+# ── TLS ──────────────────────────────────────────────────────────────
+#
+# `self-signed` is a home NAS out of the box: HTTPS with a certificate nobody
+# issued, which macOS refuses and a person can only trust by pinning it
+# (`crates/cmdr-webdav/src/tls_trust.rs`). Minted here, once per container, so
+# the certificate is stable across restarts and new on a recreation; the cells
+# read its fingerprint off the prompt rather than knowing it.
+#
+# ❗ A proper LEAF (`CA:FALSE`, `serverAuth`, the address in its SAN, a year's
+# validity), so the only thing wrong with it is who issued it. A CA certificate
+# used as a leaf, or one past macOS's 825-day ceiling, would fail for a second
+# reason too and muddy what the cells prove.
+#
+# ❗ TLS on port 80 inside the container, deliberately: the healthcheck, the
+# compose mapping, and `start.sh`'s readiness probe all speak to port 80, and
+# none of them reads a byte, so one service serves HTTPS where the others serve
+# HTTP with nothing else to special-case.
+tls_directives=""
+case "$TLS" in
+    off) ;;
+    self-signed)
+        openssl req -x509 -newkey rsa:2048 -nodes -days 365 \
+            -keyout "$HTTPD_PREFIX/conf/fixture.key" -out "$HTTPD_PREFIX/conf/fixture.crt" \
+            -subj "/CN=127.0.0.1/O=Cmdr WebDAV fixture" \
+            -addext "subjectAltName=IP:127.0.0.1,DNS:localhost" \
+            -addext "basicConstraints=critical,CA:FALSE" \
+            -addext "keyUsage=critical,digitalSignature,keyEncipherment" \
+            -addext "extendedKeyUsage=serverAuth"
+        sed -i \
+            -e 's|^#\(LoadModule ssl_module .*\)|\1|' \
+            -e 's|^#\(LoadModule socache_shmcb_module .*\)|\1|' \
+            "$CONF"
+        tls_directives="SSLEngine on
+SSLCertificateFile $HTTPD_PREFIX/conf/fixture.crt
+SSLCertificateKeyFile $HTTPD_PREFIX/conf/fixture.key"
+        ;;
+    *) echo "unknown TLS: $TLS" >&2; exit 1 ;;
+esac
+
 # ── The export ───────────────────────────────────────────────────────
 #
 # ❗ `DavLockDB` has to live somewhere the httpd WORKER user can write, and
@@ -110,6 +151,8 @@ DavMinTimeout 600
 
 # A whole test binary's cells run in parallel against one server.
 MaxRequestWorkers 150
+
+$tls_directives
 
 Alias /dav $EXPORT_DIR
 <Directory "$EXPORT_DIR">

@@ -69,6 +69,8 @@ describe('the sign-in sheet fixtures answer what their rows advertise', () => {
     ['sign-in-guest', 'refused'],
     ['host-key-first-contact', 'connected'],
     ['host-key-changed', 'connected'],
+    ['certificate-first-contact', 'connected'],
+    ['certificate-changed', 'connected'],
   ]
 
   it.each(cases)('%s answers %s', async (stateId, kind) => {

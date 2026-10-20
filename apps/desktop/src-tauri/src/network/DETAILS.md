@@ -964,10 +964,12 @@ Two details keep the table honest:
 
 ### The WebDAV twin
 
-WebDAV has one store, not two: `webdav_known_servers.rs` holds what the user has connected to (`webdav_known_servers.json`,
-keyed by the `(host, port, username)` triple `cmdr_fs::volume::webdav_volume_id` derives from) and the secret store holds
-the passwords; there is no trusted-host file because TLS trust comes from the system roots (a self-signed certificate
-answers `certificate_untrusted`, and pinning is a follow-up in GitHub [#173](https://github.com/vdavid/cmdr/issues/173)).
+WebDAV has the same two stores: `webdav_certificates.rs` holds what this machine TRUSTS beyond the system roots
+(`known-webdav-certificates.json`, one pinned SHA-256 per `(host, port)`, a self-signed NAS's certificate a person
+approved; it answers the `TrustedCertificates` seam), and `webdav_known_servers.rs` holds what the user has connected to
+(`webdav_known_servers.json`, keyed by the `(host, port, username)` triple `cmdr_fs::volume::webdav_volume_id` derives
+from). The secret store holds the passwords. ❗ A pin is written as the prompt showed it, with no second handshake: only
+that exact fingerprint is ever trusted (`crates/cmdr-webdav/DETAILS.md` § "Trusting a self-signed certificate").
 `webdav_volume_wiring.rs` is the same three steps in the same order (dial, register while retiring the incumbent via
 `on_superseded`, remember) with the same caller-owned attempt table. The connection states, the one unattended re-probe,
 and every connect outcome: `crates/cmdr-webdav/DETAILS.md` § "Connecting from the frontend".

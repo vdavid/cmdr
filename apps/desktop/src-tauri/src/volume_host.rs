@@ -10,6 +10,7 @@
 //!   `file_system::volume::manager::ArrivalOnReconnect`
 //! - credentials — `network::credential_store::KeychainCredentials`
 //! - host keys — `network::sftp_host_keys::AppHostKeys`
+//! - pinned certificates — `network::webdav_certificates::AppTrustedCertificates`
 //! - indexing — `index_host::VolumeIndexNotifier`
 //! - activity — `priority::host_policy::AppUserActivity`
 //! - analytics — `analytics::volume_sink::SpooledVolumeAnalytics`
@@ -68,6 +69,7 @@ fn wire(events: Option<Arc<dyn VolumeEventSink>>, state_root: Option<&std::path:
         .listings(Arc::new(crate::listing_host::backends::AppListings))
         .credentials(Arc::new(crate::network::credential_store::KeychainCredentials))
         .host_keys(Arc::new(crate::network::sftp_host_keys::AppHostKeys))
+        .certificates(Arc::new(crate::network::webdav_certificates::AppTrustedCertificates))
         // Mapped rather than passed through: a backend crate must not depend on
         // the index, or `cargo check` on it would compile a quarter of the app.
         .indexing(Arc::new(crate::index_host::VolumeIndexNotifier))

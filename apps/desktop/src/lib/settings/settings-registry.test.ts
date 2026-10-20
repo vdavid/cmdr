@@ -698,6 +698,12 @@ describe('File systems > Servers (SFTP, WebDAV)', () => {
     expect(ids).toContain('row:network.trustedHostKeys')
   })
 
+  it('is a search hit for a pinned certificate too', () => {
+    clearSearchIndex()
+    const ids = searchSettings('self-signed').map((result) => result.entry.id)
+    expect(ids).toContain('row:network.trustedCertificates')
+  })
+
   /** ❗ Hidden internal state adds no nav row, and no anchoring row rescues it. */
   it('leaves ordinary hidden state out of the tree', () => {
     const tree = buildSectionTree()

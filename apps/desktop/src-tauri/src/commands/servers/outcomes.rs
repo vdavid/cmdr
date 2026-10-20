@@ -76,6 +76,7 @@ pub(super) fn outcome_from_webdav(connection: WebdavConnection) -> ServerConnect
         // ❗ Its own variant, ❌ never folded into `AuthenticationRejected`: a
         // Digest-only server never saw the password.
         WebdavConnection::AuthMethodUnsupported => ServerConnectOutcome::AuthMethodUnsupported,
+        WebdavConnection::NeedsCertificateApproval(prompt) => ServerConnectOutcome::NeedsCertificateApproval(prompt),
         WebdavConnection::CertificateUntrusted => ServerConnectOutcome::CertificateUntrusted,
         WebdavConnection::NotAWebdavServer => ServerConnectOutcome::NotAWebdavServer,
         WebdavConnection::TimedOut => ServerConnectOutcome::TimedOut,

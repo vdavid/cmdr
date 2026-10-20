@@ -202,6 +202,19 @@ catch it. The cost is that a no-op `record` leaves an approve-then-reconnect har
 approve → still unknown", which is why `InMemoryHostKeys` exists alongside and actually remembers. A fixture uses that
 one; a bench uses the detached default.
 
+### `TrustedCertificates`
+
+⇐ nothing before it: WebDAV is the first backend that trusts a TLS certificate the OS refused (a NAS's self-signed one).
+The app answers it from `known-webdav-certificates.json` (`network::webdav_certificates::AppTrustedCertificates`), the
+same shape as `HostKeys` for the same reasons, and the same QUESTION shape: the backend asks `pinned(host, port)` every
+time it builds a client, a reconnect included, never takes a verdict handed down at connect.
+
+**One question, no `record`.** A pin is the fingerprint a person read off the prompt, and the backend trusts only a
+certificate with exactly that fingerprint, so there's no server to re-ask before writing it and the app writes it itself
+(`approve_webdav_certificate`). `HostKeys` keeps `record` because its approval re-checks the key over SSH first.
+Detached is trust-nothing; `InMemoryCertificates` pins for a fixture. The verifier and why it wraps the platform one:
+`crates/cmdr-webdav/DETAILS.md` § "Trusting a self-signed certificate".
+
 ### `IndexNotifier`
 
 ⇐ `index_host::index().on_watch_gap` (three sites in `crates/cmdr-smb/src/volume/watcher.rs`: both setup failures, the
@@ -399,6 +412,7 @@ the subsystem that can actually give it.
 - `VolumeEventSink` ⇒ `events::volume_mapping::TauriVolumeEvents`
 - `CredentialStore` ⇒ `network::credential_store::KeychainCredentials`
 - `HostKeys` ⇒ `network::sftp_host_keys::AppHostKeys`
+- `TrustedCertificates` ⇒ `network::webdav_certificates::AppTrustedCertificates`
 - `IndexNotifier` ⇒ `index_host::VolumeIndexNotifier`
 - `UserActivity` ⇒ `priority::host_policy::AppUserActivity`
 - `AnalyticsSink` ⇒ `analytics::volume_sink::SpooledVolumeAnalytics`

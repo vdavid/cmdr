@@ -48,6 +48,7 @@
         smb_shares: () => tString('stateRecovery.smbShares.title'),
         smb_servers: () => tString('stateRecovery.smbServers.title'),
         sftp_host_keys: () => tString('stateRecovery.sftpHostKeys.title'),
+        webdav_certificates: () => tString('stateRecovery.webdavCertificates.title'),
         local_ai: () => tString('stateRecovery.localAi.title'),
         credentials: () => tString('stateRecovery.credentials.title'),
     }

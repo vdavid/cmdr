@@ -3731,11 +3731,38 @@
   },
   "settings.servers.card.trustedHostKeys": "Trusted host keys",
   "@settings.servers.card.trustedHostKeys": {
-    "description": "Title of the only card on Settings > File systems > Servers: the list of SSH server keys this Mac has accepted. A host key is what a server proves its identity with, and \"trusted\" means the user said yes to it once. Three or four words."
+    "description": "Title of the first card on Settings > File systems > Servers: the list of SSH server keys this Mac has accepted. A host key is what a server proves its identity with, and \"trusted\" means the user said yes to it once. Three or four words."
   },
   "settings.network.trustedHostKeys.keywords": "host key, fingerprint, trust, trusted, known hosts, server, forget",
   "@settings.network.trustedHostKeys.keywords": {
     "description": "Search keywords for the “Trusted host keys” row (settings.servers.card.trustedHostKeys) in Settings > File systems > Servers (SFTP, WebDAV). What it does: the list of servers whose identity (host key, fingerprint) you’ve trusted, where you can forget one. Never shown. Search already matches its label, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
+  },
+  "settings.servers.card.trustedCertificates": "Trusted certificates",
+  "@settings.servers.card.trustedCertificates": {
+    "description": "Title of the second card on Settings > File systems > Servers: the HTTPS certificates of WebDAV servers (usually a home NAS that made its own certificate) the user told Cmdr to trust although macOS doesn't. Two or three words."
+  },
+  "settings.network.trustedCertificates.keywords": "certificate, self-signed, fingerprint, trust, trusted, NAS, server, forget",
+  "@settings.network.trustedCertificates.keywords": {
+    "description": "Search keywords for the “Trusted certificates” row (settings.servers.card.trustedCertificates) in Settings > File systems > Servers (SFTP, WebDAV). What it does: the list of servers whose HTTPS certificate you told Cmdr to trust, where you can forget one. Never shown. Search already matches its label, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
+  },
+  "settings.servers.trustedCertificates.description": "When macOS doesn’t trust a server’s certificate, Cmdr asks before it trusts it for you, and remembers your answer here. Home servers often make their own.",
+  "@settings.servers.trustedCertificates.description": {
+    "description": "Help text under the \"Trusted certificates\" card title. A certificate is what an HTTPS server proves its identity with; a home NAS often makes its own, which macOS doesn't trust. \"Cmdr\" is the app name and \"macOS\" the operating system; keep both."
+  },
+  "settings.servers.trustedCertificates.empty": "Nothing trusted yet. When you connect to a WebDAV server macOS doesn’t trust, Cmdr shows you its certificate’s fingerprint and asks.",
+  "@settings.servers.trustedCertificates.empty": {
+    "description": "Shown in place of the list when no certificate has been trusted. Reassuring, not a warning: nothing is wrong. \"WebDAV\" is a protocol name and \"Cmdr\" the app name; keep both."
+  },
+  "settings.servers.trustedCertificates.confirmTitle": "Forget this certificate?",
+  "@settings.servers.trustedCertificates.confirmTitle": {
+    "description": "Title of the confirmation asked before a trusted certificate is forgotten. A short question. Shown in a native macOS alert, so keep it to a few words."
+  },
+  "settings.servers.trustedCertificates.confirm": "The next time you connect to {host}, Cmdr will show you its certificate’s fingerprint and ask whether to trust it.",
+  "@settings.servers.trustedCertificates.confirm": {
+    "description": "Body of that confirmation: what changes if they go ahead. States a consequence rather than warning; nothing is lost. \"Cmdr\" is the app name; keep it.",
+    "placeholders": {
+      "host": "the server’s hostname or address, like \"nas.local\""
+    }
   },
   "settings.servers.trustedHostKeys.description": "Cmdr asks before it trusts a server’s key the first time you connect, and remembers your answer here. Saved servers live in the Servers list, not on this page.",
   "@settings.servers.trustedHostKeys.description": {

@@ -51,6 +51,7 @@ import type {
   SignInEndpoint,
   SignInSheetResult,
   SignInSubmission,
+  TrustPrompt,
 } from './sign-in-contract'
 import { readConnectOutcome, readSavedServerOutcome } from './server-outcomes'
 import { openSignInSheet } from './sign-in-sheet-state.svelte'
@@ -194,7 +195,7 @@ export async function openSignInForPlace(request: SignInSeamRequest): Promise<Si
     endpoint,
     shape,
     remembered,
-    hostKey: firstOutcome?.outcome === 'needs_host_key_approval' ? firstOutcome : undefined,
+    trust: trustPromptFrom(firstOutcome),
     placeId: volumeId,
     // Why the person is being asked. ❗ Read off the dial that sent them here
     // rather than assumed, so `needs_credentials` (nothing was ever offered) and
@@ -236,6 +237,13 @@ function withRememberFlip(options: { volumeId: string; remembered: boolean; atte
     }
     return await options.attempt(submission)
   }
+}
+
+/** The host key or certificate a first dial asked a person to trust, if that's what it answered. */
+function trustPromptFrom(outcome: ServerConnectOutcome | undefined): TrustPrompt | undefined {
+  if (outcome?.outcome === 'needs_host_key_approval') return { subject: 'host_key', prompt: outcome }
+  if (outcome?.outcome === 'needs_certificate_approval') return { subject: 'certificate', prompt: outcome }
+  return undefined
 }
 
 /**

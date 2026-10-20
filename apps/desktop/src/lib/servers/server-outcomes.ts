@@ -7,8 +7,8 @@
  * this switch would be two chances to word one outcome differently, which is why
  * `connect-flow.ts` folds this result rather than re-reading the wire.
  *
- * The two host-key arms keep their payloads: the sheet's key step needs a
- * fingerprint to show, and a refusal sentence has nowhere to put one.
+ * The host-key and certificate arms keep their payloads: the sheet's trust step
+ * needs a fingerprint to show, and a refusal sentence has nowhere to put one.
  */
 
 import type { EjectError, SavedServerOutcome } from '#lib/ipc/bindings.js'
@@ -22,7 +22,12 @@ export type ServerDialOutcome = Exclude<SignInAttemptOutcome, { kind: 'handed_of
 /** The outcomes that are a bare REASON, carrying nothing a sentence needs beyond its kind. */
 type PlainRefusalOutcome = Exclude<
   ServerConnectOutcome['outcome'],
-  'connected' | 'cancelled' | 'needs_host_key_approval' | 'host_key_revoked' | 'region_mismatch'
+  | 'connected'
+  | 'cancelled'
+  | 'needs_host_key_approval'
+  | 'needs_certificate_approval'
+  | 'host_key_revoked'
+  | 'region_mismatch'
 >
 
 /**
@@ -55,6 +60,8 @@ export function readConnectOutcome(outcome: ServerConnectOutcome): ServerDialOut
       return { kind: 'cancelled' }
     case 'needs_host_key_approval':
       return { kind: 'needs_host_key', prompt: outcome }
+    case 'needs_certificate_approval':
+      return { kind: 'needs_certificate', prompt: outcome }
     case 'host_key_revoked':
       return { kind: 'host_key_revoked', key: outcome }
     case 'region_mismatch':
@@ -141,6 +148,7 @@ export function readEjectAndSaveOutcome(outcome: EjectAndSaveOutcome): SaveOutco
 export function needsAHuman(outcome: ServerDialOutcome): boolean {
   return (
     outcome.kind === 'needs_host_key' ||
+    outcome.kind === 'needs_certificate' ||
     (outcome.kind === 'refused' &&
       (outcome.refusal === 'needs_credentials' ||
         outcome.refusal === 'authentication_rejected' ||

@@ -136,7 +136,7 @@ describe('a place that is asking, with nothing registered', () => {
     if (request.mode !== 'sign-in') throw new Error('unreachable')
     // The sheet opens ON the key step, so the fingerprint is what the user sees
     // first rather than a password box over a server nobody has trusted.
-    expect(request.hostKey).toEqual(prompt)
+    expect(request.trust).toEqual({ subject: 'host_key', prompt })
 
     const attempt = attemptOf(request)
     const wrong = { mode: 'sign-in' as const, secret: { secret: 'nope', remember: false }, username: null }

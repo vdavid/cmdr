@@ -179,7 +179,7 @@ var WEBDAV = &Stack{
 		// What the Playwright suites dial through the real add-server sheet: the
 		// Basic-auth server alone.
 		ModeE2E:  {"webdav-fixture-apache"},
-		ModeCore: {"webdav-fixture-apache", "webdav-fixture-digest", "webdav-fixture-norange"},
+		ModeCore: {"webdav-fixture-apache", "webdav-fixture-digest", "webdav-fixture-norange", "webdav-fixture-tls"},
 		// ❗ Its own mode, and deliberately NOT part of `core`: Nextcloud is a
 		// ~1 GB image that installs itself before it binds a port, against
 		// httpd's ~60 MB and instant start. `desktop-rust-webdav-nextcloud` is

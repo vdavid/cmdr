@@ -54,7 +54,10 @@ impl HttpBackend for WebdavVolumeInner {
     }
 
     async fn dial(&self, secret: &str) -> Result<WebdavClient, DialRefusal> {
-        match build_and_probe(&self.params(), secret, &CancellationToken::new()).await {
+        let params = self.params();
+        // ❗ Asked per dial, so a pin approved since the last client counts.
+        let pinned = self.host.certificates().pinned(params.host(), params.port());
+        match build_and_probe(&params, secret, pinned, &CancellationToken::new()).await {
             Ok((client, keeps_dates)) => {
                 self.keeps_dates.store(keeps_dates, Ordering::Relaxed);
                 Ok(client)
@@ -72,9 +75,16 @@ impl HttpBackend for WebdavVolumeInner {
             Err(WebdavConnectError::Unreachable(what) | WebdavConnectError::Transport(what)) => {
                 Err(DialRefusal::Transient(VolumeError::DeviceDisconnected(what.into())))
             }
-            Err(WebdavConnectError::CertificateUntrusted | WebdavConnectError::NotAWebdavServer) => Err(
-                DialRefusal::Transient(VolumeError::DeviceDisconnected(self.volume_id.clone().into())),
-            ),
+            // ❗ A certificate that changed while nobody was watching is NOT
+            // trusted here: an unattended dial has nobody to ask, so the volume
+            // stays down until a person opens it and the connect shows the prompt.
+            Err(
+                WebdavConnectError::CertificateNeedsApproval(_)
+                | WebdavConnectError::CertificateUntrusted
+                | WebdavConnectError::NotAWebdavServer,
+            ) => Err(DialRefusal::Transient(VolumeError::DeviceDisconnected(
+                self.volume_id.clone().into(),
+            ))),
         }
     }
 }

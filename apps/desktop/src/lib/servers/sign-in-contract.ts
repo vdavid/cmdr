@@ -19,6 +19,7 @@
  */
 
 import type {
+  CertificatePrompt,
   HostKeyPrompt,
   SecretOffer,
   SavedServer,
@@ -28,6 +29,15 @@ import type {
   SignInShape,
 } from '#lib/ipc/bindings.js'
 import type { ConnectRefusalKind, RefusalHint } from './connect-refusals'
+
+/**
+ * A server identity a person is asked to trust before a dial can go on: an SSH
+ * host key, or a TLS certificate macOS refused (a self-signed NAS). One union so
+ * the sheet's trust step has one shape to render, with each subject's own words.
+ */
+export type TrustPrompt =
+  | { subject: 'host_key'; prompt: HostKeyPrompt }
+  | { subject: 'certificate'; prompt: CertificatePrompt }
 
 /** The server a sign-in is FOR, as its read-only header spells it. */
 export interface SignInEndpoint {
@@ -121,6 +131,7 @@ export type SignInAttemptOutcome =
   /** An add that only saved ("Add", "Add anyway"): the new server's id, for the hub to select it. */
   | { kind: 'added'; serverId: string }
   | { kind: 'needs_host_key'; prompt: HostKeyPrompt }
+  | { kind: 'needs_certificate'; prompt: CertificatePrompt }
   | { kind: 'host_key_revoked'; key: SftpHostKeyIdentity }
   /**
    * `hint`: a softer line under the refusal, for something besides the server worth checking. `region`:
@@ -158,8 +169,11 @@ export type SignInSheetRequest =
       endpoint: SignInEndpoint
       /** What to ask, from the backend. ❌ Never derived from a protocol or a rung. */
       shape: SignInShape
-      /** Opens on the key step instead of the fields, when a key is what's in the way. */
-      hostKey?: HostKeyPrompt
+      /**
+       * Opens on the trust step instead of the fields, when a host key or a certificate is
+       * what's in the way.
+       */
+      trust?: TrustPrompt
       /**
        * The saved place asking, when it's one (`openSignInForPlace`). A move of that place
        * closes the sheet (`dismissSignInForPlaces`): its attempt would dial the OLD address.

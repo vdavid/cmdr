@@ -506,6 +506,8 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
       { id: 'sign-in-guest', label: 'Sign in: username, password, or guest' },
       { id: 'host-key-first-contact', label: 'Host key: first contact' },
       { id: 'host-key-changed', label: 'Host key: it changed' },
+      { id: 'certificate-first-contact', label: 'Certificate: first contact (a self-signed NAS)' },
+      { id: 'certificate-changed', label: 'Certificate: it changed' },
       { id: 'edit', label: 'Edit a saved server' },
     ],
   },

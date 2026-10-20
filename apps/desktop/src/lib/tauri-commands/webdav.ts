@@ -1,14 +1,45 @@
-// WebDAV servers: secrets and the saved-server list. Connecting goes through
-// the protocol-agnostic `servers.ts` (`connectServer` / `connectSavedPlace`).
+// WebDAV servers: certificate pins, secrets, and the saved-server list.
+// Connecting goes through the protocol-agnostic `servers.ts` (`connectServer` /
+// `connectSavedPlace`).
 //
 // The whole flow, end to end, plus what every outcome means:
 // `crates/cmdr-webdav/DETAILS.md`.
 
 import { commands } from '#lib/ipc/bindings.js'
-import type { KnownWebdavServer, WebdavUnattendedReconnect } from '#lib/ipc/bindings.js'
+import type {
+  CertificatePrompt,
+  KnownWebdavServer,
+  TrustedCertificate,
+  WebdavUnattendedReconnect,
+} from '#lib/ipc/bindings.js'
 import { throwKeychainError } from '#lib/servers/keychain-failure.js'
 
-export type { KnownWebdavServer, WebdavUnattendedReconnect }
+export type { CertificatePrompt, KnownWebdavServer, TrustedCertificate, WebdavUnattendedReconnect }
+
+/**
+ * Pins the certificate a person approved, exactly as the prompt showed it, so the next dial to that server trusts
+ * it although macOS doesn't. Dial again after it.
+ *
+ * No second handshake, unlike `approveSftpHostKey`: only this exact fingerprint is ever trusted, so if the server
+ * has moved to another certificate since, the next dial comes back on that one as `changed`.
+ */
+export async function approveWebdavCertificate(prompt: {
+  host: string
+  port: number
+  fingerprint: string
+}): Promise<void> {
+  await commands.approveWebdavCertificate(prompt.host, prompt.port, prompt.fingerprint)
+}
+
+/** Drops the pin for one server, so the next connection there is first contact again. Returns whether one was there. */
+export async function forgetWebdavCertificate(host: string, port: number): Promise<boolean> {
+  return await commands.forgetWebdavCertificate(host, port)
+}
+
+/** Every certificate this machine has pinned, for a settings screen. */
+export async function listTrustedWebdavCertificates(): Promise<TrustedCertificate[]> {
+  return await commands.listTrustedWebdavCertificates()
+}
 
 /**
  * Saves the secret for one account on one server, so the next connection is silent.

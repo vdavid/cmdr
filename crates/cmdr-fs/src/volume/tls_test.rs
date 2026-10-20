@@ -3,7 +3,7 @@
 use std::fmt;
 use std::io;
 
-use super::has_tls_refusal;
+use super::{causes, has_tls_refusal};
 
 /// An error wrapping `source`, the way a client error wraps its cause.
 #[derive(Debug)]
@@ -26,6 +26,26 @@ fn an_invalid_data_io_error_deep_in_the_chain_is_a_tls_refusal() {
     let refusal = io::Error::new(io::ErrorKind::InvalidData, "invalid peer certificate");
     let err = Wrapping(Box::new(Wrapping(Box::new(refusal))));
     assert!(has_tls_refusal(&err));
+}
+
+#[test]
+fn a_refusal_inside_another_io_error_is_found() {
+    // The shape reqwest 0.13.5 hands back for a self-signed server (printed off
+    // `webdav-fixture-tls`, 2026-10-20): the `InvalidData` sits INSIDE an
+    // `io::Error` of kind `Other`, whose `source()` skips it.
+    let refusal = io::Error::new(io::ErrorKind::InvalidData, "invalid peer certificate");
+    let err = Wrapping(Box::new(io::Error::other(refusal)));
+    assert!(has_tls_refusal(&err));
+}
+
+#[test]
+fn causes_descend_into_an_io_errors_wrapped_error() {
+    let refusal = io::Error::new(io::ErrorKind::InvalidData, "invalid peer certificate");
+    let err = Wrapping(Box::new(io::Error::other(refusal)));
+    let kinds: Vec<io::ErrorKind> = causes(&err)
+        .filter_map(|cause| cause.downcast_ref::<io::Error>().map(io::Error::kind))
+        .collect();
+    assert_eq!(kinds, [io::ErrorKind::Other, io::ErrorKind::InvalidData]);
 }
 
 #[test]

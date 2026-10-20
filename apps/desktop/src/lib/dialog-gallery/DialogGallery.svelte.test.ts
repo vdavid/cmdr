@@ -65,6 +65,7 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
   forgetServerSecret: vi.fn(() => Promise.resolve(true)),
   updateSavedServer: vi.fn(() => Promise.resolve({ outcome: 'saved' })),
   approveSftpHostKey: vi.fn(() => Promise.resolve({ outcome: 'recorded' })),
+  approveWebdavCertificate: vi.fn(() => Promise.resolve()),
   openExternalUrl: vi.fn(() => Promise.resolve()),
   markCommercialReminderDismissed: vi.fn(() => Promise.resolve()),
   markExpirationModalShown: vi.fn(() => Promise.resolve()),

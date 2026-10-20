@@ -50,6 +50,16 @@ fn webdav_entry(host: &str, pinned: bool) -> KnownWebdavServer {
     }
 }
 
+/// A self-signed NAS's first-contact certificate prompt.
+fn certificate_prompt() -> cmdr_fs::volume::tls::CertificatePrompt {
+    cmdr_fs::volume::tls::CertificatePrompt {
+        host: "nas.local".to_string(),
+        port: 5006,
+        fingerprint: "AB:CD".to_string(),
+        kind: cmdr_fs::volume::tls::CertificatePromptKind::Unknown,
+    }
+}
+
 fn manual_entry(address: &str) -> ManualServerEntry {
     ManualServerEntry {
         id: manual_servers::generate_server_id(address, 445),
@@ -335,6 +345,10 @@ fn every_webdav_outcome_maps_to_its_superset_twin_including_the_unsupported_sche
         (
             WebdavConnection::AuthMethodUnsupported,
             ServerConnectOutcome::AuthMethodUnsupported,
+        ),
+        (
+            WebdavConnection::NeedsCertificateApproval(certificate_prompt()),
+            ServerConnectOutcome::NeedsCertificateApproval(certificate_prompt()),
         ),
         (
             WebdavConnection::CertificateUntrusted,

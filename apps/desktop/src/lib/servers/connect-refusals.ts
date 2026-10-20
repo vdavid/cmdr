@@ -37,6 +37,8 @@ export type ConnectRefusalKind =
   | 'account_not_permitted'
   | 'auth_method_unsupported'
   | 'certificate_untrusted'
+  /** WebDAV: macOS refused the certificate and Cmdr has no pin for it yet; the sheet's trust step pins it. */
+  | 'certificate_unapproved'
   | 'not_a_webdav_server'
   | 'invalid_url'
   | 'timed_out'
@@ -129,6 +131,7 @@ const REFUSAL_KEYS: Record<ConnectRefusalKind, MessageKey> = {
   account_not_permitted: 'servers.refusal.accountNotPermitted',
   auth_method_unsupported: 'servers.refusal.authMethodUnsupported',
   certificate_untrusted: 'servers.refusal.certificateUntrusted',
+  certificate_unapproved: 'servers.refusal.certificateUnapproved',
   not_a_webdav_server: 'servers.refusal.notAWebdavServer',
   invalid_url: 'servers.refusal.invalidUrl',
   timed_out: 'servers.refusal.timedOut',
@@ -283,6 +286,7 @@ const REFUSAL_FIELDS: Record<ConnectRefusalKind, RefusalField> = {
   // ❗ The secret was never sent, so the field is not where the fix is.
   auth_method_unsupported: 'form',
   certificate_untrusted: 'form',
+  certificate_unapproved: 'form',
   not_a_webdav_server: 'address',
   invalid_url: 'address',
   timed_out: 'address',

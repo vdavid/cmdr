@@ -1,6 +1,6 @@
-# The WebDAV fixture stack: three real Apache httpd servers with `mod_dav` (one
-# per auth scheme a WebDAV client has to answer, plus one that ignores `Range`),
-# and one real Nextcloud.
+# The WebDAV fixture stack: four real Apache httpd servers with `mod_dav` (one
+# per auth scheme a WebDAV client has to answer, one that ignores `Range`, and
+# one behind a self-signed certificate), and one real Nextcloud.
 #
 # ❗ The project is `webdav-fixture` and every service name carries that prefix.
 # `desktop-fixture-lane-coverage` identifies a WebDAV cell by an `#[ignore]`
@@ -33,7 +33,7 @@ x-fixture: &fixture
   build: ./image
   image: cmdr-webdav-fixture:latest
   restart: unless-stopped
-  # Principle 5 applies to CI too: three idle httpd containers should cost about
+  # Principle 5 applies to CI too: four idle httpd containers should cost about
   # what one does.
   mem_limit: 256m
   cpus: 0.5
@@ -71,6 +71,18 @@ services:
     environment:
       RANGES: ignore
     ports: ['${WEBDAV_BIND_ADDR:-127.0.0.1}:${WEBDAV_FIXTURE_NORANGE_PORT:-13483}:80']
+
+  # The stock export over HTTPS with a SELF-SIGNED certificate, which is what a
+  # Synology or QNAP serves out of the box. macOS refuses it, so connecting asks
+  # a person to trust it by its fingerprint, and the cells drive that pin
+  # (`crates/cmdr-webdav/src/volume/tls_trust_test.rs`). The certificate is
+  # minted at first start (`image/entrypoint.sh`), and TLS runs on the
+  # container's port 80, so the healthcheck and `start.sh` need no exception.
+  webdav-fixture-tls:
+    <<: *fixture
+    environment:
+      TLS: self-signed
+    ports: ['${WEBDAV_BIND_ADDR:-127.0.0.1}:${WEBDAV_FIXTURE_TLS_PORT:-13484}:80']
 
   # A real Nextcloud (sabre/dav), and the ONLY service here that isn't Apache
   # `mod_dav`. It exists so three claims about real servers are observations:

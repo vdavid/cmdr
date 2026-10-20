@@ -36,6 +36,7 @@ vi.mock('#lib/tauri-commands/index.js', async (importOriginal) => ({
   forgetServerSecret: vi.fn(() => Promise.resolve(true)),
   updateSavedServer: vi.fn(() => Promise.resolve({ outcome: 'saved' })),
   approveSftpHostKey: vi.fn(() => Promise.resolve({ outcome: 'recorded' })),
+  approveWebdavCertificate: vi.fn(() => Promise.resolve()),
 }))
 
 vi.mock('@tauri-apps/plugin-dialog', () => ({ open: vi.fn(() => Promise.resolve(null)) }))
@@ -117,12 +118,15 @@ describe('SignInSheet a11y', () => {
       remembered: false,
       endpoint,
       shape: { kind: 'password' },
-      hostKey: {
-        host: 'nas.local',
-        port: 22,
-        algorithm: 'ssh-ed25519',
-        fingerprint: 'SHA256:9Xq4mE1cRt7vBn2sKw5jHy8dZpLu3aFgQoI6tNbVxYc',
-        kind: 'changed',
+      trust: {
+        subject: 'host_key',
+        prompt: {
+          host: 'nas.local',
+          port: 22,
+          algorithm: 'ssh-ed25519',
+          fingerprint: 'SHA256:9Xq4mE1cRt7vBn2sKw5jHy8dZpLu3aFgQoI6tNbVxYc',
+          kind: 'changed',
+        },
       },
       attempt: refusing,
     })
@@ -337,12 +341,15 @@ describe('the three renderers on their own', () => {
     mount(HostKeyStep, {
       target,
       props: {
-        prompt: {
-          host: 'nas.local',
-          port: 22,
-          algorithm: 'ssh-ed25519',
-          fingerprint: 'SHA256:2Bp0aJ8h5rXKk1vN7qTt3fYw9cLmQzE4sVuG6dRhPxA',
-          kind: 'unknown',
+        trust: {
+          subject: 'host_key',
+          prompt: {
+            host: 'nas.local',
+            port: 22,
+            algorithm: 'ssh-ed25519',
+            fingerprint: 'SHA256:2Bp0aJ8h5rXKk1vN7qTt3fYw9cLmQzE4sVuG6dRhPxA',
+            kind: 'unknown',
+          },
         },
         onTrust: () => {},
         busy: false,

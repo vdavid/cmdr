@@ -43,6 +43,17 @@ cmdr-http = { path = "../cmdr-http" }
 # Nextcloud a password hash per request (`DETAILS.md` § "Session cookies"); the
 # app declares it too, so both resolve one reqwest.
 reqwest = { version = "0.13", default-features = false, features = ["cookies", "http2", "rustls", "stream"] }
+# The TLS half of trusting a NAS's self-signed certificate (`tls_trust.rs`, the
+# only file that names it): a verifier that wraps the platform one reqwest uses
+# and lets one pinned certificate through, plus the typed `rustls::Error` that
+# tells an approvable refusal from a broken handshake. Both already in the graph
+# through reqwest's `rustls` feature, at these versions and a subset of its
+# features, so nothing new is compiled; `aws-lc-rs` is the provider reqwest
+# itself falls back to.
+rustls = { version = "0.23.46", default-features = false, features = ["std", "aws-lc-rs"] }
+rustls-platform-verifier = "0.7.0"
+# A certificate's SHA-256 fingerprint. The app's and `cmdr-s3`'s version.
+sha2 = "0.11"
 # PROPFIND `multistatus` parsing, namespace-aware: servers prefix `DAV:` as `D:`,
 # `d:`, `a:`, or nothing at all.
 quick-xml = "0.42"

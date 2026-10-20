@@ -62,9 +62,11 @@
         SignInSheetRequest,
         SignInSheetResult,
         SignInSubmission,
+        TrustPrompt,
     } from './sign-in-contract'
     import {
         approveSftpHostKey,
+        approveWebdavCertificate,
         cancelServerConnect,
         ejectAndUpdateSavedSmbHost,
         forgetServerSecret,
@@ -79,7 +81,7 @@
     import { tString } from '#lib/intl/messages.svelte.js'
     import type { MessageKey } from '#lib/intl/keys.gen.js'
     import { getAppLogger } from '#lib/logging/logger.js'
-    import type { HostKeyPrompt, SavedServer, ServerTarget } from '#lib/ipc/bindings.js'
+    import type { SavedServer, ServerTarget } from '#lib/ipc/bindings.js'
 
     interface Props {
         request: SignInSheetRequest
@@ -90,11 +92,11 @@
 
     const log = getAppLogger('servers')
 
-    /** The body: the form, the key question, or the one refusal no button can undo. */
-    type Step = 'form' | 'host_key' | 'revoked'
+    /** The body: the form, the trust question (a host key or a certificate), or the one refusal no button can undo. */
+    type Step = 'form' | 'trust' | 'revoked'
 
-    let step = $state<Step>(request.mode === 'sign-in' && request.hostKey ? 'host_key' : 'form')
-    let hostKeyPrompt = $state<HostKeyPrompt | null>(request.mode === 'sign-in' ? (request.hostKey ?? null) : null)
+    let step = $state<Step>(request.mode === 'sign-in' && request.trust ? 'trust' : 'form')
+    let trustPrompt = $state<TrustPrompt | null>(request.mode === 'sign-in' ? (request.trust ?? null) : null)
     let busy = $state(false)
     let refusal = $state<ConnectRefusalKind | null>(
         request.mode === 'sign-in' ? refusalShownOnOpen(request.refusal) : null,
@@ -373,8 +375,9 @@
     /**
      * The one remedy worth a button: a bare Nextcloud origin answers "nothing
      * here speaks WebDAV", and the fix is a collection path nobody knows.
-     * ownCloud shares it. ❌ `certificate_untrusted` gets no button, because none
-     * of them could work: trusting a certificate happens in Keychain Access.
+     * ownCloud shares it. ❌ `certificate_untrusted` gets no button: it's a
+     * certificate no pin can answer (revoked, malformed), and one a pin CAN
+     * answer comes back as the trust step instead.
      */
     const offersNextcloudRemedy = $derived(refusal === 'not_a_webdav_server' && form.username.trim() !== '')
 
@@ -620,8 +623,12 @@
                 close({ kind: 'cancelled' })
                 return
             case 'needs_host_key':
-                hostKeyPrompt = outcome.prompt
-                step = 'host_key'
+                trustPrompt = { subject: 'host_key', prompt: outcome.prompt }
+                step = 'trust'
+                return
+            case 'needs_certificate':
+                trustPrompt = { subject: 'certificate', prompt: outcome.prompt }
+                step = 'trust'
                 return
             case 'host_key_revoked':
                 // ❌ Deliberately final: no button can safely undo a revocation
@@ -664,30 +671,45 @@
     }
 
     /**
-     * Records the key the user looked at, then runs the round it interrupted.
+     * Records the key or pins the certificate the user looked at, then runs the
+     * round it interrupted.
      *
-     * ❗ There may BE no interrupted round: the flow hands the key question over
-     * with the sheet opening straight onto this step, so the submission is
+     * ❗ There may BE no interrupted round: the flow hands the trust question
+     * over with the sheet opening straight onto this step, so the submission is
      * whatever the form holds right now. That is usually an empty secret, which
-     * is correct — the dial past a freshly trusted key often succeeds from the
-     * stored one, and comes back asking when it doesn't.
+     * is correct — the dial past a freshly trusted server often succeeds from
+     * the stored one, and comes back asking when it doesn't.
      */
-    async function trustHostKey() {
+    async function trustServer() {
         const submission = pendingSubmission ?? buildSubmission()
-        if (!hostKeyPrompt || !submission) return
+        if (!trustPrompt || !submission) return
+        if (trustPrompt.subject === 'certificate') {
+            // ❗ Pinned as shown, with no second handshake: only this exact
+            // fingerprint is ever trusted, so if the server has since moved to
+            // another certificate the dial below comes back on it as CHANGED.
+            busy = true
+            await approveWebdavCertificate(trustPrompt.prompt)
+            busy = false
+            step = 'form'
+            await run(submission)
+            return
+        }
         busy = true
-        const result = await approveSftpHostKey(hostKeyPrompt)
+        const result = await approveSftpHostKey(trustPrompt.prompt)
         busy = false
         if (result.outcome === 'superseded') {
             // ❗ Nothing was recorded: the server presents a different key now
             // than the one just shown. The step starts over on the REAL key
             // rather than silently trusting what was on screen.
-            hostKeyPrompt = {
-                host: result.host,
-                port: result.port,
-                algorithm: result.algorithm,
-                fingerprint: result.fingerprint,
-                kind: result.kind,
+            trustPrompt = {
+                subject: 'host_key',
+                prompt: {
+                    host: result.host,
+                    port: result.port,
+                    algorithm: result.algorithm,
+                    fingerprint: result.fingerprint,
+                    kind: result.kind,
+                },
             }
             return
         }
@@ -922,8 +944,8 @@
     {#snippet title()}{sheetTitle}{/snippet}
 
     <div class="sheet-body" bind:this={sheetBody}>
-        {#if step === 'host_key' && hostKeyPrompt}
-            <HostKeyStep prompt={hostKeyPrompt} onTrust={() => void trustHostKey()} {busy} />
+        {#if step === 'trust' && trustPrompt}
+            <HostKeyStep trust={trustPrompt} onTrust={() => void trustServer()} {busy} />
         {:else if step === 'revoked'}
             <p class="form-refusal" role="alert">{refusalText}</p>
         {:else if request.mode === 'sign-in' && shape}

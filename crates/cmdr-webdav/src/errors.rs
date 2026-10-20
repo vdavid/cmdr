@@ -3,26 +3,32 @@
 //!
 //! ❌ Nothing here is prose a user reads. The `String`s are log diagnostics; the
 //! host renders every human word from the typed variant. ❌ Nothing here reads
-//! a message: every decision is on a status code, a method, or one of
-//! `reqwest::Error`'s typed predicates.
+//! a message: every decision is on a status code, a method, one of
+//! `reqwest::Error`'s typed predicates, or the `rustls::Error` under it.
 
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::VolumeError;
-use cmdr_fs::volume::tls::has_tls_refusal;
+use cmdr_fs::volume::tls::{CertificatePrompt, CertificatePromptKind};
 use log::debug;
 use reqwest::StatusCode;
+
+use crate::tls_trust::{TlsRefusal, tls_refusal};
 
 /// Why a connection attempt didn't produce a working volume.
 #[derive(Debug)]
 pub enum WebdavConnectError {
     /// The server couldn't be reached: DNS, refused, no route, or a TLS
-    /// handshake that broke for a reason other than trust.
+    /// handshake that broke anywhere but the certificate (`tls_trust.rs`).
     Unreachable(String),
     /// The probe didn't finish inside the connect budget.
     TimedOut,
-    /// The TLS handshake was refused on trust, which is what a self-signed NAS
-    /// certificate produces. Typed so the frontend can say so; there is no
-    /// pinning flow yet.
+    /// The OS refused the server's certificate on trust and a person may pin it:
+    /// a self-signed NAS on first contact, or a pinned one that CHANGED
+    /// (`tls_trust.rs`). ❗ No client is kept across the prompt; pinning is
+    /// followed by dialing again.
+    CertificateNeedsApproval(CertificatePrompt),
+    /// The certificate was refused for a reason no pin answers: revoked,
+    /// malformed, or badly signed. ❌ Not approvable.
     CertificateUntrusted,
     /// The server refused the stored secret. Retrying with the same one can
     /// only fail again, and on some servers it locks the account.
@@ -147,23 +153,35 @@ pub(crate) fn map_transport_error(err: &reqwest::Error, volume_id: &str, path: &
     }
 }
 
-/// Classifies a `reqwest` failure on the CONNECT probe.
+/// Classifies a `reqwest` failure on the CONNECT probe to `(host, port)`.
 ///
-/// A TLS refusal reaches here as a connect error whose source chain carries an
-/// `io::Error` of kind `InvalidData`, which is how `tokio-rustls` wraps every
-/// handshake refusal (trust included, and by far the commonest). ❗ Judged by
-/// the typed `ErrorKind`, ❌ never by the message.
-pub(crate) fn classify_connect_error(err: &reqwest::Error) -> WebdavConnectError {
+/// A TLS refusal is read off the `rustls::Error` under it (`tls_trust.rs`), by
+/// type: a certificate the OS refused on trust is one a person may pin, one
+/// refused for any other reason is `CertificateUntrusted`, and a handshake that
+/// broke anywhere else is the server being unreachable over TLS, ❗ so no prompt
+/// ever offers to trust it. ❌ Never by the message.
+pub(crate) fn classify_connect_error(err: &reqwest::Error, host: &str, port: u16) -> WebdavConnectError {
     if err.is_timeout() {
         return WebdavConnectError::TimedOut;
     }
-    if err.is_connect() {
-        if has_tls_refusal(err) {
-            return WebdavConnectError::CertificateUntrusted;
+    match tls_refusal(err) {
+        TlsRefusal::Approvable { fingerprint, changed } => {
+            return WebdavConnectError::CertificateNeedsApproval(CertificatePrompt {
+                host: host.to_string(),
+                port,
+                fingerprint,
+                kind: if changed {
+                    CertificatePromptKind::Changed
+                } else {
+                    CertificatePromptKind::Unknown
+                },
+            });
         }
-        return WebdavConnectError::Unreachable(err.to_string());
+        TlsRefusal::Certificate => return WebdavConnectError::CertificateUntrusted,
+        TlsRefusal::Handshake => return WebdavConnectError::Unreachable(err.to_string()),
+        TlsRefusal::None => {}
     }
-    if err.is_request() {
+    if err.is_connect() || err.is_request() {
         return WebdavConnectError::Unreachable(err.to_string());
     }
     WebdavConnectError::Transport(err.to_string())

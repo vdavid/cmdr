@@ -666,11 +666,14 @@ macro_rules! ipc_command_manifest {
                 ]
                 dispatch_only: []
             }
-            // WebDAV servers: secrets and the server list. Connecting goes through the
-            // protocol-agnostic `commands::servers` block below. Same gate and same
-            // no-stub reasoning as the SFTP block above.
+            // WebDAV servers: certificate pins, secrets, and the server list. Connecting
+            // goes through the protocol-agnostic `commands::servers` block below. Same
+            // gate and same no-stub reasoning as the SFTP block above.
             cfg(any(target_os = "macos", target_os = "linux")) {
                 typed: [
+                    crate::commands::webdav::approve_webdav_certificate,
+                    crate::commands::webdav::forget_webdav_certificate,
+                    crate::commands::webdav::list_trusted_webdav_certificates,
                     crate::commands::webdav::save_webdav_credentials,
                     crate::commands::webdav::get_known_webdav_servers,
                     crate::commands::webdav::get_webdav_unattended_reconnect,

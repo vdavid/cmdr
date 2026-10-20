@@ -1053,10 +1053,23 @@ export type {
   ServerTarget,
 } from './servers'
 
-// WebDAV servers: secrets and the saved-server list. Connecting goes through
-// the protocol-agnostic servers family above.
-export { saveWebdavCredentials, getKnownWebdavServers, getWebdavUnattendedReconnect } from './webdav'
-export type { KnownWebdavServer, SavedWebdavServer, WebdavUnattendedReconnect } from './webdav'
+// WebDAV servers: certificate pins, secrets, and the saved-server list.
+// Connecting goes through the protocol-agnostic servers family above.
+export {
+  approveWebdavCertificate,
+  forgetWebdavCertificate,
+  listTrustedWebdavCertificates,
+  saveWebdavCredentials,
+  getKnownWebdavServers,
+  getWebdavUnattendedReconnect,
+} from './webdav'
+export type {
+  CertificatePrompt,
+  KnownWebdavServer,
+  SavedWebdavServer,
+  TrustedCertificate,
+  WebdavUnattendedReconnect,
+} from './webdav'
 
 // S3 accounts: the account's secret, the unattended-reconnect query, and the
 // list-price cost estimate for a planned operation. Everything else goes through the protocol-agnostic servers family above.

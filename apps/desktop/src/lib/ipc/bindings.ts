@@ -4461,6 +4461,29 @@ export const commands = {
       | null
     >('get_sftp_unattended_reconnect', { volumeId }),
   /**
+   *  Pins the certificate a person approved for `(host, port)`: the fingerprint
+   *  the connect's `NeedsCertificateApproval` showed, exactly as shown.
+   *
+   *  After it, dial again (`connectServer` / `connectSavedPlace`). ❗ No re-check
+   *  here, unlike `approve_sftp_host_key`: only this exact fingerprint is ever
+   *  trusted, so a pin of a certificate the server has since replaced trusts
+   *  nothing, and the next dial shows the new one as CHANGED
+   *  (`network::webdav_certificates`).
+   *
+   *  ❗ On a blocking task: the write is a durable temp-and-rename.
+   */
+  approveWebdavCertificate: (host: string, port: number, fingerprint: string) =>
+    __TAURI_INVOKE<void>('approve_webdav_certificate', { host, port, fingerprint }),
+  /**
+   *  Drops the pin for `(host, port)`, so the next connection there is first
+   *  contact again. Answers whether anything was there, `false` also when the
+   *  write didn't finish in time.
+   */
+  forgetWebdavCertificate: (host: string, port: number) =>
+    __TAURI_INVOKE<boolean>('forget_webdav_certificate', { host, port }),
+  // Every certificate this machine has pinned, for a settings screen.
+  listTrustedWebdavCertificates: () => __TAURI_INVOKE<TrustedCertificate[]>('list_trusted_webdav_certificates'),
+  /**
    *  Saves the secret for one account on one server.
    *
    *  ❗ **This command IS the "remember the secret" switch.** Its meaning is exactly
@@ -6404,6 +6427,44 @@ export type CaseChange =
   | 'firstUpper'
   // Every word's first letter upper, the rest lower.
   | 'words'
+
+/**
+ *  A server certificate the OS refused and a person may trust anyway, and what
+ *  to say about it.
+ *
+ *  The TLS twin of an SSH host-key prompt: crosses IPC as-is, and the
+ *  approval hands `host`, `port`, and `fingerprint` straight back.
+ */
+export type CertificatePrompt = {
+  // The server, as addressed.
+  host: string
+  /**
+   *  Its port. Part of the identity: two services on one NAS can serve two
+   *  certificates.
+   */
+  port: number
+  /**
+   *  The leaf certificate's SHA-256, as uppercase hex pairs joined by colons
+   *  (`AB:CD:…`, 32 pairs): the form Keychain Access, browsers, and
+   *  `openssl x509 -fingerprint -sha256` show, so a person can compare it.
+   */
+  fingerprint: string
+  // Whether this is first contact or a certificate that CHANGED.
+  kind: CertificatePromptKind
+}
+
+/**
+ *  Which of the two moments a certificate prompt is for.
+ *
+ *  ❗ Two variants rather than one flag because they must never share a path: a
+ *  first-seen certificate is routine, and a changed one is the shape a
+ *  man-in-the-middle takes.
+ */
+export type CertificatePromptKind =
+  // Nothing is pinned for this server.
+  | 'unknown'
+  // A different certificate is pinned for this server.
+  | 'changed'
 
 // What the person answered.
 export type CheckboxConfirm =
@@ -15620,8 +15681,14 @@ export type ServerConnectOutcome =
    */
   | { outcome: 'auth_method_unsupported' }
   /**
-   *  WebDAV only: the TLS handshake didn't trust the certificate. ❌ Not
-   *  approvable from here; the fix is trusting the CA in the OS store.
+   *  WebDAV only: macOS refused the certificate on trust, and a person may
+   *  pin it (`approve_webdav_certificate`), then dial again. Carries whether
+   *  it's first contact or a pinned certificate that CHANGED.
+   */
+  | ({ outcome: 'needs_certificate_approval' } & CertificatePrompt)
+  /**
+   *  WebDAV only: the certificate was refused for a reason no pin answers
+   *  (revoked, malformed, badly signed). ❌ Not approvable.
    */
   | { outcome: 'certificate_untrusted' }
   // WebDAV only: the URL answers HTTP but not WebDAV.
@@ -16689,6 +16756,8 @@ export type StateFile =
   | 'smb_servers'
   // `known-sftp-hosts.json`: the SSH host keys the person approved.
   | 'sftp_host_keys'
+  // `known-webdav-certificates.json`: the server certificates the person pinned.
+  | 'webdav_certificates'
   // `ai/ai-state.json`: whether local AI is installed, its server, and a dismissed offer.
   | 'local_ai'
   // `credentials.enc`, the saved passwords and keys on a Linux without a keyring.
@@ -17505,6 +17574,21 @@ export type TreeWindow =
   | { kind: 'follow'; lead: number }
   // From a flat row index the user scrolled to.
   | { kind: 'at'; offset: number }
+
+// One pinned certificate.
+export type TrustedCertificate = {
+  // The server, as the user addressed it.
+  host: string
+  /**
+   *  Its port. Part of the identity: two services on one NAS can serve two
+   *  certificates.
+   */
+  port: number
+  // The leaf certificate's SHA-256, uppercase hex pairs joined by colons.
+  fingerprint: string
+  // When it was pinned, ISO 8601, so a settings screen can show it.
+  approvedAt: string
+}
 
 // One approved host key.
 export type TrustedHostKey = {

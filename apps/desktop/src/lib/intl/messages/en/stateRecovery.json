@@ -95,6 +95,10 @@
   "@stateRecovery.sftpHostKeys.title": {
     "description": "Headline of a notice shown once: Cmdr remembers which SFTP servers the person approved the first time they connected (by each server's security fingerprint, its \"host key\"), and that file couldn't be read, either the whole file or only some entries in it. So for some or all of those servers, Cmdr will show the first-connection approval question again. \"SFTP\" is a protocol name and stays as is. \"Cmdr\" is the product name. Sentence case, no full stop. Avoid the words \"error\" and \"failed\". Pop-up notice (toast) in the corner of Cmdr's main window."
   },
+  "stateRecovery.webdavCertificates.title": "Cmdr couldn’t read all the server certificates you trusted, so it may ask about some of them again",
+  "@stateRecovery.webdavCertificates.title": {
+    "description": "Headline of a notice shown once: Cmdr remembers which WebDAV servers’ HTTPS certificates the person chose to trust although macOS didn’t (usually a home NAS that made its own certificate), and that file couldn’t be read, either the whole file or only some entries in it. So for some or all of those servers, Cmdr will show the trust question again. \"Cmdr\" is the product name. Sentence case, no full stop. Avoid the words \"error\" and \"failed\". Pop-up notice (toast) in the corner of Cmdr's main window."
+  },
   "stateRecovery.localAi.title": "Cmdr couldn’t read its local AI setup, so it may offer to set it up again",
   "@stateRecovery.localAi.title": {
     "description": "Headline of a notice shown once: Cmdr keeps a small file about its on-device AI (whether the AI model is downloaded and installed, and whether the person dismissed the offer to install it), and that file couldn't be read, so Cmdr may offer the local AI setup or download again. \"Cmdr\" is the product name. Sentence case, no full stop. Avoid the words \"error\" and \"failed\". Pop-up notice (toast) in the corner of Cmdr's main window."

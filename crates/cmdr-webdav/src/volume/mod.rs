@@ -259,7 +259,8 @@ pub async fn connect_webdav_volume(
     let Some(secret) = secret else {
         return Err(WebdavConnectError::NeedsCredentials);
     };
-    let (client, keeps_dates) = build_and_probe(&params, &secret.secret, &cancel).await?;
+    let pinned = host.certificates().pinned(params.host(), params.port());
+    let (client, keeps_dates) = build_and_probe(&params, &secret.secret, pinned, &cancel).await?;
     if cancel.is_cancelled() {
         return Err(WebdavConnectError::Cancelled);
     }
@@ -274,15 +275,17 @@ pub async fn connect_webdav_volume(
     ))
 }
 
-/// A client for `params` with `password`, proven by one PROPFIND on the root,
-/// and whether that answer says the server keeps dates (Nextcloud's
-/// `creation_time` in a 2xx `propstat`; `DETAILS.md` § "Dates").
+/// A client for `params` with `password`, trusting the `pinned` certificate on
+/// top of the OS's, proven by one PROPFIND on the root, and whether that answer
+/// says the server keeps dates (Nextcloud's `creation_time` in a 2xx
+/// `propstat`; `DETAILS.md` § "Dates").
 pub(super) async fn build_and_probe(
     params: &WebdavConnectionParams,
     password: &str,
+    pinned: Option<String>,
     cancel: &CancellationToken,
 ) -> Result<(WebdavClient, bool), WebdavConnectError> {
-    let mut client = WebdavClient::new(params.base_url.clone(), &params.username, password)?;
+    let mut client = WebdavClient::new(params.base_url.clone(), &params.username, password, pinned)?;
     let root = paths::root_remote_path(&params.remote_root);
     let root_url = client.url_for(&root, true);
     let entries = tokio::select! {
@@ -352,3 +355,5 @@ mod sharing_test;
 mod slow_server_test;
 #[cfg(test)]
 mod test_support;
+#[cfg(test)]
+mod tls_trust_test;

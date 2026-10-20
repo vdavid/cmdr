@@ -188,6 +188,8 @@ pub enum StateFile {
     SmbServers,
     /// `known-sftp-hosts.json`: the SSH host keys the person approved.
     SftpHostKeys,
+    /// `known-webdav-certificates.json`: the server certificates the person pinned.
+    WebdavCertificates,
     /// `ai/ai-state.json`: whether local AI is installed, its server, and a dismissed offer.
     LocalAi,
     /// `credentials.enc`, the saved passwords and keys on a Linux without a keyring.

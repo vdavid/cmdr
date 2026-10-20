@@ -49,7 +49,7 @@ async fn serving_stored_gzip(count: usize) -> (WebdavClient, Url) {
     });
     let base = Url::parse(&format!("http://{addr}/dav/")).unwrap();
     (
-        WebdavClient::new(base.clone(), "user", "secret").unwrap(),
+        WebdavClient::new(base.clone(), "user", "secret", None).unwrap(),
         base.join("page.html").unwrap(),
     )
 }
@@ -119,7 +119,7 @@ async fn serving_a_207_of(size: usize, chunked: bool) -> (WebdavClient, Url) {
         let _ = socket.shutdown().await;
     });
     let base = Url::parse(&format!("http://{addr}/dav/")).unwrap();
-    (WebdavClient::new(base.clone(), "user", "secret").unwrap(), base)
+    (WebdavClient::new(base.clone(), "user", "secret", None).unwrap(), base)
 }
 
 /// ❗ A hostile or broken server can stream a listing forever: the body is
@@ -181,7 +181,7 @@ async fn serving_a_session_cookie(count: usize) -> (WebdavClient, Url, tokio::sy
     });
     let base = Url::parse(&format!("http://{addr}/dav/")).unwrap();
     (
-        WebdavClient::new(base.clone(), "user", "secret").unwrap(),
+        WebdavClient::new(base.clone(), "user", "secret", None).unwrap(),
         base,
         received,
     )

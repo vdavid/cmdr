@@ -289,6 +289,13 @@ describe('SignInSheet: connected, but the password was not kept', () => {
   })
 })
 
+/** A first-contact SSH host key for `nas.local`, as the sheet's trust step takes it. */
+const hostKey = (fingerprint: string) =>
+  ({
+    subject: 'host_key',
+    prompt: { host: 'nas.local', port: 22, algorithm: 'ssh-ed25519', fingerprint, kind: 'unknown' },
+  }) as const
+
 describe('SignInSheet: the host-key step', () => {
   it('starts over on the key the server really presents when the approval is superseded', async () => {
     const { approveSftpHostKey } = await import('#lib/tauri-commands/index.js')
@@ -308,13 +315,7 @@ describe('SignInSheet: the host-key step', () => {
       remembered: false,
       endpoint,
       shape: { kind: 'password' },
-      hostKey: {
-        host: 'nas.local',
-        port: 22,
-        algorithm: 'ssh-ed25519',
-        fingerprint: 'SHA256:THE-ONE-ON-SCREEN',
-        kind: 'unknown',
-      },
+      trust: hostKey('SHA256:THE-ONE-ON-SCREEN'),
       attempt,
     })
     expect(document.body.textContent).toContain('SHA256:THE-ONE-ON-SCREEN')
@@ -345,7 +346,7 @@ describe('SignInSheet: the host-key step', () => {
       remembered: true,
       endpoint,
       shape: { kind: 'password' },
-      hostKey: { host: 'nas.local', port: 22, algorithm: 'ssh-ed25519', fingerprint: 'SHA256:NEW', kind: 'unknown' },
+      trust: hostKey('SHA256:NEW'),
       attempt,
     })
 

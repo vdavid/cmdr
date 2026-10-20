@@ -130,6 +130,10 @@ describe('arm 3: a saved place with nothing registered', () => {
         },
         'host_key_untrusted',
       ],
+      [
+        { outcome: 'needs_certificate_approval', host: 'nas.local', port: 5006, fingerprint: 'AB:CD', kind: 'unknown' },
+        'certificate_unapproved',
+      ],
     ] as const
     for (const [outcome, refusal] of cases) {
       ipc.mock('connect_saved_place', () => outcome)
@@ -150,6 +154,22 @@ describe('arm 3: a saved place with nothing registered', () => {
       port: 22,
       algorithm: 'ssh-ed25519',
       fingerprint: 'SHA256:x',
+      kind: 'unknown',
+    }
+    ipc.mock('connect_saved_place', () => prompt)
+    const openSignIn = vi.fn(() => Promise.resolve({ signedIn: true as const, volumeId: VOLUME_ID }))
+    const result = await connectPlace({ volumeId: VOLUME_ID, connectionState: 'saved', openSignIn })
+
+    expect(openSignIn).toHaveBeenCalledWith({ volumeId: VOLUME_ID, registered: false, firstOutcome: prompt })
+    expect(result).toEqual({ kind: 'connected', volumeId: VOLUME_ID })
+  })
+
+  it('hands a certificate question to the sheet too, so a self-signed NAS can be trusted', async () => {
+    const prompt = {
+      outcome: 'needs_certificate_approval',
+      host: 'nas.local',
+      port: 5006,
+      fingerprint: 'AB:CD',
       kind: 'unknown',
     }
     ipc.mock('connect_saved_place', () => prompt)

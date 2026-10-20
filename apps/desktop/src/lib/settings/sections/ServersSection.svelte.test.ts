@@ -21,7 +21,17 @@ interface HostKey {
   approvedAt: string
 }
 
+/** One row of `listTrustedWebdavCertificates`. */
+interface Certificate {
+  host: string
+  port: number
+  fingerprint: string
+  approvedAt: string
+}
+
 const listTrustedSftpHostKeys = vi.fn<() => Promise<HostKey[]>>()
+const listTrustedWebdavCertificates = vi.fn<() => Promise<Certificate[]>>(() => Promise.resolve([]))
+const forgetWebdavCertificate = vi.fn<(host: string, port: number) => Promise<boolean>>()
 // eslint-disable-next-line cmdr/no-confusable-callback-params -- mirrors the real `forgetSftpHostKey(host, port, algorithm)`, whose shape the test exists to pin
 const forgetSftpHostKey = vi.fn<(host: string, port: number, algorithm: string) => Promise<boolean>>()
 // eslint-disable-next-line cmdr/no-confusable-callback-params -- mirrors the real `confirmDialog(message, title)`
@@ -39,6 +49,8 @@ vi.mock('#lib/settings/settings-store.js', () => ({
 vi.mock('#lib/tauri-commands/index.js', () => ({
   listTrustedSftpHostKeys: () => listTrustedSftpHostKeys(),
   forgetSftpHostKey: (host: string, port: number, algorithm: string) => forgetSftpHostKey(host, port, algorithm),
+  listTrustedWebdavCertificates: () => listTrustedWebdavCertificates(),
+  forgetWebdavCertificate: (host: string, port: number) => forgetWebdavCertificate(host, port),
 }))
 
 vi.mock('#lib/utils/confirm-dialog.js', () => ({
@@ -71,7 +83,18 @@ async function mountSection(): Promise<HTMLDivElement> {
 }
 
 function rows(target: HTMLElement): HTMLElement[] {
-  return Array.from(target.querySelectorAll('.key-row'))
+  return Array.from(target.querySelectorAll('.key-list:not([data-testid="trusted-certificates"]) .key-row'))
+}
+
+function certificateRows(target: HTMLElement): HTMLElement[] {
+  return Array.from(target.querySelectorAll('[data-testid="trusted-certificates"] .key-row'))
+}
+
+const synology: Certificate = {
+  host: 'nas.local',
+  port: 5006,
+  fingerprint: 'CD:6F:DC:7C:4B:21:C9:B5:28:58:69:B3:4E:5C:68:B8:55:26:2C:0A:5C:06:7A:8A:2D:BF:BD:FA:AE:C2:9B:E7',
+  approvedAt: '2026-10-20T10:00:00Z',
 }
 
 describe('the trusted-key list', () => {
@@ -147,6 +170,49 @@ describe('forgetting a key', () => {
 
     expect(confirmDialog).toHaveBeenCalled()
     expect(forgetSftpHostKey).not.toHaveBeenCalled()
+    target.remove()
+  })
+})
+
+describe('the trusted certificates', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    confirmDialog.mockResolvedValue(true)
+    listTrustedSftpHostKeys.mockResolvedValue([])
+    listTrustedWebdavCertificates.mockResolvedValue([synology])
+    forgetWebdavCertificate.mockResolvedValue(true)
+  })
+
+  it('shows one row per pinned certificate, with its fingerprint', async () => {
+    const target = await mountSection()
+
+    expect(certificateRows(target)).toHaveLength(1)
+    const row = certificateRows(target)[0].textContent
+    expect(row).toContain('nas.local:5006')
+    expect(row).toContain(synology.fingerprint)
+    target.remove()
+  })
+
+  it('forgets a pin by host and port after asking, then re-reads the list', async () => {
+    const target = await mountSection()
+    listTrustedWebdavCertificates.mockResolvedValue([])
+
+    certificateRows(target)[0].querySelector('button')?.click()
+    await tick()
+    await tick()
+
+    expect(confirmDialog).toHaveBeenCalled()
+    expect(forgetWebdavCertificate).toHaveBeenCalledWith('nas.local', 5006)
+    expect(listTrustedWebdavCertificates).toHaveBeenCalledTimes(2)
+    target.remove()
+  })
+
+  it('says so plainly when no certificate is pinned', async () => {
+    listTrustedWebdavCertificates.mockResolvedValue([])
+    const target = await mountSection()
+
+    expect(certificateRows(target)).toHaveLength(0)
+    expect(target.textContent).toContain('When you connect to a WebDAV server macOS doesn’t trust')
     target.remove()
   })
 })

@@ -5,7 +5,7 @@ for the questions no `mod_dav` can settle. `crates/cmdr-webdav`'s Docker cells a
 these.
 
 ```bash
-./start.sh            # core: the three httpd servers the integration lane uses
+./start.sh            # core: the four httpd servers the integration lane uses
 ./start.sh minimal    # the Basic-auth server alone
 ./start.sh e2e        # the same server, as the Playwright server specs lease it
 ./start.sh nextcloud  # the sabre/dav server alone (slow: it installs itself on first boot)
@@ -34,7 +34,7 @@ fixture and cut that (`crates/cmdr-webdav/src/volume/connection_drop_test.rs`).
 - **One named Docker volume**, `webdav-fixture-nextcloud-html`, and only for Nextcloud. The image carries
   `VOLUME /var/www/html`, so without a name Docker mints a fresh ANONYMOUS volume on every container recreation and
   nothing ever reaps one: 44 of them, 41 GB, accumulated in two weeks before anyone noticed (2026-09-19). Naming it also
-  keeps the ~25 s `occ maintenance:install` from re-running after a rebuild. The three httpd fixtures keep their export
+  keeps the ~25 s `occ maintenance:install` from re-running after a rebuild. The four httpd fixtures keep their export
   in the image layer, so they have nothing to persist. What it costs, and how the cells pay it, is below.
 
 ## The servers
@@ -45,8 +45,9 @@ fixture and cut that (`crates/cmdr-webdav/src/volume/connection_drop_test.rs`).
 | `webdav-fixture-digest`    | 13481 | `AuthType Digest` only, realm `cmdr`: proves the client refuses with a type |
 | `webdav-fixture-nextcloud` | 13482 | A real sabre/dav server: `Range`, a chunked PUT, and RFC 4331 quota         |
 | `webdav-fixture-norange`   | 13483 | `MaxRanges none`: answers every ranged GET 200 with the whole file          |
+| `webdav-fixture-tls`       | 13484 | HTTPS with a self-signed certificate, the way a home NAS ships              |
 
-The three httpd servers run as `ada` / `openthedoor` and export `/srv/data` at the URL path `/dav/`. They carry the same
+The four httpd servers run as `ada` / `openthedoor` and export `/srv/data` at the URL path `/dav/`. They carry the same
 landmarks (`hello.txt`, `docs/` holding a `readme.md`, `nested/deep/file.txt`, `many/` with 300 entries, `empty/`,
 `naïve name.txt`, `photos/2024 summer/`, `large.bin`, `dated.txt`), so a cell can assert on them whichever server it's
 pointed at.
@@ -67,6 +68,15 @@ are in the comments beside each choice (`docker-compose.yml`, `image/entrypoint.
 The export is writable by the httpd user, and Apache answers GET with `Content-Length` and honours `Range` natively,
 which is what the streaming and `read_range` cells lean on. `DavDepthInfinity On` allows a whole-tree PROPFIND;
 `DavMinTimeout 600` keeps a lock a cell takes alive past the cell.
+
+## The server with a self-signed certificate
+
+`webdav-fixture-tls` is the stock export served over HTTPS (on the container's port 80, so the healthcheck and
+`start.sh`'s probe need no exception) with a certificate `image/entrypoint.sh` mints at first start: a proper leaf for
+`127.0.0.1`, issued by nobody. macOS and Linux both refuse it, which is what a Synology or QNAP out of the box looks
+like. The cells in `crates/cmdr-webdav/src/volume/tls_trust_test.rs` dial it at `https://127.0.0.1:13484/dav/`, read the
+fingerprint off the prompt, pin it, and dial again. The certificate is new whenever the container is recreated, so no
+cell knows it ahead of time.
 
 ## The server that ignores `Range`
 
@@ -215,11 +225,11 @@ persists across container recreations now that its storage is a named volume. Tw
 
 ## One image, env-driven
 
-`image/` builds all three httpd servers. `AUTH=basic|digest` picks the auth scheme and `RANGES=honour|ignore` the range
-policy; everything else is identical, so a server here is a compose line rather than a second Dockerfile to keep in
-sync. The entrypoint uncomments the DAV and Digest modules in the stock `httpd.conf`, writes the credentials (`htpasswd`
-for Basic; the digest line is `user:realm:MD5(user:realm:password)`, computed by hand because `htdigest` is
-interactive), and includes one `webdav-fixture.conf` for the export.
+`image/` builds all four httpd servers. `AUTH=basic|digest` picks the auth scheme, `TLS=off|self-signed` the transport,
+and `RANGES=honour|ignore` the range policy; everything else is identical, so a server here is a compose line rather
+than a second Dockerfile to keep in sync. The entrypoint uncomments the DAV and Digest modules in the stock
+`httpd.conf`, writes the credentials (`htpasswd` for Basic; the digest line is `user:realm:MD5(user:realm:password)`,
+computed by hand because `htdigest` is interactive), and includes one `webdav-fixture.conf` for the export.
 
 ## Adding a server
 

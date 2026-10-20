@@ -293,11 +293,14 @@ checkbox, ❌ never inside its `<label>`, where a click on the glyph would flip 
 the same switch, with the same two keys as its label and tooltip, so the two doors can't drift in meaning
 (`../file-explorer/navigation/DETAILS.md` § "Row actions: the → submenu").
 
-**The host-key step replaces the body, ❌ never a second dialog.** First contact is routine and gets a plain primary
-button; a changed key is the shape a man-in-the-middle takes, so it carries the red weight, says what else it can mean,
-and puts its trust button behind a disclosure. A `superseded` approval starts the step over on the key the server REALLY
+**The trust step replaces the body, ❌ never a second dialog.** It asks about a `TrustPrompt` (`sign-in-contract.ts`):
+an SSH host key, or a TLS certificate macOS refused (a self-signed NAS over WebDAV), and `HostKeyStep.svelte` renders
+both with each subject's own words. First contact is routine and gets a plain primary button; a changed key or
+certificate is the shape a man-in-the-middle takes, so it carries the red weight, says what else it can mean, and puts
+its trust button behind a disclosure. A `superseded` host-key approval starts the step over on the key the server REALLY
 presents rather than silently trusting the one on screen; an `unreachable` one records nothing, because approving is a
-live question and an unanswered one is not a yes.
+live question and an unanswered one is not a yes. A certificate is pinned as shown (`approveWebdavCertificate`) and the
+round dials again, which answers a certificate that changed meanwhile with the `changed` face.
 
 ❗ **A changed host key on a REGISTERED volume has no fingerprint to show.** No backend command hands the PENDING
 host-key prompt back for one, so the banner's "Check the key" drops the session and redials, and the sheet shows that
@@ -342,8 +345,11 @@ token is the only sane state, and a revoked token surfaces as `needs_sign_in` be
   directly" (`accountNotPermitted`).
 - `auth_method_unsupported`: the server challenged with a scheme Cmdr doesn't speak, so the secret never left. ❌ Never
   name the scheme; "Digest" means nothing to the reader.
-- `certificate_untrusted`: macOS doesn't trust the certificate, and the fix is Keychain Access. Trust-on-first-use is
-  backend work (GitHub [#173](https://github.com/vdavid/cmdr/issues/173)).
+- `certificate_untrusted`: a certificate no pin can answer (revoked, malformed, badly signed). One macOS merely doesn't
+  trust (a self-signed NAS) comes back as `needs_certificate_approval` and the trust step instead.
+- `certificate_unapproved` (from `needs_certificate_approval`): the sheet's trust step shows the certificate's SHA-256
+  and pins it (`approveWebdavCertificate`), then dials again. No second handshake: a server that moved to another
+  certificate meanwhile answers that dial as `changed`.
 - `not_a_webdav_server`: the address answers HTTP but not WebDAV. The one refusal with a remedy button.
 - `invalid_url`: the saved address isn't a usable web address.
 - `timed_out` and `unreachable`: about the SERVER, so they name the host rather than the account. An `unreachable` from
@@ -513,8 +519,8 @@ for nothing, while defaulting to SFTP would put an account field in front of som
 
 ❗ **A Nextcloud URL stays whole, path and all.** Nobody can tell where the base URL ends and the collection begins, and
 the backend resolves the remote root relative to the base anyway. `not_a_webdav_server` is the one refusal with a remedy
-button, because the fix is a collection path nobody knows; `certificate_untrusted` deliberately has none, since trusting
-a certificate happens in Keychain Access.
+button, because the fix is a collection path nobody knows; `certificate_untrusted` deliberately has none, since it's a
+certificate no pin can answer (one a pin can comes back as the trust step instead).
 
 There is no property-testing library on the frontend, so `address-parser.test.ts`'s example table IS the contract: a
 shape that reaches the field and isn't in it is a shape nobody decided.
@@ -623,8 +629,6 @@ whichever doc owns the item now; ❌ nothing here restates a mechanism.
   usable without it.
 - **One switcher row per phone** rather than one per protocol: GitHub [#192](https://github.com/vdavid/cmdr/issues/192).
   The "(ADB)" name suffix is the stopgap.
-- **Certificate trust-on-first-use**, which is why a self-signed NAS lands on the honest `certificate_untrusted` wording
-  with no button that could work: GitHub [#173](https://github.com/vdavid/cmdr/issues/173), backend work.
 - **A property-testing library on the frontend.** `proptest` stays Rust-only, and `address-parser.test.ts`'s example
   table is the contract instead (§ "Add mode, protocol first").
 - **A separate pane tint per server protocol.** `appearance.tintSmb` covers all four ("Tint server panes (SMB, SFTP,

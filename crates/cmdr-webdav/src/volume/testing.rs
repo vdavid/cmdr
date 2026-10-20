@@ -17,6 +17,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use cmdr_fs::volume::Volume;
 use cmdr_fs::volume::host::VolumeHost;
+use cmdr_fs::volume::host::certificates::{InMemoryCertificates, TrustedCertificates};
 use cmdr_fs::volume::host::credentials::InMemoryCredentials;
 use cmdr_fs::volume::host::events::{RecordingVolumeEvents, VolumeEventSink};
 use tokio_util::sync::CancellationToken;
@@ -93,10 +94,13 @@ pub const FIXTURE_UNLIMITED_USER: &str = "grace";
 pub const FIXTURE_NEXTCLOUD_QUOTA_BYTES: u64 = 5 * 1024 * 1024 * 1024;
 
 /// One fixture server: the key its port env var carries, the port its compose
-/// file publishes by default, and the URL path it exports files at.
+/// file publishes by default, the scheme it speaks, and the URL path it exports
+/// files at.
 struct FixtureService {
     key: &'static str,
     port: u16,
+    /// `https` only for `webdav-fixture-tls`, whose certificate nobody issued.
+    scheme: &'static str,
     /// ❗ Not the same for every server, and that is the point of holding it
     /// here: the three Apache `mod_dav` servers export one directory at
     /// `/dav/`, while Nextcloud serves the signed-in account's files under
@@ -111,25 +115,35 @@ struct FixtureService {
 /// accounts. The three properties the sabre/dav cells read (`Range`, a chunked
 /// PUT, RFC 4331 quota) answer identically on both endpoints (verified on
 /// nextcloud 34.0.2-apache, by hand with `curl`, 2026-09-02).
-const FIXTURE_SERVICES: [FixtureService; 4] = [
+const FIXTURE_SERVICES: [FixtureService; 5] = [
     FixtureService {
         key: "APACHE",
         port: 13480,
+        scheme: "http",
         dav_path: "/dav/",
     },
     FixtureService {
         key: "DIGEST",
         port: 13481,
+        scheme: "http",
         dav_path: "/dav/",
     },
     FixtureService {
         key: "NORANGE",
         port: 13483,
+        scheme: "http",
+        dav_path: "/dav/",
+    },
+    FixtureService {
+        key: "TLS",
+        port: 13484,
+        scheme: "https",
         dav_path: "/dav/",
     },
     FixtureService {
         key: "NEXTCLOUD",
         port: 13482,
+        scheme: "http",
         dav_path: "/remote.php/webdav/",
     },
 ];
@@ -224,19 +238,16 @@ pub fn fixture_target(service: &str, fallback_port: u16, username: &str) -> Fixt
     // ❗ A panic, not a default: the servers here don't all export at the same
     // URL path, so a typo'd key that quietly got `/dav/` would 404 against
     // Nextcloud and read as a backend bug.
-    let dav_path = FIXTURE_SERVICES
-        .iter()
-        .find(|s| s.key == service)
-        .unwrap_or_else(|| {
+    let FixtureService { scheme, dav_path, .. } =
+        FIXTURE_SERVICES.iter().find(|s| s.key == service).unwrap_or_else(|| {
             panic!(
                 "no fixture service is called {service}; the stack serves {:?}",
                 FIXTURE_SERVICES.map(|s| s.key)
             )
-        })
-        .dav_path;
+        });
     FixtureTarget {
         base_url: Url::parse(&format!(
-            "http://127.0.0.1:{}{dav_path}",
+            "{scheme}://127.0.0.1:{}{dav_path}",
             fixture_port(service, fallback_port)
         ))
         .expect("a fixture URL is well-formed by construction"),
@@ -259,8 +270,13 @@ impl FixtureTarget {
 }
 
 /// A host with the secret preloaded for every account the suite signs in as,
-/// and a recording event sink. Detached otherwise.
+/// and a recording event sink. Detached otherwise, so no certificate is pinned.
 pub fn fixture_host() -> VolumeHost {
+    fixture_host_trusting(Arc::new(InMemoryCertificates::new()))
+}
+
+/// [`fixture_host`], with `certificates` answering which certificates are pinned.
+pub fn fixture_host_trusting(certificates: Arc<dyn TrustedCertificates>) -> VolumeHost {
     let mut credentials = InMemoryCredentials::new();
     for service in &FIXTURE_SERVICES {
         for username in [FIXTURE_USER, FIXTURE_UNLIMITED_USER] {
@@ -276,6 +292,7 @@ pub fn fixture_host() -> VolumeHost {
     }
     VolumeHost::builder()
         .credentials(Arc::new(credentials))
+        .certificates(certificates)
         .events(Arc::new(RecordingVolumeEvents::new()) as Arc<dyn VolumeEventSink>)
         .build()
 }

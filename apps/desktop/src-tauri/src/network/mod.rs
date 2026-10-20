@@ -33,6 +33,7 @@ pub mod server_list_file;
 pub mod sftp_host_keys;
 pub mod sftp_known_servers;
 pub mod sftp_volume_wiring;
+pub mod webdav_certificates;
 pub mod webdav_known_servers;
 pub mod webdav_volume_wiring;
 
@@ -47,9 +48,11 @@ pub fn load_sftp_stores<R: tauri::Runtime>(app: &AppHandle<R>) {
     sftp_known_servers::load_known_sftp_servers(app);
 }
 
-/// Reads the WebDAV server list off disk. One call at startup, beside
-/// [`load_sftp_stores`].
+/// Reads both WebDAV stores off disk: the certificates the user pinned and the
+/// servers they've connected to. One call at startup, beside
+/// [`load_sftp_stores`], ❗ before any volume is built, for the same reason.
 pub fn load_webdav_stores<R: tauri::Runtime>(app: &AppHandle<R>) {
+    webdav_certificates::load_trusted_certificates(app);
     webdav_known_servers::load_known_webdav_servers(app);
 }
 

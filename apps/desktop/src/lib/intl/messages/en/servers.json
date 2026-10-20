@@ -259,6 +259,13 @@
       "localNetwork": "the OS-localized macOS \"Local Network\" permission name, as System Settings shows it under Privacy & Security, injected at runtime (it follows the Mac’s system language, which can differ from Cmdr’s, so it may arrive in English)"
     }
   },
+  "servers.refusal.certificateUnapproved": "Cmdr hasn’t trusted the certificate for {host} yet.",
+  "@servers.refusal.certificateUnapproved": {
+    "description": "Shown in the pane when a WebDAV server (often a home NAS) uses an HTTPS certificate macOS doesn’t trust, and the person hasn’t told Cmdr to trust it yet. Opening the server again shows the certificate’s fingerprint to check and trust. \"Certificate\" is the server’s HTTPS security certificate.",
+    "placeholders": {
+      "host": "the server’s hostname or address, like \"nas.local\""
+    }
+  },
   "servers.refusal.hostKeyUntrusted": "Cmdr hasn’t trusted the key for {host} yet.",
   "@servers.refusal.hostKeyUntrusted": {
     "description": "Shown in the pane when an SSH server presents a host key this Mac hasn’t approved. \"Key\" is the server’s SSH host key, the fingerprint a person checks before trusting the server.",
@@ -864,6 +871,44 @@
   "@servers.hostKey.trustNewKey": {
     "description": "Button that records a CHANGED key, behind the disclosure. VERB phrase, imperative.",
     "screenshot": "server-sign-in-host-key-changed.png"
+  },
+  "servers.certificate.firstContactTitle": "macOS doesn’t know the certificate for {host}",
+  "@servers.certificate.firstContactTitle": {
+    "description": "Heading of the step where the user decides whether to trust a WebDAV server’s HTTPS certificate that macOS doesn’t trust, usually a home NAS (Synology, QNAP) that made its own certificate. Routine, not alarming. \"macOS\" is the operating system’s name.",
+    "placeholders": {
+      "host": "the server’s hostname or address, like \"nas.local\""
+    }
+  },
+  "servers.certificate.firstContactBody": "Home servers often make their own certificate. Check the fingerprint below against the one your server shows, then trust it.",
+  "@servers.certificate.firstContactBody": {
+    "description": "One line under that heading. “Fingerprint” is the short string that identifies the certificate; a person compares it character by character with what the server’s own settings page shows."
+  },
+  "servers.certificate.changedTitle": "The certificate for {host} changed",
+  "@servers.certificate.changedTitle": {
+    "description": "Heading of the same step when the server presents a DIFFERENT certificate than the one the user trusted before. This one is serious: it can mean someone is in the middle.",
+    "placeholders": {
+      "host": "the server’s hostname or address, like \"nas.local\""
+    }
+  },
+  "servers.certificate.changedBody": "This can mean the server got a new certificate, or that something is sitting between you and it. Check the fingerprint with the server’s owner before trusting it.",
+  "@servers.certificate.changedBody": {
+    "description": "One line under the changed-certificate heading. Says both innocent and serious causes, and what to do first."
+  },
+  "servers.certificate.changedDisclosure": "I’ve checked it",
+  "@servers.certificate.changedDisclosure": {
+    "description": "A collapsed section holding the button that trusts a CHANGED certificate. Deliberately behind a click, so trusting one is never a reflex. First person: the user speaking."
+  },
+  "servers.certificate.fingerprintLabel": "Certificate fingerprint (SHA-256)",
+  "@servers.certificate.fingerprintLabel": {
+    "description": "Label above the certificate’s fingerprint, a long string of letters, digits, and colons. NOUN phrase. \"SHA-256\" is the name of the method that made the fingerprint; keep it as is."
+  },
+  "servers.certificate.trustAndConnect": "Trust and connect",
+  "@servers.certificate.trustAndConnect": {
+    "description": "Button that trusts a first-seen certificate and carries on connecting. VERB phrase, imperative."
+  },
+  "servers.certificate.trustNewCertificate": "Trust the new certificate",
+  "@servers.certificate.trustNewCertificate": {
+    "description": "Button that trusts a CHANGED certificate, behind the disclosure. VERB phrase, imperative."
   },
   "servers.paneState.signedOut": "Signed out of {name}",
   "@servers.paneState.signedOut": {

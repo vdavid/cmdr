@@ -14,6 +14,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use cmdr_fs::volume::Volume;
+use cmdr_fs::volume::tls::CertificatePrompt;
 use cmdr_webdav::{UnattendedReconnect, WebdavConnectError, WebdavConnectionParams, WebdavVolume};
 
 use super::connect_wiring::{self, AttemptTable};
@@ -46,8 +47,12 @@ pub enum WebdavConnection {
     /// server). ❗ Not a rejection either: the secret was never offered, so
     /// nothing about it is known to be wrong.
     AuthMethodUnsupported,
-    /// The TLS handshake didn't trust the server's certificate. ❌ Not
-    /// approvable from here: the fix is trusting the CA in the OS store.
+    /// macOS refused the certificate on trust and a person may pin it: a
+    /// self-signed NAS on first contact, or a pinned one that changed. ❗ No
+    /// volume is held across the prompt; pinning is followed by dialing again.
+    NeedsCertificateApproval(CertificatePrompt),
+    /// The certificate was refused for a reason no pin answers (revoked,
+    /// malformed, badly signed). ❌ Not approvable.
     CertificateUntrusted,
     /// The URL answers HTTP, but not WebDAV: the `PROPFIND` probe came back
     /// without a `multistatus`, or isn't understood at that path.
@@ -226,6 +231,7 @@ fn failed(error: WebdavConnectError) -> WebdavConnection {
         WebdavConnectError::AuthenticationRejected => WebdavConnection::AuthenticationRejected,
         WebdavConnectError::NeedsCredentials => WebdavConnection::NeedsCredentials,
         WebdavConnectError::AuthMethodUnsupported => WebdavConnection::AuthMethodUnsupported,
+        WebdavConnectError::CertificateNeedsApproval(prompt) => WebdavConnection::NeedsCertificateApproval(prompt),
         WebdavConnectError::CertificateUntrusted => WebdavConnection::CertificateUntrusted,
         WebdavConnectError::NotAWebdavServer => WebdavConnection::NotAWebdavServer,
         WebdavConnectError::TimedOut => WebdavConnection::TimedOut,

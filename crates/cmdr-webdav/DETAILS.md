@@ -52,8 +52,11 @@ behind a `std::sync::RwLock` for it, read through the `params()` snapshot.
 The probe's answers, in connect terms:
 
 - **A transport failure, `is_timeout`**: `TimedOut`.
-- **A transport failure, `is_connect` with an `InvalidData` `io::Error` in the source chain**: `CertificateUntrusted`.
-- **Any other transport failure, `is_connect` / `is_request`**: `Unreachable`.
+- **A certificate macOS refused on trust (the `rustls::Error` under it)**: `CertificateNeedsApproval`, a prompt a person
+  may pin (§ "Trusting a self-signed certificate").
+- **A certificate refused for any other reason (revoked, malformed, badly signed)**: `CertificateUntrusted`.
+- **A TLS handshake that broke anywhere but the certificate, and any other transport failure, `is_connect` /
+  `is_request`**: `Unreachable`.
 - **207 with a `multistatus`**: connected.
 - **207 without one, 200, 404, 405, any other 4xx**: `NotAWebdavServer`.
 - **401 carrying a `Basic` challenge**: `AuthenticationRejected`.
@@ -101,9 +104,47 @@ are held to it (`conformance_test.rs`, `nextcloud_test.rs`); the walk itself: `c
 A `multistatus` entity (`&amp;`) reaches the parser as its own `Event::GeneralRef`, never inside a text node, so
 `propfind.rs` resolves it there; a text-level `unescape` would silently drop the character.
 
-TLS: `tokio-rustls` surfaces every handshake refusal as an `io::Error` of kind `InvalidData`, so `CertificateUntrusted`
-covers any TLS refusal, of which a self-signed NAS is by far the commonest. Narrowing it to trust alone would need a
-`rustls::Error` downcast, which means a direct `rustls` dependency; not taken yet.
+## Trusting a self-signed certificate
+
+A home NAS (Synology, QNAP) serves HTTPS with a certificate nobody issued, which macOS refuses. Cmdr trusts one the way
+SFTP trusts a host key: on first contact the connect answers `CertificateNeedsApproval` carrying the leaf's SHA-256 (a
+`cmdr_fs::volume::tls::CertificatePrompt`, `Unknown` or `Changed`), the sheet shows it, a person pins it, and the next
+dial trusts exactly that certificate. Pins live in the app (`network::webdav_certificates`, keyed `(host, port)`) and
+reach this crate through `VolumeHost::certificates()`, read every time a client is built, so a reconnect sees a pin
+approved since the last one.
+
+**Decision: a custom `rustls` verifier that WRAPS the platform one, ❌ not `add_root_certificate`.** `tls_trust.rs`'s
+`PinningVerifier` asks `rustls-platform-verifier` first (the same verifier reqwest builds, so macOS's trust store and
+rules); a certificate the OS trusts is trusted as ever. Only on a refusal does it compare the leaf's fingerprint with
+the pin. **Why**: a self-signed leaf added as a root has to also pass as a CA (it often lacks `CA:TRUE`, or carries a
+name that isn't the address typed), so the root route fails on exactly the certificates it's for, and it widens trust
+from one certificate to anything that certificate could sign. The pin trusts one fingerprint and nothing else. The
+config goes in through `ClientBuilder::tls_backend_preconfigured`, ❗ with ALPN set by hand (`h2`, `http/1.1`): a
+preconfigured config is taken whole, and an empty ALPN would quietly pin every server to HTTP/1.1.
+
+**Approvable is narrow, and typed.** Only `verify_server_cert` refuses with the crate's own `ApprovableRefusal` (inside
+`CertificateError::Other`), and only for a certificate the OS judged on trust: an unknown issuer, a name or date it
+didn't like, or a platform verdict with no closer variant. macOS reports a self-signed leaf as exactly that last one,
+`Other("… certificate is not trusted: -67843")` (verified on macOS 27, `webdav-fixture-tls`, 2026-10-20). ❌ Revoked,
+unreadable, or badly signed certificates never are. `errors.rs` reads the `rustls::Error` under a connect failure by
+type (`tls_trust::tls_refusal`): the wrapper is a prompt, any other certificate error `CertificateUntrusted`, and
+anything else in the handshake (an alert, a protocol mismatch, TLS at a plain-HTTP port, a server that can't prove the
+key its pinnable certificate names) `Unreachable`, ❗ so no prompt ever offers to trust a broken handshake.
+
+- ❗ **Reached through `cmdr_fs::volume::tls::causes`, which descends INTO an `io::Error`**: reqwest 0.13.5 nests the
+  handshake's `io::Error` (`InvalidData`, holding the `rustls::Error`) inside another of kind `Other`, and
+  `io::Error::source` skips what it wraps, so a plain `source()` walk never met it. Before that walk, every self-signed
+  server read as `Unreachable`, never `CertificateUntrusted` (printed off the fixture, 2026-10-20).
+- **No re-check before pinning**, unlike an SSH key's two-phase approval: the pin is the fingerprint the person read,
+  and only that exact one is ever trusted, so a server that moved to another certificate since meets the next dial as
+  `Changed`. That also keeps the crate's capped surface where it is (§ "The public surface is capped").
+- **A changed certificate mid-life is a refused reconnect** (`Transient`, like `CertificateUntrusted`): an unattended
+  dial has nobody to ask, so the volume stays down until a person opens it and the connect shows the prompt.
+- **The `https`-first probe ignores pins**: a self-signed twin falls back to the typed `http` address (§ "`https` first,
+  for a typed `http` address").
+- Pinned by `src/tls_trust_test.rs` (the decision table over a scripted platform verifier) and
+  `src/volume/tls_trust_test.rs` against `webdav-fixture-tls`: first contact, pin then connect and reconnect, a
+  different pin as `Changed`, and TLS at a plain-HTTP port as `Unreachable`.
 
 ## Path handling
 
@@ -433,7 +474,7 @@ The sign-in UI's command surface is protocol-agnostic: `connectServer` (a brand-
 already saved) in `apps/desktop/src-tauri/src/commands/servers.rs`, documented end to end in
 `apps/desktop/src/lib/servers/DETAILS.md`. Both funnel into `network::webdav_volume_wiring::connect_and_register`, which
 answers with outcomes (`ServerConnectOutcome`, widened across protocols)
-`connected | authentication_rejected | needs_credentials | auth_method_unsupported | certificate_untrusted | not_a_webdav_server | timed_out | unreachable | cancelled`
+`connected | authentication_rejected | needs_credentials | auth_method_unsupported | needs_certificate_approval | certificate_untrusted | not_a_webdav_server | timed_out | unreachable | cancelled`
 (`AuthMethodUnsupported` is its own variant, ❌ never folded into `AuthenticationRejected`: a Digest-only server never
 saw the password). The rest of the app's commands: `cancelServerConnect`, `disconnectPlace`,
 `saveWebdavCredentials(url, username, secret)` / `hasServerSecret` / `forgetServerSecret`, `getKnownWebdavServers` /
@@ -560,7 +601,6 @@ classification and the typed `VolumeError` path.
 ## Not supported, and say so out loud
 
 - Digest authentication (`AuthMethodUnsupported`). OAuth and app-password flows are plain passwords to this backend.
-- Certificate pinning or a trust prompt: an untrusted certificate is a typed refusal and nothing more.
 - WebDAV locks (LOCK/UNLOCK); a 423 is reported as busy. **Decision: deliberately not. Why:** locks guard against
   concurrent EDITORS, which Cmdr isn't: it copies, moves, and renames whole files, and the staged PUT+MOVE already keeps
   a partial off the user's filename. A lock adds server-side state that outlives a crash (a dead lock a person has to
@@ -580,4 +620,5 @@ counts the methods on `WebdavVolume` too. Two of those are editing a connected p
 `sharing_connection` and `set_redial_root`, which fit none of the four dispositions for the reasons
 `crates/cmdr-sftp/DETAILS.md` § "The public surface is capped" gives for their twins. `index-crate-isolation` is pinned
 at exactly 6 / 1 / 10 (measured 2026-09-11, `pnpm check index-crate-isolation`): no slack, so the next widening is a
-conversation rather than a drift.
+conversation rather than a drift. Certificate trust added none: the prompt is `cmdr_fs::volume::tls::CertificatePrompt`
+riding a new `WebdavConnectError` variant, the pin arrives through a host seam, and the app writes it itself.

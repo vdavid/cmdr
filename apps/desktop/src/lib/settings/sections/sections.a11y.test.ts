@@ -40,6 +40,16 @@ const bindingCommands = vi.hoisted(() => ({
   downloadsWatcherStatus: vi.fn(),
   recheckDownloadsWatcherGate: vi.fn(),
   setGlobalGoToLatestShortcut: vi.fn(),
+  listTrustedWebdavCertificates: vi.fn(() =>
+    Promise.resolve([
+      {
+        host: 'nas.local',
+        port: 5006,
+        fingerprint: 'CD:6F:DC:7C:4B:21:C9:B5:28:58:69:B3:4E:5C:68:B8:55:26:2C:0A:5C:06:7A:8A:2D:BF:BD:FA:AE:C2:9B:E7',
+        approvedAt: '2026-10-20T10:00:00Z',
+      },
+    ]),
+  ),
   listTrustedSftpHostKeys: vi.fn(() =>
     Promise.resolve([
       {
@@ -612,6 +622,7 @@ describe('ServersSection a11y', () => {
 
   it('with nothing trusted has no a11y violations', async () => {
     bindingCommands.listTrustedSftpHostKeys.mockResolvedValueOnce([])
+    bindingCommands.listTrustedWebdavCertificates.mockResolvedValueOnce([])
     const target = container()
     mount(ServersSection, { target, props: { searchQuery: '' } })
     await tick()

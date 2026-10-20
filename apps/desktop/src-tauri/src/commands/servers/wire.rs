@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::commands::sftp::SftpHostKeyIdentity;
 use crate::network::s3_known_places::S3ProviderChoice;
 use crate::network::saved_server_fields;
+use cmdr_fs::volume::tls::CertificatePrompt;
 use cmdr_sftp::transport::HostKeyPrompt;
 
 /// Which protocol an account speaks.
@@ -241,8 +242,12 @@ pub enum ServerConnectOutcome {
     /// The server challenged with a scheme this app doesn't speak (Digest). ❗
     /// The secret was never offered, so nothing about it is known to be wrong.
     AuthMethodUnsupported,
-    /// WebDAV only: the TLS handshake didn't trust the certificate. ❌ Not
-    /// approvable from here; the fix is trusting the CA in the OS store.
+    /// WebDAV only: macOS refused the certificate on trust, and a person may
+    /// pin it (`approve_webdav_certificate`), then dial again. Carries whether
+    /// it's first contact or a pinned certificate that CHANGED.
+    NeedsCertificateApproval(CertificatePrompt),
+    /// WebDAV only: the certificate was refused for a reason no pin answers
+    /// (revoked, malformed, badly signed). ❌ Not approvable.
     CertificateUntrusted,
     /// WebDAV only: the URL answers HTTP but not WebDAV.
     NotAWebdavServer,

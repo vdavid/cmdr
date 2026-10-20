@@ -76,7 +76,9 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
     doesn't answer for up to 30 s, so an id it returned would be useless for arming a cancel button. The table behind
     it: `network/DETAILS.md` § "The attempt table, and why the id is the caller's".
 - **`webdav.rs`**: the WebDAV surface minus connecting and minus editing without connecting, shaped like `sftp.rs`
-  minus host keys: `save_webdav_credentials` (keyed `scheme://host:port` + username; `has` / `delete` are
+  with certificate pins for host keys: `approve_webdav_certificate` (pins the fingerprint the connect's
+  `needs_certificate_approval` showed, with no second handshake) / `forget_webdav_certificate` /
+  `list_trusted_webdav_certificates`, `save_webdav_credentials` (keyed `scheme://host:port` + username; `has` / `delete` are
   crate-internal, like SFTP's), `get_known_webdav_servers`, and `get_webdav_unattended_reconnect`. Same rules as SFTP: the `attempt_id` is the caller's, reconnect and sign-in go
   through `volume_sign_in.rs`, and no command returns a stored secret. The flow is `network::webdav_volume_wiring`; the
   contract is `crates/cmdr-webdav/DETAILS.md` § "Connecting from the frontend".

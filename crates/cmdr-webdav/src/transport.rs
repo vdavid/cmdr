@@ -167,7 +167,18 @@ impl WebdavClient {
     /// 15 s apart; verified on reqwest 0.13.4, `ClientBuilder::new`,
     /// 2026-09-23), so an idle pooled connection whose far end vanished is
     /// reaped by the OS rather than handed to the next request.
-    pub(crate) fn new(base: Url, username: &str, password: &str) -> Result<Self, WebdavConnectError> {
+    ///
+    /// `pinned` is the certificate fingerprint a person trusted for this
+    /// server, if any: TLS trusts the OS's verdict plus that one certificate
+    /// (`tls_trust.rs`). ❗ Read by the caller for every client, so a reconnect
+    /// sees a pin approved since the last one.
+    pub(crate) fn new(
+        base: Url,
+        username: &str,
+        password: &str,
+        pinned: Option<String>,
+    ) -> Result<Self, WebdavConnectError> {
+        let tls = crate::tls_trust::client_config(pinned).map_err(|e| WebdavConnectError::Transport(e.to_string()))?;
         let builder = || {
             cmdr_http::client_builder()
                 .user_agent("Cmdr")
@@ -182,6 +193,7 @@ impl WebdavClient {
                 .no_brotli()
                 .no_deflate()
                 .no_zstd()
+                .tls_backend_preconfigured(tls.clone())
         };
         let build_failed = |e: reqwest::Error| WebdavConnectError::Transport(e.to_string());
         Ok(Self {
@@ -371,7 +383,13 @@ impl WebdavClient {
             .header(reqwest::header::CONTENT_TYPE, "application/xml; charset=utf-8")
             .body(PROBE_BODY)
             .timeout(REQUEST_BUDGET);
-        let response = request.send().await.map_err(|e| classify_connect_error(&e))?;
+        let response = request.send().await.map_err(|e| {
+            classify_connect_error(
+                &e,
+                self.base.host_str().unwrap_or_default(),
+                self.base.port_or_known_default().unwrap_or(80),
+            )
+        })?;
         let status = response.status();
         match status {
             StatusCode::MULTI_STATUS => {
