@@ -54,6 +54,18 @@ describe('isFileListBackgroundClick', () => {
     expect(isFileListBackgroundClick(cell)).toBe(false)
   })
 
+  // The rename field sits in the surface beside the listbox (`RenameOverlay`), not in a row:
+  // a double-click selecting a word in it must not go up a folder.
+  it('is false in the inline rename field', () => {
+    const { surface } = buildFullView()
+    const overlay = document.createElement('div')
+    const input = document.createElement('input')
+    input.className = 'rename-input'
+    overlay.appendChild(input)
+    surface.appendChild(overlay)
+    expect(isFileListBackgroundClick(input)).toBe(false)
+  })
+
   it('is false on the Full view column header above the surface (it sorts)', () => {
     const { header, headerCell } = buildFullView()
     expect(isFileListBackgroundClick(header)).toBe(false)

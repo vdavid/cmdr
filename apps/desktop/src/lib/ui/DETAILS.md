@@ -877,10 +877,10 @@ the size, the primitive owns the caret, selection, placeholder, and passthrough.
 **Two inline editors deliberately stay raw**, each carrying an `eslint-disable-next-line cmdr/prefer-ui-primitive` with
 its reason:
 
-- `file-explorer/rename/InlineRenameEditor.svelte`: sizes to the file row (`height: 100%`, `font: inherit`, 2 px side
-  padding), paints a severity-colored 2 px border with a live glow plus a shake animation on the element itself, and its
-  `.rename-input` class is a load-bearing hit-test hook (`FilePane`, both views, and the E2E suite query
-  `.closest('.rename-input')`). The framed primitive's padding alone would break row height.
+- `file-explorer/rename/InlineRenameEditor.svelte`: sizes to its row's name slot (`height: 100%`, `font: inherit`, 2 px
+  side padding), paints a severity-colored 2 px border with a live glow plus a shake animation on the element itself,
+  and its `.rename-input` class is a load-bearing hit-test hook (`FilePane`'s click and background-double-click guards
+  and the E2E suite query `.closest('.rename-input')`). The framed primitive's padding alone would break row height.
 - `file-explorer/navigation/VolumeBreadcrumb.svelte`'s favorite-rename field: a dense dropdown row that inherits the
   row's font and carries a RESTING accent border to read as "editing", where the primitive's border turns accent only on
   focus.

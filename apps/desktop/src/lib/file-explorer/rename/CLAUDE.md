@@ -5,7 +5,7 @@ context menu, or click-to-rename. Operates on the cursor item only; selection is
 
 ## Module map
 
-- **InlineRenameEditor.svelte**: the inline input that replaces the name cell.
+- **InlineRenameEditor.svelte** in **RenameOverlay.svelte**: the inline input, laid over its row.
 - **RenameConflictDialog.svelte** / **ExtensionChangeDialog.svelte**: the mid-flow confirmation dialogs.
 - **rename-state.svelte.ts**: reactive state, and the session ids.
 - **rename-operations.ts**: pure save flow, returns the `RenameResult` union.
@@ -41,8 +41,8 @@ Full details (save flow, validation tiers, cursor tracking, decisions): `DETAILS
   `mousedown` (capture), never off blur: blur can't tell a click from the row scrolling out of the virtual window, and
   committing on a scroll would rename a file nobody chose. Enter saves too. Guards and the invalid-name toast:
   `DETAILS.md` § Ending a rename session.
-- **Clicks INSIDE the editor must reach the input.** `FilePane.handlePaneClick` and both views' row `mousedown` skip
-  targets under `.rename-input`; without that the pane grabs focus and the rename dies mid-caret-placement.
+- **The field sits beside the listbox, ❌ never in the row** (`nested-interactive`), over the row's empty slot.
+  `FilePane.handlePaneClick` and `isFileListBackgroundClick` skip `.rename-input`, or a click kills the rename.
 - **The editor mounts BY PATH** (`shouldMountRenameEditor`), so a watcher diff that shifts OTHER rows makes it follow
   its file; only a diff removing the renamed file itself cancels (`listing-diff-sync`). Other watcher events don't (the
   backend catches issues on save).

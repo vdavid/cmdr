@@ -74,11 +74,6 @@ export function planRowMouseDown(input: RowMouseDownInput): RowMouseDownPlan {
 
   if (event.button !== 0) return { kind: 'ignore' }
 
-  // Let clicks inside the inline rename input pass through without
-  // triggering selection/drag; the input handles its own focus.
-  const target = event.target as HTMLElement
-  if (target.closest('.rename-input')) return { kind: 'ignore' }
-
   const entry = getEntryAt(index)
   if (!entry) return { kind: 'ignore' }
   if (entry.name === '..') return { kind: 'select' }

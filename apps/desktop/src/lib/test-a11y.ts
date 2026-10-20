@@ -126,17 +126,5 @@ export async function expectNoA11yViolations(
   expect.fail(message)
 }
 
-/**
- * The ids of the rules `element` violates, under the same options. For a test that pins a
- * KNOWN gap (say why in a comment), so no other violation slips in beside it unnoticed.
- */
-export async function a11yViolationIds(
-  element: Element | Document = document.body,
-  options: A11yAuditOptions = {},
-): Promise<string[]> {
-  const results: AxeResults = await runAxe(element, options)
-  return results.violations.map((violation) => violation.id)
-}
-
 /** Re-export so callers can build one-off custom audits if needed. */
 export { axe }

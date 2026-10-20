@@ -19,6 +19,7 @@ import { expectNoA11yViolations } from '#lib/test-a11y.js'
 import { registerFocusHome } from '#lib/ui/focus-restore.js'
 import { dirEntry, fileEntry } from './test-full-list'
 import type { FileEntry } from '../types'
+import type { RenameSessionId, RenameState } from '../rename/rename-state.svelte'
 
 /** The props every case may change after mount; both views take them. */
 interface LiveListProps {
@@ -42,6 +43,8 @@ interface ListProps {
   selectedIndices: Set<number>
   listLabel: string
   onCursorRowLanded: () => void
+  renameState: RenameState | null
+  onRenameCancel: (sessionId: RenameSessionId) => void
 }
 
 export type MountFocusableList = (options: {
@@ -247,6 +250,25 @@ export function listFocusCases(mountList: MountFocusableList): void {
     expect(onCursorRowLanded).toHaveBeenCalledTimes(1)
   })
 
+  // ARIA makes an option's children presentational and a listbox may hold only options, so
+  // the rename field lives beside the listbox, laid over its row (`RenameOverlay`).
+  it('opens the rename field outside the listbox, focused, with no a11y violations', async () => {
+    const onRenameCancel = vi.fn()
+    const list = await mountList({
+      entries: ENTRIES,
+      props: { renameState: renaming('/root/b.txt', 'b.txt'), onRenameCancel },
+    })
+    const input = list.target.querySelector<HTMLInputElement>('input.rename-input')
+    expect(input, 'the rename field is up').not.toBeNull()
+    expect(input?.closest('[role="listbox"]')).toBeNull()
+    await list.settle(() => document.activeElement === input, 'the rename field to take focus')
+    expect(input?.selectionEnd).toBe('b'.length)
+    await expectNoA11yViolations(list.target)
+
+    input?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(onRenameCancel).toHaveBeenCalledWith(7)
+  })
+
   it('puts focus home when it unmounts holding it', async () => {
     const refocus = vi.fn()
     const unregister = registerFocusHome({ root: () => undefined, refocus })
@@ -261,4 +283,17 @@ export function listFocusCases(mountList: MountFocusableList): void {
       unregister()
     }
   })
+}
+
+/** A rename session open on `path`, as `rename-state.svelte.ts` holds it. */
+function renaming(path: string, name: string): RenameState {
+  return {
+    active: true,
+    target: { path, originalName: name, parentPath: '/root', isDirectory: false },
+    currentName: name,
+    validation: { severity: 'ok', message: '' },
+    shaking: false,
+    focusTrigger: 0,
+    sessionId: 7,
+  }
 }

@@ -16,7 +16,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import FullList from './FullList.svelte'
 import FullListHeader from './FullListHeader.svelte'
-import { a11yViolationIds, expectNoA11yViolations } from '#lib/test-a11y.js'
+import { expectNoA11yViolations } from '#lib/test-a11y.js'
 import { dirEntry, fileEntry, mountFullList } from './test-full-list'
 import { installLayoutMock } from '#lib/test-layout.js'
 import { listFocusCases } from './test-list-focus.svelte'
@@ -184,30 +184,6 @@ describe('FullList row names', () => {
     })
     expect(list.target.querySelector('.col-git')?.getAttribute('data-glyph')).toBe('M')
     await expectNoA11yViolations(list.target)
-  })
-
-  // Known gap, pinned so nothing else joins it: ARIA makes an option's children
-  // presentational, so the inline rename field inside the renamed row trips axe's
-  // `nested-interactive`. It predates the row names (the field always sat inside the option),
-  // and DOM focus is on the field while it's up, so VoiceOver reads the field itself. The fix
-  // is moving the editor out of the option.
-  it('a row being renamed violates only nested-interactive', async () => {
-    const list = await mountFullList({
-      entries: [fileEntry({ name: 'report.md' })],
-      props: {
-        renameState: {
-          active: true,
-          target: { path: '/root/report.md', originalName: 'report.md', parentPath: '/root', isDirectory: false },
-          currentName: 'report.md',
-          validation: { severity: 'ok', message: '' },
-          shaking: false,
-          focusTrigger: 0,
-          sessionId: 1,
-        },
-      },
-    })
-    expect(list.target.querySelector('input')).toBeTruthy()
-    expect(await a11yViolationIds(list.target)).toEqual(['nested-interactive'])
   })
 })
 

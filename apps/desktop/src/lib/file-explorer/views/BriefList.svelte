@@ -19,6 +19,7 @@
     import FileIcon from '../selection/FileIcon.svelte'
     import TagDots from '../selection/TagDots.svelte'
     import InlineRenameEditor from '../rename/InlineRenameEditor.svelte'
+    import RenameOverlay from '../rename/RenameOverlay.svelte'
     import { shouldMountRenameEditor } from '../rename/rename-mount'
     import {
         getImageIndexBadge,
@@ -249,6 +250,19 @@
 
     // ==== Container state ====
     let scrollContainer: HTMLDivElement | undefined = $state()
+    /** The `role="listbox"` wrapper inside the scroller; the rename field sits beside it. */
+    let listboxElement: HTMLDivElement | undefined = $state()
+    /** The renamed row's empty name slot, which `RenameOverlay` lays the field over. */
+    let renameSlot = $state<HTMLElement | null>(null)
+
+    function holdRenameSlot(node: HTMLElement) {
+        renameSlot = node
+        return {
+            destroy() {
+                if (renameSlot === node) renameSlot = null
+            },
+        }
+    }
     let containerHeight = $state(0)
     let containerWidth = $state(0)
     let scrollLeft = $state(0)
@@ -496,7 +510,7 @@
     )
     const listFocus = createListFocus({
         getCursorRow: () => cursorRow,
-        getListbox: () => scrollContainer,
+        getListbox: () => listboxElement,
         isFocusedPane: () => isFocused,
         onLanded: () => onCursorRowLanded?.(),
     })
@@ -582,11 +596,6 @@
     // Handle file mousedown - selects and initiates drag tracking
     function handleMouseDown(event: MouseEvent, index: number) {
         if (event.button !== 0) return
-
-        // Let clicks inside the inline rename input pass through without
-        // triggering selection/drag. The input handles its own focus.
-        const target = event.target as HTMLElement
-        if (target.closest('.rename-input')) return
 
         const entry = getEntryAt(index)
         if (!entry) return
@@ -986,13 +995,20 @@
         }}
         onscroll={handleScroll}
         tabindex="-1"
-        role="listbox"
-        aria-multiselectable="true"
-        aria-label={listLabel ?? tString('fileExplorer.list.fileListAriaLabel')}
-        aria-activedescendant={listFocus.activeDescendant()}
-        onfocus={listFocus.handleFocus}
-        onblur={listFocus.handleBlur}
     >
+        <!-- `role="listbox"` lives on this wrapper, not the scroller, so the rename field can sit
+             beside it in the scroll content (a listbox owns only options). Same shape as `FullList`. -->
+        <div
+            class="listbox-region"
+            bind:this={listboxElement}
+            role="listbox"
+            aria-multiselectable="true"
+            aria-label={listLabel ?? tString('fileExplorer.list.fileListAriaLabel')}
+            aria-activedescendant={listFocus.activeDescendant()}
+            tabindex="-1"
+            onfocus={listFocus.handleFocus}
+            onblur={listFocus.handleBlur}
+        >
         <!-- Spacer div provides accurate scrollbar for full list width -->
         <div class="virtual-spacer" style="width: {virtualWindow.totalSize}px; height: 100%;">
             <!-- Visible window positioned with translateX -->
@@ -1060,25 +1076,8 @@
                                     dimmed={rowIsHiddenDimmed}
                                 />
                                 {#if renameState?.active && shouldMountRenameEditor(renameState.target, { path: file.path })}
-                                    <InlineRenameEditor
-                                        value={renameState.currentName}
-                                        severity={renameState.validation.severity}
-                                        shaking={renameState.shaking}
-                                        ariaLabel={tString('fileExplorer.rename.fieldAriaLabel', {
-                                            name: renameState.target?.originalName ?? '',
-                                        })}
-                                        ariaInvalid={renameState.validation.severity === 'error'}
-                                        validationMessage={renameState.validation.message}
-                                        focusTrigger={renameState.focusTrigger}
-                                        sessionId={renameState.sessionId}
-                                        onInput={(v: string) => onRenameInput?.(v)}
-                                        onSubmit={() => onRenameSubmit?.()}
-                                        onCancel={(sessionId: RenameSessionId) => onRenameCancel?.(sessionId)}
-                                        onClickAway={() => onRenameClickAway?.()}
-                                        onStep={(direction: RenameStepDirection, sessionId: RenameSessionId) =>
-                                            onRenameStep?.(direction, sessionId)}
-                                        onShakeEnd={() => onRenameShakeEnd?.()}
-                                    />
+                                    <!-- The field itself is laid over this slot from beside the listbox. -->
+                                    <span class="rename-slot" use:holdRenameSlot></span>
                                 {:else}
                                     <span
                                         class="name"
@@ -1101,6 +1100,32 @@
                 {/each}
             </div>
         </div>
+        </div>
+        {#if renameState?.active && renameSlot && scrollContainer}
+            {#key renameSlot}
+                <RenameOverlay anchor={renameSlot} scroller={scrollContainer}>
+                    <InlineRenameEditor
+                        value={renameState.currentName}
+                        severity={renameState.validation.severity}
+                        shaking={renameState.shaking}
+                        ariaLabel={tString('fileExplorer.rename.fieldAriaLabel', {
+                            name: renameState.target?.originalName ?? '',
+                        })}
+                        ariaInvalid={renameState.validation.severity === 'error'}
+                        validationMessage={renameState.validation.message}
+                        focusTrigger={renameState.focusTrigger}
+                        sessionId={renameState.sessionId}
+                        onInput={(v: string) => onRenameInput?.(v)}
+                        onSubmit={() => onRenameSubmit?.()}
+                        onCancel={(sessionId: RenameSessionId) => onRenameCancel?.(sessionId)}
+                        onClickAway={() => onRenameClickAway?.()}
+                        onStep={(direction: RenameStepDirection, sessionId: RenameSessionId) =>
+                            onRenameStep?.(direction, sessionId)}
+                        onShakeEnd={() => onRenameShakeEnd?.()}
+                    />
+                </RenameOverlay>
+            {/key}
+        {/if}
     </div>
     {#if loadingOverlay}
         <div class="loading-overlay">{@render loadingOverlay()}</div>
@@ -1180,6 +1205,8 @@
     }
 
     .brief-list {
+        /* The containing block for `RenameOverlay`, so the field scrolls with its row. */
+        position: relative;
         padding: var(--spacing-xs);
         overflow-x: auto;
         overflow-y: hidden;
@@ -1190,9 +1217,21 @@
         outline: none;
     }
 
+    .listbox-region {
+        height: 100%;
+        outline: none;
+    }
+
     .virtual-spacer {
         position: relative;
         display: flex;
+    }
+
+    /* Takes the box the name and tags had, so the rename field laid over it gets the same. */
+    .rename-slot {
+        flex: 1;
+        align-self: stretch;
+        min-width: 0;
     }
 
     .virtual-window {

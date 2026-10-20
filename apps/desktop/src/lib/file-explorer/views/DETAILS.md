@@ -329,11 +329,12 @@ row 0, the `..` cursor. Both halves are pinned, by `FullListHeader.test.ts` and
 Virtual-scroll math: `.full-list`'s own `clientHeight` IS the row area, bound straight to `rowAreaHeight` and fed to
 `calculateVirtualWindow` / `getScrollToPosition` / `firstVisibleGlobalIndex` / `lastVisibleGlobalIndex` /
 `getVisibleItemsCountUtil`. `scrollTop` and the spacer's offset differ only by `.listbox-region`'s gutter (see the
-gutter gotcha below), which `spacerScrollTop` and `scrollToIndex` convert between. A11y: the listbox role sits on a
-`.listbox-region` wrapper around `.virtual-spacer` rather than on `.full-list`, because the **"Empty folder" text is a
-sibling of that region, not a child** — an empty listbox passes `aria-required-children`, a listbox holding a non-option
-child doesn't. `BriefList` keeps its overlay outside `.brief-list` for the identical reason. ❌ Don't move either inside
-to simplify the layout.
+gutter gotcha below), which `spacerScrollTop` and `scrollToIndex` convert between. A11y: in BOTH views the listbox role
+sits on a `.listbox-region` wrapper around `.virtual-spacer`, never on the scroller, because the scroll content holds
+non-options **beside** it: Full's "Empty folder" text and both views' rename field (`../rename/RenameOverlay.svelte`).
+An empty listbox passes `aria-required-children`, a listbox holding a non-option child doesn't. `BriefList` keeps its
+empty-folder overlay outside `.brief-list` for the identical reason. ❌ Don't move any of them inside to simplify the
+layout.
 
 **`aria-activedescendant` names a row only when that row is RENDERED.** Both views derive the id from the rows in the
 virtual window (`visibleColumns` / `visibleFiles`), not from `cursorIndex >= 0`: the cursor legitimately points at
@@ -379,19 +380,19 @@ no per-view copy of any of it.
 - Full view hands in the strings its cells already render (`rowSizeText` over the same `sizeTriads` the size cell draws,
   `date.text`, the git column's `labelFor`), so nothing formats twice. It's a plain function per rendered row: no
   `$derived` per row, no DOM reads; cost is bounded by the virtual window.
-- Known gap: the inline rename field sits inside its option, whose children ARIA makes presentational, so axe flags
-  `nested-interactive` while a rename is up (pinned in `full-list.a11y.test.ts`). DOM focus is on the field then, so
-  VoiceOver reads the field. Moving the editor out of the option is the fix.
+- The inline rename field is NOT in its option: ARIA makes an option's children presentational (axe
+  `nested-interactive`), so the row keeps an empty name slot and `../rename/RenameOverlay.svelte` lays the field over it
+  from beside the listbox. Pinned for both views by `test-list-focus.svelte.ts`.
 
 Speech-level expectations (`file-list.vsr.svelte.test.ts`, `@guidepup/virtual-screen-reader`) guard this markup; what
 VoiceOver really says is the listening harness's job.
 
 **Row ids are per list instance** (`fileRowId(listId, index)`, `listId` from `$props.id()`): both panes and a
 search-results list render rows 0, 1, …, and `getElementById` would hand a focused right list the left pane's row. The
-listbox is the focus target (`focusList()`; in Full view the inner `.listbox-region`, never the `.full-list` scroller)
-and names the cursor row only while it holds focus, through `list-focus.svelte.ts`: the id lands one frame after focus,
-and lands again a frame after the cursor row's node changes under an unchanged id (a navigation's new row 0), which
-WebKit otherwise never announces. A plain cursor move shows at once. Pinned by `test-list-focus.svelte.ts`, run from
+listbox is the focus target (`focusList()`; the inner `.listbox-region` in both views, never the scroller) and names the
+cursor row only while it holds focus, through `list-focus.svelte.ts`: the id lands one frame after focus, and lands
+again a frame after the cursor row's node changes under an unchanged id (a navigation's new row 0), which WebKit
+otherwise never announces. A plain cursor move shows at once. Pinned by `test-list-focus.svelte.ts`, run from
 `full-list.a11y.test.ts` and `BriefList.focus.test.ts`.
 
 **Don't reintroduce a header-height shift with a `Math.max(0, …)` clamp** between `scrollTop` and the spacer offset: a

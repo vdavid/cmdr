@@ -32,10 +32,8 @@ const ROWS: Record<number, FileEntry> = {
   3: entry('sub', { isDirectory: true }),
 }
 
-function mouseDown(init: MouseEventInit = {}, target?: HTMLElement): MouseEvent {
-  const event = new MouseEvent('mousedown', { button: 0, ...init })
-  Object.defineProperty(event, 'target', { value: target ?? document.createElement('div') })
-  return event
+function mouseDown(init: MouseEventInit = {}): MouseEvent {
+  return new MouseEvent('mousedown', { button: 0, ...init })
 }
 
 /** The host pane a selection drag reads live (`readPressedRows`). */
@@ -67,15 +65,6 @@ function plan(overrides: Partial<RowMouseDownInput> = {}) {
 describe('rows we do not own', () => {
   it.each([1, 2])('ignores mouse button %i', (button) => {
     expect(plan({ event: mouseDown({ button }) })).toEqual({ kind: 'ignore' })
-  })
-
-  it('ignores a click inside the inline rename input', () => {
-    const input = document.createElement('input')
-    input.className = 'rename-input'
-    const wrapper = document.createElement('span')
-    wrapper.append(input)
-
-    expect(plan({ event: mouseDown({}, input) })).toEqual({ kind: 'ignore' })
   })
 
   it('ignores a row that has not been fetched yet', () => {

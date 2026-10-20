@@ -19,7 +19,8 @@ export function isFileListBackgroundClick(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false
   // Must be inside a file-list scroll surface (Brief or Full)...
   if (!target.closest('[data-file-list-surface]')) return false
-  // ...but not on an actual row (rows open the item themselves).
-  if (target.closest('.file-entry')) return false
+  // ...but not on an actual row (rows open the item themselves), nor in the rename field,
+  // which sits in the surface beside the rows (`rename/RenameOverlay.svelte`).
+  if (target.closest('.file-entry, .rename-input')) return false
   return true
 }
