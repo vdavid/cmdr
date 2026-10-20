@@ -97,8 +97,9 @@ fn an_upload_to_aws_is_a_put_and_a_head_per_file_and_folder() {
     // verifying HEADs (no no-overwrite HEAD: the folders are fresh). The
     // folders: two marker PUTs, four HEADs, six LISTs. Readying the
     // destination: three LISTs; probing the selected folder's name: a HEAD and
-    // a LIST. PUT-class: 1,002 PUTs + 10 LISTs; HEADs: 1,005.
-    close(totals(&planned)[0], 1_012.0 * 5e-6 + 1_005.0 * 4e-7);
+    // a LIST; reading the landed times back: a LIST per folder plus one per
+    // thousand files (3). PUT-class: 1,002 PUTs + 13 LISTs; HEADs: 1,005.
+    close(totals(&planned)[0], 1_015.0 * 5e-6 + 1_005.0 * 4e-7);
 }
 
 #[test]
@@ -124,12 +125,13 @@ fn a_move_within_one_aws_account_copies_on_the_server_and_deletes_the_source() {
     // One workload: the account is billed once. LISTs: the scan's stat (1)
     // and its listing plus the walk's (2), readying the destination (3) and
     // checking the move (3), the name probe (1), making the folder (3), the
-    // sweep's two and the emptied folder's capped one (3): 16. HEADs: the
-    // stat, the probe, two making the folder, the copy's source (no
-    // no-overwrite or verifying HEAD in a fresh folder), the sweep's: 6. Plus
-    // one `CopyObject` and the marker's PUT; the deletes are free.
+    // sweep's two and the emptied folder's capped one (3), reading the landed
+    // time back (1): 17. HEADs: the stat, the probe, two making the folder, the
+    // copy's source (no no-overwrite or verifying HEAD in a fresh folder), the
+    // sweep's: 6. Plus one `CopyObject` and the marker's PUT; the deletes are
+    // free.
     assert_eq!(planned.len(), 1);
-    close(totals(&planned)[0], 18.0 * 5e-6 + 6.0 * 4e-7);
+    close(totals(&planned)[0], 19.0 * 5e-6 + 6.0 * 4e-7);
 }
 
 #[test]
@@ -148,9 +150,10 @@ fn a_copy_between_two_accounts_downloads_from_one_and_uploads_to_the_other() {
     let amounts = totals(&planned);
     // R2: the two selected files' stats and their GETs at $0.36/M, egress
     // free. AWS: readying the destination (3 LISTs), a name probe per file (a
-    // HEAD and a LIST), two PUTs and their verifying HEADs.
+    // HEAD and a LIST), two PUTs and their verifying HEADs, and a HEAD per file
+    // reading its landed time back.
     close(amounts[0], 4.0 * 0.36e-6);
-    close(amounts[1], 7.0 * 5e-6 + 4.0 * 4e-7);
+    close(amounts[1], 7.0 * 5e-6 + 6.0 * 4e-7);
 }
 
 #[test]
@@ -210,8 +213,9 @@ fn without_a_per_file_list_the_bytes_spread_evenly_over_the_files() {
     let planned = plan(CostedOperation::Copy, sides, &bare, &[]);
     // Four 100 MiB files, each two 64 MiB-floor parts plus Create and Complete
     // (16), readying the destination and probing each name (7 LISTs): 23
-    // PUT-class requests; four name probes and four verifying HEADs.
-    close(totals(&planned)[0], 23.0 * 5e-6 + 8.0 * 4e-7);
+    // PUT-class requests; four name probes, four verifying HEADs, and four
+    // reading the landed times back.
+    close(totals(&planned)[0], 23.0 * 5e-6 + 12.0 * 4e-7);
 }
 
 fn clash(source_size: u64, dest_size: u64, source_modified: Option<u64>, dest_modified: Option<u64>) -> KnownClash {

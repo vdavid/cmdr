@@ -689,6 +689,8 @@ pub async fn move_volumes_with_progress(
                     if let Some((src_vol, dst_vol)) = journal_volumes.as_ref() {
                         let files = std::mem::take(&mut *created.files.lock_ignore_poison());
                         let dirs = std::mem::take(&mut *created.dirs.lock_ignore_poison());
+                        let landed =
+                            journal::LandedTimes::read_back(&*dest_volume, &landed_dest, source_is_dir, &files).await;
                         journal::record_volume_transfer_source(
                             state.scope(),
                             src_vol,
@@ -698,6 +700,7 @@ pub async fn move_volumes_with_progress(
                             source_is_dir,
                             &files,
                             (!source_is_dir).then_some(bytes as i64),
+                            &landed,
                             source_overwrote,
                         );
                         journal::record_created_dirs_on(state.scope(), dst_vol, &dirs);

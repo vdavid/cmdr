@@ -266,6 +266,19 @@ impl Workload {
         self.copy_on_server_as(size, true);
     }
 
+    /// One landed selected file's modified time read back for the operation
+    /// log (`cmdr-operations`' `journal::LandedTimes`): its `get_metadata`, a HEAD.
+    pub fn read_back_landed_file(&mut self) {
+        self.add(RequestKind::HeadObject, 1);
+    }
+
+    /// One destination folder listed to read back the modified times of the
+    /// files a selected folder landed in it (`journal::LandedTimes`): a page per
+    /// thousand keys, counted as one, like [`list_folder`](Self::list_folder).
+    pub fn read_back_landed_folder(&mut self) {
+        self.add(RequestKind::ListObjectsV2, 1);
+    }
+
     /// One folder level a move's source sweep clears
     /// (`source_sweep.rs::sweep_level`): a HEAD and a capped listing for its
     /// kind, the full listing it reads, a `DeleteObjects` for its files, and

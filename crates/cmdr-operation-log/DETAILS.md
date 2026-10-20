@@ -567,9 +567,9 @@ storing them, and adds a local-only node-id check that this path has no equivale
 1. **Snapshot recheck** (`verify_snapshot`). The item must still match the size/mtime the journal recorded. Every
    recorded field must have a present, equal live value; a recorded field whose live counterpart is absent (an MTP/SMB
    mtime the backend can't prove) is **Unverifiable** — a skip, not a guess. Nothing recorded ⇒ Unverifiable too. A
-   recorded field that differs ⇒ **Drift** — skip. This is why a copy leaf that recorded only `size` (volume transfers
-   carry no per-leaf mtime) still verifies on size, while an item whose only field (mtime) is absent live is skipped.
-   Directories aren't cheaply verifiable, so a dir's recheck is existence-only.
+   recorded field that differs ⇒ **Drift** — skip. This is why a leaf that recorded only `size` (a volume leaf whose
+   landed mtime wasn't read back) still verifies on size, while an item whose only field (mtime) is absent live is
+   skipped. Directories aren't cheaply verifiable, so a dir's recheck is existence-only.
 2. **Pinned non-destructive restore.** A restore-move (move/trash/rename undo) NEVER overwrites: if the restore target
    is occupied by a DIFFERENT entry it skips (`RestoreTargetOccupied`). The one exception is a **self-collision**
    (`src/rollback/self_collision.rs`): restoring `dog.JPG` → `dog.jpg` on a case-insensitive volume sees the target
@@ -789,18 +789,36 @@ checkpointing for the whole file-I/O duration) — it's the `rolling_back` state
 (and its `rolls_back_op_id` target), so a live rollback's streamed source rows can't vanish mid-stream (see `writer.rs`
 `handle_prune`).
 
-### What a volume leaf's snapshot carries, and what it deliberately doesn't
+### What a volume leaf's snapshot carries
 
 Every leaf of a volume (SMB/MTP) copy records its **size**, top-level and inner alike, so a cross-volume directory
 rollback reverses the whole tree rather than skipping its contents. The byte count costs nothing extra: `copy_leaf`
 returns what it piped, off a size hint the walker's `list_directory` already paid for, and `CreatedPaths` carries a
 `WrittenFile` per destination (`crates/cmdr-operations/src/ledger.rs`) so it rides through to the row (`journal.rs`).
 
-❌ **A volume leaf records NO mtime, and adding one would make things worse.** The volume write path doesn't preserve
-the source's, so the live value would differ from anything captured at read time — flipping every leaf from
-`UnverifiablePrecondition` to `Drift`, which reads to the user as "you changed this file" and still refuses. Size alone
-is enough because `verify_snapshot` is flat over the row: every recorded field must verify, and at least one must, with
-no inner-versus-top-level branch. Local-FS leaves record mtime as well, since their write path preserves it.
+**Each leaf also records the landed file's OWN mtime, read back from the destination** (`journal::LandedTimes` in
+`crates/cmdr-operations/src/journal.rs`). Size alone passed a file edited in place at the same length (a VM disk image,
+a SQLite database, a re-saved document), and undoing the copy deleted it with the user's edits (#519).
+
+- **The destination's own time, ❌ never the source's.** A destination that doesn't keep the source's date (S3, WebDAV,
+  an Android phone over MTP) would differ from a read-time capture on every leaf, flipping each one to `Drift`, which
+  reads to the user as "you changed this file" and refuses. The read-back goes through the same `Volume` the reversal
+  rechecks with, so both sides see one clock at one precision.
+- **Bounded per source, never per file.** The write path returns no landed time (`StreamWritten` carries bytes and
+  refusals), so this reads it back: one `get_metadata` for a FILE source, one `list_directory` per destination folder
+  for a DIRECTORY source, on every backend. A listed name is only matched against the files the source wrote, never
+  joined onto a path. Only a journaling transfer reads anything back.
+- **A stopped or failed source reads nothing back** (a stop never waits on the share), so its rows keep the size-only
+  check; so does a file the read-back can't place (a listing that failed, a name the listing spells differently), a
+  symlink, and a backend that reports no mtime (`None`, which `verify_snapshot` skips over).
+- `verify_snapshot` is flat over the row: every recorded field must verify, and at least one must, with no
+  inner-versus-top-level branch. Local-FS leaves record the preserved source mtime, which their write path keeps.
+- The in-flight reversals (`crates/cmdr-operations/src/reversal.rs`) keep the size-only volume recheck: their ledger
+  carries no mtime by design (`crates/cmdr-operations/src/transfer/DETAILS.md` § "What the in-flight ledgers record"),
+  and they run seconds after the write, not days.
+
+Pinned by `crates/cmdr-operations/src/journal_capture_volume_tests.rs` (`a_serial_…`, `a_concurrent_…`, the cross-volume
+move, and `undoing_a_volume_copy_keeps_a_file_edited_since_at_the_same_length`).
 
 **Remaining gap, one path**: a cross-volume MOVE interrupted mid-directory journals nothing for the children it already
 finished. Unlike the copy's, those aren't a completed unit of work — the source sweep runs per top-level source after

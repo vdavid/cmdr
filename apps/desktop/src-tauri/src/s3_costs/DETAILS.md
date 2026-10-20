@@ -27,7 +27,10 @@ the_engine_sends_what_the_estimate_counts` on both fixtures.
 - **Copy**: same account and buckets the provider copies between → on the one account, `copy_on_server_fresh` per file
   inside a selected folder and `copy_on_server` per selected file. Otherwise a `download` per file on an S3 source,
   and `upload_fresh` / `upload` the same way on an S3 destination. Either way the destination side is
-  `open_destination`, a `probe_name` per selected item, and a `make_folder` per folder.
+  `open_destination`, a `probe_name` per selected item, and a `make_folder` per folder. Once each item lands, the
+  operation log reads back the landed files' own modified times (`crates/cmdr-operation-log/DETAILS.md` § "What a
+  volume leaf's snapshot carries"): `read_back_landed_file` per selected file, and `read_back_landed_folder` per folder
+  plus one per thousand files inside the selected folders. Counted with recording on, the default.
 - **Overwrites** (a copy's or a move's, `CostEstimateRequest.clashes`): the dialog sends the conflict check's file
   clashes and its policy; `plan::overwritten` decides which the policy overwrites the way the transfer does (strictly
   smaller, strictly older), and each one is `replace_object` at the destination plus, for an upload, `upload_over`. A

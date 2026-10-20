@@ -7,10 +7,12 @@
 //! operation that opened with nothing to journal to (or never opened), and never
 //! fails the operation.
 
+use std::collections::{BTreeMap, HashMap};
+use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use cmdr_fs::volume::DEFAULT_VOLUME_ID;
+use cmdr_fs::volume::{DEFAULT_VOLUME_ID, Volume};
 use cmdr_operation_log::capture::FinalizeInputs;
 use cmdr_operation_log::types::RowRole;
 use cmdr_operation_log::types::{
@@ -227,7 +229,9 @@ pub(super) fn record_volume_leaf(
 /// empty, `dest_root` = the landed dest path, `file_size` known). A DIRECTORY
 /// source records one leaf per `created_files` entry (a dest path under
 /// `dest_root`), its source rebased onto `source_root` from the tail under
-/// `dest_root`, carrying the size the leaf was written with. `overwrote` applies to the whole source's leaves — op-wide rollback
+/// `dest_root`, carrying the size the leaf was written with. Each leaf's mtime is
+/// the landed file's own, from `landed` ([`LandedTimes`]), or `None` where it
+/// wasn't read back. `overwrote` applies to the whole source's leaves — op-wide rollback
 /// eligibility is the OR of these, so marking a source that overwrote anything is
 /// honest (deleting the copies can't restore an overwritten original). The created
 /// directories are journaled separately, after all files, via
@@ -242,6 +246,7 @@ pub(super) fn record_volume_transfer_source(
     source_is_dir: bool,
     created_files: &[WrittenFile],
     file_size: Option<i64>,
+    landed: &LandedTimes,
     overwrote: bool,
 ) {
     if source_is_dir {
@@ -255,7 +260,7 @@ pub(super) fn record_volume_transfer_source(
                 &source_leaf,
                 Some((dest_volume_id, &leaf.path)),
                 leaf.identity.recorded_size().and_then(|size| i64::try_from(size).ok()),
-                None,
+                landed.of(&leaf.path),
                 overwrote,
                 ItemOutcome::Done,
             );
@@ -268,10 +273,84 @@ pub(super) fn record_volume_transfer_source(
             source_root,
             Some((dest_volume_id, dest_root)),
             file_size,
-            None,
+            landed.of(dest_root),
             overwrote,
             ItemOutcome::Done,
         );
+    }
+}
+
+/// The modified times a volume transfer's landed files report, read back from the
+/// destination right after one top-level source lands, so each row's snapshot is
+/// size AND mtime. Size alone passed a file edited in place at the same length (a
+/// VM disk image, a SQLite database, a re-saved document), and undoing the copy
+/// deleted it with the user's edits (#519).
+///
+/// The landed file's OWN time, never the source's: a destination that doesn't keep
+/// the source's date (S3, WebDAV, an Android phone over MTP) would drift on every
+/// file. Read through the same `Volume` the reversal rechecks with, so both sides
+/// see one clock at one precision.
+///
+/// The cost is bounded per SOURCE, never per file: a FILE source asks one
+/// `get_metadata`, a DIRECTORY source one `list_directory` per destination folder
+/// its files landed in. Only a transfer that journals reads anything back, and a
+/// stopped or failed source doesn't (`Default`, so a stop never waits on the share):
+/// its rows keep the size-only check. A file the read-back can't place, or a backend
+/// that reports no mtime, records `None`, which `verify_snapshot` skips over.
+// DEFAULT-OK: empty means "nothing read back", and every lookup then answers `None`,
+// the size-only check the row had before; it claims no time for any file.
+#[derive(Debug, Default)]
+pub(crate) struct LandedTimes(HashMap<PathBuf, i64>);
+
+impl LandedTimes {
+    /// Read back the landed times of one top-level source: `landed` for a FILE
+    /// source, every `files` entry for a DIRECTORY source.
+    pub(crate) async fn read_back(
+        dest: &dyn Volume,
+        landed: &Path,
+        source_is_dir: bool,
+        files: &[WrittenFile],
+    ) -> Self {
+        let mut times = HashMap::new();
+        if !source_is_dir {
+            if let Some(secs) = dest
+                .get_metadata(landed)
+                .await
+                .ok()
+                .and_then(|entry| entry.modified_at)
+                .and_then(|secs| i64::try_from(secs).ok())
+            {
+                times.insert(landed.to_path_buf(), secs);
+            }
+            return Self(times);
+        }
+        // Each folder's landed files by name. A listed name is only ever matched
+        // against these, never joined onto a path.
+        let mut by_folder: BTreeMap<&Path, HashMap<&OsStr, &Path>> = BTreeMap::new();
+        for file in files {
+            if let (Some(folder), Some(name)) = (file.path.parent(), file.path.file_name()) {
+                by_folder.entry(folder).or_default().insert(name, &file.path);
+            }
+        }
+        for (folder, wanted) in by_folder {
+            let Ok(entries) = dest.list_directory(folder, None).await else {
+                continue;
+            };
+            for entry in entries.iter().filter(|entry| !entry.is_directory && !entry.is_symlink) {
+                let Some(path) = wanted.get(OsStr::new(&entry.name)) else {
+                    continue;
+                };
+                if let Some(secs) = entry.modified_at.and_then(|secs| i64::try_from(secs).ok()) {
+                    times.insert(path.to_path_buf(), secs);
+                }
+            }
+        }
+        Self(times)
+    }
+
+    /// The landed mtime read back for `path`, if one was.
+    pub(crate) fn of(&self, path: &Path) -> Option<i64> {
+        self.0.get(path).copied()
     }
 }
 

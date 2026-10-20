@@ -546,6 +546,7 @@ impl UnsettledSource {
                 true,
                 &files,
                 None,
+                &journal::LandedTimes::default(),
                 self.created.any_overwrote(),
             );
         }
@@ -587,6 +588,7 @@ impl Settlements {
             overwrote,
             created_files,
             created_dirs: task_created_dirs,
+            landed,
             source_path: done_source,
             skipped_count: task_skipped_count,
             skipped_bytes: task_skipped_bytes,
@@ -630,6 +632,7 @@ impl Settlements {
                 source_is_dir,
                 &created_files,
                 (!source_is_dir).then_some(bytes as i64),
+                &landed,
                 overwrote,
             );
         }
@@ -717,6 +720,7 @@ impl Settlements {
                     true,
                     &created_files,
                     None,
+                    &journal::LandedTimes::default(),
                     overwrote,
                 );
             }

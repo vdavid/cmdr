@@ -220,8 +220,8 @@ pub enum SnapshotVerdict {
 /// that was recorded (`Some`) must have a present, equal live value; a recorded
 /// field whose live counterpart is absent is Unverifiable (fail safe). At least
 /// one field must have been recorded and verified, else there's nothing to prove
-/// identity on ⇒ Unverifiable. So a copy leaf that recorded only size (volume
-/// transfers don't carry mtime) still verifies on size, while an item whose only
+/// identity on ⇒ Unverifiable. So a copy leaf that recorded only size (a volume
+/// leaf whose landed mtime wasn't read back) still verifies on size, while an item whose only
 /// recorded field (mtime) is absent live (MTP/SMB) is Unverifiable and skipped.
 ///
 /// Takes the two live fields rather than a `FileEntry`: it reads exactly these

@@ -207,6 +207,7 @@ async fn cross_volume_move_journals_per_leaf_move_rows() {
         .await
         .expect("two");
     let dest = in_memory("Dst");
+    let landed_on = Arc::clone(&dest);
 
     let op_id = "op-vol-move";
     let state = Arc::new(
@@ -258,6 +259,7 @@ async fn cross_volume_move_journals_per_leaf_move_rows() {
         "a cross-volume move must never journal under root"
     );
     assert!(vols.iter().any(|v| v == "smb-src") && vols.iter().any(|v| v == "smb-dst"));
+    assert_file_rows_carry_their_landed_mtime(jdb, op_id, &*landed_on, 2).await;
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -704,5 +706,97 @@ async fn an_interrupted_volume_folder_copy_journals_every_child_it_finished() {
     assert!(
         fixture.items().iter().all(|i| i.outcome == ItemOutcome::Done),
         "the rows name committed files, so they're Done"
+    );
+}
+
+/// A file on the destination a volume copy wrote, rewritten since with the same
+/// length but different bytes and a later modified time: a VM disk image, a SQLite
+/// database, a re-saved document.
+async fn edit_in_place_keeping_its_length(dest: &InMemoryVolume, path: &str, bytes: &[u8]) {
+    let path = std::path::Path::new(path);
+    let landed = dest.get_metadata(path).await.expect("the copy landed");
+    assert_eq!(landed.size, Some(bytes.len() as u64), "the edit keeps the length");
+    dest.delete(path).await.expect("delete");
+    dest.create_file(path, bytes).await.expect("rewrite");
+    dest.set_modified_at(path, landed.modified_at.map(|secs| secs + 3_600));
+}
+
+/// Every FILE row of `op_id` records the landed file's OWN modified time, read back
+/// from the destination, so a reversal verifies size AND mtime. Size alone passed a
+/// same-length edit and deleted it with the user's changes.
+async fn assert_file_rows_carry_their_landed_mtime(db: &std::path::Path, op_id: &str, dest: &dyn Volume, files: usize) {
+    let conn = open_read_connection(db).expect("read conn");
+    let detail = cmdr_operation_log::query::get_operation(&conn, op_id, 1_000, 0)
+        .expect("read detail")
+        .expect("the transfer is journaled");
+    let rows: Vec<_> = detail
+        .items
+        .into_iter()
+        .filter(|i| i.entry_type == EntryType::File)
+        .collect();
+    assert_eq!(rows.len(), files, "{rows:?}");
+    for row in rows {
+        let at = row.dest_path.clone().expect("a transfer row names its destination");
+        let landed = dest.get_metadata(std::path::Path::new(&at)).await.expect("landed");
+        let landed_mtime = landed.modified_at.map(|secs| secs as i64);
+        assert!(landed_mtime.is_some(), "the double reports an mtime for {at}");
+        assert_eq!(row.mtime, landed_mtime, "the row must record the landed mtime of {at}");
+    }
+}
+
+/// Two sources take the SERIAL driver (`copy_serial.rs`).
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_serial_volume_copy_records_each_landed_files_own_modified_time() {
+    let fixture = VolumeLoop::new("op-vol-mtime-serial");
+    fixture.mkdir("/album").await;
+    fixture.mkdir("/album/inner").await;
+    fixture.put("/album/one.txt", b"first").await;
+    fixture.put("/album/inner/two.txt", b"second").await;
+    fixture.put("/loose.txt", b"loose").await;
+
+    fixture.copy(&["/album", "/loose.txt"]).await;
+
+    assert_file_rows_carry_their_landed_mtime(fixture.log.db(), &fixture.op_id, &*fixture.dest, 3).await;
+}
+
+/// Three sources take the CONCURRENT driver (`copy_concurrent.rs`).
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_concurrent_volume_copy_records_each_landed_files_own_modified_time() {
+    let fixture = VolumeLoop::new("op-vol-mtime-concurrent");
+    fixture.mkdir("/album").await;
+    fixture.mkdir("/album/inner").await;
+    fixture.put("/album/one.txt", b"first").await;
+    fixture.put("/album/inner/two.txt", b"second").await;
+    fixture.put("/loose.txt", b"loose").await;
+    fixture.put("/extra.txt", b"extra").await;
+
+    fixture.copy(&["/album", "/loose.txt", "/extra.txt"]).await;
+
+    assert_file_rows_carry_their_landed_mtime(fixture.log.db(), &fixture.op_id, &*fixture.dest, 4).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn undoing_a_volume_copy_keeps_a_file_edited_since_at_the_same_length() {
+    let fixture = VolumeLoop::new("op-vol-same-length-edit");
+    fixture.mkdir("/album").await;
+    fixture.put("/album/disk.img", b"original").await;
+    fixture.put("/notes.db", b"version1").await;
+    fixture.copy(&["/album", "/notes.db"]).await;
+
+    edit_in_place_keeping_its_length(&fixture.dest, "/album/disk.img", b"EDITED!!").await;
+    edit_in_place_keeping_its_length(&fixture.dest, "/notes.db", b"version2").await;
+    let report = fixture.rollback().await;
+
+    use cmdr_operation_log::types::SkipReason;
+    let skips: Vec<_> = report.skips.iter().map(|group| (group.reason, group.count)).collect();
+    assert_eq!(
+        skips,
+        vec![(SkipReason::Drift, 2), (SkipReason::DirNotEmpty, 1)],
+        "both edits drifted, so the folder holding one stays too: {report:?}"
+    );
+    assert_eq!(
+        fixture.dest_files_under("/").await,
+        vec!["/album/disk.img", "/notes.db"],
+        "both edited files survive the undo"
     );
 }

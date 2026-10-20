@@ -22,6 +22,7 @@ use std::time::Instant;
 
 use super::super::super::conflict::ApplyToAll;
 use super::super::super::event_sinks::OperationEventSink;
+use super::super::super::journal;
 use super::super::super::ledger::WrittenFile;
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::VolumeCopyConfig;
@@ -54,6 +55,9 @@ pub(super) struct CopyTaskSuccess {
     pub(super) overwrote: bool,
     pub(super) created_files: Vec<WrittenFile>,
     pub(super) created_dirs: Vec<PathBuf>,
+    /// The landed files' own modified times, read back here in the task (so the
+    /// driver loop never awaits the destination) when the operation journals.
+    pub(super) landed: journal::LandedTimes,
     /// The top-level source this task copied, and how many children a deep
     /// merge skipped in its subtree. `skipped_count == 0` means the whole
     /// subtree landed durably, so the out-of-zip move op may drop it from the
@@ -259,6 +263,11 @@ pub(super) async fn run_copy_task(task: CopyTask) -> Result<CopyTaskSuccess, Box
         // Landed at `dest_path`, which names the original for a top-level
         // overwrite (a swap's landing ran inside the write).
         Ok(bytes) => Ok(CopyTaskSuccess {
+            landed: if state.journal_volumes.is_some() {
+                journal::LandedTimes::read_back(&*dest_volume, &dest_path, source_is_dir, &created_files).await
+            } else {
+                journal::LandedTimes::default()
+            },
             recorded_path: dest_path,
             source_is_dir,
             bytes,
