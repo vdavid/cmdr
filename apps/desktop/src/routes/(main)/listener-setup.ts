@@ -23,6 +23,7 @@ import {
   onMediaIndexFolderExclusion,
   onMediaIndexFolderChoice,
   onFunctionKeyBarHideRequested,
+  onTagsSkipped,
   onExecuteCommand,
   onOpenSettings,
   onFocusAbout,
@@ -46,6 +47,7 @@ import { navCommandForDirection } from './mouse-nav'
 import { setFolderExcluded } from '#lib/media-index/excluded-folders.js'
 import { setFolderChosen } from '#lib/media-index/always-index-folders.js'
 import { handleFunctionKeyBarHideRequested } from '#lib/file-explorer/pane/function-key-bar-hide.js'
+import { handleTagsSkipped } from '#lib/file-explorer/pane/tags-skipped-toast.js'
 import { isCommandId, type CommandId } from '#lib/commands/index.js'
 import type { ViewMode } from '#lib/app-status-store.js'
 import { adoptedOperationFor } from '#lib/file-operations/foreground-request.js'
@@ -374,6 +376,10 @@ export async function setupMenuListeners(ctx: ListenerSetupContext): Promise<voi
   // "Hide function key bar" from the bar's own right-click context menu: no
   // context to stash, so the handler just flips the setting and raises a toast.
   unlistenFns.push(await onFunctionKeyBarHideRequested(handleFunctionKeyBarHideRequested))
+
+  // A tag toggle (keyboard or context-menu circle) left files alone because their
+  // existing tags couldn't be read: say so, or the person sees a color that didn't land.
+  unlistenFns.push(await onTagsSkipped(handleTagsSkipped))
 }
 
 /** Set up MCP dialog event listeners (close/focus). */

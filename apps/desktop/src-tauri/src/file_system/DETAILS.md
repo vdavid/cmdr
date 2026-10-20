@@ -488,6 +488,17 @@ keeps them: its share stays mounted by macOS, its rows are `/Volumes/…` paths,
 macOS-mounted filesystem that can't store xattrs still shows them; only trying can tell. Reading tags (`enrich_tags`)
 still runs everywhere, since an empty read is harmless.
 
+**Two readers.** `read_tags` is lenient, for display: a read error, a bad plist, or a non-array root reads as no tags,
+and non-string elements are dropped. `read_tags_strict` is the write path's: `Ok(None)` for no xattr, `Ok(Some(_))` for
+a fully decoded array, and a typed `TagReadError` (`Unreadable(io::Error)` / `Undecodable`) otherwise. Decision/Why: a
+read-modify-write that took "couldn't read" for "untagged" replaced every tag on the file with the one being toggled
+(#541; reachable through write-without-read permission, an ACL, or a value another tool wrote oddly). Every merging
+write (`toggle_color`, the MCP `set` and `toggle`) goes through the strict one and SKIPS a file it refuses, listing it
+in `TagToggleOutcome.skipped`; a skipped file also stays out of the all-have decision. `report_skips` logs each one and
+emits `tags-skipped { count }` to the main window, which raises the `fileExplorer.tags.skipped` warning toast
+(`apps/desktop/src/lib/file-explorer/pane/tags-skipped-toast.ts`). Pinned in `tags_write_test.rs` (malformed, non-string element, mode
+`0200`, mixed selection).
+
 `tags.rs::toggle_color(paths, color)` is the higher-level op behind both triggers: it reads each path's current tags,
 applies Finder's multi-file rule (if EVERY path already carries the color, remove it from all; otherwise add the
 canonical system tag — `Red\n6`, …, `Gray\n1` — to every path that lacks it), preserves all other tags, skips rewriting
@@ -500,7 +511,7 @@ of that color).
 blob carries `kHasCustomIcon` (`0x0400` at offset 8, see `icons/per_path.rs`) plus type/creator codes; zeroing it would
 destroy custom folder icons and break `has_custom_folder_icon`. Modern Finder reads tags straight from
 `_kMDItemUserTags`, so the dot/color shows without the legacy label bits — verified to survive in
-`tags.rs::write_tests::tagging_preserves_finder_info_custom_icon_flag`. `setxattr` is atomic per attribute, so a single
+`tags_write_test.rs::tagging_preserves_finder_info_custom_icon_flag`. `setxattr` is atomic per attribute, so a single
 file is never half-written; a multi-file toggle that fails mid-loop leaves earlier files updated and propagates the
 error (the IPC command logs it rather than surfacing a hard failure — tags are low-stakes and the panes still reflect
 what's on disk).
@@ -508,7 +519,8 @@ what's on disk).
 ### Finder tags MCP consumer
 
 The MCP `tag` tool wraps `tags::toggle_color` / `set_tags` (and `system_color_name` for canonical names), resolving
-target paths off the pane state and refreshing via `Listings::apply_tags`. `cmdr://state` file entries also surface a
+target paths off the pane state and refreshing via `Listings::apply_tags`. `set` and `toggle` merge, so they skip
+unreadable files and name them in the tool result; `clear` writes regardless (removing every tag is what was asked). `cmdr://state` file entries also surface a
 `[tags:…]` marker mirrored from `PaneFileEntry.tags`. See `mcp/DETAILS.md`.
 
 ## Threading

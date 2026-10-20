@@ -89,7 +89,7 @@ use crate::window_events::{
     CloseAbout, CloseAllFileViewers, CloseConfirmation, CloseFileViewer, ExecuteCommand, FocusAbout, FocusConfirmation,
     FocusFileViewer, ForegroundOperation, FunctionKeyBarHideRequested, McpSettingsClose, MouseNav, OpenErrorReport,
     OpenFavorite, OpenFileViewer, OpenSettings, PersistRestrictedSetting, QueueRowContextAction, QueueSelectAll,
-    RevealPath, ShowSearchResultInFolder, TabContextAction, ViewerContextMenuAction, ViewerEditAction,
+    RevealPath, ShowSearchResultInFolder, TabContextAction, TagsSkipped, ViewerContextMenuAction, ViewerEditAction,
     ViewerHistoryAction, ViewerWordWrapToggled,
 };
 // AI + system/misc events.
@@ -1271,6 +1271,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             ViewerPullProgress,
             TabContextAction,
             FunctionKeyBarHideRequested,
+            // emit_to("main"): a tag toggle left unreadable files alone; the FE toasts it.
+            TagsSkipped,
             MouseNav,
             PersistRestrictedSetting,
             // FE-emitted, like `execute-command`: the queue window asks the main

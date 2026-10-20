@@ -16,8 +16,8 @@ Sync status, volume management, and file watching. The engines are crates: listi
 - **Transient scratch hides on the listing READ path only** (`cmdr-listing`'s `CachedListing::rows`): a watcher-side
   skip strands an entry in the pane forever. Cmdr's own (`.cmdr-tmp-*`) hides by OWNERSHIP, other apps' (`.sb-`) by
   NAME. § "Hiding transient scratch".
-- **Tag writes (`tags.rs`) touch ONLY `_kMDItemUserTags`, never `com.apple.FinderInfo`** (zeroing it destroys custom
-  folder icons), and encode a **binary** plist.
+- **Tag writes touch ONLY `_kMDItemUserTags`** (`FinderInfo` holds folder icons), as **binary** plist, merging
+  via `read_tags_strict` (❌ never `read_tags`).
 - **Never call macOS frameworks from rayon or any constrained-stack pool**: FileProvider XPC blows the 2 MB stack and
   can block forever. Use pooled, hard-capped 8 MB OS threads (`framework_pool.rs`). § "Threading".
 - **Watcher rules** (each has a `DETAILS.md` section; read them before touching `watcher.rs`):

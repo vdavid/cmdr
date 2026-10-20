@@ -740,13 +740,16 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
             drop(ctx);
             if !paths.is_empty() {
                 // `setxattr` is blocking I/O; keep it off the main (menu) thread.
+                let app = app.clone();
                 tauri::async_runtime::spawn_blocking(move || {
                     match crate::file_system::tags::toggle_color(&paths, color) {
-                        Ok(updates) if !updates.is_empty() => {
-                            crate::listing_host::listings()
-                                .apply_tags(&cmdr_listing::ListingId::new(listing_id), updates);
+                        Ok(outcome) => {
+                            crate::file_system::tags::report_skips(&app, &outcome.skipped);
+                            if !outcome.updates.is_empty() {
+                                crate::listing_host::listings()
+                                    .apply_tags(&cmdr_listing::ListingId::new(listing_id), outcome.updates);
+                            }
                         }
-                        Ok(_) => {}
                         Err(e) => log::warn!(target: "tags", "context-menu tag toggle failed (color={color}): {e}"),
                     }
                 });

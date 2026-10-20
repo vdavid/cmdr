@@ -1,8 +1,20 @@
 // macOS Finder color-tag commands: toggling a tag across paths and enriching a
 // cached listing's entries with fresh tag data.
 
-import { commands } from '#lib/ipc/bindings.js'
+import { type UnlistenFn } from '@tauri-apps/api/event'
+import { commands, events } from '#lib/ipc/bindings.js'
 import type { TimedOut } from './ipc-types'
+
+/**
+ * Listens for `tags-skipped`: a toggle left `count` files alone because their
+ * existing tags couldn't be read or decoded. Emitted by both the keyboard command
+ * and the context-menu circles.
+ */
+export function onTagsSkipped(handler: (count: number) => void): Promise<UnlistenFn> {
+  return events.tagsSkipped.listen((event) => {
+    handler(event.payload.count)
+  })
+}
 
 /**
  * Toggles a Finder color tag (`color` 1..=7) across `paths`, then patches the

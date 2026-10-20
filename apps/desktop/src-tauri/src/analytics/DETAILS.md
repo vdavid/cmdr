@@ -236,8 +236,8 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   bool; NEVER a tag's own text, which is user-authored content. `toggle_color` is the one op behind all three triggers
   (the seven keyboard commands, the context-menu circles, and the MCP `tag` tool), so instrumenting it covers them
   without any caller having to remember; the cost, accepted deliberately, is that the event can't say which trigger
-  fired. macOS-only, like Finder tags themselves. `succeeded` covers the partial-write case, where an earlier file kept
-  its new tags and a later one didn't.
+  fired. macOS-only, like Finder tags themselves. `succeeded` is false for the partial-write case, where an earlier file
+  kept its new tags and a later one didn't, and when a file was skipped because its tags couldn't be read.
 - `favorite_changed` (backend, `favorites/store.rs` `mutate_and_persist`): `action` (`added` / `removed` / `renamed` /
   `reordered` / `shortcut_changed`) + `favorites`, the list's size AFTER the change as an `item_count_bucket`; never a path, label, or letter. It
   sits past the no-op guard, so removing an id that isn't there doesn't inflate the count. The `action` is a required

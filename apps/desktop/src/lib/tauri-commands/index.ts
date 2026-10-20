@@ -984,7 +984,7 @@ export type {
 export { resolveGoToPath, getRecentPaths, addRecentPath, removeRecentPath } from './go-to-path'
 
 // macOS Finder color tags
-export { toggleTags, enrichTags } from './tags'
+export { toggleTags, enrichTags, onTagsSkipped } from './tags'
 
 // macOS custom updater (check / download / install)
 export {

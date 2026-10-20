@@ -623,7 +623,9 @@ export const commands = {
    *  `tags::toggle_color` for the multi-file all-have/some-have semantics). The
    *  frontend supplies `listing_id` so the cache refresh targets the right pane; an
    *  empty / unknown id still writes to disk but skips the in-place refresh (the dots
-   *  then update on the next visible-range enrich). Off macOS this is a no-op.
+   *  then update on the next visible-range enrich). Files whose existing tags couldn't
+   *  be read are left alone and reported through `tags-skipped`. Off macOS this is a
+   *  no-op.
    */
   toggleTags: (listingId: string, paths: string[], color: number) =>
     __TAURI_INVOKE<TimedOut<null>>('toggle_tags', { listingId, paths, color }),
@@ -5323,6 +5325,7 @@ export const events = {
   suggestionsChanged: makeEvent<SuggestionsChanged>('suggestions-changed'),
   systemTextSizeChanged: makeEvent<SystemTextSizeChanged>('system-text-size-changed'),
   tabContextAction: makeEvent<TabContextAction>('tab-context-action'),
+  tagsSkipped: makeEvent<TagsSkipped>('tags-skipped'),
   viewModeChanged: makeEvent<ViewModeChanged>('view-mode-changed'),
   viewerContextMenuAction: makeEvent<ViewerContextMenuAction>('viewer-context-menu-action'),
   viewerEditAction: makeEvent<ViewerEditAction>('viewer-edit-action'),
@@ -17074,6 +17077,16 @@ export type TagRef = {
    *  `5` yellow, `6` red, `7` orange.
    */
   color: number
+}
+
+/**
+ *  `tags-skipped`: a color-tag toggle (keyboard command or context-menu circle) left
+ *  `count` files alone because their existing tags couldn't be read or fully decoded
+ *  (`file_system::tags::toggle_color`). Emitted to the main window, which raises a
+ *  warning toast, so the person learns why those files didn't change color.
+ */
+export type TagsSkipped = {
+  count: number
 }
 
 // One installed terminal, as the settings dropdown needs it.

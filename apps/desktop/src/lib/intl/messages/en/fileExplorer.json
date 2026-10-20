@@ -2946,5 +2946,13 @@
   "fileExplorer.quickFilter.intro.gotIt": "Got it",
   "@fileExplorer.quickFilter.intro.gotIt": {
     "description": "Primary button in the same toast: closes it and keeps Filter mode. Shown once, the first time typing in a pane filters it (Filter is the default typing mode)."
+  },
+  "fileExplorer.tags.skipped": "{count, plural, one {Left one item’s tags as they were, since Cmdr couldn’t read the tags already on it. Check that you can open it, or tag it in Finder.} other {Left the tags on {countText} items as they were, since Cmdr couldn’t read the tags already on them. Check that you can open them, or tag them in Finder.}}",
+  "@fileExplorer.tags.skipped": {
+    "description": "Warning toast after the user toggles a color tag (a Finder tag, like Red or Blue) on selected files, when some files keep their tags unchanged because Cmdr couldn’t read the tags they already have (no read permission, or another app saved them in an unusual format). Writing anyway would have replaced those existing tags, so Cmdr skipped those files; the rest of the selection did get the color. “Finder” is the macOS file manager’s name; keep it. The apostrophes are U+2019.",
+    "placeholders": {
+      "countText": "how many files were left unchanged, already formatted for display (e.g. 1,204)",
+      "count": "the same number (drives the singular/plural form)"
+    }
   }
 }

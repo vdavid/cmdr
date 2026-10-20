@@ -76,15 +76,18 @@ pub async fn enrich_tags(listing_id: String, paths: Vec<String>) -> TimedOut<()>
 /// `tags::toggle_color` for the multi-file all-have/some-have semantics). The
 /// frontend supplies `listing_id` so the cache refresh targets the right pane; an
 /// empty / unknown id still writes to disk but skips the in-place refresh (the dots
-/// then update on the next visible-range enrich). Off macOS this is a no-op.
+/// then update on the next visible-range enrich). Files whose existing tags couldn't
+/// be read are left alone and reported through `tags-skipped`. Off macOS this is a
+/// no-op.
 #[tauri::command]
 #[specta::specta]
-pub async fn toggle_tags(listing_id: String, paths: Vec<String>, color: u8) -> TimedOut<()> {
+pub async fn toggle_tags(app: tauri::AppHandle, listing_id: String, paths: Vec<String>, color: u8) -> TimedOut<()> {
     blocking_with_timeout_flag(TAGS_WRITE_TIMEOUT, (), move || {
         match crate::file_system::tags::toggle_color(&paths, color) {
-            Ok(updates) => {
-                if !updates.is_empty() {
-                    listings().apply_tags(&ListingId::new(listing_id), updates);
+            Ok(outcome) => {
+                crate::file_system::tags::report_skips(&app, &outcome.skipped);
+                if !outcome.updates.is_empty() {
+                    listings().apply_tags(&ListingId::new(listing_id), outcome.updates);
                 }
             }
             // A write failure (permission, dead mount) is logged, not surfaced as a

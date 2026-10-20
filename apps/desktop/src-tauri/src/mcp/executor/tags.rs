@@ -63,8 +63,8 @@ async fn execute_tag_macos<R: Runtime>(app: &AppHandle<R>, params: &Value) -> To
     let (_pane, state) = super::target_pane_state(app, params)?;
     let paths = super::resolve_pane_target_paths(&state, names.as_deref())?;
 
-    let updates = apply_tag_action(action, &paths, &colors)?;
-    refresh_listing_tags(&state, updates);
+    let outcome = apply_tag_action(action, &paths, &colors)?;
+    refresh_listing_tags(&state, outcome.updates);
 
     // Flush the pane's MCP state so the `[tags:…]` marker shows in cmdr://state
     // promptly instead of ~2 s later (the debounced sync). `refresh_listing_tags`
@@ -75,11 +75,43 @@ async fn execute_tag_macos<R: Runtime>(app: &AppHandle<R>, params: &Value) -> To
     // timeout just delays the marker to the next push rather than failing the tool.
     let _ = super::flush_pane_state(app, &pane).await;
 
+    let changed = paths.len() - outcome.skipped.len();
     Ok(json!(format!(
-        "OK: {} tags on {} in the {pane} pane.",
+        "OK: {} tags on {} in the {pane} pane.{}",
         action_verb(action),
-        crate::pluralize::pluralize(paths.len() as u64, "item")
+        crate::pluralize::pluralize(changed as u64, "item"),
+        skipped_note(&outcome.skipped)
     )))
+}
+
+/// How many skipped paths the result names before summarizing the rest, so a big
+/// selection of unreadable files can't flood the caller's context.
+#[cfg(target_os = "macos")]
+const MAX_SKIPS_NAMED: usize = 10;
+
+/// The result's account of files left alone because their existing tags couldn't be
+/// read or decoded. Empty when nothing was skipped.
+#[cfg(target_os = "macos")]
+fn skipped_note(skipped: &[crate::file_system::tags::TagSkip]) -> String {
+    if skipped.is_empty() {
+        return String::new();
+    }
+    let named: Vec<String> = skipped
+        .iter()
+        .take(MAX_SKIPS_NAMED)
+        .map(|s| format!("{} ({})", s.path, s.reason))
+        .collect();
+    let more = skipped.len().saturating_sub(MAX_SKIPS_NAMED);
+    let tail = if more > 0 {
+        format!("; and {more} more")
+    } else {
+        String::new()
+    };
+    format!(
+        " Skipped {} whose existing tags couldn't be read, so their tags are unchanged: {}{tail}.",
+        crate::pluralize::pluralize(skipped.len() as u64, "item"),
+        named.join("; ")
+    )
 }
 
 /// Parse the `colors` array (color-name strings) into system color indices. An
@@ -121,16 +153,22 @@ fn color_index(name: &str) -> Option<u8> {
 }
 
 /// Applies the tag mutation and returns the resulting per-path tag sets so the
-/// caller can patch the listing cache. `set` preserves colorless (custom-named)
-/// tags and any existing colored tag whose color is requested; `toggle` uses
-/// Finder's all-have→remove rule per color; `clear` removes every tag.
+/// caller can patch the listing cache, plus the files left alone. `set` preserves
+/// colorless (custom-named) tags and any existing colored tag whose color is
+/// requested; `toggle` uses Finder's all-have→remove rule per color; `clear`
+/// removes every tag.
+///
+/// `set` and `toggle` both MERGE with what's on disk, so a file whose existing tags
+/// can't be read or fully decoded is skipped and reported, never treated as
+/// untagged (that would drop its custom tags). `clear` reads nothing to keep: the
+/// caller asked for every tag gone, so it writes regardless.
 #[cfg(target_os = "macos")]
 fn apply_tag_action(
     action: &str,
     paths: &[String],
     colors: &[u8],
-) -> Result<Vec<(String, Vec<cmdr_fs::entry::TagRef>)>, ToolError> {
-    use crate::file_system::tags::{read_tags, set_tags, toggle_color};
+) -> Result<crate::file_system::tags::TagToggleOutcome, ToolError> {
+    use crate::file_system::tags::{TagSkip, TagToggleOutcome, read_tags_strict, set_tags, toggle_color};
     use std::path::Path;
 
     match action {
@@ -141,33 +179,50 @@ fn apply_tag_action(
                     .map_err(|e| ToolError::internal(format!("Couldn't clear tags on {p}: {e}")))?;
                 updates.push((p.clone(), Vec::new()));
             }
-            Ok(updates)
+            Ok(TagToggleOutcome {
+                updates,
+                skipped: Vec::new(),
+            })
         }
         "toggle" => {
             // Toggle each requested color across all paths. Each `toggle_color`
             // reads current on-disk state, so the last color's result reflects
             // every prior toggle — it's the refresh snapshot. `colors` is
-            // validated non-empty for toggle, so `last` is always assigned.
-            let mut last = Vec::new();
+            // validated non-empty for toggle, so `last` is always assigned. An
+            // unreadable file is skipped by every pass, so the first pass's
+            // skips are the whole list.
+            let mut last = TagToggleOutcome::default();
+            let mut skipped: Option<Vec<TagSkip>> = None;
             for &color in colors {
                 last =
                     toggle_color(paths, color).map_err(|e| ToolError::internal(format!("Couldn't toggle tag: {e}")))?;
+                skipped.get_or_insert(std::mem::take(&mut last.skipped));
             }
+            last.skipped = skipped.unwrap_or_default();
             Ok(last)
         }
         "set" => {
-            let mut updates = Vec::with_capacity(paths.len());
+            let mut outcome = TagToggleOutcome::default();
             for p in paths {
-                let current = read_tags(Path::new(p));
+                let current = match read_tags_strict(Path::new(p)) {
+                    Ok(tags) => tags.unwrap_or_default(),
+                    Err(reason) => {
+                        outcome.skipped.push(TagSkip {
+                            path: p.clone(),
+                            reason,
+                        });
+                        continue;
+                    }
+                };
                 let desired = desired_tags_for_set(&current, colors);
                 // Skip files already in the target state so we don't churn mtimes.
                 if desired != current {
                     set_tags(Path::new(p), &desired)
                         .map_err(|e| ToolError::internal(format!("Couldn't set tags on {p}: {e}")))?;
                 }
-                updates.push((p.clone(), desired));
+                outcome.updates.push((p.clone(), desired));
             }
-            Ok(updates)
+            Ok(outcome)
         }
         _ => Err(ToolError::internal("unreachable: action validated by caller")),
     }
@@ -276,6 +331,35 @@ mod tests {
         let current = vec![tag("Red", 6), tag("Blue", 4)];
         let desired = desired_tags_for_set(&current, &[4]);
         assert_eq!(desired, vec![tag("Blue", 4)]);
+    }
+
+    /// #541: `set` merges with the file's existing tags, so one it can't decode is
+    /// skipped and named in the result, its bytes untouched.
+    #[test]
+    fn set_and_toggle_skip_a_file_with_undecodable_tags() {
+        use crate::file_system::tags::TAGS_XATTR;
+        let dir = crate::test_support::TestDir::new(&format!("mcp_tags_skip_{}", std::process::id()));
+        let bad = dir.join("bad.txt");
+        let good = dir.join("good.txt");
+        std::fs::write(&bad, b"x").unwrap();
+        std::fs::write(&good, b"x").unwrap();
+        xattr::set(&bad, TAGS_XATTR, b"garbage").unwrap();
+        let paths = vec![bad.to_string_lossy().into_owned(), good.to_string_lossy().into_owned()];
+
+        for action in ["set", "toggle"] {
+            let outcome = apply_tag_action(action, &paths, &[6, 4]).unwrap();
+            assert_eq!(
+                xattr::get(&bad, TAGS_XATTR).unwrap().as_deref(),
+                Some(&b"garbage"[..]),
+                "{action} must leave the undecodable value alone"
+            );
+            assert_eq!(outcome.skipped.len(), 1, "one skip reported by {action}");
+            assert_eq!(outcome.skipped[0].path, paths[0]);
+            assert_eq!(outcome.updates.len(), 1, "{action} still writes the readable file");
+            let note = skipped_note(&outcome.skipped);
+            assert!(note.contains(&paths[0]), "the result names the skipped file: {note}");
+        }
+        assert_eq!(skipped_note(&[]), "");
     }
 
     #[test]
