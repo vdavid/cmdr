@@ -14,9 +14,10 @@
 //! - **Pinned non-destructive restore.** A restore-move (move/trash/rename undo)
 //!   NEVER overwrites: if the restore target is occupied by a DIFFERENT entry it
 //!   skips that item ([`SkipReason::RestoreTargetOccupied`]). The one exception is
-//!   a case-only self-collision (restoring `dog.JPG` → `dog.jpg` on a
-//!   case-insensitive volume, where the "occupant" IS the same inode) — that's not
-//!   a real collision, so it proceeds ([`is_self_collision`]).
+//!   a self-collision (restoring `dog.JPG` → `dog.jpg` on a case-insensitive
+//!   volume, where the "occupant" IS the entry being restored, proven by node id
+//!   or by exact names in a fresh listing, never by folding) — that's not a real
+//!   collision, so it proceeds ([`is_self_collision`]).
 //!
 //! A skipped item leaves the operation `partially_rolled_back`; a fully reversed
 //! one lands `rolled_back`; one that reversed nothing (all skipped, or canceled
@@ -41,11 +42,10 @@
 
 use std::path::{Path, PathBuf};
 
-use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::{Volume, VolumeError};
 
 use super::store::{
-    OperationRow, RollbackUnit, fold_name, open_read_connection, ops_in_rolling_back, read_inverse_op, read_operation,
+    OperationRow, RollbackUnit, open_read_connection, ops_in_rolling_back, read_inverse_op, read_operation,
     read_operation_items, read_rollback_file_totals, read_rollback_units_page,
 };
 use super::types::{
@@ -255,37 +255,6 @@ pub fn verify_snapshot(
     } else {
         SnapshotVerdict::Unverifiable
     }
-}
-
-/// Lower-case each path component (Unicode + NFC via [`fold_name`]) for a
-/// case-insensitive path comparison — the trait-level fallback of the self-
-/// collision guard on backends without inodes (MTP).
-fn fold_path(path: &Path) -> PathBuf {
-    path.components()
-        .map(|c| match c {
-            std::path::Component::Normal(name) => PathBuf::from(fold_name(&name.to_string_lossy())),
-            other => PathBuf::from(other.as_os_str()),
-        })
-        .collect()
-}
-
-/// Is the entry occupying the restore target actually the SAME entry we're
-/// restoring — a case-only or identity rename, not a real collision?
-///
-/// Where real inodes exist (`LocalPosixVolume`), same inode ⇒ same entry (an inode
-/// match already implies the same device). On the trait level (MTP/SMB have no
-/// inode) the fallback compares case-normalized paths, but ONLY within one volume:
-/// a target that differs from the source only by case is the self-collision (the
-/// case-insensitive volume folded `dog.jpg` and `dog.JPG` onto one entry). A
-/// cross-volume restore to the same relative path is NEVER self (the occupant is a
-/// genuinely different file on a different device), so `same_volume` gates the
-/// path-fold fallback — without it, a move-back to `/a.txt` on another volume would
-/// wrongly overwrite a new `/a.txt` the user created there.
-fn is_self_collision(same_volume: bool, from: &Path, to: &Path, from_entry: &FileEntry, occupant: &FileEntry) -> bool {
-    if let (Some(a), Some(b)) = (from_entry.inode, occupant.inode) {
-        return a == b;
-    }
-    same_volume && fold_path(from) == fold_path(to)
 }
 
 /// Resolve the state the original op lands in from the run tally.
@@ -720,14 +689,14 @@ async fn restore_move(volumes: &dyn VolumeLookup, runner: &dyn RollbackRunner, u
     }
 
     // Pinned non-destructive policy: never overwrite the restore target. If it's
-    // occupied by a DIFFERENT entry, skip. A case-only self-collision (the target
-    // IS the same inode/path-fold as what we're restoring) is not a real collision,
-    // so restoring over it is safe — `force` lets the same-entry rename land where
-    // a case-insensitive volume reports the target "exists".
+    // occupied by a DIFFERENT entry, skip. A self-collision (a case-insensitive
+    // volume answering for the target spelling with the very entry we're
+    // restoring) is not a real collision, so restoring over it is safe: `force`
+    // lets the same-entry rename land where the volume reports the target "exists".
     let same_volume = from_vol_id == to_vol_id;
     let mut force = false;
     if let Ok(occupant) = to_volume.get_metadata(to_path).await {
-        if is_self_collision(same_volume, from_path, to_path, &from_entry, &occupant) {
+        if is_self_collision(&*to_volume, same_volume, from_path, to_path, &from_entry, &occupant).await {
             force = true;
         } else {
             return ItemResult::Skipped(SkipReason::RestoreTargetOccupied);
@@ -934,11 +903,15 @@ fn reconcile_one(conn: &rusqlite::Connection, op_id: &str) -> RollbackState {
 mod bookkeeping;
 mod order;
 mod runner;
+mod self_collision;
 mod skips;
 use bookkeeping::{InverseTotals, RunAcc, finalize_inverse, inverse_planned_item_count};
 pub use order::undo_order;
 use runner::ProgressStand;
 pub use runner::{ActRefusal, InverseAct, RollbackProgress, RollbackRunner, VolumeLookup};
+use self_collision::is_self_collision;
+#[cfg(test)]
+use self_collision::{SelfCollision, SpellingTwin, classify_self_collision, listing_confirms_twin};
 pub use skips::{SkipBreakdown, SkipTally};
 
 // The end-to-end cells drive the write engine's real executor, so they live

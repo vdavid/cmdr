@@ -8,7 +8,7 @@ disposable cache. Tauri-free; the app hosts it in `apps/desktop/src-tauri/src/op
 
 `handle.rs` (`OperationLog`: journal slot, writer, the `recording.rs` gate; `OpJournal`), `store/` (the DB, the
 migration ladder), `writer.rs` (+ `writer/prune.rs`), `capture.rs`, `types.rs` (typed tokens), `query.rs`,
-`retention.rs`, `rollback.rs` (+ `order.rs`, `skips.rs`, `runner.rs`: the PLANNER; its executor is
+`retention.rs`, `rollback.rs` (+ `order.rs`, `skips.rs`, `runner.rs`, `self_collision.rs`: the PLANNER; its executor is
 `crates/cmdr-operations/src/rollback.rs`).
 
 ## Must-knows

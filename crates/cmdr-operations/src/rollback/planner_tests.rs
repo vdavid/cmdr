@@ -7,6 +7,7 @@
 
 #[cfg(target_os = "macos")]
 mod blocked_items_tests;
+mod case_twin_tests;
 mod control_tests;
 mod lifecycle_tests;
 mod root_reach_tests;

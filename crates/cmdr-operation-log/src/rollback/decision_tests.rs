@@ -1,14 +1,16 @@
 //! The rollback planner's pure decision helpers (`verify_snapshot`,
-//! `is_self_collision`, `inverse_action`, …), unit-tested in isolation.
+//! `classify_self_collision`, `listing_confirms_twin`, `inverse_action`, …),
+//! unit-tested in isolation.
 //!
 //! The per-kind reversal runs end to end against the write engine's real
 //! executor, so those cells live app-side, beside it
 //! (`crates/cmdr-operations/src/rollback/planner_tests/`).
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use super::*;
 use crate::types::{EntryType, OpKind, RollbackState};
+use cmdr_fs::entry::FileEntry;
 
 /// A fixed mtime the snapshots and live entries agree on.
 const MT: u64 = 1_700_000_000;
@@ -58,53 +60,78 @@ fn verify_snapshot_match_drift_unverifiable() {
 }
 
 #[test]
-fn self_collision_by_inode_and_by_case_fold() {
-    // Real inodes (LocalPosix): same inode ⇒ self, whatever the names.
+fn self_collision_is_decided_by_identity_never_by_folding() {
+    let classify = |same_volume: bool, from: &str, to: &str, a: &FileEntry, b: &FileEntry| {
+        classify_self_collision(same_volume, Path::new(from), Path::new(to), a, b)
+    };
+    let twin = |parent: &str, from: &str, to: &str| SpellingTwin {
+        parent: PathBuf::from(parent),
+        from_name: from.to_string(),
+        to_name: to.to_string(),
+    };
+    // Real inodes (LocalPosix, hard-linked files): same inode ⇒ self.
     let a = entry("dog.JPG", Some(7), Some(1), Some(MT));
     let b = entry("dog.jpg", Some(7), Some(1), Some(MT));
-    assert!(is_self_collision(
-        true,
-        Path::new("/d/dog.JPG"),
-        Path::new("/d/dog.jpg"),
-        &a,
-        &b
-    ));
-    // Different inodes ⇒ a real collision even with the same name.
+    assert_eq!(classify(true, "/d/dog.JPG", "/d/dog.jpg", &a, &b), SelfCollision::Same);
+    // Different inodes ⇒ a real collision, even on the same path.
     let c = entry("dog.jpg", Some(9), Some(1), Some(MT));
-    assert!(!is_self_collision(
-        true,
-        Path::new("/d/dog.jpg"),
-        Path::new("/d/dog.jpg"),
-        &a,
-        &c
-    ));
-    // No inodes (MTP/SMB), same volume, case-only difference ⇒ self by path fold.
+    assert_eq!(
+        classify(true, "/d/dog.jpg", "/d/dog.jpg", &a, &c),
+        SelfCollision::Different
+    );
+    // A shared inode under a genuinely different name is a hard link we'd replace.
+    assert_eq!(
+        classify(true, "/d/cat.jpg", "/d/dog.jpg", &a, &b),
+        SelfCollision::Different
+    );
+
+    // No inodes (MTP/SMB/SFTP), same volume, case-only difference ⇒ the listing
+    // decides; folding alone is never proof (#511).
     let x = entry("dog.JPG", None, Some(1), Some(MT));
     let y = entry("dog.jpg", None, Some(1), Some(MT));
-    assert!(is_self_collision(
-        true,
-        Path::new("/d/dog.JPG"),
-        Path::new("/d/dog.jpg"),
-        &x,
-        &y
-    ));
+    assert_eq!(
+        classify(true, "/d/dog.JPG", "/d/dog.jpg", &x, &y),
+        SelfCollision::AskTheListings(vec![twin("/d", "dog.JPG", "dog.jpg")])
+    );
+    // A normalization-only difference, and a case-only folder in the middle.
+    assert_eq!(
+        classify(true, "/Cafe\u{0301}.txt", "/Café.txt", &x, &y),
+        SelfCollision::AskTheListings(vec![twin("/", "Cafe\u{0301}.txt", "Café.txt")])
+    );
+    assert_eq!(
+        classify(true, "/srv/media/a.txt", "/srv/Media/a.txt", &x, &y),
+        SelfCollision::AskTheListings(vec![twin("/srv", "media", "Media")])
+    );
+    // A remote root keeps its `scheme://` in the parent the listing asks for.
+    assert_eq!(
+        classify(true, "sftp://nas/srv/img.jpg", "sftp://nas/srv/IMG.JPG", &x, &y),
+        SelfCollision::AskTheListings(vec![twin("sftp://nas/srv", "img.jpg", "IMG.JPG")])
+    );
     // No inodes, DIFFERENT volume, same relative path ⇒ NOT self (the occupant is a
     // genuinely different file — a move-back must never overwrite it).
-    assert!(!is_self_collision(
-        false,
-        Path::new("/a.txt"),
-        Path::new("/a.txt"),
-        &x,
-        &y
-    ));
+    assert_eq!(classify(false, "/a.txt", "/a.txt", &x, &y), SelfCollision::Different);
     // No inodes, same volume, genuinely different sibling ⇒ not self.
-    assert!(!is_self_collision(
-        true,
-        Path::new("/d/cat.jpg"),
-        Path::new("/d/dog.jpg"),
-        &x,
-        &y
-    ));
+    assert_eq!(
+        classify(true, "/d/cat.jpg", "/d/dog.jpg", &x, &y),
+        SelfCollision::Different
+    );
+}
+
+#[test]
+fn a_listing_confirms_a_twin_only_when_it_holds_just_the_landed_spelling() {
+    let twin = SpellingTwin {
+        parent: PathBuf::from("/d"),
+        from_name: "img.jpg".to_string(),
+        to_name: "IMG.JPG".to_string(),
+    };
+    let listing = |names: &[&str]| -> Vec<FileEntry> { names.iter().map(|n| entry(n, None, None, None)).collect() };
+    // Case-insensitive volume: only the landed spelling is stored.
+    assert!(listing_confirms_twin(&listing(&["img.jpg", "other"]), &twin));
+    // Case-sensitive volume holding both: two entries.
+    assert!(!listing_confirms_twin(&listing(&["img.jpg", "IMG.JPG"]), &twin));
+    // Only the target spelling, or neither: nothing proves it's one entry.
+    assert!(!listing_confirms_twin(&listing(&["IMG.JPG"]), &twin));
+    assert!(!listing_confirms_twin(&listing(&[]), &twin));
 }
 
 #[test]

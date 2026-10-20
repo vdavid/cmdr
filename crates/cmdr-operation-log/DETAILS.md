@@ -110,7 +110,8 @@ NFC-normalizes, once in Rust at insert. It's a _record_ key, so it may differ sl
 case rules — acceptable for search, not a live mirror. Search queries the folded column with a plain b-tree index.
 **Folding is never an identity**: the log can't know a volume's case or normalization rules, and on a case-sensitive one
 (SFTP to Linux, S3, Samba with `case sensitive = yes`, case-sensitive APFS) `Media` and `media` are two folders. So the
-`dirs` identity is the exact `name` (below).
+`dirs` identity is the exact `name` (below), and the rollback's self-collision guard compares exact spellings (§ "The
+two data-safety guards").
 
 ## Schema
 
@@ -570,11 +571,32 @@ storing them, and adds a local-only node-id check that this path has no equivale
    carry no per-leaf mtime) still verifies on size, while an item whose only field (mtime) is absent live is skipped.
    Directories aren't cheaply verifiable, so a dir's recheck is existence-only.
 2. **Pinned non-destructive restore.** A restore-move (move/trash/rename undo) NEVER overwrites: if the restore target
-   is occupied by a DIFFERENT entry it skips (`RestoreTargetOccupied`). The one exception is a **case-only
-   self-collision** (`is_self_collision`): restoring `dog.JPG` → `dog.jpg` on a case-insensitive volume sees the target
-   "exist" because it IS the same entry — same inode (`LocalPosixVolume`) or, without inodes (MTP), the same case-folded
-   path **within one volume** (the `same_volume` gate is load-bearing — a cross-volume restore to the same relative path
-   is a genuinely different file and must never be treated as self).
+   is occupied by a DIFFERENT entry it skips (`RestoreTargetOccupied`). The one exception is a **self-collision**
+   (`src/rollback/self_collision.rs`): restoring `dog.JPG` → `dog.jpg` on a case-insensitive volume sees the target
+   "exist" because it IS the same entry, and the restore renames with `force`. It's decided by identity, **never by
+   folding names**: the log can't know a volume's case or normalization rules, and on a case-sensitive one (SFTP to
+   Linux, S3, Samba with `case sensitive = yes`, case-sensitive APFS) a folded match renamed over a DIFFERENT file that
+   had landed at the old spelling since (#511). In order:
+   - **Another volume ⇒ never self** (the `same_volume` gate: a cross-volume restore to the same relative path is a
+     genuinely different file).
+   - **Paths differing by more than case or normalization ⇒ never self**, even on one inode (a hard link under another
+     name is still a name we'd replace).
+   - **Both node ids known ⇒ they decide.** `FileEntry::inode` is set only by `LocalPosixVolume`, and only for a file
+     with more than one link (`cmdr-local/src/reading.rs`), so this is the rare path. Widening it to every entry was
+     ruled out: the hard-link dedup walkers (`cmdr-operations`' `scan.rs`, `scan_walker.rs`, `delete/volume_walker.rs`,
+     `scan_preview/volume.rs`) key a seen-set on the bare inode with no device, so every file would join that set
+     (memory on a 1M-file scan), and same-numbered inodes on two devices under one walked tree would dedupe as one file.
+   - **Spelled identically ⇒ self** (the very path the entry sits at).
+   - **Otherwise the listings decide** (`listing_confirms_twin`): for each component whose spelling differs, list its
+     parent (sliced from the landed path, so a remote `scheme://` root survives) and compare EXACT names. Only the
+     landed spelling listed and the target spelling absent ⇒ the volume folded the target onto the landed entry ⇒ self.
+     Both listed ⇒ two entries ⇒ `RestoreTargetOccupied`. Neither, only the target, or a failed listing ⇒ unproven ⇒
+     occupied too. The same rule covers NFC/NFD-only differences and a move between case-twin folders. It costs one
+     listing per differing component, and only when the target is already occupied.
+
+   Pinned by `rollback/decision_tests.rs` and `crates/cmdr-operations/src/rollback/planner_tests/case_twin_tests.rs`:
+   three case-sensitive `InMemoryVolume` cells that must skip and keep the occupant's bytes, and a macOS cell on the
+   real (case-insensitive) temp dir that must restore a case-only file and folder rename.
 
 ### What counts as already gone
 
@@ -749,9 +771,9 @@ source occupied and skip, so the rows could only ever report a partial they can'
 inverse the schema can't express today; the copy path, where an interrupted child IS a finished copy, journals from its
 failure arms.
 
-The case-only rename self-collision logic is unit-tested through the pure `is_self_collision` helper (inode plus
-path-fold cases) but NOT exercised end-to-end on a real case-insensitive filesystem — the `InMemoryVolume` fixtures are
-case-sensitive. A macOS-gated tempdir integration test on the real FS is the named follow-up.
+The `InMemoryVolume` fixtures are case- and normalization-sensitive, so they stand in for SFTP to Linux and S3; the
+case-insensitive side of the self-collision guard runs on the real macOS temp dir (`case_twin_tests.rs`), which returns
+early if that temp dir sits on a case-sensitive volume.
 
 **`InMemoryVolume` is more permissive than the real FS in one way that hides bugs**: its `rename` creates the target's
 missing parents, where `LocalPosixVolume` fails with `ENOENT`. A reversal test written against the double can pass on
