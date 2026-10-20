@@ -15,9 +15,54 @@
 
 use cmdr_fs::log_private::LogPrivate;
 
-use crate::indexing::store::IndexStore;
+use crate::indexing::store::{INDEX_NEEDS_REBUILD_KEY, IndexStore, MAX_TREE_DEPTH};
 
 use super::repair::{DeferredRepairs, recompute_recursive_has_symlinks, repair_dir_stats_upward};
+
+/// The steps one walk up the `parent_id` chain has taken, so a chain that loops
+/// ENDS the walk instead of spinning it forever.
+///
+/// Every up-walk on the writer counts through this. Nothing should be able to close
+/// a cycle (`handle_move_entry_v2` refuses to), but the writer can't prove that
+/// nothing ever did, and the cost of one is the whole volume: an unbounded walk
+/// spins inside the open batch, so no flush is answered again and the uncommitted
+/// transaction holds the DB's write lock for the session (GitHub issue #564).
+pub(super) struct ChainSteps {
+    walk: &'static str,
+    start_id: i64,
+    taken: usize,
+}
+
+impl ChainSteps {
+    pub(super) fn new(walk: &'static str, start_id: i64) -> Self {
+        Self {
+            walk,
+            start_id,
+            taken: 0,
+        }
+    }
+
+    /// Count the next step. `false` once the walk has gone deeper than any real
+    /// tree, which means the chain loops: the walk must stop, and the index is
+    /// marked for a rebuild, since rows that loop can't be repaired in place.
+    pub(super) fn another(&mut self, conn: &rusqlite::Connection) -> bool {
+        self.taken += 1;
+        if self.taken <= MAX_TREE_DEPTH {
+            return true;
+        }
+        log::warn!(
+            target: "indexing::writer",
+            "{}: the parent chain above id={} never reaches the root within MAX_TREE_DEPTH steps, so it loops back on itself; stopping, and marking this index for a rebuild",
+            self.walk,
+            self.start_id,
+        );
+        // Into the open batch, so it commits with whatever this message wrote.
+        if let Err(e) = IndexStore::update_meta(conn, INDEX_NEEDS_REBUILD_KEY, "1") {
+            log::warn!(target: "indexing::writer", "{}: couldn't mark the index for a rebuild: {e}", self.walk);
+        }
+        false
+    }
+}
 
 #[allow(clippy::too_many_arguments, reason = "one signed delta per aggregate field")]
 pub(super) fn propagate_delta_by_id(
@@ -31,8 +76,9 @@ pub(super) fn propagate_delta_by_id(
 ) {
     use crate::indexing::store::ROOT_ID;
 
+    let mut steps = ChainSteps::new("propagate_delta_by_id", start_id);
     let mut current_id = start_id;
-    while current_id != 0 {
+    while current_id != 0 && steps.another(conn) {
         // A read ERROR is not "no row": the `None` branch below would, for a
         // positive delta, INSERT OR REPLACE a row holding only the delta — a
         // transient failure baked into the ledger as a permanently wrong size.
@@ -151,8 +197,9 @@ pub(super) fn propagate_delta_by_id(
 pub(super) fn propagate_recursive_has_symlinks(conn: &rusqlite::Connection, start_id: i64, repairs: &DeferredRepairs) {
     use crate::indexing::store::ROOT_ID;
 
+    let mut steps = ChainSteps::new("propagate_recursive_has_symlinks", start_id);
     let mut current_id = start_id;
-    while current_id != 0 {
+    while current_id != 0 && steps.another(conn) {
         // Same rule as the size walk: a failed READ must not decide the value.
         // A `false` from a failed recompute would clear a true flag, and a failed
         // stored-row read would misfire the short-circuit. Queue and stop.
@@ -216,8 +263,9 @@ pub(super) fn propagate_recursive_has_symlinks(conn: &rusqlite::Connection, star
 pub(super) fn propagate_min_subtree_epoch(conn: &rusqlite::Connection, start_id: i64, repairs: &DeferredRepairs) {
     use crate::indexing::store::ROOT_ID;
 
+    let mut steps = ChainSteps::new("propagate_min_subtree_epoch", start_id);
     let mut current_id = start_id;
-    while current_id != 0 {
+    while current_id != 0 && steps.another(conn) {
         // A failed read is not knowledge (see `propagate_recursive_has_symlinks`).
         let (new_value, old_value) = match (
             IndexStore::recompute_min_subtree_epoch(conn, current_id),

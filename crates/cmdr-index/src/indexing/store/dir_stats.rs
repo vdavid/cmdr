@@ -2,7 +2,7 @@
 //! plus subtree-epoch recompute. Pure code movement from the former monolithic
 //! `store.rs`.
 
-use super::{DirStatsById, IndexStore, IndexStoreError, with_savepoint};
+use super::{DirStatsById, IndexStore, IndexStoreError, subtree_cte, with_savepoint};
 use rusqlite::{Connection, OptionalExtension, params};
 
 /// A `u64` aggregate as SQLite stores it, saturating at `i64::MAX`. Same
@@ -186,19 +186,15 @@ impl IndexStore {
 
     /// Get total logical size, physical size, file count, and directory count for a subtree.
     pub fn get_subtree_totals_by_id(conn: &Connection, root_id: i64) -> Result<(u64, u64, u64, u64), IndexStoreError> {
-        let mut stmt = conn.prepare_cached(
-            "WITH RECURSIVE subtree(id) AS (
-                SELECT id FROM entries WHERE id = ?1
-                UNION ALL
-                SELECT e.id FROM entries e JOIN subtree s ON e.parent_id = s.id
-            )
-            SELECT
+        let mut stmt = conn.prepare_cached(concat!(
+            subtree_cte!(),
+            "SELECT
                 COALESCE(SUM(CASE WHEN e.is_directory = 0 THEN e.logical_size ELSE 0 END), 0),
                 COALESCE(SUM(CASE WHEN e.is_directory = 0 THEN e.physical_size ELSE 0 END), 0),
                 COALESCE(SUM(CASE WHEN e.is_directory = 0 THEN 1 ELSE 0 END), 0),
                 COALESCE(SUM(CASE WHEN e.is_directory = 1 THEN 1 ELSE 0 END), 0)
-            FROM entries e WHERE e.id IN (SELECT id FROM subtree)",
-        )?;
+            FROM entries e WHERE e.id IN (SELECT id FROM subtree)"
+        ))?;
         let row = stmt.query_row(params![root_id], |row| {
             Ok((
                 row.get::<_, u64>(0)?,

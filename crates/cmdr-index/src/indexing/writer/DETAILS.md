@@ -611,15 +611,26 @@ the UNIQUE constraint. Same-parent renames don't change ancestor totals; cross-p
 ancestor chain and add to the new one (and recompute the OR-aggregated `recursive_has_symlinks` on both chains).
 
 **The parent chain must stay acyclic, and `MoveEntryV2` is the only message that can break it.** It refuses (warn, no
-write) a move whose new parent is the entry itself or inside its subtree (`IndexStore::is_within_subtree`). Every
-up-walk here (`propagate_delta_by_id` has no short-circuit at all) loops forever on a cycle, inside the open implicit
-batch: the writer never answers another `Flush`, its uncommitted transaction holds the write lock so every other
-connection gets `database is locked`, and a scan start blocked in `flush_blocking` leaves its manager `Detached` for the
-session. That chain matches every symptom of the intermittent Linux E2E wedge (CI runs 39305420701 and 39315426411,
-2026-10-19: a rescan that never logged `Scan: watcher started`, then
-`... lands as its scan start hands the manager back` and `database is locked` on every restart); the CI log runs at
-INFO, so the cycle itself is inferred, reproduced only in the `move_entry_v2_refuses_*` tests. How such a move gets
-asked for: `../watch/DETAILS.md` § "Rename detection by inode".
+write) a move whose new parent is the entry itself or inside its subtree (`IndexStore::is_within_subtree`). Before that
+guard, an unbounded up-walk (`propagate_delta_by_id` has no short-circuit at all) looped forever on the cycle the move
+closed, inside the open implicit batch: the writer never answered another `Flush`, its uncommitted transaction held the
+write lock so every other connection got `database is locked`, and a scan start blocked in `flush_blocking` left its
+manager `Detached` for the session (GitHub issue #564). That chain matches every symptom of the intermittent Linux E2E
+wedge (CI runs 39305420701, 39315426411, 39329038886, 39334449509, and 39351896200, 2026-10-19/20): no `cmdr_index` line
+for the rest of the run, because the per-navigation verifier's two in-flight slots (`MAX_CONCURRENT_VERIFICATIONS`) each
+sat in a `flush().await` the writer never answered; then `... lands as its scan start hands the manager back` and
+`database is locked` on every restart. The CI log runs at INFO, so the cycle itself is inferred, reproduced in the
+`move_entry_v2_refuses_*` tests. How such a move gets asked for: `../watch/DETAILS.md` § "Rename detection by inode".
+
+**Every walk over `parent_id` is bounded, so a cycle that got in some other way can't wedge the writer either.** Each
+up-walk (`propagate_delta_by_id`, `propagate_recursive_has_symlinks`, `propagate_min_subtree_epoch`,
+`repair_dir_stats_upward`) counts its steps through `delta.rs::ChainSteps`, and every recursive subtree query starts
+from `store::subtree_cte!`, depth-capped at `MAX_TREE_DEPTH` (4,096, about twice what `PATH_MAX` allows). A walk that
+runs past it logs one WARN naming the walk and its start id, stops, and writes the rebuild marker into the open batch,
+so the next start throws the index away (rows that loop can't be repaired in place). Defense in depth: a cycle the old
+move closed never reached disk, since the wedge kept its transaction from committing. Pinned by `entries/tests/cycle.rs`
+(red before the bound: both wedged past the flush deadline). ❌ Never write an unbounded walk over `parent_id`, up or
+down.
 
 **`recursive_has_symlinks`** is OR-aggregated bottom-up; adding a symlink flips the flag to `true`, removing the last
 one triggers a recompute (`propagate_recursive_has_symlinks`) that walks up until the recomputed value matches the

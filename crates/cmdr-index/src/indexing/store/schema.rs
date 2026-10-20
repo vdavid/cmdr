@@ -102,6 +102,32 @@ pub const ROOT_ID: i64 = 1;
 /// Parent ID of the root sentinel. No row with this ID exists in the DB.
 pub(super) const ROOT_PARENT_ID: i64 = 0;
 
+/// The deepest `parent_id` chain any walk over the tree follows. Far past any real
+/// tree (`PATH_MAX` alone caps a path at about half this many components), so a
+/// walk that reaches it is going round a cycle. ❌ Never write an unbounded walk
+/// over `parent_id`, up or down: one cycle wedged the writer for the session
+/// (GitHub issue #564).
+pub(crate) const MAX_TREE_DEPTH: usize = 4096;
+
+/// The recursive CTE every subtree query starts from: `subtree(id, depth)` holds
+/// `?1` and every row below it. Prefix a statement with it through `concat!`.
+///
+/// Depth-capped at [`MAX_TREE_DEPTH`] (spelled as a literal, since `concat!` needs
+/// one; `the_subtree_cte_stops_at_max_tree_depth` pins the two together), so a
+/// `parent_id` cycle ends the recursion. A cycle can then list a row more than once,
+/// which is why every consumer reads it through `IN (SELECT id FROM subtree)`.
+macro_rules! subtree_cte {
+    () => {
+        "WITH RECURSIVE subtree(id, depth) AS (
+            SELECT id, 0 FROM entries WHERE id = ?1
+            UNION ALL
+            SELECT e.id, s.depth + 1 FROM entries e JOIN subtree s ON e.parent_id = s.id WHERE s.depth < 4096
+        )
+        "
+    };
+}
+pub(crate) use subtree_cte;
+
 const CREATE_TABLES_SQL: &str = "
     CREATE TABLE IF NOT EXISTS entries (
         id            INTEGER PRIMARY KEY,

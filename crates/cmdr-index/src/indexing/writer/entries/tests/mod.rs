@@ -10,6 +10,7 @@ use crate::indexing::writer::tests::{open_read, setup_db};
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 
 mod bulk_reconcile;
+mod cycle;
 mod delete;
 mod delta_propagation;
 mod hardlink_dedup;
@@ -62,6 +63,36 @@ fn insert_file(writer: &IndexWriter, id: i64, parent_id: i64, name: &str, size: 
         }]))
         .unwrap();
     writer.flush_blocking().unwrap();
+}
+
+/// Flush with a deadline, so a writer that never answers fails the test rather
+/// than hanging it.
+fn flush_within(writer: &IndexWriter, deadline: std::time::Duration) {
+    let (tx, rx) = std::sync::mpsc::channel();
+    let flusher = writer.clone();
+    std::thread::spawn(move || {
+        let _ = tx.send(flusher.flush_blocking());
+    });
+    // Under nextest's 8 s slow-test timeout, so a wedge reports as this, not a kill.
+    rx.recv_timeout(deadline)
+        .expect("the writer never answered the flush: it's wedged")
+        .unwrap();
+}
+
+/// A directory with one child directory, both with stats, for the cycle tests:
+/// `left` (id 10) under the root, and `sub-dir` (id 20) under it.
+fn insert_parent_and_child(writer: &IndexWriter, db_path: &Path) {
+    let stats = |entry_id, dirs| DirStatsById {
+        entry_id,
+        recursive_logical_size: 100,
+        recursive_physical_size: 100,
+        recursive_file_count: 1,
+        recursive_dir_count: dirs,
+        recursive_has_symlinks: false,
+        min_subtree_epoch: 0,
+    };
+    insert_dir_with_stats(writer, db_path, 10, ROOT_ID, "left", stats(10, 1));
+    insert_dir_with_stats(writer, db_path, 20, 10, "sub-dir", stats(20, 0));
 }
 
 /// A plain file row under ROOT, for seeding ids the counter doesn't know about.

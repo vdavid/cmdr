@@ -3,6 +3,16 @@
 
 use super::*;
 
+/// `subtree_cte!` spells the depth cap as a literal (`concat!` needs one), so this
+/// is what keeps it the same number as `MAX_TREE_DEPTH`.
+#[test]
+fn the_subtree_cte_stops_at_max_tree_depth() {
+    assert!(
+        subtree_cte!().contains(&format!("WHERE s.depth < {MAX_TREE_DEPTH}\n")),
+        "the CTE's depth cap drifted from MAX_TREE_DEPTH"
+    );
+}
+
 #[test]
 fn delete_entry_and_subtree() {
     let (store, _dir) = open_temp_store();

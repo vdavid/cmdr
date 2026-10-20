@@ -586,35 +586,6 @@ fn move_entry_v2_bumps_writer_generation() {
     writer.shutdown();
 }
 
-/// Flush with a deadline, so a writer that never answers fails the test rather
-/// than hanging it.
-fn flush_within(writer: &IndexWriter, deadline: std::time::Duration) {
-    let (tx, rx) = std::sync::mpsc::channel();
-    let flusher = writer.clone();
-    std::thread::spawn(move || {
-        let _ = tx.send(flusher.flush_blocking());
-    });
-    // Under nextest's 8 s slow-test timeout, so a wedge reports as this, not a kill.
-    rx.recv_timeout(deadline)
-        .expect("the writer never answered the flush: it's wedged")
-        .unwrap();
-}
-
-/// A directory with one child directory, both with stats, for the cycle tests.
-fn insert_parent_and_child(writer: &IndexWriter, db_path: &Path) {
-    let stats = |entry_id, dirs| DirStatsById {
-        entry_id,
-        recursive_logical_size: 100,
-        recursive_physical_size: 100,
-        recursive_file_count: 1,
-        recursive_dir_count: dirs,
-        recursive_has_symlinks: false,
-        min_subtree_epoch: 0,
-    };
-    insert_dir_with_stats(writer, db_path, 10, ROOT_ID, "left", stats(10, 1));
-    insert_dir_with_stats(writer, db_path, 20, 10, "sub-dir", stats(20, 0));
-}
-
 /// REGRESSION (the Linux E2E index wedge, 2026-10-19): an inode the filesystem
 /// recycled can match a stale row that is an ANCESTOR of the path now holding
 /// it, so the rename pre-pass asks to move a directory under its own child.

@@ -68,8 +68,9 @@ pub(super) fn repair_dir_stats_upward(conn: &rusqlite::Connection, start_id: i64
     use crate::indexing::store::ROOT_ID;
 
     let mut wrote = false;
+    let mut steps = super::delta::ChainSteps::new("repair_dir_stats_upward", start_id);
     let mut current_id = start_id;
-    while current_id != 0 {
+    while current_id != 0 && steps.another(conn) {
         // A queued walk can name a directory something DELETED while it waited: a
         // truncating rescan, or a subtree the reconciler reaped. Recomputing that
         // from children finds none and writes a ZEROED `dir_stats` row for an entry

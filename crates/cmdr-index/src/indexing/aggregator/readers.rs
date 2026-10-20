@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use rusqlite::{Connection, params};
 
 use super::ChildrenStatsMap;
-use crate::indexing::store::{DirStatsById, IndexStoreError};
+use crate::indexing::store::{DirStatsById, IndexStoreError, subtree_cte};
 
 /// Load directory IDs that have entries but no `dir_stats` row.
 pub(super) fn load_dirs_missing_stats(conn: &Connection) -> Result<Vec<i64>, IndexStoreError> {
@@ -50,15 +50,11 @@ pub(super) fn bulk_get_listed_epochs(conn: &Connection) -> Result<HashMap<i64, u
 /// Load `dir_id -> listed_epoch` for directories within the subtree rooted at
 /// `root_id` (mirrors the scoped CTE child queries).
 pub(super) fn scoped_get_listed_epochs(conn: &Connection, root_id: i64) -> Result<HashMap<i64, u64>, IndexStoreError> {
-    let mut stmt = conn.prepare(
-        "WITH RECURSIVE subtree(id) AS (
-            SELECT id FROM entries WHERE id = ?1
-            UNION ALL
-            SELECT e.id FROM entries e JOIN subtree s ON e.parent_id = s.id
-        )
-        SELECT e.id, e.listed_epoch FROM entries e
-        WHERE e.id IN (SELECT id FROM subtree) AND e.is_directory = 1",
-    )?;
+    let mut stmt = conn.prepare(concat!(
+        subtree_cte!(),
+        "SELECT e.id, e.listed_epoch FROM entries e
+        WHERE e.id IN (SELECT id FROM subtree) AND e.is_directory = 1"
+    ))?;
     let rows = stmt.query_map(params![root_id], |row| {
         Ok((row.get::<_, i64>(0)?, row.get::<_, u64>(1)?))
     })?;
@@ -103,15 +99,11 @@ pub(super) fn get_listed_epochs_for_ids(conn: &Connection, ids: &[i64]) -> Resul
 /// Uses a recursive CTE to collect all entries under the root, then filters
 /// for directories only.
 pub(super) fn load_subtree_directory_ids(conn: &Connection, root_id: i64) -> Result<Vec<(i64, i64)>, IndexStoreError> {
-    let mut stmt = conn.prepare(
-        "WITH RECURSIVE subtree(id) AS (
-            SELECT id FROM entries WHERE id = ?1
-            UNION ALL
-            SELECT e.id FROM entries e JOIN subtree s ON e.parent_id = s.id
-        )
-        SELECT e.id, e.parent_id FROM entries e
-        WHERE e.id IN (SELECT id FROM subtree) AND e.is_directory = 1",
-    )?;
+    let mut stmt = conn.prepare(concat!(
+        subtree_cte!(),
+        "SELECT e.id, e.parent_id FROM entries e
+        WHERE e.id IN (SELECT id FROM subtree) AND e.is_directory = 1"
+    ))?;
     let rows = stmt.query_map(params![root_id], |row| {
         Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?))
     })?;
@@ -214,13 +206,9 @@ pub(super) fn scoped_get_children_stats_by_id(
     conn: &Connection,
     root_id: i64,
 ) -> Result<ChildrenStatsMap, IndexStoreError> {
-    let mut stmt = conn.prepare(
-        "WITH RECURSIVE subtree(id) AS (
-            SELECT id FROM entries WHERE id = ?1
-            UNION ALL
-            SELECT e.id FROM entries e JOIN subtree s ON e.parent_id = s.id
-        )
-        SELECT e.parent_id,
+    let mut stmt = conn.prepare(concat!(
+        subtree_cte!(),
+        "SELECT e.parent_id,
                COALESCE(SUM(CASE WHEN e.is_directory = 0 THEN e.logical_size ELSE 0 END), 0),
                COALESCE(SUM(CASE WHEN e.is_directory = 0 THEN e.physical_size ELSE 0 END), 0),
                COALESCE(SUM(CASE WHEN e.is_directory = 0 THEN 1 ELSE 0 END), 0),
@@ -228,8 +216,8 @@ pub(super) fn scoped_get_children_stats_by_id(
                COALESCE(MAX(e.is_symlink), 0)
         FROM entries e
         WHERE e.parent_id IN (SELECT id FROM subtree)
-        GROUP BY e.parent_id",
-    )?;
+        GROUP BY e.parent_id"
+    ))?;
     collect_children_stats(&mut stmt, params![root_id])
 }
 
@@ -241,15 +229,11 @@ pub(super) fn scoped_get_child_dir_ids(
     conn: &Connection,
     root_id: i64,
 ) -> Result<HashMap<i64, Vec<i64>>, IndexStoreError> {
-    let mut stmt = conn.prepare(
-        "WITH RECURSIVE subtree(id) AS (
-            SELECT id FROM entries WHERE id = ?1
-            UNION ALL
-            SELECT e.id FROM entries e JOIN subtree s ON e.parent_id = s.id
-        )
-        SELECT e.parent_id, e.id FROM entries e
-        WHERE e.parent_id IN (SELECT id FROM subtree) AND e.is_directory = 1",
-    )?;
+    let mut stmt = conn.prepare(concat!(
+        subtree_cte!(),
+        "SELECT e.parent_id, e.id FROM entries e
+        WHERE e.parent_id IN (SELECT id FROM subtree) AND e.is_directory = 1"
+    ))?;
     let rows = stmt.query_map(params![root_id], |row| {
         Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?))
     })?;

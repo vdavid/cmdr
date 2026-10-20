@@ -2,7 +2,10 @@
 //! inode / component, inserts, updates, renames/moves, and deletes. Pure code
 //! movement from the former monolithic `store.rs`.
 
-use super::{EntryRow, IndexStore, IndexStoreError, normalize_for_comparison, reconstruct_path, with_savepoint};
+use super::{
+    EntryRow, IndexStore, IndexStoreError, MAX_TREE_DEPTH, normalize_for_comparison, reconstruct_path, subtree_cte,
+    with_savepoint,
+};
 use rusqlite::{Connection, OptionalExtension, params};
 use std::ops::ControlFlow;
 
@@ -12,10 +15,6 @@ use super::ROOT_ID;
 /// Parent ids per child-lookup query, and ids per `DELETE`. Both stay well under
 /// SQLite's default 999-parameter ceiling.
 const DELETE_CHUNK: usize = 256;
-
-/// The deepest `parent_id` chain [`IndexStore::is_within_subtree`] follows. Far past
-/// any real tree, so hitting it means the chain doesn't end.
-const MAX_TREE_DEPTH: usize = 4096;
 
 /// `"?, ?, …"` for an `IN` list of `count` bound parameters.
 fn placeholders(count: usize) -> String {
@@ -807,21 +806,17 @@ impl IndexStore {
     pub fn delete_subtree_by_id(conn: &Connection, root_id: i64) -> Result<(), IndexStoreError> {
         // Delete dir_stats first to avoid dangling references
         conn.execute(
-            "WITH RECURSIVE subtree(id) AS (
-                SELECT id FROM entries WHERE id = ?1
-                UNION ALL
-                SELECT e.id FROM entries e JOIN subtree s ON e.parent_id = s.id
-            )
-            DELETE FROM dir_stats WHERE entry_id IN (SELECT id FROM subtree)",
+            concat!(
+                subtree_cte!(),
+                "DELETE FROM dir_stats WHERE entry_id IN (SELECT id FROM subtree)"
+            ),
             params![root_id],
         )?;
         conn.execute(
-            "WITH RECURSIVE subtree(id) AS (
-                SELECT id FROM entries WHERE id = ?1
-                UNION ALL
-                SELECT e.id FROM entries e JOIN subtree s ON e.parent_id = s.id
-            )
-            DELETE FROM entries WHERE id IN (SELECT id FROM subtree)",
+            concat!(
+                subtree_cte!(),
+                "DELETE FROM entries WHERE id IN (SELECT id FROM subtree)"
+            ),
             params![root_id],
         )?;
         Ok(())
