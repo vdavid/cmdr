@@ -604,9 +604,9 @@
   "@askCmdr.renameUndo.undoJob": {
     "sourceHash": "f84acd2"
   },
-  "askCmdr.renameUndo.undoJobLabel": "還原這次執行的每一項重新命名：{batches, plural, other {# 批}}裡的 {filesText} 個{files, plural, other {檔案}}",
+  "askCmdr.renameUndo.undoJobLabel": "還原全部 {batches, plural, other {# 批}}，也就是這次執行中重新命名的 {filesText} 個{files, plural, other {檔案}}",
   "@askCmdr.renameUndo.undoJobLabel": {
-    "sourceHash": "9d2e84e"
+    "sourceHash": "544447d"
   },
   "askCmdr.renameUndo.undoing": "正在把原本的名稱改回去⋯",
   "@askCmdr.renameUndo.undoing": {

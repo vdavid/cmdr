@@ -194,6 +194,19 @@
     "forms": "anonymously → 以匿名方式 (此資訊是以匿名方式收集。); anonymized → 匿名化",
     "sources": "AP-TW = AP-HK Problem Reporter"
   },
+  "answer": {
+    "accept": ["答案"],
+    "avoid": [
+      {
+        "form": "回覆",
+        "why": "the catalog spends it on a reply FROM a server or the AI (伺服器的回覆, 回覆沒有寫完), Apple Mail's Reply"
+      }
+    ],
+    "chosen": "回答",
+    "confidence": "high",
+    "forms": "status 需要你回答; 在你回答之前; remembers your answer → 把你的回答記在這裡 (答案 in the host-key sibling also reads right)",
+    "sources": "catalog (queue.row.statusAwaitingAnswer, fileOperations.operationConflict.pausedNote, suggestedOps.decisionNotRecorded); AP-TW Mail SToolbarReplyTemplate 回覆 for the avoided sense"
+  },
   "api-key": {
     "accept": ["金鑰"],
     "chosen": "API 金鑰",
