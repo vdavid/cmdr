@@ -40,11 +40,11 @@ pub fn operation_log_db_path(data_dir: &Path) -> PathBuf {
     data_dir.join(OPERATION_LOG_DB_FILE)
 }
 
-/// Fold a leaf name to its case-insensitive, normalized search/identity key:
-/// Unicode lowercase, then NFC. Done once in Rust at insert, so the DB
-/// needs no custom collation and stays inspectable. It's a *record* key, not a
-/// live filesystem mirror, so it may differ slightly from a given filesystem's
-/// exact case rules — acceptable for history.
+/// Fold a name to its case-insensitive, normalized SEARCH key: Unicode lowercase,
+/// then NFC. Done once in Rust at insert, so the DB needs no custom collation and
+/// stays inspectable. Never an identity: the log can't know a volume's case
+/// rules, and on a case-sensitive one two folded-equal names are two entries
+/// (#511, #527).
 pub fn fold_name(name: &str) -> String {
     name.to_lowercase().nfc().collect()
 }
@@ -330,29 +330,29 @@ fn split_scheme_root(path: &str) -> (Option<&str>, &str) {
 
 /// Intern one `(volume_id, parent, name)` dir row, returning its id. Insert-or-
 /// ignore against the IFNULL identity index, then read the id back (reliable
-/// whether or not the insert did anything).
+/// whether or not the insert did anything). The identity is the EXACT name;
+/// `name_folded` rides along as a plain column.
 fn intern_one(
     conn: &Connection,
     volume_id: &str,
     parent: Option<i64>,
     name: &str,
 ) -> Result<i64, OperationLogStoreError> {
-    let folded = fold_name(name);
     conn.prepare_cached(
         "INSERT INTO dirs (volume_id, parent_dir_id, name, name_folded)
          VALUES (?1, ?2, ?3, ?4)
-         ON CONFLICT (volume_id, IFNULL(parent_dir_id, 0), name_folded) DO NOTHING",
+         ON CONFLICT (volume_id, IFNULL(parent_dir_id, 0), name) DO NOTHING",
     )?
-    .execute(rusqlite::params![volume_id, parent, name, folded])?;
+    .execute(rusqlite::params![volume_id, parent, name, fold_name(name)])?;
 
     // `parent.unwrap_or(0)` mirrors the index's IFNULL(parent, 0): dir ids start
     // at 1, so 0 is a safe stand-in for a NULL (root) parent.
     let id = conn
         .prepare_cached(
             "SELECT dir_id FROM dirs
-             WHERE volume_id = ?1 AND IFNULL(parent_dir_id, 0) = ?2 AND name_folded = ?3",
+             WHERE volume_id = ?1 AND IFNULL(parent_dir_id, 0) = ?2 AND name = ?3",
         )?
-        .query_row(rusqlite::params![volume_id, parent.unwrap_or(0), folded], |row| {
+        .query_row(rusqlite::params![volume_id, parent.unwrap_or(0), name], |row| {
             row.get::<_, i64>(0)
         })?;
     Ok(id)

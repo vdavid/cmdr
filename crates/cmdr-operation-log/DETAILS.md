@@ -107,8 +107,10 @@ The index and importance stores register a `platform_case` collation for case-in
 `index-query` tool exists at all (stock `sqlite3` can't read those columns). The operation log wants
 `sqlite3`-inspectability, so it stores a precomputed `name_folded` column instead: `fold_name` lowercases (Unicode) then
 NFC-normalizes, once in Rust at insert. It's a _record_ key, so it may differ slightly from a given filesystem's exact
-case rules — acceptable for history, not a live mirror. Search and dir identity query the folded column with a plain
-b-tree index.
+case rules — acceptable for search, not a live mirror. Search queries the folded column with a plain b-tree index.
+**Folding is never an identity**: the log can't know a volume's case or normalization rules, and on a case-sensitive one
+(SFTP to Linux, S3, Samba with `case sensitive = yes`, case-sensitive APFS) `Media` and `media` are two folders. So the
+`dirs` identity is the exact `name` (below).
 
 ## Schema
 
@@ -121,10 +123,17 @@ non-obvious choices:
   repeated path prefixes. A **volume root** is a single row with `name = ''` and NULL parent, so a file directly at the
   root still has a dir to reference; `reconstruct_dir_path` walks `parent_dir_id` to it.
   - **Identity gotcha.** SQLite treats NULLs as distinct in a plain `UNIQUE`, so
-    `UNIQUE(volume_id, parent_dir_id, name_folded)` would fail to dedupe root-level dirs (NULL parent). The identity is
-    a **unique expression index** on `(volume_id, IFNULL(parent_dir_id, 0), name_folded)` instead — dir ids start at 1,
-    so 0 is a safe stand-in for a NULL parent. `intern_dir` inserts with `ON CONFLICT` on that expression, then reads
-    the id back.
+    `UNIQUE(volume_id, parent_dir_id, name)` would fail to dedupe root-level dirs (NULL parent). The identity is a
+    **unique expression index** on `(volume_id, IFNULL(parent_dir_id, 0), name)` instead — dir ids start at 1, so 0 is a
+    safe stand-in for a NULL parent. `intern_dir` inserts with `ON CONFLICT` on that expression, then reads the id back.
+  - **The identity is the EXACT name, never `name_folded`** (schema v3). A folded identity merged `/srv/Media` and
+    `/srv/media` into one row spelled whichever came first, so on a case-sensitive volume a rollback looked in, or
+    deleted from, the wrong twin (#527). `name_folded` stays as a plain column for search. On a case-insensitive volume
+    two spellings of one folder now intern twice, which costs a row and nothing else: both resolve to the same folder.
+    **Rows merged before v3 stay merged**: only the first spelling was kept and nothing recorded which items meant the
+    other, so there's nothing to split them by. An item recorded under the lost spelling still resolves to the first
+    one. Pinned by `intern_dir_keeps_case_and_normalization_twins_apart` and
+    `v3_migration_keeps_merged_dirs_and_stops_merging_new_twins`.
   - **A remote volume's root is ONE name.** A remote path is rooted at `scheme://authority` (`adb://serial/…`,
     `sftp://ada@nas:22/…`, `smb://nas/share`), and `intern_dir` keeps that head whole as the first name under the
     volume-root row (`split_scheme_root`); `reconstruct_dir_path` renders a chain led by such a name without the leading

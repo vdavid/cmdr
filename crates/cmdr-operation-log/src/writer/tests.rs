@@ -324,6 +324,40 @@ fn rollback_units_page_streams_reverse_and_excludes_search_leaves() {
     writer.shutdown();
 }
 
+/// A copy into `/srv/media` rolls back at `/srv/media`, even when the log already
+/// knows a case twin `/srv/Media`. A folded dir identity resolved it to the twin,
+/// so on a case-sensitive volume the rollback deleted from (or looked in) a folder
+/// the operation never wrote to (#527).
+#[test]
+fn rollback_unit_keeps_the_exact_spelling_of_a_case_twin_folder() {
+    let (store, writer, _dir) = fresh();
+    for (op_id, dst_dir) in [("op-upper", "/srv/Media"), ("op-lower", "/srv/media")] {
+        writer
+            .open_operation(OpenOperation {
+                op_id: op_id.into(),
+                kind: OpKind::Copy,
+                initiator: Initiator::User,
+                source_volume_id: Some("vol-1".to_string()),
+                dest_volume_id: Some("vol-1".to_string()),
+                item_count: 1,
+                started_at: 1,
+                rolls_back_op_id: None,
+                execution_status: ExecutionStatus::Running,
+            })
+            .expect("open");
+        writer
+            .record_items(op_id, vec![file_item(0, "/home", "report.pdf", dst_dir)])
+            .expect("record");
+    }
+    writer.flush_blocking().expect("flush");
+
+    let units = read_rollback_units_page(store.conn(), "op-lower", i64::MAX, 10).expect("units");
+    assert_eq!(units.len(), 1);
+    assert_eq!(units[0].dest_path, Some(PathBuf::from("/srv/media/report.pdf")));
+
+    writer.shutdown();
+}
+
 /// `set_rollback_state` transitions the two-axis rollback state (+ reason) and
 /// acts as a barrier; `set_item_outcomes` flips per-item outcomes by `(op_id, seq)`.
 /// These back the rollback engine's rolling_back transitions and the "mark reversed items

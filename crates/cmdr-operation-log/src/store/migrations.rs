@@ -58,6 +58,11 @@ pub const MIGRATIONS: &[Migration] = &[
         description: "operation_items.rollback_skip_reason: why a rollback left an item alone",
         up: migrate_v2_rollback_skip_reason,
     },
+    Migration {
+        version: 3,
+        description: "dirs identity on the exact name, so case and normalization twins stop merging",
+        up: migrate_v3_dirs_identity_exact,
+    },
 ];
 
 /// The meta key holding the integer schema version (as text). Absent ⇒ 0 (a
@@ -222,4 +227,24 @@ fn migrate_v1_initial(tx: &Transaction<'_>) -> rusqlite::Result<()> {
 /// filtered on.
 fn migrate_v2_rollback_skip_reason(tx: &Transaction<'_>) -> rusqlite::Result<()> {
     tx.execute_batch("ALTER TABLE operation_items ADD COLUMN rollback_skip_reason TEXT;")
+}
+
+/// Version 3: the `dirs` identity becomes the EXACT `name`; `name_folded` stays as a
+/// plain column.
+///
+/// The folded identity merged `/srv/Media` and `/srv/media` into one row spelled
+/// whichever came first, so on a case-sensitive volume a rollback acted on the wrong
+/// twin (#527). The log can't know a volume's case rules, so the only safe identity
+/// is the spelling the filesystem handed us.
+///
+/// **No row split.** A row a v2 build merged kept only its first spelling, and nothing
+/// recorded which items meant the other one, so there's nothing to split it by. Those
+/// rows stay as they are (and stay unique under the exact identity, being a subset of
+/// a folded-unique set); only new interns stop merging.
+fn migrate_v3_dirs_identity_exact(tx: &Transaction<'_>) -> rusqlite::Result<()> {
+    tx.execute_batch(
+        "DROP INDEX dirs_identity;
+         CREATE UNIQUE INDEX dirs_identity
+             ON dirs (volume_id, IFNULL(parent_dir_id, 0), name);",
+    )
 }

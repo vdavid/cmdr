@@ -152,7 +152,14 @@ fn a_pre_migration_item_row_reads_as_no_recorded_skip_reason() {
     let conn = cmdr_fs::sqlite_util::open_in_memory().expect("in-memory db");
     // Bring the DB to v1 only — the production schema before the column existed.
     run_migrations(&conn, &MIGRATIONS[..1]).expect("migrate to v1");
-    let dir_id = intern_dir(&conn, "vol-1", "/Users/me").expect("intern");
+    // Raw SQL, not `intern_dir`: that speaks the CURRENT dir identity, which a v1
+    // schema doesn't have.
+    conn.execute(
+        "INSERT INTO dirs (dir_id, volume_id, parent_dir_id, name, name_folded) VALUES (1, 'vol-1', NULL, '', '')",
+        [],
+    )
+    .expect("insert a v1 dir");
+    let dir_id = 1_i64;
     conn.execute(
         "INSERT INTO operations (op_id, kind, initiator, execution_status, rollback_state, started_at)
          VALUES ('op', 'rename', 'user', 'done', 'partially_rolled_back', 1)",
@@ -284,18 +291,60 @@ fn fold_name_folds_case_and_normalizes() {
     assert_eq!(fold_name(composed), "café");
 }
 
-/// On macOS the interning identity folds case: the same path in different case
-/// interns to one dir row (matching how the filesystem treats it).
+/// The interning identity is the EXACT name: case twins (and NFC/NFD twins) intern
+/// to separate dir rows and each reconstructs to its own spelling. The log can't
+/// know a volume's case rules, and on a case-sensitive one (SFTP to Linux, S3,
+/// case-sensitive APFS) `/srv/Media` and `/srv/media` are different folders, so a
+/// folded identity sent a rollback into the wrong twin (#527).
 #[test]
-#[cfg(target_os = "macos")]
-fn intern_dir_folds_case_on_macos() {
+fn intern_dir_keeps_case_and_normalization_twins_apart() {
     let dir = tempfile::tempdir().expect("temp dir");
     let path = operation_log_db_path(dir.path());
     let conn = open_write_connection(&path).expect("write conn");
 
-    let mixed = intern_dir(&conn, "vol-1", "/Users/Me/Project").expect("intern");
-    let lower = intern_dir(&conn, "vol-1", "/users/me/project").expect("intern lower");
-    assert_eq!(mixed, lower, "case-variant paths intern to the same dir");
+    let upper = intern_dir(&conn, "vol-1", "/srv/Media").expect("intern upper");
+    let lower = intern_dir(&conn, "vol-1", "/srv/media").expect("intern lower");
+    assert_ne!(upper, lower, "case twins intern to separate dirs");
+    assert_eq!(reconstruct_dir_path(&conn, upper).expect("path"), "/srv/Media");
+    assert_eq!(reconstruct_dir_path(&conn, lower).expect("path"), "/srv/media");
+
+    let composed = intern_dir(&conn, "vol-1", "/srv/Café").expect("intern NFC");
+    let decomposed = intern_dir(&conn, "vol-1", "/srv/Cafe\u{0301}").expect("intern NFD");
+    assert_ne!(composed, decomposed, "NFC and NFD spellings intern to separate dirs");
+
+    assert_eq!(
+        intern_dir(&conn, "vol-1", "/srv/media").expect("intern again"),
+        lower,
+        "the exact spelling still dedupes"
+    );
+}
+
+/// The v3 step swaps the dir identity from the folded name to the exact one in
+/// place. Rows a v2 DB already merged survive untouched (they can't be split: only
+/// the first spelling was kept), and a NEW intern of the other spelling gets its own
+/// row instead of reusing the merged one.
+#[test]
+fn v3_migration_keeps_merged_dirs_and_stops_merging_new_twins() {
+    let conn = cmdr_fs::sqlite_util::open_in_memory().expect("in-memory db");
+    run_migrations(&conn, &MIGRATIONS[..2]).expect("migrate to v2");
+    // What a v2 build left behind: `/srv/Media` interned, folded identity.
+    conn.execute_batch(
+        "INSERT INTO dirs (dir_id, volume_id, parent_dir_id, name, name_folded) VALUES (1, 'vol-1', NULL, '', '');
+         INSERT INTO dirs (dir_id, volume_id, parent_dir_id, name, name_folded) VALUES (2, 'vol-1', 1, 'srv', 'srv');
+         INSERT INTO dirs (dir_id, volume_id, parent_dir_id, name, name_folded) VALUES (3, 'vol-1', 2, 'Media', 'media');",
+    )
+    .expect("seed v2 dirs");
+
+    run_migrations(&conn, MIGRATIONS).expect("migrate to current");
+
+    assert_eq!(
+        intern_dir(&conn, "vol-1", "/srv/Media").expect("intern"),
+        3,
+        "the old row survives"
+    );
+    let lower = intern_dir(&conn, "vol-1", "/srv/media").expect("intern lower");
+    assert_ne!(lower, 3, "the other spelling no longer merges into it");
+    assert_eq!(reconstruct_dir_path(&conn, lower).expect("path"), "/srv/media");
 }
 
 /// Read-only connections open with the smaller page cache, write connections
