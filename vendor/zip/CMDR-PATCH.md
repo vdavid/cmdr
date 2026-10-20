@@ -39,8 +39,9 @@ and that copy only reads update bundles.
   before same-named ones fold into one `IndexMap` entry (`ZipArchiveMetadata::central_directory_len`). More than `len()`
   means a duplicate name whose earlier record no index reaches, which a rewrite through this reader would drop, so Cmdr
   refuses such an edit (`crates/cmdr-archive/src/mutation/plan.rs`, `refuse_a_folded_duplicate`) without needing its
-  own reader to parse the archive. Upstream `zip-rs/zip2` #841 (open) asks to expose the fold; this is the smallest
-  answer to it, and belongs in the same upstream PR draft. Tested from Cmdr
+  own reader to parse the archive. Upstream `zip-rs/zip2` #841 (open) asks to expose the fold. Upstream `master` already
+  tracks it privately (`has_duplicate_names`, since `8068ab48`), and open PR #1109 makes that public as
+  `ZipArchive::has_duplicate_names()`, which would replace this (checked 2026-10-20). Tested from Cmdr
   (`mutator_archive_shape_test::a_duplicate_name_is_refused_even_without_the_readers_names`): upstream's writer
   refuses a duplicate name, so a fixture needs a hand-built zip.
 - Unit tests at the end of `src/write.rs`'s `tests` module, the same ones as upstream.
@@ -64,6 +65,6 @@ encrypted-entry change isn't drafted yet; upstream `master` drops both flags the
 ## Dropping it
 
 When upstream ships a raw copy that keeps the stored name and an encrypted entry's flags, plus
-`central_directory_len()` or another way to see the fold, delete this folder, its `[patch.crates-io]` line, and its
+a public way to see the fold (`has_duplicate_names()`, which `refuse_a_folded_duplicate` then switches to), delete this folder, its `[patch.crates-io]` line, and its
 `exclude` entry, and keep the tests. `desktop-rust-vendor-patch-applied` fails as soon as a bump past 9.0.1 makes cargo
 resolve crates.io again.
