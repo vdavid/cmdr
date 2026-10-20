@@ -29,7 +29,9 @@
 //! sleeping share stops within one round trip of a Cancel and stands still on a
 //! Pause. A backend that takes its own walk owes the same two calls; nothing else
 //! makes Cancel work for it, and nothing else puts its entries in a transfer's
-//! tree.
+//! tree. Every read (the top stat, each listing) goes through
+//! `boundary.through_outages`, so a dropped share is waited out by the scan's
+//! owner and the walk carries on from the directory it was listing.
 
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -89,7 +91,7 @@ fn scan_tree_keeping<'a>(
     files: &'a mut Option<Vec<ScannedFile>>,
 ) -> Walking<'a, CopyScanResult> {
     Box::pin(async move {
-        let top = source.scan_stat(path).await?;
+        let top = boundary.through_outages(path, || source.scan_stat(path)).await?;
         if !top.is_directory {
             let size = top.size.unwrap_or(0);
             keep(files, &top);
@@ -273,7 +275,9 @@ fn walk_directory<'a>(
     Box::pin(async move {
         into.dir_count += 1;
         boundary.dir(dir).await?;
-        for entry in source.scan_list(dir).await? {
+        // A listing a dropped session cut off runs again once the owner has
+        // waited it out; its entries are counted only after it answers.
+        for entry in boundary.through_outages(dir, || source.scan_list(dir)).await? {
             let child = dir.join(&entry.name);
             // ❗ A symlinked directory is ONE entry, never a subtree. Following
             // one double-counts its target (Android's `/sdcard` and

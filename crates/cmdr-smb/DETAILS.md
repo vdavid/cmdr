@@ -347,6 +347,12 @@ whose disks had spun down ran to completion whatever the user pressed.
 ❗ **`dir()` goes BEFORE the listing, never after.** A listing is the round trip, seconds of it on a cold share, so a
 boundary on its far side is a Cancel the user waits out.
 
+**Every read goes through `boundary.through_outages`**: the top-level stat (its session lease inside, so a run after the
+wait takes the new session's), each listing, and the pipelined top-level stats as ONE read (`stat_leftovers`, which
+counts nothing). A share that drops mid-walk is waited out by the scan's owner (a copy's pre-flight,
+`crates/cmdr-operations/src/transfer/volume/scan_wait.rs`) and that one read runs again, so the walk carries on at the
+level it was on and counts each entry once (`crates/cmdr-fs/DETAILS.md` § "`ScanBoundary`").
+
 ❌ **Don't ask inside the pipelined top-level stat drain.** Those futures each hold a cloned `Connection`, and parking
 mid-drain would hold every one of them idle for as long as a person is thinking. The sizes it resolves are reported to
 the boundary once the drain is over; the drain itself is O(top-level paths) and pipelined, so the wait it can add is

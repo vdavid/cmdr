@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 
 use super::*;
 use crate::ignore_poison::IgnorePoison;
-use crate::volume::{ListingProgress, ScanStop, ScanStopSignal};
+use crate::volume::{ListingProgress, ScanOutages, ScanReadJudge, ScanReadNext, ScanStop, ScanStopSignal};
 
 /// A tree with no server under it: a map of directory path to its children.
 struct FakeTree {
@@ -20,6 +20,9 @@ struct FakeTree {
     asked: Mutex<Vec<String>>,
     /// What `ScanSource::keeps_files` answers.
     keeps_files: bool,
+    /// Paths whose next read (a listing or a stat) fails as a dropped session
+    /// would, once each.
+    drops_at: Mutex<Vec<String>>,
 }
 
 impl FakeTree {
@@ -29,6 +32,24 @@ impl FakeTree {
             files: HashMap::new(),
             asked: Mutex::new(Vec::new()),
             keeps_files: false,
+            drops_at: Mutex::new(Vec::new()),
+        }
+    }
+
+    /// The next read of `path` fails as a dropped session would, once.
+    fn dropping_at(self, path: &str) -> Self {
+        self.drops_at.lock_ignore_poison().push(path.to_string());
+        self
+    }
+
+    fn drop_if_armed(&self, key: &str) -> Result<(), VolumeError> {
+        let mut armed = self.drops_at.lock_ignore_poison();
+        match armed.iter().position(|p| p == key) {
+            Some(at) => {
+                armed.remove(at);
+                Err(VolumeError::DeviceDisconnected("the session is down".to_string()))
+            }
+            None => Ok(()),
         }
     }
 
@@ -72,6 +93,7 @@ impl ScanSource for FakeTree {
     fn scan_stat<'a>(&'a self, path: &'a Path) -> Walking<'a, FileEntry> {
         Box::pin(async move {
             let key = path.to_string_lossy().into_owned();
+            self.drop_if_armed(&key)?;
             let name = path
                 .file_name()
                 .map(|n| n.to_string_lossy().into_owned())
@@ -95,6 +117,7 @@ impl ScanSource for FakeTree {
         Box::pin(async move {
             let key = path.to_string_lossy().into_owned();
             self.asked.lock_ignore_poison().push(key.clone());
+            self.drop_if_armed(&key)?;
             self.dirs.get(&key).cloned().ok_or(VolumeError::NotFound(key))
         })
     }
@@ -578,4 +601,134 @@ async fn the_single_path_body_has_no_stop_to_honor() {
     let tree = stoppable_tree();
     let scan = scan_one(&tree, Path::new("/top")).await.expect("the walk");
     assert_eq!(scan.file_count, 4);
+}
+
+// ============================================================================
+// A read that fails asks the owner, and runs again on its word
+// ============================================================================
+
+/// An owner that rides out every failure (`Again`), or none (`Fail`), or
+/// stopped while it waited (`Stopped`), and notes what it was asked about.
+struct Owner {
+    answer: ScanReadNext,
+    asked: Mutex<Vec<String>>,
+}
+
+impl Owner {
+    fn answering(answer: ScanReadNext) -> Self {
+        Self {
+            answer,
+            asked: Mutex::new(Vec::new()),
+        }
+    }
+}
+
+struct Judge<'a> {
+    owner: &'a Owner,
+    path: String,
+}
+
+impl ScanOutages for Owner {
+    fn read<'a>(&'a self, path: &'a Path) -> Box<dyn ScanReadJudge + Send + 'a> {
+        Box::new(Judge {
+            owner: self,
+            path: path.to_string_lossy().into_owned(),
+        })
+    }
+}
+
+impl ScanReadJudge for Judge<'_> {
+    fn after_failure<'a>(
+        &'a mut self,
+        _error: &'a VolumeError,
+    ) -> Pin<Box<dyn Future<Output = ScanReadNext> + Send + 'a>> {
+        self.owner.asked.lock_ignore_poison().push(self.path.clone());
+        let answer = self.owner.answer;
+        Box::pin(async move { answer })
+    }
+}
+
+/// A drop in the middle of the walk, at the top stat and at a deep listing:
+/// the owner waits it out, the read runs again, and the walk carries on from
+/// the directory it was listing. Every entry is counted and recorded exactly
+/// once, the same totals a walk with no drop gets.
+#[tokio::test]
+async fn a_read_the_owner_rides_out_runs_again_and_counts_each_entry_once() {
+    use crate::testing::scan_recording::ScanRecording;
+
+    let shape = || {
+        FakeTree::new()
+            .with_dir("/top", &[("a.txt", false, 10), ("sub", true, 0), ("z.txt", false, 3)])
+            .with_dir("/top/sub", &[("b.txt", false, 5), ("deeper", true, 0)])
+            .with_dir("/top/sub/deeper", &[("c.txt", false, 7)])
+    };
+    let paths = [PathBuf::from("/top")];
+    let clean_recording = Arc::new(ScanRecording::default());
+    let clean_boundary =
+        ScanBoundary::silent().recording_to(Arc::clone(&clean_recording) as Arc<dyn crate::volume::ScanRecorder>);
+    let clean = scan_trees(&shape(), &paths, &clean_boundary)
+        .await
+        .expect("the clean walk");
+
+    let tree = shape().dropping_at("/top").dropping_at("/top/sub");
+    let owner = Owner::answering(ScanReadNext::Again);
+    let recording = Arc::new(ScanRecording::default());
+    let boundary = ScanBoundary::silent()
+        .recording_to(Arc::clone(&recording) as Arc<dyn crate::volume::ScanRecorder>)
+        .waiting_out(&owner);
+    let batch = scan_trees(&tree, &paths, &boundary)
+        .await
+        .expect("the walk rides the drops out");
+
+    assert_eq!(
+        *owner.asked.lock_ignore_poison(),
+        vec!["/top".to_string(), "/top/sub".to_string()],
+        "the owner judged the top stat's drop and the deep listing's"
+    );
+    assert_eq!(batch.aggregate.file_count, clean.aggregate.file_count);
+    assert_eq!(batch.aggregate.dir_count, clean.aggregate.dir_count);
+    assert_eq!(batch.aggregate.total_bytes, clean.aggregate.total_bytes);
+    assert_eq!(
+        boundary.counts(),
+        clean_boundary.counts(),
+        "the running tally counts no entry twice"
+    );
+    assert_eq!(
+        recording.sorted(),
+        clean_recording.sorted(),
+        "the tree records no entry twice and skips none"
+    );
+    assert_eq!(
+        tree.listings_of("/top"),
+        1,
+        "the walk went on from the level it was on, never from the top"
+    );
+    assert_eq!(tree.listings_of("/top/sub"), 2, "the dropped listing ran again");
+}
+
+/// An owner that won't wait (the error isn't an outage, or the wait gave up)
+/// leaves the read's own error to end the walk, and one that stopped while it
+/// waited ends it as a stopped scan.
+#[tokio::test]
+async fn a_read_the_owner_does_not_ride_out_ends_the_walk() {
+    let dropping_tree = || {
+        FakeTree::new()
+            .with_dir("/top", &[("sub", true, 0)])
+            .with_dir("/top/sub", &[("b.txt", false, 5)])
+            .dropping_at("/top/sub")
+    };
+    let owner = Owner::answering(ScanReadNext::Fail);
+    let boundary = ScanBoundary::silent().waiting_out(&owner);
+    let error = scan_trees(&dropping_tree(), &[PathBuf::from("/top")], &boundary)
+        .await
+        .unwrap_err();
+    assert!(matches!(error, VolumeError::DeviceDisconnected(_)), "got {error:?}");
+    assert_eq!(owner.asked.lock_ignore_poison().len(), 1);
+
+    let owner = Owner::answering(ScanReadNext::Stopped);
+    let boundary = ScanBoundary::silent().waiting_out(&owner);
+    let error = scan_trees(&dropping_tree(), &[PathBuf::from("/top")], &boundary)
+        .await
+        .unwrap_err();
+    assert!(matches!(error, VolumeError::Cancelled(_)), "got {error:?}");
 }

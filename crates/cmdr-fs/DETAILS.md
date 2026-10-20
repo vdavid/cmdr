@@ -601,6 +601,17 @@ engine's checkpoint stream answers it; every other wrapper forwards its inner st
 as the size of the transfer they're about to run, so a truncated total that looks successful is a progress bar finishing
 at 30% and a free-space check passing when it shouldn't.
 
+**A read that fails asks the owner whether to run again** (`scan_outages.rs`). A backend sends each read of its walk (a
+stat, a listing) through `boundary.through_outages(path, || read)`; a boundary built `waiting_out(&owner)` hands the
+failure to the owner's `ScanReadJudge`, which may wait out a dropped session (a copy's pre-flight:
+`crates/cmdr-operations/src/transfer/volume/scan_wait.rs`, with the operation's budget, Cancel, and Pause) and answer
+`Again`. The patience is the owner's (only it has an operation); the retry is here, next to the walk, because only the
+walk knows which round trip failed. ❗ Only a READ goes through it, and nothing is counted inside it: entries reach
+`dir` / `file` after the read answers, so a read run again counts each entry once and the walk carries on at the
+directory it was listing, ❌ never from the top. `scan_walk.rs` (everything on `ScanSource`) and SMB's own walk route
+their reads through it; a backend with no session to lose (local, MTP, archive, in-memory) has nothing to wait for.
+Pinned by `scan_walk_test.rs::a_read_the_owner_rides_out_runs_again_and_counts_each_entry_once`.
+
 **Granularity is per backend, and uniformity would be a lie.** A backend that walks a real tree (local, SMB, MTP, and
 everything on `scan_walk`) asks per entry; one whose per-path scan is a bounded walk over an already-loaded index
 (in-memory, archive) asks per source path, which is the smallest unit of waiting it has. `volume::conformance`'s

@@ -859,7 +859,12 @@ recording changes.
   `PublishError::{Failed(PublishFailure), CutOff(CutOffPublish)}`; `CutOffPublish::resume` answers `Republished`.
   `commit_without_a_wait` is test-only now. The publish loop is `archive_edit/fresh_publish.rs`.
 - `reap_remote_temps` skips what the ledger records (`is_recorded_on`).
-- Not covered, and why: the compress's planning walk (a pre-flight scan's twin).
+- The compress's planning walk and the copy's pre-flight scan wait too (#569): each read of either walk (a stat, a
+  listing) waits out a drop and runs again, so the walk carries on at the folder it was listing and counts each entry
+  once (`archive_edit/outage_wait.rs::read_through_outages`; the scan inside the backend's own walk through
+  `cmdr_fs::volume::ScanBoundary::through_outages`, owned by `transfer/volume/scan_wait.rs`). Both announce the wait on
+  their own progress, since no probe speaks for them yet. Cells: `archive_edit/fresh_plan_outage_tests.rs`,
+  `transfer/volume/preflight_outage_tests.rs`, `cmdr-fs` `scan_walk_test.rs`.
 - Cells: `archive_edit/remote_outage_tests.rs`, `archive_edit/fresh_compress_outage_tests.rs`, the reap and journal
   cells in `remote_tests.rs`. No live Docker cell (the plan asked none for this milestone).
 

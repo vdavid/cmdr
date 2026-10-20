@@ -333,8 +333,11 @@ reaped, fresh spared, other-archive ignored, delete-failure doesn't fail the edi
   had published. A wait that ends without the share says "Lost the connection to {server}" (`ServerConnectionLost`),
   unless an original set aside couldn't go back (`OriginalsKeptAside` outranks). The displaced publish's own rename
   aside waits and settles too (`../transfer/volume/displaced_destination.rs::displace_destination`). Pinned by
-  `fresh_compress_outage_tests.rs`. Not covered: the planning walk (like a copy's pre-flight scan, its own failure
-  path).
+  `fresh_compress_outage_tests.rs`. The planning walk waits too: each of its reads (a selected item's type and stat,
+  every folder's listing) goes through `outage_wait.rs::read_through_outages`, which runs that one read again once the
+  share is back, so the walk carries on at the folder it was listing, and an entry joins the plan only after its
+  parent's listing answered, so none is planned twice. No transfer probe speaks for a compress yet, so the wait is
+  announced on its own progress (the `Scanning` tick reads `Reconnecting`). Pinned by `fresh_plan_outage_tests.rs`.
 
   Progress has two unrelated byte axes. `Compressing` counts uncompressed source bytes/entries. The last source tick
   becomes indeterminate `FinishingCompression` before ZIP close, count reconciliation, validation, and local

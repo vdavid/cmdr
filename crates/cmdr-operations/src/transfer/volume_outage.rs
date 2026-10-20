@@ -330,6 +330,30 @@ pub(crate) async fn wait_after_failure(
     wait_after_shortfall(state, volumes, started_on, outages).await
 }
 
+/// [`wait_after_failure`] for work no transfer probe speaks for yet (a copy's
+/// pre-flight scan, a compress's planning walk), where nothing else would carry
+/// the wait to the UI: `announce` hears it as it starts, so the progress reads
+/// `Reconnecting` while it lasts, and again once the volume is back, so the
+/// progress stops saying so the moment it's over rather than at the walk's next
+/// tick.
+pub(crate) async fn wait_after_failure_announced(
+    state: &Arc<WriteOperationState>,
+    error: &VolumeError,
+    volumes: &[&Arc<dyn Volume>],
+    started_on: &StartedOn,
+    outages: &mut u32,
+    announce: &OutageAnnounce<'_>,
+) -> OutageEnd {
+    if error.transport_fault().is_none() {
+        return OutageEnd::NotWaitable;
+    }
+    let ended = wait_after(state, volumes, started_on, outages, Some(announce)).await;
+    if ended == OutageEnd::Back {
+        announce_wait(state, announce);
+    }
+    ended
+}
+
 /// [`wait_after_failure`] for a call that came up short with no error to
 /// classify: a best-effort apply (`Volume::apply_metadata`) reports a drop as a
 /// refused class, the same as a server's refusal. So the volumes answer
@@ -342,6 +366,18 @@ pub(crate) async fn wait_after_shortfall(
     started_on: &StartedOn,
     outages: &mut u32,
 ) -> OutageEnd {
+    wait_after(state, volumes, started_on, outages, None).await
+}
+
+/// The wait both [`wait_after_shortfall`] and [`wait_after_failure_announced`]
+/// take once the failure reads as a possible outage.
+async fn wait_after(
+    state: &Arc<WriteOperationState>,
+    volumes: &[&Arc<dyn Volume>],
+    started_on: &StartedOn,
+    outages: &mut u32,
+    announce: Option<&OutageAnnounce<'_>>,
+) -> OutageEnd {
     // A call the share cut off while the work was stopping is the stop's: read
     // as `NotWaitable`, a Cancel reached the person as "Lost the connection".
     if state.work_stopped() {
@@ -350,7 +386,7 @@ pub(crate) async fn wait_after_shortfall(
     if *outages >= MAX_OUTAGES_PER_ITEM {
         return OutageEnd::NotWaitable;
     }
-    let ended = wait_out(state, volumes, started_on, None).await;
+    let ended = wait_out(state, volumes, started_on, announce).await;
     if ended == OutageEnd::Back {
         *outages += 1;
     }

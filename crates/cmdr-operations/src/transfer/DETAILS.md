@@ -40,10 +40,11 @@ included, § "One-pass sequential extract"). Only the layout facts that none of 
   declared `mod r#move;` because `move` is a keyword, and only the strategy dispatcher; the cross-volume
   copy-then-delete engine it routes to is `move_cross.rs`, plus `move_same.rs` and `rename_merge.rs` for the same-volume
   rename path), the merge/staging engine (`strategy.rs`, `stream_pipe.rs`, `sequential_extract.rs`), and the supporting
-  `conflict.rs`, `cleanup.rs`, `preflight.rs`, `transfer_error.rs`. Every one of those is PRIVATE to `volume`; `mod.rs`
-  re-exports the nine items outside code calls, so a caller writes `transfer::volume::<item>`. Adding a caller means
-  adding a re-export, not widening a submodule — that boundary is what lets the engine's internals move without a
-  repo-wide rename, and it is why the `r#move` escape never appears outside this directory.
+  `conflict.rs`, `cleanup.rs`, `preflight.rs` (with `scan_wait.rs`, its outage wait), `transfer_error.rs`. Every one of
+  those is PRIVATE to `volume`; `mod.rs` re-exports the nine items outside code calls, so a caller writes
+  `transfer::volume::<item>`. Adding a caller means adding a re-export, not widening a submodule — that boundary is what
+  lets the engine's internals move without a repo-wide rename, and it is why the `r#move` escape never appears outside
+  this directory.
 - **`transfer_driver_*_tests.rs` sit at the `transfer/` level, wired in as submodules via `#[path = "../…"]`.** That is
   incidental, not load-bearing: `file-length` allowlist keys are plain paths and get re-pathed with the file (the
   `volume/` move did exactly that for eight entries), so it is no reason to keep or to move them.
@@ -1257,12 +1258,12 @@ included. Pinned by `staged_write_tests.rs::an_abandon_the_destination_refuses_k
 ❗ **The drivers keep no partial list, and nothing cleans a failed write's FINAL name**: the temp has the one owner
 above, and the name is the user's: a free name (someone may have taken it mid-upload), a swap's original, or a claimed
 name, where all that's ours is a `Rename` pick's placeholder, which `ClaimedNames` takes back while it's empty
-(`volume/naming.rs::take_back_unfilled_reservations`). Once a landing cleared a claimed name, what stands there is a save
-that came after our delete, or our own file, landed by the reconnect sweep from a kept landing before the post-loop ran,
-and a post-loop partial cleanup deleted either (`#575`; pinned by `volume/copy_landing_race_tests.rs`). So a concurrent task
-dropped between a swap's move aside and its rename leaves the original at its recorded aside, held for the volume's next
-arrival, whose sweep puts it back, and the temp in the in-flight set for the abandoned-write cleanup (the failure still
-names whichever sibling ended the op). Pinned by
+(`volume/naming.rs::take_back_unfilled_reservations`). Once a landing cleared a claimed name, what stands there is a
+save that came after our delete, or our own file, landed by the reconnect sweep from a kept landing before the post-loop
+ran, and a post-loop partial cleanup deleted either (`#575`; pinned by `volume/copy_landing_race_tests.rs`). So a
+concurrent task dropped between a swap's move aside and its rename leaves the original at its recorded aside, held for
+the volume's next arrival, whose sweep puts it back, and the temp in the in-flight set for the abandoned-write cleanup
+(the failure still names whichever sibling ended the op). Pinned by
 `volume/safe_replace_grid_tests.rs::a_concurrent_task_dropped_mid_swap_keeps_the_original_for_the_sweep_to_put_back`.
 
 **What that sweep can't remove now waits for the server, in the background, and is swept on reconnect**
@@ -2035,6 +2036,14 @@ again:
   begins with a volume already gone (a Retry while the NAS is still down) waits before its first step rather than
   failing on it. It announces the wait itself (no probe is registered yet). Only a cancel stops the transfer there;
   every other ending carries on, and a volume still gone fails the first step exactly as before.
+- The pre-flight scan (`volume/preflight.rs::scan_volume_sources`), INSIDE the backend's own walk: the scan's boundary
+  carries `volume/scan_wait.rs::ScanWait` (`ScanBoundary::waiting_out`), and every read the walk sends (a stat, a
+  listing, SMB's pipelined top-level stats as one) asks it after a failure, waits with the operation's budget, Cancel,
+  and Pause, and runs that one read again. A read counts nothing until it answers, so the walk carries on at the
+  directory it was listing with every entry counted (and recorded in the tree) once: no restart from the top, no double
+  count, no skip (`crates/cmdr-fs/DETAILS.md` § "`ScanBoundary`"). No probe is registered yet, so the wait is announced
+  on the operation's own channel as it starts and as it ends (`volume_outage::wait_after_failure_announced`); a give-up
+  reads as "Lost the connection", the folder it was listing as context. Pinned by `volume/preflight_outage_tests.rs`.
 - Every rename aside (`volume/displaced_destination.rs::displace_destination`, a cross-type Overwrite's and a fresh
   compress's displaced publish): the rename the transport cut off is settled by one stat of the aside after the wait
   (`volume/DETAILS.md`, the aside bullets).
@@ -2046,13 +2055,13 @@ again:
   (`volume/folder_metadata.rs`, through `wait_after_shortfall`, since a backend reports a drop under `apply_metadata` as
   a refused class rather than an error). Both: `volume/DETAILS.md`.
 
-**Not covered, deliberately.** The pre-flight SCAN of a big tree (its own walker, its own failure path), trash, the
-local engines, the instant ops (rename, new folder, new file), and a same-volume move's renames past the start gate
-(`volume/move_same.rs`, `volume/rename_merge.rs`: a rename the drop cut off can't be told from one the server refused
-without a settle of its own). Each fails on an outage as it always did. A volume delete has its own wait, which
-re-checks each entry against its walk before deleting again (`../delete/DETAILS.md` § "Waiting out a dropped share"),
-and an archive edit's planning walk is listed in `../archive_edit/DETAILS.md` § "The driver, op by op" (its compress
-bullet).
+**Not covered, deliberately.** Trash, the local engines, the instant ops (rename, new folder, new file), and a
+same-volume move past the start gate: its top-level hint listings (`volume/preflight.rs::top_level_move_hints`) and its
+renames (`volume/move_same.rs`, `volume/rename_merge.rs`: a rename the drop cut off can't be told from one the server
+refused without a settle of its own, so waiting at the listing before it would buy nothing). Each fails on an outage as
+it always did. A volume delete has its own wait, which re-checks each entry against its walk before deleting again
+(`../delete/DETAILS.md` § "Waiting out a dropped share"), and a compress's planning walk waits per read
+(`../archive_edit/DETAILS.md` § "The driver, op by op", its compress bullet).
 
 **A landing the drop cut off (`interrupted_landing.rs`, `staged_write_landing.rs::CutOffLanding`).** A rename or a
 delete whose reply never arrives may have happened or not: the drop can come before the server saw it, or after it
@@ -2082,12 +2091,12 @@ shows (`CutOffLanding::resume`):
   was ours; and the name holds what we wrote: a file of exactly our size after a rename-first landing, which cleared
   nothing, and ❗ exactly the SOURCE's bytes, compared in full (`holds_the_source`), after a cleared way or any swap,
   since a swap whose temp someone removed can leave the user's OLD file at the name, maybe at the same size. With no
-  source to compare against (the one-pass extract), that case ❌ never counts as landed. A landed swap's aside goes.
-  The compare races `stop_work` (#577): a Cancel mid-compare ends the settle as `Resumed::Stopped`, which proves
-  nothing, so ❌ nothing counts as landed, ❌ nothing is put back or discarded, and the landing record and any aside stay
-  for the volume's next arrival (pinned by
-  `staged_write_tests.rs::a_cancel_during_a_cut_off_landings_byte_compare_stops_it_and_keeps_the_landing_recorded`).
-  A single-shot create's settle (below) races it the same way.
+  source to compare against (the one-pass extract), that case ❌ never counts as landed. A landed swap's aside goes. The
+  compare races `stop_work` (#577): a Cancel mid-compare ends the settle as `Resumed::Stopped`, which proves nothing, so
+  ❌ nothing counts as landed, ❌ nothing is put back or discarded, and the landing record and any aside stay for the
+  volume's next arrival (pinned by
+  `staged_write_tests.rs::a_cancel_during_a_cut_off_landings_byte_compare_stops_it_and_keeps_the_landing_recorded`). A
+  single-shot create's settle (below) races it the same way.
 - **Anything else** (a temp that isn't whole, a name that doesn't prove it) runs the file again, a swap's original put
   back at its name first (`run_again_with_the_original_home`), and a name someone else took meets the ordinary
   late-clash refusal (`DestinationExists`, their file untouched).

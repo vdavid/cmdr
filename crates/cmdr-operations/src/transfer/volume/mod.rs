@@ -40,6 +40,7 @@ mod move_same;
 mod naming;
 mod preflight;
 mod rename_merge;
+mod scan_wait;
 mod sequential_extract;
 mod server_side_copy;
 mod source_reads;
@@ -188,6 +189,9 @@ mod hostile_names_tests;
 /// The same rule on a backend whose `is_directory` follows a link (ADB, SFTP).
 #[cfg(test)]
 mod link_following_backend_tests;
+/// A copy's own scan over a share that drops mid-walk waits for it.
+#[cfg(test)]
+mod preflight_outage_tests;
 #[cfg(test)]
 mod preflight_stop_tests;
 #[cfg(test)]

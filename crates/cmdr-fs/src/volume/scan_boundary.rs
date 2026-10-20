@@ -30,7 +30,7 @@ use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
-use super::{CopyScanResult, ListingProgress, ScanRecorder, ScanStop, VolumeError};
+use super::{CopyScanResult, ListingProgress, ScanOutages, ScanReadNext, ScanRecorder, ScanStop, VolumeError};
 
 /// Counts a scan as it walks and holds the cooperative stop it honors.
 ///
@@ -42,6 +42,9 @@ pub struct ScanBoundary<'a> {
     /// `Arc`-held for the same reason the stop is: a walk inside
     /// `spawn_blocking` (the local backend's) carries it across the closure.
     recorder: Option<Arc<dyn ScanRecorder>>,
+    /// Who decides whether a failed read waits out an outage and runs again.
+    /// Borrowed: only an async walk asks it, never one inside `spawn_blocking`.
+    outages: Option<&'a dyn ScanOutages>,
     files: AtomicUsize,
     dirs: AtomicUsize,
     bytes: AtomicU64,
@@ -55,6 +58,7 @@ impl<'a> ScanBoundary<'a> {
             on_progress,
             stop: ScanStop::none(),
             recorder: None,
+            outages: None,
             files: AtomicUsize::new(0),
             dirs: AtomicUsize::new(0),
             bytes: AtomicU64::new(0),
@@ -78,6 +82,42 @@ impl<'a> ScanBoundary<'a> {
     pub fn recording_to(mut self, recorder: Arc<dyn ScanRecorder>) -> Self {
         self.recorder = Some(recorder);
         self
+    }
+
+    /// A read the walk sends that fails asks `outages` whether to wait and run
+    /// it again ([`through_outages`](Self::through_outages)).
+    pub fn waiting_out(mut self, outages: &'a dyn ScanOutages) -> Self {
+        self.outages = Some(outages);
+        self
+    }
+
+    /// Runs `read` (one listing or stat of `path`), and when it fails, asks the
+    /// owner whether the volume went away and came back; if so, runs it again.
+    /// With no owner to ask, the read's error is the answer, as it always was.
+    ///
+    /// ❗ Only a READ, and ❌ nothing counted inside it: the entries it returns
+    /// go through [`dir`](Self::dir) / [`file`](Self::file) after it succeeds,
+    /// so a read run again counts each entry once (`scan_outages.rs`).
+    pub async fn through_outages<T, F, Fut>(&self, path: &Path, mut read: F) -> Result<T, VolumeError>
+    where
+        F: FnMut() -> Fut,
+        Fut: Future<Output = Result<T, VolumeError>>,
+    {
+        let Some(outages) = self.outages else {
+            return read().await;
+        };
+        let mut judge = outages.read(path);
+        loop {
+            let error = match read().await {
+                Ok(value) => return Ok(value),
+                Err(error) => error,
+            };
+            match judge.after_failure(&error).await {
+                ScanReadNext::Again => {}
+                ScanReadNext::Fail => return Err(error),
+                ScanReadNext::Stopped => return Err(stopped()),
+            }
+        }
     }
 
     /// One more directory, about to be listed.

@@ -7,10 +7,14 @@ use std::time::{Duration, UNIX_EPOCH};
 
 use super::super::OperationEventSink;
 use super::super::state::WriteOperationState;
+use super::super::transfer::volume_outage::OutageAnnounce;
 use super::super::transfer_tree::TreeOrder;
-use super::super::types::{ConflictResolution, WriteConflictEvent, WriteConflictResolvedEvent, WriteOperationError};
+use super::super::types::{
+    ConflictResolution, WriteConflictEvent, WriteConflictResolvedEvent, WriteOperationError, WriteOperationType,
+};
 use super::edit_error::EditError;
 use super::fresh_zip::{FreshZipEntry, FreshZipSource, RemoteZipFeeder, remote_source_bridge};
+use super::outage_wait::read_through_outages;
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::{EntryKind, Volume, VolumeError};
 use tokio::runtime::Handle;
@@ -110,6 +114,18 @@ struct PlanConflictContext<'a> {
     archive_path: &'a Path,
 }
 
+impl<'a> PlanConflictContext<'a> {
+    /// Where the walk announces a wait for a dropped share: its own progress,
+    /// since no transfer probe speaks for a compress yet.
+    fn announce(self) -> OutageAnnounce<'a> {
+        OutageAnnounce {
+            sink: self.events,
+            operation_id: self.operation_id,
+            operation_type: WriteOperationType::Compress,
+        }
+    }
+}
+
 #[allow(
     clippy::too_many_arguments,
     reason = "the planning seam carries the selection, its conflict policy and prompt context, and the walk's progress observer"
@@ -163,6 +179,7 @@ async fn plan_sources_with_context(
 ) -> Result<FreshPlan, EditError> {
     let mut entries: Vec<PlannedEntry> = Vec::new();
     let mut source_bytes = 0u64;
+    let announce = conflict_context.map(PlanConflictContext::announce);
     let (tops, mut skipped) = settle_tops(source, source_paths, conflict, state, conflict_context).await?;
     // Found-so-far tallies for the scan readout only.
     let (mut files, mut dirs) = (0usize, 0usize);
@@ -208,10 +225,13 @@ async fn plan_sources_with_context(
                     modified,
                     unix_mode,
                 });
-                let mut children = source
-                    .list_directory(&path, None)
-                    .await
-                    .map_err(|error| volume_read_error(&path, error))?;
+                // A listing the dropped share cut off runs again once it's
+                // back; its children join the plan only after it answers.
+                let mut children =
+                    read_through_outages(state, source, &path, announce.as_ref(), volume_read_error, || {
+                        source.list_directory(&path, None)
+                    })
+                    .await?;
                 dirs += 1;
                 report(on_progress, files, dirs, source_bytes, &path);
                 order.sort(&mut children, |child| {
@@ -274,6 +294,7 @@ async fn settle_tops(
 ) -> Result<(Vec<(PathBuf, String, FileEntry)>, usize), EditError> {
     let mut tops: Vec<(PathBuf, String, FileEntry)> = Vec::new();
     let mut skipped = 0usize;
+    let announce = conflict_context.map(PlanConflictContext::announce);
     let mut top_names = HashMap::<String, PathBuf>::new();
     let mut duplicate_latch = None;
     for top in source_paths {
@@ -334,18 +355,18 @@ async fn settle_tops(
         // A selected link is skipped like a nested one. Asked with `entry_kind`
         // (an `lstat`), ❌ never read off `get_metadata`: SFTP's `stat` follows
         // the link and reports its target.
-        let top_kind = source
-            .entry_kind(top)
-            .await
-            .map_err(|error| volume_read_error(top, error))?;
+        let top_kind = read_through_outages(state, source, top, announce.as_ref(), volume_read_error, || {
+            source.entry_kind(top)
+        })
+        .await?;
         if top_kind == EntryKind::Symlink {
             skipped += 1;
             continue;
         }
-        let top_meta = source
-            .get_metadata(top)
-            .await
-            .map_err(|error| volume_read_error(top, error))?;
+        let top_meta = read_through_outages(state, source, top, announce.as_ref(), volume_read_error, || {
+            source.get_metadata(top)
+        })
+        .await?;
         tops.push((top.clone(), top_name, top_meta));
     }
     TreeOrder::active(state.scope().host()).sort(&mut tops, |(_, name, meta)| (meta.is_directory, name.as_str()));
@@ -545,3 +566,7 @@ fn volume_read_error(path: &Path, error: VolumeError) -> EditError {
 #[cfg(test)]
 #[path = "fresh_plan_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "fresh_plan_outage_tests.rs"]
+mod outage_tests;

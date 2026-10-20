@@ -32,6 +32,9 @@
 //! (`Volume::copy_within`), and it counts where every write went, so a cell can
 //! tell a landing resumed from its temp from a file streamed again.
 //!
+//! Its copy scan is the shared walk (`scan_walk`) over its own stat and listing,
+//! so the session can drop at a listing mid-walk.
+//!
 //! Wraps an `InMemoryVolume` (rather than owning one) so a test can read the
 //! destination back through the same handle after the copy.
 
@@ -40,8 +43,8 @@ use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::metadata::{CarriedMetadata, ClassOutcome, MetadataReport};
 use cmdr_fs::volume::{
     BackendKind, BatchScanResult, ConnectionState, CopyScanResult, DirectoryCreation, InMemoryVolume, LaneKey,
-    ListingProgress, ScanBoundary, ScanConflict, SourceItemInfo, SpaceInfo, StreamLength, StreamWriteProgress,
-    StreamWritten, Volume, VolumeError, VolumeReadStream, WriteMode,
+    ListingProgress, ScanBoundary, ScanConflict, ScanSource, SourceItemInfo, SpaceInfo, StreamLength,
+    StreamWriteProgress, StreamWritten, Volume, VolumeError, VolumeReadStream, WriteMode, scan_walk,
 };
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -105,6 +108,12 @@ pub(crate) struct OutageVolume {
     stale_error_at_delete_of: Mutex<Option<(PathBuf, RenameDrop)>>,
     /// Drop the session as the next stat of this path starts, once.
     drop_at_stat_of: Mutex<Option<PathBuf>>,
+    /// Drop the session as the next listing of this path starts, once.
+    drop_at_listing_of: Mutex<Option<PathBuf>>,
+    /// Refuse every listing of this path, with the session up.
+    refuse_listing_of: Mutex<Option<PathBuf>>,
+    /// Every listing sent: a walk that carried on from one that started over.
+    listings: Mutex<Vec<PathBuf>>,
     /// Drop the session as the next metadata apply on this path starts, once.
     drop_at_apply_metadata_of: Mutex<Option<PathBuf>>,
     /// Refuse every metadata apply on this path, with the session up.
@@ -170,6 +179,9 @@ impl OutageVolume {
             drop_at_delete_of: Mutex::new(None),
             stale_error_at_delete_of: Mutex::new(None),
             drop_at_stat_of: Mutex::new(None),
+            drop_at_listing_of: Mutex::new(None),
+            refuse_listing_of: Mutex::new(None),
+            listings: Mutex::new(Vec::new()),
             drop_at_apply_metadata_of: Mutex::new(None),
             refuse_metadata_of: Mutex::new(None),
             refuse_deletes_of: Mutex::new(None),
@@ -307,6 +319,24 @@ impl OutageVolume {
         *self.stale_error_at_delete_of.lock_ignore_poison() = Some((path.to_path_buf(), side));
     }
 
+    /// The session drops (and the server goes away) as the next listing of
+    /// `path` starts: a walk over the share (a copy's scan, a compress's plan)
+    /// cut off mid-tree.
+    pub(crate) fn drop_at_listing_of(&self, path: &Path) {
+        *self.drop_at_listing_of.lock_ignore_poison() = Some(path.to_path_buf());
+    }
+
+    /// Every listing of `path` is refused with the session up: a server's
+    /// answer, which no wait changes.
+    pub(crate) fn refuse_listing_of(&self, path: &Path) {
+        *self.refuse_listing_of.lock_ignore_poison() = Some(path.to_path_buf());
+    }
+
+    /// How many listings of `path` were sent, the one the drop cut off included.
+    pub(crate) fn listings_of(&self, path: &Path) -> usize {
+        self.listings.lock_ignore_poison().iter().filter(|p| *p == path).count()
+    }
+
     /// The session drops (and the server goes away) as the next stat of `path`
     /// starts (`get_metadata`, and every probe built on it, `entry_kind` too).
     pub(crate) fn drop_at_stat_of(&self, path: &Path) {
@@ -432,6 +462,16 @@ fn armed_for(slot: &Mutex<Option<(PathBuf, RenameDrop)>>, path: &Path) -> Option
     }
 }
 
+impl ScanSource for OutageVolume {
+    fn scan_stat<'a>(&'a self, path: &'a Path) -> scan_walk::Walking<'a, FileEntry> {
+        self.get_metadata(path)
+    }
+
+    fn scan_list<'a>(&'a self, path: &'a Path) -> scan_walk::Walking<'a, Vec<FileEntry>> {
+        self.list_directory(path, None)
+    }
+}
+
 impl Volume for OutageVolume {
     fn name(&self) -> &str {
         self.inner.name()
@@ -495,7 +535,22 @@ impl Volume for OutageVolume {
         on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
     ) -> Fut<'a, Result<Vec<FileEntry>, VolumeError>> {
         Box::pin(async move {
+            self.listings.lock_ignore_poison().push(path.to_path_buf());
+            let armed_here = {
+                let mut armed = self.drop_at_listing_of.lock_ignore_poison();
+                armed.as_deref() == Some(path) && armed.take().is_some()
+            };
+            if armed_here {
+                self.go_away();
+            }
             self.gate()?;
+            if self.refuse_listing_of.lock_ignore_poison().as_deref() == Some(path) {
+                let path = path.display().to_string();
+                return Err(VolumeError::PermissionDenied {
+                    path,
+                    raw_os_error: None,
+                });
+            }
             self.inner.list_directory(path, on_progress).await
         })
     }
@@ -670,10 +725,9 @@ impl Volume for OutageVolume {
         paths: &'a [PathBuf],
         boundary: &'a ScanBoundary<'a>,
     ) -> Fut<'a, Result<BatchScanResult, VolumeError>> {
-        Box::pin(async move {
-            self.gate()?;
-            self.inner.scan_for_copy_batch_with_boundary(paths, boundary).await
-        })
+        // The shared walk over this volume's own stat and listing, so a drop
+        // armed at a listing lands inside the walk, as on a real share.
+        scan_walk::scan_trees(self, paths, boundary)
     }
     fn create_directory_errors_on_existing_dir(&self) -> bool {
         self.inner.create_directory_errors_on_existing_dir()

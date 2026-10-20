@@ -40,7 +40,8 @@ use super::super::super::types::{
 };
 use super::super::volume_outage::{OutageAnnounce, OutageEnd, wait_while_out};
 use super::folder_metadata::SourceFolderDates;
-use super::transfer_error::{PathRole, WriteFailure, map_volume_error};
+use super::scan_wait::ScanWait;
+use super::transfer_error::{PathRole, WriteFailure, map_failure_after_wait, map_volume_error};
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::volume::{
     EntryKind, ListingProgress, ScanBoundary, ScanRecorder, ScanStop, ScanStopSignal, Volume, VolumeError,
@@ -354,9 +355,21 @@ pub(super) async fn scan_volume_sources(
     let stop = ScanStop::new(Arc::clone(state) as Arc<dyn ScanStopSignal>);
     // Every entry the scan counts also lands in the transfer's tree.
     let recorder = Arc::new(TreeRecorder::new(source_paths, TreeOrder::active(state.scope().host())));
+    // A read the dropped share cut off waits for it and runs again, from the
+    // directory it was listing (`scan_wait.rs`).
+    let outages = ScanWait::new(
+        state,
+        volume,
+        OutageAnnounce {
+            sink: events,
+            operation_id,
+            operation_type,
+        },
+    );
     let boundary = ScanBoundary::new(Some(&scan_progress))
         .stopping_at(stop)
-        .recording_to(Arc::clone(&recorder) as Arc<dyn ScanRecorder>);
+        .recording_to(Arc::clone(&recorder) as Arc<dyn ScanRecorder>)
+        .waiting_out(&outages);
     let batch = volume
         .scan_for_copy_batch_with_boundary(source_paths, &boundary)
         .await
@@ -367,6 +380,11 @@ pub(super) async fn scan_volume_sources(
             // about a share that was fine, over their own click.
             if matches!(e, VolumeError::Cancelled(_)) {
                 return cancelled_failure(events, operation_id, operation_type);
+            }
+            // A wait that ended without the share: the connection is the
+            // cause, the folder it was listing the context.
+            if let Some((path, lost)) = outages.lost_connection() {
+                return WriteFailure::synthetic(map_failure_after_wait(&path, PathRole::Source, e, Some(lost)));
             }
             let path = source_paths.first().cloned().unwrap_or_default();
             WriteFailure::from_volume(&path, PathRole::Source, e)

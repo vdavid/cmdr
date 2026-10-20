@@ -1,7 +1,8 @@
 //! How an archive edit's steps on a remote volume ride out a dropped share:
 //! the wait a copy takes (`transfer/volume_outage.rs`), and the error a step
 //! ends with when the wait ends without the share. Shared by the remote edit
-//! (`remote.rs`) and fresh compression (`fresh_compress.rs`).
+//! (`remote.rs`) and fresh compression (`fresh_compress.rs`), whose planning
+//! walk (`fresh_plan.rs`) reads through [`read_through_outages`].
 
 use std::future::Future;
 use std::path::Path;
@@ -12,7 +13,8 @@ use super::super::transfer::recovered_name::FinalizeFailure;
 use super::super::transfer::staged_write::PublishFailure;
 use super::super::transfer::volume::{PathRole, map_failure_after_wait, map_finalize_failure};
 use super::super::transfer::volume_outage::{
-    LostConnection, OutageEnd, StartedOn, lost_connection, wait_after_failure,
+    LostConnection, OutageAnnounce, OutageEnd, StartedOn, lost_connection, wait_after_failure,
+    wait_after_failure_announced,
 };
 use super::super::types::WriteOperationError;
 use super::edit_error::EditError;
@@ -69,11 +71,40 @@ pub(super) async fn wait_out(
     outages: &mut u32,
     path: &Path,
 ) -> Next {
+    let at = FailedAt {
+        path,
+        role: PathRole::Destination,
+    };
+    wait_out_announcing(state, failed, volumes, started_on, outages, at, None).await
+}
+
+/// Where a step failed, for the error a wait that ends without the share reports.
+#[derive(Clone, Copy)]
+struct FailedAt<'a> {
+    path: &'a Path,
+    role: PathRole,
+}
+
+/// [`wait_out`], for a step on `at`'s side, announcing the wait on `announce`
+/// when nothing else speaks for the operation yet
+/// (`volume_outage::wait_after_failure_announced`).
+async fn wait_out_announcing(
+    state: &Arc<WriteOperationState>,
+    failed: StepError,
+    volumes: &[&Arc<dyn Volume>],
+    started_on: &StartedOn,
+    outages: &mut u32,
+    at: FailedAt<'_>,
+    announce: Option<&OutageAnnounce<'_>>,
+) -> Next {
     let (error, otherwise) = match failed {
         StepError::Ended(ended) => return Next::Stop(ended),
         StepError::Fault(fault) => (fault.error, fault.otherwise),
     };
-    let ended = wait_after_failure(state, &error, volumes, started_on, outages).await;
+    let ended = match announce {
+        Some(announce) => wait_after_failure_announced(state, &error, volumes, started_on, outages, announce).await,
+        None => wait_after_failure(state, &error, volumes, started_on, outages).await,
+    };
     if ended == OutageEnd::Back {
         return Next::Again;
     }
@@ -81,9 +112,48 @@ pub(super) async fn wait_out(
         return Next::Stop(EditError::Cancelled);
     }
     Next::Stop(match lost_connection(ended, &error, volumes) {
-        Some(lost) => EditError::Op(map_failure_after_wait(path, PathRole::Destination, error, Some(lost))),
+        Some(lost) => EditError::Op(map_failure_after_wait(at.path, at.role, error, Some(lost))),
         None => otherwise,
     })
+}
+
+/// Runs `read`, one read of `path` on the SOURCE volume of a walk no transfer
+/// probe speaks for (a compress's planning walk), and when it fails on the
+/// transport while the volume is out, waits for it (announced on `announce`)
+/// and runs it again. `otherwise` words a failure the wait doesn't explain.
+///
+/// ❗ Only a read: it must be safe to send twice, and the walk takes what it
+/// returns only once it answers, so a read run again plans each entry once.
+pub(super) async fn read_through_outages<T, F, Fut>(
+    state: &Arc<WriteOperationState>,
+    volume: &Arc<dyn Volume>,
+    path: &Path,
+    announce: Option<&OutageAnnounce<'_>>,
+    otherwise: fn(&Path, VolumeError) -> EditError,
+    mut read: F,
+) -> Result<T, EditError>
+where
+    F: FnMut() -> Fut,
+    Fut: Future<Output = Result<T, VolumeError>>,
+{
+    let volumes = [volume];
+    let at = FailedAt {
+        path,
+        role: PathRole::Source,
+    };
+    let mut outages = 0;
+    loop {
+        let started_on = StartedOn::now(&volumes);
+        let error = match read().await {
+            Ok(value) => return Ok(value),
+            Err(error) => error,
+        };
+        let failed = StepError::fault(error.clone(), otherwise(path, error));
+        match wait_out_announcing(state, failed, &volumes, &started_on, &mut outages, at, announce).await {
+            Next::Again => {}
+            Next::Stop(ended) => return Err(ended),
+        }
+    }
 }
 
 /// Runs `step`, which must be safe to run twice (a read, or a write that

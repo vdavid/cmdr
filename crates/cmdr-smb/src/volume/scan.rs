@@ -16,13 +16,23 @@ use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
 
+/// What one top-level path of a batch scan turned out to be.
+enum StatOutcome {
+    /// The volume root: always a directory, never stat'ed.
+    Root,
+    /// smb2 FileInfo: carries `is_directory` and `size`.
+    Entry(smb2::client::tree::FileInfo),
+}
+
 impl SmbVolume {
     /// Recursively scans an SMB path, returning file/dir counts and total bytes.
     ///
     /// ❗ Every entry passes `boundary`, and a directory passes it BEFORE its
     /// listing goes out. A share that has spun its disks down answers a listing in
     /// seconds, so a boundary on the far side of one is a Cancel the user waits
-    /// out.
+    /// out. Every read (the stat, the listing) goes through
+    /// `boundary.through_outages`, so a share that drops mid-walk is waited out
+    /// by the scan's owner and the walk carries on at the level it was on.
     ///
     /// `caller_path` is `smb_path` as the CALLER spelled it: every entry reaches
     /// the boundary under it (`ScanRecorder`'s path contract), since the
@@ -60,15 +70,19 @@ impl SmbVolume {
             if smb_path.is_empty() {
                 // Root is always a directory, scan its contents
             } else {
-                let info = {
-                    let SessionLease {
-                        tree,
-                        mut conn,
-                        generation,
-                    } = self.clone_session().await?;
-                    let r = stat_through_link(&tree, &mut conn, smb_path).await;
-                    self.handle_smb_result("scan_for_copy(stat)", smb_path, generation, r)?
-                };
+                // The lease is inside the read: a share that dropped fails it
+                // too, and a run after the wait takes the new session's.
+                let info = boundary
+                    .through_outages(caller_path, || async {
+                        let SessionLease {
+                            tree,
+                            mut conn,
+                            generation,
+                        } = self.clone_session().await?;
+                        let r = stat_through_link(&tree, &mut conn, smb_path).await;
+                        self.handle_smb_result("scan_for_copy(stat)", smb_path, generation, r)
+                    })
+                    .await?;
                 result.top_level_modified_at = filetime_to_unix_secs(info.modified);
                 result.top_level_created_at = filetime_to_unix_secs(info.created);
 
@@ -86,7 +100,11 @@ impl SmbVolume {
             result.dir_count += 1;
             boundary.dir(caller_path).await?;
             let display_path = self.to_display_path(smb_path);
-            let entries = self.list_directory_impl(Path::new(&display_path)).await?;
+            // A listing a dropped share cut off runs again once the scan's
+            // owner has waited it out; nothing below counts until it answers.
+            let entries = boundary
+                .through_outages(caller_path, || self.list_directory_impl(Path::new(&display_path)))
+                .await?;
 
             for entry in &entries {
                 let child_smb = if smb_path.is_empty() {
@@ -283,55 +301,14 @@ impl SmbVolume {
                 paths.len() - smb_paths.len()
             );
 
-            // Build N pipelined stats: one `Connection` clone per path, all off
-            // one `clone_session`, so every stat runs on the session its tree
-            // belongs to and no lock is held across any of them. Empty
-            // paths (volume root) skip the stat: the root is always a
-            // directory, and they route straight into the recursion list.
-            use futures_util::StreamExt;
-            use futures_util::stream::FuturesUnordered;
-
-            let SessionLease {
-                tree: tree_arc,
-                conn: session_conn,
-                generation,
-            } = self.clone_session().await?;
-
-            // Index tracks original position so results can be reassembled in input order.
-            enum StatOutcome {
-                Root,
-                // smb2 FileInfo: carries `is_directory` and `size`.
-                Entry(smb2::client::tree::FileInfo),
-            }
-
-            // The path rides along with the result: a refusal has to name the path
-            // it was about, and `map_smb_error` puts that name in the payload the
-            // frontend renders.
-            type StatFuture = Pin<Box<dyn Future<Output = (usize, String, Result<StatOutcome, smb2::Error>)> + Send>>;
-            let mut stat_futs: FuturesUnordered<StatFuture> = FuturesUnordered::new();
-
-            for (idx, smb_path) in &smb_paths {
-                let idx = *idx;
-                if smb_path.is_empty() {
-                    // Root: no stat needed. Inline a ready future so the
-                    // ordering logic below still sees a slot for this index.
-                    stat_futs.push(Box::pin(std::future::ready((
-                        idx,
-                        String::new(),
-                        Ok(StatOutcome::Root),
-                    ))));
-                    continue;
-                }
-                // All clones multiplex over the single SMB session.
-                let conn = session_conn.clone();
-                let tree = Arc::clone(&tree_arc);
-                let path_owned = smb_path.clone();
-                stat_futs.push(Box::pin(async move {
-                    let mut conn = conn;
-                    let r = stat_through_link(&tree, &mut conn, &path_owned).await;
-                    (idx, path_owned, r.map(StatOutcome::Entry))
-                }));
-            }
+            // N pipelined stats (`stat_leftovers`), one read to the scan's
+            // owner: a drop fails it
+            // as a whole, nothing in it is counted until it's all in, and a
+            // run after the wait sends every stat again on the new session.
+            let first_leftover = &paths[smb_paths[0].0];
+            let outcomes = boundary
+                .through_outages(first_leftover, || self.stat_leftovers(&smb_paths))
+                .await?;
 
             // `per_path_results` is already shaped to the input length and
             // pre-populated with oracle-resolved entries; the pipelined-stat
@@ -346,13 +323,13 @@ impl SmbVolume {
             // and asks per entry.
             let mut files_from_stats: Vec<(usize, u64)> = Vec::new();
 
-            while let Some((idx, smb_path, result)) = stat_futs.next().await {
-                match result {
-                    Ok(StatOutcome::Root) => {
+            for (idx, outcome) in outcomes {
+                match outcome {
+                    StatOutcome::Root => {
                         // Root path → always a directory, recurse later.
                         dirs_to_recurse.push(idx);
                     }
-                    Ok(StatOutcome::Entry(info)) => {
+                    StatOutcome::Entry(info) => {
                         if info.is_directory {
                             dirs_to_recurse.push(idx);
                         } else {
@@ -367,20 +344,6 @@ impl SmbVolume {
                             });
                             files_from_stats.push((idx, info.size));
                         }
-                    }
-                    Err(e) => {
-                        // Every stat ran on the lease's session, so the error
-                        // funnel judges it against that one.
-                        let kind = e.kind();
-                        let ends = self.inner.note_smb_error(generation, &e);
-                        warn!(
-                            "SmbVolume::scan_for_copy_batch(share={:?}): backend=smb2, error_kind={:?}, nt_status={:?}, detail={:?}, ends_the_session={ends}",
-                            LogPrivate::volume(&self.inner.share_name),
-                            kind,
-                            e.status(),
-                            cmdr_fs::log_detail::LogDetail(&e.to_string())
-                        );
-                        return Err(map_smb_error(e, &self.to_display_path(&smb_path)));
                     }
                 }
             }
@@ -421,6 +384,75 @@ impl SmbVolume {
 
             Ok(fold_batch(per_path))
         })
+    }
+
+    /// Stats every leftover top-level path of a batch scan at once: one
+    /// `Connection` clone per path, all off one `clone_session`, so every stat
+    /// runs on the session its tree belongs to and no lock is held across any
+    /// of them. An empty path (the volume root) skips the stat: the root is
+    /// always a directory.
+    ///
+    /// Answers each path's outcome by its index in the batch, or the first
+    /// stat's failure. Counts nothing, so the batch can send it again after a
+    /// wait (`ScanBoundary::through_outages`).
+    async fn stat_leftovers(&self, smb_paths: &[(usize, String)]) -> Result<Vec<(usize, StatOutcome)>, VolumeError> {
+        use futures_util::StreamExt;
+        use futures_util::stream::FuturesUnordered;
+
+        let SessionLease {
+            tree: tree_arc,
+            conn: session_conn,
+            generation,
+        } = self.clone_session().await?;
+
+        // The path rides along with the result: a refusal has to name the path
+        // it was about, and `map_smb_error` puts that name in the payload the
+        // frontend renders.
+        type StatFuture = Pin<Box<dyn Future<Output = (usize, String, Result<StatOutcome, smb2::Error>)> + Send>>;
+        let mut stat_futs: FuturesUnordered<StatFuture> = FuturesUnordered::new();
+
+        for (idx, smb_path) in smb_paths {
+            let idx = *idx;
+            if smb_path.is_empty() {
+                stat_futs.push(Box::pin(std::future::ready((
+                    idx,
+                    String::new(),
+                    Ok(StatOutcome::Root),
+                ))));
+                continue;
+            }
+            // All clones multiplex over the single SMB session.
+            let conn = session_conn.clone();
+            let tree = Arc::clone(&tree_arc);
+            let path_owned = smb_path.clone();
+            stat_futs.push(Box::pin(async move {
+                let mut conn = conn;
+                let r = stat_through_link(&tree, &mut conn, &path_owned).await;
+                (idx, path_owned, r.map(StatOutcome::Entry))
+            }));
+        }
+
+        let mut outcomes = Vec::with_capacity(smb_paths.len());
+        while let Some((idx, smb_path, result)) = stat_futs.next().await {
+            match result {
+                Ok(outcome) => outcomes.push((idx, outcome)),
+                Err(e) => {
+                    // Every stat ran on the lease's session, so the error
+                    // funnel judges it against that one.
+                    let kind = e.kind();
+                    let ends = self.inner.note_smb_error(generation, &e);
+                    warn!(
+                        "SmbVolume::scan_for_copy_batch(share={:?}): backend=smb2, error_kind={:?}, nt_status={:?}, detail={:?}, ends_the_session={ends}",
+                        LogPrivate::volume(&self.inner.share_name),
+                        kind,
+                        e.status(),
+                        cmdr_fs::log_detail::LogDetail(&e.to_string())
+                    );
+                    return Err(map_smb_error(e, &self.to_display_path(&smb_path)));
+                }
+            }
+        }
+        Ok(outcomes)
     }
 
     /// Inherent body for the `scan_for_conflicts` trait method (thin delegator in `volume_impl`).
