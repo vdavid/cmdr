@@ -671,9 +671,10 @@ fn a_name_swap_journals_every_hop_of_its_rotation() {
 }
 
 /// Journaling skips made a worry reachable-looking: `restore_move` answers any
-/// non-`Done` unit with `SkipReason::Failed`, so a skipped row could report as a
-/// failed undo. It can't, and this pins why: the rollback engine's query binds
-/// `ItemOutcome::Done`, so a skipped row is a log entry and never a rollback unit.
+/// unit that doesn't await reversal with `SkipReason::Failed`, so a skipped row
+/// could report as a failed undo. It can't, and this pins why: the rollback
+/// engine's query streams a `Skipped` row only when a rollback recorded a reason on
+/// it, so the batch's own skip is a log entry and never a rollback unit.
 /// Undo a batch that skipped a row and only the landed row is offered for reversal.
 #[test]
 fn a_skipped_row_is_logged_but_never_offered_to_undo_as_a_rollback_unit() {

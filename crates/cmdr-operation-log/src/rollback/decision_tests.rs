@@ -161,12 +161,52 @@ fn pure_mapping_helpers() {
     );
     assert_eq!(inverse_action(OpKind::Delete, EntryType::File), None);
 
-    assert_eq!(resolve_final_state(3, 0, false), RollbackState::RolledBack);
-    assert_eq!(resolve_final_state(2, 1, false), RollbackState::PartiallyRolledBack);
-    // Non-canceled, all skipped ⇒ partial (won't clear on retry).
-    assert_eq!(resolve_final_state(0, 3, false), RollbackState::PartiallyRolledBack);
-    // Canceled with nothing reversed ⇒ back to rollbackable (a clean retry).
-    assert_eq!(resolve_final_state(0, 0, true), RollbackState::Rollbackable);
-    // Canceled after reversing some ⇒ partial.
-    assert_eq!(resolve_final_state(3, 0, true), RollbackState::PartiallyRolledBack);
+    let fresh = RollbackState::Rollbackable;
+    assert_eq!(resolve_final_state(3, 0, false, fresh), RollbackState::RolledBack);
+    assert_eq!(
+        resolve_final_state(2, 1, false, fresh),
+        RollbackState::PartiallyRolledBack
+    );
+    // A full pass, all skipped ⇒ partial ("Finish" retries the skips).
+    assert_eq!(
+        resolve_final_state(0, 3, false, fresh),
+        RollbackState::PartiallyRolledBack
+    );
+    // A vacuously-empty op is fully undone.
+    assert_eq!(resolve_final_state(0, 0, false, fresh), RollbackState::RolledBack);
+    // Stopped with nothing reversed ⇒ back to rollbackable (a clean retry).
+    assert_eq!(resolve_final_state(0, 0, true, fresh), RollbackState::Rollbackable);
+    // Stopped after reversing some ⇒ partial.
+    assert_eq!(
+        resolve_final_state(3, 0, true, fresh),
+        RollbackState::PartiallyRolledBack
+    );
+}
+
+/// Finishing a partial rollback never forgets what an earlier run reversed.
+#[test]
+fn a_run_over_a_partial_op_resolves_without_forgetting_the_earlier_run() {
+    let partial = RollbackState::PartiallyRolledBack;
+    // Every held-back item came back ⇒ done.
+    assert_eq!(resolve_final_state(2, 0, false, partial), RollbackState::RolledBack);
+    // Some still held back ⇒ still partial.
+    assert_eq!(
+        resolve_final_state(1, 1, false, partial),
+        RollbackState::PartiallyRolledBack
+    );
+    // An empty pass proves nothing came back ⇒ still partial, never `RolledBack`.
+    assert_eq!(
+        resolve_final_state(0, 0, false, partial),
+        RollbackState::PartiallyRolledBack
+    );
+    // Stopped before reversing anything ⇒ still partial, never a clean `Rollbackable`.
+    assert_eq!(
+        resolve_final_state(0, 0, true, partial),
+        RollbackState::PartiallyRolledBack
+    );
+    assert_eq!(untouched_state(partial), RollbackState::PartiallyRolledBack);
+    assert_eq!(
+        untouched_state(RollbackState::Rollbackable),
+        RollbackState::Rollbackable
+    );
 }

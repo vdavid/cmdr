@@ -39,8 +39,8 @@ per-item rows, and each reversible one carrying a Roll back button. Reads the jo
   wire value, and never let a refused press look like nothing happened.
 - **A row offers a button on exactly the states `check_rollbackable` admits** (`rowRollbackAction`): `rollbackable` says
   "Roll back", `partiallyRolledBack` says "Finish rolling back". ❌ Never widen it past that gate, and ❌ never word a
-  finish as a fresh rollback. Finishing is safe because every per-item inverse rechecks then acts, so an item the first
-  pass reversed reads as gone and is credited without touching a thing; `DETAILS.md` has the full argument.
+  finish as a fresh rollback. Finishing is safe because it re-attempts only what an earlier pass didn't reverse, and
+  every per-item inverse rechecks then acts; `DETAILS.md` has the full argument.
 - **Both states whose badge leaves a person guessing explain themselves on sight** (`rowStandingNotice`, exhaustive over
   `RollbackState`): a `notRollbackable` row carries its stored reason, a partly-reversed one says what became of the
   files.

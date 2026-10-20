@@ -713,7 +713,8 @@ exists for the Ask Cmdr rename rail, where one run can approve several batches.
   every read surfaces that as `None` / `null` (`OperationItemRow`, `OperationItemView`, so MCP `operations_get` too) —
   "reason not recorded", never a stand-in. The frontend falls back to naming the reason class for exactly this case, and
   still reports the count. Retention and the startup reconcile only ever read `outcome`, so both behave identically
-  whether the column is set or NULL.
+  whether the column is set or NULL. "Finish" does read it: a pre-v2 held-back row is indistinguishable from the
+  operation's own skip, so it isn't retried, and the op stays `partially_rolled_back` (see below).
 
 ### The `rolling_back` state machine + startup reconcile
 
@@ -722,12 +723,15 @@ exists for the Ask Cmdr rename rail, where one run can approve several batches.
 never stored), then sets `rolling_back` **as late as possible** (right before the spawn) and hands the plan to the
 injected `spawn`. The double-rollback guard is automatic: a second request reads `rolling_back` and refuses. On a
 **synchronous spawn failure** (a volume dropped between the gate and the spawn, so the inverse never starts) it resets
-`rolling_back → rollbackable` in the same call before returning the typed error, so a retry isn't wedged.
+`rolling_back` back to the state the op held (`rollbackable`, or `partially_rolled_back` for a Finish) in the same call
+before returning the typed error, so a retry isn't wedged.
 
-`execute_rollback` resolves the original op at the end: `RolledBack` (nothing skipped), `PartiallyRolledBack` (any skip,
-even if nothing could be reversed — those skips won't clear on retry), or back to `Rollbackable` **only** when a run was
-CANCELED with nothing reversed (a clean retry). It marks the original's items `rolled_back`/`skipped` and journals the
-inverse op's own item rows (reversed ⇒ `done`, skipped ⇒ `skipped`), which drive the reconcile.
+`execute_rollback` resolves the original op at the end (`resolve_final_state`, given the state the op started in):
+`RolledBack` (nothing skipped), `PartiallyRolledBack` (any skip, even if nothing could be reversed; Finish retries
+them). A run that STOPPED with nothing reversed leaves the op as it found it: `Rollbackable`, or still
+`PartiallyRolledBack` when an earlier run reversed some of it. ❌ A run over a partial op never resolves `RolledBack` on
+an empty pass: finding nothing to retry proves nothing came back. It marks the original's items `rolled_back`/`skipped`
+and journals the inverse op's own item rows (reversed ⇒ `done`, skipped ⇒ `skipped`), which drive the reconcile.
 
 **Startup reconcile** (`reconcile_rolling_back_on_open`, called by `OperationLog::open` before the journal is reachable)
 resolves any op a crash left `rolling_back`: from its unfinalized inverse op's recorded outcomes (any `done` item ⇒
@@ -737,11 +741,14 @@ idempotently: every per-item inverse is a recheck-then-act, and an already-rever
 as a no-op success).
 
 That re-entrancy is load-bearing beyond the crash path: the history dialog's **Finish rolling back** button on a
-`partially_rolled_back` row is nothing but a second `rollback_operation` call on the SAME op, which the gate admits and
-the item loop re-streams from the top. The items the first pass reversed cost one metadata read each and no write. ❌ So
-don't make `check_rollbackable` refuse `PartiallyRolledBack`, and ❌ don't let any inverse act without its recheck:
-either one turns that button into a double-act. The UI side is `apps/desktop/src/lib/operation-log/DETAILS.md` § "a
-partly-reversed operation offers to finish".
+`partially_rolled_back` row is nothing but a second `rollback_operation` call on the SAME op, which the gate admits. The
+item loop streams every row that still awaits reversal (`RollbackUnit::awaits_reversal`): `done` rows, plus `skipped`
+rows carrying a `rollback_skip_reason` (held back by an earlier run). A `skipped` row with no reason is the operation's
+own skip (a bulk rename's blocked row) and never streams. Rows already `rolled_back` aren't re-read; a crash-resumed run
+whose outcomes didn't flush re-reads them as `AlreadyGone`. ❌ So don't make `check_rollbackable` refuse
+`PartiallyRolledBack`, and ❌ don't let any inverse act without its recheck: either one turns that button into a
+double-act. The UI side is `apps/desktop/src/lib/operation-log/DETAILS.md` § "a partly-reversed operation offers to
+finish".
 
 ### The retention race it closes
 

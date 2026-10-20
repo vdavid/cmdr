@@ -257,27 +257,40 @@ pub fn verify_snapshot(
     }
 }
 
-/// Resolve the state the original op lands in from the run tally.
+/// Resolve the state the original op lands in from the run tally. `before` is the
+/// state the op held when this run started.
 ///
-/// `Rollbackable` (a clean retry) is reserved for a run that was CANCELED with
-/// nothing reversed — a deliberate stop, not a completed attempt. A run that
-/// actually attempted the items resolves by outcome: no skips ⇒ `RolledBack`
-/// (including a vacuously-empty op); any skip (drift, unverifiable, occupied
-/// target) ⇒ `PartiallyRolledBack`, even if nothing could be reversed — the honest
-/// "we couldn't fully undo this", since those skips won't clear on a retry.
-fn resolve_final_state(reversed: u64, skipped: u64, canceled: bool) -> RollbackState {
-    if canceled {
-        // A deliberate stop: clean retry if nothing ran, else a partial that
-        // reversed what it managed before the stop.
+/// A run that STOPPED (`stopped`: a deliberate cancel) with nothing reversed leaves
+/// the op as it found it: a clean retry, or still partial when an earlier run
+/// already reversed some of it. A run that stopped after reversing something is
+/// partial. A run that attempted every item resolves by outcome: no skips ⇒
+/// `RolledBack` (including a vacuously-empty op); any skip (drift, unverifiable,
+/// occupied target) ⇒ `PartiallyRolledBack`, even if nothing could be reversed, and
+/// "Finish" re-attempts those items with a fresh recheck. The one exception is an
+/// empty pass over a partial op: it found nothing to retry, which proves nothing
+/// came back, so the op stays partial.
+fn resolve_final_state(reversed: u64, skipped: u64, stopped: bool, before: RollbackState) -> RollbackState {
+    let resuming = before == RollbackState::PartiallyRolledBack;
+    if stopped {
         if reversed == 0 {
-            RollbackState::Rollbackable
+            untouched_state(before)
         } else {
             RollbackState::PartiallyRolledBack
         }
-    } else if skipped == 0 {
-        RollbackState::RolledBack
-    } else {
+    } else if skipped > 0 || (resuming && reversed == 0) {
         RollbackState::PartiallyRolledBack
+    } else {
+        RollbackState::RolledBack
+    }
+}
+
+/// The state an op returns to when a rollback run changed nothing: still partial if
+/// an earlier run reversed some of it, else a clean retry.
+fn untouched_state(before: RollbackState) -> RollbackState {
+    if before == RollbackState::PartiallyRolledBack {
+        RollbackState::PartiallyRolledBack
+    } else {
+        RollbackState::Rollbackable
     }
 }
 
@@ -365,7 +378,7 @@ pub async fn execute_rollback(
         Ok(c) => c,
         Err(e) => {
             log::warn!(target: "operation_log", "rollback: read connection failed: {e}");
-            // Can't stream — resolve back to rollbackable (nothing reversed).
+            // Can't stream: nothing reversed, so the op goes back to how it was.
             finalize_inverse(
                 writer,
                 inverse_op_id,
@@ -373,13 +386,14 @@ pub async fn execute_rollback(
                 ExecutionStatus::Failed,
                 InverseTotals::default(),
             );
-            let _ = writer.set_rollback_state(&original.op_id, RollbackState::Rollbackable, None);
+            let final_state = untouched_state(original.rollback_state);
+            let _ = writer.set_rollback_state(&original.op_id, final_state, None);
             return RollbackReport {
                 reversed: 0,
                 skipped: 0,
                 skips: Vec::new(),
                 canceled: false,
-                final_state: RollbackState::Rollbackable,
+                final_state,
             };
         }
     };
@@ -486,7 +500,7 @@ pub async fn execute_rollback(
     };
     finalize_inverse(writer, inverse_op_id, inv_kind, inv_status, acc.totals(original));
 
-    let final_state = resolve_final_state(acc.reversed, acc.skipped, canceled);
+    let final_state = resolve_final_state(acc.reversed, acc.skipped, canceled, original.rollback_state);
     if let Err(e) = writer.set_rollback_state(&original.op_id, final_state, None) {
         log::warn!(target: "operation_log", "rollback: resolve original state failed: {e}");
     }
@@ -639,7 +653,7 @@ async fn remove_dir_if_empty(
 }
 
 async fn restore_move(volumes: &dyn VolumeLookup, runner: &dyn RollbackRunner, unit: &RollbackUnit) -> ItemResult {
-    if unit.outcome != ItemOutcome::Done {
+    if !unit.awaits_reversal() {
         return ItemResult::Skipped(SkipReason::Failed);
     }
     // Restore moves the item back FROM where it landed (dest) TO its original
@@ -834,9 +848,9 @@ where
     match spawn(&plan) {
         Ok(()) => Ok(plan),
         Err(refusal) => {
-            // The inverse never started — undo the `rolling_back` mark so a retry
-            // isn't refused, BEFORE returning the typed error.
-            if let Err(e) = writer.set_rollback_state(op_id, RollbackState::Rollbackable, None) {
+            // The inverse never started — put back the state the op held (a partial
+            // op stays partial) so a retry isn't refused, BEFORE returning the typed error.
+            if let Err(e) = writer.set_rollback_state(op_id, untouched_state(plan.original.rollback_state), None) {
                 log::warn!(target: "operation_log", "rollback: reset after failed spawn failed: {e}");
             }
             Err(refusal)

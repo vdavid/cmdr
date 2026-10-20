@@ -567,7 +567,32 @@ pub struct RollbackUnit {
     pub overwrote: bool,
     /// What happened to the item.
     pub outcome: ItemOutcome,
+    /// Why an earlier rollback held the item back, when one did. Present only
+    /// alongside [`ItemOutcome::Skipped`].
+    pub rollback_skip_reason: Option<SkipReason>,
 }
+
+impl RollbackUnit {
+    /// Whether a reversal still owes this item an attempt: the operation landed it
+    /// (`done`), or an earlier rollback held it back (`skipped` WITH a rollback
+    /// verdict). A `skipped` row without one is the operation's own skip, a log entry
+    /// that never moved anything. The in-code twin of `AWAITS_REVERSAL_SQL`.
+    pub(crate) fn awaits_reversal(&self) -> bool {
+        match self.outcome {
+            ItemOutcome::Done => true,
+            ItemOutcome::Skipped => self.rollback_skip_reason.is_some(),
+            ItemOutcome::Failed | ItemOutcome::RolledBack => false,
+        }
+    }
+}
+
+/// The rows a reversal streams, as SQL over `operation_items` (binds `?3` = `done`,
+/// `?4` = `skipped`): see [`RollbackUnit::awaits_reversal`]. Retrying a held-back
+/// row is what lets "Finish" pick a partial rollback back up; the per-item recheck
+/// keeps that idempotent. A held-back row recorded before the journal kept a reason
+/// (pre-v2) reads like the operation's own skip and isn't retried, which is why an
+/// empty pass over a partial op stays partial (`rollback.rs`, `resolve_final_state`).
+const AWAITS_REVERSAL_SQL: &str = "(outcome = ?3 OR (outcome = ?4 AND rollback_skip_reason IS NOT NULL))";
 
 /// Resolve an interned `dir_id` to `(volume_id, full path)`. The path is
 /// [`reconstruct_dir_path`]; the volume id is read from the dir row itself (every
@@ -607,6 +632,7 @@ fn map_rollback_unit(conn: &Connection, item: &OperationItemRow) -> Result<Rollb
         mtime: item.mtime,
         overwrote: item.overwrote,
         outcome: item.outcome,
+        rollback_skip_reason: item.rollback_skip_reason,
     })
 }
 
@@ -615,6 +641,7 @@ fn map_rollback_unit(conn: &Connection, item: &OperationItemRow) -> Result<Rollb
 /// `entry_type = dir` rows that held them). Streaming: pass `i64::MAX` for the
 /// first page, then the smallest `seq` of the returned page (exclusive) as
 /// `before_seq` for the next — so the engine never materializes a 1M-row op.
+/// Only rows that [await reversal](RollbackUnit::awaits_reversal) come back;
 /// `search_only` rows are excluded (they're for search, never reversal).
 pub fn read_rollback_units_page(
     conn: &Connection,
@@ -624,14 +651,15 @@ pub fn read_rollback_units_page(
 ) -> Result<Vec<RollbackUnit>, OperationLogStoreError> {
     let sql = format!(
         "SELECT {ITEM_COLUMNS} FROM operation_items \
-         WHERE op_id = ?1 AND row_role = ?2 AND outcome = ?3 AND seq < ?4 \
-         ORDER BY seq DESC LIMIT ?5"
+         WHERE op_id = ?1 AND row_role = ?2 AND {AWAITS_REVERSAL_SQL} AND seq < ?5 \
+         ORDER BY seq DESC LIMIT ?6"
     );
     let mut stmt = conn.prepare_cached(&sql)?;
     let mut rows = stmt.query(rusqlite::params![
         op_id,
         RowRole::RollbackUnit.as_token(),
         ItemOutcome::Done.as_token(),
+        ItemOutcome::Skipped.as_token(),
         before_seq,
         limit
     ])?;
@@ -649,19 +677,21 @@ pub fn read_rollback_units_page(
 /// reversal gets honest totals without a scanning phase and without materializing
 /// the list [`read_rollback_units_page`] pages through.
 ///
-/// The filters mirror that page query exactly (same `row_role`, same `outcome`),
+/// The filters mirror that page query exactly (same `row_role`, same outcomes),
 /// or the bar would count rows the loop never visits. Directory rows are left out
 /// on purpose: they're removed in a trailing sweep of empty leftovers, not moved.
 pub(crate) fn read_rollback_file_totals(conn: &Connection, op_id: &str) -> Result<(u64, u64), OperationLogStoreError> {
-    let mut stmt = conn.prepare_cached(
+    let sql = format!(
         "SELECT COUNT(*), COALESCE(SUM(MAX(size, 0)), 0) FROM operation_items \
-         WHERE op_id = ?1 AND row_role = ?2 AND outcome = ?3 AND entry_type = ?4",
-    )?;
+         WHERE op_id = ?1 AND row_role = ?2 AND {AWAITS_REVERSAL_SQL} AND entry_type = ?5"
+    );
+    let mut stmt = conn.prepare_cached(&sql)?;
     let totals = stmt.query_row(
         rusqlite::params![
             op_id,
             RowRole::RollbackUnit.as_token(),
             ItemOutcome::Done.as_token(),
+            ItemOutcome::Skipped.as_token(),
             EntryType::File.as_token()
         ],
         |row| Ok((row.get::<_, i64>(0)?.max(0) as u64, row.get::<_, i64>(1)?.max(0) as u64)),

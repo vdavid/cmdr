@@ -116,11 +116,12 @@ finish. The reason that's safe is in the ENGINE, not in this dialog:
 - **The op-level gate already allows it.** `check_rollbackable` (`crates/cmdr-operation-log/src/rollback.rs`) refuses
   `rollingBack`, `rolledBack`, and `notRollbackable`, and passes `rollbackable` and `partiallyRolledBack` alike. The
   `rolling_back` write happens synchronously before the dispatch returns, so two passes can never overlap.
-- **Every per-item inverse is recheck-then-act, and re-entrant by construction.** A second pass re-streams every
-  `rollback_unit` row of the ORIGINAL operation and rechecks each against its recorded snapshot. An item the first pass
-  removed reads as `NotFound` ⇒ `SkipReason::AlreadyGone`, which `counts_as_reversed`, so it's credited without any
-  filesystem call. An item the first pass restored is gone from the dest for the same reason. Nothing is acted on twice,
-  and a run whose leftovers all clear lands `rolledBack`.
+- **Every per-item inverse is recheck-then-act, and re-entrant by construction.** A second pass streams every
+  `rollback_unit` row of the ORIGINAL operation that still awaits reversal: the ones the first pass never reached, and
+  the ones it held back (`RollbackUnit::awaits_reversal`), and rechecks each against its recorded snapshot. Items the
+  first pass reversed are marked `rolled_back` and aren't re-read; one whose mark a crash lost reads as `NotFound` ⇒
+  `SkipReason::AlreadyGone`, which `counts_as_reversed`, so it's credited without acting. Nothing is acted on twice, a
+  run whose leftovers all clear lands `rolledBack`, and a pass that finds nothing to retry stays partial.
 - **The two data-safety guards still stand on the second pass.** Drift and unverifiable snapshots skip, and a restore
   never overwrites a different entry. So a file the user created at a reversed item's old path after the cancel is
   skipped, not clobbered.

@@ -2725,8 +2725,9 @@ data here: a rotation temp holds a COMPLETE user file under a private name.
 
 **Skips are log entries, not rollback units.** Non-landing rows are journaled with `ItemOutcome::Skipped` / `Failed` so
 the operation log stops claiming a smaller batch than the one that ran (they were dropped entirely before). They never
-reach undo: `read_rollback_units_page` binds `ItemOutcome::Done`, which is why `restore_move`'s non-`Done` guard is
-defensive rather than reachable. Pinned by `a_skipped_row_is_logged_but_never_offered_to_undo_as_a_rollback_unit`.
+reach undo: `read_rollback_units_page` streams only rows that `RollbackUnit::awaits_reversal` (`Done`, or `Skipped` with
+a rollback's own `rollback_skip_reason`), and `restore_move` refuses the rest defensively. Pinned by
+`a_skipped_row_is_logged_but_never_offered_to_undo_as_a_rollback_unit`.
 
 ## What the sweep does with each kind
 
