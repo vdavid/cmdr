@@ -4,6 +4,7 @@
 //! methods in `volume_impl` delegate to.
 
 use super::SmbVolume;
+use super::links::stat_through_link;
 use super::mapping::{filetime_to_unix_secs, map_smb_error};
 use super::session::SessionLease;
 use cmdr_fs::entry::FileEntry;
@@ -65,7 +66,7 @@ impl SmbVolume {
                         mut conn,
                         generation,
                     } = self.clone_session().await?;
-                    let r = tree.stat(&mut conn, smb_path).await;
+                    let r = stat_through_link(&tree, &mut conn, smb_path).await;
                     self.handle_smb_result("scan_for_copy(stat)", smb_path, generation, r)?
                 };
                 result.top_level_modified_at = filetime_to_unix_secs(info.modified);
@@ -327,7 +328,7 @@ impl SmbVolume {
                 let path_owned = smb_path.clone();
                 stat_futs.push(Box::pin(async move {
                     let mut conn = conn;
-                    let r = tree.stat(&mut conn, &path_owned).await;
+                    let r = stat_through_link(&tree, &mut conn, &path_owned).await;
                     (idx, path_owned, r.map(StatOutcome::Entry))
                 }));
             }

@@ -6,6 +6,7 @@
 //! [`SmbVolume::handle_smb_result`]. The `Volume` methods in `volume_impl.rs`
 //! are thin wrappers over these.
 
+use super::links::stat_through_link;
 use super::mapping::{directory_entry_to_file_entry, file_info_to_file_entry, fs_info_to_space_info};
 use super::session::SessionLease;
 use super::{SmbVolume, slow_calls};
@@ -186,7 +187,7 @@ impl SmbVolume {
                 mut conn,
                 generation,
             } = self.clone_session().await?;
-            let r = tree.stat(&mut conn, &smb_path).await;
+            let r = stat_through_link(&tree, &mut conn, &smb_path).await;
             slow_calls::note(&self.inner.share_name, "get_metadata", start.elapsed());
             if let Err(e) = &r
                 && e.status() == Some(smb2::types::status::NtStatus::DELETE_PENDING)
@@ -252,7 +253,7 @@ impl SmbVolume {
                 mut conn,
                 generation,
             } = self.clone_session().await?;
-            let r = tree.stat(&mut conn, &smb_path).await;
+            let r = stat_through_link(&tree, &mut conn, &smb_path).await;
             slow_calls::note(&self.inner.share_name, "is_directory", start.elapsed());
             self.handle_smb_result("is_directory", &smb_path, generation, r)?
         };

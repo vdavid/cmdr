@@ -80,3 +80,59 @@ async fn smb_integration_samba_lists_a_symlink_as_its_target() {
     }
     ensure_clean(&vol, &dir).await;
 }
+
+/// A SELECTED folder symlink copied off the share is copied as the folder it
+/// points to, the stance every cross-volume copy takes on a selected link
+/// (`crates/cmdr-operations/src/transfer/volume/copy_selected_link_tests.rs`
+/// for a local one). The engine trusts what this backend says: the batch scan's
+/// `top_level_is_directory` and `is_directory` decide between listing the link
+/// as a folder and streaming it as one file, and Samba 4.23's `stat` calls the
+/// link itself a non-directory. `entry_kind` still says `Symlink`, so a delete
+/// stays the link's own.
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_a_selected_folder_symlink_copies_as_its_folder() {
+    let vol = make_docker_volume().await;
+    let dir = test_dir_name();
+    ensure_clean(&vol, &dir).await;
+    seed_links(&vol, &dir).await;
+    let dirlink = PathBuf::from(format!("{dir}/dirlink"));
+    let filelink = PathBuf::from(format!("{dir}/filelink"));
+
+    let scan = vol
+        .scan_for_copy_batch(&[dirlink.clone(), filelink.clone()])
+        .await
+        .expect("the selection scans");
+    let (_, of_dirlink) = &scan.per_path[0];
+    assert!(of_dirlink.top_level_is_directory, "the folder link scans as a folder");
+    assert_eq!(
+        (of_dirlink.file_count, of_dirlink.total_bytes),
+        (1, 4),
+        "with its target's one file"
+    );
+    let (_, of_filelink) = &scan.per_path[1];
+    assert!(!of_filelink.top_level_is_directory);
+    assert_eq!(of_filelink.total_bytes, 4, "a file link scans as its target's bytes");
+
+    assert!(vol.is_directory(&dirlink).await.unwrap());
+    let entry = vol.get_metadata(&dirlink).await.unwrap();
+    assert!(
+        entry.is_directory && entry.is_symlink,
+        "a link to a folder, like a local one"
+    );
+    assert_eq!(vol.entry_kind(&dirlink).await.unwrap(), EntryKind::Symlink);
+    assert!(!vol.is_directory(&filelink).await.unwrap());
+
+    // What the copy then does with each: list the folder link, stream the file link.
+    let listed = vol.list_directory(&dirlink, None).await.unwrap();
+    let names: Vec<&str> = listed.iter().map(|e| e.name.as_str()).collect();
+    assert_eq!(names, vec!["keep.txt"]);
+    let stream = vol.open_read_stream(&dirlink.join("keep.txt")).await.unwrap();
+    assert_eq!(drain(stream).await, b"keep");
+    assert_eq!(drain(vol.open_read_stream(&filelink).await.unwrap()).await, b"keep");
+
+    for link in [&dirlink, &filelink] {
+        vol.delete(link).await.unwrap();
+    }
+    ensure_clean(&vol, &dir).await;
+}

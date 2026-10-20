@@ -145,11 +145,12 @@ on", not by watching a number.
   metadata, existence, space); `mutation` changes it and patches the listings that showed it; then `session`,
   `reconnect`, `state`, `read_stream` (a file read as chunks), `write_stream` (a stream written into a file),
   `random_reader` (one held-open `FileReader` read by offset, which the file viewer keeps for a whole session, #303),
-  `scan`, `scan_pool`, `watcher`, `foreground_yield`, `slow_calls` (the rolled-up `warn` for a metadata call the server
-  held over a second), `attributes` (Hidden and Locked by path), and the stateless `mapping`. Splitting further needs a
-  responsibility you can name the same way; a line count is not one. `e5ea10d02` reverted four splits invented to
-  satisfy the counter, and every one of them had widened a visibility or torn a struct from its trait impl to do it.
-  These carry the same `pub(super)` the crate already used and leave no module reaching into another's internals.
+  `scan`, `scan_pool`, `watcher`, `foreground_yield`, `links` (what a stat reads as through a link), `slow_calls` (the
+  rolled-up `warn` for a metadata call the server held over a second), `attributes` (Hidden and Locked by path), and the
+  stateless `mapping`. Splitting further needs a responsibility you can name the same way; a line count is not one.
+  `e5ea10d02` reverted four splits invented to satisfy the counter, and every one of them had widened a visibility or
+  torn a struct from its trait impl to do it. These carry the same `pub(super)` the crate already used and leave no
+  module reaching into another's internals.
 - **`volume/foreground_yield.rs` answers "should a background transfer stand aside?" from the WORK, not the transport.**
   MTP has an explicit holder for its single scarce USB pipe; SMB frames just interleave over one connection, so there is
   nothing on the transport to count. A foreground LISTING is a scoped operation, though, so it holds a per-volume lease
@@ -880,10 +881,15 @@ delete that descended into a junction deleted the target's files, a folder tree 
 - `rename_impl` (both arms) renames the link, never the target folder it used to move on Windows. Right as is.
 - `set_basic_info_impl` and `write_stream.rs`'s by-path stamp date the link itself, the `lutimes` stance; Cmdr's own
   writes are never links. `stamping.rs` stamps an open handle, unaffected.
-- `get_metadata`, `is_directory`, `exists`, `attributes_impl`, the copy scans' top-level stats (`scan.rs`), the rename's
-  `either_end_is_a_directory`, and `copy_on_server`'s date stat describe the link. On Windows a junction or `mklink /D`
-  link keeps its `DIRECTORY` attribute, so nothing that asks "folder?" changes. `spelling.rs`'s probe only asks whether
-  a prefix opens, which a link does.
+- `get_metadata`, `is_directory`, and the copy scans' top-level stats (`scan.rs`) decide how a SELECTED item is read, so
+  they go through `links.rs::stat_through_link`: a link the stat calls a non-directory is opened through, as a folder or
+  else as a file, and takes its target's kind and size (its dates stay the link's), while `is_symlink` still comes from
+  the tag. So a selected link copies the way every cross-volume copy treats one, materializing its target, as a local
+  link does (`crates/cmdr-operations/src/transfer/volume/copy_selected_link_tests.rs`). Up to two extra round trips, for
+  such a link only. Pinned by `links_integration_test.rs`.
+- `exists`, `attributes_impl`, the rename's `either_end_is_a_directory`, and `copy_on_server`'s date stat describe the
+  link itself. On Windows a junction or `mklink /D` link keeps its `DIRECTORY` attribute, so nothing that asks "folder?"
+  changes. `spelling.rs`'s probe only asks whether a prefix opens, which a link does.
 - `write_stream.rs` and `copy.rs` delete only a partial they wrote, never a link.
 
 **Samba** (verified on 4.23.8, the fixtures' `alpine:3.24`, by `links_integration_test.rs` on smb2 0.34.0, 2026-10-20;
@@ -896,9 +902,9 @@ date):
   inside the share (`wide links = no`, the default, keeps it there). Open gap: closing it on 4.23+ needs an `entry_kind`
   stat per folder before the walker descends, a round trip per folder that 4.20 can't answer anyway.
 - **4.23 honors `FILE_OPEN_REPARSE_POINT`**: a `stat` reports the link (`ReparseTag::SYMLINK`), so a SELECTED symlink is
-  a leaf and deleting it removes the link alone. The same stat calls a symlink to a folder a NON-directory, so
-  `get_metadata` and `is_directory` of one say file: copying a selected folder symlink off the share fails to stream it,
-  and a typed path into one isn't taken for a folder. A pane's listing still shows it as a folder and opens it.
+  a leaf and deleting it removes the link alone. That stat calls every symlink a non-directory sized by its link text
+  (six bytes for `-> target`), so a copy streamed a selected folder symlink as a file and its READ failed with
+  `STATUS_INVALID_DEVICE_REQUEST`; `stat_through_link` resolves it to its target.
 - **4.20 ignores the flag**: a stat follows the link, and deleting a link deletes its target, whatever the client sends.
 
 **Windows** follows MS-SMB2 § 2.2.13 and MS-FSCC § 2.1.2.1 (spec-based, not run against a Windows server, 2026-10-20).
@@ -1339,7 +1345,8 @@ Which side each one lives on, and why: § "Which side a test lives on" above.
     here because its subject is the credit window of § "Copy concurrency and the credit window", which the sized read
     and the slot clamp are the two halves of.
 - `links_integration_test.rs` — a Unix symlink made inside the guest container (`run_in_the_guest_container`): a stat
-  reports it, deleting it leaves its target, and Samba's listing doesn't mark it (§ "Junctions and symlinks").
+  reports it, deleting it leaves its target, a selected folder symlink scans and reads as its folder, and Samba's
+  listing doesn't mark it (§ "Junctions and symlinks").
 - `conformance_test.rs` — the `cmdr_fs::volume::conformance` promises, answered by a real server rather than an
   in-process double (SMB has none): `STATUS_DIRECTORY_NOT_EMPTY`, `STATUS_OBJECT_NAME_COLLISION`,
   `STATUS_OBJECT_NAME_NOT_FOUND`. That last one is the conflict scan's: `scan_for_conflicts_impl` keeps its own
