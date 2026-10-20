@@ -22,7 +22,7 @@ use crate::media_index::writer::MediaWriter;
 /// Build a tiny synthetic index DB at `path` with the given `(parent_dir, file,
 /// mtime, size)` files, creating each missing directory. Returns nothing; open the
 /// store's read connection to walk it.
-fn build_index(path: &std::path::Path, files: &[(&str, &str, u64, u64)]) {
+pub(super) fn build_index(path: &std::path::Path, files: &[(&str, &str, u64, u64)]) {
     let store = IndexStore::open(path).expect("open index");
     let conn = store.read_conn();
     let mut path_to_id: HashMap<String, i64> = HashMap::new();
@@ -78,7 +78,7 @@ fn build_index(path: &std::path::Path, files: &[(&str, &str, u64, u64)]) {
 }
 
 /// Open a fresh media store + writer for a scratch volume.
-fn media_writer(dir: &std::path::Path, volume_id: &str) -> MediaWriter {
+pub(super) fn media_writer(dir: &std::path::Path, volume_id: &str) -> MediaWriter {
     let db_path = media_db_path(dir, volume_id);
     MediaStore::open(&db_path).expect("open media store");
     MediaWriter::spawn(&db_path, volume_id).expect("media writer")
@@ -89,7 +89,7 @@ fn media_writer(dir: &std::path::Path, volume_id: &str) -> MediaWriter {
 fn never_cancels() -> bool {
     false
 }
-fn no_op_hooks() -> PassHooks<'static> {
+pub(super) fn no_op_hooks() -> PassHooks<'static> {
     PassHooks {
         cancel: &never_cancels,
         progress: &NoopProgressSink,
@@ -844,7 +844,7 @@ fn a_vanished_image_still_completes_the_pass_at_done_equals_total() {
 // ── Live enrichment: the scoped walk + scoped GC (data-safety) ──
 
 /// Seed a Done `media_status` row (with OCR text) for `path`.
-fn seed_media(writer: &MediaWriter, path: &str) {
+pub(super) fn seed_media(writer: &MediaWriter, path: &str) {
     writer
         .upsert(
             MediaStatusRow {
@@ -861,7 +861,7 @@ fn seed_media(writer: &MediaWriter, path: &str) {
         .expect("seed row");
 }
 
-fn touched(dirs: &[&str]) -> HashSet<String> {
+pub(super) fn touched(dirs: &[&str]) -> HashSet<String> {
     dirs.iter().map(|d| d.to_string()).collect()
 }
 

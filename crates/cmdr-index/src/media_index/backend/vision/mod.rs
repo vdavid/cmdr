@@ -56,6 +56,7 @@ use objc2_vision::{
 };
 
 use super::{Analysis, ImageInput, MediaAnalysis, OcrResult, Tag, VisionBackend, VisionError};
+use crate::media_index::network::fetch::MAX_FETCH_BYTES;
 
 /// The longest-edge pixel size the in-memory decode downscales to before OCR. Vision
 /// text recognition gains little above a few thousand pixels while a full-resolution
@@ -518,6 +519,55 @@ unsafe extern "C-unwind" {
     ) -> *mut CGContext;
 }
 
+/// Read a local image's compressed bytes, refusing anything but a regular file.
+///
+/// The index picks images by NAME, so a named pipe, a device link, or a symlink called
+/// `x.jpg` reaches here, and this read runs on the serialized Vision thread, where a hang
+/// wedges every pass after it. So the read fails closed on each:
+/// - `O_NOFOLLOW` refuses a symlink (`ELOOP`). The walk already drops symlink rows; this is
+///   the backstop for one swapped in since, which could point into an excluded folder.
+/// - `O_NONBLOCK` keeps the open itself from blocking on a FIFO with no writer.
+/// - The type check runs on the OPENED handle (`fstat`), so nothing can swap the path
+///   between the check and the read.
+/// - The read stops at the network path's [`MAX_FETCH_BYTES`] cap.
+pub(super) fn read_local_image(path: &str) -> Result<Vec<u8>, VisionError> {
+    use std::io::Read;
+    use std::os::unix::fs::OpenOptionsExt;
+
+    let file = std::fs::OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+        .open(path)
+        .map_err(|e| read_error(path, "open", &e))?;
+    let metadata = file.metadata().map_err(|e| read_error(path, "stat", &e))?;
+    if !metadata.file_type().is_file() {
+        return Err(VisionError::Decode(format!("'{path}' is not a regular file")));
+    }
+    let mut bytes = Vec::new();
+    file.take(MAX_FETCH_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|e| read_error(path, "read", &e))?;
+    if bytes.len() as u64 > MAX_FETCH_BYTES {
+        return Err(VisionError::Decode(format!(
+            "'{path}' is over the {MAX_FETCH_BYTES}-byte cap"
+        )));
+    }
+    Ok(bytes)
+}
+
+/// Map a local read failure to its typed [`VisionError`]. An ENOENT-class failure is a
+/// VANISHED source (a file deleted between the index walk and its analyze, or an orphaned
+/// index row's phantom path), not a bad image: a typed `Missing` so the enrich core skips
+/// it quietly (DEBUG, no row) rather than a WARN + `Failed` row. Classified by the io
+/// error KIND, never a message match.
+fn read_error(path: &str, op: &str, e: &std::io::Error) -> VisionError {
+    if e.kind() == std::io::ErrorKind::NotFound {
+        VisionError::Missing(format!("{op} '{path}': {e}"))
+    } else {
+        VisionError::Decode(format!("{op} '{path}': {e}"))
+    }
+}
+
 /// Decode an image downscaled in-memory (no thumbnail files — media_index Decision 5),
 /// returning the `CGImage` for the Vision requests. Fails closed to a typed
 /// [`VisionError`] on any hostile input.
@@ -531,18 +581,7 @@ fn decode_thumbnail(path: &str, prefetched: Option<&[u8]>) -> Result<CFRetained<
     let bytes: &[u8] = match prefetched {
         Some(b) => b,
         None => {
-            owned = std::fs::read(path).map_err(|e| {
-                // An ENOENT-class read failure is a VANISHED source (a file deleted
-                // between the index walk and its analyze, or an orphaned index row's
-                // phantom path), not a bad image: a typed `Missing` so the enrich core
-                // skips it quietly (DEBUG, no row) rather than a WARN + `Failed` row.
-                // Classified by the io error KIND, never a message match.
-                if e.kind() == std::io::ErrorKind::NotFound {
-                    VisionError::Missing(format!("read '{path}': {e}"))
-                } else {
-                    VisionError::Decode(format!("read '{path}': {e}"))
-                }
-            })?;
+            owned = read_local_image(path)?;
             &owned
         }
     };

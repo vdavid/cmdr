@@ -81,6 +81,8 @@ mod coalescing_tests;
 #[cfg(test)]
 mod enrich_memory_tests;
 #[cfg(test)]
+mod enrich_symlink_tests;
+#[cfg(test)]
 mod enrich_tests;
 #[cfg(test)]
 mod kick_tests;

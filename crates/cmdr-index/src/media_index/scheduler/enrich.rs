@@ -113,6 +113,13 @@ impl QualifyingImage<'_> {
 /// ONE walk shape, so a counting consumer and a collecting one can never disagree about
 /// what qualifies.
 ///
+/// Symlink rows never qualify, in this walk or the scoped one: the privacy exclusion
+/// judges the LINK's path while a read follows it, so a link into an excluded folder (or
+/// onto another volume) would store the target's OCR text under an included path. The
+/// rows drop BEFORE the sibling-aware predicate, so a linked `DSC.jpg` beside a real
+/// `DSC.cr2` leaves the RAW to qualify on its own. Dropping them here is also what lets a
+/// completed pass's GC collect any symlink row stored earlier.
+///
 /// Directories are held for the whole walk (path reconstruction follows parent pointers in
 /// any order), but in the compact [`DirTree`] shape: an arena plus 24 bytes per folder, never
 /// a `Vec<EntryRow>` and a heap `String` each. Files stream ordered by `parent_id` so each
@@ -137,7 +144,7 @@ pub(crate) fn for_each_qualifying_image(
 
     let mut stmt = conn
         .prepare_cached(
-            "SELECT parent_id, name, modified_at, logical_size FROM entries WHERE is_directory = 0 ORDER BY parent_id",
+            "SELECT parent_id, name, modified_at, logical_size FROM entries WHERE is_directory = 0 AND is_symlink = 0 ORDER BY parent_id",
         )
         .map_err(|e| e.to_string())?;
     let mut rows = stmt.query([]).map_err(|e| e.to_string())?;
@@ -236,7 +243,9 @@ pub(crate) fn walk_image_entries_in_dirs<'a>(
             continue;
         };
         let children = IndexStore::list_children_on(dir_id, conn).map_err(|e| e.to_string())?;
-        let files: Vec<&crate::indexing::store::EntryRow> = children.iter().filter(|c| !c.is_directory).collect();
+        // Symlink rows are dropped here exactly as the whole-index walk drops them.
+        let files: Vec<&crate::indexing::store::EntryRow> =
+            children.iter().filter(|c| !c.is_directory && !c.is_symlink).collect();
         let names: Vec<&str> = files.iter().map(|f| f.name.as_str()).collect();
         for (file, qual) in files.iter().zip(qualify_dir(&names)) {
             if let Qualification::Enrich(kind) = qual {

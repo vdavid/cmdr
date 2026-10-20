@@ -283,3 +283,89 @@ fn engine_version_is_nonempty_stable_and_shaped() {
         "engine stamp should carry the Vision revision: {v1}"
     );
 }
+
+// ── The local read refuses anything but a regular file (#547, #532) ──
+//
+// The index picks images by NAME, so a named pipe, a device link, or a symlink called
+// `x.jpg` reaches this read. Each must fail closed promptly: a pipe with no writer would
+// otherwise block the serialized Vision thread forever, and a link would read whatever it
+// points at, an excluded folder or `/dev/zero` included.
+
+/// Run [`super::read_local_image`] on a throwaway thread and wait at most two seconds, so
+/// a read that blocks fails the test instead of hanging the suite.
+fn read_within_deadline(path: &std::path::Path) -> Result<Vec<u8>, VisionError> {
+    let (tx, rx) = std::sync::mpsc::channel();
+    let path = path.to_string_lossy().to_string();
+    std::thread::spawn(move || {
+        let _ = tx.send(super::read_local_image(&path));
+    });
+    rx.recv_timeout(std::time::Duration::from_secs(2))
+        .expect("the local read blocked instead of failing closed")
+}
+
+#[test]
+fn local_read_of_a_fifo_named_like_an_image_fails_promptly() {
+    let dir = tempfile::tempdir().expect("temp");
+    let fifo = dir.path().join("x.jpg");
+    let c_path = std::ffi::CString::new(fifo.to_string_lossy().as_bytes()).expect("c path");
+    // SAFETY: `c_path` is a valid NUL-terminated path that outlives the call.
+    assert_eq!(unsafe { libc::mkfifo(c_path.as_ptr(), 0o600) }, 0, "mkfifo");
+
+    let result = read_within_deadline(&fifo);
+    assert!(
+        matches!(result, Err(VisionError::Decode(_))),
+        "got {:?}",
+        result.map(|b| b.len())
+    );
+}
+
+#[test]
+fn local_read_refuses_a_symlink_even_to_a_real_image() {
+    // The walk already drops symlink rows; this is the backstop for a link swapped in
+    // between the walk and the read.
+    let dir = tempfile::tempdir().expect("temp");
+    let link = dir.path().join("scan.jpg");
+    std::os::unix::fs::symlink(fixture_path(), &link).expect("symlink");
+
+    let result = read_within_deadline(&link);
+    assert!(
+        matches!(result, Err(VisionError::Decode(_))),
+        "got {:?}",
+        result.map(|b| b.len())
+    );
+}
+
+#[test]
+fn local_read_of_an_oversized_file_fails_closed() {
+    use crate::media_index::network::fetch::MAX_FETCH_BYTES;
+    let dir = tempfile::tempdir().expect("temp");
+    let big = dir.path().join("huge.jpg");
+    // Sparse, so the file costs no real disk.
+    std::fs::File::create(&big)
+        .and_then(|f| f.set_len(MAX_FETCH_BYTES + 1))
+        .expect("sparse file");
+
+    let result = read_within_deadline(&big);
+    assert!(
+        matches!(result, Err(VisionError::Decode(_))),
+        "got {:?}",
+        result.map(|b| b.len())
+    );
+}
+
+#[test]
+fn local_read_of_a_regular_image_returns_its_bytes() {
+    let bytes = read_within_deadline(&fixture_path()).expect("a regular file reads");
+    assert_eq!(bytes, std::fs::read(fixture_path()).expect("direct read"));
+}
+
+#[test]
+fn local_read_of_a_vanished_file_is_missing() {
+    let dir = tempfile::tempdir().expect("temp");
+    let result = read_within_deadline(&dir.path().join("gone.jpg"));
+    assert!(
+        matches!(result, Err(VisionError::Missing(_))),
+        "got {:?}",
+        result.map(|b| b.len())
+    );
+}

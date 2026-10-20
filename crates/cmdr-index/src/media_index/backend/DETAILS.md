@@ -75,9 +75,18 @@ never a blanket file allow (`clippy::undocumented_unsafe_blocks`).
 
 Hostile input fails closed to a typed `VisionError`, never a panic/hang: an unreadable/empty/non-image/undecodable file
 returns `Decode`; a request failure returns `Ocr`; a file that vanished between the index walk and the analyze returns
-`Missing` (classified from the local `std::fs::read` ENOENT by io kind, never a message match). The pass logs a `Decode`
-/ `Ocr` and marks the row `Failed`; a `Missing` is a quiet DEBUG skip that writes no row at all (`../DETAILS.md` §
-Progress events + vanished-file skip).
+`Missing` (classified from the local read's ENOENT by io kind, never a message match). The pass logs a `Decode` / `Ocr`
+and marks the row `Failed`; a `Missing` is a quiet DEBUG skip that writes no row at all (`../DETAILS.md` § Progress
+events + vanished-file skip).
+
+**The local read (`vision::read_local_image`) accepts a regular file and nothing else.** The index picks images by name,
+so a named pipe, a device link, or a symlink called `x.jpg` reaches it, and it runs on the serialized backend thread,
+where a hang wedges every later pass ([#547](https://github.com/vdavid/cmdr/issues/547)). It opens with `O_NOFOLLOW` (a
+symlink fails with `ELOOP`: the backstop to the walk's symlink filter, for a link swapped in since, which could point
+into an excluded folder, [#532](https://github.com/vdavid/cmdr/issues/532)) and `O_NONBLOCK` (so opening a FIFO with no
+writer can't block), checks the type on the OPENED handle (`fstat`, so nothing can swap the path between check and
+read), and reads through `take(MAX_FETCH_BYTES + 1)`, the network fetch's 256 MB cap (`../network/fetch.rs`). Each
+refusal is a `Decode`. A network image never reaches it: its bytes arrive prefetched.
 
 ## Testing
 
@@ -85,7 +94,8 @@ The fixture for the macOS-gated real tests lives at `test-fixtures/ocr-sample.pn
 "hello 2026", generated once via CoreGraphics text drawing). `vision/tests.rs` (macOS-only, so it can't run off-macOS):
 real Vision OCR reads the known words off the fixture; `analyze` returns real OCR + well-formed tags + a stable-length
 feature print, and a real feature print's self-cosine is ~1.0; hostile inputs (non-image, empty, missing) each return a
-typed `VisionError` with no panic. `fake.rs` tests its own determinism (tags + feature prints).
+typed `VisionError` with no panic; the local read fails closed within a deadline on a FIFO, a symlink, and a file over
+the cap. `fake.rs` tests its own determinism (tags + feature prints).
 
 `vision/spike.rs` is the M2 throughput harness: its decode-vs-full-analyze scaling numbers and what they mean for the
 worker pool are in `../scheduler/DETAILS.md` § Parallel enrichment.

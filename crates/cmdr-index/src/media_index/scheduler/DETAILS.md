@@ -105,6 +105,14 @@ genuinely need the list, and holds one heap path `String` per image; `coverage::
 aggregating sink, which holds `O(folders)`. Why aggregation must never collect first: `../DETAILS.md` § Covered-count
 preview.
 
+**Symlink rows never qualify** (`is_symlink = 0` in the SQL, the same filter in `walk_image_entries_in_dirs`). The
+privacy exclusion judges the LINK's path while a read follows it, so `scan.jpg -> ~/Documents/IDs/passport.jpg` would
+store an excluded file's OCR text, tags, and embedding under an included path, and a link can reach another volume
+entirely ([#532](https://github.com/vdavid/cmdr/issues/532)). The rows drop BEFORE `qualify_dir`, so a linked `DSC.jpg`
+beside a real `DSC.cr2` leaves the RAW to qualify alone. A symlink row stored before the filter existed is absent from
+the walk, so the next completed pass's whole-store GC (or a tick's scoped GC over its dir) collects it. The local read
+refuses a link too, as a backstop: `../backend/DETAILS.md` § FFI discipline and hostile input.
+
 **The walk's floor is its FOLDER side, held compactly.** File rows stream by, but the directories have to stay resident
 for the whole walk: rebuilding a folder's absolute path follows parent pointers upward, in any order. So
 `indexing/store/dir_tree.rs`'s `DirTree` holds them as one name arena plus a 24-byte `(id, parent_id, name slice)`
@@ -308,8 +316,9 @@ Pure: the coalescer (`coalescing_tests.rs`), `tick_is_loud` + `live_debounce_wai
 enrich pass, deletion-driven GC, the throttle/cancel decision, the edge-triggered `Completed` consumption
 (`gc_fires_on_a_completed_edge_never_a_retained_poll`), the hazard it defends against
 (`gc_over_an_empty_index_would_delete_everything_which_is_why_it_gates_on_completed`), the scoped walk, the scoped GC vs
-the whole-store trap, the sibling re-qualify, the DEFER of a below-threshold folder and the ENRICH of an overridden one
-(both keeping deferred rows for GC), and the mid-`analyze` exclusion veto. The master-toggle behavior is pinned by
+the whole-store trap, the sibling re-qualify, symlink rows dropped from both walks and GC'd when stored earlier
+(`enrich_symlink_tests.rs`), the DEFER of a below-threshold folder and the ENRICH of an overridden one (both keeping
+deferred rows for GC), and the mid-`analyze` exclusion veto. The master-toggle behavior is pinned by
 `a_pass_no_ops_while_disabled_and_enriches_once_enabled` (the disable → no-op → re-enable → enrich cycle) and
 `disabling_the_master_toggle_stops_a_running_pass_and_keeps_rows` (real red→green: the running pass stops early, rows
 preserved). `live_tests.rs` runs the tick end to end over a registered read pool (re-enrich-on-modify, below-threshold
