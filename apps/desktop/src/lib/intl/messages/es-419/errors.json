@@ -315,10 +315,6 @@
   "@errors.write.symlinkLoop.title": {
     "sourceHash": "76fafe1"
   },
-  "errors.write.linkCantMoveAcrossVolumes.message": "{path} es un enlace, y un enlace solo funciona en la unidad, el teléfono o el servidor que lo contiene. En cualquier otro lugar no apuntaría a ningún lado, así que Cmdr no movió nada.",
-  "@errors.write.linkCantMoveAcrossVolumes.message": {
-    "sourceHash": "d47c51f"
-  },
   "errors.write.cancelled.title.trash": "Movimiento al basurero cancelado",
   "@errors.write.cancelled.title.trash": {
     "sourceHash": "71aa327"

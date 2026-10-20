@@ -238,7 +238,6 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
       { id: 'archive_encrypted_entry', label: 'Zip edit would keep a protected item' },
       { id: 'archive_entry_under_file', label: 'Zip item would go inside a file' },
       { id: 'symlink_loop', label: 'Symlink loop' },
-      { id: 'link_cant_move_across_volumes', label: 'Link can’t move to another volume' },
       { id: 'cancelled', label: 'Cancelled' },
       { id: 'device_disconnected', label: 'Device disconnected' },
       { id: 'move_not_confirmed', label: 'Move not confirmed, originals kept' },

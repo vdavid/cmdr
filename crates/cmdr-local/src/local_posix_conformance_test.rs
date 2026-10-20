@@ -297,8 +297,8 @@ async fn delete_of_a_link_to_a_folder_honors_the_shared_contract() {
     .await;
 }
 
-/// The shared link-move assertion: a link to a folder lists as a link and
-/// renames as one, its target left alone (#570).
+/// The shared same-volume link-move assertion: a link to a folder lists as a
+/// link and renames as one, its target left alone (#570).
 #[tokio::test]
 async fn a_link_to_a_folder_moves_as_the_link_per_the_shared_contract() {
     let test_dir = TestDir::new("link_move_conformance_test");

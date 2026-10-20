@@ -1249,18 +1249,6 @@
   "@errors.write.symlinkLoop.suggestion": {
     "sourceHash": "87ddbca"
   },
-  "errors.write.linkCantMoveAcrossVolumes.title": "這個連結無法移動到那裡",
-  "@errors.write.linkCantMoveAcrossVolumes.title": {
-    "sourceHash": "38b0b06"
-  },
-  "errors.write.linkCantMoveAcrossVolumes.message": "{path} 是一個連結，而連結只在存放它的磁碟機、手機或伺服器上才有用。放到別處，它就什麼也指不到了，所以 Cmdr 什麼都沒移動。",
-  "@errors.write.linkCantMoveAcrossVolumes.message": {
-    "sourceHash": "e97a8f6"
-  },
-  "errors.write.linkCantMoveAcrossVolumes.suggestion": "可以改為複製這個連結，把它指向的內容一起帶過去，或者把它移動到同一個磁碟機、手機或伺服器上的資料夾裡。",
-  "@errors.write.linkCantMoveAcrossVolumes.suggestion": {
-    "sourceHash": "a71f267"
-  },
   "errors.write.cancelled.title.copy": "已取消複製",
   "@errors.write.cancelled.title.copy": {
     "sourceHash": "7edfd40"

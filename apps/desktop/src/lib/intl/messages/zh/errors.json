@@ -1248,18 +1248,6 @@
   "@errors.write.symlinkLoop.suggestion": {
     "sourceHash": "87ddbca"
   },
-  "errors.write.linkCantMoveAcrossVolumes.title": "这个链接无法移动到那里",
-  "@errors.write.linkCantMoveAcrossVolumes.title": {
-    "sourceHash": "38b0b06"
-  },
-  "errors.write.linkCantMoveAcrossVolumes.message": "{path} 是一个链接，而链接只在存放它的驱动器、手机或服务器上才有效。放到别处，它就什么也指不到了，所以 Cmdr 什么都没移动。",
-  "@errors.write.linkCantMoveAcrossVolumes.message": {
-    "sourceHash": "e97a8f6"
-  },
-  "errors.write.linkCantMoveAcrossVolumes.suggestion": "可以改为拷贝这个链接，把它指向的内容一起带过去，或者把它移动到同一个驱动器、手机或服务器上的文件夹里。",
-  "@errors.write.linkCantMoveAcrossVolumes.suggestion": {
-    "sourceHash": "a71f267"
-  },
   "errors.write.cancelled.title.copy": "已取消拷贝",
   "@errors.write.cancelled.title.copy": {
     "sourceHash": "7edfd40"

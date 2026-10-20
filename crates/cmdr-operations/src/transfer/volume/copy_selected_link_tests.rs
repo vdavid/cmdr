@@ -20,7 +20,7 @@ use super::rename_merge_test_support::make_state;
 use crate::event_sinks::CollectorEventSink;
 use crate::scan_walker::{WalkContext, walk_sources_with_per_path};
 use crate::state::CachedScanResult;
-use crate::types::{VolumeCopyConfig, WriteOperationError, WriteOperationPhase, WriteProgressEvent};
+use crate::types::{VolumeCopyConfig, WriteOperationPhase, WriteProgressEvent};
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::testing::TestDir;
 use cmdr_fs::volume::{InMemoryVolume, Volume};
@@ -218,12 +218,11 @@ async fn a_selected_link_to_a_file_copies_the_file_through_a_preview() {
     );
 }
 
-/// A MOVE through the same preview is refused before anything moves (#570):
-/// a copy may bring along what a link points at, but a move would then remove
-/// the link and leave the person with a copy of a folder they never selected
-/// (a cloud drive, for `~/Dropbox`). Link, target, and destination stay put.
+/// A MOVE through the same preview lands the folder, then the source sweep
+/// removes the LINK and nothing behind it: the target is someone's real folder
+/// (a cloud drive, for `~/Dropbox`), which the person never selected.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn a_selected_link_moved_through_a_preview_is_refused_and_moves_nothing() {
+async fn a_selected_link_moved_through_a_preview_removes_the_link_never_the_target() {
     let engine = TestOperations::new();
     let dir = TestDir::new("selected-link-move");
     let link = plant_linked_folder(&dir);
@@ -243,16 +242,9 @@ async fn a_selected_link_moved_through_a_preview_is_refused_and_moves_nothing() 
     )
     .await;
 
-    let refused = result.expect_err("a cross-volume move of a selected link must be refused");
-    assert!(
-        matches!(&refused.error, WriteOperationError::LinkCantMoveAcrossVolumes { path } if Path::new(path) == link),
-        "expected a refusal naming the link, got {:?}",
-        refused.error
-    );
-    assert!(
-        !dest.exists(Path::new("/link")).await,
-        "nothing lands at the destination"
-    );
+    assert!(result.is_ok(), "expected Ok, got {result:?}");
+    assert_eq!(read_dest(&dest, "/link/a.txt").await, b"aaa");
+    assert_eq!(read_dest(&dest, "/link/sub/b.txt").await, b"bbbbb");
     assert_eq!(
         std::fs::read(dir.join("target/a.txt")).unwrap(),
         b"aaa",
@@ -260,7 +252,7 @@ async fn a_selected_link_moved_through_a_preview_is_refused_and_moves_nothing() 
     );
     assert_eq!(std::fs::read(dir.join("target/sub/b.txt")).unwrap(), b"bbbbb");
     assert!(
-        std::fs::symlink_metadata(&link).is_ok_and(|m| m.file_type().is_symlink()),
-        "the link stays where it was"
+        std::fs::symlink_metadata(&link).is_err(),
+        "the move took the link itself"
     );
 }

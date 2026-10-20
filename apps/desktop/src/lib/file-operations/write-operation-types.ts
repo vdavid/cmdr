@@ -219,9 +219,6 @@ export type WriteOperationError =
   // reader drops. Refused before anything is written.
   | { type: 'archive_entry_under_file'; path: string; entry: string; file: string }
   | { type: 'symlink_loop'; path: string }
-  // A move to another volume was asked to carry a selected link, which can't
-  // go along. Refused before anything moves. `path` is the link.
-  | { type: 'link_cant_move_across_volumes'; path: string }
   | { type: 'cancelled'; message: string }
   // `side` is null for a backend session that dropped (MTP, SMB), which has no
   // mount table behind it: the copy stays the volume-agnostic one.

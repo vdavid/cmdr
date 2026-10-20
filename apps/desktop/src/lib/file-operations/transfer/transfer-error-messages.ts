@@ -203,9 +203,6 @@ const errorDisplayMetaMap: Record<WriteOperationError['type'], ErrorDisplayMeta>
   // old `io_error` wording did, and it was the useless half of the dialog.
   trash_refused: { category: 'needs_action', retryHint: false },
   symlink_loop: { category: 'serious', retryHint: false },
-  // No Retry: the same selection holds the same link. The way out is a copy, or
-  // a destination on the link's own volume.
-  link_cant_move_across_volumes: { category: 'needs_action', retryHint: false },
   source_not_found: { category: 'needs_action', retryHint: false },
   // No Retry: the folder is missing, so the identical request can only fail
   // again. The way out is picking another destination or restoring the folder.
@@ -546,15 +543,6 @@ function fieldDrivenMessage(error: WriteOperationError): FriendlyErrorMessage | 
     case 'archive_encrypted_entry':
     case 'archive_entry_under_file':
       return archiveEditMessage(error)
-    // A selected link, refused before a move to another volume touched
-    // anything. Named, because one link among many selected items is the
-    // whole problem, and the suggestion offers the two moves that work.
-    case 'link_cant_move_across_volumes':
-      return {
-        title: w('linkCantMoveAcrossVolumes.title'),
-        message: w('linkCantMoveAcrossVolumes.message', { path: escapeHtml(error.path) }),
-        suggestion: w('linkCantMoveAcrossVolumes.suggestion'),
-      }
     // STATUS_DELETE_PENDING: the file is marked for deletion on the server but an
     // open handle is keeping it alive. Transient: retry-after-a-moment. Named,
     // because a move involves two files and "this file" didn't say which.

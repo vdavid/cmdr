@@ -1,24 +1,27 @@
-//! What a move leans on about a symbolic link to a folder: the parent's
-//! listing reports it as a link, and [`Volume::rename`] moves the link itself.
+//! What a same-volume move leans on about a symbolic link to a folder: the
+//! parent's listing reports it as a link, and [`Volume::rename`] moves the link
+//! itself.
 
 use std::path::Path;
 
 use crate::volume::{EntryKind, Volume, VolumeError};
 
-/// A symbolic link to a folder is ONE item to a move: its parent's listing
-/// reports it as a link, and [`Volume::rename`] moves the LINK to `moved_to`,
-/// still pointing where it did, with the folder it points at untouched.
+/// A symbolic link to a folder is ONE item to a same-volume move: its parent's
+/// listing reports it as a link, and [`Volume::rename`] moves the LINK to
+/// `moved_to`, still pointing where it did, with the folder it points at
+/// untouched.
 ///
 /// `link` must already exist on `volume` as a symbolic link to the directory
 /// `target`, which holds `child_name` directly inside it. `moved_to` must be
 /// free, in an existing folder.
 ///
-/// **Why this one is worth a shared assertion.** A same-volume move is a rename
-/// per selected item, and a move to another volume refuses a selected link by
-/// reading its parent's listing (#570). A backend whose listing typed the link
-/// as what it points at would let that move copy a folder the person never
-/// selected and then remove the link; one whose rename followed the link would
-/// move the TARGET out from under every other link to it.
+/// **Why this one is worth a shared assertion.** A same-volume move types each
+/// selected item from its parent's listing and renames it (#570). A backend
+/// whose listing typed the link as what it points at would send that move into
+/// a merge through the link, renaming the target's files out of a folder the
+/// person never selected; one whose rename followed the link would move the
+/// TARGET out from under every other link to it. (A move to ANOTHER volume
+/// follows a link on purpose, as a copy does.)
 ///
 /// Backends with no links (MTP, S3, WebDAV, SMB) have nothing to run this
 /// against.

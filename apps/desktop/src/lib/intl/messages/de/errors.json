@@ -1249,18 +1249,6 @@
   "@errors.write.symlinkLoop.suggestion": {
     "sourceHash": "87ddbca"
   },
-  "errors.write.linkCantMoveAcrossVolumes.title": "Diese Verknüpfung lässt sich nicht dorthin bewegen",
-  "@errors.write.linkCantMoveAcrossVolumes.title": {
-    "sourceHash": "38b0b06"
-  },
-  "errors.write.linkCantMoveAcrossVolumes.message": "{path} ist eine Verknüpfung, und eine Verknüpfung funktioniert nur auf dem Laufwerk, Telefon oder Server, auf dem sie liegt. Überall sonst würde sie ins Leere zeigen, deshalb hat Cmdr nichts bewegt.",
-  "@errors.write.linkCantMoveAcrossVolumes.message": {
-    "sourceHash": "e97a8f6"
-  },
-  "errors.write.linkCantMoveAcrossVolumes.suggestion": "Kopiere die Verknüpfung stattdessen, damit das mitkommt, worauf sie zeigt, oder bewege sie in einen Ordner auf demselben Laufwerk, Telefon oder Server.",
-  "@errors.write.linkCantMoveAcrossVolumes.suggestion": {
-    "sourceHash": "a71f267"
-  },
   "errors.write.cancelled.title.copy": "Kopieren abgebrochen",
   "@errors.write.cancelled.title.copy": {
     "sourceHash": "7edfd40"

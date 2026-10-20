@@ -40,7 +40,6 @@ mod move_same;
 mod naming;
 mod preflight;
 mod rename_merge;
-mod selected_link;
 mod sequential_extract;
 mod server_side_copy;
 mod source_reads;

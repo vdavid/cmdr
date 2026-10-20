@@ -16,7 +16,6 @@ const pathOnlyTypes = new Set<WriteOperationError['type']>([
   'source_no_longer_connected',
   'destination_exists',
   'symlink_loop',
-  'link_cant_move_across_volumes',
   'file_locked',
   'trash_not_supported',
   'connection_interrupted',

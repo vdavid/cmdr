@@ -347,14 +347,6 @@ pub enum WriteOperationError {
     SymlinkLoop {
         path: String,
     },
-    /// A move to ANOTHER volume was asked to carry a selected symbolic link.
-    /// A link's target is a path on the volume that holds it, so recreated
-    /// elsewhere it would point nowhere, and moving what it points at would
-    /// take a folder the person never selected. Refused before anything moves.
-    /// `path` is the selected link.
-    LinkCantMoveAcrossVolumes {
-        path: String,
-    },
     Cancelled {
         message: String,
     },

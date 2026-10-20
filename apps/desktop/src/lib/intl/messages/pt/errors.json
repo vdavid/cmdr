@@ -1249,18 +1249,6 @@
   "@errors.write.symlinkLoop.suggestion": {
     "sourceHash": "87ddbca"
   },
-  "errors.write.linkCantMoveAcrossVolumes.title": "Não dá para mover este link para lá",
-  "@errors.write.linkCantMoveAcrossVolumes.title": {
-    "sourceHash": "38b0b06"
-  },
-  "errors.write.linkCantMoveAcrossVolumes.message": "{path} é um link, e um link só funciona no disco, no celular ou no servidor em que está. Em qualquer outro lugar, o link não apontaria para lugar nenhum, então o Cmdr não moveu nada.",
-  "@errors.write.linkCantMoveAcrossVolumes.message": {
-    "sourceHash": "e97a8f6"
-  },
-  "errors.write.linkCantMoveAcrossVolumes.suggestion": "Em vez disso, copie o link para levar junto aquilo para onde ele aponta, ou mova-o para uma pasta no mesmo disco, celular ou servidor.",
-  "@errors.write.linkCantMoveAcrossVolumes.suggestion": {
-    "sourceHash": "a71f267"
-  },
   "errors.write.cancelled.title.copy": "Cópia cancelada",
   "@errors.write.cancelled.title.copy": {
     "sourceHash": "7edfd40"

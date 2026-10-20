@@ -1249,18 +1249,6 @@
   "@errors.write.symlinkLoop.suggestion": {
     "sourceHash": "87ddbca"
   },
-  "errors.write.linkCantMoveAcrossVolumes.title": "Нельзя переместить эту ссылку туда",
-  "@errors.write.linkCantMoveAcrossVolumes.title": {
-    "sourceHash": "38b0b06"
-  },
-  "errors.write.linkCantMoveAcrossVolumes.message": "{path} — символическая ссылка, а такая ссылка работает только на том диске, телефоне или сервере, где она находится. В любом другом месте она указывала бы в никуда, поэтому Cmdr ничего не переместил.",
-  "@errors.write.linkCantMoveAcrossVolumes.message": {
-    "sourceHash": "e97a8f6"
-  },
-  "errors.write.linkCantMoveAcrossVolumes.suggestion": "Скопируйте ссылку вместо перемещения, чтобы вместе с ней перенести и то, на что она указывает, или переместите ее в папку на том же диске, телефоне или сервере.",
-  "@errors.write.linkCantMoveAcrossVolumes.suggestion": {
-    "sourceHash": "a71f267"
-  },
   "errors.write.cancelled.title.copy": "Копирование отменено",
   "@errors.write.cancelled.title.copy": {
     "sourceHash": "7edfd40"

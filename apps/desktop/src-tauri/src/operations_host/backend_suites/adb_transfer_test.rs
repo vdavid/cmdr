@@ -253,11 +253,12 @@ async fn a_folder_tree_lands_intact_off_a_phone() {
     a_directory_tree_lands_intact_off_the_server(Arc::clone(&phone.volume), phone.dir.clone()).await;
 }
 
-/// A SELECTED folder link moved off a phone is refused before anything moves
-/// (#570). The phone's stat follows a link, so the scan reads it as the folder
-/// it points at, and the move used to copy that folder, then remove the link.
+/// A SELECTED folder link moved off a phone is FOLLOWED, as a copy follows it
+/// (#570, `transfer/DETAILS.md` § "Symlinks are opaque to a move"): local disk
+/// gets what it points at, the link goes from the phone, and the folder it
+/// points at keeps every file.
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-async fn a_selected_link_moved_off_a_phone_is_refused() {
+async fn a_selected_link_moved_off_a_phone_lands_its_target_and_spares_it() {
     let mut tree = FakeTree::new();
     tree.add_dir("/sdcard")
         .add_dir("/sdcard/DCIM")
@@ -285,21 +286,19 @@ async fn a_selected_link_moved_off_a_phone_is_refused() {
     )
     .await;
 
-    assert!(
-        matches!(&outcome, Err(f) if matches!(f.error, WriteOperationError::LinkCantMoveAcrossVolumes { .. })),
-        "a cross-volume move of a selected link must be refused, got {outcome:?}"
+    assert!(outcome.is_ok(), "the move must succeed, got {outcome:?}");
+    assert_eq!(
+        std::fs::read(local.join("Camera/photo.jpg")).expect("the link's target landed as a folder"),
+        b"the user's photo"
     );
     let tree = phone.fake.tree();
     let tree = tree.lock_ignore_poison();
-    assert!(
-        matches!(tree.get("/sdcard/Camera"), Some(FakeNode::Symlink { .. })),
-        "the link stays on the phone"
+    assert!(tree.get("/sdcard/Camera").is_none(), "the link left the phone");
+    assert_eq!(
+        tree.file_bytes("/sdcard/DCIM/photo.jpg").as_deref(),
+        Some(&b"the user's photo"[..]),
+        "the folder the link pointed at keeps every file"
     );
-    assert!(
-        matches!(tree.get("/sdcard/DCIM/photo.jpg"), Some(FakeNode::File { .. })),
-        "and so does what it points at"
-    );
-    assert!(!local.join("Camera").exists(), "nothing lands on local disk");
 }
 
 /// ❗ The fake creates a file at `SEND` open, as a device does, so a cancel
