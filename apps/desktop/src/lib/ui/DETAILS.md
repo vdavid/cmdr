@@ -447,7 +447,8 @@ viewport.
 2. The engine's delay (roughly 1-2 s) can't be tuned, so a native title lands about a second after ours. Two hints one
    span apart in the same row, appearing a second apart, reads as a bug.
 3. It's OS chrome: it ignores our dark/light tokens, type, and reduced-motion preference.
-4. Screen readers announce `title` inconsistently. The action wires `aria-describedby` to the live tooltip element.
+4. Screen readers announce `title` inconsistently. The action wires `aria-describedby` to the live tooltip element,
+   appended to any description the trigger already carries (`Button`'s `aria-describedby`) and put back on hide.
 
 A native title also can't be dismissed with Esc or carry `shortcut` / `overflowOnly` / rich content.
 

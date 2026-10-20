@@ -333,6 +333,23 @@ describe('tooltip', () => {
       expect(el.hasAttribute('aria-describedby')).toBe(false)
     })
 
+    // A trigger can carry its own description (`Button`'s `aria-describedby`, a field's hint):
+    // the tooltip joins it while shown and leaves it as it was, never deletes it.
+    it('adds itself to a trigger’s own description while shown, and puts it back on hide', () => {
+      const el = makeTrigger()
+      el.setAttribute('aria-describedby', 'own-hint')
+      tooltip(el, 'Folder info')
+      el.dispatchEvent(new MouseEvent('mouseenter'))
+      vi.advanceTimersByTime(500)
+      const tip = document.querySelector<HTMLElement>('.cmdr-tooltip.visible')
+      expect(el.getAttribute('aria-describedby')).toBe(`own-hint ${tip?.id ?? ''}`)
+
+      el.dispatchEvent(new MouseEvent('mouseleave'))
+      vi.advanceTimersByTime(500)
+
+      expect(el.getAttribute('aria-describedby')).toBe('own-hint')
+    })
+
     it('hides shortly after the pointer leaves the tooltip itself', () => {
       const { el, tip } = showFor('Folder info')
       el.dispatchEvent(new MouseEvent('mouseleave'))

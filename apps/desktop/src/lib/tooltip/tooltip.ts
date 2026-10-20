@@ -33,6 +33,8 @@ const VIEWPORT_MARGIN = 8
 let tooltipEl: HTMLDivElement | null = null
 let tooltipIdCounter = 0
 let activeElement: HTMLElement | null = null
+/** The `aria-describedby` the active trigger carried before the tooltip joined it, put back on hide. */
+let activeOwnDescription: string | null = null
 let showTimer: ReturnType<typeof setTimeout> | null = null
 /** The element a pending show-timer belongs to, so we can cancel it if that element is torn down. */
 let timerNode: HTMLElement | null = null
@@ -307,7 +309,7 @@ function showTooltip(triggerEl: HTMLElement, param: TooltipParam): void {
 
   const tip = ensureTooltipElement()
   setTooltipContent(tip, param)
-  triggerEl.setAttribute('aria-describedby', tip.id)
+  describeBy(triggerEl, tip.id)
 
   // Position offscreen first to measure, then reposition
   tip.style.left = '0px'
@@ -316,6 +318,22 @@ function showTooltip(triggerEl: HTMLElement, param: TooltipParam): void {
   positionTooltip(triggerEl)
 
   activeElement = triggerEl
+}
+
+/** Adds the tooltip to the trigger's own description (a `Button`'s `aria-describedby`), never replacing it. */
+function describeBy(triggerEl: HTMLElement, tipId: string): void {
+  if (activeElement !== triggerEl) {
+    restoreOwnDescription()
+    activeOwnDescription = triggerEl.getAttribute('aria-describedby')
+  }
+  triggerEl.setAttribute('aria-describedby', activeOwnDescription ? `${activeOwnDescription} ${tipId}` : tipId)
+}
+
+function restoreOwnDescription(): void {
+  if (!activeElement) return
+  if (activeOwnDescription) activeElement.setAttribute('aria-describedby', activeOwnDescription)
+  else activeElement.removeAttribute('aria-describedby')
+  activeOwnDescription = null
 }
 
 function hideTooltip(): void {
@@ -327,7 +345,7 @@ function hideTooltip(): void {
     tooltipEl.classList.remove('visible')
   }
   if (activeElement) {
-    activeElement.removeAttribute('aria-describedby')
+    restoreOwnDescription()
     activeElement = null
   }
   // Last, so a caller that unmounts its body on `false` finds the content already back in its host.
