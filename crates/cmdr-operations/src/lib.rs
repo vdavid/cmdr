@@ -186,14 +186,14 @@ pub use routing::resolve_dest_path;
 
 // The wire vocabulary: payloads, configs, and typed outcomes.
 pub use types::{
-    ConflictId, ConflictInfo, ConflictResolution, ConflictResolutionOutcome, DryRunResult, KnownSize, LeftoversKeptEvent,
-    LifecycleStatus, LockedSourcesAnswer, LockedSourcesAnswerOutcome, OperationStatus, ReadOnlySide, RetryOutcome,
-    ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent, ScanPreviewProgressEvent,
-    ScanPreviewPurpose, ScanPreviewRefusal, ScanPreviewStartResult, ScanPreviewTotals, ScanProgressEvent,
-    SourceItemOutcome, SourcesGoneAnswerOutcome, TransferActivity, VolumeCopyConfig, WriteCancelledEvent,
-    WriteCompleteEvent, WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent, WriteLockedSourcesEvent,
-    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType,
-    WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent, WriteSourcesGoneEvent,
+    ConflictId, ConflictInfo, ConflictResolution, ConflictResolutionOutcome, DryRunResult, KnownSize,
+    LeftoversKeptEvent, LifecycleStatus, LockedSourcesAnswer, LockedSourcesAnswerOutcome, OperationStatus,
+    ReadOnlySide, RetryOutcome, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent,
+    ScanPreviewProgressEvent, ScanPreviewPurpose, ScanPreviewRefusal, ScanPreviewStartResult, ScanPreviewTotals,
+    ScanProgressEvent, SourceItemOutcome, SourcesGoneAnswerOutcome, TransferActivity, VolumeCopyConfig,
+    WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent,
+    WriteLockedSourcesEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult,
+    WriteOperationType, WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent, WriteSourcesGoneEvent,
 };
 
 // What the app-side test cells reach beyond the list above.
