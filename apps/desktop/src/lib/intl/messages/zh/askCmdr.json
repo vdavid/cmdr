@@ -604,9 +604,9 @@
   "@askCmdr.renameUndo.undoJob": {
     "sourceHash": "f84acd2"
   },
-  "askCmdr.renameUndo.undoJobLabel": "撤销本次运行的所有重命名：{batches, plural, other {# 批}}共 {filesText} {files, plural, other {个文件}}",
+  "askCmdr.renameUndo.undoJobLabel": "撤销全部 {batches, plural, other {# 批}}，即本次运行中重命名的 {filesText} {files, plural, other {个文件}}",
   "@askCmdr.renameUndo.undoJobLabel": {
-    "sourceHash": "9d2e84e"
+    "sourceHash": "544447d"
   },
   "askCmdr.renameUndo.undoing": "正在恢复原来的名称…",
   "@askCmdr.renameUndo.undoing": {

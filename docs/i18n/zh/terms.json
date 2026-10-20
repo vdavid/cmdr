@@ -2254,6 +2254,12 @@
     "note": "Cmdr's transfer dialog uses 覆盖; 替换 is Replace.",
     "sources": "Double Commander; Nautilus"
   },
+  "owner": {
+    "chosen": "所有者",
+    "confidence": "high",
+    "forms": "the server's owner → 这台服务器的所有者",
+    "sources": "macOS zh-CN Finder (所有者值, 选取新所有者…), AppKit (你不是文件“%@”的所有者); catalog servers.hostKey.*"
+  },
   "package": {
     "chosen": "软件包",
     "confidence": "high",
@@ -2994,6 +3000,8 @@
       "errors.listing.notConnected.suggestion": "A phone \"shows\" a prompt: it pops one up (弹出).",
       "errors.write.notConnected.suggestion": "A phone \"shows\" a prompt: it pops one up (弹出).",
       "settings.advanced.oldMacosNoticeShown.description": "\"has been shown\" reads from the user's side, 看过.",
+      "settings.servers.trustedCertificates.confirm": "\"show you its certificate's fingerprint\" is the spoken 给你看, as in its host-key sibling.",
+      "settings.servers.trustedCertificates.empty": "\"shows you its certificate's fingerprint\" is the spoken 给你看, as in its host-key sibling.",
       "settings.servers.trustedHostKeys.confirm": "\"show you its key fingerprint\" is the spoken 给你看.",
       "settings.servers.trustedHostKeys.empty": "\"shows you its fingerprint\" is the spoken 给你看.",
       "whatsNew.dialog.showLess": "\"Show less\" on a disclosure is the collapse verb 收起."
