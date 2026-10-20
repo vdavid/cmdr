@@ -8,6 +8,3 @@
 //! See [`super::CLAUDE.md`](../CLAUDE.md) for the trait shape and capability
 //! matrix, and `backends/CLAUDE.md` for what a caller reaching a backend from the
 //! app still has to know.
-
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-pub use cmdr_mtp::MtpVolume;

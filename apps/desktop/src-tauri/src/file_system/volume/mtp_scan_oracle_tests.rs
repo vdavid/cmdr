@@ -21,11 +21,12 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use crate::file_system::volume::manager::get_volume_manager;
-use crate::file_system::volume::{MtpVolume, ScanBoundary, Volume, WatchCoverage};
+use crate::file_system::volume::{ScanBoundary, Volume, WatchCoverage};
 use crate::mtp::connection_manager;
 use crate::mtp::test_support::{self, ConnectedDevice, device_lock};
 use cmdr_fs::entry::FileEntry;
 use cmdr_listing::testing::{TestListing, TestListingGuard};
+use cmdr_mtp::MtpVolume;
 
 use cmdr_mtp::volume::testing;
 

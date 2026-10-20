@@ -41,9 +41,6 @@ use cmdr_local::LocalPosixVolume;
 use volume::manager::get_volume_manager;
 
 // Re-export volume types (some not used externally yet)
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-#[allow(unused_imports, reason = "Public API re-exports for future use")]
-pub use volume::MtpVolume;
 #[allow(unused_imports, reason = "Public API re-exports for future use")]
 pub use volume::manager::VolumeManager;
 #[allow(unused_imports, reason = "Public API re-exports for future use")]

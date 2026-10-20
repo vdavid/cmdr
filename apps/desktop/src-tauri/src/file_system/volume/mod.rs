@@ -31,9 +31,6 @@ pub(crate) mod manager;
 pub(crate) mod mount_registration;
 pub mod reconnect_error;
 
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-pub use backends::MtpVolume;
-
 /// Observe a failed volume operation and, when its errno PROVES the active mount
 /// root is gone, hand the volume's ID to a live sibling mount.
 ///
