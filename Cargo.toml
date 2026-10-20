@@ -91,6 +91,19 @@ opt-level = 3
 [profile.dev.package.memchr]
 opt-level = 3
 
+# The same for the hash under `cocoon`'s key derivation (PBKDF2-SHA256, 100,000 rounds per open).
+# Unoptimized, each open or save of the Linux encrypted secrets file costs about a second, which made
+# `secrets::encrypted_file`'s tests the CI macOS lane's new tail (up to 7.9 s against the 8 s cap).
+[profile.dev.package.sha2]
+opt-level = 3
+[profile.dev.package.hmac]
+opt-level = 3
+[profile.dev.package.pbkdf2]
+opt-level = 3
+# The generic PBKDF2-over-HMAC is monomorphized in `cocoon`, so it needs the flag too.
+[profile.dev.package.cocoon]
+opt-level = 3
+
 # The house lint set, in ONE place. A member opts in with `lints.workspace = true`
 # rather than repeating a `#![deny(…)]` block at its crate root, so a new crate
 # can't quietly become a lint-free zone and the set can't drift between crates.
