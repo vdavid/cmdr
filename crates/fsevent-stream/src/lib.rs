@@ -79,6 +79,16 @@
 //! `tokio` support is enabled by default. To enable `async-std` support, disable default features and enable `async-std`
 //! feature.
 //!
+//! ## Changes from upstream
+//!
+//! This is Cmdr's fork of `fsevent-stream`. Behavior that differs from upstream:
+//!
+//! - **Overflow flag**: `EventStream` carries a shared flag that turns `true` whenever events are
+//!   dropped (the channel is full, or an event couldn't be built), so the consumer can rescan.
+//! - **Unknown flag bits are kept**: `Event::flags` is parsed with `from_bits_retain`, so an event
+//!   carrying a bit newer than this crate keeps its known bits. Upstream's `from_bits` dropped the
+//!   whole event, silently.
+//!
 //! ## Acknowledgement
 //!
 //! Some code in this project is adapted from the following projects:

@@ -129,7 +129,8 @@ pub struct EventStream {
     stream: ReceiverStream<Vec<Event>>,
     #[cfg(feature = "async-std")]
     stream: async_std::channel::Receiver<Vec<Event>>,
-    /// Set to `true` when the internal channel is full and events are dropped.
+    /// Set to `true` when events are dropped (the internal channel is full, or an event couldn't be
+    /// built), so the consumer knows to rescan.
     overflow: Arc<AtomicBool>,
 }
 
@@ -169,7 +170,7 @@ pub(crate) struct StreamContextInfo {
     event_handler: tokio::sync::mpsc::Sender<Vec<Event>>,
     #[cfg(feature = "async-std")]
     event_handler: async_std::channel::Sender<Vec<Event>>,
-    /// Shared flag set to `true` when `try_send` fails due to a full channel.
+    /// Shared flag set to `true` when events are dropped: `try_send` failed, or an event couldn't be built.
     overflow: Arc<AtomicBool>,
 }
 
@@ -292,9 +293,10 @@ pub fn create_event_stream<P: AsRef<Path>>(
     ))
 }
 
+// Flags never fail to parse: `from_bits_retain` keeps bits newer than this crate, so an event
+// carrying one still reaches the consumer with its known bits intact.
 enum CallbackError {
     ToI64,
-    ParseFlags,
 }
 
 macro_rules! define_callback {
@@ -328,23 +330,22 @@ macro_rules! define_callback {
 
                 let info = info as *const StreamContextInfo;
                 let event_handler = unsafe { &(*info).event_handler };
+                let overflow = unsafe { &(*info).overflow };
 
+                // An event we can't build is an event the consumer never sees, so raise the
+                // overflow flag: that's the consumer's "history is incomplete, rescan" signal.
                 let events = event_iter(num_events, event_paths, event_flags, event_ids)
-                    .filter_map(|event| {
-                        if let Err(e) = &event {
-                            match e {
-                                CallbackError::ToI64 => {
-                                    error!("Unable to convert inode field to i64")
-                                }
-                                CallbackError::ParseFlags => error!("Unable to parse flags"),
-                            }
+                    .filter_map(|event| match event {
+                        Ok(event) => Some(event),
+                        Err(CallbackError::ToI64) => {
+                            error!("Unable to convert inode field to i64 (event dropped, overflow flagged)");
+                            overflow.store(true, Ordering::Relaxed);
+                            None
                         }
-                        event.ok()
                     })
                     .collect();
 
                 if let Err(e) = event_handler.try_send(events) {
-                    let overflow = unsafe { &(*info).overflow };
                     if !overflow.swap(true, Ordering::Relaxed) {
                         // Log once on first failure; subsequent drops are silent.
                         // `try_send` fails for two reasons that need different responses
@@ -393,7 +394,7 @@ define_callback!(cf_ext_with_id_callback, (num, paths, flags, ids){
                         .to_i64()
                         .ok_or(CallbackError::ToI64)?,
                 ),
-                flags: StreamFlags::from_bits(flags).ok_or(CallbackError::ParseFlags)?,
+                flags: StreamFlags::from_bits_retain(flags),
                 raw_flags: flags,
                 id,
             })
@@ -418,7 +419,7 @@ define_callback!(cf_ext_callback, (num, paths, flags, ids){
                         .to_string(),
                 ),
                 inode: None,
-                flags: StreamFlags::from_bits(flags).ok_or(CallbackError::ParseFlags)?,
+                flags: StreamFlags::from_bits_retain(flags),
                 raw_flags: flags,
                 id,
             })
@@ -438,8 +439,7 @@ define_callback!(cf_callback, (num, paths, flags, ids){
                 Ok(Event {
                     path: PathBuf::from((*path).to_string()),
                     inode: None,
-                    flags: StreamFlags::from_bits(flags)
-                        .ok_or(CallbackError::ParseFlags)?,
+                    flags: StreamFlags::from_bits_retain(flags),
                     raw_flags: flags,
                     id,
                 })
@@ -462,10 +462,54 @@ define_callback!(normal_callback, (num, paths, flags, ids){
                         .to_os_string(),
                 ),
                 inode: None,
-                flags: StreamFlags::from_bits(flags).ok_or(CallbackError::ParseFlags)?,
+                flags: StreamFlags::from_bits_retain(flags),
                 raw_flags: flags,
                 id,
             })
         })
     })
 });
+
+#[cfg(all(test, feature = "tokio"))]
+mod callback_tests {
+    use std::ffi::CString;
+
+    use super::*;
+
+    /// A flag bit macOS might add later must not cost us the event: the watcher still needs its
+    /// known bits (created, removed, renamed) to keep the index in step.
+    #[test]
+    fn event_with_unknown_flag_bit_survives_with_its_known_flags() {
+        let (tx, mut rx) = tokio::sync::mpsc::channel(4);
+        let overflow = Arc::new(AtomicBool::new(false));
+        let mut context = StreamContextInfo {
+            event_handler: tx,
+            overflow: overflow.clone(),
+        };
+
+        let path = CString::new("/tmp/new-file").unwrap();
+        let paths = [path.as_ptr()];
+        let unknown_bit = 0x8000_0000;
+        let known = StreamFlags::ITEM_CREATED | StreamFlags::IS_FILE;
+        let flags = [known.bits() | unknown_bit];
+        let ids = [42];
+
+        normal_callback(
+            std::ptr::null_mut(),
+            std::ptr::addr_of_mut!(context).cast(),
+            1,
+            paths.as_ptr() as *mut c_void,
+            flags.as_ptr(),
+            ids.as_ptr(),
+        );
+
+        let batch = rx.try_recv().expect("callback sent a batch");
+        assert_eq!(batch.len(), 1, "the event survived the parse");
+        let event = &batch[0];
+        assert!(event.flags.contains(known));
+        assert_eq!(event.raw_flags, flags[0]);
+        assert_eq!(event.path, PathBuf::from("/tmp/new-file"));
+        assert_eq!(event.id, 42);
+        assert!(!overflow.load(Ordering::Relaxed));
+    }
+}
