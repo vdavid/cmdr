@@ -17,7 +17,7 @@
  */
 
 import { untrack } from 'svelte'
-import { getFileAt, getListingStats, type FolderSizes } from '#lib/tauri-commands/index.js'
+import { getFileAt, getListingStats, getSelectionEntries, type FolderSizes } from '#lib/tauri-commands/index.js'
 import type { FileEntry, ListingStats } from '../types'
 import type { CanonicalPath } from '#lib/path/canonical.js'
 import type { SearchSnapshot } from '#lib/search/snapshot-store.svelte.js'
@@ -25,6 +25,7 @@ import { applyFolderSizes, updateIndexSizesInPlace } from '../views/file-list-ut
 import { createDebounce, createThrottle } from '#lib/utils/timing.js'
 import { createParentEntry } from './parent-entry'
 import { computeSnapshotStats } from './snapshot-stats'
+import { readCursorRow, type CursorReadOptions } from './pressed-rows'
 
 /** The status bar can lag a frame behind the cursor; the list itself never does. */
 const CURSOR_FETCH_DEBOUNCE_MS = 16
@@ -61,6 +62,8 @@ export interface SelectionInfoFeedDeps {
    * (`history-cursor-sync.svelte.ts`). Never fired for `..`.
    */
   onCursorRow?: (index: number, rowPath: string) => void
+  /** The listing revision the pane's rows belong to (`pane-row-state.ts`), for the checked cursor read. */
+  getLastSequence: () => number
 }
 
 export interface SelectionInfoFeed {
@@ -70,6 +73,12 @@ export interface SelectionInfoFeed {
   readonly stats: ListingStats | null
   /** Refetch the entry under the cursor now. */
   fetchEntry: () => Promise<void>
+  /**
+   * The entry under the cursor for a command that ACTS on it, read against the
+   * revision the pane applied (`pressed-rows.ts::readCursorRow`). `null` when
+   * there's none, or when the rows never settled (announced unless `announce: false`).
+   */
+  readCursorEntry: (options?: CursorReadOptions) => Promise<FileEntry | null>
   /** Refetch the listing stats now. */
   fetchStats: () => Promise<void>
   /**
@@ -86,6 +95,32 @@ export interface SelectionInfoFeed {
 export function createSelectionInfoFeed(deps: SelectionInfoFeedDeps): SelectionInfoFeed {
   let entry = $state<FileEntry | null>(null)
   let stats = $state<ListingStats | null>(null)
+
+  /**
+   * ❗ Not `fetchEntry`'s plain `getFileAt`: the cursor index belongs to the revision
+   * the pane applied, and a watcher insert reaches the backend first, so for a few
+   * milliseconds that row number names the neighbor. Fine to DISPLAY, wrong to act on.
+   */
+  async function readCursorEntry(options: CursorReadOptions = {}): Promise<FileEntry | null> {
+    if (deps.getHasParent() && deps.getCursorIndex() === 0) {
+      const canonical = deps.getCanonicalPath()
+      return canonical ? createParentEntry(canonical) : null
+    }
+    if (deps.getTotalCount() === 0) return null
+    const pane = {
+      getListingId: deps.getListingId,
+      getCursorIndex: deps.getCursorIndex,
+      hasParentEntry: deps.getHasParent,
+      getLastSequence: deps.getLastSequence,
+    }
+    const read = await readCursorRow(
+      pane,
+      async ({ listingId, backendRows, expectedSequence }) =>
+        (await getSelectionEntries(listingId, deps.getIncludeHidden(), backendRows, expectedSequence))[0] ?? null,
+      options,
+    )
+    return read.kind === 'read' ? read.value : null
+  }
 
   async function fetchEntry(): Promise<void> {
     const listingId = deps.getListingId()
@@ -251,6 +286,7 @@ export function createSelectionInfoFeed(deps: SelectionInfoFeedDeps): SelectionI
       return stats
     },
     fetchEntry,
+    readCursorEntry,
     fetchStats,
     applyFolderSizes: (folders: FolderSizes[]) => {
       // `..` carries the PARENT folder's path, so it never matches a child reading.

@@ -5,6 +5,7 @@ import type { HubRow } from '../network/servers-hub-rows'
 import type { FavoritesMenuOpenTrigger } from '../navigation/favorites-analytics'
 import type { HistoryCursor } from '../navigation/navigation-history'
 import type { PaneRowState } from './pane-row-state'
+import type { CursorReadOptions } from './pressed-rows'
 import type { ResortResult } from '../types'
 
 /** Options for `startRename`. */
@@ -177,10 +178,11 @@ export interface FilePaneAPI {
   /** Full FileEntry under the cursor (incl. `..` synthetic entry), or null. */
   getCursorEntry(): FileEntry | null
   /**
-   * Re-reads the cursor entry and returns it. `getCursorEntry` is one IPC behind a
-   * cursor move, which is fine to DISPLAY and not fine to ACT on.
+   * Re-reads the cursor entry and returns it, checked against the revision the pane
+   * applied. `getCursorEntry` is one IPC behind a cursor move and unchecked, which is
+   * fine to DISPLAY and not fine to ACT on. `null` also when the rows never settled.
    */
-  refreshCursorEntry(): Promise<FileEntry | null>
+  refreshCursorEntry(options?: CursorReadOptions): Promise<FileEntry | null>
   /** Cursor target inside the network view (host or share), or null. */
   getNetworkCursorEntry(): NetworkCursorEntry | null
   /** The host whose share list the network view shows, or null (the Servers list, or not the network view). */

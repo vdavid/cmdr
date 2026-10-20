@@ -9,14 +9,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const { ipc, addToast } = vi.hoisted(() => ({
-  ipc: { countFolderSizes: vi.fn(), cancelFolderSizeCount: vi.fn(), getFileAt: vi.fn() },
+  ipc: { countFolderSizes: vi.fn(), cancelFolderSizeCount: vi.fn() },
   addToast: vi.fn(),
 }))
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
   countFolderSizes: ipc.countFolderSizes,
   cancelFolderSizeCount: ipc.cancelFolderSizeCount,
-  getFileAt: ipc.getFileAt,
 }))
 vi.mock('#lib/ui/toast/index.js', () => ({ addToast }))
 vi.mock('#lib/intl/messages.svelte.js', () => ({ tString: (key: string) => key }))
@@ -147,21 +146,26 @@ describe('countFolderOnSpace', () => {
     ipc.countFolderSizes.mockResolvedValue({ counted: 1, unreadable: 0, cancelled: false })
   })
 
-  it('counts the folder at the row Space selected, read from the backend', async () => {
-    ipc.getFileAt.mockResolvedValue({ name: 'photos', path: '/data/photos', isDirectory: true, isSymlink: false })
+  const folder = { name: 'photos', path: '/data/photos', isDirectory: true, isSymlink: false } as FileEntry
 
-    await countFolderOnSpace({ listingId: 'L', backendRow: 4, includeHidden: true, selected: true, enabled: true })
+  it('counts the folder the checked cursor read names, never an unchecked row lookup', async () => {
+    const readCursorRow = vi.fn(() => Promise.resolve(folder))
 
-    expect(ipc.getFileAt).toHaveBeenCalledWith('L', 4, true)
+    await countFolderOnSpace({ listingId: 'L', readCursorRow, includeHidden: true, selected: true, enabled: true })
+
+    expect(readCursorRow).toHaveBeenCalledTimes(1)
     expect(ipc.countFolderSizes).toHaveBeenCalledWith('L', true, ['/data/photos'])
   })
 
-  it('does nothing for a deselect, a file, or the parent row', async () => {
-    ipc.getFileAt.mockResolvedValue({ name: 'a.txt', path: '/data/a.txt', isDirectory: false, isSymlink: false })
+  it('does nothing for a deselect, a file, a row that never settled, or the parent row', async () => {
+    const file = { name: 'a.txt', path: '/data/a.txt', isDirectory: false, isSymlink: false } as FileEntry
+    const parent = { ...folder, name: '..' }
+    const args = { listingId: 'L', includeHidden: false, enabled: true }
 
-    await countFolderOnSpace({ listingId: 'L', backendRow: 1, includeHidden: false, selected: false, enabled: true })
-    await countFolderOnSpace({ listingId: 'L', backendRow: -1, includeHidden: false, selected: true, enabled: true })
-    await countFolderOnSpace({ listingId: 'L', backendRow: 1, includeHidden: false, selected: true, enabled: true })
+    await countFolderOnSpace({ ...args, readCursorRow: () => Promise.resolve(folder), selected: false })
+    await countFolderOnSpace({ ...args, readCursorRow: () => Promise.resolve(file), selected: true })
+    await countFolderOnSpace({ ...args, readCursorRow: () => Promise.resolve(null), selected: true })
+    await countFolderOnSpace({ ...args, readCursorRow: () => Promise.resolve(parent), selected: true })
 
     expect(ipc.countFolderSizes).not.toHaveBeenCalled()
   })

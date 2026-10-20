@@ -418,18 +418,24 @@ describe('openViewerForCursor', () => {
     expect(openFileViewerSpy).not.toHaveBeenCalled()
   })
 
-  it('does not open the viewer for a directory or the parent entry', async () => {
-    getFileAtSpy.mockResolvedValue(fileEntry({ isDirectory: true }))
-    const access = buildAccess({ paneRefs: { left: buildPaneRef({ listingId: 'lst-1', cursorIndex: 1 }) } })
+  it('does not open the viewer for a directory, the parent entry, or rows that never settled', async () => {
+    for (const cursorEntry of [fileEntry({ isDirectory: true }), fileEntry({ name: '..' }), null]) {
+      const access = buildAccess({ paneRefs: { left: buildPaneRef({ listingId: 'lst-1', cursorEntry }) } })
 
-    await create(access, buildDialogs()).openViewerForCursor()
+      await create(access, buildDialogs()).openViewerForCursor()
+    }
 
     expect(openFileViewerSpy).not.toHaveBeenCalled()
   })
 
-  it('opens the viewer for a file under the cursor, threading the pane volume id', async () => {
-    getFileAtSpy.mockResolvedValue(fileEntry({ path: '/Users/x/dir/note.md' }))
-    const access = buildAccess({ paneRefs: { left: buildPaneRef({ listingId: 'lst-1', cursorIndex: 2 }) } })
+  it('opens the file the checked cursor read names, never an unchecked row lookup', async () => {
+    // What an unchecked read would see right after a watcher insert: the neighbor.
+    getFileAtSpy.mockResolvedValue(fileEntry({ path: '/Users/x/dir/neighbor.md' }))
+    const access = buildAccess({
+      paneRefs: {
+        left: buildPaneRef({ listingId: 'lst-1', cursorEntry: fileEntry({ path: '/Users/x/dir/note.md' }) }),
+      },
+    })
 
     await create(access, buildDialogs()).openViewerForCursor()
 
@@ -437,9 +443,14 @@ describe('openViewerForCursor', () => {
   })
 
   it('threads a non-root pane volume id so a remote-hosted archive previews through it', async () => {
-    getFileAtSpy.mockResolvedValue(fileEntry({ path: '/share/bundle.zip/inner.txt' }))
     const access = buildAccess({
-      paneRefs: { left: buildPaneRef({ listingId: 'lst-1', cursorIndex: 2, volumeId: 'smb-1' }) },
+      paneRefs: {
+        left: buildPaneRef({
+          listingId: 'lst-1',
+          volumeId: 'smb-1',
+          cursorEntry: fileEntry({ path: '/share/bundle.zip/inner.txt' }),
+        }),
+      },
     })
 
     await create(access, buildDialogs()).openViewerForCursor()

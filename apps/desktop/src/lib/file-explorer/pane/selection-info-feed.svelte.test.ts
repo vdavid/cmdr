@@ -9,7 +9,9 @@
  * - the cursor effect debounces the fetch and pushes to MCP, but only with a settled listing,
  * - the search-results pane mirrors the snapshot row under the cursor, and clamps
  *   past-the-end cursors to `null`,
- * - `cleanup()` drops the pending debounce and throttle.
+ * - `cleanup()` drops the pending debounce and throttle,
+ * - a command's cursor read (`readCursorEntry`) resolves against the revision the pane
+ *   applied, so a watcher insert never hands it the neighbor row.
  *
  * Uses Svelte runes, so the filename carries the `.svelte.` infix.
  */
@@ -18,21 +20,39 @@ import { flushSync } from 'svelte'
 import { toCanonical, type CanonicalPath } from '#lib/path/canonical.js'
 import type { SearchSnapshot } from '#lib/search/snapshot-store.svelte.js'
 
-const { ipc, listUtils } = vi.hoisted<{
-  ipc: { getFileAt: Mock; getListingStats: Mock }
+const { ipc, listUtils, announceSpy } = vi.hoisted<{
+  ipc: { getFileAt: Mock; getListingStats: Mock; getSelectionEntries: Mock }
   listUtils: { updateIndexSizesInPlace: Mock }
+  announceSpy: Mock
 }>(() => ({
-  ipc: { getFileAt: vi.fn(), getListingStats: vi.fn() },
+  ipc: { getFileAt: vi.fn(), getListingStats: vi.fn(), getSelectionEntries: vi.fn() },
   listUtils: { updateIndexSizesInPlace: vi.fn() },
+  announceSpy: vi.fn(),
 }))
 
-vi.mock('#lib/tauri-commands/index.js', () => ({
+vi.mock('#lib/tauri-commands/index.js', async () => ({
   getFileAt: ipc.getFileAt,
   getListingStats: ipc.getListingStats,
+  getSelectionEntries: ipc.getSelectionEntries,
+  asListingLookupError: (
+    await vi.importActual<typeof import('#lib/tauri-commands/listing-gone.js')>('#lib/tauri-commands/listing-gone.js')
+  ).asListingLookupError,
 }))
 vi.mock('../views/file-list-utils', () => ({ updateIndexSizesInPlace: listUtils.updateIndexSizesInPlace }))
+vi.mock('./operation-start-gate', () => ({ announceRowsStillSettling: announceSpy }))
 
 import { createSelectionInfoFeed, type SelectionInfoFeed } from './selection-info-feed.svelte'
+import { PRESS_RETRY_MS, ROW_SETTLE_BUDGET_MS } from './pressed-rows'
+import {
+  APPLIED_SEQUENCE,
+  BACKEND_SEQUENCE,
+  CAUGHT_UP_ROW,
+  MOVED_LISTING_ID,
+  SELECTED_PATH,
+  SELECTED_ROW,
+  catchingUpAfterRefusal,
+  selectionEntries,
+} from './moved-listing.test-fixtures'
 
 const canonical = (path: string): CanonicalPath => toCanonical(path, '/Users/test')
 
@@ -92,8 +112,10 @@ describe('createSelectionInfoFeed', () => {
       isSearchResultsView?: boolean
       searchSnapshot?: SearchSnapshot | undefined
       selectedIndices?: number[]
+      sequence?: number
     } = {},
   ) {
+    let sequence = opts.sequence ?? 0
     let listingId = $state(opts.listingId ?? 'listing-1')
     const loading = $state(opts.loading ?? false)
     const totalCount = $state(opts.totalCount ?? 10)
@@ -123,6 +145,7 @@ describe('createSelectionInfoFeed', () => {
         getSelectionSize: () => selectedIndices.length,
         syncMcp,
         onCursorRow,
+        getLastSequence: () => sequence,
       })
     })
     flushSync()
@@ -130,6 +153,11 @@ describe('createSelectionInfoFeed', () => {
       feed,
       syncMcp,
       onCursorRow,
+      /** The pane applying a diff: its cursor follows its file to `row`, at revision `seq`. */
+      applyDiff: (row: number, seq: number) => {
+        cursorIndex = row
+        sequence = seq
+      },
       setCursorIndex: (v: number) => {
         cursorIndex = v
         flushSync()
@@ -432,6 +460,67 @@ describe('createSelectionInfoFeed', () => {
       const created = create({ isSearchResultsView: true, listingId: '', searchSnapshot: twoRows() })
       created.setSnapshot(undefined)
       expect(created.feed.stats).toBeNull()
+    })
+  })
+
+  describe("a command's read of the cursor row", () => {
+    /** The pane's cursor on `charlie.txt` at the revision it applied; the backend already moved on. */
+    function createMoved(opts: { selectedIndices?: number[] } = {}) {
+      // What an unchecked read sees: the backend's rows NOW, where `bravo.txt` took row 1.
+      ipc.getFileAt.mockImplementation((_id: string, index: number) =>
+        selectionEntries(MOVED_LISTING_ID, true, [index], BACKEND_SEQUENCE).then((rows) => rows[0]),
+      )
+      return create({
+        listingId: MOVED_LISTING_ID,
+        cursorIndex: SELECTED_ROW,
+        sequence: APPLIED_SEQUENCE,
+        selectedIndices: opts.selectedIndices,
+      })
+    }
+
+    beforeEach(() => {
+      ipc.getSelectionEntries.mockReset()
+      announceSpy.mockClear()
+    })
+
+    it('acts on the row the user saw, not the neighbor a watcher insert pushed onto its row number', async () => {
+      const created = createMoved()
+      const pane = { catchUp: () => created.applyDiff(CAUGHT_UP_ROW, BACKEND_SEQUENCE) }
+      ipc.getSelectionEntries.mockImplementation(catchingUpAfterRefusal(pane, selectionEntries))
+
+      const read = created.feed.readCursorEntry()
+      await vi.advanceTimersByTimeAsync(PRESS_RETRY_MS)
+
+      expect((await read)?.path).toBe(SELECTED_PATH)
+    })
+
+    it('reads nothing and says why when the rows never settle, never the neighbor', async () => {
+      const created = createMoved()
+      ipc.getSelectionEntries.mockImplementation(selectionEntries)
+
+      const read = created.feed.readCursorEntry()
+      await vi.advanceTimersByTimeAsync(ROW_SETTLE_BUDGET_MS + PRESS_RETRY_MS)
+
+      expect(await read).toBeNull()
+      expect(announceSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('reads the cursor row even with a selection elsewhere', async () => {
+      const created = createMoved({ selectedIndices: [0] })
+      created.applyDiff(CAUGHT_UP_ROW, BACKEND_SEQUENCE)
+      ipc.getSelectionEntries.mockImplementation(selectionEntries)
+
+      expect((await created.feed.readCursorEntry())?.path).toBe(SELECTED_PATH)
+      expect(ipc.getSelectionEntries).toHaveBeenCalledWith(MOVED_LISTING_ID, true, [CAUGHT_UP_ROW], BACKEND_SEQUENCE)
+    })
+
+    it('resolves `..` synthetically and an empty listing to null, without a read', async () => {
+      const parent = create({ hasParent: true, cursorIndex: 0, canonicalPath: canonical('/dir/sub') })
+      expect((await parent.feed.readCursorEntry())?.path).toBe('/dir')
+      dispose?.()
+      const empty = create({ totalCount: 0 })
+      expect(await empty.feed.readCursorEntry()).toBeNull()
+      expect(ipc.getSelectionEntries).not.toHaveBeenCalled()
     })
   })
 

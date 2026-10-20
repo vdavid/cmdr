@@ -63,8 +63,8 @@ Umbrella-level files:
   outlives the message it's about.
 - `create-submission.svelte.ts` + `StillCreatingNotice.svelte`: the same two dialogs' submit, from OK to how the create
   really ended, slow volumes included (§ "Mutation refusals").
-- `cursor-entry.ts`: `getCursorEntry()`, the backend entry under the pane's cursor with the `..` row shift applied once,
-  so the two dialogs' pre-fills (`getInitialFolderName` / `getInitialFileName`) can't drift.
+- `cursor-entry.ts`: `getCursorEntry()`, the entry under the pane's cursor through its checked `refreshCursorEntry`
+  (`..` reads as none), so the two dialogs' pre-fills (`getInitialFolderName` / `getInitialFileName`) can't drift.
 - `S3CostLine.svelte` + `s3-cost-line.ts`: the list-price cost estimate under the Copy, Move, and Delete dialogs' scan
   tallies (§ below).
 - `decision-keys.ts`: the fixed letter keys that answer the clash prompt and the transfer error dialog (each button

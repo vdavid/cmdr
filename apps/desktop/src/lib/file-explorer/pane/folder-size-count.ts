@@ -10,7 +10,7 @@
  * volume is gone or some folders couldn't be read.
  */
 
-import { cancelFolderSizeCount, countFolderSizes, getFileAt } from '#lib/tauri-commands/index.js'
+import { cancelFolderSizeCount, countFolderSizes } from '#lib/tauri-commands/index.js'
 import { addToast } from '#lib/ui/toast/index.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { getAppLogger } from '#lib/logging/logger.js'
@@ -83,25 +83,22 @@ export function cancelCountInPane(listingId: string): boolean {
 }
 
 /**
- * Space on a folder: once Space has selected the row at `backendRow`, count its
- * size if it should be counted. Reads the row from the backend rather than from
- * the cursor's cached entry, which trails a fast ↓ then Space by a fetch.
+ * Space on a folder: once Space has selected the cursor row, count its size if it
+ * should be counted. `readCursorRow` is the pane's checked cursor read
+ * (`FilePane.refreshCursorEntry`), ❌ never the cursor's cached entry, which trails
+ * a fast ↓ then Space by a fetch, nor a plain row lookup, which names the neighbor
+ * right after a watcher insert. `null` (the rows moved): nothing to count.
  */
 export async function countFolderOnSpace(args: {
   listingId: string
-  backendRow: number
+  readCursorRow: () => Promise<FileEntry | null>
   includeHidden: boolean
   selected: boolean
   enabled: boolean
 }): Promise<void> {
-  const { listingId, backendRow, includeHidden, selected, enabled } = args
-  if (!selected || !enabled || listingId === '' || backendRow < 0) return
-  let entry: FileEntry | null
-  try {
-    entry = await getFileAt(listingId, backendRow, includeHidden)
-  } catch {
-    return // The pane moved on: nothing to count.
-  }
+  const { listingId, readCursorRow, includeHidden, selected, enabled } = args
+  if (!selected || !enabled || listingId === '') return
+  const entry = await readCursorRow()
   if (!shouldCountOnSpace(entry, selected, enabled) || !entry) return
   await countFoldersInPane(listingId, includeHidden, [entry.path])
 }

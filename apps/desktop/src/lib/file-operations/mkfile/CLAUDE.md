@@ -18,8 +18,8 @@ rationale: `DETAILS.md`.
   `handleNewFileCreated` (`file-explorer/pane/dialog-state.svelte.ts`, via `moveCursorToNewFolder` and
   `onOpenInEditor`). Editor-launch / cursor logic edits go there, not here.
 - **The pre-fill cursor offset is shared with `mkdir`.** Both `getInitialFileName` and `getInitialFolderName` read the
-  cursor entry through `getCursorEntry()` (`../cursor-entry.ts`), which applies the `..` + `hasParent` arithmetic once.
-  Don't re-derive the index here, or the pre-fill reads the wrong entry.
+  cursor entry through `getCursorEntry()` (`../cursor-entry.ts`), the pane's revision-checked cursor read with `..` as
+  none. Don't re-derive the index here, or the pre-fill reads the wrong entry (the neighbor, after a watcher insert).
 - **The name field and its validation are shared with `NewFolderDialog`** (`../NewEntryNameField.svelte` +
   `../new-entry-name-check.svelte.ts`): the `#lib/utils/filename-validation` validators, then the async conflict check
   via `findFileIndex` + `getFileAt`. A validation change lands there, once.

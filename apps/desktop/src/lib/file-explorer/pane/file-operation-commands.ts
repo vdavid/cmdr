@@ -1,7 +1,6 @@
 import {
   createDirectory,
   createFile,
-  getFileAt,
   getSelectionEntries,
   trashRoutingForPaths,
   type Initiator,
@@ -13,7 +12,6 @@ import { getSnapshot, resolveSnapshotEntries, snapshotIdFromPanePath } from '#li
 import { resolveSnapshotSourceVolume } from './snapshot-source-volume'
 import { openFileViewer } from '#lib/file-viewer/open-viewer.js'
 import { getAppLogger } from '#lib/logging/logger.js'
-import { toBackendCursorIndex } from '#lib/file-operations/transfer/transfer-dialog-utils.js'
 import { getInitialFolderName } from '#lib/file-operations/mkdir/new-folder-operations.js'
 import { getInitialFileName } from '#lib/file-operations/mkfile/new-file-operations.js'
 import type { CloudOnlineOnlyExtent, DeleteSourceItem } from '#lib/file-operations/delete/delete-dialog-utils.js'
@@ -228,8 +226,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       return
     }
 
-    const initialName =
-      nameOverride ?? (await getInitialFolderName(paneRef, paneListingId, access.getShowHiddenFiles(), getFileAt))
+    const initialName = nameOverride ?? (await getInitialFolderName(paneRef))
 
     dialogs.showNewFolder({
       currentPath: path,
@@ -270,8 +267,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       return
     }
 
-    const initialName =
-      nameOverride ?? (await getInitialFileName(paneRef, paneListingId, access.getShowHiddenFiles(), getFileAt))
+    const initialName = nameOverride ?? (await getInitialFileName(paneRef))
 
     dialogs.showNewFile({
       currentPath: path,
@@ -326,22 +322,20 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     return dialogs.isConfirmationDialogOpen()
   }
 
-  /** Opens the file viewer for the file under the cursor. */
+  /**
+   * Opens the file viewer for the file under the cursor, read through the pane's
+   * checked cursor read (`refreshCursorEntry`), so a watcher insert can't open the neighbor.
+   */
   async function openViewerForCursor() {
     const paneRef = access.getPaneRef(access.getFocusedPane())
-    const listingId = paneRef?.getListingId()
-    if (!listingId) return
-    const cursorIndex = paneRef?.getCursorIndex()
-    const hasParent = paneRef?.hasParentEntry()
-    const backendIndex = toBackendCursorIndex(cursorIndex ?? -1, hasParent ?? false)
-    if (backendIndex === null) return
+    if (!paneRef?.getListingId()) return
 
-    const file = await getFileAt(listingId, backendIndex, access.getShowHiddenFiles())
+    const file = await paneRef.refreshCursorEntry()
     if (!file || file.isDirectory || file.name === '..') return
 
     // Pass the pane's DRIVE volume id (an archive pane keeps its parent drive's
     // id) so a file inside a remote-hosted zip previews through that volume.
-    void openFileViewer(file.path, paneRef?.getVolumeId() ?? 'root')
+    void openFileViewer(file.path, paneRef.getVolumeId())
   }
 
   /** Opens the transfer dialog with the current selection info. */

@@ -15,7 +15,7 @@ vi.mock('#lib/tauri-commands/index.js', async () => ({
   ).asListingLookupError,
 }))
 
-import { readPressedRows, type PressedPane } from './pressed-rows'
+import { readCursorRow, readPressedRows, type PressedPane } from './pressed-rows'
 import { ListingLookupFailure } from '#lib/tauri-commands/listing-gone.js'
 
 function paneOf(state: { selected: number[]; cursor?: number }): PressedPane {
@@ -79,5 +79,38 @@ describe('readPressedRows', () => {
 
     expect(await readPressedRows(paneOf({ selected: [] }), read, { cursorFallback: false })).toEqual({ kind: 'none' })
     expect(read).not.toHaveBeenCalled()
+  })
+})
+
+describe('readCursorRow', () => {
+  it('reads the cursor row alone, whatever is selected', async () => {
+    const read = vi.fn(({ backendRows }: { backendRows: number[] }) => Promise.resolve(backendRows))
+
+    expect(await readCursorRow(paneOf({ selected: [1, 2], cursor: 4 }), read)).toEqual({
+      kind: 'read',
+      value: [4],
+      onSelection: false,
+    })
+  })
+
+  it('answers none on the `..` row, without reading', async () => {
+    const read = vi.fn()
+    const pane = { ...paneOf({ selected: [], cursor: 0 }), hasParentEntry: () => true }
+
+    expect(await readCursorRow(pane, read)).toEqual({ kind: 'none' })
+    expect(read).not.toHaveBeenCalled()
+  })
+
+  it('refuses once the pane switched listings while it waited', async () => {
+    let listingId = 'listing-1'
+    const pane = { ...paneOf({ selected: [] }), getListingId: () => listingId }
+    const read = vi.fn(() => {
+      listingId = 'listing-2'
+      return changed()
+    })
+
+    expect(await readCursorRow(pane, read, { mcpRequestId: 'r' })).toEqual({ kind: 'refused' })
+    expect(read).toHaveBeenCalledTimes(1)
+    expect(announceSpy).toHaveBeenCalledWith('r')
   })
 })

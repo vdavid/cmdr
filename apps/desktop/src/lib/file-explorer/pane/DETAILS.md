@@ -931,11 +931,20 @@ either it still holds the old row. Displaying a stale row for a few milliseconds
 gap widens on a slow mount. Arrow-down then ⌥⌘T is an ordinary keyboard sequence, and it opened the previous row's
 folder until `getCursorRowForTerminal()` was made async over the re-read. All three cursor getters
 (`getFileAndPathUnderCursor`, `getPathToCopyUnderCursor`, `getCursorRowForTerminal`) re-read, so every
-`withEntryUnderCursor` arm (F4, Show in Finder, Quick Look, Get Info, copy filename, the cloud pair) does too.
-`refreshCursorEntry()` skips the IPC on a snapshot pane, whose mirror is synchronous. `getCursorEntry()` stays as it was
-for the display and mirror readers, which want the cheap cached answer. The E2E spec
-(`test/e2e-playwright/open-terminal-here.spec.ts`) is what catches a regression here: it drives a real cursor move, and
-no unit test can reach the race.
+`withEntryUnderCursor` arm (F4, Show in Finder, Quick Look, Get Info, copy filename, the cloud pair) does too, and so do
+F3, Space's folder count, select-same-kind, `⌃⏎`, and the F7 / ⇧F4 name pre-fills. `refreshCursorEntry()` skips the IPC
+on a snapshot pane, whose mirror is synchronous. `getCursorEntry()` stays as it was for the display and mirror readers,
+which want the cheap cached answer. The E2E spec (`test/e2e-playwright/open-terminal-here.spec.ts`) is what catches a
+regression here: it drives a real cursor move, and no unit test can reach the race.
+
+**The re-read is revision-checked too** (`selectionInfo.readCursorEntry` → `pressed-rows.ts::readCursorRow` →
+`getSelectionEntries` with the pane's applied sequence). The cursor index belongs to the revision the pane applied, and
+a watcher insert reaches the backend first, so a plain `get_file_at` on that row number names the NEIGHBOR for a few
+milliseconds: F4 opened the wrong file in the editor. `readCursorRow` is `readPressedRows`'s loop minus the selection
+(the cursor row whatever is selected), with the same wait, budget, and rows-still-settling toast; a refusal answers
+`null`, which every caller already treats as "no row". Space's folder count makes ONE quiet attempt (`deadline: now`): a
+retry would follow a cursor the user may have moved on since. The pre-fills stay quiet (`announce: false`). The display
+feed's own `fetchEntry` stays unchecked: a stale footer for a frame is fine.
 
 **The displayed entry follows the rows, not only the cursor index.** The feed's effect also tracks the pane's
 `cacheGeneration` (`getRowRevision`), which every cold row-space swap bumps: quick filter, sort, hidden files, a new
@@ -1914,7 +1923,8 @@ is worded per mode and promises no more than that.
   (`getSelectionEntries`), ⌘C / ⌘X, a selection drag, the context menu, tags, and copy-path all read the press through
   ONE helper, `pressed-rows.ts::readPressedRows`; Services resolves through `Listings::selection_snapshot` in Rust. Why:
   a watcher insert above the selection reaches the backend before the pane hears the diff, and the old row numbers then
-  name the neighbor, so a delete, cut, or drag acts on a file nobody picked.
+  name the neighbor, so a delete, cut, or drag acts on a file nobody picked. Commands on the CURSOR row read through its
+  sibling `readCursorRow`, the same loop (§ "A command that ACTS on the cursor row").
 - **A `changed` refusal waits, it doesn't refuse.** In a busy folder (a download running) the watcher fires every few
   hundred ms, and refusing outright turned about a quarter of presses into a toast. `readPressedRows` retries every
   `PRESS_RETRY_MS` (100 ms) within `ROW_SETTLE_BUDGET_MS` (3 s), and only the budget running out shows the

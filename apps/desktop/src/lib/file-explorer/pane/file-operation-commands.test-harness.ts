@@ -66,9 +66,12 @@ export function buildPaneRef(
     isRowStateReady: () => boolean
     whenRowStateReady: (timeoutMs: number) => Promise<boolean>
     getViewGeneration: () => number
+    /** What the pane's checked cursor read (`refreshCursorEntry`) answers. */
+    cursorEntry: FileEntry | null
   }> = {},
 ): FilePaneAPI {
   const stub = {
+    refreshCursorEntry: vi.fn(() => Promise.resolve(overrides.cursorEntry ?? null)),
     getListingId: () => ('listingId' in overrides ? overrides.listingId : 'listing-1'),
     getLastSequence: () => 0,
     getViewGeneration: overrides.getViewGeneration ?? (() => 0),

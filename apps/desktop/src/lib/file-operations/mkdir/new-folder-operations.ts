@@ -1,6 +1,6 @@
 import type { FilePaneAPI } from '#lib/file-explorer/pane/types.js'
 import type { DirectoryDiff } from '#lib/file-explorer/types.js'
-import { getCursorEntry, type GetFileAtFn } from '../cursor-entry'
+import { getCursorEntry } from '../cursor-entry'
 import { removeExtension } from './new-folder-utils'
 
 type OnDirectoryDiffFn = (handler: (payload: DirectoryDiff) => void) => Promise<() => void>
@@ -23,13 +23,8 @@ type FindFileIndexFn = (args: FindFileIndexArgs) => Promise<number | null>
  * The New folder pre-fill: the cursor entry's name, with a file's extension
  * stripped (a folder named after `report.pdf` is `report`). Empty for `..`.
  */
-export async function getInitialFolderName(
-  paneRef: FilePaneAPI | undefined,
-  paneListingId: string,
-  showHiddenFiles: boolean,
-  getFileAt: GetFileAtFn,
-): Promise<string> {
-  const entry = await getCursorEntry(paneRef, paneListingId, showHiddenFiles, getFileAt)
+export async function getInitialFolderName(paneRef: FilePaneAPI | undefined): Promise<string> {
+  const entry = await getCursorEntry(paneRef)
   if (!entry) return ''
   return entry.isDirectory ? entry.name : removeExtension(entry.name)
 }

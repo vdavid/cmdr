@@ -116,6 +116,7 @@
     } from '#lib/settings/reactive-settings.svelte.js'
     import { createRowOverlays } from './row-overlays.svelte'
     import { createSelectionInfoFeed } from './selection-info-feed.svelte'
+    import type { CursorReadOptions } from './pressed-rows'
     import { createPaneKeyRouter } from './pane-key-router'
     import { createEntryActivation } from './entry-activation'
     import { createPanePointer } from './pane-pointer'
@@ -844,13 +845,14 @@
      * round trip per cursor move, so for a moment after a move it still holds the
      * row the cursor just left. A read that only DISPLAYS the entry can live with
      * that; a command that acts on it can't (arrow-down then ⌥⌘T is an ordinary
-     * keyboard sequence, and the gap widens on a slow mount).
+     * keyboard sequence, and the gap widens on a slow mount). The re-read is checked
+     * against the revision the pane applied, so a watcher insert can't hand it the
+     * neighbor either (`selectionInfo.readCursorEntry`).
      */
     // noinspection JSUnusedGlobalSymbols -- used by DualPaneExplorer.getCursorRowForTerminal
-    export async function refreshCursorEntry(): Promise<FileEntry | null> {
+    export async function refreshCursorEntry(options?: CursorReadOptions): Promise<FileEntry | null> {
         // A snapshot pane mirrors its row synchronously, so its entry is never behind.
-        if (!isSearchResultsView) await selectionInfo.fetchEntry()
-        return selectionInfo.entry
+        return isSearchResultsView ? selectionInfo.entry : selectionInfo.readCursorEntry(options)
     }
 
     /**
@@ -1102,7 +1104,9 @@
     function countFolderOnSpace(selected: boolean): void {
         void countFolderOnSpaceAt({
             listingId,
-            backendRow: hasParent ? cursorIndex - 1 : cursorIndex,
+            // One attempt, quiet: the first reads the row Space just toggled, and a retry
+            // would follow a cursor the user may have moved on since.
+            readCursorRow: () => refreshCursorEntry({ deadline: Date.now(), announce: false }),
             includeHidden,
             selected,
             enabled: getSpaceCalculatesFolderSize(),
@@ -1900,6 +1904,7 @@
         onCursorRow: (index: number, rowPath: string) => {
             historyCursor.reportRow(index, rowPath)
         },
+        getLastSequence,
     })
 
     // Scroll the entry under the cursor into view when view mode changes

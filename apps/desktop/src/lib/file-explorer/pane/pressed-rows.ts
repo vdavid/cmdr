@@ -19,7 +19,10 @@
  * safely, so it's refused.
  */
 import { asListingLookupError } from '#lib/tauri-commands/index.js'
-import { toBackendSelectionOrCursor } from '#lib/file-operations/transfer/transfer-dialog-utils.js'
+import {
+  toBackendCursorIndex,
+  toBackendSelectionOrCursor,
+} from '#lib/file-operations/transfer/transfer-dialog-utils.js'
 import { announceRowsStillSettling } from './operation-start-gate'
 
 /**
@@ -60,6 +63,9 @@ export interface PressOptions {
   announce?: boolean
 }
 
+/** A cursor-row read's options: a press's, minus the fallback (the cursor IS the target). */
+export type CursorReadOptions = Omit<PressOptions, 'cursorFallback'>
+
 /**
  * - `read`: the read's answer, and whether the press was on a selection.
  * - `none`: nothing to act on (no listing, no selection without a cursor fallback,
@@ -77,6 +83,52 @@ export async function readPressedRows<T>(
   const listingId = pane.getListingId()
   const onSelection = pane.getSelectedIndices().length > 0
   if (!listingId || (!onSelection && !options.cursorFallback)) return { kind: 'none' }
+  const rowsNow = (): number[] | null => {
+    const selected = pane.getSelectedIndices()
+    if (selected.length > 0 !== onSelection) return null
+    return toBackendSelectionOrCursor(selected, pane.getCursorIndex(), pane.hasParentEntry())
+  }
+  return readSettledRows(pane, listingId, rowsNow, read, options, onSelection)
+}
+
+/** What a cursor-row read needs from the pane, live: a press's pane minus the selection. */
+export type CursorPane = Omit<PressedPane, 'getSelectedIndices'>
+
+/**
+ * Reads the CURSOR row alone, whatever is selected, through the same checked,
+ * busy-folder-tolerant loop: for the commands that act on the row under the
+ * cursor (F3, F4, Quick Look, Get Info, Show in Finder, copy name, open terminal
+ * here, the cloud pair). Each attempt re-reads the cursor from the pane, which
+ * carries it through every diff it applies, so the answer is the file the user
+ * saw under it, ❌ never the neighbor a watcher insert pushed onto its old row
+ * number. `none` on the `..` row.
+ */
+export async function readCursorRow<T>(
+  pane: CursorPane,
+  read: (rows: PressedRows) => Promise<T>,
+  options: CursorReadOptions = {},
+): Promise<PressedRead<T>> {
+  const listingId = pane.getListingId()
+  if (!listingId) return { kind: 'none' }
+  const rowsNow = (): number[] => {
+    const cursor = toBackendCursorIndex(pane.getCursorIndex(), pane.hasParentEntry())
+    return cursor === null ? [] : [cursor]
+  }
+  return readSettledRows(pane, listingId, rowsNow, read, options, false)
+}
+
+/**
+ * The retry loop both reads share. `rowsNow` re-derives the rows from the pane
+ * for each attempt, or answers `null` when the press changed shape meanwhile.
+ */
+async function readSettledRows<T>(
+  pane: CursorPane,
+  listingId: string,
+  rowsNow: () => number[] | null,
+  read: (rows: PressedRows) => Promise<T>,
+  options: CursorReadOptions,
+  onSelection: boolean,
+): Promise<PressedRead<T>> {
   const deadline = options.deadline ?? Date.now() + ROW_SETTLE_BUDGET_MS
   const refuse = (): PressedRead<T> => {
     if (options.announce !== false) announceRowsStillSettling(options.mcpRequestId)
@@ -84,9 +136,9 @@ export async function readPressedRows<T>(
   }
 
   for (;;) {
-    const selected = pane.getSelectedIndices()
-    if (pane.getListingId() !== listingId || selected.length > 0 !== onSelection) return refuse()
-    const backendRows = toBackendSelectionOrCursor(selected, pane.getCursorIndex(), pane.hasParentEntry())
+    if (pane.getListingId() !== listingId) return refuse()
+    const backendRows = rowsNow()
+    if (backendRows === null) return refuse()
     if (backendRows.length === 0) return { kind: 'none' }
     const expectedSequence = pane.getLastSequence()
     try {
