@@ -284,12 +284,12 @@ async fn smb_integration_a_forced_rename_replaces_the_file_in_one_frame() {
     let (requests_after, compounds_after) = request_counts(&vol).await;
 
     // The rename is one CREATE + SET_INFO + CLOSE frame; the second frame is the
-    // stat `notify_mutation` patches the listing with (CREATE + two
-    // QUERY_INFOs + CLOSE). Before, a stat and a delete went out ahead of the
-    // rename: (4, 14).
+    // stat `notify_mutation` patches the listing with (CREATE + three
+    // QUERY_INFOs + CLOSE, the third asking the reparse tag since smb2 0.34).
+    // Before, a stat and a delete went out ahead of the rename.
     assert_eq!(
         (compounds_after - compounds_before, requests_after - requests_before),
-        (2, 7),
+        (2, 8),
         "the replacing rename plus the listing patch's stat, and no delete"
     );
     assert!(!vol.exists(Path::new(&src)).await);

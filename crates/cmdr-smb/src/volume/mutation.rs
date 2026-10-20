@@ -122,32 +122,19 @@ impl SmbVolume {
             LogPrivate::path(&smb_path)
         );
 
-        // Try delete_file first (one round-trip). If the path is a directory,
-        // the server returns STATUS_FILE_IS_A_DIRECTORY; then try delete_directory.
-        // This avoids a stat round-trip for every file in bulk deletes.
-        let file_result = {
+        // `delete_link` opens the entry's reparse point itself with no
+        // file-or-directory condition, so one round trip takes a file, an empty
+        // folder, or a junction or symlink AS the link, ❌ never its target (a
+        // junction is a folder on Windows, a Samba symlink a file, #516). A
+        // non-empty folder is refused, as the trait promises.
+        {
             let SessionLease {
                 tree,
                 mut conn,
                 generation,
             } = self.clone_session().await?;
-            let r = tree.delete_file(&mut conn, &smb_path).await;
-            self.handle_smb_result("delete_file", &smb_path, generation, r)
-        };
-
-        match file_result {
-            Ok(()) => {} // File deleted successfully
-            Err(VolumeError::IsADirectory(_)) => {
-                // Expected fall-through: path is a directory, retry with delete_directory.
-                let SessionLease {
-                    tree,
-                    mut conn,
-                    generation,
-                } = self.clone_session().await?;
-                let r = tree.delete_directory(&mut conn, &smb_path).await;
-                self.handle_smb_result("delete_directory", &smb_path, generation, r)?;
-            }
-            Err(e) => return Err(e),
+            let r = tree.delete_link(&mut conn, &smb_path).await;
+            self.handle_smb_result("delete", &smb_path, generation, r)?;
         }
 
         if let (Some(parent), Some(name)) = (path.parent(), path.file_name())
@@ -273,11 +260,9 @@ impl SmbVolume {
         self.handle_smb_result("rename", path_at_fault, ran_on, r)
     }
 
-    /// Removes whatever sits at `smb_to`, so a forced rename can land on it.
-    ///
-    /// Tries the file delete first; only a typed `IsADirectory` earns the second
-    /// round trip. Any other refusal (`PermissionDenied`, `SharingViolation`, …)
-    /// propagates immediately instead of being masked by a second futile delete.
+    /// Removes whatever sits at `smb_to`, so a forced rename can land on it: a
+    /// file, an empty folder, or a link (the link alone). A refusal
+    /// (`PermissionDenied`, a non-empty folder, …) propagates as it came.
     async fn clear_rename_destination(&self, smb_to: &str) -> Result<(), VolumeError> {
         let dest_exists = {
             let SessionLease {
@@ -291,29 +276,15 @@ impl SmbVolume {
             return Ok(());
         }
 
-        let file_result = {
-            let SessionLease {
-                tree,
-                mut conn,
-                generation,
-            } = self.clone_session().await?;
-            let r = tree.delete_file(&mut conn, smb_to).await;
-            self.handle_smb_result("rename(delete_dest_file)", smb_to, generation, r)
-        };
-        match file_result {
-            Ok(()) => Ok(()),
-            Err(VolumeError::IsADirectory(_)) => {
-                let SessionLease {
-                    tree,
-                    mut conn,
-                    generation,
-                } = self.clone_session().await?;
-                let r = tree.delete_directory(&mut conn, smb_to).await;
-                self.handle_smb_result("rename(delete_dest_dir)", smb_to, generation, r)?;
-                Ok(())
-            }
-            Err(e) => Err(e),
-        }
+        // The same one-frame delete `delete_impl` sends: a file, an empty
+        // folder, or a link as the link.
+        let SessionLease {
+            tree,
+            mut conn,
+            generation,
+        } = self.clone_session().await?;
+        let r = tree.delete_link(&mut conn, smb_to).await;
+        self.handle_smb_result("rename(delete_dest)", smb_to, generation, r)
     }
 
     /// The one listing-cache patch a create leaves behind. A path that doesn't

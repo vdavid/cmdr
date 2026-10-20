@@ -669,6 +669,8 @@ mod host_seam_test;
 #[cfg(test)]
 mod integration_test;
 #[cfg(test)]
+mod links_integration_test;
+#[cfg(test)]
 mod read_stream_integration_test;
 #[cfg(test)]
 mod retirement_test;

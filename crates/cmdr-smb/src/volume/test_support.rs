@@ -110,3 +110,34 @@ pub(super) async fn drain(mut stream: Box<dyn VolumeReadStream>) -> Vec<u8> {
     }
     out
 }
+
+/// Runs `command` inside the guest fixture container, as root, against the
+/// share's disk at `/shares/public`: the one way to make what a client can't
+/// (an aged date, a Unix symlink). Panics naming what couldn't be run.
+pub(super) fn run_in_the_guest_container(command: &[&str]) -> String {
+    let port = docker_guest_params().port;
+    let container = docker(&["ps", "--filter", &format!("publish={port}"), "--format", "{{.Names}}"]);
+    let container = container.lines().next().unwrap_or_default().to_string();
+    assert!(
+        !container.is_empty(),
+        "no container publishes the guest SMB port {port}"
+    );
+    let mut args = vec!["exec", container.as_str()];
+    args.extend_from_slice(command);
+    docker(&args)
+}
+
+/// One `docker` invocation, or a panic naming what could not be run.
+fn docker(args: &[&str]) -> String {
+    let out = std::process::Command::new("docker")
+        .args(args)
+        .output()
+        .unwrap_or_else(|e| panic!("this cell reaches into the fixture container and needs the `docker` CLI: {e}"));
+    assert!(
+        out.status.success(),
+        "`docker {}` did not run: {}",
+        args.join(" "),
+        String::from_utf8_lossy(&out.stderr)
+    );
+    String::from_utf8_lossy(&out.stdout).into_owned()
+}

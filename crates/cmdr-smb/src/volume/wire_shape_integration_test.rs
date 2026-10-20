@@ -79,7 +79,7 @@ async fn smb_integration_a_hinted_read_leaves_as_one_compound_frame() {
     // Asserting the PAIR is what gives the cell its teeth: a 3-RTT streaming
     // open reads as `(0, 3)`, and a loose round trip alongside the compound as
     // `(1, 4)`. Same shape as the write cell below. The read's date rides on
-    // its own CREATE response, so a stat for it would show here as `(2, 7)`.
+    // its own CREATE response, so a stat for it would show here as `(2, 8)`.
     assert_eq!(
         (compounds_after - compounds_before, requests_after - requests_before),
         (1, 3),
@@ -295,15 +295,16 @@ async fn smb_integration_a_single_shot_write_leaves_as_one_compound_frame() {
     let (requests_after, compounds_after) = request_counts(&vol).await;
 
     assert_eq!(written.bytes, size);
-    // TWO compound frames leave the wire, four ops each (verified against Samba
-    // in the `smb-consumer` container, 2026-08-01): the write's
-    // CREATE+WRITE+FLUSH+CLOSE, then the CREATE+QUERY_INFO+CLOSE stat every SMB
-    // write ends with to patch the listing cache. What matters is that NOTHING
+    // TWO compound frames leave the wire (verified against Samba 4.23.8 in the
+    // `smb-consumer` container, smb2 0.34.0, 2026-10-20): the write's
+    // CREATE+WRITE+FLUSH+CLOSE, then the stat every SMB write ends with to patch
+    // the listing cache (CREATE + three QUERY_INFOs + CLOSE, the third the
+    // reparse tag). What matters is that NOTHING
     // outside a compound frame went out — a streaming write would show its
     // separate CREATE, WRITE, and CLOSE round trips here.
     assert_eq!(
         (compounds_after - compounds_before, requests_after - requests_before),
-        (2, 8),
+        (2, 9),
         "the write must leave as ONE compound frame (plus the post-write stat), with no loose round trips"
     );
 
@@ -356,10 +357,10 @@ async fn smb_integration_a_dated_single_shot_write_adds_one_frame_for_its_date()
     let (requests_after, compounds_after) = request_counts(&vol).await;
 
     // The write's four ops (CREATE+WRITE+FLUSH compounded, then its loose
-    // CLOSE), the date's three, the post-write stat's four.
+    // CLOSE), the date's three, the post-write stat's five.
     assert_eq!(
         (compounds_after - compounds_before, requests_after - requests_before),
-        (3, 11),
+        (3, 12),
         "a dated one-shot write must add exactly one compound frame for its date, with no other loose round trips"
     );
     let listed = vol.get_metadata(Path::new(&smb_path)).await.unwrap().modified_at;
@@ -516,7 +517,7 @@ async fn smb_integration_a_warm_uplink_lifts_the_promise_and_the_promised_write_
     assert_eq!(written.bytes, size);
     assert_eq!(
         (compounds_after - compounds_before, requests_after - requests_before),
-        (2, 8),
+        (2, 9),
         "the promised write must leave as ONE compound frame (plus the post-write stat)"
     );
     assert_eq!(drain(vol.open_read_stream(Path::new(&path)).await.unwrap()).await, data);
@@ -854,4 +855,40 @@ async fn smb_integration_a_prefetch_the_credit_window_cant_fund_streams_on_the_m
     vol.close_scan_pool().await;
 
     ensure_clean(&direct, &dir).await;
+}
+
+// ── Deletes: one frame whatever the entry is ───────────────────
+
+/// `Volume::delete` takes a file, an empty folder, and a junction or symlink in
+/// the same ONE compound frame (CREATE+SET_INFO+CLOSE): smb2's `delete_link`
+/// opens the reparse point itself with no file-or-directory condition, so a link
+/// goes as the link, never its target (#516), and a bulk delete's folders don't
+/// pay a refused file delete first. The fixture's Samba can't hold a link a
+/// client sees (`DETAILS.md` § "Junctions and symlinks"), so this pins the cost
+/// on the two entries it can.
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_a_delete_is_one_compound_frame_for_a_file_and_a_folder() {
+    let vol = make_docker_volume().await;
+    let dir = test_dir_name();
+    ensure_clean(&vol, &dir).await;
+    vol.create_directory(Path::new(&dir)).await.unwrap();
+    let file = format!("{dir}/gone.txt");
+    let folder = format!("{dir}/empty");
+    vol.create_file(Path::new(&file), b"bye").await.unwrap();
+    vol.create_directory(Path::new(&folder)).await.unwrap();
+
+    for path in [&file, &folder] {
+        let (requests_before, compounds_before) = request_counts(&vol).await;
+        vol.delete(Path::new(path)).await.unwrap();
+        let (requests_after, compounds_after) = request_counts(&vol).await;
+        assert_eq!(
+            (compounds_after - compounds_before, requests_after - requests_before),
+            (1, 3),
+            "deleting {path} must be ONE CREATE+SET_INFO+CLOSE frame"
+        );
+        assert!(!vol.exists(Path::new(path)).await, "{path} is gone");
+    }
+
+    ensure_clean(&vol, &dir).await;
 }

@@ -155,7 +155,8 @@ pub async fn ensure_clean(vol: &SmbVolume, dir: &str) {
         if let Ok(entries) = vol.list_directory(Path::new(dir), None).await {
             for entry in entries {
                 let child = format!("{}/{}", dir, entry.name);
-                if entry.is_directory {
+                // A link goes as the one entry it is, never through it.
+                if entry.is_directory && !entry.is_symlink {
                     Box::pin(ensure_clean(vol, &child)).await;
                 } else {
                     let _ = vol.delete(Path::new(&child)).await;

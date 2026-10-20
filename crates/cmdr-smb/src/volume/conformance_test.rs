@@ -422,38 +422,12 @@ async fn smb_integration_a_read_stream_reports_the_listed_date_on_both_read_path
 /// guest fixture container, the one way to age a file on a share that doesn't
 /// depend on this backend setting dates.
 fn age_in_the_container(share_relative: &str, unix_secs: u64) {
-    let port = docker_guest_params().port;
-    let container = docker(&["ps", "--filter", &format!("publish={port}"), "--format", "{{.Names}}"]);
-    let container = container.lines().next().unwrap_or_default();
-    assert!(
-        !container.is_empty(),
-        "no container publishes the guest SMB port {port}"
-    );
-    docker(&[
-        "exec",
-        container,
+    run_in_the_guest_container(&[
         "touch",
         "-d",
         &format!("@{unix_secs}"),
         &format!("/shares/public/{share_relative}"),
     ]);
-}
-
-/// One `docker` invocation, or a panic naming what could not be run.
-fn docker(args: &[&str]) -> String {
-    let out = std::process::Command::new("docker")
-        .args(args)
-        .output()
-        .unwrap_or_else(|e| {
-            panic!("this cell ages a file inside the fixture container and needs the `docker` CLI: {e}")
-        });
-    assert!(
-        out.status.success(),
-        "`docker {}` did not run: {}",
-        args.join(" "),
-        String::from_utf8_lossy(&out.stderr)
-    );
-    String::from_utf8_lossy(&out.stdout).into_owned()
 }
 
 /// The shared `NotFound`-payload assertion, against a real SMB server: what the

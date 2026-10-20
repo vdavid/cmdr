@@ -646,7 +646,7 @@ The contract: `crates/cmdr-operations/src/transfer/volume/DETAILS.md` § "Copies
   download and the hinted one-frame compound read), from the read's own CREATE response: `FileDownload::info()` on the
   streamed path (`ChannelReadStream::with_metadata`), `read_file_compound_sized_with_info` on the compound one
   (`InlineReadStream::with_created`). No extra frame; the wire-shape cells pin a hinted read at `(1, 3)`, so a stat
-  creeping back in shows there as `(2, 7)`.
+  creeping back in shows there as `(2, 8)`.
 - **The scan pool's prefetch stays dateless**: enrichment never copies those bytes.
 - **Destination half: `write_from_stream_impl` stamps `LastWriteTime` and `CreationTime`**, both in the one
   `FILE_BASIC_INFORMATION` (`stamping.rs::source_times`; access and change times go as 0, "don't change"), so the
@@ -849,6 +849,60 @@ the transfer driver to budget slots by size rather than by count.
 
 Only the transfer driver reads `max_concurrent_ops` (`crates/cmdr-operations/src/transfer/volume/copy.rs`), so this
 clamp never slows a listing, a stat, or the watcher; those share the same window and are better off for the headroom.
+
+## Junctions and symlinks
+
+A Windows share holds junctions (`mklink /J`, relocated game libraries, Dropbox folders, build caches) and symlinks; a
+Samba share can serve a Unix symlink. Each NAMES another place, so anything that walks through one acts on its target: a
+delete that descended into a junction deleted the target's files, a folder tree outside the selection (#516).
+
+- **A link is `is_link()`, never the `REPARSE_POINT` bit.** `mapping.rs` sets `FileEntry.is_symlink` from smb2's
+  `DirectoryEntry::is_link` (listings) and `FileInfo::is_link` (`get_metadata`, through `file_info_to_file_entry`): the
+  tag's name-surrogate bit, so mount points, symlinks, and any other link. Deduplicated files and OneDrive or
+  cloud-files placeholders carry the reparse bit too, and they're real files and folders: as a "link", a delete would
+  refuse their folder and a copy would skip its contents. Pinned by `mapping_test.rs`.
+- **A link keeps the `is_directory` its listing gives it**, like a local symlink to a folder (`cmdr-local`'s
+  `reading.rs`), so a pane opens it as a folder, while every walk that asks `EntryKind` (delete, the index's
+  `index_walk`, a rename's tally, a merge's dir-vs-dir test) treats it as one leaf. `BackendKind::Smb` is in
+  `has_symlinks`, so a delete's top-level probe asks `entry_kind`. A cross-volume COPY materializes a link, the same
+  stance it takes on every backend (`crates/cmdr-operations/src/transfer/DETAILS.md` § "Symlinks are opaque to a move").
+- **Every delete is smb2's `delete_link`**: `delete_impl` and a forced rename's `clear_rename_destination`. It opens the
+  reparse point itself with no file-or-directory condition, so ONE frame takes a file, an empty folder, or a link AS the
+  link (a junction is a folder on Windows, a Samba symlink a file), and refuses a non-empty folder as the trait
+  promises. A cross-volume move off the share sweeps its sources through the same `Volume::delete`. Pinned by
+  `wire_shape_integration_test.rs`'s delete cell (one frame for a file and a folder; the old file-then-folder pair cost
+  a folder two) and `links_integration_test.rs`.
+
+**What smb2 0.34 changed under each call site.** `delete_file`, `delete_directory`, `rename`, `stat` (and siblings), and
+`set_times` open the link itself (`FILE_OPEN_REPARSE_POINT`), where 0.33 and earlier opened its target. Audited
+2026-10-20:
+
+- `rename_impl` (both arms) renames the link, never the target folder it used to move on Windows. Right as is.
+- `set_basic_info_impl` and `write_stream.rs`'s by-path stamp date the link itself, the `lutimes` stance; Cmdr's own
+  writes are never links. `stamping.rs` stamps an open handle, unaffected.
+- `get_metadata`, `is_directory`, `exists`, `attributes_impl`, the copy scans' top-level stats (`scan.rs`), the rename's
+  `either_end_is_a_directory`, and `copy_on_server`'s date stat describe the link. On Windows a junction or `mklink /D`
+  link keeps its `DIRECTORY` attribute, so nothing that asks "folder?" changes. `spelling.rs`'s probe only asks whether
+  a prefix opens, which a link does.
+- `write_stream.rs` and `copy.rs` delete only a partial they wrote, never a link.
+
+**Samba** (verified on 4.23.8, the fixtures' `alpine:3.24`, by `links_integration_test.rs` on smb2 0.34.0, 2026-10-20;
+4.20.6 and 4.23.10 by
+[smb2's Samba note](https://github.com/vdavid/smb2/blob/main/docs/notes/samba-symlinks-and-reparse-points.md), same
+date):
+
+- **Listings never mark a Unix symlink**, on any version: it lists as what it points to. So a delete of a FOLDER that
+  holds a symlink to another folder still descends it and deletes the target's files through it, if that target sits
+  inside the share (`wide links = no`, the default, keeps it there). Open gap: closing it on 4.23+ needs an `entry_kind`
+  stat per folder before the walker descends, a round trip per folder that 4.20 can't answer anyway.
+- **4.23 honors `FILE_OPEN_REPARSE_POINT`**: a `stat` reports the link (`ReparseTag::SYMLINK`), so a SELECTED symlink is
+  a leaf and deleting it removes the link alone. The same stat calls a symlink to a folder a NON-directory, so
+  `get_metadata` and `is_directory` of one say file: copying a selected folder symlink off the share fails to stream it,
+  and a typed path into one isn't taken for a folder. A pane's listing still shows it as a folder and opens it.
+- **4.20 ignores the flag**: a stat follows the link, and deleting a link deletes its target, whatever the client sends.
+
+**Windows** follows MS-SMB2 § 2.2.13 and MS-FSCC § 2.1.2.1 (spec-based, not run against a Windows server, 2026-10-20).
+No fixture serves a junction.
 
 ## Decisions
 
@@ -1271,18 +1325,21 @@ Which side each one lives on, and why: § "Which side a test lives on" above.
     away), the single-shot write promise the transfer layer skips `.cmdr-tmp-*` staging on (the wire proof and the
     `write_is_single_shot` predicate behind it, kept together, and where that promise stops: one upload chunk on a cold
     connection, what a measured uplink moves in 250 ms after, with a staged write over it streaming and a promised one
-    still `(2, 8)`), and the copy-slot clamp. It owns `request_counts`, the diagnostics-metric reader those frame
-    assertions run on. **Every cell here asserts on the PAIR `(compound_requests_sent, requests_sent)`, because
-    `requests_sent` alone reads like a frame count and is not one**: smb2 ticks it once per sub-op of a chain
-    (`allocate_msg_id` is the funnel every send path goes through), while `compound_requests_sent` counts the chain, and
-    `execute_compound` hands the whole chain to one `send_and_count`. So a hinted read is `(1, 3)` for one frame
-    carrying CREATE+READ+CLOSE, and the single-shot write is `(2, 8)` for two frames of four ops each (verified against
-    Samba in the `smb-consumer` container on smb2 0.21.0, 2026-09-02). Reading the second number as round trips costs an
-    afternoon: it makes `requests == 1` look like the fast path's proof, and that assertion is unsatisfiable by
-    construction. The pair also asserts more than either half: a streaming open reads as `(0, 3)`, a loose round trip
-    beside the compound as `(1, 4)`. The copy-concurrency cell exercises neither byte path; it sits here because its
-    subject is the credit window of § "Copy concurrency and the credit window", which the sized read and the slot clamp
-    are the two halves of.
+    still `(2, 9)`), the copy-slot clamp, and a delete's one frame (§ "Junctions and symlinks"). It owns
+    `request_counts`, the diagnostics-metric reader those frame assertions run on. **Every cell here asserts on the PAIR
+    `(compound_requests_sent, requests_sent)`, because `requests_sent` alone reads like a frame count and is not one**:
+    smb2 ticks it once per sub-op of a chain (`allocate_msg_id` is the funnel every send path goes through), while
+    `compound_requests_sent` counts the chain, and `execute_compound` hands the whole chain to one `send_and_count`. So
+    a hinted read is `(1, 3)` for one frame carrying CREATE+READ+CLOSE, and the single-shot write is `(2, 9)` for two
+    frames, its own four ops and the post-write stat's five (CREATE, three QUERY_INFOs, the last the reparse tag, CLOSE;
+    verified against Samba 4.23.8 in the `smb-consumer` container on smb2 0.34.0, 2026-10-20). Reading the second number
+    as round trips costs an afternoon: it makes `requests == 1` look like the fast path's proof, and that assertion is
+    unsatisfiable by construction. The pair also asserts more than either half: a streaming open reads as `(0, 3)`, a
+    loose round trip beside the compound as `(1, 4)`. The copy-concurrency cell exercises neither byte path; it sits
+    here because its subject is the credit window of § "Copy concurrency and the credit window", which the sized read
+    and the slot clamp are the two halves of.
+- `links_integration_test.rs` — a Unix symlink made inside the guest container (`run_in_the_guest_container`): a stat
+  reports it, deleting it leaves its target, and Samba's listing doesn't mark it (§ "Junctions and symlinks").
 - `conformance_test.rs` — the `cmdr_fs::volume::conformance` promises, answered by a real server rather than an
   in-process double (SMB has none): `STATUS_DIRECTORY_NOT_EMPTY`, `STATUS_OBJECT_NAME_COLLISION`,
   `STATUS_OBJECT_NAME_NOT_FOUND`. That last one is the conflict scan's: `scan_for_conflicts_impl` keeps its own
