@@ -137,6 +137,8 @@ mod webdav_archive_integration_test;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod webdav_look_alike_test;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
+mod webdav_pause_test;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 mod webdav_refusal_test;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod webdav_refusing_proxy_test_support;

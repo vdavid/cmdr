@@ -6,7 +6,7 @@
 # to re-sync when a dependency bumps.
 #
 # Usage:
-#   ./start.sh             # core: the four servers the integration lane talks to
+#   ./start.sh             # core: the five servers the integration lane talks to
 #   ./start.sh minimal     # just the Basic-auth server
 #   ./start.sh e2e         # the same server, as the Playwright suites ask for it
 #   ./start.sh nextcloud   # just the sabre/dav server (slow: it installs itself)
@@ -37,8 +37,8 @@ case "$mode" in
         services=(webdav-fixture-apache)
         ;;
     core)
-        echo "Starting the core WebDAV servers (Basic, Digest, the one that ignores Range, and the self-signed one)..."
-        services=(webdav-fixture-apache webdav-fixture-digest webdav-fixture-norange webdav-fixture-tls)
+        echo "Starting the core WebDAV servers (Basic, Digest, the one that ignores Range, the self-signed one, and the impatient one)..."
+        services=(webdav-fixture-apache webdav-fixture-digest webdav-fixture-norange webdav-fixture-tls webdav-fixture-impatient)
         ;;
     nextcloud)
         # Deliberately alone and deliberately not in `core`: a ~1 GB image that

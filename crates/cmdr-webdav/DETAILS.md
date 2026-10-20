@@ -259,6 +259,35 @@ transfer pipeline. ❗ The crate cell's source is deliberately slow (16 pieces, 
 backend through the 200 ms progress tick, so a body that outruns one tick can only ever be cancelled before its first
 byte, which is not the case worth guarding.
 
+## Pause
+
+The engine pauses a copy by parking the SOURCE between pieces (`CheckpointStream`), which leaves this backend's `PUT`
+body silent mid-request, and every server drops a silent body sooner or later: nginx's `client_body_timeout` and
+Apache's `Timeout` after about a minute. Apache answers `408 Request Timeout` while the body is still parked, then
+closes (verified on httpd 2.4.69, `webdav-fixture-impatient` with a 3 s limit, by a raw socket and the cell below,
+2026-10-20). Before this, that 408 failed the file as an `IoError` in the middle of the pause (GitHub #358).
+
+**Decision: let the server cut it, then re-run the FILE once the pause lifts, ❌ not S3's set-aside-and-resend.** S3 can
+resend because it buffers a part before sending it (`crates/cmdr-s3/DETAILS.md` § "Pause"); this upload streams the
+source straight into the body, and the source can't be read twice from inside a write. So `writes.rs`:
+
+- The body notes when the operation was paused as it asked the source for a piece (`ScanStop::is_stopping_or_paused`,
+  off the source's `stop_signal`), which is exactly where the engine's pause parks it.
+- A `PUT` that then ends in a 408 or a cut connection is `PutFailure::CutByPause`: the caller removes what the upload
+  left (the temp, or a chunked upload's collection) at once, the write waits for the pause to lift, and answers
+  `ConnectionTimeout`. That's a transport fault, so the engine's per-file retry runs the file again from its first byte
+  (`crates/cmdr-operations/src/transfer/DETAILS.md` § "Retrying one FILE"), on a temp of its own; and it's ❌ not
+  `DeviceDisconnected`, which would drop a healthy client.
+- ❗ **The wait comes before the answer**: answering at once would have the retry start its new `PUT` straight into the
+  pause, for the server to cut off again and spend the next attempt. A cancel during the wait is `Cancelled`.
+- **A server that waits out the pause costs nothing**: the body carries on where it stopped. Only an outlasted server
+  costs the bytes already sent, once.
+- **What it costs**: one of the file's three attempts per outlasted pause, so a third long pause on ONE file (with no
+  resume in between that finished it) fails that file. The silence watch (§ "Silent or slow") keeps asking `OPTIONS`
+  every 10 s while a paused upload waits, as it does for any waiting operation.
+- Pinned by `apps/desktop/src-tauri/src/operations_host/backend_suites/webdav_pause_test.rs`: a pause past the fixture's
+  patience resumes and lands byte-exact with no temp left, and a cancel during that wait leaves nothing.
+
 ## Chunked uploads (Nextcloud)
 
 **Why**: a reverse proxy in front of a Nextcloud commonly caps one request's body (Cloudflare at 100 MB on its Free and
@@ -297,8 +326,9 @@ backend uses it for every file bigger than one chunk:
   removes the target too. The server expires an abandoned collection after a day anyway. A source that runs dry is
   reported as the whole file's short count; one with bytes left after the last chunk is refused before the `MOVE`.
 - **The `MOVE` budget grows with the file**: assembly copies every chunk, so past `MUTATION_BUDGET` it allows 10 MiB/s.
-- **Pause** parks in the source stream as it does for a single `PUT` (mid-chunk). A pause over a day loses the upload:
-  the server expires it, the next chunk fails, and the cleanup runs.
+- **Pause** parks in the source stream as it does for a single `PUT` (mid-chunk); each window forwards the source's
+  `stop_signal`, so a chunk the server cuts off during a pause takes the same way out (§ "Pause"), the whole upload
+  abandoned and sent again. A pause over a day loses the upload anyway: the server expires it.
 - Pinned by `chunking_test.rs` (detection, URLs, the plan), `src/volume/chunked_upload_test.rs` (the windows), and
   `nextcloud_test.rs::a_big_file_goes_up_in_chunks_and_a_cancelled_one_leaves_nothing` (byte-exact, dates, progress,
   collections gone after success and after a cancel; it shrinks chunks to 5 MiB). Nextcloud refuses to LIST the uploads

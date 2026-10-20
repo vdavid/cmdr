@@ -6,6 +6,7 @@
 #   AUTH        basic | digest      (default: basic)
 #   RANGES      honour | ignore     (default: honour)
 #   TLS         off | self-signed   (default: off)
+#   BODY_IDLE_TIMEOUT  seconds a request body may go silent (default: httpd's own)
 #   LARGE_MB    size of `large.bin` in MiB (default: 4)
 set -e
 
@@ -14,6 +15,7 @@ USER_PASSWORD="${USER_PASSWORD:-openthedoor}"
 AUTH="${AUTH:-basic}"
 RANGES="${RANGES:-honour}"
 TLS="${TLS:-off}"
+BODY_IDLE_TIMEOUT="${BODY_IDLE_TIMEOUT:-}"
 REALM="cmdr"
 EXPORT_DIR=/srv/data
 HTTPD_PREFIX=/usr/local/apache2
@@ -129,6 +131,21 @@ SSLCertificateKeyFile $HTTPD_PREFIX/conf/fixture.key"
     *) echo "unknown TLS: $TLS" >&2; exit 1 ;;
 esac
 
+# ── A body that goes silent ──────────────────────────────────────────
+#
+# A paused upload stalls its PUT body mid-request, and every real server drops
+# a body that goes silent for long enough: nginx's `client_body_timeout` (60 s),
+# Apache's `Timeout` (60 s). This shortens that to seconds, so a cell can pause
+# past it without waiting a minute. `mod_reqtimeout` steps aside for the body
+# (`body=0`), which leaves the core `Timeout` as the one idle limit on each
+# read, the shape nginx's is; its default `body=20,MinRate=500` would instead
+# GROW with every 500 bytes received and never fire on a big upload's pause.
+timeout_directives=""
+if [ -n "$BODY_IDLE_TIMEOUT" ]; then
+    timeout_directives="Timeout $BODY_IDLE_TIMEOUT
+RequestReadTimeout header=20-40,MinRate=500 body=0"
+fi
+
 # ── The export ───────────────────────────────────────────────────────
 #
 # ❗ `DavLockDB` has to live somewhere the httpd WORKER user can write, and
@@ -153,6 +170,7 @@ DavMinTimeout 600
 MaxRequestWorkers 150
 
 $tls_directives
+$timeout_directives
 
 Alias /dav $EXPORT_DIR
 <Directory "$EXPORT_DIR">

@@ -87,6 +87,13 @@ impl ScanStop {
         self.0.is_some()
     }
 
+    /// `true` while the owner is paused or stopping, without parking: for an
+    /// upload noting that its body went quiet because of a pause, which the
+    /// server may then cut off (WebDAV's PUT). Cheap, like the owner's own check.
+    pub fn is_stopping_or_paused(&self) -> bool {
+        self.0.as_ref().is_some_and(|signal| signal.is_stopping_or_paused())
+    }
+
     /// The boundary: `true` means stop now. Parks the calling task while the
     /// owner is paused.
     ///

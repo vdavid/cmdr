@@ -20,6 +20,9 @@ pub(super) enum WebdavFixture {
     /// The same export under `MaxRanges none`: every ranged GET comes back 200
     /// with the whole file, so a remote zip's windows are skipped to locally.
     IgnoresRange,
+    /// The same export behind a server that drops a request body after 3 s of
+    /// silence, so a paused upload outlasts it in seconds.
+    Impatient,
 }
 
 impl WebdavFixture {
@@ -27,6 +30,7 @@ impl WebdavFixture {
         match self {
             Self::Stock => ("APACHE", 13480),
             Self::IgnoresRange => ("NORANGE", 13483),
+            Self::Impatient => ("IMPATIENT", 13485),
         }
     }
 }

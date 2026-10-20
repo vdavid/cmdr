@@ -1,6 +1,7 @@
-# The WebDAV fixture stack: four real Apache httpd servers with `mod_dav` (one
-# per auth scheme a WebDAV client has to answer, one that ignores `Range`, and
-# one behind a self-signed certificate), and one real Nextcloud.
+# The WebDAV fixture stack: five real Apache httpd servers with `mod_dav` (one
+# per auth scheme a WebDAV client has to answer, one that ignores `Range`, one
+# behind a self-signed certificate, and one that drops a silent body fast), and
+# one real Nextcloud.
 #
 # ❗ The project is `webdav-fixture` and every service name carries that prefix.
 # `desktop-fixture-lane-coverage` identifies a WebDAV cell by an `#[ignore]`
@@ -33,7 +34,7 @@ x-fixture: &fixture
   build: ./image
   image: cmdr-webdav-fixture:latest
   restart: unless-stopped
-  # Principle 5 applies to CI too: four idle httpd containers should cost about
+  # Principle 5 applies to CI too: five idle httpd containers should cost about
   # what one does.
   mem_limit: 256m
   cpus: 0.5
@@ -83,6 +84,17 @@ services:
     environment:
       TLS: self-signed
     ports: ['${WEBDAV_BIND_ADDR:-127.0.0.1}:${WEBDAV_FIXTURE_TLS_PORT:-13484}:80']
+
+  # The stock export behind a server that drops a request body after 3 s of
+  # silence, where a real one waits about a minute (nginx's
+  # `client_body_timeout`, Apache's `Timeout`). A paused upload stalls its PUT
+  # body, so this is the server a pause outlasts in seconds
+  # (`apps/desktop/src-tauri/src/operations_host/backend_suites/webdav_pause_test.rs`).
+  webdav-fixture-impatient:
+    <<: *fixture
+    environment:
+      BODY_IDLE_TIMEOUT: '3'
+    ports: ['${WEBDAV_BIND_ADDR:-127.0.0.1}:${WEBDAV_FIXTURE_IMPATIENT_PORT:-13485}:80']
 
   # A real Nextcloud (sabre/dav), and the ONLY service here that isn't Apache
   # `mod_dav`. It exists so three claims about real servers are observations:

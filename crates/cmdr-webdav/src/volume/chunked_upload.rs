@@ -16,7 +16,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use cmdr_fs::log_private::LogPrivate;
-use cmdr_fs::volume::{StreamLength, StreamWritten, VolumeError, VolumeReadStream};
+use cmdr_fs::volume::{ScanStop, StreamLength, StreamWritten, VolumeError, VolumeReadStream};
 use log::debug;
 use reqwest::Method;
 
@@ -92,13 +92,13 @@ impl WebdavVolume {
                 .header(OC_TOTAL_LENGTH, size);
             let window = Box::new(source.window(len));
             let progress = |done: u64, _: u64| on_progress(sent + done, size);
-            if let Err(e) = self.stream_put(client, request, target, len, window, &progress).await {
+            if let Err(failure) = self.stream_put(client, request, target, len, window, &progress).await {
                 self.abandon(client, uploads, &id).await;
                 // A source that ran dry is the WHOLE file's short count, not
                 // this chunk's.
                 return Err(match source.ran_dry().await {
                     Some(pulled) => size_mismatch(target, pulled, size),
-                    None => e,
+                    None => failure.settle(target, self.volume_id()).await,
                 });
             }
             sent += len;
@@ -155,16 +155,25 @@ struct Source {
 /// up one after another), so the lock is never contended; it's what lets each
 /// window own its reference for the `'static` body a request needs.
 #[derive(Clone)]
-struct SharedSource(Arc<tokio::sync::Mutex<Source>>);
+struct SharedSource {
+    source: Arc<tokio::sync::Mutex<Source>>,
+    /// The source's Cancel and pause, which every window hands on (a wrapper
+    /// stream forwards its inner stream's answer): the chunk's `PUT` notes a
+    /// body the pause left silent by it.
+    pause: ScanStop,
+}
 
 impl SharedSource {
     fn new(stream: Box<dyn VolumeReadStream>) -> Self {
-        Self(Arc::new(tokio::sync::Mutex::new(Source {
-            stream,
-            carry: Vec::new(),
-            pulled: 0,
-            ran_dry: false,
-        })))
+        Self {
+            pause: stream.stop_signal(),
+            source: Arc::new(tokio::sync::Mutex::new(Source {
+                stream,
+                carry: Vec::new(),
+                pulled: 0,
+                ran_dry: false,
+            })),
+        }
     }
 
     /// The next `len` bytes of the source, as a stream of their own.
@@ -179,13 +188,13 @@ impl SharedSource {
     /// The bytes the source yielded in all, if it ended before a window was
     /// full.
     async fn ran_dry(&self) -> Option<u64> {
-        let source = self.0.lock().await;
+        let source = self.source.lock().await;
         source.ran_dry.then_some(source.pulled)
     }
 
     /// `Ok` when the source has nothing past the `size` bytes the windows took.
     async fn ensure_drained(&self, target: &str, size: u64) -> Result<(), VolumeError> {
-        let mut source = self.0.lock().await;
+        let mut source = self.source.lock().await;
         let mut extra = source.carry.len() as u64;
         while extra == 0 {
             match source.stream.next_chunk().await {
@@ -213,7 +222,7 @@ impl VolumeReadStream for Window {
             if self.left == 0 {
                 return None;
             }
-            let mut source = self.source.0.lock().await;
+            let mut source = self.source.source.lock().await;
             let mut piece = if source.carry.is_empty() {
                 match source.stream.next_chunk().await {
                     None => {
@@ -250,6 +259,10 @@ impl VolumeReadStream for Window {
     /// None: the dates ride the assembling `MOVE`, never a chunk.
     fn modified_at(&self) -> Option<std::time::SystemTime> {
         None
+    }
+
+    fn stop_signal(&self) -> ScanStop {
+        self.source.pause.clone()
     }
 }
 

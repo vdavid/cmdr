@@ -1474,7 +1474,10 @@ while the parts kept going out: a 75 MB upload paused at 20% ran to 100% before 
 the scan's vocabulary), through an `UploadPark` adapter that announces `ParkedPause` to the probe; S3 parks its requests
 on it (`crates/cmdr-s3/DETAILS.md` § "Pause"). `archive_edit/fresh_compress.rs`'s spool stream, also its operation's
 checkpoint, answers the same way. Every other wrapper forwards its inner stream's answer. Pinned by
-`volume::strategy::tests::a_destination_that_buffers_ahead_parks_on_the_operation_pause`.
+`volume::strategy::tests::a_destination_that_buffers_ahead_parks_on_the_operation_pause`. WebDAV reads the same signal
+for the opposite case: a streaming `PUT` whose body a pause left silent, which the server cuts off, waits for the resume
+and answers a retryable `ConnectionTimeout`, so the per-file retry below runs the file again
+(`crates/cmdr-webdav/DETAILS.md` § "Pause").
 
 **Pause for an MTP source (navigate the phone while a transfer is paused).** Park-in-place is correct for EVERY backend
 now, MTP included. An MTP read is a sequence of bounded ~8 MiB windows (`mtp/connection` § "Bounded-window reads");

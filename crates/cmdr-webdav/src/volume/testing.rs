@@ -115,7 +115,7 @@ struct FixtureService {
 /// accounts. The three properties the sabre/dav cells read (`Range`, a chunked
 /// PUT, RFC 4331 quota) answer identically on both endpoints (verified on
 /// nextcloud 34.0.2-apache, by hand with `curl`, 2026-09-02).
-const FIXTURE_SERVICES: [FixtureService; 5] = [
+const FIXTURE_SERVICES: [FixtureService; 6] = [
     FixtureService {
         key: "APACHE",
         port: 13480,
@@ -138,6 +138,12 @@ const FIXTURE_SERVICES: [FixtureService; 5] = [
         key: "TLS",
         port: 13484,
         scheme: "https",
+        dav_path: "/dav/",
+    },
+    FixtureService {
+        key: "IMPATIENT",
+        port: 13485,
+        scheme: "http",
         dav_path: "/dav/",
     },
     FixtureService {

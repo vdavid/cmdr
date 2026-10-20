@@ -20,6 +20,14 @@
 //!
 //! On a Nextcloud, a file bigger than one chunk goes through its chunked
 //! upload instead (`chunked_upload.rs`), each chunk one of these same `PUT`s.
+//!
+//! ❗ **A pause the server outlasted re-runs the file** ([`PutFailure::CutByPause`]).
+//! The engine pauses by parking the source between pieces, which leaves the
+//! `PUT` body silent mid-request, and a server drops a silent body (Apache and
+//! nginx after about a minute). The source can't be read twice from here, so the
+//! cut-off upload is cleaned up, the write waits for the pause to lift, and it
+//! answers `ConnectionTimeout`, which the engine's per-file retry runs again from
+//! the first byte. `DETAILS.md` § "Pause".
 
 use std::ops::ControlFlow;
 use std::path::Path;
@@ -34,14 +42,14 @@ use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::metadata::{CarriedMetadata, ClassOutcome, MetadataClasses, MetadataReport};
 use cmdr_fs::pluralize::pluralize_grouped;
 use cmdr_fs::staging::temp_sibling_name;
-use cmdr_fs::volume::{StreamWritten, VolumeError, VolumeReadStream, WriteMode};
+use cmdr_fs::volume::{ScanStop, StreamWritten, VolumeError, VolumeReadStream, WriteMode};
 use log::debug;
 use reqwest::Method;
 use reqwest::header::{CONTENT_LENGTH, CONTENT_TYPE};
 use tokio_util::sync::CancellationToken;
 
 use super::WebdavVolume;
-use crate::errors::Attempted;
+use crate::errors::{Attempted, map_status, map_transport_error};
 use crate::transport::{MUTATION_BUDGET, WebdavClient, method};
 use cmdr_fs::volume::liveness::Liveness;
 
@@ -80,6 +88,11 @@ struct BodyCounts {
     /// go out, which changes nothing: it is only ever read once the request is
     /// over.
     ended: Arc<AtomicBool>,
+    /// Whether the body went quiet for a pause: the operation was paused when
+    /// the body asked the source for a piece, which is exactly where the
+    /// engine's pause parks it. What tells a server cutting off a paused body
+    /// from one refusing the upload.
+    paused: Arc<AtomicBool>,
 }
 
 impl BodyCounts {
@@ -88,6 +101,7 @@ impl BodyCounts {
             fetched: Arc::new(AtomicU64::new(0)),
             handed: Arc::new(AtomicU64::new(0)),
             ended: Arc::new(AtomicBool::new(false)),
+            paused: Arc::new(AtomicBool::new(false)),
         }
     }
 }
@@ -109,6 +123,8 @@ struct BodySource {
     /// server that answers nothing until the whole upload is in would
     /// otherwise look silent for its entire length.
     liveness: Arc<Liveness>,
+    /// The operation's Cancel and pause, read off the source before it moved in.
+    pause: ScanStop,
 }
 
 impl BodySource {
@@ -118,6 +134,12 @@ impl BodySource {
     /// A source failure is recorded for `write_from_stream` to report and
     /// handed back as the `io::Error` that poisons the body.
     async fn fetch(&mut self) -> Result<(), std::io::Error> {
+        // ❗ Asked BEFORE the source: the engine's pause parks the source at the
+        // start of its `next_chunk`, so a paused operation seen here is a body
+        // about to go quiet for as long as the pause lasts.
+        if self.pause.is_stopping_or_paused() {
+            self.counts.paused.store(true, Ordering::Relaxed);
+        }
         match self.stream.next_chunk().await {
             None => {
                 self.counts.ended.store(true, Ordering::Relaxed);
@@ -243,6 +265,45 @@ impl UploadDates {
     }
 }
 
+/// Why a streaming `PUT` didn't land.
+pub(super) enum PutFailure {
+    /// The upload failed, for the reason it carries.
+    Refused(VolumeError),
+    /// ❗ The server cut off a body a pause left silent. Nothing is wrong with
+    /// the file or the server; the bytes sent so far are lost, and the source
+    /// can't give them again from here. Carries the operation's pause, to wait
+    /// out before the engine runs the file again.
+    CutByPause(ScanStop),
+}
+
+impl PutFailure {
+    /// The error a write answers with, once the caller has cleaned up what the
+    /// failure left on the server.
+    ///
+    /// ❗ A pause cut waits for the pause to lift FIRST, then answers
+    /// `ConnectionTimeout`, a transport fault the engine's per-file retry runs
+    /// again from the first byte. Answering at once would have the retry start
+    /// its new `PUT` straight into the pause, for the server to cut off again.
+    /// A cancel while waiting is `Cancelled`, like any other.
+    pub(super) async fn settle(self, target: &str, volume_id: &str) -> VolumeError {
+        match self {
+            Self::Refused(error) => error,
+            Self::CutByPause(pause) => {
+                log::info!(
+                    target: "volume",
+                    "WebdavVolume::write_from_stream: {target}: the server cut off a body the pause left silent; it goes again from the first byte once the pause lifts",
+                    target = LogPrivate::file_path(&target)
+                );
+                if pause.should_stop().await {
+                    VolumeError::Cancelled(volume_id.to_string())
+                } else {
+                    VolumeError::ConnectionTimeout(target.to_string())
+                }
+            }
+        }
+    }
+}
+
 /// The source yielded a different byte count than `size` promised.
 pub(super) fn size_mismatch(remote: &str, got: u64, size: u64) -> VolumeError {
     VolumeError::IoError {
@@ -348,9 +409,9 @@ impl WebdavVolume {
             .await
         {
             Ok(response) => Ok(dates.written(size, dates.judge(&response, target))),
-            Err(e) => {
+            Err(failure) => {
                 self.remove_best_effort(target).await;
-                Err(e)
+                Err(failure.settle(target, self.volume_id()).await)
             }
         }
     }
@@ -362,7 +423,8 @@ impl WebdavVolume {
     ///
     /// `Ok` only for a 2xx after which the source had yielded exactly `size`
     /// bytes. ❗ Cleans up nothing: what a failure leaves on the server is the
-    /// caller's, which knows what it was writing.
+    /// caller's, which knows what it was writing, and which then
+    /// [`settle`](PutFailure::settle)s the failure.
     pub(super) async fn stream_put(
         &self,
         client: &Arc<WebdavClient>,
@@ -371,7 +433,8 @@ impl WebdavVolume {
         size: u64,
         stream: Box<dyn VolumeReadStream>,
         on_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
-    ) -> Result<reqwest::Response, VolumeError> {
+    ) -> Result<reqwest::Response, PutFailure> {
+        let pause = stream.stop_signal();
         let counts = BodyCounts::new();
         let stop = CancellationToken::new();
         let source_error: Arc<std::sync::Mutex<Option<VolumeError>>> = Arc::new(std::sync::Mutex::new(None));
@@ -384,6 +447,7 @@ impl WebdavVolume {
                 stop: stop.clone(),
                 source_error: Arc::clone(&source_error),
                 liveness: Arc::clone(client.liveness()),
+                pause: pause.clone(),
             },
             |mut source| async move {
                 // Cancellation is answered before anything is pulled or handed
@@ -422,7 +486,10 @@ impl WebdavVolume {
         // The block scopes the in-flight request: leaving it drops the
         // request, which is what aborts a cancelled upload on the wire.
         let outcome = {
-            let put = self.send(client, request, target, Attempted::Reaching);
+            // ❗ `client.send`, not `self.send`: a pause cut is told apart by the
+            // raw answer (a 408, or the connection ending), before the status
+            // table turns it into a refusal.
+            let put = client.send(request);
             let mut put = std::pin::pin!(put);
             let mut tick = tokio::time::interval(PROGRESS_TICK);
             tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
@@ -439,7 +506,7 @@ impl WebdavVolume {
                             // polled again: a server that stalled mid-upload would
                             // otherwise hold the cancel until it asks for more.
                             stop.cancel();
-                            break Err(VolumeError::Cancelled(self.volume_id().to_string().into()));
+                            return Err(PutFailure::Refused(VolumeError::Cancelled(self.volume_id().to_string().into())));
                         }
                     }
                 }
@@ -449,14 +516,23 @@ impl WebdavVolume {
         // ❗ What came OUT of the source, never what hyper asked for. The two
         // differ by exactly the case this guard exists for.
         let total = counts.fetched.load(Ordering::Relaxed);
+        let refused = |error: VolumeError| Err(PutFailure::Refused(error));
+        let paused = counts.paused.load(Ordering::Relaxed);
         let response = match outcome {
-            Ok(response) => response,
+            Ok(response) if response.status().is_success() => response,
+            // ❗ A server that ran out of patience with a body a pause left
+            // silent answers 408 while the body is parked (verified on httpd
+            // 2.4.69, `webdav-fixture-impatient`, 2026-10-20), or just closes.
+            Ok(response) if paused && response.status() == reqwest::StatusCode::REQUEST_TIMEOUT => {
+                return Err(PutFailure::CutByPause(pause));
+            }
+            Ok(response) => return refused(map_status(response.status(), target, Attempted::Reaching)),
             Err(e) => {
                 if stop.is_cancelled() {
-                    return Err(VolumeError::Cancelled(self.volume_id().to_string().into()));
+                    return refused(VolumeError::Cancelled(self.volume_id().to_string().into()));
                 }
                 if let Some(source) = source_error.lock_ignore_poison().take() {
-                    return Err(source);
+                    return refused(source);
                 }
                 if counts.ended.load(Ordering::Relaxed) && total != size {
                     // ❗ A short source ends the request from OUR side (hyper's
@@ -464,9 +540,12 @@ impl WebdavVolume {
                     // same predicate a dropped connection answers. ❌ Not the
                     // volume's fault, so not `DeviceDisconnected`: that would flip
                     // the volume offline over one wrong `size`.
-                    return Err(size_mismatch(target, total, size));
+                    return refused(size_mismatch(target, total, size));
                 }
-                return Err(e);
+                if paused && (e.is_request() || e.is_body()) {
+                    return Err(PutFailure::CutByPause(pause));
+                }
+                return refused(map_transport_error(&e, self.volume_id(), target));
             }
         };
         if total != size {
@@ -479,10 +558,10 @@ impl WebdavVolume {
             // `total` is the read-ahead's count: a source whose pieces divide
             // `size` exactly would otherwise agree with the promise and keep a
             // truncated file.
-            return Err(size_mismatch(target, total, size));
+            return refused(size_mismatch(target, total, size));
         }
         if on_progress(total, size).is_break() {
-            return Err(VolumeError::Cancelled(self.volume_id().to_string().into()));
+            return refused(VolumeError::Cancelled(self.volume_id().to_string().into()));
         }
         Ok(response)
     }
