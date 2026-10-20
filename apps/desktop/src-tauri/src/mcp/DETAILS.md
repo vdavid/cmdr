@@ -136,17 +136,18 @@ Three things make it hold rather than merely be intended:
 
 - **A hand-authored allowlist, not inference.** No structural check can prove a handler doesn't mutate, so
   `EXPECTED_PROPOSE_TOOL_NAMES` (in `tests/tool_registry_tests/access.rs`) lists every `Propose` tool by name, and
-  `test_propose_tools_are_an_explicit_allowlist` fails if a registry entry is tagged `Propose` without being listed.
-  `propose_rename_plan` is the current entry. Widening the agent's power remains a deliberate act a human signs off,
-  having read the handler.
+  `test_propose_tools_are_an_explicit_allowlist` fails if a registry entry in EITHER view is tagged `Propose` without
+  being listed: the agent's `propose_rename_plan` and `propose_suggestions`, and the ai-client's `multi_rename`.
+  Widening that power remains a deliberate act a human signs off, having read the handler.
 - **No proposal reaches the confirmation bypass.** `autoConfirm` and `queue`'s `rollback` let an external MCP client
   skip the user's confirmation dialog — exactly the approval a proposal must never grant itself.
   `test_no_agent_tool_reaches_the_confirmation_bypass` asserts every agent-view tool declares no bypass parameter in
   its schema.
 - **Payloads are capped, per tool.** A `Propose` payload must be bounded the way `image_facts` caps at 200 paths: a
   proposal the user can't actually review is one they can only rubber-stamp, which dissolves the invariant. The cap
-  can't be enforced generically (payload shapes differ), so it's the contract the first `Propose` tool honours
-  explicitly and pins with its own test.
+  can't be enforced generically (payload shapes differ), so each `Propose` tool honours it explicitly and pins it with
+  its own test. `multi_rename` caps a proposal at 10,000 renames: a pattern rename is reviewable by its rule plus a
+  paged sample, which hand-picked names aren't.
 
 **Consent is unaffected.** Proposals flow agent → user, never to the provider. `Propose` adds no egress, so the
 provider-egress question and `CLOUD_AI_CONSENT_VERSION` are unchanged by this tier.

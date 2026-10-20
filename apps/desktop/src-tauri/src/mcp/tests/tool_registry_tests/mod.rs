@@ -37,6 +37,7 @@ const EXPECTED_TOOL_NAMES: &[&str] = &[
     "compress",
     "delete",
     "rename",
+    "multi_rename",
     "mkdir",
     "mkfile",
     "refresh",

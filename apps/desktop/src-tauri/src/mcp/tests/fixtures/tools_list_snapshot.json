@@ -311,6 +311,118 @@
       "name": "rename"
     },
     {
+      "description": "Pattern-rename the pane's files with the Multi-Rename Tool's settings (masks, search and replace, case, counter; every one optional). dryRun (default) previews each row's new name and status, paged with start/limit. dryRun false stages every ready row as ONE rename proposal for the user to review and approve in Cmdr; it never renames anything itself.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "case": {
+            "description": "Case step after search and replace (default unchanged).",
+            "enum": [
+              "unchanged",
+              "lower",
+              "upper",
+              "firstUpper",
+              "words"
+            ],
+            "type": "string"
+          },
+          "caseSensitive": {
+            "description": "Search matches case (default false).",
+            "type": "boolean"
+          },
+          "dryRun": {
+            "description": "true (default): preview only. false: stage every ready row as ONE rename proposal the user reviews and approves in Cmdr. Nothing is ever renamed by this tool.",
+            "type": "boolean"
+          },
+          "extensionMask": {
+            "description": "Extension mask (default [E]), same placeholders.",
+            "type": "string"
+          },
+          "filter": {
+            "description": "Dry run: page every row (default) or only the ones that can't be renamed as set.",
+            "enum": [
+              "all",
+              "problems"
+            ],
+            "type": "string"
+          },
+          "firstOnly": {
+            "description": "Replace only the first match (default false).",
+            "type": "boolean"
+          },
+          "greekToLatin": {
+            "description": "Write Greek letters in Latin ones, ELOT 743 (default false).",
+            "type": "boolean"
+          },
+          "includeExtension": {
+            "description": "Search the extension too (default false).",
+            "type": "boolean"
+          },
+          "limit": {
+            "description": "Dry run: rows per page (default 50, max 200).",
+            "maximum": 200,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "nameMask": {
+            "description": "Name mask (default [N]). Placeholders: [N] name, [N2-5] / [N-3] ranges, [E] extension, [C] counter ([C10+5:3] = start 10, step 5, 3 digits), [P] parent folder, [G] grandparent, [Y] [M] [D] [h] [m] [s] and [YMD] modified time, [U] / [L] / [F] / [n] upper, lower, words, or original case for what follows. [[ is a literal [.",
+            "type": "string"
+          },
+          "names": {
+            "description": "File names in the pane's folder, in rename order (what [C] counts by). Defaults to the selection, else the cursor item.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "normalizeUnicode": {
+            "description": "Rename to the composed (NFC) Unicode form (default false).",
+            "type": "boolean"
+          },
+          "pane": {
+            "description": "Which pane's files to rename. Defaults to the focused pane.",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "type": "string"
+          },
+          "rationale": {
+            "description": "Proposal only: why, shown to the user as your words.",
+            "type": "string"
+          },
+          "regex": {
+            "description": "search is a regular expression (default false).",
+            "type": "boolean"
+          },
+          "removeDiacritics": {
+            "description": "Strip accents from Latin and Greek letters (default false).",
+            "type": "boolean"
+          },
+          "replace": {
+            "description": "Replace with (default nothing).",
+            "type": "string"
+          },
+          "search": {
+            "description": "Search for this in the name (default nothing). a|b with replace x|y swaps in one pass.",
+            "type": "string"
+          },
+          "start": {
+            "description": "Dry run: first row of the page (default 0).",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "substitute": {
+            "description": "With regex: $1 in replace inserts a group (default false).",
+            "type": "boolean"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "multi_rename"
+    },
+    {
       "description": "Create a folder in the focused pane, or pass pane to target the other. No name opens the naming dialog (user confirms, not MCP); a name prefills it; name + autoConfirm creates directly (errors on a name conflict).",
       "inputSchema": {
         "properties": {

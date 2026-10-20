@@ -286,6 +286,18 @@ A release older than the tool can't answer it: nothing can add a tool to a proce
 payload, the `IOAccelerator`-is-the-Rust-heap trap, and the `vmmap` fallback for such an instance:
 `memory-debugging.md`.
 
+## Pattern-renaming a batch of files
+
+`multi_rename` runs the Multi-Rename Tool's (⌃M) settings over the pane's files (`names`, else the selection, else the
+cursor item). Every sheet knob is optional. A dry run (the default) previews each row's new name and status, paged;
+`dryRun: false` stages the ready rows as ONE rename proposal the user reviews and approves in Cmdr. It never renames.
+
+```bash
+./scripts/mcp-call.sh multi_rename '{"nameMask":"Lisbon [C:3]","limit":10}'            # preview the first 10 rows
+./scripts/mcp-call.sh multi_rename '{"nameMask":"Lisbon [C:3]","filter":"problems"}'   # only the rows that can't go
+./scripts/mcp-call.sh multi_rename '{"nameMask":"Lisbon [C:3]","dryRun":false,"rationale":"Number the trip photos"}'
+```
+
 ## Where is this instance's CPU going?
 
 `cpu_diagnostics` diffs two readings of every thread: each live thread's CPU delta with its name (and the same folded by

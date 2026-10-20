@@ -328,6 +328,41 @@ pub(crate) fn preview(
     preview
 }
 
+/// The preview for the files called `names` (in rename order) in the folder at `dir`, whose
+/// every entry is in `siblings`: [`preview`] over the names still there, plus a `Missing` row
+/// for each that's gone, in row order. A name matches its entry exactly, as the session that
+/// resolved it from the listing spelled it. Both the sheet's session and the MCP tool run
+/// through here, so they can't disagree about a row.
+pub(crate) fn preview_names(
+    compiled: &Compiled,
+    dir: &Path,
+    names: &[String],
+    siblings: &[FileEntry],
+    edits: &NameEdits,
+) -> Vec<PreviewRow> {
+    let by_name: HashMap<&str, &FileEntry> = siblings.iter().map(|e| (e.name.as_str(), e)).collect();
+    let mut present: Vec<(usize, &FileEntry)> = Vec::with_capacity(names.len());
+    let mut missing: Vec<usize> = Vec::new();
+    for (row, name) in names.iter().enumerate() {
+        match by_name.get(name.as_str()) {
+            Some(entry) => present.push((row, entry)),
+            None => missing.push(row),
+        }
+    }
+    let mut previewed = preview(compiled, dir, &present, siblings, edits);
+    previewed.extend(missing.into_iter().map(|row| PreviewRow {
+        row,
+        old_name: names[row].clone(),
+        new_name: names[row].clone(),
+        status: RowStatus::Missing,
+        icon_id: None,
+        is_directory: false,
+        edited: false,
+    }));
+    previewed.sort_by_key(|r| r.row);
+    previewed
+}
+
 /// A ready row's names, folded once.
 struct Claim {
     index: usize,

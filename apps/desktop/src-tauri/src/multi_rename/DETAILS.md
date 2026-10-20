@@ -107,6 +107,10 @@ subfolders (the executor's one-parent rule refuses it today), "next step" chaini
   names: those rows come back as `swapsLeftOut` and get their own toast (`multiRename.swapsSkipped`).
 - The preview runs off the IPC thread with a 5 s deadline, two at a time (`BlockingBudget`), since the sheet re-issues
   it on every edit.
+- `plan::preview_names` is the preview BY FILE NAME (a gone name is `Missing` in place; the counter numbers only the
+  files still there). The session and the MCP `multi_rename` tool (`../mcp/executor/multi_rename.rs`) both call it, so
+  an agent's dry run shows exactly the statuses the sheet would. The tool needs no session: it previews against the
+  pane's cached listing and, for a real run, stages the ready rows as a rename proposal rather than calling `run.rs`.
 
 ## Presets (`presets.rs`)
 

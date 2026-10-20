@@ -85,6 +85,17 @@ Depth for the MCP tool-execution layer. `CLAUDE.md` holds the must-knows.
   clamps at 24). macOS only: elsewhere it refuses rather than returning a payload of zeros a reader would take for a
   measurement. How to read the payload: `../../commands/memory_diagnostics.rs` module docs and
   `docs/tooling/memory-debugging.md`.
+- **`multi_rename.rs`**: `multi_rename`, the Multi-Rename Tool (⌃M) for an external agent, `Access::Propose`. Every
+  sheet knob is an optional param under `MultiRenameSpec`'s own camelCase name (a test pins the schema declares each).
+  Files come from `resolve_pane_target_paths` (`names`, else the selection, else the cursor item); the preview is the
+  sheet's own `multi_rename::plan::preview_names` against the pane's cached listing, so a status here is the sheet's.
+  `dryRun` (default true) pages the rows with `start` / `limit` (max 200, then `fit_to_result_budget`) and an
+  `all` / `problems` filter, with counts over every row. `dryRun: false` stages ONLY the ready rows as one rename group
+  on the suggested-ops spine (`agent::suggested_ops::propose`, no conversation), each op carrying its listing size,
+  mtime, and inode for the bridge's drift check; nothing ready or more than 10,000 ready is a typed refusal
+  (`data.reason`). Paging params beside a proposal are refused, since they'd read as proposing a slice. It never
+  renames: the user approves the group in the suggested-ops dialog. ai-client only for now; Ask Cmdr proposes renames
+  through `propose_suggestions`.
 - **`cpu.rs`**: `cpu_diagnostics`, `memory_diagnostics`' CPU sibling, over `cmdr_fs::process_cpu` (the FFI and the
   diff live there). `measure` (default) blocks for `windowSeconds` (default 10, max 60, the `await` tool's ceiling);
   `mark` stores one process-wide baseline and `sinceMark` diffs against it without blocking, so an idle census of

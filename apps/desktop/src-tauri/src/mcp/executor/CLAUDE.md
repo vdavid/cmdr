@@ -8,9 +8,8 @@ which calls these by path. Up: `../CLAUDE.md`.
 - **`mod.rs`**: shared types (`ToolResult`, `ToolError`), the `*_round_trip` helpers, and `user_path_param` /
   `expand_user_path` (tilde expansion). Dispatch is generated in the registry, not here.
 - **`ack.rs`**: the ack contract (`AckSignal` variants, `snapshot_generation`, `wait_for_ack`, default budgets).
-- Category handlers, one per tool family: `app.rs`, `view.rs`, `nav.rs`, `file_ops.rs`, `dialogs.rs`, `queue.rs`,
-  `conflicts.rs`, `archive_password.rs`, `quit.rs`, `async_tools.rs`, `search.rs`, `downloads.rs`, `operation_log.rs`,
-  `photos.rs`, `image_facts.rs`, `memory.rs`, `cpu.rs`. Which tools each one owns: DETAILS.md.
+- Category handlers, one file per tool family (`nav.rs`, `file_ops.rs`, `memory.rs`, `cpu.rs`, `multi_rename.rs`, …).
+  Which tools each one owns: DETAILS.md.
 
 ## Must-knows
 

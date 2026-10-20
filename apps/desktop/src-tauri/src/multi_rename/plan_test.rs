@@ -5,7 +5,7 @@ use std::path::Path;
 
 use super::plan::{
     Compiled, FOLDS, InvalidNameReason, MultiRenameSpec, NameEdits, RenameExample, RowStatus, SpecError, preview,
-    render_examples,
+    preview_names, render_examples,
 };
 use super::transform::{CaseChange, SEARCH_BUILDS};
 use cmdr_fs::entry::FileEntry;
@@ -49,6 +49,28 @@ fn run(spec: &MultiRenameSpec, folder: &[FileEntry], batch: &[&str]) -> Vec<(Str
         .into_iter()
         .map(|p| (p.new_name, p.status))
         .collect()
+}
+
+/// The session and the MCP tool both preview by NAME: a name the folder no longer holds is
+/// `Missing` at its own row, and the counter numbers only the files still there.
+#[test]
+fn previewing_by_name_marks_a_gone_file_missing_in_place() {
+    let folder = [file("b.jpg"), file("a.jpg")];
+    let names: Vec<String> = ["a.jpg", "gone.jpg", "b.jpg"]
+        .iter()
+        .map(|s| (*s).to_string())
+        .collect();
+    let compiled = Compiled::new(&spec("[C]")).expect("a valid spec");
+    let rows = preview_names(&compiled, Path::new(DIR), &names, &folder, &NameEdits::default());
+    let out: Vec<_> = rows.iter().map(|r| (r.row, r.new_name.as_str(), &r.status)).collect();
+    assert_eq!(
+        out,
+        vec![
+            (0, "1.jpg", &RowStatus::Ready),
+            (1, "gone.jpg", &RowStatus::Missing),
+            (2, "2.jpg", &RowStatus::Ready),
+        ]
+    );
 }
 
 #[test]

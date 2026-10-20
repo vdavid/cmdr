@@ -63,7 +63,11 @@ fn test_agent_tool_view_is_exactly_expected_set() {
 /// A `Propose` tool must also cap its payload the way `image_facts` caps at 200 paths — a proposal
 /// the user can't review is a proposal they can only rubber-stamp. That contract can't be enforced
 /// generically; see `mcp/DETAILS.md` § Consumer and access views.
-const EXPECTED_PROPOSE_TOOL_NAMES: &[&str] = &["propose_rename_plan", "propose_suggestions"];
+///
+/// `multi_rename` is the one external-client entry: it stages its ready rows as a rename group
+/// on the same spine, and its handler (`executor/multi_rename.rs`) only reads the pane's cached
+/// listing and writes the proposal rows.
+const EXPECTED_PROPOSE_TOOL_NAMES: &[&str] = &["multi_rename", "propose_rename_plan", "propose_suggestions"];
 
 /// The agent's `Memory` tools, authored by hand for the same reason the `Propose` list is.
 ///
@@ -132,8 +136,10 @@ fn test_memory_tools_are_not_exposed_to_external_mcp_clients() {
 fn test_propose_tools_are_an_explicit_allowlist() {
     use std::collections::BTreeSet;
     let allowed: BTreeSet<&str> = EXPECTED_PROPOSE_TOOL_NAMES.iter().copied().collect();
+    // Both views: an external client's `Propose` tool is the same widening as the agent's.
     let actual: BTreeSet<String> = agent_tool_view()
         .into_iter()
+        .chain(get_all_tools())
         .filter(|t| tool_access(&t.name) == Some(Access::Propose))
         .map(|t| t.name)
         .collect();

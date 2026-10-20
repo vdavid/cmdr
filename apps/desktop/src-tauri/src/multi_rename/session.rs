@@ -18,12 +18,11 @@ use std::time::{Duration, Instant};
 use serde::{Deserialize, Serialize};
 
 use crate::ignore_poison::IgnorePoison;
-use cmdr_fs::entry::FileEntry;
 use cmdr_listing::{ListingId, ListingLookupError};
 
 use super::error::MultiRenameError;
 use super::names_file::{self, Written};
-use super::plan::{Compiled, MultiRenameSpec, NameEdits, PreviewRow, RowStatus, preview};
+use super::plan::{Compiled, MultiRenameSpec, NameEdits, PreviewRow, RowStatus, preview_names};
 
 /// How many sessions live at once. A sheet is modal, so more than one or two is
 /// a window that closed without saying so. Tests share the store and run in
@@ -206,37 +205,12 @@ fn with_session<R>(session_id: &str, f: impl FnOnce(&mut Session) -> R) -> Resul
 /// Every row of `names`' preview against the folder as the listing holds it now,
 /// with the Results names in `edits`.
 fn compute(inputs: &Inputs, compiled: &Compiled, edits: &NameEdits) -> Result<Vec<PreviewRow>, MultiRenameError> {
-    let (present, missing, siblings) = {
-        let siblings = crate::listing_host::listings()
-            .entries(&ListingId::new(inputs.listing_id.clone()))
-            .map_err(|_| MultiRenameError::Gone {
-                listing_id: inputs.listing_id.clone(),
-            })?;
-        let by_name: HashMap<&str, &FileEntry> = siblings.iter().map(|e| (e.name.as_str(), e)).collect();
-        let mut present: Vec<(usize, FileEntry)> = Vec::with_capacity(inputs.names.len());
-        let mut missing: Vec<usize> = Vec::new();
-        for (row, name) in inputs.names.iter().enumerate() {
-            match by_name.get(name.as_str()) {
-                Some(entry) => present.push((row, (*entry).clone())),
-                None => missing.push(row),
-            }
-        }
-        drop(by_name);
-        (present, missing, siblings)
-    };
-    let rows: Vec<(usize, &FileEntry)> = present.iter().map(|(row, entry)| (*row, entry)).collect();
-    let mut previewed = preview(compiled, &inputs.dir, &rows, &siblings, edits);
-    previewed.extend(missing.into_iter().map(|row| PreviewRow {
-        row,
-        old_name: inputs.names[row].clone(),
-        new_name: inputs.names[row].clone(),
-        status: RowStatus::Missing,
-        icon_id: None,
-        is_directory: false,
-        edited: false,
-    }));
-    previewed.sort_by_key(|r| r.row);
-    Ok(previewed)
+    let siblings = crate::listing_host::listings()
+        .entries(&ListingId::new(inputs.listing_id.clone()))
+        .map_err(|_| MultiRenameError::Gone {
+            listing_id: inputs.listing_id.clone(),
+        })?;
+    Ok(preview_names(compiled, &inputs.dir, &inputs.names, &siblings, edits))
 }
 
 /// The sheet's live preview of `spec` over the session's files. Stores it as the

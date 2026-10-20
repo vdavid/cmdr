@@ -473,8 +473,9 @@ fn read_evidence(
 }
 
 /// The friendly name a group leads with in a review list. English display text stored with the
-/// group, as the spine takes it; the rename dialog renders its own localized copy.
-fn display_name(parent: &str, count: usize) -> String {
+/// group, as the spine takes it; the rename dialog renders its own localized copy. The MCP
+/// `multi_rename` tool's proposals lead with it too.
+pub fn display_name(parent: &str, count: usize) -> String {
     let folder = Path::new(parent)
         .file_name()
         .and_then(|name| name.to_str())

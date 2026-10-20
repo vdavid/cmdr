@@ -12,7 +12,7 @@ use super::{Access, Consumer, Tool, schemas, tool_available_to, validate_params}
 use crate::mcp::executor::{ToolError, ToolResult};
 use crate::mcp::executor::{
     app, archive_password, async_tools, conflicts, cpu, dialogs, downloads, eject, favorites, file_ops, image_facts,
-    indexing, memory, nav, operation_log, photos, queue, quit, search, tags, view,
+    indexing, memory, multi_rename, nav, operation_log, photos, queue, quit, search, tags, view,
 };
 
 mcp_tools! {
@@ -122,6 +122,16 @@ mcp_tools! {
         consumers: &[Consumer::AiClient],
         access: Access::Write,
         run: app_params file_ops::execute_rename
+    },
+    // The Multi-Rename Tool (⌃M) for an agent: `Propose`, never `Write`. A dry run previews; a
+    // real run stages the ready rows as one rename group on the suggested-ops spine, which the
+    // user approves or rejects in Cmdr. See `executor/multi_rename.rs`.
+    "multi_rename" => {
+        desc: "Pattern-rename the pane's files with the Multi-Rename Tool's settings (masks, search and replace, case, counter; every one optional). dryRun (default) previews each row's new name and status, paged with start/limit. dryRun false stages every ready row as ONE rename proposal for the user to review and approve in Cmdr; it never renames anything itself.",
+        schema: schemas::multi_rename_schema(),
+        consumers: &[Consumer::AiClient],
+        access: Access::Propose,
+        run: app_params multi_rename::execute_multi_rename
     },
     "mkdir" => {
         desc: "Create a folder in the focused pane, or pass pane to target the other. No name opens the naming \

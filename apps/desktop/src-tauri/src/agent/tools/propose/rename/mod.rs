@@ -39,7 +39,7 @@ pub use preflight::{
 pub use revise::revise_row;
 pub use store::{
     AcceptedPreflight, AcceptedRenamePreflights, RenameProposal, RenameProposalRow, RenameProposalRowSnapshot,
-    RenameProposalSnapshot, RenameSourceFingerprint, group_ops, load, numeric_id,
+    RenameProposalSnapshot, RenameSourceFingerprint, display_name as rename_display_name, group_ops, load, numeric_id,
 };
 
 #[cfg(test)]

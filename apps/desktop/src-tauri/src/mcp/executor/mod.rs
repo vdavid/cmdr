@@ -20,6 +20,7 @@ pub(crate) mod file_ops;
 pub(crate) mod image_facts;
 pub(crate) mod indexing;
 pub(crate) mod memory;
+pub(crate) mod multi_rename;
 pub(crate) mod nav;
 pub(crate) mod operation_log;
 pub(crate) mod photos;
@@ -237,15 +238,6 @@ pub(super) async fn flush_pane_state<R: Runtime>(app: &AppHandle<R>, pane: &str)
 /// Paths come from the last-synced pane state, so the loaded window is the
 /// authority: a `name` not in the listing, or a selection/cursor outside the
 /// loaded window, is an honest error rather than a silent miss.
-// The only current caller (`tag`) is macOS-gated, so off macOS this is dead code
-// under `#![deny(unused)]`; the helper itself is platform-neutral.
-#[cfg_attr(
-    not(target_os = "macos"),
-    allow(
-        dead_code,
-        reason = "only caller `tag` is macOS-gated; the helper itself is platform-neutral"
-    )
-)]
 pub(super) fn resolve_pane_target_paths(state: &PaneState, names: Option<&[String]>) -> Result<Vec<String>, ToolError> {
     if let Some(names) = names {
         if names.is_empty() {
