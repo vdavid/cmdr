@@ -2099,6 +2099,13 @@
     "forms": "the files an operation overwrote → những tệp bị ghi đè",
     "sources": "macOS Finder (Ghi đè hay giữ lại…), GNOME"
   },
+  "owner": {
+    "accept": ["quyền sở hữu"],
+    "chosen": "chủ sở hữu",
+    "confidence": "high",
+    "forms": "the server's owner → chủ sở hữu máy chủ; ownership (a file's owner, as in ls -la) → quyền sở hữu",
+    "sources": "macOS Finder (Giá trị chủ sở hữu), GNOME Nautilus, Xfce Thunar, KDE Dolphin (Owner → Chủ sở hữu); catalog servers.hostKey.*"
+  },
   "package": {
     "chosen": "gói",
     "confidence": "high",

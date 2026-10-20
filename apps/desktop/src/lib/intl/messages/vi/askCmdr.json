@@ -605,9 +605,9 @@
   "@askCmdr.renameUndo.undoJob": {
     "sourceHash": "f84acd2"
   },
-  "askCmdr.renameUndo.undoJobLabel": "Hoàn tác mọi thay đổi tên trong lần chạy này: {filesText} {files, plural, other {tệp}} trong {batches, plural, other {# lô}}",
+  "askCmdr.renameUndo.undoJobLabel": "Hoàn tác cả {batches, plural, other {# lô}}, {filesText} {files, plural, other {tệp}} đã đổi tên trong lần chạy này",
   "@askCmdr.renameUndo.undoJobLabel": {
-    "sourceHash": "9d2e84e"
+    "sourceHash": "544447d"
   },
   "askCmdr.renameUndo.undoing": "Đang đặt lại tên cũ…",
   "@askCmdr.renameUndo.undoing": {
