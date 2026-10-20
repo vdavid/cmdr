@@ -159,10 +159,26 @@ func needsSquash(commits []commit, msg string) bool {
 
 // workflowRun is one of `repos/{repo}/actions/workflows/{file}/runs`' `workflow_runs`.
 type workflowRun struct {
-	ID         int64     `json:"id"`
-	Status     string    `json:"status"`
-	Conclusion string    `json:"conclusion"`
-	CreatedAt  time.Time `json:"created_at"`
+	ID             int64     `json:"id"`
+	Status         string    `json:"status"`
+	Conclusion     string    `json:"conclusion"`
+	CreatedAt      time.Time `json:"created_at"`
+	HeadRepository struct {
+		FullName string `json:"full_name"`
+	} `json:"head_repository"`
+}
+
+// leftoverRuns picks the runs a landed branch leaves behind: unfinished, and on this repo's
+// branch, not a fork's namesake. GitHub keeps them going after the PR merges and the branch is
+// deleted, holding runners (the five macOS ones above all) that nobody waits on anymore.
+func leftoverRuns(runs []workflowRun) []workflowRun {
+	var out []workflowRun
+	for _, run := range runs {
+		if run.Status != "completed" && run.HeadRepository.FullName == repo {
+			out = append(out, run)
+		}
+	}
+	return out
 }
 
 const (

@@ -131,6 +131,16 @@ Exception: a branch carrying a merge commit (a contributor's PR record, `docs/gu
 merge-back, `docs/guides/releasing.md`) is never rebased, by `land` or by GitHub, since a plain rebase flattens the
 merge. When `main` moved, `land` stops and names the manual fix instead.
 
+## Decision: stop the landed branch's leftover runs
+
+GitHub keeps a PR's unfinished runs going after it merges and the branch is deleted (an older push's CI, CodeQL). On
+2026-10-20 two landed PRs' runs held two of the account's five macOS runners for up to 40 min while eight agents queued.
+So `finish` cancels every unfinished run on the branch (`leftoverRuns`: this repo's, not a fork's namesake).
+
+- **Here, not in a workflow on `pull_request: closed`**: that would cover every way a PR closes, but it needs
+  `actions: write`, a Scorecard Token-Permissions finding. `land` cancels with the user's own `gh` token. Renovate's
+  automerge isn't covered, but it merges only on green, so it leaves little running.
+
 ## Open points
 
 - **Renovate automerge**: Renovate uses GitHub's native auto-merge (`platformAutomerge`). Whether GitHub honors an app's

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"slices"
 	"testing"
 	"time"
 )
@@ -146,6 +147,25 @@ func TestCIVerdict(t *testing.T) {
 		if got != c.want || run.ID != c.wantID {
 			t.Errorf("%s: got %d (run %d), want %d (run %d)", c.name, got, run.ID, c.want, c.wantID)
 		}
+	}
+}
+
+func TestLeftoverRuns(t *testing.T) {
+	ours := func(id int64, status string) workflowRun {
+		run := workflowRun{ID: id, Status: status}
+		run.HeadRepository.FullName = repo
+		return run
+	}
+	fork := workflowRun{ID: 4, Status: "in_progress"}
+	fork.HeadRepository.FullName = "someone/cmdr"
+	runs := []workflowRun{ours(1, "completed"), ours(2, "in_progress"), ours(3, "queued"), fork}
+
+	var got []int64
+	for _, run := range leftoverRuns(runs) {
+		got = append(got, run.ID)
+	}
+	if want := []int64{2, 3}; !slices.Equal(got, want) {
+		t.Errorf("got %v, want %v: only this repo's unfinished runs", got, want)
 	}
 }
 

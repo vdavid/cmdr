@@ -13,7 +13,7 @@ only way commits reach `main`: nobody, admin included, lands a SHA without a gre
 ## Usage
 
 - `pnpm land`: rebase onto `origin/main` if it moved, push, open or reuse the PR, wait for `CI OK`, land, sync local
-  `main`, delete the remote branch, and print the worktree's teardown command.
+  `main`, delete the remote branch, stop its leftover runs, and print the worktree's teardown command.
 - `remove-worktree.sh` counts a branch as merged when `git cherry origin/main` finds every commit upstream, so it tears
   down after a GitHub rebase merge too.
 - Every PR it opens carries the `claude-created` label (`agentLabel`); a reused PR, like a contributor's, keeps its own.

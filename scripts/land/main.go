@@ -472,12 +472,33 @@ func finish(r runner, branch string) error {
 	default:
 		say("Left origin/%s alone: it points at %s, which isn't what landed.", branch, remote[:12])
 	}
+	stopLeftoverRuns(r, branch)
 	if teardown := teardownCommand(r.dir); teardown != "" {
 		say("Done. This worktree's branch is on main now; remove the worktree when you're finished with it:\n  %s", teardown)
 	} else {
 		say("Done.")
 	}
 	return nil
+}
+
+// stopLeftoverRuns cancels the landed branch's unfinished runs (`leftoverRuns`): an older push's
+// CI, CodeQL, a land run. Best-effort, like the rest of `finish`.
+func stopLeftoverRuns(r runner, branch string) {
+	var runs struct {
+		WorkflowRuns []workflowRun `json:"workflow_runs"`
+	}
+	if err := r.ghAPI(&runs, fmt.Sprintf("repos/%s/actions/runs?branch=%s&per_page=100", repo, url.QueryEscape(branch))); err != nil {
+		say("Couldn't list %s's runs to stop the leftovers: %v", branch, err)
+		return
+	}
+	for _, run := range leftoverRuns(runs.WorkflowRuns) {
+		// A run can finish between the list and the cancel, so a refusal is only a note.
+		if _, err := r.gh("api", "-X", "POST", fmt.Sprintf("repos/%s/actions/runs/%d/cancel", repo, run.ID), "--silent"); err != nil {
+			say("Couldn't stop leftover run %d (it may have just finished): %v", run.ID, err)
+			continue
+		}
+		say("Stopped leftover run https://github.com/%s/actions/runs/%d, which nothing waits on now.", repo, run.ID)
+	}
 }
 
 // syncMain fast-forwards local `main` to `origin/main`, never checking it out here: wherever it's
