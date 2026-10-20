@@ -392,26 +392,6 @@ test-group = 'real-notify'
 slow-timeout = { period = "90s", terminate-after = 1 }
 
 [[profile.default.overrides]]
-# The file-viewer SESSION tests that block on a real watcher (distinct from
-# `file_viewer::watcher_test::` below, which was already covered). Membership is
-# exactly "calls `wait_for_watcher_subscribed`" — that helper is what parks on a
-# real subscribe, and its `GATE_TIMEOUT` is 30 s, so 40 s keeps the gate
-# authoritative with the cap as a backstop.
-#
-# ❌ Deliberately NOT `test(file_viewer::session_test::)`: that module is ~69 tests
-# and most of them just read files, so the prefix would serialize a pile of fast
-# tests behind the group for no reason.
-filter = '''
-    test(file_viewer::session_test::test_session_close_stops_watcher)
-  + test(file_viewer::session_test::test_session_tail_mode_off_does_not_extend_index)
-  + test(file_viewer::session_test::test_session_emits_file_changed_on_append)
-  + test(file_viewer::session_test::test_session_rotation_reopens_backend)
-  + test(file_viewer::session_test::tail_mode_on_extends_backend_when_watcher_reports_grew)
-'''
-test-group = 'real-notify'
-slow-timeout = { period = "40s", terminate-after = 1 }
-
-[[profile.default.overrides]]
 # The cold-drive cell that blocks on a REAL FSEvents delivery, so it runs on the
 # real journal (`ColdDrive::watched_for_real`): `a_change_inside_a_walked_branch_...`
 # proves `ensure_branch_watch` starts a watcher that actually delivers. Every other
@@ -542,7 +522,10 @@ test-group = 'real-notify'
 slow-timeout = { period = "30s", terminate-after = 1 }
 
 [[profile.default.overrides]]
-# File-viewer session watchers — same real-FSEvents class, but these still block
+# The file-viewer watcher's four real-stream cells (`subscribe_for_real`); every
+# other viewer subscribe, the session tests' included, arms without an OS stream
+# (`file_viewer/DETAILS.md` § "Gotchas (tail mode)"). ❌ Don't add a fifth.
+# Same real-FSEvents class, but these still block
 # on a SINGLE delivery (subscribe/start a watch, then rewrite/append/rename once
 # and wait). They haven't been restructured to redo the mutation, so a starved or
 # coalesced event is unrecoverable within the run. Grant retries: each retry
@@ -556,7 +539,12 @@ slow-timeout = { period = "30s", terminate-after = 1 }
 # attempt that rescued it. So the budget reads as a flake-rate meter, not a hiding
 # place, and a rising rate here is visible without anyone re-measuring. Don't add
 # retries anywhere without that reporting in place (see `docs/testing.md`).
-filter = 'test(file_viewer::watcher_test::)'
+filter = '''
+    test(file_viewer::watcher_test::watcher_observes_append_within_debounce)
+  + test(file_viewer::watcher_test::watcher_observes_truncation_as_shrunk)
+  + test(file_viewer::watcher_test::watcher_observes_inode_replace)
+  + test(file_viewer::watcher_test::watcher_debounces_rapid_writes)
+'''
 test-group = 'real-notify'
 slow-timeout = { period = "20s", terminate-after = 1 }
 retries = 2

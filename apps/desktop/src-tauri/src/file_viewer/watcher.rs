@@ -128,9 +128,22 @@ pub struct ViewerWatcherManager {
     inner: Mutex<ManagerInner>,
 }
 
+/// What keeps a path's watch delivering: the OS stream, which disarms when dropped.
+enum WatchStream {
+    Notify(
+        #[allow(dead_code, reason = "Debouncer must be held to keep watching")]
+        Debouncer<RecommendedWatcher, RecommendedCache>,
+    ),
+    /// A test build's watch: the subscriber bookkeeping without an OS stream, so a test
+    /// that drives the session through `test_only_emit` never waits on `fseventsd`.
+    #[cfg(test)]
+    Scripted,
+}
+
 struct ManagerInner {
     states: HashMap<PathBuf, Arc<Mutex<PathState>>>,
-    debouncers: HashMap<PathBuf, Debouncer<RecommendedWatcher, RecommendedCache>>,
+    /// One per watched path, beside its `states` entry.
+    streams: HashMap<PathBuf, WatchStream>,
     /// Monotonic counter to give each subscriber a stable id (`Vec<SyncSender>`
     /// alone can't be compared by identity).
     next_sender_id: usize,
@@ -147,7 +160,7 @@ impl ViewerWatcherManager {
         Self {
             inner: Mutex::new(ManagerInner {
                 states: HashMap::new(),
-                debouncers: HashMap::new(),
+                streams: HashMap::new(),
                 next_sender_id: 0,
                 subscriber_ids: HashMap::new(),
             }),
@@ -183,50 +196,14 @@ impl ViewerWatcherManager {
             }));
             inner.states.insert(canonical.clone(), state.clone());
 
-            // Watch the parent directory: notify-rs on macOS can't reliably
-            // observe a single file when atomic-replace swaps the inode. The
-            // parent-watch + path-filter pattern matches what existing
-            // log-tail libraries do.
-            let watch_target = canonical
-                .parent()
-                .map(Path::to_path_buf)
-                .unwrap_or_else(|| canonical.clone());
-            let state_for_cb = Arc::downgrade(&state);
-            let target_path = canonical.clone();
-
-            let mut debouncer = new_debouncer(
-                Duration::from_millis(DEBOUNCE_MS),
-                None,
-                move |result: DebounceEventResult| {
-                    let Some(state) = state_for_cb.upgrade() else {
-                        return;
-                    };
-                    if let Ok(events) = result {
-                        // Filter to events touching the target path; the
-                        // parent-watch sees siblings too.
-                        let mut touched = false;
-                        for event in &events {
-                            if event.paths.iter().any(|p| p == &target_path) {
-                                touched = true;
-                                break;
-                            }
-                        }
-                        if !touched {
-                            return;
-                        }
-                        classify_and_emit(&state);
-                    }
-                    // Errors are ignored: a transient FS-event error usually
-                    // resolves on the next debounce window.
-                },
-            )
-            .map_err(|e| std::io::Error::other(format!("create viewer watcher: {}", e)))?;
-
-            debouncer
-                .watch(&watch_target, RecursiveMode::NonRecursive)
-                .map_err(|e| std::io::Error::other(format!("watch viewer path: {}", e)))?;
-
-            inner.debouncers.insert(canonical.clone(), debouncer);
+            let stream = match arm_stream(&canonical, &state) {
+                Ok(stream) => stream,
+                Err(e) => {
+                    inner.states.remove(&canonical);
+                    return Err(e);
+                }
+            };
+            inner.streams.insert(canonical.clone(), stream);
         }
 
         // Register sender on the path state.
@@ -258,7 +235,7 @@ impl ViewerWatcherManager {
         let remaining: Vec<SyncSender<WatcherEvent>> = senders.iter().map(|(_, s)| s.clone()).collect();
         if remaining.is_empty() {
             inner.subscriber_ids.remove(&canonical);
-            inner.debouncers.remove(&canonical);
+            inner.streams.remove(&canonical);
             inner.states.remove(&canonical);
         } else if let Some(state) = inner.states.get(&canonical) {
             state.lock_ignore_poison().subscribers = remaining;
@@ -270,6 +247,95 @@ impl ViewerWatcherManager {
     pub fn watch_count(&self) -> usize {
         self.inner.lock_ignore_poison().states.len()
     }
+}
+
+/// The OS half of a subscription. A test build arms `WatchStream::Scripted` unless the
+/// path opted in with `watch_for_real`. (Plain backticks: both are `cfg(test)`-only, so
+/// rustdoc can't resolve a link.)
+fn arm_stream(canonical: &Path, state: &Arc<Mutex<PathState>>) -> std::io::Result<WatchStream> {
+    #[cfg(test)]
+    if !REAL_STREAMS.lock_ignore_poison().contains(canonical) {
+        return Ok(WatchStream::Scripted);
+    }
+    arm_notify_stream(canonical, state).map(WatchStream::Notify)
+}
+
+/// Canonical paths whose watch arms a real OS stream in a test build.
+#[cfg(test)]
+static REAL_STREAMS: LazyLock<Mutex<std::collections::HashSet<PathBuf>>> =
+    LazyLock::new(|| Mutex::new(std::collections::HashSet::new()));
+
+/// Makes `path`'s watch arm a real OS stream in this test build. Only for a test that
+/// blocks on the OS delivering an event; keyed by path, not a global switch, so it holds
+/// under plain `cargo test`, where every test shares one process.
+#[cfg(test)]
+pub fn watch_for_real(path: &Path) {
+    let canonical = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+    REAL_STREAMS.lock_ignore_poison().insert(canonical);
+}
+
+/// Whether `path`'s watch holds an OS stream.
+#[cfg(test)]
+pub fn has_os_stream(path: &Path) -> bool {
+    let canonical = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+    matches!(
+        VIEWER_WATCHER_MANAGER
+            .inner
+            .lock_ignore_poison()
+            .streams
+            .get(&canonical),
+        Some(WatchStream::Notify(_))
+    )
+}
+
+/// A debounced `notify` stream that classifies each batch touching `canonical`.
+fn arm_notify_stream(
+    canonical: &Path,
+    state: &Arc<Mutex<PathState>>,
+) -> std::io::Result<Debouncer<RecommendedWatcher, RecommendedCache>> {
+    // Watch the parent directory: notify-rs on macOS can't reliably
+    // observe a single file when atomic-replace swaps the inode. The
+    // parent-watch + path-filter pattern matches what existing
+    // log-tail libraries do.
+    let watch_target = canonical
+        .parent()
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| canonical.to_path_buf());
+    let state_for_cb = Arc::downgrade(state);
+    let target_path = canonical.to_path_buf();
+
+    let mut debouncer = new_debouncer(
+        Duration::from_millis(DEBOUNCE_MS),
+        None,
+        move |result: DebounceEventResult| {
+            let Some(state) = state_for_cb.upgrade() else {
+                return;
+            };
+            if let Ok(events) = result {
+                // Filter to events touching the target path; the
+                // parent-watch sees siblings too.
+                let mut touched = false;
+                for event in &events {
+                    if event.paths.iter().any(|p| p == &target_path) {
+                        touched = true;
+                        break;
+                    }
+                }
+                if !touched {
+                    return;
+                }
+                classify_and_emit(&state);
+            }
+            // Errors are ignored: a transient FS-event error usually
+            // resolves on the next debounce window.
+        },
+    )
+    .map_err(|e| std::io::Error::other(format!("create viewer watcher: {}", e)))?;
+
+    debouncer
+        .watch(&watch_target, RecursiveMode::NonRecursive)
+        .map_err(|e| std::io::Error::other(format!("watch viewer path: {}", e)))?;
+    Ok(debouncer)
 }
 
 fn initial_metadata(path: &Path) -> (u64, Option<u64>) {

@@ -820,6 +820,14 @@ list is keyed by path. Dropping the last subscription unwatches the path.
 **Manager thread polls with a 200 ms timeout.** This is the only path that lets `close_session` make the manager exit
 when the file is idle (no events). Without it, `recv` would block forever and the thread would leak.
 
+**Tests subscribe with no OS stream.** `subscribe` splits into the bookkeeping (path state, subscribers,
+`unsubscribe`) and `arm_stream`, the OS half. A test build arms `WatchStream::Scripted` there, so a session test gets a
+live subscription that `test_only_emit` reaches, with no `fseventsd` round trip and a free drop; `has_os_stream` says
+which one a path got. A cell that blocks on real delivery opts its path in with `watch_for_real` first (the four below,
+through `subscribe_for_real`). Same split, and same why, as the listing watcher (`file_system/DETAILS.md` § "Tests arm
+no OS stream"): every session test used to arm a real stream, and the five that synced on it ran serialized in
+`real-notify`.
+
 **Real-FSEvents delivery is proven in `watcher_test.rs` and nowhere else.** `watcher_observes_append_within_debounce`
 (one append → `Grew(n)` with `n` equal to the on-disk size), `watcher_debounces_rapid_writes` (50 writes in under
 100 ms → one `Grew` at the final size, at most 5 leftovers), `watcher_observes_truncation_as_shrunk`, and
