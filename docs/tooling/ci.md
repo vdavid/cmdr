@@ -139,10 +139,11 @@ Watch with `gh cache list`.
 **Critical path.** The per-push wall clock is the longest single job, because `desktop-e2e-linux` gates only on change
 detection (not on `desktop-svelte`) and so starts at t=0 alongside everything else. E2E is usually that floor. Measured
 over 109 runs (2026-10-12 to 2026-10-19, #557), a warm E2E job is ~24.5 min: ~1.3 setup, ~12 build (the final `cmdr`
-crate alone ~10), ~8.5 tests (455, one worker). The Rust work runs as four parallel jobs: `desktop-rust` (lints, clippy,
-rustdoc, the suite), `desktop-rust-fixtures` (the Docker fixture lanes and the Nextcloud cells), `desktop-rust-macos`,
-and `desktop-rust-module-cycles`; splitting out the last two of each pair took ~10 and ~3 min off the two longest.
-Sharding the E2E tests (−3 to −4 min) only pays off once the Rust jobs are shorter than E2E too. Don't re-add a
+crate alone ~10), ~8.5 tests (455, one worker). The Rust work runs as five parallel jobs: on Linux `desktop-rust`
+(scanners, clippy, rustdoc, the suite) and `desktop-rust-fixtures` (the Docker fixture lanes and the Nextcloud cells),
+on macOS `desktop-rust-macos` (clippy, rustdoc), `desktop-rust-macos-tests`, and `desktop-rust-module-cycles`. On Linux
+the fixtures job is the longer one, so splitting the suite out of `desktop-rust` too would save no wall time. Sharding
+the E2E tests (−3 to −4 min) only pays off once the Rust jobs are shorter than E2E too. Don't re-add a
 `needs: desktop-svelte` to the e2e job — it only added ~4 min of latency for a compute-saving skip that isn't worth it
 (see the comment on the job).
 
@@ -169,26 +170,31 @@ schedule would let it go cold every time, defeating the cache. `*/6` on day-of-m
 
 Every other `ci.yml` job runs on ubuntu, so code under `cfg(target_os = "macos")` used to be compiled only on whichever
 Mac last ran `pnpm check`. This job runs on `macos-26` (the release builder's image, so it lints against the shipping
-SDK; free for a public repo) and asks the three questions Linux can't answer for that code: `desktop-rust-clippy`,
-`desktop-rust-rustdoc`, and `desktop-rust-tests`. The other platform-blind scanners stay in `desktop-rust` alone. Gated
-on the `rust` filter like `desktop-rust`, so it runs in parallel and adds no wall time unless it outlasts that job.
+SDK; free for a public repo) and, with its siblings, asks the three questions Linux can't answer for that code:
+`desktop-rust-clippy` and `desktop-rust-rustdoc` here, `desktop-rust-tests` in `desktop-rust-macos-tests`. The other
+platform-blind scanners stay in `desktop-rust` alone. All three macOS jobs gate on the `rust` filter like `desktop-rust`
+and run in parallel.
 
-`desktop-rust-module-cycles` is its sibling: a second `macos-26` job, in parallel, that runs only
-`desktop-rust-module-cycles`, whose baseline is a macOS module graph (`scripts/check/checks/DETAILS.md` § "Rust module
-cycles"), so it can't move to ubuntu. It installs the cargo-modules version the check pins and caches the binary under a
-key named after that version (`actions/cache`), and restores `desktop-rust-macos`'s rust-cache entry (`shared-key`,
-never saving) for the build scripts cargo-modules runs. It's in `ci-ok`'s `needs` too.
+`desktop-rust-macos-tests` exists because on a 3-core runner the test build alone is ~10 min, and in one job it waited
+~5 min for clippy and rustdoc first. It has its own rust-cache entry (`shared-key: desktop-rust-macos-tests`), so the
+debug test build and the clippy/rustdoc artifacts don't overwrite each other's save.
 
-- **Required.** It's in `ci-ok`'s `needs`, so a red macOS job fails the run, `ci-ok`, and both release gates. Its first
-  run (2026-10-06) failed on two tests that assumed David's Mac (a malloc zone macOS 26 doesn't register, a tight
-  watchdog margin); the second was green, and it was promoted then.
+`desktop-rust-module-cycles` is the third: a `macos-26` job that runs only `desktop-rust-module-cycles`, whose baseline
+is a macOS module graph (`scripts/check/checks/DETAILS.md` § "Rust module cycles"), so it can't move to ubuntu. It
+installs the cargo-modules version the check pins and caches the binary under a key named after that version
+(`actions/cache`), and restores `desktop-rust-macos`'s rust-cache entry (`shared-key`, never saving) for the build
+scripts cargo-modules runs. It's in `ci-ok`'s `needs` too.
+
+- **Required.** All three are in `ci-ok`'s `needs`, so a red macOS job fails the run, `ci-ok`, and both release gates.
+  Its first run (2026-10-06) failed on two tests that assumed David's Mac (a malloc zone macOS 26 doesn't register, a
+  tight watchdog margin); the second was green, and it was promoted then.
 - **Left out on purpose**: `macos-availability` (the committed selector list records the newest SDK it was built on, and
   an older runner SDK that knows a different selector set fails by design), `disk-images` (a candidate once the job has
   a track record), and the Docker fixture lanes (no Docker on GitHub's macOS runners).
-- **Cache**: its own rust-cache entry (keys are per job and OS), saved only from `main` so a PR can't add a second
-  multi-GB entry. The repo already sits at the 10 GB ceiling (11.6 GB on 2026-10-06, three ~1.9 GB `docker-e2e` entries,
-  one per `Cargo.lock`), so LRU evicts the stale E2E entries first; if this job starts building cold, check
-  `gh cache list`.
+- **Cache**: `desktop-rust-macos` and `desktop-rust-macos-tests` each own a rust-cache entry, saved only from `main` so
+  a PR can't add more multi-GB entries. The repo already sits at the 10 GB ceiling (11.6 GB on 2026-10-06, three ~1.9 GB
+  `docker-e2e` entries, one per `Cargo.lock`), so LRU evicts the stale E2E entries first; if this job starts building
+  cold, check `gh cache list`.
 
 The CI failure history that motivated it: `docs/notes/ci-health-2026-10.md`.
 
