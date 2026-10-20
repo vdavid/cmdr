@@ -205,6 +205,10 @@ jobs:
   # ===========================================
   # Desktop app - Rust backend
   # ===========================================
+  # No "Free disk space" step, here or in `desktop-rust-fixtures`: the runner's root disk is
+  # 145 GB with 86 GB free at the start, and a cold run of each job peaked at ~80 GB used,
+  # leaving 68 GB free (sampled every 5 s, PR #593, 2026-10-20). The reclaim cost ~1.5 min a
+  # run. Each job ends by printing `df -h /`, so a future squeeze shows in the log.
   desktop-rust:
     name: Desktop (Rust)
     runs-on: ubuntu-latest
@@ -215,13 +219,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      # TEMPORARY measurement: samples root-disk usage every 5 s for the whole job, so the
-      # last step can report the peak.
-      - name: Start disk sampler
-        run: |
-          nohup bash -c 'while :; do df -B1M --output=used,avail / | tail -1 >>"$RUNNER_TEMP/df.log"; sleep 5; done' >/dev/null 2>&1 &
-          df -h /
 
       - name: Install mise
         uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
@@ -386,9 +383,7 @@ jobs:
 
       - name: Report disk usage
         if: always()
-        run: |
-          df -h /
-          sort -n "$RUNNER_TEMP/df.log" | tail -1 | awk '{ printf "Peak used: %d MB, free at that point: %d MB\n", $1, $2 }'
+        run: df -h /
 
   # ===========================================
   # Desktop app - Rust against the Docker fixtures
@@ -409,13 +404,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      # TEMPORARY measurement: samples root-disk usage every 5 s for the whole job, so the
-      # last step can report the peak.
-      - name: Start disk sampler
-        run: |
-          nohup bash -c 'while :; do df -B1M --output=used,avail / | tail -1 >>"$RUNNER_TEMP/df.log"; sleep 5; done' >/dev/null 2>&1 &
-          df -h /
 
       - name: Install mise
         uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
@@ -456,7 +444,6 @@ jobs:
         run: |
           df -h /
           docker system df
-          sort -n "$RUNNER_TEMP/df.log" | tail -1 | awk '{ printf "Peak used: %d MB, free at that point: %d MB\n", $1, $2 }'
 
   # ===========================================
   # Desktop app - Rust on macOS

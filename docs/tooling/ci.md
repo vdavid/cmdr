@@ -99,10 +99,13 @@ silent** (a warning, not a red job):
 
 - **`desktop-rust`** (per push): `Swatinem/rust-cache` (SHA-pinned; `workflows-hardening` requires the pin) caches
   `target/` + cargo registry/index/git deps, keyed on Cargo.lock + rustc. An unchanged-deps push recompiles only the
-  `cmdr` crate (~16 → ~7 min). **Load-bearing companion: the "Free disk space" step.** A warm restore (~1.7 GB target +
-  cargo) plus the SMB integration build plus Docker SMB images overflow the runner's ~14 GB free disk ("No space left on
-  device" linking `libcmdr_lib.a`). The step reclaims unused preinstalled SDKs (~9 GB Android alone) first. Cold runs
-  pass without it; warm runs don't — so this only shows up once the cache is populated.
+  `cmdr` crate (~16 → ~7 min). The entry is named by `shared-key: desktop-rust` (the same key rust-cache derives from
+  the job ID), so `desktop-rust-fixtures` restores it too, never saving, and the repo keeps one Linux Rust entry.
+  Neither job has a "Free disk space" step: the runner's root disk is 145 GB with 86 GB free at the start, and a cold
+  run of each peaked at ~80 GB used with 68 GB free (sampled every 5 s, PR #593, 2026-10-20). The step dates from
+  runners with ~14 GB free, where the SMB build plus the fixture images overflowed the disk. Both jobs end on `df -h /`.
+  **Gotcha:** a verified `main` push skips this lane, so `main` rarely saves an entry and a PR's first run often builds
+  cold (it found none on PR #593); its second run restores the PR's own.
 - **`desktop-e2e-linux`**: caches the Docker-side cargo + `target/` via host bind mounts (`/tmp/cmdr-docker-cache/*`),
   keyed on Cargo.lock with a restore-keys fallback. Separate from `desktop-rust` because the e2e binary builds a
   different feature set (`playwright-e2e,virtual-mtp,smb-e2e`). **Load-bearing companion: the "Reclaim cache dir
@@ -136,8 +139,10 @@ Watch with `gh cache list`.
 **Critical path.** The per-push wall clock is the longest single job, because `desktop-e2e-linux` gates only on change
 detection (not on `desktop-svelte`) and so starts at t=0 alongside everything else. E2E is usually that floor. Measured
 over 109 runs (2026-10-12 to 2026-10-19, #557), a warm E2E job is ~24.5 min: ~1.3 setup, ~12 build (the final `cmdr`
-crate alone ~10), ~8.5 tests (455, one worker). The Rust lanes run 21–27 min, so they share the floor once E2E drops
-much below that; sharding the E2E tests (−3 to −4 min) only pays off after they shrink too. Don't re-add a
+crate alone ~10), ~8.5 tests (455, one worker). The Rust work runs as four parallel jobs: `desktop-rust` (lints, clippy,
+rustdoc, the suite), `desktop-rust-fixtures` (the Docker fixture lanes and the Nextcloud cells), `desktop-rust-macos`,
+and `desktop-rust-module-cycles`; splitting out the last two of each pair took ~10 and ~3 min off the two longest.
+Sharding the E2E tests (−3 to −4 min) only pays off once the Rust jobs are shorter than E2E too. Don't re-add a
 `needs: desktop-svelte` to the e2e job — it only added ~4 min of latency for a compute-saving skip that isn't worth it
 (see the comment on the job).
 
@@ -165,10 +170,14 @@ schedule would let it go cold every time, defeating the cache. `*/6` on day-of-m
 Every other `ci.yml` job runs on ubuntu, so code under `cfg(target_os = "macos")` used to be compiled only on whichever
 Mac last ran `pnpm check`. This job runs on `macos-26` (the release builder's image, so it lints against the shipping
 SDK; free for a public repo) and asks the three questions Linux can't answer for that code: `desktop-rust-clippy`,
-`desktop-rust-rustdoc`, and `desktop-rust-tests`. It also runs `desktop-rust-module-cycles`, whose baseline is a macOS
-module graph (`scripts/check/checks/DETAILS.md` § "Rust module cycles"), after installing the cargo-modules version the
-check pins. The other platform-blind scanners stay in `desktop-rust` alone. Gated on the `rust` filter like
-`desktop-rust`, so it runs in parallel and adds no wall time unless it outlasts that job (~29 min warm on 2026-10-05).
+`desktop-rust-rustdoc`, and `desktop-rust-tests`. The other platform-blind scanners stay in `desktop-rust` alone. Gated
+on the `rust` filter like `desktop-rust`, so it runs in parallel and adds no wall time unless it outlasts that job.
+
+`desktop-rust-module-cycles` is its sibling: a second `macos-26` job, in parallel, that runs only
+`desktop-rust-module-cycles`, whose baseline is a macOS module graph (`scripts/check/checks/DETAILS.md` § "Rust module
+cycles"), so it can't move to ubuntu. It installs the cargo-modules version the check pins and caches the binary under a
+key named after that version (`actions/cache`), and restores `desktop-rust-macos`'s rust-cache entry (`shared-key`,
+never saving) for the build scripts cargo-modules runs. It's in `ci-ok`'s `needs` too.
 
 - **Required.** It's in `ci-ok`'s `needs`, so a red macOS job fails the run, `ci-ok`, and both release gates. Its first
   run (2026-10-06) failed on two tests that assumed David's Mac (a malloc zone macOS 26 doesn't register, a tight
