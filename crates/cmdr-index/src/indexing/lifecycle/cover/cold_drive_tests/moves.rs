@@ -167,6 +167,7 @@ fn a_rename_between_a_walks_last_row_and_its_release_keeps_the_index() {
     std::fs::remove_file(&unannounced).expect("remove it behind the index's back");
 
     let (new_root, _put_back) = rename_the_drive(&drive);
+    #[cfg(target_os = "macos")]
     create_a_file(&drive, &new_root.join("scope/in-the-gap.txt"));
     assert!(
         drive.index.follow_volume_move(drive.volume_id),
@@ -174,9 +175,16 @@ fn a_rename_between_a_walks_last_row_and_its_release_keeps_the_index() {
     );
     gate.release();
 
+    // The walk never told the registry it ended, so the restart is one still in
+    // phases, which catches a gap file only by replaying the JOURNAL. inotify has
+    // none, so off macOS the gap goes unchecked here.
+    #[cfg(target_os = "macos")]
     cmdr_fs::testing::wait_until(LANDS_WITHIN, "the restart to replay what arrived in the gap", || {
         holds(&drive, "scope/in-the-gap.txt")
     });
+    // A rebuild truncates before it watches, so once a change lands live, a
+    // rebuild would already have dropped the unannounced row.
+    assert_live_at(&drive, &new_root, "after-the-restart", LANDS_WITHIN);
     assert!(
         holds(&drive, "scope/gone-unannounced.txt"),
         "the restart resumed the index the walk wrote rather than rebuilding it"
