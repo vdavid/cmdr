@@ -10,6 +10,7 @@
 use std::ops::ControlFlow;
 use std::path::Path;
 
+use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::log_detail::LogDetail;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::metadata::{CarriedMetadata, MetadataClasses, default_file_mode, routed_mode};
@@ -280,7 +281,7 @@ impl AdbVolume {
 
 fn invalid_range(path: &str) -> VolumeError {
     VolumeError::IoError {
-        message: format!("range is too large for {path}").into(),
+        message: ErrorDetail::at_path("range is too large for ", path),
         raw_os_error: None,
     }
 }

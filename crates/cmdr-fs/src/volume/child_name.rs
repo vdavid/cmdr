@@ -26,6 +26,9 @@ use std::ffi::OsStr;
 use std::fmt;
 use std::path::{Path, PathBuf};
 
+use crate::log_error::{ErrorLogText, ErrorText, write_plain};
+use crate::log_private::LogPrivate;
+
 /// One plain path component: never empty, `.`, or `..`, and never holding a
 /// `/` or a NUL. Built only by [`ChildName::new`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -68,7 +71,16 @@ impl<'a> ChildName<'a> {
 
 impl fmt::Display for NotAChildName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "not a single file name: {:?}", self.0)
+        write_plain(self, f)
+    }
+}
+
+/// The one text behind `Display` and `LogError`: the refused name is marked, inside the quotes
+/// its plain spelling keeps.
+impl ErrorLogText for NotAChildName {
+    fn write_log_text(&self, out: &mut ErrorText<'_>) -> fmt::Result {
+        fmt::Write::write_str(out, "not a single file name: ")?;
+        out.quoted_value(LogPrivate::name(&self.0))
     }
 }
 
@@ -102,5 +114,25 @@ mod tests {
     fn a_refusal_is_the_typed_invalid_name() {
         let err: VolumeError = ChildName::new("../x").unwrap_err().into();
         assert!(matches!(err, VolumeError::InvalidName(_)), "{err:?}");
+    }
+
+    /// The refused name is someone's file name: a log line marks it, inside the quotes its
+    /// plain spelling keeps, so stripped of its markers the line reads as `Display`.
+    #[test]
+    fn a_refused_name_is_marked_in_a_log_line_through_the_volume_error() {
+        use crate::log_error::LogError;
+        use crate::log_private::{LogPrivate, RESERVED};
+
+        let name = "Lake \"House\"/IMG 0001.jpg";
+        let err: VolumeError = ChildName::new(name).unwrap_err().into();
+        let logged = LogError(&err).to_string();
+        let span = format!("{:?}", LogPrivate::name(name));
+        assert!(logged.contains(&span), "{logged:?}");
+        let plain: String = logged.chars().filter(|c| !RESERVED.contains(c)).collect();
+        assert_eq!(plain, err.to_string());
+        assert_eq!(
+            err.to_string(),
+            format!("Name not usable at the destination: not a single file name: {name:?}")
+        );
     }
 }

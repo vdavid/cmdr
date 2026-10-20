@@ -7,6 +7,7 @@
 
 use std::io::ErrorKind;
 
+use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::volume::VolumeError;
 
 /// A transport-level failure on an open ADB socket.
@@ -204,16 +205,16 @@ pub fn volume_error_from_errno(errno: i32, path: &str) -> VolumeError {
         EEXIST => VolumeError::AlreadyExists(path.to_string()),
         EROFS => VolumeError::ReadOnly(path.to_string()),
         ENOSPC => VolumeError::StorageFull {
-            message: format!("ENOSPC on {path}").into(),
+            message: ErrorDetail::at_path("ENOSPC on ", path),
         },
         EISDIR => VolumeError::IsADirectory(path.to_string()),
-        ENAMETOOLONG => VolumeError::InvalidName(path.to_string().into()),
+        ENAMETOOLONG => VolumeError::InvalidName(ErrorDetail::path(path)),
         ENOTEMPTY_DEVICE => VolumeError::IoError {
-            message: format!("ENOTEMPTY on {path}").into(),
+            message: ErrorDetail::at_path("ENOTEMPTY on ", path),
             raw_os_error: Some(ENOTEMPTY_HOST),
         },
         other => VolumeError::IoError {
-            message: format!("errno {other} on {path}").into(),
+            message: ErrorDetail::at_path(format!("errno {other} on "), path),
             raw_os_error: Some(other),
         },
     }
@@ -229,9 +230,9 @@ pub fn volume_error_from_errno(errno: i32, path: &str) -> VolumeError {
 /// here.
 pub fn volume_error_from_adb(error: AdbError, path: &str) -> VolumeError {
     match error {
-        AdbError::DeviceGone => VolumeError::DeviceDisconnected(path.to_string().into()),
-        AdbError::Timeout => VolumeError::ConnectionTimeout(path.to_string().into()),
-        AdbError::Cancelled => VolumeError::Cancelled(path.to_string().into()),
+        AdbError::DeviceGone => VolumeError::DeviceDisconnected(ErrorDetail::path(path)),
+        AdbError::Timeout => VolumeError::ConnectionTimeout(ErrorDetail::path(path)),
+        AdbError::Cancelled => VolumeError::Cancelled(ErrorDetail::path(path)),
         AdbError::Io(io) => VolumeError::IoError {
             message: io.to_string().into(),
             raw_os_error: None,

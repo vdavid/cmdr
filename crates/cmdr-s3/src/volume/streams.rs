@@ -11,6 +11,7 @@ use std::path::Path;
 use std::pin::Pin;
 use std::time::SystemTime;
 
+use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::metadata::{CarriedMetadata, MetadataClasses};
 use cmdr_fs::pluralize::pluralize_grouped;
 use cmdr_fs::volume::{StreamLength, VolumeError, VolumeReadStream};
@@ -102,13 +103,14 @@ impl S3ReadStream {
         let total = self.total?;
         let reached = self.offset + self.read;
         (reached < total).then(|| VolumeError::IoError {
-            message: format!(
-                "{}: the server named {} and the body ended after {}",
-                self.path,
-                pluralize_grouped(total, "byte"),
-                pluralize_grouped(reached, "byte")
-            )
-            .into(),
+            message: ErrorDetail::path_then(
+                self.path.as_str(),
+                format!(
+                    ": the server named {} and the body ended after {}",
+                    pluralize_grouped(total, "byte"),
+                    pluralize_grouped(reached, "byte")
+                ),
+            ),
             raw_os_error: None,
         })
     }

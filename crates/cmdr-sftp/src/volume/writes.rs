@@ -33,6 +33,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::time::SystemTime;
 
+use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::metadata::{
     CarriedMetadata, ClassOutcome, MetadataClasses, MetadataReport, default_file_mode, routed_mode,
@@ -469,12 +470,14 @@ pub(super) async fn keep_source_attrs(
 /// The source yielded a different byte count than its declared length.
 fn size_mismatch(remote: &str, got: u64, declared: u64) -> VolumeError {
     VolumeError::IoError {
-        message: format!(
-            "{remote}: the source declared {} and yielded {}",
-            pluralize_grouped(declared, "byte"),
-            pluralize_grouped(got, "byte")
-        )
-        .into(),
+        message: ErrorDetail::path_then(
+            remote,
+            format!(
+                ": the source declared {} and yielded {}",
+                pluralize_grouped(declared, "byte"),
+                pluralize_grouped(got, "byte")
+            ),
+        ),
         raw_os_error: None,
     }
 }

@@ -99,3 +99,28 @@ fn connect_errors_from_transport_errors() {
     let gone = AdbConnectError::from(AdbError::DeviceGone).for_device("SER");
     assert!(matches!(gone, AdbConnectError::DeviceGone(s) if s == "SER"));
 }
+
+/// Every refusal names the path it was about, and a message variant marks it in a log line
+/// rather than flattening it into words the report's regex has to guess the end of.
+#[test]
+fn a_message_variant_marks_the_path_it_names() {
+    use cmdr_fs::log_error::LogError;
+    use cmdr_fs::log_private::LogPrivate;
+
+    let path = "/sdcard/DCIM/Lake House 2026/IMG 0001.jpg";
+    let span = LogPrivate::path(path).to_string();
+    let errors = [
+        volume_error_from_errno(ENOSPC, path),
+        volume_error_from_errno(ENAMETOOLONG, path),
+        volume_error_from_errno(ENOTEMPTY_DEVICE, path),
+        volume_error_from_errno(20, path),
+        volume_error_from_adb(AdbError::DeviceGone, path),
+        volume_error_from_adb(AdbError::Timeout, path),
+        volume_error_from_adb(AdbError::Cancelled, path),
+    ];
+    for error in errors {
+        let logged = LogError(&error).to_string();
+        assert!(logged.contains(&span), "{logged:?}");
+        assert!(error.to_string().contains(path), "{error}");
+    }
+}

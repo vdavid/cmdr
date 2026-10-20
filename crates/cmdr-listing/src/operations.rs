@@ -70,10 +70,7 @@ impl Inner {
         // Use the Volume trait to list the directory. A refused read is the error
         // and nothing else: the streaming path's `ListingEvents::finished` is where
         // the host hears about a failure (and moves a volume off a dead mount).
-        let all_entries = volume
-            .list_directory(path, None)
-            .await
-            .map_err(|e| std::io::Error::other(e.to_string()))?;
+        let all_entries = volume.list_directory(path, None).await.map_err(std::io::Error::other)?;
         benchmark::log_event_value("volume.list_directory COMPLETE, entries", all_entries.len());
 
         // Generate listing ID

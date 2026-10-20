@@ -571,7 +571,11 @@ pub(crate) fn map_volume_error(context_path: &str, role: PathRole, e: VolumeErro
 /// failed transfer), and no caller mistakes it for a transport fault worth
 /// reporting to the user.
 pub(super) fn hard_abort_error(path: &Path) -> VolumeError {
-    VolumeError::Cancelled(format!("stopped waiting for {} so the app can quit", path.display()).into())
+    VolumeError::Cancelled(cmdr_fs::error_detail::ErrorDetail::around(
+        "stopped waiting for ",
+        path.to_string_lossy(),
+        " so the app can quit",
+    ))
 }
 
 #[cfg(test)]

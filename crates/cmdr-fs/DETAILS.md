@@ -562,13 +562,20 @@ both sides read (`LogKind`, `CLOSER`, `RESERVED`, and `markers`, the lexer).
   is a site that formats it plainly. A log site switches to `LogError`; a site building IPC or technical-detail text
   stays plain on purpose.
 - **`ErrorDetail` (`error_detail.rs`) is the message field that stays typed**: an error wrapping another one's text
-  holds `ErrorDetail::of(cause)` where it held `cause.to_string()`. Its `Display`, `Debug`, JSON, and specta type are
-  that plain string (a stored one deserializes as text), so IPC and bindings don't change; its `ErrorLogText` writes the
-  cause's own, values marked. Text from the OS or a third-party crate goes in with `.into()` and stays foreign text.
-  `ViewerError`'s `Io` and `Archive` carry one.
-- **The known gap**: an error flattened into a `String` before a log macro sees it (`io::Error::other(e.to_string())` in
-  a backend's byte stream, a `format!` into another error's message, and every `VolumeError` message variant) prints
-  plain and gets only the report's regex fallback. Nothing here walks `source()`: no converted type has one.
+  holds `ErrorDetail::of(cause)` where it held `cause.to_string()`, and a backend's own words about a path take
+  `ErrorDetail::at_path` / `path_then` / `around` / `path`, which mark the path and keep the words as text. Its
+  `Display`, `Debug`, JSON, and specta type are that plain string (a stored one deserializes as text; equality compares
+  the text), so IPC and bindings don't change; its `ErrorLogText` writes the cause's own, values marked. Text from the
+  OS or a third-party crate goes in with `.into()` and stays foreign text. Every `VolumeError` message variant carries
+  one, as do `ViewerError::{Io, Archive}`, `ArchiveError::Io`, and `WriteOperationError::InvalidName`.
+- **A typed failure crosses an `io`-only seam inside the `io::Error`**: a byte source hands `io::Error::other(e)` (a
+  `VolumeError`) or `io::Error::other(ErrorDetail::of(e))` (a crate that mustn't name `VolumeError`), and
+  `VolumeError::io_detail` / `ErrorDetail::from_io` take it back out typed (`from_io_without_path` uses it). Its
+  `Display` is the cause's, so nothing reading the text changes.
+- **The known gap**: an error flattened into a `String` before a log macro sees it still prints plain and gets only the
+  report's regex fallback: a third-party crate's own text (`smb2`, `mtp-rs`, `gix`, `rusqlite`), and
+  `WriteOperationError`'s other `message` fields, which log as `log_detail()` JSON whose `message` key is no identity
+  key. Nothing here walks `source()`: no converted type has one.
 
 ## `ScanBoundary`: one seam, so a walk can't count without asking
 

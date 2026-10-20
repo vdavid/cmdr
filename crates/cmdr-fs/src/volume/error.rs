@@ -276,7 +276,7 @@ impl std::error::Error for VolumeError {}
 // produces, so beside `ChildName` it reads as `error` ↔ `child_name`.
 impl From<super::NotAChildName> for VolumeError {
     fn from(err: super::NotAChildName) -> Self {
-        VolumeError::InvalidName(err.to_string().into())
+        VolumeError::InvalidName(ErrorDetail::of(err))
     }
 }
 
@@ -338,8 +338,19 @@ impl VolumeError {
     /// [`from_io_at`](Self::from_io_at) wherever a path is in scope.
     pub fn from_io_without_path(err: &std::io::Error) -> Self {
         Self::IoError {
-            message: err.to_string().into(),
+            message: Self::io_detail(err),
             raw_os_error: err.raw_os_error(),
+        }
+    }
+
+    /// An `io::Error`'s text as an [`ErrorDetail`]. One that carries a `VolumeError` (a
+    /// backend's byte stream handing it, as `io::Error::other(e)`, to a reader that only
+    /// speaks `io`) keeps it typed, so a log line still marks its path; so does a carried
+    /// [`ErrorDetail`] ([`ErrorDetail::from_io`]); any other is the OS's words.
+    pub fn io_detail(err: &std::io::Error) -> ErrorDetail {
+        match err.get_ref().and_then(|inner| inner.downcast_ref::<Self>()) {
+            Some(carried) => ErrorDetail::of(carried.clone()),
+            None => ErrorDetail::from_io(err),
         }
     }
 

@@ -14,6 +14,7 @@ use std::sync::Arc;
 use std::time::SystemTime;
 
 use bytes::Bytes;
+use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::pluralize::pluralize_grouped;
 use cmdr_fs::volume::{StreamLength, VolumeError, VolumeReadStream};
 use futures_util::Stream;
@@ -67,13 +68,14 @@ impl WebdavReadStream {
         let total = self.total?;
         let reached = self.offset + self.read;
         (reached < total).then(|| VolumeError::IoError {
-            message: format!(
-                "{}: the server named {} and the body ended after {}",
-                self.path,
-                pluralize_grouped(total, "byte"),
-                pluralize_grouped(reached, "byte")
-            )
-            .into(),
+            message: ErrorDetail::path_then(
+                self.path.as_str(),
+                format!(
+                    ": the server named {} and the body ended after {}",
+                    pluralize_grouped(total, "byte"),
+                    pluralize_grouped(reached, "byte")
+                ),
+            ),
             raw_os_error: None,
         })
     }

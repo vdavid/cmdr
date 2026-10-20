@@ -13,6 +13,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use super::to_volume_error;
 use crate::{ArchiveByteSource, ArchiveEntryReader, SubtreeExtractReader};
+use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::metadata::{CarriedMetadata, MetadataClasses, Xattr};
 use cmdr_fs::volume::{ExtractedFile, SequentialExtract, Volume, VolumeError, VolumeReadStream};
 
@@ -272,7 +273,8 @@ impl ArchiveByteSource for VolumeByteSource {
         let data = self
             .handle
             .block_on(async move { parent.read_range(&path, offset, want).await })
-            .map_err(|err| std::io::Error::other(err.to_string()))?;
+            // Typed, so the archive error it becomes still marks the parent's path.
+            .map_err(|err| std::io::Error::other(ErrorDetail::of(err)))?;
         let n = data.len().min(buf.len());
         buf[..n].copy_from_slice(&data[..n]);
         Ok(n)

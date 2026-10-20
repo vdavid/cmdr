@@ -8,6 +8,7 @@
 use super::SmbVolume;
 use super::session::SessionLease;
 use super::stamping::{source_times, stamped};
+use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::metadata::MetadataClasses;
 use cmdr_fs::pluralize::pluralize_grouped;
@@ -79,12 +80,14 @@ pub(super) fn one_frame_write_limit(dest_is_scratch: bool, max_write: u64, quick
 /// backend's own guard for every other caller.
 fn source_broke_its_length(smb_path: &str, got: u64, declared: u64) -> VolumeError {
     VolumeError::IoError {
-        message: format!(
-            "{smb_path}: the source declared {} and yielded {}",
-            pluralize_grouped(declared, "byte"),
-            pluralize_grouped(got, "byte")
-        )
-        .into(),
+        message: ErrorDetail::path_then(
+            smb_path,
+            format!(
+                ": the source declared {} and yielded {}",
+                pluralize_grouped(declared, "byte"),
+                pluralize_grouped(got, "byte")
+            ),
+        ),
         raw_os_error: None,
     }
 }

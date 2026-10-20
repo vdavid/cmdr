@@ -34,7 +34,9 @@ pub fn volume_read_stream_to_chunk_stream<'a>(
                     Some((Ok(bytes::Bytes::from(chunk)), (stream, new_total, on_progress, total)))
                 }
                 Some(Err(e)) => {
-                    let err = std::io::Error::other(e.to_string());
+                    // Typed, so a reader that turns it back into a `VolumeError` (`io_detail`) still marks
+                    // its path.
+                    let err = std::io::Error::other(e);
                     Some((Err(err), (stream, bytes_written, on_progress, total)))
                 }
                 None => None,

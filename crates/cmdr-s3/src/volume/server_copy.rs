@@ -27,6 +27,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, SystemTime};
 
+use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::log_error::LogError;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::{ServerCopyProgress, Volume, VolumeError, WriteMode};
@@ -216,7 +217,10 @@ impl PartCopy {
                 let etag = copied.etag.ok_or_else(|| {
                     fail(
                         VolumeError::IoError {
-                            message: format!("{}: part {} answered without an ETag", self.remote, self.number).into(),
+                            message: ErrorDetail::path_then(
+                                self.remote.as_str(),
+                                format!(": part {} answered without an ETag", self.number),
+                            ),
                             raw_os_error: None,
                         },
                         false,
@@ -375,7 +379,7 @@ impl S3Volume {
         }
         let plan = plan_parts_with_floor(size, self.part_floor(), client.profile().short_tail).map_err(|TooLarge| {
             VolumeError::IoError {
-                message: format!("{to_remote}: too big for one S3 object (10,000 parts of 5 GiB)").into(),
+                message: ErrorDetail::path_then(to_remote, ": too big for one S3 object (10,000 parts of 5 GiB)"),
                 raw_os_error: None,
             }
         })?;

@@ -23,6 +23,7 @@
 use std::path::{Path, PathBuf};
 
 use cmdr_fs::entry::FileEntry;
+use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::log_error::LogError;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::host::listings::ListingHost;
@@ -224,7 +225,7 @@ impl S3Volume {
         let target_key = match contents {
             FolderContents::Holds => {
                 return Err(VolumeError::IoError {
-                    message: format!("{remote} still holds something").into(),
+                    message: ErrorDetail::path_then(remote, " still holds something"),
                     raw_os_error: Some(ENOTEMPTY),
                 });
             }

@@ -9,9 +9,10 @@
 //!
 //! Log a converted error as `{}` with `LogError(&e)` (or `{:?}`, which quotes it). An error that
 //! doesn't implement [`ErrorLogText`] doesn't compile there, so a site can't think it marked
-//! something it didn't. The known gap: an error flattened into a `String` before it reaches a
-//! log macro (an `anyhow`-style context, a `format!` into a message) prints plain, and the
-//! report's regex fallback is all it gets.
+//! something it didn't. An error flattened into a `String` before it reaches a log macro (a
+//! `format!` into a message) prints plain, and the report's regex fallback is all it gets: a
+//! message field that wraps another error holds a
+//! [`ErrorDetail`](crate::error_detail::ErrorDetail) instead, which keeps it typed.
 
 use crate::log_private::{DebugEscaping, LogPrivate, is_reserved};
 use std::fmt::{self, Write as _};
@@ -50,6 +51,16 @@ impl ErrorText<'_> {
             write!(self.out, "{value}")
         } else {
             self.out.write_str(&text)
+        }
+    }
+
+    /// Write a user-derived value as its `{:?}` spelling: quoted and escaped in plain text,
+    /// the same quotes around its span in a log line, so the two still differ only by markers.
+    pub fn quoted_value(&mut self, value: LogPrivate<'_>) -> fmt::Result {
+        if self.marking {
+            write!(self.out, "{value:?}")
+        } else {
+            write!(self.out, "{:?}", value.text())
         }
     }
 

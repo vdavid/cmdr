@@ -19,6 +19,7 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
 
 use bytes::Bytes;
+use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::log_error::LogError;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::{VolumeError, VolumeReadStream};
@@ -90,7 +91,7 @@ pub(super) fn upload_refusal(error: &S3Error, remote: &str, gone: &AtomicBool) -
     if error.code == S3ErrorCode::NoSuchUpload {
         gone.store(true, Ordering::Relaxed);
         return VolumeError::IoError {
-            message: format!("{remote}: the server ended the upload before it completed").into(),
+            message: ErrorDetail::path_then(remote, ": the server ended the upload before it completed"),
             raw_os_error: None,
         };
     }
@@ -135,7 +136,10 @@ impl PartJob {
             let failure = match self.client.upload(request, body).await {
                 Ok(answer) if answer.status.is_success() => {
                     let etag = answer.header("etag").ok_or_else(|| VolumeError::IoError {
-                        message: format!("{}: part {} answered without an ETag", self.remote, self.number).into(),
+                        message: ErrorDetail::path_then(
+                            self.remote.as_str(),
+                            format!(": part {} answered without an ETag", self.number),
+                        ),
                         raw_os_error: None,
                     })?;
                     return Ok((

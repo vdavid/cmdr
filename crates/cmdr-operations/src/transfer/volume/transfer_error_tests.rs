@@ -433,3 +433,20 @@ fn a_refusal_before_any_volume_call_reaches_the_dialog_as_itself() {
         matches!(&WriteFailure::from(error).error, WriteOperationError::MountedVolumeInside { mount_point, .. } if mount_point == "/Volumes/folder/Backup"),
     );
 }
+
+/// Tier 2's `Cancelled` names the file it stopped waiting for: marked in a log line, never
+/// words the report's regex has to guess the end of.
+#[test]
+fn a_hard_abort_marks_the_path_it_stopped_waiting_for() {
+    use cmdr_fs::log_error::LogError;
+    use cmdr_fs::log_private::LogPrivate;
+
+    let path = "Trips/Lake House/IMG 0001.jpg";
+    let error = hard_abort_error(Path::new(path));
+    let logged = LogError(&error).to_string();
+    assert!(logged.contains(&LogPrivate::path(path).to_string()), "{logged:?}");
+    assert_eq!(
+        error.to_string(),
+        format!("Cancelled: stopped waiting for {path} so the app can quit")
+    );
+}

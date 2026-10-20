@@ -227,10 +227,11 @@ impl FileRun<'_> {
             biased;
             () = state.backend_abort.cancelled() => WriteAttemptOutcome::HardAborted,
             () = cancelled_or_never(stall_abort.as_ref()) => WriteAttemptOutcome::Finished(Err(
-                VolumeError::ConnectionTimeout(format!(
-                    "the write of {} stopped moving and the transfer stopped waiting for it",
-                    dest_path.display()
-                ).into()),
+                VolumeError::ConnectionTimeout(cmdr_fs::error_detail::ErrorDetail::around(
+                    "the write of ",
+                    dest_path.to_string_lossy(),
+                    " stopped moving and the transfer stopped waiting for it",
+                )),
             )),
             result = write_fut => WriteAttemptOutcome::Finished(result),
         };

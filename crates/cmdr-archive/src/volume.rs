@@ -792,8 +792,12 @@ fn to_volume_error(err: ArchiveError) -> VolumeError {
         ArchiveError::IsADirectory(path) => VolumeError::IsADirectory(path),
         // A structurally broken zip or a live byte-source fault: a serious I/O
         // condition on the path being read.
-        ArchiveError::Corrupt(message) | ArchiveError::Io(message) => VolumeError::IoError {
+        ArchiveError::Corrupt(message) => VolumeError::IoError {
             message: message.into(),
+            raw_os_error: None,
+        },
+        ArchiveError::Io(message) => VolumeError::IoError {
+            message,
             raw_os_error: None,
         },
         // Password-protected: a typed signal the frontend prompts on (distinct

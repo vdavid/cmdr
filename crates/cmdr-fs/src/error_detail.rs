@@ -13,7 +13,8 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::log_error::{ErrorLogText, ErrorText};
+use crate::log_error::{ErrorLogText, ErrorText, write_plain};
+use crate::log_private::LogPrivate;
 
 /// Diagnostic text for an error's technical details: a backend's or the OS's own words, or a
 /// typed error it was built from. Crosses IPC and storage as a plain string.
@@ -37,6 +38,71 @@ impl ErrorDetail {
     /// The detail of a typed error, kept typed so a log line marks its values.
     pub fn of(cause: impl ErrorLogText + fmt::Display + Send + Sync + 'static) -> Self {
         Self(Inner::Error(Arc::new(cause)))
+    }
+
+    /// A backend's own words about a path it names (`"ENOSPC on "` + the path): the words stay
+    /// text, the path is marked.
+    pub fn at_path(words: impl Into<String>, path: impl Into<String>) -> Self {
+        Self::of(AtPath {
+            before: words.into(),
+            path: path.into(),
+            after: String::new(),
+        })
+    }
+
+    /// The same with the path first (`"<key>: the server ended the upload"`).
+    pub fn path_then(path: impl Into<String>, words: impl Into<String>) -> Self {
+        Self::of(AtPath {
+            before: String::new(),
+            path: path.into(),
+            after: words.into(),
+        })
+    }
+
+    /// Words on both sides of the path (`"the write of "` + the path + `" stopped moving"`).
+    pub fn around(before: impl Into<String>, path: impl Into<String>, after: impl Into<String>) -> Self {
+        Self::of(AtPath {
+            before: before.into(),
+            path: path.into(),
+            after: after.into(),
+        })
+    }
+
+    /// An `io::Error`'s detail. One built as `io::Error::other(detail)` (a byte source that
+    /// speaks only `io` handing its typed failure through) comes back as that detail, values
+    /// still marked; any other is the OS's words.
+    pub fn from_io(err: &std::io::Error) -> Self {
+        match err.get_ref().and_then(|inner| inner.downcast_ref::<Self>()) {
+            Some(carried) => carried.clone(),
+            None => err.to_string().into(),
+        }
+    }
+
+    /// A detail that is only the path a backend refused, marked.
+    pub fn path(path: impl Into<String>) -> Self {
+        Self::at_path(String::new(), path)
+    }
+}
+
+/// [`ErrorDetail::at_path`]'s and [`ErrorDetail::path_then`]'s cause: a backend's words around
+/// the one path they're about.
+struct AtPath {
+    before: String,
+    path: String,
+    after: String,
+}
+
+impl fmt::Display for AtPath {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write_plain(self, f)
+    }
+}
+
+impl ErrorLogText for AtPath {
+    fn write_log_text(&self, out: &mut ErrorText<'_>) -> fmt::Result {
+        fmt::Write::write_str(out, &self.before)?;
+        out.value(LogPrivate::path(&self.path))?;
+        fmt::Write::write_str(out, &self.after)
     }
 }
 
@@ -71,6 +137,9 @@ impl fmt::Display for ErrorDetail {
         }
     }
 }
+
+/// So a detail can ride inside an `io::Error` ([`ErrorDetail::from_io`]).
+impl std::error::Error for ErrorDetail {}
 
 /// The plain text, quoted, exactly as the `String` this replaces printed.
 impl fmt::Debug for ErrorDetail {

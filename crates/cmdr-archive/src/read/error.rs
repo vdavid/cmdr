@@ -5,6 +5,7 @@
 //! `String` payloads are for display /
 //! logging only.
 
+use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::log_error::{ErrorLogText, ErrorText, write_plain};
 use cmdr_fs::log_private::LogPrivate;
 use rc_zip::error::{Error as RcZipError, FormatError};
@@ -54,8 +55,9 @@ pub enum ArchiveError {
     /// The requested inner path resolves to a directory, not a readable file.
     IsADirectory(String),
 
-    /// The underlying byte source failed (dead mount, read error, permission).
-    Io(String),
+    /// The underlying byte source failed (dead mount, read error, permission). A parent
+    /// volume's typed error stays typed in the detail, so a log line marks its path.
+    Io(ErrorDetail),
 }
 
 impl std::fmt::Display for ArchiveError {
@@ -83,7 +85,10 @@ impl ErrorLogText for ArchiveError {
                 out.write_str("entry is a directory: ")?;
                 out.value(LogPrivate::dir_path(path))
             }
-            Self::Io(msg) => write!(out, "archive I/O error: {msg}"),
+            Self::Io(detail) => {
+                out.write_str("archive I/O error: ")?;
+                out.error(detail)
+            }
         }
     }
 }
@@ -102,7 +107,7 @@ impl From<std::io::Error> for ArchiveError {
         } else if err.kind() == std::io::ErrorKind::OutOfMemory {
             Self::TooLarge(err.to_string())
         } else {
-            Self::Io(err.to_string())
+            Self::Io(ErrorDetail::from_io(&err))
         }
     }
 }
@@ -123,7 +128,11 @@ impl From<RcZipError> for ArchiveError {
             // Decompression failure (bad compressed bytes) shows up mid-read.
             RcZipError::Decompression { method, msg } => Self::Corrupt(format!("{method:?}: {msg}")),
             RcZipError::IO(io) => Self::from(io),
-            RcZipError::UnknownSize => Self::Io("archive size could not be determined".to_string()),
+            RcZipError::UnknownSize => Self::Io("archive size could not be determined".into()),
         }
     }
 }
+
+#[cfg(test)]
+#[path = "error_test.rs"]
+mod tests;

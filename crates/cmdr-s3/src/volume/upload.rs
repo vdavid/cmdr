@@ -8,6 +8,7 @@ use std::ops::ControlFlow;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
+use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::pluralize::pluralize_grouped;
 use cmdr_fs::volume::{StreamLength, StreamWriteProgress, VolumeError, VolumeReadStream, WriteMode};
 
@@ -84,12 +85,14 @@ impl<'a> Progress<'a> {
 /// The source yielded a different byte count than it promised.
 pub(super) fn size_mismatch(remote: &str, got: u64, size: u64) -> VolumeError {
     VolumeError::IoError {
-        message: format!(
-            "{remote}: the source promised {} and yielded {}",
-            pluralize_grouped(size, "byte"),
-            pluralize_grouped(got, "byte")
-        )
-        .into(),
+        message: ErrorDetail::path_then(
+            remote,
+            format!(
+                ": the source promised {} and yielded {}",
+                pluralize_grouped(size, "byte"),
+                pluralize_grouped(got, "byte")
+            ),
+        ),
         raw_os_error: None,
     }
 }

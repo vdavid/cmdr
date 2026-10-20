@@ -33,6 +33,7 @@ use std::time::Duration;
 
 use bytes::Bytes;
 use cmdr_fs::entry::FileEntry;
+use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::metadata::MetadataClasses;
@@ -183,7 +184,7 @@ impl S3Volume {
         let _claim = self.claim_for_write(&client, bucket, key).await;
         let shape = shape_for(length, self.part_floor(), client.profile().short_tail).map_err(|TooLarge| {
             VolumeError::IoError {
-                message: format!("{remote}: too big for one S3 object (10,000 parts of 5 GiB)").into(),
+                message: ErrorDetail::path_then(remote.as_str(), ": too big for one S3 object (10,000 parts of 5 GiB)"),
                 raw_os_error: None,
             }
         })?;
@@ -547,15 +548,14 @@ impl S3Volume {
                 Ok(())
             }
             Landing::Vanished => Err(VolumeError::IoError {
-                message: format!("{}: the object was gone right after it was written", target.remote).into(),
+                message: ErrorDetail::path_then(target.remote, ": the object was gone right after it was written"),
                 raw_os_error: None,
             }),
             Landing::WrongSize { found } => Err(VolumeError::IoError {
-                message: format!(
-                    "{}: the server holds {found:?} bytes after a write of {size}",
-                    target.remote
-                )
-                .into(),
+                message: ErrorDetail::path_then(
+                    target.remote,
+                    format!(": the server holds {found:?} bytes after a write of {size}"),
+                ),
                 raw_os_error: None,
             }),
         }

@@ -28,6 +28,7 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::{Duration, SystemTime};
 
 use bytes::Bytes;
+use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::metadata::{CarriedMetadata, ClassOutcome, MetadataClasses, MetadataReport};
@@ -245,12 +246,14 @@ impl UploadDates {
 /// The source yielded a different byte count than `size` promised.
 pub(super) fn size_mismatch(remote: &str, got: u64, size: u64) -> VolumeError {
     VolumeError::IoError {
-        message: format!(
-            "{remote}: the source promised {} and yielded {}",
-            pluralize_grouped(size, "byte"),
-            pluralize_grouped(got, "byte")
-        )
-        .into(),
+        message: ErrorDetail::path_then(
+            remote,
+            format!(
+                ": the source promised {} and yielded {}",
+                pluralize_grouped(size, "byte"),
+                pluralize_grouped(got, "byte")
+            ),
+        ),
         raw_os_error: None,
     }
 }
