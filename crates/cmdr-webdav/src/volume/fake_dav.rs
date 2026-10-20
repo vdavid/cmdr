@@ -140,10 +140,11 @@ impl FakeDav {
         });
     }
 
-    /// Every MOVE under `/dav/tree/` is answered `status` from now on, the way
-    /// a server that won't rename a folder answers.
-    pub(super) fn refuse_moves(&self, status: &'static str) {
-        self.tree().refuse_moves = Some(status);
+    /// Every MOVE under `/dav/tree/` whose destination contains `onto` is
+    /// answered `status` from now on, the way a server that won't rename a
+    /// folder answers.
+    pub(super) fn refuse_moves_onto(&self, onto: &'static str, status: &'static str) {
+        self.tree().refuse_moves = Some((onto, status));
     }
 
     fn tree(&self) -> std::sync::MutexGuard<'_, Tree> {
@@ -364,8 +365,9 @@ struct Tree {
     nodes: BTreeMap<String, bool>,
     /// What lands after which request, each once.
     after: Vec<Landing>,
-    /// What every MOVE is answered instead, when set.
-    refuse_moves: Option<&'static str>,
+    /// `(onto, status)`: a MOVE whose destination contains `onto` is answered
+    /// `status` instead.
+    refuse_moves: Option<(&'static str, &'static str)>,
 }
 
 /// Once the next `method` at the node `at` is answered, `lands` appear
@@ -449,9 +451,6 @@ impl Tree {
     }
 
     fn move_node(&mut self, at: &str, request: &Request) -> &'static str {
-        if let Some(status) = self.refuse_moves {
-            return status;
-        }
         let Some(to) = request
             .destination
             .as_deref()
@@ -460,6 +459,11 @@ impl Tree {
         else {
             return "400 Bad Request";
         };
+        if let Some((onto, status)) = self.refuse_moves
+            && to.contains(onto)
+        {
+            return status;
+        }
         if !self.nodes.contains_key(at) {
             return "404 Not Found";
         }

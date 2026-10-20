@@ -145,17 +145,22 @@ impl WebdavVolume {
     ///
     /// ❗ A forced MOVE deletes a destination collection, tree and all, before
     /// it moves anything (RFC 4918 § 9.9.3), so one that holds something is
-    /// refused with `ENOTEMPTY` first (`Volume::rename`). Judged by the same
-    /// count as `delete`'s, but with the window `delete` closes still open: a
-    /// child landing between the two requests goes too.
+    /// refused with `ENOTEMPTY` first (`Volume::rename`), judged by the same
+    /// count as `delete`'s. An empty destination folder is then moved aside
+    /// the same way, so a child landing after the count is never taken
+    /// (`delete_aside.rs`).
     pub(super) async fn rename_impl(&self, from: &Path, to: &Path, force: bool) -> Result<(), VolumeError> {
         let remote_from = self.to_remote_path(from)?;
         let remote_to = self.to_remote_path(to)?;
         let client = self.clone_client().await?;
         let is_collection = self.stat(&client, &remote_from).await?.is_collection;
+        let mut onto_a_folder = false;
         if force && remote_from != remote_to {
             match self.propfind(&client, &remote_to, false, Depth::One).await {
-                Ok(listing) => refuse_if_held(&listing, &remote_to)?,
+                Ok(listing) => {
+                    refuse_if_held(&listing, &remote_to)?;
+                    onto_a_folder = listing.first().is_some_and(|p| p.is_collection);
+                }
                 Err(VolumeError::NotFound(_)) => {}
                 Err(e) => return Err(e),
             }
@@ -165,6 +170,12 @@ impl WebdavVolume {
             remote_from = LogPrivate::path(&remote_from),
             remote_to = LogPrivate::path(&remote_to)
         );
+        if onto_a_folder {
+            self.replace_collection(Arc::clone(&client), &remote_from, &remote_to, is_collection)
+                .await?;
+            patch_renamed(self, from, to).await;
+            return Ok(());
+        }
         let request = client
             .request(method("MOVE"), client.url_for(&remote_from, is_collection))
             .header("Destination", client.url_for(&remote_to, is_collection).as_str())

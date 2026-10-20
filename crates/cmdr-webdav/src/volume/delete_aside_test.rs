@@ -14,19 +14,23 @@ use super::fake_dav::FakeDav;
 use super::mutation::{ENOTEMPTY, still_holds};
 
 /// Each branch a real server's answers decide, in a scratch `dir` the caller
-/// cleans: the empty folder goes with no aside left, a held one comes back, one
+/// cleans: the empty folder goes with no aside left, a held one comes back (for
+/// a delete and for a forced rename onto it), one
 /// whose name was taken while aside is kept beside it, and a listing tidies an
 /// empty leftover but nothing else.
 ///
 /// The race itself can't be timed on a real server, so the held and taken
 /// branches start from where the race would leave them: `delete_collection`
-/// skips the first count, and `put_back` starts from a folder already aside.
+/// and `replace_collection` skip the first count, and `put_back` starts from a folder already aside.
 pub(super) async fn assert_delete_moves_aside_on_a_real_server(volume: &WebdavVolume, dir: &Path) {
     let client = volume.clone_client().await.expect("a live client");
     let remote = |path: &Path| volume.to_remote_path(path).expect("a path on this volume");
     let names = || async {
         let listed = volume.list_directory(dir, None).await.expect("the scratch listing");
-        listed.into_iter().map(|entry| entry.name).collect::<Vec<_>>()
+        let mut names = listed.into_iter().map(|entry| entry.name).collect::<Vec<_>>();
+        // RFC 4918 promises no order.
+        names.sort();
+        names
     };
 
     let gone = dir.join("gone");
@@ -47,6 +51,28 @@ pub(super) async fn assert_delete_moves_aside_on_a_real_server(volume: &WebdavVo
     assert!(is_not_empty(&refused), "a held folder is refused, got {refused:?}");
     assert!(volume.exists(&held.join("keep.txt")).await, "and moved back whole");
     assert_eq!(names().await, vec!["held"]);
+
+    // The forced rename's half: onto a held folder (count skipped) it refuses
+    // and moves nothing; onto an empty one it replaces it with nothing beside.
+    let source = dir.join("source");
+    volume.create_directory(&source).await.expect("mkcol source");
+    volume
+        .create_file(&source.join("s.txt"), b"s")
+        .await
+        .expect("put s.txt");
+    let refused = volume
+        .replace_collection(std::sync::Arc::clone(&client), &remote(&source), &remote(&held), true)
+        .await;
+    assert!(is_not_empty(&refused), "a held destination is refused, got {refused:?}");
+    assert!(volume.exists(&held.join("keep.txt")).await && volume.exists(&source.join("s.txt")).await);
+    let empty_target = dir.join("target");
+    volume.create_directory(&empty_target).await.expect("mkcol target");
+    volume
+        .rename(&source, &empty_target, true)
+        .await
+        .expect("an empty folder is replaced");
+    assert!(volume.exists(&empty_target.join("s.txt")).await);
+    assert_eq!(names().await, vec!["held", "target"], "and nothing is left beside it");
 
     let taken = dir.join("taken");
     let aside = dir.join(cmdr_fs::staging::deleting_sibling_name("taken"));
@@ -189,7 +215,7 @@ async fn a_server_that_refuses_the_move_falls_back_to_a_plain_delete() {
         let (volume, _) = server.connected().await;
         server.put_node("box", true);
         server.put_node("note.txt", false);
-        server.refuse_moves(status);
+        server.refuse_moves_onto(".cmdr-deleting-", status);
 
         volume
             .delete(&at(&volume, "box"))
@@ -202,6 +228,86 @@ async fn a_server_that_refuses_the_move_falls_back_to_a_plain_delete() {
 
         assert_eq!(server.nodes(), Vec::<String>::new(), "after a {status}");
     }
+}
+
+/// The forced rename's half of the same race (#512's refusal): a file landing
+/// in the folder being replaced, after the count, is kept and the rename refused.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_forced_rename_keeps_a_file_landing_in_the_folder_it_replaces() {
+    let server = FakeDav::start().await;
+    let (volume, _) = server.connected().await;
+    server.put_node("new", true);
+    server.put_node("new/a.txt", false);
+    server.put_node("old", true);
+    server.after("PROPFIND", "old", &[("old/late.txt", false)]);
+
+    let renamed = volume.rename(&at(&volume, "new"), &at(&volume, "old"), true).await;
+
+    assert!(
+        server.nodes().contains(&"old/late.txt".to_string()),
+        "the other client's file is still where it put it, got {:?}",
+        server.nodes()
+    );
+    assert!(
+        is_not_empty(&renamed),
+        "and the rename says why it stopped, got {renamed:?}"
+    );
+    assert_eq!(server.nodes(), vec!["new/", "new/a.txt", "old/", "old/late.txt"]);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_forced_rename_replaces_an_empty_folder_and_leaves_nothing_behind() {
+    let server = FakeDav::start().await;
+    let (volume, _) = server.connected().await;
+    server.put_node("new", true);
+    server.put_node("new/a.txt", false);
+    server.put_node("old", true);
+
+    volume
+        .rename(&at(&volume, "new"), &at(&volume, "old"), true)
+        .await
+        .expect("an empty folder is replaced");
+
+    assert_eq!(server.nodes(), vec!["old/", "old/a.txt"]);
+}
+
+/// Another client recreates the destination while the old one is aside: the
+/// source stays put, the old folder is kept beside the new one, and the rename
+/// reports the clash. Nothing is replaced that nobody confirmed.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_forced_rename_whose_destination_is_retaken_keeps_everything() {
+    let server = FakeDav::start().await;
+    let (volume, _) = server.connected().await;
+    server.put_node("new", true);
+    server.put_node("old", true);
+    server.after("MOVE", "old", &[("old", true), ("old/theirs.txt", false)]);
+
+    let renamed = volume.rename(&at(&volume, "new"), &at(&volume, "old"), true).await;
+
+    assert!(renamed.is_err(), "got {renamed:?}");
+    assert_eq!(
+        server.nodes(),
+        vec!["new/", "old/", "old (kept by Cmdr)/", "old/theirs.txt"]
+    );
+}
+
+/// A server that won't move the destination aside still gets the old forced
+/// MOVE, so the rename works.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_forced_rename_falls_back_when_the_aside_move_is_refused() {
+    let server = FakeDav::start().await;
+    let (volume, _) = server.connected().await;
+    server.put_node("new", true);
+    server.put_node("new/a.txt", false);
+    server.put_node("old", true);
+    server.refuse_moves_onto(".cmdr-deleting-", "405 Method Not Allowed");
+
+    volume
+        .rename(&at(&volume, "new"), &at(&volume, "old"), true)
+        .await
+        .expect("the plain forced MOVE");
+
+    assert_eq!(server.nodes(), vec!["old/", "old/a.txt"]);
 }
 
 /// A crash between the steps leaves an EMPTY aside at worst; the next listing

@@ -46,8 +46,8 @@ The WebDAV backend: a `Volume` over one `reqwest` client with one account's cred
   non-standard properties; `DETAILS.md` § "What a real server answers" sets the bar for a third.
 - ❗ **Dates beyond the mtime only where the connect probe saw `nc:creation_time`**; ❌ never a PROPPATCH of dates on
   `mod_dav`, which keeps them as dead properties. `DETAILS.md` § "Dates".
-- ❗ **DELETE and a forced MOVE are recursive; the trait's verbs aren't.** Both refuse a held collection; DELETE moves
-  it aside, ❌ no ETag (`DETAILS.md` § "A folder's DELETE").
+- ❗ **DELETE and a forced MOVE are recursive; the trait's verbs aren't.** Both refuse a held collection, then move it
+  aside, ❌ no ETag (`DETAILS.md` § "A folder's DELETE").
 - ❌ Never `root_anchored`, never a stat per child in a scan, never `authoritative_listing` (coverage is `None`).
 - Digest-only servers are a typed `AuthMethodUnsupported`, by the `WWW-Authenticate` scheme token.
 

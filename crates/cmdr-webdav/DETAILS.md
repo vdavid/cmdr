@@ -474,19 +474,22 @@ stays up for it (`apps/desktop/src/lib/servers/DETAILS.md`).
 is deleted first). The trait's verbs are one node (`Volume::delete`) and never a held folder (`Volume::rename`), so both
 refuse with `ENOTEMPTY` when a `Depth: 1` PROPFIND counts anything under the target (`mutation.rs::refuse_if_held`).
 
-That count alone leaves a window: a child landing between the PROPFIND and the `DELETE` (one round trip, 20–150 ms on
-Nextcloud) would go with the folder, and the call would report success. So a folder the count found empty is deleted by
-moving it aside first (`delete_aside.rs`, the same-volume move's source sweep included, via `delete_directory`):
+That count alone leaves a window: a child landing between the PROPFIND and the recursive verb (one round trip, 20–150 ms
+on Nextcloud) would go with the folder, and the call would report success. So a folder the count found empty is moved
+aside first (`delete_aside.rs`), for a delete (the same-volume move's source sweep included, via `delete_directory`) and
+for a forced rename onto it (`replace_collection`):
 
 1. `MOVE` it to `<name>.cmdr-deleting-<uuid>` beside it (`Overwrite: F`). Nobody else knows that name, so nothing new
    can land in it; a writer aiming at the old path gets a 409 instead of losing a file.
-2. Count it there (`Depth: 1`). Empty: `DELETE` it, which can no longer race. A 404 there counts as done.
-3. Held, or the `DELETE` refused: `MOVE` it back (`Overwrite: F`) and answer `ENOTEMPTY` (or the refusal). When the
-   original name was taken meanwhile, it goes to `<name> (kept by Cmdr)` (then `… 2`, up to 20) and the error says
-   where; when even that fails, the error names the aside. Nothing is lost in any branch.
-4. A server that refuses the first `MOVE` (403, 405, 501) gets the plain `DELETE`, with the window above still open
-   there. A Nextcloud share's root is the case in mind; its `MOVE` renames the mount point, so it likely takes the main
-   path (not verified on a share).
+2. Count it there (`Depth: 1`). Empty: `DELETE` it, which can no longer race. A 404 there counts as done. For a forced
+   rename, the source first `MOVE`s onto the now-free name with `Overwrite: F` (never `T`, so nothing it replaces is
+   unconfirmed), then the empty aside is deleted; a failure there leaves only what the next listing tidies.
+3. Held, or the `DELETE` (or the rename's `MOVE` in) refused: `MOVE` it back (`Overwrite: F`) and answer `ENOTEMPTY` (or
+   the refusal). When the original name was taken meanwhile, it goes to `<name> (kept by Cmdr)` (then `… 2`, up to 20)
+   and the error says where; when even that fails, the error names the aside. Nothing is lost in any branch.
+4. A server that refuses the first `MOVE` (403, 405, 501) gets the plain `DELETE` (or the plain `Overwrite: T` rename),
+   with the window above still open there. A Nextcloud share's root is the case in mind; its `MOVE` renames the mount
+   point, so it likely takes the main path (not verified on a share).
 
 Why it holds up:
 
@@ -516,7 +519,7 @@ Why not a protocol guard: neither closes the window on the fixture servers.
 (verified on httpd 2.4.69 `webdav-fixture-apache` and Nextcloud 35.0.0 `webdav-fixture-nextcloud`, by hand with `curl`,
 2026-10-20.)
 
-The forced `MOVE` in `rename` still only counts first: the window stays open there, for one replaced EMPTY folder.
+A forced rename onto a FILE keeps the plain `Overwrite: T`: a file isn't recursive, so there's no window to close.
 
 ## Which side a test lives on
 
