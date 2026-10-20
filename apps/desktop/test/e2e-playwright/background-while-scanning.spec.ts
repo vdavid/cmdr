@@ -154,13 +154,13 @@ test.describe('Backgrounding a transfer that is still counting', () => {
     })()`)
     expect(backgroundButton, 'a scanning transfer must offer Background').toBe(true)
 
-    // The Pause control stays away: a scan-wait has nothing to park, and the
-    // backend declines the flip.
+    // Pause is offered during the scan too: the walk parks on the same gate the
+    // write drivers do, and it shares Background's `canPauseOrQueue` gate.
     const pauseButton = await main.evaluate<boolean>(`(function() {
       var dialog = document.querySelector(${JSON.stringify(PROGRESS_DIALOG)});
-      return !!(dialog && dialog.querySelector('button[aria-label="Pause this operation"]'));
+      return !!(dialog && dialog.querySelector('button[aria-label="Pause this transfer"]'));
     })()`)
-    expect(pauseButton, 'nothing to pause while the operation is only counting').toBe(false)
+    expect(pauseButton, 'a scanning transfer must offer Pause').toBe(true)
 
     // Background it. The modal unmounts; the operation keeps going.
     await main.evaluate(`(function() {
