@@ -1244,7 +1244,11 @@ included. Pinned by `staged_write_tests.rs::an_abandon_the_destination_refuses_k
 
 ❗ **No driver-side partial list names a staged write's temp**, a swap's included: `failed_write_leaves_ours_at` answers
 `false` for `Stage` and `StageOverOriginal`, because the name the drivers hold is the user's (a free name, or the
-original), and the temp has the one owner above. So a concurrent task dropped between a swap's move aside and its rename
+original), and the temp has the one owner above. ❗ **Nor a claimed name** (`StageOntoClaimedName`): all that's ours
+there is a `Rename` pick's placeholder, which `ClaimedNames` takes back while it's empty
+(`volume/naming.rs::take_back_unfilled_reservations`). Once the landing cleared the name, what stands there is a save
+that came after our delete, or our own file, landed by the reconnect sweep from a kept landing before the post-loop ran,
+and the partial cleanup deleted either (`#575`; pinned by `volume/copy_landing_race_tests.rs`). So a concurrent task dropped between a swap's move aside and its rename
 leaves the original at its recorded aside, held for the volume's next arrival, whose sweep puts it back, and the temp in
 the in-flight set for the abandoned-write cleanup (the failure still names whichever sibling ended the op). Pinned by
 `volume/safe_replace_grid_tests.rs::a_concurrent_task_dropped_mid_swap_keeps_the_original_for_the_sweep_to_put_back`.

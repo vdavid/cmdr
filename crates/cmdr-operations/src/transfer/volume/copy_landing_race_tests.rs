@@ -21,6 +21,7 @@
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use super::tests::make_state;
 use super::*;
@@ -30,6 +31,7 @@ use crate::transfer::outage_volume_test_support::{OutageVolume, RenameDrop};
 use crate::transfer::volume::forward_volume_methods;
 use crate::types::{ConflictResolution, WriteOperationError};
 use cmdr_fs::volume::{InMemoryVolume, Volume, VolumeError};
+use cmdr_local::LocalPosixVolume;
 
 /// What the other writer puts at the name.
 const THEIRS: &[u8] = b"someone else's file, written while ours was in flight";
@@ -292,4 +294,145 @@ async fn concurrent_a_landing_answered_by_a_replaced_session_counts_as_landed_on
 
     outcome.expect("a landing the server performed is ours, not a clash");
     assert_each_landed_once(&inner, &nas, &names).await;
+}
+
+// ── A name the copy claimed ─────────────────────────────────────────────────
+
+/// A local destination where someone saves at `taken` the instant our landing
+/// cleared it: the delete of our `Rename` placeholder goes through, then their
+/// file is there before our rename arrives. Once: a later delete of the name
+/// is a delete of their file.
+struct SavedOverOurClearedName {
+    inner: LocalPosixVolume,
+    taken: PathBuf,
+    saved: AtomicBool,
+}
+
+impl Volume for SavedOverOurClearedName {
+    forward_volume_methods!(
+        inner => name,
+        root,
+        lane_key,
+        list_directory,
+        get_metadata,
+        exists,
+        is_directory,
+        create_file,
+        create_directory,
+        create_directory_all,
+        rename,
+        get_space_info,
+        local_path,
+        supports_streaming,
+        supports_export,
+        supports_local_fs_access,
+        operations_are_local,
+        max_concurrent_ops,
+        create_directory_errors_on_existing_dir,
+        scan_for_copy,
+        scan_for_copy_batch,
+        scan_for_conflicts,
+        open_read_stream,
+        supports_unknown_length_writes,
+        write_from_stream,
+        write_is_single_shot,
+    );
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            self.inner.delete(path).await?;
+            if path == self.taken && !self.saved.swap(true, Ordering::SeqCst) {
+                self.inner.create_file(path, THEIRS).await?;
+            }
+            Ok(())
+        })
+    }
+}
+
+/// Copies `names` into a local `/dest` that already holds `photo.jpg`, under
+/// Rename, so `photo.jpg`'s copy claims `photo (1).jpg` with a placeholder, and
+/// someone saves there the instant our landing clears it.
+async fn copy_onto_a_claimed_name_someone_saves_over(
+    engine: &TestOperations,
+    names: &[&str],
+) -> (tempfile::TempDir, Result<(), WriteOperationError>) {
+    let source = Arc::new(InMemoryVolume::new("Source"));
+    for name in names {
+        source
+            .create_file(&Path::new("/").join(name), format!("SRC-{name}").as_bytes())
+            .await
+            .expect("seeding the source");
+    }
+    let dest_dir = tempfile::tempdir().expect("tempdir");
+    std::fs::write(dest_dir.path().join("photo.jpg"), b"the user's photo").unwrap();
+    let dest = Arc::new(SavedOverOurClearedName {
+        inner: LocalPosixVolume::local_folder(
+            "Dest",
+            dest_dir.path().to_path_buf(),
+            crate::host::testing::pane_order_host(),
+        ),
+        taken: PathBuf::from("/photo (1).jpg"),
+        saved: AtomicBool::new(false),
+    });
+
+    let sources: Vec<PathBuf> = names.iter().map(|n| Path::new("/").join(n)).collect();
+    let outcome = copy_volumes_with_progress(
+        Arc::new(CollectorEventSink::new()),
+        "test-op-claimed-name-saved-over",
+        &make_state(engine),
+        source as Arc<dyn Volume>,
+        &sources,
+        dest as Arc<dyn Volume>,
+        Path::new("/"),
+        &VolumeCopyConfig {
+            conflict_resolution: ConflictResolution::Rename,
+            ..VolumeCopyConfig::default()
+        },
+    )
+    .await
+    .map(|_| ())
+    .map_err(|failure| failure.error);
+    (dest_dir, outcome)
+}
+
+/// ❗ Once a landing has cleared its claimed name, the name stops being a place
+/// the copy's failure may clean: their file stays, and our bytes are kept beside
+/// it under ` (recovered)`. The post-loop's partial cleanup used to delete
+/// whatever stood at the claimed name, which here is their save, and after a
+/// kept landing the reconnect sweep has finished, our own landed file (`#575`).
+async fn assert_their_save_and_our_bytes_both_stay(dest: &Path, outcome: &Result<(), WriteOperationError>) {
+    assert!(
+        matches!(outcome, Err(WriteOperationError::NewDataKeptAt { .. })),
+        "the landing couldn't take the name and says where the bytes went, got {outcome:?}"
+    );
+    assert_eq!(
+        std::fs::read(dest.join("photo (1).jpg")).ok().as_deref(),
+        Some(THEIRS),
+        "❗ the file someone saved at the cleared name survives the failed copy"
+    );
+    assert_eq!(
+        std::fs::read(dest.join("photo (1) (recovered).jpg")).ok().as_deref(),
+        Some(&b"SRC-photo.jpg"[..]),
+        "our bytes are kept beside it"
+    );
+}
+
+/// One source, so the SERIAL driver runs it.
+#[tokio::test]
+async fn serial_a_save_at_a_claimed_name_the_landing_cleared_survives_the_failed_copy() {
+    let engine = TestOperations::new();
+    let (dest, outcome) = copy_onto_a_claimed_name_someone_saves_over(&engine, &["photo.jpg"]).await;
+    assert_their_save_and_our_bytes_both_stay(dest.path(), &outcome).await;
+}
+
+/// Three sources, so the CONCURRENT driver runs them.
+#[tokio::test]
+async fn concurrent_a_save_at_a_claimed_name_the_landing_cleared_survives_the_failed_copy() {
+    let engine = TestOperations::new();
+    let (dest, outcome) = copy_onto_a_claimed_name_someone_saves_over(&engine, &["a.jpg", "photo.jpg", "z.jpg"]).await;
+    assert_their_save_and_our_bytes_both_stay(dest.path(), &outcome).await;
 }

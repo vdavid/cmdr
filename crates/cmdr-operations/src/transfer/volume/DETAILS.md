@@ -220,16 +220,17 @@ and CLEARS `last_dest_path` for a directory source, so the Stopped/error partial
 directory ROOT. On a merge that root holds pre-existing dest-only files. The sweep itself can no longer recurse into one
 (§ "Three ways to delete, and who may use each"), so the ledger discipline and the capability split are two independent
 defenses of the same file. A FILE source routes its dest through `last_dest_path` (serial) or `in_flight_partials`
-(concurrent, where a failed task's stays listed for the post-loop) ONLY when that path can hold OUR partial: a name the
-resolver claimed (`../staged_write.rs::failed_write_leaves_ours_at`). ❗ A plain staged write (`WriteStaging::Stage`)
-never qualifies: its bytes are on a `.cmdr-tmp-*` sibling `stream_pipe_file` abandons itself, and its final name was
-free when the driver looked, so whatever is there after a failure is someone else's. ❗ Nor does a swap
-(`StageOverOriginal`): its name is the user's ORIGINAL, and its temp is the write's own (the safe-replace paragraph
-under § "Volume copy + move"). The commonest way to get there is exactly that: another writer took the name mid-upload
-and the no-replace landing refused, and the sweep used to delete their file. Pinned by `copy_landing_race_tests.rs`
-(both drivers) and, on live WebDAV, SFTP, and SMB servers, `a_name_taken_mid_upload_is_never_replaced`. A write that
-fell back to the final name unstaged (a destination that can't rename) cleans its own partial there instead
-(`remove_unstaged_partial`). Pinned by
+(concurrent, where a failed task's stays listed for the post-loop) ONLY when that path can hold OUR partial
+(`../staged_write.rs::failed_write_leaves_ours_at`), and no staged write's can: ❗ not even a name the resolver claimed,
+whose placeholder `take_back_unfilled_reservations` owns and whose cleared name may hold someone's save or our own
+landed file (`../DETAILS.md` § "File writes are staged", `#575`). ❗ A plain staged write (`WriteStaging::Stage`) never
+qualifies: its bytes are on a `.cmdr-tmp-*` sibling `stream_pipe_file` abandons itself, and its final name was free when
+the driver looked, so whatever is there after a failure is someone else's. ❗ Nor does a swap (`StageOverOriginal`): its
+name is the user's ORIGINAL, and its temp is the write's own (the safe-replace paragraph under § "Volume copy + move").
+The commonest way to get there is exactly that: another writer took the name mid-upload and the no-replace landing
+refused, and the sweep used to delete their file. Pinned by `copy_landing_race_tests.rs` (both drivers) and, on live
+WebDAV, SFTP, and SMB servers, `a_name_taken_mid_upload_is_never_replaced`. A write that fell back to the final name
+unstaged (a destination that can't rename) cleans its own partial there instead (`remove_unstaged_partial`). Pinned by
 `copy_rollback_tests.rs::{cancel_mid_merge_stream_preserves_preexisting_dest_file, rollback_mid_merge_stream_preserves_preexisting_dest_file, cancel_mid_merge_stream_concurrent_preserves_preexisting_dest_file}`
 (serial Cancel, serial Rollback, concurrent Cancel) and `rollback_after_rename_keeps_preexisting_dest_file` (file→file
 Rename rollback removes only the `name (1)` it landed). **Don't** drop the `created` ledger in the `Err`/cancel arms or

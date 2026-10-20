@@ -544,10 +544,16 @@ pub(super) fn staging_for(replaces: &Replaces, landing: LandingName) -> WriteSta
 /// THIS operation at `dest_path` when it fails, which is what makes that path a
 /// partial for the post-loop cleanup to remove.
 ///
-/// - `StageOntoClaimedName`: the caller claimed the name (a `Rename` pick's
-///   `O_EXCL` placeholder, a cleared cross-type destination). Ours.
 /// - `Unstaged`: the bytes went to the name itself. Ours, though no driver
 ///   meets it (`stream_pipe_file` falls back to it and cleans up after it).
+/// - `StageOntoClaimedName`: ❗ **never ours either**, though the caller claimed
+///   the name. The bytes went to a temp sibling, so all that's ours at the name
+///   is a `Rename` pick's `O_EXCL` placeholder, which `ClaimedNames` takes back
+///   while it's still empty (`volume/naming.rs::take_back_unfilled_reservations`).
+///   Once the landing cleared the name, what stands there is someone's save
+///   after our delete, or our own landed file (a kept landing the reconnect
+///   sweep finished before the post-loop ran, `#575`), and cleaning it deleted
+///   that. Pinned by `copy_landing_race_tests.rs`.
 /// - `StageOverOriginal`: ❗ **never ours.** `dest_path` is the user's
 ///   ORIGINAL, which survives a failed write; the temp is the write's own,
 ///   abandoned by the write, and once the landing has cleared the way it's a
@@ -566,9 +572,10 @@ pub(super) fn staging_for(replaces: &Replaces, landing: LandingName) -> WriteSta
 ///   is the backend's to clean.
 pub(super) fn failed_write_leaves_ours_at(staging: WriteStaging) -> bool {
     match staging {
-        WriteStaging::StageOntoClaimedName | WriteStaging::Unstaged => true,
+        WriteStaging::Unstaged => true,
         WriteStaging::Stage
         | WriteStaging::StageInFreshFolder
+        | WriteStaging::StageOntoClaimedName
         | WriteStaging::StageOverOriginal
         | WriteStaging::SingleShot(_) => false,
     }

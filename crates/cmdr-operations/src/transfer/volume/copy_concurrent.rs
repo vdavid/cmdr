@@ -686,12 +686,12 @@ impl Settlements {
             );
         }
 
-        // A name that can hold OUR partial (a claimed name the write took) stays
+        // A name that can hold OUR partial (`failed_write_leaves_ours_at`) stays
         // in the in-flight partials for the post-loop's cleanup, whichever of
         // the drain's failures left it. Any other name is dropped from them.
         //
-        // `cleanup_temp == false` ⇒ `failed_dest` is a plain staged write's
-        // final name or a swap's original: never ours, and the write's own temp
+        // `cleanup_temp == false` ⇒ `failed_dest` is a staged write's final
+        // name (free, claimed, or a swap's original): never ours, and the write's own temp
         // is the write's (or, past a swap's delete, a landing nothing may
         // clean). Cleaning it would delete the user's file.
         if !cleanup_temp {
