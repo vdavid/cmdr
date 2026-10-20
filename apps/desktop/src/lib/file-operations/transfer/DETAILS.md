@@ -1030,10 +1030,12 @@ dropped off the list.
 of the `.cmdr-tmp-*` writes a stopped transfer's cleanup couldn't take off the destination at once (BE doc:
 `crates/cmdr-operations/src/transfer/DETAILS.md` § "Naming what a cancel left behind"), one line each, worded by fate
 (`STAGED_KEYS`): `refused` (the destination answered no; Cmdr tries again the next time it connects), `removedWhenBack`
-(the server was out; Cmdr removes them once it's back), and `landsWhenBack` (a COMPLETE file waiting for its name, named
-by that name, and ❌ never worded as something to remove or delete: it's the user's data). Three rules the readout
-enforces, and they exist because the defect being fixed was a toast that said the reversal was clean while gigabytes sat
-on the user's NAS:
+(the server was out; Cmdr removes them once it's back), `landsWhenBack` (a COMPLETE file waiting for its name, named by
+that name), and `rescued` (a COMPLETE file saved under a ` (recovered)` name because it couldn't take its own, named by
+the name it has now). ❌ Neither of the last two is ever worded as something to remove or delete: it's the user's data,
+and a FAILED transfer names them too, beside its cause (`new_files_kept`, `transfer-error-messages.ts`, its own
+`errors.write.newFilesKept.*` lines). Three rules the readout enforces, and they exist because the defect being fixed
+was a toast that said the reversal was clean while gigabytes sat on the user's NAS:
 
 - **A leftover always speaks**, including through both silences above. `notRolledBack` carrying one raises a toast with
   no headline at all, which is how a plain Stop and a cross-volume move's cancel get to report theirs.

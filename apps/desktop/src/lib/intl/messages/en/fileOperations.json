@@ -1937,6 +1937,25 @@
     }
   },
 
+  "fileOperations.cancelRollback.stagedLeftover.rescued.named": "Cmdr saved a complete new file on {volumeName} as {name}, because it couldn’t take its own name. Check it, then give it the name you want.",
+  "@fileOperations.cancelRollback.stagedLeftover.rescued.named": {
+    "description": "Last line of the toast after a cancelled (or stopped) copy, move, or change to an archive (a .zip edit or a new compressed file), when one file had ALREADY fully arrived at the destination but couldn’t take its final name, after the file it was replacing was already gone. Cmdr kept it under a name ending in \"(recovered)\" instead, so it may be the only copy of the person’s new data: ❗ never word it as junk, a leftover, or something to delete. The person checks it and renames it themselves. Stay conversational and never use the words \"error\" or \"failed\". Sentence case.",
+    "placeholders": {
+      "name": "the name the file has now, ending in \"(recovered)\", e.g. holiday (recovered).jpg. The \"(recovered)\" part is always English, so never translate it or the name around it.",
+      "volumeName": "the destination drive or server as it names itself, e.g. Naspolya. Uncontrolled text, never translate it."
+    }
+  },
+
+  "fileOperations.cancelRollback.stagedLeftover.rescued.counted": "Cmdr saved {countText} complete new {count, plural, one {file} other {files}} on {volumeName} under “(recovered)” names, because they couldn’t take their own. Check them, then give them the names you want.",
+  "@fileOperations.cancelRollback.stagedLeftover.rescued.counted": {
+    "description": "The same line as fileOperations.cancelRollback.stagedLeftover.rescued.named, used when two or more complete files were kept under names ending in \"(recovered)\", so it counts them instead of naming one. The \"(recovered)\" in quotes is the literal suffix Cmdr gives those names, always English, so keep it exactly as is. Same rule: these are the person’s files, ❌ never worded as junk to remove. Stay conversational and never use the words \"error\" or \"failed\". Sentence case.",
+    "placeholders": {
+      "countText": "how many files were kept, already formatted for display (e.g. 1,234). Always two or more",
+      "count": "the same number (drives the singular/plural form of the noun)",
+      "volumeName": "the destination drive or server as it names itself, e.g. Naspolya. Uncontrolled text, never translate it."
+    }
+  },
+
   "fileOperations.leftovers.unfinishedLandingKept": "Cmdr found an unfinished copy of {fileName} on {volumeName} that isn’t the size it should be, so it kept it as {keptName} rather than finishing it.",
   "@fileOperations.leftovers.unfinishedLandingKept": {
     "description": "Info toast shown when a drive or server is reconnected (or Cmdr starts up) and Cmdr finds a file a copy or move was in the middle of giving its final name, but the file isn’t the size Cmdr wrote, so Cmdr can’t tell whether it’s complete. Cmdr never deletes it (it may hold the person’s data) and never gives it the real name; it renames it to {keptName} beside where it belongs, so the person can look at it and decide. Nothing is asked of the person and nothing of theirs was lost. Matter-of-fact and reassuring; never use the words \"error\" or \"failed\". Sentence case.",

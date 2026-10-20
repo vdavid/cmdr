@@ -188,6 +188,26 @@ describe('getTechnicalDetails: variants with their own lines', () => {
     )
   })
 
+  it('lists every group of kept new files, then the cause that stopped the transfer', () => {
+    const error: WriteOperationError = {
+      type: 'new_files_kept',
+      kept: [
+        { fate: 'landsWhenBack', count: 2, exampleName: 'a.jpg', volumeName: 'NAS' },
+        { fate: 'rescued', count: 1, exampleName: 'b (recovered).jpg', volumeName: 'NAS' },
+      ],
+      cause: { type: 'write_error', path: '/dst/c.jpg', message: 'disk said no' },
+    }
+
+    expect(getTechnicalDetails(error)).toBe(
+      'Kept (landsWhenBack) on NAS: 2, for example a.jpg\n' +
+        'Kept (rescued) on NAS: 1, for example b (recovered).jpg\n' +
+        'Path: /dst/c.jpg\n' +
+        'Error: disk said no\n' +
+        'Error type: write_error\n' +
+        'Error type: new_files_kept',
+    )
+  })
+
   it('names both ends of a move whose original stayed, then what refused the delete', () => {
     const error: WriteOperationError = {
       type: 'source_not_removed',

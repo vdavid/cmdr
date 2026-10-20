@@ -631,6 +631,14 @@
   "@errors.write.newDataKeptAt.message": {
     "sourceHash": "80cc63c"
   },
+  "errors.write.newFilesKept.rescued.one": "Cmdr guardó un archivo nuevo completo en {volumeName} como {name}, porque el archivo no pudo recibir su nombre definitivo. Compruébalo y después ponle el nombre que quieras.",
+  "@errors.write.newFilesKept.rescued.one": {
+    "sourceHash": "fcd51f6"
+  },
+  "errors.write.newFilesKept.rescued.many": "Cmdr guardó {count} archivos nuevos completos en {volumeName} con “(recovered)” en el nombre, porque los archivos no pudieron recibir su nombre definitivo. Compruébalos y después ponles los nombres que quieras.",
+  "@errors.write.newFilesKept.rescued.many": {
+    "sourceHash": "d3a8f91"
+  },
   "errors.write.originalsKeptAside.title": "Tu archivo quedó con un nombre nuevo",
   "@errors.write.originalsKeptAside.title": {
     "sourceHash": "e8a7970"

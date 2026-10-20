@@ -1981,6 +1981,22 @@
   "@errors.write.sourceNotRemoved.suggestion": {
     "sourceHash": "8d2fc8b"
   },
+  "errors.write.newFilesKept.landing.one": "El archivo {name} ya está completo en {volumeName} con un nombre temporal, y recibirá su nombre definitivo la próxima vez que Cmdr se conecte a {volumeName}.",
+  "@errors.write.newFilesKept.landing.one": {
+    "sourceHash": "ae7aea2"
+  },
+  "errors.write.newFilesKept.landing.many": "{count} archivos completos esperan en {volumeName} con nombres temporales. Cada uno recibirá su nombre definitivo la próxima vez que Cmdr se conecte a {volumeName}.",
+  "@errors.write.newFilesKept.landing.many": {
+    "sourceHash": "51da3d5"
+  },
+  "errors.write.newFilesKept.rescued.one": "Cmdr ha guardado un archivo nuevo completo en {volumeName} como {name}, porque el archivo no ha podido recibir su nombre definitivo. Compruébalo y después ponle el nombre que quieras.",
+  "@errors.write.newFilesKept.rescued.one": {
+    "sourceHash": "4c10d90"
+  },
+  "errors.write.newFilesKept.rescued.many": "Cmdr ha guardado {count} archivos nuevos completos en {volumeName} con “(recovered)” en el nombre, porque los archivos no han podido recibir su nombre definitivo. Compruébalos y después ponles los nombres que quieras.",
+  "@errors.write.newFilesKept.rescued.many": {
+    "sourceHash": "37f1a4b"
+  },
   "errors.write.fallback.title.copy": "No se ha podido copiar",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "dbb854f"

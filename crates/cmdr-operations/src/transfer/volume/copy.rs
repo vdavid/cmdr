@@ -1161,8 +1161,14 @@ pub async fn copy_volumes_with_progress(
     // landing cleared the way) is already off this list, recorded as a landing,
     // so committed data is never in scope here. Whatever the destination wouldn't
     // let go of rides out on the cancel summary, so a Rollback that couldn't
-    // clear the destination never reads as one that did.
-    let staged_leftovers = super::cleanup::clean_abandoned_staged_writes(&dest_volume, state).await;
+    // clear the destination never reads as one that did. A failure names the
+    // new files its stop kept (the ones its own error doesn't already); a
+    // rollback drops the failure, so its summary names them all.
+    let reported_failure = copy_error
+        .as_ref()
+        .filter(|_| intent != OperationIntent::RollingBack)
+        .map(|f| &f.error);
+    let staged_leftovers = super::cleanup::clean_abandoned_staged_writes(&dest_volume, state, reported_failure).await;
 
     // Decide between rollback and cancel.
     if intent == OperationIntent::RollingBack {
@@ -1230,16 +1236,18 @@ pub async fn copy_volumes_with_progress(
         // After the partial cleanup, so a name a partial held is free again.
         let recovered = displaced.settle_interrupted(&dest_volume).await;
         if let Some(failure) = copy_error.take() {
-            // The failure has to say where the user's entries went: nothing
-            // else in the app tells them one changed its name.
-            copy_error = Some(if recovered.is_empty() {
-                failure
+            // The failure has to say where the user's entries went, and the
+            // new files its stop kept: nothing else in the app tells them one
+            // changed its name or waits for the server.
+            let error = if recovered.is_empty() {
+                failure.error
             } else {
-                WriteFailure::synthetic(WriteOperationError::OriginalsKeptAside {
+                WriteOperationError::OriginalsKeptAside {
                     cause: Box::new(failure.error),
                     recovered,
-                })
-            });
+                }
+            };
+            copy_error = Some(WriteFailure::synthetic(error.with_new_files_kept(&staged_leftovers)));
         } else {
             // Pure cancellation (Stopped)
             log::info!(

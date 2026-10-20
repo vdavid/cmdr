@@ -741,7 +741,11 @@ pub async fn move_volumes_with_progress(
     // Whatever the destination wouldn't let go of rides out on the cancel event
     // below, so a cancel that left scratch behind never reports a clear
     // destination.
-    let staged_leftovers = super::cleanup::clean_abandoned_staged_writes(&dest_volume, state).await;
+    let failure = match &outcome.intent {
+        PostLoopIntent::Failed(err) => Some(err),
+        PostLoopIntent::Completed | PostLoopIntent::Cancelled => None,
+    };
+    let staged_leftovers = super::cleanup::clean_abandoned_staged_writes(&dest_volume, state, failure).await;
     // Every ` (N)` placeholder a `Rename` reserved that no write landed on
     // (`naming.rs::take_back_unfilled_reservations`).
     super::naming::take_back_unfilled_reservations(&dest_volume, &state.claimed_names).await;
@@ -803,14 +807,17 @@ pub async fn move_volumes_with_progress(
         }
         PostLoopIntent::Failed(err) => {
             // `err` is already the typed `WriteOperationError` the FE renders
-            // from. It also has to say where any entry kept aside went.
-            if recovered.is_empty() {
-                return Err(WriteFailure::synthetic(err));
-            }
-            Err(WriteFailure::synthetic(WriteOperationError::OriginalsKeptAside {
-                cause: Box::new(err),
-                recovered,
-            }))
+            // from. It also has to say where any entry kept aside went, and
+            // the new files the stop kept.
+            let err = if recovered.is_empty() {
+                err
+            } else {
+                WriteOperationError::OriginalsKeptAside {
+                    cause: Box::new(err),
+                    recovered,
+                }
+            };
+            Err(WriteFailure::synthetic(err.with_new_files_kept(&staged_leftovers)))
         }
     }
 }

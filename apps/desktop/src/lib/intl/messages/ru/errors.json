@@ -1981,6 +1981,22 @@
   "@errors.write.sourceNotRemoved.suggestion": {
     "sourceHash": "8d2fc8b"
   },
+  "errors.write.newFilesKept.landing.one": "Файл «{name}» уже полностью записан на том {volumeName} под временным именем и получит свое настоящее имя, когда Cmdr в следующий раз подключится туда.",
+  "@errors.write.newFilesKept.landing.one": {
+    "sourceHash": "ae7aea2"
+  },
+  "errors.write.newFilesKept.landing.many": "Полностью записанных файлов на томе {volumeName}: {count}. Они ждут под временными именами, и каждый получит свое настоящее имя, когда Cmdr в следующий раз подключится туда.",
+  "@errors.write.newFilesKept.landing.many": {
+    "sourceHash": "51da3d5"
+  },
+  "errors.write.newFilesKept.rescued.one": "Cmdr сохранил полностью записанный новый файл на томе {volumeName} под именем «{name}», потому что файлу не удалось получить свое настоящее имя. Проверьте файл, а затем дайте ему нужное имя.",
+  "@errors.write.newFilesKept.rescued.one": {
+    "sourceHash": "4c10d90"
+  },
+  "errors.write.newFilesKept.rescued.many": "Cmdr сохранил полностью записанные новые файлы ({count}) на томе {volumeName} под именами с «(recovered)», потому что этим файлам не удалось получить свои настоящие имена. Проверьте их, а затем дайте им нужные имена.",
+  "@errors.write.newFilesKept.rescued.many": {
+    "sourceHash": "37f1a4b"
+  },
   "errors.write.fallback.title.copy": "Не удалось скопировать",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "dbb854f"

@@ -592,7 +592,7 @@ async fn a_staged_partial_the_destination_keeps_comes_back_from_the_sweep() {
     let temp = PathBuf::from("/album/holiday.jpg.cmdr-tmp-4d1f9c");
     state.in_flight_temps.lock_ignore_poison().push(temp.clone());
 
-    let leftovers = clean_abandoned_staged_writes(&volume, &state).await;
+    let leftovers = clean_abandoned_staged_writes(&volume, &state, None).await;
 
     assert_eq!(
         leftovers,
@@ -631,7 +631,7 @@ async fn a_sweep_that_cleared_the_destination_reports_no_leftovers() {
         PathBuf::from("/album/already-landed.jpg.cmdr-tmp-77aa10"),
     ]);
 
-    let leftovers = clean_abandoned_staged_writes(&volume, &state).await;
+    let leftovers = clean_abandoned_staged_writes(&volume, &state, None).await;
 
     assert!(leftovers.is_empty(), "nothing was left, so there is nothing to report");
     assert!(!vol.exists(&present).await, "the staged partial itself still goes");
@@ -652,9 +652,12 @@ async fn a_stop_with_the_destination_out_reports_at_once_and_the_temp_goes_once_
     nas.go_away();
     nas.hang_reconnects();
 
-    let leftovers = tokio::time::timeout(Duration::from_secs(2), clean_abandoned_staged_writes(&volume, &state))
-        .await
-        .expect("the stop's cleanup never waits on a share that's out");
+    let leftovers = tokio::time::timeout(
+        Duration::from_secs(2),
+        clean_abandoned_staged_writes(&volume, &state, None),
+    )
+    .await
+    .expect("the stop's cleanup never waits on a share that's out");
 
     assert_eq!(
         leftovers,
@@ -694,7 +697,7 @@ async fn a_temp_the_destination_still_refuses_waits_in_the_ledger_for_its_next_r
     let volume: Arc<dyn Volume> = vol.clone();
     let state = stopped_with_a_temp_on(&engine, &ledger, "cleanup-test-nas-refuses", &temp);
 
-    let leftovers = clean_abandoned_staged_writes(&volume, &state).await;
+    let leftovers = clean_abandoned_staged_writes(&volume, &state, None).await;
     engine.leftover_cleanups_settled().await;
 
     assert_eq!(
@@ -737,7 +740,7 @@ async fn a_temp_refused_once_goes_on_the_background_retry() {
     let volume: Arc<dyn Volume> = Arc::clone(&faulty) as Arc<dyn Volume>;
     let state = stopped_with_a_temp_on(&engine, &ledger, "cleanup-test-nas-refuses-once", &temp);
 
-    let leftovers = clean_abandoned_staged_writes(&volume, &state).await;
+    let leftovers = clean_abandoned_staged_writes(&volume, &state, None).await;
     engine.leftover_cleanups_settled().await;
 
     assert!(faulty.fault_fired(FaultyOp::Delete), "the first delete was refused");
@@ -760,7 +763,7 @@ async fn tier_two_during_the_background_pass_leaves_the_record_for_the_startup_s
     nas.go_away();
     nas.hang_reconnects();
 
-    clean_abandoned_staged_writes(&volume, &state).await;
+    clean_abandoned_staged_writes(&volume, &state, None).await;
     wait_until_async(WAIT, "the background pass to dial the share", || {
         nas.reconnect_attempts() >= 1
     })
@@ -793,7 +796,7 @@ async fn a_kept_landing_is_reported_as_a_file_that_lands_once_the_share_is_back(
         .lock_ignore_poison()
         .push(PathBuf::from("/album/holiday.jpg"));
 
-    let leftovers = clean_abandoned_staged_writes(&volume, &state).await;
+    let leftovers = clean_abandoned_staged_writes(&volume, &state, None).await;
 
     assert_eq!(
         leftovers,

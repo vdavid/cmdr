@@ -381,6 +381,25 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
       },
     },
   },
+  // A copy to the NAS that lost the connection after two of its files were done
+  // but couldn't take their names yet, and one had to be saved as ` (recovered)`.
+  // The cause's own sentence leads; the kept files follow it.
+  new_files_kept: {
+    operationType: 'copy',
+    error: {
+      type: 'new_files_kept',
+      cause: {
+        type: 'server_connection_lost',
+        path: '/Volumes/naspi/photos/2026/DSC09241.arw',
+        volumeName: 'Naspolya',
+        gaveUpAfterSecs: 900,
+      },
+      kept: [
+        { fate: 'landsWhenBack', count: 2, exampleName: 'DSC09239.arw', volumeName: 'Naspolya' },
+        { fate: 'rescued', count: 1, exampleName: 'DSC09240 (recovered).arw', volumeName: 'Naspolya' },
+      ],
+    },
+  },
   // The shape a real report arrived as: several screenshots in a cloud folder that
   // macOS refused on a permission code. The Full Disk Access line only joins the
   // suggestion when this Mac is actually missing the grant, so the gallery shows the

@@ -249,8 +249,8 @@ is the only groundwork laid for it, so ❌ don't lay more speculatively.
 `skips` is per-reason `SkipBreakdown` groups: ledger entries a reversal walked to and DECIDED to leave, named by the
 file the user is looking at. `staged_leftovers` is one `StagedLeftovers { fate, count, example_name, volume_name }`
 group per `StagedLeftoverFate` for the `.cmdr-tmp-*` writes the stop's cleanup couldn't take off the destination at once
-(§ "File writes are staged"): refused, waiting for the server, or a complete landing waiting for its name. Three reasons
-they don't merge:
+(§ "File writes are staged"): refused, waiting for the server, a complete landing waiting for its name, or a complete
+landing its give-up saved under a ` (recovered)` name (`Rescued`). Three reasons they don't merge:
 
 - **Nothing chose to keep a staged leftover.** Every `SkipReason` is a decision (drift, unprovable, occupied, non-empty)
   except `Failed`, and even `Failed` is a ledger item that may come back on a retry from history. A staged leftover is
@@ -274,6 +274,17 @@ non-empty, and it prints its lines OUTSIDE the reason list, which sits under "Cm
 The volume emit sites all attach it (the copy's Rollback branch, the copy's plain-Stop branch, the cross-volume move's
 cancel, and an archive edit's or compress's cancel, `../archive_edit/engine.rs::EditLeftovers`, for a landing its stop
 kept), so a leftover speaks even where there is no reversal at all to report.
+
+**The two fates that hold new data reach a FAILURE too** (`recovered_name::KeptNewData`, from `state.kept_landings` and
+`state.rescued_landings`, which `Landing::keep_landing` and the landing's `rescue` fill). A stop and a failure drain
+swallow the rescuing item's own error, and a failed op's `write-error` carried no leftovers at all, so someone found
+their original gone and a `.cmdr-tmp-*` or ` (recovered)` file beside it with no word about it. The same post-loop
+cleanup collects both, a failure wraps its cause as `WriteOperationError::NewFilesKept { cause, kept }` (copy, the
+cross-volume move, and an archive edit, `WriteOperationError::with_new_files_kept`), and a cancel's summary names them
+as above. The one the failure's own `NewDataKeptAt` already names is left out (`KeptNewData::beside`), so the person
+reads each file once; a Rollback drops its failure, so its summary keeps them all. Scratch fates (`Refused`,
+`RemovedWhenBack`) stay off a failure: the cause is the news there, and the background pass removes them. Pinned by
+`volume/kept_new_data_tests.rs`.
 
 `originals_still_in_place` is the third, an `OriginalsStillInPlace { count }` set at exactly one site:
 `move_op/cross_fs.rs`'s phase-4 cancel. It counts the user's own originals, not Cmdr's leavings, and it is the one place
@@ -730,10 +741,10 @@ removes the LINK (above). Local-to-local transfers never get here; the local eng
 
 **Decision: the rule for a link in a MOVE depends on where it goes** (#570). Same volume: the link itself, one rename,
 never walked (above). Across volumes: FOLLOWED, exactly as a copy follows it, a SELECTED link included: the destination
-gets what it points at, the source sweep removes the link, and the target keeps every byte. **Why**: that's what
-"move this folder to my Mac" means to most people, and the alternatives are worse. Recreating the link elsewhere leaves
-a link whose target is a path on the volume it came from (a phone's `/sdcard/DCIM` on a Mac points nowhere), and the
-`Volume` trait can't make one anyway; refusing the move is friction for a result nobody loses data to. Pinned by
+gets what it points at, the source sweep removes the link, and the target keeps every byte. **Why**: that's what "move
+this folder to my Mac" means to most people, and the alternatives are worse. Recreating the link elsewhere leaves a link
+whose target is a path on the volume it came from (a phone's `/sdcard/DCIM` on a Mac points nowhere), and the `Volume`
+trait can't make one anyway; refusing the move is friction for a result nobody loses data to. Pinned by
 `volume/link_following_backend_tests.rs` (a link-following backend like ADB or SFTP, and an `lstat` one),
 `volume/copy_selected_link_tests.rs` (through a dialog preview), the ADB and SFTP backend-suite cells
 (`a_selected_link_moved_off_*`), and, for the same-volume half, the per-backend promise
@@ -1181,8 +1192,8 @@ landing that fails with nothing cleared takes its temp away" below). Pinned by
 caller knows whose it is, because only the caller knows whether it put something of its own at this name. ❗ **A name is
 claimed only when a placeholder of ours sits there**: a `Rename` pick that reserved its name with an empty `O_EXCL` file
 (`ResolvedConflict::reserved_placeholder`, local destinations only) answers `ClaimedByTheCaller`, and the landing clears
-that placeholder and nothing else: `clear_the_way` stats the name first and refuses, taking the temp away, unless it's an
-empty regular file (`interrupted_landing::NameHeld::is_an_empty_file`). A pick that reserved nothing (every remote
+that placeholder and nothing else: `clear_the_way` stats the name first and refuses, taking the temp away, unless it's
+an empty regular file (`interrupted_landing::NameHeld::is_an_empty_file`). A pick that reserved nothing (every remote
 backend: SMB, SFTP, WebDAV, MTP, ADB, S3) and a cross-type Overwrite that moved the destination aside both saw a FREE
 name, so they answer `ExpectedFree`: a file someone put there before the landing is theirs, and the landing used to
 delete it as "in the way". A same-volume move's Rename clears its own placeholder the same empty-only way
@@ -1254,9 +1265,10 @@ original), and the temp has the one owner above. ❗ **Nor a claimed name** (`St
 there is a `Rename` pick's placeholder, which `ClaimedNames` takes back while it's empty
 (`volume/naming.rs::take_back_unfilled_reservations`). Once the landing cleared the name, what stands there is a save
 that came after our delete, or our own file, landed by the reconnect sweep from a kept landing before the post-loop ran,
-and the partial cleanup deleted either (`#575`; pinned by `volume/copy_landing_race_tests.rs`). So a concurrent task dropped between a swap's move aside and its rename
-leaves the original at its recorded aside, held for the volume's next arrival, whose sweep puts it back, and the temp in
-the in-flight set for the abandoned-write cleanup (the failure still names whichever sibling ended the op). Pinned by
+and the partial cleanup deleted either (`#575`; pinned by `volume/copy_landing_race_tests.rs`). So a concurrent task
+dropped between a swap's move aside and its rename leaves the original at its recorded aside, held for the volume's next
+arrival, whose sweep puts it back, and the temp in the in-flight set for the abandoned-write cleanup (the failure still
+names whichever sibling ended the op). Pinned by
 `volume/safe_replace_grid_tests.rs::a_concurrent_task_dropped_mid_swap_keeps_the_original_for_the_sweep_to_put_back`.
 
 **What that sweep can't remove now waits for the server, in the background, and is swept on reconnect**
@@ -1906,8 +1918,8 @@ blip. The bug this whole effort exists to kill is an infinite hang, so a retry l
 reintroduce it in a new costume — the cap is pinned by call count, not by hope
 (`a_destination_that_never_recovers_gives_up_at_the_attempt_cap`).
 
-**A landing step a blip cut off takes the same retry, then resumes** (`retry::after_a_cut_off_landing_wait`). A
-rename, a swap's clearing delete, or a publish's replace that meets a transport fault with nothing to wait for
+**A landing step a blip cut off takes the same retry, then resumes** (`retry::after_a_cut_off_landing_wait`). A rename,
+a swap's clearing delete, or a publish's replace that meets a transport fault with nothing to wait for
 (`OutageEnd::NotWaitable`: MTP's `StaleDestinationHandle` / `DeviceSessionReset`, an OS-mounted share's `ETIMEDOUT`, a
 `ConnectionTimeout` on a live session) gets `should_retry`'s gates and backoff, sharing the file's attempt count, and
 then the same `CutOffLanding::resume` an outage's end gets, which settles by stat what the step did. ❌ Never a give-up
@@ -1920,9 +1932,9 @@ Pinned by `volume/strategy_landing_retry_tests.rs`.
 site and deliberately gets NO retry of its write. Its source is a one-pass decoder sitting at a fixed position, so a
 per-file restart would mean re-decoding the whole archive prefix — the very O(n²) the sequential path exists to avoid.
 Its landing does wait out an outage (§ "Where it's asked, and why only there") and takes the landing's blip retry above,
-since settling a landing streams nothing. The local-FS
-engine (`chunked_copy.rs`) is likewise untouched: a local write that fails with a transport errno is either a dying disk
-or a network mount the volume layer should be handling, and neither is improved by retrying inside the sync chunk loop.
+since settling a landing streams nothing. The local-FS engine (`chunked_copy.rs`) is likewise untouched: a local write
+that fails with a transport errno is either a dying disk or a network mount the volume layer should be handling, and
+neither is improved by retrying inside the sync chunk loop.
 
 ### Waiting out a volume that went away (`volume_outage.rs`)
 
@@ -2065,10 +2077,10 @@ shows (`CutOffLanding::resume`):
   in `clear_the_way`) means it never reached the server, and the way is cleared again; taken by anything else means it
   went through and someone saved there since (`#576`). After a delete that went through, ❗ the rename alone,
   `rename(force = false)`, ❌ never another delete: a file someone put at the name during the outage makes it refuse,
-  and the new bytes are rescued and reported, their file untouched. After a swap's move aside whose answer was lost,
-  the aside says what happened: there means it moved, and the rename alone lands; gone means it never did, and the move
-  runs again. After the rename onto the vacated name, the rename again (`rename(force = false)`; a refusal puts the
-  original back).
+  and the new bytes are rescued and reported, their file untouched. After a swap's move aside whose answer was lost, the
+  aside says what happened: there means it moved, and the rename alone lands; gone means it never did, and the move runs
+  again. After the rename onto the vacated name, the rename again (`rename(force = false)`; a refusal puts the original
+  back).
 - **The temp is gone**: the landing counts as DONE only on proof, all three of: nothing of ours discarded it (the
   landing notes every discard it asks for, which is why `land` never discards after a transport fault: on a late error
   the delete would reach a sibling's fresh session, find the landed temp gone, and the re-run would meet our own file as
@@ -2098,16 +2110,15 @@ leaves the temp recorded as a landing, rescued when the share answers and kept f
 it doesn't (`Landing`'s `Drop` hands a dropped one to the volume's next arrival), ❌ never cleaned as a partial. A
 give-up at the rename onto the cleared name asks the temp first (`give_up_onto_cleared`, as `give_up_onto_aside` does
 for a swap): gone with a file of our size at the name is landed, still there is rescued, and a share that can't say
-keeps the record. One that ends a swap after its move aside puts the original back when the share answers, and
-otherwise leaves the aside recorded for the volume's next arrival, whose sweep puts it back (or removes it, once the
-name holds the replacement whole); the temp, never the only copy, goes with the abandoned-write cleanup. ❌ Don't loosen
-any proof to "something is at the name": a file claimed by mistake enters the rollback ledger as ours, and an undo
-deletes it. No mtime check: whether a backend keeps the source's mtime, and at what precision, varies, and the temp's
-fate already proves whose file it is. Pinned at all five safe-replace sites by `volume/swap_outage_tests.rs` (a drop
-before the move aside, after it, at the rename after it on either side, the temp removed with the old bytes at the same
-size, a stale error on the move aside, a give-up, and a cancel whose original the arrival sweep puts back), plus a
-claimed name's stale clearing delete there, and a server-side copy's landing in
-`volume/strategy_server_side_copy_tests.rs`.
+keeps the record. One that ends a swap after its move aside puts the original back when the share answers, and otherwise
+leaves the aside recorded for the volume's next arrival, whose sweep puts it back (or removes it, once the name holds
+the replacement whole); the temp, never the only copy, goes with the abandoned-write cleanup. ❌ Don't loosen any proof
+to "something is at the name": a file claimed by mistake enters the rollback ledger as ours, and an undo deletes it. No
+mtime check: whether a backend keeps the source's mtime, and at what precision, varies, and the temp's fate already
+proves whose file it is. Pinned at all five safe-replace sites by `volume/swap_outage_tests.rs` (a drop before the move
+aside, after it, at the rename after it on either side, the temp removed with the old bytes at the same size, a stale
+error on the move aside, a give-up, and a cancel whose original the arrival sweep puts back), plus a claimed name's
+stale clearing delete there, and a server-side copy's landing in `volume/strategy_server_side_copy_tests.rs`.
 
 **A single-shot write the drop cut off.** A write with no temp (`WriteMode::CreateNew` at the final name: SMB's compound
 CREATE+WRITE+FLUSH+CLOSE, which on a fresh connection carries any file up to 512 KiB and on a measured fast link up to

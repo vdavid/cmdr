@@ -21,7 +21,7 @@ import type {
   FriendlyError,
   PermissionRefusal,
 } from '#lib/file-explorer/types.js'
-import type { MountedVolumeAction, TrashRefusalKind } from '#lib/ipc/bindings.js'
+import type { MountedVolumeAction, StagedLeftovers, TrashRefusalKind } from '#lib/ipc/bindings.js'
 import { fdaIsMissing } from '#lib/onboarding/fda-status.svelte.js'
 import type { ProgressAtStop } from '#lib/tauri-commands/index.js'
 import { w, type FriendlyErrorMessage } from './transfer-error-catalog'
@@ -265,6 +265,10 @@ const errorDisplayMetaMap: Record<WriteOperationError['type'], ErrorDisplayMeta>
   // straight into a conflict with it. Nothing is broken; the one move left is
   // the user's (free the original and delete it), which the suggestion says.
   source_not_removed: { category: 'needs_action', retryHint: false },
+  // Never read: `getErrorDisplayMeta` answers with the CAUSE's, since what
+  // stopped the transfer decides whether running it again helps. Here so the
+  // map stays complete.
+  new_files_kept: { category: 'needs_action', retryHint: false },
   // A password-protected archive source. The FE prompts for a password and
   // retries, so this classification is only the fallback if the prompt is
   // bypassed; retryHint stays on so the generic dialog still offers a retry.
@@ -272,6 +276,8 @@ const errorDisplayMetaMap: Record<WriteOperationError['type'], ErrorDisplayMeta>
 }
 
 export function getErrorDisplayMeta(error: WriteOperationError): ErrorDisplayMeta {
+  // The kept files don't change why it stopped, so the cause decides.
+  if (error.type === 'new_files_kept') return getErrorDisplayMeta(error.cause)
   return errorDisplayMetaMap[error.type]
 }
 
@@ -597,19 +603,58 @@ function mountedVolumeMessage(mountPoint: string, action: MountedVolumeAction): 
 }
 
 /**
- * The two outcomes that WRAP another error as `cause` and word themselves around
+ * Builds the message for a transfer that failed after keeping new files at the
+ * destination.
+ *
+ * The cause speaks first and keeps its own title and advice, since it's why the
+ * transfer stopped (a lost connection still says so, with its counts). One line
+ * per group of kept files follows, saying where the new data is: without it,
+ * someone finds their original gone and a scratch or ` (recovered)` file beside
+ * it with no word about it.
+ */
+function newFilesKeptMessage(
+  error: Extract<WriteOperationError, { type: 'new_files_kept' }>,
+  operationType: TransferOperationType,
+  progressAtStop: ProgressAtStop | null,
+): FriendlyErrorMessage {
+  const cause = getUserFriendlyMessage(error.cause, operationType, progressAtStop)
+  const kept = error.kept.flatMap(keptFilesLine)
+  return {
+    title: cause.title,
+    message: [cause.message, ...kept].join(' '),
+    suggestion: cause.suggestion,
+  }
+}
+
+/** The line for one group of kept files, or none for a fate that holds no new data. */
+function keptFilesLine(group: StagedLeftovers): string[] {
+  const fate = group.fate === 'landsWhenBack' ? 'landing' : group.fate === 'rescued' ? 'rescued' : null
+  if (fate === null) return []
+  const volumeName = escapeHtml(group.volumeName)
+  return [
+    group.count === 1
+      ? w(`newFilesKept.${fate}.one`, { name: escapeHtml(group.exampleName), volumeName })
+      : w(`newFilesKept.${fate}.many`, { count: formatInteger(group.count), volumeName }),
+  ]
+}
+
+/**
+ * The outcomes that WRAP another error as `cause` and word themselves around
  * that cause's own advice. Split out of `getUserFriendlyMessage` to keep its
  * switch inside the complexity limit. `null` means "not one of mine".
  */
 function causeWrappingMessage(
   error: WriteOperationError,
   operationType: TransferOperationType,
+  progressAtStop: ProgressAtStop | null,
 ): FriendlyErrorMessage | null {
   switch (error.type) {
     case 'originals_kept_aside':
       return originalsKeptAsideMessage(error, operationType)
     case 'source_not_removed':
       return sourceNotRemovedMessage(error, operationType)
+    case 'new_files_kept':
+      return newFilesKeptMessage(error, operationType, progressAtStop)
     default:
       return null
   }
@@ -669,7 +714,7 @@ export function getUserFriendlyMessage(
   const fieldDriven = fieldDrivenMessage(error)
   if (fieldDriven) return fieldDriven
 
-  const wrapping = causeWrappingMessage(error, operationType)
+  const wrapping = causeWrappingMessage(error, operationType, progressAtStop)
   if (wrapping) return wrapping
 
   const perOperation = operationWordedMessage(error, operationType)

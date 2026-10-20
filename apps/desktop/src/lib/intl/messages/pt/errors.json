@@ -1981,6 +1981,22 @@
   "@errors.write.sourceNotRemoved.suggestion": {
     "sourceHash": "8d2fc8b"
   },
+  "errors.write.newFilesKept.landing.one": "O arquivo {name} já está completo em {volumeName}, com um nome temporário, e recebe o próprio nome na próxima vez que o Cmdr se conectar a {volumeName}.",
+  "@errors.write.newFilesKept.landing.one": {
+    "sourceHash": "ae7aea2"
+  },
+  "errors.write.newFilesKept.landing.many": "{count} arquivos concluídos aguardam em {volumeName} com nomes temporários. Cada um recebe o próprio nome na próxima vez que o Cmdr se conectar a {volumeName}.",
+  "@errors.write.newFilesKept.landing.many": {
+    "sourceHash": "51da3d5"
+  },
+  "errors.write.newFilesKept.rescued.one": "O Cmdr salvou um arquivo novo e completo em {volumeName} como {name}, porque o arquivo não conseguiu ficar com o próprio nome. Confira-o e depois dê a ele o nome que quiser.",
+  "@errors.write.newFilesKept.rescued.one": {
+    "sourceHash": "4c10d90"
+  },
+  "errors.write.newFilesKept.rescued.many": "O Cmdr salvou {count} arquivos novos e completos em {volumeName} com “(recovered)” no nome, porque os arquivos não conseguiram ficar com o próprio nome. Confira-os e depois dê a eles os nomes que quiser.",
+  "@errors.write.newFilesKept.rescued.many": {
+    "sourceHash": "37f1a4b"
+  },
   "errors.write.fallback.title.copy": "Não foi possível copiar",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "dbb854f"

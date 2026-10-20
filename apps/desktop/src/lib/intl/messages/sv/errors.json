@@ -1981,6 +1981,22 @@
   "@errors.write.sourceNotRemoved.suggestion": {
     "sourceHash": "8d2fc8b"
   },
+  "errors.write.newFilesKept.landing.one": "{name} finns komplett på {volumeName} under ett tillfälligt namn och får sitt riktiga namn nästa gång Cmdr ansluter till {volumeName}.",
+  "@errors.write.newFilesKept.landing.one": {
+    "sourceHash": "ae7aea2"
+  },
+  "errors.write.newFilesKept.landing.many": "{count} filer som är klara väntar på {volumeName} under tillfälliga namn. Var och en får sitt riktiga namn nästa gång Cmdr ansluter till {volumeName}.",
+  "@errors.write.newFilesKept.landing.many": {
+    "sourceHash": "51da3d5"
+  },
+  "errors.write.newFilesKept.rescued.one": "Cmdr sparade en komplett ny fil på {volumeName} som {name}, eftersom filen inte kunde få sitt riktiga namn. Kontrollera filen och ge den sedan det namn du vill ha.",
+  "@errors.write.newFilesKept.rescued.one": {
+    "sourceHash": "4c10d90"
+  },
+  "errors.write.newFilesKept.rescued.many": "Cmdr sparade {count} kompletta nya filer på {volumeName} under namn med ”(recovered)”, eftersom filerna inte kunde få sina riktiga namn. Kontrollera dem och ge dem sedan de namn du vill ha.",
+  "@errors.write.newFilesKept.rescued.many": {
+    "sourceHash": "37f1a4b"
+  },
   "errors.write.fallback.title.copy": "Det gick inte att kopiera",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "dbb854f"

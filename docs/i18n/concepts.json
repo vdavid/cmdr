@@ -690,7 +690,7 @@
       "finishing compression",
       "finishing transfer"
     ],
-    "notMatch": ["and complete", "is complete", "isn't complete"],
+    "notMatch": ["and complete", "is complete", "isn't complete", "complete new", "complete file", "complete files"],
     "note": "A scan or an AI answer being finished may take a different word than a file operation; see the locale's note.",
     "sense": "An operation or a wizard reaching its end, or a rollback being finished."
   },
@@ -2124,7 +2124,7 @@
     "distinct": ["new-folder", "create"],
     "en": "New file",
     "match": ["new file", "create file", "create new file"],
-    "notMatch": ["your new file"],
+    "notMatch": ["your new file", "complete new"],
     "sense": "The command that creates an empty file."
   },
   "new-folder": {

@@ -103,11 +103,13 @@ again, a gone temp counts as landed only when the archive holds exactly the edit
 again. A wait that ends without the share gives the swap up under the refusal rules (the original put back, or its aside
 kept recorded for the share's return) and says "Lost the connection to {server}" (`ServerConnectionLost`), unless the
 landing's own outcome (`NewDataKeptAt`) outranks it; a Cancel reads as the cancel it is, and its `write-cancelled` names
-a landing it kept (`engine.rs::EditLeftovers`, the `LandsWhenBack` line a copy's carries). Neither shape ever leaves the
-share without a whole archive: a one-step replace never empties the name, and an aside swap keeps the original whole at
-its aside. Pinned by `remote_outage_tests.rs` (a drop at the pull, the upload, and each step of the swap, both shapes, a
-stale error on the move aside, a share that stays gone before and after the move aside, a Cancel in either wait, and a
-refusal that fails at once).
+a landing it kept or a ` (recovered)` archive it saved (`engine.rs::EditLeftovers`, the `LandsWhenBack` and `Rescued`
+lines a copy's carries), as a failure does beside its cause (`NewFilesKept`). A blip with nothing to wait for takes the
+per-file retry's backoff, then the same settle (`transfer/retry.rs::after_a_cut_off_landing_wait`). Neither shape ever
+leaves the share without a whole archive: a one-step replace never empties the name, and an aside swap keeps the
+original whole at its aside. Pinned by `remote_outage_tests.rs` (a drop at the pull, the upload, and each step of the
+swap, both shapes, a stale error on the move aside, a share that stays gone before and after the move aside, a Cancel in
+either wait, and a refusal that fails at once).
 
 A cancel at ANY point before the swap's landing rename leaves the remote original whole (the local scratch dir and any
 partial remote temp are cleaned up: a RAII `ScratchDir` and the staged write's abandon). Pinned by `remote_tests`

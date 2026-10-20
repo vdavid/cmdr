@@ -16594,12 +16594,19 @@ export type StagedLeftoverFate =
    *  Cmdr connects to the destination.
    */
   | 'landsWhenBack'
+  /**
+   *  Complete files that couldn't take their names after the way there was
+   *  cleared, so they left Cmdr's scratch space under a ` (recovered)` name:
+   *  possibly the only copy, ❌ never junk. Named by that name, which is the
+   *  file the person goes to look at.
+   */
+  | 'rescued'
 
 /**
  *  One group of Cmdr's own unfinished `.cmdr-tmp-*` writes that a stop's
  *  cleanup couldn't take off the destination at once, all with one fate.
  *
- *  **Deliberately not a [`SkipBreakdown`].** A skip is a LEDGER item the
+ *  **Deliberately not a `SkipBreakdown`.** A skip is a LEDGER item the
  *  reversal walked to and chose to leave alone, named by the file the user is
  *  looking at; these are Cmdr's own scratch files for writes that never
  *  finished, and nothing chose to keep them (`transfer/volume/cleanup.rs`).
@@ -16617,7 +16624,8 @@ export type StagedLeftovers = {
    *  only one: what the user would look for at the destination. A removable
    *  temp's own scratch name (`photo.jpg.cmdr-tmp-<uuid>`); for a
    *  [`StagedLeftoverFate::LandsWhenBack`], the name the file is on its way
-   *  to (`photo.jpg`).
+   *  to (`photo.jpg`); for a [`StagedLeftoverFate::Rescued`], the name it
+   *  sits under now (`photo (recovered).jpg`).
    */
   exampleName: string
   /**
@@ -19580,6 +19588,20 @@ export type WriteOperationError =
       landedAt: string
       cause: WriteOperationError
     }
+  /**
+   *  The operation failed, and on its way to stopping it kept new files the
+   *  person has to know about: complete files waiting for their names until
+   *  the destination is back, or ones saved under a ` (recovered)` name
+   *  because they couldn't take their own. Without it, someone finds their
+   *  original gone and a scratch or ` (recovered)` file beside it with no word
+   *  about it.
+   *
+   *  ❗ `kept` is never empty and holds only the fates with new data in them
+   *  (`StagedLeftoverFate::holds_new_data`). `cause` is what actually failed,
+   *  so its own advice survives, the same shape as
+   *  [`OriginalsKeptAside`](Self::OriginalsKeptAside).
+   */
+  | { type: 'new_files_kept'; cause: WriteOperationError; kept: StagedLeftovers[] }
   /**
    *  The OS refused to move items to the Trash.
    *

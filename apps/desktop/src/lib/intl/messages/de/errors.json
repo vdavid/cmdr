@@ -1981,6 +1981,22 @@
   "@errors.write.sourceNotRemoved.suggestion": {
     "sourceHash": "8d2fc8b"
   },
+  "errors.write.newFilesKept.landing.one": "{name} liegt vollständig auf {volumeName}, vorerst unter einem temporären Namen. Den richtigen Namen bekommt die Datei, wenn Cmdr sich das nächste Mal mit {volumeName} verbindet.",
+  "@errors.write.newFilesKept.landing.one": {
+    "sourceHash": "ae7aea2"
+  },
+  "errors.write.newFilesKept.landing.many": "{count} vollständige Dateien warten auf {volumeName} unter temporären Namen. Jede bekommt ihren richtigen Namen, wenn Cmdr sich das nächste Mal mit {volumeName} verbindet.",
+  "@errors.write.newFilesKept.landing.many": {
+    "sourceHash": "51da3d5"
+  },
+  "errors.write.newFilesKept.rescued.one": "Cmdr hat eine vollständige neue Datei auf {volumeName} als {name} gespeichert, weil sie ihren richtigen Namen nicht bekommen konnte. Prüfe sie und gib ihr dann den Namen, den du möchtest.",
+  "@errors.write.newFilesKept.rescued.one": {
+    "sourceHash": "4c10d90"
+  },
+  "errors.write.newFilesKept.rescued.many": "Cmdr hat {count} vollständige neue Dateien auf {volumeName} unter Namen mit „(recovered)“ gespeichert, weil sie ihre richtigen Namen nicht bekommen konnten. Prüfe sie und gib ihnen dann die Namen, die du möchtest.",
+  "@errors.write.newFilesKept.rescued.many": {
+    "sourceHash": "37f1a4b"
+  },
   "errors.write.fallback.title.copy": "Kopieren nicht möglich",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "dbb854f"

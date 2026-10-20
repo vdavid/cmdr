@@ -8,7 +8,13 @@
  * form an import cycle back into `file-explorer/`.
  */
 
-import type { ArchiveNameRefusal, ItemKinds, MountedVolumeAction, TrashRefusalKind } from '#lib/ipc/bindings.js'
+import type {
+  ArchiveNameRefusal,
+  ItemKinds,
+  MountedVolumeAction,
+  StagedLeftovers,
+  TrashRefusalKind,
+} from '#lib/ipc/bindings.js'
 
 // ============================================================================
 // Write operation types
@@ -278,6 +284,12 @@ export type WriteOperationError =
   // original that stayed (for a folder, the item inside it that refused), `landedAt`
   // the complete copy, and `cause` what refused the delete, so its own advice survives.
   | { type: 'source_not_removed'; path: string; landedAt: string; cause: WriteOperationError }
+  // The transfer failed, and on its way to stopping it kept new files the person
+  // has to know about: complete files waiting for their names until the server is
+  // back (`landsWhenBack`), or saved under a ` (recovered)` name because they
+  // couldn't take their own (`rescued`). `kept` is never empty and holds only those
+  // two fates. `cause` is what actually failed, so its own advice survives.
+  | { type: 'new_files_kept'; cause: WriteOperationError; kept: StagedLeftovers[] }
   // The OS wouldn't take items to the Trash. Separate from `io_error` because the
   // REASON decides what the dialog can offer: as an `io_error` it arrived as one
   // sentence macOS had written, leaving nothing to say but "try again", which a

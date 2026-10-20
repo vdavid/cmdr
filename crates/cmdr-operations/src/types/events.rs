@@ -14,15 +14,13 @@
 //! `with_scan_meta` and `WriteErrorEvent::new` live in `event_sinks.rs` beside
 //! the collector sinks.
 
-use std::path::PathBuf;
-
 use serde::{Deserialize, Serialize};
 
 use cmdr_operation_log::rollback::SkipBreakdown;
 
 use super::{
-    ConflictId, OperationSnapshot, ProgressAxis, RecoveredOriginal, TransferActivity, TrashRefusalKind,
-    WriteOperationError, WriteOperationPhase, WriteOperationType,
+    ConflictId, OperationSnapshot, ProgressAxis, RecoveredOriginal, StagedLeftovers, TransferActivity,
+    TrashRefusalKind, WriteOperationError, WriteOperationPhase, WriteOperationType,
 };
 
 // ============================================================================
@@ -518,72 +516,6 @@ pub enum CancelRollbackOutcome {
     RolledBack,
     /// The reversal ran but left items behind — see [`CancelRollback::skips`].
     PartiallyRolledBack,
-}
-
-/// One group of Cmdr's own unfinished `.cmdr-tmp-*` writes that a stop's
-/// cleanup couldn't take off the destination at once, all with one fate.
-///
-/// **Deliberately not a [`SkipBreakdown`].** A skip is a LEDGER item the
-/// reversal walked to and chose to leave alone, named by the file the user is
-/// looking at; these are Cmdr's own scratch files for writes that never
-/// finished, and nothing chose to keep them (`transfer/volume/cleanup.rs`).
-/// Folding them into `skips` would also fold them into `reversed + skipped`,
-/// which is what the reversal's progress bar drains over, so the bar would
-/// report progress across items no reversal ever walks.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct StagedLeftovers {
-    /// What becomes of them, which is what the line says.
-    pub fate: StagedLeftoverFate,
-    /// Every one with this fate, not a sample.
-    pub count: u32,
-    /// The leaf name of the FIRST one, so a report can name it when it's the
-    /// only one: what the user would look for at the destination. A removable
-    /// temp's own scratch name (`photo.jpg.cmdr-tmp-<uuid>`); for a
-    /// [`StagedLeftoverFate::LandsWhenBack`], the name the file is on its way
-    /// to (`photo.jpg`).
-    pub example_name: String,
-    /// The destination's name as it names itself, so the line can say where
-    /// "back" is.
-    pub volume_name: String,
-}
-
-/// What becomes of a [`StagedLeftovers`] group.
-///
-/// ❗ Typed, so the readout words each one without reading a path or a message:
-/// a removable scratch file and a COMPLETE file waiting for its name are
-/// different news, and only the second is the user's data.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub enum StagedLeftoverFate {
-    /// The destination answered and refused the delete (an abandoned write's
-    /// handle can hold the file open for as long as its session lives). Cmdr
-    /// tries once more a few seconds later, then the next time it connects to
-    /// the destination.
-    Refused,
-    /// The destination was out. Cmdr removes them as soon as it's back.
-    RemovedWhenBack,
-    /// Complete files on their way to their names when the operation stopped,
-    /// after the way there may already have been cleared: possibly the only
-    /// copy at the destination, ❌ never junk. Each gets its name the next time
-    /// Cmdr connects to the destination.
-    LandsWhenBack,
-}
-
-impl StagedLeftovers {
-    /// One group of `paths` with `fate`, on `volume_name`. `None` for no paths.
-    pub fn of(fate: StagedLeftoverFate, paths: &[PathBuf], volume_name: &str) -> Option<Self> {
-        let first = paths.first()?;
-        Some(Self {
-            fate,
-            count: paths.len() as u32,
-            example_name: first
-                .file_name()
-                .map(|n| n.to_string_lossy().into_owned())
-                .unwrap_or_default(),
-            volume_name: volume_name.to_owned(),
-        })
-    }
 }
 
 /// The originals a cross-filesystem move still had in their old place when it

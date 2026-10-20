@@ -104,6 +104,18 @@ function variantDetailLines(error: WriteOperationError): string[] {
       ...getTechnicalDetails(error.cause).split('\n'),
     ]
   }
+  // Every group of kept files with its count, since the message names only one
+  // file per group, then the cause's own lines, so a bug report still carries
+  // what stopped the transfer.
+  if (error.type === 'new_files_kept') {
+    return [
+      ...error.kept.map(
+        (group) =>
+          `Kept (${group.fate}) on ${group.volumeName}: ${String(group.count)}, for example ${group.exampleName}`,
+      ),
+      ...getTechnicalDetails(error.cause).split('\n'),
+    ]
+  }
   // Both ends, since the item is at both, then what refused the delete.
   if (error.type === 'source_not_removed') {
     return [

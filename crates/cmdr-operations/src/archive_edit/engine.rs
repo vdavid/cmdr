@@ -13,10 +13,10 @@ use std::time::{Duration, Instant};
 use super::super::OperationEventSink;
 use super::super::host::EngineHost;
 use super::super::state::WriteOperationState;
+use super::super::transfer::recovered_name::KeptNewData;
 use super::super::types::{
-    AppearedDuringMove, CancelRollback, ProgressStep, StagedLeftoverFate, StagedLeftovers, WriteCancelledEvent,
-    WriteCompleteEvent, WriteErrorEvent, WriteOperationError, WriteOperationPhase, WriteOperationType,
-    WriteProgressEvent,
+    AppearedDuringMove, CancelRollback, ProgressStep, StagedLeftovers, WriteCancelledEvent, WriteCompleteEvent,
+    WriteErrorEvent, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
 };
 use super::edit_error::EditError;
 use super::remote::{RemoteCommitProgress, RemoteProgressObserver, pull_apply_upload_swap};
@@ -161,34 +161,39 @@ pub(super) struct EditLeftovers {
     /// What a move INTO an archive left in its source (`copy_into.rs`); `None`
     /// for every other edit.
     appeared_during_move: Option<AppearedDuringMove>,
-    /// Complete archives on their way to their names when the edit stopped,
-    /// left recorded for the drive's next arrival (`state.kept_landings`): a
-    /// remote edit's swap, or a compress's publish, that a Cancel ended after
-    /// the way was cleared. `write-cancelled` names them, as a copy's does.
-    kept_landings: Vec<StagedLeftovers>,
+    /// Complete archives a remote edit's swap, or a compress's publish, kept
+    /// when it stopped after the way was cleared: left recorded for the drive's
+    /// next arrival, or saved under a ` (recovered)` name (`KeptNewData`).
+    /// `write-cancelled` names them, as a copy's does, and so does a failure,
+    /// beside its cause (`WriteOperationError::NewFilesKept`).
+    kept: KeptNewData,
+    /// The drive's name, for the line that says where they are.
+    volume_name: String,
 }
 
 impl EditLeftovers {
-    /// Takes the landings `state`'s stop kept, on the drive `parent_volume_id`
-    /// names, beside what a move into an archive left in its source.
+    /// Takes the new archives `state`'s stop kept, on the drive
+    /// `parent_volume_id` names, beside what a move into an archive left in
+    /// its source.
     pub(super) fn of(
         state: &WriteOperationState,
         parent_volume_id: &str,
         appeared_during_move: Option<AppearedDuringMove>,
     ) -> Self {
-        let landings: Vec<PathBuf> = std::mem::take(&mut *state.kept_landings.lock_ignore_poison());
-        let kept_landings = if landings.is_empty() {
-            Vec::new()
+        let kept = KeptNewData::take(state);
+        let volume_name = if kept.landings.is_empty() && kept.rescued.is_empty() {
+            String::new()
         } else {
             let volume = state.scope().host().volumes().get(parent_volume_id);
-            let volume_name = volume.as_ref().map_or(parent_volume_id, |volume| volume.name());
-            StagedLeftovers::of(StagedLeftoverFate::LandsWhenBack, &landings, volume_name)
-                .into_iter()
-                .collect()
+            volume
+                .as_ref()
+                .map_or(parent_volume_id, |volume| volume.name())
+                .to_owned()
         };
         Self {
             appeared_during_move,
-            kept_landings,
+            kept,
+            volume_name,
         }
     }
 }
@@ -205,7 +210,8 @@ impl EditLeftovers {
 /// `skipped_count` is meaningful only on the `Ok` path; the other two arms
 /// carry `entries_done` instead, since a run that stopped has no final tally.
 /// `left` rides on the arm it belongs to: what a move left in its source on
-/// `write-complete`, the landings a Cancel kept on `write-cancelled`.
+/// `write-complete`, the new archives a stop kept on `write-cancelled`, and on
+/// `write-error` beside its cause.
 ///
 /// ❗ An archive edit tracks no top-level SELECTION, so `top_level_skipped` is
 /// `None`: its `skipped_count` is unrepresentable entries and in-zip clashes,
@@ -222,7 +228,8 @@ pub(super) fn emit_archive_terminal(
 ) {
     let EditLeftovers {
         appeared_during_move,
-        kept_landings,
+        kept,
+        volume_name,
     } = left;
     match outcome {
         Ok(()) => events.emit_complete(WriteCompleteEvent {
@@ -242,9 +249,11 @@ pub(super) fn emit_archive_terminal(
             operation_id: op_id.to_string(),
             operation_type,
             files_processed: final_progress.entries_done,
-            rollback: CancelRollback::none().with_staged_leftovers(kept_landings),
+            rollback: CancelRollback::none().with_staged_leftovers(kept.groups(&volume_name).collect()),
         }),
         Err(EditError::Op(err)) => {
+            let kept: Vec<StagedLeftovers> = kept.beside(&err).groups(&volume_name).collect();
+            let err = err.with_new_files_kept(&kept);
             events.emit_error(WriteErrorEvent::new(op_id.to_string(), operation_type, err));
         }
     }
@@ -532,6 +541,7 @@ mod tests {
     use super::*;
     use crate::event_sinks::CollectorEventSink;
     use crate::testing::TestOperations;
+    use crate::types::StagedLeftoverFate;
 
     #[test]
     fn paced_sleep_gives_way_to_a_cancel_within_a_slice() {
@@ -664,6 +674,56 @@ mod tests {
         assert!(
             state.kept_landings.lock_ignore_poison().is_empty(),
             "named once, by the one terminal event"
+        );
+    }
+
+    /// A failed edit names the new archive its stop kept too, beside the cause,
+    /// so nobody finds a ` (recovered)` archive with no word about it.
+    #[test]
+    fn a_failed_edit_names_the_new_archive_its_stop_kept_beside_its_cause() {
+        let engine = TestOperations::new();
+        let nas: Arc<dyn cmdr_fs::volume::Volume> = Arc::new(cmdr_fs::volume::InMemoryVolume::new("Naspolya"));
+        engine.volumes().register("archive-terminal-nas", nas);
+        let state = engine.new_operation_state(Duration::ZERO);
+        state
+            .rescued_landings
+            .lock_ignore_poison()
+            .push(PathBuf::from("/share/bundle (recovered).zip"));
+        let events = CollectorEventSink::new();
+        let cause = WriteOperationError::IoError {
+            path: "/share/other.zip".to_owned(),
+            message: "the share's own words".to_owned(),
+        };
+
+        emit_archive_terminal(
+            &events,
+            "archive-terminal-error",
+            WriteOperationType::ArchiveEdit,
+            Err(EditError::Op(cause)),
+            0,
+            EditLeftovers::of(&state, "archive-terminal-nas", None),
+            &MutationProgress::default(),
+        );
+
+        let errors = events.errors.lock_ignore_poison();
+        let [failed] = errors.as_slice() else {
+            panic!("one `write-error`, got {errors:?}");
+        };
+        let WriteOperationError::NewFilesKept { cause: reported, kept } = &failed.error else {
+            panic!("the failure names the kept archive, got {:?}", failed.error);
+        };
+        assert!(
+            matches!(&**reported, WriteOperationError::IoError { path, .. } if path == "/share/other.zip"),
+            "the cause stays what failed, got {reported:?}"
+        );
+        assert_eq!(
+            kept,
+            &vec![StagedLeftovers {
+                fate: StagedLeftoverFate::Rescued,
+                count: 1,
+                example_name: "bundle (recovered).zip".to_owned(),
+                volume_name: "Naspolya".to_owned(),
+            }],
         );
     }
 

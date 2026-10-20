@@ -1060,6 +1060,14 @@
   "@fileOperations.cancelRollback.stagedLeftover.landing.counted": {
     "sourceHash": "eb3d194"
   },
+  "fileOperations.cancelRollback.stagedLeftover.rescued.named": "Cmdr сохранил полностью записанный новый файл на томе {volumeName} под именем «{name}», потому что файлу не удалось получить свое настоящее имя. Проверьте файл, а затем дайте ему нужное имя.",
+  "@fileOperations.cancelRollback.stagedLeftover.rescued.named": {
+    "sourceHash": "4c10d90"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.rescued.counted": "Cmdr сохранил {countText} {count, plural, one {полностью записанный новый файл} few {полностью записанных новых файла} many {полностью записанных новых файлов} other {полностью записанного нового файла}} на томе {volumeName} под именами с «(recovered)», потому что этим файлам не удалось получить свои настоящие имена. Проверьте их, а затем дайте им нужные имена.",
+  "@fileOperations.cancelRollback.stagedLeftover.rescued.counted": {
+    "sourceHash": "a1ebb20"
+  },
   "fileOperations.leftovers.unfinishedLandingKept": "Cmdr нашел на томе {volumeName} незавершенную копию файла {fileName}, размер которой не такой, как должен быть, поэтому сохранил ее под именем {keptName}, а не стал завершать.",
   "@fileOperations.leftovers.unfinishedLandingKept": {
     "sourceHash": "92ebd0a"

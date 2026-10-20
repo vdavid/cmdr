@@ -1059,6 +1059,14 @@
   "@fileOperations.cancelRollback.stagedLeftover.landing.counted": {
     "sourceHash": "eb3d194"
   },
+  "fileOperations.cancelRollback.stagedLeftover.rescued.named": "Cmdr 已把一个完整的新文件保存到 {volumeName} 上，名为 {name}，因为这个文件没能用上正式的名称。先看看这个文件，再把它改成你想要的名字。",
+  "@fileOperations.cancelRollback.stagedLeftover.rescued.named": {
+    "sourceHash": "4c10d90"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.rescued.counted": "Cmdr 已把 {countText} {count, plural, other {个完整的新文件}}保存到 {volumeName} 上，名称里带有“(recovered)”，因为这些文件没能用上正式的名称。先看看这些文件，再把它们改成你想要的名字。",
+  "@fileOperations.cancelRollback.stagedLeftover.rescued.counted": {
+    "sourceHash": "a1ebb20"
+  },
   "fileOperations.leftovers.unfinishedLandingKept": "Cmdr 在 {volumeName} 上发现了 {fileName} 的一个不完整副本，它的大小和应有的不一样，所以 Cmdr 没有把它补完，而是把它保留为 {keptName}。",
   "@fileOperations.leftovers.unfinishedLandingKept": {
     "sourceHash": "92ebd0a"

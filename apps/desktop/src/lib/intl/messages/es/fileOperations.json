@@ -1061,6 +1061,14 @@
   "@fileOperations.cancelRollback.stagedLeftover.landing.counted": {
     "sourceHash": "eb3d194"
   },
+  "fileOperations.cancelRollback.stagedLeftover.rescued.named": "Cmdr ha guardado un archivo nuevo completo en {volumeName} como {name}, porque el archivo no ha podido recibir su nombre definitivo. Compruébalo y después ponle el nombre que quieras.",
+  "@fileOperations.cancelRollback.stagedLeftover.rescued.named": {
+    "sourceHash": "4c10d90"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.rescued.counted": "Cmdr ha guardado {countText} {count, plural, one {archivo nuevo completo} many {archivos nuevos completos} other {archivos nuevos completos}} en {volumeName} con “(recovered)” en el nombre, porque los archivos no han podido recibir su nombre definitivo. Compruébalos y después ponles los nombres que quieras.",
+  "@fileOperations.cancelRollback.stagedLeftover.rescued.counted": {
+    "sourceHash": "a1ebb20"
+  },
   "fileOperations.leftovers.unfinishedLandingKept": "Cmdr ha encontrado en {volumeName} una copia sin terminar de {fileName} que no tiene el tamaño que debería, así que la ha conservado como {keptName} en lugar de terminarla.",
   "@fileOperations.leftovers.unfinishedLandingKept": {
     "sourceHash": "92ebd0a"

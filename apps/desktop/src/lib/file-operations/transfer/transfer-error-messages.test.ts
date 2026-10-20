@@ -986,6 +986,16 @@ describe('getErrorDisplayMeta', () => {
     // Retry: the file was left as it was, and a retry is how the replace gets another go.
     { error: { type: 'landing_not_recorded', path: '/p' }, category: 'needs_action', retryHint: true },
     { error: { type: 'io_error', path: '/p', message: 'm' }, category: 'serious', retryHint: true },
+    // The cause decides: kept files don't change why the transfer stopped.
+    {
+      error: {
+        type: 'new_files_kept',
+        cause: { type: 'server_connection_lost', path: '/p', volumeName: 'NAS', gaveUpAfterSecs: 900 },
+        kept: [{ fate: 'rescued', count: 1, exampleName: 'p (recovered)', volumeName: 'NAS' }],
+      },
+      category: 'needs_action',
+      retryHint: true,
+    },
   ]
 
   for (const { error, category, retryHint } of cases) {
@@ -995,4 +1005,57 @@ describe('getErrorDisplayMeta', () => {
       expect(meta.retryHint).toBe(retryHint)
     })
   }
+})
+
+describe('new_files_kept', () => {
+  const cause: WriteOperationError = { type: 'write_error', path: '/dst/c.jpg', message: 'disk said no' }
+
+  it('keeps the cause’s title and advice, and adds where each group of new files is', () => {
+    const plain = getUserFriendlyMessage(cause)
+    const result = getUserFriendlyMessage({
+      type: 'new_files_kept',
+      cause,
+      kept: [
+        { fate: 'landsWhenBack', count: 1, exampleName: 'a.jpg', volumeName: 'NAS' },
+        { fate: 'landsWhenBack', count: 3, exampleName: 'x.jpg', volumeName: 'NAS' },
+        { fate: 'rescued', count: 1, exampleName: 'b (recovered).jpg', volumeName: 'NAS' },
+        { fate: 'rescued', count: 2, exampleName: 'y (recovered).jpg', volumeName: 'NAS' },
+      ],
+    })
+
+    expect(result.title).toBe(plain.title)
+    expect(result.suggestion).toBe(plain.suggestion)
+    expect(result.message).toBe(
+      `${plain.message} ` +
+        'a.jpg is complete on NAS under a temporary name, and gets its own name the next time Cmdr connects to NAS. ' +
+        '3 complete files wait on NAS under temporary names. Each gets its own name the next time Cmdr connects ' +
+        'to NAS. ' +
+        'Cmdr saved a complete new file on NAS as b (recovered).jpg, because it couldn’t take its own name. Check ' +
+        'it, then give it the name you want. ' +
+        'Cmdr saved 2 complete new files on NAS under “(recovered)” names, because they couldn’t take their own. ' +
+        'Check them, then give them the names you want.',
+    )
+  })
+
+  it('escapes the names it shows', () => {
+    const result = getUserFriendlyMessage({
+      type: 'new_files_kept',
+      cause,
+      kept: [{ fate: 'rescued', count: 1, exampleName: '<b> (recovered).jpg', volumeName: 'N&S' }],
+    })
+
+    expect(result.message).toContain('&lt;b&gt; (recovered).jpg')
+    expect(result.message).toContain('N&amp;S')
+  })
+
+  it('says nothing for a group that holds no new data', () => {
+    const plain = getUserFriendlyMessage(cause)
+    const result = getUserFriendlyMessage({
+      type: 'new_files_kept',
+      cause,
+      kept: [{ fate: 'refused', count: 1, exampleName: 'c.jpg.cmdr-tmp-1', volumeName: 'NAS' }],
+    })
+
+    expect(result.message).toBe(plain.message)
+  })
 })

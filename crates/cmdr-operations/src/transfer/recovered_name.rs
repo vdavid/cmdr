@@ -6,7 +6,8 @@
 //! the destination has already been cleared, the bytes are committed data
 //! wearing a sweepable name, and both halves of this module answer that:
 //! [`rescue_out_of_temp_space`] gives them a real filename, and
-//! [`FinalizeFailure`] carries that name out to the user.
+//! [`FinalizeFailure`] carries that name out to the user, or [`KeptNewData`]
+//! does when a stop or a sibling's failure swallows the item's own error.
 //!
 //! The other half is the landing that fails with nothing cleared: the user's
 //! file (or someone else's) still holds the name, the source still holds the new
@@ -24,7 +25,10 @@
 
 use std::path::{Path, PathBuf};
 
+use super::super::state::WriteOperationState;
+use super::super::types::{StagedLeftoverFate, StagedLeftovers, WriteOperationError};
 use super::super::unique_name::{NameCandidates, RESCUE_NAME_ATTEMPTS, recovered_sibling};
+use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::log_error::LogError;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::{Volume, VolumeError};
@@ -170,6 +174,50 @@ pub(crate) async fn discard_unplaced_temp(dest_volume: &dyn Volume, temp: &Path)
             );
             false
         }
+    }
+}
+
+/// The new files an operation's stop or failure kept at the destination, for
+/// its terminal event to name: landings left recorded for the destination's
+/// next arrival (by the name each is on its way to), and bytes rescued under a
+/// ` (recovered)` name (by that name).
+#[derive(Debug)]
+pub(crate) struct KeptNewData {
+    pub(crate) landings: Vec<PathBuf>,
+    pub(crate) rescued: Vec<PathBuf>,
+}
+
+impl KeptNewData {
+    /// Takes what `state`'s landings kept, so one terminal event names it.
+    ///
+    /// ❗ A stop, or a failure drain, swallows the item's own error, so this is
+    /// the only place the person hears of a file a sibling's landing kept.
+    pub(crate) fn take(state: &WriteOperationState) -> Self {
+        Self {
+            landings: std::mem::take(&mut *state.kept_landings.lock_ignore_poison()),
+            rescued: std::mem::take(&mut *state.rescued_landings.lock_ignore_poison()),
+        }
+    }
+
+    /// Leaves out the file `failure` already names (a `NewDataKeptAt`'s), so
+    /// the person reads each file once.
+    #[must_use]
+    pub(crate) fn beside(mut self, failure: &WriteOperationError) -> Self {
+        if let WriteOperationError::NewDataKeptAt { path, kept_at, .. } = failure {
+            self.landings.retain(|landing| landing != Path::new(path));
+            self.rescued.retain(|rescue| rescue != Path::new(kept_at));
+        }
+        self
+    }
+
+    /// One summary group per fate, on `volume_name`.
+    pub(crate) fn groups(&self, volume_name: &str) -> impl Iterator<Item = StagedLeftovers> {
+        [
+            StagedLeftovers::of(StagedLeftoverFate::LandsWhenBack, &self.landings, volume_name),
+            StagedLeftovers::of(StagedLeftoverFate::Rescued, &self.rescued, volume_name),
+        ]
+        .into_iter()
+        .flatten()
     }
 }
 

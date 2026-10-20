@@ -20,10 +20,12 @@ use super::super::super::ledger::{WrittenFile, WrittenIdentity};
 use super::super::super::reversal::{PresentRecheck, ReversalTally, drained, recheck_volume};
 use super::super::super::state::{WindDown, WriteOperationState};
 use super::super::super::types::{
-    StagedLeftoverFate, StagedLeftovers, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
+    StagedLeftoverFate, StagedLeftovers, WriteOperationError, WriteOperationPhase, WriteOperationType,
+    WriteProgressEvent,
 };
 use super::super::super::unblocked_removal::{NodeKind, RemovalRefused, delete_clearing_blockers};
 use super::super::leftover_cleanup::{LeftBehind, finish_in_background};
+use super::super::recovered_name::KeptNewData;
 use super::transfer_error::{AtPath, PathRole, PathedVolumeError};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::ignore_poison::IgnorePoison;
@@ -287,7 +289,11 @@ pub(super) async fn clean_partial_writes(volume: &Arc<dyn Volume>, partials: &[P
 /// the way re-records its temp as an `ItemKind::Landing` and takes it out of
 /// this set first, so a temp that may hold committed data is never in it and is
 /// never touched here; a landing the stop left recorded comes back as
-/// [`StagedLeftoverFate::LandsWhenBack`], named by the file it's on its way to.
+/// [`StagedLeftoverFate::LandsWhenBack`], named by the file it's on its way to,
+/// and one that saved its bytes under a ` (recovered)` name as
+/// [`StagedLeftoverFate::Rescued`], named by that name (`KeptNewData`), all but
+/// the one the operation's own `failure` already names. A failure carries
+/// those two beside its cause (`WriteOperationError::with_new_files_kept`).
 ///
 /// ❗ **Never waits on a share that's out**, so the terminal event goes out the
 /// moment this returns (`transfer/DETAILS.md` § "File writes are staged"):
@@ -314,8 +320,13 @@ pub(super) async fn clean_partial_writes(volume: &Arc<dyn Volume>, partials: &[P
 pub(super) async fn clean_abandoned_staged_writes(
     volume: &Arc<dyn Volume>,
     state: &Arc<WriteOperationState>,
+    failure: Option<&WriteOperationError>,
 ) -> Vec<StagedLeftovers> {
-    let landings: Vec<PathBuf> = std::mem::take(&mut *state.kept_landings.lock_ignore_poison());
+    let kept = KeptNewData::take(state);
+    let kept = match failure {
+        Some(failure) => kept.beside(failure),
+        None => kept,
+    };
     if state.backend_abort.is_cancelled() {
         log::info!(
             target: "copy",
@@ -328,10 +339,10 @@ pub(super) async fn clean_abandoned_staged_writes(
     let leftovers = [
         (StagedLeftoverFate::Refused, &left.refused),
         (StagedLeftoverFate::RemovedWhenBack, &left.out),
-        (StagedLeftoverFate::LandsWhenBack, &landings),
     ]
     .into_iter()
     .filter_map(|(fate, paths)| StagedLeftovers::of(fate, paths, volume.name()))
+    .chain(kept.groups(volume.name()))
     .collect();
     finish_in_background(volume, state, left);
     leftovers

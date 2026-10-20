@@ -555,6 +555,13 @@ async fn rescue(dest_volume: &Arc<dyn Volume>, mut landing: Landing, error: Volu
         landing.keep_landing();
     } else {
         landing.settled();
+        // Whoever ends up reporting this (the item's own failure, or a stop
+        // or a failure drain that swallows it) names where the bytes went.
+        landing
+            .state
+            .rescued_landings
+            .lock_ignore_poison()
+            .push(new_data_at.clone());
     }
     FinalizeFailure {
         error,

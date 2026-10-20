@@ -152,6 +152,10 @@ mod dest_precheck_failure_tests;
 #[cfg(test)]
 mod failure_side_tests;
 
+/// A stopped transfer names the new files its stop kept at the destination.
+#[cfg(test)]
+mod kept_new_data_tests;
+
 /// A source that doesn't deliver its declared length fails the file (#538).
 #[cfg(test)]
 mod source_length_tests;

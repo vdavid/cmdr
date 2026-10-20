@@ -1064,6 +1064,14 @@
   "@fileOperations.cancelRollback.stagedLeftover.landing.counted": {
     "sourceHash": "eb3d194"
   },
+  "fileOperations.cancelRollback.stagedLeftover.rescued.named": "Cmdr hat eine vollständige neue Datei auf {volumeName} als {name} gespeichert, weil sie ihren richtigen Namen nicht bekommen konnte. Prüfe sie und gib ihr dann den Namen, den du möchtest.",
+  "@fileOperations.cancelRollback.stagedLeftover.rescued.named": {
+    "sourceHash": "4c10d90"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.rescued.counted": "Cmdr hat {countText} vollständige neue {count, plural, one {Datei} other {Dateien}} auf {volumeName} unter Namen mit „(recovered)“ gespeichert, weil sie ihre richtigen Namen nicht bekommen konnten. Prüfe sie und gib ihnen dann die Namen, die du möchtest.",
+  "@fileOperations.cancelRollback.stagedLeftover.rescued.counted": {
+    "sourceHash": "a1ebb20"
+  },
   "fileOperations.leftovers.unfinishedLandingKept": "Cmdr hat auf {volumeName} eine unvollständige Kopie von {fileName} gefunden, die nicht die erwartete Größe hat. Deshalb hat Cmdr sie als {keptName} behalten, statt sie fertigzustellen.",
   "@fileOperations.leftovers.unfinishedLandingKept": {
     "sourceHash": "92ebd0a"

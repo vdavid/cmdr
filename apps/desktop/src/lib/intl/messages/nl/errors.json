@@ -1981,6 +1981,22 @@
   "@errors.write.sourceNotRemoved.suggestion": {
     "sourceHash": "8d2fc8b"
   },
+  "errors.write.newFilesKept.landing.one": "{name} staat volledig op {volumeName}, nog onder een tijdelijke naam, en krijgt de juiste naam de volgende keer dat Cmdr verbinding maakt met {volumeName}.",
+  "@errors.write.newFilesKept.landing.one": {
+    "sourceHash": "ae7aea2"
+  },
+  "errors.write.newFilesKept.landing.many": "{count} voltooide bestanden wachten op {volumeName} onder tijdelijke namen. Elk krijgt de juiste naam de volgende keer dat Cmdr verbinding maakt met {volumeName}.",
+  "@errors.write.newFilesKept.landing.many": {
+    "sourceHash": "51da3d5"
+  },
+  "errors.write.newFilesKept.rescued.one": "Cmdr heeft een nieuw, voltooid bestand op {volumeName} bewaard als {name}, omdat het bestand de juiste naam niet kon krijgen. Controleer het en geef het daarna de naam die je wilt.",
+  "@errors.write.newFilesKept.rescued.one": {
+    "sourceHash": "4c10d90"
+  },
+  "errors.write.newFilesKept.rescued.many": "Cmdr heeft {count} nieuwe, voltooide bestanden op {volumeName} bewaard onder namen met ‘(recovered)’, omdat de bestanden de juiste naam niet konden krijgen. Controleer ze en geef ze daarna de namen die je wilt.",
+  "@errors.write.newFilesKept.rescued.many": {
+    "sourceHash": "37f1a4b"
+  },
   "errors.write.fallback.title.copy": "Kopiëren lukte niet",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "dbb854f"

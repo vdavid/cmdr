@@ -1061,6 +1061,14 @@
   "@fileOperations.cancelRollback.stagedLeftover.landing.counted": {
     "sourceHash": "eb3d194"
   },
+  "fileOperations.cancelRollback.stagedLeftover.rescued.named": "A Cmdr elmentett egy elkészült új fájlt a célhelyre ({volumeName}) ezen a néven: „{name}”, mert a fájl nem kaphatta meg a saját nevét. Ellenőrizd, aztán nevezd el úgy, ahogy szeretnéd.",
+  "@fileOperations.cancelRollback.stagedLeftover.rescued.named": {
+    "sourceHash": "4c10d90"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.rescued.counted": "A Cmdr elmentett {countText} elkészült új {count, plural, one {fájlt} other {fájlt}} a célhelyre ({volumeName}) „(recovered)” végű néven, mert a fájlok nem kaphatták meg a saját nevüket. Ellenőrizd őket, aztán nevezd el őket úgy, ahogy szeretnéd.",
+  "@fileOperations.cancelRollback.stagedLeftover.rescued.counted": {
+    "sourceHash": "a1ebb20"
+  },
   "fileOperations.leftovers.unfinishedLandingKept": "A Cmdr talált egy félbemaradt másolatot ezen a meghajtón: {volumeName}. A fájl („{fileName}”) mérete eltér a várttól, ezért a Cmdr nem fejezte be, hanem ezen a néven megtartotta: {keptName}.",
   "@fileOperations.leftovers.unfinishedLandingKept": {
     "sourceHash": "92ebd0a"

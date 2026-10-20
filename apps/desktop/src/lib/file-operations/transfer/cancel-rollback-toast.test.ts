@@ -344,6 +344,25 @@ describe('readCancelRollback', () => {
       expect(readout?.staged[0]).not.toMatch(/remove|delete|unfinished/i)
     })
 
+    it('names a file saved under a recovered name as the user’s file, never as scratch', () => {
+      const readout = readCancelRollback(
+        rollback({
+          stagedLeftovers: [
+            { fate: 'rescued', count: 1, exampleName: 'holiday (recovered).jpg', volumeName: 'Naspolya' },
+            { fate: 'rescued', count: 2, exampleName: 'a (recovered).mov', volumeName: 'Naspolya' },
+          ],
+        }),
+        'copy',
+      )
+      expect(readout?.staged).toEqual([
+        'Cmdr saved a complete new file on Naspolya as holiday (recovered).jpg, because it couldn’t take its own ' +
+          'name. Check it, then give it the name you want.',
+        'Cmdr saved 2 complete new files on Naspolya under “(recovered)” names, because they couldn’t take their ' +
+          'own. Check them, then give them the names you want.',
+      ])
+      expect(readout?.staged.join(' ')).not.toMatch(/remove|delete|unfinished/i)
+    })
+
     it('gives each fate its own line, in the order the backend grouped them', () => {
       const readout = readCancelRollback(
         rollback({

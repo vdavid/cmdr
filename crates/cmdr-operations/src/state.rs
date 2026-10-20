@@ -252,6 +252,11 @@ pub struct WriteOperationState {
     /// (`Landing::keep_landing`): complete files, ❌ never removable, that the
     /// stop's summary names.
     pub(crate) kept_landings: std::sync::Mutex<Vec<PathBuf>>,
+    /// The ` (recovered)` names landings gave the new bytes when they couldn't
+    /// take their own after the way was cleared (`staged_write_landing.rs`'s
+    /// `rescue`): complete files, possibly the only copy, that the stop's
+    /// summary or the failure names, ❌ never just a log line.
+    pub(crate) rescued_landings: std::sync::Mutex<Vec<PathBuf>>,
     /// A test's own persisted ledger, which the in-flight temps above are also
     /// recorded in (`with_in_flight_ledger`, test builds only). `None`, always so
     /// in the app, means the engine's, through the scope; `in_flight_temps`
@@ -335,6 +340,7 @@ impl WriteOperationState {
             target_names: super::target_names::TargetNames::default(),
             in_flight_temps: std::sync::Mutex::new(Vec::new()),
             kept_landings: std::sync::Mutex::new(Vec::new()),
+            rescued_landings: std::sync::Mutex::new(Vec::new()),
             in_flight_ledger: None,
             last_progress: std::sync::Mutex::new(None),
             liveness: std::sync::Mutex::new(Some(Arc::new(()))),

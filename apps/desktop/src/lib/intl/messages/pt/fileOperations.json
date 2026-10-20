@@ -1062,6 +1062,14 @@
   "@fileOperations.cancelRollback.stagedLeftover.landing.counted": {
     "sourceHash": "eb3d194"
   },
+  "fileOperations.cancelRollback.stagedLeftover.rescued.named": "O Cmdr salvou um arquivo novo e completo em {volumeName} como {name}, porque o arquivo não conseguiu ficar com o próprio nome. Confira-o e depois dê a ele o nome que quiser.",
+  "@fileOperations.cancelRollback.stagedLeftover.rescued.named": {
+    "sourceHash": "4c10d90"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.rescued.counted": "O Cmdr salvou {countText} {count, plural, one {arquivo novo e completo} many {arquivos novos e completos} other {arquivos novos e completos}} em {volumeName} com “(recovered)” no nome, porque os arquivos não conseguiram ficar com o próprio nome. Confira-os e depois dê a eles os nomes que quiser.",
+  "@fileOperations.cancelRollback.stagedLeftover.rescued.counted": {
+    "sourceHash": "a1ebb20"
+  },
   "fileOperations.leftovers.unfinishedLandingKept": "O Cmdr encontrou em {volumeName} uma cópia incompleta de {fileName} que não tem o tamanho que deveria, então manteve essa cópia como {keptName} em vez de concluí-la.",
   "@fileOperations.leftovers.unfinishedLandingKept": {
     "sourceHash": "92ebd0a"

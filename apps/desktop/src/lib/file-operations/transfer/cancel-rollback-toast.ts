@@ -148,6 +148,10 @@ const STAGED_KEYS: Record<StagedLeftoverFate, { named: MessageKey; counted: Mess
     named: 'fileOperations.cancelRollback.stagedLeftover.landing.named',
     counted: 'fileOperations.cancelRollback.stagedLeftover.landing.counted',
   },
+  rescued: {
+    named: 'fileOperations.cancelRollback.stagedLeftover.rescued.named',
+    counted: 'fileOperations.cancelRollback.stagedLeftover.rescued.counted',
+  },
 }
 
 /**
@@ -156,8 +160,9 @@ const STAGED_KEYS: Record<StagedLeftoverFate, { named: MessageKey; counted: Mess
  * Deliberately outside `reasons`: those lines sit under "Cmdr skips anything it
  * isn't sure about", and nothing chose to keep these. The fate decides the
  * words: scratch the destination refused, scratch waiting for a server to come
- * back, or a COMPLETE file waiting for its name, which is the user's data and
- * ❌ never worded as something to remove. Naming it when there is one is the
+ * back, or a COMPLETE file waiting for its name or saved under a ` (recovered)`
+ * one, which is the user's data and ❌ never worded as something to remove.
+ * Naming it when there is one is the
  * same call the reason lines make: that name is what the user would go looking
  * for at the destination.
  */

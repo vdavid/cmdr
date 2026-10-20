@@ -1980,6 +1980,22 @@
   "@errors.write.sourceNotRemoved.suggestion": {
     "sourceHash": "8d2fc8b"
   },
+  "errors.write.newFilesKept.landing.one": "{name} 已经完整地存到 {volumeName} 上，只是暂时用的是临时名称。Cmdr 下次连接到 {volumeName} 时，会给它换上正式的名称。",
+  "@errors.write.newFilesKept.landing.one": {
+    "sourceHash": "ae7aea2"
+  },
+  "errors.write.newFilesKept.landing.many": "有 {count} 个完整的文件暂时用着临时名称，在 {volumeName} 上等待。Cmdr 下次连接到 {volumeName} 时，会给每个文件换上正式的名称。",
+  "@errors.write.newFilesKept.landing.many": {
+    "sourceHash": "51da3d5"
+  },
+  "errors.write.newFilesKept.rescued.one": "Cmdr 已把一个完整的新文件保存到 {volumeName} 上，名为 {name}，因为这个文件没能用上正式的名称。先看看这个文件，再把它改成你想要的名字。",
+  "@errors.write.newFilesKept.rescued.one": {
+    "sourceHash": "4c10d90"
+  },
+  "errors.write.newFilesKept.rescued.many": "Cmdr 已把 {count} 个完整的新文件保存到 {volumeName} 上，名称里带有“(recovered)”，因为这些文件没能用上正式的名称。先看看这些文件，再把它们改成你想要的名字。",
+  "@errors.write.newFilesKept.rescued.many": {
+    "sourceHash": "37f1a4b"
+  },
   "errors.write.fallback.title.copy": "无法拷贝",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "dbb854f"

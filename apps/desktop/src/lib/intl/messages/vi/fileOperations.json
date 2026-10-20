@@ -1060,6 +1060,14 @@
   "@fileOperations.cancelRollback.stagedLeftover.landing.counted": {
     "sourceHash": "eb3d194"
   },
+  "fileOperations.cancelRollback.stagedLeftover.rescued.named": "Cmdr đã lưu một tệp mới đầy đủ trên {volumeName} với tên {name}, vì tệp không lấy được đúng tên. Hãy kiểm tra tệp, rồi đặt cho tệp tên bạn muốn.",
+  "@fileOperations.cancelRollback.stagedLeftover.rescued.named": {
+    "sourceHash": "4c10d90"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.rescued.counted": "Cmdr đã lưu {countText} {count, plural, other {tệp}} mới đầy đủ trên {volumeName} với tên có “(recovered)”, vì các tệp này không lấy được đúng tên. Hãy kiểm tra các tệp, rồi đặt cho chúng tên bạn muốn.",
+  "@fileOperations.cancelRollback.stagedLeftover.rescued.counted": {
+    "sourceHash": "a1ebb20"
+  },
   "fileOperations.leftovers.unfinishedLandingKept": "Cmdr tìm thấy trên {volumeName} một bản sao chưa hoàn chỉnh của {fileName} có kích cỡ không đúng như mong đợi, nên Cmdr giữ nó lại với tên {keptName} thay vì làm cho xong.",
   "@fileOperations.leftovers.unfinishedLandingKept": {
     "sourceHash": "92ebd0a"

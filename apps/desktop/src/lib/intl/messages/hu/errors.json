@@ -1981,6 +1981,22 @@
   "@errors.write.sourceNotRemoved.suggestion": {
     "sourceHash": "8d2fc8b"
   },
+  "errors.write.newFilesKept.landing.one": "„{name}” már teljesen ott van a célhelyen ({volumeName}), csak ideiglenes néven. A saját nevét akkor kapja meg, amikor a Cmdr legközelebb kapcsolódik ide: {volumeName}.",
+  "@errors.write.newFilesKept.landing.one": {
+    "sourceHash": "ae7aea2"
+  },
+  "errors.write.newFilesKept.landing.many": "{count} elkészült fájl vár ideiglenes néven a célhelyen ({volumeName}). Mindegyik akkor kapja meg a saját nevét, amikor a Cmdr legközelebb kapcsolódik ide: {volumeName}.",
+  "@errors.write.newFilesKept.landing.many": {
+    "sourceHash": "51da3d5"
+  },
+  "errors.write.newFilesKept.rescued.one": "A Cmdr elmentett egy elkészült új fájlt a célhelyre ({volumeName}) ezen a néven: „{name}”, mert a fájl nem kaphatta meg a saját nevét. Ellenőrizd, aztán nevezd el úgy, ahogy szeretnéd.",
+  "@errors.write.newFilesKept.rescued.one": {
+    "sourceHash": "4c10d90"
+  },
+  "errors.write.newFilesKept.rescued.many": "A Cmdr elmentett {count} elkészült új fájlt a célhelyre ({volumeName}) „(recovered)” végű néven, mert a fájlok nem kaphatták meg a saját nevüket. Ellenőrizd őket, aztán nevezd el őket úgy, ahogy szeretnéd.",
+  "@errors.write.newFilesKept.rescued.many": {
+    "sourceHash": "37f1a4b"
+  },
   "errors.write.fallback.title.copy": "Nem sikerült a másolás",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "dbb854f"

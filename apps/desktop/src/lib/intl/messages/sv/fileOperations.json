@@ -1061,6 +1061,14 @@
   "@fileOperations.cancelRollback.stagedLeftover.landing.counted": {
     "sourceHash": "eb3d194"
   },
+  "fileOperations.cancelRollback.stagedLeftover.rescued.named": "Cmdr sparade en komplett ny fil på {volumeName} som {name}, eftersom filen inte kunde få sitt riktiga namn. Kontrollera filen och ge den sedan det namn du vill ha.",
+  "@fileOperations.cancelRollback.stagedLeftover.rescued.named": {
+    "sourceHash": "4c10d90"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.rescued.counted": "Cmdr sparade {countText} {count, plural, one {komplett ny fil} other {kompletta nya filer}} på {volumeName} under namn med ”(recovered)”, eftersom filerna inte kunde få sina riktiga namn. Kontrollera dem och ge dem sedan de namn du vill ha.",
+  "@fileOperations.cancelRollback.stagedLeftover.rescued.counted": {
+    "sourceHash": "a1ebb20"
+  },
   "fileOperations.leftovers.unfinishedLandingKept": "Cmdr hittade en ofullständig kopia av {fileName} på {volumeName} som inte har den storlek den ska ha, så Cmdr behöll den som {keptName} i stället för att slutföra den.",
   "@fileOperations.leftovers.unfinishedLandingKept": {
     "sourceHash": "92ebd0a"

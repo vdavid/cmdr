@@ -1981,6 +1981,22 @@
   "@errors.write.sourceNotRemoved.suggestion": {
     "sourceHash": "8d2fc8b"
   },
+  "errors.write.newFilesKept.landing.one": "{name} đã có đầy đủ trên {volumeName} nhưng đang mang tên tạm, và sẽ được đặt đúng tên vào lần tới Cmdr kết nối với {volumeName}.",
+  "@errors.write.newFilesKept.landing.one": {
+    "sourceHash": "ae7aea2"
+  },
+  "errors.write.newFilesKept.landing.many": "{count} tệp đã hoàn chỉnh đang chờ trên {volumeName} với tên tạm. Mỗi tệp sẽ được đặt đúng tên vào lần tới Cmdr kết nối với {volumeName}.",
+  "@errors.write.newFilesKept.landing.many": {
+    "sourceHash": "51da3d5"
+  },
+  "errors.write.newFilesKept.rescued.one": "Cmdr đã lưu một tệp mới đầy đủ trên {volumeName} với tên {name}, vì tệp không lấy được đúng tên. Hãy kiểm tra tệp, rồi đặt cho tệp tên bạn muốn.",
+  "@errors.write.newFilesKept.rescued.one": {
+    "sourceHash": "4c10d90"
+  },
+  "errors.write.newFilesKept.rescued.many": "Cmdr đã lưu {count} tệp mới đầy đủ trên {volumeName} với tên có “(recovered)”, vì các tệp này không lấy được đúng tên. Hãy kiểm tra các tệp, rồi đặt cho chúng tên bạn muốn.",
+  "@errors.write.newFilesKept.rescued.many": {
+    "sourceHash": "37f1a4b"
+  },
   "errors.write.fallback.title.copy": "Không thể sao chép",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "dbb854f"

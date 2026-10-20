@@ -111,11 +111,14 @@ impl TreeReporter {
     /// Marks the row a failure names, by the typed path it carries.
     pub(crate) fn fail_at(&self, error: &WriteOperationError) {
         let Some(tree) = &self.0 else { return };
-        // A failure that also set the user's originals aside failed on its cause's item.
-        let on_item = match error {
-            WriteOperationError::OriginalsKeptAside { cause, .. } => cause.as_ref(),
-            other => other,
-        };
+        // A failure that also set the user's originals aside, or kept new
+        // files, failed on its cause's item.
+        let mut on_item = error;
+        while let WriteOperationError::OriginalsKeptAside { cause, .. }
+        | WriteOperationError::NewFilesKept { cause, .. } = on_item
+        {
+            on_item = cause.as_ref();
+        }
         let Some(path) = on_item.item_path() else { return };
         let failure = error.clone();
         tree.mutate(|model| {

@@ -1981,6 +1981,22 @@
   "@errors.write.sourceNotRemoved.suggestion": {
     "sourceHash": "8d2fc8b"
   },
+  "errors.write.newFilesKept.landing.one": "{name} 已經完整存到 {volumeName} 上，只是目前用的是暫時的名稱。Cmdr 下次連線到 {volumeName} 時，會幫它換上正式的名稱。",
+  "@errors.write.newFilesKept.landing.one": {
+    "sourceHash": "ae7aea2"
+  },
+  "errors.write.newFilesKept.landing.many": "有 {count} 個寫入完成的檔案目前用的是暫時的名稱，在 {volumeName} 上等待。Cmdr 下次連線到 {volumeName} 時，會幫每個檔案換上正式的名稱。",
+  "@errors.write.newFilesKept.landing.many": {
+    "sourceHash": "51da3d5"
+  },
+  "errors.write.newFilesKept.rescued.one": "Cmdr 已把一個完整的新檔案儲存到 {volumeName} 上，檔名是 {name}，因為這個檔案沒辦法換上正式的名稱。先看看這個檔案，再把它改成你想要的名稱。",
+  "@errors.write.newFilesKept.rescued.one": {
+    "sourceHash": "4c10d90"
+  },
+  "errors.write.newFilesKept.rescued.many": "Cmdr 已把 {count} 個完整的新檔案儲存到 {volumeName} 上，檔名都帶有「(recovered)」，因為這些檔案沒辦法換上正式的名稱。先看看這些檔案，再把它們改成你想要的名稱。",
+  "@errors.write.newFilesKept.rescued.many": {
+    "sourceHash": "37f1a4b"
+  },
   "errors.write.fallback.title.copy": "無法複製",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "dbb854f"

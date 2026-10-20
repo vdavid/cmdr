@@ -8,7 +8,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::RecoveredOriginal;
+use super::{RecoveredOriginal, StagedLeftovers};
 
 // ============================================================================
 // Error enum (following MountError pattern)
@@ -571,6 +571,21 @@ pub enum WriteOperationError {
         landed_at: String,
         cause: Box<WriteOperationError>,
     },
+    /// The operation failed, and on its way to stopping it kept new files the
+    /// person has to know about: complete files waiting for their names until
+    /// the destination is back, or ones saved under a ` (recovered)` name
+    /// because they couldn't take their own. Without it, someone finds their
+    /// original gone and a scratch or ` (recovered)` file beside it with no word
+    /// about it.
+    ///
+    /// ❗ `kept` is never empty and holds only the fates with new data in them
+    /// (`StagedLeftoverFate::holds_new_data`). `cause` is what actually failed,
+    /// so its own advice survives, the same shape as
+    /// [`OriginalsKeptAside`](Self::OriginalsKeptAside).
+    NewFilesKept {
+        cause: Box<WriteOperationError>,
+        kept: Vec<StagedLeftovers>,
+    },
     /// The OS refused to move items to the Trash.
     ///
     /// Separate from [`IoError`](Self::IoError) because the REASON decides what the
@@ -649,12 +664,31 @@ impl WriteOperationError {
         WriteErrorDetail(serde_json::to_string(self).unwrap_or_else(|e| format!("(the error didn't serialize: {e})")))
     }
 
+    /// The same failure, naming the new files its stop kept (`leftovers`'
+    /// groups whose fate holds new data) as [`NewFilesKept`](Self::NewFilesKept);
+    /// untouched when there are none.
+    #[must_use]
+    pub fn with_new_files_kept(self, leftovers: &[StagedLeftovers]) -> Self {
+        let kept: Vec<StagedLeftovers> = leftovers
+            .iter()
+            .filter(|group| group.fate.holds_new_data())
+            .cloned()
+            .collect();
+        if kept.is_empty() {
+            return self;
+        }
+        Self::NewFilesKept {
+            cause: Box::new(self),
+            kept,
+        }
+    }
+
     /// The item an in-flight failure happened ON, as its variant names it: the
     /// file or folder the operation was reading or writing when it stopped.
     ///
     /// `None` for a refusal raised before any I/O (no single item, or one that
     /// isn't a file), and for the variants whose payload is the point
-    /// (`NewDataKeptAt`, `OriginalsKeptAside`, `SourceNotRemoved`): a caller
+    /// (`NewDataKeptAt`, `OriginalsKeptAside`, `SourceNotRemoved`, `NewFilesKept`): a caller
     /// that rewrites the error by its path would drop where the user's data
     /// is. ❌ Never read an item out of a message.
     pub fn item_path(&self) -> Option<&str> {

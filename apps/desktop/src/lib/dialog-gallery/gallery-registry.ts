@@ -265,6 +265,7 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
       { id: 'landing_not_recorded', label: 'Replace stopped, file left as it was' },
       { id: 'originals_kept_aside', label: 'Your file kept under another name' },
       { id: 'source_not_removed', label: 'Copy landed, original stayed' },
+      { id: 'new_files_kept', label: 'Failed, new files kept on the server' },
       { id: 'io_error', label: 'I/O error' },
       { id: 'trash_refused', label: 'Trash refused (permission)' },
       { id: 'archive_needs_password', label: 'Archive needs a password' },

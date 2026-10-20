@@ -3003,6 +3003,62 @@
     "description": "Last sentence of the recovery suggestion when the copy landed but the original couldn't be removed. At runtime it follows the refusal's own advice (for example \"The item may be locked: ... uncheck Locked.\"), as a separate sentence. Plain text. Raw errors.* string (no ICU).",
     "screenshot": "transfer-error-source_not_removed.png"
   },
+  "errors.write.newFilesKept.landing.one": "{name} is complete on {volumeName} under a temporary name, and gets its own name the next time Cmdr connects to {volumeName}.",
+  "errors.write.newFilesKept.landing.many": "{count} complete files wait on {volumeName} under temporary names. Each gets its own name the next time Cmdr connects to {volumeName}.",
+  "errors.write.newFilesKept.rescued.one": "Cmdr saved a complete new file on {volumeName} as {name}, because it couldn’t take its own name. Check it, then give it the name you want.",
+  "errors.write.newFilesKept.rescued.many": "Cmdr saved {count} complete new files on {volumeName} under “(recovered)” names, because they couldn’t take their own. Check them, then give them the names you want.",
+  "@errors.write.newFilesKept.landing.one": {
+    "description": "A sentence added to the end of a copy or move error dialog's explanation, after the sentence saying why the transfer stopped (often a lost connection to a server). One file had ALREADY fully arrived at the destination and was taking its final name when things stopped, and the drive or server couldn't finish that step. The file is the person's data, possibly the only copy there, so ❗ never word it as junk or something to delete. Cmdr finishes giving it its name on its own the next time it connects there. \"Cmdr\" is the app name; do NOT translate it. Plain text. Raw errors.* string (no ICU).",
+    "placeholders": {
+      "name": {
+        "description": "The file's own name, e.g. holiday.jpg, inserted verbatim. Do not translate or reformat it."
+      },
+      "volumeName": {
+        "description": "The destination drive or server as it names itself, e.g. Naspolya, inserted verbatim. Do not translate it."
+      }
+    },
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.write.newFilesKept.landing.many": {
+    "description": "The same sentence as errors.write.newFilesKept.landing.one, used when two or more complete files are waiting for their final names, so it counts them instead of naming one. Same rule: these are the person's files, ❌ never worded as junk to remove. \"Cmdr\" is the app name; do NOT translate it. Plain text. Raw errors.* string (no ICU), so the noun is always plural.",
+    "placeholders": {
+      "count": {
+        "description": "How many complete files are waiting, already formatted for display (e.g. 1,234). Always two or more."
+      },
+      "volumeName": {
+        "description": "The destination drive or server as it names itself, e.g. Naspolya, inserted verbatim. Do not translate it."
+      }
+    },
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.write.newFilesKept.rescued.one": {
+    "description": "A sentence added to the end of a copy or move error dialog's explanation, after the sentence saying why the transfer stopped. One file had ALREADY fully arrived at the destination but couldn't take its final name, after the file it was replacing was already gone, so Cmdr kept it under a name ending in \"(recovered)\". It may be the only copy of the person's new data: ❗ never word it as junk or something to delete. The person checks it and renames it themselves. \"Cmdr\" is the app name; do NOT translate it. Plain text. Raw errors.* string (no ICU).",
+    "placeholders": {
+      "name": {
+        "description": "The name the file has now, ending in \"(recovered)\", e.g. holiday (recovered).jpg, inserted verbatim. The \"(recovered)\" part is always English: do not translate or reformat any of it."
+      },
+      "volumeName": {
+        "description": "The destination drive or server as it names itself, e.g. Naspolya, inserted verbatim. Do not translate it."
+      }
+    },
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.write.newFilesKept.rescued.many": {
+    "description": "The same sentence as errors.write.newFilesKept.rescued.one, used when two or more complete files were kept under names ending in \"(recovered)\", so it counts them instead of naming one. The \"(recovered)\" in quotes is the literal suffix Cmdr gives those names, always English, so keep it exactly as is. Same rule: these are the person's files, ❌ never worded as junk to remove. \"Cmdr\" is the app name; do NOT translate it. Plain text. Raw errors.* string (no ICU), so the noun is always plural.",
+    "placeholders": {
+      "count": {
+        "description": "How many files were kept, already formatted for display (e.g. 1,234). Always two or more."
+      },
+      "volumeName": {
+        "description": "The destination drive or server as it names itself, e.g. Naspolya, inserted verbatim. Do not translate it."
+      }
+    },
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "errors.write.fallback.title.copy": "Couldn’t copy",
   "errors.write.fallback.title.move": "Couldn’t move",
   "errors.write.fallback.title.delete": "Couldn’t delete",

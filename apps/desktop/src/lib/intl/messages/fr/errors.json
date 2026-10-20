@@ -1981,6 +1981,22 @@
   "@errors.write.sourceNotRemoved.suggestion": {
     "sourceHash": "8d2fc8b"
   },
+  "errors.write.newFilesKept.landing.one": "Le fichier {name} est complet sur {volumeName}, sous un nom temporaire, et recevra son vrai nom la prochaine fois que Cmdr se connectera à {volumeName}.",
+  "@errors.write.newFilesKept.landing.one": {
+    "sourceHash": "ae7aea2"
+  },
+  "errors.write.newFilesKept.landing.many": "{count} fichiers complets attendent sur {volumeName} sous des noms temporaires. Chacun recevra son vrai nom la prochaine fois que Cmdr se connectera à {volumeName}.",
+  "@errors.write.newFilesKept.landing.many": {
+    "sourceHash": "51da3d5"
+  },
+  "errors.write.newFilesKept.rescued.one": "Cmdr a enregistré un nouveau fichier complet sur {volumeName} sous {name}, car le fichier n’a pas pu recevoir son vrai nom. Vérifiez-le, puis donnez-lui le nom de votre choix.",
+  "@errors.write.newFilesKept.rescued.one": {
+    "sourceHash": "4c10d90"
+  },
+  "errors.write.newFilesKept.rescued.many": "Cmdr a enregistré {count} nouveaux fichiers complets sur {volumeName} sous des noms avec « (recovered) », car ces fichiers n’ont pas pu recevoir leur vrai nom. Vérifiez-les, puis donnez-leur les noms de votre choix.",
+  "@errors.write.newFilesKept.rescued.many": {
+    "sourceHash": "37f1a4b"
+  },
   "errors.write.fallback.title.copy": "Copie impossible",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "dbb854f"
