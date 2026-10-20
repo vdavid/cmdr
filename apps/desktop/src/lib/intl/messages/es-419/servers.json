@@ -91,9 +91,13 @@
   "@servers.hostKey.changedBody": {
     "sourceHash": "488f40b"
   },
-  "servers.hostKey.changedDisclosure": "Ya la comprobé",
+  "servers.hostKey.changedDisclosure": "Ya lo comprobé",
   "@servers.hostKey.changedDisclosure": {
-    "sourceHash": "14de108"
+    "sourceHash": "62c5c7c"
+  },
+  "servers.certificate.changedDisclosure": "Ya lo comprobé",
+  "@servers.certificate.changedDisclosure": {
+    "sourceHash": "62c5c7c"
   },
   "servers.paneState.hostKeyChangedHint": "Su clave cambió. Esto puede significar que el servidor se reinstaló, o que hay algo entre tú y él. Comprueba la nueva clave antes de volver a conectarte.",
   "@servers.paneState.hostKeyChangedHint": {

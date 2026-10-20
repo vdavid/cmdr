@@ -103,6 +103,10 @@
   "@stateRecovery.sftpHostKeys.title": {
     "sourceHash": "5aa3290"
   },
+  "stateRecovery.webdavCertificates.title": "Cmdr no pudo leer todos los certificados de servidor en los que confiaste, así que puede que vuelva a preguntarte por algunos",
+  "@stateRecovery.webdavCertificates.title": {
+    "sourceHash": "5b8f7a7"
+  },
   "stateRecovery.localAi.title": "Cmdr no pudo leer el estado de su IA local, así que puede que vuelva a ofrecerte configurarla",
   "@stateRecovery.localAi.title": {
     "sourceHash": "e3adfce"

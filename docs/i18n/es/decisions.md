@@ -420,7 +420,7 @@ The row covers Office documents AND app packages, so bare `paquetes`, broader th
 - `Conectando…` with no target; `Conectándose a X…` with one.
 - Sheet titles are infinitive: `Añadir servidor` / `Iniciar sesión en {name}` / `Editar {name}`.
 - Many values are forced by `i18n-terms` (same English elsewhere): search the catalog before translating a new sheet.
-- `Trust and connect` → `Confiar en la clave y conectar`: `confiar` needs `en`.
+- `Trust and connect` names what to `confiar en`: `la clave`, `el certificado`.
 - owner → `quien posee el servidor`, avoiding gendered `el propietario`; "something between you and it" →
   `hay algo entre tú y él`, no MITM jargon.
 - `needsStoredSecret` is impersonal; `e inicia sesión` (`e` before `i-`).

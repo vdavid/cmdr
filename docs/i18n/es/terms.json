@@ -2131,6 +2131,13 @@
     "confidence": "high",
     "sources": "macOS Finder (Sobrescribir en la carpeta de destino)"
   },
+  "owner": {
+    "chosen": "propietario",
+    "accept": ["propietari", "propiedad", "posee", "poseen"],
+    "forms": "a file's owner → el propietario; the person who runs a server → quien posee el servidor (no gendered noun for a person)",
+    "confidence": "high",
+    "sources": "macOS Finder (Seleccionar nuevo propietario…, Valor del propietario); catalog servers.hostKey.changedBody (quien posee el servidor)"
+  },
   "package": {
     "chosen": "paquete",
     "confidence": "high",
