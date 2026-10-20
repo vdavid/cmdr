@@ -10,7 +10,7 @@ use std::sync::Arc;
 use super::super::super::in_flight_temps::{self, TrackedRecord};
 use super::super::super::journal;
 use super::super::super::state::WriteOperationState;
-use super::super::interrupted_landing::holds_the_source;
+use super::super::interrupted_landing::{NameHeld, holds_the_source};
 use super::super::recovered_name::{
     AfterARefusedDelete, FinalizeFailure, LandingAftermath, discard_unplaced_temp, rescue_out_of_temp_space,
     what_a_refused_delete_left,
@@ -76,6 +76,11 @@ pub(super) struct Landing {
     /// from the destination is proof of a landing only when nothing of ours
     /// deleted it.
     discard_asked: bool,
+    /// What stood at a claimed name as [`clear_the_way`] set out to delete it,
+    /// from one stat right before the delete; `None` until then, or when that
+    /// stat didn't answer. Only the same entry may be cleared again on a resume
+    /// ([`resume_with_a_whole_temp`]).
+    in_the_way: Option<NameHeld>,
 }
 
 /// Where a landing's temp stands in the in-flight ledgers.
@@ -110,6 +115,7 @@ impl Landing {
             recorded: Recorded::Temp,
             aside: None,
             discard_asked: false,
+            in_the_way: None,
         }
     }
 
@@ -408,16 +414,31 @@ async fn temp_is_gone(dest_volume: &Arc<dyn Volume>, landing: &Landing) -> bool 
         )
 }
 
-/// The landing's cleared-way tail for a claimed name: record the temp as a
-/// landing, clear the final name, and rename the temp onto it. `first` is the
-/// first rename's `AlreadyExists`, the error to report if the way can't be
-/// cleared.
+/// The landing's cleared-way tail for a claimed name: note what's in the way,
+/// record the temp as a landing, clear the final name, and rename the temp onto
+/// it. `first` is the first rename's `AlreadyExists`, the error to report if the
+/// way can't be cleared.
+///
+/// ❗ The note ([`NameHeld`], one stat before anything moves) is what lets a
+/// resume after a lost delete reply clear the name again only while it holds
+/// the same entry: anything else there is a file someone saved after our delete
+/// went through (`#576`). A stat the transport cuts off cuts the landing off
+/// as a first rename, since nothing was cleared yet.
 async fn clear_the_way(
     dest_volume: &Arc<dyn Volume>,
     mut landing: Landing,
     first: VolumeError,
     patience: Patience,
 ) -> Result<(), LandingError> {
+    landing.in_the_way = match dest_volume.get_metadata(&landing.final_path).await {
+        Ok(entry) => Some(NameHeld::of(&entry)),
+        Err(error) if patience == Patience::Waits && error.transport_fault().is_some() => {
+            return Err(cut_off(landing, CutOffAt::FirstRename, error));
+        }
+        // Gone already, or unreadable: nothing a resume could match, so a
+        // resume never clears the name again.
+        Err(_) => None,
+    };
     if !landing.hold().await {
         log::warn!(
             target: "copy",
@@ -593,8 +614,10 @@ impl CutOffLanding {
     ///   off. A first rename lands again from the top, and a one-step replace
     ///   runs again (the original is still whole). A clearing delete that
     ///   may have gone through asks the name: empty means it did, and the
-    ///   rename alone finishes the landing; taken means it never reached the
-    ///   server, and the way is cleared again. After a delete that went
+    ///   rename alone finishes the landing; taken by the very entry the
+    ///   landing noted before its delete ([`NameHeld`]) means it never reached
+    ///   the server, and the way is cleared again; taken by anything else means
+    ///   it did, and someone saved there since. After a delete that went
     ///   through, ❗ the rename alone, ❌ never another delete: a file
     ///   someone put at the name during the outage makes it refuse, and the
     ///   new bytes are rescued and reported, never their file deleted. A move
@@ -729,7 +752,14 @@ async fn resume_with_a_whole_temp(dest_volume: &Arc<dyn Volume>, landing: Landin
             // The delete went through before the drop.
             Err(VolumeError::NotFound(_)) => rename_onto_cleared(dest_volume, landing, Patience::Waits).await.into(),
             // It never reached the server: what was in the way still is.
-            Ok(_) => clear_the_way(dest_volume, landing, first, Patience::Waits).await.into(),
+            Ok(entry) if landing.in_the_way == Some(NameHeld::of(&entry)) => {
+                clear_the_way(dest_volume, landing, first, Patience::Waits).await.into()
+            }
+            // ❗ Something else is at the name: the delete went through, and
+            // someone saved there during the outage. The rename alone, which
+            // refuses, so the new bytes are rescued beside their file, ❌ never
+            // their file cleared.
+            Ok(_) => rename_onto_cleared(dest_volume, landing, Patience::Waits).await.into(),
             Err(stat) if stat.transport_fault().is_some() => Resumed::CutOff(Box::new(CutOffLanding {
                 landing,
                 at: CutOffAt::ClearingDelete(first),

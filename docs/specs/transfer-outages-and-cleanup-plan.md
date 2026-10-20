@@ -514,7 +514,9 @@ destination, so discarding it and re-streaming would be wasteful at best.
   rename's `AlreadyExists`, which no wait accepts, so a blip ends the op. Add that cell to the red list.
 - ❗ **A resume never deletes what appeared during the outage.** When the settle shows `orig` already gone (the first
   delete went through), resume with the rename alone (`rename(force = false)`); a file someone put at `orig` meanwhile
-  makes it refuse, and that's reported, ❌ never deleted.
+  makes it refuse, and that's reported, ❌ never deleted. A claimed name's resume clears the name again only while it
+  holds the entry the landing noted right before its delete (`#576`), and the drivers' partial cleanup never names a
+  claimed name (`#575`).
 - ❗ A Cancel, a failure drain (milestone 8), or a drop that ends the landing wait AFTER `delete(orig)` is treated like
   a give-up: rescue when the share answers, else leave the temp, recorded as `Landing` (5b), so the next sweep that
   reaches the share finishes the landing, and name it in the report. ❌ Never cleaned as a partial; the stale-temp reap

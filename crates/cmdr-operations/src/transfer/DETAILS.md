@@ -2043,12 +2043,15 @@ shows (`CutOffLanding::resume`):
 
 - **The temp is there and whole** (exactly the size the write confirmed): it lands from where the cut left off, ❌ never
   streamed again. A first rename lands again from the top. After a clearing delete whose answer was lost, the name says
-  what happened: empty means the delete went through and the rename alone finishes it; taken means it never reached the
-  server, and the way is cleared again. After a delete that went through, ❗ the rename alone, `rename(force = false)`,
-  ❌ never another delete: a file someone put at the name during the outage makes it refuse, and the new bytes are
-  rescued and reported, their file untouched. After a swap's move aside whose answer was lost, the aside says what
-  happened: there means it moved, and the rename alone lands; gone means it never did, and the move runs again. After
-  the rename onto the vacated name, the rename again (`rename(force = false)`; a refusal puts the original back).
+  what happened: empty means the delete went through and the rename alone finishes it; taken by the very entry the
+  landing noted right before its delete (`interrupted_landing::NameHeld`: kind, size, mtime, and node id, from one stat
+  in `clear_the_way`) means it never reached the server, and the way is cleared again; taken by anything else means it
+  went through and someone saved there since (`#576`). After a delete that went through, ❗ the rename alone,
+  `rename(force = false)`, ❌ never another delete: a file someone put at the name during the outage makes it refuse,
+  and the new bytes are rescued and reported, their file untouched. After a swap's move aside whose answer was lost,
+  the aside says what happened: there means it moved, and the rename alone lands; gone means it never did, and the move
+  runs again. After the rename onto the vacated name, the rename again (`rename(force = false)`; a refusal puts the
+  original back).
 - **The temp is gone**: the landing counts as DONE only on proof, all three of: nothing of ours discarded it (the
   landing notes every discard it asks for, which is why `land` never discards after a transport fault: on a late error
   the delete would reach a sibling's fresh session, find the landed temp gone, and the re-run would meet our own file as
@@ -2060,6 +2063,16 @@ shows (`CutOffLanding::resume`):
 - **Anything else** (a temp that isn't whole, a name that doesn't prove it) runs the file again, a swap's original put
   back at its name first (`run_again_with_the_original_home`), and a name someone else took meets the ordinary
   late-clash refusal (`DestinationExists`, their file untouched).
+
+**Decision/Why only a claimed name carries a note of what's at it.** A claimed name's landing EMPTIES the name before
+its rename, so after a lost delete reply a file at the name may be one someone created there afterwards, which the
+person never chose to replace. A swap never empties the name before the replacement is whole at it (the one-step
+replace, or the original moved aside first), so its resume can't meet a newcomer at a name we emptied: a whole temp
+after a cut-off one-step replace or move aside means nothing of ours happened, and what's at the name is the original,
+or a save over it during the outage. Replacing that save is the Overwrite's own window between the conflict and the
+landing, the same one a save during the copy falls into, and the outage only lengthens it. Closing that window would
+need the conflict's view of the original carried down to every swap site and checked at every landing, ❌ not at the
+resume alone.
 
 A step of the settle that meets the transport again cuts the landing off again (bounded by `MAX_OUTAGES_PER_ITEM`); one
 that meets a refusal settles by the refusal rules. A Cancel, a give-up, or a drop that ends the wait AFTER a claimed

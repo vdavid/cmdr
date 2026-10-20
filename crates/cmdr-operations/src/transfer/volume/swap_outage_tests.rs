@@ -712,6 +712,102 @@ async fn a_stale_error_on_a_claimed_names_delete_keeps_the_temp_and_its_resume_l
     assert_eq!(temps_in(&inner, "/").await, Vec::<PathBuf>::new(), "no temp left");
 }
 
+/// What someone saved at a claimed name during the outage.
+const THEIRS: &[u8] = b"someone else's notes, saved during the outage";
+
+/// A claimed name's clearing delete went through and its reply was lost with
+/// the session; while the share was away, someone saved `theirs` at the name
+/// (dated `dated`, when given). Answers the destination and what the resume of
+/// the cut-off landing came to.
+async fn resume_after_someone_saved_at_the_cleared_name(
+    lane: &str,
+    theirs: &[u8],
+    dated: Option<u64>,
+) -> (Arc<InMemoryVolume>, Resumed) {
+    let engine = TestOperations::new();
+    let inner = Arc::new(InMemoryVolume::new("Naspolya"));
+    inner.create_file(Path::new("/notes.txt"), b"").await.unwrap();
+    inner.set_modified_at(Path::new("/notes.txt"), Some(1_700_000_000));
+    let nas = OutageVolume::wrap(Arc::clone(&inner), lane);
+    nas.drop_at_delete_of(Path::new("/notes.txt"), RenameDrop::AfterTheServerPerformsIt);
+    let dest = Arc::clone(&nas) as Arc<dyn Volume>;
+    let state = Arc::new(
+        engine
+            .new_operation_state(Duration::from_millis(50))
+            .with_journal_volumes("swap-outage-source".into(), NAS_ID.into())
+            .with_in_flight_ledger(Ledger::for_test()),
+    );
+    let claimed = state.scope().host().announce_on(&*dest, Path::new("/notes.txt"));
+    let staged = StagedWrite::begin(&state, &*dest, claimed, WriteStaging::StageOntoClaimedName);
+    let temp = staged.target().to_path_buf();
+    inner.create_file(&temp, NEW).await.unwrap();
+
+    let Err(LandingError::CutOff(cut_off)) = staged.commit(&dest, NEW.len() as u64).await else {
+        panic!("a drop at the clearing delete cuts the landing off");
+    };
+    inner.create_file(Path::new("/notes.txt"), theirs).await.unwrap();
+    if let Some(dated) = dated {
+        inner.set_modified_at(Path::new("/notes.txt"), Some(dated));
+    }
+    nas.become_reachable();
+    dest.attempt_reconnect().await.expect("the share is back");
+
+    let resumed = cut_off.resume(&dest, None).await;
+    assert_eq!(temps_in(&inner, "/").await, Vec::<PathBuf>::new(), "no temp left");
+    (inner, resumed)
+}
+
+/// ❗ `#576`: a resume never deletes what appeared during the outage. The name
+/// is taken again when the share is back, but by a file that isn't what the
+/// landing was about to delete, so the delete went through and this is someone
+/// else's save: the rename alone runs, refuses, and our bytes are kept beside
+/// their file under ` (recovered)`.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_file_saved_at_a_claimed_name_during_the_outage_is_never_cleared_by_the_resume() {
+    let (inner, resumed) =
+        resume_after_someone_saved_at_the_cleared_name("claimed-name-saved-during-outage", THEIRS, None).await;
+
+    assert_eq!(
+        read_all(&*inner, Path::new("/notes.txt")).await.as_deref(),
+        Some(THEIRS),
+        "❗ their file stays at the name"
+    );
+    assert!(
+        matches!(&resumed, Resumed::Failed(failure) if failure.aftermath.is_some()),
+        "the landing reports where our bytes went"
+    );
+    assert_eq!(
+        read_all(&*inner, Path::new("/notes (recovered).txt")).await.as_deref(),
+        Some(NEW),
+        "our bytes are kept beside it"
+    );
+}
+
+/// The same when their file is empty, like the placeholder our delete took:
+/// its date tells the two apart.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn an_empty_file_saved_at_a_claimed_name_is_told_apart_from_the_placeholder_by_its_date() {
+    let (inner, resumed) = resume_after_someone_saved_at_the_cleared_name(
+        "claimed-name-empty-save-during-outage",
+        b"",
+        Some(1_700_000_100),
+    )
+    .await;
+
+    let theirs = inner
+        .get_metadata(Path::new("/notes.txt"))
+        .await
+        .expect("❗ their file stays");
+    assert_eq!(theirs.size, Some(0));
+    assert_eq!(theirs.modified_at, Some(1_700_000_100), "and it's theirs, untouched");
+    assert!(matches!(resumed, Resumed::Failed(_)), "nothing landed at their name");
+    assert_eq!(
+        read_all(&*inner, Path::new("/notes (recovered).txt")).await.as_deref(),
+        Some(NEW),
+        "our bytes are kept beside it"
+    );
+}
+
 /// (g) A Cancel during the wait after the move aside went through: the cancel
 /// is reported as one, the original stays whole at its aside, recorded, and the
 /// share's next arrival puts it back at its name.

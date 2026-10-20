@@ -17,9 +17,11 @@
 //! picks up where the cut left off: after a claimed name's clearing delete went
 //! through (the temp is then the only copy at the destination), the rename
 //! alone once the name is empty (a file someone put there meanwhile makes it
-//! refuse, and is never deleted), the clearing delete again while the name is
-//! still taken; after a swap's move aside went through, the rename alone, and
-//! the move again when the aside isn't there.
+//! refuse, and is never deleted), the clearing delete again only while the name
+//! still holds the very entry the landing noted before its delete
+//! ([`NameHeld`]; anything else there is a save that came after our delete, so
+//! the rename alone); after a swap's move aside went through, the rename alone,
+//! and the move again when the aside isn't there.
 //!
 //! **The proof a gone temp was ours.** The temp is a `.cmdr-tmp-<uuid>` name
 //! this operation minted, and only two things ever take it away: our landing
@@ -66,6 +68,7 @@
 use std::path::Path;
 use std::sync::Arc;
 
+use cmdr_fs::entry::FileEntry;
 use cmdr_fs::metadata::CarriedMetadata;
 use cmdr_fs::volume::{StreamWritten, Volume, VolumeError, VolumeReadStream, WriteMode};
 
@@ -100,6 +103,39 @@ impl WriteStamp {
         Self {
             carried,
             modified: stream.modified_at(),
+        }
+    }
+}
+
+/// What stood at a claimed name as the landing set out to clear it, so the
+/// settle of a clearing delete whose reply was lost can tell "it never reached
+/// the server" (the same entry is still there) from "it went through, and
+/// someone saved at the name during the outage" (anything else, which the
+/// settle ❌ never clears).
+///
+/// Both stats ask the SAME backend about the SAME name the same way
+/// (`get_metadata`), so they report the same fields, and a coarse clock
+/// truncates both alike: whole-struct equality is exact, and a field a backend
+/// never reports is `None` on both sides. What it can miss is a same-size save
+/// inside one tick of the destination's clock (whole seconds) on a backend with
+/// no node id, which needs our delete AND their save inside that one second.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) struct NameHeld {
+    is_directory: bool,
+    is_symlink: bool,
+    size: Option<u64>,
+    modified_at: Option<u64>,
+    inode: Option<u64>,
+}
+
+impl NameHeld {
+    pub(super) fn of(entry: &FileEntry) -> Self {
+        Self {
+            is_directory: entry.is_directory,
+            is_symlink: entry.is_symlink,
+            size: entry.size,
+            modified_at: entry.modified_at,
+            inode: entry.inode,
         }
     }
 }
