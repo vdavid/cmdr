@@ -10,6 +10,7 @@ mod blocked_items_tests;
 mod case_twin_tests;
 mod control_tests;
 mod lifecycle_tests;
+mod page_error_tests;
 mod resume_tests;
 mod root_reach_tests;
 mod test_support;

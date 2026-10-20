@@ -260,7 +260,8 @@ pub fn verify_snapshot(
 /// Resolve the state the original op lands in from the run tally. `before` is the
 /// state the op held when this run started.
 ///
-/// A run that STOPPED (`stopped`: a deliberate cancel) with nothing reversed leaves
+/// A run that STOPPED (`stopped`: a cancel, or a journal page it couldn't read, so
+/// it never saw the rest of the op) with nothing reversed leaves
 /// the op as it found it: a clean retry, or still partial when an earlier run
 /// already reversed some of it. A run that stopped after reversing something is
 /// partial. A run that attempted every item resolves by outcome: no skips ⇒
@@ -373,6 +374,11 @@ pub async fn execute_rollback(
 
     let mut acc = RunAcc::default();
     let mut canceled = false;
+    // A page the journal couldn't hand over (busy past its timeout, an undecodable
+    // row, an I/O error). The run never saw what lies past it, so it ends like a
+    // stop: keep what it reversed, leave the rest for a retry, never claim the op is
+    // fully undone.
+    let mut read_failed = false;
 
     let conn = match open_read_connection(writer.db_path()) {
         Ok(c) => c,
@@ -417,6 +423,7 @@ pub async fn execute_rollback(
             Ok(p) => p,
             Err(e) => {
                 log::warn!(target: "operation_log", "rollback: page read failed: {e}");
+                read_failed = true;
                 break;
             }
         };
@@ -477,10 +484,11 @@ pub async fn execute_rollback(
     stand.announce(runner, None);
 
     // Phase two: the buffered directory rows, deepest path first (so a child dir is
-    // removed before its parent). Skipped entirely if the run was canceled — and it
+    // removed before its parent). Skipped entirely if the run was canceled or a page
+    // failed to read (the unread files may still sit inside these dirs) — and it
     // polls the stop itself, so a reversal of a directory-heavy op stops on the
     // click rather than at the end of the sweep.
-    if !canceled {
+    if !canceled && !read_failed {
         deferred_dirs.sort_by_key(|u| std::cmp::Reverse(u.source_path.components().count()));
         for unit in &deferred_dirs {
             if runner.should_stop() {
@@ -493,14 +501,17 @@ pub async fn execute_rollback(
     }
     acc.flush(writer, inverse_op_id, &original.op_id);
 
-    let inv_status = if canceled {
+    let inv_status = if read_failed {
+        ExecutionStatus::Failed
+    } else if canceled {
         ExecutionStatus::Canceled
     } else {
         ExecutionStatus::Done
     };
     finalize_inverse(writer, inverse_op_id, inv_kind, inv_status, acc.totals(original));
 
-    let final_state = resolve_final_state(acc.reversed, acc.skipped, canceled, original.rollback_state);
+    let stopped = canceled || read_failed;
+    let final_state = resolve_final_state(acc.reversed, acc.skipped, stopped, original.rollback_state);
     if let Err(e) = writer.set_rollback_state(&original.op_id, final_state, None) {
         log::warn!(target: "operation_log", "rollback: resolve original state failed: {e}");
     }

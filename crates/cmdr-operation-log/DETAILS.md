@@ -729,9 +729,14 @@ before returning the typed error, so a retry isn't wedged.
 `execute_rollback` resolves the original op at the end (`resolve_final_state`, given the state the op started in):
 `RolledBack` (nothing skipped), `PartiallyRolledBack` (any skip, even if nothing could be reversed; Finish retries
 them). A run that STOPPED with nothing reversed leaves the op as it found it: `Rollbackable`, or still
-`PartiallyRolledBack` when an earlier run reversed some of it. ❌ A run over a partial op never resolves `RolledBack` on
-an empty pass: finding nothing to retry proves nothing came back. It marks the original's items `rolled_back`/`skipped`
-and journals the inverse op's own item rows (reversed ⇒ `done`, skipped ⇒ `skipped`), which drive the reconcile.
+`PartiallyRolledBack` when an earlier run reversed some of it. A journal page that fails to read (busy past its timeout,
+an undecodable row, an I/O error) is a stop too: the run never saw what lies past it, so it skips the directory sweep
+(unread files may sit inside those dirs), finalizes the inverse `Failed`, and resolves like a cancel, keeping what it
+reversed. One bad row fails its whole page rather than becoming a per-item skip: a newer build's token can't reach this
+build (a downgrade is refused), and a skip would need a new `SkipReason` for a row with no readable path. ❌ A run over
+a partial op never resolves `RolledBack` on an empty pass: finding nothing to retry proves nothing came back. It marks
+the original's items `rolled_back`/`skipped` and journals the inverse op's own item rows (reversed ⇒ `done`, skipped ⇒
+`skipped`), which drive the reconcile.
 
 **Startup reconcile** (`reconcile_rolling_back_on_open`, called by `OperationLog::open` before the journal is reachable)
 resolves any op a crash left `rolling_back`: from its unfinalized inverse op's recorded outcomes (any `done` item ⇒
