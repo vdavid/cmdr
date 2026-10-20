@@ -195,7 +195,7 @@
   "@servers.refusal.localNetworkHint": {
     "sourceHash": "baa1753"
   },
-  "servers.refusal.certificateUnapproved": "Cmdr hasn’t trusted the certificate for {host} yet.",
+  "servers.refusal.certificateUnapproved": "A Cmdr még nem tekinti megbízhatónak {host} tanúsítványát.",
   "@servers.refusal.certificateUnapproved": {
     "sourceHash": "e65f6af"
   },
@@ -700,35 +700,35 @@
   "@servers.hostKey.trustNewKey": {
     "sourceHash": "772baac"
   },
-  "servers.certificate.firstContactTitle": "macOS doesn’t know the certificate for {host}",
+  "servers.certificate.firstContactTitle": "A macOS nem ismeri {host} tanúsítványát",
   "@servers.certificate.firstContactTitle": {
     "sourceHash": "ca0b44a"
   },
-  "servers.certificate.firstContactBody": "Home servers often make their own certificate. Check the fingerprint below against the one your server shows, then trust it.",
+  "servers.certificate.firstContactBody": "Az otthoni szerverek gyakran maguk készítik a tanúsítványukat. Vesd össze az alábbi ujjlenyomatot azzal, amit a szervered mutat, majd állítsd be megbízhatóként.",
   "@servers.certificate.firstContactBody": {
     "sourceHash": "270cbf1"
   },
-  "servers.certificate.changedTitle": "The certificate for {host} changed",
+  "servers.certificate.changedTitle": "{host} tanúsítványa megváltozott",
   "@servers.certificate.changedTitle": {
     "sourceHash": "fc682be"
   },
-  "servers.certificate.changedBody": "This can mean the server got a new certificate, or that something is sitting between you and it. Check the fingerprint with the server’s owner before trusting it.",
+  "servers.certificate.changedBody": "Ez jelentheti azt, hogy a szerver új tanúsítványt kapott, de azt is, hogy valami beékelődött közéd és a szerver közé. Egyeztesd az ujjlenyomatot a szerver tulajdonosával, mielőtt megbízhatóként beállítanád.",
   "@servers.certificate.changedBody": {
     "sourceHash": "07a58b8"
   },
-  "servers.certificate.changedDisclosure": "I’ve checked it",
+  "servers.certificate.changedDisclosure": "Ellenőriztem",
   "@servers.certificate.changedDisclosure": {
     "sourceHash": "4051d39"
   },
-  "servers.certificate.fingerprintLabel": "Certificate fingerprint (SHA-256)",
+  "servers.certificate.fingerprintLabel": "A tanúsítvány ujjlenyomata (SHA-256)",
   "@servers.certificate.fingerprintLabel": {
     "sourceHash": "f965130"
   },
-  "servers.certificate.trustAndConnect": "Trust and connect",
+  "servers.certificate.trustAndConnect": "Beállítás megbízhatóként és csatlakozás",
   "@servers.certificate.trustAndConnect": {
     "sourceHash": "0cce535"
   },
-  "servers.certificate.trustNewCertificate": "Trust the new certificate",
+  "servers.certificate.trustNewCertificate": "Az új tanúsítvány beállítása megbízhatóként",
   "@servers.certificate.trustNewCertificate": {
     "sourceHash": "4553830"
   },
