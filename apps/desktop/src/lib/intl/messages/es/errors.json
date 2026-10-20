@@ -671,6 +671,18 @@
   "@errors.listing.ambiguousName.suggestion": {
     "sourceHash": "55b960c"
   },
+  "errors.listing.duplicateName.title": "Hay más de un elemento con este nombre",
+  "@errors.listing.duplicateName.title": {
+    "sourceHash": "3ce4c53"
+  },
+  "errors.listing.duplicateName.explanation": "`{path}` corresponde a más de un elemento de este dispositivo. Los teléfonos y las cámaras pueden guardar varios archivos con exactamente el mismo nombre en una misma carpeta, así que Cmdr no ha elegido ninguno por ti.",
+  "@errors.listing.duplicateName.explanation": {
+    "sourceHash": "cea78b8"
+  },
+  "errors.listing.duplicateName.suggestion": "Esto es lo que puedes probar:\n- En el propio dispositivo, renómbralos para que cada uno tenga su propio nombre\n- Luego vuelve a abrir esta carpeta",
+  "@errors.listing.duplicateName.suggestion": {
+    "sourceHash": "92daf88"
+  },
   "errors.listing.ioSerious.title": "No se ha podido leer esta carpeta",
   "@errors.listing.ioSerious.title": {
     "sourceHash": "af30f30"
@@ -2136,6 +2148,10 @@
   "errors.volume.ambiguousName": "Más de un elemento del servidor coincide con “{path}”, así que Cmdr no ha elegido ninguno. Elígelo desde su carpeta.",
   "@errors.volume.ambiguousName": {
     "sourceHash": "0f0e74d"
+  },
+  "errors.volume.duplicateName": "“{path}” corresponde a más de un elemento del dispositivo, así que Cmdr no ha elegido ninguno. En el propio dispositivo, renómbralos para que cada uno tenga su propio nombre, y luego inténtalo de nuevo.",
+  "@errors.volume.duplicateName": {
+    "sourceHash": "cda05a9"
   },
   "errors.volume.staleDestinationHandle": "Cmdr ha perdido la pista de la carpeta de destino en el dispositivo. Ábrela de nuevo y vuelve a intentarlo.",
   "@errors.volume.staleDestinationHandle": {

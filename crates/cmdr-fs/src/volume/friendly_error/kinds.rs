@@ -255,6 +255,21 @@ pub(super) fn ambiguous_name(path_display: &str, raw_detail: String) -> ListingE
     }
 }
 
+/// Two siblings on a device carry exactly this name (MTP, #523) and the backend
+/// refused to pick. Renaming one on the device is the fix, so no retry hint.
+pub(super) fn duplicate_name(path_display: &str, raw_detail: String) -> ListingError {
+    ListingError {
+        category: ErrorCategory::NeedsAction,
+        reason: ListingErrorReason::DuplicateName {
+            path: path_display.to_string(),
+        },
+        provider: None,
+        action_kind: None,
+        retry_hint: false,
+        raw_detail,
+    }
+}
+
 /// The file sits in cold storage (S3 Glacier) and can't be read until it's
 /// restored. Retrying changes nothing until then, so no retry hint.
 pub(super) fn cold_storage(path_display: &str, raw_detail: String) -> ListingError {

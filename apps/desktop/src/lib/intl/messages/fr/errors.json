@@ -671,6 +671,18 @@
   "@errors.listing.ambiguousName.suggestion": {
     "sourceHash": "55b960c"
   },
+  "errors.listing.duplicateName.title": "Plusieurs éléments portent ce nom",
+  "@errors.listing.duplicateName.title": {
+    "sourceHash": "3ce4c53"
+  },
+  "errors.listing.duplicateName.explanation": "`{path}` désigne plusieurs éléments sur cet appareil. Les téléphones et les appareils photo peuvent garder plusieurs fichiers portant exactement le même nom dans un même dossier : Cmdr n’en a donc choisi aucun à votre place.",
+  "@errors.listing.duplicateName.explanation": {
+    "sourceHash": "cea78b8"
+  },
+  "errors.listing.duplicateName.suggestion": "Voici ce que vous pouvez essayer :\n- Sur l’appareil lui-même, renommez-les afin que chacun ait son propre nom\n- Ensuite, rouvrez ce dossier",
+  "@errors.listing.duplicateName.suggestion": {
+    "sourceHash": "92daf88"
+  },
   "errors.listing.ioSerious.title": "Lecture du dossier impossible",
   "@errors.listing.ioSerious.title": {
     "sourceHash": "af30f30"
@@ -2136,6 +2148,10 @@
   "errors.volume.ambiguousName": "Plusieurs éléments du serveur correspondent à « {path} » : Cmdr n’en a donc choisi aucun. Choisissez plutôt l’élément voulu dans son dossier.",
   "@errors.volume.ambiguousName": {
     "sourceHash": "0f0e74d"
+  },
+  "errors.volume.duplicateName": "« {path} » désigne plusieurs éléments sur l’appareil : Cmdr n’en a donc choisi aucun. Sur l’appareil lui-même, renommez-les afin que chacun ait son propre nom, puis réessayez.",
+  "@errors.volume.duplicateName": {
+    "sourceHash": "cda05a9"
   },
   "errors.volume.staleDestinationHandle": "Cmdr a perdu la trace du dossier de destination sur l’appareil. Ouvrez-le à nouveau, puis réessayez.",
   "@errors.volume.staleDestinationHandle": {

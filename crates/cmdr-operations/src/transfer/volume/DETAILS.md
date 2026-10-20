@@ -854,7 +854,7 @@ because the resolver is handed the entry's own path, an Overwrite's safe-replace
   So an ordinary copy pays nothing, and an accented one onto a share pays one listing of the parent per miss.
 - **Ambiguity is refused, never guessed.** Two look-alikes and a source spelled like neither is
   `VolumeError::AmbiguousName`, which a transfer maps to `WriteOperationError::DestinationExists` (the truth, with no
-  Retry that would ask again).
+  Retry that would ask again). A device's same-named siblings (`VolumeError::DuplicateName`, MTP) map the same way.
 - **A free name takes the destination's spelling; an existing one never does.** `NewName::Respell` asks
   `Volume::spell_new_name` for a copy's new entries (SMB, SFTP, and WebDAV compose, so a new name lands NFC;
   `../../../DETAILS.md` § "Look-alike names" has why); `NewName::Keep` is the same-volume move, which keeps the entry it

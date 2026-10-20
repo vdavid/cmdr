@@ -671,6 +671,18 @@
   "@errors.listing.ambiguousName.suggestion": {
     "sourceHash": "55b960c"
   },
+  "errors.listing.duplicateName.title": "Mehr als ein Objekt hat diesen Namen",
+  "@errors.listing.duplicateName.title": {
+    "sourceHash": "3ce4c53"
+  },
+  "errors.listing.duplicateName.explanation": "Unter `{path}` gibt es auf diesem Gerät mehr als ein Objekt. Telefone und Kameras können in einem Ordner mehrere Dateien mit genau demselben Namen haben, deshalb hat Cmdr keines für dich ausgewählt.",
+  "@errors.listing.duplicateName.explanation": {
+    "sourceHash": "cea78b8"
+  },
+  "errors.listing.duplicateName.suggestion": "Das kannst du versuchen:\n- Benenne die Objekte direkt auf dem Gerät um, sodass jedes einen eigenen Namen hat\n- Öffne diesen Ordner danach noch einmal",
+  "@errors.listing.duplicateName.suggestion": {
+    "sourceHash": "92daf88"
+  },
   "errors.listing.ioSerious.title": "Dieser Ordner ließ sich nicht lesen",
   "@errors.listing.ioSerious.title": {
     "sourceHash": "af30f30"
@@ -2136,6 +2148,10 @@
   "errors.volume.ambiguousName": "Mehr als ein Objekt auf dem Server passt zu „{path}“, deshalb hat Cmdr keines ausgewählt. Wähle es stattdessen in seinem Ordner aus.",
   "@errors.volume.ambiguousName": {
     "sourceHash": "0f0e74d"
+  },
+  "errors.volume.duplicateName": "Unter „{path}“ gibt es auf dem Gerät mehr als ein Objekt, deshalb hat Cmdr keines ausgewählt. Benenne die Objekte direkt auf dem Gerät um, sodass jedes einen eigenen Namen hat, und versuche es dann noch einmal.",
+  "@errors.volume.duplicateName": {
+    "sourceHash": "cda05a9"
   },
   "errors.volume.staleDestinationHandle": "Cmdr hat den Zielordner auf dem Gerät aus den Augen verloren. Öffne ihn noch einmal und versuche es dann erneut.",
   "@errors.volume.staleDestinationHandle": {

@@ -671,6 +671,18 @@
   "@errors.listing.ambiguousName.suggestion": {
     "sourceHash": "55b960c"
   },
+  "errors.listing.duplicateName.title": "Több elemnek is ez a neve",
+  "@errors.listing.duplicateName.title": {
+    "sourceHash": "3ce4c53"
+  },
+  "errors.listing.duplicateName.explanation": "Ez az útvonal több elemet is jelöl ezen az eszközön: `{path}`. A telefonok és a kamerák egy mappában több teljesen azonos nevű fájlt is tárolhatnak, ezért a Cmdr nem választott helyetted.",
+  "@errors.listing.duplicateName.explanation": {
+    "sourceHash": "cea78b8"
+  },
+  "errors.listing.duplicateName.suggestion": "Ezeket próbálhatod:\n- Magán az eszközön nevezd át őket úgy, hogy mindegyiknek saját neve legyen\n- Utána nyisd meg újra ezt a mappát",
+  "@errors.listing.duplicateName.suggestion": {
+    "sourceHash": "92daf88"
+  },
   "errors.listing.ioSerious.title": "Nem sikerült beolvasni ezt a mappát",
   "@errors.listing.ioSerious.title": {
     "sourceHash": "af30f30"
@@ -2136,6 +2148,10 @@
   "errors.volume.ambiguousName": "Több elem is illik erre az útvonalra a szerveren: „{path}”, ezért a Cmdr nem választott. Válaszd ki inkább a mappájából.",
   "@errors.volume.ambiguousName": {
     "sourceHash": "0f0e74d"
+  },
+  "errors.volume.duplicateName": "Ez az útvonal több elemet is jelöl az eszközön: „{path}”, ezért a Cmdr nem választott. Magán az eszközön nevezd át őket úgy, hogy mindegyiknek saját neve legyen, majd próbáld újra.",
+  "@errors.volume.duplicateName": {
+    "sourceHash": "cda05a9"
   },
   "errors.volume.staleDestinationHandle": "A Cmdr már nem találja a célmappát az eszközön. Nyisd meg még egyszer, majd próbáld újra.",
   "@errors.volume.staleDestinationHandle": {

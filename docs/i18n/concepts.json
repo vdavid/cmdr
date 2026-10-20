@@ -2072,7 +2072,7 @@
     "distinct": ["rename"],
     "en": "Name",
     "match": ["name", "names", "filename", "filenames"],
-    "notMatch": ["your name or email", "what name this", "host name"],
+    "notMatch": ["your name or email", "what name this", "host name", "names more than one item"],
     "sense": "A file's name; also the Name column header and a saved server's name field."
   },
   "nas": {

@@ -671,6 +671,18 @@
   "@errors.listing.ambiguousName.suggestion": {
     "sourceHash": "55b960c"
   },
+  "errors.listing.duplicateName.title": "Mer än ett objekt har det här namnet",
+  "@errors.listing.duplicateName.title": {
+    "sourceHash": "3ce4c53"
+  },
+  "errors.listing.duplicateName.explanation": "`{path}` pekar på mer än ett objekt på den här enheten. Telefoner och kameror kan ha flera filer med exakt samma namn i en och samma mapp, så Cmdr valde inget åt dig.",
+  "@errors.listing.duplicateName.explanation": {
+    "sourceHash": "cea78b8"
+  },
+  "errors.listing.duplicateName.suggestion": "Så här kan du prova:\n- Byt namn på dem direkt på enheten så att vart och ett får ett eget namn\n- Öppna sedan den här mappen igen",
+  "@errors.listing.duplicateName.suggestion": {
+    "sourceHash": "92daf88"
+  },
   "errors.listing.ioSerious.title": "Det gick inte att läsa den här mappen",
   "@errors.listing.ioSerious.title": {
     "sourceHash": "af30f30"
@@ -2136,6 +2148,10 @@
   "errors.volume.ambiguousName": "Mer än ett objekt på servern matchar ”{path}”, så Cmdr valde inget. Välj det i mappen där det ligger i stället.",
   "@errors.volume.ambiguousName": {
     "sourceHash": "0f0e74d"
+  },
+  "errors.volume.duplicateName": "”{path}” pekar på mer än ett objekt på enheten, så Cmdr valde inget. Byt namn på dem direkt på enheten så att vart och ett får ett eget namn, och försök sedan igen.",
+  "@errors.volume.duplicateName": {
+    "sourceHash": "cda05a9"
   },
   "errors.volume.staleDestinationHandle": "Cmdr tappade koll på målmappen på enheten. Öppna den igen och försök på nytt.",
   "@errors.volume.staleDestinationHandle": {

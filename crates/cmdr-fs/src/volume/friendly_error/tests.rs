@@ -314,6 +314,14 @@ fn volume_error_variants_map_correctly() {
             |r| matches!(r, ListingErrorReason::AmbiguousName { .. }),
         ),
         (
+            // Two siblings on a device carry exactly this name (#523), so the
+            // backend refused to pick: the same refusal, its own words.
+            VolumeError::DuplicateName("x".into()),
+            ErrorCategory::NeedsAction,
+            false,
+            |r| matches!(r, ListingErrorReason::DuplicateName { .. }),
+        ),
+        (
             VolumeError::IoError {
                 message: "x".into(),
                 raw_os_error: None,
@@ -389,6 +397,10 @@ fn typed_variants_populate_path_param() {
     match listing_error_from_volume_error(&VolumeError::AmbiguousName("x".into()), path).reason {
         ListingErrorReason::AmbiguousName { path } => assert_eq!(path, want),
         other => panic!("AmbiguousName should carry a path, got {other:?}"),
+    }
+    match listing_error_from_volume_error(&VolumeError::DuplicateName("x".into()), path).reason {
+        ListingErrorReason::DuplicateName { path } => assert_eq!(path, want),
+        other => panic!("DuplicateName should carry a path, got {other:?}"),
     }
 }
 

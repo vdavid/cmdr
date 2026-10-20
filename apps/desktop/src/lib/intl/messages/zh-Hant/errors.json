@@ -671,6 +671,18 @@
   "@errors.listing.ambiguousName.suggestion": {
     "sourceHash": "55b960c"
   },
+  "errors.listing.duplicateName.title": "有不只一個項目使用這個名稱",
+  "@errors.listing.duplicateName.title": {
+    "sourceHash": "3ce4c53"
+  },
+  "errors.listing.duplicateName.explanation": "`{path}` 對應到這個裝置上的不只一個項目。手機和相機允許同一個資料夾裡有多個名稱完全相同的檔案，所以 Cmdr 沒有替你挑選其中一個。",
+  "@errors.listing.duplicateName.explanation": {
+    "sourceHash": "cea78b8"
+  },
+  "errors.listing.duplicateName.suggestion": "可以這樣試試：\n- 直接在裝置上幫它們改名，讓每一項都有自己的名稱\n- 然後重新開啟這個資料夾",
+  "@errors.listing.duplicateName.suggestion": {
+    "sourceHash": "92daf88"
+  },
   "errors.listing.ioSerious.title": "無法讀取這個資料夾",
   "@errors.listing.ioSerious.title": {
     "sourceHash": "af30f30"
@@ -2136,6 +2148,10 @@
   "errors.volume.ambiguousName": "伺服器上有不只一個項目符合「{path}」，所以 Cmdr 沒有替你選。請到它所在的資料夾裡選擇。",
   "@errors.volume.ambiguousName": {
     "sourceHash": "0f0e74d"
+  },
+  "errors.volume.duplicateName": "裝置上有不只一個項目對應到「{path}」，所以 Cmdr 沒有替你選。請直接在裝置上幫它們改名，讓每一項都有自己的名稱，然後再試一次。",
+  "@errors.volume.duplicateName": {
+    "sourceHash": "cda05a9"
   },
   "errors.volume.staleDestinationHandle": "Cmdr 跟丟了裝置上的目標資料夾。請再進去一次，然後重試。",
   "@errors.volume.staleDestinationHandle": {

@@ -1014,6 +1014,24 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
+  "errors.listing.duplicateName.title": "More than one item has this name",
+  "@errors.listing.duplicateName.title": {
+    "description": "Title of the listing error panel when a path on a connected phone or camera (over USB) names two or more items with exactly the same name in one folder, which these devices allow, so Cmdr refused to guess which one was meant. Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.listing.duplicateName.explanation": "`{path}` names more than one item on this device. Phones and cameras can keep several files with exactly the same name in one folder, so Cmdr didn’t pick one for you.",
+  "@errors.listing.duplicateName.explanation": {
+    "description": "Body of the listing error panel for a path that names several same-named items on a phone or camera. Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path; here it leads the sentence inside backticks. \"This device\" is the connected phone or camera. \"Cmdr\" is the app name; do NOT translate it.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.listing.duplicateName.suggestion": "Here’s what to try:\n- On the device itself, rename them so each one has its own name\n- Then open this folder again",
+  "@errors.listing.duplicateName.suggestion": {
+    "description": "Recovery suggestion for a path that names several same-named items on a phone or camera. Markdown bullet list. \"On the device itself\" means on the phone or in the camera's own menus, since Cmdr can't tell them apart to rename one.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "errors.listing.ioSerious.title": "Couldn’t read this folder",
   "errors.listing.ioSerious.explanation": "Cmdr ran into a problem with `{path}`: {osMessage}. This could be a temporary glitch or a sign that the disk or device needs attention.",
   "errors.listing.ioSerious.suggestion": "Here’s what to try:\n- Check that the disk or device is still connected\n- Try again\n- If this keeps happening, try running **Disk Utility > First Aid** on this volume",
@@ -3255,6 +3273,12 @@
   "errors.volume.ambiguousName": "More than one item on the server matches “{path}”, so Cmdr didn’t pick one. Choose it from its folder instead.",
   "@errors.volume.ambiguousName": {
     "description": "Shown when a path matches two or more items on a network server whose names look identical (they differ only in how accented letters are encoded, or in upper and lower case), so Cmdr refused to guess which one was meant. \"Choose it from its folder\" means open the containing folder and pick the item from the list. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path. Inline one-line message in a brief toast or under a name field. Plain text, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "screenshot": "mkdir-confirmation-too-long.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
+  },
+  "errors.volume.duplicateName": "“{path}” names more than one item on the device, so Cmdr didn’t pick one. On the device itself, rename them so each one has its own name, then try again.",
+  "@errors.volume.duplicateName": {
+    "description": "Shown when a path on a connected phone or camera (over USB) names two or more items with exactly the same name in one folder, which these devices allow, so Cmdr refused to guess which one was meant. \"On the device itself\" means on the phone or in the camera's own menus. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path. Inline one-line message in a brief toast or under a name field. Plain text, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "screenshot": "mkdir-confirmation-too-long.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
   },

@@ -671,6 +671,18 @@
   "@errors.listing.ambiguousName.suggestion": {
     "sourceHash": "55b960c"
   },
+  "errors.listing.duplicateName.title": "Có nhiều mục cùng mang tên này",
+  "@errors.listing.duplicateName.title": {
+    "sourceHash": "3ce4c53"
+  },
+  "errors.listing.duplicateName.explanation": "`{path}` trỏ tới nhiều mục trên thiết bị này. Điện thoại và máy ảnh có thể chứa nhiều tệp trùng tên hoàn toàn trong cùng một thư mục, nên Cmdr không tự chọn mục nào cho bạn.",
+  "@errors.listing.duplicateName.explanation": {
+    "sourceHash": "cea78b8"
+  },
+  "errors.listing.duplicateName.suggestion": "Bạn có thể thử:\n- Ngay trên thiết bị, đổi tên các mục đó để mỗi mục có một tên riêng\n- Sau đó mở lại thư mục này",
+  "@errors.listing.duplicateName.suggestion": {
+    "sourceHash": "92daf88"
+  },
   "errors.listing.ioSerious.title": "Không đọc được thư mục này",
   "@errors.listing.ioSerious.title": {
     "sourceHash": "af30f30"
@@ -2136,6 +2148,10 @@
   "errors.volume.ambiguousName": "Có nhiều mục trên máy chủ khớp với “{path}”, nên Cmdr không tự chọn mục nào. Hãy mở thư mục chứa nó rồi chọn ở đó.",
   "@errors.volume.ambiguousName": {
     "sourceHash": "0f0e74d"
+  },
+  "errors.volume.duplicateName": "“{path}” trỏ tới nhiều mục trên thiết bị, nên Cmdr không tự chọn mục nào. Hãy đổi tên các mục đó ngay trên thiết bị để mỗi mục có một tên riêng, rồi thử lại.",
+  "@errors.volume.duplicateName": {
+    "sourceHash": "cda05a9"
   },
   "errors.volume.staleDestinationHandle": "Cmdr đã mất dấu thư mục đích trên thiết bị. Hãy mở lại thư mục đó, rồi thử lại.",
   "@errors.volume.staleDestinationHandle": {

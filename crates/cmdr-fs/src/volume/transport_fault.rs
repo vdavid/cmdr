@@ -67,6 +67,7 @@ impl VolumeError {
             | Self::ColdStorage(_) // archived until someone restores it
             | Self::SourceChanged(_) // a new version is there; copying it is the person's call
             | Self::AmbiguousName(_) // two stored names fit; asking again asks the same question
+            | Self::DuplicateName(_) // two siblings share the name until someone renames one
             | Self::SignatureInvalid(_) // a refused reply, and a possible sign of tampering
             | Self::IoError { raw_os_error: None, .. } // nothing to classify on
             | Self::NeedsPassword { .. }

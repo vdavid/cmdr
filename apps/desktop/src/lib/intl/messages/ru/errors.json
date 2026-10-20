@@ -671,6 +671,18 @@
   "@errors.listing.ambiguousName.suggestion": {
     "sourceHash": "55b960c"
   },
+  "errors.listing.duplicateName.title": "Это имя есть у нескольких объектов",
+  "@errors.listing.duplicateName.title": {
+    "sourceHash": "3ce4c53"
+  },
+  "errors.listing.duplicateName.explanation": "Пути `{path}` на этом устройстве соответствует несколько объектов. Телефоны и камеры позволяют хранить в одной папке несколько файлов с точно одинаковыми именами, поэтому Cmdr не выбрал объект за вас.",
+  "@errors.listing.duplicateName.explanation": {
+    "sourceHash": "cea78b8"
+  },
+  "errors.listing.duplicateName.suggestion": "Что можно сделать:\n- Переименуйте объекты на самом устройстве, чтобы у каждого было свое имя\n- Затем снова откройте эту папку",
+  "@errors.listing.duplicateName.suggestion": {
+    "sourceHash": "92daf88"
+  },
   "errors.listing.ioSerious.title": "Не удалось прочитать папку",
   "@errors.listing.ioSerious.title": {
     "sourceHash": "af30f30"
@@ -2136,6 +2148,10 @@
   "errors.volume.ambiguousName": "На сервере несколько объектов соответствуют «{path}», поэтому Cmdr ничего не выбрал. Выберите объект в его папке.",
   "@errors.volume.ambiguousName": {
     "sourceHash": "0f0e74d"
+  },
+  "errors.volume.duplicateName": "На устройстве несколько объектов соответствуют «{path}», поэтому Cmdr ничего не выбрал. Переименуйте объекты на самом устройстве, чтобы у каждого было свое имя, и повторите попытку.",
+  "@errors.volume.duplicateName": {
+    "sourceHash": "cda05a9"
   },
   "errors.volume.staleDestinationHandle": "Cmdr потерял связь с целевой папкой на устройстве. Откройте папку снова и повторите попытку.",
   "@errors.volume.staleDestinationHandle": {

@@ -121,13 +121,22 @@ pub enum VolumeError {
     /// A path names more than one stored entry, so the backend refused to pick
     /// one. Carries the path as it was given.
     ///
-    /// Two backends raise it: SMB's [`Volume::find_stored_spelling`](super::Volume::find_stored_spelling),
-    /// for a path that matches several entries once Unicode form and case are set
-    /// aside and none exactly (ERR-VETBX), and MTP, for any op on a name two
-    /// siblings share (PTP allows same-named files in one folder).
+    /// SMB's [`Volume::find_stored_spelling`](super::Volume::find_stored_spelling)
+    /// raises it for a path that matches several entries once Unicode form and
+    /// case are set aside and none exactly (ERR-VETBX). Its device twin is
+    /// [`DuplicateName`](Self::DuplicateName).
     /// ❌ Never resolve it by choosing a candidate: on a delete or an overwrite the
     /// wrong twin is someone's file.
     AmbiguousName(String),
+    /// Two or more siblings carry EXACTLY this name, so the backend refused to
+    /// pick one. Carries the path as it was given.
+    ///
+    /// MTP raises it for any op on a name two siblings share (PTP lets a phone or
+    /// camera hold same-named files in one folder, #523). Handled exactly like
+    /// [`AmbiguousName`](Self::AmbiguousName); its own variant only because the
+    /// person reads a different cause and fix (rename one on the device).
+    /// ❌ Never resolve it by choosing a twin.
+    DuplicateName(String),
     /// The destination folder's cached handle was stale and the backend rejected
     /// a write into it (MTP: the device re-keyed its object handles since the
     /// folder was last listed). The backend has already refreshed its cache, so
@@ -224,6 +233,7 @@ impl ErrorLogText for VolumeError {
             Self::NotADirectory(path) => ("Not a directory: ", LogPrivate::path(path)),
             Self::DeletePending(path) => ("Delete pending: ", LogPrivate::path(path)),
             Self::AmbiguousName(path) => ("More than one stored name matches: ", LogPrivate::path(path)),
+            Self::DuplicateName(path) => ("Same-named siblings: ", LogPrivate::path(path)),
             Self::StaleDestinationHandle(path) => ("Destination folder handle was stale: ", LogPrivate::dir_path(path)),
             Self::ColdStorage(path) => (
                 "In cold storage, needs a restore before reading: ",

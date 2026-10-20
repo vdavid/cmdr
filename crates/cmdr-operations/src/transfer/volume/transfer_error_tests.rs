@@ -82,12 +82,18 @@ fn a_source_name_two_items_answer_to_is_not_a_taken_destination() {
     let err = map_volume_error(
         "/DCIM/IMG_1.JPG",
         PathRole::Source,
-        VolumeError::AmbiguousName("/DCIM/IMG_1.JPG".to_string()),
+        VolumeError::DuplicateName("/DCIM/IMG_1.JPG".to_string()),
     );
     assert!(
         !matches!(err, WriteOperationError::DestinationExists { .. }),
         "a source refusal must not read as a taken destination, got {err:?}"
     );
+    let device_dest = map_volume_error(
+        "/ctx",
+        PathRole::Destination,
+        VolumeError::DuplicateName("/DCIM/IMG_1.JPG".to_string()),
+    );
+    assert!(matches!(device_dest, WriteOperationError::DestinationExists { path } if path == "/DCIM/IMG_1.JPG"));
     let dest = map_volume_error(
         "/ctx",
         PathRole::Destination,

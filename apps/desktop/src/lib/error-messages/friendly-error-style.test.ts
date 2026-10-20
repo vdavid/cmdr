@@ -119,6 +119,7 @@ const LISTING_REASONS: ListingErrorReason[] = [
   { reason: 'coldStorage', path: PATH },
   { reason: 'invalidName', path: PATH },
   { reason: 'ambiguousName', path: PATH },
+  { reason: 'duplicateName', path: PATH },
   { reason: 'ioSerious', path: PATH, osMessage: 'something went wrong' },
   { reason: 'isADirectory', path: PATH },
   { reason: 'archiveUnreadable' },

@@ -142,6 +142,7 @@ pub fn listing_error_from_volume_error(err: &VolumeError, path: &Path) -> Listin
         VolumeError::InvalidName(_) => kinds::invalid_name(&path_display, raw),
         VolumeError::DeletePending(_) => kinds::delete_pending(&path_display, raw),
         VolumeError::AmbiguousName(_) => kinds::ambiguous_name(&path_display, raw),
+        VolumeError::DuplicateName(_) => kinds::duplicate_name(&path_display, raw),
         VolumeError::ColdStorage(_) => kinds::cold_storage(&path_display, raw),
         // Write-only error (the MTP upload path's stale-handle signal); it never
         // reaches the listing pipeline. Mapped defensively to a not-found on the

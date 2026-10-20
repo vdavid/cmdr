@@ -10507,6 +10507,16 @@ export type ListingErrorReason =
       // The path the failure was about.
       path: string
     }
+  /**
+   *  `VolumeError::DuplicateName`: two or more siblings on a device carry
+   *  exactly this name, so nothing was opened. No retry hint: renaming one on
+   *  the device is the fix.
+   */
+  | {
+      reason: 'duplicateName'
+      // The path the failure was about.
+      path: string
+    }
   // An I/O failure the backend couldn't classify further.
   | {
       reason: 'ioSerious'
@@ -18373,14 +18383,25 @@ export type VolumeError =
    *  A path names more than one stored entry, so the backend refused to pick
    *  one. Carries the path as it was given.
    *
-   *  Two backends raise it: SMB's [`Volume::find_stored_spelling`](super::Volume::find_stored_spelling),
-   *  for a path that matches several entries once Unicode form and case are set
-   *  aside and none exactly (ERR-VETBX), and MTP, for any op on a name two
-   *  siblings share (PTP allows same-named files in one folder).
+   *  SMB's [`Volume::find_stored_spelling`](super::Volume::find_stored_spelling)
+   *  raises it for a path that matches several entries once Unicode form and
+   *  case are set aside and none exactly (ERR-VETBX). Its device twin is
+   *  [`DuplicateName`](Self::DuplicateName).
    *  ❌ Never resolve it by choosing a candidate: on a delete or an overwrite the
    *  wrong twin is someone's file.
    */
   | { type: 'ambiguousName'; data: string }
+  /**
+   *  Two or more siblings carry EXACTLY this name, so the backend refused to
+   *  pick one. Carries the path as it was given.
+   *
+   *  MTP raises it for any op on a name two siblings share (PTP lets a phone or
+   *  camera hold same-named files in one folder, #523). Handled exactly like
+   *  [`AmbiguousName`](Self::AmbiguousName); its own variant only because the
+   *  person reads a different cause and fix (rename one on the device).
+   *  ❌ Never resolve it by choosing a twin.
+   */
+  | { type: 'duplicateName'; data: string }
   /**
    *  The destination folder's cached handle was stale and the backend rejected
    *  a write into it (MTP: the device re-keyed its object handles since the

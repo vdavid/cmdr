@@ -671,6 +671,18 @@
   "@errors.listing.ambiguousName.suggestion": {
     "sourceHash": "55b960c"
   },
+  "errors.listing.duplicateName.title": "Mais de um item tem este nome",
+  "@errors.listing.duplicateName.title": {
+    "sourceHash": "3ce4c53"
+  },
+  "errors.listing.duplicateName.explanation": "`{path}` corresponde a mais de um item neste dispositivo. Celulares e câmeras podem guardar vários arquivos com exatamente o mesmo nome na mesma pasta, então o Cmdr não escolheu nenhum por você.",
+  "@errors.listing.duplicateName.explanation": {
+    "sourceHash": "cea78b8"
+  },
+  "errors.listing.duplicateName.suggestion": "Veja o que tentar:\n- No próprio dispositivo, renomeie os itens para que cada um tenha um nome próprio\n- Depois abra esta pasta de novo",
+  "@errors.listing.duplicateName.suggestion": {
+    "sourceHash": "92daf88"
+  },
   "errors.listing.ioSerious.title": "Não foi possível ler esta pasta",
   "@errors.listing.ioSerious.title": {
     "sourceHash": "af30f30"
@@ -2136,6 +2148,10 @@
   "errors.volume.ambiguousName": "Mais de um item no servidor corresponde a “{path}”, então o Cmdr não escolheu nenhum. Escolha o item na pasta onde ele está.",
   "@errors.volume.ambiguousName": {
     "sourceHash": "0f0e74d"
+  },
+  "errors.volume.duplicateName": "“{path}” corresponde a mais de um item no dispositivo, então o Cmdr não escolheu nenhum. No próprio dispositivo, renomeie os itens para que cada um tenha um nome próprio e tente de novo.",
+  "@errors.volume.duplicateName": {
+    "sourceHash": "cda05a9"
   },
   "errors.volume.staleDestinationHandle": "O Cmdr perdeu a referência da pasta de destino no dispositivo. Abra a pasta de novo e tente outra vez.",
   "@errors.volume.staleDestinationHandle": {

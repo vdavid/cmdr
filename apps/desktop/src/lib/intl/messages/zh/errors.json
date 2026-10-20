@@ -671,6 +671,18 @@
   "@errors.listing.ambiguousName.suggestion": {
     "sourceHash": "55b960c"
   },
+  "errors.listing.duplicateName.title": "有不止一个项目使用这个名称",
+  "@errors.listing.duplicateName.title": {
+    "sourceHash": "3ce4c53"
+  },
+  "errors.listing.duplicateName.explanation": "这个设备上有不止一个项目对应 `{path}`。手机和相机允许同一个文件夹里有多个名称完全相同的文件，所以 Cmdr 没有替你挑选其中一个。",
+  "@errors.listing.duplicateName.explanation": {
+    "sourceHash": "cea78b8"
+  },
+  "errors.listing.duplicateName.suggestion": "可以这样试试：\n- 直接在设备上给它们改名，让每一项都有自己的名称\n- 然后重新打开这个文件夹",
+  "@errors.listing.duplicateName.suggestion": {
+    "sourceHash": "92daf88"
+  },
   "errors.listing.ioSerious.title": "无法读取这个文件夹",
   "@errors.listing.ioSerious.title": {
     "sourceHash": "af30f30"
@@ -2135,6 +2147,10 @@
   "errors.volume.ambiguousName": "服务器上有不止一个项目匹配“{path}”，所以 Cmdr 没有替你选。请到它所在的文件夹里选择。",
   "@errors.volume.ambiguousName": {
     "sourceHash": "0f0e74d"
+  },
+  "errors.volume.duplicateName": "设备上有不止一个项目对应“{path}”，所以 Cmdr 没有替你挑选。请直接在设备上给它们改名，让每一项都有自己的名称，然后再试一次。",
+  "@errors.volume.duplicateName": {
+    "sourceHash": "cda05a9"
   },
   "errors.volume.staleDestinationHandle": "Cmdr 跟丢了设备上的目标文件夹。请再次进入这个文件夹，然后重试。",
   "@errors.volume.staleDestinationHandle": {

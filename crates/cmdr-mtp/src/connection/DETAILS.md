@@ -247,8 +247,10 @@ and never the first, and deleting row one deleted row two's file.
 - **The name resolves to neither.** `PathHandleCache::record_listing` records a name more than one child answers to as
   `same_named` (no forward entry, a reverse entry per twin so a change event still finds the folder, nothing cached
   beneath it). `resolve_path_to_handle` answers `MtpConnectionError::AmbiguousName` for it, so every path-addressed op
-  refuses (read, delete, rename, move, list) and touches nothing. `MtpVolume` maps it to `VolumeError::AmbiguousName`,
-  the variant SMB raises for look-alike names; a transfer reports it on the source as a refusal of that item.
+  refuses (read, delete, rename, move, list) and touches nothing. `MtpVolume` maps it to `VolumeError::DuplicateName`,
+  handled everywhere like SMB's look-alike `AmbiguousName` but its own variant, so the person reads the device's cause
+  and fix (rename one on the device) rather than "spelled differently on the server"; a transfer reports it on the
+  source as a refusal of that item.
 - **It lasts until a listing names one.** The next listing of the folder that has the name once makes it an ordinary
   entry; one without it drops it. A `Tree` delete still clears both twins: it caches each child's handle right before
   recursing into it.

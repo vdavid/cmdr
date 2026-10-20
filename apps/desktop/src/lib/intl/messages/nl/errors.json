@@ -671,6 +671,18 @@
   "@errors.listing.ambiguousName.suggestion": {
     "sourceHash": "55b960c"
   },
+  "errors.listing.duplicateName.title": "Meer dan één onderdeel heeft deze naam",
+  "@errors.listing.duplicateName.title": {
+    "sourceHash": "3ce4c53"
+  },
+  "errors.listing.duplicateName.explanation": "`{path}` verwijst naar meer dan één onderdeel op dit apparaat. Telefoons en camera’s kunnen meerdere bestanden met precies dezelfde naam in één map bewaren, dus Cmdr heeft er niet zelf een voor je gekozen.",
+  "@errors.listing.duplicateName.explanation": {
+    "sourceHash": "cea78b8"
+  },
+  "errors.listing.duplicateName.suggestion": "Dit kun je proberen:\n- Wijzig op het apparaat zelf de namen, zodat elk onderdeel een eigen naam heeft\n- Open deze map daarna opnieuw",
+  "@errors.listing.duplicateName.suggestion": {
+    "sourceHash": "92daf88"
+  },
   "errors.listing.ioSerious.title": "Kon deze map niet lezen",
   "@errors.listing.ioSerious.title": {
     "sourceHash": "af30f30"
@@ -2136,6 +2148,10 @@
   "errors.volume.ambiguousName": "Meer dan één onderdeel op de server past bij ‘{path}’, dus Cmdr heeft er geen gekozen. Open de map waarin het staat en kies het daar.",
   "@errors.volume.ambiguousName": {
     "sourceHash": "0f0e74d"
+  },
+  "errors.volume.duplicateName": "‘{path}’ verwijst naar meer dan één onderdeel op het apparaat, dus Cmdr heeft er geen gekozen. Wijzig op het apparaat zelf de namen, zodat elk onderdeel een eigen naam heeft, en probeer het opnieuw.",
+  "@errors.volume.duplicateName": {
+    "sourceHash": "cda05a9"
   },
   "errors.volume.staleDestinationHandle": "Cmdr is de doelmap op het apparaat kwijtgeraakt. Open hem opnieuw en probeer het dan nog eens.",
   "@errors.volume.staleDestinationHandle": {

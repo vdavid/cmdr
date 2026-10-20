@@ -307,6 +307,13 @@ pub enum ListingErrorReason {
         /// The path the failure was about.
         path: String,
     },
+    /// `VolumeError::DuplicateName`: two or more siblings on a device carry
+    /// exactly this name, so nothing was opened. No retry hint: renaming one on
+    /// the device is the fix.
+    DuplicateName {
+        /// The path the failure was about.
+        path: String,
+    },
     /// An I/O failure the backend couldn't classify further.
     IoSerious {
         /// The path the failure was about.

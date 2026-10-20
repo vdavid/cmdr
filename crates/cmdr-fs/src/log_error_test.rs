@@ -19,6 +19,7 @@ fn errors(path: &str) -> Vec<VolumeError> {
         VolumeError::NotADirectory(p()),
         VolumeError::DeletePending(p()),
         VolumeError::AmbiguousName(p()),
+        VolumeError::DuplicateName(p()),
         VolumeError::StaleDestinationHandle(p()),
         VolumeError::ColdStorage(p()),
         VolumeError::SourceChanged(p()),

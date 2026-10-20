@@ -23,9 +23,9 @@ pub(super) fn map_mtp_error(e: MtpConnectionError) -> VolumeError {
             VolumeError::DeviceDisconnected(e.to_string())
         }
         MtpConnectionError::ObjectNotFound { path, .. } => VolumeError::NotFound(path),
-        // Same-named siblings: the refusal SMB raises for look-alike names, and
-        // for the same reason (`VolumeError::AmbiguousName`).
-        MtpConnectionError::AmbiguousName { path, .. } => VolumeError::AmbiguousName(path),
+        // Same-named siblings: handled like SMB's look-alike `AmbiguousName`, but
+        // its own variant so the person reads the device's cause and fix (#523).
+        MtpConnectionError::AmbiguousName { path, .. } => VolumeError::DuplicateName(path),
         MtpConnectionError::StaleParentHandle { dest_folder, .. } => VolumeError::StaleDestinationHandle(dest_folder),
         MtpConnectionError::ExclusiveAccess { .. } | MtpConnectionError::PermissionDenied { .. } => {
             VolumeError::PermissionDenied {
@@ -57,3 +57,7 @@ pub(super) fn map_mtp_error(e: MtpConnectionError) -> VolumeError {
         },
     }
 }
+
+#[cfg(test)]
+#[path = "mapping_test.rs"]
+mod mapping_test;

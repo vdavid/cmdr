@@ -535,13 +535,14 @@ pub(crate) fn map_volume_error(context_path: &str, role: PathRole, e: VolumeErro
         VolumeError::SourceChanged(_) => WriteOperationError::SourceChanged {
             path: context_path.to_string(),
         },
-        // On the DESTINATION (`landing.rs`) the folder holds two look-alikes of
-        // the name and neither spelled as asked, so it's taken and no answer
-        // picks which: "already exists" is the truth, with no Retry that would
-        // ask the same question again. On the SOURCE it's an MTP folder holding
-        // two same-named files, and the backend won't pick one to read (#523):
-        // nothing is taken anywhere, so it stays a refusal of this item.
-        VolumeError::AmbiguousName(path) => match role {
+        // On the DESTINATION the folder holds two look-alikes of the name and
+        // neither spelled as asked (`landing.rs`), or two same-named files on a
+        // device, so it's taken and no answer picks which: "already exists" is
+        // the truth, with no Retry that would ask the same question again. On the
+        // SOURCE it's an MTP folder holding two same-named files, and the backend
+        // won't pick one to read (#523): nothing is taken anywhere, so it stays a
+        // refusal of this item.
+        VolumeError::AmbiguousName(path) | VolumeError::DuplicateName(path) => match role {
             PathRole::Destination => WriteOperationError::DestinationExists { path },
             PathRole::Source => WriteOperationError::IoError {
                 path,
