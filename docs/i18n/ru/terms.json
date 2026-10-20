@@ -3381,7 +3381,7 @@
   },
   "owner": {
     "chosen": "владелец",
-    "accept": ["владел"],
+    "accept": ["владел", "администратор", "управляет сервером"],
     "forms": "the person who runs a server → тот, кто управляет сервером / администратор сервера (not владелец)",
     "confidence": "high",
     "sources": "MS owner → «владелец» (incl. the Macintosh file-owner sense); Double Commander Owner → «Владелец»"

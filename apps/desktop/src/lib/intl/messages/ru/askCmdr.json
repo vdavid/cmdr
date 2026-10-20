@@ -604,9 +604,9 @@
   "@askCmdr.renameUndo.undoJob": {
     "sourceHash": "f84acd2"
   },
-  "askCmdr.renameUndo.undoJobLabel": "Отменить все переименования этого запуска: {filesText} {files, plural, one {файл} few {файла} many {файлов} other {файла}} в {batches, plural, one {# пакете} few {# пакетах} many {# пакетах} other {# пакета}}",
+  "askCmdr.renameUndo.undoJobLabel": "Отменить все {batches, plural, one {# пакет} few {# пакета} many {# пакетов} other {# пакета}}, {filesText} {files, plural, one {файл переименован} few {файла переименованы} many {файлов переименовано} other {файла переименовано}} за этот запуск",
   "@askCmdr.renameUndo.undoJobLabel": {
-    "sourceHash": "9d2e84e"
+    "sourceHash": "544447d"
   },
   "askCmdr.renameUndo.undoing": "Возврат прежних имен…",
   "@askCmdr.renameUndo.undoing": {
