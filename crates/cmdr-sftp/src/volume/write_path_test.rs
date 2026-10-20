@@ -684,7 +684,7 @@ impl VolumeReadStream for ScriptedSource {
             }
             if self.fails_at.is_some_and(|at| self.at >= at) {
                 return Some(Err(VolumeError::DeviceDisconnected(
-                    "the scripted source stopped".to_string(),
+                    "the scripted source stopped".into(),
                 )));
             }
             let take = 40_003.min(self.bytes.len() - self.at);

@@ -379,7 +379,7 @@ impl InMemoryVolume {
         let normalized = self.normalize(path);
         if self.stat_fails_for(&normalized) {
             return Err(VolumeError::IoError {
-                message: format!("Stat unavailable for {}", normalized.display()),
+                message: format!("Stat unavailable for {}", normalized.display()).into(),
                 raw_os_error: None,
             });
         }

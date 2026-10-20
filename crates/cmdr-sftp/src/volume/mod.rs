@@ -220,7 +220,7 @@ impl SftpVolume {
             .read()
             .await
             .clone()
-            .ok_or_else(|| VolumeError::DeviceDisconnected(self.inner.volume_id.clone()))
+            .ok_or_else(|| VolumeError::DeviceDisconnected(self.inner.volume_id.clone().into()))
     }
 
     /// Drops the live session.

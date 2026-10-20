@@ -101,7 +101,7 @@ async fn cross_volume_move_error_names_the_child_that_failed_not_the_selected_fo
     let flaky = FlakyDest::new(
         usize::MAX,
         VolumeError::IoError {
-            message: "Protocol error: STATUS_OBJECT_NAME_INVALID during Create".to_string(),
+            message: "Protocol error: STATUS_OBJECT_NAME_INVALID during Create".into(),
             raw_os_error: None,
         },
     )
@@ -149,7 +149,7 @@ async fn cross_volume_move_delete_error_names_the_child_that_failed_not_the_sele
     let src = UndeletableSource::new(
         "doomed.txt",
         VolumeError::IoError {
-            message: "Resource busy".to_string(),
+            message: "Resource busy".into(),
             raw_os_error: None,
         },
     );
@@ -211,7 +211,7 @@ async fn a_cross_type_move_that_fails_halfway_keeps_the_file_it_was_replacing() 
             super::super::faulty_volume::FaultyOp::OpenReadStream,
             1,
             VolumeError::IoError {
-                message: "simulated source read failure".to_string(),
+                message: "simulated source read failure".into(),
                 raw_os_error: None,
             },
         )

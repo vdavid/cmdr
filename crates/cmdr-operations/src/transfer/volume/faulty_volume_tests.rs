@@ -7,7 +7,7 @@ use cmdr_fs::volume::InMemoryVolume;
 
 fn io(message: &str) -> VolumeError {
     VolumeError::IoError {
-        message: message.to_string(),
+        message: message.to_string().into(),
         raw_os_error: None,
     }
 }

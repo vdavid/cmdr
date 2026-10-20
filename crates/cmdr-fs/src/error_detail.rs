@@ -40,6 +40,16 @@ impl ErrorDetail {
     }
 }
 
+impl ErrorDetail {
+    /// The plain text, borrowed when it's already words.
+    fn text(&self) -> std::borrow::Cow<'_, str> {
+        match &self.0 {
+            Inner::Text(text) => std::borrow::Cow::Borrowed(text),
+            Inner::Error(cause) => std::borrow::Cow::Owned(cause.to_string()),
+        }
+    }
+}
+
 impl From<String> for ErrorDetail {
     fn from(text: String) -> Self {
         Self(Inner::Text(text))
@@ -66,6 +76,34 @@ impl fmt::Display for ErrorDetail {
 impl fmt::Debug for ErrorDetail {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(&self.to_string(), f)
+    }
+}
+
+/// Two details are equal when they read the same: the text is what a person, a store, or IPC
+/// ever compares.
+impl PartialEq for ErrorDetail {
+    fn eq(&self, other: &Self) -> bool {
+        self.text() == other.text()
+    }
+}
+
+impl Eq for ErrorDetail {}
+
+impl PartialEq<str> for ErrorDetail {
+    fn eq(&self, other: &str) -> bool {
+        self.text() == other
+    }
+}
+
+impl PartialEq<String> for ErrorDetail {
+    fn eq(&self, other: &String) -> bool {
+        self.text() == other.as_str()
+    }
+}
+
+impl PartialEq<&str> for ErrorDetail {
+    fn eq(&self, other: &&str) -> bool {
+        self.text() == *other
     }
 }
 

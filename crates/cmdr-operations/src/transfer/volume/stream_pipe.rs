@@ -511,7 +511,7 @@ impl FileRun<'_> {
                 // rather than the transport error that triggered the retry, so
                 // the post-loop reclassifies it and emits `write-cancelled`.
                 return ControlFlow::Break(
-                    Err(VolumeError::Cancelled("Operation cancelled by user".to_string())).at_destination(dest_path),
+                    Err(VolumeError::Cancelled("Operation cancelled by user".into())).at_destination(dest_path),
                 );
             }
             self.attempt += 1;
@@ -528,7 +528,7 @@ impl FileRun<'_> {
         // log the user's own click as a failed transfer.
         if error.transport_fault().is_some() && self.state.work_stopped() {
             return ControlFlow::Break(
-                Err(VolumeError::Cancelled("Operation cancelled by user".to_string())).at_destination(dest_path),
+                Err(VolumeError::Cancelled("Operation cancelled by user".into())).at_destination(dest_path),
             );
         }
         if attempt > 1 {

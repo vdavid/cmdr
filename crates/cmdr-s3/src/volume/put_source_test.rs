@@ -29,7 +29,7 @@ impl VolumeReadStream for LyingSource {
                 if self.fail {
                     self.fail = false;
                     return Some(Err(VolumeError::IoError {
-                        message: "the disk went away".to_string(),
+                        message: "the disk went away".into(),
                         // An errno no S3 failure carries, so the error is
                         // recognizably the source's own.
                         raw_os_error: Some(SOURCE_ERRNO),

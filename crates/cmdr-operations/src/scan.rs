@@ -89,7 +89,7 @@ pub(super) async fn scan_subtree_with_oracle(
     }
 
     if is_cancelled() {
-        return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+        return Err(VolumeError::Cancelled("Operation cancelled by user".into()));
     }
     if let Some(pause) = pause {
         pause.park_while_paused_async().await;
@@ -111,7 +111,7 @@ pub(super) async fn scan_subtree_with_oracle(
 
     for entry in entries {
         if is_cancelled() {
-            return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+            return Err(VolumeError::Cancelled("Operation cancelled by user".into()));
         }
         // After the cancel check, never before: cancel outranks pause.
         if let Some(pause) = pause {

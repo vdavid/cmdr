@@ -224,7 +224,7 @@ impl S3Volume {
         let target_key = match contents {
             FolderContents::Holds => {
                 return Err(VolumeError::IoError {
-                    message: format!("{remote} still holds something"),
+                    message: format!("{remote} still holds something").into(),
                     raw_os_error: Some(ENOTEMPTY),
                 });
             }
@@ -349,7 +349,8 @@ impl S3Volume {
             }
             other => {
                 return Err(VolumeError::IoError {
-                    message: format!("{remote_to}: the renamed copy isn't what was sent ({other:?}); the source stays"),
+                    message: format!("{remote_to}: the renamed copy isn't what was sent ({other:?}); the source stays")
+                        .into(),
                     raw_os_error: None,
                 });
             }

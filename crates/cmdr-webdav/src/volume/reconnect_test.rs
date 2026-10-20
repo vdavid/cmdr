@@ -386,7 +386,7 @@ async fn a_late_loss_from_a_replaced_client_leaves_the_new_one_connected() {
                     .lose(volume.inner.session.connection().generation())
             );
             volume.inner.session.connection().install();
-            Err(VolumeError::DeviceDisconnected("old client".to_string()))
+            Err(VolumeError::DeviceDisconnected("old client".into()))
         })
         .await;
 
@@ -404,7 +404,7 @@ async fn a_late_loss_from_a_replaced_client_leaves_the_new_one_connected() {
 
     // The new client's own loss still counts.
     let outcome: Result<(), _> = volume
-        .noting(async { Err(VolumeError::DeviceDisconnected("new client".to_string())) })
+        .noting(async { Err(VolumeError::DeviceDisconnected("new client".into())) })
         .await;
     assert!(outcome.is_err());
     assert_eq!(volume.connection_state(), Some(ConnectionState::Disconnected));

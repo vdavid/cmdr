@@ -90,7 +90,7 @@ pub(super) fn upload_refusal(error: &S3Error, remote: &str, gone: &AtomicBool) -
     if error.code == S3ErrorCode::NoSuchUpload {
         gone.store(true, Ordering::Relaxed);
         return VolumeError::IoError {
-            message: format!("{remote}: the server ended the upload before it completed"),
+            message: format!("{remote}: the server ended the upload before it completed").into(),
             raw_os_error: None,
         };
     }
@@ -107,7 +107,7 @@ impl PartJob {
         loop {
             // ❌ No request is open across a pause: the server would drop it.
             if self.pause.stopped().await {
-                return Err(VolumeError::Cancelled(self.volume_id.clone()));
+                return Err(VolumeError::Cancelled(self.volume_id.clone().into()));
             }
             attempt += 1;
             self.handed.store(0, Ordering::Relaxed);
@@ -135,7 +135,7 @@ impl PartJob {
             let failure = match self.client.upload(request, body).await {
                 Ok(answer) if answer.status.is_success() => {
                     let etag = answer.header("etag").ok_or_else(|| VolumeError::IoError {
-                        message: format!("{}: part {} answered without an ETag", self.remote, self.number),
+                        message: format!("{}: part {} answered without an ETag", self.remote, self.number).into(),
                         raw_os_error: None,
                     })?;
                     return Ok((
@@ -153,7 +153,9 @@ impl PartJob {
                     }
                     map_s3_error(&error, &self.remote)
                 }
-                Err(_) if self.stop.is_cancelled() => return Err(VolumeError::Cancelled(self.volume_id.clone())),
+                Err(_) if self.stop.is_cancelled() => {
+                    return Err(VolumeError::Cancelled(self.volume_id.clone().into()));
+                }
                 Err(e) => match halted.get() {
                     Some(Halt::SetAside) => {
                         debug!(
@@ -165,7 +167,7 @@ impl PartJob {
                         attempt -= 1;
                         continue;
                     }
-                    Some(Halt::Stopped) => return Err(VolumeError::Cancelled(self.volume_id.clone())),
+                    Some(Halt::Stopped) => return Err(VolumeError::Cancelled(self.volume_id.clone().into())),
                     None => map_exchange_error(&e, &self.volume_id, &self.remote),
                 },
             };
@@ -180,7 +182,7 @@ impl PartJob {
                 LogError(&failure)
             );
             tokio::select! {
-                () = self.stop.cancelled() => return Err(VolumeError::Cancelled(self.volume_id.clone())),
+                () = self.stop.cancelled() => return Err(VolumeError::Cancelled(self.volume_id.clone().into())),
                 () = tokio::time::sleep(wait) => {}
             }
         }
@@ -237,7 +239,7 @@ impl S3Volume {
         if let PartSizes::Open { part_size } = sizes {
             let volume_id = self.volume_id().to_string();
             let mut between = || match progress.at(0) {
-                std::ops::ControlFlow::Break(()) => Err(VolumeError::Cancelled(volume_id.clone())),
+                std::ops::ControlFlow::Break(()) => Err(VolumeError::Cancelled(volume_id.clone().into())),
                 std::ops::ControlFlow::Continue(()) => Ok(()),
             };
             let head = reader
@@ -262,11 +264,11 @@ impl S3Volume {
         // Cancel that came in while the last part was in flight (or while
         // paused) is honoured here, before it.
         let sent = match sent {
-            Ok(_) if progress.pause.stopped().await => Err(VolumeError::Cancelled(self.volume_id().to_string())),
+            Ok(_) if progress.pause.stopped().await => Err(VolumeError::Cancelled(self.volume_id().to_string().into())),
             sent => sent,
         };
         let sent = sent.and_then(|(parts, total)| match progress.at(total) {
-            std::ops::ControlFlow::Break(()) => Err(VolumeError::Cancelled(self.volume_id().to_string())),
+            std::ops::ControlFlow::Break(()) => Err(VolumeError::Cancelled(self.volume_id().to_string().into())),
             std::ops::ControlFlow::Continue(()) => Ok((parts, total)),
         });
         let outcome = match sent {
@@ -403,7 +405,7 @@ impl S3Volume {
                             match progress.at(done_bytes + moving) {
                                 std::ops::ControlFlow::Break(()) => {
                                     stop.cancel();
-                                    Err(VolumeError::Cancelled(self.volume_id().to_string()))
+                                    Err(VolumeError::Cancelled(self.volume_id().to_string().into()))
                                 }
                                 std::ops::ControlFlow::Continue(()) => Ok(()),
                             }
@@ -458,7 +460,7 @@ impl S3Volume {
                     let moving: u64 = on_wire.values().map(|handed| handed.load(Ordering::Relaxed)).sum();
                     if progress.at(done_bytes + moving).is_break() {
                         stop.cancel();
-                        return Err(VolumeError::Cancelled(self.volume_id().to_string()));
+                        return Err(VolumeError::Cancelled(self.volume_id().to_string().into()));
                     }
                 }
             }
@@ -468,7 +470,7 @@ impl S3Volume {
         if let PartSizes::Planned(plan) = sizes {
             // Every part is in, so progress stands still while this waits.
             let mut between = || match progress.at(done_bytes) {
-                std::ops::ControlFlow::Break(()) => Err(VolumeError::Cancelled(self.volume_id().to_string())),
+                std::ops::ControlFlow::Break(()) => Err(VolumeError::Cancelled(self.volume_id().to_string().into())),
                 std::ops::ControlFlow::Continue(()) => Ok(()),
             };
             let more = !reader.at_end_with(&mut between).await?;

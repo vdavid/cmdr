@@ -397,7 +397,7 @@ async fn wait_after(
 /// so the post-loop must see it as one and emit `write-cancelled`, never log the
 /// person's own click as a failed transfer.
 pub(crate) fn cancelled() -> VolumeError {
-    VolumeError::Cancelled("Operation cancelled by user".to_string())
+    VolumeError::Cancelled("Operation cancelled by user".into())
 }
 
 /// Waits for ONE volume that reads `Disconnected`. See the module docs.

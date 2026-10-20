@@ -132,7 +132,7 @@ impl SftpVolume {
         let remote = self.to_remote_path(path)?;
         // Before 1970 or past 2106: outside what SFTP v3's `u32` can say.
         let stamp = UnixTimeStamp::new(modified).map_err(|e| VolumeError::IoError {
-            message: format!("SFTP v3 can't express that date: {e}"),
+            message: format!("SFTP v3 can't express that date: {e}").into(),
             raw_os_error: None,
         })?;
         let session = self.clone_session().await?;

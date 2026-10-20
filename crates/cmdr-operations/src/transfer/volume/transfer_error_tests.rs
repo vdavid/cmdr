@@ -301,7 +301,7 @@ fn test_map_volume_error_invalid_name() {
     let err = map_volume_error(
         "/Volumes/naspi/export/report:2026.json",
         PathRole::Source,
-        VolumeError::InvalidName("Protocol error: STATUS_OBJECT_NAME_INVALID during Create".to_string()),
+        VolumeError::InvalidName("Protocol error: STATUS_OBJECT_NAME_INVALID during Create".into()),
     );
     assert!(
         matches!(
@@ -345,7 +345,7 @@ fn a_reply_refused_for_its_signature_stops_with_its_own_reason() {
     let err = map_volume_error(
         "/smb/share/photos/a.jpg",
         PathRole::Source,
-        VolumeError::SignatureInvalid("signature verification failed".to_string()),
+        VolumeError::SignatureInvalid("signature verification failed".into()),
     );
     assert!(
         matches!(
@@ -361,7 +361,7 @@ fn lost_at(path: &str) -> PathedVolumeError {
     PathedVolumeError::new(
         PathRole::Destination,
         Path::new(path),
-        VolumeError::DeviceDisconnected("session lost".to_string()),
+        VolumeError::DeviceDisconnected("session lost".into()),
     )
 }
 

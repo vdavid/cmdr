@@ -412,7 +412,7 @@ impl Volume for InMemoryVolume {
             }
             if self.rename_to_failing.read_ignore_poison().contains(&to_normalized) {
                 return Err(VolumeError::IoError {
-                    message: format!("rename to {} is configured to fail", to.display()),
+                    message: format!("rename to {} is configured to fail", to.display()).into(),
                     raw_os_error: None,
                 });
             }

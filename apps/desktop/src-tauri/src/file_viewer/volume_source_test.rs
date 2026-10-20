@@ -76,7 +76,7 @@ impl VolumeRandomReader for SyntheticReader {
             }
             self.state.reads.fetch_add(1, Ordering::SeqCst);
             if self.state.fail_next_read.swap(false, Ordering::SeqCst) {
-                return Err(VolumeError::ConnectionTimeout("the share dropped".to_string()));
+                return Err(VolumeError::ConnectionTimeout("the share dropped".into()));
             }
             let end = (offset + len as u64).min(self.size);
             let bytes: Vec<u8> = (offset.min(end)..end).map(synthetic_byte).collect();

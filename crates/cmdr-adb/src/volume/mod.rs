@@ -160,7 +160,7 @@ impl AdbVolume {
 impl AdbVolumeInner {
     async fn open_sync(&self, path: &str) -> Result<SyncSession, VolumeError> {
         if self.unmounted.load(std::sync::atomic::Ordering::Relaxed) {
-            return Err(VolumeError::DeviceDisconnected(self.volume_id.clone()));
+            return Err(VolumeError::DeviceDisconnected(self.volume_id.clone().into()));
         }
         SyncSession::open(&self.endpoint, &self.serial, self.features)
             .await
@@ -171,7 +171,7 @@ impl AdbVolumeInner {
     /// a `DeviceGone` describes.
     pub(super) fn map_adb_error(&self, error: AdbError, path: &str) -> VolumeError {
         match error {
-            AdbError::DeviceGone => VolumeError::DeviceDisconnected(self.volume_id.clone()),
+            AdbError::DeviceGone => VolumeError::DeviceDisconnected(self.volume_id.clone().into()),
             other => crate::errors::volume_error_from_adb(other, path),
         }
     }

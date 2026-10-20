@@ -77,7 +77,7 @@ impl Volume for StatFailingVolume {
         if path == self.unanswerable {
             return Box::pin(async move {
                 Err(VolumeError::IoError {
-                    message: "Stat unavailable".to_string(),
+                    message: "Stat unavailable".into(),
                     raw_os_error: None,
                 })
             });
@@ -91,7 +91,7 @@ impl Volume for StatFailingVolume {
         if path == self.unanswerable {
             return Box::pin(async move {
                 Err(VolumeError::IoError {
-                    message: "Stat unavailable".to_string(),
+                    message: "Stat unavailable".into(),
                     raw_os_error: None,
                 })
             });

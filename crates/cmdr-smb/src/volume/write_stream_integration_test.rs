@@ -344,7 +344,7 @@ impl VolumeReadStream for ErroringReadStream {
                 Some(Ok(self.chunk.clone()))
             } else {
                 Some(Err(VolumeError::IoError {
-                    message: "Injected source read error".to_string(),
+                    message: "Injected source read error".into(),
                     raw_os_error: None,
                 }))
             }

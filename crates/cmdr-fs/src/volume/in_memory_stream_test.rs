@@ -234,7 +234,7 @@ async fn test_write_from_stream_cancel_via_progress() {
     assert!(result.is_err());
     let err = result.unwrap_err();
     assert!(
-        matches!(err, VolumeError::IoError { ref message, .. } if message.contains("cancelled")),
+        matches!(err, VolumeError::IoError { ref message, .. } if message.to_string().contains("cancelled")),
         "expected cancellation error, got: {:?}",
         err
     );

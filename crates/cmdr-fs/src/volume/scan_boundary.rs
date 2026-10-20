@@ -231,7 +231,7 @@ impl<'a> ScanBoundary<'a> {
 /// that passes when it shouldn't. Every caller of the batch scan already handles
 /// this variant.
 pub fn stopped() -> VolumeError {
-    VolumeError::Cancelled("Operation cancelled by user".to_string())
+    VolumeError::Cancelled("Operation cancelled by user".into())
 }
 
 #[cfg(test)]

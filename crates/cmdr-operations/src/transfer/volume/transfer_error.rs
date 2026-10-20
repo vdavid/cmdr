@@ -261,7 +261,7 @@ impl PathedVolumeError {
             path: path.to_path_buf(),
             role: PathRole::Destination,
             error: VolumeError::IoError {
-                message: format!("{refusal:?}"),
+                message: format!("{refusal:?}").into(),
                 raw_os_error: None,
             },
             aftermath: None,
@@ -482,13 +482,13 @@ pub(crate) fn map_volume_error(context_path: &str, role: PathRole, e: VolumeErro
         },
         VolumeError::IoError { message, .. } => WriteOperationError::IoError {
             path: context_path.to_string(),
-            message,
+            message: message.to_string(),
         },
         // A reply refused for its signature stops the transfer with its own stopped state; the
         // person also hears about the server once per session (`crate::security_notices`).
         VolumeError::SignatureInvalid(message) => WriteOperationError::ReplySignatureRefused {
             path: context_path.to_string(),
-            message,
+            message: message.to_string(),
         },
         // Extracting from a password-protected archive: a typed signal the FE
         // prompts on (then retries via `set_archive_password`), never a generic
@@ -571,7 +571,7 @@ pub(crate) fn map_volume_error(context_path: &str, role: PathRole, e: VolumeErro
 /// failed transfer), and no caller mistakes it for a transport fault worth
 /// reporting to the user.
 pub(super) fn hard_abort_error(path: &Path) -> VolumeError {
-    VolumeError::Cancelled(format!("stopped waiting for {} so the app can quit", path.display()))
+    VolumeError::Cancelled(format!("stopped waiting for {} so the app can quit", path.display()).into())
 }
 
 #[cfg(test)]

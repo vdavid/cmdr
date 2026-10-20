@@ -189,7 +189,7 @@ pub(crate) async fn fulfill_with_resolver(
 ) -> Result<FulfillOutcome, FulfillError> {
     let Some(volume) = resolver.resolve(source_volume_id, source_path) else {
         // The source vanished between drag-start and fulfillment.
-        let err = VolumeError::DeviceDisconnected(format!("Volume '{source_volume_id}' is no longer available"));
+        let err = VolumeError::DeviceDisconnected(format!("Volume '{source_volume_id}' is no longer available").into());
         return Err(FulfillError::from_volume_error(&err, dest_path));
     };
 
@@ -350,7 +350,7 @@ async fn create_local_dir(dest_path: &Path) -> Result<(), VolumeError> {
     tokio::task::spawn_blocking(move || std::fs::create_dir_all(&dest))
         .await
         .map_err(|e| VolumeError::IoError {
-            message: e.to_string(),
+            message: e.to_string().into(),
             raw_os_error: None,
         })?
         .map_err(|e| VolumeError::from_io_at(&e, &dest_for_error))

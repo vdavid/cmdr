@@ -74,7 +74,7 @@ impl Volume for FailReadForPathVolume {
         if path == self.fail_for {
             return Box::pin(async move {
                 Err(VolumeError::IoError {
-                    message: "simulated source read failure".to_string(),
+                    message: "simulated source read failure".into(),
                     raw_os_error: None,
                 })
             });
@@ -111,7 +111,7 @@ impl Volume for RefuseIsDirectoryForPathVolume {
         if path == self.fail_for {
             return Box::pin(async move {
                 Err(VolumeError::IoError {
-                    message: "simulated probe failure while resolving a conflict".to_string(),
+                    message: "simulated probe failure while resolving a conflict".into(),
                     raw_os_error: None,
                 })
             });
@@ -862,7 +862,7 @@ impl Volume for FailReadOnCueVolume {
                 permit.forget();
             }
             Err(VolumeError::IoError {
-                message: "simulated source read failure".to_string(),
+                message: "simulated source read failure".into(),
                 raw_os_error: None,
             })
         })

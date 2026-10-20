@@ -96,7 +96,7 @@ impl AdbVolume {
         }
         if cancelled {
             session.quit().await;
-            return Err(VolumeError::Cancelled(device));
+            return Err(VolumeError::Cancelled(device.into()));
         }
 
         // A link to a folder must navigate like one. One `stat` per symlink,

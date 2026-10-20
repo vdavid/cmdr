@@ -63,17 +63,17 @@ impl HttpBackend for WebdavVolumeInner {
                 Err(DialRefusal::Rejected)
             }
             Err(WebdavConnectError::NeedsCredentials) => Err(DialRefusal::NeedsUser),
-            Err(WebdavConnectError::Cancelled) => {
-                Err(DialRefusal::Transient(VolumeError::Cancelled(self.volume_id.clone())))
-            }
+            Err(WebdavConnectError::Cancelled) => Err(DialRefusal::Transient(VolumeError::Cancelled(
+                self.volume_id.clone().into(),
+            ))),
             Err(WebdavConnectError::TimedOut) => Err(DialRefusal::Transient(VolumeError::ConnectionTimeout(
-                self.volume_id.clone(),
+                self.volume_id.clone().into(),
             ))),
             Err(WebdavConnectError::Unreachable(what) | WebdavConnectError::Transport(what)) => {
-                Err(DialRefusal::Transient(VolumeError::DeviceDisconnected(what)))
+                Err(DialRefusal::Transient(VolumeError::DeviceDisconnected(what.into())))
             }
             Err(WebdavConnectError::CertificateUntrusted | WebdavConnectError::NotAWebdavServer) => Err(
-                DialRefusal::Transient(VolumeError::DeviceDisconnected(self.volume_id.clone())),
+                DialRefusal::Transient(VolumeError::DeviceDisconnected(self.volume_id.clone().into())),
             ),
         }
     }

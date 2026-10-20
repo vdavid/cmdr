@@ -49,7 +49,7 @@ impl Volume for FailReadForPath {
         if path == self.fail_for {
             return Box::pin(async move {
                 Err(VolumeError::IoError {
-                    message: "simulated source read failure".to_string(),
+                    message: "simulated source read failure".into(),
                     raw_os_error: None,
                 })
             });

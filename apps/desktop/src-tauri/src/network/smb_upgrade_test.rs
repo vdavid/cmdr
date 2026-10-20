@@ -169,7 +169,7 @@ mod tracking {
             let torn_down = self.on_unmount_called.load(Ordering::Relaxed);
             Box::pin(async move {
                 if torn_down {
-                    Err(VolumeError::DeviceDisconnected("session torn down".to_string()))
+                    Err(VolumeError::DeviceDisconnected("session torn down".into()))
                 } else {
                     Ok(true)
                 }

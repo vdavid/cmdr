@@ -553,7 +553,7 @@ async fn a_generic_error_names_the_cloud_provider_behind_the_path() {
     let volume = refused_with(
         "reaction-provider",
         VolumeError::IoError {
-            message: "Operation timed out".to_string(),
+            message: "Operation timed out".into(),
             raw_os_error: Some(libc::ETIMEDOUT),
         },
     );

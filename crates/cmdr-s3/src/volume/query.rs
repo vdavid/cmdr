@@ -324,7 +324,7 @@ pub(super) fn body_error(error: &BodyError, path: &str) -> VolumeError {
     match error {
         BodyError::Embedded(error) => map_s3_error(error, path),
         BodyError::Malformed => VolumeError::IoError {
-            message: "the server answered 2xx with a body that isn't the S3 document asked for".to_string(),
+            message: "the server answered 2xx with a body that isn't the S3 document asked for".into(),
             raw_os_error: None,
         },
     }
@@ -371,7 +371,7 @@ impl Gathered {
 /// Cancelled between pages: a listing is many requests, and each one costs.
 fn stop_if_cancelled(cancel: Option<&CancellationToken>, remote: &str) -> Result<(), VolumeError> {
     if cancel.is_some_and(CancellationToken::is_cancelled) {
-        return Err(VolumeError::Cancelled(remote.to_string()));
+        return Err(VolumeError::Cancelled(remote.to_string().into()));
     }
     Ok(())
 }

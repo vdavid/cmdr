@@ -98,7 +98,10 @@ fn anything_else_is_an_io_error_naming_the_code_and_status() {
     else {
         panic!("a throttle is an I/O error");
     };
-    assert!(message.contains("SlowDown") && message.contains("503"), "{message}");
+    assert!(
+        message.to_string().contains("SlowDown") && message.to_string().contains("503"),
+        "{message}"
+    );
 }
 
 /// GCS refuses a name it can't store (a line break) with `400

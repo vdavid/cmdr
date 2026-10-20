@@ -41,7 +41,7 @@ pub(super) async fn rebuild<B: HttpBackend>(owner: &B, offered: Option<String>) 
     let session = owner.session();
     let volume_id = session.connection.volume_id();
     let attended = offered.is_some();
-    let gone = || Stalled::Transient(VolumeError::DeviceDisconnected(volume_id.to_string()));
+    let gone = || Stalled::Transient(VolumeError::DeviceDisconnected(volume_id.to_string().into()));
     if session.unmounted.load(Ordering::Relaxed) {
         return Err(gone());
     }

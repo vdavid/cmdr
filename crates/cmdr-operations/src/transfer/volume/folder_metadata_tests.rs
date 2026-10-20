@@ -172,7 +172,7 @@ async fn a_copy_that_fails_partway_dates_no_folder() {
             FaultyOp::WriteFromStream,
             2,
             VolumeError::IoError {
-                message: "the disk gave up".to_string(),
+                message: "the disk gave up".into(),
                 raw_os_error: None,
             },
         )

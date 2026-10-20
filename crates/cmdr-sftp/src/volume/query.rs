@@ -54,7 +54,7 @@ impl SftpVolume {
         let mut stream = std::pin::pin!(dir.read_dir());
         while let Some(next) = stream.next().await {
             if cancel.is_some_and(CancellationToken::is_cancelled) {
-                return Err(VolumeError::Cancelled(remote));
+                return Err(VolumeError::Cancelled(remote.into()));
             }
             // ⚠️ A non-UTF-8 filename fails the WHOLE readdir here, by design in
             // `openssh-sftp-client`: it deserializes names through `ssh_format`,

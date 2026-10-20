@@ -68,7 +68,7 @@ async fn smb_read_stream_propagates_mid_stream_error() {
     let (mut stream, _cancel_rx) = make_stream_from_chunks(
         vec![
             Ok(vec![1u8; 10]),
-            Err(VolumeError::DeviceDisconnected("simulated".to_string())),
+            Err(VolumeError::DeviceDisconnected("simulated".into())),
         ],
         0,
     );

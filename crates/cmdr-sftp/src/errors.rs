@@ -70,15 +70,15 @@ pub fn map_sftp_error(err: &SftpError, path: &str) -> VolumeError {
         SftpError::SftpError(kind, message) => classify(*kind, &message.to_string(), path),
         // The channel under the engine died: the session is gone, and every
         // operation on it fails fast rather than hanging.
-        SftpError::IOError(io) => VolumeError::DeviceDisconnected(io.to_string()),
+        SftpError::IOError(io) => VolumeError::DeviceDisconnected(io.to_string().into()),
         // ⚠️ The engine's read or flush task exited, which it does on a
         // deserialization failure as well as on a dead channel. Either way every
         // later request on this session answers the same thing, so the honest
         // report is a lost connection. `volume/query.rs` § the non-UTF-8 note has
         // the filename case that reaches here.
-        SftpError::BackgroundTaskFailure(what) => VolumeError::DeviceDisconnected((*what).to_string()),
+        SftpError::BackgroundTaskFailure(what) => VolumeError::DeviceDisconnected((*what).to_string().into()),
         other => VolumeError::IoError {
-            message: other.to_string(),
+            message: other.to_string().into(),
             raw_os_error: None,
         },
     }
@@ -164,7 +164,7 @@ fn resolve(kind: SftpErrorKind, message: &str, path: &str, attempted: Attempted,
         // directory that still holds something (`sftp-server.c`'s
         // `errno_to_portable`, OpenSSH 9.8, read 2026-08-22).
         (Attempted::RemovingANode, WhatIsThere::Directory) => VolumeError::IoError {
-            message: message.to_string(),
+            message: message.to_string().into(),
             raw_os_error: Some(ENOTEMPTY),
         },
         // Nothing at the path (or nothing the probe could see) says the failure
@@ -208,7 +208,7 @@ fn classify(kind: SftpErrorKind, message: &str, path: &str) -> VolumeError {
         }
         SftpErrorKind::OpUnsupported => VolumeError::NotSupported,
         _ => VolumeError::IoError {
-            message: message.to_string(),
+            message: message.to_string().into(),
             raw_os_error: None,
         },
     }

@@ -112,7 +112,7 @@ async fn unmounting_says_nothing_and_leaves_no_edge_behind() {
 
     // The moment after: an in-flight operation discovers the dead session.
     volume.note_lost_session(
-        &cmdr_fs::volume::VolumeError::DeviceDisconnected("gone".to_string()),
+        &cmdr_fs::volume::VolumeError::DeviceDisconnected("gone".into()),
         volume.inner.connection.generation(),
     );
     assert!(

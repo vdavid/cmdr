@@ -38,7 +38,7 @@ fn make_state(engine: &TestOperations) -> Arc<WriteOperationState> {
 const THE_USERS_BYTES: &[u8] = b"the user's own copy";
 
 fn timeout() -> VolumeError {
-    VolumeError::ConnectionTimeout("the share stopped answering".to_string())
+    VolumeError::ConnectionTimeout("the share stopped answering".into())
 }
 
 /// A destination holding one file the incoming source would land on, wrapped so

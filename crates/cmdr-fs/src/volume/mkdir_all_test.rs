@@ -128,7 +128,7 @@ impl MakesDirectories for FakeServer {
 /// What Apache answers to anything addressed under a file.
 fn bad_request() -> VolumeError {
     VolumeError::IoError {
-        message: "HTTP 400 Bad Request".to_string(),
+        message: "HTTP 400 Bad Request".into(),
         raw_os_error: None,
     }
 }

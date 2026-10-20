@@ -50,7 +50,7 @@ impl VolumeReadStream for FailAfterOneChunkStream {
                 Some(Ok(c))
             } else {
                 Some(Err(VolumeError::IoError {
-                    message: "simulated mid-stream read failure".to_string(),
+                    message: "simulated mid-stream read failure".into(),
                     raw_os_error: None,
                 }))
             }
@@ -411,7 +411,7 @@ impl Volume for RenameFailsDestVolume {
         }
         Box::pin(async {
             Err(VolumeError::IoError {
-                message: "simulated disconnect during finalize rename".to_string(),
+                message: "simulated disconnect during finalize rename".into(),
                 raw_os_error: None,
             })
         })

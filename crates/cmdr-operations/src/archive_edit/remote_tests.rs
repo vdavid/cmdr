@@ -233,7 +233,7 @@ async fn remote_edit_reap_delete_failure_does_not_fail_the_edit() {
             stale_temp.clone(),
             1,
             VolumeError::IoError {
-                message: "the server refused".to_owned(),
+                message: "the server refused".to_owned().into(),
                 raw_os_error: None,
             },
         )

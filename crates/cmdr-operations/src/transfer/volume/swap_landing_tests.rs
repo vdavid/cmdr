@@ -52,7 +52,7 @@ impl Volume for RenameRefusesOne {
         }
         Box::pin(async {
             Err(VolumeError::IoError {
-                message: "simulated disconnect during the swap's rename".to_string(),
+                message: "simulated disconnect during the swap's rename".into(),
                 raw_os_error: None,
             })
         })

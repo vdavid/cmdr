@@ -25,7 +25,7 @@ const THE_USERS_BYTES: &[u8] = b"the user's own copy";
 
 fn refused() -> VolumeError {
     VolumeError::IoError {
-        message: "the share refused the rename".to_string(),
+        message: "the share refused the rename".into(),
         raw_os_error: None,
     }
 }

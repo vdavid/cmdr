@@ -334,7 +334,7 @@ impl SmbVolume {
 
 fn check_cancel(cancel: Option<&CancellationToken>) -> Result<(), VolumeError> {
     match cancel {
-        Some(token) if token.is_cancelled() => Err(VolumeError::Cancelled("Finding a stored spelling".to_string())),
+        Some(token) if token.is_cancelled() => Err(VolumeError::Cancelled("Finding a stored spelling".into())),
         _ => Ok(()),
     }
 }

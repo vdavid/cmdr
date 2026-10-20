@@ -144,7 +144,7 @@ impl Volume for ServerCopyVolume {
             // A conforming backend reports its own stop as `Cancelled`, the way
             // the chunk loop of a real `copy-data` does.
             if on_progress(0, size).is_break() {
-                return Err(VolumeError::Cancelled(to.display().to_string()));
+                return Err(VolumeError::Cancelled(to.display().to_string().into()));
             }
             self.inner
                 .write_from_stream(
@@ -433,7 +433,7 @@ impl Volume for StorePlace {
             };
             self.copies.lock().expect("test lock").push((to.to_path_buf(), mode));
             if progress.checkpoint().await.is_break() {
-                return Err(VolumeError::Cancelled(to.display().to_string()));
+                return Err(VolumeError::Cancelled(to.display().to_string().into()));
             }
             self.checkpointed.store(true, Ordering::SeqCst);
             let stream = peer.inner.open_read_stream(from).await?;

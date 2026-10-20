@@ -136,7 +136,7 @@ impl SmbVolume {
         let entries = match listed {
             Ok(entries) => entries,
             Err(ListingStop::Cancelled) => {
-                return Err(VolumeError::Cancelled("Listing cancelled".to_string()));
+                return Err(VolumeError::Cancelled("Listing cancelled".into()));
             }
             Err(ListingStop::Smb(e)) => return self.handle_smb_result("list_directory", &smb_path, generation, Err(e)),
         };

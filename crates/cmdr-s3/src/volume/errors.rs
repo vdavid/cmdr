@@ -55,7 +55,7 @@ pub(crate) fn map_s3_error(error: &S3Error, path: &str) -> VolumeError {
             "S3 path={path:?}: backend=s3, error_kind=invalid_name, code={error}",
             path = LogPrivate::path(path)
         );
-        return VolumeError::InvalidName(error.to_string());
+        return VolumeError::InvalidName(error.to_string().into());
     }
     if error.is_not_implemented() || error.status == http::StatusCode::METHOD_NOT_ALLOWED {
         return VolumeError::NotSupported;
@@ -78,7 +78,7 @@ pub(crate) fn map_s3_error(error: &S3Error, path: &str) -> VolumeError {
         };
     }
     VolumeError::IoError {
-        message: error.to_string(),
+        message: error.to_string().into(),
         raw_os_error: None,
     }
 }

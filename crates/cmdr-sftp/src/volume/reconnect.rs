@@ -235,7 +235,7 @@ impl SftpVolumeInner {
         let attended = offered.is_some();
         if self.unmounted.load(Ordering::Relaxed) {
             return Err(Stalled::Transient(VolumeError::DeviceDisconnected(
-                self.volume_id.clone(),
+                self.volume_id.clone().into(),
             )));
         }
         let _guard = self.reconnect_lock.lock().await;
@@ -243,7 +243,7 @@ impl SftpVolumeInner {
         // a winning attempt can land inside it.
         if self.unmounted.load(Ordering::Relaxed) {
             return Err(Stalled::Transient(VolumeError::DeviceDisconnected(
-                self.volume_id.clone(),
+                self.volume_id.clone().into(),
             )));
         }
         if self.session.read().await.is_some() {
@@ -271,7 +271,7 @@ impl SftpVolumeInner {
                 if self.unmounted.load(Ordering::Relaxed) {
                     drop(connection);
                     return Err(Stalled::Transient(VolumeError::DeviceDisconnected(
-                        self.volume_id.clone(),
+                        self.volume_id.clone().into(),
                     )));
                 }
                 // ❗ Installed, given the next generation, and marked
@@ -300,12 +300,14 @@ impl SftpVolumeInner {
             // Unreachable as this stands, since the token above is nobody's.
             // Reported as a transient loss rather than `unreachable!()` so a
             // future caller that DOES hand one in gets a retry, not a panic.
-            Err(SftpConnectError::Cancelled) => Err(Stalled::Transient(VolumeError::Cancelled(self.volume_id.clone()))),
+            Err(SftpConnectError::Cancelled) => Err(Stalled::Transient(VolumeError::Cancelled(
+                self.volume_id.clone().into(),
+            ))),
             Err(SftpConnectError::TimedOut) => Err(Stalled::Transient(VolumeError::ConnectionTimeout(
-                self.volume_id.clone(),
+                self.volume_id.clone().into(),
             ))),
             Err(SftpConnectError::Unreachable(what) | SftpConnectError::Transport(what)) => {
-                Err(Stalled::Transient(VolumeError::DeviceDisconnected(what)))
+                Err(Stalled::Transient(VolumeError::DeviceDisconnected(what.into())))
             }
         }
     }

@@ -93,7 +93,7 @@ pub(super) async fn copy_single_path(
 ) -> Result<u64, PathedVolumeError> {
     // Check cancellation up front.
     if state.work_stopped() {
-        return Err(VolumeError::Cancelled("Operation cancelled by user".to_string())).at_source(source_path);
+        return Err(VolumeError::Cancelled("Operation cancelled by user".into())).at_source(source_path);
     }
 
     let source_is_directory = resolve_source_is_directory(source_volume, source_path, source_is_directory)

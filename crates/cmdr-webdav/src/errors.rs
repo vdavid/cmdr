@@ -104,20 +104,20 @@ pub(crate) fn map_status(status: StatusCode, path: &str, attempted: Attempted) -
         StatusCode::PRECONDITION_FAILED => match attempted {
             Attempted::TakingAName => VolumeError::AlreadyExists(path.to_string()),
             Attempted::Reaching => VolumeError::IoError {
-                message: format!("HTTP {status}"),
+                message: format!("HTTP {status}").into(),
                 raw_os_error: None,
             },
         },
         StatusCode::LOCKED => VolumeError::IoError {
-            message: format!("HTTP {status}"),
+            message: format!("HTTP {status}").into(),
             raw_os_error: Some(EBUSY),
         },
         StatusCode::INSUFFICIENT_STORAGE => VolumeError::StorageFull {
-            message: format!("HTTP {status}"),
+            message: format!("HTTP {status}").into(),
         },
         StatusCode::NOT_IMPLEMENTED => VolumeError::NotSupported,
         other => VolumeError::IoError {
-            message: format!("HTTP {other}"),
+            message: format!("HTTP {other}").into(),
             raw_os_error: None,
         },
     }
@@ -131,7 +131,7 @@ pub(crate) fn map_status(status: StatusCode, path: &str, attempted: Attempted) -
 /// variant so the transfer layer can retry rather than remount.
 pub(crate) fn map_transport_error(err: &reqwest::Error, volume_id: &str, path: &str) -> VolumeError {
     if err.is_timeout() {
-        return VolumeError::ConnectionTimeout(path.to_string());
+        return VolumeError::ConnectionTimeout(path.to_string().into());
     }
     if err.is_connect() || err.is_request() {
         debug!(
@@ -139,10 +139,10 @@ pub(crate) fn map_transport_error(err: &reqwest::Error, volume_id: &str, path: &
             cmdr_fs::log_detail::LogDetail(&err.to_string()),
             path = LogPrivate::path(path)
         );
-        return VolumeError::DeviceDisconnected(volume_id.to_string());
+        return VolumeError::DeviceDisconnected(volume_id.to_string().into());
     }
     VolumeError::IoError {
-        message: err.to_string(),
+        message: err.to_string().into(),
         raw_os_error: None,
     }
 }

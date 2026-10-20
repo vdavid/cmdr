@@ -284,7 +284,7 @@ async fn list_one_directory(
         Ok(Ok(Ok(entries))) => Ok(entries),
         Ok(Ok(Err(e))) => Err(VolumeScanError::Volume(e)),
         Ok(Err(join_err)) => Err(VolumeScanError::Volume(cmdr_fs::volume::VolumeError::IoError {
-            message: format!("Directory listing task failed: {join_err}"),
+            message: format!("Directory listing task failed: {join_err}").into(),
             raw_os_error: None,
         })),
         Err(_elapsed) => Err(VolumeScanError::Timeout(dir_path)),

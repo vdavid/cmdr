@@ -88,7 +88,8 @@ pub(super) fn size_mismatch(remote: &str, got: u64, size: u64) -> VolumeError {
             "{remote}: the source promised {} and yielded {}",
             pluralize_grouped(size, "byte"),
             pluralize_grouped(got, "byte")
-        ),
+        )
+        .into(),
         raw_os_error: None,
     }
 }

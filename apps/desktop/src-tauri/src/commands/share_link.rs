@@ -36,7 +36,7 @@ pub async fn copy_share_link(
         .write_text(link.into_url())
         // The clipboard's own words, for the details panel; they carry no URL.
         .map_err(|e| VolumeError::IoError {
-            message: format!("couldn't write the clipboard: {e}"),
+            message: format!("couldn't write the clipboard: {e}").into(),
             raw_os_error: None,
         })
 }

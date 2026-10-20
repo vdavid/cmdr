@@ -451,7 +451,7 @@ fn spawn_read(read: &ListingRead<'_>, slot: ReadSlot, beat: Arc<Beat>, cancel: C
         let slot = slot;
         if !slot.reads.admit(&slot, &cancel).await {
             return Err(VolumeError::Cancelled(
-                "listing cancelled before its read started".to_string(),
+                "listing cancelled before its read started".into(),
             ));
         }
         let on_progress = |p: ListingProgress| {
@@ -475,7 +475,7 @@ fn spawn_read(read: &ListingRead<'_>, slot: ReadSlot, beat: Arc<Beat>, cancel: C
     Box::pin(async move {
         let result = task.await.unwrap_or_else(|e| {
             Err(VolumeError::IoError {
-                message: format!("Directory listing task failed: {}", e),
+                message: format!("Directory listing task failed: {}", e).into(),
                 raw_os_error: None,
             })
         });

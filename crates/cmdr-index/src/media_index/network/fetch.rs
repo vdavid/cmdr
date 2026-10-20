@@ -248,7 +248,7 @@ fn classify_volume_error(e: cmdr_fs::volume::VolumeError) -> FetchError {
     use cmdr_fs::volume::VolumeError;
     match e {
         VolumeError::NotFound(_) => FetchError::NotFound,
-        VolumeError::DeviceDisconnected(msg) => FetchError::Disconnected(msg),
+        VolumeError::DeviceDisconnected(msg) => FetchError::Disconnected(msg.to_string()),
         VolumeError::ConnectionTimeout(msg) => FetchError::Disconnected(format!("connection timeout: {msg}")),
         other => FetchError::Unreadable(other.to_string()),
     }

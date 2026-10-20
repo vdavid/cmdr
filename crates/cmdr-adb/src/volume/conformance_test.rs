@@ -511,7 +511,7 @@ impl ChunkedSource {
     fn failing_unknown(bytes: &[u8], chunk: usize) -> Self {
         let mut source = Self::unknown(bytes, chunk);
         source.chunks.push_back(Err(VolumeError::DeviceDisconnected(
-            "the scripted source stopped".to_string(),
+            "the scripted source stopped".into(),
         )));
         source
     }

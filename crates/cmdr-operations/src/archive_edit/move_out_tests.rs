@@ -488,7 +488,7 @@ impl Volume for FailOnNameVolume {
         if fails {
             return Box::pin(async {
                 Err(VolumeError::IoError {
-                    message: "injected write failure".to_string(),
+                    message: "injected write failure".into(),
                     raw_os_error: None,
                 })
             });

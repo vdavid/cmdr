@@ -77,6 +77,6 @@ fn a_507_is_storage_full_and_a_501_is_not_supported() {
 fn anything_else_keeps_the_status_number() {
     assert!(matches!(
         map_status(StatusCode::BAD_GATEWAY, PATH, Attempted::Reaching),
-        VolumeError::IoError { message, raw_os_error: None } if message.contains("502")
+        VolumeError::IoError { message, raw_os_error: None } if message.to_string().contains("502")
     ));
 }

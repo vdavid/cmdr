@@ -43,7 +43,7 @@ impl VolumeReadStream for PausableSpoolStream {
     fn next_chunk(&mut self) -> Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>> {
         Box::pin(async move {
             if self.state.stop_or_park_async().await {
-                return Some(Err(VolumeError::Cancelled("fresh ZIP upload cancelled".to_string())));
+                return Some(Err(VolumeError::Cancelled("fresh ZIP upload cancelled".into())));
             }
             self.inner.next_chunk().await
         })

@@ -897,9 +897,7 @@ async fn a_late_loss_from_a_replaced_session_leaves_the_new_one_connected() {
             // lost and a reconnect installs a new one.
             assert!(volume.inner.connection.lose(volume.inner.connection.generation()));
             volume.inner.connection.install();
-            Err(cmdr_fs::volume::VolumeError::DeviceDisconnected(
-                "old session".to_string(),
-            ))
+            Err(cmdr_fs::volume::VolumeError::DeviceDisconnected("old session".into()))
         })
         .await;
 
@@ -913,11 +911,7 @@ async fn a_late_loss_from_a_replaced_session_leaves_the_new_one_connected() {
 
     // The new session's own loss still counts.
     let outcome: Result<(), _> = volume
-        .noting(async {
-            Err(cmdr_fs::volume::VolumeError::DeviceDisconnected(
-                "new session".to_string(),
-            ))
-        })
+        .noting(async { Err(cmdr_fs::volume::VolumeError::DeviceDisconnected("new session".into())) })
         .await;
     assert!(outcome.is_err());
     assert_eq!(volume.inner.connection.state(), ConnectionState::Disconnected);

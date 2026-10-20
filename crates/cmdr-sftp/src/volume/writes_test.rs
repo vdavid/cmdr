@@ -62,7 +62,7 @@ impl PositionedWrite for ScriptedWriter {
             let mut left = left.lock().expect("no test panics while holding this");
             if *left == 0 {
                 return Err(VolumeError::StorageFull {
-                    message: "the scripted writer stopped here".to_string(),
+                    message: "the scripted writer stopped here".into(),
                 });
             }
             *left -= 1;

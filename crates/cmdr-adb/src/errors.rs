@@ -204,16 +204,16 @@ pub fn volume_error_from_errno(errno: i32, path: &str) -> VolumeError {
         EEXIST => VolumeError::AlreadyExists(path.to_string()),
         EROFS => VolumeError::ReadOnly(path.to_string()),
         ENOSPC => VolumeError::StorageFull {
-            message: format!("ENOSPC on {path}"),
+            message: format!("ENOSPC on {path}").into(),
         },
         EISDIR => VolumeError::IsADirectory(path.to_string()),
-        ENAMETOOLONG => VolumeError::InvalidName(path.to_string()),
+        ENAMETOOLONG => VolumeError::InvalidName(path.to_string().into()),
         ENOTEMPTY_DEVICE => VolumeError::IoError {
-            message: format!("ENOTEMPTY on {path}"),
+            message: format!("ENOTEMPTY on {path}").into(),
             raw_os_error: Some(ENOTEMPTY_HOST),
         },
         other => VolumeError::IoError {
-            message: format!("errno {other} on {path}"),
+            message: format!("errno {other} on {path}").into(),
             raw_os_error: Some(other),
         },
     }
@@ -229,15 +229,15 @@ pub fn volume_error_from_errno(errno: i32, path: &str) -> VolumeError {
 /// here.
 pub fn volume_error_from_adb(error: AdbError, path: &str) -> VolumeError {
     match error {
-        AdbError::DeviceGone => VolumeError::DeviceDisconnected(path.to_string()),
-        AdbError::Timeout => VolumeError::ConnectionTimeout(path.to_string()),
-        AdbError::Cancelled => VolumeError::Cancelled(path.to_string()),
+        AdbError::DeviceGone => VolumeError::DeviceDisconnected(path.to_string().into()),
+        AdbError::Timeout => VolumeError::ConnectionTimeout(path.to_string().into()),
+        AdbError::Cancelled => VolumeError::Cancelled(path.to_string().into()),
         AdbError::Io(io) => VolumeError::IoError {
-            message: io.to_string(),
+            message: io.to_string().into(),
             raw_os_error: None,
         },
         AdbError::Refused(msg) | AdbError::Protocol(msg) => VolumeError::IoError {
-            message: msg,
+            message: msg.into(),
             raw_os_error: None,
         },
     }

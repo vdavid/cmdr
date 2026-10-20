@@ -47,7 +47,7 @@ impl FakeTree {
         match armed.iter().position(|p| p == key) {
             Some(at) => {
                 armed.remove(at);
-                Err(VolumeError::DeviceDisconnected("the session is down".to_string()))
+                Err(VolumeError::DeviceDisconnected("the session is down".into()))
             }
             None => Ok(()),
         }

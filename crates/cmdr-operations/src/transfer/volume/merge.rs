@@ -630,7 +630,7 @@ async fn merge_level<'a>(
         // through the between-chunks checkpoint the byte path parks at, so this
         // is the only thing that stops a paused merge from walking on.
         if pool.drive(state.stop_or_park_async()).await {
-            return Err(VolumeError::Cancelled("Operation cancelled by user".to_string())).at_source(source_path);
+            return Err(VolumeError::Cancelled("Operation cancelled by user".into())).at_source(source_path);
         }
 
         let child_source = PathBuf::from(&entry.path);

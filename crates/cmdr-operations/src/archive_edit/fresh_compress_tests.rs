@@ -77,7 +77,7 @@ impl Volume for RefuseAfterProducerProgress {
             self.producer_progressed.notified().await;
             drop(stream);
             Err(VolumeError::IoError {
-                message: "injected destination refusal".to_string(),
+                message: "injected destination refusal".into(),
                 raw_os_error: None,
             })
         })
@@ -285,7 +285,7 @@ impl Volume for GatedDestination {
                 let _ = gate.wait_for(|open| *open).await;
                 if matches!(self.script, AfterFirstChunk::HoldThenFail) {
                     return Err(VolumeError::IoError {
-                        message: "injected connection loss".to_string(),
+                        message: "injected connection loss".into(),
                         raw_os_error: None,
                     });
                 }
@@ -296,7 +296,7 @@ impl Volume for GatedDestination {
                 .is_break()
                 {
                     self.stopped_by_break.store(true, Ordering::SeqCst);
-                    return Err(VolumeError::Cancelled(dest.display().to_string()));
+                    return Err(VolumeError::Cancelled(dest.display().to_string().into()));
                 }
             }
         })

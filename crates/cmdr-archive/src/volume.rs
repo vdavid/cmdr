@@ -726,7 +726,7 @@ where
     match spawn_blocking(closure).await {
         Ok(result) => result,
         Err(join_err) => Err(VolumeError::IoError {
-            message: join_err.to_string(),
+            message: join_err.to_string().into(),
             raw_os_error: None,
         }),
     }
@@ -793,7 +793,7 @@ fn to_volume_error(err: ArchiveError) -> VolumeError {
         // A structurally broken zip or a live byte-source fault: a serious I/O
         // condition on the path being read.
         ArchiveError::Corrupt(message) | ArchiveError::Io(message) => VolumeError::IoError {
-            message,
+            message: message.into(),
             raw_os_error: None,
         },
         // Password-protected: a typed signal the frontend prompts on (distinct

@@ -285,7 +285,7 @@ impl SmbVolume {
             Ok(Err(e)) => return Err(e),
             Err(_) => {
                 return Err(VolumeError::IoError {
-                    message: "SMB download task terminated before reporting size".to_string(),
+                    message: "SMB download task terminated before reporting size".into(),
                     raw_os_error: None,
                 });
             }

@@ -145,10 +145,13 @@ pub(super) fn judge_landing(expected: u64, ours: Option<&str>, found: Option<&La
 /// answer to the no-overwrite HEAD).
 pub(super) fn refuse_unstorable(client: &S3Client, key: &str, remote: &str) -> Result<(), VolumeError> {
     match client.profile().refused_key_char(key) {
-        Some(refused) => Err(VolumeError::InvalidName(format!(
-            "{remote}: this provider doesn't store U+{:04X} in a name",
-            u32::from(refused)
-        ))),
+        Some(refused) => Err(VolumeError::InvalidName(
+            format!(
+                "{remote}: this provider doesn't store U+{:04X} in a name",
+                u32::from(refused)
+            )
+            .into(),
+        )),
         None => Ok(()),
     }
 }
@@ -180,7 +183,7 @@ impl S3Volume {
         let _claim = self.claim_for_write(&client, bucket, key).await;
         let shape = shape_for(length, self.part_floor(), client.profile().short_tail).map_err(|TooLarge| {
             VolumeError::IoError {
-                message: format!("{remote}: too big for one S3 object (10,000 parts of 5 GiB)"),
+                message: format!("{remote}: too big for one S3 object (10,000 parts of 5 GiB)").into(),
                 raw_os_error: None,
             }
         })?;
@@ -278,7 +281,7 @@ impl S3Volume {
         let mut reader = PartReader::new(stream);
         let volume_id = self.volume_id().to_string();
         let mut between = || match progress.at(0) {
-            ControlFlow::Break(()) => Err(VolumeError::Cancelled(volume_id.clone())),
+            ControlFlow::Break(()) => Err(VolumeError::Cancelled(volume_id.clone().into())),
             ControlFlow::Continue(()) => Ok(()),
         };
         let bytes = reader
@@ -315,7 +318,7 @@ impl S3Volume {
         )
         .map_err(|_| VolumeError::NotFound(target.remote.to_string()))?;
         let conditional = target.mode.refuses_occupied() && !built.check_first;
-        let cancelled = || VolumeError::Cancelled(self.volume_id().to_string());
+        let cancelled = || VolumeError::Cancelled(self.volume_id().to_string().into());
         // On a server that may keep a cut-off body, this PUT stays on record
         // until it's known settled, so one the cleanup below can't reach (the
         // link is down, or the request was dropped mid-flight) is cleared by
@@ -544,14 +547,15 @@ impl S3Volume {
                 Ok(())
             }
             Landing::Vanished => Err(VolumeError::IoError {
-                message: format!("{}: the object was gone right after it was written", target.remote),
+                message: format!("{}: the object was gone right after it was written", target.remote).into(),
                 raw_os_error: None,
             }),
             Landing::WrongSize { found } => Err(VolumeError::IoError {
                 message: format!(
                     "{}: the server holds {found:?} bytes after a write of {size}",
                     target.remote
-                ),
+                )
+                .into(),
                 raw_os_error: None,
             }),
         }

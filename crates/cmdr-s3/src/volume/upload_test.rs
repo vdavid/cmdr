@@ -107,7 +107,7 @@ impl VolumeReadStream for StallsAtEnd {
 async fn a_cancel_while_the_end_check_waits_on_a_stalled_source_returns() {
     let mut reader = PartReader::new(Box::new(StallsAtEnd(vec![vec![7; 4]])));
     assert_eq!(reader.fill(4).await.expect("a part").len(), 4);
-    let mut between = || Err(VolumeError::Cancelled("s3-test".to_string()));
+    let mut between = || Err(VolumeError::Cancelled("s3-test".into()));
     let checked = tokio::time::timeout(Duration::from_secs(2), reader.at_end_with(&mut between)).await;
     let answer = checked.expect("Cancel returns within a couple of progress ticks");
     assert!(matches!(answer, Err(VolumeError::Cancelled(_))), "got {answer:?}");

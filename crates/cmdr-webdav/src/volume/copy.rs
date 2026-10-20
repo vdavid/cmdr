@@ -36,7 +36,7 @@ impl WebdavVolume {
         self.send(&client, request, &remote_to, Attempted::Reaching).await?;
         if on_progress(total, total).is_break() {
             self.remove_best_effort(&remote_to).await;
-            return Err(VolumeError::Cancelled(self.volume_id().to_string()));
+            return Err(VolumeError::Cancelled(self.volume_id().to_string().into()));
         }
         Ok(total)
     }

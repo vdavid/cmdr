@@ -252,10 +252,10 @@ impl VolumeReadStream for FreshZipStream {
                     None
                 }
                 None if self.cancellation.is_requested() => {
-                    Some(Err(VolumeError::Cancelled("fresh ZIP cancelled".to_string())))
+                    Some(Err(VolumeError::Cancelled("fresh ZIP cancelled".into())))
                 }
                 None => Some(Err(VolumeError::IoError {
-                    message: "the ZIP producer stopped before the archive was complete".to_string(),
+                    message: "the ZIP producer stopped before the archive was complete".into(),
                     raw_os_error: None,
                 })),
             }

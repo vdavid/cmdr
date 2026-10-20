@@ -80,7 +80,7 @@ impl LocalPosixVolume {
                         return Err(cmdr_fs::volume::scan_stopped());
                     }
                     let entry = entry.map_err(|e| VolumeError::IoError {
-                        message: e.to_string(),
+                        message: e.to_string().into(),
                         raw_os_error: None,
                     })?;
                     let ft = entry.file_type();

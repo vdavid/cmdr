@@ -495,7 +495,7 @@ impl SmbVolume {
                 match read_listing(&tree, conn, &smb_path, &display_path, None, cancel, &runtime).await {
                     Ok(entries) => return Ok(entries),
                     Err(ListingStop::Cancelled) => {
-                        return Err(VolumeError::Cancelled("Listing cancelled".to_string()));
+                        return Err(VolumeError::Cancelled("Listing cancelled".into()));
                     }
                     Err(ListingStop::Smb(e)) if is_pool_member_dead(&e) => {
                         log::debug!(

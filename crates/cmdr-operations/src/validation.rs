@@ -27,7 +27,7 @@ pub(crate) fn validate_transfer_destination_name(
     {
         return Err(WriteOperationError::InvalidName {
             path: named_path.display().to_string(),
-            message: "Choose one item and a filename without path separators".to_string(),
+            message: "Choose one item and a filename without path separators".into(),
         });
     }
     validate_path_length(&named_path)

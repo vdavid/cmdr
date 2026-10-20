@@ -96,14 +96,14 @@ impl Volume for DeadSession {
         _path: &'a Path,
         _on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
-        Box::pin(async { Err(VolumeError::DeviceDisconnected("dead".to_string())) })
+        Box::pin(async { Err(VolumeError::DeviceDisconnected("dead".into())) })
     }
 
     fn get_metadata<'a>(
         &'a self,
         _path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
-        Box::pin(async { Err(VolumeError::DeviceDisconnected("dead".to_string())) })
+        Box::pin(async { Err(VolumeError::DeviceDisconnected("dead".into())) })
     }
 
     fn exists<'a>(&'a self, _path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
@@ -119,7 +119,7 @@ impl Volume for DeadSession {
             if hangs {
                 std::future::pending::<()>().await;
             }
-            Err(VolumeError::DeviceDisconnected("dead".to_string()))
+            Err(VolumeError::DeviceDisconnected("dead".into()))
         })
     }
 }

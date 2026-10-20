@@ -416,7 +416,7 @@ impl OutageVolume {
         if self.up.load(Ordering::SeqCst) {
             Ok(())
         } else {
-            Err(VolumeError::DeviceDisconnected("the session is down".to_owned()))
+            Err(VolumeError::DeviceDisconnected("the session is down".to_owned().into()))
         }
     }
 
@@ -446,7 +446,7 @@ impl OutageVolume {
             }
             self.go_away();
             self.reconnected_elsewhere();
-            return Err(VolumeError::DeviceDisconnected("the session is down".to_owned()));
+            return Err(VolumeError::DeviceDisconnected("the session is down".to_owned().into()));
         }
         self.gate()?;
         call().await
@@ -525,7 +525,9 @@ impl Volume for OutageVolume {
                 self.bring_the_session_back();
                 Ok(())
             } else {
-                Err(VolumeError::ConnectionTimeout("the server didn't answer".to_owned()))
+                Err(VolumeError::ConnectionTimeout(
+                    "the server didn't answer".to_owned().into(),
+                ))
             }
         })
     }
@@ -608,7 +610,7 @@ impl Volume for OutageVolume {
             };
             if refused_here {
                 return Err(VolumeError::IoError {
-                    message: "sharing violation".to_string(),
+                    message: "sharing violation".into(),
                     raw_os_error: None,
                 });
             }
@@ -644,7 +646,7 @@ impl Volume for OutageVolume {
                 }
                 self.go_away();
                 self.reconnected_elsewhere();
-                return Err(VolumeError::DeviceDisconnected("the session is down".to_owned()));
+                return Err(VolumeError::DeviceDisconnected("the session is down".to_owned().into()));
             }
             if let Some(side) = armed_for(&self.drop_at_rename_of, from) {
                 if side == RenameDrop::AfterTheServerPerformsIt {
@@ -661,7 +663,7 @@ impl Volume for OutageVolume {
                 }
                 self.go_away();
                 self.reconnected_elsewhere();
-                return Err(VolumeError::DeviceDisconnected("the session is down".to_owned()));
+                return Err(VolumeError::DeviceDisconnected("the session is down".to_owned().into()));
             }
             self.under_path_drops(to, &self.drop_at_rename_onto, None, || {
                 self.inner.rename(from, to, force)
@@ -769,7 +771,7 @@ impl Volume for OutageVolume {
                     self.inner.set_modified_at(dest, Some(servers_own));
                 }
                 self.go_away();
-                return Err(VolumeError::DeviceDisconnected("the session is down".to_owned()));
+                return Err(VolumeError::DeviceDisconnected("the session is down".to_owned().into()));
             }
             Ok(written)
         })

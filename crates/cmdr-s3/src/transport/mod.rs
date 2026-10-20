@@ -494,7 +494,7 @@ impl S3Client {
         let response = match tokio::time::timeout(QUERY_BUDGET, sent).await {
             Ok(Ok(response)) => response,
             Ok(Err(e)) => return Err(map_transport_error(&e, volume_id, path)),
-            Err(_elapsed) => return Err(VolumeError::ConnectionTimeout(path.to_string())),
+            Err(_elapsed) => return Err(VolumeError::ConnectionTimeout(path.to_string().into())),
         };
         self.liveness.heard();
         self.note_version(response.version());
@@ -616,7 +616,7 @@ pub(crate) fn map_exchange_error(err: &ExchangeError, volume_id: &str, path: &st
     match err {
         ExchangeError::Transport(err) => map_transport_error(err, volume_id, path),
         ExchangeError::BodyTooLarge { .. } => VolumeError::IoError {
-            message: err.to_string(),
+            message: err.to_string().into(),
             raw_os_error: None,
         },
     }
@@ -626,7 +626,7 @@ pub(crate) fn map_exchange_error(err: &ExchangeError, volume_id: &str, path: &st
 /// answer (a streaming GET).
 pub(crate) fn map_transport_error(err: &reqwest::Error, volume_id: &str, path: &str) -> VolumeError {
     if err.is_timeout() {
-        return VolumeError::ConnectionTimeout(path.to_string());
+        return VolumeError::ConnectionTimeout(path.to_string().into());
     }
     if err.is_connect() || err.is_request() {
         debug!(
@@ -634,10 +634,10 @@ pub(crate) fn map_transport_error(err: &reqwest::Error, volume_id: &str, path: &
             cmdr_fs::log_detail::LogDetail(&err.to_string()),
             path = LogPrivate::path(path)
         );
-        return VolumeError::DeviceDisconnected(volume_id.to_string());
+        return VolumeError::DeviceDisconnected(volume_id.to_string().into());
     }
     VolumeError::IoError {
-        message: err.to_string(),
+        message: err.to_string().into(),
         raw_os_error: None,
     }
 }

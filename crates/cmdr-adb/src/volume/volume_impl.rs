@@ -278,7 +278,7 @@ impl Volume for AdbVolume {
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(self.noting(async move {
             if cancel.is_some_and(CancellationToken::is_cancelled) {
-                return Err(VolumeError::Cancelled(path.to_string_lossy().into_owned()));
+                return Err(VolumeError::Cancelled(path.to_string_lossy().into_owned().into()));
             }
             self.delete_impl(path).await
         }))

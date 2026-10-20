@@ -493,7 +493,7 @@ async fn clear_the_way(
 fn landing_not_recorded() -> FinalizeFailure {
     FinalizeFailure {
         error: VolumeError::IoError {
-            message: "the landing record couldn't be confirmed on disk".to_owned(),
+            message: "the landing record couldn't be confirmed on disk".to_owned().into(),
             raw_os_error: None,
         },
         aftermath: Some(LandingAftermath::NotRecorded),

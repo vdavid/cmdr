@@ -323,7 +323,7 @@ pub(crate) async fn run_oracle_aware_batch_scan(
     for parent in &group_order {
         if is_cancelled() {
             return Err(cmdr_fs::volume::VolumeError::Cancelled(
-                "Operation cancelled by user".to_string(),
+                "Operation cancelled by user".into(),
             ));
         }
         // The park points on the volume path are the ones cancel already has:

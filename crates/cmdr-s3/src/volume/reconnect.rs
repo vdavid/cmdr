@@ -61,11 +61,11 @@ impl HttpBackend for S3VolumeInner {
                 | S3ConnectError::BucketListRefused
                 | S3ConnectError::NeedsCredentials,
             ) => Err(DialRefusal::Rejected),
-            Err(S3ConnectError::Cancelled) => {
-                Err(DialRefusal::Transient(VolumeError::Cancelled(self.volume_id.clone())))
-            }
+            Err(S3ConnectError::Cancelled) => Err(DialRefusal::Transient(VolumeError::Cancelled(
+                self.volume_id.clone().into(),
+            ))),
             Err(S3ConnectError::TimedOut) => Err(DialRefusal::Transient(VolumeError::ConnectionTimeout(
-                self.volume_id.clone(),
+                self.volume_id.clone().into(),
             ))),
             Err(
                 S3ConnectError::Unreachable(_)
@@ -77,7 +77,7 @@ impl HttpBackend for S3VolumeInner {
                 | S3ConnectError::CertificateUntrusted
                 | S3ConnectError::NotAnS3Endpoint,
             ) => Err(DialRefusal::Transient(VolumeError::DeviceDisconnected(
-                self.volume_id.clone(),
+                self.volume_id.clone().into(),
             ))),
         }
     }

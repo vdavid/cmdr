@@ -481,7 +481,7 @@ impl Volume for MockDirVolume {
             }
             if self.fail_at.lock_ignore_poison().as_deref() == Some(path) {
                 return Err(VolumeError::IoError {
-                    message: "injected create failure".to_string(),
+                    message: "injected create failure".into(),
                     raw_os_error: None,
                 });
             }

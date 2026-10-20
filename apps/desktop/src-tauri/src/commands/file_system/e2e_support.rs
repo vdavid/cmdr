@@ -89,7 +89,7 @@ pub fn preview_friendly_error(
 
     let volume_error = if let Some(code) = error_code {
         VolumeError::IoError {
-            message: format!("os error {}", code),
+            message: format!("os error {}", code).into(),
             raw_os_error: Some(code),
         }
     } else if let Some(ref name) = variant {

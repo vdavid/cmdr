@@ -715,7 +715,7 @@ mod tests {
         note_root_failure(
             id,
             &VolumeError::IoError {
-                message: "no such file".to_string(),
+                message: "no such file".into(),
                 raw_os_error: Some(libc::ENOENT),
             },
         );
@@ -728,7 +728,7 @@ mod tests {
         note_root_failure(
             id,
             &VolumeError::IoError {
-                message: "socket is not connected".to_string(),
+                message: "socket is not connected".into(),
                 raw_os_error: Some(libc::ENOTCONN),
             },
         );

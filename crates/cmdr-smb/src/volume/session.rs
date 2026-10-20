@@ -62,9 +62,9 @@ impl SmbVolume {
     fn check_connection(&self) -> Result<(), VolumeError> {
         match self.inner.connection_state() {
             ConnectionState::Direct => Ok(()),
-            ConnectionState::Disconnected => Err(VolumeError::DeviceDisconnected(
-                "SMB connection is disconnected".to_string(),
-            )),
+            ConnectionState::Disconnected => {
+                Err(VolumeError::DeviceDisconnected("SMB connection is disconnected".into()))
+            }
         }
     }
 
@@ -104,7 +104,7 @@ impl SmbVolume {
                     ticket,
                     acquired_at.elapsed()
                 );
-                VolumeError::DeviceDisconnected("SMB session not available".to_string())
+                VolumeError::DeviceDisconnected("SMB session not available".into())
             })?;
             let lease = SessionLease {
                 tree: Arc::clone(&session.tree),

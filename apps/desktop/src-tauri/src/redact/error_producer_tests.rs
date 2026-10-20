@@ -105,7 +105,7 @@ fn a_hostile_name_in_an_error_field_never_closes_its_span_early() {
             assert_ships_none(&smb_folder_line(&error), &["Lake", "House", "Rest", "Trips"]);
         }
         let foreign = VolumeError::IoError {
-            message: format!("the server said no about {value}"),
+            message: format!("the server said no about {value}").into(),
             raw_os_error: None,
         };
         let line = format!("{HEAD}read: {}", LogError(&foreign));

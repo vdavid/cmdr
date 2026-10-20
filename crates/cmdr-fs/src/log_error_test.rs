@@ -24,9 +24,9 @@ fn errors(path: &str) -> Vec<VolumeError> {
         VolumeError::ColdStorage(p()),
         VolumeError::SourceChanged(p()),
         VolumeError::FriendlyGit(FriendlyGitError::new(FriendlyGitErrorKind::CorruptRepo, p())),
-        VolumeError::DeviceDisconnected(format!("lost {path}")),
+        VolumeError::DeviceDisconnected(format!("lost {path}").into()),
         VolumeError::IoError {
-            message: format!("refused {path}"),
+            message: format!("refused {path}").into(),
             raw_os_error: Some(5),
         },
         VolumeError::NotSupported,
@@ -93,7 +93,7 @@ fn each_path_variant_marks_its_whole_path_by_kind() {
 fn a_reserved_char_in_foreign_text_is_replaced() {
     let hostile = format!("Lake{CLOSER}House");
     let error = VolumeError::IoError {
-        message: format!("the server refused {hostile}"),
+        message: format!("the server refused {hostile}").into(),
         raw_os_error: None,
     };
     assert_eq!(
@@ -128,4 +128,33 @@ fn debug_quotes_the_marked_text_one_depth_down() {
 fn an_empty_path_writes_no_span() {
     let error = VolumeError::FriendlyGit(FriendlyGitError::new(FriendlyGitErrorKind::NotARepo, ""));
     assert_eq!(LogError(&error).to_string(), "git: NotARepo ()");
+}
+
+/// A message variant whose detail kept its cause typed marks the cause's path, and reads as
+/// the cause's own words once the markers are gone.
+#[test]
+fn a_message_variant_marks_the_values_of_a_typed_cause() {
+    use crate::error_detail::ErrorDetail;
+    use crate::log_private::LogPrivate;
+
+    let path = "Trips/Lake House/a.jpg";
+    let cause = || ErrorDetail::of(VolumeError::NotFound(path.to_string()));
+    let span = LogPrivate::path(path).to_string();
+    for error in [
+        VolumeError::IoError {
+            message: cause(),
+            raw_os_error: Some(66),
+        },
+        VolumeError::StorageFull { message: cause() },
+        VolumeError::DeviceDisconnected(cause()),
+        VolumeError::DeviceSessionReset(cause()),
+        VolumeError::ConnectionTimeout(cause()),
+        VolumeError::Cancelled(cause()),
+        VolumeError::InvalidName(cause()),
+        VolumeError::SignatureInvalid(cause()),
+    ] {
+        let logged = LogError(&error).to_string();
+        assert!(logged.contains(&span), "{logged:?}");
+        assert_eq!(without_reserved(&logged), error.to_string());
+    }
 }

@@ -207,7 +207,7 @@ impl SmbVolume {
         key: &ResumeKey,
         progress: &dyn ServerCopyProgress,
     ) -> Result<(), VolumeError> {
-        let cancelled = || VolumeError::Cancelled("Operation cancelled by user".to_string());
+        let cancelled = || VolumeError::Cancelled("Operation cancelled by user".into());
         // An empty source still reports once, so a caller's bar reaches 100%
         // rather than never being told about a zero-byte file.
         if copy.total == 0 {

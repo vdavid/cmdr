@@ -259,7 +259,7 @@ async fn a_failure_marks_the_row_of_the_file_it_names() {
             FaultyOp::OpenReadStream,
             2,
             VolumeError::IoError {
-                message: "unreadable".to_owned(),
+                message: "unreadable".to_owned().into(),
                 raw_os_error: None,
             },
         )

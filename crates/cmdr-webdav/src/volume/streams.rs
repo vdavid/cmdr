@@ -72,7 +72,8 @@ impl WebdavReadStream {
                 self.path,
                 pluralize_grouped(total, "byte"),
                 pluralize_grouped(reached, "byte")
-            ),
+            )
+            .into(),
             raw_os_error: None,
         })
     }
@@ -87,7 +88,7 @@ impl VolumeReadStream for WebdavReadStream {
                 let next = match tokio::time::timeout(REQUEST_BUDGET, self.body.next()).await {
                     Ok(Some(next)) => next,
                     Ok(None) => return self.ended_short().map(Err),
-                    Err(_elapsed) => return Some(Err(VolumeError::ConnectionTimeout(self.path.clone()))),
+                    Err(_elapsed) => return Some(Err(VolumeError::ConnectionTimeout(self.path.clone().into()))),
                 };
                 let chunk = match next {
                     Ok(chunk) => {

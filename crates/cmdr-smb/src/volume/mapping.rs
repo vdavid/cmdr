@@ -133,24 +133,26 @@ pub(super) fn map_smb_error(err: smb2::Error, path: &str) -> VolumeError {
             path: path.to_string(),
             raw_os_error: None,
         },
-        ErrorKind::ConnectionLost | ErrorKind::SessionExpired => VolumeError::DeviceDisconnected(err.to_string()),
-        ErrorKind::TimedOut => VolumeError::ConnectionTimeout(err.to_string()),
+        ErrorKind::ConnectionLost | ErrorKind::SessionExpired => {
+            VolumeError::DeviceDisconnected(err.to_string().into())
+        }
+        ErrorKind::TimedOut => VolumeError::ConnectionTimeout(err.to_string().into()),
         ErrorKind::DiskFull => VolumeError::StorageFull {
-            message: err.to_string(),
+            message: err.to_string().into(),
         },
-        ErrorKind::Cancelled => VolumeError::Cancelled("Operation cancelled by user".to_string()),
+        ErrorKind::Cancelled => VolumeError::Cancelled("Operation cancelled by user".into()),
         // The server refused the NAME, not the operation, so it never looked for
         // the file and retrying the same name can only fail again. smb2 already
         // maps the characters SMB2 forbids outright into the private-use area, so
         // what lands here is a reserved device name, a name past the server's
         // length limit, or a character its filesystem can't store — all of which
         // the user fixes by renaming, and none of which a retry helps.
-        ErrorKind::InvalidName => VolumeError::InvalidName(err.to_string()),
+        ErrorKind::InvalidName => VolumeError::InvalidName(err.to_string().into()),
         // Typed, never an `IoError`: a refused reply isn't a transport blip to retry.
-        ErrorKind::SignatureInvalid => VolumeError::SignatureInvalid(err.to_string()),
+        ErrorKind::SignatureInvalid => VolumeError::SignatureInvalid(err.to_string().into()),
         _ => VolumeError::IoError {
             raw_os_error: local_errno(&err),
-            message: err.to_string(),
+            message: err.to_string().into(),
         },
     }
 }

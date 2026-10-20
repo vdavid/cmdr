@@ -591,7 +591,7 @@ async fn a_failed_sequential_extract_takes_back_every_unfilled_reservation() {
         FaultyOp::WriteFromStream,
         1,
         VolumeError::IoError {
-            message: "simulated write failure".to_string(),
+            message: "simulated write failure".into(),
             raw_os_error: None,
         },
     )

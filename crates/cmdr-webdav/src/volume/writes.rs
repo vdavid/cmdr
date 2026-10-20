@@ -249,7 +249,8 @@ pub(super) fn size_mismatch(remote: &str, got: u64, size: u64) -> VolumeError {
             "{remote}: the source promised {} and yielded {}",
             pluralize_grouped(size, "byte"),
             pluralize_grouped(got, "byte")
-        ),
+        )
+        .into(),
         raw_os_error: None,
     }
 }
@@ -435,7 +436,7 @@ impl WebdavVolume {
                             // polled again: a server that stalled mid-upload would
                             // otherwise hold the cancel until it asks for more.
                             stop.cancel();
-                            break Err(VolumeError::Cancelled(self.volume_id().to_string()));
+                            break Err(VolumeError::Cancelled(self.volume_id().to_string().into()));
                         }
                     }
                 }
@@ -449,7 +450,7 @@ impl WebdavVolume {
             Ok(response) => response,
             Err(e) => {
                 if stop.is_cancelled() {
-                    return Err(VolumeError::Cancelled(self.volume_id().to_string()));
+                    return Err(VolumeError::Cancelled(self.volume_id().to_string().into()));
                 }
                 if let Some(source) = source_error.lock_ignore_poison().take() {
                     return Err(source);
@@ -478,7 +479,7 @@ impl WebdavVolume {
             return Err(size_mismatch(target, total, size));
         }
         if on_progress(total, size).is_break() {
-            return Err(VolumeError::Cancelled(self.volume_id().to_string()));
+            return Err(VolumeError::Cancelled(self.volume_id().to_string().into()));
         }
         Ok(response)
     }

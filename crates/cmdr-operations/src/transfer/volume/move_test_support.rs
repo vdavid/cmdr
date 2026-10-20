@@ -237,7 +237,7 @@ impl Volume for MoveRenameFailsDestVolume {
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async {
             Err(VolumeError::IoError {
-                message: "simulated disconnect during finalize rename".to_string(),
+                message: "simulated disconnect during finalize rename".into(),
                 raw_os_error: None,
             })
         })

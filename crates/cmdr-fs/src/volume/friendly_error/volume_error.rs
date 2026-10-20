@@ -179,7 +179,7 @@ pub fn listing_error_from_volume_error(err: &VolumeError, path: &Path) -> Listin
         VolumeError::IoError {
             raw_os_error: None,
             message,
-        } => kinds::io_serious(&path_display, message, raw),
+        } => kinds::io_serious(&path_display, &message.to_string(), raw),
         // A HEADER-encrypted archive (a `-mhe=on` 7z) reaches the LISTING path with
         // `NeedsPassword`: its metadata is encrypted, so even browsing needs the
         // password. Surface the dedicated reason the FE renders as a password prompt

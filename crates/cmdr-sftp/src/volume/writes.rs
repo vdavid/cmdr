@@ -125,7 +125,7 @@ impl PositionedWrite for RemoteWrite {
         Pin::new(&mut self.file)
             .start_seek(SeekFrom::Start(offset))
             .map_err(|e| VolumeError::IoError {
-                message: e.to_string(),
+                message: e.to_string().into(),
                 raw_os_error: e.raw_os_error(),
             })?;
         self.file
@@ -150,7 +150,7 @@ pub(super) async fn write_all_at<W: PositionedWrite>(
             // nothing again, and treating it as progress would hang the upload
             // instead of failing it.
             return Err(VolumeError::IoError {
-                message: format!("the server accepted none of a {}-byte write", bytes.len() - done),
+                message: format!("the server accepted none of a {}-byte write", bytes.len() - done).into(),
                 raw_os_error: None,
             });
         }
@@ -349,7 +349,7 @@ impl SftpVolume {
             })
             .is_break()
             {
-                return Err(VolumeError::Cancelled(remote.to_string()));
+                return Err(VolumeError::Cancelled(remote.to_string().into()));
             }
         }
     }
@@ -473,7 +473,8 @@ fn size_mismatch(remote: &str, got: u64, declared: u64) -> VolumeError {
             "{remote}: the source declared {} and yielded {}",
             pluralize_grouped(declared, "byte"),
             pluralize_grouped(got, "byte")
-        ),
+        )
+        .into(),
         raw_os_error: None,
     }
 }

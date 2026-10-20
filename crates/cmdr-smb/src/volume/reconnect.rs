@@ -133,9 +133,7 @@ impl SmbVolumeInner {
         // lock means a queued caller doesn't pay the lock-acquisition cost for
         // a volume that's about to be (or already is) gone.
         if self.unmounted.load(Ordering::Relaxed) {
-            return Err(VolumeError::DeviceDisconnected(
-                "SMB volume has been unmounted".to_string(),
-            ));
+            return Err(VolumeError::DeviceDisconnected("SMB volume has been unmounted".into()));
         }
 
         // Single-flight: concurrent callers (FE cycle tick + lazy nav-time
@@ -145,9 +143,7 @@ impl SmbVolumeInner {
         // Re-check `unmounted`: between releasing the early check and acquiring
         // the lock, `on_unmount` may have run on another thread.
         if self.unmounted.load(Ordering::Relaxed) {
-            return Err(VolumeError::DeviceDisconnected(
-                "SMB volume has been unmounted".to_string(),
-            ));
+            return Err(VolumeError::DeviceDisconnected("SMB volume has been unmounted".into()));
         }
 
         if self.connection_state() == ConnectionState::Direct {
@@ -249,7 +245,7 @@ impl SmbVolumeInner {
             drop(client);
             drop(tree);
             return Err(VolumeError::DeviceDisconnected(
-                "SMB volume was unmounted during reconnect".to_string(),
+                "SMB volume was unmounted during reconnect".into(),
             ));
         }
 

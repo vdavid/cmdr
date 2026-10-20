@@ -216,7 +216,7 @@ impl PartCopy {
                 let etag = copied.etag.ok_or_else(|| {
                     fail(
                         VolumeError::IoError {
-                            message: format!("{}: part {} answered without an ETag", self.remote, self.number),
+                            message: format!("{}: part {} answered without an ETag", self.remote, self.number).into(),
                             raw_os_error: None,
                         },
                         false,
@@ -375,7 +375,7 @@ impl S3Volume {
         }
         let plan = plan_parts_with_floor(size, self.part_floor(), client.profile().short_tail).map_err(|TooLarge| {
             VolumeError::IoError {
-                message: format!("{to_remote}: too big for one S3 object (10,000 parts of 5 GiB)"),
+                message: format!("{to_remote}: too big for one S3 object (10,000 parts of 5 GiB)").into(),
                 raw_os_error: None,
             }
         })?;
@@ -461,7 +461,7 @@ impl S3Volume {
             }
             // The copy is what publishes: a pause waits here, a Cancel stops it.
             if progress.checkpoint().await.is_break() || progress.advanced(0, size).is_break() {
-                return Err(VolumeError::Cancelled(self.volume_id().to_string()));
+                return Err(VolumeError::Cancelled(self.volume_id().to_string().into()));
             }
             let answer = match client.exchange(built.request, COMPLETE_BUDGET).await {
                 Ok(answer) => answer,
@@ -570,7 +570,7 @@ impl S3Volume {
             self.refuse_if_taken(client, target).await?;
         }
         if progress.checkpoint().await.is_break() {
-            return Err(VolumeError::Cancelled(self.volume_id().to_string()));
+            return Err(VolumeError::Cancelled(self.volume_id().to_string().into()));
         }
         let (upload_id, mut guard) = self.start_recorded_upload(client, target).await?;
         let gone = Arc::new(AtomicBool::new(false));
@@ -580,7 +580,7 @@ impl S3Volume {
         // ❗ The completion publishes, so a Cancel that came in while the last
         // part was in flight is honoured before it.
         let copied = copied.and_then(|parts| match progress.advanced(plan.total, plan.total) {
-            ControlFlow::Break(()) => Err(VolumeError::Cancelled(self.volume_id().to_string())),
+            ControlFlow::Break(()) => Err(VolumeError::Cancelled(self.volume_id().to_string().into())),
             ControlFlow::Continue(()) => Ok(parts),
         });
         let copied = match copied {
@@ -725,7 +725,7 @@ impl S3Volume {
                     }
                 };
                 if flow.is_break() {
-                    return Err(VolumeError::Cancelled(self.volume_id().to_string()));
+                    return Err(VolumeError::Cancelled(self.volume_id().to_string().into()));
                 }
                 waiting.pop_front();
                 in_flight.push(Box::pin(part(number, 1, None).send()));
@@ -771,7 +771,7 @@ fn settle_part(
             copy.parts.push(landed);
             copy.window.landed();
             if progress.advanced(*copy.done_bytes, total).is_break() {
-                return Err(VolumeError::Cancelled(volume_id.to_string()));
+                return Err(VolumeError::Cancelled(volume_id.to_string().into()));
             }
             Ok(())
         }

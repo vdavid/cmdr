@@ -23,7 +23,7 @@ use crate::volume::git_error::{FriendlyGitError, FriendlyGitErrorKind};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 fn make_io_error(errno: i32) -> VolumeError {
     VolumeError::IoError {
-        message: format!("test error {}", errno),
+        message: format!("test error {}", errno).into(),
         raw_os_error: Some(errno),
     }
 }

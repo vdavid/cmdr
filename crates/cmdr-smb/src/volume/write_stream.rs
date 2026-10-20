@@ -83,7 +83,8 @@ fn source_broke_its_length(smb_path: &str, got: u64, declared: u64) -> VolumeErr
             "{smb_path}: the source declared {} and yielded {}",
             pluralize_grouped(declared, "byte"),
             pluralize_grouped(got, "byte")
-        ),
+        )
+        .into(),
         raw_os_error: None,
     }
 }
@@ -289,7 +290,7 @@ impl SmbVolume {
                         })
                         .is_break()
                         {
-                            return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+                            return Err(VolumeError::Cancelled("Operation cancelled by user".into()));
                         }
                     }
                     // A source that came up short is refused too: `Known(size)`
@@ -467,7 +468,7 @@ impl SmbVolume {
                         // Best-effort delete of the partial file on its own
                         // cloned connection (the writer's connection is gone).
                         delete_partial().await;
-                        return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+                        return Err(VolumeError::Cancelled("Operation cancelled by user".into()));
                     }
                 }
 

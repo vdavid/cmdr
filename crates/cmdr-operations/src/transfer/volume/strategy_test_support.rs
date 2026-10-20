@@ -494,7 +494,7 @@ impl Volume for UndeletableSource {
                 && !self.inner.list_directory(path, None).await?.is_empty()
             {
                 return Err(VolumeError::IoError {
-                    message: "Directory not empty".to_string(),
+                    message: "Directory not empty".into(),
                     raw_os_error: None,
                 });
             }
@@ -776,7 +776,7 @@ impl Volume for TierOneWitnessDest {
                     // the handle and remove the partial it was writing.
                     let _ = self.inner.delete(dest).await;
                     self.own_cleanup_ran.store(true, Ordering::SeqCst);
-                    return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+                    return Err(VolumeError::Cancelled("Operation cancelled by user".into()));
                 }
             }
             Ok(StreamWritten::nothing_refused(data.len() as u64))

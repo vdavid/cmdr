@@ -148,7 +148,7 @@ pub(super) async fn extract_sequential_subtree(
         // iteration covers the remainder of the subtree whenever skipped members
         // drain through it.
         if state.stop_or_park_async().await {
-            return Err(VolumeError::Cancelled("Operation cancelled by user".to_string())).at_source(source_path);
+            return Err(VolumeError::Cancelled("Operation cancelled by user".into())).at_source(source_path);
         }
         // Not in the plan ⇒ the file was skipped by conflict resolution (or isn't
         // wanted). Drop it; the next `next_file` drains its bytes.

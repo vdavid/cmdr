@@ -453,7 +453,7 @@ async fn landing_onto_a_name_believed_free_leaves_it_alone() {
 /// way; everything else says the destination is none of our business.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_rename_that_failed_for_another_reason_leaves_the_destination_alone() {
-    let (inner, outcome) = land_with_a_rename_that_fails(VolumeError::DeviceDisconnected("blip".to_string())).await;
+    let (inner, outcome) = land_with_a_rename_that_fails(VolumeError::DeviceDisconnected("blip".into())).await;
 
     assert!(
         matches!(
@@ -730,7 +730,7 @@ async fn a_refused_displacement_preserves_the_original_and_cleans_the_generated_
     let engine = TestOperations::new();
     let state = state(&engine);
     let inner =
-        Arc::new(InMemoryVolume::new("dest").with_rename_failing(VolumeError::DeviceDisconnected("blip".to_string())));
+        Arc::new(InMemoryVolume::new("dest").with_rename_failing(VolumeError::DeviceDisconnected("blip".into())));
     let dest: Arc<dyn Volume> = Arc::clone(&inner) as Arc<dyn Volume>;
     inner
         .create_file(Path::new("/notes.txt"), b"THE USER'S FILE")

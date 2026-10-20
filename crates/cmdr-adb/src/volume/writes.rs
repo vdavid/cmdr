@@ -235,7 +235,7 @@ impl AdbVolume {
             .await?;
         if on_progress(size, size).is_break() {
             let _ = shell::run(&self.inner.endpoint, &self.inner.serial, &["rm", "-f", &device_to]).await;
-            return Err(VolumeError::Cancelled(device_to));
+            return Err(VolumeError::Cancelled(device_to.into()));
         }
         self.notify_created(to).await;
         Ok(size)
@@ -280,7 +280,7 @@ impl AdbVolume {
             path = LogPrivate::path(path)
         );
         VolumeError::IoError {
-            message,
+            message: message.into(),
             raw_os_error: None,
         }
     }

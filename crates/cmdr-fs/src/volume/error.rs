@@ -10,6 +10,7 @@ use std::fmt::Write as _;
 
 use serde::{Deserialize, Serialize};
 
+use crate::error_detail::ErrorDetail;
 use crate::log_error::{ErrorLogText, ErrorText, write_plain};
 use crate::log_private::LogPrivate;
 use crate::volume::git_error::FriendlyGitError;
@@ -27,8 +28,9 @@ use crate::volume::git_error::FriendlyGitError;
 ///
 /// The `String`s in here are LOG AND TECHNICAL-DETAIL text, never a sentence
 /// shown on its own: the path-carrying variants carry a path (see
-/// [`from_io_at`](Self::from_io_at)), and the diagnostic-carrying ones carry
-/// whatever the backend said, for the technical-details disclosure.
+/// [`from_io_at`](Self::from_io_at)), and the diagnostic-carrying ones carry an
+/// [`ErrorDetail`]: whatever the backend said, for the technical-details
+/// disclosure, or the typed error behind it, so a log line marks its paths.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(
     tag = "type",
@@ -56,7 +58,7 @@ pub enum VolumeError {
     /// Not supported by this volume type.
     NotSupported,
     /// Device went away mid-operation.
-    DeviceDisconnected(String),
+    DeviceDisconnected(ErrorDetail),
     /// The device or server is listed, but nothing has connected to it yet, so
     /// no volume answers for it. Carries the path.
     ///
@@ -72,18 +74,18 @@ pub enum VolumeError {
     /// ❌ never map this to `DeviceDisconnected`, which would tear a live device
     /// out of the sidebar. MTP-only today. See `mtp/connection/DETAILS.md`
     /// § "Session reset is not a disconnect".
-    DeviceSessionReset(String),
+    DeviceSessionReset(ErrorDetail),
     /// Device or volume is read-only.
     ReadOnly(String),
     /// Device storage is full.
     StorageFull {
         /// What the backend reported, for the technical-details panel.
-        message: String,
+        message: ErrorDetail,
     },
     /// Connection timed out.
-    ConnectionTimeout(String),
+    ConnectionTimeout(ErrorDetail),
     /// Operation was cancelled by the user (progress callback returned Break).
-    Cancelled(String),
+    Cancelled(ErrorDetail),
     /// The path is a directory, not a file (for example, SMB STATUS_FILE_IS_A_DIRECTORY).
     IsADirectory(String),
     /// Something that isn't a directory sits where a directory has to be: a file,
@@ -112,7 +114,7 @@ pub enum VolumeError {
     /// device name (`CON`, `NUL`, `LPT1`), a name past the server's own length
     /// limit, or a character the server's filesystem can't store. Carries what the
     /// backend reported, for the technical-details panel.
-    InvalidName(String),
+    InvalidName(ErrorDetail),
     /// The file is in `STATUS_DELETE_PENDING`: a delete has been requested on the server
     /// but at least one open handle is keeping the file alive. The file will disappear
     /// once the last handle closes; any new `Create` (stat, open, write) on the path
@@ -172,12 +174,12 @@ pub enum VolumeError {
     /// Typed rather than an [`IoError`](Self::IoError): it's a possible sign of tampering
     /// between the Mac and the server (or a broken network device), not a transport blip, so
     /// it's never retried and the host records it (`SecurityRefusal`). SMB-only today.
-    SignatureInvalid(String),
+    SignatureInvalid(ErrorDetail),
     /// Anything the backend couldn't classify further. The classifier
     /// re-dispatches on `raw_os_error` when one is present.
     IoError {
         /// What the OS or backend reported, for the technical-details panel.
-        message: String,
+        message: ErrorDetail,
         /// The errno behind it, when there was one.
         raw_os_error: Option<i32>,
     },
@@ -218,7 +220,7 @@ impl std::fmt::Display for VolumeError {
 /// The one text behind `Display` and `LogError`. A path-carrying variant marks its
 /// path as the kind it is (a stale handle names a folder, cold storage and a changed
 /// source name a file); the diagnostic-carrying ones carry a backend's own words,
-/// which stay text. `ReadOnly` is a path from `from_io_at` and some backends but a
+/// which stay text unless an `ErrorDetail` kept a typed cause, whose values it marks. `ReadOnly` is a path from `from_io_at` and some backends but a
 /// message from others, so it's marked as a path: a message hashed whole loses a
 /// triage clue, an unmarked path ships a name.
 impl ErrorLogText for VolumeError {
@@ -241,14 +243,14 @@ impl ErrorLogText for VolumeError {
             ),
             Self::SourceChanged(path) => ("The source changed during the copy: ", LogPrivate::file_path(path)),
             Self::NotSupported => return out.write_str("Operation not supported"),
-            Self::DeviceDisconnected(msg) => return write!(out, "Device disconnected: {msg}"),
-            Self::DeviceSessionReset(msg) => return write!(out, "Device session restarted: {msg}"),
-            Self::StorageFull { message } => return write!(out, "Storage full: {message}"),
-            Self::ConnectionTimeout(msg) => return write!(out, "Connection timed out: {msg}"),
-            Self::Cancelled(msg) => return write!(out, "Cancelled: {msg}"),
-            Self::InvalidName(msg) => return write!(out, "Name not usable at the destination: {msg}"),
-            Self::SignatureInvalid(msg) => return write!(out, "Reply refused, its signature didn't hold: {msg}"),
-            Self::IoError { message, .. } => return write!(out, "I/O error: {message}"),
+            Self::DeviceDisconnected(msg) => return detail_line(out, "Device disconnected: ", msg),
+            Self::DeviceSessionReset(msg) => return detail_line(out, "Device session restarted: ", msg),
+            Self::StorageFull { message } => return detail_line(out, "Storage full: ", message),
+            Self::ConnectionTimeout(msg) => return detail_line(out, "Connection timed out: ", msg),
+            Self::Cancelled(msg) => return detail_line(out, "Cancelled: ", msg),
+            Self::InvalidName(msg) => return detail_line(out, "Name not usable at the destination: ", msg),
+            Self::SignatureInvalid(msg) => return detail_line(out, "Reply refused, its signature didn't hold: ", msg),
+            Self::IoError { message, .. } => return detail_line(out, "I/O error: ", message),
             Self::NeedsPassword { wrong_attempt: true } => return out.write_str("Archive password is incorrect"),
             Self::NeedsPassword { wrong_attempt: false } => return out.write_str("Archive is password-protected"),
             Self::FriendlyGit(err) => {
@@ -261,13 +263,20 @@ impl ErrorLogText for VolumeError {
     }
 }
 
+/// A message variant's line: its words, then the detail, which marks a typed cause's values and
+/// writes a backend's own words as foreign text.
+fn detail_line(out: &mut ErrorText<'_>, prefix: &str, detail: &ErrorDetail) -> std::fmt::Result {
+    out.write_str(prefix)?;
+    out.error(detail)
+}
+
 impl std::error::Error for VolumeError {}
 
 // Here, not in `child_name.rs`: the module-cycle check files an impl under the type it
 // produces, so beside `ChildName` it reads as `error` ↔ `child_name`.
 impl From<super::NotAChildName> for VolumeError {
     fn from(err: super::NotAChildName) -> Self {
-        VolumeError::InvalidName(err.to_string())
+        VolumeError::InvalidName(err.to_string().into())
     }
 }
 
@@ -314,9 +323,9 @@ impl VolumeError {
             // What the OS said, ❌ never the path: a message variant logs as plain text, and
             // every caller names the item from its own context.
             ErrorKind::StorageFull | ErrorKind::QuotaExceeded => Self::StorageFull {
-                message: err.to_string(),
+                message: err.to_string().into(),
             },
-            ErrorKind::InvalidFilename => Self::InvalidName(err.to_string()),
+            ErrorKind::InvalidFilename => Self::InvalidName(err.to_string().into()),
             _ => Self::from_io_without_path(err),
         }
     }
@@ -329,7 +338,7 @@ impl VolumeError {
     /// [`from_io_at`](Self::from_io_at) wherever a path is in scope.
     pub fn from_io_without_path(err: &std::io::Error) -> Self {
         Self::IoError {
-            message: err.to_string(),
+            message: err.to_string().into(),
             raw_os_error: err.raw_os_error(),
         }
     }

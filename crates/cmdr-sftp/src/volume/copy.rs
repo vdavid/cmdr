@@ -157,7 +157,7 @@ impl SftpVolume {
             // ❗ The only cancellation this path has. There is no token here, so a
             // caller that never looked at the callback would be uncancelable.
             if on_progress(copied, total).is_break() {
-                return Err(VolumeError::Cancelled(self.volume_id().to_string()));
+                return Err(VolumeError::Cancelled(self.volume_id().to_string().into()));
             }
         }
         Ok(())
@@ -170,7 +170,7 @@ fn seek_to(file: &mut File, offset: u64) -> Result<(), VolumeError> {
     Pin::new(file)
         .start_seek(SeekFrom::Start(offset))
         .map_err(|e| VolumeError::IoError {
-            message: e.to_string(),
+            message: e.to_string().into(),
             raw_os_error: e.raw_os_error(),
         })
 }

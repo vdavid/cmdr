@@ -75,7 +75,7 @@ impl AdbVolumeInner {
     pub(super) async fn do_attempt_reconnect(&self) -> Result<(), VolumeError> {
         let _guard = self.reconnect_lock.lock().await;
         if self.unmounted.load(Ordering::Relaxed) || self.connection.is_retired() {
-            return Err(VolumeError::DeviceDisconnected(self.volume_id.clone()));
+            return Err(VolumeError::DeviceDisconnected(self.volume_id.clone().into()));
         }
         match self.hello().await {
             Ok(()) => {

@@ -110,7 +110,7 @@ impl Volume for CancellingVolume {
                 if cancel.is_some_and(CancellationToken::is_cancelled) {
                     self.fetched_before_cancel.store(i, Ordering::Release);
                     self.listing_observed_cancel.store(true, Ordering::Release);
-                    return Err(VolumeError::Cancelled("listing cancelled".to_string()));
+                    return Err(VolumeError::Cancelled("listing cancelled".into()));
                 }
                 yielded.push(entry.clone());
                 self.fetched_live.fetch_add(1, Ordering::Release);
@@ -181,7 +181,7 @@ impl Volume for CancellingVolume {
         Box::pin(async move {
             if cancel.is_some_and(CancellationToken::is_cancelled) {
                 self.delete_observed_cancel.store(true, Ordering::Release);
-                return Err(VolumeError::Cancelled("delete cancelled".to_string()));
+                return Err(VolumeError::Cancelled("delete cancelled".into()));
             }
             Ok(())
         })
@@ -539,7 +539,7 @@ async fn volume_error_emits_write_settled_event() {
         ) -> Pin<Box<dyn Future<Output = Result<Vec<cmdr_fs::entry::FileEntry>, VolumeError>> + Send + 'a>> {
             Box::pin(async move {
                 Err(VolumeError::IoError {
-                    message: "simulated".to_string(),
+                    message: "simulated".into(),
                     raw_os_error: None,
                 })
             })
@@ -552,7 +552,7 @@ async fn volume_error_emits_write_settled_event() {
         ) -> Pin<Box<dyn Future<Output = Result<Vec<cmdr_fs::entry::FileEntry>, VolumeError>> + Send + 'a>> {
             Box::pin(async move {
                 Err(VolumeError::IoError {
-                    message: "simulated".to_string(),
+                    message: "simulated".into(),
                     raw_os_error: None,
                 })
             })

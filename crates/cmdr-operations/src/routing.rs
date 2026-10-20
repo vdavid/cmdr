@@ -508,7 +508,7 @@ impl crate::Operations {
         let target_names =
             TargetNames::new(renames.iter().cloned()).map_err(|NotAName(name)| WriteOperationError::InvalidName {
                 path: name,
-                message: "a new name is one name, not a path".to_string(),
+                message: "a new name is one name, not a path".into(),
             })?;
         let (sources, names): (Vec<PathBuf>, Vec<String>) = renames.into_iter().unzip();
         // Plain `get`: the route gates below refuse an in-zip or `.git` source or target.

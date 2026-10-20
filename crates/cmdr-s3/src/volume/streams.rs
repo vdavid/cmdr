@@ -107,7 +107,8 @@ impl S3ReadStream {
                 self.path,
                 pluralize_grouped(total, "byte"),
                 pluralize_grouped(reached, "byte")
-            ),
+            )
+            .into(),
             raw_os_error: None,
         })
     }
@@ -124,7 +125,7 @@ impl VolumeReadStream for S3ReadStream {
                     Ok(Some(Ok(chunk))) => chunk,
                     Ok(Some(Err(e))) => return Some(Err(e)),
                     Ok(None) => return self.ended_short().map(Err),
-                    Err(_elapsed) => return Some(Err(VolumeError::ConnectionTimeout(self.path.clone()))),
+                    Err(_elapsed) => return Some(Err(VolumeError::ConnectionTimeout(self.path.clone().into()))),
                 };
                 if self.skip > 0 {
                     let drop = usize::try_from(self.skip).unwrap_or(usize::MAX).min(chunk.len());

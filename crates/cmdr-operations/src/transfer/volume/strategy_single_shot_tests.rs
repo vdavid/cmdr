@@ -148,7 +148,7 @@ impl Volume for SingleShotDest {
                 })
                 .is_break()
                 {
-                    return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+                    return Err(VolumeError::Cancelled("Operation cancelled by user".into()));
                 }
             }
             Ok(StreamWritten::nothing_refused(written))

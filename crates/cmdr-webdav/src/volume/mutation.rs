@@ -212,7 +212,8 @@ pub(super) fn still_holds(remote: &str, held: usize) -> VolumeError {
         message: format!(
             "{remote} still holds {}",
             pluralize_with(held as u64, "entry", "entries")
-        ),
+        )
+        .into(),
         raw_os_error: Some(ENOTEMPTY),
     }
 }

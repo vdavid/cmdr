@@ -266,7 +266,7 @@ impl LocalPosixVolume {
                     drop(file);
                     let partial = dest_abs.clone();
                     let _ = spawn_blocking(move || std::fs::remove_file(&partial)).await;
-                    return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+                    return Err(VolumeError::Cancelled("Operation cancelled by user".into()));
                 }
             }
 

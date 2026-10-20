@@ -414,7 +414,7 @@ impl Volume for IncrementalDest {
                     // remove the partial at the WRITE path.
                     let _ = self.inner.delete(dest).await;
                     self.aborted.fetch_add(1, Ordering::SeqCst);
-                    return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+                    return Err(VolumeError::Cancelled("Operation cancelled by user".into()));
                 }
             }
             Ok(StreamWritten::nothing_refused(data.len() as u64))

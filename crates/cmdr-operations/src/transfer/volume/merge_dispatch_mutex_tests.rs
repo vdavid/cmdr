@@ -86,7 +86,7 @@ impl Volume for HeldReadSource {
                 .await;
                 if held.then_fail {
                     return Err(VolumeError::IoError {
-                        message: "simulated source read failure".to_string(),
+                        message: "simulated source read failure".into(),
                         raw_os_error: None,
                     });
                 }

@@ -399,7 +399,7 @@ async fn remove_tree_reports_the_leaf_that_refused() {
     let vol = UndeletableSource::new(
         "doomed.txt",
         VolumeError::IoError {
-            message: "Resource busy".to_string(),
+            message: "Resource busy".into(),
             raw_os_error: None,
         },
     );
@@ -598,7 +598,7 @@ async fn a_temp_refused_once_goes_on_the_background_retry() {
             FaultyOp::Delete,
             1,
             VolumeError::IoError {
-                message: "sharing violation".to_string(),
+                message: "sharing violation".into(),
                 raw_os_error: None,
             },
         )

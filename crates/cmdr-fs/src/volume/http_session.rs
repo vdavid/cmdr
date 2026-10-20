@@ -211,7 +211,7 @@ pub trait HttpBackend: Retires + Send + Sync + Sized + 'static {
                         biased;
                         outcome = work => outcome,
                         () = liveness.lost().cancelled() => {
-                            Err(VolumeError::DeviceDisconnected(session.connection.volume_id().to_string()))
+                            Err(VolumeError::DeviceDisconnected(session.connection.volume_id().to_string().into()))
                         }
                     };
                     drop(waiting);
@@ -427,7 +427,7 @@ impl<B: HttpBackend> HttpSession<B> {
     pub async fn client(&self) -> Result<Arc<B::Client>, VolumeError> {
         self.installed_client()
             .await
-            .ok_or_else(|| VolumeError::DeviceDisconnected(self.connection.volume_id().to_string()))
+            .ok_or_else(|| VolumeError::DeviceDisconnected(self.connection.volume_id().to_string().into()))
     }
 
     /// The live client, if there is one.

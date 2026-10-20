@@ -179,7 +179,7 @@ impl Volume for RecordingDest {
         if let Some(message) = self.listing_failure {
             return Box::pin(async move {
                 Err(VolumeError::IoError {
-                    message: message.to_string(),
+                    message: message.to_string().into(),
                     raw_os_error: None,
                 })
             });

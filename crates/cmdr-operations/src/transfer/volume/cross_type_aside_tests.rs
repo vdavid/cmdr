@@ -121,7 +121,7 @@ fn source_failing_first_read(source: Arc<InMemoryVolume>) -> Arc<FaultyVolume<In
             FaultyOp::OpenReadStream,
             1,
             VolumeError::IoError {
-                message: "simulated source read failure".to_string(),
+                message: "simulated source read failure".into(),
                 raw_os_error: None,
             },
         )

@@ -20,7 +20,7 @@ pub(super) fn map_mtp_error(e: MtpConnectionError) -> VolumeError {
         // path doesn't exist", and the conflict scan answered a gone phone with
         // "nothing clashes".
         MtpConnectionError::DeviceNotFound { .. } | MtpConnectionError::NotConnected { .. } => {
-            VolumeError::DeviceDisconnected(e.to_string())
+            VolumeError::DeviceDisconnected(e.to_string().into())
         }
         MtpConnectionError::ObjectNotFound { path, .. } => VolumeError::NotFound(path),
         // Same-named siblings: handled like SMB's look-alike `AmbiguousName`, but
@@ -33,26 +33,28 @@ pub(super) fn map_mtp_error(e: MtpConnectionError) -> VolumeError {
                 raw_os_error: None,
             }
         }
-        MtpConnectionError::Cancelled { .. } => VolumeError::Cancelled(e.to_string()),
-        MtpConnectionError::Disconnected { .. } => VolumeError::DeviceDisconnected(e.to_string()),
+        MtpConnectionError::Cancelled { .. } => VolumeError::Cancelled(e.to_string().into()),
+        MtpConnectionError::Disconnected { .. } => VolumeError::DeviceDisconnected(e.to_string().into()),
         // ❌ NOT `DeviceDisconnected`: a session reset leaves the device plugged
         // in and reopenable, so tearing down the volume would throw away a live
         // device. It's a RECOVERABLE failure of this one operation — the
         // connection layer already has a reopen running — so it carries its own
         // retryable variant rather than a dead-end `IoError`.
-        MtpConnectionError::SessionReset { .. } => VolumeError::DeviceSessionReset(e.to_string()),
-        MtpConnectionError::Timeout { .. } => VolumeError::ConnectionTimeout(e.to_string()),
-        MtpConnectionError::StorageFull { .. } => VolumeError::StorageFull { message: e.to_string() },
+        MtpConnectionError::SessionReset { .. } => VolumeError::DeviceSessionReset(e.to_string().into()),
+        MtpConnectionError::Timeout { .. } => VolumeError::ConnectionTimeout(e.to_string().into()),
+        MtpConnectionError::StorageFull { .. } => VolumeError::StorageFull {
+            message: e.to_string().into(),
+        },
         MtpConnectionError::StoreReadOnly { .. } => VolumeError::ReadOnly(e.to_string()),
         // The trait contract's refusal, carrying the errno POSIX would have
         // raised, so a caller that classifies on `raw_os_error` sees the same
         // thing here as it does over `LocalPosixVolume` or SMB.
         MtpConnectionError::DirectoryNotEmpty { .. } => VolumeError::IoError {
-            message: e.to_string(),
+            message: e.to_string().into(),
             raw_os_error: Some(ENOTEMPTY),
         },
         _ => VolumeError::IoError {
-            message: e.to_string(),
+            message: e.to_string().into(),
             raw_os_error: None,
         },
     }

@@ -158,7 +158,7 @@ impl PositionedRead for RemoteFile {
         Pin::new(&mut self.file)
             .start_seek(SeekFrom::Start(offset))
             .map_err(|e| VolumeError::IoError {
-                message: e.to_string(),
+                message: e.to_string().into(),
                 raw_os_error: e.raw_os_error(),
             })?;
         let len = u32::try_from(len).unwrap_or(u32::MAX);
@@ -273,7 +273,7 @@ impl SftpVolume {
             Ok(Err(e)) => return Err(e),
             // The producer's task went away without answering, which only a
             // runtime shutdown does.
-            Err(_) => return Err(VolumeError::DeviceDisconnected(self.inner.volume_id.clone())),
+            Err(_) => return Err(VolumeError::DeviceDisconnected(self.inner.volume_id.clone().into())),
         };
 
         Ok(ChannelReadStream::new(chunk_rx, cancel_tx, opened.length())

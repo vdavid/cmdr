@@ -151,7 +151,7 @@ impl AdbVolume {
                 device = LogPrivate::file_path(&device)
             );
             return Err(VolumeError::IoError {
-                message: format!("device-side range read exited {}", outcome.exit_code),
+                message: format!("device-side range read exited {}", outcome.exit_code).into(),
                 raw_os_error: None,
             });
         }
@@ -258,7 +258,7 @@ impl AdbVolume {
             })
             .is_break()
             {
-                return Err(VolumeError::Cancelled(device.to_string()));
+                return Err(VolumeError::Cancelled(device.to_string().into()));
             }
         }
         let date = stream.modified_at().unwrap_or_else(std::time::SystemTime::now);
@@ -280,7 +280,7 @@ impl AdbVolume {
 
 fn invalid_range(path: &str) -> VolumeError {
     VolumeError::IoError {
-        message: format!("range is too large for {path}"),
+        message: format!("range is too large for {path}").into(),
         raw_os_error: None,
     }
 }

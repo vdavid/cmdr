@@ -44,7 +44,7 @@ pub(crate) fn get_space_info_statvfs(path: &Path) -> Result<SpaceInfo, VolumeErr
     use std::ffi::CString;
 
     let path_c = CString::new(path.to_string_lossy().as_bytes()).map_err(|e| VolumeError::IoError {
-        message: e.to_string(),
+        message: e.to_string().into(),
         raw_os_error: None,
     })?;
 

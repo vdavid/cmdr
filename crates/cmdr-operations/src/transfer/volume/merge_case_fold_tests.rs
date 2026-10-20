@@ -120,9 +120,7 @@ impl Volume for CaseFoldingDest {
             self.probes.lock_ignore_poison().push(path.to_path_buf());
             let folded = self.fold(path).await;
             if self.probe_is_unanswerable && folded != *path {
-                return Err(VolumeError::DeviceDisconnected(
-                    "the share stopped answering".to_string(),
-                ));
+                return Err(VolumeError::DeviceDisconnected("the share stopped answering".into()));
             }
             self.inner.get_metadata(&folded).await
         })

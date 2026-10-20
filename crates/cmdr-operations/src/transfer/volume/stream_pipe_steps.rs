@@ -230,7 +230,7 @@ impl FileRun<'_> {
                 VolumeError::ConnectionTimeout(format!(
                     "the write of {} stopped moving and the transfer stopped waiting for it",
                     dest_path.display()
-                )),
+                ).into()),
             )),
             result = write_fut => WriteAttemptOutcome::Finished(result),
         };

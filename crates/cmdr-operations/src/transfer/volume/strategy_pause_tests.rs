@@ -501,7 +501,7 @@ impl Volume for BufferingDest {
             self.drained.notify_one();
             let _permit = self.go.acquire().await;
             if stop.should_stop().await {
-                return Err(VolumeError::Cancelled("stopped while paused".to_string()));
+                return Err(VolumeError::Cancelled("stopped while paused".into()));
             }
             self.inner.create_file(dest, &bytes).await?;
             let written = bytes.len() as u64;

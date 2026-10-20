@@ -30,12 +30,12 @@ impl WebdavVolume {
         {
             PropfindOutcome::Entries(entries) => Ok(entries),
             PropfindOutcome::NotMultistatus => Err(VolumeError::IoError {
-                message: "the server answered 207 without a multistatus body".to_string(),
+                message: "the server answered 207 without a multistatus body".into(),
                 raw_os_error: None,
             }),
             PropfindOutcome::TooLarge { limit } => Err(VolumeError::IoError {
                 // allowed-pluralize-noun: `limit` is a cap in mebibytes, never 1.
-                message: format!("the server's listing ran past {limit} bytes"),
+                message: format!("the server's listing ran past {limit} bytes").into(),
                 raw_os_error: None,
             }),
             PropfindOutcome::Status(status) => Err(map_status(status, remote, Attempted::Reaching)),
@@ -56,7 +56,7 @@ impl WebdavVolume {
         let client = self.clone_client().await?;
         let props = self.propfind(&client, &remote, true, Depth::One).await?;
         if cancel.is_some_and(CancellationToken::is_cancelled) {
-            return Err(VolumeError::Cancelled(remote));
+            return Err(VolumeError::Cancelled(remote.into()));
         }
         let own = format!(
             "{}{}",

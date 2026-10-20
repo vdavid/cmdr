@@ -78,7 +78,7 @@ async fn a_late_loss_from_before_the_device_came_back_leaves_it_connected() {
             // brings it back.
             volume.note_device_gone();
             volume.attempt_reconnect().await.expect("the device answers");
-            Err(VolumeError::DeviceDisconnected("before the way back".to_string()))
+            Err(VolumeError::DeviceDisconnected("before the way back".into()))
         })
         .await;
 
@@ -99,7 +99,7 @@ async fn a_late_loss_from_before_the_device_came_back_leaves_it_connected() {
 
     // A loss on the current generation still counts.
     let outcome: Result<(), _> = volume
-        .noting(async { Err(VolumeError::ConnectionTimeout("now".to_string())) })
+        .noting(async { Err(VolumeError::ConnectionTimeout("now".into())) })
         .await;
     assert!(outcome.is_err());
     assert_eq!(volume.session_state(), ConnectionState::Disconnected);

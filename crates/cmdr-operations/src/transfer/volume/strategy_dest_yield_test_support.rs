@@ -208,7 +208,7 @@ impl Volume for ForegroundBusyDest {
                 })
                 .is_break()
                 {
-                    return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+                    return Err(VolumeError::Cancelled("Operation cancelled by user".into()));
                 }
             }
             if single_shot {
@@ -306,7 +306,7 @@ impl Volume for PanicIfProbedDest {
                 })
                 .is_break()
                 {
-                    return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+                    return Err(VolumeError::Cancelled("Operation cancelled by user".into()));
                 }
             }
             Ok(StreamWritten::nothing_refused(bytes_written))
