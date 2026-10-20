@@ -76,6 +76,21 @@ overflow-checks = false
 [profile.dev]
 debug = "line-tables-only"
 
+# The regex engines, optimized even in debug and test builds. `redact` matches Unicode word
+# boundaries over lines that carry its non-ASCII span markers, so `regex` falls back from the lazy
+# DFA to the PikeVM, which unoptimized runs ~20 ms per 1 KB line. That made the redact property
+# tests the CI macOS lane's slowest (6–8 s, starved past the 8 s cap twice in three runs, each
+# costing a contention re-run). These are leaf deps, so the cost is one slower compile that
+# rust-cache keeps; release is untouched.
+[profile.dev.package.regex-automata]
+opt-level = 3
+[profile.dev.package.regex-syntax]
+opt-level = 3
+[profile.dev.package.aho-corasick]
+opt-level = 3
+[profile.dev.package.memchr]
+opt-level = 3
+
 # The house lint set, in ONE place. A member opts in with `lints.workspace = true`
 # rather than repeating a `#![deny(…)]` block at its crate root, so a new crate
 # can't quietly become a lint-free zone and the set can't drift between crates.
