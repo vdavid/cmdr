@@ -216,17 +216,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      # Reclaim ~15-20 GB of preinstalled SDKs we never use. The runner ships
-      # ~14 GB free; once rust-cache restores ~1.7 GB of `target/` + the cargo
-      # registry/index AND the SMB integration tests build their own archives
-      # while Docker holds the SMB container images, a cold-passing build runs
-      # out of disk ("No space left on device" linking libcmdr_lib.a). Freeing
-      # the Android SDK alone (~9 GB) is the bulk; the rest is headroom. Best-
-      # effort (`|| true`): dir names drift across runner images. `df -h` lands
-      # in the log so a future squeeze is diagnosable at a glance.
-      - name: Free disk space
+      # TEMPORARY measurement: samples root-disk usage every 5 s for the whole job, so the
+      # last step can report the peak.
+      - name: Start disk sampler
         run: |
-          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/share/swift /opt/hostedtoolcache/CodeQL || true
+          nohup bash -c 'while :; do df -B1M --output=used,avail / | tail -1 >>"$RUNNER_TEMP/df.log"; sleep 5; done' >/dev/null 2>&1 &
           df -h /
 
       - name: Install mise
@@ -246,9 +240,13 @@ jobs:
       # check means the whole job saves nothing, and every later run recompiles
       # the Tauri tree from cold while still failing. A red job is exactly when
       # the cache matters most, because that's the state you push fixes into.
+      #
+      # `shared-key` names the entry explicitly (it equals the job-ID key rust-cache would
+      # derive anyway), so `desktop-rust-fixtures` can restore this same entry by name.
       - name: Cache Rust build
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
+          shared-key: desktop-rust
           cache-on-failure: true
 
       - name: Install Tauri dependencies (Linux)
@@ -386,7 +384,61 @@ jobs:
       - name: Run Rust tests
         run: ./scripts/check/check --check desktop-rust-tests --ci
 
-      - name: Run the Docker fixture integration tests (SMB, SFTP, and WebDAV)
+      - name: Report disk usage
+        if: always()
+        run: |
+          df -h /
+          sort -n "$RUNNER_TEMP/df.log" | tail -1 | awk '{ printf "Peak used: %d MB, free at that point: %d MB\n", $1, $2 }'
+
+  # ===========================================
+  # Desktop app - Rust against the Docker fixtures
+  # ===========================================
+  # The fixture lanes (SMB, SFTP, WebDAV, and S3 containers, plus a real Nextcloud) in their
+  # own job, so their ~10 min of container bring-up runs alongside `desktop-rust` instead of
+  # after it. Same filter and gate as `desktop-rust`; it restores that job's rust-cache entry
+  # by name and never saves, so the repo keeps one Linux Rust entry. Dependency-only, like
+  # every rust-cache entry: the workspace crates compile here once, with the same cargo flags
+  # as `desktop-rust-tests` (`HostCargoLaneArgs`).
+  desktop-rust-fixtures:
+    name: Desktop (Rust, fixtures)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: changes
+    if: inputs.run_all || needs.changes.outputs.rust == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # TEMPORARY measurement: samples root-disk usage every 5 s for the whole job, so the
+      # last step can report the peak.
+      - name: Start disk sampler
+        run: |
+          nohup bash -c 'while :; do df -B1M --output=used,avail / | tail -1 >>"$RUNNER_TEMP/df.log"; sleep 5; done' >/dev/null 2>&1 &
+          df -h /
+
+      - name: Install mise
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          shared-key: desktop-rust
+          save-if: false
+
+      - name: Install Tauri dependencies (Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libacl1-dev
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      - name: Run the Docker fixture integration tests (SMB, SFTP, WebDAV, and S3)
         run: ./scripts/check/check --check desktop-rust-integration-tests --ci
 
       # The sabre/dav cells, against a real Nextcloud. Slow-lane locally (a ~1 GB
@@ -395,9 +447,16 @@ jobs:
       # still answer this way" has to be asked: the three claims these cells pin
       # are the only ones in `crates/cmdr-webdav` that no Apache fixture can
       # reach. Measured 2026-09-02: ~1 min of container, seconds of tests, on a
-      # build this job already warmed.
+      # build the step above already warmed.
       - name: Run the WebDAV cells against a real Nextcloud (sabre/dav)
         run: ./scripts/check/check --check desktop-rust-webdav-nextcloud --ci
+
+      - name: Report disk usage
+        if: always()
+        run: |
+          df -h /
+          docker system df
+          sort -n "$RUNNER_TEMP/df.log" | tail -1 | awk '{ printf "Peak used: %d MB, free at that point: %d MB\n", $1, $2 }'
 
   # ===========================================
   # Desktop app - Rust on macOS
@@ -440,10 +499,12 @@ jobs:
 
       # Its own cache (rust-cache keys on job and OS). `save-if` keeps a PR from writing a second
       # multi-GB entry against the repo's 10 GB ceiling; `cache-on-failure` for the same reason
-      # as in `desktop-rust`: a red run is when the next push needs a warm cache most.
+      # as in `desktop-rust`: a red run is when the next push needs a warm cache most. `shared-key`
+      # (equal to the job-ID key) lets `desktop-rust-module-cycles` restore this entry by name.
       - name: Cache Rust build
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
+          shared-key: desktop-rust-macos
           cache-on-failure: true
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
@@ -465,15 +526,65 @@ jobs:
       - name: Run Rust tests
         run: ./scripts/check/check --check desktop-rust-tests --ci
 
-      # On this job because the module-cycles baseline is a macOS module graph (an ubuntu
-      # analysis drops the macOS-gated modules). The check owns the pin and prints it here.
-      # rust-cache carries `~/.cargo/bin`, so the multi-minute install only runs on a cold
-      # cache or a version bump.
+  # ===========================================
+  # Desktop app - Rust module cycles (macOS)
+  # ===========================================
+  # Its own job so the cargo-modules analysis runs alongside `desktop-rust-macos` instead of
+  # after its suite. On macOS, and on the same `macos-26` image, because the module-cycles
+  # baseline is a macOS module graph: an ubuntu analysis drops the macOS-gated modules, so its
+  # numbers would disagree for reasons unrelated to coupling. Same filter and gate as the other
+  # Rust jobs.
+  desktop-rust-module-cycles:
+    name: Desktop (Rust, module cycles)
+    runs-on: macos-26
+    # A cold cargo-modules install (it builds rust-analyzer) plus a cold build-script pass.
+    timeout-minutes: 30
+    needs: changes
+    if: inputs.run_all || needs.changes.outputs.rust == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install mise
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+
+      - name: Install tools with mise
+        run: mise install
+
+      # cargo-modules loads the workspace the way rust-analyzer does, running build scripts
+      # and proc macros, so `desktop-rust-macos`'s warm `target/` saves that compile. Restore
+      # only: that job owns the entry.
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          shared-key: desktop-rust-macos
+          save-if: false
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      # The check owns the pin and prints it here.
+      - name: Read the pinned cargo-modules version
+        id: cargo-modules
+        run: echo "version=$(./scripts/check/check --print-cargo-modules-version)" >>"$GITHUB_OUTPUT"
+
+      # A cache of its own, keyed on the pin, because the rust-cache entry above is restore-only
+      # here and `desktop-rust-macos` never installs the tool. The multi-minute build then only
+      # runs on a version bump.
+      - name: Cache cargo-modules
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cargo/bin/cargo-modules
+          key: cargo-modules-${{ steps.cargo-modules.outputs.version }}-${{ runner.os }}-${{ runner.arch }}
+
       - name: Install cargo-modules (pinned)
+        env:
+          VERSION: ${{ steps.cargo-modules.outputs.version }}
         run: |
-          version="$(./scripts/check/check --print-cargo-modules-version)"
-          if [ "$(cargo-modules --version 2>/dev/null)" != "cargo-modules $version" ]; then
-            cargo install cargo-modules --version "$version" --locked
+          if [ "$(cargo-modules --version 2>/dev/null)" != "cargo-modules $VERSION" ]; then
+            cargo install cargo-modules --version "$VERSION" --locked
           fi
 
       - name: Check Rust module cycles
@@ -1350,7 +1461,9 @@ jobs:
         changes,
         full-run,
         desktop-rust,
+        desktop-rust-fixtures,
         desktop-rust-macos,
+        desktop-rust-module-cycles,
         desktop-svelte,
         desktop-e2e-linux,
         website,
