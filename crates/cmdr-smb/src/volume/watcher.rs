@@ -18,6 +18,7 @@ use super::state::SessionGeneration;
 use super::{MountAnchor, SmbVolumeInner};
 use cmdr_fs::archive_format::has_supported_archive_extension;
 use cmdr_fs::entry::FileEntry;
+use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::host::VolumeHost;
@@ -25,6 +26,7 @@ use cmdr_fs::volume::host::indexing::WatchGap;
 use cmdr_fs::volume::{DirectoryChange, SelfHandle, Volume};
 use futures_util::StreamExt;
 use log::{debug, info, warn};
+use smb2::types::SessionId;
 use smb2::{ClientConfig, FileNotifyAction};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -313,6 +315,7 @@ pub(super) async fn run_smb_watcher(
     username: String,
     password: String,
     volume: WatchedVolume,
+    replaces: Option<SessionId>,
     cancel_rx: tokio::sync::oneshot::Receiver<()>,
 ) {
     let WatchedVolume {
@@ -341,6 +344,9 @@ pub(super) async fn run_smb_watcher(
         // namespace-backed volume would index but never notice a change.
         dfs_enabled: true,
         dfs_target_overrides: Default::default(),
+        // The watcher session that died before this one (its own predecessor,
+        // never the main session's), so the server ends it and its watch handle.
+        previous_session_id: replaces,
         ..Default::default()
     };
     // A watcher that can't even establish its session can't keep the index
@@ -559,6 +565,13 @@ pub(super) async fn run_smb_watcher(
                 // — only a rescan does (the "admittedly stale" model).
                 host.indexing().watch_gap(&volume_id, WatchGap::WatcherStopped);
                 let _ = watcher.close().await;
+                // Before the reconnect below, whose new watcher names this session
+                // to the server so it frees the watch handle at once.
+                if let Some(id) = super::session::retired_session_id(&client)
+                    && let Some(inner) = share.live()
+                {
+                    *inner.retired_watcher_session.lock_ignore_poison() = Some(id);
+                }
                 // Backend-autonomous recovery: the watcher's dedicated session
                 // dying proves the server connection broke. Drive a bounded-backoff
                 // reconnect (single source of truth: `SmbVolume::do_attempt_reconnect`),

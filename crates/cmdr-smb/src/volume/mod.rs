@@ -251,6 +251,10 @@ struct SmbVolumeInner {
     state: SessionCell,
     /// Cancel sender for the background watcher task. Send to stop watching.
     watcher_cancel: std::sync::Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
+    /// The id of the watcher session that died, set on its way out and taken by
+    /// the next `spawn_watcher`, whose session names it to the server
+    /// (`session::retired_session_id`). The watcher's own predecessor only.
+    retired_watcher_session: std::sync::Mutex<Option<smb2::types::SessionId>>,
     /// Single-flight guard for `attempt_reconnect`. Concurrent callers (FE
     /// backoff cycle + lazy nav-time retry) wait on the same in-flight attempt
     /// instead of dog-piling the server.
@@ -378,6 +382,7 @@ impl SmbVolume {
                 )))),
                 state: SessionCell::new(ConnectionState::Direct, SessionGeneration::FIRST),
                 watcher_cancel: std::sync::Mutex::new(None),
+                retired_watcher_session: std::sync::Mutex::new(None),
                 reconnect_lock: Arc::new(tokio::sync::Mutex::new(())),
                 unmounted: Arc::new(AtomicBool::new(false)),
                 retirement: Arc::new(Retirement::new()),
@@ -553,7 +558,7 @@ pub async fn connect_smb_volume(
     params: SmbConnectionParams,
     host: VolumeHost,
 ) -> Result<SmbVolume, smb2::Error> {
-    let (client, tree) = build_session(&params).await?;
+    let (client, tree) = build_session(&params, None).await?;
     let vol = SmbVolume::new(name, anchor, volume_id, params.clone(), client, tree, host);
     vol.inner.spawn_watcher(&params, SessionGeneration::FIRST);
     // PII-free analytics: a direct SMB connection succeeded. No host / share / credential
@@ -660,6 +665,8 @@ mod params_test {
 #[cfg(test)]
 mod attributes_integration_test;
 #[cfg(test)]
+mod black_hole_proxy;
+#[cfg(test)]
 mod conformance_test;
 #[cfg(test)]
 mod credit_cap_proxy;
@@ -671,6 +678,8 @@ mod host_seam_test;
 mod integration_test;
 #[cfg(test)]
 mod links_integration_test;
+#[cfg(test)]
+mod previous_session_integration_test;
 #[cfg(test)]
 mod read_stream_integration_test;
 #[cfg(test)]

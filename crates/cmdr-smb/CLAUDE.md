@@ -14,20 +14,19 @@ keychain, mounts, and human-facing words stay in the app's `network/`.
 
 - **The backend asks the app only through the `VolumeHost`** (`crates/cmdr-fs/src/volume/host/CLAUDE.md`); background
   work spawns onto `host.runtime()`.
-- **The watcher runs on a DEDICATED session and never reconnects itself**: on death it kicks the ONE reconnect path
-  (`spawn_watcher_death_reconnect`). ❌ No second loop or cancel on pane close.
+- **The watcher runs on a DEDICATED session**: on death it kicks the ONE reconnect path
+  (`spawn_watcher_death_reconnect`). ❌ No second loop, no cancel on pane close.
 - **`SmbVolume` is a per-mount-root instance over a shared `Arc<SmbVolumeInner>`**; share-scoped background work reads
   `SmbVolumeInner::self_handle()`, ❌ never the volume id (the SUCCESSOR's after a swap).
 - **A replaced volume is SUPERSEDED, never unmounted**: `on_superseded` retires the id-scoped parts and leaves the
   session to transfers still holding an `Arc` (a teardown killed a live NAS copy). ❌ A promotion calls neither hook on
   the replaced instance (both act on the SHARED session).
-- **`paths_are_os_visible()` tracks the MOUNT, not the backend kind**. ❌ Never hardcode `true`: smb2 browses on past a
-  dead mount, so the drag it breaks fails silently.
+- **`paths_are_os_visible()` tracks the MOUNT**. ❌ Never hardcode `true`: smb2 browses on past a dead mount, so a drag
+  fails silently.
 - **`write_from_stream` drives an OWNED `FileWriter` on a cloned `Connection`** (❌ never borrowed under the session
   mutex: the QNAP deadlock); on error, `abort()` then delete the partial.
-- **A copy's date stamps the writer's OWN handle before `finish()`**; ❌ never by path while it's open (its close
-  re-stamps).
-- **Unknown-length writes always stream**, succeeding on `finish`'s confirmed count.
+- **A copy stamps dates on the writer's OWN handle before `finish()`**; ❌ never by path (its close re-stamps).
+- **Unknown-length writes stream**, succeeding on `finish`'s count.
 - **A forced file rename is one atomic `ReplaceIfExists` swap**; ❌ never clear a destination that's the source
   re-cased.
 - **One-frame fast paths stop at smb2's quick limits**: a hinted read at `quick_read_limit()`, the write promise at
@@ -37,16 +36,16 @@ keychain, mounts, and human-facing words stay in the app's `network/`.
 - **Bulk work draws on the refcounted pool of extra sessions** (`scan_pool.rs`); a dead member retries on a sibling, ❌
   never moving the MAIN volume's state.
 - **An error funnels with its lease's generation**, ❌ never a fresh read (DETAILS § "Which session a loss is about").
+- **A rebuilt session names only its OWN dead predecessor** (`retired_session_id`), ❌ never a live one.
 - **smb2 bounds every wait itself**: ❌ no timeout layer of ours.
-- **A link is `is_link()`, ❌ never the `REPARSE_POINT` bit** (dedup and cloud files carry it). DETAILS § "Junctions and
-  symlinks".
+- **A link is `is_link()`, ❌ never the `REPARSE_POINT` bit** (dedup and cloud files carry it; DETAILS § "Junctions
+  and symlinks").
 - **Path conversion matches whole COMPONENTS both ways** (`to_smb_path` / `to_display_path` join and strip
   `share_root`). ❌ Build a volume through `MountAnchor`, never a bare mount path: an anchored mount that loses its
   anchor addresses the share's top (ERR-48RZX).
-- **SMB names are opaque bytes** (NFC and NFD mix, ERR-VETBX): ❌ never normalize a share path, wire or watcher key (a
-  `\` in a watcher filename is NAME). A foreign path gets exact only via `find_stored_spelling`, ❌ never a fold inside
-  an operation (a delete could hit a look-alike). New names compose in the app's write layer (`composes_new_names`), ❌
-  never here.
+- **SMB names are opaque bytes** (ERR-VETBX): ❌ never normalize a share path, wire or watcher key (a `\` in a watcher
+  filename is NAME). A foreign path gets exact only via `find_stored_spelling`, ❌ never a fold inside an operation (a
+  delete could hit a look-alike). New names compose in the app's write layer, ❌ never here.
 
 ## Crate must-knows
 

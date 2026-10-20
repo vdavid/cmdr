@@ -278,6 +278,37 @@ is about.
   `a_send_failure_and_a_disconnect_*`, `the_reported_generation_moves_only_when_a_session_is_installed`), through both
   `handle_smb_result` and `note_smb_error`.
 
+### A replacement session names the one it replaces
+
+Every client here runs `auto_reconnect: false`, so a reconnect builds a fresh client, and without help the server can't
+tie the new session to the dropped one: it keeps the old session and its open handles until it notices the dead
+connection itself. After a drop with no FIN (a real network loss) that's minutes, and a temp the old session had open
+refuses its delete with `STATUS_SHARING_VIOLATION` meanwhile (#578, #581). So each replacement passes
+`ClientConfig::previous_session_id` (smb2 0.33.0), and the server ends the old session, closing its handles, before the
+new one's setup returns.
+
+- **Who names whom.** `build_session(params, replaces)` takes the id. The main reconnect (`reconnect_once`) reads it off
+  the still-installed `MainSession` before dialing. A scan-pool member sets its dead session's id aside in
+  `PoolMember::retired` as `mark_member_dead` clears the slot, and its `reconnect_member` takes it. A dying watcher
+  stores its own in `SmbVolumeInner::retired_watcher_session`, and the next `spawn_watcher` passes it to the new
+  watcher's `ClientConfig`. ❌ Never a sibling's: each names only its own predecessor.
+- **❗ Only a session smb2 tore down** (`session::retired_session_id`: `Some` only once the client's connection
+  `is_disconnected()`). The server ends a named session whether or not it's still working, and every request on it after
+  that comes back unsigned, so smb2 fails it as `SignatureInvalid`, which the app records as a security refusal. A main
+  session that's lost while its connection is still up (a watcher death the main link didn't share) keeps serving its
+  in-flight leases and closes when the last clone drops. With `auto_reconnect: false` a torn-down connection never
+  revives, so nobody is using a session it names.
+- **Where it does nothing.** Samba ignores the id for a guest login and for a different user's session (verified against
+  Samba 4.20.6 by smb2, 2026-10-20), so a guest share still waits for the server to notice; the transfer cleanup's
+  retries (`cmdr-operations`'s `transfer/leftover_cleanup.rs`) cover that case. DFS target connections start their own
+  sessions and aren't named.
+- **Durable handles.** On Windows 8.1+ naming the old session also closes its durable opens. Cmdr asks for none (writes
+  open with no oplock, lease, or durable context; `volume_impl.rs`), so nothing is lost. A future durable-reclaim path
+  must leave the id unset for the session it means to reclaim from.
+- Pinned by `previous_session_integration_test.rs` against `smb-consumer-auth` through a `BlackHoleProxy` (the drop with
+  no FIN): the held temp deletes on the first try after the reconnect, and a reconnect over a session still up leaves a
+  call on it working.
+
 ### Backend-autonomous reconnect and index resume
 
 The FE reconnect manager only runs its backoff while a `FilePane` subscribes to the volume, so before this a background
@@ -1311,6 +1342,8 @@ Which side each one lives on, and why: § "Which side a test lives on" above.
   own name carries one), and a name Cmdr writes round-trips.
 - `session_integration_test.rs` — what the SESSION does: the connection gate the fresh-listing oracle reads, the
   reconnect cycle, the refcounted scan pool, and what a supersede leaves alone.
+- `previous_session_integration_test.rs` — a reconnect naming the session it replaces, on the `auth` fixture through
+  `black_hole_proxy.rs` (§ "A replacement session names the one it replaces").
 - `src/connection_integration_test.rs` — the three answers `try_open_share` hears from the `both` fixture: a guest
   refused at TreeConnect, the allowed account let in, and a missing share's bad network name. What the app makes of them
   is `apps/desktop/src-tauri/src/network/share_access_test.rs`.

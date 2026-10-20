@@ -26,7 +26,10 @@ parallel load). The lead made these calls; they're yours to confirm or overturn:
    it: someone is working in that tree right now, and a delete has no rollback.
 4. **Accepted residual risk**: a byte-identical file someone saved at the name during an outage is claimed as ours (an
    undo would remove it), over failing every NAS copy whose reply a drop swallowed.
-5. **`PreviousSessionId` is out of scope** (see "The smb2 dependency"); it needs a new smb2 API.
+5. **A reconnect sends `PreviousSessionId`** (#581, smb2 0.33.0), so the server frees the dropped session's handles
+   before the new session is up. Safe because Cmdr opens no durable handles (Windows 8.1+ closes those too). The
+   cleanup's refusal retries stay: Samba ignores the id for a guest login. How: `crates/cmdr-smb/DETAILS.md` § "A
+   replacement session names the one it replaces".
 6. **All new user-facing copy is a v0 draft for your review**: the "Lost the connection to {server}" error (copy, move,
    delete, compress, archive edit), "changed while disconnected", the cancel summary's "removed once it's back" and
    "lands once it's back" lines, and the unfinished-landing notice. ❗ The 17 new keys aren't translated yet and 2
@@ -89,9 +92,8 @@ deletes the file (ours); verify that shape before relying on it. That release re
 resetting the connection on a mid-chain FLUSH); every escape below still happens on a drop from any other cause. ❌
 Don't plan against a re-flush or "FLUSH retried" path: a FLUSH refusal is a refusal, never a connection loss.
 
-Out of scope: sending `PreviousSessionId` on cmdr's reconnects (#490 layer 5). cmdr runs `auto_reconnect: false` and
-builds a fresh client; smb2 exposes `previous_session_id()` read-only, with no way to seed a new client. A possible
-later smb2 API (seed a client's session setup with a previous id); not part of this plan.
+`PreviousSessionId` on cmdr's reconnects (#490 layer 5) landed after this plan (decision 5): smb2 0.33.0 added
+`ClientConfig::previous_session_id` and `SmbClient::session_id`, and each fresh client names the session it replaces.
 
 ## Diagnosis recap (what the code does today)
 

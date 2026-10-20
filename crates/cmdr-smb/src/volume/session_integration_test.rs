@@ -505,7 +505,7 @@ async fn smb_integration_mount_unmount_cycles_leave_no_sockets_behind() {
 async fn smb_integration_a_session_swapped_mid_clone_is_handed_out_whole() {
     let vol = Arc::new(make_docker_volume().await);
     let params = vol.inner.params.read().await.clone();
-    let (new_client, new_tree) = build_session(&params).await.expect("a second session to install");
+    let (new_client, new_tree) = build_session(&params, None).await.expect("a second session to install");
 
     // Hold the session, the way a reconnect installing its own does, while
     // `clone_session` starts.

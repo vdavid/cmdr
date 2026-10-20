@@ -3,10 +3,12 @@
 //! start/stop, and the backend-autonomous watcher-death reconnect loop.
 
 use super::mapping::map_smb_error;
-use super::session::{MainSession, build_session, refresh_credentials_from_store, refresh_remembered_credentials};
+use super::session::{
+    MainSession, build_session, refresh_credentials_from_store, refresh_remembered_credentials, retired_session_id,
+};
 use super::state::{ConnectionState, SessionGeneration};
 use super::{SmbConnectionParams, SmbVolumeInner};
-use cmdr_fs::ignore_poison::RwLockIgnorePoison;
+use cmdr_fs::ignore_poison::{IgnorePoison, RwLockIgnorePoison};
 use cmdr_fs::log_error::LogError;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::SelfHandle;
@@ -96,8 +98,10 @@ impl SmbVolumeInner {
         // The app's runtime, never `tokio::spawn`: a backend's watcher can be
         // started from a synchronous setup hook or an OS thread with no reactor,
         // where `tokio::spawn` panics.
+        // The previous watcher's session, if it died on a torn-down connection.
+        let replaces = self.retired_watcher_session.lock_ignore_poison().take();
         self.host.runtime().spawn(super::watcher::run_smb_watcher(
-            addr, share, username, password, volume, cancel_rx,
+            addr, share, username, password, volume, replaces, cancel_rx,
         ));
 
         if let Ok(mut guard) = self.watcher_cancel.lock() {
@@ -170,7 +174,17 @@ impl SmbVolumeInner {
             LogPrivate::volume(&self.share_name)
         );
 
-        let first_attempt = build_session(&params_snapshot).await;
+        // The session this one replaces, still installed until the swap below.
+        // Naming it lets the server end it, and free what it held open (a temp a
+        // drop interrupted), before the new session is up (#581).
+        let replaces = self
+            .session
+            .lock()
+            .await
+            .as_ref()
+            .and_then(|s| retired_session_id(&s.client));
+
+        let first_attempt = build_session(&params_snapshot, replaces).await;
         let ((client, tree), connected_with) = match first_attempt {
             Ok(pair) => (pair, params_snapshot),
             Err(err) if crate::is_auth_error(&err) => {
@@ -184,7 +198,7 @@ impl SmbVolumeInner {
                         if refreshed.username != params_snapshot.username
                             || refreshed.password != params_snapshot.password =>
                     {
-                        match build_session(&refreshed).await {
+                        match build_session(&refreshed, replaces).await {
                             Ok(pair) => {
                                 // Refreshed creds worked; persist them on the volume.
                                 let mut params_w = self.params.write().await;

@@ -75,6 +75,7 @@ fn make_test_volume_full(volume_id: &str, host: VolumeHost, share_root: &str, mo
             session: Arc::new(tokio::sync::Mutex::new(None)),
             state: SessionCell::new(ConnectionState::Disconnected, SessionGeneration::FIRST),
             watcher_cancel: std::sync::Mutex::new(None),
+            retired_watcher_session: std::sync::Mutex::new(None),
             reconnect_lock: Arc::new(tokio::sync::Mutex::new(())),
             unmounted: Arc::new(AtomicBool::new(false)),
             retirement: Arc::new(Retirement::new()),

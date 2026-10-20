@@ -51,14 +51,16 @@ use futures_util::stream::FuturesUnordered;
 use super::mapping::map_smb_error;
 use super::query::{ListingStop, read_listing};
 use super::read_stream::{ASSUMED_MAX_READ, InlineReadStream};
-use super::session::build_session;
+use super::session::{build_session, retired_session_id};
 use super::state::{ConnectionState, ends_the_session};
 use super::{SmbConnectionParams, SmbVolume};
 use cmdr_fs::entry::FileEntry;
+use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::{Volume, VolumeError, VolumeReadStream};
 use smb2::SmbClient;
 use smb2::client::tree::Tree;
+use smb2::types::SessionId;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -92,6 +94,25 @@ struct MemberSession {
 /// briefly (clone or install), never across a `build_session`.
 struct PoolMember {
     session: tokio::sync::Mutex<Option<MemberSession>>,
+    /// The id of THIS member's session that died, set when it's cleared out of
+    /// `session` and taken by the reconnect that replaces it, which names it to
+    /// the server (`session::retired_session_id`). ❌ Never a sibling's.
+    retired: std::sync::Mutex<Option<SessionId>>,
+}
+
+impl PoolMember {
+    /// The dead session this member's reconnect replaces: still in the slot when
+    /// `mark_member_dead` couldn't take the lock, else the one it set aside.
+    async fn take_retired(&self) -> Option<SessionId> {
+        let in_slot = self
+            .session
+            .lock()
+            .await
+            .as_ref()
+            .and_then(|s| retired_session_id(&s.client));
+        let set_aside = self.retired.lock_ignore_poison().take();
+        in_slot.or(set_aside)
+    }
 }
 
 /// The pure member-selection bookkeeping, decoupled from the real sessions so the
@@ -197,6 +218,7 @@ impl ScanPool {
             }
             members.push(Arc::new(PoolMember {
                 session: tokio::sync::Mutex::new(sess),
+                retired: std::sync::Mutex::new(None),
             }));
         }
         let pool = Arc::new(Self {
@@ -255,8 +277,12 @@ impl ScanPool {
             // Clear the slot so acquire() skips it; a best-effort try_lock keeps
             // this off the await path (a concurrent clone releases in microseconds,
             // and the reconnect below reinstalls regardless).
-            if let Ok(mut guard) = self.members[idx].session.try_lock() {
-                *guard = None;
+            let member = &self.members[idx];
+            if let Ok(mut guard) = member.session.try_lock()
+                && let Some(dead) = guard.take()
+                && let Some(id) = retired_session_id(&dead.client)
+            {
+                *member.retired.lock_ignore_poison() = Some(id);
             }
         }
         self.spawn_reconnect(idx);
@@ -278,11 +304,13 @@ impl ScanPool {
     }
 
     async fn reconnect_member(&self, idx: usize) {
+        // Named on every attempt: a server that already ended it ignores the id.
+        let replaces = self.members[idx].take_retired().await;
         for delay in POOL_MEMBER_RECONNECT_BACKOFF {
             if self.closed.load(Ordering::Relaxed) {
                 return;
             }
-            match build_session(&self.params).await {
+            match build_session(&self.params, replaces).await {
                 Ok((client, tree)) => {
                     let mut guard = self.members[idx].session.lock().await;
                     if self.closed.load(Ordering::Relaxed) {
@@ -354,7 +382,7 @@ async fn open_slots(params: &SmbConnectionParams, n: usize, volume_id: &str) -> 
     let mut futs = FuturesUnordered::new();
     for i in 0..n {
         let params = params.clone();
-        futs.push(async move { (i, build_session(&params).await) });
+        futs.push(async move { (i, build_session(&params, None).await) });
     }
     let mut slots: Vec<Option<MemberSession>> = (0..n).map(|_| None).collect();
     while let Some((i, result)) = futs.next().await {

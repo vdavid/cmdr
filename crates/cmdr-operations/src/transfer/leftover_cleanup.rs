@@ -21,9 +21,12 @@
 //!    from [`CleanupPolicy::retry_after`] on, each wait doubling, whether it was
 //!    refused at the stop or the moment the destination came back: a write the
 //!    drain's deadline dropped closes its handle a moment after the drop when no
-//!    credit was on hand, and the session an outage dropped holds its temp open
-//!    until the server notices that session is gone (on Samba, a moment after
-//!    the new one is up, seconds when it's busy, `#578`). One refused for good (smb2#24's handle, held until the session ends) gets its
+//!    credit was on hand, and the session an outage dropped can hold its temp
+//!    open until the server notices that session is gone (on Samba, a moment
+//!    after the new one is up, seconds when it's busy, `#578`). An SMB
+//!    reconnect names the dropped session so the server ends it first (`#581`),
+//!    but Samba ignores that for a guest login, so the retries stay for guest
+//!    shares and the in-flight write's late close. One refused for good (smb2#24's handle, held until the session ends) gets its
 //!    answer on the next reconnect, when that session is gone.
 //! 3. **What's still there goes to the ledger's pending set, ONCE, after the pass
 //!    is done** (`in_flight_temps::keep_temp_for_arrival`), so this pass and the
@@ -171,9 +174,10 @@ const REFUSAL_RETRIES: u32 = 3;
 /// Deletes what it can of `left`, and answers what's still there.
 ///
 /// A temp the share refuses the moment it's back gets the same retries as one
-/// refused at the stop: the session the outage dropped holds it open until the
-/// server notices that session is gone, which Samba does a moment after the
-/// new one is up, and seconds later when it's busy (`#578`).
+/// refused at the stop: the session the outage dropped can hold it open until
+/// the server notices that session is gone, which Samba does a moment after
+/// the new one is up, and seconds later when it's busy (`#578`). A named SMB
+/// login's reconnect ends that session up front (`#581`); a guest's can't.
 async fn take_away(volume: &Arc<dyn Volume>, state: &Arc<WriteOperationState>, left: LeftBehind) -> Vec<PathBuf> {
     if !left.out.is_empty() || !reads_live(volume) {
         bring_back(volume, state).await;

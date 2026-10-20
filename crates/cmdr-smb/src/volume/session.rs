@@ -11,6 +11,7 @@ use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::credentials::StoredCredentials;
 use log::{debug, warn};
 use smb2::client::tree::Tree;
+use smb2::types::SessionId;
 use smb2::{ClientConfig, SmbClient};
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -195,9 +196,30 @@ impl SmbVolume {
     }
 }
 
+/// The session id a replacement client names as its `PreviousSessionId`
+/// (#581), or `None` while `client`'s connection is still up.
+///
+/// The server ends a named session even mid-request, and a request on it
+/// afterwards fails as `SignatureInvalid`, which reads as a security refusal.
+/// So a session is named only once smb2 has torn its connection down: with
+/// `auto_reconnect: false` nothing can revive it, so nobody is still using it.
+/// One whose connection is up (a watcher death the main session didn't share)
+/// closes itself when its last clone drops.
+pub(super) fn retired_session_id(client: &SmbClient) -> Option<SessionId> {
+    client.connection().is_disconnected().then(|| client.session_id())
+}
+
 /// Builds a fresh smb2 session using the given params. Returns the connected
 /// client + tree on success.
-pub(super) async fn build_session(params: &SmbConnectionParams) -> Result<(SmbClient, Tree), smb2::Error> {
+///
+/// `replaces` names the session this one stands in for
+/// ([`retired_session_id`]), so the server ends it, closing its handles, before
+/// the new one is up. ❌ Never a sibling's: each pool member or watcher names
+/// only its own predecessor.
+pub(super) async fn build_session(
+    params: &SmbConnectionParams,
+    replaces: Option<SessionId>,
+) -> Result<(SmbClient, Tree), smb2::Error> {
     use crate::build_smb_addr;
 
     let config = ClientConfig {
@@ -215,6 +237,10 @@ pub(super) async fn build_session(params: &SmbConnectionParams) -> Result<(SmbCl
         // ordinary NAS pays nothing for this being on.
         dfs_enabled: true,
         dfs_target_overrides: Default::default(),
+        // Safe because Cmdr asks for no durable handles: on Windows 8.1+ this
+        // also closes the old session's durable opens, which a client meaning to
+        // reclaim one must keep.
+        previous_session_id: replaces,
         ..Default::default()
     };
     let mut client = crate::connection::connect_volume_client(config).await?;

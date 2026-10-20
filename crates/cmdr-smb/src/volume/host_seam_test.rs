@@ -100,7 +100,7 @@ async fn a_creation_the_backend_cannot_stat_patches_nothing() {
 async fn unwatched_docker_volume(host: VolumeHost) -> SmbVolume {
     let params = docker_guest_params();
     let port = params.port;
-    let (client, tree) = build_session(&params)
+    let (client, tree) = build_session(&params, None)
         .await
         .unwrap_or_else(|e| panic!("no fixture container at 127.0.0.1:{port} ({e:?})"));
     let volume_id = cmdr_fs::volume::smb_volume_id("127.0.0.1", port, "public");
