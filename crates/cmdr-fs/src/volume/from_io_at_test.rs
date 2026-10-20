@@ -58,6 +58,25 @@ fn a_directory_where_a_file_was_expected_names_the_path() {
     ));
 }
 
+/// A full disk and an unusable name carry what the OS said, ❌ never the path: their variants
+/// hold a message, which logs as plain text (so the path would ship through the report's regex
+/// fallback only), and every caller already names the item from its own context.
+#[test]
+fn a_full_disk_or_an_unusable_name_keeps_the_path_out_of_its_message() {
+    for kind in [
+        io::ErrorKind::StorageFull,
+        io::ErrorKind::QuotaExceeded,
+        io::ErrorKind::InvalidFilename,
+    ] {
+        let err = at(kind);
+        let message = match &err {
+            VolumeError::StorageFull { message } | VolumeError::InvalidName(message) => message,
+            other => panic!("{kind:?} landed in {other:?}"),
+        };
+        assert_eq!(message, &io::Error::from(kind).to_string(), "{kind:?}");
+    }
+}
+
 /// `ENAMETOOLONG`: retrying the same name can only fail the same way, so it's
 /// `InvalidName`, the variant that offers no Retry.
 #[test]

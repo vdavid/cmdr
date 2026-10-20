@@ -311,10 +311,12 @@ impl VolumeError {
             ErrorKind::AlreadyExists => Self::AlreadyExists(located()),
             ErrorKind::ReadOnlyFilesystem => Self::ReadOnly(located()),
             ErrorKind::IsADirectory => Self::IsADirectory(located()),
+            // What the OS said, ❌ never the path: a message variant logs as plain text, and
+            // every caller names the item from its own context.
             ErrorKind::StorageFull | ErrorKind::QuotaExceeded => Self::StorageFull {
-                message: format!("{err}: {}", located()),
+                message: err.to_string(),
             },
-            ErrorKind::InvalidFilename => Self::InvalidName(format!("{err}: {}", located())),
+            ErrorKind::InvalidFilename => Self::InvalidName(err.to_string()),
             _ => Self::from_io_without_path(err),
         }
     }
