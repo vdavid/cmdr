@@ -416,7 +416,9 @@ async fn deep_prompts_keep_listing_order_while_the_copies_overlap() {
 async fn a_cancel_mid_subtree_leaves_no_leaf_still_writing() {
     let engine = TestOperations::new();
     let source = folder_of(40).await;
-    let dest = WindowWatchingDest::new(8, 8);
+    // Rendezvous above the window, so every leaf lingers out its whole deadline and
+    // the cancel can't miss: a copy that ends before it lands reports `Ok`.
+    let dest = WindowWatchingDest::new(8, 9);
     let dest_volume: Arc<dyn Volume> = Arc::clone(&dest) as Arc<dyn Volume>;
 
     let guard = engine.register("merge-window-cancel");
@@ -444,9 +446,9 @@ async fn a_cancel_mid_subtree_leaves_no_leaf_still_writing() {
         }
     });
 
-    // Let the window fill, then cancel through the real user-facing path.
-    // allowed-test-sleep: the canceller's head start IS the subject — the cancel has to land while several leaves are mid-write.
-    tokio::time::sleep(Duration::from_millis(60)).await;
+    // Let the window fill, then cancel through the real user-facing path while
+    // every leaf in it is mid-write.
+    cmdr_fs::testing::wait_until_async(Duration::from_secs(5), "the window to fill", || dest.still_live() == 8).await;
     engine.cancel_write_operation(&operation_id, false);
 
     let result = tokio::time::timeout(Duration::from_secs(20), copy)
