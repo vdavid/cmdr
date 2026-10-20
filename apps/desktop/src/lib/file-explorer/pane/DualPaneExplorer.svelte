@@ -23,7 +23,6 @@
     import {
         listen,
         type Location,
-        type UnlistenFn,
         updateFocusedPane,
         onVolumeContextAction,
         onVolumeUnmounted,
@@ -32,6 +31,7 @@
     import { ensureFontMetricsLoaded } from '#lib/font-metrics/index.js'
     import { determineNavigationPath } from '../navigation/path-navigation'
     import { createVolumeRootFollow } from './volume-root-follow'
+    import { createMountScope } from '#lib/utils/mount-scope.js'
 
     import { canGoBack, getCurrentEntry } from '../navigation/navigation-history'
     import { recordCursor, type CursorReading } from '../navigation/history-cursor'
@@ -186,11 +186,9 @@
     $effect(() =>
         registerFocusHome({ root: () => containerElement, refocus: focusActivePane, keepsFocus: isPaneChromeTarget }),
     )
-    let unlistenVolumeUnmount: UnlistenFn | undefined
-    let unlistenVolumeContextAction: UnlistenFn | undefined
-    let unlistenIndexEvents: UnlistenFn | undefined
-    let unlistenIndexAggregationComplete: UnlistenFn | undefined
-    let unlistenMenuBarRebuilt: UnlistenFn | undefined
+    // Everything onMount starts. Unmounting can land mid-startup, so each await is
+    // followed by an `add` that tears down at once and stops startup when it has.
+    const mountScope = createMountScope()
 
     // Debounced mirror of both panes' tab structure into the MCP backend store.
     // Owns its own reactive $effect + debounce timer; `syncTabsToBackend` is
@@ -582,13 +580,13 @@
     }
 
     onMount(async () => {
-        stopSplitKeyReleaseListener = splitNudger.listenForKeyRelease(window)
+        mountScope.add(splitNudger.listenForKeyRelease(window))
 
         // Start font metrics measurement in background (non-blocking)
         void ensureFontMetricsLoaded()
 
         // Start network discovery in background (non-blocking)
-        void initNetworkDiscovery()
+        void initNetworkDiscovery().finally(() => mountScope.add(cleanupNetworkDiscovery))
 
         // Initialize volume store (subscribes to backend-pushed volume list). Also
         // wire up the SMB reconnect manager; it listens for `volume-connection-changed`
@@ -600,13 +598,17 @@
             initRestrictedPathsStore(),
             initSystemStrings(),
         ])
+        mountScope.add(cleanupVolumeStore)
+        if (!mountScope.add(cleanupVolumeBusyStore)) return
 
         // Load persisted state, resolve volumes, and create tab managers
         const persistedState = await loadPersistedState()
+        if (mountScope.disposed) return
         explorerState.setTabMgr('left', persistedState.leftTabMgr)
         explorerState.setTabMgr('right', persistedState.rightTabMgr)
         explorerState.setFocusedPane(persistedState.focusedPane)
         await updateFocusedPane(persistedState.focusedPane)
+        if (mountScope.disposed) return
         explorerState.setLeftPaneWidthPercent(persistedState.leftPaneWidthPercent)
 
         initialized = true
@@ -621,6 +623,7 @@
         if (import.meta.env.DEV) {
             void recalculateWebviewOffset()
             window.addEventListener('resize', handleResizeForDevTools)
+            mountScope.add(() => { window.removeEventListener('resize', handleResizeForDevTools); })
         }
 
         // Subscribe to volume unmount events (redirect panes off ejected volumes)
@@ -628,42 +631,47 @@
         // looking the path up would find nothing if the `volumes-changed` refresh
         // won the race. The mount watchers still speak in paths, which is the
         // fallback.
-        unlistenVolumeUnmount = await onVolumeUnmounted((payload) => {
+        const unlistenVolumeUnmount = await onVolumeUnmounted((payload) => {
             const volumeId = payload.volumeId ?? volumeMountedAt(volumes, payload.volumePath)?.id
             if (volumeId) {
                 void edgeFlow.handleVolumeUnmount(volumeId)
             }
         })
+        if (!mountScope.add(unlistenVolumeUnmount)) return
         await volumeRootFollow.init()
+        if (!mountScope.add(volumeRootFollow.cleanup)) return
 
         // Native breadcrumb context menu's "Eject (name)" item routes back via this
         // event; body in `volume-context-action.ts`. The Svelte popup paths in
         // VolumeBreadcrumb call `ejectVolume` directly; this listener only handles
         // the native-menu case.
-        unlistenVolumeContextAction = await onVolumeContextAction((payload) => {
+        const unlistenVolumeContextAction = await onVolumeContextAction((payload) => {
             handleVolumeContextAction(payload, {
                 getVolumes: () => volumes,
                 getFocusedPane: () => explorerState.getFocusedPane(),
                 navigate: navigateIntent,
             })
         })
+        if (!mountScope.add(unlistenVolumeContextAction)) return
 
         // Refresh a pane's folder sizes when the index moved them (the backend names the listing).
-        unlistenIndexEvents = await onListingIndexSizesChanged((payload) => {
+        const unlistenIndexEvents = await onListingIndexSizesChanged((payload) => {
             handleListingIndexSizesChanged(payload)
         })
+        if (!mountScope.add(unlistenIndexEvents)) return
 
         // Refresh both panes when aggregation completes (all dir_stats are now in the DB)
-        unlistenIndexAggregationComplete = await listen('index-aggregation-complete', () => {
+        const unlistenIndexAggregationComplete = await listen('index-aggregation-complete', () => {
             getPaneRef('left')?.refreshIndexSizes()
             getPaneRef('right')?.refreshIndexSizes()
         })
+        if (!mountScope.add(unlistenIndexAggregationComplete)) return
 
         // The menu bar is thrown away and rebuilt when the UI language changes, so
         // every item is a new object and everything this window had pushed onto the
         // old ones is gone. Rust restores what it knows (checked states, the
         // view-mode pair); these six are the ones only the frontend knows.
-        unlistenMenuBarRebuilt = await onMenuBarRebuilt(() => {
+        const unlistenMenuBarRebuilt = await onMenuBarRebuilt(() => {
             resyncMenuAccelerators()
             syncPinTabMenu()
             syncReopenMenuState()
@@ -675,30 +683,20 @@
             // operation-start gate, which a fresh bar comes up without.
             void activateWindowMenu('main')
         })
+        if (!mountScope.add(unlistenMenuBarRebuilt)) return
 
         // Register the native drag-and-drop listeners (drag-image-size, drag-modifiers,
         // onDragDropEvent). The controller owns the band; the folder-highlight effect
         // was already created synchronously in the factory body.
         await dragDrop.init()
+        mountScope.add(dragDrop.cleanup)
     })
 
     onDestroy(() => {
-        unlistenVolumeUnmount?.()
-        volumeRootFollow.cleanup()
-        unlistenVolumeContextAction?.()
-        unlistenIndexEvents?.()
-        unlistenIndexAggregationComplete?.()
-        unlistenMenuBarRebuilt?.()
+        mountScope.dispose()
         tabMcpSync.cleanup()
         quickLookFollow.cleanup()
-        // No cleanup needed for throttle (no pending timers)
-        cleanupVolumeStore()
-        cleanupVolumeBusyStore()
-        cleanupNetworkDiscovery()
-        dragDrop.cleanup()
         tabDrag.destroy()
-        stopSplitKeyReleaseListener?.()
-        window.removeEventListener('resize', handleResizeForDevTools) // No-op in non-dev, safe to always call
     })
 
     function handlePaneResize(widthPercent: number) {
@@ -717,7 +715,6 @@
         setPercent: (percent) => { explorerState.setLeftPaneWidthPercent(percent); },
         persist: (percent) => { persistence.persistLayout(percent); },
     })
-    let stopSplitKeyReleaseListener: (() => void) | undefined
 
     function handlePaneResizeReset() {
         splitNudger.center()

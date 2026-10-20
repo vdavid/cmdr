@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { mount } from 'svelte'
+import { flushSync, mount, unmount } from 'svelte'
 import { tick } from 'svelte'
 import DualPaneExplorer from './DualPaneExplorer.svelte'
 
@@ -252,6 +252,49 @@ describe('DualPaneExplorer', () => {
     await tick()
 
     expect(updateFocusedPane).toHaveBeenCalledWith('right')
+  })
+
+  // Regression: `onMount` is async, so an explorer torn down before its awaits
+  // settle used to keep going and register listeners nothing ever removed.
+  it('removes every listener its startup registers, even when unmounted mid-startup', async () => {
+    const commands = await import('#lib/tauri-commands/index.js')
+    const registrations = [
+      commands.onVolumesChanged,
+      commands.onVolumeUnmounted,
+      commands.onVolumeRootChanged,
+      commands.onServerPlaceMoved,
+      commands.onVolumeContextAction,
+      commands.onListingIndexSizesChanged,
+      commands.listen,
+      commands.onMenuBarRebuilt,
+      commands.onDragImageSize,
+      commands.onDragModifiers,
+      commands.onNetworkHostFound,
+      commands.onNetworkHostLost,
+      commands.onNetworkHostResolved,
+      commands.onNetworkDiscoveryStateChanged,
+    ] as const
+    const unlistens: ReturnType<typeof vi.fn>[] = []
+    for (const register of registrations) {
+      vi.mocked(register).mockImplementation(() => {
+        const unlisten = vi.fn()
+        unlistens.push(unlisten)
+        return Promise.resolve(unlisten)
+      })
+    }
+    const warn = vi.spyOn(console, 'warn')
+
+    const target = document.createElement('div')
+    const explorer = mount(DualPaneExplorer, { target })
+    flushSync() // Runs onMount up to its first await.
+    await unmount(explorer)
+    for (let i = 0; i < 10; i++) await tick()
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    await tick()
+
+    expect(unlistens.filter((unlisten) => unlisten.mock.calls.length === 0)).toHaveLength(0)
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('derived_inert'))
+    warn.mockRestore()
   })
 })
 

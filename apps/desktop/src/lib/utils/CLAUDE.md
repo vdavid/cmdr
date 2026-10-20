@@ -7,11 +7,11 @@ Small stateless helpers. Pure, no Svelte state, safe to import from plain `.ts` 
 `filename-validation.ts` (client-side name and path validation), `timing.ts` (`withTimeout`, `createDebounce`,
 `createThrottle`, `createCoalesced`, `waitForNextPaint`), `shorten-middle.ts` + `shorten-middle-action.ts`
 (mid-truncation and its Svelte action), `srgb-mix.ts` + `webkit-compat.ts` (sRGB color math, `color-mix()` detection),
-`confirm-dialog.ts`, `pluralize.ts`, `text-input-focus.ts`, `reactivity.ts` (`dependOn`), `version.ts` (semver
-`major.minor.patch` ordering), `inline-size-action.ts` (the container-query stand-in), `scroll-box-size-action.ts` (a
-scroller's client box, scrollbars included), `boot-guard-keys.ts` (the three catalog keys the `app.html` boot guard
-shows), `unicode-fuzzy.ts` (the shared fuzzy matcher: any script, accent folding, exact CJK). Per-file export catalogs:
-`DETAILS.md`.
+`confirm-dialog.ts`, `pluralize.ts`, `text-input-focus.ts`, `reactivity.ts` (`dependOn`), `mount-scope.ts` (an async
+`onMount`'s teardowns, safe against unmount mid-startup), `version.ts` (semver `major.minor.patch` ordering),
+`inline-size-action.ts` (the container-query stand-in), `scroll-box-size-action.ts` (a scroller's client box, scrollbars
+included), `boot-guard-keys.ts` (the three catalog keys the `app.html` boot guard shows), `unicode-fuzzy.ts` (the shared
+fuzzy matcher: any script, accent folding, exact CJK). Per-file export catalogs: `DETAILS.md`.
 
 ## Must-knows
 

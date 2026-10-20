@@ -92,6 +92,15 @@ replaces the tag's content, or a mock's `..._args` kept for its type) is marked 
 carries two predicates: `isTextInputFocused()` reads `document.activeElement` (keyboard events), and
 `isTextInputTarget(target)` inspects an event target (mouse, where a right-click can land on an unfocused field).
 
+## mount-scope.ts
+
+`createMountScope()` collects the teardowns an async `onMount` starts; `onDestroy` calls `dispose()`. Unmounting can
+land while startup is parked on an await (a test that mounts and ends synchronously does exactly this), and a listener
+registered after that point would outlive the component and read its dead deriveds (`derived_inert`). So register each
+teardown right after the await that created it: `if (!scope.add(unlisten)) return`. On a disposed scope `add` runs the
+teardown at once and answers `false`, which both frees the late listener and stops the rest of startup. Used by
+`DualPaneExplorer.svelte`.
+
 ## version.ts
 
 `compareVersions(a, b)` orders two release strings by their numeric `major.minor.patch` core (negative / zero /
