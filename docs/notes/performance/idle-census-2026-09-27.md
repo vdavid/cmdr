@@ -27,6 +27,8 @@ drop, and which cuts are left that the hub doesn't already list.
 
 ## A better CPU instrument: per-thread time with names
 
+This recipe now ships as the `cpu_diagnostics` MCP tool (`docs/tooling/mcp.md`, `crates/cmdr-fs/src/process_cpu/`).
+
 `ps -M` has no thread names. `proc_pidinfo(pid, PROC_PIDLISTTHREADS)` plus `PROC_PIDTHREADINFO` per handle returns each
 thread's name and user and system time in nanoseconds, for any process of the same user, no root needed (verified on
 macOS 27.0, a 25-line C tool against Dock and against Cmdr, 2026-09-27). Snapshot it every minute and diff:

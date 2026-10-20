@@ -286,6 +286,22 @@ A release older than the tool can't answer it: nothing can add a tool to a proce
 payload, the `IOAccelerator`-is-the-Rust-heap trap, and the `vmmap` fallback for such an instance:
 `memory-debugging.md`.
 
+## Where is this instance's CPU going?
+
+`cpu_diagnostics` diffs two readings of every thread: each live thread's CPU delta with its name (and the same folded by
+name, so `tokio-rt-worker` ×24 is one row), what threads that exited inside the window spent, wakeups from
+`TASK_POWER_INFO`, context switches, and how the thread count moved. Percentages are of one core. Read-only, macOS only.
+
+```bash
+./scripts/mcp-call.sh cpu_diagnostics '{}'                       # a 10 s window, blocking
+./scripts/mcp-call.sh cpu_diagnostics '{"windowSeconds":60,"maxThreads":50}'
+./scripts/mcp-call.sh cpu_diagnostics '{"action":"mark"}'        # an idle census: mark now...
+./scripts/mcp-call.sh cpu_diagnostics '{"action":"sinceMark"}'   # ...read 20 minutes later, without blocking
+```
+
+Idle CPU has no hotspot, so read `threadsByName` and `exitedThreads` first. Why per-thread cumulative deltas and not
+`sample` or `top`: `docs/notes/performance/idle-census-2026-09-27.md` § "A better CPU instrument".
+
 ## Connection resilience
 
 The MCP server goes down during hot reloads (up to 15s for Rust changes, up to 3s for frontend changes). Multiple agents

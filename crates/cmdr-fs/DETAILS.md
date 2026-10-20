@@ -78,8 +78,8 @@ the next section.
   the message field that keeps its cause typed for it, and `log_json`, a value's JSON with its fields marked; § "Marked
   log values"), `tcc_paths`, `ignore_poison`, `pluralize`, `tilde` (`expand_tilde`, for a path a person typed on THIS
   machine), `byte_size` (`format_size`, the IEC byte count log lines and model-facing answers read), `thread_qos`,
-  `thread_cpu`, `process_memory`, `utility_pool.rs` (`UtilityPool`, a keep-alive pool of `Utility`-QoS threads, so
-  background work that comes in streams, like index walks, reuses threads instead of creating one per job).
+  `thread_cpu`, `process_cpu/`, `process_memory`, `utility_pool.rs` (`UtilityPool`, a keep-alive pool of `Utility`-QoS
+  threads, so background work that comes in streams, like index walks, reuses threads instead of creating one per job).
 - `mapped_file_faults/`: the SIGBUS recovery that turns a read of a mapped file whose disk went away into zeros, and the
   generation a reader checks to distrust what it read meanwhile. § "Mapped-file faults".
 - `testing/`: behind the `testing` feature. `TestDir`, the two waits, and `unique_test_id` (a pid-and-counter key for a
@@ -112,10 +112,17 @@ through a local helper, a fully-qualified call inline in an expression, a `use` 
 - **`ignore_poison`, `pluralize`, `thread_qos`, `thread_cpu`, `process_memory`.** Host primitives with 8–49 references
   from the index trees, none of which can sensibly be injected. `thread_qos` in particular is the property that kept
   indexing in-process at all: a `tokio::runtime::Handle` does nothing for thread scheduling class. `thread_cpu` reads
-  `CLOCK_THREAD_CPUTIME_ID` for the CALLING thread, which is the only way to attribute CPU to one thread on macOS:
-  `ps -M` reports per-thread cumulative CPU but no thread names, so a thread has to report its own. It's cumulative on
-  purpose, so a window is the difference of two readings; the index writer's heartbeat is its one consumer today
+  `CLOCK_THREAD_CPUTIME_ID` for the CALLING thread, so a thread can log its own cost cheaply; it's cumulative on
+  purpose, so a window is the difference of two readings, and the index writer's heartbeat is its one consumer today
   (`../cmdr-index/src/indexing/writer/probe_stats.rs`).
+- **`process_cpu/`.** The whole-process sibling: every live thread's name and cumulative time (`proc_pidinfo` with
+  `PROC_PIDLISTTHREADIDS` + `PROC_PIDTHREADID64INFO`, which `ps -M` can't give because it has no names), the process
+  total from `getrusage` (exited threads included), and the task's wakeup and context-switch counters.
+  `CpuCensus::between` diffs two snapshots and is pure; exited threads are the process delta minus the live threads'
+  deltas. ❌ Don't read `proc_taskinfo.pti_total_user` as nanoseconds: it's Mach ticks (125/3 ns on Apple silicon). Its
+  consumer is the `cpu_diagnostics` MCP tool (`apps/desktop/src-tauri/src/mcp/executor/cpu.rs`). Verified on macOS 27.0
+  by `process_cpu::macos`'s live tests (a named busy thread lands on its name; a thread exiting inside the window lands
+  in the exited share), 2026-10-20.
 - **`utility_pool`.** The pooled half of `thread_qos`: a thread that runs only `Utility` work for its whole life can be
   lowered without leaking the class onto anything else, which is what makes pooling background threads legal. It's here
   beside `thread_qos` for that reason; its consumers today are the index walker and the rescan drain in `cmdr-index`.

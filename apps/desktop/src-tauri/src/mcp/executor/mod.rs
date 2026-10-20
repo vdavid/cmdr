@@ -11,6 +11,7 @@ pub(crate) mod app;
 pub(crate) mod archive_password;
 pub(crate) mod async_tools;
 pub(crate) mod conflicts;
+pub(crate) mod cpu;
 pub(crate) mod dialogs;
 pub(crate) mod downloads;
 pub(crate) mod eject;

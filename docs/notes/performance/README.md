@@ -75,9 +75,9 @@ Rules canonical elsewhere are one line here plus the pointer; the rest are canon
   parked. Use per-thread cumulative CPU (`ps -M <pid>`) and CPU-time deltas over minutes (`ps -o time`). Never rank work
   off one `sample` window, never count a syscall leaf as CPU, never infer CPU from log volume
   (`idle-cpu-attribution-2026-08-03.md` § "The rules this leaves behind").
-- **For per-thread CPU with names, use `proc_pidinfo`** (`PROC_PIDLISTTHREADS` plus `PROC_PIDTHREADINFO`), diffed per
-  minute; the process delta minus the live threads' deltas is what exited threads spent (`idle-census-2026-09-27.md` §
-  "A better CPU instrument").
+- **For per-thread CPU with names, use the `cpu_diagnostics` MCP tool** (`docs/tooling/mcp.md`): `proc_pidinfo` per
+  thread, diffed over a window; the process delta minus the live threads' deltas is what exited threads spent
+  (`idle-census-2026-09-27.md` § "A better CPU instrument"). For a long idle window, `mark` then `sinceMark`.
 - **`top`'s `IDLEW` column is unreliable on macOS 27**: it read static across intervals. Don't use it for wakeups.
 - **Know the build's allocator before reading `vmmap`.** On the system allocator (macOS by default) the Rust heap is in
   the `Malloc *` rows, shared with Objective-C and C. On a macOS mimalloc build (`--features mimalloc`, and every build
@@ -145,7 +145,8 @@ Rules canonical elsewhere are one line here plus the pointer; the rest are canon
   `smb2-socket-lifetime-2026-09-23.md`.
 - **mDNS log storm**: fixed upstream in `mdns-sd` 0.21.5, which is Cmdr's floor:
   `apps/desktop/src-tauri/src/network/DETAILS.md`.
-- **`memory_diagnostics` over MCP**, release builds included: `docs/tooling/memory-debugging.md`.
+- **`memory_diagnostics` over MCP**, release builds included: `docs/tooling/memory-debugging.md`. Its CPU sibling,
+  **`cpu_diagnostics`** (per-thread CPU with names, exited threads, wakeups, thread growth): `docs/tooling/mcp.md`.
 - **Each CLIP tower loads on demand**, so enrichment never pays for the text tower:
   `crates/cmdr-index/src/media_index/clip/DETAILS.md` § "What holding the towers costs". **A rescan-anchor storm costs
   one sweep a day**: `crates/cmdr-index/src/indexing/reconcile/reconciler/rescan/DETAILS.md` § "Anchor-cardinality
@@ -212,7 +213,6 @@ Items that don't move the targets, each tracked in its own issue:
 - #333: give burst-transient data (listing entries, search side tables) its own allocation region, dropped wholesale, to
   stay low at the burst peak as well as at rest.
 - #318: `SmbClient::close()` (LOGOFF) in `smb2`.
-- #321: the CPU half of the diagnostics instrument (per-thread CPU and wakeups over MCP).
 - #323: a stuck-loop watchdog at the log sink, and third-party `log::error!` reaching Flow B.
 - #324: share lists prefetched for every discovered SMB host at launch.
 - #325: a sync-status pool thread wedged in a File Provider call.

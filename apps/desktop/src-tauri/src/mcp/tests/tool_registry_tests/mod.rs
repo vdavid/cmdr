@@ -71,4 +71,5 @@ const EXPECTED_TOOL_NAMES: &[&str] = &[
     "image_facts",
     "list_dir",
     "memory_diagnostics",
+    "cpu_diagnostics",
 ];

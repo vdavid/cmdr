@@ -88,11 +88,11 @@ fn test_total_tool_count() {
     // 6 nav + 2 cursor + 1 select + 8 file_op + 1 tag + 3 view + 1 tab + 2 dialog + 3 app + 2
     // search + 1 settings + 1 indexing + 1 queue + 1 conflict + 1 archive unlock + 1 favorites + 3
     // network + 1 eject + 1 await + 1 downloads + 3 operation_log + 2 photo (search + facts) + 1
-    // index listing (list_dir) + 1 diagnostics (memory_diagnostics) = 48
+    // index listing (list_dir) + 2 diagnostics (memory_diagnostics, cpu_diagnostics) = 49
     assert_eq!(
         tools.len(),
-        48,
-        "Expected 48 tools, got {}. Did you add/remove tools?",
+        49,
+        "Expected 49 tools, got {}. Did you add/remove tools?",
         tools.len()
     );
 }

@@ -85,6 +85,11 @@ Depth for the MCP tool-execution layer. `CLAUDE.md` holds the must-knows.
   clamps at 24). macOS only: elsewhere it refuses rather than returning a payload of zeros a reader would take for a
   measurement. How to read the payload: `../../commands/memory_diagnostics.rs` module docs and
   `docs/tooling/memory-debugging.md`.
+- **`cpu.rs`**: `cpu_diagnostics`, `memory_diagnostics`' CPU sibling, over `cmdr_fs::process_cpu` (the FFI and the
+  diff live there). `measure` (default) blocks for `windowSeconds` (default 10, max 60, the `await` tool's ceiling);
+  `mark` stores one process-wide baseline and `sinceMark` diffs against it without blocking, so an idle census of
+  20 minutes never holds an MCP call open. The mark stays put, so repeated reads are cumulative. macOS only, refusing
+  elsewhere like its sibling. ai-client only.
 - **`tests.rs`**: unit tests for the dispatcher and shared helpers; per-category tests live alongside their handlers.
 
 ## The search result

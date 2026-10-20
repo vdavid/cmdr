@@ -10,8 +10,8 @@ fn test_all_tools_count() {
     // 6 nav + 2 cursor + 1 selection + 8 file_op + 1 tag + 3 view + 1 tab + 2 dialog + 3 app
     // + 2 search + 1 settings + 1 indexing + 1 queue + 1 conflict + 1 archive unlock + 1 favorites
     // + 3 network + 1 eject + 1 await + 1 downloads + 3 operation_log + 2 photo (search + facts)
-    // + 1 index listing (list_dir) + 1 diagnostics (memory_diagnostics) = 48
-    assert_eq!(get_all_tools().len(), 48);
+    // + 1 index listing (list_dir) + 2 diagnostics (memory_diagnostics, cpu_diagnostics) = 49
+    assert_eq!(get_all_tools().len(), 49);
 }
 
 #[test]
@@ -332,6 +332,23 @@ fn test_memory_diagnostics_schema() {
     assert_eq!(sizes.get("maximum").unwrap(), &json!(24));
 
     // Nothing is required: the point is that one bare call answers the question.
+    assert!(schema.get("required").unwrap().as_array().unwrap().is_empty());
+    assert_eq!(schema.get("additionalProperties").unwrap(), &json!(false));
+}
+
+/// One bare call must answer (a default window), and a long idle census must not need a
+/// long-held call, which is what `mark` / `sinceMark` are for.
+#[test]
+fn test_cpu_diagnostics_schema() {
+    let tools = get_all_tools();
+    let schema = &tool(&tools, "cpu_diagnostics").input_schema;
+    let props = schema.get("properties").unwrap();
+
+    let actions = props.get("action").unwrap().get("enum").unwrap().as_array().unwrap();
+    assert_eq!(actions, &[json!("measure"), json!("mark"), json!("sinceMark")]);
+    assert_eq!(props.get("windowSeconds").unwrap().get("maximum").unwrap(), &json!(60));
+    assert_eq!(props.get("maxThreads").unwrap().get("maximum").unwrap(), &json!(200));
+
     assert!(schema.get("required").unwrap().as_array().unwrap().is_empty());
     assert_eq!(schema.get("additionalProperties").unwrap(), &json!(false));
 }

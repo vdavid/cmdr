@@ -11,7 +11,7 @@ use serde_json::Value;
 use super::{Access, Consumer, Tool, schemas, tool_available_to, validate_params};
 use crate::mcp::executor::{ToolError, ToolResult};
 use crate::mcp::executor::{
-    app, archive_password, async_tools, conflicts, dialogs, downloads, eject, favorites, file_ops, image_facts,
+    app, archive_password, async_tools, conflicts, cpu, dialogs, downloads, eject, favorites, file_ops, image_facts,
     indexing, memory, nav, operation_log, photos, queue, quit, search, tags, view,
 };
 
@@ -430,6 +430,16 @@ mcp_tools! {
         consumers: &[Consumer::AiClient],
         access: Access::Read,
         run: params_only memory::execute_memory_diagnostics
+    },
+    // Its CPU sibling, over `cmdr_fs::process_cpu`. Same `access: Read` story: thread names are
+    // set by our code and our dependencies, everything else is a count or a duration. Same
+    // ai-client-only reasoning too.
+    "cpu_diagnostics" => {
+        desc: "Where this Cmdr process's CPU went over a window, per named thread: each live thread's CPU delta (and threads folded by name), what threads that exited inside the window spent (the process delta minus the live threads'), wakeups from TASK_POWER_INFO, context switches and syscalls, and how the thread count moved. 'measure' (default) blocks for windowSeconds; for longer windows, 'mark' a baseline and read 'sinceMark' later. Percentages are of one core. macOS only.",
+        schema: schemas::cpu_diagnostics_schema(),
+        consumers: &[Consumer::AiClient],
+        access: Access::Read,
+        run: params_only cpu::execute_cpu_diagnostics
     },
 
     // ── Agent read-only tools ─────────────────────────────────────────────────

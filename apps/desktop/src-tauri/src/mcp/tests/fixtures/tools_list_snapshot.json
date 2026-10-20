@@ -1314,6 +1314,38 @@
       "name": "memory_diagnostics"
     },
     {
+      "description": "Where this Cmdr process's CPU went over a window, per named thread: each live thread's CPU delta (and threads folded by name), what threads that exited inside the window spent (the process delta minus the live threads'), wakeups from TASK_POWER_INFO, context switches and syscalls, and how the thread count moved. 'measure' (default) blocks for windowSeconds; for longer windows, 'mark' a baseline and read 'sinceMark' later. Percentages are of one core. macOS only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "description": "measure (default): block for windowSeconds, then report. mark: store a baseline and return at once. sinceMark: report from the last mark to now, without blocking; the mark stays, so repeated reads are cumulative.",
+            "enum": [
+              "measure",
+              "mark",
+              "sinceMark"
+            ],
+            "type": "string"
+          },
+          "maxThreads": {
+            "description": "Individual threads to list, costliest first (default 20). threadsByName always lists every name.",
+            "maximum": 200,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "windowSeconds": {
+            "description": "measure only: the window length (default 10). Longer windows: mark, then sinceMark.",
+            "maximum": 60,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "cpu_diagnostics"
+    },
+    {
       "description": "List a folder's children from the drive index (never the disk), plus its recursive size total. Sort by name, size, or modified; page with limit/offset. sortBy size ranks files and folders together by space used, to find where space goes inside ONE folder; search ranks a whole drive.",
       "inputSchema": {
         "additionalProperties": false,
