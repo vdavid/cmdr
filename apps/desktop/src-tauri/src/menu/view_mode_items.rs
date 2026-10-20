@@ -21,7 +21,7 @@ use crate::intl::menu_t;
 use super::mnemonics::Mnemonics;
 use super::{
     MenuState, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID,
-    ViewMode,
+    ViewMode, cloned_handle,
 };
 
 /// Rebuilds the four per-pane view-mode `CheckMenuItem`s with the current
@@ -125,17 +125,15 @@ pub fn sync_view_mode_check_states<R: Runtime>(menu_state: &MenuState<R>) -> tau
     let left_mode = *menu_state.view_mode_left.lock_ignore_poison();
     let right_mode = *menu_state.view_mode_right.lock_ignore_poison();
 
-    if let Some(item) = menu_state.view_mode_full_left.lock_ignore_poison().as_ref() {
-        item.set_checked(left_mode == ViewMode::Full)?;
-    }
-    if let Some(item) = menu_state.view_mode_brief_left.lock_ignore_poison().as_ref() {
-        item.set_checked(left_mode == ViewMode::Brief)?;
-    }
-    if let Some(item) = menu_state.view_mode_full_right.lock_ignore_poison().as_ref() {
-        item.set_checked(right_mode == ViewMode::Full)?;
-    }
-    if let Some(item) = menu_state.view_mode_brief_right.lock_ignore_poison().as_ref() {
-        item.set_checked(right_mode == ViewMode::Brief)?;
+    for (slot, checked) in [
+        (&menu_state.view_mode_full_left, left_mode == ViewMode::Full),
+        (&menu_state.view_mode_brief_left, left_mode == ViewMode::Brief),
+        (&menu_state.view_mode_full_right, right_mode == ViewMode::Full),
+        (&menu_state.view_mode_brief_right, right_mode == ViewMode::Brief),
+    ] {
+        if let Some(item) = cloned_handle(slot) {
+            item.set_checked(checked)?;
+        }
     }
     Ok(())
 }

@@ -564,23 +564,27 @@ impl<R: Runtime> MenuState<R> {
     /// ❗ On macOS the caller must follow with `set_display_accelerators`: `set_text` replaces the
     /// `NSMenuItem`'s attributed title with a plain one, and the dimmed glyph goes with it.
     pub fn set_item_label(&self, menu_id: &str, label: String) -> Result<(), String> {
-        // Read before taking `items`: `set_text` below blocks on the main thread, which may be
-        // inside `set_display_accelerators` holding this very lock.
         let shortcut = match self.display_accelerators.lock_ignore_poison().get(menu_id) {
             Some(rebound) => rebound.clone(),
             None => menu_bar::spec_display_accelerator(menu_id).map(str::to_string),
         };
-        let mut items = self.items.lock_ignore_poison();
-        let entry = items
-            .get_mut(menu_id)
-            .ok_or_else(|| format!("The menu bar holds no `{menu_id}` item"))?;
         let built = match shortcut {
             Some(shortcut) => display_accelerator_label(&label, &shortcut, Platform::current()),
             None => label.clone(),
         };
-        entry.item.set_text(built).map_err(|e| e.to_string())?;
-        entry.label = label;
-        Ok(())
+        // ❗ `set_text` waits on the main thread, and this runs off it too (the `cmdr` command's
+        // label refresh), so no lock may be held across it: a main-thread command taking `items`
+        // meanwhile would deadlock the app. The label is stored first, so a rebind that swaps the
+        // item in the gap rebuilds it from the new words.
+        let item = {
+            let mut items = self.items.lock_ignore_poison();
+            let entry = items
+                .get_mut(menu_id)
+                .ok_or_else(|| format!("The menu bar holds no `{menu_id}` item"))?;
+            entry.label = label;
+            entry.item.clone()
+        };
+        item.set_text(built).map_err(|e| e.to_string())
     }
 
     /// Store every item reference a freshly built bar hands back, and return the bar itself.
@@ -606,6 +610,16 @@ impl<R: Runtime> MenuState<R> {
         *self.sort_submenu.lock_ignore_poison() = Some(items.sort_submenu);
         items.menu
     }
+}
+
+/// A clone of the menu handle stored in `slot`, with the lock already released.
+///
+/// ❗ Take a handle out this way before calling anything on it. Every menu call (`set_enabled`,
+/// `set_checked`, `is_checked`, `set_text`, …) waits on the main thread, so holding a `MenuState`
+/// lock across one from any other thread deadlocks against a main-thread command taking the same
+/// lock. Handles are cheap reference-counted clones of the live item.
+pub(crate) fn cloned_handle<T: Clone>(slot: &Mutex<Option<T>>) -> Option<T> {
+    slot.lock_ignore_poison().clone()
 }
 
 /// Result struct for menu items that need to be stored.

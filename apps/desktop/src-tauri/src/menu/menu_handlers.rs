@@ -253,8 +253,7 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
     // A disabled item's accelerator still fires, so the greying alone doesn't cover it.
     if id == SHOW_HIDDEN_FILES_ID {
         let menu_state = app.state::<MenuState<tauri::Wry>>();
-        let guard = menu_state.show_hidden_files.lock_ignore_poison();
-        if let Some(check_item) = guard.as_ref() {
+        if let Some(check_item) = super::cloned_handle(&menu_state.show_hidden_files) {
             let new_state = check_item.is_checked().unwrap_or(true);
             if menu_state.refuses_over_dialog(VIEW_SHOW_HIDDEN_COMMAND_ID) {
                 let _ = check_item.set_checked(!new_state);

@@ -9,7 +9,7 @@
 use crate::ignore_poison::IgnorePoison;
 use crate::menu::{
     MenuState, SELECT_SAME_KIND_ID, SameKindTarget, SettingsChanged, TrashUndoTarget, UNDO_TRASH_ID, ViewMode,
-    apply_menu_item_states, rebuild_view_mode_items, same_kind_menu_label, set_menu_context,
+    apply_menu_item_states, cloned_handle, rebuild_view_mode_items, same_kind_menu_label, set_menu_context,
     sync_view_mode_check_states, undo_trash_menu_label,
 };
 #[cfg(target_os = "macos")]
@@ -35,8 +35,8 @@ use tauri_specta::Event as _;
 #[specta::specta]
 pub fn toggle_hidden_files<R: Runtime>(app: AppHandle<R>) -> Result<bool, String> {
     let menu_state = app.state::<MenuState<R>>();
-    let guard = menu_state.show_hidden_files.lock_ignore_poison();
-    let Some(check_item) = guard.as_ref() else {
+    // A handle, ❌ not the guard: the MCP tool calls this off the main thread (`cloned_handle`).
+    let Some(check_item) = cloned_handle(&menu_state.show_hidden_files) else {
         return Err("Menu not initialized".to_string());
     };
 
@@ -63,8 +63,7 @@ pub fn toggle_hidden_files<R: Runtime>(app: AppHandle<R>) -> Result<bool, String
 #[specta::specta]
 pub fn sync_menu_show_hidden<R: Runtime>(app: AppHandle<R>, checked: bool) -> Result<(), String> {
     let menu_state = app.state::<MenuState<R>>();
-    let guard = menu_state.show_hidden_files.lock_ignore_poison();
-    let Some(check_item) = guard.as_ref() else {
+    let Some(check_item) = cloned_handle(&menu_state.show_hidden_files) else {
         // Menu not yet initialized (very early in startup). The next menu
         // build will pick up the persisted setting, so a no-op here is fine.
         return Ok(());
@@ -124,8 +123,7 @@ pub fn update_view_mode_menu<R: Runtime>(
 #[specta::specta]
 pub fn update_pin_tab_menu<R: Runtime>(app: AppHandle<R>, is_pinned: bool) -> Result<(), String> {
     let menu_state = app.state::<MenuState<R>>();
-    let guard = menu_state.pin_tab.lock_ignore_poison();
-    let Some(item) = guard.as_ref() else {
+    let Some(item) = cloned_handle(&menu_state.pin_tab) else {
         return Err("Menu not initialized".to_string());
     };
     item.set_text(crate::menu::pin_tab_label(is_pinned))

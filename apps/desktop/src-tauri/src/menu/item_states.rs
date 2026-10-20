@@ -18,7 +18,7 @@ use super::{
     CLOSE_TAB_ID, CommandScope, EDIT_PASTE_MOVE_ID, FILE_COMPRESS_ID, FILE_COPY_ID, FILE_DELETE_ID,
     FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, MenuState, OPEN_TERMINAL_HERE_ID,
     PIN_TAB_MENU_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, UNDO_TRASH_ID, VIEW_SET_MODE_COMMAND_ID,
-    VIEW_SHOW_HIDDEN_COMMAND_ID, menu_id_to_command,
+    VIEW_SHOW_HIDDEN_COMMAND_ID, cloned_handle, menu_id_to_command,
 };
 
 /// Swaps the app-level menu bar to the main menu, if a different menu is installed.
@@ -200,8 +200,16 @@ pub(crate) fn apply_menu_item_states<R: Runtime>(menu_state: &MenuState<R>) {
         refused: &refused,
     };
 
-    for (id, entry) in menu_state.items.lock_ignore_poison().iter() {
-        let _ = entry.item.set_enabled(menu_item_enabled(id, &inputs));
+    // Decided under the lock, applied after it: `set_enabled` waits on the main thread, and an
+    // off-main writer holding `items` across it deadlocks this very function on the main thread.
+    let verdicts: Vec<_> = menu_state
+        .items
+        .lock_ignore_poison()
+        .iter()
+        .map(|(id, entry)| (entry.item.clone(), menu_item_enabled(id, &inputs)))
+        .collect();
+    for (item, enabled) in verdicts {
+        let _ = item.set_enabled(enabled);
     }
 
     // The items held in their own `MenuState` fields, outside `items`. All of them are explorer
@@ -213,10 +221,10 @@ pub(crate) fn apply_menu_item_states<R: Runtime>(menu_state: &MenuState<R>) {
     let show_hidden_enabled = explorer_item(VIEW_SHOW_HIDDEN_COMMAND_ID);
     let view_mode_enabled = explorer_item(VIEW_SET_MODE_COMMAND_ID);
 
-    if let Some(ref item) = *menu_state.pin_tab.lock_ignore_poison() {
+    if let Some(item) = cloned_handle(&menu_state.pin_tab) {
         let _ = item.set_enabled(pin_tab_enabled);
     }
-    if let Some(ref item) = *menu_state.show_hidden_files.lock_ignore_poison() {
+    if let Some(item) = cloned_handle(&menu_state.show_hidden_files) {
         let _ = item.set_enabled(show_hidden_enabled);
     }
     for view_mode_item in [
@@ -225,19 +233,19 @@ pub(crate) fn apply_menu_item_states<R: Runtime>(menu_state: &MenuState<R>) {
         &menu_state.view_mode_full_right,
         &menu_state.view_mode_brief_right,
     ] {
-        if let Some(ref item) = *view_mode_item.lock_ignore_poison() {
+        if let Some(item) = cloned_handle(view_mode_item) {
             let _ = item.set_enabled(view_mode_enabled);
         }
     }
     // The parent "Left pane" / "Right pane" submenus too, so they appear greyed out instead of
     // opening to reveal disabled items.
     for pane_submenu in [&menu_state.view_left_pane_submenu, &menu_state.view_right_pane_submenu] {
-        if let Some(ref submenu) = *pane_submenu.lock_ignore_poison() {
+        if let Some(submenu) = cloned_handle(pane_submenu) {
             let _ = submenu.set_enabled(view_mode_enabled);
         }
     }
     // The sort items themselves are in `items`, each greyed by its own command.
-    if let Some(ref submenu) = *menu_state.sort_submenu.lock_ignore_poison() {
+    if let Some(submenu) = cloned_handle(&menu_state.sort_submenu) {
         let _ = submenu.set_enabled(inputs.explorer_menu_active);
     }
 
@@ -251,7 +259,7 @@ pub(crate) fn apply_menu_item_states<R: Runtime>(menu_state: &MenuState<R>) {
             viewer_text_edit_enabled(holder.as_deref())
         };
         for item in [&menu_state.viewer_edit_cut, &menu_state.viewer_edit_paste] {
-            if let Some(ref item) = *item.lock_ignore_poison() {
+            if let Some(item) = cloned_handle(item) {
                 let _ = item.set_enabled(enabled);
             }
         }
@@ -262,7 +270,7 @@ pub(crate) fn apply_menu_item_states<R: Runtime>(menu_state: &MenuState<R>) {
             (&menu_state.viewer_go_back, history.can_go_back),
             (&menu_state.viewer_go_forward, history.can_go_forward),
         ] {
-            if let Some(ref item) = *item.lock_ignore_poison() {
+            if let Some(item) = cloned_handle(item) {
                 let _ = item.set_enabled(enabled);
             }
         }

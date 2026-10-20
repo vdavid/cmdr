@@ -1244,6 +1244,20 @@ class of bug.
 
 ## Gotchas
 
+- **Gotcha: a `MenuState` lock held across a menu call deadlocks the app.** Every Tauri menu call (`set_enabled`,
+  `set_checked`, `is_checked`, `set_text`, `remove`, `insert`, …) runs on the main thread: inline when the caller is
+  there, else dispatched and WAITED for. So a tokio task holding a lock across one waits on the main thread while a sync
+  IPC command there waits on the lock. **Why:** a language switch fired the `cmdr` command's label refresh
+  (`cli::commands::refresh_menu_item`, tokio) holding `items` inside `set_text`, while `set_reopen_closed_tab_enabled` on
+  the main thread blocked in `apply_menu_item_states` on the same lock, forever (`sample` of the hung app,
+  2026-10-20); every main-window focus gain ran the same race. So `set_item_label` stores the label and clones the item
+  under the lock, then calls `set_text` with it released (a rebind in the gap rebuilds from the new label), and
+  `apply_menu_item_states` collects its verdicts first, then applies them. Single-handle slots go through
+  `cloned_handle`. The remove/recreate/reinsert paths (`update_menu_item_accelerator`, `rebuild_view_mode_items`) and the
+  bar swaps (`swap_to_main_menu` / `swap_to_viewer_menu`) still hold their lock across the calls, because the swap must
+  be atomic; that's safe only because they run on the main thread alone (sync commands and `rebuild_menu_bar`), ❌ so
+  never call them from a task. No test pins this: the mock runtime runs a main-thread task inline on the caller unless
+  its event loop is running, so it can't stage the wait.
 - **No `Menu::default()`**: Both platforms build from scratch. The old approach inherited system
   defaults that added unwanted items.
 - **Tab as accelerator**: Switch pane uses Tab, which could conflict with menu bar accessibility

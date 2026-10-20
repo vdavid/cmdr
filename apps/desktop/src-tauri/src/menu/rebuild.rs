@@ -37,10 +37,7 @@ pub fn rebuild_menu_bar<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     // off the live item (the menu itself is the authority for it, see
     // `menu/CLAUDE.md`); the view modes and the licence label come from the
     // cached copies `MenuState` already keeps for `rebuild_view_mode_items`.
-    let show_hidden = menu_state
-        .show_hidden_files
-        .lock_ignore_poison()
-        .as_ref()
+    let show_hidden = super::cloned_handle(&menu_state.show_hidden_files)
         .and_then(|item| item.is_checked().ok())
         .unwrap_or(false);
     let view_mode = *menu_state.view_mode_left.lock_ignore_poison();

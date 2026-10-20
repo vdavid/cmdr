@@ -727,11 +727,9 @@ pub fn viewer_set_history_state(
 pub fn viewer_set_word_wrap(app_handle: tauri::AppHandle, label: String, checked: bool) -> Result<(), String> {
     #[cfg(target_os = "macos")]
     {
-        use crate::ignore_poison::IgnorePoison;
         let _ = &label;
         let menu_state = app_handle.state::<crate::menu::MenuState<tauri::Wry>>();
-        let guard = menu_state.viewer_word_wrap.lock_ignore_poison();
-        if let Some(check) = guard.as_ref() {
+        if let Some(check) = crate::menu::cloned_handle(&menu_state.viewer_word_wrap) {
             check.set_checked(checked).map_err(|e| e.to_string())?;
         }
         Ok(())

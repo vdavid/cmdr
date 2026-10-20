@@ -25,6 +25,8 @@ Native menu bars for macOS and Linux, built from scratch in the user's language.
   `⇧8` IS `*`, and AppKit fires a registered one app-wide. `displayed_item` carries the glyph. ❗ `setAttributedTitle:`
   also rewrites `title` (which muda 0.20's `text()` reads back), so `find_ns_item` and `menu_item_text` both cut at
   the first TAB.
+- **❌ Never hold a `MenuState` lock across a menu call** (`set_text`, `set_enabled`, …): it waits on the main
+  thread, so a tokio task deadlocks the app. Clone the handle out (`cloned_handle`). DETAILS § Gotchas.
 - **Accelerator changes go remove/recreate/reinsert**, so `MenuState` tracks each item's submenu and index; a live
   label moves through `MenuState::set_item_label`, ❌ never a bare `set_text`.
 - **Four families skip `"execute-command"`**: CheckMenuItems auto-toggle (it would double-toggle) and send
