@@ -234,7 +234,7 @@ pub enum WriteOperationError {
         /// What was being written when the refusal came back.
         path: String,
         /// The OS's own sentence, for the technical-details block ONLY.
-        message: String,
+        message: cmdr_fs::error_detail::ErrorDetail,
         /// The OS's number for the refusal, so a bug report keeps it. `None` for a
         /// backend that raises its own refusal with no errno behind it.
         errno: Option<i32>,
@@ -348,7 +348,7 @@ pub enum WriteOperationError {
         path: String,
     },
     Cancelled {
-        message: String,
+        message: cmdr_fs::error_detail::ErrorDetail,
     },
     /// Device was disconnected during the operation (USB, MTP, etc.).
     ///
@@ -445,17 +445,17 @@ pub enum WriteOperationError {
     /// diagnostic, for the technical details only.
     ReplySignatureRefused {
         path: String,
-        message: String,
+        message: cmdr_fs::error_detail::ErrorDetail,
     },
     /// Couldn't read from the source.
     ReadError {
         path: String,
-        message: String,
+        message: cmdr_fs::error_detail::ErrorDetail,
     },
     /// Couldn't write to the destination.
     WriteError {
         path: String,
-        message: String,
+        message: cmdr_fs::error_detail::ErrorDetail,
     },
     /// File name exceeds the destination filesystem's length limit.
     NameTooLong {
@@ -523,7 +523,7 @@ pub enum WriteOperationError {
         /// Where the complete new data is right now.
         kept_at: String,
         /// What the destination said when the rename was refused.
-        message: String,
+        message: cmdr_fs::error_detail::ErrorDetail,
     },
     /// A replace refused before it cleared anything: Cmdr couldn't confirm its
     /// note of the landing on disk (the in-flight ledger's writer is gone, or
@@ -600,7 +600,7 @@ pub enum WriteOperationError {
         /// Why, classified at the OS boundary.
         reason: TrashRefusalKind,
         /// The OS's own words, for the technical-details disclosure ONLY.
-        message: String,
+        message: cmdr_fs::error_detail::ErrorDetail,
         /// At least one refused item is online-only (`SF_DATALESS`): its contents
         /// live on the provider's servers, which is the actual reason the trash
         /// wouldn't take it.
@@ -616,7 +616,7 @@ pub enum WriteOperationError {
     /// Catch-all for genuinely unexpected IO errors.
     IoError {
         path: String,
-        message: String,
+        message: cmdr_fs::error_detail::ErrorDetail,
     },
 }
 
@@ -655,13 +655,14 @@ macro_rules! item_path_of {
 }
 
 impl WriteOperationError {
-    /// The error for a log line's `detail={:?}` field: the JSON the frontend gets, quoted and
-    /// capped as external text (`LogDetail`). Its derived `Debug` would print `volume_name: "…"`,
-    /// `entry`, `first`, and the rest under snake_case keys no report pass knows, while the
-    /// JSON's keys (`volumeName`, `entry`, `first`, …) are the ones a report tokenizes in a
-    /// frontend line, so the same error ships the same way from either side.
+    /// The error for a log line's `detail={:?}` field: the JSON the frontend gets, with each
+    /// field marked by its kind (`log_field`) and each `message` written as its `ErrorDetail`'s
+    /// marked log text, so a typed cause marks its own values. Its derived `Debug` would print
+    /// `volume_name: "…"` under snake_case keys no report pass knows; the JSON's keys are the
+    /// ones a frontend line carries too, so the same error ships the same way from either side.
+    /// The frontend's JSON itself never carries a marker.
     pub fn log_detail(&self) -> WriteErrorDetail {
-        WriteErrorDetail(serde_json::to_string(self).unwrap_or_else(|e| format!("(the error didn't serialize: {e})")))
+        WriteErrorDetail(cmdr_fs::log_json::log_json(self, log_field))
     }
 
     /// The same failure, naming the new files its stop kept (`leftovers`'
@@ -721,7 +722,7 @@ impl WriteOperationError {
     ) -> Self {
         Self::PermissionDenied {
             path,
-            message,
+            message: message.into(),
             errno,
             refusal: PermissionRefusal::from_errno(errno),
             refused_folder,
@@ -735,7 +736,7 @@ impl WriteOperationError {
     pub fn object_store_refused(path: String, message: String, side: Option<PermissionSide>) -> Self {
         Self::PermissionDenied {
             path,
-            message,
+            message: message.into(),
             errno: None,
             refusal: PermissionRefusal::ObjectStoreAccount,
             refused_folder: None,
@@ -785,10 +786,28 @@ pub struct OversizedFile {
 }
 
 /// [`WriteOperationError::log_detail`]: a log line's `detail={:?}` value, never data.
-pub struct WriteErrorDetail(String);
+pub struct WriteErrorDetail(cmdr_fs::log_json::LoggedJson);
 
 impl std::fmt::Debug for WriteErrorDetail {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        cmdr_fs::log_detail::LogDetail(&self.0).fmt(f)
+        self.0.fmt(f)
+    }
+}
+
+/// What each of `WriteOperationError`'s JSON fields holds, by its camelCase key, for
+/// [`WriteOperationError::log_detail`] (nested `cause`, `kept`, `recovered`, and `files`
+/// included). ❗ Fails closed: a string under a key not named here is marked as a path, so a
+/// new field leaks nothing, it only hashes until it's named.
+fn log_field(key: &str) -> cmdr_fs::log_json::JsonField {
+    use cmdr_fs::log_json::JsonField::{Detail, Mark, Words};
+    use cmdr_fs::log_private::LogKind;
+    match key {
+        // The variant tag and the typed vocabularies: fixed words, never user data.
+        "type" | "side" | "reason" | "refusal" | "filesystem" | "fate" => Words,
+        "message" => Detail,
+        "volumeName" | "deviceName" => Mark(LogKind::Volume),
+        "name" | "exampleName" => Mark(LogKind::Name),
+        "mountPoint" | "refusedFolder" => Mark(LogKind::DirPath),
+        _ => Mark(LogKind::Path),
     }
 }

@@ -79,7 +79,7 @@ fn a_failure_marks_every_ancestor_failed_and_keeps_its_reason() {
         deep,
         WriteOperationError::IoError {
             path: "/src/top/sub/c.bin".to_string(),
-            message: "gone".to_string(),
+            message: "gone".into(),
         },
     );
 
@@ -270,7 +270,7 @@ fn a_folder_that_failed_is_failed_and_so_is_everything_above_it() {
     let sub = node_at(&model, &["top", "sub"]);
     let error = || WriteOperationError::IoError {
         path: "/src/top/sub".to_string(),
-        message: "gone".to_string(),
+        message: "gone".into(),
     };
 
     model.fail(sub, error());

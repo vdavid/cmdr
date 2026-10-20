@@ -601,7 +601,7 @@ fn test_validate_path_length_name_too_long() {
     let path = PathBuf::from("/tmp").join(&long_name);
     let result = validate_path_length(&path);
     assert!(
-        matches!(result, Err(WriteOperationError::IoError { ref message, .. }) if message.contains("File name")),
+        matches!(result, Err(WriteOperationError::IoError { ref message, .. }) if message.to_string().contains("File name")),
         "Should reject file names exceeding 255 bytes, got: {:?}",
         result
     );
@@ -619,7 +619,7 @@ fn test_validate_path_length_path_too_long() {
 
     let result = validate_path_length(&path);
     assert!(
-        matches!(result, Err(WriteOperationError::IoError { ref message, .. }) if message.contains("Path exceeds")),
+        matches!(result, Err(WriteOperationError::IoError { ref message, .. }) if message.to_string().contains("Path exceeds")),
         "Should reject paths exceeding 1024 bytes, got: {:?}",
         result
     );

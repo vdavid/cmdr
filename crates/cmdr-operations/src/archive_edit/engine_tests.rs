@@ -154,7 +154,7 @@ fn a_failed_edit_names_the_new_archive_its_stop_kept_beside_its_cause() {
     let events = CollectorEventSink::new();
     let cause = WriteOperationError::IoError {
         path: "/share/other.zip".to_owned(),
-        message: "the share's own words".to_owned(),
+        message: "the share's own words".to_owned().into(),
     };
 
     emit_archive_terminal(

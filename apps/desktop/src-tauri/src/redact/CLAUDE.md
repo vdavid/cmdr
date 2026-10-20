@@ -15,7 +15,7 @@ policy: unsalted `redact_line` (MCP resources, the crash hook) writes bare token
   `DETAILS.md` § "Marked spans".
 - **A leak from our own log site is fixed at the site**, ❌ not with a new regex shape: `LogPrivate::<kind>` (keeping
   `key=` and the format spec), `LogError(&e)` for a path-carrying error, `LogDetail(text).marking(&[…])` for external
-  text in `detail=` / `stderr=` / `stdout=`. The `log-private-values` check fails on any unmarked value. A crate without
+  text in `detail=` / `stderr=` / `stdout=`, `cmdr_fs::log_json` for a value logged as its JSON. The `log-private-values` check fails on any unmarked value. A crate without
   `cmdr-fs` logs `key={:?}` under a `path_field` key, or `host=` / `server=` / `share=` / `user=`. ❌ Never redact at
   the log site.
 - **❌ Never branch the policy on `context.is_none()`.** A second MCP policy once let a URL swallow a following path

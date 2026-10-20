@@ -166,7 +166,7 @@ fn a_failure_marks_the_row_its_source_path_names() {
 
     slot.note_failure(&WriteOperationError::ReadError {
         path: "/src/top/sub/c.bin".to_string(),
-        message: "unreadable".to_string(),
+        message: "unreadable".into(),
     });
 
     assert_eq!(state_of(&slot, deep), LeafState::Failed);
@@ -193,7 +193,7 @@ fn with_no_tree_and_no_row_every_report_is_silent() {
     let empty = TransferTreeSlot::default();
     empty.note_failure(&WriteOperationError::IoError {
         path: "/src/top/a.bin".to_string(),
-        message: "gone".to_string(),
+        message: "gone".into(),
     });
     assert!(
         !empty.view(&request(), ProgressAxis::Bytes).ready,

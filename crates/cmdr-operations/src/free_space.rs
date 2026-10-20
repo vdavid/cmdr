@@ -66,7 +66,7 @@ pub(super) fn check_local_copy_space(
         ) {
             Some(need) => Ok(Some(need.bytes())),
             None => Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
+                message: "Operation cancelled by user".into(),
             }),
         }
     })

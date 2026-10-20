@@ -299,7 +299,7 @@ fn settled_rows_say_how_they_ended() {
         failed,
         WriteOperationError::IoError {
             path: "/src/folder_1/file_00000".to_string(),
-            message: "gone".to_string(),
+            message: "gone".into(),
         },
     );
     let mut open = at(0, 10);

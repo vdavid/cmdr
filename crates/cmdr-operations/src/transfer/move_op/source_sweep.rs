@@ -310,7 +310,7 @@ pub(super) fn delete_sources_after_move(
             });
             return Err(SweepStopped {
                 error: WriteOperationError::Cancelled {
-                    message: "Operation cancelled by user".to_string(),
+                    message: "Operation cancelled by user".into(),
                 },
                 counts: None,
             });

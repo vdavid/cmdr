@@ -387,7 +387,9 @@ around them. So it has one mechanism, used at every such site:
 - **Identity-keyed JSON pairs inside the value are tokenized first** (`"server":"…"`, `"share"`, `"username"`, `"path"`,
   `"name"`, `"source"`, `"first"`, `"entry"`, `"deviceName"`, …): the frontend's `describeForLog` renders an object,
   and a typed error's payload, as compact JSON whose keys say what each value is, in a spelling the line's own keyed
-  fields may not share. It marks those same values (`apps/desktop/src/lib/logging/DETAILS.md` § "Marking values for
+  fields may not share. The backend's `WriteOperationError::log_detail` marks every field itself (`cmdr_fs::log_json`,
+  a `message` through its `ErrorDetail`, `crates/cmdr-fs/DETAILS.md` § "Marked log values"), so its spans are read
+  first and this pass never has to guess that `message` holds a path. The frontend marks those same values (`apps/desktop/src/lib/logging/DETAILS.md` § "Marking values for
   error reports"), so the span pass hashes them first; this is the fallback for a pair logged unmarked, and the two
   key sets stay in step (`fe_bridge_tests.rs`). `error`, `err`, `result`, and `detail` placeholders all render
   as `detail=` fields (`log-bridge.ts`).

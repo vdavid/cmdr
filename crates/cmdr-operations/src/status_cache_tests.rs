@@ -453,11 +453,11 @@ async fn every_transfer_start_has_exactly_one_finish_however_the_op_ends() {
                     match ending {
                         Ending::Completes => Ok(()),
                         Ending::Cancels => Err(WriteOperationError::Cancelled {
-                            message: "stopped".to_string(),
+                            message: "stopped".into(),
                         }),
                         Ending::Fails => Err(WriteOperationError::IoError {
                             path: "/x".to_string(),
-                            message: "gone".to_string(),
+                            message: "gone".into(),
                         }),
                         Ending::HandlerPanics => panic!("simulated handler panic"),
                     }

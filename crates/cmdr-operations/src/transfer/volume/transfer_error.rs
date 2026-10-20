@@ -15,6 +15,7 @@ use super::super::super::types::{
 };
 use super::super::recovered_name::{FinalizeFailure, LandingAftermath};
 use super::super::volume_outage::{self, LostConnection, OutageFailure};
+use cmdr_fs::error_detail::ErrorDetail;
 use cmdr_fs::volume::VolumeError;
 
 /// Which side of a transfer a failing path belongs to.
@@ -178,7 +179,7 @@ impl From<PathedVolumeError> for WriteFailure {
             (Some(LandingAftermath::NewDataKeptAt(kept_at)), _) => WriteOperationError::NewDataKeptAt {
                 path,
                 kept_at: kept_at.display().to_string(),
-                message: e.error.to_string(),
+                message: ErrorDetail::of(e.error),
             },
             (Some(LandingAftermath::NotRecorded), _) => WriteOperationError::LandingNotRecorded { path },
             (None, Some(lost)) => {
@@ -346,7 +347,7 @@ pub(crate) async fn unregistered_volume_error(
         // (Log and technical-details text, not rendered prose.)
         (UnregisteredVolume::Gone, PathRole::Destination) => WriteOperationError::IoError {
             path: volume_id.to_string(),
-            message: format!("Destination volume '{volume_id}' not found"),
+            message: format!("Destination volume '{volume_id}' not found").into(),
         },
     }
 }
@@ -439,7 +440,8 @@ pub(crate) fn map_volume_error(context_path: &str, role: PathRole, e: VolumeErro
                     PathRole::Source => "source",
                     PathRole::Destination => "destination",
                 }
-            ),
+            )
+            .into(),
         },
         // A backend session that dropped (MTP, SMB), which has no mount table
         // and no captured sides behind it, so the copy stays the
@@ -478,17 +480,17 @@ pub(crate) fn map_volume_error(context_path: &str, role: PathRole, e: VolumeErro
             path: context_path.to_string(),
         },
         VolumeError::Cancelled(_) => WriteOperationError::Cancelled {
-            message: "Operation cancelled by user".to_string(),
+            message: "Operation cancelled by user".into(),
         },
         VolumeError::IoError { message, .. } => WriteOperationError::IoError {
             path: context_path.to_string(),
-            message: message.to_string(),
+            message,
         },
         // A reply refused for its signature stops the transfer with its own stopped state; the
         // person also hears about the server once per session (`crate::security_notices`).
         VolumeError::SignatureInvalid(message) => WriteOperationError::ReplySignatureRefused {
             path: context_path.to_string(),
-            message: message.to_string(),
+            message,
         },
         // Extracting from a password-protected archive: a typed signal the FE
         // prompts on (then retries via `set_archive_password`), never a generic
@@ -499,11 +501,11 @@ pub(crate) fn map_volume_error(context_path: &str, role: PathRole, e: VolumeErro
         },
         VolumeError::FriendlyGit(git_err) => WriteOperationError::IoError {
             path: context_path.to_string(),
-            message: git_err.to_string(),
+            message: ErrorDetail::of(git_err),
         },
         VolumeError::IsADirectory(path) => WriteOperationError::IoError {
             path,
-            message: "Is a directory".to_string(),
+            message: "Is a directory".into(),
         },
         // A file where the destination folder, or one above it, should be. The
         // volume names the thing in the way, and that path is the one fact the
@@ -547,7 +549,8 @@ pub(crate) fn map_volume_error(context_path: &str, role: PathRole, e: VolumeErro
             PathRole::Source => WriteOperationError::IoError {
                 path,
                 message: "More than one item on the device answers to this name, so Cmdr didn't pick one to read"
-                    .to_string(),
+                    .to_string()
+                    .into(),
             },
         },
         // Surfaced only when the transfer engine's one-shot retry on a stale
@@ -558,7 +561,8 @@ pub(crate) fn map_volume_error(context_path: &str, role: PathRole, e: VolumeErro
         VolumeError::StaleDestinationHandle(dest_folder) => WriteOperationError::WriteError {
             path: dest_folder,
             message: "The destination folder couldn't be found on the device. Open the folder again and retry."
-                .to_string(),
+                .to_string()
+                .into(),
         },
     }
 }
@@ -571,7 +575,7 @@ pub(crate) fn map_volume_error(context_path: &str, role: PathRole, e: VolumeErro
 /// failed transfer), and no caller mistakes it for a transport fault worth
 /// reporting to the user.
 pub(super) fn hard_abort_error(path: &Path) -> VolumeError {
-    VolumeError::Cancelled(cmdr_fs::error_detail::ErrorDetail::around(
+    VolumeError::Cancelled(ErrorDetail::around(
         "stopped waiting for ",
         path.to_string_lossy(),
         " so the app can quit",

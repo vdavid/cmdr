@@ -66,7 +66,7 @@ pub(super) fn classify_io_error(e: &std::io::Error, path: String) -> WriteOperat
         std::io::ErrorKind::AlreadyExists => WriteOperationError::DestinationExists { path },
         _ => WriteOperationError::IoError {
             path,
-            message: e.to_string(),
+            message: cmdr_fs::error_detail::ErrorDetail::from_io(e),
         },
     }
 }
@@ -141,9 +141,13 @@ impl WriteOperationError {
                 refused_folder,
                 side: None,
                 ..
-            } if is_locked_item(source) => {
-                Self::permission_denied(path, message, errno, refused_folder, Some(PermissionSide::Source))
-            }
+            } if is_locked_item(source) => Self::permission_denied(
+                path,
+                message.to_string(),
+                errno,
+                refused_folder,
+                Some(PermissionSide::Source),
+            ),
             other => other,
         }
     }
@@ -265,7 +269,7 @@ mod tests {
         let failures = [
             WriteOperationError::IoError {
                 path: "/x".to_string(),
-                message: "boom".to_string(),
+                message: "boom".into(),
             },
             WriteOperationError::SourceNotFound { path: "/x".to_string() },
             WriteOperationError::permission_denied("/x".to_string(), "denied".to_string(), None, None, None),

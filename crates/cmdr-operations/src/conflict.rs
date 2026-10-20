@@ -436,7 +436,7 @@ pub(super) fn resolve_conflict(
                 Err(_) => {
                     // Sender dropped = operation cancelled
                     Err(WriteOperationError::Cancelled {
-                        message: "Operation cancelled by user".to_string(),
+                        message: "Operation cancelled by user".into(),
                     })
                 }
             }
@@ -661,7 +661,7 @@ pub(super) fn calculate_dest_path(
     if path == source_root {
         let file_name = path.file_name().ok_or_else(|| WriteOperationError::IoError {
             path: path.display().to_string(),
-            message: "Invalid source path".to_string(),
+            message: "Invalid source path".into(),
         })?;
         return Ok(dest_root.join(file_name));
     }
@@ -672,7 +672,7 @@ pub(super) fn calculate_dest_path(
         .strip_prefix(source_parent)
         .map_err(|_| WriteOperationError::IoError {
             path: path.display().to_string(),
-            message: "Failed to calculate relative path".to_string(),
+            message: "Failed to calculate relative path".into(),
         })?;
 
     Ok(dest_root.join(relative))

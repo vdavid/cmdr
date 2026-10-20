@@ -149,7 +149,7 @@ pub(crate) async fn run_volume_scan_preview(
     let result: Result<BatchScanResult, WriteOperationError> = async {
         if state.cancelled.load(Ordering::Relaxed) {
             return Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
+                message: "Operation cancelled by user".into(),
             });
         }
 

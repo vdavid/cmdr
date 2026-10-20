@@ -645,7 +645,7 @@ fn begin_stage(
 fn volume_read_error(path: &Path, error: VolumeError) -> EditError {
     EditError::Op(WriteOperationError::ReadError {
         path: path.display().to_string(),
-        message: error.to_string(),
+        message: cmdr_fs::error_detail::ErrorDetail::of(error),
     })
 }
 

@@ -93,7 +93,7 @@ impl crate::Operations {
         if !target_names.is_empty() {
             return Err(WriteOperationError::IoError {
                 path: dest_path.display().to_string(),
-                message: "a rename that runs as a move stays on one volume".to_string(),
+                message: "a rename that runs as a move stays on one volume".into(),
             });
         }
 

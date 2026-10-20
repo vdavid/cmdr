@@ -155,7 +155,8 @@ pub(super) async fn validate_stage(
             path: path.display().to_string(),
             message: format!(
                 "ZIP byte counts disagree (producer {producer_bytes}, writer {writer_bytes}, destination {stat_bytes})"
-            ),
+            )
+            .into(),
         })));
     }
     let reader_path = volume
@@ -176,7 +177,7 @@ pub(super) async fn validate_stage(
     if expected.quarantined > 0 || ExpectedIndex::of_index(&index) != *expected {
         return Err(StepError::Ended(EditError::Op(WriteOperationError::WriteError {
             path: path.display().to_string(),
-            message: "the staged ZIP did not read back as the planned entries".to_string(),
+            message: "the staged ZIP did not read back as the planned entries".into(),
         })));
     }
     Ok(())
@@ -187,7 +188,7 @@ pub(super) async fn validate_stage(
 fn unreadable(path: &Path, error: VolumeError) -> StepError {
     let otherwise = EditError::Op(WriteOperationError::ReadError {
         path: path.display().to_string(),
-        message: error.to_string(),
+        message: cmdr_fs::error_detail::ErrorDetail::of(error.clone()),
     });
     StepError::fault(error, otherwise)
 }

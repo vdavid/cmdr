@@ -142,7 +142,7 @@ pub(super) async fn rename_merge_directory(
 ) -> Result<(), WriteOperationError> {
     if ctx.state.work_stopped() {
         return Err(WriteOperationError::Cancelled {
-            message: "Operation cancelled by user".to_string(),
+            message: "Operation cancelled by user".into(),
         });
     }
 
@@ -169,7 +169,7 @@ pub(super) async fn rename_merge_directory(
         // single iteration is unbounded.
         if ctx.state.stop_or_park_async().await {
             return Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
+                message: "Operation cancelled by user".into(),
             });
         }
 

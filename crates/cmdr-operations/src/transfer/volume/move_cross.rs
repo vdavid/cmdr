@@ -155,7 +155,7 @@ pub async fn move_volumes_with_progress(
     // whether to unlock them for it (`locked_sources.rs`).
     let Some(locked) = plan_locked_on_volume(&*events, operation_id, state, &source_volume, source_paths).await else {
         return Err(WriteFailure::synthetic(WriteOperationError::Cancelled {
-            message: "Operation cancelled by user".to_string(),
+            message: "Operation cancelled by user".into(),
         }));
     };
     let locked = Arc::new(locked);
@@ -802,7 +802,7 @@ pub async fn move_volumes_with_progress(
                     .with_recovered(recovered),
             });
             Err(WriteFailure::synthetic(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
+                message: "Operation cancelled by user".into(),
             }))
         }
         PostLoopIntent::Failed(err) => {

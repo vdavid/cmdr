@@ -189,7 +189,7 @@ impl Operations {
                             operation_type,
                             WriteOperationError::IoError {
                                 path: String::new(),
-                                message: format!("Task failed: {}", join_error),
+                                message: format!("Task failed: {}", join_error).into(),
                             },
                         ));
                     }

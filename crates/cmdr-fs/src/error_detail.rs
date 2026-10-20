@@ -187,9 +187,16 @@ impl ErrorLogText for ErrorDetail {
     }
 }
 
+/// The plain text, except while `log_json` builds a log line's JSON: then the marked log
+/// text, so a typed cause's values arrive as spans. ❌ Only `log_json` sets that mode, and it
+/// never hands the result anywhere but a log macro.
 impl Serialize for ErrorDetail {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.collect_str(self)
+        if crate::log_json::is_marking() {
+            serializer.collect_str(&crate::log_error::LogError(self))
+        } else {
+            serializer.collect_str(self)
+        }
     }
 }
 

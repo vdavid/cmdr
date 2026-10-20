@@ -102,7 +102,7 @@ fn error_event(operation_id: &str) -> WriteErrorEvent {
         WriteOperationType::Copy,
         WriteOperationError::IoError {
             path: "/Users/me/a.txt".to_string(),
-            message: "disk went away".to_string(),
+            message: "disk went away".into(),
         },
     )
 }
@@ -239,7 +239,7 @@ async fn a_failure_through_the_production_sink_effects_is_retained_and_surfaces_
             WriteOperationType::Copy,
             WriteOperationError::IoError {
                 path: "/Users/me/a.raw".to_string(),
-                message: "disk went away".to_string(),
+                message: "disk went away".into(),
             },
         ),
         |_| rows_at_emit = rows_for(&engine, &op),

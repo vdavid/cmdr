@@ -532,7 +532,7 @@ pub(super) async fn top_level_move_hints(
             .await
             .map_err(|e| WriteOperationError::IoError {
                 path: parent.display().to_string(),
-                message: format!("listing move-source parent failed: {e}"),
+                message: format!("listing move-source parent failed: {e}").into(),
             })?;
         let by_name: HashMap<&str, &cmdr_fs::entry::FileEntry> = entries.iter().map(|e| (e.name.as_str(), e)).collect();
         for path in paths {
@@ -627,6 +627,6 @@ fn cancelled_failure(
         rollback: CancelRollback::none(),
     });
     WriteFailure::synthetic(WriteOperationError::Cancelled {
-        message: "Operation cancelled by user".to_string(),
+        message: "Operation cancelled by user".into(),
     })
 }

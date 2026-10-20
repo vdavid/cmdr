@@ -363,7 +363,7 @@ fn move_resolved_into_place(
         safe_overwrite_dir(state, landing, |target| {
             fs::rename(&source_path, target).map_err(|e| WriteOperationError::IoError {
                 path: source_path.display().to_string(),
-                message: format!("Failed to rename across types: {}", e),
+                message: format!("Failed to rename across types: {}", e).into(),
             })
         })?;
         move_tx.record(
@@ -539,7 +539,7 @@ fn merge_move_directory(
         // this a paused merge would keep going while the UI says it stopped.
         if state.stop_or_park_sync() {
             return Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
+                message: "Operation cancelled by user".into(),
             });
         }
 

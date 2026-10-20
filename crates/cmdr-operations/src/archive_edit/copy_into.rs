@@ -250,7 +250,7 @@ async fn materialize_sources(
             let stamped = stamp_source(source_volume, src).await.map_err(|e| {
                 EditError::Op(WriteOperationError::ReadError {
                     path: e.path.display().to_string(),
-                    message: e.error.to_string(),
+                    message: cmdr_fs::error_detail::ErrorDetail::of(e.error),
                 })
             })?;
             carried.push((src.clone(), stamped));
@@ -269,7 +269,7 @@ async fn materialize_sources(
     let scratch = ScratchDir::new("cmdr-archive-source-pull").map_err(|e| {
         EditError::Op(WriteOperationError::IoError {
             path: String::new(),
-            message: e.to_string(),
+            message: cmdr_fs::error_detail::ErrorDetail::from_io(&e),
         })
     })?;
     let dest_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder(
@@ -311,7 +311,7 @@ async fn pull_one_source(
     let is_directory = source_volume.is_directory(source_path).await.map_err(|e| {
         EditError::Op(WriteOperationError::ReadError {
             path: source_path.display().to_string(),
-            message: e.to_string(),
+            message: cmdr_fs::error_detail::ErrorDetail::of(e),
         })
     })?;
 
@@ -322,7 +322,7 @@ async fn pull_one_source(
             VolumeError::Cancelled(_) => EditError::Cancelled,
             other => EditError::Op(WriteOperationError::ReadError {
                 path: source_path.display().to_string(),
-                message: other.to_string(),
+                message: cmdr_fs::error_detail::ErrorDetail::of(other),
             }),
         })
 }

@@ -62,7 +62,7 @@ pub(super) fn move_with_rename(
         LockedScan::of_renames(sources, destination, config.destination_name.as_deref()),
     ) else {
         return Err(WriteOperationError::Cancelled {
-            message: "Operation cancelled by user".to_string(),
+            message: "Operation cancelled by user".into(),
         });
     };
     // A same-FS move is journaled and reversed at TOP-LEVEL granularity (one
@@ -97,13 +97,13 @@ pub(super) fn move_with_rename(
             // item boundary is the only place to park.
             if state.stop_or_park_sync() {
                 return Err(WriteOperationError::Cancelled {
-                    message: "Operation cancelled by user".to_string(),
+                    message: "Operation cancelled by user".into(),
                 });
             }
 
             let file_name = source.file_name().ok_or_else(|| WriteOperationError::IoError {
                 path: source.display().to_string(),
-                message: "Invalid source path".to_string(),
+                message: "Invalid source path".into(),
             })?;
             let leaf = config
                 .destination_name
@@ -360,7 +360,7 @@ pub(super) fn move_with_rename(
         // "already emitted its terminal event", and journals the op as canceled
         // rather than done — which is what a reversed move is.
         return Err(WriteOperationError::Cancelled {
-            message: "Operation cancelled by user".to_string(),
+            message: "Operation cancelled by user".into(),
         });
     }
 

@@ -61,7 +61,7 @@ impl EntryStop {
     pub(super) fn into_error(self, path: &Path, volume: &dyn Volume) -> WriteOperationError {
         match self {
             Self::Cancelled => WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
+                message: "Operation cancelled by user".into(),
             },
             Self::Changed => WriteOperationError::ChangedWhileDisconnected {
                 path: path.display().to_string(),

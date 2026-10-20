@@ -290,7 +290,7 @@ pub(crate) fn copy_files_with_progress_inner(
             let claimed =
                 create_unique_dir(&original_dest, &state.claimed_names).map_err(|e| WriteOperationError::IoError {
                     path: original_dest.display().to_string(),
-                    message: format!("Couldn't create the copy's folder: {e}"),
+                    message: format!("Couldn't create the copy's folder: {e}").into(),
                 })?;
             folder_metadata::narrow_like_its_source(&claimed, source);
             transaction.record_dir(claimed.clone());
@@ -702,7 +702,7 @@ pub(crate) fn copy_files_with_progress_inner(
         }
         PostLoopIntent::Cancelled => {
             let cancellation = WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
+                message: "Operation cancelled by user".into(),
             };
             match state.intent().load() {
                 OperationIntent::RollingBack => {

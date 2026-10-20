@@ -72,7 +72,7 @@ impl crate::Operations {
                     .await
                     .map_err(|error| WriteOperationError::IoError {
                         path: dest_zip_full_path.display().to_string(),
-                        message: error.to_string(),
+                        message: error.to_string().into(),
                     })?;
                 (dest_zip_full_path, existed)
             }

@@ -353,7 +353,7 @@ impl ScanWatchdog {
         state.cancelled.store(true, Ordering::Relaxed);
         let failure = WriteOperationError::IoError {
             path: self.first_source.clone(),
-            message: message.clone(),
+            message: message.clone().into(),
         };
         if let Some(previews) = self.previews.upgrade() {
             previews.settle_preview(&self.preview_id, ScanOutcome::Error(failure), None);

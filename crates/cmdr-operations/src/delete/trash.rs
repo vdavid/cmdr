@@ -18,6 +18,8 @@ use super::super::types::{
     WriteErrorEvent, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
     WriteSourceItemDoneEvent,
 };
+use cmdr_fs::error_detail::ErrorDetail;
+use cmdr_fs::log_error::{ErrorLogText, ErrorText, write_plain};
 use cmdr_fs::log_private::LogPrivate;
 
 // ============================================================================
@@ -306,6 +308,37 @@ pub fn trash_dir_for_path(_path: &Path) -> Option<PathBuf> {
 // Batch trash with progress
 // ============================================================================
 
+/// A refused batch's summary for `TrashRefused`'s technical details: `path: why`, joined by
+/// `; `. Typed, so a log line marks each path.
+fn refused_summary(errors: &[TrashItemError]) -> ErrorDetail {
+    ErrorDetail::of(RefusedSummary(
+        errors.iter().map(|e| (e.path.clone(), e.message.clone())).collect(),
+    ))
+}
+
+/// [`refused_summary`]'s cause: each refused item's path and the OS's words about it.
+struct RefusedSummary(Vec<(PathBuf, String)>);
+
+impl std::fmt::Display for RefusedSummary {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write_plain(self, f)
+    }
+}
+
+impl ErrorLogText for RefusedSummary {
+    fn write_log_text(&self, out: &mut ErrorText<'_>) -> std::fmt::Result {
+        use std::fmt::Write as _;
+        for (index, (path, message)) in self.0.iter().enumerate() {
+            if index > 0 {
+                out.write_str("; ")?;
+            }
+            out.value(LogPrivate::path(path))?;
+            write!(out, ": {message}")?;
+        }
+        Ok(())
+    }
+}
+
 /// Per-item error from a trash operation.
 #[derive(Debug, Clone)]
 pub(crate) struct TrashItemError {
@@ -363,7 +396,7 @@ pub(crate) fn trash_files_with_progress(
                 rollback: CancelRollback::none(), // Trash is recoverable, no rollback needed
             });
             return Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
+                message: "Operation cancelled by user".into(),
             });
         }
 
@@ -375,7 +408,7 @@ pub(crate) fn trash_files_with_progress(
             Err(error) => {
                 errors.push(TrashItemError {
                     path: source.clone(),
-                    message: format!("'{}' no longer exists", source.display()),
+                    message: "no longer exists".to_string(),
                     // A vanished source is not a permission problem; offering a grant
                     // as the fix would send the user somewhere useless.
                     reason: TrashRefusalKind::Other,
@@ -530,11 +563,7 @@ pub(crate) fn trash_files_with_progress(
 
     // If all items failed, emit error
     if items_done == 0 && !errors.is_empty() {
-        let error_summary = errors
-            .iter()
-            .map(|e| format!("{}: {}", e.path.display(), e.message))
-            .collect::<Vec<_>>()
-            .join("; ");
+        let error_summary = refused_summary(&errors);
         // One reason for the batch: the strongest one any item reported. A batch where
         // even one item was refused for permission is a batch the FDA hint can help with,
         // and `Other` would silently withhold it.

@@ -36,6 +36,7 @@ pub mod icons;
 pub mod ignore_poison;
 pub mod log_detail;
 pub mod log_error;
+pub mod log_json;
 pub mod log_private;
 pub mod log_rollup;
 pub mod mapped_file_faults;

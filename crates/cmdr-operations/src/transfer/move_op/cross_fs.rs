@@ -129,14 +129,14 @@ pub(super) fn move_with_staging(
         LockedScan::of_paths(scanned_items(sources, &scan_result)),
     ) else {
         return Err(WriteOperationError::Cancelled {
-            message: "Operation cancelled by user".to_string(),
+            message: "Operation cancelled by user".into(),
         });
     };
 
     // Create staging directory
     fs::create_dir(&staging_dir).map_err(|e| WriteOperationError::IoError {
         path: staging_dir.display().to_string(),
-        message: format!("Failed to create staging directory: {}", e),
+        message: format!("Failed to create staging directory: {}", e).into(),
     })?;
     // Hidden from the pane while this move owns it, and recorded so an ending
     // that never reaches Phase 5 leaves something that knows what it is. ❗ It
@@ -392,7 +392,7 @@ pub(super) fn move_with_staging(
 
             let file_name = source.file_name().ok_or_else(|| WriteOperationError::IoError {
                 path: source.display().to_string(),
-                message: "Invalid source path".to_string(),
+                message: "Invalid source path".into(),
             })?;
 
             let leaf = config
@@ -520,7 +520,7 @@ pub(super) fn move_with_staging(
                 let landing = state.scope().host().announce(&final_path);
                 rename_onto_free_name(&staged_path, landing).map_err(|e| WriteOperationError::IoError {
                     path: staged_path.display().to_string(),
-                    message: format!("Failed to move from staging: {}", e),
+                    message: format!("Failed to move from staging: {}", e).into(),
                 })?;
             }
         }

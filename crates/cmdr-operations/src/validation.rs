@@ -116,13 +116,13 @@ pub(crate) fn ensure_destination_dir(destination: &Path) -> Result<(), WriteOper
                 ),
                 _ => refused(WriteOperationError::IoError {
                     path: destination.display().to_string(),
-                    message: format!("Couldn't create the destination folder: {e}"),
+                    message: format!("Couldn't create the destination folder: {e}").into(),
                 }),
             })
         }
         Err(e) => Err(refused(WriteOperationError::IoError {
             path: destination.display().to_string(),
-            message: format!("Couldn't access the destination folder: {e}"),
+            message: format!("Couldn't access the destination folder: {e}").into(),
         })),
     }
 }
@@ -161,14 +161,14 @@ pub(crate) fn validate_destination_not_inside_source(
     // recurse into itself until disk-full. Fail closed instead.
     let canonical_dest = canonicalize_or_nearest_ancestor(destination).map_err(|e| WriteOperationError::IoError {
         path: destination.display().to_string(),
-        message: format!("Couldn't resolve destination path: {e}"),
+        message: format!("Couldn't resolve destination path: {e}").into(),
     })?;
 
     for source in sources {
         if source.is_dir() {
             let canonical_source = source.canonicalize().map_err(|e| WriteOperationError::IoError {
                 path: source.display().to_string(),
-                message: format!("Couldn't resolve source path: {e}"),
+                message: format!("Couldn't resolve source path: {e}").into(),
             })?;
             if canonical_dest.starts_with(&canonical_source) {
                 return Err(WriteOperationError::DestinationInsideSource {
@@ -429,7 +429,7 @@ pub(crate) fn validate_path_length(dest_path: &Path) -> Result<(), WriteOperatio
     if path_str.len() > MAX_PATH_BYTES {
         return Err(WriteOperationError::IoError {
             path: dest_path.display().to_string(),
-            message: format!("Path exceeds maximum length of {} bytes", MAX_PATH_BYTES),
+            message: format!("Path exceeds maximum length of {} bytes", MAX_PATH_BYTES).into(),
         });
     }
 
@@ -439,7 +439,7 @@ pub(crate) fn validate_path_length(dest_path: &Path) -> Result<(), WriteOperatio
     {
         return Err(WriteOperationError::IoError {
             path: dest_path.display().to_string(),
-            message: format!("File name exceeds maximum length of {} bytes", MAX_NAME_BYTES),
+            message: format!("File name exceeds maximum length of {} bytes", MAX_NAME_BYTES).into(),
         });
     }
 

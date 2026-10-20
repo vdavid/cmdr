@@ -244,7 +244,7 @@ async fn a_failed_preview_fails_its_operation() {
         &preview_id,
         ScanOutcome::Error(WriteOperationError::IoError {
             path: "/src/locked.bin".to_string(),
-            message: "Permission denied".to_string(),
+            message: "Permission denied".into(),
         }),
         None,
     );

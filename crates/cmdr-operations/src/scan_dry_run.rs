@@ -161,7 +161,7 @@ fn dry_run_scan_recursive(
     // Check cancellation
     if state.intent().is_cancelled() {
         return Err(WriteOperationError::Cancelled {
-            message: "Operation cancelled by user".to_string(),
+            message: "Operation cancelled by user".into(),
         });
     }
 

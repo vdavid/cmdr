@@ -327,15 +327,15 @@ fn test_safe_overwrite_dir_materializes_folder_over_existing_file() {
     let result = safe_overwrite_dir(&overwrite_state(), &dest, |target| {
         fs::create_dir_all(target).map_err(|e| WriteOperationError::IoError {
             path: target.display().to_string(),
-            message: format!("create_dir_all: {e}"),
+            message: format!("create_dir_all: {e}").into(),
         })?;
         fs::write(target.join("a.txt"), "a").map_err(|e| WriteOperationError::IoError {
             path: target.display().to_string(),
-            message: format!("write a: {e}"),
+            message: format!("write a: {e}").into(),
         })?;
         fs::write(target.join("b.txt"), "b").map_err(|e| WriteOperationError::IoError {
             path: target.display().to_string(),
-            message: format!("write b: {e}"),
+            message: format!("write b: {e}").into(),
         })?;
         Ok(())
     });
@@ -371,7 +371,7 @@ fn test_safe_overwrite_dir_restores_original_on_materialize_failure() {
         fs::create_dir_all(target).ok();
         fs::write(target.join("partial.txt"), "half-written").ok();
         Err(WriteOperationError::Cancelled {
-            message: "user cancelled".to_string(),
+            message: "user cancelled".into(),
         })
     });
 
@@ -460,11 +460,11 @@ fn test_safe_overwrite_dir_over_folder_dest_replaces_contents() {
     let result = safe_overwrite_dir(&overwrite_state(), &dest, |target| {
         fs::create_dir_all(target).map_err(|e| WriteOperationError::IoError {
             path: target.display().to_string(),
-            message: format!("create_dir_all: {e}"),
+            message: format!("create_dir_all: {e}").into(),
         })?;
         fs::write(target.join("new.txt"), "new").map_err(|e| WriteOperationError::IoError {
             path: target.display().to_string(),
-            message: format!("write new: {e}"),
+            message: format!("write new: {e}").into(),
         })?;
         Ok(())
     });

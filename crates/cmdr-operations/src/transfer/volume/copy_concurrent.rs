@@ -757,7 +757,7 @@ impl Settlements {
             ctx,
             WriteFailure::synthetic(WriteOperationError::IoError {
                 path,
-                message: ended.to_string(),
+                message: ended.to_string().into(),
             }),
         );
     }

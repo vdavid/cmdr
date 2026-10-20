@@ -408,7 +408,7 @@ fn a_copy_failure_ships_no_name_from_its_typed_error() {
         },
         WriteOperationError::ReadError {
             path: "/Volumes/Backup/Summer (Lake House) Trip/IMG 0001.jpg".to_string(),
-            message: "Permission denied (os error 13)".to_string(),
+            message: "Permission denied (os error 13)".into(),
         },
     ];
     let private = ["Lake", "House", "Summer", "Trip", "Family", "Photos", "IMG", "0001"];
@@ -424,6 +424,56 @@ fn a_copy_failure_ships_no_name_from_its_typed_error() {
         );
         assert_ships_none(&local, &private);
         assert!(r(&local).ends_with(", keeping 3 completed files"), "{}", r(&local));
+    }
+}
+
+/// A failed operation's `detail=` JSON marks every field by its kind, so a share-relative name
+/// under a key no report pass knows (`entry`, `other`, `archivePath`, `keptAt`) ships as
+/// tokens, and a `message` that kept its volume error typed marks that error's path. The
+/// frontend's JSON is the same text with no marker in it.
+#[test]
+fn a_failed_operations_detail_marks_every_field_by_kind() {
+    use cmdr_fs::error_detail::ErrorDetail;
+    use cmdr_fs::log_private::RESERVED;
+    use cmdr_fs::volume::VolumeError;
+    use cmdr_operations::WriteOperationError;
+
+    let share = "Trips/Summer (Lake House) 2026/IMG 0001.jpg";
+    let errors = [
+        WriteOperationError::ArchiveEntryNamesCollide {
+            entry: "Summer Lake/IMG 0001.jpg".to_string(),
+            other: "Summer Lake/img 0001.JPG".to_string(),
+            archive_path: "Summer Lake House/IMG 0001.jpg".to_string(),
+        },
+        WriteOperationError::IoError {
+            path: "/Volumes/Backup".to_string(),
+            message: ErrorDetail::of(VolumeError::PermissionDenied {
+                path: share.to_string(),
+                raw_os_error: None,
+            }),
+        },
+        WriteOperationError::NewDataKeptAt {
+            path: share.to_string(),
+            kept_at: "Trips/Summer (Lake House) 2026/IMG 0001 (recovered).jpg".to_string(),
+            message: "the rename was refused".into(),
+        },
+    ];
+    let private = ["Lake", "House", "Summer", "IMG", "0001", "recovered"];
+    for error in errors {
+        let line = format!(
+            "{HEAD}copy_between_volumes: operation op-1 failed: detail={:?}",
+            error.log_detail()
+        );
+        assert_ships_none(&line, &private);
+        let tag = serde_json::to_value(&error).expect("serializes")["type"].clone();
+        let tag = tag.as_str().expect("a tagged enum");
+        assert!(
+            r(&line).contains(&format!("\\\"type\\\":\\\"{tag}\\\"")),
+            "{}",
+            r(&line)
+        );
+        let ipc = serde_json::to_string(&error).expect("serializes");
+        assert!(!ipc.contains(|c| RESERVED.contains(&c)), "{ipc}");
     }
 }
 

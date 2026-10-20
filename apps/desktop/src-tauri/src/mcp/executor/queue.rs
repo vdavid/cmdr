@@ -378,7 +378,7 @@ mod tests {
                 WriteOperationType::Copy,
                 &WriteOperationError::IoError {
                     path: "/Users/me/photos/a.raw".to_string(),
-                    message: "disk went away".to_string(),
+                    message: "disk went away".into(),
                 },
             );
             Self(operation_id)

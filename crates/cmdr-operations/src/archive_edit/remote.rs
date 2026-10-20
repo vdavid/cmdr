@@ -474,7 +474,7 @@ async fn reap_remote_temps(
 fn io_op(path: &str, message: &str) -> EditError {
     EditError::Op(WriteOperationError::IoError {
         path: path.to_string(),
-        message: message.to_string(),
+        message: message.to_string().into(),
     })
 }
 

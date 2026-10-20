@@ -111,7 +111,7 @@ pub(super) async fn scan_volume_recursive(
 
     if state.intent().is_cancelled() {
         return Err(WriteOperationError::Cancelled {
-            message: "Operation cancelled by user".to_string(),
+            message: "Operation cancelled by user".into(),
         });
     }
 

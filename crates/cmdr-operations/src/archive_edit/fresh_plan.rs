@@ -246,7 +246,7 @@ async fn plan_sources_with_context(
                 let size = meta.size.ok_or_else(|| {
                     EditError::Op(WriteOperationError::ReadError {
                         path: path.display().to_string(),
-                        message: "the source did not report its size".to_string(),
+                        message: "the source did not report its size".into(),
                     })
                 })?;
                 source_bytes = source_bytes.saturating_add(size);
@@ -536,7 +536,7 @@ pub(super) async fn validate_aliases(
             .await
             .map_err(|error| WriteOperationError::IoError {
                 path: archive_path.display().to_string(),
-                message: error.to_string(),
+                message: error.to_string().into(),
             })?;
     } else if Arc::ptr_eq(source, dest) || source.lane_key() == dest.lane_key() {
         let archive_path = cmdr_fs::volume::remote_paths::normalize_remote_path(archive_path);
@@ -559,7 +559,7 @@ pub(super) async fn validate_aliases(
 fn volume_read_error(path: &Path, error: VolumeError) -> EditError {
     EditError::Op(WriteOperationError::ReadError {
         path: path.display().to_string(),
-        message: error.to_string(),
+        message: cmdr_fs::error_detail::ErrorDetail::of(error),
     })
 }
 

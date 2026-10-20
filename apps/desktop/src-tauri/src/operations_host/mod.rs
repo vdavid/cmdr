@@ -154,7 +154,7 @@ pub(crate) fn claim_ledger_in(slot: &'static OnceLock<Operations>, data_dir: Opt
 pub(crate) fn refuse_not_installed(_: NotInstalled) -> cmdr_operations::WriteOperationError {
     cmdr_operations::WriteOperationError::IoError {
         path: String::new(),
-        message: "the write engine isn't ready yet".to_string(),
+        message: "the write engine isn't ready yet".into(),
     }
 }
 

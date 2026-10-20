@@ -162,7 +162,7 @@ fn a_cancel_is_never_rewritten_into_a_disconnect() {
     let _hook = test_hook::pull(&sides.destination.root);
 
     let cancelled = WriteOperationError::Cancelled {
-        message: "Operation cancelled by user".to_string(),
+        message: "Operation cancelled by user".into(),
     };
     assert!(matches!(
         name_the_vanished_drive(cancelled, Some(&sides)),

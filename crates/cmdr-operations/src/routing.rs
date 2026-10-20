@@ -175,9 +175,9 @@ fn destination_takes_no_writes(dest_volume: &Arc<dyn Volume>) -> WriteOperationE
 fn route_cannot_hold_a_binding(route: &str) -> WriteOperationError {
     WriteOperationError::IoError {
         path: String::new(),
-        message: format!(
+        message: (format!(
             "This transfer runs as an archive changeset ({route}), which can't yet hold its sources to what was reviewed."
-        ),
+        )).into(),
     }
 }
 

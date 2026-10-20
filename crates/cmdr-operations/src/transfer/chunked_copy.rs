@@ -83,7 +83,7 @@ pub(crate) fn chunked_copy_with_metadata(
 
     let read_error = |e: std::io::Error, what: &str| WriteOperationError::ReadError {
         path: source.display().to_string(),
-        message: format!("Failed to {what}: {e}"),
+        message: format!("Failed to {what}: {e}").into(),
     };
     let mut src_file = std::fs::File::open(source).map_err(|e| read_error(e, "open source file"))?;
     // One `fstat` answers the size, the dates, the mode, and the flags.
@@ -97,7 +97,7 @@ pub(crate) fn chunked_copy_with_metadata(
         .open(dest)
         .map_err(|e| WriteOperationError::WriteError {
             path: dest.display().to_string(),
-            message: format!("Failed to create destination file: {}", e),
+            message: format!("Failed to create destination file: {}", e).into(),
         })?;
 
     let bytes = copy_data_chunked(
@@ -125,7 +125,7 @@ pub(crate) fn chunked_copy_with_metadata(
     // 2026-10-11: a time-set before the flush read back the rename's time).
     cmdr_fs::durable::sync_file_data(&dst_file).map_err(|e| WriteOperationError::WriteError {
         path: dest.display().to_string(),
-        message: format!("Couldn't flush destination to disk: {}", e),
+        message: format!("Couldn't flush destination to disk: {}", e).into(),
     })?;
 
     // Best effort: a refused class is logged and the copy stands (invariant 1).
@@ -292,7 +292,7 @@ fn copy_data_chunked(
             // Clean up partial file in background (may block on network mounts)
             super::super::cancellable::remove_file_in_background(dest.to_path_buf());
             return Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
+                message: "Operation cancelled by user".into(),
             });
         }
 
@@ -303,7 +303,7 @@ fn copy_data_chunked(
 
         let bytes_read = src_file.read(&mut buffer).map_err(|e| WriteOperationError::ReadError {
             path: source.display().to_string(),
-            message: format!("Failed to read from source: {}", e),
+            message: format!("Failed to read from source: {}", e).into(),
         })?;
 
         if bytes_read == 0 {
@@ -314,7 +314,7 @@ fn copy_data_chunked(
             .write_all(&buffer[..bytes_read])
             .map_err(|e| WriteOperationError::WriteError {
                 path: dest.display().to_string(),
-                message: format!("Failed to write to destination: {}", e),
+                message: format!("Failed to write to destination: {}", e).into(),
             })?;
 
         total_bytes += bytes_read as u64;

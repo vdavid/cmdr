@@ -115,7 +115,7 @@ where
             Ok(result) => result,
             Err(join) => Err(EditError::Op(WriteOperationError::IoError {
                 path: archive_path.display().to_string(),
-                message: format!("archive edit task failed: {join}"),
+                message: format!("archive edit task failed: {join}").into(),
             })),
         };
     }
@@ -138,14 +138,14 @@ pub(super) fn to_write_error(archive_path: &Path, err: MutationError) -> WriteOp
     let path = archive_path.display().to_string();
     match err {
         MutationError::Cancelled => WriteOperationError::Cancelled {
-            message: "the archive edit was cancelled".to_string(),
+            message: "the archive edit was cancelled".into(),
         },
         MutationError::OpenOriginal(io) | MutationError::Io(io) => {
             super::super::error_classification::classify_io_error(&io, path)
         }
         MutationError::Zip(zip_err) => WriteOperationError::WriteError {
             path,
-            message: zip_err.to_string(),
+            message: zip_err.to_string().into(),
         },
         MutationError::EncryptedEntryRetained { name } => WriteOperationError::ArchiveEncryptedEntry { path, name },
         MutationError::DuplicateEntryName { name } => WriteOperationError::ArchiveDuplicateEntryName { path, name },
@@ -154,7 +154,7 @@ pub(super) fn to_write_error(archive_path: &Path, err: MutationError) -> WriteOp
         }
         MutationError::ReadSource { inner_path, source } => WriteOperationError::ReadError {
             path: inner_path,
-            message: source.to_string(),
+            message: cmdr_fs::error_detail::ErrorDetail::from_io(&source),
         },
     }
 }

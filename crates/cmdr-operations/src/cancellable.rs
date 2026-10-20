@@ -141,7 +141,7 @@ fn await_worker_result<T>(
         if state.intent().is_cancelled() {
             log::debug!("{context}: cancellation detected during polling op={operation_id}");
             return Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
+                message: "Operation cancelled by user".into(),
             });
         }
 
@@ -151,7 +151,7 @@ fn await_worker_result<T>(
             Err(mpsc::RecvTimeoutError::Disconnected) => {
                 return Err(WriteOperationError::IoError {
                     path: context.to_string(),
-                    message: format!("{context} thread terminated unexpectedly"),
+                    message: format!("{context} thread terminated unexpectedly").into(),
                 });
             }
         }

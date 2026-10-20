@@ -141,7 +141,7 @@ pub(crate) async fn delete_volume_files_with_progress_inner(
                     rollback: CancelRollback::none(),
                 });
                 return Err(WriteOperationError::Cancelled {
-                    message: "Operation cancelled by user".to_string(),
+                    message: "Operation cancelled by user".into(),
                 });
             }
 
@@ -360,7 +360,7 @@ pub(crate) async fn delete_volume_files_with_progress_inner(
                 rollback: CancelRollback::none(),
             });
             return Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
+                message: "Operation cancelled by user".into(),
             });
         }
 
@@ -405,7 +405,7 @@ pub(crate) async fn delete_volume_files_with_progress_inner(
                         rollback: CancelRollback::none(),
                     });
                     return Err(WriteOperationError::Cancelled {
-                        message: "Operation cancelled by user".to_string(),
+                        message: "Operation cancelled by user".into(),
                     });
                 }
                 Err(stop) => {
@@ -483,7 +483,7 @@ pub(crate) async fn delete_volume_files_with_progress_inner(
                 rollback: CancelRollback::none(),
             });
             return Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
+                message: "Operation cancelled by user".into(),
             });
         }
 
@@ -497,7 +497,7 @@ pub(crate) async fn delete_volume_files_with_progress_inner(
                     rollback: CancelRollback::none(),
                 });
                 return Err(WriteOperationError::Cancelled {
-                    message: "Operation cancelled by user".to_string(),
+                    message: "Operation cancelled by user".into(),
                 });
             }
             // Best effort, as it always was: a folder still holding something

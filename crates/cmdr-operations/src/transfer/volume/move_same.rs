@@ -904,7 +904,7 @@ pub async fn move_within_same_volume_with_progress(
                 rollback: CancelRollback::none(),
             });
             Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
+                message: "Operation cancelled by user".into(),
             })
         }
         PostLoopIntent::Failed(err) => Err(err),

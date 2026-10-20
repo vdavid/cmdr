@@ -161,7 +161,7 @@ pub(crate) fn run_scan_preview(
             // this preview reports exactly this as its own failure.
             on_io_error: &|path, e| classify_io_error(&e, path.display().to_string()),
             on_cancelled: &|| WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
+                message: "Operation cancelled by user".into(),
             },
             on_symlink_loop: &|path| WriteOperationError::SymlinkLoop {
                 path: path.display().to_string(),

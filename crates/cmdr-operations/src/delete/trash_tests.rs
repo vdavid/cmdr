@@ -347,6 +347,33 @@ fn test_trash_item_error_captures_path_and_message() {
     assert_eq!(error.reason, TrashRefusalKind::NotPermitted);
 }
 
+/// A refused batch's summary names each item's path marked in a log line, and reads as
+/// `path: why; path: why` everywhere else.
+#[test]
+fn a_refused_batch_summary_marks_each_path() {
+    use cmdr_fs::log_error::LogError;
+
+    let item = |path: &str, message: &str| TrashItemError {
+        path: PathBuf::from(path),
+        message: message.to_string(),
+        reason: TrashRefusalKind::NotPermitted,
+        online_only: false,
+    };
+    let errors = [
+        item("Trips/Lake House/a.jpg", "Permission denied"),
+        item("Trips/Lake House/b.jpg", "no longer exists"),
+    ];
+    let summary = refused_summary(&errors);
+    assert_eq!(
+        summary.to_string(),
+        "Trips/Lake House/a.jpg: Permission denied; Trips/Lake House/b.jpg: no longer exists"
+    );
+    let logged = LogError(&summary).to_string();
+    for path in ["Trips/Lake House/a.jpg", "Trips/Lake House/b.jpg"] {
+        assert!(logged.contains(&LogPrivate::path(path).to_string()), "{logged:?}");
+    }
+}
+
 /// A batch reports the reason that opens the most doors, not the most common one:
 /// eight vanished files beside one permission refusal is still a batch where a
 /// permission grant might be the answer.

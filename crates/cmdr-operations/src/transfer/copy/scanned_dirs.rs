@@ -46,7 +46,7 @@ pub(in crate::transfer) fn create_scanned_dirs_at_destination(
         // per-file loop, so "Paused" is already on screen when it starts.
         if state.stop_or_park_sync() {
             return Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
+                message: "Operation cancelled by user".into(),
             });
         }
         let Some(dest) = dir_dest_path(dir, sources, destination) else {
@@ -91,7 +91,7 @@ pub(in crate::transfer) fn create_scanned_dirs_at_destination(
         };
         create_dirs_like_their_sources(&dirs_to_create, &mapping).map_err(|e| WriteOperationError::IoError {
             path: dest.display().to_string(),
-            message: format!("Failed to create directory: {}", e),
+            message: format!("Failed to create directory: {}", e).into(),
         })?;
         for created in dirs_to_create {
             transaction.record_dir(created.clone());

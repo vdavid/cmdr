@@ -128,7 +128,7 @@ pub(crate) fn delete_files_with_progress_inner(
                 rollback: CancelRollback::none(), // Delete operations can't be rolled back
             });
             return Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
+                message: "Operation cancelled by user".into(),
             });
         }
 
@@ -215,7 +215,7 @@ pub(crate) fn delete_files_with_progress_inner(
                 rollback: CancelRollback::none(), // Delete operations can't be rolled back
             });
             return Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
+                message: "Operation cancelled by user".into(),
             });
         }
 

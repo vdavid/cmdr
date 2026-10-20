@@ -12,7 +12,7 @@ use crate::types::{RetryOutcome, WriteOperationStartResult};
 fn io_error(path: &str) -> WriteOperationError {
     WriteOperationError::IoError {
         path: path.to_string(),
-        message: "disk went away".to_string(),
+        message: "disk went away".into(),
     }
 }
 
@@ -141,7 +141,7 @@ fn cancels_and_password_prompts_are_not_retained_as_failures() {
         &OperationId::from("op-cancelled"),
         WriteOperationType::Copy,
         &WriteOperationError::Cancelled {
-            message: "cancelled".to_string(),
+            message: "cancelled".into(),
         },
     );
     mgr.retain_failure(

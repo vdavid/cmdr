@@ -306,10 +306,10 @@ fn scan_sources_internal(
         park_while_paused: &|| pause.park_while_paused(),
         on_io_error: &|path, e| WriteOperationError::IoError {
             path: path.display().to_string(),
-            message: e.to_string(),
+            message: cmdr_fs::error_detail::ErrorDetail::from_io(&e),
         },
         on_cancelled: &|| WriteOperationError::Cancelled {
-            message: "Operation cancelled by user".to_string(),
+            message: "Operation cancelled by user".into(),
         },
         on_symlink_loop: &|path| WriteOperationError::SymlinkLoop {
             path: path.display().to_string(),

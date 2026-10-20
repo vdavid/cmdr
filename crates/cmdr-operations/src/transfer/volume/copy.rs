@@ -146,7 +146,7 @@ impl crate::Operations {
         if !source_volume.supports_export() {
             return Err(WriteOperationError::IoError {
                 path: source_volume.root().display().to_string(),
-                message: format!("Source volume '{}' does not support export", source_volume.name()),
+                message: format!("Source volume '{}' does not support export", source_volume.name()).into(),
             });
         }
 
@@ -1246,7 +1246,7 @@ pub async fn copy_volumes_with_progress(
     }
 
     Err(WriteFailure::synthetic(WriteOperationError::Cancelled {
-        message: "Operation cancelled by user".to_string(),
+        message: "Operation cancelled by user".into(),
     }))
 }
 

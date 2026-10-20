@@ -1044,7 +1044,7 @@ the temp; on a failure INSIDE it the original goes back to its name, and only wh
   way before it rescues. ❌ Retiring the record on the raw error left the user's file under a scratch name nothing knew
   about. Pinned by `displaced_destination_tests.rs`.
 - Pinned by `conflict_tests.rs::file_overwrite_keeps_the_original_and_writes_at_its_name`,
-  `../staged_write_tests.rs::a_swap_lands_delete_first_and_never_renames_with_force`, and
+  `../staged_write_tests.rs::a_swap_moves_the_original_aside_first_and_never_renames_with_force`, and
   `copy_crashsafe_tests.rs::{cross_volume_overwrite_preserves_dest_on_midstream_failure, cross_volume_overwrite_success_replaces_and_cleans_temp, cross_volume_overwrite_concurrent_replaces_and_cleans_temp}`.
 
 **Cross-volume move source-delete removes a LEDGER, never the tree** (`source_sweep.rs`, the twin of the local

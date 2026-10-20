@@ -74,12 +74,12 @@ the next section.
   own key, which the drive index stores and the write engine matches sources under), `log_rollup`, `log_private` +
   `log_detail` (`LogPrivate`, the wrapper a log site marks a user-derived value with, over the ONE marker table and
   lexer the app's span pass reads too; `LogDetail` for external OS/server/CLI text as one Debug-quoted, 1 KiB-capped
-  field, and `LoggedText` for our own; `log_error`, the `LogError` a path-carrying error logs through, and
-  `error_detail`, the message field that keeps its cause typed for it; § "Marked log values"), `tcc_paths`,
-  `ignore_poison`, `pluralize`, `tilde` (`expand_tilde`, for a path a person typed on THIS machine), `byte_size`
-  (`format_size`, the IEC byte count log lines and model-facing answers read), `thread_qos`, `thread_cpu`,
-  `process_memory`, `utility_pool.rs` (`UtilityPool`, a keep-alive pool of `Utility`-QoS threads, so background work
-  that comes in streams, like index walks, reuses threads instead of creating one per job).
+  field, and `LoggedText` for our own; `log_error`, the `LogError` a path-carrying error logs through, `error_detail`,
+  the message field that keeps its cause typed for it, and `log_json`, a value's JSON with its fields marked; § "Marked
+  log values"), `tcc_paths`, `ignore_poison`, `pluralize`, `tilde` (`expand_tilde`, for a path a person typed on THIS
+  machine), `byte_size` (`format_size`, the IEC byte count log lines and model-facing answers read), `thread_qos`,
+  `thread_cpu`, `process_memory`, `utility_pool.rs` (`UtilityPool`, a keep-alive pool of `Utility`-QoS threads, so
+  background work that comes in streams, like index walks, reuses threads instead of creating one per job).
 - `mapped_file_faults/`: the SIGBUS recovery that turns a read of a mapped file whose disk went away into zeros, and the
   generation a reader checks to distrust what it read meanwhile. § "Mapped-file faults".
 - `testing/`: behind the `testing` feature. `TestDir`, the two waits, and `unique_test_id` (a pid-and-counter key for a
@@ -556,8 +556,8 @@ both sides read (`LogKind`, `CLOSER`, `RESERVED`, and `markers`, the lexer).
   `cmdr-operations`' `MutationError`, conflict `VolumeScanError`, and `FlushFailure`, `MtpConnectionError`,
   `cmdr-archive`'s `ArchiveError` and `MutationError`, and the app's `ReconnectError` and `ViewerError`. A log site
   formats them through `LogError`; the type system refuses `LogError` of anything else. `WriteOperationError` (~50
-  variants, all IPC) logs as `error.log_detail()` instead: the frontend's JSON in a `detail=` field, whose camelCase
-  keys a report tokenizes.
+  variants, all IPC) logs as `error.log_detail()` instead: the frontend's JSON with its fields marked (`log_json`,
+  below), in a `detail=` field.
 - **Finding the sites**: compile the workspace with a converted type's `Display` (and `Error`) removed; every error left
   is a site that formats it plainly. A log site switches to `LogError`; a site building IPC or technical-detail text
   stays plain on purpose.
@@ -566,16 +566,23 @@ both sides read (`LogKind`, `CLOSER`, `RESERVED`, and `markers`, the lexer).
   `ErrorDetail::at_path` / `path_then` / `around` / `path`, which mark the path and keep the words as text. Its
   `Display`, `Debug`, JSON, and specta type are that plain string (a stored one deserializes as text; equality compares
   the text), so IPC and bindings don't change; its `ErrorLogText` writes the cause's own, values marked. Text from the
-  OS or a third-party crate goes in with `.into()` and stays foreign text. Every `VolumeError` message variant carries
-  one, as do `ViewerError::{Io, Archive}`, `ArchiveError::Io`, and `WriteOperationError::InvalidName`.
+  OS or a third-party crate goes in with `.into()` and stays foreign text. Every `VolumeError` and `WriteOperationError`
+  message field carries one, as do `ViewerError::{Io, Archive}` and `ArchiveError::Io`.
+- **`log_json` (`log_json.rs`) is a value's JSON for a log line, each field marked by kind**: the caller's table maps a
+  key to `Mark(kind)`, `Detail` (an `ErrorDetail`, which serializes its marked log text while `log_json` runs, a
+  thread-local mode nothing else sets), or `Words` (reserved chars replaced, so another party's text can't forge a
+  span). The plain JSON (IPC, stores) never carries a marker. **Decision: a span's body passes through verbatim.** It is
+  already the value's `{:?}` body, so JSON-escaping it again would put it a depth below its raw markers; `\"` and `\\`
+  are JSON escapes too, so the text stays JSON, and stripped of its markers it IS the plain JSON (pinned by
+  `the_logged_json_is_the_ipc_json_once_its_markers_are_gone`). `LoggedJson`'s `Debug` is `LoggedText`'s, so its spans
+  sit at depth 1. `WriteOperationError::log_detail`'s table fails closed: an unnamed string key is marked as a path.
 - **A typed failure crosses an `io`-only seam inside the `io::Error`**: a byte source hands `io::Error::other(e)` (a
   `VolumeError`) or `io::Error::other(ErrorDetail::of(e))` (a crate that mustn't name `VolumeError`), and
   `VolumeError::io_detail` / `ErrorDetail::from_io` take it back out typed (`from_io_without_path` uses it). Its
   `Display` is the cause's, so nothing reading the text changes.
-- **The known gap**: an error flattened into a `String` before a log macro sees it still prints plain and gets only the
-  report's regex fallback: a third-party crate's own text (`smb2`, `mtp-rs`, `gix`, `rusqlite`), and
-  `WriteOperationError`'s other `message` fields, which log as `log_detail()` JSON whose `message` key is no identity
-  key. Nothing here walks `source()`: no converted type has one.
+- **The known gap**: a third-party crate's own text (`smb2`, `mtp-rs`, `gix`, `rusqlite`, a `JoinError`) is flattened
+  before we see it, prints plain, and gets only the report's regex fallback. Nothing here walks `source()`: no converted
+  type has one.
 
 ## `ScanBoundary`: one seam, so a walk can't count without asking
 

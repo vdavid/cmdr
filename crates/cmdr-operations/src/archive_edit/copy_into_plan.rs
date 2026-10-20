@@ -43,7 +43,7 @@ pub(super) fn build_copy_into_changeset(
             EditError::Op(w) => w,
             // A pre-resolved policy never prompts, so it can't be cancelled here.
             EditError::Cancelled => WriteOperationError::Cancelled {
-                message: "the archive copy was cancelled".to_string(),
+                message: "the archive copy was cancelled".into(),
             },
         },
     )
@@ -85,13 +85,13 @@ fn build_copy_into_changeset_inner(
     let source = LocalFileSource::open(archive_path).map_err(|e| {
         EditError::Op(WriteOperationError::WriteError {
             path: archive_path.display().to_string(),
-            message: e.to_string(),
+            message: cmdr_fs::error_detail::ErrorDetail::from_io(&e),
         })
     })?;
     let index = ArchiveIndex::parse(Arc::new(source), ArchiveFormat::Zip, None).map_err(|e| {
         EditError::Op(WriteOperationError::WriteError {
             path: archive_path.display().to_string(),
-            message: e.to_string(),
+            message: cmdr_fs::error_detail::ErrorDetail::of(e),
         })
     })?;
 
@@ -119,7 +119,7 @@ fn build_copy_into_changeset_inner(
         let meta = std::fs::symlink_metadata(src).map_err(|e| {
             EditError::Op(WriteOperationError::ReadError {
                 path: src.display().to_string(),
-                message: e.to_string(),
+                message: cmdr_fs::error_detail::ErrorDetail::from_io(&e),
             })
         })?;
 

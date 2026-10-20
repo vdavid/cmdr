@@ -58,12 +58,13 @@ included, § "One-pass sequential extract"). Only the layout facts that none of 
   vocabulary takes a lock, holds an `Arc`, or reads the registry. ❌ Don't put a probe field or a counter here.
 - **`volume_outage.rs` is the wait for a volume that went away** (§ "Waiting out a volume that went away"), with
   `volume_outage_tests.rs` beside it and `outage_volume_test_support.rs`'s `OutageVolume` as the double: a volume whose
-  session a test drops and restores, like the SMB share in `#398`. The operation-side slot it fills lives one level up,
-  in `../outage_slot.rs`, so the activity classifier can read it without reaching into this layer.
-  `interrupted_landing.rs` holds the proofs a landing or a single-shot write the drop cut off is settled by, and
-  `staged_write_landing.rs::CutOffLanding` the landing's settle itself (§ "A landing the drop cut off").
-  `leftover_cleanup.rs` is the background pass that finishes a stopped transfer's cleanup (§ "File writes are staged"),
-  one level above `volume/` because its engine store (`LeftoverCleanups`, in `EngineStores`) is the crate root's.
+  session a test drops and restores, like the SMB share in `#398` (its arming API there, the `impl Volume` that fires it
+  in `outage_volume_test_support_impl.rs`). The operation-side slot it fills lives one level up, in `../outage_slot.rs`,
+  so the activity classifier can read it without reaching into this layer. `interrupted_landing.rs` holds the proofs a
+  landing or a single-shot write the drop cut off is settled by, and `staged_write_landing_cut_off.rs` the landing's
+  settle itself, `CutOffLanding::{resume, give_up}` (§ "A landing the drop cut off"). `leftover_cleanup.rs` is the
+  background pass that finishes a stopped transfer's cleanup (§ "File writes are staged"), one level above `volume/`
+  because its engine store (`LeftoverCleanups`, in `EngineStores`) is the crate root's.
 - **`transfer_probe_ends.rs` is what the probe asks the two volumes**, another `#[path]` child: `TransferEnds` (the
   source and destination, held only for their connections' liveness and the source's received-byte count) and
   `InboundWindow` (the receive rate across the last few ticks, pure and tested on its own).
@@ -1072,9 +1073,11 @@ all; see `../delete/CLAUDE.md`.
 **Decision**: a cross-volume file write streams into a `.cmdr-tmp-<uuid>` sibling and is renamed onto its final name
 only after its last byte, whether or not a conflict made it a safe-replace, unless the write is structurally incapable
 of leaving a partial there (`volume/DETAILS.md` § "The single-shot exemption"). `staged_write.rs` owns it (its landing,
-`land` and the ledger hand-off, in `staged_write_landing.rs`, its aside swap in `staged_write_landing_aside.rs`; the
-generated-file publishes in `staged_write_publish.rs`). Its write sites: `stream_pipe_file`, the sequential extractor,
-and the server-side copy here, plus a fresh compress and a remote zip edit's swap in `../archive_edit/`.
+`land` and the ledger hand-off, in `staged_write_landing.rs`, its aside swap in `staged_write_landing_aside.rs`, a
+cut-off landing's settle in `staged_write_landing_cut_off.rs`; the generated-file publishes in
+`staged_write_publish.rs`; its cells in `staged_write_tests.rs`, with `staged_write_ledger_tests.rs` and
+`staged_write_cut_off_tests.rs` beside it). Its write sites: `stream_pipe_file`, the sequential extractor, and the
+server-side copy here, plus a fresh compress and a remote zip edit's swap in `../archive_edit/`.
 
 **Why**: the conflict layer only staged a file→file Overwrite. A NEW file has no conflict, so it streamed straight to
 the destination path — and a transfer killed mid-stream left a truncated file wearing the user's real filename, which is
@@ -1165,13 +1168,13 @@ crash after a delete with no record would leave the only copy on a temp the next
 sight (it wears the source's dates), and one after a move aside with no record would leave the user's file on a scratch
 name nothing points back from. A ledger that keeps nothing on disk by design (one no claim opened, as a test's engine)
 has nothing to confirm against and lands as before. Pinned by
-`staged_write.rs::tests::{a_swap_whose_aside_record_has_no_writer_leaves_the_original_in_place, a_swap_whose_aside_record_the_log_refused_leaves_the_original_in_place, a_swap_with_no_path_space_for_its_aside_record_leaves_the_original_in_place}`.
+`staged_write_ledger_tests.rs::{a_swap_whose_aside_record_has_no_writer_leaves_the_original_in_place, a_swap_whose_aside_record_the_log_refused_leaves_the_original_in_place, a_swap_with_no_path_space_for_its_aside_record_leaves_the_original_in_place}`.
 The landing record retires when the rename lands it, when the rescue below gives it a real name, or when the refused
 delete left the name taken (the temp is a spare copy then: it's discarded, or turned back into a temp if the discard
 fails). A landing that can't tell whether the delete went through, a rescue that couldn't rename either, and a landing
 cut off mid-way (a dropped task, a wait that ended without the share) leave it recorded, held for the volume's next
 arrival. Pinned by
-`staged_write.rs::{a_claimed_name_landing_is_on_disk_as_a_landing_before_it_clears_the_way, a_landing_cut_off_after_clearing_the_way_is_finished_by_the_next_launch}`.
+`staged_write_ledger_tests.rs::{a_claimed_name_landing_is_on_disk_as_a_landing_before_it_clears_the_way, a_landing_cut_off_after_clearing_the_way_is_finished_by_the_next_launch}`.
 
 ❗ **A cleared way plus a refused second rename strands committed data**, and the landing gets it out of temp space on
 the spot. The bytes are complete by then, the destination name is now EMPTY, and the temp wears a `.cmdr-tmp-*` name,
@@ -2063,15 +2066,14 @@ it always did. A volume delete has its own wait, which re-checks each entry agai
 (`../delete/DETAILS.md` § "Waiting out a dropped share"), and a compress's planning walk waits per read
 (`../archive_edit/DETAILS.md` § "The driver, op by op", its compress bullet).
 
-**A landing the drop cut off (`interrupted_landing.rs`, `staged_write_landing.rs::CutOffLanding`).** A rename or a
-delete whose reply never arrives may have happened or not: the drop can come before the server saw it, or after it
-performed it. Run again blind, a rename that happened re-copies the file and its landing meets OUR file at a name the
-caller believed free, which `land` rightly refuses as an unresolved clash: a copy that waited out the outage then failed
-with `DestinationExists` over its own file. Not rare: the live-SMB cell
-(`operations_host/backend_suites/smb_outage_test.rs`) hit it whenever the cut fell inside a landing of the concurrent
-window. And after a claimed name's clearing delete that went through, the temp is the destination's ONLY copy. So the
-landing stops at the step the transport cut off, and once the share is back it is settled from what the destination
-shows (`CutOffLanding::resume`):
+**A landing the drop cut off (`interrupted_landing.rs`, `staged_write_landing_cut_off.rs`).** A rename or a delete whose
+reply never arrives may have happened or not: the drop can come before the server saw it, or after it performed it. Run
+again blind, a rename that happened re-copies the file and its landing meets OUR file at a name the caller believed
+free, which `land` rightly refuses as an unresolved clash: a copy that waited out the outage then failed with
+`DestinationExists` over its own file. Not rare: the live-SMB cell (`operations_host/backend_suites/smb_outage_test.rs`)
+hit it whenever the cut fell inside a landing of the concurrent window. And after a claimed name's clearing delete that
+went through, the temp is the destination's ONLY copy. So the landing stops at the step the transport cut off, and once
+the share is back it is settled from what the destination shows (`CutOffLanding::resume`):
 
 - **The temp is there and whole** (exactly the size the write confirmed): it lands from where the cut left off, ❌ never
   streamed again. A first rename lands again from the top. After a clearing delete whose answer was lost, the name says
@@ -2095,8 +2097,8 @@ shows (`CutOffLanding::resume`):
   compare races `stop_work` (#577): a Cancel mid-compare ends the settle as `Resumed::Stopped`, which proves nothing, so
   ❌ nothing counts as landed, ❌ nothing is put back or discarded, and the landing record and any aside stay for the
   volume's next arrival (pinned by
-  `staged_write_tests.rs::a_cancel_during_a_cut_off_landings_byte_compare_stops_it_and_keeps_the_landing_recorded`). A
-  single-shot create's settle (below) races it the same way.
+  `staged_write_cut_off_tests.rs::a_cancel_during_a_cut_off_landings_byte_compare_stops_it_and_keeps_the_landing_recorded`).
+  A single-shot create's settle (below) races it the same way.
 - **Anything else** (a temp that isn't whole, a name that doesn't prove it) runs the file again, a swap's original put
   back at its name first (`run_again_with_the_original_home`), and a name someone else took meets the ordinary
   late-clash refusal (`DestinationExists`, their file untouched).

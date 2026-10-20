@@ -64,7 +64,7 @@ impl crate::Operations {
     ) -> Result<WriteOperationStartResult, WriteOperationError> {
         let first = sources.first().ok_or_else(|| WriteOperationError::IoError {
             path: String::new(),
-            message: "no entries to delete".to_string(),
+            message: "no entries to delete".into(),
         })?;
         let (archive_path, _) = cmdr_fs::archive_format::archive_boundary_candidate(first)
             .ok_or_else(|| read_only_error(first, ReadOnlySide::Destination))?;
@@ -77,7 +77,7 @@ impl crate::Operations {
             if source_archive != archive_path {
                 return Err(WriteOperationError::IoError {
                     path: source.display().to_string(),
-                    message: "can't delete entries from more than one archive at once".to_string(),
+                    message: "can't delete entries from more than one archive at once".into(),
                 });
             }
             deletes.push(normalize_inner_path(&inner));

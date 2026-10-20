@@ -205,7 +205,7 @@ where
         discard_temp(state, &temp_record);
         return Err(WriteOperationError::IoError {
             path: dest.display().to_string(),
-            message: format!("Failed to set aside existing destination: {}", e),
+            message: format!("Failed to set aside existing destination: {}", e).into(),
         });
     }
 
@@ -268,7 +268,7 @@ where
             std::io::ErrorKind::InvalidFilename => classify_io_error(&e, dest.display().to_string()),
             _ => WriteOperationError::IoError {
                 path: dest.display().to_string(),
-                message: format!("Failed to finalize the copy: {}", e),
+                message: format!("Failed to finalize the copy: {}", e).into(),
             },
         });
     }
@@ -608,7 +608,7 @@ pub(super) fn displace_with_directory(
         in_flight_temps::retire(state, &record);
         return Err(WriteOperationError::IoError {
             path: dest.display().to_string(),
-            message: format!("Failed to set aside existing destination: {}", e),
+            message: format!("Failed to set aside existing destination: {}", e).into(),
         });
     }
     let displaced = DisplacedEntry {
@@ -624,7 +624,8 @@ pub(super) fn displace_with_directory(
             message: format!(
                 "Failed to create directory after setting the blocking file aside: {}",
                 e
-            ),
+            )
+            .into(),
         });
     }
     Ok(displaced)
@@ -697,7 +698,7 @@ where
         in_flight_temps::retire(state, &record);
         return Err(WriteOperationError::IoError {
             path: dest.display().to_string(),
-            message: format!("Failed to set aside existing destination: {}", e),
+            message: format!("Failed to set aside existing destination: {}", e).into(),
         });
     }
 

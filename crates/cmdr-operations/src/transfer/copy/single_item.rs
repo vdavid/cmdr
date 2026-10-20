@@ -252,7 +252,7 @@ pub(in crate::transfer) fn copy_single_item(
             *files_done
         );
         return Err(WriteOperationError::Cancelled {
-            message: "Operation cancelled by user".to_string(),
+            message: "Operation cancelled by user".into(),
         });
     }
 
@@ -349,7 +349,7 @@ pub(in crate::transfer) fn copy_single_item(
                     let incoming = incoming_folder_for(source, &dest_path, &blocking);
                     create_dir_like_its_source(&renamed_root, &incoming).map_err(|e| WriteOperationError::IoError {
                         path: renamed_root.display().to_string(),
-                        message: format!("Failed to create renamed directory: {}", e),
+                        message: format!("Failed to create renamed directory: {}", e).into(),
                     })?;
                     transaction.record_dir(renamed_root.clone());
                     created_dirs.insert(renamed_root.clone());
@@ -411,7 +411,7 @@ pub(in crate::transfer) fn copy_single_item(
             };
             create_dirs_like_their_sources(&dirs_to_create, &mapping).map_err(|e| WriteOperationError::IoError {
                 path: parent.display().to_string(),
-                message: format!("Failed to create directory: {}", e),
+                message: format!("Failed to create directory: {}", e).into(),
             })?;
 
             // Record only the directories we actually created, in creation order.
@@ -591,7 +591,7 @@ pub(in crate::transfer) fn copy_single_item(
         // Check cancellation before copy
         if state.intent().is_cancelled() {
             return Err(WriteOperationError::Cancelled {
-                message: "Operation cancelled by user".to_string(),
+                message: "Operation cancelled by user".into(),
             });
         }
 

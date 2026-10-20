@@ -289,7 +289,7 @@ fn prefer_pipeline_error(
         _ if operation_cancelled => EditError::Cancelled,
         _ => EditError::Op(WriteOperationError::WriteError {
             path: path.display().to_string(),
-            message: "the ZIP pipeline stopped before the archive was complete".to_string(),
+            message: "the ZIP pipeline stopped before the archive was complete".into(),
         }),
     }
 }
@@ -301,12 +301,13 @@ fn is_derivative(error: &FreshZipError) -> bool {
 
 fn fresh_error(path: &Path, error: FreshZipError) -> EditError {
     match error {
-        FreshZipError::Source { entry, message } => {
-            EditError::Op(WriteOperationError::ReadError { path: entry, message })
-        }
+        FreshZipError::Source { entry, message } => EditError::Op(WriteOperationError::ReadError {
+            path: entry,
+            message: message.into(),
+        }),
         other => EditError::Op(WriteOperationError::WriteError {
             path: path.display().to_string(),
-            message: format!("{other:?}"),
+            message: format!("{other:?}").into(),
         }),
     }
 }
@@ -314,6 +315,6 @@ fn fresh_error(path: &Path, error: FreshZipError) -> EditError {
 pub(super) fn volume_write_error(path: &Path, error: VolumeError) -> EditError {
     EditError::Op(WriteOperationError::WriteError {
         path: path.display().to_string(),
-        message: error.to_string(),
+        message: cmdr_fs::error_detail::ErrorDetail::of(error),
     })
 }

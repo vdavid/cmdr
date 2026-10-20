@@ -308,12 +308,12 @@ pub(crate) fn copy_file_native(
         if destination.is_dir() {
             std::fs::remove_dir_all(destination).map_err(|e| WriteOperationError::IoError {
                 path: destination.display().to_string(),
-                message: format!("Failed to remove existing destination: {}", e),
+                message: format!("Failed to remove existing destination: {}", e).into(),
             })?;
         } else {
             std::fs::remove_file(destination).map_err(|e| WriteOperationError::IoError {
                 path: destination.display().to_string(),
-                message: format!("Failed to remove existing destination: {}", e),
+                message: format!("Failed to remove existing destination: {}", e).into(),
             })?;
         }
     }
@@ -325,7 +325,7 @@ pub(crate) fn copy_file_native(
     if state.is_null() {
         return Err(WriteOperationError::IoError {
             path: source.display().to_string(),
-            message: "Failed to allocate copyfile state".to_string(),
+            message: "Failed to allocate copyfile state".into(),
         });
     }
 
@@ -374,7 +374,7 @@ pub(crate) fn copy_file_native(
     {
         let _ = std::fs::remove_file(destination);
         return Err(WriteOperationError::Cancelled {
-            message: "Operation cancelled by user".to_string(),
+            message: "Operation cancelled by user".into(),
         });
     }
 
@@ -418,12 +418,12 @@ pub(crate) fn copy_symlink(source: &Path, destination: &Path) -> Result<(), Writ
 
     let target = std::fs::read_link(source).map_err(|e| WriteOperationError::IoError {
         path: source.display().to_string(),
-        message: format!("Failed to read symlink: {}", e),
+        message: format!("Failed to read symlink: {}", e).into(),
     })?;
 
     std::os::unix::fs::symlink(&target, destination).map_err(|e| WriteOperationError::IoError {
         path: destination.display().to_string(),
-        message: format!("Failed to create symlink: {}", e),
+        message: format!("Failed to create symlink: {}", e).into(),
     })?;
 
     match std::fs::symlink_metadata(source) {
@@ -456,12 +456,12 @@ pub(crate) fn copy_symlink(source: &Path, destination: &Path) -> Result<(), Writ
 fn path_to_cstring(path: &Path) -> Result<CString, WriteOperationError> {
     let path_str = path.to_str().ok_or_else(|| WriteOperationError::IoError {
         path: path.display().to_string(),
-        message: "Path contains invalid UTF-8".to_string(),
+        message: "Path contains invalid UTF-8".into(),
     })?;
 
     CString::new(path_str).map_err(|_| WriteOperationError::IoError {
         path: path.display().to_string(),
-        message: "Path contains null byte".to_string(),
+        message: "Path contains null byte".into(),
     })
 }
 

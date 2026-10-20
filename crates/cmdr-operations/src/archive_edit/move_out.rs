@@ -80,7 +80,7 @@ impl crate::Operations {
         // (the `{ delete }` changeset needs archive-root-relative names).
         let first = source_paths.first().ok_or_else(|| WriteOperationError::IoError {
             path: String::new(),
-            message: "no entries to move".to_string(),
+            message: "no entries to move".into(),
         })?;
         let (archive_path, _) = cmdr_fs::archive_format::archive_boundary_candidate(first)
             .ok_or_else(|| read_only_error(first, ReadOnlySide::Source))?;
@@ -97,7 +97,7 @@ impl crate::Operations {
             if source_archive != archive_path {
                 return Err(WriteOperationError::IoError {
                     path: source.display().to_string(),
-                    message: "can't move entries out of more than one archive at once".to_string(),
+                    message: "can't move entries out of more than one archive at once".into(),
                 });
             }
             inner_by_source.push((source.clone(), normalize_inner_path(&inner)));

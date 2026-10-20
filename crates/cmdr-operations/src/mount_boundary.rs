@@ -204,7 +204,7 @@ async fn on_local_disk(
         .await
         .map_err(|e| WriteOperationError::IoError {
             path: first.display().to_string(),
-            message: format!("the mount check didn't finish: {e}"),
+            message: format!("the mount check didn't finish: {e}").into(),
         })
 }
 

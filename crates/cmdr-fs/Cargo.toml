@@ -54,6 +54,8 @@ libc = "0.2"
 # manage. Same version the app pins.
 blake3 = "1.8.3"
 serde = { version = "1", features = ["derive"] }
+# `log_json` builds a log line's marked JSON beside the plain one.
+serde_json = "1"
 # Type export for the Rust↔TS bindings. Pinned to the EXACT same version the app
 # uses: two `specta` crates in one graph would make these `Type` impls stop
 # satisfying `tauri-specta`, and the app's command signatures collect them
@@ -143,7 +145,6 @@ plist = { version = "1.8.0", optional = true }
 plist = "1.8.0"
 
 [dev-dependencies]
-serde_json = "1"
 # `sqlite_util`'s tests open real on-disk databases: the page-cache budget and the
 # freelist reclamation only mean anything against a file-backed connection.
 tempfile = "3"
