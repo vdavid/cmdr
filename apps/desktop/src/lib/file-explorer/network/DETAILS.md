@@ -515,6 +515,23 @@ that isn't one (the IPC call itself broke) reads as `unexpected`, its text going
 same sentence plus the typed `reason`. Why the variants are cut the way they are: `src-tauri/src/network/DETAILS.md` §
 "A mount refusal is data, and the frontend words it".
 
+## A mount that waits
+
+A NetFS mount can hang behind a stuck macOS sign-in helper for the whole mount timeout (#604), so `NetworkMountView`'s
+mounting state has a Cancel (and `share.back` cancels too, since no browser is mounted to take the key). Each mount
+mints an attempt id (`newServerAttemptId`) and passes it to `mountNetworkShare`; Cancel hands it to
+`cancelServerConnect`. After 10 s (`MOUNT_SLOW_AFTER_MS`, the backend's `SUSPECT_AFTER`) a line under the spinner says
+it's still waiting.
+
+- **A cancel the person asked for goes back to the share list quietly**, ❌ never the error pane: `cancelled` with
+  `mountCancelRequested` set returns as if nothing happened.
+- **A cancel or timeout the backend reads as the wedge comes back `sign_in_helper_stuck`**, which the error pane words
+  with the command that restarts the helper. Try again re-mounts; while the old NetFS call is still stuck in the same
+  helper, the backend answers the same right away. How the backend decides: `src-tauri/src/network/DETAILS.md` § "A
+  mount Cmdr gave up on, and a wedged sign-in helper".
+- **❗ This mounting state is still its own renderer**, not `../pane/RemoteConnectView.svelte`: it predates the one
+  typed remote-wait state. Folding it in is a follow-up.
+
 ## SMB live-reconnect flow (cross-component)
 
 When a direct-SMB session drops mid-use, four pieces coordinate to recover:

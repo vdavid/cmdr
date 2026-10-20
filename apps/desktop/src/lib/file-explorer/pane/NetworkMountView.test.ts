@@ -22,6 +22,7 @@ import { renderMountError } from '../network/mount-error-messages'
 const h = vi.hoisted(() => ({
   fetchShares: vi.fn(),
   mountNetworkShare: vi.fn(),
+  cancelServerConnect: vi.fn(() => Promise.resolve(true)),
   saveSmbCredentials: vi.fn(),
   setSmbAccountPreference: vi.fn(() => Promise.resolve(true)),
   getSmbCredentials: vi.fn(),
@@ -34,6 +35,8 @@ const h = vi.hoisted(() => ({
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
   mountNetworkShare: h.mountNetworkShare,
+  cancelServerConnect: h.cancelServerConnect,
+  newServerAttemptId: () => 'server-connect-test-attempt',
   resolvePathVolume: h.resolvePathVolume,
   saveSmbCredentials: h.saveSmbCredentials,
   setSmbAccountPreference: h.setSmbAccountPreference,
@@ -218,7 +221,16 @@ describe('NetworkMountView mount-failure auth loop', () => {
     expect(outcome).toEqual({ kind: 'handed_off' })
     expect(h.mountNetworkShare).toHaveBeenCalledTimes(2)
     // The host's own name rides along, which is what the saved share is filed under.
-    expect(h.mountNetworkShare).toHaveBeenLastCalledWith(ADDRESS, 'naspi', 'david', 'hunter2', 445, 15000, 'Naspolya')
+    expect(h.mountNetworkShare).toHaveBeenLastCalledWith(
+      ADDRESS,
+      'naspi',
+      'david',
+      'hunter2',
+      445,
+      15000,
+      'Naspolya',
+      'server-connect-test-attempt',
+    )
     // Remembered only once the mount actually went through.
     await vi.waitFor(() => {
       expect(h.saveSmbCredentials).toHaveBeenCalledWith('Naspolya', null, 'david', 'hunter2')
@@ -584,6 +596,110 @@ describe('NetworkMountView mount-failure auth loop', () => {
       expect(target.querySelector('.mount-error-state')).toBeTruthy()
     })
     expect(h.openSignInSheet, 'a non-auth failure asks for no credential').not.toHaveBeenCalled()
+
+    await unmount(component)
+  })
+})
+
+/**
+ * #604: a NetFS mount can hang behind a stuck macOS sign-in helper for as long as
+ * the timeout allows. The wait says what's going on, can be called off, and a
+ * stuck helper is explained in the pane rather than worded as a slow server.
+ */
+describe('NetworkMountView: a mount that waits', () => {
+  /** Settles the running mount the way the backend answers a cancel. */
+  let answerMount: (error: MountError) => void = () => {}
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    document.body.innerHTML = ''
+    h.fetchShares.mockResolvedValue({ shares: [naspi], authMode: 'guest_allowed', fromCache: false })
+    h.getSmbCredentials.mockRejectedValue(new Error('not found'))
+    h.mountNetworkShare.mockImplementation(
+      () =>
+        new Promise((_resolve, reject) => {
+          answerMount = (error) => {
+            reject(refused(error))
+          }
+        }),
+    )
+  })
+
+  it('offers Cancel while it waits, and Cancel calls off that mount and goes back to the share list', async () => {
+    const { target, component } = await mountViewAndActivateShare()
+    await vi.waitFor(() => {
+      expect(target.querySelector('.mounting-state')).toBeTruthy()
+    })
+
+    const cancel = must(target.querySelector<HTMLButtonElement>('.mounting-state button'), 'the Cancel button')
+    cancel.click()
+    expect(h.cancelServerConnect).toHaveBeenCalledWith('server-connect-test-attempt')
+
+    answerMount({ type: 'cancelled', share: 'naspi' })
+    await vi.waitFor(() => {
+      expect(target.querySelector('.share-row')).toBeTruthy()
+    })
+    expect(target.querySelector('.mount-error-state'), 'a cancel the person asked for is no failure').toBeNull()
+
+    await unmount(component)
+  })
+
+  it('cancels on the back key too, since the share list is not on screen to take it', async () => {
+    const { target, component, api } = await mountViewAndActivateShare()
+    await vi.waitFor(() => {
+      expect(target.querySelector('.mounting-state')).toBeTruthy()
+    })
+
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    api.handleKeyDown(event)
+    expect(event.defaultPrevented).toBe(true)
+    expect(h.cancelServerConnect).toHaveBeenCalledWith('server-connect-test-attempt')
+
+    await unmount(component)
+  })
+
+  it('says it is still waiting once the mount runs past ten seconds', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const component = mount(NetworkMountView, {
+      target,
+      props: { paneId: 'left', isFocused: true, initialNetworkHost: host },
+    })
+    const api = component as unknown as NetworkMountViewApi
+    await vi.waitFor(() => {
+      expect(target.querySelector('.share-row')).toBeTruthy()
+    })
+
+    vi.useFakeTimers()
+    try {
+      api.openCursorItem()
+      await tick()
+      expect(target.querySelector('.mounting-hint'), 'a fresh mount only spins').toBeNull()
+      vi.advanceTimersByTime(10_000)
+      await tick()
+      expect(must(target.querySelector('.mounting-hint'), 'the still-waiting line').textContent).toContain(
+        'Still waiting',
+      )
+    } finally {
+      vi.useRealTimers()
+    }
+
+    await unmount(component)
+  })
+
+  it('explains a stuck sign-in helper in the pane, with the command that restarts it', async () => {
+    const { target, component } = await mountViewAndActivateShare()
+    await vi.waitFor(() => {
+      expect(target.querySelector('.mounting-state')).toBeTruthy()
+    })
+
+    answerMount({ type: 'sign_in_helper_stuck', server: ADDRESS })
+    await vi.waitFor(() => {
+      expect(target.querySelector('.mount-error-state')).toBeTruthy()
+    })
+    const message = must(target.querySelector('.mount-error-state .error-message'), 'the message').textContent
+    expect(message).toContain('Naspolya')
+    expect(message).toContain('killall NetAuthSysAgent')
 
     await unmount(component)
   })

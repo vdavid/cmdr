@@ -38,6 +38,7 @@ const PLAIN_REFUSALS: Record<PlainRefusalOutcome, ConnectRefusalKind> = {
   invalid_url: 'invalid_url',
   start_folder_outside_root: 'start_folder_outside_root',
   timed_out: 'timed_out',
+  sign_in_helper_stuck: 'sign_in_helper_stuck',
   unreachable: 'unreachable',
   access_denied: 'access_denied',
   bucket_list_refused: 'bucket_list_refused',

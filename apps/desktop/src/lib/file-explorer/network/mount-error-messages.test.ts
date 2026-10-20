@@ -27,6 +27,7 @@ const SHARE = 'data'
 const CASES: { [K in MountError['type']]: Extract<MountError, { type: K }> } = {
   host_unreachable: { type: 'host_unreachable', server: ADDRESS },
   timeout: { type: 'timeout', server: ADDRESS },
+  sign_in_helper_stuck: { type: 'sign_in_helper_stuck', server: ADDRESS },
   share_not_found: { type: 'share_not_found', server: ADDRESS, share: SHARE },
   auth_required: { type: 'auth_required', server: ADDRESS, share: SHARE },
   auth_failed: { type: 'auth_failed', server: ADDRESS },

@@ -117,8 +117,9 @@ describe('commands.mountNetworkShare', () => {
     const timeoutMs: number | null = 20000
 
     const hostName: string | null = 'Storage'
+    const attemptId: string | null = 'server-connect-1'
 
-    await commands.mountNetworkShare(server, share, username, password, port, timeoutMs, hostName)
+    await commands.mountNetworkShare(server, share, username, password, port, timeoutMs, hostName, attemptId)
 
     expect(ipc.lastCall('mount_network_share')?.payload).toEqual({
       server,
@@ -128,6 +129,7 @@ describe('commands.mountNetworkShare', () => {
       port,
       timeoutMs,
       hostName,
+      attemptId,
     })
   })
 
@@ -137,7 +139,7 @@ describe('commands.mountNetworkShare', () => {
       throw { type: 'auth_failed', server: 's' }
     })
 
-    const out = await commands.mountNetworkShare('s', 'sh', 'u', 'p', null, null, null)
+    const out = await commands.mountNetworkShare('s', 'sh', 'u', 'p', null, null, null, null)
 
     expect(out.status).toBe('error')
     if (out.status === 'error') {

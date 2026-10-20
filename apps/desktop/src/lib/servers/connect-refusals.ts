@@ -40,6 +40,11 @@ export type ConnectRefusalKind =
   | 'not_a_webdav_server'
   | 'invalid_url'
   | 'timed_out'
+  /**
+   * SMB on macOS: the server answers, and macOS's network sign-in helper (`NetAuthSysAgent`) looks wedged.
+   * ❗ Not `timed_out`: the fix is restarting the helper on this Mac, ❌ never anything about the server.
+   */
+  | 'sign_in_helper_stuck'
   | 'unreachable'
   | 'host_key_untrusted'
   | 'host_key_revoked'
@@ -132,6 +137,7 @@ const REFUSAL_KEYS: Record<ConnectRefusalKind, MessageKey> = {
   not_a_webdav_server: 'servers.refusal.notAWebdavServer',
   invalid_url: 'servers.refusal.invalidUrl',
   timed_out: 'servers.refusal.timedOut',
+  sign_in_helper_stuck: 'servers.refusal.signInHelperStuck',
   unreachable: 'servers.refusal.unreachable',
   host_key_untrusted: 'servers.refusal.hostKeyUntrusted',
   host_key_revoked: 'servers.refusal.hostKeyRevoked',
@@ -286,6 +292,8 @@ const REFUSAL_FIELDS: Record<ConnectRefusalKind, RefusalField> = {
   not_a_webdav_server: 'address',
   invalid_url: 'address',
   timed_out: 'address',
+  // No field fixes a helper on this Mac: restarting it in Terminal does.
+  sign_in_helper_stuck: 'form',
   unreachable: 'address',
   host_key_untrusted: 'form',
   host_key_revoked: 'form',

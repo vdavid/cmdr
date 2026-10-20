@@ -880,6 +880,18 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Shown while mounting a network share, in the network flow that starts at the servers list pictured here."
   },
+  "fileExplorer.networkMount.mountingSlow": "Still waiting for macOS to connect. You can cancel at any time.",
+  "@fileExplorer.networkMount.mountingSlow": {
+    "description": "One line under the \"Mounting …\" text once a network share has taken more than about 10 seconds to connect, so the person knows the wait is real and that the Cancel button below it works. Reassurance, not an alarm.",
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown while mounting a network share, in the network flow that starts at the servers list pictured here."
+  },
+  "fileExplorer.networkMount.cancel": "Cancel",
+  "@fileExplorer.networkMount.cancel": {
+    "description": "Button under the \"Mounting …\" text that stops waiting for a network share to connect and goes back to the server's list of shares.",
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown while mounting a network share, in the network flow that starts at the servers list pictured here."
+  },
   "fileExplorer.networkMount.shareFallback": "share",
   "@fileExplorer.networkMount.shareFallback": {
     "description": "Generic word used in the mounting text when the share’s name is not known yet (e.g. \"Mounting share…\").",

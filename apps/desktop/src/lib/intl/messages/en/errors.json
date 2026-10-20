@@ -3515,6 +3515,15 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open. That list opens from the servers list pictured here."
   },
+  "errors.mount.signInHelperStuck": "“{server}” is answering, but macOS’s network sign-in helper looks stuck, so no share can connect right now. To restart it, open Terminal, run killall NetAuthSysAgent, then try again. macOS starts the helper again on its own.",
+  "@errors.mount.signInHelperStuck": {
+    "description": "Shown when a network share (SMB) waited a long time without connecting while the server itself is reachable: a macOS background helper called NetAuthSysAgent is stuck, and only restarting it helps. Surface: the network pane, after someone opens a shared folder on a network server. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this text under it, and Try again and Back buttons. Keep \"killall NetAuthSysAgent\" exactly as written, untranslated: it's a command the person types into Terminal. \"Terminal\" is the macOS app's name; use the name macOS shows for it in your language. Plain text, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "server": "the server's name as the pane shows it (like Naspolya), or its network address (like 192.168.1.20) when it has no name"
+    },
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open. That list opens from the servers list pictured here."
+  },
   "errors.mount.shareNotFound": "There’s no share called “{share}” on “{server}”. Go back and pick one from the list.",
   "@errors.mount.shareNotFound": {
     "description": "Shown when the server says it has no shared folder by that name, for example because it was renamed or removed after the list loaded. \"Share\" means a folder a server makes available over the network. \"Go back\" points at the Back button, which returns to the server's list of shares. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",

@@ -355,6 +355,8 @@ export async function listSharesWithCredentials(
  * @param timeoutMs Optional timeout in milliseconds (default: 20000)
  * @param hostName The name the person knows the server by; a mount that goes through is
  *   saved as a share place under it (`docs/specs/saved-smb-shares.md`)
+ * @param attemptId Mint with `newServerAttemptId()`; `cancelServerConnect(attemptId)` calls the
+ *   mount off, answering `cancelled` (or `sign_in_helper_stuck` after a long wait on a server that answers)
  * @returns MountResult with mount path on success
  * @throws MountFailure carrying the typed `MountError`; `asMountError` gets it back, and
  *   `renderMountError` words it
@@ -367,6 +369,7 @@ export async function mountNetworkShare(
   port?: number,
   timeoutMs?: number,
   hostName?: string,
+  attemptId?: string,
 ): Promise<MountResult> {
   const res = await commands.mountNetworkShare(
     server,
@@ -376,6 +379,7 @@ export async function mountNetworkShare(
     port ?? null,
     timeoutMs ?? null,
     hostName ?? null,
+    attemptId ?? null,
   )
   if (res.status === 'error') throwMountError(res.error)
   return res.data

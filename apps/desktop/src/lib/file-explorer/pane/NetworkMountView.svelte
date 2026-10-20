@@ -4,7 +4,9 @@
     import { focusHome } from '#lib/ui/focus-restore.js'
     import type { MountError, NetworkHost, PlacesAccount, ShareInfo } from '../types'
     import {
+        cancelServerConnect,
         mountNetworkShare,
+        newServerAttemptId,
         resolvePathVolume,
         saveSmbCredentials,
         setSmbAccountPreference,
@@ -106,6 +108,18 @@
     // Mounting state
     let isMounting = $state(false)
     let mountError = $state<MountError | null>(null)
+
+    /**
+     * How long a mount runs before the pane says it's still waiting. Matches the
+     * backend's `netfs_wedge::SUSPECT_AFTER`: a healthy mount takes a second or two.
+     */
+    const MOUNT_SLOW_AFTER_MS = 10_000
+    /** The running mount's id, which Cancel calls it off by. `null` when none runs. */
+    let mountAttemptId: string | null = null
+    /** Whether the person pressed Cancel on the running mount, so its `cancelled` answer goes back quietly. */
+    let mountCancelRequested = false
+    /** Set once the running mount outlasted `MOUNT_SLOW_AFTER_MS`. */
+    let mountingSlow = $state(false)
 
     // Track last mount attempt for retry
     let lastMountAttempt = $state<{
@@ -316,6 +330,7 @@
         isMounting = true
         mountError = null
         const server = resolveServerAddress(currentNetworkHost)
+        const { attemptId, finish } = startMountAttempt()
 
         try {
             // Use provided credentials if available
@@ -329,6 +344,7 @@
                 currentNetworkHost.port,
                 getMountTimeoutMs(),
                 currentNetworkHost.name,
+                attemptId,
             )
 
             // Navigate to the mounted share
@@ -342,26 +358,17 @@
             onNetworkHostChange?.(null)
 
             // The mount path is typically /Volumes/<ShareName>
-            const mountPath = result.mountPath
-
-            // Find the actual volume for the mounted path
-            // This ensures proper breadcrumb display and volume context
-            // (No need to refresh volume list; the mount event triggers a volumes-changed broadcast)
-            const { volume: mountedVolume } = await resolvePathVolume(mountPath)
-
-            if (mountedVolume) {
-                // Use the real volume ID and path from the system
-                onVolumeChange?.({ volumeId: mountedVolume.id, volumePath: mountedVolume.path, targetPath: mountPath })
-            } else {
-                // Fallback: use mount path as both volume path and target
-                // This can happen if the volume list hasn't refreshed yet
-                onVolumeChange?.({ volumeId: mountPath, volumePath: mountPath, targetPath: mountPath })
-            }
+            await landOnMount(result.mountPath)
             return null
         } catch (e) {
+            const refusal = asMountError(e)
+            // The person called it off: back to the share list, ❌ no error pane. A cancel
+            // after a long wait on a server that answers comes back `sign_in_helper_stuck`
+            // instead, and that one the pane explains.
+            if (mountCancelRequested && refusal?.type === 'cancelled') return null
             // A value that isn't a typed refusal means the IPC call itself broke down,
             // which the catch-all words honestly; its text goes to the log below.
-            mountError = asMountError(e) ?? { type: 'unexpected', server, share: share.name, detail: String(e) }
+            mountError = refusal ?? { type: 'unexpected', server, share: share.name, detail: String(e) }
             // WARN, not ERROR: the pane below renders this failure with a retry, so
             // it's an outcome the person is looking at, not a defect to report. At
             // error level every unreachable NAS captured a backtrace and a state
@@ -374,8 +381,58 @@
             })
             return mountError
         } finally {
+            finish()
             isMounting = false
         }
+    }
+
+    /** Takes the pane to the share mounted at `mountPath`. */
+    async function landOnMount(mountPath: string) {
+        // Find the actual volume for the mounted path
+        // This ensures proper breadcrumb display and volume context
+        // (No need to refresh volume list; the mount event triggers a volumes-changed broadcast)
+        const { volume: mountedVolume } = await resolvePathVolume(mountPath)
+
+        if (mountedVolume) {
+            // Use the real volume ID and path from the system
+            onVolumeChange?.({ volumeId: mountedVolume.id, volumePath: mountedVolume.path, targetPath: mountPath })
+        } else {
+            // Fallback: use mount path as both volume path and target
+            // This can happen if the volume list hasn't refreshed yet
+            onVolumeChange?.({ volumeId: mountPath, volumePath: mountPath, targetPath: mountPath })
+        }
+    }
+
+    /**
+     * Files a new mount as the running one: its id for Cancel, and the timer that
+     * says it's still waiting. `finish` undoes both once the mount answers.
+     */
+    function startMountAttempt(): { attemptId: string; finish: () => void } {
+        const attemptId = newServerAttemptId()
+        mountAttemptId = attemptId
+        mountCancelRequested = false
+        mountingSlow = false
+        const slowTimer = setTimeout(() => {
+            if (mountAttemptId === attemptId) mountingSlow = true
+        }, MOUNT_SLOW_AFTER_MS)
+        const finish = () => {
+            clearTimeout(slowTimer)
+            if (mountAttemptId === attemptId) mountAttemptId = null
+            mountingSlow = false
+        }
+        return { attemptId, finish }
+    }
+
+    /**
+     * Calls off the running mount. The backend stops WAITING and answers; the NetFS
+     * call itself can't be taken back (`src-tauri/src/network/netfs_wedge.rs`).
+     */
+    function cancelMount() {
+        if (!mountAttemptId) return
+        mountCancelRequested = true
+        void cancelServerConnect(mountAttemptId).catch((e: unknown) => {
+            log.warn('Calling off the mount did not go through: {error}', { error: e })
+        })
     }
 
     /** Mounts a share the user picked, and asks for a credential if that is what's missing. */
@@ -463,6 +520,14 @@
     export function handleKeyDown(e: KeyboardEvent) {
         // The sign-in sheet is modal and owns the keyboard while it is up.
         if (signingIn) return
+        if (isMounting) {
+            // Neither browser is mounted while a mount runs; `share.back` is Cancel.
+            if (eventMatchesCommand(e, 'share.back')) {
+                claimKey(e)
+                cancelMount()
+            }
+            return
+        }
         if (mountError) {
             // The error pane replaced the share list, so neither browser is mounted and
             // the delegation below would land on nothing: without this branch the whole
@@ -573,6 +638,14 @@
                 target: currentNetworkHost?.name ?? tString('fileExplorer.networkMount.shareFallback'),
             })}</span
         >
+        {#if mountingSlow}
+            <span class="mounting-hint">{tString('fileExplorer.networkMount.mountingSlow')}</span>
+        {/if}
+        <!-- ❗ Every wait with a process behind it has a cancel: a NetFS mount can hang
+             behind a stuck macOS sign-in helper for as long as the timeout allows (#604). -->
+        <Button variant="secondary" size="mini" onclick={cancelMount}>
+            {tString('fileExplorer.networkMount.cancel')}
+        </Button>
     </div>
 {:else if mountError?.type === 'auth_required'}
     <!-- ❗ A share that wants an account is a normal step, not a failure: no ❌, no
@@ -636,6 +709,12 @@
 
     .mounting-text {
         font-size: var(--font-size-sm);
+    }
+
+    .mounting-hint {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
+        text-align: center;
     }
 
     .mount-error-state,

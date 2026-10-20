@@ -4146,6 +4146,8 @@ export const commands = {
    *  * `host_name` - The name the person knows the server by (the discovery list's
    *    `name`), which a saved share row is filed under. `None` files it under
    *    `server`.
+   *  * `attempt_id` - The frontend's id that `cancel_server_connect` calls this mount
+   *    off by. `None` can't be called off.
    *
    *  ❗ A mount that went through is SAVED as a share place, with the account it
    *  signed in as (`network::smb_saved_shares`, `docs/specs/saved-smb-shares.md`):
@@ -4164,9 +4166,19 @@ export const commands = {
     port: number | null,
     timeoutMs: number | null,
     hostName: string | null,
+    attemptId: string | null,
   ) =>
     typedError<MountResult, MountError>(
-      __TAURI_INVOKE('mount_network_share', { server, share, username, password, port, timeoutMs, hostName }),
+      __TAURI_INVOKE('mount_network_share', {
+        server,
+        share,
+        username,
+        password,
+        port,
+        timeoutMs,
+        hostName,
+        attemptId,
+      }),
     ),
   /**
    *  Upgrades an existing OS-mounted SMB volume to use a direct smb2 connection, with
@@ -4618,9 +4630,8 @@ export const commands = {
   /**
    *  Calls off the connect running under `attempt_id`, whichever protocol owns it.
    *
-   *  Each backend holds its OWN attempt table, so this asks both; an id nobody is
-   *  connecting under answers `false`, which a cancel racing a finished connect
-   *  legitimately does.
+   *  Each backend holds its OWN attempt table, so this asks every one; an id nobody
+   *  holds answers `false`, which a cancel racing a finished connect legitimately does.
    */
   cancelServerConnect: (attemptId: string) => __TAURI_INVOKE<boolean>('cancel_server_connect', { attemptId }),
   /**
@@ -11598,6 +11609,13 @@ export type MountError =
   | { type: 'host_unreachable'; server: string }
   // The server didn't answer within the mount's budget.
   | { type: 'timeout'; server: string }
+  /**
+   *  macOS's network sign-in helper (`NetAuthSysAgent`) looks wedged: a mount
+   *  waited it out while the server answered on its SMB port, or an earlier one
+   *  is still stuck in it. Only restarting the helper clears it
+   *  (`network/netfs_wedge.rs`). macOS only.
+   */
+  | { type: 'sign_in_helper_stuck'; server: string }
   // The server has no share by that name, or offers none to this identity.
   | { type: 'share_not_found'; server: string; share: string }
   // The server wants a sign-in before it opens the share: a guest was turned away.
@@ -15664,6 +15682,12 @@ export type ServerConnectOutcome =
   | { outcome: 'start_folder_outside_root' }
   // The handshake didn't finish inside the connect budget.
   | { outcome: 'timed_out' }
+  /**
+   *  SMB on macOS only: the server answers, and macOS's network sign-in helper
+   *  (`NetAuthSysAgent`) looks wedged, so no mount can go through until it's
+   *  restarted (`network/netfs_wedge.rs`).
+   */
+  | { outcome: 'sign_in_helper_stuck' }
   // No route, refused, DNS, or a transport-level breakdown.
   | { outcome: 'unreachable' }
   // The user called it off. ❗ Nothing was registered, remembered, or stored.

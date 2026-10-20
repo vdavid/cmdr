@@ -383,12 +383,14 @@ backend's English `Share "data" not found on "observermch"`.
 
 - **Every producer answers with data**: `mount.rs::error_from_code` (NetFS codes), `settle_netfs_answer`
   (`MountMissing`), `share_access::clarified`, `mount_linux.rs::classify_mount_error` (`gio` stderr), and
-  `network::mount_share`'s timeout and join-failure arms. Each keeps its diagnostic detail in the log.
+  `network::mount_share`'s timeout, cancel, and join-failure arms (`netfs_wedge::read_given_up`). Each keeps its diagnostic
+  detail in the log.
 - **A variant exists where the fix differs.** `UnsupportedProtocol` (NetFS `-5996`) is fixed in the server's settings.
   `MountRefused` (NetAuth `-6602`) signed in and was still turned down, so ❌ it's not an auth question: the sign-in
   sheet would loop on a password that worked. `GvfsMissing` (Linux, no `gio`) is fixed by installing a package.
   `Unexpected` takes an unknown code, a URL `CFURLCreateWithString` rejects, a panicked task, and `gio` stderr nothing
-  recognizes. NetFS's "no shares available" codes stay `ShareNotFound`: to someone who picked one share it's the same
+  recognizes. `SignInHelperStuck` is fixed on THIS Mac by restarting a daemon (§ "A mount Cmdr gave up on, and a
+  wedged sign-in helper"). NetFS's "no shares available" codes stay `ShareNotFound`: to someone who picked one share it's the same
   answer, and `share_access` clarifies both the same way.
 - **A guest turned away is `AuthRequired`, ❌ never `AuthFailed`**: a guest typed no password to be wrong. NetFS answers a
   guest on a server that lets only accounts in with an auth code that maps to `AuthFailed` (-6600 in the field;
@@ -402,6 +404,40 @@ backend's English `Share "data" not found on "observermch"`.
 Pinned by `mount_test.rs::every_netfs_code_maps_to_typed_data`, `share_access_test.rs`, the Linux
 `classify_mount_error_snapshot_*` tests, and `mount-error-messages.test.ts` (every variant has catalog words that
 follow the error-copy rules).
+
+## A mount Cmdr gave up on, and a wedged sign-in helper
+
+`network::mount_share` waits on `mount_share_sync` until the timeout or the caller's `CancellationToken`, whichever
+comes first. Neither stops the NetFS call: its blocking thread stays inside `NetFSMountURLSync`. That matters because of
+the wedge in § Gotchas ("A wedged `NetAuthSysAgent` hangs every NetFS mount"): every call queues on the stuck daemon,
+so a retry only stacks another thread behind the first. `netfs_wedge.rs` owns both answers (#604, ERR-PRTPK).
+
+- **Reading a mount it gave up on** (`read_given_up`): waited at least `SUSPECT_AFTER` (10 s; a healthy mount takes
+  1–2 s) AND the server's SMB port accepts a TCP connect within 2 s AND the call is still running →
+  `MountError::SignInHelperStuck`. Anything else keeps its plain answer, `Timeout` or `Cancelled`. A cancel sooner than
+  10 s is someone changing their mind, never evidence. The probe only runs past 10 s, so it never slows a quick cancel.
+- **Not piling on** (`CallLedger`, process-wide as `NETFS_CALLS`): each NetFS call files an `InFlightCall` guard that
+  moves INTO the blocking closure, so it drops when NetFS lets the thread go, ❌ not when the mount stops waiting. A call
+  read as stuck is filed with the helper's pid. While one is still in flight, every new mount (any server: the wedge is
+  daemon-wide) answers `SignInHelperStuck` before calling NetFS.
+- **What clears it**: the stuck call coming back (logged with how long it took, which is the evidence the next report
+  needs), or the helper running now not being the pid it got stuck in (a new pid, or none: launchd starts it on the
+  next mount). That second check is what makes "run `killall NetAuthSysAgent`, then Try again" work even if NetFS
+  never releases the old thread. A pid that couldn't be read at the time keeps blocking until the call comes back.
+- **❌ Cmdr never restarts the helper itself.** It's a system daemon serving every app; the user runs the command,
+  which the message spells out (`errors.mount.signInHelperStuck`, `servers.refusal.signInHelperStuck`).
+- **macOS only** (`CAN_WEDGE`): Linux's `gio mount` keeps `Timeout`, and its `MountError` carries the variant only to
+  keep one JSON shape.
+- **Cancel reaches both mount paths.** The share-list mount (`mount_network_share`) files its `attempt_id` in
+  `mod.rs`'s `MOUNT_ATTEMPTS`; the saved-share connect (`smb_saved_shares::connect_saved_share`) passes its own
+  attempt's token. Both are called off by `cancel_server_connect`, and both read a cancel THROUGH `mount_share` (❌ not
+  a `select!` around it), so a long cancel on a reachable server reads as the wedge too. The saved-share path maps it to
+  `ServerConnectOutcome::SignInHelperStuck`.
+- **Out of scope, a decision for later**: falling back to `mount_smbfs`, which mounts straight through the wedge but
+  handles credentials differently and would mean two mount paths.
+
+Pinned by `netfs_wedge_test.rs` (the ledger, the verdict against a real loopback listener, the pid lookup) and
+`smb_saved_shares_test.rs` (the outcome).
 
 ## The mount URL is built, escaped, and NFC-normalized
 
@@ -1263,5 +1299,6 @@ credential's shape (`user_empty`, `user_domain=none|backslash|at`, `password_emp
   sides (`sample $(pgrep -f 'deps/cmdr_lib-')` and `sample $(pgrep NetAuthSysAgent)`) rather than trusting the test
   name; clear it with `killall NetAuthSysAgent`, which launchd relaunches on demand. (Verified on macOS 26.6.2 / 25G83,
   2026-09-05: 39 consecutive timeouts across two commits and two worktrees, then a 1.5 s pass immediately after the
-  restart, with no code change.)
+  restart, with no code change.) What the app does about it for a user: § "A mount Cmdr gave up on, and a wedged
+  sign-in helper".
 - **`statfs` can return mDNS service names instead of IPs**: When macOS auto-reconnects an SMB mount on login, `statfs.f_mntfromname` may contain `//user@Naspolya._smb._tcp.local/share` instead of `//user@192.168.1.111/share`. These service names are not DNS-resolvable. `resolve_server_address()` in `smb_server_address.rs` detects these (by checking for `._tcp`/`._udp`) and resolves them to IPs via `fresh_discovered_hosts()`. All upgrade paths (startup, mount-time, manual) go through this resolution. Similarly, `friendly_server_name()` extracts the display name (e.g., `Naspolya`) for UI display.

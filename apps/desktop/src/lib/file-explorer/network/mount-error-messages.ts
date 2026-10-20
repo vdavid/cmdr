@@ -39,6 +39,7 @@ const MOUNT_MESSAGE: {
 } = {
   host_unreachable: (_e, server) => raw('errors.mount.hostUnreachable', { server }),
   timeout: (_e, server) => raw('errors.mount.timeout', { server }),
+  sign_in_helper_stuck: (_e, server) => raw('errors.mount.signInHelperStuck', { server }),
   share_not_found: (e, server) => raw('errors.mount.shareNotFound', { server, share: e.share }),
   auth_required: (e, server) => raw('errors.mount.authRequired', { server, share: e.share }),
   auth_failed: (_e, server) => raw('errors.mount.authFailed', { server }),

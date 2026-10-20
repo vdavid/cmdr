@@ -245,6 +245,13 @@
       "host": "the server’s hostname or address, like \"nas.local\""
     }
   },
+  "servers.refusal.signInHelperStuck": "{host} is answering, but macOS’s network sign-in helper looks stuck. To restart it, open Terminal, run killall NetAuthSysAgent, then try again. macOS starts the helper again on its own.",
+  "@servers.refusal.signInHelperStuck": {
+    "description": "Shown in the pane when a saved network share (SMB) waited a long time without connecting while the server itself is reachable: a macOS background helper called NetAuthSysAgent is stuck, and only restarting it helps. Keep \"killall NetAuthSysAgent\" exactly as written, untranslated: it’s a command the person types into Terminal. \"Terminal\" is the macOS app’s name; use the name macOS shows for it in your language.",
+    "placeholders": {
+      "host": "the server’s hostname or address, like \"nas.local\""
+    }
+  },
   "servers.refusal.unreachable": "Cmdr couldn’t reach {host}.",
   "@servers.refusal.unreachable": {
     "description": "Shown in the Add server form and the sign-in form when there was no route to the server at all: it’s off, the name doesn’t resolve, or the network is down. Names the address the person typed (a pane standing on a saved server says servers.paneState.unreachable instead). \"Cmdr\" is the product name.",
