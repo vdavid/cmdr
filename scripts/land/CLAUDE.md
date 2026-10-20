@@ -12,14 +12,14 @@ only way commits reach `main`: nobody, admin included, lands a SHA without a gre
 
 ## Usage
 
-- `pnpm land`: rebase if `main` moved, push, open or reuse the PR, dispatch the land run (the macOS lane PR runs
-  defer), wait for its `CI OK`, land, sync local `main`, delete the remote branch, stop its leftover runs, and print the
+- `pnpm land`: rebase if `main` moved, push, open or reuse the PR, dispatch the land run (the macOS lane PR runs defer),
+  wait for its `CI OK`, land, sync local `main`, delete the remote branch, stop its leftover runs, and print the
   teardown command.
 - `remove-worktree.sh` counts a branch as merged when `git cherry origin/main` finds every commit upstream, so it tears
   down after a GitHub rebase merge too.
 - Every PR it opens carries the `claude-created` label (`agentLabel`); a reused PR, like a contributor's, keeps its own.
 - `pnpm land -no-wait`: push and open the PR, then return. Run it after each green milestone and keep working: its PR
-  run is Linux only (a PR that changed Rust shows `CI OK without macOS`), so it costs no macOS runner.
+  run skips the macOS lane.
 - `pnpm land -squash [-m MESSAGE]`: squash first (default message: every commit message, oldest first).
 - `pnpm land rulesets`: print what `-apply` would create or update on GitHub.
 
