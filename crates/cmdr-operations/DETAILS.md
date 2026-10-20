@@ -258,7 +258,8 @@ decisions"; the estimator in § "ETA + throughput"; `WriteSettledGuard` in § "S
 - **`types/errors.rs` splits the same way**: `WriteOperationError` and the types that exist only as one of its variants'
   payloads (`ReadOnlySide`, `TransferRole`, `DisconnectedSide`, `TrashRefusalKind`, `RecoveredOriginal`,
   `OversizedFile`). `RecoveredOriginal` itself sits in `types.rs`, and its `new` is `pub(crate)`: its callers are the
-  transfer engines.
+  transfer engines. How an error reads in a log line (`log_detail`, its per-key marking table) is the
+  `src/types/errors/log_detail.rs` child's.
 - **`error_classification.rs` classifies from `errno` / `ErrorKind` only, never the message**. The native copy calls on
   both platforms (`macos_copy`, `linux_copy`) share `classify_copy_io_error`, which also picks the path: a refused write
   names the destination, anything else the source. One table, so the platforms can't drift apart again. A dropped link's

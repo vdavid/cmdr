@@ -1,6 +1,7 @@
 //! What a write operation refuses with: `WriteOperationError` and the typed
 //! payloads its variants carry (`ReadOnlySide`, `TransferRole`,
-//! `DisconnectedSide`, `TrashRefusalKind`, `OversizedFile`).
+//! `DisconnectedSide`, `TrashRefusalKind`, `OversizedFile`). How one reads in
+//! a log line (`log_detail`) is the `errors/log_detail.rs` child's.
 //!
 //! One level down from `types.rs` and re-exported from it, the way `events.rs`
 //! is, so every caller keeps its `types::WriteOperationError` path. Same floor
@@ -9,6 +10,8 @@
 use serde::{Deserialize, Serialize};
 
 use super::{RecoveredOriginal, StagedLeftovers};
+
+mod log_detail;
 
 // ============================================================================
 // Error enum (following MountError pattern)
@@ -655,16 +658,6 @@ macro_rules! item_path_of {
 }
 
 impl WriteOperationError {
-    /// The error for a log line's `detail={:?}` field: the JSON the frontend gets, with each
-    /// field marked by its kind (`log_field`) and each `message` written as its `ErrorDetail`'s
-    /// marked log text, so a typed cause marks its own values. Its derived `Debug` would print
-    /// `volume_name: "…"` under snake_case keys no report pass knows; the JSON's keys are the
-    /// ones a frontend line carries too, so the same error ships the same way from either side.
-    /// The frontend's JSON itself never carries a marker.
-    pub fn log_detail(&self) -> WriteErrorDetail {
-        WriteErrorDetail(cmdr_fs::log_json::log_json(self, log_field))
-    }
-
     /// The same failure, naming the new files its stop kept (`leftovers`'
     /// groups whose fate holds new data) as [`NewFilesKept`](Self::NewFilesKept);
     /// untouched when there are none.
@@ -783,31 +776,4 @@ pub enum TrashRefusalKind {
 pub struct OversizedFile {
     pub name: String,
     pub size: u64,
-}
-
-/// [`WriteOperationError::log_detail`]: a log line's `detail={:?}` value, never data.
-pub struct WriteErrorDetail(cmdr_fs::log_json::LoggedJson);
-
-impl std::fmt::Debug for WriteErrorDetail {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
-/// What each of `WriteOperationError`'s JSON fields holds, by its camelCase key, for
-/// [`WriteOperationError::log_detail`] (nested `cause`, `kept`, `recovered`, and `files`
-/// included). ❗ Fails closed: a string under a key not named here is marked as a path, so a
-/// new field leaks nothing, it only hashes until it's named.
-fn log_field(key: &str) -> cmdr_fs::log_json::JsonField {
-    use cmdr_fs::log_json::JsonField::{Detail, Mark, Words};
-    use cmdr_fs::log_private::LogKind;
-    match key {
-        // The variant tag and the typed vocabularies: fixed words, never user data.
-        "type" | "side" | "reason" | "refusal" | "filesystem" | "fate" => Words,
-        "message" => Detail,
-        "volumeName" | "deviceName" => Mark(LogKind::Volume),
-        "name" | "exampleName" => Mark(LogKind::Name),
-        "mountPoint" | "refusedFolder" => Mark(LogKind::DirPath),
-        _ => Mark(LogKind::Path),
-    }
 }
