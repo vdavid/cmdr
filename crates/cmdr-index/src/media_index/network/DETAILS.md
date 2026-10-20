@@ -65,7 +65,7 @@ its `std::fs` read on a throwaway thread and waits with `recv_timeout`; `VolumeB
 with `tokio::time::timeout`. Either timeout returns `FetchError::Disconnected` (pause), never a wedge. Critically, the
 fetch happens in the ENRICH layer, not on the serialized Vision OCR worker thread — the backend receives the
 already-fetched bytes via `ImageInput.bytes` (`Some` = network, `None` = local read-it-yourself), so a hung transport
-can never stall OCR of other (local) volumes. A `MAX_FETCH_BYTES` cap skips a pathological file rather than OOMing (the
+can never stall OCR of other (local) volumes. A `MAX_IMAGE_BYTES` cap skips a pathological file rather than OOMing (the
 direct fetcher also short-circuits on an over-cap size hint, without touching the wire).
 
 ## The conservative-fetch policy with teeth (`policy.rs`)

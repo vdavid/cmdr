@@ -33,10 +33,7 @@ use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
 
-/// A hard cap on a single image's compressed bytes. Comfortably above any real photo
-/// or RAW; a file past it is skipped (not read into memory) rather than risking an
-/// OOM on a pathological input.
-pub(crate) const MAX_FETCH_BYTES: u64 = 256 * 1024 * 1024;
+use crate::media_index::MAX_IMAGE_BYTES;
 
 /// Why a byte fetch didn't yield bytes. Typed (never string-matched — `no-string-
 /// matching`): the caller branches on the variant to decide pause-vs-skip-vs-fail.
@@ -48,7 +45,7 @@ pub enum FetchError {
     /// The file no longer exists at the mount. A vanished source — the caller skips it
     /// (a completed scan's GC collects it), never marks it `Failed`.
     NotFound,
-    /// The file is larger than [`MAX_FETCH_BYTES`]; skipped without reading.
+    /// The file is larger than [`MAX_IMAGE_BYTES`]; skipped without reading.
     TooLarge,
     /// The file exists but its BYTES couldn't be read (permission denied, a corrupt
     /// region, an exotic per-file refusal) — a per-file fault, NOT a transport one.
@@ -103,7 +100,7 @@ impl ByteFetcher for FsByteFetcher {
     }
 }
 
-/// Read a file, capping at [`MAX_FETCH_BYTES`] and classifying failures by I/O error
+/// Read a file, capping at [`MAX_IMAGE_BYTES`] and classifying failures by I/O error
 /// KIND (a typed errno, not a message match — see [`classify_io_error`]).
 fn read_bounded(path: &str) -> Result<Vec<u8>, FetchError> {
     use std::io::Read;
@@ -111,12 +108,12 @@ fn read_bounded(path: &str) -> Result<Vec<u8>, FetchError> {
         Ok(f) => f,
         Err(e) => return Err(classify_io_error(&e, path, "open")),
     };
-    // Read at most MAX_FETCH_BYTES + 1 so we can tell "exactly at the cap" from "over".
+    // Read at most MAX_IMAGE_BYTES + 1 so we can tell "exactly at the cap" from "over".
     let mut buf = Vec::new();
-    let mut limited = file.take(MAX_FETCH_BYTES + 1);
+    let mut limited = file.take(MAX_IMAGE_BYTES + 1);
     match limited.read_to_end(&mut buf) {
         Ok(_) => {
-            if buf.len() as u64 > MAX_FETCH_BYTES {
+            if buf.len() as u64 > MAX_IMAGE_BYTES {
                 Err(FetchError::TooLarge)
             } else {
                 Ok(buf)
@@ -184,7 +181,7 @@ impl VolumeByteFetcher {
 impl ByteFetcher for VolumeByteFetcher {
     fn fetch(&self, os_path: &str, size_hint: Option<u64>, timeout: Duration) -> Result<Vec<u8>, FetchError> {
         // A known-oversized file is skipped without touching the wire at all.
-        if size_hint.is_some_and(|s| s > MAX_FETCH_BYTES) {
+        if size_hint.is_some_and(|s| s > MAX_IMAGE_BYTES) {
             return Err(FetchError::TooLarge);
         }
         let volume = std::sync::Arc::clone(&self.volume);
@@ -209,7 +206,7 @@ impl ByteFetcher for VolumeByteFetcher {
 
 /// Drain one file through `Volume::open_read_stream_for_scan` (the background bulk
 /// read: over SMB, small hinted files come from the scan-session connection pool so
-/// parallel prefetch reads actually overlap), capping at [`MAX_FETCH_BYTES`] (stop
+/// parallel prefetch reads actually overlap), capping at [`MAX_IMAGE_BYTES`] (stop
 /// draining and skip, rather than buffering a pathological file), classifying
 /// failures by TYPED `VolumeError` variant.
 async fn read_via_volume(
@@ -222,11 +219,11 @@ async fn read_via_volume(
         .await
         .map_err(classify_volume_error)?;
     // Pre-size from the hint (capped), so a typical photo lands in one allocation.
-    let mut buf = Vec::with_capacity(size_hint.unwrap_or(0).min(MAX_FETCH_BYTES) as usize);
+    let mut buf = Vec::with_capacity(size_hint.unwrap_or(0).min(MAX_IMAGE_BYTES) as usize);
     while let Some(chunk) = stream.next_chunk().await {
         let chunk = chunk.map_err(classify_volume_error)?;
         buf.extend_from_slice(&chunk);
-        if buf.len() as u64 > MAX_FETCH_BYTES {
+        if buf.len() as u64 > MAX_IMAGE_BYTES {
             // Dropping the stream cancels the producer (SmbReadStream sends its
             // cancel signal on drop).
             return Err(FetchError::TooLarge);
@@ -573,7 +570,7 @@ mod tests {
         assert!(matches!(err, FetchError::NotFound), "got {err:?}");
 
         let err = fetcher
-            .fetch("/whatever.jpg", Some(MAX_FETCH_BYTES + 1), Duration::from_secs(5))
+            .fetch("/whatever.jpg", Some(MAX_IMAGE_BYTES + 1), Duration::from_secs(5))
             .expect_err("over-cap hint");
         assert!(matches!(err, FetchError::TooLarge), "got {err:?}");
     }

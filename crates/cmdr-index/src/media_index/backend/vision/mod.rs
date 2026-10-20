@@ -56,7 +56,7 @@ use objc2_vision::{
 };
 
 use super::{Analysis, ImageInput, MediaAnalysis, OcrResult, Tag, VisionBackend, VisionError};
-use crate::media_index::network::fetch::MAX_FETCH_BYTES;
+use crate::media_index::MAX_IMAGE_BYTES;
 
 /// The longest-edge pixel size the in-memory decode downscales to before OCR. Vision
 /// text recognition gains little above a few thousand pixels while a full-resolution
@@ -529,7 +529,7 @@ unsafe extern "C-unwind" {
 /// - `O_NONBLOCK` keeps the open itself from blocking on a FIFO with no writer.
 /// - The type check runs on the OPENED handle (`fstat`), so nothing can swap the path
 ///   between the check and the read.
-/// - The read stops at the network path's [`MAX_FETCH_BYTES`] cap.
+/// - The read stops at the shared [`MAX_IMAGE_BYTES`] cap.
 pub(super) fn read_local_image(path: &str) -> Result<Vec<u8>, VisionError> {
     use std::io::Read;
     use std::os::unix::fs::OpenOptionsExt;
@@ -544,12 +544,12 @@ pub(super) fn read_local_image(path: &str) -> Result<Vec<u8>, VisionError> {
         return Err(VisionError::Decode(format!("'{path}' is not a regular file")));
     }
     let mut bytes = Vec::new();
-    file.take(MAX_FETCH_BYTES + 1)
+    file.take(MAX_IMAGE_BYTES + 1)
         .read_to_end(&mut bytes)
         .map_err(|e| read_error(path, "read", &e))?;
-    if bytes.len() as u64 > MAX_FETCH_BYTES {
+    if bytes.len() as u64 > MAX_IMAGE_BYTES {
         return Err(VisionError::Decode(format!(
-            "'{path}' is over the {MAX_FETCH_BYTES}-byte cap"
+            "'{path}' is over the {MAX_IMAGE_BYTES}-byte cap"
         )));
     }
     Ok(bytes)

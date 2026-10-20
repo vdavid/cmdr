@@ -85,8 +85,8 @@ where a hang wedges every later pass ([#547](https://github.com/vdavid/cmdr/issu
 symlink fails with `ELOOP`: the backstop to the walk's symlink filter, for a link swapped in since, which could point
 into an excluded folder, [#532](https://github.com/vdavid/cmdr/issues/532)) and `O_NONBLOCK` (so opening a FIFO with no
 writer can't block), checks the type on the OPENED handle (`fstat`, so nothing can swap the path between check and
-read), and reads through `take(MAX_FETCH_BYTES + 1)`, the network fetch's 256 MB cap (`../network/fetch.rs`). Each
-refusal is a `Decode`. A network image never reaches it: its bytes arrive prefetched.
+read), and reads through `take(MAX_IMAGE_BYTES + 1)`, the 256 MB cap the network fetch shares (`media_index/mod.rs`).
+Each refusal is a `Decode`. A network image never reaches it: its bytes arrive prefetched.
 
 ## Testing
 

@@ -29,6 +29,12 @@ pub mod vector;
 pub(crate) mod writer;
 pub(crate) mod writer_registry;
 
+/// A hard cap on a single image's compressed bytes, for every read that feeds the backend:
+/// the network fetch and the local read both stop past it. Comfortably above any real
+/// photo or RAW; a file past it is skipped (never read into memory) rather than risking an
+/// OOM on a pathological input such as a link to `/dev/zero`.
+pub(crate) const MAX_IMAGE_BYTES: u64 = 256 * 1024 * 1024;
+
 /// The subsystem's test-only surface. ❌ Not part of the API.
 #[cfg(any(test, feature = "testing"))]
 #[doc(hidden)]

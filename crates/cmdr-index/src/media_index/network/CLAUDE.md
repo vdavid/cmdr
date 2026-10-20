@@ -25,7 +25,7 @@ opt-in / override / exclusion globals, `enrich.rs` the parallel pipeline.
   volumes, so ONLY override-covered volumes/folders enrich. ❌ Don't treat `None` as enrich-all.
 - **Never block a runtime worker.** Both fetchers bound the whole read (`recv_timeout` on a throwaway thread /
   `tokio::time::timeout`) and return `Disconnected` rather than wedging; the fetch happens in the ENRICH layer, so a
-  hung transport can never stall another volume's OCR. `MAX_FETCH_BYTES` skips a pathological file instead of OOMing.
+  hung transport can never stall another volume's OCR. `MAX_IMAGE_BYTES` skips a pathological file instead of OOMing.
 - **Prefetch admission is bounded by BYTES, not file count** (`budget.rs`); a count-based queue would buffer gigabytes
   on a RAW-heavy corpus. An over-cap file is admitted alone (never deadlocks); a stop wakes a blocked acquire.
 - **`config` is a settings-seeded process global**, not a per-volume store, and `is_excluded` is read LIVE while

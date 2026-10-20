@@ -337,12 +337,12 @@ fn local_read_refuses_a_symlink_even_to_a_real_image() {
 
 #[test]
 fn local_read_of_an_oversized_file_fails_closed() {
-    use crate::media_index::network::fetch::MAX_FETCH_BYTES;
+    use crate::media_index::MAX_IMAGE_BYTES;
     let dir = tempfile::tempdir().expect("temp");
     let big = dir.path().join("huge.jpg");
     // Sparse, so the file costs no real disk.
     std::fs::File::create(&big)
-        .and_then(|f| f.set_len(MAX_FETCH_BYTES + 1))
+        .and_then(|f| f.set_len(MAX_IMAGE_BYTES + 1))
         .expect("sparse file");
 
     let result = read_within_deadline(&big);

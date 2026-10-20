@@ -3,7 +3,7 @@
 //! Parallel network enrichment fetches image bytes ahead of the decode+inference stage so
 //! the (wire-serialized) fetch of image k+1 overlaps the compute of image k. Left
 //! unbounded, that prefetch could buffer gigabytes: a per-file cap is 256 MB
-//! (`network/fetch.rs::MAX_FETCH_BYTES`) and each in-flight decode holds a ~36 MB bitmap,
+//! (`media_index::MAX_IMAGE_BYTES`) and each in-flight decode holds a ~36 MB bitmap,
 //! so a COUNT-based queue on a RAW-heavy corpus blows past the memory watchdog's ceiling.
 //! So admission is bounded by BYTES, not file count: a fetcher acquires an image's byte
 //! size before reading it and releases it once the decode has consumed it, so the total

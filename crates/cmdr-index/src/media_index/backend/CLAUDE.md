@@ -19,7 +19,7 @@ print), `vision/spike.rs` the throughput measurement harness.
 - **Hostile input fails CLOSED to a typed `VisionError`, never a panic or a hang.** Unreadable/empty/non-image/
   undecodable → `Decode`; a request failure → `Ocr`; a vanished file → `Missing`, classified by io kind, ❌ never by
   message text. The local read takes a regular file only (`O_NOFOLLOW | O_NONBLOCK`, `fstat` on the handle, a
-  `MAX_FETCH_BYTES` cap): a FIFO, device, or symlink named `x.jpg` is a `Decode`, ❌ never a plain `std::fs::read`.
+  `MAX_IMAGE_BYTES` cap): a FIFO, device, or symlink named `x.jpg` is a `Decode`, ❌ never a plain `std::fs::read`.
 - **Every `unsafe` block carries a per-site `// SAFETY:`** naming the concrete invariant (pointer/buffer validity,
   Create-vs-Get ownership on each CF `Create`, the extern-static key reads, the success gate). ❌ Never a blanket
   file-level allow.
