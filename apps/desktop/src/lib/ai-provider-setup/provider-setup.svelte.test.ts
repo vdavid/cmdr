@@ -35,6 +35,15 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
   cloudAiHostVerdicts: (baseUrls: string[]) => cloudAiHostVerdicts(baseUrls),
 }))
 
+// The real key is a Web Crypto SHA-256, which resolves on Node's thread pool after an
+// unbounded number of ticks; under a loaded CI runner `settle()` lost that race and the
+// check never started. A plain join keeps the cache's keying (provider, URL, key) intact.
+vi.mock('#lib/settings/ai-model-cache.js', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  computeModelCacheKey: (providerId: string, baseUrl: string, keyFingerprint: string) =>
+    Promise.resolve(`${providerId}|${baseUrl}|${keyFingerprint}`),
+}))
+
 const settingsMap: Record<string, unknown> = {}
 vi.mock('#lib/settings/index.js', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>()
@@ -57,8 +66,9 @@ vi.mock('#lib/app-mode.js', async (importOriginal) => ({
 }))
 
 /**
- * Lets the controller's chained promises settle. Two macrotask yields, not just a
- * microtask drain: the model-cache key is a Web Crypto digest, which resolves a tick out.
+ * Lets the controller's chained promises settle: a few macrotask yields, each with a
+ * microtask drain. Only enough because the model-cache key is mocked below; a real digest
+ * runs on Node's thread pool and can take any number of ticks on a loaded CI runner.
  */
 async function settle(): Promise<void> {
   for (let round = 0; round < 3; round++) {
