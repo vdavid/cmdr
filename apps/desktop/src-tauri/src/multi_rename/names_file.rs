@@ -8,7 +8,10 @@
 //! skipped; the preview shows what came of each row.
 
 use std::collections::HashMap;
-use std::io;
+use std::fs::{File, OpenOptions};
+use std::io::{self, Read, Write};
+#[cfg(unix)]
+use std::os::unix::fs::OpenOptionsExt;
 use std::path::{Path, PathBuf};
 
 use unicode_normalization::UnicodeNormalization;
@@ -53,7 +56,7 @@ pub fn parse(text: &str) -> Vec<NameEdit> {
 /// A Results file as written: where it is, and each row's new name in it, by
 /// composed old name, so reading back can tell which lines the user changed.
 /// Dropping it deletes the file, so a closed, evicted, or cleared session leaves
-/// nothing behind in the temp folder.
+/// nothing behind.
 #[derive(Debug)]
 pub struct Written {
     pub path: PathBuf,
@@ -80,7 +83,7 @@ impl Written {
 
 impl Drop for Written {
     fn drop(&mut self) {
-        // Best effort: the temp folder is the OS's to clean, and it may be gone already.
+        // Best effort: the file may be gone already (a data wipe, the user).
         if let Err(e) = std::fs::remove_file(&self.path)
             && e.kind() != io::ErrorKind::NotFound
         {
@@ -93,35 +96,110 @@ impl Drop for Written {
     }
 }
 
-/// Writes `rows` to the Results file at `path`.
+/// Writes `rows` to the Results file at `path`, in a folder only this user can open
+/// ([`private_folder`]). A stale file at the name (one a crashed run left) is replaced; anything
+/// else there, a symlink above all, is refused, so a planted link can't redirect the write.
 pub fn write(path: &Path, rows: &[PreviewRow]) -> io::Result<Written> {
-    if let Some(dir) = path.parent() {
-        std::fs::create_dir_all(dir)?;
-    }
-    std::fs::write(path, render(rows))?;
-    Ok(Written {
+    let dir = path
+        .parent()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "the Results file has no folder"))?;
+    private_folder(dir)?;
+    remove_stale(path)?;
+    let mut file = create_new(path)?;
+    // Built before the text goes in, so a failed write still deletes the file on drop.
+    let written = Written {
         path: path.to_path_buf(),
         names: rows
             .iter()
             .filter(|row| row.status != RowStatus::Missing)
             .map(|row| (row.old_name.nfc().collect(), row.new_name.clone()))
             .collect(),
-    })
+    };
+    file.write_all(render(rows).as_bytes())?;
+    Ok(written)
 }
 
-/// Where session `session_id` writes its Results file: the user's temp folder. The
-/// process id keeps two running Cmdrs (a dev build beside the app, a test process
-/// beside another) off each other's files: session ids count from 1 in each.
-pub fn path_for(session_id: &str) -> PathBuf {
-    let (dir, prefix) = this_process_files();
-    dir.join(format!("{prefix}{session_id}.txt"))
+/// The Results file's text as the user saved it. Never follows a symlink at the name, and
+/// refuses anything but a regular file: a named pipe there would hang the read.
+pub fn read(path: &Path) -> io::Result<String> {
+    let mut options = OpenOptions::new();
+    options.read(true);
+    #[cfg(unix)]
+    options.custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK);
+    let mut file = options.open(path)?;
+    if !file.metadata()?.is_file() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "the Results file isn't a regular file",
+        ));
+    }
+    let mut text = String::new();
+    file.read_to_string(&mut text)?;
+    Ok(text)
 }
 
-/// The folder Results files go to, and the name prefix that marks this process's: what "Delete
-/// all Cmdr data" removes, leaving other running Cmdrs' files alone.
-pub fn this_process_files() -> (PathBuf, String) {
-    (
-        std::env::temp_dir().join("cmdr-multi-rename"),
-        format!("{}-", std::process::id()),
-    )
+/// Makes `dir` with mode `0700`, or takes the one there only if it's a real folder (not a
+/// symlink), owned by this user, and closed to everyone else. A looser one could be someone
+/// else's, who could then plant links in it, swap in their own names, or read the user's.
+#[cfg(unix)]
+fn private_folder(dir: &Path) -> io::Result<()> {
+    use std::os::unix::fs::{DirBuilderExt, MetadataExt};
+
+    if let Some(parent) = dir.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    match std::fs::DirBuilder::new().mode(0o700).create(dir) {
+        Ok(()) => {}
+        Err(e) if e.kind() == io::ErrorKind::AlreadyExists => {}
+        Err(e) => return Err(e),
+    }
+    let meta = std::fs::symlink_metadata(dir)?;
+    // SAFETY: `geteuid` takes no arguments, shares no memory, and can't fail.
+    let me = unsafe { libc::geteuid() };
+    if !meta.is_dir() || meta.uid() != me || meta.mode() & 0o077 != 0 {
+        return Err(io::Error::new(
+            io::ErrorKind::PermissionDenied,
+            "the Results folder isn't private to this user",
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(not(unix))]
+fn private_folder(dir: &Path) -> io::Result<()> {
+    std::fs::create_dir_all(dir)
+}
+
+/// Removes a regular file at `path`, and refuses anything else there.
+fn remove_stale(path: &Path) -> io::Result<()> {
+    match std::fs::symlink_metadata(path) {
+        Ok(meta) if meta.is_file() => std::fs::remove_file(path),
+        Ok(_) => Err(io::Error::new(
+            io::ErrorKind::AlreadyExists,
+            "something other than a Results file sits at its name",
+        )),
+        Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(()),
+        Err(e) => Err(e),
+    }
+}
+
+/// A new `0600` file at `path`, failing if anything appeared there since [`remove_stale`].
+fn create_new(path: &Path) -> io::Result<File> {
+    let mut options = OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    options.mode(0o600).custom_flags(libc::O_NOFOLLOW);
+    options.open(path)
+}
+
+/// The Results folder's name inside the app's cache dir.
+const RESULTS_DIR_NAME: &str = "multi-rename";
+
+/// Where session `session_id` writes its Results file: `multi-rename/` in the app's cache dir
+/// (`config::app_cache_dir`, so a dev or E2E instance keeps its own), which "Delete all Cmdr
+/// data" removes whole. `None` when the OS has no cache dir. The process id keeps two Cmdrs on
+/// one cache dir off each other's files: session ids count from 1 in each.
+pub fn path_for(session_id: &str) -> Option<PathBuf> {
+    let name = format!("{}-{session_id}.txt", std::process::id());
+    Some(crate::config::app_cache_dir()?.join(RESULTS_DIR_NAME).join(name))
 }

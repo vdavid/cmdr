@@ -3,7 +3,7 @@
 
 use std::path::Path;
 
-use super::plan::{TargetShape, WipeTarget};
+use super::plan::WipeTarget;
 
 /// The local AI model's folder and file extension, under the data dir (`ai/state.rs`).
 const AI_DIR: &str = "ai";
@@ -22,21 +22,7 @@ pub struct Sizes {
 }
 
 pub fn measure(plan: &[WipeTarget], data_dir: &Path) -> Sizes {
-    let total = plan
-        .iter()
-        .map(|target| match &target.shape {
-            TargetShape::Whole => size_of(&target.path),
-            TargetShape::FilesWithPrefix(prefix) => std::fs::read_dir(&target.path)
-                .map(|entries| {
-                    entries
-                        .flatten()
-                        .filter(|e| e.file_name().to_string_lossy().starts_with(prefix.as_str()))
-                        .map(|e| size_of(&e.path()))
-                        .sum()
-                })
-                .unwrap_or(0),
-        })
-        .sum();
+    let total = plan.iter().map(|target| size_of(&target.path)).sum();
     Sizes {
         total,
         models: model_bytes(data_dir),
@@ -95,17 +81,14 @@ mod tests {
             WipeTarget {
                 kind: TargetKind::AppData,
                 path: data.clone(),
-                shape: TargetShape::Whole,
             },
             WipeTarget {
                 kind: TargetKind::Cache,
                 path: cache,
-                shape: TargetShape::Whole,
             },
             WipeTarget {
                 kind: TargetKind::WebKit,
                 path: root.join("missing"),
-                shape: TargetShape::Whole,
             },
         ];
 

@@ -354,9 +354,9 @@ pub(crate) fn write_names(session_id: &str, preview_id: u64) -> Result<PathBuf, 
     let (latest, _) = stored(session_id, preview_id)?;
     // The old file first: it has the same path, and dropping it deletes it.
     with_session(session_id, |s| s.written = None)?;
-    let path = names_file::path_for(session_id);
-    let written = names_file::write(&path, &latest.rows)
-        .map_err(|e| MultiRenameError::CouldntWriteNames { detail: e.to_string() })?;
+    let couldnt = |detail: String| MultiRenameError::CouldntWriteNames { detail };
+    let path = names_file::path_for(session_id).ok_or_else(|| couldnt("the OS has no cache folder".to_string()))?;
+    let written = names_file::write(&path, &latest.rows).map_err(|e| couldnt(e.to_string()))?;
     with_session(session_id, |s| s.written = Some(written))?;
     Ok(path)
 }
@@ -368,7 +368,7 @@ pub(crate) fn read_names(session_id: &str) -> Result<usize, MultiRenameError> {
     let path = with_session(session_id, |s| s.written.as_ref().map(|w| w.path.clone()))?
         .ok_or_else(|| gone("no Results file was written".to_string()))?;
     // Read outside the lock; the merge below checks the file is still this session's.
-    let text = std::fs::read_to_string(&path).map_err(|e| gone(e.to_string()))?;
+    let text = names_file::read(&path).map_err(|e| gone(e.to_string()))?;
     with_session(session_id, |s| {
         let written = s
             .written

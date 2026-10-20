@@ -15,7 +15,7 @@ use cmdr_fs::log_private::LogPrivate;
 
 use crate::secrets::{SecretStore, SecretStoreError};
 
-use super::plan::{TargetKind, TargetShape, WipeTarget};
+use super::plan::{TargetKind, WipeTarget};
 
 /// The marker in a tombstone's name. Nothing else in Cmdr's folders carries it.
 pub(super) const TOMBSTONE_MARKER: &str = ".cmdr-wipe-";
@@ -101,11 +101,7 @@ fn delete_every_secret(secrets: &dyn SecretStore) {
 
 /// Remove one target; `Some` names what's still on disk afterwards.
 fn remove_target(target: &WipeTarget) -> Option<WipeLeftover> {
-    match &target.shape {
-        TargetShape::Whole => remove_whole(&target.path),
-        TargetShape::FilesWithPrefix(prefix) => remove_prefixed_files(&target.path, prefix),
-    }
-    .map(|path| {
+    remove_whole(&target.path).map(|path| {
         log::warn!(target: "data_wipe", "{:?} couldn't be removed: {}", target.kind, LogPrivate::path(&path));
         WipeLeftover::Path {
             path: path.to_string_lossy().into_owned(),
@@ -137,21 +133,6 @@ fn remove_whole(path: &Path) -> Option<PathBuf> {
     None
 }
 
-fn remove_prefixed_files(dir: &Path, prefix: &str) -> Option<PathBuf> {
-    let entries = std::fs::read_dir(dir).ok()?;
-    let mut first_left: Option<PathBuf> = None;
-    for entry in entries.flatten() {
-        if !entry.file_name().to_string_lossy().starts_with(prefix) {
-            continue;
-        }
-        let path = entry.path();
-        if remove_any(&path).is_err() && exists(&path) {
-            first_left.get_or_insert(path);
-        }
-    }
-    first_left
-}
-
 /// `<parent>/<name>.cmdr-wipe-<random>`: beside the original, so the rename never crosses a
 /// volume, and hidden from nothing (a person looking for leftovers should find it).
 fn tombstone_for(path: &Path) -> Option<PathBuf> {
@@ -160,11 +141,11 @@ fn tombstone_for(path: &Path) -> Option<PathBuf> {
     Some(parent.join(format!("{name}{TOMBSTONE_MARKER}{}", uuid::Uuid::new_v4().simple())))
 }
 
-/// Removes leftover tombstones of the plan's whole targets: what a wipe that crashed halfway
-/// left behind. Returns how many it removed.
+/// Removes leftover tombstones of the plan's targets: what a wipe that crashed halfway left
+/// behind. Returns how many it removed.
 pub fn sweep_tombstones(plan: &[WipeTarget]) -> usize {
     let mut removed = 0;
-    for target in plan.iter().filter(|t| t.shape == TargetShape::Whole) {
+    for target in plan {
         let (Some(parent), Some(name)) = (target.path.parent(), target.path.file_name()) else {
             continue;
         };
@@ -181,19 +162,12 @@ pub fn sweep_tombstones(plan: &[WipeTarget]) -> usize {
     removed
 }
 
-/// Removes each whole target in place, without reporting: the last pass at exit, for what the
-/// app's own shutdown wrote back after the wipe (stores saved on exit, WebKit's caches).
+/// Removes each target in place, without reporting: the last pass at exit, for what the app's
+/// own shutdown wrote back after the wipe (stores saved on exit, WebKit's caches).
 pub fn remove_again(plan: &[WipeTarget]) {
     for target in plan {
-        match &target.shape {
-            TargetShape::Whole => {
-                if exists(&target.path) {
-                    let _ = remove_any(&target.path);
-                }
-            }
-            TargetShape::FilesWithPrefix(prefix) => {
-                let _ = remove_prefixed_files(&target.path, prefix);
-            }
+        if exists(&target.path) {
+            let _ = remove_any(&target.path);
         }
     }
 }
@@ -286,11 +260,7 @@ mod tests {
     }
 
     fn whole(kind: TargetKind, path: PathBuf) -> WipeTarget {
-        WipeTarget {
-            kind,
-            path,
-            shape: TargetShape::Whole,
-        }
+        WipeTarget { kind, path }
     }
 
     /// A data dir the way the app leaves it: a database with its WAL, a settings file, and a
@@ -401,29 +371,6 @@ mod tests {
                 item_name: "Cmdr".to_string()
             }]
         );
-    }
-
-    /// The temp folder is shared with every other Cmdr process: only this one's files go.
-    #[test]
-    fn prefixed_files_go_and_other_processes_files_stay() {
-        let dir = TestDir::new("wipe-prefixed");
-        std::fs::write(dir.join("4242-1.txt"), b"mine").unwrap();
-        std::fs::write(dir.join("4242-2.txt"), b"mine").unwrap();
-        std::fs::write(dir.join("777-1.txt"), b"another process").unwrap();
-        let plan = vec![WipeTarget {
-            kind: TargetKind::RenameLists,
-            path: dir.to_path_buf(),
-            shape: TargetShape::FilesWithPrefix("4242-".to_string()),
-        }];
-
-        let report = wipe(&plan, "cmdr", &FakeSecrets::default(), "Cmdr", &FakeHost::default());
-
-        assert_eq!(report, WipeReport::default());
-        let left: Vec<String> = std::fs::read_dir(&dir)
-            .unwrap()
-            .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
-            .collect();
-        assert_eq!(left, vec!["777-1.txt".to_string()]);
     }
 
     /// A symlink inside the data dir is removed as a link: what it points at is the person's.

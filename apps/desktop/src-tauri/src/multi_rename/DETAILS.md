@@ -85,8 +85,8 @@ subfolders (the executor's one-parent rule refuses it today), "next step" chaini
 - Sessions live in a process-wide map, at most `MAX_SESSIONS`; opening one drops sessions idle past `IDLE_LIMIT`,
   then the least recently used. The sheet closes its session (`close_multi_rename`) when it closes.
 - **Results (⌥⏎, TC's "edit names", `names_file.rs`)**: `write_multi_rename_names(session, previewId)` writes that
-  preview's rows (a `Missing` one gets no line) as `old<TAB>new` lines to `$TMPDIR/cmdr-multi-rename/<session>.txt`;
-  the sheet opens it in the user's editor and calls `read_multi_rename_names` when its window gets focus again. A line
+  preview's rows (a `Missing` one gets no line) as `old<TAB>new` lines to
+  `<app cache dir>/multi-rename/<pid>-<session>.txt`; the sheet opens it in the user's editor and calls `read_multi_rename_names` when its window gets focus again. A line
   counts only when its new name differs from what was written, so an untouched row keeps following the settings and
   an earlier edit stays; the merged names (`NameEdits`, by composed old name) become the session's, and every preview
   from then on puts them through `Compiled::finish` and all the status checks (`PreviewRow::edited` marks them).
@@ -96,6 +96,12 @@ subfolders (the executor's one-parent rule refuses it today), "next step" chaini
   `StoredPreview` keeps the edits it showed, and apply recomputes with those: an edit read back after the preview on
   screen never sneaks into its rename. Dropping a `Written` deletes the file, so close, eviction, and clear tidy up.
   The file is read outside the sessions lock. Ported from PR #386 (Jiri Slovacek), whose read-back was process-wide.
+- **Decision/Why: the Results folder is the user's alone.** `names_file::write` makes `multi-rename/` with mode `0700`
+  and refuses one that's a symlink, someone else's, or open to others; the file is `create_new` + `O_NOFOLLOW`, `0600`,
+  and a stale one is removed first only if it's a regular file. `read` won't follow a link or open a named pipe. Why:
+  in a shared `/tmp` on Linux, another account could pre-create the folder, plant a link at the guessable name so the
+  write overwrote the user's own file, swap in its own names, or read the user's (issue #546). The app's cache dir
+  is per-user and per-instance, and "Delete all Cmdr data" removes it whole.
 - Plain search: a `*` is lazy (`IMG_*_` ends at the first `_`) except a trailing one, which runs to the end. Search
   and names are composed (NFC) first, so `é` typed finds the decomposed `é` an SMB share stores.
 - A single search takes its replacement literally (`|` included); only a list pairs with a list. A list of nothing

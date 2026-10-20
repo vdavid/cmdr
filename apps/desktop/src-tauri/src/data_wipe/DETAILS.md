@@ -27,13 +27,11 @@ From `WipeRoots` (`plan::build_plan`), in order, minus unsafe ones and ones nest
 - The data dir (settings, histories, `main.db` with Ask Cmdr chats, `ai/` with memory and the local model, the
   importance, media, and operation-log databases, `license.json`, the telemetry queue, crash and error reports, the
   image-search model, MCP token and port files, server lists, SFTP host keys, the file-backed secret store in dev).
-- The cache dir (the drive index; WebKit's and Core ML's caches).
+- The cache dir (the drive index; bulk-rename Results files in `multi-rename/`; WebKit's and Core ML's caches).
 - The log dir (`cmdr.log`), when it isn't inside the data dir.
 - macOS `~/Library`: `Preferences/<id>.plist`, `Saved Application State/<id>.savedState`, `WebKit/<id>`,
   `HTTPStorages/<id>`, and `Caches/<id>` / `Logs/<id>` when the cache or log dir lives elsewhere (an E2E run), since
   WebKit still writes there.
-- This process's bulk-rename Results files in `$TMPDIR/cmdr-multi-rename/` (prefix `<pid>-`): the folder is shared
-  with other running Cmdrs.
 
 ## Decisions
 

@@ -10,7 +10,8 @@ use std::path::{Path, PathBuf};
 pub struct WipeRoots {
     /// The app data dir (`CMDR_DATA_DIR`, else `~/Library/Application Support/<identifier>`).
     pub data_dir: PathBuf,
-    /// The cache dir holding the drive index (`config::app_cache_dir`).
+    /// The cache dir holding the drive index and the bulk-rename Results files
+    /// (`config::app_cache_dir`).
     pub cache_dir: Option<PathBuf>,
     /// The log dir this session writes to (`logging::log_dir`).
     pub log_dir: Option<PathBuf>,
@@ -21,8 +22,6 @@ pub struct WipeRoots {
     pub identifier: String,
     /// The person's home folder, which no target may ever be or contain.
     pub home_dir: Option<PathBuf>,
-    /// Bulk-rename name lists: the folder, and the file-name prefix that marks this process's.
-    pub rename_lists: Option<(PathBuf, String)>,
 }
 
 /// What a target holds, for logs and docs. The dialog speaks about the data, never these.
@@ -40,24 +39,13 @@ pub enum TargetKind {
     LibraryCache,
     /// `~/Library/Logs/<identifier>` when this session logs elsewhere.
     LibraryLogs,
-    RenameLists,
 }
 
-/// How a target is removed.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TargetShape {
-    /// The whole file or folder at the path.
-    Whole,
-    /// Only the files in the folder whose names start with this prefix: the folder is shared
-    /// with other Cmdr processes.
-    FilesWithPrefix(String),
-}
-
+/// One file or folder, removed whole.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WipeTarget {
     pub kind: TargetKind,
     pub path: PathBuf,
-    pub shape: TargetShape,
 }
 
 /// Everything to remove, in order: the data dir first (it holds the most), then the rest.
@@ -88,23 +76,15 @@ pub fn build_plan(roots: &WipeRoots) -> Vec<WipeTarget> {
             whole(TargetKind::LibraryLogs, library.join("Logs").join(id)),
         ]);
     }
-    if let Some((dir, prefix)) = &roots.rename_lists {
-        candidates.push(WipeTarget {
-            kind: TargetKind::RenameLists,
-            path: dir.clone(),
-            shape: TargetShape::FilesWithPrefix(prefix.clone()),
-        });
-    }
-
     let safe: Vec<WipeTarget> = candidates
         .into_iter()
         .filter(|target| is_safe_target(&target.path, roots))
         .collect();
     let mut plan: Vec<WipeTarget> = Vec::new();
     for target in &safe {
-        let covered = safe.iter().any(|outer| {
-            outer.shape == TargetShape::Whole && outer.path != target.path && target.path.starts_with(&outer.path)
-        });
+        let covered = safe
+            .iter()
+            .any(|outer| outer.path != target.path && target.path.starts_with(&outer.path));
         let duplicate = plan.iter().any(|kept| kept.path == target.path);
         if !covered && !duplicate {
             plan.push(target.clone());
@@ -114,11 +94,7 @@ pub fn build_plan(roots: &WipeRoots) -> Vec<WipeTarget> {
 }
 
 fn whole(kind: TargetKind, path: PathBuf) -> WipeTarget {
-    WipeTarget {
-        kind,
-        path,
-        shape: TargetShape::Whole,
-    }
+    WipeTarget { kind, path }
 }
 
 /// A last guard against a misresolved root: the target must be an absolute path at least two
@@ -182,10 +158,6 @@ mod tests {
             library_dir: Some(library()),
             identifier: ID.to_string(),
             home_dir: Some(home()),
-            rename_lists: Some((
-                PathBuf::from("/var/folders/xy/T/cmdr-multi-rename"),
-                "4242-".to_string(),
-            )),
         }
     }
 
@@ -207,12 +179,8 @@ mod tests {
                 lib.join("Saved Application State").join(format!("{ID}.savedState")),
                 lib.join("WebKit").join(ID),
                 lib.join("HTTPStorages").join(ID),
-                PathBuf::from("/var/folders/xy/T/cmdr-multi-rename"),
             ]
         );
-        let rename = plan.last().expect("the rename lists are planned");
-        assert_eq!(rename.shape, TargetShape::FilesWithPrefix("4242-".to_string()));
-        assert!(plan[..plan.len() - 1].iter().all(|t| t.shape == TargetShape::Whole));
     }
 
     /// The security event log lives in the data dir, so the data dir's target takes it. Named here
@@ -222,10 +190,8 @@ mod tests {
         let roots = prod_roots();
         let log = crate::security_log::file_path(&roots.data_dir);
         assert!(
-            build_plan(&roots)
-                .iter()
-                .any(|t| t.shape == TargetShape::Whole && log.starts_with(&t.path)),
-            "{} isn't inside any whole target",
+            build_plan(&roots).iter().any(|t| log.starts_with(&t.path)),
+            "{} isn't inside any target",
             log.display()
         );
     }
@@ -243,7 +209,6 @@ mod tests {
             library_dir: Some(lib.clone()),
             identifier: id.to_string(),
             home_dir: Some(home()),
-            rename_lists: None,
         };
         let plan = build_plan(&roots);
         for target in &plan {
@@ -272,7 +237,6 @@ mod tests {
             library_dir: Some(library()),
             identifier: id.to_string(),
             home_dir: Some(home()),
-            rename_lists: None,
         };
         let plan = build_plan(&roots);
         assert_eq!(plan[0].path, data);
@@ -293,7 +257,6 @@ mod tests {
             library_dir: None,
             identifier: ID.to_string(),
             home_dir: Some(PathBuf::from("/home/someone")),
-            rename_lists: None,
         };
         assert_eq!(
             paths(&build_plan(&roots)),

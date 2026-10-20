@@ -69,7 +69,6 @@ fn roots<R: Runtime>(app: &AppHandle<R>) -> Option<WipeRoots> {
     } else {
         None
     };
-    let (rename_dir, rename_prefix) = crate::multi_rename::names_file::this_process_files();
     Some(WipeRoots {
         data_dir,
         cache_dir: crate::config::app_cache_dir(),
@@ -77,7 +76,6 @@ fn roots<R: Runtime>(app: &AppHandle<R>) -> Option<WipeRoots> {
         library_dir,
         identifier: app.config().identifier.clone(),
         home_dir,
-        rename_lists: Some((rename_dir, rename_prefix)),
     })
 }
 
