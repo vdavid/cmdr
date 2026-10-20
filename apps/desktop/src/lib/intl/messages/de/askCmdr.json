@@ -606,9 +606,9 @@
   "@askCmdr.renameUndo.undoJob": {
     "sourceHash": "f84acd2"
   },
-  "askCmdr.renameUndo.undoJobLabel": "Alle Umbenennungen dieses Durchlaufs widerrufen: {filesText} {files, plural, one {Datei} other {Dateien}} in {batches, plural, one {# Gruppe} other {# Gruppen}}",
+  "askCmdr.renameUndo.undoJobLabel": "Alle {batches, plural, one {# Gruppe} other {# Gruppen}} widerrufen, {filesText} {files, plural, one {Datei} other {Dateien}} in diesem Durchlauf umbenannt",
   "@askCmdr.renameUndo.undoJobLabel": {
-    "sourceHash": "9d2e84e"
+    "sourceHash": "544447d"
   },
   "askCmdr.renameUndo.undoing": "Alte Namen werden zurückgesetzt …",
   "@askCmdr.renameUndo.undoing": {

@@ -2274,7 +2274,8 @@
     "sources": "macOS Finder Get Info (Teilen & Zugriffsrechte)",
     "exceptions": {
       "servers.hostKey.firstContactBody": "the person who runs a server is not an owner in this sense: die Person, die den Server betreibt",
-      "servers.hostKey.changedBody": "the person who runs a server is not an owner in this sense: die Person, die den Server betreibt"
+      "servers.hostKey.changedBody": "the person who runs a server is not an owner in this sense: die Person, die den Server betreibt",
+      "servers.certificate.changedBody": "the person who runs a server is not an owner in this sense: die Person, die den Server betreibt"
     }
   },
   "package": {

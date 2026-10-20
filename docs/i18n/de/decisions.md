@@ -475,11 +475,12 @@ Deliberate splits (don't unify):
   `Verbindung zu {name} trennen` (Apple's FileProvider frame), never `{name} trennen`.
 - The `*BusyTooltip` trio shares `Cmdr arbeitet noch mit Dateien auf diesem … . …, sobald das erledigt ist.`; eject says
   `Wirf das Gerät aus`, never `es` (could be Cmdr).
-- `Die Verbindung wurde unterbrochen.`, never `abgebrochen` (the user-cancelled status).
-- A certificate or key takes the dative: `macOS vertraut dem Zertifikat … nicht` (Apple's Trust strings, kept active).
-- The host key in prose is plain `der Schlüssel` with `von {host}`: never `Hostschlüssel` (jargon the English avoids)
-  nor `{host}s Schlüssel` (a placeholder never takes a case ending).
-- `Anmeldemethode` over Apple's `Authentifizierungsmethode` (jargon the `@key` wants avoided).
+- `Die Verbindung wurde unterbrochen.`, never `abgebrochen` (the cancelled status).
+- A certificate or key takes the dative (`vertraut dem Zertifikat … nicht`, Apple). Both `*.changedDisclosure` say
+  `Ich habe das geprüft`: `ihn`/`es` would split one English.
+- The host key in prose is `der Schlüssel von {host}` (the certificate likewise): never `Hostschlüssel` (jargon) nor
+  `{host}s Schlüssel`.
+- `Anmeldemethode` over Apple's `Authentifizierungsmethode` (jargon the `@key` avoids).
 - `Das Passwort hat für {username} nicht geklappt.`, never Apple's `ungültig`: nobody gets blamed.
 - The sheet's field is the short `Adresse`; prose says `Serveradresse`.
 - Back-references say `den Server`, never `ihn`: in `connectionTooltipNeedsHostKey` two masculine nouns precede it.
