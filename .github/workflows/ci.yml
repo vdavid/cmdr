@@ -463,15 +463,15 @@ jobs:
   # Cmdr ships on macOS, but every other job here runs on ubuntu, so the code under
   # `cfg(target_os = "macos")` (FSEvents, AppKit, DiskArbitration, File Provider, TCC, the
   # `cmdr-fsevent-stream` member) was compiled, linted, and tested only on whichever Mac last ran
-  # `pnpm check`. This job and `desktop-rust-macos-tests` ask the three questions Linux can't
-  # answer for that code: does it lint clean, do its intra-doc links resolve (here), and do its
-  # tests pass (there, in parallel, since on a 3-core runner the test build alone is ~10 min and
-  # waiting for clippy and rustdoc first cost ~5 more). Everything platform-blind (the static
-  # scanners, rustfmt, notices, jscpd) stays in `desktop-rust` alone.
+  # `pnpm check`. This job asks the three questions Linux can't answer for that code: does it
+  # lint clean, do its intra-doc links resolve, and do its tests pass. Everything platform-blind
+  # (the static scanners, rustfmt, notices, jscpd) stays in `desktop-rust` alone. Last, it runs
+  # module cycles, whose baseline is a macOS module graph (an ubuntu analysis drops the
+  # macOS-gated modules).
   #
-  # It also runs module cycles, after rustdoc: the baseline is a macOS module graph (an ubuntu
-  # analysis drops the macOS-gated modules), and this job finishes well before the tests job,
-  # so the extra minutes cost no wall time and no third macOS runner.
+  # One job, deliberately: splitting the suite into a second macOS job saved ~5 min of wall
+  # time, but the account runs at most five macOS jobs at once (of 20), and with several PRs
+  # in flight a second macOS job per run cost more in queue time than it saved (2026-10-20).
   #
   # Deliberately left out:
   # - `macos-availability`: the committed selector list records the NEWEST SDK it was built on
@@ -487,9 +487,9 @@ jobs:
     # Pinned to the release builder's image so the lanes lint against the SDK the app ships with;
     # see the `runs-on` comment in `release-pipeline.yml` for why it's never `macos-latest`.
     runs-on: macos-26
-    # A cold ~1000-crate Tauri check on a 3-core runner, clippy, rustdoc, and a cold
-    # cargo-modules install (~6 min) plus its analysis (~7 min cold).
-    timeout-minutes: 60
+    # A cold ~1000-crate Tauri compile on a 3-core runner (clippy, rustdoc, then the test build),
+    # the suite, and a cold cargo-modules install (~6 min) plus its analysis (~7 min cold).
+    timeout-minutes: 90
     needs: changes
     if: inputs.run_all || needs.changes.outputs.rust == 'true'
 
@@ -529,6 +529,9 @@ jobs:
         if: always()
         run: rm -rf target/doc
 
+      - name: Run Rust tests
+        run: ./scripts/check/check --check desktop-rust-tests --ci
+
       # The check owns the pin and prints it here.
       - name: Install cargo-modules (pinned)
         run: |
@@ -539,46 +542,6 @@ jobs:
 
       - name: Check Rust module cycles
         run: ./scripts/check/check --check desktop-rust-module-cycles --ci
-
-  # ===========================================
-  # Desktop app - Rust tests on macOS
-  # ===========================================
-  # The macOS suite, split from `desktop-rust-macos` (see the comment there) so its ~10 min test
-  # build starts right after the cache restore. Same image, filter, and gate.
-  desktop-rust-macos-tests:
-    name: Desktop (Rust, macOS tests)
-    runs-on: macos-26
-    # A cold ~1000-crate Tauri compile on a 3-core runner, then the suite.
-    timeout-minutes: 60
-    needs: changes
-    if: inputs.run_all || needs.changes.outputs.rust == 'true'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
-
-      - name: Install tools with mise
-        run: mise install
-
-      # A cache entry of its own, so this job's test build and `desktop-rust-macos`'s clippy and
-      # rustdoc artifacts don't overwrite each other's save. `save-if` and `cache-on-failure` for
-      # the same reasons as there; `warm-rust-macos-tests-cache` writes the same entry.
-      - name: Cache Rust build
-        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
-        with:
-          shared-key: desktop-rust-macos-tests
-          cache-on-failure: true
-          save-if: ${{ env.SAVE_RUST_CACHE }}
-
-      - name: Build check tool
-        run: go build -o check .
-        working-directory: ./scripts/check
-
-      - name: Run Rust tests
-        run: ./scripts/check/check --check desktop-rust-tests --ci
 
   # ===========================================
   # Desktop app - Svelte frontend
@@ -1069,7 +1032,7 @@ jobs:
   warm-rust-macos-cache:
     name: Warm Rust build cache (macOS)
     runs-on: macos-26
-    timeout-minutes: 60
+    timeout-minutes: 90
     needs: changes
     if: >-
       github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.result == 'success' &&
@@ -1111,6 +1074,11 @@ jobs:
         if: always() && steps.cache.outputs.cache-hit != 'true'
         run: rm -rf target/doc
 
+      # Compiles the test binaries (and installs cargo-nextest) without running the suite.
+      - name: Build the test binaries
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: ./scripts/check/check --check nextest-filter-coverage --ci
+
       - name: Install cargo-modules (pinned)
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
@@ -1118,45 +1086,6 @@ jobs:
           if [ "$(cargo-modules --version 2>/dev/null)" != "cargo-modules $version" ]; then
             cargo install cargo-modules --version "$version" --locked
           fi
-
-  # The `desktop-rust-macos-tests` entry; see `warm-rust-cache`.
-  warm-rust-macos-tests-cache:
-    name: Warm Rust test build cache (macOS)
-    runs-on: macos-26
-    timeout-minutes: 60
-    needs: changes
-    if: >-
-      github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.result == 'success' &&
-      needs.changes.outputs.rust != 'true'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
-
-      - name: Install tools with mise
-        run: mise install
-
-      # Must match `desktop-rust-macos-tests`'s step.
-      - name: Cache Rust build
-        id: cache
-        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
-        with:
-          shared-key: desktop-rust-macos-tests
-          cache-on-failure: true
-          save-if: ${{ env.SAVE_RUST_CACHE }}
-
-      - name: Build check tool
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: go build -o check .
-        working-directory: ./scripts/check
-
-      # Compiles the test binaries (and installs cargo-nextest) without running the suite.
-      - name: Build the test binaries
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: ./scripts/check/check --check nextest-filter-coverage --ci
 
   # ===========================================
   # Website
@@ -1639,7 +1568,6 @@ jobs:
         desktop-rust,
         desktop-rust-fixtures,
         desktop-rust-macos,
-        desktop-rust-macos-tests,
         desktop-svelte,
         desktop-e2e-linux,
         website,

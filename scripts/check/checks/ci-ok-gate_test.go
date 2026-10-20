@@ -40,9 +40,6 @@ jobs:
   warm-rust-macos-cache:
     needs: changes
 
-  warm-rust-macos-tests-cache:
-    needs: changes
-
   ci-ok:
     name: CI OK
     needs:

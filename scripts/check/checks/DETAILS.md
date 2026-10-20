@@ -1642,10 +1642,10 @@ installs the pin on purpose, so a skip there means the install broke, and a skip
 editing the constant, installing it, running `pnpm check module-cycles`, and re-seeding the allowlist from what the new
 version reports.
 
-CI runs it on `ci.yml`'s `desktop-rust-macos` job only, after rustdoc. The baseline is a **macOS** module graph, and an
-ubuntu runner analyzes a different set of cfg-gated modules (`drag_image_detection` and `drag_image_swap` are macOS-only
-and don't exist there), so its numbers would disagree for reasons that have nothing to do with coupling. The job
-installs the pin it reads from `--print-cargo-modules-version`, and rust-cache carries `~/.cargo/bin`, so the
+CI runs it on `ci.yml`'s `desktop-rust-macos` job only, last, after the Rust tests. The baseline is a **macOS** module
+graph, and an ubuntu runner analyzes a different set of cfg-gated modules (`drag_image_detection` and `drag_image_swap`
+are macOS-only and don't exist there), so its numbers would disagree for reasons that have nothing to do with coupling.
+The job installs the pin it reads from `--print-cargo-modules-version`, and rust-cache carries `~/.cargo/bin`, so the
 multi-minute install runs only on a cold cache or a bump. That job gates `ci-ok` and both release gates, so a tangle
 blocks a release until it's cut or David accepts it.
 
