@@ -65,7 +65,7 @@ the crash and saying that private info is anonymized first. That press calls `se
   reason the default split exists is in § The three report consents; this is per-report consent at the one moment it
   means something, which is a different thing from moving the line.
 - **The bundle is scoped to the CRASH, not to now**: `BundleScope::Window { first_error_at: <crash timestamp> }` walks
-  back 30 minutes from when the app died. Flow A's "last hour of this session" would be wrong by however long the
+  back 30 minutes from when the app died. Flow A's "past five hours of this session" would be wrong by however long the
   machine sat closed between the crash and this launch. The crash file's `timestamp` is the moment of death for both
   capture paths (the signal path reads it from the raw file's mtime), which is what makes this work.
 - **The note is ours**: `Log for CRASH-XXXXX`, so triage can put the bundle and the crash row side by side. The short id

@@ -123,7 +123,7 @@ impl std::fmt::Display for ErrorReportSendError {
 /// straight back to [`send_error_report`]: that's how the report lands under the id the user
 /// is holding.
 ///
-/// Scope: last hour of log content (see [`BundleScope::flow_a_default`]). Capped at
+/// Scope: the past five hours of log content (see [`BundleScope::flow_a_default`]). Capped at
 /// 1 MB compressed during streaming via [`FLOW_A_BUNDLE_CAP_MB`] (early termination,
 /// no post-hoc trimming). The trailing `cap_bundle_to_mb` is a defense-in-depth no-op
 /// for this path (the streaming pipeline already enforces the cap) but stays in case
@@ -272,9 +272,9 @@ fn flow_a_request(
 /// own rather than a flag on [`send_error_report`]. Two things make it different from Flow A:
 ///
 /// - **Scope is the crash, not now.** `BundleScope::Window { first_error_at: crash_time }` walks
-///   back 30 minutes from the crash rather than an hour from this launch. The interesting log
+///   back 30 minutes from the crash rather than five hours from this launch. The interesting log
 ///   lines are in the PREVIOUS session, and however long the machine sat closed between the crash
-///   and this launch is exactly how wrong Flow A's "last hour" would be.
+///   and this launch is exactly how wrong Flow A's "past five hours" would be.
 /// - **The note is ours, not the user's.** `Log for CRASH-XXXXX` ties the bundle to the crash row
 ///   so triage can put the two side by side. It carries no user text, so nothing needs previewing.
 ///

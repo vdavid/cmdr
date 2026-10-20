@@ -1,11 +1,11 @@
 //! Tail walker: read a log file from the end backwards in fixed-size chunks, yielding
 //! lines newest-first. Stop the moment a leading ISO-8601 timestamp falls older than a
-//! cutoff. Used by Flow A's "last hour of log content" filter so we don't have to read
+//! cutoff. Used by Flow A's "past five hours of log content" filter so we don't have to read
 //! and redact the entire ~180 MB log dir to ship a 1 MB triage bundle.
 //!
 //! ## Why backwards?
 //!
-//! Flow A's window is "the last N minutes of content," anchored on `now`. The newest
+//! Flow A's window is "the last N hours of content," anchored on `now`. The newest
 //! lines live at the END of the file. Reading forward from the start means redacting and
 //! buffering everything older too, wasting CPU when 99 %+ of the file is outside the
 //! window. Reading backward from the end lets us bail the instant we cross the cutoff.

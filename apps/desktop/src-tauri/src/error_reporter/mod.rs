@@ -165,7 +165,7 @@ impl BuildMode {
 /// Time filter applied when picking which log content to include.
 ///
 /// - `Recent { window }`: include only log lines whose leading ISO-8601 timestamp falls within
-///   `[now - window, now]`. The default for Flow A's manual-send path is one hour
+///   `[now - window, now]`. The default for Flow A's manual-send path is five hours
 ///   (`flow_a_default()`). Implemented as a tail-walker that reads each log file from the end
 ///   backward in 64 KB chunks, stops the moment it crosses the cutoff, and streams lines straight
 ///   into the zip writer (no full-file read, no intermediate `Vec<String>`). Lines without a
@@ -185,8 +185,8 @@ pub enum BundleScope {
 }
 
 impl BundleScope {
-    /// Default Flow A scope: last hour of log content. Manual error reports are about
-    /// "something that just happened"; anything older is irrelevant noise.
+    /// Default Flow A scope: the past five hours of log content. Manual error reports are
+    /// about "something that happened recently"; last week's session is irrelevant noise.
     pub fn flow_a_default() -> Self {
         BundleScope::Recent {
             window: FLOW_A_DEFAULT_WINDOW,
@@ -194,12 +194,14 @@ impl BundleScope {
     }
 }
 
-/// Default window for Flow A's manual-send path. Picked from "what would a user mean
-/// when they click 'send error report'?": anything that happened in the past hour, not
-/// last week's session. Lowered from the original 24 h after the streaming rewrite: with
-/// tail-walking we could afford a wider window cheaply, but a wider window dilutes triage
-/// signal more than it adds context.
-const FLOW_A_DEFAULT_WINDOW: Duration = Duration::from_secs(60 * 60);
+/// Default window for Flow A's manual-send path (and feedback with logs attached). Picked
+/// from "what would a user mean when they click 'send error report'?": a stuck moment is
+/// often an hour or more before the user gets to reporting it, so one hour missed the
+/// interesting part (vdavid/cmdr#605), while 24 h dilutes triage signal more than it adds
+/// context. The tail walker makes the width cheap, and [`FLOW_A_BUNDLE_CAP_MB`] still bounds
+/// the bundle: it fills newest-first, so a busy five hours loses its oldest lines, never the
+/// newest. The dialogs' copy says "the past five hours"; change both together.
+const FLOW_A_DEFAULT_WINDOW: Duration = Duration::from_secs(5 * 60 * 60);
 
 /// Hard cap for Flow A bundles. 1 MB compressed lands at roughly 19 MB uncompressed,
 /// which still gives plenty of recent log context. Lowered from the original 10 MB

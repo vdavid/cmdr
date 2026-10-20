@@ -71,7 +71,7 @@ describe('CrashReportToastContent', () => {
     await tick()
 
     // The crash's own timestamp, never `Date.now()`: the lines worth reading are in the previous
-    // session, and however long the machine sat closed is how wrong "the last hour" would be.
+    // session, and however long the machine sat closed is how wrong "the past five hours" would be.
     expect(sendCrashLogReport).toHaveBeenCalledExactlyOnceWith('CRASH-V2SCH', '2026-03-22T10:00:00Z')
   })
 

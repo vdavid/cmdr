@@ -5,9 +5,9 @@
     "screenshot": "error-report.png"
   },
 
-  "errorReporter.dialog.description": "This sends Cmdr’s recent log files to the team so we can fix what went wrong. The logs are redacted client-side: file paths, hostnames, IPs, and emails are all scrubbed before sending.",
+  "errorReporter.dialog.description": "This sends the past five hours of Cmdr’s logs to the team so we can fix what went wrong. The logs are redacted client-side: file paths, hostnames, IPs, and emails are all scrubbed before sending.",
   "@errorReporter.dialog.description": {
-    "description": "Main explanation in the error-report dialog: what is sent and that it is redacted for privacy first. Reassuring. \"Cmdr\" is the product name; \"IPs\" means IP addresses (do not translate \"Cmdr\").",
+    "description": "Main explanation in the error-report dialog: what is sent (the logs from the past five hours) and that it is redacted for privacy first. Reassuring. \"Cmdr\" is the product name; \"IPs\" means IP addresses (do not translate \"Cmdr\").",
     "screenshot": "error-report.png"
   },
 

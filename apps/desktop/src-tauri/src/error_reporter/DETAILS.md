@@ -235,8 +235,11 @@ command exists in every build: under `DisableCrashAndErrorReports` the dialog's 
 
 `build_bundle` takes a `BundleScope`:
 
-- `BundleScope::Recent { window }`: Flow A. The default is one hour
-  (`BundleScope::flow_a_default()`); the manual-send path uses it. The pipeline is
+- `BundleScope::Recent { window }`: Flow A. The default is five hours
+  (`BundleScope::flow_a_default()`); the manual-send path uses it. One hour missed the
+  interesting part: a stuck moment is often an hour or more before the user gets to
+  reporting it (vdavid/cmdr#605). The dialogs' copy says "the past five hours", so change
+  both together. The cap below still bounds a busy five hours, keeping the newest lines. The pipeline is
   **tail-walker + streaming-zip**:
   1. List active log files newest-first via `logging::list_recent_log_files`.
   2. For each file, skip outright if its mtime is older than `now - window`.

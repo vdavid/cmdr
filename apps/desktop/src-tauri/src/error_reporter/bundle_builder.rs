@@ -140,7 +140,7 @@ pub async fn build_bundle<R: tauri::Runtime>(
 
     match scope {
         BundleScope::Recent { window } => {
-            let cutoff = now_utc - chrono::Duration::from_std(window).unwrap_or(chrono::Duration::hours(1));
+            let cutoff = now_utc - chrono::Duration::from_std(window).unwrap_or(chrono::Duration::hours(5));
             build_bundle_streaming(id, manifest, files, cutoff, now_system, &redaction)
         }
         BundleScope::Window { .. } => {
@@ -531,7 +531,7 @@ pub(super) fn load_and_filter_log_file(
     // window, skip it entirely: its newest line is older than what we want.
     let lower_bound = match scope {
         BundleScope::Recent { window } => {
-            now_utc - chrono::Duration::from_std(window).unwrap_or(chrono::Duration::hours(1))
+            now_utc - chrono::Duration::from_std(window).unwrap_or(chrono::Duration::hours(5))
         }
         BundleScope::Window { first_error_at } => first_error_at - FLOW_B_PRE_ERROR_WINDOW,
     };

@@ -1023,6 +1023,46 @@ mod streaming_tests {
         assert!(!bundle.sample_last.is_empty());
     }
 
+    /// Flow A's default scope reaches five hours back: a stuck moment is often an hour or
+    /// more before the user gets to reporting it (vdavid/cmdr#605).
+    #[test]
+    fn flow_a_default_scope_keeps_the_past_five_hours() {
+        let BundleScope::Recent { window } = BundleScope::flow_a_default() else {
+            panic!("Flow A's default scope must be `Recent`");
+        };
+        let dir = make_log_dir("flow-a-default");
+        let log = dir.join("cmdr.log");
+        let now = Utc::now();
+        let mut f = fs::File::create(&log).unwrap();
+        writeln!(f, "{} INFO six-hours-old line", iso(now - chrono::Duration::hours(6))).unwrap();
+        writeln!(
+            f,
+            "{} INFO four-and-a-half-hours-old line",
+            iso(now - chrono::Duration::minutes(270))
+        )
+        .unwrap();
+        drop(f);
+
+        let cutoff = now - chrono::Duration::from_std(window).unwrap();
+        let bundle = build_bundle_streaming(
+            "ERR-FIVEH".to_string(),
+            sample_manifest(),
+            vec![log.clone()],
+            cutoff,
+            SystemTime::now(),
+            &test_redaction(),
+        )
+        .unwrap();
+
+        let entries = read_zip_entries(&bundle.zip_bytes);
+        let log_body = entries.get("logs/cmdr.log").expect("log entry");
+        assert!(
+            log_body.contains("four-and-a-half-hours-old"),
+            "kept too little: {log_body}"
+        );
+        assert!(!log_body.contains("six-hours-old"), "kept too much: {log_body}");
+    }
+
     /// Continuation lines (no leading timestamp) ride along with the previous
     /// timestamped line. Exercise via a panic-style block straddling the cutoff.
     #[test]
