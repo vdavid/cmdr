@@ -3,8 +3,8 @@
 //! inside either operation module.
 //!
 //! **Three deletes, split by capability, and only [`remove_tree`] recurses.**
-//! Cleanup and rollback reach for [`delete_written_file`] (one node, no listing)
-//! and [`prune_created_dir_if_empty`] (empty-only, and it establishes the
+//! Rollback reaches for `delete_clearing_blockers` on one `NodeKind::File` (one
+//! node, no listing) and [`prune_created_dir_if_empty`] (empty-only, and it establishes the
 //! emptiness itself); a tree removal has to name its authorization in the type
 //! ([`TreeRemoval`]). That's what keeps a wrong "is this a directory?" belief
 //! from reaching a recursive delete: on the cleanup path there isn't one in
@@ -16,7 +16,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::in_flight_temps;
-use super::super::super::ledger::{WrittenFile, WrittenIdentity};
+use super::super::super::ledger::WrittenFile;
 use super::super::super::reversal::{PresentRecheck, ReversalTally, drained, recheck_volume};
 use super::super::super::state::{WindDown, WriteOperationState};
 use super::super::super::types::{
@@ -26,7 +26,7 @@ use super::super::super::types::{
 use super::super::super::unblocked_removal::{NodeKind, RemovalRefused, delete_clearing_blockers};
 use super::super::leftover_cleanup::{LeftBehind, finish_in_background};
 use super::super::recovered_name::KeptNewData;
-use super::transfer_error::{AtPath, PathRole, PathedVolumeError};
+use super::transfer_error::{PathRole, PathedVolumeError};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::log_error::LogError;
@@ -60,7 +60,7 @@ const STALE_TEMP_MIN_AGE: Duration = Duration::from_secs(60 * 60);
 /// had, or a kept-partial under cancel) is left in place, so rollback never destroys data
 /// this operation didn't write.
 ///
-/// Neither loop can recurse: they call [`delete_written_file`] and
+/// Neither loop can recurse: they remove one `NodeKind::File` node each and call
 /// [`prune_created_dir_if_empty`], so a directory that reaches this ledger by mistake costs
 /// the user a leftover, never a file.
 ///
@@ -164,34 +164,28 @@ pub(super) async fn volume_rollback_with_progress(
 
 /// Remove ONE destination file this operation wrote, if the backend still reports
 /// the file this operation wrote.
-///
-/// A partial goes without asking: it has no complete file to recognize, and
-/// leaving one behind is the failure cancelling mid-file exists to prevent
-/// ([`super::super::super::ledger::WrittenIdentity::OwnPartial`]).
 async fn reverse_written_file(runtime: &Handle, volume: &Arc<dyn Volume>, entry: &WrittenFile) -> ItemResult {
-    if !matches!(entry.identity, WrittenIdentity::OwnPartial) {
-        let live_size = match volume.get_metadata(&entry.path).await {
-            Ok(live) => live.size,
-            // Already gone ⇒ the end state we wanted already holds.
-            Err(VolumeError::NotFound(_)) => return ItemResult::Skipped(SkipReason::AlreadyGone),
-            Err(e) => {
-                log::warn!(
-                    "volume_rollback_with_progress: couldn't recheck {}: {e}",
-                    LogPrivate::file_path(&entry.path),
-                    e = LogError(&e)
-                );
-                return ItemResult::Skipped(SkipReason::UnverifiablePrecondition);
-            }
-        };
-        match recheck_volume(entry, live_size) {
-            PresentRecheck::Act => {}
-            PresentRecheck::Skip(reason) => {
-                log::info!(
-                    "volume_rollback_with_progress: leaving {} alone ({reason:?})",
-                    LogPrivate::file_path(&entry.path)
-                );
-                return ItemResult::Skipped(reason);
-            }
+    let live_size = match volume.get_metadata(&entry.path).await {
+        Ok(live) => live.size,
+        // Already gone ⇒ the end state we wanted already holds.
+        Err(VolumeError::NotFound(_)) => return ItemResult::Skipped(SkipReason::AlreadyGone),
+        Err(e) => {
+            log::warn!(
+                "volume_rollback_with_progress: couldn't recheck {}: {e}",
+                LogPrivate::file_path(&entry.path),
+                e = LogError(&e)
+            );
+            return ItemResult::Skipped(SkipReason::UnverifiablePrecondition);
+        }
+    };
+    match recheck_volume(entry, live_size) {
+        PresentRecheck::Act => {}
+        PresentRecheck::Skip(reason) => {
+            log::info!(
+                "volume_rollback_with_progress: leaving {} alone ({reason:?})",
+                LogPrivate::file_path(&entry.path)
+            );
+            return ItemResult::Skipped(reason);
         }
     }
     // One node each: these are the FILES this operation wrote, verified just
@@ -220,60 +214,6 @@ fn removal_result(path: &Path, removed: Result<(), RemovalRefused>) -> ItemResul
                 e = LogError(&e)
             );
             ItemResult::Skipped(SkipReason::Failed)
-        }
-    }
-}
-
-/// Folds the writes that were still in flight into the rollback ledger, marked as
-/// this operation's OWN partials: the serial driver's single `last_dest_path`
-/// plus the concurrent driver's one-per-in-flight-task set.
-///
-/// **They go in as `WrittenIdentity::OwnPartial`, never as files whose identity
-/// is unknown.** A partial has no size and no complete file to recognize, by
-/// construction — so a reversal that treated "can't verify it" as "leave it
-/// alone" would strand a truncated file at the destination, which is the exact
-/// outcome cancelling mid-file exists to avoid. Nothing but this operation can
-/// plausibly own a destination path that never held a complete file, so these are
-/// removed on sight. Pinned by the E2E "cancelling inside one large file leaves
-/// no partial behind".
-///
-/// A path the ledger already carries stays as it is: the completed write it
-/// describes is the better record of the two, and pushing a second entry would
-/// make the reversal walk the same path twice.
-pub(super) fn append_own_partials(
-    ledger: &mut Vec<WrittenFile>,
-    last_dest_path: Option<PathBuf>,
-    in_flight_partials: &[PathBuf],
-) {
-    for partial in last_dest_path.into_iter().chain(in_flight_partials.iter().cloned()) {
-        if ledger.iter().any(|entry| entry.path == partial) {
-            continue;
-        }
-        ledger.push(WrittenFile::own_partial(partial));
-    }
-}
-
-/// Removes the destination partials a Stopped or errored copy left behind: the
-/// serial driver's single `last_dest_path` plus the concurrent driver's
-/// one-per-in-flight-task set, already net of anything that finished.
-///
-/// Best-effort per path: a partial that refuses to go is logged and the sweep
-/// moves on. One node each, via [`delete_written_file`] — a directory source's
-/// dest ROOT that reached this list through a driver bug is a merged folder
-/// holding the user's own files, and it must survive.
-pub(super) async fn clean_partial_writes(volume: &Arc<dyn Volume>, partials: &[PathBuf], operation_id: &str) {
-    for partial_path in partials {
-        log::debug!(
-            "copy_volumes_with_progress: cleaning up partial file {} for op={}",
-            LogPrivate::file_path(partial_path),
-            operation_id,
-        );
-        if let Err(e) = delete_written_file(volume, partial_path).await {
-            log::warn!(
-                "copy_volumes_with_progress: couldn't clean up partial {}: {}",
-                LogPrivate::path(&e.path),
-                LogError(&e.error)
-            );
         }
     }
 }
@@ -344,7 +284,7 @@ pub(super) async fn clean_abandoned_staged_writes(
     .filter_map(|(fate, paths)| StagedLeftovers::of(fate, paths, volume.name()))
     .chain(kept.groups(volume.name()))
     .collect();
-    finish_in_background(volume, state, left);
+    finish_in_background(volume, state, in_flight_temps::dest_home(state), left);
     leftovers
 }
 
@@ -479,26 +419,6 @@ pub(super) async fn reap_stale_transfer_temps(
         }
     }
     Some(survivors)
-}
-
-/// Removes ONE destination file this operation wrote. ❌ Never recurses, never
-/// lists.
-///
-/// The only delete the rollback loop over `copied_paths` and the post-loop
-/// [`clean_partial_writes`] sweep may call. Both take their paths from a ledger
-/// of individual files, and a directory reaching either of them is a bug in the
-/// bookkeeping — one that used to cost the user a merged folder's worth of
-/// pre-existing files and now costs a leftover directory and a warn.
-///
-/// A path that's already gone is a success: the job is "make sure this isn't
-/// there", and a partial that never landed isn't worth a warn. Anything else
-/// (the `ENOTEMPTY` of a non-empty directory, a permission refusal) comes back
-/// carrying the path.
-async fn delete_written_file(volume: &Arc<dyn Volume>, path: &Path) -> Result<(), PathedVolumeError> {
-    match volume.delete(path).await {
-        Ok(()) | Err(VolumeError::NotFound(_)) => Ok(()),
-        Err(error) => Err(error).at_destination(path),
-    }
 }
 
 /// Removes a directory this operation created, but only once it's empty.

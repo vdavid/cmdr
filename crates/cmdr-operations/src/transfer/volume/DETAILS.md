@@ -215,28 +215,22 @@ data loss. The cleanup path can't reach one any more (§ "Three ways to delete, 
 The same ledger must flow out of the **interrupted-mid-stream** path, not just the completed-copy path. A directory
 source cancelled/rolled-back/errored while still streaming its children returns `Err` from `copy_single_path`; both the
 serial transfer closure's `Err` arm and the concurrent task's `CopyTaskFailure` carry the per-file `CreatedPaths` ledger
-so the post-loop records the individual files (into `copied_paths`) and newly-created subdirs (into `created_dirs`) —
-and CLEARS `last_dest_path` for a directory source, so the Stopped/error partial-cleanup sweep is never handed the dest
-directory ROOT. On a merge that root holds pre-existing dest-only files. The sweep itself can no longer recurse into one
-(§ "Three ways to delete, and who may use each"), so the ledger discipline and the capability split are two independent
-defenses of the same file. A FILE source routes its dest through `last_dest_path` (serial) or `in_flight_partials`
-(concurrent, where a failed task's stays listed for the post-loop) ONLY when that path can hold OUR partial
-(`../staged_write.rs::failed_write_leaves_ours_at`), and no staged write's can: ❗ not even a name the resolver claimed,
-whose placeholder `take_back_unfilled_reservations` owns and whose cleared name may hold someone's save or our own
-landed file (`../DETAILS.md` § "File writes are staged", `#575`). ❗ A plain staged write (`WriteStaging::Stage`) never
-qualifies: its bytes are on a `.cmdr-tmp-*` sibling `stream_pipe_file` abandons itself, and its final name was free when
-the driver looked, so whatever is there after a failure is someone else's. ❗ Nor does a swap (`StageOverOriginal`): its
-name is the user's ORIGINAL, and its temp is the write's own (the safe-replace paragraph under § "Volume copy + move").
-The commonest way to get there is exactly that: another writer took the name mid-upload and the no-replace landing
-refused, and the sweep used to delete their file. Pinned by `copy_landing_race_tests.rs` (both drivers) and, on live
-WebDAV, SFTP, and SMB servers, `a_name_taken_mid_upload_is_never_replaced`. A write that fell back to the final name
-unstaged (a destination that can't rename) cleans its own partial there instead (`remove_unstaged_partial`). Pinned by
+so the post-loop records the individual files (into `copied_paths`) and newly-created subdirs (into `created_dirs`),
+never the dest directory ROOT. On a merge that root holds pre-existing dest-only files. The rollback itself can't
+recurse into one (§ "Three ways to delete, and who may use each"), so the ledger discipline and the capability split are
+two independent defenses of the same file. ❗ **Nothing cleans a failed write's FINAL name**: the drivers keep no
+partial list. A staged write's bytes are on a `.cmdr-tmp-*` sibling with one owner (`../DETAILS.md` § "File writes are
+staged"), and the final name is the user's: a free name someone may have taken mid-upload (the no-replace landing
+refuses, and a post-loop sweep of the name used to delete their file), a swap's ORIGINAL, or a `Rename` pick's name,
+whose placeholder `take_back_unfilled_reservations` owns and which, once our landing cleared it, holds someone's save or
+our own landed file (`#575`). Pinned by `copy_landing_race_tests.rs` (both drivers) and, on live WebDAV, SFTP, and SMB
+servers, `a_name_taken_mid_upload_is_never_replaced`. A write that fell back to the final name unstaged (a destination
+that can't rename) cleans its own partial there instead (`remove_unstaged_partial`). Pinned by
 `copy_rollback_tests.rs::{cancel_mid_merge_stream_preserves_preexisting_dest_file, rollback_mid_merge_stream_preserves_preexisting_dest_file, cancel_mid_merge_stream_concurrent_preserves_preexisting_dest_file}`
 (serial Cancel, serial Rollback, concurrent Cancel) and `rollback_after_rename_keeps_preexisting_dest_file` (file→file
-Rename rollback removes only the `name (1)` it landed). **Don't** drop the `created` ledger in the `Err`/cancel arms or
-let a directory source's dest root reach `last_dest_path` (serial) or `in_flight_partials` (concurrent). A task the
-concurrent driver ABORTS at its drain deadline (after a cancel or a failure) never reaches either arm, nor does one that
-panics, so the driver holds an `Arc` on each in-flight task's `CreatedPaths` (`CopyTask.created`) and
+Rename rollback removes only the `name (1)` it landed). **Don't** drop the `created` ledger in the `Err`/cancel arms. A
+task the concurrent driver ABORTS at its drain deadline (after a cancel or a failure) never reaches either arm, nor does
+one that panics, so the driver holds an `Arc` on each in-flight task's `CreatedPaths` (`CopyTask.created`) and
 `ConcurrentDriver::finish` (or `Settlements::record_panic`) hands over, and journals, what every such directory source
 had already landed. A panic is the operation's failure, like a task error, ❌ never a source that silently goes missing.
 Pinned by `copy_cancel_tests.rs::rollback_undoes_what_an_abandoned_folder_task_already_landed`.
@@ -245,11 +239,9 @@ Pinned by `copy_cancel_tests.rs::rollback_undoes_what_an_abandoned_folder_task_a
 
 **Decision**: `cleanup.rs` offers three deletes, split by capability, and exactly one of them recurses.
 
-- **`delete_written_file(volume, path)`** — one `Volume::delete`, no listing, no recursion. The rollback loop over
-  `copied_paths` and the post-loop `clean_partial_writes` sweep may call nothing else. A path that's already gone
-  (`NotFound`) counts as success: the job is "make sure this isn't there", and a partial that never landed is not a
-  failure worth a warn. Anything else (a non-empty directory's `ENOTEMPTY`, a permission refusal) comes back as a
-  `PathedVolumeError` the caller logs.
+- **One `NodeKind::File` removal** (`delete_clearing_blockers`, after the size recheck): no listing, no recursion. The
+  rollback loop over `copied_paths` may call nothing else. A path that's already gone counts as reversed; anything else
+  (a non-empty directory's `ENOTEMPTY`, a permission refusal) is a counted, logged skip.
 - **`prune_created_dir_if_empty(volume, dir)`** — lists the directory and deletes it only when the listing comes back
   empty. A listing that FAILS leaves the directory standing: unknown is not empty.
 - **`remove_tree(volume, path, why: TreeRemoval)`** — the recursive sweep, with the first-child-failure reporting (§
@@ -260,13 +252,11 @@ Pinned by `copy_cancel_tests.rs::rollback_undoes_what_an_abandoned_folder_task_a
   `remove_tree` logs the variant before it starts, so a recursive delete says in the log who authorized it.
 
 **Why**: the ledger decisions above made cleanup per-FILE by DISCIPLINE — the paths that reach the sweep happen to be
-files, and the sweep would recurse the day one wasn't. Both feeds into the rollback loop come through a single cell
-(`copy_serial.rs`'s `last_dest_cell`, which holds a directory source's dest ROOT from the moment the transfer starts
-until its result arrives), and whether a directory can survive that window is a property of the DRIVER, not of the
-cleanup code. Splitting by capability makes the claim structural instead: no wrong `is_directory` belief can reach a
-recursive delete, because on the cleanup path there is no recursive delete in scope. A fourth sweep has to answer
-"authorized by what?" in the type. Pinned by
-`cleanup_tests.rs::{partial_sweep_leaves_a_directory_and_its_contents_alone, rollback_leaves_a_directory_in_copied_paths_alone}`.
+files, and the sweep would recurse the day one wasn't, and whether a directory can reach the ledger is a property of the
+DRIVER, not of the cleanup code. Splitting by capability makes the claim structural instead: no wrong `is_directory`
+belief can reach a recursive delete, because on the rollback path there is no recursive delete in scope. A fourth sweep
+has to answer "authorized by what?" in the type. Pinned by
+`cleanup_tests.rs::rollback_leaves_a_directory_in_copied_paths_alone`.
 
 **Why the prune lists instead of trusting the `delete` contract**: `Volume::delete` promises not to recurse, every
 shipping backend keeps that promise, and a conformance assertion holds them to it — but "the user's untouched files
@@ -297,14 +287,13 @@ things broke on that lie, and the second is the dangerous one:
 
 - `copy_single_path` trusts the flag absolutely, so a directory went down the FILE branch and the copy died on the
   backend's "can't read a directory" (`local_posix.rs`). Copying any local folder to SMB or MTP failed outright.
-- Both drivers gate partial cleanup on "is this source a directory?" precisely so the post-loop sweep is never handed a
-  destination directory ROOT (see the ledger decisions above). With the flag wrong, the dest dir's path reached
-  `last_dest_path` (serial) / `in_flight_partials` (concurrent), and since dir-vs-dir merges silently, that path is the
-  user's OWN pre-existing folder. A failed copy deleted it.
+- Both drivers record a DIRECTORY source file by file, never by its root (see the ledger decisions above). With the flag
+  wrong, the dest dir's path reached the cleanup, and since dir-vs-dir merges silently, that path is the user's OWN
+  pre-existing folder. A failed copy deleted it.
 
-So the resolved answer, not the raw hint, must drive the ledger/cleanup branch as well as the streaming branch —
-resolving only for the copy call would leave the guard defeated. `Err` from the probe (the source can't be stat'd at
-all) fails that source rather than guessing.
+So the resolved answer, not the raw hint, must drive the ledger branch as well as the streaming branch — resolving only
+for the copy call would leave the guard defeated. `Err` from the probe (the source can't be stat'd at all) fails that
+source rather than guessing.
 
 **`SourceHint` has no `Default`, and it stays that way.** A `SourceHint::default()` isn't "no information": it's a
 confident `is_directory: false` that nobody established. `source_hints.get(p).copied().unwrap_or_default()` reads as
@@ -900,11 +889,10 @@ Two rules keep that queue from wedging or re-asking:
   wake either (ERR-8MEX6, 21 minutes with no I/O). While it prepares, the driver still records what the window hands
   back (`copy_concurrent.rs::prepare_while_draining`), so a source that lands during a prompt gets its
   `write-source-item-done`, journal rows, and files-axis tick at once; that's bookkeeping, not liveness (later failures
-  record too: the first error stands, and a later partial stays in `in_flight_partials` for the post-loop). Preparing
-  has no cancel arm on purpose: dropping a resolver mid-answer can strand a reserved name or a set-aside destination,
-  and a cancel ends preparation anyway (it abandons the prompt, and a resolver checks the intent once it holds the
-  mutex). So a top-level prompt holds back its own source and every later one, while the sources already in flight run
-  on, exactly as they do during a deep prompt.
+  record too: the first error stands). Preparing has no cancel arm on purpose: dropping a resolver mid-answer can strand
+  a reserved name or a set-aside destination, and a cancel ends preparation anyway (it abandons the prompt, and a
+  resolver checks the intent once it holds the mutex). So a top-level prompt holds back its own source and every later
+  one, while the sources already in flight run on, exactly as they do during a deep prompt.
 - **The resolver takes the op-wide latch CELL, ❌ never a copy.** It reads the cell up front, re-reads it under the
   mutex, and records the answer into it the moment it lands. Callers used to copy the latch out, run the resolver on the
   copy, and store it back: a prompt queued behind another task's "Skip all" re-checked a stale copy and asked again, and
@@ -997,8 +985,7 @@ the temp; on a failure INSIDE it the original goes back to its name, and only wh
   directory, sparing only what the in-flight ledger records. Only `AlreadyExists` earns another candidate: the rename
   has already failed once, so a dead link would fail identically under eight names and only add eight timeouts. When no
   rename lands at all, the bytes stay under the temp name, still recorded as a landing, and the failure reports THAT
-  path. ❗ No driver-side partial list ever names the temp or the original (`failed_write_leaves_ours_at` answers
-  `false` for `StageOverOriginal`), so the partial-cleanup contract ("delete partials on error") can't reach either: a
+  path. ❗ No driver-side list ever names the temp or the original, so no post-loop cleanup can reach either: a
   concurrent task DROPPED between the move aside and the rename (the driver breaking on a sibling's failure) leaves the
   original at its recorded aside for the sweep that puts it back. Pinned by `swap_landing_tests.rs` (the rescue, the
   reap that can no longer reach it, the taken-name series, both give-up shapes, and the three move-aside answers),
@@ -1377,10 +1364,9 @@ write. A failed landing would also have left committed data under a `.cmdr-tmp-*
 - **A file→file Overwrite**: `apply_volume_conflict_resolution` answers `Replaces::InPlace` (write path = the original)
   instead of a temp sibling. `staging_for` maps it straight to `SingleShot(ClaimedByTheCaller)`, so it goes out as
   `CreateOrReplace` with nothing to finalize. ❗ It must never fall back to a staged landing, and ❗ a failed write's
-  cleanup must never touch the name: what's there is the user's original (`failed_write_leaves_ours_at` answers `false`
-  for `SingleShot`). Every write site still records the overwrite (`Replaces::overwrites`), so the op stays
-  not-rollbackable. A same-volume move treats `InPlace` like a safe-replace: the original goes aside and the source is
-  renamed onto its name.
+  cleanup must never touch the name: what's there is the user's original (nothing cleans a final name). Every write site
+  still records the overwrite (`Replaces::overwrites`), so the op stays not-rollbackable. A same-volume move treats
+  `InPlace` like a safe-replace: the original goes aside and the source is renamed onto its name.
 - **Only staging reads the OR.** The destination-side yield floor and the stall watchdog keep reading
   `write_is_single_shot`: an upload holds a request open while the source drains, so neither exemption applies.
 
@@ -1953,9 +1939,9 @@ labelled with its own volume.
 - Cross-volume move (`move_cross.rs`) and serial copy (`copy_serial.rs`) map the walker's `PathedVolumeError` through
   `WriteFailure::from`, never the loop's `source_path`, so the side and a landing's `aftermath` both survive.
 - The concurrent driver carries TWO paths on `CopyTaskFailure` (`copy_concurrent_task.rs`) and they are not
-  interchangeable: `failed_path` is the DESTINATION entry to drop from `in_flight_partials` and possibly clean, while
-  `failure` is the `PathedVolumeError` the user is told about. Merging them would either clean the wrong path or report
-  the dest dir root.
+  interchangeable: `failed_path` is the DESTINATION entry (a directory source's dest root, which its finished children
+  journal under), while `failure` is the `PathedVolumeError` the user is told about. Merging them would report the dest
+  dir root.
 - `pull_path_to_local` deliberately drops back to a bare `VolumeError`: it materializes into a scratch dir that is
   discarded wholesale on failure, so no consumer reads a per-item path.
 

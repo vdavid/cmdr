@@ -109,29 +109,3 @@ fn an_untouched_copy_reverses_completely() {
     assert!(!dir.exists(), "the created directory goes with its contents");
     assert_eq!(frames.last().unwrap().files_done, 0);
 }
-
-/// A partial this operation was still writing goes even though nothing about it
-/// can be verified — leaving a truncated file behind is the failure cancelling
-/// mid-file exists to prevent.
-#[test]
-fn a_partial_still_goes_while_a_changed_file_stays() {
-    let engine = TestOperations::new();
-    let tmp = tempfile::tempdir().unwrap();
-    let dir = tmp.path().join("album");
-    fs::create_dir(&dir).unwrap();
-    let partial = dir.join("half-written.mov");
-    let changed = dir.join("changed.txt");
-    fs::write(&partial, b"the first chunk").unwrap();
-    fs::write(&changed, b"as recorded").unwrap();
-    let recorded = vec![
-        WrittenFile::own_partial(partial.clone()),
-        WrittenFile::local(changed.clone()),
-    ];
-    fs::write(&changed, b"somebody else edited this in place").unwrap();
-
-    let (_frames, report) = reverse(&engine, &dir, recorded);
-
-    assert!(!partial.exists(), "a partial must never be left behind");
-    assert!(changed.exists(), "a file that changed must never be deleted");
-    assert_eq!(report.outcome, CancelRollbackOutcome::PartiallyRolledBack);
-}

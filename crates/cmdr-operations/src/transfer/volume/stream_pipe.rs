@@ -243,8 +243,8 @@ struct FileRun<'a> {
     staging: WriteStaging,
     /// Set once that fallback happened. From then on a failed attempt's partial
     /// sits AT the final name and is ours, so the terminal failure removes it
-    /// here: the driver can't, because it only knows the staging it asked for
-    /// (`failed_write_leaves_ours_at`).
+    /// here: the driver only knows the staging it asked for, and nothing else
+    /// ever cleans a final name.
     writing_at_the_final_name: bool,
     /// Which attempt at THIS file we're on, 1-based. A transport blip
     /// (`VolumeError::transport_fault`) runs the file again from its first byte

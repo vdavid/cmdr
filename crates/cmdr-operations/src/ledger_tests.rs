@@ -113,21 +113,6 @@ fn a_volume_file_records_its_size_only() {
     assert_eq!(recorded.identity.recorded_size(), Some(1_048_576));
 }
 
-/// A partial is its own case, not an unverifiable file. A reversal removes one on
-/// sight, so the two must never collapse into each other.
-#[test]
-fn a_partial_is_not_an_unverifiable_file() {
-    let recorded = WrittenFile::own_partial(PathBuf::from("/share/half.mov"));
-
-    assert_eq!(recorded.identity, WrittenIdentity::OwnPartial);
-    assert_ne!(recorded.identity, WrittenIdentity::Unverifiable);
-    assert_eq!(
-        recorded.identity.recorded_size(),
-        None,
-        "a partial has no size by construction"
-    );
-}
-
 // ── The local copy's ledger (`CopyTransaction`) ──
 
 #[test]

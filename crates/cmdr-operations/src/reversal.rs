@@ -91,12 +91,6 @@ impl PresentRecheck {
 /// symlink that dangles has to be FOUND here, and `metadata` would follow it to
 /// its missing target and call the link absent.
 pub(crate) fn recheck_local(file: &WrittenFile) -> Recheck {
-    // A partial has no complete file to recognize and, by construction, no size
-    // either — and nothing but this operation can plausibly own a destination
-    // path that never held a complete file. See [`WrittenIdentity::OwnPartial`].
-    if file.identity == WrittenIdentity::OwnPartial {
-        return Recheck::Act;
-    }
     let live = match fs::symlink_metadata(&file.path) {
         Ok(live) => live,
         Err(e) if e.kind() == io::ErrorKind::NotFound => return Recheck::AlreadyGone,
@@ -105,8 +99,6 @@ pub(crate) fn recheck_local(file: &WrittenFile) -> Recheck {
         Err(_) => return Recheck::Skip(SkipReason::UnverifiablePrecondition),
     };
     match file.identity {
-        // Handled above; repeated here so a new variant can't fall through.
-        WrittenIdentity::OwnPartial => Recheck::Act,
         WrittenIdentity::Unverifiable => Recheck::Skip(SkipReason::UnverifiablePrecondition),
         WrittenIdentity::VolumeFile { .. } => {
             // A volume entry in a local ledger is a bookkeeping bug, not a file
@@ -139,7 +131,6 @@ pub(crate) fn recheck_local(file: &WrittenFile) -> Recheck {
 /// here, so nothing pays a second round trip to re-ask.
 pub(crate) fn recheck_volume(file: &WrittenFile, live_size: Option<u64>) -> PresentRecheck {
     match file.identity {
-        WrittenIdentity::OwnPartial => PresentRecheck::Act,
         WrittenIdentity::VolumeFile { size } => {
             PresentRecheck::of(verify_snapshot(Some(size as i64), None, live_size, None))
         }

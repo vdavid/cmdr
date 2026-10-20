@@ -103,7 +103,6 @@ pub(super) struct ConcurrentCopy<'a> {
     pub(super) apply_to_all_cell: Arc<std::sync::Mutex<ApplyToAll>>,
     pub(super) copied_paths: Arc<std::sync::Mutex<Vec<WrittenFile>>>,
     pub(super) created_dirs: Arc<std::sync::Mutex<Vec<PathBuf>>>,
-    pub(super) in_flight_partials: Arc<std::sync::Mutex<Vec<PathBuf>>>,
     /// What cross-type Overwrites set aside, for the post-loop to settle.
     pub(super) displaced: Arc<DisplacedLedger>,
     pub(super) deep_skipped_files: Arc<AtomicUsize>,
@@ -113,9 +112,9 @@ pub(super) struct ConcurrentCopy<'a> {
 /// What the driver leaves for the caller's post-loop bookkeeping. The counters
 /// aren't in here: they live in the shared atomics the caller already holds.
 ///
-/// A failed FILE source whose name can hold OUR partial leaves it listed in
-/// `in_flight_partials` for the post-loop's cleanup; a directory source's
-/// cleanup runs per-file off the `copied_paths` / `created_dirs` ledgers.
+/// A directory source's rollback runs per-file off the `copied_paths` /
+/// `created_dirs` ledgers; a file source's staged temp is the staged-write
+/// cleanup's.
 pub(super) struct ConcurrentOutcome {
     /// The first failure, if any: a task's, a panic, or conflict resolution's.
     /// The driver stops starting new work and drains on one.
@@ -528,8 +527,8 @@ impl<'a> ConcurrentDriver<'a> {
 
 impl UnsettledSource {
     /// Hands what an aborted or panicked DIRECTORY source already landed to the
-    /// operation's ledger. A FILE source's is empty; its partial rides
-    /// `in_flight_partials`.
+    /// operation's ledger. A FILE source's is empty; its temp is the staged-write
+    /// cleanup's.
     fn hand_over(self, ctx: &ConcurrentCopy<'_>) {
         if !self.source_is_dir {
             return;
@@ -610,9 +609,7 @@ impl Settlements {
         if task_skipped_count == 0 {
             ctx.events.note_source_landed_clean(&done_source);
         }
-        // Remove the in-flight partial and record what the op wrote for
-        // rollback.
-        ctx.forget_in_flight_partial(&recorded_path);
+        // Record what the op wrote for rollback.
         // Whatever this source set aside is now fully replaced.
         ctx.displaced.landed_under(&recorded_path);
         let file_name_done = recorded_path.file_name().map(|n| n.to_string_lossy().to_string());
@@ -661,15 +658,12 @@ impl Settlements {
         ctx.leaf_ledger.emit(file_name_done, ctx.leaf_ledger.current());
     }
 
-    /// One source failed: drop its in-flight partial, thread its rollback ledger
-    /// out, and decide whether what it left behind is a partial to clean or
-    /// committed data to keep.
+    /// One source failed: thread its rollback ledger out.
     fn record_failure(&mut self, ctx: &ConcurrentCopy<'_>, failure: CopyTaskFailure) {
         let CopyTaskFailure {
             failed_path: failed_dest,
             failure: reported,
             source_path: done_source,
-            cleanup_temp,
             source_is_dir,
             overwrote,
             created_files,
@@ -686,17 +680,6 @@ impl Settlements {
             );
         }
 
-        // A name that can hold OUR partial (`failed_write_leaves_ours_at`) stays
-        // in the in-flight partials for the post-loop's cleanup, whichever of
-        // the drain's failures left it. Any other name is dropped from them.
-        //
-        // `cleanup_temp == false` ⇒ `failed_dest` is a staged write's final
-        // name (free, claimed, or a swap's original): never ours, and the write's own temp
-        // is the write's (or, past a swap's delete, a landing nothing may
-        // clean). Cleaning it would delete the user's file.
-        if !cleanup_temp {
-            ctx.forget_in_flight_partial(&failed_dest);
-        }
         if source_is_dir {
             // DIRECTORY source interrupted mid-stream. Record the per-file
             // partials and newly-created subdirs the op wrote, NOT the dir root
@@ -753,8 +736,7 @@ impl Settlements {
     }
 
     /// A task panicked: a failure like any other, ❌ never lost. What it had
-    /// landed hands over like an aborted task's; a FILE source's partial stays
-    /// in `in_flight_partials` for the post-loop.
+    /// landed hands over like an aborted task's.
     fn record_panic(&mut self, ctx: &ConcurrentCopy<'_>, unsettled: UnsettledSource, ended: &JoinError) {
         log::error!(
             target: "copy",

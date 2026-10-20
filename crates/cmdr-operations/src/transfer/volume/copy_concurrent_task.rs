@@ -4,10 +4,7 @@
 //! Everything the task needs arrives owned on [`CopyTask`], so the future is
 //! `'static` and spawns on its own (the probe's task-local scope is set inside
 //! it, in [`run_copy_task`]). The two result payloads carry back what the phase
-//! runner's cleanup and rollback have to know, and
-//! `CopyTaskFailure::cleanup_temp`, which says whether the failed path may be
-//! cleaned at all, is the most data-loss-sensitive line in this directory: read
-//! its doc before touching the arms that build it.
+//! runner's rollback and journal have to know.
 //!
 //! Conflict resolution is NOT here. It runs on the driver before a task is built
 //! (`copy_concurrent_source.rs`), so a Stop prompt holds back its source and
@@ -31,7 +28,7 @@ use super::super::transfer_probe::{CURRENT_TASK_PROBE, TaskProbeHandle};
 use super::displaced_destination::DisplacedLedger;
 use super::merge_ctx::{CreatedPaths, FileWindow, MergeCtx, MergeProbe};
 use super::preflight::{SourceFileFacts, SourceHint};
-use super::strategy::{LandingName, Replaces, copy_single_path, failed_write_leaves_ours_at, staging_for};
+use super::strategy::{LandingName, Replaces, copy_single_path, staging_for};
 use super::transfer_error::PathedVolumeError;
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::volume::Volume;
@@ -39,8 +36,8 @@ use cmdr_fs::volume::Volume;
 /// Success payload for one concurrent copy task.
 ///
 /// `recorded_path` is the top-level landed path (the original's own name after
-/// an overwrite): the entry the result handler drops from `in_flight_partials`,
-/// and what it records for rollback for a top-level file source.
+/// an overwrite): what the result handler records for rollback for a top-level
+/// file source.
 /// `created_files` / `created_dirs` carry the per-file destinations and newly-created subdirectories from a
 /// DIRECTORY source's recursive copy, so rollback removes exactly what the op
 /// wrote into a (possibly pre-existing, merged) dest directory and never the
@@ -69,23 +66,21 @@ pub(super) struct CopyTaskSuccess {
 
 /// Failure payload for one concurrent copy task.
 ///
-/// `failed_path` is the in-flight partial entry to remove from
-/// `in_flight_partials` (the dest item path). ❌ It is NOT the path to report:
-/// it names where the partial sits on the DESTINATION, which for a directory
-/// source is the dest dir root. `failure` carries the item the walker actually
-/// failed on (deep inside the subtree, not the top-level item the user
-/// selected) and the side that refused, and is the only one of the two a user
-/// can act on. Keep them separate. `cleanup_temp` says whether `failed_path`
-/// can hold a partial of OURS (`failed_write_leaves_ours_at`): `false` for a
-/// plain staged write, whose temp is the write's own to abandon, and ❗ for a
-/// swap, whose `failed_path` is the user's original.
+/// `failed_path` is the dest item path, which for a directory source is the dest
+/// dir root its finished children journal under. ❌ It is NOT the path to
+/// report: `failure` carries the item the walker actually failed on (deep
+/// inside the subtree, not the top-level item the user selected) and the side
+/// that refused, and is the only one of the two a user can act on. Keep them
+/// separate. ❌ Nothing cleans `failed_path`: a staged write never leaves a
+/// partial at a final name, which is the user's (a free name someone may have
+/// taken, a claimed name our landing may have cleared, a swap's original).
 ///
 /// `source_is_dir` plus `created_files` / `created_dirs` carry the per-file
 /// rollback ledger for a DIRECTORY source interrupted mid-stream. Without it the
-/// post-loop cleanup/rollback would fall back to recursively deleting the dest
-/// directory ROOT — which on a merge destroys pre-existing dest-only files. With
-/// it, the partials are cleaned per-file and the newly-created dirs pruned
-/// empty-only, so a merged dir holding a sentinel survives.
+/// post-loop rollback would have nothing per-file to reverse, and the dest
+/// directory ROOT holds pre-existing dest-only files on a merge. With it, the
+/// files roll back per-file and the newly-created dirs are pruned empty-only, so
+/// a merged dir holding a sentinel survives.
 ///
 /// `source_path` and `overwrote` are here for the same reason the success
 /// payload carries them: the children this task DID finish are committed files
@@ -98,7 +93,6 @@ pub(super) struct CopyTaskFailure {
     /// the user's only complete copy went (`new_data_at`).
     pub(super) failure: PathedVolumeError,
     pub(super) source_path: PathBuf,
-    pub(super) cleanup_temp: bool,
     pub(super) source_is_dir: bool,
     pub(super) overwrote: bool,
     pub(super) created_files: Vec<WrittenFile>,
@@ -162,9 +156,9 @@ pub(super) struct CopyTask {
 
 /// Streams one top-level source item end to end.
 ///
-/// The `Err` payload's `cleanup_temp` is the whole reason this returns a struct
-/// rather than a `VolumeError`: see [`CopyTaskFailure`]. Boxed, since it carries
-/// the per-file rollback ledger and would otherwise size every `Ok` too.
+/// The `Err` payload is a struct rather than a `VolumeError` because it carries
+/// the per-file rollback ledger ([`CopyTaskFailure`]). Boxed, since that ledger
+/// would otherwise size every `Ok` too.
 pub(super) async fn run_copy_task(task: CopyTask) -> Result<CopyTaskSuccess, Box<CopyTaskFailure>> {
     let CopyTask {
         events,
@@ -281,21 +275,15 @@ pub(super) async fn run_copy_task(task: CopyTask) -> Result<CopyTaskSuccess, Box
             skipped_bytes: task_skipped_bytes,
         }),
         // A failure (incl. a mid-stream cancel, and a landing that couldn't
-        // finish): clean `dest_path` (`cleanup_temp = true`) ❗ only when it can
-        // hold OUR partial. A plain staged write's final name never does, and
-        // cleaning it deleted whatever another writer put there; a swap's names
-        // the user's original (`failed_write_leaves_ours_at`). A failed
-        // top-level write replaced nothing it can be blamed for: a swap that got
-        // past its delete told the journal itself (`staged_write.rs::land`). For
-        // a DIRECTORY source, carry the per-file ledger so the result handler
-        // records the individual partials instead of the dir root — the
-        // post-loop must never recursively delete a merged dest dir and destroy
-        // pre-existing dest-only files.
+        // finish). A failed top-level write replaced nothing it can be blamed
+        // for: a swap that got past its delete told the journal itself
+        // (`staged_write.rs::land`). For a DIRECTORY source, carry the per-file
+        // ledger so the result handler records the individual files instead of
+        // the dir root.
         Err(e) => Err(Box::new(CopyTaskFailure {
             failed_path: dest_path,
             failure: e,
             source_path,
-            cleanup_temp: failed_write_leaves_ours_at(staging),
             source_is_dir,
             overwrote: created.any_overwrote(),
             created_files,

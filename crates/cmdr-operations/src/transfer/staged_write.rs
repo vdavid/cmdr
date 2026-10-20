@@ -546,47 +546,6 @@ pub(super) fn staging_for(replaces: &Replaces, landing: LandingName) -> WriteSta
     }
 }
 
-/// Whether a FILE write handed `dest_path` with `staging` can leave anything of
-/// THIS operation at `dest_path` when it fails, which is what makes that path a
-/// partial for the post-loop cleanup to remove.
-///
-/// - `Unstaged`: the bytes went to the name itself. Ours, though no driver
-///   meets it (`stream_pipe_file` falls back to it and cleans up after it).
-/// - `StageOntoClaimedName`: ❗ **never ours either**, though the caller claimed
-///   the name. The bytes went to a temp sibling, so all that's ours at the name
-///   is the `Rename` pick's `O_EXCL` placeholder, which `ClaimedNames` takes back
-///   while it's still empty (`volume/naming.rs::take_back_unfilled_reservations`).
-///   Once the landing cleared the name, what stands there is someone's save
-///   after our delete, or our own landed file (a kept landing the reconnect
-///   sweep finished before the post-loop ran, `#575`), and cleaning it deleted
-///   that. Pinned by `copy_landing_race_tests.rs`.
-/// - `StageOverOriginal`: ❗ **never ours.** `dest_path` is the user's
-///   ORIGINAL, which survives a failed write; the temp is the write's own,
-///   abandoned by the write, and once the landing has cleared the way it's a
-///   landing no cleanup may touch.
-/// - `Stage`: ❗ **never ours.** The bytes went to a `.cmdr-tmp-*` sibling that
-///   `stream_pipe_file` abandons itself, and the name was FREE when the driver
-///   looked. Anything there now is someone else's, and the likeliest reason the
-///   write failed at all is that someone else took the name mid-upload (the
-///   landing refuses, `staged_write.rs::land`). Cleaning `dest_path` then
-///   deleted their file. Pinned by `copy_landing_race_tests.rs` and, on live
-///   servers, `a_name_taken_mid_upload_is_never_replaced`.
-/// - `SingleShot`: ❗ never ours either. A driver meets it for an in-place
-///   replace on a whole-publishing destination ([`Replaces::InPlace`]), where
-///   a failed write leaves the user's ORIGINAL at the name; an upgraded staged
-///   write is resolved inside `stream_pipe_file`. Either way its failed attempt
-///   is the backend's to clean.
-pub(super) fn failed_write_leaves_ours_at(staging: WriteStaging) -> bool {
-    match staging {
-        WriteStaging::Unstaged => true,
-        WriteStaging::Stage
-        | WriteStaging::StageInFreshFolder
-        | WriteStaging::StageOntoClaimedName
-        | WriteStaging::StageOverOriginal
-        | WriteStaging::SingleShot(_) => false,
-    }
-}
-
 /// Drops the staging for a write the DESTINATION lands in one indivisible shot.
 ///
 /// Staging keeps a byte-incomplete file from wearing the user's real filename.

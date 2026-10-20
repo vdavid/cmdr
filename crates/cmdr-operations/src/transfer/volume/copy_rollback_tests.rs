@@ -224,8 +224,8 @@ async fn same_volume_copy_into_sibling_dir_is_allowed() {
 /// moment the copy first reports forward byte progress (a `Copying` event with
 /// `bytes_done > 0`). For a directory source that's an INTRA-stream interruption:
 /// the trip lands while `copy_single_path` is still mid-directory-stream, so it
-/// returns `Err(Cancelled)` and leaves `last_dest_path` pointing at the dest
-/// directory ROOT — the exact mid-merge cell. Parameterized so the same setup
+/// returns `Err(Cancelled)` with the task's path being the dest directory ROOT
+/// — the exact mid-merge cell. Parameterized so the same setup
 /// exercises both Cancel (`Stopped`) and Rollback (`RollingBack`).
 struct TripIntentOnFirstByteSink {
     inner: CollectorEventSink,
@@ -338,8 +338,7 @@ async fn cancel_mid_merge_stream_preserves_preexisting_dest_file() {
 
 /// ROLLBACK (`RollingBack`) during a directory MERGE that is still mid-copy must
 /// preserve a pre-existing dest-only sentinel. Same sibling cell as the cancel
-/// case above, but on the rollback arm (which pushes `last_dest_path` /
-/// `in_flight_partials` into `copied_paths` and deletes them recursively).
+/// case above, but on the rollback arm, which reverses `copied_paths`.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn rollback_mid_merge_stream_preserves_preexisting_dest_file() {
     let engine = TestOperations::new();

@@ -21,9 +21,9 @@ use super::types::RecoveredOriginal;
 /// One destination path this operation put on disk, with the identity a reversal
 /// rechecks before removing it or renaming it back.
 ///
-/// Build one through [`WrittenFile::local`], [`WrittenFile::volume`], or
-/// [`WrittenFile::own_partial`]: each names the kind of write it describes, and
-/// none of them can produce a local entry missing its node id.
+/// Build one through [`WrittenFile::local`] or [`WrittenFile::volume`]: each
+/// names the kind of write it describes, and neither can produce a local entry
+/// missing its node id.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct WrittenFile {
     /// Where it landed. For a move ledger this is the moved-TO path, the one a
@@ -60,15 +60,6 @@ impl WrittenFile {
             identity: WrittenIdentity::VolumeFile { size },
         }
     }
-
-    /// A write THIS operation was still making when it stopped. See
-    /// [`WrittenIdentity::OwnPartial`].
-    pub(crate) fn own_partial(path: PathBuf) -> Self {
-        Self {
-            path,
-            identity: WrittenIdentity::OwnPartial,
-        }
-    }
 }
 
 /// How a reversal can tell that what now sits at a destination path is still what
@@ -100,17 +91,6 @@ pub(crate) enum WrittenIdentity {
     /// offers a stable node id, so these carry the same-size exposure the
     /// operation log's own reversal has always carried.
     VolumeFile { size: u64 },
-    /// A write this operation was still making when it stopped: a truncated
-    /// destination, or a staged temp that never landed.
-    ///
-    /// There is no complete file to recognize here, and by construction no size
-    /// either — but nothing except this operation can plausibly own a destination
-    /// path that never held a complete file, so a reversal removes one of these
-    /// on sight. ❌ It is NOT an entry whose identity we happen not to know
-    /// ([`WrittenIdentity::Unverifiable`] is that): folding the two together
-    /// strands a truncated file at the destination, the exact outcome the
-    /// mid-file-cancel work exists to prevent.
-    OwnPartial,
     /// Nothing could be established about the entry — the stat that would have
     /// snapshotted it failed. Unprovable, so a reversal fails safe and leaves it.
     Unverifiable,
@@ -148,7 +128,7 @@ impl WrittenIdentity {
     pub(crate) fn node(&self) -> Option<NodeId> {
         match self {
             Self::LocalFile { node, .. } | Self::LocalDir { node } => Some(*node),
-            Self::VolumeFile { .. } | Self::OwnPartial | Self::Unverifiable => None,
+            Self::VolumeFile { .. } | Self::Unverifiable => None,
         }
     }
 
@@ -175,7 +155,7 @@ impl WrittenIdentity {
     pub(crate) fn recorded_size(&self) -> Option<u64> {
         match self {
             Self::LocalFile { size, .. } | Self::VolumeFile { size } => Some(*size),
-            Self::LocalDir { .. } | Self::OwnPartial | Self::Unverifiable => None,
+            Self::LocalDir { .. } | Self::Unverifiable => None,
         }
     }
 }

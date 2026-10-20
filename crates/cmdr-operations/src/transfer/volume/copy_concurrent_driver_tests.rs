@@ -5,17 +5,17 @@
 //! **Why this seam and not the end-to-end one.** Two of the driver's data-safety
 //! rules are invisible from outside `copy_volumes_with_progress`, because a
 //! second, independent defense stands behind them: the post-loop's cleanup and
-//! rollback can only reach `delete_written_file` / `prune_created_dir_if_empty`,
-//! which list before they delete, so handing them a merged destination ROOT
+//! rollback can only reach one-node removals and `prune_created_dir_if_empty`,
+//! which lists before it deletes, so handing them a merged destination ROOT
 //! fails to delete it instead of destroying the user's files (`DETAILS.md` §
 //! "Three ways to delete, and who may use each"). That capability split is
 //! deliberate, and it means an end-to-end assertion about surviving files stays
 //! green whether the driver's rollback ledger is right or wrong. Asserting on
 //! what the driver HANDS BACK is what actually pins the ledger.
 //!
-//! The finalize-failure arm of `cleanup_temp` (a temp holding the only complete
-//! copy of the new data must be left on disk) is pinned end to end instead, in
-//! `copy_crashsafe_tests.rs`; the stream-failure arm below is its sibling.
+//! A finalize failure (a temp holding the only complete copy of the new data
+//! must be left on disk) is pinned end to end instead, in
+//! `copy_crashsafe_tests.rs`; the stream-failure cell below is its sibling.
 //!
 //! Beyond the ledger, this is also where the pieces the phase runner can't reach
 //! get pinned: what `prepare_source` decides for one source before any task
@@ -150,7 +150,6 @@ struct Harness {
     apply_to_all: Arc<std::sync::Mutex<ApplyToAll>>,
     copied_paths: Arc<std::sync::Mutex<Vec<WrittenFile>>>,
     created_dirs: Arc<std::sync::Mutex<Vec<PathBuf>>>,
-    in_flight_partials: Arc<std::sync::Mutex<Vec<PathBuf>>>,
 }
 
 impl Harness {
@@ -185,7 +184,6 @@ impl Harness {
             apply_to_all: Arc::new(std::sync::Mutex::new(ApplyToAll::default())),
             copied_paths: Arc::new(std::sync::Mutex::new(Vec::new())),
             created_dirs: Arc::new(std::sync::Mutex::new(Vec::new())),
-            in_flight_partials: Arc::new(std::sync::Mutex::new(Vec::new())),
         }
     }
 
@@ -215,7 +213,6 @@ impl Harness {
             apply_to_all_cell: Arc::clone(&self.apply_to_all),
             copied_paths: Arc::clone(&self.copied_paths),
             created_dirs: Arc::clone(&self.created_dirs),
-            in_flight_partials: Arc::clone(&self.in_flight_partials),
             displaced: Arc::new(DisplacedLedger::default()),
             deep_skipped_files: Arc::new(AtomicUsize::new(0)),
             deep_skipped_bytes: Arc::new(AtomicU64::new(0)),
@@ -230,7 +227,6 @@ impl Harness {
             outcome,
             copied: self.copied_paths.lock_ignore_poison().clone(),
             created_dirs: self.created_dirs.lock_ignore_poison().clone(),
-            in_flight_partials: self.in_flight_partials.lock_ignore_poison().clone(),
         }
     }
 
@@ -272,7 +268,6 @@ struct DriverRun {
     outcome: ConcurrentOutcome,
     copied: Vec<WrittenFile>,
     created_dirs: Vec<PathBuf>,
-    in_flight_partials: Vec<PathBuf>,
 }
 
 impl DriverRun {
@@ -413,14 +408,13 @@ async fn every_recorded_destination_carries_the_size_it_was_written_with() {
 
 /// The same ledger has to flow out of the FAILURE arm, not just the success one.
 /// A directory source whose subtree copy fails part-way hands back the files it
-/// managed to write and lists no partial — the dest directory root
-/// is never designated as a partial to clean.
+/// managed to write, never the dest directory root.
 ///
 /// The cancel-shaped sibling of this is pinned end to end by
 /// `copy_rollback_tests.rs::cancel_mid_merge_stream_concurrent_preserves_preexisting_dest_file`.
 /// A genuine transport failure takes the same arm and had nothing watching it.
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-async fn a_failed_directory_source_records_its_files_and_never_its_root_as_a_partial() {
+async fn a_failed_directory_source_records_its_files_and_never_its_root() {
     let engine = TestOperations::new();
     let (source_inner, dest, sources) = merge_batch(3).await;
     let source: Arc<dyn Volume> = Arc::new(FailReadForPathVolume {
@@ -445,28 +439,20 @@ async fn a_failed_directory_source_records_its_files_and_never_its_root_as_a_par
         "the files the interrupted directory source did write must be recorded per file: {:?}",
         run.copied_paths()
     );
-    assert!(
-        !run.in_flight_partials.contains(&PathBuf::from("/album")),
-        "a DIRECTORY source's dest root must never be handed to the partial-cleanup sweep: {:?}",
-        run.in_flight_partials
-    );
 }
 
 // ============================================================================
-// `cleanup_temp`: a swap's failed stream designates nothing
+// A swap's failed stream leaves the original whole
 // ============================================================================
 
-/// A FILE source resolved to a safe-replace Overwrite whose STREAM fails hands
-/// NOTHING to the in-flight partials (`cleanup_temp = false`): the name it holds
-/// is the user's original, and the half-written temp went with the write
-/// itself (`StagedWrite::abandon`).
-///
-/// Designating the name would delete the user's file on the way out. The other
+/// A FILE source resolved to a safe-replace Overwrite whose STREAM fails leaves
+/// the user's original whole at its name, and the half-written temp went with
+/// the write itself (`StagedWrite::abandon`). The other
 /// half — a landing that failed after the swap's delete, where the temp holds
 /// the only complete copy of the new data and MUST be left on disk — is pinned
 /// by `copy_crashsafe_tests.rs::cross_volume_overwrite_concurrent_preserves_new_data_on_finalize_failure`.
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-async fn a_swap_whose_stream_fails_designates_nothing_for_cleanup() {
+async fn a_swap_whose_stream_fails_leaves_the_original_whole() {
     let engine = TestOperations::new();
     let source_inner = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
     source_inner.create_file(Path::new("/a.txt"), b"AAA").await.unwrap();
@@ -494,11 +480,6 @@ async fn a_swap_whose_stream_fails_designates_nothing_for_cleanup() {
     assert!(
         run.outcome.copy_error.is_some(),
         "the failing source must surface an error"
-    );
-    assert!(
-        run.in_flight_partials.is_empty(),
-        "❗ the only name the driver holds is the user's original: {:?}",
-        run.in_flight_partials
     );
     let leftovers: Vec<String> = dest
         .list_directory(Path::new("/"), None)
@@ -553,10 +534,6 @@ async fn a_pre_skipped_source_is_dropped_without_being_counted_again() {
         (0, 0, 0, 0),
         "the bulk skip already counted this source; counting it again over-reports progress"
     );
-    assert!(
-        harness.in_flight_partials.lock_ignore_poison().is_empty(),
-        "nothing was written, so nothing is in flight"
-    );
 }
 
 /// A clash the resolver answers with Skip advances BOTH progress axes exactly
@@ -590,15 +567,12 @@ async fn a_conflict_resolved_to_skip_credits_both_progress_axes_once() {
     );
 }
 
-/// A file→file Overwrite is prepared as a swap at the original's own name, and
-/// ❗ nothing goes on the in-flight partial list: the name is the user's file,
-/// and the write's temp is the write's own (`failed_write_leaves_ours_at`).
-///
-/// That is what makes a mid-stream failure survivable: the original is untouched
-/// until the temp is complete, and the cleanup sweep that runs on cancel or
-/// error can't reach it.
+/// A file→file Overwrite is prepared as a swap at the original's own name: the
+/// name is the user's file, and the write's temp is the write's own. That is
+/// what makes a mid-stream failure survivable: the original is untouched until
+/// the temp is complete.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn a_file_overwrite_is_prepared_as_a_swap_with_no_partial_to_clean() {
+async fn a_file_overwrite_is_prepared_as_a_swap() {
     let engine = TestOperations::new();
     let source = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
     source.create_file(Path::new("/a.txt"), b"NEW").await.unwrap();
@@ -621,10 +595,6 @@ async fn a_file_overwrite_is_prepared_as_a_swap_with_no_partial_to_clean() {
         "the task writes at the name the user ends up with"
     );
     assert_eq!(task.replaces, super::super::strategy::Replaces::Swap);
-    assert!(
-        harness.in_flight_partials.lock_ignore_poison().is_empty(),
-        "❗ the original must never be on the partial list"
-    );
 }
 
 // ============================================================================
@@ -730,11 +700,6 @@ async fn a_conflict_resolution_failure_comes_back_in_the_outcome() {
         run.copied_paths(),
         vec![PathBuf::from("/a.txt")],
         "the source that DID land must be in the rollback ledger; without it a Rollback has nothing to undo"
-    );
-    assert!(
-        run.in_flight_partials.is_empty(),
-        "the window was empty when the resolver refused, so nothing is left in flight: {:?}",
-        run.in_flight_partials
     );
 }
 

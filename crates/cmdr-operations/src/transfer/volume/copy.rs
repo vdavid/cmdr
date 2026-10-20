@@ -46,7 +46,7 @@ use cmdr_fs::volume::{DirectoryCreation, SpaceInfo, Volume, VolumeError};
 use cmdr_operation_log::types::{OpKind, OperationId};
 
 use super::super::super::ledger::WrittenFile;
-use super::cleanup::{clean_partial_writes, volume_rollback_with_progress};
+use super::cleanup::volume_rollback_with_progress;
 use super::displaced_destination::DisplacedLedger;
 use super::item_identity::is_the_same_item;
 use super::transfer_error::{PathRole, WriteFailure, write_error_event_from};
@@ -944,16 +944,11 @@ pub async fn copy_volumes_with_progress(
     // non-recursive empty-only delete — so a dir we created but which still
     // holds a pre-existing sibling (or a kept-partial under cancel) survives.
     let created_dirs: Arc<std::sync::Mutex<Vec<PathBuf>>> = Arc::new(std::sync::Mutex::new(Vec::new()));
-    // In concurrent mode, in-flight tasks each pin down their own partial
-    // destination path so a cancel/error can delete all of them. Sequential
-    // mode keeps the legacy single-slot behavior via a 1-element vec.
-    let in_flight_partials: Arc<std::sync::Mutex<Vec<PathBuf>>> = Arc::new(std::sync::Mutex::new(Vec::new()));
     // What a cross-type Overwrite renamed aside to free a name, at any depth
     // and from either driver. Settled below, once the operation knows how it
     // ended: dropped on success, put back by a rollback, and by a stop or a
     // failure put back or kept beside the name (`displaced_destination.rs`).
     let displaced = Arc::new(DisplacedLedger::default());
-    let mut last_dest_path: Option<PathBuf>;
     // Deep-merge skips (children a merge resolved to Skip) are invisible to the
     // driver's top-level skip accounting, so both paths fold each source's
     // `CreatedPaths::skipped_file_count` in here; the totals are added to the
@@ -1017,14 +1012,11 @@ pub async fn copy_volumes_with_progress(
             apply_to_all_cell: Arc::clone(&apply_to_all_cell),
             copied_paths: Arc::clone(&copied_paths),
             created_dirs: Arc::clone(&created_dirs),
-            in_flight_partials: Arc::clone(&in_flight_partials),
             displaced: Arc::clone(&displaced),
             deep_skipped_files: Arc::clone(&deep_skipped_files),
             deep_skipped_bytes: Arc::clone(&deep_skipped_bytes),
         })
         .await;
-        // A failed task's own partial stays in `in_flight_partials`.
-        last_dest_path = None;
         copy_error = outcome.copy_error;
         // Sync counters for post-loop reporting.
         files_done = files_done_atomic.load(Ordering::Relaxed);
@@ -1065,7 +1057,6 @@ pub async fn copy_volumes_with_progress(
         bytes_done = outcome.bytes_done;
         files_skipped = outcome.files_skipped;
         bytes_skipped = outcome.bytes_skipped;
-        last_dest_path = outcome.last_dest_path;
         copy_error = outcome.copy_error;
     }
 
@@ -1079,9 +1070,6 @@ pub async fn copy_volumes_with_progress(
         .map(|m| m.into_inner().unwrap_or_default())
         .unwrap_or_else(|arc| arc.lock_ignore_poison().clone());
     let created_dirs: Vec<PathBuf> = Arc::try_unwrap(created_dirs)
-        .map(|m| m.into_inner().unwrap_or_default())
-        .unwrap_or_else(|arc| arc.lock_ignore_poison().clone());
-    let in_flight_partials: Vec<PathBuf> = Arc::try_unwrap(in_flight_partials)
         .map(|m| m.into_inner().unwrap_or_default())
         .unwrap_or_else(|arc| arc.lock_ignore_poison().clone());
 
@@ -1172,10 +1160,6 @@ pub async fn copy_volumes_with_progress(
 
     // Decide between rollback and cancel.
     if intent == OperationIntent::RollingBack {
-        // The writes still in flight when the user clicked go into the ledger as
-        // this operation's OWN partials, which the reversal removes on sight.
-        super::cleanup::append_own_partials(&mut copied_paths, last_dest_path.take(), &in_flight_partials);
-
         // User requested rollback: delete all copied files in reverse order with progress
         log::info!(
             "copy_volumes_with_progress: rolling back op={}, {} paths to delete",
@@ -1219,21 +1203,9 @@ pub async fn copy_volumes_with_progress(
             );
         }
     } else {
-        // Stopped or error: keep completed files, clean up partial files.
-        // Sequential path leaves at most one partial in `last_dest_path`.
-        // Concurrent path leaves one-per-in-flight-task in `in_flight_partials`
-        // (already net of anything that finished before the abort).
-        let mut partials_to_clean: Vec<PathBuf> = Vec::new();
-        if let Some(partial_path) = last_dest_path.take() {
-            partials_to_clean.push(partial_path);
-        }
-        for partial in &in_flight_partials {
-            if !partials_to_clean.contains(partial) {
-                partials_to_clean.push(partial.clone());
-            }
-        }
-        clean_partial_writes(&dest_volume, &partials_to_clean, operation_id).await;
-        // After the partial cleanup, so a name a partial held is free again.
+        // Stopped or error: keep completed files. A staged write never leaves a
+        // partial at a final name (its temp went with the staged-write cleanup
+        // above), so there's nothing at the destination's names to clean.
         let recovered = displaced.settle_interrupted(&dest_volume).await;
         if let Some(failure) = copy_error.take() {
             // The failure has to say where the user's entries went, and the

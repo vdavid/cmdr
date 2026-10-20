@@ -21,12 +21,11 @@ Drivers: `transfer_driver/CLAUDE.md`. File map: `DETAILS.md` § Files.
   `validation::is_real_directory` / `Volume::entry_kind`, ❌ never `Path::is_dir` / `Volume::is_directory` (both follow
   it). DETAILS § "Symlinks are opaque to a move".
 - **A ledger entry carries the identity it landed with, ❌ never an mtime** (`../ledger.rs`): local = size +
-  `(dev,ino)`, volume = size, a partial marked as ITS OWN. Ledgers POP as they reverse. DETAILS § "What the in-flight
-  ledgers record".
+  `(dev,ino)`, volume = size. Ledgers POP as they reverse. DETAILS § "What the in-flight ledgers record".
 - **A reversal RECHECKS each entry right before acting, ❌ never a batch** (`../reversal.rs`): changed or unprovable ⇒
-  leave it, report it on `write-cancelled`; an own-partial goes on sight; a move-back never overwrites an occupied
-  source. Only the `Drop` net is unconditional, sweeping from `../ledger.rs`; ❌ don't route it through `reversal.rs`
-  (module cycle). § "What a reversal does with that identity".
+  leave it, report it on `write-cancelled`; ❌ nothing goes on sight; a move-back never overwrites an occupied source.
+  Only the `Drop` net is unconditional, sweeping from `../ledger.rs`; ❌ don't route it through `reversal.rs` (module
+  cycle). § "What a reversal does with that identity".
 - **A move's source delete removes the LEDGER of what it copied, ❌ never the tree** (`move_op/`, `volume/`
   `source_sweep.rs`; locally after the flush, DETAILS § Durability): what arrived mid-move keeps its original
   (`AppearedDuringMove`), as does one saved over after copying (`SourceStamp`).

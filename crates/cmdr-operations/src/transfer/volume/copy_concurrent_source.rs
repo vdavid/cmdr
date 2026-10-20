@@ -27,7 +27,7 @@ use super::copy_concurrent_task::CopyTask;
 use super::landing::{DestFolder, Landing, NewName, where_it_lands};
 use super::merge_ctx::MergeProbe;
 use super::preflight::SourceFileFacts;
-use super::strategy::{LandingName, Replaces, failed_write_leaves_ours_at, resolve_source_is_directory, staging_for};
+use super::strategy::{Replaces, resolve_source_is_directory};
 use super::transfer_error::{AtPath, PathRole, PathedVolumeError, WriteFailure, map_volume_error};
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::log_private::LogPrivate;
@@ -62,11 +62,9 @@ impl ConcurrentCopy<'_> {
         // Is this source a directory? Resolved ONCE per source, here, from
         // the preflight hint — or by probing when there is none (a LOCAL
         // scan preview completes with an empty `per_path`, so a real
-        // directory can arrive hintless). Three things downstream read this
-        // answer and all three break on a wrong one: the conflict resolver,
-        // `copy_single_path`'s streaming branch, and — the data-safety one —
-        // the `in_flight_partials` gate below, which keeps a merged
-        // destination directory out of the post-loop's recursive sweep.
+        // directory can arrive hintless). Both things downstream that read this
+        // answer break on a wrong one: the conflict resolver, and
+        // `copy_single_path`'s streaming branch.
         let source_hint = self.source_hints.get(source_path).copied();
         let source_is_dir = resolve_source_is_directory(
             &self.source_volume,
@@ -154,34 +152,6 @@ impl ConcurrentCopy<'_> {
             LogPrivate::path(source_path),
             LogPrivate::path(&dest_item_path)
         );
-
-        // Mark this destination as in-flight so cancel/error can clean it
-        // up — but ONLY for a FILE source. A DIRECTORY source's dest is a
-        // (possibly pre-existing, merged) dir whose cleanup path is
-        // `remove_tree`; recording the dir ROOT here and
-        // then recursively deleting it on keep-partials/rollback would
-        // destroy pre-existing dest-only files (the merge invariant). A
-        // directory source's cleanup is owned entirely by the per-file
-        // `created`/`copied_paths` ledger threaded out of the task's
-        // result arms. (A dir task dropped mid-flight on abort leaves its
-        // in-flight `.cmdr-tmp-<uuid>` for the backend writer's abort to
-        // clean; never the merged root.) Pinned by
-        // `cancel_mid_merge_stream_concurrent_preserves_preexisting_dest_file`.
-        //
-        // ❗ And only a path that can hold OUR partial: a plain staged write's
-        // final name never does (`failed_write_leaves_ours_at`), and cleaning it
-        // deleted whatever another writer put there; a swap's is the user's
-        // original.
-        let landing = if dest_name_claimed {
-            LandingName::ClaimedByTheCaller
-        } else {
-            LandingName::ExpectedFree
-        };
-        if !source_is_dir && failed_write_leaves_ours_at(staging_for(&replaces, landing)) {
-            self.in_flight_partials
-                .lock_ignore_poison()
-                .push(dest_item_path.clone());
-        }
 
         // Register before the task is pushed, so a task that never gets
         // polled still shows up in a dump as `spawned`.
@@ -380,14 +350,6 @@ impl ConcurrentCopy<'_> {
                 rc
             })
         })
-    }
-
-    /// Drops one path from the in-flight partial list, wherever it sits.
-    pub(super) fn forget_in_flight_partial(&self, path: &Path) {
-        let mut partials = self.in_flight_partials.lock_ignore_poison();
-        if let Some(pos) = partials.iter().position(|p| p == path) {
-            partials.swap_remove(pos);
-        }
     }
 
     /// A source skipped whole, before any task: its tree rows, and its

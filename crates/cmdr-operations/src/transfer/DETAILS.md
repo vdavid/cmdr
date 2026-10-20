@@ -115,7 +115,6 @@ or the user replaced in the meantime.
   id without someone touching the file, so it adds no false alarms of its own.
 - **Volume (SMB, MTP, archive): size only.** No backend but the local filesystem offers a stable node id, so these carry
   the same-size exposure the operation log's own reversal has always carried.
-- **A partial is its own case**, not "a file whose identity we don't know". See below.
 - **Unverifiable** is the honest answer when the stat that would have snapshotted an entry failed, and the only route to
   it.
 
@@ -298,20 +297,16 @@ volume copy Stop/Rollback, and cross-volume move cancellation all attach it. It 
 can reverse cleanly while another writer occupies the original name, and a plain Stop runs no reversal at all. The
 frontend therefore breaks either silent/clean reading and names both paths at `info` level.
 
-### The partials carve-out
+### No partial ever wears a final name
 
-`volume/cleanup.rs::append_own_partials` folds the writes still in flight when the user clicked into the rollback
-ledger, marked `WrittenIdentity::OwnPartial`.
-
-**They are NOT entries whose identity is unknown.** A partial has no size and no complete file to recognize, by
-construction, so a uniform "can't verify it, leave it alone" rule would strand a truncated file at the destination — the
-exact failure the mid-file-cancel work exists to prevent, pinned by `test/e2e-playwright/operation-log-rollback.spec.ts`
-("cancelling inside one large file leaves no partial behind"). Nothing but this operation can plausibly own a
-destination path that never held a complete file, so a reversal removes one on sight. The type keeps the two apart so
-the distinction can't be lost in a later pass.
-
-The local path needs no equivalent: `chunked_copy.rs` removes its own partial and never records it, and every local
-write stages (§ "Local copies stage"), so an abandoned one wears a `.cmdr-tmp-*` name instead of the destination's.
+Every write stages, local and volume alike (§ "Local copies stage", § "File writes are staged"), so a write still in
+flight when the user clicks leaves a `.cmdr-tmp-*` temp, never a truncated file at the destination's name. The temp has
+one owner, the staged-write cleanup, which removes it or reports it (`staged_leftovers`); that's what keeps
+`test/e2e-playwright/operation-log-rollback.spec.ts` ("cancelling inside one large file leaves no partial behind")
+green. So the ledgers hold only complete files, every reversal entry is rechecked against the identity it landed with,
+and ❌ nothing removes a destination path on sight: a "partial" at a final name could only be someone else's file (a
+name taken mid-upload, a save at a name our landing cleared) or one of ours that landed. `chunked_copy.rs` removes its
+own partial temp and never records it.
 
 **Move strategy.** Same filesystem detected via device ID comparison (`MetadataExt::dev`). Cross-filesystem move uses a
 `.cmdr-staging-<uuid>` dir at the destination root, then atomic `rename` into place, then source deletion.
@@ -1259,13 +1254,12 @@ share. Whatever is still listed when the driver's loop ends belongs to a task th
 to such an abandon, so `volume::cleanup::clean_abandoned_staged_writes` takes those, deep-merge children and swaps
 included. Pinned by `staged_write_tests.rs::an_abandon_the_destination_refuses_keeps_the_temp_listed`.
 
-❗ **No driver-side partial list names a staged write's temp**, a swap's included: `failed_write_leaves_ours_at` answers
-`false` for `Stage` and `StageOverOriginal`, because the name the drivers hold is the user's (a free name, or the
-original), and the temp has the one owner above. ❗ **Nor a claimed name** (`StageOntoClaimedName`): all that's ours
-there is a `Rename` pick's placeholder, which `ClaimedNames` takes back while it's empty
-(`volume/naming.rs::take_back_unfilled_reservations`). Once the landing cleared the name, what stands there is a save
+❗ **The drivers keep no partial list, and nothing cleans a failed write's FINAL name**: the temp has the one owner
+above, and the name is the user's: a free name (someone may have taken it mid-upload), a swap's original, or a claimed
+name, where all that's ours is a `Rename` pick's placeholder, which `ClaimedNames` takes back while it's empty
+(`volume/naming.rs::take_back_unfilled_reservations`). Once a landing cleared a claimed name, what stands there is a save
 that came after our delete, or our own file, landed by the reconnect sweep from a kept landing before the post-loop ran,
-and the partial cleanup deleted either (`#575`; pinned by `volume/copy_landing_race_tests.rs`). So a concurrent task
+and a post-loop partial cleanup deleted either (`#575`; pinned by `volume/copy_landing_race_tests.rs`). So a concurrent task
 dropped between a swap's move aside and its rename leaves the original at its recorded aside, held for the volume's next
 arrival, whose sweep puts it back, and the temp in the in-flight set for the abandoned-write cleanup (the failure still
 names whichever sibling ended the op). Pinned by

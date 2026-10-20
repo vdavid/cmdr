@@ -90,8 +90,6 @@ pub(super) struct SerialOutcome {
     pub(super) bytes_done: u64,
     pub(super) files_skipped: usize,
     pub(super) bytes_skipped: u64,
-    /// The half-written partial to sweep, when one source failed mid-stream.
-    pub(super) last_dest_path: Option<PathBuf>,
     /// The failure, if any. The caller's post-loop owns rollback and cleanup.
     pub(super) copy_error: Option<WriteFailure>,
 }
@@ -125,7 +123,6 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
         deep_skipped_bytes,
     } = ctx;
 
-    let mut last_dest_path: Option<PathBuf> = None;
     let mut copy_error: Option<WriteFailure> = None;
 
     let driver_config = DriverConfig {
@@ -152,7 +149,6 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
     // interior mutability. Avoids `&mut` captures (which would force
     // `AsyncFnMut` semantics; the driver bounds the closures as plain
     // `FnMut` returning `Pin<Box<dyn Future + Send>>`).
-    let last_dest_cell: Arc<std::sync::Mutex<Option<PathBuf>>> = Arc::new(std::sync::Mutex::new(None));
     // Reuse the op-wide latch cell created above; the serial driver and the
     // deep merge share it so a "…all" choice propagates across both.
     let apply_to_all_cell = Arc::clone(&apply_to_all_cell);
@@ -285,7 +281,6 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
             let dest_volume = Arc::clone(&dest_volume);
             let state = Arc::clone(state);
             let events = Arc::clone(&events);
-            let last_dest_cell = Arc::clone(&last_dest_cell);
             let copied_paths = Arc::clone(&copied_paths_for_closure);
             let created_dirs = Arc::clone(&created_dirs_for_closure);
             let source_hints = Arc::clone(&source_hints_arc);
@@ -327,7 +322,6 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                 let dest_volume = Arc::clone(&dest_volume);
                 let state = Arc::clone(&state);
                 let events = Arc::clone(&events);
-                let last_dest_cell = Arc::clone(&last_dest_cell);
                 let copied_paths = Arc::clone(&copied_paths);
                 let created_dirs = Arc::clone(&created_dirs);
                 let source_hints = Arc::clone(&source_hints);
@@ -435,13 +429,6 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                     };
 
                     let staging = super::strategy::staging_for(&replaces, landing);
-                    // ❗ Only a path that can hold OUR partial is designated for
-                    // the post-loop cleanup. A plain staged write's final name
-                    // never does, and deleting it on failure deleted whatever
-                    // another writer put there; a swap's is the user's original
-                    // (`failed_write_leaves_ours_at`).
-                    *last_dest_cell.lock_ignore_poison() =
-                        super::strategy::failed_write_leaves_ours_at(staging).then(|| dest_item_path.clone());
 
                     // This driver STREAMS the source itself rather than handing
                     // it to a window, so from here until the next iteration
@@ -498,9 +485,6 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                     };
                     match copy_result {
                         Ok(bytes_copied) => {
-                            // The file landed: nothing at its name is a partial
-                            // any more.
-                            *last_dest_cell.lock_ignore_poison() = None;
                             // Overwrote iff a top-level file→file Overwrite
                             // replaced a file (a swap or in place), OR a
                             // deep-merge child replaced a dest file.
@@ -591,22 +575,13 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                             // children), hand the per-file ledger to the
                             // post-loop bookkeeping just like the success
                             // arm — record the individual files this op
-                            // streamed and the subdirs it newly created, and
-                            // CLEAR `last_dest_cell` so the post-loop cleanup
-                            // never recursively deletes the dest directory
-                            // ROOT. On a merge that root holds pre-existing
-                            // dest-only files; recursively deleting it is
-                            // silent data loss (the same class of bug the
-                            // HIGH-A fix closed for the completed-copy path).
-                            // The recorded per-file partials are cleaned
-                            // individually (Stopped/error) or rolled back
-                            // per-file (RollingBack); created dirs are pruned
-                            // empty-only, so a dir still holding a sentinel
-                            // survives. A FILE source keeps `last_dest_cell`
-                            // pointing at its single partial dest/temp — a
-                            // genuine partial that's safe to remove.
+                            // streamed and the subdirs it newly created, never
+                            // the dest directory ROOT: on a merge that root
+                            // holds pre-existing dest-only files. The recorded
+                            // files roll back per-file (RollingBack); created
+                            // dirs are pruned empty-only, so a dir still
+                            // holding a sentinel survives.
                             if source_is_dir {
-                                *last_dest_cell.lock_ignore_poison() = None;
                                 let files = std::mem::take(&mut *created.files.lock_ignore_poison());
                                 let dirs = std::mem::take(&mut *created.dirs.lock_ignore_poison());
                                 // Journal the children this source DID finish.
@@ -658,11 +633,6 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
         probe.set_driver_phase(DriverPhase::PostLoop, "post-loop bookkeeping");
     }
 
-    // Pull mutable cells back into function-scope locals so the
-    // post-loop branch sees the same shape as the legacy serial loop
-    // for `last_dest_path` (partial-cleanup state) and the failure
-    // context (`WriteFailure` reconstruction below).
-    //
     // `apply_to_all_resolution` and `source_hints` are subsumed by the
     // driver and never read post-loop — silenced with `_ =` rather than
     // assigned back to dead locals (which `#[deny(unused_assignments)]`
@@ -670,9 +640,6 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
     // ApplyToAll is `Copy + Default`; replace with default to drop the
     // latch (this is the legacy `.take()` shape preserved for symmetry).
     let _ = std::mem::take(&mut *apply_to_all_cell.lock_ignore_poison());
-    if let Some(p) = last_dest_cell.lock_ignore_poison().take() {
-        last_dest_path = Some(p);
-    }
     let _ = source_hints_arc;
 
     let files_done = outcome.files_done;
@@ -696,7 +663,6 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
         bytes_done,
         files_skipped,
         bytes_skipped,
-        last_dest_path,
         copy_error,
     }
 }

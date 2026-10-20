@@ -76,21 +76,6 @@ fn a_file_already_gone_counts_as_done_rather_than_a_skip() {
     assert_eq!(report.outcome, CancelRollbackOutcome::RolledBack);
 }
 
-/// A write this operation was still making has no complete file to recognize and,
-/// by construction, no size. It goes anyway — leaving a truncated file at the
-/// destination is exactly what cancelling mid-file exists to prevent.
-#[test]
-fn a_partial_this_operation_was_writing_goes_without_a_recheck() {
-    let tmp = tempfile::tempdir().unwrap();
-    let partial = tmp.path().join("half-written.mov");
-    fs::write(&partial, b"the first megabyte").unwrap();
-
-    let result = remove_local_file(&WrittenFile::own_partial(partial.clone()));
-
-    assert!(matches!(result, ItemResult::Reversed));
-    assert!(!partial.exists(), "a partial must never be left behind");
-}
-
 /// An entry whose stat failed when the ledger recorded it is unprovable, and an
 /// unprovable file is one a reversal fails safe on. ❌ Not to be confused with a
 /// partial, which has no identity for a very different reason.
@@ -162,13 +147,6 @@ fn a_volume_file_the_backend_now_reports_at_another_size_is_left_alone() {
         PresentRecheck::Skip(SkipReason::UnverifiablePrecondition),
         "a backend that won't say fails safe"
     );
-}
-
-/// A partial on a volume goes on sight too, without a round trip to size it.
-#[test]
-fn a_volume_partial_goes_without_a_size() {
-    let partial = WrittenFile::own_partial(PathBuf::from("/share/half.mov"));
-    assert_eq!(recheck_volume(&partial, None), PresentRecheck::Act);
 }
 
 /// The three outcomes a cancel can report, and the boundary between them.

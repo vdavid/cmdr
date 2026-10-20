@@ -11,7 +11,6 @@
 use super::*;
 use crate::event_sinks::CollectorEventSink;
 use crate::in_flight_temps::{self, Ledger, RecordHome};
-use crate::ledger::WrittenIdentity;
 use crate::outage_slot::{CleanupPolicy, OutagePolicy};
 use crate::testing::TestOperations;
 use crate::transfer::outage_volume_test_support::OutageVolume;
@@ -115,39 +114,8 @@ async fn roll_back(
     .into_cancel_rollback()
 }
 
-/// **The destructive one.** A directory that reaches the partial sweep must
-/// cost the user nothing.
-///
-/// `copy_serial.rs` parks every source's destination in `last_dest_path`,
-/// directories included, and clears it in both arms of the transfer's result.
-/// Whether a directory root can survive that window is a property of the
-/// DRIVER (today it awaits the future, so it can't) — and the sweep is not
-/// allowed to depend on it. A merged destination directory holds files the
-/// user already had; removing it recursively is silent data loss.
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn partial_sweep_leaves_a_directory_and_its_contents_alone() {
-    let vol = Arc::new(InMemoryVolume::new("Dest"));
-    vol.create_directory(Path::new("/album")).await.unwrap();
-    vol.create_file(Path::new("/album/keep-me.jpg"), b"the user's own file")
-        .await
-        .unwrap();
-    let volume: Arc<dyn Volume> = vol.clone();
-
-    clean_partial_writes(&volume, &[PathBuf::from("/album")], "cleanup-tests-op").await;
-
-    assert!(
-        vol.exists(Path::new("/album/keep-me.jpg")).await,
-        "a directory in the partial sweep must not take the user's files with it"
-    );
-    assert!(
-        vol.exists(Path::new("/album")).await,
-        "the merged dest directory survives"
-    );
-}
-
-/// The same leak through the OTHER feed: `copy.rs`'s RollingBack branch pushes
-/// `last_dest_path` into `copied_paths`, and the rollback loop deletes each
-/// entry. Same cell, same directory, same loss.
+/// A directory that reaches `copied_paths` by mistake costs a leftover, never the
+/// user's files: the rollback loop removes one file node per entry.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn rollback_leaves_a_directory_in_copied_paths_alone() {
     let engine = TestOperations::new();
@@ -262,54 +230,6 @@ async fn rollback_leaves_a_file_the_backend_now_reports_at_another_size() {
     assert_eq!(report.skips[0].example_name, "theirs.jpg");
 }
 
-/// A write that was still in flight goes even though nothing about it can be
-/// verified, while a complete file that changed stays. The two must never fold
-/// together: a partial left at the destination is a truncated file.
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn a_partial_still_goes_while_a_changed_file_stays() {
-    let engine = TestOperations::new();
-    let vol = Arc::new(InMemoryVolume::new("Dest"));
-    vol.create_directory(Path::new("/album")).await.unwrap();
-    vol.create_file(Path::new("/album/half.mov"), b"the first chunk")
-        .await
-        .unwrap();
-    vol.create_file(Path::new("/album/done.jpg"), b"complete")
-        .await
-        .unwrap();
-    let volume: Arc<dyn Volume> = vol.clone();
-
-    let done = PathBuf::from("/album/done.jpg");
-    let size = volume.get_metadata(&done).await.unwrap().size.unwrap();
-    let mut ledger = vec![WrittenFile::volume(done, size)];
-    append_own_partials(&mut ledger, Some(PathBuf::from("/album/half.mov")), &[]);
-    vol.set_reported_size(Path::new("/album/done.jpg"), 999_999);
-
-    let events = CollectorEventSink::new();
-    let state = make_state(&engine);
-    volume_rollback_with_progress(
-        &volume,
-        &mut ledger,
-        &[],
-        &events,
-        "cleanup-tests-op",
-        &WindDown::of(&state),
-        2,
-        30,
-        2,
-        30,
-    )
-    .await;
-
-    assert!(
-        !vol.exists(Path::new("/album/half.mov")).await,
-        "a partial must never be left at the destination"
-    );
-    assert!(
-        vol.exists(Path::new("/album/done.jpg")).await,
-        "a complete file that changed must never be deleted"
-    );
-}
-
 /// **The second destructive one, against a backend that lies.** The created-dirs
 /// prune has to establish emptiness ITSELF.
 ///
@@ -368,61 +288,7 @@ async fn created_dir_prune_still_removes_an_empty_directory() {
     assert!(!inner.exists(Path::new("/album")).await);
 }
 
-// ── The in-flight partials this operation owns ─────────────────────────────
-
-/// A write that was still in flight goes into the ledger as this operation's own
-/// partial, which is a different thing from a file whose identity is unknown.
-///
-/// A partial has no size and no complete file to recognize, by construction, so
-/// a reversal that skipped whatever it couldn't verify would leave a truncated
-/// file at the destination. Nothing else can own a destination path that never
-/// held a complete file, so these are removed on sight.
-#[test]
-fn in_flight_writes_join_the_ledger_as_this_operation_s_own_partials() {
-    let mut ledger = vec![WrittenFile::volume(PathBuf::from("/album/done.jpg"), 4096)];
-
-    append_own_partials(
-        &mut ledger,
-        Some(PathBuf::from("/album/half.jpg")),
-        &[PathBuf::from("/album/also-half.jpg")],
-    );
-
-    assert_eq!(ledger[0].identity, WrittenIdentity::VolumeFile { size: 4096 });
-    for partial in &ledger[1..] {
-        assert_eq!(
-            partial.identity,
-            WrittenIdentity::OwnPartial,
-            "{} was still being written",
-            partial.path.display()
-        );
-        assert_ne!(
-            partial.identity,
-            WrittenIdentity::Unverifiable,
-            "a partial that reads as merely unverifiable gets left at the destination"
-        );
-    }
-    assert_eq!(ledger.len(), 3);
-}
-
-/// A path the ledger already carries isn't added twice: the completed write is
-/// the better record, and a second entry would walk the same path twice.
-#[test]
-fn a_partial_the_ledger_already_carries_is_not_added_twice() {
-    let mut ledger = vec![WrittenFile::volume(PathBuf::from("/album/one.jpg"), 10)];
-
-    append_own_partials(
-        &mut ledger,
-        Some(PathBuf::from("/album/one.jpg")),
-        &[PathBuf::from("/album/two.jpg"), PathBuf::from("/album/two.jpg")],
-    );
-
-    let paths: Vec<&PathBuf> = ledger.iter().map(|entry| &entry.path).collect();
-    assert_eq!(
-        paths,
-        vec![&PathBuf::from("/album/one.jpg"), &PathBuf::from("/album/two.jpg")]
-    );
-    assert_eq!(ledger[0].identity, WrittenIdentity::VolumeFile { size: 10 });
-}
+// ── A stopped reversal ─────────────────────────────────────────────────────
 
 /// The volume ledger is a stack too: a reversal the user stops halfway leaves it
 /// claiming exactly what's still on the volume.
