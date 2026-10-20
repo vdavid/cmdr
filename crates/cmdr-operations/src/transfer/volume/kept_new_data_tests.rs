@@ -27,6 +27,7 @@ use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::volume::{
     InMemoryVolume, StreamLength, StreamWriteProgress, StreamWritten, Volume, VolumeError, VolumeReadStream, WriteMode,
 };
+use cmdr_operation_log::types::OperationId;
 
 #[derive(Clone, Copy, Debug)]
 enum Driver {
@@ -205,7 +206,7 @@ async fn a_failure_that_names_its_own_rescue_lists_only_the_others() {
 struct CancelsAtTheFirstWrite {
     inner: Arc<InMemoryVolume>,
     engine: Operations,
-    operation_id: String,
+    operation_id: OperationId,
 }
 
 impl Volume for CancelsAtTheFirstWrite {
@@ -261,7 +262,7 @@ async fn a_cancel_names_the_new_files_its_stop_kept() {
         let dest = Arc::new(CancelsAtTheFirstWrite {
             inner: dest().await,
             engine: Operations::clone(&engine),
-            operation_id,
+            operation_id: OperationId::from(operation_id),
         });
 
         let _ = run(driver, &state, &events, dest as Arc<dyn Volume>).await;

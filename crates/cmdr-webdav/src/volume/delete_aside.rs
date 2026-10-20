@@ -72,7 +72,7 @@ impl WebdavVolume {
             .await
             .unwrap_or_else(|stopped| {
                 Err(VolumeError::IoError {
-                    message: format!("the folder change stopped: {stopped}"),
+                    message: format!("the folder change stopped: {stopped}").into(),
                     raw_os_error: None,
                 })
             })
@@ -269,11 +269,11 @@ fn kept_name(remote: &str, attempt: u32) -> String {
 fn noted(why: VolumeError, note: &str) -> VolumeError {
     match why {
         VolumeError::IoError { message, raw_os_error } => VolumeError::IoError {
-            message: format!("{message}; {note}"),
+            message: format!("{message}; {note}").into(),
             raw_os_error,
         },
         other => VolumeError::IoError {
-            message: format!("{other}; {note}"),
+            message: format!("{other}; {note}").into(),
             raw_os_error: None,
         },
     }
