@@ -334,7 +334,7 @@ impl Volume for LocalPosixVolume {
             if let Some(errno) = injected.take() {
                 return Box::pin(async move {
                     Err(VolumeError::IoError {
-                        message: format!("Injected error for testing (os error {})", errno),
+                        message: format!("Injected error for testing (os error {})", errno).into(),
                         raw_os_error: Some(errno),
                     })
                 });

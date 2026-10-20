@@ -112,7 +112,7 @@ impl Volume for InMemoryVolume {
                 let mut injected = self.injected_error.lock_ignore_poison();
                 if let Some(errno) = injected.take() {
                     return Err(VolumeError::IoError {
-                        message: format!("Injected error for testing (os error {})", errno),
+                        message: format!("Injected error for testing (os error {})", errno).into(),
                         raw_os_error: Some(errno),
                     });
                 }

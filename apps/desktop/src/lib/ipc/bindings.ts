@@ -18301,8 +18301,9 @@ export type VolumeCopyConfig = {
  *
  *  The `String`s in here are LOG AND TECHNICAL-DETAIL text, never a sentence
  *  shown on its own: the path-carrying variants carry a path (see
- *  [`from_io_at`](Self::from_io_at)), and the diagnostic-carrying ones carry
- *  whatever the backend said, for the technical-details disclosure.
+ *  [`from_io_at`](Self::from_io_at)), and the diagnostic-carrying ones carry an
+ *  [`ErrorDetail`]: whatever the backend said, for the technical-details
+ *  disclosure, or the typed error behind it, so a log line marks its paths.
  */
 export type VolumeError =
   // No such path. Carries the path.
