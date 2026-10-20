@@ -931,6 +931,23 @@ pub trait Volume: Send + Sync {
         Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
+    /// Files the credentials of a sign-in that ALREADY connected this volume, by
+    /// the same rule [`reconnect_with_credentials`](Self::reconnect_with_credentials)
+    /// files them after its dial, ❌ without dialing.
+    ///
+    /// The sheet's "Try again" after `remember_refused` (#603): the round proved
+    /// the secret, and a second sign-in would find the session live, dial
+    /// nothing, and so save nothing. ❗ Only for the secret that round connected
+    /// with: the caller keeps that promise. Refuses what the sign-in refuses
+    /// (another account, a rung no secret mends). Default `Err(NotSupported)`;
+    /// SMB, SFTP, WebDAV, and S3 override it.
+    fn remember_sign_in<'a>(
+        &'a self,
+        _sign_in: secret_store::SignIn,
+    ) -> Pin<Box<dyn Future<Output = Result<secret_store::SignedIn, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Err(VolumeError::NotSupported) })
+    }
+
     // ========================================
     // Watching: Optional, default no-op
     // ========================================

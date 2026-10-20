@@ -301,15 +301,33 @@ impl SmbVolumeInner {
         let Some(connected_with) = self.reconnect_once().await? else {
             return Ok(SignedIn::NOTHING_FILED);
         };
-        let kept = refresh_remembered_credentials(&self.host, &connected_with, sign_in.remember).await;
+        Ok(self.file_sign_in(&connected_with, &sign_in).await)
+    }
+
+    /// Files a sign-in that already connected this share, ❌ without dialing: the
+    /// sheet's "Try again" after a refused save (#603). A second sign-in would
+    /// find the session live and file nothing. The server-vs-share rule is
+    /// `refresh_remembered_credentials`'s, so it holds here as after a dial.
+    pub(super) async fn do_remember_sign_in(&self, sign_in: SignIn) -> Result<SignedIn, VolumeError> {
+        let connected_with = {
+            let mut params = self.params.read().await.clone();
+            params.username = sign_in.username.clone();
+            params.password = sign_in.secret.clone();
+            params
+        };
+        Ok(self.file_sign_in(&connected_with, &sign_in).await)
+    }
+
+    async fn file_sign_in(&self, connected_with: &SmbConnectionParams, sign_in: &SignIn) -> SignedIn {
+        let kept = refresh_remembered_credentials(&self.host, connected_with, sign_in.remember).await;
         if !kept {
             // Non-fatal: the session is up; only the "silent next time" guarantee is lost.
             warn!(
-                "SmbVolumeInner::reconnect_with_credentials(share={:?}): the secret store didn't take the credentials; this session still came up",
+                "SmbVolumeInner::file_sign_in(share={:?}): the secret store didn't take the credentials; this session still came up",
                 LogPrivate::volume(&self.share_name)
             );
         }
-        Ok(SignedIn::after(&sign_in, kept))
+        SignedIn::after(sign_in, kept)
     }
 }
 

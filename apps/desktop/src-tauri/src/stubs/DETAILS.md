@@ -14,7 +14,8 @@ Per-stub behavior and rationale. `CLAUDE.md` holds the invariants; the catalog b
   ⚠️ Nothing compiles this file on macOS or Linux (the only platforms built and the only ones in CI), so drift from
   `commands/network.rs` is caught by reading alone. Argument lists match the real commands (compared 2026-09-30). Four
   stubs still answer `Result<_, String>` where the real command answers a typed error, which breaks the JSON-shape
-  invariant: `reconnect_volume` and `reconnect_volume_with_credentials` (`ReconnectError`), `disconnect_smb_volume`
+  invariant: `reconnect_volume`, `reconnect_volume_with_credentials`, and `remember_volume_sign_in`
+  (`ReconnectError`), `disconnect_smb_volume`
   (`EjectError`), and `connect_to_server` (`AddServerError`). Each needs a variant chosen for "not available here".
 - **`permissions.rs`**: `check_full_disk_access` / `check_full_disk_access_quiet` return `true`;
   `open_privacy_settings` and the appearance/System-Settings deep-link commands return errors.

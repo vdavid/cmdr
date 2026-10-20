@@ -93,9 +93,21 @@ impl S3VolumeInner {
     /// The attended reconnect. `access_key_id` must be the key this volume IS:
     /// another key is another account, so it answers `NotSupported`.
     pub(super) async fn reconnect_as(&self, sign_in: SignIn) -> Result<SignedIn, VolumeError> {
+        self.own_account(&sign_in)?;
+        self.reconnect_with_sign_in(sign_in).await
+    }
+
+    /// Files a sign-in that already connected, ❌ without dialing (#603). The
+    /// same account rule as [`reconnect_as`](Self::reconnect_as).
+    pub(super) async fn remember_as(&self, sign_in: SignIn) -> Result<SignedIn, VolumeError> {
+        self.own_account(&sign_in)?;
+        Ok(self.remember_sign_in(sign_in).await)
+    }
+
+    fn own_account(&self, sign_in: &SignIn) -> Result<(), VolumeError> {
         if sign_in.username != self.params().access_key_id() {
             return Err(VolumeError::NotSupported);
         }
-        self.reconnect_with_sign_in(sign_in).await
+        Ok(())
     }
 }

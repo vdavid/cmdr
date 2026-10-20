@@ -445,6 +445,18 @@ pub async fn reconnect_volume_with_credentials(
     Err("Direct SMB connection not supported on this platform".to_string())
 }
 
+/// Files a connected sign-in's credentials (stub: returns error).
+#[tauri::command]
+#[specta::specta]
+pub async fn remember_volume_sign_in(
+    _volume_id: String,
+    _username: String,
+    _password: String,
+    _remember: bool,
+) -> Result<SignedInReply, String> {
+    Err("Direct SMB connection not supported on this platform".to_string())
+}
+
 /// What a sign-in on this volume may ask for (stub: the trait's own default).
 ///
 /// ❗ `Password`, ❌ never `Nothing`: a wrong `Nothing` is a volume with no way

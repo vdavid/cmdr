@@ -675,6 +675,43 @@ pub async fn reconnect_volume_with_credentials(
         .map_err(ReconnectError::from)
 }
 
+/// Files the credentials of a sign-in that already connected this volume, ❌
+/// without dialing: the sign-in sheet's "Try again" after `remember_refused`
+/// (#603). A second [`reconnect_volume_with_credentials`] would find the session
+/// live (SFTP, SMB), dial nothing, and so save nothing.
+///
+/// ❗ Only for the secret that round connected with; the frontend keeps that
+/// promise. The backend files it by the post-dial rule (`Volume::remember_sign_in`)
+/// and refuses what the sign-in refuses.
+#[tauri::command]
+#[specta::specta]
+pub async fn remember_volume_sign_in(
+    volume_id: String,
+    username: String,
+    password: String,
+    remember: bool,
+) -> Result<SignedInReply, ReconnectError> {
+    use crate::file_system::volume::manager::get_volume_manager;
+
+    let volume = get_volume_manager()
+        .get(&volume_id)
+        .ok_or_else(|| ReconnectError::VolumeNotFound {
+            volume_id: volume_id.clone(),
+        })?;
+
+    volume
+        .remember_sign_in(cmdr_fs::volume::secret_store::SignIn {
+            username,
+            secret: password,
+            remember,
+        })
+        .await
+        .map(|signed_in| SignedInReply {
+            remember_refused: signed_in.remember_refused,
+        })
+        .map_err(ReconnectError::from)
+}
+
 /// Disconnects a single SMB volume by tearing down its OS mount.
 ///
 /// Thin delegate to [`crate::file_system::volume::eject::disconnect_smb`]; the

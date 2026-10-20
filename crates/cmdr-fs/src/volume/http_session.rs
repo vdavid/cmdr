@@ -285,8 +285,19 @@ pub trait HttpBackend: Retires + Send + Sync + Sized + 'static {
             reconnect::rebuild(self, Some(sign_in.secret.clone()))
                 .await
                 .map_err(|stalled| reconnect::report(self, stalled))?;
+            Ok(self.remember_sign_in(sign_in).await)
+        }
+    }
+
+    /// Files a sign-in that already connected, the way its Remember box asks,
+    /// ❌ without dialing: the second half of
+    /// [`reconnect_with_sign_in`](Self::reconnect_with_sign_in), and the sheet's
+    /// "Try again" after a refused save (#603). The backend checks the account
+    /// first, as it does for a sign-in.
+    fn remember_sign_in(&self, sign_in: SignIn) -> impl Future<Output = SignedIn> + Send {
+        async move {
             let kept = reconnect::keep_signed_in_secret(self, &sign_in).await;
-            Ok(SignedIn::after(&sign_in, kept))
+            SignedIn::after(&sign_in, kept)
         }
     }
 

@@ -126,16 +126,16 @@ through a local helper, a fully-qualified call inline in an expression, a `use` 
   DBs live in `cmdr-index`, while the agent's and the operation log's stay app-side. Putting it in `cmdr-index` would
   make `agent/` and `operation_log/` depend on the index for connection plumbing, and there is only one
   `SQLITE_CONFIG_PAGECACHE` slab per process, so it genuinely has to be one instance both sides see.
-- **`staging`.** The two file markers, the `.cmdr-staging-<op>` directory prefix, the `StagingTemp` mint, and the
-  in-flight registry. `is_staging_dir_name` is a STRICT parse (the prefix plus exactly a hyphenated UUID, nothing around
-  it) because a sweep acts on its answer, where `is_staging_temp_name` is a substring test on a name whose answer only
-  hides a row; `is_cmdr_scratch_name` is the union the listing gate asks. A mutating backend has to be able to stage a
-  write, and the archive mutator already does; leaving the mint in the app would mean the first backend crate either
-  reaches upward for it or grows a seam for something with no per-backend variation. The mint's only tie to write-op
-  state is an `Option<Weak<()>>` liveness token the CALLER hands over, which names no app type. The pure name rules a
-  listing asks (`could_be_hidden_from_listings`, the gate, and `hidden_with_settings`, which takes both settings as
-  arguments) are here too, so the listing engine never reaches the app for them. The two visibility settings stay
-  app-side (below).
+- **`staging`.** The two file markers, the `.cmdr-staging-<op>` directory prefix, the `<name>.cmdr-deleting-<uuid>`
+  folder a WebDAV delete moves aside, the `StagingTemp` mint, and the in-flight registry. `is_staging_dir_name` and
+  `is_deleting_aside_name` are STRICT parses (the marker plus exactly a hyphenated UUID) because a sweep or a tidy acts
+  on their answer, where `is_staging_temp_name` is a substring test on a name whose answer only hides a row;
+  `is_cmdr_scratch_name` is the union the listing gate asks. A mutating backend has to be able to stage a write, and the
+  archive mutator already does; leaving the mint in the app would mean the first backend crate either reaches upward for
+  it or grows a seam for something with no per-backend variation. The mint's only tie to write-op state is an
+  `Option<Weak<()>>` liveness token the CALLER hands over, which names no app type. The pure name rules a listing asks
+  (`could_be_hidden_from_listings`, the gate, and `hidden_with_settings`, which takes both settings as arguments) are
+  here too, so the listing engine never reaches the app for them. The two visibility settings stay app-side (below).
 - **`metadata`.** The ordering rules for a copy's metadata have one home, and the archive mutator (a crate) has to reach
   them as well as the app's copy engines, so they can't live under `transfer/`.
 - **`benchmark`.** Pure `std` diagnostics behind an env var, called by the listing engine, the local reader, and the
@@ -960,7 +960,10 @@ modules under `volume/` carry the arithmetic, each behind a trait the backend im
   store can put a Keychain prompt in front of a call, and a modal dialog on the async runtime holds every other volume.
   A sign-in (`SignIn`, the trait's `reconnect_with_credentials` payload) is filed by `keep_signed_in_secret` only once
   it CONNECTED, and as its Remember box says: on saves, seeding an empty store; off only refreshes, since an empty store
-  is the user having declined. Before the dial, a typo replaced the secret that worked (#530).
+  is the user having declined. Before the dial, a typo replaced the secret that worked (#530). The trait's
+  `remember_sign_in` runs that same filing ❌ without a dial, for the sheet's "Try again" after a refused save: a second
+  sign-in finds an SFTP or SMB session live, dials nothing, and so files nothing (#603). Each backend reaches one filing
+  helper from both paths, so the two can't drift.
 
 SMB and MTP keep their own cache-aware batch scans (their watchers back the `authoritative_listing` shortcut) and borrow
 only the pure halves, `conflicts_against` and `fold_batch`, so every backend hands a conflict dialog the same shape and

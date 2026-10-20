@@ -363,8 +363,10 @@ token is the only sane state, and a revoked token surfaces as `needs_sign_in` be
   nothing was saved.
 - `secret_not_stored`: sign-in mode, the Remember box was on and the Keychain wouldn't store the password AFTER the
   round connected (the backend's typed `SignedInReply.rememberRefused`, #530). The connection stands: the sheet stays
-  open on this line under the password, and leaving it closes as `connected`. Says how to sign in without storing it. ❌
-  Not `authentication_rejected`: no server was asked anything.
+  open on this line under the password, and leaving it closes as `connected`. "Try again" (Sign in with the same account
+  and secret) only files it: `mendAttempt` calls `rememberVolumeSignIn`, ❌ never a second mend, which would find an
+  SFTP or SMB session live and save nothing (#603). A changed secret is unproven, so it mends again. Says how to sign in
+  without storing it. ❌ Not `authentication_rejected`: no server was asked anything.
 - `saved_secret_not_updated`: edit mode, the settings saved and the password write didn't. Says the changes are saved,
   so nobody re-saves an edit that landed.
 - `address_taken`: edit mode, the new address is another saved server's. Under `address`, naming that server

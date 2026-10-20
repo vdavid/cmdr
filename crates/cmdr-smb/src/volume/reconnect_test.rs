@@ -508,3 +508,47 @@ async fn the_reported_generation_moves_only_when_a_session_is_installed() {
     vol.inner.transition_to_direct(installed);
     assert_eq!(Volume::connection_generation(&vol), Some(first + 1));
 }
+
+// ── Filing a sign-in that already connected (#603) ───────────────────
+
+/// ❗ **"Try again" after a refused save files the credentials WITHOUT a dial.**
+/// The sign-in already proved them, and with the session live a second sign-in
+/// dials nothing and so saved nothing. The port is closed, so a store holding
+/// them is evidence the save didn't wait on a server.
+#[tokio::test]
+async fn remembering_a_sign_in_files_it_by_the_same_rule_without_dialing() {
+    let store = Arc::new(InMemoryCredentials::new());
+    let vol = offline_volume_over(&store).await;
+
+    let filed = vol
+        .remember_sign_in(SignIn {
+            username: "ada".to_string(),
+            secret: "typed".to_string(),
+            remember: true,
+        })
+        .await
+        .expect("filing needs no server");
+
+    assert!(!filed.remember_refused);
+    assert_eq!(secret_at(&store, None), held("ada", "typed"));
+    assert_eq!(secret_at(&store, Some("TestShare")), None);
+}
+
+/// ❗ The server-vs-share rule holds here too: another account never replaces
+/// the server entry every other share signs in with.
+#[tokio::test]
+async fn remembering_another_accounts_sign_in_files_the_share_its_own() {
+    let store = Arc::new(InMemoryCredentials::new().with_entry("127.0.0.1", None, "ada", "ada-pw"));
+    let vol = offline_volume_over(&store).await;
+
+    vol.remember_sign_in(SignIn {
+        username: "grace".to_string(),
+        secret: "grace-pw".to_string(),
+        remember: true,
+    })
+    .await
+    .expect("filing needs no server");
+
+    assert_eq!(secret_at(&store, None), held("ada", "ada-pw"));
+    assert_eq!(secret_at(&store, Some("TestShare")), held("grace", "grace-pw"));
+}

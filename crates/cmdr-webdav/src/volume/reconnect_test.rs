@@ -221,6 +221,49 @@ async fn a_refused_remember_is_reported_while_the_connection_stands() {
     assert!(!unchecked.remember_refused, "no box, no promise to break");
 }
 
+/// ❗ **"Try again" after a refused save files the secret WITHOUT a dial** (#603),
+/// and a store that refuses again says so again. Port 1 refuses every dial, so
+/// the stored secret is evidence the save didn't wait on a server.
+#[tokio::test]
+async fn remembering_a_sign_in_files_it_without_dialing() {
+    let sign_in = |username: &str| cmdr_fs::volume::secret_store::SignIn {
+        username: username.to_string(),
+        secret: "typed".to_string(),
+        remember: true,
+    };
+    let store = Arc::new(InMemoryCredentials::new());
+    let host = VolumeHost::builder()
+        .credentials(Arc::clone(&store) as Arc<dyn CredentialStore>)
+        .build();
+    let volume = make_test_volume_with("/", host);
+    let service = volume.inner.params().credential_service();
+
+    let filed = volume
+        .remember_sign_in(sign_in("ada"))
+        .await
+        .expect("filing needs no server");
+    assert!(!filed.remember_refused);
+    assert_eq!(
+        store.credentials(&service, Some("ada")).map(|held| held.secret),
+        Some("typed".to_string())
+    );
+
+    let another = volume.remember_sign_in(sign_in("grace")).await;
+    assert!(matches!(another, Err(VolumeError::NotSupported)), "got {another:?}");
+
+    let refusing = make_test_volume_with(
+        "/",
+        VolumeHost::builder()
+            .credentials(Arc::new(RefusesWrites(InMemoryCredentials::new())))
+            .build(),
+    );
+    let refused = refusing
+        .remember_sign_in(sign_in("ada"))
+        .await
+        .expect("filing needs no server");
+    assert!(refused.remember_refused, "a refused store is said out loud again");
+}
+
 // ── Against the fixture ──────────────────────────────────────────────
 
 /// ❗ **The switch off leaves a perfectly reachable server alone.**

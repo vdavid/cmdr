@@ -27,6 +27,7 @@ import {
   listSavedServers,
   newServerAttemptId,
   reconnectVolumeWithCredentials,
+  rememberVolumeSignIn,
   savedServerId,
   updateSavedServer,
   type SavedServer,
@@ -415,23 +416,32 @@ function dialSavedPlaceAttempt(volumeId: string): SignInAttempt {
  * CONNECTED (#530): on, it saves the secret that worked; off, it refreshes an
  * entry still there and never seeds one. `withRememberFlip` has already
  * forgotten the entry by the time an OFF round runs.
+ *
+ * ❗ After a round connected and the Keychain refused the save, the next round
+ * with the SAME account and secret ("Try again") only files it
+ * (`rememberVolumeSignIn`, #603): a second mend would find the session live and
+ * save nothing. A changed secret is unproven, so it mends again.
  */
 function mendAttempt(volumeId: string, endpoint: SignInEndpoint): SignInAttempt {
+  let unsaved: { username: string; secret: string } | null = null
   return async (submission) => {
     if (submission.mode !== 'sign-in') return { kind: 'refused', refusal: 'needs_credentials' }
     // ❗ The username the SHAPE allowed. `null` means the variant renders it
     // read-only, and the account the volume already has is the one to send.
     const username = submission.username ?? endpoint.username ?? ''
+    const secret = submission.secret?.secret ?? ''
+    const remember = submission.secret?.remember ?? false
+    const proven = unsaved?.username === username && unsaved.secret === secret
     try {
-      const reply = await reconnectVolumeWithCredentials(
-        volumeId,
-        username,
-        submission.secret?.secret ?? '',
-        submission.secret?.remember ?? false,
-      )
-      return reply.rememberRefused
-        ? { kind: 'connected', volumeId, rememberRefused: true }
-        : { kind: 'connected', volumeId }
+      const reply = proven
+        ? await rememberVolumeSignIn(volumeId, username, secret, remember)
+        : await reconnectVolumeWithCredentials(volumeId, username, secret, remember)
+      if (reply.rememberRefused) {
+        unsaved = { username, secret }
+        return { kind: 'connected', volumeId, rememberRefused: true }
+      }
+      unsaved = null
+      return { kind: 'connected', volumeId }
     } catch (e) {
       return { kind: 'refused', refusal: mendRefusal(e) }
     }

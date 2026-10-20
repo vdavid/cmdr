@@ -534,6 +534,46 @@ describe('the Remember box in sign-in mode', () => {
     await seam
   })
 
+  it('retries only the save after a refused one, for the secret that connected (#603)', async () => {
+    // ❗ A second mend finds the SFTP or SMB session live, dials nothing, and so
+    // saves nothing. "Try again" files the proven secret without a dial instead.
+    ipc.mock('reconnect_volume_with_credentials', () => ({ rememberRefused: true }))
+    const saves = [{ rememberRefused: true }, { rememberRefused: false }]
+    ipc.mock('remember_volume_sign_in', () => saves.shift())
+    const seam = openSignInForPlace({ volumeId: VOLUME_ID, registered: true })
+    const attempt = attemptOf(await parkedRequest())
+    const round = (secret: string) => attempt({ mode: 'sign-in', secret: { secret, remember: true }, username: null })
+
+    await round('hunter2')
+    expect(await round('hunter2')).toEqual({ kind: 'connected', volumeId: VOLUME_ID, rememberRefused: true })
+    expect(await round('hunter2')).toEqual({ kind: 'connected', volumeId: VOLUME_ID })
+    expect(ipc.callCount('reconnect_volume_with_credentials')).toBe(1)
+    expect(ipc.lastCall('remember_volume_sign_in')?.payload).toMatchObject({
+      volumeId: VOLUME_ID,
+      password: 'hunter2',
+      remember: true,
+    })
+
+    closeSignInSheet({ kind: 'connected', volumeId: VOLUME_ID })
+    await seam
+  })
+
+  it('mends again, ❌ never files, a secret that changed after the refused save', async () => {
+    // Only the round's own secret is proven; anything typed since is a guess.
+    ipc.mock('reconnect_volume_with_credentials', () => ({ rememberRefused: true }))
+    ipc.mock('remember_volume_sign_in', () => ({ rememberRefused: false }))
+    const seam = openSignInForPlace({ volumeId: VOLUME_ID, registered: true })
+    const attempt = attemptOf(await parkedRequest())
+
+    await attempt({ mode: 'sign-in', secret: { secret: 'hunter2', remember: true }, username: null })
+    await attempt({ mode: 'sign-in', secret: { secret: 'hunter3', remember: true }, username: null })
+    expect(ipc.callCount('reconnect_volume_with_credentials')).toBe(2)
+    expect(ipc.callCount('remember_volume_sign_in')).toBe(0)
+
+    closeSignInSheet({ kind: 'connected', volumeId: VOLUME_ID })
+    await seam
+  })
+
   it('writes nothing at all when the box is left where it started', async () => {
     ipc.mock('has_server_secret', () => true)
     ipc.mock('reconnect_volume_with_credentials', () => ({ rememberRefused: false }))

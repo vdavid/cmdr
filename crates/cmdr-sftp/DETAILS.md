@@ -867,9 +867,10 @@ Keychain prompt.
 **What each switch does NOT do:**
 
 - ❌ Turning auto-reconnect on never writes a secret. An attended sign-in files one only as its Remember box says
-  (`SignIn::remember`, `reconnect::keep_signed_in_secret`), once the dial connected: on saves it, seeding an empty
-  store; off only refreshes an entry still there, since an empty store is the user having said no. That applies to the
-  passphrase rung too, which has no special case.
+  (`SignIn::remember`, `reconnect::file_sign_in`), once the dial connected: on saves it, seeding an empty store; off
+  only refreshes an entry still there, since an empty store is the user having said no. That applies to the passphrase
+  rung too, which has no special case. `do_remember_sign_in` (the sheet's "Try again" after a refused save, #603) runs
+  the same filing with no dial, behind the same `check_sign_in` refusals.
 - Remembering a secret doesn't turn auto-reconnect on. It only makes it possible.
 - Auto-reconnect off doesn't block an ATTENDED reconnect. `reconnect_with_credentials` is a person acting, and the
   switch is about what happens with nobody watching.

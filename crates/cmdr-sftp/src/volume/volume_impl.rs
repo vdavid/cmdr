@@ -507,6 +507,15 @@ impl Volume for SftpVolume {
         Box::pin(self.inner.do_reconnect_with_credentials(sign_in))
     }
 
+    /// Files a sign-in that already connected, ❌ without dialing (#603), refused
+    /// where the sign-in itself is.
+    fn remember_sign_in<'a>(
+        &'a self,
+        sign_in: cmdr_fs::volume::secret_store::SignIn,
+    ) -> Pin<Box<dyn Future<Output = Result<cmdr_fs::volume::secret_store::SignedIn, VolumeError>> + Send + 'a>> {
+        Box::pin(self.inner.do_remember_sign_in(sign_in))
+    }
+
     // ── What this backend is, in capability terms ────────────────────
 
     /// No mount, so no local filesystem path and nothing the OS can open.

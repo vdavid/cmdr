@@ -940,3 +940,47 @@ async fn only_an_installed_session_moves_the_generation() {
     volume.inner.connection.install();
     assert_eq!(Volume::connection_generation(&volume), Some(first + 1));
 }
+
+// ── Filing a sign-in that already connected (#603) ───────────────────
+
+/// ❗ **"Try again" after a refused save files the secret WITHOUT a dial.** With
+/// the session live a second sign-in finds nothing to rebuild and so saves
+/// nothing. No transition reported is the evidence nothing dialed.
+#[tokio::test]
+async fn remembering_a_sign_in_files_it_without_dialing() {
+    let (events, credentials, volume) = offline_volume_holding(AuthRungUsed::Password, CountingCredentials::empty());
+
+    let filed = volume
+        .remember_sign_in(cmdr_fs::volume::secret_store::SignIn {
+            username: "ada".to_string(),
+            secret: "typed".to_string(),
+            remember: true,
+        })
+        .await
+        .expect("filing needs no server");
+
+    assert!(!filed.remember_refused);
+    assert_eq!(credentials.stored("127.0.0.1:12599", "ada").as_deref(), Some("typed"));
+    assert_eq!(reported(&events), vec![]);
+}
+
+/// The same refusals as the sign-in itself: another account is another volume,
+/// and a rung no secret mends has nothing to file.
+#[tokio::test]
+async fn remembering_is_refused_where_signing_in_is() {
+    for (rung, username) in [(AuthRungUsed::Password, "grace"), (AuthRungUsed::Agent, "ada")] {
+        let (_events, credentials, volume) = offline_volume_holding(rung, CountingCredentials::empty());
+        let refusal = volume
+            .remember_sign_in(cmdr_fs::volume::secret_store::SignIn {
+                username: username.to_string(),
+                secret: "hunter2".to_string(),
+                remember: true,
+            })
+            .await;
+        assert!(
+            matches!(refusal, Err(cmdr_fs::volume::VolumeError::NotSupported)),
+            "{rung:?} as {username}: got {refusal:?}"
+        );
+        assert_eq!(credentials.stored("127.0.0.1:12599", username), None);
+    }
+}

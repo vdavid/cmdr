@@ -214,3 +214,40 @@ async fn only_an_installed_client_moves_the_generation() {
     volume.inner.session.connection().install();
     assert_eq!(volume.connection_generation(), Some(first + 1));
 }
+
+/// ❗ **"Try again" after a refused save files the secret WITHOUT a dial** (#603).
+/// Port 1 refuses every dial, so a stored secret and an unmoved state are the
+/// evidence nothing dialed; another key is refused as the sign-in refuses it.
+#[tokio::test]
+async fn remembering_a_sign_in_files_it_without_dialing() {
+    use cmdr_fs::volume::host::credentials::{CredentialStore, InMemoryCredentials};
+    use cmdr_fs::volume::secret_store::SignIn;
+
+    let store = Arc::new(InMemoryCredentials::new());
+    let host = VolumeHost::builder()
+        .credentials(Arc::clone(&store) as Arc<dyn CredentialStore>)
+        .build();
+    let volume = make_test_volume_with(Some("cmdr-test"), host);
+    let service = volume.inner.params().credential_service();
+    let before = volume.connection_state();
+    let sign_in = |username: &str| SignIn {
+        username: username.to_string(),
+        secret: "typed".to_string(),
+        remember: true,
+    };
+
+    let filed = volume
+        .remember_sign_in(sign_in("AKIATEST"))
+        .await
+        .expect("filing needs no server");
+
+    assert!(!filed.remember_refused);
+    assert_eq!(
+        store.credentials(&service, Some("AKIATEST")).map(|held| held.secret),
+        Some("typed".to_string())
+    );
+    assert_eq!(volume.connection_state(), before);
+
+    let refusal = volume.remember_sign_in(sign_in("AKIASOMEONEELSE")).await;
+    assert!(matches!(refusal, Err(VolumeError::NotSupported)), "got {refusal:?}");
+}

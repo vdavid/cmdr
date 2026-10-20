@@ -282,6 +282,7 @@ export {
   type DirectConnectionSwitch,
   reconnectVolume,
   reconnectVolumeWithCredentials,
+  rememberVolumeSignIn,
   getVolumeSignInState,
   disconnectSmbVolume,
   type SignInShape,

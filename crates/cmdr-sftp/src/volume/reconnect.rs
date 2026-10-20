@@ -168,50 +168,60 @@ impl SftpVolumeInner {
     }
 
     /// The attended variant: the user just typed a secret, so the unattended
-    /// policy doesn't apply.
-    ///
-    /// `username` must be the account this volume IS. Two accounts on one server
-    /// see different files under the same paths and carry different volume ids
-    /// (`sftp_volume_id(host, port, username)`), so signing in as another one
-    /// means opening another volume rather than mending this one.
+    /// policy doesn't apply. Refused where [`check_sign_in`](Self::check_sign_in) says.
     pub(super) async fn do_reconnect_with_credentials(&self, sign_in: SignIn) -> Result<SignedIn, VolumeError> {
+        self.check_sign_in(&sign_in)?;
+        self.auth_attempt_spent.store(false, Ordering::Relaxed);
+        let rebuilt = self
+            .rebuild(Some(sign_in.secret.clone()))
+            .await
+            .map_err(|stalled| self.report(stalled))?;
+        // ❗ Written only once the typed secret WORKED (#530): a typo written
+        // before the dial replaced the one that did. A session that was already
+        // live, or a rung that took no secret (the agent signed first), proved
+        // nothing about it.
+        if let Rebuilt::Dialed(rung) = rebuilt
+            && rung_took_the_secret(rung)
+        {
+            return Ok(self.file_sign_in(&sign_in).await);
+        }
+        Ok(SignedIn::NOTHING_FILED)
+    }
+
+    /// Files a sign-in that already connected, ❌ without dialing: the sheet's
+    /// "Try again" after a refused save (#603). A second sign-in would find the
+    /// session live and file nothing. Refused where the sign-in itself is.
+    pub(super) async fn do_remember_sign_in(&self, sign_in: SignIn) -> Result<SignedIn, VolumeError> {
+        self.check_sign_in(&sign_in)?;
+        Ok(self.file_sign_in(&sign_in).await)
+    }
+
+    /// Whether a typed secret can mend this volume at all.
+    ///
+    /// - `username` must be the account this volume IS. Two accounts on one
+    ///   server see different files under the same paths and carry different
+    ///   volume ids (`sftp_volume_id(host, port, username)`), so signing in as
+    ///   another one means opening another volume rather than mending this one.
+    /// - An agent or an unencrypted key file is missing no secret, so there is
+    ///   nothing a typed one can fix. ❗ The frontend must not offer a sign-in
+    ///   there: a button that answers `NotSupported` every time is worse than
+    ///   no button. The other three rungs take one, ❌ with no special case for
+    ///   the passphrase: what decides whether it's written down is the
+    ///   "remember the secret" switch, not the rung.
+    fn check_sign_in(&self, sign_in: &SignIn) -> Result<(), VolumeError> {
         if sign_in.username != self.params().username {
             return Err(VolumeError::NotSupported);
         }
         match self.auth_rung() {
-            // Neither rung is missing a secret, so there is nothing a typed one
-            // can fix. ❗ The frontend must not offer a sign-in here: a button
-            // that answers `NotSupported` every time is worse than no button.
             AuthRungUsed::Agent
             | AuthRungUsed::KeyFile {
                 passphrase_protected: false,
             } => Err(VolumeError::NotSupported),
-            // The dial gets the typed secret directly, so a keychain that refuses
-            // the write still reconnects now. The same three rungs, ❌ with no
-            // special case for the passphrase: what decides whether it's written
-            // down is the "remember the secret" switch, not the rung.
             AuthRungUsed::Password
             | AuthRungUsed::KeyboardInteractive
             | AuthRungUsed::KeyFile {
                 passphrase_protected: true,
-            } => {
-                self.auth_attempt_spent.store(false, Ordering::Relaxed);
-                let rebuilt = self
-                    .rebuild(Some(sign_in.secret.clone()))
-                    .await
-                    .map_err(|stalled| self.report(stalled))?;
-                // ❗ Written only once the typed secret WORKED (#530): a typo
-                // written before the dial replaced the one that did. A session
-                // that was already live, or a rung that took no secret (the agent
-                // signed first), proved nothing about it.
-                if let Rebuilt::Dialed(rung) = rebuilt
-                    && rung_took_the_secret(rung)
-                {
-                    let kept = self.keep_signed_in_secret(&sign_in).await;
-                    return Ok(SignedIn::after(&sign_in, kept));
-                }
-                Ok(SignedIn::NOTHING_FILED)
-            }
+            } => Ok(()),
         }
     }
 
@@ -435,8 +445,9 @@ impl SftpVolumeInner {
     /// exactly "the Keychain holds one for this account", so the box decides,
     /// ❌ never the dial on its own.
     ///
-    /// A refusal is non-fatal: only the "silent next time" guarantee is lost.
-    async fn keep_signed_in_secret(&self, sign_in: &SignIn) -> bool {
+    /// A refusal is non-fatal: only the "silent next time" guarantee is lost,
+    /// and the answer says so when a checked box was refused.
+    async fn file_sign_in(&self, sign_in: &SignIn) -> SignedIn {
         let took = secret_store::keep_signed_in_secret(&self.host, &self.params().credential_service(), sign_in).await;
         if !took {
             warn!(
@@ -445,7 +456,7 @@ impl SftpVolumeInner {
                 self.volume_id
             );
         }
-        took
+        SignedIn::after(sign_in, took)
     }
 }
 

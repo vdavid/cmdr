@@ -755,6 +755,13 @@ impl Volume for SmbVolume {
         Box::pin(self.inner.do_reconnect_with_credentials(sign_in))
     }
 
+    fn remember_sign_in<'a>(
+        &'a self,
+        sign_in: cmdr_fs::volume::secret_store::SignIn,
+    ) -> Pin<Box<dyn Future<Output = Result<cmdr_fs::volume::secret_store::SignedIn, VolumeError>> + Send + 'a>> {
+        Box::pin(self.inner.do_remember_sign_in(sign_in))
+    }
+
     /// The share's retirement flag, so the registry can tell this volume when it
     /// stops serving it.
     ///

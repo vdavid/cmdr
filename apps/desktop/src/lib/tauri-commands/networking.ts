@@ -495,6 +495,25 @@ export async function reconnectVolumeWithCredentials(
 }
 
 /**
+ * Files the credentials of a sign-in that ALREADY connected this volume, without
+ * dialing: the sheet's "Try again" after `rememberRefused` (#603). A second
+ * `reconnectVolumeWithCredentials` would find the session live and save nothing.
+ *
+ * ❗ Only for the secret that round connected with. Same reply and refusals as
+ * `reconnectVolumeWithCredentials`.
+ */
+export async function rememberVolumeSignIn(
+  volumeId: string,
+  username: string,
+  password: string,
+  remember: boolean,
+): Promise<SignedInReply> {
+  const res = await commands.rememberVolumeSignIn(volumeId, username, password, remember)
+  if (res.status === 'error') throwReconnectError(res.error)
+  return res.data
+}
+
+/**
  * What a "Sign in" affordance on this volume may ask the user for, right now.
  *
  * Ask when the affordance renders, and never hold on to the answer: a backend

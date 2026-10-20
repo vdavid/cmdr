@@ -66,7 +66,8 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   deliberately no command that returns a stored secret. The flow behind the commands is `network::sftp_volume_wiring`;
   the frontend contract is `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend".
   - ❗ **Reconnecting an SFTP volume, and asking what a sign-in would want, both go through `network.rs`**:
-    `reconnect_volume`, `reconnect_volume_with_credentials`, and `get_volume_sign_in_state`. All three are
+    `reconnect_volume`, `reconnect_volume_with_credentials`, `remember_volume_sign_in` (files a sign-in that already
+    connected, without dialing, #603), and `get_volume_sign_in_state`. All four are
     backend-neutral: they delegate to a `Volume` trait method on whatever is registered, so no backend owns a copy.
   - ❗ **The connect outcome (`ServerConnectOutcome`, below) carries no rung**, and nothing about a later sign-in: the
     rung is a fact about that dial, and what a sign-in would ask for is decided per dial too, so it is a query

@@ -4268,6 +4268,20 @@ export const commands = {
       __TAURI_INVOKE('reconnect_volume_with_credentials', { volumeId, username, password, remember }),
     ),
   /**
+   *  Files the credentials of a sign-in that already connected this volume, ❌
+   *  without dialing: the sign-in sheet's "Try again" after `remember_refused`
+   *  (#603). A second [`reconnect_volume_with_credentials`] would find the session
+   *  live (SFTP, SMB), dial nothing, and so save nothing.
+   *
+   *  ❗ Only for the secret that round connected with; the frontend keeps that
+   *  promise. The backend files it by the post-dial rule (`Volume::remember_sign_in`)
+   *  and refuses what the sign-in refuses.
+   */
+  rememberVolumeSignIn: (volumeId: string, username: string, password: string, remember: boolean) =>
+    typedError<SignedInReply, ReconnectError>(
+      __TAURI_INVOKE('remember_volume_sign_in', { volumeId, username, password, remember }),
+    ),
+  /**
    *  What FORM a "Sign in" affordance on this volume takes, right now: which fields
    *  the sheet renders, and whether the username among them is editable.
    *

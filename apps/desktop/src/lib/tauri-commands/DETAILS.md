@@ -96,8 +96,8 @@ commands, and notable non-obvious placements.
   disconnect, the two-phase host-key approval, the saved-server list, and the password store. The whole frontend
   contract, including the approval sequence and the per-rung banner table: `crates/cmdr-sftp/DETAILS.md` § "Connecting
   from the frontend". ❗ Reconnecting an SFTP volume, and asking what a sign-in would want, use `networking.ts`'s
-  `reconnectVolume` / `reconnectVolumeWithCredentials` / `getVolumeSignInState`, all three backend-neutral (two despite
-  the name).
+  `reconnectVolume` / `reconnectVolumeWithCredentials` / `rememberVolumeSignIn` / `getVolumeSignInState`, all four
+  backend-neutral (two despite the name).
 - **`webdav.ts`**: WebDAV servers minus connecting: cancel, disconnect, the saved-server list, the password store, and
   the unattended-reconnect query. No host-key step. The contract: `crates/cmdr-webdav/DETAILS.md` § "Connecting from the
   frontend". Reconnect and sign-in use the same three backend-neutral `networking.ts` commands SFTP does.

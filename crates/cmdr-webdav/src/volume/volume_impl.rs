@@ -427,6 +427,13 @@ impl Volume for WebdavVolume {
         Box::pin(self.inner.reconnect_as(sign_in))
     }
 
+    fn remember_sign_in<'a>(
+        &'a self,
+        sign_in: cmdr_fs::volume::secret_store::SignIn,
+    ) -> Pin<Box<dyn Future<Output = Result<cmdr_fs::volume::secret_store::SignedIn, VolumeError>> + Send + 'a>> {
+        Box::pin(self.inner.remember_as(sign_in))
+    }
+
     // ── What this backend is, in capability terms ────────────────────
 
     fn supports_local_fs_access(&self) -> bool {
