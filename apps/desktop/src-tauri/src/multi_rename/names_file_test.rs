@@ -217,6 +217,35 @@ mod private_folder {
         assert!(!real.join("names.txt").exists());
     }
 
+    /// A crashed run's files stay in the cache dir (no OS cleans it), so a write sweeps the ones
+    /// whose process is gone. A live process's file, a link, and a name that isn't ours stay.
+    #[test]
+    fn write_sweeps_files_of_processes_that_are_gone() {
+        let dir = TestDir::new("multi-rename-names-sweep");
+        let results = private_dir(&dir);
+        let mut child = std::process::Command::new("true").spawn().expect("spawns");
+        let dead_pid = child.id();
+        child.wait().expect("waits");
+        let dead = results.join(format!("{dead_pid}-multi-rename-1.txt"));
+        std::fs::write(&dead, "a.txt\tb.txt\n").expect("writes");
+        let live = results.join(format!("{}-multi-rename-9.txt", std::process::id()));
+        std::fs::write(&live, "a.txt\tb.txt\n").expect("writes");
+        let unparsed = results.join("notes.txt");
+        std::fs::write(&unparsed, "mine").expect("writes");
+        let victim = dir.join("victim.txt");
+        std::fs::write(&victim, "precious").expect("writes");
+        let dead_link = results.join(format!("{dead_pid}-multi-rename-2.txt"));
+        symlink(&victim, &dead_link).expect("links");
+
+        let _written = write(&results.join("names.txt"), &[row("a.txt", "b.txt")]).expect("writes");
+
+        assert!(!dead.exists(), "a gone process's file is swept");
+        assert!(live.exists(), "a running process's file stays");
+        assert!(unparsed.exists(), "a name without a pid stays");
+        assert!(std::fs::symlink_metadata(&dead_link).is_ok(), "a link is never touched");
+        assert_eq!(std::fs::read_to_string(&victim).expect("reads"), "precious");
+    }
+
     #[test]
     fn a_stale_file_at_the_name_is_replaced() {
         let dir = TestDir::new("multi-rename-names-stale");

@@ -104,6 +104,7 @@ pub fn write(path: &Path, rows: &[PreviewRow]) -> io::Result<Written> {
         .parent()
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "the Results file has no folder"))?;
     private_folder(dir)?;
+    sweep_orphans(dir);
     remove_stale(path)?;
     let mut file = create_new(path)?;
     // Built before the text goes in, so a failed write still deletes the file on drop.
@@ -168,6 +169,55 @@ fn private_folder(dir: &Path) -> io::Result<()> {
 #[cfg(not(unix))]
 fn private_folder(dir: &Path) -> io::Result<()> {
     std::fs::create_dir_all(dir)
+}
+
+/// Removes the Results files of processes that are no longer running: a crash skips
+/// `Written`'s drop, and no OS empties the cache dir. Only regular files named `<pid>-…` go;
+/// a link, a folder, or a name without a pid stays. Best effort.
+#[cfg(unix)]
+fn sweep_orphans(dir: &Path) {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let Some(pid) = name
+            .to_str()
+            .and_then(|name| name.split_once('-'))
+            .map(|(pid, _)| pid)
+            .filter(|pid| !pid.is_empty() && pid.bytes().all(|b| b.is_ascii_digit()))
+            .and_then(|pid| pid.parse::<libc::pid_t>().ok())
+            .filter(|pid| *pid > 0)
+        else {
+            continue;
+        };
+        // `DirEntry::file_type` doesn't follow a link, so a link reads as one and stays.
+        if !entry.file_type().is_ok_and(|kind| kind.is_file()) || !process_is_gone(pid) {
+            continue;
+        }
+        if let Err(e) = std::fs::remove_file(entry.path())
+            && e.kind() != io::ErrorKind::NotFound
+        {
+            log::debug!(
+                target: "multi_rename::names_file",
+                "couldn't sweep {}: {e}",
+                cmdr_fs::log_private::LogPrivate::file_path(&entry.path())
+            );
+        }
+    }
+}
+
+#[cfg(not(unix))]
+fn sweep_orphans(_dir: &Path) {}
+
+/// Whether no process `pid` exists. `EPERM` (someone else's process) counts as running.
+#[cfg(unix)]
+fn process_is_gone(pid: libc::pid_t) -> bool {
+    // SAFETY: signal 0 sends nothing; `kill` only checks that `pid` exists, and takes no pointers.
+    if unsafe { libc::kill(pid, 0) } == 0 {
+        return false;
+    }
+    io::Error::last_os_error().raw_os_error() == Some(libc::ESRCH)
 }
 
 /// Removes a regular file at `path`, and refuses anything else there.
