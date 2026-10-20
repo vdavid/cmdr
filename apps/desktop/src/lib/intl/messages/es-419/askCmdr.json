@@ -119,6 +119,10 @@
   "@askCmdr.event.contextTrimmed": {
     "sourceHash": "4262e70"
   },
+  "askCmdr.composer.selectionCapped": "Se adjuntaron los primeros {attachedText} de {totalText} {total, plural, one {elemento seleccionado} many {elementos seleccionados} other {elementos seleccionados}}.",
+  "@askCmdr.composer.selectionCapped": {
+    "sourceHash": "8c1eaa6"
+  },
   "askCmdr.composer.providerOff": "Activa un proveedor de IA en Configuración para empezar a chatear.",
   "@askCmdr.composer.providerOff": {
     "sourceHash": "f72de54"

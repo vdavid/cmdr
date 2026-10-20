@@ -348,6 +348,10 @@
   "@askCmdr.composer.attach": {
     "sourceHash": "3e812c7"
   },
+  "askCmdr.composer.selectionCapped": "Прикреплены первые {attachedText} из {totalText} {total, plural, one {выделенного объекта} few {выделенных объектов} many {выделенных объектов} other {выделенного объекта}}.",
+  "@askCmdr.composer.selectionCapped": {
+    "sourceHash": "8abeced"
+  },
   "askCmdr.composer.dropHint": "Отпустите, чтобы прикрепить",
   "@askCmdr.composer.dropHint": {
     "sourceHash": "34a7a63"

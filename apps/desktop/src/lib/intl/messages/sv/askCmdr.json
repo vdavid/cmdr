@@ -348,6 +348,10 @@
   "@askCmdr.composer.attach": {
     "sourceHash": "3e812c7"
   },
+  "askCmdr.composer.selectionCapped": "De första {attachedText} av {totalText} {total, plural, one {markerat objekt} other {markerade objekt}} är bifogade.",
+  "@askCmdr.composer.selectionCapped": {
+    "sourceHash": "8abeced"
+  },
   "askCmdr.composer.dropHint": "Släpp för att bifoga",
   "@askCmdr.composer.dropHint": {
     "sourceHash": "34a7a63"

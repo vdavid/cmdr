@@ -350,6 +350,10 @@
   "@askCmdr.composer.attach": {
     "sourceHash": "3e812c7"
   },
+  "askCmdr.composer.selectionCapped": "Se han adjuntado los primeros {attachedText} de {totalText} {total, plural, one {elemento seleccionado} many {elementos seleccionados} other {elementos seleccionados}}.",
+  "@askCmdr.composer.selectionCapped": {
+    "sourceHash": "8abeced"
+  },
   "askCmdr.composer.dropHint": "Suelta para adjuntar",
   "@askCmdr.composer.dropHint": {
     "sourceHash": "34a7a63"

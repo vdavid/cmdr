@@ -351,6 +351,10 @@
   "@askCmdr.composer.attach": {
     "sourceHash": "3e812c7"
   },
+  "askCmdr.composer.selectionCapped": "De eerste {attachedText} van {totalText} {total, plural, one {geselecteerd onderdeel} other {geselecteerde onderdelen}} zijn bijgevoegd.",
+  "@askCmdr.composer.selectionCapped": {
+    "sourceHash": "8abeced"
+  },
   "askCmdr.composer.dropHint": "Zet hier neer om bij te voegen",
   "@askCmdr.composer.dropHint": {
     "sourceHash": "34a7a63"

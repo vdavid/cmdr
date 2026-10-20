@@ -321,6 +321,13 @@
     "confidence": "high",
     "sources": "AP Photos + Preview (TW = HK)"
   },
+  "attachment": {
+    "accept": ["附加", "附上"],
+    "chosen": "附件",
+    "confidence": "high",
+    "forms": "noun 附件 (移除附件); verb 附加 (放開就能附加, 已附加…); attaching an email or logs to a report → 附上",
+    "sources": "AP-TW = AP-HK Finder (Quick Look Attachment → 快速查看附件, Mail's 原始附件), MS (附件), THU (附加到郵件)"
+  },
   "attribute": {
     "chosen": "屬性",
     "confidence": "high",

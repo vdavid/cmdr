@@ -350,6 +350,10 @@
   "@askCmdr.composer.attach": {
     "sourceHash": "3e812c7"
   },
+  "askCmdr.composer.selectionCapped": "Die ersten {attachedText} von {totalText} ausgewählten {total, plural, one {Objekt} other {Objekten}} wurden angehängt.",
+  "@askCmdr.composer.selectionCapped": {
+    "sourceHash": "8abeced"
+  },
   "askCmdr.composer.dropHint": "Zum Anhängen ablegen",
   "@askCmdr.composer.dropHint": {
     "sourceHash": "34a7a63"

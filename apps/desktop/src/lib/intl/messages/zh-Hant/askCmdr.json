@@ -348,6 +348,10 @@
   "@askCmdr.composer.attach": {
     "sourceHash": "3e812c7"
   },
+  "askCmdr.composer.selectionCapped": "已附加選取的 {totalText} 個{total, plural, other {項目}}中的前 {attachedText} 個。",
+  "@askCmdr.composer.selectionCapped": {
+    "sourceHash": "8abeced"
+  },
   "askCmdr.composer.dropHint": "放開就能附加",
   "@askCmdr.composer.dropHint": {
     "sourceHash": "34a7a63"
