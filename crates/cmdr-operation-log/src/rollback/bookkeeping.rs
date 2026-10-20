@@ -179,6 +179,7 @@ fn inverse_item_row(seq: i64, unit: &RollbackUnit, result: &ItemResult) -> Journ
         mtime: unit.mtime,
         outcome,
         overwrote: false,
+        dest_identity: None,
     }
 }
 

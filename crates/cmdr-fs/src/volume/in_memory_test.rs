@@ -243,6 +243,37 @@ async fn rename_honors_the_shared_no_clobber_contract() {
     .await;
 }
 
+/// The double's node identity behaves like an inode: a rename carries it along, and a
+/// new entry under a freed name gets its own. A rollback test leans on both to stand a
+/// stranger in for a trashed folder.
+#[tokio::test]
+async fn node_identity_follows_the_entry_not_the_name() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_directory(Path::new("/Invoices")).await.unwrap();
+    let original = volume.node_identity(Path::new("/Invoices")).await.unwrap();
+    assert!(original.is_some());
+
+    volume
+        .rename(Path::new("/Invoices"), Path::new("/.Trash/Invoices"), false)
+        .await
+        .unwrap();
+    assert_eq!(
+        volume.node_identity(Path::new("/.Trash/Invoices")).await.unwrap(),
+        original
+    );
+
+    volume.delete(Path::new("/.Trash/Invoices")).await.unwrap();
+    volume.create_directory(Path::new("/.Trash/Invoices")).await.unwrap();
+    assert_ne!(
+        volume.node_identity(Path::new("/.Trash/Invoices")).await.unwrap(),
+        original
+    );
+    assert!(matches!(
+        volume.node_identity(Path::new("/Invoices")).await,
+        Err(VolumeError::NotFound(_))
+    ));
+}
+
 /// A confirmed replace never takes a folder that holds something, from a file
 /// or from a folder.
 #[tokio::test]

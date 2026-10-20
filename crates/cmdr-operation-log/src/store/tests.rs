@@ -347,6 +347,38 @@ fn v3_migration_keeps_merged_dirs_and_stops_merging_new_twins() {
     assert_eq!(reconstruct_dir_path(&conn, lower).expect("path"), "/srv/media");
 }
 
+/// The v4 step adds the dest identity without inventing one: a row a v3 build wrote
+/// survives whole and reads as "identity not recorded", which keeps its undo on the
+/// older checks rather than refusing it.
+#[test]
+fn v4_migration_keeps_older_rows_with_no_recorded_identity() {
+    let conn = cmdr_fs::sqlite_util::open_in_memory().expect("in-memory db");
+    run_migrations(&conn, &MIGRATIONS[..3]).expect("migrate to v3");
+    // What a v3 build left behind: a folder trashed from `/work` to `/.Trash`.
+    conn.execute_batch(
+        "INSERT INTO dirs (dir_id, volume_id, parent_dir_id, name, name_folded) VALUES (1, 'root', NULL, '', '');
+         INSERT INTO dirs (dir_id, volume_id, parent_dir_id, name, name_folded) VALUES (2, 'root', 1, 'work', 'work');
+         INSERT INTO dirs (dir_id, volume_id, parent_dir_id, name, name_folded) VALUES (3, 'root', 1, '.Trash', '.trash');
+         INSERT INTO operations (op_id, kind, initiator, execution_status, rollback_state, started_at)
+             VALUES ('op', 'trash', 'user', 'done', 'rollbackable', 1);
+         INSERT INTO operation_items
+             (op_id, seq, entry_type, row_role, source_dir_id, source_name, source_name_folded,
+              dest_dir_id, dest_name, dest_name_folded, size, outcome)
+             VALUES ('op', 0, 'dir', 'rollback_unit', 2, 'Invoices', 'invoices', 3, 'Invoices', 'invoices', 64, 'done');",
+    )
+    .expect("seed a v3 trash");
+
+    run_migrations(&conn, MIGRATIONS).expect("migrate to current");
+
+    let units = read_rollback_units_page(&conn, "op", i64::MAX, 10).expect("units");
+    assert_eq!(units.len(), 1, "the pre-migration row survives the step");
+    assert_eq!(units[0].dest_path, Some(PathBuf::from("/.Trash/Invoices")));
+    assert_eq!(
+        units[0].dest_identity, None,
+        "no identity was recorded, so none is made up"
+    );
+}
+
 /// Read-only connections open with the smaller page cache, write connections
 /// with the bigger one. Both are upper bounds drawn from the process-wide slab;
 /// budgets and rationale: `cmdr_fs::sqlite_util`.

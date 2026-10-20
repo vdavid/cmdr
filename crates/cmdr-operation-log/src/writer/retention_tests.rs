@@ -46,6 +46,7 @@ fn journal_bulk_op(writer: &OperationLogWriter, op_index: i64, item_count: i64) 
             mtime: Some(1_700_000_000 + seq),
             outcome: ItemOutcome::Done,
             overwrote: false,
+            dest_identity: None,
         })
         .collect();
     writer.record_items(&op_id, items).expect("record");
@@ -112,6 +113,7 @@ fn prune_removes_old_operation_and_gcs_its_dirs() {
                     mtime: None,
                     outcome: ItemOutcome::Done,
                     overwrote: false,
+                    dest_identity: None,
                 }],
             )
             .expect("record");
@@ -413,6 +415,7 @@ fn size_prune_removes_a_rolled_back_pair_together() {
             mtime: Some(1_700_000_000 + seq),
             outcome: ItemOutcome::Done,
             overwrote: false,
+            dest_identity: None,
         })
         .collect();
     writer.record_items("original", bulk).expect("record orig");

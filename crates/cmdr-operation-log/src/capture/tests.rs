@@ -208,6 +208,7 @@ fn leaf(seq: i64, name: &str, overwrote: bool) -> JournalItem {
         mtime: Some(100),
         outcome: ItemOutcome::Done,
         overwrote,
+        dest_identity: None,
     }
 }
 

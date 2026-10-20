@@ -249,6 +249,7 @@ fn seed_rolling_back(rig: &Rig, op_id: &str, inverse: Option<(&str, &[ItemOutcom
                 mtime: Some(MT as i64),
                 outcome,
                 overwrote: false,
+                dest_identity: None,
             })
             .collect();
         rig.writer.record_items(inv_id, items).expect("record inverse items");

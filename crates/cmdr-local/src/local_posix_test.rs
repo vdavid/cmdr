@@ -268,6 +268,30 @@ async fn test_rename_conflict_no_force() {
     assert!(test_dir.join("target.txt").exists());
 }
 
+/// The node a folder is survives a rename (what a trip into the Trash is), and a new
+/// folder under the freed name is a different one: the check a trash undo makes.
+#[tokio::test]
+async fn node_identity_follows_the_folder_not_its_name() {
+    let test_dir = TestDir::new("node_identity_test");
+    let volume = LocalPosixVolume::local_folder("Test", &*test_dir, VolumeHost::detached());
+    volume.create_directory(Path::new("Invoices")).await.unwrap();
+    let original = volume.node_identity(Path::new("Invoices")).await.unwrap();
+    assert!(original.is_some(), "APFS and ext4 keep a birth time");
+
+    volume
+        .rename(Path::new("Invoices"), Path::new("Trashed"), false)
+        .await
+        .unwrap();
+    assert_eq!(volume.node_identity(Path::new("Trashed")).await.unwrap(), original);
+
+    volume.create_directory(Path::new("Invoices")).await.unwrap();
+    assert_ne!(volume.node_identity(Path::new("Invoices")).await.unwrap(), original);
+    assert!(matches!(
+        volume.node_identity(Path::new("missing")).await,
+        Err(VolumeError::NotFound(_))
+    ));
+}
+
 #[tokio::test]
 async fn test_rename_force_overwrites() {
     use std::fs;

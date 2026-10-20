@@ -341,6 +341,20 @@ pub trait Volume: Send + Sync {
         Box::pin(async move { self.get_metadata(path).await.map(|entry| EntryKind::of(&entry)) })
     }
 
+    /// Which filesystem node sits at `path`, the link itself when it's a link, or
+    /// `Ok(None)` when the backend can't say.
+    ///
+    /// A rollback asks it before moving a trashed item back, so a stranger that
+    /// later took the item's name in the Trash stays there ([`NodeIdentity`]).
+    /// Defaults to `Ok(None)`, the honest answer for a protocol with no stable
+    /// node ids; `LocalPosixVolume` answers with one `lstat`.
+    fn node_identity<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Option<NodeIdentity>, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Ok(None) })
+    }
+
     // ========================================
     // E2E test support (feature-gated)
     // ========================================
@@ -2093,6 +2107,7 @@ pub mod listing_progress;
 pub mod liveness;
 pub mod mkdir_all;
 pub mod mtp_ids;
+mod node_identity;
 pub mod patching;
 mod read_stream;
 pub mod remote_paths;
@@ -2146,6 +2161,7 @@ pub use share_link::{ShareLink, ShareLinkExpiry};
 // so callers keep `volume::sftp_app_root` and friends.
 pub use in_memory::InMemoryVolume;
 pub use mkdir_all::{LeadsTo, MadeDirectories, MakesDirectories};
+pub use node_identity::NodeIdentity;
 pub use patching::{PatchSource, patch_created, patch_deleted, patch_mutation, patch_renamed};
 pub use read_stream::{SequentialExtract, VolumeRandomReader, VolumeReadStream};
 pub use remote_paths::{

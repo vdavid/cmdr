@@ -63,6 +63,11 @@ pub const MIGRATIONS: &[Migration] = &[
         description: "dirs identity on the exact name, so case and normalization twins stop merging",
         up: migrate_v3_dirs_identity_exact,
     },
+    Migration {
+        version: 4,
+        description: "operation_items.dest_inode + dest_birth_ns: which node an item landed as",
+        up: migrate_v4_dest_identity,
+    },
 ];
 
 /// The meta key holding the integer schema version (as text). Absent ⇒ 0 (a
@@ -246,5 +251,23 @@ fn migrate_v3_dirs_identity_exact(tx: &Transaction<'_>) -> rusqlite::Result<()> 
         "DROP INDEX dirs_identity;
          CREATE UNIQUE INDEX dirs_identity
              ON dirs (volume_id, IFNULL(parent_dir_id, 0), name);",
+    )
+}
+
+/// Version 4: record WHICH node an item landed as at its dest, beside the dest's name.
+///
+/// The Trash hands a freed name to the next item trashed under it, so an undo that
+/// checked only the in-Trash path could bring back a stranger (#535). The pair is a
+/// `cmdr_fs::volume::NodeIdentity`: `dest_inode` bit-cast to SQLite's signed integer,
+/// `dest_birth_ns` as is; both set or both NULL.
+///
+/// Nullable, no default, and **no backfill**: the node a v3 row's item landed as was
+/// never read, and nothing on disk can tell us now. NULL reads as "identity not
+/// recorded", and the rollback keeps its older checks for such a row. No index: it's
+/// read per item alongside the row, never filtered on.
+fn migrate_v4_dest_identity(tx: &Transaction<'_>) -> rusqlite::Result<()> {
+    tx.execute_batch(
+        "ALTER TABLE operation_items ADD COLUMN dest_inode INTEGER;
+         ALTER TABLE operation_items ADD COLUMN dest_birth_ns INTEGER;",
     )
 }

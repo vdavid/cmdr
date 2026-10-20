@@ -23,7 +23,9 @@ use cmdr_fs::volume::listing_progress::report_while;
 use cmdr_fs::volume::{
     CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage,
 };
-use cmdr_fs::volume::{EntryKind, ListingProgress, StreamLength, StreamWriteProgress, StreamWritten, WriteMode};
+use cmdr_fs::volume::{
+    EntryKind, ListingProgress, NodeIdentity, StreamLength, StreamWriteProgress, StreamWritten, WriteMode,
+};
 use std::future::Future;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -437,6 +439,23 @@ impl Volume for LocalPosixVolume {
             })
             .await
             .expect("spawn_blocking entry_kind closure doesn't panic and the task is uncancelable")
+        })
+    }
+
+    fn node_identity<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Option<NodeIdentity>, VolumeError>> + Send + 'a>> {
+        // One bare `lstat`, the same read the trash journals the identity from.
+        let abs_path = self.resolve(path);
+        Box::pin(async move {
+            spawn_blocking(move || {
+                std::fs::symlink_metadata(&abs_path)
+                    .map(|metadata| NodeIdentity::of(&metadata))
+                    .map_err(|e| VolumeError::from_io_at(&e, &abs_path))
+            })
+            .await
+            .expect("spawn_blocking node_identity closure doesn't panic and the task is uncancelable")
         })
     }
 

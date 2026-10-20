@@ -178,7 +178,7 @@ impl super::super::Operations {
         source: &Path,
         initiator: cmdr_operation_log::types::Initiator,
     ) -> Result<Option<PathBuf>, MutationError> {
-        use cmdr_operation_log::types::{EntryType, ExecutionStatus, ItemOutcome, OpKind};
+        use cmdr_operation_log::types::{EntryType, ExecutionStatus, OpKind};
         let scope = self.op_scope();
 
         let source_meta = fs::symlink_metadata(source).map_err(|_| MutationError::NotFound {
@@ -209,15 +209,13 @@ impl super::super::Operations {
                 } else {
                     EntryType::File
                 };
-                super::super::journal::record_local_leaf(
+                super::super::journal::record_trashed(
                     &scope,
                     entry_type,
                     source,
                     in_trash.as_deref(),
                     Some(source_meta.len() as i64),
                     super::super::journal::mtime_secs(&source_meta),
-                    false,
-                    ItemOutcome::Done,
                 );
                 if let Some(buffered) = &buffered {
                     super::super::journal_search::persist_and_note(
@@ -435,15 +433,13 @@ pub(crate) fn trash_files_with_progress(
                 } else {
                     cmdr_operation_log::types::EntryType::File
                 };
-                super::super::journal::record_local_leaf(
+                super::super::journal::record_trashed(
                     state.scope(),
                     entry_type,
                     source,
                     in_trash.as_deref(),
                     item_size.map(|s| s as i64).or(Some(source_meta.len() as i64)),
                     super::super::journal::mtime_secs(&source_meta),
-                    false,
-                    cmdr_operation_log::types::ItemOutcome::Done,
                 );
 
                 // Persist the buffered `search_only` leaves NOW that this item

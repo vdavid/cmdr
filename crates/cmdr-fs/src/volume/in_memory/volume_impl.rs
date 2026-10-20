@@ -8,9 +8,9 @@ use crate::ignore_poison::IgnorePoison;
 use crate::ignore_poison::RwLockIgnorePoison;
 use crate::metadata::{CarriedMetadata, ClassOutcome, MetadataCaps, MetadataClasses, MetadataReport};
 use crate::volume::{
-    BackendKind, ConnectionState, CopyScanResult, IndexWalk, LaneKey, RenameWork, ScanConflict, SourceItemInfo,
-    SpaceInfo, StreamLength, StreamWriteProgress, StreamWritten, Volume, VolumeError, VolumeReadStream, WriteAccess,
-    WriteMode,
+    BackendKind, ConnectionState, CopyScanResult, IndexWalk, LaneKey, NodeIdentity, RenameWork, ScanConflict,
+    SourceItemInfo, SpaceInfo, StreamLength, StreamWriteProgress, StreamWritten, Volume, VolumeError, VolumeReadStream,
+    WriteAccess, WriteMode,
 };
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -160,6 +160,13 @@ impl Volume for InMemoryVolume {
         })
     }
 
+    fn node_identity<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Option<NodeIdentity>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move { self.stat_entry_with(path, |entry| Some(entry.identity())) })
+    }
+
     fn is_directory<'a>(
         &'a self,
         path: &'a Path,
@@ -229,14 +236,7 @@ impl Volume for InMemoryVolume {
             };
 
             Self::touch_parent_of(&mut entries, &normalized);
-            entries.insert(
-                normalized,
-                InMemoryEntry {
-                    metadata,
-                    content: None,
-                    extra: CarriedMetadata::default(),
-                },
-            );
+            entries.insert(normalized, InMemoryEntry::new(metadata, None));
 
             Ok(())
         })

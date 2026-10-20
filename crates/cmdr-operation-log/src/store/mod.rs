@@ -19,6 +19,7 @@ mod migrations;
 
 use std::path::{Path, PathBuf};
 
+use cmdr_fs::volume::NodeIdentity;
 use rusqlite::{Connection, ErrorCode, OptionalExtension};
 use unicode_normalization::UnicodeNormalization;
 
@@ -194,6 +195,9 @@ pub struct OperationItemRow {
     /// wasn't recorded: a row written before the column existed, or an outcome no
     /// rollback produced. Never defaulted — see [`SkipReason`].
     pub rollback_skip_reason: Option<SkipReason>,
+    /// Which node the item landed as at its dest, when that was recorded (a trash,
+    /// from schema v4 on).
+    pub dest_identity: Option<NodeIdentity>,
 }
 
 /// A handle to `operation-log.db`, owning a connection for direct reads and the
@@ -495,7 +499,7 @@ pub fn recent_operations(conn: &Connection, limit: u32) -> Result<Vec<OperationR
 }
 
 pub(super) const ITEM_COLUMNS: &str = "item_id, op_id, seq, entry_type, row_role, source_dir_id, source_name, dest_dir_id, \
-     dest_name, size, mtime, outcome, overwrote, rollback_skip_reason";
+     dest_name, size, mtime, outcome, overwrote, rollback_skip_reason, dest_inode, dest_birth_ns";
 
 pub(super) fn map_item_row(row: &rusqlite::Row<'_>) -> Result<OperationItemRow, OperationLogStoreError> {
     Ok(OperationItemRow {
@@ -513,6 +517,13 @@ pub(super) fn map_item_row(row: &rusqlite::Row<'_>) -> Result<OperationItemRow, 
         outcome: decode(row.get(11)?, ItemOutcome::from_token, "outcome")?,
         overwrote: row.get::<_, i64>(12)? != 0,
         rollback_skip_reason: decode_opt(row.get(13)?, SkipReason::from_token, "rollback_skip_reason")?,
+        dest_identity: match (row.get::<_, Option<i64>>(14)?, row.get::<_, Option<i64>>(15)?) {
+            (Some(inode), Some(birth_nanos)) => Some(NodeIdentity {
+                inode: inode as u64,
+                birth_nanos,
+            }),
+            _ => None,
+        },
     })
 }
 
@@ -564,6 +575,9 @@ pub struct RollbackUnit {
     /// Why an earlier rollback held the item back, when one did. Present only
     /// alongside [`ItemOutcome::Skipped`].
     pub rollback_skip_reason: Option<SkipReason>,
+    /// Which node the item landed as at `dest_path`, when that was recorded. A
+    /// restore moves back only that node, never a stranger under its name.
+    pub dest_identity: Option<NodeIdentity>,
 }
 
 impl RollbackUnit {
@@ -627,6 +641,7 @@ fn map_rollback_unit(conn: &Connection, item: &OperationItemRow) -> Result<Rollb
         overwrote: item.overwrote,
         outcome: item.outcome,
         rollback_skip_reason: item.rollback_skip_reason,
+        dest_identity: item.dest_identity,
     })
 }
 

@@ -94,6 +94,7 @@ fn record(journal: &OpJournal, name: &str) {
         mtime: Some(100),
         outcome: ItemOutcome::Done,
         overwrote: false,
+        dest_identity: None,
     }]);
 }
 

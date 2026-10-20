@@ -45,7 +45,7 @@
 
 use std::path::{Path, PathBuf};
 
-use cmdr_fs::volume::{Volume, VolumeError};
+use cmdr_fs::volume::{NodeIdentity, Volume, VolumeError};
 
 use super::store::{
     OperationRow, RollbackUnit, open_read_connection, ops_in_rolling_back, read_inverse_op, read_operation,
@@ -716,6 +716,19 @@ async fn remove_dir_if_empty(
     }
 }
 
+/// Whether the entry at `path` is the node the operation recorded landing there. A
+/// different node is [`SkipReason::Drift`]: someone else's item under the recorded
+/// name. A volume that can't say, or a stat that fails, proves nothing, so it fails
+/// safe too. One `lstat`, never a walk.
+async fn same_node(volume: &dyn Volume, path: &Path, recorded: NodeIdentity) -> Result<(), SkipReason> {
+    match volume.node_identity(path).await {
+        Ok(Some(live)) if live == recorded => Ok(()),
+        Ok(Some(_)) => Err(SkipReason::Drift),
+        Ok(None) => Err(SkipReason::UnverifiablePrecondition),
+        Err(_) => Err(SkipReason::Failed),
+    }
+}
+
 async fn restore_move(volumes: &dyn VolumeLookup, runner: &dyn RollbackRunner, unit: &RollbackUnit) -> ItemResult {
     if !unit.awaits_reversal() {
         return ItemResult::Skipped(SkipReason::Failed);
@@ -755,6 +768,13 @@ async fn restore_move(volumes: &dyn VolumeLookup, runner: &dyn RollbackRunner, u
         }
         Err(_) => return ItemResult::Skipped(SkipReason::Failed),
     };
+    // It must be the very node the op left there, when the op recorded which: the
+    // Trash gives a freed name to the next item trashed under it.
+    if let Some(recorded) = unit.dest_identity
+        && let Err(skip) = same_node(&*from_volume, from_path, recorded).await
+    {
+        return ItemResult::Skipped(skip);
+    }
     // For a file, verify it hasn't changed since the op (dirs: existence only —
     // a subtree isn't cheaply verifiable, so existence + a clear target is the
     // contract). Drift / unverifiable ⇒ skip.

@@ -12,7 +12,7 @@ use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use cmdr_fs::volume::{DEFAULT_VOLUME_ID, Volume};
+use cmdr_fs::volume::{DEFAULT_VOLUME_ID, NodeIdentity, Volume};
 use cmdr_operation_log::capture::FinalizeInputs;
 use cmdr_operation_log::types::RowRole;
 use cmdr_operation_log::types::{
@@ -188,6 +188,41 @@ pub(super) fn record_local_leaf(
         mtime,
         overwrote,
         outcome,
+        None,
+    );
+}
+
+/// Record the `rollback_unit` row of one top-level item the OS moved to the Trash,
+/// with its in-Trash location `in_trash` as the dest.
+///
+/// Also records WHICH node landed there, read with one `lstat` right after the
+/// trash, so an undo moves back only that node: the Trash hands a freed name to the
+/// next item trashed under it (`cmdr-operation-log` DETAILS § "A trashed item must
+/// still be the one trashed"). A stat that fails here records no identity, and the
+/// undo keeps the checks a row from before identities gets.
+pub(super) fn record_trashed(
+    scope: &OpScope,
+    entry_type: EntryType,
+    source: &Path,
+    in_trash: Option<&Path>,
+    size: Option<i64>,
+    mtime: Option<i64>,
+) {
+    let dest_identity = in_trash
+        .and_then(|path| std::fs::symlink_metadata(path).ok())
+        .and_then(|metadata| NodeIdentity::of(&metadata));
+    record_row(
+        scope,
+        entry_type,
+        RowRole::RollbackUnit,
+        DEFAULT_VOLUME_ID,
+        source,
+        in_trash.map(|d| (DEFAULT_VOLUME_ID, d)),
+        size,
+        mtime,
+        false,
+        ItemOutcome::Done,
+        dest_identity,
     );
 }
 
@@ -221,6 +256,7 @@ pub(super) fn record_volume_leaf(
         mtime,
         overwrote,
         outcome,
+        None,
     );
 }
 
@@ -379,6 +415,7 @@ pub(super) fn record_search_leaf(
         mtime,
         false,
         ItemOutcome::Done,
+        None,
     );
 }
 
@@ -397,6 +434,7 @@ fn record_row(
     mtime: Option<i64>,
     overwrote: bool,
     outcome: ItemOutcome,
+    dest_identity: Option<NodeIdentity>,
 ) {
     let (source_dir, source_name) = local_split(source);
     let (dest_volume_id, dest_dir, dest_name) = match dest {
@@ -422,6 +460,7 @@ fn record_row(
             mtime,
             outcome,
             overwrote,
+            dest_identity,
         }],
     );
 }
@@ -451,6 +490,7 @@ pub(super) fn record_created_dirs_on(scope: &OpScope, dest_volume_id: &str, dirs
             None,
             false,
             ItemOutcome::Done,
+            None,
         );
     }
 }
@@ -678,6 +718,7 @@ pub(super) fn record_compress_archive(
             mtime,
             outcome: ItemOutcome::Done,
             overwrote: !net_new,
+            dest_identity: None,
         }],
     );
 }

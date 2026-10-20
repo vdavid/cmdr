@@ -36,6 +36,7 @@ fn file_item(seq: i64, src_dir: &str, name: &str, dst_dir: &str) -> JournalItem 
         mtime: Some(1_700_000_000),
         outcome: ItemOutcome::Done,
         overwrote: false,
+        dest_identity: None,
     }
 }
 
@@ -77,6 +78,7 @@ fn open_record_finalize_round_trips_one_operation() {
         mtime: None,
         outcome: ItemOutcome::Done,
         overwrote: false,
+        dest_identity: None,
     };
     writer
         .record_items(
@@ -199,6 +201,7 @@ fn finalize_counts_split_by_row_role() {
         mtime: None,
         outcome: ItemOutcome::Done,
         overwrote: false,
+        dest_identity: None,
     };
     let leaf = |seq: i64, name: &str| JournalItem {
         seq,
@@ -214,6 +217,7 @@ fn finalize_counts_split_by_row_role() {
         mtime: None,
         outcome: ItemOutcome::Done,
         overwrote: false,
+        dest_identity: None,
     };
     writer
         .record_items("op-trash", vec![unit, leaf(1, "a.jpg"), leaf(2, "b.jpg")])
@@ -282,6 +286,7 @@ fn rollback_units_page_streams_reverse_and_excludes_search_leaves() {
         mtime: Some(1_700_000_000),
         outcome: ItemOutcome::Done,
         overwrote: false,
+        dest_identity: None,
     };
     let leaf = JournalItem {
         row_role: RowRole::SearchOnly,
@@ -501,4 +506,42 @@ fn reconcile_reads_find_rolling_back_ops_and_their_inverse() {
     );
 
     writer.shutdown();
+}
+
+/// The node a trashed item landed as reads back exactly, an inode past `i64::MAX`
+/// included (SQLite's integers are signed, so the column holds it bit-cast).
+#[test]
+fn a_recorded_dest_identity_round_trips_through_the_journal() {
+    use cmdr_fs::volume::NodeIdentity;
+
+    let (store, writer, _dir) = fresh();
+    writer
+        .open_operation(OpenOperation {
+            op_id: "op".into(),
+            kind: OpKind::Trash,
+            initiator: Initiator::User,
+            source_volume_id: Some("vol-1".to_string()),
+            dest_volume_id: None,
+            item_count: 2,
+            started_at: 1,
+            rolls_back_op_id: None,
+            execution_status: ExecutionStatus::Running,
+        })
+        .expect("open");
+    let landed = NodeIdentity {
+        inode: u64::MAX - 7,
+        birth_nanos: 1_792_523_387_123_456_789,
+    };
+    let trashed = JournalItem {
+        dest_identity: Some(landed),
+        ..file_item(0, "/work", "a.pdf", "/.Trash")
+    };
+    writer
+        .record_items("op", vec![trashed, file_item(1, "/work", "b.pdf", "/.Trash")])
+        .expect("record");
+    writer.flush_blocking().expect("flush");
+
+    let units = read_rollback_units_page(store.conn(), "op", i64::MAX, 10).expect("units");
+    let identities: Vec<_> = units.iter().map(|u| (u.seq, u.dest_identity)).collect();
+    assert_eq!(identities, vec![(1, None), (0, Some(landed))]);
 }

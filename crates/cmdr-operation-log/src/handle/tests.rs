@@ -55,6 +55,7 @@ fn item(name: &str) -> Vec<JournalItem> {
         mtime: Some(100),
         outcome: ItemOutcome::Done,
         overwrote: false,
+        dest_identity: None,
     }]
 }
 

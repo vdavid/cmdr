@@ -10,7 +10,7 @@
 
 #[cfg(doc)]
 use super::Volume; // the knobs' docs link the trait methods each one bends
-use super::{BackendKind, ConnectionState, IndexWalk, SpaceInfo, StreamWritten, VolumeError};
+use super::{BackendKind, ConnectionState, IndexWalk, NodeIdentity, SpaceInfo, StreamWritten, VolumeError};
 use crate::entry::FileEntry;
 use crate::ignore_poison::IgnorePoison;
 use crate::ignore_poison::RwLockIgnorePoison;
@@ -18,6 +18,7 @@ use crate::metadata::{CarriedMetadata, ClassOutcome, MetadataCaps, MetadataClass
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::RwLock;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 mod volume_impl;
 
@@ -30,6 +31,32 @@ struct InMemoryEntry {
     /// `created_at` and `permissions` stay on `metadata`, where a listing
     /// reads them.
     extra: CarriedMetadata,
+    /// What [`Volume::node_identity`] reports: fresh for every entry created, kept
+    /// across a rename, like an inode.
+    node: u64,
+}
+
+impl InMemoryEntry {
+    fn new(metadata: FileEntry, content: Option<Vec<u8>>) -> Self {
+        /// Unique across every in-memory volume in the process, so two entries
+        /// never share an identity by accident.
+        static NEXT_NODE: AtomicU64 = AtomicU64::new(1);
+        Self {
+            metadata,
+            content,
+            extra: CarriedMetadata::default(),
+            node: NEXT_NODE.fetch_add(1, Ordering::Relaxed),
+        }
+    }
+
+    /// What [`Volume::node_identity`] reports for this entry. A double has no birth
+    /// time worth faking: `node` alone is never reused.
+    fn identity(&self) -> NodeIdentity {
+        NodeIdentity {
+            inode: self.node,
+            birth_nanos: 0,
+        }
+    }
 }
 
 /// An in-memory volume for testing without touching the real file system.
@@ -367,10 +394,16 @@ impl InMemoryVolume {
         self.stat_failing.read_ignore_poison().contains(normalized)
     }
 
-    /// The one stat body behind `get_metadata` and `is_directory`: answers `f`
-    /// over the entry's metadata, `NotFound` for a missing path, and the typed
-    /// `IoError` for a path under [`Self::set_stat_failing`].
+    /// The stat body behind `get_metadata` and `is_directory`: answers `f` over the
+    /// entry's metadata, the same way [`Self::stat_entry_with`] does.
     fn stat_with<T>(&self, path: &Path, f: impl FnOnce(&FileEntry) -> T) -> Result<T, VolumeError> {
+        self.stat_entry_with(path, |entry| f(&entry.metadata))
+    }
+
+    /// The one stat body behind every per-path question: answers `f` over the
+    /// stored entry, `NotFound` for a missing path, and the typed `IoError` for a
+    /// path under [`Self::set_stat_failing`].
+    fn stat_entry_with<T>(&self, path: &Path, f: impl FnOnce(&InMemoryEntry) -> T) -> Result<T, VolumeError> {
         let entries = self.entries.read().map_err(|_| VolumeError::IoError {
             message: "Lock poisoned".into(),
             raw_os_error: None,
@@ -386,7 +419,7 @@ impl InMemoryVolume {
 
         entries
             .get(&normalized)
-            .map(|e| f(&e.metadata))
+            .map(f)
             .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))
     }
 
@@ -591,14 +624,7 @@ impl InMemoryVolume {
             let mut map = volume.entries.write_ignore_poison();
             for entry in entries {
                 let path = PathBuf::from(&entry.path);
-                map.insert(
-                    path,
-                    InMemoryEntry {
-                        metadata: entry,
-                        content: None,
-                        extra: CarriedMetadata::default(),
-                    },
-                );
+                map.insert(path, InMemoryEntry::new(entry, None));
             }
         }
         volume
@@ -716,14 +742,7 @@ impl InMemoryVolume {
             ..FileEntry::new(name, normalized.display().to_string(), false, false)
         };
         Self::touch_parent_of(entries, &normalized);
-        entries.insert(
-            normalized,
-            InMemoryEntry {
-                metadata,
-                content: Some(data),
-                extra: CarriedMetadata::default(),
-            },
-        );
+        entries.insert(normalized, InMemoryEntry::new(metadata, Some(data)));
     }
 
     /// Moves a folder's date to now when an entry lands in it or leaves it, as on

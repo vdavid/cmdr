@@ -388,6 +388,33 @@ fn trashed_dir_records_search_leaves_and_stays_full() {
     );
 }
 
+/// A trashed item's row records WHICH node landed in the Trash, read off the in-Trash
+/// path itself, so an undo can tell it from a stranger that later takes its name (#535).
+#[cfg(target_os = "macos")]
+#[test]
+fn trashed_item_records_the_node_it_landed_as_in_the_trash() {
+    use cmdr_fs::volume::NodeIdentity;
+    use cmdr_operation_log::store::read_rollback_units_page;
+
+    let (engine, log) = journaled();
+    let work = tempfile::tempdir().expect("work");
+    let dir = work.path().join("invoices");
+    std::fs::create_dir(&dir).expect("mk");
+    let before = NodeIdentity::of(&std::fs::symlink_metadata(&dir).expect("stat")).expect("APFS keeps a birth time");
+
+    install_canned_leaves(SearchCoverage::Full, None, &[]);
+    trash(&engine, "op-trash-identity", std::slice::from_ref(&dir));
+
+    let conn = open_read_connection(log.db()).expect("read conn");
+    let units = read_rollback_units_page(&conn, "op-trash-identity", i64::MAX, 10).expect("units");
+    assert_eq!(units.len(), 1, "{units:?}");
+    let in_trash = units[0].dest_path.clone().expect("macOS reports the in-Trash location");
+    let landed = NodeIdentity::of(&std::fs::symlink_metadata(&in_trash).expect("in the Trash")).expect("identity");
+    assert_eq!(units[0].dest_identity, Some(landed), "the node at the in-Trash path");
+    assert_eq!(landed, before, "a trip into the Trash keeps the node");
+    std::fs::remove_dir(&in_trash).expect("clean up the one item this test trashed");
+}
+
 /// A trash op whose one top-level item FAILS records no `search_only` rows for
 /// that item's subtree, while a sibling that succeeded keeps its leaves — so
 /// search can't return a trash that never happened (persist-after-success).
@@ -597,6 +624,7 @@ fn bench_persist_throughput() {
             mtime: Some(1),
             outcome: cmdr_operation_log::types::ItemOutcome::Done,
             overwrote: false,
+            dest_identity: None,
         })
         .collect();
     let t = std::time::Instant::now();
