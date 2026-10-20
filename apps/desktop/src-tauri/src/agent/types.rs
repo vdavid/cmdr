@@ -239,9 +239,10 @@ impl ProposalOutcomes {
     /// renders empty, never a header saying nothing happened: that would spend budget to say
     /// nothing.
     ///
-    /// ⚠️ **The instruction lives HERE, not in `SYSTEM_PROMPT`.** This block opens exactly one
-    /// kind of turn, and the system prompt rides the cached prefix of every turn the rail and
-    /// every wake ever run. A permanent tax on all of them, to steer one, is the wrong trade.
+    /// ⚠️ **The instruction lives in this turn's opener (`agent/prompts/followup.md`), not in
+    /// the system prompt.** This block opens exactly one kind of turn, and the system prompt
+    /// rides the cached prefix of every turn the rail and every wake ever run. A permanent tax
+    /// on all of them, to steer one, is the wrong trade.
     ///
     /// ❌ Never render this into the UI. It is deliberately English and deliberately shaped for
     /// a prompt; the rail says the same numbers in the user's own language.
@@ -249,16 +250,12 @@ impl ProposalOutcomes {
         if self.decisions.is_empty() {
             return String::new();
         }
-        let mut out = String::from("The user has answered suggestions you made:\n");
-        for decision in &self.decisions {
-            out.push_str(&format!("{}\n", decision.render()));
-        }
-        out.push_str(
-            "Save what you should do differently next time with memory_write or memory_edit. \
-             Then reply in one or two sentences, and ask a single short question only if their \
-             reason would change what you suggest next.\n",
-        );
-        out
+        let decisions: String = self
+            .decisions
+            .iter()
+            .map(|decision| format!("{}\n", decision.render()))
+            .collect();
+        crate::agent::prompts::followup(&decisions)
     }
 
     /// Every path the block mentions, in order. The follow-up message's FTS text: the display
@@ -310,7 +307,7 @@ mod tests {
     }
 
     /// The follow-up turn's opener says what happened AND what to do about it: the instruction
-    /// lives here rather than in `SYSTEM_PROMPT`, which every other turn would pay for.
+    /// lives here rather than in the system prompt, which every other turn would pay for.
     #[test]
     fn the_follow_up_prompt_asks_for_a_lesson_rather_than_only_reporting() {
         let rendered = ProposalOutcomes {

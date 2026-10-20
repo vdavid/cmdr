@@ -2161,10 +2161,13 @@ doubles as production code.
   or `optimizeDeps` doesn't answer for `build`. It deliberately enforces no UPPER bound against the plist: mapping a
   macOS version to "the WebKit we must assume" is a product call, not a fact), knip, type-drift, tests,
   e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)
-- **Desktop / Docs**: pluralize-noun, third-party-notices (regenerate-and-diff `THIRD-PARTY-NOTICES.md` from
-  `Cargo.lock` + `pnpm-lock.yaml` via cargo-about and `pnpm licenses list`, plus the hand-kept vendored credits of §
-  "Vendored credits"; the accepted-license list is derived from `deny.toml` rather than duplicated, the output is pinned
-  to be identical on macOS and Linux, and the runner's input fingerprint is what keeps it off unrelated runs)
+- **Desktop / Docs**: pluralize-noun, prompt-lint (every agent prompt in `apps/desktop/src-tauri/src/agent/prompts/` has
+  complete frontmatter and a template that compiles, and its `render` call in `mod.rs` passes exactly the variables its
+  `variables:` declares and its body uses; a call in any other shape fails closed), third-party-notices
+  (regenerate-and-diff `THIRD-PARTY-NOTICES.md` from `Cargo.lock` + `pnpm-lock.yaml` via cargo-about and
+  `pnpm licenses list`, plus the hand-kept vendored credits of § "Vendored credits"; the accepted-license list is
+  derived from `deny.toml` rather than duplicated, the output is pinned to be identical on macOS and Linux, and the
+  runner's input fingerprint is what keeps it off unrelated runs)
 - **Website / Astro**: astro-sync, eslint, typecheck, build, html-validate, bundle-size (warn-only), e2e. `astro-sync`
   generates Astro's gitignored `types.d.ts` and `website-eslint` depends on it: the type-aware rules read
   `astro:content` through it, and on an unsynced tree every blog-post field is `any`, so the `no-unsafe-*` rules bury

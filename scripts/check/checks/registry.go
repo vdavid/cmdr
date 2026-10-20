@@ -184,6 +184,17 @@ var AllChecks = []CheckDefinition{
 		Run:         RunLogErrorMacro,
 	},
 	{
+		ID:          "desktop-prompt-lint",
+		Nickname:    "prompt-lint",
+		DisplayName: "agent prompt templates",
+		App:         AppDesktop,
+		Tech:        "📝 Docs",
+		DependsOn:   nil,
+		IsFast:      true,
+		Inputs:      []string{promptsDir + "/**"}, // the prompt files and the mod.rs that renders them
+		Run:         RunPromptLint,
+	},
+	{
 		ID:          "desktop-rust-sqlite-open-direct",
 		Nickname:    "sqlite-open-direct",
 		DisplayName: "sqlite-open-direct",

@@ -307,6 +307,9 @@ jobs:
       - name: Check sqlite-open-direct
         run: ./scripts/check/check --check desktop-rust-sqlite-open-direct --ci
 
+      - name: Check prompt-lint
+        run: ./scripts/check/check --check desktop-prompt-lint --ci
+
       - name: Check discarded-outcome
         run: ./scripts/check/check --check desktop-rust-discarded-outcome --ci
 

@@ -13,6 +13,7 @@ the surface, so every later slice grows here too.
 - `memory/`: the jailed, capped folder the agent writes about the user. `memory/CLAUDE.md`.
 - `wake/`: the proactive pipeline and the thread driving it. `wake/CLAUDE.md`.
 - `chat/`: `run_turn` + `ChatRuntime` plus pure context assembly. `chat/CLAUDE.md`.
+- `prompts/`: the authored prompts as Markdown, read from disk in dev builds. `prompts/CLAUDE.md`.
 - `types.rs`, `outcomes.rs`, `pricing.rs`
   (an unknown cloud model is `priced = false`, never a silent $0; prices drift, re-verify at release).
 

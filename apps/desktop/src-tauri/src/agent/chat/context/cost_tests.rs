@@ -100,7 +100,7 @@ fn every_call_pays_about_3_500_tokens_of_fixed_overhead() {
     let tools = crate::agent::tools::agent_tool_declarations();
     assert_eq!(tools.len(), 19, "the overhead below is the cost of THESE declarations");
 
-    let system = estimate_prompt_tokens(crate::agent::chat::system_prompt::SYSTEM_PROMPT, &[], &[]);
+    let system = estimate_prompt_tokens(&crate::agent::chat::system_prompt::system_prompt(), &[], &[]);
     let declarations = estimate_prompt_tokens("", &tools, &[]);
 
     assert_near(system, SYSTEM_PROMPT_TOKENS, "the system prompt");
@@ -242,8 +242,9 @@ fn assemble_rename_turn(files: usize, budget: usize) -> (usize, usize, usize) {
     ));
 
     let tools = crate::agent::tools::agent_tool_declarations();
+    let system_prompt = crate::agent::chat::system_prompt::system_prompt();
     let real_prefix = PrefixInputs {
-        system_prompt: crate::agent::chat::system_prompt::SYSTEM_PROMPT,
+        system_prompt: &system_prompt,
         cmdr_md: None,
         memory: None,
         tools: &tools,

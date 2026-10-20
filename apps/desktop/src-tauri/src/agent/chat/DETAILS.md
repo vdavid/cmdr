@@ -7,7 +7,8 @@ Pull-tier docs for `agent/chat/`. Must-knows live in `CLAUDE.md`.
 `run_turn` assembles and sends, top to bottom:
 
 1. **System** (`system` arg), in three parts and this order: the agent's own memory, fenced
-   (§ The memory block); `system_prompt::SYSTEM_PROMPT`; then the user's `CMDR.md` under a
+   (§ The memory block); `system_prompt::system_prompt()` (the text is `../prompts/system.md`, read once per turn);
+   then the user's `CMDR.md` under a
    header if present (§ Which `CMDR.md`, and how much of it). Stable, cached. The prompt's
    labelled sections (identity, what you can do, coverage, memory, renaming, suggesting
    operations, evidence, style) let a rule be found and edited without re-reading the block;
@@ -101,7 +102,7 @@ pins that a plan citing one is refused, with the same quote checking out before 
 <what the agent wrote about the user, cut to this turn's share>
 ----- END SAVED NOTES -----
 
-<SYSTEM_PROMPT>
+<the system prompt>
 
 The user's CMDR.md (their notes for you; read-only):
 <CMDR.md>
@@ -308,7 +309,7 @@ Estimated tokens from the shipped assets and `estimate_prompt_tokens`. Every fig
 `context/cost_tests.rs`, whose constants block is the single copy; a failure there names both numbers and says to update
 the test and this section together.
 
-- **Fixed overhead: 6,263 tokens** on every single call — 1,994 for `SYSTEM_PROMPT` and 4,269 for the 19 tool
+- **Fixed overhead: 6,263 tokens** on every single call — 1,994 for the system prompt and 4,269 for the 19 tool
   declarations. The old flat 8k budget, against a prefix half this size, still left only ~4.9k for the actual work, so
   an 11-file `image_facts` batch fit and a 12-file one did not. **It grows with the tool view**: the suggested-ops trio
   is ~1,000 tokens of schema, which every call pays whether or not it suggests anything, and which costs a 16k budget

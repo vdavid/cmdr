@@ -17,7 +17,7 @@ use super::repeats::{FailedCalls, Repeat};
 use super::types::{TurnParams, TurnResult, TurnTally};
 use super::{LOG_TARGET, context};
 use crate::agent::chat::context::{ElisionFacts, MAX_TOOL_TURNS, MAX_WALL_TIME, PrefixInputs};
-use crate::agent::chat::system_prompt::SYSTEM_PROMPT;
+use crate::agent::chat::system_prompt::system_prompt;
 use crate::agent::llm::AgentLlm;
 use crate::agent::llm::types::{
     AgentDelta, AgentLlmError, AgentMessage, AgentPart, AgentRole, AgentStopReason, AgentToolCall, AgentToolResult,
@@ -99,6 +99,9 @@ async fn drive(
     // What already came back with a problem this turn, so an identical retry doesn't cost
     // another provider round trip for the same answer (`repeats.rs`).
     let mut failed_calls = FailedCalls::default();
+    // Read once per turn: a dev build reads the prompt file on each call, and every model call
+    // of one turn must send the same prefix bytes.
+    let system_prompt = system_prompt();
 
     loop {
         // Cancellation and both budgets are checked at the top, so no `respond` fires
@@ -118,7 +121,7 @@ async fn drive(
         }
 
         let prefix = PrefixInputs {
-            system_prompt: SYSTEM_PROMPT,
+            system_prompt: &system_prompt,
             cmdr_md: params.cmdr_md,
             memory: params.memory,
             tools,
