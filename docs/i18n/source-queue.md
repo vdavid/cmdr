@@ -7,6 +7,14 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
 
 ## Open
 
+- `servers.certificate.trustAndConnect` / `servers.hostKey.trustAndConnect` and the two `changedDisclosure` keys: same
+  English ("Trust and connect", "I’ve checked it") on two nouns, so gendered or object-taking locales split one label
+  (es, sv, flagged by `term-consistency`) or dropped the pronoun (de, fr). Name the object in English, or allowlist.
+  (all)
+- No `batch` or `run` concept, though every locale settled them for `askCmdr.renameUndo.undoJobLabel`; the `fingerprint`
+  concept says "SSH key" only, but now covers TLS certificates too. (de, fr, hu, nl, vi, zh, zh-Hant)
+- The brief's "No concept yet" lists carry contraction fragments and stopwords ("hasn", "got", "sitting"); the word
+  extractor could skip them. (vi, zh, zh-Hant)
 - `whatsNew.securityNotice.title`: the English says "This version fixed", but the description says the count spans every
   version installed since the dialog was last seen. Say which it is ("These updates fixed …"?); all locales mirrored
   "this version". (all)
