@@ -182,8 +182,12 @@ and `curl` in the image, and `Dockerfile.base` names both (`openssh-client`, `cu
 - `app-stacks-after-failure.txt`: Playwright exited non-zero. The app is still alive then, so a hang that failed tests
   is still in place to read.
 - `app-stacks-still-running.txt`: the tests have run `E2E_STACK_DUMP_AFTER_SECS` (default 900, against about 8.5 min on
-  a green run). The job's 40-min timeout kills the step before any on-failure hook runs, so a runaway needs a dump taken
-  from inside.
+  a green run) AND a test has already failed its last attempt. The job's 40-min timeout kills the step before any
+  on-failure hook runs, so a runaway needs a dump taken from inside. ⚠️ The second condition is what keeps the dump
+  harmless: gdb stops every app thread while it reads them, which could push a test in flight past its timeout, so it
+  only attaches to a run that's already lost. A slow run that's still passing is never paused. The gate greps the
+  Playwright output (teed to `/tmp/playwright-progress.log` in the container) for the list reporter's final-failure
+  line, a cross plus `(retry #1)`, which assumes `retries: 1` in `playwright.config.ts`.
 
 CI uploads the folder as the `e2e-app-stacks` artifact on failure. Why it's permanent: the drive index hang (GitHub
 issue #564) struck one run in two to seven and logged nothing at INFO, so only a dump already in place catches the next

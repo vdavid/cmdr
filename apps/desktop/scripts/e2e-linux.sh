@@ -674,7 +674,20 @@ else
             # A run still going this long is a runaway (a green run takes about 8.5
             # min of tests), and the job timeout would end it before any on-failure
             # step ran, so take a dump while the app is still alive.
-            ( sleep "${E2E_STACK_DUMP_AFTER_SECS:-900}" && dump_app_stacks still-running ) &
+            #
+            # gdb stops every app thread while it reads them, which could push a
+            # test in flight past its timeout. So this dump waits until the run is
+            # already lost: a test has failed its LAST attempt (the list reporter
+            # marks that line with a cross and "retry #1", since retries is 1). A
+            # slow run that is still passing never gets attached to, so the dump can
+            # never turn a pass into a failure.
+            PLAYWRIGHT_PROGRESS=/tmp/playwright-progress.log
+            : > "$PLAYWRIGHT_PROGRESS"
+            (
+                sleep "${E2E_STACK_DUMP_AFTER_SECS:-900}"
+                until grep -q "✘.*(retry #1)" "$PLAYWRIGHT_PROGRESS"; do sleep 15; done
+                dump_app_stacks still-running
+            ) &
             DUMP_TIMER_PID=$!
 
             # Run Playwright tests. We deliberately do NOT pass --reporter
@@ -687,13 +700,15 @@ else
                 npx playwright test \
                     --config test/e2e-playwright/playwright.config.ts \
                     --project tauri \
-                    --grep "$E2E_GREP" ${E2E_REPEAT_EACH:+--repeat-each "$E2E_REPEAT_EACH"}
+                    --grep "$E2E_GREP" ${E2E_REPEAT_EACH:+--repeat-each "$E2E_REPEAT_EACH"} \
+                    2>&1 | tee "$PLAYWRIGHT_PROGRESS"
             else
                 npx playwright test \
                     --config test/e2e-playwright/playwright.config.ts \
-                    --project tauri ${E2E_REPEAT_EACH:+--repeat-each "$E2E_REPEAT_EACH"}
+                    --project tauri ${E2E_REPEAT_EACH:+--repeat-each "$E2E_REPEAT_EACH"} \
+                    2>&1 | tee "$PLAYWRIGHT_PROGRESS"
             fi
-            playwright_status=$?
+            playwright_status=${PIPESTATUS[0]}
             set -e
             kill $DUMP_TIMER_PID 2>/dev/null || true
             # The app is still running here, so a hang that failed tests is still
