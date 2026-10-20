@@ -1184,7 +1184,7 @@ default; a share answers `username_password { guestAllowed }` instead). That is 
 ever asked about a volume that just reported `needs_credentials`, so a needless password box is recoverable while a
 wrong `nothing` is a volume nobody can sign in to. The rung-by-rung cells are
 `crates/cmdr-sftp/src/volume/reconnect_test.rs`; the default's are
-`apps/desktop/src-tauri/src/commands/network_test.rs`.
+`apps/desktop/src-tauri/src/commands/volume_sign_in_test.rs`.
 
 - ❗ **The username field in a sign-in form is read-only, and it is the volume's own account.**
   `reconnect_with_credentials` refuses a username that isn't this volume's, because the volume id is

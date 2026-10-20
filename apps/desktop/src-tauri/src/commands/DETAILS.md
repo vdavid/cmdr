@@ -65,7 +65,7 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   protocol-agnostic `cancel_server_connect` / `disconnect_place` / `forget_server`. ❗ There is
   deliberately no command that returns a stored secret. The flow behind the commands is `network::sftp_volume_wiring`;
   the frontend contract is `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend".
-  - ❗ **Reconnecting an SFTP volume, and asking what a sign-in would want, both go through `network.rs`**:
+  - ❗ **Reconnecting an SFTP volume, and asking what a sign-in would want, both go through `volume_sign_in.rs`**:
     `reconnect_volume`, `reconnect_volume_with_credentials`, `remember_volume_sign_in` (files a sign-in that already
     connected, without dialing, #603), and `get_volume_sign_in_state`. All four are
     backend-neutral: they delegate to a `Volume` trait method on whatever is registered, so no backend owns a copy.
@@ -78,7 +78,7 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 - **`webdav.rs`**: the WebDAV surface minus connecting and minus editing without connecting, shaped like `sftp.rs`
   minus host keys: `save_webdav_credentials` (keyed `scheme://host:port` + username; `has` / `delete` are
   crate-internal, like SFTP's), `get_known_webdav_servers`, and `get_webdav_unattended_reconnect`. Same rules as SFTP: the `attempt_id` is the caller's, reconnect and sign-in go
-  through `network.rs`, and no command returns a stored secret. The flow is `network::webdav_volume_wiring`; the
+  through `volume_sign_in.rs`, and no command returns a stored secret. The flow is `network::webdav_volume_wiring`; the
   contract is `crates/cmdr-webdav/DETAILS.md` § "Connecting from the frontend".
 - **`s3.rs`**: the S3 surface the facade has no reason to widen: the ACCOUNT's secret (`save` / `has` / `delete`, keyed
   `s3+<scheme>://<host>:<port>` + the access key id, shared by every bucket under the key), `get_known_s3_places` (each
@@ -103,7 +103,7 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
     Digest-only server never saw the password, so "check your password" is the wrong fix to put in front of someone.
   - ❗ **`connect_saved_place` refuses a REGISTERED id** (`SavedPlaceRefusal::AlreadyConnected`). Re-dialing would
     register a second volume under the same id; a session that dropped is mended by
-    `network.rs::reconnect_volume_with_credentials`, which is what enforces the read-only username rule and the
+    `volume_sign_in.rs::reconnect_volume_with_credentials`, which is what enforces the read-only username rule and the
     never-seeds rule. Neither refusal is something a person did, which is why they are an `Err` rather than an outcome:
     the frontend reads either as a `saved` row that went stale and moves on (reload or close), ❌ never a sentence
     (`apps/desktop/src/lib/servers/DETAILS.md` § The three arms).
@@ -160,14 +160,17 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
     id is the account root's place id, the SMB host → shares shape (`servers/s3_accounts.rs`); every per-place command
     takes the place's own volume id. Its outcomes add `access_denied`, `bucket_list_refused`, `bucket_not_found`,
     `region_mismatch`, `clock_skewed`, and `not_an_s3_endpoint`, with a wrong secret reusing `authentication_rejected`.
-- **`network.rs`**: SMB/network shares: discovery, share listing, keychain, mounting, direct-connection upgrade,
-  in-place reconnect (`reconnect_volume`: backend single-flighted via `Volume::attempt_reconnect`;
-  `reconnect_volume_with_credentials`: the "Sign in" path after an auth-failure reconnect give-up, via
-  `Volume::reconnect_with_credentials`), what FORM a sign-in takes (`get_volume_sign_in_state`, via
+- **`volume_sign_in.rs`**: the backend-neutral sign-in commands, one per `Volume` trait method: in-place reconnect
+  (`reconnect_volume`: backend single-flighted via `Volume::attempt_reconnect`; `reconnect_volume_with_credentials`:
+  the "Sign in" path after an auth-failure reconnect give-up, via `Volume::reconnect_with_credentials`), filing a
+  sign-in that already connected (`remember_volume_sign_in`, via `Volume::remember_sign_in`, the sheet's "Try again"
+  after a refused save, #603), and what FORM a sign-in takes (`get_volume_sign_in_state`, via
   `Volume::sign_in_prompt`, a `SignInShape` tagged on `kind`, read live when a banner renders, ❌ never carried on a
   connect result and ❌ never derived from the protocol or the sheet's mode; an unregistered id and a backend with no
   story of its own both answer `password`, the safe way to be wrong, and a share answers `username_password` because
-  the share is the identity and the account is a field on it), per-volume disconnect (`disconnect_smb_volume`: macOS shells out to
+  the share is the identity and the account is a field on it). Off macOS and Linux, `stubs/network.rs` stands in.
+- **`network.rs`**: SMB/network shares: discovery, share listing, keychain, mounting, direct-connection upgrade,
+  per-volume disconnect (`disconnect_smb_volume`: macOS shells out to
   `diskutil unmount`, Linux drops the smb2 session). Borrow Finder's saved password (macOS):
   `system_has_saved_smb_password` (prompt-free probe driving the "Use saved password" offer) and
   `upgrade_to_smb_volume_using_saved_password` (consent-gated read via `secrets::system_keychain_smb` → direct smb2 →

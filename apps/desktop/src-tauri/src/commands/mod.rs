@@ -70,6 +70,8 @@ pub mod smb_diagnostics;
 pub mod sync_status; // Has both macOS and non-macOS implementations
 pub mod usage;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
+pub mod volume_sign_in; // Backend-neutral sign-in commands; `stubs/network.rs` stands in elsewhere
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod volumes;
 // WebDAV: the same gate and the same reason as `sftp`. ❌ No stub counterpart.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
