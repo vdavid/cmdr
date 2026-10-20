@@ -719,8 +719,9 @@ impl CutOffLanding {
     /// to the abandoned-write cleanup; a clearing delete takes one stat (taken:
     /// the temp is a spare copy and goes; can't tell: it stays recorded as a
     /// landing for the next sweep that reaches the share); a rename after the
-    /// delete rescues the bytes out of temp space, or leaves them recorded when
-    /// the share can't take that rename either. A swap that moved the original
+    /// delete asks the temp first (`give_up_onto_cleared`): gone with our bytes
+    /// at the name is landed, still there rescues the bytes out of temp space,
+    /// and a share that can't say leaves them recorded. A swap that moved the original
     /// aside puts it back, or leaves its aside record for the next sweep when
     /// the share can't say. `Ok` when the share answered after all and the
     /// landing finished.
@@ -731,7 +732,7 @@ impl CutOffLanding {
             CutOffAt::ClearingDelete(first) => {
                 after_a_refused_delete(dest_volume, landing, first, error, Patience::GaveUp).await
             }
-            CutOffAt::RenameOntoCleared => return Err(rescue(dest_volume, landing, error).await),
+            CutOffAt::RenameOntoCleared => return give_up_onto_cleared(dest_volume, landing, error).await,
             CutOffAt::SettingAside => after_a_refused_aside(dest_volume, landing, error, Patience::GaveUp).await,
             CutOffAt::RenameOntoAside => return give_up_onto_aside(dest_volume, landing, error).await,
         };
@@ -740,6 +741,33 @@ impl CutOffLanding {
             // Unreachable: a landing that gave up cuts nothing off.
             LandingError::CutOff(cut_off) => cut_off.error.into(),
         })
+    }
+}
+
+/// [`CutOffLanding::give_up`] of the rename onto a cleared name: the temp says
+/// whether it happened, so a rename the server performed before its reply was
+/// lost is never "rescued" from a temp that's no longer there.
+///
+/// - **The temp is there**: the rename never happened, and the bytes leave
+///   temp space ([`rescue`]).
+/// - **The temp is gone** and nothing of ours discarded it: the rename
+///   happened, when the name holds exactly what we wrote. Anything else at the
+///   name is no proof, and with the temp gone there's nothing left to protect.
+/// - **The share can't say**: the landing stays recorded for the next sweep
+///   that reaches it, which finishes the landing.
+async fn give_up_onto_cleared(
+    dest_volume: &Arc<dyn Volume>,
+    mut landing: Landing,
+    error: VolumeError,
+) -> Result<(), FinalizeFailure> {
+    match dest_volume.get_metadata(landing.temp()).await {
+        Ok(_) => Err(rescue(dest_volume, landing, error).await),
+        Err(VolumeError::NotFound(_)) if !landing.discard_asked => {
+            let landed = holds_our_size(dest_volume, &landing.final_path, landing.size).await;
+            landing.settled();
+            if landed { Ok(()) } else { Err(error.into()) }
+        }
+        _ => Err(error.into()),
     }
 }
 

@@ -22,6 +22,7 @@ use std::sync::{Arc, Mutex};
 
 use super::super::super::state::WriteOperationState;
 use super::super::super::transfer_tree::NodeId;
+use super::super::retry::after_a_cut_off_landing_wait;
 use super::super::staged_write::{LandingError, Resumed, StagedWrite};
 use super::super::transfer_driver::SourceProgress;
 use super::super::volume_outage::{self, OutageEnd, OutageFailure, StartedOn, lost_connection, wait_after_failure};
@@ -222,7 +223,8 @@ pub(super) async fn extract_sequential_subtree(
 
 /// Gives one member's written temp its name, riding out an outage the landing
 /// meets the way `stream_pipe_file` does: a step the transport cut off waits
-/// for the destination, then settles what it did and lands what's left
+/// for the destination (or, with nothing to wait for, takes the per-file retry's
+/// backoff), then settles what it did and lands what's left
 /// (`staged_write::CutOffLanding`).
 ///
 /// ❗ A one-pass decode can't run the member again, so whatever would run the
@@ -242,9 +244,10 @@ async fn land_member(
         Err(LandingError::Failed(failure)) => return Err(PathedVolumeError::from_landing(failure, dest_path)),
         Err(LandingError::CutOff(cut_off)) => cut_off,
     };
-    let mut outages = 0;
+    let (mut outages, mut attempt) = (0, 1);
     loop {
         let ended = wait_after_failure(state, cut_off.error(), &volumes, &started_on, &mut outages).await;
+        let ended = after_a_cut_off_landing_wait(ended, cut_off.error(), &mut attempt, state).await;
         if ended != OutageEnd::Back {
             let lost = lost_connection(ended, cut_off.error(), &volumes);
             return match cut_off.give_up(dest_volume).await {

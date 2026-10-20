@@ -32,6 +32,9 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::super::state::WriteOperationState;
+use super::transfer_probe::{TaskPhase, note_task_retry, set_task_phase};
+use super::volume_outage::OutageEnd;
+use cmdr_fs::log_error::LogError;
 use cmdr_fs::volume::VolumeError;
 
 /// How many times one file's write may run in total, the first try included.
@@ -88,6 +91,54 @@ pub(super) async fn wait_before_retry(state: &Arc<WriteOperationState>, failed_a
         biased;
         () = state.stop_work.cancelled() => false,
         () = tokio::time::sleep(backoff_after(failed_attempt)) => !state.work_stopped(),
+    }
+}
+
+/// How the wait after a landing step the transport cut off (a rename, a swap's
+/// clearing delete, a publish's replace) ended, once a blip with nothing to
+/// wait for has had the per-file retry: `ended` is
+/// `volume_outage::wait_after_failure`'s answer for `error`, and `attempt` is
+/// the file's count (1-based).
+///
+/// - [`OutageEnd::Back`] gives the file a fresh set of attempts, as a write's
+///   outage does.
+/// - [`OutageEnd::NotWaitable`] (a stale MTP handle, an OS-mounted share's
+///   timeout, a live session's timeout) takes a write's gates and backoff
+///   ([`should_retry`], [`wait_before_retry`]): `Back` once the backoff ran,
+///   `Cancelled` when the work stopped during it, and `NotWaitable` still when
+///   there's no retry for it (a refusal, or the attempts are spent).
+///
+/// ❗ On `Back` the caller RESUMES (`CutOffLanding::resume`), ❌ never gives up
+/// on a blip: the step may have been performed, and only the resume's stat
+/// says so. Giving up parked the new bytes under ` (recovered)` with the
+/// original already gone, or named a temp a performed rename had moved.
+pub(crate) async fn after_a_cut_off_landing_wait(
+    ended: OutageEnd,
+    error: &VolumeError,
+    attempt: &mut u32,
+    state: &Arc<WriteOperationState>,
+) -> OutageEnd {
+    match ended {
+        OutageEnd::Back => {
+            *attempt = 1;
+            OutageEnd::Back
+        }
+        OutageEnd::NotWaitable if should_retry(error, *attempt, state) => {
+            log::warn!(
+                target: "copy",
+                "landing: attempt {attempt} of {MAX_ATTEMPTS} was cut off ({error}) with nothing to wait for; \
+                 settling it again in {:?}",
+                backoff_after(*attempt), error = LogError(error),
+            );
+            note_task_retry();
+            set_task_phase(TaskPhase::WaitingToRetry);
+            if !wait_before_retry(state, *attempt).await {
+                return OutageEnd::Cancelled;
+            }
+            *attempt += 1;
+            OutageEnd::Back
+        }
+        ended => ended,
     }
 }
 

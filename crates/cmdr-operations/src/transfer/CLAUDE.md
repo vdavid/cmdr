@@ -18,8 +18,8 @@ Drivers: `transfer_driver/CLAUDE.md`. File map: `DETAILS.md` § Files.
 - **A source that would land on ITSELF is a duplicate, ❌ never a conflict**: settled by `dev+ino` per TOP-LEVEL source,
   before the loop. DETAILS § "Self-collision".
 - **A symlink is a LEAF to a same-volume move (cross-volume follows it) and to every copy's DESTINATION**: ask
-  `validation::is_real_directory` / `Volume::entry_kind`, ❌ never `Path::is_dir` / `Volume::is_directory` (both
-  follow it). DETAILS § "Symlinks are opaque to a move".
+  `validation::is_real_directory` / `Volume::entry_kind`, ❌ never `Path::is_dir` / `Volume::is_directory` (both follow
+  it). DETAILS § "Symlinks are opaque to a move".
 - **A ledger entry carries the identity it landed with, ❌ never an mtime** (`../ledger.rs`): local = size +
   `(dev,ino)`, volume = size, a partial marked as ITS OWN. Ledgers POP as they reverse. DETAILS § "What the in-flight
   ledgers record".
@@ -47,7 +47,7 @@ Drivers: `transfer_driver/CLAUDE.md`. File map: `DETAILS.md` § Files.
   deletes its own partial; ❌ never race a write against it. Tier 2 (`backend_abort`) skips cleanup. A cancel AND the
   concurrent driver's first failure fire `state.stop_work` (it DRAINS, ❌ never drops); only the intent tells them
   apart. DETAILS § "Two tiers of cancel".
-- **Retry is per-FILE, ONLY inside `stream_pipe_file`** (`retry.rs`): ❌ never higher, ❌ never on a `Cancelled`. A
+- **Retry is per-FILE** (`retry.rs`): ❌ never higher, ❌ never on a `Cancelled`; a cut-off landing RESUMES. A
   `Disconnected` volume is WAITED for (`volume_outage.rs`); ❌ only re-runnable calls use `through_outages`. **The stall
   watchdog is GATED** (liveness `Dead`, SMB only, AND `STALL_ABORT_AFTER`): ❌ never collapse the AND.
 

@@ -49,6 +49,7 @@ use super::super::journal;
 use super::super::scratch_dir::ScratchDir;
 use super::super::state::WriteOperationState;
 use super::super::transfer::StagedWrite;
+use super::super::transfer::retry::after_a_cut_off_landing_wait;
 use super::super::transfer::staged_write::{LandingError, LandingSource, Resumed};
 use super::super::transfer::volume::PathRole;
 use super::super::transfer::volume_outage::{OutageEnd, StartedOn, lost_connection, wait_after_failure};
@@ -380,8 +381,10 @@ async fn swap_into_place(
         Err(LandingError::Failed(failure)) => return Swapped::Ended(landing_failure(archive_path, failure, None)),
         Err(LandingError::CutOff(cut_off)) => cut_off,
     };
+    let mut attempt = 1;
     loop {
         let ended = wait_after_failure(state, cut_off.error(), &volumes, &started_on, outages).await;
+        let ended = after_a_cut_off_landing_wait(ended, cut_off.error(), &mut attempt, state).await;
         if ended != OutageEnd::Back {
             let lost = lost_connection(ended, cut_off.error(), &volumes);
             return match cut_off.give_up(parent).await {

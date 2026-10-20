@@ -1906,10 +1906,21 @@ blip. The bug this whole effort exists to kill is an infinite hang, so a retry l
 reintroduce it in a new costume — the cap is pinned by call count, not by hope
 (`a_destination_that_never_recovers_gives_up_at_the_attempt_cap`).
 
+**A landing step a blip cut off takes the same retry, then resumes** (`retry::after_a_cut_off_landing_wait`). A
+rename, a swap's clearing delete, or a publish's replace that meets a transport fault with nothing to wait for
+(`OutageEnd::NotWaitable`: MTP's `StaleDestinationHandle` / `DeviceSessionReset`, an OS-mounted share's `ETIMEDOUT`, a
+`ConnectionTimeout` on a live session) gets `should_retry`'s gates and backoff, sharing the file's attempt count, and
+then the same `CutOffLanding::resume` an outage's end gets, which settles by stat what the step did. ❌ Never a give-up
+on the first blip: it parked the new bytes under ` (recovered)` with the original already deleted, and when the
+timed-out rename had happened, the rescue found no temp and the report named one that didn't exist. Every landing wait
+asks it: `stream_pipe_file`, the sequential extract's `land_member`, and the archive edit's swap and fresh publish.
+Pinned by `volume/strategy_landing_retry_tests.rs`.
+
 **Scope: streaming writes only.** `volume/sequential_extract.rs` (a compressed tar / solid 7z source) has its own write
-site and deliberately gets NO retry. Its source is a one-pass decoder sitting at a fixed position, so a per-file restart
-would mean re-decoding the whole archive prefix — the very O(n²) the sequential path exists to avoid. Its landing does
-wait out an outage (§ "Where it's asked, and why only there"), since settling a landing streams nothing. The local-FS
+site and deliberately gets NO retry of its write. Its source is a one-pass decoder sitting at a fixed position, so a
+per-file restart would mean re-decoding the whole archive prefix — the very O(n²) the sequential path exists to avoid.
+Its landing does wait out an outage (§ "Where it's asked, and why only there") and takes the landing's blip retry above,
+since settling a landing streams nothing. The local-FS
 engine (`chunked_copy.rs`) is likewise untouched: a local write that fails with a transport errno is either a dying disk
 or a network mount the volume layer should be handling, and neither is improved by retrying inside the sync chunk loop.
 
@@ -2080,11 +2091,14 @@ landing, the same one a save during the copy falls into, and the outage only len
 need the conflict's view of the original carried down to every swap site and checked at every landing, ❌ not at the
 resume alone.
 
-A step of the settle that meets the transport again cuts the landing off again (bounded by `MAX_OUTAGES_PER_ITEM`); one
-that meets a refusal settles by the refusal rules. A Cancel, a give-up, or a drop that ends the wait AFTER a claimed
-name's way may have been cleared leaves the temp recorded as a landing, rescued when the share answers and kept for the
-next sweep that reaches it when it doesn't (`Landing`'s `Drop` hands a dropped one to the volume's next arrival), ❌
-never cleaned as a partial. One that ends a swap after its move aside puts the original back when the share answers, and
+A step of the settle that meets the transport again cuts the landing off again (bounded by `MAX_OUTAGES_PER_ITEM`, and
+for a blip with nothing to wait for by the file's attempts, § "Retrying one FILE"); one that meets a refusal settles by
+the refusal rules. A Cancel, a give-up, or a drop that ends the wait AFTER a claimed name's way may have been cleared
+leaves the temp recorded as a landing, rescued when the share answers and kept for the next sweep that reaches it when
+it doesn't (`Landing`'s `Drop` hands a dropped one to the volume's next arrival), ❌ never cleaned as a partial. A
+give-up at the rename onto the cleared name asks the temp first (`give_up_onto_cleared`, as `give_up_onto_aside` does
+for a swap): gone with a file of our size at the name is landed, still there is rescued, and a share that can't say
+keeps the record. One that ends a swap after its move aside puts the original back when the share answers, and
 otherwise leaves the aside recorded for the volume's next arrival, whose sweep puts it back (or removes it, once the
 name holds the replacement whole); the temp, never the only copy, goes with the abandoned-write cleanup. ❌ Don't loosen
 any proof to "something is at the name": a file claimed by mistake enters the rollback ledger as ours, and an undo

@@ -589,6 +589,64 @@ async fn a_landing_that_cleared_the_way_and_then_could_not_rename_rescues_the_ne
     );
 }
 
+/// A destination whose rename onto `/notes.txt` goes through and then loses
+/// its reply on the transport.
+struct RenamesThenLosesTheReply {
+    inner: Arc<InMemoryVolume>,
+}
+
+impl Volume for RenamesThenLosesTheReply {
+    forward_volume_methods!(inner => name, root, get_metadata, exists, delete, list_directory);
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn rename<'a>(
+        &'a self,
+        from: &'a Path,
+        to: &'a Path,
+        force: bool,
+    ) -> std::pin::Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            self.inner.rename(from, to, force).await?;
+            if to == Path::new("/notes.txt") {
+                return Err(VolumeError::ConnectionTimeout("the rename's reply never came".into()));
+            }
+            Ok(())
+        })
+    }
+}
+
+/// A rename onto the cleared name that the server performed before its reply
+/// was lost, given up at once: the temp is gone and the name holds our bytes,
+/// so it landed. ❌ Never a rescue that names a temp no longer there.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_given_up_rename_onto_a_cleared_name_that_went_through_counts_as_landed() {
+    let inner = Arc::new(InMemoryVolume::new("dest"));
+    let dest: Arc<dyn Volume> = Arc::new(RenamesThenLosesTheReply {
+        inner: Arc::clone(&inner),
+    });
+    // A `Rename` pick's placeholder: the name this write claimed.
+    inner.create_file(Path::new("/notes.txt"), b"").await.unwrap();
+    inner
+        .create_file(Path::new("/notes.txt.cmdr-tmp-abc"), b"THE NEW BYTES")
+        .await
+        .unwrap();
+
+    land_unrecorded(
+        &dest,
+        Path::new("/notes.txt.cmdr-tmp-abc"),
+        Path::new("/notes.txt"),
+        LandingName::ClaimedByTheCaller,
+    )
+    .await
+    .expect("the rename went through, so the file landed");
+
+    assert_eq!(size_of(&inner, "/notes.txt").await, Some(13));
+    assert!(!inner.exists(Path::new("/notes (recovered).txt")).await);
+}
+
 /// Abandoning removes the partial and stops tracking it.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn abandon_removes_the_partial() {

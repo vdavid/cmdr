@@ -11,6 +11,7 @@ use std::sync::Arc;
 
 use super::super::state::WriteOperationState;
 use super::super::transfer::StagedWrite;
+use super::super::transfer::retry::after_a_cut_off_landing_wait;
 use super::super::transfer::staged_write::{
     CutOffLanding, CutOffPublish, LandingError, PublishError, Republished, Resumed,
 };
@@ -68,8 +69,10 @@ pub(super) async fn publish_stage(
         Settled::Done(published) => return published,
         Settled::CutOff(cut_off) => cut_off,
     };
+    let mut attempt = 1;
     loop {
         let ended = wait_after_failure(state, cut_off.error(), &volumes, &started_on, outages).await;
+        let ended = after_a_cut_off_landing_wait(ended, cut_off.error(), &mut attempt, state).await;
         if ended != OutageEnd::Back {
             let lost = lost_connection(ended, cut_off.error(), &volumes);
             return cut_off

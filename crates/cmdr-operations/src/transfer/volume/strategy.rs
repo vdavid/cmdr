@@ -222,6 +222,9 @@ mod copy_tests;
 #[path = "strategy_dest_yield_tests.rs"]
 mod dest_yield_tests;
 #[cfg(test)]
+#[path = "strategy_landing_retry_tests.rs"]
+mod landing_retry_tests;
+#[cfg(test)]
 #[path = "strategy_pause_tests.rs"]
 mod pause_tests;
 #[cfg(test)]

@@ -411,46 +411,70 @@ impl FileRun<'_> {
             },
             // A landing step the transport cut off: the destination went away
             // under it (or answered with a session someone else had already
-            // replaced), and the server may or may not have performed it. Once
-            // the share is back, the next pass settles what it did and lands
-            // what's left (`resume_landing`). A wait that ends without the share
-            // meets the refusal rules (`CutOffLanding::give_up`): nothing
-            // cleared leaves the temp to the abandoned-write cleanup, and a
-            // cleared way rescues the new bytes or leaves them recorded as a
-            // landing for the next sweep that reaches the share, ❌ never
-            // cleaned. A cancel takes the same give-up, and is reported as the
-            // cancel it is.
+            // replaced, or blipped with nothing to wait for), and the server
+            // may or may not have performed it. Once the share is back, or
+            // after the per-file retry's backoff for a blip
+            // (`retry::after_a_landing_blip`), the next pass settles what it
+            // did and lands what's left (`resume_landing`). A wait that ends
+            // without the share meets the refusal rules
+            // (`CutOffLanding::give_up`): nothing cleared leaves the temp to the
+            // abandoned-write cleanup, and a cleared way rescues the new bytes
+            // or leaves them recorded as a landing for the next sweep that
+            // reaches the share, ❌ never cleaned. A cancel takes the same
+            // give-up, and is reported as the cancel it is.
             Fault::Land {
                 cut_off,
                 bytes,
                 lost,
                 after_landing,
                 ..
-            } => match ended {
-                OutageEnd::Back => {
-                    self.landing_to_resume = Some(LandingToResume {
-                        cut_off,
-                        bytes,
-                        lost,
-                        after_landing,
-                    });
-                    self.attempt = 1;
-                    ControlFlow::Continue(())
+            } => {
+                let to_resume = LandingToResume {
+                    cut_off,
+                    bytes,
+                    lost,
+                    after_landing,
+                };
+                let ended = retry::after_a_cut_off_landing_wait(
+                    ended,
+                    to_resume.cut_off.error(),
+                    &mut self.attempt,
+                    self.state,
+                )
+                .await;
+                if ended == OutageEnd::Back {
+                    self.landing_to_resume = Some(to_resume);
+                    return ControlFlow::Continue(());
                 }
-                OutageEnd::Cancelled | OutageEnd::GaveUp { .. } | OutageEnd::NotWaitable => {
-                    set_task_phase(TaskPhase::Finalizing);
-                    match cut_off.give_up(self.dest_volume).await {
-                        Ok(()) => ControlFlow::Break(Ok(self.landed(bytes, lost, &after_landing).await)),
-                        Err(_) if ended == OutageEnd::Cancelled => {
-                            ControlFlow::Break(Err(volume_outage::cancelled()).at_destination(self.dest_path))
-                        }
-                        Err(failure) => {
-                            ControlFlow::Break(Err(PathedVolumeError::from_landing(failure, self.dest_path)
-                                .with_lost_connection(connection_lost)))
-                        }
-                    }
-                }
-            },
+                self.give_up_landing(to_resume, ended == OutageEnd::Cancelled, connection_lost)
+                    .await
+            }
+        }
+    }
+
+    /// A cut-off landing whose wait ended without the destination: settled by
+    /// the refusal rules (`CutOffLanding::give_up`), and reported as the stop
+    /// when the work `stopped`, else as the failure, carrying the server
+    /// connection that ended it (`lost`) when that's what did.
+    async fn give_up_landing(
+        &self,
+        landing: LandingToResume,
+        stopped: bool,
+        lost: Option<LostConnection>,
+    ) -> ControlFlow<Result<u64, PathedVolumeError>> {
+        let LandingToResume {
+            cut_off,
+            bytes,
+            lost: lost_metadata,
+            after_landing,
+        } = landing;
+        set_task_phase(TaskPhase::Finalizing);
+        match cut_off.give_up(self.dest_volume).await {
+            Ok(()) => ControlFlow::Break(Ok(self.landed(bytes, lost_metadata, &after_landing).await)),
+            Err(_) if stopped => ControlFlow::Break(Err(volume_outage::cancelled()).at_destination(self.dest_path)),
+            Err(failure) => ControlFlow::Break(Err(
+                PathedVolumeError::from_landing(failure, self.dest_path).with_lost_connection(lost)
+            )),
         }
     }
 
