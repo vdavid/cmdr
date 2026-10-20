@@ -81,5 +81,7 @@ Issue #461. Must-knows in `CLAUDE.md`.
 - **No `#[serde(other)]` catch-alls on the saved-server enums.** `S3ProviderChoice`, `ConnectionMode`, and `AuthOptions`
   cross IPC as specta types, and a catch-all would both widen every frontend `switch` and write a newer build's entry
   back without its fields. Dropping the entry and keeping the copy loses nothing.
-- **Not covered**: a `license.json` recovery loses the "key is in the secret store" marker, so the license reads as
-  absent until the person enters the key again. The notice says so.
+- **A `license.json` recovery loses the "key is in the secret store" marker**, so `recover_plugin_stores` records it
+  (`license_file_recovered`) and licensing probes the secret store once at launch to restore it
+  (`../licensing/DETAILS.md` § Key storage). When the probe finds nothing (or can't read), the license reads as absent
+  until the person enters the key again; the notice's conditional copy covers both outcomes.

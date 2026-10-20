@@ -23,6 +23,16 @@ const CONSENT_OFF_AFTER_RECOVERY: [&str; 2] = ["analytics.enabled", "updates.cra
 /// every consent off rather than as a first launch.
 static SETTINGS_RECOVERED: AtomicBool = AtomicBool::new(false);
 
+/// This session set `license.json` aside (or found it unreadable), so licensing asks the secret
+/// store once whether a key is still there ([`license_file_recovered`]).
+static LICENSE_RECOVERED: AtomicBool = AtomicBool::new(false);
+
+/// Whether this launch recovered `license.json`, whose "key is in the secret store" marker went
+/// with it. Licensing reads it once at launch to probe for the key and restore the marker.
+pub fn license_file_recovered() -> bool {
+    LICENSE_RECOVERED.load(Ordering::Relaxed)
+}
+
 /// The four plugin stores, at the paths their readers use. Call from `setup()` after the instance
 /// lock and the security log, and before anything reads one of them.
 pub fn recover_plugin_stores<R: Runtime>(app: &AppHandle<R>) {
@@ -41,8 +51,9 @@ pub fn recover_plugin_stores<R: Runtime>(app: &AppHandle<R>) {
     // Rust loads this one by bare name, so it always sits in the plugin's own app data dir.
     match tauri_plugin_store::resolve_store_path(app, "license.json") {
         Ok(path) => {
-            // allowed-discarded-outcome: setup has no surface to report a recovery on; `recover` logs what it did
-            recover(&path, StateFile::License);
+            if recover(&path, StateFile::License) {
+                LICENSE_RECOVERED.store(true, Ordering::Relaxed);
+            }
         }
         Err(e) => log::warn!(target: LOG_TARGET, "Couldn't resolve license.json to check it: {e}"),
     }

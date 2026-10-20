@@ -43,6 +43,26 @@ the Keychain on macOS (service `Cmdr`), Secret Service or the encrypted file on 
   matches the item's ACL (a Developer ID build updating itself keeps its designated requirement). Dev and E2E never
   reach the Keychain (`CMDR_SECRET_STORE=file`, `docs/tooling/instance-isolation.md`). `commit_license` and
   `reset_license` run on a blocking task with no deadline, since a write can still raise a consent dialog.
+- **After a `license.json` recovery, the marker comes back from the Keychain** (`restore_marker`, run by
+  `move_license_key_into_secret_store` right after the migration). A set-aside file takes the marker with it, but
+  the key stays in the secret store, so a paid install would otherwise read as Personal until the key is entered
+  again. When `state_recovery::license_file_recovered()` says this launch recovered the file, it reads `license.key`
+  once: a parseable license restores the marker (and saves; if the set-aside failed, the patched plugin refuses the
+  save, but the in-memory marker still carries the session and the next launch probes again), `NotFound` stays
+  Personal, and any other answer logs and stays Personal without latching anything. Every other launch skips the
+  probe, so a Personal install still never touches the Keychain outside a recovery. The recovery notice keeps its
+  conditional "If Cmdr shows as unlicensed now" copy, since the probe can come back empty.
+- **Can that probe prompt on a fresh install? No, for a shipped build** (reasoned, not run: read
+  `security-framework` 3.7.0 `passwords.rs` and `secrets/keychain_macos.rs`, macOS 26 headless box with no Keychain
+  to test against, 2026-10-20). `set_generic_password` is a plain `SecItemAdd` with no `kSecUseDataProtectionKeychain`
+  and no `kSecAttrAccess`, so the item lands in the login keychain with the default ACL: the creating app, by its
+  designated requirement (bundle id plus Developer ID team), is trusted to read it. A reinstall or update of the
+  Developer ID build satisfies the same requirement and reads silently. A Personal install has no item, and a lookup
+  that matches nothing returns `errSecItemNotFound` before any ACL check, so no dialog. The one case that would show
+  the SecurityAgent "wants to use your confidential information" dialog is a release build signed differently (a
+  local ad-hoc `pnpm build` on a Mac that also ran the shipped app, both on service `Cmdr`); a "Deny" there is
+  `AccessDenied`, logged, and asked again only after the next recovery. The probe runs inside `setup()`, like the
+  migration's own Keychain calls, so that dialog would hold startup until answered.
 - **Leftovers**: migrating doesn't reach copies outside the live file, like a Time Machine snapshot of an older
   `license.json` or freed APFS blocks. Accepted: same exposure as before, shrinking as backups age out.
 

@@ -90,6 +90,23 @@ pub fn move_license_key_into_secret_store(app: &tauri::AppHandle) {
             "Couldn't move the license key into the secret store, keeping it in {LICENSE_FILE} and retrying next launch: {reason}"
         ),
     }
+    match restore_marker(
+        &*store,
+        crate::secrets::store(),
+        crate::state_recovery::license_file_recovered(),
+    ) {
+        MarkerRestore::NotNeeded => {}
+        MarkerRestore::Restored => {
+            save_license_file(&store);
+            log::info!("{LICENSE_FILE} was set aside, and the license key is still in the secret store, so it's back");
+        }
+        MarkerRestore::NoKeyStored => {
+            log::info!("{LICENSE_FILE} was set aside, and the secret store holds no license key to restore");
+        }
+        MarkerRestore::Unreadable(reason) => log::warn!(
+            "{LICENSE_FILE} was set aside, and the secret store didn't give back a license key, so the license reads as absent until it's entered again: {reason}"
+        ),
+    }
 }
 
 /// Removes the stored key from the secret store and `license.json`. Called by `reset_license`.
@@ -175,6 +192,46 @@ pub(super) fn clear(file: &impl LicenseFile, secrets: &dyn SecretStore) {
     file.delete(FILE_KEY_IN_SECRET_STORE);
     file.delete(FILE_KEY_LEGACY_LICENSE);
     file.delete(FILE_KEY_LEGACY_SHORT_CODE);
+}
+
+/// What [`restore_marker`] did, for the log.
+#[derive(Debug, PartialEq, Eq)]
+pub(super) enum MarkerRestore {
+    /// `license.json` wasn't recovered this launch, or still says where the key is: no probe.
+    NotNeeded,
+    /// The secret store still held a license, so the marker is back.
+    Restored,
+    /// The secret store holds no license: a Personal install, or one that was reset.
+    NoKeyStored,
+    /// The secret store didn't answer, or held something that isn't a license. No marker.
+    Unreadable(String),
+}
+
+/// After `license.json` was set aside, asks the secret store once whether a license is still
+/// there, and writes the marker back if so. A set-aside file took the marker with it while the key
+/// stayed in the Keychain, so without this a paid install reads as Personal until the key is
+/// entered again. Every launch that didn't recover the file skips the probe, which keeps a
+/// Personal install off the Keychain.
+pub(super) fn restore_marker(
+    file: &impl LicenseFile,
+    secrets: &dyn SecretStore,
+    license_file_recovered: bool,
+) -> MarkerRestore {
+    let marker_present = file.get(FILE_KEY_IN_SECRET_STORE).and_then(|v| v.as_bool()) == Some(true);
+    if !license_file_recovered || marker_present || license_in_file(file).is_some() {
+        return MarkerRestore::NotNeeded;
+    }
+    match secrets.get(SECRET_KEY) {
+        Ok(bytes) => match serde_json::from_slice::<StoredLicense>(&bytes) {
+            Ok(_) => {
+                file.set(FILE_KEY_IN_SECRET_STORE, Value::Bool(true));
+                MarkerRestore::Restored
+            }
+            Err(e) => MarkerRestore::Unreadable(format!("The stored license entry doesn't parse: {e}")),
+        },
+        Err(SecretStoreError::NotFound(_)) => MarkerRestore::NoKeyStored,
+        Err(e) => MarkerRestore::Unreadable(e.to_string()),
+    }
 }
 
 /// A key an older version wrote into the file, if there is one.
@@ -452,6 +509,67 @@ mod tests {
         file.set(FILE_KEY_IN_SECRET_STORE, serde_json::json!(true));
 
         assert_eq!(load(&file, &FakeSecrets::default()).unwrap(), None);
+    }
+
+    #[test]
+    fn a_recovered_file_gets_its_marker_back_when_the_secret_store_still_holds_the_license() {
+        let secrets = FakeSecrets::default();
+        save(&MapFile::default(), &secrets, &the_license()).unwrap();
+        let fresh_file = MapFile::default();
+        secrets.calls.store(0, Ordering::SeqCst);
+
+        assert_eq!(restore_marker(&fresh_file, &secrets, true), MarkerRestore::Restored);
+
+        assert_eq!(
+            secrets.calls.load(Ordering::SeqCst),
+            1,
+            "one read of the secret store, nothing more"
+        );
+        assert_eq!(fresh_file.get(FILE_KEY_IN_SECRET_STORE), Some(serde_json::json!(true)));
+        assert_eq!(load(&fresh_file, &secrets).unwrap(), Some(the_license()));
+    }
+
+    #[test]
+    fn a_recovered_file_stays_unlicensed_when_the_secret_store_holds_no_license() {
+        let fresh_file = MapFile::default();
+        let secrets = FakeSecrets::default();
+
+        assert_eq!(restore_marker(&fresh_file, &secrets, true), MarkerRestore::NoKeyStored);
+
+        assert_eq!(secrets.calls.load(Ordering::SeqCst), 1);
+        assert!(fresh_file.snapshot().is_empty(), "no marker for a key that isn't there");
+        assert_eq!(load(&fresh_file, &secrets).unwrap(), None);
+    }
+
+    #[test]
+    fn a_secret_store_entry_that_isnt_a_license_restores_no_marker() {
+        let fresh_file = MapFile::default();
+        let secrets = FakeSecrets::default();
+        secrets
+            .entries
+            .lock_ignore_poison()
+            .insert(SECRET_KEY.to_string(), b"not json".to_vec());
+
+        assert!(matches!(
+            restore_marker(&fresh_file, &secrets, true),
+            MarkerRestore::Unreadable(_)
+        ));
+        assert!(fresh_file.snapshot().is_empty());
+    }
+
+    /// The probe is for the launch after a recovery only: every other launch of a Personal
+    /// install still never touches the Keychain.
+    #[test]
+    fn a_launch_without_a_recovery_never_probes_the_secret_store() {
+        let secrets = FakeSecrets::default();
+        save(&MapFile::default(), &secrets, &the_license()).unwrap();
+        secrets.calls.store(0, Ordering::SeqCst);
+
+        assert_eq!(
+            restore_marker(&MapFile::default(), &secrets, false),
+            MarkerRestore::NotNeeded
+        );
+        assert_eq!(secrets.calls.load(Ordering::SeqCst), 0);
     }
 
     #[test]

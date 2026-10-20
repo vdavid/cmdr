@@ -27,7 +27,7 @@ use crate::security_log::{self, SecurityEvent};
 use cmdr_fs::log_private::LogPrivate;
 
 pub use crate::security_log::StateFile;
-pub use plugin_stores::{recover_plugin_stores, settings_for_consent};
+pub use plugin_stores::{license_file_recovered, recover_plugin_stores, settings_for_consent};
 pub use state_file::{StateRead, StateWriteError, lenient_entries, read_state_file, write_state_file};
 
 const LOG_TARGET: &str = "state_recovery";
