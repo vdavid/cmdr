@@ -390,6 +390,44 @@ describe('the error report and amendment sections', () => {
   })
 })
 
+describe('feedback with logs', () => {
+  it('shows the logs on the feedback entry and mails no separate error report for them', async () => {
+    insertFeedback({ error_report_id: 'ERR-AB7PV' })
+    insertErrorReport({ short_id: 'ERR-AB7PV', user_note: 'Logs sent with in-app feedback' })
+
+    await handleReportDigest(testEnv())
+
+    const email = lastEmail()
+    expect(email.subject).toBe('Cmdr digest: 1 feedback in the past 3h')
+    expect(email.html).toContain('Please add a Date added column')
+    expect(email.html).toContain('Logs: ERR-AB7PV')
+    expect(email.html).toContain('2.00 KB')
+    expect(email.html).not.toContain('Error reports')
+    // Carried, so stamped: the next tick doesn't mail the report on its own.
+    expect(unnotified('error_reports')).toBe(0)
+    expect(unnotified('feedback')).toBe(0)
+  })
+
+  it("says so when the logs hadn't arrived yet", async () => {
+    insertFeedback({ error_report_id: 'ERR-AB7PV' })
+
+    await handleReportDigest(testEnv())
+
+    expect(lastEmail().html).toContain('Logs: ERR-AB7PV')
+    expect(lastEmail().html).toContain("hadn't arrived")
+  })
+
+  it('still mails logs on their own when their feedback went out in an earlier digest', async () => {
+    insertFeedback({ error_report_id: 'ERR-AB7PV' })
+    await handleReportDigest(testEnv())
+    insertErrorReport({ short_id: 'ERR-AB7PV', user_note: 'Logs sent with in-app feedback' })
+
+    await handleReportDigest(testEnv())
+
+    expect(lastEmail().subject).toBe('Cmdr digest: 1 error in the past 3h')
+  })
+})
+
 describe('ops alerts', () => {
   function insertOpsEvent(kind: string, message: string): void {
     db.sqlite.prepare(`INSERT INTO ops_events (kind, message) VALUES (?, ?)`).run(kind, message)

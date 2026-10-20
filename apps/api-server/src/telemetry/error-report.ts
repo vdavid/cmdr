@@ -53,7 +53,7 @@ const DEFAULT_BUCKET_NAME = 'cmdr-error-reports'
  * `error_reporter::generate_short_id` (alphabet kept in sync in
  * `apps/desktop/src-tauri/src/short_id.rs`).
  */
-const SHORT_ID_PATTERN = /^ERR-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{5}$/
+export const SHORT_ID_PATTERN = /^ERR-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{5}$/
 
 export interface ErrorReportMeta {
   /**

@@ -3,7 +3,7 @@
  * stake is a row a WHERE clause quietly skips, so the SQL has to run for real.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { applyMigration, createSqliteD1, type SqliteD1 } from './sqlite-d1-test-helper'
+import { applyMigrationsFrom, createSqliteD1, type SqliteD1 } from './sqlite-d1-test-helper'
 import { fileCrashCards, fileErrorReportCards, fileFeedbackCards, postAmendmentsToBoard } from './report-outbox'
 import { personalCommentExpiry } from './report-cards'
 import type { Bindings } from './types'
@@ -135,13 +135,13 @@ function insertErrorReport(
     )
 }
 
-function insertFeedback(fields: { email?: string | null; buildMode?: string } = {}) {
+function insertFeedback(fields: { email?: string | null; buildMode?: string; errorReportId?: string | null } = {}) {
   db.sqlite
     .prepare(
-      `INSERT INTO feedback (created_at, feedback, email, app_version, os_version, build_mode)
-         VALUES ('2026-10-01 10:00:00', 'Please add a Date added column', ?, '0.52.0', '15.7.9', ?)`,
+      `INSERT INTO feedback (created_at, feedback, email, app_version, os_version, build_mode, error_report_id)
+         VALUES ('2026-10-01 10:00:00', 'Please add a Date added column', ?, '0.52.0', '15.7.9', ?, ?)`,
     )
-    .run(fields.email ?? null, fields.buildMode ?? 'release')
+    .run(fields.email ?? null, fields.buildMode ?? 'release', fields.errorReportId ?? null)
 }
 
 function issueNumbers(table: string): (number | null)[] {
@@ -168,7 +168,7 @@ describe('the migration', () => {
          VALUES ('', '0.51.0', '27.0', 'aarch64', 'SIGSEGV', 'old', 'bt');
        INSERT INTO feedback (feedback, app_version, os_version) VALUES ('old message', '0.51.0', '27.0');`,
     )
-    applyMigration(db.sqlite, '0022_report_outbox.sql')
+    applyMigrationsFrom(db.sqlite, '0022')
     const github = fakeGitHub()
 
     await fileCrashCards(testEnv())
@@ -353,6 +353,67 @@ describe('fileFeedbackCards', () => {
 
     expect(github.issues[0].labels).toContain('needs-reply')
     expect(personalCommentExpiry(github.comments[0].body)).toBe('2028-09-30')
+  })
+})
+
+describe('feedback with logs', () => {
+  const LOGS_NOTE = 'Logs sent with in-app feedback'
+
+  it('files the feedback and its logs as ONE card, and the report never gets its own', async () => {
+    const github = fakeGitHub()
+    const env = testEnv()
+    insertFeedback({ errorReportId: 'ERR-AB7PV' })
+    insertErrorReport({ shortId: 'ERR-AB7PV', note: LOGS_NOTE })
+
+    // The tick's order: error reports first, then feedback.
+    await fileErrorReportCards(env)
+    await fileFeedbackCards(env)
+    await fileErrorReportCards(env)
+
+    expect(github.issues).toHaveLength(1)
+    const [card] = github.issues
+    expect(card.labels).toEqual(['in-app-feedback', 'unprocessed'])
+    expect(card.body).toContain('Please add a Date added column')
+    expect(card.body).toContain('`ERR-AB7PV`')
+    expect(card.body).toContain('error-reports/prod/2026-10-01/ERR-AB7PV-uuid.zip')
+    expect(issueNumbers('feedback')).toEqual([card.number])
+    expect(issueNumbers('error_reports')).toEqual([card.number])
+    // An amendment to that report would find this card.
+    expect(await env.ERROR_REPORT_META.get('gh_issue:ERR-AB7PV')).toBe(String(card.number))
+  })
+
+  it('says so on the card when the logs had not arrived yet', async () => {
+    const github = fakeGitHub()
+    insertFeedback({ errorReportId: 'ERR-AB7PV' })
+
+    await fileFeedbackCards(testEnv())
+
+    expect(github.issues[0].body).toContain('`ERR-AB7PV`')
+    expect(github.issues[0].body).toContain("hadn't arrived")
+  })
+
+  it('gives late logs their own card, pointing at the feedback card', async () => {
+    const github = fakeGitHub()
+    const env = testEnv()
+    insertFeedback({ errorReportId: 'ERR-AB7PV' })
+    await fileFeedbackCards(env)
+    insertErrorReport({ shortId: 'ERR-AB7PV', note: LOGS_NOTE })
+
+    await fileErrorReportCards(env)
+
+    expect(github.issues).toHaveLength(2)
+    const [feedbackCard, reportCard] = github.issues
+    expect(reportCard.body).toContain(`#${String(feedbackCard.number)}`)
+  })
+
+  it('never holds a report back for a debug-build feedback row, which never gets a card', async () => {
+    const github = fakeGitHub()
+    insertFeedback({ errorReportId: 'ERR-AB7PV', buildMode: 'debug' })
+    insertErrorReport({ shortId: 'ERR-AB7PV' })
+
+    await fileErrorReportCards(testEnv())
+
+    expect(github.issues).toHaveLength(1)
   })
 })
 

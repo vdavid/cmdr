@@ -1,12 +1,15 @@
 import { Hono, type Context } from 'hono'
-import { enforceIpRateLimit, hasEmailShape, type Bindings } from '../types'
+import { enforceIpRateLimit, hasEmailShape, isAbsent, type Bindings } from '../types'
+import { SHORT_ID_PATTERN } from './error-report'
 
 const feedback = new Hono<{ Bindings: Bindings }>()
 
 /**
  * In-app "Send feedback" ingestion. JSON body (no log bundle, unlike `/error-report`):
- * required `feedback` text plus `appVersion` / `osVersion`, optional reply-to `email` and
- * `buildMode`. The row is written to the D1 `feedback` table (the durable sink; the
+ * required `feedback` text plus `appVersion` / `osVersion`, optional reply-to `email`,
+ * `buildMode`, and `errorReportId`. The last is the `ERR-XXXXX` of the logs the sender chose to
+ * include: the app sends them right after this request, as an ordinary `/error-report` upload
+ * under that id, and the cron puts the two on one card (`report-outbox.ts`). The row is written to the D1 `feedback` table (the durable sink; the
  * write is awaited so a failure surfaces as a retryable soft 502, not a silent drop).
  * The cron files its card and mails it in the next digest.
  *
@@ -33,6 +36,7 @@ interface FeedbackBody {
   osVersion: string
   email?: string | null
   buildMode?: 'release' | 'debug' | null
+  errorReportId?: string | null
 }
 
 /**
@@ -55,13 +59,23 @@ function validateFeedbackShape(body: Record<string, unknown>): string | null {
       return `Missing required field: ${field}`
     }
   }
-  const email = body.email
-  if (email !== undefined && email !== null && (typeof email !== 'string' || !hasEmailShape(email))) {
+  return validateOptionalFields(body)
+}
+
+/**
+ * The fields a client may omit. Each tolerates `null` as well as `undefined` (see {@link isAbsent});
+ * only a present-but-wrong value fails.
+ */
+function validateOptionalFields(body: Record<string, unknown>): string | null {
+  const { email, buildMode, errorReportId } = body
+  if (!isAbsent(email) && (typeof email !== 'string' || !hasEmailShape(email))) {
     return 'Invalid email'
   }
-  const buildMode = body.buildMode
-  if (buildMode !== undefined && buildMode !== null && buildMode !== 'release' && buildMode !== 'debug') {
+  if (!isAbsent(buildMode) && buildMode !== 'release' && buildMode !== 'debug') {
     return 'Invalid buildMode'
+  }
+  if (!isAbsent(errorReportId) && (typeof errorReportId !== 'string' || !SHORT_ID_PATTERN.test(errorReportId))) {
+    return 'Invalid errorReportId'
   }
   return null
 }
@@ -116,10 +130,17 @@ feedback.post('/feedback', async (c) => {
   // NULL and the cron files its card (`report-outbox.ts`).
   try {
     await c.env.TELEMETRY_DB.prepare(
-      `INSERT INTO feedback (feedback, email, app_version, os_version, build_mode)
-         VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO feedback (feedback, email, app_version, os_version, build_mode, error_report_id)
+         VALUES (?, ?, ?, ?, ?, ?)`,
     )
-      .bind(text, body.email ?? null, body.appVersion, body.osVersion, body.buildMode ?? null)
+      .bind(
+        text,
+        body.email ?? null,
+        body.appVersion,
+        body.osVersion,
+        body.buildMode ?? null,
+        body.errorReportId ?? null,
+      )
       .run()
   } catch (e) {
     console.error('Feedback: D1 write failed', e)

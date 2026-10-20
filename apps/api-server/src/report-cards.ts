@@ -188,6 +188,11 @@ export interface ErrorReportIssueInput {
    * because an auto-sent report with a card is otherwise a puzzle for whoever triages it.
    */
   filedFromAmendment?: boolean
+  /**
+   * The card of the feedback message these logs were sent with, when that card was filed before
+   * the logs arrived. Normally the logs ride on the feedback card and never get one of their own.
+   */
+  feedbackCard?: number | null
 }
 
 /**
@@ -208,6 +213,7 @@ export function buildErrorReportIssue(input: ErrorReportIssueInput): IssueConten
     `**OS**: ${macOsLabel(input.osVersion)} · **Arch**: ${input.arch}`,
     `**Bundle**: ${formatBytes(input.sizeBytes)}, uploaded ${uploadedAt} UTC`,
     `**R2 key**: \`${input.r2Key}\``,
+    ...(input.feedbackCard ? [`**Sent with**: the feedback on #${String(input.feedbackCard)}`] : []),
     '',
     'The note, the reply-to address, and the download link (when there are any) are in the first',
     'comment, which is deleted 90 days after the upload. To fetch the bundle after the link expires,',
@@ -290,6 +296,15 @@ export function buildCrashIssue(input: CrashIssueInput): IssueContent {
   }
 }
 
+/**
+ * The logs a feedback sender chose to include: an ordinary error report, uploaded right after the
+ * feedback under the `ERR-XXXXX` the feedback row names. `arrived: false` when no such report was
+ * in D1 when the card was filed (still in flight, or its upload didn't make it).
+ */
+export type FeedbackLogs =
+  | { id: string; arrived: true; sizeBytes: number; r2Key: string }
+  | { id: string; arrived: false }
+
 /** One in-app feedback submission, already stored in D1. */
 export interface FeedbackIssueInput {
   rowId: number
@@ -298,6 +313,21 @@ export interface FeedbackIssueInput {
   osVersion: string
   feedback?: string | null
   email?: string | null
+  logs?: FeedbackLogs | null
+}
+
+/** The card's logs lines: the bundle's technical facts, or why there are none. Names nobody. */
+function feedbackLogsLines(logs: FeedbackLogs | null | undefined): string[] {
+  if (!logs) return []
+  if (!logs.arrived) {
+    return [
+      `**Logs**: \`${logs.id}\`, sent separately, hadn't arrived when this card was filed. If it arrives, it gets its own card pointing here.`,
+    ]
+  }
+  return [
+    `**Logs**: \`${logs.id}\`, ${formatBytes(logs.sizeBytes)}, the past five hours, redacted on the Mac`,
+    `**R2 key**: \`${logs.r2Key}\``,
+  ]
 }
 
 /**
@@ -311,6 +341,7 @@ export function buildFeedbackIssue(input: FeedbackIssueInput): IssueContent {
     `**Feedback row**: \`${String(input.rowId)}\` in the D1 \`feedback\` table`,
     `**App version**: ${input.appVersion}`,
     `**OS**: ${macOsLabel(input.osVersion)}`,
+    ...feedbackLogsLines(input.logs),
     '',
     '**What they wrote**',
     '',
@@ -319,6 +350,11 @@ export function buildFeedbackIssue(input: FeedbackIssueInput): IssueContent {
     input.email?.trim()
       ? 'A reply-to address is in the first comment, which is deleted two years after it was sent.'
       : 'No reply-to address was attached.',
+    ...(input.logs?.arrived
+      ? [
+          'The logs’ download link is in the first comment. To fetch the bundle after the link expires, see `docs/tooling/feedback-and-error-digest.md`.',
+        ]
+      : []),
   ].join('\n')
 
   return {

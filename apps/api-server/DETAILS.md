@@ -274,10 +274,11 @@ back to the OAuth login).
 
 **D1 for telemetry and fulfillment:** crash reports, downloads, update checks, heartbeats, relayed feature events,
 feedback, and the `license_issuance` record all live in D1 (binding `TELEMETRY_DB`, database `cmdr-telemetry`).
-Migrations live in `migrations/` (latest: `0023_card_ratings.sql`, the triage comments the rating job has applied or
-flagged, § Card ratings; `0022_report_outbox.sql`, the report outbox: `error_reports`, `error_report_amendments`,
-`ops_events`, and `issue_number` on crashes and feedback, § The reports repo; `0021_license_adjustments.sql` is the
-refund and chargeback record `/webhook/paddle` keeps beside the ledger (`src/licensing/DETAILS.md` § Refunds);
+Migrations live in `migrations/` (latest: `0026_feedback_error_report_id.sql`, the logs a feedback message came with, §
+The reports repo; `0023_card_ratings.sql`, the triage comments the rating job has applied or flagged, § Card ratings;
+`0022_report_outbox.sql`, the report outbox: `error_reports`, `error_report_amendments`, `ops_events`, and
+`issue_number` on crashes and feedback, § The reports repo; `0021_license_adjustments.sql` is the refund and chargeback
+record `/webhook/paddle` keeps beside the ledger (`src/licensing/DETAILS.md` § Refunds);
 `0020_heartbeat_uptime_and_events.sql` is `heartbeat.uptime_seconds` and the `analytics_event` table `/heartbeat` relays
 feature events into; `0017_manual_licenses.sql` is the `source` / `organization_name` / `expires_at` / `revoked_at` /
 `note` columns that turn `license_issuance` into the ledger for hand-issued licenses as well as purchases;
@@ -345,6 +346,9 @@ failure from the rest and raises the alarm for it (§ Cron alarms):
      person a plain reply. With several there's no single right answer, so the per-entry `mailto:` links carry them.
    - Every entry links its card, or says it isn't on the board yet. Debug builds are left out entirely (and never
      stamped, which costs nothing).
+   - **Logs sent with feedback show on the feedback entry** (id, size, download link, or "hadn't arrived yet"), and the
+     report isn't listed again under error reports, though it's stamped with the rest. Logs that arrive after their
+     feedback was already mailed come on their own in a later digest.
 3. **License backup** (00:00 UTC only, and FIRST in the daily block, so a snapshot precedes anything that mutates):
    `handleLicenseBackup` writes every license and every stored key into one R2 object. What's in it and how a restore
    would read it: `src/licensing/DETAILS.md` § License backups.
@@ -586,6 +590,18 @@ crash's reply-to carry 90 days, a feedback reply-to carries two years. ❗ Each 
 is the exception that proves the split, and it lives in the issue body, because the policy keeps feedback text so it can
 be acted on; only the address expires. A crash's technical facts (panic message, macOS exception, top frames) also go in
 the body: the client redacts them and the policy keeps them indefinitely.
+
+**Feedback with logs is ONE card.** A feedback row's `error_report_id` names the logs the sender included, which the app
+uploads as an ordinary error report right after the feedback (`src/telemetry/DETAILS.md` § In-app feedback).
+
+- `fileErrorReportCards` holds a report back while a release feedback row naming it still owes a card, and
+  `fileFeedbackCards` files the feedback with the report's technical facts (id, size, R2 key) in the body and its
+  download link in the personal comment, then stamps the report's `issue_number` and KV pointer with the feedback card.
+  So the report never files its own card, and an amendment to it lands on the feedback card.
+- The personal comment expires with the reply-to's two years when there is one, else at the logs' 90 days.
+- Logs that hadn't arrived when the feedback card was filed: the card says so, and when they do arrive they get their
+  own card with a `Sent with` line pointing at the feedback card. A debug feedback row never gets a card, so it never
+  holds a report back.
 
 **Amendments land on the card they amend.** `postAmendmentsToBoard` runs after the report jobs, so a note added minutes
 after its upload lands as a comment on the card filed just before it.

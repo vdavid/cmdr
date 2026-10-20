@@ -12,6 +12,7 @@
 
 import { sendReportDigestEmail, digestSize, type DigestContent } from './email/digest'
 import type { CrashFate } from './email/crash'
+import type { FeedbackEmailLogs } from './email/feedback'
 import type { BoardCard } from './email/layout'
 import { humanReportRecipient } from './email/send'
 import { SIGNUP_KINDS, type OpsEventKind } from './ops-events'
@@ -86,6 +87,11 @@ interface FeedbackRow {
   app_version: string
   os_version: string
   issue_number: number | null
+  /** The `ERR-XXXXX` of the logs the sender included, or null when they included none. */
+  error_report_id: string | null
+  /** That report's bundle, when it has arrived. */
+  report_size: number | null
+  report_key: string | null
 }
 
 interface OpsRow {
@@ -131,8 +137,14 @@ async function readPending(db: D1Database): Promise<PendingRows> {
     .all<AmendmentRow>()
   const feedback = await db
     .prepare(
-      `SELECT id, created_at, feedback, email, app_version, os_version, issue_number
-         FROM feedback WHERE notified_at IS NULL AND ${RELEASE_ONLY} ORDER BY created_at DESC`,
+      `SELECT f.id, f.created_at, f.feedback, f.email, f.app_version, f.os_version, f.issue_number, f.error_report_id,
+              r.size_bytes AS report_size, r.r2_key AS report_key
+         FROM feedback f
+         LEFT JOIN error_reports r ON r.id = (
+           SELECT MAX(id) FROM error_reports WHERE short_id = f.error_report_id AND build_mode = 'release'
+         )
+         WHERE f.notified_at IS NULL AND COALESCE(f.build_mode, 'release') != 'debug'
+         ORDER BY f.created_at DESC`,
     )
     .all<FeedbackRow>()
   const opsAlerts = await db
@@ -190,9 +202,41 @@ async function presignQuietly(env: Bindings, key: string): Promise<string | null
   }
 }
 
+/**
+ * The feedback entry's logs: the bundle and its link, or a line saying it hadn't arrived. Null when
+ * the sender included no logs.
+ */
+async function feedbackLogs(env: Bindings, row: FeedbackRow): Promise<FeedbackEmailLogs | null> {
+  if (!row.error_report_id) return null
+  if (row.report_size === null || row.report_key === null) return { id: row.error_report_id, arrived: false }
+  return {
+    id: row.error_report_id,
+    arrived: true,
+    sizeBytes: row.report_size,
+    downloadUrl: await presignQuietly(env, row.report_key),
+    linkTtlHours: PRESIGN_TTL_HOURS,
+  }
+}
+
 async function toContent(env: Bindings, rows: PendingRows): Promise<DigestContent> {
+  // Logs sent with a feedback message in this digest show on that message's entry, so they aren't
+  // listed again as an error report. They're still stamped with the rest (`handleReportDigest`).
+  const logsOnFeedback = new Set(rows.feedback.map((row) => row.error_report_id).filter(Boolean))
+  const feedback = []
+  for (const row of rows.feedback) {
+    feedback.push({
+      when: row.created_at,
+      version: row.app_version,
+      osVersion: row.os_version,
+      message: row.feedback,
+      email: row.email,
+      logs: await feedbackLogs(env, row),
+      card: cardFor(env, row.issue_number),
+    })
+  }
+
   const errorReports = []
-  for (const row of rows.errorReports) {
+  for (const row of rows.errorReports.filter((report) => !logsOnFeedback.has(report.short_id))) {
     errorReports.push({
       id: row.short_id,
       kind: row.kind === 'user' ? ('user' as const) : ('auto' as const),
@@ -231,14 +275,7 @@ async function toContent(env: Bindings, rows: PendingRows): Promise<DigestConten
       amendmentCount: row.amendment_count,
       card: cardFor(env, row.report_issue),
     })),
-    feedback: rows.feedback.map((row) => ({
-      when: row.created_at,
-      version: row.app_version,
-      osVersion: row.os_version,
-      message: row.feedback,
-      email: row.email,
-      card: cardFor(env, row.issue_number),
-    })),
+    feedback,
     opsAlerts: rows.opsAlerts.map((row) => ({ when: row.created_at, kind: row.kind, message: opsAlertMessage(row) })),
   }
 }

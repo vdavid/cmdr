@@ -78,7 +78,7 @@ describe('POST /feedback', () => {
     expect(res.status).toBe(204)
     expect(calls).toHaveLength(1)
     expect(calls[0].sql).toContain('INSERT INTO feedback')
-    expect(calls[0].args).toEqual([validBody.feedback, null, validBody.appVersion, validBody.osVersion, null])
+    expect(calls[0].args).toEqual([validBody.feedback, null, validBody.appVersion, validBody.osVersion, null, null])
   })
 
   it('stores the optional reply-to email and buildMode', async () => {
@@ -94,7 +94,27 @@ describe('POST /feedback', () => {
       validBody.appVersion,
       validBody.osVersion,
       'debug',
+      null,
     ])
+  })
+
+  it('stores the error report id of the logs the sender chose to include', async () => {
+    const { db, calls } = createRecordingD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const res = await postFeedback({ ...validBody, errorReportId: 'ERR-AB23X' }, bindings)
+
+    expect(res.status).toBe(204)
+    expect(calls[0].sql).toContain('error_report_id')
+    expect(calls[0].args.at(-1)).toBe('ERR-AB23X')
+  })
+
+  it('returns 400 for an error report id that is not an ERR-XXXXX', async () => {
+    const bindings = createBindings()
+    for (const errorReportId of ['ERR-ab23x', 'CRASH-AB23X', 'ERR-AB23X; DROP TABLE feedback', 42]) {
+      const res = await postFeedback({ ...validBody, errorReportId }, bindings)
+      expect(res.status).toBe(400)
+    }
   })
 
   it('trims surrounding whitespace from the feedback text before storing', async () => {
@@ -165,7 +185,7 @@ describe('POST /feedback', () => {
     const { db } = createRecordingD1()
     const bindings = createBindings({ TELEMETRY_DB: db })
 
-    const res = await postFeedback({ ...validBody, email: null, buildMode: null }, bindings)
+    const res = await postFeedback({ ...validBody, email: null, buildMode: null, errorReportId: null }, bindings)
 
     expect(res.status).toBe(204)
   })

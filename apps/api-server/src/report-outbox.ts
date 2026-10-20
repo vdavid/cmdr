@@ -30,6 +30,7 @@ import {
   buildFeedbackIssue,
   buildPersonalComment,
   expiryAfter,
+  type FeedbackLogs,
   type IssueSource,
 } from './report-cards'
 import { readReportFacts } from './telemetry/error-report-amend'
@@ -168,10 +169,19 @@ export async function fileCrashCards(env: Bindings): Promise<void> {
 export async function fileErrorReportCards(env: Bindings): Promise<void> {
   if (!resolveIssueTarget(env)) return
 
+  // Logs sent with a feedback message wait for that message's card and ride on it
+  // (`fileFeedbackCards`), so a report whose feedback still owes a card is held back. Logs that
+  // arrive after the feedback card was filed get their own card, pointing at it.
   const { results } = await env.TELEMETRY_DB.prepare(
-    `SELECT id, short_id, created_at, kind, app_version, os_version, arch, size_bytes, r2_key, user_note, email
+    `SELECT id, short_id, created_at, kind, app_version, os_version, arch, size_bytes, r2_key, user_note, email,
+            (SELECT f.issue_number FROM feedback f WHERE f.error_report_id = error_reports.short_id ORDER BY f.id DESC LIMIT 1) AS feedback_issue
          FROM error_reports
          WHERE issue_number IS NULL AND build_mode = 'release'
+           AND NOT EXISTS (
+             SELECT 1 FROM feedback f
+               WHERE f.error_report_id = error_reports.short_id AND f.issue_number IS NULL
+                 AND COALESCE(f.build_mode, 'release') != 'debug'
+           )
          ORDER BY id
          LIMIT ?`,
   )
@@ -188,6 +198,7 @@ export async function fileErrorReportCards(env: Bindings): Promise<void> {
       r2_key: string
       user_note: string | null
       email: string | null
+      feedback_issue: number | null
     }>()
 
   const cards: PendingCard[] = []
@@ -207,6 +218,7 @@ export async function fileErrorReportCards(env: Bindings): Promise<void> {
           r2Key: row.r2_key,
           uploadedUnixSeconds: Math.floor(Date.parse(`${row.created_at.replace(' ', 'T')}Z`) / 1000),
           email: row.email,
+          feedbackCard: row.feedback_issue,
         }),
         personalComment: buildPersonalComment({
           userNote: row.user_note,
@@ -224,15 +236,25 @@ export async function fileErrorReportCards(env: Bindings): Promise<void> {
   raiseOnFailure('error report', await fileCards(env, 'error-report', 'error_reports', cards))
 }
 
-/** Release feedback still owed a card, oldest first. */
+/**
+ * Release feedback still owed a card, oldest first. Feedback sent with logs carries the report's
+ * `ERR-XXXXX`, and that report rides on this card: its technical facts in the body, its download
+ * link in the comment, and its row stamped with this card's number so it never files one of its own
+ * (and an amendment to it lands here).
+ */
 export async function fileFeedbackCards(env: Bindings): Promise<void> {
   if (!resolveIssueTarget(env)) return
 
   const { results } = await env.TELEMETRY_DB.prepare(
-    `SELECT id, created_at, feedback, email, app_version, os_version
-         FROM feedback
-         WHERE issue_number IS NULL AND ${RELEASE_ONLY}
-         ORDER BY id
+    `SELECT f.id, f.created_at, f.feedback, f.email, f.app_version, f.os_version, f.error_report_id,
+            r.id AS report_row, r.size_bytes AS report_size, r.r2_key AS report_key
+         FROM feedback f
+         LEFT JOIN error_reports r ON r.id = (
+           SELECT MAX(id) FROM error_reports
+             WHERE short_id = f.error_report_id AND build_mode = 'release' AND issue_number IS NULL
+         )
+         WHERE f.issue_number IS NULL AND COALESCE(f.build_mode, 'release') != 'debug'
+         ORDER BY f.id
          LIMIT ?`,
   )
     .bind(ROWS_PER_TICK)
@@ -243,28 +265,64 @@ export async function fileFeedbackCards(env: Bindings): Promise<void> {
       email: string | null
       app_version: string
       os_version: string
+      error_report_id: string | null
+      report_row: number | null
+      report_size: number | null
+      report_key: string | null
     }>()
 
-  const cards = results.map((row) => ({
-    rowId: row.id,
-    content: {
-      ...buildFeedbackIssue({
-        rowId: row.id,
-        buildMode: 'release' as const,
-        appVersion: row.app_version,
-        osVersion: row.os_version,
-        feedback: row.feedback,
-        email: row.email,
-      }),
-      // Only the reply-to address expires; the message itself lives in the body.
-      personalComment: buildPersonalComment({
-        email: row.email,
-        expiresOn: expiryAfter(row.created_at, FEEDBACK_EMAIL_RETENTION_DAYS),
-      }),
-    },
-  }))
+  const cards: PendingCard[] = []
+  for (const row of results) {
+    const logs = feedbackLogs(row)
+    const downloadUrl = logs?.arrived ? await presignQuietly(env, logs.r2Key) : null
+    cards.push({
+      rowId: row.id,
+      content: {
+        ...buildFeedbackIssue({
+          rowId: row.id,
+          buildMode: 'release' as const,
+          appVersion: row.app_version,
+          osVersion: row.os_version,
+          feedback: row.feedback,
+          email: row.email,
+          logs,
+        }),
+        // Only the reply-to address and the bundle link expire; the message itself lives in the
+        // body. The address sets the date when there is one, else the logs' 90 days do.
+        personalComment: buildPersonalComment({
+          email: row.email,
+          downloadUrl,
+          linkTtlHours: PRESIGN_TTL_HOURS,
+          expiresOn: expiryAfter(
+            row.created_at,
+            row.email?.trim() ? FEEDBACK_EMAIL_RETENTION_DAYS : ERROR_REPORT_RETENTION_DAYS,
+          ),
+        }),
+      },
+      afterFiling: async (issueNumber) => {
+        if (!logs?.arrived || row.report_row === null) return
+        await env.TELEMETRY_DB.prepare(
+          `UPDATE error_reports SET issue_number = ? WHERE id = ? AND issue_number IS NULL`,
+        )
+          .bind(issueNumber, row.report_row)
+          .run()
+        await rememberIssueNumber(env.ERROR_REPORT_META, logs.id, issueNumber)
+      },
+    })
+  }
 
   raiseOnFailure('feedback', await fileCards(env, 'feedback', 'feedback', cards))
+}
+
+/** What a feedback row's linked report looks like on its card, or null when it came without logs. */
+function feedbackLogs(row: {
+  error_report_id: string | null
+  report_size: number | null
+  report_key: string | null
+}): FeedbackLogs | null {
+  if (!row.error_report_id) return null
+  if (row.report_size === null || row.report_key === null) return { id: row.error_report_id, arrived: false }
+  return { id: row.error_report_id, arrived: true, sizeBytes: row.report_size, r2Key: row.report_key }
 }
 
 /**

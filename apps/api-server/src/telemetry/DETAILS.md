@@ -36,7 +36,7 @@ Error report amendment: POST /error-report/:id/amend → rate-limit by IP (ERROR
 
 Heartbeat: POST /heartbeat → rate-limit by IP (HEARTBEAT_LIMITER, 429 if over) → read the body under 256 KB (400) → validate the beat (required fields + analId/version shape + config-size cap + uptimeSeconds + events is an array; 400) → keep the first 500 events, drop malformed ones (counted, logged) → AWAITED: ONE D1 batch writing the heartbeat row + the events (failure → soft 502), no IP stored → in waitUntil: forward the events to PostHog (skipped without POSTHOG_PROJECT_KEY; failure logged, never surfaced) → 204
 
-Feedback: POST /feedback → rate-limit by IP (FEEDBACK_LIMITER, 429 if over) → validate shape (required feedback text ≤ 100k code points + appVersion/osVersion, optional email/buildMode) → AWAITED D1 write to `feedback` (failure → soft 502 so the app offers a retry) → 204 → the 3-hourly cron files its card and mails it in the report digest (`../../DETAILS.md` § Cron handler)
+Feedback: POST /feedback → rate-limit by IP (FEEDBACK_LIMITER, 429 if over) → validate shape (required feedback text ≤ 100k code points + appVersion/osVersion, optional email/buildMode/errorReportId) → AWAITED D1 write to `feedback` (failure → soft 502 so the app offers a retry) → 204 → the 3-hourly cron files its card and mails it in the report digest (`../../DETAILS.md` § Cron handler)
 
 Download redirect: GET /download/:version/:arch → write to D1 (fire-and-forget) → 302 to GitHub Releases
 
@@ -369,10 +369,19 @@ overshoot small.
 
 `POST /feedback` is the open-beta "Send feedback" channel. JSON body: required `feedback` text (trimmed, 1–100 000
 Unicode code points; the cap matches the desktop dialog and the Rust validator) plus `appVersion` / `osVersion`,
-optional reply-to `email` (loose shape check) and `buildMode`. Body capped at 512 KB. The D1 `feedback` table is the
-durable sink, so unlike the other telemetry writes this one is AWAITED: a D1 failure returns a soft 502 the desktop app
-surfaces as a gentle retry. Nothing else happens at intake. No install id of any kind is read or stored, so feedback
-can't be joined to the analytics stream. Rate-limited at 5/min/IP via `FEEDBACK_LIMITER` (the IP is never stored).
+optional reply-to `email` (loose shape check), `buildMode`, and `errorReportId`. Body capped at 512 KB. The D1
+`feedback` table is the durable sink, so unlike the other telemetry writes this one is AWAITED: a D1 failure returns a
+soft 502 the desktop app surfaces as a gentle retry. Nothing else happens at intake. No install id of any kind is read
+or stored, so feedback can't be joined to the analytics stream. Rate-limited at 5/min/IP via `FEEDBACK_LIMITER` (the IP
+is never stored).
+
+`errorReportId` (`feedback.error_report_id`, migration `0026`) is the `ERR-XXXXX` of the logs the sender chose to
+include, validated against the same pattern `/error-report` uses. The app posts the feedback FIRST and then uploads the
+logs as an ordinary `/error-report` (the five-hour Flow A bundle, note `Logs sent with in-app feedback`, no reply-to),
+so a failed feedback POST uploads nothing and the retry can't leave a duplicate bundle. The cost is a row that can name
+a report that never arrives (the upload failed after the feedback landed); the card and the digest say so rather than
+assume. Nothing links the two server-side beyond the id: the report still carries the `diag_` id in its manifest, as
+every error report does, and feedback still carries no install id at all.
 
 The row is also the outbox entry: the cron files its card (`feedback.issue_number`, NULL means owed) and mails it in the
 three-hour digest (`feedback.notified_at`, NULL means unsent); the intake path writes neither column. How the digest
