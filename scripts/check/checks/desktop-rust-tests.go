@@ -51,12 +51,26 @@ func RunRustTests(ctx *CheckContext) (CheckResult, error) {
 	// starved test look like it ran twice as often as it did.
 	records := ParseNextestResults(output)
 	ctx.RecordTests(records...)
+
+	// CI only: there the timings would otherwise die with the runner, and locally the
+	// check runner's test log already keeps every slow test. Every verdict carries it,
+	// a red or contention-softened one included: a starved run is when it's most wanted.
+	details := ""
+	if ctx.CI && len(records) > 0 {
+		details = RustTimingProfile(output, wall, records, rustTimingTopN)
+	}
+
 	if err != nil {
 		// Trim the per-test PASS/SKIP lines (the Linux lane already does): on a 4 800-test
 		// suite they bury the diagnosis and the actual panics under thousands of lines.
 		// FAIL/LEAK/TIMEOUT/SLOW and every panic body survive.
-		return resolveRustFailure("rust tests failed",
+		result, failure := resolveRustFailure("rust tests failed",
 			nextestContentionRunner(ctx.RootDir, baseArgs), LoadPerCore, trimRustTestProgress(output))
+		if failure != nil && details != "" {
+			failure = fmt.Errorf("%w\n%s", failure, indentOutput(details))
+		}
+		result.Details = details
+		return result, failure
 	}
 
 	// Parse test count from output: "X tests run:"
@@ -67,13 +81,6 @@ func RunRustTests(ctx *CheckContext) (CheckResult, error) {
 	if len(matches) > 1 {
 		count, _ = strconv.Atoi(matches[1])
 		message = fmt.Sprintf("%d %s passed", count, Pluralize(count, "test", "tests"))
-	}
-
-	// CI only: there the timings would otherwise die with the runner, and locally the
-	// check runner's test log already keeps every slow test.
-	details := ""
-	if ctx.CI {
-		details = RustTimingProfile(output, wall, records, rustTimingTopN)
 	}
 
 	// A retry-rescued run still exits 0. Report it as a warning rather than a pass:
