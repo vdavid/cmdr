@@ -6,7 +6,7 @@ search-generation bump. Other areas point here.
 
 `mod.rs` the `WriteMessage` protocol + `IndexWriter` handle + `writer_loop`; `batch.rs` the implicit transaction;
 `entries.rs`, `delta.rs`, `aggregation.rs`, `repair/` (+ `deferred.rs` queue), `pending_rollups.rs`,
-`abandoned_retry.rs`, `maintenance.rs`, `probe_stats.rs`, `wait_probe.rs`, one job each.
+`abandoned_retry.rs`, `maintenance.rs`, `probe_stats.rs`, `wait_probe.rs`, `flush_wait.rs`, one job each.
 
 ## Must-knows (all hold PER volume id)
 

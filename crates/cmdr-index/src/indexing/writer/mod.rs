@@ -36,6 +36,7 @@ mod aggregation;
 mod batch;
 mod delta;
 mod entries;
+mod flush_wait;
 mod maintenance;
 mod pending_rollups;
 mod probe_stats;
@@ -58,6 +59,8 @@ use entries::{
     handle_delete_entry_by_id, handle_delete_subtree_by_id, handle_insert_entries_v2, handle_move_entry_v2,
     handle_truncate_data, handle_upsert_entry_v2,
 };
+use flush_wait::BusyOn;
+pub use flush_wait::FlushReply;
 use maintenance::{handle_incremental_vacuum, request_wal_checkpoint, run_deferred_wal_checkpoint};
 use pending_rollups::{PendingRollups, emit_full_refresh, settle_the_ledger};
 use repair::DeferredRepairs;
@@ -407,7 +410,7 @@ pub enum WriteMessage {
     GetEntryCount(oneshot::Sender<Result<u64, IndexStoreError>>),
     /// Flush: confirms all prior messages have been committed.
     /// The writer responds through the channel after processing this message.
-    Flush(oneshot::Sender<()>),
+    Flush(FlushReply),
     /// Truncate `entries` and `dir_stats` tables, preserving `meta`.
     /// Used before a full rescan so the scan starts from a clean slate.
     TruncateData,
@@ -600,6 +603,11 @@ pub struct IndexWriter {
     /// event loop (which polls it to stop) and the supervisor (which awaits it to
     /// fail the volume). See `indexing::failure`.
     failure_signal: Arc<IndexFailureSignal>,
+    /// The message the writer thread is inside right now, read by a flush that has
+    /// waited long enough to say what it's stuck behind (`flush_wait.rs`).
+    busy_on: Arc<BusyOn>,
+    /// The volume this writer belongs to, for that same line.
+    volume_id: Arc<str>,
 }
 
 impl IndexWriter {
@@ -674,6 +682,9 @@ impl IndexWriter {
         let rollup_walks_clone = Arc::clone(&rollup_walks);
         let failure_signal = Arc::new(IndexFailureSignal::new(Arc::clone(&events)));
         let failure_signal_clone = Arc::clone(&failure_signal);
+        let busy_on = Arc::new(BusyOn::default());
+        let busy_on_clone = Arc::clone(&busy_on);
+        let volume_id_shared: Arc<str> = Arc::from(volume_id.as_str());
 
         let handle = thread::Builder::new()
             .name("index-writer".into())
@@ -695,6 +706,7 @@ impl IndexWriter {
                         idle_epoch_clone,
                         rollup_walks_clone,
                         failure_signal_clone,
+                        busy_on_clone,
                     )
                 }
             })
@@ -713,6 +725,8 @@ impl IndexWriter {
             idle_epoch,
             rollup_walks,
             failure_signal,
+            busy_on,
+            volume_id: volume_id_shared,
         })
     }
 
@@ -846,33 +860,47 @@ impl IndexWriter {
     }
 
     /// Send a `Flush` and await the response, confirming all prior messages have been committed.
+    ///
+    /// Every `STALL_REPORT_INTERVAL` without an answer it logs a WARN naming the
+    /// message the writer is stuck on, and keeps waiting (`flush_wait.rs` says why).
     pub async fn flush(&self) -> Result<(), IndexStoreError> {
         let (tx, rx) = oneshot::channel();
-        self.send(WriteMessage::Flush(tx))?;
-        rx.await.map_err(|_| {
-            IndexStoreError::Io(std::io::Error::new(
-                std::io::ErrorKind::BrokenPipe,
-                "Writer thread dropped flush reply",
-            ))
-        })
+        self.send(WriteMessage::Flush(FlushReply::Async(tx)))?;
+        flush_wait::wait_async(rx, &self.busy_on, &self.volume_id).await
     }
 
     /// Send a `Flush` and block until all prior messages have been committed.
     /// Safe to call from synchronous code (no async runtime needed). The wait for
     /// the writer to catch up is recorded in [`wait_probe`], same as a parked send:
     /// from the caller's side both are time spent waiting on the writer queue.
+    ///
+    /// Reports a stall the way [`flush`](Self::flush) does. This is the wait a scan
+    /// start makes with its manager out of the registry, so it's the line that
+    /// names a wedged volume.
     pub fn flush_blocking(&self) -> Result<(), IndexStoreError> {
-        let (tx, rx) = oneshot::channel();
-        self.send(WriteMessage::Flush(tx))?;
+        self.flush_blocking_reporting_every(flush_wait::STALL_REPORT_INTERVAL)
+    }
+
+    fn flush_blocking_reporting_every(&self, interval: Duration) -> Result<(), IndexStoreError> {
+        let (tx, rx) = mpsc::sync_channel(1);
+        self.send(WriteMessage::Flush(FlushReply::Blocking(tx)))?;
         let parked = Instant::now();
-        let result = rx.blocking_recv();
+        let result = flush_wait::wait_blocking(&rx, interval, &self.busy_on, &self.volume_id);
         wait_probe::note(parked.elapsed());
-        result.map_err(|_| {
-            IndexStoreError::Io(std::io::Error::new(
-                std::io::ErrorKind::BrokenPipe,
-                "Writer thread dropped flush reply",
-            ))
-        })
+        result
+    }
+
+    /// [`flush_blocking`](Self::flush_blocking) with a short report interval, so a
+    /// test can watch a stalled flush name its stall.
+    #[cfg(test)]
+    pub(crate) fn flush_blocking_reporting_every_for_test(&self, interval: Duration) -> Result<(), IndexStoreError> {
+        self.flush_blocking_reporting_every(interval)
+    }
+
+    /// What the writer thread is inside right now (`flush_wait.rs`).
+    #[cfg(test)]
+    pub(crate) fn busy_on(&self) -> Option<(&'static str, Duration)> {
+        self.busy_on.snapshot()
     }
 
     /// Send a `Shutdown` message and wait for the writer thread to finish.
@@ -1182,6 +1210,7 @@ fn writer_loop(
     idle_epoch: Arc<AtomicU64>,
     rollup_walks: Arc<AtomicU64>,
     failure_signal: Arc<IndexFailureSignal>,
+    busy_on: Arc<BusyOn>,
 ) {
     log::debug!("Writer: thread started");
     let mut stats = WriterStats::new();
@@ -1274,6 +1303,7 @@ fn writer_loop(
         }
 
         let kind = msg.kind();
+        busy_on.start(kind);
         let proc_start = Instant::now();
         // macOS: drain autoreleased ObjC objects each iteration.
         #[cfg(target_os = "macos")]
@@ -1317,6 +1347,7 @@ fn writer_loop(
             &failure_signal,
         );
         let took = proc_start.elapsed();
+        busy_on.end();
         probe.time_in_processing += took;
         probe.messages_processed += 1;
         // Only a message that ENDS gets this line; one that never does is named by the
@@ -1687,7 +1718,7 @@ fn process_message(
             // things this used to say already ride the 5 s summary above, which
             // counts flushes in its breakdown and carries the running total.
             // All prior messages have been processed; signal the caller.
-            let _ = reply.send(());
+            reply.send();
         }
         WriteMessage::SetDeltaPropagation(enabled) => {
             // A control message, not a mutation: it only flips ambient writer

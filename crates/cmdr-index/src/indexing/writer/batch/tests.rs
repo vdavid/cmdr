@@ -12,6 +12,7 @@ use std::thread;
 
 use super::*;
 use crate::indexing::store::{IndexStore, ROOT_ID};
+use crate::indexing::writer::flush_wait::BusyOn;
 use crate::indexing::writer::tests::{setup_db, wait_for_writer_to_settle};
 use crate::indexing::writer::{AggSource, IndexWriter, MutationTracker, WRITER_CHANNEL_CAPACITY, writer_loop};
 
@@ -70,7 +71,7 @@ fn every_message() -> Vec<WriteMessage> {
         WriteMessage::DeleteMeta("k".into()),
         WriteMessage::MarkDirsListed { ids: vec![2], epoch: 1 },
         WriteMessage::BumpCurrentEpoch,
-        WriteMessage::Flush(tokio::sync::oneshot::channel().0),
+        WriteMessage::Flush(tokio::sync::oneshot::channel().0.into()),
         WriteMessage::TruncateData,
         WriteMessage::SetDeltaPropagation(false),
         WriteMessage::BeginTransaction,
@@ -95,7 +96,7 @@ fn every_message() -> Vec<WriteMessage> {
 #[test]
 fn every_durability_barrier_forces_the_batch_shut() {
     let barriers = [
-        WriteMessage::Flush(tokio::sync::oneshot::channel().0),
+        WriteMessage::Flush(tokio::sync::oneshot::channel().0.into()),
         WriteMessage::BeginTransaction,
         WriteMessage::CommitTransaction,
         WriteMessage::TruncateData,
@@ -321,6 +322,7 @@ fn run_prefilled_loop(db_path: &Path, messages: Vec<WriteMessage>) -> usize {
             Arc::new(AtomicU64::new(0)),
             Arc::new(AtomicU64::new(0)),
             Arc::new(IndexFailureSignal::new(crate::NoopEventSink::shared())),
+            Arc::new(BusyOn::default()),
         );
     });
     handle.join().expect("writer thread join");
@@ -373,7 +375,7 @@ fn a_flush_reply_means_the_batched_rows_are_already_committed() {
     let (reply_tx, reply_rx) = tokio::sync::oneshot::channel();
 
     let mut messages: Vec<WriteMessage> = (0..BEFORE_FLUSH).map(|i| upsert(&format!("early{i}.txt"))).collect();
-    messages.push(WriteMessage::Flush(reply_tx));
+    messages.push(WriteMessage::Flush(reply_tx.into()));
     messages.extend((0..AFTER_FLUSH).map(|i| upsert(&format!("late{i}.txt"))));
     for msg in messages {
         queue_depth.fetch_add(1, Ordering::Relaxed);
@@ -396,6 +398,7 @@ fn a_flush_reply_means_the_batched_rows_are_already_committed() {
             Arc::new(AtomicU64::new(0)),
             Arc::new(AtomicU64::new(0)),
             Arc::new(IndexFailureSignal::new(crate::NoopEventSink::shared())),
+            Arc::new(BusyOn::default()),
         );
     });
 

@@ -157,7 +157,7 @@ fn lifecycle_transitions_under_load() {
 
     // Send Flush but intentionally drop the receiver without awaiting.
     let (tx, _rx) = tokio::sync::oneshot::channel::<()>();
-    w.send(WriteMessage::Flush(tx)).unwrap();
+    w.send(WriteMessage::Flush(tx.into())).unwrap();
 
     // Immediately send Shutdown. The writer must handle the dropped
     // oneshot sender (Flush response fails to send) and then exit.

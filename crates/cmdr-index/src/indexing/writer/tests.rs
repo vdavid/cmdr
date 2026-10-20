@@ -838,6 +838,7 @@ fn a_fatal_storage_error_stops_the_writer_and_trips_the_signal() {
             Arc::new(AtomicU64::new(0)),
             Arc::new(AtomicU64::new(0)),
             signal_for_loop,
+            Arc::new(BusyOn::default()),
         );
     });
 
