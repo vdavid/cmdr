@@ -246,6 +246,10 @@ token_enum! {
         /// nothing to put back. A real skip, unlike `AlreadyGone`, because the end state the
         /// undo wanted (the item home again) does NOT hold.
         Vanished => "vanished",
+        /// Undoing a copy would delete the only copy left: its original is gone from
+        /// where it was copied from, or is no longer the file that was copied (its
+        /// size changed). Removing a copy is permanent, so the copy stays.
+        OriginalGone => "original_gone",
         /// A backend error prevented reversing this item.
         Failed => "failed",
         /// The item was verified as this operation's own, but it wears a lock this

@@ -304,6 +304,7 @@ async fn reconcile_with_no_inverse_row_returns_to_rollbackable_and_a_reissue_res
         .set_rollback_state("op", RollbackState::RollingBack, None)
         .expect("set");
     rig.writer.flush_blocking().expect("flush");
+    rig.put_originals("op").await;
 
     // No inverse op ⇒ reconcile returns it straight to rollbackable.
     reconcile_rolling_back_on_open(&rig.writer);
@@ -338,6 +339,7 @@ async fn retention_cannot_prune_a_rollbacks_source_mid_stream() {
             file_unit(1, "src", "/two.txt", "dst", "/two.txt", 2),
         ],
     );
+    rig.put_originals("op").await;
     // The op is mid-rollback...
     rig.writer
         .set_rollback_state("op", RollbackState::RollingBack, None)

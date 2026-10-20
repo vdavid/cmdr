@@ -142,6 +142,8 @@ const SKIP_REASON_KEYS: Record<SkipReason, { named: MessageKey; counted: Message
   },
   // Only a REMOVAL meets a lock it can't clear, and a rename's undo renames back.
   locked: null,
+  // Only undoing a COPY checks an original, and a rename's undo renames back.
+  originalGone: null,
   alreadyGone: null,
 }
 

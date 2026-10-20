@@ -65,6 +65,7 @@ async fn a_copy_rollback_removes_a_locked_and_a_deny_delete_copy() {
         RollbackState::Rollbackable,
         vec![unit(0, &locked), unit(1, &acl)],
     );
+    rig.put_originals("op").await;
 
     let report = rig.rollback("op").await;
 
@@ -97,6 +98,7 @@ async fn a_copy_rollback_removes_a_locked_read_only_folder_and_its_child() {
             dir_unit(1, "root", &vault.to_string_lossy()),
         ],
     );
+    rig.put_originals("op").await;
 
     let report = rig.rollback("op").await;
 

@@ -17,6 +17,7 @@ use cmdr_fs::volume::{InMemoryVolume, Volume, VolumeError};
 use cmdr_operation_log::rollback::*;
 use cmdr_operation_log::store::{
     OperationItemRow, OperationRow, open_read_connection, operation_log_db_path, read_operation, read_operation_items,
+    read_rollback_units_page,
 };
 use cmdr_operation_log::types::{
     EntryType, ExecutionStatus, Initiator, ItemOutcome, OpKind, RollbackState, RowRole, SearchCoverage,
@@ -139,6 +140,33 @@ impl Rig {
             })
             .expect("finalize");
         self.writer.flush_blocking().expect("flush");
+    }
+
+    /// Put every copied file's ORIGINAL back where the seeded rows say it was copied
+    /// from, at the recorded size, on its registered source volume. Undoing a copy
+    /// removes it only while its original is still there, so a copy cell that wants
+    /// its copies gone seeds the originals too; one that tests the original being
+    /// gone leaves this out (`copy_original_tests.rs`).
+    pub(super) async fn put_originals(&self, op_id: &str) {
+        let conn = open_read_connection(self.writer.db_path()).expect("read conn");
+        let units = read_rollback_units_page(&conn, op_id, i64::MAX, 10_000).expect("read units");
+        for unit in units.iter().filter(|unit| unit.entry_type == EntryType::File) {
+            let volume = self
+                .vm
+                .get(&unit.source_volume_id)
+                .expect("the source volume is registered");
+            if let Some(parent) = unit.source_path.parent() {
+                volume
+                    .create_directory_all(parent)
+                    .await
+                    .expect("the original's folder");
+            }
+            let size = unit.size.expect("a copy row records its size") as usize;
+            volume
+                .create_file(&unit.source_path, &vec![b'o'; size])
+                .await
+                .expect("the original");
+        }
     }
 
     pub(super) async fn rollback(&self, op_id: &str) -> RollbackReport {

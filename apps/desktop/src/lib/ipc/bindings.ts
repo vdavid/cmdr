@@ -16207,8 +16207,10 @@ export type SkipBreakdown = {
  *  rollback verdict to report. `AlreadyGone` counts as reversed (the desired end
  *  state already holds), so it lands `RolledBack` and is never stored.
  *
- *  This is reporting fidelity only: no variant may change whether an item is
- *  skipped, retried, or forced.
+ *  WHICH variant is stored is reporting fidelity only: no variant may change
+ *  whether an item is skipped, retried, or forced. That a reason is stored at all
+ *  is load-bearing: it tells a row a rollback held back (which "Finish" retries)
+ *  from the operation's own skip (`RollbackUnit::awaits_reversal`).
  */
 export type SkipReason =
   /**
@@ -16242,6 +16244,12 @@ export type SkipReason =
    *  undo wanted (the item home again) does NOT hold.
    */
   | 'vanished'
+  /**
+   *  Undoing a copy would delete the only copy left: its original is gone from
+   *  where it was copied from, or is no longer the file that was copied (its
+   *  size changed). Removing a copy is permanent, so the copy stays.
+   */
+  | 'originalGone'
   // A backend error prevented reversing this item.
   | 'failed'
   /**

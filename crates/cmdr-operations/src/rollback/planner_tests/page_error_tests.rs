@@ -35,6 +35,7 @@ async fn copied_files_and_a_folder() -> (Rig, Arc<InMemoryVolume>) {
         RollbackState::Rollbackable,
         units,
     );
+    rig.put_originals("op").await;
     (rig, dst)
 }
 

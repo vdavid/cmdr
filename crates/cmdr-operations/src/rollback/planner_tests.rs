@@ -9,6 +9,7 @@
 mod blocked_items_tests;
 mod case_twin_tests;
 mod control_tests;
+mod copy_original_tests;
 mod lifecycle_tests;
 mod page_error_tests;
 mod resume_tests;

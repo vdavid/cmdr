@@ -103,6 +103,9 @@ const REASON_KEYS: Record<SkipReason, { named: MessageKey; counted: MessageKey }
   // Only the journal's restore-move (an undo of a FINISHED move, trash, or rename) reports it;
   // an in-flight reversal reads a missing item as `alreadyGone`.
   vanished: null,
+  // Only the journal's undo of a FINISHED copy checks the copy's original; a cancel's
+  // reversal removes copies whose originals it was reading moments ago.
+  originalGone: null,
 }
 
 /** What happened to the items one reason applies to: named when it's the only

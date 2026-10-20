@@ -145,7 +145,7 @@ fn pure_mapping_helpers() {
 
     assert_eq!(
         inverse_action(OpKind::Copy, EntryType::File),
-        Some(InverseAction::RemoveFileIfUnchanged)
+        Some(InverseAction::RemoveCopyIfOriginalStays)
     );
     assert_eq!(
         inverse_action(OpKind::Copy, EntryType::Dir),

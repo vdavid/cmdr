@@ -52,6 +52,7 @@ async fn copy_rollback_removes_copies_and_created_dirs() {
         ],
     );
 
+    rig.put_originals("op").await;
     let report = rig.rollback("op").await;
     assert_eq!(report.final_state, RollbackState::RolledBack);
     assert_eq!(report.reversed, 4);
@@ -393,6 +394,7 @@ async fn drift_on_one_item_skips_only_that_item() {
             file_unit(1, "src", "/gone.txt", "dst", "/gone.txt", 2),
         ],
     );
+    rig.put_originals("op").await;
     let report = rig.rollback("op").await;
     assert_eq!(report.reversed, 1);
     assert_eq!(report.skipped, 1);
@@ -683,6 +685,7 @@ async fn the_e2e_throttle_hook_paces_the_item_loop() {
 
     rig.pacing.set_rollback_pace(Some(std::time::Duration::from_millis(20)));
     let started = std::time::Instant::now();
+    rig.put_originals("op").await;
     let report = rig.rollback("op").await;
     let elapsed = started.elapsed();
     rig.pacing.set_rollback_pace(None);
@@ -742,6 +745,7 @@ async fn a_canceled_original_op_rolls_back_exactly_its_completed_items() {
         .expect("finalize");
     rig.writer.flush_blocking().expect("flush");
 
+    rig.put_originals("op").await;
     let report = rig.rollback("op").await;
     assert_eq!(report.reversed, 1, "reverses exactly the completed item");
     assert_eq!(report.final_state, RollbackState::RolledBack);
@@ -887,6 +891,7 @@ async fn a_folder_copy_and_its_rollback_report_the_same_item_count() {
         .expect("finalize");
     rig.writer.flush_blocking().expect("flush");
 
+    rig.put_originals("op").await;
     let report = rig.rollback_as("op", "inv").await;
     assert_eq!(report.reversed, 3);
 
@@ -975,6 +980,7 @@ async fn a_housekeeping_directory_does_not_hide_a_skipped_file_in_the_inverse_he
         .expect("finalize");
     rig.writer.flush_blocking().expect("flush");
 
+    rig.put_originals("op").await;
     rig.rollback_as("op", "inv").await;
 
     let inverse = rig.read_op("inv");
@@ -1008,6 +1014,7 @@ async fn streams_a_large_op_across_pages() {
         RollbackState::Rollbackable,
         units,
     );
+    rig.put_originals("op").await;
     let report = rig.rollback("op").await;
     assert_eq!(report.reversed, N as u64, "every page's items reversed");
     assert_eq!(report.final_state, RollbackState::RolledBack);

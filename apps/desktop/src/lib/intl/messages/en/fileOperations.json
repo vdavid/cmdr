@@ -1667,7 +1667,7 @@
 
   "fileOperations.rollbackConfirm.bodyUndoByDeleting": "This deletes the files and folders the operation created. Cmdr skips anything it isn’t sure about, so a few may stay behind.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
-    "description": "Body of the Rollback confirmation when the user undoes a FINISHED operation that created things: a copy, a new file, a new folder, or a compress. Two facts, both load-bearing: rolling back deletes what the operation made, and Cmdr leaves alone every file it can’t match against what it recorded (the user changed it since, or it was never recorded), so the reversal can come out partial. Sibling wordings cover undoing a move and undoing a rename; keep the second sentence parallel across all three.",
+    "description": "Body of the Rollback confirmation when the user undoes a FINISHED operation that created things: a copy, a new file, a new folder, or a compress. Two facts, both load-bearing: rolling back deletes what the operation made, and Cmdr leaves alone every file it can’t match against what it recorded (the user changed it since, it was never recorded, or the original a copy was made from is gone, so the copy is the only one left), so the reversal can come out partial. Sibling wordings cover undoing a move and undoing a rename; keep the second sentence parallel across all three.",
     "screenshot": "rollback-confirmation-undoByDeleting.png"
   },
   "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "This moves the files back where they came from. Cmdr skips anything it isn’t sure about, so a few may stay where they are.",

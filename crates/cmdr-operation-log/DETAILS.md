@@ -620,12 +620,38 @@ root-reach rule (`vanished_item` wraps `missing_item`). Crediting it, as this on
 toast "Put back 3 files." over an emptied trash. Pinned by `trash_rollback_skips_when_trash_was_emptied` and
 `trash_rollback_credits_an_item_already_put_back`.
 
+### A copy's original must still be there
+
+Undoing a copy deletes the copy permanently (`Volume::delete`, never the Trash), and "the copy is redundant" only holds
+while the original exists. Copy photos off a card, delete them there, then roll the copy back: the undo removed the only
+copy left (#518). So a copied file's inverse is `RemoveCopyIfOriginalStays`: after the copy verifies against its
+snapshot, `original_stays` stats `unit.source_path` on `unit.source_volume_id` and removes the copy only when the
+original is there, a file, at the recorded size.
+
+- **Gone, a directory now, or a different size** ⇒ `SkipReason::OriginalGone`: what was copied exists nowhere else.
+- **Can't tell** ⇒ `UnverifiablePrecondition`: the source volume isn't registered (the op-level gate refuses that before
+  any item runs, so this is the planner's own floor), the stat errors for any other reason, the backend reports no size,
+  or a `NotFound` lands outside the volume's root (a narrowed remote place, § "What counts as already gone").
+- **Size only, never mtime.** A local copy records the source's preserved mtime, but a volume copy records the
+  destination's own (§ "What a volume leaf's snapshot carries"), which no source matches.
+- **An original a later logged operation MOVED counts as gone.** The journal isn't consulted: a copy is only ever
+  removed against an original seen in place, and a skip is the safe answer.
+- **Order.** The copy is checked first, so a copy already gone stays an idempotent `AlreadyGone` whatever happened to
+  its original. The skip is stored like any other, so "Finish rolling back" rechecks it, and an original that came back
+  since lets the copy go.
+- Only a COPY checks: `create_file` and compress have no original, and a cross-FS move's rows restore rather than
+  remove.
+
+Pinned by `crates/cmdr-operations/src/rollback/planner_tests/copy_original_tests.rs`. Copy cells that want their copies
+removed seed the originals with `Rig::put_originals`.
+
 ### Per-kind inverse table
 
-The op kind + item entry-type map to one of three inverse actions (`inverse_action`):
+The op kind + item entry-type map to one of four inverse actions (`inverse_action`):
 
-- **copy** → file: `RemoveFileIfUnchanged` (delete the copied dest if it still matches the snapshot); dir: the created
-  dir is `RemoveDirIfEmpty`. A copy of a whole tree removes its copied files, then its created dirs.
+- **copy** → file: `RemoveCopyIfOriginalStays` (delete the copied dest if it still matches the snapshot AND its original
+  is still there, § "A copy's original must still be there"); dir: the created dir is `RemoveDirIfEmpty`. A copy of a
+  whole tree removes its copied files, then its created dirs.
 - **create_file / compress** (`archive_edit`) → `RemoveFileIfUnchanged` (delete the created file / net-new archive only
   if unchanged — a later zip-edit drifts the archive, so it's left untouched).
 - **create_folder** → `RemoveDirIfEmpty` (remove only if still empty — a file added since ⇒ keep, partial).

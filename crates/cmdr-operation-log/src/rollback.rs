@@ -19,6 +19,9 @@
 //!   or by exact names in a fresh listing, never by folding) — that's not a real
 //!   collision, so it proceeds ([`is_self_collision`]).
 //!
+//! Undoing a copy also proves the copy's original is still there before it
+//! deletes the copy ([`original_stays`]): never remove the only copy left.
+//!
 //! A skipped item leaves the operation `partially_rolled_back`; a fully reversed
 //! one lands `rolled_back`; one that reversed nothing (all skipped, or canceled
 //! before anything ran) returns to `rollbackable` so a retry can resume — every
@@ -153,9 +156,13 @@ pub fn inverse_kind(kind: OpKind) -> OpKind {
 /// item's entry type (`DETAILS.md` § "Per-kind inverse table").
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum InverseAction {
-    /// Remove the created/copied file at its dest, only if it still matches the
-    /// snapshot (copy file, create_file, compress archive).
+    /// Remove the created file at its dest, only if it still matches the snapshot
+    /// (create_file, compress archive).
     RemoveFileIfUnchanged,
+    /// Remove a copied file at its dest, only if it still matches the snapshot AND
+    /// its original is still where it was copied from, unchanged in size: removing
+    /// a copy is permanent, so it must never take the only copy left.
+    RemoveCopyIfOriginalStays,
     /// Remove the created/copied directory at its dest, only if still empty (copy's
     /// created dirs, create_folder).
     RemoveDirIfEmpty,
@@ -182,7 +189,7 @@ fn is_created_in_place(unit: &RollbackUnit) -> bool {
 fn inverse_action(kind: OpKind, entry_type: EntryType) -> Option<InverseAction> {
     match kind {
         OpKind::Copy => Some(match entry_type {
-            EntryType::File => InverseAction::RemoveFileIfUnchanged,
+            EntryType::File => InverseAction::RemoveCopyIfOriginalStays,
             EntryType::Dir => InverseAction::RemoveDirIfEmpty,
         }),
         OpKind::CreateFile | OpKind::ArchiveEdit => Some(InverseAction::RemoveFileIfUnchanged),
@@ -547,7 +554,8 @@ async fn reverse_item(
         }
     };
     match action {
-        InverseAction::RemoveFileIfUnchanged => remove_file_if_unchanged(volumes, runner, unit).await,
+        InverseAction::RemoveFileIfUnchanged => remove_file_if_unchanged(volumes, runner, unit, false).await,
+        InverseAction::RemoveCopyIfOriginalStays => remove_file_if_unchanged(volumes, runner, unit, true).await,
         InverseAction::RemoveDirIfEmpty => remove_dir_if_empty(volumes, runner, unit).await,
         InverseAction::RestoreMove => restore_move(volumes, runner, unit).await,
     }
@@ -589,10 +597,15 @@ fn vanished_item(sides: &[(&dyn Volume, &Path)]) -> ItemResult {
     }
 }
 
+/// Remove the file a removal inverse targets, once it verifies against its snapshot.
+/// `check_original` (a copy) also requires the original to still be there
+/// ([`original_stays`]); it's checked after the copy verifies, so a copy already
+/// gone stays an idempotent no-op whatever happened to its original.
 async fn remove_file_if_unchanged(
     volumes: &dyn VolumeLookup,
     runner: &dyn RollbackRunner,
     unit: &RollbackUnit,
+    check_original: bool,
 ) -> ItemResult {
     let (vol_id, path) = removal_target(unit);
     let Some(volume) = volumes.get(&vol_id) else {
@@ -607,6 +620,9 @@ async fn remove_file_if_unchanged(
     };
     match verify_snapshot(unit.size, unit.mtime, live.size, live.modified_at) {
         SnapshotVerdict::Match => {
+            if check_original && let Err(kept) = original_stays(volumes, unit).await {
+                return ItemResult::Skipped(kept);
+            }
             let removed = runner
                 .perform(InverseAct::RemoveFile {
                     volume: &volume,
@@ -617,6 +633,43 @@ async fn remove_file_if_unchanged(
         }
         SnapshotVerdict::Drift => ItemResult::Skipped(SkipReason::Drift),
         SnapshotVerdict::Unverifiable => ItemResult::Skipped(SkipReason::UnverifiablePrecondition),
+    }
+}
+
+/// Whether a copy's original is still where it was copied from (`unit.source_path`
+/// on `unit.source_volume_id`), as the file that was copied: present, a file, and
+/// the recorded size. Undoing a copy deletes it permanently, and "the copy is
+/// redundant" only holds while the original exists: copy photos off a card, delete
+/// them there, and the copy is the only one left.
+///
+/// Size only, never mtime: a local copy records the source's preserved mtime, but a
+/// volume copy records the destination's own, which no source matches.
+///
+/// Fails safe on doubt: gone, a directory now, or a different size is
+/// [`SkipReason::OriginalGone`]; a source volume that isn't registered, a stat that
+/// errors for another reason, a size the backend can't report, or a `NotFound` for a
+/// path outside the volume's root (a narrowed remote place, see [`missing_item`]) is
+/// [`SkipReason::UnverifiablePrecondition`]. An original that a later logged
+/// operation moved elsewhere counts as gone too: the journal isn't consulted, so a
+/// copy is only ever removed against an original seen in place.
+async fn original_stays(volumes: &dyn VolumeLookup, unit: &RollbackUnit) -> Result<(), SkipReason> {
+    let Some(volume) = volumes.get(&unit.source_volume_id) else {
+        return Err(SkipReason::UnverifiablePrecondition);
+    };
+    let path = unit.source_path.as_path();
+    let original = match volume.get_metadata(path).await {
+        Ok(entry) => entry,
+        Err(VolumeError::NotFound(_)) if path.starts_with(volume.root()) => return Err(SkipReason::OriginalGone),
+        Err(_) => return Err(SkipReason::UnverifiablePrecondition),
+    };
+    if original.is_directory {
+        return Err(SkipReason::OriginalGone);
+    }
+    match (unit.size, original.size) {
+        (None, _) => Ok(()),
+        (Some(_), None) => Err(SkipReason::UnverifiablePrecondition),
+        (Some(recorded), Some(live)) if live as i64 == recorded => Ok(()),
+        (Some(_), Some(_)) => Err(SkipReason::OriginalGone),
     }
 }
 
