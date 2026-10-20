@@ -114,6 +114,9 @@ function container(): HTMLDivElement {
   return target
 }
 
+/** The composer's "Ask about selection" read, with nothing to attach. */
+const noSelection = () => Promise.resolve({ kind: 'refs' as const, refs: [], leftOut: 0 })
+
 beforeEach(() => {
   triggerState.streaming = false
   triggerState.width = 340
@@ -168,7 +171,7 @@ describe('AskCmdrAttachmentChip a11y', () => {
 describe('AskCmdrComposer a11y', () => {
   function mountComposer(): HTMLElement {
     const target = container()
-    mount(AskCmdrComposer, { target, props: {} })
+    mount(AskCmdrComposer, { target, props: { readSelection: noSelection } })
     return target
   }
 
@@ -389,7 +392,7 @@ describe('AskCmdrRail a11y', () => {
 
   function mountRail(): HTMLElement {
     const target = container()
-    mount(AskCmdrRail, { target, props: {} })
+    mount(AskCmdrRail, { target, props: { readSelection: noSelection } })
     return target
   }
 

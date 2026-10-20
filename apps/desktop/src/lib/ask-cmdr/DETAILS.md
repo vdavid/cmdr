@@ -282,9 +282,13 @@ registry lives below `commands/` rather than inside the chat command.
   cleared after. They ride into the context envelope as `attached: <path> (<kind>)` on the latest user turn — **path +
   kind only, structurally never contents** (the read-only privacy line). History user rows carry no chips (the refs were
   envelope text, not stored blocks).
-- **"Ask about selection"** (the paperclip button) calls `ask_cmdr_selection_attachments`, which reads the focused pane
-  from `PaneStateStore` (the same source the envelope uses) and returns its selection (or cursor item) as typed refs —
-  no filesystem stat.
+- **"Ask about selection"** (the paperclip button) calls its `readSelection` prop (`+page.svelte` →
+  `ExplorerAPI.readSelectionAttachments` → `../file-explorer/pane/selection-attachments-read.ts`): the focused pane's
+  WHOLE selection (or cursor item) as typed refs, resolved against the BACKEND listing, revision-checked, no filesystem
+  stat. ❌ Never resolve it from `PaneStateStore`: that holds only each pane's loaded window, so a selection scrolled
+  past it attached short, silently. Past `SELECTION_ATTACHMENT_CAP` (100) it keeps the first rows in pane order and the
+  composer toasts how many it left out (`askCmdr.composer.selectionCapped`); every ref rides into the next turn's
+  context, so the cap protects the user's tokens. The chip row scrolls past `8lh`.
 - **Drag-onto-composer is a NATIVE webview drag, not HTML5** (`ask-cmdr-drop.ts`): a Cmdr pane drag is delivered through
   `getCurrentWebview().onDragDropEvent`, so a DOM `ondrop` would never fire. The composer subscribes to that event and
   hit-tests its own rect (via `toViewportPosition`, mirroring the pane drag-drop controller). For an in-app drag the

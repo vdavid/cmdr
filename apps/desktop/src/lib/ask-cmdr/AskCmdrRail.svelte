@@ -31,6 +31,14 @@
     import { cloudConsentState } from '#lib/ai/cloud-consent.svelte.js'
     import { getSetting, onSpecificSettingChange, type AiProvider } from '#lib/settings/index.js'
     import { openSessions, sessionsState } from './ask-cmdr-sessions.svelte'
+    import type { SelectionAttachmentsRead } from '#lib/file-explorer/pane/selection-attachments-read.js'
+
+    interface Props {
+        /** The composer's "Ask about selection" read, handed down from the explorer. */
+        readSelection: () => Promise<SelectionAttachmentsRead>
+    }
+
+    const { readSelection }: Props = $props()
 
     const badgeStatus = getBadgeStatus('ask-cmdr')
 
@@ -167,7 +175,7 @@
             {/if}
         </div>
 
-        <AskCmdrComposer />
+        <AskCmdrComposer {readSelection} />
         <AskCmdrCostFooter />
 
         {#if sessionsState.open}

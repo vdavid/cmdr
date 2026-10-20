@@ -14,8 +14,11 @@
     import { tString } from '#lib/intl/messages.svelte.js'
     import { tooltip } from '#lib/tooltip/tooltip.js'
     import { getSetting, onSpecificSettingChange, type AiProvider } from '#lib/settings/index.js'
-    import { askCmdrSelectionAttachments, askCmdrFakeActive } from '#lib/tauri-commands/index.js'
+    import { askCmdrFakeActive } from '#lib/tauri-commands/index.js'
     import { getAppLogger } from '#lib/logging/logger.js'
+    import { addToast } from '#lib/ui/toast/index.js'
+    import { formatInteger } from '#lib/intl/number-format.js'
+    import type { SelectionAttachmentsRead } from '#lib/file-explorer/pane/selection-attachments-read.js'
     import AskCmdrAttachmentChip from './AskCmdrAttachmentChip.svelte'
     import { installComposerDrop } from './ask-cmdr-drop'
     import {
@@ -27,6 +30,13 @@
         sendMessage,
         stopStreaming,
     } from './ask-cmdr-trigger.svelte'
+
+    interface Props {
+        /** "Ask about selection": the focused pane's whole selection, from the explorer (`ExplorerAPI`). */
+        readSelection: () => Promise<SelectionAttachmentsRead>
+    }
+
+    const { readSelection }: Props = $props()
 
     const log = getAppLogger('askCmdr')
 
@@ -77,7 +87,20 @@
 
     async function attachSelection(): Promise<void> {
         try {
-            addAttachments(await askCmdrSelectionAttachments())
+            // `changed` attaches nothing; the read already said why.
+            const read = await readSelection()
+            if (read.kind === 'refs') {
+                addAttachments(read.refs)
+                if (read.leftOut > 0) {
+                    const total = read.refs.length + read.leftOut
+                    const params = {
+                        attachedText: formatInteger(read.refs.length),
+                        totalText: formatInteger(total),
+                        total,
+                    }
+                    addToast(tString('askCmdr.composer.selectionCapped', params), { level: 'info' })
+                }
+            }
         } catch (e) {
             log.warn('attaching the selection failed: {error}', { error: e })
         }
@@ -169,10 +192,14 @@
         outline-offset: -2px;
     }
 
+    /* A whole selection can attach up to `SELECTION_ATTACHMENT_CAP` chips; past a few
+       rows they scroll, so the composer never grows over the thread. */
     .attachments {
         display: flex;
         flex-wrap: wrap;
         gap: var(--spacing-xxs);
+        max-height: 8lh;
+        overflow-y: auto;
     }
 
     .composer-row {

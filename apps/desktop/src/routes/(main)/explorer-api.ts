@@ -21,6 +21,7 @@ import type { VolumeSelectOutcome } from '#lib/file-explorer/pane/volume-selecti
 import type { FavoriteOpenedEvent } from '#lib/file-explorer/navigation/favorites-analytics.js'
 import type { MultiRenameSelection } from '#lib/file-explorer/pane/pane-commands.js'
 import type { SelectedPathsRead } from '#lib/file-explorer/pane/selected-paths-read.js'
+import type { SelectionAttachmentsRead } from '#lib/file-explorer/pane/selection-attachments-read.js'
 import type { SplitDirection } from '#lib/file-explorer/pane/pane-split.js'
 import type {
   CopyPathBetweenPanesArgs,
@@ -127,6 +128,12 @@ export interface ExplorerAPI {
    * `#lib/file-explorer/pane/selected-paths-read.ts`.
    */
   readSelectedPathsForCopy: () => Promise<SelectedPathsRead>
+  /**
+   * "Ask about selection": the focused pane's WHOLE selection (or its cursor row) as
+   * Ask Cmdr attachment refs, read from the backend listing, capped with a count of
+   * what it left out. `#lib/file-explorer/pane/selection-attachments-read.ts`.
+   */
+  readSelectionAttachments: () => Promise<SelectionAttachmentsRead>
   /**
    * The focused pane's cursor row as "Open terminal here" reads it: name, path, and
    * whether it's a folder. `..` comes back as a real row (the command treats it as

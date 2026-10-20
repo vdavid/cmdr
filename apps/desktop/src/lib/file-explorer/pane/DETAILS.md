@@ -117,6 +117,9 @@ suite:
   mean the filename), unlike `SearchResultsView`'s own adapter, which synthesizes the `~`-shortened full path for the
   Name column. `SearchResultEntry.parentPath` is home-relative too, so it is display text and never a path to join onto.
 - `selected-paths-read.ts`: the selection as paths for copy-path / copy-filename (§ Copy-path below).
+- `selection-attachments-read.ts`: Ask Cmdr's "Ask about selection", the WHOLE selection (or cursor row) as attachment
+  refs from the backend listing, capped with a typed `leftOut` count (`../../ask-cmdr/DETAILS.md` § Attachments by
+  reference).
 - `pressed-rows.ts`: `readPressedRows`, the one revision-checked read of a press's rows, waiting out a busy folder (§
   Compare directories).
 - `snapshot-source-volume.ts`: which real volume a search-results pane's rows live on, for the delete and transfer

@@ -96,6 +96,7 @@
     import { createFileOperationCommands } from './file-operation-commands'
     import { createPaneCommands, type MultiRenameSelection } from './pane-commands'
     import type { SelectedPathsRead } from './selected-paths-read'
+    import type { SelectionAttachmentsRead } from './selection-attachments-read'
     import { createSortOperations } from './sort-operations'
     import { createSwapPanes } from './swap-panes'
     import { createSplitNudger, type SplitDirection } from './pane-split'
@@ -998,6 +999,10 @@
 
     export function readSelectedPathsForCopy(): Promise<SelectedPathsRead> {
         return paneCommands.readSelectedPathsForCopy()
+    }
+
+    export function readSelectionAttachments(): Promise<SelectionAttachmentsRead> {
+        return paneCommands.readSelectionAttachments()
     }
 
     export function getCursorRowForTerminal(): Promise<{ name: string; path: string; isDirectory: boolean } | null> {

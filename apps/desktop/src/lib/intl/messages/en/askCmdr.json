@@ -367,6 +367,15 @@
     "description": "Button in the composer that attaches the file or folder selected in the active pane, so the user can ask about it. Sentence case.",
     "screenshot": "ask-cmdr-empty.png"
   },
+  "askCmdr.composer.selectionCapped": "Attached the first {attachedText} of {totalText} selected {total, plural, one {item} other {items}}.",
+  "@askCmdr.composer.selectionCapped": {
+    "description": "Toast in the main window after the user pressed \"Ask about selection\" (the paperclip button in the Ask Cmdr chat panel) with more files and folders selected than one message can carry. The first ones in list order were attached to their next Ask Cmdr message; the rest were not. Items are files or folders. Don't use the words \"error\" or \"failed\".",
+    "placeholders": {
+      "attachedText": "How many items were attached, already formatted with thousands separators, like 100.",
+      "totalText": "How many items were selected in the file list, already formatted with thousands separators, like 2,345.",
+      "total": "The raw selected count as an integer, used only to pick the singular or plural word."
+    }
+  },
   "askCmdr.composer.dropHint": "Drop to attach",
   "@askCmdr.composer.dropHint": {
     "description": "Overlay shown on the composer while a file or folder is dragged over it, inviting a drop. Sentence case."

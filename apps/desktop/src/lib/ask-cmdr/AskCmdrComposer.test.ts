@@ -57,14 +57,31 @@ vi.mock('#lib/settings/index.js', () => ({
   onSpecificSettingChange: settings.onSpecificSettingChange,
 }))
 
-import AskCmdrComposer from './AskCmdrComposer.svelte'
+const { ipc, addToast } = vi.hoisted(() => ({
+  ipc: { askCmdrFakeActive: vi.fn(() => Promise.resolve(false)) },
+  addToast: vi.fn(),
+}))
+vi.mock('#lib/tauri-commands/index.js', () => ipc)
+vi.mock('#lib/ui/toast/index.js', () => ({ addToast }))
 
-function mountComposer(): HTMLElement {
+import AskCmdrComposer from './AskCmdrComposer.svelte'
+import type { SelectionAttachmentsRead } from '#lib/file-explorer/pane/selection-attachments-read.js'
+
+function mountComposer(props: { readSelection?: () => Promise<SelectionAttachmentsRead> } = {}): HTMLElement {
   const target = document.createElement('div')
   document.body.appendChild(target)
-  mount(AskCmdrComposer, { target, props: {} })
+  const readSelection = props.readSelection ?? (() => Promise.resolve({ kind: 'refs' as const, refs: [], leftOut: 0 }))
+  mount(AskCmdrComposer, { target, props: { readSelection } })
   return target
 }
+
+function attachButtonOf(target: HTMLElement): HTMLButtonElement {
+  const btn = target.querySelector<HTMLButtonElement>('.composer-button.ghost')
+  if (btn === null) throw new Error('expected an attach button')
+  return btn
+}
+
+const rows = ['/x/row1', '/x/row2', '/x/row3'].map((path) => ({ path, kind: 'file' as const }))
 
 function textareaOf(target: HTMLElement): HTMLTextAreaElement {
   const ta = target.querySelector('textarea')
@@ -126,6 +143,45 @@ describe('AskCmdrComposer', () => {
     if (stop === null) throw new Error('expected a stop button while streaming')
     stop.click()
     expect(spies.stopStreaming).toHaveBeenCalled()
+  })
+
+  describe('Ask about selection', () => {
+    beforeEach(() => {
+      spies.addAttachments.mockReset()
+      addToast.mockReset()
+    })
+
+    it('attaches every selected row, loaded on screen or not', async () => {
+      const target = mountComposer({ readSelection: () => Promise.resolve({ kind: 'refs', refs: rows, leftOut: 0 }) })
+      await tick()
+      attachButtonOf(target).click()
+      await vi.waitFor(() => expect(spies.addAttachments).toHaveBeenCalled())
+
+      expect(spies.addAttachments).toHaveBeenCalledWith(rows)
+      expect(addToast).not.toHaveBeenCalled()
+    })
+
+    it('says how many rows a capped selection left out', async () => {
+      const target = mountComposer({
+        readSelection: () => Promise.resolve({ kind: 'refs', refs: rows, leftOut: 1_234 }),
+      })
+      await tick()
+      attachButtonOf(target).click()
+      await vi.waitFor(() => expect(addToast).toHaveBeenCalledTimes(1))
+
+      expect(spies.addAttachments).toHaveBeenCalledWith(rows)
+      expect(String(addToast.mock.calls[0][0])).toContain('1,237')
+    })
+
+    it('attaches nothing when the rows never settled', async () => {
+      const target = mountComposer({ readSelection: () => Promise.resolve({ kind: 'changed' }) })
+      await tick()
+      attachButtonOf(target).click()
+      await tick()
+      await tick()
+
+      expect(spies.addAttachments).not.toHaveBeenCalled()
+    })
   })
 
   describe('AI-provider gate', () => {

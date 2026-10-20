@@ -105,6 +105,7 @@
     } from '#lib/licensing/licensing-store.svelte.js'
     import { updateLicenseCommandName } from '#lib/commands/command-registry.js'
     import type { ExplorerAPI } from './explorer-api'
+    import type { SelectionAttachmentsRead } from '#lib/file-explorer/pane/selection-attachments-read.js'
 
     /**
      * Onboarding wizard visibility. The wizard owns the first-launch path: FDA, AI consent,
@@ -152,6 +153,10 @@
         isSnapshotPane: boolean
     } | null>(null)
     let explorerRef: ExplorerAPI | undefined = $state()
+    /** Ask Cmdr's "Ask about selection" reads the focused pane; with no explorer, nothing attaches. */
+    function readSelectionAttachments(): Promise<SelectionAttachmentsRead> {
+        return explorerRef?.readSelectionAttachments() ?? Promise.resolve({ kind: 'refs', refs: [], leftOut: 0 })
+    }
     /**
      * Whether the title bar says "Personal use only". Mirrors Rust's
      * `licensing::get_window_title` (a personal or an expired licence both count
@@ -882,7 +887,7 @@
             <div class="explorer-rail-row">
                 <DualPaneExplorer bind:this={explorerRef} onCommand={dispatchers.explorer} />
                 {#if askCmdrState.open}
-                    <AskCmdrRail />
+                    <AskCmdrRail readSelection={readSelectionAttachments} />
                 {/if}
             </div>
             {#if askCmdrState.renameReview}

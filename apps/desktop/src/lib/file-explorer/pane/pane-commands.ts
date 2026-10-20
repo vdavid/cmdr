@@ -12,6 +12,10 @@ import { routeTypingKey } from './type-to-jump-keys'
 import { readPressedRows } from './pressed-rows'
 import { capabilitiesFor } from './volume-capabilities'
 import { readSelectedPathsForCopy as readSelectedPathsForCopyFrom, type SelectedPathsRead } from './selected-paths-read'
+import {
+  readSelectionAttachments as readSelectionAttachmentsFrom,
+  type SelectionAttachmentsRead,
+} from './selection-attachments-read'
 import type { SelectionActionArgs } from '../../../routes/(main)/explorer-api'
 import type { FilePaneAPI } from './types'
 import type { FileEntry, FriendlyError } from '../types'
@@ -126,6 +130,11 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
   /** The focused pane's selection as paths for copy-path / copy-filename (`selected-paths-read.ts`). */
   function readSelectedPathsForCopy(): Promise<SelectedPathsRead> {
     return readSelectedPathsForCopyFrom(access)
+  }
+
+  /** The focused pane's selection (or cursor row) as Ask Cmdr attachments (`selection-attachments-read.ts`). */
+  function readSelectionAttachments(): Promise<SelectionAttachmentsRead> {
+    return readSelectionAttachmentsFrom(access)
   }
 
   /**
@@ -595,6 +604,7 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     getFileAndPathUnderCursor,
     getPathToCopyUnderCursor,
     readSelectedPathsForCopy,
+    readSelectionAttachments,
     getCursorRowForTerminal,
     toggleTagOnFocusedSelection,
     sendKeyToFocusedPane,

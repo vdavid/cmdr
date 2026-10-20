@@ -152,6 +152,7 @@ export type MessageKey =
   | 'askCmdr.composer.dropHint'
   | 'askCmdr.composer.placeholder'
   | 'askCmdr.composer.providerOff'
+  | 'askCmdr.composer.selectionCapped'
   | 'askCmdr.composer.send'
   | 'askCmdr.composer.stop'
   | 'askCmdr.context.label'

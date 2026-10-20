@@ -478,7 +478,6 @@ macro_rules! ipc_command_manifest {
                     crate::commands::agent::ask_cmdr_search_conversations,
                     crate::commands::agent::ask_cmdr_rename_conversation,
                     crate::commands::agent::ask_cmdr_archive_conversation,
-                    crate::commands::agent::ask_cmdr_selection_attachments,
                     crate::commands::agent::ask_cmdr_resolve_attachments,
                     crate::commands::agent::ask_cmdr_legacy_opt_in,
                     crate::commands::agent::ask_cmdr_enabled_changed,

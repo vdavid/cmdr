@@ -3571,13 +3571,6 @@ export const commands = {
   askCmdrArchiveConversation: (id: number, archived: boolean) =>
     typedError<null, string>(__TAURI_INVOKE('ask_cmdr_archive_conversation', { id, archived })),
   /**
-   *  "Ask about selection": attachment refs for the focused pane's current selection, or
-   *  its cursor item when nothing is selected. Reads [`PaneStateStore`] — the same live
-   *  source the envelope uses — so kinds come from known pane state, with no filesystem
-   *  stat. Empty when no pane state is registered.
-   */
-  askCmdrSelectionAttachments: () => __TAURI_INVOKE<AttachmentRef[]>('ask_cmdr_selection_attachments'),
-  /**
    *  Resolve dragged local paths into typed attachment refs. Kinds come from the known
    *  pane files (left + right) — no filesystem stat — defaulting to `File` for an unknown
    *  path. The frontend only calls this for LOCAL drags; virtual-volume drag paths

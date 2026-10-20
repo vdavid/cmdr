@@ -487,7 +487,6 @@ export {
   searchAskCmdrConversations,
   renameAskCmdrConversation,
   archiveAskCmdrConversation,
-  askCmdrSelectionAttachments,
   resolveAskCmdrAttachments,
   askCmdrFakeActive,
   askCmdrLegacyOptIn,

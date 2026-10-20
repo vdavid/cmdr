@@ -232,12 +232,6 @@ export async function archiveAskCmdrConversation(id: number, archived: boolean):
   if (res.status === 'error') throwIpcError(res.error)
 }
 
-/** Attachment refs for the focused pane's current selection (or its cursor item when
- * nothing is selected) — the "ask about selection" affordance. Path + kind only. */
-export async function askCmdrSelectionAttachments(): Promise<AttachmentRef[]> {
-  return commands.askCmdrSelectionAttachments()
-}
-
 /** Resolve dragged LOCAL paths into typed attachment refs (kind from known pane state).
  * Only for local-volume drags; virtual-volume paths mis-resolve and aren't supported. */
 export async function resolveAskCmdrAttachments(paths: string[]): Promise<AttachmentRef[]> {
