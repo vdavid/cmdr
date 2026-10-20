@@ -39,6 +39,11 @@ vi.mock('./settings/store-path', () => ({
   resolveStorePath: (name: string) => Promise.resolve(name),
 }))
 
+// Stateless and heavy (they pull in the IPC layer and the i18n runtime), so passed
+// through to load once per file: see `docs/testing.md` § "Reloading a module per test".
+vi.mock('./file-explorer/navigation/path-resolution', async (importOriginal) => await importOriginal())
+vi.mock('./file-explorer/navigation/real-folder-history', async (importOriginal) => await importOriginal())
+
 /** Everything exists, so no walk-up fallback kicks in. */
 const alwaysExists = () => Promise.resolve(true)
 

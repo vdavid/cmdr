@@ -30,6 +30,10 @@ vi.mock('#lib/ipc/bindings.js', () => ({
 vi.mock('#lib/logging/logger.js', () => ({
   getAppLogger: () => ({ warn: warnSpy, info: vi.fn(), error: vi.fn(), debug: vi.fn() }),
 }))
+// Stateless and heavy (they pull in the i18n runtime and the IPC layer), so passed
+// through to load once per file: see `docs/testing.md` § "Reloading a module per test".
+vi.mock('#lib/commands/command-registry.js', async (importOriginal) => await importOriginal())
+vi.mock('#lib/tauri-commands/index.js', async (importOriginal) => await importOriginal())
 
 // Static, so the module graph is transformed once up front instead of inside the first
 // test's timeout; each test still gets a fresh store through `vi.resetModules()`.

@@ -26,6 +26,14 @@ import type { RestrictedWindowSettings } from '#lib/ipc/bindings.js'
 import './settings-store'
 import './restricted-settings-bridge'
 
+// Stateless and heavy (each pulls in the i18n runtime), so passed through to load
+// once per file: see `docs/testing.md` § "Reloading a module per test". The IPC
+// wrappers reach the mocked IPC at call time, so a cached copy still sees each
+// test's `installIpcMock()`.
+vi.mock('./settings-registry', async (importOriginal) => await importOriginal())
+vi.mock('./settings-migrations', async (importOriginal) => await importOriginal())
+vi.mock('#lib/tauri-commands/settings.js', async (importOriginal) => await importOriginal())
+
 let ipc: IpcRecorder
 
 const snapshot: RestrictedWindowSettings = {

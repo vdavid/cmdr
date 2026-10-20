@@ -50,6 +50,11 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
   }),
 }))
 
+// Stateless and heavy (each pulls in the i18n runtime), so passed through to load
+// once per file: see `docs/testing.md` § "Reloading a module per test".
+vi.mock('./settings-registry', async (importOriginal) => await importOriginal())
+vi.mock('./settings-migrations', async (importOriginal) => await importOriginal())
+
 beforeAll(async () => {
   await import('./settings-store')
 })

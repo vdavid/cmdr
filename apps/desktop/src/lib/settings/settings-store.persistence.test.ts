@@ -76,6 +76,12 @@ vi.mock('#lib/tauri-commands/settings.js', () => ({
   persistRestrictedWindowSetting: vi.fn(() => Promise.resolve({ status: 'ok' })),
 }))
 
+// Stateless and heavy (each pulls in the i18n runtime), so passed through to load
+// once per file: see `docs/testing.md` § "Reloading a module per test". Init's
+// managed-policy load imports the IPC barrel dynamically.
+vi.mock('./settings-registry', async (importOriginal) => await importOriginal())
+vi.mock('./settings-migrations', async (importOriginal) => await importOriginal())
+vi.mock('#lib/tauri-commands/index.js', async (importOriginal) => await importOriginal())
 // Warm Vite's transform cache: `settings-store` transitively pulls the whole
 // intl catalog, a cold transform runs several seconds and would race the
 // per-test timeout. A `beforeAll` gets the longer hook budget.
@@ -563,6 +569,16 @@ describe('a second window that never heard a change', () => {
     await window.initializeSettings()
     return window
   }
+
+  it('gives each window its own store module state', async () => {
+    // The premise of every test here. Guards the pass-through mocks at the top
+    // of the file: caching the store itself would merge the windows silently.
+    const settings = await openWindow()
+    const main = await openWindow()
+    expect(main).not.toBe(settings)
+    main.setSetting('viewer.wordWrap', !getDefaultValue('viewer.wordWrap'))
+    expect(settings.getSetting('viewer.wordWrap')).toBe(getDefaultValue('viewer.wordWrap'))
+  })
 
   it('keeps a setting changed just before it opened when it closes', async () => {
     const main = await openWindow()

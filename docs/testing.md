@@ -96,6 +96,23 @@ Also watch the wall-clock: on a contended machine the lane's own runtime swings 
 few seconds one directory buys. Measure the directory in isolation and read the CPU totals (`transform`, `import`,
 `environment`), not the lane's wall clock.
 
+### Reloading a module per test
+
+A store test that simulates a reload, relaunch, or second window with `vi.resetModules()` plus a dynamic re-import
+re-evaluates the module's WHOLE import graph each time. Anything reaching the i18n runtime or the
+`#lib/tauri-commands/index.js` barrel costs ~140 ms per reload on a quiet machine, so a few reloads per test crossed
+vitest's 5 s timeout under load (`shortcuts-store.test.ts`).
+
+- **Pass heavy, stateless deps through**: `vi.mock('<dep>', async (importOriginal) => await importOriginal())`. A mocked
+  module survives `vi.resetModules()`, so it loads once per file while the module under test still starts fresh. That
+  took `shortcuts-store.test.ts` from 135–575 ms per test to 1–5 ms.
+- **Pass through only what holds no state the test depends on**, and never a module the test re-mocks with `vi.doMock`
+  (or one that captured such a module: the cached copy keeps the old one). Profile first: time each of the module's
+  imports after a reset, and remember dynamic `import()`s inside init.
+- **When reloads simulate separate windows, add a guard test** that two loads are distinct instances with separate
+  state, so a pass-through that swallows the module under test fails loudly (`shortcuts-store.test.ts`,
+  `settings-store.persistence.test.ts`).
+
 ## Decision table: what tool for what test
 
 - **Pure function with edge cases**: `proptest` (Rust unit). State a property, fuzz inputs.
