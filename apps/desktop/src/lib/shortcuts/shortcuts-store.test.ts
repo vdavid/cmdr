@@ -96,6 +96,15 @@ vi.mock('#lib/ipc/bindings.js', () => ({
   },
 }))
 
+// The store's two heavy imports, passed through unchanged. A mocked module
+// survives `vi.resetModules()`, so these load once per file instead of on every
+// simulated reload: together they pull in the i18n runtime and the whole IPC
+// layer, ~140 ms per reload on a quiet machine, which pushed a several-reload
+// test past the 5 s timeout under CPU load. Neither holds per-window state the
+// store depends on, so each reload still starts the store's own module state
+// from scratch.
+vi.mock('#lib/commands/command-registry.js', async (importOriginal) => await importOriginal())
+vi.mock('#lib/tauri-commands/index.js', async (importOriginal) => await importOriginal())
 // Import fresh after a module reset so the store's module-scoped map starts empty,
 // then re-reads `disk`. Returns the relevant store functions.
 async function loadStore() {
@@ -582,6 +591,16 @@ describe('shortcuts-store saves only what this window changed', () => {
     await window.initializeShortcuts()
     return window
   }
+
+  it('gives each window its own store module state', async () => {
+    // The premise of every test here. Guards the passthrough mocks at the top
+    // of the file: caching the store itself would merge the windows silently.
+    const settings = await openWindow()
+    const main = await openWindow()
+    expect(main).not.toBe(settings)
+    main.addShortcut('app.about', 'F9')
+    expect(settings.getEffectiveShortcuts('app.about')).toEqual([])
+  })
 
   it("keeps another window's rebind it never heard of when it saves its own", async () => {
     const settings = await openWindow()
