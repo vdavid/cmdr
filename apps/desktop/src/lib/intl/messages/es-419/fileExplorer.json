@@ -398,5 +398,9 @@
   "fileExplorer.quickFilter.intro.openSettings": "Configuración…",
   "@fileExplorer.quickFilter.intro.openSettings": {
     "sourceHash": "4184f3c"
+  },
+  "fileExplorer.tags.skipped": "{count, plural, one {Cmdr dejó las etiquetas de un elemento como estaban, porque no pudo leer las que ya tenía. Comprueba que puedes abrirlo o etiquétalo en el Finder.} many {Cmdr dejó las etiquetas de {countText} elementos como estaban, porque no pudo leer las que ya tenían. Comprueba que puedes abrirlos o etiquétalos en el Finder.} other {Cmdr dejó las etiquetas de {countText} elementos como estaban, porque no pudo leer las que ya tenían. Comprueba que puedes abrirlos o etiquétalos en el Finder.}}",
+  "@fileExplorer.tags.skipped": {
+    "sourceHash": "b006e02"
   }
 }

@@ -2036,5 +2036,9 @@
   "fileExplorer.quickFilter.intro.gotIt": "D’accord",
   "@fileExplorer.quickFilter.intro.gotIt": {
     "sourceHash": "5ad3dbd"
+  },
+  "fileExplorer.tags.skipped": "{count, plural, one {Cmdr n’a pas pu lire les tags déjà présents sur un élément et les a donc laissés tels quels. Vérifiez que vous pouvez ouvrir cet élément, ou ajoutez le tag dans le Finder.} many {Cmdr n’a pas pu lire les tags déjà présents sur {countText} éléments et les a donc laissés tels quels. Vérifiez que vous pouvez ouvrir ces éléments, ou ajoutez le tag dans le Finder.} other {Cmdr n’a pas pu lire les tags déjà présents sur {countText} éléments et les a donc laissés tels quels. Vérifiez que vous pouvez ouvrir ces éléments, ou ajoutez le tag dans le Finder.}}",
+  "@fileExplorer.tags.skipped": {
+    "sourceHash": "31363ee"
   }
 }

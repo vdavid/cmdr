@@ -2041,5 +2041,9 @@
   "fileExplorer.quickFilter.intro.gotIt": "Begrepen",
   "@fileExplorer.quickFilter.intro.gotIt": {
     "sourceHash": "5ad3dbd"
+  },
+  "fileExplorer.tags.skipped": "{count, plural, one {Cmdr heeft de tags van één onderdeel gelaten zoals ze waren, omdat de tags die er al op zaten niet te lezen waren. Controleer of je het onderdeel kunt openen, of geef het in Finder een tag.} other {Cmdr heeft de tags van {countText} onderdelen gelaten zoals ze waren, omdat de tags die er al op zaten niet te lezen waren. Controleer of je de onderdelen kunt openen, of geef ze in Finder een tag.}}",
+  "@fileExplorer.tags.skipped": {
+    "sourceHash": "31363ee"
   }
 }

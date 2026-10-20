@@ -2031,5 +2031,9 @@
   "fileExplorer.quickFilter.intro.gotIt": "Entendido",
   "@fileExplorer.quickFilter.intro.gotIt": {
     "sourceHash": "5ad3dbd"
+  },
+  "fileExplorer.tags.skipped": "{count, plural, one {Cmdr ha dejado las etiquetas de un elemento como estaban, porque no ha podido leer las que ya tenía. Comprueba que puedes abrirlo o etiquétalo en el Finder.} many {Cmdr ha dejado las etiquetas de {countText} elementos como estaban, porque no ha podido leer las que ya tenían. Comprueba que puedes abrirlos o etiquétalos en el Finder.} other {Cmdr ha dejado las etiquetas de {countText} elementos como estaban, porque no ha podido leer las que ya tenían. Comprueba que puedes abrirlos o etiquétalos en el Finder.}}",
+  "@fileExplorer.tags.skipped": {
+    "sourceHash": "31363ee"
   }
 }

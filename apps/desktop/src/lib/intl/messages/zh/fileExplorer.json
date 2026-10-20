@@ -2024,5 +2024,9 @@
   "fileExplorer.quickFilter.intro.gotIt": "知道了",
   "@fileExplorer.quickFilter.intro.gotIt": {
     "sourceHash": "5ad3dbd"
+  },
+  "fileExplorer.tags.skipped": "{count, plural, other {Cmdr 让 {countText} 个项目的标签保持原样，因为读不到上面已有的标签。确认一下你能打开相关项目，或者改在 Finder 中添加标签。}}",
+  "@fileExplorer.tags.skipped": {
+    "sourceHash": "31363ee"
   }
 }

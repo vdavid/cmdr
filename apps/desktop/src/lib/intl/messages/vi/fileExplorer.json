@@ -2028,5 +2028,9 @@
   "fileExplorer.quickFilter.intro.gotIt": "Đã hiểu",
   "@fileExplorer.quickFilter.intro.gotIt": {
     "sourceHash": "5ad3dbd"
+  },
+  "fileExplorer.tags.skipped": "{count, plural, other {Cmdr đã giữ nguyên thẻ của {countText} mục vì không đọc được thẻ đang có. Hãy kiểm tra xem bạn có mở được không, hoặc gắn thẻ trong Finder.}}",
+  "@fileExplorer.tags.skipped": {
+    "sourceHash": "31363ee"
   }
 }

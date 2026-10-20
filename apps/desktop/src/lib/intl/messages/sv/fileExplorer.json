@@ -2029,5 +2029,9 @@
   "fileExplorer.quickFilter.intro.gotIt": "Uppfattat",
   "@fileExplorer.quickFilter.intro.gotIt": {
     "sourceHash": "5ad3dbd"
+  },
+  "fileExplorer.tags.skipped": "{count, plural, one {Cmdr lämnade taggarna på ett objekt som de var, eftersom taggarna som redan fanns där inte gick att läsa. Kontrollera att du kan öppna objektet, annars kan du lägga till taggen i Finder.} other {Cmdr lämnade taggarna på {countText} objekt som de var, eftersom taggarna som redan fanns där inte gick att läsa. Kontrollera att du kan öppna objekten, annars kan du lägga till taggen i Finder.}}",
+  "@fileExplorer.tags.skipped": {
+    "sourceHash": "31363ee"
   }
 }

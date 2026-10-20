@@ -2026,5 +2026,9 @@
   "fileExplorer.quickFilter.intro.gotIt": "Értem",
   "@fileExplorer.quickFilter.intro.gotIt": {
     "sourceHash": "5ad3dbd"
+  },
+  "fileExplorer.tags.skipped": "{count, plural, one {A Cmdr változatlanul hagyta egy elem címkéit, mert nem tudta beolvasni a már rajta lévőket. Ellenőrizd, hogy meg tudod-e nyitni, vagy címkézd fel a Finderben.} other {A Cmdr változatlanul hagyta {countText} elem címkéit, mert nem tudta beolvasni a már rajtuk lévőket. Ellenőrizd, hogy meg tudod-e nyitni őket, vagy címkézd fel őket a Finderben.}}",
+  "@fileExplorer.tags.skipped": {
+    "sourceHash": "31363ee"
   }
 }

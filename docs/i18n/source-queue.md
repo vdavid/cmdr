@@ -473,3 +473,6 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
   (`Megszakítás` vs `Mégsem`) and took `Megszakítás`. (hu)
 - `concepts.json` `client` matched "client-side" in `errorReporter.dialog.description`; added `notMatch: client-side`
   and dropped the ru and zh-Hant exceptions it needed. (ru, zh-Hant)
+- `fileExplorer.tags.skipped`: `--lang all` briefs skip the `es-419` overlay, yet an es value with a Spain-only form
+  (`no se ha podido`) fails the overlay test until es-419 forks it, and `--restamp` refuses overlays, so its hash took
+  `sourceHash()` by hand. Have the brief flag needed forks and let `--restamp` stamp an overlay. (es)

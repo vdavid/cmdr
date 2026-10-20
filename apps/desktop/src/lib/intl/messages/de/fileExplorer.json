@@ -2033,5 +2033,9 @@
   "fileExplorer.quickFilter.intro.gotIt": "Alles klar",
   "@fileExplorer.quickFilter.intro.gotIt": {
     "sourceHash": "5ad3dbd"
+  },
+  "fileExplorer.tags.skipped": "{count, plural, one {Cmdr hat die Tags eines Objekts unverändert gelassen, weil es die vorhandenen Tags nicht lesen konnte. Prüfe, ob du das Objekt öffnen kannst, oder füge den Tag im Finder hinzu.} other {Cmdr hat die Tags von {countText} Objekten unverändert gelassen, weil es die vorhandenen Tags nicht lesen konnte. Prüfe, ob du die Objekte öffnen kannst, oder füge den Tag im Finder hinzu.}}",
+  "@fileExplorer.tags.skipped": {
+    "sourceHash": "31363ee"
   }
 }
