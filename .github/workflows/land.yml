@@ -1,0 +1,113 @@
+name: Land
+
+# `pnpm land`'s gate for a commit about to land: the macOS lane (`macos-lane.yml`) when the branch
+# changed Rust, plus the commit's `ci.yml` PR run, which ran every other lane. Its `CI OK` is the
+# check `main`'s ruleset requires, so the macOS runners (five at most, the queue's bottleneck)
+# only ever see commits that are landing. `docs/tooling/ci.md` § macOS lane.
+#
+# Its own workflow, not a `ci.yml` dispatch: GitHub's ruleset reads only the newest run of a
+# workflow on a commit, so a `ci.yml` land run's `CI OK` was shadowed by the PR run that started
+# three seconds after it (a push refused with "Required status check "CI OK" is expected",
+# 2026-10-21). Separate workflows don't shadow each other, as `codeql.yml` and `ci.yml` show.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer land of the same branch replaces an older one, whose commit can't land anymore.
+concurrency:
+  group: land-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect Rust changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      rust: ${{ steps.filter.outputs.rust }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      # One source for "changed Rust": `ci.yml`'s own filter list, read out of it, so the two
+      # can't drift.
+      - name: Read ci.yml's change filters
+        run:
+          yq '.jobs.changes.steps[] | select(.id == "filter") | .with.filters' .github/workflows/ci.yml
+          >"$RUNNER_TEMP/filters.yml"
+
+      # On a dispatch, paths-filter compares the branch with its merge-base on the default branch.
+      - name: Detect file changes
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: ${{ runner.temp }}/filters.yml
+
+  desktop-rust-macos:
+    name: Desktop (Rust, macOS)
+    needs: changes
+    if: needs.changes.outputs.rust == 'true'
+    uses: ./.github/workflows/macos-lane.yml
+
+  # The required check, by its NAME (❌ don't rename it). `always()` so it reports on every run,
+  # since GitHub counts a skipped required check as passing.
+  ci-ok:
+    name: CI OK
+    runs-on: ubuntu-latest
+    # It waits for the PR run, which usually finished while the macOS lane ran.
+    timeout-minutes: 75
+    needs: [changes, desktop-rust-macos]
+    if: always()
+    # A job-level block replaces the workflow-level one; this job reads no code.
+    permissions:
+      actions: read # read the PR run's verdict
+    steps:
+      - name: Check the macOS lane
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          bad=$(jq -r 'to_entries[] | select(.value.result != "success" and .value.result != "skipped") | "\(.key): \(.value.result)"' <<<"$NEEDS")
+          if [[ -n "$bad" ]]; then
+            echo "These jobs didn't pass:"
+            echo "$bad"
+            exit 1
+          fi
+          if [[ "$(jq -r '.changes.result' <<<"$NEEDS")" != "success" ]]; then
+            echo "Change detection didn't run, so a skipped macOS lane proves nothing."
+            exit 1
+          fi
+
+      # By the PR run's conclusion, not a check name: the newest `ci.yml` PR run on this commit
+      # decides, since a new push cancels the older one.
+      - name: Wait for the PR run on this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          for attempt in $(seq 1 140); do
+            run=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$SHA&event=pull_request&per_page=20" \
+              --jq '.workflow_runs | sort_by(.created_at) | last // empty | "\(.status) \(.conclusion) \(.html_url)"')
+            read -r status conclusion url <<<"$run"
+            if [[ -z "$run" ]]; then
+              if [[ "$attempt" -gt 10 ]]; then
+                echo "No PR run on $SHA, so nothing ran its other lanes. Open the PR (pnpm land does), then re-run this job."
+                exit 1
+              fi
+            elif [[ "$status" == "completed" ]]; then
+              if [[ "$conclusion" == "success" ]]; then
+                echo "The PR run passed every other lane on $SHA: $url"
+                exit 0
+              fi
+              echo "The PR run on $SHA ended '$conclusion': $url"
+              echo "Re-run its failed jobs (or fix and push), then re-run this run's failed jobs."
+              exit 1
+            fi
+            sleep 30
+          done
+          echo "The PR run on $SHA is still going after 70 min: $url"
+          exit 1

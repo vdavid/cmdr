@@ -17,6 +17,8 @@ How the GitHub workflows fit together, and the invariants that keep them honest.
 | `scorecard.yml`         | Push to main, weekly, rule edits        | OpenSSF Scorecard: publishes the score (README badge) and SARIF to code scanning. § below            |
 | `codeql.yml`            | PRs, push to main, weekly, manual       | CodeQL (Actions, JS/TS, Rust); a high or critical finding fails it and blocks releases. § below      |
 | `gradle-wrapper.yml`    | Push to main, wrapper PRs, weekly       | Checks the IntelliJ plugin's `gradle-wrapper.jar` against Gradle's published checksums. § Scorecard  |
+| `land.yml`              | Dispatched by `pnpm land`               | The landing commit's gate: the macOS lane plus its PR run, reported as `CI OK`. § macOS lane         |
+| `macos-lane.yml`        | Called by `ci.yml` and `land.yml`       | The macOS lane's steps. § macOS lane                                                                 |
 
 `slow-checks.yml` also runs the fuzz smoke job (120 s per target, findings uploaded as `fuzz-artifacts`;
 `fuzz/CLAUDE.md`). `ci.yml`'s `Full run (run_all)` job runs only on a `run_all` dispatch: both release gates match it by
@@ -184,6 +186,12 @@ Mac last ran `pnpm check`. This job runs on `macos-26` (the release builder's im
 SDK; free for a public repo) and asks the three questions Linux can't answer for that code: `desktop-rust-clippy`,
 `desktop-rust-rustdoc`, and `desktop-rust-tests`, in that order. The other platform-blind scanners stay in
 `desktop-rust` alone. Gated on the `rust` filter like `desktop-rust`, so it runs in parallel with it.
+
+Its steps live in the reusable `macos-lane.yml`, called by `ci.yml`'s `desktop-rust-macos` and by `land.yml`, a
+dispatch-only gate for a commit about to land: the lane when the branch changed Rust (read through `ci.yml`'s own filter
+list), plus a `CI OK` that also waits for the commit's `ci.yml` PR run to succeed. It's a separate workflow because
+GitHub's ruleset reads only the newest run of a workflow on a commit: a `ci.yml` dispatch's `CI OK` was shadowed by the
+PR run that started three seconds later (push refused with "Required status check "CI OK" is expected", 2026-10-21).
 
 Last, it runs `desktop-rust-module-cycles`, whose baseline is a macOS module graph (`scripts/check/checks/DETAILS.md` §
 "Rust module cycles"), so it can't move to ubuntu. It first installs the cargo-modules version the check pins;

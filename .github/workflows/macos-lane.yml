@@ -1,0 +1,73 @@
+name: macOS lane
+
+# The macOS lane, called by `ci.yml` (`desktop-rust-macos`) and `land.yml`. Cmdr ships on macOS,
+# but every other CI job runs on ubuntu, so the code under `cfg(target_os = "macos")` (FSEvents,
+# AppKit, DiskArbitration, File Provider, TCC, the `cmdr-fsevent-stream` member) gets compiled,
+# linted, and tested only here. Why it lives in its own file, what it runs, and what it leaves
+# out: `docs/tooling/ci.md` § macOS lane.
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  lane:
+    name: Clippy, rustdoc, tests, module cycles
+    # Pinned to the release builder's image so the lanes lint against the SDK the app ships with;
+    # see the `runs-on` comment in `release-pipeline.yml` for why it's never `macos-latest`.
+    runs-on: macos-26
+    # A cold ~1000-crate Tauri compile on a 3-core runner (clippy, rustdoc, then the test build),
+    # the suite, and a cold cargo-modules install (~6 min) plus its analysis (~7 min cold).
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install mise
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+
+      - name: Install tools with mise
+        run: mise install
+
+      # Its own cache (keys are per OS), saved from `main` only, like `ci.yml`'s
+      # `SAVE_RUST_CACHE` (a called workflow doesn't inherit the caller's `env`, so it's restated);
+      # `cache-on-failure` for the same reason as in `desktop-rust`. `shared-key` lets
+      # `warm-rust-macos-cache` write this same entry. It carries `~/.cargo/bin`, so the pinned
+      # cargo-modules below installs only on a cold entry or a bump.
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          shared-key: desktop-rust-macos
+          cache-on-failure: true
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      - name: Run clippy
+        run: ./scripts/check/check --check desktop-rust-clippy --ci
+
+      - name: Check rustdoc links
+        run: ./scripts/check/check --check desktop-rust-rustdoc --ci
+
+      # Same reason as in `desktop-rust`: rustdoc HTML is cache payload nothing reads.
+      - name: Drop rustdoc HTML before it reaches the cache
+        if: always()
+        run: rm -rf target/doc
+
+      - name: Run Rust tests
+        run: ./scripts/check/check --check desktop-rust-tests --ci
+
+      # The check owns the pin and prints it here.
+      - name: Install cargo-modules (pinned)
+        run: |
+          version="$(./scripts/check/check --print-cargo-modules-version)"
+          if [ "$(cargo-modules --version 2>/dev/null)" != "cargo-modules $version" ]; then
+            cargo install cargo-modules --version "$version" --locked
+          fi
+
+      - name: Check Rust module cycles
+        run: ./scripts/check/check --check desktop-rust-module-cycles --ci
