@@ -138,7 +138,7 @@ impl Ground {
                     Err(e) => {
                         // One unwalkable root doesn't stop the others: it simply stays
                         // frontier, and the next search asks for it again.
-                        log::warn!("Cover: couldn't walk {}: {e}", LogPrivate::dir_path(root));
+                        log::warn!("Cover: couldn't walk {}: {}", LogPrivate::dir_path(root), LogError(&e));
                         (None, RootOutcome::Failed)
                     }
                 }

@@ -158,6 +158,9 @@ pub enum VolumeScanError {
     WriterSend(String),
     /// Setting up the scan context (root sentinel, id counter) failed.
     Context(String),
+    /// The walk's root doesn't cross into the volume's index path space, so the index has no
+    /// entry to walk it from. Carries the root, typed so a log line marks it.
+    OutsideIndex(PathBuf),
     /// The walk stopped because its cancellation token fired, carrying the
     /// partial totals it had reached. A distinct variant rather than a flag on
     /// the summary, so `Ok` means "this walk finished" and no caller can mark a
@@ -224,6 +227,11 @@ impl ErrorLogText for VolumeScanError {
             }
             Self::WriterSend(m) => write!(out, "writer send failed: {m}"),
             Self::Context(m) => write!(out, "scan context setup failed: {m}"),
+            Self::OutsideIndex(root) => {
+                out.write_str("scan context setup failed: ")?;
+                out.value(LogPrivate::dir_path(root))?;
+                out.write_str(" is outside the volume's index")
+            }
             Self::Cancelled(s) => write!(
                 out,
                 "scan cancelled after {} entries in {} dirs",

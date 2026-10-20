@@ -172,7 +172,9 @@ impl EventReconciler {
                 value: at.to_string(),
             });
         }
-        let label = format!("{} MustScanSubDirs ({})", reason.label(), anchor.display());
+        // The trigger names the reason, ❌ never the anchor: it rides into later log lines as
+        // plain text, and the line below logs the anchor marked.
+        let label = format!("{} MustScanSubDirs", reason.label());
         log::info!(
             "MustScanSubDirs: routing {} anchor {} to the visible scanner",
             reason.label(), // allowed-log-private: a fixed sweep-reason word, not a user value

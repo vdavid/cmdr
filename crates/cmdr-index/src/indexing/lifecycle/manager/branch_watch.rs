@@ -32,6 +32,7 @@ use crate::indexing::watch::event_loop::{JOURNAL_GAP_THRESHOLD, LiveConfig, run_
 use crate::indexing::watch::watcher::{self, DriveWatcher, FsChangeEvent};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::log_error::LogError;
 use cmdr_fs::pluralize::pluralize;
 
 /// A manager's "a branch watch start is in flight" mark, cleared when the start
@@ -129,7 +130,11 @@ impl BranchWatchStart {
             Err(e) => {
                 // Non-fatal, and honest: the coverage stays served, it just stops
                 // being kept current.
-                log::warn!("Branch watch: '{}' couldn't start a watcher: {e}", self.volume_id);
+                log::warn!(
+                    "Branch watch: '{}' couldn't start a watcher: {}",
+                    self.volume_id,
+                    LogError(&e)
+                );
                 None
             }
         }

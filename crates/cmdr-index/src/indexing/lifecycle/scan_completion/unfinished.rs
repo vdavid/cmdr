@@ -8,6 +8,7 @@
 use crate::indexing::events::{ActivityPhase, EventSink, IndexEvent, set_phase_for};
 use crate::indexing::lifecycle::{freshness, signals};
 use crate::indexing::scanner::{ScanError, ScanSummary};
+use cmdr_fs::log_error::LogError;
 
 /// Whether a failed local scan should emit `index-scan-aborted`: only when the
 /// volume VANISHED (its root became unlistable), never for a legitimately empty
@@ -49,7 +50,7 @@ pub(super) fn report_unfinished_scan(
 ) {
     match result {
         Ok(Err(e)) => {
-            log::warn!("Volume scan failed: {e}");
+            log::warn!("Volume scan failed: {}", LogError(e));
             // The scan/reconcile bailed (e.g. `EmptyRoot`, `RootUnlistable`, or a
             // `catch_unwind`-converted reconcile-walk `Panicked`). The prior index
             // is untouched and stays visible, but `ScanStarted` already moved

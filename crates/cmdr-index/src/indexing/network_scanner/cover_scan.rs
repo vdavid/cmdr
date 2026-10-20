@@ -372,7 +372,7 @@ fn resolve_root_id(conn: &rusqlite::Connection, space: &IndexPathSpace, root: &P
     let absolute = space.absolute(&root.to_string_lossy());
     let index_relative = space
         .index_relative(&absolute)
-        .ok_or_else(|| VolumeScanError::Context(format!("{} is outside the volume's index", root.display())))?;
+        .ok_or_else(|| VolumeScanError::OutsideIndex(root.to_path_buf()))?;
     resolve_scan_root(conn, Path::new(&index_relative), false).map_err(|e| VolumeScanError::Context(e.to_string()))
 }
 

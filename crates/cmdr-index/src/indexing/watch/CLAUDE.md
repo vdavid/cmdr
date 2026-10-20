@@ -6,7 +6,7 @@ event loop that turns its stream into index writes.
 ## Module map
 
 - **watcher.rs** — the drive watcher: macOS FSEvents via `cmdr-fsevent-stream` (event ids + `sinceWhen` replay), Linux
-  inotify via `notify`. `supports_event_replay()` is the gate.
+  inotify via `notify`. `supports_event_replay()` is the gate; `watcher/error.rs` is `WatcherError`.
 - **branches.rs** — `WatchScope` + `BranchWatch`: how much of a volume its loop answers for, and the buffer keeping a
   cover walk off a live loop's ground.
 - **event_loop.rs + event_loop/** — `live.rs`, `rename_detect.rs`, `replay.rs` (cold start), `verification.rs` +

@@ -275,6 +275,8 @@ pub(super) enum NotWalkable {
     /// walk declines and leaves the repair to the reconcile that heals type
     /// changes.
     FileRowInTheChain(PathBuf),
+    /// The walk upserted a folder's row, flushed, and still couldn't read it back.
+    AbsentAfterUpsert(PathBuf),
     /// The store wouldn't answer. Log-only.
     Store(String),
 }
@@ -299,6 +301,11 @@ impl ErrorLogText for NotWalkable {
                 out.write_str("the index holds ")?;
                 out.value(LogPrivate::path(path))?;
                 out.write_str(" as a file")
+            }
+            Self::AbsentAfterUpsert(path) => {
+                out.write_str("the index store wouldn't answer: ")?;
+                out.value(LogPrivate::dir_path(path))?;
+                out.write_str(" is still absent after its own upsert")
             }
             Self::Store(e) => write!(out, "the index store wouldn't answer: {e}"),
         }
@@ -428,6 +435,6 @@ fn create_directory_row(
         .map_err(|e| NotWalkable::Store(e.to_string()))?;
     let id = IndexStore::resolve_component(conn, parent_id, name)
         .map_err(|e| NotWalkable::Store(e.to_string()))?
-        .ok_or_else(|| NotWalkable::Store(format!("{} is still absent after its own upsert", on_disk.display())))?;
+        .ok_or_else(|| NotWalkable::AbsentAfterUpsert(on_disk.to_path_buf()))?;
     Ok((id, snapshot))
 }

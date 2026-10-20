@@ -2,10 +2,10 @@
 
 The LOCAL fresh-scan directory walker (boot disk + `LocalExternal`), plus the exclusion policy every local path shares.
 
-`mod.rs` drives a scan (`ScanRoot` + `WalkPolicy`, `LOCAL_LIST_TIMEOUT`); `insert_visitor.rs` turns each read's children
-into rows on worker threads, attributed via the carried `dir.id`; `walker/` is the hang-tolerant engine and its own
-guardrails (`walker/CLAUDE.md`); `exclusions.rs` is the single `should_exclude` gate for scanner, reconcile, watch
-verification, and the verifier.
+`mod.rs` drives a scan (`ScanRoot` + `WalkPolicy`, `LOCAL_LIST_TIMEOUT`), `error.rs` says why one stopped short
+(`ScanError`); `insert_visitor.rs` turns each read's children into rows on worker threads, attributed via the carried
+`dir.id`; `walker/` is the hang-tolerant engine and its own guardrails (`walker/CLAUDE.md`); `exclusions.rs` is the
+single `should_exclude` gate for scanner, reconcile, watch verification, and the verifier.
 
 ## Must-knows
 

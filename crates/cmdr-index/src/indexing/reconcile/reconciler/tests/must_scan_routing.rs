@@ -86,6 +86,9 @@ async fn root_scale_must_scan_routes_to_scanner_without_a_stuck_hold() {
         1,
         "a shallow (root-scale) anchor routes to the scanner"
     );
+    // The trigger names the reason, never the anchor: it rides into later log lines as plain
+    // text, and the routing line already logs the anchor marked.
+    assert_eq!(sink.lock().unwrap()[0], "shallow MustScanSubDirs");
     // ...and took NO reconcile hourglass hold, and queued nothing on the drain.
     assert!(
         !instance.tracker.is_pending("/"),

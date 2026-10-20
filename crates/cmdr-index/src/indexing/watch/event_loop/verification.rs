@@ -23,6 +23,7 @@ use crate::indexing::scanner;
 use crate::indexing::store::{self, IndexStore};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 use cmdr_fs::firmlinks;
+use cmdr_fs::log_error::LogError;
 use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::pluralize::{pluralize, pluralize_with};
 
@@ -125,8 +126,9 @@ pub(super) async fn run_background_verification(
                     }
                     Err(e) => {
                         log::warn!(
-                            "Background verification: scan_subtree({}) failed: {e}",
-                            LogPrivate::dir_path(dir_path)
+                            "Background verification: scan_subtree({}) failed: {}",
+                            LogPrivate::dir_path(dir_path),
+                            LogError(&e)
                         );
                     }
                 }

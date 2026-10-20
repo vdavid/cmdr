@@ -30,6 +30,7 @@ use crate::indexing::watch::event_loop::{ReplayConfig, run_replay_event_loop};
 use crate::indexing::watch::watcher::{self, DriveWatcher};
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::log_error::LogError;
 use cmdr_fs::pluralize::pluralize;
 
 impl IndexManager {
@@ -456,7 +457,10 @@ impl IndexManager {
             Err(e) => {
                 watcher_overflow = None;
                 // Watcher failure is non-fatal: scan works without it, just no live updates
-                log::warn!("Failed to start DriveWatcher (scan will proceed without watcher): {e}");
+                log::warn!(
+                    "Failed to start DriveWatcher (scan will proceed without watcher): {}",
+                    LogError(&e)
+                );
             }
         }
 

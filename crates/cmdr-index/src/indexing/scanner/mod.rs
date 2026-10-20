@@ -30,6 +30,8 @@ use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 use cmdr_fs::pluralize::{pluralize, pluralize_with};
 
 pub(in crate::indexing) mod boot_tree_mounts;
+mod error;
+pub use error::ScanError;
 mod exclusions;
 pub use exclusions::SYSTEM_DIR_EXCLUDES;
 pub(in crate::indexing) use exclusions::*;
@@ -466,82 +468,6 @@ impl ScanOutcome {
     }
 }
 
-/// Errors that can occur during scanning.
-#[derive(Debug)]
-pub enum ScanError {
-    Io(std::io::Error),
-    WriterSend(String),
-    /// The volume ROOT listing SUCCEEDED but returned zero children, so a
-    /// reconcile rescan would see an empty live tree and delete every existing
-    /// child (blanking the index). Surfaced by the LOCAL reconcile walker
-    /// (`local_reconcile`) before it diffs the root, so the completion handler
-    /// takes its `Err` arm and writes NO `scan_completed_at`: the prior
-    /// stale-but-real index is kept and heals on the next launch. Mirrors the
-    /// network path's `VolumeScanError::EmptyRoot`; see
-    /// `indexing/DETAILS.md` § "No completion marker on an empty root".
-    EmptyRoot,
-    /// The volume ROOT itself couldn't be listed (its read errored or timed out),
-    /// which for a mount-rooted external drive means the mount VANISHED mid-scan (a
-    /// yanked USB stick / SD card). Distinct from [`EmptyRoot`](ScanError::EmptyRoot):
-    /// an empty-but-readable root lists successfully (zero children), whereas a
-    /// vanished root can't be read at all. The completion handler treats this as an
-    /// aborted scan — it writes NO `scan_completed_at` and emits `index-scan-aborted`
-    /// so the frontend clears the stuck "scanning" row — mirroring the network path's
-    /// disconnect arm. Surfaced by the fresh guarded-walker scan (`run_scan`, when the root is
-    /// the only dir and never read, or when the drive left the host's mount table by
-    /// the end of the walk) and the LOCAL reconcile walk (`local_reconcile`, when its
-    /// root read returns `None` or its drive left).
-    RootUnlistable,
-    /// The walk stopped because its cancellation token fired, carrying the
-    /// partial totals it had reached. A distinct variant rather than a flag on
-    /// the summary: `scan_completed_at` is written only on the `Ok` path, so a
-    /// caller cannot mark a half-built index complete by forgetting to check.
-    /// It is NOT a failure — the completion handlers route it to its own arm,
-    /// which keeps the prior freshness and fires no abort. See
-    /// `lifecycle/scan_completion.rs`.
-    Cancelled(ScanSummary),
-    /// A [`ScanRoot::Virgin`] walk was pointed at a directory the index already
-    /// holds children for, so the add-only walk it wanted to run isn't safe: its
-    /// fresh ids would collide with the existing rows, `INSERT OR IGNORE` would
-    /// drop them silently, and everything below a dropped id would be orphaned.
-    /// NOT a failure — the caller repairs the directory with the serial
-    /// reconcile, which compares by name and writes only differences.
-    NotVirgin,
-    /// The reconcile walk panicked. `local_reconcile::start_local_reconcile`
-    /// wraps the walk in `catch_unwind` and converts the panic payload into this
-    /// typed variant (carrying the panic message), so the thread's `JoinHandle`
-    /// resolves to `Ok(Err(ScanError::Panicked(_)))` instead of a raw thread
-    /// panic. That routes it through the completion handler's `Ok(Err(_))` arm,
-    /// which logs cleanly and fires `FreshnessEvent::ScanFailed` ⇒ Stale.
-    Panicked(String),
-}
-
-impl std::fmt::Display for ScanError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ScanError::Io(e) => write!(f, "I/O error: {e}"),
-            ScanError::WriterSend(msg) => write!(f, "Writer send failed: {msg}"),
-            ScanError::EmptyRoot => write!(f, "root listing returned no children (treating as a failed rescan)"),
-            ScanError::RootUnlistable => write!(f, "volume root became unlistable (mount vanished mid-scan)"),
-            ScanError::Cancelled(s) => write!(
-                f,
-                "scan cancelled after {} entries in {} dirs",
-                s.total_entries, s.total_dirs
-            ),
-            ScanError::NotVirgin => write!(f, "the scan root already has children, so an add-only walk isn't safe"),
-            ScanError::Panicked(msg) => write!(f, "reconcile walk panicked: {msg}"),
-        }
-    }
-}
-
-impl std::error::Error for ScanError {}
-
-impl From<std::io::Error> for ScanError {
-    fn from(err: std::io::Error) -> Self {
-        ScanError::Io(err)
-    }
-}
-
 /// How long a COVER walk pauses before each directory read, from
 /// `CMDR_E2E_WALK_THROTTLE_MS`.
 ///
@@ -822,7 +748,7 @@ fn run_scan(
         } else {
             let index_root = space
                 .index_relative(&root.to_string_lossy())
-                .ok_or_else(|| ScanError::WriterSend(format!("{} is outside the volume's index", root.display())))?;
+                .ok_or_else(|| ScanError::OutsideIndex(root.to_path_buf()))?;
             resolve_scan_root(&conn, Path::new(&index_root), false).map_err(|e| ScanError::WriterSend(e.to_string()))?
         };
         // An add-only walk is safe only over ground the index holds nothing for.

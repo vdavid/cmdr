@@ -550,7 +550,8 @@ both sides read (`LogKind`, `CLOSER`, `RESERVED`, and `markers`, the lexer).
 - **Converted**: `VolumeError` (each path variant marks its path by the kind it carries: `StaleDestinationHandle` and
   `IsADirectory` a dir, `ColdStorage` and `SourceChanged` a file, the rest neutral; `ReadOnly` too, since some backends
   put a message there; the message variants stay text), `FriendlyGitError`, `cmdr-index`'s `VolumeScanError` (whose
-  `ConsecutiveFailures` keeps the last error typed for this), `NotWalkable`, and `SizeError`, `cmdr-operations`'
+  `ConsecutiveFailures` keeps the last error typed for this), `ScanError`, `WatcherError`, `NotWalkable`, and
+  `SizeError` (a root outside the index or a refused watch rides as a typed path, ❌ never a `format!`), `cmdr-operations`'
   `MutationError`, conflict `VolumeScanError`, and `FlushFailure`, `MtpConnectionError`, `cmdr-archive`'s `ArchiveError`
   and `MutationError`, and the app's `ReconnectError` and `ViewerError`. A log site formats them through `LogError`; the
   type system refuses `LogError` of anything else. `WriteOperationError` (~50 variants, all IPC) logs as

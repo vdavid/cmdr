@@ -458,3 +458,20 @@ fn a_walk_cancelled_up_front_covers_nothing_and_admits_it() {
         "nothing may claim coverage it didn't earn"
     );
 }
+
+// ── What a refusal logs ──────────────────────────────────────────────
+
+/// A folder the walk created but couldn't read back is marked in a log line and plain
+/// everywhere else: a share-relative path has no `/` for the report's regex to find.
+#[test]
+fn a_row_still_absent_after_its_upsert_marks_its_folder() {
+    use cmdr_fs::log_error::LogError;
+    use cmdr_fs::log_private::LogPrivate;
+
+    let folder = "Trips/Summer (Lake House) 2026";
+    let error = bootstrap::NotWalkable::AbsentAfterUpsert(Path::new(folder).to_path_buf());
+    let span = LogPrivate::dir_path(folder).to_string();
+    let marked = LogError(&error).to_string();
+    assert!(marked.contains(&span), "{marked:?}");
+    assert_eq!(marked.replace(&span, folder), error.to_string());
+}

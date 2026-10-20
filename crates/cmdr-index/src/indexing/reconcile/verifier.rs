@@ -9,6 +9,7 @@ use std::sync::{LazyLock, Mutex};
 use std::time::Instant;
 
 use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::log_error::LogError;
 use cmdr_fs::log_private::LogPrivate;
 
 use super::reconciler;
@@ -521,7 +522,11 @@ async fn verify_and_correct(
                     );
                 }
                 Err(e) => {
-                    log::warn!("Verifier: scan_subtree({}) failed: {e}", LogPrivate::dir_path(new_dir));
+                    log::warn!(
+                        "Verifier: scan_subtree({}) failed: {}",
+                        LogPrivate::dir_path(new_dir),
+                        LogError(&e)
+                    );
                 }
             }
         }

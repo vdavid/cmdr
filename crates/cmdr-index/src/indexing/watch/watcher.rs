@@ -66,29 +66,8 @@ pub struct FsEventFlags {
     pub history_done: bool,
 }
 
-/// Errors that can occur when starting the watcher.
-#[derive(Debug)]
-pub enum WatcherError {
-    /// Used on macOS (FSEvents); not constructed on Linux.
-    #[allow(dead_code, reason = "constructed on macOS, not Linux")]
-    Io(std::io::Error),
-    /// Used on Linux (inotify) and stub platforms; not constructed on macOS.
-    #[allow(dead_code, reason = "constructed on Linux/stub, not macOS")]
-    StreamCreate(String),
-}
-
-impl std::fmt::Display for WatcherError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            WatcherError::Io(e) => write!(f, "I/O error: {e}"),
-            WatcherError::StreamCreate(msg) => {
-                write!(f, "Failed to create watcher: {msg}")
-            }
-        }
-    }
-}
-
-impl std::error::Error for WatcherError {}
+mod error;
+pub use error::WatcherError;
 
 /// Whether the current platform supports event ID-based journal replay.
 ///
@@ -473,7 +452,12 @@ fn watch_one(
     watcher
         .lock_ignore_poison()
         .watch(root, RecursiveMode::Recursive)
-        .map_err(|e| WatcherError::StreamCreate(format!("inotify watch on {}: {e}", root.display())))
+        // The cause without its paths: `notify` appends the root it was given, which the
+        // variant already carries typed.
+        .map_err(|e| WatcherError::WatchRefused {
+            root: root.to_path_buf(),
+            cause: notify::Error::new(e.kind).to_string(),
+        })
 }
 
 /// Translate a `notify::Event` into zero or more `FsChangeEvent`s.
