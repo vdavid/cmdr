@@ -3,9 +3,9 @@
   "@errorReporter.dialog.title": {
     "sourceHash": "c327e68"
   },
-  "errorReporter.dialog.description": "Isto envia os arquivos de registro recentes do Cmdr para a equipe, para que possamos corrigir o que deu errado. Os registros são limpos no seu computador: caminhos de arquivo, nomes de host, IPs e e-mails são todos removidos antes do envio.",
+  "errorReporter.dialog.description": "Isto envia os registros do Cmdr das últimas cinco horas para a equipe, para que possamos corrigir o que deu errado. Os registros são limpos no seu computador: caminhos de arquivo, nomes de host, IPs e e-mails são todos removidos antes do envio.",
   "@errorReporter.dialog.description": {
-    "sourceHash": "ba4012f"
+    "sourceHash": "6b02a3f"
   },
   "errorReporter.dialog.referenceIdLabel": "ID de referência:",
   "@errorReporter.dialog.referenceIdLabel": {

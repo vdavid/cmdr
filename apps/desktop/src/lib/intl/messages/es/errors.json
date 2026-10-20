@@ -2289,6 +2289,10 @@
   "@errors.mount.timeout": {
     "sourceHash": "d0629fe"
   },
+  "errors.mount.signInHelperStuck": "“{server}” responde, pero el servicio de inicio de sesión en red de macOS parece atascado, así que ahora mismo no se puede conectar ningún recurso compartido. Para reiniciar el servicio, abre Terminal, ejecuta killall NetAuthSysAgent y vuelve a intentarlo. macOS vuelve a iniciar el servicio por su cuenta.",
+  "@errors.mount.signInHelperStuck": {
+    "sourceHash": "90a4cf1"
+  },
   "errors.mount.shareNotFound": "No hay ningún recurso compartido llamado “{share}” en “{server}”. Vuelve atrás y elige uno de la lista.",
   "@errors.mount.shareNotFound": {
     "sourceHash": "10f3c59"

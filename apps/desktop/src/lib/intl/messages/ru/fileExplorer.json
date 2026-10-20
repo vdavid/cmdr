@@ -556,6 +556,14 @@
   "@fileExplorer.networkMount.mounting": {
     "sourceHash": "7b7368d"
   },
+  "fileExplorer.networkMount.mountingSlow": "Ожидание подключения macOS продолжается. Отменить можно в любой момент.",
+  "@fileExplorer.networkMount.mountingSlow": {
+    "sourceHash": "e8e9040"
+  },
+  "fileExplorer.networkMount.cancel": "Отменить",
+  "@fileExplorer.networkMount.cancel": {
+    "sourceHash": "19766ed"
+  },
   "fileExplorer.networkMount.shareFallback": "общая папка",
   "@fileExplorer.networkMount.shareFallback": {
     "sourceHash": "c3bc45a"

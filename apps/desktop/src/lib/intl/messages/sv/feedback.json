@@ -24,6 +24,10 @@
   "@feedback.dialog.tooLong": {
     "sourceHash": "b6e0abf"
   },
+  "feedback.dialog.includeLogs": "Skicka med loggar från de senaste fem timmarna (maskerade)",
+  "@feedback.dialog.includeLogs": {
+    "sourceHash": "983e536"
+  },
   "feedback.dialog.moreWays": "Du kan också <github>bläddra och rösta på GitHub</github> eller <call>boka ett samtal</call> med David.",
   "@feedback.dialog.moreWays": {
     "sourceHash": "5a26a7c"
@@ -51,5 +55,9 @@
   "feedback.sentToast": "Tack för återkopplingen! Vi läser varje notering.",
   "@feedback.sentToast": {
     "sourceHash": "6092c03"
+  },
+  "feedback.sentWithoutLogsToast": "Tack för återkopplingen! Vi läser varje notering. Loggarna kom inte med den här gången.",
+  "@feedback.sentWithoutLogsToast": {
+    "sourceHash": "c22a703"
   }
 }

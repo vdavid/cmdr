@@ -849,10 +849,7 @@
     "chosen": "клиент",
     "accept": ["клиент"],
     "confidence": "high",
-    "sources": "MS (client → клиент); macOS live Sharing (Clients → Клиенты)",
-    "exceptions": {
-      "errorReporter.dialog.description": "\"client-side\" is rendered as «на вашем устройстве»: no client noun appears, and «на стороне клиента» would be jargon."
-    }
+    "sources": "MS (client → клиент); macOS live Sharing (Clients → Клиенты)"
   },
   "clipboard": {
     "chosen": "буфер обмена",

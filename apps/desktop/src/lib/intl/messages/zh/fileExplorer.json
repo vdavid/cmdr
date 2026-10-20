@@ -555,6 +555,14 @@
   "@fileExplorer.networkMount.mounting": {
     "sourceHash": "7b7368d"
   },
+  "fileExplorer.networkMount.mountingSlow": "还在等待 macOS 完成连接。你可以随时取消。",
+  "@fileExplorer.networkMount.mountingSlow": {
+    "sourceHash": "e8e9040"
+  },
+  "fileExplorer.networkMount.cancel": "取消",
+  "@fileExplorer.networkMount.cancel": {
+    "sourceHash": "19766ed"
+  },
   "fileExplorer.networkMount.shareFallback": "共享",
   "@fileExplorer.networkMount.shareFallback": {
     "sourceHash": "c3bc45a"

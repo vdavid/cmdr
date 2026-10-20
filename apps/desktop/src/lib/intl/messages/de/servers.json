@@ -189,6 +189,10 @@
   "@servers.refusal.timedOut": {
     "sourceHash": "b2f0e52"
   },
+  "servers.refusal.signInHelperStuck": "{host} antwortet, aber der Dienst von macOS für die Netzwerkanmeldung scheint zu hängen. Um den Dienst neu zu starten, öffne Terminal, führe killall NetAuthSysAgent aus und versuche es dann erneut. macOS startet den Dienst von selbst wieder.",
+  "@servers.refusal.signInHelperStuck": {
+    "sourceHash": "6089478"
+  },
   "servers.refusal.unreachable": "Cmdr konnte {host} nicht erreichen.",
   "@servers.refusal.unreachable": {
     "sourceHash": "6fcba90"

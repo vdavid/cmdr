@@ -187,6 +187,10 @@
   "@servers.refusal.timedOut": {
     "sourceHash": "b2f0e52"
   },
+  "servers.refusal.signInHelperStuck": "{host} 有响应，但 macOS 的网络登录辅助程序似乎卡住了。要重新启动它，请打开“终端”，运行 killall NetAuthSysAgent，然后重试。macOS 会自动重新启动这个辅助程序。",
+  "@servers.refusal.signInHelperStuck": {
+    "sourceHash": "6089478"
+  },
   "servers.refusal.unreachable": "Cmdr 连不上 {host}。",
   "@servers.refusal.unreachable": {
     "sourceHash": "6fcba90"

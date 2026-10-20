@@ -24,6 +24,10 @@
   "@feedback.dialog.tooLong": {
     "sourceHash": "b6e0abf"
   },
+  "feedback.dialog.includeLogs": "附上過去 5 小時的記錄檔（已遮蔽個人資訊）",
+  "@feedback.dialog.includeLogs": {
+    "sourceHash": "983e536"
+  },
   "feedback.dialog.moreWays": "你也可以<github>在 GitHub 上瀏覽和投票</github>，或者<call>預約通話</call>和 David 聊聊。",
   "@feedback.dialog.moreWays": {
     "sourceHash": "5a26a7c"
@@ -51,5 +55,9 @@
   "feedback.sentToast": "感謝你的意見反應！我們每一則都會讀。",
   "@feedback.sentToast": {
     "sourceHash": "6092c03"
+  },
+  "feedback.sentWithoutLogsToast": "感謝你的意見反應！我們每一則都會讀。這次記錄檔沒能一起送出。",
+  "@feedback.sentWithoutLogsToast": {
+    "sourceHash": "c22a703"
   }
 }

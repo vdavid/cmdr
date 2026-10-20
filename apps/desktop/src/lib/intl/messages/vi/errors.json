@@ -2289,6 +2289,10 @@
   "@errors.mount.timeout": {
     "sourceHash": "d0629fe"
   },
+  "errors.mount.signInHelperStuck": "“{server}” vẫn phản hồi, nhưng dịch vụ đăng nhập mạng của macOS có vẻ bị treo, nên hiện không có mục chia sẻ nào kết nối được. Để khởi động lại dịch vụ này, hãy mở Terminal, chạy killall NetAuthSysAgent, rồi thử lại. macOS sẽ tự chạy lại dịch vụ.",
+  "@errors.mount.signInHelperStuck": {
+    "sourceHash": "90a4cf1"
+  },
   "errors.mount.shareNotFound": "Không có mục chia sẻ nào tên “{share}” trên “{server}”. Hãy quay lại và chọn một mục trong danh sách.",
   "@errors.mount.shareNotFound": {
     "sourceHash": "10f3c59"

@@ -188,6 +188,10 @@
   "@servers.refusal.timedOut": {
     "sourceHash": "b2f0e52"
   },
+  "servers.refusal.signInHelperStuck": "{host} está respondendo, mas o serviço de início de sessão na rede do macOS parece travado. Para reiniciar o serviço, abra o Terminal, execute killall NetAuthSysAgent e tente novamente. O macOS volta a iniciar o serviço por conta própria.",
+  "@servers.refusal.signInHelperStuck": {
+    "sourceHash": "6089478"
+  },
   "servers.refusal.unreachable": "O Cmdr não conseguiu alcançar {host}.",
   "@servers.refusal.unreachable": {
     "sourceHash": "6fcba90"

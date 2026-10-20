@@ -2289,6 +2289,10 @@
   "@errors.mount.timeout": {
     "sourceHash": "d0629fe"
   },
+  "errors.mount.signInHelperStuck": "„{server}“ antwortet, aber der Dienst von macOS für die Netzwerkanmeldung scheint zu hängen, deshalb lässt sich gerade keine Freigabe verbinden. Um den Dienst neu zu starten, öffne Terminal, führe killall NetAuthSysAgent aus und versuche es dann erneut. macOS startet den Dienst von selbst wieder.",
+  "@errors.mount.signInHelperStuck": {
+    "sourceHash": "90a4cf1"
+  },
   "errors.mount.shareNotFound": "Auf „{server}“ gibt es keine Freigabe namens „{share}“. Geh zurück und wähle eine aus der Liste.",
   "@errors.mount.shareNotFound": {
     "sourceHash": "10f3c59"

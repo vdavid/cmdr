@@ -2289,6 +2289,10 @@
   "@errors.mount.timeout": {
     "sourceHash": "d0629fe"
   },
+  "errors.mount.signInHelperStuck": "„{server}” válaszol, de úgy tűnik, elakadt a macOS hálózati bejelentkezési segédfolyamata, ezért most egyik megosztás sem tud csatlakozni. Az újraindításához nyisd meg a Terminalt, futtasd a killall NetAuthSysAgent parancsot, aztán próbáld újra. A macOS magától újra elindítja a segédfolyamatot.",
+  "@errors.mount.signInHelperStuck": {
+    "sourceHash": "90a4cf1"
+  },
   "errors.mount.shareNotFound": "Nincs „{share}” nevű megosztás ezen a szerveren: „{server}”. Lépj vissza, és válassz egyet a listából.",
   "@errors.mount.shareNotFound": {
     "sourceHash": "10f3c59"

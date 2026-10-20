@@ -3,9 +3,9 @@
   "@errorReporter.dialog.title": {
     "sourceHash": "c327e68"
   },
-  "errorReporter.dialog.description": "Damit sendest du die aktuellen Protokolldateien von Cmdr an das Team, damit wir das Problem beheben können. Die Protokolle werden lokal bereinigt: Dateipfade, Hostnamen, IP-Adressen und E-Mail-Adressen werden vor dem Senden alle entfernt.",
+  "errorReporter.dialog.description": "Damit sendest du die Cmdr-Protokolle der letzten fünf Stunden an das Team, damit wir das Problem beheben können. Die Protokolle werden lokal bereinigt: Dateipfade, Hostnamen, IP-Adressen und E-Mail-Adressen werden vor dem Senden alle entfernt.",
   "@errorReporter.dialog.description": {
-    "sourceHash": "ba4012f"
+    "sourceHash": "6b02a3f"
   },
   "errorReporter.dialog.referenceIdLabel": "Referenz-ID:",
   "@errorReporter.dialog.referenceIdLabel": {

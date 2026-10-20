@@ -2289,6 +2289,10 @@
   "@errors.mount.timeout": {
     "sourceHash": "d0629fe"
   },
+  "errors.mount.signInHelperStuck": "“{server}” está respondendo, mas o serviço de início de sessão na rede do macOS parece travado, então nenhum compartilhamento consegue se conectar agora. Para reiniciar o serviço, abra o Terminal, execute killall NetAuthSysAgent e tente novamente. O macOS volta a iniciar o serviço por conta própria.",
+  "@errors.mount.signInHelperStuck": {
+    "sourceHash": "90a4cf1"
+  },
   "errors.mount.shareNotFound": "Não há nenhum compartilhamento chamado “{share}” em “{server}”. Volte e escolha um da lista.",
   "@errors.mount.shareNotFound": {
     "sourceHash": "10f3c59"

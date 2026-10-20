@@ -24,6 +24,10 @@
   "@feedback.dialog.tooLong": {
     "sourceHash": "b6e0abf"
   },
+  "feedback.dialog.includeLogs": "Incluir os registros das últimas cinco horas (com dados pessoais removidos)",
+  "@feedback.dialog.includeLogs": {
+    "sourceHash": "983e536"
+  },
   "feedback.dialog.moreWays": "Você também pode <github>ver e votar no GitHub</github> ou <call>agendar uma conversa</call> com o David.",
   "@feedback.dialog.moreWays": {
     "sourceHash": "5a26a7c"
@@ -51,5 +55,9 @@
   "feedback.sentToast": "Valeu pelo feedback! Lemos todas as mensagens.",
   "@feedback.sentToast": {
     "sourceHash": "6092c03"
+  },
+  "feedback.sentWithoutLogsToast": "Valeu pelo feedback! Lemos todas as mensagens. Desta vez os registros não foram junto.",
+  "@feedback.sentWithoutLogsToast": {
+    "sourceHash": "c22a703"
   }
 }

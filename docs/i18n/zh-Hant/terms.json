@@ -613,9 +613,6 @@
   "client": {
     "chosen": "用戶端",
     "confidence": "high",
-    "exceptions": {
-      "errorReporter.dialog.description": "Client-side → 在你的電腦上, said plainly."
-    },
     "sources": "MS (HKG, TWN)"
   },
   "clipboard": {
@@ -2462,7 +2459,8 @@
     "chosen": "備註",
     "confidence": "high",
     "exceptions": {
-      "feedback.sentToast": "We read every note → 我們每一則都會讀: the classifier 則 carries the note, and 留言 is named in feedback.dialog.description."
+      "feedback.sentToast": "We read every note → 我們每一則都會讀: the classifier 則 carries the note, and 留言 is named in feedback.dialog.description.",
+      "feedback.sentWithoutLogsToast": "Opens with feedback.sentToast verbatim (我們每一則都會讀), as its English does."
     },
     "forms": "a note on an error report → 備註; Ask Cmdr’s saved notes → 筆記; the feedback message → 留言",
     "sources": "MS (note → 備註, user-entered text); catalog errorReporter.dialog.noteLabel"
@@ -2886,6 +2884,13 @@
     "decision": "Reconnecting and the nothing-to-ask line",
     "forms": "a state → 正在重新連線⋯ / 正在重新連線到 {name}⋯; telling the user to plug it back in → 重新連接 / 重新接上; unplug and reconnect → 拔掉再重新接上",
     "sources": "AP-TW = AP-HK Screen Sharing reconnectingMessage, FaceTime, Phone"
+  },
+  "redact": {
+    "accept": ["遮蔽處理"],
+    "chosen": "遮蔽",
+    "confidence": "tentative",
+    "forms": "redacted logs → 記錄已遮蔽處理; a label suffix (redacted) → （已遮蔽個人資訊）",
+    "sources": "catalog (errorReporter.dialog.description, errorReporter.dialog.totalLines: 遮蔽處理 ×2); no AP-TW or MS zh-Hant entry for redact (MS scrub is the timeline 拖曳 sense)"
   },
   "redo": {
     "chosen": "重做",

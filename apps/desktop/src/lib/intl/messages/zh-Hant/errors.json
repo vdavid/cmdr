@@ -2289,6 +2289,10 @@
   "@errors.mount.timeout": {
     "sourceHash": "d0629fe"
   },
+  "errors.mount.signInHelperStuck": "「{server}」有回應，但 macOS 的網路登入輔助程式好像卡住了，所以現在連不上任何共享資料夾。要重新啟動它，請開啟「終端機」，執行 killall NetAuthSysAgent，然後再試一次。macOS 會自動重新啟動這個輔助程式。",
+  "@errors.mount.signInHelperStuck": {
+    "sourceHash": "90a4cf1"
+  },
   "errors.mount.shareNotFound": "「{server}」上沒有名為「{share}」的共享資料夾。請返回，從列表中挑一個。",
   "@errors.mount.shareNotFound": {
     "sourceHash": "10f3c59"

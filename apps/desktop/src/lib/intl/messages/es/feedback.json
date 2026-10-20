@@ -24,6 +24,10 @@
   "@feedback.dialog.tooLong": {
     "sourceHash": "b6e0abf"
   },
+  "feedback.dialog.includeLogs": "Incluir los registros de las últimas cinco horas (depurados)",
+  "@feedback.dialog.includeLogs": {
+    "sourceHash": "983e536"
+  },
   "feedback.dialog.moreWays": "También puedes <github>explorar y votar en GitHub</github> o <call>reservar una llamada</call> con David.",
   "@feedback.dialog.moreWays": {
     "sourceHash": "5a26a7c"
@@ -51,5 +55,9 @@
   "feedback.sentToast": "¡Gracias por tus comentarios! Leemos todas las notas.",
   "@feedback.sentToast": {
     "sourceHash": "6092c03"
+  },
+  "feedback.sentWithoutLogsToast": "¡Gracias por tus comentarios! Leemos todas las notas. Esta vez no han llegado los registros.",
+  "@feedback.sentWithoutLogsToast": {
+    "sourceHash": "c22a703"
   }
 }

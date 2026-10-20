@@ -466,3 +466,10 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
   which reads odd in English; consider "this compression" (most languages used their compression noun). The `en-GB` /
   `en-AU` overlays fork `errors.write.cancelled.title.*` ("cancelled"), but not these two new keys, so British readers
   get "canceled" here only. (all)
+- `errors.mount.signInHelperStuck` / `servers.refusal.signInHelperStuck`: "network sign-in helper" has no
+  Apple-localized name; say in the description that it's a nameless background process, so locales describe it (all
+  chose "service" or "process"). (all)
+- `fileExplorer.networkMount.cancel`: say whether it stops a running mount or closes a dialog; hu splits Cancel by that
+  (`Megszakítás` vs `Mégsem`) and took `Megszakítás`. (hu)
+- `concepts.json` `client` matched "client-side" in `errorReporter.dialog.description`; added `notMatch: client-side`
+  and dropped the ru and zh-Hant exceptions it needed. (ru, zh-Hant)

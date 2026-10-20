@@ -3,9 +3,9 @@
   "@errorReporter.dialog.title": {
     "sourceHash": "c327e68"
   },
-  "errorReporter.dialog.description": "這會把 Cmdr 最近的記錄檔傳給團隊，讓我們修正出問題的地方。記錄會先在你的電腦上遮蔽處理：檔案路徑、主機名稱、IP 位址和電子郵件地址都會在傳送前清掉。",
+  "errorReporter.dialog.description": "這會把 Cmdr 過去 5 小時的記錄檔傳給團隊，讓我們修正出問題的地方。記錄會先在你的電腦上遮蔽處理：檔案路徑、主機名稱、IP 位址和電子郵件地址都會在傳送前清掉。",
   "@errorReporter.dialog.description": {
-    "sourceHash": "ba4012f"
+    "sourceHash": "6b02a3f"
   },
   "errorReporter.dialog.referenceIdLabel": "參考 ID：",
   "@errorReporter.dialog.referenceIdLabel": {

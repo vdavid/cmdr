@@ -24,6 +24,10 @@
   "@feedback.dialog.tooLong": {
     "sourceHash": "b6e0abf"
   },
+  "feedback.dialog.includeLogs": "Logbestanden van de afgelopen vijf uur meesturen (geschoond)",
+  "@feedback.dialog.includeLogs": {
+    "sourceHash": "983e536"
+  },
   "feedback.dialog.moreWays": "Je kunt ook <github>bladeren en stemmen op GitHub</github> of <call>een gesprek boeken</call> met David.",
   "@feedback.dialog.moreWays": {
     "sourceHash": "5a26a7c"
@@ -51,5 +55,9 @@
   "feedback.sentToast": "Bedankt voor je feedback! We lezen elk bericht.",
   "@feedback.sentToast": {
     "sourceHash": "6092c03"
+  },
+  "feedback.sentWithoutLogsToast": "Bedankt voor je feedback! We lezen elk bericht. De logbestanden zijn deze keer niet meegekomen.",
+  "@feedback.sentWithoutLogsToast": {
+    "sourceHash": "c22a703"
   }
 }

@@ -557,6 +557,14 @@
   "@fileExplorer.networkMount.mounting": {
     "sourceHash": "7b7368d"
   },
+  "fileExplorer.networkMount.mountingSlow": "Todavía esperando a que macOS se conecte. Puedes cancelar cuando quieras.",
+  "@fileExplorer.networkMount.mountingSlow": {
+    "sourceHash": "e8e9040"
+  },
+  "fileExplorer.networkMount.cancel": "Cancelar",
+  "@fileExplorer.networkMount.cancel": {
+    "sourceHash": "19766ed"
+  },
   "fileExplorer.networkMount.shareFallback": "recurso compartido",
   "@fileExplorer.networkMount.shareFallback": {
     "sourceHash": "c3bc45a"

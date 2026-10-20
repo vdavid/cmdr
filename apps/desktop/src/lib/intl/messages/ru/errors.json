@@ -2289,6 +2289,10 @@
   "@errors.mount.timeout": {
     "sourceHash": "d0629fe"
   },
+  "errors.mount.signInHelperStuck": "Сервер «{server}» отвечает, но служба входа в сеть macOS, похоже, зависла, поэтому сейчас не подключается ни одна общая папка. Чтобы перезапустить службу, откройте Терминал, выполните killall NetAuthSysAgent и повторите попытку. macOS сама запустит службу заново.",
+  "@errors.mount.signInHelperStuck": {
+    "sourceHash": "90a4cf1"
+  },
   "errors.mount.shareNotFound": "На сервере «{server}» нет общей папки «{share}». Вернитесь и выберите папку из списка.",
   "@errors.mount.shareNotFound": {
     "sourceHash": "10f3c59"

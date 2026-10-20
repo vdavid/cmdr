@@ -2289,6 +2289,10 @@
   "@errors.mount.timeout": {
     "sourceHash": "d0629fe"
   },
+  "errors.mount.signInHelperStuck": "‘{server}’ reageert, maar het netwerkinlogproces van macOS lijkt vast te zitten, dus er kan nu geen gedeelde map verbinding maken. Om het proces te herstarten, open je Terminal, voer je killall NetAuthSysAgent uit en probeer je het daarna opnieuw. macOS start het proces vanzelf weer.",
+  "@errors.mount.signInHelperStuck": {
+    "sourceHash": "90a4cf1"
+  },
   "errors.mount.shareNotFound": "Er is geen gedeelde map met de naam ‘{share}’ op ‘{server}’. Ga terug en kies er een uit de lijst.",
   "@errors.mount.shareNotFound": {
     "sourceHash": "10f3c59"

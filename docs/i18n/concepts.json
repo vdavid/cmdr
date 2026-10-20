@@ -587,6 +587,7 @@
   "client": {
     "en": "client",
     "match": ["client", "clients"],
+    "notMatch": ["client-side"],
     "sense": "A program that connects to a server (an AI client over MCP, a sync client)."
   },
   "clipboard": {

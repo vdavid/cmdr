@@ -24,6 +24,10 @@
   "@feedback.dialog.tooLong": {
     "sourceHash": "b6e0abf"
   },
+  "feedback.dialog.includeLogs": "Приложить журналы за последние пять часов (личные данные удаляются)",
+  "@feedback.dialog.includeLogs": {
+    "sourceHash": "983e536"
+  },
   "feedback.dialog.moreWays": "Также можно <github>посмотреть предложения на GitHub и проголосовать</github> или <call>записаться на звонок</call> с Дэвидом.",
   "@feedback.dialog.moreWays": {
     "sourceHash": "5a26a7c"
@@ -51,5 +55,9 @@
   "feedback.sentToast": "Спасибо за отзыв! Мы читаем каждое сообщение.",
   "@feedback.sentToast": {
     "sourceHash": "6092c03"
+  },
+  "feedback.sentWithoutLogsToast": "Спасибо за отзыв! Мы читаем каждое сообщение. Журналы в этот раз не дошли.",
+  "@feedback.sentWithoutLogsToast": {
+    "sourceHash": "c22a703"
   }
 }

@@ -188,6 +188,10 @@
   "@servers.refusal.timedOut": {
     "sourceHash": "b2f0e52"
   },
+  "servers.refusal.signInHelperStuck": "{host} répond, mais le service d’identification réseau de macOS semble figé. Pour redémarrer ce service, ouvrez Terminal, exécutez killall NetAuthSysAgent, puis réessayez. macOS relance le service de lui-même.",
+  "@servers.refusal.signInHelperStuck": {
+    "sourceHash": "6089478"
+  },
   "servers.refusal.unreachable": "Cmdr n’a pas pu joindre {host}.",
   "@servers.refusal.unreachable": {
     "sourceHash": "6fcba90"

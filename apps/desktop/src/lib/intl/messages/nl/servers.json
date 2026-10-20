@@ -190,6 +190,10 @@
   "@servers.refusal.timedOut": {
     "sourceHash": "b2f0e52"
   },
+  "servers.refusal.signInHelperStuck": "{host} reageert, maar het netwerkinlogproces van macOS lijkt vast te zitten. Om het proces te herstarten, open je Terminal, voer je killall NetAuthSysAgent uit en probeer je het daarna opnieuw. macOS start het proces vanzelf weer.",
+  "@servers.refusal.signInHelperStuck": {
+    "sourceHash": "6089478"
+  },
   "servers.refusal.unreachable": "Cmdr kon {host} niet bereiken.",
   "@servers.refusal.unreachable": {
     "sourceHash": "6fcba90"

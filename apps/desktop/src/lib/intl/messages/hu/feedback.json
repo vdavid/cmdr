@@ -24,6 +24,10 @@
   "@feedback.dialog.tooLong": {
     "sourceHash": "b6e0abf"
   },
+  "feedback.dialog.includeLogs": "Az elmúlt öt óra naplóinak mellékelése (kitakarva)",
+  "@feedback.dialog.includeLogs": {
+    "sourceHash": "983e536"
+  },
   "feedback.dialog.moreWays": "<github>Böngészhetsz és szavazhatsz a GitHubon</github>, vagy <call>foglalhatsz egy hívást</call> Daviddel.",
   "@feedback.dialog.moreWays": {
     "sourceHash": "5a26a7c"
@@ -51,5 +55,9 @@
   "feedback.sentToast": "Köszönjük a visszajelzést! Minden üzenetet elolvasunk.",
   "@feedback.sentToast": {
     "sourceHash": "6092c03"
+  },
+  "feedback.sentWithoutLogsToast": "Köszönjük a visszajelzést! Minden üzenetet elolvasunk. A naplók ezúttal nem érkeztek meg vele.",
+  "@feedback.sentWithoutLogsToast": {
+    "sourceHash": "c22a703"
   }
 }

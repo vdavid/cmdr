@@ -6,5 +6,9 @@
   "feedback.dialog.softFailure": "Lo sentimos, no pudimos enviar tus comentarios ahora mismo. ¿Lo intentas de nuevo?",
   "@feedback.dialog.softFailure": {
     "sourceHash": "4be2620"
+  },
+  "feedback.sentWithoutLogsToast": "¡Gracias por tus comentarios! Leemos todas las notas. Esta vez no llegaron los registros.",
+  "@feedback.sentWithoutLogsToast": {
+    "sourceHash": "32a1400"
   }
 }

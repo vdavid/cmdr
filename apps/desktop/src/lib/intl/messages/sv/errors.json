@@ -2289,6 +2289,10 @@
   "@errors.mount.timeout": {
     "sourceHash": "d0629fe"
   },
+  "errors.mount.signInHelperStuck": "”{server}” svarar, men macOS hjälpprocess för nätverksinloggning verkar ha fastnat, så ingen delad mapp kan ansluta just nu. Starta om hjälpprocessen så här: öppna Terminal, kör killall NetAuthSysAgent och försök sedan igen. macOS startar hjälpprocessen igen av sig själv.",
+  "@errors.mount.signInHelperStuck": {
+    "sourceHash": "90a4cf1"
+  },
   "errors.mount.shareNotFound": "Det finns ingen delad mapp som heter ”{share}” på ”{server}”. Gå tillbaka och välj en i listan.",
   "@errors.mount.shareNotFound": {
     "sourceHash": "10f3c59"

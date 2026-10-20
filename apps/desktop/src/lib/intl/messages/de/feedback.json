@@ -24,6 +24,10 @@
   "@feedback.dialog.tooLong": {
     "sourceHash": "b6e0abf"
   },
+  "feedback.dialog.includeLogs": "Protokolle der letzten fünf Stunden mitsenden (bereinigt)",
+  "@feedback.dialog.includeLogs": {
+    "sourceHash": "983e536"
+  },
   "feedback.dialog.moreWays": "Du kannst auch <github>auf GitHub stöbern und abstimmen</github> oder einen <call>Anruf mit David buchen</call>.",
   "@feedback.dialog.moreWays": {
     "sourceHash": "5a26a7c"
@@ -51,5 +55,9 @@
   "feedback.sentToast": "Danke für dein Feedback! Wir lesen jede Nachricht.",
   "@feedback.sentToast": {
     "sourceHash": "6092c03"
+  },
+  "feedback.sentWithoutLogsToast": "Danke für dein Feedback! Wir lesen jede Nachricht. Die Protokolle sind diesmal nicht mitgekommen.",
+  "@feedback.sentWithoutLogsToast": {
+    "sourceHash": "c22a703"
   }
 }

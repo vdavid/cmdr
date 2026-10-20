@@ -2288,6 +2288,10 @@
   "@errors.mount.timeout": {
     "sourceHash": "d0629fe"
   },
+  "errors.mount.signInHelperStuck": "“{server}”有响应，但 macOS 的网络登录辅助程序似乎卡住了，所以现在任何共享都连接不上。要重新启动它，请打开“终端”，运行 killall NetAuthSysAgent，然后重试。macOS 会自动重新启动这个辅助程序。",
+  "@errors.mount.signInHelperStuck": {
+    "sourceHash": "90a4cf1"
+  },
   "errors.mount.shareNotFound": "“{server}”上没有名为“{share}”的共享。请返回并从列表中选择一个。",
   "@errors.mount.shareNotFound": {
     "sourceHash": "10f3c59"

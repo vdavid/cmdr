@@ -24,6 +24,10 @@
   "@feedback.dialog.tooLong": {
     "sourceHash": "b6e0abf"
   },
+  "feedback.dialog.includeLogs": "Gửi kèm nhật ký trong năm giờ qua (đã lược bỏ thông tin riêng tư)",
+  "@feedback.dialog.includeLogs": {
+    "sourceHash": "983e536"
+  },
   "feedback.dialog.moreWays": "Bạn cũng có thể <github>xem và bình chọn trên GitHub</github> hoặc <call>đặt một cuộc gọi</call> với David.",
   "@feedback.dialog.moreWays": {
     "sourceHash": "5a26a7c"
@@ -51,5 +55,9 @@
   "feedback.sentToast": "Cảm ơn bạn đã phản hồi! Chúng tôi đọc mọi lời nhắn.",
   "@feedback.sentToast": {
     "sourceHash": "6092c03"
+  },
+  "feedback.sentWithoutLogsToast": "Cảm ơn bạn đã phản hồi! Chúng tôi đọc mọi lời nhắn. Lần này nhật ký không gửi kèm được.",
+  "@feedback.sentWithoutLogsToast": {
+    "sourceHash": "c22a703"
   }
 }

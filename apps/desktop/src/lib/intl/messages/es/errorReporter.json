@@ -3,9 +3,9 @@
   "@errorReporter.dialog.title": {
     "sourceHash": "c327e68"
   },
-  "errorReporter.dialog.description": "Esto envía los archivos de registro recientes de Cmdr al equipo para que podamos arreglar lo que ha ido mal. Los registros se depuran en tu dispositivo: las rutas de archivos, los nombres de host, las IP y los correos se eliminan antes de enviarlos.",
+  "errorReporter.dialog.description": "Esto envía los registros de Cmdr de las últimas cinco horas al equipo para que podamos arreglar lo que ha ido mal. Los registros se depuran en tu dispositivo: las rutas de archivos, los nombres de host, las IP y los correos se eliminan antes de enviarlos.",
   "@errorReporter.dialog.description": {
-    "sourceHash": "ba4012f"
+    "sourceHash": "6b02a3f"
   },
   "errorReporter.dialog.referenceIdLabel": "ID de referencia:",
   "@errorReporter.dialog.referenceIdLabel": {

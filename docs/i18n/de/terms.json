@@ -2132,7 +2132,8 @@
     "exceptions": {
       "feedback.dialog.description": "the feedback dialog calls the user’s text a Nachricht, consistently across its surface",
       "feedback.dialog.invalid": "the feedback dialog calls the user’s text a Nachricht, consistently across its surface",
-      "feedback.sentToast": "the feedback dialog calls the user’s text a Nachricht, consistently across its surface"
+      "feedback.sentToast": "the feedback dialog calls the user’s text a Nachricht, consistently across its surface",
+      "feedback.sentWithoutLogsToast": "the feedback dialog calls the user’s text a Nachricht, consistently across its surface"
     },
     "sources": "MS terminology (note → Notiz); catalog (errorReporter.dialog.noteLabel)"
   },
