@@ -978,8 +978,8 @@ folds a batch the same way.
 reads, and the 2/5/15/30/60/120 s backoff loop). A backend implements `HttpBackend` with only what differs: its client
 (`SessionClient`: the `Liveness` it feeds and a `ping`), its probe and the map from its refusals (`dial` →
 `DialRefusal::{Rejected, NeedsUser, Transient}`), where its secret is filed (`credential_key`), and, for S3, the upload
-sweep a rebuilt client starts (`client_installed`). The account check of an attended sign-in stays backend-side
-(`reconnect_as`), because only the backend knows what names its account.
+sweep a rebuilt client starts (`client_installed`). The account check of an attended sign-in and a save-only "Try again"
+is shared too (`own_account`): a `SignIn` for another account than `credential_key().scope` answers `NotSupported`.
 
 - **The first `DeviceDisconnected` acts once.** `noting` hands every error to `note_lost_session`, which flips
   `Connected → Disconnected` through `ConnectionReporter::lose`, takes the dead client out, cancels its `lost` token (so

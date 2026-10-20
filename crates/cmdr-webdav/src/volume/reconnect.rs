@@ -9,7 +9,6 @@ use std::sync::atomic::Ordering;
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::http_session::{CredentialKey, DialRefusal, HttpBackend, HttpSession, SessionClient};
 use cmdr_fs::volume::liveness::Liveness;
-use cmdr_fs::volume::secret_store::{SignIn, SignedIn};
 use cmdr_fs::volume::{Retirement, Retires, VolumeError};
 use tokio_util::sync::CancellationToken;
 
@@ -77,28 +76,5 @@ impl HttpBackend for WebdavVolumeInner {
                 DialRefusal::Transient(VolumeError::DeviceDisconnected(self.volume_id.clone())),
             ),
         }
-    }
-}
-
-impl WebdavVolumeInner {
-    /// The attended reconnect. `username` must be the account this volume IS:
-    /// another account is another volume, so it answers `NotSupported`.
-    pub(super) async fn reconnect_as(&self, sign_in: SignIn) -> Result<SignedIn, VolumeError> {
-        self.own_account(&sign_in)?;
-        self.reconnect_with_sign_in(sign_in).await
-    }
-
-    /// Files a sign-in that already connected, ❌ without dialing (#603). The
-    /// same account rule as [`reconnect_as`](Self::reconnect_as).
-    pub(super) async fn remember_as(&self, sign_in: SignIn) -> Result<SignedIn, VolumeError> {
-        self.own_account(&sign_in)?;
-        Ok(self.remember_sign_in(sign_in).await)
-    }
-
-    fn own_account(&self, sign_in: &SignIn) -> Result<(), VolumeError> {
-        if sign_in.username != self.params().username {
-            return Err(VolumeError::NotSupported);
-        }
-        Ok(())
     }
 }

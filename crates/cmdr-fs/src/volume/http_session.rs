@@ -274,27 +274,44 @@ pub trait HttpBackend: Retires + Send + Sync + Sized + 'static {
     }
 
     /// The attended variant: `sign_in` is what a person just typed for THIS
-    /// volume's account (the backend checks the account first: another one is
-    /// another volume). ❗ The secret is filed only once it CONNECTED, the way
-    /// its Remember box asks (`secret_store::keep_signed_in_secret`): written
-    /// before the dial, a typo replaced the secret that worked (#530). An
-    /// attended rebuild always dials, so `Ok` means this secret was accepted.
+    /// volume's account; another account (by `credential_key().scope`) is
+    /// another volume, so it answers `NotSupported`. ❗ The secret is filed
+    /// only once it CONNECTED, the way its Remember box asks
+    /// (`secret_store::keep_signed_in_secret`): written before the dial, a typo
+    /// replaced the secret that worked (#530). An attended rebuild always
+    /// dials, so `Ok` means this secret was accepted.
     fn reconnect_with_sign_in(&self, sign_in: SignIn) -> impl Future<Output = Result<SignedIn, VolumeError>> + Send {
         async move {
+            self.own_account(&sign_in)?;
             self.session().auth_attempt_spent.store(false, Ordering::Relaxed);
             reconnect::rebuild(self, Some(sign_in.secret.clone()))
                 .await
                 .map_err(|stalled| reconnect::report(self, stalled))?;
-            Ok(self.remember_sign_in(sign_in).await)
+            Ok(self.keep_sign_in(sign_in).await)
         }
     }
 
     /// Files a sign-in that already connected, the way its Remember box asks,
-    /// ❌ without dialing: the second half of
-    /// [`reconnect_with_sign_in`](Self::reconnect_with_sign_in), and the sheet's
-    /// "Try again" after a refused save (#603). The backend checks the account
-    /// first, as it does for a sign-in.
-    fn remember_sign_in(&self, sign_in: SignIn) -> impl Future<Output = SignedIn> + Send {
+    /// ❌ without dialing: the sheet's "Try again" after a refused save (#603).
+    /// The same account rule as
+    /// [`reconnect_with_sign_in`](Self::reconnect_with_sign_in).
+    fn remember_sign_in(&self, sign_in: SignIn) -> impl Future<Output = Result<SignedIn, VolumeError>> + Send {
+        async move {
+            self.own_account(&sign_in)?;
+            Ok(self.keep_sign_in(sign_in).await)
+        }
+    }
+
+    /// Whether `sign_in` names the account this volume IS.
+    fn own_account(&self, sign_in: &SignIn) -> Result<(), VolumeError> {
+        if sign_in.username != self.credential_key().scope {
+            return Err(VolumeError::NotSupported);
+        }
+        Ok(())
+    }
+
+    /// The filing both entry points end with, once the account is checked.
+    fn keep_sign_in(&self, sign_in: SignIn) -> impl Future<Output = SignedIn> + Send {
         async move {
             let kept = reconnect::keep_signed_in_secret(self, &sign_in).await;
             SignedIn::after(&sign_in, kept)
