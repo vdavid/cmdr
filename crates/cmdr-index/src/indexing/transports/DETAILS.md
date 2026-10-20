@@ -188,8 +188,13 @@ by the stored handle. PTP events are device-wide but storages are separate names
 - **Path space — no mount-strip.** The MTP resolver produces storage-relative paths (`/DCIM/Camera`) and the index
   `ROOT_ID` is the storage root, so `apply_mtp_*` resolves against the index directly. The read-side `index_read_path`
   strips the `mtp://{device}/{storage}` scheme prefix off listing/dir-stats paths (owned by `../paths/DETAILS.md`).
-- One difference from SMB: a removal's handle still resolves on the `ReadPool` at enqueue time, so an `ObjectRemoved`
-  right behind its own upsert can miss the uncommitted row, the shape SMB's `ResolveThenWrite` closed.
+- **Resolved on the writer, like SMB.** Both upserts (parent by path) and removals (row by stored handle) ride
+  `WriteMessage::ResolveThenWrite` (`send_resolved`), live and in post-scan replay. Decision/Why: on a `ReadPool`
+  connection a file added right behind its new folder missed the uncommitted folder row and was never indexed, and an
+  `ObjectRemoved` right behind its own upsert left the row for good. Pinned by
+  `a_file_added_right_behind_its_new_folder_lands_inside_it` and
+  `a_removal_right_behind_its_add_deletes_the_row_the_add_made`. Replay applies buffered removals before the buffered
+  adds it resolves off-thread; harmless, since a gone object's handle doesn't come back.
 - The rest matches SMB: enqueue on the volume's writer, index write before the `DirsUpdated` emit, buffer-during-scan
   (`SCAN_CHANGE_BUFFER`, 50,000, overflow ⇒ Stale) replayed after aggregation, discard-on-interrupt.
 
