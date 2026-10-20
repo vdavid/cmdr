@@ -875,7 +875,7 @@ recording changes.
   `in_flight_sweep_tests.rs::an_aside_that_isnt_there_retires_whatever_its_destination_holds`.
 - An archive edit's `write-cancelled` names the landings its stop kept (`archive_edit/engine.rs::EditLeftovers`, the
   copy's `LandsWhenBack` line on the parent's drive); the FE already words it. Cell:
-  `engine.rs::tests::a_cancelled_edit_names_the_landing_its_stop_kept`.
+  `engine_tests.rs::a_cancelled_edit_names_the_landing_its_stop_kept`.
 - Every swap landing (copies and archive edits alike) takes ONE replacing rename on a backend with
   `supports_atomic_replace_rename` (local disks, SMB): `staged_write_landing.rs::replace_in_one_step`, cut off as
   `CutOffAt::ReplacingRename` and settled like a first rename except that a gone temp proves the landing only on the

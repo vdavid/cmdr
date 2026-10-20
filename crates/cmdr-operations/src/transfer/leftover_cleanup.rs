@@ -1,6 +1,6 @@
-//! What a stopped transfer's cleanup can't remove at once, removed in the
-//! background, and what even that can't remove, handed to the ledger's
-//! reconnect sweep.
+//! What a stopped transfer's or archive edit's cleanup can't remove at once,
+//! removed in the background, and what even that can't remove, handed to the
+//! ledger's reconnect sweep.
 //!
 //! **A Cancel never waits on a dropped share, and neither does a failure.**
 //! `volume/cleanup.rs::clean_abandoned_staged_writes` deletes inline only what a
@@ -8,7 +8,10 @@
 //! event goes out the moment that's done. A temp the destination couldn't take
 //! (it was out, a delete met a transport fault, or it refused) comes here: ONE
 //! pass per stopped operation, spawned on the engine's runtime, holding no lane,
-//! so the next queued job on that share starts as usual.
+//! so the next queued job on that share starts as usual. A remote zip edit's
+//! or a compress's upload temp that its `StagedWrite::abandon` couldn't delete
+//! comes here the same way, from its terminal
+//! (`archive_edit/engine.rs::EditLeftovers`), on the parent's drive.
 //!
 //! The pass, in order:
 //!
@@ -54,7 +57,7 @@ use tokio::time::Instant;
 use tokio_util::sync::CancellationToken;
 use tokio_util::task::TaskTracker;
 
-use super::super::in_flight_temps;
+use super::super::in_flight_temps::{self, RecordHome};
 use super::super::state::WriteOperationState;
 use cmdr_fs::log_error::LogError;
 use cmdr_fs::log_private::LogPrivate;
@@ -114,28 +117,48 @@ impl LeftBehind {
     }
 }
 
-/// Hands `left` to a background pass on `volume` and returns at once. See the
-/// module docs.
-pub(crate) fn finish_in_background(volume: &Arc<dyn Volume>, state: &Arc<WriteOperationState>, left: LeftBehind) {
+/// Hands `left` to a background pass on `volume` and returns at once. `home` is
+/// the path space their records live in: a transfer's destination
+/// (`in_flight_temps::dest_home`), or the parent's drive for an archive edit,
+/// whose state names no destination (`archive_edit/engine.rs::EditLeftovers`).
+/// See the module docs.
+pub(crate) fn finish_in_background(
+    volume: &Arc<dyn Volume>,
+    state: &Arc<WriteOperationState>,
+    home: Option<RecordHome>,
+    left: LeftBehind,
+) {
     if left.is_empty() {
         return;
     }
     let cleanups = state.scope().stores().leftover_cleanups();
     let quit = cleanups.quit.clone();
-    let volume = Arc::clone(volume);
-    let pass_state = Arc::clone(state);
+    let pass = Pass {
+        volume: Arc::clone(volume),
+        state: Arc::clone(state),
+        home,
+    };
     cleanups
         .passes
-        .spawn_on(run(volume, pass_state, left, quit), &state.scope().host().runtime());
+        .spawn_on(run(pass, left, quit), &state.scope().host().runtime());
 }
 
-async fn run(volume: Arc<dyn Volume>, state: Arc<WriteOperationState>, left: LeftBehind, quit: CancellationToken) {
+/// One background pass: the volume it deletes on, the stopped operation, and
+/// where that operation recorded its temps.
+struct Pass {
+    volume: Arc<dyn Volume>,
+    state: Arc<WriteOperationState>,
+    home: Option<RecordHome>,
+}
+
+async fn run(pass: Pass, left: LeftBehind, quit: CancellationToken) {
     let count = left.len();
+    let (volume, state) = (&pass.volume, &pass.state);
     let remaining = tokio::select! {
         biased;
         () = state.backend_abort.cancelled() => None,
         () = quit.cancelled() => None,
-        remaining = take_away(&volume, &state, left) => Some(remaining),
+        remaining = take_away(&pass, left) => Some(remaining),
     };
     let Some(remaining) = remaining else {
         log::info!(
@@ -160,7 +183,7 @@ async fn run(volume: Arc<dyn Volume>, state: Arc<WriteOperationState>, left: Lef
         LogPrivate::volume(volume.name()),
     );
     for temp in &remaining {
-        in_flight_temps::keep_temp_for_arrival(&state, in_flight_temps::dest_home(&state), temp);
+        in_flight_temps::keep_temp_for_arrival(state, pass.home.clone(), temp);
     }
 }
 
@@ -178,14 +201,15 @@ const REFUSAL_RETRIES: u32 = 3;
 /// the server notices that session is gone, which Samba does a moment after
 /// the new one is up, and seconds later when it's busy (`#578`). A named SMB
 /// login's reconnect ends that session up front (`#581`); a guest's can't.
-async fn take_away(volume: &Arc<dyn Volume>, state: &Arc<WriteOperationState>, left: LeftBehind) -> Vec<PathBuf> {
+async fn take_away(pass: &Pass, left: LeftBehind) -> Vec<PathBuf> {
+    let (volume, state) = (&pass.volume, &pass.state);
     if !left.out.is_empty() || !reads_live(volume) {
         bring_back(volume, state).await;
     }
     let Deletes {
         mut remaining,
         mut refused,
-    } = delete_each(volume, state, left.out).await;
+    } = delete_each(pass, left.out).await;
     refused.extend(left.refused);
     let mut pause = state.cleanup_policy.retry_after;
     for _ in 0..REFUSAL_RETRIES {
@@ -194,7 +218,7 @@ async fn take_away(volume: &Arc<dyn Volume>, state: &Arc<WriteOperationState>, l
         }
         tokio::time::sleep(pause).await;
         pause = pause.saturating_mul(2);
-        let round = delete_each(volume, state, std::mem::take(&mut refused)).await;
+        let round = delete_each(pass, std::mem::take(&mut refused)).await;
         remaining.extend(round.remaining);
         refused = round.refused;
     }
@@ -213,7 +237,8 @@ struct Deletes {
 }
 
 /// Deletes each of `temps` the destination takes, retiring its record.
-async fn delete_each(volume: &Arc<dyn Volume>, state: &Arc<WriteOperationState>, temps: Vec<PathBuf>) -> Deletes {
+async fn delete_each(pass: &Pass, temps: Vec<PathBuf>) -> Deletes {
+    let (volume, state) = (&pass.volume, &pass.state);
     let mut round = Deletes::default();
     for temp in temps {
         if !reads_live(volume) {
@@ -222,7 +247,7 @@ async fn delete_each(volume: &Arc<dyn Volume>, state: &Arc<WriteOperationState>,
         }
         match tokio::time::timeout(state.outage_policy.attempt_timeout, volume.delete(&temp)).await {
             Ok(Ok(()) | Err(VolumeError::NotFound(_))) => {
-                in_flight_temps::retire_temp(state, in_flight_temps::dest_home(state), &temp);
+                in_flight_temps::retire_temp(state, pass.home.clone(), &temp);
             }
             Ok(Err(error)) => {
                 log::debug!(

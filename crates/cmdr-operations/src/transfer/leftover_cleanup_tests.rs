@@ -57,6 +57,7 @@ async fn an_outage_the_operation_gave_up_on_gets_one_look_and_no_wait() {
     finish_in_background(
         &volume,
         &state,
+        in_flight_temps::dest_home(&state),
         LeftBehind {
             out: vec![temp.clone()],
             refused: Vec::new(),
@@ -121,6 +122,7 @@ async fn a_temp_the_share_refuses_the_moment_it_is_back_goes_on_the_retries() {
     finish_in_background(
         &volume,
         &state,
+        in_flight_temps::dest_home(&state),
         LeftBehind {
             out: vec![temp.clone()],
             refused: Vec::new(),

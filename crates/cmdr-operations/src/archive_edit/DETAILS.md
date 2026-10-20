@@ -124,6 +124,13 @@ network per edit (the pull), documented and accepted — there is no remote rand
 future in-place-append optimization). Remote backends don't carry the archive file's mode/mtime/xattr across the rewrite
 the way local `copyfile` does; the upload mints a fresh remote object.
 
+**An upload temp the abandon couldn't delete.** The share was out, or refused, so the temp stays listed. Every edit's
+terminal (`engine.rs::EditLeftovers::of`, a compress's included) hands it to the background cleanup on the parent's
+drive, in the parent's path space, as a copy's stop does (`../transfer/leftover_cleanup.rs`): removed once the share is
+back, else left to the drive's next arrival, ❌ never to the next launch (#574), and `write-cancelled` names it
+(`Refused` / `RemovedWhenBack`). Pinned by
+`engine_tests.rs::a_temp_a_stopped_edit_left_on_a_share_that_is_out_waits_for_the_drives_next_arrival`.
+
 **Stale upload-temp reaping.** A crash or kill between the upload finishing and the swap's landing can leave the
 fully-uploaded temp on the remote under its `<archive>.cmdr-tmp-<uuid>` name. It's harmless (the original is intact and
 the temp holds the NEW bytes), but untidy. `pull_apply_upload_swap` reaps it at the start of the next edit of the SAME

@@ -288,6 +288,7 @@ impl ItemHome {
 
 /// The path space one producer's absolute paths get recorded in, and the root
 /// they're stated relative to.
+#[derive(Clone)]
 pub(crate) struct RecordHome {
     pub(crate) home: ItemHome,
     /// `Some` for a mount home: the root paths are stored relative to.

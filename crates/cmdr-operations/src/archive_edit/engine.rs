@@ -12,16 +12,20 @@ use std::time::{Duration, Instant};
 
 use super::super::OperationEventSink;
 use super::super::host::EngineHost;
+use super::super::in_flight_temps::{self, RecordHome};
 use super::super::state::WriteOperationState;
+use super::super::transfer::leftover_cleanup::{LeftBehind, finish_in_background};
 use super::super::transfer::recovered_name::KeptNewData;
 use super::super::types::{
-    AppearedDuringMove, CancelRollback, ProgressStep, StagedLeftovers, WriteCancelledEvent, WriteCompleteEvent,
-    WriteErrorEvent, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
+    AppearedDuringMove, CancelRollback, ProgressStep, StagedLeftoverFate, StagedLeftovers, WriteCancelledEvent,
+    WriteCompleteEvent, WriteErrorEvent, WriteOperationError, WriteOperationPhase, WriteOperationType,
+    WriteProgressEvent,
 };
 use super::edit_error::EditError;
 use super::remote::{RemoteCommitProgress, RemoteProgressObserver, pull_apply_upload_swap};
 use cmdr_archive::mutator::{MutationError, MutationHooks, MutationProgress};
 use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::volume::{ConnectionState, Volume};
 
 /// Runs a plan+apply closure against an archive, transparently LOCAL or REMOTE.
 ///
@@ -167,6 +171,10 @@ pub(super) struct EditLeftovers {
     /// `write-cancelled` names them, as a copy's does, and so does a failure,
     /// beside its cause (`WriteOperationError::NewFilesKept`).
     kept: KeptNewData,
+    /// Upload temps the edit couldn't delete as it stopped, by fate: handed to
+    /// the background cleanup ([`hand_off_temps`]), and named on
+    /// `write-cancelled` as a copy's are.
+    scratch: Vec<StagedLeftovers>,
     /// The drive's name, for the line that says where they are.
     volume_name: String,
 }
@@ -174,28 +182,83 @@ pub(super) struct EditLeftovers {
 impl EditLeftovers {
     /// Takes the new archives `state`'s stop kept, on the drive
     /// `parent_volume_id` names, beside what a move into an archive left in
-    /// its source.
+    /// its source, and hands the temps it couldn't delete to the background
+    /// cleanup on that drive ([`hand_off_temps`]).
     pub(super) fn of(
-        state: &WriteOperationState,
+        state: &Arc<WriteOperationState>,
         parent_volume_id: &str,
         appeared_during_move: Option<AppearedDuringMove>,
     ) -> Self {
         let kept = KeptNewData::take(state);
-        let volume_name = if kept.landings.is_empty() && kept.rescued.is_empty() {
-            String::new()
-        } else {
-            let volume = state.scope().host().volumes().get(parent_volume_id);
-            volume
-                .as_ref()
-                .map_or(parent_volume_id, |volume| volume.name())
-                .to_owned()
-        };
+        let volume = state.scope().host().volumes().get(parent_volume_id);
+        let volume_name = volume
+            .as_ref()
+            .map_or(parent_volume_id, |volume| volume.name())
+            .to_owned();
+        let scratch = hand_off_temps(state, parent_volume_id, volume.as_ref(), &volume_name);
         Self {
             appeared_during_move,
             kept,
+            scratch,
             volume_name,
         }
     }
+}
+
+/// Hands the upload temps an edit couldn't delete to the background cleanup on
+/// the parent's drive (`transfer/leftover_cleanup.rs`), as a copy's stop does,
+/// and answers the cancel summary's lines for them. A remote zip edit's or a
+/// compress's `StagedWrite::abandon` leaves a temp listed when the share can't
+/// take the delete, and both name-and-age reaps skip a recorded temp, so
+/// nothing else reaches it before the next launch (#574).
+///
+/// Their records live in the parent's path space: a remote edit's state names
+/// no destination (`StagedWrite::begin_over_original` records under the
+/// parent), and a compress's destination is the parent. Skipped once tier 2
+/// fired, as a copy's cleanup is: the records stay for the startup sweep.
+fn hand_off_temps(
+    state: &Arc<WriteOperationState>,
+    parent_volume_id: &str,
+    volume: Option<&Arc<dyn Volume>>,
+    volume_name: &str,
+) -> Vec<StagedLeftovers> {
+    if state.backend_abort.is_cancelled() {
+        return Vec::new();
+    }
+    let temps = std::mem::take(&mut *state.in_flight_temps.lock_ignore_poison());
+    if temps.is_empty() {
+        return Vec::new();
+    }
+    let home = RecordHome::volume_space(parent_volume_id);
+    let Some(volume) = volume else {
+        // The drive left: its next arrival's sweep removes them.
+        for temp in &temps {
+            in_flight_temps::keep_temp_for_arrival(state, Some(home.clone()), temp);
+        }
+        return StagedLeftovers::of(StagedLeftoverFate::RemovedWhenBack, &temps, volume_name)
+            .into_iter()
+            .collect();
+    };
+    let left = if volume.connection_state().is_none_or(ConnectionState::is_live) {
+        LeftBehind {
+            out: Vec::new(),
+            refused: temps,
+        }
+    } else {
+        LeftBehind {
+            out: temps,
+            refused: Vec::new(),
+        }
+    };
+    let scratch = [
+        (StagedLeftoverFate::Refused, &left.refused),
+        (StagedLeftoverFate::RemovedWhenBack, &left.out),
+    ]
+    .into_iter()
+    .filter_map(|(fate, paths)| StagedLeftovers::of(fate, paths, volume_name))
+    .collect();
+    finish_in_background(volume, state, Some(home), left);
+    scratch
 }
 
 /// Emits the ONE terminal event an archive edit's outcome calls for, and
@@ -229,6 +292,7 @@ pub(super) fn emit_archive_terminal(
     let EditLeftovers {
         appeared_during_move,
         kept,
+        scratch,
         volume_name,
     } = left;
     match outcome {
@@ -249,7 +313,8 @@ pub(super) fn emit_archive_terminal(
             operation_id: op_id.to_string(),
             operation_type,
             files_processed: final_progress.entries_done,
-            rollback: CancelRollback::none().with_staged_leftovers(kept.groups(&volume_name).collect()),
+            rollback: CancelRollback::none()
+                .with_staged_leftovers(scratch.into_iter().chain(kept.groups(&volume_name)).collect()),
         }),
         Err(EditError::Op(err)) => {
             let kept: Vec<StagedLeftovers> = kept.beside(&err).groups(&volume_name).collect();
@@ -537,226 +602,5 @@ impl MutationHooks for MutatorHooks {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::event_sinks::CollectorEventSink;
-    use crate::testing::TestOperations;
-    use crate::types::StagedLeftoverFate;
-
-    #[test]
-    fn paced_sleep_gives_way_to_a_cancel_within_a_slice() {
-        // The cancel lands after the first check, so a 10 s pace must return at once.
-        let checks = AtomicUsize::new(0);
-        let started = Instant::now();
-        sleep_unless_cancelled(Duration::from_secs(10), || checks.fetch_add(1, Ordering::Relaxed) >= 1);
-        assert!(
-            started.elapsed() < Duration::from_secs(1),
-            "slept {:?} past a cancel",
-            started.elapsed()
-        );
-    }
-
-    #[test]
-    fn paced_sleep_runs_its_full_length_without_a_cancel() {
-        let started = Instant::now();
-        sleep_unless_cancelled(Duration::from_millis(30), || false);
-        assert!(started.elapsed() >= Duration::from_millis(30));
-    }
-
-    /// What a query API (the MCP `cmdr://state` resource) reads for this op.
-    fn cached(engine: &TestOperations, id: &str) -> (WriteOperationPhase, usize, usize, u64, u64) {
-        let status = engine
-            .get_operation_status(&cmdr_operation_log::types::OperationId::from(id))
-            .expect("the op is registered");
-        (
-            status.phase,
-            status.files_done,
-            status.files_total,
-            status.bytes_done,
-            status.bytes_total,
-        )
-    }
-
-    #[test]
-    fn every_emitted_phase_of_a_compress_reaches_the_status_cache() {
-        let engine = TestOperations::new();
-        let id = "compress-status-mirror";
-        engine.status().register(id, WriteOperationType::Compress, vec![]);
-        let hooks = MutatorHooks::new(
-            Arc::new(engine.new_operation_state(Duration::ZERO)),
-            Arc::new(CollectorEventSink::new()) as Arc<dyn OperationEventSink>,
-            id.to_string(),
-            WriteOperationType::Compress,
-            Duration::ZERO,
-        );
-
-        hooks.emit_scan_progress(
-            super::super::fresh_plan::PlanProgress {
-                files: 2,
-                dirs: 1,
-                bytes: 100,
-                current_dir: Path::new("/src"),
-            },
-            None,
-            true,
-        );
-        assert_eq!(cached(&engine, id), (WriteOperationPhase::Scanning, 2, 0, 100, 0));
-
-        // Pre-fix the cache stayed at `Scanning` from here to the terminal event.
-        let tick = |entries_done, bytes_done| MutationProgress {
-            entries_done,
-            entries_total: 3,
-            entries_changed: 3,
-            bytes_done,
-            bytes_total: 100,
-        };
-        MutationHooks::on_progress(&hooks, tick(1, 40));
-        assert_eq!(cached(&engine, id), (WriteOperationPhase::Compressing, 1, 3, 40, 100));
-
-        MutationHooks::on_progress(&hooks, tick(3, 100));
-        assert_eq!(
-            cached(&engine, id),
-            (WriteOperationPhase::FinishingCompression, 0, 0, 0, 0)
-        );
-
-        hooks.emit_remote_progress(RemoteCommitProgress::Transferring {
-            bytes_done: 0,
-            bytes_total: 60,
-        });
-        assert_eq!(cached(&engine, id), (WriteOperationPhase::Transferring, 0, 0, 0, 60));
-
-        hooks.emit_remote_progress(RemoteCommitProgress::Finishing);
-        assert_eq!(
-            cached(&engine, id),
-            (WriteOperationPhase::FinishingTransfer, 0, 0, 0, 0)
-        );
-    }
-
-    /// A Cancel that ended a remote edit's swap (or a compress's publish) after
-    /// the way was cleared kept the new archive recorded for the drive's next
-    /// arrival. `write-cancelled` names it, as a copy's does, so the person
-    /// reads where their archive is rather than nothing at all.
-    #[test]
-    fn a_cancelled_edit_names_the_landing_its_stop_kept() {
-        let engine = TestOperations::new();
-        let nas: Arc<dyn cmdr_fs::volume::Volume> = Arc::new(cmdr_fs::volume::InMemoryVolume::new("Naspolya"));
-        engine.volumes().register("archive-terminal-nas", nas);
-        let state = engine.new_operation_state(Duration::ZERO);
-        state
-            .kept_landings
-            .lock_ignore_poison()
-            .push(PathBuf::from("/share/bundle.zip"));
-        let events = CollectorEventSink::new();
-
-        emit_archive_terminal(
-            &events,
-            "archive-terminal-cancel",
-            WriteOperationType::ArchiveEdit,
-            Err(EditError::Cancelled),
-            0,
-            EditLeftovers::of(&state, "archive-terminal-nas", None),
-            &MutationProgress::default(),
-        );
-
-        let cancelled = events.cancelled.lock_ignore_poison();
-        let [cancelled] = cancelled.as_slice() else {
-            panic!("one `write-cancelled`, got {cancelled:?}");
-        };
-        assert_eq!(
-            cancelled.rollback.staged_leftovers,
-            vec![StagedLeftovers {
-                fate: StagedLeftoverFate::LandsWhenBack,
-                count: 1,
-                example_name: "bundle.zip".to_owned(),
-                volume_name: "Naspolya".to_owned(),
-            }],
-        );
-        assert!(
-            state.kept_landings.lock_ignore_poison().is_empty(),
-            "named once, by the one terminal event"
-        );
-    }
-
-    /// A failed edit names the new archive its stop kept too, beside the cause,
-    /// so nobody finds a ` (recovered)` archive with no word about it.
-    #[test]
-    fn a_failed_edit_names_the_new_archive_its_stop_kept_beside_its_cause() {
-        let engine = TestOperations::new();
-        let nas: Arc<dyn cmdr_fs::volume::Volume> = Arc::new(cmdr_fs::volume::InMemoryVolume::new("Naspolya"));
-        engine.volumes().register("archive-terminal-nas", nas);
-        let state = engine.new_operation_state(Duration::ZERO);
-        state
-            .rescued_landings
-            .lock_ignore_poison()
-            .push(PathBuf::from("/share/bundle (recovered).zip"));
-        let events = CollectorEventSink::new();
-        let cause = WriteOperationError::IoError {
-            path: "/share/other.zip".to_owned(),
-            message: "the share's own words".to_owned(),
-        };
-
-        emit_archive_terminal(
-            &events,
-            "archive-terminal-error",
-            WriteOperationType::ArchiveEdit,
-            Err(EditError::Op(cause)),
-            0,
-            EditLeftovers::of(&state, "archive-terminal-nas", None),
-            &MutationProgress::default(),
-        );
-
-        let errors = events.errors.lock_ignore_poison();
-        let [failed] = errors.as_slice() else {
-            panic!("one `write-error`, got {errors:?}");
-        };
-        let WriteOperationError::NewFilesKept { cause: reported, kept } = &failed.error else {
-            panic!("the failure names the kept archive, got {:?}", failed.error);
-        };
-        assert!(
-            matches!(&**reported, WriteOperationError::IoError { path, .. } if path == "/share/other.zip"),
-            "the cause stays what failed, got {reported:?}"
-        );
-        assert_eq!(
-            kept,
-            &vec![StagedLeftovers {
-                fate: StagedLeftoverFate::Rescued,
-                count: 1,
-                example_name: "bundle (recovered).zip".to_owned(),
-                volume_name: "Naspolya".to_owned(),
-            }],
-        );
-    }
-
-    #[test]
-    fn remote_transfer_ticks_keep_the_configured_cadence_but_phase_boundaries_emit() {
-        let engine = TestOperations::new();
-        let events = Arc::new(CollectorEventSink::new());
-        let hooks = MutatorHooks::new(
-            Arc::new(engine.new_operation_state(Duration::from_secs(60))),
-            Arc::clone(&events) as Arc<dyn OperationEventSink>,
-            "compress-cadence".to_string(),
-            WriteOperationType::Compress,
-            Duration::from_secs(60),
-        );
-
-        hooks.emit_remote_progress(RemoteCommitProgress::Transferring {
-            bytes_done: 0,
-            bytes_total: 100,
-        });
-        hooks.emit_remote_progress(RemoteCommitProgress::Transferring {
-            bytes_done: 10,
-            bytes_total: 100,
-        });
-        hooks.emit_remote_progress(RemoteCommitProgress::Transferring {
-            bytes_done: 20,
-            bytes_total: 100,
-        });
-        hooks.emit_remote_progress(RemoteCommitProgress::Finishing);
-
-        let progress = events.progress.lock_ignore_poison();
-        assert_eq!(progress.len(), 2, "intermediate upload chunks must be throttled");
-        assert_eq!(progress[0].phase, WriteOperationPhase::Transferring);
-        assert_eq!(progress[0].bytes_done, 0);
-        assert_eq!(progress[1].phase, WriteOperationPhase::FinishingTransfer);
-    }
-}
+#[path = "engine_tests.rs"]
+mod tests;
