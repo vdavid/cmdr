@@ -422,7 +422,7 @@ async fn on_an_lstat_backend_a_moved_dir_link_goes_as_the_link() {
     mkdir(root, "src");
     link(root, "src/album", "outside/target");
 
-    move_across(
+    let dest = move_across(
         &engine,
         &source,
         "op-plain-cross-top-link",
@@ -432,6 +432,10 @@ async fn on_an_lstat_backend_a_moved_dir_link_goes_as_the_link() {
 
     assert_eq!(read(root, "outside/target/inside.txt"), b"OUTSIDE THE SELECTION");
     assert!(!is_link(root, "src/album"), "the moved link is gone");
+    assert!(
+        dest.exists(Path::new("/album/inside.txt")).await,
+        "the destination holds what the link pointed at (#570)"
+    );
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
