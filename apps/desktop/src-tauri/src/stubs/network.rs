@@ -179,6 +179,9 @@ pub enum MountError {
     Timeout {
         server: String,
     },
+    SignInHelperStuck {
+        server: String,
+    },
     ShareNotFound {
         server: String,
         share: String,
@@ -383,6 +386,7 @@ pub async fn mount_network_share(
     _port: Option<u16>,
     _timeout_ms: Option<u64>,
     _host_name: Option<String>,
+    _attempt_id: Option<String>,
 ) -> Result<MountResult, MountError> {
     Err(MountError::Unexpected {
         server,

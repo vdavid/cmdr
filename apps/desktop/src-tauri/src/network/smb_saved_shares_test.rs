@@ -33,6 +33,11 @@ fn a_refused_mount_asks_the_right_question() {
     );
     assert_eq!(outcome(MountError::Timeout { server: server.clone() }), "TimedOut");
     assert_eq!(outcome(MountError::Cancelled { share: share.clone() }), "Cancelled");
+    // ❗ Its own outcome, ❌ never `TimedOut`: the fix is on this Mac, not the server.
+    assert_eq!(
+        outcome(MountError::SignInHelperStuck { server: server.clone() }),
+        "SignInHelperStuck"
+    );
     for about_the_share in [
         MountError::HostUnreachable { server: server.clone() },
         MountError::ShareNotFound {

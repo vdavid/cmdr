@@ -265,12 +265,13 @@ pub async fn connect_saved_share(
         password.clone(),
         port,
         None,
-    );
-    let result = tokio::select! {
-        result = mount => result,
-        () = cancel.cancelled() => return ServerConnectOutcome::Cancelled,
-    };
-    let mounted = match result {
+        &cancel,
+    )
+    .await;
+    // ❗ A cancel comes back from the mount, ❌ not around it: a cancel after a long
+    // wait on a server that answers is a stuck sign-in helper, which the user needs
+    // to hear about (`netfs_wedge`).
+    let mounted = match mount {
         Ok(mounted) => mounted,
         Err(error) => return outcome_of(&error),
     };
@@ -353,6 +354,7 @@ pub(crate) fn outcome_of(error: &MountError) -> ServerConnectOutcome {
             ServerConnectOutcome::AuthenticationRejected
         }
         MountError::Timeout { .. } => ServerConnectOutcome::TimedOut,
+        MountError::SignInHelperStuck { .. } => ServerConnectOutcome::SignInHelperStuck,
         MountError::Cancelled { .. } => ServerConnectOutcome::Cancelled,
         MountError::HostUnreachable { .. }
         | MountError::ShareNotFound { .. }

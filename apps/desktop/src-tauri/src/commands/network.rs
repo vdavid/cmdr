@@ -376,6 +376,8 @@ use crate::network::mount::{self, MountError, MountResult};
 /// * `host_name` - The name the person knows the server by (the discovery list's
 ///   `name`), which a saved share row is filed under. `None` files it under
 ///   `server`.
+/// * `attempt_id` - The frontend's id that `cancel_server_connect` calls this mount
+///   off by. `None` can't be called off.
 ///
 /// ❗ A mount that went through is SAVED as a share place, with the account it
 /// signed in as (`network::smb_saved_shares`, `docs/specs/saved-smb-shares.md`):
@@ -399,11 +401,13 @@ pub async fn mount_network_share(
     port: Option<u16>,
     timeout_ms: Option<u64>,
     host_name: Option<String>,
+    attempt_id: Option<String>,
 ) -> Result<MountResult, MountError> {
     let actual_port = port.unwrap_or(445);
     // ❗ Before the mount: a move of this server landing while the mount is out must
     // keep it from saving the old address again (`remember_mount_since`).
     let set_out = crate::network::connect_wiring::DialTicket::now();
+    let (cancel, _filed) = crate::network::file_mount_attempt(attempt_id.as_deref());
     let result = crate::network::mount_share(
         server.clone(),
         share.clone(),
@@ -411,6 +415,7 @@ pub async fn mount_network_share(
         password.clone(),
         actual_port,
         timeout_ms,
+        &cancel,
     )
     .await?;
 

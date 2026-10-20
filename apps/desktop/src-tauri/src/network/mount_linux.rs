@@ -29,6 +29,10 @@ pub enum MountError {
     Timeout {
         server: String,
     },
+    /// Never produced here: only macOS's NetFS sign-in helper wedges.
+    SignInHelperStuck {
+        server: String,
+    },
     ShareNotFound {
         server: String,
         share: String,

@@ -64,6 +64,11 @@ pub enum MountError {
     HostUnreachable { server: String },
     /// The server didn't answer within the mount's budget.
     Timeout { server: String },
+    /// macOS's network sign-in helper (`NetAuthSysAgent`) looks wedged: a mount
+    /// waited it out while the server answered on its SMB port, or an earlier one
+    /// is still stuck in it. Only restarting the helper clears it
+    /// (`network/netfs_wedge.rs`). macOS only.
+    SignInHelperStuck { server: String },
     /// The server has no share by that name, or offers none to this identity.
     ShareNotFound { server: String, share: String },
     /// The server wants a sign-in before it opens the share: a guest was turned away.

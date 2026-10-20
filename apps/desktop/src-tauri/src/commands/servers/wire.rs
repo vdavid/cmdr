@@ -273,6 +273,10 @@ pub enum ServerConnectOutcome {
     StartFolderOutsideRoot,
     /// The handshake didn't finish inside the connect budget.
     TimedOut,
+    /// SMB on macOS only: the server answers, and macOS's network sign-in helper
+    /// (`NetAuthSysAgent`) looks wedged, so no mount can go through until it's
+    /// restarted (`network/netfs_wedge.rs`).
+    SignInHelperStuck,
     /// No route, refused, DNS, or a transport-level breakdown.
     Unreachable,
     /// The user called it off. ❗ Nothing was registered, remembered, or stored.

@@ -323,9 +323,8 @@ pub async fn connect_server(
 
 /// Calls off the connect running under `attempt_id`, whichever protocol owns it.
 ///
-/// Each backend holds its OWN attempt table, so this asks both; an id nobody is
-/// connecting under answers `false`, which a cancel racing a finished connect
-/// legitimately does.
+/// Each backend holds its OWN attempt table, so this asks every one; an id nobody
+/// holds answers `false`, which a cancel racing a finished connect legitimately does.
 #[tauri::command]
 #[specta::specta]
 pub fn cancel_server_connect(attempt_id: String) -> bool {
@@ -333,9 +332,10 @@ pub fn cancel_server_connect(attempt_id: String) -> bool {
     let webdav = webdav_volume_wiring::cancel_connect(&attempt_id);
     let s3 = s3_volume_wiring::cancel_connect(&attempt_id);
     let smb = smb_saved_shares::cancel_connect(&attempt_id);
+    let smb_share_list_mount = crate::network::cancel_mount(&attempt_id);
     // The sheet's "Eject and save" runs under the same kind of id, and its Cancel is this one.
     let eject_and_save = crate::server_move::smb::cancel_eject_and_save(&attempt_id);
-    sftp || webdav || s3 || smb || eject_and_save
+    sftp || webdav || s3 || smb || smb_share_list_mount || eject_and_save
 }
 
 /// Drops a place's session and takes it out of the registry, answering whether

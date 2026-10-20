@@ -74,6 +74,9 @@ mod mount_watch;
 // Cross-platform: `same_server` and `credential_key` are used on both macOS and Linux
 // (mount dedup, `smb_upgrade`, keychain keying).
 pub mod server_identity;
+// Whether a mount Cmdr gave up on met a wedged `NetAuthSysAgent`, and the ledger of
+// NetFS calls still stuck in it. Both platforms' mounts pass through it; only macOS's can wedge.
+pub(crate) mod netfs_wedge;
 // Asks the server itself why a mount found no share. Both platforms' mounts reach
 // it through `mount_share` below.
 pub(crate) mod share_access;
@@ -150,7 +153,8 @@ pub fn is_network_enabled() -> bool {
 pub(crate) const DEFAULT_MOUNT_TIMEOUT_MS: u64 = 20_000;
 
 /// Mounts an SMB share through the platform backend's blocking
-/// `mount::mount_share_sync`, on the blocking pool under the mount timeout.
+/// `mount::mount_share_sync`, on the blocking pool under the mount timeout, until
+/// `cancel` fires.
 ///
 /// A panicked task and an expired budget come back as the typed `MountError` the
 /// frontend words, and a mount that could only say "not found" spends what's left
@@ -159,6 +163,11 @@ pub(crate) const DEFAULT_MOUNT_TIMEOUT_MS: u64 = 20_000;
 /// sign-in it is (`share_access::refusal_for_identity`). One function for both
 /// platforms, so the timeout and these readings can't drift apart between macOS
 /// and Linux.
+///
+/// ❗ A timeout or a cancel doesn't stop the NetFS call: its thread stays blocked
+/// inside NetFS. `netfs_wedge` reads a long wait on a server that answers as a
+/// wedged `NetAuthSysAgent`, and while such a call is still stuck, this answers
+/// `SignInHelperStuck` right away rather than queue another call behind it.
 pub async fn mount_share(
     server: String,
     share: String,
@@ -166,37 +175,44 @@ pub async fn mount_share(
     password: Option<String>,
     port: u16,
     timeout_ms: Option<u64>,
+    cancel: &tokio_util::sync::CancellationToken,
 ) -> Result<mount::MountResult, mount::MountError> {
+    use netfs_wedge::{GaveUpWhy, NETFS_CALLS};
+
+    if let Some(refusal) = netfs_wedge::refusal_while_stuck(&NETFS_CALLS, netfs_wedge::sign_in_helper_pid(), &server) {
+        return Err(refusal);
+    }
     let attempt = share_access::ShareAttempt::new(&server, &share, port, username.as_deref(), password.as_deref());
     let started = std::time::Instant::now();
     let timeout_duration = std::time::Duration::from_millis(timeout_ms.unwrap_or(DEFAULT_MOUNT_TIMEOUT_MS));
     // Rides the blocking work, not this future: the call outlives our timeout when the
     // system's mount service wedges, and that's exactly when its log lines matter.
     let watch = mount_watch::MountWatch::start(&server, &share, mount_watch::SLOW_MOUNT);
+    let call = NETFS_CALLS.start();
+    let call_id = call.id();
     let mount_future = tokio::task::spawn_blocking(move || {
+        // Held until NetFS lets the thread go, which can be long after the mount gave up on it.
+        let _call = call;
         let result = mount::mount_share_sync(&server, &share, username.as_deref(), password.as_deref(), port);
         watch.finish(result.is_ok());
         result
     });
 
-    let result = match tokio::time::timeout(timeout_duration, mount_future).await {
-        Ok(Ok(result)) => result,
-        Ok(Err(join_error)) => Err(mount::MountError::Unexpected {
-            server: attempt.server().to_string(),
-            share: attempt.share().to_string(),
-            detail: format!("the mount task didn't finish: {join_error}"),
-        }),
-        Err(_timeout) => {
-            log::warn!(
-                "Mounting share={:?} on server={:?} didn't finish within {} s",
-                cmdr_fs::log_private::LogPrivate::volume(attempt.share()),
-                cmdr_fs::log_private::LogPrivate::host(attempt.server()),
-                timeout_duration.as_secs()
-            );
-            Err(mount::MountError::Timeout {
+    let gave_up = tokio::select! {
+        joined = tokio::time::timeout(timeout_duration, mount_future) => match joined {
+            Ok(Ok(result)) => Ok(result),
+            Ok(Err(join_error)) => Ok(Err(mount::MountError::Unexpected {
                 server: attempt.server().to_string(),
-            })
-        }
+                share: attempt.share().to_string(),
+                detail: format!("the mount task didn't finish: {join_error}"),
+            })),
+            Err(_timeout) => Err(GaveUpWhy::TimedOut),
+        },
+        () = cancel.cancelled() => Err(GaveUpWhy::Cancelled),
+    };
+    let result = match gave_up {
+        Ok(result) => result,
+        Err(why) => Err(read_given_up(&attempt, port, call_id, why, started.elapsed()).await),
     };
 
     match result {
@@ -207,6 +223,64 @@ pub async fn mount_share(
         Err(refusal) => Err(share_access::refusal_for_identity(refusal, &attempt)),
         Ok(mounted) => Ok(mounted),
     }
+}
+
+/// What [`mount_share`] answers for a NetFS call it stopped waiting on.
+async fn read_given_up(
+    attempt: &share_access::ShareAttempt,
+    port: u16,
+    call: netfs_wedge::CallId,
+    why: netfs_wedge::GaveUpWhy,
+    waited: std::time::Duration,
+) -> mount::MountError {
+    log::warn!(
+        "Mounting share={:?} on server={:?} stopped waiting after {} s ({why:?})",
+        cmdr_fs::log_private::LogPrivate::volume(attempt.share()),
+        cmdr_fs::log_private::LogPrivate::host(attempt.server()),
+        waited.as_secs()
+    );
+    let mount = netfs_wedge::GivenUpMount {
+        server: attempt.server(),
+        share: attempt.share(),
+        port,
+    };
+    netfs_wedge::read_given_up(
+        &netfs_wedge::NETFS_CALLS,
+        call,
+        why,
+        waited,
+        mount,
+        netfs_wedge::sign_in_helper_pid,
+    )
+    .await
+}
+
+/// The share-list mounts a user can still call off (`mount_network_share`), by the
+/// id the frontend minted. Saved-share connects hold their own table
+/// (`smb_saved_shares`).
+static MOUNT_ATTEMPTS: connect_wiring::AttemptTable = connect_wiring::AttemptTable::new("an smb share mount");
+
+/// Files a share-list mount as cancelable under `attempt_id`. No id, nothing can
+/// call it off. ❗ Hold the guard until the mount answers.
+pub fn file_mount_attempt(
+    attempt_id: Option<&str>,
+) -> (
+    tokio_util::sync::CancellationToken,
+    Option<connect_wiring::AttemptGuard>,
+) {
+    match attempt_id {
+        Some(id) => {
+            let (cancel, guard) = MOUNT_ATTEMPTS.register(id);
+            (cancel, Some(guard))
+        }
+        None => (tokio_util::sync::CancellationToken::new(), None),
+    }
+}
+
+/// Calls off the share-list mount running under `attempt_id`, answering whether
+/// one was. ❗ It stops the WAITING: the NetFS call itself can't be taken back.
+pub fn cancel_mount(attempt_id: &str) -> bool {
+    MOUNT_ATTEMPTS.cancel(attempt_id)
 }
 
 /// Whether a host was discovered via mDNS or added manually by the user.

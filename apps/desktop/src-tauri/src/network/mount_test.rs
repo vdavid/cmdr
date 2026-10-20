@@ -7,6 +7,7 @@
 
 use super::*;
 use crate::network::mount_share;
+use tokio_util::sync::CancellationToken;
 
 /// `CFURLCreateWithString` parses, it does not escape: it returns NULL for any
 /// string that isn't already a valid RFC 3986 URL, so a share whose name carries
@@ -305,7 +306,16 @@ async fn smb_integration_mount_guest_no_dialog() {
     // so this picks up the regression even under cold Docker startup.
     let budget = Duration::from_secs(10);
     let start = Instant::now();
-    let result = mount_share(host.clone(), "public".to_string(), None, None, port, Some(8_000)).await;
+    let result = mount_share(
+        host.clone(),
+        "public".to_string(),
+        None,
+        None,
+        port,
+        Some(8_000),
+        &CancellationToken::new(),
+    )
+    .await;
     let elapsed = start.elapsed();
 
     // Always try to unmount so a successful mount doesn't linger between runs.
@@ -371,7 +381,16 @@ async fn smb_integration_mount_non_ascii_share() {
         .args(["unmount", "force", &format!("/Volumes/{share}")])
         .output();
 
-    let result = mount_share(host.clone(), share.to_string(), None, None, port, Some(16_000)).await;
+    let result = mount_share(
+        host.clone(),
+        share.to_string(),
+        None,
+        None,
+        port,
+        Some(16_000),
+        &CancellationToken::new(),
+    )
+    .await;
 
     // Unmount on every exit path, assertion failures included.
     struct UnmountOnDrop(String);
@@ -450,7 +469,16 @@ async fn smb_integration_mount_guest_refused_share_asks_for_credentials() {
         .unwrap_or(10482);
     let host = "localhost".to_string();
 
-    let result = mount_share(host.clone(), "private".to_string(), None, None, port, Some(8_000)).await;
+    let result = mount_share(
+        host.clone(),
+        "private".to_string(),
+        None,
+        None,
+        port,
+        Some(8_000),
+        &CancellationToken::new(),
+    )
+    .await;
 
     assert!(
         matches!(result, Err(MountError::AuthRequired { .. })),
@@ -477,7 +505,16 @@ async fn smb_integration_mount_guest_on_an_accounts_only_server_asks_for_credent
         .unwrap_or(10481);
     let host = "localhost".to_string();
 
-    let result = mount_share(host.clone(), "private".to_string(), None, None, port, Some(8_000)).await;
+    let result = mount_share(
+        host.clone(),
+        "private".to_string(),
+        None,
+        None,
+        port,
+        Some(8_000),
+        &CancellationToken::new(),
+    )
+    .await;
 
     // A mount riding a session NetFS cached from an earlier sign-in would go through;
     // it's not this test's to keep.
@@ -512,6 +549,7 @@ async fn smb_integration_mount_missing_share_stays_not_found() {
         None,
         port,
         Some(8_000),
+        &CancellationToken::new(),
     )
     .await;
 
