@@ -409,9 +409,7 @@ define_callback!(cf_ext_callback, (num, paths, flags, ids){
             unsafe { paths.get_unchecked(idx as CFIndex) },
             unsafe { *flags.add(idx) },
             unsafe { *ids.add(idx) },
-        ))
-        .and_then(|(dict, flags, id)| {
-            Ok(Event {
+        )).map(|(dict, flags, id)| Event {
                 path: PathBuf::from(
                     (*unsafe {
                         CFString::from_void(*dict.get(&*kFSEventStreamEventExtendedDataPathKey),)
@@ -423,7 +421,6 @@ define_callback!(cf_ext_callback, (num, paths, flags, ids){
                 raw_flags: flags,
                 id,
             })
-        })
     })
 });
 
@@ -434,16 +431,13 @@ define_callback!(cf_callback, (num, paths, flags, ids){
             unsafe { paths.get_unchecked(idx as CFIndex) },
             unsafe { *flags.add(idx) },
             unsafe { *ids.add(idx) },
-        ))
-            .and_then(|(path, flags, id)| {
-                Ok(Event {
+        )).map(|(path, flags, id)| Event {
                     path: PathBuf::from((*path).to_string()),
                     inode: None,
                     flags: StreamFlags::from_bits_retain(flags),
                     raw_flags: flags,
                     id,
                 })
-            })
     })
 });
 
@@ -454,9 +448,7 @@ define_callback!(normal_callback, (num, paths, flags, ids){
             unsafe { *paths.add(idx) },
             unsafe { *flags.add(idx) },
             unsafe { *ids.add(idx) },
-        ))
-        .and_then(|(path, flags, id)| {
-            Ok(Event {
+        )).map(|(path, flags, id)| Event {
                 path: PathBuf::from(
                     OsStr::from_bytes(unsafe { CStr::from_ptr(path) }.to_bytes())
                         .to_os_string(),
@@ -466,7 +458,6 @@ define_callback!(normal_callback, (num, paths, flags, ids){
                 raw_flags: flags,
                 id,
             })
-        })
     })
 });
 
