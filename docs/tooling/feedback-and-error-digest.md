@@ -39,15 +39,18 @@ Cloudflare account id: `6a4433bf11c3cf86feda057f76f47991` (also printed by `wran
 ## Feedback (D1 table `feedback` in `cmdr-telemetry`)
 
 One row per submission, written by `POST /feedback`. Columns (see `apps/api-server/migrations/0007_feedback.sql`):
-`id, created_at, feedback, email, app_version, os_version, build_mode`. `email` is the optional reply-to the sender
-chose to attach (nullable); no install id is stored, so feedback can't be joined to analytics. `created_at` is SQLite
-`datetime('now')`, i.e. `YYYY-MM-DD HH:MM:SS` UTC (a space, no `T`, no offset) so a plain `YYYY-MM-DD` bound compares
-lexicographically.
+`id, created_at, feedback, email, app_version, os_version, build_mode, error_report_id`. `email` is the optional
+reply-to the sender chose to attach (nullable); no install id is stored, so feedback can't be joined to analytics.
+`error_report_id` is the `ERR-XXXXX` of the logs the sender ticked "Include the past five hours of logs" for (nullable,
+migration `0026`): an ordinary error report, uploaded right after the feedback, with the note
+`Logs sent with in-app feedback`. Chase it like any other id (§ Chasing ONE id below); on the board it rides on the
+feedback's card rather than getting its own. `created_at` is SQLite `datetime('now')`, i.e. `YYYY-MM-DD HH:MM:SS` UTC (a
+space, no `T`, no offset) so a plain `YYYY-MM-DD` bound compares lexicographically.
 
 ```bash
 cd apps/api-server
 npx wrangler d1 execute cmdr-telemetry --remote --json \
-  --command "SELECT id, created_at, feedback, email, app_version, os_version, build_mode \
+  --command "SELECT id, created_at, feedback, email, app_version, os_version, build_mode, error_report_id \
              FROM feedback WHERE created_at >= '2026-05-30' ORDER BY created_at DESC"
 ```
 

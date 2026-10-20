@@ -28,7 +28,7 @@ describe('error-reporter dialog copy parity (en)', () => {
   it('resolves the static dialog strings', () => {
     expect(tString('errorReporter.dialog.title')).toBe('Send error report')
     expect(tString('errorReporter.dialog.description')).toBe(
-      'This sends Cmdr’s recent log files to the team so we can fix what went wrong. The logs are redacted client-side: file paths, hostnames, IPs, and emails are all scrubbed before sending.',
+      'This sends the past five hours of Cmdr’s logs to the team so we can fix what went wrong. The logs are redacted client-side: file paths, hostnames, IPs, and emails are all scrubbed before sending.',
     )
     expect(tString('errorReporter.dialog.referenceIdLabel')).toBe('Reference ID:')
     expect(tString('errorReporter.dialog.copy')).toBe('Copy')

@@ -4,11 +4,14 @@
      *
      * Mounted from `(main)/+layout.svelte` and driven by the reactive `feedbackFlow`
      * store, mirroring `ErrorReportDialog`. Ships the text via the `send_feedback`
-     * IPC command; no log bundle rides along (that's the error reporter's job).
+     * IPC command, plus the past five hours of logs when the user ticks that box (the
+     * backend sends them as an error report the server links to this feedback).
      */
     import { onMount, tick } from 'svelte'
     import ModalDialog from '#lib/ui/ModalDialog.svelte'
     import Button from '#lib/ui/Button.svelte'
+    import Checkbox from '#lib/ui/Checkbox.svelte'
+    import { getManagedPolicyView } from '#lib/managed-policy/managed-policy.svelte.js'
     import AttachEmailCheckbox from '#lib/attach-email/AttachEmailCheckbox.svelte'
     import { createAttachEmail } from '#lib/attach-email/attach-email.svelte.js'
     import TextArea from '#lib/ui/TextArea.svelte'
@@ -31,6 +34,10 @@
     let feedbackText = $state('')
     let textareaRef: HTMLTextAreaElement | undefined
     const attachEmail = createAttachEmail()
+    // Unticked every time the dialog opens: logs are a per-message choice, never a sticky one.
+    let includeLogs = $state(false)
+    // The organization's policy can turn error reports off, and the logs travel as one.
+    const reportsOff = $derived(getManagedPolicyView().reportsDisabled)
     let sending = $state(false)
     let sendFailedMessage = $state<string | null>(null)
 
@@ -49,12 +56,18 @@
         sending = true
         sendFailedMessage = null
         try {
-            const result = await sendFeedback(feedbackText, attachEmail.emailToAttach)
-            if (result.kind === 'sent') {
+            const result = await sendFeedback(feedbackText, attachEmail.emailToAttach, includeLogs && !reportsOff)
+            if (result.kind === 'sent' || result.kind === 'sentWithoutLogs') {
                 // Sticky choice and a newly typed address are remembered only now: a
                 // half-typed one shouldn't become the reply channel for every report.
                 attachEmail.persist()
-                addToast(tString('feedback.sentToast'), { level: 'success' })
+                // The feedback is in either way, so the dialog closes; a retry would only
+                // send the message twice.
+                if (result.kind === 'sent') {
+                    addToast(tString('feedback.sentToast'), { level: 'success' })
+                } else {
+                    addToast(tString('feedback.sentWithoutLogsToast'), { level: 'info' })
+                }
                 feedbackText = ''
                 closeFeedbackDialog()
             } else if (result.kind === 'invalid') {
@@ -168,6 +181,12 @@
 
         <AttachEmailCheckbox email={attachEmail} />
 
+        {#if !reportsOff}
+            <div class="include-logs">
+                <Checkbox bind:checked={includeLogs}>{tString('feedback.dialog.includeLogs')}</Checkbox>
+            </div>
+        {/if}
+
         <p class="more-ways">
             <Trans key="feedback.dialog.moreWays" snippets={{ github: githubLink, call: callLink }} />
         </p>
@@ -215,6 +234,12 @@
         margin: calc(var(--spacing-md) * -1) 0 var(--spacing-md);
         font-size: var(--font-size-xs);
         color: var(--color-error);
+    }
+
+    /* Same rhythm and tone as the attach-email box right above it. */
+    .include-logs {
+        margin-bottom: var(--spacing-md);
+        color: var(--color-text-secondary);
     }
 
     .more-ways {

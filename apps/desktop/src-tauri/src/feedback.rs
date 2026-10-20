@@ -1,15 +1,25 @@
 //! In-app "Send feedback" backend.
 //!
 //! Validates and ships a beta tester's feedback text to the api-server's `POST /feedback`,
-//! which stores it in D1 and pings Discord. No log bundle rides along (that's the error
-//! reporter's job); the payload is the text plus app/OS identifiers and an optional
-//! reply-to email the user explicitly ticked a box to attach.
+//! which stores it in D1; the cron files its card and mails it in the digest. The payload is
+//! the text plus app/OS identifiers and an optional reply-to email the user explicitly ticked
+//! a box to attach.
+//!
+//! When the user also ticks "Include the past five hours of logs", the logs travel the error
+//! reporter's own path ([`send_with_optional_logs`]): the same Flow A bundle, redaction, and
+//! upload, under an `ERR-XXXXX` the feedback payload names so the server can show the two as
+//! one card. The feedback goes FIRST and the logs only once it landed, so a failed send
+//! uploads nothing and a retry can't leave a second bundle behind.
 //!
 //! Returns a typed [`SendFeedbackResult`] the UI branches on (`kind` discriminant), never a
 //! message string, per the no-error-string-matching rule. Mirrors `commands/beta_signup.rs`
 //! for the network shape and `error_reporter::upload` for the CI / E2E skip gates.
 
+use crate::error_reporter::{self, BundleKind, BundleRequest, BundleScope, FLOW_A_BUNDLE_CAP_MB};
+use crate::managed_policy::Egress;
+use crate::server_request::{self, ServerRequestError};
 use serde::Serialize;
+use std::future::Future;
 
 /// Hard cap on the feedback text, counted in Unicode code points (`.chars().count()`) so it
 /// matches the dialog's counter (`Array.from(text).length`) and the server-side validator.
@@ -24,14 +34,22 @@ pub enum FeedbackTextError {
     TooLong,
 }
 
+/// The note on a bundle sent with feedback. Ours, not the user's (their words are the
+/// feedback itself), so triage can tell these logs from a hand-written report at a glance.
+pub const LOGS_NOTE: &str = "Logs sent with in-app feedback";
+
 /// The send outcome, returned across IPC so the frontend reacts on a typed `kind`
 /// discriminant rather than parsing a message. Serializes as `{"kind":"sent"}` /
-/// `{"kind":"invalid"}` / `{"kind":"softFailure"}`.
+/// `{"kind":"sentWithoutLogs"}` / `{"kind":"invalid"}` / `{"kind":"softFailure"}`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum SendFeedbackResult {
-    /// The feedback landed on the server.
+    /// The feedback landed on the server, with its logs when the user asked for them.
     Sent,
+    /// The feedback landed, but the logs the user asked to include didn't: the bundle
+    /// couldn't be built or uploaded, or the organization's policy turns error reports off.
+    /// The UI thanks them and says so; nothing is retried, since the feedback is already in.
+    SentWithoutLogs,
     /// The text didn't pass validation (empty after trimming, or over the length cap).
     /// The dialog already blocks both, so this is a backstop for bypassed input.
     Invalid,
@@ -50,7 +68,7 @@ pub enum SendFeedbackResult {
     SoftFailure,
 }
 
-/// The request body for `POST /feedback`. `email`/`build_mode` serialize as `null` when
+/// The request body for `POST /feedback`. `email`/`error_report_id` serialize as `null` when
 /// absent (no `skip_serializing_if`; the server tolerates both `null` and missing keys).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -60,6 +78,8 @@ pub struct FeedbackPayload {
     pub app_version: String,
     pub os_version: String,
     pub build_mode: String,
+    /// The `ERR-XXXXX` the logs will be uploaded under, when the user asked to include them.
+    pub error_report_id: Option<String>,
 }
 
 /// Trim and validate a raw feedback text. Returns the trimmed text ready to ship.
@@ -76,16 +96,97 @@ pub fn prepared_feedback_text(raw: &str) -> Result<String, FeedbackTextError> {
     Ok(trimmed.to_string())
 }
 
-/// Assemble the full payload from a validated text and the optional reply-to email.
-/// App version comes from the crate version, OS version from [`crate::platform::os_version`],
-/// and `build_mode` from `cfg!(debug_assertions)` (the server tags dev builds `[DEV]` on Discord).
-pub fn build_payload(feedback: String, email: Option<String>) -> FeedbackPayload {
+/// Assemble the full payload from a validated text, the optional reply-to email, and the id
+/// the logs will travel under. App version comes from the crate version, OS version from
+/// [`crate::platform::os_version`], and `build_mode` from `cfg!(debug_assertions)` (the server
+/// keeps debug builds off the board and out of the digest).
+pub fn build_payload(feedback: String, email: Option<String>, error_report_id: Option<String>) -> FeedbackPayload {
     FeedbackPayload {
         feedback,
         email,
         app_version: env!("CARGO_PKG_VERSION").to_string(),
         os_version: crate::platform::os_version(),
         build_mode: if cfg!(debug_assertions) { "debug" } else { "release" }.to_string(),
+        error_report_id,
+    }
+}
+
+/// Send the feedback, and the logs with it when `include_logs` is set and the organization's
+/// policy allows error reports.
+///
+/// The logs are a Flow A bundle ([`BundleScope::flow_a_default`], the past five hours) under a
+/// freshly minted `ERR-XXXXX`, with [`LOGS_NOTE`] as its note and no reply-to: the address, if
+/// any, rides on the feedback, and `AttachedEmail` belongs to the error-report dialog.
+pub async fn send_with_optional_logs<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    text: String,
+    email: Option<String>,
+    include_logs: bool,
+    server_url: &str,
+) -> SendFeedbackResult {
+    let logs_allowed = include_logs && server_request::check_policy(Egress::ErrorReport).await.is_ok();
+    let report_id = logs_allowed.then(error_reporter::generate_short_id);
+    let payload = build_payload(text, email, report_id);
+    let result = send_then_attach_logs(&payload, server_url, |id| upload_logs(app, id)).await;
+    // Asked for logs the policy won't send: the feedback is in, the logs aren't, and the dialog
+    // says so rather than claim they went. (The dialog hides the box under the policy, so this
+    // is a backstop.)
+    if include_logs && !logs_allowed && result == SendFeedbackResult::Sent {
+        return SendFeedbackResult::SentWithoutLogs;
+    }
+    result
+}
+
+/// [`send`] the payload, then, only once it landed and only when it names a report,
+/// `attach_logs(id)`. `attach_logs` answers whether the logs landed too.
+///
+/// Feedback first because the feedback is what the person wrote: it must never wait on, or be
+/// lost to, a bundle (error-report intake can be paused or over its daily budget). And a failed
+/// feedback send leaves nothing behind, so the dialog's retry is clean.
+pub async fn send_then_attach_logs<F, Fut>(
+    payload: &FeedbackPayload,
+    server_url: &str,
+    attach_logs: F,
+) -> SendFeedbackResult
+where
+    F: FnOnce(String) -> Fut,
+    Fut: Future<Output = bool>,
+{
+    let result = send(payload, server_url).await;
+    match (&result, &payload.error_report_id) {
+        (SendFeedbackResult::Sent, Some(id)) if !attach_logs(id.clone()).await => SendFeedbackResult::SentWithoutLogs,
+        _ => result,
+    }
+}
+
+/// Build and upload the Flow A bundle under `id`. Answers whether it landed; the why goes to
+/// the log.
+async fn upload_logs<R: tauri::Runtime>(app: &tauri::AppHandle<R>, id: String) -> bool {
+    let request = BundleRequest {
+        kind: BundleKind::User,
+        scope: BundleScope::flow_a_default(),
+        id: Some(id),
+        user_note: Some(LOGS_NOTE.to_string()),
+        email: None,
+    };
+    let bundle = match error_reporter::build_bundle(app, request).await {
+        Ok(bundle) => bundle,
+        Err(detail) => {
+            log::warn!(target: "cmdr_lib::feedback", "Couldn't build the logs for feedback: {detail}");
+            return false;
+        }
+    };
+    let capped = error_reporter::cap_bundle_to_mb(bundle.zip_bytes, FLOW_A_BUNDLE_CAP_MB);
+    match error_reporter::upload(capped, &bundle.manifest, &error_reporter::error_report_url()).await {
+        Ok(result) => {
+            log::info!(target: "cmdr_lib::feedback", "Sent the logs with the feedback as {}", result.id);
+            true
+        }
+        Err(ServerRequestError::BlockedByPolicy) => false,
+        Err(failure) => {
+            log::warn!(target: "cmdr_lib::feedback", "Couldn't send the logs with the feedback: {failure}");
+            false
+        }
     }
 }
 
@@ -111,7 +212,8 @@ pub async fn send(payload: &FeedbackPayload, server_url: &str) -> SendFeedbackRe
     }
     #[cfg(not(feature = "playwright-e2e"))]
     {
-        if std::env::var("CI").is_ok() {
+        // Not under `cfg(test)`: the unit tests send to a local fake server, never the live one.
+        if !cfg!(test) && std::env::var("CI").is_ok() {
             log::info!(target: "cmdr_lib::feedback", "Skipping feedback send (CI)");
             return SendFeedbackResult::Sent;
         }
@@ -177,10 +279,11 @@ mod tests {
 
     #[test]
     fn payload_serializes_camel_case_with_null_email_when_absent() {
-        let payload = build_payload("great app".to_string(), None);
+        let payload = build_payload("great app".to_string(), None, None);
         let value = serde_json::to_value(&payload).unwrap();
         assert_eq!(value["feedback"], "great app");
         assert!(value["email"].is_null());
+        assert!(value["errorReportId"].is_null());
         assert_eq!(value["appVersion"], env!("CARGO_PKG_VERSION"));
         assert!(value["osVersion"].as_str().is_some_and(|v| !v.is_empty()));
         assert_eq!(
@@ -191,8 +294,96 @@ mod tests {
 
     #[test]
     fn payload_carries_the_reply_to_email_when_provided() {
-        let payload = build_payload("hi".to_string(), Some("tester@example.com".to_string()));
+        let payload = build_payload("hi".to_string(), Some("tester@example.com".to_string()), None);
         let value = serde_json::to_value(&payload).unwrap();
         assert_eq!(value["email"], "tester@example.com");
+    }
+
+    #[test]
+    fn payload_names_the_error_report_carrying_the_logs() {
+        let payload = build_payload("it hung".to_string(), None, Some("ERR-AB23X".to_string()));
+        let value = serde_json::to_value(&payload).unwrap();
+        assert_eq!(value["errorReportId"], "ERR-AB23X");
+    }
+
+    /// The feedback-then-logs order, against a fake `/feedback`. The network path is compiled
+    /// out of E2E builds, so these only exist without that feature.
+    #[cfg(not(feature = "playwright-e2e"))]
+    mod with_logs {
+        use super::*;
+        use std::sync::Arc;
+        use std::sync::atomic::{AtomicBool, Ordering};
+        use wiremock::matchers::{body_partial_json, method};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+
+        async fn feedback_server(status: u16) -> MockServer {
+            let server = MockServer::start().await;
+            Mock::given(method("POST"))
+                .respond_with(ResponseTemplate::new(status))
+                .mount(&server)
+                .await;
+            server
+        }
+
+        fn payload_with_logs() -> FeedbackPayload {
+            build_payload("it hung".to_string(), None, Some("ERR-AB23X".to_string()))
+        }
+
+        #[tokio::test]
+        async fn uploads_the_logs_only_after_the_feedback_landed_and_under_its_id() {
+            let server = MockServer::start().await;
+            Mock::given(method("POST"))
+                .and(body_partial_json(serde_json::json!({ "errorReportId": "ERR-AB23X" })))
+                .respond_with(ResponseTemplate::new(204))
+                .expect(1)
+                .mount(&server)
+                .await;
+
+            let result = send_then_attach_logs(&payload_with_logs(), &server.uri(), |id| async move {
+                assert_eq!(id, "ERR-AB23X");
+                true
+            })
+            .await;
+
+            assert_eq!(result, SendFeedbackResult::Sent);
+        }
+
+        #[tokio::test]
+        async fn sends_no_logs_when_the_feedback_did_not_land() {
+            let server = feedback_server(503).await;
+            let attached = Arc::new(AtomicBool::new(false));
+            let flag = attached.clone();
+
+            let result = send_then_attach_logs(&payload_with_logs(), &server.uri(), |_| async move {
+                flag.store(true, Ordering::SeqCst);
+                true
+            })
+            .await;
+
+            assert_eq!(result, SendFeedbackResult::SoftFailure);
+            assert!(!attached.load(Ordering::SeqCst), "a retry would upload a second bundle");
+        }
+
+        #[tokio::test]
+        async fn says_the_feedback_went_without_its_logs_when_the_upload_did_not_land() {
+            let server = feedback_server(204).await;
+
+            let result = send_then_attach_logs(&payload_with_logs(), &server.uri(), |_| async { false }).await;
+
+            assert_eq!(result, SendFeedbackResult::SentWithoutLogs);
+        }
+
+        #[tokio::test]
+        async fn never_attaches_logs_to_feedback_that_names_no_report() {
+            let server = feedback_server(204).await;
+            let payload = build_payload("great app".to_string(), None, None);
+
+            let result = send_then_attach_logs(&payload, &server.uri(), |_| async {
+                panic!("no report id, so no logs to send");
+            })
+            .await;
+
+            assert_eq!(result, SendFeedbackResult::Sent);
+        }
     }
 }

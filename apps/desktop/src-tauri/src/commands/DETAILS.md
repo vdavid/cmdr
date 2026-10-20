@@ -392,9 +392,10 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 - **`usage.rs`**: `get_launch_day_count()`, the read seam over the on-device launch-day ledger, so the frontend can gate
   a hint on "at least N days of use". Read-only (Rust appends at startup) and 2 s-deadlined; a missing, unreadable, or
   slow ledger answers 0 so a hint stays silent. Not telemetry and deliberately not a setting: `../usage/CLAUDE.md`.
-- **`feedback.rs`**: `send_feedback(feedback_text, email?)` POSTs to `/feedback` via `crate::feedback`, returning a
-  typed `SendFeedbackResult` (`Invalid` on a bad email, etc.). Network, not filesystem, so no `blocking_with_timeout`
-  (the `reqwest` client carries its own 10 s timeout).
+- **`feedback.rs`**: `send_feedback(feedback_text, email?, include_logs)` POSTs to `/feedback` via `crate::feedback`
+  (and, with `include_logs`, then uploads a Flow A bundle the feedback names), returning a typed `SendFeedbackResult`
+  (`SentWithoutLogs` when the feedback landed and the logs didn't, `Invalid` on a bad text, etc.). The POST is network,
+  not filesystem, so no `blocking_with_timeout` (the `reqwest` client carries its own 10 s timeout).
 - **`search.rs`**: thin IPC wrappers over the `search` module. `resolve_ai_backend` for AI provider config. Post-filters
   directory sizes after `fill_directory_sizes`.
 - **`selection.rs`**: Selection-dialog backend (parallel to `search.rs`), thin wrappers over `crate::selection`:

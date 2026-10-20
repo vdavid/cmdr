@@ -9,14 +9,21 @@ const FEEDBACK_URL: &str = "http://localhost:8787/feedback";
 #[cfg(not(debug_assertions))]
 const FEEDBACK_URL: &str = "https://api.getcmdr.com/feedback";
 
-/// Sends a beta tester's feedback text (plus an optional reply-to email they chose to attach)
-/// to the api-server. Returns a typed result the UI branches on.
+/// Sends a beta tester's feedback text (plus an optional reply-to email they chose to attach,
+/// and the past five hours of logs when they ticked that box) to the api-server. Returns a
+/// typed result the UI branches on.
 ///
-/// Network-touching but NOT filesystem-touching, so no `blocking_with_timeout` is needed (that's
-/// for syscalls that hang on dead mounts). The `reqwest` client carries its own 10 s timeout.
+/// The feedback POST is network-only, so no `blocking_with_timeout` is needed (that's for
+/// syscalls that hang on dead mounts); its `reqwest` client carries its own 10 s timeout. The
+/// logs reuse the error reporter's bundle builder, which reads only the app's own log dir.
 #[tauri::command]
 #[specta::specta]
-pub async fn send_feedback(feedback_text: String, email: Option<String>) -> SendFeedbackResult {
+pub async fn send_feedback(
+    app: tauri::AppHandle,
+    feedback_text: String,
+    email: Option<String>,
+    include_logs: bool,
+) -> SendFeedbackResult {
     let text = match feedback::prepared_feedback_text(&feedback_text) {
         Ok(t) => t,
         Err(e) => {
@@ -24,6 +31,5 @@ pub async fn send_feedback(feedback_text: String, email: Option<String>) -> Send
             return SendFeedbackResult::Invalid;
         }
     };
-    let payload = feedback::build_payload(text, email);
-    feedback::send(&payload, FEEDBACK_URL).await
+    feedback::send_with_optional_logs(&app, text, email, include_logs, FEEDBACK_URL).await
 }

@@ -10,18 +10,31 @@ import { describe, it, vi, expect, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import FeedbackDialog from './FeedbackDialog.svelte'
 import { expectNoA11yViolations } from '#lib/test-a11y.js'
+import { tString } from '#lib/intl/messages.svelte.js'
 import { closeFeedbackDialog, feedbackFlow } from './feedback-flow.svelte'
 import { GITHUB_ISSUES_URL, BOOK_A_CALL_URL } from '#lib/beta-links.js'
 
-const sendFeedbackMock = vi.fn<(payload: { feedbackText: string; email?: string }) => Promise<{ kind: string }>>()
+const sendFeedbackMock =
+  vi.fn<(payload: { feedbackText: string; email?: string; includeLogs: boolean }) => Promise<{ kind: string }>>()
 const openExternalUrlMock = vi.fn<(url: string) => Promise<void>>(() => Promise.resolve())
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
-  sendFeedback: (text: string, email?: string) => sendFeedbackMock({ feedbackText: text, email }),
+  sendFeedback: (text: string, email: string | undefined, includeLogs: boolean) =>
+    sendFeedbackMock({ feedbackText: text, email, includeLogs }),
   openExternalUrl: (url: string) => openExternalUrlMock(url),
 }))
+
+// Only `reportsDisabled` matters to the dialog; a test flips it before mounting.
+const managedPolicy = vi.hoisted(() => ({ reportsDisabled: false }))
+vi.mock('#lib/managed-policy/managed-policy.svelte.js', async (importOriginal) => {
+  const real = await importOriginal<typeof import('#lib/managed-policy/managed-policy.svelte.js')>()
+  return {
+    ...real,
+    getManagedPolicyView: () => ({ ...real.UNMANAGED, reportsDisabled: managedPolicy.reportsDisabled }),
+  }
+})
 
 // Settings are mocked per-test via these refs so the email-on-file and sticky-default
 // states can vary. Defaults: no email on file, attach-default off.
@@ -157,7 +170,11 @@ describe('FeedbackDialog', () => {
     await tick()
     await new Promise((r) => setTimeout(r, 0))
 
-    expect(sendFeedbackMock).toHaveBeenCalledWith({ feedbackText: 'More keyboard shortcuts please!', email: undefined })
+    expect(sendFeedbackMock).toHaveBeenCalledWith({
+      feedbackText: 'More keyboard shortcuts please!',
+      email: undefined,
+      includeLogs: false,
+    })
     expect(addToastMock).toHaveBeenCalled()
     expect(feedbackFlow.open).toBe(false)
   })
@@ -199,7 +216,11 @@ describe('FeedbackDialog', () => {
     await tick()
     await new Promise((r) => setTimeout(r, 0))
 
-    expect(sendFeedbackMock).toHaveBeenCalledWith({ feedbackText: 'hi', email: 'tester@example.com' })
+    expect(sendFeedbackMock).toHaveBeenCalledWith({
+      feedbackText: 'hi',
+      email: 'tester@example.com',
+      includeLogs: false,
+    })
     expect(setSettingMock).toHaveBeenCalledWith('analytics.email', 'tester@example.com')
   })
 
@@ -246,7 +267,7 @@ describe('FeedbackDialog', () => {
     await tick()
     await new Promise((r) => setTimeout(r, 0))
 
-    expect(sendFeedbackMock).toHaveBeenCalledWith({ feedbackText: 'hi', email: undefined })
+    expect(sendFeedbackMock).toHaveBeenCalledWith({ feedbackText: 'hi', email: undefined, includeLogs: false })
     expect(setSettingMock).not.toHaveBeenCalledWith('analytics.email', expect.anything())
   })
 
@@ -268,7 +289,11 @@ describe('FeedbackDialog', () => {
     await tick()
     await new Promise((r) => setTimeout(r, 0))
 
-    expect(sendFeedbackMock).toHaveBeenCalledWith({ feedbackText: 'hi', email: 'onfile@example.com' })
+    expect(sendFeedbackMock).toHaveBeenCalledWith({
+      feedbackText: 'hi',
+      email: 'onfile@example.com',
+      includeLogs: false,
+    })
     // The address is already on file, so the send has nothing to write back.
     expect(setSettingMock).not.toHaveBeenCalledWith('analytics.email', expect.anything())
   })
@@ -296,7 +321,11 @@ describe('FeedbackDialog', () => {
     await tick()
     await new Promise((r) => setTimeout(r, 0))
 
-    expect(sendFeedbackMock).toHaveBeenCalledWith({ feedbackText: 'hi', email: 'tester@example.com' })
+    expect(sendFeedbackMock).toHaveBeenCalledWith({
+      feedbackText: 'hi',
+      email: 'tester@example.com',
+      includeLogs: false,
+    })
     expect(setSettingMock).toHaveBeenCalledWith('updates.attachEmailToReports', true)
   })
 
@@ -320,6 +349,68 @@ describe('FeedbackDialog', () => {
     findButton(target, 'Cancel')?.click()
     await tick()
     expect(feedbackFlow.open).toBe(false)
+  })
+})
+
+describe('FeedbackDialog logs', () => {
+  const LOGS_LABEL = 'Include the past five hours of logs (redacted)'
+
+  function logsCheckbox(target: HTMLElement): HTMLInputElement | null {
+    const label = Array.from(target.querySelectorAll('label')).find((l) => l.textContent.includes(LOGS_LABEL))
+    return label?.querySelector('input[type="checkbox"]') ?? null
+  }
+
+  async function sendWithLogs(target: HTMLElement): Promise<void> {
+    feedbackFlow.open = true
+    await typeFeedback(target, 'NetAuthSysAgent got stuck')
+    logsCheckbox(target)?.click()
+    await tick()
+    findButton(target, 'Send feedback')?.click()
+    await tick()
+    await new Promise((r) => setTimeout(r, 0))
+  }
+
+  beforeEach(() => {
+    closeFeedbackDialog()
+    managedPolicy.reportsDisabled = false
+    sendFeedbackMock.mockReset()
+    sendFeedbackMock.mockResolvedValue({ kind: 'sent' })
+    addToastMock.mockClear()
+  })
+
+  it('offers the logs, unticked, so nothing beyond the message goes unless asked', async () => {
+    const target = await mountDialog()
+    expect(logsCheckbox(target)?.checked).toBe(false)
+  })
+
+  it('sends the logs along when the box is ticked', async () => {
+    const target = await mountDialog()
+
+    await sendWithLogs(target)
+
+    expect(sendFeedbackMock).toHaveBeenCalledWith({
+      feedbackText: 'NetAuthSysAgent got stuck',
+      email: undefined,
+      includeLogs: true,
+    })
+    expect(addToastMock).toHaveBeenCalledWith(tString('feedback.sentToast'), { level: 'success' })
+  })
+
+  it('thanks the user and says so when the feedback went but the logs didn’t', async () => {
+    sendFeedbackMock.mockResolvedValue({ kind: 'sentWithoutLogs' })
+    const target = await mountDialog()
+
+    await sendWithLogs(target)
+
+    expect(addToastMock).toHaveBeenCalledWith(tString('feedback.sentWithoutLogsToast'), { level: 'info' })
+    // The feedback is in, so there's nothing to retry here.
+    expect(feedbackFlow.open).toBe(false)
+  })
+
+  it('leaves the logs out when the organization turns reports off', async () => {
+    managedPolicy.reportsDisabled = true
+    const target = await mountDialog()
+    expect(logsCheckbox(target)).toBeNull()
   })
 })
 

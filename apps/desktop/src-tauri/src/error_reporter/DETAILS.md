@@ -183,6 +183,16 @@ deterministic enough that the preview hash matches what'll be uploaded.
 manifest, a couple of dozen sample lines, a count, and a size: a few KB, held for as long
 as one toast lives. The megabytes never survive the dispatch.
 
+## Logs sent with feedback
+
+The feedback dialog's "Include the past five hours of logs" box sends a Flow A bundle through this module's own
+`build_bundle` + `cap_bundle_to_mb` + `upload`, from `crate::feedback::send_with_optional_logs`: same scope, redaction,
+cap, and policy gate, no second pipeline. Its note is `crate::feedback::LOGS_NOTE` (ours, like the crash log's
+`Log for CRASH-XXXXX`), it carries no email (the address rides on the feedback, and `AttachedEmail` stays the error
+dialog's), and its `ERR-XXXXX` is minted up front so the feedback payload can name it. The feedback is sent first and
+the bundle only once it landed; why, and how the server joins the two: `../feedback.rs` and
+`apps/api-server/DETAILS.md` § The reports repo.
+
 ## Managed policy
 
 Under `DisableCrashAndErrorReports` nothing leaves: `upload` and `send_amend` ride `server_request::send`

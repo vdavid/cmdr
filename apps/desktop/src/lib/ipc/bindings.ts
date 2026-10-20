@@ -2244,9 +2244,9 @@ export const commands = {
    *  own rather than a flag on [`send_error_report`]. Two things make it different from Flow A:
    *
    *  - **Scope is the crash, not now.** `BundleScope::Window { first_error_at: crash_time }` walks
-   *    back 30 minutes from the crash rather than an hour from this launch. The interesting log
+   *    back 30 minutes from the crash rather than five hours from this launch. The interesting log
    *    lines are in the PREVIOUS session, and however long the machine sat closed between the crash
-   *    and this launch is exactly how wrong Flow A's "last hour" would be.
+   *    and this launch is exactly how wrong Flow A's "past five hours" would be.
    *  - **The note is ours, not the user's.** `Log for CRASH-XXXXX` ties the bundle to the crash row
    *    so triage can put the two side by side. It carries no user text, so nothing needs previewing.
    *
@@ -2302,14 +2302,16 @@ export const commands = {
   recordSettingsDefaults: (defaults: { [key in string]: SettingValue }) =>
     __TAURI_INVOKE<void>('record_settings_defaults', { defaults }),
   /**
-   *  Sends a beta tester's feedback text (plus an optional reply-to email they chose to attach)
-   *  to the api-server. Returns a typed result the UI branches on.
+   *  Sends a beta tester's feedback text (plus an optional reply-to email they chose to attach,
+   *  and the past five hours of logs when they ticked that box) to the api-server. Returns a
+   *  typed result the UI branches on.
    *
-   *  Network-touching but NOT filesystem-touching, so no `blocking_with_timeout` is needed (that's
-   *  for syscalls that hang on dead mounts). The `reqwest` client carries its own 10 s timeout.
+   *  The feedback POST is network-only, so no `blocking_with_timeout` is needed (that's for
+   *  syscalls that hang on dead mounts); its `reqwest` client carries its own 10 s timeout. The
+   *  logs reuse the error reporter's bundle builder, which reads only the app's own log dir.
    */
-  sendFeedback: (feedbackText: string, email: string | null) =>
-    __TAURI_INVOKE<SendFeedbackResult>('send_feedback', { feedbackText, email }),
+  sendFeedback: (feedbackText: string, email: string | null, includeLogs: boolean) =>
+    __TAURI_INVOKE<SendFeedbackResult>('send_feedback', { feedbackText, email, includeLogs }),
   // Get the current app status (personal, commercial, or expired).
   getLicenseStatus: () => __TAURI_INVOKE<AppStatus>('get_license_status'),
   /**
@@ -15570,11 +15572,17 @@ export type SemanticHit = {
 /**
  *  The send outcome, returned across IPC so the frontend reacts on a typed `kind`
  *  discriminant rather than parsing a message. Serializes as `{"kind":"sent"}` /
- *  `{"kind":"invalid"}` / `{"kind":"softFailure"}`.
+ *  `{"kind":"sentWithoutLogs"}` / `{"kind":"invalid"}` / `{"kind":"softFailure"}`.
  */
 export type SendFeedbackResult =
-  // The feedback landed on the server.
+  // The feedback landed on the server, with its logs when the user asked for them.
   | { kind: 'sent' }
+  /**
+   *  The feedback landed, but the logs the user asked to include didn't: the bundle
+   *  couldn't be built or uploaded, or the organization's policy turns error reports off.
+   *  The UI thanks them and says so; nothing is retried, since the feedback is already in.
+   */
+  | { kind: 'sentWithoutLogs' }
   /**
    *  The text didn't pass validation (empty after trimming, or over the length cap).
    *  The dialog already blocks both, so this is a backstop for bypassed input.
