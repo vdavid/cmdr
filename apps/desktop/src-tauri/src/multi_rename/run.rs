@@ -11,6 +11,7 @@ use futures_util::stream::{self, StreamExt};
 use serde::{Deserialize, Serialize};
 use tokio::time::Duration;
 
+use crate::file_system::git::wiring::portal_serves;
 use crate::file_system::volume::Volume;
 use crate::file_system::volume::io_budget_for_volume;
 use crate::file_system::volume::manager::path_routes_over_its_parent;
@@ -18,7 +19,7 @@ use cmdr_fs::deadline::{Deadline, blocking_typed_result_with_timeout, timeout_de
 use cmdr_operation_log::types::Initiator;
 use cmdr_operations::{BulkRenameRow, RenameStartError, SourceFingerprint};
 
-use super::error::MultiRenameError;
+use super::error::{MultiRenameError, ReadOnlyPlace};
 use super::plan::PreviewRow;
 use super::session::{Prepared, prepare};
 
@@ -49,6 +50,18 @@ fn bulk_row(dir: &Path, row: &PreviewRow, expected_fingerprint: SourceFingerprin
         source: dir.join(&row.old_name),
         destination: dir.join(&row.new_name),
         expected_fingerprint,
+    }
+}
+
+/// Which route serves a row's path, lexically and in `resolve`'s order (the git
+/// portal first, so a `.zip` inside a snapshot is the portal's).
+fn row_route(path: &Path) -> Option<ReadOnlyPlace> {
+    if portal_serves(path) {
+        Some(ReadOnlyPlace::GitPortal)
+    } else if path_routes_over_its_parent(path) {
+        Some(ReadOnlyPlace::Archive)
+    } else {
+        None
     }
 }
 
@@ -109,13 +122,15 @@ pub(crate) async fn apply(
     let resolved = crate::file_system::volume::manager::get_volume_manager()
         .resolve(&prepared.volume_id, &prepared.dir)
         .await;
-    let a_row_is_routed = prepared.ready.iter().any(|row| {
-        [&row.old_name, &row.new_name]
-            .into_iter()
-            .any(|name| path_routes_over_its_parent(&prepared.dir.join(name)))
+    let routed = resolved.routed.map(ReadOnlyPlace::from).or_else(|| {
+        prepared.ready.iter().find_map(|row| {
+            [&row.old_name, &row.new_name]
+                .into_iter()
+                .find_map(|name| row_route(&prepared.dir.join(name)))
+        })
     });
-    if resolved.routed.is_some() || a_row_is_routed {
-        return Err(MultiRenameError::ReadOnly);
+    if let Some(place) = routed {
+        return Err(MultiRenameError::ReadOnly { place });
     }
 
     let Prepared { volume_id, dir, ready } = prepared;

@@ -12091,8 +12091,8 @@ export type MultiRenameError =
    *  preview replaced it: re-preview.
    */
   | { type: 'previewOutOfDate' }
-  // The folder is read-only (inside an archive or a `.git` portal).
-  | { type: 'readOnly' }
+  // The folder, or a row in it, is read-only because a route serves it.
+  | { type: 'readOnly'; place: ReadOnlyPlace }
   // Results couldn't write its names file; `detail` is log text only.
   | { type: 'couldntWriteNames'; detail: string }
   /**
@@ -13656,6 +13656,16 @@ export type QuitRequested = {
  *  frontend sends `Eof` so the backend can resolve the end without a fake row number.
  */
 export type RangeEnd = { kind: 'row'; row: number; offset: number } | { kind: 'eof' }
+
+/**
+ *  Which route made a folder or a row read-only, so the sheet names it: a repo's
+ *  `.git` portal reads as git history, an archive as an archive.
+ */
+export type ReadOnlyPlace =
+  // Inside a `.zip` (or another archive) the archive route serves.
+  | 'archive'
+  // One of a repo's virtual `.git` trees, or a `.git/` listing's category row.
+  | 'gitPortal'
 
 /**
  *  Which half of a transfer refused the write, for [`WriteOperationError::ReadOnlyDevice`].

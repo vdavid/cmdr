@@ -491,7 +491,6 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
   }
 
   /** Opens the delete confirmation dialog for the current selection or cursor item. */
-  // eslint-disable-next-line complexity -- Guard chain: each early-return is an independent precondition; splitting wouldn't add clarity.
   async function openDeleteDialog({ permanent, autoConfirm, mcpRequestId, initiator }: OpenDeleteDialogArgs) {
     if (operationStartIsBlocked(mcpRequestId)) return
 

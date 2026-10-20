@@ -4,7 +4,7 @@
 use std::path::Path;
 use std::sync::Arc;
 
-use super::error::MultiRenameError;
+use super::error::{MultiRenameError, ReadOnlyPlace};
 use super::plan::{MultiRenameSpec, RowStatus};
 use super::run::apply;
 use super::session::{FIRST_PAGE, PreviewFilter, close, is_open, open, page, preview_session, spec_of};
@@ -362,7 +362,15 @@ async fn a_batch_holding_a_dot_git_category_row_is_refused_as_read_only() {
     )
     .await;
 
-    assert!(matches!(outcome, Err(MultiRenameError::ReadOnly)), "{outcome:?}");
+    assert!(
+        matches!(
+            outcome,
+            Err(MultiRenameError::ReadOnly {
+                place: ReadOnlyPlace::GitPortal
+            })
+        ),
+        "{outcome:?}"
+    );
     assert_eq!(names_on_disk(&dot_git), vec!["description", "worktrees"]);
     close(&session.session_id);
 }

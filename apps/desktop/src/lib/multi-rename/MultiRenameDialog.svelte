@@ -311,7 +311,9 @@
             case 'previewOutOfDate':
                 return tString('multiRename.error.previewOutOfDate')
             case 'readOnly':
-                return tString('multiRename.error.readOnly')
+                return error.place === 'gitPortal'
+                    ? tString('fileExplorer.readOnly.gitPortalMessage')
+                    : tString('multiRename.error.readOnly')
             case 'timedOut':
                 return tString('multiRename.error.timedOut')
             case 'couldntWriteNames':

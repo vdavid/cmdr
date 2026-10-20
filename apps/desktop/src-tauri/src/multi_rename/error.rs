@@ -28,8 +28,8 @@ pub enum MultiRenameError {
     /// The folder changed since the preview the user started from, or a newer
     /// preview replaced it: re-preview.
     PreviewOutOfDate,
-    /// The folder is read-only (inside an archive or a `.git` portal).
-    ReadOnly,
+    /// The folder, or a row in it, is read-only because a route serves it.
+    ReadOnly { place: ReadOnlyPlace },
     /// Results couldn't write its names file; `detail` is log text only.
     CouldntWriteNames { detail: String },
     /// There's no Results file to read back: none was written, or it's gone or
@@ -39,4 +39,24 @@ pub enum MultiRenameError {
     TimedOut,
     /// The worker failed; `detail` is log text only.
     Internal { detail: String },
+}
+
+/// Which route made a folder or a row read-only, so the sheet names it: a repo's
+/// `.git` portal reads as git history, an archive as an archive.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum ReadOnlyPlace {
+    /// Inside a `.zip` (or another archive) the archive route serves.
+    Archive,
+    /// One of a repo's virtual `.git` trees, or a `.git/` listing's category row.
+    GitPortal,
+}
+
+impl From<cmdr_fs::volume::RoutedKind> for ReadOnlyPlace {
+    fn from(kind: cmdr_fs::volume::RoutedKind) -> Self {
+        match kind {
+            cmdr_fs::volume::RoutedKind::Archive => Self::Archive,
+            cmdr_fs::volume::RoutedKind::GitPortal => Self::GitPortal,
+        }
+    }
 }

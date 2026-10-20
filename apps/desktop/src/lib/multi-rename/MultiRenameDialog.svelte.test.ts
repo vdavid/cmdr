@@ -264,7 +264,7 @@ describe('MultiRenameDialog', () => {
   it.each([
     [{ type: 'nothingToRename' }],
     [{ type: 'previewOutOfDate' }],
-    [{ type: 'readOnly' }],
+    [{ type: 'readOnly', place: 'archive' }],
     [{ type: 'couldntStart', reason: { type: 'busy' } }],
   ])('words a refused start (%o)', async (error) => {
     ipc.applyMultiRename.mockResolvedValue({ ok: false, error })
@@ -273,6 +273,18 @@ describe('MultiRenameDialog', () => {
     await settle()
     expect(ipc.applyMultiRename).toHaveBeenCalled()
     expect(root.querySelector('[role="alert"]')?.textContent.trim()).toBeTruthy()
+  })
+
+  it('names the route that refused a start: the git portal reads as the portal, an archive as an archive (#529)', async () => {
+    const alertFor = async (place: string): Promise<string | undefined> => {
+      ipc.applyMultiRename.mockResolvedValue({ ok: false, error: { type: 'readOnly', place } })
+      const root = await mountSheet()
+      key(inputs(root)[0], 'Enter')
+      await settle()
+      return root.querySelector('[role="alert"]')?.textContent.trim()
+    }
+    expect(await alertFor('gitPortal')).toContain('snapshots of your git history')
+    expect(await alertFor('archive')).toContain('inside an archive')
   })
 
   it('starts from Enter in the name mask and hands the operation up', async () => {
