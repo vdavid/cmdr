@@ -30,6 +30,7 @@ concurrency:
 # `main`'s entry and saves nothing. Each entry is ~1–2 GB against the repo's 10 GB ceiling, and
 # per-PR saves kept it over the line, so LRU evicted entries within minutes and nearly every PR
 # run built cold (2026-10-20, PR #593). The `warm-rust-*` jobs keep `main`'s entries current.
+# The E2E lane's Cargo + target cache follows the same switch (`warm-e2e-linux-cache`).
 # Named so it doesn't start with `RUST` or `CARGO`: rust-cache hashes env vars with those
 # prefixes into its key.
 env:
@@ -762,9 +763,13 @@ jobs:
           df -h /
 
       # Restores main's entry on a PR (a PR can read its base branch's caches, never
-      # another PR's); `warm-e2e-linux-cache` below keeps that entry alive.
-      - name: Cache Cargo + target (via host bind mounts into Docker)
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      # another PR's); `warm-e2e-linux-cache` below keeps that entry alive. Restore and
+      # save are split so only `main` saves (the save step after the ownership reclaim):
+      # a ~1.2 GB entry per PR kept the repo over its 10 GB ceiling and evicted
+      # everything into cold builds (2026-10-20, PR #593). Same switch as the Rust caches.
+      - name: Restore Cargo + target (via host bind mounts into Docker)
+        id: e2e-target-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             /tmp/cmdr-docker-cache/cargo
@@ -825,6 +830,18 @@ jobs:
       - name: Reclaim cache dir ownership for the save step
         if: always()
         run: sudo chown -R "$(id -u):$(id -g)" /tmp/cmdr-docker-cache
+
+      # `main` only (`SAVE_RUST_CACHE`), and not on an exact hit, which has nothing new.
+      # The paths and key must match the restore step above and `warm-e2e-linux-cache`.
+      - name: Save Cargo + target
+        if: >-
+          !cancelled() && env.SAVE_RUST_CACHE == 'true' && steps.e2e-target-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            /tmp/cmdr-docker-cache/cargo
+            /tmp/cmdr-docker-cache/target
+          key: ${{ steps.e2e-target-cache.outputs.cache-primary-key }}
 
       # ❗ The path is the Playwright `outputDir`, which for THIS lane is
       # `./test-results` resolved against the config's own directory

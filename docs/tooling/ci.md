@@ -115,16 +115,17 @@ silent** (a warning, not a red job):
   `RUST*` env into the key, which is also why the switch is named `SAVE_RUST_CACHE`.
 - **`desktop-e2e-linux`**: caches the Docker-side cargo + `target/` via host bind mounts (`/tmp/cmdr-docker-cache/*`),
   keyed on Cargo.lock with a restore-keys fallback. Separate from `desktop-rust` because the e2e binary builds a
-  different feature set (`playwright-e2e,virtual-mtp,smb-e2e`). **Load-bearing companion: the "Reclaim cache dir
-  ownership" step.** The Docker build runs as root and writes the bind-mounted dirs as root; the actions/cache post-step
-  runs as the runner user, so `tar` can't read them and the **save fails as a warning** — which is exactly why this
-  cache never persisted for months (every e2e run did a cold ~10-min build). A `chown` back to the runner after the
-  Docker run fixes it (warm e2e build ~11 min vs ~21 cold). If e2e ever starts building cold again, check that the save
-  isn't warning "Permission denied" again. **Second companion: the `warm-e2e-linux-cache` job.** A PR restores only its
-  own or `main`'s caches, and a verified `main` push skips the lane, so without it no main-scoped entry exists and every
-  new PR's first run builds cold (4 of 9 PR runs on 2026-10-19, #557). It runs post-land on `main`, rebuilds either E2E
-  cache only when the current key has no entry, and is exempt from `ci-ok` (`ciOKGateExempt`). Its cache `path`s and
-  keys must stay identical to the lane's.
+  different feature set (`playwright-e2e,virtual-mtp,smb-e2e`). Split into `actions/cache/restore` and a save step that
+  runs only on `main` (`SAVE_RUST_CACHE`, like the Rust caches), so PRs restore `main`'s entry and add none.
+  **Load-bearing companion: the "Reclaim cache dir ownership" step.** The Docker build runs as root and writes the
+  bind-mounted dirs as root; the save step runs as the runner user, so `tar` can't read them and the **save fails as a
+  warning** — which is exactly why this cache never persisted for months (every e2e run did a cold ~10-min build). A
+  `chown` back to the runner after the Docker run fixes it (warm e2e build ~11 min vs ~21 cold). If e2e ever starts
+  building cold again, check that the save isn't warning "Permission denied" again. **Second companion: the
+  `warm-e2e-linux-cache` job.** A PR restores only its own or `main`'s caches, and a verified `main` push skips the
+  lane, so without it no main-scoped entry exists and every new PR's first run builds cold (4 of 9 PR runs on
+  2026-10-19, #557). It runs post-land on `main`, rebuilds either E2E cache only when the current key has no entry, and
+  is exempt from `ci-ok` (`ciOKGateExempt`). Its cache `path`s and keys must stay identical to the lane's.
 - **`desktop-e2e-linux` base image**: the E2E Docker base image (apt packages + Node + Rust; see
   `apps/desktop/test/e2e-linux/DETAILS.md` § "Build caching") cached as a `docker save` tar, keyed on
   `hashFiles(Dockerfile.base)` with **no restore-keys** (a stale tar's image carries a different content-hash tag, so
