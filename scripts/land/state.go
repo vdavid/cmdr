@@ -191,6 +191,14 @@ const (
 	latePoll  = time.Minute
 )
 
+// missingRunGivesUp says whether a poll that found no CI run on the head ends the wait. Only a
+// run that never showed up does: one that was seen and then dropped out of the list (it
+// happened 2026-10-20, with the run still queued) is still on its way, and the wait's own
+// timeout bounds it.
+func missingRunGivesUp(seen bool, waited time.Duration) bool {
+	return !seen && waited > appearWithin
+}
+
 // pollDelay is how long to wait before the next CI poll, before jitter.
 func pollDelay(v verdict, runAge time.Duration) time.Duration {
 	switch {

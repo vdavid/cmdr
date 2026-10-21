@@ -238,3 +238,24 @@ func TestWorktrees(t *testing.T) {
 		t.Error("nope: found")
 	}
 }
+
+// A run that showed up once and then dropped out of GitHub's list (2026-10-20: "no CI run after
+// 5m0s" right after "Waiting for CI OK: …/runs/39442510363") is still on its way, so only a run
+// that never appeared ends the wait.
+func TestMissingRunGivesUp(t *testing.T) {
+	cases := []struct {
+		name   string
+		seen   bool
+		waited time.Duration
+		want   bool
+	}{
+		{"just pushed", false, time.Minute, false},
+		{"never appeared", false, appearWithin + time.Second, true},
+		{"seen, then missing", true, appearWithin + time.Hour, false},
+	}
+	for _, c := range cases {
+		if got := missingRunGivesUp(c.seen, c.waited); got != c.want {
+			t.Errorf("%s: got %v, want %v", c.name, got, c.want)
+		}
+	}
+}

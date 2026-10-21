@@ -93,7 +93,7 @@ func main() {
 		flag.Usage()
 		os.Exit(2)
 	}
-	r := runner{dir: *root}
+	r := runner{dir: *root, cache: responseCache{}}
 	if flag.NArg() > 0 {
 		if flag.Arg(0) != "rulesets" {
 			flag.Usage()
@@ -303,6 +303,9 @@ func ensurePR(r runner, branch string, commits []commit) (pullRequest, error) {
 func waitForCI(r runner, head string, timeout time.Duration) error {
 	start := time.Now()
 	announced := false
+	// Whether a run on head showed up yet. Once one has, a poll that lists none is GitHub's
+	// list lagging, never a push that started nothing.
+	seen := false
 	for {
 		// One REST call per poll; the `CI OK` check runs only matter once the run finished.
 		var runs struct {
@@ -327,10 +330,11 @@ func waitForCI(r runner, head string, timeout time.Duration) error {
 		case verdictRed:
 			return ciFailure(r, run)
 		case verdictMissing:
-			if time.Since(start) > appearWithin {
+			if missingRunGivesUp(seen, time.Since(start)) {
 				return fmt.Errorf("no CI run on %s after %s. Check the PR's Checks tab, then land again: pnpm land", head[:12], appearWithin)
 			}
 		case verdictPending:
+			seen = true
 			if !announced {
 				say("Waiting for %s: https://github.com/%s/actions/runs/%d", ciCheck, repo, run.ID)
 				announced = true

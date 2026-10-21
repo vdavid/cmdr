@@ -14,6 +14,8 @@ import (
 // runner runs git and gh in one directory, the worktree being landed.
 type runner struct {
 	dir string
+	// cache answers `ghAPI`'s unchanged polls from a 304; nil caches nothing.
+	cache responseCache
 }
 
 func (r runner) cmd(stdin, name string, args ...string) (string, error) {
@@ -108,19 +110,26 @@ func (r runner) commits(rangeSpec string) ([]commit, error) {
 
 // ghAPI GETs a REST path and decodes the JSON body into out. It reads the budget from the
 // response's own headers, which `gh api rate_limit` can contradict, so the polling calls use it.
+// With a cache it sends the last ETag, so an unchanged answer comes back as a free 304.
 func (r runner) ghAPI(out any, path string) error {
 	body, err := r.ghRetrying(transientRetries, func() (string, *apiBudget, error) {
-		stdout, err := r.cmd("", "gh", "api", "--include", path)
-		status, budget, body, ok := parseAPIResponse(stdout)
-		switch {
-		case !ok:
-			return "", nil, err
-		case err == nil && status < 300:
-			return body, nil, nil
-		case err == nil:
-			err = fmt.Errorf("gh api %s: HTTP %d\n%s", path, status, body)
+		args := []string{"api", "--include", path}
+		if etag := r.cache.etag(path); etag != "" {
+			args = append(args, "-H", "If-None-Match: "+etag)
 		}
-		return "", &budget, err
+		// gh exits non-zero on a 304 too, so the status decides, not the exit code.
+		stdout, err := r.cmd("", "gh", args...)
+		resp, ok := parseAPIResponse(stdout)
+		if !ok {
+			return "", nil, err
+		}
+		if body, ok := r.cache.settle(path, resp); ok {
+			return body, nil, nil
+		}
+		if err == nil {
+			err = fmt.Errorf("gh api %s: HTTP %d\n%s", path, resp.status, resp.body)
+		}
+		return "", &resp.budget, err
 	})
 	if err != nil {
 		return err
@@ -157,19 +166,23 @@ func (r runner) ghCall(args []string) func() (string, *apiBudget, error) {
 }
 
 // ghRetrying runs call, and after a failure acts on `afterGHFailure`: it sleeps until a spent
-// budget refills, or retries up to `retries` times.
+// budget refills, backs off a secondary limit, or retries up to `retries` times.
 func (r runner) ghRetrying(retries int, call func() (string, *apiBudget, error)) (string, error) {
+	backedOff := 0
 	for {
 		out, budget, err := call()
 		if err == nil {
 			return out, nil
 		}
-		next, wait := afterGHFailure(budget, retries, time.Now())
+		next, wait := afterGHFailure(budget, retries, backedOff, time.Now())
 		switch next {
 		case ghGiveUp:
 			return out, err
 		case ghWaitForReset:
 			say("GitHub's API budget for this account is spent (many lands polling at once?), so waiting %s for it to refill.", wait.Round(time.Second))
+		case ghBackOff:
+			backedOff++
+			say("GitHub's short-term rate limit turned a call away without saying for how long, so waiting %s before trying again.", wait.Round(time.Second))
 		case ghRetryTransient:
 			retries--
 		}

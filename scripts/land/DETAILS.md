@@ -93,9 +93,19 @@ answered 403 after CI was green, and that land was lost. So:
 - **Poll by run age** (`pollDelay`): 20 s until the run shows up, every 3 min while it's younger than 15 min (CI takes
   25–35 min), then every minute, each plus up to 25% jitter. About 15–25 calls per CI run, down from ~180 (three calls
   every 30 s).
-- **A failed call waits out a spent budget** (`afterGHFailure`, `ghbudget.go`), then continues: it sleeps until the
-  reset, or a secondary limit's `Retry-After`. Reads otherwise get two short retries; writes (`gh pr create`, ruleset
-  apply) get none, since they may have gone through.
+- **An unchanged poll is free** (`responseCache`, `ghbudget.go`): `ghAPI` sends the path's last ETag as `If-None-Match`,
+  and GitHub answers an unchanged list with a 304 that it doesn't charge to the primary budget (verified 2026-10-21:
+  `X-RateLimit-Remaining` stayed at 4,942 across two 304s on the workflow-runs list). Most polls of a running CI see
+  nothing new. Gotcha: `gh` exits non-zero on a 304, so the parsed status decides, not the exit code.
+- **A failed call waits out a rate limit** (`afterGHFailure`, `ghbudget.go`), then continues: it sleeps until a spent
+  budget's reset, or a secondary limit's `Retry-After`. A 403 or 429 with budget left and no `Retry-After` is a
+  secondary limit too: GitHub's docs say to wait at least a minute, then longer each time, so it backs off 1, 2, 4, and
+  8 min (15 min in all) before giving up. That costs a real permission 403 the same 15 min, which no polled path
+  answers. Reads otherwise get two short retries; writes (`gh pr create`, ruleset apply) get none, since they may have
+  gone through.
+- **A run that showed up never makes the wait give up** (`missingRunGivesUp`): on 2026-10-20 a queued run printed
+  "Waiting for CI OK", then dropped out of the `head_sha` list, and the land quit with "no CI run after 5m0s". Only a
+  push that started no run at all stops at `appearWithin`; a seen run waits out the usual timeout.
 - **The budget comes from the failing response's own headers** (`gh api --include`, parsed by `net/http`, so no stderr
   matching). Gotcha: `gh api rate_limit` can disagree with them (2026-10-20: `core` showed 2,862 left while the Actions
   API answered `X-RateLimit-Remaining: 0`), so it's only the fallback for `gh pr` / `gh run` calls, which print no
