@@ -1555,6 +1555,12 @@ export const commands = {
    */
   renameMultiRenamePreset: (id: string, name: string) =>
     __TAURI_INVOKE<MultiRenamePreset[]>('rename_multi_rename_preset', { id, name }),
+  /**
+   *  Move up / Move down: swaps a preset with its neighbor, so the menu's numbers
+   *  follow. No-op at that end of the list or for an unknown id. Answers the list after.
+   */
+  moveMultiRenamePreset: (id: string, direction: PresetMove) =>
+    __TAURI_INVOKE<MultiRenamePreset[]>('move_multi_rename_preset', { id, direction }),
   // Gives a preset new settings in place. No-op for an unknown id. Answers the list after.
   updateMultiRenamePreset: (id: string, spec: MultiRenameSpec) =>
     __TAURI_INVOKE<MultiRenamePreset[]>('update_multi_rename_preset', { id, spec }),
@@ -13460,6 +13466,9 @@ export type PrepareResult = {
    */
   loading: boolean
 }
+
+// Which way Move up / Move down takes a preset in the list.
+export type PresetMove = 'up' | 'down'
 
 /**
  *  A preset Cmdr starts the list with ("Date and time", "Remove diacritics", …),

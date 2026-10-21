@@ -5,7 +5,8 @@
 use super::plan::MultiRenameSpec;
 use super::preset_store::PresetStore;
 use super::presets::{
-    LastSpec, MultiRenamePreset, PresetList, PresetSeed, delete_in, rename_in, save_in, seed_in, update_spec_in,
+    LastSpec, MultiRenamePreset, PresetList, PresetMove, PresetSeed, delete_in, move_in, rename_in, save_in, seed_in,
+    update_spec_in,
 };
 use super::transform::CaseChange;
 use crate::recents::RecentsFile;
@@ -135,6 +136,24 @@ fn a_delete_drops_one_preset_and_the_rest_keep_their_order() {
     assert!(delete_in(&mut list, "b"));
     assert_eq!(names(&list), ["Photos", "Docs"]);
     assert!(!delete_in(&mut list, "b"), "a second delete finds nothing");
+}
+
+#[test]
+fn moving_a_preset_swaps_it_with_its_neighbor() {
+    let mut list = vec![preset("a", "Photos"), preset("b", "Music"), preset("c", "Docs")];
+    assert!(move_in(&mut list, "c", PresetMove::Up));
+    assert_eq!(names(&list), ["Photos", "Docs", "Music"]);
+    assert!(move_in(&mut list, "a", PresetMove::Down));
+    assert_eq!(names(&list), ["Docs", "Photos", "Music"]);
+}
+
+#[test]
+fn moving_past_either_end_or_an_unknown_preset_changes_nothing() {
+    let mut list = vec![preset("a", "Photos"), preset("b", "Music")];
+    assert!(!move_in(&mut list, "a", PresetMove::Up));
+    assert!(!move_in(&mut list, "b", PresetMove::Down));
+    assert!(!move_in(&mut list, "gone", PresetMove::Up));
+    assert_eq!(names(&list), ["Photos", "Music"]);
 }
 
 #[test]

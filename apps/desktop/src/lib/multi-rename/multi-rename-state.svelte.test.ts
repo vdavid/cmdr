@@ -17,6 +17,7 @@ const { ipc } = vi.hoisted(() => ({
     deleteMultiRenamePreset: vi.fn(),
     renameMultiRenamePreset: vi.fn(),
     updateMultiRenamePreset: vi.fn(),
+    moveMultiRenamePreset: vi.fn(),
     getMultiRenameLastSettings: vi.fn(),
     saveMultiRenameLastSettings: vi.fn(),
   },
@@ -329,6 +330,12 @@ describe('createMultiRenameState', () => {
         stored = stored.map((p) => (p.id === id ? { ...p, spec } : p))
         return answer()
       })
+      ipc.moveMultiRenamePreset.mockImplementation((id: string, direction: 'up' | 'down') => {
+        const at = stored.findIndex((p) => p.id === id)
+        const to = direction === 'up' ? at - 1 : at + 1
+        if (at !== -1 && to >= 0 && to < stored.length) [stored[at], stored[to]] = [stored[to], stored[at]]
+        return answer()
+      })
       ipc.deleteMultiRenamePreset.mockImplementation((id: string) => {
         stored = stored.filter((p) => p.id !== id)
         return answer()
@@ -475,6 +482,17 @@ describe('createMultiRenameState', () => {
       expect(ipc.updateMultiRenamePreset).toHaveBeenCalledWith('p1', expect.objectContaining({ nameMask: '[N]-[C:3]' }))
       expect(tool.loadedId).toBe('p1')
       expect(tool.edited).toBe(false)
+      tool.dispose()
+    })
+
+    it('moves a preset, keeping what is loaded', async () => {
+      const tool = createMultiRenameState('S')
+      await tool.loadPresets()
+      tool.loadPreset('p2')
+      await tool.movePreset({ id: 'p2', direction: 'up' })
+      expect(ipc.moveMultiRenamePreset).toHaveBeenCalledWith('p2', 'up')
+      expect(tool.presets.map((p) => p.id)).toEqual(['p2', 'p1'])
+      expect(tool.loadedId).toBe('p2')
       tool.dispose()
     })
 

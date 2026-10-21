@@ -26,6 +26,7 @@ const ipc = vi.hoisted(() => ({
   deleteMultiRenamePreset: vi.fn(),
   renameMultiRenamePreset: vi.fn(),
   updateMultiRenamePreset: vi.fn(),
+  moveMultiRenamePreset: vi.fn(),
   getMultiRenameLastSettings: vi.fn(),
   saveMultiRenameLastSettings: vi.fn(),
   rollbackOperation: vi.fn(),
@@ -106,6 +107,7 @@ describe('MultiRenameDialog', () => {
     ipc.deleteMultiRenamePreset.mockResolvedValue([])
     ipc.renameMultiRenamePreset.mockResolvedValue([])
     ipc.updateMultiRenamePreset.mockResolvedValue([])
+    ipc.moveMultiRenamePreset.mockResolvedValue([])
     ipc.getMultiRenameLastSettings.mockResolvedValue(null)
     ipc.saveMultiRenameLastSettings.mockResolvedValue(undefined)
     setLastMultiRenameRun(null)

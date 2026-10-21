@@ -2,7 +2,7 @@
     /**
      * The Multi-rename sheet's presets: one button (F2) that opens the Presets menu
      * (the presets numbered 1–9 by position, Reset all fields, Save current as…, and a
-     * Rename / Update / Delete submenu per preset), plus the name popover that
+     * Rename / Update / Move up / Move down / Delete submenu per preset), plus the name popover that
      * ⌘S and Rename… open. The sheet owns the keys and calls `pressOpenKey` / `openSave`;
      * everything else lives here.
      */
@@ -62,6 +62,8 @@
                     saveAs: tString('multiRename.presets.saveAs'),
                     rename: tString('multiRename.presets.rename'),
                     update: tString('multiRename.presets.update'),
+                    moveUp: tString('multiRename.presets.moveUp'),
+                    moveDown: tString('multiRename.presets.moveDown'),
                     delete: tString('multiRename.presets.delete'),
                 },
             }),
@@ -112,6 +114,9 @@
                 return
             case 'update':
                 void run('update', () => tool.updatePreset(action.id))
+                return
+            case 'move':
+                void run('move', () => tool.movePreset({ id: action.id, direction: action.direction }))
                 return
             case 'delete':
                 void run('delete', () => tool.deletePreset(action.id))

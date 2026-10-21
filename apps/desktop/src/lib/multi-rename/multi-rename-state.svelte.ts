@@ -23,6 +23,7 @@ import {
   getMultiRenameLastSettings,
   getMultiRenamePresets,
   getMultiRenamePreviewRows,
+  moveMultiRenamePreset,
   previewMultiRename,
   readMultiRenameNames,
   renameMultiRenamePreset,
@@ -34,6 +35,7 @@ import {
   type MultiRenamePreset,
   type MultiRenameSpec,
   type MultiRenameStarted,
+  type PresetMove,
   type PreviewCounts,
   type PreviewFilter,
   type PreviewRow,
@@ -107,6 +109,8 @@ export interface MultiRenameState {
   renamePreset: (args: { id: string; name: string }) => Promise<void>
   /** Gives a preset the current fields; it becomes the loaded one. */
   updatePreset: (id: string) => Promise<void>
+  /** Move up / Move down: swaps a preset with its neighbor, so the menu's numbers follow. */
+  movePreset: (args: { id: string; direction: PresetMove }) => Promise<void>
   deletePreset: (id: string) => Promise<void>
   /** Remembers the fields and the loaded preset for the next sheet. */
   persist: () => Promise<void>
@@ -345,6 +349,9 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
     async updatePreset(id) {
       presets = await updateMultiRenamePreset(id, $state.snapshot(spec))
       loadedId = id
+    },
+    async movePreset({ id, direction }) {
+      presets = await moveMultiRenamePreset(id, direction)
     },
     async deletePreset(id) {
       presets = await deleteMultiRenamePreset(id)

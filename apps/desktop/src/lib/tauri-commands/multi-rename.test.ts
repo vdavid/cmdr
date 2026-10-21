@@ -19,6 +19,7 @@ vi.mock('#lib/ipc/bindings.js', () => ({
     deleteMultiRenamePreset: vi.fn(),
     renameMultiRenamePreset: vi.fn(),
     updateMultiRenamePreset: vi.fn(),
+    moveMultiRenamePreset: vi.fn(),
     getMultiRenameLastSettings: vi.fn(),
     saveMultiRenameLastSettings: vi.fn(),
     writeMultiRenameNames: vi.fn(),
@@ -38,6 +39,7 @@ import {
   getMultiRenameLastSettings,
   getMultiRenamePresets,
   getMultiRenamePreviewRows,
+  moveMultiRenamePreset,
   openMultiRename,
   previewMultiRename,
   readMultiRenameNames,
@@ -125,6 +127,8 @@ describe('multi-rename wrappers', () => {
     expect(commands.renameMultiRenamePreset).toHaveBeenCalledWith('p', 'New')
     await updateMultiRenamePreset('p', spec)
     expect(commands.updateMultiRenamePreset).toHaveBeenCalledWith('p', spec)
+    await moveMultiRenamePreset('p', 'down')
+    expect(commands.moveMultiRenamePreset).toHaveBeenCalledWith('p', 'down')
 
     const last = { spec, presetId: 'p' }
     vi.mocked(commands.getMultiRenameLastSettings).mockResolvedValueOnce(last)

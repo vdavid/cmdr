@@ -8,8 +8,8 @@ use crate::multi_rename::error::MultiRenameError;
 use crate::multi_rename::history::{FIELD_HISTORY, FieldHistoryEntry, MAX_FIELD_HISTORY, history_entries};
 use crate::multi_rename::plan::{MultiRenameSpec, PreviewRow, RenameExample, render_examples};
 use crate::multi_rename::presets::{
-    LAST_SPEC, LastSpec, MAX_PRESETS, MultiRenameLastSettings, MultiRenamePreset, PRESETS, PresetSeed, delete_in,
-    rename_in, save_in, update_spec_in,
+    LAST_SPEC, LastSpec, MAX_PRESETS, MultiRenameLastSettings, MultiRenamePreset, PRESETS, PresetMove, PresetSeed,
+    delete_in, move_in, rename_in, save_in, update_spec_in,
 };
 use crate::multi_rename::run::{MultiRenameStarted, apply};
 use crate::multi_rename::session::{self, MultiRenameOpened, MultiRenamePreview, PreviewFilter};
@@ -219,4 +219,12 @@ pub fn rename_multi_rename_preset(app: tauri::AppHandle, id: String, name: Strin
 #[specta::specta]
 pub fn update_multi_rename_preset(app: tauri::AppHandle, id: String, spec: MultiRenameSpec) -> Vec<MultiRenamePreset> {
     PRESETS.edit(&app, "an update", |presets| update_spec_in(presets, &id, &spec))
+}
+
+/// Move up / Move down: swaps a preset with its neighbor, so the menu's numbers
+/// follow. No-op at that end of the list or for an unknown id. Answers the list after.
+#[tauri::command]
+#[specta::specta]
+pub fn move_multi_rename_preset(app: tauri::AppHandle, id: String, direction: PresetMove) -> Vec<MultiRenamePreset> {
+    PRESETS.edit(&app, "a move", |presets| move_in(presets, &id, direction))
 }

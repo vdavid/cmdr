@@ -27,6 +27,7 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
   deleteMultiRenamePreset: vi.fn(() => Promise.resolve([])),
   renameMultiRenamePreset: vi.fn(() => Promise.resolve([])),
   updateMultiRenamePreset: vi.fn(() => Promise.resolve([])),
+  moveMultiRenamePreset: vi.fn(() => Promise.resolve([])),
 }))
 
 async function settle(): Promise<void> {

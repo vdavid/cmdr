@@ -146,6 +146,14 @@
   "@multiRename.presets.update": {
     "description": "Item in a saved preset's submenu that overwrites that preset with the tool's current fields. Greyed out when the preset already matches them."
   },
+  "multiRename.presets.moveUp": "Move up",
+  "@multiRename.presets.moveUp": {
+    "description": "Item in a preset's submenu that moves that preset one place up the Presets list, so it swaps numbers (the 1–9 keys) with the one above. Greyed out on the top preset."
+  },
+  "multiRename.presets.moveDown": "Move down",
+  "@multiRename.presets.moveDown": {
+    "description": "Item in a preset's submenu that moves that preset one place down the Presets list, so it swaps numbers (the 1–9 keys) with the one below. Greyed out on the bottom preset."
+  },
   "multiRename.presets.delete": "Delete",
   "@multiRename.presets.delete": {
     "description": "Item in a saved preset's submenu that deletes that preset. Only the preset goes; no files are touched."

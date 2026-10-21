@@ -5,7 +5,7 @@
  */
 
 import type { MenuItem, MenuSection } from '#lib/ui/menu-types.js'
-import type { MultiRenamePreset, MultiRenameSpec } from '#lib/tauri-commands/index.js'
+import type { MultiRenamePreset, MultiRenameSpec, PresetMove } from '#lib/tauri-commands/index.js'
 import { specsEqual } from './spec'
 
 /** Presets past this many have no digit: the keys stop at 9. */
@@ -18,6 +18,7 @@ export type PresetAction =
   | { kind: 'saveAs' }
   | { kind: 'rename'; id: string }
   | { kind: 'update'; id: string }
+  | { kind: 'move'; id: string; direction: PresetMove }
   | { kind: 'delete'; id: string }
 
 export interface PresetMenuInput {
@@ -27,7 +28,16 @@ export interface PresetMenuInput {
   loadedId: string | null
   /** The fields as they are now, so Update is offered only where it would change something. */
   current: MultiRenameSpec
-  labels: { saved: string; reset: string; saveAs: string; rename: string; update: string; delete: string }
+  labels: {
+    saved: string
+    reset: string
+    saveAs: string
+    rename: string
+    update: string
+    moveUp: string
+    moveDown: string
+    delete: string
+  }
 }
 
 export function presetMenuSections(input: PresetMenuInput): MenuSection<PresetAction>[] {
@@ -47,6 +57,18 @@ export function presetMenuSections(input: PresetMenuInput): MenuSection<PresetAc
           label: labels.update,
           disabled: specsEqual(preset.spec, current),
           data: { kind: 'update', id: preset.id },
+        },
+        {
+          value: `saved:${preset.id}:moveUp`,
+          label: labels.moveUp,
+          disabled: index === 0,
+          data: { kind: 'move', id: preset.id, direction: 'up' },
+        },
+        {
+          value: `saved:${preset.id}:moveDown`,
+          label: labels.moveDown,
+          disabled: index === saved.length - 1,
+          data: { kind: 'move', id: preset.id, direction: 'down' },
         },
         { value: `saved:${preset.id}:delete`, label: labels.delete, data: { kind: 'delete', id: preset.id } },
       ],

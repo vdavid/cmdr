@@ -9,6 +9,8 @@ const labels = {
   saveAs: 'Save current as…',
   rename: 'Rename…',
   update: 'Update',
+  moveUp: 'Move up',
+  moveDown: 'Move down',
   delete: 'Delete',
 }
 
@@ -54,12 +56,26 @@ describe('presetMenuSections', () => {
     ])
   })
 
-  it('gives each preset Rename, Update, and Delete', () => {
+  it('gives each preset Rename, Update, Move up, Move down, and Delete', () => {
     const [savedSection] = presetMenuSections(input())
     expect(savedSection.items[0].submenu?.map((i) => i.data)).toEqual([
       { kind: 'rename', id: 'p1' },
       { kind: 'update', id: 'p1' },
+      { kind: 'move', id: 'p1', direction: 'up' },
+      { kind: 'move', id: 'p1', direction: 'down' },
       { kind: 'delete', id: 'p1' },
+    ])
+  })
+
+  it('greys Move up on the top preset and Move down on the bottom one', () => {
+    const [savedSection] = presetMenuSections(input({ saved: saved(3) }))
+    const moves = savedSection.items.map((row) =>
+      (row.submenu ?? []).filter((i) => i.data?.kind === 'move').map((i) => i.disabled === true),
+    )
+    expect(moves).toEqual([
+      [true, false],
+      [false, false],
+      [false, true],
     ])
   })
 

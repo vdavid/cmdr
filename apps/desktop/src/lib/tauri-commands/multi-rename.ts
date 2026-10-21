@@ -14,6 +14,7 @@ import {
   type MultiRenameSpec,
   type MultiRenameStarted,
   type PreviewCounts,
+  type PresetMove,
   type PresetSeed,
   type PreviewFilter,
   type PreviewRow,
@@ -31,6 +32,7 @@ export type {
   MultiRenameSpec,
   MultiRenameStarted,
   PreviewCounts,
+  PresetMove,
   PresetSeed,
   PreviewFilter,
   PreviewRow,
@@ -142,6 +144,11 @@ export async function deleteMultiRenamePreset(id: string): Promise<MultiRenamePr
 /** Renames a preset in place; a preset already called `name` is replaced. Answers the list after. */
 export async function renameMultiRenamePreset(id: string, name: string): Promise<MultiRenamePreset[]> {
   return commands.renameMultiRenamePreset(id, name)
+}
+
+/** Move up / Move down: swaps a preset with its neighbor. Answers the list after. */
+export async function moveMultiRenamePreset(id: string, direction: PresetMove): Promise<MultiRenamePreset[]> {
+  return commands.moveMultiRenamePreset(id, direction)
 }
 
 /** Gives a preset new settings in place. Answers the list after. */

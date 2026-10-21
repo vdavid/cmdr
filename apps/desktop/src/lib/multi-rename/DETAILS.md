@@ -85,8 +85,9 @@
 - **Presets** (TC's F2 "Load/save settings"): the footer's `[Presets ▾ <name>]` button opens a house `Menu`: the presets
   under a "Your presets" heading, in the user's order, numbered 1–9 by position (a digit picks one), then Reset all
   fields (TC's `<Default>`) and Save current as… (⌘S chip). Each preset has a submenu (→, hover, or right-click):
-  Rename…, Update with current fields (greyed when nothing would change), Delete. Picking a preset loads it; nothing
-  runs. Every preset command answers the backend's list after the change, so the sheet takes it from there.
+  Rename…, Update with current fields (greyed when nothing would change), Move up, Move down (greyed at the top and
+  bottom; the numbers follow the places), Delete. Picking a preset loads it; nothing runs. Every preset command answers
+  the backend's list after the change, so the sheet takes it from there.
   - **Seeds**: `loadPresets` hands the backend `PRESET_SEEDS` (`spec.ts`) named in the UI language; a list that never
     took them gets them once, after its own presets (`src-tauri/src/multi_rename/DETAILS.md` § Presets). From then on
     they're ordinary presets: there's no built-in kind.

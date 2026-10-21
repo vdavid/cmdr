@@ -106,6 +106,31 @@ pub fn save_in(presets: &mut Vec<MultiRenamePreset>, mut preset: MultiRenamePres
     true
 }
 
+/// Which way Move up / Move down takes a preset in the list.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum PresetMove {
+    Up,
+    Down,
+}
+
+/// Swaps preset `id` with its neighbor above or below. Returns whether it moved:
+/// `false` at that end of the list, or for an unknown id.
+pub fn move_in(presets: &mut [MultiRenamePreset], id: &str, direction: PresetMove) -> bool {
+    let Some(at) = presets.iter().position(|p| p.id == id) else {
+        return false;
+    };
+    let to = match direction {
+        PresetMove::Up => at.checked_sub(1),
+        PresetMove::Down => Some(at + 1).filter(|&to| to < presets.len()),
+    };
+    let Some(to) = to else {
+        return false;
+    };
+    presets.swap(at, to);
+    true
+}
+
 /// Deletes preset `id`; the rest keep their order. Returns whether it was there.
 pub fn delete_in(presets: &mut Vec<MultiRenamePreset>, id: &str) -> bool {
     let before = presets.len();

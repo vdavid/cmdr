@@ -134,10 +134,12 @@ the frontend (`spec.ts`).
 - **Decision/Why: an ordered store, not a recents list.** The sheet's Presets menu numbers presets 1–9 by position, so
   a number may move only when the user moves or deletes something. A recents list puts every add on top, which
   renumbered the menu on each save. Each change is a pure op on the `Vec` (`save_in`, `rename_in`, `update_spec_in`,
-  `delete_in`) run by `PresetStore::edit` as one locked step with one durable temp+rename write, and every preset
+  `delete_in`, `move_in`) run by `PresetStore::edit` as one locked step with one durable temp+rename write, and every preset
   command answers the list after, so the sheet never reads it back separately.
 - **Save** (`save_in`): a new name goes at the END; a taken name is replaced where it stands. A new one past
   `MAX_PRESETS` is refused (logged), never trimmed off another end: either would lose or renumber a preset.
+- **Move up / Move down** (`move_multi_rename_preset`, `move_in`) swap a preset with its neighbor; at that end of the
+  list it's a no-op (the sheet greys the item).
 - **Rename** and **Update with current fields** change the preset where it stands. A rename onto a taken name drops
   the other preset in that same step (`rename_in`), so no reader ever sees two presets with one name, or neither.
 - **Seeds** (`seed_in`, `PresetSeed`): the list starts with Date and time (`[Y-M-D h.m.s]`), Remove diacritics,
