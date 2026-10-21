@@ -669,8 +669,9 @@ function writeRecentFeedback(w: ReportWriter, feedback: FeedbackRow[]): void {
   writeList(w, 'Recent feedback:', feedback, 30, (msg) => {
     const answered = msg.answeredAt ? `, answered ${msg.answeredAt.split(' ')[0]}` : ''
     const replyTo = msg.email ? ` [reply-to: ${msg.email}${answered}]` : ''
+    const logs = msg.errorReportId ? ` [logs: ${msg.errorReportId}]` : ''
     const text = msg.feedback.replace(/\s+/g, ' ').slice(0, 280)
-    return `  ${msg.createdAt.split(' ')[0]} (v${msg.appVersion})${replyTo}: ${text}`
+    return `  ${msg.createdAt.split(' ')[0]} (v${msg.appVersion})${replyTo}${logs}: ${text}`
   })
 }
 

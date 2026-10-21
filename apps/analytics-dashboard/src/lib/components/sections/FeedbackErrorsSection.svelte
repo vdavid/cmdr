@@ -2,6 +2,8 @@
   Product § Feedback & errors: in-app feedback messages and error-report bundle metadata. Shows error
   reports per day, by kind, and by version, plus recent feedback and a recent-error-reports table. Each
   feedback message with a reply-to email has a mark-answered toggle (the `setAnswered` action on `/product`).
+  A message sent with logs names their `ERR-XXXXX`: a link to that row of the recent-error-reports table when it's
+  listed there, else the id as selectable text (older, or outside the table's 15 rows).
 -->
 <script lang="ts">
     import type { SourceResult, DashboardSelection } from '#lib/server/types.js'
@@ -48,6 +50,7 @@
         {@const errorsPerDay = errorReportsByDay(fe.errorReports)}
         {@const errorsByKind = tallyErrorReportsByField(fe.errorReports, 'kind')}
         {@const errorsByVersion = tallyErrorReportsByField(fe.errorReports, 'appVersion')}
+        {@const recentReports = fe.errorReports.slice(0, 15)}
 
         <MetricRow
             metrics={[
@@ -104,6 +107,15 @@
                                 <span class="tabular-nums">{msg.createdAt.split(' ')[0]}</span>
                                 <span>v{msg.appVersion}</span>
                                 <span>{msg.osVersion}</span>
+                                {#if msg.errorReportId}
+                                    {#if recentReports.some((report) => report.id === msg.errorReportId)}
+                                        <a class="text-accent hover:text-accent-hover" href="#{msg.errorReportId}">
+                                            Logs <span class="font-mono">{msg.errorReportId}</span>
+                                        </a>
+                                    {:else}
+                                        <span>Logs <span class="font-mono select-all">{msg.errorReportId}</span></span>
+                                    {/if}
+                                {/if}
                                 {#if msg.email}
                                     <a
                                         class="text-accent hover:text-accent-hover"
@@ -157,8 +169,8 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {#each fe.errorReports.slice(0, 15) as report (report.id)}
-                                <tr class="border-b border-border-subtle/50">
+                            {#each recentReports as report (report.id)}
+                                <tr id={report.id} class="scroll-mt-32 border-b border-border-subtle/50 target:bg-accent/10">
                                     <td class="py-1.5 pr-4 font-mono text-text-primary">{report.id}</td>
                                     <td class="py-1.5 pr-4 text-text-secondary">{report.kind}</td>
                                     <td class="py-1.5 pr-4 text-text-secondary tabular-nums">{report.appVersion}</td>

@@ -7,7 +7,8 @@
 /**
  * One in-app "Send feedback" submission. `email` is the optional reply-to the sender attached.
  * `answeredAt` is when David marked it answered by hand (replies go out from his mailbox, which the
- * api-server never sees), or null while it still needs one.
+ * api-server never sees), or null while it still needs one. `errorReportId` is the `ERR-XXXXX` of the
+ * logs the sender chose to include, or null when they sent none.
  */
 export interface FeedbackRow {
   id: number
@@ -18,6 +19,7 @@ export interface FeedbackRow {
   osVersion: string
   buildMode: string | null
   answeredAt: string | null
+  errorReportId: string | null
 }
 
 /** One error-report bundle's metadata (the zip itself stays in R2). `kind` is "auto" or "user". */

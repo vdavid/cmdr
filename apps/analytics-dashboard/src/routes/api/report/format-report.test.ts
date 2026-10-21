@@ -267,6 +267,7 @@ const richData: DashboardData = {
           osVersion: '15.5',
           buildMode: 'release',
           answeredAt: null,
+          errorReportId: null,
         },
         {
           id: 2,
@@ -278,6 +279,7 @@ const richData: DashboardData = {
           osVersion: '14.7',
           buildMode: null,
           answeredAt: null,
+          errorReportId: 'ERR-AB7PV',
         },
         {
           id: 3,
@@ -288,6 +290,7 @@ const richData: DashboardData = {
           osVersion: '14.7',
           buildMode: 'release',
           answeredAt: '2026-07-30 18:45:00',
+          errorReportId: null,
         },
       ],
       errorReports: [
@@ -590,7 +593,7 @@ Error reports by day:
 
 Recent feedback:
   2026-08-01 (v1.10.0) [reply-to: someone@example.com]: Love it, especially the preview pane.
-  2026-07-31 (v1.2.0): ${'x'.repeat(280)}
+  2026-07-31 (v1.2.0) [logs: ERR-AB7PV]: ${'x'.repeat(280)}
   2026-07-30 (v1.2.0) [reply-to: answered@example.com, answered 2026-07-30]: Already got a reply.`
 
 const allFailedReport = `# Cmdr analytics report (7d)

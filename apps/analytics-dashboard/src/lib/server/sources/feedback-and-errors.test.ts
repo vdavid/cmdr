@@ -21,6 +21,7 @@ const sampleFeedback: FeedbackRow[] = [
     osVersion: 'macOS 15.5',
     buildMode: 'release',
     answeredAt: null,
+    errorReportId: null,
   },
   {
     id: 1,
@@ -31,6 +32,7 @@ const sampleFeedback: FeedbackRow[] = [
     osVersion: 'macOS 14.0',
     buildMode: 'release',
     answeredAt: null,
+    errorReportId: null,
   },
 ]
 

@@ -492,6 +492,10 @@ have a happy-path test carrying the real `type: 'app'` stamp, so the discriminat
   `routes/product/+page.server.ts`, which proxies to the api-server's `PUT /admin/feedback/:id/answered` (stores
   `feedback.answered_at`). The `/api/report` text shows the same count and tags answered rows `answered YYYY-MM-DD`.
   Feedback skips the cache for this reason; the error-report half still caches.
+- **A feedback message sent with logs shows their `ERR-XXXXX`** (`errorReportId`, from `feedback.error_report_id`). On
+  the page it links to that row of "Recent error reports" (`#ERR-XXXXX`, highlighted via `:target`) when the row is
+  among the 15 shown; otherwise it's selectable text, since the dashboard has no per-report view (the bundle's contents
+  stay in R2 and the local digest). `/api/report` tags the line `[logs: ERR-XXXXX]`.
 - **PostHog uses the HogQL query API** (`/api/projects/{id}/query/`), not the legacy Trends API (`/insights/trend/`),
   which returns "Legacy insight endpoints are not available" for newer accounts.
 - **Umami metrics use `type=path`** (not `type=url`): `url` and `page` return 400, but `path`, `referrer`, `event`, and
