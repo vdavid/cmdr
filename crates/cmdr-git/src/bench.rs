@@ -32,9 +32,8 @@ const RUNS: usize = 21; // p95 of 21 sorted samples = the 20th.
 
 fn fixture_dir() -> PathBuf {
     let mut p = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    p.pop(); // src-tauri/
-    p.pop(); // desktop/
-    p.pop(); // apps/
+    p.pop(); // cmdr-git/
+    p.pop(); // crates/
     p.push("target/test-fixtures/git/synth-50k");
     p
 }
@@ -105,6 +104,22 @@ fn percentile(mut samples: Vec<u128>, p: f64) -> u128 {
     let idx = ((samples.len() as f64) * p / 100.0).ceil() as usize;
     let idx = idx.saturating_sub(1).min(samples.len() - 1);
     samples[idx]
+}
+
+/// Regression: when this file moved from `apps/desktop/src-tauri` to `crates/cmdr-git`, the
+/// path kept popping three levels and landed the fixture one folder above the checkout, where
+/// no `cargo clean`, sweep, or worktree teardown ever collects it.
+#[test]
+fn fixture_dir_is_in_this_workspaces_target() {
+    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .canonicalize()
+        .unwrap();
+    assert!(
+        workspace_root.join("Cargo.lock").is_file(),
+        "{workspace_root:?} isn't the workspace root"
+    );
+    assert_eq!(fixture_dir(), workspace_root.join("target/test-fixtures/git/synth-50k"));
 }
 
 #[test]
