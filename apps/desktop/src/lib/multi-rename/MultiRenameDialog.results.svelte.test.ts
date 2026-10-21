@@ -13,6 +13,7 @@ import { setLastMultiRenameRun } from './last-run.svelte'
 const ipc = vi.hoisted(() => ({
   previewMultiRename: vi.fn(),
   getMultiRenamePreviewRows: vi.fn(),
+  getMultiRenameRangeSamples: vi.fn(() => Promise.resolve({ ok: true, value: [] })),
   renderMultiRenameExamples: vi.fn(),
   applyMultiRename: vi.fn(),
   writeMultiRenameNames: vi.fn(),

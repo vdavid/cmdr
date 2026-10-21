@@ -44,6 +44,7 @@
     import type { CaseChange, HistoryField, SpecError } from '#lib/ipc/bindings.js'
     import { createMultiRenameState } from './multi-rename-state.svelte'
     import MaskInput from './MaskInput.svelte'
+    import { provideRangeSampleSource } from './range-sample-source'
     import { TOGGLE_COMMANDS, WHOLE_NAME_TOGGLES, optionKeyOf, type ToggleField, type WholeNameField } from './option-keys'
     import { presetKeyOf, type PresetsControlApi } from './preset-keys'
     import PresetsControl from './PresetsControl.svelte'
@@ -97,6 +98,8 @@
 
     // One sheet renames one session; a new session remounts it.
     const tool = createMultiRenameState(session.sessionId)
+    // The mask fields' range editors show what a range takes from the files around the list's cursor.
+    provideRangeSampleSource(tool)
     const results = createResults(tool)
     const fieldHistory = createFieldHistoryMenu({
         inputOf: (field) =>

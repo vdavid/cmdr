@@ -19,6 +19,7 @@ import { RollbackRefusalFailure } from '#lib/operation-log/rollback-refusal.js'
 const ipc = vi.hoisted(() => ({
   previewMultiRename: vi.fn(),
   getMultiRenamePreviewRows: vi.fn(),
+  getMultiRenameRangeSamples: vi.fn(() => Promise.resolve({ ok: true, value: [] })),
   moveMultiRenameRow: vi.fn(),
   renderMultiRenameExamples: vi.fn(),
   applyMultiRename: vi.fn(),

@@ -10,9 +10,9 @@
      * - The editor opens on its own (`token-editor-rules.ts`): while the caret rests inside a token,
      *   with focus staying in the field, and while the pointer rests on a token or the editor. It
      *   opens after a short delay, so a caret or pointer passing through doesn't flash it.
-     * - ArrowDown with the caret inside or right after a token goes into its editor (opening it
-     *   first if needed) and is claimed; anywhere else it's left alone. Escape in the field closes
-     *   an open editor, and is claimed so the sheet stays.
+     * - ArrowDown with the caret inside a token (or right after a counter) goes into its editor
+     *   (opening it first if needed) and is claimed; anywhere else it's left alone, for the field's
+     *   history. Escape in the field closes an open editor, and is claimed so the sheet stays.
      * - The editor lives in a house `Popover` under the token. Every edit rewrites the token in
      *   the text through `onValueChange`, so the mask stays the single source of truth. Enter,
      *   Escape, or ArrowUp from its first field return focus here with the caret after the token;
@@ -24,7 +24,7 @@
     import Popover from '#lib/ui/Popover.svelte'
     import TextInput from '#lib/ui/TextInput.svelte'
     import { claimKey } from '#lib/shortcuts/claim-key.js'
-    import { MASK_TOKEN_KINDS } from './mask-token-kinds'
+    import { MASK_TOKEN_KINDS, anyKind } from './mask-token-kinds'
     import { findTokens, replaceToken, tokenAtCaret, type MaskToken } from './mask-tokens'
     import { nextEditor, tokenInside, type EditorEvent, type EditorOpen } from './token-editor-rules'
 
@@ -270,7 +270,15 @@
         }
         if (e.key !== 'ArrowDown') return
         const input = e.currentTarget as HTMLInputElement
-        const token = editing ?? tokenAtCaret(tokens, input.selectionEnd ?? -1)
+        const caret = input.selectionEnd ?? -1
+        // Right after a token counts only for the kinds that say so (`downRightAfter`).
+        const token =
+            editing ??
+            tokenInside(tokens, caret) ??
+            tokenAtCaret(
+                tokens.filter((t) => t.kind.downRightAfter),
+                caret,
+            )
         if (!token) return
         claimKey(e)
         // A passive editor stops being one, which sends focus to its first field.
@@ -359,7 +367,8 @@
         ariaLabel={token ? tString(token.kind.editorLabel) : undefined}
     >
         {#if token}
-            {@const Editor = token.kind.editor}
+            {@const kind = anyKind(token.kind)}
+            {@const Editor = kind.editor}
             <!-- Focus arriving here (a click, ArrowDown) means the user is working in the editor. -->
             <div
                 bind:this={editorEl}
@@ -367,7 +376,7 @@
             >
                 <Editor
                     value={token.value}
-                    onChange={(next) => { rewrite(token, token.kind.format(next)) }}
+                    onChange={(next) => { rewrite(token, kind.format(next)) }}
                     onDone={done}
                 />
             </div>

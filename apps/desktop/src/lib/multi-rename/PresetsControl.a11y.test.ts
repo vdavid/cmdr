@@ -16,6 +16,7 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
     Promise.resolve({ ok: true, value: { previewId: 1, counts: { ready: 0, unchanged: 0, problems: 0 }, rows: [] } }),
   ),
   getMultiRenamePreviewRows: vi.fn(() => Promise.resolve({ ok: true, value: [] })),
+  getMultiRenameRangeSamples: vi.fn(() => Promise.resolve({ ok: true, value: [] })),
   applyMultiRename: vi.fn(),
   getMultiRenamePresets: vi.fn(() =>
     Promise.resolve([

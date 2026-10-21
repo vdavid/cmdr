@@ -586,5 +586,207 @@
   "multiRename.placeholderHelp.counterEditHint": "Put the caret in a counter or point at it to change its numbers.",
   "@multiRename.placeholderHelp.counterEditHint": {
     "description": "In the Multi-rename sheet, a tooltip on a placeholder button (such as [N], [E], or [C]) explains what that placeholder puts in the new name, lists a few of its other forms, and shows each with an example on a made-up file (Beach day.jpg, in the folder Trips/Lisbon 2026, last changed 2026-07-14 09:05:30). Last line of the counter placeholder’s tooltip: a counter in the mask opens a small editor for its start, step, and digits when the text cursor is inside it or the mouse rests on it."
+  },
+  "multiRename.rangeEditor.marker": "Choose characters",
+  "@multiRename.rangeEditor.marker": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Accessible name (read by screen readers) of the small ▾ button drawn under each range placeholder; it opens the range editor. A VERB phrase."
+  },
+  "multiRename.rangeEditor.title": "Characters to take",
+  "@multiRename.rangeEditor.title": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Accessible name of the range editor popover. A NOUN phrase."
+  },
+  "multiRename.rangeEditor.takeFrom": "Take from",
+  "@multiRename.rangeEditor.takeFrom": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Label of the row of buttons that picks which text the characters come from (Name, Extension, Folder, Grandparent folder, Full name)."
+  },
+  "multiRename.rangeEditor.field.name": "Name",
+  "@multiRename.rangeEditor.field.name": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Button in the \"Take from\" row: the file’s name without its extension."
+  },
+  "multiRename.rangeEditor.field.extension": "Extension",
+  "@multiRename.rangeEditor.field.extension": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Button in the \"Take from\" row: the file’s extension (jpg, pdf)."
+  },
+  "multiRename.rangeEditor.field.parent": "Folder",
+  "@multiRename.rangeEditor.field.parent": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Button in the \"Take from\" row: the name of the folder the file is in."
+  },
+  "multiRename.rangeEditor.field.grandparent": "Grandparent folder",
+  "@multiRename.rangeEditor.field.grandparent": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Button in the \"Take from\" row: the name of the folder above the file’s folder."
+  },
+  "multiRename.rangeEditor.field.fullName": "Full name",
+  "@multiRename.rangeEditor.field.fullName": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Button in the \"Take from\" row: the file’s whole name, extension included."
+  },
+  "multiRename.rangeEditor.characters": "Characters",
+  "@multiRename.rangeEditor.characters": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Accessible name of the row of letters the user drags across."
+  },
+  "multiRename.rangeEditor.start": "Start",
+  "@multiRename.rangeEditor.start": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Label of the row that says whether the first chosen character is counted from the start or from the end of the name; also the accessible name of the handle at the selection’s start edge. A NOUN."
+  },
+  "multiRename.rangeEditor.end": "End",
+  "@multiRename.rangeEditor.end": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Label of the row that says whether the last chosen character is counted from the start or from the end of the name; also the accessible name of the handle at the selection’s end edge. A NOUN."
+  },
+  "multiRename.rangeEditor.writeAs": "Write as",
+  "@multiRename.rangeEditor.writeAs": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Label of the row that picks how the placeholder is written: from a start to an end ([N2-5]), or a start and a length ([N2,4])."
+  },
+  "multiRename.rangeEditor.form.span": "Start to end",
+  "@multiRename.rangeEditor.form.span": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Option in the \"Write as\" row: the placeholder names the first and the last character, like [N2-5]."
+  },
+  "multiRename.rangeEditor.form.length": "Start and length",
+  "@multiRename.rangeEditor.form.length": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Option in the \"Write as\" row: the placeholder names the first character and how many to take, like [N2,4]."
+  },
+  "multiRename.rangeEditor.fromStart": "From the start",
+  "@multiRename.rangeEditor.fromStart": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Option in the Start or End row, shown while no characters are chosen: count this end from the start of the name."
+  },
+  "multiRename.rangeEditor.fromEnd": "From the end",
+  "@multiRename.rangeEditor.fromEnd": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Option in the Start or End row, shown while no characters are chosen: count this end from the end of the name."
+  },
+  "multiRename.rangeEditor.positionFromStart": "{at, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+  "@multiRename.rangeEditor.positionFromStart": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Option in the Start or End row: count this end from the start of the name, where it is the given character (1st, 2nd, 3rd). An ordinal number alone.",
+    "placeholders": {
+      "at": "the character’s position from the start, counted from 1 (e.g. 3)"
+    }
+  },
+  "multiRename.rangeEditor.positionFromEnd": "{at, selectordinal, =1 {Last} one {#st from the end} two {#nd from the end} few {#rd from the end} other {#th from the end}}",
+  "@multiRename.rangeEditor.positionFromEnd": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Option in the Start or End row: count this end from the end of the name, where it is the given character from the end (Last, 2nd from the end).",
+    "placeholders": {
+      "at": "the character’s position from the end, the last one being 1 (e.g. 2)"
+    }
+  },
+  "multiRename.rangeEditor.endFollowsStart": "With the start counted from the end, the end counts from the end too.",
+  "@multiRename.rangeEditor.endFollowsStart": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Tooltip on the End row’s \"from the start\" option, which is turned off while the Start row counts from the end: the placeholder’s grammar counts both ends from the end then."
+  },
+  "multiRename.rangeEditor.edgeFromStart": "character {at}, {character}",
+  "@multiRename.rangeEditor.edgeFromStart": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. What a screen reader says for a handle at one edge of the chosen characters, after its name (Start or End), when it counts from the start: its position and the letter there.",
+    "placeholders": {
+      "at": "the character’s position from the start, counted from 1 (e.g. 3)",
+      "character": "the letter at that position (e.g. B), or the word for a space"
+    }
+  },
+  "multiRename.rangeEditor.edgeFromEnd": "{at, selectordinal, =1 {the last character} one {#st from the end} two {#nd from the end} few {#rd from the end} other {#th from the end}}, {character}",
+  "@multiRename.rangeEditor.edgeFromEnd": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. What a screen reader says for a handle at one edge of the chosen characters, after its name (Start or End), when it counts from the end: its position from the end and the letter there.",
+    "placeholders": {
+      "at": "the character’s position from the end, the last one being 1 (e.g. 5)",
+      "character": "the letter at that position (e.g. h), or the word for a space"
+    }
+  },
+  "multiRename.rangeEditor.space": "space",
+  "@multiRename.rangeEditor.space": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. What a screen reader says for a space character in the name, where it would read the letter. A NOUN, lowercase."
+  },
+  "multiRename.rangeEditor.keys": "← → move it, ⇧ moves the end, ⌥ the start",
+  "@multiRename.rangeEditor.keys": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Quiet hint under the row of letters: the left and right arrow keys move the chosen characters, with Shift held they move only the last one, with Option held only the first one. Keep the arrow and key symbols as they are."
+  },
+  "multiRename.rangeEditor.reading.whole": "All of it",
+  "@multiRename.rangeEditor.reading.whole": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Plain-language line saying what the placeholder takes: the whole name (or extension, or folder name)."
+  },
+  "multiRename.rangeEditor.reading.one": "Only the {at, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} character",
+  "@multiRename.rangeEditor.reading.one": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Plain-language line saying what the placeholder takes: one character, counted from the start.",
+    "placeholders": {
+      "at": "its position from the start, counted from 1 (e.g. 3)"
+    }
+  },
+  "multiRename.rangeEditor.reading.oneFromEnd": "Only the {at, selectordinal, =1 {last} one {#st-to-last} two {#nd-to-last} few {#rd-to-last} other {#th-to-last}} character",
+  "@multiRename.rangeEditor.reading.oneFromEnd": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Plain-language line saying what the placeholder takes: one character, counted from the end (the last, the 2nd-to-last).",
+    "placeholders": {
+      "at": "its position from the end, the last one being 1 (e.g. 2)"
+    }
+  },
+  "multiRename.rangeEditor.reading.toEnd": "From the {at, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} character to the end",
+  "@multiRename.rangeEditor.reading.toEnd": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Plain-language line saying what the placeholder takes: from a character, counted from the start, to the end of the name.",
+    "placeholders": {
+      "at": "the first character’s position, counted from 1 (e.g. 3)"
+    }
+  },
+  "multiRename.rangeEditor.reading.lastChars": "{count, plural, one {The last character} other {The last # characters}}",
+  "@multiRename.rangeEditor.reading.lastChars": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Plain-language line saying what the placeholder takes: the last few characters of the name.",
+    "placeholders": {
+      "count": "how many characters at the end (e.g. 3)"
+    }
+  },
+  "multiRename.rangeEditor.reading.span": "From the {from, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} to the {to, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} character",
+  "@multiRename.rangeEditor.reading.span": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Plain-language line saying what the placeholder takes: a run of characters, both ends counted from the start, both included.",
+    "placeholders": {
+      "from": "the first character’s position, counted from 1 (e.g. 2)",
+      "to": "the last character’s position, counted from 1 (e.g. 5)"
+    }
+  },
+  "multiRename.rangeEditor.reading.spanToFromEnd": "From the {from, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} to the {to, selectordinal, =1 {last} one {#st-to-last} two {#nd-to-last} few {#rd-to-last} other {#th-to-last}} character",
+  "@multiRename.rangeEditor.reading.spanToFromEnd": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Plain-language line saying what the placeholder takes: a run from a character counted from the start to one counted from the end (From the 1st to the 5th-to-last character), both included.",
+    "placeholders": {
+      "from": "the first character’s position from the start, counted from 1 (e.g. 1)",
+      "to": "the last character’s position from the end, the last one being 1 (e.g. 5)"
+    }
+  },
+  "multiRename.rangeEditor.reading.spanFromEnd": "From the {from, selectordinal, =1 {last} one {#st-to-last} two {#nd-to-last} few {#rd-to-last} other {#th-to-last}} to the {to, selectordinal, =1 {last} one {#st-to-last} two {#nd-to-last} few {#rd-to-last} other {#th-to-last}} character",
+  "@multiRename.rangeEditor.reading.spanFromEnd": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Plain-language line saying what the placeholder takes: a run whose both ends are counted from the end (From the 8th-to-last to the 5th-to-last character), both included.",
+    "placeholders": {
+      "from": "the first character’s position from the end, the last one being 1 (e.g. 8)",
+      "to": "the last character’s position from the end, the last one being 1 (e.g. 5)"
+    }
+  },
+  "multiRename.rangeEditor.reading.length": "{count, plural, one {# character} other {# characters}}, starting at the {at, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+  "@multiRename.rangeEditor.reading.length": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Plain-language line saying what the placeholder takes: a number of characters, starting at a character counted from the start.",
+    "placeholders": {
+      "count": "how many characters are taken (e.g. 3)",
+      "at": "the first one’s position, counted from 1 (e.g. 7)"
+    }
+  },
+  "multiRename.rangeEditor.reading.lengthFromEnd": "{count, plural, one {# character} other {# characters}}, starting at the {at, selectordinal, =1 {last} one {#st-to-last} two {#nd-to-last} few {#rd-to-last} other {#th-to-last}}",
+  "@multiRename.rangeEditor.reading.lengthFromEnd": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Plain-language line saying what the placeholder takes: a number of characters, starting at a character counted from the end.",
+    "placeholders": {
+      "count": "how many characters are taken (e.g. 3)",
+      "at": "the first one’s position from the end, the last one being 1 (e.g. 3)"
+    }
+  },
+  "multiRename.rangeEditor.takesNothing": "Takes nothing from this file",
+  "@multiRename.rangeEditor.takesNothing": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Warning under the row of letters when the placeholder takes no characters from the file shown (it asks for characters past the end of its name)."
+  },
+  "multiRename.rangeEditor.emptyField": "Empty for this file",
+  "@multiRename.rangeEditor.emptyField": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Shown in place of the row of letters when the chosen text is empty for the file shown (a folder has no extension, for example)."
+  },
+  "multiRename.rangeEditor.onYourFiles": "On your files",
+  "@multiRename.rangeEditor.onYourFiles": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Heading over a few of the files being renamed, each showing its name with the chosen characters highlighted and what the placeholder takes from it."
+  },
+  "multiRename.rangeEditor.nothing": "nothing",
+  "@multiRename.rangeEditor.nothing": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Shown after the arrow for a file the placeholder takes no characters from. Lowercase, like a value."
+  },
+  "multiRename.rangeEditor.gives": "gives",
+  "@multiRename.rangeEditor.gives": {
+    "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Read only by screen readers, between a file’s name and what the placeholder takes from it, where sighted users see an arrow (Beach day gives Beach). A VERB."
+  },
+  "multiRename.placeholderHelp.rangeEditHint": "Put the caret in a placeholder like [N] and press ↓ to choose its characters.",
+  "@multiRename.placeholderHelp.rangeEditHint": {
+    "description": "In the Multi-rename sheet, a tooltip on a placeholder button (such as [N], [E], or [C]) explains what that placeholder puts in the new name, lists a few of its other forms, and shows each with an example on a made-up file (Beach day.jpg, in the folder Trips/Lisbon 2026, last changed 2026-07-14 09:05:30). Last line of the [N], [E], and [P] tooltips: with the text cursor in such a placeholder in the mask, the down arrow key opens a small editor to pick which characters it takes. Keep [N] and ↓ as they are."
   }
 }

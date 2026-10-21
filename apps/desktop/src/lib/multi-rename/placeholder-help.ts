@@ -74,6 +74,7 @@ export const PLACEHOLDER_HELP: readonly PlaceholderHelp[] = [
         meaningParams: { count: 3 },
       },
     ],
+    footnote: 'multiRename.placeholderHelp.rangeEditHint',
   },
   {
     placeholder: '[E]',
@@ -88,6 +89,7 @@ export const PLACEHOLDER_HELP: readonly PlaceholderHelp[] = [
         meaningParams: { from: 2, to: 3 },
       },
     ],
+    footnote: 'multiRename.placeholderHelp.rangeEditHint',
   },
   {
     placeholder: '[P]',
@@ -102,6 +104,7 @@ export const PLACEHOLDER_HELP: readonly PlaceholderHelp[] = [
       },
       { mask: '[G]', meaning: 'multiRename.placeholderHelp.grandparent' },
     ],
+    footnote: 'multiRename.placeholderHelp.rangeEditHint',
   },
   {
     placeholder: '[C]',

@@ -105,12 +105,17 @@
         )
     }
 
-    /** Moves focus to the first focusable element inside the popover, unless focus is already in it. */
+    /**
+     * Moves focus into the popover, unless it's already there: to the element marked
+     * `data-initial-focus` (content whose main control isn't first, like the range editor's
+     * character ribbon), else the first focusable one.
+     */
     async function focusFirst(): Promise<void> {
         await tick()
         if (popoverEl?.contains(document.activeElement)) return
-        const focusables = focusableElements()
-        focusables[0]?.focus()
+        const preferred = popoverEl?.querySelector<HTMLElement>('[data-initial-focus]')
+        const target = preferred ?? focusableElements().at(0)
+        target?.focus()
     }
 
     function handleKeyDown(e: KeyboardEvent): void {

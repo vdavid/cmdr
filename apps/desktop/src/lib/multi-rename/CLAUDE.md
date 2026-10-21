@@ -15,8 +15,8 @@ The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: tha
   clash) and `preset-keys.ts` (F2 / ⌘S) are pure.
 - `spec.ts` the default spec, the preset seeds, `specsEqual`, placeholder insertion; `row-status.ts` a row status →
   glyph, label, reason. Pure.
-- `MaskInput.svelte` both mask fields, `[C…]` tokens with a ▾ marker and an inline `CounterTokenEditor`
-  (`mask-token-kinds.ts`); `mask-tokens.ts` / `counter-token.ts` / `token-editor-rules.ts` are its pure logic.
+- `MaskInput.svelte` both mask fields; `[C…]` and range tokens get a ▾ marker and an inline editor
+  (`mask-token-kinds.ts`), over pure `mask-tokens.ts`, `*-token.ts`, `range-editor.ts`, `token-editor-rules.ts`.
 - `PlaceholderTip.svelte` / `placeholder-help.ts`, `SearchOptionChips.svelte` / `search-option-help.ts`: tooltips and
   chips; `rename-examples.ts` renders the examples.
 - `last-run.svelte.ts` the last run, which Undo rename (⌘⌥Z) rolls back. Outlives the sheet.
@@ -34,15 +34,15 @@ The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: tha
   mid-composition.
 - **Every sheet key is a fixed registry command** in `Main window/Multi-rename`, read through `eventMatchesCommand` and
   claimed, from a text field too. ❌ No raw key tests. An open Presets menu owns every key (its `onKey` answers F2 and
-  ⌘S). ↓ at a mask's `[C…]` token is the counter editor's (MaskInput claims it first), elsewhere the field's history.
+  ⌘S). ↓ inside a mask token (or after a `[C…]`) is its editor's, elsewhere the field's history.
 - **F2 is also File > Rename's menu accelerator.** The sheet claims that menu command while mounted, so both roads end
   in `PresetsControl.pressOpenKey`, which toggles once per press (`createKeyRoadEcho`). ❌ Don't call `openMenu` from a
   key path: the echo would close the menu it opened.
 - ⌘⌥ C/A/H/L/O/Q/T/V belong to app commands, D to the Dock. DETAILS § Layout and option keys.
-- **`counter-token.ts` must read `[C…]` as `mask.rs` does**: both test against
-  `src-tauri/src/multi_rename/counter_token_vectors.json`; change the grammar there first.
+- **The `*-token.ts` grammars read tokens as `mask.rs` does** (`src-tauri/src/multi_rename/*_token_vectors.json`);
+  change one there first.
 - **Tooltip examples are the engine's render of made-up files**, the marked part set apart. ❌ No slicing or replacing
-  in TS. DETAILS § Tooltip examples.
+  in TS, in the range editor too (`rangeSamples`). DETAILS § Tooltip examples, § Range editor.
 - **A spec error keeps the last good preview** under the message; any other error clears it.
 - **A caret-opened editor is `passive`** (no focus, no trap): typing stays in the field. DETAILS § Mask input.
 - **The sheet opens on what the last one closed with**: fields AND loaded preset, so "Mine (edited)" survives. An edit

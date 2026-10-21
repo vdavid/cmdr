@@ -9,7 +9,8 @@
   file, a few other forms from `mask.rs` with their examples, and for a range the part it takes in bold with what the
   field keeps around it quiet. The lead line names what the example ran on: `Beach day.jpg`, its path with the two
   folders above it (`[P]`), the date and time (`[YMD]`, `[hms]`), or "the first three files" (a counter, whose numbers
-  come from `counterSamples`, no engine call). § Tooltip examples.
+  come from `counterSamples`, no engine call). The `[N]`, `[E]`, and `[P]` tooltips end on how to open the range editor
+  (`rangeEditHint`), the counter's on its editor (`counterEditHint`). § Tooltip examples.
 - **The list's heading slot** (`.message-line`): one line tall above the preview, so nothing coming or going moves the
   list. An error wins it (ellipsis, overflow tooltip), then Results' notice, else a "Preview" label styled like the
   field labels (`multiRename.preview`, the same key that names the table). Both live regions (`role="alert"` for the
@@ -82,8 +83,8 @@
   or the chevron at the field's end opens one house `Menu` (`field-history-menu.svelte.ts`, rendered inside the dialog
   so it portals into the modal's layer) under that field, listing what it held in earlier renames, newest first (at most
   `HISTORY_SHOWN`); a pick fills the field and the menu hands focus back. The backend records it
-  (`multi_rename/DETAILS.md` § Field history); the sheet reads it once on mount. **↓ routing:** with the caret inside or
-  right after a mask's `[C…]` token, MaskInput claims ↓ first (into the counter's editor), so the sheet never sees it;
+  (`multi_rename/DETAILS.md` § Field history); the sheet reads it once on mount. **↓ routing:** with the caret inside a
+  mask's token, or right after a `[C…]`, MaskInput claims ↓ first (into its editor), so the sheet never sees it;
   anywhere else the sheet's keydown opens the history, unless the field has none, when ↓ is left to the field.
   **Decision/Why:** the chevron (`FieldHistoryChevron.svelte`) is `Combobox`'s 16 px tertiary glyph in `TextInput`'s
   trailing slot, so it reads as the field's own list, apart from the small ▾ markers under tokens. It's disabled while
@@ -214,23 +215,70 @@
     so the popover's trap is gone before focus moves (else the trap pulls focus back).
   - The popover is `surface="solid"` (opaque `--color-bg-secondary`): the house glass is ~70% opaque, and the numbers
     must read cleanly over the mask and the list.
-- **Keys**: ArrowDown with an editor open goes into its first field; with none, ArrowDown with the caret inside or right
-  after an editable token (`tokenAtCaret`: `from < caret <= to`) opens it there. Both are claimed (`claimKey`); anywhere
-  else ArrowDown isn't touched. Escape in the field closes an open editor and is claimed, so the sheet stays. In the
-  editor, ArrowDown / ArrowUp walk the fields, and Enter or ArrowUp from the first field closes it; both are claimed, so
-  the sheet's Enter-starts never sees them. Escape is the `Popover`'s, which stops it before the sheet closes. All three
-  put focus back in the field with the caret after the token (Escape through the anchor span's `onfocus`); a click
-  elsewhere closes the editor and leaves focus where it landed.
-- **Markers**: an absolutely placed ▾ `<button tabindex="-1">` ("Edit counter", `aria-haspopup="dialog"`) centered under
-  each token, measured with a canvas in the input's computed font, net of `scrollLeft`; one scrolled out of view isn't
-  drawn. Mousedown is prevented, so a click never moves focus out of the field. Re-measured on mask change, input
-  scroll, resize, and `selectionchange` (the caret can scroll the input).
+- **Keys**: ArrowDown with an editor open goes into its first field; with none, ArrowDown with the caret inside an
+  editable token (`tokenInside`), or right after a kind with `downRightAfter` (the counter; `tokenAtCaret`:
+  `from < caret <= to`), opens it there. **Decision/Why:** not right after a range: `[N]` and `[E]` are the default
+  masks, so the caret sits right after one whenever the sheet opens, where ↓ is TC's field history. Both are claimed
+  (`claimKey`); anywhere else ArrowDown isn't touched. Escape in the field closes an open editor and is claimed, so the
+  sheet stays. In the editor, ArrowDown / ArrowUp walk the fields (rows, in the range editor: § Range editor), and Enter
+  or ArrowUp from the first field closes it; both are claimed, so the sheet's Enter-starts never sees them. Escape is
+  the `Popover`'s, which stops it before the sheet closes. All three put focus back in the field with the caret after
+  the token (Escape through the anchor span's `onfocus`); a click elsewhere closes the editor and leaves focus where it
+  landed.
+- **Markers**: an absolutely placed ▾ `<button tabindex="-1">` ("Edit counter", "Choose characters",
+  `aria-haspopup="dialog"`) centered under each token, measured with a canvas in the input's computed font, net of
+  `scrollLeft`; one scrolled out of view isn't drawn. Mousedown is prevented, so a click never moves focus out of the
+  field. Re-measured on mask change, input scroll, resize, and `selectionchange` (the caret can scroll the input).
 - **Token kinds** (`mask-token-kinds.ts`): each is a grammar (`parse(inner)` → value or `null`, `format(value)` → the
   shortest inner text, in a pure module), an editor component taking `TokenEditorProps` (`value`, `onChange`, `onDone`),
   and two message keys. The text is the single source of truth: an editor edit is `format` + `replaceToken`, never state
-  of its own. A new kind (a range, a date) is one entry there plus its grammar's tests.
+  of its own. A new kind (a date) is one entry there plus its grammar's tests. `MaskInput` renders whichever kind a
+  token is through `anyKind` (TS can't pair a union of kinds with their values in markup).
 - **Counter** (`counter-token.ts`): parses step for step like `counter()` in `mask.rs`, quirks included (`[C++5]` is
   step 5); both sides test against `counter_token_vectors.json`. Writes back in minimal form: defaults (start 1, step 1,
   digits 1) left out, so all-default is a bare `[C]`; a negative start always writes its step (`[C-5+1]`: a lone `[C-5]`
   is a step of -5) and clamps at `MIN_COUNTER_START`; digits clamp to 1–`MAX_COUNTER_DIGITS`. An emptied editor field
   means that part's default; a half-typed `-` waits.
+
+## Range editor
+
+`RangeTokenEditor.svelte`, the inline editor of a range token (`[N…]` `[E…]` `[P…]` `[G…]`, the full-name `[2-5]`): TC's
+"select the characters to insert" dialog, done inline. Three parts, top to bottom.
+
+- **What to take**: "Take from" (a house `ToggleGroup`: Name, Extension, Folder, Grandparent folder, Full name) and the
+  ribbon, the field's text on the list cursor's file, one cell per character (what `Array.from` splits, as the engine
+  counts), positions from the start above and from the end below, the taken run tinted (`--color-accent-selection`) with
+  a bar on each edge (`--color-accent-pop`, the mark color that reads on tinted surfaces). The number each edge counts
+  from is set in bold. Drag to pick, ⇧-click to extend from the far edge. There is no file switcher: the example is
+  always the cursor row (`sampleRows`), so moving the list's cursor changes it. Switching the field keeps the range.
+- **How to count**: Start and End each offer "from the start" / "from the end", labelled with the edge's real place on
+  that file ("1st" / "9th from the end"), and Write as offers "Start to end" (`[N2-5]`) / "Start and length" (`[N2,4]`);
+  the length form hides End. With Start counted from the end, End's "from the start" is off, its tooltip saying why: the
+  grammar reads a positive end after a negative start from the end too (`[N-8-5]`). A plain-words line reads the token
+  (`rangeReading`, ICU `selectordinal` positions: "From the 1st to the 5th-to-last character"), and a warning says when
+  it takes nothing from the cursor's file.
+- **On your files**: at most five rows, the cursor's and up to two either side (`rowsAround`, shifted at the list's ends
+  so it stays five), each the field's text with the taken part marked, then what it gives, or "nothing" in the warning
+  color. The cursor row is set apart (`aria-current`).
+- **Which edges count from where**: a drag (or ⇧-click) is a fresh pick, each end counting from the edge it's nearer
+  (`autoAnchors`: a tie goes to the start, and an end on the last character counts from the end, so it runs to the end
+  of every name); keys and the Start / End rows keep the token's own choice (`anchorsOf`), so a manual choice sticks
+  until the next drag. A whole field writes as the bare `[N]` (the full name as `[1-]`). `rangeForSelection` turns a
+  pick into the token; `range_token_vectors.json`'s `selections` prove each one takes exactly what was picked.
+- **The engine decides what a range takes.** The editor asks `rangeSamples(token, rows)` (the state's, through Svelte
+  context, `range-sample-source.ts`, so `MaskInput` stays free of the session), answered by
+  `get_multi_rename_range_samples` from `mask.rs`'s own `bounds` (`src-tauri/src/multi_rename/DETAILS.md` § Session). It
+  asks on every token change and every new preview, a generation counter dropping overtaken answers; a refusal (a moved
+  row's preview still on its way) keeps what's shown. The pick the last edit wrote stands in until the answer for its
+  token lands (`picked`), so a key pressed again right away moves on from it. TS only splits the answer's text at the
+  engine's indices to draw it.
+- **Keys and focus**: the editor's first stop is the start handle (`data-initial-focus`, which `Popover` honors; the
+  ribbon itself while nothing is taken, and the start handle once the first answer lands). On the ribbon ← / → move the
+  selection, ⇧ ← / → its end, ⌥ ← / → its start (`ribbonMoveOf`, `moveSelection`); a move by one edge focuses that
+  edge's handle, so VoiceOver reads its new place. ↑ / ↓ walk the rows (Take from, ribbon, Start, End, Write as), ↑ from
+  Take from and Enter anywhere go back to the mask; the editor claims ↑ / ↓ / Enter in the capture phase, so the toggle
+  groups and the sheet never see them. **Decision/Why: the two edges are `role="slider"` handles**, labelled Start and
+  End, `aria-valuenow` their 1-based place and `aria-valuetext` how the token counts them ("character 1, B", "5th from
+  the end, h", a space read as "space"), described by the reading and the keys hint. A range is two values, and the ARIA
+  multi-thumb slider is the pattern VoiceOver knows; the cells themselves are `aria-hidden`, and "On your files" reads
+  each file in full.
