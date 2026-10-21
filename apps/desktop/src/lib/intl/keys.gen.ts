@@ -2786,6 +2786,7 @@ export type MessageKey =
   | 'multiRename.placeholderHelp.parent'
   | 'multiRename.placeholderHelp.shortYear'
   | 'multiRename.placeholderHelp.time'
+  | 'multiRename.preset.dateAndTime'
   | 'multiRename.preset.greekToLatin'
   | 'multiRename.preset.normalizeUnicode'
   | 'multiRename.preset.removeDiacritics'

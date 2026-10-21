@@ -128,9 +128,8 @@ subfolders (the executor's one-parent rule refuses it today), "next step" chaini
 ## Presets (`presets.rs`, `preset_store.rs`)
 
 One list in the user's order, top to bottom, in `multi-rename-presets.json` (`PresetStore`), keyed by the trimmed,
-lowercased name: saving under a taken name replaces that preset (the sheet asks first). The built-in presets (Remove
-diacritics, Greek to Latin, Normalize Unicode) and "Reset all fields" live in the frontend (`spec.ts`) so their names
-are translated.
+lowercased name: saving under a taken name replaces that preset (the sheet asks first). "Reset all fields" lives in
+the frontend (`spec.ts`).
 
 - **Decision/Why: an ordered store, not a recents list.** The sheet's Presets menu numbers presets 1–9 by position, so
   a number may move only when the user moves or deletes something. A recents list puts every add on top, which
@@ -141,13 +140,26 @@ are translated.
   `MAX_PRESETS` is refused (logged), never trimmed off another end: either would lose or renumber a preset.
 - **Rename** and **Update with current fields** change the preset where it stands. A rename onto a taken name drops
   the other preset in that same step (`rename_in`), so no reader ever sees two presets with one name, or neither.
-- **The file** keeps the `crate::recents` envelope (`_schemaVersion: 1`, `entries`), which is what it was while presets
-  were a recents list, so an older build's file reads as stored (newest first) and an older build reads ours. A file
-  that won't read goes through `state_recovery::read_state_file` (set aside, the person told once), like every state
-  file; the lock discipline is `recents`' (two locks, never held at once).
+- **Seeds** (`seed_in`, `PresetSeed`): the list starts with Date and time (`[Y-M-D h.m.s]`), Remove diacritics,
+  Greek to Latin, and Normalize Unicode, as ordinary presets the user can rename, update, move, and delete. They go in
+  ONCE per list, after the presets already there, skipping a name the list has and stopping at `MAX_PRESETS`, so no
+  number the user knows moves. `seeded` in the file records it, so a deleted seed never comes back and an emptied list
+  stays empty. No file (a new install) is unseeded; so is a file from before seeding (no `seeded` field), which is how
+  an existing user gets them; a file set aside as unreadable counts as seeded (the person's list is in the copy).
+  **Decision/Why: the frontend names them, the backend decides.** `get_multi_rename_presets(seeds)` takes the seeds,
+  names already in the UI language (`spec.ts`'s `PRESET_SEEDS` through `tString`) and runs `seed_in` before answering;
+  every later call is a no-op for them. The names are message keys the backend can't read, and from then on they're
+  plain user data, so nothing re-translates them. A preset saved before the first read keeps its place: the seeds go
+  after it.
+- **The file** keeps the `crate::recents` envelope (`_schemaVersion: 1`, `entries`) plus `seeded`, so an older build's
+  file reads as stored (newest first) and an older build reads ours. A file that won't read goes through
+  `state_recovery::read_state_file` (set aside, the person told once), like every state file; the lock discipline is
+  `recents`' (two locks, never held at once).
 - **Last settings** (`LAST_SPEC`, `LastSpec`): a one-entry `RecentsFile` in `multi-rename-last.json` (fixed
-  `dedupe_key`, so a save replaces it) holding the spec and the `LoadedPreset` the sheet closed with. Ported from PR
-  #386; the preset is Cmdr's addition (sheet side: `src/lib/multi-rename/DETAILS.md` § Presets).
+  `dedupe_key`, so a save replaces it) holding the spec and the `presetId` the sheet closed with. Ported from PR #386;
+  the preset is Cmdr's addition (sheet side: `src/lib/multi-rename/DETAILS.md` § Presets). `StoredLastSpec` also reads
+  the older `preset: { kind, id }`: a `saved` one keeps its id, a `builtIn` one (those are seeds now, with ids of their
+  own) names no preset and keeps the fields.
 - **Newer options load off.** `greek_to_latin` and `normalize_unicode` are `#[serde(default)]`, so a preset (or last
   settings) saved before they existed loads with both off.
 - **Legacy counter fields.** Presets saved while the sheet had counter start / step / digits fields still carry

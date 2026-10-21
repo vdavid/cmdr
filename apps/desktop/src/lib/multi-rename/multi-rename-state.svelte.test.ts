@@ -296,11 +296,11 @@ describe('createMultiRenameState', () => {
     tool.update({ nameMask: 'typed' })
     release({
       spec: { ...DEFAULT_SPEC, nameMask: 'remembered' },
-      preset: { kind: 'builtIn', id: 'builtin:remove-diacritics' },
+      presetId: 'p1',
     })
     await settle()
     expect(tool.spec.nameMask).toBe('typed')
-    expect(tool.loaded).toBeNull()
+    expect(tool.loadedId).toBeNull()
     tool.dispose()
   })
 
@@ -338,14 +338,14 @@ describe('createMultiRenameState', () => {
     it('opens on the settings and preset the last sheet closed with, marked edited when they differ', async () => {
       ipc.getMultiRenameLastSettings.mockResolvedValue({
         spec: { ...DEFAULT_SPEC, nameMask: 'IMG_[C]_x' },
-        preset: { kind: 'saved', id: 'p1' },
+        presetId: 'p1',
       })
       const tool = createMultiRenameState('S')
       await tool.loadPresets()
       await settle()
       expect(tool.spec.nameMask).toBe('IMG_[C]_x')
       expect((ipc.previewMultiRename.mock.calls[0][1] as { nameMask: string }).nameMask).toBe('IMG_[C]_x')
-      expect(tool.loaded).toEqual({ kind: 'saved', id: 'p1' })
+      expect(tool.loadedId).toBe('p1')
       expect(tool.edited).toBe(true)
       tool.dispose()
     })
@@ -354,12 +354,12 @@ describe('createMultiRenameState', () => {
       const tool = createMultiRenameState('S')
       await tool.loadPresets()
       await settle()
-      tool.loadPreset({ kind: 'saved', id: 'p1' })
+      tool.loadPreset('p1')
       tool.update({ search: 'x' })
       await tool.persist()
       expect(ipc.saveMultiRenameLastSettings).toHaveBeenLastCalledWith(
         expect.objectContaining({ nameMask: 'IMG_[C]', search: 'x' }),
-        { kind: 'saved', id: 'p1' },
+        'p1',
       )
 
       tool.resetFields()
@@ -371,13 +371,13 @@ describe('createMultiRenameState', () => {
     it('forgets a remembered preset that was deleted since, keeping its fields', async () => {
       ipc.getMultiRenameLastSettings.mockResolvedValue({
         spec: { ...DEFAULT_SPEC, nameMask: 'gone' },
-        preset: { kind: 'saved', id: 'deleted' },
+        presetId: 'deleted',
       })
       const tool = createMultiRenameState('S')
       await tool.loadPresets()
       await settle()
       expect(tool.spec.nameMask).toBe('gone')
-      expect(tool.loaded).toBeNull()
+      expect(tool.loadedId).toBeNull()
       await tool.persist()
       expect(ipc.saveMultiRenameLastSettings).toHaveBeenLastCalledWith(
         expect.objectContaining({ nameMask: 'gone' }),
@@ -389,12 +389,12 @@ describe('createMultiRenameState', () => {
     it('loads a saved preset, and marks it edited only while a field differs from it', async () => {
       const tool = createMultiRenameState('S')
       await tool.loadPresets()
-      expect(tool.loaded).toBeNull()
+      expect(tool.loadedId).toBeNull()
       expect(tool.edited).toBe(false)
 
-      tool.loadPreset({ kind: 'saved', id: 'p1' })
+      tool.loadPreset('p1')
       expect(tool.spec.nameMask).toBe('IMG_[C]')
-      expect(tool.loaded).toEqual({ kind: 'saved', id: 'p1' })
+      expect(tool.loadedId).toBe('p1')
       expect(tool.edited).toBe(false)
 
       tool.update({ nameMask: 'IMG_[C]_x' })
@@ -404,17 +404,18 @@ describe('createMultiRenameState', () => {
       tool.dispose()
     })
 
-    it('loads a built-in preset, and Reset all fields leaves nothing loaded', () => {
+    it('Reset all fields leaves nothing loaded', async () => {
       const tool = createMultiRenameState('S')
-      tool.loadPreset({ kind: 'builtIn', id: 'builtin:remove-diacritics' })
-      expect(tool.spec.removeDiacritics).toBe(true)
-      expect(tool.loaded).toEqual({ kind: 'builtIn', id: 'builtin:remove-diacritics' })
+      await tool.loadPresets()
+      tool.loadPreset('p2')
+      expect(tool.spec.case).toBe('lower')
+      expect(tool.loadedId).toBe('p2')
       tool.update({ case: 'upper' })
       expect(tool.edited).toBe(true)
 
       tool.resetFields()
       expect(tool.spec).toEqual(DEFAULT_SPEC)
-      expect(tool.loaded).toBeNull()
+      expect(tool.loadedId).toBeNull()
       expect(tool.edited).toBe(false)
       tool.dispose()
     })
@@ -427,8 +428,22 @@ describe('createMultiRenameState', () => {
       const saved = stored.find((p) => p.name === 'Drafts')
       expect(saved?.spec.search).toBe('draft')
       expect(tool.presets.map((p) => p.name)).toEqual(['Photos', 'Music', 'Drafts'])
-      expect(tool.loaded).toEqual({ kind: 'saved', id: saved?.id })
+      expect(tool.loadedId).toBe(saved?.id)
       expect(tool.edited).toBe(false)
+      tool.dispose()
+    })
+
+    it('hands the backend the seeds, named in the UI language, every time it reads the list', async () => {
+      const tool = createMultiRenameState('S')
+      await tool.loadPresets()
+      const seeds = ipc.getMultiRenamePresets.mock.calls[0][0] as { name: string; spec: { nameMask: string } }[]
+      expect(seeds.map((seed) => seed.name)).toEqual([
+        'Date and time',
+        'Remove diacritics',
+        'Greek to Latin',
+        'Normalize Unicode',
+      ])
+      expect(seeds[0].spec.nameMask).toBe('[Y-M-D h.m.s]')
       tool.dispose()
     })
 
@@ -452,13 +467,13 @@ describe('createMultiRenameState', () => {
     it('updates a preset with the current fields, which loads it unedited', async () => {
       const tool = createMultiRenameState('S')
       await tool.loadPresets()
-      tool.loadPreset({ kind: 'saved', id: 'p1' })
+      tool.loadPreset('p1')
       tool.update({ nameMask: '[N]-[C:3]' })
       expect(tool.edited).toBe(true)
 
       await tool.updatePreset('p1')
       expect(ipc.updateMultiRenamePreset).toHaveBeenCalledWith('p1', expect.objectContaining({ nameMask: '[N]-[C:3]' }))
-      expect(tool.loaded).toEqual({ kind: 'saved', id: 'p1' })
+      expect(tool.loadedId).toBe('p1')
       expect(tool.edited).toBe(false)
       tool.dispose()
     })
@@ -466,9 +481,9 @@ describe('createMultiRenameState', () => {
     it('deleting the loaded preset leaves nothing loaded, and keeps the fields', async () => {
       const tool = createMultiRenameState('S')
       await tool.loadPresets()
-      tool.loadPreset({ kind: 'saved', id: 'p1' })
+      tool.loadPreset('p1')
       await tool.deletePreset('p1')
-      expect(tool.loaded).toBeNull()
+      expect(tool.loadedId).toBeNull()
       expect(tool.spec.nameMask).toBe('IMG_[C]')
       expect(tool.presets.map((p) => p.id)).toEqual(['p2'])
       tool.dispose()

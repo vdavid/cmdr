@@ -5,13 +5,13 @@ The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: tha
 - `MultiRenameDialog.svelte` the sheet; `routes/(main)/+page.svelte` opens the backend session first and closes it with
   the sheet. `PreviewList.svelte` its preview (a `table`-semantics `ColumnList` over the windowed `source`).
 - `multi-rename-state.svelte.ts` the spec, the debounced preview (a generation counter drops stale answers), the rows in
-  view, presets (`loaded`, `edited`), the last settings (`persist`), Results' names, Start.
+  view, presets (`loadedId`, `edited`), the last settings (`persist`), Results' names, Start.
 - `results.svelte.ts` Results (⌥⏎): whether a names file is out in the editor; window focus reads it back.
 - `field-history-menu.svelte.ts` the fields' history (↓): one house `Menu` under the field that asked;
   `FieldHistoryChevron.svelte` the chevron at each field's end.
 - `PresetsControl.svelte` the Presets button, its house `Menu`, and the name popover. `preset-menu.ts` (rows, name
   clash) and `preset-keys.ts` (F2 / ⌘S) are pure.
-- `spec.ts` the default spec, built-in presets, `specsEqual`, placeholder insertion; `row-status.ts` a row status →
+- `spec.ts` the default spec, the preset seeds, `specsEqual`, placeholder insertion; `row-status.ts` a row status →
   glyph, label, reason. Pure.
 - `MaskInput.svelte` both mask fields, `[C…]` tokens with a ▾ marker and an inline `CounterTokenEditor`
   (`mask-token-kinds.ts`); `mask-tokens.ts` / `counter-token.ts` / `token-editor-rules.ts` are its pure logic.

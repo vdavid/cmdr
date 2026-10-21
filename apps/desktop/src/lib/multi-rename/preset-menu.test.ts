@@ -23,8 +23,7 @@ function saved(count: number): MultiRenamePreset[] {
 function input(overrides: Partial<PresetMenuInput> = {}): PresetMenuInput {
   return {
     saved: saved(2),
-    builtIns: [{ id: 'builtin:remove-diacritics', name: 'Remove diacritics' }],
-    loaded: null,
+    loadedId: null,
     current: DEFAULT_SPEC,
     labels,
     ...overrides,
@@ -32,19 +31,18 @@ function input(overrides: Partial<PresetMenuInput> = {}): PresetMenuInput {
 }
 
 describe('presetMenuSections', () => {
-  it('lists saved presets first, then built-ins, then Reset all fields and Save current as…', () => {
+  it('lists the presets top to bottom, then Reset all fields and Save current as…', () => {
     const sections = presetMenuSections(input())
     expect(sections.map((s) => s.items.map((i) => i.label))).toEqual([
       ['Preset 1', 'Preset 2'],
-      ['Remove diacritics'],
       ['Reset all fields', 'Save current as…'],
     ])
   })
 
-  it('heads the saved presets “Your presets”', () => {
-    const [savedSection, builtIns] = presetMenuSections(input())
+  it('heads the presets “Your presets”', () => {
+    const [savedSection, actions] = presetMenuSections(input())
     expect(savedSection.heading).toBe('Your presets')
-    expect(builtIns.heading).toBeUndefined()
+    expect(actions.heading).toBeUndefined()
   })
 
   it('numbers the first nine saved presets, and only those', () => {
@@ -56,14 +54,13 @@ describe('presetMenuSections', () => {
     ])
   })
 
-  it('gives each saved preset Rename, Update, and Delete, and built-ins none', () => {
-    const [savedSection, builtIns] = presetMenuSections(input())
+  it('gives each preset Rename, Update, and Delete', () => {
+    const [savedSection] = presetMenuSections(input())
     expect(savedSection.items[0].submenu?.map((i) => i.data)).toEqual([
       { kind: 'rename', id: 'p1' },
       { kind: 'update', id: 'p1' },
       { kind: 'delete', id: 'p1' },
     ])
-    expect(builtIns.items[0].submenu).toBeUndefined()
   })
 
   it('offers Update only where it would change the preset', () => {
@@ -74,13 +71,12 @@ describe('presetMenuSections', () => {
   })
 
   it('marks the loaded preset, and every row loads or acts through its data', () => {
-    const sections = presetMenuSections(input({ loaded: { kind: 'saved', id: 'p2' } }))
+    const sections = presetMenuSections(input({ loadedId: 'p2' }))
     const rows = sections.flatMap((s) => s.items)
     expect(rows.find((i) => i.check)?.label).toBe('Preset 2')
     expect(rows.map((i) => i.data)).toEqual([
-      { kind: 'load', preset: { kind: 'saved', id: 'p1' } },
-      { kind: 'load', preset: { kind: 'saved', id: 'p2' } },
-      { kind: 'load', preset: { kind: 'builtIn', id: 'builtin:remove-diacritics' } },
+      { kind: 'load', id: 'p1' },
+      { kind: 'load', id: 'p2' },
       { kind: 'reset' },
       { kind: 'saveAs' },
     ])
@@ -88,8 +84,8 @@ describe('presetMenuSections', () => {
     expect(new Set(values).size).toBe(values.length)
   })
 
-  it('leaves out the saved section while there are none', () => {
-    expect(presetMenuSections(input({ saved: [] })).map((s) => s.id)).toEqual(['builtIn', 'actions'])
+  it('leaves out the presets section while there are none', () => {
+    expect(presetMenuSections(input({ saved: [] })).map((s) => s.id)).toEqual(['actions'])
   })
 })
 

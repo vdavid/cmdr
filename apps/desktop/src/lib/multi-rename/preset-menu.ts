@@ -1,20 +1,19 @@
 /**
  * The Presets menu's rows (F2 in the Multi-rename sheet), built from data so the
- * house `Menu` draws and drives them. Pure: the sheet hands in the saved presets,
- * what's loaded, and the words; it gets back sections whose rows carry a typed action.
+ * house `Menu` draws and drives them. Pure: the sheet hands in the presets (top to
+ * bottom), what's loaded, and the words; it gets back sections whose rows carry a typed action.
  */
 
 import type { MenuItem, MenuSection } from '#lib/ui/menu-types.js'
 import type { MultiRenamePreset, MultiRenameSpec } from '#lib/tauri-commands/index.js'
-import type { LoadedPreset } from './multi-rename-state.svelte'
 import { specsEqual } from './spec'
 
-/** Saved presets past this many have no digit: the keys stop at 9. */
+/** Presets past this many have no digit: the keys stop at 9. */
 const NUMBERED = 9
 
 /** What picking a row does. */
 export type PresetAction =
-  | { kind: 'load'; preset: LoadedPreset }
+  | { kind: 'load'; id: string }
   | { kind: 'reset' }
   | { kind: 'saveAs' }
   | { kind: 'rename'; id: string }
@@ -22,26 +21,25 @@ export type PresetAction =
   | { kind: 'delete'; id: string }
 
 export interface PresetMenuInput {
+  /** Top to bottom: a preset's number is its place. */
   saved: MultiRenamePreset[]
-  builtIns: { id: string; name: string }[]
-  loaded: LoadedPreset | null
+  /** The id of the preset the fields came from. */
+  loadedId: string | null
   /** The fields as they are now, so Update is offered only where it would change something. */
   current: MultiRenameSpec
   labels: { saved: string; reset: string; saveAs: string; rename: string; update: string; delete: string }
 }
 
 export function presetMenuSections(input: PresetMenuInput): MenuSection<PresetAction>[] {
-  const { saved, builtIns, loaded, current, labels } = input
-  const isLoaded = (preset: LoadedPreset): boolean => loaded?.kind === preset.kind && loaded.id === preset.id
+  const { saved, loadedId, current, labels } = input
 
   const savedRows = saved.map((preset, index): MenuItem<PresetAction> => {
-    const self: LoadedPreset = { kind: 'saved', id: preset.id }
     return {
       value: `saved:${preset.id}`,
       label: preset.name,
       accelerator: index < NUMBERED ? String(index + 1) : undefined,
-      check: isLoaded(self) ? { kind: 'current' } : undefined,
-      data: { kind: 'load', preset: self },
+      check: preset.id === loadedId ? { kind: 'current' } : undefined,
+      data: { kind: 'load', id: preset.id },
       submenu: [
         { value: `saved:${preset.id}:rename`, label: labels.rename, data: { kind: 'rename', id: preset.id } },
         {
@@ -55,19 +53,8 @@ export function presetMenuSections(input: PresetMenuInput): MenuSection<PresetAc
     }
   })
 
-  const builtInRows = builtIns.map((preset): MenuItem<PresetAction> => {
-    const self: LoadedPreset = { kind: 'builtIn', id: preset.id }
-    return {
-      value: `builtIn:${preset.id}`,
-      label: preset.name,
-      check: isLoaded(self) ? { kind: 'current' } : undefined,
-      data: { kind: 'load', preset: self },
-    }
-  })
-
   const sections: MenuSection<PresetAction>[] = []
   if (savedRows.length > 0) sections.push({ id: 'saved', heading: labels.saved, items: savedRows })
-  sections.push({ id: 'builtIn', items: builtInRows })
   sections.push({
     id: 'actions',
     items: [

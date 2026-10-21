@@ -1,6 +1,6 @@
 /**
  * The Multi-Rename sheet's settings: the default (Total Commander's `<Default>`:
- * no change), the built-in presets, comparing two specs, and placeholder insertion. Pure, so the
+ * no change), the presets Cmdr seeds the list with, comparing two specs, and placeholder insertion. Pure, so the
  * sheet's state module and its tests share it.
  */
 
@@ -23,32 +23,26 @@ export const DEFAULT_SPEC: MultiRenameSpec = {
   normalizeUnicode: false,
 }
 
-/** A preset that ships with Cmdr. Its name is a message key, so it's translated. */
-export interface BuiltInPreset {
-  id: string
+/**
+ * A preset Cmdr starts the list with. Its name is a message key, read in the UI language when the
+ * backend seeds the list (`presets.rs`'s `seed_in`); from then on it's an ordinary preset, the user's to
+ * rename, update, move, or delete.
+ */
+export interface PresetSeedSource {
   nameKey:
+    | 'multiRename.preset.dateAndTime'
     | 'multiRename.preset.removeDiacritics'
     | 'multiRename.preset.greekToLatin'
     | 'multiRename.preset.normalizeUnicode'
   spec: MultiRenameSpec
 }
 
-export const BUILT_IN_PRESETS: BuiltInPreset[] = [
-  {
-    id: 'builtin:remove-diacritics',
-    nameKey: 'multiRename.preset.removeDiacritics',
-    spec: { ...DEFAULT_SPEC, removeDiacritics: true },
-  },
-  {
-    id: 'builtin:greek-to-latin',
-    nameKey: 'multiRename.preset.greekToLatin',
-    spec: { ...DEFAULT_SPEC, greekToLatin: true },
-  },
-  {
-    id: 'builtin:normalize-unicode',
-    nameKey: 'multiRename.preset.normalizeUnicode',
-    spec: { ...DEFAULT_SPEC, normalizeUnicode: true },
-  },
+/** The seeds, top to bottom. */
+export const PRESET_SEEDS: PresetSeedSource[] = [
+  { nameKey: 'multiRename.preset.dateAndTime', spec: { ...DEFAULT_SPEC, nameMask: '[Y-M-D h.m.s]' } },
+  { nameKey: 'multiRename.preset.removeDiacritics', spec: { ...DEFAULT_SPEC, removeDiacritics: true } },
+  { nameKey: 'multiRename.preset.greekToLatin', spec: { ...DEFAULT_SPEC, greekToLatin: true } },
+  { nameKey: 'multiRename.preset.normalizeUnicode', spec: { ...DEFAULT_SPEC, normalizeUnicode: true } },
 ]
 
 /**

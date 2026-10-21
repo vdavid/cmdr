@@ -4,7 +4,9 @@
 
 use super::plan::MultiRenameSpec;
 use super::preset_store::PresetStore;
-use super::presets::{LastSpec, LoadedPreset, MultiRenamePreset, delete_in, rename_in, save_in, update_spec_in};
+use super::presets::{
+    LastSpec, MultiRenamePreset, PresetList, PresetSeed, delete_in, rename_in, save_in, seed_in, update_spec_in,
+};
 use super::transform::CaseChange;
 use crate::recents::RecentsFile;
 
@@ -334,7 +336,7 @@ fn the_last_settings_keep_one_entry_and_survive_a_restart() {
 
     let writer: RecentsFile<LastSpec> = RecentsFile::new();
     writer.add_at(Some(&path), LastSpec::new(spec("[N]-one"), None), 1);
-    let loaded = Some(LoadedPreset::Saved { id: "p1".to_string() });
+    let loaded = Some("p1".to_string());
     writer.add_at(Some(&path), LastSpec::new(spec("[N]-two"), loaded.clone()), 1);
 
     let reader: RecentsFile<LastSpec> = RecentsFile::new();
@@ -342,7 +344,7 @@ fn the_last_settings_keep_one_entry_and_survive_a_restart() {
     let entries = reader.entries(None);
     assert_eq!(entries.len(), 1, "saving replaces the one entry");
     assert_eq!(entries[0].settings.spec, spec("[N]-two"));
-    assert_eq!(entries[0].settings.preset, loaded);
+    assert_eq!(entries[0].settings.preset_id, loaded);
 }
 
 #[test]
@@ -366,5 +368,154 @@ fn last_settings_saved_without_a_preset_or_the_newer_options_load() {
     .expect("an older save loads");
     assert_eq!(last.settings.spec.name_mask, "[N]-old");
     assert!(!last.settings.spec.normalize_unicode);
-    assert_eq!(last.settings.preset, None);
+    assert_eq!(last.settings.preset_id, None);
+}
+
+/// Last settings as a build saved them while built-in presets were their own kind.
+fn last_with_preset(preset: serde_json::Value) -> LastSpec {
+    let mut stored = serde_json::to_value(LastSpec::new(spec("[N]-old"), None)).expect("serializes");
+    stored["preset"] = preset;
+    serde_json::from_value(stored).expect("an older save loads")
+}
+
+#[test]
+fn older_last_settings_keep_a_saved_preset_and_drop_a_built_in_one() {
+    let saved = last_with_preset(serde_json::json!({ "kind": "saved", "id": "p1" }));
+    assert_eq!(saved.settings.preset_id.as_deref(), Some("p1"));
+
+    // The built-ins are seeded presets now, with ids of their own: the fields stay, no preset is named.
+    let built_in = last_with_preset(serde_json::json!({ "kind": "builtIn", "id": "builtin:remove-diacritics" }));
+    assert_eq!(built_in.settings.preset_id, None);
+    assert_eq!(built_in.settings.spec, spec("[N]-old"));
+}
+
+// -- Seeds --
+
+fn seeds() -> Vec<PresetSeed> {
+    [
+        "Date and time",
+        "Remove diacritics",
+        "Greek to Latin",
+        "Normalize Unicode",
+    ]
+    .into_iter()
+    .map(|name| PresetSeed {
+        name: name.to_string(),
+        spec: spec(&format!("[N]-{name}")),
+    })
+    .collect()
+}
+
+const SEED_NAMES: [&str; 4] = [
+    "Date and time",
+    "Remove diacritics",
+    "Greek to Latin",
+    "Normalize Unicode",
+];
+
+#[test]
+fn a_new_install_starts_with_the_seeds_in_order() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let path = dir.path().join("multi-rename-presets.json");
+    let store = PresetStore::new();
+    store.load_at(&path);
+
+    let answer = store.seed_at(Some(&path), seeds(), 10);
+
+    assert_eq!(names(&answer), SEED_NAMES);
+    assert_eq!(answer[0].spec, spec("[N]-Date and time"));
+    let ids: std::collections::HashSet<&str> = answer.iter().map(|p| p.id.as_str()).collect();
+    assert_eq!(ids.len(), 4, "every seed gets its own id");
+    assert!(path.exists(), "seeding writes the file, so it happens once");
+}
+
+#[test]
+fn seeds_go_in_once_so_a_deleted_one_never_comes_back() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let path = dir.path().join("multi-rename-presets.json");
+    let store = PresetStore::new();
+    store.load_at(&path);
+    let seeded = store.seed_at(Some(&path), seeds(), 10);
+    store.edit_at(Some(&path), "a delete", |list| delete_in(list, &seeded[1].id));
+
+    let after_restart = PresetStore::new();
+    after_restart.load_at(&path);
+    let answer = after_restart.seed_at(Some(&path), seeds(), 10);
+    assert_eq!(names(&answer), ["Date and time", "Greek to Latin", "Normalize Unicode"]);
+}
+
+#[test]
+fn an_emptied_list_is_never_reseeded() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let path = dir.path().join("multi-rename-presets.json");
+    let store = PresetStore::new();
+    store.load_at(&path);
+    for preset in store.seed_at(Some(&path), seeds(), 10) {
+        store.edit_at(Some(&path), "a delete", |list| delete_in(list, &preset.id));
+    }
+
+    let after_restart = PresetStore::new();
+    after_restart.load_at(&path);
+    assert!(after_restart.seed_at(Some(&path), seeds(), 10).is_empty());
+}
+
+#[test]
+fn an_older_build_s_presets_get_the_seeds_after_them_once_skipping_names_they_have() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let path = dir.path().join("multi-rename-presets.json");
+    let entries = serde_json::to_value([preset("b", "Mine"), preset("a", " remove DIACRITICS")]).expect("serializes");
+    let older = serde_json::json!({ "_schemaVersion": 1, "entries": entries });
+    std::fs::write(&path, older.to_string()).expect("write");
+
+    let store = PresetStore::new();
+    store.load_at(&path);
+    let answer = store.seed_at(Some(&path), seeds(), 10);
+    assert_eq!(
+        names(&answer),
+        [
+            "Mine",
+            " remove DIACRITICS",
+            "Date and time",
+            "Greek to Latin",
+            "Normalize Unicode"
+        ],
+        "their numbers stay, and a name they have isn't added twice"
+    );
+    assert_eq!(answer[1].spec, spec("[N]-a"), "their own preset keeps its settings");
+
+    let after_restart = PresetStore::new();
+    after_restart.load_at(&path);
+    assert_eq!(after_restart.seed_at(Some(&path), seeds(), 10).len(), 5, "once only");
+}
+
+#[test]
+fn a_preset_saved_before_the_seeds_arrive_keeps_number_one() {
+    let mut list = PresetList::default();
+    assert!(save_in(&mut list.entries, preset("a", "Mine"), 10));
+    assert!(seed_in(&mut list, seeds(), 10));
+    assert_eq!(names(&list.entries)[..2], ["Mine", "Date and time"]);
+}
+
+#[test]
+fn seeding_stops_at_the_cap() {
+    let mut list = PresetList {
+        entries: vec![preset("a", "Mine")],
+        seeded: false,
+    };
+    assert!(seed_in(&mut list, seeds(), 2));
+    assert_eq!(names(&list.entries), ["Mine", "Date and time"]);
+    assert!(list.seeded);
+}
+
+#[test]
+fn a_set_aside_presets_file_isnt_seeded() {
+    // It wasn't a new install: the person's list is in the set-aside copy.
+    let dir = tempfile::tempdir().expect("tempdir");
+    let path = dir.path().join("multi-rename-presets.json");
+    std::fs::write(&path, "{not json").expect("write garbage");
+    let _notices = crate::state_recovery::testing::capture_recoveries();
+
+    let store = PresetStore::new();
+    store.load_at(&path);
+    assert!(store.seed_at(Some(&path), seeds(), 10).is_empty());
 }

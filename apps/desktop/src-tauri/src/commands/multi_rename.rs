@@ -8,7 +8,7 @@ use crate::multi_rename::error::MultiRenameError;
 use crate::multi_rename::history::{FIELD_HISTORY, FieldHistoryEntry, MAX_FIELD_HISTORY, history_entries};
 use crate::multi_rename::plan::{MultiRenameSpec, PreviewRow, RenameExample, render_examples};
 use crate::multi_rename::presets::{
-    LAST_SPEC, LastSpec, LoadedPreset, MAX_PRESETS, MultiRenameLastSettings, MultiRenamePreset, PRESETS, delete_in,
+    LAST_SPEC, LastSpec, MAX_PRESETS, MultiRenameLastSettings, MultiRenamePreset, PRESETS, PresetSeed, delete_in,
     rename_in, save_in, update_spec_in,
 };
 use crate::multi_rename::run::{MultiRenameStarted, apply};
@@ -178,15 +178,17 @@ pub fn get_multi_rename_last_settings() -> Option<MultiRenameLastSettings> {
 /// for the next ⌃M.
 #[tauri::command]
 #[specta::specta]
-pub fn save_multi_rename_last_settings(app: tauri::AppHandle, spec: MultiRenameSpec, preset: Option<LoadedPreset>) {
-    LAST_SPEC.add(&app, LastSpec::new(spec, preset), 1);
+pub fn save_multi_rename_last_settings(app: tauri::AppHandle, spec: MultiRenameSpec, preset_id: Option<String>) {
+    LAST_SPEC.add(&app, LastSpec::new(spec, preset_id), 1);
 }
 
-/// The saved presets, top to bottom.
+/// The saved presets, top to bottom. A list that never took the seeds (a new
+/// install, or a file from before seeding) gets `seeds` after its presets first,
+/// once: the frontend names them in the UI language, the backend decides.
 #[tauri::command]
 #[specta::specta]
-pub fn get_multi_rename_presets() -> Vec<MultiRenamePreset> {
-    PRESETS.entries()
+pub fn get_multi_rename_presets(app: tauri::AppHandle, seeds: Vec<PresetSeed>) -> Vec<MultiRenamePreset> {
+    PRESETS.seed(&app, seeds, MAX_PRESETS)
 }
 
 /// Saves a preset at the end of the list; one with the same name is replaced where it

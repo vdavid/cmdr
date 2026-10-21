@@ -1,8 +1,8 @@
 <script lang="ts">
     /**
      * The Multi-rename sheet's presets: one button (F2) that opens the Presets menu
-     * (saved presets numbered 1–9, built-ins, Reset all fields, Save current as…, and a
-     * Rename / Update / Delete submenu per saved preset), plus the name popover that
+     * (the presets numbered 1–9 by position, Reset all fields, Save current as…, and a
+     * Rename / Update / Delete submenu per preset), plus the name popover that
      * ⌘S and Rename… open. The sheet owns the keys and calls `pressOpenKey` / `openSave`;
      * everything else lives here.
      */
@@ -22,7 +22,6 @@
     import type { MultiRenameState } from './multi-rename-state.svelte'
     import { createKeyRoadEcho, presetKeyOf, type KeyRoad } from './preset-keys'
     import { presetMenuSections, presetNameClash, type PresetAction, type PresetNameMode } from './preset-menu'
-    import { BUILT_IN_PRESETS } from './spec'
 
     interface Props {
         tool: MultiRenameState
@@ -47,13 +46,7 @@
     // F2 can arrive twice for one press: the keydown, and File > Rename's accelerator.
     const isEcho = createKeyRoadEcho()
 
-    const loadedName = $derived.by(() => {
-        const loaded = tool.loaded
-        if (!loaded) return null
-        if (loaded.kind === 'saved') return tool.presets.find((p) => p.id === loaded.id)?.name ?? null
-        const builtIn = BUILT_IN_PRESETS.find((p) => p.id === loaded.id)
-        return builtIn ? tString(builtIn.nameKey) : null
-    })
+    const loadedName = $derived(tool.presets.find((p) => p.id === tool.loadedId)?.name ?? null)
 
     const clash = $derived(nameMode ? presetNameClash(nameMode, name, tool.presetNamed) : undefined)
 
@@ -61,8 +54,7 @@
         getSections: () =>
             presetMenuSections({
                 saved: tool.presets,
-                builtIns: BUILT_IN_PRESETS.map((p) => ({ id: p.id, name: tString(p.nameKey) })),
-                loaded: tool.loaded,
+                loadedId: tool.loadedId,
                 current: tool.spec,
                 labels: {
                     saved: tString('multiRename.presets.saved'),
@@ -107,7 +99,7 @@
     function act(action: PresetAction): void {
         switch (action.kind) {
             case 'load':
-                tool.loadPreset(action.preset)
+                tool.loadPreset(action.id)
                 return
             case 'reset':
                 tool.resetFields()
@@ -147,10 +139,9 @@
         openMenu()
     }
 
-    /** Opens the name popover to save the fields (⌘S), prefilled with the loaded saved preset's name. */
+    /** Opens the name popover to save the fields (⌘S), prefilled with the loaded preset's name. */
     export function openSave(): void {
-        const loaded = tool.loaded
-        openName({ kind: 'save' }, loaded?.kind === 'saved' ? (loadedName ?? '') : '')
+        openName({ kind: 'save' }, loadedName ?? '')
     }
 
     function openName(mode: PresetNameMode, prefill: string): void {

@@ -6,7 +6,6 @@ import {
   commands,
   type FieldHistoryEntry,
   type HistoryField,
-  type LoadedPreset,
   type MultiRenameError,
   type MultiRenameLastSettings,
   type MultiRenameOpened,
@@ -15,6 +14,7 @@ import {
   type MultiRenameSpec,
   type MultiRenameStarted,
   type PreviewCounts,
+  type PresetSeed,
   type PreviewFilter,
   type PreviewRow,
   type RenameExample,
@@ -23,7 +23,6 @@ import {
 export type {
   FieldHistoryEntry,
   HistoryField,
-  LoadedPreset,
   MultiRenameError,
   MultiRenameLastSettings,
   MultiRenameOpened,
@@ -32,6 +31,7 @@ export type {
   MultiRenameSpec,
   MultiRenameStarted,
   PreviewCounts,
+  PresetSeed,
   PreviewFilter,
   PreviewRow,
   RenameExample,
@@ -121,9 +121,12 @@ export async function closeMultiRename(sessionId: string): Promise<void> {
   await commands.closeMultiRename(sessionId)
 }
 
-/** The saved presets, top to bottom. */
-export async function getMultiRenamePresets(): Promise<MultiRenamePreset[]> {
-  return commands.getMultiRenamePresets()
+/**
+ * The saved presets, top to bottom. A list that never took the seeds (a new install, or one from before
+ * seeding) gets `seeds` after its presets first, once; the backend decides.
+ */
+export async function getMultiRenamePresets(seeds: PresetSeed[]): Promise<MultiRenamePreset[]> {
+  return commands.getMultiRenamePresets(seeds)
 }
 
 /** Saves a preset at the end of the list, or over the one with its name where that stands. Answers the list after. */
@@ -152,8 +155,8 @@ export async function getMultiRenameLastSettings(): Promise<MultiRenameLastSetti
 }
 
 /** Remembers the settings the sheet closes with, and the preset they came from, for the next ⌃M. */
-export async function saveMultiRenameLastSettings(spec: MultiRenameSpec, preset: LoadedPreset | null): Promise<void> {
-  await commands.saveMultiRenameLastSettings(spec, preset)
+export async function saveMultiRenameLastSettings(spec: MultiRenameSpec, presetId: string | null): Promise<void> {
+  await commands.saveMultiRenameLastSettings(spec, presetId)
 }
 
 /** What the text fields held when earlier renames ran, newest first, every field together. */

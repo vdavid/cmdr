@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { BUILT_IN_PRESETS, DEFAULT_SPEC, insertAtCaret, specsEqual } from './spec'
+import { DEFAULT_SPEC, PRESET_SEEDS, insertAtCaret, specsEqual } from './spec'
 
 describe('multi-rename spec helpers', () => {
   it('the default changes nothing', () => {
@@ -10,20 +10,19 @@ describe('multi-rename spec helpers', () => {
     expect(DEFAULT_SPEC.normalizeUnicode).toBe(false)
   })
 
-  it('ships a remove-diacritics preset that only removes diacritics', () => {
-    const preset = BUILT_IN_PRESETS.find((p) => p.id === 'builtin:remove-diacritics')
-    expect(preset?.spec).toEqual({ ...DEFAULT_SPEC, removeDiacritics: true })
-  })
-
-  it('ships Greek to Latin and Normalize Unicode presets that each set that option alone', () => {
-    expect(BUILT_IN_PRESETS.find((p) => p.id === 'builtin:greek-to-latin')?.spec).toEqual({
-      ...DEFAULT_SPEC,
-      greekToLatin: true,
-    })
-    expect(BUILT_IN_PRESETS.find((p) => p.id === 'builtin:normalize-unicode')?.spec).toEqual({
-      ...DEFAULT_SPEC,
-      normalizeUnicode: true,
-    })
+  it('seeds Date and time, then one preset per whole-name option, each changing that alone', () => {
+    expect(PRESET_SEEDS.map((seed) => seed.nameKey)).toEqual([
+      'multiRename.preset.dateAndTime',
+      'multiRename.preset.removeDiacritics',
+      'multiRename.preset.greekToLatin',
+      'multiRename.preset.normalizeUnicode',
+    ])
+    expect(PRESET_SEEDS.map((seed) => seed.spec)).toEqual([
+      { ...DEFAULT_SPEC, nameMask: '[Y-M-D h.m.s]' },
+      { ...DEFAULT_SPEC, removeDiacritics: true },
+      { ...DEFAULT_SPEC, greekToLatin: true },
+      { ...DEFAULT_SPEC, normalizeUnicode: true },
+    ])
   })
 
   it('compares two specs field by field, whatever order the fields came in', () => {

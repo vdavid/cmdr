@@ -1114,7 +1114,6 @@ export {
   saveMultiRenameLastSettings,
 } from './multi-rename'
 export type {
-  LoadedPreset,
   FieldHistoryEntry,
   HistoryField,
   MultiRenameError,
@@ -1126,6 +1125,7 @@ export type {
   MultiRenameSpec,
   MultiRenameStarted,
   PreviewCounts,
+  PresetSeed,
   PreviewFilter,
   PreviewRow,
   RenameExample,

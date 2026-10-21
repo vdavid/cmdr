@@ -82,26 +82,28 @@
 - **Start's toast** says how many files are renaming; a batch that ran as a move on S3 adds a warning for the swaps it
   left out (`swapsLeftOut`), as Ask Cmdr does.
 - **Gallery**: `not-triggerable`, since the preview is computed from a real listing.
-- **Presets** (TC's F2 "Load/save settings"): the footer's `[Presets ▾ <name>]` button opens a house `Menu`: saved
-  presets under a "Your presets" heading, in the user's order, numbered 1–9 by position (a digit picks one), then the
-  built-ins, then Reset all fields (TC's `<Default>`) and Save current as… (⌘S chip). Each saved preset has a submenu
-  (→, hover, or right-click): Rename…, Update with current fields (greyed when nothing would change), Delete. Picking a
-  preset loads it; nothing runs. Every preset command answers the backend's list after the change, so the sheet takes it
-  from there.
+- **Presets** (TC's F2 "Load/save settings"): the footer's `[Presets ▾ <name>]` button opens a house `Menu`: the presets
+  under a "Your presets" heading, in the user's order, numbered 1–9 by position (a digit picks one), then Reset all
+  fields (TC's `<Default>`) and Save current as… (⌘S chip). Each preset has a submenu (→, hover, or right-click):
+  Rename…, Update with current fields (greyed when nothing would change), Delete. Picking a preset loads it; nothing
+  runs. Every preset command answers the backend's list after the change, so the sheet takes it from there.
+  - **Seeds**: `loadPresets` hands the backend `PRESET_SEEDS` (`spec.ts`) named in the UI language; a list that never
+    took them gets them once, after its own presets (`src-tauri/src/multi_rename/DETAILS.md` § Presets). From then on
+    they're ordinary presets: there's no built-in kind.
   - **Last settings** (TC keeps them too): closing the sheet, any way, saves the fields and the loaded preset (`persist`
     in `onDestroy` → `save_multi_rename_last_settings`, one entry in `multi-rename-last.json`), and the next sheet's
     first preview waits for them. **Decision/Why:** the preset travels with the fields, so a reopened sheet's button
     still names it and `edited` stays honest (fields alone would make an edited preset look like nothing was loaded). A
-    remembered preset deleted since is dropped (`loaded` reads the live list), its fields kept. `touched` makes an edit
-    (or a preset pick) made before they arrive win.
+    remembered preset deleted since is dropped (`loadedId` reads the live list), its fields kept. `touched` makes an
+    edit (or a preset pick) made before they arrive win.
   - The button reads `<name> (edited)` once a field differs from the loaded preset (`specsEqual`), and just "Presets"
     with nothing loaded. Saving or updating makes that preset the loaded one; deleting it leaves nothing loaded and the
     fields as they are.
   - ⌘S (and Save current as…, and Rename…) open a `Popover` anchored to the button, with one name field prefilled with
-    the loaded saved preset's name. Enter saves; a name another preset has (`presetNameClash`, the backend's
-    trimmed-lowercase rule) asks inline first, and a second Enter or Replace confirms. Escape closes the popover only
-    (it stops the key before the sheet sees it), and focus goes back to the button. The field's Enter is claimed, so it
-    never reaches the sheet's Enter-starts rule.
+    the loaded preset's name. Enter saves; a name another preset has (`presetNameClash`, the backend's trimmed-lowercase
+    rule) asks inline first, and a second Enter or Replace confirms. Escape closes the popover only (it stops the key
+    before the sheet sees it), and focus goes back to the button. The field's Enter is claimed, so it never reaches the
+    sheet's Enter-starts rule.
   - The menu lives in the sheet's overlay (`Menu` portals through `providePortalTarget`), so it sits above the scrim and
     inside the focus trap; its capture listener takes every key while open, so the sheet's Enter can't start a rename
     from it.

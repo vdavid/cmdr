@@ -113,6 +113,46 @@ pub fn delete_in(presets: &mut Vec<MultiRenamePreset>, id: &str) -> bool {
     presets.len() != before
 }
 
+/// The presets, top to bottom, and whether this list ever took the seeds.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct PresetList {
+    pub entries: Vec<MultiRenamePreset>,
+    /// The seeds went in (or the list's file was set aside, which isn't a new
+    /// install). Never goes back to `false`, so a deleted seed stays deleted.
+    pub seeded: bool,
+}
+
+/// A preset Cmdr starts the list with ("Date and time", "Remove diacritics", …),
+/// named in the UI language: the frontend owns the specs and the words, the
+/// backend decides whether they go in.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct PresetSeed {
+    pub name: String,
+    pub spec: MultiRenameSpec,
+}
+
+/// Adds the seeds after the user's presets, once per list: none whose name the
+/// list already has, none past `max`. Returns whether it ran.
+pub fn seed_in(list: &mut PresetList, seeds: Vec<PresetSeed>, max: usize) -> bool {
+    if list.seeded {
+        return false;
+    }
+    for PresetSeed { name, spec } in seeds {
+        let key = name_key(&name);
+        if key.is_empty() || list.entries.len() >= max || list.entries.iter().any(|p| p.key() == key) {
+            continue;
+        }
+        list.entries.push(MultiRenamePreset {
+            id: uuid::Uuid::new_v4().to_string(),
+            name: name.trim().to_string(),
+            spec,
+        });
+    }
+    list.seeded = true;
+    true
+}
+
 /// Renames preset `id` to `name` (trimmed) where it stands in the list. Another
 /// preset already called that is dropped: a preset is its name, and the sheet asks
 /// before replacing one. Returns whether anything changed: `false` for an unknown
@@ -147,33 +187,19 @@ pub fn update_spec_in(presets: &mut [MultiRenamePreset], id: &str, spec: &MultiR
 /// one left off (TC keeps them too). One entry, in its own file.
 pub static LAST_SPEC: RecentsFile<LastSpec> = RecentsFile::new();
 
-/// The preset the sheet's fields came from, so a reopened sheet's Presets button
-/// names it (and says "edited" when the fields moved off it).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
-#[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
-pub enum LoadedPreset {
-    Saved {
-        id: String,
-    },
-    /// One that ships with Cmdr (`spec.ts`'s `BUILT_IN_PRESETS`).
-    BuiltIn {
-        id: String,
-    },
-}
-
-/// What the sheet closed with: its fields, and the preset they came from.
+/// What the sheet closed with: its fields, and the preset they came from, so a
+/// reopened sheet's Presets button names it (and says "edited" when the fields
+/// moved off it).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MultiRenameLastSettings {
     pub spec: MultiRenameSpec,
-    /// Absent in a file saved before the sheet remembered it.
-    #[serde(default)]
-    pub preset: Option<LoadedPreset>,
+    pub preset_id: Option<String>,
 }
 
 /// The one entry `LAST_SPEC` keeps.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", from = "StoredLastSpec")]
 pub struct LastSpec {
     pub id: String,
     #[serde(flatten)]
@@ -183,10 +209,51 @@ pub struct LastSpec {
 impl LastSpec {
     const ID: &'static str = "last";
 
-    pub fn new(spec: MultiRenameSpec, preset: Option<LoadedPreset>) -> Self {
+    pub fn new(spec: MultiRenameSpec, preset_id: Option<String>) -> Self {
         Self {
             id: Self::ID.to_string(),
-            settings: MultiRenameLastSettings { spec, preset },
+            settings: MultiRenameLastSettings { spec, preset_id },
+        }
+    }
+}
+
+/// `LastSpec` as stored, by this build or an older one: a file saved before the
+/// sheet remembered its preset has none, and one saved while Cmdr's own presets
+/// were a separate kind names the preset as `preset: { kind, id }`.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct StoredLastSpec {
+    id: String,
+    spec: MultiRenameSpec,
+    #[serde(default)]
+    preset_id: Option<String>,
+    #[serde(default)]
+    preset: Option<OlderLoadedPreset>,
+}
+
+#[derive(Deserialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+enum OlderLoadedPreset {
+    Saved {
+        id: String,
+    },
+    /// One that shipped with Cmdr. Those are seeded presets now, with ids of their
+    /// own, so the fields stay and no preset is named.
+    BuiltIn {},
+}
+
+impl From<StoredLastSpec> for LastSpec {
+    fn from(stored: StoredLastSpec) -> Self {
+        let older = match stored.preset {
+            Some(OlderLoadedPreset::Saved { id }) => Some(id),
+            Some(OlderLoadedPreset::BuiltIn {}) | None => None,
+        };
+        Self {
+            id: stored.id,
+            settings: MultiRenameLastSettings {
+                spec: stored.spec,
+                preset_id: stored.preset_id.or(older),
+            },
         }
     }
 }

@@ -102,7 +102,7 @@ describe('MultiRenameDialog a11y', () => {
     })
     getMultiRenameLastSettings.mockResolvedValueOnce({
       spec: { ...DEFAULT_SPEC, greekToLatin: true, removeDiacritics: true, normalizeUnicode: true },
-      preset: null,
+      presetId: null,
     })
     setLastMultiRenameRun({ operationId: 'op1', renaming: 2 })
     await expectNoA11yViolations(await mountSheet())

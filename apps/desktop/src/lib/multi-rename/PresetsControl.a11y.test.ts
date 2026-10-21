@@ -52,7 +52,7 @@ async function mountControl(): Promise<{
   document.body.appendChild(root)
   const tool = createMultiRenameState('S')
   await tool.loadPresets()
-  tool.loadPreset({ kind: 'saved', id: 'p2' })
+  tool.loadPreset('p2')
   tool.update({ nameMask: 'IMG_[C]_x' })
   const control = mount(PresetsControl, { target: root, props: { tool } })
   cleanup = () => {

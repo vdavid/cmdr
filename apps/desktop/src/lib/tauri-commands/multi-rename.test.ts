@@ -126,8 +126,8 @@ describe('multi-rename wrappers', () => {
     await updateMultiRenamePreset('p', spec)
     expect(commands.updateMultiRenamePreset).toHaveBeenCalledWith('p', spec)
 
-    const last = { spec, preset: { kind: 'saved', id: 'p' } }
-    vi.mocked(commands.getMultiRenameLastSettings).mockResolvedValueOnce(last as never)
+    const last = { spec, presetId: 'p' }
+    vi.mocked(commands.getMultiRenameLastSettings).mockResolvedValueOnce(last)
     expect(await getMultiRenameLastSettings()).toEqual(last)
     await saveMultiRenameLastSettings(spec, null)
     expect(commands.saveMultiRenameLastSettings).toHaveBeenCalledWith(spec, null)
@@ -147,7 +147,9 @@ describe('multi-rename wrappers', () => {
   it('passes presets through', async () => {
     const preset = { id: 'p', name: 'Plain', spec }
     vi.mocked(commands.getMultiRenamePresets).mockResolvedValueOnce([preset] as never)
-    expect(await getMultiRenamePresets()).toEqual([preset])
+    const seeds = [{ name: 'Plain', spec }]
+    expect(await getMultiRenamePresets(seeds)).toEqual([preset])
+    expect(commands.getMultiRenamePresets).toHaveBeenCalledWith(seeds)
     await saveMultiRenamePreset(preset)
     expect(commands.saveMultiRenamePreset).toHaveBeenCalledWith(preset)
     await deleteMultiRenamePreset('p')

@@ -1534,8 +1534,13 @@ export const commands = {
     typedError<null, MultiRenameError>(__TAURI_INVOKE('clear_multi_rename_names', { sessionId })),
   // The text fields' history, newest first, every field together.
   getMultiRenameHistory: () => __TAURI_INVOKE<FieldHistoryEntry[]>('get_multi_rename_history'),
-  // The saved presets, top to bottom.
-  getMultiRenamePresets: () => __TAURI_INVOKE<MultiRenamePreset[]>('get_multi_rename_presets'),
+  /**
+   *  The saved presets, top to bottom. A list that never took the seeds (a new
+   *  install, or a file from before seeding) gets `seeds` after its presets first,
+   *  once: the frontend names them in the UI language, the backend decides.
+   */
+  getMultiRenamePresets: (seeds: PresetSeed[]) =>
+    __TAURI_INVOKE<MultiRenamePreset[]>('get_multi_rename_presets', { seeds }),
   /**
    *  Saves a preset at the end of the list; one with the same name is replaced where it
    *  stands. Answers the list after.
@@ -1557,21 +1562,14 @@ export const commands = {
   getMultiRenameLastSettings: () =>
     __TAURI_INVOKE<{
       spec: MultiRenameSpec
-      // Absent in a file saved before the sheet remembered it.
-      preset?: LoadedPreset | null
+      presetId: string | null
     } | null>('get_multi_rename_last_settings'),
   /**
    *  Remembers the settings the sheet closes with, and the preset they came from,
    *  for the next ⌃M.
    */
-  saveMultiRenameLastSettings: (
-    spec: MultiRenameSpec,
-    preset:
-      | { kind: 'saved'; id: string }
-      // One that ships with Cmdr (`spec.ts`'s `BUILT_IN_PRESETS`).
-      | { kind: 'builtIn'; id: string }
-      | null,
-  ) => __TAURI_INVOKE<void>('save_multi_rename_last_settings', { spec, preset }),
+  saveMultiRenameLastSettings: (spec: MultiRenameSpec, presetId: string | null) =>
+    __TAURI_INVOKE<void>('save_multi_rename_last_settings', { spec, presetId }),
   // Moves a file or directory to the macOS Trash via NSFileManager.
   moveToTrash: (path: string) => typedError<null, MutationError>(__TAURI_INVOKE('move_to_trash', { path })),
   /**
@@ -10917,15 +10915,6 @@ export type LiveSystemState = {
 }
 
 /**
- *  The preset the sheet's fields came from, so a reopened sheet's Presets button
- *  names it (and says "edited" when the fields moved off it).
- */
-export type LoadedPreset =
-  | { kind: 'saved'; id: string }
-  // One that ships with Cmdr (`spec.ts`'s `BUILT_IN_PRESETS`).
-  | { kind: 'builtIn'; id: string }
-
-/**
  *  Why `start_ai_server` or `start_ai_download` didn't do its job. Exported to `bindings.ts`
  *  through `ipc.rs`'s `.typ` (both commands are generic, so specta doesn't collect them).
  *
@@ -12282,11 +12271,14 @@ export type MultiRenameError =
   // The worker failed; `detail` is log text only.
   | { type: 'internal'; detail: string }
 
-// What the sheet closed with: its fields, and the preset they came from.
+/**
+ *  What the sheet closed with: its fields, and the preset they came from, so a
+ *  reopened sheet's Presets button names it (and says "edited" when the fields
+ *  moved off it).
+ */
 export type MultiRenameLastSettings = {
   spec: MultiRenameSpec
-  // Absent in a file saved before the sheet remembered it.
-  preset?: LoadedPreset | null
+  presetId: string | null
 }
 
 // An open sheet's session.
@@ -13467,6 +13459,16 @@ export type PrepareResult = {
    *  that declined indexing never searches at all.
    */
   loading: boolean
+}
+
+/**
+ *  A preset Cmdr starts the list with ("Date and time", "Remove diacritics", …),
+ *  named in the UI language: the frontend owns the specs and the words, the
+ *  backend decides whether they go in.
+ */
+export type PresetSeed = {
+  name: string
+  spec: MultiRenameSpec
 }
 
 // How a preview's rows add up, for the footer and the Rename button.

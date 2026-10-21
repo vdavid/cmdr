@@ -128,7 +128,7 @@
   },
   "multiRename.presets.saved": "Your presets",
   "@multiRename.presets.saved": {
-    "description": "Heading of the presets the user saved, at the top of the Presets menu (above the presets that come with Cmdr)."
+    "description": "Heading of the preset list at the top of the Presets menu: the user's presets, numbered 1–9 by position, including the ones Cmdr started the list with."
   },
   "multiRename.presets.reset": "Reset all fields",
   "@multiRename.presets.reset": {
@@ -174,17 +174,21 @@
   "@multiRename.presets.replace": {
     "description": "Button in the preset-name popup, after the question whether to replace the preset that already has the name. Replaces that preset."
   },
+  "multiRename.preset.dateAndTime": "Date and time",
+  "@multiRename.preset.dateAndTime": {
+    "description": "Name of a preset Cmdr starts the Presets list with, saved in this language the first time the list loads; the user can rename or delete it like their own. It names each file after its last-modified date and time, like 2026-07-14 09.05.30."
+  },
   "multiRename.preset.removeDiacritics": "Remove diacritics",
   "@multiRename.preset.removeDiacritics": {
-    "description": "Built-in preset that keeps names as they are but removes diacritics (á becomes a, ž becomes z)."
+    "description": "Name of a preset Cmdr starts the Presets list with, saved in this language the first time the list loads; the user can rename or delete it like their own. It keeps names as they are but removes diacritics (á becomes a, ž becomes z)."
   },
   "multiRename.preset.greekToLatin": "Greek to Latin",
   "@multiRename.preset.greekToLatin": {
-    "description": "Built-in preset that writes Greek letters in Latin ones (Αθήνα becomes Athina) and changes nothing else."
+    "description": "Name of a preset Cmdr starts the Presets list with, saved in this language the first time the list loads; the user can rename or delete it like their own. It writes Greek letters in Latin ones (Αθήνα becomes Athina) and changes nothing else."
   },
   "multiRename.preset.normalizeUnicode": "Normalize Unicode",
   "@multiRename.preset.normalizeUnicode": {
-    "description": "Built-in preset that only stores accented letters in the single-character form Windows, Linux, and websites expect; the names look the same."
+    "description": "Name of a preset Cmdr starts the Presets list with, saved in this language the first time the list loads; the user can rename or delete it like their own. It only stores accented letters in the single-character form Windows, Linux, and websites expect; the names look the same."
   },
   "multiRename.presetName": "Preset name",
   "@multiRename.presetName": {
