@@ -435,7 +435,9 @@ packages from app bundles. The description keeps its siblings' frame, `Mit tesz 
 ## A szerverközpont: kapcsolódási állapotok, elutasítások, elfelejtés (`servers.*`, `fileExplorer.navigation.connectionTooltip*`/`.disconnect*`/`.forget*`)
 
 - Connecting to {name}… → `Kapcsolódás ide: {name}…` (Finder `MN1`, verbatim). Quote only where English quotes.
-- The server pane's buttons are dialog buttons: `Mégsem`, not the running-op `Megszakítás`.
+- The server pane's buttons are dialog buttons: `Mégsem`, not the running-op `Megszakítás`. That holds for
+  `servers.paneState.cancel` too, though it stops a connection (or a share mount) still opening: Finder's own
+  "Connecting to server" wait says `Mégsem`.
 - host key → `{host} kulcsa`: the possessive lands on `kulcs`. Trust as a statement → `megbízhatónak tekint`; ❌ never
   `elfogad`, which hides the trust decision.
 - compromised → `kompromittált` (tentative), over `visszavont`, which is revoked and reads administrative.
