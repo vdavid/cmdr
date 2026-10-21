@@ -2,7 +2,9 @@
 
 use chrono::NaiveDate;
 
-use super::mask::{MAX_COUNTER_DIGITS, Mask, MaskError, RowFacts, counter_token, range_token, range_token_bounds};
+use super::mask::{
+    MAX_COUNTER_DIGITS, Mask, MaskError, RangeToken, RowFacts, counter_token, range_token, range_token_bounds,
+};
 
 fn facts(name: &str) -> RowFacts<'_> {
     RowFacts {
@@ -299,4 +301,30 @@ fn the_range_grammar_agrees_with_the_shared_vectors() {
             "{token}, length {length}"
         );
     }
+}
+
+#[test]
+fn a_range_token_reads_its_field_and_says_which_characters_it_takes() {
+    let row = facts("Beach day.jpg");
+    let take = |inner: &str| {
+        let range = RangeToken::parse(inner).expect(inner);
+        let source = range.source(&row);
+        (source, range.bounds(source.chars().count()))
+    };
+    assert_eq!(take("N2-5"), ("Beach day", Some((1, 4))));
+    assert_eq!(take("E"), ("jpg", Some((0, 2))));
+    assert_eq!(take("P-4-"), ("Holiday 2026", Some((8, 11))));
+    assert_eq!(take("G1"), ("Photos", Some((0, 0))));
+    assert_eq!(take("-3-"), ("Beach day.jpg", Some((10, 12))));
+    // Past the end, it takes nothing.
+    assert_eq!(take("N20-25"), ("Beach day", None));
+    assert_eq!(take("N0"), ("Beach day", None));
+    // Characters, never bytes.
+    let accented = facts("Érdekes.txt");
+    let range = RangeToken::parse("N2-3").expect("a range");
+    assert_eq!(range.source(&accented), "Érdekes");
+    assert_eq!(range.bounds(7), Some((1, 2)));
+    // Another placeholder isn't a range.
+    assert_eq!(RangeToken::parse("C"), None);
+    assert_eq!(RangeToken::parse("n"), None);
 }

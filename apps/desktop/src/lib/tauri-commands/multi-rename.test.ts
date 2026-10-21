@@ -12,6 +12,7 @@ vi.mock('#lib/ipc/bindings.js', () => ({
     previewMultiRename: vi.fn(),
     getMultiRenamePreviewRows: vi.fn(),
     moveMultiRenameRow: vi.fn(),
+    getMultiRenameRangeSamples: vi.fn(),
     renderMultiRenameExamples: vi.fn(),
     applyMultiRename: vi.fn(),
     closeMultiRename: vi.fn(),
@@ -40,6 +41,7 @@ import {
   getMultiRenameLastSettings,
   getMultiRenamePresets,
   getMultiRenamePreviewRows,
+  getMultiRenameRangeSamples,
   moveMultiRenamePreset,
   moveMultiRenameRow,
   openMultiRename,
@@ -94,6 +96,15 @@ describe('multi-rename wrappers', () => {
   })
 
   it('moves a row in the rename order and answers its new place, or says why not', async () => {
+    vi.mocked(commands.getMultiRenameRangeSamples).mockResolvedValueOnce({
+      status: 'ok',
+      data: [{ row: 0, text: 'Beach day', taken: { first: 1, last: 4 } }],
+    } as never)
+    expect(await getMultiRenameRangeSamples('S', 'N2-5', [0])).toEqual({
+      ok: true,
+      value: [{ row: 0, text: 'Beach day', taken: { first: 1, last: 4 } }],
+    })
+    expect(commands.getMultiRenameRangeSamples).toHaveBeenCalledWith('S', 'N2-5', [0])
     vi.mocked(commands.moveMultiRenameRow).mockResolvedValueOnce({ status: 'ok', data: 2 } as never)
     expect(await moveMultiRenameRow('S', 3, 'up')).toEqual({ ok: true, value: 2 })
     expect(commands.moveMultiRenameRow).toHaveBeenCalledWith('S', 3, 'up')

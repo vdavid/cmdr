@@ -12,6 +12,7 @@ const { ipc } = vi.hoisted(() => ({
     previewMultiRename: vi.fn(),
     getMultiRenamePreviewRows: vi.fn(),
     moveMultiRenameRow: vi.fn(),
+    getMultiRenameRangeSamples: vi.fn(),
     applyMultiRename: vi.fn(),
     getMultiRenamePresets: vi.fn(),
     saveMultiRenamePreset: vi.fn(),
@@ -25,7 +26,7 @@ const { ipc } = vi.hoisted(() => ({
 }))
 vi.mock('#lib/tauri-commands/index.js', () => ipc)
 
-import { PREVIEW_DELAY_MS, createMultiRenameState } from './multi-rename-state.svelte'
+import { PREVIEW_DELAY_MS, createMultiRenameState, rowsAround } from './multi-rename-state.svelte'
 import { DEFAULT_SPEC } from './spec'
 import type { MultiRenamePreset } from '#lib/tauri-commands/index.js'
 
@@ -281,6 +282,30 @@ describe('createMultiRenameState', () => {
       await settle()
       expect(tool.cursorIndex).toBe(1)
       expect(tool.cursorRow?.oldName).toBe('b')
+      tool.dispose()
+    })
+
+    it('names the rows the range editor shows: the cursor row and up to four around it', async () => {
+      ipc.previewMultiRename.mockResolvedValue(preview(1, five))
+      const tool = createMultiRenameState('S')
+      expect(tool.sampleRows).toBeNull()
+      await settle()
+      expect(tool.sampleRows).toEqual({ cursor: 0, rows: [0, 1, 2, 3, 4] })
+      tool.setCursor(3)
+      expect(tool.sampleRows).toEqual({ cursor: 3, rows: [0, 1, 2, 3, 4] })
+      tool.dispose()
+    })
+
+    it('asks the engine what a range takes, and answers nothing when it refuses', async () => {
+      ipc.previewMultiRename.mockResolvedValue(preview(1, five))
+      const samples = [{ row: 0, text: 'a', taken: { first: 0, last: 0 } }]
+      ipc.getMultiRenameRangeSamples.mockResolvedValueOnce({ ok: true, value: samples })
+      const tool = createMultiRenameState('S')
+      await settle()
+      expect(await tool.rangeSamples('N1', [0])).toEqual(samples)
+      expect(ipc.getMultiRenameRangeSamples).toHaveBeenCalledWith('S', 'N1', [0])
+      ipc.getMultiRenameRangeSamples.mockResolvedValueOnce({ ok: false, error: { type: 'previewOutOfDate' } })
+      expect(await tool.rangeSamples('N1', [0])).toBeNull()
       tool.dispose()
     })
 
@@ -685,5 +710,20 @@ describe('createMultiRenameState', () => {
       expect(tool.presets.map((p) => p.id)).toEqual(['p2'])
       tool.dispose()
     })
+  })
+})
+
+describe('rowsAround', () => {
+  it('takes two on each side, shifted at the ends so it stays five', () => {
+    expect(rowsAround(5, 10)).toEqual([3, 4, 5, 6, 7])
+    expect(rowsAround(0, 10)).toEqual([0, 1, 2, 3, 4])
+    expect(rowsAround(1, 10)).toEqual([0, 1, 2, 3, 4])
+    expect(rowsAround(9, 10)).toEqual([5, 6, 7, 8, 9])
+  })
+
+  it('takes every row when there are five or fewer', () => {
+    expect(rowsAround(1, 3)).toEqual([0, 1, 2])
+    expect(rowsAround(0, 1)).toEqual([0])
+    expect(rowsAround(0, 0)).toEqual([])
   })
 })

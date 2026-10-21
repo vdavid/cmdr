@@ -12,7 +12,7 @@ use crate::multi_rename::presets::{
     delete_in, move_in, rename_in, save_in, update_spec_in,
 };
 use crate::multi_rename::run::{MultiRenameStarted, apply};
-use crate::multi_rename::session::{self, MultiRenameOpened, MultiRenamePreview, PreviewFilter, RowMove};
+use crate::multi_rename::session::{self, MultiRenameOpened, MultiRenamePreview, PreviewFilter, RangeSample, RowMove};
 use cmdr_fs::deadline::{BlockingBudget, blocking_typed_result_with_timeout, timeout_detached_typed};
 
 /// Opens a session over the pane's selection: `selected_indices` are backend row
@@ -94,6 +94,21 @@ pub async fn move_multi_rename_row(
     direction: RowMove,
 ) -> Result<usize, MultiRenameError> {
     session::move_row(&session_id, row, direction)
+}
+
+/// The range editor's examples: what the range placeholder `token` (`N2-5`, its
+/// text between the brackets) takes from each of the session's files at `rows`
+/// (their places, at most `MAX_RANGE_SAMPLES`), as the latest preview lists them.
+/// The engine slices; the sheet only draws. `previewOutOfDate` while a move has
+/// retired the preview.
+#[tauri::command]
+#[specta::specta]
+pub async fn get_multi_rename_range_samples(
+    session_id: String,
+    token: String,
+    rows: Vec<usize>,
+) -> Result<Vec<RangeSample>, MultiRenameError> {
+    session::range_samples(&session_id, &token, &rows)
 }
 
 /// Each example's new name for the sheet's tooltips, rendered on made-up files

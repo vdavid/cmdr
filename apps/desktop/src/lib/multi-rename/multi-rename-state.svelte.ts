@@ -28,6 +28,7 @@ import {
   getMultiRenameLastSettings,
   getMultiRenamePresets,
   getMultiRenamePreviewRows,
+  getMultiRenameRangeSamples,
   moveMultiRenamePreset,
   moveMultiRenameRow,
   previewMultiRename,
@@ -45,6 +46,7 @@ import {
   type PreviewCounts,
   type PreviewFilter,
   type PreviewRow,
+  type RangeSample,
   type RowMove,
 } from '#lib/tauri-commands/index.js'
 import type { ColumnListWindowedSource } from '#lib/ui/column-list-types.js'
@@ -65,10 +67,29 @@ const NO_COUNTS: PreviewCounts = { ready: 0, unchanged: 0, problems: 0 }
 /** How the backend tells two preset names apart (`presets.rs`'s `dedupe_key`). */
 const nameKey = (name: string): string => name.trim().toLowerCase()
 
+/** How many files the range editor shows its range on. */
+const SAMPLE_ROWS = 5
+
 /** Rows `start..end` of the preview, end exclusive. */
 export interface RowWindow {
   start: number
   end: number
+}
+
+/**
+ * The session rows around `cursor` the range editor shows: up to `SAMPLE_ROWS`, the cursor's
+ * neighbors on both sides, shifted at either end of the `total` rows so it stays that many.
+ */
+export function rowsAround(cursor: number, total: number): number[] {
+  const count = Math.min(SAMPLE_ROWS, total)
+  const start = Math.max(0, Math.min(cursor - Math.floor(SAMPLE_ROWS / 2), total - count))
+  return Array.from({ length: count }, (_, i) => start + i)
+}
+
+/** The rows the range editor shows its range on: the cursor's session row and the rows around it. */
+export interface SampleRows {
+  cursor: number
+  rows: number[]
 }
 
 export interface MultiRenameState {
@@ -101,6 +122,16 @@ export interface MultiRenameState {
   readonly cursorRow: PreviewRow | undefined
   /** Puts the cursor on row `index` of the list, clamped to it. */
   setCursor: (index: number) => void
+  /**
+   * The session rows the range editor shows (the cursor row and up to four around it, by place
+   * in the rename order), or `null` with no cursor row yet.
+   */
+  readonly sampleRows: SampleRows | null
+  /**
+   * What the range placeholder `token` (`N2-5`) takes from the session files at `rows`: the
+   * engine's answer, or `null` when it can't say (a moved row's preview still on its way).
+   */
+  rangeSamples: (token: string, rows: number[]) => Promise<RangeSample[] | null>
   /**
    * Moves the cursor row one place in the rename order (what `[C]` counts), the cursor with
    * it, and previews again. Resolves with its new index, or `null` when it didn't move: at
@@ -178,6 +209,12 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
   const listed = (): number => (problemsOnly ? counts.problems : totalOf(counts))
   const cursorIndex = (): number => (listed() === 0 ? -1 : Math.max(0, Math.min(cursor, listed() - 1)))
   const cursorRow = (): PreviewRow | undefined => rows.get(cursorIndex())
+  // Every row of the session, problems included: what the range editor's examples come from.
+  const sampleRows = $derived.by((): SampleRows | null => {
+    const cursorPlace = cursorRow()?.row
+    if (cursorPlace === undefined) return null
+    return { cursor: cursorPlace, rows: rowsAround(cursorPlace, totalOf(counts)) }
+  })
 
   /** Before the list's rows are replaced: with every row listed, an index is the row itself. */
   function keepCursorRow(): void {
@@ -374,6 +411,13 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
     setCursor(index) {
       cursorAnchor = null
       cursor = Math.max(0, Math.min(index, listed() - 1))
+    },
+    get sampleRows() {
+      return sampleRows
+    },
+    async rangeSamples(token, sampleRowList) {
+      const answer = await getMultiRenameRangeSamples(sessionId, token, sampleRowList)
+      return answer.ok ? answer.value : null
     },
     get pending() {
       return waiting > 0

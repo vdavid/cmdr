@@ -31,7 +31,11 @@ from PR #386 (Jiri Slovacek): a plain table reads `ευ` as `eu`, which no Greek
 
 - Fields with ranges: `[N]` `[E]` `[P]` `[G]`, and a bare range (`[2-5]`) on the full name. `[N1]` one character,
   `[N2-5]`, `[N2,5]` (start, length), `[N2-]`, negative starts count from the end; with a negative start a positive end
-  counts from the end too (`[N-8-5]` is 8th-last to 5th-last), as TC documents.
+  counts from the end too (`[N-8-5]` is 8th-last to 5th-last), as TC documents. `bounds` turns a range and a text
+  length into the first and last character taken (or none); `slice` and `RangeToken::bounds` both go through it, so the
+  range editor's highlight is exactly what a rename takes. The frontend's `range-token.ts` parses and writes the same
+  grammar, tested against `range_token_vectors.json` (its `selections` check that each token the editor writes takes
+  exactly the characters the user picked).
 - Counter `[C]`: 1, 2, 3, in the name mask or the extension mask. Each counter carries its own settings, as TC writes
   them: start, `+`/`-` step, `:` digits (`[C10+5:3]`, `[C10]`, `[C+5]`, `[C:3]`, `[C100-10]`), each defaulting to 1.
   **Decision/Why:** the settings live in the mask, not in sheet-wide fields, so two counters can count differently and a
@@ -96,6 +100,13 @@ subfolders (the executor's one-parent rule refuses it today), "next step" chaini
 - **Decision: apply recomputes, then requires the preview the user saw.** `apply_multi_rename(session, previewId)`
   reruns that preview's spec over the session's files and refuses with `PreviewOutOfDate` unless its ready rows are
   exactly the stored ones (same row, names, status, icon, and kind). Why: the folder can change between the preview and Start.
+- **Range samples** (`get_multi_rename_range_samples(session, token, rows)`, `session::range_samples`): for the sheet's
+  range editor, what one range placeholder takes from a few session files (at most `MAX_RANGE_SAMPLES`): each row's
+  field text and the taken `first`/`last` character (Unicode scalar indices, what `Array.from` splits in JS), or none.
+  **Decision/Why: it reads the latest preview's rows** (old name, folder or not), not the listing: they're the rows
+  the sheet lists, the call stays a lookup of a few structs with no listing lock, and a moved row's retired preview
+  answers `PreviewOutOfDate` until the next one, which the sheet's cursor row follows anyway. Names are composed first,
+  as the preview renders them. A token that isn't a range is a `Spec` error.
 - Sessions live in a process-wide map, at most `MAX_SESSIONS`; opening one drops sessions idle past `IDLE_LIMIT`,
   then the least recently used. The sheet closes its session (`close_multi_rename`) when it closes.
 - **Results (⌥⏎, TC's "edit names", `names_file.rs`)**: `write_multi_rename_names(session, previewId)` writes that

@@ -18,13 +18,17 @@ use std::sync::{Arc, LazyLock, Mutex};
 use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
+use unicode_normalization::UnicodeNormalization;
 
 use crate::ignore_poison::IgnorePoison;
 use cmdr_listing::{ListingId, ListingLookupError};
 
 use super::error::MultiRenameError;
+use super::mask::{MaskError, RangeToken, RowFacts};
 use super::names_file::{self, Written};
-use super::plan::{Compiled, MultiRenameSpec, NameEdits, PreviewRow, RowStatus, preview_names};
+use super::plan::{
+    Compiled, MultiRenameSpec, NameEdits, PreviewRow, RowStatus, SpecError, folder_names, preview_names,
+};
 
 /// How many sessions live at once. A sheet is modal, so more than one or two is
 /// a window that closed without saying so. Tests share the store and run in
@@ -319,6 +323,83 @@ pub(crate) fn move_row(session_id: &str, row: usize, direction: RowMove) -> Resu
         s.latest = None;
         Ok(to)
     })?
+}
+
+/// The most rows one range-samples request answers: the editor shows five.
+pub(crate) const MAX_RANGE_SAMPLES: usize = 16;
+
+/// What a range placeholder takes from one session file, for the sheet's range
+/// editor: the text its field reads and the characters it takes from it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct RangeSample {
+    /// The file's place in the session (what `PreviewRow::row` names).
+    pub row: usize,
+    /// The field's text: the name, extension, folder, folder above, or full name.
+    pub text: String,
+    /// The characters taken, as indices into `text`'s Unicode scalar values (what
+    /// `Array.from(text)` splits), or `None` when it takes nothing.
+    pub taken: Option<TakenChars>,
+}
+
+/// The first and last character a range takes, from 0, both included.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct TakenChars {
+    pub first: usize,
+    pub last: usize,
+}
+
+/// What the range placeholder `token` (its text between the brackets, `N2-5`)
+/// takes from each of the session's files at `rows`, computed by `mask.rs`'s own
+/// slicing. Reads the files as the latest preview lists them (its old names, and
+/// whether each is a folder), so it answers for exactly the rows the sheet shows;
+/// `PreviewOutOfDate` while a move has retired it. A row past the end is left out;
+/// at most `MAX_RANGE_SAMPLES` rows answer. A token that isn't a range is a spec
+/// error, worded like the mask's own.
+pub(crate) fn range_samples(
+    session_id: &str,
+    token: &str,
+    rows: &[usize],
+) -> Result<Vec<RangeSample>, MultiRenameError> {
+    let range = RangeToken::parse(token).ok_or_else(|| MultiRenameError::Spec {
+        error: SpecError::NameMask {
+            error: MaskError::Unknown {
+                placeholder: token.to_string(),
+            },
+        },
+    })?;
+    let (latest, dir) = with_session(session_id, |s| {
+        s.latest.as_ref().map(|l| (Arc::clone(l), s.dir.clone()))
+    })?
+    .ok_or(MultiRenameError::PreviewOutOfDate)?;
+    let (parent, grandparent) = folder_names(&dir);
+    Ok(rows
+        .iter()
+        .filter_map(|&row| latest.rows.get(row))
+        .take(MAX_RANGE_SAMPLES)
+        .map(|shown| {
+            // Composed, as the preview renders it (`plan.rs`).
+            let file_name: String = shown.old_name.nfc().collect();
+            let facts = RowFacts {
+                file_name: &file_name,
+                is_directory: shown.is_directory,
+                parent: &parent,
+                grandparent: &grandparent,
+                modified: None,
+                position: shown.row,
+            };
+            let text = range.source(&facts);
+            let taken = range
+                .bounds(text.chars().count())
+                .map(|(first, last)| TakenChars { first, last });
+            RangeSample {
+                row: shown.row,
+                text: text.to_string(),
+                taken,
+            }
+        })
+        .collect())
 }
 
 /// What apply renames: the rows ready now, proven to be the ones preview

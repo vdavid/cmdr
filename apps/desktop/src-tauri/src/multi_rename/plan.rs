@@ -4,6 +4,7 @@
 //! preview and the apply, which recomputes it rather than trusting names the
 //! frontend sends back.
 
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
@@ -197,12 +198,7 @@ impl Compiled {
         // Composed, so a range never splits a letter from its accent in a name an
         // SMB share or HFS stores decomposed.
         let file_name: String = entry.name.nfc().collect();
-        let parent = dir.file_name().map(|n| n.to_string_lossy()).unwrap_or_default();
-        let grandparent = dir
-            .parent()
-            .and_then(Path::file_name)
-            .map(|n| n.to_string_lossy())
-            .unwrap_or_default();
+        let (parent, grandparent) = folder_names(dir);
         self.render(&RowFacts {
             file_name: &file_name,
             is_directory: entry.is_directory,
@@ -282,6 +278,17 @@ pub(crate) fn render_examples(examples: &[RenameExample]) -> Vec<Option<String>>
             }))
         })
         .collect()
+}
+
+/// The names of `dir` and the folder above it, what `[P]` and `[G]` read.
+pub(crate) fn folder_names(dir: &Path) -> (Cow<'_, str>, Cow<'_, str>) {
+    let parent = dir.file_name().map(|n| n.to_string_lossy()).unwrap_or_default();
+    let grandparent = dir
+        .parent()
+        .and_then(Path::file_name)
+        .map(|n| n.to_string_lossy())
+        .unwrap_or_default();
+    (parent, grandparent)
 }
 
 fn local_time(unix_seconds: u64) -> Option<NaiveDateTime> {

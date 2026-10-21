@@ -18,6 +18,7 @@ import {
   type PresetSeed,
   type PreviewFilter,
   type PreviewRow,
+  type RangeSample,
   type RenameExample,
   type RowMove,
 } from '#lib/ipc/bindings.js'
@@ -37,6 +38,7 @@ export type {
   PresetSeed,
   PreviewFilter,
   PreviewRow,
+  RangeSample,
   RenameExample,
   RowMove,
 }
@@ -96,6 +98,20 @@ export async function moveMultiRenameRow(
   direction: RowMove,
 ): Promise<MultiRenameResult<number>> {
   return result(await commands.moveMultiRenameRow(sessionId, row, direction))
+}
+
+/**
+ * What the range placeholder `token` (its text between the brackets, `N2-5`) takes from each
+ * session file at `rows` (their places), as the latest preview lists them: the field's text and
+ * the characters taken. The engine slices; the sheet only draws. `previewOutOfDate` while a move
+ * has retired the preview.
+ */
+export async function getMultiRenameRangeSamples(
+  sessionId: string,
+  token: string,
+  rows: number[],
+): Promise<MultiRenameResult<RangeSample[]>> {
+  return result(await commands.getMultiRenameRangeSamples(sessionId, token, rows))
 }
 
 /**

@@ -1510,6 +1510,17 @@ export const commands = {
   moveMultiRenameRow: (sessionId: string, row: number, direction: RowMove) =>
     typedError<number, MultiRenameError>(__TAURI_INVOKE('move_multi_rename_row', { sessionId, row, direction })),
   /**
+   *  The range editor's examples: what the range placeholder `token` (`N2-5`, its
+   *  text between the brackets) takes from each of the session's files at `rows`
+   *  (their places, at most `MAX_RANGE_SAMPLES`), as the latest preview lists them.
+   *  The engine slices; the sheet only draws. `previewOutOfDate` while a move has
+   *  retired the preview.
+   */
+  getMultiRenameRangeSamples: (sessionId: string, token: string, rows: number[]) =>
+    typedError<RangeSample[], MultiRenameError>(
+      __TAURI_INVOKE('get_multi_rename_range_samples', { sessionId, token, rows }),
+    ),
+  /**
    *  Each example's new name for the sheet's tooltips, rendered on made-up files
    *  by the same engine as the preview; `None` for a spec that doesn't run.
    */
@@ -13504,7 +13515,10 @@ export type PreviewFilter = 'all' | 'problems'
 
 // One row of the preview.
 export type PreviewRow = {
-  // The row's place in the batch (rename order), stable across previews.
+  /**
+   *  The row's place in the batch (rename order), stable across previews until the
+   *  user moves the row (`session::move_row`).
+   */
   row: number
   oldName: string
   newName: string
@@ -13867,6 +13881,22 @@ export type QuitRequested = {
  *  frontend sends `Eof` so the backend can resolve the end without a fake row number.
  */
 export type RangeEnd = { kind: 'row'; row: number; offset: number } | { kind: 'eof' }
+
+/**
+ *  What a range placeholder takes from one session file, for the sheet's range
+ *  editor: the text its field reads and the characters it takes from it.
+ */
+export type RangeSample = {
+  // The file's place in the session (what `PreviewRow::row` names).
+  row: number
+  // The field's text: the name, extension, folder, folder above, or full name.
+  text: string
+  /**
+   *  The characters taken, as indices into `text`'s Unicode scalar values (what
+   *  `Array.from(text)` splits), or `None` when it takes nothing.
+   */
+  taken: TakenChars | null
+}
 
 /**
  *  Which route made a folder or a row read-only, so the sheet names it: a repo's
@@ -17327,6 +17357,12 @@ export type TagRef = {
  */
 export type TagsSkipped = {
   count: number
+}
+
+// The first and last character a range takes, from 0, both included.
+export type TakenChars = {
+  first: number
+  last: number
 }
 
 // One installed terminal, as the settings dropdown needs it.

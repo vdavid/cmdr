@@ -149,6 +149,37 @@ enum Range {
     Span(i64, i64),
 }
 
+/// One range placeholder on its own (`N2-5`, `E1`, `-3-`): the field it reads and
+/// the characters it takes. For the sheet's range editor, which shows what a range
+/// takes from real files without slicing anything itself.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RangeToken {
+    field: Field,
+    range: Range,
+}
+
+impl RangeToken {
+    /// The range `inner` (a placeholder's text between its brackets) spells, or
+    /// `None` for any other placeholder or none.
+    pub fn parse(inner: &str) -> Option<Self> {
+        match placeholder(inner) {
+            Ok(Token::Field(field, range)) => Some(Self { field, range }),
+            _ => None,
+        }
+    }
+
+    /// The text it reads for `row`.
+    pub fn source<'a>(&self, row: &RowFacts<'a>) -> &'a str {
+        self.field.source(row)
+    }
+
+    /// The characters it takes from a text `len` characters long: the first and
+    /// last index, from 0, both included; `None` when it takes nothing.
+    pub fn bounds(&self, len: usize) -> Option<(usize, usize)> {
+        bounds(self.range, len)
+    }
+}
+
 /// A range as the shared vectors write it: field, kind, `at`, `to`, `length`.
 #[cfg(test)]
 pub(super) type RangeParts = (&'static str, &'static str, Option<i64>, Option<i64>, Option<u64>);

@@ -1099,6 +1099,7 @@ export {
   previewMultiRename,
   getMultiRenamePreviewRows,
   moveMultiRenameRow,
+  getMultiRenameRangeSamples,
   renderMultiRenameExamples,
   applyMultiRename,
   closeMultiRename,
@@ -1132,5 +1133,6 @@ export type {
   PresetSeed,
   PreviewFilter,
   PreviewRow,
+  RangeSample,
   RenameExample,
 } from './multi-rename'

@@ -8,7 +8,7 @@ use super::error::MultiRenameError;
 use super::plan::MultiRenameSpec;
 use super::run::apply;
 use super::run_test::{folder, names_on_disk, settled, strip_diacritics};
-use super::session::{PreviewFilter, RowMove, close, move_row, open, page, preview_session};
+use super::session::{PreviewFilter, RowMove, TakenChars, close, move_row, open, page, preview_session, range_samples};
 use cmdr_operations::testing::CollectorEventSink;
 
 /// `1 a.txt`, `2 b.txt`, …: the counter shows the rename order.
@@ -100,4 +100,51 @@ fn moving_in_a_closed_session_says_so() {
         move_row("multi-rename-never-opened", 0, RowMove::Down),
         Err(MultiRenameError::SessionClosed)
     ));
+}
+
+#[test]
+fn range_samples_say_what_a_range_takes_from_each_file_the_preview_lists() {
+    let (dir, listing) = folder("multi-rename-range-samples", &["Beach day.jpg", "IMG_2041.jpg", "x.md"]);
+    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    preview_session(&session.session_id, &numbered()).expect("a preview");
+
+    // The rows the preview lists, in its order: the listing sorts them by name.
+    let samples = range_samples(&session.session_id, "N2-5", &[0, 1, 2]).expect("samples");
+    let taken: Vec<(&str, Option<(usize, usize)>)> = samples
+        .iter()
+        .map(|s| (s.text.as_str(), s.taken.map(|t| (t.first, t.last))))
+        .collect();
+    assert_eq!(
+        taken,
+        vec![("Beach day", Some((1, 4))), ("IMG_2041", Some((1, 4))), ("x", None)]
+    );
+    assert_eq!(samples.iter().map(|s| s.row).collect::<Vec<_>>(), vec![0, 1, 2]);
+
+    // The other fields, and a row past the end left out.
+    let extension = range_samples(&session.session_id, "E-2-", &[2, 7]).expect("samples");
+    assert_eq!(extension.len(), 1);
+    assert_eq!(extension[0].text, "md");
+    assert_eq!(extension[0].taken, Some(TakenChars { first: 0, last: 1 }));
+    let folder_name = dir.file_name().expect("a name").to_string_lossy().into_owned();
+    let parent = range_samples(&session.session_id, "P", &[0]).expect("samples");
+    assert_eq!(parent[0].text, folder_name);
+    close(&session.session_id);
+}
+
+#[test]
+fn range_samples_refuse_a_token_that_isnt_a_range_and_wait_for_a_moved_rows_preview() {
+    let (_dir, listing) = folder("multi-rename-range-refusals", &["a.txt", "b.txt"]);
+    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    preview_session(&session.session_id, &numbered()).expect("a preview");
+
+    assert!(matches!(
+        range_samples(&session.session_id, "C10", &[0]),
+        Err(MultiRenameError::Spec { .. })
+    ));
+    move_row(&session.session_id, 1, RowMove::Up).expect("it moves");
+    assert!(matches!(
+        range_samples(&session.session_id, "N", &[0]),
+        Err(MultiRenameError::PreviewOutOfDate)
+    ));
+    close(&session.session_id);
 }
