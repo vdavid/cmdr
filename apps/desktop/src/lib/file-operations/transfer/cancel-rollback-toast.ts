@@ -363,7 +363,7 @@ export function raiseCancelRollbackToast(rollback: CancelRollback, operationType
     id: CANCEL_ROLLBACK_TOAST_ID,
     level: readout.level,
     timeoutMs:
-      readout.reasons.length > 0 || readout.recovered.length > 0 || readout.staged !== null
+      readout.reasons.length > 0 || readout.recovered.length > 0 || readout.staged.length > 0
         ? REASONS_TIMEOUT_MS
         : SUMMARY_TIMEOUT_MS,
     props: { readout },

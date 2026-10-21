@@ -1,7 +1,10 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { readCancelRollback } from './cancel-rollback-toast'
+import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from 'vitest'
+import { raiseCancelRollbackToast, readCancelRollback } from './cancel-rollback-toast'
 import { _setLocaleForTests } from '#lib/intl/locale.js'
+import { addToast } from '#lib/ui/toast/index.js'
 import type { CancelRollback, SkipBreakdown, SkipReason, StagedLeftovers } from '#lib/ipc/bindings.js'
+
+vi.mock('#lib/ui/toast/index.js', () => ({ addToast: vi.fn() }))
 
 // The readout resolves its wording through `t()` (catalog + ICU), which reads the
 // active locale. Pin en-US so these are golden assertions on the shipped English.
@@ -517,5 +520,32 @@ describe('readCancelRollback', () => {
       expect(readCancelRollback(rollback({}), 'move')).toBeNull()
       expect(readCancelRollback(rollback({}), 'copy')).toBeNull()
     })
+  })
+})
+
+describe('raiseCancelRollbackToast', () => {
+  beforeEach(() => {
+    vi.mocked(addToast).mockClear()
+  })
+
+  function timeoutOf(partial: Partial<CancelRollback>): number | undefined {
+    raiseCancelRollbackToast(rollback(partial), 'copy')
+    return vi.mocked(addToast).mock.calls[0]?.[1]?.timeoutMs
+  }
+
+  it('holds a one-line summary only as long as the app’s other result toasts', () => {
+    // Regression: an always-true `staged !== null` once gave every summary the long hold.
+    expect(timeoutOf({ outcome: 'rolledBack', reversed: 3 })).toBe(7000)
+  })
+
+  it('holds longer when there are reasons to read', () => {
+    expect(timeoutOf({ outcome: 'partiallyRolledBack', reversed: 3, skips: [skip('drift', 2)] })).toBe(12000)
+  })
+
+  it('holds longer when Cmdr’s own scratch stayed behind', () => {
+    const stagedLeftovers: StagedLeftovers[] = [
+      { fate: 'refused', count: 1, exampleName: 'a.cmdr-tmp-1', volumeName: 'Naspolya' },
+    ]
+    expect(timeoutOf({ outcome: 'rolledBack', reversed: 3, stagedLeftovers })).toBe(12000)
   })
 })
