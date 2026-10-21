@@ -51,7 +51,7 @@ reqwest = { version = "0.13", default-features = false, features = ["cookies", "
 # features, so nothing new is compiled; `aws-lc-rs` is the provider reqwest
 # itself falls back to.
 rustls = { version = "0.23.46", default-features = false, features = ["std", "aws-lc-rs"] }
-rustls-platform-verifier = "0.7.0"
+rustls-platform-verifier = "0.7.1"
 # A certificate's SHA-256 fingerprint. The app's and `cmdr-s3`'s version.
 sha2 = "0.11"
 # PROPFIND `multistatus` parsing, namespace-aware: servers prefix `DAV:` as `D:`,

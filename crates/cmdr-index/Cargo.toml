@@ -181,7 +181,7 @@ rusqlite = { version = "0.40", features = ["hooks"] }
 # Property-based testing for the algorithmic cores: path resolution, aggregate
 # roll-up, and the importance scorer, where the input space is too large for
 # example tests to cover meaningfully.
-proptest = "1.11.0"
+proptest = "1.12.0"
 criterion = { version = "0.8.1", features = ["html_reports"] }
 # Dev-only env-driven logger, for the wire traces a concurrency stress test can
 # switch on with `RUST_LOG` when it's being debugged.

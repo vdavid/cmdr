@@ -127,8 +127,8 @@ tauri-plugin-dialog = "2.6"
 tauri-plugin-notification = "2.3.3"
 # Global system-wide keyboard shortcut (default ⌃⌥⌘J for "reveal latest download"). On
 # macOS, the plugin uses Carbon's `RegisterEventHotKey` so it needs no extra TCC grant
-# (Accessibility/Input Monitoring not required). Pinned at 2.4.0 (published 2026-09-26).
-tauri-plugin-global-shortcut = "=2.4.0"
+# (Accessibility/Input Monitoring not required). Pinned at 2.4.1.
+tauri-plugin-global-shortcut = "=2.4.1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 notify = "8"
@@ -217,7 +217,7 @@ encoding_rs = "0.8.35"
 # Lock-free atomic Arc swap used by the file viewer to replace the active backend
 # (ByteSeek/LineIndex) without taking a write lock on the read path. Already pulled
 # in transitively; declaring it makes the dependency explicit.
-arc-swap = "1.9.1"
+arc-swap = "1.9.3"
 walkdir = "2"
 # Drive indexing: SQLite store and macOS FSEvents watcher (the parallel directory
 # walker is now the in-tree `indexing::scanner::walker`, not a dependency)
@@ -310,7 +310,7 @@ pulldown-cmark = { version = "0.13.4", default-features = false, features = ["ht
 # Sanitizes the HTML the viewer renders from an untrusted Markdown file (READMEs carry raw `<img>`,
 # `<details>`, `<a>`): an allowlist of tags and attributes, so no script, handler, form, or frame
 # reaches the viewer's webview. Also hands back the parsed DOM, where the image sources get rewritten.
-ammonia = "4.2.3"
+ammonia = "4.2.4"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 # The custom updater's trust check: unpacking the release tarball and requiring Cmdr's Developer
@@ -416,7 +416,7 @@ security-framework = "3.2"
 security-framework-sys = "2.17"
 # Custom updater: minisign signature verification (extraction and the code-signature check
 # live in `cmdr-update-trust`).
-minisign-verify = "0.2"
+minisign-verify = "0.3"
 # `CFUserNotification` (+ its `CFDate` / `CFURL` prerequisites) powers the instance-lock refusal
 # alert: it's the one alert API that doesn't pump our run loop (see `instance_lock.rs`).
 # `CFPreferences` (+ `CFPropertyList` and its `CFError` prerequisite) is how `dock/` reads and
@@ -543,7 +543,7 @@ getrandom = { version = "0.4", features = ["sys_rng"] }
 # is too large for example tests to cover meaningfully (parser, glob→regex,
 # topological sort, Unicode collation). Pinned at 1.11.0 (published 2026-03-24,
 # ~7 weeks old at landing). MIT OR Apache-2.0.
-proptest = "1.11.0"
+proptest = "1.12.0"
 # HTTP mock server for AI client integration tests. Verifies request shape (temperature
 # present on chat/completions, omitted on /v1/responses) and parsing without burning
 # real API quota. Pinned at 0.6.5 (latest stable, published 2025-08-24).

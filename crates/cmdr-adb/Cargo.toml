@@ -51,7 +51,7 @@ tokio-util = { version = "0.7.18", default-features = false }
 # Full Unicode case folding (`ß` and `SS` fold together) plus canonical forms:
 # how the rename guard tells a re-cased source from another folder on a
 # casefolded `/sdcard`. Both already in the graph (`mime_guess`, `cmdr-fs`).
-unicase = "2.9"
+unicase = "2.10"
 unicode-normalization = "0.1"
 
 [dev-dependencies]
