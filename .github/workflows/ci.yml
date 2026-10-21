@@ -670,6 +670,58 @@ jobs:
         run: ./scripts/check/check --check desktop-svelte-tests --ci
 
   # ===========================================
+  # Desktop app - type-aware ESLint
+  # ===========================================
+  # The rules that need TypeScript's types (`no-unnecessary-condition`, `no-floating-promises`,
+  # `no-deprecated`, ...). The `desktop-svelte` job's ESLint step runs with them OFF. They used
+  # to live only in the every-six-days slow workflow, where 25 errors sat on a green `main`
+  # (2026-10-21), one of them a real toast bug. Their own job, so the 2-4 min they take run
+  # beside `desktop-svelte` instead of lengthening it.
+  desktop-svelte-eslint-typecheck:
+    name: Desktop (Svelte, type-aware ESLint)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: changes
+    if: inputs.run_all || needs.changes.outputs.svelte == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install mise
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+
+      - name: Install tools with mise
+        run: mise install
+
+      - name: Cache pnpm
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The type-aware config extends `$app/tsconfig`, which only `svelte-kit sync` generates.
+      - name: Generate SvelteKit types
+        run: pnpm exec svelte-kit sync
+        working-directory: ./apps/desktop
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      # Two passes, one projectService batch per file type, each far faster than one combined.
+      - name: Run type-aware ESLint (Svelte files)
+        run: ./scripts/check/check --check desktop-svelte-eslint-typecheck-svelte --ci
+
+      - name: Run type-aware ESLint (TypeScript files)
+        run: ./scripts/check/check --check desktop-svelte-eslint-typecheck-typescript --ci
+
+  # ===========================================
   # Desktop app - Playwright E2E on Linux
   # ===========================================
   desktop-e2e-linux:
@@ -1558,6 +1610,7 @@ jobs:
         desktop-rust-fixtures,
         desktop-rust-macos,
         desktop-svelte,
+        desktop-svelte-eslint-typecheck,
         desktop-e2e-linux,
         website,
         api-server,

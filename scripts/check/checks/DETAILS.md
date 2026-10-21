@@ -2555,9 +2555,11 @@ violation inside the crate.
 **Decision**: Split `desktop-svelte-eslint` into fast (non-type-aware) and slow (full) checks. **Why**: Type-aware rules
 (`no-floating-promises`, `no-unsafe-*`, etc.) take ~45% of lint time due to TypeScript project service startup. The fast
 check sets `ESLINT_NO_TYPECHECK=1`, which `eslint.config.js` reads to use `tseslint.configs.strict` (no type info) and
-suppress `reportUnusedDisableDirectives` (since disable comments for type-aware rules would look unused). The slow check
-(`IsSlow: true`) runs the full config with all rules and `reportUnusedDisableDirectives` on, so stale disable comments
-are still caught.
+suppress `reportUnusedDisableDirectives` (since disable comments for type-aware rules would look unused). The full
+checks (`eslint-typecheck-svelte`, `eslint-typecheck-ts`) run the whole config with `reportUnusedDisableDirectives` on,
+so stale disable comments are still caught. In CI they get their own per-push job (`desktop-svelte-eslint-typecheck`)
+beside `desktop-svelte`, so their 2–4 min don't lengthen it. They used to run only in the every-six-days slow workflow,
+where 25 errors (one a real toast-timeout bug) sat on a green `main` (2026-10-21).
 
 **Decision**: `desktop-svelte-kit-sync` runs before every check that needs the TypeScript program. **Why**:
 `apps/desktop/tsconfig.json` extends `$app/tsconfig`, the gitignored `node_modules/$app/tsconfig.json` sync generates,

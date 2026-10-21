@@ -187,50 +187,6 @@ jobs:
           if-no-files-found: ignore
 
   # ===========================================
-  # Type-aware ESLint (too slow for per-push CI)
-  # ===========================================
-  eslint-typecheck:
-    name: ESLint (type-aware)
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Install mise
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
-
-      - name: Install tools with mise
-        run: mise install
-
-      - name: Cache pnpm
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Generate SvelteKit types
-        run: pnpm exec svelte-kit sync
-        working-directory: ./apps/desktop
-
-      - name: Build check tool
-        run: go build -o check .
-        working-directory: ./scripts/check
-
-      # Two passes since the check was split (10632789): one projectService
-      # batch per file type keeps each pass ~15 s instead of ~10 min combined.
-      - name: Run type-aware ESLint (Svelte files)
-        run: ./scripts/check/check --check desktop-svelte-eslint-typecheck-svelte --ci
-
-      - name: Run type-aware ESLint (TypeScript files)
-        run: ./scripts/check/check --check desktop-svelte-eslint-typecheck-typescript --ci
-
-  # ===========================================
   # Website Docker build
   # ===========================================
   # The website deploys as a Docker image built on the server; per-push CI only

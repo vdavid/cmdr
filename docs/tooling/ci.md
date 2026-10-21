@@ -8,7 +8,7 @@ How the GitHub workflows fit together, and the invariants that keep them honest.
 | Workflow                | Trigger                                 | What it does                                                                                         |
 | ----------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `ci.yml`                | PRs, pushes to main, manual             | Main suite. Change detection gates the per-app jobs; `hygiene` runs unless verified; deploys website |
-| `slow-checks.yml`       | Every 6 days (3 AM UTC), manual         | osv-scanner, cargo-deny/udeps, govulncheck, type-aware ESLint, website Docker build, 30-min SMB soak |
+| `slow-checks.yml`       | Every 6 days (3 AM UTC), manual         | osv-scanner, cargo-deny/udeps, govulncheck, website Docker build, 30-min SMB soak                    |
 | `advisories.yml`        | Daily (4:17 AM UTC), manual             | osv-scanner (every lockfile) and cargo-deny (no compile): new advisories surface in a day            |
 | `deploy-api-server.yml` | Push to main touching `apps/api-server` | Deploys the Cloudflare Worker.                                                                       |
 | `deploy-dashboard.yml`  | Push to main touching the dashboard     | Builds and deploys the analytics dashboard to Cloudflare Pages.                                      |
