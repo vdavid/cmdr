@@ -57,7 +57,8 @@ pub enum SpecError {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct PreviewRow {
-    /// The row's place in the batch (rename order), stable across previews.
+    /// The row's place in the batch (rename order), stable across previews until the
+    /// user moves the row (`session::move_row`).
     pub row: usize,
     pub old_name: String,
     pub new_name: String,

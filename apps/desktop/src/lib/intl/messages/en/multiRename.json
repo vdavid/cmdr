@@ -303,6 +303,14 @@
   "@multiRename.results.editing": {
     "description": "Shown under the sheet’s fields while the names list is open in the text editor. Each line is an old name, a tab, and the new name."
   },
+  "multiRename.movedRow": "Moved to {positionText} of {totalText}",
+  "@multiRename.movedRow": {
+    "description": "Screen-reader announcement (never shown) after the user moved the file under the cursor one place up or down in the Multi-rename preview list with Shift+Up or Shift+Down, which changes the order the files are renamed in (the order the counter numbers them). Say where the file now is, as a position in the list.",
+    "placeholders": {
+      "positionText": "the file's new position in the list, counting from 1, ready to drop into the sentence (for example 3)",
+      "totalText": "how many files the list holds, ready to drop into the sentence (for example 1,234)"
+    }
+  },
   "multiRename.results.edited": "{count, plural, one {# name comes from your edited list} other {# names come from your edited list}}.",
   "@multiRename.results.edited": {
     "description": "Shown under the sheet’s fields when the preview uses names the user typed in the text editor (Results). {count} is how many files carry such a name."

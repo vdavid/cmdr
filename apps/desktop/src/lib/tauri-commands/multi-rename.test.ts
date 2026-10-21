@@ -11,6 +11,7 @@ vi.mock('#lib/ipc/bindings.js', () => ({
     openMultiRename: vi.fn(),
     previewMultiRename: vi.fn(),
     getMultiRenamePreviewRows: vi.fn(),
+    moveMultiRenameRow: vi.fn(),
     renderMultiRenameExamples: vi.fn(),
     applyMultiRename: vi.fn(),
     closeMultiRename: vi.fn(),
@@ -40,6 +41,7 @@ import {
   getMultiRenamePresets,
   getMultiRenamePreviewRows,
   moveMultiRenamePreset,
+  moveMultiRenameRow,
   openMultiRename,
   previewMultiRename,
   readMultiRenameNames,
@@ -89,6 +91,18 @@ describe('multi-rename wrappers', () => {
     vi.mocked(commands.getMultiRenamePreviewRows).mockResolvedValueOnce({ status: 'ok', data: rows } as never)
     expect(await getMultiRenamePreviewRows('S', 1, 200, 100, 'problems')).toEqual({ ok: true, value: rows })
     expect(commands.getMultiRenamePreviewRows).toHaveBeenCalledWith('S', 1, 200, 100, 'problems')
+  })
+
+  it('moves a row in the rename order and answers its new place, or says why not', async () => {
+    vi.mocked(commands.moveMultiRenameRow).mockResolvedValueOnce({ status: 'ok', data: 2 } as never)
+    expect(await moveMultiRenameRow('S', 3, 'up')).toEqual({ ok: true, value: 2 })
+    expect(commands.moveMultiRenameRow).toHaveBeenCalledWith('S', 3, 'up')
+
+    vi.mocked(commands.moveMultiRenameRow).mockResolvedValueOnce({
+      status: 'error',
+      error: { type: 'sessionClosed' },
+    } as never)
+    expect(await moveMultiRenameRow('S', 3, 'down')).toEqual({ ok: false, error: { type: 'sessionClosed' } })
   })
 
   it('starts a rename from the preview the user saw, and reports a refusal', async () => {

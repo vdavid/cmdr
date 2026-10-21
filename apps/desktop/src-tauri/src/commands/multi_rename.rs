@@ -12,7 +12,7 @@ use crate::multi_rename::presets::{
     delete_in, move_in, rename_in, save_in, update_spec_in,
 };
 use crate::multi_rename::run::{MultiRenameStarted, apply};
-use crate::multi_rename::session::{self, MultiRenameOpened, MultiRenamePreview, PreviewFilter};
+use crate::multi_rename::session::{self, MultiRenameOpened, MultiRenamePreview, PreviewFilter, RowMove};
 use cmdr_fs::deadline::{BlockingBudget, blocking_typed_result_with_timeout, timeout_detached_typed};
 
 /// Opens a session over the pane's selection: `selected_indices` are backend row
@@ -81,6 +81,19 @@ pub async fn get_multi_rename_preview_rows(
     filter: PreviewFilter,
 ) -> Result<Vec<PreviewRow>, MultiRenameError> {
     session::page(&session_id, preview_id, offset, limit, filter)
+}
+
+/// ⇧↑ / ⇧↓ in the sheet's list: moves the file at `row` one place up or down in the
+/// rename order (what `[C]` counts) and answers its new place. The preview on screen
+/// retires; the sheet asks for the next one.
+#[tauri::command]
+#[specta::specta]
+pub async fn move_multi_rename_row(
+    session_id: String,
+    row: usize,
+    direction: RowMove,
+) -> Result<usize, MultiRenameError> {
+    session::move_row(&session_id, row, direction)
 }
 
 /// Each example's new name for the sheet's tooltips, rendered on made-up files

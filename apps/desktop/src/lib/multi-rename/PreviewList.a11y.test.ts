@@ -59,6 +59,7 @@ describe('PreviewList a11y', () => {
         rows: { count: ROWS.length, getRow: (index: number) => ROWS[index], onRangeChange: () => {} },
         cursorIndex: 2,
         onCursorChange: () => {},
+        onMoveRow: () => Promise.resolve(null),
       },
     })
     await tick()

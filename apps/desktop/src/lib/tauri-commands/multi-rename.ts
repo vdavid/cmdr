@@ -19,6 +19,7 @@ import {
   type PreviewFilter,
   type PreviewRow,
   type RenameExample,
+  type RowMove,
 } from '#lib/ipc/bindings.js'
 
 export type {
@@ -37,6 +38,7 @@ export type {
   PreviewFilter,
   PreviewRow,
   RenameExample,
+  RowMove,
 }
 
 /** A typed answer the sheet words itself: the value, or why there is none. */
@@ -82,6 +84,18 @@ export async function getMultiRenamePreviewRows(
   filter: PreviewFilter,
 ): Promise<MultiRenameResult<PreviewRow[]>> {
   return result(await commands.getMultiRenamePreviewRows(sessionId, previewId, offset, limit, filter))
+}
+
+/**
+ * ⇧↑ / ⇧↓: moves the session's file at `row` one place in the rename order and answers
+ * its new place (the same at that end). The preview on screen retires; preview again.
+ */
+export async function moveMultiRenameRow(
+  sessionId: string,
+  row: number,
+  direction: RowMove,
+): Promise<MultiRenameResult<number>> {
+  return result(await commands.moveMultiRenameRow(sessionId, row, direction))
 }
 
 /**

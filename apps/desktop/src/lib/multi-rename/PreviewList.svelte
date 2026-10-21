@@ -8,10 +8,15 @@
      * A `grid`: a Tab stop with one cursor, which ↑/↓, PageUp/PageDown, Home/End, and a click
      * move (hover doesn't: the cursor drives the range examples, which mustn't jump while the
      * pointer passes over). The state owns the index; a move it makes is scrolled into view.
+     * ⇧↑ / ⇧↓ move the cursor row in the rename order, and a screen reader hears where it went.
      */
     import StatusGlyph from '#lib/ui/StatusGlyph.svelte'
     import ColumnList from '#lib/ui/ColumnList.svelte'
     import Icon from '#lib/ui/Icon.svelte'
+    import LiveAnnouncer from '#lib/ui/LiveAnnouncer.svelte'
+    import { claimKey } from '#lib/shortcuts/claim-key.js'
+    import { eventMatchesCommand } from '#lib/shortcuts/index.js'
+    import { formatInteger } from '#lib/intl/number-format.js'
     import {
         columnListProps,
         type ColumnListApi,
@@ -23,7 +28,7 @@
     import { useShortenMiddle } from '#lib/utils/shorten-middle-action.js'
     import { tString } from '#lib/intl/messages.svelte.js'
     import { tooltip } from '#lib/tooltip/tooltip.js'
-    import type { PreviewRow } from '#lib/tauri-commands/index.js'
+    import type { PreviewRow, RowMove } from '#lib/tauri-commands/index.js'
     import { rowStatusView, type StatusMessage } from './row-status'
 
     interface Props {
@@ -33,11 +38,34 @@
         /** The cursor row, or -1. */
         cursorIndex: number
         onCursorChange: (index: number) => void
+        /** Moves the cursor row in the rename order: its new index, or `null` when it didn't move. */
+        onMoveRow: (direction: RowMove) => Promise<number | null>
     }
 
-    const { rows, stale = false, cursorIndex, onCursorChange }: Props = $props()
+    const { rows, stale = false, cursorIndex, onCursorChange, onMoveRow }: Props = $props()
 
     let list = $state<ColumnListApi>()
+    let announcer: { announce: (message: string) => void } | undefined = $state()
+
+    /** ⇧↑ / ⇧↓, claimed even when the row can't move (at an end, or with the problems alone). */
+    function onListKeydown(event: KeyboardEvent): void {
+        const direction: RowMove | null = eventMatchesCommand(event, 'multiRename.moveRowUp')
+            ? 'up'
+            : eventMatchesCommand(event, 'multiRename.moveRowDown')
+              ? 'down'
+              : null
+        if (direction === null) return
+        claimKey(event)
+        void onMoveRow(direction).then((index) => {
+            if (index === null) return
+            announcer?.announce(
+                tString('multiRename.movedRow', {
+                    positionText: formatInteger(index + 1),
+                    totalText: formatInteger(rows.count),
+                }),
+            )
+        })
+    }
 
     // A cursor the state moved (back to every row, a moved row) comes into view; the list's
     // own keys scroll it already.
@@ -108,11 +136,13 @@
             ariaLabel: tString('multiRename.preview'),
             cursorIndex,
             onCursorChange,
+            onKeydown: onListKeydown,
             headerClass: 'preview-header',
             rowClass: 'preview-row',
         })}
     />
 </div>
+<LiveAnnouncer bind:this={announcer} />
 
 {#snippet iconCell({ row }: ColumnListCellContext<PreviewRow>)}
     <span class="icon-box">

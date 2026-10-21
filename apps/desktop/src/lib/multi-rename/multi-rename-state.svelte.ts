@@ -17,7 +17,8 @@
  *
  * The list has one cursor (`cursorIndex`, `cursorRow`), on the top row at first. It stays
  * on its row (`PreviewRow.row`) across previews: with every row listed a row's index IS
- * its `row`; among the problems it's found again in the first page that lands.
+ * its `row`; among the problems it's found again in the first page that lands. ⇧↑ / ⇧↓
+ * move the cursor row in the session's rename order (`moveCursorRow`), one at a time.
  */
 
 import {
@@ -28,6 +29,7 @@ import {
   getMultiRenamePresets,
   getMultiRenamePreviewRows,
   moveMultiRenamePreset,
+  moveMultiRenameRow,
   previewMultiRename,
   readMultiRenameNames,
   renameMultiRenamePreset,
@@ -43,6 +45,7 @@ import {
   type PreviewCounts,
   type PreviewFilter,
   type PreviewRow,
+  type RowMove,
 } from '#lib/tauri-commands/index.js'
 import type { ColumnListWindowedSource } from '#lib/ui/column-list-types.js'
 import { tString } from '#lib/intl/messages.svelte.js'
@@ -98,6 +101,12 @@ export interface MultiRenameState {
   readonly cursorRow: PreviewRow | undefined
   /** Puts the cursor on row `index` of the list, clamped to it. */
   setCursor: (index: number) => void
+  /**
+   * Moves the cursor row one place in the rename order (what `[C]` counts), the cursor with
+   * it, and previews again. Resolves with its new index, or `null` when it didn't move: at
+   * that end, with the problems listed alone (a move among them is ambiguous), or refused.
+   */
+  moveCursorRow: (direction: RowMove) => Promise<number | null>
   /** Row `index` of the list (of the problem rows, with `problemsOnly`), or `undefined` while its page is on its way. */
   rowAt: (index: number) => PreviewRow | undefined
   /** The list shows rows `start..end`: fetch the ones missing, drop the far ones. */
@@ -155,6 +164,8 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
   // Among the problems a new preview may move the cursor's row: its `row`, to find again
   // in the first page that lands.
   let cursorAnchor: number | null = null
+  // Moves run one after another, so each starts from where the last left the row.
+  let moving: Promise<unknown> = Promise.resolve()
   let generation = 0
   let timer: ReturnType<typeof setTimeout> | null = null
   let shown: RowWindow = { start: 0, end: 0 }
@@ -260,6 +271,19 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
     })
   }
 
+  async function moveRow(direction: RowMove): Promise<number | null> {
+    // With every row listed, an index is the row's place in the session.
+    const from = cursorIndex()
+    if (problemsOnly || from < 0 || previewId === null) return null
+    const answer = await moveMultiRenameRow(sessionId, from, direction)
+    if (!answer.ok || answer.value === from) return null
+    cursorAnchor = null
+    cursor = answer.value
+    // The move retired the preview on screen: the next one shows the new order.
+    void refresh()
+    return answer.value
+  }
+
   function schedule(): void {
     applyError = null
     if (timer === null) waiting++
@@ -335,6 +359,17 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
     },
     get cursorRow() {
       return cursorRow()
+    },
+    moveCursorRow(direction) {
+      // Pending from the key on, so a Start right after it waits for the new order's preview.
+      waiting++
+      const next = moving
+        .then(() => moveRow(direction))
+        .finally(() => {
+          waiting--
+        })
+      moving = next.catch(() => {})
+      return next
     },
     setCursor(index) {
       cursorAnchor = null

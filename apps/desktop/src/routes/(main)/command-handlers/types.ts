@@ -70,6 +70,8 @@ export type DispatchExemptId =
   | 'multiRename.undoRename'
   | 'multiRename.results'
   | 'multiRename.fieldHistory'
+  | 'multiRename.moveRowUp'
+  | 'multiRename.moveRowDown'
   | 'multiRename.rename'
   | 'network.selectHost'
   | 'share.back'

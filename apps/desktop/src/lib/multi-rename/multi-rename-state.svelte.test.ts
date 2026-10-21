@@ -11,6 +11,7 @@ const { ipc } = vi.hoisted(() => ({
   ipc: {
     previewMultiRename: vi.fn(),
     getMultiRenamePreviewRows: vi.fn(),
+    moveMultiRenameRow: vi.fn(),
     applyMultiRename: vi.fn(),
     getMultiRenamePresets: vi.fn(),
     saveMultiRenamePreset: vi.fn(),
@@ -356,6 +357,60 @@ describe('createMultiRenameState', () => {
       await settle()
       expect(tool.cursorIndex).toBe(1)
       expect(tool.cursorRow?.oldName).toBe('e')
+      tool.dispose()
+    })
+    it('moves the cursor row in the rename order, takes the cursor along, and previews again at once', async () => {
+      ipc.previewMultiRename.mockResolvedValue(preview(1, five))
+      ipc.moveMultiRenameRow.mockResolvedValue({ ok: true, value: 2 })
+      const tool = createMultiRenameState('S')
+      await settle()
+      tool.setCursor(3)
+
+      const moving = tool.moveCursorRow('up')
+      expect(tool.pending).toBe(true)
+      expect(await moving).toBe(2)
+      expect(ipc.moveMultiRenameRow).toHaveBeenCalledWith('S', 3, 'up')
+      expect(tool.cursorIndex).toBe(2)
+      await settle()
+      expect(ipc.previewMultiRename).toHaveBeenCalledTimes(2)
+      expect(tool.pending).toBe(false)
+      tool.dispose()
+    })
+
+    it('moves again from where the last move left the row, however fast the keys come', async () => {
+      ipc.previewMultiRename.mockResolvedValue(preview(1, five))
+      ipc.moveMultiRenameRow.mockImplementation((_s: string, row: number) =>
+        Promise.resolve({ ok: true, value: row + 1 }),
+      )
+      const tool = createMultiRenameState('S')
+      await settle()
+      tool.setCursor(1)
+
+      const first = tool.moveCursorRow('down')
+      const second = tool.moveCursorRow('down')
+      expect(await first).toBe(2)
+      expect(await second).toBe(3)
+      expect(ipc.moveMultiRenameRow.mock.calls.map((call: unknown[]) => call[1])).toEqual([1, 2])
+      expect(tool.cursorIndex).toBe(3)
+      tool.dispose()
+    })
+
+    it('answers null at either end, and asks nothing while listing the problems alone', async () => {
+      ipc.previewMultiRename.mockResolvedValue({
+        ok: true,
+        value: { previewId: 1, counts: { ready: 4, unchanged: 0, problems: 1 }, rows: five },
+      })
+      ipc.getMultiRenamePreviewRows.mockResolvedValue({ ok: true, value: [five[4]] })
+      ipc.moveMultiRenameRow.mockResolvedValue({ ok: true, value: 0 })
+      const tool = createMultiRenameState('S')
+      await settle()
+      expect(await tool.moveCursorRow('up')).toBeNull()
+      expect(ipc.previewMultiRename).toHaveBeenCalledTimes(1)
+
+      tool.setProblemsOnly(true)
+      ipc.moveMultiRenameRow.mockClear()
+      expect(await tool.moveCursorRow('down')).toBeNull()
+      expect(ipc.moveMultiRenameRow).not.toHaveBeenCalled()
       tool.dispose()
     })
   })

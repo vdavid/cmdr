@@ -7,7 +7,9 @@
 //! that vanished previews as `Missing`, never as another file.
 //!
 //! The names and the latest preview stay here: the sheet gets counts and the
-//! page of rows it draws, and sends back only the session and preview ids.
+//! page of rows it draws, and sends back only the session and preview ids. The
+//! files' order is the rename order, which the sheet can change a row at a time
+//! (`move_row`).
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -283,6 +285,40 @@ pub(crate) fn page(
         .iter()
         .filter(|row| filter == PreviewFilter::All || row.status.is_problem());
     Ok(kept.skip(offset).take(limit.min(MAX_PAGE)).cloned().collect())
+}
+
+/// Which way ⇧↑ / ⇧↓ moves a row in the rename order.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum RowMove {
+    Up,
+    Down,
+}
+
+/// Moves the session's file at `row` one place up or down in the rename order (the
+/// order `[C]` counts) and answers its new place; at that end it stays put. A move
+/// retires the latest preview: its rows no longer say what the session renames, so
+/// paging and apply refuse it with `PreviewOutOfDate` until the sheet's next preview.
+pub(crate) fn move_row(session_id: &str, row: usize, direction: RowMove) -> Result<usize, MultiRenameError> {
+    with_session(session_id, |s| {
+        if row >= s.names.len() {
+            return Err(MultiRenameError::Internal {
+                detail: format!("row {row} is past the session's {} files", s.names.len()),
+            });
+        }
+        let to = match direction {
+            RowMove::Up => row.checked_sub(1),
+            RowMove::Down => Some(row + 1).filter(|&to| to < s.names.len()),
+        };
+        let Some(to) = to else {
+            return Ok(row);
+        };
+        let mut names = s.names.to_vec();
+        names.swap(row, to);
+        s.names = names.into();
+        s.latest = None;
+        Ok(to)
+    })?
 }
 
 /// What apply renames: the rows ready now, proven to be the ones preview

@@ -528,6 +528,7 @@
             stale={previewStale}
             cursorIndex={tool.cursorIndex}
             onCursorChange={tool.setCursor}
+            onMoveRow={tool.moveCursorRow}
         />
 
         <!-- Inside the dialog, so it portals into the modal's layer (above the scrim, inside its focus trap). -->

@@ -118,6 +118,8 @@ export interface ColumnListProps<T> {
    * jump while the pointer passes over.
    */
   hoverMovesCursor?: boolean
+  /** A `grid`'s keydown that isn't one of its cursor keys (the Multi-rename preview's ⇧↑ / ⇧↓). */
+  onKeydown?: (event: KeyboardEvent) => void
   onRowClick?: (index: number) => void
   /** Right-click on a data row. The list calls `preventDefault` when this is set. */
   onRowContextMenu?: (payload: ColumnListRowEvent<T>) => void

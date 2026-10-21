@@ -796,6 +796,16 @@
     "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). In one of the tool's text fields, it lists what that field held in earlier renames, to pick one.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
+  "commands.multiRenameMoveRowUp.label": "Move the file up in the rename order",
+  "@commands.multiRenameMoveRowUp.label": {
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). In the tool's preview list, it moves the file under the cursor one place earlier in the order the files are renamed in, which is the order the counter numbers them.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
+  "commands.multiRenameMoveRowDown.label": "Move the file down in the rename order",
+  "@commands.multiRenameMoveRowDown.label": {
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). In the tool's preview list, it moves the file under the cursor one place later in the order the files are renamed in, which is the order the counter numbers them.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
   "commands.multiRenameRename.label": "Rename the files",
   "@commands.multiRenameRename.label": {
     "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). It renames every file the preview shows as ready, as the tool’s main Rename button does.",

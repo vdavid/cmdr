@@ -39,6 +39,7 @@
         cursorIndex = -1,
         onCursorChange,
         hoverMovesCursor = false,
+        onKeydown,
         onRowClick,
         onRowContextMenu,
         isGroupHeading,
@@ -187,10 +188,13 @@
     const activeDescendant = createDeferredActiveDescendant()
     const cursorRowId = $derived(isGrid ? activeDescendantId(cursorIndex) : undefined)
 
-    /** A grid's own cursor keys. Anything else (⇧↑, Enter) bubbles to the parent. */
+    /** A grid's own cursor keys. Anything else (⇧↑, Enter) goes to `onKeydown`, and bubbles on. */
     function onGridKeydown(event: KeyboardEvent): void {
         const next = cursorTarget(event, cursorIndex)
-        if (next === null) return
+        if (next === null) {
+            onKeydown?.(event)
+            return
+        }
         claimKey(event)
         if (next < 0) return
         onCursorChange?.(next)

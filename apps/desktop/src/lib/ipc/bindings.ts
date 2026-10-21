@@ -1503,6 +1503,13 @@ export const commands = {
       __TAURI_INVOKE('get_multi_rename_preview_rows', { sessionId, previewId, offset, limit, filter }),
     ),
   /**
+   *  ⇧↑ / ⇧↓ in the sheet's list: moves the file at `row` one place up or down in the
+   *  rename order (what `[C]` counts) and answers its new place. The preview on screen
+   *  retires; the sheet asks for the next one.
+   */
+  moveMultiRenameRow: (sessionId: string, row: number, direction: RowMove) =>
+    typedError<number, MultiRenameError>(__TAURI_INVOKE('move_multi_rename_row', { sessionId, row, direction })),
+  /**
    *  Each example's new name for the sheet's tooltips, rendered on made-up files
    *  by the same engine as the preview; `None` for a spec that doesn't run.
    */
@@ -14562,6 +14569,9 @@ export type RowBeside =
   | 'previous'
   // The row after it.
   | 'next'
+
+// Which way ⇧↑ / ⇧↓ moves a row in the rename order.
+export type RowMove = 'up' | 'down'
 
 /**
  *  An item row's role. `RollbackUnit` rows are the reversal

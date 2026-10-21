@@ -27,6 +27,8 @@ mod results_test;
 #[cfg(test)]
 mod run_test;
 #[cfg(test)]
+mod session_test;
+#[cfg(test)]
 mod transform_test;
 #[cfg(test)]
 mod transliterate_test;

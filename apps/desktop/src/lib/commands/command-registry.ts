@@ -83,6 +83,8 @@ export const FIXED_KEY_COMMAND_IDS = [
   'multiRename.undoRename',
   'multiRename.results',
   'multiRename.fieldHistory',
+  'multiRename.moveRowUp',
+  'multiRename.moveRowDown',
   'multiRename.rename',
   'network.selectHost',
   'share.back',

@@ -10,8 +10,7 @@ normalization, a counter, presets, and a live preview. The sheet is `src/lib/mul
 - `transliterate.rs` Greek to Latin (ELOT 743). Pure.
 - `plan.rs` the preview over a folder's entries: each row's new name and status; `render_examples` runs the sheet's
   tooltip examples (made-up files) through the same `Compiled::render`. Pure.
-- `session.rs` one open sheet's files (resolved once from the pane's selection), its latest preview, paging, and its
-  Results names.
+- `session.rs` one sheet's files in rename order (`move_row`), its latest preview, paging, and Results names.
 - `names_file.rs` Results (⌥⏎): the preview as `old<TAB>new` lines, and the user's edits merged back by old name.
 - `run.rs` apply: proves the ready rows against the preview shown, then runs `start_renames` (Ask Cmdr's executor).
 - `error.rs` `MultiRenameError`, shared by `session` and `run` so neither imports the other (`module-cycles`).

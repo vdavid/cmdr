@@ -19,6 +19,7 @@ import { RollbackRefusalFailure } from '#lib/operation-log/rollback-refusal.js'
 const ipc = vi.hoisted(() => ({
   previewMultiRename: vi.fn(),
   getMultiRenamePreviewRows: vi.fn(),
+  moveMultiRenameRow: vi.fn(),
   renderMultiRenameExamples: vi.fn(),
   applyMultiRename: vi.fn(),
   getMultiRenamePresets: vi.fn(),
@@ -411,6 +412,27 @@ describe('MultiRenameDialog', () => {
       rows[0].click()
       await tick()
       expect(cursorNames(root)).toEqual(['a.pdf'])
+    })
+
+    it('⇧↓ in the list moves the cursor row down the rename order and says where it went', async () => {
+      ipc.previewMultiRename.mockResolvedValue({ ok: true, value: MIXED })
+      ipc.moveMultiRenameRow.mockResolvedValue({ ok: true, value: 1 })
+      const root = await mountSheet()
+      const grid = root.querySelector<HTMLElement>('[role="grid"]')
+      if (!grid) throw new Error('no grid')
+
+      // In a text field ⇧↓ is the field's: it extends the text selection.
+      key(inputs(root)[0], 'ArrowDown', { shiftKey: true })
+      expect(ipc.moveMultiRenameRow).not.toHaveBeenCalled()
+
+      key(grid, 'ArrowDown', { shiftKey: true })
+      await settle()
+      expect(ipc.moveMultiRenameRow).toHaveBeenCalledWith('S', 0, 'down')
+      expect(ipc.previewMultiRename).toHaveBeenCalledTimes(2)
+      expect(cursorNames(root)).toEqual(['c.pdf'])
+      await new Promise((resolve) => setTimeout(resolve, 150))
+      const spoken = [...root.querySelectorAll('[data-live-announcer]')].map((region) => region.textContent.trim())
+      expect(spoken).toContain('Moved to 2 of 3')
     })
 
     function problemsToggle(root: HTMLElement): HTMLButtonElement | null {

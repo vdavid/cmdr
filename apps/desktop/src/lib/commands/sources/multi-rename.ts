@@ -142,6 +142,26 @@ export const multiRenameCommands: CommandSource[] = [
     fixedKey: true,
   },
   {
+    // In the preview list: the row under the cursor moves in the rename order (what `[C]`
+    // counts), the cursor with it. ⇧↑ / ⇧↓ in a text field stay the field's selection keys.
+    id: 'multiRename.moveRowUp',
+    nameKey: 'commands.multiRenameMoveRowUp.label',
+    scope: 'Main window/Multi-rename',
+    showInPalette: false,
+    shortcuts: ['⇧↑'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+    fixedKey: true,
+  },
+  {
+    id: 'multiRename.moveRowDown',
+    nameKey: 'commands.multiRenameMoveRowDown.label',
+    scope: 'Main window/Multi-rename',
+    showInPalette: false,
+    shortcuts: ['⇧↓'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+    fixedKey: true,
+  },
+  {
     // The primary button's key, from anywhere in the sheet. Plain Enter in a text field renames too
     // (TC's Start!), outside the registry: it's the field's own key, and buttons keep theirs.
     id: 'multiRename.rename',

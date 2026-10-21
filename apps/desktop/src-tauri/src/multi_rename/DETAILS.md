@@ -77,7 +77,14 @@ subfolders (the executor's one-parent rule refuses it today), "next step" chaini
   hidden-files setting moved (the `selection_snapshot` guard F5 uses), and stores the names. Every preview looks them up in the
   listing's entries by name. Why: the sheet first sent row numbers and every preview mapped them through the LIVE
   listing, so a file landing above the selection shifted it onto files the user never picked, in the preview and at
-  Start. A row's `row` is its place in the session, so it's stable across previews.
+  Start. A row's `row` is its place in the session, so it's stable across previews until the user moves it.
+- **Rename order** (⇧↑ / ⇧↓ in the sheet's list, `move_multi_rename_row`): the session's names ARE the rename order,
+  the one `[C]` counts. `move_row(session, row, direction)` swaps the file at `row` with its neighbor and answers its
+  new place (the same at that end; a row past the end is `Internal`). **Decision/Why: a move retires the latest
+  preview** (`latest = None`), so paging, Results, and apply refuse it with `PreviewOutOfDate` until the sheet's next
+  preview: its rows no longer say what the session renames, and apply must never start from an order nobody saw. The
+  sheet sends the cursor's INDEX, which with every row listed is the place, so a second move before the new preview
+  lands still names the moved file; it refuses moves while listing the problems alone (an index there isn't a place).
 - **Decision: names stay in the backend.** A preview answers `previewId`, the counts, and the first `FIRST_PAGE` rows;
   `get_multi_rename_preview_rows` serves the rest of the stored preview a page (≤ `MAX_PAGE`) at a time, so a
   200,000-file folder never ships its names to the frontend and back. Only the latest preview is stored (ids are
