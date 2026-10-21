@@ -2798,6 +2798,7 @@ export type MessageKey =
   | 'multiRename.presets.clash'
   | 'multiRename.presets.delete'
   | 'multiRename.presets.edited'
+  | 'multiRename.presets.listFull'
   | 'multiRename.presets.moveDown'
   | 'multiRename.presets.moveUp'
   | 'multiRename.presets.rename'

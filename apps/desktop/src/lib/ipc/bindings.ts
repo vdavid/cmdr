@@ -1561,10 +1561,10 @@ export const commands = {
     __TAURI_INVOKE<MultiRenamePreset[]>('get_multi_rename_presets', { seeds }),
   /**
    *  Saves a preset at the end of the list; one with the same name is replaced where it
-   *  stands. Answers the list after.
+   *  stands. Answers the list after, or `ListFull` when a new one would pass `MAX_PRESETS`.
    */
   saveMultiRenamePreset: (preset: MultiRenamePreset) =>
-    __TAURI_INVOKE<MultiRenamePreset[]>('save_multi_rename_preset', { preset }),
+    typedError<MultiRenamePreset[], PresetSaveRefusal>(__TAURI_INVOKE('save_multi_rename_preset', { preset })),
   // Deletes a preset by id. No-op when it isn't there. Answers the list after.
   deleteMultiRenamePreset: (id: string) => __TAURI_INVOKE<MultiRenamePreset[]>('delete_multi_rename_preset', { id }),
   /**
@@ -13487,6 +13487,11 @@ export type PrepareResult = {
 
 // Which way Move up / Move down takes a preset in the list.
 export type PresetMove = 'up' | 'down'
+
+// Why a save didn't change the list. Typed, so the sheet words it.
+export type PresetSaveRefusal =
+  // The list holds `max` presets already, and this name is a new one.
+  { type: 'listFull'; max: number }
 
 /**
  *  A preset Cmdr starts the list with ("Date and time", "Remove diacritics", …),

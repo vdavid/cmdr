@@ -82,28 +82,41 @@ fn name_key(name: &str) -> String {
     name.trim().to_lowercase()
 }
 
+/// Why a save didn't change the list. Typed, so the sheet words it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum PresetSaveRefusal {
+    /// The list holds `max` presets already, and this name is a new one.
+    ListFull { max: u32 },
+}
+
 /// Saves `preset`: over the preset with its name, where that one stands, or as a
 /// new one at the end, so no other preset's number moves. A new one past `max` is
-/// refused. Returns whether the list changed.
-pub fn save_in(presets: &mut Vec<MultiRenamePreset>, mut preset: MultiRenamePreset, max: usize) -> bool {
+/// refused, and the list stays as it was.
+pub fn save_in(
+    presets: &mut Vec<MultiRenamePreset>,
+    mut preset: MultiRenamePreset,
+    max: usize,
+) -> Result<(), PresetSaveRefusal> {
     let key = preset.key();
     if let Some(at) = presets.iter().position(|p| p.key() == key) {
         presets[at] = preset;
         // A list that somehow grew two presets with one name heals here.
         let id = presets[at].id.clone();
         presets.retain(|p| p.id == id || p.key() != key);
-        return true;
+        return Ok(());
     }
     if presets.len() >= max {
-        log::warn!(target: "multi_rename::presets", "Didn't save a preset: the list holds {max} already");
-        return false;
+        return Err(PresetSaveRefusal::ListFull {
+            max: u32::try_from(max).unwrap_or(u32::MAX),
+        });
     }
     // Keep ids unique even when the caller hands over one the list holds.
     if presets.iter().any(|p| p.id == preset.id) {
         preset.id = uuid::Uuid::new_v4().to_string();
     }
     presets.push(preset);
-    true
+    Ok(())
 }
 
 /// Which way Move up / Move down takes a preset in the list.

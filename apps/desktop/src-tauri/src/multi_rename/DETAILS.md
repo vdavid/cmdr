@@ -155,7 +155,8 @@ the frontend (`spec.ts`).
   `delete_in`, `move_in`) run by `PresetStore::edit` as one locked step with one durable temp+rename write, and every preset
   command answers the list after, so the sheet never reads it back separately.
 - **Save** (`save_in`): a new name goes at the END; a taken name is replaced where it stands. A new one past
-  `MAX_PRESETS` is refused (logged), never trimmed off another end: either would lose or renumber a preset.
+  `MAX_PRESETS` is refused with a typed `PresetSaveRefusal::ListFull` (the name popover words it), never trimmed off
+  another end: either would lose or renumber a preset.
 - **Move up / Move down** (`move_multi_rename_preset`, `move_in`) swap a preset with its neighbor; at that end of the
   list it's a no-op (the sheet greys the item).
 - **Rename** and **Update with current fields** change the preset where it stands. A rename onto a taken name drops

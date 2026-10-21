@@ -22,6 +22,7 @@
     import type { MultiRenameState } from './multi-rename-state.svelte'
     import { createKeyRoadEcho, presetKeyOf, type KeyRoad } from './preset-keys'
     import { presetMenuSections, presetNameClash, type PresetAction, type PresetNameMode } from './preset-menu'
+    import { asPresetSaveRefusal, type PresetSaveRefusal } from './preset-save-refusal'
 
     interface Props {
         tool: MultiRenameState
@@ -40,6 +41,8 @@
     let name = $state('')
     /** The preset Enter would replace, once the user was told; editing the name forgets it. */
     let confirmedClash = $state<string | null>(null)
+    /** Why the last save didn't land (the list is full); the popover stays open and says so. Editing the name forgets it. */
+    let saveRefusal = $state<PresetSaveRefusal | null>(null)
 
     const openShortcut = $derived(getFirstShortcutReactive('multiRename.openPresets'))
 
@@ -153,6 +156,7 @@
         if (nameMode !== null) return
         name = prefill
         confirmedClash = null
+        saveRefusal = null
         nameMode = mode
         // The popover focuses its first field; select the prefill so typing replaces it.
         queueMicrotask(() => {
@@ -171,10 +175,29 @@
             confirmedClash = clash.id
             return
         }
+        if (mode.kind === 'save') {
+            await saveFromPopover()
+            return
+        }
         closeName()
         buttonEl?.focus()
-        if (mode.kind === 'save') await run('save', () => tool.savePreset(name))
-        else await run('rename', () => tool.renamePreset({ id: mode.id, name }))
+        await run('rename', () => tool.renamePreset({ id: mode.id, name }))
+    }
+
+    /** Saves, closing the popover once it landed; a full list keeps it open with the reason. */
+    async function saveFromPopover(): Promise<void> {
+        try {
+            await tool.savePreset(name)
+        } catch (e) {
+            const refusal = asPresetSaveRefusal(e)
+            if (refusal) {
+                saveRefusal = refusal
+                return
+            }
+            log.warn("couldn't save a multi-rename preset: {reason}", { reason: e })
+        }
+        closeName()
+        buttonEl?.focus()
     }
 
     function handleNameKeydown(e: KeyboardEvent): void {
@@ -228,14 +251,17 @@
                     oninput={(e: Event) => {
                         name = (e.currentTarget as HTMLInputElement).value
                         confirmedClash = null
+                        saveRefusal = null
                     }}
                     onkeydown={handleNameKeydown}
                     ariaLabel={tString('multiRename.presetName')}
-                    warning={clash !== undefined && confirmedClash === clash.id}
+                    warning={(clash !== undefined && confirmedClash === clash.id) || saveRefusal !== null}
                 />
             </label>
             {#if clash !== undefined && confirmedClash === clash.id}
-                <p class="clash" role="alert">{tString('multiRename.presets.clash', { preset: clash.name })}</p>
+                <p class="note" role="alert">{tString('multiRename.presets.clash', { preset: clash.name })}</p>
+            {:else if saveRefusal?.type === 'listFull'}
+                <p class="note" role="alert">{tString('multiRename.presets.listFull', { max: saveRefusal.max })}</p>
             {/if}
             <div class="actions">
                 <Button variant="primary" size="mini" disabled={name.trim() === ''} onclick={() => { void submitName() }}>
@@ -289,7 +315,7 @@
         color: var(--color-text-secondary);
     }
 
-    .clash {
+    .note {
         margin: 0;
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);

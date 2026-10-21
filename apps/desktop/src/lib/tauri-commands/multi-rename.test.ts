@@ -1,7 +1,7 @@
 /**
  * Tests for the Multi-Rename Tauri command wrappers: typed results pass through
  * as `{ ok, value }` / `{ ok, error }`, and the session, paging, and presets are
- * plain pass-throughs.
+ * plain pass-throughs; a preset save past the cap throws its typed refusal.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -32,6 +32,7 @@ vi.mock('#lib/ipc/bindings.js', () => ({
 }))
 
 import { commands, type MultiRenameSpec } from '#lib/ipc/bindings.js'
+import { asPresetSaveRefusal } from '#lib/multi-rename/preset-save-refusal.js'
 import {
   applyMultiRename,
   clearMultiRenameNames,
@@ -179,10 +180,19 @@ describe('multi-rename wrappers', () => {
     const seeds = [{ name: 'Plain', spec }]
     expect(await getMultiRenamePresets(seeds)).toEqual([preset])
     expect(commands.getMultiRenamePresets).toHaveBeenCalledWith(seeds)
-    await saveMultiRenamePreset(preset)
+    vi.mocked(commands.saveMultiRenamePreset).mockResolvedValueOnce({ status: 'ok', data: [preset] } as never)
+    expect(await saveMultiRenamePreset(preset)).toEqual([preset])
     expect(commands.saveMultiRenamePreset).toHaveBeenCalledWith(preset)
     await deleteMultiRenamePreset('p')
     expect(commands.deleteMultiRenamePreset).toHaveBeenCalledWith('p')
+  })
+
+  it('throws a full list as a typed refusal the sheet words', async () => {
+    const refusal = { type: 'listFull', max: 200 } as const
+    vi.mocked(commands.saveMultiRenamePreset).mockResolvedValueOnce({ status: 'error', error: refusal } as never)
+    const caught = await saveMultiRenamePreset({ id: 'p', name: 'Plain', spec }).catch((e: unknown) => e)
+    expect(asPresetSaveRefusal(caught)).toEqual(refusal)
+    expect(asPresetSaveRefusal(new Error('other'))).toBeNull()
   })
 
   it('passes the examples through and hands back what the engine rendered', async () => {

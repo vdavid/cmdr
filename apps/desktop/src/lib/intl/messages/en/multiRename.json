@@ -178,6 +178,10 @@
   "@multiRename.presets.clash": {
     "description": "Shown in the preset-name popup when the typed name belongs to another saved preset. Pressing Enter again or the Replace button replaces that preset. {preset} is its name."
   },
+  "multiRename.presets.listFull": "You have {max, number} presets, the most Cmdr keeps. Delete one to save this.",
+  "@multiRename.presets.listFull": {
+    "description": "Shown in the save-preset popup when the user tries to save a new preset but the list is already at its limit. Nothing was saved; the popup stays open. Deleting a preset (from its submenu in the Presets menu) makes room. {max} is the limit, 200."
+  },
   "multiRename.presets.replace": "Replace",
   "@multiRename.presets.replace": {
     "description": "Button in the preset-name popup, after the question whether to replace the preset that already has the name. Replaces that preset."

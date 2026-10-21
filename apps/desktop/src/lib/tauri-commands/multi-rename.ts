@@ -22,6 +22,7 @@ import {
   type RenameExample,
   type RowMove,
 } from '#lib/ipc/bindings.js'
+import { PresetSaveFailure } from '#lib/multi-rename/preset-save-refusal.js'
 
 export type {
   FieldHistoryEntry,
@@ -161,9 +162,14 @@ export async function getMultiRenamePresets(seeds: PresetSeed[]): Promise<MultiR
   return commands.getMultiRenamePresets(seeds)
 }
 
-/** Saves a preset at the end of the list, or over the one with its name where that stands. Answers the list after. */
+/**
+ * Saves a preset at the end of the list, or over the one with its name where that stands. Answers the list after.
+ * A new one past the cap throws a {@link PresetSaveFailure} (`listFull`), which the name popover words.
+ */
 export async function saveMultiRenamePreset(preset: MultiRenamePreset): Promise<MultiRenamePreset[]> {
-  return commands.saveMultiRenamePreset(preset)
+  const res = await commands.saveMultiRenamePreset(preset)
+  if (res.status === 'error') throw new PresetSaveFailure(res.error)
+  return res.data
 }
 
 /** Deletes a preset. Answers the list after. */

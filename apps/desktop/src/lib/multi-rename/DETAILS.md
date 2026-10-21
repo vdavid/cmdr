@@ -125,7 +125,8 @@
     the loaded preset's name. Enter saves; a name another preset has (`presetNameClash`, the backend's trimmed-lowercase
     rule) asks inline first, and a second Enter or Replace confirms. Escape closes the popover only (it stops the key
     before the sheet sees it), and focus goes back to the button. The field's Enter is claimed, so it never reaches the
-    sheet's Enter-starts rule.
+    sheet's Enter-starts rule. A save past the cap comes back as a typed `listFull` (`PresetSaveFailure`,
+    `preset-save-refusal.ts`): the popover stays open and says how many presets Cmdr keeps; editing the name clears it.
   - The menu lives in the sheet's overlay (`Menu` portals through `providePortalTarget`), so it sits above the scrim and
     inside the focus trap; its capture listener takes every key while open, so the sheet's Enter can't start a rename
     from it.

@@ -8,8 +8,8 @@ use crate::multi_rename::error::MultiRenameError;
 use crate::multi_rename::history::{FIELD_HISTORY, FieldHistoryEntry, MAX_FIELD_HISTORY, history_entries};
 use crate::multi_rename::plan::{MultiRenameSpec, PreviewRow, RenameExample, render_examples};
 use crate::multi_rename::presets::{
-    LAST_SPEC, LastSpec, MAX_PRESETS, MultiRenameLastSettings, MultiRenamePreset, PRESETS, PresetMove, PresetSeed,
-    delete_in, move_in, rename_in, save_in, update_spec_in,
+    LAST_SPEC, LastSpec, MAX_PRESETS, MultiRenameLastSettings, MultiRenamePreset, PRESETS, PresetMove,
+    PresetSaveRefusal, PresetSeed, delete_in, move_in, rename_in, save_in, update_spec_in,
 };
 use crate::multi_rename::run::{MultiRenameStarted, apply};
 use crate::multi_rename::session::{self, MultiRenameOpened, MultiRenamePreview, PreviewFilter, RangeSample, RowMove};
@@ -220,11 +220,22 @@ pub fn get_multi_rename_presets(app: tauri::AppHandle, seeds: Vec<PresetSeed>) -
 }
 
 /// Saves a preset at the end of the list; one with the same name is replaced where it
-/// stands. Answers the list after.
+/// stands. Answers the list after, or `ListFull` when a new one would pass `MAX_PRESETS`.
 #[tauri::command]
 #[specta::specta]
-pub fn save_multi_rename_preset(app: tauri::AppHandle, preset: MultiRenamePreset) -> Vec<MultiRenamePreset> {
-    PRESETS.edit(&app, "a save", |presets| save_in(presets, preset, MAX_PRESETS))
+pub fn save_multi_rename_preset(
+    app: tauri::AppHandle,
+    preset: MultiRenamePreset,
+) -> Result<Vec<MultiRenamePreset>, PresetSaveRefusal> {
+    let mut refused = None;
+    let presets = PRESETS.edit(&app, "a save", |presets| match save_in(presets, preset, MAX_PRESETS) {
+        Ok(()) => true,
+        Err(refusal) => {
+            refused = Some(refusal);
+            false
+        }
+    });
+    refused.map_or(Ok(presets), Err)
 }
 
 /// Deletes a preset by id. No-op when it isn't there. Answers the list after.

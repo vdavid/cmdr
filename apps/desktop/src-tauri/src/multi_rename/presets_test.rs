@@ -5,8 +5,8 @@
 use super::plan::MultiRenameSpec;
 use super::preset_store::PresetStore;
 use super::presets::{
-    LastSpec, MultiRenamePreset, PresetList, PresetMove, PresetSeed, delete_in, move_in, rename_in, save_in, seed_in,
-    update_spec_in,
+    LastSpec, MultiRenamePreset, PresetList, PresetMove, PresetSaveRefusal, PresetSeed, delete_in, move_in, rename_in,
+    save_in, seed_in, update_spec_in,
 };
 use super::transform::CaseChange;
 use crate::recents::RecentsFile;
@@ -90,7 +90,7 @@ fn an_update_keeps_the_preset_where_it_stands() {
 #[test]
 fn a_new_preset_goes_at_the_end_so_no_number_moves() {
     let mut list = vec![preset("a", "Photos"), preset("b", "Music")];
-    assert!(save_in(&mut list, preset("c", "Docs"), 10));
+    assert_eq!(save_in(&mut list, preset("c", "Docs"), 10), Ok(()));
     assert_eq!(names(&list), ["Photos", "Music", "Docs"]);
 }
 
@@ -99,7 +99,7 @@ fn saving_over_a_taken_name_replaces_that_preset_where_it_stands() {
     let mut list = vec![preset("a", "Photos"), preset("b", "Music"), preset("c", "Docs")];
     let mut again = preset("b", " music ");
     again.spec = spec("[C]");
-    assert!(save_in(&mut list, again, 10));
+    assert_eq!(save_in(&mut list, again, 10), Ok(()));
     assert_eq!(names(&list), ["Photos", " music ", "Docs"]);
     assert_eq!(list[1].spec, spec("[C]"));
     assert_eq!(list[1].id, "b");
@@ -108,7 +108,7 @@ fn saving_over_a_taken_name_replaces_that_preset_where_it_stands() {
 #[test]
 fn saving_over_a_taken_name_under_a_new_id_keeps_the_place_and_takes_the_id() {
     let mut list = vec![preset("a", "Photos"), preset("b", "Music")];
-    assert!(save_in(&mut list, preset("new", "PHOTOS"), 10));
+    assert_eq!(save_in(&mut list, preset("new", "PHOTOS"), 10), Ok(()));
     assert_eq!(names(&list), ["PHOTOS", "Music"]);
     assert_eq!(list[0].id, "new");
 }
@@ -116,16 +116,20 @@ fn saving_over_a_taken_name_under_a_new_id_keeps_the_place_and_takes_the_id() {
 #[test]
 fn a_new_preset_past_the_cap_is_refused_and_nothing_moves() {
     let mut list = vec![preset("a", "Photos"), preset("b", "Music")];
-    assert!(!save_in(&mut list, preset("c", "Docs"), 2));
+    assert_eq!(
+        save_in(&mut list, preset("c", "Docs"), 2),
+        Err(PresetSaveRefusal::ListFull { max: 2 }),
+        "the sheet words the refusal, so it crosses typed"
+    );
     assert_eq!(names(&list), ["Photos", "Music"]);
     // Replacing one at the cap is fine: the list doesn't grow.
-    assert!(save_in(&mut list, preset("b", "Music"), 2));
+    assert_eq!(save_in(&mut list, preset("b", "Music"), 2), Ok(()));
 }
 
 #[test]
 fn a_new_preset_with_an_id_the_list_holds_gets_a_fresh_one() {
     let mut list = vec![preset("a", "Photos")];
-    assert!(save_in(&mut list, preset("a", "Music"), 10));
+    assert_eq!(save_in(&mut list, preset("a", "Music"), 10), Ok(()));
     assert_eq!(names(&list), ["Photos", "Music"]);
     assert_ne!(list[1].id, "a");
 }
@@ -162,9 +166,15 @@ fn the_order_survives_a_restart() {
     let path = dir.path().join("multi-rename-presets.json");
 
     let writer = PresetStore::new();
-    writer.edit_at(Some(&path), "a save", |list| save_in(list, preset("a", "Photos"), 10));
-    writer.edit_at(Some(&path), "a save", |list| save_in(list, preset("b", "Music"), 10));
-    let answer = writer.edit_at(Some(&path), "a save", |list| save_in(list, preset("c", "Docs"), 10));
+    writer.edit_at(Some(&path), "a save", |list| {
+        save_in(list, preset("a", "Photos"), 10).is_ok()
+    });
+    writer.edit_at(Some(&path), "a save", |list| {
+        save_in(list, preset("b", "Music"), 10).is_ok()
+    });
+    let answer = writer.edit_at(Some(&path), "a save", |list| {
+        save_in(list, preset("c", "Docs"), 10).is_ok()
+    });
     assert_eq!(names(&answer), ["Photos", "Music", "Docs"], "an edit answers the list");
 
     let reader = PresetStore::new();
@@ -178,8 +188,12 @@ fn a_rename_persists_as_one_write() {
     let path = dir.path().join("multi-rename-presets.json");
 
     let writer = PresetStore::new();
-    writer.edit_at(Some(&path), "a save", |list| save_in(list, preset("a", "Photos"), 10));
-    writer.edit_at(Some(&path), "a save", |list| save_in(list, preset("b", "Music"), 10));
+    writer.edit_at(Some(&path), "a save", |list| {
+        save_in(list, preset("a", "Photos"), 10).is_ok()
+    });
+    writer.edit_at(Some(&path), "a save", |list| {
+        save_in(list, preset("b", "Music"), 10).is_ok()
+    });
     writer.edit_at(Some(&path), "a rename", |list| rename_in(list, "a", "Music"));
 
     let reader = PresetStore::new();
@@ -194,7 +208,9 @@ fn an_edit_that_changes_nothing_leaves_the_file_untouched() {
     let dir = tempfile::tempdir().expect("tempdir");
     let path = dir.path().join("multi-rename-presets.json");
     let store = PresetStore::new();
-    store.edit_at(Some(&path), "a save", |list| save_in(list, preset("a", "Photos"), 10));
+    store.edit_at(Some(&path), "a save", |list| {
+        save_in(list, preset("a", "Photos"), 10).is_ok()
+    });
     std::fs::remove_file(&path).expect("remove");
 
     store.edit_at(Some(&path), "a delete", |list| delete_in(list, "gone"));
@@ -325,7 +341,9 @@ fn a_legacy_presets_file_loads_migrated() {
     let dir = tempfile::tempdir().expect("tempdir");
     let path = dir.path().join("multi-rename-presets.json");
     let writer = PresetStore::new();
-    writer.edit_at(Some(&path), "a save", |list| save_in(list, preset("a", "Photos"), 10));
+    writer.edit_at(Some(&path), "a save", |list| {
+        save_in(list, preset("a", "Photos"), 10).is_ok()
+    });
     // Turn the stored preset into an older Cmdr's: bare `[C]`, sheet digits 3.
     let mut stored: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(&path).expect("read")).expect("json");
@@ -510,7 +528,7 @@ fn an_older_build_s_presets_get_the_seeds_after_them_once_skipping_names_they_ha
 #[test]
 fn a_preset_saved_before_the_seeds_arrive_keeps_number_one() {
     let mut list = PresetList::default();
-    assert!(save_in(&mut list.entries, preset("a", "Mine"), 10));
+    assert_eq!(save_in(&mut list.entries, preset("a", "Mine"), 10), Ok(()));
     assert!(seed_in(&mut list, seeds(), 10));
     assert_eq!(names(&list.entries)[..2], ["Mine", "Date and time"]);
 }

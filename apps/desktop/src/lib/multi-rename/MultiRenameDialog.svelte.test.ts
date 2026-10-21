@@ -3,7 +3,7 @@
  * answer gets its own words, Enter in a mask starts, a placeholder button inserts
  * into the name mask, and the presets: F2 opens their menu, a digit loads one,
  * the button says when the fields drifted from it, and ⌘S saves (asking before it
- * replaces), with Enter and Escape staying inside the name popover; closing
+ * replaces, and saying so when the list is full), with Enter and Escape staying inside the name popover; closing
  * remembers the fields; and ⌘⌥Z rolls back the last run.
  */
 
@@ -15,6 +15,7 @@ import type { RenameExample } from '#lib/tauri-commands/index.js'
 import { MARK_END, MARK_START } from './rename-examples'
 import { setLastMultiRenameRun } from './last-run.svelte'
 import { RollbackRefusalFailure } from '#lib/operation-log/rollback-refusal.js'
+import { PresetSaveFailure } from './preset-save-refusal'
 
 const ipc = vi.hoisted(() => ({
   previewMultiRename: vi.fn(),
@@ -783,6 +784,31 @@ describe('MultiRenameDialog', () => {
       expect(ipc.saveMultiRenamePreset).toHaveBeenCalledWith(expect.objectContaining({ id: 'p1', name: 'mine' }))
       expect(document.querySelector('.ui-popover')).toBeNull()
       expect(ipc.applyMultiRename).not.toHaveBeenCalled()
+    })
+
+    it('a full preset list keeps the name popover open and says what to do', async () => {
+      ipc.saveMultiRenamePreset.mockRejectedValue(new PresetSaveFailure({ type: 'listFull', max: 200 }))
+      const root = await mountSheet()
+      key(inputs(root)[0], 's', { code: 'KeyS', metaKey: true })
+      await settle()
+      const name = document.querySelector<HTMLInputElement>('.ui-popover input')
+      if (!name) throw new Error('no name popover')
+      name.value = 'Fresh'
+      name.dispatchEvent(new Event('input', { bubbles: true }))
+      await settle()
+
+      key(name, 'Enter')
+      await settle()
+      expect(ipc.saveMultiRenamePreset).toHaveBeenCalledWith(expect.objectContaining({ name: 'Fresh' }))
+      expect(document.querySelector('.ui-popover')).toBeTruthy()
+      expect(document.querySelector('.ui-popover [role="alert"]')?.textContent).toContain('200')
+      expect(presetsButton(root).textContent).not.toContain('Fresh')
+
+      // Editing the name clears the note, so a retry starts clean.
+      name.value = 'Fresh2'
+      name.dispatchEvent(new Event('input', { bubbles: true }))
+      await settle()
+      expect(document.querySelector('.ui-popover [role="alert"]')).toBeNull()
     })
 
     it('Escape closes the name popover and leaves the sheet open', async () => {
