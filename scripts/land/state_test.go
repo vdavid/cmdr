@@ -53,6 +53,36 @@ func TestNextLandPath(t *testing.T) {
 	}
 }
 
+func TestNextRecordStep(t *testing.T) {
+	cases := []struct {
+		name       string
+		prState    string
+		headOnMain bool
+		want       recordStep
+	}{
+		{"open, not recorded yet", "OPEN", false, recordBuild},
+		{"open, record landed, GitHub not caught up", "OPEN", true, recordConfirm},
+		{"already merged", "MERGED", true, recordAlreadyMerged},
+		{"merged beats everything", "MERGED", false, recordAlreadyMerged},
+		{"closed without a merge", "CLOSED", false, recordRefuseClosed},
+		{"closed, head on main anyway", "CLOSED", true, recordRefuseClosed},
+	}
+	for _, c := range cases {
+		if got := nextRecordStep(c.prState, c.headOnMain); got != c.want {
+			t.Errorf("%s: got %d, want %d", c.name, got, c.want)
+		}
+	}
+}
+
+func TestRecordMessageNamesThePR(t *testing.T) {
+	if got := recordMessage(393).Subject; got != "chore: record PR #393 as merged" {
+		t.Errorf("got %q", got)
+	}
+	if got := recordBranch(393); got != "record-pr-393" {
+		t.Errorf("got %q", got)
+	}
+}
+
 func TestPatchesUpstream(t *testing.T) {
 	cases := []struct {
 		name, cherry string

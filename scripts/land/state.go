@@ -2,6 +2,7 @@ package main
 
 import (
 	"cmp"
+	"fmt"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -96,6 +97,48 @@ func nextLandPath(based, hasMerges bool, rebaseable *bool) landPath {
 	default:
 		// Still computing: try, and GitHub refuses the merge if it can't rebase.
 		return landGitHubRebase
+	}
+}
+
+// recordStep is what `-record N` does once the branch itself landed.
+type recordStep int
+
+const (
+	// recordRefuseClosed: the PR is closed unmerged, and GitHub marks only an open PR merged.
+	recordRefuseClosed recordStep = iota
+	recordAlreadyMerged
+	// recordConfirm: the PR head is already on `main` (a record landed), so only wait for GitHub
+	// to mark the PR merged, then tidy up.
+	recordConfirm
+	// recordBuild: build the record, put it through CI, and land it.
+	recordBuild
+)
+
+// nextRecordStep decides from the contributor PR's state (`gh pr view --json state`) and whether
+// its head is already an ancestor of `origin/main`.
+func nextRecordStep(prState string, headOnMain bool) recordStep {
+	switch {
+	case prState == "MERGED":
+		return recordAlreadyMerged
+	case prState != "OPEN":
+		return recordRefuseClosed
+	case headOnMain:
+		return recordConfirm
+	default:
+		return recordBuild
+	}
+}
+
+// recordBranch is the branch that carries PR n's record through CI.
+func recordBranch(n int) string {
+	return "record-pr-" + strconv.Itoa(n)
+}
+
+// recordMessage is the record commit's message, which its PR also takes as title and body.
+func recordMessage(n int) commit {
+	return commit{
+		Subject: fmt.Sprintf("chore: record PR #%d as merged", n),
+		Body:    fmt.Sprintf("An `ours` merge of PR #%d's head: it changes no file, only makes that head an ancestor of `main`, so GitHub marks the PR merged. Its commits landed cherry-picked, in their own land. See `docs/guides/handling-prs.md`.", n),
 	}
 }
 

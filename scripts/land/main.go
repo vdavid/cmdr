@@ -21,6 +21,10 @@
 // When GitHub can't rebase the green PR (a conflict, or a merge commit a rebase would flatten),
 // it catches up here and waits for CI again, up to `maxCIRuns` runs in all.
 //
+// With `-record N`, a second land follows once the branch is on `main`: a record branch, the
+// current `main` plus an `ours` merge of contributor PR N's head, through CI and fast-forwarded
+// onto `main`, so GitHub marks PR N merged (`record.go`).
+//
 // Every run reads where the branch stands and picks up from there, so it's safe to re-run after a
 // flake re-run, a rebase, or a closed laptop.
 //
@@ -29,6 +33,7 @@
 //	pnpm land                 push, wait for CI, land
 //	pnpm land -no-wait        push and open the PR, then return (offload CI between milestones)
 //	pnpm land -squash [-m M]  squash first
+//	pnpm land -record N       land, then record contributor PR N as merged
 //	pnpm land rulesets [-apply]
 //
 // Docs: `scripts/land/CLAUDE.md`.
@@ -74,6 +79,16 @@ type config struct {
 	message string
 	noWait  bool
 	timeout time.Duration
+	// record is the contributor PR to record as merged once the branch landed, or 0.
+	record int
+}
+
+// command is how to run this land again.
+func (c config) command() string {
+	if c.record > 0 {
+		return fmt.Sprintf("pnpm land -record %d", c.record)
+	}
+	return "pnpm land"
 }
 
 func main() {
@@ -82,8 +97,9 @@ func main() {
 	message := flag.String("m", "", "with -squash: the commit message (default: every commit message, oldest first)")
 	noWait := flag.Bool("no-wait", false, "push and open the PR, then return without waiting for CI or landing")
 	timeout := flag.Duration("timeout", 2*time.Hour, "how long to wait for CI")
+	recordPR := flag.Int("record", 0, "once the branch landed, record contributor PR `N` as merged (docs/guides/handling-prs.md)")
 	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr, "Usage: pnpm land [-no-wait] [-squash [-m MESSAGE]] [-timeout 2h]")
+		fmt.Fprintln(os.Stderr, "Usage: pnpm land [-no-wait] [-squash [-m MESSAGE]] [-record N] [-timeout 2h]")
 		fmt.Fprintln(os.Stderr, "       pnpm land rulesets [-apply]")
 		flag.PrintDefaults()
 	}
@@ -111,9 +127,25 @@ func main() {
 	if *message != "" && !*squash {
 		fail(errors.New("-m only works with -squash"))
 	}
-	cfg := config{root: *root, squash: *squash, message: *message, noWait: *noWait, timeout: *timeout}
+	if *recordPR < 0 {
+		fail(errors.New("-record takes the contributor's PR number"))
+	}
+	cfg := config{root: *root, squash: *squash, message: *message, noWait: *noWait, timeout: *timeout, record: *recordPR}
 	if err := land(r, cfg); err != nil {
 		fail(err)
+	}
+	if cfg.noWait {
+		return
+	}
+	if cfg.record > 0 {
+		if err := record(r, cfg); err != nil {
+			fail(err)
+		}
+	}
+	if teardown := teardownCommand(r.dir); teardown != "" {
+		say("Done. This worktree's branch is on main now; remove the worktree when you're finished with it:\n  %s", teardown)
+	} else {
+		say("Done.")
 	}
 }
 
@@ -168,10 +200,10 @@ func landOnce(r runner, cfg config) error {
 		return err
 	}
 	if cfg.noWait {
-		say("CI is on it: %s\nLand it when you're ready: pnpm land", pr.URL)
+		say("CI is on it: %s\nLand it when you're ready: %s", pr.URL, cfg.command())
 		return nil
 	}
-	if err := waitForCI(r, head, cfg.timeout); err != nil {
+	if err := waitForCI(r, head, cfg); err != nil {
 		return err
 	}
 	if err := landGreen(r, pr, head, state.hasMerges); err != nil {
@@ -192,7 +224,7 @@ func start(r runner, state branchState) (bool, error) {
 		say("%s is already on origin/main.", state.branch)
 		return false, finish(r, state.branch)
 	case stepRefuseMergeRebase:
-		return false, errors.New("origin/main moved, and this branch carries a merge commit that a plain rebase would flatten. Catch up by hand, then land again:\n  git rebase --rebase-merges origin/main   (a contributor's PR record: docs/guides/handling-prs.md)\n  or redo the merge on top of main         (a release merge-back: docs/guides/releasing.md)")
+		return false, errors.New("origin/main moved, and this branch carries a merge commit that a plain rebase would flatten. Catch up by hand, then land again:\n  a release merge-back: redo the merge on top of main   (docs/guides/releasing.md)\n  a contributor's PR record: drop the merge from this branch, then land with `pnpm land -record <PR number>`,\n    which records the PR in a land of its own          (docs/guides/handling-prs.md)")
 	case stepRebase:
 		say("Rebasing onto origin/main...")
 		if _, err := r.git("rebase", "origin/main"); err != nil {
@@ -304,7 +336,7 @@ func ensurePR(r runner, branch string, commits []commit) (pullRequest, error) {
 	return pullRequest{Number: number, State: "OPEN", URL: url}, nil
 }
 
-func waitForCI(r runner, head string, timeout time.Duration) error {
+func waitForCI(r runner, head string, cfg config) error {
 	start := time.Now()
 	announced := false
 	// Whether a run on head showed up yet. Once one has, a poll that lists none is GitHub's
@@ -332,10 +364,10 @@ func waitForCI(r runner, head string, timeout time.Duration) error {
 			say("%s is green.", ciCheck)
 			return nil
 		case verdictRed:
-			return ciFailure(r, run)
+			return ciFailure(r, run, cfg.command())
 		case verdictMissing:
 			if missingRunGivesUp(seen, time.Since(start)) {
-				return fmt.Errorf("no CI run on %s after %s. Check the PR's Checks tab, then land again: pnpm land", head[:12], appearWithin)
+				return fmt.Errorf("no CI run on %s after %s. Check the PR's Checks tab, then land again: %s", head[:12], appearWithin, cfg.command())
 			}
 		case verdictPending:
 			seen = true
@@ -344,8 +376,8 @@ func waitForCI(r runner, head string, timeout time.Duration) error {
 				announced = true
 			}
 		}
-		if time.Since(start) > timeout {
-			return fmt.Errorf("CI is still running after %s; land again to keep waiting: pnpm land", timeout)
+		if time.Since(start) > cfg.timeout {
+			return fmt.Errorf("CI is still running after %s; land again to keep waiting: %s", cfg.timeout, cfg.command())
 		}
 		delay := pollDelay(v, time.Since(run.CreatedAt))
 		time.Sleep(delay + jitter(delay/4))
@@ -354,7 +386,7 @@ func waitForCI(r runner, head string, timeout time.Duration) error {
 
 // ciFailure names the failed jobs and how to re-run them; flakes are expected, so that's the
 // first thing to try.
-func ciFailure(r runner, run workflowRun) error {
+func ciFailure(r runner, run workflowRun, again string) error {
 	var view struct {
 		Jobs []struct {
 			Name       string `json:"name"`
@@ -370,7 +402,7 @@ func ciFailure(r runner, run workflowRun) error {
 			}
 		}
 	}
-	msg += fmt.Sprintf("A flake? Re-run the failed jobs, then land again:\n  gh run rerun %d --failed -R %s && pnpm land\nA real failure? Fix it, commit, and land again.", run.ID, repo)
+	msg += fmt.Sprintf("A flake? Re-run the failed jobs, then land again:\n  gh run rerun %d --failed -R %s && %s\nA real failure? Fix it, commit, and land again.", run.ID, repo, again)
 	return errors.New(msg)
 }
 
@@ -481,11 +513,6 @@ func finish(r runner, branch string) error {
 		say("Left origin/%s alone: it points at %s, which isn't what landed.", branch, remote[:12])
 	}
 	stopLeftoverRuns(r, branch)
-	if teardown := teardownCommand(r.dir); teardown != "" {
-		say("Done. This worktree's branch is on main now; remove the worktree when you're finished with it:\n  %s", teardown)
-	} else {
-		say("Done.")
-	}
 	return nil
 }
 
