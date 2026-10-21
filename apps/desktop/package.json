@@ -58,7 +58,7 @@
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "@ark-ui/svelte": "^5.24.3",
-    "@chenglou/pretext": "^0.0.9",
+    "@chenglou/pretext": "^1.0.0",
     "@leeoniya/ufuzzy": "^1.0.19",
     "@logtape/logtape": "^2.4.1",
     "@tauri-apps/api": "^2.12.4",
