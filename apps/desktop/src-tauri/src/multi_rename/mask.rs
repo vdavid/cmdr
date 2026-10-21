@@ -127,6 +127,19 @@ enum Field {
     FullName,
 }
 
+impl Field {
+    /// The text this field reads for `row`.
+    fn source<'a>(self, row: &RowFacts<'a>) -> &'a str {
+        match self {
+            Self::Name => row.split_name().0,
+            Self::Extension => row.split_name().1,
+            Self::Parent => row.parent,
+            Self::Grandparent => row.grandparent,
+            Self::FullName => row.file_name,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Range {
     All,
@@ -134,6 +147,45 @@ enum Range {
     From(i64),
     Length(i64, usize),
     Span(i64, i64),
+}
+
+/// A range as the shared vectors write it: field, kind, `at`, `to`, `length`.
+#[cfg(test)]
+pub(super) type RangeParts = (&'static str, &'static str, Option<i64>, Option<i64>, Option<u64>);
+
+/// What a whole range token (`[N2-5]`) spells, as the shared vectors write it.
+/// For the tests that hold the frontend's parser to this one.
+#[cfg(test)]
+pub(super) fn range_token(token: &str) -> Option<RangeParts> {
+    let inner = token.strip_prefix('[')?.strip_suffix(']')?;
+    let Ok(Token::Field(field, range)) = placeholder(inner) else {
+        return None;
+    };
+    let field = match field {
+        Field::Name => "name",
+        Field::Extension => "extension",
+        Field::Parent => "parent",
+        Field::Grandparent => "grandparent",
+        Field::FullName => "fullName",
+    };
+    Some(match range {
+        Range::All => (field, "all", None, None, None),
+        Range::One(at) => (field, "one", Some(at), None, None),
+        Range::From(at) => (field, "from", Some(at), None, None),
+        Range::Length(at, length) => (field, "length", Some(at), None, u64::try_from(length).ok()),
+        Range::Span(at, to) => (field, "span", Some(at), Some(to), None),
+    })
+}
+
+/// The characters a whole range token (`[N2-5]`) takes from a text `len`
+/// characters long, for the tests that hold the frontend's tokens to this one.
+#[cfg(test)]
+pub(super) fn range_token_bounds(token: &str, len: usize) -> Option<(usize, usize)> {
+    let inner = token.strip_prefix('[')?.strip_suffix(']')?;
+    let Ok(Token::Field(_, range)) = placeholder(inner) else {
+        return None;
+    };
+    bounds(range, len)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -197,21 +249,11 @@ impl Mask {
 
     /// The mask's text for `row`.
     pub fn render(&self, row: &RowFacts<'_>) -> String {
-        let (name, extension) = row.split_name();
         let mut out = CaseWriter::default();
         for token in &self.0 {
             match token {
                 Token::Literal(text) => out.push(text),
-                Token::Field(field, range) => {
-                    let source = match field {
-                        Field::Name => name,
-                        Field::Extension => extension,
-                        Field::Parent => row.parent,
-                        Field::Grandparent => row.grandparent,
-                        Field::FullName => row.file_name,
-                    };
-                    out.push(&slice(source, *range));
-                }
+                Token::Field(field, range) => out.push(&slice(field.source(row), *range)),
                 Token::Counter(CounterParts { start, step, digits }) => {
                     let position = i64::try_from(row.position).unwrap_or(i64::MAX);
                     let value = start
@@ -414,10 +456,21 @@ fn index_of(position: i64, len: usize) -> i64 {
 }
 
 fn slice(source: &str, range: Range) -> String {
-    let chars: Vec<char> = source.chars().collect();
-    let len = chars.len();
+    if range == Range::All {
+        return source.to_string();
+    }
+    match bounds(range, source.chars().count()) {
+        Some((first, last)) => source.chars().skip(first).take(last - first + 1).collect(),
+        None => String::new(),
+    }
+}
+
+/// The characters `range` takes from a text `len` characters long: the first and
+/// last index, from 0, both included; `None` when it takes nothing (past the end,
+/// or an empty text).
+fn bounds(range: Range, len: usize) -> Option<(usize, usize)> {
     let (first, last) = match range {
-        Range::All => return source.to_string(),
+        Range::All => (0, len as i64 - 1),
         Range::One(at) => (index_of(at, len), index_of(at, len)),
         Range::From(at) => (index_of(at, len), len as i64 - 1),
         Range::Length(at, length) => {
@@ -434,9 +487,10 @@ fn slice(source: &str, range: Range) -> String {
     let first = first.max(0);
     let last = last.min(len as i64 - 1);
     if first > last {
-        return String::new();
+        return None;
     }
-    chars[first as usize..=last as usize].iter().collect()
+    // Both within 0..len here, so neither conversion can fail.
+    Some((usize::try_from(first).ok()?, usize::try_from(last).ok()?))
 }
 
 fn pad(value: i64, digits: u32) -> String {

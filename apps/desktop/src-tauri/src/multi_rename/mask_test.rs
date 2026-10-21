@@ -2,7 +2,7 @@
 
 use chrono::NaiveDate;
 
-use super::mask::{MAX_COUNTER_DIGITS, Mask, MaskError, RowFacts, counter_token};
+use super::mask::{MAX_COUNTER_DIGITS, Mask, MaskError, RowFacts, counter_token, range_token, range_token_bounds};
 
 fn facts(name: &str) -> RowFacts<'_> {
     RowFacts {
@@ -241,6 +241,62 @@ fn the_counter_grammar_agrees_with_the_shared_vectors() {
         assert!(
             matches!(Mask::parse(token), Err(MaskError::Unknown { .. })),
             "{token} must not parse"
+        );
+    }
+}
+
+/// The range vectors the frontend's `range-token.ts` is tested against too, so the
+/// two grammars can't drift, and the editor's tokens take what the user chose.
+#[test]
+fn the_range_grammar_agrees_with_the_shared_vectors() {
+    let vectors: serde_json::Value =
+        serde_json::from_str(include_str!("range_token_vectors.json")).expect("the vectors are JSON");
+    let valid = vectors["valid"].as_array().expect("a valid list");
+    assert!(!valid.is_empty());
+    for vector in valid {
+        let token = vector["token"].as_str().expect("a token");
+        let expected = (
+            vector["field"].as_str().expect("a field"),
+            vector["kind"].as_str().expect("a kind"),
+            vector["at"].as_i64(),
+            vector["to"].as_i64(),
+            vector["length"].as_u64(),
+        );
+        assert_eq!(range_token(token), Some(expected), "{token}");
+        // The frontend's minimal rewrite takes the same characters, from names short and long.
+        let minimal = vector["minimal"].as_str().expect("a minimal form");
+        let (typed, rewritten) = (Mask::parse(token).expect(token), Mask::parse(minimal).expect(minimal));
+        for file in ["a", "Beach day.jpg", "ABCDEFGHIJKLMNOP.txt", ""] {
+            assert_eq!(
+                typed.render(&facts(file)),
+                rewritten.render(&facts(file)),
+                "{token} vs {minimal} on {file:?}"
+            );
+        }
+    }
+    for token in vectors["invalid"].as_array().expect("an invalid list") {
+        let token = token.as_str().expect("a token");
+        assert!(
+            matches!(Mask::parse(token), Err(MaskError::Unknown { .. })),
+            "{token} must not parse"
+        );
+    }
+    for token in vectors["notRanges"].as_array().expect("a not-ranges list") {
+        let token = token.as_str().expect("a token");
+        assert!(Mask::parse(token).is_ok(), "must parse: {token}");
+        assert_eq!(range_token(token), None, "{token} isn't a range");
+    }
+    let selections = vectors["selections"].as_array().expect("a selections list");
+    assert!(!selections.is_empty());
+    for selection in selections {
+        let token = selection["token"].as_str().expect("a token");
+        let length = usize::try_from(selection["length"].as_u64().expect("a length")).expect("a usize");
+        let first = usize::try_from(selection["first"].as_u64().expect("a first")).expect("a usize");
+        let last = usize::try_from(selection["last"].as_u64().expect("a last")).expect("a usize");
+        assert_eq!(
+            range_token_bounds(token, length),
+            Some((first, last)),
+            "{token}, length {length}"
         );
     }
 }
