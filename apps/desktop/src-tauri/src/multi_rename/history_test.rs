@@ -1,6 +1,6 @@
 //! What a rename adds to the fields' history.
 
-use super::history::{HistoryField, history_entries};
+use super::history::{HistoryField, history_entries, history_seed};
 use super::plan::MultiRenameSpec;
 use super::transform::CaseChange;
 
@@ -63,4 +63,16 @@ fn each_entry_gets_its_own_id() {
     let mut ids: Vec<&str> = entries.iter().map(|e| e.id.as_str()).collect();
     ids.dedup();
     assert_eq!(ids.len(), 3);
+}
+
+#[test]
+fn a_new_install_s_name_mask_history_offers_the_date_then_the_name() {
+    let seed: Vec<(HistoryField, String)> = history_seed().into_iter().map(|e| (e.field, e.value)).collect();
+    assert_eq!(
+        seed,
+        [
+            (HistoryField::NameMask, "[Y-M-D h.m.s]".to_string()),
+            (HistoryField::NameMask, "[N]".to_string()),
+        ]
+    );
 }

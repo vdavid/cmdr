@@ -181,3 +181,7 @@ using a value again moves it to the top. `apply_multi_rename` reads the spec of 
 top. **Decision/Why:** recorded on a started rename, never on typing, so the list holds values that renamed something.
 `get_multi_rename_history` hands the sheet the whole list; it filters by field. Ported from PR #386 (Jiri Slovacek),
 where it lived in `presets.rs`.
+
+- **A new install's history is seeded** (`history_seed`, through `RecentsFile::load_seeded`): the name mask's ↓
+  offers `[Y-M-D h.m.s]`, then `[N]` (which a rename never records, being the default). Only a missing file seeds; the
+  seed reaches disk with the first rename, so an emptied or set-aside history never gets it back.

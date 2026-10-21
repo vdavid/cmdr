@@ -54,6 +54,20 @@ impl RecentEntry for FieldHistoryEntry {
     }
 }
 
+/// What a new install's history holds, newest first: the name mask offers the
+/// date and time, then the plain name (`[N]`, which a rename never records, being
+/// the default).
+pub fn history_seed() -> Vec<FieldHistoryEntry> {
+    ["[Y-M-D h.m.s]", "[N]"]
+        .into_iter()
+        .map(|value| FieldHistoryEntry {
+            id: uuid::Uuid::new_v4().to_string(),
+            field: HistoryField::NameMask,
+            value: value.to_string(),
+        })
+        .collect()
+}
+
 /// The history entries a rename with `spec` adds: each field that holds
 /// something other than its no-change default, oldest first so the name mask
 /// ends up on top.

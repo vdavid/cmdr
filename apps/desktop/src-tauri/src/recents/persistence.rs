@@ -20,7 +20,8 @@ struct Envelope<C> {
     entries: C,
 }
 
-/// Reads the list at `path`, newest first.
+/// Reads the list at `path`, newest first, saying what it found, so a caller can tell
+/// no file (`Missing`, a new install) from one it set aside.
 ///
 /// A file we can't read or parse (non-UTF-8 bytes included), or one stamped with a
 /// schema version we don't know, is set aside and we start empty
@@ -29,7 +30,7 @@ struct Envelope<C> {
 /// happen, [`write`](fn@write) refuses to save over the file for the session. There's only ever
 /// been one version, so a migrator would be speculative; when v2 lands, this version
 /// check becomes a `match`.
-pub(super) fn read<E: RecentEntry>(path: &Path) -> Vec<E> {
+pub(super) fn read<E: RecentEntry>(path: &Path) -> crate::state_recovery::StateRead<Vec<E>> {
     cleanup_tmp_file(path);
     crate::state_recovery::read_state_file(path, E::STATE_FILE, |bytes| {
         match serde_json::from_slice::<Envelope<Vec<E>>>(bytes) {
@@ -42,8 +43,6 @@ pub(super) fn read<E: RecentEntry>(path: &Path) -> Vec<E> {
             Err(e) => Err(e.to_string()),
         }
     })
-    .into_value()
-    .unwrap_or_default()
 }
 
 /// Writes `entries` durably: temp file + fsync + rename + parent-dir fsync, so the
@@ -71,6 +70,10 @@ mod tests {
     use super::*;
     use crate::recents::test_support::{TestEntry, entry};
 
+    fn read_list(path: &Path) -> Vec<TestEntry> {
+        read(path).into_value().unwrap_or_default()
+    }
+
     #[test]
     fn save_then_load_round_trip() {
         let dir = tempfile::tempdir().expect("tempdir");
@@ -78,7 +81,7 @@ mod tests {
 
         write(&path, &[entry("b"), entry("a")]).expect("write");
 
-        let loaded: Vec<TestEntry> = read(&path);
+        let loaded: Vec<TestEntry> = read_list(&path);
         assert_eq!(loaded.len(), 2);
         assert_eq!(loaded[0].key, "b");
         assert_eq!(loaded[1].key, "a");
@@ -108,7 +111,7 @@ mod tests {
     #[test]
     fn missing_file_reads_as_empty() {
         let dir = tempfile::tempdir().expect("tempdir");
-        let entries: Vec<TestEntry> = read(&dir.path().join(TestEntry::FILENAME));
+        let entries: Vec<TestEntry> = read_list(&dir.path().join(TestEntry::FILENAME));
         assert!(entries.is_empty());
     }
 
@@ -119,7 +122,7 @@ mod tests {
         fs::write(&path, "{not valid json at all").expect("write garbage");
 
         let notices = crate::state_recovery::testing::capture_recoveries();
-        let entries: Vec<TestEntry> = read(&path);
+        let entries: Vec<TestEntry> = read_list(&path);
         assert!(entries.is_empty());
 
         let kept = crate::state_recovery::testing::kept_copies(&path);
@@ -138,7 +141,7 @@ mod tests {
         fs::write(&path, r#"{"_schemaVersion": 2, "entries": []}"#).expect("write");
 
         let notices = crate::state_recovery::testing::capture_recoveries();
-        let entries: Vec<TestEntry> = read(&path);
+        let entries: Vec<TestEntry> = read_list(&path);
         assert!(entries.is_empty());
 
         assert_eq!(
@@ -156,9 +159,9 @@ mod tests {
         let path = dir.path().join(TestEntry::FILENAME);
 
         fs::write(&path, "first garbage").expect("write");
-        let _: Vec<TestEntry> = read(&path);
+        let _: Vec<TestEntry> = read_list(&path);
         fs::write(&path, "second garbage").expect("write");
-        let _: Vec<TestEntry> = read(&path);
+        let _: Vec<TestEntry> = read_list(&path);
 
         let kept = crate::state_recovery::testing::kept_copies(&path);
         let contents: Vec<String> = kept
@@ -185,7 +188,7 @@ mod tests {
         let original = fs::read(&path).expect("read it back");
         fs::set_permissions(&path, fs::Permissions::from_mode(0o000)).expect("make it unreadable");
 
-        let loaded: Vec<TestEntry> = read(&path);
+        let loaded: Vec<TestEntry> = read_list(&path);
         assert!(loaded.is_empty());
         write(&path, &[entry("c")]).expect("the next add saves");
 
@@ -204,7 +207,7 @@ mod tests {
         let path = dir.path().join(TestEntry::FILENAME);
         fs::write(&path, b"{\"_schemaVersion\": 1, \"entries\": [\xff\xfe]}").expect("write");
 
-        let loaded: Vec<TestEntry> = read(&path);
+        let loaded: Vec<TestEntry> = read_list(&path);
         assert!(loaded.is_empty());
         write(&path, &[entry("c")]).expect("the next add saves");
 
@@ -224,7 +227,7 @@ mod tests {
         fs::write(&tmp, "stale").expect("write tmp");
 
         // Reading cleans it up even when the real file doesn't exist.
-        let _: Vec<TestEntry> = read(&path);
+        let _: Vec<TestEntry> = read_list(&path);
         assert!(!tmp.exists(), "stale tmp should be removed");
     }
 }

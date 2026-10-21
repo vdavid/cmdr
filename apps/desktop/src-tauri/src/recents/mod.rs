@@ -94,13 +94,21 @@ impl<E: RecentEntry> RecentsFile<E> {
     }
 
     pub(crate) fn load_at(&self, path: &Path) {
+        self.load_seeded_at(path, Vec::new);
+    }
+
+    /// [`Self::load_at`], except a list with no file yet starts from `seed`.
+    pub(crate) fn load_seeded_at(&self, path: &Path, seed: impl FnOnce() -> Vec<E>) {
         // The disk guard is released before the cache guard is taken: no code path
         // in here ever holds both, which is what keeps two locks deadlock-free.
         let loaded = {
             let _disk = self.disk.lock_ignore_poison();
             persistence::read::<E>(path)
         };
-        *self.cached.lock_ignore_poison() = loaded;
+        *self.cached.lock_ignore_poison() = match loaded {
+            crate::state_recovery::StateRead::Missing => seed(),
+            other => other.into_value().unwrap_or_default(),
+        };
     }
 
     pub(crate) fn add_at(&self, path: Option<&Path>, entry: E, max_count: usize) {
@@ -185,6 +193,15 @@ impl<E: RecentEntry> RecentsFile<E> {
     pub fn load<R: tauri::Runtime>(&self, app: &tauri::AppHandle<R>) {
         if let Some(path) = self.path(app) {
             self.load_at(&path);
+        }
+    }
+
+    /// [`Self::load`], except a list with no file yet (a new install) starts from
+    /// `seed`, newest first. It's written with the first change, like any entry; a
+    /// file that's there, emptied or set aside, never takes the seed.
+    pub fn load_seeded<R: tauri::Runtime>(&self, app: &tauri::AppHandle<R>, seed: impl FnOnce() -> Vec<E>) {
+        if let Some(path) = self.path(app) {
+            self.load_seeded_at(&path, seed);
         }
     }
 
@@ -525,6 +542,61 @@ mod tests {
         list.apply_max_count_at(Some(&path), 10);
 
         assert!(!path.exists(), "a cap that drops nothing shouldn't rewrite the file");
+    }
+
+    // -- load_seeded_at: a seed for a list that has no file yet --
+
+    #[test]
+    fn a_list_with_no_file_starts_from_its_seed() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join(TestEntry::FILENAME);
+
+        let list = list();
+        list.load_seeded_at(&path, || vec![entry("seed-a"), entry("seed-b")]);
+
+        assert_eq!(keys(&list.entries(None)), ["seed-a", "seed-b"]);
+        assert!(
+            !path.exists(),
+            "the seed is written with the first real change, not on load"
+        );
+    }
+
+    #[test]
+    fn a_seeded_list_keeps_its_seed_once_something_is_added() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join(TestEntry::FILENAME);
+        let writer = list();
+        writer.load_seeded_at(&path, || vec![entry("seed")]);
+        writer.add_at(Some(&path), entry("a"), 10);
+
+        let reader = list();
+        reader.load_seeded_at(&path, || vec![entry("other")]);
+        assert_eq!(keys(&reader.entries(None)), ["a", "seed"]);
+    }
+
+    #[test]
+    fn an_emptied_list_is_never_reseeded() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join(TestEntry::FILENAME);
+        let writer = list();
+        writer.load_seeded_at(&path, || vec![entry("seed")]);
+        writer.clear_at(Some(&path));
+
+        let reader = list();
+        reader.load_seeded_at(&path, || vec![entry("seed")]);
+        assert!(reader.entries(None).is_empty());
+    }
+
+    #[test]
+    fn a_set_aside_list_is_not_seeded() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join(TestEntry::FILENAME);
+        std::fs::write(&path, "{not json").expect("write garbage");
+        let _notices = crate::state_recovery::testing::capture_recoveries();
+
+        let list = list();
+        list.load_seeded_at(&path, || vec![entry("seed")]);
+        assert!(list.entries(None).is_empty());
     }
 
     #[test]

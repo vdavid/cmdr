@@ -57,11 +57,11 @@ recover case in `crate::ignore_poison`'s policy.
 
 `RecentsFile`'s operations come in two layers, and the split is what makes them testable:
 
-- The path-driven core (`load_at`, `add_at`, `remove_at`, `clear_at`, `apply_max_count_at`) takes the file location as an
-  argument, so a test drives the whole cycle against a tempdir with no `AppHandle`. A `None` path is the real "the app
-  data dir didn't resolve" case: the list still moves, the write is skipped.
-- The app-bound facade (`load`, `add`, `remove`, `clear`, `apply_max_count`) resolves the path and delegates. It's the
-  only Tauri-aware code in the module.
+- The path-driven core (`load_at`, `load_seeded_at`, `add_at`, `remove_at`, `clear_at`, `apply_max_count_at`) takes
+  the file location as an argument, so a test drives the whole cycle against a tempdir with no `AppHandle`. A `None`
+  path is the real "the app data dir didn't resolve" case: the list still moves, the write is skipped.
+- The app-bound facade (`load`, `load_seeded`, `add`, `remove`, `clear`, `apply_max_count`) resolves the path and
+  delegates. It's the only Tauri-aware code in the module.
 
 Consumers construct their own `RecentsFile::new()` in tests rather than reaching for the shared `static`, so tests don't
 interfere through process-global state.

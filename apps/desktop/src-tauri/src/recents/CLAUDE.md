@@ -22,6 +22,8 @@ entries the same; this module owns everything else.
 - **The two locks are never held at once, by construction.** `update` confines the cache guard to its own body and hands
   the disk write an owned snapshot; `load_at` releases the disk guard before taking the cache one. Keep any new
   operation inside `update` and the property holds itself.
+- **`load_seeded` seeds only a list with NO file** (a new install), in memory; the seed reaches disk with the first
+  change. An emptied or set-aside list is never reseeded.
 - **A file we can't read is set aside, not migrated.** A read error, a parse failure (non-UTF-8 included), or an
   unknown `_schemaVersion` goes through `state_recovery::read_state_file` (a timestamped copy, the person told once,
   keyed by `RecentEntry::STATE_FILE`) and the list starts empty, so a stray edit can't break a dialog forever, and the
