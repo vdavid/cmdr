@@ -485,7 +485,11 @@ describe('createSelectionInfoFeed', () => {
 
     it('acts on the row the user saw, not the neighbor a watcher insert pushed onto its row number', async () => {
       const created = createMoved()
-      const pane = { catchUp: () => created.applyDiff(CAUGHT_UP_ROW, BACKEND_SEQUENCE) }
+      const pane = {
+        catchUp: () => {
+          created.applyDiff(CAUGHT_UP_ROW, BACKEND_SEQUENCE)
+        },
+      }
       ipc.getSelectionEntries.mockImplementation(catchingUpAfterRefusal(pane, selectionEntries))
 
       const read = created.feed.readCursorEntry()

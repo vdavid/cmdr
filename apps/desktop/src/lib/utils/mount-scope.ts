@@ -7,7 +7,12 @@
 export interface MountScope {
   /** Registers a teardown. Returns whether the scope is still live; if not, the teardown already ran. */
   add: (teardown: () => void) => boolean
-  readonly disposed: boolean
+  /**
+   * Whether the scope was disposed. A method, not a property: TypeScript would
+   * carry a property's narrowing across the next `await`, so a second check
+   * after one would read as dead code while unmount can still flip it.
+   */
+  isDisposed: () => boolean
   /** Runs every registered teardown once, newest first. Later `add`s run immediately. */
   dispose: () => void
 }
@@ -24,9 +29,7 @@ export function createMountScope(): MountScope {
       teardowns.push(teardown)
       return true
     },
-    get disposed() {
-      return disposed
-    },
+    isDisposed: () => disposed,
     dispose: () => {
       if (disposed) return
       disposed = true

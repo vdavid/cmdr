@@ -20,7 +20,7 @@ function article(html: string): HTMLElement {
 }
 
 function placeholders(root: HTMLElement): string[] {
-  return [...root.querySelectorAll('[data-md-placeholder]')].map((el) => el.textContent?.trim() ?? '')
+  return [...root.querySelectorAll('[data-md-placeholder]')].map((el) => el.textContent.trim())
 }
 
 describe('parseImageMarker', () => {

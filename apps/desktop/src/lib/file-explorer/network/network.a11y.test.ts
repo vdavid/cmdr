@@ -310,7 +310,7 @@ describe('ServersHubStatusBar a11y', () => {
     document.body.appendChild(target)
     mount(ServersHubStatusBar, { target, props: { serverCount: 4, onRefresh: () => {} } })
     await tick()
-    const name = target.querySelector('button')?.textContent?.replace(/\s+/g, ' ') ?? ''
+    const name = target.querySelector('button')?.textContent.replace(/\s+/g, ' ') ?? ''
     expect(name).toMatch(/servers, Press/)
   })
 })

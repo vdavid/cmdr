@@ -27,7 +27,7 @@ const FOLDABLE_SCRIPT = /[\p{Script=Latin}\p{Script=Greek}\p{Script=Cyrillic}]/u
 const COMBINING_MARKS = /\p{M}/gu
 
 /** Letters that aren't a base plus a mark, so NFD leaves them alone. Each maps to ONE character. */
-const STANDALONE_FOLDS: Record<string, string> = { ø: 'o', ł: 'l', đ: 'd', æ: 'a', œ: 'o' }
+const STANDALONE_FOLDS: Partial<Record<string, string>> = { ø: 'o', ł: 'l', đ: 'd', æ: 'a', œ: 'o' }
 
 /** Folds one BMP character: lowercased, its accents dropped, still exactly one code unit. */
 function foldChar(char: string): string {

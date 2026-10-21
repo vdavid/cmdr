@@ -22,7 +22,7 @@
         activateWindowMenu,
         type RowText,
     } from '#lib/tauri-commands/index.js'
-    import { replaceState } from '$app/navigation'
+    import { goto } from '$app/navigation'
     import { eventMatchesCommand } from '#lib/shortcuts/index.js'
     import { createViewerNavigation } from './viewer-navigation.svelte'
     import { createViewerPull } from './viewer-pull.svelte'
@@ -1020,7 +1020,7 @@
         const url = new URL(window.location.href)
         url.searchParams.set('path', path)
         url.searchParams.delete('tail')
-        replaceState(url, {})
+        await goto(url, { state: {}, shallow: true, replace: true })
         await tick()
         if (viewMode === 'text') scroll.contentRef?.focus()
     }

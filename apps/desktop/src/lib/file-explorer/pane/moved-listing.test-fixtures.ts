@@ -54,12 +54,11 @@ export function selectionEntries(
   indices: number[],
   expectedSequence: number,
 ): Promise<FileEntry[]> {
-  try {
+  // A refusal thrown in the executor rejects the promise, as the IPC call would.
+  return new Promise((resolve) => {
     refuseUnlessCurrent(listingId, expectedSequence)
-  } catch (error) {
-    return Promise.reject(error)
-  }
-  return Promise.resolve(indices.map((index) => rows[index]))
+    resolve(indices.map((index) => rows[index]))
+  })
 }
 
 /** The revision-checked paths read (`getSelectionSnapshot`). */

@@ -170,7 +170,7 @@ describe('buildTransferPropsFromSelection / buildTransferPropsFromCursor', () =>
       vi.mocked(getSelectionSnapshot).mockImplementation(moved.catchingUpAfterRefusal(pane, moved.selectionSnapshot))
       const build = onSelection ? buildTransferPropsFromSelection : buildTransferPropsFromCursor
 
-      const result = await build('move', pane as unknown as FilePaneAPI, true, context)
+      const result = await build('move', pane, true, context)
 
       expect(result?.sourcePaths).toEqual([moved.SELECTED_PATH])
       expect(announceRowsStillSettling).not.toHaveBeenCalled()

@@ -43,11 +43,18 @@ const onResolve = vi.fn<(resolution: ConflictResolution, applyToAll: boolean) =>
 const onCancel = vi.fn<(rollback: boolean) => void>()
 
 /** Reactive, so a test can raise the next clash or flip a disabled state on the mounted body. */
-const props = $state({
+const props: {
+  conflictEvent: ReturnType<typeof clash>
+  isCopy: boolean
+  isMove: boolean
+  rollbackSupport: RollbackSupport | null
+  isCancelling: boolean
+  isResolvingConflict: boolean
+} = $state({
   conflictEvent: clash(),
   isCopy: true,
   isMove: false,
-  rollbackSupport: 'supported' as RollbackSupport | null,
+  rollbackSupport: 'supported',
   isCancelling: false,
   isResolvingConflict: false,
 })

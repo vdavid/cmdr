@@ -155,7 +155,9 @@ describe('AskCmdrComposer', () => {
       const target = mountComposer({ readSelection: () => Promise.resolve({ kind: 'refs', refs: rows, leftOut: 0 }) })
       await tick()
       attachButtonOf(target).click()
-      await vi.waitFor(() => expect(spies.addAttachments).toHaveBeenCalled())
+      await vi.waitFor(() => {
+        expect(spies.addAttachments).toHaveBeenCalled()
+      })
 
       expect(spies.addAttachments).toHaveBeenCalledWith(rows)
       expect(addToast).not.toHaveBeenCalled()
@@ -167,7 +169,9 @@ describe('AskCmdrComposer', () => {
       })
       await tick()
       attachButtonOf(target).click()
-      await vi.waitFor(() => expect(addToast).toHaveBeenCalledTimes(1))
+      await vi.waitFor(() => {
+        expect(addToast).toHaveBeenCalledTimes(1)
+      })
 
       expect(spies.addAttachments).toHaveBeenCalledWith(rows)
       expect(String(addToast.mock.calls[0][0])).toContain('1,237')

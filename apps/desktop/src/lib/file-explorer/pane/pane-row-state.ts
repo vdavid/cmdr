@@ -108,7 +108,9 @@ export function createPaneRowState(deps: {
           clearTimeout(timer)
           resolve(ready)
         }
-        const timer = setTimeout(() => answer(false), timeoutMs)
+        const timer = setTimeout(() => {
+          answer(false)
+        }, timeoutMs)
         readyWaiters.add(answer)
       })
     },

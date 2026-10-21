@@ -296,11 +296,7 @@
     // The outside conditions `rowState.isReady` reads live here as `$state`, so a change to any
     // of them may settle the rows: tell row-state, which answers whoever waits (`whenReady`).
     $effect(() => {
-        void loading
-        void listingId
-        void operationSelectedNames
-        void renameFlow.pendingCursorName
-        void includeHidden
+        dependOn(loading, listingId, operationSelectedNames, renameFlow.pendingCursorName, includeHidden)
         rowState.recheck()
     })
 

@@ -144,7 +144,7 @@ describe('a folder whose size the drive index has only partly counted', () => {
   }
 
   function existingSize(target: HTMLElement): string | undefined {
-    return target.querySelectorAll('.conflict-file')[0]?.querySelector('.conflict-file-size')?.textContent.trim()
+    return target.querySelector('.conflict-file')?.querySelector('.conflict-file-size')?.textContent.trim()
   }
 
   it('marks the folder size as a lower bound, the way the listing does', async () => {

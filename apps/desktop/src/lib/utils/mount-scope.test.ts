@@ -12,7 +12,7 @@ describe('createMountScope', () => {
     scope.dispose()
 
     expect(order).toEqual(['second', 'first'])
-    expect(scope.disposed).toBe(true)
+    expect(scope.isDisposed()).toBe(true)
   })
 
   it('runs a teardown added after dispose at once and reports the scope dead', () => {

@@ -603,12 +603,12 @@
 
         // Load persisted state, resolve volumes, and create tab managers
         const persistedState = await loadPersistedState()
-        if (mountScope.disposed) return
+        if (mountScope.isDisposed()) return
         explorerState.setTabMgr('left', persistedState.leftTabMgr)
         explorerState.setTabMgr('right', persistedState.rightTabMgr)
         explorerState.setFocusedPane(persistedState.focusedPane)
         await updateFocusedPane(persistedState.focusedPane)
-        if (mountScope.disposed) return
+        if (mountScope.isDisposed()) return
         explorerState.setLeftPaneWidthPercent(persistedState.leftPaneWidthPercent)
 
         initialized = true

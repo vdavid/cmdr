@@ -24,10 +24,10 @@ describe('createViewerHistory', () => {
     const history = createViewerHistory('/a.md')
     history.visit('/b.md')
     history.target('back')
-    expect(history.current?.path).toBe('/b.md')
+    expect(history.current.path).toBe('/b.md')
 
     history.step('back')
-    expect(history.current?.path).toBe('/a.md')
+    expect(history.current.path).toBe('/a.md')
     expect(history.canGoForward).toBe(true)
     expect(history.target('forward')?.path).toBe('/b.md')
   })
@@ -56,7 +56,7 @@ describe('createViewerHistory', () => {
     const history = createViewerHistory('/a.md')
     history.step('back')
     history.step('forward')
-    expect(history.current?.path).toBe('/a.md')
+    expect(history.current.path).toBe('/a.md')
   })
 
   it('keeps at most the newest entries', () => {
@@ -68,6 +68,6 @@ describe('createViewerHistory', () => {
       steps++
     }
     expect(steps).toBe(MAX_HISTORY_ENTRIES - 1)
-    expect(history.current?.path).toBe('/6.md')
+    expect(history.current.path).toBe('/6.md')
   })
 })

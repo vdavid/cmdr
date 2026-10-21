@@ -42,10 +42,10 @@ let conflictCb: ((e: WriteConflictEvent) => void) | null = null
 // `registry` is what the operation's own row says about itself: the dialog reads
 // `rollbackSupport` off it, so a test that wants the backend's verdict rather
 // than the props-only rule sets it here.
-const { progressCbs, registry } = vi.hoisted(() => ({
-  progressCbs: [] as ((event: Record<string, unknown>) => void)[],
-  registry: { rollbackSupport: 'supported' as RollbackSupport },
-}))
+const { progressCbs, registry } = vi.hoisted(() => {
+  const registry: { rollbackSupport: RollbackSupport } = { rollbackSupport: 'supported' }
+  return { progressCbs: [] as ((event: Record<string, unknown>) => void)[], registry }
+})
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
