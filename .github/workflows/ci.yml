@@ -64,6 +64,7 @@ jobs:
     # current `main`) and on the release gate's full run. `ci-coverage` keeps every lane on this gate.
     outputs:
       verified: ${{ steps.verified.outputs.verified }}
+      same-tree: ${{ steps.same-tree.outputs.same-tree }}
       rust: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.rust || 'false' }}
       svelte: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.svelte || 'false' }}
       desktop: ${{ steps.verified.outputs.verified != 'true' && steps.filter.outputs.desktop || 'false' }}
@@ -124,6 +125,36 @@ jobs:
             fi
           fi
           echo "No green CI OK on $SHA or on the head of a PR it merged; running the lanes."
+
+      # Pull requests only. A PR whose head tree is byte-identical to its base's changes no file:
+      # a `pnpm land -record N` record, an `ours` merge that only makes a contributor's PR head an
+      # ancestor of `main` (`docs/guides/handling-prs.md`). Then `hygiene` has nothing to check
+      # and skips, while the path-filtered lanes already skip on a PR with no files, so `CI OK`
+      # reports in about a minute. It compares tree SHAs, which match only when every byte does,
+      # never a file list. The base side is the branch's tip now: the event's `base.sha` can
+      # trail it on a re-push, which would only cost a needless hygiene run. A failed lookup
+      # falls back to running hygiene, never to a skip.
+      - name: Check whether the PR changes any file at all
+        id: same-tree
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          if ! head_tree=$(gh api "repos/$REPO/git/commits/$HEAD_SHA" --jq .tree.sha) ||
+            ! base_tree=$(gh api "repos/$REPO/branches/$BASE_REF" --jq .commit.commit.tree.sha) ||
+            [[ -z "$head_tree" || -z "$base_tree" ]]; then
+            echo "::warning::Couldn't read the trees of $HEAD_SHA and $BASE_REF; running hygiene."
+            exit 0
+          fi
+          if [[ "$head_tree" == "$base_tree" ]]; then
+            echo "same-tree=true" >>"$GITHUB_OUTPUT"
+            echo "The PR head $HEAD_SHA has $BASE_REF's exact tree ($head_tree), so hygiene skips."
+          else
+            echo "The PR changes the tree ($base_tree to $head_tree), so hygiene runs."
+          fi
 
       # Filter design rules (the `ci-coverage` check validates the non-glob paths exist):
       # - A filter must cover every path its job's checks read, not just the obvious app dir.
@@ -1363,7 +1394,8 @@ jobs:
         run: ./scripts/check/check --check dashboard-build --ci
 
   # ===========================================
-  # Repo hygiene (no path gate; skips only on an already-verified `main` push)
+  # Repo hygiene (no path gate; skips only on an already-verified `main` push or a PR that
+  # changes no file)
   # ===========================================
   # Catches what per-app filters can't: oxfmt formats the whole monorepo (docs,
   # configs, workflows), so a docs-only commit must still run it — otherwise
@@ -1374,9 +1406,10 @@ jobs:
     name: Repo hygiene
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Every run but an already-verified `main` push (see `changes`).
+    # Every run but an already-verified `main` push and a PR whose tree equals its base's (a
+    # record-only commit changes no file, so there's nothing to check; see `changes`).
     needs: changes
-    if: needs.changes.outputs.verified != 'true'
+    if: needs.changes.outputs.verified != 'true' && needs.changes.outputs.same-tree != 'true'
 
     steps:
       - name: Checkout code

@@ -5,19 +5,19 @@ How the GitHub workflows fit together, and the invariants that keep them honest.
 
 ## Workflow inventory
 
-| Workflow                | Trigger                                 | What it does                                                                                         |
-| ----------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `ci.yml`                | PRs, pushes to main, manual             | Main suite. Change detection gates the per-app jobs; `hygiene` runs unless verified; deploys website |
-| `slow-checks.yml`       | Every 6 days (3 AM UTC), manual         | osv-scanner, cargo-deny/udeps, govulncheck, website Docker build, 30-min SMB soak                    |
-| `advisories.yml`        | Daily (4:17 AM UTC), manual             | osv-scanner (every lockfile) and cargo-deny (no compile): new advisories surface in a day            |
-| `deploy-api-server.yml` | Push to main touching `apps/api-server` | Deploys the Cloudflare Worker.                                                                       |
-| `deploy-dashboard.yml`  | Push to main touching the dashboard     | Builds and deploys the analytics dashboard to Cloudflare Pages.                                      |
-| `release.yml`           | `v*` tags                               | Only calls `release-pipeline.yml` (so attestations name the reusable workflow as signer).            |
-| `release-pipeline.yml`  | Called by `release.yml`                 | Builds, signs, and publishes the desktop app on macOS runners. `docs/guides/releasing.md`            |
-| `scorecard.yml`         | Push to main, weekly, rule edits        | OpenSSF Scorecard: publishes the score (README badge) and SARIF to code scanning. § below            |
-| `codeql.yml`            | PRs, push to main, weekly, manual       | CodeQL (Actions, JS/TS, Rust); a high or critical finding fails it and blocks releases. § below      |
-| `gradle-wrapper.yml`    | Push to main, wrapper PRs, weekly       | Checks the IntelliJ plugin's `gradle-wrapper.jar` against Gradle's published checksums. § Scorecard  |
-| `macos-lane.yml`        | Called by `ci.yml`                      | The macOS lane's steps. § macOS lane                                                                 |
+| Workflow                | Trigger                                 | What it does                                                                                        |
+| ----------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `ci.yml`                | PRs, pushes to main, manual             | Main suite. Change detection gates the jobs (`hygiene`: § The hygiene job); deploys website         |
+| `slow-checks.yml`       | Every 6 days (3 AM UTC), manual         | osv-scanner, cargo-deny/udeps, govulncheck, website Docker build, 30-min SMB soak                   |
+| `advisories.yml`        | Daily (4:17 AM UTC), manual             | osv-scanner (every lockfile) and cargo-deny (no compile): new advisories surface in a day           |
+| `deploy-api-server.yml` | Push to main touching `apps/api-server` | Deploys the Cloudflare Worker.                                                                      |
+| `deploy-dashboard.yml`  | Push to main touching the dashboard     | Builds and deploys the analytics dashboard to Cloudflare Pages.                                     |
+| `release.yml`           | `v*` tags                               | Only calls `release-pipeline.yml` (so attestations name the reusable workflow as signer).           |
+| `release-pipeline.yml`  | Called by `release.yml`                 | Builds, signs, and publishes the desktop app on macOS runners. `docs/guides/releasing.md`           |
+| `scorecard.yml`         | Push to main, weekly, rule edits        | OpenSSF Scorecard: publishes the score (README badge) and SARIF to code scanning. § below           |
+| `codeql.yml`            | PRs, push to main, weekly, manual       | CodeQL (Actions, JS/TS, Rust); a high or critical finding fails it and blocks releases. § below     |
+| `gradle-wrapper.yml`    | Push to main, wrapper PRs, weekly       | Checks the IntelliJ plugin's `gradle-wrapper.jar` against Gradle's published checksums. § Scorecard |
+| `macos-lane.yml`        | Called by `ci.yml`                      | The macOS lane's steps. § macOS lane                                                                |
 
 `slow-checks.yml` also runs the fuzz smoke job (120 s per target, findings uploaded as `fuzz-artifacts`;
 `fuzz/CLAUDE.md`). `ci.yml`'s `Full run (run_all)` job runs only on a `run_all` dispatch: both release gates match it by
@@ -83,14 +83,26 @@ with a reason.** When you rename one, CI fails until every workflow catches up. 
 
 ## The hygiene job
 
-Runs on every PR and unverified push (no path gate; § Landing doesn't re-run the suite). Holds the checks whose inputs
-no per-app filter can cover:
+Runs on every PR and unverified push (no path gate; § Landing doesn't re-run the suite), except a PR that changes no
+file. Holds the checks whose inputs no per-app filter can cover:
 
 - `oxfmt` formats the whole monorepo (docs, configs, workflows). Before the hygiene job, a docs-only commit ran zero CI,
   so unformatted markdown could land on main and fail the next unrelated PR's CI. Locally, the git hooks apply all three
   formatters at commit and push time: `docs/tooling/git-hooks.md`.
 - `changelog-commit-links` (previously duplicated across three jobs; needs `fetch-depth: 0`).
 - `workflows-hardening`, `workflows-rustup`, and `ci-coverage` — the workflow files they scan are no app's territory.
+
+**A PR whose head tree equals its base branch's skips it** (`changes`' `same-tree` step, pull requests only). That's a
+`pnpm land -record N` record (`docs/guides/handling-prs.md`): an `ours` merge that changes no file, only ancestry, so
+hygiene has nothing to check. The path-filtered lanes skip too (the PR lists no files), `CI OK` passes on all-skipped
+lanes, and the record lands in about a minute instead of waiting out a busy queue.
+
+- It compares tree SHAs (the head commit's, and the base branch tip's as the step runs), which match only when every
+  byte does; a file-list diff would be a weaker proxy. The live base tip, because the event's `base.sha` can trail it on
+  a re-push.
+- A failed lookup leaves `same-tree` unset, so hygiene runs: the fallback is never a skip.
+- Verified offline only (2026-10-21, the step's script against the live API: `main`'s tip read same, PR #393's head
+  differed, a missing SHA warned and ran hygiene). The first real record PR is its live test.
 
 ## Build caching
 
