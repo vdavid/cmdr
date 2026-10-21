@@ -164,8 +164,9 @@ the frontend (`spec.ts`).
 - **Seeds** (`seed_in`, `PresetSeed`): the list starts with Date and time (`[Y-M-D h.m.s]`), Remove diacritics,
   Greek to Latin, and Normalize Unicode, as ordinary presets the user can rename, update, move, and delete. They go in
   ONCE per list, after the presets already there, skipping a name the list has and stopping at `MAX_PRESETS`, so no
-  number the user knows moves. `seeded` in the file records it, so a deleted seed never comes back and an emptied list
-  stays empty. No file (a new install) is unseeded; so is a file from before seeding (no `seeded` field), which is how
+  number the user knows moves. `seeded` in the file records it, so a deleted seed stays gone and an emptied list stays
+  empty. **Known limit:** an older build rewrites the file without `seeded`, so after a downgrade-then-upgrade the
+  seeds are offered again: a deleted one returns, and a renamed one comes back beside the renamed copy. No file (a new install) is unseeded; so is a file from before seeding (no `seeded` field), which is how
   an existing user gets them; a file set aside as unreadable counts as seeded (the person's list is in the copy).
   **Decision/Why: the frontend names them, the backend decides.** `get_multi_rename_presets(seeds)` takes the seeds,
   names already in the UI language (`spec.ts`'s `PRESET_SEEDS` through `tString`) and runs `seed_in` before answering;
