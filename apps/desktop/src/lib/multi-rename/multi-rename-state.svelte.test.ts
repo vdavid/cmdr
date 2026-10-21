@@ -438,6 +438,26 @@ describe('createMultiRenameState', () => {
       expect(ipc.moveMultiRenameRow).not.toHaveBeenCalled()
       tool.dispose()
     })
+
+    it("asks nothing while a spec error holds the last good rows, which couldn't show the new order", async () => {
+      ipc.previewMultiRename.mockResolvedValue(preview(1, five))
+      ipc.moveMultiRenameRow.mockResolvedValue({ ok: true, value: 2 })
+      const tool = createMultiRenameState('S')
+      await settle()
+      tool.setCursor(3)
+      ipc.previewMultiRename.mockResolvedValue({
+        ok: false,
+        error: { type: 'spec', error: { type: 'nameMask', error: { type: 'unclosed', at: 0 } } },
+      })
+      tool.update({ nameMask: '[N' })
+      await vi.advanceTimersByTimeAsync(PREVIEW_DELAY_MS)
+      expect(tool.error?.type).toBe('spec')
+
+      expect(await tool.moveCursorRow('up')).toBeNull()
+      expect(ipc.moveMultiRenameRow).not.toHaveBeenCalled()
+      expect(tool.cursorIndex).toBe(3)
+      tool.dispose()
+    })
   })
 
   it('saves a preset under its name, replacing one with the same name', async () => {

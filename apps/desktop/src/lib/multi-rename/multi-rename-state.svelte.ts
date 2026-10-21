@@ -135,7 +135,8 @@ export interface MultiRenameState {
   /**
    * Moves the cursor row one place in the rename order (what `[C]` counts), the cursor with
    * it, and previews again. Resolves with its new index, or `null` when it didn't move: at
-   * that end, with the problems listed alone (a move among them is ambiguous), or refused.
+   * that end, with the problems listed alone (a move among them is ambiguous), under a preview
+   * error (the rows on screen can't show the new order), or refused.
    */
   moveCursorRow: (direction: RowMove) => Promise<number | null>
   /** Row `index` of the list (of the problem rows, with `problemsOnly`), or `undefined` while its page is on its way. */
@@ -309,9 +310,10 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
   }
 
   async function moveRow(direction: RowMove): Promise<number | null> {
-    // With every row listed, an index is the row's place in the session.
+    // With every row listed, an index is the row's place in the session. Under an error the
+    // list holds the last good rows, which can't show the new order.
     const from = cursorIndex()
-    if (problemsOnly || from < 0 || previewId === null) return null
+    if (problemsOnly || error !== null || from < 0 || previewId === null) return null
     const answer = await moveMultiRenameRow(sessionId, from, direction)
     if (!answer.ok || answer.value === from) return null
     cursorAnchor = null
