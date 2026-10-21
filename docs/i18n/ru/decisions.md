@@ -329,7 +329,7 @@ The everyday word for an employer's or school's IT staff; MS's `ИТ-служб�
 `Автоматически подключаться снова` over `Подключаться автоматически`, which reads as "connect at startup", the exact
 misreading the label exists to prevent. Quoted copies follow.
 
-## Known servers are named сервер (`servers.hub.editNearbyHint`, `servers.sheet.addedToast`, `servers.refusal.timedOut`, `servers.paneState.connecting`)
+## Known servers are named сервер (`servers.hub.editNearbyHint`, `servers.sheet.addedToast`, `servers.refusal.timedOut`, `servers.paneState.connecting`, `servers.paneState.placeOnServer`)
 
 The type is known, so `Сервер {name}`, not the robotic `Объект {name}` or `Хост {host}`. SSH keeps `ключ хоста`. The
 status column's `Подключено` beside masculine `Сохранен` is an open question (`review-queue.md`).

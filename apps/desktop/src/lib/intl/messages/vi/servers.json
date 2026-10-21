@@ -139,6 +139,10 @@
   "@servers.paneState.connecting": {
     "sourceHash": "7fb114e"
   },
+  "servers.paneState.placeOnServer": "{name} trên {server}",
+  "@servers.paneState.placeOnServer": {
+    "sourceHash": "6dba043"
+  },
   "servers.paneState.connectingHint": "Việc này có thể mất vài giây.",
   "@servers.paneState.connectingHint": {
     "sourceHash": "c830378"

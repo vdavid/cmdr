@@ -142,6 +142,10 @@
   "@servers.paneState.connecting": {
     "sourceHash": "7fb114e"
   },
+  "servers.paneState.placeOnServer": "{name} op {server}",
+  "@servers.paneState.placeOnServer": {
+    "sourceHash": "6dba043"
+  },
   "servers.paneState.connectingHint": "Dit kan een paar seconden duren.",
   "@servers.paneState.connectingHint": {
     "sourceHash": "c830378"

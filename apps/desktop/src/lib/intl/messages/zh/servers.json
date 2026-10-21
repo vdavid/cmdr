@@ -139,6 +139,10 @@
   "@servers.paneState.connecting": {
     "sourceHash": "7fb114e"
   },
+  "servers.paneState.placeOnServer": "{server} 上的 {name}",
+  "@servers.paneState.placeOnServer": {
+    "sourceHash": "6dba043"
+  },
   "servers.paneState.connectingHint": "这可能需要几秒钟。",
   "@servers.paneState.connectingHint": {
     "sourceHash": "c830378"

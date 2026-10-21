@@ -435,35 +435,34 @@ packages from app bundles. The description keeps its siblings' frame, `Mit tesz 
 ## A szerverközpont: kapcsolódási állapotok, elutasítások, elfelejtés (`servers.*`, `fileExplorer.navigation.connectionTooltip*`/`.disconnect*`/`.forget*`)
 
 - Connecting to {name}… → `Kapcsolódás ide: {name}…` (Finder `MN1`, verbatim). Quote only where English quotes.
-- The server pane's buttons are dialog buttons: `Mégsem`, not the running-op `Megszakítás`. That holds for
-  `servers.paneState.cancel` too, though it stops a connection (or a share mount) still opening: Finder's own
-  "Connecting to server" wait says `Mégsem`.
+  `{name} on {server}` → `{name} ezen a szerveren: {server}` (`errors.mount.shareNotFound`'s frame).
+- The server pane's buttons are dialog buttons: `Mégsem`, not the running-op `Megszakítás`, even
+  `servers.paneState.cancel` stopping a mount (Finder's connect wait says `Mégsem`).
 - host key → `{host} kulcsa`: the possessive lands on `kulcs`. Trust as a statement → `megbízhatónak tekint`; ❌ never
-  `elfogad`, which hides the trust decision.
-- compromised → `kompromittált` (tentative), over `visszavont`, which is revoked and reads administrative.
-- Keychain Access → `Kulcskarika-elérés` (the live bundle's name beats the support site's `Kulcskarika-hozzáférés`); the
-  store is `kulcskarika`.
+  `elfogad` (hides the trust decision).
+- compromised → `kompromittált` (tentative), over `visszavont` (revoked, administrative).
+- Keychain Access → `Kulcskarika-elérés` (the live bundle, over the support site's `Kulcskarika-hozzáférés`); the store
+  is `kulcskarika`.
 - Open X to Y → a `-hoz/-hez` purpose noun (`a kapcsolódáshoz`), never a `hogy` clause.
-- The forget questions name the type and move the name behind a colon: `Elfelejted ezt a szervert: „{name}”?`,
+- Forget questions put the type first, the name after a colon: `Elfelejted ezt a szervert: „{name}”?`,
   `Elfelejted a mentett jelszót ehhez: „{name}”?`. The network browser's host keeps `gép` and its unquoted `{hostName}`
   (`Elfelejted ezt a gépet: {hostName}?`); Nothing gets unmounted → `Semmit nem csatol le`.
 - `{name} leválasztása` is the aria, like `{name} kiadása`.
 - The account suffix pair shares `-ként`: `{username} felhasználóként` / `vendégként` (the base noun carries the case).
   Sign in as… → `Bejelentkezés másként…` (Apple's `Mentés másként` shape); Use guest → `Váltás vendégre`.
-- X Anyway → `Hozzáadás mindenképp` (AppKit `Mentés mindenképp`, `Átnevezés mindenképp`).
+- X Anyway → `Hozzáadás mindenképp` (AppKit `Mentés mindenképp`).
 - Not connected (a chosen state, not a failure) → `Nem kapcsolódik: {name}` (AppKit's `Not Connected` state, colon
-  slot); ❌ not `Nincs csatlakoztatva`, the error pane's wording for a failed listing.
+  slot); ❌ not the failed listing's `Nincs csatlakoztatva`.
 - Optional (a field) → `Nem kötelező` (Microsoft); an optional STEP stays `választható`.
 
 ## A szerverközpont táblázata és a kötetváltó rögzítése (`servers.hub.*`, `commands.servers*`, `fileExplorer.navigation.server*Toast`/`.pinRefusedToast`/`.networkVolume`, `shortcuts.scope.servers`/`.places`)
 
-- Places → `Helyek`, over the old `Megosztásböngésző`, which can't hold storage buckets.
-- Address column → `Cím` (the table is about servers already).
-- Last used → `Utolsó használat` (macOS `Security.prefPane`, the same column role), over the file list's
-  `Utoljára használva` pattern: a literal Tier-1 match beats a family pattern with no source.
+- Places → `Helyek`, over `Megosztásböngésző` (can't hold storage buckets).
+- Address column → `Cím` (the table is already about servers).
+- Last used → `Utolsó használat` (macOS `Security.prefPane`), over the file list's unsourced `Utoljára használva`.
 - Found nearby → `A közelben felfedezve` (IOBluetoothUI).
 - Pin / unpin → `Szerver rögzítése / rögzítés feloldása` (Notes), ❌ not `megszüntetése`.
-- volume switcher → `kötetválasztó`: English has two names for one surface, Hungarian one.
+- volume switcher → `kötetválasztó`: one Hungarian name for English's two.
 - The pin toasts put `{name}` bare in subject position: `{name} mostantól ott van a kötetválasztódban.`
 - `Mac` takes `Macet` (161 macOS hits); `NAS-t`. Empty state `Még nincs szerver`.
 
