@@ -2769,6 +2769,7 @@ export type MessageKey =
   | 'multiRename.placeholderHelp.counterStep'
   | 'multiRename.placeholderHelp.date'
   | 'multiRename.placeholderHelp.datePart'
+  | 'multiRename.placeholderHelp.dateSeparators'
   | 'multiRename.placeholderHelp.dottedTime'
   | 'multiRename.placeholderHelp.extension'
   | 'multiRename.placeholderHelp.firstChar'

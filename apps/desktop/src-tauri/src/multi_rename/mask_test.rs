@@ -107,6 +107,36 @@ fn date_and_time_from_the_modified_time() {
 }
 
 #[test]
+fn a_date_placeholder_keeps_dashes_dots_underscores_and_spaces_between_its_parts() {
+    let file = "a.txt";
+    assert_eq!(name("[Y-M-D h.m.s]", file), "2026-06-15 23.10.09");
+    assert_eq!(name("[D.M.Y]", file), "15.06.2026");
+    assert_eq!(name("[y_M_D]", file), "26_06_15");
+    assert_eq!(name("[hm-]", file), "2310-", "a separator may end it");
+    assert_eq!(name("[M-m]", file), "06-10", "case still tells month from minute");
+}
+
+#[test]
+fn a_date_with_separators_leaves_the_rest_of_the_grammar_alone() {
+    let file = "ABCDEFGHIJ.txt";
+    assert_eq!(
+        name("[2-5]", file),
+        "BCDE",
+        "a leading digit is still a full-name range"
+    );
+    assert_eq!(name("[-3-]", file), "txt", "a leading dash too");
+    assert_eq!(name("[N2-5]", file), "BCDE");
+    assert_eq!(name("[d]", file), "2026-06-15");
+    assert_eq!(name("[t]", file), "23.10.09");
+    for bad in ["[Y:M]", "[Y/M]", "[-Y]", "[.Y]", "[ Y]", "[Y-d]", "[t.Y]", "[Y-D-x]"] {
+        assert!(
+            matches!(Mask::parse(bad), Err(MaskError::Unknown { .. })),
+            "{bad} isn't a date"
+        );
+    }
+}
+
+#[test]
 fn case_switches_apply_from_where_they_stand() {
     assert_eq!(name("[U][N]", "Annual report.pdf"), "ANNUAL REPORT");
     assert_eq!(name("[N1-6][U][N7-]", "Annual report.pdf"), "Annual REPORT");

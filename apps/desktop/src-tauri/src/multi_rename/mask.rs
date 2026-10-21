@@ -14,8 +14,10 @@
 //!   `[C:3]`, `[C100-10]`. A lone leading sign is the step (`[C-5]` counts down
 //!   by five), so a negative start says its step too: `[C-5+1]`.
 //! - Date and time of the last modification, local time: `[Y]` `[y]` `[M]` `[D]`
-//!   `[h]` `[m]` `[s]`, combined as `[YMD]` or `[hms]`; `[d]` is `2026-06-15` and
-//!   `[t]` is `23.10.09` (no colons, which macOS shows as slashes).
+//!   `[h]` `[m]` `[s]`, combined as `[YMD]` or `[hms]`, with `-` `.` `_` or a
+//!   space kept between the letters: `[Y-M-D h.m.s]` is `2026-06-15 23.10.09`.
+//!   `[d]` is `2026-06-15` and `[t]` is `23.10.09` (no colons, which macOS shows
+//!   as slashes).
 //! - `[U]` `[L]` `[F]` `[n]`: upper / lower / first letter of each word / the
 //!   original case, from that point on.
 //! - `[[` is a literal `[`; a `]` outside a placeholder is itself.
@@ -145,6 +147,8 @@ enum DatePart {
     Second,
     IsoDate,
     DottedTime,
+    /// A `-`, `.`, `_`, or space between the parts, kept as typed.
+    Separator(char),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -371,13 +375,17 @@ pub fn fill_counter_defaults(mask: &str, start: i64, step: i64, digits: u32) -> 
     out
 }
 
+/// `[d]`, `[t]`, or date letters with separators between them (`[Y-M-D h.m.s]`).
+/// It starts with a letter, so `[-3-]` stays a range; `:` and `/` aren't
+/// separators (macOS shows `:` as `/`, and `/` splits paths).
 fn date_parts(text: &str) -> Option<Vec<DatePart>> {
     match text {
         "d" => return Some(vec![DatePart::IsoDate]),
         "t" => return Some(vec![DatePart::DottedTime]),
         _ => {}
     }
-    text.chars()
+    let parts = text
+        .chars()
         .map(|c| match c {
             'Y' => Some(DatePart::Year),
             'y' => Some(DatePart::ShortYear),
@@ -386,9 +394,14 @@ fn date_parts(text: &str) -> Option<Vec<DatePart>> {
             'h' => Some(DatePart::Hour),
             'm' => Some(DatePart::Minute),
             's' => Some(DatePart::Second),
+            '-' | '.' | '_' | ' ' => Some(DatePart::Separator(c)),
             _ => None,
         })
-        .collect()
+        .collect::<Option<Vec<_>>>()?;
+    match parts.first() {
+        Some(DatePart::Separator(_)) | None => None,
+        Some(_) => Some(parts),
+    }
 }
 
 /// 1-based `position` (negative counts from the end) as a 0-based index.
@@ -452,6 +465,10 @@ fn date(when: &NaiveDateTime, parts: &[DatePart]) -> String {
             DatePart::Second => write!(out, "{:02}", when.second()),
             DatePart::IsoDate => write!(out, "{:04}-{:02}-{:02}", when.year(), when.month(), when.day()),
             DatePart::DottedTime => write!(out, "{:02}.{:02}.{:02}", when.hour(), when.minute(), when.second()),
+            DatePart::Separator(c) => {
+                out.push(*c);
+                Ok(())
+            }
         };
     }
     out

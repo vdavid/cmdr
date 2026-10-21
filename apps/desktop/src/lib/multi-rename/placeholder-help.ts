@@ -121,6 +121,7 @@ export const PLACEHOLDER_HELP: readonly PlaceholderHelp[] = [
     example: 'date',
     syntax: [
       { mask: '[d]', meaning: 'multiRename.placeholderHelp.isoDate' },
+      { mask: '[Y-M-D h.m.s]', meaning: 'multiRename.placeholderHelp.dateSeparators' },
       { mask: '[yMD]', meaning: 'multiRename.placeholderHelp.shortYear' },
       { mask: '[D]', meaning: 'multiRename.placeholderHelp.datePart' },
     ],

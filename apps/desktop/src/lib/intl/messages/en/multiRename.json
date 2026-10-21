@@ -525,6 +525,10 @@
   "@multiRename.placeholderHelp.isoDate": {
     "description": "In the Multi-rename sheet, a tooltip on a placeholder button (such as [N], [E], or [C]) explains what that placeholder puts in the new name, lists a few of its other forms, and shows each with an example on a made-up file (Beach day.jpg, in the folder Trips/Lisbon 2026, last changed 2026-07-14 09:05:30). Meaning of the [d] form: year-month-day separated by dashes, like 2026-10-09."
   },
+  "multiRename.placeholderHelp.dateSeparators": "Any parts, with dashes, dots, underscores, or spaces between them",
+  "@multiRename.placeholderHelp.dateSeparators": {
+    "description": "In the Multi-rename sheet, a tooltip on a placeholder button (such as [N], [E], or [C]) explains what that placeholder puts in the new name, lists a few of its other forms, and shows each with an example on a made-up file (Beach day.jpg, in the folder Trips/Lisbon 2026, last changed 2026-07-14 09:05:30). Meaning of a form like [Y-M-D h.m.s]: the date and time letters (Y, M, D, h, m, s) can be combined in any order inside one placeholder, with dashes (-), dots (.), underscores (_), or spaces between them, each kept as typed (2026-07-14 09.05.30). Colons and slashes aren’t allowed."
+  },
   "multiRename.placeholderHelp.shortYear": "With a two-digit year",
   "@multiRename.placeholderHelp.shortYear": {
     "description": "In the Multi-rename sheet, a tooltip on a placeholder button (such as [N], [E], or [C]) explains what that placeholder puts in the new name, lists a few of its other forms, and shows each with an example on a made-up file (Beach day.jpg, in the folder Trips/Lisbon 2026, last changed 2026-07-14 09:05:30). Meaning of the [yMD] form: like [YMD] but the year has two digits (26 for 2026)."

@@ -40,6 +40,11 @@ from PR #386 (Jiri Slovacek): a plain table reads `ευ` as `eu`, which no Greek
   TC has no negative start).
 - Date and time of the last modification: `[Y]` `[y]` `[M]` `[D]` `[h]` `[m]` `[s]`, combinable (`[YMD]`, `[hms]`),
   `[d]` ISO date, `[t]` `hh.mm.ss` (TC's country-specific forms would put `:` in names, which macOS shows as `/`).
+  A combination may keep `-` `.` `_` or a space between its letters, each rendered as itself: `[Y-M-D h.m.s]` is
+  `2026-07-14 09.05.30`, `[D.M.Y]` is `14.07.2026`. **Decision/Why:** Cmdr's extension (TC has none), so one
+  placeholder reads as the name it makes. It must start with a letter, so `[2-5]` and `[-3-]` stay full-name ranges;
+  `:` and `/` aren't separators (the slash problem above, and `/` splits paths); `d` and `t` stay whole-placeholder
+  only.
 - Case switches `[U]` `[L]` `[F]` `[n]` apply from where they stand.
 - `[[` is a literal `[`.
 
