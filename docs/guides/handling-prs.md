@@ -14,27 +14,27 @@ several times an hour, so anything we ask someone to redo is stale before they r
    contributor's own commit stays theirs.
 3. **Leave their commit message alone.** It feeds the release notes, but our conventional-commits rule is for us, and
    rewriting someone's words to satisfy it buys nothing.
-4. **Record the PR head** (below), then `pnpm land`.
+4. **Land with `pnpm land -record <N>`.** It lands the branch like a plain `pnpm land`, then records the PR as merged
+   (below). Re-run it at any stage; once PR N reads merged, it says so and stops.
 5. **Comment and thank them**, naming what landed and what we changed on top.
 
 ## Recording the PR head so GitHub marks it merged
 
 GitHub marks a PR merged only when its head SHA becomes an ancestor of the base branch, or when the merge runs through
-GitHub's own API. Cherry-picking rewrites SHAs, so without this the PR stays open forever. An `ours` merge on the
-worktree branch makes the head an ancestor while leaving the tree byte-identical:
+GitHub's own API. Cherry-picking rewrites SHAs, so without a record the PR stays open forever. The record is an `ours`
+merge of the PR head on top of `main`: it makes the head an ancestor while leaving the tree byte-identical.
 
-```sh
-git fetch origin pull/<N>/head:refs/tmp/pr<N>
-git merge -s ours --no-ff refs/tmp/pr<N> -m "chore: record PR #<N> as merged"
-```
+`-record N` builds it in a land of its own, after the branch landed: a `record-pr-<N>` branch holding the current
+`origin/main` plus that merge (`chore: record PR #<N> as merged`), checked for an empty tree diff and the PR head's
+ancestry before it's pushed. It goes through CI like any land, fast-forwards `main`, waits for PR N to read merged, and
+deletes the record branch. Since it changes no file, CI skips every lane, `hygiene` included, and goes green in about a
+minute (`docs/tooling/ci.md` § The hygiene job). The why and the mechanics: `scripts/land/DETAILS.md` § Decision: record
+a contributor PR in its own land.
 
-Check before landing: `git diff HEAD^1` prints nothing, and `git merge-base --is-ancestor refs/tmp/pr<N> HEAD` succeeds.
-GitHub closes the PR with the Merged badge when `land` puts it on `main`.
-
-- **Gotcha / Why:** the merge commit's diff against its first parent is empty, which reads like a mistake. That's what
-  it's for: it carries only the ancestry. Don't "clean it up".
-- **Gotcha / Why:** a plain rebase flattens merges, so `pnpm land -squash` drops it, and `land` refuses to rebase a
-  branch with a merge commit. If `main` moved, run `git rebase --rebase-merges origin/main`, then `pnpm land`.
+- **Gotcha / Why:** the record's diff against `main` is empty, which reads like a mistake. That's what it's for: it
+  carries only the ancestry. Don't "clean it up".
+- ❌ **Don't put the merge on the content branch.** A merge commit can't ride the rebase a busy `main` forces, so `land`
+  refuses such a branch once `main` moves.
 
 We take these merge commits in an otherwise linear history on purpose: the Merged badge is part of what a contributor
 gets for the work, and a gray "Closed" reads as a rejection.

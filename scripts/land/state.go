@@ -22,8 +22,8 @@ type branchState struct {
 	landed bool
 	// based: origin/main is an ancestor of HEAD, so the branch fast-forwards onto it.
 	based bool
-	// hasMerges: the branch carries a merge commit (a contributor's PR record, a release
-	// merge-back), which a plain rebase would flatten.
+	// hasMerges: the branch carries a merge commit (a release merge-back), which a plain rebase
+	// would flatten. A contributor's PR record never rides a branch: `-record N` lands it alone.
 	hasMerges bool
 }
 

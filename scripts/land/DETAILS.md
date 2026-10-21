@@ -138,9 +138,36 @@ off, so GitHub still demands `CI OK` green on the PR's head SHA, and `--match-he
   `remove-worktree.sh` asks the same question before tearing a worktree down.
 - **The fast-forward still wins when it can**: it keeps SHAs identical, so `main` gets exactly the commits CI tested.
 
-Exception: a branch carrying a merge commit (a contributor's PR record, `docs/guides/handling-prs.md`; a release
-merge-back, `docs/guides/releasing.md`) is never rebased, by `land` or by GitHub, since a plain rebase flattens the
-merge. When `main` moved, `land` stops and names the manual fix instead.
+Exception: a branch carrying a merge commit (a release merge-back, `docs/guides/releasing.md`) is never rebased, by
+`land` or by GitHub, since a plain rebase flattens the merge. When `main` moved, `land` stops and names the manual fix
+instead. A contributor PR's record never rides a branch (§ Decision: record a contributor PR in its own land).
+
+## Decision: record a contributor PR in its own land
+
+Decision: `pnpm land -record N` lands the cherry-picked branch exactly like `pnpm land` (linear, no merge commit), then
+lands PR N's record separately: a `record-pr-N` branch holding the current `origin/main` plus an `ours` merge of
+`refs/pull/N/head`, fast-forwarded onto `main` once `CI OK` is green on it (`record.go`).
+
+Why: a merge commit can't ride a rebase, and `main` gets about eight lands an hour against a 25–35 min CI, so a content
+branch carrying the record almost never found `main` still under it, and `land` refused it. PR #393 (2026-10-21) needed
+a manual `git rebase --rebase-merges`, which replayed the `ours` merge as a conflicting real merge that had to be redone
+by hand. Split off, the record's tree equals `main`'s, so CI skips every lane, `hygiene` included (`docs/tooling/ci.md`
+§ The hygiene job), and goes green in about a minute: the window `main` has to stay still shrinks from half an hour to
+one minute.
+
+- **Built, never rebased**: `git commit-tree <main>^{tree} -p <main> -p <PR head>`, which is what
+  `git merge -s ours --no-ff` makes, with no checkout. Before the push, `verifyRecord` checks the tree equals `main`'s
+  and that both `main` and the PR head are ancestors.
+- **`main` moved under its CI**: `landRecord` returns `errMainMoved` (no GitHub rebase: it'd flatten the merge), and
+  `record` rebuilds on the new `main`, up to `maxCIRuns` runs, like a phase-1 conflict.
+- **Idempotent like the rest** (`nextRecordStep`): PR N `MERGED` says so and stops; `CLOSED` is refused (GitHub marks
+  only an open PR merged); a PR head already on `main` skips to the wait for `MERGED` (up to a minute) and the tidy-up.
+  A record origin already has for the exact current `main` (same parents, same tree) is reused, so a re-run doesn't push
+  a fresh SHA and restart its CI. Phase 1 finds its branch landed and passes straight through.
+- **Tidy-up**: deletes the record branch on origin, stops its leftover runs, and drops the `refs/land/pr-N` and tracking
+  refs. The record PR itself turns merged with the fast-forward.
+- Tested against bare origins with a pushed `refs/pull/N/head` (`record_test.go`); the GitHub side (PR states, the
+  record PR's CI) waits for the first real contributor PR.
 
 ## Decision: stop the landed branch's leftover runs
 
