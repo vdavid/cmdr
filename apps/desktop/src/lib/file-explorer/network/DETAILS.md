@@ -519,11 +519,17 @@ same sentence plus the typed `reason`. Why the variants are cut the way they are
 
 A NetFS mount can hang behind a stuck macOS sign-in helper for the whole mount timeout (#604), so `NetworkMountView`
 renders the wait through `../pane/RemoteConnectView.svelte`, the ONE remote-wait view: a `connecting` state named after
-the share, with the `host:port` it dials under the name, and that view's Cancel (`share.back` cancels too, since no
-browser is mounted to take the key). Each mount mints an attempt id (`newServerAttemptId`) and passes it to
-`mountNetworkShare`; Cancel hands it to `cancelServerConnect`. After 10 s (`MOUNT_SLOW_AFTER_MS`, the backend's
-`SUSPECT_AFTER`) the state's `hint` swaps the generic "This can take a few seconds." for a line saying it's still
-waiting for macOS.
+the share, with the server's friendly name beside it ("naspi on Naspolya": the hub's label, else the host's name) and
+the `host:port` it dials under that, and that view's Cancel (`share.back` cancels too, since no browser is mounted to
+take the key). Each mount mints an attempt id (`newServerAttemptId`) and passes it to `mountNetworkShare`; Cancel hands
+it to `cancelServerConnect`. After 10 s (`MOUNT_SLOW_AFTER_MS`, the backend's `SUSPECT_AFTER`) the state's `hint` swaps
+the generic "This can take a few seconds." for a line saying it's still waiting for macOS.
+
+- **The wait keeps its own copy of what it names** (`mounting`: share, server, address), captured at mount start: a
+  mount that went through clears `lastMountAttempt`, the host, and its label before it lands on the share, and the wait
+  is still on screen then.
+- **A host known only by its address names the share alone**: its name would repeat the `host:port` line right under it
+  (`friendlyServerName`).
 
 - **A cancel the person asked for goes back to the share list quietly**, ❌ never the error pane: `cancelled` with
   `mountCancelRequested` set returns as if nothing happened.

@@ -107,12 +107,14 @@
     let adoptedAutoMount: string | undefined = initialAutoMountShare
 
     /**
-     * The running mount: the share and the `host:port` it dials, for the connecting
+     * The running mount: the share, the server's friendly name (`null` when the host
+     * has none but its address), and the `host:port` it dials, for the connecting
      * view. `null` when none runs. Its own copy, ❌ not derived from
-     * `lastMountAttempt` and `currentNetworkHost`: a mount that went through clears
-     * both before it lands on the share, and the wait is still on screen then.
+     * `lastMountAttempt`, `currentNetworkHost`, and `currentHostLabel`: a mount that
+     * went through clears them before it lands on the share, and the wait is still
+     * on screen then.
      */
-    let mounting = $state<{ share: string; address: string } | null>(null)
+    let mounting = $state<{ share: string; server: string | null; address: string } | null>(null)
     let mountError = $state<MountError | null>(null)
 
     /**
@@ -342,7 +344,11 @@
 
         mountError = null
         const server = resolveServerAddress(currentNetworkHost)
-        mounting = { share: share.name, address: dialedAddress(server, currentNetworkHost.port) }
+        mounting = {
+            share: share.name,
+            server: friendlyServerName(currentNetworkHost, currentHostLabel, server),
+            address: dialedAddress(server, currentNetworkHost.port),
+        }
         const { attemptId, finish } = startMountAttempt()
 
         try {
@@ -402,6 +408,17 @@
     /** `host:port` the way the other connecting views show it (`serverAddressOf`), an IPv6 host bracketed. */
     function dialedAddress(server: string, port: number): string {
         return `${server.includes(':') ? `[${server}]` : server}:${String(port)}`
+    }
+
+    /**
+     * What the person calls the host (the hub's label, else its name), or `null` when
+     * that's only its address: the dialed `host:port` shows under it, and one address
+     * twice says nothing.
+     */
+    function friendlyServerName(networkHost: NetworkHost, label: string | undefined, dialed: string): string | null {
+        const friendly = label ?? networkHost.name
+        const isAddress = [dialed, networkHost.ipAddress].some((a) => a?.toLowerCase() === friendly.toLowerCase())
+        return isAddress ? null : friendly
     }
 
     /** Takes the pane to the share mounted at `mountPath`. */
@@ -652,7 +669,12 @@
     <!-- ❗ The shared remote-wait view, ❌ not a one-off spinner: its Cancel calls off
          the mount, which can hang behind a stuck macOS sign-in helper for as long
          as the timeout allows (#604). -->
-    <RemoteConnectView name={mounting.share} address={mounting.address} state={mountConnectState} />
+    <RemoteConnectView
+        name={mounting.share}
+        server={mounting.server}
+        address={mounting.address}
+        state={mountConnectState}
+    />
 {:else if mountError?.type === 'auth_required'}
     <!-- ❗ A share that wants an account is a normal step, not a failure: no ❌, no
          "Couldn't mount share", and no Try again, which without an account gets

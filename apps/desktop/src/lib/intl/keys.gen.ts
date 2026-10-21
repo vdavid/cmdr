@@ -3390,6 +3390,7 @@ export type MessageKey =
   | 'servers.paneState.hostKeyChanged'
   | 'servers.paneState.hostKeyChangedHint'
   | 'servers.paneState.notConnected'
+  | 'servers.paneState.placeOnServer'
   | 'servers.paneState.reconnecting'
   | 'servers.paneState.retryKeepsTrying'
   | 'servers.paneState.retryNow'

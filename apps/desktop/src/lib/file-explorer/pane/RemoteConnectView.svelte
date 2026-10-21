@@ -39,12 +39,22 @@
          * says nothing about whether it points at a LAN address or a VPN one.
          */
         address?: string | null
+        /**
+         * The server `name` lives on, by the name a person knows it by ("Naspolya"),
+         * for a place that's one of several on it (a share mount). Absent where
+         * `name` already is the server, or where the server has no name but its
+         * address, which `address` shows already.
+         */
+        server?: string | null
         state: RemoteConnectState
     }
 
     // ❗ Renamed on the way in: a local binding called `state` would make every
     // `$state(...)` in this file read as a store subscription instead of a rune.
-    const { name, address = null, state: connectState }: Props = $props()
+    const { name, address = null, server = null, state: connectState }: Props = $props()
+
+    /** The line above the heading: the place, and the server it's on when that's worth saying. */
+    const identity = $derived(server ? tString('servers.paneState.placeOnServer', { name, server }) : name)
 
     /** The backoff loop's face, when a loop is what's running. */
     const cycle = $derived(connectState.kind === 'connecting' ? connectState.cycle : undefined)
@@ -86,7 +96,7 @@
 
 <div class="remote-connect" role="status" aria-live="polite">
     <div class="content">
-        <div class="place-name">{name}</div>
+        <div class="place-name">{identity}</div>
         {#if address}
             <div class="place-address">{address}</div>
         {/if}

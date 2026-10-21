@@ -180,6 +180,16 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
+  "servers.paneState.placeOnServer": "{name} on {server}",
+  "@servers.paneState.placeOnServer": {
+    "description": "Small line above the \"Connecting to …\" heading, naming what the pane is opening and which server it lives on, for example \"naspi on Naspolya\". Shown while Cmdr connects to a network share. Keep it short: it sits on one line above the server’s address.",
+    "placeholders": {
+      "name": "the share’s name, like \"naspi\" or \"Photos\"",
+      "server": "the server’s name as the person knows it, like \"Naspolya\" or a name they gave it"
+    },
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
+  },
   "servers.paneState.connectingHint": "This can take a few seconds.",
   "@servers.paneState.connectingHint": {
     "description": "One line under the connecting heading, setting the expectation that a server handshake is not instant. Reassurance, not an instruction.",

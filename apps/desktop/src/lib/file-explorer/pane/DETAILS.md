@@ -2197,9 +2197,10 @@ The producers:
   per-status booleans: a status without its own arm used to render a plain listing over a dead session.
 - `device-connect.svelte.ts` owns `waiting_for_device` and a phone's `connecting` / `refused`. Its sentences come from
   `#lib/adb/adb-connect-errors.ts`, so the view stays generic and the words stay Android's.
-- `NetworkMountView.svelte` renders a share mount's wait as `connecting`, with a `hint` once it runs past 10 s
-  (`../network/DETAILS.md` § "A mount that waits"). Its failures stay its own error pane: they're `MountError`s with
-  their own words and retry, ❌ not a `refused` state.
+- `NetworkMountView.svelte` renders a share mount's wait as `connecting`, passing the view's optional `server` (the
+  share's server by its friendly name, so the identity line reads "naspi on Naspolya"), with a `hint` once it runs past
+  10 s (`../network/DETAILS.md` § "A mount that waits"). Its failures stay its own error pane: they're `MountError`s
+  with their own words and retry, ❌ not a `refused` state.
 
 **A backoff loop wears the `connecting` state, with a `cycle` payload.** It says how long the loop keeps going and which
 attempt it is on, drains a bar toward the next attempt, and offers Try now beside Cancel and Disconnect. ❗ The

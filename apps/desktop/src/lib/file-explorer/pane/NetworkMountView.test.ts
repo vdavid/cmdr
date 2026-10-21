@@ -665,6 +665,44 @@ describe('NetworkMountView: a mount that waits', () => {
     await unmount(component)
   })
 
+  it('names the server by the name a person knows it by, beside the share', async () => {
+    const { target, component } = await mountViewAndActivateShare()
+    await vi.waitFor(() => {
+      expect(target.querySelector('.remote-connect')).toBeTruthy()
+    })
+
+    expect(must(target.querySelector('.remote-connect .place-name'), 'the identity line').textContent).toBe(
+      'naspi on Naspolya',
+    )
+
+    await unmount(component)
+  })
+
+  it('names the share alone for a host known only by its address, so the address shows once', async () => {
+    const ipOnly: NetworkHost = { id: 'manual-ip', name: ADDRESS, ipAddress: ADDRESS, port: 445, source: 'manual' }
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const component = mount(NetworkMountView, {
+      target,
+      props: { paneId: 'left', isFocused: true, initialNetworkHost: ipOnly },
+    })
+    const api = component as unknown as NetworkMountViewApi
+    await vi.waitFor(() => {
+      expect(target.querySelector('.share-row')).toBeTruthy()
+    })
+    api.openCursorItem()
+    await vi.waitFor(() => {
+      expect(target.querySelector('.remote-connect')).toBeTruthy()
+    })
+
+    expect(must(target.querySelector('.remote-connect .place-name'), 'the identity line').textContent).toBe('naspi')
+    expect(must(target.querySelector('.remote-connect .place-address'), 'the address').textContent).toBe(
+      `${ADDRESS}:445`,
+    )
+
+    await unmount(component)
+  })
+
   it('cancels on the back key too, since the share list is not on screen to take it', async () => {
     const { target, component, api } = await mountViewAndActivateShare()
     await vi.waitFor(() => {
