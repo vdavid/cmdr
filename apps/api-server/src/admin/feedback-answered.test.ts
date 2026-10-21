@@ -1,6 +1,6 @@
 /**
- * Marking feedback answered, end to end through the Hono app against a REAL SQLite with every
- * migration applied, so the `answered_at` column and the toggle's SQL are what's under test.
+ * The admin feedback list and marking feedback answered, end to end through the Hono app against a
+ * REAL SQLite with every migration applied, so the columns and the SQL are what's under test.
  */
 import { describe, expect, it } from 'vitest'
 import { app } from '../index'
@@ -75,5 +75,23 @@ describe('PUT /admin/feedback/:id/answered', () => {
     expect((await mark(bindings, 'abc', { answered: true })).status).toBe(400)
     expect((await mark(bindings, 1, { answered: 'yes' })).status).toBe(400)
     expect((await mark(bindings, 1, {})).status).toBe(400)
+  })
+})
+
+describe('GET /admin/feedback', () => {
+  it('returns the linked error report id, and null when the message came without logs', async () => {
+    const { sqlite, bindings } = setup()
+    sqlite
+      .prepare(
+        `INSERT INTO feedback (id, created_at, feedback, app_version, os_version, error_report_id)
+           VALUES (2, datetime('now', '+1 minute'), 'Copy stalls', '0.52.0', 'macOS 26.0', 'ERR-AB7PV')`,
+      )
+      .run()
+    const res = await app.request('/admin/feedback?range=7d', { headers: authHeaders }, bindings)
+    const rows = await res.json<Array<{ id: number; errorReportId: string | null }>>()
+    expect(rows.map((row) => [row.id, row.errorReportId])).toEqual([
+      [2, 'ERR-AB7PV'],
+      [1, null],
+    ])
   })
 })

@@ -331,7 +331,8 @@ admin.get('/admin/config-shape', async (c) => {
 
 // Admin feedback: in-app "Send feedback" messages from D1, newest first. The dashboard is private
 // (Cloudflare Access), so the full message text and any reply-to email are returned for triage.
-// No install id is stored alongside feedback, so there's nothing to join it to.
+// No install id is stored alongside feedback, so there's nothing to join it to. `errorReportId` is
+// the `ERR-XXXXX` of the logs the sender chose to include, or null when they sent none.
 admin.get('/admin/feedback', async (c) => {
   const authError = await verifyAdminAuth(c)
   if (authError) return authError
@@ -347,7 +348,7 @@ admin.get('/admin/feedback', async (c) => {
   const { results } = await c.env.TELEMETRY_DB.prepare(
     `SELECT id, created_at AS createdAt, feedback, email,
                 app_version AS appVersion, os_version AS osVersion, build_mode AS buildMode,
-                answered_at AS answeredAt
+                answered_at AS answeredAt, error_report_id AS errorReportId
          FROM feedback ${whereClause}
          ORDER BY created_at DESC
          LIMIT 1000`,
@@ -360,6 +361,7 @@ admin.get('/admin/feedback', async (c) => {
     osVersion: string
     buildMode: string | null
     answeredAt: string | null
+    errorReportId: string | null
   }>()
 
   return c.json(results)

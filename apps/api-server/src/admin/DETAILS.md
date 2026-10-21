@@ -12,13 +12,14 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
   raw `count` plus deduped `uniqueCount`), `/admin/active-users`, `/admin/update-activity` (per-day distinct
   update-enabled installs, the retained aggregate ∪ today's raw), `/admin/crashes` (by day/crash site/signal),
   `/admin/heartbeat-dau` (§ below), `/admin/config-shape` (settings values per app version, § below), `/admin/feedback`
-  (full text, reply-to email, and `answeredAt`, newest first), `PUT /admin/feedback/:id/answered` (§ below),
-  `/admin/error-reports` (per-bundle R2 metadata via `list` + custom metadata, newest first; `.amend.json` sidecars
-  share the prefix and are skipped, since an amendment is part of its report rather than a second one).
+  (full text, reply-to email, `answeredAt`, and the linked logs' `errorReportId`, newest first),
+  `PUT /admin/feedback/:id/answered` (§ below), `/admin/error-reports` (per-bundle R2 metadata via `list` + custom
+  metadata, newest first; `.amend.json` sidecars share the prefix and are skipped, since an amendment is part of its
+  report rather than a second one).
 - **`funnel.ts`**: `/admin/funnel`, plus the pure `buildDateList` / `assembleFunnel` / `aggregateUaFamilies` helpers.
 - Tests: `admin-stats.test.ts`, `admin-endpoints.test.ts`, `funnel.test.ts` (route auth/validation plus the pure date
   math, zero-fill, and D7-knowability rules), `heartbeat-dau-sql.test.ts` (the DAU and app-hours query on real SQLite),
-  `feedback-answered.test.ts` (the mark-answered toggle through the app on real SQLite).
+  `feedback-answered.test.ts` (the feedback list and the mark-answered toggle through the app on real SQLite).
 
 Consumer: the private SvelteKit dashboard in `apps/analytics-dashboard/`.
 
