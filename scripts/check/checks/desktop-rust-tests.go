@@ -2,11 +2,9 @@ package checks
 
 import (
 	"fmt"
-	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // RunRustTests runs Rust tests using cargo-nextest.
@@ -14,37 +12,28 @@ func RunRustTests(ctx *CheckContext) (CheckResult, error) {
 	// Every workspace member, not just the app: a member the test lane doesn't
 	// select still compiles and still looks green, so its tests silently stop
 	// running the moment they move into a crate. `member-coverage` guards this.
+	// The selection and the features come from `HostCargoLaneArgs` inside
+	// `buildNextestLane`: every lane sharing `target/` has to ask cargo the same
+	// question, or they take turns invalidating each other's artifacts.
 	//
-	// The features come from the same helper for the same reason the selection
-	// does: every lane sharing `target/` has to ask cargo the same question, or
-	// they take turns invalidating each other's artifacts.
-	laneArgs, err := HostCargoLaneArgs(ctx.RootDir)
-	if err != nil {
-		return CheckResult{}, err
-	}
-
-	if err := EnsureCargoNextest(); err != nil {
-		return CheckResult{}, err
-	}
-
-	// `HostCargoLaneArgs` carries `--features cmdr/virtual-mtp`, which compiles in
-	// the virtual MTP device: the only way the MTP suites can run at all. Most of
-	// them are `cmdr-mtp`'s own now (the whole `volume/` and `connection/` device
-	// tree), with the app keeping the cells that assert on ITS side of the backend
+	// Those features carry `cmdr/virtual-mtp`, which compiles in the virtual MTP
+	// device: the only way the MTP suites can run at all. Most of them are
+	// `cmdr-mtp`'s own now (the whole `volume/` and `connection/` device tree), with
+	// the app keeping the cells that assert on ITS side of the backend
 	// (`mtp/volume_wiring_test`, `file_system/volume/mtp_scan_oracle_tests`,
-	// `operations_host/backend_suites/mtp_archive_test`, `.../rename_merge_mtp_tests`). Without
-	// the feature they're silently filtered out and protect nothing. It costs
+	// `operations_host/backend_suites/mtp_archive_test`, `.../rename_merge_mtp_tests`).
+	// Without the feature they're silently filtered out and protect nothing. It costs
 	// ~2-4 s on a ~27 s suite.
-	baseArgs := append([]string{"--locked"}, laneArgs...)
-	cmd := exec.Command("cargo", append([]string{"nextest", "run"}, baseArgs...)...)
-	cmd.Dir = ctx.RootDir
-	started := time.Now()
-	output, err := RunCommand(cmd, true)
-	wall := time.Since(started)
+	//
 	// nextest colours its output under a forced-colour environment (`FORCE_COLOR` /
 	// `CLICOLOR_FORCE`), and everything below reads it with line-anchored patterns, so
-	// normalise once at the boundary rather than trusting "not a TTY" to mean "no colour".
-	output = StripANSI(output)
+	// the lane normalises it once at the boundary rather than trusting "not a TTY" to
+	// mean "no colour".
+	lane, output, wall, err := runNextestLane(ctx.RootDir, nextestRunOptions{}, "")
+	if lane == nil {
+		return CheckResult{}, err
+	}
+	defer lane.remove()
 	// Before the verdict branch, so a red run records WHICH tests went red. Only the
 	// first run is recorded: the contention re-run below re-executes a named subset
 	// under a different profile, and logging those as extra results would make a
@@ -65,7 +54,7 @@ func RunRustTests(ctx *CheckContext) (CheckResult, error) {
 		// suite they bury the diagnosis and the actual panics under thousands of lines.
 		// FAIL/LEAK/TIMEOUT/SLOW and every panic body survive.
 		result, failure := resolveRustFailure("rust tests failed",
-			nextestContentionRunner(ctx.RootDir, baseArgs), LoadPerCore, trimRustTestProgress(output))
+			lane.contentionRunner(), LoadPerCore, trimRustTestProgress(output))
 		if failure != nil && details != "" {
 			failure = fmt.Errorf("%w\n%s", failure, indentOutput(details))
 		}
@@ -193,19 +182,3 @@ func contentionWarnMessage(results []ContentionResult) string {
 // actually executed, so a non-zero exit is "tests failed" (expected during a re-run),
 // not "cargo couldn't run" (which is a runner error and must not be read as evidence).
 var nextestRanRE = regexp.MustCompile(`(?m)^\s*Summary \[`)
-
-// nextestContentionRunner runs a named subset under one of the contention profiles.
-func nextestContentionRunner(workDir string, baseArgs []string) ContentionRunner {
-	return func(profile string, names []string) (string, error) {
-		args := append([]string{"nextest", "run", "--profile", profile}, baseArgs...)
-		args = append(args, "-E", NextestFilterExpr(names))
-		cmd := exec.Command("cargo", args...)
-		cmd.Dir = workDir
-		out, err := RunCommand(cmd, true)
-		out = StripANSI(out)
-		if err != nil && !nextestRanRE.MatchString(out) {
-			return "", fmt.Errorf("contention re-run under profile %s could not run: %w", profile, err)
-		}
-		return out, nil
-	}
-}

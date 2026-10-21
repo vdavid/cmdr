@@ -2,7 +2,6 @@ package checks
 
 import (
 	"fmt"
-	"os/exec"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -82,27 +81,18 @@ func RunDiskImageTests(ctx *CheckContext) (CheckResult, error) {
 		return Success("skipped: macOS only"), nil
 	}
 
-	laneArgs, err := HostCargoLaneArgs(ctx.RootDir)
-	if err != nil {
-		return CheckResult{}, err
-	}
-	if err := EnsureCargoNextest(); err != nil {
-		return CheckResult{}, err
-	}
-
-	// The same question `desktop-rust-tests` asks cargo, so this reuses that
-	// lane's warm build instead of paying its own compile.
+	// The same question `desktop-rust-tests` asks cargo (`buildNextestLane`), so this
+	// reuses that lane's warm build instead of paying its own compile.
 	filter := diskImageLaneFilter(diskImageLaneTestAtoms, diskImageHandRunTestAtoms)
-	baseArgs := append([]string{"--locked", "--run-ignored", "only"}, laneArgs...)
-	cmd := exec.Command("cargo", append(append([]string{"nextest", "run"}, baseArgs...), "-E", filter)...)
-	cmd.Dir = ctx.RootDir
-	output, err := RunCommand(cmd, true)
-	// See `desktop-rust-tests.go`: captured nextest output is not plain text.
-	output = StripANSI(output)
+	lane, output, _, err := runNextestLane(ctx.RootDir, nextestRunOptions{RunIgnoredOnly: true}, filter)
+	if lane == nil {
+		return CheckResult{}, err
+	}
+	defer lane.remove()
 	ctx.RecordTests(ParseNextestResults(output)...)
 	if err != nil {
 		return resolveRustFailure("disk-image tests failed",
-			nextestContentionRunner(ctx.RootDir, baseArgs), LoadPerCore, trimRustTestProgress(output))
+			lane.contentionRunner(), LoadPerCore, trimRustTestProgress(output))
 	}
 
 	count := -1

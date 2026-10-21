@@ -1292,8 +1292,30 @@ class, a spec has a file and a shard) and projects it onto the shared verdicts (
 
 All three lanes funnel a failure through the one `resolveRustFailure` in `desktop-rust-tests.go`, which takes the runner
 and the load sampler as parameters. That injection is the contract: a lane may say WHERE a re-run happens, never what a
-red run means. `desktop-rust-tests` and `desktop-rust-integration-tests` pass `nextestContentionRunner` (shells out to
-`cargo` on the host) and `LoadPerCore`; `desktop-rust-tests-linux` passes a container-backed pair (below).
+red run means. The four host lanes (`desktop-rust-tests`, `-integration-tests`, `-disk-images`, `-webdav-nextcloud`)
+pass their `nextestLane`'s `contentionRunner` and `LoadPerCore`; `desktop-rust-tests-linux` passes a container-backed
+pair (below).
+
+### A host lane asks cargo once (`rust-test-build.go`)
+
+`runNextestLane` builds the lane's tests with `cargo nextest list --list-type binaries-only --message-format json`
+(`--locked` plus `HostCargoLaneArgs`, the same question for every host lane), writing the binaries-metadata JSON to a
+temp file. The main run and both re-run stages are `cargo nextest run --binaries-metadata <file>`, which executes those
+exact binaries and never invokes a cargo build.
+
+- **Why:** a re-run that repeats the cargo options asks cargo again and rebuilds whatever it finds dirty. On CI's Linux
+  runner it found `cmdr` dirty every time (`build.rs` watched a `resources/ai/.version` only macOS writes), so
+  re-running one 1-second test cost 1m37s of compile; from the build it takes 2 s (verified on CI `ubuntu-latest`, with
+  `CARGO_LOG=cargo::compiler::fingerprint=info`, 2026-10-21, #619). macOS warn runs ran 12–15 min longer than green ones
+  before this. It's also the honest re-run: the binaries that failed, not a fresh build of whatever the tree holds now.
+- **Debugging a rebuild:** cargo's fingerprint log target is `cargo::compiler::fingerprint` (the older
+  `cargo::core::compiler::fingerprint` now logs nothing); `stale:` / `dirty:` lines name the file or unit.
+- **A mismatch can't be reintroduced.** `nextestRunOptions` (today only `RunIgnoredOnly`) is the only per-lane run input
+  and can't hold a cargo flag, and nextest itself refuses cargo options beside `--binaries-metadata` (a clap conflict),
+  so a smuggled one fails loudly rather than rebuilding. Pinned by
+  `TestAContentionRerunExecutesTheMainRunsBinariesWithoutAskingCargo`.
+- **The build's output leads the lane's output**, so `RustTimingProfile`'s "building and listing" split still holds. A
+  build that fails returns before any run, as "couldn't build the Rust tests" plus cargo's errors.
 
 Two stages, both serialized (`test-threads = 1`), driven by two nextest profiles in `.config/nextest.toml`:
 
@@ -1312,7 +1334,7 @@ Gotchas:
   2026-07-29 on an idle M3 Max: `smb_integration_concurrent_streaming_writes_no_deadlock` carries a 130 s cap and runs
   in **2.8 s**; the whole 53-test integration suite is **5.3 s** wall-clock. 40 s is ~14x the slowest real test across
   every lane.
-- **The integration lane passes `--run-ignored only` through `baseArgs`** so the re-run inherits it. Every
+- **The ignored-test lanes set `RunIgnoredOnly` on their `nextestLane`** so the re-run inherits it. Every
   `smb_integration_*` test is `#[ignore]`-gated, so a re-run without it selects nothing and the probe would read as
   "everything passed alone", turning every real SMB failure into a contention warn.
 - **A non-zero cargo exit during a re-run is expected**, because failing tests are the whole point. `nextestRanRE`

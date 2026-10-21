@@ -3,6 +3,7 @@ package checks
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -274,19 +275,32 @@ func KillAllProcesses() {
 // descendants can be killed together on shutdown.
 func RunCommand(cmd *exec.Cmd, captureOutput bool) (string, error) {
 	var stdout, stderr bytes.Buffer
+	var err error
 	if captureOutput {
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
+		err = RunCommandTo(cmd, &stdout, &stderr)
 	} else {
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		err = RunCommandTo(cmd, os.Stdout, os.Stderr)
 	}
+
+	output := stdout.String()
+	if stderr.Len() > 0 {
+		output += stderr.String()
+	}
+	return output, err
+}
+
+// RunCommandTo executes a command with its stdout and stderr going where the caller says, in
+// its own process group and tracked like `RunCommand`, so a shutdown stops it too. For a
+// command whose stdout is data (JSON to a file) and whose stderr is the human log.
+func RunCommandTo(cmd *exec.Cmd, stdout, stderr io.Writer) error {
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 
 	// Give the child its own process group so we can kill the whole tree.
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	if err := cmd.Start(); err != nil {
-		return "", err
+		return err
 	}
 
 	processTracker.mu.Lock()
@@ -298,12 +312,7 @@ func RunCommand(cmd *exec.Cmd, captureOutput bool) (string, error) {
 	processTracker.mu.Lock()
 	delete(processTracker.procs, cmd)
 	processTracker.mu.Unlock()
-
-	output := stdout.String()
-	if stderr.Len() > 0 {
-		output += stderr.String()
-	}
-	return output, err
+	return err
 }
 
 // CommandExists checks if a command exists in PATH.

@@ -48,7 +48,7 @@ One Go file per check, registered in `registry.go`'s `AllChecks`. Runner: `../CL
   with what built it and skips on a match; any uncertainty rebuilds.
 - **A red test lane re-runs its failures ALONE before believing them**; the verdicts are shared
   (`contention-verdict.go`). Rust: `resolveRustFailure`, the Docker lane execing into its live container, ❌ never a
-  `docker run`. Playwright: `resolveE2EFailure`, by spec FILE.
+  `docker run`. Playwright: `resolveE2EFailure`, by spec FILE. Host Rust re-runs reuse the build (`runNextestLane`).
 - After authoring, run `pnpm check go-vet staticcheck` and update DETAILS § "Apps and check counts". `--fast` membership
   is `IsFast`, hand-curated.
 

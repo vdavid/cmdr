@@ -58,27 +58,18 @@ func RunWebdavNextcloudTests(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{}, err
 	}
 
-	laneArgs, err := HostCargoLaneArgs(ctx.RootDir)
-	if err != nil {
+	// Debug, and the same question `desktop-rust-tests` asks cargo (`buildNextestLane`),
+	// so this reuses that lane's warm build instead of paying its own compile.
+	lane, output, _, err := runNextestLane(ctx.RootDir, nextestRunOptions{RunIgnoredOnly: true},
+		"test("+WebdavNextcloudTestAtom+")")
+	if lane == nil {
 		return CheckResult{}, err
 	}
-	if err := EnsureCargoNextest(); err != nil {
-		return CheckResult{}, err
-	}
-
-	// Debug, and the same question `desktop-rust-tests` asks cargo, so this
-	// reuses that lane's warm build instead of paying its own compile.
-	baseArgs := append([]string{"--locked", "--run-ignored", "only"}, laneArgs...)
-	cmd := exec.Command("cargo", append(append([]string{"nextest", "run"}, baseArgs...),
-		"-E", "test("+WebdavNextcloudTestAtom+")")...)
-	cmd.Dir = ctx.RootDir
-	output, err := RunCommand(cmd, true)
-	// See `desktop-rust-tests.go`: captured nextest output is not plain text.
-	output = StripANSI(output)
+	defer lane.remove()
 	ctx.RecordTests(ParseNextestResults(output)...)
 	if err != nil {
 		return resolveRustFailure("Nextcloud WebDAV cells failed",
-			nextestContentionRunner(ctx.RootDir, baseArgs), LoadPerCore, trimRustTestProgress(output))
+			lane.contentionRunner(), LoadPerCore, trimRustTestProgress(output))
 	}
 
 	count := -1

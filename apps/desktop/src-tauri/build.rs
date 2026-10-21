@@ -1,6 +1,13 @@
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:rerun-if-changed=resources/ai/.version");
+    // Only where the fetch writes it: on any other host `download-llama-server.go` lays down a
+    // placeholder and no `.version`, and cargo reads a watched path that doesn't exist as
+    // "changed" on EVERY invocation. That re-ran this script and recompiled `cmdr` for each cargo
+    // call on Linux, 1m40s per test lane on CI (#619). `cfg!` here is the HOST, as the Go
+    // script's `runtime.GOOS` is.
+    if cfg!(target_os = "macos") {
+        println!("cargo:rerun-if-changed=resources/ai/.version");
+    }
     println!("cargo:rerun-if-changed=../scripts/download-llama-server.go");
 
     generate_command_ids();

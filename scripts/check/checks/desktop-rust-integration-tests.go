@@ -42,15 +42,6 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 		)
 	}
 
-	// Workspace-wide; the filter expression is what narrows the run, not the
-	// package selection. The features come along for the ride even though no SMB
-	// test needs them: asking cargo a different question than `desktop-rust-tests`
-	// does would make the two lanes rebuild `cmdr` for each other, every run.
-	laneArgs, err := HostCargoLaneArgs(ctx.RootDir)
-	if err != nil {
-		return CheckResult{}, err
-	}
-
 	// Wait for the core services to be running (the orchestrator started them,
 	// but they may still be transitioning to `running` when this check
 	// kicks off). We don't require `healthy` here because these images don't
@@ -83,26 +74,22 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{}, err
 	}
 
-	if err := EnsureCargoNextest(); err != nil {
-		return CheckResult{}, err
-	}
-
-	// Run in debug (the default profile) so this reuses the warm test build from
-	// `desktop-rust-tests` instead of paying a separate full release compile.
-	// Measured on the 35 cells the lane held in 2026-08: ~4s in debug vs ~1m52s in
-	// release, where ~all the release time was the disjoint compile, not the SMB
-	// execution. The tests are correctness checks (pass/fail), not benchmarks, so
-	// `-O` doesn't change their outcome — every one of them passed in debug.
-	// `--run-ignored only` rides in baseArgs so the contention re-run inherits it: these
+	// Workspace-wide, debug, and the same features as `desktop-rust-tests`
+	// (`buildNextestLane`), so this reuses that lane's warm test build: the filter
+	// expression is what narrows the run, not the package selection. Measured on the
+	// 35 cells the lane held in 2026-08: ~4s in debug vs ~1m52s in release, where ~all
+	// the release time was the disjoint compile, not the SMB execution. The tests are
+	// correctness checks (pass/fail), not benchmarks, so `-O` doesn't change their
+	// outcome — every one of them passed in debug.
+	// `RunIgnoredOnly` lives on the lane so the contention re-run inherits it: these
 	// tests are all `#[ignore]`-gated, so a re-run without it would select nothing and
 	// read as "everything passed alone".
-	baseArgs := append([]string{"--locked", "--run-ignored", "only"}, laneArgs...)
-	cmd := exec.Command("cargo", append(append([]string{"nextest", "run"}, baseArgs...),
-		"-E", fixtureIntegrationFilter(ctx.RootDir))...)
-	cmd.Dir = ctx.RootDir
-	output, err := RunCommand(cmd, true)
-	// See `desktop-rust-tests.go`: captured nextest output is not plain text by default.
-	output = StripANSI(output)
+	lane, output, _, err := runNextestLane(ctx.RootDir, nextestRunOptions{RunIgnoredOnly: true},
+		fixtureIntegrationFilter(ctx.RootDir))
+	if lane == nil {
+		return CheckResult{}, err
+	}
+	defer lane.remove()
 	// Before the verdict branch, so a red run records WHICH tests went red
 	// (`test-log.go`); the contention re-run below is deliberately not recorded.
 	ctx.RecordTests(ParseNextestResults(output)...)
@@ -112,7 +99,7 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 		// test measured 2.8s (whole 53-test suite: 5.3s wall-clock), well inside the
 		// contention-retry profile's 40s headroom.
 		return resolveRustFailure("fixture integration tests failed",
-			nextestContentionRunner(ctx.RootDir, baseArgs), LoadPerCore, trimRustTestProgress(output))
+			lane.contentionRunner(), LoadPerCore, trimRustTestProgress(output))
 	}
 
 	re := regexp.MustCompile(`(\d+) tests? run`)
