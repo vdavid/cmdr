@@ -656,6 +656,14 @@
   "@commands.multiRenameFieldHistory.label": {
     "sourceHash": "75fb21f"
   },
+  "commands.multiRenameMoveRowUp.label": "Move the file up in the rename order",
+  "@commands.multiRenameMoveRowUp.label": {
+    "sourceHash": "d476ae3"
+  },
+  "commands.multiRenameMoveRowDown.label": "Move the file down in the rename order",
+  "@commands.multiRenameMoveRowDown.label": {
+    "sourceHash": "b4c44b3"
+  },
   "commands.multiRenameRename.label": "Переименовать файлы",
   "@commands.multiRenameRename.label": {
     "sourceHash": "da881fb"
