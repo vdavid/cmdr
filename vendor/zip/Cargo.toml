@@ -13,7 +13,7 @@
 edition = "2024"
 rust-version = "1.88"
 name = "zip"
-version = "9.0.1"
+version = "9.0.5"
 authors = [
     "Mathijs van de Nes <git@mathijs.vd-nes.nl>",
     "Marli Frost <marli@frost.red>",
@@ -61,6 +61,21 @@ rustdoc-args = [
 _arbitrary = ["dep:arbitrary"]
 _bzip2_any = []
 _deflate-any = []
+_miri_compatible_features = [
+    "bzip2",
+    "chrono",
+    "deflate-flate2",
+    "flate2/rust_backend",
+    "deflate-zopfli",
+    "jiff-02",
+    "legacy-zip",
+    "lzma",
+    "nt-time",
+    "ppmd",
+    "unreserved",
+    "xz",
+    "time",
+]
 aes-crypto = [
     "dep:aes",
     "dep:constant_time_eq",
@@ -128,6 +143,7 @@ ppmd = ["dep:ppmd-rust"]
 time = ["dep:time"]
 unreserved = []
 xz = ["dep:lzma-rust2"]
+zstd = ["dep:zstd"]
 
 [lib]
 name = "zip"
@@ -158,7 +174,7 @@ optional = true
 default-features = false
 
 [dependencies.constant_time_eq]
-version = "0.4"
+version = "^0.6.1"
 optional = true
 
 [dependencies.crc32fast]
@@ -186,7 +202,7 @@ version = "^0.2.4"
 optional = true
 
 [dependencies.lzma-rust2]
-version = "^0.21.0"
+version = "^0.22.0"
 features = [
     "std",
     "encoder",
@@ -209,7 +225,7 @@ version = "0.13"
 optional = true
 
 [dependencies.ppmd-rust]
-version = "1.4"
+version = "1.5"
 optional = true
 
 [dependencies.sha1]
@@ -228,7 +244,7 @@ version = "^0.8.3"
 optional = true
 
 [dependencies.zstd]
-version = "^0.13.3"
+version = "^0.14.0"
 optional = true
 default-features = false
 
@@ -239,15 +255,8 @@ version = "0.1"
 version = "^4.4.18"
 features = ["derive"]
 
-[dev-dependencies.getrandom]
-version = "0.4"
-default-features = false
-
 [dev-dependencies.rayon]
 version = "1.11"
-
-[dev-dependencies.tempfile]
-version = "3.15"
 
 [dev-dependencies.time]
 version = "^0.3.47"
@@ -264,6 +273,12 @@ version = "^0.31.3"
 features = ["fs"]
 default-features = false
 
+[target."cfg(not(miri))".dev-dependencies.count_instructions]
+version = "0.2"
+
+[target."cfg(not(miri))".dev-dependencies.tempfile]
+version = "3.15"
+
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies.getrandom]
 version = "0.4"
 optional = true
@@ -275,9 +290,8 @@ features = ["std"]
 optional = true
 default-features = false
 
-[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies.getrandom]
-version = "0.4"
-default-features = false
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies.rand]
+version = "0.10.3"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies.getrandom]
 version = "0.4"

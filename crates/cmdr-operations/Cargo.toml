@@ -75,7 +75,7 @@ dirs = "7"
 walkdir = "2"
 # Fresh compression's writer. The features match the app's copy, so the graph
 # links one `zip`.
-zip = { version = "9.0.1", default-features = false, features = ["deflate", "aes-crypto", "unreserved"] }
+zip = { version = "9.0.5", default-features = false, features = ["deflate", "aes-crypto", "unreserved"] }
 
 [target.'cfg(unix)'.dependencies]
 # `statvfs`, `renameatx_np`, `clonefile`, errnos, and the local copy's syscalls.

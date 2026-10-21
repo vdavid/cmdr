@@ -30,7 +30,14 @@ pub(crate) fn simplified_components(input: &Path) -> Option<Vec<&OsStr>> {
             Utf8WindowsComponent::ParentDir => {
                 out.pop()?;
             }
-            Utf8WindowsComponent::Normal(s) => out.push(OsStr::new(s)),
+            Utf8WindowsComponent::Normal(s) => {
+                // As in `enclosed_name`: a separator inside one component means the name is
+                // split differently when it is written.
+                if s.contains(['/', '\\']) {
+                    return None;
+                }
+                out.push(OsStr::new(s));
+            }
             Utf8WindowsComponent::CurDir => (),
         }
     }
@@ -62,6 +69,12 @@ pub(crate) fn enclosed_name(file_name: &str) -> Option<PathBuf> {
                 out_path.pop();
             }
             Utf8WindowsComponent::Normal(s) => {
+                // Inside a verbatim (`\\?\`) path `/` is not a separator, so `../b` comes back
+                // as one component; joined onto an ordinary path it is split again. The check
+                // here and the eventual write must agree on where a component ends.
+                if s.contains(['/', '\\']) {
+                    return None;
+                }
                 depth += 1;
                 out_path.push(s);
             }
@@ -174,11 +187,21 @@ pub(crate) fn resolve_enclosed(
     let mut queue: VecDeque<OsString> = components.into_iter().collect();
     let mut hops = 0usize;
 
+    // Set once a component does not exist (and is not created). A later entry may create it as a
+    // symlink, which would change the meaning of any subsequent `..` to the unknown
+    // target's parent rather than the symlink's parent.
+    let mut missing = false;
+
     while let Some(component) = queue.pop_front() {
         if component.is_empty() || component == OsStr::new(".") {
             continue;
         }
         if component == OsStr::new("..") {
+            if missing {
+                return Err(invalid!(
+                    "Path may escape the destination directory through a future symlink - '..' after a missing component"
+                ));
+            }
             // Never walk above `base`: `..` is rejected once we are back at `base`.
             if current == base {
                 return Err(invalid!(
@@ -198,6 +221,8 @@ pub(crate) fn resolve_enclosed(
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
                 if create_dirs && !queue.is_empty() {
                     make_writable_dir_all(&current)?;
+                } else {
+                    missing = true;
                 }
                 continue;
             }
@@ -368,6 +393,25 @@ mod tests {
         }
 
         assert_eq!(enclosed_name(r"\\?\C:\..\..\etc\passwd"), None);
+    }
+
+    /// Inside a verbatim path `/` is not a separator, so the parser hands `../b` back as one
+    /// `Normal` component. Once the result is joined onto an ordinary destination path, `/` is
+    /// a separator again, so a caller would write one level above the destination. A name
+    /// whose component holds a separator is not enclosed, as `\\?\C:\..\b` and `../b` are not.
+    #[test]
+    fn test_enclosed_name_verbatim_prefix_with_a_separator_inside_a_component() {
+        for name in [
+            r"\\?\C:\../b",
+            r"\\?\C:\a/../../b",
+            r"\\?\UNC\server\share\../b",
+            r"\\?\C:\a\..\../b",
+            r"\\?\C:\..\b",
+            "../b",
+        ] {
+            assert_eq!(enclosed_name(name), None, "{name}");
+            assert_eq!(simplified_components(Path::new(name)), None, "{name}");
+        }
     }
 
     /// `base` is canonicalized, so on Windows it is spelled in the verbatim form. A

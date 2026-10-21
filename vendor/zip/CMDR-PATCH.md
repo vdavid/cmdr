@@ -1,6 +1,6 @@
-# zip 9.0.1, patched
+# zip 9.0.5, patched
 
-The crates.io release of `zip` 9.0.1 (upstream `zip-rs/zip2` at tag `v9.0.1`), swapped in through the root
+The crates.io release of `zip` 9.0.5 (upstream `zip-rs/zip2` at tag `v9.0.5`), swapped in through the root
 `Cargo.toml`'s `[patch.crates-io]`. Everything here is the published package byte for byte, apart from the change below
 and the files left out:
 
@@ -29,8 +29,8 @@ and that copy only reads update bundles.
   skips it for raw entries, as `add_prepared_file` already works around). Upstream dropped both flags, because
   `ZipFile::options()` carries no ZipCrypto state, so a kept ZipCrypto entry read back as ciphertext. Bit 3 matters on
   its own: it picks ZipCrypto's password check byte (the DOS time's high byte under it, which is how Info-ZIP's
-  `zip -e` writes, else the CRC's). `raw_copy_options` also skips the stored AES extra field (`0x9901`), which
-  `options()` already carries and the writer writes from, so an AES entry no longer gets it twice. Known limit:
+  `zip -e` writes, else the CRC's). An AES entry gets its extra field (`0x9901`) once: upstream's `raw_copy_options`
+  skips the stored one by 9.0.5, as `options()` already carries it. Known limit:
   `raw_copy_file_touch` on a bit-3 ZipCrypto entry changes the time its check byte encrypts, which no copy can fix
   without the password; Cmdr never touches. Tests: `raw_copy_file_keeps_a_zipcrypto_entry_decryptable` and
   `raw_copy_file_writes_an_aes_entrys_extra_field_once` here, and Cmdr's
@@ -39,8 +39,9 @@ and that copy only reads update bundles.
   before same-named ones fold into one `IndexMap` entry (`ZipArchiveMetadata::central_directory_len`). More than `len()`
   means a duplicate name whose earlier record no index reaches, which a rewrite through this reader would drop, so Cmdr
   refuses such an edit (`crates/cmdr-archive/src/mutation/plan.rs`, `refuse_a_folded_duplicate`) without needing its
-  own reader to parse the archive. Upstream `zip-rs/zip2` #841 (open) asks to expose the fold. Upstream `master` already
-  tracks it privately (`has_duplicate_names`, since `8068ab48`), and open PR #1109 makes that public as
+  own reader to parse the archive. Upstream `zip-rs/zip2` #841 (open) asks to expose the fold. Upstream 9.0.5
+  tracks it privately (`ZipArchiveMetadata::has_duplicate_names`, from the same `raw_file_count` this reads), and open
+  PR #1109 makes that public as
   `ZipArchive::has_duplicate_names()`, which would replace this (checked 2026-10-20). Tested from Cmdr
   (`mutator_archive_shape_test::a_duplicate_name_is_refused_even_without_the_readers_names`): upstream's writer
   refuses a duplicate name, so a fixture needs a hand-built zip.
@@ -66,5 +67,5 @@ encrypted-entry change isn't drafted yet; upstream `master` drops both flags the
 
 When upstream ships a raw copy that keeps the stored name and an encrypted entry's flags, plus
 a public way to see the fold (`has_duplicate_names()`, which `refuse_a_folded_duplicate` then switches to), delete this folder, its `[patch.crates-io]` line, and its
-`exclude` entry, and keep the tests. `desktop-rust-vendor-patch-applied` fails as soon as a bump past 9.0.1 makes cargo
+`exclude` entry, and keep the tests. `desktop-rust-vendor-patch-applied` fails as soon as a bump past 9.0.5 makes cargo
 resolve crates.io again.

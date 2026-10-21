@@ -235,7 +235,7 @@ tauri-plugin-playwright = { version = "0.4.1", optional = true }
 # use of this crate (the write side, and the decrypt path rc-zip can't serve) lives in
 # `cmdr-archive`; `aes-crypto` is declared there and unifies here, so the feature set is a
 # superset of both. `aes 0.9.1` (stable) unifies with `smb2`'s SMB3 AEAD stack.
-zip = { version = "9.0.1", default-features = false, features = ["deflate", "aes-crypto", "unreserved"] }
+zip = { version = "9.0.5", default-features = false, features = ["deflate", "aes-crypto", "unreserved"] }
 # Error reporter: short-ID generation (`ERR-XXXXX`) using rejection sampling.
 rand = "0.10"
 # Multi-provider LLM client. Normalizes OpenAI / OpenAI Responses / Anthropic / Gemini /
