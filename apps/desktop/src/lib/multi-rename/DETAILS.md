@@ -27,7 +27,16 @@
 - **Columns**: file icon (the row's `iconId` from the icon cache, else a file or folder glyph), old name, a quiet arrow,
   new name (emphasis; quiet when unchanged), and a status glyph. Names mid-truncate as Search's do (`useShortenMiddle`).
   Every track is fixed or `share`d: a windowed source can't be measured, so the two names split what the glyphs leave.
-  `table` semantics, since it's a preview with no cursor.
+- **Cursor**: the list is a Tab stop with one cursor row (`ColumnList`'s `grid` semantics, `lib/ui/DETAILS.md` §
+  ColumnList): ↑/↓, PageUp/PageDown, Home/End, and a click move it, in the house cursor color; VoiceOver reads the row
+  through `aria-activedescendant`. No multi-selection. It opens on the top row, and the state holds it (`cursorIndex`,
+  `cursorRow`, `setCursor`): it stays on its row (`PreviewRow.row`) across previews, clamped when the count shrinks.
+  With every row listed an index IS the row, so that's free; among the problems the state finds the row again in the
+  first page that lands. "Problems only" on puts it on the first problem; off puts it back on its own row. A cursor the
+  state moves is scrolled into view (`PreviewList`'s effect). **Decision/Why: hover doesn't move it**
+  (`hoverMovesCursor` off, unlike Search): the cursor row drives the range editor's examples, which mustn't jump while
+  the pointer passes over. The list's keys are bare (`list-cursor.ts`), so ↓ there never meets the fields' history
+  (`multiRename.fieldHistory` answers only in a text field).
 - **Status glyphs** (`row-status.ts`): one glyph per problem kind (invalid name, duplicate, name taken, gone) in a
   `StatusGlyph`, its short label the accessible name and the full reason the tooltip, in the error color. Ready and
   unchanged rows show nothing and carry screen-reader-only text, so a screen-reader user still hears every row's status.

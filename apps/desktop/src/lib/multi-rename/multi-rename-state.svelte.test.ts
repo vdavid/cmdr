@@ -236,6 +236,130 @@ describe('createMultiRenameState', () => {
     tool.dispose()
   })
 
+  describe('the cursor', () => {
+    const five = [row(0, 'a', 'A'), row(1, 'b', 'B'), row(2, 'c', 'C'), row(3, 'd', 'D'), row(4, 'e', 'E')]
+
+    it('opens on the top row and names it', async () => {
+      ipc.previewMultiRename.mockResolvedValue(preview(1, five))
+      const tool = createMultiRenameState('S')
+      expect(tool.cursorIndex).toBe(-1)
+      await settle()
+      expect(tool.cursorIndex).toBe(0)
+      expect(tool.cursorRow?.oldName).toBe('a')
+      tool.dispose()
+    })
+
+    it('stays on its row across a new preview, and clamps when the list shrinks', async () => {
+      ipc.previewMultiRename.mockResolvedValue(preview(1, five))
+      const tool = createMultiRenameState('S')
+      await settle()
+      tool.setCursor(3)
+      expect(tool.cursorRow?.oldName).toBe('d')
+
+      ipc.previewMultiRename.mockResolvedValue(
+        preview(
+          2,
+          five.map((r) => ({ ...r, newName: `${r.newName}x` })),
+        ),
+      )
+      tool.update({ nameMask: '[N]x' })
+      await vi.advanceTimersByTimeAsync(PREVIEW_DELAY_MS)
+      await settle()
+      expect(tool.cursorIndex).toBe(3)
+      expect(tool.cursorRow?.newName).toBe('Dx')
+
+      ipc.previewMultiRename.mockResolvedValue({ ok: false, error: { type: 'gone', listingId: 'L' } })
+      tool.update({ nameMask: '[N]y' })
+      await vi.advanceTimersByTimeAsync(PREVIEW_DELAY_MS)
+      expect(tool.cursorIndex).toBe(-1)
+      expect(tool.cursorRow).toBeUndefined()
+
+      ipc.previewMultiRename.mockResolvedValue(preview(3, five.slice(0, 2)))
+      tool.update({ nameMask: '[N]z' })
+      await vi.advanceTimersByTimeAsync(PREVIEW_DELAY_MS)
+      await settle()
+      expect(tool.cursorIndex).toBe(1)
+      expect(tool.cursorRow?.oldName).toBe('b')
+      tool.dispose()
+    })
+
+    it('clamps a cursor set past either end', async () => {
+      ipc.previewMultiRename.mockResolvedValue(preview(1, five))
+      const tool = createMultiRenameState('S')
+      await settle()
+      tool.setCursor(40)
+      expect(tool.cursorIndex).toBe(4)
+      tool.setCursor(-3)
+      expect(tool.cursorIndex).toBe(0)
+      tool.dispose()
+    })
+
+    it('goes to the top of the problems, and back to its own row with every row listed', async () => {
+      const rows = [row(0, 'a', 'b'), row(1, 'c', 'd', 'duplicate'), row(2, 'e', 'f'), row(3, 'g', 'h', 'targetExists')]
+      ipc.previewMultiRename.mockResolvedValue({
+        ok: true,
+        value: { previewId: 7, counts: { ready: 2, unchanged: 0, problems: 2 }, rows },
+      })
+      const problems = [rows[1], rows[3]]
+      ipc.getMultiRenamePreviewRows.mockImplementation(
+        (_s: string, _p: number, offset: number, limit: number, filter: string) =>
+          Promise.resolve({
+            ok: true,
+            value: (filter === 'problems' ? problems : rows).slice(offset, offset + limit),
+          }),
+      )
+      const tool = createMultiRenameState('S')
+      await settle()
+      tool.setCursor(2)
+
+      tool.setProblemsOnly(true)
+      tool.show({ start: 0, end: 40 })
+      await settle()
+      expect(tool.cursorIndex).toBe(0)
+      tool.setCursor(1)
+      expect(tool.cursorRow?.oldName).toBe('g')
+
+      tool.setProblemsOnly(false)
+      tool.show({ start: 0, end: 40 })
+      await settle()
+      expect(tool.cursorIndex).toBe(3)
+      expect(tool.cursorRow?.oldName).toBe('g')
+      tool.dispose()
+    })
+
+    it('follows its row among the problems when a new preview moves it', async () => {
+      const rows = [row(0, 'a', 'b', 'duplicate'), row(1, 'c', 'd', 'duplicate'), row(2, 'e', 'f', 'duplicate')]
+      let problems = rows
+      ipc.previewMultiRename.mockResolvedValue({
+        ok: true,
+        value: { previewId: 7, counts: { ready: 0, unchanged: 0, problems: 3 }, rows },
+      })
+      ipc.getMultiRenamePreviewRows.mockImplementation((_s: string, _p: number, offset: number, limit: number) =>
+        Promise.resolve({ ok: true, value: problems.slice(offset, offset + limit) }),
+      )
+      const tool = createMultiRenameState('S')
+      await settle()
+      tool.setProblemsOnly(true)
+      tool.show({ start: 0, end: 40 })
+      await settle()
+      tool.setCursor(2)
+      expect(tool.cursorRow?.oldName).toBe('e')
+
+      // Row 0 is fixed: row 2 is now the second problem.
+      problems = [rows[1], rows[2]]
+      ipc.previewMultiRename.mockResolvedValue({
+        ok: true,
+        value: { previewId: 8, counts: { ready: 1, unchanged: 0, problems: 2 }, rows },
+      })
+      tool.update({ nameMask: '[N]x' })
+      await vi.advanceTimersByTimeAsync(PREVIEW_DELAY_MS)
+      await settle()
+      expect(tool.cursorIndex).toBe(1)
+      expect(tool.cursorRow?.oldName).toBe('e')
+      tool.dispose()
+    })
+  })
+
   it('saves a preset under its name, replacing one with the same name', async () => {
     ipc.getMultiRenamePresets.mockResolvedValue([{ id: 'p1', name: 'Bez diakritiky', spec: {} }])
     const tool = createMultiRenameState('S')

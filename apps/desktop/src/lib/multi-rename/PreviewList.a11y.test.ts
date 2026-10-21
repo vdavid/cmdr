@@ -1,6 +1,7 @@
 /**
  * Tier 3 a11y test for `PreviewList.svelte`: a ready row, an unchanged one, a row whose
- * new name was typed in Results (the pencil where the arrow is), and a problem row.
+ * new name was typed in Results (the pencil where the arrow is), and a problem row, in a
+ * focused grid naming its cursor row.
  */
 
 import { describe, it, expect } from 'vitest'
@@ -54,10 +55,20 @@ describe('PreviewList a11y', () => {
     document.body.appendChild(target)
     mount(PreviewList, {
       target,
-      props: { rows: { count: ROWS.length, getRow: (index: number) => ROWS[index], onRangeChange: () => {} } },
+      props: {
+        rows: { count: ROWS.length, getRow: (index: number) => ROWS[index], onRangeChange: () => {} },
+        cursorIndex: 2,
+        onCursorChange: () => {},
+      },
     })
     await tick()
     expect(target.querySelectorAll('.edited-mark')).toHaveLength(2)
+    const grid = target.querySelector<HTMLElement>('[role="grid"]')
+    grid?.focus()
+    // The cursor row's id lands a frame after focus (`deferred-active-descendant.svelte.ts`).
+    await new Promise((resolve) => setTimeout(resolve, 150))
+    await tick()
+    expect(grid?.getAttribute('aria-activedescendant')).toBeTruthy()
     await expectNoA11yViolations(target)
   })
 })

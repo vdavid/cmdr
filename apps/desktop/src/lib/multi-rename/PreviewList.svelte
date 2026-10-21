@@ -4,12 +4,17 @@
      * source, one row per file (its icon, old name → new name, and a status glyph on a
      * problem). A name the user typed in Results carries a pencil where the arrow is. The
      * rows come a page at a time, and it draws only the ones in view.
+     *
+     * A `grid`: a Tab stop with one cursor, which ↑/↓, PageUp/PageDown, Home/End, and a click
+     * move (hover doesn't: the cursor drives the range examples, which mustn't jump while the
+     * pointer passes over). The state owns the index; a move it makes is scrolled into view.
      */
     import StatusGlyph from '#lib/ui/StatusGlyph.svelte'
     import ColumnList from '#lib/ui/ColumnList.svelte'
     import Icon from '#lib/ui/Icon.svelte'
     import {
         columnListProps,
+        type ColumnListApi,
         type ColumnListCellContext,
         type ColumnListColumn,
         type ColumnListWindowedSource,
@@ -25,9 +30,21 @@
         rows: ColumnListWindowedSource<PreviewRow>
         /** The rows are the last good preview under a spec error: dimmed, as the house dims what's unavailable. */
         stale?: boolean
+        /** The cursor row, or -1. */
+        cursorIndex: number
+        onCursorChange: (index: number) => void
     }
 
-    const { rows, stale = false }: Props = $props()
+    const { rows, stale = false, cursorIndex, onCursorChange }: Props = $props()
+
+    let list = $state<ColumnListApi>()
+
+    // A cursor the state moved (back to every row, a moved row) comes into view; the list's
+    // own keys scroll it already.
+    $effect(() => {
+        const index = cursorIndex
+        if (index >= 0) list?.scrollIndexIntoView(index)
+    })
 
     /** The icon track, the same as Search's results (`query-ui/result-column-widths.ts`). */
     const ICON_TRACK_PX = 24
@@ -83,11 +100,14 @@
 
 <div class="preview" class:is-unavailable={stale}>
     <ColumnList
+        bind:this={list}
         {...columnListProps({
             columns,
             rows,
-            semantics: 'table',
+            semantics: 'grid',
             ariaLabel: tString('multiRename.preview'),
+            cursorIndex,
+            onCursorChange,
             headerClass: 'preview-header',
             rowClass: 'preview-row',
         })}

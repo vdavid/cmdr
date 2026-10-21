@@ -523,7 +523,12 @@
             {/if}
         </div>
 
-        <PreviewList rows={tool.source} stale={previewStale} />
+        <PreviewList
+            rows={tool.source}
+            stale={previewStale}
+            cursorIndex={tool.cursorIndex}
+            onCursorChange={tool.setCursor}
+        />
 
         <!-- Inside the dialog, so it portals into the modal's layer (above the scrim, inside its focus trap). -->
         <Menu menu={fieldHistory.menu} ariaLabel={tString('multiRename.history')} minWidth={240} />

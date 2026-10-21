@@ -185,7 +185,7 @@ describe('MultiRenameDialog', () => {
     const label = root.querySelector('.preview-label')
     expect(label?.textContent.trim()).toBe('Preview')
     expect(label?.getAttribute('aria-hidden')).toBe('true')
-    expect(root.querySelector('[role="table"]')?.getAttribute('aria-label')).toBe('Preview')
+    expect(root.querySelector('[role="grid"]')?.getAttribute('aria-label')).toBe('Preview')
   })
 
   it('a mask error dims the last good preview and its summary as stale, and a fixed mask brings them back', async () => {
@@ -365,13 +365,13 @@ describe('MultiRenameDialog', () => {
     }
 
     function cellTexts(root: HTMLElement, column: string): string[] {
-      return [...root.querySelectorAll(`[role="cell"][data-column="${column}"]`)].map((c) => c.textContent.trim())
+      return [...root.querySelectorAll(`[role="gridcell"][data-column="${column}"]`)].map((c) => c.textContent.trim())
     }
 
-    it('lists each file’s old and new name as table rows', async () => {
+    it('lists each file’s old and new name as grid rows', async () => {
       ipc.previewMultiRename.mockResolvedValue({ ok: true, value: MIXED })
       const root = await mountSheet()
-      expect(root.querySelector('[role="table"]')?.getAttribute('aria-label')).toBe('Preview')
+      expect(root.querySelector('[role="grid"]')?.getAttribute('aria-label')).toBe('Preview')
       expect(cellTexts(root, 'old-name')).toEqual(['a.pdf', 'c.pdf', 'gone.pdf'])
       expect(cellTexts(root, 'new-name')).toEqual(['b.pdf', 'd.pdf', 'gone.pdf'])
     })
@@ -379,11 +379,38 @@ describe('MultiRenameDialog', () => {
     it('marks a problem with a named glyph, and says a ready row is ready to screen readers only', async () => {
       ipc.previewMultiRename.mockResolvedValue({ ok: true, value: MIXED })
       const root = await mountSheet()
-      const status = [...root.querySelectorAll('[role="cell"][data-column="status"]')]
+      const status = [...root.querySelectorAll('[role="gridcell"][data-column="status"]')]
       expect(status[0].querySelector('[role="img"]')).toBeNull()
       expect(status[0].querySelector('.sr-only')?.textContent).toBe('Ready to rename')
       expect(status[1].querySelector('[role="img"]')?.getAttribute('aria-label')).toBe('Name is taken')
       expect(status[2].querySelector('[role="img"]')?.getAttribute('aria-label')).toBe('No longer in this folder')
+    })
+
+    function cursorNames(root: HTMLElement): string[] {
+      return [...root.querySelectorAll('.is-under-cursor [data-column="old-name"]')].map((c) => c.textContent.trim())
+    }
+
+    it('opens with the cursor on the top row, which the keys and a click move and hover doesn’t', async () => {
+      ipc.previewMultiRename.mockResolvedValue({ ok: true, value: MIXED })
+      const root = await mountSheet()
+      const grid = root.querySelector<HTMLElement>('[role="grid"]')
+      expect(grid?.tabIndex).toBe(0)
+      expect(cursorNames(root)).toEqual(['a.pdf'])
+
+      grid?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }))
+      await tick()
+      expect(cursorNames(root)).toEqual(['c.pdf'])
+      grid?.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true }))
+      await tick()
+      expect(cursorNames(root)).toEqual(['gone.pdf'])
+
+      const rows = root.querySelectorAll<HTMLElement>('.preview-row')
+      rows[1].dispatchEvent(new MouseEvent('mouseenter'))
+      await tick()
+      expect(cursorNames(root)).toEqual(['gone.pdf'])
+      rows[0].click()
+      await tick()
+      expect(cursorNames(root)).toEqual(['a.pdf'])
     })
 
     function problemsToggle(root: HTMLElement): HTMLButtonElement | null {

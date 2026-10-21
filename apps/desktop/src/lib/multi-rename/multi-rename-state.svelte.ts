@@ -14,6 +14,10 @@
  *
  * The preview reruns 120 ms after the last edit, and a generation counter drops
  * an answer a newer edit overtook, so fast typing never shows an older preview.
+ *
+ * The list has one cursor (`cursorIndex`, `cursorRow`), on the top row at first. It stays
+ * on its row (`PreviewRow.row`) across previews: with every row listed a row's index IS
+ * its `row`; among the problems it's found again in the first page that lands.
  */
 
 import {
@@ -88,6 +92,12 @@ export interface MultiRenameState {
   readonly applying: boolean
   /** How many rows carry a name the user typed in Results; every preview from now on shows them. */
   readonly editedCount: number
+  /** The list's cursor row, an index like `rowAt`'s, or -1 with nothing listed. */
+  readonly cursorIndex: number
+  /** The cursor row, or `undefined` while its page is on its way (or nothing is listed). */
+  readonly cursorRow: PreviewRow | undefined
+  /** Puts the cursor on row `index` of the list, clamped to it. */
+  setCursor: (index: number) => void
   /** Row `index` of the list (of the problem rows, with `problemsOnly`), or `undefined` while its page is on its way. */
   rowAt: (index: number) => PreviewRow | undefined
   /** The list shows rows `start..end`: fetch the ones missing, drop the far ones. */
@@ -140,6 +150,11 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
   let applyError = $state<MultiRenameError | null>(null)
   let editedCount = $state(0)
   let waiting = $state(0)
+  // Where the cursor was put; `cursorIndex` clamps it to what's listed.
+  let cursor = $state(0)
+  // Among the problems a new preview may move the cursor's row: its `row`, to find again
+  // in the first page that lands.
+  let cursorAnchor: number | null = null
   let generation = 0
   let timer: ReturnType<typeof setTimeout> | null = null
   let shown: RowWindow = { start: 0, end: 0 }
@@ -150,6 +165,16 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
   const totalOf = (c: PreviewCounts): number => c.ready + c.unchanged + c.problems
   const filterOf = (): PreviewFilter => (problemsOnly ? 'problems' : 'all')
   const listed = (): number => (problemsOnly ? counts.problems : totalOf(counts))
+  const cursorIndex = (): number => (listed() === 0 ? -1 : Math.max(0, Math.min(cursor, listed() - 1)))
+  const cursorRow = (): PreviewRow | undefined => rows.get(cursorIndex())
+
+  /** Before the list's rows are replaced: with every row listed, an index is the row itself. */
+  function keepCursorRow(): void {
+    const row = cursorRow()?.row
+    if (row === undefined) return
+    if (problemsOnly) cursorAnchor = row
+    else cursor = row
+  }
 
   function specOf(id: string): MultiRenameSpec | undefined {
     return presets.find((p) => p.id === id)?.spec
@@ -173,10 +198,15 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
     }
     if (asked !== generation) return
     if (answer.ok) {
+      keepCursorRow()
       previewId = answer.value.previewId
       counts = answer.value.counts
       // With no problems left there's nothing to list alone: every row again.
-      if (counts.problems === 0) problemsOnly = false
+      if (counts.problems === 0 && problemsOnly) {
+        problemsOnly = false
+        if (cursorAnchor !== null) cursor = cursorAnchor
+        cursorAnchor = null
+      }
       // The first page is every row's; a list of problems pages its own in.
       rows = problemsOnly ? new SvelteMap() : new SvelteMap(answer.value.rows.map((row) => [row.row, row]))
       error = null
@@ -215,6 +245,11 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
       // A newer preview or the other list replaced this one: its own rows are on their way.
       if (!answer.ok || previewId !== id || rows !== into) return
       answer.value.forEach((row, i) => rows.set(from + i, row))
+      if (cursorAnchor !== null) {
+        const found = answer.value.findIndex((row) => row.row === cursorAnchor)
+        if (found >= 0) cursor = from + found
+        cursorAnchor = null
+      }
       if (rows.size > HELD_ROWS) {
         const keepFrom = shown.start - PAGE_LIMIT
         const keepTo = shown.end + PAGE_LIMIT
@@ -295,6 +330,16 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
     get editedCount() {
       return editedCount
     },
+    get cursorIndex() {
+      return cursorIndex()
+    },
+    get cursorRow() {
+      return cursorRow()
+    },
+    setCursor(index) {
+      cursorAnchor = null
+      cursor = Math.max(0, Math.min(index, listed() - 1))
+    },
     get pending() {
       return waiting > 0
     },
@@ -304,6 +349,10 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
     show,
     setProblemsOnly(on) {
       if (on === problemsOnly) return
+      // The problems start at the top; every row again goes back to the cursor's own row.
+      const row = cursorRow()?.row ?? cursorAnchor
+      cursorAnchor = null
+      cursor = on ? 0 : (row ?? 0)
       problemsOnly = on
       rows = new SvelteMap()
       fetching = null

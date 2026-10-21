@@ -167,7 +167,7 @@ describe('MultiRenameDialog Results', () => {
 
     expect(ipc.readMultiRenameNames).toHaveBeenCalledWith('S')
     expect(notice(root)).toContain('1 name comes from your edited list')
-    const mark = root.querySelector('[role="cell"][data-column="arrow"] .edited-mark')
+    const mark = root.querySelector('[role="gridcell"][data-column="arrow"] .edited-mark')
     expect(mark?.textContent).toContain('You typed this name in Results')
   })
 

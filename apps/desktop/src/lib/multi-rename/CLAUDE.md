@@ -3,9 +3,11 @@
 The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: that module's `CLAUDE.md` / `DETAILS.md`).
 
 - `MultiRenameDialog.svelte` the sheet; `routes/(main)/+page.svelte` opens the backend session first and closes it with
-  the sheet. `PreviewList.svelte` its preview (a `table`-semantics `ColumnList` over the windowed `source`).
+  the sheet. `PreviewList.svelte` its preview (a `grid`-semantics `ColumnList` over the windowed `source`, with one
+  cursor).
 - `multi-rename-state.svelte.ts` the spec, the debounced preview (a generation counter drops stale answers), the rows in
-  view, presets (`loadedId`, `edited`), the last settings (`persist`), Results' names, Start.
+  view, the list's cursor (`cursorIndex`, `cursorRow`), presets (`loadedId`, `edited`), the last settings (`persist`),
+  Results' names, Start.
 - `results.svelte.ts` Results (⌥⏎): whether a names file is out in the editor; window focus reads it back.
 - `field-history-menu.svelte.ts` the fields' history (↓): one house `Menu` under the field that asked;
   `FieldHistoryChevron.svelte` the chevron at each field's end.
