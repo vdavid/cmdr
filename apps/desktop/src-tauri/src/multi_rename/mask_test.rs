@@ -41,6 +41,17 @@ fn ranges_count_from_one_and_from_the_end() {
     assert_eq!(name("[N20-30]", file), "", "past the end is empty, not an error");
 }
 
+/// The `[N]` tooltip's forms (`placeholder-help.ts`), each between what the field keeps around it.
+#[test]
+fn the_name_tooltip_forms_take_what_their_help_says() {
+    let file = "Beach day.jpg";
+    assert_eq!(name("[N1-2]<[N3]>[N4-]", file), "Be<a>ch day");
+    assert_eq!(name("[N1]<[N2-5]>[N6-]", file), "B<each> day");
+    assert_eq!(name("<[N1--2]>[N-1-]", file), "<Beach da>y", "up to the second-to-last");
+    assert_eq!(name("[N1-6]<[N7,3]>[N10-]", file), "Beach <day>", "three from the 7th");
+    assert_eq!(name("[N1--4]<[N-3,3]>", file), "Beach <day>", "the last three");
+}
+
 #[test]
 fn ranges_count_characters_not_bytes() {
     assert_eq!(name("[N1-3]", "žluťoučký.txt"), "žlu");

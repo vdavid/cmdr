@@ -56,7 +56,19 @@ export const PLACEHOLDER_HELP: readonly PlaceholderHelp[] = [
         meaningParams: { from: 2, to: 5 },
       },
       {
-        mask: '[N-3-]',
+        mask: '[N1--2]',
+        around: { after: '[N-1-]' },
+        meaning: 'multiRename.placeholderHelp.allButLast',
+        meaningParams: { count: 1 },
+      },
+      {
+        mask: '[N7,3]',
+        around: { before: '[N1-6]', after: '[N10-]' },
+        meaning: 'multiRename.placeholderHelp.charsFrom',
+        meaningParams: { count: 3, from: 7 },
+      },
+      {
+        mask: '[N-3,3]',
         around: { before: '[N1--4]' },
         meaning: 'multiRename.placeholderHelp.lastChars',
         meaningParams: { count: 3 },

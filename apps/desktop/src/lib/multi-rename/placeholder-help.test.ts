@@ -44,6 +44,18 @@ describe('placeholder help', () => {
     expect(hintPieces({ mask: '[C10+5:3]' }, new Map())).toEqual([{ text: '010, 015, 020…', marked: true }])
   })
 
+  it('shows the name’s ranges from one character to the last few, each with what the field keeps around it', () => {
+    const name = PLACEHOLDER_HELP.find((help) => help.placeholder === '[N]')
+    // `mask_test.rs` holds the engine to these masks' examples on “Beach day”.
+    expect(name?.syntax.map(hintMask)).toEqual([
+      `[N1-2]${MARK_START}[N3]${MARK_END}[N4-]`,
+      `[N1]${MARK_START}[N2-5]${MARK_END}[N6-]`,
+      `${MARK_START}[N1--2]${MARK_END}[N-1-]`,
+      `[N1-6]${MARK_START}[N7,3]${MARK_END}[N10-]`,
+      `[N1--4]${MARK_START}[N-3,3]${MARK_END}`,
+    ])
+  })
+
   it('has no example for a mask the engine didn’t render', () => {
     expect(hintPieces({ mask: '[N3]', around: { before: '[N1-2]' } }, new Map())).toBeNull()
   })

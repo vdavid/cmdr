@@ -459,9 +459,24 @@
       "to": "the last position taken (e.g. 5)"
     }
   },
+  "multiRename.placeholderHelp.allButLast": "{count, plural, one {All but the last character} other {All but the last # characters}}",
+  "@multiRename.placeholderHelp.allButLast": {
+    "description": "In the Multi-rename sheet, a tooltip on a placeholder button (such as [N], [E], or [C]) explains what that placeholder puts in the new name, lists a few of its other forms, and shows each with an example on a made-up file (Beach day.jpg, in the folder Trips/Lisbon 2026, last changed 2026-07-14 09:05:30). Meaning of a form like [N1--2]: from the first character up to the second-to-last one, so the name without its last few characters (Beach day becomes Beach da).",
+    "placeholders": {
+      "count": "how many characters at the end are left out (e.g. 1)"
+    }
+  },
+  "multiRename.placeholderHelp.charsFrom": "{count, plural, one {# character} other {# characters}}, starting at character {from}",
+  "@multiRename.placeholderHelp.charsFrom": {
+    "description": "In the Multi-rename sheet, a tooltip on a placeholder button (such as [N], [E], or [C]) explains what that placeholder puts in the new name, lists a few of its other forms, and shows each with an example on a made-up file (Beach day.jpg, in the folder Trips/Lisbon 2026, last changed 2026-07-14 09:05:30). Meaning of a form like [N7,3]: a run of a given length that starts at a given position (Beach day gives day). Positions count from 1.",
+    "placeholders": {
+      "count": "how many characters are taken (e.g. 3)",
+      "from": "the position of the first one, counted from 1 (e.g. 7)"
+    }
+  },
   "multiRename.placeholderHelp.lastChars": "{count, plural, one {The last character} other {The last # characters}}",
   "@multiRename.placeholderHelp.lastChars": {
-    "description": "In the Multi-rename sheet, a tooltip on a placeholder button (such as [N], [E], or [C]) explains what that placeholder puts in the new name, lists a few of its other forms, and shows each with an example on a made-up file (Beach day.jpg, in the folder Trips/Lisbon 2026, last changed 2026-07-14 09:05:30). Meaning of a form like [N-3-]: the last few characters, counted from the end.",
+    "description": "In the Multi-rename sheet, a tooltip on a placeholder button (such as [N], [E], or [C]) explains what that placeholder puts in the new name, lists a few of its other forms, and shows each with an example on a made-up file (Beach day.jpg, in the folder Trips/Lisbon 2026, last changed 2026-07-14 09:05:30). Meaning of a form like [N-3,3]: the last few characters, counted from the end.",
     "placeholders": {
       "count": "how many characters from the end (e.g. 3)"
     }
