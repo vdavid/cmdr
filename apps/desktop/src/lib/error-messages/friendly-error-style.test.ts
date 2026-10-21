@@ -253,6 +253,7 @@ const PANE_STATE_KEYS = Object.keys(serversCatalog).filter(
  */
 const PANE_STATE_PARAMS = {
   name: 'Naspolya',
+  server: 'Naspolya',
   duration: '2 minutes',
   // The two duration keys carry an ICU plural: the raw number selects the form,
   // the `*Text` twin is what the reader sees (`#lib/intl/messages/CLAUDE.md`).
