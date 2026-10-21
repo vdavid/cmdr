@@ -5,6 +5,7 @@
 
 import type { Snippet } from 'svelte'
 import type { ColumnWidth } from './column-list-layout'
+import type { ListCursorKeyOptions } from './list-cursor'
 
 export type { ColumnWidth } from './column-list-layout'
 
@@ -97,13 +98,26 @@ export interface ColumnListProps<T> {
    * `listbox` (default): rows are options and the cursor row is `aria-selected`, for
    * lists you move through and act on. `table`: rows and cells, for previews and rows
    * holding their own controls (an option can't contain a checkbox or a text field).
+   * `grid`: a table that is itself a Tab stop with a cursor: it takes focus, answers the
+   * cursor keys and clicks (`onCursorChange`), and names its cursor row through
+   * `aria-activedescendant`, its cells read under their column headers.
    */
-  semantics?: 'listbox' | 'table'
+  semantics?: 'listbox' | 'table' | 'grid'
   ariaLabel: string
   /** The row under the cursor, or -1. */
   cursorIndex?: number
-  /** The pointer entered a data row. Writing it to `cursorIndex` gives the single cursor. */
-  onHover?: (index: number) => void
+  /**
+   * The list moved the cursor: a click on a data row, a cursor key in a `grid`, and the
+   * pointer entering a row with `hoverMovesCursor`. Writing it to `cursorIndex` is what
+   * makes them one cursor.
+   */
+  onCursorChange?: (index: number) => void
+  /**
+   * Hover moves the cursor too (Search, where the mouse and the arrows share it). Off by
+   * default: a cursor that drives something else (the Multi-rename range examples) mustn't
+   * jump while the pointer passes over.
+   */
+  hoverMovesCursor?: boolean
   onRowClick?: (index: number) => void
   /** Right-click on a data row. The list calls `preventDefault` when this is set. */
   onRowContextMenu?: (payload: ColumnListRowEvent<T>) => void
@@ -132,6 +146,12 @@ export interface ColumnListProps<T> {
   id?: string
 }
 
+/** How `cursorTarget` reads a key. */
+export interface ColumnListCursorKeyOptions extends ListCursorKeyOptions {
+  /** ↓ on the last row goes to the first and ↑ on the first to the last. Pages and ends never wrap. */
+  wrap?: boolean
+}
+
 /**
  * Types `ColumnList`'s props in TypeScript, inferring `T` from `rows`, so inline callbacks
  * (`rowKey: (entry) => entry.path`) are typed where the linter can see them:
@@ -146,4 +166,12 @@ export interface ColumnListApi {
   scrollIndexIntoView: (index: number) => void
   /** Row `index`'s option id while it's drawn, else `undefined` (needs the `id` prop). Reactive. */
   activeDescendantId: (index: number) => string | undefined
+  /** How many rows fit on screen: what a page key moves by (less one). */
+  visibleRowCount: () => number
+  /**
+   * Where a cursor key (↑ ↓ PageUp PageDown Home End, no modifier) takes the cursor from row
+   * `from`: a data row, stepping over group headings, or -1 when no row can take it. `null`
+   * for any other key, which stays the caller's.
+   */
+  cursorTarget: (event: KeyboardEvent, from: number, options?: ColumnListCursorKeyOptions) => number | null
 }

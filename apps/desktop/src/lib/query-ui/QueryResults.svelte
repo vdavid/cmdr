@@ -559,7 +559,9 @@
                     ariaLabel: tString('queryUi.results.listboxAria'),
                     id: listboxId,
                     cursorIndex,
-                    onHover,
+                    // The mouse and the arrows share one cursor here.
+                    onCursorChange: onHover,
+                    hoverMovesCursor: true,
                     onRowClick: onResultClick,
                     onRowContextMenu: ({ row }) => {
                         onRowMenu(row)

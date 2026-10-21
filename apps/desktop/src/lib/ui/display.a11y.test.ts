@@ -135,6 +135,27 @@ describe('ColumnList a11y', () => {
     expect(target.querySelector('.column-list-row.is-placeholder')).not.toBeNull()
     await expectNoA11yViolations(target)
   })
+
+  it('focused grid naming its cursor row has no a11y violations', async () => {
+    const target = container()
+    mount(ColumnList<Row>, {
+      target,
+      props: {
+        columns,
+        rows: { count: 3, getRow: (index: number) => rows[index] },
+        semantics: 'grid',
+        ariaLabel: 'Preview',
+        cursorIndex: 1,
+      },
+    })
+    await tick()
+    const grid = target.querySelector<HTMLElement>('[role="grid"]')
+    grid?.focus()
+    await new Promise((resolve) => setTimeout(resolve, 150))
+    await tick()
+    expect(grid?.getAttribute('aria-activedescendant')).toBeTruthy()
+    await expectNoA11yViolations(target)
+  })
 })
 
 /**

@@ -6,18 +6,29 @@
      * keys both move, and virtual scrolling over a fixed, token-derived row height, fed by a
      * plain array or a windowed source that pages from the backend.
      *
-     * The parent owns the keyboard and the cursor index; this component renders, reports
-     * hover, clicks, and right-clicks, and scrolls a row into view on request
-     * (`scrollIndexIntoView`). DETAILS.md § ColumnList has the contract.
+     * The parent owns the cursor index; this component renders, reports cursor moves
+     * (`onCursorChange`: clicks, hover where asked, and a `grid`'s own cursor keys) and
+     * right-clicks, works out where a cursor key lands (`cursorTarget`, over `list-cursor.ts`),
+     * and scrolls a row into view on request (`scrollIndexIntoView`). DETAILS.md § ColumnList
+     * has the contract.
      *
      * Named for what it is: a list (one cursor, listbox semantics by default) laid out in
      * columns. Ark UI has no table or data grid, and its `Listbox` owns selection and keys
      * itself, which is exactly what this leaves to the parent.
      */
     import { untrack } from 'svelte'
+    import { claimKey } from '#lib/shortcuts/claim-key.js'
     import { OVERSCAN_ROWS, revealScrollTop, visibleRange } from './column-list-layout'
     import { createColumnTracks } from './column-list-tracks.svelte'
-    import type { ColumnListProps, ColumnListRow, ColumnListSource, ColumnListWindowedSource } from './column-list-types'
+    import { createDeferredActiveDescendant } from './deferred-active-descendant.svelte'
+    import { listCursorMoveOf, nextListCursor } from './list-cursor'
+    import type {
+        ColumnListCursorKeyOptions,
+        ColumnListProps,
+        ColumnListRow,
+        ColumnListSource,
+        ColumnListWindowedSource,
+    } from './column-list-types'
 
     const {
         columns,
@@ -26,7 +37,8 @@
         semantics = 'listbox',
         ariaLabel,
         cursorIndex = -1,
-        onHover,
+        onCursorChange,
+        hoverMovesCursor = false,
         onRowClick,
         onRowContextMenu,
         isGroupHeading,
@@ -38,7 +50,11 @@
         id,
     }: ColumnListProps<T> = $props()
 
-    function optionId(index: number): string | undefined {
+    const uid = $props.id()
+
+    /** A listbox option's id (with the `id` prop), or a grid row's: what `aria-activedescendant` names. */
+    function rowId(index: number): string | undefined {
+        if (isGrid) return `${id ?? uid}-row-${String(index)}`
         return id === undefined || isTable ? undefined : `${id}-option-${String(index)}`
     }
 
@@ -54,7 +70,9 @@
     /** One row's height in pixels, read off the probe (which carries the row height token). */
     let rowHeightPx = $state(0)
 
-    const isTable = $derived(semantics === 'table')
+    const isGrid = $derived(semantics === 'grid')
+    // A grid is a table that takes focus: the same rows, cells, and header.
+    const isTable = $derived(semantics === 'table' || isGrid)
     // A content-sized row takes `rowHeight` as its floor rather than its height.
     const rowStyleHeight = $derived(virtualized ? rowHeight : undefined)
     const rowMinHeight = $derived(virtualized ? undefined : rowHeight)
@@ -124,7 +142,59 @@
         if (index < range.start || index >= range.end) return undefined
         const row = rowAt(index)
         if (row === undefined || isGroupHeading?.(row)) return undefined
-        return optionId(index)
+        return rowId(index)
+    }
+
+    /** How many rows fit on screen, at least one: what a page key moves by (less one). */
+    export function visibleRowCount(): number {
+        const viewport = viewportEl
+        if (!viewport || viewport.clientHeight <= 0) return 1
+        if (virtualized && rowHeightPx > 0) return Math.max(1, Math.floor(viewport.clientHeight / rowHeightPx))
+        // Content-sized rows differ in height: count the ones fully in view.
+        const box = viewport.getBoundingClientRect()
+        const inView = [...viewport.querySelectorAll<HTMLElement>('.column-list-row[data-index]')].filter((el) => {
+            const rect = el.getBoundingClientRect()
+            return rect.height > 0 && rect.top >= box.top && rect.bottom <= box.bottom
+        })
+        return Math.max(1, inView.length)
+    }
+
+    /**
+     * Where a cursor key takes the cursor from row `from` (`list-cursor.ts`): a data row,
+     * stepping over group headings (a row still loading can take it), or -1 when no row can.
+     * `null` for any other key, which stays the caller's.
+     */
+    export function cursorTarget(
+        event: KeyboardEvent,
+        from: number,
+        options: ColumnListCursorKeyOptions = {},
+    ): number | null {
+        const move = listCursorMoveOf(event, options)
+        if (move === null) return null
+        return nextListCursor(move, {
+            count,
+            from,
+            visibleRows: visibleRowCount(),
+            wrap: options.wrap,
+            isSkipped: (index) => {
+                const row = rowAt(index)
+                return row !== undefined && Boolean(isGroupHeading?.(row))
+            },
+        })
+    }
+
+    // A grid names its cursor row a frame after it takes focus, or VoiceOver reads only the grid.
+    const activeDescendant = createDeferredActiveDescendant()
+    const cursorRowId = $derived(isGrid ? activeDescendantId(cursorIndex) : undefined)
+
+    /** A grid's own cursor keys. Anything else (⇧↑, Enter) bubbles to the parent. */
+    function onGridKeydown(event: KeyboardEvent): void {
+        const next = cursorTarget(event, cursorIndex)
+        if (next === null) return
+        claimKey(event)
+        if (next < 0) return
+        onCursorChange?.(next)
+        scrollIndexIntoView(next)
     }
 
     /** Brings row `index` fully into view. The parent calls it after moving the cursor by key. */
@@ -149,12 +219,19 @@
     }
 </script>
 
+<!-- A grid is the focused element itself, so its keys and its `aria-activedescendant` live
+     on this root; a listbox or table never takes focus here. -->
 <div
     class="column-list"
     class:is-content-sized={!virtualized}
-    role={isTable ? 'table' : undefined}
+    role={isGrid ? 'grid' : isTable ? 'table' : undefined}
     aria-label={isTable ? ariaLabel : undefined}
     aria-rowcount={isTable ? count + 1 : undefined}
+    tabindex={isGrid ? 0 : undefined}
+    aria-activedescendant={isGrid ? activeDescendant.of(cursorRowId) : undefined}
+    onkeydown={isGrid ? onGridKeydown : undefined}
+    onfocus={isGrid ? () => { activeDescendant.tookFocus(cursorRowId) } : undefined}
+    onblur={isGrid ? () => { activeDescendant.reset() } : undefined}
 >
     <div
         class="column-list-row column-list-probe"
@@ -237,20 +314,23 @@
                         style:height={rowStyleHeight}
                         style:min-height={rowMinHeight}
                         role={isTable ? 'row' : 'option'}
-                        id={optionId(index)}
+                        id={rowId(index)}
                         tabindex={isTable ? undefined : -1}
-                        aria-selected={isTable ? undefined : isUnderCursor}
+                        aria-selected={isTable && !isGrid ? undefined : isUnderCursor}
                         aria-setsize={isTable ? undefined : count}
                         aria-posinset={isTable ? undefined : index + 1}
                         aria-rowindex={isTable ? index + 2 : undefined}
                         data-index={index}
-                        onclick={() => onRowClick?.(index)}
+                        onclick={() => {
+                            onCursorChange?.(index)
+                            onRowClick?.(index)
+                        }}
                         oncontextmenu={(event) => {
                             if (!onRowContextMenu) return
                             event.preventDefault()
                             onRowContextMenu({ index, row, event })
                         }}
-                        onmouseenter={() => onHover?.(index)}
+                        onmouseenter={hoverMovesCursor ? () => onCursorChange?.(index) : undefined}
                     >
                         {#each columns as column (column.id)}
                             <span
@@ -260,7 +340,7 @@
                                 class:is-unclipped={column.clip === false}
                                 class:tone-secondary={column.tone === 'secondary'}
                                 class:tone-tertiary={column.tone === 'tertiary'}
-                                role={isTable ? 'cell' : undefined}
+                                role={isGrid ? 'gridcell' : isTable ? 'cell' : undefined}
                                 data-column={column.id}
                             >
                                 {@render column.cell({ row, index, isUnderCursor })}
@@ -374,10 +454,21 @@
         border-top: 1px solid var(--color-border-subtle);
     }
 
-    /* Single cursor: hover and the parent's arrow keys both write the cursor index, so
+    /* Single cursor: clicks, the keys, and hover where asked all write the cursor index, so
        there's no separate hover background. */
     .column-list-row.is-under-cursor {
         background: var(--color-accent-subtle);
+    }
+
+    /* A grid holds focus itself. The ring sits inside its edge: a consumer's well around the
+       list clips what overhangs (Multi-rename's rounded preview). */
+    .column-list[role='grid'] {
+        outline: none;
+    }
+
+    .column-list[role='grid']:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
     }
 
     /* A row that hasn't arrived holds its place; nothing on it answers the pointer. */

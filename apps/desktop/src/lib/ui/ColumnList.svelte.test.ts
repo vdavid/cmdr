@@ -194,12 +194,12 @@ describe('ColumnList windowed source', () => {
 })
 
 describe('ColumnList cursor and pointer', () => {
-  it('marks the cursor row as the selected option and reports hover, click, and right-click', async () => {
-    const onHover = vi.fn()
+  it('marks the cursor row as the selected option and reports a click and a right-click', async () => {
+    const onCursorChange = vi.fn()
     const onRowClick = vi.fn()
     const onRowContextMenu = vi.fn()
     const rows = items(3)
-    const target = await render({ rows, cursorIndex: 1, onHover, onRowClick, onRowContextMenu })
+    const target = await render({ rows, cursorIndex: 1, onCursorChange, onRowClick, onRowContextMenu })
     const options = target.querySelectorAll<HTMLElement>('[role="option"]')
     expect(target.querySelector('[role="listbox"]')?.getAttribute('aria-label')).toBe('Things')
     expect([...options].map((o) => o.getAttribute('aria-selected'))).toEqual(['false', 'true', 'false'])
@@ -208,13 +208,165 @@ describe('ColumnList cursor and pointer', () => {
     expect(options[2].getAttribute('aria-setsize')).toBe('3')
 
     options[2].dispatchEvent(new MouseEvent('mouseenter'))
+    // Hover leaves the cursor alone unless the list asks for it.
+    expect(onCursorChange).not.toHaveBeenCalled()
     options[2].click()
     const menu = new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
     options[0].dispatchEvent(menu)
-    expect(onHover).toHaveBeenCalledWith(2)
+    expect(onCursorChange).toHaveBeenCalledWith(2)
     expect(onRowClick).toHaveBeenCalledWith(2)
     expect(onRowContextMenu).toHaveBeenCalledWith(expect.objectContaining({ index: 0, row: rows[0] }))
     expect(menu.defaultPrevented).toBe(true)
+  })
+
+  it('moves the cursor on hover with hoverMovesCursor', async () => {
+    const onCursorChange = vi.fn()
+    const target = await render({ rows: items(3), cursorIndex: 0, onCursorChange, hoverMovesCursor: true })
+    target.querySelectorAll<HTMLElement>('[role="option"]')[2].dispatchEvent(new MouseEvent('mouseenter'))
+    expect(onCursorChange).toHaveBeenCalledWith(2)
+  })
+})
+
+/** Mounts a list and hands back its API too, for the methods a parent calls. */
+async function mountList(props: Record<string, unknown>): Promise<{ target: HTMLElement; api: ColumnListApi }> {
+  const target = document.createElement('div')
+  document.body.appendChild(target)
+  const component = mount(ColumnList<Item>, {
+    target,
+    props: { columns: plainColumns, ariaLabel: 'Things', ...props } as never,
+  })
+  cleanup = () => {
+    void unmount(component)
+  }
+  for (let i = 0; i < 4; i++) {
+    await tick()
+    await Promise.resolve()
+  }
+  return { target, api: component as ColumnListApi }
+}
+
+function keydown(key: string, modifiers: KeyboardEventInit = {}): KeyboardEvent {
+  return new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...modifiers })
+}
+
+// The parent decides when a key is the list's (Search's field, a review row's button); the
+// list says where it lands, from its own count, headings, and rows on screen.
+describe('ColumnList cursorTarget', () => {
+  it('pages by the rows on screen, less one, and reaches both ends', async () => {
+    // 200 px viewport over 20 px rows: 10 on screen.
+    const { api } = await mountList({ rows: items(100) })
+    expect(api.visibleRowCount()).toBe(10)
+    expect(api.cursorTarget(keydown('PageDown'), 0)).toBe(9)
+    expect(api.cursorTarget(keydown('PageUp'), 50)).toBe(41)
+    expect(api.cursorTarget(keydown('End'), 3)).toBe(99)
+    expect(api.cursorTarget(keydown('Home'), 30)).toBe(0)
+  })
+
+  it('wraps a step when asked, and leaves Home and End to a text field', async () => {
+    const { api } = await mountList({ rows: items(5) })
+    expect(api.cursorTarget(keydown('ArrowDown'), 4)).toBe(4)
+    expect(api.cursorTarget(keydown('ArrowDown'), 4, { wrap: true })).toBe(0)
+    expect(api.cursorTarget(keydown('Home'), 3, { textField: true })).toBeNull()
+  })
+
+  it("steps over group headings, and answers null for a key that isn't a cursor key", async () => {
+    const rows: Item[] = [{ id: -1, name: '~/A' }, ...items(2), { id: -2, name: '~/B' }, ...items(2)]
+    const { api } = await mountList({
+      rows,
+      semantics: 'table',
+      isGroupHeading: (row: Item) => row.id < 0,
+      groupHeading: nameCell,
+    })
+    expect(api.cursorTarget(keydown('ArrowDown'), 2)).toBe(4)
+    expect(api.cursorTarget(keydown('Home'), 5)).toBe(1)
+    expect(api.cursorTarget(keydown('ArrowDown', { shiftKey: true }), 2)).toBeNull()
+    expect(api.cursorTarget(keydown('Enter'), 2)).toBeNull()
+  })
+
+  it('lets the cursor land on a windowed row that is still loading', async () => {
+    const source: ColumnListWindowedSource<Item> = {
+      count: 50,
+      getRow: (index) => (index < 5 ? items(5)[index] : undefined),
+    }
+    const { api } = await mountList({ rows: source })
+    expect(api.cursorTarget(keydown('ArrowDown'), 4)).toBe(5)
+  })
+})
+
+// A grid is a table that holds focus itself: the Multi-rename preview, a Tab stop whose
+// cursor the keys and clicks move, read by VoiceOver through `aria-activedescendant`.
+describe('ColumnList grid semantics', () => {
+  it('is a focusable grid of rows and gridcells with the cursor row selected', async () => {
+    const { target } = await mountList({ rows: items(3), semantics: 'grid', cursorIndex: 1 })
+    const grid = target.querySelector<HTMLElement>('[role="grid"]')
+    expect(grid?.getAttribute('tabindex')).toBe('0')
+    expect(grid?.getAttribute('aria-label')).toBe('Things')
+    expect(grid?.getAttribute('aria-rowcount')).toBe('4')
+    expect(target.querySelectorAll('[role="columnheader"]')).toHaveLength(2)
+    const rows = target.querySelectorAll<HTMLElement>('.column-list-row.is-data')
+    expect([...rows].map((row) => row.getAttribute('aria-selected'))).toEqual(['false', 'true', 'false'])
+    expect(rows[0].querySelectorAll('[role="gridcell"]')).toHaveLength(2)
+    expect(rows[0].hasAttribute('tabindex')).toBe(false)
+  })
+
+  it('answers its cursor keys and claims them, and leaves the rest to bubble', async () => {
+    const onCursorChange = vi.fn()
+    const { target } = await mountList({ rows: items(100), semantics: 'grid', cursorIndex: 3, onCursorChange })
+    const grid = target.querySelector<HTMLElement>('[role="grid"]')
+    // Above the mount root: Svelte delegates `onkeydown` to the root itself.
+    const outside = vi.fn()
+    document.body.addEventListener('keydown', outside)
+
+    const down = keydown('ArrowDown')
+    grid?.dispatchEvent(down)
+    expect(onCursorChange).toHaveBeenLastCalledWith(4)
+    expect(down.defaultPrevented).toBe(true)
+    grid?.dispatchEvent(keydown('PageDown'))
+    expect(onCursorChange).toHaveBeenLastCalledWith(12)
+    grid?.dispatchEvent(keydown('End'))
+    expect(onCursorChange).toHaveBeenLastCalledWith(99)
+    expect(outside).not.toHaveBeenCalled()
+
+    const shifted = keydown('ArrowDown', { shiftKey: true })
+    grid?.dispatchEvent(shifted)
+    expect(shifted.defaultPrevented).toBe(false)
+    expect(outside).toHaveBeenCalledTimes(1)
+    expect(onCursorChange).toHaveBeenCalledTimes(3)
+    document.body.removeEventListener('keydown', outside)
+  })
+
+  it('scrolls the row a key landed on into view', async () => {
+    const { target } = await mountList({
+      rows: items(1_000),
+      semantics: 'grid',
+      cursorIndex: 0,
+      onCursorChange: vi.fn(),
+    })
+    target.querySelector<HTMLElement>('[role="grid"]')?.dispatchEvent(keydown('End'))
+    flushSync()
+    expect(target.querySelector<HTMLElement>(VIEWPORT)?.scrollTop).toBe(1_000 * ROW_PX - 200)
+  })
+
+  it('names the cursor row as its active descendant a frame after it takes focus', async () => {
+    vi.useFakeTimers()
+    try {
+      const { target } = await mountList({ rows: items(3), semantics: 'grid', cursorIndex: 2 })
+      const grid = target.querySelector<HTMLElement>('[role="grid"]')
+      expect(grid?.hasAttribute('aria-activedescendant')).toBe(false)
+      grid?.focus()
+      flushSync()
+      expect(grid?.hasAttribute('aria-activedescendant')).toBe(false)
+      vi.advanceTimersByTime(150)
+      flushSync()
+      const id = grid?.getAttribute('aria-activedescendant') ?? ''
+      expect(id).not.toBe('')
+      expect(target.querySelector(`#${CSS.escape(id)}`)?.getAttribute('data-index')).toBe('2')
+      grid?.blur()
+      flushSync()
+      expect(grid?.hasAttribute('aria-activedescendant')).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 

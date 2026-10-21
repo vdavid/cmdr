@@ -3,6 +3,7 @@
     import SectionCard from '#lib/ui/SectionCard.svelte'
     import ColumnList from '#lib/ui/ColumnList.svelte'
     import Size from '#lib/ui/Size.svelte'
+    import { claimKey } from '#lib/shortcuts/claim-key.js'
     import {
         columnListProps,
         type ColumnListApi,
@@ -12,8 +13,9 @@
 
     /**
      * Two lists: a short measured listbox (hover moves the cursor; click the list, then the
-     * arrow keys move it too, the way a dialog owns its keys), and a 100,000-row windowed
-     * table that "pages" rows in after a delay, with a group heading every 50 rows.
+     * cursor keys move it too, the way a dialog owns its keys), and a 100,000-row windowed
+     * grid that "pages" rows in after a delay, with a group heading every 50 rows: a Tab stop
+     * whose cursor its own keys and clicks move, and hover doesn't.
      */
     interface FileRow {
         name: string
@@ -51,10 +53,11 @@
     ]
 
     function onListKeydown(event: KeyboardEvent): void {
-        if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
-        event.preventDefault()
-        const step = event.key === 'ArrowDown' ? 1 : -1
-        cursor = (cursor + step + files.length) % files.length
+        const next = list?.cursorTarget(event, cursor, { wrap: true })
+        if (next === undefined || next === null) return
+        claimKey(event)
+        if (next < 0) return
+        cursor = next
         list?.scrollIndexIntoView(cursor)
     }
     let list: ColumnListApi | undefined = $state()
@@ -65,6 +68,7 @@
         newName: string
     }
 
+    let renameCursor = $state(1)
     const TOTAL = 100_000
     const PAGE = 200
     const loaded = new SvelteMap<number, RenameRow>()
@@ -104,7 +108,7 @@
 <SectionCard id="components-column-list" label="Column list">
     <p class="hint">
         Measured listbox: Name and Kind share the width by max-min fairness, Size is fixed. Hover moves the cursor;
-        click the list and the arrow keys move it too.
+        click the list and the cursor keys move it too.
     </p>
     <!-- The demo owns the keys the way a dialog would; the list itself takes no focus. -->
     <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
@@ -117,18 +121,24 @@
                 rowKey: (row) => row.name,
                 ariaLabel: 'Files',
                 cursorIndex: cursor,
-                onHover: (index) => (cursor = index),
+                onCursorChange: (index) => (cursor = index),
+                hoverMovesCursor: true,
             })}
         />
     </div>
-    <p class="hint">Windowed table: 100,000 rows paged in after 300 ms, a folder heading every 50 rows.</p>
+    <p class="hint">
+        Windowed grid: 100,000 rows paged in after 300 ms, a folder heading every 50 rows. Tab to it: the cursor keys
+        and clicks move its cursor, hover doesn't.
+    </p>
     <div class="frame tall">
         <ColumnList
             {...columnListProps({
                 columns: renameColumns,
                 rows: renames,
-                semantics: 'table',
+                semantics: 'grid',
                 ariaLabel: 'Rename preview',
+                cursorIndex: renameCursor,
+                onCursorChange: (index) => (renameCursor = index),
                 isGroupHeading: (row) => row.heading,
                 groupHeading: folderHeading,
             })}

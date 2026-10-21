@@ -66,8 +66,8 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
 - **`NumberInput.svelte`**: Presentational Ark `NumberInput`: framed field with −/+ steppers and a unit;
   `SettingNumberInput` wraps it
 - **`ColumnList.svelte`**: The house list of rows in measured columns: one shared grid template, a single cursor,
-  virtual scrolling, listbox or table semantics. Math in `column-list-layout.ts`, DOM reads in
-  `column-list-tracks.svelte.ts`, types in `column-list-types.ts`. See § ColumnList
+  virtual scrolling, listbox, table, or grid semantics. Math in `column-list-layout.ts`, DOM reads in
+  `column-list-tracks.svelte.ts`, types in `column-list-types.ts`, the cursor keys in `list-cursor.ts`. See § ColumnList
 - **`DateLabel.svelte`**: Canonical inline modified-date renderer: format + per-component age-tier coloring
 - **`ShortcutChip.svelte`**: Canonical keyboard-shortcut renderer: live `commandId` mode (clickable) or literal `key`
   mode
@@ -1675,7 +1675,7 @@ mismatch-warning + cursor-row neutralization treatment.
 ## ColumnList
 
 Every dialog that lists files or records in columns renders `ColumnList`: Search and Selection (`QueryResults`) today,
-Ask Cmdr's rename review (`table` semantics, content-sized rows), and the Multi-rename preview (`table` semantics, a
+Ask Cmdr's rename review (`table` semantics, content-sized rows), and the Multi-rename preview (`grid` semantics, a
 windowed source). One look, one cursor model, one width contract. The name says what it is: a list (one cursor, listbox
 semantics by default) laid out in columns. Ark UI has no table or data grid, and its `Listbox` owns selection and keys
 itself, which is exactly what this leaves to the parent.
@@ -1696,15 +1696,36 @@ itself, which is exactly what this leaves to the parent.
   for a row not loaded yet, which draws an `aria-hidden` placeholder), and `onRangeChange({ start, end })`, called (in
   `untrack`) whenever the drawn range moves, so the consumer fetches those rows. `rowKey` keys an array's rows; a
   windowed source is keyed by index.
-- **Cursor**: the parent owns it and the keyboard. `cursorIndex` paints `.is-under-cursor` (and `aria-selected` in a
-  listbox); `onHover(index)` fires on `mouseenter`, and writing it back to `cursorIndex` is what makes hover and arrows
-  one cursor. After moving the cursor by key, call the exported `scrollIndexIntoView(index)` (it computes the scroll
-  from the row height, so it works for rows outside the drawn window). `onRowClick(index)`, and
-  `onRowContextMenu({ index, row, event })`, which `preventDefault`s for you.
+- **Cursor**: the parent owns the index. `cursorIndex` paints `.is-under-cursor` (and `aria-selected` in a listbox or
+  grid). The list reports every move it makes through `onCursorChange(index)`: a click on a data row, a `grid`'s own
+  cursor keys, and `mouseenter` when `hoverMovesCursor` is on. Writing it back to `cursorIndex` is what makes them one
+  cursor. **Decision/Why: hover is opt-in.** Search turns it on (the mouse and the arrows share the cursor); the
+  Multi-rename preview leaves it off, because its cursor drives the range examples and they mustn't jump while the
+  pointer passes over. `onRowClick(index)` fires after the cursor move, and `onRowContextMenu({ index, row, event })`
+  `preventDefault`s for you.
+- **Cursor keys** (`list-cursor.ts`, pure, tested): ↑/↓ step, PageUp/PageDown page by `visibleRowCount() - 1` (the file
+  panes' step, so a row of context stays), Home/End go to the ends, and group headings are stepped over (a windowed row
+  still loading takes the cursor). Bare keys only: ⇧↓, ⌘↓, ⌥↓, ⌃↓ are somebody else's and pass through, which is why
+  it's a class-of-key matcher rather than registry commands (as `menu-navigation.ts`). A parent that owns its keys
+  elsewhere asks `cursorTarget(event, from, { wrap, textField })`: the index the key lands on, -1 when no row can take
+  it, or `null` for any other key. It claims (`claimKey`) and writes the cursor itself, then calls
+  `scrollIndexIntoView(index)` (computed from the row height, so it works for rows outside the drawn window). `wrap`
+  loops ↑/↓ at the ends (Search); `textField` leaves Home/End to the field the keys come from, as the editable-combobox
+  pattern has them. Consumers: Search's query field (`wrap`, `textField`), Ask Cmdr's rename review (the focused preview
+  button's row), and the Multi-rename preview (a `grid`, which answers them itself).
 - **Semantics**: `listbox` (default) for lists you move through and act on: rows are `option`s with `aria-setsize` /
   `aria-posinset`, so a virtualized list still announces its true length. `table` for previews and rows that hold
   controls (an `option` can't contain a checkbox or a text field): `table` / `row` / `columnheader` / `cell`, with
-  `aria-rowcount` and per-row `aria-rowindex` (the header is row 1).
+  `aria-rowcount` and per-row `aria-rowindex` (the header is row 1). `grid` for a table that is its own Tab stop with a
+  cursor: the root is `role="grid"` with `tabindex="0"` and takes focus itself (rows never do), rows are `row`s with
+  `aria-selected` on the cursor row, cells `gridcell`s under their `columnheader`s. It answers the cursor keys (claimed,
+  then `onCursorChange` and a scroll into view) and lets every other key bubble to the parent (the Multi-rename sheet's
+  ⇧↑/⇧↓). It names the cursor row (`{id or $props.id()}-row-{index}`, drawn rows only) as its `aria-activedescendant` a
+  frame after it takes focus (`deferred-active-descendant.svelte.ts`: VoiceOver reads only the grid otherwise), so
+  VoiceOver reads the row as the cursor moves. **Decision/Why: grid, not listbox,** for a preview with columns: a
+  listbox's option reads as one run of text ("a.pdf b.pdf"), while a grid keeps the column headers and the row count.
+  Its focus ring (`:focus-visible`, the accent) sits inside the edge, since a consumer's rounded well clips what
+  overhangs.
 - **Named by a combobox**: a listbox given `id` takes it, and every option gets `{id}-option-{index}`, so a field
   outside the list (Search's query field) can `aria-controls` it. The exported `activeDescendantId(index)` returns that
   id only while the row is drawn (a data row, not a heading), since an `aria-activedescendant` naming an unmounted row
