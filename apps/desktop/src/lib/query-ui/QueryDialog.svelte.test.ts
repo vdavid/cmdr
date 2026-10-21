@@ -384,6 +384,40 @@ describe('QueryDialog recent-items dropdown', () => {
     cleanup()
   })
 
+  it('walks the results with the house list keys: ↑/↓ loop, PageDown and PageUp page, Home and End stay the field’s', async () => {
+    const entries = Array.from({ length: 5 }, (_, i) => ({
+      ...SAMPLE_RESULT,
+      path: `/${String(i)}`,
+      name: `${String(i)}.jpg`,
+    }))
+    const { overlay, state, cleanup } = mountQueryDialog({
+      initialQuery: '*.jpg',
+      runQueryResult: { entries, totalCount: entries.length },
+    })
+    await settle()
+    dispatchKey(overlay, 'Enter')
+    await settle()
+    expect(state.getCursorIndex()).toBe(0)
+
+    dispatchKey(overlay, 'ArrowUp')
+    expect(state.getCursorIndex()).toBe(4)
+    dispatchKey(overlay, 'ArrowDown')
+    expect(state.getCursorIndex()).toBe(0)
+    // No layout in the test DOM: a page is one row.
+    const page = dispatchKey(overlay, 'PageDown')
+    expect(page.defaultPrevented).toBe(true)
+    expect(state.getCursorIndex()).toBe(1)
+    dispatchKey(overlay, 'PageUp')
+    expect(state.getCursorIndex()).toBe(0)
+    const end = dispatchKey(overlay, 'End')
+    expect(end.defaultPrevented).toBe(false)
+    expect(state.getCursorIndex()).toBe(0)
+    // ⌘↓ is the field's caret key, not a cursor move.
+    dispatchKey(overlay, 'ArrowDown', { meta: true })
+    expect(state.getCursorIndex()).toBe(0)
+    cleanup()
+  })
+
   it('the field chevron opens the dropdown', async () => {
     const { overlay, cleanup } = mountQueryDialog({ recentEntries: [RECENT_ENTRY] })
     await settle()

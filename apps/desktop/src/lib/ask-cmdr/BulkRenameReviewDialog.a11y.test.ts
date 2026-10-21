@@ -425,7 +425,7 @@ describe('BulkRenameReviewDialog', () => {
   })
 
   /** Keyboard-first: reviewing 50 rows can't require a mouse to move the preview. */
-  it('walks the previews with the arrow keys', async () => {
+  it('walks the previews with the house list keys', async () => {
     const target = mountDialog()
     await tick()
     const buttons = [...target.querySelectorAll<HTMLButtonElement>('.preview-open')]
@@ -440,6 +440,17 @@ describe('BulkRenameReviewDialog', () => {
     // At the ends, focus stays put rather than wrapping into another row's controls.
     buttons[0]?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }))
     expect(document.activeElement).toBe(buttons[0])
+
+    // The house list keys: End and Home reach either end, PageDown pages (a row, with no
+    // layout in the test DOM). Each is claimed, so the file pane never sees it.
+    const end = new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true })
+    buttons[0]?.dispatchEvent(end)
+    expect(document.activeElement).toBe(buttons.at(-1))
+    expect(end.defaultPrevented).toBe(true)
+    buttons.at(-1)?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }))
+    expect(document.activeElement).toBe(buttons[0])
+    buttons[0]?.dispatchEvent(new KeyboardEvent('keydown', { key: 'PageDown', bubbles: true }))
+    expect(document.activeElement).toBe(buttons[1])
   })
 
   /**

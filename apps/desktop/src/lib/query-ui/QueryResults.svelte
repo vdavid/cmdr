@@ -10,8 +10,9 @@
      * menu, which is the whole of what a per-row `…` button offered.
      *
      * Cursor model (single cursor): hover writes `cursorIndex` via `onHover`, so mouse and
-     * keyboard share one accent-colored cursor; the parent dialog owns the arrows and loops
-     * top<->bottom. Column widths: `result-column-widths.ts` and DETAILS.md § Column widths.
+     * keyboard share one accent-colored cursor; the parent dialog owns the keys and asks
+     * `cursorTarget` where one lands (↑/↓ loop top<->bottom). Column widths:
+     * `result-column-widths.ts` and DETAILS.md § Column widths.
      */
     import { tick } from 'svelte'
     import { getCachedIcon, iconCacheVersion } from '#lib/icon-cache.js'
@@ -32,6 +33,7 @@
         type ColumnListApi,
         type ColumnListCellContext,
         type ColumnListColumn,
+        type ColumnListCursorKeyOptions,
     } from '#lib/ui/column-list-types.js'
     import { resultColumnWidths } from './result-column-widths'
     import EmptyState from './EmptyState.svelte'
@@ -401,6 +403,18 @@
     /** The cursor row's option id while it's drawn, for the query combobox's `aria-activedescendant`. Reactive. */
     export function cursorOptionId(): string | undefined {
         return showingRows ? columnList?.activeDescendantId(cursorIndex) : undefined
+    }
+
+    /**
+     * Where a cursor key lands from row `from` (`ColumnList.cursorTarget`), or `null` when it
+     * isn't one or no rows show.
+     */
+    export function cursorTarget(
+        event: KeyboardEvent,
+        from: number,
+        options?: ColumnListCursorKeyOptions,
+    ): number | null {
+        return showingRows ? (columnList?.cursorTarget(event, from, options) ?? null) : null
     }
 
     /** Scrolls the cursor row into view. Called by the parent after cursor changes. */

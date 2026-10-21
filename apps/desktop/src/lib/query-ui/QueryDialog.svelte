@@ -71,6 +71,7 @@
     } from './result-actions'
     import { getSetting, onSpecificSettingChange } from '#lib/settings/index.js'
     import ModalDialog from '#lib/ui/ModalDialog.svelte'
+    import type { ColumnListCursorKeyOptions } from '#lib/ui/column-list-types.js'
     import Switch from '#lib/ui/Switch.svelte'
     import Button from '#lib/ui/Button.svelte'
     import { tooltip } from '#lib/tooltip/tooltip.js'
@@ -89,6 +90,7 @@
     /** Shape of the `bind:this` ref for `QueryResults.svelte` — only the exported method we call. */
     interface QueryResultsAPI {
         scrollCursorIntoView(): void
+        cursorTarget(event: KeyboardEvent, from: number, options?: ColumnListCursorKeyOptions): number | null
         // The query field is a combobox over the result list: focus stays in the field while
         // ↑/↓ move the cursor, so the cursor row reaches a screen reader only as its
         // `aria-activedescendant`. All three read through `QueryResults`, which owns the list.
@@ -489,29 +491,34 @@
     }
 
     /**
-     * Up / Down navigation through results. Loops top<->bottom.
+     * The result list's cursor keys (`ColumnList.cursorTarget`): ↑/↓ loop top<->bottom,
+     * PageUp/PageDown page, and Home/End stay the query field's, as a combobox has them.
+     * Returns whether it took the key.
      *
      * With no result list to walk, ArrowDown opens the recent-items dropdown instead — the
      * combobox gesture, landing on a key that was otherwise dead. Results win when they
      * exist: walking them is the more valuable use of ↓, and the chevron + `⌘H` open the
      * dropdown unconditionally.
      */
-    function handleArrowNav(e: KeyboardEvent): void {
-        const len = config.state.getResults().length
-        if (len === 0) {
-            if (e.key === 'ArrowDown' && !recent.isOpen && recentEntries.length > 0) {
-                e.preventDefault()
-                recent.open()
-            }
-            return
+    function handleCursorKey(e: KeyboardEvent): boolean {
+        if (config.state.getResults().length === 0) {
+            if (e.key !== 'ArrowDown' || recent.isOpen || recentEntries.length === 0) return false
+            e.preventDefault()
+            recent.open()
+            return true
         }
+        const next = queryResultsComponent?.cursorTarget(e, config.state.getCursorIndex(), {
+            wrap: true,
+            textField: true,
+        })
+        if (next === undefined || next === null) return false
         e.preventDefault()
-        const cur = config.state.getCursorIndex()
-        const next = e.key === 'ArrowDown' ? (cur + 1) % len : (cur - 1 + len) % len
+        if (next < 0) return true
         config.state.setCursorIndex(next)
         // D8: cursor moves keep ⏎ on "go-to-file" as the user browses the list.
         config.state.setLastDialogEvent('cursor-moved')
         queryResultsComponent?.scrollCursorIntoView()
+        return true
     }
 
     /** Mouse hover writes the cursor so mouse + keyboard share one cursor (cursor model). */
@@ -529,6 +536,7 @@
         e.stopPropagation()
         // Tab wrapping is handled by `use:trapFocus` on the overlay.
         if (handleModifierShortcuts(e)) return
+        if (handleCursorKey(e)) return
         switch (e.key) {
             case 'Escape': {
                 // The window-capture handler above normally gets here first; this is the
@@ -539,10 +547,6 @@
                 if (outcome === 'close') config.onClose()
                 break
             }
-            case 'ArrowDown':
-            case 'ArrowUp':
-                handleArrowNav(e)
-                break
             case 'Enter':
                 e.preventDefault()
                 dispatchEnterAction(config, enterAction, runner.run)

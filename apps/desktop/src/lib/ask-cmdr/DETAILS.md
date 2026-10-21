@@ -529,9 +529,10 @@ truncation, because hiding evidence from the reviewer is the failure this column
 The reviewer has to be able to see the file, because a plausible wrong name only looks wrong beside the picture. Every
 row shows its own 36 px thumbnail (scanning 50 rows for the odd wrong one is the actual review task, so a detail pane
 would only show the row the user already suspects), and each thumbnail is a button that opens the file in the full
-viewer with Space or Enter. ArrowDown / ArrowUp walk the buttons, so the preview follows the focused row with no mouse,
-and the focused row is the list's cursor row (`cursorIndex`). Hover doesn't move it: the highlight marks the row Space
-acts on.
+viewer with Space or Enter. The house list keys walk the buttons (↑/↓, PageUp/PageDown, Home/End, over the folder
+headings; `ColumnList.cursorTarget`, claimed), so the preview follows the focused row with no mouse, and the focused row
+is the list's cursor row (`cursorIndex`): a key moves the cursor by focusing the landing row's button. Hover doesn't
+move it: the highlight marks the row Space acts on.
 
 - **Thumbnails reuse the viewer's `cmdr-media://` preview scheme** through `mediaIndexThumbnailToken` + `mediaUrl`, the
   same path `lib/search/ImageSearchResults.svelte` takes. They do NOT depend on media-index enrichment: the token is

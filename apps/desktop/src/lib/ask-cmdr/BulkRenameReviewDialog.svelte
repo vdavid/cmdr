@@ -5,7 +5,13 @@
     import Icon from '#lib/ui/Icon.svelte'
     import Checkbox from '#lib/ui/Checkbox.svelte'
     import ColumnList from '#lib/ui/ColumnList.svelte'
-    import type { ColumnDemandArgs, ColumnListCellContext, ColumnListColumn } from '#lib/ui/column-list-types.js'
+    import type {
+        ColumnDemandArgs,
+        ColumnListApi,
+        ColumnListCellContext,
+        ColumnListColumn,
+    } from '#lib/ui/column-list-types.js'
+    import { claimKey } from '#lib/shortcuts/claim-key.js'
     import { tString } from '#lib/intl/messages.svelte.js'
     import { formatInteger } from '#lib/intl/number-format.js'
     import { mediaIndexDropThumbnailTokens, mediaIndexThumbnailToken, onDirectoryDiff } from '#lib/tauri-commands/index.js'
@@ -261,18 +267,23 @@
         void releaseThumbnails()
     })
 
-    /** Arrow keys walk the preview buttons, so the preview follows the focused row with no
-     *  mouse. Tab still reaches every control; this only makes 50 rows navigable. */
-    function movePreviewFocus(from: HTMLElement, delta: number): void {
-        const buttons = [...(from.closest('.rows')?.querySelectorAll<HTMLButtonElement>('.preview-open') ?? [])]
-        buttons[buttons.indexOf(from as HTMLButtonElement) + delta]?.focus()
-    }
+    let list = $state<ColumnListApi>()
 
+    /** The house list keys (↑/↓, PageUp/PageDown, Home/End, over the folder headings) walk the
+     *  preview buttons, so the preview follows the focused row with no mouse. Focus IS the
+     *  cursor here, so the cursor moves by focusing the row's button. Tab still reaches every
+     *  control; this only makes 50 rows navigable. */
     function onPreviewKeydown(event: KeyboardEvent): void {
-        const delta = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0
-        if (delta === 0 || !(event.currentTarget instanceof HTMLElement)) return
-        event.preventDefault()
-        movePreviewFocus(event.currentTarget, delta)
+        const next = list?.cursorTarget(event, cursorIndex)
+        if (next === undefined || next === null || !(event.currentTarget instanceof HTMLElement)) return
+        claimKey(event)
+        const item = listRows[next] as ListRow | undefined
+        if (item?.kind !== 'file') return
+        list?.scrollIndexIntoView(next)
+        event.currentTarget
+            .closest('.rows')
+            ?.querySelector<HTMLButtonElement>(`.preview-open[data-row-id="${CSS.escape(item.row.rowId)}"]`)
+            ?.focus()
     }
 
     // ── Editing a proposed name ───────────────────────────────────────────────
@@ -601,6 +612,7 @@
                 </div>
                 <div class="rows" aria-busy={preflighting}>
                     <ColumnList
+                        bind:this={list}
                         {columns}
                         rows={listRows}
                         rowKey={(item: ListRow) => item.key}

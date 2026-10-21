@@ -1719,13 +1719,13 @@ itself, which is exactly what this leaves to the parent.
   `aria-rowcount` and per-row `aria-rowindex` (the header is row 1). `grid` for a table that is its own Tab stop with a
   cursor: the root is `role="grid"` with `tabindex="0"` and takes focus itself (rows never do), rows are `row`s with
   `aria-selected` on the cursor row, cells `gridcell`s under their `columnheader`s. It answers the cursor keys (claimed,
-  then `onCursorChange` and a scroll into view) and lets every other key bubble to the parent (the Multi-rename sheet's
-  ⇧↑/⇧↓). It names the cursor row (`{id or $props.id()}-row-{index}`, drawn rows only) as its `aria-activedescendant` a
-  frame after it takes focus (`deferred-active-descendant.svelte.ts`: VoiceOver reads only the grid otherwise), so
-  VoiceOver reads the row as the cursor moves. **Decision/Why: grid, not listbox,** for a preview with columns: a
-  listbox's option reads as one run of text ("a.pdf b.pdf"), while a grid keeps the column headers and the row count.
-  Its focus ring (`:focus-visible`, the accent) sits inside the edge, since a consumer's rounded well clips what
-  overhangs.
+  then `onCursorChange` and a scroll into view) and hands every other key to `onKeydown` before it bubbles on (the
+  Multi-rename preview's ⇧↑/⇧↓). It names the cursor row (`{id or $props.id()}-row-{index}`, drawn rows only) as its
+  `aria-activedescendant` a frame after it takes focus (`deferred-active-descendant.svelte.ts`: VoiceOver reads only the
+  grid otherwise), so VoiceOver reads the row as the cursor moves. **Decision/Why: grid, not listbox,** for a preview
+  with columns: a listbox's option reads as one run of text ("a.pdf b.pdf"), while a grid keeps the column headers and
+  the row count. Its focus ring (`:focus-visible`, the accent) sits inside the edge, since a consumer's rounded well
+  clips what overhangs.
 - **Named by a combobox**: a listbox given `id` takes it, and every option gets `{id}-option-{index}`, so a field
   outside the list (Search's query field) can `aria-controls` it. The exported `activeDescendantId(index)` returns that
   id only while the row is drawn (a data row, not a heading), since an `aria-activedescendant` naming an unmounted row

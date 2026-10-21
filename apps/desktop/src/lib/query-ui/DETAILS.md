@@ -196,8 +196,8 @@ Escape depends on.
 
 **Openers**: the chevron, `⌘H` (toggles), and `ArrowDown` in the field. `ArrowDown` opens ONLY when there are no results
 to walk: with a result list, `↓` keeps moving the cursor, which is the more valuable use of the key. So the gesture
-lands on a key that was otherwise dead (`handleArrowNav` returned early on an empty list), and it never steals result
-navigation. The chevron and `⌘H` work regardless.
+lands on a key that was otherwise dead (`handleCursorKey` has no list to walk on an empty one), and it never steals
+result navigation. The chevron and `⌘H` work regardless.
 
 **Keyboard contract inside the dropdown** (`RecentItemsPopover.handleKeydown`):
 
@@ -574,6 +574,9 @@ Both Search and Selection inherit these. ⏎ has dynamic ownership (see D8 below
 - **`⌥R`**: Mode chip: Regex (global)
 - **`↑` / `↓`**: Move the cursor through the results list (loops top<->bottom). With NO results, `↓` opens the
   recent-items dropdown instead (see § Recent-items dropdown)
+- **`PageUp` / `PageDown`**: Page the cursor by the rows on screen, less one. The math is the house list's
+  (`ColumnList.cursorTarget`, `#lib/ui/list-cursor.ts`), asked with `wrap` and `textField`: `Home` / `End` stay the
+  query field's caret keys, as the editable-combobox pattern has them, so they don't move the cursor
 - **`←` / `→`**: When focus is on a mode chip: move between chips (skip Content)
 - **`Tab`**: Trapped within the dialog (shared `use:trapFocus` on the overlay); cycles through interactive elements
 - **`Escape`**: Close the dialog
@@ -625,8 +628,8 @@ Same external props as `SearchModeChips`: `mode`, `aiEnabled`, `disabled`, `onSe
 results, Enter with dynamic ownership, popover-aware Escape) while rendering as a `ModalDialog`. `ownsKeyboard` is what
 makes that possible; see § Chrome.
 
-**Two-cursor hover model**: `cursorIndex` (keyboard) and `hoveredIndex` (mouse) are independent. Hovering a row writes
-`cursorIndex` via `onHover` so mouse + keyboard share one accent-colored cursor.
+**Hover moves the cursor**: hovering a row writes `cursorIndex` via `onHover` (`ColumnList`'s `hoverMovesCursor`), so
+mouse + keyboard share one accent-colored cursor.
 
 **Live search with debounce**: 1 s debounce on filename/regex modes only, gated by the `search.autoApply` setting
 (default on). AI mode never auto-applies regardless: AI calls cost money and the user must explicitly opt in via Enter /
