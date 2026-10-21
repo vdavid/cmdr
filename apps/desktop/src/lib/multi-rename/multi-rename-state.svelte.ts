@@ -64,7 +64,7 @@ const HELD_ROWS = 3000
 
 const NO_COUNTS: PreviewCounts = { ready: 0, unchanged: 0, problems: 0 }
 
-/** How the backend tells two preset names apart (`presets.rs`'s `dedupe_key`). */
+/** How the backend tells two preset names apart (`presets.rs`'s `name_key`). */
 const nameKey = (name: string): string => name.trim().toLowerCase()
 
 /** How many files the range editor shows its range on. */
