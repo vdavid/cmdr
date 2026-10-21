@@ -5,6 +5,7 @@ pub(crate) mod history;
 pub(crate) mod mask;
 pub(crate) mod names_file;
 pub(crate) mod plan;
+pub(crate) mod preset_store;
 pub(crate) mod presets;
 pub(crate) mod run;
 pub(crate) mod session;

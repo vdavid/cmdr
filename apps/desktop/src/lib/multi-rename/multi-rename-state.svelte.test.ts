@@ -309,27 +309,29 @@ describe('createMultiRenameState', () => {
     const music: MultiRenamePreset = { id: 'p2', name: 'Music', spec: { ...DEFAULT_SPEC, case: 'lower' } }
     let stored: MultiRenamePreset[] = []
 
-    /** A backend that keeps its list, as `presets.rs` does. */
+    /** A backend that keeps its list in order and answers it after each change, as `presets.rs` does. */
+    const answer = (): Promise<MultiRenamePreset[]> => Promise.resolve(stored.map((p) => ({ ...p })))
     beforeEach(() => {
       stored = [photos, music]
-      ipc.getMultiRenamePresets.mockImplementation(() => Promise.resolve(stored.map((p) => ({ ...p }))))
+      ipc.getMultiRenamePresets.mockImplementation(answer)
       ipc.saveMultiRenamePreset.mockImplementation((preset: MultiRenamePreset) => {
-        stored = [preset, ...stored.filter((p) => p.name.toLowerCase() !== preset.name.toLowerCase())]
-        return Promise.resolve()
+        const at = stored.findIndex((p) => p.name.toLowerCase() === preset.name.toLowerCase())
+        stored = at === -1 ? [...stored, preset] : stored.map((p, i) => (i === at ? preset : p))
+        return answer()
       })
       ipc.renameMultiRenamePreset.mockImplementation((id: string, name: string) => {
         stored = stored.flatMap((p) =>
           p.id === id ? [{ ...p, name }] : p.name.toLowerCase() === name.toLowerCase() ? [] : [p],
         )
-        return Promise.resolve()
+        return answer()
       })
       ipc.updateMultiRenamePreset.mockImplementation((id: string, spec: MultiRenamePreset['spec']) => {
         stored = stored.map((p) => (p.id === id ? { ...p, spec } : p))
-        return Promise.resolve()
+        return answer()
       })
       ipc.deleteMultiRenamePreset.mockImplementation((id: string) => {
         stored = stored.filter((p) => p.id !== id)
-        return Promise.resolve()
+        return answer()
       })
     })
 
@@ -424,6 +426,7 @@ describe('createMultiRenameState', () => {
       await tool.savePreset('  Drafts ')
       const saved = stored.find((p) => p.name === 'Drafts')
       expect(saved?.spec.search).toBe('draft')
+      expect(tool.presets.map((p) => p.name)).toEqual(['Photos', 'Music', 'Drafts'])
       expect(tool.loaded).toEqual({ kind: 'saved', id: saved?.id })
       expect(tool.edited).toBe(false)
       tool.dispose()

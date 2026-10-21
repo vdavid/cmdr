@@ -1,7 +1,7 @@
 # Multi-Rename Tool
 
-Total Commander's ⌃M renamer: a name mask and an extension mask with placeholders, search & replace, a case step,
-Greek to Latin, removing diacritics, Unicode normalization, a counter, presets, and a live preview. The sheet is `src/lib/multi-rename/`.
+Total Commander's ⌃M renamer: masks with placeholders, search & replace, case, Greek to Latin, diacritics, Unicode
+normalization, a counter, presets, and a live preview. The sheet is `src/lib/multi-rename/`.
 
 ## Module map
 
@@ -9,16 +9,15 @@ Greek to Latin, removing diacritics, Unicode normalization, a counter, presets, 
 - `transform.rs` search & replace, the case step, Greek to Latin, `remove_diacritics`. Pure.
 - `transliterate.rs` Greek to Latin (ELOT 743). Pure.
 - `plan.rs` the preview over a folder's entries: each row's new name and status; `render_examples` runs the sheet's
-  tooltip examples (a spec on a made-up file in `Trips/Lisbon 2026`, last changed 2026-07-14 09:05:30) through the
-  same `Compiled::render`. Pure.
+  tooltip examples (made-up files) through the same `Compiled::render`. Pure.
 - `session.rs` one open sheet's files (resolved once from the pane's selection), its latest preview, paging, and its
   Results names.
 - `names_file.rs` Results (⌥⏎): the preview as `old<TAB>new` lines, and the user's edits merged back by old name.
 - `run.rs` apply: proves the ready rows against the preview shown, then runs `start_renames` (Ask Cmdr's executor).
 - `error.rs` `MultiRenameError`, shared by `session` and `run` so neither imports the other (`module-cycles`).
 - `history.rs` the text fields' history on `crate::recents`, recorded when a rename starts.
-- `presets.rs` named presets on `crate::recents`; rename and update edit one in place (`rename_in`, `update_spec_in`).
-  `LAST_SPEC` keeps the settings the last sheet closed with.
+- `presets.rs` named presets in the user's order, as pure ops on the list (`save_in`, `rename_in`, …), on
+  `preset_store.rs` (their file). `LAST_SPEC` keeps the settings the last sheet closed with.
 
 ## Must-knows
 
@@ -41,8 +40,9 @@ Greek to Latin, removing diacritics, Unicode normalization, a counter, presets, 
 - **The counter's settings live in the mask** (`[C10+5:3]`); a bare `[C]` counts 1, 2, 3, unpadded. Old presets'
   sheet-wide counter fields fold into the masks on load (`presets.rs`). Its width is capped (`MAX_COUNTER_DIGITS`) and
   its arithmetic saturates.
-- **Statuses compare folded names** (`name_fold`, as the Mac does, so over-cautious on a case-sensitive volume): a name
-  held by a file that stays is `TargetExists`, one a batch row leaves is free, and a block cascades (a blocked row
-  stays, which can block the row renaming into it) through a worklist, so a long chain stays linear.
+- **A preset's number is its place**: a new one goes last; save-over, rename, and update keep it. ❌ Not on
+  `crate::recents`, whose `add` moves an entry to the top.
+- **Statuses compare folded names** (`name_fold`, as the Mac does): a name held by a file that stays is `TargetExists`,
+  one a batch row leaves is free, and a block cascades through a worklist, so a long chain stays linear.
 
 Decisions and the TC semantics in detail: `DETAILS.md`.

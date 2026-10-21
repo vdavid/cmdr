@@ -1,8 +1,10 @@
-//! Presets: renaming and updating one in place, and that both survive a restart;
-//! the last settings the sheet closed with.
+//! Presets: one list in the user's order (saving appends, renaming and updating
+//! keep a preset's place), that it survives a restart; the last settings the sheet
+//! closed with.
 
 use super::plan::MultiRenameSpec;
-use super::presets::{LastSpec, LoadedPreset, MultiRenamePreset, rename_in, update_spec_in};
+use super::preset_store::PresetStore;
+use super::presets::{LastSpec, LoadedPreset, MultiRenamePreset, delete_in, rename_in, save_in, update_spec_in};
 use super::transform::CaseChange;
 use crate::recents::RecentsFile;
 
@@ -83,20 +85,128 @@ fn an_update_keeps_the_preset_where_it_stands() {
 }
 
 #[test]
+fn a_new_preset_goes_at_the_end_so_no_number_moves() {
+    let mut list = vec![preset("a", "Photos"), preset("b", "Music")];
+    assert!(save_in(&mut list, preset("c", "Docs"), 10));
+    assert_eq!(names(&list), ["Photos", "Music", "Docs"]);
+}
+
+#[test]
+fn saving_over_a_taken_name_replaces_that_preset_where_it_stands() {
+    let mut list = vec![preset("a", "Photos"), preset("b", "Music"), preset("c", "Docs")];
+    let mut again = preset("b", " music ");
+    again.spec = spec("[C]");
+    assert!(save_in(&mut list, again, 10));
+    assert_eq!(names(&list), ["Photos", " music ", "Docs"]);
+    assert_eq!(list[1].spec, spec("[C]"));
+    assert_eq!(list[1].id, "b");
+}
+
+#[test]
+fn saving_over_a_taken_name_under_a_new_id_keeps_the_place_and_takes_the_id() {
+    let mut list = vec![preset("a", "Photos"), preset("b", "Music")];
+    assert!(save_in(&mut list, preset("new", "PHOTOS"), 10));
+    assert_eq!(names(&list), ["PHOTOS", "Music"]);
+    assert_eq!(list[0].id, "new");
+}
+
+#[test]
+fn a_new_preset_past_the_cap_is_refused_and_nothing_moves() {
+    let mut list = vec![preset("a", "Photos"), preset("b", "Music")];
+    assert!(!save_in(&mut list, preset("c", "Docs"), 2));
+    assert_eq!(names(&list), ["Photos", "Music"]);
+    // Replacing one at the cap is fine: the list doesn't grow.
+    assert!(save_in(&mut list, preset("b", "Music"), 2));
+}
+
+#[test]
+fn a_new_preset_with_an_id_the_list_holds_gets_a_fresh_one() {
+    let mut list = vec![preset("a", "Photos")];
+    assert!(save_in(&mut list, preset("a", "Music"), 10));
+    assert_eq!(names(&list), ["Photos", "Music"]);
+    assert_ne!(list[1].id, "a");
+}
+
+#[test]
+fn a_delete_drops_one_preset_and_the_rest_keep_their_order() {
+    let mut list = vec![preset("a", "Photos"), preset("b", "Music"), preset("c", "Docs")];
+    assert!(delete_in(&mut list, "b"));
+    assert_eq!(names(&list), ["Photos", "Docs"]);
+    assert!(!delete_in(&mut list, "b"), "a second delete finds nothing");
+}
+
+#[test]
+fn the_order_survives_a_restart() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let path = dir.path().join("multi-rename-presets.json");
+
+    let writer = PresetStore::new();
+    writer.edit_at(Some(&path), "a save", |list| save_in(list, preset("a", "Photos"), 10));
+    writer.edit_at(Some(&path), "a save", |list| save_in(list, preset("b", "Music"), 10));
+    let answer = writer.edit_at(Some(&path), "a save", |list| save_in(list, preset("c", "Docs"), 10));
+    assert_eq!(names(&answer), ["Photos", "Music", "Docs"], "an edit answers the list");
+
+    let reader = PresetStore::new();
+    reader.load_at(&path);
+    assert_eq!(names(&reader.entries()), ["Photos", "Music", "Docs"]);
+}
+
+#[test]
 fn a_rename_persists_as_one_write() {
     let dir = tempfile::tempdir().expect("tempdir");
     let path = dir.path().join("multi-rename-presets.json");
 
-    let writer: RecentsFile<MultiRenamePreset> = RecentsFile::new();
-    writer.add_at(Some(&path), preset("a", "Photos"), 10);
-    writer.add_at(Some(&path), preset("b", "Music"), 10);
+    let writer = PresetStore::new();
+    writer.edit_at(Some(&path), "a save", |list| save_in(list, preset("a", "Photos"), 10));
+    writer.edit_at(Some(&path), "a save", |list| save_in(list, preset("b", "Music"), 10));
     writer.edit_at(Some(&path), "a rename", |list| rename_in(list, "a", "Music"));
 
-    let reader: RecentsFile<MultiRenamePreset> = RecentsFile::new();
+    let reader = PresetStore::new();
     reader.load_at(&path);
-    let reloaded = reader.entries(None);
+    let reloaded = reader.entries();
     assert_eq!(names(&reloaded), ["Music"]);
     assert_eq!(reloaded[0].id, "a");
+}
+
+#[test]
+fn an_edit_that_changes_nothing_leaves_the_file_untouched() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let path = dir.path().join("multi-rename-presets.json");
+    let store = PresetStore::new();
+    store.edit_at(Some(&path), "a save", |list| save_in(list, preset("a", "Photos"), 10));
+    std::fs::remove_file(&path).expect("remove");
+
+    store.edit_at(Some(&path), "a delete", |list| delete_in(list, "gone"));
+
+    assert!(!path.exists(), "a no-op edit shouldn't rewrite the file");
+}
+
+#[test]
+fn an_unreadable_presets_file_is_set_aside_and_the_list_starts_empty() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let path = dir.path().join("multi-rename-presets.json");
+    std::fs::write(&path, "{not json").expect("write garbage");
+
+    let notices = crate::state_recovery::testing::capture_recoveries();
+    let store = PresetStore::new();
+    store.load_at(&path);
+    assert!(store.entries().is_empty());
+    assert_eq!(crate::state_recovery::testing::kept_copies(&path).len(), 1);
+    assert_eq!(notices.recoveries().len(), 1);
+}
+
+#[test]
+fn an_older_build_s_presets_file_loads_in_its_stored_order() {
+    // Before presets had their own order, the file was a recents list, newest first.
+    let dir = tempfile::tempdir().expect("tempdir");
+    let path = dir.path().join("multi-rename-presets.json");
+    let entries = serde_json::to_value([preset("b", "Music"), preset("a", "Photos")]).expect("serializes");
+    let older = serde_json::json!({ "_schemaVersion": 1, "entries": entries });
+    std::fs::write(&path, older.to_string()).expect("write");
+
+    let store = PresetStore::new();
+    store.load_at(&path);
+    assert_eq!(names(&store.entries()), ["Music", "Photos"]);
 }
 
 /// A preset as an older Cmdr saved it, with the sheet-wide counter fields.
@@ -193,8 +303,8 @@ fn a_saved_preset_writes_no_legacy_counter_fields() {
 fn a_legacy_presets_file_loads_migrated() {
     let dir = tempfile::tempdir().expect("tempdir");
     let path = dir.path().join("multi-rename-presets.json");
-    let writer: RecentsFile<MultiRenamePreset> = RecentsFile::new();
-    writer.add_at(Some(&path), preset("a", "Photos"), 10);
+    let writer = PresetStore::new();
+    writer.edit_at(Some(&path), "a save", |list| save_in(list, preset("a", "Photos"), 10));
     // Turn the stored preset into an older Cmdr's: bare `[C]`, sheet digits 3.
     let mut stored: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(&path).expect("read")).expect("json");
@@ -205,9 +315,9 @@ fn a_legacy_presets_file_loads_migrated() {
     entry["spec"]["counterDigits"] = 3.into();
     std::fs::write(&path, stored.to_string()).expect("write");
 
-    let reader: RecentsFile<MultiRenamePreset> = RecentsFile::new();
+    let reader = PresetStore::new();
     reader.load_at(&path);
-    assert_eq!(reader.entries(None)[0].spec.name_mask, "[N]-[C:3]");
+    assert_eq!(reader.entries()[0].spec.name_mask, "[N]-[C:3]");
 }
 
 #[test]

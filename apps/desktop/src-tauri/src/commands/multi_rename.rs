@@ -8,8 +8,8 @@ use crate::multi_rename::error::MultiRenameError;
 use crate::multi_rename::history::{FIELD_HISTORY, FieldHistoryEntry, MAX_FIELD_HISTORY, history_entries};
 use crate::multi_rename::plan::{MultiRenameSpec, PreviewRow, RenameExample, render_examples};
 use crate::multi_rename::presets::{
-    LAST_SPEC, LastSpec, LoadedPreset, MAX_PRESETS, MultiRenameLastSettings, MultiRenamePreset, PRESETS, rename_in,
-    update_spec_in,
+    LAST_SPEC, LastSpec, LoadedPreset, MAX_PRESETS, MultiRenameLastSettings, MultiRenamePreset, PRESETS, delete_in,
+    rename_in, save_in, update_spec_in,
 };
 use crate::multi_rename::run::{MultiRenameStarted, apply};
 use crate::multi_rename::session::{self, MultiRenameOpened, MultiRenamePreview, PreviewFilter};
@@ -182,39 +182,39 @@ pub fn save_multi_rename_last_settings(app: tauri::AppHandle, spec: MultiRenameS
     LAST_SPEC.add(&app, LastSpec::new(spec, preset), 1);
 }
 
-/// The saved presets, newest first.
+/// The saved presets, top to bottom.
 #[tauri::command]
 #[specta::specta]
 pub fn get_multi_rename_presets() -> Vec<MultiRenamePreset> {
-    PRESETS.entries(None)
+    PRESETS.entries()
 }
 
-/// Saves a preset; one with the same name is replaced.
+/// Saves a preset at the end of the list; one with the same name is replaced where it
+/// stands. Answers the list after.
 #[tauri::command]
 #[specta::specta]
-pub fn save_multi_rename_preset(app: tauri::AppHandle, preset: MultiRenamePreset) {
-    PRESETS.add(&app, preset, MAX_PRESETS);
+pub fn save_multi_rename_preset(app: tauri::AppHandle, preset: MultiRenamePreset) -> Vec<MultiRenamePreset> {
+    PRESETS.edit(&app, "a save", |presets| save_in(presets, preset, MAX_PRESETS))
 }
 
-/// Deletes a preset by id. No-op when it isn't there.
+/// Deletes a preset by id. No-op when it isn't there. Answers the list after.
 #[tauri::command]
 #[specta::specta]
-pub fn delete_multi_rename_preset(app: tauri::AppHandle, id: String) {
-    PRESETS.remove(&app, &id);
+pub fn delete_multi_rename_preset(app: tauri::AppHandle, id: String) -> Vec<MultiRenamePreset> {
+    PRESETS.edit(&app, "a delete", |presets| delete_in(presets, &id))
 }
 
 /// Renames a preset in place; another preset with that name is replaced (the sheet
-/// asks first). No-op for an unknown id or an empty name.
+/// asks first). No-op for an unknown id or an empty name. Answers the list after.
 #[tauri::command]
 #[specta::specta]
-pub fn rename_multi_rename_preset(app: tauri::AppHandle, id: String, name: String) {
-    PRESETS.edit(&app, "a rename", |presets| rename_in(presets, &id, &name));
+pub fn rename_multi_rename_preset(app: tauri::AppHandle, id: String, name: String) -> Vec<MultiRenamePreset> {
+    PRESETS.edit(&app, "a rename", |presets| rename_in(presets, &id, &name))
 }
 
-/// Gives a preset new settings in place, so the menu's numbers don't move. No-op
-/// for an unknown id.
+/// Gives a preset new settings in place. No-op for an unknown id. Answers the list after.
 #[tauri::command]
 #[specta::specta]
-pub fn update_multi_rename_preset(app: tauri::AppHandle, id: String, spec: MultiRenameSpec) {
-    PRESETS.edit(&app, "an update", |presets| update_spec_in(presets, &id, &spec));
+pub fn update_multi_rename_preset(app: tauri::AppHandle, id: String, spec: MultiRenameSpec) -> Vec<MultiRenamePreset> {
+    PRESETS.edit(&app, "an update", |presets| update_spec_in(presets, &id, &spec))
 }

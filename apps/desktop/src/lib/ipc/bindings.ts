@@ -1534,24 +1534,25 @@ export const commands = {
     typedError<null, MultiRenameError>(__TAURI_INVOKE('clear_multi_rename_names', { sessionId })),
   // The text fields' history, newest first, every field together.
   getMultiRenameHistory: () => __TAURI_INVOKE<FieldHistoryEntry[]>('get_multi_rename_history'),
-  // The saved presets, newest first.
+  // The saved presets, top to bottom.
   getMultiRenamePresets: () => __TAURI_INVOKE<MultiRenamePreset[]>('get_multi_rename_presets'),
-  // Saves a preset; one with the same name is replaced.
-  saveMultiRenamePreset: (preset: MultiRenamePreset) => __TAURI_INVOKE<void>('save_multi_rename_preset', { preset }),
-  // Deletes a preset by id. No-op when it isn't there.
-  deleteMultiRenamePreset: (id: string) => __TAURI_INVOKE<void>('delete_multi_rename_preset', { id }),
+  /**
+   *  Saves a preset at the end of the list; one with the same name is replaced where it
+   *  stands. Answers the list after.
+   */
+  saveMultiRenamePreset: (preset: MultiRenamePreset) =>
+    __TAURI_INVOKE<MultiRenamePreset[]>('save_multi_rename_preset', { preset }),
+  // Deletes a preset by id. No-op when it isn't there. Answers the list after.
+  deleteMultiRenamePreset: (id: string) => __TAURI_INVOKE<MultiRenamePreset[]>('delete_multi_rename_preset', { id }),
   /**
    *  Renames a preset in place; another preset with that name is replaced (the sheet
-   *  asks first). No-op for an unknown id or an empty name.
+   *  asks first). No-op for an unknown id or an empty name. Answers the list after.
    */
   renameMultiRenamePreset: (id: string, name: string) =>
-    __TAURI_INVOKE<void>('rename_multi_rename_preset', { id, name }),
-  /**
-   *  Gives a preset new settings in place, so the menu's numbers don't move. No-op
-   *  for an unknown id.
-   */
+    __TAURI_INVOKE<MultiRenamePreset[]>('rename_multi_rename_preset', { id, name }),
+  // Gives a preset new settings in place. No-op for an unknown id. Answers the list after.
   updateMultiRenamePreset: (id: string, spec: MultiRenameSpec) =>
-    __TAURI_INVOKE<void>('update_multi_rename_preset', { id, spec }),
+    __TAURI_INVOKE<MultiRenamePreset[]>('update_multi_rename_preset', { id, spec }),
   // The settings the sheet last closed with, if any.
   getMultiRenameLastSettings: () =>
     __TAURI_INVOKE<{

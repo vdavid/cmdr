@@ -1,6 +1,6 @@
-//! Saved Multi-Rename settings: named presets, the newest first (TC's F2
+//! Saved Multi-Rename settings: named presets in the user's order (TC's F2
 //! "Load/save settings" list), and the settings the last sheet closed with. The
-//! list machinery is `crate::recents`.
+//! presets file is `preset_store`; the last settings ride on `crate::recents`.
 
 use serde::{Deserialize, Serialize};
 
@@ -8,13 +8,14 @@ use crate::recents::{RecentEntry, RecentsFile};
 
 use super::mask::fill_counter_defaults;
 use super::plan::MultiRenameSpec;
+use super::preset_store::PresetStore;
 
-/// How many presets the list keeps.
+/// How many presets the list holds; saving a new one past it is refused.
 pub const MAX_PRESETS: usize = 200;
 
 /// The presets list. Loaded at startup; read and written through
 /// `crate::commands::multi_rename`.
-pub static PRESETS: RecentsFile<MultiRenamePreset> = RecentsFile::new();
+pub static PRESETS: PresetStore = PresetStore::new();
 
 /// One saved preset.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
@@ -69,24 +70,47 @@ impl<'de> Deserialize<'de> for MultiRenamePreset {
     }
 }
 
-impl RecentEntry for MultiRenamePreset {
-    const FILENAME: &'static str = "multi-rename-presets.json";
-    const LOG_TARGET: &'static str = "multi_rename::presets";
-    const LOG_NAME: &'static str = "multi-rename presets";
-    const STATE_FILE: crate::state_recovery::StateFile = crate::state_recovery::StateFile::MultiRenamePresets;
-
-    fn id(&self) -> &str {
-        &self.id
+impl MultiRenamePreset {
+    /// A preset is its name, trimmed and in any case: saving under a name that's
+    /// taken replaces that preset.
+    fn key(&self) -> String {
+        name_key(&self.name)
     }
+}
 
-    fn set_id(&mut self, id: String) {
-        self.id = id;
-    }
+fn name_key(name: &str) -> String {
+    name.trim().to_lowercase()
+}
 
-    /// A preset is its name: saving under a name that's taken replaces that preset.
-    fn dedupe_key(&self) -> String {
-        self.name.trim().to_lowercase()
+/// Saves `preset`: over the preset with its name, where that one stands, or as a
+/// new one at the end, so no other preset's number moves. A new one past `max` is
+/// refused. Returns whether the list changed.
+pub fn save_in(presets: &mut Vec<MultiRenamePreset>, mut preset: MultiRenamePreset, max: usize) -> bool {
+    let key = preset.key();
+    if let Some(at) = presets.iter().position(|p| p.key() == key) {
+        presets[at] = preset;
+        // A list that somehow grew two presets with one name heals here.
+        let id = presets[at].id.clone();
+        presets.retain(|p| p.id == id || p.key() != key);
+        return true;
     }
+    if presets.len() >= max {
+        log::warn!(target: "multi_rename::presets", "Didn't save a preset: the list holds {max} already");
+        return false;
+    }
+    // Keep ids unique even when the caller hands over one the list holds.
+    if presets.iter().any(|p| p.id == preset.id) {
+        preset.id = uuid::Uuid::new_v4().to_string();
+    }
+    presets.push(preset);
+    true
+}
+
+/// Deletes preset `id`; the rest keep their order. Returns whether it was there.
+pub fn delete_in(presets: &mut Vec<MultiRenamePreset>, id: &str) -> bool {
+    let before = presets.len();
+    presets.retain(|p| p.id != id);
+    presets.len() != before
 }
 
 /// Renames preset `id` to `name` (trimmed) where it stands in the list. Another
@@ -102,8 +126,8 @@ pub fn rename_in(presets: &mut Vec<MultiRenamePreset>, id: &str, name: &str) -> 
         return false;
     }
     presets[at].name = name.to_string();
-    let key = presets[at].dedupe_key();
-    presets.retain(|p| p.id == id || p.dedupe_key() != key);
+    let key = presets[at].key();
+    presets.retain(|p| p.id == id || p.key() != key);
     true
 }
 

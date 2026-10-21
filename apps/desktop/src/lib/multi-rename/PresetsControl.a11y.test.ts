@@ -23,10 +23,10 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
       { id: 'p2', name: 'Photos', spec: { ...DEFAULT_SPEC, nameMask: 'IMG_[C]' } },
     ]),
   ),
-  saveMultiRenamePreset: vi.fn(() => Promise.resolve()),
-  deleteMultiRenamePreset: vi.fn(() => Promise.resolve()),
-  renameMultiRenamePreset: vi.fn(() => Promise.resolve()),
-  updateMultiRenamePreset: vi.fn(() => Promise.resolve()),
+  saveMultiRenamePreset: vi.fn(() => Promise.resolve([])),
+  deleteMultiRenamePreset: vi.fn(() => Promise.resolve([])),
+  renameMultiRenamePreset: vi.fn(() => Promise.resolve([])),
+  updateMultiRenamePreset: vi.fn(() => Promise.resolve([])),
 }))
 
 async function settle(): Promise<void> {

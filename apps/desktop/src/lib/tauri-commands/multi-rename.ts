@@ -121,26 +121,29 @@ export async function closeMultiRename(sessionId: string): Promise<void> {
   await commands.closeMultiRename(sessionId)
 }
 
+/** The saved presets, top to bottom. */
 export async function getMultiRenamePresets(): Promise<MultiRenamePreset[]> {
   return commands.getMultiRenamePresets()
 }
 
-export async function saveMultiRenamePreset(preset: MultiRenamePreset): Promise<void> {
-  await commands.saveMultiRenamePreset(preset)
+/** Saves a preset at the end of the list, or over the one with its name where that stands. Answers the list after. */
+export async function saveMultiRenamePreset(preset: MultiRenamePreset): Promise<MultiRenamePreset[]> {
+  return commands.saveMultiRenamePreset(preset)
 }
 
-export async function deleteMultiRenamePreset(id: string): Promise<void> {
-  await commands.deleteMultiRenamePreset(id)
+/** Deletes a preset. Answers the list after. */
+export async function deleteMultiRenamePreset(id: string): Promise<MultiRenamePreset[]> {
+  return commands.deleteMultiRenamePreset(id)
 }
 
-/** Renames a preset in place; a preset already called `name` is replaced. */
-export async function renameMultiRenamePreset(id: string, name: string): Promise<void> {
-  await commands.renameMultiRenamePreset(id, name)
+/** Renames a preset in place; a preset already called `name` is replaced. Answers the list after. */
+export async function renameMultiRenamePreset(id: string, name: string): Promise<MultiRenamePreset[]> {
+  return commands.renameMultiRenamePreset(id, name)
 }
 
-/** Gives a preset new settings in place, so the menu's numbers don't move. */
-export async function updateMultiRenamePreset(id: string, spec: MultiRenameSpec): Promise<void> {
-  await commands.updateMultiRenamePreset(id, spec)
+/** Gives a preset new settings in place. Answers the list after. */
+export async function updateMultiRenamePreset(id: string, spec: MultiRenameSpec): Promise<MultiRenamePreset[]> {
+  return commands.updateMultiRenamePreset(id, spec)
 }
 
 /** The settings the sheet last closed with, and the preset they came from; `null` before the first close. */

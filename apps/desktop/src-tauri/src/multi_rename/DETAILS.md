@@ -68,7 +68,9 @@ subfolders (the executor's one-parent rule refuses it today), "next step" chaini
 - Row statuses: `Ready`, `Unchanged` (same name), `InvalidName` (via `validate_filename`, plus `.` / `..`),
   `Duplicate` (two rows get one folded name), `TargetExists` (a sibling that STAYS holds the folded name; siblings
   include hidden entries), and `Missing` (the session's file left the folder; set by `session.rs`, never by `plan`). A
-  batch row renaming away frees its name, so chains and swaps preview as ready.
+  batch row renaming away frees its name, so chains and swaps preview as ready. Names fold as the Mac does, so a
+  case-sensitive volume gets over-cautious statuses; a block cascades (a blocked row stays, which can block the row
+  renaming into it).
 - **Decision: a backend session holds the files, by name.** `open_multi_rename(listing, includeHidden, rows | null,
   sequence)` reads the pane's rows (`null`: every row the pane shows, which is what "all selected" and "nothing
   selected" both mean) through `Listings::selection_names`, refuses with `SelectionChanged` when the sequence or the
@@ -123,24 +125,31 @@ subfolders (the executor's one-parent rule refuses it today), "next step" chaini
   an agent's dry run shows exactly the statuses the sheet would. The tool needs no session: it previews against the
   pane's cached listing and, for a real run, stages the ready rows as a rename proposal rather than calling `run.rs`.
 
-## Presets (`presets.rs`)
+## Presets (`presets.rs`, `preset_store.rs`)
 
-`RecentsFile<MultiRenamePreset>` in `multi-rename-presets.json`, keyed by the trimmed, lowercased name: saving under a
-taken name replaces it (the sheet asks first). The built-in presets (Remove diacritics, Greek to Latin, Normalize
-Unicode) and "Reset all fields" live in the frontend (`spec.ts`) so their names are translated.
+One list in the user's order, top to bottom, in `multi-rename-presets.json` (`PresetStore`), keyed by the trimmed,
+lowercased name: saving under a taken name replaces that preset (the sheet asks first). The built-in presets (Remove
+diacritics, Greek to Latin, Normalize Unicode) and "Reset all fields" live in the frontend (`spec.ts`) so their names
+are translated.
 
+- **Decision/Why: an ordered store, not a recents list.** The sheet's Presets menu numbers presets 1–9 by position, so
+  a number may move only when the user moves or deletes something. A recents list puts every add on top, which
+  renumbered the menu on each save. Each change is a pure op on the `Vec` (`save_in`, `rename_in`, `update_spec_in`,
+  `delete_in`) run by `PresetStore::edit` as one locked step with one durable temp+rename write, and every preset
+  command answers the list after, so the sheet never reads it back separately.
+- **Save** (`save_in`): a new name goes at the END; a taken name is replaced where it stands. A new one past
+  `MAX_PRESETS` is refused (logged), never trimmed off another end: either would lose or renumber a preset.
+- **Rename** and **Update with current fields** change the preset where it stands. A rename onto a taken name drops
+  the other preset in that same step (`rename_in`), so no reader ever sees two presets with one name, or neither.
+- **The file** keeps the `crate::recents` envelope (`_schemaVersion: 1`, `entries`), which is what it was while presets
+  were a recents list, so an older build's file reads as stored (newest first) and an older build reads ours. A file
+  that won't read goes through `state_recovery::read_state_file` (set aside, the person told once), like every state
+  file; the lock discipline is `recents`' (two locks, never held at once).
 - **Last settings** (`LAST_SPEC`, `LastSpec`): a one-entry `RecentsFile` in `multi-rename-last.json` (fixed
   `dedupe_key`, so a save replaces it) holding the spec and the `LoadedPreset` the sheet closed with. Ported from PR
   #386; the preset is Cmdr's addition (sheet side: `src/lib/multi-rename/DETAILS.md` § Presets).
 - **Newer options load off.** `greek_to_latin` and `normalize_unicode` are `#[serde(default)]`, so a preset (or last
   settings) saved before they existed loads with both off.
-
-- **Save** (`save_multi_rename_preset`) is `RecentsFile::add`: the preset goes on top.
-- **Rename** and **Update with current fields** (`rename_multi_rename_preset`, `update_multi_rename_preset`) change the
-  preset where it stands, through `RecentsFile::edit`: one locked step, one temp+rename write. **Decision/Why:** the
-  sheet's Presets menu numbers saved presets 1–9, so moving one to the top on a rename would renumber the rest under the
-  user's fingers. A rename onto a taken name drops the other preset in that same step (`rename_in`), so no reader ever
-  sees two presets with one name, or neither.
 - **Legacy counter fields.** Presets saved while the sheet had counter start / step / digits fields still carry
   `counterStart` / `counterStep` / `counterDigits`. `MultiRenamePreset`'s hand-written `Deserialize` folds them into
   every counter of both masks (`mask::fill_counter_defaults`): a part the counter already has stays, a missing one takes

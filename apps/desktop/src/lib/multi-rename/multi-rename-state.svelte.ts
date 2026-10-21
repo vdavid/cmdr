@@ -334,24 +334,20 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
       const trimmed = name.trim()
       if (trimmed === '') return
       const id = presetNamed(trimmed)?.id ?? crypto.randomUUID()
-      await saveMultiRenamePreset({ id, name: trimmed, spec: $state.snapshot(spec) })
-      presets = await getMultiRenamePresets()
+      presets = await saveMultiRenamePreset({ id, name: trimmed, spec: $state.snapshot(spec) })
       loaded = { kind: 'saved', id }
     },
     async renamePreset({ id, name }) {
       const trimmed = name.trim()
       if (trimmed === '') return
-      await renameMultiRenamePreset(id, trimmed)
-      presets = await getMultiRenamePresets()
+      presets = await renameMultiRenamePreset(id, trimmed)
     },
     async updatePreset(id) {
-      await updateMultiRenamePreset(id, $state.snapshot(spec))
-      presets = await getMultiRenamePresets()
+      presets = await updateMultiRenamePreset(id, $state.snapshot(spec))
       loaded = { kind: 'saved', id }
     },
     async deletePreset(id) {
-      await deleteMultiRenamePreset(id)
-      presets = await getMultiRenamePresets()
+      presets = await deleteMultiRenamePreset(id)
       if (loaded?.kind === 'saved' && loaded.id === id) loaded = null
     },
     async persist() {
