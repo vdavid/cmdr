@@ -548,21 +548,9 @@
   "@fileExplorer.network.reconnect.willTryMore": {
     "sourceHash": "a7d887a"
   },
-  "fileExplorer.networkMount.mounting": "Csatolás: {target}…",
-  "@fileExplorer.networkMount.mounting": {
-    "sourceHash": "7b7368d"
-  },
   "fileExplorer.networkMount.mountingSlow": "A Cmdr még mindig vár, hogy a macOS csatlakozzon. Bármikor megszakíthatod.",
   "@fileExplorer.networkMount.mountingSlow": {
     "sourceHash": "e8e9040"
-  },
-  "fileExplorer.networkMount.cancel": "Megszakítás",
-  "@fileExplorer.networkMount.cancel": {
-    "sourceHash": "19766ed"
-  },
-  "fileExplorer.networkMount.shareFallback": "megosztás",
-  "@fileExplorer.networkMount.shareFallback": {
-    "sourceHash": "c3bc45a"
   },
   "fileExplorer.networkMount.mountFailedTitle": "Nem sikerült csatolni a megosztást",
   "@fileExplorer.networkMount.mountFailedTitle": {

@@ -551,21 +551,9 @@
   "@fileExplorer.network.reconnect.willTryMore": {
     "sourceHash": "a7d887a"
   },
-  "fileExplorer.networkMount.mounting": "{target} aankoppelen…",
-  "@fileExplorer.networkMount.mounting": {
-    "sourceHash": "7b7368d"
-  },
   "fileExplorer.networkMount.mountingSlow": "Nog steeds wachten tot macOS verbinding maakt. Je kunt op elk moment annuleren.",
   "@fileExplorer.networkMount.mountingSlow": {
     "sourceHash": "e8e9040"
-  },
-  "fileExplorer.networkMount.cancel": "Annuleer",
-  "@fileExplorer.networkMount.cancel": {
-    "sourceHash": "19766ed"
-  },
-  "fileExplorer.networkMount.shareFallback": "gedeelde map",
-  "@fileExplorer.networkMount.shareFallback": {
-    "sourceHash": "c3bc45a"
   },
   "fileExplorer.networkMount.mountFailedTitle": "Gedeelde map aankoppelen lukte niet",
   "@fileExplorer.networkMount.mountFailedTitle": {

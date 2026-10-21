@@ -70,3 +70,22 @@ describe('the address under the name', () => {
     target.remove()
   })
 })
+
+describe('a single dial with its own hint', () => {
+  it('says the producer’s sentence under the spinner instead of the generic one (#604)', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(RemoteConnectView, {
+      target,
+      props: {
+        name: 'naspi',
+        state: { kind: 'connecting', cancel: vi.fn(), hint: 'Still waiting for macOS to connect.' },
+      },
+    })
+    await tick()
+
+    expect(target.querySelector('.hint')?.textContent).toBe('Still waiting for macOS to connect.')
+    expect(target.textContent).not.toContain('This can take a few seconds.')
+    target.remove()
+  })
+})

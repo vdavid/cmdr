@@ -2187,7 +2187,7 @@ of its own: the caller hands it a typed `remote-connect-state.ts` value and the 
 says what is happening in one sentence, and every state with a process behind it has a cancel. A spinner with no words
 is the failure shape it replaces: a person can't tell a slow handshake from a wedged one, and has no way out of either.
 
-Two producers:
+The producers:
 
 - `place-connect.svelte.ts` owns the first-dial `connecting` and `refused`, for a pane landing on a `saved` place. It
   dials once per landing (a `dialed` guard), and its Cancel aims at the attempt id `connect-flow.ts` hands out before
@@ -2197,6 +2197,9 @@ Two producers:
   per-status booleans: a status without its own arm used to render a plain listing over a dead session.
 - `device-connect.svelte.ts` owns `waiting_for_device` and a phone's `connecting` / `refused`. Its sentences come from
   `#lib/adb/adb-connect-errors.ts`, so the view stays generic and the words stay Android's.
+- `NetworkMountView.svelte` renders a share mount's wait as `connecting`, with a `hint` once it runs past 10 s
+  (`../network/DETAILS.md` § "A mount that waits"). Its failures stay its own error pane: they're `MountError`s with
+  their own words and retry, ❌ not a `refused` state.
 
 **A backoff loop wears the `connecting` state, with a `cycle` payload.** It says how long the loop keeps going and which
 attempt it is on, drains a bar toward the next attempt, and offers Try now beside Cancel and Disconnect. ❗ The
@@ -2204,6 +2207,9 @@ countdown and Try now are not decoration: without the bar a person can't tell a 
 without Try now they sit out a delay for a server they can see is back. The payload is plain data plus callbacks, so the
 view holds no reference to the reconnect manager and a second backend's loop renders through it unchanged. `waiting` is
 `null` while an attempt is actually in flight — nothing to draw, nothing to skip — and the spinner carries the motion.
+
+**A single dial may carry a `hint`**, a finished sentence from a producer that knows more about this wait than the
+generic "This can take a few seconds". The type rules out a `hint` beside a `cycle`, which brings its own `lines`.
 
 ❗ **The cycle's Cancel and Disconnect both LEAVE the volume, for home on the root volume, ❌ never a walk-up.** With
 the session down, a walk-up can only land on the same volume (an SFTP path stops at its scheme root), which re-listed

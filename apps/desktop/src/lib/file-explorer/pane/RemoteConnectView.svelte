@@ -35,7 +35,7 @@
         name: string
         /**
          * What the pane is dialing, as `host:port` (`serverAddressOf`), or absent
-         * where there's no address to show (a phone, an SMB share). A saved name
+         * where there's no address to show (a phone, a mounted SMB share). A saved name
          * says nothing about whether it points at a LAN address or a VPN one.
          */
         address?: string | null
@@ -116,7 +116,7 @@
                     <p class="hint">{line}</p>
                 {/each}
             {:else}
-                <p class="hint">{tString('servers.paneState.connectingHint')}</p>
+                <p class="hint">{connectState.hint ?? tString('servers.paneState.connectingHint')}</p>
             {/if}
             <div class="actions">
                 {#if cycle}

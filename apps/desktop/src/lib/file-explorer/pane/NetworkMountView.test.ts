@@ -628,10 +628,15 @@ describe('NetworkMountView: a mount that waits', () => {
   it('offers Cancel while it waits, and Cancel calls off that mount and goes back to the share list', async () => {
     const { target, component } = await mountViewAndActivateShare()
     await vi.waitFor(() => {
-      expect(target.querySelector('.mounting-state')).toBeTruthy()
+      expect(target.querySelector('.remote-connect')).toBeTruthy()
     })
 
-    const cancel = must(target.querySelector<HTMLButtonElement>('.mounting-state button'), 'the Cancel button')
+    const cancel = must(
+      [...target.querySelectorAll<HTMLButtonElement>('.remote-connect button')].find(
+        (button) => button.textContent.trim() === 'Cancel',
+      ),
+      'the Cancel button',
+    )
     cancel.click()
     expect(h.cancelServerConnect).toHaveBeenCalledWith('server-connect-test-attempt')
 
@@ -644,10 +649,26 @@ describe('NetworkMountView: a mount that waits', () => {
     await unmount(component)
   })
 
+  it('names the share it mounts and the address it dials, in the shared connecting view', async () => {
+    const { target, component } = await mountViewAndActivateShare()
+    await vi.waitFor(() => {
+      expect(target.querySelector('.remote-connect')).toBeTruthy()
+    })
+
+    expect(must(target.querySelector('.remote-connect .title'), 'the heading').textContent).toContain(
+      'Connecting to naspi',
+    )
+    expect(must(target.querySelector('.remote-connect .place-address'), 'the address').textContent).toBe(
+      `${ADDRESS}:445`,
+    )
+
+    await unmount(component)
+  })
+
   it('cancels on the back key too, since the share list is not on screen to take it', async () => {
     const { target, component, api } = await mountViewAndActivateShare()
     await vi.waitFor(() => {
-      expect(target.querySelector('.mounting-state')).toBeTruthy()
+      expect(target.querySelector('.remote-connect')).toBeTruthy()
     })
 
     const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
@@ -674,12 +695,11 @@ describe('NetworkMountView: a mount that waits', () => {
     try {
       api.openCursorItem()
       await tick()
-      expect(target.querySelector('.mounting-hint'), 'a fresh mount only spins').toBeNull()
+      const hint = () => must(target.querySelector('.remote-connect .hint'), 'the line under the spinner').textContent
+      expect(hint(), 'a fresh mount says only that it takes a moment').not.toContain('Still waiting')
       vi.advanceTimersByTime(10_000)
       await tick()
-      expect(must(target.querySelector('.mounting-hint'), 'the still-waiting line').textContent).toContain(
-        'Still waiting',
-      )
+      expect(hint()).toContain('Still waiting')
     } finally {
       vi.useRealTimers()
     }
@@ -690,7 +710,7 @@ describe('NetworkMountView: a mount that waits', () => {
   it('explains a stuck sign-in helper in the pane, with the command that restarts it', async () => {
     const { target, component } = await mountViewAndActivateShare()
     await vi.waitFor(() => {
-      expect(target.querySelector('.mounting-state')).toBeTruthy()
+      expect(target.querySelector('.remote-connect')).toBeTruthy()
     })
 
     answerMount({ type: 'sign_in_helper_stuck', server: ADDRESS })

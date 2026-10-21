@@ -28,7 +28,8 @@
     import type { SignInAttemptOutcome } from '#lib/servers/sign-in-contract.js'
     import Button from '#lib/ui/Button.svelte'
     import Icon from '#lib/ui/Icon.svelte'
-    import Spinner from '#lib/ui/Spinner.svelte'
+    import RemoteConnectView from './RemoteConnectView.svelte'
+    import type { RemoteConnectState } from './remote-connect-state'
     import { tString } from '#lib/intl/messages.svelte.js'
     import { eventMatchesCommand } from '#lib/shortcuts/index.js'
     import { claimKey } from '#lib/shortcuts/claim-key.js'
@@ -105,8 +106,13 @@
     /** The parent's value this view last adopted, so the same one isn't adopted twice. */
     let adoptedAutoMount: string | undefined = initialAutoMountShare
 
-    // Mounting state
-    let isMounting = $state(false)
+    /**
+     * The running mount: the share and the `host:port` it dials, for the connecting
+     * view. `null` when none runs. Its own copy, ❌ not derived from
+     * `lastMountAttempt` and `currentNetworkHost`: a mount that went through clears
+     * both before it lands on the share, and the wait is still on screen then.
+     */
+    let mounting = $state<{ share: string; address: string } | null>(null)
     let mountError = $state<MountError | null>(null)
 
     /**
@@ -120,6 +126,13 @@
     let mountCancelRequested = false
     /** Set once the running mount outlasted `MOUNT_SLOW_AFTER_MS`. */
     let mountingSlow = $state(false)
+
+    /** The running mount as the ONE remote-wait state every pane renders. */
+    const mountConnectState = $derived<RemoteConnectState>({
+        kind: 'connecting',
+        cancel: cancelMount,
+        hint: mountingSlow ? tString('fileExplorer.networkMount.mountingSlow') : undefined,
+    })
 
     // Track last mount attempt for retry
     let lastMountAttempt = $state<{
@@ -327,9 +340,9 @@
         // Store for retry
         lastMountAttempt = { share, credentials }
 
-        isMounting = true
         mountError = null
         const server = resolveServerAddress(currentNetworkHost)
+        mounting = { share: share.name, address: dialedAddress(server, currentNetworkHost.port) }
         const { attemptId, finish } = startMountAttempt()
 
         try {
@@ -382,8 +395,13 @@
             return mountError
         } finally {
             finish()
-            isMounting = false
+            mounting = null
         }
+    }
+
+    /** `host:port` the way the other connecting views show it (`serverAddressOf`), an IPv6 host bracketed. */
+    function dialedAddress(server: string, port: number): string {
+        return `${server.includes(':') ? `[${server}]` : server}:${String(port)}`
     }
 
     /** Takes the pane to the share mounted at `mountPath`. */
@@ -520,7 +538,7 @@
     export function handleKeyDown(e: KeyboardEvent) {
         // The sign-in sheet is modal and owns the keyboard while it is up.
         if (signingIn) return
-        if (isMounting) {
+        if (mounting) {
             // Neither browser is mounted while a mount runs; `share.back` is Cancel.
             if (eventMatchesCommand(e, 'share.back')) {
                 claimKey(e)
@@ -566,7 +584,7 @@
      * and the MCP tool would report a move that never happened.
      */
     export function getItemCount(): number {
-        if (isMounting || mountError) return 0
+        if (mounting || mountError) return 0
         if (currentNetworkHost) return placesBrowserRef?.getItemCount() ?? 0
         return serversHubRef?.getItemCount() ?? 0
     }
@@ -586,7 +604,7 @@
      */
     // noinspection JSUnusedGlobalSymbols -- used by FilePane.getNetworkCursorEntry
     export function getNetworkCursorEntry(): NetworkCursorEntry | null {
-        if (isMounting || mountError) return null
+        if (mounting || mountError) return null
         if (currentNetworkHost) {
             const share = placesBrowserRef?.getShareUnderCursor() ?? null
             return share ? { kind: 'share', share } : null
@@ -630,23 +648,11 @@
     }
 </script>
 
-{#if isMounting}
-    <div class="mounting-state">
-        <Spinner size="md" />
-        <span class="mounting-text"
-            >{tString('fileExplorer.networkMount.mounting', {
-                target: currentNetworkHost?.name ?? tString('fileExplorer.networkMount.shareFallback'),
-            })}</span
-        >
-        {#if mountingSlow}
-            <span class="mounting-hint">{tString('fileExplorer.networkMount.mountingSlow')}</span>
-        {/if}
-        <!-- ❗ Every wait with a process behind it has a cancel: a NetFS mount can hang
-             behind a stuck macOS sign-in helper for as long as the timeout allows (#604). -->
-        <Button variant="secondary" size="mini" onclick={cancelMount}>
-            {tString('fileExplorer.networkMount.cancel')}
-        </Button>
-    </div>
+{#if mounting}
+    <!-- ❗ The shared remote-wait view, ❌ not a one-off spinner: its Cancel calls off
+         the mount, which can hang behind a stuck macOS sign-in helper for as long
+         as the timeout allows (#604). -->
+    <RemoteConnectView name={mounting.share} address={mounting.address} state={mountConnectState} />
 {:else if mountError?.type === 'auth_required'}
     <!-- ❗ A share that wants an account is a normal step, not a failure: no ❌, no
          "Couldn't mount share", and no Try again, which without an account gets
@@ -697,26 +703,6 @@
 {/if}
 
 <style>
-    .mounting-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        gap: var(--spacing-md);
-        color: var(--color-text-secondary);
-    }
-
-    .mounting-text {
-        font-size: var(--font-size-sm);
-    }
-
-    .mounting-hint {
-        font-size: var(--font-size-sm);
-        color: var(--color-text-tertiary);
-        text-align: center;
-    }
-
     .mount-error-state,
     .mount-sign-in-state {
         display: flex;

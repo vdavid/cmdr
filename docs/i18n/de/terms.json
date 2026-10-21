@@ -2971,9 +2971,6 @@
     "chosen": "Teilen",
     "confidence": "tentative",
     "decision": "Platzhalterzeilen in „Öffnen mit“ und „Teilen“",
-    "exceptions": {
-      "fileExplorer.networkMount.shareFallback": "English sense: the bare fallback noun for a network share (the =share pattern can’t tell the two apart)"
-    },
     "forms": "share options → Optionen zum Teilen; No share options → Keine Optionen zum Teilen",
     "sources": "macOS Finder (Teilen)"
   },

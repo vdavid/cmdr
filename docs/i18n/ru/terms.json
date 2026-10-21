@@ -4542,9 +4542,6 @@
     ],
     "confidence": "high",
     "sources": "Finder LocalizableMerged: Share → Поделиться, Share… → Поделиться…; AppKit AccessibilityImageDescriptions: share → поделиться; DC: Share → Поделиться",
-    "exceptions": {
-      "fileExplorer.networkMount.shareFallback": "The whole-value «share» here is an SMB network share (`network-share`), «общий ресурс»."
-    },
     "decision": "Share menu"
   },
   "sharing-and-permissions": {

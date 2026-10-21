@@ -3335,9 +3335,6 @@
   "share-menu": {
     "chosen": "分享",
     "confidence": "high",
-    "exceptions": {
-      "fileExplorer.networkMount.shareFallback": "English sense: the fallback noun for a network share → 共享資料夾 (network-share)."
-    },
     "forms": "share options → 分享選項; No share options → 沒有分享選項",
     "note": "Apple itself swaps the words (TW 共享與權限： vs HK 分享與權限：), so 分享 is the safer single choice for handing a file to another app; an SMB share is 共享資料夾.",
     "sources": "AP-TW (#N166), MS"

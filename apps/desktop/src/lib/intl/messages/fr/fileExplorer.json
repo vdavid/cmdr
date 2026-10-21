@@ -549,21 +549,9 @@
   "@fileExplorer.network.reconnect.willTryMore": {
     "sourceHash": "a7d887a"
   },
-  "fileExplorer.networkMount.mounting": "Montage de {target}…",
-  "@fileExplorer.networkMount.mounting": {
-    "sourceHash": "7b7368d"
-  },
   "fileExplorer.networkMount.mountingSlow": "Toujours en attente de la connexion par macOS. Vous pouvez annuler à tout moment.",
   "@fileExplorer.networkMount.mountingSlow": {
     "sourceHash": "e8e9040"
-  },
-  "fileExplorer.networkMount.cancel": "Annuler",
-  "@fileExplorer.networkMount.cancel": {
-    "sourceHash": "19766ed"
-  },
-  "fileExplorer.networkMount.shareFallback": "partage",
-  "@fileExplorer.networkMount.shareFallback": {
-    "sourceHash": "c3bc45a"
   },
   "fileExplorer.networkMount.mountFailedTitle": "Impossible de monter le partage",
   "@fileExplorer.networkMount.mountFailedTitle": {

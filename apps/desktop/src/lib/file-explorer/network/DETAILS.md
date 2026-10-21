@@ -517,11 +517,13 @@ same sentence plus the typed `reason`. Why the variants are cut the way they are
 
 ## A mount that waits
 
-A NetFS mount can hang behind a stuck macOS sign-in helper for the whole mount timeout (#604), so `NetworkMountView`'s
-mounting state has a Cancel (and `share.back` cancels too, since no browser is mounted to take the key). Each mount
-mints an attempt id (`newServerAttemptId`) and passes it to `mountNetworkShare`; Cancel hands it to
-`cancelServerConnect`. After 10 s (`MOUNT_SLOW_AFTER_MS`, the backend's `SUSPECT_AFTER`) a line under the spinner says
-it's still waiting.
+A NetFS mount can hang behind a stuck macOS sign-in helper for the whole mount timeout (#604), so `NetworkMountView`
+renders the wait through `../pane/RemoteConnectView.svelte`, the ONE remote-wait view: a `connecting` state named after
+the share, with the `host:port` it dials under the name, and that view's Cancel (`share.back` cancels too, since no
+browser is mounted to take the key). Each mount mints an attempt id (`newServerAttemptId`) and passes it to
+`mountNetworkShare`; Cancel hands it to `cancelServerConnect`. After 10 s (`MOUNT_SLOW_AFTER_MS`, the backend's
+`SUSPECT_AFTER`) the state's `hint` swaps the generic "This can take a few seconds." for a line saying it's still
+waiting for macOS.
 
 - **A cancel the person asked for goes back to the share list quietly**, ❌ never the error pane: `cancelled` with
   `mountCancelRequested` set returns as if nothing happened.
@@ -529,8 +531,8 @@ it's still waiting.
   with the command that restarts the helper. Try again re-mounts; while the old NetFS call is still stuck in the same
   helper, the backend answers the same right away. How the backend decides: `src-tauri/src/network/DETAILS.md` § "A
   mount Cmdr gave up on, and a wedged sign-in helper".
-- **❗ This mounting state is still its own renderer**, not `../pane/RemoteConnectView.svelte`: it predates the one
-  typed remote-wait state. Folding it in is a follow-up.
+- **The running mount keeps its own `mounting` copy** (share + address), ❌ not one derived from `lastMountAttempt` and
+  `currentNetworkHost`: a mount that went through clears both before it lands on the share, with the wait still up.
 
 ## SMB live-reconnect flow (cross-component)
 

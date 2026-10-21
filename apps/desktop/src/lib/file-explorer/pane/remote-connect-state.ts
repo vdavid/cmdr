@@ -24,8 +24,14 @@ export type RemoteConnectState =
    * drop the session). ❗ Honest progress is the point — without the countdown a
    * person can't tell a slow handshake from a wedged one, and without "Try now"
    * they wait out a delay for a server they can see is back.
+   *
+   * `hint` is for a SINGLE dial only: a finished sentence from the producer that
+   * knows more about this wait than the generic "This can take a few seconds"
+   * (a share mount that ran past `MOUNT_SLOW_AFTER_MS` says it's still waiting
+   * for macOS). ❗ A cycle brings its own `lines`, so the type rules out both.
    */
-  | { kind: 'connecting'; cancel: () => void; cycle?: RetryCycle }
+  | { kind: 'connecting'; cancel: () => void; cycle: RetryCycle; hint?: never }
+  | { kind: 'connecting'; cancel: () => void; cycle?: never; hint?: string }
   /**
    * A device is present but not usable yet, and the thing that would change that
    * happens on the DEVICE: a phone showing its "Allow USB debugging?" prompt.

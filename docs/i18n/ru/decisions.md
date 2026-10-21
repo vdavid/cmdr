@@ -127,15 +127,10 @@ dropdown shows `Как в системе (…)` (`Редактировать ф�
 macOS says `хост` (DirectoryBinding Host → Хост, ssh `подлинность хоста`); MS's `узел` made one panel use two words for
 one thing. Hostname → `имя хоста`.
 
-## Network share: общая папка over общий ресурс (`commands.shareSelectShare.label`, `settings.section.smbNetworkShares`, `fileExplorer.network.share.*`, `errors.shareList.*`, `servers.hub.forgetShare`, `fileExplorer.networkMount.shareFallback`)
+## Network share: общая папка over общий ресурс (`commands.shareSelectShare.label`, `settings.section.smbNetworkShares`, `fileExplorer.network.share.*`, `errors.shareList.*`, `servers.hub.forgetShare`)
 
 macOS's Sharing pane says `Общие папки`, MS `общая папка`; `общий ресурс` is Windows phrasing. Prose may say
 `сетевая папка`; the mounted thing stays `том`.
-
-## Mounting line and its fallback (`fileExplorer.networkMount.mounting`, `fileExplorer.networkMount.shareFallback`)
-
-`Подключение: {target}…` over `Подключение тома {target}…`: `{target}` is a host name or the fallback share word, so a
-type noun in front doubles it (`тома общая папка`) and calls a server a volume.
 
 ## Locked: Защита over заблокирован (`errors.write.fileLocked.*`, `errors.mutation.fileLocked`, `errors.write.permissionDenied.suggestion.deleteMac`, `errors.write.trashRefused.suggestion.notPermitted`)
 

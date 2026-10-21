@@ -2799,10 +2799,7 @@
     "accept": ["compartir"],
     "forms": "share options → opciones para compartir",
     "confidence": "high",
-    "sources": "macOS (Compartir)",
-    "exceptions": {
-      "fileExplorer.networkMount.shareFallback": "The bare noun share is a network share here (recurso compartido), not the Share submenu."
-    }
+    "sources": "macOS (Compartir)"
   },
   "sharing-and-permissions": {
     "chosen": "Compartir y permisos",
