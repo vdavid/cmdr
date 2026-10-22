@@ -39,7 +39,9 @@ gitignored and comes from these steps. Scripts take `--video=demo` (the default)
 
 - **Words, shots, gestures, look, and music edit** of a video: its spec, `src/videos/demo.ts` or
   `src/videos/anywhere.ts`. In the script, `say` is what the voice reads and `show` is the caption; rerun `pnpm voice`
-  after changing it. `shots` pick the footage beat, the placeholder still, how the time splits, and where to punch in.
+  after changing it. `shots` pick the footage beat, the placeholder still, where to punch in, and how they line up with
+  the voice: `cue` cuts in just before a phrase, and `sync` plays a recorded moment (matched by its label in
+  `video-beats.json`) exactly when a phrase starts.
 - **A third video**: copy a spec, give it a new `id` and `compositionId`, and add it to `src/videos/index.ts`.
 - **Timing rules** (cuts on bar lines, the optional lift, the ending): `src/timeline.ts`. Lengths per section:
   `minBars`.
