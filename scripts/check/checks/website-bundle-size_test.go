@@ -70,6 +70,41 @@ func TestRunWebsiteBundleSizeSkipsWithoutDist(t *testing.T) {
 	}
 }
 
+// Regression: `update-visual-baselines.sh` mounts a container volume over `dist/`, which leaves an
+// empty `dist/` on the host. That's no build, so it must not ratchet the baseline down to 0 B
+// (it did, in a worktree right after a release run, 2026-10-22).
+func TestRunWebsiteBundleSizeSkipsAnEmptyDist(t *testing.T) {
+	rootDir, distDir := makeBundleRoot(t)
+	if err := os.MkdirAll(distDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeTestBundleBaseline(t, rootDir, bundleBaseline{TotalBytes: 7_300_000})
+	result, err := RunWebsiteBundleSize(&CheckContext{RootDir: rootDir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Code != ResultSkipped {
+		t.Errorf("got code %v, want ResultSkipped", result.Code)
+	}
+	if got := readBundleBaseline(t, rootDir).TotalBytes; got != 7_300_000 {
+		t.Errorf("the baseline moved to %d", got)
+	}
+}
+
+func TestRunWebsiteHTMLValidateSkipsAnEmptyDist(t *testing.T) {
+	rootDir, distDir := makeBundleRoot(t)
+	if err := os.MkdirAll(distDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	result, err := RunWebsiteHTMLValidate(&CheckContext{RootDir: rootDir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Code != ResultSkipped {
+		t.Errorf("got code %v, want ResultSkipped", result.Code)
+	}
+}
+
 func TestRunWebsiteBundleSizeCreatesBaselineLocally(t *testing.T) {
 	rootDir, distDir := makeBundleRoot(t)
 	writeDistFile(t, distDir, "index.html", 1000)

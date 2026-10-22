@@ -168,6 +168,14 @@ func formatBundleBytes(bytes int64) string {
 	}
 }
 
+// hasBuildOutput: dir exists and holds anything. An empty one isn't a build: the website's
+// visual-baselines script mounts a container volume over `dist/`, which leaves an empty `dist/` on
+// the host, and reading that as a 0 B build ratcheted the baseline to nothing.
+func hasBuildOutput(dir string) bool {
+	entries, err := os.ReadDir(dir)
+	return err == nil && len(entries) > 0
+}
+
 // runBundleSizeCheck is the whole lane: produce or find the output, scan it,
 // and compare against the baseline. Warn-only; it never fails the suite.
 func runBundleSizeCheck(ctx *CheckContext, spec bundleSizeSpec) (CheckResult, error) {
@@ -176,7 +184,7 @@ func runBundleSizeCheck(ctx *CheckContext, spec bundleSizeSpec) (CheckResult, er
 			return CheckResult{}, err
 		}
 	}
-	if _, err := os.Stat(spec.distDir); os.IsNotExist(err) {
+	if !hasBuildOutput(spec.distDir) {
 		return Skipped(spec.missingHint), nil
 	}
 
