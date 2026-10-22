@@ -36,7 +36,11 @@ struct Envelope<C> {
     entries: C,
 }
 
-/// The presets, in the user's order. Declared once as `presets::PRESETS`.
+/// The presets list. Loaded at startup; read and written through
+/// `crate::commands::multi_rename`.
+pub static PRESETS: PresetStore = PresetStore::new();
+
+/// The presets, in the user's order. Declared once as [`PRESETS`].
 pub struct PresetStore {
     cached: Mutex<PresetList>,
     /// Serializes the flush from cache to disk, so two IPC commands landing together

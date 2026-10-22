@@ -15,8 +15,8 @@ normalization, a counter, presets, and a live preview. The sheet is `src/lib/mul
 - `run.rs` apply: proves the ready rows against the preview shown, then runs `start_renames` (Ask Cmdr's executor).
 - `error.rs` `MultiRenameError`, shared by `session` and `run` so neither imports the other (`module-cycles`).
 - `history.rs` the text fields' history on `crate::recents`, recorded when a rename starts.
-- `presets.rs` named presets in the user's order, as pure ops on the list (`save_in`, `rename_in`, …), on
-  `preset_store.rs` (their file). `LAST_SPEC` keeps the settings the last sheet closed with.
+- `presets.rs` named presets in the user's order, as pure ops on the list (`save_in`, `rename_in`, …).
+  `LAST_SPEC` keeps the last sheet's settings. `preset_store.rs` (their file, `PRESETS`) builds on it.
 
 ## Must-knows
 

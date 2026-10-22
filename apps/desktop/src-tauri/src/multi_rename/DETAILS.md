@@ -145,7 +145,9 @@ subfolders (the executor's one-parent rule refuses it today), "next step" chaini
 
 ## Presets (`presets.rs`, `preset_store.rs`)
 
-One list in the user's order, top to bottom, in `multi-rename-presets.json` (`PresetStore`), keyed by the trimmed,
+One list in the user's order, top to bottom, in `multi-rename-presets.json` (`PresetStore`, its one instance the
+`preset_store::PRESETS` static; `presets.rs` stays the pure list logic and types, so the store depends on it and not
+the other way around), keyed by the trimmed,
 lowercased name: saving under a taken name replaces that preset (the sheet asks first). "Reset all fields" lives in
 the frontend (`spec.ts`).
 

@@ -1,6 +1,7 @@
 //! Saved Multi-Rename settings: named presets in the user's order (TC's F2
 //! "Load/save settings" list), and the settings the last sheet closed with. The
-//! presets file is `preset_store`; the last settings ride on `crate::recents`.
+//! presets file is `preset_store`, which builds on this module and never the other
+//! way around; the last settings ride on `crate::recents`.
 
 use serde::{Deserialize, Serialize};
 
@@ -8,14 +9,9 @@ use crate::recents::{RecentEntry, RecentsFile};
 
 use super::mask::fill_counter_defaults;
 use super::plan::MultiRenameSpec;
-use super::preset_store::PresetStore;
 
 /// How many presets the list holds; saving a new one past it is refused.
 pub const MAX_PRESETS: usize = 200;
-
-/// The presets list. Loaded at startup; read and written through
-/// `crate::commands::multi_rename`.
-pub static PRESETS: PresetStore = PresetStore::new();
 
 /// One saved preset.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
