@@ -42,6 +42,13 @@ impl WindDown {
         self.state.progress_interval
     }
 
+    /// The host's rollback pace (`Pacing::rollback_pace`), taken after each item
+    /// the reversal walks. `None` in every real build; under E2E it holds the bar
+    /// long enough to watch it drain.
+    pub(crate) fn pace(&self) -> Option<Duration> {
+        self.state.scope().host().pacing().rollback_pace()
+    }
+
     /// The engine's runtime, whose blocking pool a removal's syscalls run on.
     pub(crate) fn runtime(&self) -> Handle {
         self.state.scope().host().runtime()

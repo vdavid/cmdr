@@ -94,6 +94,11 @@ pub(super) fn rollback_with_progress(
             emit(Some(current_file_name), files_left, bytes_left);
             last_progress_time = Instant::now();
         }
+
+        // E2E-only, like the copy loop's throttle: the host's rollback pace.
+        if let Some(pause) = wind_down.pace() {
+            std::thread::sleep(pause);
+        }
     }
 
     // The directories this copy created, deepest-first and empty-only. No

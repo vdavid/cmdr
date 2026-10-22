@@ -56,7 +56,8 @@ pub fn set_test_throttle(ms: Option<u64>) -> Result<(), String> {
     Ok(())
 }
 
-/// Pauses the rollback engine `ms` before each item it reverses.
+/// Pauses the rollback engine `ms` before each item it reverses, and a
+/// Rollback-cancelled transfer's own reversal after each item.
 ///
 /// `None` clears the override. The rollback of an E2E-sized operation is over in
 /// single-digit milliseconds, so a spec about a reversal IN PROGRESS (watch it run,
