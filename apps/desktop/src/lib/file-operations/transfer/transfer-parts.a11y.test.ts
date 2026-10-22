@@ -2,8 +2,8 @@
  * Tier 3 a11y tests for the presentational pieces the transfer dialogs and toasts
  * compose: the compression controls, the direction arrow, the scan-phase body,
  * the variant-derived error copy, the cancelled-rollback summary, the
- * progress dialog's Rollback button, its stalled-transfer notice, and the setup
- * dialog's "files already exist" block.
+ * progress dialog's Rollback button, its stalled-transfer notice, its done
+ * state's summary, and the setup dialog's "files already exist" block.
  *
  * One file per component would cost about five times as much: `svelte-tests`
  * charges per test FILE, not per test (`docs/testing.md` § "What a test actually
@@ -67,6 +67,7 @@ import CancelRollbackToastContent from './CancelRollbackToastContent.svelte'
 import TransferRollbackControls from './TransferRollbackControls.svelte'
 import TransferStallNotice from './TransferStallNotice.svelte'
 import TransferConflictsSection from './TransferConflictsSection.svelte'
+import TransferDoneSummary from './TransferDoneSummary.svelte'
 import type { TransferRollback } from './transfer-rollback.svelte'
 
 /** A fresh container, appended to the document and ready to mount into. */
@@ -467,6 +468,29 @@ describe('TransferConflictsSection a11y', () => {
   it('the “couldn’t find out” notice has no a11y violations', async () => {
     const target = container()
     mount(TransferConflictsSection, { target, props: { ...base, conflictCheckUnknown: true, choiceVisible: false } })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+})
+
+/**
+ * `TransferDoneSummary`: the lines under a finished operation's bars in the
+ * progress dialog's done state (size, time, and speed; the skips; what the OS
+ * refused to trash), as one live region.
+ */
+describe('TransferDoneSummary a11y', () => {
+  const event = {
+    operationId: 'op-1',
+    operationType: 'trash' as const,
+    filesProcessed: 12,
+    filesSkipped: 2,
+    bytesProcessed: 50_000_000,
+    refused: { itemCount: 1, reason: 'notPermitted' as const },
+  }
+
+  it('the full summary has no a11y violations', async () => {
+    const target = container()
+    mount(TransferDoneSummary, { target, props: { event, elapsedMs: 12_000 } })
     await tick()
     await expectNoA11yViolations(target)
   })
