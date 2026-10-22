@@ -143,8 +143,8 @@ the variable alone.
    full CI run and CodeQL beside the build (§ The CI gate).
 2. **The tag push's run** builds without publishing: `guard`, then `draft`, which creates the draft release up front
    (three parallel jobs each looking for a draft by tag could each create one; drafts can't be fetched by tag).
-   `ci-gate` skips: nothing here is public, and CI is still running beside it. The three `compile` jobs and then the
-   three `sign` jobs build into it: the DMGs and `.app.tar.gz` archives, no `.sig` files. `sbom` runs beside them, and
+   `ci-gate` skips: nothing here is public, and CI is still running beside it. The two `compile` jobs and then the three
+   `sign` jobs build into it: the DMGs and `.app.tar.gz` archives, no `.sig` files. `sbom` runs beside them, and
    `attest` attests the draft's assets. `publish` and `bump-tap` skip, so `latest.json` doesn't move and nothing is
    public.
    - The Tauri CLI won't bundle without an updater key once the config has a pubkey, and the archive must still come out
@@ -377,9 +377,10 @@ check.
     - **Run** `./scripts/release-evidence.sh evidence X.Y.Z` with `CMDR_RELEASE_EVIDENCE_ARCHIVE` (the archive folder,
       `//host/share/path`; `-archive` overrides it), `SMB2_USER`, and `SMB2_PASS_COMMAND` set. Add `-old-macos-smoke`
       when § Pre-release smoke test on old macOS ran for this release. It runs step 12's checks again, then:
-      - finds the runs: the full (`run_all`) `ci.yml` run on the tagged `chore(release)` commit, else on its parent
-        (where the release gate passed when `release.sh` didn't need a run of its own), the `codeql.yml` run on that
-        same commit, and the `release.yml` runs for the tag (two in `local` mode: the tag push and the dispatch);
+      - finds the runs: the full (`run_all`) `ci.yml` run on the tagged `chore(release)` commit, else on its parent (a
+        hand-made security-only release, or one from before the release ran CI on its own commit; § The CI gate), the
+        `codeql.yml` run on that same commit, and the `release.yml` runs for the tag (two in `local` mode: the tag push
+        and the dispatch);
       - collects into a fresh `vX.Y.Z` folder (`-out DIR`, default a temp dir): the SBOMs, the `.intoto.jsonl`,
         `checksums.txt`, `latest.json`, each run's jobs JSON and gzipped log, one CodeQL SARIF per language, and
         `attestation-verify.txt`;
