@@ -1,4 +1,4 @@
-import { AbsoluteFill, Easing, Img, OffthreadVideo, Sequence, staticFile } from 'remotion'
+import { AbsoluteFill, Easing, Freeze, Img, OffthreadVideo, Sequence, staticFile } from 'remotion'
 import { useTimeline } from '../context.ts'
 import { COLORS, FONT, MONO, hits, inRanges, ramp } from '../lib/motion.ts'
 import { f, type SectionPlan, type ShotPlan } from '../timeline.ts'
@@ -64,57 +64,94 @@ const Glow: React.FC<{ t: number; pulse: number; colors: [string, string, string
 )
 
 // Base footage box: centered a bit high, leaving the bottom band for captions.
-const BOX = { cx: 960, cy: 478, w: 1440 }
+// The footage box: centered a bit high, leaving the bottom band for captions; at most this wide and tall.
+const BOX = { cx: 960, cy: 470, maxW: 1440, maxH: 820 }
+// The stills carry the window's shadow margins, so their box is the full image.
+const STILL_ASPECT = 2508 / 1634
 
 const Shot: React.FC<{ shot: ShotPlan; t: number; first: boolean }> = ({ shot, t, first }) => {
   const len = shot.end - shot.start
   const local = t - shot.start
   const focus = shot.focus ?? { x: 0.5, y: 0.5, zoom: 1 }
-  // The first shot drifts in slowly, then punches in on the key moment; later shots cut in already close.
+  // The punch-in lands on the synced moment; without one, the first shot drifts, then punches in at 45 %, and later
+  // shots cut in already close.
   const drift = ramp(local, 0, len, (x) => x)
-  const punchAt = first ? len * 0.45 : 0
-  const punch = first ? ramp(local, punchAt, punchAt + 0.45, Easing.bezier(0.2, 1.4, 0.4, 1)) : 1
-  const p = first ? 0.25 * drift + 0.75 * punch : 0.7 + 0.3 * drift
+  const punchAt = shot.syncAt !== undefined ? Math.max(0, shot.syncAt - shot.start - 0.1) : first ? len * 0.45 : 0
+  const punches = shot.syncAt !== undefined || first
+  const punch = punches ? ramp(local, punchAt, punchAt + 0.45, Easing.bezier(0.2, 1.4, 0.4, 1)) : 1
+  const p = punches ? 0.25 * drift + 0.75 * punch : 0.7 + 0.3 * drift
   const zoom = 1 + (focus.zoom - 1) * p
-  const isVideo = shot.footage !== undefined
-  const aspect = isVideo ? 9 / 16 : 1634 / 2508
-  const h = BOX.w * aspect
-  const dx = (0.5 - focus.x) * BOX.w * p
+  const aspect = shot.footage?.aspect ?? STILL_ASPECT
+  const w = Math.min(BOX.maxW, BOX.maxH * aspect)
+  const h = w / aspect
+  const dx = (0.5 - focus.x) * w * p
   const dy = (0.5 - focus.y) * h * p
   const style: React.CSSProperties = {
     position: 'absolute',
-    left: BOX.cx - BOX.w / 2,
+    left: BOX.cx - w / 2,
     top: BOX.cy - h / 2,
-    width: BOX.w,
+    width: w,
     height: h,
     transform: `scale(${zoom}) translate(${dx}px, ${dy}px)`,
     transformOrigin: '50% 50%',
   }
   if (shot.footage) {
-    const from = f(shot.footage.from)
-    const available = f(shot.footage.duration) - from
     return (
       <div
         style={{
           ...style,
-          borderRadius: 18,
+          borderRadius: 14,
           overflow: 'hidden',
           border: `1px solid ${COLORS.border}`,
           boxShadow: '0 40px 120px rgba(0,0,0,0.6)',
         }}
       >
-        <Sequence from={f(shot.start)} durationInFrames={Math.max(1, Math.min(f(len), available))} layout="none">
-          <OffthreadVideo
-            src={staticFile(shot.footage.file)}
-            trimBefore={from}
-            muted
-            style={{ width: '100%', height: '100%' }}
-          />
-        </Sequence>
+        <FootageClip shot={shot} />
       </div>
     )
   }
   return <Img src={staticFile(`brand/screenshots/${shot.still}`)} style={style} />
+}
+
+/**
+ * Plays a shot's footage in three parts: a hold on the first usable frame while the clip "catches up" to its synced
+ * moment, the clip itself, and a hold on the last frame if the shot outlasts the recording.
+ */
+export const FootageClip: React.FC<{ shot: ShotPlan }> = ({ shot }) => {
+  const footage = shot.footage
+  if (!footage) return null
+  const src = staticFile(footage.file)
+  const start = f(shot.start)
+  const end = f(shot.end)
+  const holdIn = Math.max(0, f(footage.usableStart) - f(footage.from))
+  const playFrom = Math.max(f(footage.from), f(footage.usableStart))
+  const lastFrame = f(footage.duration) - 1
+  const playLen = Math.max(0, Math.min(end - start - holdIn, lastFrame - playFrom))
+  const holdOut = end - start - holdIn - playLen
+  const fill = { width: '100%', height: '100%' }
+  return (
+    <>
+      {holdIn > 0 && (
+        <Sequence from={start} durationInFrames={holdIn} layout="none">
+          <Freeze frame={playFrom}>
+            <OffthreadVideo src={src} muted style={fill} />
+          </Freeze>
+        </Sequence>
+      )}
+      {playLen > 0 && (
+        <Sequence from={start + holdIn} durationInFrames={playLen} layout="none">
+          <OffthreadVideo src={src} trimBefore={playFrom} muted style={fill} />
+        </Sequence>
+      )}
+      {holdOut > 0 && (
+        <Sequence from={start + holdIn + playLen} durationInFrames={holdOut} layout="none">
+          <Freeze frame={lastFrame}>
+            <OffthreadVideo src={src} muted style={fill} />
+          </Freeze>
+        </Sequence>
+      )}
+    </>
+  )
 }
 
 // The warmer title: words step in on eighth notes, dropping with a little bounce, then a mustard marker swipes behind

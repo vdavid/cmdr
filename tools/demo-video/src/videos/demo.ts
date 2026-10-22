@@ -28,8 +28,21 @@ const script: Section[] = [
       { say: 'Search your whole drive as you type.', show: 'Search your whole drive as you type.' },
     ],
     shots: [
-      { beat: 'speed', still: 'app-main-dark.webp', weight: 0.55, focus: { x: 0.28, y: 0.55, zoom: 1.3 } },
-      { beat: 'speed', still: 'search-dark.webp', weight: 0.45, focus: { x: 0.5, y: 0.4, zoom: 1.2 } },
+      {
+        beat: 'speed',
+        still: 'app-main-dark.webp',
+        weight: 0.55,
+        focus: { x: 0.3, y: 0.5, zoom: 1.25 },
+        sync: { moment: 'the 50,000-file listing is up', phrase: 2 },
+      },
+      {
+        beat: 'speed',
+        still: 'search-dark.webp',
+        weight: 0.45,
+        focus: { x: 0.5, y: 0.4, zoom: 1.25 },
+        cue: 4,
+        sync: { moment: 'search opens', phrase: 4 },
+      },
     ],
   },
   {
@@ -47,14 +60,37 @@ const script: Section[] = [
     ],
     dropOnPhrase: 4,
     shots: [
-      { beat: 'trust', still: 'app-main-dark.webp', weight: 0.5, focus: { x: 0.5, y: 0.5, zoom: 1.1 } },
+      // The recording's Pause, Resume, and rollback each land on their line; the rollback cuts in on the big drop.
       {
         beat: 'trust',
         still: 'app-main-dark.webp',
-        weight: 0.5,
-        focus: { x: 0.68, y: 0.6, zoom: 1.4 },
-        moment: 'rollback',
+        weight: 0.3,
+        focus: { x: 0.5, y: 0.5, zoom: 1.1 },
+        sync: { moment: 'F5: copy', phrase: 0 },
+      },
+      {
+        beat: 'trust',
+        still: 'app-main-dark.webp',
+        weight: 0.15,
+        focus: { x: 0.5, y: 0.55, zoom: 1.3 },
+        cue: 1,
+        sync: { moment: 'Pause', phrase: 1 },
+      },
+      {
+        beat: 'trust',
+        still: 'app-main-dark.webp',
+        weight: 0.15,
+        focus: { x: 0.5, y: 0.55, zoom: 1.2 },
+        cue: 2,
+        sync: { moment: 'Resume', phrase: 2 },
+      },
+      {
+        beat: 'trust',
+        still: 'app-main-dark.webp',
+        weight: 0.4,
+        focus: { x: 0.5, y: 0.55, zoom: 1.35 },
         startsOnDrop: true,
+        sync: { moment: 'the bar walks back', phrase: 5 },
       },
     ],
   },
@@ -68,7 +104,15 @@ const script: Section[] = [
       { say: 'with patterns and counters,', show: 'with patterns and counters,' },
       { say: 'and see every new name before you apply.', show: 'and see every new name before you apply.' },
     ],
-    shots: [{ beat: 'rename', still: 'app-main-dark.webp', weight: 1, focus: { x: 0.3, y: 0.4, zoom: 1.32 } }],
+    shots: [
+      {
+        beat: 'rename',
+        still: 'app-main-dark.webp',
+        weight: 1,
+        focus: { x: 0.5, y: 0.45, zoom: 1.25 },
+        sync: { moment: 'typing the pattern', phrase: 1 },
+      },
+    ],
   },
   {
     id: 'reach',
@@ -84,8 +128,25 @@ const script: Section[] = [
       { say: 'all as plain folders.', show: 'all as plain folders.' },
     ],
     shots: [
-      { beat: 'reach', still: 'app-main-dark.webp', weight: 0.5, focus: { x: 0.28, y: 0.2, zoom: 1.45 } },
-      { beat: 'reach', still: 'app-main-dark.webp', weight: 0.5, focus: { x: 0.7, y: 0.45, zoom: 1.25 } },
+      // This video's recordings have no NAS or phone, so the opening lines ride the calm hero shot; the zip and the
+      // Git history land on their words.
+      { beat: 'hero', still: 'app-main-dark.webp', weight: 0.4, focus: { x: 0.5, y: 0.5, zoom: 1.08 } },
+      {
+        beat: 'reach',
+        still: 'app-main-dark.webp',
+        weight: 0.3,
+        focus: { x: 0.35, y: 0.45, zoom: 1.25 },
+        cue: 3,
+        sync: { moment: 'inside the zip', phrase: 3 },
+      },
+      {
+        beat: 'reach',
+        still: 'app-main-dark.webp',
+        weight: 0.3,
+        focus: { x: 0.35, y: 0.45, zoom: 1.25 },
+        cue: 4,
+        sync: { moment: 'Enter on .git', phrase: 4 },
+      },
     ],
   },
   {
@@ -101,7 +162,16 @@ const script: Section[] = [
       { say: 'Find my tax report from last year?', show: '"Find my tax report from last year"' },
       { say: 'Just works.', show: 'just works.' },
     ],
-    shots: [{ beat: 'ai', still: 'chat-dark.webp', weight: 1, focus: { x: 0.6, y: 0.5, zoom: 1.3 } }],
+    shots: [
+      {
+        beat: 'ai',
+        still: 'chat-dark.webp',
+        weight: 1,
+        focus: { x: 0.6, y: 0.5, zoom: 1.3 },
+        stillOnly:
+          "The ai recording is a plain filename search (its manifest remark says so), which would contradict the voice; the still shows Ask Cmdr. Drop this once it's re-recorded with an AI provider.",
+      },
+    ],
   },
   {
     id: 'care',
@@ -118,8 +188,31 @@ const script: Section[] = [
       },
     ],
     shots: [
-      { beat: 'care', still: 'settings-dark.webp', weight: 0.5, focus: { x: 0.5, y: 0.45, zoom: 1.15 } },
-      { beat: 'care', still: 'app-main-dark.webp', weight: 0.5, focus: { x: 0.5, y: 0.9, zoom: 1.32 } },
+      // Languages preview live, the theme flips to light on "dark and light modes", then back to arrowing through
+      // languages for "every single thing works from the keyboard".
+      {
+        beat: 'care',
+        still: 'settings-dark.webp',
+        weight: 0.3,
+        focus: { x: 0.5, y: 0.4, zoom: 1.12 },
+        sync: { moment: 'ArrowDown', phrase: 0 },
+      },
+      {
+        beat: 'care',
+        still: 'settings-dark.webp',
+        weight: 0.3,
+        focus: { x: 0.5, y: 0.45, zoom: 1.12 },
+        cue: 1,
+        sync: { moment: 'Theme mode', phrase: 1 },
+      },
+      {
+        beat: 'care',
+        still: 'settings-dark.webp',
+        weight: 0.4,
+        focus: { x: 0.5, y: 0.4, zoom: 1.12 },
+        cue: 3,
+        sync: { moment: 'ArrowDown', phrase: 3 },
+      },
     ],
   },
   {

@@ -1,7 +1,8 @@
-import { AbsoluteFill, Easing, Img, OffthreadVideo, Sequence, staticFile } from 'remotion'
+import { AbsoluteFill, Easing, Img, staticFile } from 'remotion'
 import { useTimeline } from '../context.ts'
 import { COLORS, FONT, MONO, hit, ramp } from '../lib/motion.ts'
-import { f, type SectionPlan } from '../timeline.ts'
+import type { SectionPlan } from '../timeline.ts'
+import { FootageClip } from './Beat.tsx'
 
 // The close: the presenter is back full size with the app floating beside them; on the music's final hit the frame
 // clears and the end card slams in (logo, name, URL), then holds through the decay.
@@ -22,21 +23,16 @@ export const Close: React.FC<{ t: number; section: SectionPlan }> = ({ t, sectio
             left: 860,
             top: 150,
             width: 1180,
-            height: 1180 * (1634 / 2508),
+            height: 1180 / (shot?.footage?.aspect ?? 2508 / 1634),
             transform: `rotateY(${-22 + local * 1.6}deg) rotateX(${5 - local * 0.4}deg) translateX(${(1 - enter) * 160}px)`,
             transformOrigin: '0% 50%',
             filter: `drop-shadow(0 0 80px rgba(139,92,246,0.35))`,
+            borderRadius: shot?.footage ? 14 : 0,
+            overflow: shot?.footage ? 'hidden' : 'visible',
           }}
         >
           {shot?.footage ? (
-            <Sequence from={f(shot.start)} durationInFrames={f(shot.end - shot.start)} layout="none">
-              <OffthreadVideo
-                src={staticFile(shot.footage.file)}
-                trimBefore={f(shot.footage.from)}
-                muted
-                style={{ width: '100%', height: '100%', borderRadius: 18 }}
-              />
-            </Sequence>
+            <FootageClip shot={shot} />
           ) : (
             <Img
               src={staticFile(`brand/screenshots/${shot?.still ?? 'app-main-dark.webp'}`)}

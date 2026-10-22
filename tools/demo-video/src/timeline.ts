@@ -17,13 +17,39 @@ export type VoicePhrase = { show: string; start: number; end: number }
 export type VoiceSection = { file: string; duration: number; lead: number; phrases: VoicePhrase[]; envelope: number[] }
 export type VoiceManifest = { fps: number; source: string; sections: Record<string, VoiceSection> }
 
-export type FootageBeat = { file: string; duration: number; moments: Record<string, number> }
+/** `moments`: the recording's labelled notes, plus `start`/`end` (the usable span) and `key` (its key frame). */
+export type FootageBeat = {
+  file: string
+  duration: number
+  width: number
+  height: number
+  moments: Record<string, number>
+}
 export type FootageManifest = { beats: Record<string, FootageBeat> }
+
+/** A moment by exact key, else the first label containing it (case-insensitive). */
+export function momentTime(f: FootageBeat, name: string): number {
+  if (f.moments[name] !== undefined) return f.moments[name]
+  const hit = Object.keys(f.moments).find((k) => k.toLowerCase().includes(name.toLowerCase()))
+  if (hit === undefined)
+    throw new Error(`Footage ${f.file} has no moment matching "${name}": ${Object.keys(f.moments).join(' | ')}`)
+  return f.moments[hit]
+}
 
 export type VoiceClip = { sectionId: string; file: string; start: number; from: number; to: number }
 export type MusicSegment = { start: number; end: number; trackOffset: number }
 export type Caption = { show: string; start: number; end: number; sectionId: string }
-export type ShotPlan = Shot & { start: number; end: number; footage?: { file: string; from: number; duration: number } }
+/**
+ * `footage.from` is the clip time at the shot's start. It can be before `usableStart` (the shot holds the first usable
+ * frame until the clip catches up) or run past `duration` (the shot holds the last frame).
+ */
+export type ShotPlan = Shot & {
+  start: number
+  end: number
+  /** When the synced moment plays (video time); the punch-in lands on it. */
+  syncAt?: number
+  footage?: { file: string; from: number; duration: number; aspect: number; usableStart: number }
+}
 export type SectionPlan = {
   id: string
   kind: Section['kind']
@@ -170,35 +196,65 @@ export function buildTimeline(
     shots: [],
   })
 
-  // Shots split each section's footage time by weight; real footage replaces the still when the manifest has it.
+  // Shots. Cut points come from cues (just before a phrase, on the beat), the lift, or the shots' weights (on a bar
+  // line). Real footage replaces the still when the manifest has it, lined up with the voice by `sync`.
+  const snapBeat = (t: number): number => drop1 + Math.round((t - drop1) / beat) * beat
   for (const [si, plan] of sections.entries()) {
     const section = script[si]
+    const phraseStart = (k: number): number => {
+      const c = captions.filter((x) => x.sectionId === section.id)[k]
+      if (!c) throw new Error(`${section.id}: no phrase ${k}`)
+      return c.start
+    }
     const total = plan.end - plan.footageStart
     const weights = section.shots.reduce((s, x) => s + x.weight, 0)
-    // Cut points between shots: by weight, snapped to the nearest bar line (or onto the lift when asked).
-    const cutsAt: number[] = []
+    const bounds = [plan.footageStart]
     let acc = plan.footageStart
-    for (const shot of section.shots.slice(0, -1)) {
+    for (const [k, shot] of section.shots.entries()) {
+      if (k === 0) {
+        acc += (shot.weight / weights) * total
+        continue
+      }
+      const byWeight = drop1 + Math.round((acc - drop1) / bar) * bar
+      const cut =
+        shot.startsOnDrop && bigDrop !== null
+          ? bigDrop
+          : shot.cue !== undefined
+            ? snapBeat(phraseStart(shot.cue) - 0.3)
+            : byWeight
+      const prev = bounds[bounds.length - 1]
+      bounds.push(cut > prev + 0.4 && cut < plan.end - 0.4 ? cut : Math.min(plan.end - 0.4, Math.max(prev + 0.4, acc)))
       acc += (shot.weight / weights) * total
-      cutsAt.push(acc)
     }
-    section.shots.forEach((shot, k) => {
-      if (k === 0) return
-      const raw = cutsAt[k - 1]
-      const snapped = shot.startsOnDrop && bigDrop !== null ? bigDrop : drop1 + Math.round((raw - drop1) / bar) * bar
-      cutsAt[k - 1] = snapped > plan.footageStart + 0.5 && snapped < plan.end - 0.5 ? snapped : raw
-    })
-    const bounds = [plan.footageStart, ...cutsAt, plan.end]
-    const used: Record<string, number> = {}
+    bounds.push(plan.end)
+    const playedTo: Record<string, number> = {}
     plan.shots = section.shots.map((shot, k) => {
       const start = bounds[k]
-      const len = bounds[k + 1] - start
+      const end = bounds[k + 1]
       const f = footage.beats[shot.beat]
-      if (!f) return { ...shot, start, end: start + len }
-      const moment = shot.moment !== undefined ? f.moments[shot.moment] : undefined
-      const from = moment !== undefined ? Math.max(0, moment - 0.6) : (used[shot.beat] ?? f.moments.start ?? 0)
-      used[shot.beat] = from + len
-      return { ...shot, start, end: start + len, footage: { file: f.file, from, duration: f.duration } }
+      if (!f || shot.stillOnly) return { ...shot, start, end }
+      let from: number
+      let syncAt: number | undefined
+      if (shot.sync) {
+        const m = momentTime(f, shot.sync.moment)
+        const at = shot.sync.phrase !== undefined ? phraseStart(shot.sync.phrase) : start + 0.3
+        from = m - (at - start)
+        syncAt = at
+      } else from = playedTo[shot.beat] ?? f.moments.start ?? 0
+      playedTo[shot.beat] = from + (end - start)
+      return {
+        ...shot,
+        start,
+        end,
+        syncAt,
+        footage: {
+          file: f.file,
+          from,
+          duration: f.duration,
+          aspect: f.width / f.height,
+          usableStart: f.moments.start ?? 0,
+        },
+      }
     })
   }
 

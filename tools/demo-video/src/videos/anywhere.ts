@@ -39,7 +39,6 @@ const script: Section[] = [
         still: 'app-main-dark.webp',
         weight: 0.5,
         focus: { x: 0.5, y: 0.6, zoom: 1.15 },
-        moment: 'serverCopy',
       },
     ],
   },
@@ -57,7 +56,7 @@ const script: Section[] = [
     ],
     shots: [
       { beat: 's3', still: 'app-main-dark.webp', weight: 0.5, focus: { x: 0.7, y: 0.4, zoom: 1.3 } },
-      { beat: 's3', still: 'app-main-dark.webp', weight: 0.5, focus: { x: 0.5, y: 0.5, zoom: 1.2 }, moment: 'cost' },
+      { beat: 's3', still: 'app-main-dark.webp', weight: 0.5, focus: { x: 0.5, y: 0.5, zoom: 1.2 } },
     ],
   },
   {
@@ -94,7 +93,6 @@ const script: Section[] = [
         still: 'app-main-dark.webp',
         weight: 0.5,
         focus: { x: 0.7, y: 0.5, zoom: 1.3 },
-        moment: 'restic',
       },
     ],
   },
@@ -117,7 +115,6 @@ const script: Section[] = [
         still: 'app-main-dark.webp',
         weight: 0.45,
         focus: { x: 0.5, y: 0.85, zoom: 1.35 },
-        moment: 'queue',
       },
     ],
   },

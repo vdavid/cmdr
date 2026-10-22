@@ -9,10 +9,18 @@ export type Shot = {
   weight: number
   /** Punch-in target, in footage-relative coordinates (0–1), and how far to zoom. */
   focus?: { x: number; y: number; zoom: number }
-  /** A named moment from the footage manifest to land the punch-in on. */
-  moment?: string
-  /** This shot cuts in exactly on the music's lift (other shot cuts snap to the nearest bar line). */
+  /** The shot cuts in just before this phrase (index in the section) starts, snapped to the nearest beat. */
+  cue?: number
+  /** This shot cuts in exactly on the music's lift. */
   startsOnDrop?: boolean
+  /**
+   * Lines the footage up with the voice: the clip moment whose manifest label contains `moment` (case-insensitive;
+   * also `key` for the key frame, `start` for the usable start) plays exactly when phrase `phrase` starts, or 0.3 s
+   * into the shot without a phrase. Without `sync`, the clip continues from where the beat's previous shot left off.
+   */
+  sync?: { moment: string; phrase?: number }
+  /** Keep the still even when footage exists, with the reason (for example, a recording that shows the wrong thing). */
+  stillOnly?: string
 }
 
 export type Section = {
