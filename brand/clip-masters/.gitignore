@@ -1,0 +1,10 @@
+# The clip masters are INTERMEDIATES, not deliverables: lossless ProRes 4444 recordings
+# from `pnpm marketing:clips` (~60 MB a second at 2x) plus the markers the encoder trims
+# by. Git can't delta them and nothing ships them; the encoded clips in
+# `apps/website/public/clips/` are tracked, these are not. Keep them around to re-encode
+# without re-recording (`pnpm marketing:clips --encode-only`).
+#
+# This file is tracked so the directory exists in a fresh clone and the docs that point
+# here resolve.
+*
+!.gitignore

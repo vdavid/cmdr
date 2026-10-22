@@ -5,7 +5,8 @@ of this page is what to do with the results, and what to look at when a run refu
 
 Not to be confused with the translator screenshots (`pnpm i18n:shots`), which photograph ~150 UI surfaces for
 `docs/guides/i18n-translation.md`. Different audience, different pipeline, one shared launch layer
-(`apps/desktop/scripts/capture-runtime.ts`).
+(`apps/desktop/scripts/capture-runtime.ts`). The website's looping video clips are this pipeline's sibling,
+`pnpm marketing:clips`: `docs/guides/product-clips.md`.
 
 ## Reshoot
 
@@ -89,7 +90,8 @@ CMDR_SHOTS_TEXT_SIZE=100 pnpm marketing:shots --out /tmp/one-off
 
 ## How it works, in one paragraph
 
-`apps/desktop/scripts/marketing-shots.ts` launches the Playwright-enabled binary on a persistent data dir of its own
+`apps/desktop/scripts/marketing-shots.ts` (through `marketing-launch.ts`, shared with the clips) launches the
+Playwright-enabled binary on a persistent data dir of its own
 (`~/Library/Application Support/com.veszelovszki.cmdr-shots`, with its drive index in
 `~/Library/Caches/com.veszelovszki.cmdr-shots/drive-index`), then runs `marketing-shots.spec.ts` on its own shard. The
 spec stages each shot through the real UI and photographs it with `screencapture -l -o`, verifying the bytes before it

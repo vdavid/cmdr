@@ -23,8 +23,8 @@ launch boundary, the llama-server fetch, and the type-drift check.
 - **`gen-analytics-defaults.ts`** (+ `-lib.ts`): the per-version settings-defaults manifest the dashboard resolves
   absent config keys against (`pnpm analytics:defaults`, guarded by `settings-defaults`); DETAILS § "The defaults
   manifest"
-- **`marketing-shots.ts`**: reshoots the brand masters (`pnpm marketing:shots`); `docs/guides/screenshots.md`. Needs
-  ImageMagick, and a missing `magick` fails up front
+- **`marketing-shots.ts`** / **`marketing-clips.ts`**: the brand stills and the website clips, both launched through
+  `marketing-launch.ts`; `docs/guides/screenshots.md`, `docs/guides/product-clips.md`
 - **`capture-runtime.ts`**: launch primitives for both capture orchestrators (`ensureE2eBinary`), plus
   `createTrackedArtifactGuard` (only a green run keeps its rewrite of tracked artifacts; DETAILS § "The capture guard").
   `capture-countdown.ts`: the self-calibrating estimate behind the specs' orange hands-off countdown (DETAILS § "The

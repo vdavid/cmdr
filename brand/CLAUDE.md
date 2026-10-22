@@ -18,6 +18,9 @@ website, AlternativeTo, newsletter, and any new surface all pull from.
   committing ~2 MB of undeltifiable blobs per reshoot bought nothing. They live here rather than in
   `apps/website/public/hero/` so the website ships only the WebPs (everything under `public/` ships verbatim). Details:
   [`apps/website/public/hero/DETAILS.md`](../apps/website/public/hero/DETAILS.md).
+- `clip-masters/`: the lossless ProRes 4444 recordings and their trim markers that `pnpm marketing:clips` encodes the
+  website's clips (`apps/website/public/clips/`) from. **Untracked**, like `hero-masters/`; kept so `--encode-only` can
+  re-encode without re-recording. [`docs/guides/product-clips.md`](../docs/guides/product-clips.md).
 - `copy/`: marketing text blobs (taglines, descriptions, feature lists).
 - `listings/`: one file per app directory we submit Cmdr to, holding every field of that site's form, filled and ready
   to paste: [`listings/macupdate.md`](listings/macupdate.md), [`listings/alternativeto.md`](listings/alternativeto.md).
