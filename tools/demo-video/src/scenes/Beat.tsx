@@ -165,7 +165,7 @@ const TitleCard: React.FC<{ text: string; t: number; out: number }> = ({ text, t
       <div
         style={{
           position: 'absolute',
-          top: 640,
+          top: 680,
           height: 6,
           width: 360 * ramp(t, 0.12, 0.5),
           background: COLORS.mustard,
