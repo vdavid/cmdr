@@ -91,6 +91,9 @@ with `plutil`, 236,620 strings that exist in `en`, `es`, and `es_419` (2026-09-2
   `tomar una foto` 3 / 60).
 - **a place → `lugar`**: `otro sitio` 10 / 0, `otro lugar` 0 / 9 (`a su lugar`, `desde cualquier lugar`,
   `a ningún lado`). `sitio web` stays.
+- **on average → `en promedio`** over `es`'s `de media` (`fileOperations.transferProgress.doneSummaryRate`). `de media`
+  reads as Spain's; `en promedio` is the usual Latin American form. Not in the macOS sweep, so no counts. The same
+  done-state keys also take the preterite (`Se copiaron 3 archivos`, `Tardó`, `Se omitió`, `lo que hizo`).
 - **`vale la pena`** over `merece la pena`, and **no `vosotros`** (`vuestras contribuciones` → `sus contribuciones`).
   Neither shows up in the macOS sweep; both are the standard Latin American forms. `plantéate` → `considera` rides along
   in the one key that had it.

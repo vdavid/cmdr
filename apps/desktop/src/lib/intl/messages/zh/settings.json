@@ -530,6 +530,18 @@
   "@settings.fileOperations.defaultConflictPolicy.keywords": {
     "sourceHash": "00e5bca"
   },
+  "settings.fileOperations.keepProgressOpenWhenDone.label": "文件操作完成后让进度窗口保持打开",
+  "@settings.fileOperations.keepProgressOpenWhenDone.label": {
+    "sourceHash": "bcca627"
+  },
+  "settings.fileOperations.keepProgressOpenWhenDone.description": "在你关闭之前，窗口会一直显示这项操作做了什么：处理了多少、用了多长时间，以及跳过了什么。",
+  "@settings.fileOperations.keepProgressOpenWhenDone.description": {
+    "sourceHash": "005448f"
+  },
+  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "结束、做完、总结、摘要、结果、报告、统计、留着、不关、停留、对话框、弹窗、拷贝、复制、移动、删除、废纸篓、回收站、撤销、速度、耗时",
+  "@settings.fileOperations.keepProgressOpenWhenDone.keywords": {
+    "sourceHash": "978b2ff"
+  },
   "settings.fileOperations.defaultConflictPolicy.opt.skip": "全部跳过",
   "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
     "sourceHash": "28d0359"

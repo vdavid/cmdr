@@ -1252,7 +1252,8 @@
   },
   "file-operations": {
     "chosen": "operaciones de archivos",
-    "forms": "Navigation & file ops → Navegación y operaciones de archivos",
+    "accept": ["operación de archivos"],
+    "forms": "Navigation & file ops → Navegación y operaciones de archivos; a file operation → una operación de archivos",
     "confidence": "high",
     "sources": "catalog (settings.navigationAndFileOps.card.fileOperations); Double Commander (Operaciones con archivos)"
   },
@@ -2400,6 +2401,9 @@
     "accept": ["list"],
     "forms": "agrees with the THING that's ready, never the reader: El comando “cmdr” está listo, Una nueva versión de Cmdr está lista, IA lista; a reader who is ready gets restructured (see style.md, quiet gendered words)",
     "confidence": "high",
+    "exceptions": {
+      "fileOperations.transferProgress.undoWaitingTooltip": "\"Undo is ready\" names the reader's ability, not a thing being prepared: Podrás deshacer esta operación en un momento (listo would agree with the button name, an awkward masculine for an infinitive label)"
+    },
     "sources": "catalog (updates.toast.ready, ai.toast.readyTitle, main.cliCommand.installed)"
   },
   "recent": {

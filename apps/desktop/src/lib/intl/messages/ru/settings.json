@@ -528,6 +528,18 @@
   "@settings.fileOperations.defaultConflictPolicy.keywords": {
     "sourceHash": "00e5bca"
   },
+  "settings.fileOperations.keepProgressOpenWhenDone.label": "Не закрывать окно хода выполнения после завершения операции с файлами",
+  "@settings.fileOperations.keepProgressOpenWhenDone.label": {
+    "sourceHash": "bcca627"
+  },
+  "settings.fileOperations.keepProgressOpenWhenDone.description": "Пока вы не закроете окно, в нем видно, что сделала операция: сколько обработано, сколько времени это заняло и что было пропущено.",
+  "@settings.fileOperations.keepProgressOpenWhenDone.description": {
+    "sourceHash": "005448f"
+  },
+  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "прогресс, ход, готово, завершено, закончено, итог, итоги, сводка, результат, отчет, оставить, не закрывать, закрыть, окно, диалог, копирование, перемещение, удаление, Корзина",
+  "@settings.fileOperations.keepProgressOpenWhenDone.keywords": {
+    "sourceHash": "978b2ff"
+  },
   "settings.fileOperations.defaultConflictPolicy.opt.skip": "Пропустить",
   "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
     "sourceHash": "28d0359"

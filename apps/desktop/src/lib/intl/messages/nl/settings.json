@@ -532,6 +532,18 @@
   "@settings.fileOperations.defaultConflictPolicy.keywords": {
     "sourceHash": "00e5bca"
   },
+  "settings.fileOperations.keepProgressOpenWhenDone.label": "Voortgangsvenster open laten als een bestandsbewerking klaar is",
+  "@settings.fileOperations.keepProgressOpenWhenDone.label": {
+    "sourceHash": "bcca627"
+  },
+  "settings.fileOperations.keepProgressOpenWhenDone.description": "Het venster toont wat de bewerking heeft gedaan tot je het sluit: hoeveel, hoe lang ze duurde en wat ze heeft overgeslagen.",
+  "@settings.fileOperations.keepProgressOpenWhenDone.description": {
+    "sourceHash": "005448f"
+  },
+  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "voortgang, klaar, voltooid, afgerond, gereed, samenvatting, resultaat, overzicht, verslag, blijven staan, openhouden, sluiten, venster, dialoogvenster, kopiëren, verplaatsen, verwijderen, prullenmand",
+  "@settings.fileOperations.keepProgressOpenWhenDone.keywords": {
+    "sourceHash": "978b2ff"
+  },
   "settings.fileOperations.defaultConflictPolicy.opt.skip": "Sla over",
   "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
     "sourceHash": "28d0359"

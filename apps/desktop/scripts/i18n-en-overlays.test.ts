@@ -397,6 +397,7 @@ describe('the rulings the catalogs are supposed to encode', () => {
       'fileOperations.sourcesGone.nothingLeftToast',
       'fileOperations.transferProgress.canceledAlertTitle',
       'fileOperations.transferProgress.canceledAlertMessage',
+      'fileOperations.transferProgress.titleDone',
     ])
     for (const [tag, cat] of [
       ['en-GB', gb],

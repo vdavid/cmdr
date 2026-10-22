@@ -67,6 +67,10 @@
   "@fileOperations.transferProgress.titleCancellingSlow": {
     "sourceHash": "afeb3a3"
   },
+  "fileOperations.transferProgress.titleDone": "{type, select, copy {{count, plural, =0 {Nothing copied} one {Copied {countText} file} other {Copied {countText} files}}} move {{count, plural, =0 {Nothing moved} one {Moved {countText} file} other {Moved {countText} files}}} delete {{count, plural, =0 {Nothing deleted} one {Deleted {countText} file} other {Deleted {countText} files}}} trash {{count, plural, =0 {Nothing moved to the Bin} one {Moved {countText} file to the Bin} other {Moved {countText} files to the Bin}}} compress {{count, plural, =0 {Nothing compressed} one {Compressed {countText} file} other {Compressed {countText} files}}} other {Done}}",
+  "@fileOperations.transferProgress.titleDone": {
+    "sourceHash": "3db0154"
+  },
   "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to the Bin}}…",
   "@fileOperations.transferProgress.titleActive": {
     "sourceHash": "0c636e5"

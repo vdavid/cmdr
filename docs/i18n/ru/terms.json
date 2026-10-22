@@ -3286,7 +3286,10 @@
     "forms": "button → «Открыть»; opening → открытие; Open with → Открыть в программе",
     "confidence": "high",
     "sources": "macOS Finder LocalizableMerged N151 Open → «Открыть», AppKit SavePanel Open → «Открыть»; Double Commander Open → «Открыть»",
-    "proseAccept": ["запуск", "запуст"]
+    "proseAccept": ["запуск", "запуст"],
+    "exceptions": {
+      "settings.fileOperations.keepProgressOpenWhenDone.label": "\"Keep the window open\" is a state, not the Open action: a keep-open switch reads «Не закрывать окно … после …», as Double Commander's «Не закрывать окно терминала после запуска программы»."
+    }
   },
   "open-beta": {
     "chosen": "открытое бета-тестирование",
@@ -3809,7 +3812,10 @@
     "accept": ["готов"],
     "forms": "agrees with its noun: Новая версия готова, Индекс готов, Модель готова",
     "confidence": "high",
-    "sources": "macOS live Ready → «Готово», «Готов»"
+    "sources": "macOS live Ready → «Готово», «Готов»",
+    "exceptions": {
+      "fileOperations.transferProgress.undoWaitingTooltip": "\"Undo is ready\" means a button starts working, not a prepared resource: «Кнопка „Отменить“ заработает…» names the control; «готова» would read as a feminine «отмена» nobody sees."
+    }
   },
   "recent": {
     "chosen": "Недавние",

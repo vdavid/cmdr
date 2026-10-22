@@ -531,6 +531,18 @@
   "@settings.fileOperations.defaultConflictPolicy.keywords": {
     "sourceHash": "00e5bca"
   },
+  "settings.fileOperations.keepProgressOpenWhenDone.label": "Garder la fenêtre de progression ouverte à la fin des opérations sur les fichiers",
+  "@settings.fileOperations.keepProgressOpenWhenDone.label": {
+    "sourceHash": "bcca627"
+  },
+  "settings.fileOperations.keepProgressOpenWhenDone.description": "Affiche ce que l’opération a fait jusqu’à ce que vous fermiez la fenêtre : la quantité traitée, la durée et ce qui a été ignoré.",
+  "@settings.fileOperations.keepProgressOpenWhenDone.description": {
+    "sourceHash": "005448f"
+  },
+  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "terminé, fini, achevé, fin, résumé, bilan, résultat, rapport, rester, laisser, conserver, dialogue, copie, déplacement, suppression, corbeille, vitesse, temps",
+  "@settings.fileOperations.keepProgressOpenWhenDone.keywords": {
+    "sourceHash": "978b2ff"
+  },
   "settings.fileOperations.defaultConflictPolicy.opt.skip": "Ignorer",
   "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
     "sourceHash": "28d0359"

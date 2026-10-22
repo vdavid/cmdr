@@ -585,6 +585,42 @@
   "@fileOperations.transferProgress.titleConflict": {
     "sourceHash": "ae71a9a"
   },
+  "fileOperations.transferProgress.conflictPolicyCaption": "Wenn eine Datei bereits vorhanden ist: {policy}",
+  "@fileOperations.transferProgress.conflictPolicyCaption": {
+    "sourceHash": "cec5c27"
+  },
+  "fileOperations.transferProgress.titleDone": "{type, select, copy {{count, plural, =0 {Nichts kopiert} one {{countText} Datei kopiert} other {{countText} Dateien kopiert}}} move {{count, plural, =0 {Nichts bewegt} one {{countText} Datei bewegt} other {{countText} Dateien bewegt}}} delete {{count, plural, =0 {Nichts gelöscht} one {{countText} Datei gelöscht} other {{countText} Dateien gelöscht}}} trash {{count, plural, =0 {Nichts in den Papierkorb bewegt} one {{countText} Datei in den Papierkorb bewegt} other {{countText} Dateien in den Papierkorb bewegt}}} compress {{count, plural, =0 {Nichts komprimiert} one {{countText} Datei komprimiert} other {{countText} Dateien komprimiert}}} other {Fertig}}",
+  "@fileOperations.transferProgress.titleDone": {
+    "sourceHash": "3db0154"
+  },
+  "fileOperations.transferProgress.doneSummaryRate": "<size></size> in {duration}, durchschnittlich <rate></rate>/s",
+  "@fileOperations.transferProgress.doneSummaryRate": {
+    "sourceHash": "4f6d910"
+  },
+  "fileOperations.transferProgress.doneSummarySize": "<size></size> insgesamt",
+  "@fileOperations.transferProgress.doneSummarySize": {
+    "sourceHash": "01f3008"
+  },
+  "fileOperations.transferProgress.doneSummaryTime": "Hat {duration} gedauert",
+  "@fileOperations.transferProgress.doneSummaryTime": {
+    "sourceHash": "ddbfd5f"
+  },
+  "fileOperations.transferProgress.doneSkipped": "{count, plural, one {{countText} bereits vorhandene Datei übersprungen} other {{countText} bereits vorhandene Dateien übersprungen}}",
+  "@fileOperations.transferProgress.doneSkipped": {
+    "sourceHash": "a6d800b"
+  },
+  "fileOperations.transferProgress.undo": "Widerrufen",
+  "@fileOperations.transferProgress.undo": {
+    "sourceHash": "a8283ad"
+  },
+  "fileOperations.transferProgress.undoWaitingTooltip": "„Widerrufen“ ist gleich bereit, sobald Cmdr festgehalten hat, was dieser Vorgang getan hat.",
+  "@fileOperations.transferProgress.undoWaitingTooltip": {
+    "sourceHash": "54fe565"
+  },
+  "fileOperations.transferProgress.undoUnavailableTooltip": "Dieser Vorgang lässt sich nicht widerrufen.",
+  "@fileOperations.transferProgress.undoUnavailableTooltip": {
+    "sourceHash": "9b61717"
+  },
   "fileOperations.transferProgress.titleFlushing": "Letztes Stück wird geschrieben …",
   "@fileOperations.transferProgress.titleFlushing": {
     "sourceHash": "3aa5686"

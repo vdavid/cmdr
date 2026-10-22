@@ -134,3 +134,8 @@ German runs 20–35% longer than English. Look at these against the pseudolocale
 - restic keys: `errors.volume.noContent` coins `Spezialdatei` for a device file or pipe (no pile hit; `Gerätedatei` is
   too narrow); `errors.write.sourcesSpanVolumes.*` renders „view“ as `Ansicht`, which may read as the display mode
   (source-queue entry open). Check both.
+- `fileOperations.transferProgress.*` done state: `conflictPolicyCaption` takes the settings label's wording
+  (`Wenn eine Datei bereits vorhanden ist: {policy}`), which may overflow the one-line caption with
+  `Überschreiben, wenn älter`; `doneSkipped` folds „that already existed“ into an attribute
+  (`bereits vorhandene Dateien übersprungen`); `undoWaitingTooltip` quotes the button
+  (`„Widerrufen“ ist gleich bereit …`). Check fit and tone.

@@ -526,3 +526,10 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
   Promote that shipped frame to a ruling per locale. (all but ru, zh-Hant)
 - `multiRename.movedRow` and `commands.multiRenameMoveRow*` reorder a preview row; the `move` concept's `notMatch` now
   covers “move the file up/down”, but “moved to” still matches, so each locale needs an exception for `movedRow`. (all)
+- `fileOperations.transferProgress.conflictPolicyCaption`: `{policy}` reuses the copy dialog's BUTTON labels, which most
+  locales write as imperatives (nl `Overschrijf indien ouder`, `Vraag voor elk`), so the caption reads “If a file
+  already exists: Overwrite if older!” as a command. Consider dedicated noun-phrase or state labels for the caption
+  (“Skip”, “Overwrite if older”) as `*PolicyName` keys. (all with an imperative/infinitive split: nl, de, hu, sv, …)
+- `fileOperations.transferProgress.undo`: “Undo” here reverses a whole finished operation (with confirmation), a fourth
+  sense beside text undo, Put Back, and an AI rename run. Say so in the `undo` concept’s sense so locales with split
+  words (nl `Herstel` / `Zet terug` / `Ongedaan maken`) pick deliberately. (all)

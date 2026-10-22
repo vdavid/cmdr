@@ -531,6 +531,18 @@
   "@settings.fileOperations.defaultConflictPolicy.keywords": {
     "sourceHash": "00e5bca"
   },
+  "settings.fileOperations.keepProgressOpenWhenDone.label": "Manter a janela de progresso aberta quando uma operação de arquivo terminar",
+  "@settings.fileOperations.keepProgressOpenWhenDone.label": {
+    "sourceHash": "bcca627"
+  },
+  "settings.fileOperations.keepProgressOpenWhenDone.description": "Até você fechar a janela, ela mostra o que a operação fez: quanto foi processado, quanto tempo levou e o que foi ignorado.",
+  "@settings.fileOperations.keepProgressOpenWhenDone.description": {
+    "sourceHash": "005448f"
+  },
+  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "concluído, terminado, finalizado, pronto, fim, resumo, resultado, relatório, estatísticas, velocidade, tempo, duração, manter, fixar, fechar, diálogo, copiar, mover, apagar, lixo, transferência",
+  "@settings.fileOperations.keepProgressOpenWhenDone.keywords": {
+    "sourceHash": "978b2ff"
+  },
   "settings.fileOperations.defaultConflictPolicy.opt.skip": "Ignorar",
   "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
     "sourceHash": "28d0359"

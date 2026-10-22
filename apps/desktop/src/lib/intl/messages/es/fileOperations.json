@@ -584,6 +584,42 @@
   "@fileOperations.transferProgress.titleConflict": {
     "sourceHash": "ae71a9a"
   },
+  "fileOperations.transferProgress.conflictPolicyCaption": "Si un archivo ya existe: {policy}",
+  "@fileOperations.transferProgress.conflictPolicyCaption": {
+    "sourceHash": "cec5c27"
+  },
+  "fileOperations.transferProgress.titleDone": "{type, select, copy {{count, plural, =0 {No se ha copiado nada} one {Se ha copiado {countText} archivo} many {Se han copiado {countText} archivos} other {Se han copiado {countText} archivos}}} move {{count, plural, =0 {No se ha movido nada} one {Se ha movido {countText} archivo} many {Se han movido {countText} archivos} other {Se han movido {countText} archivos}}} delete {{count, plural, =0 {No se ha eliminado nada} one {Se ha eliminado {countText} archivo} many {Se han eliminado {countText} archivos} other {Se han eliminado {countText} archivos}}} trash {{count, plural, =0 {No se ha movido nada a la papelera} one {Se ha movido {countText} archivo a la papelera} many {Se han movido {countText} archivos a la papelera} other {Se han movido {countText} archivos a la papelera}}} compress {{count, plural, =0 {No se ha comprimido nada} one {Se ha comprimido {countText} archivo} many {Se han comprimido {countText} archivos} other {Se han comprimido {countText} archivos}}} other {Hecho}}",
+  "@fileOperations.transferProgress.titleDone": {
+    "sourceHash": "3db0154"
+  },
+  "fileOperations.transferProgress.doneSummaryRate": "<size></size> en {duration}, <rate></rate>/s de media",
+  "@fileOperations.transferProgress.doneSummaryRate": {
+    "sourceHash": "4f6d910"
+  },
+  "fileOperations.transferProgress.doneSummarySize": "<size></size> en total",
+  "@fileOperations.transferProgress.doneSummarySize": {
+    "sourceHash": "01f3008"
+  },
+  "fileOperations.transferProgress.doneSummaryTime": "Ha tardado {duration}",
+  "@fileOperations.transferProgress.doneSummaryTime": {
+    "sourceHash": "ddbfd5f"
+  },
+  "fileOperations.transferProgress.doneSkipped": "{count, plural, one {Se ha omitido {countText} archivo que ya existía} many {Se han omitido {countText} archivos que ya existían} other {Se han omitido {countText} archivos que ya existían}}",
+  "@fileOperations.transferProgress.doneSkipped": {
+    "sourceHash": "a6d800b"
+  },
+  "fileOperations.transferProgress.undo": "Deshacer",
+  "@fileOperations.transferProgress.undo": {
+    "sourceHash": "a8283ad"
+  },
+  "fileOperations.transferProgress.undoWaitingTooltip": "Podrás deshacer esta operación en un momento, cuando Cmdr termine de registrar lo que ha hecho.",
+  "@fileOperations.transferProgress.undoWaitingTooltip": {
+    "sourceHash": "54fe565"
+  },
+  "fileOperations.transferProgress.undoUnavailableTooltip": "Esta operación no se puede deshacer.",
+  "@fileOperations.transferProgress.undoUnavailableTooltip": {
+    "sourceHash": "9b61717"
+  },
   "fileOperations.transferProgress.titleFlushing": "Escribiendo la última parte…",
   "@fileOperations.transferProgress.titleFlushing": {
     "sourceHash": "3aa5686"

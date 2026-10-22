@@ -583,6 +583,42 @@
   "@fileOperations.transferProgress.titleConflict": {
     "sourceHash": "ae71a9a"
   },
+  "fileOperations.transferProgress.conflictPolicyCaption": "文件已存在时：{policy}",
+  "@fileOperations.transferProgress.conflictPolicyCaption": {
+    "sourceHash": "cec5c27"
+  },
+  "fileOperations.transferProgress.titleDone": "{type, select, copy {{count, plural, =0 {没有拷贝任何文件} other {已拷贝 {countText} 个文件}}} move {{count, plural, =0 {没有移动任何文件} other {已移动 {countText} 个文件}}} delete {{count, plural, =0 {没有删除任何文件} other {已删除 {countText} 个文件}}} trash {{count, plural, =0 {没有将任何文件移到废纸篓} other {已将 {countText} 个文件移到废纸篓}}} compress {{count, plural, =0 {没有压缩任何文件} other {已压缩 {countText} 个文件}}} other {已完成}}",
+  "@fileOperations.transferProgress.titleDone": {
+    "sourceHash": "3db0154"
+  },
+  "fileOperations.transferProgress.doneSummaryRate": "共 <size></size>，用时 {duration}，平均 <rate></rate>/秒",
+  "@fileOperations.transferProgress.doneSummaryRate": {
+    "sourceHash": "4f6d910"
+  },
+  "fileOperations.transferProgress.doneSummarySize": "共 <size></size>",
+  "@fileOperations.transferProgress.doneSummarySize": {
+    "sourceHash": "01f3008"
+  },
+  "fileOperations.transferProgress.doneSummaryTime": "用时 {duration}",
+  "@fileOperations.transferProgress.doneSummaryTime": {
+    "sourceHash": "ddbfd5f"
+  },
+  "fileOperations.transferProgress.doneSkipped": "{count, plural, other {已跳过 {countText} 个已存在的文件}}",
+  "@fileOperations.transferProgress.doneSkipped": {
+    "sourceHash": "a6d800b"
+  },
+  "fileOperations.transferProgress.undo": "撤销",
+  "@fileOperations.transferProgress.undo": {
+    "sourceHash": "a8283ad"
+  },
+  "fileOperations.transferProgress.undoWaitingTooltip": "撤销马上就准备好了，等 Cmdr 记录完这项操作做了什么就行。",
+  "@fileOperations.transferProgress.undoWaitingTooltip": {
+    "sourceHash": "54fe565"
+  },
+  "fileOperations.transferProgress.undoUnavailableTooltip": "这项操作无法撤销。",
+  "@fileOperations.transferProgress.undoUnavailableTooltip": {
+    "sourceHash": "9b61717"
+  },
   "fileOperations.transferProgress.titleFlushing": "正在写入最后一部分…",
   "@fileOperations.transferProgress.titleFlushing": {
     "sourceHash": "3aa5686"

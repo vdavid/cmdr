@@ -81,7 +81,7 @@
   },
   "already-exists": {
     "chosen": "já existe",
-    "accept": ["existe"],
+    "accept": ["existe", "existir", "existia"],
     "confidence": "high",
     "sources": "macOS Finder pt-BR (NE73 Já existe um item com o mesmo nome nesta localização.)"
   },

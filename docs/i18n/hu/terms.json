@@ -2809,14 +2809,10 @@
   },
   "progress": {
     "chosen": "előrehaladás",
-    "accept": ["folyamatban"],
-    "forms": "No progress for {duration} → {duration} óta nincs előrehaladás; aria Méret-előrehaladás, Fájl-előrehaladás",
+    "accept": ["folyamatban", "folyamatjelző"],
+    "forms": "No progress for {duration} → {duration} óta nincs előrehaladás; aria Méret-előrehaladás, Fájl-előrehaladás; the progress window / dialog → folyamatjelző ablak / párbeszédablak (named after its indicator; előrehaladási ablak reads as a calque)",
     "confidence": "high",
-    "sources": "macOS Finder (Előrehaladás paraméterei); Xfce Thunar (Fájlművelet előrehaladása)",
-    "exceptions": {
-      "queue.row.foregroundTooltip": "a progress dialog → folyamatjelző párbeszédablak, matching folyamatjelző ablak in fileOperations.backgroundStart.tooltip",
-      "fileOperations.backgroundStart.tooltip": "a progress window → folyamatjelző ablak: the window is named after its indicator; előrehaladási ablak reads as a calque."
-    }
+    "sources": "macOS Finder (Előrehaladás paraméterei); Xfce Thunar (Fájlművelet előrehaladása)"
   },
   "properties": {
     "chosen": "tulajdonságai",
@@ -3436,7 +3432,7 @@
   },
   "skip": {
     "chosen": "Átugrás",
-    "accept": ["átugr", "kihagy"],
+    "accept": ["átugr", "kihagy", "hagyott ki"],
     "forms": "the conflict-policy button → Átugrás; Skip all → Összes átugrása; a past outcome → kihagyva",
     "confidence": "high",
     "sources": "macOS Finder (PE112/AL6 Átugrás; Kihagyás/Kihagyva)",

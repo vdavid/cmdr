@@ -528,6 +528,18 @@
   "@settings.fileOperations.defaultConflictPolicy.keywords": {
     "sourceHash": "00e5bca"
   },
+  "settings.fileOperations.keepProgressOpenWhenDone.label": "Giữ cửa sổ tiến trình mở khi thao tác tệp hoàn tất",
+  "@settings.fileOperations.keepProgressOpenWhenDone.label": {
+    "sourceHash": "bcca627"
+  },
+  "settings.fileOperations.keepProgressOpenWhenDone.description": "Cửa sổ sẽ hiển thị những gì thao tác đã làm cho đến khi bạn đóng lại: đã xử lý bao nhiêu, mất bao lâu và đã bỏ qua những gì.",
+  "@settings.fileOperations.keepProgressOpenWhenDone.description": {
+    "sourceHash": "005448f"
+  },
+  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "tiến độ, xong, hoàn thành, kết thúc, tóm tắt, kết quả, báo cáo, thống kê, tốc độ, thời gian, giữ lại, ở lại, đóng, hộp thoại, chép, chuyển, xóa, rác",
+  "@settings.fileOperations.keepProgressOpenWhenDone.keywords": {
+    "sourceHash": "978b2ff"
+  },
   "settings.fileOperations.defaultConflictPolicy.opt.skip": "Bỏ qua",
   "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
     "sourceHash": "28d0359"

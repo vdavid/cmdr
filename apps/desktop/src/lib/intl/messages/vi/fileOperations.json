@@ -584,6 +584,42 @@
   "@fileOperations.transferProgress.titleConflict": {
     "sourceHash": "ae71a9a"
   },
+  "fileOperations.transferProgress.conflictPolicyCaption": "Nếu tệp đã tồn tại: {policy}",
+  "@fileOperations.transferProgress.conflictPolicyCaption": {
+    "sourceHash": "cec5c27"
+  },
+  "fileOperations.transferProgress.titleDone": "{type, select, copy {{count, plural, =0 {Không sao chép tệp nào} other {Đã sao chép {countText} tệp}}} move {{count, plural, =0 {Không di chuyển tệp nào} other {Đã di chuyển {countText} tệp}}} delete {{count, plural, =0 {Không xóa tệp nào} other {Đã xóa {countText} tệp}}} trash {{count, plural, =0 {Không chuyển tệp nào vào thùng rác} other {Đã chuyển {countText} tệp vào thùng rác}}} compress {{count, plural, =0 {Không nén tệp nào} other {Đã nén {countText} tệp}}} other {Xong}}",
+  "@fileOperations.transferProgress.titleDone": {
+    "sourceHash": "3db0154"
+  },
+  "fileOperations.transferProgress.doneSummaryRate": "<size></size> trong {duration}, trung bình <rate></rate>/giây",
+  "@fileOperations.transferProgress.doneSummaryRate": {
+    "sourceHash": "4f6d910"
+  },
+  "fileOperations.transferProgress.doneSummarySize": "Tổng cộng <size></size>",
+  "@fileOperations.transferProgress.doneSummarySize": {
+    "sourceHash": "01f3008"
+  },
+  "fileOperations.transferProgress.doneSummaryTime": "Mất {duration}",
+  "@fileOperations.transferProgress.doneSummaryTime": {
+    "sourceHash": "ddbfd5f"
+  },
+  "fileOperations.transferProgress.doneSkipped": "{count, plural, other {Đã bỏ qua {countText} tệp đã tồn tại}}",
+  "@fileOperations.transferProgress.doneSkipped": {
+    "sourceHash": "a6d800b"
+  },
+  "fileOperations.transferProgress.undo": "Hoàn tác",
+  "@fileOperations.transferProgress.undo": {
+    "sourceHash": "a8283ad"
+  },
+  "fileOperations.transferProgress.undoWaitingTooltip": "Hoàn tác sẽ sẵn sàng trong giây lát, ngay khi Cmdr ghi lại xong những gì thao tác này đã làm.",
+  "@fileOperations.transferProgress.undoWaitingTooltip": {
+    "sourceHash": "54fe565"
+  },
+  "fileOperations.transferProgress.undoUnavailableTooltip": "Không thể hoàn tác thao tác này.",
+  "@fileOperations.transferProgress.undoUnavailableTooltip": {
+    "sourceHash": "9b61717"
+  },
   "fileOperations.transferProgress.titleFlushing": "Đang ghi phần cuối cùng…",
   "@fileOperations.transferProgress.titleFlushing": {
     "sourceHash": "3aa5686"

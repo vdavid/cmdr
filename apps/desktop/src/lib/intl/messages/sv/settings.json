@@ -532,6 +532,18 @@
   "@settings.fileOperations.defaultConflictPolicy.keywords": {
     "sourceHash": "00e5bca"
   },
+  "settings.fileOperations.keepProgressOpenWhenDone.label": "Behåll förloppsfönstret öppet när en filåtgärd är klar",
+  "@settings.fileOperations.keepProgressOpenWhenDone.label": {
+    "sourceHash": "bcca627"
+  },
+  "settings.fileOperations.keepProgressOpenWhenDone.description": "Fönstret visar vad åtgärden gjorde tills du stänger det: hur mycket, hur lång tid det tog och vad den hoppade över.",
+  "@settings.fileOperations.keepProgressOpenWhenDone.description": {
+    "sourceHash": "005448f"
+  },
+  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "förlopp, klar, färdig, slutförd, sammanfattning, resultat, rapport, översikt, stanna kvar, behåll, stäng, fönster, dialog, kopiera, flytta, radera, papperskorg, hastighet, tid",
+  "@settings.fileOperations.keepProgressOpenWhenDone.keywords": {
+    "sourceHash": "978b2ff"
+  },
   "settings.fileOperations.defaultConflictPolicy.opt.skip": "Hoppa över",
   "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
     "sourceHash": "28d0359"

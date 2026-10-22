@@ -16,14 +16,14 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 2920 / 4795 keys have a screenshot (61%):** 1591 direct (33%) and 1329 representative (28%). 1686 remain
+**Total: 2929 / 4813 keys have a screenshot (61%):** 1591 direct (33%) and 1338 representative (28%). 1695 remain
 uncoupled, and 189 are native surfaces a webview capture cannot reach.
 
 | Area            | Direct | Representative | Uncoupled | Native | Total | Any % |
 | --------------- | -----: | -------------: | --------: | -----: | ----: | ----: |
 | adb             |      3 |              0 |        17 |      0 |    20 |   15% |
 | ai              |      0 |            123 |         0 |      0 |   123 |  100% |
-| askCmdr         |     65 |              0 |       134 |      0 |   199 |   33% |
+| askCmdr         |     65 |              0 |       135 |      0 |   200 |   33% |
 | commandPalette  |      3 |              2 |         2 |      0 |     7 |   71% |
 | commands        |    215 |              1 |       100 |      0 |   316 |   68% |
 | common          |      9 |              1 |         8 |      0 |    18 |   56% |
@@ -32,8 +32,8 @@ uncoupled, and 189 are native surfaces a webview capture cannot reach.
 | errorReporter   |     16 |              0 |        42 |      0 |    58 |   28% |
 | errors          |    116 |            488 |         0 |      0 |   604 |  100% |
 | feedback        |      7 |              6 |         2 |      0 |    15 |   87% |
-| fileExplorer    |    121 |             65 |       328 |      0 |   514 |   36% |
-| fileOperations  |    124 |             75 |       119 |      0 |   318 |   63% |
+| fileExplorer    |    121 |             65 |       330 |      0 |   516 |   36% |
+| fileOperations  |    124 |             84 |       123 |      0 |   331 |   63% |
 | goToPath        |      5 |              6 |         2 |      0 |    13 |   85% |
 | indexing        |     34 |             17 |        20 |      0 |    71 |   72% |
 | licensing       |     49 |             35 |        25 |      0 |   109 |   77% |
@@ -41,7 +41,7 @@ uncoupled, and 189 are native surfaces a webview capture cannot reach.
 | main            |      7 |              0 |        46 |      2 |    55 |   13% |
 | menu            |      4 |              0 |         0 |    187 |   191 |    2% |
 | mtp             |     18 |              2 |         0 |      0 |    20 |  100% |
-| multiRename     |      0 |              0 |       172 |      0 |   172 |    0% |
+| multiRename     |      0 |              0 |       162 |      0 |   162 |    0% |
 | notifications   |      0 |              0 |         1 |      0 |     1 |    0% |
 | onboarding      |     96 |             39 |        25 |      0 |   160 |   84% |
 | operationLog    |     26 |             30 |         0 |      0 |    56 |  100% |
@@ -51,12 +51,12 @@ uncoupled, and 189 are native surfaces a webview capture cannot reach.
 | securityNotices |      0 |              0 |        13 |      0 |    13 |    0% |
 | selection       |     14 |              0 |         1 |      0 |    15 |   93% |
 | servers         |     73 |             27 |       103 |      0 |   203 |   49% |
-| settings        |    404 |             36 |       403 |      0 |   843 |   52% |
+| settings        |    404 |             36 |       414 |      0 |   854 |   52% |
 | shortcuts       |     35 |             28 |         0 |      0 |    63 |  100% |
 | stateRecovery   |      0 |              0 |        31 |      0 |    31 |    0% |
 | suggestedOps    |      0 |              0 |        38 |      0 |    38 |    0% |
 | transfer        |      2 |             22 |         0 |      0 |    24 |  100% |
-| ui              |      8 |              0 |        19 |      0 |    27 |   30% |
+| ui              |      8 |              0 |        20 |      0 |    28 |   29% |
 | updates         |      5 |             27 |         0 |      0 |    32 |  100% |
 | viewer          |     30 |             88 |         0 |      0 |   118 |  100% |
 | whatsNew        |      6 |              1 |         4 |      0 |    11 |   64% |

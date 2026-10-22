@@ -530,6 +530,18 @@
   "@settings.fileOperations.defaultConflictPolicy.keywords": {
     "sourceHash": "00e5bca"
   },
+  "settings.fileOperations.keepProgressOpenWhenDone.label": "A folyamatjelző ablak nyitva tartása, amikor egy fájlművelet befejeződik",
+  "@settings.fileOperations.keepProgressOpenWhenDone.label": {
+    "sourceHash": "bcca627"
+  },
+  "settings.fileOperations.keepProgressOpenWhenDone.description": "Amíg be nem zárod, megmutatja, mit csinált a művelet: mennyit, mennyi idő alatt, és mit hagyott ki.",
+  "@settings.fileOperations.keepProgressOpenWhenDone.description": {
+    "sourceHash": "005448f"
+  },
+  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "kész, befejezve, vége, összegzés, összefoglaló, eredmény, jelentés, statisztika, sebesség, marad, nyitva, ablak, párbeszédablak, másolás, áthelyezés, törlés, kuka",
+  "@settings.fileOperations.keepProgressOpenWhenDone.keywords": {
+    "sourceHash": "978b2ff"
+  },
   "settings.fileOperations.defaultConflictPolicy.opt.skip": "Átugrás",
   "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
     "sourceHash": "28d0359"

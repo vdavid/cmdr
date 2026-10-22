@@ -530,6 +530,18 @@
   "@settings.fileOperations.defaultConflictPolicy.keywords": {
     "sourceHash": "00e5bca"
   },
+  "settings.fileOperations.keepProgressOpenWhenDone.label": "檔案操作完成後保持進度視窗開啟",
+  "@settings.fileOperations.keepProgressOpenWhenDone.label": {
+    "sourceHash": "bcca627"
+  },
+  "settings.fileOperations.keepProgressOpenWhenDone.description": "視窗會一直顯示這項操作做了什麼，直到你關掉為止：處理了多少、花了多久，還有略過了哪些檔案。",
+  "@settings.fileOperations.keepProgressOpenWhenDone.description": {
+    "sourceHash": "005448f"
+  },
+  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "進度, 完成, 做完, 結束, 摘要, 總結, 結果, 報告, 統計, 留著, 不關, 保留, 視窗, 對話方塊, 複製, 移動, 刪除, 垃圾桶",
+  "@settings.fileOperations.keepProgressOpenWhenDone.keywords": {
+    "sourceHash": "978b2ff"
+  },
   "settings.fileOperations.defaultConflictPolicy.opt.skip": "全部略過",
   "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
     "sourceHash": "28d0359"

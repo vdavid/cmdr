@@ -107,6 +107,26 @@
   "@fileOperations.transferProgress.stallUnknown": {
     "sourceHash": "af54155"
   },
+  "fileOperations.transferProgress.titleDone": "{type, select, copy {{count, plural, =0 {No se copió nada} one {Se copió {countText} archivo} many {Se copiaron {countText} archivos} other {Se copiaron {countText} archivos}}} move {{count, plural, =0 {No se movió nada} one {Se movió {countText} archivo} many {Se movieron {countText} archivos} other {Se movieron {countText} archivos}}} delete {{count, plural, =0 {No se eliminó nada} one {Se eliminó {countText} archivo} many {Se eliminaron {countText} archivos} other {Se eliminaron {countText} archivos}}} trash {{count, plural, =0 {No se movió nada al basurero} one {Se movió {countText} archivo al basurero} many {Se movieron {countText} archivos al basurero} other {Se movieron {countText} archivos al basurero}}} compress {{count, plural, =0 {No se comprimió nada} one {Se comprimió {countText} archivo} many {Se comprimieron {countText} archivos} other {Se comprimieron {countText} archivos}}} other {Hecho}}",
+  "@fileOperations.transferProgress.titleDone": {
+    "sourceHash": "a790b3e"
+  },
+  "fileOperations.transferProgress.doneSummaryRate": "<size></size> en {duration}, <rate></rate>/s en promedio",
+  "@fileOperations.transferProgress.doneSummaryRate": {
+    "sourceHash": "25da5e8"
+  },
+  "fileOperations.transferProgress.doneSummaryTime": "Tardó {duration}",
+  "@fileOperations.transferProgress.doneSummaryTime": {
+    "sourceHash": "f3ae98b"
+  },
+  "fileOperations.transferProgress.doneSkipped": "{count, plural, one {Se omitió {countText} archivo que ya existía} many {Se omitieron {countText} archivos que ya existían} other {Se omitieron {countText} archivos que ya existían}}",
+  "@fileOperations.transferProgress.doneSkipped": {
+    "sourceHash": "e4d97f9"
+  },
+  "fileOperations.transferProgress.undoWaitingTooltip": "Podrás deshacer esta operación en un momento, cuando Cmdr termine de registrar lo que hizo.",
+  "@fileOperations.transferProgress.undoWaitingTooltip": {
+    "sourceHash": "f706531"
+  },
   "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Copiando} move {Moviendo} compress {Comprimiendo} delete {Eliminando} other {Moviendo al basurero}}…",
   "@fileOperations.transferProgress.titleActive": {
     "sourceHash": "1346def"

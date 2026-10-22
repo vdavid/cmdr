@@ -584,6 +584,42 @@
   "@fileOperations.transferProgress.titleConflict": {
     "sourceHash": "ae71a9a"
   },
+  "fileOperations.transferProgress.conflictPolicyCaption": "Если файл уже существует: «{policy}»",
+  "@fileOperations.transferProgress.conflictPolicyCaption": {
+    "sourceHash": "cec5c27"
+  },
+  "fileOperations.transferProgress.titleDone": "{type, select, copy {{count, plural, =0 {Ничего не скопировано} one {Скопирован {countText} файл} few {Скопированы {countText} файла} many {Скопировано {countText} файлов} other {Скопировано {countText} файла}}} move {{count, plural, =0 {Ничего не перемещено} one {Перемещен {countText} файл} few {Перемещены {countText} файла} many {Перемещено {countText} файлов} other {Перемещено {countText} файла}}} delete {{count, plural, =0 {Ничего не удалено} one {Удален {countText} файл} few {Удалены {countText} файла} many {Удалено {countText} файлов} other {Удалено {countText} файла}}} trash {{count, plural, =0 {Ничего не перемещено в Корзину} one {Перемещен в Корзину {countText} файл} few {Перемещены в Корзину {countText} файла} many {Перемещено в Корзину {countText} файлов} other {Перемещено в Корзину {countText} файла}}} compress {{count, plural, =0 {Ничего не сжато} one {Сжат {countText} файл} few {Сжаты {countText} файла} many {Сжато {countText} файлов} other {Сжато {countText} файла}}} other {Готово}}",
+  "@fileOperations.transferProgress.titleDone": {
+    "sourceHash": "3db0154"
+  },
+  "fileOperations.transferProgress.doneSummaryRate": "<size></size> за {duration}, в среднем <rate></rate>/с",
+  "@fileOperations.transferProgress.doneSummaryRate": {
+    "sourceHash": "4f6d910"
+  },
+  "fileOperations.transferProgress.doneSummarySize": "Всего: <size></size>",
+  "@fileOperations.transferProgress.doneSummarySize": {
+    "sourceHash": "01f3008"
+  },
+  "fileOperations.transferProgress.doneSummaryTime": "Заняло {duration}",
+  "@fileOperations.transferProgress.doneSummaryTime": {
+    "sourceHash": "ddbfd5f"
+  },
+  "fileOperations.transferProgress.doneSkipped": "{count, plural, one {Пропущен {countText} уже существующий файл} few {Пропущены {countText} уже существующих файла} many {Пропущено {countText} уже существующих файлов} other {Пропущено {countText} уже существующего файла}}",
+  "@fileOperations.transferProgress.doneSkipped": {
+    "sourceHash": "a6d800b"
+  },
+  "fileOperations.transferProgress.undo": "Отменить",
+  "@fileOperations.transferProgress.undo": {
+    "sourceHash": "a8283ad"
+  },
+  "fileOperations.transferProgress.undoWaitingTooltip": "Кнопка «Отменить» заработает через мгновение, как только Cmdr закончит записывать, что было сделано.",
+  "@fileOperations.transferProgress.undoWaitingTooltip": {
+    "sourceHash": "54fe565"
+  },
+  "fileOperations.transferProgress.undoUnavailableTooltip": "Эту операцию нельзя отменить.",
+  "@fileOperations.transferProgress.undoUnavailableTooltip": {
+    "sourceHash": "9b61717"
+  },
   "fileOperations.transferProgress.titleFlushing": "Завершение записи…",
   "@fileOperations.transferProgress.titleFlushing": {
     "sourceHash": "3aa5686"

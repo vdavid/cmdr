@@ -435,6 +435,14 @@
   "@settings.fileOperations.skipConfirmation.keywords": {
     "sourceHash": "9e8c5fc"
   },
+  "settings.fileOperations.keepProgressOpenWhenDone.description": "Hasta que cierres la ventana, muestra lo que hizo la operación: cuánto procesó, cuánto tardó y lo que haya omitido.",
+  "@settings.fileOperations.keepProgressOpenWhenDone.description": {
+    "sourceHash": "e6291e0"
+  },
+  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "progreso, terminado, finalizado, acabado, completado, resumen, resultado, informe, reporte, estadísticas, velocidad, duración, quedarse, mantener, dejar abierta, cerrar, ventana, diálogo, copiar, mover, eliminar, borrar, papelera, basurero",
+  "@settings.fileOperations.keepProgressOpenWhenDone.keywords": {
+    "sourceHash": "5290fc2"
+  },
   "settings.mediaIndex.showFileStatusIcons.keywords": "imagen, foto, insignia, insignias, icono, ícono, superposición, indicador, estado, indexado",
   "@settings.mediaIndex.showFileStatusIcons.keywords": {
     "sourceHash": "714ab25"

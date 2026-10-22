@@ -1202,7 +1202,7 @@
     "sources": "Double Commander (file list → bestandenlijst)"
   },
   "file-operations": {
-    "accept": ["Bestandsbewerkingen", "bewerkingen"],
+    "accept": ["Bestandsbewerkingen", "bewerkingen", "bestandsbewerking"],
     "chosen": "bestandsbewerkingen",
     "confidence": "high",
     "forms": "the short Settings section Navigation & file ops → Navigatie en bewerkingen; the card keeps the full Bestandsbewerkingen",

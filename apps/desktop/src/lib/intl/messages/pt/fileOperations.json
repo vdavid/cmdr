@@ -585,6 +585,42 @@
   "@fileOperations.transferProgress.titleConflict": {
     "sourceHash": "ae71a9a"
   },
+  "fileOperations.transferProgress.conflictPolicyCaption": "Se um arquivo já existir: {policy}",
+  "@fileOperations.transferProgress.conflictPolicyCaption": {
+    "sourceHash": "cec5c27"
+  },
+  "fileOperations.transferProgress.titleDone": "{type, select, copy {{count, plural, =0 {Nada foi copiado} one {{countText} arquivo copiado} many {{countText} arquivos copiados} other {{countText} arquivos copiados}}} move {{count, plural, =0 {Nada foi movido} one {{countText} arquivo movido} many {{countText} arquivos movidos} other {{countText} arquivos movidos}}} delete {{count, plural, =0 {Nada foi apagado} one {{countText} arquivo apagado} many {{countText} arquivos apagados} other {{countText} arquivos apagados}}} trash {{count, plural, =0 {Nada foi movido para o Lixo} one {{countText} arquivo movido para o Lixo} many {{countText} arquivos movidos para o Lixo} other {{countText} arquivos movidos para o Lixo}}} compress {{count, plural, =0 {Nada foi comprimido} one {{countText} arquivo comprimido} many {{countText} arquivos comprimidos} other {{countText} arquivos comprimidos}}} other {Concluído}}",
+  "@fileOperations.transferProgress.titleDone": {
+    "sourceHash": "3db0154"
+  },
+  "fileOperations.transferProgress.doneSummaryRate": "<size></size> em {duration}, <rate></rate>/s em média",
+  "@fileOperations.transferProgress.doneSummaryRate": {
+    "sourceHash": "4f6d910"
+  },
+  "fileOperations.transferProgress.doneSummarySize": "<size></size> no total",
+  "@fileOperations.transferProgress.doneSummarySize": {
+    "sourceHash": "01f3008"
+  },
+  "fileOperations.transferProgress.doneSummaryTime": "Levou {duration}",
+  "@fileOperations.transferProgress.doneSummaryTime": {
+    "sourceHash": "ddbfd5f"
+  },
+  "fileOperations.transferProgress.doneSkipped": "{count, plural, one {{countText} arquivo ignorado porque já existia} many {{countText} arquivos ignorados porque já existiam} other {{countText} arquivos ignorados porque já existiam}}",
+  "@fileOperations.transferProgress.doneSkipped": {
+    "sourceHash": "a6d800b"
+  },
+  "fileOperations.transferProgress.undo": "Desfazer",
+  "@fileOperations.transferProgress.undo": {
+    "sourceHash": "a8283ad"
+  },
+  "fileOperations.transferProgress.undoWaitingTooltip": "Desfazer fica pronto em um instante, assim que o Cmdr terminar de registrar o que esta operação fez.",
+  "@fileOperations.transferProgress.undoWaitingTooltip": {
+    "sourceHash": "54fe565"
+  },
+  "fileOperations.transferProgress.undoUnavailableTooltip": "Esta operação não pode ser desfeita.",
+  "@fileOperations.transferProgress.undoUnavailableTooltip": {
+    "sourceHash": "9b61717"
+  },
   "fileOperations.transferProgress.titleFlushing": "Gravando a última parte…",
   "@fileOperations.transferProgress.titleFlushing": {
     "sourceHash": "3aa5686"

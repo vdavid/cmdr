@@ -532,6 +532,18 @@
   "@settings.fileOperations.defaultConflictPolicy.keywords": {
     "sourceHash": "00e5bca"
   },
+  "settings.fileOperations.keepProgressOpenWhenDone.label": "Fortschrittsfenster offen lassen, wenn ein Dateivorgang fertig ist",
+  "@settings.fileOperations.keepProgressOpenWhenDone.label": {
+    "sourceHash": "bcca627"
+  },
+  "settings.fileOperations.keepProgressOpenWhenDone.description": "Das Fenster zeigt dann, was der Vorgang getan hat, bis du es schließt: wie viel, wie lange er gedauert hat und was er übersprungen hat.",
+  "@settings.fileOperations.keepProgressOpenWhenDone.description": {
+    "sourceHash": "005448f"
+  },
+  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "Fortschritt, fertig, erledigt, abgeschlossen, beendet, Zusammenfassung, Ergebnis, Bericht, Bilanz, geöffnet, bleiben, stehen lassen, Dialog, Dauer, Geschwindigkeit, Tempo, Kopieren, Bewegen, Verschieben, Löschen, Papierkorb",
+  "@settings.fileOperations.keepProgressOpenWhenDone.keywords": {
+    "sourceHash": "978b2ff"
+  },
   "settings.fileOperations.defaultConflictPolicy.opt.skip": "Überspringen",
   "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
     "sourceHash": "28d0359"

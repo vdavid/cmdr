@@ -171,6 +171,10 @@
   "@settings.fileOperations.skipConfirmation.keywords": {
     "sourceHash": "9f61258"
   },
+  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "progress, done, finished, complete, summary, result, report, stay, keep, close, window, dialog, copy, move, delete, trash, bin",
+  "@settings.fileOperations.keepProgressOpenWhenDone.keywords": {
+    "sourceHash": "978b2ff"
+  },
   "settings.dataWipe.goes.license": "The licence on this Mac. To activate it again, enter the licence key from your purchase email.",
   "@settings.dataWipe.goes.license": {
     "sourceHash": "90b5b06"

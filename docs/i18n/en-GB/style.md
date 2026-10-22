@@ -173,6 +173,11 @@ Considered and deliberately NOT forked, so nobody re-litigates them:
   `Checking`, and `hint` are dialect-neutral, and British Finder writes `Open in Terminal` and `Choose Application…`
   with the same spellings as base `en` (`_ignored/i18n/en-GB/macOS/Finder/LocalizableMerged.json`, `N67` and `N137`,
   2026-09-05). The one word worth a look, `app`, is what British Finder calls it too.
+- **The progress dialog's done state (`fileOperations.transferProgress.done*`, `undo*`, `conflictPolicyCaption`, and
+  `settings.fileOperations.keepProgressOpenWhenDone.*`).** Only the Bin forks: `titleDone`'s trash branch
+  (`Moved 3 files to the Bin`) and the setting's keywords (`trash, bin`, keeping the American word as a search synonym
+  like `skipConfirmation.keywords`). `on average`, `in total`, `Took`, `dialog`, and `summary` are dialect-neutral. Same
+  two forks in `en-AU`.
 - **`Forward` → `Forwards` on the Go menu.** The adverbial `-s` rides the verb phrase only. `en-GB` writes `Forward` on
   the menu item (`Finder/MenuBar.json:249.title`, `SystemSettings/MainMenu.json:448.title`) while writing `go forwards`
   in the accessibility description, so `menu.go.forward` inherits and `commands.navForward.label` forks.
