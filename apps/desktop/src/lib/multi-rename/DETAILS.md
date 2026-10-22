@@ -226,10 +226,10 @@
   default masks, so the caret sits right after one whenever the sheet opens, where ↓ is TC's field history; one rule for
   every kind is David's pick. Both are claimed (`claimKey`); anywhere else ArrowDown isn't touched. Escape in the field
   closes an open editor and is claimed, so the sheet stays. In the counter's editor, ArrowDown / ArrowUp walk the
-  fields, and Enter or ArrowUp from the first field closes it; in the range editor only Enter does (§ Range editor).
-  Both are claimed, so the sheet's Enter-starts never sees them. Escape is the `Popover`'s, which stops it before the
-  sheet closes. All three put focus back in the field with the caret after the token (Escape through the anchor span's
-  `onfocus`); a click elsewhere closes the editor and leaves focus where it landed.
+  fields, and Enter or ArrowUp from the first field closes it; in the range editor Enter, or ArrowUp in its text box,
+  does (§ Range editor). Both are claimed, so the sheet's Enter-starts never sees them. Escape is the `Popover`'s, which
+  stops it before the sheet closes. All three put focus back in the field with the caret after the token (Escape through
+  the anchor span's `onfocus`); a click elsewhere closes the editor and leaves focus where it landed.
 - **Markers**: an absolutely placed ▾ `<button tabindex="-1">` ("Edit counter", "Choose characters",
   `aria-haspopup="dialog"`) centered under each token, measured with a canvas in the input's computed font, net of
   `scrollLeft`; one scrolled out of view isn't drawn. Mousedown is prevented, so a click never moves focus out of the
@@ -253,9 +253,10 @@
 - **What to take**: an uneditable, monospace house `TextInput` holding the token's field on the list cursor's file,
   under a visible `<label>` ("Select the characters to take"). The token says which field it reads, so there's no field
   picker. It behaves as a text box: a caret, and every native caret and selection key and pointer gesture (←/→, ⌥, ⌘,
-  Home / End, ↑ / ↓, ⇧ with any, click, drag, double-click, ⌘A); long names scroll inside the box, so the editor keeps
-  its width (420 px). There is no file switcher: the example is always the cursor row (`sampleRows`), so moving the
-  list's cursor changes it. A field that's empty on that file shows "Empty for this file" as the box's placeholder.
+  Home / End, ⇧ with any, click, drag, double-click, ⌘A), bare ↑ / ↓ aside (Keys and focus, below); long names scroll
+  inside the box, so the editor keeps its width (420 px). There is no file switcher: the example is always the cursor
+  row (`sampleRows`), so moving the list's cursor changes it. A field that's empty on that file shows "Empty for this
+  file" as the box's placeholder.
 - **How to count**: Start and End each offer "from the start" / "from the end", labelled with the edge's real place on
   that file ("1st" / "9th from the end"), and Write as offers "Start to end" (`[N2-5]`) / "Start and length" (`[N2,4]`);
   the length form hides End. With Start counted from the end, End's "from the start" is off, its tooltip saying why: the
@@ -299,9 +300,13 @@
   row's preview still on its way) keeps what's shown. The pick the last edit wrote stands in until the answer for its
   token lands (`picked`), so the box keeps the user's selection meanwhile. TS only splits the answer's text at the
   engine's indices to draw it.
-- **Keys and focus**: the box is the editor's first stop, and every key in it is the field's own (↑ / ↓ move the caret
-  to the start / end, as in any single-line field). Enter anywhere goes back to the mask, claimed in the capture phase
-  so the sheet never starts a rename; Escape is the `Popover`'s; Tab moves on through the toggles.
+- **Keys and focus**: the box is the editor's first stop, and every key in it is the field's own except bare ↑ / ↓: ↑
+  goes back to the mask (as Enter does), ↓ moves focus to the Start toggles (`ToggleGroup.focus()`; a claimed no-op for
+  the whole field, whose toggles are off). **Decision/Why:** in a single-line field they'd only jump the caret to the
+  start / end, which Home / End and ⌘← / ⌘→ already do, while up / down between the mask, the box, and the toggles is
+  how keyboard and VoiceOver users move through the editor. With a modifier they stay native (⇧↑ / ⇧↓ extend the
+  selection to the start / end). Enter anywhere goes back to the mask, claimed in the capture phase so the sheet never
+  starts a rename; Escape is the `Popover`'s; Tab moves on through the toggles.
 - **Accessibility**: the box is named by its visible label and described by the reading line; VoiceOver reads a text
   field's selection natively. The reading line is a polite live region, so a token changed from the toggles or the mask
   is read out in plain words. In a passive (caret-opened) editor the box isn't focused, and WebKit doesn't paint an

@@ -2027,6 +2027,10 @@ should line up with the fields below it, as `TransferDialog`'s Copy / Move / Com
 `ModeChips` row do. Cells only split evenly down to their own content size (`min-width: auto` on a flex item), so a long
 option like "AI Ask anything ⌥A" keeps its width and the shorter cells give way.
 
+`focus()` (through `bind:this`, typed as `ToggleGroupAPI` from `toggle-group-types.ts`) moves focus to the active cell,
+or the first enabled one, and returns whether a cell took it (`false` for a disabled group). For a caller that sends a
+key into the group, like the range editor's ↓.
+
 The group's ends are fully rounded (`--radius-full` on `.tg-root` plus `overflow: hidden`, which clips the first and
 last cells to the pill, so no per-cell corner rounding is needed).
 

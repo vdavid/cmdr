@@ -22,11 +22,13 @@
      * lands in it, and that mustn't rewrite the token.
      *
      * Keys: Enter leaves through `onDone`, claimed in the capture phase so the sheet never starts a
-     * rename from here. Escape belongs to the `Popover` around this. Every other key is native.
+     * rename from here. In the box, a bare ↑ leaves the same way and a bare ↓ moves on to the Start
+     * toggles. Escape belongs to the `Popover` around this. Every other key is native.
      */
     import { tString } from '#lib/intl/messages.svelte.js'
     import TextInput from '#lib/ui/TextInput.svelte'
     import ToggleGroup, { type ToggleGroupOption } from '#lib/ui/ToggleGroup.svelte'
+    import type { ToggleGroupAPI } from '#lib/ui/toggle-group-types.js'
     import { claimKey } from '#lib/shortcuts/claim-key.js'
     import type { RangeSample } from '#lib/tauri-commands/index.js'
     import type { TokenEditorProps } from './mask-token-kinds'
@@ -95,6 +97,7 @@
 
     let rootEl: HTMLDivElement | undefined = $state()
     let boxEl: HTMLInputElement | undefined = $state()
+    let startGroup: ToggleGroupAPI | undefined = $state()
 
     /**
      * The token the box (or a toggle, which keeps the box's selection) last wrote, and on which
@@ -167,7 +170,23 @@
         selectingBy = 'pointer'
     }
 
-    function handleBoxKeydown(): void {
+    /**
+     * Bare ↑ / ↓ aren't caret keys here: ↑ leaves for the mask, ↓ goes on to the Start toggles (a
+     * no-op for the whole field, whose toggles are off). With a modifier they stay native (⇧↑
+     * extends the selection to the start, ⌘↓ moves to the end), like every other key.
+     */
+    function handleBoxKeydown(e: KeyboardEvent): void {
+        const bare = !e.isComposing && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey
+        if (bare && e.key === 'ArrowUp') {
+            claimKey(e)
+            onDone()
+            return
+        }
+        if (bare && e.key === 'ArrowDown') {
+            claimKey(e)
+            startGroup?.focus()
+            return
+        }
         selectingBy = 'key'
     }
 
@@ -363,6 +382,7 @@
         <div class="row">
             <span class="label" aria-hidden="true">{tString('multiRename.rangeEditor.start')}</span>
             <ToggleGroup
+                bind:this={startGroup}
                 semantics="toggles"
                 value={anchors.startFromEnd ? 'end' : 'start'}
                 options={startOptions}

@@ -9,6 +9,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import ToggleGroup, { type ToggleGroupOption as Option } from './ToggleGroup.svelte'
+import type { ToggleGroupAPI } from './toggle-group-types'
 
 function setupTabs(options: Option[], value: string, opts: Partial<{ disabled: boolean }> = {}) {
   const target = document.createElement('div')
@@ -270,5 +271,45 @@ describe('ToggleGroup (toggles semantics)', () => {
     expect(items[0].getAttribute('aria-checked')).toBe('false')
     expect(items[1].getAttribute('aria-checked')).toBe('true')
     expect(items[2].getAttribute('aria-checked')).toBe('false')
+  })
+})
+
+describe('ToggleGroup focus()', () => {
+  const opts: Option[] = [
+    { value: 'a', label: 'A' },
+    { value: 'b', label: 'B' },
+    { value: 'c', label: 'C', disabled: true },
+  ]
+
+  function setup(semantics: 'tabs' | 'toggles', value: string, disabled = false) {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const group = mount(ToggleGroup, {
+      target,
+      props: { semantics, value, options: opts, onChange: vi.fn(), ariaLabel: 'Focus test', disabled },
+    }) as unknown as ToggleGroupAPI
+    return { target, group }
+  }
+
+  it.each(['tabs', 'toggles'] as const)('focuses the active cell in %s semantics', async (semantics) => {
+    const { target, group } = setup(semantics, 'b')
+    await tick()
+    expect(group.focus()).toBe(true)
+    expect(document.activeElement).toBe(target.querySelectorAll('.tg-item')[1])
+  })
+
+  it.each(['tabs', 'toggles'] as const)('falls back to the first enabled cell in %s semantics', async (semantics) => {
+    const { target, group } = setup(semantics, 'c')
+    await tick()
+    expect(group.focus()).toBe(true)
+    expect(document.activeElement).toBe(target.querySelectorAll('.tg-item')[0])
+  })
+
+  it.each(['tabs', 'toggles'] as const)('takes no focus when the %s group is disabled', async (semantics) => {
+    const { group } = setup(semantics, 'a', true)
+    await tick()
+    const before = document.activeElement
+    expect(group.focus()).toBe(false)
+    expect(document.activeElement).toBe(before)
   })
 })

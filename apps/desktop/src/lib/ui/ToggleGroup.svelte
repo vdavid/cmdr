@@ -93,6 +93,20 @@
         return options.findIndex((o) => !o.disabled)
     })
 
+    let rootEl: HTMLElement | null = $state(null)
+
+    /**
+     * Moves focus into the group, on the active cell (or the first enabled one), for a caller that
+     * sends a key here, like the range editor's ↓. Returns whether a cell took focus: a disabled
+     * group has none to take it.
+     */
+    export function focus(): boolean {
+        if (disabled || focusableIndex < 0) return false
+        const cell = rootEl?.querySelectorAll<HTMLElement>('.tg-item')[focusableIndex]
+        cell?.focus()
+        return cell !== undefined && document.activeElement === cell
+    }
+
     function activate(option: ToggleGroupOption): void {
         if (disabled || option.disabled) return
         if (option.value === value) return
@@ -154,7 +168,7 @@
 </script>
 
 {#if semantics === 'tabs'}
-    <div class="tg-root" class:is-full-width={fullWidth} role="tablist"
+    <div bind:this={rootEl} class="tg-root" class:is-full-width={fullWidth} role="tablist"
         aria-label={ariaLabel}
         aria-describedby={ariaDescribedBy}
     >
@@ -194,6 +208,7 @@
     </div>
 {:else}
     <ArkToggleGroup.Root
+        bind:ref={rootEl}
         class={fullWidth ? 'tg-root is-full-width' : 'tg-root'}
         value={toggleValue}
         onValueChange={handleToggleValueChange}

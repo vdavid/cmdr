@@ -365,22 +365,60 @@ describe('the range editor', () => {
     expect(box().placeholder).toBe('Empty for this file')
   })
 
-  it('leaves ↑ / ↓ to the box, and Enter leaves for the mask', async () => {
+  it('leaves for the mask on Enter', async () => {
     const m = await mountField('[N] x')
     await open(m, 2)
-    for (const k of ['ArrowUp', 'ArrowDown']) {
-      const press = new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true })
-      box().dispatchEvent(press)
-      expect(press.defaultPrevented).toBe(false)
-    }
-    await settle()
-    expect(document.activeElement).toBe(box())
-
     key(box(), 'Enter')
     await settle()
     expect(document.activeElement).toBe(m.input)
     expect(m.input.selectionStart).toBe(3)
     expect(m.outerKeys).not.toContain('Enter')
     expect(m.value()).toBe('[N] x')
+  })
+
+  it('leaves for the mask on ↑ in the box, claimed, with the caret after the token', async () => {
+    const m = await mountField('[N1-5] x')
+    await open(m, 2)
+    key(box(), 'ArrowUp')
+    await settle()
+    expect(document.activeElement).toBe(m.input)
+    expect(m.input.selectionStart).toBe(6)
+    expect(m.outerKeys).not.toContain('ArrowUp')
+    expect(m.value()).toBe('[N1-5] x')
+  })
+
+  it('moves focus from the box to the Start toggles on ↓, claimed', async () => {
+    const m = await mountField('[N1-5]')
+    await open(m, 2)
+    key(box(), 'ArrowDown')
+    await settle()
+    expect(document.activeElement).toBe(toggle('1st'))
+    expect(m.outerKeys).not.toContain('ArrowDown')
+    expect(m.value()).toBe('[N1-5]')
+  })
+
+  it('keeps ↓ in the box for the whole field, whose toggles are off', async () => {
+    const m = await mountField('[N]')
+    await open(m, 2)
+    key(box(), 'ArrowDown')
+    await settle()
+    expect(document.activeElement).toBe(box())
+    expect(shown()).toEqual([0, 9])
+    expect(m.outerKeys).not.toContain('ArrowDown')
+  })
+
+  it.each([
+    ['ArrowUp', { shiftKey: true }],
+    ['ArrowDown', { shiftKey: true }],
+    ['ArrowUp', { metaKey: true }],
+    ['ArrowDown', { altKey: true }],
+  ])('leaves %s with modifiers %o to the box, so it extends or moves the selection natively', async (k, mods) => {
+    const m = await mountField('[N1-5]')
+    await open(m, 2)
+    const press = new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true, ...mods })
+    box().dispatchEvent(press)
+    await settle()
+    expect(press.defaultPrevented).toBe(false)
+    expect(document.activeElement).toBe(box())
   })
 })
