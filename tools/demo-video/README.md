@@ -27,7 +27,9 @@ gitignored and comes from these steps. Scripts take `--video=demo` (the default)
    so rerunning costs only the transcription. `--force` regenerates; `--only=<section>` does one section.
 5. `pnpm footage --video=anywhere`: transcodes the ProRes masters listed in
    `brand/clip-masters/<footageDir>/video-beats.json` (`video` for the first video, `video2` for the second) into H.264
-   proxies. Beats without footage keep their still placeholders. This is a heavy encode.
+   proxies. Beats without footage keep their still placeholders (or a shot's `fallbackBeat`). This is a heavy encode.
+   Run it for both videos before rendering either: shots can borrow another video's recordings (`source`), and the first
+   video's NAS and phone lines use the second video's `smb` and `phone` clips.
 6. `pnpm timeline --video=anywhere`: prints the computed edit (cuts, voice placement, music jumps, which clip span each
    shot plays, total length). Add `--footage-plan` to plan against the masters before transcoding anything.
 7. `pnpm studio` to scrub both, then `pnpm render:demo`, `pnpm render:anywhere`, `pnpm poster:demo`, and

@@ -128,9 +128,27 @@ const script: Section[] = [
       { say: 'all as plain folders.', show: 'all as plain folders.' },
     ],
     shots: [
-      // This video's recordings have no NAS or phone, so the opening lines ride the calm hero shot; the zip and the
-      // Git history land on their words.
-      { beat: 'hero', still: 'app-main-dark.webp', weight: 0.4, focus: { x: 0.5, y: 0.5, zoom: 1.08 } },
+      // The NAS and the phone borrow short slices of the second video's recordings (until those exist, the calm hero
+      // clip stands in); the zip and the Git history land on their words.
+      {
+        beat: 'smb',
+        source: 'anywhere',
+        fallbackBeat: 'hero',
+        still: 'app-main-dark.webp',
+        weight: 0.25,
+        focus: { x: 0.5, y: 0.5, zoom: 1.12 },
+        sync: { moment: 'key', phrase: 1 },
+      },
+      {
+        beat: 'phone',
+        source: 'anywhere',
+        fallbackBeat: 'hero',
+        still: 'app-main-dark.webp',
+        weight: 0.15,
+        focus: { x: 0.5, y: 0.5, zoom: 1.12 },
+        cue: 2,
+        sync: { moment: 'key', phrase: 2 },
+      },
       {
         beat: 'reach',
         still: 'app-main-dark.webp',

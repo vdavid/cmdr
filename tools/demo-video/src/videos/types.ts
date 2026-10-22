@@ -21,6 +21,10 @@ export type Shot = {
   sync?: { moment: string; phrase?: number }
   /** Keep the still even when footage exists, with the reason (for example, a recording that shows the wrong thing). */
   stillOnly?: string
+  /** Borrow `beat` from another video's recordings (its spec `id`). */
+  source?: string
+  /** When `beat`'s footage doesn't exist (yet), play this beat of this video's own recordings instead (no `sync`). */
+  fallbackBeat?: string
 }
 
 export type Section = {

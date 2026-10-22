@@ -4,7 +4,8 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { paths } from '../src/config.ts'
 import { buildTimeline, type FootageManifest, type VoiceManifest } from '../src/timeline.ts'
-import { videoFromArgs } from '../src/videos/index.ts'
+import { VIDEOS, videoFromArgs } from '../src/videos/index.ts'
+import type { VideoSpec } from '../src/videos/types.ts'
 import { footageEntry, readMasters } from './lib/clip-masters.ts'
 
 const video = videoFromArgs(process.argv)
@@ -18,10 +19,15 @@ const read = <T>(rel: string, fallback?: T): T => {
 }
 const voice = read<VoiceManifest>(`${p.voice}/manifest.json`)
 // `--footage-plan`: plan against the masters' manifest directly, before (or without) transcoding the proxies.
-const masters = process.argv.includes('--footage-plan') ? readMasters(video) : undefined
-const footage: FootageManifest = masters
-  ? { beats: Object.fromEntries(masters.map((b) => [b.id, footageEntry(video, b)])) }
-  : read<FootageManifest>(`${p.footage}/manifest.json`, { beats: {} })
+const plan = process.argv.includes('--footage-plan')
+const footageOf = (v: VideoSpec): FootageManifest => {
+  const masters = plan ? readMasters(v) : undefined
+  return masters
+    ? { beats: Object.fromEntries(masters.map((b) => [b.id, footageEntry(v, b)])) }
+    : read<FootageManifest>(`${paths(v.id).footage}/manifest.json`, { beats: {} })
+}
+// Every video's footage: shots can borrow another video's recordings.
+const footage = Object.fromEntries(VIDEOS.map((v) => [v.id, footageOf(v)]))
 const onsets = read<number[]>(p.onsets, [])
 const t = buildTimeline(video, voice, footage, onsets)
 const s = (x: number): string => x.toFixed(2).padStart(6)

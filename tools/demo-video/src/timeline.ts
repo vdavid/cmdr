@@ -88,11 +88,14 @@ const TAIL = 0.35
 const STING = 1.9
 const TITLE_CARD = 1.05
 
-/** `onsets`: the track's strong drum hits in track seconds (`public/<id>/music-onsets.json`), for `pulse: 'onsets'`. */
+/**
+ * `footage`: every video's footage manifest by video id (shots can borrow another video's recordings).
+ * `onsets`: the track's strong drum hits in track seconds (`public/<id>/music-onsets.json`), for `pulse: 'onsets'`.
+ */
 export function buildTimeline(
   spec: VideoSpec,
   voice: VoiceManifest,
-  footage: FootageManifest,
+  footage: Record<string, FootageManifest>,
   onsets: number[] = [],
 ): Timeline {
   const { script, music } = spec
@@ -231,17 +234,21 @@ export function buildTimeline(
     plan.shots = section.shots.map((shot, k) => {
       const start = bounds[k]
       const end = bounds[k + 1]
-      const f = footage.beats[shot.beat]
+      const own = footage[spec.id]?.beats ?? {}
+      const primary = footage[shot.source ?? spec.id]?.beats[shot.beat]
+      const fallback = primary ? undefined : shot.fallbackBeat ? own[shot.fallbackBeat] : undefined
+      const f = primary ?? fallback
+      const played = primary ? `${shot.source ?? spec.id}:${shot.beat}` : `${spec.id}:${shot.fallbackBeat}`
       if (!f || shot.stillOnly) return { ...shot, start, end }
       let from: number
       let syncAt: number | undefined
-      if (shot.sync) {
+      if (shot.sync && primary) {
         const m = momentTime(f, shot.sync.moment)
         const at = shot.sync.phrase !== undefined ? phraseStart(shot.sync.phrase) : start + 0.3
         from = m - (at - start)
         syncAt = at
-      } else from = playedTo[shot.beat] ?? f.moments.start ?? 0
-      playedTo[shot.beat] = from + (end - start)
+      } else from = playedTo[played] ?? f.moments.start ?? 0
+      playedTo[played] = from + (end - start)
       return {
         ...shot,
         start,

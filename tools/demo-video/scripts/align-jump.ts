@@ -14,7 +14,7 @@ const ROOT = join(import.meta.dirname, '..')
 const manifest = join(ROOT, 'public', paths(video.id).voice, 'manifest.json')
 if (!existsSync(manifest)) throw new Error(`Run pnpm voice --video=${video.id} first`)
 const voice = JSON.parse(readFileSync(manifest, 'utf8')) as VoiceManifest
-const t = buildTimeline(video, voice, { beats: {} })
+const t = buildTimeline(video, voice, {})
 const rate = 8000
 const w = 0.005
 const env = rmsWindows(decodeMono(join(ROOT, 'assets/music', video.music.source), rate, 'lowpass=f=2500'), rate, w)

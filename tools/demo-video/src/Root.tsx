@@ -51,7 +51,18 @@ export const RemotionRoot: React.FC = () => (
           const video = videoById(props.videoId)
           const p = paths(video.id)
           const voice = await loadJson<VoiceManifest>(`${p.voice}/manifest.json`)
-          const footage = await loadJson<FootageManifest>(`${p.footage}/manifest.json`, { beats: {} })
+          // Every video's footage: shots can borrow another video's recordings.
+          const footage = Object.fromEntries(
+            await Promise.all(
+              VIDEOS.map(
+                async (v) =>
+                  [
+                    v.id,
+                    await loadJson<FootageManifest>(`${paths(v.id).footage}/manifest.json`, { beats: {} }),
+                  ] as const,
+              ),
+            ),
+          )
           const onsets = await loadJson<number[]>(p.onsets, [])
           const timeline = buildTimeline(video, voice, footage, onsets)
           return { durationInFrames: f(timeline.duration), props: { ...props, timeline, voice } }
