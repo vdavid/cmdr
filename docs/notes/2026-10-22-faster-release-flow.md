@@ -65,14 +65,16 @@ From David's "go" (procedure step 7), `local` mode:
 2. In parallel:
    - The tag push's build: ~60 min (v0.55.0: universal compile 52 min, aarch64 33, x86_64 27, then sign ~5, pkg/vet/
      attest ~3). The parallel lipo work brings the build to roughly 35–40 min.
-   - R's full CI run: 25–40 min (the macOS lane is the long pole), CodeQL 12–20 min.
+   - R's full CI run: 20–40 min (the macOS lane is the long pole; 21 min in the test), CodeQL 12–20 min. Both compete
+     with the build for the account's five macOS runners, which delayed the test build's compiles by up to 30 min.
 3. `release-finish.sh`: waits for both (fail fast on CI), CodeQL gate, provenance, vet, sign, upload: ~2 min after the
    later of the two.
 4. The finishing run (`ci-gate`, vet, publish, attest, bump-tap): ~3 min.
 5. Shipped. Then `release.sh X.Y.Z` again merges R back (a PR run, ~30 min, blocking nothing users get).
 
-Go to shipped: ~65–70 min today (the build is the long pole), ~45 min once the lipo change lands (CI becomes the long
-pole). Before: ~2 h 10 min without hiccups, ~3 h with v0.55.0's.
+Go to shipped: ~65–70 min today with free runners (the build is the long pole), ~45 min once the lipo change lands (CI
+becomes the long pole); runner contention can add up to half an hour, as in the test. Before: ~2 h 10 min without
+hiccups, ~3 h with v0.55.0's.
 
 ## Verification
 
@@ -93,8 +95,27 @@ All on GitHub with `RELEASE_UPDATE_SIGNING=local`, pre-release tags only, nothin
   re-run command, and the abort command. `release-finish.sh -dry-run` refused on the red run too. That run showed
   `gh run view --log-failed` refusing mid-run, so the hint now uses the jobs logs API (checked live: it printed the
   oxfmt failure naming the file). `release.sh -abort` cancelled the run and deleted the branch and local tag.
-- **`v0.55.1-pipelinetest.4`** (R `6545a2e4a`): CI run 39742222240, CodeQL run 39742237296, build run 39742260113.
-  RESULTS PENDING.
+- **`v0.55.1-pipelinetest.4`** (R `6545a2e4a`), the green half:
+  - `release.sh -test` took ~1 min from start to both pushes (07:40–07:41 UTC). CI run 39742222240, CodeQL run
+    39742237296, build run 39742260113, all started at 07:41.
+  - `release-ci-gate.sh 0.55.1-pipelinetest.4`, run in bounded chunks (it's stateless, so each call resumed), printed
+    the jobs as they moved and ended green at 08:02 (CI took 21 min), then ran the CodeQL gate: green.
+  - `release-finish.sh -dry-run` at 08:02, CI green but the build still compiling: passed the gate and stopped only at
+    the missing archives.
+  - The server-side gate in the run that publishes: a `release.yml` dispatch on the test tag (run 39744841553, safe
+    because `vet-update-archives` and `publish`'s first step both need things only a real finish provides). Its
+    `ci-gate` job installed Go through mise, fetched the tag, and printed "Full CI run on 6545a2e4a is green" and the
+    CodeQL line. Cancelled right after, to give its queued macOS job back to the build.
+  - The build: green at 09:07, 85 min. The compiles queued behind the account's five macOS runners (aarch64 started 19
+    min late, x86_64 30 min late, while this CI run's macOS lane and other sessions held them); universal took 56 min.
+  - `release-finish.sh -dry-run` at 09:07: gate green, provenance verified on all three archives, the updater's own
+    check passed, signed with the sops key, and every signature verified (key `A2601F36BB168C0A`).
+    `codesign --verify --deep --strict` and `spctl -a -vv` accepted the universal app (Notarized Developer ID).
+  - `release.sh -abort 0.55.1-pipelinetest.4` deleted the four build artifacts, the draft, the tag, and the branch;
+    afterwards no test tag, branch, draft, or artifact was left on GitHub or locally.
+- **Not exercised live**: a real (non-dry) `release-finish.sh`, which refuses a pre-release version; its combined
+  build-and-CI wait is built from the pieces above (the CI watch the gate ran, and the build-run polling it always had).
+  The merge-back (it can't run without touching `main`). `ci` mode.
 
 ## Found and fixed on the way
 

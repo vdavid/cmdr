@@ -692,8 +692,9 @@ once.
   `RELEASE_REPUBLISH_TAG`: it unblocks only the tag written in it. It skips the CodeQL half too. Clear it once that run
   finishes.
 - **Verified** with pipeline test releases on 2026-10-22 (`docs/notes/2026-10-22-faster-release-flow.md`): the build ran
-  while CI ran, a dry run refused while CI was running and on a red run, and the wait stopped two minutes in on a
-  deliberately misformatted file, with the Rust lanes still running.
+  while CI ran, a dry run refused while CI was running and on a red run and went through signing once both were green,
+  the `ci-gate` job passed in a finishing dispatch, and the wait stopped two minutes in on a deliberately misformatted
+  file, with the Rust lanes still running.
 
 ## Merging the release back into `main`
 
