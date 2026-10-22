@@ -681,6 +681,8 @@ impl OperationManager {
                 _ => PauseOutcome::NotApplicable,
             }
         };
+        let verb = if paused { "pause" } else { "resume" };
+        log::info!("set_paused: {verb} op={operation_id} -> {outcome:?}");
         if outcome == PauseOutcome::Applied {
             self.emit_changed();
         }
