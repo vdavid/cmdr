@@ -12,6 +12,7 @@ import ArrowRight from '~icons/lucide/arrow-right'
 import Bell from '~icons/lucide/bell'
 import Brain from '~icons/lucide/brain'
 import ChartPie from '~icons/lucide/chart-pie'
+import Clapperboard from '~icons/lucide/clapperboard'
 import Cloud from '~icons/lucide/cloud'
 import Container from '~icons/lucide/container'
 import Copy from '~icons/lucide/copy'
@@ -24,6 +25,8 @@ import GitBranch from '~icons/lucide/git-branch'
 import Globe from '~icons/lucide/globe'
 import History from '~icons/lucide/history'
 import Keyboard from '~icons/lucide/keyboard'
+import LaptopMinimalCheck from '~icons/lucide/laptop-minimal-check'
+import Languages from '~icons/lucide/languages'
 import ListChecks from '~icons/lucide/list-checks'
 import Mail from '~icons/lucide/mail'
 import MessageCircleQuestionMark from '~icons/lucide/message-circle-question-mark'
@@ -31,6 +34,8 @@ import MessagesSquare from '~icons/lucide/messages-square'
 import Monitor from '~icons/lucide/monitor'
 import Navigation from '~icons/lucide/navigation'
 import PartyPopper from '~icons/lucide/party-popper'
+import Pause from '~icons/lucide/pause'
+import Play from '~icons/lucide/play'
 import Pointer from '~icons/lucide/pointer'
 import Puzzle from '~icons/lucide/puzzle'
 import ReplaceAll from '~icons/lucide/replace-all'
@@ -44,6 +49,8 @@ import Sparkles from '~icons/lucide/sparkles'
 import SquareChevronRight from '~icons/lucide/square-chevron-right'
 import SquareTerminal from '~icons/lucide/square-terminal'
 import Star from '~icons/lucide/star'
+import ToggleLeft from '~icons/lucide/toggle-left'
+import Undo2 from '~icons/lucide/undo-2'
 import Usb from '~icons/lucide/usb'
 import Zap from '~icons/lucide/zap'
 
@@ -53,6 +60,7 @@ export const ICONS = {
   bell: Bell,
   brain: Brain,
   'chart-pie': ChartPie,
+  clapperboard: Clapperboard,
   cloud: Cloud,
   container: Container,
   copy: Copy,
@@ -65,6 +73,8 @@ export const ICONS = {
   globe: Globe,
   history: History,
   keyboard: Keyboard,
+  'laptop-minimal-check': LaptopMinimalCheck,
+  languages: Languages,
   'list-checks': ListChecks,
   mail: Mail,
   'message-circle-question-mark': MessageCircleQuestionMark,
@@ -72,6 +82,8 @@ export const ICONS = {
   monitor: Monitor,
   navigation: Navigation,
   'party-popper': PartyPopper,
+  pause: Pause,
+  play: Play,
   pointer: Pointer,
   puzzle: Puzzle,
   'replace-all': ReplaceAll,
@@ -85,6 +97,8 @@ export const ICONS = {
   'square-chevron-right': SquareChevronRight,
   'square-terminal': SquareTerminal,
   star: Star,
+  'toggle-left': ToggleLeft,
+  'undo-2': Undo2,
   usb: Usb,
   zap: Zap,
 } as const

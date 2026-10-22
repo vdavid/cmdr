@@ -28,6 +28,9 @@ RUN node apps/website/scripts/fetch-live-manifest.ts
 # changelog page and the feature-status page / badge labels respectively
 COPY CHANGELOG.md feature-status.json ./
 
+# Screenshot masters, which `ProductClip.astro` imports as stills for clips not recorded yet
+COPY brand/screenshots/ ./brand/screenshots/
+
 # Build static site
 WORKDIR /app/apps/website
 RUN pnpm run build

@@ -1,0 +1,470 @@
+---
+/**
+ * A short, muted, looping screen recording of the app, framed as a macOS window.
+ *
+ * - Picks the light or dark recording to match the site theme, and follows the theme toggle live.
+ * - Loads and plays only while on screen; pauses offscreen. A play/pause button is always reachable
+ *   (WCAG 2.2.2), and with `prefers-reduced-motion` the clip waits on its poster until clicked.
+ * - The recordings have no alpha channel, so the rounded corners and the shadow are CSS.
+ * - Before a clip is recorded, it falls back to a still: the `brand/screenshots/` master where one
+ *   exists (those carry their own window shadow), otherwise a placeholder card that says so.
+ *
+ * File contract and availability rules: `src/build/product-clips.ts`.
+ */
+import { Image } from 'astro:assets'
+import type { ImageMetadata } from 'astro'
+import Icon from './icons/Icon.astro'
+import { getProductClip, type ClipSlug } from '../build/product-clips'
+import searchLight from '../../../../brand/screenshots/search-light.webp'
+import searchDark from '../../../../brand/screenshots/search-dark.webp'
+
+interface Props {
+    slug: ClipSlug
+    /** What the clip shows, for screen readers. Becomes the video's `aria-label` and the still's `alt`. */
+    label: string
+    caption?: string
+    class?: string
+}
+
+const { slug, label, caption, class: className } = Astro.props
+
+const placeholderTitles: Record<ClipSlug, string> = {
+    'copy-rollback': 'Copy, pause, and roll back',
+    'ops-queue': 'The operation queue',
+    'multi-rename': 'Multi-rename',
+    search: 'Natural-language search',
+    'language-switch': 'Switching languages',
+    viewer: 'The file viewer',
+    settings: 'Settings',
+}
+
+// Only masters a page renders belong here: Astro emits every imported image's full-size original
+// into `dist/` even when nothing renders it (lazy globs too), so a `settings` still would ship
+// ~330 KB of dead bytes until a page shows that clip. The Docker build copies `brand/screenshots/` in.
+const stills: Partial<Record<ClipSlug, { light: ImageMetadata; dark: ImageMetadata }>> = {
+    search: { light: searchLight, dark: searchDark },
+}
+
+const clip = getProductClip(slug)
+const still = clip ? undefined : stills[slug]
+const stillWidths = [800, 1400]
+const stillSizes = '(min-width: 1024px) 640px, 100vw'
+---
+
+<figure class:list={['product-clip', className]}>
+    {
+        clip ? (
+            <div
+                class="clip-window"
+                style={`aspect-ratio: ${clip.width} / ${clip.height}`}
+                data-product-clip
+                data-state="paused"
+                data-av1-light={clip.files.light.av1}
+                data-av1-dark={clip.files.dark.av1}
+                data-h264-light={clip.files.light.h264}
+                data-h264-dark={clip.files.dark.h264}
+            >
+                <img
+                    class="clip-poster clip-poster--light"
+                    src={clip.files.light.poster}
+                    width={clip.width}
+                    height={clip.height}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                />
+                <img
+                    class="clip-poster clip-poster--dark"
+                    src={clip.files.dark.poster}
+                    width={clip.width}
+                    height={clip.height}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                />
+                <video
+                    class="clip-video"
+                    width={clip.width}
+                    height={clip.height}
+                    muted
+                    loop
+                    playsinline
+                    disablepictureinpicture
+                    preload="none"
+                    aria-label={label}
+                />
+                <button type="button" class="clip-toggle" data-clip-toggle aria-label="Play clip">
+                    <Icon name="play" size={16} class="clip-toggle__play" />
+                    <Icon name="pause" size={16} class="clip-toggle__pause" />
+                </button>
+            </div>
+        ) : still ? (
+            <div class="clip-still">
+                <Image
+                    class="clip-still__img clip-still__img--light"
+                    src={still.light}
+                    width={1400}
+                    widths={stillWidths}
+                    sizes={stillSizes}
+                    alt={label}
+                    loading="lazy"
+                />
+                <Image
+                    class="clip-still__img clip-still__img--dark"
+                    src={still.dark}
+                    width={1400}
+                    widths={stillWidths}
+                    sizes={stillSizes}
+                    alt={label}
+                    loading="lazy"
+                />
+            </div>
+        ) : (
+            <div class="clip-placeholder" role="img" aria-label={`Placeholder for a clip: ${label}`}>
+                <span class="clip-placeholder__pill">Placeholder</span>
+                <Icon name="clapperboard" size={32} />
+                <span class="clip-placeholder__title">{placeholderTitles[slug]}</span>
+                <span class="clip-placeholder__note">Clip not recorded yet</span>
+            </div>
+        )
+    }
+    {caption && <figcaption class="clip-caption">{caption}</figcaption>}
+</figure>
+
+<style>
+    .product-clip {
+        margin: 0;
+        /* Window shadow, tuned per theme below. Videos carry no alpha, so this IS the window shadow. */
+        --clip-shadow:
+            0 0 0 1px rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.3), 0 24px 48px -12px rgb(0 0 0 / 0.55);
+        --clip-rim: color-mix(in srgb, var(--color-text-primary) 12%, transparent);
+    }
+
+    @media (prefers-color-scheme: light) {
+        :global(:root:not([data-theme='dark'])) .product-clip {
+            --clip-shadow:
+                0 0 0 1px rgb(0 0 0 / 0.12), 0 2px 6px rgb(0 0 0 / 0.08), 0 24px 48px -16px rgb(0 0 0 / 0.28);
+            --clip-rim: transparent;
+        }
+    }
+
+    :global(:root[data-theme='light']) .product-clip {
+        --clip-shadow:
+            0 0 0 1px rgb(0 0 0 / 0.12), 0 2px 6px rgb(0 0 0 / 0.08), 0 24px 48px -16px rgb(0 0 0 / 0.28);
+        --clip-rim: transparent;
+    }
+
+    .clip-window {
+        position: relative;
+        overflow: hidden;
+        border-radius: clamp(8px, 1.4vw, 12px);
+        background: var(--color-surface);
+        box-shadow: var(--clip-shadow);
+        isolation: isolate;
+    }
+
+    /* The macOS window's hairline highlight, drawn above the video so it never gets covered. */
+    .clip-window::after {
+        content: '';
+        pointer-events: none;
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        border-radius: inherit;
+        box-shadow: inset 0 0 0 1px var(--clip-rim);
+    }
+
+    .clip-poster,
+    .clip-video {
+        display: block;
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .clip-video {
+        opacity: 0;
+        transition: opacity 250ms ease;
+    }
+
+    .clip-window[data-ready] .clip-video {
+        opacity: 1;
+    }
+
+    /* Show only the poster matching the theme. Lazy images that aren't rendered never download. */
+    .clip-poster--light,
+    .clip-still__img--light {
+        display: none;
+    }
+
+    @media (prefers-color-scheme: light) {
+        :global(:root:not([data-theme='dark'])) .clip-poster--dark,
+        :global(:root:not([data-theme='dark'])) .clip-still__img--dark {
+            display: none;
+        }
+        :global(:root:not([data-theme='dark'])) .clip-poster--light,
+        :global(:root:not([data-theme='dark'])) .clip-still__img--light {
+            display: block;
+        }
+    }
+
+    :global(:root[data-theme='light']) .clip-poster--dark,
+    :global(:root[data-theme='light']) .clip-still__img--dark {
+        display: none;
+    }
+    :global(:root[data-theme='light']) .clip-poster--light,
+    :global(:root[data-theme='light']) .clip-still__img--light {
+        display: block;
+    }
+
+    .clip-toggle {
+        position: absolute;
+        right: 12px;
+        bottom: 12px;
+        z-index: 3;
+        display: grid;
+        place-items: center;
+        width: 36px;
+        height: 36px;
+        border: 1px solid var(--color-border);
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--color-surface-elevated) 88%, transparent);
+        backdrop-filter: blur(8px);
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 200ms ease;
+    }
+
+    .clip-toggle :global(.icon) {
+        color: var(--color-text-primary);
+    }
+
+    /* Visible while hovering, when focused, and whenever the clip sits paused. */
+    .clip-window:hover .clip-toggle,
+    .clip-toggle:focus-visible,
+    .clip-window[data-state='paused'] .clip-toggle {
+        opacity: 1;
+    }
+
+    .clip-toggle:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+    .clip-window[data-state='playing'] .clip-toggle :global(.clip-toggle__play),
+    .clip-window[data-state='paused'] .clip-toggle :global(.clip-toggle__pause) {
+        display: none;
+    }
+
+    /* The screenshot masters already include the real macOS window and its shadow on transparency.
+       Pull their transparent margin outward so the window itself lines up with
+       the framed clips beside them. 112 px of 2284 px window width, as a share of the figure. */
+    .clip-still {
+        margin: -4.9%;
+    }
+
+    .clip-still :global(img) {
+        width: 100%;
+        height: auto;
+    }
+
+    .clip-placeholder {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        aspect-ratio: 16 / 10;
+        padding: 24px;
+        border: 1.5px dashed var(--color-border);
+        border-radius: clamp(8px, 1.4vw, 12px);
+        text-align: center;
+        background:
+            radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--color-accent) 8%, transparent), transparent 60%),
+            var(--color-surface);
+    }
+
+    .clip-placeholder__pill {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        padding: 2px 10px;
+        border: 1px solid var(--color-border);
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--color-text-tertiary);
+    }
+
+    .clip-placeholder__title {
+        font-weight: 600;
+        color: var(--color-text-primary);
+    }
+
+    .clip-placeholder__note {
+        font-size: 0.875rem;
+        color: var(--color-text-tertiary);
+    }
+
+    .clip-caption {
+        margin-top: 14px;
+        font-size: 0.9375rem;
+        line-height: 1.5;
+        color: var(--color-text-secondary);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .clip-video,
+        .clip-toggle {
+            transition: none;
+        }
+    }
+</style>
+
+<script>
+    type Theme = 'light' | 'dark'
+
+    interface Clip {
+        root: HTMLElement
+        video: HTMLVideoElement
+        button: HTMLButtonElement
+        visible: boolean
+        /** Whether the clip should play while on screen: autoplay, unless reduced motion or the visitor paused it. */
+        wantsPlay: boolean
+        /** Theme of the loaded sources; `null` until the clip first comes on screen. */
+        theme: Theme | null
+    }
+
+    const AV1_TYPE = 'video/mp4; codecs="av01.0.08M.08"'
+    const clips = new Set<Clip>()
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const prefersLight = window.matchMedia('(prefers-color-scheme: light)')
+
+    function activeTheme(): Theme {
+        const explicit = document.documentElement.dataset.theme
+        if (explicit === 'light' || explicit === 'dark') return explicit
+        return prefersLight.matches ? 'light' : 'dark'
+    }
+
+    function source(src: string, type: string): HTMLSourceElement {
+        const el = document.createElement('source')
+        el.src = src
+        el.type = type
+        return el
+    }
+
+    /** Points the video at the active theme's files, keeping its position and play state. */
+    function loadSources(clip: Clip): void {
+        const theme = activeTheme()
+        if (clip.theme === theme) return
+        const { video, root } = clip
+        const resumeAt = video.currentTime
+        const wasPlaying = !video.paused
+        const av1 = theme === 'light' ? root.dataset.av1Light : root.dataset.av1Dark
+        const h264 = theme === 'light' ? root.dataset.h264Light : root.dataset.h264Dark
+        const sources: HTMLSourceElement[] = []
+        if (av1) sources.push(source(av1, AV1_TYPE))
+        if (h264) sources.push(source(h264, 'video/mp4'))
+        video.replaceChildren(...sources)
+        clip.theme = theme
+        delete root.dataset.ready
+        video.preload = 'auto'
+        video.load()
+        if (resumeAt > 0) {
+            video.addEventListener(
+                'loadedmetadata',
+                () => {
+                    video.currentTime = resumeAt
+                },
+                { once: true },
+            )
+        }
+        if (wasPlaying) play(clip)
+    }
+
+    function play(clip: Clip): void {
+        loadSources(clip)
+        clip.video.play().catch(() => {
+            // Autoplay refused (data saver, an old browser policy): stay on the poster with the play button showing.
+            syncState(clip)
+        })
+    }
+
+    function syncState(clip: Clip): void {
+        const paused = clip.video.paused
+        clip.root.dataset.state = paused ? 'paused' : 'playing'
+        clip.button.setAttribute('aria-label', paused ? 'Play clip' : 'Pause clip')
+    }
+
+    function apply(clip: Clip): void {
+        if (clip.visible && clip.wantsPlay) play(clip)
+        else if (!clip.video.paused) clip.video.pause()
+    }
+
+    const visibility = new IntersectionObserver(
+        (entries) => {
+            for (const entry of entries) {
+                const clip = [...clips].find((c) => c.root === entry.target)
+                if (!clip) continue
+                clip.visible = entry.isIntersecting
+                apply(clip)
+            }
+        },
+        { rootMargin: '120px 0px', threshold: 0.15 },
+    )
+
+    function bind(root: HTMLElement): void {
+        const video = root.querySelector('video')
+        const button = root.querySelector<HTMLButtonElement>('[data-clip-toggle]')
+        if (!video || !button) return
+        const clip: Clip = { root, video, button, visible: false, wantsPlay: !reducedMotion.matches, theme: null }
+        clips.add(clip)
+        root.dataset.bound = ''
+
+        const toggle = () => {
+            clip.wantsPlay = clip.video.paused
+            if (clip.wantsPlay) play(clip)
+            else clip.video.pause()
+        }
+        button.addEventListener('click', toggle)
+        video.addEventListener('click', toggle)
+        video.addEventListener('play', () => syncState(clip))
+        video.addEventListener('pause', () => syncState(clip))
+        video.addEventListener('loadeddata', () => {
+            root.dataset.ready = ''
+        })
+        visibility.observe(root)
+    }
+
+    function reloadAllForTheme(): void {
+        for (const clip of clips) if (clip.theme !== null) loadSources(clip)
+    }
+
+    new MutationObserver(reloadAllForTheme).observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-theme'],
+    })
+    prefersLight.addEventListener('change', reloadAllForTheme)
+    reducedMotion.addEventListener('change', () => {
+        for (const clip of clips) {
+            clip.wantsPlay = !reducedMotion.matches
+            apply(clip)
+        }
+    })
+
+    document.addEventListener('astro:page-load', () => {
+        // Forget clips a client-side navigation removed.
+        for (const clip of clips) {
+            if (!clip.root.isConnected) {
+                visibility.unobserve(clip.root)
+                clips.delete(clip)
+            }
+        }
+        document.querySelectorAll<HTMLElement>('[data-product-clip]:not([data-bound])').forEach(bind)
+    })
+</script>
