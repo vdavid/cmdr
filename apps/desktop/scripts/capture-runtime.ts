@@ -1,6 +1,7 @@
 /**
- * Launch primitives shared by the two capture orchestrators: `i18n-capture.ts`
- * (translator screenshots) and `marketing-shots.ts` (the brand masters).
+ * Launch primitives shared by the capture orchestrators: `i18n-capture.ts`
+ * (translator screenshots) and the marketing captures (`marketing-launch.ts`, behind
+ * `marketing-shots.ts` and `marketing-clips.ts`).
  *
  * Both spawn the same Playwright-enabled binary, wait on the same kind of socket,
  * pin an MCP port the same way, and depend on the same macOS fact: a raw binary

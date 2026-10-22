@@ -64,7 +64,7 @@ export const OVERLAY_SCROLLBAR_ARGS: readonly string[] = ['-AppleShowScrollBars'
  *
  * Merges rather than overwrites: the marketing-shots instance keeps a data dir
  * between runs, with pane paths, tabs, and favorites David adjusted by hand
- * (`scripts/marketing-shots.ts` § `seedSettingsIfNew`). An unreadable file (a
+ * (`scripts/marketing-launch.ts` § `seedSettingsIfNew`). An unreadable file (a
  * torn write from a killed run) is replaced, since there's nothing to preserve.
  *
  * @param dataDir the instance's `CMDR_DATA_DIR`

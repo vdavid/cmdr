@@ -21,7 +21,7 @@
 ///   definition, which makes it the single strongest signal.
 /// - `CMDR_DATA_DIR`: an isolated data dir. Prod resolves `app_data_dir()` instead, and an
 ///   isolated dir is exactly what mints a fresh install id. It also covers
-///   `scripts/marketing-shots.ts`, which deliberately sets no other hook.
+///   `scripts/marketing-launch.ts` (the marketing shots and clips), which deliberately sets no other hook.
 /// - `CMDR_E2E_MODE`: the Playwright and Linux Docker E2E lanes, plus `scripts/i18n-capture.ts`.
 /// - `CMDR_MOCK_FDA`: the FDA mock. Only a harness ever sets it, and it's what made 1,550 phantom
 ///   installs report `fdaGranted: true` on their first-ever launch.
@@ -86,7 +86,8 @@ mod tests {
         let e2e_checker = ["CMDR_INSTANCE_ID", "CMDR_DATA_DIR", "CMDR_E2E_MODE", "CMDR_MOCK_FDA"];
         // `apps/desktop/scripts/i18n-capture.ts`.
         let i18n_capture = ["CMDR_E2E_MODE", "CMDR_DATA_DIR", "CMDR_MOCK_FDA"];
-        // `apps/desktop/scripts/marketing-shots.ts` deliberately leaves `CMDR_E2E_MODE` unset.
+        // `apps/desktop/scripts/marketing-launch.ts` (`pnpm marketing:shots` and `pnpm marketing:clips`)
+        // deliberately leaves `CMDR_E2E_MODE` unset.
         let marketing_shots = ["CMDR_DATA_DIR", "CMDR_CACHE_DIR"];
         // `apps/desktop/scripts/tauri-wrapper.ts` (dev and per-worktree dev).
         let dev_wrapper = ["CMDR_INSTANCE_ID", "CMDR_DATA_DIR", "CMDR_CACHE_DIR"];
