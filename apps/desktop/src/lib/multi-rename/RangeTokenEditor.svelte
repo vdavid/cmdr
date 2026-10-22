@@ -325,8 +325,27 @@
         ]
     }
 
-    const startOptions = $derived(edgeOptions(selection?.first))
-    const endOptions = $derived(edgeOptions(selection?.last, anchors.startFromEnd))
+    function countingNow() {
+        return {
+            start: anchors.startFromEnd ? 'end' : 'start',
+            startOptions: edgeOptions(selection?.first),
+            end: endFromEnd ? 'end' : 'start',
+            endOptions: edgeOptions(selection?.last, anchors.startFromEnd),
+            form: anchors.form,
+            off: !selection,
+        }
+    }
+
+    /**
+     * What the toggle groups show, settled before each render. Ark's teardown reads a group's props
+     * one last time, and a derived there would re-run the whole chain back to `value`, mid-change
+     * when an error boundary is tearing the editor down: Svelte's `derived_references_self`. A
+     * `$state` read returns what the group last showed.
+     */
+    let counting = $state.raw(countingNow())
+    $effect.pre(() => {
+        counting = countingNow()
+    })
     const formOptions = $derived<ToggleGroupOption[]>([
         { value: 'span', label: tString('multiRename.rangeEditor.form.span') },
         { value: 'length', label: tString('multiRename.rangeEditor.form.length') },
@@ -432,23 +451,23 @@
             <ToggleGroup
                 bind:this={startGroup}
                 semantics="toggles"
-                value={anchors.startFromEnd ? 'end' : 'start'}
-                options={startOptions}
+                value={counting.start}
+                options={counting.startOptions}
                 onChange={setStart}
                 ariaLabel={tString('multiRename.rangeEditor.start')}
-                disabled={!selection}
+                disabled={counting.off}
             />
         </div>
-        {#if anchors.form === 'span'}
+        {#if counting.form === 'span'}
             <div class="row">
                 <span class="label" aria-hidden="true">{tString('multiRename.rangeEditor.end')}</span>
                 <ToggleGroup
                     semantics="toggles"
-                    value={endFromEnd ? 'end' : 'start'}
-                    options={endOptions}
+                    value={counting.end}
+                    options={counting.endOptions}
                     onChange={setEnd}
                     ariaLabel={tString('multiRename.rangeEditor.end')}
-                    disabled={!selection}
+                    disabled={counting.off}
                 />
             </div>
         {/if}
@@ -456,11 +475,11 @@
             <span class="label" aria-hidden="true">{tString('multiRename.rangeEditor.writeAs')}</span>
             <ToggleGroup
                 semantics="toggles"
-                value={anchors.form}
+                value={counting.form}
                 options={formOptions}
                 onChange={setForm}
                 ariaLabel={tString('multiRename.rangeEditor.writeAs')}
-                disabled={!selection}
+                disabled={counting.off}
             />
         </div>
     </div>

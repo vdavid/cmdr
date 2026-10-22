@@ -17,6 +17,7 @@
      *   the text through `onValueChange`, so the mask stays the single source of truth. Enter,
      *   Escape, or ArrowUp from its first field return focus here with the caret after the token;
      *   a click elsewhere closes it and leaves focus where the click put it.
+     * - The editor reads `shown`, which holds the token past its close until the editor unmounts.
      */
     import { flushSync, onDestroy, onMount, tick, type Snippet } from 'svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
@@ -69,6 +70,16 @@
     /** The open editor: its token, by start (a rewrite changes only its end), and why it's open. */
     let editor = $state<EditorOpen | null>(null)
     const editing = $derived(tokens.find((token) => token.span.from === editor?.from))
+    /**
+     * The token the editor shows: `editing`, held once it's gone until the editor unmounts. A box
+     * event can land between the close and the unmount, and an editor reading a token that's gone
+     * throws inside its own deriveds, which the error boundary turns into a blank window.
+     */
+    let lastEditing: Token | undefined
+    const shown = $derived.by(() => {
+        if (editing) lastEditing = editing
+        return lastEditing
+    })
     /** Where the caret goes once the editor closes through a key. */
     let returnCaret: number | null = null
 
@@ -237,8 +248,10 @@
         }
     })
 
-    function rewrite(token: Token, inner: string): void {
-        onValueChange(replaceToken(value, token.span, inner).mask)
+    /** Writes an edit into the token the editor is open on; a closing editor's late edit writes nothing. */
+    function rewrite(inner: string): void {
+        if (!editing) return
+        onValueChange(replaceToken(value, editing.span, inner).mask)
     }
 
     /** Closes the editor; focus comes back through the anchor (Escape) or `focusAfterEditing` (Enter, ArrowUp). */
@@ -349,17 +362,18 @@
 </div>
 
 {#if anchorEl}
-    {@const token = editing}
+    {@const token = shown}
     <Popover
         anchor={anchorEl}
-        open={token !== undefined}
+        open={editing !== undefined}
         passive={editor?.reason !== 'focus'}
         alsoInside={wrapperEl}
         surface="solid"
         onClose={close}
         ariaLabel={token ? tString(token.kind.editorLabel) : undefined}
     >
-        {#if token}
+        <!-- `token` (`shown`), never `editing`: the editor reads it until it's gone. -->
+        {#if editing && token}
             {@const kind = anyKind(token.kind)}
             {@const Editor = kind.editor}
             <!-- Focus arriving here (a click, ArrowDown) means the user is working in the editor. -->
@@ -369,7 +383,7 @@
             >
                 <Editor
                     value={token.value}
-                    onChange={(next) => { rewrite(token, kind.format(next)) }}
+                    onChange={(next) => { rewrite(kind.format(next)) }}
                     onDone={done}
                 />
             </div>

@@ -428,6 +428,113 @@ describe('the range editor', () => {
     expect(m.value()).toBe('[N] x')
   })
 
+  // Regression anchor: a box event between the close and the unmount once read the editor's
+  // token after the mask had dropped it; under the app's error boundary that tore the toggle
+  // groups down mid-read (`derived_references_self`) and blanked the window.
+  describe('closes cleanly right after an edit', () => {
+    async function closeAfterEdit(close: (m: Mounted) => void): Promise<{ m: Mounted; errors: unknown[] }> {
+      const errors: unknown[] = []
+      const onError = (e: ErrorEvent): void => {
+        errors.push(e.error)
+      }
+      window.addEventListener('error', onError)
+      try {
+        const m = await mountField('[N] x')
+        await open(m, 2)
+        await select('pointer', 0, 5)
+        expect(m.value()).toBe('[N1-5] x')
+        try {
+          close(m)
+        } catch (error) {
+          errors.push(error)
+        }
+        await settle()
+        return { m, errors }
+      } finally {
+        window.removeEventListener('error', onError)
+      }
+    }
+
+    /**
+     * Sends `selectionchange` as Escape hands focus back, before the box's blur, as WebKit may;
+     * `moveTo` first moves the box's selection there.
+     */
+    function selectionChangeOnFocusReturn(moveTo?: [number, number]): void {
+      const anchor = document.querySelector<HTMLElement>('.editor-anchor')
+      if (!anchor) throw new Error('no editor anchor')
+      const focus = anchor.focus.bind(anchor)
+      anchor.focus = (options?: FocusOptions) => {
+        if (moveTo) box().setSelectionRange(...moveTo)
+        document.dispatchEvent(new Event('selectionchange'))
+        focus(options)
+      }
+    }
+
+    it.each([
+      [
+        'Escape in the box',
+        (): void => {
+          key(box(), 'Escape')
+        },
+      ],
+      [
+        'Enter in the box',
+        (): void => {
+          key(box(), 'Enter')
+        },
+      ],
+      [
+        '↑ in the box',
+        (): void => {
+          key(box(), 'ArrowUp')
+        },
+      ],
+      [
+        'Escape in the mask',
+        (m: Mounted): void => {
+          m.input.focus()
+          key(m.input, 'Escape')
+        },
+      ],
+      [
+        'a selection change between the close and the unmount',
+        (): void => {
+          selectionChangeOnFocusReturn()
+          key(box(), 'Escape')
+        },
+      ],
+    ])('on %s', async (_how, close) => {
+      const { m, errors } = await closeAfterEdit(close)
+      expect(errors).toEqual([])
+      expect(document.querySelector('.ui-popover')).toBeNull()
+      expect(document.activeElement).toBe(m.input)
+      expect(m.value()).toBe('[N1-5] x')
+    })
+
+    it('writes nothing from a box event that lands after the close', async () => {
+      const { m, errors } = await closeAfterEdit(() => {
+        // A new selection the late event would otherwise write as `[N1-3]`.
+        selectionChangeOnFocusReturn([0, 3])
+        key(box(), 'Escape')
+      })
+      expect(errors).toEqual([])
+      expect(m.value()).toBe('[N1-5] x')
+    })
+
+    it('when an edit and the close land in one flush', async () => {
+      const { m, errors } = await closeAfterEdit(() => {
+        const el = box()
+        el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }))
+        el.setSelectionRange(0, 4)
+        el.dispatchEvent(new Event('select', { bubbles: true }))
+        key(el, 'Escape')
+      })
+      expect(errors).toEqual([])
+      expect(document.querySelector('.ui-popover')).toBeNull()
+      expect(m.value()).toBe('[N1-4] x')
+    })
+  })
+
   it('leaves for the mask on ↑ in the box, claimed, with the caret after the token', async () => {
     const m = await mountField('[N1-5] x')
     await open(m, 2)

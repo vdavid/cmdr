@@ -3,8 +3,7 @@
 The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: that module's `CLAUDE.md` / `DETAILS.md`).
 
 - `MultiRenameDialog.svelte` the sheet; `routes/(main)/+page.svelte` opens the backend session first and closes it with
-  the sheet. `PreviewList.svelte` its preview (a `grid`-semantics `ColumnList` over the windowed `source`, with one
-  cursor).
+  the sheet. `PreviewList.svelte` its preview (a `grid` `ColumnList` over the windowed `source`, one cursor).
 - `multi-rename-state.svelte.ts` the spec, the debounced preview (a generation counter drops stale answers), the rows in
   view, the list's cursor (`cursorIndex`, `cursorRow`), presets (`loadedId`, `edited`), the last settings (`persist`),
   Results' names, Start.
@@ -28,8 +27,8 @@ The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: tha
   sequence (stale: `selectionChanged`, a toast). Then the sheet sends the spec and, at Start, the `previewId`; it holds
   only the counts and the rows in view. "Problems only" pages from the backend (`PreviewFilter`), ❌ never by filtering
   rows it holds.
-- **Start waits for the preview of the last edit** (`pending`), so it never runs a spec nobody saw; a failed Start
-  (`applyError`) doesn't block a retry. Results waits the same way.
+- **Start and Results wait for the preview of the last edit** (`pending`), so neither runs a spec nobody saw; a failed
+  Start (`applyError`) doesn't block a retry.
 - **Enter starts from a mask or search field** (⌘⏎ from anywhere), saves from the preset-name popover, and never fires
   mid-composition.
 - **Every sheet key is a fixed registry command** in `Main window/Multi-rename`, read through `eventMatchesCommand` and
@@ -44,9 +43,10 @@ The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: tha
 - **Tooltip examples are the engine's render of made-up files**, the marked part set apart. ❌ No slicing or replacing
   in TS, in the range editor too (`rangeSamples`). DETAILS § Tooltip examples, § Range editor.
 - **A spec error keeps the last good preview** under the message; any other error clears it.
-- **A caret-opened editor is `passive`** (no focus, no trap): typing stays in the field. DETAILS § Mask input.
+- **A caret-opened editor is `passive`** (no focus, no trap). A token editor reads `shown`, ❌ never `editing`: a gone
+  token blanked the window. DETAILS § Mask input.
 - **The sheet opens on what the last one closed with**: fields AND loaded preset, so "Mine (edited)" survives. An edit
   made before they arrive wins. DETAILS § Presets.
-- `edited` compares against the preset as it is in the list now, so a rename, update, or delete needs no syncing.
+- `edited` compares against the listed preset, so a rename, update, or delete needs no syncing.
 
 More: `DETAILS.md`.

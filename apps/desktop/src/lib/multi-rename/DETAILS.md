@@ -239,6 +239,12 @@
   and two message keys. The text is the single source of truth: an editor edit is `format` + `replaceToken`, never state
   of its own. A new kind (a date) is one entry there plus its grammar's tests. `MaskInput` renders whichever kind a
   token is through `anyKind` (TS can't pair a union of kinds with their values in markup).
+- **Gotcha/Why: the editor never sees its token vanish.** It gets `shown` (`editing`, held once it's gone) and unmounts
+  on `editing`, so it reads a real token until it's gone; an edit it sends once closed writes nothing (`rewrite` reads
+  `editing`). Escape's focus return runs between the close and the unmount, and WebKit can tell the range editor's box a
+  selection change there; that read `value` off the dropped token, threw inside the editor's deriveds, and the app's
+  error boundary tore the editor down mid-read (`derived_references_self`), blanking the window. Pinned by
+  `RangeTokenEditor.svelte.test.ts` § closes cleanly right after an edit.
 - **Counter** (`counter-token.ts`): parses step for step like `counter()` in `mask.rs`, quirks included (`[C++5]` is
   step 5); both sides test against `counter_token_vectors.json`. Writes back in minimal form: defaults (start 1, step 1,
   digits 1) left out, so all-default is a bare `[C]`; a negative start always writes its step (`[C-5+1]`: a lone `[C-5]`
@@ -307,6 +313,11 @@
   how keyboard and VoiceOver users move through the editor. With a modifier they stay native (⇧↑ / ⇧↓ extend the
   selection to the start / end). Enter anywhere goes back to the mask, claimed in the capture phase so the sheet never
   starts a rename; Escape is the `Popover`'s; Tab moves on through the toggles.
+- **Gotcha/Why: the toggle groups get settled `$state`** (`counting`, set in an `$effect.pre`), never deriveds of the
+  token. Ark's teardown reads a group's props one last time, and a derived there re-runs the chain back to `value`; when
+  an error boundary tears the editor down from inside that chain, the re-run reads a derived that's mid-run, and
+  Svelte's `derived_references_self` hides the real error. `MaskInput` keeps `value` from vanishing (§ Mask input); this
+  keeps any other failure readable.
 - **Accessibility**: the box is named by its visible label and described by the reading line; VoiceOver reads a text
   field's selection natively. The reading line is a polite live region, so a token changed from the toggles or the mask
   is read out in plain words.
