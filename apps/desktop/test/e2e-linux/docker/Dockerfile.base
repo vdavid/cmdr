@@ -8,7 +8,7 @@
 # file hash. The fast-changing part (entrypoint.sh) lives in `Dockerfile`,
 # which builds FROM this image in ~1 s.
 
-FROM ubuntu:26.04@sha256:f144425ff09be612d6d9ad965196e9cdc23dae1f42110a8a11a3e9a8198759f7
+FROM ubuntu:26.04@sha256:c098726dd9b9733f3e885f8de0ef375206a311b0a317eadc40d347b1115fb944
 
 # Avoid prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -119,8 +119,8 @@ RUN corepack enable pnpm
 # Rust (needed to compile the Tauri binary with --features playwright-e2e). The bind-mounted
 # registry cache in `e2e-linux.sh` lives under /root/.cargo, so the toolchain moves there too.
 # `rust-toolchain.toml` still picks the compiler; matching the image to its pin saves the download.
-COPY --from=rust:1.98.1-slim-trixie@sha256:4cd829461bd5c4d511c32e269da9cb8929223b666519d8004e35fc8d1d771ab7 /usr/local/cargo /root/.cargo
-COPY --from=rust:1.98.1-slim-trixie@sha256:4cd829461bd5c4d511c32e269da9cb8929223b666519d8004e35fc8d1d771ab7 /usr/local/rustup /root/.rustup
+COPY --from=rust:1.99.0-slim-trixie@sha256:2752b332db73fdbb7dc576f06c82ed1f312005784ef913d7e04a28f5f55dc581 /usr/local/cargo /root/.cargo
+COPY --from=rust:1.99.0-slim-trixie@sha256:2752b332db73fdbb7dc576f06c82ed1f312005784ef913d7e04a28f5f55dc581 /usr/local/rustup /root/.rustup
 ENV CARGO_HOME=/root/.cargo RUSTUP_HOME=/root/.rustup
 ENV PATH="/root/.cargo/bin:${PATH}"
 
