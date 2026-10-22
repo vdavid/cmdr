@@ -1,122 +1,20 @@
 #!/bin/bash
-# Release gate: the commit being released must have a FULLY green CI run, and CodeQL must be green
-# on it with no open high or critical alert (`release-codeql-gate.sh`, run last).
+# Release gate: waits for the release's full CI run and CodeQL on the tagged commit, and fails the
+# moment any CI job goes red, naming it, how to see why, and what to do next (re-run a flake, or
+# abort the release with `./scripts/release.sh -abort X.Y.Z`).
 #
-# "Fully" means a `workflow_dispatch` run with `run_all`, never a push run: CI on a push to main
-# skips every job whose paths didn't change, so a docs-only HEAD reads green while the commit
-# before it broke the Rust lane. Only a run_all run on the exact commit covers every job. The runs
-# API carries no inputs, so a run counts as full only when its `Full run (run_all)` marker job
-# (`ci.yml`, `if: inputs.run_all`) didn't skip; a dispatch with run_all off doesn't count.
+# "Full" means a `workflow_dispatch` run with `run_all`, never a push or PR run: those skip every
+# job whose paths didn't change. `release.sh` dispatches it on the release branch right after it
+# pushes the tag, so it runs beside the build. The rules (which run counts, the parent fallback
+# of the security-only patch flow, the emergency bypass `RELEASE_SKIP_CI_GATE=1`) live in one
+# place: `scripts/release-finish/ci.go`. `release-finish.sh` runs the same wait before it signs,
+# and `release-pipeline.yml`'s `ci-gate` job checks it again before `publish`.
 #
-# Idempotent: it reuses a full run that already exists on the commit (finished or still going),
-# starts one if there's none, waits for it, and exits non-zero unless it succeeded. So the release
-# procedure calls it early to overlap the ~25-minute run with changelog drafting, and `release.sh` calls it
-# again before the version bump, where it returns at once.
-#
-# On a landed `chore(release): vX.Y.Z` commit it takes the parent's full run too, the rule
-# `release-pipeline.yml`'s `ci-gate` job applies to the tag. `release.sh` calls it there once more
-# after landing: a no-op normally, and a full run on the release commit itself when `land` had to
-# rebase it onto a `main` that moved.
-#
-# Emergency bypass (a hotfix while CI is red for a reason outside the repo): RELEASE_SKIP_CI_GATE=1.
-# `release.yml` enforces the same rule server-side (its `ci-gate` job), with its own bypass: the
-# repository variable RELEASE_SKIP_CI_GATE_TAG set to the exact tag.
+# Usage: ./scripts/release-ci-gate.sh <version>
 set -euo pipefail
 
-WORKFLOW=ci.yml
-
-if [[ "${RELEASE_SKIP_CI_GATE:-}" == "1" ]]; then
-  echo "⚠️  RELEASE_SKIP_CI_GATE=1: releasing WITHOUT a green full CI run."
-  echo "   release.yml checks this again: set the repository variable RELEASE_SKIP_CI_GATE_TAG to the exact tag"
-  echo "   (like v1.2.3) before pushing it, and clear it once the release run finishes."
-  exit 0
+if [[ $# -ne 1 ]]; then
+  echo "Usage: $0 <version>   (like 0.56.0; the local tag vX.Y.Z names the commit)" >&2
+  exit 2
 fi
-
-git fetch --quiet origin main
-# GitHub's current name for the repo (it may move to the `getcmdr` org, #476), for the links below.
-REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
-SHA=$(git rev-parse HEAD)
-REMOTE_SHA=$(git rev-parse origin/main)
-if [[ "$SHA" != "$REMOTE_SHA" ]]; then
-  echo "Error: HEAD ($SHA) isn't origin/main ($REMOTE_SHA)."
-  echo "The release ships what's on main. Land what's missing (pnpm land from its worktree), sync local main"
-  echo "(git pull --ff-only origin main), then re-run."
-  exit 1
-fi
-# The commits whose full run counts: HEAD, and its parent when HEAD is the release commit.
-CANDIDATES=("$SHA")
-if [[ "$(git log -1 --format=%s HEAD)" =~ ^chore\(release\):\ v[0-9] ]]; then
-  CANDIDATES+=("$(git rev-parse HEAD^)")
-fi
-
-# The marker job's conclusion in a run: `success` in a full run, `skipped` with run_all off, and
-# empty while the job hasn't finished (or the run hasn't listed its jobs yet). Matched by job name,
-# which `ci.yml` owns.
-marker_of() {
-  gh run view "$1" --json jobs \
-    --jq '[.jobs[] | select(.name == "Full run (run_all)")][0].conclusion // ""'
-}
-
-# The newest full run on the commit given. `--commit` filters on the run's head SHA. The marker
-# needs no other job, so it settles within seconds of a run starting; a just-queued run gets a
-# minute for it.
-find_run() {
-  local commit="$1" id status marker
-  while read -r id status; do
-    for _ in $(seq 1 12); do
-      marker=$(marker_of "$id")
-      # A finished run without the marker predates it, so it can't prove anything: move on.
-      [[ -n "$marker" || "$status" == "completed" ]] && break
-      sleep 5
-    done
-    if [[ "$marker" == "success" ]]; then
-      echo "$id"
-      return
-    fi
-  done < <(gh run list --workflow "$WORKFLOW" --event workflow_dispatch --commit "$commit" --limit 10 \
-    --json databaseId,status --jq '.[] | "\(.databaseId) \(.status)"')
-}
-
-RUN_ID=""
-for c in "${CANDIDATES[@]}"; do
-  RUN_ID=$(find_run "$c")
-  if [[ -n "$RUN_ID" ]]; then
-    SHA="$c"
-    break
-  fi
-done
-if [[ -z "$RUN_ID" ]]; then
-  echo "No full CI run on ${SHA:0:9} yet; starting one (run_all)."
-  gh workflow run "$WORKFLOW" --ref main -f run_all=true
-  # The dispatch returns before the run is listed; give it up to a minute to appear.
-  for _ in $(seq 1 12); do
-    sleep 5
-    RUN_ID=$(find_run "$SHA")
-    [[ -n "$RUN_ID" ]] && break
-  done
-  if [[ -z "$RUN_ID" ]]; then
-    echo "Error: started a CI run, but it didn't show up for ${SHA:0:9} within a minute."
-    echo "Check https://github.com/$REPO/actions and re-run this gate."
-    exit 1
-  fi
-fi
-
-URL="https://github.com/$REPO/actions/runs/$RUN_ID"
-STATUS=$(gh run view "$RUN_ID" --json status --jq .status)
-if [[ "$STATUS" != "completed" ]]; then
-  echo "Waiting for the full CI run on ${SHA:0:9} ($URL)..."
-  # `--exit-status` would fail the script on red; the conclusion check below words that instead.
-  gh run watch "$RUN_ID" --interval 30 >/dev/null || true
-fi
-
-CONCLUSION=$(gh run view "$RUN_ID" --json conclusion --jq .conclusion)
-if [[ "$CONCLUSION" != "success" ]]; then
-  echo "Error: the full CI run on ${SHA:0:9} ended '$CONCLUSION': $URL"
-  echo "Fix it on a branch, land it, and re-run. A new commit gets its own run."
-  exit 1
-fi
-echo "✅ Full CI run on ${SHA:0:9} is green: $URL"
-
-# CodeQL runs as its own workflow, so it has its own gate: a green run on this commit and no open
-# high or critical alert.
-"$(dirname "$0")/release-codeql-gate.sh" --wait "$SHA"
+exec "$(dirname "$0")/release-finish.sh" -ci-gate -wait "$1"

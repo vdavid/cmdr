@@ -1603,10 +1603,11 @@ jobs:
   # Full-run marker for the release gate
   # ===========================================
   # Runs only when `run_all` is on, so its success is how the release gate
-  # (`scripts/release-ci-gate.sh` and `release-pipeline.yml`'s `ci-gate`) tells a full run from a
-  # dispatch with `run_all` off, which the runs API can't show (it carries no inputs). The gates
-  # match this job's NAME, so ❌ don't rename it without updating both. It needs nothing, so it
-  # marks the MODE only; the gates read green-or-red from the run's own conclusion.
+  # (`scripts/release-finish/ci.go`, run by `release-finish.sh` and `release-pipeline.yml`'s
+  # `ci-gate`) tells a full run from a dispatch with `run_all` off, which the runs API can't show
+  # (it carries no inputs). The gate matches this job's NAME (`fullRunMarker`), so ❌ don't rename
+  # it without updating that. It needs nothing, so it marks the MODE only; the gate reads
+  # green-or-red from the run's jobs and its own conclusion.
   full-run:
     name: Full run (run_all)
     runs-on: ubuntu-latest

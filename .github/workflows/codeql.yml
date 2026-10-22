@@ -4,7 +4,7 @@ name: CodeQL
 # land in the repo's code-scanning tab, and a run FAILS when a high or critical finding is left:
 # `.github/codeql/filter-sarif.sh` drops the accepted false positives
 # (`.github/codeql/accepted-findings.json`), uploads the rest, and fails on what blocks. The release
-# gate (`scripts/release-codeql-gate.sh`) won't tag over a red run or an open high alert.
+# gate (`scripts/release-codeql-gate.sh`) won't ship over a red run or an open high alert.
 #
 # Rust takes far longer than the other two (8.5 min against ~1.5 min for JS/TS and 10 s for Actions
 # with the CodeQL 2.27.1 CLI on an M-series Mac, 2026-10-08; 12–20 min on a runner), so it never

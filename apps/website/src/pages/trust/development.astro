@@ -244,10 +244,10 @@ const toc = [
         <li><strong>On demand</strong>: a 30-minute stress test of repeated copies from an SMB server.</li>
     </ul>
     <p>
-        A release waits for GitHub's checks: before tagging, the release script requires a full, green run of every
-        check on the exact commit being released. The release workflow on GitHub checks it again before it builds
-        anything, so a tag pushed by hand can't skip it. (For the version-bump commit the release script adds on top,
-        the workflow checks the commit right before it.)
+        A release waits for GitHub's checks: a full, green run of every check on the exact commit being released,
+        version bump included. The app builds while those checks run, but nothing ships until they're green: the
+        update isn't signed without them, and the release workflow on GitHub checks them again before it publishes
+        anything, so a tag pushed by hand can't skip them.
     </p>
     <p>
         Not in place: automated tests of the macOS-only code on GitHub (the per-push runs use Linux).
@@ -255,9 +255,9 @@ const toc = [
     <DevTodo>
         Numbers only you see. In the {window.days} days to {measuredOn}, {ciOnMain.failed} of {ciOnMain.runs} CI runs
         on <code>main</code> failed, and {ciOnMain.releaseCommitsRed} of the last {ciOnMain.releaseCommits} release
-        commits had a red job ({ciOnMain.redJobs}). <code>scripts/release.sh</code> refuses to tag without a green full CI run
-        on HEAD (<code>scripts/release-ci-gate.sh</code>), and the release workflow's <code>ci-gate</code> job checks it
-        again. Suggestion: add a macOS runner lane for clippy and the Rust tests (public repo, so macOS minutes are
+        commits had a red job ({ciOnMain.redJobs}). <code>scripts/release-finish.sh</code> refuses to sign without a green full CI run
+        on the tagged commit (<code>scripts/release-ci-gate.sh</code>), and the release workflow's <code>ci-gate</code> job
+        checks it again before publishing. Suggestion: add a macOS runner lane for clippy and the Rust tests (public repo, so macOS minutes are
         free), since per-push CI never compiles the <code>cfg(target_os = "macos")</code> code. That moves a sentence
         off this page.
     </DevTodo>

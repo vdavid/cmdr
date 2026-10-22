@@ -7,10 +7,13 @@
 # - `ci` (or unset): the tag push does everything, the `sign` job signing with the updater key
 #   from the `release` environment.
 # - `local`: the tag push builds, notarizes, and attests into a DRAFT release, with no updater
-#   signatures and no manifest move. `scripts/release-finish.sh` on David's laptop verifies each
-#   archive's provenance, signs it with the key from sops, uploads the `.sig` files, then
-#   dispatches this workflow on the tag (`workflow_dispatch`), which runs only `guard`, `publish`,
-#   `attest`, and `bump-tap`. The updater key never reaches GitHub.
+#   signatures and no manifest move, while the release's full CI run goes on beside it.
+#   `scripts/release-finish.sh` on David's laptop waits for both, verifies each archive's
+#   provenance, signs it with the key from sops, uploads the `.sig` files, then dispatches this
+#   workflow on the tag (`workflow_dispatch`), which runs only `guard`, `ci-gate`,
+#   `vet-update-archives`, `publish`, `attest`, and `bump-tap`. The updater key never reaches GitHub.
+# `ci-gate` runs in whichever run publishes, so nothing ships without a green full CI run on the
+# tagged commit: before `compile` in `ci` mode, before `publish` in the `local` dispatch.
 # `docs/guides/releasing.md` § Who signs the update archives.
 name: Release pipeline
 
@@ -109,22 +112,23 @@ jobs:
 
           echo "$TAG moves the manifest $CURRENT -> $VERSION. Proceeding."
 
-  # The server-side twin of `scripts/release-ci-gate.sh`: only a commit with a fully green CI run
-  # ships. Fully green means a `workflow_dispatch` run of `ci.yml` (the `run_all` one the local gate
-  # starts), never a push run, since push runs skip every lane whose paths didn't change.
+  # Only a commit with a fully green CI run ships: a `workflow_dispatch` run of `ci.yml` with
+  # `run_all` on the tagged commit (`release.sh` starts it on the release branch as it pushes the
+  # tag), never a push or PR run, since those skip every lane whose paths didn't change. Plus
+  # CodeQL: a green run on that commit and no open high or critical alert on `main`. The rules
+  # live in `scripts/release-finish/ci.go` (`release-finish.sh -ci-gate`), which the laptop runs
+  # too: there with a wait that fails on the first red job, here once, with no waiting.
   #
-  # Which commit: `release.sh` runs the local gate on `origin/main`, THEN commits the version bump
-  # and tags that. So the tagged commit itself never has a full run at push time, and its parent
-  # is the one that was gated. The parent counts only when the tagged commit is that release
-  # commit (subject `chore(release): vX.Y.Z`); a tag on any other commit needs a full run of its
-  # own. The local gate already waited for the run to finish, so there's nothing to wait for here.
+  # It runs in whichever run publishes: a `ci` mode tag push (before `compile`, the old gate-first
+  # order, since that run ships on its own: `release.sh` waits for green before pushing a `ci` mode
+  # tag) or the dispatch that finishes a `local` release (before `publish`). A `local` tag push
+  # builds into a private draft beside the CI run, so it skips this and nothing waits for CI.
   ci-gate:
     name: Require green CI on the released commit
-    # The tag push only. A dispatch finishes a release whose build this job already gated, and
-    # skipping it here also skips `compile` (so `sign`) and `sbom`, which need it.
-    if: github.event_name == 'push'
+    needs: [guard]
+    if: github.event_name == 'workflow_dispatch' || needs.guard.outputs.update-signing == 'ci'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions:
       contents: read
       actions: read # list CI and CodeQL runs
@@ -134,77 +138,40 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          # The tagged commit and its parent.
+          # The tagged commit and its parent, whose run counts for a hand-made security-only release.
           fetch-depth: 2
 
-      - name: Require a green full CI run
+      - name: Fetch the release tag
+        # The gate resolves the tag itself, and checkout may leave only the commit.
+        run: git fetch --force --no-tags origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+
+      - name: Install Go for the gate
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          install_args: go
+
+      - name: Require a green full CI run and CodeQL
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.ref_name }}
           # Same shape as RELEASE_REPUBLISH_TAG: names one exact tag, so a stale value can't act as
-          # a blanket bypass. The server-side half of the local RELEASE_SKIP_CI_GATE=1.
+          # a blanket bypass. It turns on the gate's own bypass, RELEASE_SKIP_CI_GATE=1.
           SKIP: ${{ vars.RELEASE_SKIP_CI_GATE_TAG }}
         run: |
           set -euo pipefail
           if [ "$SKIP" = "$TAG" ]; then
-            echo "::warning::RELEASE_SKIP_CI_GATE_TAG names $TAG, so this release ships WITHOUT a green full CI run. Clear that variable once this run finishes."
-            exit 0
+            echo "::warning::RELEASE_SKIP_CI_GATE_TAG names $TAG, so this release ships WITHOUT a green full CI run or the CodeQL gate. Clear that variable once this run finishes."
+            export RELEASE_SKIP_CI_GATE=1
           fi
-
-          VERSION="${TAG#v}"
-          SHA=$(git rev-parse HEAD)
-          CANDIDATES="$SHA"
-          if [ "$(git log -1 --format=%s HEAD)" = "chore(release): v$VERSION" ]; then
-            CANDIDATES="$CANDIDATES $(git rev-parse HEAD^)"
-          fi
-
-          # A green dispatch run counts only when its `Full run (run_all)` marker job succeeded:
-          # the runs API carries no inputs, and that job (`ci.yml`, `if: inputs.run_all`) skips in
-          # a dispatch with run_all off. Matched by job name, which `ci.yml` owns.
-          for c in $CANDIDATES; do
-            for id in $(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$c&event=workflow_dispatch&status=success&per_page=10" \
-              --jq '.workflow_runs[].id'); do
-              MARKER=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$id/jobs?per_page=100" \
-                --jq '[.jobs[] | select(.name == "Full run (run_all)")][0].conclusion // ""')
-              if [ "$MARKER" = "success" ]; then
-                echo "Full CI run on ${c:0:9} is green: https://github.com/$GITHUB_REPOSITORY/actions/runs/$id"
-                exit 0
-              fi
-            done
-          done
-
-          echo "::error::No green full CI run (ci.yml, workflow_dispatch with run_all) on $(for c in $CANDIDATES; do printf '%s ' "${c:0:9}"; done)for $TAG."
-          echo "scripts/release.sh runs scripts/release-ci-gate.sh before tagging, which starts and waits for that run. If that run is still going, wait for it, then re-run the failed jobs."
-          echo "Emergency bypass: set the repository variable RELEASE_SKIP_CI_GATE_TAG to exactly '$TAG', re-run, then clear it. Procedure: docs/guides/releasing.md § Release gates that abort before tagging."
-          exit 1
-
-      # CodeQL is its own workflow: a green run on the commit, and no open high or critical alert
-      # (the Rust half can come from an older run). Same bypass as the step above.
-      - name: Require green CodeQL
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ github.ref_name }}
-          SKIP: ${{ vars.RELEASE_SKIP_CI_GATE_TAG }}
-        run: |
-          set -euo pipefail
-          if [ "$SKIP" = "$TAG" ]; then
-            echo "::warning::RELEASE_SKIP_CI_GATE_TAG names $TAG, so this release ships WITHOUT the CodeQL gate."
-            exit 0
-          fi
-          CANDIDATES=$(git rev-parse HEAD)
-          if [ "$(git log -1 --format=%s HEAD)" = "chore(release): ${TAG}" ]; then
-            CANDIDATES="$CANDIDATES $(git rev-parse HEAD^)"
-          fi
-          # shellcheck disable=SC2086 # one argument per commit
-          ./scripts/release-codeql-gate.sh $CANDIDATES
+          ./scripts/release-finish.sh -ci-gate "${TAG#v}"
 
   # `local` mode only: the draft release the three `sign` jobs upload into. Created once, up front,
   # because three parallel jobs each looking for a draft by tag (drafts can't be fetched by tag)
   # can each find none and create one. Re-runs reuse the draft.
   draft:
     name: Create the draft release
-    needs: [guard, ci-gate]
-    if: needs.guard.outputs.update-signing == 'local'
+    needs: [guard]
+    if: github.event_name == 'push' && needs.guard.outputs.update-signing == 'local'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -251,11 +218,13 @@ jobs:
   compile:
     name: Compile (${{ matrix.arch }})
     needs: [guard, ci-gate, draft]
-    # `ci` mode skips `draft`; `local` mode needs it, so `sign` never uploads into anything but
-    # the draft.
+    # `ci` mode skips `draft` and builds only after `ci-gate`, since its run publishes. `local`
+    # mode skips `ci-gate` (the build goes into a private draft while CI runs beside it, and
+    # `publish` is what waits for green) and needs `draft`, so `sign` never uploads into anything
+    # but the draft.
     if: >-
-      !cancelled() && needs.guard.result == 'success' && needs.ci-gate.result == 'success' && (
-        (needs.guard.outputs.update-signing == 'ci' && needs.draft.result == 'skipped') ||
+      !cancelled() && needs.guard.result == 'success' && (
+        (needs.guard.outputs.update-signing == 'ci' && needs.ci-gate.result == 'success' && needs.draft.result == 'skipped') ||
         (needs.guard.outputs.update-signing == 'local' && needs.draft.result == 'success'))
     # Two runners can build this: GitHub's hosted macOS images, and David's self-hosted M3 MBP
     # (`[self-hosted, macOS, ARM64]`). GitHub-hosted is the ACTIVE one; see
@@ -840,6 +809,10 @@ jobs:
   sbom:
     name: Generate SBOMs
     needs: [guard, ci-gate]
+    # The tag push only, gated like `compile`: after `ci-gate` in `ci` mode, right away in `local`.
+    if: >-
+      !cancelled() && github.event_name == 'push' && needs.guard.result == 'success' && (
+        needs.ci-gate.result == 'success' || needs.guard.outputs.update-signing == 'local')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -991,10 +964,12 @@ jobs:
   publish:
     name: Publish release
     # `pkg` only for ordering: its pkg (if any) is on the release before the checksums are taken.
-    # The `if` below ignores how it ended. `vet-update-archives` is a hard requirement.
-    needs: [guard, sign, pkg, vet-update-archives]
+    # The `if` below ignores how it ended. `ci-gate` (a green full CI run and CodeQL on the tagged
+    # commit) and `vet-update-archives` are hard requirements.
+    needs: [guard, ci-gate, sign, pkg, vet-update-archives]
     if: >-
-      !cancelled() && needs.guard.result == 'success' && needs.vet-update-archives.result == 'success' && (
+      !cancelled() && needs.guard.result == 'success' && needs.ci-gate.result == 'success' &&
+      needs.vet-update-archives.result == 'success' && (
         github.event_name == 'workflow_dispatch' ||
         (needs.guard.outputs.update-signing == 'ci' && needs.sign.result == 'success'))
     runs-on: ubuntu-latest

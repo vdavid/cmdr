@@ -1,10 +1,13 @@
 // Release finish: the laptop half of a release whose update archives are signed locally
 // (repository variable `RELEASE_UPDATE_SIGNING=local`), so the updater key never touches GitHub.
 //
-// The tag push builds, notarizes, and attests into a DRAFT release with no updater signatures.
-// This then, in order:
+// The tag push builds, notarizes, and attests into a DRAFT release with no updater signatures,
+// while the release's full CI run goes on beside it (`release.sh` starts both). This then, in
+// order:
 //
-//  1. waits for that run and requires it green;
+//  1. waits for that build run AND the full CI run on the tagged commit, printing each job as it
+//     moves, and stops on the first red job of either (`ci.go`); once CI is green, it requires the
+//     CodeQL gate too (`scripts/release-codeql-gate.sh`);
 //  2. downloads the three `.app.tar.gz` update archives from the draft;
 //  3. verifies each one's build provenance with `gh attestation verify`, pinned to
 //     `release-pipeline.yml` at the tag's commit on a GitHub-hosted runner, and refuses to
@@ -32,8 +35,13 @@
 // `-verify-dir DIR` only verifies the archives and `.sig` files in DIR against the app's trusted keys,
 // with no gh or sops; the `publish` job gates a dispatch on it.
 //
-// `-dry-run` stops after step 6: it uploads, dispatches, and publishes nothing, and works on an
-// already published release or a pipeline test tag's draft (it takes a pre-release version like
+// `-ci-gate` only checks the release's CI and CodeQL gate, once: the `ci-gate` job in
+// `release-pipeline.yml` runs it before anything ships. With `-wait` it waits instead, failing on
+// the first red job (`scripts/release-ci-gate.sh`).
+//
+// `-dry-run` checks the CI gate once (no waiting: it refuses while the run is red or still going)
+// and stops after step 6: it uploads, dispatches, and publishes nothing, and works on an already
+// published release or a pipeline test tag's draft (it takes a pre-release version like
 // `0.52.1-pipelinetest.1`). `-signer-workflow` (dry runs only) checks a release from before the
 // reusable workflow, whose provenance `release.yml` signed, or one built before the repo moved
 // (`vdavid/cmdr/.github/workflows/release-pipeline.yml`): the attestation is checked against the
@@ -52,7 +60,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -94,8 +101,11 @@ func main() {
 	signer := flag.String("signer-workflow", "", "dry runs only: the workflow whose provenance must cover the archives (default: this repo's "+pipelineWorkflowPath+")")
 	verifyDir := flag.String("verify-dir", "", "only verify the three archives in DIR against their .sig files and the app's trusted keys (the publish job's gate)")
 	backupKey := flag.Bool("backup-key", false, "sign with the offline backup key from $"+backupKeyEnv+" and $"+backupPasswordEnv+" instead of sops: the key-rotation release only")
+	ciGateOnly := flag.Bool("ci-gate", false, "only check the release's full CI run and CodeQL gate on the tagged commit (the pipeline's ci-gate job)")
+	wait := flag.Bool("wait", false, "with -ci-gate: wait for the run, failing on the first red job")
 	flag.Usage = func() {
 		fmt.Fprintln(os.Stderr, "Usage: ./scripts/release-finish.sh [-dry-run] [-backup-key] [-out DIR] [-signer-workflow WORKFLOW] <version>")
+		fmt.Fprintln(os.Stderr, "       ./scripts/release-finish.sh -ci-gate [-wait] <version>")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -112,32 +122,41 @@ func main() {
 		dryRun:         *dryRun,
 		backupKey:      *backupKey,
 	}
-	if err := checkVersion(cfg.version, cfg.dryRun && *verifyDir == ""); err != nil {
+	if err := dispatch(cfg, *verifyDir, *ciGateOnly, *wait); err != nil {
 		fail(err)
 	}
-	if *verifyDir != "" {
-		if err := verifyOnly(cfg, *verifyDir); err != nil {
-			fail(err)
-		}
-		return
+}
+
+// dispatch runs the mode the flags pick: `-verify-dir`, `-ci-gate`, or a release (dry or real).
+func dispatch(cfg config, verifyDir string, ciGateOnly, wait bool) error {
+	if wait && !ciGateOnly {
+		return errors.New("-wait only works with -ci-gate")
+	}
+	// Checking a gate changes nothing, so it takes a pipeline test tag's version too.
+	if err := checkVersion(cfg.version, (cfg.dryRun || ciGateOnly) && verifyDir == ""); err != nil {
+		return err
+	}
+	if verifyDir != "" {
+		return verifyOnly(cfg, verifyDir)
 	}
 	resolved, err := resolveRepo(cfg.root)
 	if err != nil {
-		fail(err)
+		return err
 	}
 	repo = resolved
+	if ciGateOnly {
+		return ciGateCommand(cfg, wait)
+	}
 	if cfg.signerWorkflow == "" {
 		cfg.signerWorkflow = pipelineSignerFor(repo)
 	}
 	if cfg.signerWorkflow != pipelineSignerFor(repo) && !cfg.dryRun {
-		fail(errors.New("-signer-workflow is for dry runs only: a real release is signed only on release-pipeline.yml's provenance"))
+		return errors.New("-signer-workflow is for dry runs only: a real release is signed only on release-pipeline.yml's provenance")
 	}
 	if _, err := signerRepo(cfg.signerWorkflow); err != nil {
-		fail(err)
+		return err
 	}
-	if err := run(cfg); err != nil {
-		fail(err)
-	}
+	return run(cfg)
 }
 
 func fail(err error) {
@@ -153,18 +172,44 @@ func runURL(id int64) string {
 	return fmt.Sprintf("https://github.com/%s/actions/runs/%d", repo, id)
 }
 
-func run(cfg config) error {
+// tagCommit is the commit the local release tag points at: what CI tested and the pipeline built.
+func tagCommit(cfg config) (string, error) {
 	commit, err := output(cfg.root, nil, "git", "rev-parse", "--verify", "--quiet", cfg.tag+"^{commit}")
 	if err != nil {
-		return fmt.Errorf("there's no local tag %s. Run this in the clone that tagged the release, or `git fetch origin tag %s` first", cfg.tag, cfg.tag)
+		return "", fmt.Errorf("there's no local tag %s. Run this in the clone that tagged the release, or `git fetch origin tag %s` first", cfg.tag, cfg.tag)
+	}
+	return commit, nil
+}
+
+// ciGateCommand is `-ci-gate [-wait]`.
+func ciGateCommand(cfg config, wait bool) error {
+	commit, err := tagCommit(cfg)
+	if err != nil {
+		return err
+	}
+	if wait {
+		return waitForCI(cfg, commit)
+	}
+	return checkCI(cfg, commit)
+}
+
+func run(cfg config) error {
+	commit, err := tagCommit(cfg)
+	if err != nil {
+		return err
 	}
 	pubkeys, err := readTrustedPubkeys(cfg.root)
 	if err != nil {
 		return err
 	}
 
-	if !cfg.dryRun {
-		published, err := waitUntilSignable(cfg)
+	if cfg.dryRun {
+		// Signs nothing anyone can use, but still only what could ship.
+		if err := checkCI(cfg, commit); err != nil {
+			return err
+		}
+	} else {
+		published, err := waitUntilSignable(cfg, commit)
 		if err != nil {
 			return err
 		}
@@ -233,8 +278,8 @@ func verifyOnly(cfg config, dir string) error {
 }
 
 // waitUntilSignable reports a release that's already published (signing is behind it), and
-// otherwise waits for the tag push's run to finish green.
-func waitUntilSignable(cfg config) (published bool, err error) {
+// otherwise waits for the tag push's run and the release's CI to finish green.
+func waitUntilSignable(cfg config, commit string) (published bool, err error) {
 	rel, found, err := findRelease(cfg.tag)
 	if err != nil {
 		return false, err
@@ -242,7 +287,7 @@ func waitUntilSignable(cfg config) (published bool, err error) {
 	if found && !rel.IsDraft {
 		return true, nil
 	}
-	return false, waitForBuildRun(cfg.tag)
+	return false, waitForBuildAndCI(cfg, commit)
 }
 
 // requireArchives checks the release is in a state to sign: a draft (or, in a dry run, any
@@ -430,7 +475,7 @@ func finish(cfg config) error {
 		switch action {
 		case actionDone:
 			step("%s is out: the finishing run went green (%s).", cfg.tag, runURL(r.ID))
-			fmt.Println("    Next: check getcmdr.com/latest.json, the archive URLs, and the attestations (step 12 of docs/guides/releasing.md § The release procedure).")
+			fmt.Printf("    Next: merge the release commit back into main (./scripts/release.sh %s), then check getcmdr.com/latest.json, the archive URLs, and the attestations (docs/guides/releasing.md § The release procedure).\n", cfg.version)
 			return nil
 		case actionWait:
 			if err := waitRun(r.ID); err != nil {
@@ -460,38 +505,56 @@ func finish(cfg config) error {
 	}
 }
 
-// waitForBuildRun waits for the tag push's run and requires it green: the draft, the builds,
-// the SBOMs, and the provenance this signs on.
-func waitForBuildRun(tag string) error {
-	runs, err := listRuns(tag, "push")
+// waitForBuildAndCI waits for the tag push's run (the draft, the builds, the SBOMs, and the
+// provenance this signs on) and the release's full CI run, which run side by side, and requires
+// both green. It stops at the first red CI job rather than waiting the build out.
+func waitForBuildAndCI(cfg config, commit string) error {
+	ci, err := newCIWatch(cfg, commit)
+	if err != nil {
+		return err
+	}
+	runs, err := listRuns(cfg.tag, "push")
 	if err != nil {
 		return err
 	}
 	if len(runs) == 0 {
-		step("Waiting for the %s tag push to start its release run", tag)
-		if err := waitForNewRun(tag, "push", nil); err != nil {
-			return fmt.Errorf("%w. Was the tag pushed (`git push origin %s`)?", err, tag)
+		step("Waiting for the %s tag push to start its release run", cfg.tag)
+		if err := waitForNewRun(cfg.tag, "push", nil); err != nil {
+			return fmt.Errorf("%w. Was the tag pushed (`git push origin %s`)?", err, cfg.tag)
 		}
-		if runs, err = listRuns(tag, "push"); err != nil {
+		if runs, err = listRuns(cfg.tag, "push"); err != nil {
 			return err
 		}
 	}
-	r, _ := newest(runs)
-	if !r.completed() {
-		step("Waiting for the build run (%s); hosted macOS builds take roughly an hour", runURL(r.ID))
-		if err := waitRun(r.ID); err != nil {
+	build, _ := newest(runs)
+	step("Waiting for the build run (%s), roughly an hour on hosted macOS runners", runURL(build.ID))
+	seen := map[string]string{}
+	buildDone := false
+	for {
+		if err := ci.poll(); err != nil {
 			return err
 		}
-		if runs, err = listRuns(tag, "push"); err != nil {
-			return err
+		if !buildDone {
+			v, err := viewRun(build.ID)
+			if err != nil {
+				return err
+			}
+			for _, line := range jobChanges(seen, v.ciJobs()) {
+				fmt.Println("    Build: " + line)
+			}
+			if v.Status == "completed" {
+				if v.Conclusion != "success" {
+					return fmt.Errorf("the %s build run ended %s: %s. Re-run its failed jobs (`gh run rerun %d --failed`), then run this again", cfg.tag, v.Conclusion, runURL(build.ID), build.ID)
+				}
+				step("The build run is green (%s)", runURL(build.ID))
+				buildDone = true
+			}
 		}
-		r, _ = newest(runs)
+		if buildDone && ci.done {
+			return nil
+		}
+		time.Sleep(ciPollEvery)
 	}
-	if !r.succeeded() {
-		return fmt.Errorf("the %s build run ended %s: %s. Re-run its failed jobs (`gh run rerun %d --failed`), then run this again", tag, r.Conclusion, runURL(r.ID), r.ID)
-	}
-	step("The build run is green (%s)", runURL(r.ID))
-	return nil
 }
 
 func listRuns(tag, event string) ([]workflowRun, error) {
@@ -548,6 +611,14 @@ func viewRun(id int64) (runView, error) {
 	return v, nil
 }
 
+func (v runView) ciJobs() []ciJob {
+	jobs := make([]ciJob, 0, len(v.Jobs))
+	for _, j := range v.Jobs {
+		jobs = append(jobs, ciJob{Name: j.Name, Status: j.Status, Conclusion: j.Conclusion})
+	}
+	return jobs
+}
+
 // waitRun polls a run until it completes, printing each job's status as it changes.
 func waitRun(id int64) error {
 	seen := map[string]string{}
@@ -556,15 +627,8 @@ func waitRun(id int64) error {
 		if err != nil {
 			return err
 		}
-		for _, j := range v.Jobs {
-			state := j.Status
-			if j.Conclusion != "" {
-				state = j.Conclusion
-			}
-			if seen[j.Name] != state {
-				seen[j.Name] = state
-				fmt.Printf("    %s: %s\n", j.Name, state)
-			}
+		for _, line := range jobChanges(seen, v.ciJobs()) {
+			fmt.Println("    " + line)
 		}
 		if v.Status == "completed" {
 			return nil
@@ -598,16 +662,9 @@ func findRelease(tag string) (releaseInfo, bool, error) {
 	if err != nil {
 		return releaseInfo{}, false, err
 	}
-	var found []releaseInfo
-	dec := json.NewDecoder(strings.NewReader(out))
-	for {
-		var r releaseInfo
-		if err := dec.Decode(&r); errors.Is(err, io.EOF) {
-			break
-		} else if err != nil {
-			return releaseInfo{}, false, fmt.Errorf("reading the release list: %w", err)
-		}
-		found = append(found, r)
+	found, err := decodeStream[releaseInfo](out)
+	if err != nil {
+		return releaseInfo{}, false, fmt.Errorf("reading the release list: %w", err)
 	}
 	switch len(found) {
 	case 0:
