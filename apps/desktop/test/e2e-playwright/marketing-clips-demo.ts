@@ -32,7 +32,21 @@ export const DEMO = {
   projects: 'Projects',
   documents: 'Documents',
   fieldNotes: join('Documents', 'Field notes'),
+  /** The demo video's speed beat: one folder holding `SENSOR_LOGS` files. */
+  sensorLogs: join('Archive', 'Sensor logs'),
+  /** The demo video's rename beat. */
+  cameraRoll: join('Photos', 'Camera roll'),
+  code: 'Code',
+  /** A real git repo, for the `.git` portal. */
+  repo: join('Code', 'website'),
+  zip: join('Code', 'Brand assets.zip'),
 } as const
+
+/** The speed beat's file count (scaled down with `SIZE_SCALE` in the unit test). */
+export const SENSOR_LOGS = 50_000
+
+/** The file the speed beat searches for among the sensor logs. */
+export const SENSOR_LOG_QUERY = 'sensor-41873'
 
 /** The projects the queue clip copies, one transfer each. */
 export const QUEUE_SOURCES = [
@@ -51,6 +65,9 @@ const TRIP_PHOTOS = 64
 
 /** How many files the multi-rename clip renames. A screenful in the preview. */
 const RAW_IMPORTS = 18
+
+/** How many photos the demo video's rename beat renames. */
+const CAMERA_ROLL = 30
 
 /** A tiny deterministic PRNG (mulberry32), so every run stages the same sizes. */
 function prng(seed: number): () => number {
@@ -102,7 +119,7 @@ export function removeDemoTree(root = DEMO_ROOT): void {
  * What the marker says. Bump the version whenever the staged content changes, so the next
  * run restages instead of keeping a stale tree.
  */
-const MARKER_TEXT = 'Staged by pnpm marketing:clips (demo tree v2). Safe to delete.\n'
+const MARKER_TEXT = 'Staged by pnpm marketing:clips (demo tree v3). Safe to delete.\n'
 
 /**
  * Makes sure the demo tree is there and current, and puts its mutable folders back.
@@ -118,6 +135,7 @@ export function ensureDemoTree(root = DEMO_ROOT): 'kept' | 'staged' {
   const marker = join(root, MARKER)
   if (existsSync(marker) && readFileSync(marker, 'utf8') === MARKER_TEXT) {
     resetRawImports(root)
+    resetCameraRoll(root)
     resetBackup(root)
     return 'kept'
   }
@@ -136,6 +154,9 @@ export function stageDemoTree(root = DEMO_ROOT): void {
   mkdirSync(join(root, DEMO.backup), { recursive: true })
   stageProjects(root)
   stageDocuments(root)
+  resetCameraRoll(root)
+  stageSensorLogs(root)
+  stageCode(root)
 
   const music = join(root, 'Music')
   mkdirSync(music, { recursive: true })
@@ -168,6 +189,77 @@ export function resetRawImports(root = DEMO_ROOT): void {
     const when = demoDate(Math.floor(i / 6), i * 11)
     utimesSync(path, when, when)
   }
+}
+
+/** Puts the demo video's rename beat's photos back to their camera names. */
+export function resetCameraRoll(root = DEMO_ROOT): void {
+  const dir = join(root, DEMO.cameraRoll)
+  emptyDir(dir)
+  const rand = prng(13)
+  for (let i = 0; i < CAMERA_ROLL; i++) {
+    const path = join(dir, `IMG_${String(5102 + i * 2)}.jpg`)
+    writeSized(path, 2_800_000 + Math.floor(rand() * 3_400_000))
+    const when = demoDate(4 + Math.floor(i / 10), i * 13)
+    utimesSync(path, when, when)
+  }
+}
+
+/**
+ * The speed beat's big folder: `SENSOR_LOGS` small log files with zero-padded numbers,
+ * so it sorts like a real data dump and one exact name is findable.
+ */
+function stageSensorLogs(root: string): void {
+  const dir = join(root, DEMO.sensorLogs)
+  mkdirSync(dir, { recursive: true })
+  const count = Math.max(50, Math.round(SENSOR_LOGS * SIZE_SCALE))
+  const rand = prng(17)
+  for (let i = 1; i <= count; i++) {
+    writeFileSync(join(dir, `sensor-${String(i).padStart(5, '0')}.log`), 'x'.repeat(200 + Math.floor(rand() * 3800)))
+  }
+}
+
+/** A small website repo with real history (for the `.git` portal) and a zip beside it. */
+function stageCode(root: string): void {
+  const repo = join(root, DEMO.repo)
+  mkdirSync(join(repo, 'src'), { recursive: true })
+  const git = (args: string[], day: number): void => {
+    const date = `2026-0${String(6 + Math.floor(day / 28))}-${String((day % 28) + 1).padStart(2, '0')}T10:00:00Z`
+    const res = spawnSync('git', args, {
+      cwd: repo,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        GIT_AUTHOR_NAME: 'Studio',
+        GIT_AUTHOR_EMAIL: 'studio@example.com',
+        GIT_COMMITTER_NAME: 'Studio',
+        GIT_COMMITTER_EMAIL: 'studio@example.com',
+        GIT_AUTHOR_DATE: date,
+        GIT_COMMITTER_DATE: date,
+      },
+    })
+    if (res.status !== 0) throw new Error(`git ${args.join(' ')} failed: ${res.stderr}`)
+  }
+  const commit = (message: string, day: number, files: Record<string, string>): void => {
+    for (const [name, text] of Object.entries(files)) writeFileSync(join(repo, name), text)
+    git(['add', '.'], day)
+    git(['commit', '-q', '-m', message], day)
+  }
+  git(['init', '-q', '-b', 'main'], 0)
+  commit('First page', 0, { 'index.html': '<h1>Studio</h1>\n', 'README.md': '# Studio website\n' })
+  commit('Add styles', 3, { 'styles.css': 'body { font-family: system-ui; }\n' })
+  commit('Gallery page', 9, { 'gallery.html': '<h1>Gallery</h1>\n', 'src/gallery.js': 'export const photos = []\n' })
+  git(['tag', 'v1.0'], 9)
+  git(['checkout', '-q', '-b', 'redesign'], 12)
+  commit('New color palette', 12, { 'styles.css': 'body { font-family: system-ui; color: #1d3557; }\n' })
+  git(['checkout', '-q', 'main'], 14)
+  commit('Contact form', 15, { 'contact.html': '<form></form>\n', 'src/contact.js': 'export function send() {}\n' })
+
+  // The zip: the brand refresh project's files, browsed like a folder in the reach beat.
+  const res = spawnSync('zip', ['-q', '-r', join(root, DEMO.zip), 'Brand refresh'], {
+    cwd: join(root, DEMO.projects),
+    encoding: 'utf8',
+  })
+  if (res.status !== 0) throw new Error(`zip failed: ${res.stderr}`)
 }
 
 /** Empties `Backup/`, where the copy and queue clips land, for the next take. */

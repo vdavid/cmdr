@@ -95,6 +95,8 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
     var stream: SCStream?
     var firstPts: CMTime?
     var frames = 0
+    /// The last frame written, re-stamped at the stop time by `finish`.
+    var lastSample: CMSampleBuffer?
     var stopping = false
 
     init(out: URL, width: Int, height: Int) throws {
@@ -136,7 +138,10 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
             emit(["event": "recording", "firstFrameEpochMs": epochMs, "width": width, "height": height])
         }
         if input.isReadyForMoreMediaData {
-            if input.append(sampleBuffer) { frames += 1 }
+            if input.append(sampleBuffer) {
+                frames += 1
+                lastSample = sampleBuffer
+            }
         }
     }
 
@@ -153,6 +158,20 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
             self.stream?.stopCapture { _ in
                 self.queue.async {
                     guard let first = self.firstPts else { fail("stopped before the first frame arrived") }
+                    // The last frame again, stamped at the stop: `endSession` alone left the
+                    // file ending at the last CHANGE (a 2.75 s take probed as 2.46 s, verified
+                    // 2026-10-23), which cut a still ending short.
+                    if let last = self.lastSample, CMTimeCompare(stopAt, CMSampleBufferGetPresentationTimeStamp(last)) > 0 {
+                        var timing = CMSampleTimingInfo(duration: .invalid, presentationTimeStamp: stopAt, decodeTimeStamp: .invalid)
+                        var copy: CMSampleBuffer?
+                        if CMSampleBufferCreateCopyWithNewTiming(
+                            allocator: nil, sampleBuffer: last, sampleTimingEntryCount: 1, sampleTimingArray: &timing,
+                            sampleBufferOut: &copy) == noErr,
+                            let copy, self.input.isReadyForMoreMediaData
+                        {
+                            self.input.append(copy)
+                        }
+                    }
                     self.input.markAsFinished()
                     self.writer.endSession(atSourceTime: stopAt)
                     self.writer.finishWriting {

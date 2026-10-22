@@ -22,3 +22,14 @@ export const CLIP_SLUGS = [
 ] as const
 
 export type ClipSlug = (typeof CLIP_SLUGS)[number]
+
+/**
+ * The demo video's beats (`marketing-video-scenes.ts`), in recording order, dark only.
+ * `care` goes last for the same reason `language-switch` does.
+ */
+export const VIDEO_BEATS = ['speed', 'trust', 'rename', 'reach', 'ai', 'hero', 'care'] as const
+
+export type VideoBeat = (typeof VIDEO_BEATS)[number]
+
+/** A video beat's test title prefix, kept apart from the clip slugs for `--grep`. */
+export const VIDEO_TITLE_PREFIX = 'video-'

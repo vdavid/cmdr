@@ -38,6 +38,10 @@ export interface Take {
   markStart: () => void
   /** Marks the frame the poster is cut from: a moment that explains the clip on its own. */
   markPoster: () => void
+  /** Marks where the usable footage ends, when slack follows it; `finish` marks it otherwise. */
+  markEnd: () => void
+  /** Notes a key moment by name (the long-form video beats list them for the editor). */
+  note: (label: string) => void
   /** Marks where the clip ends, stops the recorder, and writes the markers file. */
   finish: () => Promise<void>
   /** Stops the recorder and throws the master away. For a take that failed partway. */
@@ -73,6 +77,8 @@ export async function startTake(options: {
 
   let startEpochMs: number | null = null
   let posterEpochMs: number | null = null
+  const notes: { epochMs: number; label: string }[] = []
+  let usableEndEpochMs: number | null = null
 
   async function stop(): Promise<void> {
     proc.stdin.end('stop\n')
@@ -86,8 +92,14 @@ export async function startTake(options: {
     markPoster: () => {
       posterEpochMs = Date.now()
     },
+    markEnd: () => {
+      usableEndEpochMs = Date.now()
+    },
+    note: (label) => {
+      notes.push({ epochMs: Date.now(), label })
+    },
     finish: async () => {
-      const endEpochMs = Date.now()
+      const endEpochMs = usableEndEpochMs ?? Date.now()
       await stop()
       if (startEpochMs === null) {
         rmSync(recording, { force: true })
@@ -102,6 +114,7 @@ export async function startTake(options: {
         endEpochMs,
         // A take with no explicit poster moment uses its midpoint.
         posterEpochMs: posterEpochMs ?? Math.round((startEpochMs + endEpochMs) / 2),
+        notes,
       }
       writeFileSync(`${base}.markers.json`, `${JSON.stringify(markers, null, 2)}\n`)
     },

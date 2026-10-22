@@ -25,8 +25,9 @@ import {
   settingsPan,
   viewer,
 } from './marketing-clips-scenes.js'
-import { CLIP_SLUGS } from './marketing-clips-slugs.js'
-import type { ClipSlug } from './marketing-clips-slugs.js'
+import { CLIP_SLUGS, VIDEO_BEATS, VIDEO_TITLE_PREFIX } from './marketing-clips-slugs.js'
+import type { ClipSlug, VideoBeat } from './marketing-clips-slugs.js'
+import { ai, care, hero, reach, rename, speed, trust } from './marketing-video-scenes.js'
 import type { ClipTheme } from './marketing-clips-take.js'
 
 /**
@@ -42,6 +43,17 @@ const SCENES: Record<ClipSlug, (page: TauriPage, theme: ClipTheme) => Promise<vo
   'language-switch': languageSwitch,
   viewer,
   settings: settingsPan,
+}
+
+/** Every video beat's scene, a `Record` for the same reason as `SCENES`. */
+const VIDEO_SCENES: Record<VideoBeat, (page: TauriPage) => Promise<void>> = {
+  speed,
+  trust,
+  rename,
+  reach,
+  ai,
+  hero,
+  care,
 }
 
 const THEMES: ClipTheme[] = ['dark', 'light']
@@ -76,5 +88,13 @@ test.describe('marketing clips', () => {
         await SCENES[slug](tauriPage as TauriPage, theme)
       })
     }
+  }
+
+  // The demo video's long-form beats, dark only (`marketing-video-scenes.ts`). Recorded only
+  // by `pnpm marketing:clips --video`, whose `--grep` names them by their `video-` prefix.
+  for (const beat of VIDEO_BEATS) {
+    test(`${VIDEO_TITLE_PREFIX}${beat} dark`, async ({ tauriPage }) => {
+      await VIDEO_SCENES[beat](tauriPage as TauriPage)
+    })
   }
 })

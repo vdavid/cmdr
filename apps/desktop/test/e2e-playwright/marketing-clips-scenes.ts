@@ -78,7 +78,7 @@ const PROGRESS_DIALOG = '[data-dialog-id="transfer-progress"]'
 const MULTI_RENAME = '[data-dialog-id="multi-rename"]'
 
 /** Lets a frame sit on screen. Choreography only; see the file header. */
-function hold(ms: number): Promise<void> {
+export function hold(ms: number): Promise<void> {
   return sleep(ms)
 }
 
@@ -86,7 +86,7 @@ function hold(ms: number): Promise<void> {
  * Types `text` into `selector` one character at a time, the way a person would, through
  * `input` events so the bound state follows. `perCharMs` is choreography.
  */
-async function typeSlowly(page: TauriPage, selector: string, text: string, perCharMs = 85): Promise<void> {
+export async function typeSlowly(page: TauriPage, selector: string, text: string, perCharMs = 85): Promise<void> {
   const sel = JSON.stringify(selector)
   const found = await page.evaluate<boolean>(`(function(){
       var el = document.querySelector(${sel});
@@ -109,18 +109,18 @@ async function typeSlowly(page: TauriPage, selector: string, text: string, perCh
   }
 }
 
-async function invoke(page: TauriPage, command: string, args: Record<string, unknown>): Promise<void> {
+export async function invoke(page: TauriPage, command: string, args: Record<string, unknown>): Promise<void> {
   await page.evaluate(`window.__TAURI_INTERNALS__.invoke(${JSON.stringify(command)}, ${JSON.stringify(args)})`)
 }
 
 /** Per-file copy pace and per-item rollback pace (`src-tauri/src/test_mode.rs`); `null` clears. */
-async function setThrottles(page: TauriPage, copyMs: number | null, rollbackMs: number | null): Promise<void> {
+export async function setThrottles(page: TauriPage, copyMs: number | null, rollbackMs: number | null): Promise<void> {
   await invoke(page, 'set_test_throttle', { ms: copyMs })
   await invoke(page, 'set_test_rollback_throttle', { ms: rollbackMs })
 }
 
 /** Cancels whatever is still running and waits for the operation lanes to empty. */
-async function drainOperations(page: TauriPage): Promise<void> {
+export async function drainOperations(page: TauriPage): Promise<void> {
   await page.evaluate(`(async function() {
     try {
       var ops = await window.__TAURI_INTERNALS__.invoke('list_operations');
@@ -146,11 +146,20 @@ async function drainOperations(page: TauriPage): Promise<void> {
  * Idempotent, like the stills' `stageMainWindow`: a previous take may have left a
  * dialog up or a pane somewhere else.
  */
-async function stageMain(page: TauriPage, theme: ClipTheme, left: string, right: string): Promise<void> {
-  await setWindowSize(page, 'main', CLIP_MAIN.width, CLIP_MAIN.height)
+export async function stageMain(
+  page: TauriPage,
+  theme: ClipTheme,
+  left: string,
+  right: string,
+  look: { size: { width: number; height: number }; zoom: 100 | 125 } = { size: CLIP_MAIN, zoom: 100 },
+): Promise<void> {
+  // Zoom first: it changes nothing about the window's size, but set after the resize it
+  // would reflow the panes the size poll below just waited for.
+  await dispatchMenuCommand(page, `view.zoom.set${String(look.zoom)}`)
+  await setWindowSize(page, 'main', look.size.width, look.size.height)
   await expect
     .poll(async () => (await windowMetrics(page, 'main')).logical.width, { timeout: waitBudget(5000) })
-    .toBe(CLIP_MAIN.width)
+    .toBe(look.size.width)
   await waitForIndexedSizes(page, LOG)
   await stageCosmetics(page)
   await resetTabs('left')
@@ -176,19 +185,21 @@ async function stageMain(page: TauriPage, theme: ClipTheme, left: string, right:
  * its folders still read either (seen on the first real run, 2026-10-22).
  */
 async function waitForExactSizes(page: TauriPage): Promise<void> {
+  // Soft: an inexact size is cosmetic, and a take is worth more than a size. A folder the
+  // index never sizes (the `.git` portal's repo, a zip) would otherwise fail its beat at
+  // the timeout (first video run, 2026-10-23), so this warns and goes on.
   await expect
     .poll(
       () =>
         page.evaluate<boolean>(
           `[...document.querySelectorAll('.file-pane')].some((p) => p.textContent.includes('≥') || p.textContent.includes('<dir>'))`,
         ),
-      {
-        timeout: waitBudget(120000),
-        intervals: [500],
-        message: 'a folder size still reads ≥ or <dir>, so the index never finished the demo tree',
-      },
+      { timeout: waitBudget(45000), intervals: [500] },
     )
     .toBe(false)
+    .catch(() => {
+      console.warn(`${LOG} a folder size still reads ≥ or <dir> after 45 s; recording anyway`)
+    })
 }
 
 /**
@@ -198,7 +209,7 @@ async function waitForExactSizes(page: TauriPage): Promise<void> {
  * `requestAnimationFrame` in an occluded window, so a clip recorded behind the terminal
  * would show frozen progress bars.
  */
-async function recordWindow(
+export async function recordWindow(
   page: TauriPage,
   options: { slug: string; theme: ClipTheme; label: string; include?: string[] },
 ): Promise<Take> {
@@ -216,7 +227,7 @@ async function recordWindow(
 }
 
 /** Runs `body` inside a take, abandoning the take (never a half master) when it throws. */
-async function inTake(take: Take, body: () => Promise<void>): Promise<void> {
+export async function inTake(take: Take, body: () => Promise<void>): Promise<void> {
   try {
     await body()
   } catch (e) {
@@ -401,7 +412,7 @@ export async function multiRename(page: TauriPage, theme: ClipTheme): Promise<vo
  * opens on what the last one closed with, so the second take would otherwise open with
  * the finished mask already showing its preview, and the typing would change nothing.
  */
-async function resetMultiRenameMask(page: TauriPage): Promise<void> {
+export async function resetMultiRenameMask(page: TauriPage): Promise<void> {
   const mask = `${MULTI_RENAME} input[aria-label="Name mask"]`
   await dispatchMenuCommand(page, 'file.multiRename')
   await page.waitForSelector(mask, waitBudget(5000))
@@ -513,7 +524,7 @@ export async function languageSwitch(page: TauriPage, theme: ClipTheme): Promise
  * main-window reset didn't stick, so a take that ended on Vietnamese left it saved, and
  * every later window (the viewer) opened in Vietnamese (first real run, 2026-10-22).
  */
-async function pickEnglish(settings: TauriPage, trigger: string): Promise<void> {
+export async function pickEnglish(settings: TauriPage, trigger: string): Promise<void> {
   // Two picks, British English then English, because a pick of the value that's already
   // saved changes nothing: after previewing a dozen languages the saved value is still
   // `en`, so picking `en` alone left the backend on the last PREVIEWED one, and the
@@ -546,7 +557,7 @@ async function pickEnglish(settings: TauriPage, trigger: string): Promise<void> 
  * instead (`setTheme`), the settings window rendered dark while its Theme mode control
  * still showed Light (first real run, 2026-10-22).
  */
-async function openStagedSettings(page: TauriPage, theme: ClipTheme): Promise<TauriPage> {
+export async function openStagedSettings(page: TauriPage, theme: ClipTheme): Promise<TauriPage> {
   const settings = await openSettingsWindowViaProd(page)
   await settings.waitForSelector('.settings-sidebar', waitBudget(5000))
   // Appearance > Colors and formats, by position: the sidebar's first item is the bare

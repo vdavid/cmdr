@@ -12,6 +12,7 @@ pnpm marketing:clips                        # every clip, dark and light, into a
 pnpm marketing:clips --only copy-rollback   # one clip; repeat or comma-separate for more
 pnpm marketing:clips --out ~/Desktop/clips  # somewhere else, leaving the website untouched
 pnpm marketing:clips --encode-only          # re-encode the masters already in brand/clip-masters/
+pnpm marketing:clips --video                # the demo video's long-form beats instead (masters only)
 ```
 
 - ❗ **Leave the machine alone while it records.** Each take brings Cmdr to the front: ScreenCaptureKit records a
@@ -35,7 +36,17 @@ Slugs come from `apps/desktop/test/e2e-playwright/marketing-clips-slugs.ts`; eac
 - `language-switch`: Settings > Appearance > Language, the list open, ArrowDown twelve times; the picker previews each
   language as it's highlighted, so the window re-renders in each.
 - `viewer`: a Markdown README, a photo, a text file, then a binary as bytes and hex, one after another in one window.
-- `settings`: a pan through the first eight Settings sections.
+- `settings`: a pan through seven Settings sections, one per group.
+
+## Demo video footage (`--video`)
+
+`pnpm marketing:clips --video` (plus `--only <beat>`) records the 90-second demo video's long-form beats instead: dark
+only, 1280x800 at 125% zoom, paced like a confident human demo, as ProRes masters in `brand/clip-masters/video/` with no
+encode. Beats live in `apps/desktop/test/e2e-playwright/marketing-video-scenes.ts`: `speed` (a 50,000-file folder, fast
+scrolling, an instant search), `trust`, `rename`, `reach` (a zip and a Git repo's history as folders), `ai`, `hero`, and
+`care`. Each take names its key moments (`take.note`), and `video-beats.json` beside the masters lists every beat's
+file, size, usable span, key frame, and notes in seconds from the master's start
+(`apps/desktop/scripts/marketing-video.ts`).
 
 ## What it produces
 
