@@ -137,6 +137,18 @@ describe('MultiRenameDialog field history', () => {
     expect(menuRows()).toEqual(['[N]_[C]'])
   })
 
+  it('↓ with the caret right after a counter token opens the history, not the counter editor', async () => {
+    const root = await mountSheet()
+    const mask = fields(root)[0]
+    mask.value = 'x [C] y'
+    mask.dispatchEvent(new Event('input', { bubbles: true }))
+    await settle()
+    pressDown(mask, 5)
+    await settle()
+    expect(menuRows()).toEqual(['[N]_[C]'])
+    expect(document.querySelector('.ui-popover input')).toBeNull()
+  })
+
   it('↓ with the caret in a counter token opens the counter editor, not the history', async () => {
     const root = await mountSheet()
     const mask = fields(root)[0]

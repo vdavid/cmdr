@@ -10,9 +10,9 @@
      * - The editor opens on its own (`token-editor-rules.ts`): while the caret rests inside a token,
      *   with focus staying in the field, and while the pointer rests on a token or the editor. It
      *   opens after a short delay, so a caret or pointer passing through doesn't flash it.
-     * - ArrowDown with the caret inside a token (or right after a counter) goes into its editor
-     *   (opening it first if needed) and is claimed; anywhere else it's left alone, for the field's
-     *   history. Escape in the field closes an open editor, and is claimed so the sheet stays.
+     * - ArrowDown with the caret inside a token goes into its editor (opening it first if needed)
+     *   and is claimed; anywhere else, right before or after a token too, it's left alone, for the
+     *   field's history. Escape in the field closes an open editor, and is claimed so the sheet stays.
      * - The editor lives in a house `Popover` under the token. Every edit rewrites the token in
      *   the text through `onValueChange`, so the mask stays the single source of truth. Enter,
      *   Escape, or ArrowUp from its first field return focus here with the caret after the token;

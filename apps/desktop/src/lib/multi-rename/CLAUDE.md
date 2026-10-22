@@ -34,7 +34,7 @@ The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: tha
   mid-composition.
 - **Every sheet key is a fixed registry command** in `Main window/Multi-rename`, read through `eventMatchesCommand` and
   claimed, from a text field too. ❌ No raw key tests. An open Presets menu owns every key (its `onKey` answers F2 and
-  ⌘S). ↓ inside a mask token (or after a `[C…]`) is its editor's, elsewhere the field's history.
+  ⌘S). ↓ strictly inside a mask token is its editor's, elsewhere the field's history.
 - **F2 is also File > Rename's menu accelerator.** The sheet claims that menu command while mounted, so both roads end
   in `PresetsControl.pressOpenKey`, which toggles once per press (`createKeyRoadEcho`). ❌ Don't call `openMenu` from a
   key path: the echo would close the menu it opened.

@@ -25,11 +25,6 @@ export interface MaskTokenKind<V> extends MaskTokenGrammar<V> {
   markerLabel: MessageKey
   /** The editor popover's accessible name. */
   editorLabel: MessageKey
-  /**
-   * ↓ right after the token (not only inside it) goes into its editor. Off for the ranges: `[N]` and
-   * `[E]` are the default masks, sitting right before the caret where ↓ is the field's history.
-   */
-  downRightAfter: boolean
 }
 
 const counterTokenKind: MaskTokenKind<Counter> = {
@@ -37,7 +32,6 @@ const counterTokenKind: MaskTokenKind<Counter> = {
   editor: CounterTokenEditor,
   markerLabel: 'multiRename.counterEditor.marker',
   editorLabel: 'multiRename.counterEditor.title',
-  downRightAfter: true,
 }
 
 const rangeTokenKind: MaskTokenKind<RangeToken> = {
@@ -45,7 +39,6 @@ const rangeTokenKind: MaskTokenKind<RangeToken> = {
   editor: RangeTokenEditor,
   markerLabel: 'multiRename.rangeEditor.marker',
   editorLabel: 'multiRename.rangeEditor.title',
-  downRightAfter: false,
 }
 
 export const MASK_TOKEN_KINDS = [counterTokenKind, rangeTokenKind] as const

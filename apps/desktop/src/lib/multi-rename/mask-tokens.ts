@@ -64,11 +64,6 @@ export function findTokens<K extends MaskTokenGrammar<unknown>>(mask: string, ki
   return tokens
 }
 
-/** The token the caret is inside of, or right after. */
-export function tokenAtCaret<T extends { span: PlaceholderSpan }>(tokens: readonly T[], caret: number): T | undefined {
-  return tokens.find((token) => caret > token.span.from && caret <= token.span.to)
-}
-
 /** `mask` with the placeholder at `span` rewritten to `[inner]`, and the caret just past it. */
 export function replaceToken(mask: string, span: PlaceholderSpan, inner: string): { mask: string; caret: number } {
   const token = `[${inner}]`

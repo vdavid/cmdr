@@ -87,7 +87,7 @@
   so it portals into the modal's layer) under that field, listing what it held in earlier renames, newest first (at most
   `HISTORY_SHOWN`); a pick fills the field and the menu hands focus back. The backend records it
   (`multi_rename/DETAILS.md` § Field history); the sheet reads it once on mount. **↓ routing:** with the caret inside a
-  mask's token, or right after a `[C…]`, MaskInput claims ↓ first (into its editor), so the sheet never sees it;
+  mask's token (never on its outer edges), MaskInput claims ↓ first (into its editor), so the sheet never sees it;
   anywhere else the sheet's keydown opens the history, unless the field has none, when ↓ is left to the field.
   **Decision/Why:** the chevron (`FieldHistoryChevron.svelte`) is `Combobox`'s 16 px tertiary glyph in `TextInput`'s
   trailing slot, so it reads as the field's own list, apart from the small ▾ markers under tokens. It's disabled while
@@ -220,17 +220,16 @@
   - The popover is `surface="solid"` (opaque `--color-bg-secondary`): the house glass is ~70% opaque, and the numbers
     must read cleanly over the mask and the list.
 - **Keys** (`downTarget`): ArrowDown with an editor open goes into its first field, except with the caret on that
-  token's outer edge (`|[N]`, `[N]|`), where the caret's own token or the field's history takes it; with none, ArrowDown
-  with the caret inside an editable token (`tokenInside`, which takes `[|N]` and `[N|]`), or right after a kind with
-  `downRightAfter` (the counter; `tokenAtCaret`: `from < caret <= to`), opens it there. So a range opens only from
-  inside, by key or by the caret resting; a counter from inside or right after, never right before. **Decision/Why:**
-  not right after a range: `[N]` and `[E]` are the default masks, so the caret sits right after one whenever the sheet
-  opens, where ↓ is TC's field history. Both are claimed (`claimKey`); anywhere else ArrowDown isn't touched. Escape in
-  the field closes an open editor and is claimed, so the sheet stays. In the editor, ArrowDown / ArrowUp walk the fields
-  (rows, in the range editor: § Range editor), and Enter or ArrowUp from the first field closes it; both are claimed, so
-  the sheet's Enter-starts never sees them. Escape is the `Popover`'s, which stops it before the sheet closes. All three
-  put focus back in the field with the caret after the token (Escape through the anchor span's `onfocus`); a click
-  elsewhere closes the editor and leaves focus where it landed.
+  token's outer edge (`|[N]`, `[N]|`), where the field's history takes it; with none, ArrowDown with the caret inside an
+  editable token (`tokenInside`, which takes `[|N]` and `[N|]`) opens it there. So every kind, the counter too, opens
+  only from inside, by key or by the caret resting. **Decision/Why:** not on an outer edge: `[N]` and `[E]` are the
+  default masks, so the caret sits right after one whenever the sheet opens, where ↓ is TC's field history; one rule for
+  every kind is David's pick. Both are claimed (`claimKey`); anywhere else ArrowDown isn't touched. Escape in the field
+  closes an open editor and is claimed, so the sheet stays. In the editor, ArrowDown / ArrowUp walk the fields (rows, in
+  the range editor: § Range editor), and Enter or ArrowUp from the first field closes it; both are claimed, so the
+  sheet's Enter-starts never sees them. Escape is the `Popover`'s, which stops it before the sheet closes. All three put
+  focus back in the field with the caret after the token (Escape through the anchor span's `onfocus`); a click elsewhere
+  closes the editor and leaves focus where it landed.
 - **Markers**: an absolutely placed ▾ `<button tabindex="-1">` ("Edit counter", "Choose characters",
   `aria-haspopup="dialog"`) centered under each token, measured with a canvas in the input's computed font, net of
   `scrollLeft`; one scrolled out of view isn't drawn. Mousedown is prevented, so a click never moves focus out of the

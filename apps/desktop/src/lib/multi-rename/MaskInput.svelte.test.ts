@@ -1,6 +1,6 @@
 /**
- * Behavior tests for `MaskInput.svelte`: a counter token gets a marker, ArrowDown with the caret at
- * the token (or a click on its marker) opens the counter editor, an edit rewrites the token in
+ * Behavior tests for `MaskInput.svelte`: a counter token gets a marker, ArrowDown with the caret
+ * inside the token (or a click on its marker) opens the counter editor, an edit rewrites the token in
  * minimal form, and leaving the editor puts the caret right after the token. Enter and Escape in the
  * editor stay in it, so the sheet around it neither starts nor closes.
  */
@@ -81,18 +81,19 @@ describe('MaskInput', () => {
     expect(markers).toHaveLength(2)
   })
 
-  it('opens the editor with ArrowDown when the caret is right after a counter token', async () => {
+  // `IMG_[C10]`: `[` at 4, `]` at 8, so 4 is `|[`, 5 is `[|`, 8 is `|]`, and 9 is `]|`.
+  it.each([5, 7, 8])('opens the editor with ArrowDown at %i, inside the counter token', async (caret) => {
     const m = await mountField('IMG_[C10]')
-    await openWithArrowDown(m, 9)
+    await openWithArrowDown(m, caret)
     const popover = document.querySelector('.ui-popover')
     expect(popover?.getAttribute('aria-label')).toBe('Counter')
     expect(editorFields().map((f) => f.value)).toEqual(['10', '1', '1'])
     expect(document.activeElement).toBe(editorFields()[0])
   })
 
-  it('leaves ArrowDown right before a counter to the field’s history', async () => {
+  it.each([4, 9])('leaves ArrowDown at %i, on an outer edge of a counter, to the field’s history', async (caret) => {
     const m = await mountField('IMG_[C10]')
-    await openWithArrowDown(m, 4)
+    await openWithArrowDown(m, caret)
     expect(document.querySelector('.ui-popover')).toBeNull()
     expect(m.outerKeys).toEqual(['ArrowDown'])
   })
@@ -119,7 +120,7 @@ describe('MaskInput', () => {
 
   it('rewrites the token on every edit, in minimal form', async () => {
     const m = await mountField('IMG_[C] [N]')
-    await openWithArrowDown(m, 7)
+    await openWithArrowDown(m, 6)
     const [start, step, digits] = editorFields()
     type(digits, '3')
     await settle()
@@ -150,7 +151,7 @@ describe('MaskInput', () => {
 
   it('waits on a half-typed number and clamps one past the limits', async () => {
     const m = await mountField('[C]')
-    await openWithArrowDown(m, 3)
+    await openWithArrowDown(m, 2)
     const [, step, digits] = editorFields()
     type(step, '-')
     await settle()
@@ -184,7 +185,7 @@ describe('MaskInput', () => {
 
   it('Enter closes the editor without reaching the sheet', async () => {
     const m = await mountField('[C] x')
-    await openWithArrowDown(m, 3)
+    await openWithArrowDown(m, 2)
     key(editorFields()[2], 'Enter')
     await settle()
     expect(document.querySelector('.ui-popover')).toBeNull()
@@ -195,7 +196,7 @@ describe('MaskInput', () => {
 
   it('ArrowDown and ArrowUp walk the fields, and ArrowUp from the first one leaves', async () => {
     const m = await mountField('[C:2]')
-    await openWithArrowDown(m, 5)
+    await openWithArrowDown(m, 4)
     const [start, step] = editorFields()
     key(start, 'ArrowDown')
     expect(document.activeElement).toBe(step)

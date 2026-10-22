@@ -18,22 +18,23 @@ describe('tokenInside', () => {
 })
 
 describe('downTarget', () => {
-  // A range at 4–7 (`|[` at 4, `]|` at 7) and a counter at 10–14, which ↓ also takes right after.
-  const range = { span: { from: 4, to: 7, inner: 'N' }, kind: { downRightAfter: false } }
-  const counter = { span: { from: 10, to: 14, inner: 'C10' }, kind: { downRightAfter: true } }
+  // A range at 4–7 (`|[` at 4, `]|` at 7) and a counter at 10–14: one rule for every kind.
+  const range = span(4, 7)
+  const counter = span(10, 14)
   const tokens = [range, counter]
 
-  it('takes a range only with the caret inside it, at either bracket’s inner side too', () => {
+  it('takes a token only with the caret inside it, at either bracket’s inner side too', () => {
     expect(downTarget(tokens, 5, undefined)).toBe(range)
     expect(downTarget(tokens, 6, undefined)).toBe(range)
-    expect(downTarget(tokens, 4, undefined)).toBeUndefined()
-    expect(downTarget(tokens, 7, undefined)).toBeUndefined()
+    expect(downTarget(tokens, 11, undefined)).toBe(counter)
+    expect(downTarget(tokens, 13, undefined)).toBe(counter)
   })
 
-  it('takes a counter from inside and right after it, not right before', () => {
-    expect(downTarget(tokens, 12, undefined)).toBe(counter)
-    expect(downTarget(tokens, 14, undefined)).toBe(counter)
+  it('leaves a caret on either outer edge to the field’s history, the counter’s too', () => {
+    expect(downTarget(tokens, 4, undefined)).toBeUndefined()
+    expect(downTarget(tokens, 7, undefined)).toBeUndefined()
     expect(downTarget(tokens, 10, undefined)).toBeUndefined()
+    expect(downTarget(tokens, 14, undefined)).toBeUndefined()
   })
 
   it('goes into an open editor, but not through its token’s outer edge', () => {
@@ -41,13 +42,12 @@ describe('downTarget', () => {
     expect(downTarget(tokens, 5, range)).toBe(range)
     expect(downTarget(tokens, 4, range)).toBeUndefined()
     expect(downTarget(tokens, 7, range)).toBeUndefined()
-    expect(downTarget(tokens, 14, counter)).toBe(counter)
     expect(downTarget(tokens, 10, counter)).toBeUndefined()
+    expect(downTarget(tokens, 14, counter)).toBeUndefined()
   })
 
-  it('takes the caret’s token over an open editor it sits on the edge of', () => {
-    const touching = [counter, { span: { from: 14, to: 17, inner: 'N' }, kind: { downRightAfter: false } }]
-    expect(downTarget(touching, 14, touching[1])).toBe(counter)
+  it('takes the caret’s token over another one’s open editor', () => {
+    expect(downTarget(tokens, 12, range)).toBe(counter)
   })
 })
 

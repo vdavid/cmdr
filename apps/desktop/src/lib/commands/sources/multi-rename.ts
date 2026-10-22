@@ -131,8 +131,8 @@ export const multiRenameCommands: CommandSource[] = [
     fixedKey: true,
   },
   {
-    // In a text field: TC's field history, as a combobox opens its list. With the caret in a mask's
-    // `[C…]` token, MaskInput claims ↓ first (into the counter's editor).
+    // In a text field: TC's field history, as a combobox opens its list. With the caret inside a
+    // mask's token, MaskInput claims ↓ first (into that token's editor).
     id: 'multiRename.fieldHistory',
     nameKey: 'commands.multiRenameFieldHistory.label',
     scope: 'Main window/Multi-rename',

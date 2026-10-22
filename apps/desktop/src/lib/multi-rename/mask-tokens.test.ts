@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { counterKind } from './counter-token'
-import { findTokens, replaceToken, scanPlaceholders, tokenAtCaret } from './mask-tokens'
+import { findTokens, replaceToken, scanPlaceholders } from './mask-tokens'
 
 const KINDS = [counterKind]
 
@@ -26,14 +26,6 @@ describe('mask placeholders', () => {
       [4, 'counter', { start: 10, step: 1, digits: 1 }],
       [15, 'counter', { start: 1, step: 1, digits: 1 }],
     ])
-  })
-
-  it('finds the token with the caret inside it or right after it', () => {
-    const tokens = findTokens('a[C]b', KINDS)
-    expect(tokenAtCaret(tokens, 1)).toBeUndefined()
-    expect(tokenAtCaret(tokens, 2)?.span.from).toBe(1)
-    expect(tokenAtCaret(tokens, 4)?.span.from).toBe(1)
-    expect(tokenAtCaret(tokens, 5)).toBeUndefined()
   })
 
   it('rewrites one token and puts the caret right after it', () => {
