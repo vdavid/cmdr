@@ -62,6 +62,7 @@
     const pasteAsFileDef = getSettingDefinition('fileOperations.pasteClipboardAsFile') ?? defaultDef
     const skipConfirmationDef = getSettingDefinition('fileOperations.skipConfirmation') ?? defaultDef
     const conflictPolicyDef = getSettingDefinition('fileOperations.defaultConflictPolicy') ?? defaultDef
+    const keepProgressOpenDef = getSettingDefinition('fileOperations.keepProgressOpenWhenDone') ?? defaultDef
     const textEditorAppDef = getSettingDefinition('behavior.textEditorApp') ?? defaultDef
     const openTerminalHereAppDef = getSettingDefinition('behavior.openTerminalHereApp') ?? defaultDef
     const operationLogEnabledDef = getSettingDefinition('operationLog.enabled') ?? defaultDef
@@ -91,6 +92,7 @@
         'fileOperations.pasteClipboardAsFile',
         'fileOperations.skipConfirmation',
         'fileOperations.defaultConflictPolicy',
+        'fileOperations.keepProgressOpenWhenDone',
     )}
         <SectionCard label={tString('settings.navigationAndFileOps.card.fileOperations')}>
             {#if shouldShow('fileOperations.allowFileExtensionChanges')}
@@ -132,6 +134,16 @@
                     {searchQuery}
                 >
                     <SettingSelect id="fileOperations.defaultConflictPolicy" />
+                </SettingRow>
+            {/if}
+            {#if shouldShow('fileOperations.keepProgressOpenWhenDone')}
+                <SettingRow
+                    id="fileOperations.keepProgressOpenWhenDone"
+                    label={keepProgressOpenDef.label}
+                    description={keepProgressOpenDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="fileOperations.keepProgressOpenWhenDone" />
                 </SettingRow>
             {/if}
         </SectionCard>

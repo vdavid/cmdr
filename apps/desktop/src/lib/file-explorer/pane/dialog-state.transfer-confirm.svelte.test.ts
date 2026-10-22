@@ -219,10 +219,12 @@ describe('an MCP confirm on the transfer dialog', () => {
         dialogs.handleTransferCancel()
       },
       onTransferComplete: noop,
+      onTransferDoneClosed: noop,
       onTransferCancelled: noop,
       onTransferError: noop,
       onTransferQueue: noop,
       onAdoptedComplete: noop,
+      onAdoptedDoneClosed: noop,
       onAdoptedCancelled: noop,
       onAdoptedError: noop,
       onAdoptedQueue: noop,

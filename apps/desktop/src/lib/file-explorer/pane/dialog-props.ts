@@ -97,6 +97,16 @@ export type TransferConfirmer = (
 export type DeleteConfirmer = (options?: ConfirmOptions) => Promise<ConfirmPress>
 
 /**
+ * How the progress dialog is taking a completion: `keptOpen` when it stays up on
+ * its done state ("Keep the progress window open when a file operation
+ * finishes"), so the parent runs its pane tail now and unmounts nothing until the
+ * dialog's `onDoneClosed`.
+ */
+export interface CompletionView {
+  keptOpen: boolean
+}
+
+/**
  * What a transfer operation reports when it finishes: `TransferProgressDialog`'s
  * `onComplete`, shared by both the started and adopted arms
  * (`onTransferComplete` / `onAdoptedComplete`).

@@ -497,6 +497,7 @@ export interface SettingsValues {
   'fileOperations.pasteClipboardAsFile': PasteClipboardAsFileMode
   'fileOperations.skipConfirmation': boolean
   'fileOperations.defaultConflictPolicy': DefaultConflictPolicy
+  'fileOperations.keepProgressOpenWhenDone': boolean
   'fileOperations.progressUpdateInterval': number
   'fileOperations.maxConflictsToShow': number
 

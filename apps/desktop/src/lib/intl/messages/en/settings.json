@@ -637,6 +637,18 @@
   "@settings.fileOperations.defaultConflictPolicy.keywords": {
     "description": "Search keywords for the “When files already exist” setting (settings.fileOperations.defaultConflictPolicy.label) in Settings > Behavior > Navigation & file ops. What it does: picks which “files already exist” option the copy and move dialog starts on (skip, overwrite, overwrite if smaller or older, or ask later). Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
+  "settings.fileOperations.keepProgressOpenWhenDone.label": "Keep the progress window open when a file operation finishes",
+  "@settings.fileOperations.keepProgressOpenWhenDone.label": {
+    "description": "Settings switch label in Settings > Behavior > Navigation & file ops > File operations. When on, the progress window of a copy, move, delete, or move to trash stays on screen after the operation finishes, showing what it did, until the person closes it. \"Progress window\" is the dialog with the progress bars."
+  },
+  "settings.fileOperations.keepProgressOpenWhenDone.description": "It shows what the operation did until you close it: how much, how long it took, and anything it skipped.",
+  "@settings.fileOperations.keepProgressOpenWhenDone.description": {
+    "description": "Help text under the switch that keeps the progress window open after a copy, move, delete, or move to trash finishes. \"It\" is the progress window; \"the operation\" is the copy, move, delete, or move to trash that just finished."
+  },
+  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "progress, done, finished, complete, summary, result, report, stay, keep, close, window, dialog, copy, move, delete, trash",
+  "@settings.fileOperations.keepProgressOpenWhenDone.keywords": {
+    "description": "Search keywords for the “Keep the progress window open when a file operation finishes” setting (settings.fileOperations.keepProgressOpenWhenDone.label) in Settings > Behavior > Navigation & file ops. What it does: keeps the progress window of a copy, move, delete, or move to trash up after it finishes, with a summary of what it did. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
+  },
   "settings.fileOperations.defaultConflictPolicy.opt.skip": "Skip",
   "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
     "description": "Option of the 'When files already exist' setting: leave every clashing file at the destination untouched. Must match the copy dialog's radio for a single clash, 'Skip' (fileOperations.transferDialog.policySkip, its one-clash form)."

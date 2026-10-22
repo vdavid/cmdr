@@ -31,11 +31,7 @@ import {
 import { addToast, type NonErrorToastLevel } from '#lib/ui/toast/index.js'
 import { dismissQueueHandoffToast } from '#lib/file-operations/queue/queue-handoff-toast.js'
 import { tString } from '#lib/intl/messages.svelte.js'
-import {
-  composeTransferCompleteToast,
-  composeDurabilityUnconfirmedToast,
-  composeTrashRefusedToast,
-} from '#lib/file-operations/transfer/transfer-complete-toast.js'
+import { planCompletionToasts } from '#lib/file-operations/transfer/transfer-complete-toast.js'
 import TrashCompleteToastContent from '#lib/file-operations/delete/TrashCompleteToastContent.svelte'
 import { isOperationLogRecording } from '#lib/operation-log/recording.js'
 import {
@@ -70,6 +66,7 @@ import type {
   NewFolderDialogPropsData,
   OperationStartVerdict,
   TransferCompletePayload,
+  CompletionView,
   TransferConfirmPayload,
   TransferErrorPropsData,
   TransferProgressPropsData,
@@ -110,6 +107,9 @@ export function createDialogState(deps: DialogStateDeps) {
   // `DETAILS.md` § "Birth context".
   let showTransferProgressDialog = $state(false)
   let transferProgressProps = $state<TransferProgressPropsData | null>(null)
+  /** A finished duplicate's rename editor, held while its progress dialog stays
+   *  open on the done state; opened once that closes. */
+  let renameAfterDone: (() => void) | null = null
 
   // New folder dialog state
   let showNewFolderDialog = $state(false)
@@ -203,7 +203,8 @@ export function createDialogState(deps: DialogStateDeps) {
   function raiseCompletionToasts(
     op: TransferOperationType,
     settledOperationId: string | null,
-    message: string,
+    // `null` when a progress dialog kept open on its done state already says it.
+    message: string | null,
     level: NonErrorToastLevel,
     refusedMessage: string | null,
     durabilityMessage: string | null,
@@ -217,23 +218,25 @@ export function createDialogState(deps: DialogStateDeps) {
       // With the operation log off, the trash was never journaled: no Undo, and nothing for Edit > Undo trash.
       const undoable = isOperationLogRecording()
       if (undoable) rememberTrashForUndo(settledOperationId, trashed)
-      addToast(TrashCompleteToastContent, {
-        id: trashCompleteToastId(settledOperationId),
-        level,
-        timeoutMs: 10000,
-        props: {
-          message,
-          operationId: settledOperationId,
-          // Only used when the journal recorded no in-trash location, to pick
-          // WHICH volume's trash to open. The focused pane is the honest
-          // stand-in for a birth context that went missing: it's the pane the
-          // trash was started from.
-          sourceFolderPath: sourceFolderPath ?? deps.getFocusedPaneRef()?.getCurrentPath() ?? '',
-          explorer: deps.getExplorer(),
-          undoable,
-        },
-      })
-    } else {
+      if (message !== null) {
+        addToast(TrashCompleteToastContent, {
+          id: trashCompleteToastId(settledOperationId),
+          level,
+          timeoutMs: 10000,
+          props: {
+            message,
+            operationId: settledOperationId,
+            // Only used when the journal recorded no in-trash location, to pick
+            // WHICH volume's trash to open. The focused pane is the honest
+            // stand-in for a birth context that went missing: it's the pane the
+            // trash was started from.
+            sourceFolderPath: sourceFolderPath ?? deps.getFocusedPaneRef()?.getCurrentPath() ?? '',
+            explorer: deps.getExplorer(),
+            undoable,
+          },
+        })
+      }
+    } else if (message !== null) {
       addToast(message, { level, timeoutMs: 7000 })
     }
     // Last, so it lands newest. 10s to match the trash toast it stands beside.
@@ -263,6 +266,7 @@ export function createDialogState(deps: DialogStateDeps) {
       durabilityUnconfirmed,
     }: TransferCompletePayload,
     settledOperationId: string | null,
+    view: CompletionView = { keptOpen: false },
   ): void {
     const op = props?.operationType ?? 'copy'
     // ❌ No search-snapshot purge here. A dialog knows what the operation was
@@ -280,39 +284,33 @@ export function createDialogState(deps: DialogStateDeps) {
     })
     // Top-level counts for the per-type split ("Moved 1 file and 3 folders").
     // F5/F6, drag-and-drop, and clipboard paste all supply these now; absent
-    // only when a kind probe came back partial → composer falls back.
-    const toastMessage = composeTransferCompleteToast({
-      operationType: op,
-      filesProcessed,
-      filesSkipped,
-      fileCount: props?.fileCount,
-      folderCount: props?.folderCount,
-      appearedDuringMove,
-      topLevelSkipped,
-      metadataLeftBehind,
-      lockedKept,
-    })
-    // A trash the OS refused part of still ends as a completion, so without
-    // this it said "Moved 1 file to trash" in success green and the item still
-    // in the pane went unmentioned. It takes the level down with it: nothing
-    // about a partly refused batch may read as a clean success.
-    //
-    // `info` for the all-skipped case (nothing actually moved/copied — neutral
-    // outcome, not a success). `success` everywhere else, including mixed: the
-    // user's intent landed at the target.
-    const refusedMessage = composeTrashRefusedToast(refused)
-    // Same for a copy whose files aren't confirmed on the disk: it landed, but not as a clean success.
-    const durabilityMessage = composeDurabilityUnconfirmedToast(durabilityUnconfirmed)
-    const allSkipped = filesSkipped > 0 && filesSkipped === filesProcessed
-    const completeLevel: NonErrorToastLevel =
-      refusedMessage !== null || durabilityMessage !== null ? 'warn' : allSkipped ? 'info' : 'success'
+    // only when a kind probe came back partial → composer falls back. A trash
+    // the OS refused part of still ends as a completion, so without its own
+    // warning it said "Moved 1 file to trash" in success green and the item
+    // still in the pane went unmentioned (`planCompletionToasts`).
+    const plan = planCompletionToasts(
+      {
+        operationType: op,
+        filesProcessed,
+        filesSkipped,
+        fileCount: props?.fileCount,
+        folderCount: props?.folderCount,
+        appearedDuringMove,
+        topLevelSkipped,
+        metadataLeftBehind,
+        lockedKept,
+        refused,
+        durabilityUnconfirmed,
+      },
+      view.keptOpen,
+    )
     raiseCompletionToasts(
       op,
       settledOperationId,
-      toastMessage,
-      completeLevel,
-      refusedMessage,
-      durabilityMessage,
+      plan.message,
+      plan.level,
+      plan.refused,
+      plan.durability,
       props?.sourceFolderPath,
       {
         sourcePaths: props?.sourcePaths ?? [],
@@ -789,7 +787,10 @@ export function createDialogState(deps: DialogStateDeps) {
       deps.onRefocus()
     },
 
-    handleTransferComplete(payload: TransferCompletePayload) {
+    /** The started operation completed. `view.keptOpen`: the dialog stays up on
+     *  its done state, so the pane work runs now and the dialog (and the rename
+     *  editor a duplicate ends in) wait for `handleTransferDoneClosed`. */
+    handleTransferComplete(payload: TransferCompletePayload, view: CompletionView = { keptOpen: false }) {
       const props = transferProgressProps
       // Read the foreground slot NOW, while the progress dialog still holds it:
       // it releases the slot as it unmounts, below. The operation's journal is
@@ -797,31 +798,52 @@ export function createDialogState(deps: DialogStateDeps) {
       // costs the rename editor.
       const settledOperationId = getForegroundOperationId()
 
-      announceCompletion(props, payload, settledOperationId)
+      announceCompletion(props, payload, settledOperationId, view)
 
       paneEffects.refreshPanesAfterTransfer()
       paneEffects.clearSourcePaneAfterTransfer()
 
+      // A duplicate the trigger asked to name ends in the inline rename editor.
+      // Unawaited: it reads the journal, so it settles a round trip after
+      // everything above, and it must not hold the dialog open meanwhile.
+      const renameDuplicate = () =>
+        void openRenameOnDuplicate({
+          context: props,
+          operationId: settledOperationId,
+          paneRef: deps.getFocusedPaneRef(),
+          showHiddenFiles: deps.getShowHiddenFiles(),
+        })
+      if (view.keptOpen) {
+        // An editor opening under a modal would take keys the person can't see.
+        renameAfterDone = renameDuplicate
+        return
+      }
+
       showTransferProgressDialog = false
       transferProgressProps = null
       deps.onRefocus()
+      renameDuplicate()
+    },
 
-      // A duplicate the trigger asked to name ends in the inline rename editor.
-      // Last, and unawaited: it reads the journal, so it settles a round trip
-      // after everything above, and it must not hold the dialog open meanwhile.
-      void openRenameOnDuplicate({
-        context: props,
-        operationId: settledOperationId,
-        paneRef: deps.getFocusedPaneRef(),
-        showHiddenFiles: deps.getShowHiddenFiles(),
-      })
+    /** The person closed a finished started operation's done state. */
+    handleTransferDoneClosed() {
+      const renameDuplicate = renameAfterDone
+      renameAfterDone = null
+      showTransferProgressDialog = false
+      transferProgressProps = null
+      deps.onRefocus()
+      renameDuplicate?.()
     },
 
     /** The four outcomes of a dialog that ADOPTED its operation. Separate from
      *  the birth handlers, in a separate module, so their pane work is not
      *  reachable from a view that has no birth context to act on. */
-    handleAdoptedComplete(payload: TransferCompletePayload) {
-      adopted.handleComplete(payload)
+    handleAdoptedComplete(payload: TransferCompletePayload, view: CompletionView = { keptOpen: false }) {
+      adopted.handleComplete(payload, view)
+    },
+
+    handleAdoptedDoneClosed() {
+      adopted.handleDoneClosed()
     },
 
     handleAdoptedCancelled(filesProcessed: number) {

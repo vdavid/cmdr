@@ -113,9 +113,13 @@
       "lines": 1218,
       "reason": "One table: every `WriteOperationError` variant's en wording per operation, pinned case by case so a copy edit lands in the catalog AND here. It grows by one case per new refusal wording; splitting by variant would scatter the table a reviewer reads top to bottom."
     },
+    "apps/desktop/src/lib/file-operations/transfer/TransferProgressDialog.svelte": {
+      "lines": 914,
+      "reason": "TODO: one dialog with three modes (running, a clash, and the done state of #484), and most of its length is the markup's own why-comments. The cleanest split is per mode: the running footer (Pause/Resume, Queue/Background, Cancel, the cancel-time Close, `TransferRollbackControls`, ~70 lines with their comments) into a `TransferRunningActions.svelte` taking `progress` and `rollback`, and the done mode's footer plus its Undo question into a `TransferDoneActions.svelte` taking `progress` and `doneUndo`. Both only render and call methods on the two controllers, so nothing would have to be threaded back."
+    },
     "apps/desktop/src/lib/file-operations/transfer/transfer-progress-state.svelte.ts": {
-      "lines": 884,
-      "reason": "One closure over shared mutable teardown flags (`operationId`, `backgrounded`, `destroyed`, `closed`, `cancelRequestedBeforeId`, and the two wind-down timers) that birth, the four outcome effects, and the command handlers all read and write, plus about 90 lines of pass-through getters over `bound.current` that are the dialog's read surface; splitting `beginOperation` out would mean threading eight callbacks back in. The plain-`let` staleness hazard and the settle contract that hold the halves together are argued in the module header and in `transfer/CLAUDE.md`."
+      "lines": 1003,
+      "reason": "One closure over shared mutable teardown flags (`operationId`, `backgrounded`, `destroyed`, `closed`, `cancelRequestedBeforeId`, `doneReported`, and the two wind-down timers) that birth, the four outcome effects, the done state's close, and the command handlers all read and write, plus about 100 lines of pass-through getters over `bound.current` that are the dialog's read surface; splitting `beginOperation` out would mean threading eight callbacks back in, and the done state shares the single-shot `closed` latch with every other way out. The plain-`let` staleness hazard and the settle contract that hold the halves together are argued in the module header and in `transfer/CLAUDE.md`."
     },
     "apps/desktop/src/lib/onboarding/StepAi.svelte": {
       "lines": 916,

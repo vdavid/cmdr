@@ -25,7 +25,7 @@ export const CONFLICT_POLICY_OPTIONS = [
  * no radio (only a clash's "Rename all" reaches it), so it takes that button's
  * word.
  */
-export function conflictPolicyLabel(policy: ConflictResolution): string {
+function conflictPolicyLabel(policy: ConflictResolution): string {
   if (policy === 'stop') return tString('fileOperations.transferDialog.policyAskEach')
   if (policy === 'rename') return tString('fileOperations.transferProgress.conflictRename')
   const option = CONFLICT_POLICY_OPTIONS.find((candidate) => candidate.value === policy)

@@ -210,6 +210,20 @@ export const behaviorSettings: SettingDefinitionSource[] = [
       ],
     },
   },
+  {
+    // FE-owned: `TransferProgressDialog` reads it when its operation completes,
+    // and stays up on a summary of what it did instead of closing
+    // (`file-operations/transfer/DETAILS.md` § "The done state").
+    id: 'fileOperations.keepProgressOpenWhenDone',
+    section: ['Behavior', 'Navigation & file ops'],
+    cardKey: 'settings.navigationAndFileOps.card.fileOperations',
+    labelKey: 'settings.fileOperations.keepProgressOpenWhenDone.label',
+    descriptionKey: 'settings.fileOperations.keepProgressOpenWhenDone.description',
+    keywordsKey: 'settings.fileOperations.keepProgressOpenWhenDone.keywords',
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
 
   // ------------------------------------------------------------------------
   // Text editor, rendered as its own card inside Navigation & file ops, above

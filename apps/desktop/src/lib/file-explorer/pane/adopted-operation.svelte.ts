@@ -25,18 +25,19 @@
 import { getForegroundOperationId } from '#lib/file-operations/foreground-operation.svelte.js'
 import { addToast } from '#lib/ui/toast/index.js'
 import { tString } from '#lib/intl/messages.svelte.js'
-import {
-  composeTransferCompleteToast,
-  composeDurabilityUnconfirmedToast,
-  composeTrashRefusedToast,
-} from '#lib/file-operations/transfer/transfer-complete-toast.js'
+import { planCompletionToasts } from '#lib/file-operations/transfer/transfer-complete-toast.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 import { formatByteSize } from '#lib/units/index.js'
 import { pluralize } from '#lib/utils/pluralize.js'
 import { transferOpLabel } from './transfer-op-label'
 import type { TransferOperationType, WriteOperationError } from '../types'
 import type { ProgressAtStop } from '#lib/tauri-commands/index.js'
-import type { AdoptedOperationData, ForegroundOperationVerdict, TransferCompletePayload } from './dialog-props'
+import type {
+  AdoptedOperationData,
+  CompletionView,
+  ForegroundOperationVerdict,
+  TransferCompletePayload,
+} from './dialog-props'
 
 const log = getAppLogger('fileExplorer')
 
@@ -130,17 +131,21 @@ export function createAdoptedOperation(deps: AdoptedOperationDeps) {
 
     /** An adopted operation finished. It says what the operation did and stops
      *  there: what a pane should do about a transfer belongs to the view that
-     *  started it. */
-    handleComplete({
-      filesProcessed,
-      filesSkipped,
-      bytesProcessed,
-      appearedDuringMove,
-      refused,
-      metadataLeftBehind,
-      lockedKept,
-      durabilityUnconfirmed,
-    }: TransferCompletePayload): void {
+     *  started it. `view.keptOpen`: the dialog stays up on its done state until
+     *  `handleDoneClosed`, and says the counts itself. */
+    handleComplete(
+      {
+        filesProcessed,
+        filesSkipped,
+        bytesProcessed,
+        appearedDuringMove,
+        refused,
+        metadataLeftBehind,
+        lockedKept,
+        durabilityUnconfirmed,
+      }: TransferCompletePayload,
+      view: CompletionView = { keptOpen: false },
+    ): void {
       const op = adoptedProps?.operationType ?? 'copy'
       log.info(
         '{op} complete (adopted): {filesProcessed} {filesNoun} ({filesSkipped} skipped, {refusedCount} refused, {bytes})',
@@ -153,31 +158,33 @@ export function createAdoptedOperation(deps: AdoptedOperationDeps) {
           bytes: formatByteSize(bytesProcessed),
         },
       )
-      const toastMessage = composeTransferCompleteToast({
-        operationType: op,
-        filesProcessed,
-        filesSkipped,
-        appearedDuringMove,
-        metadataLeftBehind,
-        lockedKept,
-      })
-      const allSkipped = filesSkipped > 0 && filesSkipped === filesProcessed
       // A trash the OS refused part of says so here too, for the same reason it
       // does in the window that started it: the items are still in the pane, so
       // the completion can't be the only thing the user hears about.
-      const refusedMessage = composeTrashRefusedToast(refused)
-      const durabilityMessage = composeDurabilityUnconfirmedToast(durabilityUnconfirmed)
-      addToast(toastMessage, {
-        level: refusedMessage !== null || durabilityMessage !== null ? 'warn' : allSkipped ? 'info' : 'success',
-        timeoutMs: 7000,
-      })
-      if (refusedMessage !== null) {
-        addToast(refusedMessage, { level: 'warn', timeoutMs: 10000 })
-      }
-      if (durabilityMessage !== null) {
-        addToast(durabilityMessage, { level: 'warn', dismissal: 'persistent' })
-      }
+      const plan = planCompletionToasts(
+        {
+          operationType: op,
+          filesProcessed,
+          filesSkipped,
+          appearedDuringMove,
+          metadataLeftBehind,
+          lockedKept,
+          refused,
+          durabilityUnconfirmed,
+        },
+        view.keptOpen,
+      )
+      if (plan.message !== null) addToast(plan.message, { level: plan.level, timeoutMs: 7000 })
+      if (plan.refused !== null) addToast(plan.refused, { level: 'warn', timeoutMs: 10000 })
+      if (plan.durability !== null) addToast(plan.durability, { level: 'warn', dismissal: 'persistent' })
 
+      if (view.keptOpen) return
+      settle()
+      deps.onRefocus()
+    },
+
+    /** The person closed a finished adopted operation's done state. */
+    handleDoneClosed(): void {
       settle()
       deps.onRefocus()
     },

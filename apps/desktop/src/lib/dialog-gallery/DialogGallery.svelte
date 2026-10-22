@@ -75,6 +75,7 @@
     import { getAppLogger } from '#lib/logging/logger.js'
     import { untrack } from 'svelte'
     import TransferProgressDialog from '#lib/file-operations/transfer/TransferProgressDialog.svelte'
+    import type { CompletionView, TransferCompletePayload } from '#lib/file-explorer/pane/dialog-props.js'
     import { DEFAULT_VOLUME_ID } from '#lib/tauri-commands/index.js'
     import {
         closeGalleryDialog,
@@ -390,7 +391,8 @@
     {:else if plan?.kind === 'go-to-path'}
         <GoToPathDialog {...plan.props} onGo={closeGoToPathPreview} onCancel={closeGalleryDialog} />
     {:else if plan?.kind === 'transfer-progress'}
-        <!-- Starts a real copy on mount, like the app's own: every outcome only closes the preview. -->
+        <!-- Starts a real copy on mount, like the app's own: every outcome only closes the preview.
+             With "Keep the progress window open…" on, a completion stays on its done state until closed. -->
         <TransferProgressDialog
             {...plan.props}
             operationType="copy"
@@ -398,7 +400,10 @@
             sourceVolumeId={DEFAULT_VOLUME_ID}
             destVolumeId={DEFAULT_VOLUME_ID}
             conflictResolution="stop"
-            onComplete={closeGalleryDialog}
+            onComplete={(_payload: TransferCompletePayload, view: CompletionView) => {
+                if (!view.keptOpen) closeGalleryDialog()
+            }}
+            onDoneClosed={closeGalleryDialog}
             onCancelled={closeGalleryDialog}
             onError={closeGalleryDialog}
             onQueue={closeGalleryDialog}

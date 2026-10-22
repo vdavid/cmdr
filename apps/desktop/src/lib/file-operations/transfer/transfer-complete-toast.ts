@@ -41,6 +41,7 @@ import type {
   TrashRefusedItems,
 } from '#lib/ipc/bindings.js'
 import type { TransferOperationType } from '#lib/file-explorer/types.js'
+import type { NonErrorToastLevel } from '#lib/ui/toast/index.js'
 import { trashRefusedCountSentence } from './transfer-error-messages'
 
 export interface TransferCompleteToastInput {
@@ -78,6 +79,64 @@ export interface TransferCompleteToastInput {
 export function composeTransferCompleteToast(input: TransferCompleteToastInput): string {
   const toast = withLeftBehind(composeOutcome(input), input.appearedDuringMove)
   return withLockedKept(withMetadataLeftBehind(toast, input.metadataLeftBehind), input.lockedKept)
+}
+
+/** The toasts a completion raises, for the started and the adopted progress dialog alike. */
+export interface CompletionToastPlan {
+  /** The completion toast, or `null` when a dialog kept open on its done state says it already. */
+  message: string | null
+  level: NonErrorToastLevel
+  /** What a batch trash had to leave behind, or `null`. */
+  refused: string | null
+  /** A copy whose files aren't confirmed on the disk, or `null`. Raised whatever the dialog does:
+   *  the done state doesn't say it. */
+  durability: string | null
+}
+
+/**
+ * Plans the toasts for a completed operation. A trash the OS refused part of, or a copy whose
+ * files aren't confirmed on the disk, takes the level down to `warn`: nothing about either may
+ * read as a clean success. `info` for the all-skipped case (nothing moved; a neutral outcome),
+ * `success` everywhere else, including mixed. `keptOpen`: the progress dialog stays on its done
+ * state, which says the counts, the skips, and what the OS refused, so only a completion toast
+ * carrying something more still speaks.
+ */
+export function planCompletionToasts(
+  input: TransferCompleteToastInput & {
+    refused?: TrashRefusedItems | null
+    durabilityUnconfirmed?: DurabilityUnconfirmed | null
+  },
+  keptOpen: boolean,
+): CompletionToastPlan {
+  const refused = composeTrashRefusedToast(input.refused)
+  const durability = composeDurabilityUnconfirmedToast(input.durabilityUnconfirmed)
+  const allSkipped = input.filesSkipped > 0 && input.filesSkipped === input.filesProcessed
+  const level: NonErrorToastLevel = refused !== null || durability !== null ? 'warn' : allSkipped ? 'info' : 'success'
+  const quiet = keptOpen && !completionToastCarriesMore(input)
+  return {
+    message: quiet ? null : composeTransferCompleteToast(input),
+    level,
+    refused: keptOpen ? null : refused,
+    durability,
+  }
+}
+
+/**
+ * Whether the completion toast says more than the counts: what a move left in the source, what
+ * the destination couldn't store, or Locked items kept. A progress dialog kept open on its done
+ * state says the counts and the skips, never these, so a toast carrying one still has to speak.
+ */
+function completionToastCarriesMore(
+  input: Pick<TransferCompleteToastInput, 'appearedDuringMove' | 'metadataLeftBehind' | 'lockedKept'>,
+): boolean {
+  const { appearedDuringMove, metadataLeftBehind, lockedKept } = input
+  return (
+    (appearedDuringMove?.itemCount ?? 0) > 0 ||
+    (appearedDuringMove?.changedCount ?? 0) > 0 ||
+    (metadataLeftBehind?.classes.length ?? 0) > 0 ||
+    (lockedKept?.skipped ?? 0) > 0 ||
+    (lockedKept?.systemLocked ?? 0) > 0
+  )
 }
 
 /** Appends what a move left in place because it was Locked: what the person chose to skip, then

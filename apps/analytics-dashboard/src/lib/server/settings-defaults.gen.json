@@ -2469,6 +2469,7 @@
     "fileExplorer.typeToJump.resetDelay": 1000,
     "fileOperations.adbEnabled": true,
     "fileOperations.allowFileExtensionChanges": "ask",
+    "fileOperations.keepProgressOpenWhenDone": false,
     "fileOperations.maxConflictsToShow": 100,
     "fileOperations.mtpConnectionWarning": true,
     "fileOperations.mtpEnabled": true,

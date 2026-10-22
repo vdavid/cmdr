@@ -8,7 +8,12 @@
         ConflictResolution,
     } from '#lib/file-explorer/types.js'
     import type { OpKind, RollbackSupport, SpaceShortfall } from '#lib/ipc/bindings.js'
-    import type { TransferCompletePayload } from '#lib/file-explorer/pane/dialog-props.js'
+    import type { CompletionView, TransferCompletePayload } from '#lib/file-explorer/pane/dialog-props.js'
+    import { getSetting } from '#lib/settings/index.js'
+    import { isOperationLogRecording } from '#lib/operation-log/recording.js'
+    import { createDoneUndo } from './transfer-done-undo.svelte'
+    import { doneTitle } from './transfer-done-summary'
+    import TransferDoneSummary from './TransferDoneSummary.svelte'
     import { getVolumes } from '#lib/stores/volume-store.svelte.js'
     import DirectionIndicator from './DirectionIndicator.svelte'
     import { conflictDialogWidthStyle, deriveTransferLabel } from './transfer-dialog-utils'
@@ -91,7 +96,12 @@
         initiator?: Initiator
         /** Rename mode: the one source moves into `destinationPath` under this name. */
         newName?: string
-        onComplete: (payload: TransferCompletePayload) => void
+        /** The operation completed. `view.keptOpen`: the dialog stays up on its
+         *  done state ("Keep the progress window open when a file operation
+         *  finishes"), so run the pane tail now and unmount on `onDoneClosed`. */
+        onComplete: (payload: TransferCompletePayload, view: CompletionView) => void
+        /** The person closed the done state. */
+        onDoneClosed?: () => void
         onCancelled: (filesProcessed: number) => void
         onError: (error: WriteOperationError, progressAtStop: ProgressAtStop | null) => void
         /** Send this operation to the background: unmount the modal but keep the
@@ -128,6 +138,7 @@
         initiator,
         newName,
         onComplete,
+        onDoneClosed,
         onCancelled,
         onError,
         onQueue,
@@ -136,6 +147,9 @@
 
     /** The tree's height before the user resizes the dialog, in rows. */
     const TREE_ROWS = 8
+
+    /** The operation kinds whose finished run the done state offers to undo. */
+    const UNDOABLE_TYPES: ReadonlySet<TransferOperationType> = new Set(['copy', 'move', 'trash', 'compress'])
 
     /** The conflict prompt and a reversal take the tree's place; this brings it back as the
      *  user left it (toggles, following, scroll, height) rather than fresh. */
@@ -220,7 +234,10 @@
         folderCount,
         initiator,
         newName,
+        // Asked at the moment of completion, so flipping it mid-transfer counts.
+        keepOpenWhenDone: () => getSetting('fileOperations.keepProgressOpenWhenDone'),
         onComplete,
+        onDoneClosed,
         onCancelled,
         onError,
         onQueue,
@@ -261,6 +278,29 @@
         rollBack: () => void progress.handleCancel(true),
     })
     const conflictPolicy = $derived(progress.conflictPolicy)
+    /** The finished operation this dialog stays open on, or `null` while it runs
+     *  (and always, with the setting off). */
+    const done = $derived(progress.done)
+    /** The done state's Undo: the operation log's rollback of a finished
+     *  operation, for the kinds that journal one. ❌ Not on a delete (a permanent
+     *  delete keeps nothing to restore), an archive edit, or a reversal. */
+    const doneUndo = createDoneUndo({
+        operationId: () => progress.operationId,
+        offered: () =>
+            done !== null &&
+            reverses === null &&
+            UNDOABLE_TYPES.has(operationType) &&
+            isOperationLogRecording(),
+        settled: () => progress.settleEventReceived,
+        onDispatched: () => { progress.closeDone(); },
+    })
+    const undoState = $derived(doneUndo.state)
+    /** Why Undo isn't pressable yet, or at all; nothing while it works. */
+    const undoTooltip = $derived.by(() => {
+        if (undoState.kind === 'waiting') return tString('fileOperations.transferProgress.undoWaitingTooltip')
+        if (undoState.kind !== 'blocked') return undefined
+        return tString(undoState.reason ?? 'fileOperations.transferProgress.undoUnavailableTooltip')
+    })
     const isCancelling = $derived(progress.isCancelling)
     const cancelEventReceived = $derived(progress.cancelEventReceived)
     const settleSlow = $derived(progress.settleSlow)
@@ -339,8 +379,16 @@
     /** Escape is the Cancel button (keeps what's written, asks nothing). Once
      *  Cancel is spent, it's the close instead, so Escape always leads out. */
     function handleEscape(): void {
-        if (isCancelling || operationSettled) progress.detach()
+        if (done !== null) progress.closeDone()
+        else if (isCancelling || operationSettled) progress.detach()
         else void progress.handleCancel(false)
+    }
+
+    /** Enter closes the done state from anywhere but a button, which takes Enter
+     *  as its own press (Undo stays Undo). */
+    function isDoneEnter(event: KeyboardEvent): boolean {
+        if (done === null || event.key !== 'Enter' || hasModifier(event)) return false
+        return !(event.target instanceof HTMLElement && event.target.closest('button') !== null)
     }
 
     /** The conflict body's answer keys, reached through this dialog's keydowns. */
@@ -350,6 +398,12 @@
         // A clash's keys (Enter = Skip, Escape = Cancel). With a clash up there's
         // no `onclose`, so `ModalDialog` passes Escape on to here unhandled.
         if (conflictBody?.handleKeydown(event)) return
+
+        if (isDoneEnter(event)) {
+            event.preventDefault()
+            progress.closeDone()
+            return
+        }
 
         // Dialog-scoped F2 → "Queue" (send to background). This is Total
         // Commander's copy-dialog-local F2, NOT the global `file.rename` binding:
@@ -425,6 +479,24 @@
      both buttons during the MIN_DISPLAY_MS hold-open window. Without this, the user can
      click Rollback after the copy completed and silently get nothing. -->
 {#snippet actions()}
+    {#if done !== null}
+        <!-- The finished operation's buttons: Undo where the journal admits one,
+             and Close, which holds focus so Enter closes. An Undo that can't work
+             yet (the journal row lands at `write-settled`) or at all is
+             `aria-disabled` with the reason, ❌ never `disabled`, which would take
+             the reason out of the tab order. -->
+        {#if undoState.kind !== 'none'}
+            <Button
+                variant="secondary"
+                ariaDisabled={undoState.kind !== 'ready' || doneUndo.dispatching}
+                tooltipContent={undoTooltip}
+                onclick={doneUndo.request}>{tString('fileOperations.transferProgress.undo')}</Button
+            >
+        {/if}
+        <Button variant="primary" autoFocus onclick={progress.closeDone}
+            >{tString('fileOperations.transferProgress.close')}</Button
+        >
+    {:else}
     <!-- Manage controls: Pause/Resume keeps the op alive but parked;
          Queue sends it to the background and opens the queue window (also
          F2 while this dialog is focused). Both show only during the active
@@ -486,6 +558,7 @@
     {#if (isCopy || isMove) && reversalVariant === null}
         <TransferRollbackControls {rollback} {isRollingBack} disabled={isCancelling || operationSettled || isScanning} />
     {/if}
+    {/if}
 {/snippet}
 
 <ModalDialog
@@ -512,7 +585,10 @@
     footer={!isDeleteOrTrash && conflictEvent ? undefined : actions}
 >
     {#snippet title()}
-        {#if reversalVariant !== null}
+        {#if done !== null}
+            <!-- What it DID, past tense: the done state outranks every phase. -->
+            {doneTitle(operationType, done.event)}
+        {:else if reversalVariant !== null}
             <!-- Named by what the reversal DOES, with the scope the journal
                  already counted, so the title agrees with the confirmation the
                  user answered a moment ago. It outranks every phase below: a
@@ -603,7 +679,24 @@
             <p class="conflict-policy-caption">{conflictPolicyCaption(conflictPolicy)}</p>
         {/if}
 
-        {#if isScanning}
+        {#if done !== null}
+            <!-- Finished: both bars full whatever the last tick said (the
+                 completion's own counts), no rate or time left, then what it
+                 did. -->
+            <div class="progress-section">
+                <TransferProgressReadout
+                    bytesDone={done.event.bytesProcessed}
+                    bytesTotal={Math.max(bytesTotal, done.event.bytesProcessed)}
+                    filesDone={done.event.filesProcessed}
+                    filesTotal={Math.max(filesTotal, done.event.filesProcessed)}
+                    countKind={progressCountKind(opKind, phase)}
+                />
+            </div>
+            <TransferDoneSummary event={done.event} elapsedMs={done.elapsedMs} />
+            {#if doneUndo.refusal !== null}
+                <p class="undo-refusal" role="status">{tString(doneUndo.refusal)}</p>
+            {/if}
+        {:else if isScanning}
             <!-- Scanning phase: what's happening, then tallies, throughput, and
                  the current dir/file. There's no matching banner for the active
                  phase: the bars, their labels, and the dialog title already say
@@ -680,7 +773,7 @@
             {/key}
         {/if}
 
-        {#if destUsesNativeSmb}
+        {#if destUsesNativeSmb && done === null}
             <p class="smb-native-note">
                 {tString('fileOperations.transferProgress.smbNativeNote')}
             </p>
@@ -691,7 +784,7 @@
              next to the button they'd reach for rather than interrupting the
              readout. Full content width, warning-toned, and built from the house
              card so it can't drift from the conflict block in `TransferDialog`. -->
-        {#if showStall && stall}
+        {#if showStall && stall && done === null}
             <TransferStallNotice {stall} {operationType} />
         {/if}
         </div>
@@ -706,6 +799,17 @@
      the question up would otherwise still be promising a journey home. -->
 {#if rollback.confirming}
     <RollbackConfirmDialog variant={rollback.variant} onConfirm={rollback.confirm} onCancel={rollback.dismiss} />
+{/if}
+
+<!-- The done state's Undo asks the history dialog's own question, worded by what
+     the journal says the operation was (`transfer-done-undo.svelte.ts`). -->
+{#if doneUndo.confirming && undoState.kind === 'ready'}
+    <RollbackConfirmDialog
+        variant={rollbackConfirmVariant(undoState.opKind)}
+        finishing={undoState.finishing}
+        onConfirm={() => void doneUndo.confirm()}
+        onCancel={doneUndo.dismiss}
+    />
 {/if}
 
 <!-- A cancel pressed here, once the operation has fully stopped: the dialog stays
@@ -777,6 +881,13 @@
         white-space: nowrap;
         background: var(--color-bg-tertiary);
         border-radius: var(--radius-sm);
+    }
+
+    /* A turned-down Undo: said where the button is, never silently. */
+    .undo-refusal {
+        margin: 0 0 var(--spacing-md);
+        font-size: var(--font-size-sm);
+        color: var(--color-warning-text);
     }
 
     /* Native SMB note */

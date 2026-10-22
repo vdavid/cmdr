@@ -89,6 +89,7 @@
         DeleteConfirmer,
         ConfirmOrigin,
         TransferCompletePayload,
+        CompletionView,
     } from './dialog-props'
     import { explorerState } from './explorer-state.svelte'
     import type { PaneAccess } from './pane-access'
@@ -1566,15 +1567,17 @@
     onTransferCancel={() => {
         dialogs.handleTransferCancel()
     }}
-    onTransferComplete={(payload: TransferCompletePayload) => {
-        dialogs.handleTransferComplete(payload)
+    onTransferComplete={(payload: TransferCompletePayload, view: CompletionView) => {
+        dialogs.handleTransferComplete(payload, view)
     }}
+    onTransferDoneClosed={() => { dialogs.handleTransferDoneClosed(); }}
     onTransferCancelled={(files: number) => {
         dialogs.handleTransferCancelled(files)
     }}
-    onAdoptedComplete={(payload: TransferCompletePayload) => {
-        dialogs.handleAdoptedComplete(payload)
+    onAdoptedComplete={(payload: TransferCompletePayload, view: CompletionView) => {
+        dialogs.handleAdoptedComplete(payload, view)
     }}
+    onAdoptedDoneClosed={() => { dialogs.handleAdoptedDoneClosed(); }}
     onAdoptedCancelled={(files: number) => {
         dialogs.handleAdoptedCancelled(files)
     }}

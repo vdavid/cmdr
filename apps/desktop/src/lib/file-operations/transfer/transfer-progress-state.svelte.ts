@@ -65,8 +65,8 @@ import type {
   WriteOperationPhase,
   WriteOperationError,
 } from '#lib/file-explorer/types.js'
-import type { TransferCompletePayload } from '#lib/file-explorer/pane/dialog-props.js'
-import type { ProgressAtStop } from '#lib/tauri-commands/index.js'
+import type { CompletionView, TransferCompletePayload } from '#lib/file-explorer/pane/dialog-props.js'
+import type { ProgressAtStop, WriteCompleteEvent } from '#lib/tauri-commands/index.js'
 import type { ProgressStep, RollbackSupport } from '#lib/ipc/bindings.js'
 import { pluralize } from '#lib/utils/pluralize.js'
 import { getAppLogger } from '#lib/logging/logger.js'
@@ -87,7 +87,17 @@ export interface TransferProgressStateConfig extends TransferStartConfig {
    *  has no birth context for an adopted operation and must not run a pane tail
    *  against it (`../../file-explorer/pane/dialog-state.svelte.ts`). */
   adoptOperationId?: string
-  onComplete: (payload: TransferCompletePayload) => void
+  /** Whether a COMPLETED operation keeps the view open on its done state
+   *  ("Keep the progress window open when a file operation finishes"), asked at
+   *  the moment it completes. Absent means no. */
+  keepOpenWhenDone?: () => boolean
+  /** The completion, reported once. `keptOpen` says the view stays up on its
+   *  done state: the parent runs its pane tail now and unmounts nothing until
+   *  `onDoneClosed`. */
+  onComplete: (payload: TransferCompletePayload, view: CompletionView) => void
+  /** The person closed the done state (Close, Enter, Escape, ×, or an MCP
+   *  close). Only ever after an `onComplete` with `keptOpen: true`. */
+  onDoneClosed?: () => void
   onCancelled: (filesProcessed: number) => void
   /** `progressAtStop` rides on the `write-error` event, not on the error, so the
    *  dialog can say how far a transfer got before its drive left. */
@@ -109,6 +119,30 @@ export interface TransferProgressStateConfig extends TransferStartConfig {
  *  honestly has: the title, the paths, and the buttons, with the bars appearing
  *  the moment the operation says where it is. */
 const OPENING_PHASE: WriteOperationPhase = 'scanning'
+
+/** A completed operation the view stays open on. */
+interface TransferDone {
+  event: WriteCompleteEvent
+  /** From the moment the manager admitted the operation (the snapshot's
+   *  `startedAt`) to its completion, or `null` when the view never heard when it
+   *  started. */
+  elapsedMs: number | null
+}
+
+/** What the parent hears about a completion, nulls where the wire leaves a field out. */
+function completionPayload(event: WriteCompleteEvent): TransferCompletePayload {
+  return {
+    filesProcessed: event.filesProcessed,
+    filesSkipped: event.filesSkipped,
+    bytesProcessed: event.bytesProcessed,
+    appearedDuringMove: event.appearedDuringMove ?? null,
+    topLevelSkipped: event.topLevelSkipped ?? null,
+    refused: event.refused ?? null,
+    metadataLeftBehind: event.metadataLeftBehind ?? null,
+    lockedKept: event.lockedKept ?? null,
+    durabilityUnconfirmed: event.durabilityUnconfirmed ?? null,
+  }
+}
 
 const EMPTY_SCAN: ScanReadout = {
   filesFound: 0,
@@ -212,6 +246,12 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
   /** A cancel this view asked for has landed, and the dialog stays up behind a
    *  "you canceled this" alert until OK. Holds what OK needs to finish closing. */
   let pendingCancelAck = $state<{ event: WriteCancelledEvent } | null>(null)
+  /** The completed operation this view stays open on, when the person asked for
+   *  that. Display state only; `doneReported` is the latch. */
+  let done = $state<TransferDone | null>(null)
+  /** Latches the kept-open completion report. A plain `let`: the outcome effect
+   *  that sets it must not re-run on it. */
+  let doneReported = false
 
   /** Flips true once the settle wait has exceeded `SLOW_SETTLE_LABEL_MS`.
    *  Drives the "(cleaning up)" tail on the dialog label. */
@@ -368,6 +408,23 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     })
   }
 
+  /** How long the operation ran, from its admission (the backend's stamp on the
+   *  registry row) to now, the moment it completed. `null` when no row this
+   *  view saw carried one. */
+  function elapsedSinceStart(): number | null {
+    const startedAt = session()?.snapshot?.startedAt ?? null
+    return startedAt === null ? null : Math.max(0, Date.now() - startedAt)
+  }
+
+  /** Close on the done state: the Close button, Enter, Escape, ×, or an MCP
+   *  close. Single-shot like every other way out. */
+  function closeDone(): void {
+    if (done === null || closed) return
+    closed = true
+    log.info('Closing the finished op={operationId}', { operationId })
+    config.onDoneClosed?.()
+  }
+
   /** OK on the "you canceled this" alert: say what stayed, then close. No
    *  anti-flicker floor, since the person has been reading the dialog. */
   function acknowledgeCancel(): void {
@@ -390,36 +447,41 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
    *  volume in that state is what wedged the device in the original incident.
    *  See the "Settle contract" in
    *  `crates/cmdr-operations/CLAUDE.md`. */
+  function reportCompletion(event: WriteCompleteEvent): void {
+    // The refused count rides along: a batch trash that left items behind
+    // still ends as a completion, and a log line that only counted what went
+    // reads as a clean run for an operation that wasn't one.
+    log.info('{op} complete: {filesProcessed} {filesNoun}, {bytesProcessed} {bytesNoun}, {refused} refused', {
+      op: operationLabel,
+      filesProcessed: event.filesProcessed,
+      filesNoun: pluralize(event.filesProcessed, 'file'),
+      bytesProcessed: event.bytesProcessed,
+      bytesNoun: pluralize(event.bytesProcessed, 'byte'),
+      refused: event.refused?.itemCount ?? 0,
+    })
+    const payload = completionPayload(event)
+    if (config.keepOpenWhenDone?.() ?? false) {
+      // The done state: the view stays up until the person closes it, and the
+      // parent hears NOW, so the panes refresh while the summary is read. No
+      // floor to wait out either, since nothing is about to vanish.
+      if (doneReported || closed) return
+      doneReported = true
+      done = { event, elapsedMs: elapsedSinceStart() }
+      clearWindDownTimers()
+      clearSettledWithoutEndingTimer()
+      config.onComplete(payload, { keptOpen: true })
+      return
+    }
+    close(() => {
+      config.onComplete(payload, { keptOpen: false })
+    })
+  }
+
   function reportOutcome(settled: OperationOutcome, settleEventReceived: boolean): void {
     switch (settled.kind) {
-      case 'complete': {
-        const event = settled.event
-        // The refused count rides along: a batch trash that left items behind
-        // still ends as a completion, and a log line that only counted what went
-        // reads as a clean run for an operation that wasn't one.
-        log.info('{op} complete: {filesProcessed} {filesNoun}, {bytesProcessed} {bytesNoun}, {refused} refused', {
-          op: operationLabel,
-          filesProcessed: event.filesProcessed,
-          filesNoun: pluralize(event.filesProcessed, 'file'),
-          bytesProcessed: event.bytesProcessed,
-          bytesNoun: pluralize(event.bytesProcessed, 'byte'),
-          refused: event.refused?.itemCount ?? 0,
-        })
-        close(() => {
-          config.onComplete({
-            filesProcessed: event.filesProcessed,
-            filesSkipped: event.filesSkipped,
-            bytesProcessed: event.bytesProcessed,
-            appearedDuringMove: event.appearedDuringMove ?? null,
-            topLevelSkipped: event.topLevelSkipped ?? null,
-            refused: event.refused ?? null,
-            metadataLeftBehind: event.metadataLeftBehind ?? null,
-            lockedKept: event.lockedKept ?? null,
-            durabilityUnconfirmed: event.durabilityUnconfirmed ?? null,
-          })
-        })
+      case 'complete':
+        reportCompletion(settled.event)
         return
-      }
       case 'error': {
         const error = settled.event.error
         if (error.type === 'archive_needs_password') {
@@ -660,6 +722,12 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
    * and one that is already winding down or over is simply stopped watching.
    */
   function detach(): void {
+    if (done !== null) {
+      // Finished and kept open: there's nothing left to hand over or stop, so
+      // closing the modal is the Close button.
+      closeDone()
+      return
+    }
     if (operationId === null) {
       // Nothing to hand over yet. Birth does it the moment the id lands, so the
       // key press isn't silently dropped.
@@ -818,6 +886,7 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     detach,
     dismiss,
     acknowledgeCancel,
+    closeDone,
     handleCancel,
     handleConflictResolution,
     handlePauseResume,
@@ -889,6 +958,16 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     },
     get operationSettled(): boolean {
       return session()?.settled ?? false
+    },
+    /** The completed operation this view is staying open on, or `null`. */
+    get done(): TransferDone | null {
+      return done
+    },
+    /** The backend's `write-settled` has arrived: the operation's journal rows
+     *  are readable from here (`../CLAUDE.md`), which the done state's Undo
+     *  waits for. */
+    get settleEventReceived(): boolean {
+      return session()?.settleEventReceived ?? false
     },
     get isPaused(): boolean {
       return session()?.status === 'paused'

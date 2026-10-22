@@ -23,6 +23,7 @@
         DeleteConfirmer,
         ConfirmOrigin,
         TransferCompletePayload,
+        CompletionView,
     } from './dialog-props'
     import type { FriendlyError, WriteOperationError } from '../types'
     import type { ProgressAtStop } from '#lib/tauri-commands/index.js'
@@ -51,10 +52,12 @@
         registerDeleteConfirmer,
         onTransferCancel,
         onTransferComplete,
+        onTransferDoneClosed,
         onTransferCancelled,
         onTransferError,
         onTransferQueue,
         onAdoptedComplete,
+        onAdoptedDoneClosed,
         onAdoptedCancelled,
         onAdoptedError,
         onAdoptedQueue,
@@ -97,7 +100,11 @@
         /** The delete dialog's twin of `registerTransferConfirmer`. */
         registerDeleteConfirmer: (confirm: DeleteConfirmer) => () => void
         onTransferCancel: () => void
-        onTransferComplete: (payload: TransferCompletePayload) => void
+        onTransferComplete: (payload: TransferCompletePayload, view: CompletionView) => void
+        /** The person closed a finished operation's done state (the progress
+         *  dialog kept open by "Keep the progress window open when a file
+         *  operation finishes"). */
+        onTransferDoneClosed: () => void
         onTransferCancelled: (filesProcessed: number) => void
         onTransferError: (
             error: WriteOperationError,
@@ -108,7 +115,8 @@
         /** The four outcomes of a dialog that ADOPTED its operation. Separate
          *  callbacks, not a flag on the started ones: an adopted view has no
          *  birth context, so its tail must not be able to reach the pane work. */
-        onAdoptedComplete: (payload: TransferCompletePayload) => void
+        onAdoptedComplete: (payload: TransferCompletePayload, view: CompletionView) => void
+        onAdoptedDoneClosed: () => void
         onAdoptedCancelled: (filesProcessed: number) => void
         onAdoptedError: (error: WriteOperationError, progressAtStop: ProgressAtStop | null) => void
         onAdoptedQueue: () => void
@@ -185,6 +193,7 @@
             sourceFolderPath={adoptedProgressProps.sourcePath ?? ''}
             destinationPath={adoptedProgressProps.destinationPath ?? undefined}
             onComplete={onAdoptedComplete}
+            onDoneClosed={onAdoptedDoneClosed}
             onCancelled={onAdoptedCancelled}
             onError={onAdoptedError}
             onQueue={onAdoptedQueue}
@@ -210,6 +219,7 @@
             initiator={transferProgressProps.initiator}
             newName={transferProgressProps.newName}
             onComplete={onTransferComplete}
+            onDoneClosed={onTransferDoneClosed}
             onCancelled={onTransferCancelled}
             onError={onTransferError}
             onQueue={onTransferQueue}

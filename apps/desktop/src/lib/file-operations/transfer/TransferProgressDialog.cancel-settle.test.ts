@@ -103,7 +103,8 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
 }))
 
 vi.mock('#lib/settings/index.js', () => ({
-  getSetting: vi.fn(() => 500),
+  // The done state is off, as it ships; every other setting reads as a number.
+  getSetting: vi.fn((key: string) => (key === 'fileOperations.keepProgressOpenWhenDone' ? false : 500)),
 }))
 
 vi.mock('#lib/settings/reactive-settings.svelte.js', () => ({
@@ -315,17 +316,20 @@ describe('TransferProgressDialog cancel-settle gate', () => {
       vi.advanceTimersByTime(450)
       await tick()
       expect(onComplete, 'complete path closes on min-display gate, no settle wait').toHaveBeenCalledTimes(1)
-      expect(onComplete).toHaveBeenCalledWith({
-        filesProcessed: 5,
-        filesSkipped: 0,
-        bytesProcessed: 1234,
-        appearedDuringMove: null,
-        topLevelSkipped: null,
-        refused: null,
-        metadataLeftBehind: null,
-        lockedKept: null,
-        durabilityUnconfirmed: null,
-      })
+      expect(onComplete).toHaveBeenCalledWith(
+        {
+          filesProcessed: 5,
+          filesSkipped: 0,
+          bytesProcessed: 1234,
+          appearedDuringMove: null,
+          topLevelSkipped: null,
+          refused: null,
+          metadataLeftBehind: null,
+          lockedKept: null,
+          durabilityUnconfirmed: null,
+        },
+        { keptOpen: false },
+      )
       void unmount(component)
     } finally {
       vi.useRealTimers()

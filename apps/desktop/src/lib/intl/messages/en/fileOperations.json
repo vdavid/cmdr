@@ -1051,7 +1051,79 @@
     "placeholders": {
       "policy": "the chosen option, worded exactly as in the copy dialog's choices, like 'Skip', 'Overwrite if older', or 'Ask for each'"
     },
-    "screenshot": "transfer-dialog.png"
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+  },
+
+  "fileOperations.transferProgress.titleDone": "{type, select, copy {{count, plural, =0 {Nothing copied} one {Copied {countText} file} other {Copied {countText} files}}} move {{count, plural, =0 {Nothing moved} one {Moved {countText} file} other {Moved {countText} files}}} delete {{count, plural, =0 {Nothing deleted} one {Deleted {countText} file} other {Deleted {countText} files}}} trash {{count, plural, =0 {Nothing moved to the trash} one {Moved {countText} file to the trash} other {Moved {countText} files to the trash}}} compress {{count, plural, =0 {Nothing compressed} one {Compressed {countText} file} other {Compressed {countText} files}}} other {Done}}",
+  "@fileOperations.transferProgress.titleDone": {
+    "description": "Title of the progress dialog once the operation has finished, shown only when the person turned on 'Keep the progress window open when a file operation finishes' in Settings. Past tense: it says what the operation did. The count leaves out files that were skipped (they get their own line below). 'Nothing copied' and its siblings are for when every file was skipped. 'the trash' is the macOS Trash (use the OS's localized name).",
+    "placeholders": {
+      "type": "the operation: copy, move, delete, trash (move to trash), or compress",
+      "count": "how many files it copied, moved, deleted, or compressed (drives the singular/plural form)",
+      "countText": "the same number, already formatted for display (e.g. 1,234)"
+    },
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+  },
+
+  "fileOperations.transferProgress.doneSummaryRate": "<size></size> in {duration}, <rate></rate>/s on average",
+  "@fileOperations.transferProgress.doneSummaryRate": {
+    "description": "Line under the full progress bars of a finished operation (the progress dialog kept open after it finished): how much it copied or moved, how long it took, and its average speed. <size> renders the total size, like '1.2 GB', and <rate> the speed's size part, like '6.4 MB' (both widgets with no inner text); '/s' means per second, so keep it right after <rate>, as in fileOperations.shared.byteRate.",
+    "placeholders": {
+      "duration": "how long the operation took, already formatted, like '3m 12s'"
+    },
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+  },
+
+  "fileOperations.transferProgress.doneSummarySize": "<size></size> in total",
+  "@fileOperations.transferProgress.doneSummarySize": {
+    "description": "Line under the full progress bars of a finished operation when Cmdr doesn't know how long it took (or it took under a second): how much it copied or moved. <size> renders the size, like '1.2 GB' (a widget with no inner text).",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+  },
+
+  "fileOperations.transferProgress.doneSummaryTime": "Took {duration}",
+  "@fileOperations.transferProgress.doneSummaryTime": {
+    "description": "Line under the full progress bars of a finished operation that moved no bytes worth counting (like a delete): how long it took.",
+    "placeholders": {
+      "duration": "how long the operation took, already formatted, like '3m 12s'"
+    },
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+  },
+
+  "fileOperations.transferProgress.doneSkipped": "{count, plural, one {Skipped {countText} file that already existed} other {Skipped {countText} files that already existed}}",
+  "@fileOperations.transferProgress.doneSkipped": {
+    "description": "Line in a finished copy or move's progress dialog: how many files it left alone because a file with the same name was already at the destination (the person chose to skip those). A neutral fact, not a warning.",
+    "placeholders": {
+      "count": "how many files were skipped (drives the singular/plural form)",
+      "countText": "the same number, already formatted for display (e.g. 1,234)"
+    },
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+  },
+
+  "fileOperations.transferProgress.undo": "Undo",
+  "@fileOperations.transferProgress.undo": {
+    "description": "Button in a finished operation's progress dialog that reverses what the operation did (asks for confirmation first). Short control label, a verb.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+  },
+
+  "fileOperations.transferProgress.undoWaitingTooltip": "Undo is ready in a moment, once Cmdr finishes recording what this did.",
+  "@fileOperations.transferProgress.undoWaitingTooltip": {
+    "description": "Tooltip on the Undo button of a finished operation's progress dialog during the second or so before it works, while Cmdr finishes writing down what the operation did (it needs that record to undo it).",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+  },
+
+  "fileOperations.transferProgress.undoUnavailableTooltip": "This one can’t be undone.",
+  "@fileOperations.transferProgress.undoUnavailableTooltip": {
+    "description": "Tooltip on the switched-off Undo button of a finished operation's progress dialog, when Cmdr can't reverse this operation and has no more specific reason to give.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.titleFlushing": "Writing the last piece…",
