@@ -4,6 +4,7 @@
 //! rule every `*_tests.rs` in this directory follows.
 
 use super::*;
+use crate::conflict::apply_to_all_record;
 use crate::event_sinks::CollectorEventSink;
 use crate::testing::TestOperations;
 use cmdr_fs::volume::InMemoryVolume;

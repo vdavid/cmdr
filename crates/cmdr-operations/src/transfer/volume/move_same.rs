@@ -102,7 +102,8 @@ impl crate::Operations {
         let state = Arc::new(
             self.new_operation_state(Duration::from_millis(progress_interval_ms))
                 .with_journal_volumes(volume_id.clone(), volume_id.clone())
-                .with_target_names(target_names),
+                .with_target_names(target_names)
+                .with_conflict_policy(config.conflict_resolution),
         );
         let journal_volume_id = volume_id.clone();
 

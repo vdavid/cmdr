@@ -26,5 +26,6 @@ pub(super) fn make_volumes() -> (Arc<dyn Volume>, Arc<dyn Volume>) {
 mod cancellation;
 mod conflicts;
 mod destination;
+mod policy_latch;
 mod progress;
 mod scan;

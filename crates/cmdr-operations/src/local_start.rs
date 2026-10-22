@@ -21,7 +21,7 @@ use super::state::{WriteOperationState, WriteSettledGuard};
 use super::transfer::copy::copy_files_with_progress_inner;
 use super::transfer::move_op::move_files_with_progress_inner;
 use super::types::{
-    ReadOnlySide, RollbackSupport, WriteErrorEvent, WriteOperationConfig, WriteOperationError,
+    ConflictResolution, ReadOnlySide, RollbackSupport, WriteErrorEvent, WriteOperationConfig, WriteOperationError,
     WriteOperationStartResult, WriteOperationType,
 };
 use super::validation::{
@@ -64,6 +64,10 @@ impl Operations {
         // can't be named afterwards (`transfer_sides.rs`). `None` for an operation
         // with only one side (a delete, a trash).
         sides: Option<transfer_sides::TransferSides>,
+        // What a copy or move does with a name already taken at the destination,
+        // as the snapshot reports it (`conflict_policy_cell.rs`). `None` for an
+        // operation with no destination to clash at.
+        conflict_policy: Option<ConflictResolution>,
         handler: F,
     ) -> Result<WriteOperationStartResult, WriteOperationError>
     where
@@ -72,10 +76,13 @@ impl Operations {
             + 'static,
     {
         let operation_id = OperationId::from(cmdr_operation_log::new_operation_id());
-        let state = Arc::new(
-            self.new_operation_state(Duration::from_millis(progress_interval_ms))
-                .with_sides(sides),
-        );
+        let mut state = self
+            .new_operation_state(Duration::from_millis(progress_interval_ms))
+            .with_sides(sides);
+        if let Some(policy) = conflict_policy {
+            state = state.with_conflict_policy(policy);
+        }
+        let state = Arc::new(state);
 
         let descriptor = OperationDescriptor {
             operation_id: operation_id.clone(),
@@ -261,6 +268,7 @@ impl Operations {
             config.preview_id.clone(),
             sources.len() as u64,
             sides,
+            Some(config.conflict_resolution),
             move |events, op_id, state| {
                 let Some(sources) = retain_bound_sources(
                     &*events,
@@ -331,6 +339,7 @@ impl Operations {
             config.preview_id.clone(),
             sources.len() as u64,
             sides,
+            Some(config.conflict_resolution),
             move |events, op_id, state| {
                 let Some(sources) = retain_bound_sources(
                     &*events,
@@ -434,6 +443,7 @@ impl Operations {
                 sources.len() as u64,
                 // One side only: a delete has no destination volume.
                 None,
+                None,
                 move |events, op_id, state| {
                     let Some(sources) = retain_bound_sources(
                         &*events,
@@ -513,6 +523,7 @@ impl Operations {
             None,
             sources.len() as u64,
             // One side only: trash always lands in the local macOS Trash.
+            None,
             None,
             move |events, op_id, state| {
                 let Some((sources, item_sizes)) = retain_bound_sources_with_sizes(

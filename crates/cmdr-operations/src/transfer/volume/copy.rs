@@ -271,7 +271,8 @@ impl crate::Operations {
         // stay unchanged); the open/finalize bracket below uses them directly.
         let state = Arc::new(
             self.new_operation_state(Duration::from_millis(config.progress_interval_ms))
-                .with_journal_volumes(source_volume_id.clone(), dest_volume_id.clone()),
+                .with_journal_volumes(source_volume_id.clone(), dest_volume_id.clone())
+                .with_conflict_policy(config.conflict_resolution),
         );
         let journal_source_volume_id = source_volume_id.clone();
         let journal_dest_volume_id = dest_volume_id.clone();

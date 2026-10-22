@@ -56,6 +56,7 @@ function buildRow(
       reverses: null,
       error: null,
       canRetry: false,
+      conflictPolicy: null,
       items: null,
     },
     progress,

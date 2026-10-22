@@ -233,6 +233,8 @@ impl ManagerInner {
                 error: None,
                 can_retry: false,
                 items: rec.descriptor.summary.items.clone(),
+                // Read off the operation's state by `OperationManager::list`.
+                conflict_policy: None,
             });
         let settled_failures = self
             .failures
@@ -335,6 +337,9 @@ impl OperationManager {
     ) {
         let operation_id = descriptor.operation_id.clone();
 
+        // A "… all" answer mid-run changes the policy the snapshot reports; this
+        // is who it tells.
+        state.conflict_policy.attach(Arc::downgrade(self));
         self.registry.insert(operation_id.clone(), Arc::clone(&state));
 
         // Claim the confirming dialog's preview before the record exists, so a
@@ -812,6 +817,7 @@ impl OperationManager {
                     // Filled in by `RetainedFailure::row` from the recipe it holds.
                     can_retry: false,
                     items: summary.items,
+                    conflict_policy: None,
                 },
                 retry,
             ));
@@ -899,7 +905,22 @@ impl OperationManager {
 
     /// The thin registry snapshot (membership + status), FIFO order.
     pub(crate) fn list(&self) -> Vec<OperationSnapshot> {
-        self.inner.lock_ignore_poison().snapshot()
+        let mut rows = self.inner.lock_ignore_poison().snapshot();
+        // The live policy is the operation's own state, joined here after the
+        // records lock is released. A retained failure's state is forgotten, so
+        // its row keeps `None`.
+        for row in &mut rows {
+            if let Some(state) = self.registry.get(&OperationId::from(row.operation_id.as_str())) {
+                row.conflict_policy = state.conflict_policy.current();
+            }
+        }
+        rows
+    }
+
+    /// Re-broadcasts `operations-changed` for a change the records don't hold:
+    /// an operation's latched conflict policy (`conflict_policy_cell.rs`).
+    pub(crate) fn broadcast_changed(&self) {
+        self.emit_changed();
     }
 
     /// Test-only: lanes currently reserved (in-use count per lane).

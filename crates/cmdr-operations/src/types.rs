@@ -239,6 +239,12 @@ pub struct OperationSnapshot {
     pub can_retry: bool,
     /// See [`OperationSummaryText::items`].
     pub items: Option<OperationItems>,
+    /// What a copy or move does with a file that already exists at the
+    /// destination, as it runs NOW: the confirmed policy until a clash answered
+    /// with "… all" latches another (a broadcast follows that change). `None` for
+    /// an operation with no policy, and on a retained failure.
+    /// `conflict_policy_cell.rs`.
+    pub conflict_policy: Option<ConflictResolution>,
 }
 
 // ============================================================================

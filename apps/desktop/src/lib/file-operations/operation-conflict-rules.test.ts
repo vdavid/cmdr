@@ -26,6 +26,7 @@ function row(id: string, status: OperationSnapshot['status'], type: OperationSna
       reverses: null,
       error: null,
       canRetry: false,
+      conflictPolicy: null,
       items: null,
     },
     progress: null,

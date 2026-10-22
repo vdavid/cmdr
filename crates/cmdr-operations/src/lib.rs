@@ -56,6 +56,7 @@ mod archive_edit;
 mod cancellable;
 mod compress_estimate;
 mod conflict;
+mod conflict_policy_cell;
 mod conflict_preflight;
 mod conflict_slot;
 mod create;

@@ -222,6 +222,7 @@ export function snapshot(
     reverses: null,
     error: null,
     canRetry: false,
+    conflictPolicy: null,
     items: null,
   }
 }

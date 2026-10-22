@@ -98,6 +98,31 @@ pub(super) struct ApplyToAll {
     has_seen_clash: bool,
 }
 
+impl ApplyToAll {
+    /// What a file landing on a file now gets without a prompt, if a person
+    /// latched one: the policy the operation reports from then on
+    /// (`conflict_policy_cell.rs`). The cross-type buckets answer narrower
+    /// questions and stay out of it.
+    pub(super) const fn blanket(&self) -> Option<ConflictResolution> {
+        self.same_kind
+    }
+}
+
+/// Records a person's answer AND reports the policy it latched, if any: every
+/// Stop prompt's answer goes through here.
+pub(super) fn record_answer(
+    state: &WriteOperationState,
+    latches: &mut ApplyToAll,
+    kind: ClashKind,
+    resolution: ConflictResolution,
+    apply_to_all: bool,
+) {
+    apply_to_all_record(latches, kind, resolution, apply_to_all);
+    if let Some(policy) = latches.blanket() {
+        state.conflict_policy.latch(policy);
+    }
+}
+
 /// A resolution the latches answered with, plus whether a person answered it
 /// on a prompt for THIS clash shape.
 #[derive(Clone, Copy, Debug)]
@@ -419,7 +444,8 @@ pub(super) fn resolve_conflict(
                     // Save the original (unreduced) variant under the right bucket so
                     // subsequent conflicts re-evaluate the conditional variants against
                     // their own metadata, not the file that originally prompted.
-                    apply_to_all_record(
+                    record_answer(
+                        state,
                         apply_to_all_resolution,
                         kind,
                         response.resolution,

@@ -159,6 +159,7 @@ function liveRow(id: string): { snapshot: OperationSnapshot } {
       reverses: null,
       error: null,
       canRetry: false,
+      conflictPolicy: null,
       items: null,
     },
   }

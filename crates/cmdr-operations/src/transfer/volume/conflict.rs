@@ -25,7 +25,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use super::super::super::conflict::{
-    ApplyToAll, ClashKind, IncomingItem, answered_resolution_for_clash, apply_to_all_effective, apply_to_all_record,
+    ApplyToAll, ClashKind, IncomingItem, answered_resolution_for_clash, apply_to_all_effective, record_answer,
     resolution_for_clash,
 };
 use super::super::super::event_sinks::OperationEventSink;
@@ -347,11 +347,13 @@ pub(super) async fn resolve_volume_conflict(
                     });
                     // Save the original (unreduced) variant under the right bucket so
                     // subsequent clashes re-evaluate the conditional variants against
-                    // their own metadata. `apply_to_all_record` also flips the
-                    // "first-clash" flag whether or not the user picked an apply-to-all
-                    // option, so a later file→folder "* all" choice won't be considered
-                    // "first" if a regular clash happened earlier in this op.
-                    apply_to_all_record(
+                    // their own metadata. Recording also flips the "first-clash"
+                    // flag whether or not the user picked an apply-to-all option, so
+                    // a later file→folder "* all" choice won't be considered "first"
+                    // if a regular clash happened earlier in this op, and reports a
+                    // latched policy to every window.
+                    record_answer(
+                        state,
                         &mut apply_to_all.lock_ignore_poison(),
                         kind,
                         response.resolution,

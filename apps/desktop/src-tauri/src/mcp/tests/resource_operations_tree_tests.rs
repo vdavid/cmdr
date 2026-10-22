@@ -88,6 +88,7 @@ fn yaml_for(tree: TransferTreeView) -> String {
             error: None,
             can_retry: false,
             items: None,
+            conflict_policy: None,
         },
         progress: None,
         pending_conflict: None,

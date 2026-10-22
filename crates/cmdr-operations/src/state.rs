@@ -231,6 +231,10 @@ pub struct WriteOperationState {
     /// [`with_target_names`](Self::with_target_names). Carried here for the
     /// same reason as `journal_volumes`.
     pub(crate) target_names: super::target_names::TargetNames,
+    /// The conflict policy this operation runs under now, as the snapshot
+    /// reports it: the confirmed one, until a "… all" answer latches another.
+    /// Empty for an operation with no policy. [`super::conflict_policy_cell`].
+    pub(crate) conflict_policy: super::conflict_policy_cell::ConflictPolicyCell,
     /// Destination `.cmdr-tmp-*` paths this operation is CURRENTLY streaming
     /// bytes into, so an abandoned transfer's litter can be found and removed.
     ///
@@ -338,6 +342,7 @@ impl WriteOperationState {
             journal_volumes: None,
             sides: None,
             target_names: super::target_names::TargetNames::default(),
+            conflict_policy: super::conflict_policy_cell::ConflictPolicyCell::default(),
             in_flight_temps: std::sync::Mutex::new(Vec::new()),
             kept_landings: std::sync::Mutex::new(Vec::new()),
             rescued_landings: std::sync::Mutex::new(Vec::new()),
@@ -496,6 +501,14 @@ impl WriteOperationState {
     /// state in an `Arc`.
     pub(crate) fn with_target_names(mut self, target_names: super::target_names::TargetNames) -> Self {
         self.target_names = target_names;
+        self
+    }
+
+    /// Set the policy a copy or move was confirmed with (see
+    /// [`conflict_policy`](Self::conflict_policy)). Chained before wrapping the
+    /// state in an `Arc`.
+    pub(crate) fn with_conflict_policy(mut self, policy: ConflictResolution) -> Self {
+        self.conflict_policy = super::conflict_policy_cell::ConflictPolicyCell::starting_on(policy);
         self
     }
 

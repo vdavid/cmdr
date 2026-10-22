@@ -32,6 +32,7 @@ function operation(
     reverses: null,
     error: null,
     canRetry: false,
+    conflictPolicy: null,
     items: null,
   }
 }

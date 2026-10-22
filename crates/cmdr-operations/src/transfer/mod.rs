@@ -45,6 +45,8 @@ pub(super) use staged_write::StagedWrite;
 pub(crate) use super::ledger::CopyTransaction;
 
 #[cfg(test)]
+mod conflict_policy_latch_tests;
+#[cfg(test)]
 mod conflict_prompt_sides_tests;
 #[cfg(test)]
 pub(crate) mod conflict_responder_test_support;
