@@ -117,8 +117,12 @@ const COLOR_TAGS = ['-colorspace', 'bt709', '-color_primaries', 'bt709', '-color
  * `ffmpeg` arguments for one video encode of `master` into `out`.
  *
  * - **AV1**: SVT-AV1 with screen-content tools (`scm=1`: palette and intra block copy,
- *   built for flat UI and text). CRF 32 at preset 4 lands a 6–10 s clip at roughly
- *   150–500 KB, the budget the landing page was planned around (issue #693).
+ *   built for flat UI and text). CRF 42 at preset 4: text stays as crisp as the H.264's
+ *   at roughly 70–85% of its bytes. CRF 32 came out LARGER than the H.264 on every clip,
+ *   and `scm=1` beat both `scm=0` and auto by 5–10% (measured on the viewer clip, SVT-AV1
+ *   4.2.0, 2026-10-23). Real UI clips land at roughly 250–900 KB, above the 150–500 KB the
+ *   landing page was planned around (issue #693), because 2x masters of text-heavy
+ *   windows carry more detail than that estimate assumed.
  * - **H.264**: High profile, CRF 22, `faststart` so playback starts before the last byte.
  *
  * Both are silent (`-an`) and `faststart`, and both get the same filter chain, so the
@@ -133,7 +137,7 @@ export function ffmpegVideoArgs(
 ): string[] {
   const codecArgs =
     codec === 'av1'
-      ? ['-c:v', 'libsvtav1', '-preset', '4', '-crf', '32', '-svtav1-params', 'scm=1:tune=0']
+      ? ['-c:v', 'libsvtav1', '-preset', '4', '-crf', '42', '-svtav1-params', 'scm=1:tune=0']
       : ['-c:v', 'libx264', '-preset', 'veryslow', '-crf', '22', '-profile:v', 'high', '-tune', 'animation']
   return [
     '-hide_banner',

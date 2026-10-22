@@ -66,7 +66,13 @@ const CLIP_MAIN = { width: 1000, height: 640 }
 const CLIP_VIEWER = { width: 960, height: 680 }
 
 /** The queue window's size, small enough to sit inside the main window's frame. */
-const CLIP_QUEUE = { width: 600, height: 300 }
+const CLIP_QUEUE = { width: 720, height: 470 }
+
+/**
+ * The still beat after a clip's start marker and before its first action, so a viewer
+ * sees where the clip begins before anything moves (and the loop's seam reads as a pause).
+ */
+const LEAD_IN_MS = 800
 
 const PROGRESS_DIALOG = '[data-dialog-id="transfer-progress"]'
 const MULTI_RENAME = '[data-dialog-id="multi-rename"]'
@@ -157,9 +163,32 @@ async function stageMain(page: TauriPage, theme: ClipTheme, left: string, right:
     `document.querySelectorAll('.file-pane')[0]?.classList.contains('is-focused') ?? false`,
   )
   if (!leftFocused) await mcpCall('switch_pane', {})
+  await waitForExactSizes(page)
   await pinVolatileChrome(page)
   await setTheme(page, theme)
   await dismissAllToasts(page)
+}
+
+/**
+ * Waits until every folder in both panes shows an exact size: no `≥` (a lower bound
+ * while the index hasn't aggregated a folder) and no `<dir>` (not indexed yet). The demo
+ * tree is seconds old when the first take stages, so `waitForIndexedSizes` passes while
+ * its folders still read either (seen on the first real run, 2026-10-22).
+ */
+async function waitForExactSizes(page: TauriPage): Promise<void> {
+  await expect
+    .poll(
+      () =>
+        page.evaluate<boolean>(
+          `[...document.querySelectorAll('.file-pane')].some((p) => p.textContent.includes('≥') || p.textContent.includes('<dir>'))`,
+        ),
+      {
+        timeout: waitBudget(120000),
+        intervals: [500],
+        message: 'a folder size still reads ≥ or <dir>, so the index never finished the demo tree',
+      },
+    )
+    .toBe(false)
 }
 
 /**
@@ -212,6 +241,7 @@ export async function copyRollback(page: TauriPage, theme: ClipTheme): Promise<v
     await inTake(take, async () => {
       await hold(700)
       take.markStart()
+      await hold(LEAD_IN_MS)
       await dispatchMenuCommand(page, 'file.copy')
       await page.waitForSelector(TRANSFER_DIALOG, waitBudget(5000))
       await hold(700)
@@ -230,7 +260,7 @@ export async function copyRollback(page: TauriPage, theme: ClipTheme): Promise<v
       await expect
         .poll(async () => !(await page.isVisible(PROGRESS_DIALOG)), { timeout: waitBudget(30000) })
         .toBeTruthy()
-      await hold(1000)
+      await hold(700)
     })
   } finally {
     await setThrottles(page, null, null)
@@ -254,10 +284,11 @@ export async function opsQueue(page: TauriPage, theme: ClipTheme): Promise<void>
     await inTake(take, async () => {
       await hold(800)
       take.markStart()
+      await hold(LEAD_IN_MS)
       for (const [i, source] of QUEUE_SOURCES.entries()) {
         await startCopy(page, join(DEMO_ROOT, DEMO.projects, source), join(DEMO_ROOT, DEMO.backup))
         if (i === 2) take.markPoster()
-        await hold(450)
+        await hold(350)
       }
       await expect
         .poll(
@@ -268,7 +299,7 @@ export async function opsQueue(page: TauriPage, theme: ClipTheme): Promise<void>
           { timeout: waitBudget(60000) },
         )
         .toBe(0)
-      await hold(1200)
+      await hold(700)
     })
   } finally {
     await setThrottles(page, null, null)
@@ -279,9 +310,15 @@ export async function opsQueue(page: TauriPage, theme: ClipTheme): Promise<void>
   }
 }
 
-/** Starts a local copy over IPC, exactly what the F5 dialog dispatches, with no modal. */
+/**
+ * Starts a local copy over IPC, exactly what the F5 dialog dispatches, with no modal.
+ *
+ * Fire-and-forget inside the webview: `copy_between_volumes` answers only once its
+ * pre-flight has run, and awaiting it serialized the five starts a second apart, so the
+ * queue never held more than one row (first real run, 2026-10-22).
+ */
 async function startCopy(page: TauriPage, source: string, destination: string): Promise<void> {
-  await invoke(page, 'copy_between_volumes', {
+  const args = {
     sourceVolumeId: 'root',
     sourcePaths: [source],
     destVolumeId: 'root',
@@ -293,7 +330,8 @@ async function startCopy(page: TauriPage, source: string, destination: string): 
       previewId: null,
       preKnownConflicts: [],
     },
-  })
+  }
+  await page.evaluate(`void window.__TAURI_INTERNALS__.invoke('copy_between_volumes', ${JSON.stringify(args)})`)
 }
 
 /**
@@ -326,10 +364,12 @@ export async function multiRename(page: TauriPage, theme: ClipTheme): Promise<vo
   await stageMain(page, theme, join(DEMO_ROOT, DEMO.rawImports), join(DEMO_ROOT, DEMO.trip))
   await dispatchMenuCommand(page, 'selection.selectAll')
   try {
+    await resetMultiRenameMask(page)
     const take = await recordWindow(page, { slug: 'multi-rename', theme, label: 'main' })
     await inTake(take, async () => {
       await hold(700)
       take.markStart()
+      await hold(LEAD_IN_MS)
       await dispatchMenuCommand(page, 'file.multiRename')
       await page.waitForSelector(MULTI_RENAME, waitBudget(5000))
       await hold(900)
@@ -356,6 +396,31 @@ export async function multiRename(page: TauriPage, theme: ClipTheme): Promise<vo
   }
 }
 
+/**
+ * Off camera: opens the sheet, puts the name mask back to `[N]`, and closes it. The sheet
+ * opens on what the last one closed with, so the second take would otherwise open with
+ * the finished mask already showing its preview, and the typing would change nothing.
+ */
+async function resetMultiRenameMask(page: TauriPage): Promise<void> {
+  const mask = `${MULTI_RENAME} input[aria-label="Name mask"]`
+  await dispatchMenuCommand(page, 'file.multiRename')
+  await page.waitForSelector(mask, waitBudget(5000))
+  await typeSlowly(page, mask, '[N]', 0)
+  // Wait for the preview of `[N]` (the footer counts "0 to rename") before closing, so the
+  // sheet closes on it rather than on a pending edit.
+  await expect
+    .poll(
+      () =>
+        page.evaluate<boolean>(
+          `/^0 to rename/.test(document.querySelector(${JSON.stringify(`${MULTI_RENAME} .counts`)})?.textContent?.trim() ?? '')`,
+        ),
+      { timeout: waitBudget(5000) },
+    )
+    .toBe(true)
+  await clickButtonByText(page, `${MULTI_RENAME} button`, 'Cancel')
+  await expect.poll(async () => !(await page.isVisible(MULTI_RENAME)), { timeout: waitBudget(5000) }).toBeTruthy()
+}
+
 /** A query typed, results landing. */
 export async function search(page: TauriPage, theme: ClipTheme): Promise<void> {
   await stageMain(page, theme, DEMO_ROOT, join(DEMO_ROOT, DEMO.documents))
@@ -363,18 +428,22 @@ export async function search(page: TauriPage, theme: ClipTheme): Promise<void> {
   await openSearchDialog(page)
   await resetSearchDialog(page)
   await closeSearchDialog(page)
+  // The reset can end on a "Couldn't finish that search" toast for the empty query, which
+  // otherwise opens the clip (first real run, 2026-10-23).
+  await dismissAllToasts(page)
   try {
     const take = await recordWindow(page, { slug: 'search', theme, label: 'main' })
     await inTake(take, async () => {
       await hold(700)
       take.markStart()
+      await hold(LEAD_IN_MS)
       await openSearchDialog(page)
       await hold(500)
       await typeSlowly(page, SEARCH_INPUT, SEARCH_QUERY, 110)
       await page.waitForSelector(`${SEARCH_OVERLAY} .result-row`, waitBudget(30000))
       await hold(700)
       take.markPoster()
-      await hold(2200)
+      await hold(3200)
     })
   } finally {
     await closeSearchDialog(page).catch(() => {})
@@ -386,20 +455,29 @@ export async function search(page: TauriPage, theme: ClipTheme): Promise<void> {
  * the picker previews each one as it's highlighted, so the whole window re-renders.
  */
 export async function languageSwitch(page: TauriPage, theme: ClipTheme): Promise<void> {
-  await setTheme(page, theme)
-  const settings = await openSettingsWindowViaProd(page)
+  const settings = await openStagedSettings(page, theme)
   try {
-    await settings.waitForSelector('.settings-sidebar', waitBudget(5000))
-    // The language row lives on the first section, Appearance > Colors and formats.
-    await settings.evaluate(`document.querySelectorAll('.section-item')[0]?.click()`)
     const trigger = `document.getElementById('setting-appearance.language')?.querySelector('.select-trigger')`
-    await expect.poll(() => settings.evaluate<boolean>(`!!(${trigger})`), { timeout: waitBudget(5000) }).toBe(true)
+    const found = await expect
+      .poll(() => settings.evaluate<boolean>(`!!(${trigger})`), { timeout: waitBudget(5000) })
+      .toBe(true)
+      .then(
+        () => true,
+        () => false,
+      )
+    if (!found) {
+      const seen = await settings.evaluate<string>(
+        `JSON.stringify({ selected: document.querySelector('.section-item.selected')?.textContent?.trim(), rows: [...document.querySelectorAll('.setting-row')].map((r) => r.id).slice(0, 12) })`,
+      )
+      throw new Error(`the language picker isn't on screen: ${seen}`)
+    }
 
     const take = await recordWindow(page, { slug: 'language-switch', theme, label: 'settings' })
     await invoke(page, 'plugin:window|set_focus', { label: 'settings' })
     await inTake(take, async () => {
       await hold(800)
       take.markStart()
+      await hold(LEAD_IN_MS)
       expect(await pointerClick(settings, trigger)).toBe('clicked')
       await expect
         .poll(
@@ -415,37 +493,126 @@ export async function languageSwitch(page: TauriPage, theme: ClipTheme): Promise
         await hold(650)
         if (i === 5) take.markPoster()
       }
-      // Closing without a pick leaves the committed language: back to English.
-      expect(await pointerClick(settings, trigger)).toBe('clicked')
-      await hold(1000)
+      // Ends with the list still open on the last language.
+      await hold(500)
     })
+    // Off camera: pick English in the open list, from the settings window itself.
+    await pickEnglish(settings, trigger)
   } finally {
     await setSetting(page, 'appearance.language', 'en')
     await closeScopedWindow(page, settings, 'settings')
   }
 }
 
+/**
+ * Picks English in the language picker's OPEN list, the way a person would, and waits for
+ * the window to read English.
+ *
+ * ❗ Through the picker in the settings window, ❌ never `setSetting` from the main window
+ * and ❌ never by closing the list: closing it commits whatever is highlighted, and a
+ * main-window reset didn't stick, so a take that ended on Vietnamese left it saved, and
+ * every later window (the viewer) opened in Vietnamese (first real run, 2026-10-22).
+ */
+async function pickEnglish(settings: TauriPage, trigger: string): Promise<void> {
+  // Two picks, British English then English, because a pick of the value that's already
+  // saved changes nothing: after previewing a dozen languages the saved value is still
+  // `en`, so picking `en` alone left the backend on the last PREVIEWED one, and the
+  // next viewer window opened in Vietnamese (first real run, 2026-10-22).
+  for (const tag of ['en-GB', 'en']) {
+    const item = `${selectContentExpr(trigger)}?.querySelector('[data-part="item"][data-value="${tag}"]')`
+    // The menu stays mounted while closed, so "open" is its `data-state`, not its presence.
+    const open = `${selectContentExpr(trigger)}?.getAttribute('data-state') === 'open'`
+    await expect
+      .poll(
+        async () => {
+          if (await settings.evaluate<boolean>(`!!(${item}) && ${open}`)) return true
+          await pointerClick(settings, trigger)
+          return false
+        },
+        { timeout: waitBudget(5000) },
+      )
+      .toBe(true)
+    expect(await pointerClick(settings, item)).toBe('clicked')
+    await expect
+      .poll(() => settings.evaluate<string>(`document.documentElement.lang`), { timeout: waitBudget(10000) })
+      .toBe(tag)
+  }
+}
+
+/**
+ * Opens the settings window on Appearance > Colors and formats, in English and `theme`.
+ *
+ * The theme is picked in the settings window's OWN theme control. Set from the main window
+ * instead (`setTheme`), the settings window rendered dark while its Theme mode control
+ * still showed Light (first real run, 2026-10-22).
+ */
+async function openStagedSettings(page: TauriPage, theme: ClipTheme): Promise<TauriPage> {
+  const settings = await openSettingsWindowViaProd(page)
+  await settings.waitForSelector('.settings-sidebar', waitBudget(5000))
+  // Appearance > Colors and formats, by position: the sidebar's first item is the bare
+  // "Appearance" group (no rows of its own), its first child the section with the
+  // language and theme rows. By position because a previous take may have left the
+  // window in another language.
+  await expect
+    .poll(
+      () =>
+        settings.evaluate<boolean>(`(function () {
+          document.querySelectorAll('.section-item')[1]?.click();
+          return !!document.getElementById('setting-theme.mode') && !!document.getElementById('setting-appearance.language');
+        })()`),
+      { timeout: waitBudget(10000) },
+    )
+    .toBe(true)
+  if ((await settings.evaluate<string>(`document.documentElement.lang`)) !== 'en') {
+    const trigger = `document.getElementById('setting-appearance.language')?.querySelector('.select-trigger')`
+    expect(await pointerClick(settings, trigger)).toBe('clicked')
+    await pickEnglish(settings, trigger)
+  }
+  const label = theme === 'dark' ? 'Dark' : 'Light'
+  const option = `[...document.getElementById('setting-theme.mode').querySelectorAll('button, [data-part="item"]')].find((b) => b.textContent.trim() === ${JSON.stringify(label)})`
+  expect(await pointerClick(settings, option)).toBe('clicked')
+  await expect
+    .poll(() => settings.evaluate<boolean>(`window.matchMedia('(prefers-color-scheme: dark)').matches`), {
+      timeout: waitBudget(10000),
+    })
+    .toBe(theme === 'dark')
+  return settings
+}
+
+/**
+ * The sections the settings pan visits, by their English sidebar labels: a spread across
+ * the groups, skipping the group headers themselves, which hold no rows.
+ */
+const PAN_SECTIONS = [
+  'Zoom and density',
+  'File and folder sizes',
+  'Navigation & file ops',
+  'Drive indexing',
+  'Provider',
+  'Ask Cmdr',
+  'SMB/Network shares',
+]
+
 /** A short pan through Settings sections. */
 export async function settingsPan(page: TauriPage, theme: ClipTheme): Promise<void> {
-  await setTheme(page, theme)
-  const settings = await openSettingsWindowViaProd(page)
+  const settings = await openStagedSettings(page, theme)
   try {
-    await settings.waitForSelector('.section-item', waitBudget(5000))
-    await settings.evaluate(`document.querySelectorAll('.section-item')[0]?.click()`)
-    const sections = await settings.evaluate<number>(`document.querySelectorAll('.section-item').length`)
-    const visits = Math.min(8, sections)
-
     const take = await recordWindow(page, { slug: 'settings', theme, label: 'settings' })
     await invoke(page, 'plugin:window|set_focus', { label: 'settings' })
     await inTake(take, async () => {
-      await hold(900)
+      await hold(700)
       take.markStart()
-      for (let i = 1; i < visits; i++) {
-        await settings.evaluate(`document.querySelectorAll('.section-item')[${String(i)}]?.click()`)
+      await hold(LEAD_IN_MS)
+      for (const [i, section] of PAN_SECTIONS.entries()) {
+        const clicked = await settings.evaluate<boolean>(`(function () {
+          var item = [...document.querySelectorAll('.section-item')].find((s) => s.textContent.trim() === ${JSON.stringify(section)});
+          if (item) item.click();
+          return !!item;
+        })()`)
+        if (!clicked) throw new Error(`no Settings section reads '${section}'`)
         await hold(1100)
         if (i === 3) take.markPoster()
       }
-      await hold(400)
     })
   } finally {
     await closeScopedWindow(page, settings, 'settings')

@@ -1,7 +1,8 @@
 /**
  * The staged folder tree every marketing clip shows: a small studio's shared drive with
- * nice, realistic, non-personal names. Created fresh by the clips run, ❌ never David's
- * real data.
+ * nice, realistic, non-personal names, ❌ never David's real data. Staged by the clips
+ * run and kept between runs (`ensureDemoTree` says why); `pnpm marketing:clips
+ * --remove-demo` deletes it.
  *
  * It lives at `/Users/Shared/Studio` (override: `CMDR_CLIPS_DEMO_ROOT`) because that path
  * reads as an ordinary folder in a breadcrumb and carries no user name, which a temp dir
@@ -14,7 +15,7 @@
  */
 
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 export const DEMO_ROOT = process.env.CMDR_CLIPS_DEMO_ROOT ?? '/Users/Shared/Studio'
@@ -97,11 +98,38 @@ export function removeDemoTree(root = DEMO_ROOT): void {
   rmSync(root, { recursive: true, force: true })
 }
 
-/** (Re)creates the whole demo tree from scratch. */
+/**
+ * What the marker says. Bump the version whenever the staged content changes, so the next
+ * run restages instead of keeping a stale tree.
+ */
+const MARKER_TEXT = 'Staged by pnpm marketing:clips (demo tree v2). Safe to delete.\n'
+
+/**
+ * Makes sure the demo tree is there and current, and puts its mutable folders back.
+ *
+ * ❗ It KEEPS a current tree rather than restaging it every run, and the orchestrator calls
+ * it BEFORE the app launches. A tree deleted and recreated under a running app comes back
+ * without folder sizes: the index's verifier marks the old one stale and the new subtree
+ * reads `<dir>` for minutes ("Parent path not found in index", first real run,
+ * 2026-10-22). Staged before launch, the startup journal replay indexes it like any
+ * other change.
+ */
+export function ensureDemoTree(root = DEMO_ROOT): 'kept' | 'staged' {
+  const marker = join(root, MARKER)
+  if (existsSync(marker) && readFileSync(marker, 'utf8') === MARKER_TEXT) {
+    resetRawImports(root)
+    resetBackup(root)
+    return 'kept'
+  }
+  stageDemoTree(root)
+  return 'staged'
+}
+
+/** (Re)creates the whole demo tree from scratch. Prefer `ensureDemoTree`, which says why. */
 export function stageDemoTree(root = DEMO_ROOT): void {
   removeDemoTree(root)
   mkdirSync(root, { recursive: true })
-  writeFileSync(join(root, MARKER), 'Staged by pnpm marketing:clips. Safe to delete.\n')
+  writeFileSync(join(root, MARKER), MARKER_TEXT)
 
   stageTripPhotos(root)
   resetRawImports(root)
@@ -131,8 +159,7 @@ function stageTripPhotos(root: string): void {
 /** Puts the multi-rename clip's files back to their camera names, for the next take. */
 export function resetRawImports(root = DEMO_ROOT): void {
   const dir = join(root, DEMO.rawImports)
-  rmSync(dir, { recursive: true, force: true })
-  mkdirSync(dir, { recursive: true })
+  emptyDir(dir)
   const rand = prng(5)
   for (let i = 0; i < RAW_IMPORTS; i++) {
     const path = join(dir, `DSC_${String(7310 + i * 4).padStart(4, '0')}.jpg`)
@@ -145,9 +172,16 @@ export function resetRawImports(root = DEMO_ROOT): void {
 
 /** Empties `Backup/`, where the copy and queue clips land, for the next take. */
 export function resetBackup(root = DEMO_ROOT): void {
-  const dir = join(root, DEMO.backup)
-  rmSync(dir, { recursive: true, force: true })
+  emptyDir(join(root, DEMO.backup))
+}
+
+/**
+ * Empties `dir` but keeps the folder itself, so the index never sees it deleted and
+ * recreated (see `ensureDemoTree`).
+ */
+function emptyDir(dir: string): void {
   mkdirSync(dir, { recursive: true })
+  for (const entry of readdirSync(dir)) rmSync(join(dir, entry), { recursive: true, force: true })
 }
 
 function stageProjects(root: string): void {
@@ -188,13 +222,44 @@ function stageDocuments(root: string): void {
 }
 
 /**
- * A real JPEG for the viewer to render: a deterministic ImageMagick plasma, which reads
- * as a landscape-ish photo at a glance. The clips run requires ImageMagick up front.
+ * A real JPEG for the viewer to render: a calm, drawn landscape (dusk sky, two mountain
+ * ridges, a lake), deterministic so every run shows the same picture. A plasma fill read
+ * as noise rather than a photo (first real run, 2026-10-22). The clips run requires
+ * ImageMagick up front.
  */
 function stagePhoto(path: string): void {
   const res = spawnSync(
     'magick',
-    ['-size', '1600x1000', '-seed', '2026', 'plasma:#9fd3e6-#1d3557', '-blur', '0x2', '-quality', '88', path],
+    [
+      '-size',
+      '1600x1000',
+      'gradient:#3d5a80-#f2c48d',
+      '-fill',
+      '#fff4d6',
+      '-draw',
+      'circle 1180,420 1180,375',
+      '-fill',
+      '#5c6b8a',
+      '-draw',
+      'polygon 0,640 180,470 330,560 520,380 760,600 980,450 1210,610 1420,500 1600,580 1600,760 0,760',
+      '-fill',
+      '#2f3b52',
+      '-draw',
+      'polygon 0,720 260,580 470,690 700,560 940,700 1180,600 1400,720 1600,650 1600,780 0,780',
+      '-fill',
+      '#1c2638',
+      '-draw',
+      'rectangle 0,760 1600,1000',
+      '-fill',
+      '#e9b98066',
+      '-draw',
+      'rectangle 1140,790 1220,800',
+      '-blur',
+      '0x1.2',
+      '-quality',
+      '88',
+      path,
+    ],
     { encoding: 'utf8' },
   )
   if (res.error !== undefined || res.status !== 0) {

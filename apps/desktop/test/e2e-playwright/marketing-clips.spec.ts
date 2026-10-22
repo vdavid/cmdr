@@ -15,7 +15,7 @@ import { waitBudget } from './wait-budget.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 import { ensureMcpClient } from '../e2e-shared/mcp-client.js'
 import { captureTest as test, stopVideoRecording } from './fixtures.js'
-import { removeDemoTree, stageDemoTree } from './marketing-clips-demo.js'
+import { ensureDemoTree } from './marketing-clips-demo.js'
 import {
   copyRollback,
   languageSwitch,
@@ -54,12 +54,10 @@ test.setTimeout(waitBudget(1_200_000))
 test.describe('marketing clips', () => {
   test.skip(process.platform !== 'darwin', 'The clips are ScreenCaptureKit recordings of macOS windows.')
 
+  // The orchestrator already ensured it before the launch; this resets the mutable
+  // folders when a worker restarts after a failure, and stages it for a hand run.
   test.beforeAll(() => {
-    stageDemoTree()
-  })
-
-  test.afterAll(() => {
-    removeDemoTree()
+    ensureDemoTree()
   })
 
   test.beforeEach(async ({ tauriPage }) => {

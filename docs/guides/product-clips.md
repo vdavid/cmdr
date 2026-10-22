@@ -54,14 +54,20 @@ gitignored. Tune an encode setting and re-run with `--encode-only`; no re-record
 1. **Launch**: `apps/desktop/scripts/marketing-launch.ts`, shared with `pnpm marketing:shots`: the Playwright-enabled
    E2E binary on its own persistent data dir (`~/Library/Application Support/com.veszelovszki.cmdr-clips`), with
    `CMDR_E2E_MODE` and `CMDR_E2E_START_PATH` unset for the same reasons as the stills.
-2. **Stage**: `marketing-clips.spec.ts` stages a demo tree at `/Users/Shared/Studio` (`CMDR_CLIPS_DEMO_ROOT` overrides):
-   a small studio's shared drive with realistic, non-personal names. ❗ It deletes that folder only when it carries the
-   `.cmdr-clips-demo` marker it wrote, so a real folder at that path makes the run refuse instead.
+2. **Stage**: the orchestrator stages a demo tree at `/Users/Shared/Studio` (`CMDR_CLIPS_DEMO_ROOT` overrides) BEFORE
+   the launch, and keeps it between runs (`pnpm marketing:clips --remove-demo` deletes it): a small studio's shared
+   drive with realistic, non-personal names. A tree staged under the running app reads `<dir>` and `≥` sizes for
+   minutes, so `ensureDemoTree` in `marketing-clips-demo.ts` keeps a current tree and only empties its mutable folders.
+   ❗ It deletes that folder only when it carries the `.cmdr-clips-demo` marker it wrote, so a real folder at that path
+   makes the run refuse instead. `language-switch` records last: after it, the app's saved language can drift back to
+   the last previewed one until the next launch (`marketing-clips-slugs.ts`).
 3. **Record**: per take, `marketing-clips-take.ts` starts the recorder on the window's CGWindowID and resolves on its
    first frame; the scene then marks start, poster, and end on the wall clock while it drives the real UI.
    `marketing-clips-recorder.swift` is compiled on demand into `~/Library/Caches/com.veszelovszki.cmdr-clips/recorder/`,
-   keyed by its source hash. One window records through `desktopIndependentWindow` without its shadow; `ops-queue` adds
-   the queue window through a display filter cropped to the main window's frame.
+   keyed by its source hash. It records the display with every other window excluded, cropped to the window's frame
+   (`ops-queue` keeps the queue window too). ❗ Never a window filter (`desktopIndependentWindow`,
+   `display(including:)`): macOS 27 then replaces the window's traffic lights with its purple "being shared" pill. The
+   recorder also parks the mouse pointer off the window, since a resting pointer hovers buttons and opens tooltips.
 4. **Encode**: `apps/desktop/scripts/marketing-clips-encode.ts` trims each master to its markers and encodes. The
    recorder ends the master at its STOP time, not its last frame (ScreenCaptureKit sends frames only on change), so a
    still ending isn't cut short.

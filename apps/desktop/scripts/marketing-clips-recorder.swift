@@ -20,9 +20,10 @@
 //   spec's markers are written in (`Date.now()`), so the encoder can trim to them.
 // - **The session ends at the STOP time, not the last frame**: ScreenCaptureKit sends a
 //   frame only when the window changes, so a still ending would otherwise be cut short.
-// - **One window**: `desktopIndependentWindow`, which keeps recording even when another
-//   window covers it. **Several**: a display filter limited to those windows, cropped to
-//   the FIRST window's frame, so a second window shows where it overlaps the first.
+// - **The display minus every other window, cropped to the FIRST window's frame**, so a
+//   second window (`--include-window-id`) shows where it overlaps the first, and the
+//   title bar keeps its traffic lights (`record` says why the window filters don't).
+//   Anything else the display shows on top of the window is excluded too.
 //
 // Compiled with `-swift-version 5`: the delegate callbacks below are queue-confined by
 // hand (every writer touch happens on `queue`), which Swift 6's checker can't see.
@@ -30,6 +31,7 @@
 // `startWriting`, `append`) in favor of input receivers; they still work, and this stays
 // on them until the replacement is verified (swiftc 6.4, macOS 27.0.1, 2026-10-22).
 
+import AppKit
 import AVFoundation
 import CoreGraphics
 import CoreMedia
@@ -182,6 +184,21 @@ func preflight() async -> Never {
     exit(access && windows >= 0 ? 0 : 2)
 }
 
+/// Moves the mouse pointer off the recorded window. The pointer itself is never recorded
+/// (`showsCursor = false`), but one resting over the window still HOVERS: buttons light up
+/// and tooltips open mid-clip (seen on the first real run, 2026-10-22).
+func parkCursor(outside frame: CGRect, displays: [SCDisplay]) {
+    guard let display = displays.first(where: { $0.frame.intersects(frame) }) ?? displays.first else { return }
+    let screen = display.frame
+    let candidates = [
+        CGPoint(x: screen.maxX - 2, y: screen.midY),
+        CGPoint(x: screen.minX + 2, y: screen.midY),
+        CGPoint(x: screen.midX, y: screen.maxY - 2),
+    ]
+    let spot = candidates.first(where: { !frame.contains($0) }) ?? candidates[0]
+    CGWarpMouseCursorPosition(spot)
+}
+
 func record(_ options: Options) async {
     guard let windowId = options.windowId, let out = options.out else {
         fail("usage: --window-id <id> [--include-window-id <id>]... --out <file.mov>")
@@ -199,21 +216,23 @@ func record(_ options: Options) async {
         return found
     }
     let primary = window(windowId)
+    parkCursor(outside: primary.frame, displays: content.displays)
 
-    let filter: SCContentFilter
+    // The DISPLAY, minus every window but ours, cropped to the primary window's frame.
+    // ❗ Not `desktopIndependentWindow` and not `display(including:)`: both make macOS 27
+    // swap the captured window's traffic lights for its purple "being shared" pill, which
+    // then sits in the corner of every clip. Excluding everything else is display capture
+    // to macOS, so the window keeps its real title bar (verified on macOS 27.0.1,
+    // 2026-10-23, by recording the same window both ways).
+    let wanted = Set([windowId] + options.includeWindowIds)
+    for id in options.includeWindowIds { _ = window(id) }
+    guard
+        let display = content.displays.first(where: { $0.frame.contains(CGPoint(x: primary.frame.midX, y: primary.frame.midY)) })
+    else { fail("window \(windowId) isn't on any display") }
+    let filter = SCContentFilter(display: display, excludingWindows: content.windows.filter { !wanted.contains($0.windowID) })
     let config = SCStreamConfiguration()
-    if options.includeWindowIds.isEmpty {
-        filter = SCContentFilter(desktopIndependentWindow: primary)
-        config.ignoreShadowsSingleWindow = true
-    } else {
-        let windows = [primary] + options.includeWindowIds.map(window)
-        guard
-            let display = content.displays.first(where: { $0.frame.contains(CGPoint(x: primary.frame.midX, y: primary.frame.midY)) })
-        else { fail("window \(windowId) isn't on any display") }
-        filter = SCContentFilter(display: display, including: windows)
-        config.ignoreShadowsDisplay = true
-        config.sourceRect = primary.frame.offsetBy(dx: -display.frame.minX, dy: -display.frame.minY)
-    }
+    config.ignoreShadowsDisplay = true
+    config.sourceRect = primary.frame.offsetBy(dx: -display.frame.minX, dy: -display.frame.minY)
     let scale = CGFloat(filter.pointPixelScale)
     // Even dimensions: every 4:2:0 encode downstream needs them.
     let width = (Int((primary.frame.width * scale).rounded()) / 2) * 2
@@ -269,6 +288,11 @@ struct ClipRecorder {
     /// explicit `exit()` from `finish`, `fail`, or `preflight`.
     static func main() {
         let options = Options.parse(CommandLine.arguments)
+        // ❗ Connects to the window server before ScreenCaptureKit needs it. Without an
+        // NSApplication, `startCapture` aborts in `CGS_REQUIRE_INIT` (verified on macOS
+        // 27.0.1, 2026-10-22); `--preflight` works without it, which is how that hid.
+        // `.prohibited`: no Dock icon, never the key app.
+        NSApplication.shared.setActivationPolicy(.prohibited)
         Task {
             if options.preflight { await preflight() }
             await record(options)

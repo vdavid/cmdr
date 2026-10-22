@@ -7,6 +7,7 @@
  * pnpm marketing:clips --out /tmp/clips       # write somewhere else, leave the website alone
  * pnpm marketing:clips --encode-only          # re-encode the masters already in brand/clip-masters/
  * pnpm marketing:clips --dry-run              # check the machine, launch nothing
+ * pnpm marketing:clips --remove-demo          # delete the demo tree the runs keep in /Users/Shared/Studio
  * ```
  *
  * Three stages:
@@ -43,6 +44,7 @@ import type { ClipManifestEntry, ClipMarkers } from './marketing-clips-encode.ts
 import { captureInstance, launchCaptureApp, prepareCaptureInstance, runCaptureShard } from './marketing-launch.ts'
 import { CLIP_SLUGS } from '../test/e2e-playwright/marketing-clips-slugs.ts'
 import type { ClipSlug } from '../test/e2e-playwright/marketing-clips-slugs.ts'
+import { DEMO_ROOT, MARKER, ensureDemoTree, removeDemoTree } from '../test/e2e-playwright/marketing-clips-demo.ts'
 
 const LOG = '[marketing-clips]'
 
@@ -52,15 +54,13 @@ const RECORDER_SOURCE = join(here, 'marketing-clips-recorder.swift')
 /** Compiled recorders, keyed by source hash, so every worktree shares one build per version. */
 const RECORDER_CACHE = join(homedir(), 'Library', 'Caches', 'com.veszelovszki.cmdr-clips', 'recorder')
 
-/** Where the demo tree goes; mirrors `DEMO_ROOT` in `marketing-clips-demo.ts`. */
-const DEMO_ROOT = process.env.CMDR_CLIPS_DEMO_ROOT ?? '/Users/Shared/Studio'
-
 interface Options {
   only: ClipSlug[]
   outDir: string
   mastersDir: string
   dryRun: boolean
   encodeOnly: boolean
+  removeDemo: boolean
 }
 
 function parseArgs(argv: string[]): Options {
@@ -70,6 +70,7 @@ function parseArgs(argv: string[]): Options {
     mastersDir: join(repoRoot, 'brand', 'clip-masters'),
     dryRun: false,
     encodeOnly: false,
+    removeDemo: false,
   }
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
@@ -90,6 +91,7 @@ function parseArgs(argv: string[]): Options {
     else if (arg === '--masters') options.mastersDir = value()
     else if (arg === '--dry-run') options.dryRun = true
     else if (arg === '--encode-only') options.encodeOnly = true
+    else if (arg === '--remove-demo') options.removeDemo = true
     else throw new Error(`unknown argument '${arg}'`)
   }
   return options
@@ -175,7 +177,7 @@ function preflight(options: Options): { checks: Check[]; recorder: string | null
         : `${res.stderr.trim()}. Allow the terminal to control System Events (Privacy & Security > Automation).`
     })
     check(`the demo folder (${DEMO_ROOT})`, () => {
-      if (existsSync(DEMO_ROOT) && !existsSync(join(DEMO_ROOT, '.cmdr-clips-demo'))) {
+      if (existsSync(DEMO_ROOT) && !existsSync(join(DEMO_ROOT, MARKER))) {
         return 'it exists and is not a staged demo tree, so it may be real data; move it or set CMDR_CLIPS_DEMO_ROOT'
       }
       accessSync(dirname(DEMO_ROOT), constants.W_OK)
@@ -206,6 +208,9 @@ async function record(options: Options, recorder: string): Promise<boolean> {
   const instance = captureInstance('clips')
   mkdirSync(options.mastersDir, { recursive: true })
   prepareCaptureInstance(instance, LOG, {})
+  // Before the launch, so the app's startup journal replay indexes a freshly staged tree
+  // (`ensureDemoTree` explains why a tree staged under a running app reads `<dir>`).
+  console.log(`${LOG} demo tree at ${DEMO_ROOT}: ${ensureDemoTree()}`)
 
   const app = await launchCaptureApp({
     binary,
@@ -254,8 +259,26 @@ function encodeAll(options: Options, notBefore: number): string[] {
   return skipped
 }
 
+/** What a dry run says it would do. */
+function printPlan(options: Options): void {
+  const slugs = selectedSlugs(options)
+  console.log(
+    `${LOG} would ${options.encodeOnly ? 're-encode' : 'record and encode'}: ${slugs.join(', ')} (dark and light)`,
+  )
+  console.log(`${LOG} masters: ${options.mastersDir}`)
+  console.log(`${LOG} output: ${options.outDir} ({slug}-{theme}-av1.mp4, -h264.mp4, .webp, clips.json)`)
+  if (!options.encodeOnly) {
+    console.log(`${LOG} the E2E binary is built first if the tree changed (not checked by a dry run).`)
+  }
+}
+
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2))
+  if (options.removeDemo) {
+    removeDemoTree()
+    console.log(`${LOG} removed the demo tree at ${DEMO_ROOT}.`)
+    return
+  }
   const started = Date.now()
 
   const { checks, recorder } = preflight(options)
@@ -263,20 +286,12 @@ async function main(): Promise<void> {
     console.log(`${LOG} ${problem === null ? '✓' : '✗'} ${name}${problem === null ? '' : `: ${problem}`}`)
   const failed = checks.filter((c) => c.problem !== null)
 
+  if (options.dryRun) printPlan(options)
+  if (failed.length > 0) throw new Error(`${String(failed.length)} check(s) failed; see above`)
   if (options.dryRun) {
-    const slugs = selectedSlugs(options)
-    console.log(
-      `${LOG} would ${options.encodeOnly ? 're-encode' : 'record and encode'}: ${slugs.join(', ')} (dark and light)`,
-    )
-    console.log(`${LOG} masters: ${options.mastersDir}`)
-    console.log(`${LOG} output: ${options.outDir} ({slug}-{theme}-av1.mp4, -h264.mp4, .webp, clips.json)`)
-    if (!options.encodeOnly)
-      console.log(`${LOG} the E2E binary is built first if the tree changed (not checked by a dry run).`)
-    if (failed.length > 0) throw new Error(`${String(failed.length)} check(s) failed; see above`)
     console.log(`${LOG} dry run OK: nothing launched, nothing recorded.`)
     return
   }
-  if (failed.length > 0) throw new Error(`${String(failed.length)} check(s) failed; see above`)
 
   let recordedAll = true
   if (!options.encodeOnly) {
