@@ -86,6 +86,12 @@
       "automerge": true
     },
     {
+      "description": "The E2E base image's `rust` stage moves with `rust-toolchain.toml`, never on its own: the `e2e-rust-image-pin` check fails when the image tag or the `RUSTUP_TOOLCHAIN` env next to it differs from the pinned channel. A bump here alone would turn that check red on the whole automerged `docker images` group, and the toolchain pin moves through the dashboard-approved desktop group. So whoever bumps the pin bumps this too, guided by the check. Skipping the digest refreshes costs nothing, since `Dockerfile.base` copies only the toolchain dirs out of this image, never its Debian layer.",
+      "matchFileNames": ["apps/desktop/test/e2e-linux/docker/Dockerfile.base"],
+      "matchPackageNames": ["rust"],
+      "enabled": false
+    },
+    {
       "description": "The fixture compose files name their locally built images (`cmdr-sftp-fixture:latest` and friends); no registry has them.",
       "matchManagers": ["docker-compose"],
       "matchPackageNames": ["/^cmdr-/"],

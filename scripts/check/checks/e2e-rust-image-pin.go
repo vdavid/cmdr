@@ -17,6 +17,7 @@ import (
 //
 // Fails when any `rust:<version>-...` image or `RUSTUP_TOOLCHAIN=<version>` in `Dockerfile.base`
 // differs from the pinned channel. Bump them together; the image tag also needs its new digest.
+// Renovate leaves this image alone (`renovate.json`) so the bump always comes with the pin's.
 const (
 	e2eRustToolchainFile = "rust-toolchain.toml"
 	e2eRustDockerfile    = "apps/desktop/test/e2e-linux/docker/Dockerfile.base"
