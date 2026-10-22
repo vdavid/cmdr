@@ -35,16 +35,16 @@ it; feature must-knows live in each directory's colocated `CLAUDE.md`, and the m
 - ❌ A size or duration becomes text in ONE place: `#lib/units` (`formatByteSize` / `formatDuration`), `<Size bytes>` in
   markup. Never a private `formatBytes` or a `1024` ladder: four copies once drifted and two windows disagreed.
   `cmdr/no-private-unit-format`.
-- Stay aligned to Ark UI's naming: a `lib/ui/` wrapper takes the name of the `@ark-ui/svelte` component it wraps, 1:1.
-  Raise any divergence, don't silently rename. Feature code imports the house wrapper, never `@ark-ui/svelte`
-  (`cmdr/no-raw-ark-import`, allowlisted to `lib/ui/` alone).
+- A `lib/ui/` wrapper takes its `@ark-ui/svelte` component's name, 1:1 (raise any divergence). Feature code imports the
+  wrapper, never `@ark-ui/svelte` (`cmdr/no-raw-ark-import`).
+- **Every window, pane, and dialog has an error boundary**: a route dialog's `{#if}` goes INSIDE a `DialogBoundary`
+  (`cmdr/dialog-inside-boundary`). `DETAILS.md` § Error boundaries.
 - ❌ Before hand-rolling a control or dialog/window chrome, reach for the `lib/ui` primitive (`ModalDialog`, `Checkbox`,
   `Select`, `Combobox`, …) and check Debug > Components. Never a raw `<input type=checkbox|radio>` / `<select>`, a
   `<button>` / `<div>` wearing `role=switch|checkbox|radio`, nor a `<button>` around a lone `<Icon name="info">`
   (`InfoTip`, or `StatusGlyph` if unfocusable). `cmdr/prefer-ui-primitive`; opt out per element, with reason. New
   primitive: `docs/guides/building-ui.md`.
-- Loading remote content (`fetch`, `iframe`)? Ask whether to disable it in dev, where `withGlobalTauri: true` makes
-  remote content a security risk.
+- Remote content (`fetch`, `iframe`)? Ask about disabling it in dev: `withGlobalTauri: true` makes it a security risk.
 - ❌ No `import.meta.env.DEV` in a `.svelte` script (it blinds knip): `isDevBuild()` from `#lib/app-mode`. `{#if}`
   markup keeps the literal. `DETAILS.md` § Dev gates.
 - **`app.html`'s boot guard is ES5 on purpose**: one ES6 token kills it silently on old Safari, and `pnpm dev` won't

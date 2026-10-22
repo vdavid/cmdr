@@ -4,8 +4,9 @@ Reusable components (Ark UI backs the complex ones); silent-breakage rules only.
 
 ## Module map
 
-- Dialogs: `ModalDialog.svelte` (overlay + drag + Escape + focus + MCP tracking), `focus-trap.ts` (`use:trapFocus`),
-  `dialog-registry.ts` (`SOFT_DIALOG_REGISTRY`), `AlertDialog.svelte`, `focus-restore.ts` (❌ never restore focus bare).
+- Dialogs: `ModalDialog.svelte` (overlay+drag+Escape+focus+MCP tracking), `focus-trap.ts` (`use:trapFocus`),
+  `dialog-registry.ts`, `AlertDialog.svelte`, `focus-restore.ts` (❌ never restore focus bare),
+  `boundary/DialogBoundary.svelte` (`apps/desktop/src/DETAILS.md` § Error boundaries).
 - The house menu: `Menu.svelte` + `createMenu` (`menu-controller.svelte.ts`), over `menu-navigation.ts` /
   `menu-reorder.ts`. ❗ A `.svelte.ts` may never case-collide with a component. DETAILS § Menu.
 - The primitives (`Icon`, `Spinner`, `Button`, `ColumnList`, form controls, `Select`, `Combobox`, text fields,

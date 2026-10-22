@@ -27,8 +27,9 @@ their helper siblings are listed in `DETAILS.md` § File map.
 - **The snapshot pane (`volumeId === 'search-results'`) couples six points**; skip one and selection, the path, delete,
   the MCP mirror, sort, or the footer's counts silently break. Its path must ❌ never reach disk, and only the
   `{ snapshot }` arm may open one.
-- **Every dialog renders inside ONE `<svelte:boundary>` in `DialogManager.svelte`**: `show*` flips first and suppresses
-  pane keys, so a mid-render throw wedges the keyboard behind a blank screen.
+- **Every dialog renders inside ONE `DialogBoundary` in `DialogManager.svelte`, whose close dismisses them ALL**:
+  `show*` flips first and suppresses pane keys, so a throw would wedge the keyboard behind a blank screen. Each pane
+  sits in a `PaneBoundary` ABOVE its per-tab `{#key}` (`apps/desktop/src/DETAILS.md` § Error boundaries).
 - **Nav-state persistence fires from ONE subscriber** (`persistence-subscriber.svelte.ts`): mutate the store and let it
   react, ❌ never a scattered `saveAppStatus`.
 - **The `network` pane is the SERVERS HUB** (`NetworkMountView`): it owns its MCP push, so `pane-mcp-sync` skips it, and

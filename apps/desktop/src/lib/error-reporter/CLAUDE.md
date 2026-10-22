@@ -42,9 +42,9 @@ event into a confirmation toast, whose button reopens the SAME report for a note
   message. A component error toast MUST pass `report`. ❌ Never log at error level to make something reportable (that
   auto-sends). `DETAILS.md` § Report offers.
 - **Only the main window renders the dialog** (`(main)/+layout.svelte`, AFTER the page, so it opens over the dialogs
-  it's offered from). Other windows ask over `open-error-report`. The one exception is
-  `apps/desktop/src/routes/+error.svelte`: when the main window's page crashes, that layout is gone, so the crash page
-  hosts the dialog and its toasts itself.
+  it's offered from). Other windows ask over `open-error-report`. The one exception is `PageCrashPanel.svelte` (a
+  crashed window, shown by `+error.svelte` and the root `WindowBoundary`): that layout is gone, so the panel hosts the
+  dialog and its toasts itself.
 
 The two modes, the managed-off dialog, the Flow B toast, and the caps: `DETAILS.md`. Read it before any non-trivial work
 here: editing, planning, reorganizing, or advising.

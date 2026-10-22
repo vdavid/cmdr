@@ -137,3 +137,51 @@ file byte-identical, hashed filenames included. A move OUT of a component rewrit
 instead: extract every `(selector, property, value)` triple from the before and after bundles, normalize away the
 `.svelte-<hash>` classes and the added container prefix, and diff the sets. Anything that shows up on one side only is a
 rule you changed, not moved.
+
+## Error boundaries
+
+A component that throws while it renders, runs an effect, or tears down must never blank a window. Four layers of
+`<svelte:boundary>` make sure it can't, from the outside in:
+
+- **Window**: `#lib/error-reporter/WindowBoundary.svelte`, wrapping everything in `routes/+layout.svelte`. Every window
+  (main, Settings, viewer, queue, shortcuts, debug, the `/dev` pages) renders through that one layout, so one boundary
+  covers them all. Its failed state is `PageCrashPanel` ("Something went wrong in this window", technical details, a
+  report offer, Reload). Reload first re-arms in place with `reset()`, keeping the window's backend subscriptions; if
+  the window breaks again within five seconds of that, the next Reload reloads the webview.
+- **SvelteKit's per-route boundaries**: SvelteKit puts one around each route node below the root layout, and renders
+  `routes/+error.svelte` (the same `PageCrashPanel`) when a page throws while rendering. They catch most page throws
+  before the window boundary does; the window boundary takes the rest.
+- **Pane**: `#lib/file-explorer/pane/PaneBoundary.svelte`, one per file pane in `DualPaneExplorer`'s `paneBlock`. A
+  broken pane shows "This pane hit a problem" with Reload while the other pane, the tab bar, and every dialog keep
+  working. Switching tabs in the broken pane re-arms it too.
+- **Dialog**: `#lib/ui/boundary/DialogBoundary.svelte`. A broken dialog closes (through the host's `onClose`), a toast
+  says so, focus goes home (`focusHome()`), and the boundary re-arms on the next tick, capped at three re-arms inside
+  five seconds so a host whose close doesn't close can't spin. `DialogManager` puts ONE around every pane dialog, with
+  an `onClose` that dismisses them all, because a stray `show*` flag suppresses the pane's keys
+  (`lib/file-explorer/pane/DETAILS.md` § "A dialog that throws during render must never wedge input"). Every dialog a
+  route mounts gets its own.
+
+**Why a boundary has to sit ABOVE what it guards.** Svelte routes a throw from an effect's teardown to the nearest LIVE
+ancestor boundary and skips one that is itself being destroyed (`execute_effect_teardown` → `invoke_error_boundary`,
+verified on Svelte 5.57.2 by reading `internal/client/reactivity/effects.js` and `error-handling.js`, 2026-10-22). So a
+dialog's boundary wraps the `{#if}` that mounts it, and the pane's wraps the per-tab `{#key}` that remounts it: a
+boundary inside them is torn down along with what it guards, and the throw goes over its head to the window. That's how
+a `derived_references_self` thrown while the Multi-rename sheet closed blanked the main window.
+
+**The rule for new code.** A new window route needs nothing: the root layout covers it. A new dialog mounted from a
+route goes in its own `<DialogBoundary name=… onClose=…>` around its `{#if}`; `cmdr/dialog-inside-boundary`
+(`apps/desktop/eslint-plugins/dialog-inside-boundary.js`) fails the lint on one that isn't. `onClose` clears whatever
+state mounts the dialog, usually its own close handler. Leave it out only for a dialog that owns its visibility and
+starts closed when remounted (`StaleDriveDialog`). A dialog holding a paused operation's question
+(`OperationConflictDialog`, `SourcesGonePrompt`, `LockedSourcesPrompt`) closes by cancelling that operation, since
+nothing can answer it once its dialog is gone; the quit prompt calls the quit off.
+
+**Reporting.** Each boundary's `onerror` logs the throw at error level, naming the boundary that caught it, so it lands
+in the log file, error-report bundles, and an opted-in auto-send. SvelteKit also hands every boundary throw to
+`hooks.client.ts`, which logs it with its frames and turns it into the `{ message, detail }` the boundary receives
+(`lib/logging/DETAILS.md`). Boundaries never see throws in event handlers, timers, or promise callbacks: those reach the
+global `app·uncaught` logger (`lib/logging/uncaught-errors.ts`) and leave the UI as it was.
+
+Tests: `DialogBoundary.svelte.test.ts`, `PaneBoundary.svelte.test.ts`, and `WindowBoundary.svelte.test.ts` each mount a
+component that throws while rendering and one that throws while tearing down (`test/fixtures/`), and assert the host
+survives and reports.

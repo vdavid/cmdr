@@ -995,7 +995,7 @@ below rather than merely spreading lines:
   answer a skipped one gives.
 
 `dialog-state.svelte.ts` keeps birth context, the confirmation / alert / error dialogs, and the cross-cutting queries
-(`anyDialogOpen`, `isConfirmationDialogOpen`, `dismissAllAfterRenderFailure`).
+(`anyDialogOpen`, `isConfirmationDialogOpen`, `dismissAllAfterDialogFailure`).
 
 **An MCP `dialog confirm` on the transfer or delete dialog presses the dialog's own confirm**, ❌ never a payload built
 from `transferDialogProps` / `deleteDialogProps`. The mounted `TransferDialog` registers its `handleConfirm` through
@@ -1188,22 +1188,21 @@ adopted view's snapshots stay correct without the view knowing anything. Why tha
 fatter completion event: `#lib/search/DETAILS.md` § "Cross-snapshot purge". Both families are pinned against reaching
 for the store in `dialog-state.foreground.svelte.test.ts`.
 
-**A dialog that throws during render must never wedge input.** Every dialog renders inside one `<svelte:boundary>` in
-`DialogManager.svelte`. Opening a dialog sets its `show*` flag BEFORE anything renders, and `isConfirmationDialogOpen()`
-suppresses the pane's keyboard while that flag is true, so a dialog that throws mid-render leaves the user with no keys
-and nothing on screen to escape from. (Lived case: a doubly-mounted NAS put two volumes carrying one id into the
-transfer dialog's destination `{#each}`; Svelte threw `each_key_duplicate` during the flush and F6 killed the keyboard.)
-The boundary's `onerror` calls `dialogs.handleDialogRenderFailure(error)` (the error arrives as SvelteKit's
-`{ status, message }`, whose message `apps/desktop/src/hooks.client.ts` makes `Name: message`; the hook logs the
-original with its frames), which logs through the app's error path, toasts the user, and clears EVERY `show*` flag
-(`dismissAllAfterRenderFailure`, wider than `closeConfirmationDialog`) before refocusing the pane. It then re-arms the
-boundary with `reset()` on a `setTimeout(0)`: without a reset the boundary stays failed and no dialog opens again for
-the rest of the session, and the deferral lets the dismissal flush first so the retry renders nothing rather than the
-same throw. A cap of three failures inside a five-second window stops a re-render loop while still letting a later,
-unrelated failure recover. `setTimeout(0)`, ❌ never `requestAnimationFrame`: macOS throttles it in unfocused windows
-(`docs/testing.md`). The `failed` snippet is deliberately empty: by the time it renders there is no dialog left to show.
-Pinned by `DialogManager.svelte.test.ts` (the boundary catches, through the real component) and
+**A dialog that throws during render must never wedge input.** Every dialog renders inside one `DialogBoundary`
+(`#lib/ui/boundary/DialogBoundary.svelte`) in `DialogManager.svelte`. Opening a dialog sets its `show*` flag BEFORE
+anything renders, and `isConfirmationDialogOpen()` suppresses the pane's keyboard while that flag is true, so a dialog
+that throws mid-render leaves the user with no keys and nothing on screen to escape from. (Lived case: a doubly-mounted
+NAS put two volumes carrying one id into the transfer dialog's destination `{#each}`; Svelte threw `each_key_duplicate`
+during the flush and F6 killed the keyboard.) So the boundary's `onClose` is `dialogs.dismissAllAfterDialogFailure()`,
+which clears EVERY `show*` flag (wider than `closeConfirmationDialog`) and refocuses the pane. The boundary itself
+reports, toasts, and re-arms on the next tick (capped), which is what lets the next dialog open at all; the shared
+mechanics, and why the boundary must sit above every `{#if}` it guards, are in `apps/desktop/src/DETAILS.md` § "Error
+boundaries". Pinned by `DialogManager.svelte.test.ts` (the boundary catches, through the real component) and
 `dialog-state.render-failure.svelte.test.ts` (the keyboard is un-suppressed and every dialog is cleared).
+
+**Each pane sits in its own `PaneBoundary`**, wrapped around the per-tab `{#key}` in `DualPaneExplorer`'s `paneBlock`. A
+pane that throws shows "This pane hit a problem" with Reload; the other pane, the tab bar, and every dialog keep
+working, and switching tabs re-arms it (`resetKey` is the active tab id). Same section of `apps/desktop/src/DETAILS.md`.
 
 **Live disk space.** `FilePane` registers each pane independently with the backend space poller (`watchVolumeSpace`
 keyed by pane ID). Two panes on the same volume have independent registrations; one navigating away doesn't unwatch the
