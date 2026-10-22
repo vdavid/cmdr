@@ -2067,7 +2067,9 @@
       "moved up",
       "moved down",
       "operations can move",
-      "move up"
+      "move up",
+      "move the file up",
+      "move the file down"
     ],
     "sense": "Relocating files to another folder (F6)."
   },

@@ -1962,8 +1962,6 @@
     "confidence": "high",
     "exceptions": {
       "commands.editUndoTrash.description": "English-sense: moving to the trash is placer dans la corbeille.",
-      "commands.multiRenameMoveRowDown.label": "English-sense: reordering a row, so Reculer, like commands.queueMoveLater.label and menu.queue.moveDown.",
-      "commands.multiRenameMoveRowUp.label": "English-sense: reordering a row, so Avancer, like commands.queueMoveEarlier.label and menu.queue.moveUp.",
       "settings.dataWipe.doneMessage": "English-sense: moving to the trash is placer dans la corbeille.",
       "errors.mutation.trashRefused": "English-sense: moving to the trash is placer dans la corbeille.",
       "errors.write.fallback.message.trash": "English-sense: moving to the trash is placer dans la corbeille.",

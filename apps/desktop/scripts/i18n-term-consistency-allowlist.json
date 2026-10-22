@@ -10,6 +10,10 @@
         "reason": "Two different checks. `Wird geprüft …` checks a connection or a key (`ai.cloud.checking`, `licensing.dialog.checking`); `Wird gesucht …` is macOS Software Update's own idiom for checking for updates (Nach Updates suchen), so `updates.status.checking` follows Apple. `docs/i18n/de/decisions.md` § Ein englisches Wort, ein deutsches Wort."
       },
       {
+        "source": "Start",
+        "reason": "Two different things in Multi-rename. `Startwert` is the counter's first number (`multiRename.counterEditor.start`, beside `Schrittweite` and `Stellen`); `Anfang` is the first edge of a character range (`multiRename.rangeEditor.start`, paired with `Ende` and the `Von vorn`/`Von hinten` options). A range edge isn't a value, and `Startwert` beside `Ende` would read as a number field."
+      },
+      {
         "source": "Dismiss",
         "reason": "`Schließen` closes a dialog, toast, or notice that can come back; `Ausblenden` hides a queue row (`queue.row.dismiss`) or a hint line (`adb.hint.dismiss`) for good. A row can't be closed, and the @key says nothing is undone, retried, or deleted. The `dismiss` ruling in `docs/i18n/de/terms.json`."
       },
@@ -56,6 +60,14 @@
       {
         "source": "Modified",
         "reason": "`Modificación` is Finder's date column (Fecha de modificación) and every date filter; `Modificados` filters the shortcuts the user changed, a masculine plural agreeing with `atajos`, with no date involved."
+      },
+      {
+        "source": "Move down",
+        "reason": "`Retrasar` moves a waiting operation later in the queue's run order (`menu.queue.moveDown`); `Bajar` moves a preset one place down a list, swapping its 1–9 number with the one below (`multiRename.presets.moveDown`). A preset isn't scheduled, so `Retrasar` would read as \"do it later\"."
+      },
+      {
+        "source": "Move up",
+        "reason": "`Adelantar` moves a waiting operation earlier in the queue's run order (`menu.queue.moveUp`); `Subir` moves a preset one place up a list, swapping its 1–9 number with the one above (`multiRename.presets.moveUp`). A preset isn't scheduled, so `Adelantar` would read as \"do it sooner\"."
       },
       {
         "source": "Search",
@@ -154,6 +166,10 @@
         "reason": "The dialog title asks the user (`Elküldöd a jelentést?`, the house form for question titles); the button is the nominal `Jelentés küldése`."
       },
       {
+        "source": "Start",
+        "reason": "Two different things in Multi-rename. `Kezdőérték` is the counter's first number (`multiRename.counterEditor.start`, beside `Lépésköz` and `Számjegyek`); `Eleje` is the first edge of a character range (`multiRename.rangeEditor.start`, paired with `Vége` and the `Elölről`/`Hátulról` options). A range edge isn't a value."
+      },
+      {
         "source": "Something went wrong, and Cmdr couldn’t tell what",
         "reason": "`errors.eject.unexpected` follows the eject wrapper `Nem sikerült kiadni: …`, where the settled `Valami nem sikerült` would repeat itself, so it says `A Cmdr problémába ütközött, …`. See `docs/i18n/hu/decisions.md` § Kiadás és leválasztás."
       },
@@ -196,6 +212,14 @@
         "reason": "`Bewerkingsdatum` is Finder's Date Modified column and the date filters. The keyboard-shortcuts filter means shortcuts the user changed, with no date involved, so it takes `Gewijzigd`."
       },
       {
+        "source": "Move down",
+        "reason": "`Schuif naar achteren` moves a waiting operation later in the queue's run order (`menu.queue.moveDown`); `Schuif omlaag` moves a preset one place down a list, swapping its 1–9 number with the one below (`multiRename.presets.moveDown`). A preset isn't scheduled, so `naar achteren` would read as \"do it later\"."
+      },
+      {
+        "source": "Move up",
+        "reason": "`Schuif naar voren` moves a waiting operation earlier in the queue's run order (`menu.queue.moveUp`); `Schuif omhoog` moves a preset one place up a list, swapping its 1–9 number with the one above (`multiRename.presets.moveUp`). A preset isn't scheduled, so `naar voren` would read as \"do it sooner\"."
+      },
+      {
         "source": "Running",
         "reason": "`Bezig` is an operation or task in progress (the queue's state word). `Actief` is a local AI server process that is up, which Dutch doesn't call `bezig`."
       },
@@ -222,6 +246,10 @@
       {
         "source": "Show hidden files",
         "reason": "The View-menu item is the imperative `Toon verborgen bestanden`; the Settings checkbox label is infinitive-last, `Verborgen bestanden tonen`, the house form of every settings label."
+      },
+      {
+        "source": "Start",
+        "reason": "Two different things in Multi-rename. `Beginnummer` is the counter's first number (`multiRename.counterEditor.start`, beside `Stapgrootte` and `Cijfers`); `Begin` is the first edge of a character range (`multiRename.rangeEditor.start`, paired with `Einde` and the `Vanaf het begin`/`Vanaf het einde` options). A range edge isn't a number."
       },
       {
         "source": "Undo",
@@ -302,9 +330,17 @@
       {
         "source": "Zoom",
         "reason": "Finder splits them: the text-zoom submenu is the noun `Zoom`, Window > Zoom is the verb `Zooma`."
+      },
+      {
+        "source": "Start",
+        "reason": "Two different things in Multi-rename. `Startvärde` is the counter’s first number (`multiRename.counterEditor.start`, beside `Steg` and `Antal siffror`); `Början` is the first edge of a character range (`multiRename.rangeEditor.start`, paired with `Slut` and the `Från början`/`Från slutet` options). A range edge isn’t a number, and `Startvärde` beside `Slut` would read as a number field."
       }
     ],
     "vi": [
+      {
+        "source": "Start",
+        "reason": "Two different things in Multi-rename. `Số bắt đầu` is the counter's first number (`multiRename.counterEditor.start`, beside the step and digits fields); `Điểm đầu` is the first edge of a character range (`multiRename.rangeEditor.start`, paired with `Điểm cuối` and the `Tính từ đầu`/`Tính từ cuối` options). A range edge isn't a number, and `Số bắt đầu` beside `Điểm cuối` would read as a number field."
+      },
       {
         "source": "Archived",
         "reason": "Two senses of one English word. `askCmdr.sessions.archivedBadge` marks a chat the user put away (`Đã lưu trữ`, stored away); `fileExplorer.archivedFile.label` marks a file in an S3 cold-storage class that must be restored before it can be read (`Lưu trữ lạnh`, cold storage). Using the chat's word on the file hides why it won't open."
@@ -356,6 +392,10 @@
         "reason": "`选择` is the verb and the menu-bar title; `请选择` is the dropdown placeholder (English `Select...`), a prompt that nothing is chosen yet."
       },
       {
+        "source": "Start",
+        "reason": "Two Multi-rename controls. The counter editor's Start is the NUMBER the counter begins at, `起始值` (Total Commander zh-CN, with `步长` / `位数`); the range editor's Start is the first chosen character's POSITION, paired with End as `起点` / `终点`, and also names the drag handle. `起始值` would read as a number field there."
+      },
+      {
         "source": "Unreachable",
         "reason": "`无法连接` is a host the network browser can't connect to; `无法访问` is a tab whose folder or volume can't be reached, where there may be no connection at all (an ejected drive)."
       },
@@ -373,6 +413,10 @@
       }
     ],
     "zh-Hant": [
+      {
+        "source": "Start",
+        "reason": "Two different things in Multi-rename. `起始值` is the counter's first number (`multiRename.counterEditor.start`, beside the step and digits fields); `起點` is the first edge of a character range (`multiRename.rangeEditor.start`, paired with `終點` and the `從開頭算`/`從結尾算` options). A range edge isn't a number, and `起始值` beside `終點` would read as a number field."
+      },
       {
         "source": "App",
         "reason": "Two senses of one English word. The Settings colour options mean the app AS A SOURCE of a colour (kept as the Latin `App`, per the brand-word rule); the shortcuts scope means `in-app`, which needs `App 內` to contrast with the system-wide scope beside it."
