@@ -2029,7 +2029,8 @@
     "decision": "A move that could not be confirmed",
     "exceptions": {
       "errors.eject.busy": "the message also covers copying and deleting, so it names the Vorgang, not Cmdr’s Move command",
-      "errors.write.moveNotConfirmed.suggestion": "es points back at the move named in the title; Your originals haven’t moved → liegen noch dort, wo sie waren"
+      "errors.write.moveNotConfirmed.suggestion": "es points back at the move named in the title; Your originals haven’t moved → liegen noch dort, wo sie waren",
+      "multiRename.movedRow": "reordering a row in the preview list, not relocating a file; the announcement names only the new place (Jetzt an Position …), like the rücken family of the move-up/down keys"
     },
     "forms": "button Bewegen; progress Wird bewegt; the one move as a noun → die Bewegung, the act → das Bewegen; moves as an enumerated noun has no German noun, so enumerate verbs (umzubenennen, zu bewegen und aufzuräumen)",
     "note": "Don't use bewegen for a message that also covers copying and deleting: say Vorgang there.",
@@ -3795,6 +3796,9 @@
   "space-key": {
     "chosen": "Leertaste",
     "confidence": "high",
+    "exceptions": {
+      "multiRename.rangeEditor.space": "the space CHARACTER in a file name, read aloud in place of a letter, not the key → Leerzeichen (Double Commander, TC 135)"
+    },
     "forms": "⇧Leertaste for the chord; prose → die Leertaste; compounds Leertasten-Hinweis",
     "sources": "macOS AppKit FunctionKeyNames (Space), SystemSettings Siri/Spotlight SPACEBAR_KEY → Leertaste; AppKit Date Picker help (die Leertaste); TC 5139 (beim Markieren mit der Leertaste); Double Commander [Leertaste]"
   },

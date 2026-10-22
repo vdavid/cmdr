@@ -693,7 +693,7 @@
   "@multiRename.rangeEditor.space": {
     "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. What a screen reader says for a space character in the name, where it would read the letter. A NOUN, lowercase."
   },
-  "multiRename.rangeEditor.keys": "← → move it, ⇧ moves the end, ⌥ the start",
+  "multiRename.rangeEditor.keys": "← → move the selection, ⇧ its end, ⌥ its start",
   "@multiRename.rangeEditor.keys": {
     "description": "In the Multi-rename sheet, the range editor is a small popover under a range placeholder such as [N], [N2-5], or [E] in the name or extension mask (it opens with the down arrow key while the text cursor is in the placeholder, or when the text cursor or the mouse rests on it). It shows one file’s name (or extension, or folder name) as a row of letters the user drags across to pick which characters go into the new name, with options for how the placeholder counts them and a few files showing what it takes from each. Quiet hint under the row of letters: the left and right arrow keys move the chosen characters, with Shift held they move only the last one, with Option held only the first one. Keep the arrow and key symbols as they are."
   },

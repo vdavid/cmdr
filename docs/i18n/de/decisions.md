@@ -855,3 +855,8 @@ Apple's Dock menu (`Dock.app/Contents/Resources/de.lproj/DockMenus.strings`) sup
 ## Tooltips im Mehrfach-Umbenennen (`multiRename.placeholderHelp.*`, `multiRename.searchOptionHelp.*`)
 
 - `Ein`/`Aus` wie `settings.*`; caret → `Einfügemarke` (macOS 27 AppKit); `Beginnt mit` wie Finders Umbenennen.
+
+## Bereichseditor (`multiRename.rangeEditor.*`)
+
+- `Anfang`/`Ende` mit `Von vorn`/`Von hinten` statt „Ende: Vom Ende“; `#. von hinten` statt „3.-letzte“; take →
+  `übernehmen`; grandparent → `Ordner darüber`; Zeilen umordnen → `nach vorn/hinten rücken` wie `menu.queue.moveUp`.
