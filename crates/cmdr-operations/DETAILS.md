@@ -204,7 +204,8 @@ The full top-level inventory is here:
   `WriteOperationState::transfer_tree` once a copy's, move's, or compress's scan is done; `tree_view.rs` answers
   `get_transfer_tree_view` from it. Conflicts and overwrite: `conflict.rs` (policy), `conflict_preflight.rs` (the
   transfer dialog's BEFORE-the-write check, § "The pre-flight conflict check"), `unique_name.rs` (the ` (N)` namer),
-  `conflict_slot.rs` (the one-answer-wins slot behind `resolve_write_conflict`), `overwrite.rs` (tests in
+  `conflict_slot.rs` (the one-answer-wins slot behind `resolve_write_conflict`), `conflict_policy_cell.rs` (the policy a
+  running copy or move reports, § "The live policy and the start time a row reports"), `overwrite.rs` (tests in
   `overwrite_tests.rs`), `look_alike.rs` (a name a byte-exact volume holds in another Unicode spelling, and where a new
   folder, file, or rename target goes; § "Look-alike names"). Cancellation and durability: `cancellable.rs`,
   `rollback.rs`, `durability.rs`. `rollback.rs` wears two hats: the history dialog's reversal, and the executor the
@@ -1601,6 +1602,25 @@ deleted.
 
 A retained failure keeps the field (`retain_failure` copies it off the live record), so a reversal that stopped early
 still reads as a reversal on the row that explains why.
+
+### The live policy and the start time a row reports (`conflict_policy`, `started_at`)
+
+Two snapshot fields aren't on the descriptor, because they aren't fixed at registration. `OperationManager::list` joins
+them in after it releases the records lock, for live rows only (a retained failure reports `None` for both):
+
+- **`conflict_policy`**: what a copy or move does with a name already taken at the destination, as it runs NOW. It lives
+  on the operation's state (`conflict_policy_cell.rs`), starts on the confirmed policy (`with_conflict_policy`, set by
+  the local, cross-volume, and same-volume starters; `None` for everything else), and changes when a person answers a
+  Stop prompt with "… all". Both Stop arms record the answer through `conflict::record_answer`, which latches it and
+  hands the SAME-KIND bucket to the cell (`ApplyToAll::blanket`). The cross-type buckets stay out on purpose: they
+  answer narrower questions a one-line caption can't word, and they never widen the policy for ordinary clashes. A
+  change re-broadcasts `operations-changed` once (the cell holds a `Weak` to the manager, attached in `spawn_managed`);
+  a repeat of the same answer says nothing. Why the snapshot and not the start config: a progress dialog ADOPTED from
+  the queue never saw the config (`apps/desktop/src/lib/file-operations/transfer/DETAILS.md` § "The conflict-policy
+  caption").
+- **`started_at`**: Unix ms when the manager admitted the operation, which is the status cache's existing
+  `OperationStatus::started_at` stamp (`StatusCache::register` runs at admission). `None` while queued. The progress
+  dialog's done state times the operation off it, so an adopted dialog can say how long it took too.
 
 ### Rollback availability (`rollback_support`)
 

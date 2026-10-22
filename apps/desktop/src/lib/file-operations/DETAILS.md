@@ -537,10 +537,12 @@ reflex Enter never reverses anything.
 
 **Raised by the surface, not the session.** Four hosts hold the pending question in their own `$state`
 (`TransferProgressDialog`, `OperationConflictDialog`, `QueueRow`, and `#lib/operation-log/OperationLogDialog.svelte`),
-each stacking the dialog over itself; the session stays a command surface with no view in it. In the first two the
-question stacks over a dialog from the same subtree, which is what DOM order and the trap stack already handle
-(`#lib/ui/DETAILS.md` § ModalDialog). The queue window raises its own copy — a soft dialog, ❌ never a native `ask`,
-which would need a capability the queue window deliberately drops and would be undriveable from the E2E suite.
+each stacking the dialog over itself; the progress dialog asks it twice, for its in-flight Rollback and for its done
+state's Undo of the finished operation (`transfer/DETAILS.md` § "The done state"); the session stays a command surface
+with no view in it. In the first two the question stacks over a dialog from the same subtree, which is what DOM order
+and the trap stack already handle (`#lib/ui/DETAILS.md` § ModalDialog). The queue window raises its own copy — a soft
+dialog, ❌ never a native `ask`, which would need a capability the queue window deliberately drops and would be
+undriveable from the E2E suite.
 
 **All four variants sit in the dialog gallery** (Debug > Soft dialogs), one state each, because getting one of four
 confirmations wrong is a copy problem you can only catch by reading them side by side.

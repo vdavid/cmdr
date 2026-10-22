@@ -110,7 +110,12 @@ live here:
   stalled-transfer notice").
 - **`TransferConflictsSection.svelte` is the setup dialog's "files already exist" block** ("couldn't find out", the
   merge and clash lines, the policy radios, and their notes). Presentational: `TransferDialog.svelte` owns the conflict
-  check and the policy rules (§ "The remembered conflict policy") and hears each pick through `onPick`.
+  check and the policy rules (§ "The remembered conflict policy") and hears each pick through `onPick`. Its radio list
+  lives in `conflict-policy-labels.ts`, which the progress dialog's caption words its policy from too (§ "The
+  conflict-policy caption").
+- **The done state is four files** (§ "The done state"): `transfer-progress-state.svelte.ts` holds it (`done`,
+  `closeDone`), `transfer-done-summary.ts` words the title and figures, `TransferDoneSummary.svelte` renders the lines
+  under the bars, and `transfer-done-undo.svelte.ts` is the Undo controller.
 - **`ScanPhaseBody.svelte` is shared by the progress dialog and the queue row** (`comfortable` and `compact` densities),
   so a change to it lands on both surfaces.
 - **`transfer-complete-toast.ts::composeTransferCompleteToast` splits TOP-LEVEL items by type only** ("Moved 1 file and
@@ -1254,6 +1259,57 @@ session's progress tick (`progress.progressTick`), 8 rows tall at most before a 
 - **❌ No tree during a reversal** (an in-flight rollback or an adopted undo): its rows would still say "done" about
   files that are going away. A clash replaces the body as before, so the tree remounts after it; `treeMemory`
   (`createTransferTreeMemory`) brings it back as the user left it: hand toggles, following, scroll, and height.
+
+## The conflict-policy caption
+
+A copy or move's progress dialog says, in one quiet line under the from → to names, what happens to a file that already
+exists at the destination: "If a file already exists: Overwrite if older" (#483).
+
+- **The source is the operation's registry row** (`OperationSnapshot.conflictPolicy`, through
+  `progress.conflictPolicy`), ❌ never the dialog's `conflictResolution` prop. An ADOPTED dialog has no birth config at
+  all, and the policy changes mid-run: a clash answered with "… all" latches a new one, and the backend re-broadcasts
+  the row (`crates/cmdr-operations/DETAILS.md` § "The live policy and the start time a row reports"). A dispatching
+  dialog shows its own confirmed policy only for the frames before the first snapshot lands, where the two are the same
+  answer.
+- **The wording is the setup dialog's own**: `conflict-policy-labels.ts` holds the radios list
+  `TransferConflictsSection` renders, and the caption picks the radios' count-free form ("Overwrite if smaller", "Ask
+  for each"), so one policy can't read two ways across the two dialogs. Rename has no radio (only a clash's "Rename all"
+  reaches it), so it takes that button's word.
+- Copy and move only. Compress swaps the policy for a dest-exists check, and delete, trash, and archive edits have none
+  (their rows report `null`). The queue row doesn't show it yet.
+
+## The done state
+
+With "Keep the progress window open when a file operation finishes" on (`fileOperations.keepProgressOpenWhenDone`, off
+by default, #484), a COMPLETED operation keeps its progress dialog up until the person closes it. Errors and cancels
+keep their own flows, and a backgrounded operation has no dialog to keep. It applies to an adopted dialog too.
+
+- **The parent hears the completion at once, and the unmount later.** `reportCompletion` reads the setting at the moment
+  of completion, sets `done`, and calls `onComplete(payload, { keptOpen: true })` with no anti-flicker floor (nothing is
+  about to vanish), so the panes refresh and the selection clears while the summary is read. The dialog comes down on
+  `onDoneClosed`, from `closeDone()`: Close, Enter (outside a button, so Undo stays Undo), Escape, ×, and an MCP close
+  (a `detach()` on a done dialog is a close). The single-shot `closed` latch covers it like every other way out. The
+  parent (`../../file-explorer/pane/dialog-state.svelte.ts`) holds a duplicate's rename editor until then, so it doesn't
+  open under the modal.
+- **What it shows**: a past-tense title off `WriteCompleteEvent` that counts what the operation DID, skips excluded
+  ("Copied 1,234 files", "Nothing copied" when all were skipped); both bars full from the completion's own counts, with
+  no rate or time left; the #483 caption; the tree, when it was showing; then `TransferDoneSummary`: size, time, and
+  average speed (time from the snapshot's `startedAt`, the admission stamp, so an adopted dialog has it too; under a
+  second or unknown, the size alone), the conflict skips ("Skipped 12 files that already existed"), and what the OS
+  refused to trash, in the trash toast's own words.
+- **Toasts stay quiet about what the dialog says** (`planCompletionToasts`, shared by the started and adopted arms): no
+  plain completion toast and no refused-trash toast while kept open, but one that carries something the dialog doesn't
+  (items a move left behind, metadata the destination couldn't keep, Locked items) still raises, and so does the
+  durability warning. A trash is still remembered for Edit > Undo trash. The foreground slot stays held until the dialog
+  unmounts, so the corner chip doesn't announce it either.
+- **Undo is the operation log's finished-operation rollback, ❌ never a second path** (`transfer-done-undo.svelte.ts`).
+  It waits for `write-settled` (journal rows are readable only then), reads the row with `getOperationLogDetail`, offers
+  exactly what `rowRollbackAction` admits, asks through `RollbackConfirmDialog` with the variant the JOURNAL's kind
+  picks, and dispatches `rollbackOperation`. On success the dialog closes and the reversal runs as its own queued
+  operation, the way the history dialog dispatches and lets go (`#lib/operation-log/DETAILS.md` § "The rollback flow");
+  a refusal is worded under the summary and the dialog stays. Before the row is readable, or when it says no, the button
+  is `aria-disabled` with the reason. Offered for copy, move, trash, and compress with the operation log recording; ❌
+  never for a delete (nothing to restore), an archive edit, or a reversal.
 
 ## Pause, Queue, and auto-queue (progress dialog)
 

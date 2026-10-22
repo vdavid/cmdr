@@ -1068,7 +1068,10 @@ the user already supplied it. Contract: `../../file-operations/transfer/DETAILS.
 
 A transfer that duplicated ONE item in the folder it already lived in can end by opening the inline rename editor on the
 copy. `handleTransferComplete` runs that tail last and unawaited, through `duplicate-rename.ts`, and only there: a
-cancel and a failure reach their own handlers, so "a duplicate that didn't complete gets no editor" needs no check.
+cancel and a failure reach their own handlers, so "a duplicate that didn't complete gets no editor" needs no check. A
+progress dialog kept open on its done state (`{ keptOpen: true }`) runs the pane tail at once but holds the editor until
+`handleTransferDoneClosed`, so it never opens under the modal (`#lib/file-operations/transfer/DETAILS.md` § "The done
+state"). The adopted arm has its own `handleAdoptedDoneClosed`, with no pane work either way.
 
 Three things hold it together:
 
