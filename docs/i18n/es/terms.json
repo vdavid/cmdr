@@ -1910,6 +1910,9 @@
       }
     ],
     "confidence": "high",
+    "exceptions": {
+      "multiRename.movedRow": "a screen-reader line after reordering a preview row, not relocating a file; says where the row now is (Ahora en la posición…)"
+    },
     "sources": "macOS Finder (label sense)"
   },
   "move-to-trash": {

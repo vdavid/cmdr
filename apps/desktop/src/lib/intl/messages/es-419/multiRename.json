@@ -55,6 +55,10 @@
   "@multiRename.presets.clash": {
     "sourceHash": "0699f6f"
   },
+  "multiRename.presets.listFull": "Ya tienes {max, number} preconfiguraciones, el máximo que guarda Cmdr. Elimina una para guardar esta.",
+  "@multiRename.presets.listFull": {
+    "sourceHash": "ecfb4c5"
+  },
   "multiRename.presetName": "Nombre de la preconfiguración",
   "@multiRename.presetName": {
     "sourceHash": "f1afbfd"
@@ -66,6 +70,10 @@
   "multiRename.results.discard": "Volver a usar la configuración",
   "@multiRename.results.discard": {
     "sourceHash": "3f96e0a"
+  },
+  "multiRename.placeholderHelp.rangeEditHint": "Pon el cursor de texto en un marcador como [N] y presiona ↓ para elegir sus caracteres.",
+  "@multiRename.placeholderHelp.rangeEditHint": {
+    "sourceHash": "b39aa02"
   },
   "multiRename.error.couldntWriteNames": "No se pudo escribir la lista de nombres. Comprueba que tu disco de arranque tiene espacio libre.",
   "@multiRename.error.couldntWriteNames": {

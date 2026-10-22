@@ -656,11 +656,11 @@
   "@commands.multiRenameFieldHistory.label": {
     "sourceHash": "75fb21f"
   },
-  "commands.multiRenameMoveRowUp.label": "Move the file up in the rename order",
+  "commands.multiRenameMoveRowUp.label": "Subir el archivo en el orden de cambio de nombre",
   "@commands.multiRenameMoveRowUp.label": {
     "sourceHash": "d476ae3"
   },
-  "commands.multiRenameMoveRowDown.label": "Move the file down in the rename order",
+  "commands.multiRenameMoveRowDown.label": "Bajar el archivo en el orden de cambio de nombre",
   "@commands.multiRenameMoveRowDown.label": {
     "sourceHash": "b4c44b3"
   },

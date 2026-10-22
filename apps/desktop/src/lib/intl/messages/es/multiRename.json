@@ -135,11 +135,11 @@
   "@multiRename.presets.update": {
     "sourceHash": "1bae4e4"
   },
-  "multiRename.presets.moveUp": "Move up",
+  "multiRename.presets.moveUp": "Subir",
   "@multiRename.presets.moveUp": {
     "sourceHash": "c66feb5"
   },
-  "multiRename.presets.moveDown": "Move down",
+  "multiRename.presets.moveDown": "Bajar",
   "@multiRename.presets.moveDown": {
     "sourceHash": "40bb50d"
   },
@@ -167,7 +167,7 @@
   "@multiRename.presets.clash": {
     "sourceHash": "7b084a2"
   },
-  "multiRename.presets.listFull": "You have {max, number} presets, the most Cmdr keeps. Delete one to save this.",
+  "multiRename.presets.listFull": "Ya tienes {max, number} preajustes, el máximo que guarda Cmdr. Elimina uno para guardar este.",
   "@multiRename.presets.listFull": {
     "sourceHash": "36531ed"
   },
@@ -175,7 +175,7 @@
   "@multiRename.presets.replace": {
     "sourceHash": "95e1543"
   },
-  "multiRename.preset.dateAndTime": "Date and time",
+  "multiRename.preset.dateAndTime": "Fecha y hora",
   "@multiRename.preset.dateAndTime": {
     "sourceHash": "a079c3b"
   },
@@ -291,7 +291,7 @@
   "@multiRename.results.editing": {
     "sourceHash": "0a54cdc"
   },
-  "multiRename.movedRow": "Moved to {positionText} of {totalText}",
+  "multiRename.movedRow": "Ahora en la posición {positionText} de {totalText}",
   "@multiRename.movedRow": {
     "sourceHash": "cc7f474"
   },
@@ -451,11 +451,11 @@
   "@multiRename.placeholderHelp.charRange": {
     "sourceHash": "60bd1e5"
   },
-  "multiRename.placeholderHelp.allButLast": "{count, plural, one {All but the last character} other {All but the last # characters}}",
+  "multiRename.placeholderHelp.allButLast": "{count, plural, one {Todo menos el último carácter} many {Todo menos los últimos # caracteres} other {Todo menos los últimos # caracteres}}",
   "@multiRename.placeholderHelp.allButLast": {
     "sourceHash": "1452dc2"
   },
-  "multiRename.placeholderHelp.charsFrom": "{count, plural, one {# character} other {# characters}}, starting at character {from}",
+  "multiRename.placeholderHelp.charsFrom": "{count, plural, one {# carácter} many {# caracteres} other {# caracteres}}, empezando por el carácter {from}",
   "@multiRename.placeholderHelp.charsFrom": {
     "sourceHash": "2308c77"
   },
@@ -495,7 +495,7 @@
   "@multiRename.placeholderHelp.isoDate": {
     "sourceHash": "d5d3357"
   },
-  "multiRename.placeholderHelp.dateSeparators": "Any parts, with dashes, dots, underscores, or spaces between them",
+  "multiRename.placeholderHelp.dateSeparators": "Las partes que quieras, con guiones, puntos, guiones bajos o espacios entre ellas",
   "@multiRename.placeholderHelp.dateSeparators": {
     "sourceHash": "a8192a0"
   },
@@ -531,159 +531,159 @@
   "@multiRename.placeholderHelp.counterEditHint": {
     "sourceHash": "6ba268e"
   },
-  "multiRename.rangeEditor.marker": "Choose characters",
+  "multiRename.rangeEditor.marker": "Elegir los caracteres",
   "@multiRename.rangeEditor.marker": {
     "sourceHash": "fdfe315"
   },
-  "multiRename.rangeEditor.title": "Characters to take",
+  "multiRename.rangeEditor.title": "Caracteres que tomar",
   "@multiRename.rangeEditor.title": {
     "sourceHash": "e1e72f0"
   },
-  "multiRename.rangeEditor.takeFrom": "Take from",
+  "multiRename.rangeEditor.takeFrom": "Tomar de",
   "@multiRename.rangeEditor.takeFrom": {
     "sourceHash": "b5b4632"
   },
-  "multiRename.rangeEditor.field.name": "Name",
+  "multiRename.rangeEditor.field.name": "Nombre",
   "@multiRename.rangeEditor.field.name": {
     "sourceHash": "dcd1d52"
   },
-  "multiRename.rangeEditor.field.extension": "Extension",
+  "multiRename.rangeEditor.field.extension": "Extensión",
   "@multiRename.rangeEditor.field.extension": {
     "sourceHash": "395aeb9"
   },
-  "multiRename.rangeEditor.field.parent": "Folder",
+  "multiRename.rangeEditor.field.parent": "Carpeta",
   "@multiRename.rangeEditor.field.parent": {
     "sourceHash": "74ccd43"
   },
-  "multiRename.rangeEditor.field.grandparent": "Grandparent folder",
+  "multiRename.rangeEditor.field.grandparent": "Carpeta abuela",
   "@multiRename.rangeEditor.field.grandparent": {
     "sourceHash": "defe9c7"
   },
-  "multiRename.rangeEditor.field.fullName": "Full name",
+  "multiRename.rangeEditor.field.fullName": "Nombre completo",
   "@multiRename.rangeEditor.field.fullName": {
     "sourceHash": "f13a64b"
   },
-  "multiRename.rangeEditor.characters": "Characters",
+  "multiRename.rangeEditor.characters": "Caracteres",
   "@multiRename.rangeEditor.characters": {
     "sourceHash": "6fac39e"
   },
-  "multiRename.rangeEditor.start": "Start",
+  "multiRename.rangeEditor.start": "Inicio",
   "@multiRename.rangeEditor.start": {
     "sourceHash": "e4bb9f1"
   },
-  "multiRename.rangeEditor.end": "End",
+  "multiRename.rangeEditor.end": "Fin",
   "@multiRename.rangeEditor.end": {
     "sourceHash": "f4db1e4"
   },
-  "multiRename.rangeEditor.writeAs": "Write as",
+  "multiRename.rangeEditor.writeAs": "Escribir como",
   "@multiRename.rangeEditor.writeAs": {
     "sourceHash": "39dfb5b"
   },
-  "multiRename.rangeEditor.form.span": "Start to end",
+  "multiRename.rangeEditor.form.span": "De inicio a fin",
   "@multiRename.rangeEditor.form.span": {
     "sourceHash": "bb96ea7"
   },
-  "multiRename.rangeEditor.form.length": "Start and length",
+  "multiRename.rangeEditor.form.length": "Inicio y longitud",
   "@multiRename.rangeEditor.form.length": {
     "sourceHash": "2830961"
   },
-  "multiRename.rangeEditor.fromStart": "From the start",
+  "multiRename.rangeEditor.fromStart": "Desde el inicio",
   "@multiRename.rangeEditor.fromStart": {
     "sourceHash": "109d4ab"
   },
-  "multiRename.rangeEditor.fromEnd": "From the end",
+  "multiRename.rangeEditor.fromEnd": "Desde el final",
   "@multiRename.rangeEditor.fromEnd": {
     "sourceHash": "577185f"
   },
-  "multiRename.rangeEditor.positionFromStart": "{at, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+  "multiRename.rangeEditor.positionFromStart": "{at, selectordinal, other {#.º}}",
   "@multiRename.rangeEditor.positionFromStart": {
     "sourceHash": "a20af9d"
   },
-  "multiRename.rangeEditor.positionFromEnd": "{at, selectordinal, =1 {Last} one {#st from the end} two {#nd from the end} few {#rd from the end} other {#th from the end}}",
+  "multiRename.rangeEditor.positionFromEnd": "{at, selectordinal, =1 {Último} =2 {Penúltimo} other {#.º desde el final}}",
   "@multiRename.rangeEditor.positionFromEnd": {
     "sourceHash": "4c9ee08"
   },
-  "multiRename.rangeEditor.endFollowsStart": "With the start counted from the end, the end counts from the end too.",
+  "multiRename.rangeEditor.endFollowsStart": "Si el inicio se cuenta desde el final, el fin también.",
   "@multiRename.rangeEditor.endFollowsStart": {
     "sourceHash": "379bd45"
   },
-  "multiRename.rangeEditor.edgeFromStart": "character {at}, {character}",
+  "multiRename.rangeEditor.edgeFromStart": "carácter {at}, {character}",
   "@multiRename.rangeEditor.edgeFromStart": {
     "sourceHash": "4215254"
   },
-  "multiRename.rangeEditor.edgeFromEnd": "{at, selectordinal, =1 {the last character} one {#st from the end} two {#nd from the end} few {#rd from the end} other {#th from the end}}, {character}",
+  "multiRename.rangeEditor.edgeFromEnd": "{at, selectordinal, =1 {el último carácter} =2 {el penúltimo carácter} other {el carácter # desde el final}}, {character}",
   "@multiRename.rangeEditor.edgeFromEnd": {
     "sourceHash": "0166691"
   },
-  "multiRename.rangeEditor.space": "space",
+  "multiRename.rangeEditor.space": "espacio",
   "@multiRename.rangeEditor.space": {
     "sourceHash": "3f49dbb"
   },
-  "multiRename.rangeEditor.keys": "← → move it, ⇧ moves the end, ⌥ the start",
+  "multiRename.rangeEditor.keys": "← → mueven la selección, ⇧ solo el fin, ⌥ solo el inicio",
   "@multiRename.rangeEditor.keys": {
     "sourceHash": "b8f24a5"
   },
-  "multiRename.rangeEditor.reading.whole": "All of it",
+  "multiRename.rangeEditor.reading.whole": "Todo",
   "@multiRename.rangeEditor.reading.whole": {
     "sourceHash": "f5062de"
   },
-  "multiRename.rangeEditor.reading.one": "Only the {at, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} character",
+  "multiRename.rangeEditor.reading.one": "Solo el carácter {at, selectordinal, other {#}}",
   "@multiRename.rangeEditor.reading.one": {
     "sourceHash": "815c40c"
   },
-  "multiRename.rangeEditor.reading.oneFromEnd": "Only the {at, selectordinal, =1 {last} one {#st-to-last} two {#nd-to-last} few {#rd-to-last} other {#th-to-last}} character",
+  "multiRename.rangeEditor.reading.oneFromEnd": "Solo {at, selectordinal, =1 {el último carácter} =2 {el penúltimo carácter} other {el carácter # desde el final}}",
   "@multiRename.rangeEditor.reading.oneFromEnd": {
     "sourceHash": "e0b450d"
   },
-  "multiRename.rangeEditor.reading.toEnd": "From the {at, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} character to the end",
+  "multiRename.rangeEditor.reading.toEnd": "Del carácter {at, selectordinal, other {#}} al final",
   "@multiRename.rangeEditor.reading.toEnd": {
     "sourceHash": "f28d18b"
   },
-  "multiRename.rangeEditor.reading.lastChars": "{count, plural, one {The last character} other {The last # characters}}",
+  "multiRename.rangeEditor.reading.lastChars": "{count, plural, one {El último carácter} many {Los últimos # caracteres} other {Los últimos # caracteres}}",
   "@multiRename.rangeEditor.reading.lastChars": {
     "sourceHash": "9f073f8"
   },
-  "multiRename.rangeEditor.reading.span": "From the {from, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} to the {to, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} character",
+  "multiRename.rangeEditor.reading.span": "Del carácter {from, selectordinal, other {#}} al {to, selectordinal, other {#}}",
   "@multiRename.rangeEditor.reading.span": {
     "sourceHash": "d68204f"
   },
-  "multiRename.rangeEditor.reading.spanToFromEnd": "From the {from, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} to the {to, selectordinal, =1 {last} one {#st-to-last} two {#nd-to-last} few {#rd-to-last} other {#th-to-last}} character",
+  "multiRename.rangeEditor.reading.spanToFromEnd": "Del carácter {from, selectordinal, other {#}} {to, selectordinal, =1 {al último} =2 {al penúltimo} other {al # desde el final}}",
   "@multiRename.rangeEditor.reading.spanToFromEnd": {
     "sourceHash": "b7714db"
   },
-  "multiRename.rangeEditor.reading.spanFromEnd": "From the {from, selectordinal, =1 {last} one {#st-to-last} two {#nd-to-last} few {#rd-to-last} other {#th-to-last}} to the {to, selectordinal, =1 {last} one {#st-to-last} two {#nd-to-last} few {#rd-to-last} other {#th-to-last}} character",
+  "multiRename.rangeEditor.reading.spanFromEnd": "Del {from, selectordinal, =1 {último carácter} =2 {penúltimo carácter} other {carácter # desde el final}} {to, selectordinal, =1 {al último} =2 {al penúltimo} other {al # desde el final}}",
   "@multiRename.rangeEditor.reading.spanFromEnd": {
     "sourceHash": "20f1163"
   },
-  "multiRename.rangeEditor.reading.length": "{count, plural, one {# character} other {# characters}}, starting at the {at, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+  "multiRename.rangeEditor.reading.length": "{count, plural, one {# carácter} many {# caracteres} other {# caracteres}}, empezando por el carácter {at, selectordinal, other {#}}",
   "@multiRename.rangeEditor.reading.length": {
     "sourceHash": "9bb683a"
   },
-  "multiRename.rangeEditor.reading.lengthFromEnd": "{count, plural, one {# character} other {# characters}}, starting at the {at, selectordinal, =1 {last} one {#st-to-last} two {#nd-to-last} few {#rd-to-last} other {#th-to-last}}",
+  "multiRename.rangeEditor.reading.lengthFromEnd": "{count, plural, one {# carácter} many {# caracteres} other {# caracteres}}, empezando por {at, selectordinal, =1 {el último carácter} =2 {el penúltimo carácter} other {el carácter # desde el final}}",
   "@multiRename.rangeEditor.reading.lengthFromEnd": {
     "sourceHash": "8c3c882"
   },
-  "multiRename.rangeEditor.takesNothing": "Takes nothing from this file",
+  "multiRename.rangeEditor.takesNothing": "No toma nada de este archivo",
   "@multiRename.rangeEditor.takesNothing": {
     "sourceHash": "be62d05"
   },
-  "multiRename.rangeEditor.emptyField": "Empty for this file",
+  "multiRename.rangeEditor.emptyField": "Vacío en este archivo",
   "@multiRename.rangeEditor.emptyField": {
     "sourceHash": "ccb5be2"
   },
-  "multiRename.rangeEditor.onYourFiles": "On your files",
+  "multiRename.rangeEditor.onYourFiles": "En tus archivos",
   "@multiRename.rangeEditor.onYourFiles": {
     "sourceHash": "e8c0d5e"
   },
-  "multiRename.rangeEditor.nothing": "nothing",
+  "multiRename.rangeEditor.nothing": "nada",
   "@multiRename.rangeEditor.nothing": {
     "sourceHash": "1785cfc"
   },
-  "multiRename.rangeEditor.gives": "gives",
+  "multiRename.rangeEditor.gives": "da",
   "@multiRename.rangeEditor.gives": {
     "sourceHash": "64ea62d"
   },
-  "multiRename.placeholderHelp.rangeEditHint": "Put the caret in a placeholder like [N] and press ↓ to choose its characters.",
+  "multiRename.placeholderHelp.rangeEditHint": "Pon el cursor de texto en un marcador como [N] y pulsa ↓ para elegir sus caracteres.",
   "@multiRename.placeholderHelp.rangeEditHint": {
     "sourceHash": "f1ef6fc"
   }

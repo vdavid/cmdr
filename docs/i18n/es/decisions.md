@@ -646,3 +646,10 @@ in labels. `Solo verás este aviso una vez.`: names the notice, no gendered adje
 ## Reordenar la cola (`commands.queueMoveEarlier/Later.label`, `queue.reorder.*`)
 
 `Adelantar` / `Retrasar en la cola` over `Subir` / `Bajar`: it's about starting sooner; "in line" is `la cola`.
+
+## El editor de rangos (`multiRename.rangeEditor.*`, `multiRename.presets.moveUp/Down`)
+
+- A position in prose is a cardinal after the noun (`el carácter 3`, `Del carácter 2 al 5`), like `charRange`;
+  `el 3.º carácter` would need the `3.er` apocope. A bare option label keeps `#.º`. From the end: `último`, `penúltimo`,
+  `el carácter # desde el final`. Range edges are `Inicio` / `Fin` (`Inicio` as in the counter).
+- Presets reorder with `Subir` / `Bajar`: a place in a list, not run order, so not the queue's `Adelantar`.
