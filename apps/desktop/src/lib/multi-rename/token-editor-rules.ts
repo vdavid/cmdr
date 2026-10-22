@@ -3,7 +3,7 @@
  * pointer resting on one, or the user working in the editor. The timing (open delays) is the
  * component's; this is which token's editor is open, and why. Pure.
  */
-import type { PlaceholderSpan } from './mask-tokens'
+import { tokenAtCaret, type PlaceholderSpan } from './mask-tokens'
 
 /**
  * Why the editor is open, which decides what closes it.
@@ -37,6 +37,27 @@ export type EditorEvent =
 /** The token the caret is strictly inside of: on a bracket's outer side, it's just next to it. */
 export function tokenInside<T extends { span: PlaceholderSpan }>(tokens: readonly T[], caret: number): T | undefined {
   return tokens.find((token) => caret > token.span.from && caret < token.span.to)
+}
+
+/**
+ * The token ↓ in the field opens or goes into: the one the caret is inside, or right after for a
+ * kind with `downRightAfter` (the counter). An open editor (the pointer's) takes ↓ from anywhere
+ * but its own token's outer edges, so `|[N]` and `[N]|` stay the field's history.
+ */
+export function downTarget<T extends { span: PlaceholderSpan; kind: { downRightAfter: boolean } }>(
+  tokens: readonly T[],
+  caret: number,
+  open: T | undefined,
+): T | undefined {
+  const atCaret =
+    tokenInside(tokens, caret) ??
+    tokenAtCaret(
+      tokens.filter((token) => token.kind.downRightAfter),
+      caret,
+    )
+  if (open === undefined) return atCaret
+  const onOuterEdge = caret === open.span.from || (caret === open.span.to && !open.kind.downRightAfter)
+  return onOuterEdge ? atCaret : open
 }
 
 /** The caret only moves while the field has focus, so an editor the user was in follows the caret again, as does one the pointer opened once the caret lands in a token. */

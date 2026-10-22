@@ -38,19 +38,19 @@
   (`hoverMovesCursor` off, unlike Search): the cursor row drives the range editor's examples, which mustn't jump while
   the pointer passes over. The list's keys are bare (`list-cursor.ts`), so ↓ there never meets the fields' history
   (`multiRename.fieldHistory` answers only in a text field).
-- **Rename order** (⇧↑ / ⇧↓ and ⌥↑ / ⌥↓, `multiRename.moveRowUp` / `.moveRowDown`, fixed keys, two per command): in
-  the list, the cursor row moves
-  one place in the session's order (what `[C]` counts) and the cursor goes with it (`moveCursorRow`; the backend's
-  `move_row`, `src-tauri/src/multi_rename/DETAILS.md` § Session, preview, and apply). `PreviewList` answers them through
-  `ColumnList`'s `onKeydown` (the grid's keys that aren't cursor keys), so in a text field ⇧↑ / ⇧↓ stay the selection
-  keys and ⌥↑ / ⌥↓ the caret's. The move retires the preview on screen, and the state previews again at once; it's `pending` from the key on, so
-  a Start right after waits for the new order's preview. Moves queue, each from where the last left the row. Off while
-  "Problems only" is on (claimed, nothing moves): a move in a filtered view is ambiguous. Off under a preview error too:
-  the dimmed last good rows can't show the new order, so the cursor would land on another file. A move is announced
-  through a house `LiveAnnouncer` ("Moved to 3 of 48", `multiRename.movedRow`); a move at an end says nothing.
-  **Decision/Why:** ⇧↑ / ⇧↓ are David's pick; ⌥↑ / ⌥↓ ride along as the house reorder key (the `Menu`, the queue
-  window). The file list's ⌥↑ / ⌥↓ (top / bottom) never meet them: dialogs block those while the sheet is up.
-  Neither meets another sheet key or `Main window/Multi-rename`'s ancestors (`registry-conflicts.test.ts`).
+- **Rename order** (⇧↑ / ⇧↓ and ⌥↑ / ⌥↓, `multiRename.moveRowUp` / `.moveRowDown`, fixed keys, two per command): in the
+  list, the cursor row moves one place in the session's order (what `[C]` counts) and the cursor goes with it
+  (`moveCursorRow`; the backend's `move_row`, `src-tauri/src/multi_rename/DETAILS.md` § Session, preview, and apply).
+  `PreviewList` answers them through `ColumnList`'s `onKeydown` (the grid's keys that aren't cursor keys), so in a text
+  field ⇧↑ / ⇧↓ stay the selection keys and ⌥↑ / ⌥↓ the caret's. The move retires the preview on screen, and the state
+  previews again at once; it's `pending` from the key on, so a Start right after waits for the new order's preview.
+  Moves queue, each from where the last left the row. Off while "Problems only" is on (claimed, nothing moves): a move
+  in a filtered view is ambiguous. Off under a preview error too: the dimmed last good rows can't show the new order, so
+  the cursor would land on another file. A move is announced through a house `LiveAnnouncer` ("Moved to 3 of 48",
+  `multiRename.movedRow`); a move at an end says nothing. **Decision/Why:** ⇧↑ / ⇧↓ are David's pick; ⌥↑ / ⌥↓ ride along
+  as the house reorder key (the `Menu`, the queue window). The file list's ⌥↑ / ⌥↓ (top / bottom) never meet them:
+  dialogs block those while the sheet is up. Neither meets another sheet key or `Main window/Multi-rename`'s ancestors
+  (`registry-conflicts.test.ts`).
 - **Status glyphs** (`row-status.ts`): one glyph per problem kind (invalid name, duplicate, name taken, gone) in a
   `StatusGlyph`, its short label the accessible name and the full reason the tooltip, in the error color. Ready and
   unchanged rows show nothing and carry screen-reader-only text, so a screen-reader user still hears every row's status.
@@ -219,16 +219,18 @@
     so the popover's trap is gone before focus moves (else the trap pulls focus back).
   - The popover is `surface="solid"` (opaque `--color-bg-secondary`): the house glass is ~70% opaque, and the numbers
     must read cleanly over the mask and the list.
-- **Keys**: ArrowDown with an editor open goes into its first field; with none, ArrowDown with the caret inside an
-  editable token (`tokenInside`), or right after a kind with `downRightAfter` (the counter; `tokenAtCaret`:
-  `from < caret <= to`), opens it there. **Decision/Why:** not right after a range: `[N]` and `[E]` are the default
-  masks, so the caret sits right after one whenever the sheet opens, where ↓ is TC's field history. Both are claimed
-  (`claimKey`); anywhere else ArrowDown isn't touched. Escape in the field closes an open editor and is claimed, so the
-  sheet stays. In the editor, ArrowDown / ArrowUp walk the fields (rows, in the range editor: § Range editor), and Enter
-  or ArrowUp from the first field closes it; both are claimed, so the sheet's Enter-starts never sees them. Escape is
-  the `Popover`'s, which stops it before the sheet closes. All three put focus back in the field with the caret after
-  the token (Escape through the anchor span's `onfocus`); a click elsewhere closes the editor and leaves focus where it
-  landed.
+- **Keys** (`downTarget`): ArrowDown with an editor open goes into its first field, except with the caret on that
+  token's outer edge (`|[N]`, `[N]|`), where the caret's own token or the field's history takes it; with none, ArrowDown
+  with the caret inside an editable token (`tokenInside`, which takes `[|N]` and `[N|]`), or right after a kind with
+  `downRightAfter` (the counter; `tokenAtCaret`: `from < caret <= to`), opens it there. So a range opens only from
+  inside, by key or by the caret resting; a counter from inside or right after, never right before. **Decision/Why:**
+  not right after a range: `[N]` and `[E]` are the default masks, so the caret sits right after one whenever the sheet
+  opens, where ↓ is TC's field history. Both are claimed (`claimKey`); anywhere else ArrowDown isn't touched. Escape in
+  the field closes an open editor and is claimed, so the sheet stays. In the editor, ArrowDown / ArrowUp walk the fields
+  (rows, in the range editor: § Range editor), and Enter or ArrowUp from the first field closes it; both are claimed, so
+  the sheet's Enter-starts never sees them. Escape is the `Popover`'s, which stops it before the sheet closes. All three
+  put focus back in the field with the caret after the token (Escape through the anchor span's `onfocus`); a click
+  elsewhere closes the editor and leaves focus where it landed.
 - **Markers**: an absolutely placed ▾ `<button tabindex="-1">` ("Edit counter", "Choose characters",
   `aria-haspopup="dialog"`) centered under each token, measured with a canvas in the input's computed font, net of
   `scrollLeft`; one scrolled out of view isn't drawn. Mousedown is prevented, so a click never moves focus out of the

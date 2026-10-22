@@ -90,6 +90,13 @@ describe('MaskInput', () => {
     expect(document.activeElement).toBe(editorFields()[0])
   })
 
+  it('leaves ArrowDown right before a counter to the field’s history', async () => {
+    const m = await mountField('IMG_[C10]')
+    await openWithArrowDown(m, 4)
+    expect(document.querySelector('.ui-popover')).toBeNull()
+    expect(m.outerKeys).toEqual(['ArrowDown'])
+  })
+
   it('leaves ArrowDown alone when the caret is away from any counter', async () => {
     const m = await mountField('IMG_[C] [N]')
     m.input.focus()
@@ -224,6 +231,12 @@ describe('MaskInput', () => {
     it('stays shut with the caret right after a token, so finishing one never pops it', async () => {
       const m = await mountField('IMG_[C10] x')
       await caretAt(m, 9)
+      expect(document.querySelector('.ui-popover')).toBeNull()
+    })
+
+    it('stays shut with the caret right before a token', async () => {
+      const m = await mountField('IMG_[C10] x')
+      await caretAt(m, 4)
       expect(document.querySelector('.ui-popover')).toBeNull()
     })
 

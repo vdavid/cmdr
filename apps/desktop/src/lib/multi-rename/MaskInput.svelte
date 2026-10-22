@@ -25,8 +25,8 @@
     import TextInput from '#lib/ui/TextInput.svelte'
     import { claimKey } from '#lib/shortcuts/claim-key.js'
     import { MASK_TOKEN_KINDS, anyKind } from './mask-token-kinds'
-    import { findTokens, replaceToken, tokenAtCaret, type MaskToken } from './mask-tokens'
-    import { nextEditor, tokenInside, type EditorEvent, type EditorOpen } from './token-editor-rules'
+    import { findTokens, replaceToken, type MaskToken } from './mask-tokens'
+    import { downTarget, nextEditor, tokenInside, type EditorEvent, type EditorOpen } from './token-editor-rules'
 
     type Token = MaskToken<(typeof MASK_TOKEN_KINDS)[number]>
 
@@ -271,14 +271,7 @@
         if (e.key !== 'ArrowDown') return
         const input = e.currentTarget as HTMLInputElement
         const caret = input.selectionEnd ?? -1
-        // Right after a token counts only for the kinds that say so (`downRightAfter`).
-        const token =
-            editing ??
-            tokenInside(tokens, caret) ??
-            tokenAtCaret(
-                tokens.filter((t) => t.kind.downRightAfter),
-                caret,
-            )
+        const token = downTarget(tokens, caret, editing)
         if (!token) return
         claimKey(e)
         // A passive editor stops being one, which sends focus to its first field.

@@ -25,6 +25,7 @@ const TAKEN: Record<string, [number, number] | null> = {
   'N1--2': [0, 7],
   'N1-3': [0, 2],
   'N2-4': [1, 3],
+  'N2-5': [1, 4],
   'N1-5': [0, 4],
   'N1--4': [0, 5],
   'N-9-5': [0, 4],
@@ -127,11 +128,61 @@ describe('the range editor', () => {
     expect(document.querySelectorAll('button[aria-label="Choose characters"]')).toHaveLength(3)
   })
 
-  it('leaves ↓ right after a range to the field’s history', async () => {
-    const m = await mountField('[N]')
-    await open(m, 3)
-    expect(document.querySelector('.ui-popover')).toBeNull()
-    expect(m.outerKeys).toContain('ArrowDown')
+  describe('opens only with the caret inside the token, never on its outer edges', () => {
+    /** Past the caret's and the pointer's open delays. */
+    const pause = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 450))
+
+    async function caretRestsAt(m: Mounted, caret: number): Promise<void> {
+      m.input.focus()
+      m.input.setSelectionRange(caret, caret)
+      m.input.dispatchEvent(new Event('keyup', { bubbles: true }))
+      await pause()
+      await settle()
+    }
+
+    // `x [N2-5] y`: `[` at 2, `]` at 7, so 2 is `|[`, 3 is `[|`, 7 is `|]`, and 8 is `]|`.
+    const MASK = 'x [N2-5] y'
+
+    it.each([2, 8])('leaves ↓ at %i, on an outer edge, to the field’s history', async (caret) => {
+      const m = await mountField(MASK)
+      await open(m, caret)
+      expect(document.querySelector('.ui-popover')).toBeNull()
+      expect(m.outerKeys).toContain('ArrowDown')
+    })
+
+    it.each([3, 5, 7])('opens on ↓ at %i, inside the token', async (caret) => {
+      const m = await mountField(MASK)
+      await open(m, caret)
+      expect(document.activeElement).toBe(handle('Start'))
+      expect(m.outerKeys).not.toContain('ArrowDown')
+    })
+
+    it.each([2, 8])('stays shut with the caret resting at %i, on an outer edge', async (caret) => {
+      const m = await mountField(MASK)
+      await caretRestsAt(m, caret)
+      expect(document.querySelector('.ui-popover')).toBeNull()
+    })
+
+    it.each([3, 5, 7])('opens passively with the caret resting at %i, inside the token', async (caret) => {
+      const m = await mountField(MASK)
+      await caretRestsAt(m, caret)
+      expect(document.querySelector('.ui-popover')).not.toBeNull()
+      expect(document.activeElement).toBe(m.input)
+    })
+
+    it.each([2, 8])('doesn’t take ↓ at %i into an editor the pointer opened', async (caret) => {
+      const m = await mountField(MASK)
+      m.input.focus()
+      m.input.setSelectionRange(caret, caret)
+      document.querySelector('button[aria-label="Choose characters"]')?.dispatchEvent(new MouseEvent('mouseenter'))
+      await pause()
+      await settle()
+      expect(document.querySelector('.ui-popover')).not.toBeNull()
+      key(m.input, 'ArrowDown')
+      await settle()
+      expect(document.activeElement).toBe(m.input)
+      expect(m.outerKeys).toContain('ArrowDown')
+    })
   })
 
   it('opens on ↓ with the start handle focused, over the cursor file’s characters', async () => {
