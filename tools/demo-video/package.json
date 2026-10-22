@@ -1,0 +1,31 @@
+{
+  "name": "cmdr-demo-video",
+  "private": true,
+  "type": "module",
+  "description": "Cmdr's 90-second promo video, built with Remotion from a script, TTS voice, CC music, and app footage",
+  "scripts": {
+    "prepare-assets": "node scripts/prepare-assets.ts",
+    "voice": "node scripts/voice.ts",
+    "footage": "node scripts/footage.ts",
+    "studio": "remotion studio src/index.ts",
+    "still": "remotion still src/index.ts CmdrDemo",
+    "preview": "remotion render src/index.ts CmdrDemo out/preview.mp4 --scale=0.33 --concurrency=2",
+    "render": "remotion render src/index.ts CmdrDemo out/cmdr-demo-90s.mp4 --codec=h264 --audio-codec=aac --crf=16",
+    "poster": "remotion still src/index.ts CmdrDemo out/cmdr-demo-90s-poster.png --frame=2640",
+    "stems": "remotion render src/index.ts CmdrDemo out/stem-voice.wav --codec=wav --props=props/stem-voice.json && remotion render src/index.ts CmdrDemo out/stem-music.wav --codec=wav --props=props/stem-music.json && remotion render src/index.ts CmdrDemo out/stem-mix.wav --codec=wav",
+    "check-levels": "node scripts/check-levels.ts",
+    "timeline": "node scripts/timeline.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.536",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "remotion": "4.0.536"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
+    "typescript": "6.0.3"
+  }
+}
