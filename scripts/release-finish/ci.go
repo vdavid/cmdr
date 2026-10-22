@@ -159,7 +159,8 @@ func ciRedMessage(repo string, run ciRun, failed []ciJob, version string) string
 		fmt.Fprintf(&b, "  %s: %s %s\n", j.Name, j.Conclusion, j.URL)
 	}
 	if len(failed) > 0 {
-		fmt.Fprintf(&b, "See why: gh run view %d -R %s --job %d --log-failed\n", run.ID, repo, failed[0].ID)
+		// Not `gh run view --log-failed`: it refuses while the run goes on, which is when this stops.
+		fmt.Fprintf(&b, "See why: gh api --allow-escape-sequences repos/%s/actions/jobs/%d/logs | tail -100\n", repo, failed[0].ID)
 	} else {
 		fmt.Fprintf(&b, "The run ended %s. See why: gh run view %d -R %s\n", run.Conclusion, run.ID, repo)
 	}

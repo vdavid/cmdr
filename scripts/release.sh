@@ -42,6 +42,19 @@ fi
 TAG="v$VERSION"
 RELEASE_BRANCH="release/$TAG"
 RELEASE_SUBJECT="chore(release): $TAG"
+# The release-prep edits (docs/guides/releasing.md § The release procedure, steps 3–5), left
+# uncommitted for this script: the changelog, the roadmap (content in roadmap.ts, layout in
+# roadmap.astro), the feature-status source of truth (plus the features page, which needs a card for
+# every new feature id or it fails the build), and the security advisory list (its new entry names
+# this version, which the `desktop-security-advisories` check only accepts once the bump lands).
+PREP_FILES=(
+  CHANGELOG.md
+  feature-status.json
+  apps/website/src/pages/features.astro
+  apps/website/src/lib/roadmap.ts
+  apps/website/src/pages/roadmap.astro
+  apps/desktop/src-tauri/resources/security-advisories.json
+)
 # Who signs the update archives (docs/guides/releasing.md § Who signs the update archives). Unset is `ci`.
 SIGNING=$(gh variable get RELEASE_UPDATE_SIGNING 2>/dev/null || echo ci)
 
@@ -69,20 +82,13 @@ prepare_release() {
     exit 1
   fi
 
-  # Check for uncommitted changes. The release-prep edits are allowed through and get included in
-  # the release commit: the changelog, the roadmap (content in roadmap.ts, layout in roadmap.astro),
-  # the feature-status source of truth (plus the features page, which needs a card for every new
-  # feature id or it fails the build), and the security advisory list (its new entry names this
-  # version, which the `desktop-security-advisories` check only accepts once the bump below lands).
-  # See docs/guides/releasing.md § The release procedure for the steps that produce them.
-  local exclude=(
-    ':!CHANGELOG.md'
-    ':!feature-status.json'
-    ':!apps/website/src/pages/features.astro'
-    ':!apps/website/src/lib/roadmap.ts'
-    ':!apps/website/src/pages/roadmap.astro'
-    ':!apps/desktop/src-tauri/resources/security-advisories.json'
-  )
+  # Check for uncommitted changes. The release-prep edits (PREP_FILES) are allowed through and get
+  # included in the release commit.
+  local exclude=()
+  local f
+  for f in "${PREP_FILES[@]}"; do
+    exclude+=(":!$f")
+  done
   if ! git diff --quiet -- "${exclude[@]}" || ! git diff --staged --quiet -- "${exclude[@]}"; then
     echo "Error: Working tree has uncommitted changes (other than the changelog, roadmap, feature status and its page, and security advisory list). Commit or stash them first."
     exit 1
@@ -100,7 +106,7 @@ prepare_release() {
 
   if [[ "$MODE" == release ]]; then
     # Stage allowed files so the pull below carries them along
-    git add CHANGELOG.md feature-status.json apps/website/src/pages/features.astro apps/website/src/lib/roadmap.ts apps/website/src/pages/roadmap.astro apps/desktop/src-tauri/resources/security-advisories.json 2>/dev/null || true
+    git add "${PREP_FILES[@]}" 2>/dev/null || true
 
     # The release commit goes on top of origin/main's HEAD, X. Local `main` mirrors `origin/main`,
     # so this only ever fast-forwards; a local commit on `main` makes it refuse (it belongs on a
@@ -108,8 +114,12 @@ prepare_release() {
     git pull --ff-only --autostash origin main
   fi
 
-  # Check CHANGELOG.md has an [Unreleased] section with content. A pipeline test ships no notes.
-  if [[ "$MODE" == release ]]; then
+  # Check CHANGELOG.md has an [Unreleased] section with content. A pipeline test writes a one-line
+  # one: the app's What's new reads the changelog, and a test pins its newest entry to the app version.
+  if [[ "$MODE" == test ]]; then
+    awk '!done && /^## \[/ { print "## [Unreleased]\n\nA pipeline test of the release flow, never published.\n"; done = 1 } { print }' \
+      CHANGELOG.md > CHANGELOG.md.tmp && mv CHANGELOG.md.tmp CHANGELOG.md
+  else
     if ! grep -q '## \[Unreleased\]' CHANGELOG.md; then
       echo "Error: CHANGELOG.md has no [Unreleased] section."
       echo "Add a '## [Unreleased]' heading with release notes before the first versioned section."
@@ -185,15 +195,10 @@ prepare_release() {
   # guard (the `--ci` gate below opts past it via --ci instead).
   pnpm check oxfmt -m
 
-  # Stage the files the script itself just bumped.
+  # Stage the release-prep edits and the files the script itself just bumped.
   git add \
-    CHANGELOG.md \
+    "${PREP_FILES[@]}" \
     LICENSE \
-    feature-status.json \
-    apps/website/src/pages/features.astro \
-    apps/website/src/lib/roadmap.ts \
-    apps/website/src/pages/roadmap.astro \
-    apps/desktop/src-tauri/resources/security-advisories.json \
     apps/desktop/package.json \
     apps/desktop/src-tauri/tauri.conf.json \
     apps/desktop/src-tauri/Cargo.toml \
@@ -312,6 +317,25 @@ merge_back() {
   echo "$TAG is released and on main."
 }
 
+# Hands the release-prep edits in R back as uncommitted edits, with the changelog section under
+# `[Unreleased]` again, so a restart after an abort finds them where release.sh expects them. A
+# pipeline test has none.
+restore_prep_edits() {
+  local r
+  r=$(git rev-parse -q --verify "refs/tags/$TAG^{commit}" || git rev-parse -q --verify "refs/heads/$RELEASE_BRANCH" || true)
+  if [[ -z "$r" || "$VERSION" == *-pipelinetest.* ]]; then
+    return
+  fi
+  if git diff "$r^" "$r" -- "${PREP_FILES[@]}" | git apply; then
+    sed -i '' "s/^## \[${VERSION//./\\.}\] - .*/## [Unreleased]/" CHANGELOG.md
+    echo "Put the release prep (changelog, roadmap, feature status, advisories) back as uncommitted edits."
+  else
+    echo "Couldn't put the release prep back on this tree. It's in ${r:0:12}; take it with:"
+    echo "  git diff $r^ $r -- ${PREP_FILES[*]} | git apply"
+    echo "  then rename the changelog's '## [$VERSION] - ...' heading back to '## [Unreleased]'."
+  fi
+}
+
 # Drops a release that never went public: stops its runs (so nothing uploads into a draft about to
 # go, and no runner keeps working for it), deletes the build artifacts and the draft, then the tag
 # and the branch, on origin and here. Nothing public moves in an unpublished release: `latest.json`
@@ -342,12 +366,17 @@ abort_release() {
   if [[ -n "$(git ls-remote --heads origin "refs/heads/$RELEASE_BRANCH")" ]]; then
     git push --quiet --no-verify origin --delete "$RELEASE_BRANCH" && echo "Deleted $RELEASE_BRANCH on origin."
   fi
+  restore_prep_edits
   git tag -d "$TAG" 2>/dev/null || true
   if [[ "$(git branch --show-current)" == "$RELEASE_BRANCH" ]]; then
     git switch main
   fi
   git branch -D "$RELEASE_BRANCH" 2>/dev/null || true
-  echo "$TAG is gone. Land the fix on main, then release again: ./scripts/release.sh $VERSION"
+  if [[ "$VERSION" == *-pipelinetest.* ]]; then
+    echo "$TAG is gone."
+  else
+    echo "$TAG is gone. Land the fix on main, then release again: ./scripts/release.sh $VERSION"
+  fi
 }
 
 if [[ "$MODE" == abort ]]; then

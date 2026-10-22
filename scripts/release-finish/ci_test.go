@@ -118,7 +118,8 @@ func TestCIRedMessageSaysWhyAndWhatNext(t *testing.T) {
 	msg := ciRedMessage("vdavid/cmdr", ciRun{ID: 42}, failed, "0.56.0")
 	for _, want := range []string{
 		"hygiene: failure https://example/job/77",
-		"gh run view 42 -R vdavid/cmdr --job 77 --log-failed",
+		// `gh run view --log-failed` refuses while the run goes on, which is when a fail-fast gate stops.
+		"gh api --allow-escape-sequences repos/vdavid/cmdr/actions/jobs/77/logs | tail -100",
 		"gh run rerun 42 --failed -R vdavid/cmdr",
 		"./scripts/release.sh -abort 0.56.0",
 	} {
