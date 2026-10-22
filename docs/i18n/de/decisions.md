@@ -859,4 +859,4 @@ Apple's Dock menu (`Dock.app/Contents/Resources/de.lproj/DockMenus.strings`) sup
 ## Bereichseditor (`multiRename.rangeEditor.*`)
 
 - `Anfang`/`Ende` mit `Von vorn`/`Von hinten` statt „Ende: Vom Ende“; `#. von hinten` statt „3.-letzte“; take →
-  `übernehmen`; grandparent → `Ordner darüber`; Zeilen umordnen → `nach vorn/hinten rücken` wie `menu.queue.moveUp`.
+  `übernehmen`; Zeilen umordnen → `nach vorn/hinten rücken` wie `menu.queue.moveUp`.

@@ -635,5 +635,5 @@ points at `deze gedeelde map`, since `hij` floats between two de-words.
 - `commands.multiRename*.label`: `<label> aan/uit` over `Zet … aan of uit`.
 - `multiRename.placeholderHelp.*`: `tijdstip` (`de hele tijd` means ‘constantly’); caret → `tekstcursor`.
 - `multiRename.rangeEditor.*`: ordinals `#e` (CLDR nl ordinal is `other` only); counted from the end →
-  `#e vanaf het einde` (TC `Meet het eerste teken vanaf het einde`), never `#e-laatste`; range edges `Begin`/`Einde`,
-  the counter keeps `Beginnummer`.
+  `#e vanaf het einde` (TC `Meet het eerste teken vanaf het einde`), never `#e-laatste`; edges `Begin`/`Einde` (counter:
+  `Beginnummer`).
