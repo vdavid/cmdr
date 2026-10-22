@@ -160,6 +160,18 @@ describe('sendMessage + streaming', () => {
     expect(assistantAt(1).tools[0]).toMatchObject({ running: false, ok: true })
   })
 
+  it('a repeated start for a call already on screen adds no second tool line', () => {
+    // Regression anchor for ERR-FRMAR: two lines with one call id crashed the window on
+    // Svelte's `each_key_duplicate`. The backend announces each call once, and the rail
+    // holds the same line on its own side, whatever sends the repeat.
+    sendMessage('rename these')
+    fire({ type: 'assistantStarted' })
+    fire({ type: 'toolCallStarted', callId: 'c1', tool: 'list_dir' })
+    fire({ type: 'toolCallStarted', callId: 'c1', tool: 'list_dir' })
+    fire({ type: 'toolCallStarted', callId: 'c2', tool: 'app_state' })
+    expect(assistantAt(1).tools.map((tool) => tool.callId)).toEqual(['c1', 'c2'])
+  })
+
   it('a successful turn retires unfinished activity while keeping completed tool history', () => {
     sendMessage('inspect this folder')
     fire({ type: 'assistantStarted' })

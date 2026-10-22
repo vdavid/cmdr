@@ -352,8 +352,13 @@ function applyThinking(): void {
   ensureAssistant().thinking = true
 }
 
+/** Idempotent per call: the tool lines are keyed by call id, and a repeated key crashes the
+ * whole window (Svelte's `each_key_duplicate`, ERR-FRMAR). */
 function applyToolStarted(callId: string, tool: string): void {
-  ensureAssistant().tools.push({ callId, tool, running: true, ok: true, path: null })
+  const assistant = ensureAssistant()
+  if (!assistant.tools.some((candidate) => candidate.callId === callId)) {
+    assistant.tools.push({ callId, tool, running: true, ok: true, path: null })
+  }
   resetProgressWatchdog()
 }
 

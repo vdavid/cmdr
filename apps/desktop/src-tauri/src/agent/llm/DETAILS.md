@@ -58,9 +58,15 @@ genai → agent (parse), per `genai_content_to_agent_parts(content, provider)`:
 - `Binary` / `Custom` → dropped (the agent's read-only toolset never produces them).
 
 Stream events → `AgentDelta` (`map_stream_event`): `Chunk` → `Text` (empty chunks skipped); `ReasoningChunk` /
-`ThoughtSignatureChunk` → `ReasoningTick` (content never surfaced); `ToolCallChunk` → `ToolCallStarted`; `End` →
-`End{stop, usage, message}` built from the captured content, stop reason, and usage; a stream error → mapped
-`AgentLlmError`.
+`ThoughtSignatureChunk` → `ReasoningTick` (content never surfaced); `ToolCallChunk` → `ToolCallStarted`, **once per
+call id** (`map_stream`); `End` → `End{stop, usage, message}` built from the captured content, stop reason, and usage;
+a stream error → mapped `AgentLlmError`.
+
+Gotcha: genai's OpenAI streamer (verified on genai 0.6.5, reading its OpenAI adapter's streamer source, 2026-10-22) emits a
+`ToolCallChunk` for EVERY argument fragment, each carrying the merged call's id. Passed through raw, a call whose
+arguments stream in several fragments started several times, the rail keyed two tool lines on one id, and Svelte's
+`each_key_duplicate` took the whole window down (`ERR-FRMAR`, local Ministral 3B on llama-server). The rail's
+`applyToolStarted` is idempotent per call id too, as a second guard.
 
 ## Degenerate tool calls
 
