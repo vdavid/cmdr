@@ -2,6 +2,7 @@ import { random } from 'remotion'
 import { FPS } from '../config.ts'
 import { phraseIndexAt, sectionAt, useTimeline } from '../context.ts'
 import { COLORS, boil, clamp01 } from '../lib/motion.ts'
+import type { PoseName } from '../videos/types.ts'
 
 // "David" as a stick figure: round glasses in Cmdr mustard, a hair tuft, eyebrows that lift on emphasis, a mouth
 // driven by the voice's loudness, and arm gestures cued per phrase. Lines "boil" (redrawn every few frames with a
@@ -9,7 +10,6 @@ import { COLORS, boil, clamp01 } from '../lib/motion.ts'
 
 type Arm = [upper: number, bend: number]
 type Pose = { l: Arm; r: Arm; tilt: number; hop: number }
-type PoseName = 'idle' | 'wave' | 'point' | 'open' | 'shrug' | 'cheer' | 'thumb'
 
 const POSES: Record<PoseName, Pose> = {
   idle: { l: [16, 12], r: [16, 12], tilt: 0, hop: 0 },
@@ -19,18 +19,6 @@ const POSES: Record<PoseName, Pose> = {
   shrug: { l: [58, 102], r: [58, 102], tilt: 9, hop: 0 },
   cheer: { l: [158, 8], r: [158, 8], tilt: 0, hop: 1 },
   thumb: { l: [16, 12], r: [34, 118], tilt: -3, hop: 0 },
-}
-
-/** One pose per caption phrase; after the final hit he waves goodbye. */
-const GESTURES: Record<string, PoseName[]> = {
-  intro: ['wave', 'point', 'open', 'shrug', 'cheer'],
-  speed: ['idle', 'point', 'open', 'cheer', 'point'],
-  trust: ['idle', 'open', 'point', 'shrug', 'wave', 'idle', 'thumb'],
-  rename: ['open', 'idle', 'point'],
-  reach: ['open', 'point', 'idle', 'open', 'idle', 'thumb'],
-  ai: ['idle', 'shrug', 'idle', 'open', 'idle', 'thumb'],
-  care: ['open', 'idle', 'idle', 'cheer'],
-  close: ['cheer', 'open', 'point'],
 }
 
 const SHOULDER = { x: 200, y: 270 }
@@ -47,10 +35,11 @@ export const StickFigure: React.FC<{
   h: number
   beat: number
 }> = ({ t, level, bubble, w, h, beat }) => {
-  const { timeline } = useTimeline()
+  const { timeline, spec } = useTimeline()
   const frame = Math.round(t * FPS)
   const section = sectionAt(timeline, t)
-  const pose = currentPose(timeline, section.id, t)
+  // One pose per caption phrase (the video spec's `gestures`); after the final hit he waves goodbye.
+  const pose = currentPose(timeline, spec.gestures[section.id] ?? [], section.id, t)
   const open = clamp01((level - 0.06) / 0.75)
 
   const sway = Math.sin(t * 0.9) * 2.2
@@ -152,9 +141,13 @@ export const StickFigure: React.FC<{
   )
 }
 
-function currentPose(timeline: ReturnType<typeof useTimeline>['timeline'], sectionId: string, t: number): Pose {
+function currentPose(
+  timeline: ReturnType<typeof useTimeline>['timeline'],
+  list: PoseName[],
+  sectionId: string,
+  t: number,
+): Pose {
   if (t >= timeline.finalHit) return POSES.wave
-  const list = GESTURES[sectionId] ?? []
   const idx = phraseIndexAt(timeline, sectionId, t, 0.2)
   const caps = timeline.captions.filter((c) => c.sectionId === sectionId)
   const name = idx >= 0 ? (list[idx] ?? 'idle') : 'idle'

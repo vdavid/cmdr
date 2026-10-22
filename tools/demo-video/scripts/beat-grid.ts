@@ -36,7 +36,8 @@ let phase = 0
 let phaseScore = 0
 for (let p = 0; p < beat; p += w) {
   let s = 0
-  for (let t = p; t < env.length * w; t += beat) s += at(t / w)
+  // Phase from the analyzed range only: live drums drift, so a whole-song phase can be off by a fraction of a beat.
+  for (let t = p; t < Number(toArg); t += beat) if (t >= Number(fromArg)) s += at(t / w)
   if (s > phaseScore) {
     phaseScore = s
     phase = p

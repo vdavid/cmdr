@@ -1,20 +1,25 @@
-// Turns the recorded ProRes masters into H.264 proxies Remotion seeks quickly, and writes public/footage/manifest.json.
-// Reads brand/clip-masters/video/video-beats.json. Beats missing from it keep their still placeholders.
+// Turns the recorded ProRes masters into H.264 proxies Remotion seeks quickly, and writes
+// public/<videoId>/footage/manifest.json.
+// Reads brand/clip-masters/<footageDir>/video-beats.json (`video` for the first video, `video2` for the second).
+// Beats missing from it keep their still placeholders.
 //
-//   node scripts/footage.ts            transcode what's new or changed
-//   node scripts/footage.ts --force    transcode everything again
+//   node scripts/footage.ts --video=anywhere            transcode what's new or changed (default video: demo)
+//   node scripts/footage.ts --video=anywhere --force    transcode everything again
 //
 // Heavy: it encodes minutes of 1080p+ video. It runs at low priority with few threads, but don't run it while
 // something CPU-sensitive (like a screen recording) is going.
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
+import { paths } from '../src/config.ts'
 import type { FootageManifest } from '../src/timeline.ts'
+import { videoFromArgs } from '../src/videos/index.ts'
 import { durationSec } from './lib/audio.ts'
 
 const ROOT = join(import.meta.dirname, '..')
-const MANIFEST = resolve(ROOT, '../../brand/clip-masters/video/video-beats.json')
-const OUT = join(ROOT, 'public/footage')
+const video = videoFromArgs(process.argv)
+const MANIFEST = resolve(ROOT, '../../brand/clip-masters', video.footageDir, 'video-beats.json')
+const OUT = join(ROOT, 'public', paths(video.id).footage)
 const force = process.argv.includes('--force')
 
 type Loose = Record<string, unknown>
@@ -59,7 +64,7 @@ for (const beat of readBeats(JSON.parse(readFileSync(MANIFEST, 'utf8')))) {
     console.warn(`${beat.id}: ${src} is missing, skipping`)
     continue
   }
-  const file = `footage/${beat.id}.mp4`
+  const file = `${paths(video.id).footage}/${beat.id}.mp4`
   const out = join(ROOT, 'public', file)
   if (force || !existsSync(out) || statSync(out).mtimeMs < statSync(src).mtimeMs) {
     console.log(`${beat.id}: transcoding ${beat.file}`)
@@ -99,4 +104,4 @@ for (const beat of readBeats(JSON.parse(readFileSync(MANIFEST, 'utf8')))) {
   manifest.beats[beat.id] = { file, duration: durationSec(out), moments: beat.moments }
 }
 writeFileSync(join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2))
-console.log(`Wrote public/footage/manifest.json with ${Object.keys(manifest.beats).length} beats`)
+console.log(`Wrote public/${paths(video.id).footage}/manifest.json with ${Object.keys(manifest.beats).length} beats`)

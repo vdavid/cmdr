@@ -1,40 +1,8 @@
-// The video's script: the single source for the voice generator (`scripts/voice.ts`) and the composition.
-// Pure data, no imports, so Node can load it directly with type stripping.
-//
-// Each section is one voice file. `phrases` are the burned-in captions: `say` is what the TTS reads (spelled for
-// pronunciation), `show` is what the caption shows (spelled for the eye, per the style guide). Caption timing comes
-// from word timestamps of the generated audio, so phrases only need to follow the spoken order.
+// Video 1, "Cmdr in 90 seconds": David's origin story, then six beats of what only Cmdr does, cut to dubstep.
+// Pure data (type-only imports), so Node scripts can load it with type stripping.
+import type { Section, VideoSpec } from './types.ts'
 
-export type ShotKind = 'still' | 'video'
-
-export type Shot = {
-  /** Footage beat from `brand/clip-masters/video/video-beats.json`; the still is the fallback until it exists. */
-  beat: string
-  still: string
-  /** Fraction of the section's footage time this shot takes (shots split the section in order). */
-  weight: number
-  /** Punch-in target on the still, in still-relative coordinates (0–1), and how far to zoom. */
-  focus?: { x: number; y: number; zoom: number }
-  /** Footage-relative: a named moment from the manifest to land the punch-in on. */
-  moment?: string
-  /** This shot cuts in exactly on the music's big drop (other shot cuts snap to the nearest bar line). */
-  startsOnDrop?: boolean
-}
-
-export type Section = {
-  id: string
-  kind: 'intro' | 'beat' | 'close'
-  /** The kinetic title card that opens a demo beat. */
-  title?: string
-  phrases: { say: string; show: string }[]
-  /** A phrase index whose first word should land exactly on a downbeat (the music's big drop rides on it). */
-  dropOnPhrase?: number
-  /** The section runs at least this many bars (1 bar ≈ 1.7 s), so the footage gets time beyond the voice. */
-  minBars?: number
-  shots: Shot[]
-}
-
-export const SCRIPT: Section[] = [
+const script: Section[] = [
   {
     id: 'intro',
     kind: 'intro',
@@ -166,11 +134,57 @@ export const SCRIPT: Section[] = [
   },
 ]
 
-/** How the TTS should perform. Kept beside the script because it's part of the performance. */
-export const VOICE_INSTRUCTIONS = [
-  'Voice: a warm, natural man in his early forties, a developer talking about something he built and loves.',
-  'Tone: friendly, a little playful, quietly confident. Never salesy, never announcer-like, no radio voice.',
-  'Pacing: brisk and energetic but relaxed, with short natural pauses between sentences; punchy on one-word lines',
-  'like "Instant." and "Pause it."',
-  'Pronunciation: "Commander" is the product name, said as one ordinary word. "NAS" rhymes with "jazz".',
-].join(' ')
+export const demo: VideoSpec = {
+  id: 'demo',
+  compositionId: 'CmdrDemo',
+  footageDir: 'video',
+  script,
+  voiceInstructions: [
+    'Voice: a warm, natural man in his early forties, a developer talking about something he built and loves.',
+    'Tone: friendly, a little playful, quietly confident. Never salesy, never announcer-like, no radio voice.',
+    'Pacing: brisk and energetic but relaxed, with short natural pauses between sentences; punchy on one-word lines',
+    'like "Instant." and "Pause it."',
+    'Pronunciation: "Commander" is the product name, said as one ordinary word. "NAS" rhymes with "jazz".',
+  ].join(' '),
+  music: {
+    source: 'cdk-snaps.mp3',
+    credit: 'Music: "Snaps" by cdk · CC BY 3.0',
+    bpm: 139.94,
+    cutEvery: 1,
+    drop1: 13.5,
+    lift: { bar: 16, keepBars: 2, breakdownBar: 9 },
+    finalSection: 164.0,
+    finalHit: 192.02,
+    tail: 2.6,
+    joinFade: 1 / 30,
+    finalJumpNudge: -0.044,
+    gainUnderVoice: 0.13,
+    gainOpen: 0.46,
+    gainFinal: 0.66,
+  },
+  theme: {
+    titleStyle: 'slam',
+    transition: 'zoom',
+    flashes: true,
+    pulse: 'downbeats',
+    pulseAmount: 0.012,
+    haze: ['#8b5cf6', '#3b82f6', '#ec4899', '#ffc206'],
+    leaks: [
+      ['rgba(255,194,6,0.55)', 'rgba(236,72,153,0.35)'],
+      ['rgba(139,92,246,0.5)', 'rgba(34,211,238,0.3)'],
+      ['rgba(236,72,153,0.45)', 'rgba(255,194,6,0.35)'],
+    ],
+  },
+  gestures: {
+    intro: ['wave', 'point', 'open', 'shrug', 'cheer'],
+    speed: ['idle', 'point', 'open', 'cheer', 'point'],
+    trust: ['idle', 'open', 'point', 'shrug', 'wave', 'idle', 'thumb'],
+    rename: ['open', 'idle', 'point'],
+    reach: ['open', 'point', 'idle', 'open', 'idle', 'thumb'],
+    ai: ['idle', 'shrug', 'idle', 'open', 'idle', 'thumb'],
+    care: ['open', 'idle', 'idle', 'cheer'],
+    close: ['cheer', 'open', 'point'],
+  },
+  intro: 'origin',
+  endTagline: 'Free for personal use · macOS',
+}

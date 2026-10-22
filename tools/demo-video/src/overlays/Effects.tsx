@@ -10,21 +10,22 @@ const GRAIN = `url("data:image/svg+xml;utf8,${encodeURIComponent(
   `<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 1.4 -0.2'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>`,
 )}")`
 
-const LEAKS = [
-  ['rgba(255,194,6,0.55)', 'rgba(236,72,153,0.35)'],
-  ['rgba(139,92,246,0.5)', 'rgba(34,211,238,0.3)'],
-  ['rgba(236,72,153,0.45)', 'rgba(255,194,6,0.35)'],
-]
-
 export const Effects: React.FC = () => {
   const t = useT()
-  const { timeline } = useTimeline()
+  const { timeline, spec } = useTimeline()
+  const LEAKS = spec.theme.leaks
   const frame = Math.round(t * FPS)
   const cuts = timeline.sections.slice(1).map((s) => s.start)
   const leaks = cuts.map((at, i) => ({ at, i, d: t - at })).filter(({ d }) => d >= -0.05 && d < 1.1)
-  const flash = Math.max(hit(t, timeline.drop1, 0.07) * 0.35, hit(t, timeline.bigDrop, 0.08) * 0.5)
-  const goldFlash = hit(t, timeline.finalHit, 0.1) * 0.45
-  const cutFlash = hits(t, cuts, 0.05) * 0.12
+  // The drop-and-glitch theme flashes on the drops and cuts; the warm theme lets the light leaks carry the cuts.
+  const flash = spec.theme.flashes
+    ? Math.max(
+        hit(t, timeline.drop1, 0.07) * 0.35,
+        timeline.bigDrop === null ? 0 : hit(t, timeline.bigDrop, 0.08) * 0.5,
+      )
+    : 0
+  const goldFlash = hit(t, timeline.finalHit, 0.1) * (spec.theme.flashes ? 0.45 : 0.25)
+  const cutFlash = spec.theme.flashes ? hits(t, cuts, 0.05) * 0.12 : 0
   return (
     <AbsoluteFill style={{ pointerEvents: 'none' }}>
       {leaks.map(({ at, i, d }) => {

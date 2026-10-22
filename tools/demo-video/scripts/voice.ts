@@ -1,26 +1,29 @@
-// Builds the voice track, one file per script section, plus `public/voice/manifest.json` with each section's
+// Builds a video's voice track, one file per script section, plus `public/<videoId>/voice/manifest.json` with each section's
 // duration, word-timed caption phrases, and a per-frame loudness envelope (the stick figure's mouth).
 //
-//   OPENAI_API_KEY=$(secret OPENAI_API_KEY) node scripts/voice.ts           TTS, cached by text + voice settings
+//   OPENAI_API_KEY=$(secret OPENAI_API_KEY) node scripts/voice.ts --video=anywhere   TTS, cached by text + voice
+//                                     settings (`--video` defaults to the first video, `demo`)
 //   OPENAI_API_KEY=$(secret OPENAI_API_KEY) node scripts/voice.ts --force   regenerate every TTS take
 //   OPENAI_API_KEY=$(secret OPENAI_API_KEY) node scripts/voice.ts --source=webcam
-//                                     use the audio of public/webcam/<id>.mp4 instead of TTS (real takes)
+//                                     use the audio of public/<videoId>/webcam/<sectionId>.mp4 instead of TTS (real takes)
 //   node scripts/voice.ts --only=trust    limit to one section
 //
-// Raw takes live in assets/voice-raw/ (the paid part); everything in public/voice/ is derived and cheap to redo.
+// Raw takes live in assets/voice-raw/<videoId>/ (the paid part); everything in public/<videoId>/voice/ is derived and cheap to redo.
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { FPS, VOICE } from '../src/config.ts'
-import { SCRIPT, VOICE_INSTRUCTIONS, type Section } from '../src/script.ts'
+import { FPS, VOICE, paths } from '../src/config.ts'
+import { videoFromArgs } from '../src/videos/index.ts'
+import type { Section } from '../src/videos/types.ts'
 import type { VoiceManifest } from '../src/timeline.ts'
 import { decodeMono, durationSec, rmsWindows, toDb } from './lib/audio.ts'
 
 const ROOT = join(import.meta.dirname, '..')
-const RAW = join(ROOT, 'assets/voice-raw')
-const OUT = join(ROOT, 'public/voice')
 const args = process.argv.slice(2)
+const video = videoFromArgs(args)
+const RAW = join(ROOT, 'assets/voice-raw', video.id)
+const OUT = join(ROOT, 'public', paths(video.id).voice)
 const force = args.includes('--force')
 const source = args.find((a) => a.startsWith('--source='))?.split('=')[1] ?? 'tts'
 const only = args.find((a) => a.startsWith('--only='))?.split('=')[1]
@@ -44,7 +47,7 @@ async function tts(section: Section, rawPath: string): Promise<void> {
       model: VOICE.model,
       voice: VOICE.voice,
       input,
-      instructions: VOICE_INSTRUCTIONS,
+      instructions: video.voiceInstructions,
       response_format: 'wav',
     }),
   })
@@ -103,21 +106,57 @@ function align(script: string[], heard: string[]): (number | undefined)[] {
   return out
 }
 
+const NUMBERS: Record<string, string> = {
+  zero: '0',
+  one: '1',
+  two: '2',
+  three: '3',
+  four: '4',
+  five: '5',
+  six: '6',
+  seven: '7',
+  eight: '8',
+  nine: '9',
+  ten: '10',
+  fifteen: '15',
+  twenty: '20',
+  fifty: '50',
+  hundred: '00',
+  thousand: '000',
+  // Spoken URLs ("get commander dot com") come back from the transcript as "getcommander.com" or "getcommander com".
+  dot: '',
+}
+/**
+ * Spelling-insensitive form for comparing script and transcript: number words become digits, "dot" and spaces vanish, so
+ * "S three", "A W S", and "twenty-five" match the transcript's "S3", "AWS", and "25".
+ */
+const squash = (s: string): string =>
+  tokens(s)
+    .map((w) => NUMBERS[w] ?? w)
+    .join('')
+
+function editDistance(a: string, b: string): number {
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j)
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i]
+    for (let j = 1; j <= b.length; j++)
+      cur[j] = Math.min(prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1), prev[j] + 1, cur[j - 1] + 1)
+    prev = cur
+  }
+  return prev[b.length]
+}
+
 /**
  * The TTS model sometimes drops or garbles a sentence (seen on the intro: the last line went missing). A take passes
- * when the transcript matches most script words AND the last phrase is actually there.
+ * when the transcript is close to the script overall AND the last phrase's ending is actually there.
  */
 function takeIsComplete(section: Section, words: Word[]): boolean {
-  const perPhrase = section.phrases.map((p) => tokens(p.say))
-  const flat = perPhrase.flat()
-  const heard = words.map((w) => tokens(w.word).join(''))
-  const map = align(flat, heard)
-  const exact = map.filter((j, i) => j !== undefined && heard[j] === flat[i]).length
-  const lastPhraseStart = flat.length - perPhrase[perPhrase.length - 1].length
-  const lastPhraseHeard = map
-    .slice(lastPhraseStart)
-    .some((j, i) => j !== undefined && heard[j] === flat[lastPhraseStart + i])
-  return exact / flat.length >= 0.75 && lastPhraseHeard && heard.length <= flat.length * 1.3
+  const want = squash(section.phrases.map((p) => p.say).join(' '))
+  const heard = squash(words.map((w) => w.word).join(' '))
+  const similarity = 1 - editDistance(want, heard) / Math.max(want.length, heard.length)
+  const lastPhrase = squash(section.phrases[section.phrases.length - 1].say)
+  const ending = lastPhrase.slice(-Math.min(10, lastPhrase.length))
+  return similarity >= 0.85 && heard.slice(-ending.length - 6).includes(ending)
 }
 
 /** Phrase timings from word timestamps; falls back to spreading phrases by length over the audio. */
@@ -175,23 +214,23 @@ async function main(): Promise<void> {
     : undefined
   const manifest: VoiceManifest = { fps: FPS, source, sections: previous?.source === source ? previous.sections : {} }
 
-  for (const section of SCRIPT) {
+  for (const section of video.script) {
     if (only && section.id !== only) continue
     console.log(`${section.id}:`)
     const hash = createHash('sha256')
-      .update(JSON.stringify([section.phrases.map((p) => p.say), VOICE, VOICE_INSTRUCTIONS]))
+      .update(JSON.stringify([section.phrases.map((p) => p.say), VOICE, video.voiceInstructions]))
       .digest('hex')
       .slice(0, 12)
     const rawPath = source === 'webcam' ? join(RAW, `webcam-${section.id}.wav`) : join(RAW, `${section.id}-${hash}.wav`)
 
-    const file = `voice/${section.id}.wav`
+    const file = `${paths(video.id).voice}/${section.id}.wav`
     const outPath = join(ROOT, 'public', file)
     let words: Word[] = []
     let duration = 0
     let lead = 0
     for (let attempt = 1; ; attempt++) {
       if (source === 'webcam') {
-        const take = join(ROOT, 'public/webcam', `${section.id}.mp4`)
+        const take = join(ROOT, 'public', paths(video.id).webcam, `${section.id}.mp4`)
         if (!existsSync(take)) throw new Error(`Missing webcam take ${take}`)
         execFileSync('ffmpeg', ['-v', 'error', '-y', '-i', take, '-vn', '-ac', '1', '-ar', '48000', rawPath])
       } else if (force || attempt > 1 || !existsSync(rawPath)) {

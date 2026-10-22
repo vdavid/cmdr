@@ -2,10 +2,12 @@ import { createContext, useContext } from 'react'
 import { useCurrentFrame } from 'remotion'
 import { FPS } from './config.ts'
 import type { SectionPlan, Timeline, VoiceManifest } from './timeline.ts'
+import type { VideoSpec } from './videos/types.ts'
 
-export const TimelineContext = createContext<{ timeline: Timeline; voice: VoiceManifest } | null>(null)
+type Ctx = { timeline: Timeline; voice: VoiceManifest; spec: VideoSpec }
+export const TimelineContext = createContext<Ctx | null>(null)
 
-export function useTimeline(): { timeline: Timeline; voice: VoiceManifest } {
+export function useTimeline(): Ctx {
   const ctx = useContext(TimelineContext)
   if (!ctx) throw new Error('useTimeline outside TimelineContext')
   return ctx

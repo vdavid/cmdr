@@ -39,7 +39,7 @@ export const Presenter: React.FC = () => {
   if (frame.visible <= 0.001) return null
 
   const level = voiceLevel(timeline, voice, t)
-  const beat = inRanges(t, timeline.highEnergy) ? hits(t, timeline.downbeats, 0.16) : 0
+  const beat = inRanges(t, timeline.highEnergy) ? hits(t, timeline.pulses, 0.16) : 0
   const b = frame.bubble
   const w = FULL_W + (BUBBLE_D - FULL_W) * b
   const h = FULL_H + (BUBBLE_D - FULL_H) * b

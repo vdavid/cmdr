@@ -1,9 +1,9 @@
 # Credits and licenses
 
-Everything third-party in the demo video, with the evidence we checked. The heavy files themselves live in the
+Everything third-party in the promo videos, with the evidence we checked. The heavy files themselves live in the
 gitignored `assets/` and `public/`.
 
-## Music
+## Music: `demo` (Cmdr in 90 seconds)
 
 **"Snaps (Original RumbleStep Mix)" by cdk**
 
@@ -20,8 +20,9 @@ gitignored `assets/` and `public/`.
 - How we edited it (CC BY allows adaptations; say so in the credit): trimmed, two whole-bar jumps, and volume ducking
   under the voice. See `src/timeline.ts`.
 
-**Required attribution.** The end card shows a short credit on screen ("Music: "Snaps" by cdk · CC BY 3.0", in
-`src/scenes/Close.tsx`). Wherever the video is published, also put the full credit with links in the description:
+**Required attribution.** The end card shows a short credit on screen ("Music: "Snaps" by cdk · CC BY 3.0", from
+`music.credit` in `src/videos/demo.ts`). Wherever the video is published, also put the full credit with links in the
+description:
 
 > Music: "Snaps (Original RumbleStep Mix)" by cdk (https://ccmixter.org/files/cdk/47643), licensed under CC BY 3.0
 > (https://creativecommons.org/licenses/by/3.0/). Edited for length.
@@ -33,10 +34,39 @@ Runner-ups the music search found (same license and site, both downloaded to `as
 - "Drive" by Alex Beroza feat. cdk & Darryl J, https://ccmixter.org/files/AlexBeroza/43098, CC BY 3.0, uploaded
   2013-07-28. Credit all three if used.
 
+## Music: `anywhere` (safe file operations, to and from anywhere)
+
+**"Reach Out (Stems)" by spinningmerkaba**
+
+- Track page: https://ccmixter.org/files/jlbrock44/32919 (the artist's ccMixter handle is jlbrock44; the page shows the
+  name spinningmerkaba)
+- License: Creative Commons Attribution 3.0 (CC BY 3.0), http://creativecommons.org/licenses/by/3.0/, in the track's
+  license box. (The page footer's CC BY-NC 4.0 link is ccMixter's license for its own site text, not the track's.)
+- Released: "uploaded: Sun, Aug 7, 2011 @ 10:29 PM" in the track page header.
+- Checked on 2026-10-23 by fetching the track page live (Firecrawl, then curl).
+- Length 3:28. Acoustic and electric guitars, bass, and live drums; the page calls it the instrumental stems of the song
+  "Reach Out", and this file is their mix. 112.94 BPM measured.
+- Downloaded MP3: `assets/music/spinningmerkaba-reach-out.mp3`.
+- How we edited it: trimmed so the band comes in on the intro-to-demo cut, one whole-bar jump (crossfaded) so its final
+  hit lands on the logo, and volume ducking under the voice.
+
+**Required attribution.** The end card shows "Music: "Reach Out" by spinningmerkaba · CC BY 3.0". Wherever the video is
+published, also put the full credit in the description:
+
+> Music: "Reach Out (Stems)" by spinningmerkaba (https://ccmixter.org/files/jlbrock44/32919), licensed under CC BY 3.0
+> (https://creativecommons.org/licenses/by/3.0/). Edited for length.
+
+Runner-ups (both CC BY 3.0 on ccMixter, checked on their pages with curl, downloaded to `assets/music/`, neither used):
+
+- "Prayers" by Admiral Bob feat. emmrodriguez, https://ccmixter.org/files/admiralbob77/61151, uploaded 2020-02-29. A
+  remix of "Prayer" by emmrodriguez (https://ccmixter.org/files/emmrodriguez/49416, also CC BY 3.0): credit both. Funky
+  jazz groove, clean stop, but no lift.
+- "School Boys" by Lemoneight, https://ccmixter.org/files/Lemoneight/59691, uploaded 2019-05-06. Indie rock, moodier.
+
 ## Voice
 
-Synthesized with OpenAI's text-to-speech API: model `gpt-4o-mini-tts`, voice `cedar`, steered by `VOICE_INSTRUCTIONS` in
-`src/script.ts`. Caption timing comes from OpenAI's `whisper-1` word timestamps.
+Synthesized with OpenAI's text-to-speech API: model `gpt-4o-mini-tts`, voice `cedar`, steered by each video's
+`voiceInstructions` in `src/videos/`. Caption timing comes from OpenAI's `whisper-1` word timestamps.
 
 - OpenAI's usage policies require telling viewers that a TTS voice is AI-generated, not a human:
   https://developers.openai.com/api/docs/guides/text-to-speech. If this version is ever published with the synthetic

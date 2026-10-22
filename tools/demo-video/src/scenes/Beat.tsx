@@ -6,33 +6,48 @@ import { f, type SectionPlan, type ShotPlan } from '../timeline.ts'
 // A demo beat: a kinetic title card slams in on the cut, then pushes through into the app footage, which drifts and
 // punches in on the key UI moment. The footage is the real recording when the manifest has it, else a still.
 export const Beat: React.FC<{ t: number; section: SectionPlan }> = ({ t, section }) => {
-  const { timeline } = useTimeline()
+  const { timeline, spec } = useTimeline()
+  const { theme } = spec
   const local = t - section.start
   const cardOut = section.footageStart - section.start
-  const pulse = inRanges(t, timeline.highEnergy) ? hits(t, timeline.downbeats, 0.14) : 0
+  const pulse = inRanges(t, timeline.highEnergy) ? hits(t, timeline.pulses, 0.14) : 0
   const reveal = ramp(local, cardOut - 0.3, cardOut + 0.25, Easing.bezier(0.16, 1, 0.3, 1))
   const total = timeline.sections.filter((s) => s.kind === 'beat').length
+  // `zoom` pushes through the card into the footage; `slide` pushes the card out left as the footage slides in.
+  const enter =
+    theme.transition === 'zoom'
+      ? {
+          transform: `scale(${1.35 - 0.35 * reveal + pulse * theme.pulseAmount})`,
+          filter: `blur(${(1 - reveal) * 12}px)`,
+        }
+      : {
+          transform: `translateX(${(1 - reveal) * 360}px) scale(${1 + pulse * theme.pulseAmount})`,
+          filter: `blur(${(1 - reveal) * 6}px)`,
+        }
   return (
     <AbsoluteFill>
-      <AbsoluteFill
-        style={{
-          opacity: reveal,
-          transform: `scale(${1.35 - 0.35 * reveal + pulse * 0.012})`,
-          filter: `blur(${(1 - reveal) * 12}px)`,
-        }}
-      >
-        <Glow t={t} pulse={pulse} />
+      <AbsoluteFill style={{ opacity: reveal, ...enter }}>
+        <Glow t={t} pulse={pulse} colors={spec.theme.haze} />
         {section.shots.map((shot, i) =>
           t >= shot.start && t < shot.end ? <Shot key={i} shot={shot} t={t} first={i === 0} /> : null,
         )}
       </AbsoluteFill>
       <SectionTag section={section} index={section.index} total={total} t={local} cardOut={cardOut} />
-      {local < cardOut + 0.3 && <TitleCard text={section.title ?? ''} t={local} out={cardOut} />}
+      {local < cardOut + 0.3 &&
+        (theme.titleStyle === 'slam' ? (
+          <TitleCard text={section.title ?? ''} t={local} out={cardOut} />
+        ) : (
+          <GrooveCard text={section.title ?? ''} t={local} out={cardOut} beat={60 / spec.music.bpm} />
+        ))}
     </AbsoluteFill>
   )
 }
 
-const Glow: React.FC<{ t: number; pulse: number }> = ({ t, pulse }) => (
+const Glow: React.FC<{ t: number; pulse: number; colors: [string, string, string, string] }> = ({
+  t,
+  pulse,
+  colors,
+}) => (
   <div
     style={{
       position: 'absolute',
@@ -41,7 +56,7 @@ const Glow: React.FC<{ t: number; pulse: number }> = ({ t, pulse }) => (
       top: 170,
       bottom: 250,
       borderRadius: 60,
-      background: `linear-gradient(${120 + Math.sin(t * 0.3) * 20}deg, ${COLORS.violet}, ${COLORS.blue} 45%, ${COLORS.mustard})`,
+      background: `linear-gradient(${120 + Math.sin(t * 0.3) * 20}deg, ${colors[0]}, ${colors[1]} 45%, ${colors[3]})`,
       filter: 'blur(110px)',
       opacity: 0.32 + pulse * 0.12,
     }}
@@ -100,6 +115,74 @@ const Shot: React.FC<{ shot: ShotPlan; t: number; first: boolean }> = ({ shot, t
     )
   }
   return <Img src={staticFile(`brand/screenshots/${shot.still}`)} style={style} />
+}
+
+// The warmer title: words step in on eighth notes, dropping with a little bounce, then a mustard marker swipes behind
+// the last word, like someone highlighting it by hand. It leaves by sliding left as the footage pushes in.
+const GrooveCard: React.FC<{ text: string; t: number; out: number; beat: number }> = ({ text, t, out, beat }) => {
+  const words = text.split(' ')
+  const step = Math.min(beat / 2, 0.55 / Math.max(1, words.length - 1))
+  const exit = ramp(t, out - 0.3, out + 0.2, Easing.bezier(0.7, 0, 0.84, 0))
+  const marker = ramp(t, step * (words.length - 1) + 0.18, step * (words.length - 1) + 0.42)
+  return (
+    <AbsoluteFill
+      style={{
+        alignItems: 'center',
+        justifyContent: 'center',
+        opacity: 1 - exit,
+        transform: `translateX(${exit * -320}px)`,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          gap: '0 34px',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          maxWidth: 1500,
+          fontFamily: FONT,
+          fontWeight: 750,
+          fontSize: 132,
+          letterSpacing: -4,
+          lineHeight: 1.12,
+          color: COLORS.text,
+        }}
+      >
+        {words.map((w, i) => {
+          const a = ramp(t, i * step, i * step + 0.34, Easing.bezier(0.3, 1.6, 0.5, 1))
+          const last = i === words.length - 1
+          return (
+            <span
+              key={i}
+              style={{
+                position: 'relative',
+                display: 'inline-block',
+                transform: `translateY(${(1 - a) * -70}px) rotate(${(1 - a) * (i % 2 ? 4 : -4)}deg)`,
+                opacity: Math.min(1, a * 1.6),
+              }}
+            >
+              {last && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    left: -14,
+                    right: -14,
+                    top: '18%',
+                    bottom: '6%',
+                    background: COLORS.mustard,
+                    borderRadius: 14,
+                    transform: `skewX(-8deg) scaleX(${marker})`,
+                    transformOrigin: '0% 50%',
+                  }}
+                />
+              )}
+              <span style={{ position: 'relative', color: last && marker > 0.5 ? COLORS.bg : undefined }}>{w}</span>
+            </span>
+          )
+        })}
+      </div>
+    </AbsoluteFill>
+  )
 }
 
 const TitleCard: React.FC<{ text: string; t: number; out: number }> = ({ text, t, out }) => {

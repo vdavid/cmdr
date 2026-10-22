@@ -1,4 +1,4 @@
-import { useT, useTimeline } from '../context.ts'
+import { sectionAt, useT, useTimeline } from '../context.ts'
 import { COLORS, FONT, ramp } from '../lib/motion.ts'
 
 // Burned-in captions for muted viewing. One phrase at a time; words light up as they're spoken (timed by their share
@@ -14,14 +14,26 @@ export const Captions: React.FC = () => {
   if (i < 0) return null
   const c = caps[i]
   const enter = ramp(t, c.start - 0.1, c.start + 0.08)
+  // During the beats the presenter bubble owns the bottom-right corner, so captions center in the space left of it.
+  const besideBubble = sectionAt(timeline, t).kind === 'beat'
+  const long = c.show.length > 50
   const words = c.show.split(' ')
   const total = c.show.length
   let acc = 0
   return (
-    <div style={{ position: 'absolute', left: 0, right: 0, bottom: 64, display: 'flex', justifyContent: 'center' }}>
+    <div
+      style={{
+        position: 'absolute',
+        left: 0,
+        right: besideBubble ? 330 : 0,
+        bottom: 64,
+        display: 'flex',
+        justifyContent: 'center',
+      }}
+    >
       <div
         style={{
-          maxWidth: 1240,
+          maxWidth: besideBubble ? 1400 : 1560,
           padding: '14px 30px 16px',
           borderRadius: 18,
           background: 'rgba(10,10,11,0.72)',
@@ -29,7 +41,7 @@ export const Captions: React.FC = () => {
           boxShadow: '0 12px 40px rgba(0,0,0,0.4)',
           fontFamily: FONT,
           fontWeight: 600,
-          fontSize: 48,
+          fontSize: long ? 44 : 48,
           lineHeight: 1.25,
           letterSpacing: -0.6,
           textAlign: 'center',

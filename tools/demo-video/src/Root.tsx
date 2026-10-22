@@ -1,7 +1,8 @@
 import { Composition, continueRender, delayRender, staticFile } from 'remotion'
-import { FPS, HEIGHT, WIDTH } from './config.ts'
+import { FPS, HEIGHT, WIDTH, paths } from './config.ts'
 import { buildTimeline, f, type FootageManifest, type Timeline, type VoiceManifest } from './timeline.ts'
 import { Video } from './Video.tsx'
+import { VIDEOS, videoById } from './videos/index.ts'
 
 // Inter is the website's face; the variable font covers every weight we use.
 const fontHandle = delayRender('Loading Inter')
@@ -19,8 +20,13 @@ inter
     continueRender(fontHandle)
   })
 
-/** `stem` renders one audio stem alone (`--props='{"stem":"voice"}'`), to measure levels; omit it for the mix. */
-export type VideoProps = { timeline: Timeline | null; voice: VoiceManifest | null; stem?: 'voice' | 'music' }
+/** `stem` renders one audio stem alone (`--props=props/stem-voice.json`), to measure levels; omit it for the mix. */
+export type VideoProps = {
+  videoId: string
+  timeline: Timeline | null
+  voice: VoiceManifest | null
+  stem?: 'voice' | 'music'
+}
 
 async function loadJson<T>(path: string, fallback?: T): Promise<T> {
   const res = await fetch(staticFile(path))
@@ -30,19 +36,27 @@ async function loadJson<T>(path: string, fallback?: T): Promise<T> {
 }
 
 export const RemotionRoot: React.FC = () => (
-  <Composition
-    id="CmdrDemo"
-    component={Video}
-    width={WIDTH}
-    height={HEIGHT}
-    fps={FPS}
-    durationInFrames={90 * FPS}
-    defaultProps={{ timeline: null, voice: null } satisfies VideoProps}
-    calculateMetadata={async ({ props }) => {
-      const voice = await loadJson<VoiceManifest>('voice/manifest.json')
-      const footage = await loadJson<FootageManifest>('footage/manifest.json', { beats: {} })
-      const timeline = buildTimeline(voice, footage)
-      return { durationInFrames: f(timeline.duration), props: { ...props, timeline, voice } }
-    }}
-  />
+  <>
+    {VIDEOS.map((spec) => (
+      <Composition
+        key={spec.id}
+        id={spec.compositionId}
+        component={Video}
+        width={WIDTH}
+        height={HEIGHT}
+        fps={FPS}
+        durationInFrames={90 * FPS}
+        defaultProps={{ videoId: spec.id, timeline: null, voice: null } satisfies VideoProps}
+        calculateMetadata={async ({ props }) => {
+          const video = videoById(props.videoId)
+          const p = paths(video.id)
+          const voice = await loadJson<VoiceManifest>(`${p.voice}/manifest.json`)
+          const footage = await loadJson<FootageManifest>(`${p.footage}/manifest.json`, { beats: {} })
+          const onsets = await loadJson<number[]>(p.onsets, [])
+          const timeline = buildTimeline(video, voice, footage, onsets)
+          return { durationInFrames: f(timeline.duration), props: { ...props, timeline, voice } }
+        }}
+      />
+    ))}
+  </>
 )

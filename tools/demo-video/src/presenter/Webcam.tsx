@@ -1,12 +1,13 @@
 import { OffthreadVideo, Sequence, staticFile } from 'remotion'
+import { paths } from '../config.ts'
 import { useTimeline } from '../context.ts'
 import { f } from '../timeline.ts'
 
-// Real webcam takes in the presenter slot: `public/webcam/<sectionId>.mp4`, one take per script section, whose audio
+// Real webcam takes in the presenter slot: `public/<videoId>/webcam/<sectionId>.mp4`, one take per script section, whose audio
 // also became the voice (`pnpm voice --source=webcam`). Each take plays in sync with its voice clip and keeps
 // rolling (silently) until the next one starts, so there are no frozen faces between lines.
 export const Webcam: React.FC = () => {
-  const { timeline, voice } = useTimeline()
+  const { timeline, voice, spec } = useTimeline()
   const clips = timeline.voice.map((clip, i, all) => {
     // Take time = voice-file time + the silence trimmed off the take's start.
     const takeFrom = clip.from + voice.sections[clip.sectionId].lead
@@ -22,7 +23,7 @@ export const Webcam: React.FC = () => {
         return (
           <Sequence key={i} from={f(start)} durationInFrames={Math.max(1, f(end) - f(start))} layout="none">
             <OffthreadVideo
-              src={staticFile(`webcam/${clip.sectionId}.mp4`)}
+              src={staticFile(`${paths(spec.id).webcam}/${clip.sectionId}.mp4`)}
               trimBefore={f(takeFrom - pre)}
               muted
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}

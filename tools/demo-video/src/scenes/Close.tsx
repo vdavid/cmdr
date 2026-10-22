@@ -6,7 +6,7 @@ import { f, type SectionPlan } from '../timeline.ts'
 // The close: the presenter is back full size with the app floating beside them; on the music's final hit the frame
 // clears and the end card slams in (logo, name, URL), then holds through the decay.
 export const Close: React.FC<{ t: number; section: SectionPlan }> = ({ t, section }) => {
-  const { timeline } = useTimeline()
+  const { timeline, spec } = useTimeline()
   const local = t - section.start
   const hitT = timeline.finalHit
   const cleared = ramp(t, hitT - 0.06, hitT + 0.05)
@@ -45,12 +45,12 @@ export const Close: React.FC<{ t: number; section: SectionPlan }> = ({ t, sectio
           )}
         </div>
       </AbsoluteFill>
-      {t >= hitT - 0.06 && <EndCard t={t - hitT} />}
+      {t >= hitT - 0.06 && <EndCard t={t - hitT} tagline={spec.endTagline} credit={spec.music.credit} />}
     </AbsoluteFill>
   )
 }
 
-const EndCard: React.FC<{ t: number }> = ({ t }) => {
+const EndCard: React.FC<{ t: number; tagline: string; credit: string }> = ({ t, tagline, credit }) => {
   const slam = ramp(t, 0, 0.32, Easing.bezier(0.2, 1.6, 0.4, 1))
   const shock = ramp(t, 0, 0.9)
   const word = ramp(t, 0.12, 0.5)
@@ -126,7 +126,7 @@ const EndCard: React.FC<{ t: number }> = ({ t }) => {
             letterSpacing: 1,
           }}
         >
-          Free for personal use · macOS
+          {tagline}
         </div>
       </div>
       {/* CC BY 3.0 needs visible attribution; the license link lives in CREDITS.md and the video description. */}
@@ -142,7 +142,7 @@ const EndCard: React.FC<{ t: number }> = ({ t }) => {
           opacity: small * 0.75,
         }}
       >
-        Music: "Snaps" by cdk · CC BY 3.0
+        {credit}
       </div>
     </AbsoluteFill>
   )
