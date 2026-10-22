@@ -277,10 +277,11 @@
   all follow live. With no selection, Start / End / Write as are disabled; a toggle rewrites the token and leaves the
   box's selection as it is.
 - **Sync from outside only** (`boxNeedsSync`): a token from anywhere but the box (typed in the mask, a new cursor row,
-  the editor opening, the engine's first answer) sets the box's selection to the engine's bounds, or a caret at the end
-  for the whole field or a token that takes nothing (`boxOffsetsFor`). The editor remembers the token and text the box
-  (or a toggle) last wrote (`wrote`) and never sets those back. **Gotcha/Why**: re-applying the bounds after the box's
-  own change turned every caret move back into a selection, so the box had no caret.
+  the editor opening, the engine's first answer) sets the box's selection to the engine's bounds, all the text for the
+  whole field, or a caret at the end for a token that takes nothing (`boxOffsetsFor`). The editor remembers the token
+  and text the box (or a toggle) last wrote (`wrote`) and never sets those back, so a caret the user makes in the whole
+  field stays a caret. **Gotcha/Why**: re-applying the bounds after the box's own change turned every caret move back
+  into a selection, so the box had no caret.
 - **Which edges count from where**: a pointer selection is a fresh pick, each end counting from the edge it's nearer
   (`autoAnchors`: a tie goes to the start, and an end on the last character counts from the end, so it runs to the end
   of every name); a selection a key adjusted keeps the token's own choice (`anchorsOf`), so a manual Start / End choice

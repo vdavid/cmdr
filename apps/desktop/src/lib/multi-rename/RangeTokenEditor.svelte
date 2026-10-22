@@ -13,8 +13,8 @@
      *
      * The box drives the token: a selection becomes the token (`textPick`), and a bare caret is the
      * whole field (`[N]`). A token that changes any other way (typed in the mask, a new cursor row,
-     * the editor opening) sets the box's selection to the engine's bounds, or a caret at the end
-     * for the whole field; the box's own changes are never set back (`boxNeedsSync`), or every
+     * the editor opening) sets the box's selection to the engine's bounds, or all the text for the
+     * whole field; the box's own changes are never set back (`boxNeedsSync`), or every
      * caret move would turn back into a selection. A pointer selection is a fresh pick, each end
      * counting from the edge it's nearer; a key only adjusts it, keeping the token's own edges, so
      * a manual Start / End choice sticks until the next pointer pick. Only a selection that follows
@@ -77,7 +77,7 @@
     const cursorSample = $derived(answer?.samples.find((sample) => sample.row === answer?.cursor))
     const text = $derived(cursorSample?.text ?? '')
     const length = $derived(Array.from(text).length)
-    /** The whole field selects nothing: the box shows a bare caret, and there are no edges to count. */
+    /** The whole field has no part: the box selects all its text, and there are no edges to count. */
     const whole = $derived(isWholeField(value.range))
     const selection = $derived.by((): Selection | null => {
         if (whole) return null
@@ -128,12 +128,15 @@
     /** The box's selection right before an edit WebKit wouldn't let us cancel, to put back with the text. */
     let beforeEdit: { start: number; end: number } | null = null
 
-    /** The box's selection set to the token's characters on this file, or a caret at the end for the whole field. */
+    /** What the box selects for the token: its characters on this file, or all the text for the whole field. */
+    const shownPart = $derived(whole ? 'whole' : selection)
+
+    /** The box's selection set to the token's part (`shownPart`), or a caret at the end when it takes nothing. */
     function showSelection(): void {
         const box = boxEl
         if (!box) return
         selectingBy = null
-        const { start, end } = boxOffsetsFor(text, selection)
+        const { start, end } = boxOffsetsFor(text, shownPart)
         if (box.selectionStart === start && box.selectionEnd === end) return
         box.setSelectionRange(start, end)
     }
@@ -205,7 +208,7 @@
         const box = boxEl
         if (!box || box.value === text || composing) return
         box.value = text
-        const { start, end } = beforeEdit ?? boxOffsetsFor(text, selection)
+        const { start, end } = beforeEdit ?? boxOffsetsFor(text, shownPart)
         box.setSelectionRange(start, end)
         beforeEdit = null
     }

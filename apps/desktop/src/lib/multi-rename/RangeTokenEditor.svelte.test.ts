@@ -270,10 +270,10 @@ describe('the range editor', () => {
     expect(m.value()).toBe('[N1-5]')
   })
 
-  it('shows the whole field as a caret at the end, with nothing to count', async () => {
+  it('shows the whole field as the whole text selected, with nothing to count', async () => {
     const m = await mountField('[N]')
     await open(m, 2)
-    expect(shown()).toEqual([9, 9])
+    expect(shown()).toEqual([0, 9])
     expect(toggle('From the start').disabled).toBe(true)
     expect(toggle('Start and length').disabled).toBe(true)
   })
@@ -293,12 +293,31 @@ describe('the range editor', () => {
   it('moves the box’s selection when the token changes in the mask', async () => {
     const m = await mountField('[N]')
     await open(m, 2)
-    expect(shown()).toEqual([9, 9])
+    expect(shown()).toEqual([0, 9])
     m.input.value = '[N1-3]'
     m.input.dispatchEvent(new Event('input', { bubbles: true }))
     await settle()
     expect(document.querySelector('.ui-popover .reading')?.textContent).toContain('From the 1st to the 3rd character')
     expect(shown()).toEqual([0, 3])
+    m.input.value = '[N]'
+    m.input.dispatchEvent(new Event('input', { bubbles: true }))
+    await settle()
+    expect(shown()).toEqual([0, 9])
+  })
+
+  it('keeps a caret the user makes in the whole field, and Tab’s select-all there writes nothing', async () => {
+    const m = await mountField('[N]')
+    await open(m, 2)
+    await select('key', 4, 4)
+    expect(m.value()).toBe('[N]')
+    expect(shown()).toEqual([4, 4])
+    box().blur()
+    box().focus()
+    box().setSelectionRange(0, 9)
+    box().dispatchEvent(new Event('select', { bubbles: true }))
+    await settle()
+    expect(m.value()).toBe('[N]')
+    expect(shown()).toEqual([0, 9])
   })
 
   it('counts the start from the end on request, which takes the end with it', async () => {

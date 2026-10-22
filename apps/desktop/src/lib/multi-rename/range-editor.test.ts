@@ -116,7 +116,13 @@ describe('the box’s selection set from outside', () => {
     expect(boxOffsetsFor('Beach day', { first: 0, last: 4, length: 9 })).toEqual({ start: 0, end: 5 })
   })
 
-  it('puts a caret at the end when there’s no part to select', () => {
+  it('selects the whole text for the whole field', () => {
+    expect(boxOffsetsFor('Beach day', 'whole')).toEqual({ start: 0, end: 9 })
+    expect(boxOffsetsFor('a😀', 'whole')).toEqual({ start: 0, end: 3 })
+    expect(boxOffsetsFor('', 'whole')).toEqual({ start: 0, end: 0 })
+  })
+
+  it('puts a caret at the end when the token takes nothing from the file', () => {
     expect(boxOffsetsFor('Beach day', null)).toEqual({ start: 9, end: 9 })
     expect(boxOffsetsFor('a😀', null)).toEqual({ start: 3, end: 3 })
     expect(boxOffsetsFor('', null)).toEqual({ start: 0, end: 0 })

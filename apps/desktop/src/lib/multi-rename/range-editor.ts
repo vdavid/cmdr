@@ -50,14 +50,18 @@ export function textPick(args: { text: string; start: number; end: number; form:
   return { selection, range: rangeForSelection({ selection, anchors, form: args.form }) }
 }
 
-/** Whether `range` takes the whole field (`[N]`, or its `[N1-]` spelling), which the box shows as a bare caret. */
+/** Whether `range` takes the whole field (`[N]`, or its `[N1-]` spelling), which the box shows as all its text selected. */
 export function isWholeField(range: Range): boolean {
   return range.kind === 'all' || (range.kind === 'from' && range.at === 1)
 }
 
-/** The box's selection for `selection`'s characters, or a caret at the end when there's no part to select. */
-export function boxOffsetsFor(text: string, selection: Selection | null): { start: number; end: number } {
-  return selection ? textOffsetsOf(text, selection) : { start: text.length, end: text.length }
+/**
+ * The box's selection for what the token takes: `part`'s characters, all the text for the whole
+ * field, or a caret at the end for a token that takes nothing from this file.
+ */
+export function boxOffsetsFor(text: string, part: Selection | 'whole' | null): { start: number; end: number } {
+  if (part === 'whole') return { start: 0, end: text.length }
+  return part ? textOffsetsOf(text, part) : { start: text.length, end: text.length }
 }
 
 /** The token the box itself last wrote, and the field's text it was picked in. */
