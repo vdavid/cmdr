@@ -623,7 +623,7 @@
   },
   "multiRename.rangeEditor.keys": "← → déplacent la sélection, ⇧ sa fin, ⌥ son début",
   "@multiRename.rangeEditor.keys": {
-    "sourceHash": "b8f24a5"
+    "sourceHash": "6106f59"
   },
   "multiRename.rangeEditor.reading.whole": "Tout",
   "@multiRename.rangeEditor.reading.whole": {
