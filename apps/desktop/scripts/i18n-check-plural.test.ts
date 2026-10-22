@@ -38,6 +38,37 @@ describe('requiredPluralCategories: data-driven from Intl', () => {
   it('Japanese needs only other', () => {
     expect([...requiredPluralCategories('ja')]).toEqual(['other'])
   })
+
+  it('ordinal sets differ from cardinal ones (English one/two/few/other, Spanish other only)', () => {
+    expect([...requiredPluralCategories('en', 'ordinal')].sort()).toEqual(['few', 'one', 'other', 'two'])
+    expect([...requiredPluralCategories('es', 'ordinal')]).toEqual(['other'])
+    expect([...requiredPluralCategories('es')].sort()).toEqual(['many', 'one', 'other'])
+  })
+})
+
+describe('pluralCoverageDetail: selectordinal uses the ordinal CLDR set', () => {
+  const englishOrdinal = new Map([['at', new Set(['one', 'two', 'few', 'other'])]])
+
+  it('is clean for an English ordinal covering one/two/few/other', () => {
+    expect(pluralCoverageDetail('en', '{at, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}')).toBeNull()
+  })
+
+  it('flags an English ordinal missing two/few', () => {
+    expect(pluralCoverageDetail('en', '{at, selectordinal, one {#st} other {#th}}')).toMatch(
+      /\{at\} missing plural categories few, two/,
+    )
+  })
+
+  it('is clean for a Spanish other-only ordinal against a full English ordinal', () => {
+    expect(pluralCoverageDetail('es', '{at, selectordinal, other {#.º}}', englishOrdinal)).toBeNull()
+  })
+
+  it('still requires the cardinal set for a Spanish plural in the same message', () => {
+    const englishMixed = new Map([...englishOrdinal, ['count', new Set(['one', 'other'])]])
+    expect(
+      pluralCoverageDetail('es', '{at, selectordinal, other {#.º}} {count, plural, other {# archivos}}', englishMixed),
+    ).toBe('{count} missing plural categories many, one')
+  })
 })
 
 describe('pluralCoverageDetail: pure classifier', () => {

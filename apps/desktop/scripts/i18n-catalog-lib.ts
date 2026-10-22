@@ -284,6 +284,8 @@ interface MessageStructure {
   tags: Set<string>
   pluralCategories: Map<string, Set<string>>
   selectCategories: Map<string, Set<string>>
+  /** The `pluralCategories` args that are `selectordinal`, so CLDR ordinal (not cardinal) rules govern them. */
+  ordinalArgs: Set<string>
 }
 
 /**
@@ -293,6 +295,8 @@ interface MessageStructure {
 export interface AstElement {
   type: number
   value: string
+  /** On plural elements: `cardinal` for `plural`, `ordinal` for `selectordinal`. */
+  pluralType?: 'cardinal' | 'ordinal'
   options?: Record<string, { value: AstElement[] }>
   children?: AstElement[]
 }
@@ -332,6 +336,7 @@ function walkAst(ast: readonly AstElement[], acc: MessageStructure): void {
           walkAst(branch.value, acc)
         }
         target.set(el.value, cats)
+        if (el.pluralType === 'ordinal') acc.ordinalArgs.add(el.value)
         break
       }
       case TYPE.tag:
@@ -365,6 +370,7 @@ export function parseMessage(value: string, locale = 'en'): MessageStructure & {
     tags: new Set(),
     pluralCategories: new Map(),
     selectCategories: new Map(),
+    ordinalArgs: new Set(),
   }
   try {
     const ast = new IntlMessageFormat(value, locale).getAst() as unknown as readonly AstElement[]

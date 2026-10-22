@@ -10,7 +10,9 @@
  * FAILS the build (Go wrapper maps exit 1 → ERROR).
  *
  * The required set is data-driven, with NO bundled CLDR table:
- * `new Intl.PluralRules(locale).resolvedOptions().pluralCategories`. Two ICU
+ * `new Intl.PluralRules(locale, { type }).resolvedOptions().pluralCategories`,
+ * with `type: 'ordinal'` for `selectordinal` args and `'cardinal'` for `plural`
+ * ones (Spanish ordinals need only `other`, its cardinals one/many/other). Two ICU
  * exemptions, both correct: `other` is always required and always present (ICU
  * mandates it); explicit `=N` literal branches (`=0`, `=1`) are exact-value
  * matches that sit ALONGSIDE the keyword categories, never substitute for them,
@@ -42,19 +44,24 @@ import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.ts'
 
 /**
  * The CLDR plural categories a locale requires, from the platform's `Intl`
- * (no bundled CLDR table). Cached per locale.
+ * (no bundled CLDR table). Cached per locale and rule type.
  */
 const requiredCache = new Map<string, Set<string>>()
 
 /**
- * Returns the set of plural categories `locale` requires per CLDR.
+ * Returns the set of plural categories `locale` requires per CLDR. `plural` args
+ * follow the cardinal rules and `selectordinal` args the ordinal ones, and the two
+ * sets differ (English cardinal one/other, ordinal one/two/few/other; Spanish
+ * cardinal one/many/other, ordinal other only).
  * @param locale a BCP-47 tag
+ * @param type `cardinal` for `plural`, `ordinal` for `selectordinal`
  */
-export function requiredPluralCategories(locale: string): Set<string> {
-  const cached = requiredCache.get(locale)
+export function requiredPluralCategories(locale: string, type: Intl.PluralRuleType = 'cardinal'): Set<string> {
+  const cacheKey = `${locale}:${type}`
+  const cached = requiredCache.get(cacheKey)
   if (cached) return cached
-  const cats = new Set(new Intl.PluralRules(locale).resolvedOptions().pluralCategories)
-  requiredCache.set(locale, cats)
+  const cats = new Set(new Intl.PluralRules(locale, { type }).resolvedOptions().pluralCategories)
+  requiredCache.set(cacheKey, cats)
   return cats
 }
 
@@ -87,9 +94,9 @@ export function pluralCoverageDetail(
 ): string | null {
   const parsed = parseMessage(localeValue, locale)
   if (!parsed.ok || parsed.pluralCategories.size === 0) return null
-  const localeCldr = requiredPluralCategories(locale)
   const parts: string[] = []
   for (const [arg, provided] of parsed.pluralCategories) {
+    const localeCldr = requiredPluralCategories(locale, parsed.ordinalArgs.has(arg) ? 'ordinal' : 'cardinal')
     const englishCats = englishPlurals?.get(arg)
     // If English engaged the full plural (or we have no English reference), require
     // the locale's full CLDR set. If English was degenerate (`other`-only), require
