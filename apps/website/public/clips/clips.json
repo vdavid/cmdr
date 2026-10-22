@@ -1,0 +1,54 @@
+{
+  "generatedBy": "pnpm marketing:clips (apps/desktop/scripts/marketing-clips.ts)",
+  "clips": [
+    {
+      "slug": "copy-rollback",
+      "width": 1500,
+      "height": 960,
+      "duration": 11.933,
+      "themes": ["dark", "light"]
+    },
+    {
+      "slug": "language-switch",
+      "width": 1500,
+      "height": 1056,
+      "duration": 10.033,
+      "themes": ["dark", "light"]
+    },
+    {
+      "slug": "multi-rename",
+      "width": 1500,
+      "height": 960,
+      "duration": 7.533,
+      "themes": ["dark", "light"]
+    },
+    {
+      "slug": "ops-queue",
+      "width": 1500,
+      "height": 960,
+      "duration": 10.133,
+      "themes": ["dark", "light"]
+    },
+    {
+      "slug": "search",
+      "width": 1500,
+      "height": 960,
+      "duration": 6.933,
+      "themes": ["dark", "light"]
+    },
+    {
+      "slug": "settings",
+      "width": 1500,
+      "height": 1056,
+      "duration": 8.567,
+      "themes": ["dark", "light"]
+    },
+    {
+      "slug": "viewer",
+      "width": 1500,
+      "height": 1062,
+      "duration": 10.567,
+      "themes": ["dark", "light"]
+    }
+  ]
+}
