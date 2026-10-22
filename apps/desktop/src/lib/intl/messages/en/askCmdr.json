@@ -1023,5 +1023,9 @@
   "askCmdr.decision.verbExtract": "extracting",
   "@askCmdr.decision.verbExtract": {
     "description": "The name of one action Ask Cmdr can suggest (unpacking an archive), dropped into the askCmdr.decision.rejected and askCmdr.decision.approved sentences as their verbName placeholder. Translate it in whatever form those two sentences need in your language (English uses the -ing form); the two sentences and these seven names are translated together. Lowercase, no full stop."
+  },
+  "askCmdr.railBoundary.closedToast": "Ask Cmdr ran into a problem and closed. Open it again to keep going.",
+  "@askCmdr.railBoundary.closedToast": {
+    "description": "Toast shown when the Ask Cmdr chat rail broke unexpectedly, while opening, in use, or while closing. The app has already closed the rail and put keyboard focus back on the file list; reopening the rail brings the conversation back. \"Ask Cmdr\" is the product name; keep it as-is."
   }
 }

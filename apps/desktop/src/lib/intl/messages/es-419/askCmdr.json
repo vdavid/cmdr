@@ -250,5 +250,9 @@
   "askCmdr.decision.verbTrash": "mover al basurero",
   "@askCmdr.decision.verbTrash": {
     "sourceHash": "1ea1d0e"
+  },
+  "askCmdr.railBoundary.closedToast": "Ask Cmdr tuvo un problema y se cerró. Vuelve a abrirlo para seguir.",
+  "@askCmdr.railBoundary.closedToast": {
+    "sourceHash": "017a215"
   }
 }

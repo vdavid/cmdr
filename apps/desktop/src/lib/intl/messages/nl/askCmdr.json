@@ -799,5 +799,9 @@
   "askCmdr.decision.verbExtract": "uitpakken",
   "@askCmdr.decision.verbExtract": {
     "sourceHash": "c924f71"
+  },
+  "askCmdr.railBoundary.closedToast": "Ask Cmdr liep tegen een probleem aan en is gesloten. Open het opnieuw om verder te gaan.",
+  "@askCmdr.railBoundary.closedToast": {
+    "sourceHash": "18caa70"
   }
 }

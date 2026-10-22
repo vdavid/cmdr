@@ -796,5 +796,9 @@
   "askCmdr.decision.verbExtract": "giải nén",
   "@askCmdr.decision.verbExtract": {
     "sourceHash": "c924f71"
+  },
+  "askCmdr.railBoundary.closedToast": "Ask Cmdr gặp sự cố nên đã đóng lại. Hãy mở lại để tiếp tục.",
+  "@askCmdr.railBoundary.closedToast": {
+    "sourceHash": "18caa70"
   }
 }

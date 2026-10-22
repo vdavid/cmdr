@@ -37,8 +37,8 @@ it; feature must-knows live in each directory's colocated `CLAUDE.md`, and the m
   `cmdr/no-private-unit-format`.
 - A `lib/ui/` wrapper takes its `@ark-ui/svelte` component's name, 1:1 (raise any divergence). Feature code imports the
   wrapper, never `@ark-ui/svelte` (`cmdr/no-raw-ark-import`).
-- **Every window, pane, and dialog has an error boundary**: a route dialog's `{#if}` goes INSIDE a `DialogBoundary`
-  (`cmdr/dialog-inside-boundary`). `DETAILS.md` § Error boundaries.
+- **Every window, pane, dialog, and rail has an error boundary**: a route dialog's `{#if}` goes INSIDE a
+  `DialogBoundary` (`cmdr/dialog-inside-boundary`). `DETAILS.md` § Error boundaries.
 - ❌ Before hand-rolling a control or dialog/window chrome, reach for the `lib/ui` primitive (`ModalDialog`, `Checkbox`,
   `Select`, `Combobox`, …) and check Debug > Components. Never a raw `<input type=checkbox|radio>` / `<select>`, a
   `<button>` / `<div>` wearing `role=switch|checkbox|radio`, nor a `<button>` around a lone `<Icon name="info">`

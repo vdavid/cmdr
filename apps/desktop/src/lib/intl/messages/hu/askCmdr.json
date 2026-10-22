@@ -796,5 +796,9 @@
   "askCmdr.decision.verbExtract": "kicsomagolását",
   "@askCmdr.decision.verbExtract": {
     "sourceHash": "c924f71"
+  },
+  "askCmdr.railBoundary.closedToast": "Az Ask Cmdr problémába ütközött, és bezárult. Nyisd meg újra a folytatáshoz.",
+  "@askCmdr.railBoundary.closedToast": {
+    "sourceHash": "18caa70"
   }
 }

@@ -795,5 +795,9 @@
   "askCmdr.decision.verbExtract": "解壓縮",
   "@askCmdr.decision.verbExtract": {
     "sourceHash": "c924f71"
+  },
+  "askCmdr.railBoundary.closedToast": "Ask Cmdr 遇到了問題，已關閉。重新開啟即可繼續。",
+  "@askCmdr.railBoundary.closedToast": {
+    "sourceHash": "18caa70"
   }
 }

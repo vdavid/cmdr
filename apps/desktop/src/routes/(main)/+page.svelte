@@ -34,7 +34,7 @@
     import { closeSuggestedOps, suggestedOpsState } from '#lib/suggested-ops/suggested-ops-trigger.svelte.js'
     import AskCmdrRail from '#lib/ask-cmdr/AskCmdrRail.svelte'
     import BulkRenameReviewDialog from '#lib/ask-cmdr/BulkRenameReviewDialog.svelte'
-    import { askCmdrState } from '#lib/ask-cmdr/ask-cmdr-trigger.svelte.js'
+    import { askCmdrState, closeRail } from '#lib/ask-cmdr/ask-cmdr-trigger.svelte.js'
     import { cancelRenameReview } from '#lib/ask-cmdr/ask-cmdr-rename-review.svelte.js'
     import DialogBoundary from '#lib/ui/boundary/DialogBoundary.svelte'
     import { cancelConflictPrompt } from '#lib/file-operations/operation-conflict.svelte.js'
@@ -932,9 +932,16 @@
         {#if showApp}
             <div class="explorer-rail-row">
                 <DualPaneExplorer bind:this={explorerRef} onCommand={dispatchers.explorer} />
-                {#if askCmdrState.open}
-                    <AskCmdrRail readSelection={readSelectionAttachments} />
-                {/if}
+                <!-- A broken rail closes with its own toast and reopens fine; the panes stay. -->
+                <DialogBoundary
+                    name="askCmdrRail"
+                    onClose={closeRail}
+                    closedMessage={tString('askCmdr.railBoundary.closedToast')}
+                >
+                    {#if askCmdrState.open}
+                        <AskCmdrRail readSelection={readSelectionAttachments} />
+                    {/if}
+                </DialogBoundary>
             </div>
             <DialogBoundary name="bulkRenameReview" onClose={cancelRenameReview}>
                 {#if askCmdrState.renameReview}

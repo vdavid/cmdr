@@ -795,5 +795,9 @@
   "askCmdr.decision.verbExtract": "распаковка",
   "@askCmdr.decision.verbExtract": {
     "sourceHash": "c924f71"
+  },
+  "askCmdr.railBoundary.closedToast": "В Ask Cmdr возникла проблема, и он закрылся. Откройте его снова, чтобы продолжить.",
+  "@askCmdr.railBoundary.closedToast": {
+    "sourceHash": "18caa70"
   }
 }

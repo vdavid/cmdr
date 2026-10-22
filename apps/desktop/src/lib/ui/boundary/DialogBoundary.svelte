@@ -1,6 +1,7 @@
 <script lang="ts">
     /**
-     * Walls one dialog (or a group of them) off from the rest of the window.
+     * Walls one dialog (or a group of them, or the Ask Cmdr rail) off from the rest
+     * of the window.
      *
      * A dialog that throws while it renders or tears down closes, a toast says so, the
      * throw is reported, and focus goes home, while the window stays exactly as it was.
@@ -27,10 +28,16 @@
          * dialog that owns its visibility, which the remount itself starts closed.
          */
         onClose?: () => void
+        /**
+         * The toast's text, already translated. Defaults to the generic "That dialog ran
+         * into a problem" line; a surface the user knows by name (the Ask Cmdr rail)
+         * names itself.
+         */
+        closedMessage?: string
         children: Snippet
     }
 
-    const { name, onClose, children }: Props = $props()
+    const { name, onClose, closedMessage, children }: Props = $props()
 
     const log = getAppLogger('dialogBoundary')
 
@@ -56,7 +63,7 @@
      */
     function handleError(error: unknown, reset: () => void): void {
         log.error('The {name} dialog threw; closing it and handing focus back: {error}', { name, error })
-        addToast(tString('ui.dialogBoundary.closedToast'), { level: 'error' })
+        addToast(closedMessage ?? tString('ui.dialogBoundary.closedToast'), { level: 'error' })
         try {
             onClose?.()
         } catch (closeError) {

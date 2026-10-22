@@ -308,6 +308,12 @@ registry lives below `commands/` rather than inside the chat command.
 - Rail open flag + width persist via `app-status-store.ts` (`askCmdrRailOpen`, `askCmdrRailWidth`, clamped 280–520),
   mirroring `leftPaneWidthPercent`. `hydrateRail` applies them once at startup from `loadPersistedState` (reopening
   bootstraps the active thread).
+- **A broken rail closes; the window stays.** The route wraps `{#if askCmdrState.open}` in a `DialogBoundary` whose
+  `onClose` is `closeRail` and whose toast is `askCmdr.railBoundary.closedToast`. A throw while the rail renders or
+  tears down closes it the normal way (state, persistence, window shrink, focus home), and reopening works. Why it sits
+  above the `{#if}`, and the lint rule (`cmdr/dialog-inside-boundary` covers `*Rail`): `apps/desktop/src/DETAILS.md` §
+  Error boundaries. Regression anchor: cmdr-reports#78 (`each_key_duplicate` in the rail blanked the main window). Test:
+  `rail-boundary.svelte.test.ts`.
 
 ## The toggle wiring
 

@@ -798,5 +798,9 @@
   "askCmdr.decision.verbExtract": "extraer",
   "@askCmdr.decision.verbExtract": {
     "sourceHash": "c924f71"
+  },
+  "askCmdr.railBoundary.closedToast": "Ask Cmdr ha tenido un problema y se ha cerrado. Vuelve a abrirlo para seguir.",
+  "@askCmdr.railBoundary.closedToast": {
+    "sourceHash": "18caa70"
   }
 }

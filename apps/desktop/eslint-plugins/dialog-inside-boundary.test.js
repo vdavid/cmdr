@@ -68,6 +68,15 @@ ruleTester.run('dialog-inside-boundary', rule, {
       code: `<FilePane /><DialogBoundary name="x"><DialogGallery /></DialogBoundary><DialogGallery />`,
       filename: routeFile,
     },
+    // The rail inside its boundary, in the route's shape.
+    {
+      code: `<DialogBoundary name="askCmdrRail" onClose={closeRail}>
+  {#if askCmdrState.open}
+    <AskCmdrRail />
+  {/if}
+</DialogBoundary>`,
+      filename: routeFile,
+    },
     // Plain HTML elements aren't components.
     {
       code: `<dialog open>x</dialog>`,
@@ -108,6 +117,18 @@ ruleTester.run('dialog-inside-boundary', rule, {
         { messageId: 'missingBoundary', data: { name: 'ExpirationModal' } },
         { messageId: 'missingBoundary', data: { name: 'ModalDialog' } },
       ],
+    },
+    // A side rail beside the panes needs one too (cmdr-reports#78: a crash in the Ask Cmdr
+    // rail blanked the main window).
+    {
+      code: `<div class="explorer-rail-row">
+  <DualPaneExplorer />
+  {#if askCmdrState.open}
+    <AskCmdrRail />
+  {/if}
+</div>`,
+      filename: routeFile,
+      errors: [{ messageId: 'missingBoundary', data: { name: 'AskCmdrRail' } }],
     },
     // Dotted name, unwrapped.
     {

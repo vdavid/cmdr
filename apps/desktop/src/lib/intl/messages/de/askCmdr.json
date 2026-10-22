@@ -797,5 +797,9 @@
   "askCmdr.decision.verbExtract": "das Entpacken von",
   "@askCmdr.decision.verbExtract": {
     "sourceHash": "c924f71"
+  },
+  "askCmdr.railBoundary.closedToast": "Ask Cmdr ist auf ein Problem gestoßen und wurde geschlossen. Öffne es erneut, um weiterzumachen.",
+  "@askCmdr.railBoundary.closedToast": {
+    "sourceHash": "18caa70"
   }
 }

@@ -140,7 +140,7 @@ rule you changed, not moved.
 
 ## Error boundaries
 
-A component that throws while it renders, runs an effect, or tears down must never blank a window. Four layers of
+A component that throws while it renders, runs an effect, or tears down must never blank a window. Five layers of
 `<svelte:boundary>` make sure it can't, from the outside in:
 
 - **Window**: `#lib/error-reporter/WindowBoundary.svelte`, wrapping everything in `routes/+layout.svelte`. Every window
@@ -160,6 +160,9 @@ A component that throws while it renders, runs an effect, or tears down must nev
   an `onClose` that dismisses them all, because a stray `show*` flag suppresses the pane's keys
   (`lib/file-explorer/pane/DETAILS.md` § "A dialog that throws during render must never wedge input"). Every dialog a
   route mounts gets its own.
+- **Rail**: the same `DialogBoundary`, around the Ask Cmdr rail's `{#if askCmdrState.open}` in the main route. A broken
+  rail closes through `closeRail`, its toast names Ask Cmdr (the `closedMessage` prop), and the panes keep working.
+  `lib/ask-cmdr/DETAILS.md` § "Layout, persistence, focus".
 
 **Why a boundary has to sit ABOVE what it guards.** Svelte routes a throw from an effect's teardown to the nearest LIVE
 ancestor boundary and skips one that is itself being destroyed (`execute_effect_teardown` → `invoke_error_boundary`,
@@ -168,11 +171,12 @@ dialog's boundary wraps the `{#if}` that mounts it, and the pane's wraps the per
 boundary inside them is torn down along with what it guards, and the throw goes over its head to the window. That's how
 a `derived_references_self` thrown while the Multi-rename sheet closed blanked the main window.
 
-**The rule for new code.** A new window route needs nothing: the root layout covers it. A new dialog mounted from a
-route goes in its own `<DialogBoundary name=… onClose=…>` around its `{#if}`; `cmdr/dialog-inside-boundary`
-(`apps/desktop/eslint-plugins/dialog-inside-boundary.js`) fails the lint on one that isn't. `onClose` clears whatever
-state mounts the dialog, usually its own close handler. Leave it out only for a dialog that owns its visibility and
-starts closed when remounted (`StaleDriveDialog`). A dialog holding a paused operation's question
+**The rule for new code.** A new window route needs nothing: the root layout covers it. A new dialog or side rail
+mounted from a route goes in its own `<DialogBoundary name=… onClose=…>` around its `{#if}`;
+`cmdr/dialog-inside-boundary` (`apps/desktop/eslint-plugins/dialog-inside-boundary.js`) fails the lint on one that isn't
+(it knows a component by its name's suffix: `Dialog`, `Modal`, `Sheet`, `Rail`, and the rest the rule lists). `onClose`
+clears whatever state mounts the dialog, usually its own close handler. Leave it out only for a dialog that owns its
+visibility and starts closed when remounted (`StaleDriveDialog`). A dialog holding a paused operation's question
 (`OperationConflictDialog`, `SourcesGonePrompt`, `LockedSourcesPrompt`) closes by cancelling that operation, since
 nothing can answer it once its dialog is gone; the quit prompt calls the quit off.
 
@@ -182,6 +186,6 @@ in the log file, error-report bundles, and an opted-in auto-send. SvelteKit also
 (`lib/logging/DETAILS.md`). Boundaries never see throws in event handlers, timers, or promise callbacks: those reach the
 global `app·uncaught` logger (`lib/logging/uncaught-errors.ts`) and leave the UI as it was.
 
-Tests: `DialogBoundary.svelte.test.ts`, `PaneBoundary.svelte.test.ts`, and `WindowBoundary.svelte.test.ts` each mount a
-component that throws while rendering and one that throws while tearing down (`test/fixtures/`), and assert the host
-survives and reports.
+Tests: `DialogBoundary.svelte.test.ts`, `PaneBoundary.svelte.test.ts`, `WindowBoundary.svelte.test.ts`, and
+`lib/ask-cmdr/rail-boundary.svelte.test.ts` each mount a component that throws while rendering and one that throws while
+tearing down (`test/fixtures/`), and assert the host survives and reports.

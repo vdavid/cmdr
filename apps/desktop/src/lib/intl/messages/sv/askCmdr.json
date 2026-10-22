@@ -796,5 +796,9 @@
   "askCmdr.decision.verbExtract": "extrahera",
   "@askCmdr.decision.verbExtract": {
     "sourceHash": "c924f71"
+  },
+  "askCmdr.railBoundary.closedToast": "Ask Cmdr stötte på ett problem och stängdes. Öppna Ask Cmdr igen för att fortsätta.",
+  "@askCmdr.railBoundary.closedToast": {
+    "sourceHash": "18caa70"
   }
 }

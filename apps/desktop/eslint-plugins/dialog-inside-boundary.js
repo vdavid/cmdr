@@ -1,5 +1,6 @@
 /**
- * ESLint rule: every dialog a route mounts must sit inside a `DialogBoundary`.
+ * ESLint rule: every dialog a route mounts must sit inside a `DialogBoundary`, and
+ * so must a side rail mounted beside the panes (the Ask Cmdr rail).
  *
  * Rationale: a dialog that throws while rendering or tearing down blanks the
  * whole window unless an error boundary catches it. Svelte routes a teardown
@@ -13,9 +14,14 @@
  *
  * In a `.svelte` file under `src/routes/` (but not `src/routes/dev/`), a
  * component element whose name (the last segment of a dotted name) ends in
- * `Dialog`, `Dialogs`, `Modal`, `Sheet`, `Palette`, `Prompt`, `Wizard`, or
- * `Window`, with no `DialogBoundary` component among its ancestors. Elements,
- * `{#if}`, `{#key}`, `{#each}`, and snippets may sit in between.
+ * `Dialog`, `Dialogs`, `Modal`, `Sheet`, `Palette`, `Prompt`, `Wizard`,
+ * `Window`, or `Rail`, with no `DialogBoundary` component among its ancestors.
+ * Elements, `{#if}`, `{#key}`, `{#each}`, and snippets may sit in between.
+ *
+ * `Rail` is in because a rail is a dialog in every way that matters here: the
+ * route mounts it under an `{#if}`, and closing it is the recovery. `Panel` and
+ * `Sidebar` stay out: routes mount those for good (`PageCrashPanel`, the Debug
+ * window's panels, `SettingsSidebar`), so there's nothing to close.
  *
  * ## What it deliberately does NOT catch
  *
@@ -35,7 +41,7 @@
  *   <!-- eslint-disable-next-line cmdr/dialog-inside-boundary -- <reason> -->
  */
 
-const DIALOG_NAME = /(Dialogs?|Modal|Sheet|Palette|Prompt|Wizard|Window)$/
+const DIALOG_NAME = /(Dialogs?|Modal|Sheet|Palette|Prompt|Wizard|Window|Rail)$/
 const BOUNDARY_NAME = 'DialogBoundary'
 
 /** Normalizes separators so the path checks work on Windows filenames too. */
@@ -58,7 +64,7 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Require every dialog a route mounts to sit inside a `DialogBoundary`.',
+      description: 'Require every dialog or side rail a route mounts to sit inside a `DialogBoundary`.',
       recommended: true,
     },
     messages: {

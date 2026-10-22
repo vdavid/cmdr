@@ -205,6 +205,7 @@ export type MessageKey =
   | 'askCmdr.gate.off.turnOn'
   | 'askCmdr.loadEarlier'
   | 'askCmdr.newChat'
+  | 'askCmdr.railBoundary.closedToast'
   | 'askCmdr.renameReview.allow'
   | 'askCmdr.renameReview.allowAll'
   | 'askCmdr.renameReview.blocked'
