@@ -789,6 +789,11 @@ share options → `Nincs megosztási lehetőség`.
 - Positions sit in a colon slot (`ezen a helyen: {at}`), the example file after `esetén` or before `nevű`, the date
   before `időpontban`: none of them can take an article or suffix. On/Off → `Be` / `Ki` (the switch states).
 
+## A karaktertartomány-szerkesztő (`multiRename.rangeEditor.*`)
+
+- An ordinal's article goes on `elölről`/`hátulról` (`az elölről 3. karakter`, `a hátulról 2. karaktertől`), never on
+  the number: CLDR's ordinal `one` (1, 5) misses `az 50.`–`az 59.`. Start/End → `Eleje`/`Vége`, not `Kezdőérték`.
+
 ## Az átvitel élő fájlfája (`fileOperations.transferTree.*`)
 
 - "X of Y" aria → `X kész ennyiből: Y`: a size can't take `-ból/-ből`, so a colon slot, and the file count shares it.
