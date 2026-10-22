@@ -4,13 +4,15 @@ Live: https://cmdr.macupdate.com/ (accepted from the 2026-09-18 v0.46.0 submissi
 through). Submission form: https://member.macupdate.com/content/submit (needs a MacUpdate member account). The same form
 creates and modifies a listing: type `Cmdr` into "Modify an existing listing?" at the top to load this one.
 
-Status: **v0.53.0 submitted 2026-10-15, reviewer pinged the same day, awaiting review** (the fields below are what went
-in). Before it, the live page showed v0.46.0; the v0.47.0 and v0.49.0 updates were prepared but never submitted.
+Status: **v0.55.0 prepared 2026-10-22, not submitted yet** (the fields below are what goes in). Before it, v0.53.0 was
+submitted 2026-10-15 with the reviewer pinged the same day; the live page showed v0.46.0 then, and the v0.47.0 and
+v0.49.0 updates were prepared but never submitted. v0.54.0 got no submission of its own, so the v0.55.0 Version changes
+cover both. Neither release made the Description false, so it's unchanged since v0.53.0.
 
 ❗ **A submission sits unreviewed until David pings a MacUpdate reviewer directly.** The v0.46.0 one only went through
 after a ping, and the earlier ones never did. The contact is in the vault's directory blitz plan (MacUpdate entry), so
-every handoff ends with "submit, then ping". Since it skips v0.47–v0.52, the Description picks up what shipped in
-between (multi-rename, compare folders, folder sizes on demand, S3) and the Version changes cover v0.53.0 alone.
+every handoff ends with "submit, then ping". The v0.53.0 submission skipped v0.47–v0.52, so its Description picked up
+what shipped in between (multi-rename, compare folders, folder sizes on demand, S3).
 
 **The Download URL is the dynamic `getcmdr.com/download/latest/universal` link** (since the v0.53.0 submission), so it
 never goes stale and downloads count toward MacUpdate. Their guidelines ask for "the direct URL to the installer package
@@ -38,7 +40,7 @@ the Price field and the note to the review team instead.
 - **Product page URL**: `https://getcmdr.com`
 - **Purchase URL**: `https://getcmdr.com/pricing`
 - **Developer support URL**: `https://github.com/vdavid/cmdr/issues`
-- **Version number**: `0.53.0`
+- **Version number**: `0.55.0`
 - **Price**: leave empty (their hint says empty means free). Cmdr is free for personal use; commercial licenses are sold
   on the purchase URL and explained to the review team below.
 
@@ -154,50 +156,62 @@ A blazing-fast, keyboard-driven two-pane file manager for macOS, with fully opti
 
 ### Version changes
 
-Their hint asks for the changes in the current version, with `<h5>` section heads and `<ul>` lists. This covers v0.53.0
-(no patches); what shipped between the live v0.46.0 and it went into the Description instead.
+Their hint asks for the changes in the current version, with `<h5>` section heads and `<ul>` lists. This covers v0.54.0
+and v0.55.0 (no patches in either), since v0.54.0 never got a submission of its own. MacUpdate takes `<p>` in this field
+too, so the data-safety sweep gets one line of context above its Fixed list.
 
 ```html
 <h5>New</h5>
 <ul>
   <li>
-    Cmdr works with VoiceOver: file rows say their name, kind, position, and selection, and menus, Settings, search, the
-    command palette, notifications, and progress bars speak as you go.
+    Browse restic backups on any drive or server like folders: unlock a repo once, open any snapshot read-only, and copy
+    files out to restore them. (alpha)
   </li>
-  <li>Follows the macOS Increase contrast, Differentiate without color, and Show borders settings live.</li>
+  <li>Markdown files open formatted in the viewer, with pictures and links you can follow with Back and Forward.</li>
   <li>
-    Everything works from the keyboard: reach a pane's tabs, location bar, and sort buttons with ⌃F5, notifications with
-    ⌃F6, and move tabs and the pane divider with keys.
+    Type "cmdr ." in a terminal to open that folder in Cmdr. Homebrew installs the command, or add it from the menu.
   </li>
-  <li>Edit &gt; Undo move to trash, and a setting that keeps notifications until you close them.</li>
-  <li>Copying a file within one SMB share happens on the NAS itself: a 4 GB duplicate takes seconds.</li>
-  <li>F9 opens a terminal in the current folder.</li>
-  <li>Right-click a job in the operation queue for its actions.</li>
-  <li>Help &gt; Accessibility guide.</li>
+  <li>Remember your choice for files that already exist in the copy and move dialog, contributed by Jiri Slovacek.</li>
+  <li>Escape cancels a running transfer, and Space pauses it.</li>
+  <li>Drag waiting operations in the queue to reorder them.</li>
+  <li>WebDAV trusts a NAS's self-signed certificate on first use, and you manage it in Settings.</li>
+  <li>Settings &gt; Updates &amp; privacy &gt; Delete all Cmdr data removes everything Cmdr keeps on your Mac.</li>
+  <li>An optional box sends the past five hours of redacted logs with your feedback.</li>
 </ul>
 <h5>Improved</h5>
 <ul>
-  <li>Selected files show an edge bar and heavier text, so they don't rely on color alone.</li>
-  <li>Text size goes up to 200%, and small buttons are easier to hit.</li>
-  <li>The git commit browser lists up to 100,000 commits in about a second.</li>
-  <li>Big SMB folders show their loading count climb, and stop loading when you leave.</li>
-  <li>Opening a file says which app it opens in.</li>
+  <li>
+    Copies, moves, deletes, compressions, and zip edits wait out a dropped server, then finish and clean up their temp
+    files once it's back.
+  </li>
+  <li>Search Settings, the command palette, and shortcuts in any language, accents optional.</li>
+  <li>Zips holding password-protected entries can be edited, and those entries keep their password.</li>
+  <li>Cmdr asks once before moving Locked items.</li>
+  <li>A wrong archive or backup password shows right under the field.</li>
 </ul>
 <h5>Fixed</h5>
+<p>A big data-safety sweep fixed dozens of rare ways an operation could lose or damage files. The main ones:</p>
 <ul>
-  <li>Reconnecting to a NAS that accepted the connection but never answered could hang.</li>
-  <li>Renaming a file on an SMB share to another letter case was refused, or deleted the file when overwriting.</li>
-  <li>Large copies to Nextcloud behind a proxy failed partway.</li>
-  <li>A pane inside a zip didn't show changes until you left it, and edited zips kept their old date.</li>
-  <li>Type-to-jump and the quick filter didn't start on Cyrillic, Greek, and other non-Latin keyboard layouts.</li>
-  <li>The bottoms of letters like "g" and "p" were cut off in the file list.</li>
+  <li>
+    Deleting a folder on an external drive, phone, server, or Windows share could also delete what its symlinks pointed
+    to.
+  </li>
+  <li>Deleting, overwriting, or moving a folder could empty a drive mounted inside it.</li>
+  <li>An Overwrite cut off by a crash or a dropped share could lose both the original and the new file.</li>
+  <li>A file that changed size mid-copy, or an upload cut off by a network drop, could land truncated.</li>
+  <li>Actions right after a folder change, a quick filter, or a sort sometimes hit the neighboring file.</li>
+  <li>Undo could delete the only copy left of a file, or a file edited since.</li>
+  <li>Settings, shortcuts, favorites, and saved servers got wiped when Cmdr couldn't read their file at launch.</li>
+  <li>Copying small files to older Samba NASes dropped the connection.</li>
+  <li>Cmdr crashed when a drive or share disappeared while it read a file there.</li>
 </ul>
 <h5>Security</h5>
 <ul>
-  <li>Updates must carry Cmdr's Apple Developer ID signature, beside the update signature.</li>
-  <li>A backup update-signing key lets a leaked or lost key be replaced with one release.</li>
-  <li>A hostile file open in the viewer can't change settings.</li>
-  <li>SMB share passwords stay out of logs.</li>
+  <li>Error reports hide every path, name, server, and account.</li>
+  <li>The license key lives in the Keychain.</li>
+  <li>Cmdr warns before sending a WebDAV password to an http address, and tries https first.</li>
+  <li>SFTP refuses a host key marked revoked in known_hosts.</li>
+  <li>A local security event log, and an alert when Cmdr turns away a fake update.</li>
 </ul>
 ```
 
@@ -231,7 +245,7 @@ macOS 12 Monterey or later, both Apple Silicon and Intel. macOS 10.15 Catalina a
 For an update, keep it short:
 
 ```
-Hi folks! Thanks for listing Cmdr! This is the v0.53.0 update: new version number, download link, version changes, and a refreshed description (accessibility, plus features that shipped since my last update). Thanks!
+Hi folks! Thanks for listing Cmdr! This is the v0.55.0 update: new version number, version changes (covering v0.54.0 and v0.55.0), and fresh screenshots. Thanks!
 
 David
 ```

@@ -22,6 +22,13 @@ v0.53.0 rewrote the description (2026-10-15) in the voice of David's MacUpdate r
 and the newer features (multi-rename, VoiceOver, S3, on-server SMB copies). It also fixed the language count: Russian
 shipped in v0.50.0, so it's 15, not 14.
 
+v0.54.0 and v0.55.0 changed nothing here (checked 2026-10-22), so there's nothing to submit for them. No line became
+false: still 15 languages, and the alpha features the description names are still alpha (`feature-status.json`). Restic
+backups (new, alpha), Markdown in the viewer, WebDAV trusting a NAS's self-signed certificate, and the data-safety sweep
+add to what's there without contradicting it, and with 8 characters left under the cap, adding any of them means cutting
+something else. The Features box "Command line interface" stays unchecked: the new `cmdr <path>` command only opens a
+folder in the app, which isn't what that box promises.
+
 ## Main info
 
 - **Name**: `Cmdr`
@@ -181,10 +188,10 @@ Also, my ask from last time (if it's not done already): Cmdr is source-available
 
 So they don't get re-litigated at the next edit pass:
 
-- **The full description sits at 2,991 of their 3,000-character cap.** Every addition has to be paid for by a cut, so
-  measure before and after; the form rejects an over-long one outright. Nothing in v0.46.0 made the description false
-  (no feature graduated out of alpha, no claim broke, and the description names no prices), so that release changed
-  nothing here, per `docs/guides/releasing.md` § "Refreshing the app-directory listings".
+- **The full description sits at 2,992 of their 3,000-character cap** (measured 2026-10-22). Every addition has to be
+  paid for by a cut, so measure before and after; the form rejects an over-long one outright. Nothing in v0.46.0 made
+  the description false (no feature graduated out of alpha, no claim broke, and the description names no prices), so
+  that release changed nothing here, per `docs/guides/releasing.md` § "Refreshing the app-directory listings".
 
 - **Keep "Is Opensource?" checked.** Unchecking it hides the Source URL field, and a public link to the source is worth
   more than a precise badge. The description carries the BSL correction instead, in its third paragraph rather than as
