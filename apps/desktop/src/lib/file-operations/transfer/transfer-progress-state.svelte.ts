@@ -864,6 +864,16 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     get rollbackSupport(): RollbackSupport | null {
       return session()?.snapshot?.rollbackSupport ?? null
     },
+    /** What the operation does with a file that already exists at the
+     *  destination, as it runs NOW: the registry row's word, which follows a
+     *  mid-run "… all" answer. `null` for an operation with none (delete,
+     *  trash, compress). Before the first snapshot lands, a dispatching view's
+     *  own confirmed policy says the same thing; an adopted one has none. */
+    get conflictPolicy(): ConflictResolution | null {
+      const snapshot = session()?.snapshot
+      if (snapshot) return snapshot.conflictPolicy
+      return adoptedOperationId === null ? (config.conflictResolution ?? null) : null
+    },
     /** The operation has reported a cancel, and the dialog stays in
      *  "Cancelling…" until the backend has finished tearing down too. */
     get cancelEventReceived(): boolean {

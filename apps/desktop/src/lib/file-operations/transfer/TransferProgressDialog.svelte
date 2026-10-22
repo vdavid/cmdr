@@ -36,6 +36,7 @@
     import { rollbackConfirmVariant, reversalTitleKey } from '../reversal-wording'
     import TransferRollbackControls from './TransferRollbackControls.svelte'
     import { createTransferRollback } from './transfer-rollback.svelte'
+    import { conflictPolicyCaption } from './conflict-policy-labels'
     import { opKindForTransferType } from '../op-kind'
     import { getMainWindowOperationRows } from '#lib/file-operations/queue/main-window-operations.svelte.js'
     import { hasOtherQueuedWork } from '#lib/file-operations/queue/queue-backlog.js'
@@ -259,6 +260,7 @@
         operationSettled: () => progress.operationSettled,
         rollBack: () => void progress.handleCancel(true),
     })
+    const conflictPolicy = $derived(progress.conflictPolicy)
     const isCancelling = $derived(progress.isCancelling)
     const cancelEventReceived = $derived(progress.cancelEventReceived)
     const settleSlow = $derived(progress.settleSlow)
@@ -594,6 +596,12 @@
                 {destinationLabel}
             />
         {/if}
+        <!-- What happens to a file that's already there, in the setup dialog's
+             own words. Off the operation's registry row, so an adopted dialog
+             says it too and a mid-run "… all" answer changes it. -->
+        {#if (isCopy || isMove) && conflictPolicy !== null}
+            <p class="conflict-policy-caption">{conflictPolicyCaption(conflictPolicy)}</p>
+        {/if}
 
         {#if isScanning}
             <!-- Scanning phase: what's happening, then tallies, throughput, and
@@ -732,6 +740,14 @@
         display: flex;
         flex-direction: column;
         gap: var(--spacing-sm);
+    }
+
+    /* A quiet aside under the from → to line: static, secondary to everything
+       that moves. */
+    .conflict-policy-caption {
+        margin: var(--spacing-xs) 0 0;
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
     }
 
     /* Says what the dialog is busy with while it's something other than the

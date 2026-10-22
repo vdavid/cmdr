@@ -2143,6 +2143,7 @@ export type MessageKey =
   | 'fileOperations.transferProgress.conflictOverwriteAllSmaller'
   | 'fileOperations.transferProgress.conflictOverwriteFolderWithFile'
   | 'fileOperations.transferProgress.conflictOverwriteFoldersWithFiles'
+  | 'fileOperations.transferProgress.conflictPolicyCaption'
   | 'fileOperations.transferProgress.conflictRename'
   | 'fileOperations.transferProgress.conflictRenameAll'
   | 'fileOperations.transferProgress.conflictRollback'

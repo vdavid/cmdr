@@ -19,6 +19,7 @@
     import Icon from '#lib/ui/Icon.svelte'
     import { t, tString } from '#lib/intl/messages.svelte.js'
     import type { OverwriteNoteReach } from './remembered-conflict-policy'
+    import { CONFLICT_POLICY_OPTIONS } from './conflict-policy-labels'
 
     interface Props {
         /** The conflict check couldn't run: say so, never render a clean destination. */
@@ -54,21 +55,13 @@
         rememberedOverwriteReach,
     }: Props = $props()
 
-    // The file-conflict policy radios; `as const` keeps the values and label keys literal.
-    const conflictPolicies = [
-        { value: 'skip', labelKey: 'fileOperations.transferDialog.policySkip' },
-        { value: 'overwrite', labelKey: 'fileOperations.transferDialog.policyOverwrite' },
-        { value: 'overwrite_smaller', labelKey: 'fileOperations.transferDialog.policyOverwriteSmaller' },
-        { value: 'overwrite_older', labelKey: 'fileOperations.transferDialog.policyOverwriteOlder' },
-        { value: 'stop', labelKey: 'fileOperations.transferDialog.policyStop' },
-    ] as const
-
-    // File-conflict policy options for `RadioGroup`. With known clashes the label
+    // File-conflict policy options for `RadioGroup`, from the list the progress
+    // dialog's caption words its policy from (`conflict-policy-labels.ts`). With known clashes the label
     // pluralizes on their count ("Skip" vs "Skip all"). With merges alone nobody knows
     // how many files inside clash (the check is top-level only), so the labels claim no
     // count: "Skip all" of zero read as skipping the folders.
     const conflictPolicyItems = $derived<RadioItem[]>(
-        conflictPolicies.map((option) => ({
+        CONFLICT_POLICY_OPTIONS.map((option) => ({
             value: option.value,
             label:
                 totalConflictCount > 0
