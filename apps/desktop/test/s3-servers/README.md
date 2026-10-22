@@ -21,7 +21,7 @@ fixture and cut that, the way `crates/cmdr-webdav/src/volume/connection_drop_tes
 
 ## The servers
 
-- **`s3-fixture-versitygw`**, port 14480: `versity/versitygw:v1.8.0` over its POSIX backend. The default target. Honours
+- **`s3-fixture-versitygw`**, port 14480: `versity/versitygw:v1.9.0` over its POSIX backend. The default target. Honours
   `If-None-Match` and `If-Match` on writes.
 - **`s3-fixture-garage`**, port 14481: `dxflrs/garage:v2.4.1`, single node. Ignores every write precondition, so it's
   the server that proves Cmdr never leans on no-clobber PUTs working everywhere.
@@ -101,12 +101,14 @@ Observed by hand with `curl --aws-sigv4` and a small Go SigV4 signer against Ver
   (minimum part size is 5Mb)"); VersityGW accepts it, as AWS does for a last part. A multipart copy has to upload a
   short tail rather than copy it, at least on Garage.
 - `CopyObject` across buckets (`cmdr-test` to `cmdr-test-2`): 200 on both.
-- ❗ **A PUT cut off mid-body (the client closes the connection before `Content-Length`): VersityGW stores the bytes
-  that arrived as the object**, under its name, which S3 never does; Garage keeps nothing. Deterministic on VersityGW
-  v1.8.0 (`cmdr-s3`'s `write_test.rs::a_cancelled_single_put_publishes_nothing`, a source stalled after 1 MiB of 3:
-  1,048,576 bytes stored), 2026-10-01. The same holds when the link dies under the client (a proxy black-holed, then
-  refused): 17,038,220 of 25,165,824 bytes stored with the write's token, a moment after the drop rather than at it
-  (`connection_drop_test.rs::a_put_cut_off_by_an_outage_leaves_nothing_for_the_retry_to_trip_over`), 2026-10-20.
+- A PUT cut off mid-body (the client closes the connection before `Content-Length`): both keep nothing, as S3 promises.
+  ❗ **VersityGW up to v1.8.0 stored the bytes that arrived as the object**, under its name (1,048,576 of 3 MiB from a
+  stalled source, 2026-10-01; 17,038,220 of 25,165,824 bytes with the write's token when a proxy cut the link, a moment
+  after the drop rather than at it, 2026-10-20). v1.9.0 refuses the short body ("reject a PutObject whose body ends
+  before Content-Length"): `cmdr-s3`'s
+  `connection_drop_test.rs::a_put_cut_off_by_an_outage_leaves_nothing_for_the_retry_to_trip_over` found nothing under
+  the name after 5 s in every CI run, 2026-10-22. Cmdr still guards against such a server (`crates/cmdr-s3/DETAILS.md` §
+  "No-overwrite writes"), since older gateways are out there.
 - ❗ **An aborted multipart upload can come back on VersityGW** when an `UploadPart` cut off a moment before the abort
   lands after it: `ListMultipartUploads` shows the upload again (7 of 20 runs of `…a_cancel_mid_multipart…`,
   2026-10-01). AWS documents the same race and says to abort again until the parts are gone.
@@ -133,9 +135,9 @@ Observed by hand with `curl --aws-sigv4` and a small Go SigV4 signer against Ver
 **How real providers compare.** `live.sh` beside this README runs `cmdr-s3`'s `live_` cells against real accounts (§
 "Live providers" below; never in a lane). Two things the fixtures here don't show: both accept a zero-byte PUT and a
 bodyless POST without `Content-Length`, which R2, Hetzner, and GCS refuse with 411; and R2 refuses a last part LARGER
-than the rest, the shape Garage's small-copy-source rule pushed toward. Real providers refuse a cut-off PUT (VersityGW's
-publish is the fixture outlier), and VersityGW's `If-None-Match` on Complete matches AWS and R2 but not Hetzner, GCS, or
-Spaces. All findings: `crates/cmdr-s3/DETAILS.md` § "Verified providers".
+than the rest, the shape Garage's small-copy-source rule pushed toward. Real providers refuse a cut-off PUT (so does
+VersityGW since v1.9.0), and VersityGW's `If-None-Match` on Complete matches AWS and R2 but not Hetzner, GCS, or Spaces.
+All findings: `crates/cmdr-s3/DETAILS.md` § "Verified providers".
 
 ❗ **macOS's curl 8.7.1 signs `x-amz-copy-source-range` wrong**: both servers reject the request with a signature
 mismatch, while the same request signed by hand passes. It's a curl bug, not a server one, so don't trust a

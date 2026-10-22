@@ -215,8 +215,8 @@ pub(crate) struct ProviderProfile {
     cross_bucket_copy: AtomicBool,
     /// Whether the provider refuses a PUT whose body ends before its
     /// `Content-Length` and keeps the old object, as S3's contract says. An
-    /// allowlist, like conditional writes: VersityGW publishes the bytes that
-    /// arrived (`apps/desktop/test/s3-servers/README.md`), so an in-place
+    /// allowlist, like conditional writes: VersityGW up to v1.8.0 publishes the
+    /// bytes that arrived (`apps/desktop/test/s3-servers/README.md`), so an in-place
     /// overwrite cut off there loses the original. Elsewhere an overwrite of
     /// an existing object goes as a multipart upload (`DETAILS.md` §
     /// "Overwrites in parts"). The evidence per provider: `DETAILS.md` §

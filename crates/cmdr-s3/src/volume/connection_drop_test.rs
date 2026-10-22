@@ -143,17 +143,18 @@ async fn write_holing_at(
 }
 
 /// ❗ **A PUT cut off by the link going down, with the server out of reach
-/// for the cleanup, never leaves VersityGW's truncated object under the
-/// user's name for the retry to trip over (#522).** VersityGW stores the part
-/// of a body that arrived once the connection drops (verified here), and the
-/// write's own cleanup can't reach it then; the write's token is on record, so
-/// the retry after the outage removes it and lands the file.
+/// for the cleanup, leaves nothing for the retry after the outage to trip
+/// over (#522).** VersityGW is off the `refuses_short_body` allowlist, so the
+/// PUT goes on record and the retry's claim on the key HEADs it first. Since
+/// v1.9.0 VersityGW refuses the short body and keeps nothing (verified in CI,
+/// 2026-10-22); a server that keeps one, and the record removing it, is
+/// `cut_off_record_test.rs`, against the fake.
 #[tokio::test(flavor = "multi_thread")]
 #[ignore = "needs the S3 fixture stack: apps/desktop/test/s3-servers/start.sh (s3-fixture)"]
 async fn a_put_cut_off_by_an_outage_leaves_nothing_for_the_retry_to_trip_over() {
     let Proxied { proxy, volume, .. } = through_a_proxy().await;
-    // Brought back by hand below, once the precondition is checked: the
-    // sweep a reconnect starts would otherwise race the checks for the body.
+    // Brought back by hand below, so the retry runs on a link we know is up
+    // rather than whenever the backoff probes.
     volume.set_auto_reconnect(false);
     let key = format!("{}cut-off.bin", scratch_prefix("cut-off-put"));
     let path = volume.root().join(&key);
@@ -174,31 +175,7 @@ async fn a_put_cut_off_by_an_outage_leaves_nothing_for_the_retry_to_trip_over() 
     assert!(first.is_err(), "the cut-off write fails: {first:?}");
 
     proxy.restore().await;
-    // VersityGW stores the cut-off body a moment after the drop (within a
-    // second here, v1.8.0, 2026-10-20), not as the connection closes.
     let target = S3Target::Fixture(VERSITYGW);
-    let mut kept = None;
-    for _ in 0..50 {
-        kept = target.stored_header(FIXTURE_BUCKET, &key, "content-length").await;
-        if kept.is_some() {
-            break;
-        }
-        // allowed-test-sleep: the poll interval of a wait on the SERVER's store, which only an async HEAD can see.
-        tokio::time::sleep(Duration::from_millis(100)).await;
-    }
-    assert!(
-        kept.as_deref()
-            .and_then(|len| len.parse::<usize>().ok())
-            .is_some_and(|len| len < bytes.len()),
-        "precondition: VersityGW kept the cut-off body under the name (it held {kept:?})"
-    );
-    assert!(
-        target
-            .stored_header(FIXTURE_BUCKET, &key, crate::metadata::WRITE_TOKEN_HEADER)
-            .await
-            .is_some(),
-        "precondition: the kept body carries the cut-off write's token"
-    );
 
     volume
         .reconnect_with_credentials(cmdr_fs::volume::secret_store::SignIn {

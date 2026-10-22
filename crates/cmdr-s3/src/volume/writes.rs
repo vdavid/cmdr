@@ -21,7 +21,8 @@
 //! can see without bucket versioning; `DETAILS.md` § "No-overwrite writes".
 //!
 //! ❗ **A cut-off PUT is cleaned up after** by its own token (`cut_off.rs`),
-//! because VersityGW stores whatever arrived before the connection dropped.
+//! because a server like VersityGW up to v1.8.0 stores whatever arrived
+//! before the connection dropped.
 //! That covers a write to a free name; an overwrite of an existing object
 //! there never goes as a PUT at all ([`ShortStream::OnePart`]).
 
@@ -250,7 +251,7 @@ impl S3Volume {
     /// Whether a write that would go as one PUT has to go as a multipart
     /// upload instead: a `CreateOrReplace` over an existing object (one HEAD to
     /// find out) on a provider not trusted to refuse a short body. VersityGW
-    /// publishes a PUT cut off mid-body, which would replace the original with
+    /// up to v1.8.0 publishes a PUT cut off mid-body, which would replace the original with
     /// a truncated object. An empty body has nothing to cut short.
     async fn overwrites_in_parts(
         &self,

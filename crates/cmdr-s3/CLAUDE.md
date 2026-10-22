@@ -40,7 +40,7 @@ bucket, or an account root listing them). Plan: `docs/specs/s3-support-plan.md`.
   never `RemoteRoot` directly, or the folder row reaches the file.
 - ❗ **`delete` is one node** (`ENOTEMPTY` under a folder); `delete_directory` ❌ never reaches a same-named object.
   **`rename` moves one small file**; a folder or a bigger object is `RenameWork::CopyThenDelete`, the engine's job.
-- ❗ **An overwrite off the `refuses_short_body` allowlist goes multipart**, even one part: VersityGW publishes a
+- ❗ **An overwrite off the `refuses_short_body` allowlist goes multipart**, even one part: older VersityGW published a
   cut-off PUT, losing the original.
 - ❗ **Server-side copy stays within one account**, matched on the concrete `S3Volume`, ❌ never a path. GCS has no
   `UploadPartCopy`: one `CopyObject` there.

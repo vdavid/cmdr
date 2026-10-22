@@ -4,7 +4,7 @@
 //! - **A multipart upload** not finished or aborted: S3 keeps its parts
 //!   forever, invisible in every listing, and bills them. The sweep aborts it.
 //! - **A PUT that was cut off** on a provider not trusted to refuse a short
-//!   body (`ProviderProfile::refuses_short_body`): VersityGW stores the part
+//!   body (`ProviderProfile::refuses_short_body`): VersityGW up to v1.8.0 stores the part
 //!   that arrived under the user's name, and when the link died the write's own
 //!   cleanup couldn't reach the server (#522). The sweep, or the next write to
 //!   that key, removes the object if it carries the PUT's token and is short.

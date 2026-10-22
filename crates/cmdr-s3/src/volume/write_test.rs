@@ -161,7 +161,7 @@ impl VolumeReadStream for StallingSource {
 /// name, and never hangs on the stalled source. A PUT's body is read whole
 /// before it goes (`writes.rs::read_whole`), so the Cancel lands while it
 /// fills, answered every progress tick, and not a byte reaches the server
-/// (VersityGW would otherwise store a cut-off body under the user's name). A
+/// (VersityGW up to v1.8.0 would otherwise store a cut-off body under the user's name). A
 /// PUT cut off mid-body is settled by its token: `pause_test.rs` pins that
 /// against a fake that keeps cut-off bodies.
 async fn a_cancelled_single_put_publishes_nothing(service: FixtureService) {
@@ -204,7 +204,7 @@ async fn a_cancelled_single_put_publishes_nothing(service: FixtureService) {
 }
 
 /// ❗ An overwrite of an existing object that's cancelled mid-body keeps the
-/// ORIGINAL. VersityGW publishes a PUT cut off mid-body (fixture README), so
+/// ORIGINAL. VersityGW up to v1.8.0 publishes a PUT cut off mid-body (fixture README), so
 /// on a provider not trusted to refuse a short body the write goes as a
 /// multipart upload, which publishes nothing until its completion. Nothing of
 /// it stays behind: no upload on the server, no record in the ledger.

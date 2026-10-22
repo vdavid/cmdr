@@ -492,10 +492,10 @@ holds nothing until the request's last byte, yet a multipart upload spans many r
   pinned by `late_cancel_test.rs`, a fake S3 that commits then answers slowly). An empty body has no last piece, so its
   only Cancel check is before the request.
 - ❗ **A cut-off PUT is cleaned up after**, because not every server keeps S3's promise to publish nothing short of
-  `Content-Length`: VersityGW stores whatever arrived before the connection dropped (fixture README). Every PUT carries
-  a token of its own (`x-amz-meta-cmdr-write`, `metadata::write_token`), and a PUT that was cancelled or cut off HEADs
-  its key (again after 150 and 300 ms, since the server stores the body only once it notices the drop) and deletes the
-  object ONLY when it carries that token AND its HEAD shows a length SHORTER than the PUT sent
+  `Content-Length`: VersityGW up to v1.8.0 stored whatever arrived before the connection dropped (fixture README). Every
+  PUT carries a token of its own (`x-amz-meta-cmdr-write`, `metadata::write_token`), and a PUT that was cancelled or cut
+  off HEADs its key (again after 150 and 300 ms, since the server stores the body only once it notices the drop) and
+  deletes the object ONLY when it carries that token AND its HEAD shows a length SHORTER than the PUT sent
   (`cut_off.rs::settle_cut_off_put`): anything else there is the original or another writer's. ❗ A HEAD with no length,
   or a longer one (a client that kept our `x-amz-meta-*` token on overwrite), is left alone and the record let go: it
   may be a whole user file, and losing the cleanup costs far less than that delete (#522/#545). ❗ Ours at the full size
@@ -512,11 +512,13 @@ holds nothing until the request's last byte, yet a multipart upload spans many r
   stays is settled by the reconnect/connect sweep and, first, by the next write to that key (`claim_for_write`, also
   before a server-side copy), so the engine's retry after the outage lands instead of meeting our own truncated body as
   "already exists". Verified on VersityGW v1.8.0 through a black-holed then refused proxy (2026-10-20): it stored
-  17,038,220 of 25,165,824 bytes WITH our token under the name, a moment after the drop rather than at it
-  (`connection_drop_test.rs::a_put_cut_off_by_an_outage_leaves_nothing_for_the_retry_to_trip_over`; the plain-lane twins
-  are `cut_off_record_test.rs`). ❗ A sweep's HEAD-then-DELETE is only safe while nothing publishes at the key, so it
-  takes the key's claim (`UploadLedger::try_claim_key`) and skips a held one; a write claims the key only when a record
-  exists for it, since only a write to that key makes one.
+  17,038,220 of 25,165,824 bytes WITH our token under the name, a moment after the drop rather than at it. v1.9.0 keeps
+  nothing, so the Docker cell
+  (`connection_drop_test.rs::a_put_cut_off_by_an_outage_leaves_nothing_for_the_retry_to_trip_over`) now covers the
+  outage and the retry, and the removal of a kept body lives in the plain-lane twins (`cut_off_record_test.rs`). ❗ A
+  sweep's HEAD-then-DELETE is only safe while nothing publishes at the key, so it takes the key's claim
+  (`UploadLedger::try_claim_key`) and skips a held one; a write claims the key only when a record exists for it, since
+  only a write to that key makes one.
 - **Multipart** (`multipart_upload.rs`): up to the profile's `upload_concurrency()` (4) parts in flight, and a part is
   read from the source only when a slot is free, so at most four part buffers exist (256 MiB at the floor). Parts are
   buffered at all because a failed one is sent again after 1, 2, then 4 s on a throttle (`SlowDown`, 503, 429), a server
