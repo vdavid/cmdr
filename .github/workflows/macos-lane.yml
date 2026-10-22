@@ -35,7 +35,11 @@ jobs:
       # `SAVE_RUST_CACHE` (a called workflow doesn't inherit the caller's `env`, so it's restated);
       # `cache-on-failure` for the same reason as in `desktop-rust`. `shared-key` lets
       # `warm-rust-macos-cache` write this same entry. It carries `~/.cargo/bin`, so the pinned
-      # cargo-modules below installs only on a cold entry or a bump.
+      # cargo-modules below installs only on a cold entry or a bump. The toolchain step keeps
+      # the key stable across runner images (see the action).
+      - name: Keep only the pinned Rust toolchain
+        uses: ./.github/actions/pinned-rust-toolchain
+
       - name: Cache Rust build
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:

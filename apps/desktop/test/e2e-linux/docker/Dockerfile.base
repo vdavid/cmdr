@@ -3,15 +3,20 @@
 # Everything expensive and rarely-edited lives here: apt packages, Node, pnpm,
 # and Rust. `e2e-linux.sh` builds this as `cmdr-e2e-base:<sha256[0..12] of this
 # file>`, so editing this file auto-invalidates the tag and triggers a rebuild;
-# an unchanged file reuses the existing image with zero build work. CI persists
-# the built image as a docker-save tar via actions/cache, keyed on the same
-# file hash. The fast-changing part (entrypoint.sh) lives in `Dockerfile`,
-# which builds FROM this image in ~1 s.
+# an unchanged file reuses the existing image with zero build work. CI keeps
+# the built image in a container registry under the same content-hash tag
+# (`e2e-linux.sh`'s E2E_BASE_REGISTRY). The fast-changing part (entrypoint.sh)
+# lives in `Dockerfile`, which builds FROM this image in ~1 s.
 
 FROM ubuntu:26.04@sha256:c098726dd9b9733f3e885f8de0ef375206a311b0a317eadc40d347b1115fb944
 
 # Avoid prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
+
+# apt gives up on a stalled mirror connection after 30 s and retries it, instead
+# of waiting forever: a slow mirror once stretched this build past 30 min.
+RUN printf 'Acquire::Retries "5";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' \
+    > /etc/apt/apt.conf.d/80-retries
 
 # Install Tauri dependencies (matching official prerequisites)
 # See: https://tauri.app/start/prerequisites/#linux

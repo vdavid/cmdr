@@ -1,0 +1,28 @@
+name: Install Tauri dependencies (Linux)
+description: >-
+  apt-installs the system libraries the Tauri crates link against, with a timeout and retries so a slow Ubuntu mirror
+  fails fast instead of eating the job.
+
+# Why: this install is ~0.5 min on a healthy mirror, but on 2026-10-22 it took 2.8, 5.2, 6.6,
+# 19.3, and 38.9 min in five of ~25 runs, and the 38.9 one ran `desktop-rust-fixtures` into its
+# 40-min cap. So apt itself gives up on a stalled connection (`Acquire::http::Timeout`) and
+# retries it, the network part runs under `timeout`, and the whole thing gets a second attempt.
+# Only the download is time-boxed: killing `dpkg` mid-install would leave a broken package state,
+# and installing from the local archive is fast anyway.
+runs:
+  using: composite
+  steps:
+    - name: Install Tauri dependencies (Linux)
+      shell: bash
+      run: |
+        packages=(libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libacl1-dev)
+        apt_opts=(-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30)
+        for attempt in 1 2; do
+          if timeout 300 sudo apt-get "${apt_opts[@]}" update &&
+            timeout 480 sudo apt-get "${apt_opts[@]}" install -y --download-only "${packages[@]}"; then
+            sudo apt-get install -y --no-download "${packages[@]}"
+            exit 0
+          fi
+          echo "::warning::apt attempt $attempt failed or timed out."
+        done
+        exit 1

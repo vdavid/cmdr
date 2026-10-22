@@ -310,7 +310,11 @@ jobs:
       #
       # `shared-key` names the entry explicitly (it equals the job-ID key rust-cache would
       # derive anyway), so `desktop-rust-fixtures` and `warm-rust-cache` use this same entry.
-      # Saved from `main` only (`SAVE_RUST_CACHE`, top of file).
+      # Saved from `main` only (`SAVE_RUST_CACHE`, top of file). The toolchain step before it
+      # keeps the key stable across runner images (see the action).
+      - name: Keep only the pinned Rust toolchain
+        uses: ./.github/actions/pinned-rust-toolchain
+
       - name: Cache Rust build
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
@@ -319,9 +323,8 @@ jobs:
           save-if: ${{ env.SAVE_RUST_CACHE }}
 
       - name: Install Tauri dependencies (Linux)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libacl1-dev
+        uses: ./.github/actions/tauri-linux-deps
+        timeout-minutes: 20
 
       - name: Build check tool
         run: go build -o check .
@@ -486,6 +489,9 @@ jobs:
       - name: Install tools with mise
         run: mise install
 
+      - name: Keep only the pinned Rust toolchain
+        uses: ./.github/actions/pinned-rust-toolchain
+
       - name: Cache Rust build
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
@@ -493,9 +499,8 @@ jobs:
           save-if: false
 
       - name: Install Tauri dependencies (Linux)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libacl1-dev
+        uses: ./.github/actions/tauri-linux-deps
+        timeout-minutes: 20
 
       - name: Build check tool
         run: go build -o check .
@@ -753,6 +758,44 @@ jobs:
         run: ./scripts/check/check --check desktop-svelte-eslint-typecheck-typescript --ci
 
   # ===========================================
+  # Desktop app - the E2E base image
+  # ===========================================
+  # The E2E lane's Docker base image (apt packages, Node, Rust: `Dockerfile.base`) lives in
+  # GitHub's container registry, tagged by the hash of `Dockerfile.base`. This job builds and
+  # pushes it only when the registry lacks the current tag (a `Dockerfile.base` edit, or a new
+  # owner after a repo move), and costs ~20 s otherwise. It used to live in the Actions cache,
+  # which evicts under size pressure; the E2E job then rebuilt it inside its own 40-min cap,
+  # and a slow apt mirror ran it out (2026-10-22). Here a build has its own long cap, and the
+  # registry never evicts. `apps/desktop/test/e2e-linux/DETAILS.md` § CI base image.
+  e2e-base-image:
+    name: E2E base image
+    runs-on: ubuntu-latest
+    # ~5 min to build on healthy apt mirrors; slow ones have stretched it past 30.
+    timeout-minutes: 60
+    needs: changes
+    if: inputs.run_all || needs.changes.outputs.desktop == 'true'
+    permissions:
+      contents: read # check out the code
+      packages: write # push the image when the registry lacks it
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Log in to the container registry
+        env:
+          ACTOR: ${{ github.actor }}
+          TOKEN: ${{ github.token }}
+        run: docker login ghcr.io --username "$ACTOR" --password-stdin <<<"$TOKEN"
+
+      - name: Build and push the base image if the registry lacks it
+        run: ./scripts/e2e-linux.sh --base-only
+        working-directory: ./apps/desktop
+        env:
+          E2E_BASE_REGISTRY: ghcr.io/${{ github.repository_owner }}
+          E2E_BASE_PUSH: 'true'
+
+  # ===========================================
   # Desktop app - Playwright E2E on Linux
   # ===========================================
   desktop-e2e-linux:
@@ -774,9 +817,13 @@ jobs:
     #   starts at t=0, the single biggest wall-clock win on the per-push path.
     #   Trade: e2e runs even when svelte-check / eslint / svelte tests fail
     #   (rare); a genuine frontend BUILD error still fails e2e's own build.
-    # `changes` always runs, so no always()/skip handling is needed here.
-    needs: changes
+    # `changes` always runs, so no always()/skip handling is needed here. `e2e-base-image` is
+    # ~20 s when the registry has the image, so it barely moves the start.
+    needs: [changes, e2e-base-image]
     if: inputs.run_all || needs.changes.outputs.desktop == 'true'
+    permissions:
+      contents: read # check out the code
+      packages: read # pull the E2E base image
 
     steps:
       - name: Checkout code
@@ -786,12 +833,12 @@ jobs:
       # need. The runner's root disk is 145 GB, and every one of 109 runs
       # (2026-10-12 to 2026-10-19, #557) showed 107–108 GB free AFTER the reclaim,
       # which only ever removed preinstalled SDKs (tens of GB at most). This job
-      # peaks at roughly 15 GB: the base image plus its tar on a miss, the
-      # cargo/target caches, and the fixture images. The `df` keeps the headroom
-      # visible in the log; if it ever runs tight, bring the reclaim back.
+      # peaks at roughly 15 GB: the base image, the cargo/target caches, and the
+      # fixture images. The `df` keeps the headroom visible in the log; if it
+      # ever runs tight, bring the reclaim back.
       - name: Prepare Docker cache dirs
         run: |
-          mkdir -p /tmp/cmdr-docker-cache/cargo /tmp/cmdr-docker-cache/target /tmp/cmdr-docker-base-image
+          mkdir -p /tmp/cmdr-docker-cache/cargo /tmp/cmdr-docker-cache/target
           df -h /
 
       # Restores main's entry on a PR (a PR can read its base branch's caches, never
@@ -810,26 +857,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-docker-e2e-
 
-      # The E2E base image (apt packages, Node, Rust — see Dockerfile.base) as
-      # a docker-save tar, so each run skips the cold ~4-min image build.
-      # Keyed on the Dockerfile.base content, matching e2e-linux.sh's own
-      # content-hash tag. Deliberately NO restore-keys: a stale tar's image
-      # carries a different content-hash tag, so the script would rebuild
-      # anyway — restoring multi-GB of unusable tar only wastes disk and time.
-      - name: Cache E2E Docker base image
-        id: base-image-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: /tmp/cmdr-docker-base-image
-          key: ${{ runner.os }}-e2e-base-image-${{ hashFiles('apps/desktop/test/e2e-linux/docker/Dockerfile.base') }}
-
-      - name: Load E2E base image from cache
-        if: steps.base-image-cache.outputs.cache-hit == 'true'
-        run: |
-          docker load -i /tmp/cmdr-docker-base-image/base.tar
-          # Reclaim ~3.5 GB right away: with no restore-keys, a hit is always
-          # exact, so the cache post-step won't save and the tar is dead weight.
-          rm /tmp/cmdr-docker-base-image/base.tar
+      # `e2e-base-image` made sure the registry holds the base image (apt packages, Node,
+      # Rust; see Dockerfile.base), so the script below pulls it instead of building it.
+      - name: Log in to the container registry
+        env:
+          ACTOR: ${{ github.actor }}
+          TOKEN: ${{ github.token }}
+        run: docker login ghcr.io --username "$ACTOR" --password-stdin <<<"$TOKEN"
 
       - name: Run E2E tests in Docker
         run: ./scripts/e2e-linux.sh
@@ -838,19 +872,7 @@ jobs:
           # Point Docker volumes at host paths so actions/cache can persist them
           CARGO_VOLUME: /tmp/cmdr-docker-cache/cargo
           TARGET_VOLUME: /tmp/cmdr-docker-cache/target
-
-      # On a base-cache miss, export the freshly built base image so the
-      # actions/cache post-step (which runs even when tests fail) can save it.
-      # `docker save cmdr-e2e-base` packs every tag of the repo (the content
-      # hash + latest), so the next run's `docker load` restores the exact tag
-      # e2e-linux.sh looks for. Guarded on the image existing in case the run
-      # died before the base build.
-      - name: Export E2E base image for the cache save
-        if: always() && steps.base-image-cache.outputs.cache-hit != 'true'
-        run: |
-          if [ -n "$(docker image ls -q cmdr-e2e-base)" ]; then
-            docker save cmdr-e2e-base -o /tmp/cmdr-docker-base-image/base.tar
-          fi
+          E2E_BASE_REGISTRY: ghcr.io/${{ github.repository_owner }}
 
       # The Docker build runs as root, so it writes the bind-mounted cache dirs
       # as root. The actions/cache post-step then runs as the runner user and
@@ -917,8 +939,8 @@ jobs:
   # `main` push skips every lane, `desktop-e2e-linux` stopped running on `main`, so no
   # main-scoped `Linux-docker-e2e-*` entry existed and each new PR's first E2E run
   # built cold: ~21 min instead of ~11, 4 of 9 PR runs on 2026-10-19 (#557). This job
-  # rebuilds the two E2E caches on `main` whenever an entry for the current key is
-  # missing, and costs ~20 s when both are there.
+  # rebuilds the E2E Cargo + target cache on `main` whenever the current key has no
+  # entry, and costs ~20 s when it's there. It pulls the base image like the lane does.
   # - Post-land, so `ci-ok` doesn't wait for it (exempt in `ciOKGateExempt`); a
   #   failure here costs the next PR a cold build, nothing more.
   # - Skips when the E2E lane itself runs on this push: that job saves the same keys.
@@ -933,6 +955,9 @@ jobs:
     if: >-
       github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.result == 'success' &&
       needs.changes.outputs.desktop != 'true'
+    permissions:
+      contents: read # check out the code
+      packages: read # pull the E2E base image
 
     steps:
       - name: Checkout code
@@ -948,22 +973,13 @@ jobs:
           key: ${{ runner.os }}-docker-e2e-${{ hashFiles('Cargo.lock') }}
           lookup-only: true
 
-      - name: Look up the E2E base image cache
-        id: base-lookup
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: /tmp/cmdr-docker-base-image
-          key: ${{ runner.os }}-e2e-base-image-${{ hashFiles('apps/desktop/test/e2e-linux/docker/Dockerfile.base') }}
-          lookup-only: true
-
       - name: Decide whether to warm
         id: decide
         env:
           TARGET_HIT: ${{ steps.target-lookup.outputs.cache-hit }}
-          BASE_HIT: ${{ steps.base-lookup.outputs.cache-hit }}
         run: |
-          if [[ "$TARGET_HIT" == "true" && "$BASE_HIT" == "true" ]]; then
-            echo "Both E2E caches exist on main for the current keys; nothing to warm."
+          if [[ "$TARGET_HIT" == "true" ]]; then
+            echo "The E2E cache exists on main for the current key; nothing to warm."
             echo "warm=false" >>"$GITHUB_OUTPUT"
           else
             echo "warm=true" >>"$GITHUB_OUTPUT"
@@ -973,7 +989,7 @@ jobs:
       - name: Prepare Docker cache dirs
         if: steps.decide.outputs.warm == 'true'
         run: |
-          mkdir -p /tmp/cmdr-docker-cache/cargo /tmp/cmdr-docker-cache/target /tmp/cmdr-docker-base-image
+          mkdir -p /tmp/cmdr-docker-cache/cargo /tmp/cmdr-docker-cache/target
           df -h /
 
       - name: Cache Cargo + target (via host bind mounts into Docker)
@@ -987,19 +1003,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-docker-e2e-
 
-      - name: Cache E2E Docker base image
-        id: base-image-cache
+      - name: Log in to the container registry
         if: steps.decide.outputs.warm == 'true'
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: /tmp/cmdr-docker-base-image
-          key: ${{ runner.os }}-e2e-base-image-${{ hashFiles('apps/desktop/test/e2e-linux/docker/Dockerfile.base') }}
-
-      - name: Load E2E base image from cache
-        if: steps.decide.outputs.warm == 'true' && steps.base-image-cache.outputs.cache-hit == 'true'
-        run: |
-          docker load -i /tmp/cmdr-docker-base-image/base.tar
-          rm /tmp/cmdr-docker-base-image/base.tar
+        env:
+          ACTOR: ${{ github.actor }}
+          TOKEN: ${{ github.token }}
+        run: docker login ghcr.io --username "$ACTOR" --password-stdin <<<"$TOKEN"
 
       - name: Build the E2E app in Docker
         if: steps.decide.outputs.warm == 'true'
@@ -1008,13 +1017,7 @@ jobs:
         env:
           CARGO_VOLUME: /tmp/cmdr-docker-cache/cargo
           TARGET_VOLUME: /tmp/cmdr-docker-cache/target
-
-      - name: Export E2E base image for the cache save
-        if: always() && steps.decide.outputs.warm == 'true' && steps.base-image-cache.outputs.cache-hit != 'true'
-        run: |
-          if [ -n "$(docker image ls -q cmdr-e2e-base)" ]; then
-            docker save cmdr-e2e-base -o /tmp/cmdr-docker-base-image/base.tar
-          fi
+          E2E_BASE_REGISTRY: ghcr.io/${{ github.repository_owner }}
 
       - name: Reclaim cache dir ownership for the save step
         if: always() && steps.decide.outputs.warm == 'true'
@@ -1052,7 +1055,10 @@ jobs:
       - name: Install tools with mise
         run: mise install
 
-      # Must match `desktop-rust`'s step.
+      # Must match `desktop-rust`'s steps.
+      - name: Keep only the pinned Rust toolchain
+        uses: ./.github/actions/pinned-rust-toolchain
+
       - name: Cache Rust build
         id: cache
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
@@ -1063,9 +1069,8 @@ jobs:
 
       - name: Install Tauri dependencies (Linux)
         if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libacl1-dev
+        uses: ./.github/actions/tauri-linux-deps
+        timeout-minutes: 20
 
       - name: Build check tool
         if: steps.cache.outputs.cache-hit != 'true'
@@ -1117,7 +1122,10 @@ jobs:
       - name: Install tools with mise
         run: mise install
 
-      # Must match the lane's step in `macos-lane.yml`.
+      # Must match the lane's steps in `macos-lane.yml`.
+      - name: Keep only the pinned Rust toolchain
+        uses: ./.github/actions/pinned-rust-toolchain
+
       - name: Cache Rust build
         id: cache
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
@@ -1155,6 +1163,59 @@ jobs:
           if [ "$(cargo-modules --version 2>/dev/null)" != "cargo-modules $version" ]; then
             cargo install cargo-modules --version "$version" --locked
           fi
+
+  # ===========================================
+  # Drop superseded build caches on main
+  # ===========================================
+  # A new `Cargo.lock` gives every big cache a new key, and the old entry (~1.3–1.9 GB) stays
+  # until it ages out after 7 unused days. Two generations of the Rust and E2E caches put the
+  # repo at ~11.5 GB against its 10 GB budget, so GitHub's LRU eviction started dropping
+  # entries the lanes still used (2026-10-22). After every job that saves one has finished,
+  # this keeps the newest `main` entry of each family and deletes the rest. A family is the key
+  # minus its trailing hash parts, for example `v0-rust-desktop-rust-Linux-x64`. A PR whose
+  # lockfile is older still restores the newest entry through its restore-keys prefix.
+  # Post-land, so exempt from `ci-ok` (`ciOKGateExempt`): a failure only leaves the old
+  # entries to age out.
+  prune-superseded-caches:
+    name: Drop superseded build caches
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs:
+      [
+        desktop-rust,
+        desktop-rust-macos,
+        desktop-e2e-linux,
+        warm-e2e-linux-cache,
+        warm-rust-cache,
+        warm-rust-macos-cache,
+      ]
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      actions: write # delete caches
+
+    steps:
+      - name: Keep the newest main entry of each Rust and E2E cache family
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          declare -A newest
+          gh cache list --repo "$REPO" --ref refs/heads/main --sort created_at --order desc --limit 100 \
+            --json id,key --jq '.[] | "\(.id) \(.key)"' >caches.txt
+          while read -r id key; do
+            case "$key" in
+              v0-rust-* | *-docker-e2e-*) ;;
+              *) continue ;;
+            esac
+            family=$(sed -E 's/(-[0-9a-f]{8,})+$//' <<<"$key")
+            if [[ -n "${newest[$family]:-}" ]]; then
+              echo "Deleting $key (superseded by ${newest[$family]})"
+              gh cache delete "$id" --repo "$REPO"
+            else
+              newest[$family]=$key
+              echo "Keeping $key"
+            fi
+          done <caches.txt
 
   # ===========================================
   # Website
@@ -1622,8 +1683,8 @@ jobs:
   # ===========================================
   # `main`'s ruleset requires this job's check by its NAME, `CI OK`, so ❌ don't rename it. It must
   # report on every run, never be skipped: GitHub counts a skipped required check as passing.
-  # - `needs` lists every job but the post-land `deploy-website` and `warm-e2e-linux-cache`
-  #   (`ci-coverage` enforces it). `changes` belongs
+  # - `needs` lists every job but the post-land ones (`deploy-website`, the `warm-*` cache jobs,
+  #   and `prune-superseded-caches`; `ci-coverage` enforces it). `changes` belongs
   #   here too: when it fails, every lane is skipped, and the gate used to read that as green.
   # - `always()`, not `!cancelled()`, so a cancelled run reports red instead of skipped.
   # - Only `success` and `skipped` pass. A lane skipped by change detection is fine; `changes`
@@ -1645,6 +1706,7 @@ jobs:
         desktop-rust-macos,
         desktop-svelte,
         desktop-svelte-eslint-typecheck,
+        e2e-base-image,
         desktop-e2e-linux,
         website,
         api-server,

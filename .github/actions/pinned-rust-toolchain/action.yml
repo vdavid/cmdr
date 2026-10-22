@@ -1,0 +1,26 @@
+name: Keep only the pinned Rust toolchain
+description: >-
+  Installs the toolchain `rust-toolchain.toml` pins and uninstalls every other one the runner image ships. Run it right
+  before `Swatinem/rust-cache`.
+
+# Why: rust-cache hashes the rustc version of EVERY installed toolchain into its key, and the
+# runner image preinstalls a `stable` of its own. While GitHub rolls a new image out, which takes
+# days after each Rust release, half the runners ship the old stable next to our pin and half ship
+# only the new one, so one job wrote two keys run by run (`e3a6d410`, then `770ca156`, then
+# `e3a6d410` on 2026-10-22). Each flip restored a partial match, recompiled for ~20 min, and saved
+# another ~1.8 GB entry, which kept the repo over its 10 GB cache budget. With only the pin left,
+# the key depends on `rust-toolchain.toml` alone. `docs/tooling/ci.md` § Build caching.
+runs:
+  using: composite
+  steps:
+    - name: Keep only the pinned Rust toolchain
+      shell: bash
+      run: |
+        # With no argument, rustup installs what `rust-toolchain.toml` pins.
+        rustup toolchain install
+        pinned=$(rustup show active-toolchain | cut -d' ' -f1)
+        rustup default "$pinned"
+        rustup toolchain list | cut -d' ' -f1 | grep -vxF "$pinned" | while read -r toolchain; do
+          rustup toolchain uninstall "$toolchain"
+        done
+        rustup toolchain list

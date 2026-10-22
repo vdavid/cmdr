@@ -9,6 +9,7 @@
 #   ./scripts/e2e-linux.sh --build       # Force rebuild Docker images (base with --no-cache)
 #   ./scripts/e2e-linux.sh --build-only  # Build Docker images, then exit (no tests)
 #   ./scripts/e2e-linux.sh --build-app-only  # Build images + the Tauri binary, then exit (CI cache warm)
+#   ./scripts/e2e-linux.sh --base-only  # Make sure the registry has the base image, then exit (CI)
 #   ./scripts/e2e-linux.sh --shell       # Start interactive shell in container
 #   ./scripts/e2e-linux.sh --vnc         # Interactive VNC mode with hot reload
 #   ./scripts/e2e-linux.sh --clean       # Clean Linux build cache
@@ -179,6 +180,7 @@ log_error() {
 FORCE_BUILD=false
 BUILD_ONLY=false
 BUILD_APP_ONLY=false
+BASE_ONLY=false
 INTERACTIVE=false
 VNC_MODE=false
 CLEAN=false
@@ -197,6 +199,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --build-app-only)
             BUILD_APP_ONLY=true
+            shift
+            ;;
+        --base-only)
+            BASE_ONLY=true
             shift
             ;;
         --shell)
@@ -228,6 +234,8 @@ while [[ $# -gt 0 ]]; do
             echo "  --build-only      Build Docker images, then exit without running tests"
             echo "  --build-app-only  Build Docker images and the Tauri binary, then exit without"
             echo "                    running tests (CI's main-branch cache warm uses this)"
+            echo "  --base-only       Make sure E2E_BASE_REGISTRY holds the base image: build and push"
+            echo "                    it when missing, then exit (CI's base-image job uses this)"
             echo "  --shell           Start interactive shell in container"
             echo "  --vnc             Interactive VNC mode with hot reload (pnpm dev)"
             echo "  --clean           Clean this checkout's Linux build cache (forces rebuild);"
@@ -276,14 +284,53 @@ label_cache_volumes
 #     (minutes cold), so it's content-addressed: tagged
 #     cmdr-e2e-base:<sha256[0..12] of Dockerfile.base> and only rebuilt when
 #     that file changes (or with --build, which forces a --no-cache rebuild for
-#     refreshing stale apt content). CI persists it as a docker-save tar via
-#     actions/cache, keyed on the same file's hash, so a cache hit skips the
-#     build entirely.
+#     refreshing stale apt content).
+#   - In CI, the base lives in a container registry (E2E_BASE_REGISTRY, for
+#     example ghcr.io/vdavid) under the same content-hash tag. ci.yml's
+#     `e2e-base-image` job runs --base-only, which builds and pushes it only
+#     when the registry lacks that tag (E2E_BASE_PUSH=true), and every other
+#     run pulls it. A registry, because the Actions cache it used to live in
+#     evicts under size pressure, and rebuilding inside the test job then ran
+#     it past its time cap (2026-10-22).
 #   - Final image (Dockerfile): FROM base + entrypoint.sh. Cheap (~1 s), so
 #     it's rebuilt every run — entrypoint.sh edits propagate without --build.
 
 BASE_HASH=$(sha256_stdin < "$DOCKER_DIR/Dockerfile.base" | cut -c1-12)
 BASE_IMAGE="$BASE_IMAGE_REPO:$BASE_HASH"
+REMOTE_BASE_IMAGE=""
+if [[ -n "${E2E_BASE_REGISTRY:-}" ]]; then
+    # Registry paths must be lowercase, and a GitHub owner name may not be.
+    REMOTE_BASE_IMAGE="$(echo "$E2E_BASE_REGISTRY" | tr '[:upper:]' '[:lower:]')/$BASE_IMAGE_REPO:$BASE_HASH"
+fi
+
+if $BASE_ONLY; then
+    if [[ -z "$REMOTE_BASE_IMAGE" ]]; then
+        log_error "--base-only needs E2E_BASE_REGISTRY"
+        exit 1
+    fi
+    # A manifest lookup reads a few KB; pulling the image just to learn it exists would read GBs.
+    if ! $FORCE_BUILD && docker manifest inspect "$REMOTE_BASE_IMAGE" &> /dev/null; then
+        log_info "The registry already has the E2E base image: $REMOTE_BASE_IMAGE"
+        exit 0
+    fi
+    # Missing there but built here already (a local run), so push without rebuilding.
+    if ! $FORCE_BUILD && docker image inspect "$BASE_IMAGE" &> /dev/null; then
+        docker tag "$BASE_IMAGE" "$REMOTE_BASE_IMAGE"
+        docker push "$REMOTE_BASE_IMAGE"
+        exit 0
+    fi
+fi
+
+if ! $FORCE_BUILD && ! $BASE_ONLY && [[ -n "$REMOTE_BASE_IMAGE" ]] &&
+    ! docker image inspect "$BASE_IMAGE" &> /dev/null; then
+    log_info "Pulling E2E base image: $REMOTE_BASE_IMAGE"
+    if docker pull "$REMOTE_BASE_IMAGE"; then
+        docker tag "$REMOTE_BASE_IMAGE" "$BASE_IMAGE"
+        docker tag "$REMOTE_BASE_IMAGE" "$BASE_IMAGE_REPO:latest"
+    else
+        log_warn "Couldn't pull $REMOTE_BASE_IMAGE, so building the base here instead"
+    fi
+fi
 
 if $FORCE_BUILD || ! docker image inspect "$BASE_IMAGE" &> /dev/null; then
     log_info "Building E2E base image: $BASE_IMAGE"
@@ -291,8 +338,20 @@ if $FORCE_BUILD || ! docker image inspect "$BASE_IMAGE" &> /dev/null; then
     if $FORCE_BUILD; then
         NO_CACHE_ARG="--no-cache"
     fi
+    # The source label links a pushed image to its repo, which is what grants the
+    # repo's workflow token access to the package.
+    LABEL_ARGS=()
+    if [[ -n "${GITHUB_REPOSITORY:-}" ]]; then
+        LABEL_ARGS=(--label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY")
+    fi
     docker build $NO_CACHE_ARG -t "$BASE_IMAGE" -t "$BASE_IMAGE_REPO:latest" \
+        ${LABEL_ARGS[@]+"${LABEL_ARGS[@]}"} \
         -f "$DOCKER_DIR/Dockerfile.base" "$DOCKER_DIR"
+    if [[ "${E2E_BASE_PUSH:-}" == "true" && -n "$REMOTE_BASE_IMAGE" ]]; then
+        log_info "Pushing E2E base image: $REMOTE_BASE_IMAGE"
+        docker tag "$BASE_IMAGE" "$REMOTE_BASE_IMAGE"
+        docker push "$REMOTE_BASE_IMAGE"
+    fi
     # Prune older base tags (each holds ~3.5 GB of layers). Best-effort: a tag
     # backed by a running container just stays until the next prune.
     STALE_BASE_TAGS=$(docker images "$BASE_IMAGE_REPO" --format '{{.Tag}}' | grep -v -e "^$BASE_HASH\$" -e '^latest$' || true)
@@ -303,6 +362,10 @@ if $FORCE_BUILD || ! docker image inspect "$BASE_IMAGE" &> /dev/null; then
     fi
 else
     log_info "Reusing E2E base image: $BASE_IMAGE"
+fi
+
+if $BASE_ONLY; then
+    exit 0
 fi
 
 docker build -t "$IMAGE_NAME" --build-arg BASE_IMAGE="$BASE_IMAGE" \

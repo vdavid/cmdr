@@ -53,8 +53,9 @@ pnpm test:e2e:linux:vnc                # VNC mode with hot reload (pnpm dev)
 - `desktop-e2e-linux`: Playwright E2E in Docker. Not in the default lanes (slow).
 - `e2e-linux-typecheck`: TypeScript check on e2e-playwright files, runs by default.
 
-Base-image tar persistence and build-volume bind-mounts: DETAILS.md § Build caching. David's UTM Ubuntu VM for fast
-Linux-only iteration (setup, SSH loop, disk cleanup, the half-configured-D-Bus gotcha): DETAILS.md § Ubuntu test VM.
+CI base image (`E2E_BASE_REGISTRY`) and build-volume bind-mounts: DETAILS.md § Build caching. David's UTM Ubuntu VM for
+fast Linux-only iteration (setup, SSH loop, disk cleanup, the half-configured-D-Bus gotcha): DETAILS.md § Ubuntu test
+VM.
 
 Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

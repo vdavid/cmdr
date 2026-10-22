@@ -55,18 +55,33 @@ Only needed to refresh content baked into cached layers (stale apt lists, a newe
 edits invalidate on their own. `--build-only` builds the images and exits without running tests. The dev packages the
 build needs (`libwebkit2gtk-4.1-dev`, `patchelf`, friends) are baked into the base.
 
-### CI base-image persistence
+### CI base image
 
-In the `ci.yml` `desktop-e2e-linux` job, runners start fresh, so the base image is persisted as a `docker save` tar via
-`actions/cache`, keyed on `hashFiles(Dockerfile.base)` (same invalidation signal as the local tag). Cache hit →
-`docker load` (then the tar is deleted to reclaim ~3.5 GB; a hit is always exact, no `restore-keys`). Cache miss → the
-script builds the base, and an `Export E2E base image` step re-creates the tar for the cache post-step. No registry
-involved.
+CI runners start fresh, so the base image lives in GitHub's container registry as
+`ghcr.io/<owner>/cmdr-e2e-base:<hash>`, the same content-hash tag as locally. `e2e-linux.sh` reads two env vars, and a
+local run sets neither, so it behaves as above:
+
+- `E2E_BASE_REGISTRY` (`ghcr.io/<owner>`): when the local tag is missing, pull it from there before building. A failed
+  pull falls back to a local build with a warning.
+- `E2E_BASE_PUSH=true`: push a freshly built base there.
+
+`ci.yml`'s `e2e-base-image` job runs `--base-only`: a manifest lookup (a few KB), and a build plus push only when the
+registry lacks the tag. `desktop-e2e-linux` needs it, so the test job only ever pulls. The owner comes from
+`github.repository_owner`, so a repo move needs no edit: the first run under the new owner builds and pushes there. The
+old owner's package then needs a manual delete.
+
+- **Why a registry**: the image used to be a `docker save` tar in the Actions cache. That cache evicts its least
+  recently used entries above the repo's 10 GB budget, and on a miss the test job rebuilt the base inside its own 40-min
+  cap. On 2026-10-22, slow apt mirrors stretched that rebuild past 30 min and the job timed out with no test failure.
+- **The build's own guards**: `Dockerfile.base` sets apt retries and a 30-s connection timeout, and the job has a 60-min
+  cap.
+- **Access**: the build adds an `org.opencontainers.image.source` label for the repo, which links the package to it, so
+  the workflow token can pull it. Each job that touches the registry runs `docker login ghcr.io` with that token.
 
 A PR can read only its own and `main`'s caches, and a verified `main` push skips the E2E lane, so `ci.yml`'s
-`warm-e2e-linux-cache` job rebuilds both E2E caches on `main` (through `e2e-linux.sh --build-app-only`: images plus the
-Tauri binary, no fixtures, no tests) whenever the current key has no entry there. Without it, each new PR's first run
-built cold, ~21 min against ~11 (`docs/tooling/ci.md` § Build caching).
+`warm-e2e-linux-cache` job rebuilds the E2E Cargo + target cache on `main` (through `e2e-linux.sh --build-app-only`:
+images plus the Tauri binary, no fixtures, no tests) whenever the current key has no entry there. Without it, each new
+PR's first run built cold, ~21 min against ~11 (`docs/tooling/ci.md` § Build caching).
 
 ### Volumes (cargo, target, node_modules, .svelte-kit)
 

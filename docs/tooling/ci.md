@@ -126,6 +126,12 @@ silent** (a warning, not a red job):
   compiling checks and saves. They skip when the Rust lanes ran on that push, and they're exempt from `ci-ok`
   (`ciOKGateExempt`). Their rust-cache inputs and the steps before them must match the lane's: rust-cache hashes the
   rustc version and `CARGO*`/ `RUST*` env into the key, which is also why the switch is named `SAVE_RUST_CACHE`.
+- **Every rust-cache step follows the `pinned-rust-toolchain` action** (`.github/actions/`). rust-cache hashes the rustc
+  version of EVERY installed toolchain, and the runner image preinstalls its own `stable`. While GitHub rolls out a new
+  image (days, after each Rust release), runners differ, so one job wrote two keys run by run: `e3a6d410` with the old
+  stable next to the pin, `770ca156` without it (2026-10-22). Each flip restored a partial match, recompiled ~20 min,
+  and saved another ~1.8 GB entry. The action installs the pin and uninstalls every other toolchain, so the key depends
+  on `rust-toolchain.toml` alone. A new rust-cache step needs it too.
 - **`desktop-e2e-linux`**: caches the Docker-side cargo + `target/` via host bind mounts (`/tmp/cmdr-docker-cache/*`),
   keyed on Cargo.lock with a restore-keys fallback. Separate from `desktop-rust` because the e2e binary builds a
   different feature set (`playwright-e2e,virtual-mtp,smb-e2e`). Split into `actions/cache/restore` and a save step that
@@ -137,28 +143,33 @@ silent** (a warning, not a red job):
   building cold again, check that the save isn't warning "Permission denied" again. **Second companion: the
   `warm-e2e-linux-cache` job.** A PR restores only its own or `main`'s caches, and a verified `main` push skips the
   lane, so without it no main-scoped entry exists and every new PR's first run builds cold (4 of 9 PR runs on
-  2026-10-19, #557). It runs post-land on `main`, rebuilds either E2E cache only when the current key has no entry, and
-  is exempt from `ci-ok` (`ciOKGateExempt`). Its cache `path`s and keys must stay identical to the lane's.
-- **`desktop-e2e-linux` base image**: the E2E Docker base image (apt packages + Node + Rust; see
-  `apps/desktop/test/e2e-linux/DETAILS.md` § "Build caching") cached as a `docker save` tar, keyed on
-  `hashFiles(Dockerfile.base)` with **no restore-keys** (a stale tar's image carries a different content-hash tag, so
-  `e2e-linux.sh` would rebuild anyway). Saves the cold ~4-min image build per run. **Load-bearing companion: the "Export
-  E2E base image" step.** (The job has no "Free disk space" step: the runner's root disk is 145 GB with 107+ GB free,
-  measured on 109 runs in October 2026, and the reclaim cost ~1.6 min a run, #557.) The export step is what puts the tar
-  on disk for the cache post-step; without it the cache saves an empty dir and every run builds cold (silently — the
-  cache "hits" but contains nothing, which is why the load step would fail loudly on a missing tar rather than
-  soft-skip).
+  2026-10-19, #557). It runs post-land on `main`, rebuilds the E2E target cache only when the current key has no entry,
+  and is exempt from `ci-ok` (`ciOKGateExempt`). Its cache `path`s and key must stay identical to the lane's.
+- **The E2E base image is not an Actions cache.** It lives in GitHub's container registry, tagged by the hash of
+  `Dockerfile.base`: the `e2e-base-image` job builds and pushes it only when the tag is missing, and `desktop-e2e-linux`
+  (which needs that job) pulls it. As a cache entry it was the LRU victim whenever the repo went over budget, and the
+  test job then rebuilt it inside its own 40-min cap, which slow apt mirrors ran out (2026-10-22).
+  `apps/desktop/test/e2e-linux/DETAILS.md` § "CI base image". (The E2E job has no "Free disk space" step: the runner's
+  root disk is 145 GB with 107+ GB free, measured on 109 runs in October 2026, and the reclaim cost ~1.6 min a run,
+  #557.)
+- **The Linux apt install goes through the `tauri-linux-deps` action** (`.github/actions/`): apt's own 30-s connection
+  timeout and retries, a `timeout` on the download, and a second attempt, under a 20-min step cap. On 2026-10-22 the
+  plain install took up to 38.9 min (usually ~0.5) and ran `desktop-rust-fixtures` out of its 40-min cap.
 - **`slow-checks` dependency-checks**: rust-cache for cargo-udeps's nightly `target/`, plus the same "Free disk space"
   step. Kept alive by the 6-day cron (below).
 
 rust-cache keys per-job, so these are independent caches and each prunes itself. The shared risk is GitHub's **10 GB
-per-repo ceiling**. With the Rust and E2E target caches saved from `main` only, the steady state is about 7.2 GB
+per-repo ceiling**. With the Rust and E2E target caches saved from `main` only, the steady state is about 6.4 GB
 (`gh cache list`, 2026-10-20, macOS entry from its last single-job save): `desktop-rust` ~1.7, `desktop-rust-macos`
-~1.4, `docker-e2e` ~1.15, the e2e base-image tar ~0.8, the `slow-checks` udeps cache ~1.7 (estimate; it was evicted when
-measured), mise ~0.2 per OS, plus small scorecard and CodeQL entries. Per-PR saves are only mise (~0.17 GB each on
-macOS). Before this, every PR also saved ~1.7 GB of Rust and ~1.2 GB of E2E target, the repo sat at ~12 GB, and LRU
-evicted entries within minutes. Protect the per-push `desktop-rust` cache first; the udeps cache is the one to drop
-under pressure.
+~1.4, `docker-e2e` ~1.15, the `slow-checks` udeps cache ~1.7 (estimate; it was evicted when measured), mise ~0.2 per OS,
+plus small scorecard and CodeQL entries. Per-PR saves are only mise (~0.17 GB each on macOS). Before this, every PR also
+saved ~1.7 GB of Rust and ~1.2 GB of E2E target, the repo sat at ~12 GB, and LRU evicted entries within minutes.
+
+**Load-bearing companion: the `prune-superseded-caches` job.** A new `Cargo.lock` gives each big entry a new key, and
+the old one lingers until 7 unused days pass, so two generations put the repo at ~11.5 GB (2026-10-22). Post-land on
+`main`, after every job that saves one, it keeps the newest `main` entry per family (`v0-rust-*` and `*-docker-e2e-*`,
+the key minus its trailing hash parts) and deletes the rest. It's exempt from `ci-ok`. Protect the per-push
+`desktop-rust` cache first; the udeps cache is the one to drop under pressure.
 
 **Critical path.** The per-push wall clock is the longest single job, because `desktop-e2e-linux` gates only on change
 detection (not on `desktop-svelte`) and so starts at t=0 alongside everything else. E2E is usually that floor. Measured

@@ -54,13 +54,15 @@ jobs:
       # Rust cache (with desktop-rust + the e2e Docker cache); if the repo total
       # crosses GitHub's 10 GB ceiling, LRU may evict the least-used (this one)
       # regardless of the cron. Watch `gh cache list` sizes.
+      - name: Keep only the pinned Rust toolchain
+        uses: ./.github/actions/pinned-rust-toolchain
+
       - name: Cache Rust build
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
 
       - name: Install Tauri dependencies (Linux)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libacl1-dev
+        uses: ./.github/actions/tauri-linux-deps
+        timeout-minutes: 20
 
       - name: Build check tool
         run: go build -o check .
@@ -145,6 +147,9 @@ jobs:
       # Keyed on the fuzz lockfile; `fuzz/target/` (the instrumented build) and the
       # cargo registry. Separate from the other Rust caches: different toolchain, flags,
       # and target dir.
+      - name: Keep only the pinned Rust toolchain
+        uses: ./.github/actions/pinned-rust-toolchain
+
       - name: Cache fuzz build
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
@@ -250,9 +255,8 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Install Tauri dependencies (Linux)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libacl1-dev
+        uses: ./.github/actions/tauri-linux-deps
+        timeout-minutes: 20
 
       - name: Start Docker SMB containers
         run: ./apps/desktop/test/smb-servers/start.sh core
