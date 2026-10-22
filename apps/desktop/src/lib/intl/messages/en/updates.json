@@ -102,25 +102,33 @@
     "description": "Bold first line of a warning toast that stays until dismissed. A newer Cmdr is out, but this Mac's copy of the app belongs to another account (typically installed by an administrator or a company's IT tools), so Cmdr can't update itself. Shown to people who ARE administrators of this Mac, so they can fix it themselves. Not an error: a calm statement. \"Cmdr\" is the product name, never translated.",
     "placeholders": {
       "version": "the newer version that is out (for example 0.54.0)"
-    }
+    },
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
   "updates.unwritable.adminDetail": "{path} belongs to another account. To update, download Cmdr from <website>getcmdr.com</website> and drag it into Applications. macOS will ask for your password.",
   "@updates.unwritable.adminDetail": {
     "description": "Second line of the same warning toast (see updates.unwritable.adminHeadline), telling an administrator how to update by hand: download the app again from the website and drag it into the Applications folder, replacing the old copy. macOS then asks for their password, which is expected. <website> wraps a link that opens the website; keep \"getcmdr.com\" exactly as is. \"Applications\" is the macOS folder name: use the name macOS shows for that folder in the target language.",
     "placeholders": {
       "path": "the full path of the app on disk (for example /Applications/Cmdr.app), never translated"
-    }
+    },
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
   "updates.unwritable.standardHeadline": "Cmdr {version} is out",
   "@updates.unwritable.standardHeadline": {
     "description": "Bold first line of a warning toast that stays until dismissed. A newer Cmdr is out, but the person's account can't update the app on this Mac (typically a work Mac where the company's IT team installs software, and the person isn't an administrator). \"Cmdr\" is the product name, never translated.",
     "placeholders": {
       "version": "the newer version that is out (for example 0.54.0)"
-    }
+    },
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
   "updates.unwritable.standardDetail": "Your account can’t update Cmdr on this Mac. Ask your IT team, or whoever manages this Mac, to update it.",
   "@updates.unwritable.standardDetail": {
-    "description": "Second line of the same warning toast (see updates.unwritable.standardHeadline). Tells someone without administrator rights who can update the app for them: their company's IT team on a work Mac, or whoever set up and manages the Mac at home. Friendly and practical, not an error."
+    "description": "Second line of the same warning toast (see updates.unwritable.standardHeadline). Tells someone without administrator rights who can update the app for them: their company's IT team on a work Mac, or whoever set up and manages the Mac at home. Friendly and practical, not an error.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
   "updates.moveToApplicationsDialog.title": "Move Cmdr to your Applications folder",
   "@updates.moveToApplicationsDialog.title": {
@@ -203,14 +211,18 @@
     "description": "Status line in Settings > Updates & privacy (and the toast after the person picks \"Check for updates\"), when a newer Cmdr is out but this Mac's copy of the app belongs to another account, so Cmdr can't update itself. Shown to administrators, who can replace the app by hand: download it again from the website and drag it into the Applications folder. Keep \"getcmdr.com\" exactly as is. \"Applications\" is the macOS folder name: use the name macOS shows for that folder in the target language. Not an error.",
     "placeholders": {
       "version": "the newer version that is out (for example 0.54.0)"
-    }
+    },
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
   "updates.status.unwritableStandard": "Cmdr {version} is out, but your account can’t update Cmdr on this Mac.",
   "@updates.status.unwritableStandard": {
     "description": "Status line in Settings > Updates & privacy (and the toast after the person picks \"Check for updates\"), when a newer Cmdr is out but the person's account can't update the app on this Mac, typically a work Mac whose IT team installs software. Not an error: a calm statement.",
     "placeholders": {
       "version": "the newer version that is out (for example 0.54.0)"
-    }
+    },
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
   "updates.status.ready": "Update v{next} ready. Restart to apply.",
   "@updates.status.ready": {
