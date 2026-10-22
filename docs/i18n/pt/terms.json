@@ -1776,6 +1776,9 @@
     "accept": ["mov"],
     "forms": "progress Movendo; noun movimentação (Finder MV2_V1 Desfazer Movimentação)",
     "confidence": "confirmed",
+    "exceptions": {
+      "multiRename.movedRow": "reordering a row in the preview list, not relocating a file; the announcement names only the new place (Agora na posição …), and a participle would have to agree with a file or a folder"
+    },
     "sources": "macOS Finder pt-BR"
   },
   "move-to-trash": {
@@ -3300,6 +3303,9 @@
     "accept": ["grav"],
     "forms": "written so far → gravados até agora; half-written → gravado pela metade",
     "confidence": "confirmed",
+    "exceptions": {
+      "multiRename.rangeEditor.writeAs": "how a placeholder is spelled in the mask ([N2-5] vs [N2,4]), not data landing on a disk, so the everyday Escrever como"
+    },
     "sources": "shipped pt catalog"
   },
   "zoom": {
