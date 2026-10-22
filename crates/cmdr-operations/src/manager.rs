@@ -340,7 +340,12 @@ impl OperationManager {
 
         // A "… all" answer mid-run changes the policy the snapshot reports; this
         // is who it tells.
-        state.conflict_policy.attach(Arc::downgrade(self));
+        let manager = Arc::downgrade(self);
+        state.conflict_policy.attach(move || {
+            if let Some(manager) = manager.upgrade() {
+                manager.broadcast_changed();
+            }
+        });
         self.registry.insert(operation_id.clone(), Arc::clone(&state));
 
         // Claim the confirming dialog's preview before the record exists, so a

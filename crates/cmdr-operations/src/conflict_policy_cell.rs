@@ -14,24 +14,28 @@
 //! for ordinary clashes, so leaving them out keeps the caption true for the
 //! clashes it describes.
 
-use std::sync::{Mutex, OnceLock, Weak};
+use std::sync::{Mutex, OnceLock};
 
 use cmdr_fs::ignore_poison::IgnorePoison;
 
-use super::manager::OperationManager;
 use super::types::ConflictResolution;
 
-/// One operation's effective conflict policy, plus the manager to tell when it
+/// Says a policy change out loud. The manager's broadcast, handed in as a
+/// closure so this cell never names the manager (whose registry holds the
+/// state that holds this cell: naming it back would close a module cycle).
+type OnChange = Box<dyn Fn() + Send + Sync>;
+
+/// One operation's effective conflict policy, plus who to tell when it
 /// changes. `None` for an operation with no policy at all (a delete, a trash, a
 /// rename), which is also what the snapshot reports for it.
-// DEFAULT-OK: no policy and no manager yet is the state of every operation that has none,
+// DEFAULT-OK: no policy and no listener yet is the state of every operation that has none,
 // and of a transfer before `with_conflict_policy` and registration fill it in.
 #[derive(Default)]
 pub(crate) struct ConflictPolicyCell {
     policy: Mutex<Option<ConflictResolution>>,
-    /// Set when the manager registers the operation. Weak: the manager's
-    /// registry holds the state that holds this cell.
-    manager: OnceLock<Weak<OperationManager>>,
+    /// Set when the manager registers the operation. The closure holds the
+    /// manager weakly: its registry holds the state that holds this cell.
+    on_change: OnceLock<OnChange>,
 }
 
 impl ConflictPolicyCell {
@@ -39,7 +43,7 @@ impl ConflictPolicyCell {
     pub(crate) fn starting_on(policy: ConflictResolution) -> Self {
         Self {
             policy: Mutex::new(Some(policy)),
-            manager: OnceLock::new(),
+            on_change: OnceLock::new(),
         }
     }
 
@@ -48,10 +52,10 @@ impl ConflictPolicyCell {
         *self.policy.lock_ignore_poison()
     }
 
-    /// Wires the manager that broadcasts a change. The manager's call, once, at
+    /// Wires what broadcasts a change. The manager's call, once, at
     /// registration.
-    pub(crate) fn attach(&self, manager: Weak<OperationManager>) {
-        let _ = self.manager.set(manager);
+    pub(crate) fn attach(&self, on_change: impl Fn() + Send + Sync + 'static) {
+        let _ = self.on_change.set(Box::new(on_change));
     }
 
     /// A person latched `policy` for every clash to come. Re-broadcasts the
@@ -67,8 +71,8 @@ impl ConflictPolicyCell {
         }
         // Outside the lock: the broadcast reads `current()` back through the
         // manager's snapshot.
-        if let Some(manager) = self.manager.get().and_then(Weak::upgrade) {
-            manager.broadcast_changed();
+        if let Some(on_change) = self.on_change.get() {
+            on_change();
         }
     }
 }
