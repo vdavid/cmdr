@@ -7,6 +7,7 @@
     import NewFolderDialog from '#lib/file-operations/mkdir/NewFolderDialog.svelte'
     import NewFileDialog from '#lib/file-operations/mkfile/NewFileDialog.svelte'
     import AlertDialog from '#lib/ui/AlertDialog.svelte'
+    import DialogBoundary from '#lib/ui/boundary/DialogBoundary.svelte'
     import type { TransferDialogPropsData } from './transfer-operations'
     import type {
         AdoptedOperationData,
@@ -27,7 +28,7 @@
     import type { ProgressAtStop } from '#lib/tauri-commands/index.js'
 
     const {
-        onDialogRenderError,
+        onDismissAll,
         showTransferDialog,
         transferDialogProps,
         showTransferProgressDialog,
@@ -71,8 +72,8 @@
         onTrashInBackground,
         onDeleteCancel,
     }: {
-        /** Dismisses every dialog and returns focus to the pane. See `handleRenderError`. */
-        onDialogRenderError: (error: unknown) => void
+        /** Dismisses every dialog and returns focus to the pane, after one of them threw. */
+        onDismissAll: () => void
         showTransferDialog: boolean
         transferDialogProps: TransferDialogPropsData | null
         showTransferProgressDialog: boolean
@@ -128,56 +129,19 @@
         onTrashInBackground: (previewId: string | null, origin?: ConfirmOrigin) => void
         onDeleteCancel: () => void
     } = $props()
-
-    /**
-     * How many consecutive render failures may re-arm the boundary before it
-     * stays down. Dismissing every dialog makes all the `{#if}` conditions
-     * false, so the retry renders nothing and can't throw again; the cap is
-     * there so an unforeseen throw-on-empty can't spin forever.
-     */
-    const MAX_CONSECUTIVE_RESETS = 3
-    /** Failures further apart than this start a fresh count, so one bad moment
-     *  doesn't cost the rest of the session its dialogs. A re-render loop lands
-     *  well inside it and still trips the cap. */
-    const FAILURE_WINDOW_MS = 5000
-    let consecutiveFailures = 0
-    let lastFailureAt = 0
-
-    /**
-     * Recovers from a dialog that threw while rendering.
-     *
-     * A throw mid-render leaves nothing on screen, but the `show*` flag that
-     * opened the dialog is already true, so `isConfirmationDialogOpen()` keeps
-     * suppressing the pane's keyboard: the app looks frozen with nothing to
-     * escape from. (Lived case: a doubly-mounted NAS put two volumes with one id
-     * into the transfer dialog's destination `{#each}`, and Svelte threw
-     * `each_key_duplicate` during flush.)
-     *
-     * So: report it through the app's error path, dismiss every dialog, hand
-     * focus back to the pane, then re-arm the boundary. The reset is deferred to
-     * the next tick — `setTimeout(0)`, ❌ never `requestAnimationFrame`, which
-     * macOS throttles in unfocused windows — so the dismissal has flushed before
-     * the contents re-render. Without a reset, the boundary stays failed and NO
-     * dialog opens again for the rest of the session.
-     */
-    function handleRenderError(error: unknown, reset: () => void): void {
-        onDialogRenderError(error)
-        const now = Date.now()
-        consecutiveFailures = now - lastFailureAt > FAILURE_WINDOW_MS ? 1 : consecutiveFailures + 1
-        lastFailureAt = now
-        if (consecutiveFailures > MAX_CONSECUTIVE_RESETS) return
-        setTimeout(() => { reset(); }, 0)
-    }
 </script>
 
 <!--
-    Every dialog renders inside ONE error boundary. A dialog that throws while
-    rendering must never leave the app with a suppressed keyboard and nothing on
-    screen; `handleRenderError` dismisses them all, gives the pane its focus
-    back, and re-arms the boundary. The `failed` snippet renders nothing on
-    purpose: by the time it runs there is no dialog left to show.
+    Every dialog renders inside ONE `DialogBoundary`. A dialog that throws while
+    rendering or tearing down must never leave the app with a suppressed keyboard
+    and nothing on screen: the `show*` flag that opened it is already true, so
+    `isConfirmationDialogOpen()` keeps eating the pane's keys. (Lived case: a
+    doubly-mounted NAS put two volumes with one id into the transfer dialog's
+    destination `{#each}`, and Svelte threw `each_key_duplicate` during flush.)
+    So the boundary's close dismisses them ALL, which also hands the pane its
+    focus back; the boundary reports, toasts, and re-arms.
 -->
-<svelte:boundary onerror={handleRenderError}>
+<DialogBoundary name="paneDialogs" onClose={onDismissAll}>
     {#if showTransferDialog && transferDialogProps}
         {#key transferDialogProps}
             <TransferDialog
@@ -333,8 +297,4 @@
             onCancel={onUnlockCancel}
         />
     {/if}
-
-    {#snippet failed()}
-        <!-- Deliberately empty: the dialogs are dismissed and the pane has focus. -->
-    {/snippet}
-</svelte:boundary>
+</DialogBoundary>

@@ -5,9 +5,10 @@
  * A dialog that throws while rendering used to leave the app wedged: nothing
  * reached the screen, but the `show*` flag was already true, so
  * `isConfirmationDialogOpen()` kept suppressing the pane's keyboard with no
- * dialog to escape from. The boundary has to catch the throw, hand it to the
- * recovery callback (which dismisses every dialog and refocuses the pane), and
- * leave the rest of the app mounted.
+ * dialog to escape from. Its `DialogBoundary` has to catch the throw, call the
+ * dismiss-all callback (which also refocuses the pane), and leave the rest of
+ * the app mounted. What the boundary itself does (report, toast, re-arm) is
+ * pinned in `#lib/ui/boundary/DialogBoundary.svelte.test.ts`.
  *
  * `AlertDialog` is mocked with a fixture that throws from its instance script,
  * so the real `DialogManager` is what's under test.
@@ -41,10 +42,10 @@ import { buttonLabel } from '#lib/file-operations/test-button-label.js'
 type DialogManagerProps = ComponentProps<typeof DialogManager>
 
 /** Every prop `DialogManager` needs, with nothing open and no-op callbacks. */
-function baseProps(onDialogRenderError: (error: unknown) => void): DialogManagerProps {
+function baseProps(onDismissAll: () => void): DialogManagerProps {
   const noop = (): void => {}
   return {
-    onDialogRenderError,
+    onDismissAll,
     showTransferDialog: false,
     transferDialogProps: null,
     showTransferProgressDialog: false,
@@ -89,9 +90,9 @@ function baseProps(onDialogRenderError: (error: unknown) => void): DialogManager
 }
 
 /** The props for an open alert dialog, which the mock makes throw on render. */
-function openAlertProps(onDialogRenderError: (error: unknown) => void): DialogManagerProps {
+function openAlertProps(onDismissAll: () => void): DialogManagerProps {
   return {
-    ...baseProps(onDialogRenderError),
+    ...baseProps(onDismissAll),
     showAlertDialog: true,
     alertDialogProps: { title: 'Heads up', message: 'Something to say' },
   }
@@ -115,8 +116,8 @@ describe('DialogManager error boundary', () => {
   })
 
   it('hands a dialog that throws during render to the recovery callback instead of propagating', () => {
-    const onDialogRenderError = vi.fn()
-    const props = openAlertProps(onDialogRenderError)
+    const onDismissAll = vi.fn()
+    const props = openAlertProps(onDismissAll)
 
     // Mounting must NOT throw: the boundary is what stands between a broken
     // dialog and a webview with a suppressed keyboard and a blank screen.
@@ -125,9 +126,7 @@ describe('DialogManager error boundary', () => {
       flushSync()
     }).not.toThrow()
 
-    expect(onDialogRenderError).toHaveBeenCalledTimes(1)
-    expect(onDialogRenderError.mock.calls[0][0]).toBeInstanceOf(Error)
-    expect((onDialogRenderError.mock.calls[0][0] as Error).message).toContain('blew up while rendering')
+    expect(onDismissAll).toHaveBeenCalledTimes(1)
   })
 
   it('renders nothing after the failure, so no half-built dialog is left on screen', () => {
@@ -141,12 +140,12 @@ describe('DialogManager error boundary', () => {
   })
 
   it('stays quiet and mounts normally when no dialog is open', () => {
-    const onDialogRenderError = vi.fn()
+    const onDismissAll = vi.fn()
 
-    component = mount(DialogManager, { target: host, props: baseProps(onDialogRenderError) }) as Record<string, unknown>
+    component = mount(DialogManager, { target: host, props: baseProps(onDismissAll) }) as Record<string, unknown>
     flushSync()
 
-    expect(onDialogRenderError).not.toHaveBeenCalled()
+    expect(onDismissAll).not.toHaveBeenCalled()
   })
 })
 

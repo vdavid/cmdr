@@ -184,10 +184,6 @@
   "@fileExplorer.pane.refreshStillRunningToast": {
     "sourceHash": "0636af4"
   },
-  "fileExplorer.pane.dialogRenderFailedToast": "Não foi possível abrir essa caixa de diálogo, então nós a fechamos e devolvemos o teclado. Tente novamente.",
-  "@fileExplorer.pane.dialogRenderFailedToast": {
-    "sourceHash": "1e8ed2d"
-  },
   "fileExplorer.pane.ejectFailedToast": "Não foi possível ejetar {volumeName}: {message}",
   "@fileExplorer.pane.ejectFailedToast": {
     "sourceHash": "f4072a7"

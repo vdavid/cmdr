@@ -70,6 +70,7 @@
     import { initializeShortcuts } from '#lib/shortcuts/index.js'
     import { availableMediaKind } from './media-view'
     import ViewerCopyDialogs from './ViewerCopyDialogs.svelte'
+    import DialogBoundary from '#lib/ui/boundary/DialogBoundary.svelte'
     import MediaImageView from './MediaImageView.svelte'
     import MediaPdfView from './MediaPdfView.svelte'
     import MediaMarkdownView from './MediaMarkdownView.svelte'
@@ -1436,17 +1437,25 @@
     />
 </main>
 
-
-<ViewerCopyDialogs
-    confirmBytes={copyFlow.confirmBytes}
-    refuseBytes={copyFlow.refuseBytes}
-    onCancelConfirm={copyFlow.cancelConfirm}
-    onProceedConfirm={copyFlow.proceedConfirm}
-    onDismissRefuse={copyFlow.dismissRefuse}
-    onSaveAs={() => {
-        void copyFlow.handleSaveAs()
+<!-- Above the dialogs' own `{#if}`s, so a copy dialog that breaks closes and the viewer stays. -->
+<DialogBoundary
+    name="viewerCopy"
+    onClose={() => {
+        copyFlow.cancelConfirm()
+        copyFlow.dismissRefuse()
     }}
-/>
+>
+    <ViewerCopyDialogs
+        confirmBytes={copyFlow.confirmBytes}
+        refuseBytes={copyFlow.refuseBytes}
+        onCancelConfirm={copyFlow.cancelConfirm}
+        onProceedConfirm={copyFlow.proceedConfirm}
+        onDismissRefuse={copyFlow.dismissRefuse}
+        onSaveAs={() => {
+            void copyFlow.handleSaveAs()
+        }}
+    />
+</DialogBoundary>
 
 <style>
     .viewer-container {

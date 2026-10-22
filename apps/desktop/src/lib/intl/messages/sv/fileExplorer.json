@@ -184,10 +184,6 @@
   "@fileExplorer.pane.refreshStillRunningToast": {
     "sourceHash": "0636af4"
   },
-  "fileExplorer.pane.dialogRenderFailedToast": "Den här dialogrutan kunde inte öppnas, så vi stängde den och gav tillbaka tangentbordet. Försök igen.",
-  "@fileExplorer.pane.dialogRenderFailedToast": {
-    "sourceHash": "1e8ed2d"
-  },
   "fileExplorer.pane.ejectFailedToast": "Det gick inte att mata ut {volumeName}: {message}",
   "@fileExplorer.pane.ejectFailedToast": {
     "sourceHash": "f4072a7"

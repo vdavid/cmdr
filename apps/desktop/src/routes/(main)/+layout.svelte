@@ -50,9 +50,14 @@
     import CrashReportDialog from '#lib/crash-reporter/CrashReportDialog.svelte'
     import { checkForPendingCrashReport } from '#lib/crash-reporter/pending-crash-report.js'
     import ErrorReportDialog from '#lib/error-reporter/ErrorReportDialog.svelte'
-    import { errorReportFlow, hostErrorReportDialog } from '#lib/error-reporter/error-report-flow.svelte.js'
+    import {
+        closeErrorReportDialog,
+        errorReportFlow,
+        hostErrorReportDialog,
+    } from '#lib/error-reporter/error-report-flow.svelte.js'
     import FeedbackDialog from '#lib/feedback/FeedbackDialog.svelte'
-    import { feedbackFlow } from '#lib/feedback/feedback-flow.svelte.js'
+    import { closeFeedbackDialog, feedbackFlow } from '#lib/feedback/feedback-flow.svelte.js'
+    import DialogBoundary from '#lib/ui/boundary/DialogBoundary.svelte'
     import SignInSheet from '#lib/servers/SignInSheet.svelte'
     import { closeSignInSheet, currentSignInRequest } from '#lib/servers/sign-in-sheet-state.svelte.js'
     import { initAutoSendToastListener, cleanupAutoSendToastListener } from '#lib/error-reporter/auto-send-toast.svelte.js'
@@ -349,34 +354,49 @@
 </script>
 
 <ToastContainer />
-{#if showCrashReportDialog && pendingCrashReport}
-    <CrashReportDialog report={pendingCrashReport} onClose={closeCrashReportDialog} />
-{/if}
-{#if feedbackFlow.open}
-    <FeedbackDialog />
-{/if}
+<!-- Every dialog in its own `DialogBoundary`, above its `{#if}`, as on the page:
+     `apps/desktop/src/DETAILS.md` § "Error boundaries". -->
+<DialogBoundary name="crashReport" onClose={closeCrashReportDialog}>
+    {#if showCrashReportDialog && pendingCrashReport}
+        <CrashReportDialog report={pendingCrashReport} onClose={closeCrashReportDialog} />
+    {/if}
+</DialogBoundary>
+<DialogBoundary name="feedback" onClose={closeFeedbackDialog}>
+    {#if feedbackFlow.open}
+        <FeedbackDialog />
+    {/if}
+</DialogBoundary>
 <!-- The one sign-in sheet. Every credential ask in the app opens THIS one
      (`#lib/servers/sign-in-sheet-state.svelte.ts`), so a second protocol never
      means a second dialog. Keyed on the request, so a sheet opened while one is
-     already up starts from a clean form rather than inheriting the old one's. -->
-{#if signInRequest}
-    {#key signInRequest}
-        <SignInSheet request={signInRequest} onDone={closeSignInSheet} />
-    {/key}
-{/if}
-{#if showPtpcameradDialog}
-    <PtpcameradDialog
-        blockingProcess={ptpcameradBlockingProcess}
-        onClose={closePtpcameradDialog}
-        onRetry={retryMtpConnection}
-    />
-{/if}
-{#if showPermissionDialog}
-    <MtpPermissionDialog onClose={closePermissionDialog} onRetry={retryPermissionConnection} />
-{/if}
-{#if updateBlockerNotice.blocker}
-    <MoveToApplicationsDialog blocker={updateBlockerNotice.blocker} onClose={dismissMoveToApplicationsNudge} />
-{/if}
+     already up starts from a clean form rather than inheriting the old one's.
+     A broken sheet settles its caller as cancelled. -->
+<DialogBoundary name="signIn" onClose={() => { closeSignInSheet({ kind: 'cancelled' }) }}>
+    {#if signInRequest}
+        {#key signInRequest}
+            <SignInSheet request={signInRequest} onDone={closeSignInSheet} />
+        {/key}
+    {/if}
+</DialogBoundary>
+<DialogBoundary name="ptpcamerad" onClose={closePtpcameradDialog}>
+    {#if showPtpcameradDialog}
+        <PtpcameradDialog
+            blockingProcess={ptpcameradBlockingProcess}
+            onClose={closePtpcameradDialog}
+            onRetry={retryMtpConnection}
+        />
+    {/if}
+</DialogBoundary>
+<DialogBoundary name="mtpPermission" onClose={closePermissionDialog}>
+    {#if showPermissionDialog}
+        <MtpPermissionDialog onClose={closePermissionDialog} onRetry={retryPermissionConnection} />
+    {/if}
+</DialogBoundary>
+<DialogBoundary name="moveToApplications" onClose={dismissMoveToApplicationsNudge}>
+    {#if updateBlockerNotice.blocker}
+        <MoveToApplicationsDialog blocker={updateBlockerNotice.blocker} onClose={dismissMoveToApplicationsNudge} />
+    {/if}
+</DialogBoundary>
 {#if import.meta.env.DEV || __CMDR_E2E_BUILD__}
     <DialogGallery />
 {/if}
@@ -388,25 +408,30 @@
 <!-- After the page, so it stacks over the page's own dialogs (they share `--z-modal` and
      stack by DOM order): "Send error report…" is offered FROM the transfer error dialog,
      the new-folder dialog, and the progress dialog, and has to open on top of them. -->
-{#if errorReportFlow.open}
-    <ErrorReportDialog />
-{/if}
+<DialogBoundary name="errorReport" onClose={closeErrorReportDialog}>
+    {#if errorReportFlow.open}
+        <ErrorReportDialog />
+    {/if}
+</DialogBoundary>
 <!-- Last in the markup AND `topmost` (`--z-modal-top`): the quit prompt has to
      be answerable over anything already open, a modal conflict dialog included.
      The z-index is what actually guarantees it; the position here just keeps the
-     DOM honest about the intent. -->
-{#if quitPrompt.open}
-    <QuitConfirmationDialog
-        operations={quitPrompt.operations}
-        secondsLeft={quitPrompt.secondsLeft}
-        onQuit={() => {
-            quitPrompt.confirm()
-        }}
-        onKeepWorking={() => {
-            quitPrompt.keepWorking()
-        }}
-    />
-{/if}
+     DOM honest about the intent. A broken prompt calls the quit off rather than
+     letting the countdown end operations nobody got to see. -->
+<DialogBoundary name="quit" onClose={() => { quitPrompt.keepWorking() }}>
+    {#if quitPrompt.open}
+        <QuitConfirmationDialog
+            operations={quitPrompt.operations}
+            secondsLeft={quitPrompt.secondsLeft}
+            onQuit={() => {
+                quitPrompt.confirm()
+            }}
+            onKeepWorking={() => {
+                quitPrompt.keepWorking()
+            }}
+        />
+    {/if}
+</DialogBoundary>
 
 <style>
     .page-wrapper {

@@ -153,5 +153,10 @@
   "ui.confirmDialog.cancel": "Cancel",
   "@ui.confirmDialog.cancel": {
     "description": "The cancelling button of a native confirmation alert that carries a checkbox (Forget server's \"Also forget the saved password\"). Use the word your language's macOS uses on a Cancel button."
+  },
+
+  "ui.dialogBoundary.closedToast": "That dialog ran into a problem, so we closed it. Please try again.",
+  "@ui.dialogBoundary.closedToast": {
+    "description": "Toast shown when any dialog in the app broke unexpectedly, while opening, in use, or while closing. The app has already closed the dialog and put keyboard focus back on the file list, so the person can simply open it again. \"That dialog\" is deliberately generic: the toast doesn't know the dialog's name."
   }
 }

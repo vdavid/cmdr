@@ -183,10 +183,6 @@
   "@fileExplorer.pane.refreshStillRunningToast": {
     "sourceHash": "0636af4"
   },
-  "fileExplorer.pane.dialogRenderFailedToast": "這個對話方塊沒能開啟，我們已經把它關掉並把鍵盤交還給你。請再試一次。",
-  "@fileExplorer.pane.dialogRenderFailedToast": {
-    "sourceHash": "1e8ed2d"
-  },
   "fileExplorer.pane.ejectFailedToast": "無法退出 {volumeName}：{message}",
   "@fileExplorer.pane.ejectFailedToast": {
     "sourceHash": "f4072a7"

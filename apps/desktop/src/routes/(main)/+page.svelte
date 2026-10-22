@@ -27,14 +27,19 @@
         acknowledgementsState,
         closeAcknowledgements,
     } from '#lib/licensing/acknowledgements-trigger.svelte.js'
-    import { whatsNewState } from '#lib/whats-new/whats-new-trigger.svelte.js'
+    import { closeWhatsNew, whatsNewState } from '#lib/whats-new/whats-new-trigger.svelte.js'
     import OperationLogDialog from '#lib/operation-log/OperationLogDialog.svelte'
-    import { operationLogState } from '#lib/operation-log/operation-log-trigger.svelte.js'
+    import { closeOperationLog, operationLogState } from '#lib/operation-log/operation-log-trigger.svelte.js'
     import SuggestedOpsDialog from '#lib/suggested-ops/SuggestedOpsDialog.svelte'
-    import { suggestedOpsState } from '#lib/suggested-ops/suggested-ops-trigger.svelte.js'
+    import { closeSuggestedOps, suggestedOpsState } from '#lib/suggested-ops/suggested-ops-trigger.svelte.js'
     import AskCmdrRail from '#lib/ask-cmdr/AskCmdrRail.svelte'
     import BulkRenameReviewDialog from '#lib/ask-cmdr/BulkRenameReviewDialog.svelte'
     import { askCmdrState } from '#lib/ask-cmdr/ask-cmdr-trigger.svelte.js'
+    import { cancelRenameReview } from '#lib/ask-cmdr/ask-cmdr-rename-review.svelte.js'
+    import DialogBoundary from '#lib/ui/boundary/DialogBoundary.svelte'
+    import { cancelConflictPrompt } from '#lib/file-operations/operation-conflict.svelte.js'
+    import { cancelSourcesGonePrompt } from '#lib/file-operations/sources-gone.svelte.js'
+    import { cancelLockedSourcesPrompt } from '#lib/file-operations/locked-sources.svelte.js'
     import { goToPath } from '#lib/go-to-path/go-to-path.js'
     import {
         getFocusedPanePath,
@@ -498,6 +503,10 @@
         showCommercialReminder = false
     }
 
+    function closeOldMacosNotice() {
+        oldMacosNoticeVersion = null
+    }
+
     function handleAboutClose() {
         showAboutWindow = false
     }
@@ -783,105 +792,142 @@
     <main class="main-content">
         <!-- eslint-disable-next-line cmdr/no-raw-user-facing-string -- "Cmdr" is the brand name, never translated (style guide); a screen-reader-only app heading. -->
         <h1 class="sr-only">Cmdr</h1>
-        {#if showAboutWindow}
-            <AboutWindow onClose={handleAboutClose} />
-        {/if}
+        <!-- Each dialog sits in its own `DialogBoundary`, ABOVE its `{#if}`: one that throws while
+             rendering or closing closes alone, and the window stays. `onClose` takes it off screen;
+             `cmdr/dialog-inside-boundary` keeps every dialog here wrapped. -->
+        <DialogBoundary name="about" onClose={handleAboutClose}>
+            {#if showAboutWindow}
+                <AboutWindow onClose={handleAboutClose} />
+            {/if}
+        </DialogBoundary>
 
-        {#if showLicenseKeyDialog}
-            <LicenseKeyDialog onClose={handleLicenseKeyDialogClose} onSuccess={handleLicenseKeySuccess} />
-        {/if}
+        <DialogBoundary name="licenseKey" onClose={handleLicenseKeyDialogClose}>
+            {#if showLicenseKeyDialog}
+                <LicenseKeyDialog onClose={handleLicenseKeyDialogClose} onSuccess={handleLicenseKeySuccess} />
+            {/if}
+        </DialogBoundary>
 
-        {#if showCommandPalette}
-            <CommandPalette onExecute={dispatchers.palette} onClose={handleCommandPaletteClose} />
-        {/if}
+        <DialogBoundary name="commandPalette" onClose={handleCommandPaletteClose}>
+            {#if showCommandPalette}
+                <CommandPalette onExecute={dispatchers.palette} onClose={handleCommandPaletteClose} />
+            {/if}
+        </DialogBoundary>
 
-        {#if showSearchDialog}
-            <SearchDialog
-                onNavigate={handleSearchNavigate}
-                onClose={handleSearchDialogClose}
-                scopePresets={getFocusedPaneSearchScope()}
-                searchVolume={getFocusedPaneSearchTargetVolume()}
-                onShowAllInMainWindow={handleOpenSearchInPane}
-                onReopen={() => {
-                    showSearchDialog = true
-                }}
-                onGrantFullDiskAccess={() => {
-                    void openOnboardingFromMenuOrPalette(startupGatesCtx, 'palette')
-                }}
-            />
-        {/if}
+        <DialogBoundary name="search" onClose={handleSearchDialogClose}>
+            {#if showSearchDialog}
+                <SearchDialog
+                    onNavigate={handleSearchNavigate}
+                    onClose={handleSearchDialogClose}
+                    scopePresets={getFocusedPaneSearchScope()}
+                    searchVolume={getFocusedPaneSearchTargetVolume()}
+                    onShowAllInMainWindow={handleOpenSearchInPane}
+                    onReopen={() => {
+                        showSearchDialog = true
+                    }}
+                    onGrantFullDiskAccess={() => {
+                        void openOnboardingFromMenuOrPalette(startupGatesCtx, 'palette')
+                    }}
+                />
+            {/if}
+        </DialogBoundary>
 
-        {#if showGoToPathDialog}
-            <GoToPathDialog
-                baseDir={getFocusedPanePath()}
-                onGo={handleGoToPath}
-                onCancel={handleGoToPathDialogClose}
-            />
-        {/if}
+        <DialogBoundary name="goToPath" onClose={handleGoToPathDialogClose}>
+            {#if showGoToPathDialog}
+                <GoToPathDialog
+                    baseDir={getFocusedPanePath()}
+                    onGo={handleGoToPath}
+                    onCancel={handleGoToPathDialogClose}
+                />
+            {/if}
+        </DialogBoundary>
 
-        {#if multiRenameSession}
-            <MultiRenameDialog
-                session={multiRenameSession}
-                nothingSelected={multiRenameNothingSelected}
-                onApplied={handleMultiRenameApplied}
-                onUndoStarted={handleMultiRenameUndoStarted}
-                onClose={closeMultiRename}
-            />
-        {/if}
+        <DialogBoundary name="multiRename" onClose={closeMultiRename}>
+            {#if multiRenameSession}
+                <MultiRenameDialog
+                    session={multiRenameSession}
+                    nothingSelected={multiRenameNothingSelected}
+                    onApplied={handleMultiRenameApplied}
+                    onUndoStarted={handleMultiRenameUndoStarted}
+                    onClose={closeMultiRename}
+                />
+            {/if}
+        </DialogBoundary>
 
-        {#if showSelectionDialog && selectionDialogSnapshot}
-            <SelectionDialog
-                mode={showSelectionDialog}
-                entries={selectionDialogSnapshot.entries}
-                cursorIndex={selectionDialogSnapshot.cursorIndex}
-                isSnapshotPane={selectionDialogSnapshot.isSnapshotPane}
-                onCommit={handleSelectionCommit}
-                onClose={handleSelectionDialogClose}
-            />
-        {/if}
+        <DialogBoundary name="selection" onClose={handleSelectionDialogClose}>
+            {#if showSelectionDialog && selectionDialogSnapshot}
+                <SelectionDialog
+                    mode={showSelectionDialog}
+                    entries={selectionDialogSnapshot.entries}
+                    cursorIndex={selectionDialogSnapshot.cursorIndex}
+                    isSnapshotPane={selectionDialogSnapshot.isSnapshotPane}
+                    onCommit={handleSelectionCommit}
+                    onClose={handleSelectionDialogClose}
+                />
+            {/if}
+        </DialogBoundary>
 
-        {#if showExpiredModal}
-            <ExpirationModal organizationName={expiredOrgName} {expiredAt} onClose={handleExpirationModalClose} />
-        {/if}
+        <DialogBoundary name="expiration" onClose={handleExpirationModalClose}>
+            {#if showExpiredModal}
+                <ExpirationModal organizationName={expiredOrgName} {expiredAt} onClose={handleExpirationModalClose} />
+            {/if}
+        </DialogBoundary>
 
-        {#if showCommercialReminder}
-            <CommercialReminderModal onClose={handleCommercialReminderClose} />
-        {/if}
+        <DialogBoundary name="commercialReminder" onClose={handleCommercialReminderClose}>
+            {#if showCommercialReminder}
+                <CommercialReminderModal onClose={handleCommercialReminderClose} />
+            {/if}
+        </DialogBoundary>
 
-        {#if whatsNewState.open}
-            <WhatsNewDialog />
-        {/if}
+        <DialogBoundary name="whatsNew" onClose={closeWhatsNew}>
+            {#if whatsNewState.open}
+                <WhatsNewDialog />
+            {/if}
+        </DialogBoundary>
 
-        {#if acknowledgementsState.open}
-            <AcknowledgementsDialog onClose={closeAcknowledgements} />
-        {/if}
+        <DialogBoundary name="acknowledgements" onClose={closeAcknowledgements}>
+            {#if acknowledgementsState.open}
+                <AcknowledgementsDialog onClose={closeAcknowledgements} />
+            {/if}
+        </DialogBoundary>
 
-        {#if operationLogState.open}
-            <OperationLogDialog />
-        {/if}
+        <DialogBoundary name="operationLog" onClose={closeOperationLog}>
+            {#if operationLogState.open}
+                <OperationLogDialog />
+            {/if}
+        </DialogBoundary>
 
-        {#if suggestedOpsState.open}
-            <SuggestedOpsDialog />
-        {/if}
+        <DialogBoundary name="suggestedOps" onClose={closeSuggestedOps}>
+            {#if suggestedOpsState.open}
+                <SuggestedOpsDialog />
+            {/if}
+        </DialogBoundary>
 
-        {#if showOnboarding}
-            <OnboardingWizard onComplete={handleWizardComplete} />
-        {/if}
+        <!-- Closing a broken wizard doesn't complete onboarding: it comes back on the next launch. -->
+        <DialogBoundary
+            name="onboarding"
+            onClose={() => {
+                setOnboardingVisible(false)
+            }}
+        >
+            {#if showOnboarding}
+                <OnboardingWizard onComplete={handleWizardComplete} />
+            {/if}
+        </DialogBoundary>
 
         <!-- `topmost`, and after the wizard in the markup: this lands over onboarding,
              which owns a full-screen overlay at `--z-modal`. The quit prompt is topmost
              too and renders later still (in `+layout.svelte`), so it keeps winning. -->
-        {#if oldMacosNoticeVersion !== null}
-            <AlertDialog
-                topmost
-                title={tString('main.oldMacos.title', { version: oldMacosNoticeVersion })}
-                message={tString('main.oldMacos.body')}
-                buttonText={tString('main.oldMacos.gotIt')}
-                onClose={() => {
-                    oldMacosNoticeVersion = null
-                }}
-            />
-        {/if}
+        <DialogBoundary name="oldMacos" onClose={closeOldMacosNotice}>
+            {#if oldMacosNoticeVersion !== null}
+                <AlertDialog
+                    topmost
+                    title={tString('main.oldMacos.title', { version: oldMacosNoticeVersion })}
+                    message={tString('main.oldMacos.body')}
+                    buttonText={tString('main.oldMacos.gotIt')}
+                    onClose={closeOldMacosNotice}
+                />
+            {/if}
+        </DialogBoundary>
 
         {#if showApp}
             <div class="explorer-rail-row">
@@ -890,14 +936,27 @@
                     <AskCmdrRail readSelection={readSelectionAttachments} />
                 {/if}
             </div>
-            {#if askCmdrState.renameReview}
-                <BulkRenameReviewDialog />
-            {/if}
+            <DialogBoundary name="bulkRenameReview" onClose={cancelRenameReview}>
+                {#if askCmdrState.renameReview}
+                    <BulkRenameReviewDialog />
+                {/if}
+            </DialogBoundary>
             <StatusCorner onOpenOnboarding={() => void openOnboardingFromMenuOrPalette(startupGatesCtx, 'menu')} />
-            <StaleDriveDialog />
-            <OperationConflictDialog />
-            <SourcesGonePrompt />
-            <LockedSourcesPrompt />
+            <!-- These four own their visibility. A remount starts the stale-drive one closed; the
+                 other three hold a paused operation's question that nothing can answer once its
+                 dialog breaks, so closing one cancels that operation (without rolling back). -->
+            <DialogBoundary name="staleDrive">
+                <StaleDriveDialog />
+            </DialogBoundary>
+            <DialogBoundary name="operationConflict" onClose={() => void cancelConflictPrompt(false)}>
+                <OperationConflictDialog />
+            </DialogBoundary>
+            <DialogBoundary name="sourcesGone" onClose={() => void cancelSourcesGonePrompt()}>
+                <SourcesGonePrompt />
+            </DialogBoundary>
+            <DialogBoundary name="lockedSources" onClose={() => void cancelLockedSourcesPrompt()}>
+                <LockedSourcesPrompt />
+            </DialogBoundary>
         {/if}
 
         {#if showApp}

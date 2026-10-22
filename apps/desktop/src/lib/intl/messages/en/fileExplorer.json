@@ -280,9 +280,17 @@
   "@fileExplorer.pane.refreshStillRunningToast": {
     "description": "Info toast shown when the user refreshes a pane (⌘R) and the folder takes more than two seconds to read, which happens on a slow network share or a phone. Reassures them the read is still going and the list will catch up on its own."
   },
-  "fileExplorer.pane.dialogRenderFailedToast": "That dialog couldn’t open, so we closed it and gave the keyboard back. Please try again.",
-  "@fileExplorer.pane.dialogRenderFailedToast": {
-    "description": "Error toast shown when a dialog threw while rendering. The dialog is dismissed and focus returns to the file pane, so the user can retry."
+  "fileExplorer.paneBoundary.title": "This pane hit a problem",
+  "@fileExplorer.paneBoundary.title": {
+    "description": "Heading shown in place of one file pane's contents when that pane broke unexpectedly. The other pane, the tabs, and the rest of the window keep working. Calm, not alarming: a short statement, no exclamation."
+  },
+  "fileExplorer.paneBoundary.body": "The other pane still works. Reload this one to open its folder again.",
+  "@fileExplorer.paneBoundary.body": {
+    "description": "Sentence under the \"This pane hit a problem\" heading. Reassures the person that the other file pane is fine, and says the Reload button below opens the same folder again in this pane."
+  },
+  "fileExplorer.paneBoundary.reload": "Reload pane",
+  "@fileExplorer.paneBoundary.reload": {
+    "description": "Button under \"This pane hit a problem\" that rebuilds the broken file pane and opens its folder again. A verb phrase; \"pane\" is one of the two side-by-side file lists."
   },
   "fileExplorer.pane.ejectFailedToast": "Couldn’t eject {volumeName}: {message}",
   "@fileExplorer.pane.ejectFailedToast": {

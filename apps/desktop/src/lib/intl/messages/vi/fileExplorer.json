@@ -184,10 +184,6 @@
   "@fileExplorer.pane.refreshStillRunningToast": {
     "sourceHash": "0636af4"
   },
-  "fileExplorer.pane.dialogRenderFailedToast": "Không thể mở hộp thoại đó, nên chúng tôi đã đóng nó và trả lại bàn phím cho bạn. Hãy thử lại nhé.",
-  "@fileExplorer.pane.dialogRenderFailedToast": {
-    "sourceHash": "1e8ed2d"
-  },
   "fileExplorer.pane.ejectFailedToast": "Không thể tháo {volumeName}: {message}",
   "@fileExplorer.pane.ejectFailedToast": {
     "sourceHash": "f4072a7"

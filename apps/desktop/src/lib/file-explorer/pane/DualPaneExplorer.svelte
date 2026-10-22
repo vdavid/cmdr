@@ -4,6 +4,7 @@
     import { countFoldersInPane } from './folder-size-count'
     import { onMount, onDestroy, untrack } from 'svelte'
     import FilePane from './FilePane.svelte'
+    import PaneBoundary from './PaneBoundary.svelte'
     import type {
         CancelLoadingPayload,
         CopyPathBetweenPanesArgs,
@@ -1426,83 +1427,86 @@
                 handleFocus(paneId)
             }}
         />
-        <!--suppress JSUnresolvedReference -->
-        {#key getActiveTab(tabMgr).id}
-            <FilePane
-                bind:this={paneRefs[paneId]}
-                {paneId}
-                initialPath={getPanePath(paneId)}
-                volumeId={getPaneVolumeId(paneId)}
-                volumePath={getPaneVolumePath(paneId)}
-                volumeName={getPaneVolumeName(paneId)}
-                isFocused={focusedPane === paneId}
-                {showHiddenFiles}
-                viewMode={getPaneViewMode(paneId)}
-                sortBy={getPaneSort(paneId).sortBy}
-                sortOrder={getPaneSort(paneId).sortOrder}
-                directorySortMode={getDirectorySortMode()}
-                onPathChange={(path: string) => {
-                    handlePathCommitted(paneId, path)
-                }}
-                onStoredSpelling={(spelling: { from: string; to: string }) => {
-                    adoptStoredSpelling(navigateDeps, paneId, spelling)
-                }}
-                onCursorReading={(reading: CursorReading) => {
-                    recordCursor(getCurrentEntry(getPaneHistory(paneId)), reading)
-                }}
-                onVolumeChange={({ volumeId, targetPath, exact }: VolumeChangePayload) => {
-                    navigateIntent({
-                        pane: paneId,
-                        to: { selectVolume: { volumeId, path: targetPath } },
-                        source: 'user',
-                        exact,
-                    })
-                }}
-                onGoToLocation={(location: Location) => {
-                    // A search-results row opening a real entry: `{ location }` routes
-                    // itself (cross-volume → switch arm), landing on the entry's real
-                    // volume. `onVolumeChange` is the other intent (deliberate volume
-                    // (re)select); they map to the two destination shapes.
-                    navigateIntent({ pane: paneId, to: { goTo: location }, source: 'user' })
-                }}
-                onRevealSearchResult={(path: string) => {
-                    void revealSearchResultInPane(
-                        { getFocusedPane, setFocusedPane, getPaneLocation, navigate, moveCursor },
-                        paneId,
-                        path,
-                    )
-                }}
-                onRequestFocus={() => {
-                    handleFocus(paneId)
-                }}
-                onSwitchVolumeChooserPane={() => {
-                    switchVolumeChooserPane(paneId)
-                }}
-                onSortChange={(column: SortColumn) => sortOps.handleSortChange(paneId, column)}
-                onNetworkHostChange={(host: NetworkHost | null) => {
-                    handleNetworkHostChange(paneId, host)
-                }}
-                onCancelLoading={(cancelled: CancelLoadingPayload) => {
-                    edgeFlow.handleCancelLoading(paneId, cancelled)
-                }}
-                onMtpFatalError={(msg: string) => edgeFlow.handleMtpFatalError(paneId, msg)}
-                onNeedsPassword={(info: {
-                    volumeId: string
-                    path: string
-                    wrongAttempt: boolean
-                    retry: () => void
-                }) => { dialogs.showUnlockForBrowse(info); }}
-                onConfirmRenameAsMove={(request: RenameAsMoveRequest) => { fileOps.confirmRenameAsMove(paneId, request); }}
-                unreachable={getActiveTab(tabMgr).unreachable}
-                onRetryUnreachable={() => edgeFlow.handleRetryUnreachable(paneId)}
-                onOpenHome={() => edgeFlow.handleOpenHome(paneId)}
-                canGoBack={canGoBack(getActiveTab(tabMgr).history)}
-                onGoBack={() => {
-                    navigateIntent({ pane: paneId, to: { history: 'back' }, source: 'user' })
-                }}
-                {onCommand}
-            />
-        {/key}
+        <!-- Above the `{#key}`, so a pane that throws while tearing down still finds it alive. -->
+        <PaneBoundary {paneId} resetKey={getActiveTab(tabMgr).id}>
+            <!--suppress JSUnresolvedReference -->
+            {#key getActiveTab(tabMgr).id}
+                <FilePane
+                    bind:this={paneRefs[paneId]}
+                    {paneId}
+                    initialPath={getPanePath(paneId)}
+                    volumeId={getPaneVolumeId(paneId)}
+                    volumePath={getPaneVolumePath(paneId)}
+                    volumeName={getPaneVolumeName(paneId)}
+                    isFocused={focusedPane === paneId}
+                    {showHiddenFiles}
+                    viewMode={getPaneViewMode(paneId)}
+                    sortBy={getPaneSort(paneId).sortBy}
+                    sortOrder={getPaneSort(paneId).sortOrder}
+                    directorySortMode={getDirectorySortMode()}
+                    onPathChange={(path: string) => {
+                        handlePathCommitted(paneId, path)
+                    }}
+                    onStoredSpelling={(spelling: { from: string; to: string }) => {
+                        adoptStoredSpelling(navigateDeps, paneId, spelling)
+                    }}
+                    onCursorReading={(reading: CursorReading) => {
+                        recordCursor(getCurrentEntry(getPaneHistory(paneId)), reading)
+                    }}
+                    onVolumeChange={({ volumeId, targetPath, exact }: VolumeChangePayload) => {
+                        navigateIntent({
+                            pane: paneId,
+                            to: { selectVolume: { volumeId, path: targetPath } },
+                            source: 'user',
+                            exact,
+                        })
+                    }}
+                    onGoToLocation={(location: Location) => {
+                        // A search-results row opening a real entry: `{ location }` routes
+                        // itself (cross-volume → switch arm), landing on the entry's real
+                        // volume. `onVolumeChange` is the other intent (deliberate volume
+                        // (re)select); they map to the two destination shapes.
+                        navigateIntent({ pane: paneId, to: { goTo: location }, source: 'user' })
+                    }}
+                    onRevealSearchResult={(path: string) => {
+                        void revealSearchResultInPane(
+                            { getFocusedPane, setFocusedPane, getPaneLocation, navigate, moveCursor },
+                            paneId,
+                            path,
+                        )
+                    }}
+                    onRequestFocus={() => {
+                        handleFocus(paneId)
+                    }}
+                    onSwitchVolumeChooserPane={() => {
+                        switchVolumeChooserPane(paneId)
+                    }}
+                    onSortChange={(column: SortColumn) => sortOps.handleSortChange(paneId, column)}
+                    onNetworkHostChange={(host: NetworkHost | null) => {
+                        handleNetworkHostChange(paneId, host)
+                    }}
+                    onCancelLoading={(cancelled: CancelLoadingPayload) => {
+                        edgeFlow.handleCancelLoading(paneId, cancelled)
+                    }}
+                    onMtpFatalError={(msg: string) => edgeFlow.handleMtpFatalError(paneId, msg)}
+                    onNeedsPassword={(info: {
+                        volumeId: string
+                        path: string
+                        wrongAttempt: boolean
+                        retry: () => void
+                    }) => { dialogs.showUnlockForBrowse(info); }}
+                    onConfirmRenameAsMove={(request: RenameAsMoveRequest) => { fileOps.confirmRenameAsMove(paneId, request); }}
+                    unreachable={getActiveTab(tabMgr).unreachable}
+                    onRetryUnreachable={() => edgeFlow.handleRetryUnreachable(paneId)}
+                    onOpenHome={() => edgeFlow.handleOpenHome(paneId)}
+                    canGoBack={canGoBack(getActiveTab(tabMgr).history)}
+                    onGoBack={() => {
+                        navigateIntent({ pane: paneId, to: { history: 'back' }, source: 'user' })
+                    }}
+                    {onCommand}
+                />
+            {/key}
+        </PaneBoundary>
     </div>
 {/snippet}
 
@@ -1536,8 +1540,8 @@
 <TabDragOverlay view={tabDrag.view} />
 
 <DialogManager
-    onDialogRenderError={(error: unknown) => {
-        dialogs.handleDialogRenderFailure(error)
+    onDismissAll={() => {
+        dialogs.dismissAllAfterDialogFailure()
     }}
     showTransferDialog={dialogs.showTransferDialog}
     transferDialogProps={dialogs.transferDialogProps}

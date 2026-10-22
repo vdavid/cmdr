@@ -4,7 +4,7 @@
      * Main-window-specific features (updater, notifications) are in (main)/+layout.svelte.
      * Other windows (viewer, debug) get only this minimal layout.
      */
-    import { onMount } from 'svelte'
+    import { onMount, type Snippet } from 'svelte'
     // Global stylesheets, in cascade order. The five after `app.css` must stay last;
     // importing them here is what keeps them there. Don't move them into an `@import`
     // inside `app.css`: that hoists to the top of the sheet and inverts the cascade.
@@ -19,6 +19,9 @@
     import { initWindowSettings } from '#lib/settings/window-settings.js'
     import { initAppMode } from '#lib/app-mode.js'
     import { installContextMenuOwnership } from '#lib/context-menu-ownership.js'
+    import WindowBoundary from '#lib/error-reporter/WindowBoundary.svelte'
+
+    const { children }: { children?: Snippet } = $props()
 
     onMount(() => {
         // No WebKit page menu ("Reload", "Inspect Element") in ANY window: text fields
@@ -44,4 +47,8 @@
     })
 </script>
 
-<slot />
+<!-- Every window renders through this layout, so this one boundary is what makes a blank
+     window impossible in all of them. `apps/desktop/src/DETAILS.md` § "Error boundaries". -->
+<WindowBoundary>
+    {@render children?.()}
+</WindowBoundary>

@@ -1,15 +1,15 @@
 /**
- * The render-failure recovery path in `createDialogState`.
+ * The dialog-failure recovery path in `createDialogState`.
  *
  * A dialog that throws mid-render puts nothing on screen, but the `show*` flag
  * that opened it is already true, and `isConfirmationDialogOpen()` suppresses
  * the pane's keyboard while it is. That's the wedge: a user pressed F6, saw
  * nothing, and had no working keys and nothing to escape from.
  *
- * `handleDialogRenderFailure` is the exit `DialogManager`'s error boundary
+ * `dismissAllAfterDialogFailure` is the close `DialogManager`'s `DialogBoundary`
  * calls. It must clear EVERY dialog (not only the confirmation ones
- * `closeConfirmationDialog` covers), give the pane its focus back, and report
- * the failure through the app's error path.
+ * `closeConfirmationDialog` covers) and give the pane its focus back. Reporting
+ * and the toast are the boundary's (`#lib/ui/boundary/DialogBoundary.svelte.test.ts`).
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -83,7 +83,7 @@ describe('dialog render-failure recovery', () => {
     })
     expect(dialogs.isConfirmationDialogOpen()).toBe(true)
 
-    dialogs.handleDialogRenderFailure(new Error('each_key_duplicate'))
+    dialogs.dismissAllAfterDialogFailure()
 
     expect(dialogs.isConfirmationDialogOpen()).toBe(false)
     expect(dialogs.showNewFolderDialog).toBe(false)
@@ -95,7 +95,7 @@ describe('dialog render-failure recovery', () => {
     dialogs.showAlert('Heads up', 'Something to say')
     expect(dialogs.showAlertDialog).toBe(true)
 
-    dialogs.handleDialogRenderFailure(new Error('boom'))
+    dialogs.dismissAllAfterDialogFailure()
 
     expect(dialogs.showAlertDialog).toBe(false)
     expect(dialogs.showTransferDialog).toBe(false)
@@ -105,19 +105,5 @@ describe('dialog render-failure recovery', () => {
     expect(dialogs.showDeleteDialog).toBe(false)
     expect(dialogs.showNewFolderDialog).toBe(false)
     expect(dialogs.showNewFileDialog).toBe(false)
-  })
-
-  it('reports the failure and tells the user, rather than swallowing it', () => {
-    const dialogs = makeState()
-    dialogs.showAlert('Heads up', 'Something to say')
-
-    const thrown = new TypeError('each_key_duplicate')
-    dialogs.handleDialogRenderFailure(thrown)
-
-    expect(logError).toHaveBeenCalledTimes(1)
-    // The raw value: the log bridge's `describeForLog` renders it, cause chain included.
-    const [, details] = logError.mock.calls[0] as [string, { error: unknown }]
-    expect(details.error).toBe(thrown)
-    expect(addToast).toHaveBeenCalledWith('fileExplorer.pane.dialogRenderFailedToast', { level: 'error' })
   })
 })

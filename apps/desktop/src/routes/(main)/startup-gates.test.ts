@@ -729,7 +729,7 @@ describe('the old-macOS notice sits above onboarding and below the quit prompt',
   }
 
   it('opts into the topmost layer', () => {
-    expect(read('./+page.svelte')).toContain('<AlertDialog\n                topmost')
+    expect(read('./+page.svelte')).toMatch(/<AlertDialog\s+topmost/)
   })
 
   it('renders after the wizard, so the DOM agrees with the z-index', () => {

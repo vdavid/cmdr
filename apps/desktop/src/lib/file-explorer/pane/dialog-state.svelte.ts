@@ -1051,24 +1051,17 @@ export function createDialogState(deps: DialogStateDeps) {
     },
 
     /**
-     * Dismisses every dialog after one of them threw while rendering.
+     * Dismisses every dialog after one of them threw while rendering or tearing down.
      *
      * A dialog that throws mid-render leaves nothing on screen, but the `show*`
      * flag that opened it is already true, so `isConfirmationDialogOpen()` keeps
      * suppressing the pane's keyboard: the user is stuck with no dialog to
      * escape from. Clearing every flag (not only the confirmation ones
      * `closeConfirmationDialog` covers) and refocusing the pane is the one exit.
-     * Called from `DialogManager`'s error boundary.
+     * `DialogManager`'s `DialogBoundary` calls it as its `onClose`; the boundary
+     * reports the throw and toasts.
      */
-    handleDialogRenderFailure(error: unknown) {
-      log.error('A dialog threw while rendering; dismissing every dialog and refocusing the pane: {error}', {
-        error,
-      })
-      addToast(tString('fileExplorer.pane.dialogRenderFailedToast'), { level: 'error' })
-      this.dismissAllAfterRenderFailure()
-    },
-
-    dismissAllAfterRenderFailure() {
+    dismissAllAfterDialogFailure() {
       showTransferDialog = false
       transferDialogProps = null
       showTransferProgressDialog = false

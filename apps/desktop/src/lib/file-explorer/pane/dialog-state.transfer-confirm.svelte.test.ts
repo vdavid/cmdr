@@ -177,12 +177,12 @@ describe('an MCP confirm on the transfer dialog', () => {
       skipsConfirmations: () => false,
       onOpenInEditor: vi.fn(),
     })
-    const onDialogRenderError = vi.fn()
+    const onDismissAll = vi.fn()
     const noop = (): void => {}
     // Live getters, like `DualPaneExplorer`'s bindings: the dialog's props read
     // through them into the dialog state's slot every time.
     const props: ComponentProps<typeof DialogManager> = {
-      onDialogRenderError,
+      onDismissAll,
       get showTransferDialog() {
         return dialogs.showTransferDialog
       },
@@ -244,7 +244,7 @@ describe('an MCP confirm on the transfer dialog', () => {
     dialogs.showTransfer(transferProps(operationType))
     flushSync()
     expect(target.querySelector('[data-dialog-id="transfer-confirmation"]')).not.toBeNull()
-    return { dialogs, target, onDialogRenderError }
+    return { dialogs, target, onDismissAll }
   }
 
   /** What an MCP `dialog confirm` does: presses the open dialog's own confirm, through the dialog state. */
@@ -266,7 +266,7 @@ describe('an MCP confirm on the transfer dialog', () => {
   it('starts no scan once it confirmed while the dialog was still resolving the home dir', async () => {
     const home = deferred<string>()
     vi.mocked(homeDir).mockReturnValueOnce(home.promise)
-    const { dialogs, target, onDialogRenderError } = openTransferDialog()
+    const { dialogs, target, onDismissAll } = openTransferDialog()
 
     confirmFromMcp(dialogs)
     await operationStarted(dialogs, target)
@@ -276,14 +276,14 @@ describe('an MCP confirm on the transfer dialog', () => {
     await settle()
 
     expect(rejections).toEqual([])
-    expect(onDialogRenderError).not.toHaveBeenCalled()
+    expect(onDismissAll).not.toHaveBeenCalled()
     expect(commands.onScanPreviewProgress).not.toHaveBeenCalled()
     expect(commands.startScanPreview).not.toHaveBeenCalled()
     expect(commands.scanVolumeForConflicts).not.toHaveBeenCalled()
   })
 
   it('waits for a scan that is still registering its listeners, and hands its preview over', async () => {
-    const { dialogs, target, onDialogRenderError } = openTransferDialog()
+    const { dialogs, target, onDismissAll } = openTransferDialog()
     await vi.waitFor(() => {
       expect(commands.onScanPreviewProgress).toHaveBeenCalled()
     })
@@ -296,7 +296,7 @@ describe('an MCP confirm on the transfer dialog', () => {
     await settle()
 
     expect(rejections).toEqual([])
-    expect(onDialogRenderError).not.toHaveBeenCalled()
+    expect(onDismissAll).not.toHaveBeenCalled()
     expect(dialogs.transferProgressProps?.previewId).toBe('preview-1')
     expect(commands.cancelScanPreview).not.toHaveBeenCalled()
     expect(unlistens.length).toBeGreaterThan(0)
@@ -307,7 +307,7 @@ describe('an MCP confirm on the transfer dialog', () => {
     const preview = deferred<{ previewId: string }>()
     vi.mocked(commands.startScanPreview).mockReturnValue(preview.promise)
     registrations.resolve(undefined)
-    const { dialogs, target, onDialogRenderError } = openTransferDialog()
+    const { dialogs, target, onDismissAll } = openTransferDialog()
     await vi.waitFor(() => {
       expect(commands.startScanPreview).toHaveBeenCalled()
     })
@@ -320,7 +320,7 @@ describe('an MCP confirm on the transfer dialog', () => {
     await settle()
 
     expect(rejections).toEqual([])
-    expect(onDialogRenderError).not.toHaveBeenCalled()
+    expect(onDismissAll).not.toHaveBeenCalled()
     expect(dialogs.transferProgressProps?.previewId).toBe('preview-late')
     expect(commands.cancelScanPreview).not.toHaveBeenCalled()
   })
@@ -366,7 +366,7 @@ describe('an MCP confirm on the transfer dialog', () => {
 
   it('hands the preview to the operation, uncancelled, when a person confirms', async () => {
     registrations.resolve(undefined)
-    const { dialogs, target, onDialogRenderError } = openTransferDialog()
+    const { dialogs, target, onDismissAll } = openTransferDialog()
     await vi.waitFor(() => {
       expect(commands.checkScanPreviewStatus).toHaveBeenCalledWith('preview-1')
     })
@@ -381,7 +381,7 @@ describe('an MCP confirm on the transfer dialog', () => {
     await settle()
 
     expect(rejections).toEqual([])
-    expect(onDialogRenderError).not.toHaveBeenCalled()
+    expect(onDismissAll).not.toHaveBeenCalled()
     expect(dialogs.transferProgressProps?.previewId).toBe('preview-1')
     expect(commands.cancelScanPreview).not.toHaveBeenCalled()
     expect(unlistens.length).toBeGreaterThan(0)
@@ -390,7 +390,7 @@ describe('an MCP confirm on the transfer dialog', () => {
 
   it('starts on F2 with no progress dialog EVER rendered, not even for a frame, and hands the preview over', async () => {
     registrations.resolve(undefined)
-    const { dialogs, target, onDialogRenderError } = openTransferDialog()
+    const { dialogs, target, onDismissAll } = openTransferDialog()
     await vi.waitFor(() => {
       expect(commands.checkScanPreviewStatus).toHaveBeenCalledWith('preview-1')
     })
@@ -419,6 +419,6 @@ describe('an MCP confirm on the transfer dialog', () => {
     )
     expect(commands.cancelScanPreview).not.toHaveBeenCalled()
     expect(rejections).toEqual([])
-    expect(onDialogRenderError).not.toHaveBeenCalled()
+    expect(onDismissAll).not.toHaveBeenCalled()
   })
 })

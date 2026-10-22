@@ -183,10 +183,6 @@
   "@fileExplorer.pane.refreshStillRunningToast": {
     "sourceHash": "0636af4"
   },
-  "fileExplorer.pane.dialogRenderFailedToast": "这个对话框没能打开，我们已将其关闭并把键盘交还给你。请重试。",
-  "@fileExplorer.pane.dialogRenderFailedToast": {
-    "sourceHash": "1e8ed2d"
-  },
   "fileExplorer.pane.ejectFailedToast": "无法推出 {volumeName}：{message}",
   "@fileExplorer.pane.ejectFailedToast": {
     "sourceHash": "f4072a7"
