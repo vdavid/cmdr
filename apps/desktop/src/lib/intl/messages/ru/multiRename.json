@@ -539,33 +539,9 @@
   "@multiRename.rangeEditor.title": {
     "sourceHash": "e1e72f0"
   },
-  "multiRename.rangeEditor.takeFrom": "Откуда брать",
-  "@multiRename.rangeEditor.takeFrom": {
-    "sourceHash": "b5b4632"
-  },
-  "multiRename.rangeEditor.field.name": "Имя",
-  "@multiRename.rangeEditor.field.name": {
-    "sourceHash": "dcd1d52"
-  },
-  "multiRename.rangeEditor.field.extension": "Расширение",
-  "@multiRename.rangeEditor.field.extension": {
-    "sourceHash": "395aeb9"
-  },
-  "multiRename.rangeEditor.field.parent": "Папка",
-  "@multiRename.rangeEditor.field.parent": {
-    "sourceHash": "74ccd43"
-  },
-  "multiRename.rangeEditor.field.grandparent": "Папка уровнем выше",
-  "@multiRename.rangeEditor.field.grandparent": {
-    "sourceHash": "defe9c7"
-  },
-  "multiRename.rangeEditor.field.fullName": "Полное имя",
-  "@multiRename.rangeEditor.field.fullName": {
-    "sourceHash": "f13a64b"
-  },
-  "multiRename.rangeEditor.characters": "Символы",
-  "@multiRename.rangeEditor.characters": {
-    "sourceHash": "6fac39e"
+  "multiRename.rangeEditor.selectCharacters": "Select the characters to take",
+  "@multiRename.rangeEditor.selectCharacters": {
+    "sourceHash": "8b07e2a"
   },
   "multiRename.rangeEditor.start": "Начало",
   "@multiRename.rangeEditor.start": {
@@ -606,22 +582,6 @@
   "multiRename.rangeEditor.endFollowsStart": "Если начало отсчитывается с конца, конец тоже отсчитывается с конца.",
   "@multiRename.rangeEditor.endFollowsStart": {
     "sourceHash": "379bd45"
-  },
-  "multiRename.rangeEditor.edgeFromStart": "символ {at}, {character}",
-  "@multiRename.rangeEditor.edgeFromStart": {
-    "sourceHash": "4215254"
-  },
-  "multiRename.rangeEditor.edgeFromEnd": "{at, selectordinal, =1 {последний символ} other {#-й с конца}}, {character}",
-  "@multiRename.rangeEditor.edgeFromEnd": {
-    "sourceHash": "0166691"
-  },
-  "multiRename.rangeEditor.space": "пробел",
-  "@multiRename.rangeEditor.space": {
-    "sourceHash": "3f49dbb"
-  },
-  "multiRename.rangeEditor.keys": "← → перемещают выделение, с ⇧ только его конец, с ⌥ только начало",
-  "@multiRename.rangeEditor.keys": {
-    "sourceHash": "6106f59"
   },
   "multiRename.rangeEditor.reading.whole": "Целиком",
   "@multiRename.rangeEditor.reading.whole": {

@@ -14,9 +14,6 @@ import type { MaskTokenGrammar } from './mask-tokens'
 /** The text a range reads, as `RowFacts` in `mask.rs` names it. */
 export type RangeField = 'name' | 'extension' | 'parent' | 'grandparent' | 'fullName'
 
-/** The fields in the editor's order. */
-export const RANGE_FIELDS: readonly RangeField[] = ['name', 'extension', 'parent', 'grandparent', 'fullName']
-
 /** Positions count from 1; a negative one counts from the end (-1 is the last character). */
 export type Range =
   | { kind: 'all' }

@@ -539,33 +539,9 @@
   "@multiRename.rangeEditor.title": {
     "sourceHash": "e1e72f0"
   },
-  "multiRename.rangeEditor.takeFrom": "Lấy từ",
-  "@multiRename.rangeEditor.takeFrom": {
-    "sourceHash": "b5b4632"
-  },
-  "multiRename.rangeEditor.field.name": "Tên",
-  "@multiRename.rangeEditor.field.name": {
-    "sourceHash": "dcd1d52"
-  },
-  "multiRename.rangeEditor.field.extension": "Đuôi tệp",
-  "@multiRename.rangeEditor.field.extension": {
-    "sourceHash": "395aeb9"
-  },
-  "multiRename.rangeEditor.field.parent": "Thư mục",
-  "@multiRename.rangeEditor.field.parent": {
-    "sourceHash": "74ccd43"
-  },
-  "multiRename.rangeEditor.field.grandparent": "Thư mục cấp trên",
-  "@multiRename.rangeEditor.field.grandparent": {
-    "sourceHash": "defe9c7"
-  },
-  "multiRename.rangeEditor.field.fullName": "Tên đầy đủ",
-  "@multiRename.rangeEditor.field.fullName": {
-    "sourceHash": "f13a64b"
-  },
-  "multiRename.rangeEditor.characters": "Ký tự",
-  "@multiRename.rangeEditor.characters": {
-    "sourceHash": "6fac39e"
+  "multiRename.rangeEditor.selectCharacters": "Select the characters to take",
+  "@multiRename.rangeEditor.selectCharacters": {
+    "sourceHash": "8b07e2a"
   },
   "multiRename.rangeEditor.start": "Điểm đầu",
   "@multiRename.rangeEditor.start": {
@@ -606,22 +582,6 @@
   "multiRename.rangeEditor.endFollowsStart": "Khi điểm đầu tính từ cuối, điểm cuối cũng tính từ cuối.",
   "@multiRename.rangeEditor.endFollowsStart": {
     "sourceHash": "379bd45"
-  },
-  "multiRename.rangeEditor.edgeFromStart": "ký tự thứ {at}, {character}",
-  "@multiRename.rangeEditor.edgeFromStart": {
-    "sourceHash": "4215254"
-  },
-  "multiRename.rangeEditor.edgeFromEnd": "{at, selectordinal, one {ký tự cuối cùng} other {ký tự thứ # từ cuối}}, {character}",
-  "@multiRename.rangeEditor.edgeFromEnd": {
-    "sourceHash": "0166691"
-  },
-  "multiRename.rangeEditor.space": "dấu cách",
-  "@multiRename.rangeEditor.space": {
-    "sourceHash": "3f49dbb"
-  },
-  "multiRename.rangeEditor.keys": "← → di chuyển vùng chọn, ⇧ điểm cuối, ⌥ điểm đầu",
-  "@multiRename.rangeEditor.keys": {
-    "sourceHash": "6106f59"
   },
   "multiRename.rangeEditor.reading.whole": "Toàn bộ",
   "@multiRename.rangeEditor.reading.whole": {

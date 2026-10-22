@@ -540,34 +540,9 @@
   "@multiRename.rangeEditor.title": {
     "sourceHash": "e1e72f0"
   },
-  "multiRename.rangeEditor.takeFrom": "Übernehmen aus",
-  "@multiRename.rangeEditor.takeFrom": {
-    "sourceHash": "b5b4632"
-  },
-  "multiRename.rangeEditor.field.name": "Name",
-  "@multiRename.rangeEditor.field.name": {
-    "sourceHash": "dcd1d52",
-    "sameAsSourceJustification": "„Name“ ist im Deutschen dasselbe Wort; byte-identisch mit menu.sort.name und servers.sheet.name (macOS Finder „Name“)."
-  },
-  "multiRename.rangeEditor.field.extension": "Endung",
-  "@multiRename.rangeEditor.field.extension": {
-    "sourceHash": "395aeb9"
-  },
-  "multiRename.rangeEditor.field.parent": "Ordner",
-  "@multiRename.rangeEditor.field.parent": {
-    "sourceHash": "74ccd43"
-  },
-  "multiRename.rangeEditor.field.grandparent": "Ordner darüber",
-  "@multiRename.rangeEditor.field.grandparent": {
-    "sourceHash": "defe9c7"
-  },
-  "multiRename.rangeEditor.field.fullName": "Ganzer Name",
-  "@multiRename.rangeEditor.field.fullName": {
-    "sourceHash": "f13a64b"
-  },
-  "multiRename.rangeEditor.characters": "Zeichen",
-  "@multiRename.rangeEditor.characters": {
-    "sourceHash": "6fac39e"
+  "multiRename.rangeEditor.selectCharacters": "Select the characters to take",
+  "@multiRename.rangeEditor.selectCharacters": {
+    "sourceHash": "8b07e2a"
   },
   "multiRename.rangeEditor.start": "Anfang",
   "@multiRename.rangeEditor.start": {
@@ -608,22 +583,6 @@
   "multiRename.rangeEditor.endFollowsStart": "Wenn der Anfang von hinten gezählt wird, zählt auch das Ende von hinten.",
   "@multiRename.rangeEditor.endFollowsStart": {
     "sourceHash": "379bd45"
-  },
-  "multiRename.rangeEditor.edgeFromStart": "Zeichen {at}, {character}",
-  "@multiRename.rangeEditor.edgeFromStart": {
-    "sourceHash": "4215254"
-  },
-  "multiRename.rangeEditor.edgeFromEnd": "{at, selectordinal, =1 {das letzte Zeichen} other {#. Zeichen von hinten}}, {character}",
-  "@multiRename.rangeEditor.edgeFromEnd": {
-    "sourceHash": "0166691"
-  },
-  "multiRename.rangeEditor.space": "Leerzeichen",
-  "@multiRename.rangeEditor.space": {
-    "sourceHash": "3f49dbb"
-  },
-  "multiRename.rangeEditor.keys": "← → bewegen die Auswahl, ⇧ das Ende, ⌥ den Anfang",
-  "@multiRename.rangeEditor.keys": {
-    "sourceHash": "6106f59"
   },
   "multiRename.rangeEditor.reading.whole": "Alles",
   "@multiRename.rangeEditor.reading.whole": {

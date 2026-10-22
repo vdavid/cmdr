@@ -540,33 +540,9 @@
   "@multiRename.rangeEditor.title": {
     "sourceHash": "e1e72f0"
   },
-  "multiRename.rangeEditor.takeFrom": "Ta från",
-  "@multiRename.rangeEditor.takeFrom": {
-    "sourceHash": "b5b4632"
-  },
-  "multiRename.rangeEditor.field.name": "Namn",
-  "@multiRename.rangeEditor.field.name": {
-    "sourceHash": "dcd1d52"
-  },
-  "multiRename.rangeEditor.field.extension": "Tillägg",
-  "@multiRename.rangeEditor.field.extension": {
-    "sourceHash": "395aeb9"
-  },
-  "multiRename.rangeEditor.field.parent": "Mapp",
-  "@multiRename.rangeEditor.field.parent": {
-    "sourceHash": "74ccd43"
-  },
-  "multiRename.rangeEditor.field.grandparent": "Överordnad mapp",
-  "@multiRename.rangeEditor.field.grandparent": {
-    "sourceHash": "defe9c7"
-  },
-  "multiRename.rangeEditor.field.fullName": "Hela namnet",
-  "@multiRename.rangeEditor.field.fullName": {
-    "sourceHash": "f13a64b"
-  },
-  "multiRename.rangeEditor.characters": "Tecken",
-  "@multiRename.rangeEditor.characters": {
-    "sourceHash": "6fac39e"
+  "multiRename.rangeEditor.selectCharacters": "Select the characters to take",
+  "@multiRename.rangeEditor.selectCharacters": {
+    "sourceHash": "8b07e2a"
   },
   "multiRename.rangeEditor.start": "Början",
   "@multiRename.rangeEditor.start": {
@@ -607,22 +583,6 @@
   "multiRename.rangeEditor.endFollowsStart": "När början räknas från slutet räknas slutet också från slutet.",
   "@multiRename.rangeEditor.endFollowsStart": {
     "sourceHash": "379bd45"
-  },
-  "multiRename.rangeEditor.edgeFromStart": "tecken {at}, {character}",
-  "@multiRename.rangeEditor.edgeFromStart": {
-    "sourceHash": "4215254"
-  },
-  "multiRename.rangeEditor.edgeFromEnd": "{at, selectordinal, =1 {det sista tecknet} one {#:a från slutet} other {#:e från slutet}}, {character}",
-  "@multiRename.rangeEditor.edgeFromEnd": {
-    "sourceHash": "0166691"
-  },
-  "multiRename.rangeEditor.space": "mellanslag",
-  "@multiRename.rangeEditor.space": {
-    "sourceHash": "3f49dbb"
-  },
-  "multiRename.rangeEditor.keys": "← → flyttar markeringen, ⇧ slutet, ⌥ början",
-  "@multiRename.rangeEditor.keys": {
-    "sourceHash": "6106f59"
   },
   "multiRename.rangeEditor.reading.whole": "Alltihop",
   "@multiRename.rangeEditor.reading.whole": {

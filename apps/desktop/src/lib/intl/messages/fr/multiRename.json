@@ -540,34 +540,9 @@
   "@multiRename.rangeEditor.title": {
     "sourceHash": "e1e72f0"
   },
-  "multiRename.rangeEditor.takeFrom": "Prendre dans",
-  "@multiRename.rangeEditor.takeFrom": {
-    "sourceHash": "b5b4632"
-  },
-  "multiRename.rangeEditor.field.name": "Nom",
-  "@multiRename.rangeEditor.field.name": {
-    "sourceHash": "dcd1d52"
-  },
-  "multiRename.rangeEditor.field.extension": "Extension",
-  "@multiRename.rangeEditor.field.extension": {
-    "sourceHash": "395aeb9",
-    "sameAsSourceJustification": "French uses the same word, extension, for the part of a filename after the dot (macOS Finder « Masquer l’extension », TC « Extension »; terms.json extension; same as multiRename.extensionMask)."
-  },
-  "multiRename.rangeEditor.field.parent": "Dossier",
-  "@multiRename.rangeEditor.field.parent": {
-    "sourceHash": "74ccd43"
-  },
-  "multiRename.rangeEditor.field.grandparent": "Dossier grand-parent",
-  "@multiRename.rangeEditor.field.grandparent": {
-    "sourceHash": "defe9c7"
-  },
-  "multiRename.rangeEditor.field.fullName": "Nom complet",
-  "@multiRename.rangeEditor.field.fullName": {
-    "sourceHash": "f13a64b"
-  },
-  "multiRename.rangeEditor.characters": "Caractères",
-  "@multiRename.rangeEditor.characters": {
-    "sourceHash": "6fac39e"
+  "multiRename.rangeEditor.selectCharacters": "Select the characters to take",
+  "@multiRename.rangeEditor.selectCharacters": {
+    "sourceHash": "8b07e2a"
   },
   "multiRename.rangeEditor.start": "Début",
   "@multiRename.rangeEditor.start": {
@@ -608,22 +583,6 @@
   "multiRename.rangeEditor.endFollowsStart": "Quand le début se compte depuis la fin, la fin aussi.",
   "@multiRename.rangeEditor.endFollowsStart": {
     "sourceHash": "379bd45"
-  },
-  "multiRename.rangeEditor.edgeFromStart": "caractère {at}, {character}",
-  "@multiRename.rangeEditor.edgeFromStart": {
-    "sourceHash": "4215254"
-  },
-  "multiRename.rangeEditor.edgeFromEnd": "{at, selectordinal, =1 {le dernier caractère} one {#er depuis la fin} other {#e depuis la fin}}, {character}",
-  "@multiRename.rangeEditor.edgeFromEnd": {
-    "sourceHash": "0166691"
-  },
-  "multiRename.rangeEditor.space": "espace",
-  "@multiRename.rangeEditor.space": {
-    "sourceHash": "3f49dbb"
-  },
-  "multiRename.rangeEditor.keys": "← → déplacent la sélection, ⇧ sa fin, ⌥ son début",
-  "@multiRename.rangeEditor.keys": {
-    "sourceHash": "6106f59"
   },
   "multiRename.rangeEditor.reading.whole": "Tout",
   "@multiRename.rangeEditor.reading.whole": {

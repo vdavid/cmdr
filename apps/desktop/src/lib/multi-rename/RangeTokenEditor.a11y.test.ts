@@ -1,7 +1,7 @@
 /**
  * Tier 3 a11y tests for `RangeTokenEditor.svelte`: on its own, with no files to show (a field outside
- * the sheet), and open under a range token in `MaskInput` with files around the cursor, its handles
- * as sliders.
+ * the sheet), and open under a range token in `MaskInput` with files around the cursor, its labelled
+ * read-only text box holding the cursor file's name.
  */
 
 import { afterEach, describe, it } from 'vitest'
@@ -65,13 +65,13 @@ describe('the range editor open in a mask field a11y', () => {
     input?.setSelectionRange(2, 2)
     input?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }))
     await settle()
-    if (!document.querySelector('.ui-popover [role="slider"], .ui-popover .warning')) {
+    if (!document.querySelector('.ui-popover .sample')) {
       throw new Error('the range editor did not open')
     }
     return root
   }
 
-  it('the open range editor, its handles as sliders, has no violations', async () => {
+  it('the open range editor, its text box selecting the token’s characters, has no violations', async () => {
     await mountRange('[N1--5]')
     await expectNoA11yViolations(document.body)
   })

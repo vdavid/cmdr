@@ -1,37 +1,83 @@
 import { describe, it, expect } from 'vitest'
-import { extendAnchor, moveSelection, rangeReading, ribbonMoveOf, spanBetween } from './range-editor'
+import { rangeReading, selectionInText, textOffsetsOf, textPick } from './range-editor'
 
-const nine = (first: number, last: number) => ({ first, last, length: 9 })
+describe('a selection in the text box', () => {
+  // `Beach day`: nine characters, `B` at 0 and `y` at 8.
+  const pick = (start: number, end: number, form: 'span' | 'length' = 'span') =>
+    textPick({ text: 'Beach day', start, end, form })?.range ?? null
 
-describe('moveSelection', () => {
-  it('moves the whole selection, and stops at either end', () => {
-    expect(moveSelection(nine(1, 3), { step: 1, edge: 'both' })).toEqual(nine(2, 4))
-    expect(moveSelection(nine(0, 3), { step: -1, edge: 'both' })).toEqual(nine(0, 3))
-    expect(moveSelection(nine(6, 8), { step: 1, edge: 'both' })).toEqual(nine(6, 8))
+  it('leaves the token alone when it’s only a caret', () => {
+    expect(selectionInText('Beach day', 3, 3)).toBeNull()
+    expect(pick(3, 3)).toBeNull()
   })
 
-  it('moves the end alone, never past the start or the last character', () => {
-    expect(moveSelection(nine(1, 3), { step: 1, edge: 'end' })).toEqual(nine(1, 4))
-    expect(moveSelection(nine(1, 1), { step: -1, edge: 'end' })).toEqual(nine(1, 1))
-    expect(moveSelection(nine(1, 8), { step: 1, edge: 'end' })).toEqual(nine(1, 8))
+  it('leaves the token alone on an empty field', () => {
+    expect(selectionInText('', 0, 0)).toBeNull()
+    expect(textPick({ text: '', start: 0, end: 0, form: 'span' })).toBeNull()
   })
 
-  it('moves the start alone, never past the end or the first character', () => {
-    expect(moveSelection(nine(1, 3), { step: -1, edge: 'start' })).toEqual(nine(0, 3))
-    expect(moveSelection(nine(3, 3), { step: 1, edge: 'start' })).toEqual(nine(3, 3))
-    expect(moveSelection(nine(0, 3), { step: -1, edge: 'start' })).toEqual(nine(0, 3))
+  it('hands back the characters it picked with the range', () => {
+    expect(textPick({ text: 'Beach day', start: 1, end: 4, form: 'span' })).toEqual({
+      selection: { first: 1, last: 3, length: 9 },
+      range: { kind: 'span', at: 2, to: 4 },
+    })
+  })
+
+  it('keeps the token’s own edges when asked, as a key only adjusting the selection does', () => {
+    const keep = { startFromEnd: false, endFromEnd: false }
+    expect(textPick({ text: 'Beach day', start: 6, end: 9, form: 'span', keep })?.range).toEqual({
+      kind: 'span',
+      at: 7,
+      to: 9,
+    })
+    expect(textPick({ text: 'Beach day', start: 0, end: 9, form: 'span', keep })?.range).toEqual({
+      kind: 'span',
+      at: 1,
+      to: 9,
+    })
+  })
+
+  it('reads the whole field as the bare field', () => {
+    expect(selectionInText('Beach day', 0, 9)).toEqual({ first: 0, last: 8, length: 9 })
+    expect(pick(0, 9)).toEqual({ kind: 'all' })
+  })
+
+  it('reads one character as one', () => {
+    expect(pick(2, 3)).toEqual({ kind: 'one', at: 3 })
+  })
+
+  it('counts each end from the edge it’s nearer, so a run near the end counts from the end', () => {
+    expect(pick(0, 5)).toEqual({ kind: 'span', at: 1, to: 5 })
+    expect(pick(6, 8)).toEqual({ kind: 'span', at: -3, to: 2 })
+    expect(pick(6, 9)).toEqual({ kind: 'from', at: -3 })
+  })
+
+  it('keeps the length form', () => {
+    expect(pick(1, 5, 'length')).toEqual({ kind: 'length', at: 2, length: 4 })
+  })
+
+  it('counts characters as the engine does, not UTF-16 units', () => {
+    // `a😀b`: the emoji is one character but two UTF-16 units, so `b` sits at units 3–4.
+    expect(selectionInText('a😀b', 1, 3)).toEqual({ first: 1, last: 1, length: 3 })
+    expect(selectionInText('a😀b', 3, 4)).toEqual({ first: 2, last: 2, length: 3 })
   })
 })
 
-describe('a drag', () => {
-  it('spans its two characters either way round', () => {
-    expect(spanBetween(5, 2, 9)).toEqual(nine(2, 5))
-    expect(spanBetween(2, 2, 9)).toEqual(nine(2, 2))
+describe('textOffsetsOf', () => {
+  it('puts the engine’s bounds back as the text box’s selection', () => {
+    expect(textOffsetsOf('Beach day', { first: 0, last: 4, length: 9 })).toEqual({ start: 0, end: 5 })
+    expect(textOffsetsOf('Beach day', { first: 8, last: 8, length: 9 })).toEqual({ start: 8, end: 9 })
   })
 
-  it('extends from the far edge on ⇧-click', () => {
-    expect(extendAnchor(nine(2, 4), 7)).toBe(2)
-    expect(extendAnchor(nine(2, 4), 0)).toBe(4)
+  it('counts UTF-16 units past a character that takes two', () => {
+    expect(textOffsetsOf('a😀b', { first: 1, last: 2, length: 3 })).toEqual({ start: 1, end: 4 })
+  })
+
+  it('round-trips with selectionInText', () => {
+    const text = 'x😀 yz'
+    const selection = { first: 1, last: 3, length: 5 }
+    const { start, end } = textOffsetsOf(text, selection)
+    expect(selectionInText(text, start, end)).toEqual(selection)
   })
 })
 
@@ -82,22 +128,5 @@ describe('rangeReading', () => {
       key: 'multiRename.rangeEditor.reading.spanFromEnd',
       params: { from: 8, to: 5 },
     })
-  })
-})
-
-describe('ribbonMoveOf', () => {
-  const press = (key: string, mods: { shiftKey?: boolean; altKey?: boolean; metaKey?: boolean } = {}) =>
-    ribbonMoveOf({ key, shiftKey: false, altKey: false, metaKey: false, ctrlKey: false, ...mods })
-
-  it('moves the selection with ← / →, its end with ⇧, its start with ⌥', () => {
-    expect(press('ArrowRight')).toEqual({ step: 1, edge: 'both' })
-    expect(press('ArrowLeft', { shiftKey: true })).toEqual({ step: -1, edge: 'end' })
-    expect(press('ArrowRight', { altKey: true })).toEqual({ step: 1, edge: 'start' })
-  })
-
-  it('leaves every other key and combination alone', () => {
-    expect(press('ArrowUp')).toBeNull()
-    expect(press('ArrowRight', { metaKey: true })).toBeNull()
-    expect(press('ArrowRight', { shiftKey: true, altKey: true })).toBeNull()
   })
 })

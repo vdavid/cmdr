@@ -526,5 +526,3 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
   Promote that shipped frame to a ruling per locale. (all but ru, zh-Hant)
 - `multiRename.movedRow` and `commands.multiRenameMoveRow*` reorder a preview row; the `move` concept's `notMatch` now
   covers “move the file up/down”, but “moved to” still matches, so each locale needs an exception for `movedRow`. (all)
-- `space-key`'s `=space` match also fires on `multiRename.rangeEditor.space` (the space CHARACTER, read aloud); add it
-  to `notMatch` or make `=` case-sensitive. de recorded an exception meanwhile. (de)

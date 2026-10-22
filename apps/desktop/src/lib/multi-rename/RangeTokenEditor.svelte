@@ -1,57 +1,50 @@
 <script lang="ts">
     /**
-     * The range token's editor (`[N2-5]`, `[E1]`, `[-3-]`), top to bottom: what to take (the
-     * field, and its characters on the list cursor's file as a ribbon to drag across), how to
-     * count (each end from the start or the end, and the form), and what the token takes from
-     * the files around the cursor. Every edit goes to `onChange`, which rewrites the token in the
-     * mask. Which characters a range takes is always the engine's answer (`rangeSampleSource`),
-     * never sliced here; this only turns a pick into a token (`range-token.ts`).
+     * The range token's editor (`[N2-5]`, `[E1]`, `[-3-]`), top to bottom: the token's field on the
+     * list cursor's file in a read-only text box to select characters in (TC's "select the
+     * characters to insert"), how to count (each end from the start or the end, and the form), and
+     * what the token takes from the files around the cursor. Every edit goes to `onChange`, which
+     * rewrites the token in the mask. Which characters a range takes is always the engine's answer
+     * (`rangeSampleSource`), never sliced here; this only turns a pick into a token.
      *
-     * A drag (or a ⇧-click, which extends it) counts each end from the edge it's nearer
-     * (`autoAnchors`); keys and the Start / End rows keep the token's own choice, so a manual
-     * choice sticks until the next drag.
+     * The box and the token follow each other: a selection the user makes becomes the token
+     * (`textPick`), and a token that changes any other way (typed in the mask, Start / End / Write
+     * as, a new cursor row) sets the box's selection to the engine's bounds. A bare caret leaves the
+     * token. A pointer selection is a fresh pick, each end counting from the edge it's nearer; a key
+     * only adjusts it, keeping the token's own edges, so a manual Start / End choice sticks until
+     * the next pointer pick. Only a selection that follows the user's own pointer or key in the box
+     * counts: WebKit selects a field's whole text when Tab lands in it, and that mustn't rewrite the
+     * token to `[N]`.
      *
-     * Keys: ↑ / ↓ walk the rows (↑ from the top row, and Enter anywhere, leave through `onDone`);
-     * on the ribbon ← / → move the selection, ⇧ its end, ⌥ its start. ↑ / ↓ / Enter are claimed
-     * in the capture phase, so the toggle groups and the sheet never see them. Escape belongs to
-     * the `Popover` around this.
+     * Keys: ↑ / ↓ walk the rows (↑ from the box, and Enter anywhere, leave through `onDone`). In the
+     * single-line box plain ↑ / ↓ would only collapse the selection to an end, which leaves the token
+     * anyway, so nothing is lost; ⇧↑ / ⇧↓ stay the field's own. ↑ / ↓ / Enter are claimed in the
+     * capture phase, so the toggle groups and the sheet never see them. Escape belongs to the
+     * `Popover` around this.
      */
-    import { tick } from 'svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
-    import type { MessageKey } from '#lib/intl/keys.gen.js'
+    import TextInput from '#lib/ui/TextInput.svelte'
     import ToggleGroup, { type ToggleGroupOption } from '#lib/ui/ToggleGroup.svelte'
     import { claimKey } from '#lib/shortcuts/claim-key.js'
     import type { RangeSample } from '#lib/tauri-commands/index.js'
     import type { TokenEditorProps } from './mask-token-kinds'
     import {
-        RANGE_FIELDS,
         anchorsOf,
         autoAnchors,
         formatRangeToken,
         rangeForSelection,
         type Anchors,
-        type RangeField,
+        type Range,
         type RangeForm,
         type RangeToken,
         type Selection,
     } from './range-token'
-    import { extendAnchor, moveSelection, rangeReading, ribbonMoveOf, spanBetween } from './range-editor'
+    import { rangeReading, textOffsetsOf, textPick } from './range-editor'
     import { rangeSampleSource } from './range-sample-source'
 
     const { value, onChange, onDone }: TokenEditorProps<RangeToken> = $props()
 
     const source = rangeSampleSource()
-
-    /** The handles' width, so the end one sits inside its cell. Matches `.edge`'s CSS. */
-    const EDGE_WIDTH_PX = 3
-
-    const FIELD_LABELS: Record<RangeField, MessageKey> = {
-        name: 'multiRename.rangeEditor.field.name',
-        extension: 'multiRename.rangeEditor.field.extension',
-        parent: 'multiRename.rangeEditor.field.parent',
-        grandparent: 'multiRename.rangeEditor.field.grandparent',
-        fullName: 'multiRename.rangeEditor.field.fullName',
-    }
 
     const tokenText = $derived(formatRangeToken(value))
     const anchors = $derived(anchorsOf(value.range))
@@ -59,8 +52,8 @@
     /** The engine's latest answer: for which token, which row is the cursor's, and the samples. */
     let answer = $state.raw<{ token: string; cursor: number; samples: RangeSample[] } | null>(null)
     /**
-     * The pick the last edit wrote, standing in until the engine answers for its token, so a key
-     * pressed again right away moves on from it rather than from the answer before.
+     * The pick the last edit wrote, standing in until the engine answers for its token, so the box
+     * keeps the user's selection rather than jumping back to the answer before.
      */
     let picked = $state.raw<{ token: string; selection: Selection } | null>(null)
     let asked = 0
@@ -80,8 +73,8 @@
     })
 
     const cursorSample = $derived(answer?.samples.find((sample) => sample.row === answer?.cursor))
-    const chars = $derived(cursorSample ? Array.from(cursorSample.text) : [])
-    const length = $derived(chars.length)
+    const text = $derived(cursorSample?.text ?? '')
+    const length = $derived(Array.from(text).length)
     const selection = $derived.by((): Selection | null => {
         if (picked?.token === tokenText) return picked.selection
         const taken = cursorSample?.taken
@@ -91,122 +84,93 @@
     const endFromEnd = $derived(anchors.startFromEnd || anchors.endFromEnd)
 
     const uid = $props.id()
+    const boxId = `range-editor-box-${uid}`
     const readingId = `range-editor-reading-${uid}`
-    const keysId = `range-editor-keys-${uid}`
     const samplesId = `range-editor-samples-${uid}`
 
     let rootEl: HTMLDivElement | undefined = $state()
-    let ribbonEl: HTMLDivElement | undefined = $state()
-    let startEl: HTMLSpanElement | undefined = $state()
-    let endEl: HTMLSpanElement | undefined = $state()
+    let boxEl: HTMLInputElement | undefined = $state()
 
-    function write(next: Selection, nextAnchors: Anchors, form: RangeForm): void {
-        const token: RangeToken = { field: value.field, range: rangeForSelection({ selection: next, anchors: nextAnchors, form }) }
+    function commit(next: Selection, range: Range): void {
+        const token: RangeToken = { field: value.field, range }
         picked = { token: formatRangeToken(token), selection: next }
         onChange(token)
     }
 
-    /** A fresh pick (a drag or a click): each end counts from the edge it's nearer. */
-    function pickFresh(next: Selection): void {
-        write(next, autoAnchors(next), anchors.form)
+    function write(next: Selection, nextAnchors: Anchors, form: RangeForm): void {
+        commit(next, rangeForSelection({ selection: next, anchors: nextAnchors, form }))
     }
 
-    // ===== The ribbon =====
+    // ===== The box =====
 
-    let dragAnchor: number | null = null
-    let dragAt: number | null = null
+    /**
+     * What last moved the box's selection since focus last left it: the user's pointer (a fresh
+     * pick), a key (an adjustment, keeping the token's own edges), or neither (Tab's select-all,
+     * or this editor setting it), which writes nothing.
+     */
+    let selectingBy: 'pointer' | 'key' | null = null
 
-    function cellAt(e: PointerEvent): number | null {
-        // Under pointer capture the event targets the ribbon itself, so find the cell by position.
-        const direct = e.target instanceof Element ? e.target.closest<HTMLElement>('[data-index]') : null
-        const cell = direct ?? document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-index]')
-        const index = cell?.dataset.index
-        return index === undefined ? null : Number(index)
+    /** The box's selection set to the token's characters on this file, or a caret when it takes none. */
+    function showSelection(): void {
+        const box = boxEl
+        if (!box) return
+        const { start, end } = selection ? textOffsetsOf(text, selection) : { start: 0, end: 0 }
+        if (box.selectionStart === start && box.selectionEnd === end) return
+        box.setSelectionRange(start, end)
     }
 
-    function handlePointerDown(e: PointerEvent): void {
-        if (e.button !== 0 || length === 0) return
-        const index = cellAt(e)
-        if (index === null) return
-        e.preventDefault()
-        dragAnchor = e.shiftKey && selection ? extendAnchor(selection, index) : index
-        dragAt = index
-        pickFresh(spanBetween(dragAnchor, index, length))
-        if (ribbonEl && 'setPointerCapture' in ribbonEl) ribbonEl.setPointerCapture(e.pointerId)
-        void tick().then(() => startEl?.focus())
+    // Follows the token, the cursor's file, and the box's text (rendered before effects run).
+    $effect(showSelection)
+
+    function handleSelectionChange(): void {
+        const box = boxEl
+        if (!box || selectingBy === null || box.selectionStart === null || box.selectionEnd === null) return
+        const keep = selectingBy === 'key' ? { startFromEnd: anchors.startFromEnd, endFromEnd } : undefined
+        const pick = textPick({ text, start: box.selectionStart, end: box.selectionEnd, form: anchors.form, keep })
+        // A caret leaves the token; the same characters again (the token's own, set back) change nothing.
+        if (!pick || (selection && pick.selection.first === selection.first && pick.selection.last === selection.last)) return
+        commit(pick.selection, pick.range)
     }
 
-    function handlePointerMove(e: PointerEvent): void {
-        if (dragAnchor === null) return
-        const index = cellAt(e)
-        if (index === null || index === dragAt) return
-        dragAt = index
-        pickFresh(spanBetween(dragAnchor, index, length))
+    function handleBoxPointerDown(): void {
+        selectingBy = 'pointer'
     }
 
-    function endDrag(): void {
-        dragAnchor = null
-        dragAt = null
+    function handleBoxKeydown(): void {
+        selectingBy = 'key'
     }
 
-    function handleRibbonKey(e: KeyboardEvent): void {
-        const move = e.isComposing ? null : ribbonMoveOf(e)
-        if (move === null) return
-        claimKey(e)
-        if (length === 0) return
-        if (!selection) {
-            pickFresh(spanBetween(0, 0, length))
-            return
-        }
-        const next = moveSelection(selection, move)
-        if (next.first === selection.first && next.last === selection.last) return
-        // Keys keep the token's own choice of edges.
-        write(next, { startFromEnd: anchors.startFromEnd, endFromEnd }, anchors.form)
-        // The handle that moved takes focus, so a screen reader reads its new place.
-        if (move.edge === 'end') endEl?.focus()
-        else if (move.edge === 'start') startEl?.focus()
+    function handleBoxFocus(): void {
+        // A pointer in the box selects on its own; Tab's select-all comes after this, so the token's
+        // characters go back on top of it.
+        if (selectingBy === null) setTimeout(showSelection, 0)
     }
 
-    // The ribbon is a labelled group, so its pointer and key handlers go on as listeners; the
-    // handles carry the keys too, as sliders.
+    function handleBoxBlur(): void {
+        selectingBy = null
+    }
+
     $effect(() => {
-        const ribbon = ribbonEl
-        if (!ribbon) return
-        ribbon.addEventListener('pointerdown', handlePointerDown)
-        ribbon.addEventListener('pointermove', handlePointerMove)
-        ribbon.addEventListener('pointerup', endDrag)
-        ribbon.addEventListener('pointercancel', endDrag)
-        ribbon.addEventListener('keydown', handleRibbonKey)
+        const box = boxEl
+        if (!box) return
+        box.addEventListener('pointerdown', handleBoxPointerDown)
+        box.addEventListener('keydown', handleBoxKeydown)
+        box.addEventListener('focus', handleBoxFocus)
+        box.addEventListener('blur', handleBoxBlur)
+        box.addEventListener('select', handleSelectionChange)
+        // WebKit tells a field's selection moving through the document's `selectionchange`.
+        document.addEventListener('selectionchange', handleSelectionChange)
         return () => {
-            ribbon.removeEventListener('pointerdown', handlePointerDown)
-            ribbon.removeEventListener('pointermove', handlePointerMove)
-            ribbon.removeEventListener('pointerup', endDrag)
-            ribbon.removeEventListener('pointercancel', endDrag)
-            ribbon.removeEventListener('keydown', handleRibbonKey)
+            box.removeEventListener('pointerdown', handleBoxPointerDown)
+            box.removeEventListener('keydown', handleBoxKeydown)
+            box.removeEventListener('focus', handleBoxFocus)
+            box.removeEventListener('blur', handleBoxBlur)
+            box.removeEventListener('select', handleSelectionChange)
+            document.removeEventListener('selectionchange', handleSelectionChange)
         }
     })
-
-    // The first answer lands after the popover focused the empty ribbon: hand focus to the start handle.
-    $effect(() => {
-        if (selection && startEl && document.activeElement === ribbonEl) startEl.focus()
-    })
-
-    function charName(index: number): string {
-        const char = chars[index] ?? ''
-        return char === ' ' ? tString('multiRename.rangeEditor.space') : char
-    }
-
-    function edgeText(index: number, fromEnd: boolean): string {
-        return fromEnd
-            ? tString('multiRename.rangeEditor.edgeFromEnd', { at: length - index, character: charName(index) })
-            : tString('multiRename.rangeEditor.edgeFromStart', { at: index + 1, character: charName(index) })
-    }
 
     // ===== How to count =====
-
-    const fieldOptions = $derived<ToggleGroupOption[]>(
-        RANGE_FIELDS.map((field) => ({ value: field, label: tString(FIELD_LABELS[field]) })),
-    )
 
     /**
      * Start / End's two options, each showing the real position of the edge at `index` on the cursor's
@@ -236,11 +200,6 @@
         { value: 'length', label: tString('multiRename.rangeEditor.form.length') },
     ])
 
-    function setField(field: string): void {
-        picked = null
-        onChange({ field: field as RangeField, range: value.range })
-    }
-
     function setStart(edge: string): void {
         if (!selection) return
         const startFromEnd = edge === 'end'
@@ -267,11 +226,10 @@
 
     // ===== Keys =====
 
-    /** The element ↑ / ↓ puts focus on in `row`: its handle, its focusable ribbon, or its picked option. */
+    /** The element ↑ / ↓ puts focus on in `row`: the box, or the row's picked option. */
     function focusTargetIn(row: Element): HTMLElement | null {
         return (
-            row.querySelector<HTMLElement>('[role="slider"]') ??
-            row.querySelector<HTMLElement>('[tabindex="0"]') ??
+            row.querySelector<HTMLElement>('input') ??
             row.querySelector<HTMLElement>('[data-state="on"]:not([disabled])') ??
             row.querySelector<HTMLElement>('button:not([disabled])')
         )
@@ -304,7 +262,7 @@
     $effect(() => {
         const root = rootEl
         if (!root) return
-        // Capture: ↑ / ↓ / Enter are the editor's before a toggle group or the sheet sees them.
+        // Capture: ↑ / ↓ / Enter are the editor's before the box, a toggle group, or the sheet sees them.
         root.addEventListener('keydown', handleKeydown, true)
         return () => {
             root.removeEventListener('keydown', handleKeydown, true)
@@ -312,111 +270,35 @@
     })
 
     function pieces(sample: RangeSample): { before: string; taken: string; after: string } {
-        const text = Array.from(sample.text)
+        const chars = Array.from(sample.text)
         if (!sample.taken) return { before: sample.text, taken: '', after: '' }
         const { first, last } = sample.taken
         return {
-            before: text.slice(0, first).join(''),
-            taken: text.slice(first, last + 1).join(''),
-            after: text.slice(last + 1).join(''),
+            before: chars.slice(0, first).join(''),
+            taken: chars.slice(first, last + 1).join(''),
+            after: chars.slice(last + 1).join(''),
         }
     }
 </script>
 
 <div class="range-editor" bind:this={rootEl}>
-    <div class="row" data-walk>
-        <span class="label" aria-hidden="true">{tString('multiRename.rangeEditor.takeFrom')}</span>
-        <ToggleGroup
-            semantics="toggles"
-            value={value.field}
-            options={fieldOptions}
-            onChange={setField}
-            ariaLabel={tString('multiRename.rangeEditor.takeFrom')}
+    <div class="pick" data-walk>
+        <label class="label" for={boxId}>{tString('multiRename.rangeEditor.selectCharacters')}</label>
+        <TextInput
+            id={boxId}
+            readonly
+            mono
+            value={text}
+            bind:inputElement={boxEl}
+            placeholder={answer && length === 0 ? tString('multiRename.rangeEditor.emptyField') : undefined}
+            aria-describedby={readingId}
+            autocomplete="off"
+            spellcheck="false"
         />
     </div>
 
-    <div class="ribbon-row" data-walk>
-        {#if answer && length === 0}
-            <p class="note">{tString('multiRename.rangeEditor.emptyField')}</p>
-        {:else}
-            <!-- The handles carry the keys while there's a selection; before one, the ribbon does. -->
-            <div
-                class="ribbon"
-                bind:this={ribbonEl}
-                role="group"
-                aria-label={tString('multiRename.rangeEditor.characters')}
-                aria-describedby="{readingId} {keysId}"
-                tabindex={selection ? -1 : 0}
-                data-initial-focus={selection ? undefined : ''}
-            >
-                <div class="numbers" aria-hidden="true">
-                    {#each chars as _, i (i)}
-                        <span
-                            class="number"
-                            class:on={selection !== null &&
-                                ((i === selection.first && !anchors.startFromEnd) ||
-                                    (i === selection.last && anchors.form === 'span' && !endFromEnd))}
-                            >{i + 1}</span
-                        >
-                    {/each}
-                </div>
-                <div class="cells">
-                    {#each chars as char, i (i)}
-                        <span
-                            class="cell"
-                            class:space={char === ' '}
-                            class:taken={selection !== null && i >= selection.first && i <= selection.last}
-                            data-index={i}
-                            aria-hidden="true">{char === ' ' ? '·' : char}</span
-                        >
-                    {/each}
-                    {#if selection}
-                        <span
-                            bind:this={startEl}
-                            class="edge"
-                            style:left="calc({selection.first} * var(--spacing-range-cell))"
-                            role="slider"
-                            tabindex="0"
-                            data-initial-focus
-                            aria-label={tString('multiRename.rangeEditor.start')}
-                            aria-describedby="{readingId} {keysId}"
-                            aria-valuemin={1}
-                            aria-valuemax={length}
-                            aria-valuenow={selection.first + 1}
-                            aria-valuetext={edgeText(selection.first, anchors.startFromEnd)}
-                        ></span>
-                        <span
-                            bind:this={endEl}
-                            class="edge"
-                            style:left="calc({selection.last + 1} * var(--spacing-range-cell) - {EDGE_WIDTH_PX}px)"
-                            role="slider"
-                            tabindex="0"
-                            aria-label={tString('multiRename.rangeEditor.end')}
-                            aria-describedby="{readingId} {keysId}"
-                            aria-valuemin={1}
-                            aria-valuemax={length}
-                            aria-valuenow={selection.last + 1}
-                            aria-valuetext={edgeText(selection.last, anchors.form === 'span' && endFromEnd)}
-                        ></span>
-                    {/if}
-                </div>
-                <div class="numbers" aria-hidden="true">
-                    {#each chars as _, i (i)}
-                        <span
-                            class="number"
-                            class:on={selection !== null &&
-                                ((i === selection.first && anchors.startFromEnd) ||
-                                    (i === selection.last && anchors.form === 'span' && endFromEnd))}
-                            >{i - length}</span
-                        >
-                    {/each}
-                </div>
-            </div>
-        {/if}
-        <p class="keys" id={keysId}>{tString('multiRename.rangeEditor.keys')}</p>
-    </div>
-
-    <p class="reading" id={readingId}>
+    <!-- Live, so a token changed from the toggles or the mask is read out in plain words. -->
+    <p class="reading" id={readingId} aria-live="polite">
         <code class="token">[{tokenText}]</code>
         {reading}
         {#if answer && length > 0 && !selection}
@@ -424,40 +306,43 @@
         {/if}
     </p>
 
-    <div class="row" data-walk>
-        <span class="label" aria-hidden="true">{tString('multiRename.rangeEditor.start')}</span>
-        <ToggleGroup
-            semantics="toggles"
-            value={anchors.startFromEnd ? 'end' : 'start'}
-            options={startOptions}
-            onChange={setStart}
-            ariaLabel={tString('multiRename.rangeEditor.start')}
-            disabled={!selection}
-        />
-    </div>
-    {#if anchors.form === 'span'}
+    <!-- One grid, so the three groups share the widest one's natural width. -->
+    <div class="counting">
         <div class="row" data-walk>
-            <span class="label" aria-hidden="true">{tString('multiRename.rangeEditor.end')}</span>
+            <span class="label" aria-hidden="true">{tString('multiRename.rangeEditor.start')}</span>
             <ToggleGroup
                 semantics="toggles"
-                value={endFromEnd ? 'end' : 'start'}
-                options={endOptions}
-                onChange={setEnd}
-                ariaLabel={tString('multiRename.rangeEditor.end')}
+                value={anchors.startFromEnd ? 'end' : 'start'}
+                options={startOptions}
+                onChange={setStart}
+                ariaLabel={tString('multiRename.rangeEditor.start')}
                 disabled={!selection}
             />
         </div>
-    {/if}
-    <div class="row" data-walk>
-        <span class="label" aria-hidden="true">{tString('multiRename.rangeEditor.writeAs')}</span>
-        <ToggleGroup
-            semantics="toggles"
-            value={anchors.form}
-            options={formOptions}
-            onChange={setForm}
-            ariaLabel={tString('multiRename.rangeEditor.writeAs')}
-            disabled={!selection}
-        />
+        {#if anchors.form === 'span'}
+            <div class="row" data-walk>
+                <span class="label" aria-hidden="true">{tString('multiRename.rangeEditor.end')}</span>
+                <ToggleGroup
+                    semantics="toggles"
+                    value={endFromEnd ? 'end' : 'start'}
+                    options={endOptions}
+                    onChange={setEnd}
+                    ariaLabel={tString('multiRename.rangeEditor.end')}
+                    disabled={!selection}
+                />
+            </div>
+        {/if}
+        <div class="row" data-walk>
+            <span class="label" aria-hidden="true">{tString('multiRename.rangeEditor.writeAs')}</span>
+            <ToggleGroup
+                semantics="toggles"
+                value={anchors.form}
+                options={formOptions}
+                onChange={setForm}
+                ariaLabel={tString('multiRename.rangeEditor.writeAs')}
+                disabled={!selection}
+            />
+        </div>
     </div>
 
     {#if answer && answer.samples.length > 0}
@@ -484,20 +369,17 @@
 
 <style>
     .range-editor {
-        --spacing-range-cell: 22px;
-
         display: flex;
         flex-direction: column;
         gap: var(--spacing-sm);
-        width: 520px;
+        width: 420px;
         max-width: 100%;
     }
 
-    .row {
-        display: grid;
-        grid-template-columns: 72px minmax(0, 1fr);
-        align-items: center;
-        gap: var(--spacing-sm);
+    .pick {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xxs);
     }
 
     .label {
@@ -505,111 +387,6 @@
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
         font-weight: normal;
-    }
-
-    .ribbon-row {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xxs);
-        min-width: 0;
-    }
-
-    .ribbon {
-        display: flex;
-        flex-direction: column;
-        align-self: flex-start;
-        max-width: 100%;
-        min-height: var(--spacing-xl);
-        padding: var(--spacing-xxs);
-        overflow-x: auto;
-        border-radius: var(--radius-sm);
-        user-select: none;
-        touch-action: none;
-    }
-
-    .ribbon:focus-visible {
-        outline: 2px solid var(--color-accent);
-        outline-offset: -2px;
-    }
-
-    .numbers,
-    .cells {
-        display: flex;
-    }
-
-    .cells {
-        position: relative;
-    }
-
-    .number {
-        flex: none;
-        width: var(--spacing-range-cell);
-        color: var(--color-text-tertiary);
-        font-family: var(--font-mono);
-        font-size: var(--font-size-xs);
-        text-align: center;
-        font-variant-numeric: tabular-nums;
-    }
-
-    .number.on {
-        color: var(--color-text-primary);
-        font-weight: 600;
-    }
-
-    .cell {
-        flex: none;
-        display: grid;
-        place-items: center;
-        width: var(--spacing-range-cell);
-        height: 28px;
-        border-block: 1px solid var(--color-border);
-        background: var(--color-bg-primary);
-        color: var(--color-text-primary);
-        font-family: var(--font-mono);
-        font-size: var(--font-size-md);
-        cursor: text;
-    }
-
-    .cell:first-child {
-        border-left: 1px solid var(--color-border);
-        border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-    }
-
-    .cell:nth-last-child(1 of .cell) {
-        border-right: 1px solid var(--color-border);
-        border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    }
-
-    .cell.space {
-        color: var(--color-text-tertiary);
-    }
-
-    .cell.taken {
-        background: var(--color-accent-selection);
-    }
-
-    /* The two handles: a bar on each edge of the selection, in the mark color that reads on any
-       tinted surface. */
-    .edge {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        width: 3px;
-        border-radius: var(--radius-xs);
-        background: var(--color-accent-pop);
-        cursor: ew-resize;
-    }
-
-    .edge:focus-visible {
-        outline: 2px solid var(--color-accent);
-        outline-offset: 1px;
-    }
-
-    .keys,
-    .note {
-        margin: 0;
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-xs);
     }
 
     .reading {
@@ -626,6 +403,31 @@
     .warning {
         display: block;
         color: var(--color-warning-text);
+    }
+
+    /* The groups' column is as wide as the widest group's labels, and every group fills it, so the
+       three line up as one column whatever a translation does to a label. */
+    .counting {
+        display: grid;
+        grid-template-columns: max-content max-content;
+        justify-content: start;
+        align-items: center;
+        gap: var(--spacing-xs) var(--spacing-sm);
+    }
+
+    .counting .row {
+        display: contents;
+    }
+
+    .counting :global(.tg-root) {
+        display: flex;
+        width: 100%;
+    }
+
+    /* Each segment grows from its label's width, so a long label never clips. */
+    .counting :global(.tg-root .tg-item) {
+        flex: 1 1 auto;
+        justify-content: center;
     }
 
     .samples {

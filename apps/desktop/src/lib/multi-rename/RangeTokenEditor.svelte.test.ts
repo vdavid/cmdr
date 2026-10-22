@@ -1,9 +1,10 @@
 /**
  * Behavior tests for the range editor inside `MaskInput`: a range token gets a marker, ↓ opens the
- * editor on its start handle, a drag or a key rewrites the token (each end counting from its nearer
- * edge on a drag, keeping the token's own edges on a key), the Start / End / Write as rows rewrite
- * how it counts, and the files around the cursor show what it takes. The engine is a fake that
- * answers fixed bounds per token: the real bounds are `mask.rs`'s, tested there.
+ * editor in its text box with the token's characters selected, a selection the user makes rewrites
+ * the token (each end counting from its nearer edge on a pointer pick, keeping the token's own
+ * edges on a key), a token changed any other way moves the box's selection, the Start / End /
+ * Write as rows rewrite how it counts, and the files around the cursor show what it takes. The
+ * engine is a fake that answers fixed bounds per token: the real bounds are `mask.rs`'s, tested there.
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
@@ -22,32 +23,30 @@ async function settle(): Promise<void> {
 /** What the fake engine takes from "Beach day" (or "jpg" for `[E…]`) for each token the tests write. */
 const TAKEN: Record<string, [number, number] | null> = {
   N: [0, 8],
-  'N1--2': [0, 7],
   'N1-3': [0, 2],
-  'N2-4': [1, 3],
-  'N2-5': [1, 4],
+  'N1-4': [0, 3],
   'N1-5': [0, 4],
   'N1--4': [0, 5],
   'N-9-5': [0, 4],
   'N1,5': [0, 4],
+  N1: [0, 0],
   'N20-25': null,
-  'E1-5': [0, 2],
 }
 
-function fakeSource(): RangeSampleSource & { asked: string[] } {
-  const asked: string[] = []
+/** The field's text on the cursor's file: `[G…]` is empty there. */
+function textFor(token: string): string {
+  if (token.startsWith('E')) return 'jpg'
+  if (token.startsWith('G')) return ''
+  return 'Beach day'
+}
+
+function fakeSource(): RangeSampleSource {
   return {
-    asked,
     sampleRows: { cursor: 0, rows: [0, 1, 2] },
     rangeSamples: (token) => {
-      asked.push(token)
       const taken = TAKEN[token] ?? null
       const samples: RangeSample[] = [
-        {
-          row: 0,
-          text: token.startsWith('E') ? 'jpg' : 'Beach day',
-          taken: taken ? { first: taken[0], last: taken[1] } : null,
-        },
+        { row: 0, text: textFor(token), taken: taken ? { first: taken[0], last: taken[1] } : null },
         { row: 1, text: 'IMG_2041', taken: { first: 0, last: 3 } },
         { row: 2, text: 'x', taken: null },
       ]
@@ -94,7 +93,7 @@ async function mountField(initial: string): Promise<Mounted> {
   return { input, value: () => state.value, outerKeys }
 }
 
-function key(el: Element, k: string, mods: { shiftKey?: boolean; altKey?: boolean } = {}): void {
+function key(el: Element, k: string, mods: { shiftKey?: boolean } = {}): void {
   el.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true, ...mods }))
 }
 
@@ -105,14 +104,23 @@ async function open(m: Mounted, caret: number): Promise<void> {
   await settle()
 }
 
-const handle = (name: 'Start' | 'End'): HTMLElement | null =>
-  document.querySelector<HTMLElement>(`.ui-popover [role="slider"][aria-label="${name}"]`)
-
-function cell(index: number): HTMLElement {
-  const found = document.querySelector<HTMLElement>(`.ui-popover [data-index="${String(index)}"]`)
-  if (!found) throw new Error(`no cell ${String(index)}`)
+function box(): HTMLInputElement {
+  const found = document.querySelector<HTMLInputElement>('.ui-popover input[readonly]')
+  if (!found) throw new Error('no text box')
   return found
 }
+
+/** The user selecting `start`..`end` in the box, by pointer or by key. */
+async function select(by: 'pointer' | 'key', start: number, end: number): Promise<void> {
+  const el = box()
+  if (by === 'pointer') el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }))
+  else key(el, 'ArrowRight', { shiftKey: true })
+  el.setSelectionRange(start, end)
+  el.dispatchEvent(new Event('select', { bubbles: true }))
+  await settle()
+}
+
+const shown = (): [number | null, number | null] => [box().selectionStart, box().selectionEnd]
 
 function toggle(label: string): HTMLButtonElement {
   const found = [...document.querySelectorAll<HTMLButtonElement>('.ui-popover button')].find(
@@ -153,7 +161,7 @@ describe('the range editor', () => {
     it.each([3, 5, 7])('opens on ↓ at %i, inside the token', async (caret) => {
       const m = await mountField(MASK)
       await open(m, caret)
-      expect(document.activeElement).toBe(handle('Start'))
+      expect(document.activeElement).toBe(box())
       expect(m.outerKeys).not.toContain('ArrowDown')
     })
 
@@ -185,42 +193,61 @@ describe('the range editor', () => {
     })
   })
 
-  it('opens on ↓ with the start handle focused, over the cursor file’s characters', async () => {
-    const m = await mountField('[N]')
+  it('opens on ↓ in its labelled text box, the cursor file’s name in it and the token’s characters selected', async () => {
+    const m = await mountField('[N1-5]')
     await open(m, 2)
-    expect(document.querySelectorAll('.ui-popover .cell')).toHaveLength(9)
-    expect(document.activeElement).toBe(handle('Start'))
-    expect(handle('Start')?.getAttribute('aria-valuetext')).toBe('character 1, B')
-    // `[N]` runs to the end, so its end counts from the end.
-    expect(handle('End')?.getAttribute('aria-valuetext')).toBe('the last character, y')
-    expect(document.querySelector('.ui-popover .reading')?.textContent).toContain('All of it')
+    expect(document.activeElement).toBe(box())
+    expect(box().value).toBe('Beach day')
+    expect(shown()).toEqual([0, 5])
+    expect(box().labels?.[0]?.textContent).toBe('Select the characters to take')
+    expect(document.querySelector('.ui-popover .reading')?.textContent).toContain('From the 1st to the 5th character')
   })
 
-  it('moves the end with ⇧←, the whole selection with →, and the start with ⌥→, keeping the token’s edges', async () => {
+  it('writes a pointer selection as the token, each end counting from its nearer edge', async () => {
     const m = await mountField('[N]')
     await open(m, 2)
-    key(handle('Start') as HTMLElement, 'ArrowLeft', { shiftKey: true })
-    await settle()
-    expect(m.value()).toBe('[N1--2]')
-    expect(document.activeElement).toBe(handle('End'))
-
-    const n = await remount('[N1-3]')
-    key(handle('Start') as HTMLElement, 'ArrowRight')
-    await settle()
-    expect(n.value()).toBe('[N2-4]')
+    await select('pointer', 0, 5)
+    expect(m.value()).toBe('[N1-5]')
+    await select('pointer', 0, 6)
+    expect(m.value()).toBe('[N1--4]')
   })
 
-  it('counts each end of a drag from its nearer edge', async () => {
-    const m = await mountField('[N]')
+  it('keeps the token’s own edges when a key adjusts the selection', async () => {
+    const m = await mountField('[N1-3]')
     await open(m, 2)
-    cell(0).dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }))
-    cell(4).dispatchEvent(new PointerEvent('pointermove', { bubbles: true, button: 0 }))
+    // A pointer pick would count an end on the 6th of nine from the end (`[N1--4]`); a key keeps it from the start.
+    await select('key', 0, 4)
+    expect(m.value()).toBe('[N1-4]')
+  })
+
+  it('leaves the token as it is for a bare caret', async () => {
+    const m = await mountField('[N1-5]')
+    await open(m, 2)
+    await select('pointer', 3, 3)
+    expect(m.value()).toBe('[N1-5]')
+  })
+
+  it('ignores a selection the user didn’t make, like Tab’s select-all, and puts the token’s characters back', async () => {
+    const m = await mountField('[N1-5]')
+    await open(m, 2)
+    box().blur()
+    box().focus()
+    box().setSelectionRange(0, 9)
+    box().dispatchEvent(new Event('select', { bubbles: true }))
     await settle()
     expect(m.value()).toBe('[N1-5]')
-    cell(5).dispatchEvent(new PointerEvent('pointermove', { bubbles: true, button: 0 }))
-    cell(5).dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0 }))
+    expect(shown()).toEqual([0, 5])
+  })
+
+  it('moves the box’s selection when the token changes in the mask', async () => {
+    const m = await mountField('[N]')
+    await open(m, 2)
+    expect(shown()).toEqual([0, 9])
+    m.input.value = '[N1-3]'
+    m.input.dispatchEvent(new Event('input', { bubbles: true }))
     await settle()
-    expect(m.value()).toBe('[N1--4]')
+    expect(document.querySelector('.ui-popover .reading')?.textContent).toContain('From the 1st to the 3rd character')
+    expect(shown()).toEqual([0, 3])
   })
 
   it('counts the start from the end on request, which takes the end with it', async () => {
@@ -231,6 +258,7 @@ describe('the range editor', () => {
     await settle()
     expect(m.value()).toBe('[N-9-5]')
     expect(toggle('5th').disabled).toBe(true)
+    expect(shown()).toEqual([0, 5])
   })
 
   it('writes a start and length, and drops the End row', async () => {
@@ -239,16 +267,7 @@ describe('the range editor', () => {
     toggle('Start and length').click()
     await settle()
     expect(m.value()).toBe('[N1,5]')
-    expect(handle('End')).not.toBeNull()
     expect([...document.querySelectorAll('.ui-popover .label')].map((label) => label.textContent)).not.toContain('End')
-  })
-
-  it('switches the field and keeps the range', async () => {
-    const m = await mountField('[N1-5]')
-    await open(m, 2)
-    toggle('Extension').click()
-    await settle()
-    expect(m.value()).toBe('[E1-5]')
   })
 
   it('shows what the token takes from the files around the cursor, the cursor’s set apart', async () => {
@@ -260,56 +279,42 @@ describe('the range editor', () => {
     expect(rows[0].querySelector('mark')?.textContent).toBe('Beach')
   })
 
-  it('says when it takes nothing from the cursor’s file, and a key then picks the first character', async () => {
+  it('says when it takes nothing from the cursor’s file, selects nothing, and a selection then picks', async () => {
     const m = await mountField('[N20-25]')
     await open(m, 7)
     expect(document.querySelector('.ui-popover .warning')?.textContent).toBe('Takes nothing from this file')
-    expect(handle('Start')).toBeNull()
-    const ribbon = document.querySelector<HTMLElement>('.ui-popover .ribbon')
-    expect(document.activeElement).toBe(ribbon)
-    key(ribbon as HTMLElement, 'ArrowRight')
-    await settle()
+    expect(shown()).toEqual([0, 0])
+    await select('pointer', 0, 1)
     expect(m.value()).toBe('[N1]')
   })
 
-  it('walks the rows with ↑ / ↓ and leaves from the top, and Enter leaves from anywhere', async () => {
+  it('says so when the field is empty on the cursor’s file', async () => {
+    const m = await mountField('[G]')
+    await open(m, 2)
+    expect(box().value).toBe('')
+    expect(box().placeholder).toBe('Empty for this file')
+  })
+
+  it('walks the rows with ↑ / ↓ and leaves from the box, and Enter leaves from anywhere', async () => {
     const m = await mountField('[N] x')
     await open(m, 2)
-    key(handle('Start') as HTMLElement, 'ArrowDown')
+    key(box(), 'ArrowDown')
     await settle()
     expect(document.activeElement?.textContent.trim()).toBe('1st')
     key(document.activeElement as HTMLElement, 'ArrowUp')
-    key(document.activeElement as HTMLElement, 'ArrowUp')
     await settle()
-    expect(document.activeElement?.textContent.trim()).toBe('Name')
-    key(document.activeElement as HTMLElement, 'ArrowUp')
+    expect(document.activeElement).toBe(box())
+    key(box(), 'ArrowUp')
     await settle()
     expect(document.activeElement).toBe(m.input)
     expect(m.input.selectionStart).toBe(3)
 
     await open(m, 2)
-    key(handle('Start') as HTMLElement, 'Enter')
+    key(box(), 'Enter')
     await settle()
     expect(document.activeElement).toBe(m.input)
     expect(m.outerKeys).not.toContain('Enter')
     expect(m.outerKeys).not.toContain('ArrowUp')
-  })
-
-  it('follows the mask as the user types in it', async () => {
-    const m = await mountField('[N]')
-    await open(m, 2)
-    m.input.value = '[N1-3]'
-    m.input.dispatchEvent(new Event('input', { bubbles: true }))
-    await settle()
-    expect(document.querySelector('.ui-popover .reading')?.textContent).toContain('From the 1st to the 3rd character')
+    expect(m.value()).toBe('[N] x')
   })
 })
-
-/** Mounts a fresh field (the last one goes) and opens its editor on the token at the start. */
-async function remount(initial: string): Promise<Mounted> {
-  cleanup?.()
-  document.body.innerHTML = ''
-  const m = await mountField(initial)
-  await open(m, 2)
-  return m
-}

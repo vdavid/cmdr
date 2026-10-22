@@ -71,6 +71,3 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   mirrors the English "view" but is also the word for `la vista breve` / `la vista completa`; a reader should say
   whether `Parte de tu selección está dentro de una vista` is clear, or whether `carpeta virtual` reads better (pending
   the English rewording in `source-queue.md`).
-- **Range editor** (`multiRename.rangeEditor.field.grandparent`): `Carpeta abuela` mirrors "Grandparent folder"
-  (`carpeta superior` is already the parent folder); a reader should say whether it reads naturally, or whether
-  `Carpeta de arriba` is clearer.

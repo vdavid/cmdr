@@ -3796,9 +3796,6 @@
   "space-key": {
     "chosen": "Leertaste",
     "confidence": "high",
-    "exceptions": {
-      "multiRename.rangeEditor.space": "the space CHARACTER in a file name, read aloud in place of a letter, not the key → Leerzeichen (Double Commander, TC 135)"
-    },
     "forms": "⇧Leertaste for the chord; prose → die Leertaste; compounds Leertasten-Hinweis",
     "sources": "macOS AppKit FunctionKeyNames (Space), SystemSettings Siri/Spotlight SPACEBAR_KEY → Leertaste; AppKit Date Picker help (die Leertaste); TC 5139 (beim Markieren mit der Leertaste); Double Commander [Leertaste]"
   },

@@ -217,8 +217,8 @@
   - Focus going into the editor (ArrowDown, a click into it, the marker) makes it `focus`-held: only Escape, Enter,
     ArrowUp, or a click elsewhere closes it. A mousedown back in the field hands it to the caret first, `flushSync`ed,
     so the popover's trap is gone before focus moves (else the trap pulls focus back).
-  - The popover is `surface="solid"` (opaque `--color-bg-secondary`): the house glass is ~70% opaque, and the numbers
-    must read cleanly over the mask and the list.
+  - The popover is `surface="solid"` (opaque `--color-bg-secondary`): the house glass is ~70% opaque, and the fields and
+    examples must read cleanly over the mask and the list.
 - **Keys** (`downTarget`): ArrowDown with an editor open goes into its first field, except with the caret on that
   token's outer edge (`|[N]`, `[N]|`), where the field's history takes it; with none, ArrowDown with the caret inside an
   editable token (`tokenInside`, which takes `[|N]` and `[N|]`) opens it there. So every kind, the counter too, opens
@@ -250,40 +250,52 @@
 `RangeTokenEditor.svelte`, the inline editor of a range token (`[N…]` `[E…]` `[P…]` `[G…]`, the full-name `[2-5]`): TC's
 "select the characters to insert" dialog, done inline. Three parts, top to bottom.
 
-- **What to take**: "Take from" (a house `ToggleGroup`: Name, Extension, Folder, Grandparent folder, Full name) and the
-  ribbon, the field's text on the list cursor's file, one cell per character (what `Array.from` splits, as the engine
-  counts), positions from the start above and from the end below, the taken run tinted (`--color-accent-selection`) with
-  a bar on each edge (`--color-accent-pop`, the mark color that reads on tinted surfaces). The number each edge counts
-  from is set in bold. Drag to pick, ⇧-click to extend from the far edge. There is no file switcher: the example is
-  always the cursor row (`sampleRows`), so moving the list's cursor changes it. Switching the field keeps the range.
+- **What to take**: a read-only, monospace house `TextInput` holding the token's field on the list cursor's file, under
+  a visible `<label>` ("Select the characters to take"). The token says which field it reads, so there's no field
+  picker. The user selects characters the native way (drag, double-click, ⇧← / ⇧→, ⇧⌘← / →); long names scroll inside
+  the box, so the editor keeps its width (420 px). There is no file switcher: the example is always the cursor row
+  (`sampleRows`), so moving the list's cursor changes it. A field that's empty on that file shows "Empty for this file"
+  as the box's placeholder.
 - **How to count**: Start and End each offer "from the start" / "from the end", labelled with the edge's real place on
   that file ("1st" / "9th from the end"), and Write as offers "Start to end" (`[N2-5]`) / "Start and length" (`[N2,4]`);
   the length form hides End. With Start counted from the end, End's "from the start" is off, its tooltip saying why: the
-  grammar reads a positive end after a negative start from the end too (`[N-8-5]`). A plain-words line reads the token
-  (`rangeReading`, ICU `selectordinal` positions: "From the 1st to the 5th-to-last character"), and a warning says when
-  it takes nothing from the cursor's file.
+  grammar reads a positive end after a negative start from the end too (`[N-8-5]`). The three groups share one grid
+  column as wide as the widest group's labels (`max-content`), each group filling it and each segment growing from its
+  label (`flex: 1 1 auto`), so they line up and never stretch to the editor's width, whatever a translation does. A
+  plain-words line reads the token (`rangeReading`, ICU `selectordinal` positions: "From the 1st to the 5th-to-last
+  character"), and a warning says when it takes nothing from the cursor's file.
 - **On your files**: at most five rows, the cursor's and up to two either side (`rowsAround`, shifted at the list's ends
   so it stays five), each the field's text with the taken part marked, then what it gives, or "nothing" in the warning
   color. The cursor row is set apart (`aria-current`).
-- **Which edges count from where**: a drag (or ⇧-click) is a fresh pick, each end counting from the edge it's nearer
+- **The box and the token follow each other.** A selection the user makes becomes the token (`textPick`, over
+  `selectionInText`, which turns the field's UTF-16 offsets into the engine's characters, what `Array.from` splits). A
+  token that changes any other way (typed in the mask, Start / End / Write as, a new cursor row) sets the box's
+  selection to the engine's bounds (`textOffsetsOf`), or a caret at the start when it takes nothing; a selection already
+  there isn't set again, so a drag in progress is never disturbed. A bare caret leaves the token.
+- **Which edges count from where**: a pointer selection is a fresh pick, each end counting from the edge it's nearer
   (`autoAnchors`: a tie goes to the start, and an end on the last character counts from the end, so it runs to the end
-  of every name); keys and the Start / End rows keep the token's own choice (`anchorsOf`), so a manual choice sticks
-  until the next drag. A whole field writes as the bare `[N]` (the full name as `[1-]`). `rangeForSelection` turns a
-  pick into the token; `range_token_vectors.json`'s `selections` prove each one takes exactly what was picked.
+  of every name); a selection a key adjusted keeps the token's own choice (`anchorsOf`), so a manual Start / End choice
+  sticks until the next pointer pick. A whole field writes as the bare `[N]` (the full name as `[1-]`).
+  `rangeForSelection` turns a pick into the token; `range_token_vectors.json`'s `selections` prove each one takes
+  exactly what was picked.
+- **Gotcha/Why: only a selection the user's own pointer or key made counts** (`selectingBy`, reset on blur). WebKit
+  selects a field's whole text when Tab lands in it (and restores-or-selects-all on a programmatic `focus()`), and that
+  must not rewrite the token to `[N]`; the editor puts the token's characters back right after focus instead. The editor
+  hears the selection through the field's `select` and the document's `selectionchange`.
 - **The engine decides what a range takes.** The editor asks `rangeSamples(token, rows)` (the state's, through Svelte
   context, `range-sample-source.ts`, so `MaskInput` stays free of the session), answered by
   `get_multi_rename_range_samples` from `mask.rs`'s own `bounds` (`src-tauri/src/multi_rename/DETAILS.md` § Session). It
   asks on every token change and every new preview, a generation counter dropping overtaken answers; a refusal (a moved
   row's preview still on its way) keeps what's shown. The pick the last edit wrote stands in until the answer for its
-  token lands (`picked`), so a key pressed again right away moves on from it. TS only splits the answer's text at the
+  token lands (`picked`), so the box keeps the user's selection meanwhile. TS only splits the answer's text at the
   engine's indices to draw it.
-- **Keys and focus**: the editor's first stop is the start handle (`data-initial-focus`, which `Popover` honors; the
-  ribbon itself while nothing is taken, and the start handle once the first answer lands). On the ribbon ← / → move the
-  selection, ⇧ ← / → its end, ⌥ ← / → its start (`ribbonMoveOf`, `moveSelection`); a move by one edge focuses that
-  edge's handle, so VoiceOver reads its new place. ↑ / ↓ walk the rows (Take from, ribbon, Start, End, Write as), ↑ from
-  Take from and Enter anywhere go back to the mask; the editor claims ↑ / ↓ / Enter in the capture phase, so the toggle
-  groups and the sheet never see them. **Decision/Why: the two edges are `role="slider"` handles**, labelled Start and
-  End, `aria-valuenow` their 1-based place and `aria-valuetext` how the token counts them ("character 1, B", "5th from
-  the end, h", a space read as "space"), described by the reading and the keys hint. A range is two values, and the ARIA
-  multi-thumb slider is the pattern VoiceOver knows; the cells themselves are `aria-hidden`, and "On your files" reads
-  each file in full.
+- **Keys and focus**: the box is the editor's first stop. Inside it the field's own keys select. ↑ / ↓ walk the rows
+  (box, Start, End, Write as), ↑ from the box and Enter anywhere go back to the mask; the editor claims plain ↑ / ↓ /
+  Enter in the capture phase, so the box, the toggle groups, and the sheet never see them. **Decision/Why: plain ↑ / ↓
+  are claimed in the box too**: in a single-line field they'd only collapse the selection to an end, which leaves the
+  token anyway, so nothing is lost, and the editor walks like the counter's; ⇧↑ / ⇧↓ (select to an end) stay the
+  field's.
+- **Accessibility**: the box is named by its visible label and described by the reading line; VoiceOver reads a text
+  field's selection natively. The reading line is a polite live region, so a token changed from the toggles or the mask
+  is read out in plain words. In a passive (caret-opened) editor the box isn't focused, and WebKit doesn't paint an
+  unfocused field's selection: "On your files" marks the cursor row's taken part there.
