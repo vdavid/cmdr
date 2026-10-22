@@ -182,7 +182,7 @@ jobs:
               - 'apps/desktop/test/webdav-servers/**'
               # The managed-policy drift guard embeds these (`managed_policy/public_docs_test.rs`).
               - 'apps/website/public/mdm/**'
-              - 'apps/website/src/lib/trust.ts'
+              - 'apps/website/src/lib/trust-mdm.ts'
               - 'crates/**'
               - 'Cargo.toml'
               - 'Cargo.lock'

@@ -10,7 +10,7 @@ use super::public_docs_test::read_dictionary;
 
 const PROFILE: &str = include_str!("../../../../website/public/mdm/cmdr-full-disk-access.mobileconfig");
 const PREFERENCES_PROFILE: &str = include_str!("../../../../website/public/mdm/cmdr-managed-preferences.mobileconfig");
-const TRUST_TS: &str = include_str!("../../../../website/src/lib/trust.ts");
+const TRUST_TS: &str = include_str!("../../../../website/src/lib/trust-mdm.ts");
 const TAURI_CONF: &str = include_str!("../../tauri.conf.json");
 
 const TCC_PAYLOAD_TYPE: &str = "com.apple.TCC.configuration-profile-policy";
@@ -36,11 +36,11 @@ fn expected_requirement() -> String {
     )
 }
 
-/// The `codeRequirement` string `trust.ts` exports (single-quoted, on the line after its name).
+/// The `codeRequirement` string `trust-mdm.ts` exports (single-quoted, on the line after its name).
 fn trust_page_requirement() -> String {
     let start = TRUST_TS
         .find("export const codeRequirement =")
-        .expect("trust.ts exports codeRequirement");
+        .expect("trust-mdm.ts exports codeRequirement");
     let rest = &TRUST_TS[start..];
     let open = rest.find('\'').expect("codeRequirement is a single-quoted string") + 1;
     let len = rest[open..].find('\'').expect("codeRequirement's string ends");

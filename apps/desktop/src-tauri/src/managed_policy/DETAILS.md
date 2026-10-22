@@ -7,7 +7,7 @@ The canonical key catalog for Cmdr's MDM support. `/trust` and the sample profil
 - `apps/website/public/mdm/cmdr-managed-preferences.mobileconfig` (a whole unsigned profile, one payload of type
   `com.veszelovszki.cmdr`) and `apps/website/public/mdm/com.veszelovszki.cmdr.plist` (the bare key dictionary, for MDM
   "preference file" uploads), served at `getcmdr.com/mdm/` with their own types (`apps/website/nginx.conf`).
-- `/trust#mdm` renders its key list from `managedPreferenceKeys` in `apps/website/src/lib/trust.ts`.
+- `/trust#mdm` renders its key list from `managedPreferenceKeys` in `apps/website/src/lib/trust-mdm.ts`.
 - **Drift guard** (`public_docs_test.rs`): all three key sets equal `ALL_KEYS`, every example value parses without a
   warning, and the two files carry the same values. A new key fails it until the files and `/trust` list it. The Rust
   lanes and CI's `rust` filter list the three files as inputs, so editing only them isn't a cached pass.
@@ -18,7 +18,7 @@ The canonical key catalog for Cmdr's MDM support. `/trust` and the sample profil
   granting Full Disk Access plus the five narrower file services the app's `Info.plist` asks for. It's not a managed
   preference and Cmdr never reads it; it lives here because it's the other MDM file admins download. **Guard**
   (`pppc_profile_test.rs`): every grant names `config::BUNDLE_ID` and a code requirement built from `tauri.conf.json`
-  (bundle id plus the Team ID in `signingIdentity`), `codeRequirement` in `trust.ts` equals it too, entries use
+  (bundle id plus the Team ID in `signingIdentity`), `codeRequirement` in `trust-mdm.ts` equals it too, entries use
   `Allowed` (`Authorization` needs macOS 11; the floor is 10.15), and neither profile reuses the other's identifiers or
   UUIDs. Which TCC services it carries and why: the comment at the top of the file and `/trust#mdm-deploy`. Not yet
   tested on an MDM-enrolled Mac (only the requirement, against the shipped 0.50.0 with `codesign -v -R=`, 2026-10-07);

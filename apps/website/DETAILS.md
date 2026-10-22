@@ -165,8 +165,8 @@ in `public/fonts/`.
   block in `nginx.conf`.
 - **Sample MDM files**: `public/mdm/` holds the sample `.mobileconfig` profile and the bare `.plist` linked from
   `/trust#mdm`. nginx's `/mdm/` location gives them `application/x-apple-aspen-config` and `application/x-plist` (the
-  default mime table knows neither). The page's key list renders from `managedPreferenceKeys` in `src/lib/trust.ts`. A
-  Rust test guards all three key sets against the app's (`apps/desktop/src-tauri/src/managed_policy/DETAILS.md` § The
+  default mime table knows neither). The page's key list renders from `managedPreferenceKeys` in `src/lib/trust-mdm.ts`.
+  A Rust test guards all three key sets against the app's (`apps/desktop/src-tauri/src/managed_policy/DETAILS.md` § The
   public mirror), so a key edit here needs the app's key list to match.
 
 ## Icons

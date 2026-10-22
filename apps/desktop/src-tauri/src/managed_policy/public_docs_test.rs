@@ -9,7 +9,7 @@ use super::source::FakeSource;
 
 const PREFERENCE_FILE: &str = include_str!("../../../../website/public/mdm/com.veszelovszki.cmdr.plist");
 const PROFILE: &str = include_str!("../../../../website/public/mdm/cmdr-managed-preferences.mobileconfig");
-const TRUST_TS: &str = include_str!("../../../../website/src/lib/trust.ts");
+const TRUST_TS: &str = include_str!("../../../../website/src/lib/trust-mdm.ts");
 
 fn expected_keys() -> BTreeSet<String> {
     ALL_KEYS.iter().map(ToString::to_string).collect()
@@ -47,11 +47,11 @@ fn profile_payload() -> plist::Dictionary {
         .collect()
 }
 
-/// The `key: '…'` entries of `managedPreferenceKeys` in `trust.ts`.
+/// The `key: '…'` entries of `managedPreferenceKeys` in `trust-mdm.ts`.
 fn trust_page_keys() -> BTreeSet<String> {
     let start = TRUST_TS
         .find("export const managedPreferenceKeys")
-        .expect("trust.ts exports managedPreferenceKeys");
+        .expect("trust-mdm.ts exports managedPreferenceKeys");
     let rest = &TRUST_TS[start..];
     let block = &rest[..rest.find("\n]").expect("managedPreferenceKeys ends with a `]` line")];
     block

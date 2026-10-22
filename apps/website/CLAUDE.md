@@ -11,8 +11,8 @@ Marketing site and blog for Cmdr. Astro + Tailwind v4 (CSS-first config in `src/
 - `src/content/blog/{slug}/index.md`: blog posts, colocated images (schema in `src/content.config.ts`). Add one:
   `docs/guides/writing-blog-posts.md`.
 - `src/lib/`: typed page content, edited there, never in the page: `roadmap.ts`, `feature-status.ts`, `trust.ts`,
-  `trust-development.ts`, `accessibility-report.ts`. `changelog.ts` linkifies `CHANGELOG.md`'s bare commit hashes
-  (`scripts/check/checks/DETAILS.md` § "CHANGELOG commit refs").
+  `trust-mdm.ts`, `trust-development.ts`, `accessibility-report.ts`. `changelog.ts` linkifies `CHANGELOG.md`'s bare
+  commit hashes (`scripts/check/checks/DETAILS.md` § "CHANGELOG commit refs").
 - `src/components/DevTodo.astro`: loud ⚠️ callout for David, rendered only in dev. [DETAILS.md](DETAILS.md) § Dev-only
   task callouts.
 - `src/dev/blog-editor/`: dev-only Markdown editor at `/dev/blog` (Vite middleware, absent from prod).

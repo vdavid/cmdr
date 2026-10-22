@@ -189,7 +189,7 @@ var rustEmbeddedInputs = []string{
 	"apps/desktop/src-tauri/tauri.conf.json",
 	"apps/desktop/src-tauri/updater-backup.pub",
 	"apps/website/public/mdm/**",
-	"apps/website/src/lib/trust.ts",
+	"apps/website/src/lib/trust-mdm.ts",
 }
 
 // rustScanInputs is what a Rust source scanner of the given jurisdiction reads:
