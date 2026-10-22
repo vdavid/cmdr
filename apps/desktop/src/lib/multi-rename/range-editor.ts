@@ -64,6 +64,20 @@ export function boxOffsetsFor(text: string, part: Selection | 'whole' | null): {
   return part ? textOffsetsOf(text, part) : { start: text.length, end: text.length }
 }
 
+/**
+ * The box's text split at its selection (`selectionStart` / `selectionEnd`, UTF-16 units, which
+ * string slicing counts in too), for drawing the selection while the box is unfocused.
+ */
+export function selectionPieces(
+  text: string,
+  start: number,
+  end: number,
+): { before: string; selected: string; after: string } {
+  const from = Math.min(start, end, text.length)
+  const to = Math.min(Math.max(start, end), text.length)
+  return { before: text.slice(0, from), selected: text.slice(from, to), after: text.slice(to) }
+}
+
 /** The token the box itself last wrote, and the field's text it was picked in. */
 export interface BoxWrite {
   token: string

@@ -365,6 +365,58 @@ describe('the range editor', () => {
     expect(box().placeholder).toBe('Empty for this file')
   })
 
+  describe('draws the box’s selection itself while the box is unfocused', () => {
+    /** The marked part of the drawn selection, or `null` when none is drawn. */
+    const drawn = (): string | null => document.querySelector('.ui-popover .box-mirror mark')?.textContent ?? null
+
+    async function openPassively(m: Mounted, caret: number): Promise<void> {
+      m.input.focus()
+      m.input.setSelectionRange(caret, caret)
+      m.input.dispatchEvent(new Event('keyup', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 450))
+      await settle()
+    }
+
+    it('marks the token’s characters in a caret-opened editor, hidden from assistive tech', async () => {
+      const m = await mountField('[N1-5]')
+      await openPassively(m, 2)
+      expect(document.activeElement).toBe(m.input)
+      expect(drawn()).toBe('Beach')
+      expect(document.querySelector('.ui-popover .box-mirror')?.getAttribute('aria-hidden')).toBe('true')
+    })
+
+    it('follows a token typed in the mask', async () => {
+      const m = await mountField('[N1-5]')
+      await openPassively(m, 2)
+      m.input.value = '[N1-3]'
+      m.input.setSelectionRange(2, 2)
+      m.input.dispatchEvent(new Event('input', { bubbles: true }))
+      await settle()
+      expect(drawn()).toBe('Bea')
+    })
+
+    it('marks all the text for the whole field, and nothing for a token that takes nothing', async () => {
+      const whole = await mountField('[N]')
+      await openPassively(whole, 2)
+      expect(drawn()).toBe('Beach day')
+      cleanup?.()
+      document.body.innerHTML = ''
+      const nothing = await mountField('[N20-25]')
+      await openPassively(nothing, 3)
+      expect(drawn()).toBeNull()
+    })
+
+    it('hides while the box has focus, and shows the selection the user left once it goes', async () => {
+      const m = await mountField('[N]')
+      await open(m, 2)
+      await select('pointer', 0, 5)
+      expect(drawn()).toBeNull()
+      box().blur()
+      await settle()
+      expect(drawn()).toBe('Beach')
+    })
+  })
+
   it('leaves for the mask on Enter', async () => {
     const m = await mountField('[N] x')
     await open(m, 2)

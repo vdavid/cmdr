@@ -161,6 +161,10 @@
      selected characters read as selected while `--color-text-primary` on top
      stays legible. */
   --color-accent-selection: color-mix(in oklch, var(--color-accent), transparent 70%);
+  /* A text selection drawn while its field is unfocused: macOS's quiet inactive-selection gray,
+     under `--color-text-primary` (dark override in the prefers-color-scheme block below). Used by
+     the range editor's text box, whose selection matters with the box unfocused. */
+  --color-text-selection-inactive: #dcdcdc;
   /* A higher-contrast accent for small marks that sit ON accent-tinted surfaces, where plain
      --color-accent blends in. Mode-aware: darker than the accent in light mode, lighter in dark mode
      (dark override in the prefers-color-scheme block below). Used by the symlink badge, and by
@@ -774,6 +778,8 @@
     --color-bg-primary: #1e1e1e;
     --color-bg-secondary: #2a2a2a;
     --color-bg-tertiary: #333333;
+    /* Inactive text selection (see `:root`): macOS's dark unfocused-selection gray. */
+    --color-text-selection-inactive: #464646;
     /* Checkerboard pair for dark mode: lifted off `--color-bg-primary` so the stage
        reads as a distinct surface, tile ~1.7:1 against base. */
     --color-checkerboard-base: #262626;

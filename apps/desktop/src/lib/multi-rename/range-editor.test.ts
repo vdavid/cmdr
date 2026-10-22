@@ -5,6 +5,7 @@ import {
   isWholeField,
   rangeReading,
   selectionInText,
+  selectionPieces,
   textOffsetsOf,
   textPick,
 } from './range-editor'
@@ -126,6 +127,18 @@ describe('the box’s selection set from outside', () => {
     expect(boxOffsetsFor('Beach day', null)).toEqual({ start: 9, end: 9 })
     expect(boxOffsetsFor('a😀', null)).toEqual({ start: 3, end: 3 })
     expect(boxOffsetsFor('', null)).toEqual({ start: 0, end: 0 })
+  })
+})
+
+describe('selectionPieces', () => {
+  it('splits the box’s text at its selection, in the field’s UTF-16 offsets', () => {
+    expect(selectionPieces('Beach day', 0, 5)).toEqual({ before: '', selected: 'Beach', after: ' day' })
+    expect(selectionPieces('a😀b', 1, 3)).toEqual({ before: 'a', selected: '😀', after: 'b' })
+  })
+
+  it('selects nothing for a caret, and clamps offsets past the end', () => {
+    expect(selectionPieces('Beach day', 4, 4)).toEqual({ before: 'Beac', selected: '', after: 'h day' })
+    expect(selectionPieces('jpg', 1, 9)).toEqual({ before: 'j', selected: 'pg', after: '' })
   })
 })
 

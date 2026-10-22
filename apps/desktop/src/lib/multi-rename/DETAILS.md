@@ -309,5 +309,12 @@
   starts a rename; Escape is the `Popover`'s; Tab moves on through the toggles.
 - **Accessibility**: the box is named by its visible label and described by the reading line; VoiceOver reads a text
   field's selection natively. The reading line is a polite live region, so a token changed from the toggles or the mask
-  is read out in plain words. In a passive (caret-opened) editor the box isn't focused, and WebKit doesn't paint an
-  unfocused field's selection: "On your files" marks the cursor row's taken part there.
+  is read out in plain words.
+- **The selection stays visible unfocused.** WebKit paints no selection in an unfocused field, yet the box's selection
+  is the token, so after Tab moves on, and in a passive (caret-opened) editor whose box never takes focus, a mirror
+  draws it: an `aria-hidden` layer over the field's content box (the frame's border and padding, the control's mono font
+  and leading, `white-space: pre`, so each character, emoji included, lands on the box's own), shifted by the box's
+  `scrollLeft`, marking `selectionPieces` in `--color-text-selection-inactive` under `--color-text-primary`. It reads
+  the box's real selection (`noteBoxSelection`: on every sync, selection change, blur, and put-back edit), so it follows
+  outside syncs too, and hides while the box has focus, where the native selection shows. If the house field's padding
+  or font moves, the mirror must move with it.

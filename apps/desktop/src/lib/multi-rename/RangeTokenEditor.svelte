@@ -43,7 +43,15 @@
         type RangeToken,
         type Selection,
     } from './range-token'
-    import { boxNeedsSync, boxOffsetsFor, isWholeField, rangeReading, textPick, type BoxWrite } from './range-editor'
+    import {
+        boxNeedsSync,
+        boxOffsetsFor,
+        isWholeField,
+        rangeReading,
+        selectionPieces,
+        textPick,
+        type BoxWrite,
+    } from './range-editor'
     import { rangeSampleSource } from './range-sample-source'
 
     const { value, onChange, onDone }: TokenEditorProps<RangeToken> = $props()
@@ -140,8 +148,29 @@
         if (!box) return
         selectingBy = null
         const { start, end } = boxOffsetsFor(text, shownPart)
-        if (box.selectionStart === start && box.selectionEnd === end) return
-        box.setSelectionRange(start, end)
+        if (box.selectionStart !== start || box.selectionEnd !== end) box.setSelectionRange(start, end)
+        noteBoxSelection()
+    }
+
+    // ===== The selection drawn while the box is unfocused =====
+    // WebKit paints no selection in an unfocused field, yet that selection is the token: after Tab
+    // moves on, and in a caret-opened editor whose box never takes focus, the mirror draws it.
+
+    let boxFocused = $state(false)
+    /** The box's selection and horizontal scroll, as last read, for the mirror. */
+    let boxSelection = $state.raw({ start: 0, end: 0 })
+    let boxScroll = $state(0)
+    const mirror = $derived(selectionPieces(text, boxSelection.start, boxSelection.end))
+
+    function noteBoxSelection(): void {
+        const box = boxEl
+        if (!box) return
+        boxSelection = { start: box.selectionStart ?? 0, end: box.selectionEnd ?? 0 }
+        boxScroll = box.scrollLeft
+    }
+
+    function handleBoxScroll(): void {
+        boxScroll = boxEl?.scrollLeft ?? 0
     }
 
     // Follows a token from outside the box (the mask, a new cursor row, the engine's first answer),
@@ -153,6 +182,7 @@
     })
 
     function handleSelectionChange(): void {
+        noteBoxSelection()
         const box = boxEl
         if (!box || selectingBy === null || composing || box.selectionStart === null || box.selectionEnd === null) return
         // A key adjusts a part's edges; from the whole field (no part yet) it's a fresh pick.
@@ -191,6 +221,7 @@
     }
 
     function handleBoxFocus(): void {
+        boxFocused = true
         // A pointer in the box selects on its own; Tab's select-all comes after this, so the token's
         // characters go back on top of it.
         if (selectingBy === null) setTimeout(showSelection, 0)
@@ -198,6 +229,8 @@
 
     function handleBoxBlur(): void {
         selectingBy = null
+        boxFocused = false
+        noteBoxSelection()
     }
 
     // ===== The box refuses edits =====
@@ -230,6 +263,7 @@
         const { start, end } = beforeEdit ?? boxOffsetsFor(text, shownPart)
         box.setSelectionRange(start, end)
         beforeEdit = null
+        noteBoxSelection()
     }
 
     function handleCompositionStart(): void {
@@ -249,6 +283,7 @@
             ['keydown', handleBoxKeydown],
             ['focus', handleBoxFocus],
             ['blur', handleBoxBlur],
+            ['scroll', handleBoxScroll],
             ['select', handleSelectionChange],
             ['beforeinput', handleBeforeInput],
             ['cut', handleCut],
@@ -354,18 +389,31 @@
 <div class="range-editor" bind:this={rootEl}>
     <div class="pick">
         <label class="label" for={boxId}>{tString('multiRename.rangeEditor.selectCharacters')}</label>
-        <!-- Not `readonly`, which draws no caret in WebKit: the box refuses edits itself. -->
-        <TextInput
-            id={boxId}
-            aria-readonly="true"
-            mono
-            value={text}
-            bind:inputElement={boxEl}
-            placeholder={answer && length === 0 ? tString('multiRename.rangeEditor.emptyField') : undefined}
-            aria-describedby={readingId}
-            autocomplete="off"
-            spellcheck="false"
-        />
+        <div class="box-wrap">
+            <!-- Not `readonly`, which draws no caret in WebKit: the box refuses edits itself. -->
+            <TextInput
+                id={boxId}
+                aria-readonly="true"
+                mono
+                value={text}
+                bind:inputElement={boxEl}
+                placeholder={answer && length === 0 ? tString('multiRename.rangeEditor.emptyField') : undefined}
+                aria-describedby={readingId}
+                autocomplete="off"
+                spellcheck="false"
+            />
+            {#if !boxFocused && mirror.selected}
+                <!-- The box's selection, drawn while WebKit draws none (an unfocused field). VoiceOver
+                     reads the field's own selection, so this stays out of the tree. -->
+                <div class="box-mirror" aria-hidden="true">
+                    <div class="box-mirror-clip">
+                        <span class="box-mirror-text" style:transform="translateX({-boxScroll}px)"
+                            >{mirror.before}<mark>{mirror.selected}</mark>{mirror.after}</span
+                        >
+                    </div>
+                </div>
+            {/if}
+        </div>
     </div>
 
     <!-- Live, so a token changed from the toggles or the mask is read out in plain words. -->
@@ -452,6 +500,44 @@
         display: flex;
         flex-direction: column;
         gap: var(--spacing-xxs);
+    }
+
+    .box-wrap {
+        position: relative;
+    }
+
+    /* Laid over the house field's content box: the frame's border and padding
+       (`app-field.css` § `.text-field`), then the control's own font and leading, so
+       each character lands on the box's. Only the marked part paints; the rest stays
+       transparent over the box's own text. */
+    .box-mirror {
+        display: flex;
+        position: absolute;
+        inset: 0;
+        align-items: center;
+        padding: var(--spacing-input);
+        border: 1px solid transparent;
+        pointer-events: none;
+    }
+
+    .box-mirror-clip {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    .box-mirror-text {
+        display: inline-block;
+        color: transparent;
+        font-family: var(--font-mono);
+        font-size: var(--font-size-input);
+        line-height: var(--font-line-height-tight);
+        white-space: pre;
+    }
+
+    .box-mirror-text mark {
+        background: var(--color-text-selection-inactive);
+        color: var(--color-text-primary);
     }
 
     .label {
