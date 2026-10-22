@@ -253,14 +253,25 @@
        `.tg-root.svelte-<hash> .tg-item` whiffed against the Ark-rendered DOM and every
        Settings toggle row rendered as unstyled run-on text. No other component uses these
        class names, so unscoping is safe. */
-    /* Fully-rounded ends: `overflow: hidden` clips the first and last cells to the
-       pill, so no per-cell corner rounding is needed. */
+    /* Fully-rounded ends: the first and last cells round their own outer corners to the
+       pill. ❌ No `overflow: hidden` on the root instead: it clips a focused cell's ring at
+       the rounded ends and its glow at the segment edges. */
     :global(.tg-root) {
         display: inline-flex;
         align-items: center;
         border: 1px solid var(--color-border);
         border-radius: var(--radius-full);
-        overflow: hidden;
+    }
+
+    :global(.tg-root .tg-item:first-child) {
+        border-start-start-radius: var(--radius-full);
+        border-end-start-radius: var(--radius-full);
+    }
+
+    :global(.tg-root .tg-item:last-child) {
+        border-right: none;
+        border-start-end-radius: var(--radius-full);
+        border-end-end-radius: var(--radius-full);
     }
 
     /* `fullWidth`: stretch to the container and split it evenly. `flex: 1 1 0` (not
@@ -300,10 +311,6 @@
             background var(--transition-base),
             border-color var(--transition-base),
             color var(--transition-base);
-    }
-
-    :global(.tg-root .tg-item:last-child) {
-        border-right: none;
     }
 
     :global(.tg-root .tg-item:not(:disabled):hover) {

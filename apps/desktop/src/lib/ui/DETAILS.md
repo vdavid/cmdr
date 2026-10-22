@@ -2031,8 +2031,9 @@ option like "AI Ask anything ⌥A" keeps its width and the shorter cells give wa
 or the first enabled one, and returns whether a cell took it (`false` for a disabled group). For a caller that sends a
 key into the group, like the range editor's ↓.
 
-The group's ends are fully rounded (`--radius-full` on `.tg-root` plus `overflow: hidden`, which clips the first and
-last cells to the pill, so no per-cell corner rounding is needed).
+The group's ends are fully rounded: `--radius-full` on `.tg-root`, and the first and last cells round their own outer
+corners to match. **Gotcha/Why:** not `overflow: hidden` on the root, which clipped a focused cell's inset ring at the
+rounded ends and its `--shadow-focus` glow at every segment edge.
 
 `ToggleGroupOption` shape:
 
