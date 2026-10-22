@@ -101,24 +101,24 @@ be the release's.
 ## Testing the pipeline without releasing
 
 In `local` mode a tag push builds only into a private draft (`publish` and `bump-tap` skip, `latest.json` stays), so a
-pre-release tag tests the whole build for real: signing, notarization, the gate, provenance. Done for
-`v0.52.1-pipelinetest.1` on 2026-10-15; the record and the installed-app half are in
-`docs/notes/2026-10-15-update-path-proof.md`.
+pre-release tag tests the whole flow for real: the release commit, its CI run beside the build, signing, notarization,
+the gate, provenance. Done for `v0.52.1-pipelinetest.1` on 2026-10-15 (the record and the installed-app half:
+`docs/notes/2026-10-15-update-path-proof.md`) and for the release flow itself with `v0.55.1-pipelinetest.4` on
+2026-10-22 (`docs/notes/2026-10-22-faster-release-flow.md`).
 
-1. Confirm `RELEASE_UPDATE_SIGNING` is `local`. In `ci` mode the same push would PUBLISH.
-2. Get a full CI run and a CodeQL run green on the commit you'll build: push a helper tag that isn't `v*` (say
-   `pipelinetest-base-N`) and dispatch both on it (`gh workflow run ci.yml --ref <tag> -f run_all=true`, then
-   `codeql.yml`). `main`'s own green run works too when testing `main` as is.
-3. On top of it, a throwaway branch with one commit titled `chore(release): vX.Y.Z-pipelinetest.N` bumping the version
-   in `apps/desktop/package.json`, `tauri.conf.json`, and `Cargo.toml` (then `cargo update --workspace`), so `ci-gate`
-   takes the parent's run, as for a real release. Sign the tag (`git tag -s`) and push only the tag. The guard's
-   `sort -V` ranks the pre-release above the live version.
-4. When the run is green: `./scripts/release-finish.sh -dry-run -out <dir> X.Y.Z-pipelinetest.N` (dry runs take a
-   pre-release version; never a real run on a test tag), then `codesign --verify --deep --strict` and `spctl -a -vv` on
-   each extracted app.
-5. Clean up: delete the draft (`gh api -X DELETE repos/vdavid/cmdr/releases/<id>`, the id from the releases list since
-   drafts can't be fetched by tag), the run's artifacts, the tags on GitHub and locally, and the branch. The run's
-   attestations stay (on the repo and in Sigstore's public log) and describe assets nobody can fetch.
+1. Confirm `RELEASE_UPDATE_SIGNING` is `local`. In `ci` mode the same push would PUBLISH, so `release.sh -test` refuses.
+2. In a clean worktree whose branch carries what you're testing (the pipeline runs the workflow files at the tag's
+   commit): `./scripts/release.sh -test X.Y.Z-pipelinetest.N`, with an `N` no tag on origin has yet
+   (`git ls-remote --tags origin 'v*pipelinetest*'`). It runs the release prep on top of HEAD, with a one-line changelog
+   section and no settings-defaults entry, then commits, tags, pushes, and starts CI and CodeQL as for a real release.
+   The guard's `sort -V` ranks the pre-release above the live version.
+3. While CI runs, `./scripts/release-finish.sh -dry-run -out <dir> X.Y.Z-pipelinetest.N` refuses (the run is still
+   going), and `./scripts/release-ci-gate.sh X.Y.Z-pipelinetest.N` follows it.
+4. When the build and CI are both green: the same dry run (dry runs take a pre-release version; never a real run on a
+   test tag), then `codesign --verify --deep --strict` and `spctl -a -vv` on each extracted app.
+5. Clean up: `./scripts/release.sh -abort X.Y.Z-pipelinetest.N` stops the test's runs and deletes its artifacts, draft,
+   tag, and branch, on GitHub and locally. The run's attestations stay (on the repo and in Sigstore's public log) and
+   describe assets nobody can fetch.
 
 ## Who signs the update archives
 
@@ -139,39 +139,45 @@ the variable alone.
 
 ### How a `local` release runs
 
-1. `release.sh` and the tag push are unchanged.
-2. **The tag push's run** builds without publishing: `guard`, `ci-gate`, then `draft`, which creates the draft release
-   up front (three parallel jobs each looking for a draft by tag could each create one; drafts can't be fetched by tag).
-   The three `compile` jobs and then the three `sign` jobs build into it: the DMGs and `.app.tar.gz` archives, no `.sig`
-   files. `sbom` runs beside them, and `attest` attests the draft's assets. `publish` and `bump-tap` skip, so
-   `latest.json` doesn't move and nothing is public.
+1. **`release.sh`** commits the release on top of `origin/main`, tags that commit, pushes both, and starts the release's
+   full CI run and CodeQL beside the build (§ The CI gate).
+2. **The tag push's run** builds without publishing: `guard`, then `draft`, which creates the draft release up front
+   (three parallel jobs each looking for a draft by tag could each create one; drafts can't be fetched by tag).
+   `ci-gate` skips: nothing here is public, and CI is still running beside it. The three `compile` jobs and then the
+   three `sign` jobs build into it: the DMGs and `.app.tar.gz` archives, no `.sig` files. `sbom` runs beside them, and
+   `attest` attests the draft's assets. `publish` and `bump-tap` skip, so `latest.json` doesn't move and nothing is
+   public.
    - The Tauri CLI won't bundle without an updater key once the config has a pubkey, and the archive must still come out
      of the bundler in the shape `ci` mode ships. So each `sign` job makes a throwaway key (a mismatch the bundler only
      warns about) and keeps its signatures on the runner (its upload step skips `.sig` files in `local` mode).
-3. **On the laptop, `./scripts/release-finish.sh X.Y.Z`** (step 8 of § The release procedure starts it right after the
-   push). It waits for that run to go green, downloads the three archives, and runs `gh attestation verify` on each,
-   pinned to `release-pipeline.yml` at the tag's commit (`--signer-digest`, `--source-digest`, `--source-ref`) on a
-   GitHub-hosted runner. It refuses to sign anything that doesn't verify, or that the updater would refuse to install (§
-   The release gate). Then it signs with `tauri signer sign`, the key and password read from sops
-   (`CMDR_TAURI_SIGNING_PRIVATE_KEY`, `CMDR_TAURI_SIGNING_PRIVATE_KEY_PASSWORD`) into the signer's environment only,
-   verifies each new signature against the pubkey in `tauri.conf.json` with its own minisign verifier (the check the app
-   runs), uploads the `.sig` files, reads them back, and dispatches `release.yml` on the tag.
-4. **The dispatched run** finishes it: `guard` (it also refuses a dispatch on a branch), `vet-update-archives` (§ The
-   release gate), then `publish`, which verifies every archive's `.sig` against the app's trusted keys (main or backup),
-   publishes the draft, and then runs exactly the `ci` mode steps (`latest.json` from the `.sig` assets, checksums,
-   release notes, marking the release Latest, the website deploy), then `attest` and `bump-tap`. `ci-gate`, `compile`,
-   `sign`, and `sbom` skip.
+3. **On the laptop, `./scripts/release-finish.sh X.Y.Z`** (step 8 of § The release procedure starts it right after
+   `release.sh`). It waits for that run and the release's full CI run to go green, failing at the first red CI job, then
+   requires the CodeQL gate. It downloads the three archives and runs `gh attestation verify` on each, pinned to
+   `release-pipeline.yml` at the tag's commit (`--signer-digest`, `--source-digest`, `--source-ref`) on a GitHub-hosted
+   runner. It refuses to sign anything that doesn't verify, or that the updater would refuse to install (§ The release
+   gate). Then it signs with `tauri signer sign`, the key and password read from sops (`CMDR_TAURI_SIGNING_PRIVATE_KEY`,
+   `CMDR_TAURI_SIGNING_PRIVATE_KEY_PASSWORD`) into the signer's environment only, verifies each new signature against
+   the pubkey in `tauri.conf.json` with its own minisign verifier (the check the app runs), uploads the `.sig` files,
+   reads them back, and dispatches `release.yml` on the tag.
+4. **The dispatched run** finishes it: `guard` (it also refuses a dispatch on a branch), `ci-gate` (the CI gate once
+   more, server-side), `vet-update-archives` (§ The release gate), then `publish`, which needs both, verifies every
+   archive's `.sig` against the app's trusted keys (main or backup), publishes the draft, and then runs exactly the `ci`
+   mode steps (`latest.json` from the `.sig` assets, checksums, release notes, marking the release Latest, the website
+   deploy), then `attest` and `bump-tap`. `draft`, `compile`, `sign`, and `sbom` skip.
+5. **Back into `main`**: `./scripts/release.sh X.Y.Z` again, once the release is published (§ Merging the release back
+   into `main`).
 
 `release-finish.sh` is resumable: re-run it after anything (a closed laptop, a red job). It holds no state of its own
-and reads where the release stands on GitHub. A build still running gets waited for, a draft gets signed (re-signing a
-draft is harmless, since nothing reads its signatures yet), a published release skips to the finishing run, a red
-finishing run gets its failed jobs re-run once (a fresh dispatch would meet the guard, since `publish` may have moved
-the manifest already), and a green one ends it. It doesn't read the variable: a release finishes in the mode its tag
-push ran in.
+and reads where the release stands on GitHub. A build or CI run still going gets waited for, a draft gets signed
+(re-signing a draft is harmless, since nothing reads its signatures yet), a published release skips to the finishing
+run, a red finishing run gets its failed jobs re-run once (a fresh dispatch would meet the guard, since `publish` may
+have moved the manifest already), and a green one ends it. It doesn't read the variable: a release finishes in the mode
+its tag push ran in.
 
-**Dry run**: `./scripts/release-finish.sh -dry-run -out <dir> X.Y.Z` stops after verifying the new signatures and
-touches nothing on GitHub; it works on a published release too. `-signer-workflow` (dry runs only) checks a release from
-before the reusable workflow, which `release.yml` signed. (Verified on v0.50.0, 2026-10-06: provenance verified with
+**Dry run**: `./scripts/release-finish.sh -dry-run -out <dir> X.Y.Z` checks the CI gate once (it refuses while the run
+is red or still going, never waits), stops after verifying the new signatures, and touches nothing on GitHub; it works
+on a published release too. `-signer-workflow` (dry runs only) checks a release from before the reusable workflow, which
+`release.yml` signed. (Verified on v0.50.0, 2026-10-06: provenance verified with
 `-signer-workflow vdavid/cmdr/.github/workflows/release.yml`, the sops key signed all three archives and each signature
 verified against the app's pubkey; the default pin refused the same archives; the verifier accepted v0.50.0's CI-made
 signatures and rejected one swapped across arches.)
@@ -266,7 +272,7 @@ check.
    - **`local`**: verify the key is readable from sops without printing it:
      `secret CMDR_TAURI_SIGNING_PRIVATE_KEY > /dev/null && secret CMDR_TAURI_SIGNING_PRIVATE_KEY_PASSWORD > /dev/null`.
      If it fails, warn the user and stop.
-   - **CI is enabled**, since the gate and `land` wait on it. David sometimes disables it to save GHA minutes; if
+   - **CI is enabled**, since the CI gate and `land` wait on it. David sometimes disables it to save GHA minutes; if
      `gh workflow list --all` shows `CI` as `disabled_manually`, `gh workflow enable CI`, tell the user, and ask whether
      to disable it again after the release.
    - **No known exploitable vulnerability ships** (EU Cyber Resilience Act, Annex I Part I (2)(a)). List the open
@@ -277,12 +283,10 @@ check.
      `projects/Cmdr/business/CRA technical file/Release log.md`: the date, the version (filled in at step 6), the issue
      numbers reviewed, and "none exploitable" or links to the risk decisions. Step 13 adds the evidence under it. ❌ No
      exploit detail in this repo; the line stays in the vault.
-2. **Sync `main` and start the CI gate now.** Everything the release ships must be landed already (`pnpm land`,
-   `scripts/land/CLAUDE.md`). In the main clone: `git pull --ff-only origin main`, then run
-   `./scripts/release-ci-gate.sh` in the background. It starts a full (`run_all`) CI run on that commit and waits for it
-   (~25 min), overlapping it with the drafting below; `release.sh` re-runs it before the version bump and aborts unless
-   it's green. If it goes red, fix it in a worktree, land the fix, sync, and restart the gate: the new commit needs its
-   own run. Details: § Release gates that abort before tagging.
+2. **Sync `main`.** Everything the release ships must be landed already (`pnpm land`, `scripts/land/CLAUDE.md`). In the
+   main clone: `git pull --ff-only origin main`. Nothing waits on `main` from here on: `release.sh` puts the release
+   commit on top of whatever `origin/main` is when it runs, and its one CI run tests exactly that commit (§ The CI
+   gate). A commit landing after this sync ships too, unlisted in the changelog unless you add it.
 3. **Draft the CHANGELOG** from the git commits since the last release, per § Writing the CHANGELOG, and present the
    draft for review.
    - **Ask David: "Does this release fix a vulnerability users should act on?"** Yes means an entry per fixed
@@ -311,22 +315,28 @@ check.
      `--ignore-lock` skips the lock file), then run `pnpm dev:website` as a background command, confirm the URL answers,
      and give it to him. The script passes `--ignore-lock`, which keeps Astro in the foreground; without it, Astro
      7.3.8+ detaches the server whenever it detects an agent's env vars.
+   - **Check the prep before asking for the go**: `pnpm check -m` (a plain full default run, about 5 minutes; `-m`
+     because release prep happens in the main clone), and fix what it finds. The prep edits stay uncommitted until
+     `release.sh` commits them, so no commit hook ever sees them, and a broken edit would otherwise surface only as a
+     red release CI run. One finding is expected: a new security advisory entry fails `desktop-security-advisories` (its
+     `fixedIn` is newer than the app version until `release.sh` bumps it).
 6. **Advise the version** (patch: bug fixes, minor: new features, major: major launches), and give the user the
    `./scripts/release.sh x.x.x` command.
-7. **Offer to run the release script**, and wait for confirmation before running it. Run it as a background command:
-   after the bumps it commits on a `release/vX.Y.Z` branch and lands it with `pnpm land`, which waits for `CI OK` on the
-   release commit (25–35 min), then syncs `main`, re-checks the gate, and makes the signed tag. Re-run it with the same
-   version after any stop (a red or flaky CI run, a closed laptop): it resumes from the release branch or from the
-   landed commit. If `land` rebased onto a `main` that moved, the gate wants a full run on the release commit itself and
-   waits for it.
-8. **Push the tag immediately** with `git push origin vX.Y.Z` IFF the release script completed cleanly. Else: stop and
-   ask.
-   - **`local` mode: start `./scripts/release-finish.sh X.Y.Z` right after the push**, as a background command. It waits
-     for the build run (about an hour), verifies each update archive's provenance, signs on this laptop, uploads the
-     signatures, and dispatches the finishing run that publishes, then waits for that too. It's resumable: if it stops
-     (a red job, a closed laptop), fix the cause and run it again; never sign or publish by hand. Its failure messages
-     map to § `release-finish.sh` stopped. The laptop has to stay on until it ends, so tell the user that instead of the
-     "laptop is free" note in step 10.
+7. **Offer to run the release script**, and wait for confirmation before running it. Run it as a background command (a
+   few minutes): it syncs `main`, runs the release-prep checks (§ Release prep checks that abort before tagging),
+   commits `chore(release): vX.Y.Z` (call it R) on a `release/vX.Y.Z` branch on top of `origin/main`, signs the tag on
+   R, pushes the branch, and starts R's full CI run and CodeQL on it. In `local` mode it pushes the tag right away, so
+   the build (about an hour) runs beside CI (25–40 min); in `ci` mode, whose tag push publishes on its own, it waits for
+   green CI first. Re-run it with the same version after any stop: it resumes. If it stops before tagging, fix what it
+   says and re-run; if CI goes red later, § The CI gate says what to do.
+8. **`local` mode: start `./scripts/release-finish.sh X.Y.Z` right after `release.sh`**, as a background command. It
+   waits for the build and R's CI together, printing each job as it moves, and stops at the first red CI job (§ The CI
+   gate: a flake gets its failed jobs re-run, a real failure aborts the release). Once both are green it requires the
+   CodeQL gate, verifies each update archive's provenance, signs on this laptop, uploads the signatures, and dispatches
+   the finishing run that publishes, then waits for that too. It's resumable: if it stops (a red job, a closed laptop),
+   fix the cause and run it again; never sign or publish by hand. Its failure messages map to § `release-finish.sh`
+   stopped. The laptop has to stay on until it ends, so tell the user that instead of the "laptop is free" note in
+   step 10.
 9. **Confirm the build started**: wait ~30 seconds, then run `gh run view <release-run-id> --json jobs` and check the
    `Compile (...)` jobs. On GitHub-hosted runners both should be `in_progress` together; the three
    `Sign and notarize (...)` jobs start once both are green. Self-hosted: see § Keep the Mac awake during the build.
@@ -334,10 +344,11 @@ check.
     every few minutes in the background and report progress (which jobs are done, which are still running). Report when
     all jobs complete; if one fails, show the failure details and advise how to fix it. Suggest the user also track it
     at https://github.com/vdavid/cmdr/actions.
-11. **Watch the `main` push run of the release commit.** Landing it started a `CI` run on `main`, whose `deploy-website`
-    job publishes the roadmap, feature-status, and landing-page changes (the release workflow only deploys the new
-    `latest.json`). If it goes red, fix in the background and surface it when convenient; it doesn't block the shipped
-    release.
+11. **Merge the release back into `main`** once it's published: `./scripts/release.sh X.Y.Z` again, as a background
+    command (§ Merging the release back into `main`). Its land puts the version bump and the changelog on `main`, and
+    `main`'s push run that follows deploys the roadmap, feature-status, and landing-page changes (the release workflow
+    only deploys the new `latest.json`). If it stops or goes red, fix it in the background and surface it when
+    convenient; it doesn't block the shipped release.
 12. **After the release run succeeds (in `local` mode: after `release-finish.sh` reports the finishing run green),
     verify the public surface** with `./scripts/release-evidence.sh verify X.Y.Z` (about a minute; what it checks:
     `scripts/release-evidence/main.go`). It stops at the first thing wrong and says what:
@@ -397,25 +408,24 @@ with these differences. The procedure pre-approves building and publishing it, s
   key: `ssh-add --apple-load-keychain` does it without a prompt once David has logged in. Without the key in the agent,
   the tag can't be signed unattended and `release.sh` aborts before pushing. (Verified on David's laptop with
   `git config`, `ssh-add -l`, and the `v0.52.0` tag's SSH signature, 2026-10-15; the reboot path is untested.)
-- **Docker running**: `release.sh` aborts before tagging without it (§ Release gates that abort before tagging).
-- **The laptop awake and online for about 75 minutes after the push**, while `release-finish.sh` waits for the build,
-  signs, and waits for the finishing run. Run it as `caffeinate -i ./scripts/release-finish.sh X.Y.Z`, on power with the
-  lid open. If it stops, re-run it: it's resumable.
+- **Docker running**: `release.sh` aborts before tagging without it (§ Release prep checks that abort before tagging).
+- **The laptop awake and online for about 75 minutes after `release.sh`**, while `release-finish.sh` waits for the build
+  and CI, signs, and waits for the finishing run. Run it as `caffeinate -i ./scripts/release-finish.sh X.Y.Z`, on power
+  with the lid open. If it stops, re-run it: it's resumable.
 - MFA, Bitwarden, and the phone aren't needed: everything else runs on GitHub with credentials already in place.
 
 **Before tagging:**
 
 - Containment may have disabled the release workflow. Re-enable it: `gh workflow enable release.yml -R vdavid/cmdr`.
-- CI red for reasons outside the fix? Use the emergency bypass in § Release gates that abort before tagging, and clear
-  `RELEASE_SKIP_CI_GATE_TAG` afterwards.
+- CI red for reasons outside the fix? Use the emergency bypass in § The CI gate, and clear `RELEASE_SKIP_CI_GATE_TAG`
+  afterwards.
 - If the updater key itself leaked, make the fix release the rotation release too: § Rotating to the backup updater key,
   which also says when to sign it with the backup key and when with the leaked one.
 - If `main` carries unreleased features, cut the fix from the last release tag instead: § Security-only patch release.
 
-**Timeline**, from the tabletop's estimate (2026-10-15), not yet measured on a real incident: two to three hours of
-agent work on the fix and changelog, with the ~25-minute CI gate overlapping it, then about 90 minutes from the tag push
-to `latest.json` (the build is about an hour of it). A running copy checks every three hours by default, so it picks the
-fix up within hours.
+**Timeline**, not yet measured on a real incident: two to three hours of agent work on the fix and changelog, then about
+75 minutes from `release.sh` to `latest.json`: the hour-long build with the release's CI run beside it, then signing and
+the finishing run. A running copy checks every three hours by default, so it picks the fix up within hours.
 
 **After it ships:** run steps 12 and 13 of § The release procedure, then:
 
@@ -434,14 +444,14 @@ updates where that's technically feasible (Annex I Part II (2)). If `main` holds
 
 **What works from any tag, unchanged**: the whole tag-push pipeline (`guard`, `ci-gate`, `compile`, `sign`, the release
 gate, `sbom`, `attest`, `publish`, `bump-tap`) and `release-finish.sh`. They read the tag, and `publish` marks the
-release Latest (which is what the website serves) whichever branch the tag sits on. The `ci-gate` job accepts the tagged
-commit's parent when the tagged commit is the `chore(release): vX.Y.Z` commit, on any branch.
+release Latest (which is what the website serves) whichever branch the tag sits on. The CI gate takes the tagged
+commit's parent's full run when the tagged commit is the `chore(release): vX.Y.Z` commit and has no full run of its own,
+on any branch (§ The CI gate), which is what step 4 below gives it.
 
 **What assumes `main` HEAD, and how this procedure gets around it:**
 
-- ❌ **Don't run `release.sh`.** It runs on `main` only, pulls `origin/main`, and lands its release commit there, which
-  would ship every unreleased feature. Its gate, `release-ci-gate.sh`, also refuses any HEAD that isn't `origin/main`,
-  and dispatches CI on `main` only. Step 5 does its steps by hand.
+- ❌ **Don't run `release.sh`.** It runs on `main` only and puts its release commit on top of `origin/main`, which would
+  ship every unreleased feature. Step 5 does its steps by hand.
 - **The pipeline runs from the tag's own commit**, so the workflow files, `release-finish.sh`, and
   `.github/release-signers` are the old tag's. Before cutting, run
   `git diff vX.Y.Z main -- .github/workflows/release.yml .github/workflows/release-pipeline.yml scripts/release-finish.sh scripts/release-finish/ .github/release-signers`.
@@ -461,7 +471,7 @@ Steps:
    run doesn't deploy the website: `deploy-website` runs on `main` only.
    - **CI from an old tag can go red on what `main` has already fixed**, like a new dependency advisory or a lint from a
      newer tool. Bring over only what the gate needs, as its own commit. A red lane that has nothing to do with the fix
-     can take the emergency bypass in § Release gates that abort before tagging.
+     can take the emergency bypass in § The CI gate.
    - **The CodeQL gate also requires no open high or critical alert on `main`.** That's on purpose: fix or triage the
      alert first.
 5. **Changelog, then the release commit and tag.** Add a `## [Unreleased]` section with a one-line lead and only
@@ -471,19 +481,19 @@ Steps:
    (`npm pkg set version=...`) through `git tag -s`, in its order, with the new version: the settings-defaults stamp,
    `tauri.conf.json`, `Cargo.toml` plus `cargo update --workspace`, the CHANGELOG heading, the `LICENSE` change date,
    the visual baselines, both `oxfmt` passes, the strict `i18n-stale` check, the `chore(release): vX.Y.Z+1` commit, and
-   the signed tag. Skip its pull and its CI gate (step 4 replaced them). The commit subject must match exactly, or the
-   server-side `ci-gate` looks for a full CI run on the release commit itself and fails.
+   the signed tag. Skip its pull, its pushes, and its CI dispatch (step 4 replaced them). The commit subject must match
+   exactly, or the CI gate looks for a full CI run on the release commit itself and fails.
 6. **Push the tag only** (`git push origin vX.Y.Z+1`), then follow § The release procedure from step 8 on: in `local`
    mode `release-finish.sh`, run from this worktree so it reads the tag's own `tauri.conf.json` pubkey, then the build
-   monitoring, step 12's checks, and step 13's evidence. Step 11's standalone `CI` run doesn't apply, since nothing went
-   to `main`.
-7. **Merge the patch back into `main`** once it's published: in a fresh worktree off `main`,
-   `git merge --no-ff vX.Y.Z+1`, then `pnpm land` (never `-squash`, which would flatten the merge; if `main` moved,
-   `land` refuses to rebase a merge, so redo the merge on top of it). The merge is what puts the patch's `CHANGELOG.md`
-   section on the website and in the next release's history, makes its hashes reachable for `changelog-links`, and moves
-   `main`'s version up to the live one. Resolve conflicts in favor of the patch for the version files and the
-   settings-defaults stamp, keep both sides in `CHANGELOG.md`, and keep `main`'s copy of a cherry-picked fix. It's the
-   one merge commit in `main`'s history that a fast-forward can't replace, since the two branches have diverged.
+   monitoring, step 12's checks, and step 13's evidence. Step 11 doesn't apply: step 7 below merges the patch back.
+7. **Merge the patch back into `main`** once it's published: from the patch worktree, `pnpm land -merge`, which has
+   GitHub merge the tagged commit into `main` with a merge commit (§ Merging the release back into `main`). If GitHub
+   can't merge it cleanly, merge by hand: in a fresh worktree off `main`, `git merge --no-ff vX.Y.Z+1`, then `pnpm land`
+   (never `-squash`, which would flatten the merge; if `main` moved, `land` refuses to rebase a merge, so redo the merge
+   on top of it). The merge is what puts the patch's `CHANGELOG.md` section on the website and in the next release's
+   history, makes its hashes reachable for `changelog-links`, and moves `main`'s version up to the live one. Resolve
+   conflicts in favor of the patch for the version files and the settings-defaults stamp, keep both sides in
+   `CHANGELOG.md`, and keep `main`'s copy of a cherry-picked fix.
 8. **Tear down the worktree**: `~/.claude/scripts/remove-worktree.sh security-vX.Y.Z+1`.
 
 The next regular release drafts its CHANGELOG from `vX.Y.Z+1..main` and doesn't list the fix again.
@@ -595,7 +605,7 @@ readers, and why it's never `latest.json`: `apps/desktop/src-tauri/src/security_
   fix it jumped over.
 - **Leave it uncommitted for `release.sh`**, which lets it through its dirty-tree guard and puts it in the release
   commit. `desktop-security-advisories` refuses a `fixedIn` newer than the app version, so committing it before the bump
-  turns the CI gate red.
+  turns CI red (and step 5's `pnpm check -m` reports it, expectedly).
 - **The GitHub advisory goes public after the release ships**, so a link to it 404s until then. Publish it in the same
   sitting, or, when its details are held back (`SECURITY.md`), link the changelog entry instead.
 
@@ -640,33 +650,71 @@ sequentially on one machine. Under hosted runners they run concurrently, where a
 locking and corrupting it. The directory is gone (reclaimed 21 GB); switching back recreates it, at the cost of one cold
 compile.
 
-## Release gates that abort before tagging
+## The CI gate
 
-`scripts/release.sh` runs a few hard gates locally before it commits and tags, so a release that can't ship is never
-tagged. Beyond the version/CHANGELOG checks and `oxfmt --ci`, four are worth knowing:
+Nothing ships unless the release commit itself, R (the tagged `chore(release): vX.Y.Z` commit), has a green full CI run
+and green CodeQL. One implementation decides it, `scripts/release-finish/ci.go`, and three places run it:
 
-- **Only a commit with a fully green CI run ships.** `scripts/release-ci-gate.sh` requires HEAD to be `origin/main` (CI
-  never saw anything else) and a successful `CI` run on that exact commit, started via `workflow_dispatch` with
-  `run_all`. ❗ A push or PR run doesn't count: CI's change detection skips unchanged lanes, so a docs-only HEAD reads
-  green while the commit before it broke Rust. The gate reuses a full run already on the commit, starts one otherwise,
-  and waits (~25 min), so the release procedure (step 2) starts it early to overlap it with changelog drafting. A flaky
-  red run: `gh run rerun <id> --failed`, then re-run the release. The release commit itself (version bumps, CHANGELOG)
-  then gets `CI OK` from its own PR run before `land` puts it on `main`, and after landing the gate runs once more,
-  taking the parent's full run, or starting one on the release commit when `land` rebased it.
-  - **How a run proves it was full:** the runs API carries no inputs, so `ci.yml` has a `Full run (run_all)` job that
-    runs only with `run_all` on (`if: inputs.run_all`, no needs). Both gates count a run only when that job succeeded,
-    so a dispatch with `run_all` off never passes. They match the job by name: renaming it means updating both.
-  - **The release workflow enforces it again server-side** (the `ci-gate` job, which `build` and `sbom` wait on), so a
-    tag pushed by hand can't skip it. It looks for a successful full run of `ci.yml` on the tagged commit, or on its
-    parent when the tagged commit is the `chore(release): vX.Y.Z` commit `release.sh` makes after the local gate (the
-    same rule as the local gate's last call). It doesn't wait: the local gate already did. If it fails because the run
-    was still going, wait for it, then "Re-run failed jobs".
-  - **CodeQL gates the release too**, in both places: a green `codeql.yml` run on the commit, and no open high or
-    critical CodeQL alert on `main` (`scripts/release-codeql-gate.sh`, `docs/tooling/ci.md` § CodeQL). The bypass below
-    skips it as well.
-  - **Emergency bypass** for a hotfix while CI is red for reasons outside the repo: `RELEASE_SKIP_CI_GATE=1` locally,
-    AND the repository variable `RELEASE_SKIP_CI_GATE_TAG` set to the exact tag (like `v0.51.1`) before pushing it. Same
-    shape as `RELEASE_REPUBLISH_TAG`: it unblocks only the tag written in it. Clear it once the run finishes.
+- **`release.sh`** starts the runs: right after it pushes the tag, it dispatches `ci.yml` with `run_all` and
+  `codeql.yml` on `release/vX.Y.Z`, R's branch, so they run beside the build. In `ci` mode it waits for green before
+  pushing the tag (`release-ci-gate.sh`), since that tag push publishes on its own.
+- **`release-finish.sh`** waits for them beside the build and won't sign until they're green. Its dry run checks once
+  and refuses while the run is red or still going.
+- **`release-pipeline.yml`'s `ci-gate` job** checks again, without waiting, in whichever run publishes: before `publish`
+  in the `local` finishing run, before `compile` in a `ci` mode tag push. So a tag pushed by hand can't skip it. A
+  `local` tag push skips the job: it builds only a private draft.
+
+`./scripts/release-ci-gate.sh X.Y.Z` follows the run on its own; `./scripts/release-finish.sh -ci-gate X.Y.Z` checks it
+once.
+
+- **Only a full run counts**: a `workflow_dispatch` run with `run_all`. ❗ A push or PR run doesn't: CI's change
+  detection skips unchanged lanes, so a docs-only commit reads green while the commit before it broke Rust. The runs API
+  carries no inputs, so `ci.yml` has a `Full run (run_all)` job that runs only with `run_all` on (`if: inputs.run_all`,
+  no needs). The gate counts a run only when that job succeeded or hasn't finished, matching it by name
+  (`fullRunMarker`): renaming the job means updating that.
+- **Which commit**: R's own full run whenever R has one, so a red or running run on R holds the release however green
+  its parent is. R's parent's only when R is the `chore(release)` commit and has no full run at all: the hand-made
+  security-only patch release (§ Security-only patch release, step 4).
+- **CodeQL, on the same commit**: a green `codeql.yml` run on it, and no open high or critical CodeQL alert on `main`
+  (`scripts/release-codeql-gate.sh`, `docs/tooling/ci.md` § CodeQL).
+- **It fails fast**: a wait prints each job as it moves and stops at the first red job, naming it, its log
+  (`gh api --allow-escape-sequences repos/vdavid/cmdr/actions/jobs/<job id>/logs`, which works mid-run;
+  `gh run view --log-failed` waits for the whole run), and the two ways on:
+  - **A flake**: `gh run rerun <run id> --failed`, then re-run the command that stopped (`release-finish.sh` or
+    `release-ci-gate.sh`). Its wait picks up the new attempt.
+  - **A real failure**: `./scripts/release.sh -abort X.Y.Z`. It stops the release's runs and deletes the build
+    artifacts, the draft, the tag, and the release branch (nothing was public: `latest.json` and the Homebrew tap move
+    only at publish), and puts the changelog and the other prep edits back as uncommitted edits. Fix it in a worktree,
+    land the fix, sync `main`, and run `./scripts/release.sh X.Y.Z` again.
+- **Emergency bypass** for a hotfix while CI is red for reasons outside the repo: `RELEASE_SKIP_CI_GATE=1` in the
+  environment of `release-finish.sh` (in `ci` mode, `release.sh`), AND the repository variable
+  `RELEASE_SKIP_CI_GATE_TAG` set to the exact tag (like `v0.51.1`) before the run that publishes starts. Same shape as
+  `RELEASE_REPUBLISH_TAG`: it unblocks only the tag written in it. It skips the CodeQL half too. Clear it once that run
+  finishes.
+- **Verified** with pipeline test releases on 2026-10-22 (`docs/notes/2026-10-22-faster-release-flow.md`): the build ran
+  while CI ran, a dry run refused while CI was running and on a red run, and the wait stopped two minutes in on a
+  deliberately misformatted file, with the Rust lanes still running.
+
+## Merging the release back into `main`
+
+R reaches `main` only once the release is published, so an aborted release never touches `main`. Re-running
+`./scripts/release.sh X.Y.Z` on a published release lands R with `pnpm land -merge` from the main clone
+(`scripts/land/CLAUDE.md`): a PR whose head is R, its CI run, then a fast-forward when `main` hasn't moved since R's
+parent, else a merge commit GitHub makes onto whatever `main` is by then. ❌ Never a rebase or a squash: R has to stay
+on `main`'s history as the exact commit CI tested and the tag names. A plain `pnpm land` refuses to rebase a tagged
+commit.
+
+- **Needs merge commits allowed on `main`**: the repository's "Allow merge commits" setting, and `merge` in
+  `.github/rulesets/main-pr-required.json`'s `allowed_merge_methods` (`pnpm land rulesets -apply`). Without them GitHub
+  refuses the merge and `land` says so; the fast-forward works either way.
+- **A conflict GitHub can't merge** (rare: R changes only the version files, `Cargo.lock`, `LICENSE`, and the
+  release-prep files): `land` stops. Merge by hand as in § Security-only patch release, step 7.
+- **Its PR runs CI once more** (~30 min), on R merged with the current `main`. Nothing users get waits for it.
+
+## Release prep checks that abort before tagging
+
+`scripts/release.sh` runs a few hard checks locally before it commits and tags, so a release that can't ship is never
+tagged. Beyond the version/CHANGELOG checks and `oxfmt --ci`, three are worth knowing:
 
 - **Changelog refs must be on `main`.** After its fast-forward pull, the script runs
   `pnpm check changelog-links --fresh`, which fails the release on any ref not reachable from HEAD (a commit cited from
@@ -872,13 +920,13 @@ from what `sign` uploaded would strand every install in the field, with no fallb
 
 Two jobs in `release-pipeline.yml`, beside the build-and-publish chain:
 
-- **`sbom`** (`needs: [guard, ci-gate]`, read-only token, no OIDC) runs beside the macOS builds. It generates the three
-  SBOMs: `cargo cyclonedx` (version pinned in the workflow, CycloneDX 1.5) on `apps/desktop/src-tauri/Cargo.toml` with
-  default features, once per target triple, and a frontend build with `CMDR_FRONTEND_SBOM=1` for the npm side, which
-  lists the packages the bundler actually put in the app (`apps/desktop/scripts/vite-frontend-sbom.ts`; `package.json`
-  can't say, since Svelte ships from devDependencies). It fails if a lockfile moved while resolving, or if an SBOM isn't
-  CycloneDX, doesn't name this version as its root, or lists too few components (100 for Rust, 30 for the frontend). It
-  hands them on as the `sboms` workflow artifact.
+- **`sbom`** (the tag push only: right away in `local` mode, after `ci-gate` in `ci` mode; read-only token, no OIDC)
+  runs beside the macOS builds. It generates the three SBOMs: `cargo cyclonedx` (version pinned in the workflow,
+  CycloneDX 1.5) on `apps/desktop/src-tauri/Cargo.toml` with default features, once per target triple, and a frontend
+  build with `CMDR_FRONTEND_SBOM=1` for the npm side, which lists the packages the bundler actually put in the app
+  (`apps/desktop/scripts/vite-frontend-sbom.ts`; `package.json` can't say, since Svelte ships from devDependencies). It
+  fails if a lockfile moved while resolving, or if an SBOM isn't CycloneDX, doesn't name this version as its root, or
+  lists too few components (100 for Rust, 30 for the frontend). It hands them on as the `sboms` workflow artifact.
 - **`attest`** (`needs: [publish, sbom]`, holds `id-token: write` and `attestations: write`) downloads every asset back
   from the published release, uploads the SBOMs to it, and runs `actions/attest`: one SLSA provenance attestation
   covering every asset (SBOMs included), then one SBOM attestation per SBOM, bound to the builds it describes (each Rust
@@ -1077,15 +1125,14 @@ pushes should be able to unlock it.
 
 ### Release build failed, need to retry same version
 
-Delete the tag, land the fix, then tag the new `main` and push:
+A flake (a notarization timeout, a runner hiccup): re-run the failed jobs (`gh run rerun <id> --failed`), then re-run
+`release-finish.sh`. A failure that needs a code change: abort the release and start over, which is safe before publish,
+since nothing was public yet:
 
 ```bash
-git tag -d v0.x.x                      # delete local tag
-git push origin :refs/tags/v0.x.x      # delete remote tag
+./scripts/release.sh -abort X.Y.Z   # its runs, artifacts, draft, tag, and branch go; the prep edits come back
 # ... fix in a worktree, pnpm land, then in the main clone: git pull --ff-only origin main ...
-./scripts/release-ci-gate.sh           # the fix is the tagged commit now, so it needs its own full run
-git tag -s -m "Cmdr v0.x.x" v0.x.x     # recreate signed tag
-git push origin v0.x.x                 # push again
+./scripts/release.sh X.Y.Z          # a fresh release commit on the new main, with its own CI run
 ```
 
 The `guard` job doesn't get in the way here: the failed run never published, so the live manifest still names the
@@ -1094,15 +1141,18 @@ version, at which point the retry would be a rebuild of something users have.
 
 ### Draft release left on GitHub after failed build
 
-In `ci` mode, go to GitHub → Releases → delete the draft manually before retrying (the `sign` job refuses to upload into
-a draft there). In `local` mode the draft is the point: a retry of the same tag reuses it (the `draft` job finds it, and
-the `sign` jobs replace same-named assets). Only delete one when the `draft` job reports more than one release on the
-tag.
+In `ci` mode, delete the draft before retrying (the `sign` job refuses to upload into a draft there):
+`./scripts/release.sh -abort X.Y.Z` does it with the rest of the cleanup. In `local` mode the draft is the point: a
+re-run of the same tag's jobs reuses it (the `draft` job finds it, and the `sign` jobs replace same-named assets). Only
+delete one by hand when the `draft` job reports more than one release on the tag.
 
 ### `release-finish.sh` stopped
 
 Fix the cause, then run it again; it picks up where the release stands.
 
+- **"the release's full CI run is red"**: § The CI gate. Re-run a flake's failed jobs and run this again; abort a real
+  failure with `./scripts/release.sh -abort X.Y.Z`.
+- **"no full CI run … on <sha>"**: the CI dispatch never happened. `./scripts/release.sh X.Y.Z` resumes and starts it.
 - **"refusing to sign … its build provenance didn't verify"**: the tag push's `attest` job failed or didn't run, or the
   archive on the draft isn't the one the pipeline built at the tag. Check the `attest` job first (re-run failed jobs if
   it was an outage). ❌ Never sign around it, and never pass `-signer-workflow` outside a dry run (the tool refuses):

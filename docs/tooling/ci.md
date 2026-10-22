@@ -20,8 +20,8 @@ How the GitHub workflows fit together, and the invariants that keep them honest.
 | `macos-lane.yml`        | Called by `ci.yml`                      | The macOS lane's steps. § macOS lane                                                                |
 
 `slow-checks.yml` also runs the fuzz smoke job (120 s per target, findings uploaded as `fuzz-artifacts`;
-`fuzz/CLAUDE.md`). `ci.yml`'s `Full run (run_all)` job runs only on a `run_all` dispatch: both release gates match it by
-name to prove a run was full, so renaming it breaks releases (`docs/guides/releasing.md`).
+`fuzz/CLAUDE.md`). `ci.yml`'s `Full run (run_all)` job runs only on a `run_all` dispatch: the release's CI gate matches
+it by name to prove a run was full, so renaming it breaks releases (`docs/guides/releasing.md` § The CI gate).
 
 The website deploy is a job inside `ci.yml` (gated on the website checks passing), NOT a standalone workflow. There used
 to be a standalone `deploy-website.yml` on the same path filters; it deployed a second time per push and didn't wait for
@@ -222,8 +222,8 @@ group is job-level because the workflow-level one must stay per-run (§ Triggers
 workflow", checked 2026-10-21). `warm-rust-macos-cache` stays out of the group: it runs only when the lane skipped, and
 mostly hits the cache and exits.
 
-- **Required.** It's in `ci-ok`'s `needs`, so a red macOS job fails the run, `ci-ok`, and both release gates. Its first
-  run (2026-10-06) failed on two tests that assumed David's Mac (a malloc zone macOS 26 doesn't register, a tight
+- **Required.** It's in `ci-ok`'s `needs`, so a red macOS job fails the run, `ci-ok`, and the release's CI gate. Its
+  first run (2026-10-06) failed on two tests that assumed David's Mac (a malloc zone macOS 26 doesn't register, a tight
   watchdog margin); the second was green, and it was promoted then.
 - **Left out on purpose**: `macos-availability` (the committed selector list records the newest SDK it was built on, and
   an older runner SDK that knows a different selector set fails by design), `disk-images` (a candidate once the job has
@@ -301,8 +301,10 @@ through `CODEQL_EXTRACTOR_RUST_OPTION_*` env vars.
   with a reason), uploads the rest, and fails the run on anything at security-severity 7.0+ or level `error`. A false
   positive in shipped code goes in that list; ❌ don't dismiss it in GitHub's UI, which the run can't see.
 - **Release gate**: `scripts/release-codeql-gate.sh` needs a green CodeQL run on the released commit AND no open high or
-  critical CodeQL alert on `main` (which catches a Rust finding from an older run). `release-ci-gate.sh` calls it with
-  `--wait`; `release-pipeline.yml`'s `ci-gate` job calls it again, behind the same `RELEASE_SKIP_CI_GATE_TAG` bypass.
+  critical CodeQL alert on `main` (which catches a Rust finding from an older run). `release.sh` dispatches that run on
+  the release branch; the release's CI gate (`scripts/release-finish/ci.go`) calls the script on the commit whose full
+  CI run counted, with `--wait` on the laptop and without in `release-pipeline.yml`'s `ci-gate` job, behind the same
+  bypass (`docs/guides/releasing.md` § The CI gate).
 - **Run it locally** (the action's own bundle, `codeql-bundle-v<cli>` from `github/codeql-action` releases, with the CLI
   version in that action tag's `src/defaults.json`):
   `codeql database create db --language=rust --build-mode=none --codescanning-config=.github/codeql/codeql-config.yml`
@@ -334,9 +336,9 @@ doesn't re-run the suite); a job that genuinely shouldn't gate goes in its `ciOK
 ## Triggers and concurrency
 
 Feature branches run CI through their PR (the land script opens it on the first push), as `pull_request`; `push` covers
-only `main`, for the post-land deploy and the release gates. So a branch push runs CI once. On a PR,
-`dorny/paths-filter` lists the PR's files through the API (the whole branch delta against the base, no history needed;
-verified in run 38431502003, 2026-10-13: "Fetching list of changed files for PR#402 from GitHub API").
+only `main`, for the post-land deploy; the release's full run is a dispatch on its release branch. So a branch push runs
+CI once. On a PR, `dorny/paths-filter` lists the PR's files through the API (the whole branch delta against the base, no
+history needed; verified in run 38431502003, 2026-10-13: "Fetching list of changed files for PR#402 from GitHub API").
 
 `ci.yml` and `codeql.yml` share one `concurrency` shape: a PR's new push cancels its older run, while `main` pushes and
 dispatches each get their own group (the run ID). A shared group with `cancel-in-progress: false` still isn't safe for
@@ -363,8 +365,8 @@ the push in about a minute, and `deploy-website` runs off the raw `website-chang
 push, a PR whose head never went green, an earlier commit of a replayed series) runs in full; so does any failed lookup.
 (Verified on the first real land, run 39137865939, 2026-10-18: every lane skipped.)
 
-- **Dispatches always run in full**, so the release gate's `run_all` run (`scripts/release-ci-gate.sh`) is unaffected:
-  the lookup is push-only.
+- **Dispatches always run in full**, so the release's `run_all` run (`docs/guides/releasing.md` § The CI gate) is
+  unaffected: the lookup is push-only.
 - **Trust**: it trusts a `CI OK` from GitHub Actions on the SHA or on the merged PR's head, which is exactly what
   ruleset B trusts when it lets the push or the merge land. Fork PRs need no special case: their head still needs our
   own green `CI OK`.

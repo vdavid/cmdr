@@ -16,7 +16,7 @@ GitHub by name and leaves every other ruleset alone.
   so GitHub merges a PR whose head is green even when `main` moved since (§ Decision: merge a green PR onto a moved
   `main`); that costs Scorecard's "up to date before merge". **No bypass actors**: nobody lands red, and `--admin` can't
   skip it. Releases need none either: the pipeline pushes nothing to `main`, and `release.sh` lands its commit through
-  `pnpm land` (`docs/guides/releasing.md` § What a release publishes).
+  `pnpm land -merge` (`docs/guides/releasing.md` § Merging the release back into `main`).
 - Two older ones stay as they are: "main: no force-push or deletion" and "Release tags (v*)".
 - `pnpm land rulesets` compares each file with GitHub's copy and names only the ones that drifted. GitHub answers with
   defaults the files leave out, so a field missing from a file isn't drift.
@@ -57,9 +57,9 @@ commit a formatting fix and stop that push; `pushBranch` then pushes once more w
 don't count as dirty: they can't change what lands, and the main clone, where `release.sh` lands its release commit
 from, often has some.
 
-`scripts/release.sh` depends on this interface: `pnpm land` from the main clone, exit 0 only when the SHA is on
-`origin/main`, local `main` synced by `fetch origin main:main`, and any CI run on the SHA counting. Change it with the
-release flow (`docs/guides/releasing.md`).
+`scripts/release.sh` depends on this interface: `pnpm land -merge` from the main clone on the release branch, exit 0
+only when the release commit is on `origin/main`'s history, and local `main` synced by `fetch origin main:main`. Change
+it with the release flow (`docs/guides/releasing.md`).
 
 `ciVerdict` takes the newest CI run on the SHA (a `gh run rerun` reopens it, so an in-flight re-run reads as pending,
 not red) and the newest `CI OK` check run. Only `success` is green: GitHub would accept a skipped check, which a
@@ -138,9 +138,34 @@ off, so GitHub still demands `CI OK` green on the PR's head SHA, and `--match-he
   `remove-worktree.sh` asks the same question before tearing a worktree down.
 - **The fast-forward still wins when it can**: it keeps SHAs identical, so `main` gets exactly the commits CI tested.
 
-Exception: a branch carrying a merge commit (a release merge-back, `docs/guides/releasing.md`) is never rebased, by
-`land` or by GitHub, since a plain rebase flattens the merge. When `main` moved, `land` stops and names the manual fix
-instead. A contributor PR's record never rides a branch (§ Decision: record a contributor PR in its own land).
+Exception: a branch carrying a merge commit (a security-only patch merged back by hand, `docs/guides/releasing.md`) is
+never rebased, by `land` or by GitHub, since a plain rebase flattens the merge. When `main` moved, `land` stops and
+names the manual fix instead. A contributor PR's record never rides a branch (§ Decision: record a contributor PR in its
+own land). A tagged commit isn't rebased either (§ Decision: `-merge` keeps a release commit's SHA).
+
+## Decision: `-merge` keeps a release commit's SHA
+
+Decision: `pnpm land -merge` never rebases. The green head lands by fast-forward while it still descends from
+`origin/main`, else with `gh pr merge <n> --admin --merge --match-head-commit <sha>` (`nextMergePath`): GitHub makes a
+merge commit onto whatever `main` is by then. A plain land refuses to rebase a branch carrying a tagged commit
+(`stepRefuseTaggedRebase`, `runner.tagged`) and points at `-merge`.
+
+Why: a release is tagged on its `chore(release)` commit before it reaches `main`, and that commit is the one its full CI
+run tested and the pipeline built (`docs/guides/releasing.md` § The CI gate). A rebase would give `main` a different
+SHA, leaving the tag off `main`'s history. A merge commit made locally can't land either: `main` takes about eight lands
+an hour against a 25–35 min CI, so it'd rebuild and re-run forever (the reason `-record` exists). GitHub's merge needs
+no rebuild, like the rebase path of § Decision: merge a green PR onto a moved `main`.
+
+- **The CI wait reads only the PR's runs** (`ciRunsPath`): the release commit also has its release's full dispatch run,
+  and the CI ruleset reads only the newest run on a commit, which is the PR's once it starts. Landing on the older green
+  run would be refused while the PR run goes.
+- **A conflict stops it** (`mergeable` false, `errMergeConflict`): merge by hand in a worktree off `main`, then `land`
+  that. Rare, since a release commit touches only version files, `Cargo.lock`, `LICENSE`, and release-prep files.
+- **Needs merge commits allowed on `main`**: the repo's `allow_merge_commit` and `merge` in `main-pr-required.json`'s
+  `allowed_merge_methods`. Both off as of 2026-10-22, pending David's call; until then GitHub refuses the merge and land
+  says so, and only the fast-forward works.
+- Unit-tested (`nextStartStep`, `nextMergePath`, `tagged` against a real repo); the GitHub side waits for the first real
+  release merge-back.
 
 ## Decision: record a contributor PR in its own land
 

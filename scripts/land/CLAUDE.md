@@ -18,6 +18,7 @@ only way commits reach `main`: nobody, admin included, lands a SHA without a gre
 - `pnpm land -no-wait`: push and open the PR, then return. Run it after each green milestone and keep working.
 - `pnpm land -squash [-m MESSAGE]`: squash first (default message: every commit message, oldest first).
 - `pnpm land -record N`: land, then record contributor PR N as merged in a second land (`docs/guides/handling-prs.md`).
+- `pnpm land -merge`: never rebase; a fast-forward or a GitHub merge commit (the release merge-back).
 - `pnpm land rulesets`: print what `-apply` would create or update on GitHub.
 - PRs it opens carry the `claude-created` label; a reused PR, like a contributor's, keeps its own.
 
@@ -30,9 +31,9 @@ only way commits reach `main`: nobody, admin included, lands a SHA without a gre
 - **Re-run it at any stage.** A red CI prints the failed jobs and `gh run rerun <id> --failed`. Only a conflict GitHub
   can't rebase makes it rebase here and run CI again, eight runs at most. A branch GitHub rebased onto `main` counts as
   landed (`git cherry`, which `remove-worktree.sh` asks too).
-- **It never rebases a merge commit**, here or on GitHub: a plain rebase flattens it. A branch carrying one (a release
-  merge-back) stops when `main` moved. A contributor PR's record rides no branch: `-record N` builds it on `origin/main`
-  and rebuilds it if `main` moves (`DETAILS.md` § Decision: record a contributor PR in its own land).
+- **It never rebases a merge or a tagged commit**, here or on GitHub. A branch carrying a merge stops when `main` moved;
+  a tagged one (a release) needs `-merge`. A contributor PR's record rides no branch: `-record N` builds it on
+  `origin/main` (`DETAILS.md` § Decision: record a contributor PR in its own land).
 - **It never overwrites commits only origin's branch has** (another machine, GitHub's "Update branch"): it stops and
   says how to bring them in. Keep the bare lease plus `--force-if-includes` (`DETAILS.md` § Gotcha: the branch push).
 - ❌ **Don't use the PR page's merge button.** `land` picks the fast-forward when it can (the SHAs CI tested), syncs
