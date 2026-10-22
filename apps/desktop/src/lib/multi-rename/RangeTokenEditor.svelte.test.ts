@@ -2,7 +2,8 @@
  * Behavior tests for the range editor inside `MaskInput`: a range token gets a marker, ↓ opens the
  * editor in its text box with the token's characters selected, a selection the user makes rewrites
  * the token (each end counting from its nearer edge on a pointer pick, keeping the token's own
- * edges on a key), a token changed any other way moves the box's selection, the Start / End /
+ * edges on a key) and a bare caret the whole field, the box refuses edits and never re-selects
+ * after its own caret move, a token changed any other way moves the box's selection, the Start / End /
  * Write as rows rewrite how it counts, and the files around the cursor show what it takes. The
  * engine is a fake that answers fixed bounds per token: the real bounds are `mask.rs`'s, tested there.
  */
@@ -105,16 +106,16 @@ async function open(m: Mounted, caret: number): Promise<void> {
 }
 
 function box(): HTMLInputElement {
-  const found = document.querySelector<HTMLInputElement>('.ui-popover input[readonly]')
+  const found = document.querySelector<HTMLInputElement>('.ui-popover input[aria-readonly]')
   if (!found) throw new Error('no text box')
   return found
 }
 
-/** The user selecting `start`..`end` in the box, by pointer or by key. */
+/** The user selecting `start`..`end` in the box (a caret when they're equal), by pointer or by key. */
 async function select(by: 'pointer' | 'key', start: number, end: number): Promise<void> {
   const el = box()
   if (by === 'pointer') el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }))
-  else key(el, 'ArrowRight', { shiftKey: true })
+  else key(el, 'ArrowRight', { shiftKey: start !== end })
   el.setSelectionRange(start, end)
   el.dispatchEvent(new Event('select', { bubbles: true }))
   await settle()
@@ -220,11 +221,61 @@ describe('the range editor', () => {
     expect(m.value()).toBe('[N1-4]')
   })
 
-  it('leaves the token as it is for a bare caret', async () => {
+  it('takes the whole field for a bare caret, by pointer or by key', async () => {
     const m = await mountField('[N1-5]')
     await open(m, 2)
     await select('pointer', 3, 3)
+    expect(m.value()).toBe('[N]')
+    await select('pointer', 0, 5)
     expect(m.value()).toBe('[N1-5]')
+    await select('key', 5, 5)
+    expect(m.value()).toBe('[N]')
+  })
+
+  it('never selects again after the box’s own caret move, so the caret stays', async () => {
+    const m = await mountField('[N]')
+    await open(m, 2)
+    await select('key', 4, 4)
+    expect(shown()).toEqual([4, 4])
+    await select('pointer', 0, 5)
+    expect(m.value()).toBe('[N1-5]')
+    expect(shown()).toEqual([0, 5])
+    await select('key', 2, 2)
+    expect(m.value()).toBe('[N]')
+    expect(shown()).toEqual([2, 2])
+  })
+
+  it('refuses every edit, keeping the text and the token', async () => {
+    const m = await mountField('[N1-5]')
+    await open(m, 2)
+    const typing = new InputEvent('beforeinput', {
+      inputType: 'insertText',
+      data: 'x',
+      bubbles: true,
+      cancelable: true,
+    })
+    box().dispatchEvent(typing)
+    expect(typing.defaultPrevented).toBe(true)
+    for (const type of ['paste', 'cut', 'drop']) {
+      const edit = new Event(type, { bubbles: true, cancelable: true })
+      box().dispatchEvent(edit)
+      expect(edit.defaultPrevented).toBe(true)
+    }
+    // An edit WebKit wouldn't let anyone cancel (an IME's) is put back, the selection with it.
+    box().value = 'Beach dayx'
+    box().dispatchEvent(new Event('input', { bubbles: true }))
+    await settle()
+    expect(box().value).toBe('Beach day')
+    expect(shown()).toEqual([0, 5])
+    expect(m.value()).toBe('[N1-5]')
+  })
+
+  it('shows the whole field as a caret at the end, with nothing to count', async () => {
+    const m = await mountField('[N]')
+    await open(m, 2)
+    expect(shown()).toEqual([9, 9])
+    expect(toggle('From the start').disabled).toBe(true)
+    expect(toggle('Start and length').disabled).toBe(true)
   })
 
   it('ignores a selection the user didn’t make, like Tab’s select-all, and puts the token’s characters back', async () => {
@@ -242,7 +293,7 @@ describe('the range editor', () => {
   it('moves the box’s selection when the token changes in the mask', async () => {
     const m = await mountField('[N]')
     await open(m, 2)
-    expect(shown()).toEqual([0, 9])
+    expect(shown()).toEqual([9, 9])
     m.input.value = '[N1-3]'
     m.input.dispatchEvent(new Event('input', { bubbles: true }))
     await settle()
@@ -283,7 +334,7 @@ describe('the range editor', () => {
     const m = await mountField('[N20-25]')
     await open(m, 7)
     expect(document.querySelector('.ui-popover .warning')?.textContent).toBe('Takes nothing from this file')
-    expect(shown()).toEqual([0, 0])
+    expect(shown()).toEqual([9, 9])
     await select('pointer', 0, 1)
     expect(m.value()).toBe('[N1]')
   })
@@ -295,26 +346,22 @@ describe('the range editor', () => {
     expect(box().placeholder).toBe('Empty for this file')
   })
 
-  it('walks the rows with ↑ / ↓ and leaves from the box, and Enter leaves from anywhere', async () => {
+  it('leaves ↑ / ↓ to the box, and Enter leaves for the mask', async () => {
     const m = await mountField('[N] x')
     await open(m, 2)
-    key(box(), 'ArrowDown')
-    await settle()
-    expect(document.activeElement?.textContent.trim()).toBe('1st')
-    key(document.activeElement as HTMLElement, 'ArrowUp')
+    for (const k of ['ArrowUp', 'ArrowDown']) {
+      const press = new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true })
+      box().dispatchEvent(press)
+      expect(press.defaultPrevented).toBe(false)
+    }
     await settle()
     expect(document.activeElement).toBe(box())
-    key(box(), 'ArrowUp')
-    await settle()
-    expect(document.activeElement).toBe(m.input)
-    expect(m.input.selectionStart).toBe(3)
 
-    await open(m, 2)
     key(box(), 'Enter')
     await settle()
     expect(document.activeElement).toBe(m.input)
+    expect(m.input.selectionStart).toBe(3)
     expect(m.outerKeys).not.toContain('Enter')
-    expect(m.outerKeys).not.toContain('ArrowUp')
     expect(m.value()).toBe('[N] x')
   })
 })

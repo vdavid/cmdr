@@ -1,19 +1,35 @@
 import { describe, it, expect } from 'vitest'
-import { rangeReading, selectionInText, textOffsetsOf, textPick } from './range-editor'
+import {
+  boxNeedsSync,
+  boxOffsetsFor,
+  isWholeField,
+  rangeReading,
+  selectionInText,
+  textOffsetsOf,
+  textPick,
+} from './range-editor'
 
 describe('a selection in the text box', () => {
   // `Beach day`: nine characters, `B` at 0 and `y` at 8.
   const pick = (start: number, end: number, form: 'span' | 'length' = 'span') =>
-    textPick({ text: 'Beach day', start, end, form })?.range ?? null
+    textPick({ text: 'Beach day', start, end, form }).range
 
-  it('leaves the token alone when it’s only a caret', () => {
+  it('takes the whole field when it’s only a caret, wherever the caret is', () => {
     expect(selectionInText('Beach day', 3, 3)).toBeNull()
-    expect(pick(3, 3)).toBeNull()
+    expect(textPick({ text: 'Beach day', start: 3, end: 3, form: 'span' })).toEqual({
+      selection: null,
+      range: { kind: 'all' },
+    })
+    expect(pick(0, 0)).toEqual({ kind: 'all' })
+    expect(pick(9, 9)).toEqual({ kind: 'all' })
   })
 
-  it('leaves the token alone on an empty field', () => {
+  it('takes the whole field on an empty field, the length form too', () => {
     expect(selectionInText('', 0, 0)).toBeNull()
-    expect(textPick({ text: '', start: 0, end: 0, form: 'span' })).toBeNull()
+    expect(textPick({ text: '', start: 0, end: 0, form: 'length' })).toEqual({
+      selection: null,
+      range: { kind: 'all' },
+    })
   })
 
   it('hands back the characters it picked with the range', () => {
@@ -25,12 +41,12 @@ describe('a selection in the text box', () => {
 
   it('keeps the token’s own edges when asked, as a key only adjusting the selection does', () => {
     const keep = { startFromEnd: false, endFromEnd: false }
-    expect(textPick({ text: 'Beach day', start: 6, end: 9, form: 'span', keep })?.range).toEqual({
+    expect(textPick({ text: 'Beach day', start: 6, end: 9, form: 'span', keep }).range).toEqual({
       kind: 'span',
       at: 7,
       to: 9,
     })
-    expect(textPick({ text: 'Beach day', start: 0, end: 9, form: 'span', keep })?.range).toEqual({
+    expect(textPick({ text: 'Beach day', start: 0, end: 9, form: 'span', keep }).range).toEqual({
       kind: 'span',
       at: 1,
       to: 9,
@@ -78,6 +94,47 @@ describe('textOffsetsOf', () => {
     const selection = { first: 1, last: 3, length: 5 }
     const { start, end } = textOffsetsOf(text, selection)
     expect(selectionInText(text, start, end)).toEqual(selection)
+  })
+})
+
+describe('isWholeField', () => {
+  it('knows the bare field and its from-the-1st spelling', () => {
+    expect(isWholeField({ kind: 'all' })).toBe(true)
+    expect(isWholeField({ kind: 'from', at: 1 })).toBe(true)
+  })
+
+  it('knows every other range takes a part', () => {
+    expect(isWholeField({ kind: 'from', at: 2 })).toBe(false)
+    expect(isWholeField({ kind: 'span', at: 1, to: -1 })).toBe(false)
+    expect(isWholeField({ kind: 'one', at: 1 })).toBe(false)
+    expect(isWholeField({ kind: 'length', at: 1, length: 9 })).toBe(false)
+  })
+})
+
+describe('the box’s selection set from outside', () => {
+  it('selects the engine’s bounds', () => {
+    expect(boxOffsetsFor('Beach day', { first: 0, last: 4, length: 9 })).toEqual({ start: 0, end: 5 })
+  })
+
+  it('puts a caret at the end when there’s no part to select', () => {
+    expect(boxOffsetsFor('Beach day', null)).toEqual({ start: 9, end: 9 })
+    expect(boxOffsetsFor('a😀', null)).toEqual({ start: 3, end: 3 })
+    expect(boxOffsetsFor('', null)).toEqual({ start: 0, end: 0 })
+  })
+})
+
+describe('boxNeedsSync', () => {
+  it('syncs a token the box didn’t write', () => {
+    expect(boxNeedsSync({ token: 'N1-5', text: 'Beach day', wrote: null })).toBe(true)
+    expect(boxNeedsSync({ token: 'N1-5', text: 'Beach day', wrote: { token: 'N1-3', text: 'Beach day' } })).toBe(true)
+  })
+
+  it('leaves the box alone for the token it wrote itself, so a caret is never re-selected', () => {
+    expect(boxNeedsSync({ token: 'N', text: 'Beach day', wrote: { token: 'N', text: 'Beach day' } })).toBe(false)
+  })
+
+  it('syncs the token the box wrote once the cursor’s file changes under it', () => {
+    expect(boxNeedsSync({ token: 'N1-5', text: 'IMG_2041', wrote: { token: 'N1-5', text: 'Beach day' } })).toBe(true)
   })
 })
 

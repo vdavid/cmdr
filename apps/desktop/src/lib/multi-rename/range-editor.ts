@@ -37,20 +37,42 @@ export function textOffsetsOf(text: string, selection: Selection): { start: numb
 /**
  * What a selection in the text box picks, and the range that takes it, in the token's current form.
  * A fresh pick (no `keep`) counts each end from the edge it's nearer (`autoAnchors`); `keep` holds
- * the token's own edges, for a selection the keys only adjusted. `null` for a bare caret, which
- * leaves the token.
+ * the token's own edges, for a selection the keys only adjusted. A bare caret selects nothing and
+ * takes the whole field.
  */
-export function textPick(args: {
-  text: string
-  start: number
-  end: number
-  form: RangeForm
-  keep?: Anchors
-}): { selection: Selection; range: Range } | null {
+export function textPick(args: { text: string; start: number; end: number; form: RangeForm; keep?: Anchors }): {
+  selection: Selection | null
+  range: Range
+} {
   const selection = selectionInText(args.text, args.start, args.end)
-  if (!selection) return null
+  if (!selection) return { selection: null, range: { kind: 'all' } }
   const anchors = args.keep ?? autoAnchors(selection)
   return { selection, range: rangeForSelection({ selection, anchors, form: args.form }) }
+}
+
+/** Whether `range` takes the whole field (`[N]`, or its `[N1-]` spelling), which the box shows as a bare caret. */
+export function isWholeField(range: Range): boolean {
+  return range.kind === 'all' || (range.kind === 'from' && range.at === 1)
+}
+
+/** The box's selection for `selection`'s characters, or a caret at the end when there's no part to select. */
+export function boxOffsetsFor(text: string, selection: Selection | null): { start: number; end: number } {
+  return selection ? textOffsetsOf(text, selection) : { start: text.length, end: text.length }
+}
+
+/** The token the box itself last wrote, and the field's text it was picked in. */
+export interface BoxWrite {
+  token: string
+  text: string
+}
+
+/**
+ * Whether the box's selection should follow the token: only when the token came from outside the
+ * box (the mask, a new cursor row). Setting it back after the box's own change would collapse
+ * every caret move into a selection, which kills the caret.
+ */
+export function boxNeedsSync(args: { token: string; text: string; wrote: BoxWrite | null }): boolean {
+  return args.wrote?.token !== args.token || args.wrote.text !== args.text
 }
 
 /** A range in plain words: a message key and its numbers (positions as typed, from-the-end ones made positive). */

@@ -1,26 +1,28 @@
 <script lang="ts">
     /**
      * The range token's editor (`[N2-5]`, `[E1]`, `[-3-]`), top to bottom: the token's field on the
-     * list cursor's file in a read-only text box to select characters in (TC's "select the
-     * characters to insert"), how to count (each end from the start or the end, and the form), and
-     * what the token takes from the files around the cursor. Every edit goes to `onChange`, which
-     * rewrites the token in the mask. Which characters a range takes is always the engine's answer
+     * list cursor's file in a text box to select characters in (TC's "select the characters to
+     * insert"), how to count (each end from the start or the end, and the form), and what the token
+     * takes from the files around the cursor. Every edit goes to `onChange`, which rewrites the
+     * token in the mask. Which characters a range takes is always the engine's answer
      * (`rangeSampleSource`), never sliced here; this only turns a pick into a token.
      *
-     * The box and the token follow each other: a selection the user makes becomes the token
-     * (`textPick`), and a token that changes any other way (typed in the mask, Start / End / Write
-     * as, a new cursor row) sets the box's selection to the engine's bounds. A bare caret leaves the
-     * token. A pointer selection is a fresh pick, each end counting from the edge it's nearer; a key
-     * only adjusts it, keeping the token's own edges, so a manual Start / End choice sticks until
-     * the next pointer pick. Only a selection that follows the user's own pointer or key in the box
-     * counts: WebKit selects a field's whole text when Tab lands in it, and that mustn't rewrite the
-     * token to `[N]`.
+     * The box is a real text field with a caret and every native caret and selection key, but it
+     * refuses edits (typing, paste, cut, drop, IME). It isn't `readonly`: WebKit draws no caret in
+     * a read-only field.
      *
-     * Keys: ↑ / ↓ walk the rows (↑ from the box, and Enter anywhere, leave through `onDone`). In the
-     * single-line box plain ↑ / ↓ would only collapse the selection to an end, which leaves the token
-     * anyway, so nothing is lost; ⇧↑ / ⇧↓ stay the field's own. ↑ / ↓ / Enter are claimed in the
-     * capture phase, so the toggle groups and the sheet never see them. Escape belongs to the
-     * `Popover` around this.
+     * The box drives the token: a selection becomes the token (`textPick`), and a bare caret is the
+     * whole field (`[N]`). A token that changes any other way (typed in the mask, a new cursor row,
+     * the editor opening) sets the box's selection to the engine's bounds, or a caret at the end
+     * for the whole field; the box's own changes are never set back (`boxNeedsSync`), or every
+     * caret move would turn back into a selection. A pointer selection is a fresh pick, each end
+     * counting from the edge it's nearer; a key only adjusts it, keeping the token's own edges, so
+     * a manual Start / End choice sticks until the next pointer pick. Only a selection that follows
+     * the user's own pointer or key in the box counts: WebKit selects a field's whole text when Tab
+     * lands in it, and that mustn't rewrite the token.
+     *
+     * Keys: Enter leaves through `onDone`, claimed in the capture phase so the sheet never starts a
+     * rename from here. Escape belongs to the `Popover` around this. Every other key is native.
      */
     import { tString } from '#lib/intl/messages.svelte.js'
     import TextInput from '#lib/ui/TextInput.svelte'
@@ -39,7 +41,7 @@
         type RangeToken,
         type Selection,
     } from './range-token'
-    import { rangeReading, textOffsetsOf, textPick } from './range-editor'
+    import { boxNeedsSync, boxOffsetsFor, isWholeField, rangeReading, textPick, type BoxWrite } from './range-editor'
     import { rangeSampleSource } from './range-sample-source'
 
     const { value, onChange, onDone }: TokenEditorProps<RangeToken> = $props()
@@ -55,7 +57,7 @@
      * The pick the last edit wrote, standing in until the engine answers for its token, so the box
      * keeps the user's selection rather than jumping back to the answer before.
      */
-    let picked = $state.raw<{ token: string; selection: Selection } | null>(null)
+    let picked = $state.raw<{ token: string; selection: Selection | null } | null>(null)
     let asked = 0
 
     $effect(() => {
@@ -75,7 +77,10 @@
     const cursorSample = $derived(answer?.samples.find((sample) => sample.row === answer?.cursor))
     const text = $derived(cursorSample?.text ?? '')
     const length = $derived(Array.from(text).length)
+    /** The whole field selects nothing: the box shows a bare caret, and there are no edges to count. */
+    const whole = $derived(isWholeField(value.range))
     const selection = $derived.by((): Selection | null => {
+        if (whole) return null
         if (picked?.token === tokenText) return picked.selection
         const taken = cursorSample?.taken
         return taken ? { first: taken.first, last: taken.last, length } : null
@@ -91,9 +96,18 @@
     let rootEl: HTMLDivElement | undefined = $state()
     let boxEl: HTMLInputElement | undefined = $state()
 
-    function commit(next: Selection, range: Range): void {
+    /**
+     * The token the box (or a toggle, which keeps the box's selection) last wrote, and on which
+     * text. While the token and the text still match it, the box's selection is the user's own and
+     * stays as it is. Not reactive: only the token and the text changing re-run the sync.
+     */
+    let wrote: BoxWrite | null = null
+
+    function commit(next: Selection | null, range: Range): void {
         const token: RangeToken = { field: value.field, range }
-        picked = { token: formatRangeToken(token), selection: next }
+        const formatted = formatRangeToken(token)
+        wrote = { token: formatted, text }
+        picked = { token: formatted, selection: next }
         onChange(token)
     }
 
@@ -109,26 +123,40 @@
      * or this editor setting it), which writes nothing.
      */
     let selectingBy: 'pointer' | 'key' | null = null
+    /** An IME composing in the box: its interim text is refused at the end, and its selection writes nothing. */
+    let composing = false
+    /** The box's selection right before an edit WebKit wouldn't let us cancel, to put back with the text. */
+    let beforeEdit: { start: number; end: number } | null = null
 
-    /** The box's selection set to the token's characters on this file, or a caret when it takes none. */
+    /** The box's selection set to the token's characters on this file, or a caret at the end for the whole field. */
     function showSelection(): void {
         const box = boxEl
         if (!box) return
-        const { start, end } = selection ? textOffsetsOf(text, selection) : { start: 0, end: 0 }
+        selectingBy = null
+        const { start, end } = boxOffsetsFor(text, selection)
         if (box.selectionStart === start && box.selectionEnd === end) return
         box.setSelectionRange(start, end)
     }
 
-    // Follows the token, the cursor's file, and the box's text (rendered before effects run).
-    $effect(showSelection)
+    // Follows a token from outside the box (the mask, a new cursor row, the engine's first answer),
+    // never the box's own (rendered before effects run).
+    $effect(() => {
+        if (!boxNeedsSync({ token: tokenText, text, wrote })) return
+        wrote = null
+        showSelection()
+    })
 
     function handleSelectionChange(): void {
         const box = boxEl
-        if (!box || selectingBy === null || box.selectionStart === null || box.selectionEnd === null) return
-        const keep = selectingBy === 'key' ? { startFromEnd: anchors.startFromEnd, endFromEnd } : undefined
+        if (!box || selectingBy === null || composing || box.selectionStart === null || box.selectionEnd === null) return
+        // A key adjusts a part's edges; from the whole field (no part yet) it's a fresh pick.
+        const keep = selectingBy === 'key' && !whole ? { startFromEnd: anchors.startFromEnd, endFromEnd } : undefined
         const pick = textPick({ text, start: box.selectionStart, end: box.selectionEnd, form: anchors.form, keep })
-        // A caret leaves the token; the same characters again (the token's own, set back) change nothing.
-        if (!pick || (selection && pick.selection.first === selection.first && pick.selection.last === selection.last)) return
+        if (formatRangeToken({ field: value.field, range: pick.range }) === tokenText) {
+            // The same token (a caret moving inside the whole field): the box already shows it.
+            wrote = { token: tokenText, text }
+            return
+        }
         commit(pick.selection, pick.range)
     }
 
@@ -150,22 +178,69 @@
         selectingBy = null
     }
 
+    // ===== The box refuses edits =====
+
+    function refuse(e: Event): void {
+        e.preventDefault()
+    }
+
+    function handleBeforeInput(e: InputEvent): void {
+        const box = boxEl
+        if (box && box.selectionStart !== null && box.selectionEnd !== null) {
+            beforeEdit = { start: box.selectionStart, end: box.selectionEnd }
+        }
+        e.preventDefault()
+    }
+
+    /** Copies what cut would take, without taking it. */
+    function handleCut(e: ClipboardEvent): void {
+        const box = boxEl
+        e.preventDefault()
+        if (!box || box.selectionStart === null || box.selectionEnd === null) return
+        e.clipboardData?.setData('text/plain', box.value.slice(box.selectionStart, box.selectionEnd))
+    }
+
+    /** An edit that got through anyway (an IME's interim text isn't cancelable in WebKit): put the field back. */
+    function handleInput(): void {
+        const box = boxEl
+        if (!box || box.value === text || composing) return
+        box.value = text
+        const { start, end } = beforeEdit ?? boxOffsetsFor(text, selection)
+        box.setSelectionRange(start, end)
+        beforeEdit = null
+    }
+
+    function handleCompositionStart(): void {
+        composing = true
+    }
+
+    function handleCompositionEnd(): void {
+        composing = false
+        handleInput()
+    }
+
     $effect(() => {
         const box = boxEl
         if (!box) return
-        box.addEventListener('pointerdown', handleBoxPointerDown)
-        box.addEventListener('keydown', handleBoxKeydown)
-        box.addEventListener('focus', handleBoxFocus)
-        box.addEventListener('blur', handleBoxBlur)
-        box.addEventListener('select', handleSelectionChange)
+        const listeners: [string, (e: never) => void][] = [
+            ['pointerdown', handleBoxPointerDown],
+            ['keydown', handleBoxKeydown],
+            ['focus', handleBoxFocus],
+            ['blur', handleBoxBlur],
+            ['select', handleSelectionChange],
+            ['beforeinput', handleBeforeInput],
+            ['cut', handleCut],
+            ['paste', refuse],
+            ['drop', refuse],
+            ['input', handleInput],
+            ['compositionstart', handleCompositionStart],
+            ['compositionend', handleCompositionEnd],
+        ]
+        for (const [type, listener] of listeners) box.addEventListener(type, listener as EventListener)
         // WebKit tells a field's selection moving through the document's `selectionchange`.
         document.addEventListener('selectionchange', handleSelectionChange)
         return () => {
-            box.removeEventListener('pointerdown', handleBoxPointerDown)
-            box.removeEventListener('keydown', handleBoxKeydown)
-            box.removeEventListener('focus', handleBoxFocus)
-            box.removeEventListener('blur', handleBoxBlur)
-            box.removeEventListener('select', handleSelectionChange)
+            for (const [type, listener] of listeners) box.removeEventListener(type, listener as EventListener)
             document.removeEventListener('selectionchange', handleSelectionChange)
         }
     })
@@ -226,43 +301,16 @@
 
     // ===== Keys =====
 
-    /** The element ↑ / ↓ puts focus on in `row`: the box, or the row's picked option. */
-    function focusTargetIn(row: Element): HTMLElement | null {
-        return (
-            row.querySelector<HTMLElement>('input') ??
-            row.querySelector<HTMLElement>('[data-state="on"]:not([disabled])') ??
-            row.querySelector<HTMLElement>('button:not([disabled])')
-        )
-    }
-
-    /** ↑ / ↓ from the row holding the event's target: the next row's control, or out through `onDone` from the top row. */
-    function walk(e: KeyboardEvent, root: HTMLElement, step: 1 | -1): void {
-        const rows = [...root.querySelectorAll('[data-walk]')].filter((row) => focusTargetIn(row) !== null)
-        const at = rows.findIndex((row) => e.target instanceof Node && row.contains(e.target))
-        if (at === -1) return
-        claimKey(e)
-        if (step === -1 && at === 0) {
-            onDone()
-            return
-        }
-        const next = rows.at(at + step)
-        if (next) focusTargetIn(next)?.focus()
-    }
-
     function handleKeydown(e: KeyboardEvent): void {
-        if (e.isComposing || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey || !rootEl) return
-        if (e.key === 'Enter') {
-            claimKey(e)
-            onDone()
-        } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-            walk(e, rootEl, e.key === 'ArrowUp' ? -1 : 1)
-        }
+        if (e.isComposing || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey || e.key !== 'Enter') return
+        claimKey(e)
+        onDone()
     }
 
     $effect(() => {
         const root = rootEl
         if (!root) return
-        // Capture: ↑ / ↓ / Enter are the editor's before the box, a toggle group, or the sheet sees them.
+        // Capture: Enter is the editor's before a toggle group or the sheet sees it.
         root.addEventListener('keydown', handleKeydown, true)
         return () => {
             root.removeEventListener('keydown', handleKeydown, true)
@@ -282,11 +330,12 @@
 </script>
 
 <div class="range-editor" bind:this={rootEl}>
-    <div class="pick" data-walk>
+    <div class="pick">
         <label class="label" for={boxId}>{tString('multiRename.rangeEditor.selectCharacters')}</label>
+        <!-- Not `readonly`, which draws no caret in WebKit: the box refuses edits itself. -->
         <TextInput
             id={boxId}
-            readonly
+            aria-readonly="true"
             mono
             value={text}
             bind:inputElement={boxEl}
@@ -301,14 +350,14 @@
     <p class="reading" id={readingId} aria-live="polite">
         <code class="token">[{tokenText}]</code>
         {reading}
-        {#if answer && length > 0 && !selection}
+        {#if answer && length > 0 && !whole && !selection}
             <span class="warning">{tString('multiRename.rangeEditor.takesNothing')}</span>
         {/if}
     </p>
 
     <!-- One grid, so the three groups share the widest one's natural width. -->
     <div class="counting">
-        <div class="row" data-walk>
+        <div class="row">
             <span class="label" aria-hidden="true">{tString('multiRename.rangeEditor.start')}</span>
             <ToggleGroup
                 semantics="toggles"
@@ -320,7 +369,7 @@
             />
         </div>
         {#if anchors.form === 'span'}
-            <div class="row" data-walk>
+            <div class="row">
                 <span class="label" aria-hidden="true">{tString('multiRename.rangeEditor.end')}</span>
                 <ToggleGroup
                     semantics="toggles"
@@ -332,7 +381,7 @@
                 />
             </div>
         {/if}
-        <div class="row" data-walk>
+        <div class="row">
             <span class="label" aria-hidden="true">{tString('multiRename.rangeEditor.writeAs')}</span>
             <ToggleGroup
                 semantics="toggles"
