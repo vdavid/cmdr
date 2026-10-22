@@ -1572,6 +1572,9 @@ jobs:
       - name: Check .mise.toml is the only Go version
         run: ./scripts/check/check --check go-version-single-source --ci
 
+      - name: Check the E2E image copies the pinned Rust
+        run: ./scripts/check/check --check e2e-rust-image-pin --ci
+
       - name: Check workflow hardening
         run: ./scripts/check/check --check workflows-hardening --ci
 

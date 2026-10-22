@@ -1856,6 +1856,17 @@ var AllChecks = []CheckDefinition{
 		Run:    RunScorecardLocal,
 	},
 	{
+		ID:          "e2e-rust-image-pin",
+		Nickname:    "e2e-rust-pin",
+		DisplayName: "E2E image Rust matches the pin",
+		App:         AppOther,
+		Tech:        "📏 Metrics",
+		DependsOn:   nil,
+		IsFast:      true,
+		Inputs:      e2eRustImagePinInputs,
+		Run:         RunE2ERustImagePin,
+	},
+	{
 		ID:          "workflows-rustup",
 		Nickname:    "rustup-add",
 		DisplayName: "workflows / rustup add",

@@ -123,10 +123,15 @@ RUN corepack enable pnpm
 
 # Rust (needed to compile the Tauri binary with --features playwright-e2e). The bind-mounted
 # registry cache in `e2e-linux.sh` lives under /root/.cargo, so the toolchain moves there too.
-# `rust-toolchain.toml` still picks the compiler; matching the image to its pin saves the download.
-COPY --from=rust:1.99.0-slim-trixie@sha256:2752b332db73fdbb7dc576f06c82ed1f312005784ef913d7e04a28f5f55dc581 /usr/local/cargo /root/.cargo
-COPY --from=rust:1.99.0-slim-trixie@sha256:2752b332db73fdbb7dc576f06c82ed1f312005784ef913d7e04a28f5f55dc581 /usr/local/rustup /root/.rustup
+# The image's version must match `rust-toolchain.toml`'s pin (`e2e-rust-image-pin` enforces it).
+COPY --from=rust:1.99.1-slim-trixie@sha256:aab42391a986424e22d6a3ec14f37bc6dd3dacff4d457ca7cccd781e02297cc6 /usr/local/cargo /root/.cargo
+COPY --from=rust:1.99.1-slim-trixie@sha256:aab42391a986424e22d6a3ec14f37bc6dd3dacff4d457ca7cccd781e02297cc6 /usr/local/rustup /root/.rustup
 ENV CARGO_HOME=/root/.cargo RUSTUP_HOME=/root/.rustup
+# Use the image's toolchain as is. Left to `rust-toolchain.toml`, rustup would add the components
+# and macOS targets it lists (clippy, rustfmt, rust-analyzer, two darwin std libs) in every fresh
+# container, and the E2E build needs none of them. The `e2e-rust-image-pin` check keeps this and
+# the image tag above on the pinned version.
+ENV RUSTUP_TOOLCHAIN=1.99.1
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Set up display for Xvfb
