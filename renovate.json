@@ -6,6 +6,8 @@
   "automerge": true,
   "platformAutomerge": true,
   "minimumReleaseAge": "3 days",
+  "rebaseWhen": "conflicted",
+  "updateNotScheduled": false,
   "ignorePaths": [
     "**/node_modules/**",
     "**/bower_components/**",

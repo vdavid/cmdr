@@ -6,9 +6,16 @@ description: How to update project dependencies
 
 ## Who updates what
 
-Renovate (`renovate.json`) still owns four lanes and auto-merges them unattended. **Leave them alone**: website,
-Cloudflare apps (`api-server` + `analytics-dashboard`), linters and formatters, security advisories, and David's own
-crates (`smb2`, `mtp-rs`).
+Renovate (`renovate.json`) still owns these lanes and auto-merges them unattended. **Leave them alone**: website,
+Cloudflare apps (`api-server` + `analytics-dashboard`), linters and formatters, Docker images, security advisories, and
+David's own crates (`smb2`, `mtp-rs`).
+
+❗ **Renovate rebases a PR only on a conflict, and touches it only in its schedule window** (`rebaseWhen: conflicted`,
+`updateNotScheduled: false`). The default rebases an automerge PR on every push to `main`, and a red one re-ran the full
+CI on each landing: #486 burned about 15 runs in two days on a fixture change no rebase could fix. `main` doesn't
+require up-to-date branches, so automerge works without it. The accepted cost: two automerged PRs can land without CI
+ever seeing them together, which the lanes' disjoint files make unlikely to matter. A red Renovate PR needs a human fix
+(or a ticked "rebase" box on the PR once `main` holds one).
 
 Two lanes are hand-driven, because a bot can't finish them:
 
