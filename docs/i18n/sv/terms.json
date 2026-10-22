@@ -2464,13 +2464,13 @@
     "sources": "macOS WorkflowKit, AppStoreKit (Relevans), macOS 26.6.2, 2026-09-06"
   },
   "reload": {
-    "accept": ["läsa in"],
+    "accept": ["läsa in", "läs in"],
     "chosen": "läs in på nytt",
     "confidence": "high",
     "exceptions": {
       "main.dockPinNudge.addedButDockDidNotRestart": "What didn't happen is the Dock process restarting, Apple's Starta om (DockMenus RELAUNCH)."
     },
-    "forms": "distinct from uppdatera (refresh a list)",
+    "forms": "distinct from uppdatera (refresh a list); Reload X → Läs in X på nytt (the object splits the phrase: Läs in panelen på nytt)",
     "sources": "macOS/MS framing"
   },
   "remote": {

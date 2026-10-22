@@ -184,6 +184,18 @@
   "@fileExplorer.pane.refreshStillRunningToast": {
     "sourceHash": "0636af4"
   },
+  "fileExplorer.paneBoundary.title": "Den här panelen stötte på ett problem",
+  "@fileExplorer.paneBoundary.title": {
+    "sourceHash": "b448d1e"
+  },
+  "fileExplorer.paneBoundary.body": "Den andra panelen fungerar fortfarande. Läs in den här panelen på nytt för att öppna mappen igen.",
+  "@fileExplorer.paneBoundary.body": {
+    "sourceHash": "949e6b2"
+  },
+  "fileExplorer.paneBoundary.reload": "Läs in panelen på nytt",
+  "@fileExplorer.paneBoundary.reload": {
+    "sourceHash": "a53cfeb"
+  },
   "fileExplorer.pane.ejectFailedToast": "Det gick inte att mata ut {volumeName}: {message}",
   "@fileExplorer.pane.ejectFailedToast": {
     "sourceHash": "f4072a7"

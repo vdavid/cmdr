@@ -107,5 +107,9 @@
   "ui.confirmDialog.cancel": "Mégsem",
   "@ui.confirmDialog.cancel": {
     "sourceHash": "19766ed"
+  },
+  "ui.dialogBoundary.closedToast": "A párbeszédablak problémába ütközött, ezért bezártuk. Kérlek, próbáld újra.",
+  "@ui.dialogBoundary.closedToast": {
+    "sourceHash": "b735ae2"
   }
 }

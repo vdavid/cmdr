@@ -107,5 +107,9 @@
   "ui.confirmDialog.cancel": "Cancelar",
   "@ui.confirmDialog.cancel": {
     "sourceHash": "19766ed"
+  },
+  "ui.dialogBoundary.closedToast": "Essa caixa de diálogo encontrou um problema, então fechamos a janela. Tente novamente.",
+  "@ui.dialogBoundary.closedToast": {
+    "sourceHash": "b735ae2"
   }
 }

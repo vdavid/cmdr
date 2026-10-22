@@ -106,5 +106,9 @@
   "ui.confirmDialog.cancel": "取消",
   "@ui.confirmDialog.cancel": {
     "sourceHash": "19766ed"
+  },
+  "ui.dialogBoundary.closedToast": "對話方塊遇到了問題，所以我們把它關閉了。請再試一次。",
+  "@ui.dialogBoundary.closedToast": {
+    "sourceHash": "b735ae2"
   }
 }

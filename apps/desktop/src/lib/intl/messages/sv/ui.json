@@ -107,5 +107,9 @@
   "ui.confirmDialog.cancel": "Avbryt",
   "@ui.confirmDialog.cancel": {
     "sourceHash": "19766ed"
+  },
+  "ui.dialogBoundary.closedToast": "Dialogen stötte på ett problem, så vi stängde den. Försök igen.",
+  "@ui.dialogBoundary.closedToast": {
+    "sourceHash": "b735ae2"
   }
 }

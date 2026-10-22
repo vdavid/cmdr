@@ -107,5 +107,9 @@
   "ui.confirmDialog.cancel": "Annuleer",
   "@ui.confirmDialog.cancel": {
     "sourceHash": "19766ed"
+  },
+  "ui.dialogBoundary.closedToast": "Dat dialoogvenster liep tegen een probleem aan, dus we hebben het gesloten. Probeer het opnieuw.",
+  "@ui.dialogBoundary.closedToast": {
+    "sourceHash": "b735ae2"
   }
 }

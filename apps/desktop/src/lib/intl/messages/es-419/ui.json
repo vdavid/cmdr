@@ -22,5 +22,9 @@
   "ui.loadingIcon.cancelHint": "Presiona <key></key> para cancelar y volver",
   "@ui.loadingIcon.cancelHint": {
     "sourceHash": "d3b5941"
+  },
+  "ui.dialogBoundary.closedToast": "Ese diálogo tuvo un problema, así que lo cerramos. Inténtalo de nuevo.",
+  "@ui.dialogBoundary.closedToast": {
+    "sourceHash": "ec54fee"
   }
 }

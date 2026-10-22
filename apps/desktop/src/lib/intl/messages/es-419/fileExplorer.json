@@ -31,6 +31,10 @@
   "@fileExplorer.pane.trashUnconfirmedToast": {
     "sourceHash": "2ccd578"
   },
+  "fileExplorer.paneBoundary.title": "Este panel tuvo un problema",
+  "@fileExplorer.paneBoundary.title": {
+    "sourceHash": "94defd5"
+  },
   "fileExplorer.pane.ejectFailedToast": "No se pudo expulsar {volumeName}: {message}",
   "@fileExplorer.pane.ejectFailedToast": {
     "sourceHash": "3793ec5"

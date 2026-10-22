@@ -107,5 +107,9 @@
   "ui.confirmDialog.cancel": "Отменить",
   "@ui.confirmDialog.cancel": {
     "sourceHash": "19766ed"
+  },
+  "ui.dialogBoundary.closedToast": "В диалоговом окне возникла проблема, поэтому мы его закрыли. Попробуйте еще раз.",
+  "@ui.dialogBoundary.closedToast": {
+    "sourceHash": "b735ae2"
   }
 }

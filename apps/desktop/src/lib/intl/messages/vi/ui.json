@@ -107,5 +107,9 @@
   "ui.confirmDialog.cancel": "Hủy",
   "@ui.confirmDialog.cancel": {
     "sourceHash": "19766ed"
+  },
+  "ui.dialogBoundary.closedToast": "Hộp thoại đó gặp sự cố nên chúng tôi đã đóng lại. Hãy thử lại.",
+  "@ui.dialogBoundary.closedToast": {
+    "sourceHash": "b735ae2"
   }
 }

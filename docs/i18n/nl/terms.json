@@ -2549,9 +2549,10 @@
     "sources": "macOS WorkflowKit, AppStoreKit, Automator, Music (Relevance → Relevantie), verified on macOS 26.6.2 (25G83), 2026-09-06"
   },
   "reload": {
-    "accept": ["opnieuw laden", "opnieuw geladen", "opnieuw te laden"],
+    "accept": ["opnieuw laden", "opnieuw geladen", "opnieuw te laden", "laad"],
     "chosen": "Laad opnieuw",
     "confidence": "high",
+    "forms": "Reload X → Laad X opnieuw (the object splits the verb: Laad paneel opnieuw)",
     "sources": "MS (reload → opnieuw laden)"
   },
   "remote": {

@@ -184,6 +184,18 @@
   "@fileExplorer.pane.refreshStillRunningToast": {
     "sourceHash": "0636af4"
   },
+  "fileExplorer.paneBoundary.title": "В этой панели возникла проблема",
+  "@fileExplorer.paneBoundary.title": {
+    "sourceHash": "b448d1e"
+  },
+  "fileExplorer.paneBoundary.body": "Другая панель по-прежнему работает. Перезагрузите эту панель, чтобы снова открыть ее папку.",
+  "@fileExplorer.paneBoundary.body": {
+    "sourceHash": "949e6b2"
+  },
+  "fileExplorer.paneBoundary.reload": "Перезагрузить панель",
+  "@fileExplorer.paneBoundary.reload": {
+    "sourceHash": "a53cfeb"
+  },
   "fileExplorer.pane.ejectFailedToast": "Том {volumeName} не извлечен: {message}",
   "@fileExplorer.pane.ejectFailedToast": {
     "sourceHash": "f4072a7"

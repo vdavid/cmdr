@@ -2669,6 +2669,9 @@
     "accept": ["Neu laden", "neu gelad", "neu zu laden", "lade neu"],
     "chosen": "neu laden",
     "confidence": "high",
+    "exceptions": {
+      "fileExplorer.paneBoundary.body": "Reload this one → Lade diesen Bereich neu: the separable imperative splits around its object, so the ruled form can't stay contiguous"
+    },
     "sources": "standard German"
   },
   "remote": {

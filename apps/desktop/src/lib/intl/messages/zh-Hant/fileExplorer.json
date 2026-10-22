@@ -183,6 +183,18 @@
   "@fileExplorer.pane.refreshStillRunningToast": {
     "sourceHash": "0636af4"
   },
+  "fileExplorer.paneBoundary.title": "這個窗格遇到了問題",
+  "@fileExplorer.paneBoundary.title": {
+    "sourceHash": "b448d1e"
+  },
+  "fileExplorer.paneBoundary.body": "另一個窗格仍能正常使用。重新載入這個窗格，就能再次開啟它的資料夾。",
+  "@fileExplorer.paneBoundary.body": {
+    "sourceHash": "949e6b2"
+  },
+  "fileExplorer.paneBoundary.reload": "重新載入窗格",
+  "@fileExplorer.paneBoundary.reload": {
+    "sourceHash": "a53cfeb"
+  },
   "fileExplorer.pane.ejectFailedToast": "無法退出 {volumeName}：{message}",
   "@fileExplorer.pane.ejectFailedToast": {
     "sourceHash": "f4072a7"
