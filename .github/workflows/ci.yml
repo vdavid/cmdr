@@ -1170,10 +1170,13 @@ jobs:
   # A new `Cargo.lock` gives every big cache a new key, and the old entry (~1.3–1.9 GB) stays
   # until it ages out after 7 unused days. Two generations of the Rust and E2E caches put the
   # repo at ~11.5 GB against its 10 GB budget, so GitHub's LRU eviction started dropping
-  # entries the lanes still used (2026-10-22). After every job that saves one has finished,
-  # this keeps the newest `main` entry of each family and deletes the rest. A family is the key
-  # minus its trailing hash parts, for example `v0-rust-desktop-rust-Linux-x64`. A PR whose
-  # lockfile is older still restores the newest entry through its restore-keys prefix.
+  # entries the lanes still used (2026-10-22). After every job that reads or saves one has
+  # finished, this keeps the most recently USED `main` entry of each family and deletes the
+  # rest. Used, not created: the jobs just before it touched the entry this commit's key names,
+  # while a stale key can be the newer one (on 2026-10-22 a flipping toolchain hash saved one
+  # after the live entry). A family is the key minus its trailing hash parts, for example
+  # `v0-rust-desktop-rust-Linux-x64`. A PR whose lockfile is older still restores the kept
+  # entry through its restore-keys prefix.
   # Post-land, so exempt from `ci-ok` (`ciOKGateExempt`): a failure only leaves the old
   # entries to age out.
   prune-superseded-caches:
@@ -1194,13 +1197,13 @@ jobs:
       actions: write # delete caches
 
     steps:
-      - name: Keep the newest main entry of each Rust and E2E cache family
+      - name: Keep the most recently used main entry of each Rust and E2E cache family
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: |
-          declare -A newest
-          gh cache list --repo "$REPO" --ref refs/heads/main --sort created_at --order desc --limit 100 \
+          declare -A kept
+          gh cache list --repo "$REPO" --ref refs/heads/main --sort last_accessed_at --order desc --limit 100 \
             --json id,key --jq '.[] | "\(.id) \(.key)"' >caches.txt
           while read -r id key; do
             case "$key" in
@@ -1208,11 +1211,11 @@ jobs:
               *) continue ;;
             esac
             family=$(sed -E 's/(-[0-9a-f]{8,})+$//' <<<"$key")
-            if [[ -n "${newest[$family]:-}" ]]; then
-              echo "Deleting $key (superseded by ${newest[$family]})"
+            if [[ -n "${kept[$family]:-}" ]]; then
+              echo "Deleting $key (superseded by ${kept[$family]})"
               gh cache delete "$id" --repo "$REPO"
             else
-              newest[$family]=$key
+              kept[$family]=$key
               echo "Keeping $key"
             fi
           done <caches.txt

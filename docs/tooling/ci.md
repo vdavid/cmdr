@@ -167,9 +167,9 @@ saved ~1.7 GB of Rust and ~1.2 GB of E2E target, the repo sat at ~12 GB, and LRU
 
 **Load-bearing companion: the `prune-superseded-caches` job.** A new `Cargo.lock` gives each big entry a new key, and
 the old one lingers until 7 unused days pass, so two generations put the repo at ~11.5 GB (2026-10-22). Post-land on
-`main`, after every job that saves one, it keeps the newest `main` entry per family (`v0-rust-*` and `*-docker-e2e-*`,
-the key minus its trailing hash parts) and deletes the rest. It's exempt from `ci-ok`. Protect the per-push
-`desktop-rust` cache first; the udeps cache is the one to drop under pressure.
+`main`, after every job that saves one, it keeps the most recently used `main` entry per family (`v0-rust-*` and
+`*-docker-e2e-*`, the key minus its trailing hash parts) and deletes the rest. It's exempt from `ci-ok`. Protect the
+per-push `desktop-rust` cache first; the udeps cache is the one to drop under pressure.
 
 **Critical path.** The per-push wall clock is the longest single job, because `desktop-e2e-linux` gates only on change
 detection (not on `desktop-svelte`) and so starts at t=0 alongside everything else. E2E is usually that floor. Measured
