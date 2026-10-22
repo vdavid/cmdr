@@ -162,8 +162,9 @@ no rebuild, like the rebase path of § Decision: merge a green PR onto a moved `
 - **A conflict stops it** (`mergeable` false, `errMergeConflict`): merge by hand in a worktree off `main`, then `land`
   that. Rare, since a release commit touches only version files, `Cargo.lock`, `LICENSE`, and release-prep files.
 - **Needs merge commits allowed on `main`**: the repo's `allow_merge_commit` and `merge` in `main-pr-required.json`'s
-  `allowed_merge_methods`. Both off as of 2026-10-22, pending David's call; until then GitHub refuses the merge and land
-  says so, and only the fast-forward works.
+  `allowed_merge_methods` (David chose this over a cherry-pick plus an `ours` record, which would put the release commit
+  on `main` twice, 2026-10-22). Without either, GitHub refuses the merge and land says so; the fast-forward works
+  regardless. The PR page's button offers merge commits too, which is one more reason land owns merging.
 - Unit-tested (`nextStartStep`, `nextMergePath`, `tagged` against a real repo); the GitHub side waits for the first real
   release merge-back.
 

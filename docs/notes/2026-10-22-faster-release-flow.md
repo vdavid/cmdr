@@ -128,13 +128,13 @@ All on GitHub with `RELEASE_UPDATE_SIGNING=local`, pre-release tags only, nothin
 
 ## Skipped, and open questions
 
-- **Merge-back needs David's call**: merge commits are off on the repo (`allow_merge_commit: false`, and the "main: PR
-  with approval" ruleset allows squash and rebase only), so `land -merge` can fast-forward but GitHub refuses the merge
-  commit when `main` moved, which it nearly always will have. Options: (a) allow merge commits (repo setting plus
-  `merge` in `allowed_merge_methods`, `pnpm land rulesets -apply`); (b) keep them off and land R's diff as a cherry-pick
-  through a normal land, then record R with an `ours` merge via the `-record` mechanics (works today, but the release
-  commit shows up twice in `main`'s history). Built for (a); nothing on GitHub was changed. The GitHub side of
-  `land -merge` is unit-tested only (no pipeline test can touch `main`).
+- **Merge-back: merge commits on `main`.** They were off (`allow_merge_commit: false`, and the "main: PR with approval"
+  ruleset allowed squash and rebase only), so `land -merge` could only fast-forward, which a release almost never can
+  after an hour. David chose (2026-10-22) to allow them over the alternative (land R's diff as a cherry-pick, then
+  record R with an `ours` merge, which puts the release commit on `main` twice). The branch adds `merge` to
+  `main-pr-required.json`'s `allowed_merge_methods`; the repo setting and `pnpm land rulesets -apply` are the lead's to
+  run, after this branch lands. The GitHub side of `land -merge` is unit-tested only (no pipeline test can touch
+  `main`).
 - **The merge-back PR runs CI once more** (~30 min, including the macOS lane), testing R merged with the current `main`.
   It blocks nothing users get, but it costs runner minutes. A possible follow-up: `ci.yml`'s `verified` step (today
   push-only) could also skip the lanes on a PR whose head SHA already has a green full dispatch run, the same trust as

@@ -706,8 +706,8 @@ on `main`'s history as the exact commit CI tested and the tag names. A plain `pn
 commit.
 
 - **Needs merge commits allowed on `main`**: the repository's "Allow merge commits" setting, and `merge` in
-  `.github/rulesets/main-pr-required.json`'s `allowed_merge_methods` (`pnpm land rulesets -apply`). Without them GitHub
-  refuses the merge and `land` says so; the fast-forward works either way.
+  `.github/rulesets/main-pr-required.json`'s `allowed_merge_methods` (applied with `pnpm land rulesets -apply`). If
+  either is off, GitHub refuses the merge and `land` says so; the fast-forward works either way.
 - **A conflict GitHub can't merge** (rare: R changes only the version files, `Cargo.lock`, `LICENSE`, and the
   release-prep files): `land` stops. Merge by hand as in § Security-only patch release, step 7.
 - **Its PR runs CI once more** (~30 min), on R merged with the current `main`. Nothing users get waits for it.
