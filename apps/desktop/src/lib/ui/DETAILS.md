@@ -963,8 +963,8 @@ Props:
   numbers that must read cleanly over anything. Default `glass`.
 - `children: Snippet`: the floating content.
 
-Opening (or a passive popover turning active) focuses the content element marked `data-initial-focus`, else the first
-focusable one: the Multi-rename range editor marks its character ribbon, whose "Take from" row sits above it.
+Opening (or a passive popover turning active) focuses the content's first focusable element, unless focus is already
+inside.
 
 The rendered element carries the `.ui-popover` class. Host dialogs that must defer Escape to an open popover detect it
 by that class (the query dialog's capture-phase guard checks `dialogElement.querySelector('.ui-popover')`); the E2E
