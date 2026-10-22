@@ -2038,7 +2038,10 @@ rounded ends and its `--shadow-focus` glow at every segment edge.
 **Focus ring.** A focused cell draws a 2px accent outline inset by 2px (inside the cell, so neighbors and the pill's
 border never cover it) plus the `--shadow-focus` glow. On the active cell the accent ring would vanish into the accent
 fill, so it's drawn in `--color-accent-fg` and inset by 4px, the fill framing it on every side; that pair is gated at
-3:1 for every accent in `scripts/check-a11y-contrast/non_text_states.go`.
+3:1 for every accent in `scripts/check-a11y-contrast/non_text_states.go`. Under Increase contrast the global
+`html.increase-contrast :is(button, a, [role='button']):focus-visible` ink shadow replaces the glow, outside the cell
+against the inset ring. It wins on specificity, (0,3,1) against the cell rule's (0,3,0), so ❌ never raise the cell
+focus rule's specificity, nor set `box-shadow` in the active-cell one (0,4,0), or the ink layer is gone.
 
 `ToggleGroupOption` shape:
 
