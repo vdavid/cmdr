@@ -1,0 +1,190 @@
+---
+/**
+ * The landing page's clip-led tour, in the order of issue #693: trust first (nothing else does
+ * rollback), then multi-rename, reach, optional AI, and the craft. Copy is a draft for David's review.
+ * Every `/features#…` link targets a card id that `src/pages/features.astro` renders.
+ */
+import ProductClip from './ProductClip.astro'
+import ShowcaseSection from './ShowcaseSection.astro'
+import Icon from './icons/Icon.astro'
+import type { IconName } from './icons/icon-map'
+
+const reach = [
+    {
+        href: '/features#android-devices',
+        icon: 'smartphone',
+        title: 'Phones',
+        text: 'Android over MTP and ADB, up to 4x faster than Android File Transfer.',
+    },
+    {
+        href: '/features#network-drives',
+        icon: 'server',
+        title: 'Network drives',
+        text: 'Its own SMB client, 4–200x faster than the macOS one.',
+    },
+    {
+        href: '/features#connect',
+        icon: 'globe',
+        title: 'Servers',
+        text: 'SFTP, WebDAV, and S3, like any local folder.',
+    },
+    {
+        href: '/features#git-browser',
+        icon: 'git-branch',
+        title: 'Git',
+        text: 'Browse history, branches, and stashes as folders.',
+    },
+    {
+        href: '/features#archives',
+        icon: 'file-archive',
+        title: 'Archives',
+        text: 'Open zip, tar, and 7z files like folders.',
+    },
+] satisfies { href: string; icon: IconName; title: string; text: string }[]
+---
+
+<div class="showcase-tour">
+    <!-- (a) Trust: the one thing no other file manager does goes first. -->
+    <ShowcaseSection id="trust" eyebrow="File operations" title="File operations you can trust" layout="stacked">
+        <p>
+            Accurate progress, honest ETAs, and pause, resume, or cancel at any moment. Every operation lands in a log,
+            and you can roll it back, even days later.
+        </p>
+        <p class="text-base text-text-tertiary">
+            Rollback covers anything that didn’t permanently delete data. <a href="/data-safety"
+                >How Cmdr keeps your files safe</a
+            >
+        </p>
+        <div slot="media" class="grid gap-10 md:grid-cols-2 md:gap-8">
+            <ProductClip
+                slug="copy-rollback"
+                label="Copying a folder in Cmdr: the copy pauses, resumes, finishes, and then gets rolled back from the operation log."
+                caption="Copy, pause, resume, then roll the whole thing back."
+            />
+            <ProductClip
+                slug="ops-queue"
+                label="Several file operations queued in Cmdr, one sent to the background, and a waiting one dragged to reorder the queue."
+                caption="Queue operations, send them to the background, and reorder what’s waiting."
+            />
+        </div>
+    </ShowcaseSection>
+
+    <!-- (b) Multi-rename -->
+    <ShowcaseSection id="multi-rename" eyebrow="Multi-rename" title="Rename hundreds of files in one go">
+        <p>
+            Patterns, counters, and search and replace, with a live preview of every new name before anything changes.
+            Changed your mind? Undo.
+        </p>
+        <p>
+            Rather say it in words? Ask for “add the date and make it lowercase” and review what the optional AI
+            suggests.
+        </p>
+        <p class="text-base">
+            <a href="/features#multi-rename">Multi-rename</a>
+            <span class="text-text-tertiary" aria-hidden="true">&middot;</span>
+            <a href="/features#ai-rename">Natural-language rename</a>
+        </p>
+        <ProductClip
+            slot="media"
+            slug="multi-rename"
+            label="Cmdr's multi-rename window: a pattern with a counter renames a batch of photos, with the new names previewed live."
+        />
+    </ShowcaseSection>
+
+    <!-- (c) Viewer plus a compact reach strip -->
+    <ShowcaseSection id="opens-everything" eyebrow="Viewer and connections" title="Opens everything, fast" flip>
+        <p>
+            The built-in viewer opens a 10 GB file in about a second, and searches it. Text, images, binary, and hex,
+            all driven from the keyboard.
+        </p>
+        <p class="text-base"><a href="/features#file-viewer">The file viewer</a></p>
+        <ProductClip
+            slot="media"
+            slug="viewer"
+            label="Cmdr's viewer opening a 10 GB log file instantly, searching it, then switching to hex view."
+        />
+        <div slot="after" class="mx-auto mt-20 max-w-6xl">
+            <h3 class="mb-6 text-lg font-semibold text-text-primary">And it reaches well beyond your disk</h3>
+            <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                {
+                    reach.map((item) => (
+                        <li>
+                            <a
+                                href={item.href}
+                                class="group flex h-full flex-col gap-2 rounded-xl border border-border bg-surface p-4 no-underline transition-colors duration-300 hover:border-accent/40 hover:bg-surface-elevated"
+                            >
+                                <span class="flex items-center gap-2">
+                                    <Icon name={item.icon} size={20} />
+                                    <span class="font-semibold text-text-primary">{item.title}</span>
+                                </span>
+                                <span class="text-sm/relaxed text-text-secondary">{item.text}</span>
+                            </a>
+                        </li>
+                    ))
+                }
+            </ul>
+        </div>
+    </ShowcaseSection>
+
+    <!-- (d) AI, opt-in -->
+    <ShowcaseSection id="optional-ai" eyebrow="AI" title="AI, only if you want it">
+        <p>
+            Describe what you’re looking for, like “my tax report from last year”, and Cmdr turns it into filters and
+            shows hits in a second.
+        </p>
+        <ul class="space-y-3 text-base">
+            <li class="flex gap-3">
+                <Icon name="toggle-left" size={22} class="mt-0.5 shrink-0" />
+                <span
+                    ><strong class="font-semibold text-text-primary">Off by default.</strong> With AI off, Cmdr is a complete
+                    two-pane file manager.</span
+                >
+            </li>
+            <li class="flex gap-3">
+                <Icon name="laptop-minimal-check" size={22} class="mt-0.5 shrink-0" />
+                <span
+                    ><strong class="font-semibold text-text-primary">Can stay 100% on your Mac.</strong> The built-in model
+                    runs locally. Or bring your own OpenAI, Claude, or Gemini key.</span
+                >
+            </li>
+        </ul>
+        <p class="text-base">
+            <a href="/features#search">Smart search</a>
+            <span class="text-text-tertiary" aria-hidden="true">&middot;</span>
+            <a href="/features#local-ai">The private model</a>
+        </p>
+        <ProductClip
+            slot="media"
+            slug="search"
+            label="Searching in Cmdr by typing a plain-language request, which turns into filters and a list of matching files."
+        />
+    </ShowcaseSection>
+
+    <!-- (e) Craft -->
+    <ShowcaseSection id="made-with-care" eyebrow="Details" title="Made with care" flip>
+        <p>
+            Cmdr follows your Mac’s look and accessibility settings, and speaks 15 languages. Switch between them
+            whenever you like, no restart needed.
+        </p>
+        <p class="text-base"><a href="/trust/accessibility-guide">Accessibility guide</a></p>
+        <ProductClip
+            slot="media"
+            slug="language-switch"
+            label="Switching Cmdr's language in Settings: the whole interface changes language on the spot."
+            caption="Works with VoiceOver · WCAG 2.2 AA contrast · Real dark and light modes"
+        />
+    </ShowcaseSection>
+</div>
+
+<style>
+    /* A hairline between sections, faded at the edges so the page reads as one tour. */
+    .showcase-tour > :global(section + section)::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 10%;
+        right: 10%;
+        height: 1px;
+        background: linear-gradient(to right, transparent, var(--color-border), transparent);
+    }
+</style>

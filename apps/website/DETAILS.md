@@ -236,8 +236,8 @@ Using it:
 
 - `<Icon name="rocket" size={40} />`. Default gold comes from `.icon { color: var(--color-accent) }` plus Lucide's
   `currentColor` stroke; recolor by passing a `class` (e.g. a Tailwind `text-text-secondary`).
-- When a data array feeds `<Icon name={…}>` (the `Features.astro` / `features.astro` grids), type its `icon` field as
-  `IconName` via `satisfies { …; icon: IconName }[]` so a bad name is a compile error at the data site.
+- When a data array feeds `<Icon name={…}>` (the `features.astro` grid, the `Showcase.astro` reach strip), type its
+  `icon` field as `IconName` via `satisfies { …; icon: IconName }[]` so a bad name is a compile error at the data site.
 - **Size is applied as CSS `width`/`height`, never as width/height attributes.** Lucide glyphs already ship
   `width="1.2em" height="1.2em"`; passing width/height props too emits duplicate attributes, which `html-validate`'s
   `no-dup-attr` rejects (it runs over `dist/**/*.html`). `Icon.astro` sizes via a scoped `.icon :global(svg)` rule.
@@ -275,6 +275,29 @@ All pages support both light and dark mode. Users can override their system pref
 
 **Decision/Why**: The dual-selector pattern (media query + `data-theme` attribute) ensures the site works correctly
 without JS (falls back to system preference) while supporting explicit overrides via the toggle.
+
+## Product clips
+
+The landing page leads with short screen recordings of the app (`Showcase.astro`, order and pitch from issue #693):
+trust (copy and rollback, the queue), multi-rename, viewer plus a reach strip, optional AI, and craft.
+
+- **Files**: `pnpm marketing:clips` (apps/desktop) writes `public/clips/{slug}-{light,dark}-{av1,h264}.mp4`, a
+  `{slug}-{theme}.webp` poster per theme, and `clips.json` (slug → width, height, duration). The contract and the
+  "available" rule (manifest entry, both H.264 files, and both posters; AV1 optional) live in
+  `src/build/product-clips.ts`, read at build time.
+- **Player** (`ProductClip.astro`): no `src` until the clip scrolls near the viewport, then AV1 with H.264 as the
+  fallback (Safari decodes AV1 only in hardware), for the active theme. A theme toggle swaps the files and keeps the
+  position. Offscreen pauses. A play/pause button is always reachable (WCAG 2.2.2); with `prefers-reduced-motion` the
+  clip waits on its poster until clicked. Posters are lazy `<img>` pairs hidden per theme by CSS, so only the visible
+  one downloads, the same reasoning as the hero's background images.
+- **Window chrome is CSS**: the recordings have no alpha, so the rounded corners, hairline rim, and shadow come from
+  `.clip-window`.
+- **Before a clip exists**, the slot shows a still: the `brand/screenshots/` master for `search` (it carries its own
+  macOS shadow, so it's pulled outward by its transparent margin), else a placeholder card labeled as one. The Docker
+  build copies `brand/screenshots/` in for this (`Dockerfile`, `.dockerignore`).
+- **Gotcha**: Astro emits the full-size original of every imported image into `dist/`, used or not, and lazy
+  `import.meta.glob` imports emit the whole matched set. So `ProductClip.astro` statically imports only the masters a
+  page renders (verified on Astro 7.3.8, comparing `dist/_astro/`, 2026-10-22).
 
 ## Typed linting
 
