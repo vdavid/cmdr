@@ -46,6 +46,14 @@ var nonTextScenarios = []nonTextScenario{
 		Surfaces: fieldSurfaces,
 		Gated:    []rowContrastTier{tierIncrease},
 	},
+	// A focused ToggleGroup cell that's also the active one: its fill is the accent,
+	// so the ring is drawn inside it in `--color-accent-fg` (`ToggleGroup.svelte`).
+	{
+		Selector: "focused active ToggleGroup cell's ring",
+		MarkVar:  "color-accent-fg",
+		Surfaces: []string{"color-accent"},
+		Gated:    []rowContrastTier{tierDefault, tierIncrease},
+	},
 	// The focused pane's active-tab band: the raw accent by default (a pane-level
 	// extra, measured: Apple Yellow is 1.45:1 on the tab), `--color-accent-pop`
 	// under Differentiate without color, where it must clear 3:1.

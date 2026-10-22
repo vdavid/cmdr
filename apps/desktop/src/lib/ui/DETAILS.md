@@ -2035,6 +2035,11 @@ The group's ends are fully rounded: `--radius-full` on `.tg-root`, and the first
 corners to match. **Gotcha/Why:** not `overflow: hidden` on the root, which clipped a focused cell's inset ring at the
 rounded ends and its `--shadow-focus` glow at every segment edge.
 
+**Focus ring.** A focused cell draws a 2px accent outline inset by 2px (inside the cell, so neighbors and the pill's
+border never cover it) plus the `--shadow-focus` glow. On the active cell the accent ring would vanish into the accent
+fill, so it's drawn in `--color-accent-fg` and inset by 4px, the fill framing it on every side; that pair is gated at
+3:1 for every accent in `scripts/check-a11y-contrast/non_text_states.go`.
+
 `ToggleGroupOption` shape:
 
 | Field          | Type       | Notes                                                                                                 |

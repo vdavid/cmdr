@@ -343,6 +343,16 @@
         z-index: 1;
     }
 
+    /* On the active cell the accent ring would vanish into the accent fill, so it's drawn
+       in the cell's own foreground (black or white per accent, `lib/accent-color.ts`), set in
+       from the edge so the fill frames it on every side. Gated in
+       `scripts/check-a11y-contrast/non_text_states.go`. */
+    :global(.tg-root .tg-item.is-active:focus-visible),
+    :global(.tg-root .tg-item[data-state='on']:focus-visible) {
+        outline-color: var(--color-accent-fg);
+        outline-offset: -4px;
+    }
+
     /* Inner wrapper for Ark items: the tooltip action needs a real element to attach to and Ark's
        item is the host button. We wrap the contents in a span so badge / label / hint can sit
        inside it the same way the tabs branch lays them out. */
