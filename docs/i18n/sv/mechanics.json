@@ -23,8 +23,8 @@
       "why": "a slashed article or pronoun that dodges en/ett gender; name the noun (`filen`, `objektet`) or rephrase"
     },
     {
-      "pattern": "\\uFFFC(?::|’|')?\\p{Ll}",
-      "why": "an ending or genitive glued to an insert (`{name}s`, `{name}:s`, `{system_settings}en`) depends on how the value sounds; use a preposition (`på {name}`, `från {host}`). A hyphenated compound (`{mode}-sökning`, `.git`-mappen) is fine"
+      "pattern": "\\uFFFC(?!:[ae](?!\\p{L}))(?::|’|')?\\p{Ll}",
+      "why": "an ending or genitive glued to an insert (`{name}s`, `{name}:s`, `{system_settings}en`) depends on how the value sounds; use a preposition (`på {name}`, `från {host}`). A hyphenated compound (`{mode}-sökning`, `.git`-mappen) is fine, and so is an ordinal `#:a` / `#:e` inside a `selectordinal` branch, whose category already picked the ending (Svenska skrivregler: `1:a`, `3:e`)"
     }
   ]
 }

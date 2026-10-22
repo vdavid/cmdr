@@ -571,3 +571,8 @@ catalog.
 - Cmdr's failed step is `ta bort originalet` (`moveAlreadyLanded`); the user's is `Radera originalet själv`, the settled
   delete verb.
 - `Ingenting gick förlorat` differs on purpose from `originalsKeptAside`'s `Ingenting slängdes` ("thrown away" there).
+
+## Range editor (`multiRename.rangeEditor.*`)
+
+- Ordinals are `#:a` / `#:e` from the `selectordinal` category; from the end, `sista` (=1) and `näst sista` (=2), else
+  `det 3:e sista tecknet`. Edges `Början` / `Slut`; grandparent `Överordnad mapp` beside the parent's `Mapp`.
