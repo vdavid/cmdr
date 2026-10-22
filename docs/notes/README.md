@@ -26,6 +26,9 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 
 **QA handoffs**, deleted once QA'd:
 
+- `demo-video-footage.md` — the long-form footage `pnpm marketing:clips --video` recorded for the 90-second demo video
+  (#693): what each beat shows, where it lives, what's missing, and the app bugs the recording surfaced.
+
 - `smb2-030-qa-2026-10-14.md` — what the `smb2` 0.30.0 upgrade changed for a share user, how to see each change, and the
   four proposals it didn't build (streamed rows, resumable uploads, atomic landing, rename detection).
 
