@@ -236,7 +236,6 @@ pub(super) fn copy_file_using(
     post_landing: PostLanding,
     progress_callback: Option<ChunkedCopyProgressFn>,
 ) -> Result<StrategyCopyOutcome, WriteOperationError> {
-    let cancelled = state.intent();
     // Every arm below writes through `stage_and_land_file`: the bytes go to a
     // `.cmdr-tmp-*` sibling and take the real name by one same-directory rename.
     // ❌ Don't add an arm that writes straight to `dest` — that is the whole
@@ -244,7 +243,7 @@ pub(super) fn copy_file_using(
     match strategy {
         #[cfg(target_os = "macos")]
         LocalCopyStrategy::AppleClone => {
-            let context = CopyProgressContext::with_cancellation(cancelled.clone());
+            let context = CopyProgressContext::with_cancellation(state.intent().clone());
             let landed = stage_and_land_file(state, dest, needs_safe_overwrite, post_landing, |target| {
                 copy_single_file_native(source, target, false, Some(&context)).map(Staged::bytes)
             })?;
@@ -259,7 +258,7 @@ pub(super) fn copy_file_using(
         LocalCopyStrategy::Chunked => {
             // Chunked copy `sync_data`s the file itself before returning.
             let landed = stage_and_land_file(state, dest, needs_safe_overwrite, post_landing, |target| {
-                chunked_copy_with_metadata(source, target, cancelled, progress_callback)
+                chunked_copy_with_metadata(source, target, state, progress_callback)
             })?;
             Ok(StrategyCopyOutcome {
                 bytes: landed.bytes,
@@ -273,7 +272,7 @@ pub(super) fn copy_file_using(
             // but we can't cheaply tell here), so the caller flushes the dest.
             // The source's POSIX ACL goes on after the landing, as on every arm.
             let landed = stage_and_land_file(state, dest, needs_safe_overwrite, post_landing, |target| {
-                let bytes = copy_single_file_linux(source, target, false, cancelled, progress_callback)?;
+                let bytes = copy_single_file_linux(source, target, false, state, progress_callback)?;
                 Ok(Staged {
                     bytes,
                     landed: LandedMetadata::of_source_acl(source),
@@ -287,7 +286,7 @@ pub(super) fn copy_file_using(
         }
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         LocalCopyStrategy::StdCopy => {
-            let _ = (cancelled, progress_callback); // Unused on this platform
+            let _ = progress_callback; // Unused on this platform
             // The std fallback doesn't flush; the caller's end-of-op pass does.
             let landed = stage_and_land_file(state, dest, needs_safe_overwrite, post_landing, |target| {
                 fs::copy(source, target).with_path(source).map(Staged::bytes)

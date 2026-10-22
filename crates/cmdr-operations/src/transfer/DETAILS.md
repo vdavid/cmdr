@@ -561,7 +561,7 @@ route it through `overwrite::safe_overwrite_dir`; the copy's folder→file case 
 runs it:
 
 - macOS, same APFS volume → `LocalCopyStrategy::AppleClone`, `copyfile(3)` with `COPYFILE_CLONE` for instant clonefile
-- macOS, everything else → `Chunked` (`chunked_copy_with_metadata`, 1 MB chunks, cancellation between chunks)
+- macOS, everything else → `Chunked` (`chunked_copy_with_metadata`, 1 MB chunks, cancel and pause between chunks)
 - Linux, network → `Chunked`
 - Linux, local → `KernelCopyRange` (`copy_single_file_linux`, `copy_file_range(2)`, reflink on btrfs/XFS)
 - Other platforms → `StdCopy`, the `std::fs::copy` fallback
@@ -1853,11 +1853,14 @@ listing budget (`indexing/network_scanner/scan_pace.rs`, which owns the reasonin
 design), the transfer parks. The runtime-level `tokio::task::yield_now()` (worker fairness) is a different layer and
 stays alongside this session-level yield.
 
-**Scoped out: the local-FS sync chunk loop.** `chunked_copy.rs::copy_data_chunked` (and the macOS `copyfile` / Linux
-`copy_file_range` strategies) receive only the cancel `intent` atom, not the `PauseGate` (which lives on
-`WriteOperationState`). So a local→local copy of one huge file pauses only at the next file boundary, not mid-file.
-Threading the gate through `copy_strategy.rs` + the native paths is the v2 follow-up; the user-reported case is
-MTP→local (the volume streaming path), which is fully covered.
+**The local-FS chunk loops park too.** `chunked_copy.rs::copy_data_chunked` and Linux's `copy_file_range` loop
+(`linux_copy.rs`) take the `WriteOperationState` and ask `stop_or_park_sync` at the top of each chunk, where they used
+to read only the cancel intent. A single big file is ONE item to the sync driver's loop, so without this it streamed to
+the end under a Paused dialog: the macOS case was a local→system-mounted SMB share (`/Volumes/...`), which takes the
+`Chunked` arm. The parked copy holds its open `.cmdr-tmp-*` handle; on a network mount, a session that drops during a
+long pause and doesn't come back fails the next write, which ends the copy like any other write error. Only the APFS
+clone arm (`copyfile(3)`, one instant call) has no boundary to park at. Pinned by
+`chunked_copy::tests::{chunked_copy_parks_mid_file_while_paused_then_resumes, chunked_copy_cancel_while_paused_unblocks}`.
 
 ## Retrying one FILE, and the watchdog that ends a wait nothing else will
 

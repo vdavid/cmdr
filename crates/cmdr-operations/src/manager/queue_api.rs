@@ -47,8 +47,8 @@ impl Operations {
         }
     }
 
-    /// Pauses one Running operation: parks it at its next between-files
-    /// boundary and flips its `LifecycleStatus` to `Paused` (re-emitting
+    /// Pauses one Running operation: parks it at its next boundary (between
+    /// files, and between chunks of a file that streams) and flips its `LifecycleStatus` to `Paused` (re-emitting
     /// `operations-changed`). A paused op keeps its lane slots. Pausing a Queued
     /// op is a v1 no-op (it isn't touching a device yet — it stays Queued and
     /// admits normally when its lanes free); pausing a Done/absent op is a

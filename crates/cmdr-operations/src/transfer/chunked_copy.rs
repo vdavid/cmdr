@@ -1,11 +1,11 @@
-//! Chunked file copy with cancellation support for network filesystems.
+//! Chunked file copy that stops on a cancel and parks on a pause between chunks.
 //!
 //! macOS `copyfile()` ignores `COPYFILE_QUIT` on network filesystems - the syscall
 //! continues until buffered I/O drains. This module provides a chunked read/write
-//! alternative that checks cancellation between chunks, allowing immediate response
-//! to user cancellation requests.
+//! alternative that asks `stop_or_park_sync` between chunks, so Cancel and Pause
+//! both land mid-file.
 
-use super::super::state::IntentCell;
+use super::super::state::WriteOperationState;
 use std::io::{Read, Write};
 use std::os::unix::fs::OpenOptionsExt as _;
 use std::path::Path;
@@ -48,7 +48,7 @@ pub(crate) fn is_network_filesystem(path: &Path) -> bool {
 // Chunked copy with metadata
 // ============================================================================
 
-/// Copies a file using chunked read/write with cancellation checks.
+/// Copies a file using chunked read/write, stopping or parking between chunks.
 ///
 /// This is used for network filesystems where `copyfile()` doesn't respond
 /// to cancellation in a timely manner. The copy checks for cancellation
@@ -72,7 +72,7 @@ pub(crate) fn is_network_filesystem(path: &Path) -> bool {
 pub(crate) fn chunked_copy_with_metadata(
     source: &Path,
     dest: &Path,
-    cancelled: &IntentCell,
+    state: &WriteOperationState,
     progress_callback: Option<ChunkedCopyProgressFn>,
 ) -> Result<Staged, WriteOperationError> {
     log::debug!(
@@ -105,7 +105,7 @@ pub(crate) fn chunked_copy_with_metadata(
         &mut dst_file,
         source,
         dest,
-        cancelled,
+        state,
         src_meta.len(),
         progress_callback,
     )?;
@@ -167,13 +167,6 @@ pub(crate) fn chunked_copy_with_metadata(
 /// that dies can't wedge the suite.
 #[cfg(test)]
 pub(crate) mod chunk_park {
-    // Only the macOS real-detach lane arms the park; elsewhere the copy's own hook is all
-    // that's read, and `-D unused` is fatal on the Linux build.
-    #![cfg_attr(
-        not(target_os = "macos"),
-        expect(dead_code, reason = "only the macOS real-detach lane arms the park")
-    )]
-
     use std::path::{Path, PathBuf};
     use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
     use std::sync::{Arc, Mutex};
@@ -275,7 +268,7 @@ fn copy_data_chunked(
     dst_file: &mut std::fs::File,
     source: &Path,
     dest: &Path,
-    cancelled: &IntentCell,
+    state: &WriteOperationState,
     source_size: u64,
     progress_callback: Option<ChunkedCopyProgressFn>,
 ) -> Result<u64, WriteOperationError> {
@@ -283,8 +276,10 @@ fn copy_data_chunked(
     let mut total_bytes = 0u64;
 
     loop {
-        // Check cancellation BEFORE each read
-        if cancelled.is_cancelled() {
+        // The chunk boundary: stop on a cancel, park while paused. A single big
+        // file is one item to the driver's loop, so without this it streams to
+        // the end under a Paused dialog.
+        if state.stop_or_park_sync() {
             log::debug!(
                 "chunked_copy: cancellation detected after {} bytes, cleaning up",
                 total_bytes
@@ -335,12 +330,21 @@ fn copy_data_chunked(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testing::TestOperations;
     use cmdr_fs::testing::TestDir;
     use std::fs;
     use std::sync::Arc;
+    use std::time::Duration;
 
     fn create_temp_dir(name: &str) -> TestDir {
         TestDir::new(&format!("chunked_copy_test_{}", name))
+    }
+
+    /// A live operation to copy under; the engine has to outlive it.
+    fn running_state() -> (TestOperations, Arc<WriteOperationState>) {
+        let engine = TestOperations::new();
+        let state = Arc::new(engine.new_operation_state(Duration::from_millis(50)));
+        (engine, state)
     }
 
     #[test]
@@ -351,8 +355,8 @@ mod tests {
 
         fs::write(&src, "Hello, chunked copy!").unwrap();
 
-        let cancelled = IntentCell::running();
-        let result = chunked_copy_with_metadata(&src, &dst, &cancelled, None);
+        let (_engine, state) = running_state();
+        let result = chunked_copy_with_metadata(&src, &dst, &state, None);
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap().bytes, 20); // "Hello, chunked copy!" is 20 bytes
@@ -371,12 +375,99 @@ mod tests {
         fs::write(&src, &large_content).unwrap();
 
         // Pre-cancelled
-        let cancelled = IntentCell::reading(crate::OperationIntent::Stopped);
-        let result = chunked_copy_with_metadata(&src, &dst, &cancelled, None);
+        let (_engine, state) = running_state();
+        state.intent().set_for_test(crate::OperationIntent::Stopped);
+        let result = chunked_copy_with_metadata(&src, &dst, &state, None);
 
         assert!(matches!(result, Err(WriteOperationError::Cancelled { .. })));
         // Partial file cleanup is now async/best-effort (fires on a detached thread),
         // so we don't assert file absence here; it may or may not be deleted yet.
+    }
+
+    /// Regression: a paused copy of ONE big file stops mid-file. This loop is the
+    /// arm a share on the system SMB mount takes, and it used to check only
+    /// cancel, so the file streamed on to 100% while the dialog said Paused.
+    #[test]
+    fn chunked_copy_parks_mid_file_while_paused_then_resumes() {
+        let temp_dir = create_temp_dir("pause_mid_file");
+        let src = temp_dir.join("source.bin");
+        let dst = temp_dir.join("dest.bin");
+        let content: Vec<u8> = (0..CHUNK_SIZE * 4).map(|i| (i % 251) as u8).collect();
+        fs::write(&src, &content).unwrap();
+
+        let (_engine, state) = running_state();
+        let park = chunk_park::park_after(&src, CHUNK_SIZE as u64);
+        let (sent, seen) = std::sync::mpsc::channel::<u64>();
+        let copy = {
+            let (state, src, dst) = (Arc::clone(&state), src.clone(), dst.clone());
+            std::thread::spawn(move || {
+                let report = move |done: u64, _total: u64| {
+                    let _ = sent.send(done);
+                };
+                chunked_copy_with_metadata(&src, &dst, &state, Some(&report))
+            })
+        };
+
+        // Hold the copy one chunk in, then pause and let it go: the chunk it was
+        // about to read lands, and it parks before the next.
+        let one = CHUNK_SIZE as u64;
+        assert_eq!(park.wait_until_parked(Duration::from_secs(10)), Some(one));
+        state.pause_gate.pause();
+        park.release();
+        let wait = Duration::from_secs(10);
+        assert_eq!(seen.recv_timeout(wait), Ok(one));
+        assert_eq!(seen.recv_timeout(wait), Ok(2 * one));
+        assert!(
+            seen.recv_timeout(Duration::from_millis(500)).is_err(),
+            "a paused copy must stop advancing mid-file"
+        );
+        assert!(!copy.is_finished(), "the copy must still be parked while paused");
+
+        state.pause_gate.resume();
+        let staged = copy
+            .join()
+            .expect("copy thread panicked")
+            .expect("resumed copy succeeds");
+        assert_eq!(staged.bytes, content.len() as u64);
+        assert_eq!(
+            fs::read(&dst).unwrap(),
+            content,
+            "resume carries on with no byte lost or doubled"
+        );
+    }
+
+    /// Cancel outranks pause: a cancel landing while the copy is parked wakes it,
+    /// and it ends `Cancelled` instead of waiting for a resume.
+    #[test]
+    fn chunked_copy_cancel_while_paused_unblocks() {
+        let temp_dir = create_temp_dir("cancel_while_paused");
+        let src = temp_dir.join("source.bin");
+        let dst = temp_dir.join("dest.bin");
+        fs::write(&src, vec![7u8; CHUNK_SIZE * 3]).unwrap();
+
+        let engine = TestOperations::new();
+        let op = engine.register_state(
+            "test-chunked-cancel-while-paused",
+            Arc::new(engine.new_operation_state(Duration::from_millis(50))),
+        );
+        let state = Arc::clone(op.state());
+        let park = chunk_park::park_after(&src, CHUNK_SIZE as u64);
+        let copy = {
+            let (state, src, dst) = (Arc::clone(&state), src.clone(), dst.clone());
+            std::thread::spawn(move || chunked_copy_with_metadata(&src, &dst, &state, None))
+        };
+
+        assert!(park.wait_until_parked(Duration::from_secs(10)).is_some());
+        state.pause_gate.pause();
+        park.release();
+        engine.cancel_write_operation(op.id(), false);
+
+        let result = copy.join().expect("copy thread panicked");
+        assert!(
+            matches!(result, Err(WriteOperationError::Cancelled { .. })),
+            "cancel wins over pause, got {:?}",
+            result.map(|staged| staged.bytes)
+        );
     }
 
     #[test]
@@ -390,8 +481,8 @@ mod tests {
         fs::write(&src, "#!/bin/bash").unwrap();
         fs::set_permissions(&src, fs::Permissions::from_mode(0o755)).unwrap();
 
-        let cancelled = IntentCell::running();
-        let result = chunked_copy_with_metadata(&src, &dst, &cancelled, None);
+        let (_engine, state) = running_state();
+        let result = chunked_copy_with_metadata(&src, &dst, &state, None);
 
         assert!(result.is_ok());
         let dst_perms = fs::metadata(&dst).unwrap().permissions().mode();
@@ -406,8 +497,8 @@ mod tests {
 
         fs::write(&src, "").unwrap();
 
-        let cancelled = IntentCell::running();
-        let result = chunked_copy_with_metadata(&src, &dst, &cancelled, None);
+        let (_engine, state) = running_state();
+        let result = chunked_copy_with_metadata(&src, &dst, &state, None);
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap().bytes, 0);
@@ -437,8 +528,8 @@ mod tests {
         let target_mtime = filetime::FileTime::from_unix_time(1_600_000_000, 0); // 2020-09-13
         filetime::set_file_mtime(&src, target_mtime).unwrap();
 
-        let cancelled = IntentCell::running();
-        chunked_copy_with_metadata(&src, &dst, &cancelled, None).unwrap();
+        let (_engine, state) = running_state();
+        chunked_copy_with_metadata(&src, &dst, &state, None).unwrap();
 
         let dst_meta = fs::metadata(&dst).unwrap();
         let dst_mtime = filetime::FileTime::from_last_modification_time(&dst_meta);
@@ -469,8 +560,8 @@ mod tests {
             return;
         }
 
-        let cancelled = IntentCell::running();
-        chunked_copy_with_metadata(&src, &dst, &cancelled, None).unwrap();
+        let (_engine, state) = running_state();
+        chunked_copy_with_metadata(&src, &dst, &state, None).unwrap();
 
         let roundtripped = xattr::get(&dst, key).unwrap();
         assert_eq!(
@@ -498,8 +589,8 @@ mod tests {
         let expected = payload.len() as u64;
         fs::write(&src, &payload).unwrap();
 
-        let cancelled = IntentCell::running();
-        let result = chunked_copy_with_metadata(&src, &dst, &cancelled, None).unwrap();
+        let (_engine, state) = running_state();
+        let result = chunked_copy_with_metadata(&src, &dst, &state, None).unwrap();
         assert_eq!(
             result.bytes, expected,
             "returned byte count must equal source length over multiple chunks"
@@ -520,7 +611,7 @@ mod tests {
         let expected_size = large_content.len() as u64;
         fs::write(&src, &large_content).unwrap();
 
-        let cancelled = IntentCell::running();
+        let (_engine, state) = running_state();
         let callback_count = Arc::new(AtomicU64::new(0));
         let last_bytes = Arc::new(AtomicU64::new(0));
 
@@ -532,7 +623,7 @@ mod tests {
             assert_eq!(total, expected_size);
         };
 
-        let result = chunked_copy_with_metadata(&src, &dst, &cancelled, Some(&progress_cb));
+        let result = chunked_copy_with_metadata(&src, &dst, &state, Some(&progress_cb));
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap().bytes, expected_size);

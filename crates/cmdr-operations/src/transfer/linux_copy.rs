@@ -5,7 +5,7 @@
 //! APFS clonefile on macOS. On other filesystems it falls back to an
 //! in-kernel data copy, still faster than userspace read/write.
 
-use super::super::state::IntentCell;
+use super::super::state::WriteOperationState;
 use std::fs;
 use std::os::unix::fs::OpenOptionsExt as _;
 use std::os::unix::io::AsRawFd;
@@ -19,7 +19,7 @@ use super::super::types::WriteOperationError;
 
 /// Chunk size per `copy_file_range` call (4 MB).
 /// Larger than chunked_copy's 1 MB because this is an in-kernel operation
-/// with no userspace buffer overhead. Cancellation is still checked between
+/// with no userspace buffer overhead. Cancel and pause are still asked between
 /// iterations.
 const COPY_RANGE_CHUNK: usize = 4 * 1024 * 1024;
 
@@ -31,13 +31,13 @@ const COPY_RANGE_CHUNK: usize = 4 * 1024 * 1024;
 /// * `source` - Source file path
 /// * `destination` - Destination file path (will be created/overwritten)
 /// * `overwrite` - If true, overwrite existing destination
-/// * `cancelled` - Cancellation flag checked between chunks
+/// * `state` - The operation, asked to stop or park between chunks
 /// * `progress_callback` - Optional callback called with (bytes_so_far, total)
 pub(crate) fn copy_single_file_linux(
     source: &Path,
     destination: &Path,
     overwrite: bool,
-    cancelled: &IntentCell,
+    state: &WriteOperationState,
     progress_callback: Option<&dyn Fn(u64, u64)>,
 ) -> Result<u64, WriteOperationError> {
     let src_file = fs::File::open(source).map_err(|e| classify_copy_io_error(&e, source, destination))?;
@@ -77,8 +77,8 @@ pub(crate) fn copy_single_file_linux(
     let mut dst_offset: libc::off64_t = 0;
 
     while bytes_copied < total_size {
-        // Check cancellation before each chunk
-        if cancelled.is_cancelled() {
+        // The chunk boundary: stop on a cancel, park while paused.
+        if state.stop_or_park_sync() {
             log::debug!("linux_copy: cancelled after {} bytes, cleaning up", bytes_copied);
             drop(dst_file);
             let _ = fs::remove_file(destination);
@@ -155,12 +155,21 @@ pub(crate) fn copy_single_file_linux(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testing::TestOperations;
     use cmdr_fs::testing::TestDir;
     use std::sync::Arc;
     use std::sync::atomic::Ordering;
+    use std::time::Duration;
 
     fn create_temp_dir(name: &str) -> TestDir {
         TestDir::new(&format!("linux_copy_test_{}", name))
+    }
+
+    /// A live operation to copy under; the engine has to outlive it.
+    fn running_state() -> (TestOperations, Arc<WriteOperationState>) {
+        let engine = TestOperations::new();
+        let state = Arc::new(engine.new_operation_state(Duration::from_millis(50)));
+        (engine, state)
     }
 
     #[test]
@@ -170,9 +179,9 @@ mod tests {
         let dst = dir.join("dest.txt");
 
         fs::write(&src, "Hello, Linux!").unwrap();
-        let cancelled = IntentCell::running();
+        let (_engine, state) = running_state();
 
-        let result = copy_single_file_linux(&src, &dst, false, &cancelled, None);
+        let result = copy_single_file_linux(&src, &dst, false, &state, None);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 13);
         assert_eq!(fs::read_to_string(&dst).unwrap(), "Hello, Linux!");
@@ -188,9 +197,9 @@ mod tests {
 
         fs::write(&src, "#!/bin/bash\necho hi").unwrap();
         fs::set_permissions(&src, fs::Permissions::from_mode(0o755)).unwrap();
-        let cancelled = IntentCell::running();
+        let (_engine, state) = running_state();
 
-        let result = copy_single_file_linux(&src, &dst, false, &cancelled, None);
+        let result = copy_single_file_linux(&src, &dst, false, &state, None);
         assert!(result.is_ok());
 
         let dst_perms = fs::metadata(&dst).unwrap().permissions().mode();
@@ -204,9 +213,9 @@ mod tests {
         let dst = dir.join("dest.txt");
 
         fs::write(&src, "").unwrap();
-        let cancelled = IntentCell::running();
+        let (_engine, state) = running_state();
 
-        let result = copy_single_file_linux(&src, &dst, false, &cancelled, None);
+        let result = copy_single_file_linux(&src, &dst, false, &state, None);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 0);
         assert_eq!(fs::read_to_string(&dst).unwrap(), "");
@@ -222,8 +231,9 @@ mod tests {
         fs::write(&src, "content").unwrap();
 
         // Pre-cancelled
-        let cancelled = IntentCell::reading(crate::OperationIntent::Stopped);
-        let result = copy_single_file_linux(&src, &dst, false, &cancelled, None);
+        let (_engine, state) = running_state();
+        state.intent().set_for_test(crate::OperationIntent::Stopped);
+        let result = copy_single_file_linux(&src, &dst, false, &state, None);
 
         assert!(matches!(result, Err(WriteOperationError::Cancelled { .. })));
         assert!(!dst.exists());
@@ -238,8 +248,8 @@ mod tests {
         fs::write(&src, "source").unwrap();
         fs::write(&dst, "existing").unwrap();
 
-        let cancelled = IntentCell::running();
-        let result = copy_single_file_linux(&src, &dst, false, &cancelled, None);
+        let (_engine, state) = running_state();
+        let result = copy_single_file_linux(&src, &dst, false, &state, None);
         assert!(result.is_err());
         assert_eq!(fs::read_to_string(&dst).unwrap(), "existing");
     }
@@ -253,8 +263,8 @@ mod tests {
         fs::write(&src, "new content").unwrap();
         fs::write(&dst, "old content").unwrap();
 
-        let cancelled = IntentCell::running();
-        let result = copy_single_file_linux(&src, &dst, true, &cancelled, None);
+        let (_engine, state) = running_state();
+        let result = copy_single_file_linux(&src, &dst, true, &state, None);
         assert!(result.is_ok());
         assert_eq!(fs::read_to_string(&dst).unwrap(), "new content");
     }
@@ -270,7 +280,7 @@ mod tests {
         let content = "x".repeat(1000);
         fs::write(&src, &content).unwrap();
 
-        let cancelled = IntentCell::running();
+        let (_engine, state) = running_state();
         let last_bytes = Arc::new(AtomicU64::new(0));
         let last_bytes_clone = Arc::clone(&last_bytes);
 
@@ -279,7 +289,7 @@ mod tests {
             last_bytes_clone.store(bytes, Ordering::Relaxed);
         };
 
-        let result = copy_single_file_linux(&src, &dst, false, &cancelled, Some(&cb));
+        let result = copy_single_file_linux(&src, &dst, false, &state, Some(&cb));
         assert!(result.is_ok());
         assert_eq!(last_bytes.load(Ordering::Relaxed), 1000);
     }

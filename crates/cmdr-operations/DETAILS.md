@@ -1700,12 +1700,13 @@ mid-`Copying`).
   `MutationHooks::wait_if_paused`, and every SCAN boundary that already observes cancel. The cross-volume streaming copy
   path ALSO parks BETWEEN CHUNKS via the `CheckpointStream` wrapper in `transfer/volume/stream_pipe.rs` (the sync
   per-chunk `on_progress` callback can't `.await`, so the async stream decorator owns mid-file parking + a `yield_now`),
-  so a paused single large file (e.g. MTP→local) stops mid-stream holding only its `.cmdr-tmp-<uuid>`. Two paths still
-  pause only at a file boundary, both for the same reason — no stream to park between chunks and nothing freed by
-  parking: the local-FS sync chunk loop (`chunked_copy.rs`, which receives the cancel atom, not the `PauseGate`) and a
-  server-side copy made in one call, such as SFTP's `copy_within` (`transfer/volume/server_side_copy.rs`'s
-  `try_server_side_copy`); one made in pieces (S3's parts) parks between them, at `ServerCopyProgress::checkpoint`. Full
-  rationale + scope: `src/transfer/DETAILS.md` § "Pause reaches between chunks".
+  so a paused single large file (e.g. MTP→local) stops mid-stream holding only its `.cmdr-tmp-<uuid>`. The local-FS
+  chunk loops (`chunked_copy.rs`, Linux's `linux_copy.rs`) ask `stop_or_park_sync` per chunk, so a local copy to a
+  system-mounted share parks mid-file too. Only a copy made in one call pauses at a file boundary, having no chunk to
+  park between: the APFS clone, and a server-side copy such as SFTP's `copy_within`
+  (`transfer/volume/server_side_copy.rs`'s `try_server_side_copy`); one made in pieces (S3's parts) parks between them,
+  at `ServerCopyProgress::checkpoint`. Full rationale + scope: `src/transfer/DETAILS.md` § "Pause reaches between
+  chunks".
 - **Cancellation always wins over pause.** `cancel_write_operation` / `cancel_all_write_operations` flip the intent AND
   call `pause_gate.wake()`, so a paused, parked op unblocks, observes the non-`Running` intent, and bails through the
   existing keep-partials path (keeping already-copied files, deleting only the last partial). Without that wake a paused
