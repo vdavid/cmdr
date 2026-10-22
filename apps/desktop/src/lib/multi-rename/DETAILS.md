@@ -38,16 +38,18 @@
   (`hoverMovesCursor` off, unlike Search): the cursor row drives the range editor's examples, which mustn't jump while
   the pointer passes over. The list's keys are bare (`list-cursor.ts`), so ↓ there never meets the fields' history
   (`multiRename.fieldHistory` answers only in a text field).
-- **Rename order** (⇧↑ / ⇧↓, `multiRename.moveRowUp` / `.moveRowDown`, fixed keys): in the list, the cursor row moves
+- **Rename order** (⇧↑ / ⇧↓ and ⌥↑ / ⌥↓, `multiRename.moveRowUp` / `.moveRowDown`, fixed keys, two per command): in
+  the list, the cursor row moves
   one place in the session's order (what `[C]` counts) and the cursor goes with it (`moveCursorRow`; the backend's
   `move_row`, `src-tauri/src/multi_rename/DETAILS.md` § Session, preview, and apply). `PreviewList` answers them through
   `ColumnList`'s `onKeydown` (the grid's keys that aren't cursor keys), so in a text field ⇧↑ / ⇧↓ stay the selection
-  keys. The move retires the preview on screen, and the state previews again at once; it's `pending` from the key on, so
+  keys and ⌥↑ / ⌥↓ the caret's. The move retires the preview on screen, and the state previews again at once; it's `pending` from the key on, so
   a Start right after waits for the new order's preview. Moves queue, each from where the last left the row. Off while
   "Problems only" is on (claimed, nothing moves): a move in a filtered view is ambiguous. Off under a preview error too:
   the dimmed last good rows can't show the new order, so the cursor would land on another file. A move is announced
   through a house `LiveAnnouncer` ("Moved to 3 of 48", `multiRename.movedRow`); a move at an end says nothing.
-  **Decision/Why:** ⇧↑ / ⇧↓ are David's pick; the house reorder key elsewhere is ⌥↑ / ⌥↓ (the `Menu`, the queue window).
+  **Decision/Why:** ⇧↑ / ⇧↓ are David's pick; ⌥↑ / ⌥↓ ride along as the house reorder key (the `Menu`, the queue
+  window). The file list's ⌥↑ / ⌥↓ (top / bottom) never meet them: dialogs block those while the sheet is up.
   Neither meets another sheet key or `Main window/Multi-rename`'s ancestors (`registry-conflicts.test.ts`).
 - **Status glyphs** (`row-status.ts`): one glyph per problem kind (invalid name, duplicate, name taken, gone) in a
   `StatusGlyph`, its short label the accessible name and the full reason the tooltip, in the error color. Ready and

@@ -143,12 +143,13 @@ export const multiRenameCommands: CommandSource[] = [
   },
   {
     // In the preview list: the row under the cursor moves in the rename order (what `[C]`
-    // counts), the cursor with it. ⇧↑ / ⇧↓ in a text field stay the field's selection keys.
+    // counts), the cursor with it. ⇧↑ / ⇧↓ are David's pick, ⌥↑ / ⌥↓ the house reorder key
+    // (`lib/ui/menu-navigation.ts`, the queue window). In a text field both stay the field's own.
     id: 'multiRename.moveRowUp',
     nameKey: 'commands.multiRenameMoveRowUp.label',
     scope: 'Main window/Multi-rename',
     showInPalette: false,
-    shortcuts: ['⇧↑'],
+    shortcuts: ['⇧↑', '⌥↑'],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
@@ -157,7 +158,7 @@ export const multiRenameCommands: CommandSource[] = [
     nameKey: 'commands.multiRenameMoveRowDown.label',
     scope: 'Main window/Multi-rename',
     showInPalette: false,
-    shortcuts: ['⇧↓'],
+    shortcuts: ['⇧↓', '⌥↓'],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },

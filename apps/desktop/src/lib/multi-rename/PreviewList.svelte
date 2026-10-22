@@ -47,7 +47,7 @@
     let list = $state<ColumnListApi>()
     let announcer: { announce: (message: string) => void } | undefined = $state()
 
-    /** ⇧↑ / ⇧↓, claimed even when the row can't move (at an end, or with the problems alone). */
+    /** ⇧↑ / ⇧↓ and ⌥↑ / ⌥↓, claimed even when the row can't move (at an end, or with the problems alone). */
     function onListKeydown(event: KeyboardEvent): void {
         const direction: RowMove | null = eventMatchesCommand(event, 'multiRename.moveRowUp')
             ? 'up'

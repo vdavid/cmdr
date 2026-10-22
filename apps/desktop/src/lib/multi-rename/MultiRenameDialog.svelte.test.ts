@@ -437,6 +437,30 @@ describe('MultiRenameDialog', () => {
       expect(spoken).toContain('Moved to 2 of 3')
     })
 
+    it('⌥↑ / ⌥↓ in the list move the cursor row too, the house reorder key', async () => {
+      ipc.previewMultiRename.mockResolvedValue({ ok: true, value: MIXED })
+      ipc.moveMultiRenameRow.mockResolvedValue({ ok: true, value: 1 })
+      const root = await mountSheet()
+      const grid = root.querySelector<HTMLElement>('[role="grid"]')
+      if (!grid) throw new Error('no grid')
+
+      // In a text field ⌥↑ / ⌥↓ are the field's: they move the caret by paragraph.
+      key(inputs(root)[0], 'ArrowDown', { altKey: true })
+      key(inputs(root)[0], 'ArrowUp', { altKey: true })
+      expect(ipc.moveMultiRenameRow).not.toHaveBeenCalled()
+
+      key(grid, 'ArrowDown', { altKey: true })
+      await settle()
+      expect(ipc.moveMultiRenameRow).toHaveBeenCalledWith('S', 0, 'down')
+      expect(cursorNames(root)).toEqual(['c.pdf'])
+
+      ipc.moveMultiRenameRow.mockResolvedValue({ ok: true, value: 0 })
+      key(grid, 'ArrowUp', { altKey: true })
+      await settle()
+      expect(ipc.moveMultiRenameRow).toHaveBeenLastCalledWith('S', 1, 'up')
+      expect(cursorNames(root)).toEqual(['a.pdf'])
+    })
+
     function problemsToggle(root: HTMLElement): HTMLButtonElement | null {
       return root.querySelector<HTMLButtonElement>('.counts button')
     }
