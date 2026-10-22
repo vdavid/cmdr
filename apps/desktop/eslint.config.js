@@ -41,6 +41,7 @@ import noRawLocaleFormat from './eslint-plugins/no-raw-locale-format.js'
 import noPrivateUnitFormat from './eslint-plugins/no-private-unit-format.js'
 import noRawUserFacingString from './eslint-plugins/no-raw-user-facing-string.js'
 import dialogNeedsFocusTrap from './eslint-plugins/dialog-needs-focus-trap.js'
+import dialogInsideBoundary from './eslint-plugins/dialog-inside-boundary.js'
 import preferUiPrimitive from './eslint-plugins/prefer-ui-primitive.js'
 import keyHintViaButtonProp from './eslint-plugins/key-hint-via-button-prop.js'
 import dialogButtonsInFooter from './eslint-plugins/dialog-buttons-in-footer.js'
@@ -317,6 +318,7 @@ export default tseslint.config(
           'no-private-unit-format': noPrivateUnitFormat,
           'no-raw-user-facing-string': noRawUserFacingString,
           'dialog-needs-focus-trap': dialogNeedsFocusTrap,
+          'dialog-inside-boundary': dialogInsideBoundary,
           'prefer-ui-primitive': preferUiPrimitive,
           'key-hint-via-button-prop': keyHintViaButtonProp,
           'dialog-buttons-in-footer': dialogButtonsInFooter,
@@ -370,6 +372,11 @@ export default tseslint.config(
       // copy for fixtures/assertions).
       'cmdr/no-raw-user-facing-string': 'error',
       'cmdr/dialog-needs-focus-trap': 'error',
+      // A route dialog sits inside a `DialogBoundary` (above the `{#if}` that
+      // mounts it), so a render or teardown throw closes it instead of
+      // blanking the window. Scoped to `src/routes/` minus `routes/dev/`
+      // inside the rule.
+      'cmdr/dialog-inside-boundary': 'error',
       // Feature code uses the house UI primitives (`Checkbox`, `RadioGroup`,
       // `Select`, `ModalDialog`, `ProgressBar`), never a raw native control:
       // raw controls gray out on window blur, ignore theme tokens, and
