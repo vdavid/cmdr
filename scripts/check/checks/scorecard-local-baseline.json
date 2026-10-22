@@ -55,6 +55,14 @@
         {
           "warning": "Warn: jobLevel 'contents' permission set to 'write': .github/workflows/release.yml",
           "reason": "The caller of release-pipeline.yml has to grant what the reusable workflow's jobs ask for."
+        },
+        {
+          "warning": "Warn: jobLevel 'packages' permission set to 'write': .github/workflows/ci.yml",
+          "reason": "`e2e-base-image` pushes the E2E Docker base image to GHCR, only when the registry lacks the current tag. Test infra only (releases never use it), the token stays out of the Docker build, and fork PRs get a read-only token anyway. The jobs that only pull get `packages: read`; the score stays 10."
+        },
+        {
+          "warning": "Warn: jobLevel 'actions' permission set to 'write': .github/workflows/ci.yml",
+          "reason": "`prune-superseded-caches` deletes superseded `main` build caches after a land, so the repo stays under its 10 GB budget. Runs only on `main` pushes, with no checkout and no third-party action, just an inline `gh cache` script; `release.yml` can't be dispatched. The score stays 10."
         }
       ]
     }
