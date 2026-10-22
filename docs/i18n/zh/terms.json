@@ -3679,6 +3679,9 @@
     ],
     "chosen": "空格键",
     "confidence": "high",
+    "exceptions": {
+      "multiRename.rangeEditor.space": "the space CHARACTER in a file name, read aloud in place of a letter, not the key → 空格 (macOS zh-CN, TC and DC call the character 空格; 键 names only the key)"
+    },
     "forms": "按空格键 + verb; chord ⇧空格键 (macOS: Command-空格键)",
     "sources": "macOS AppKit FunctionKeyNames (Space), SystemSettings Siri/Spotlight SPACEBAR_KEY → 空格键; TC zh-CN 1644, 5139 (用空格键选择时); Double Commander 空格键; Midnight Commander 空格键"
   },

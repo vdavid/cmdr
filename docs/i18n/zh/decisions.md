@@ -675,3 +675,5 @@ in prose.
   `计数器` / `起始值` / `步长` / `位数`, case menu `不变` / `全部小写` / `全部大写`.
 - Search & replace is `查找` / `替换为` (Finder BulkRename `查找：`, TC 6613), not the file-search `搜索`; the status
   column is `状态`, not the user-note `备注`.
+- Range editor: `起点` / `终点` (a position, not the counter's `起始值`); ordinals `第 # 个` / `倒数第 # 个`, `=1` →
+  `最后一个`.
