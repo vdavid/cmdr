@@ -540,7 +540,7 @@
   "@multiRename.rangeEditor.title": {
     "sourceHash": "e1e72f0"
   },
-  "multiRename.rangeEditor.selectCharacters": "Select the characters to take",
+  "multiRename.rangeEditor.selectCharacters": "Markera tecknen du vill ta med",
   "@multiRename.rangeEditor.selectCharacters": {
     "sourceHash": "8b07e2a"
   },

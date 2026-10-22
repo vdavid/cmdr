@@ -539,7 +539,7 @@
   "@multiRename.rangeEditor.title": {
     "sourceHash": "e1e72f0"
   },
-  "multiRename.rangeEditor.selectCharacters": "Select the characters to take",
+  "multiRename.rangeEditor.selectCharacters": "Chọn các ký tự cần lấy",
   "@multiRename.rangeEditor.selectCharacters": {
     "sourceHash": "8b07e2a"
   },
