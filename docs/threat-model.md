@@ -1,32 +1,13 @@
 # Threat model
 
-The whole-app threat model for Cmdr: what we protect, from whom, where the trust boundaries run, what stops each threat
-today, and what risk we knowingly carry. It's written for two readers: an enterprise security reviewer, and an agent
-changing code that sits on a boundary below.
+What Cmdr protects, from whom, where the trust boundaries run, what stops each threat today, and what risk we knowingly
+carry. Each mitigation points to the code or doc that implements it, so you can check the claim.
 
-This is a map. Each mechanism lives in exactly one doc (usually the `DETAILS.md` beside the code), and this file points
-there instead of restating it. Per-area privacy and hardening decisions are in `docs/security.md`; the reviewer-facing
-summary is the website's `/trust` page (`apps/website/src/lib/trust.ts`); the disclosure policy is the repo-root
-`SECURITY.md`.
-
-Verified against the code at `6b4bd4a2c` on 2026-10-05, by reading the code paths named below (not the docs alone); the
-security fixes, fuzzing, release environment, and managed-preferences mitigations re-checked at `218426862` the same
-day.
-
-❗ This repo is public. Gaps an attacker could use before they're fixed are tracked in a private tracker, not here. This
-file names each boundary and says where its gaps go, whether or not one is open right now; don't add exploit detail. A
-newly found gap goes to the private tracker (`vdavid/cmdr-reports`) first, labeled `security-gap`, which is what the
-release check lists.
-
-## How to use this
-
-- **Changing code at a boundary below?** Read that boundary's section first. If your change adds an entry point, widens
-  what crosses the boundary, or removes a mitigation listed here, update the section in the same commit.
-- **Adding a new boundary** (a new network backend, a new IPC surface, a new outbound host, a new parser of untrusted
-  bytes): add a section with the same four parts (entry points, threats, mitigations, residual risk), and re-rank the
-  list at the end.
-- **Closing a residual risk?** Move it to mitigations, and update `/trust` (`trust.ts`'s `knownLimitations`) if it's
-  listed there.
+- **Checked against the code** on 2026-10-05 (commits `6b4bd4a2c` and `218426862`).
+- **Not in this file**: gaps an attacker could use before they're fixed. Those are tracked privately and reviewed before
+  every release; each boundary below says where its gaps go.
+- **Related**: the summary for security and IT teams is [getcmdr.com/trust](https://getcmdr.com/trust), and how to
+  report a vulnerability is `SECURITY.md`.
 
 ## Security posture in one paragraph
 
@@ -392,8 +373,8 @@ risk.
   requirement (Annex I Part I (2)(e), "such as by encrypting relevant data at rest"). **Why**, per threat:
   - **Another process running as the user**: app-level encryption doesn't help. Cmdr must hold the key to use the data,
     so the key sits in the Keychain item or file that same process could read, or in Cmdr's memory, which it can also
-    read. It would add CPU and disk cost (principle 5) and a lost-key failure mode, and buy no confidentiality.
-    Same-user code is out of scope anyway (§ Security posture).
+    read. It would add CPU and disk cost and a lost-key failure mode, and buy no confidentiality. Same-user code is out
+    of scope anyway (§ Security posture).
   - **Stolen or lost Mac**: FileVault encrypts the whole disk at rest, Cmdr's data included. Setup Assistant offers it
     on every new Mac, and IT can enforce it on managed Macs through MDM.
   - **Another local user**: `~/Library` and its `Application Support` and `Caches` are mode `700` (owner-only), so other

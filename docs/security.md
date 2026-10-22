@@ -11,6 +11,23 @@ policy, release, update cadence) is `/trust/development`, with its measured numb
 `apps/website/src/lib/trust-development.ts`; update it when a check lane, `deny.toml`, `renovate.json`, or the release
 workflow changes what it claims.
 
+## Maintaining the threat model
+
+`docs/threat-model.md` is written for security reviewers, so the instructions for changing it live here.
+
+- **Changing code at a boundary there?** Read that boundary's section first. If your change adds an entry point, widens
+  what crosses the boundary, or removes a mitigation listed there, update the section in the same commit.
+- **Adding a new boundary** (a new network backend, IPC surface, outbound host, or parser of untrusted bytes): add a
+  section with the same four parts (entry points, threats, mitigations, residual risk), and re-rank the list at the end.
+- **Closing a residual risk?** Move it to mitigations, and update `/trust` (`trust.ts`'s `knownLimitations`) if it's
+  listed there.
+- **Single-source**: each mechanism lives in exactly one doc (usually the `DETAILS.md` beside the code); the threat
+  model points there and never restates it.
+- ❗ **The repo is public: no exploit detail there.** Each boundary names where its gaps go, whether or not one is open
+  right now. A newly found gap goes to the private tracker (`vdavid/cmdr-reports`) first, labeled `security-gap`, which
+  is what the release check lists.
+- **Re-verify by reading the code paths it names**, not the docs alone, and update its "Checked against the code" line.
+
 ## Entitlements: the bundle ships none
 
 `apps/desktop/src-tauri/Entitlements.plist` is a deliberately empty dict. Release builds keep the hardened runtime
