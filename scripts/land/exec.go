@@ -50,6 +50,35 @@ func (r runner) isAncestor(a, b string) bool {
 	return err == nil
 }
 
+// tagged reports whether a tag points at any commit in rangeSpec: a release commit, whose tag a
+// rebase would leave behind, off `main`'s history. A failed lookup reads as tagged, the safe side.
+func (r runner) tagged(rangeSpec string) bool {
+	commits, err := r.git("rev-list", rangeSpec)
+	if err != nil {
+		return true
+	}
+	if commits == "" {
+		return false
+	}
+	// The peeled commit of an annotated tag, the object itself of a lightweight one.
+	refs, err := r.git("for-each-ref", "--format=%(*objectname) %(objectname)", "refs/tags")
+	if err != nil {
+		return true
+	}
+	onTag := map[string]bool{}
+	for line := range strings.SplitSeq(refs, "\n") {
+		for sha := range strings.FieldsSeq(line) {
+			onTag[sha] = true
+		}
+	}
+	for sha := range strings.SplitSeq(commits, "\n") {
+		if onTag[sha] {
+			return true
+		}
+	}
+	return false
+}
+
 // allUpstream reports whether every commit on HEAD is already on `origin/main` patch for patch, as
 // after GitHub rebased the branch onto it under fresh SHAs.
 func (r runner) allUpstream() bool {

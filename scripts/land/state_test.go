@@ -24,7 +24,47 @@ func TestNextStartStep(t *testing.T) {
 		{"a merge commit on a current branch", branchState{branch: "worktree-x", based: true, hasMerges: true}, stepProceed},
 	}
 	for _, c := range cases {
-		if got := nextStartStep(c.state); got != c.want {
+		if got := nextStartStep(c.state, false); got != c.want {
+			t.Errorf("%s: got %d, want %d", c.name, got, c.want)
+		}
+	}
+}
+
+// A release commit carries its tag, so a rebase would take the tagged commit off `main`'s history.
+func TestNextStartStepKeepsATaggedCommit(t *testing.T) {
+	moved := branchState{branch: "release/v1.2.3", tagged: true}
+	if got := nextStartStep(moved, false); got != stepRefuseTaggedRebase {
+		t.Errorf("a plain land rebasing a tagged commit: got %d, want %d", got, stepRefuseTaggedRebase)
+	}
+	if got := nextStartStep(moved, true); got != stepProceed {
+		t.Errorf("-merge never rebases: got %d, want %d", got, stepProceed)
+	}
+	if got := nextStartStep(branchState{branch: "release/v1.2.3"}, true); got != stepProceed {
+		t.Errorf("-merge on any branch never rebases: got %d, want %d", got, stepProceed)
+	}
+	if got := nextStartStep(branchState{branch: "release/v1.2.3", tagged: true, based: true}, false); got != stepProceed {
+		t.Errorf("a tagged commit main hasn't moved under fast-forwards: got %d, want %d", got, stepProceed)
+	}
+	if got := nextStartStep(branchState{branch: "release/v1.2.3", tagged: true, landed: true}, true); got != stepFinish {
+		t.Errorf("a merged-back release: got %d, want %d", got, stepFinish)
+	}
+}
+
+func TestNextMergePath(t *testing.T) {
+	yes, no := true, false
+	cases := []struct {
+		name      string
+		based     bool
+		mergeable *bool
+		want      landPath
+	}{
+		{"main didn't move", true, nil, landFastForward},
+		{"main moved", false, &yes, landGitHubMerge},
+		{"main moved, GitHub still computing", false, nil, landGitHubMerge},
+		{"main moved into a conflict", false, &no, landMergeConflict},
+	}
+	for _, c := range cases {
+		if got := nextMergePath(c.based, c.mergeable); got != c.want {
 			t.Errorf("%s: got %d, want %d", c.name, got, c.want)
 		}
 	}

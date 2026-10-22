@@ -22,9 +22,12 @@ type branchState struct {
 	landed bool
 	// based: origin/main is an ancestor of HEAD, so the branch fast-forwards onto it.
 	based bool
-	// hasMerges: the branch carries a merge commit (a release merge-back), which a plain rebase
-	// would flatten. A contributor's PR record never rides a branch: `-record N` lands it alone.
+	// hasMerges: the branch carries a merge commit, which a plain rebase would flatten. A
+	// contributor's PR record never rides a branch: `-record N` lands it alone.
 	hasMerges bool
+	// tagged: a tag points at one of the branch's commits (a release commit), so a rebase would
+	// leave the tag off `main`'s history. `-merge` lands it as it is.
+	tagged bool
 }
 
 type startStep int
@@ -40,11 +43,14 @@ const (
 	// stepRefuseMergeRebase: `origin/main` moved under a merge commit; say how to catch up by hand
 	// and stop.
 	stepRefuseMergeRebase
+	// stepRefuseTaggedRebase: `origin/main` moved under a tagged commit, which only `-merge` lands.
+	stepRefuseTaggedRebase
 	stepProceed
 )
 
-// nextStartStep decides from the local state what a run does first.
-func nextStartStep(s branchState) startStep {
+// nextStartStep decides from the local state what a run does first. With `-merge` the branch is
+// never rebased: it lands as it is, by fast-forward or a merge commit GitHub makes.
+func nextStartStep(s branchState, merge bool) startStep {
 	switch {
 	case s.branch == "" || s.branch == "main":
 		return stepRefuseBranch
@@ -52,6 +58,10 @@ func nextStartStep(s branchState) startStep {
 		return stepRefuseDirty
 	case s.landed:
 		return stepFinish
+	case merge || s.based:
+		return stepProceed
+	case s.tagged:
+		return stepRefuseTaggedRebase
 	case !s.based && s.hasMerges:
 		return stepRefuseMergeRebase
 	case !s.based:
@@ -84,6 +94,11 @@ const (
 	// landRebaseAndRerun: GitHub can't rebase it (a conflict, or a merge commit a rebase would
 	// flatten), so the branch catches up here and CI runs again.
 	landRebaseAndRerun
+	// landGitHubMerge (`-merge`): `origin/main` moved, so GitHub merges the green PR into it with a
+	// merge commit, keeping the head's SHA (and its tag) on `main`'s history.
+	landGitHubMerge
+	// landMergeConflict (`-merge`): GitHub can't merge it cleanly; a person merges by hand.
+	landMergeConflict
 )
 
 // nextLandPath picks the land path. rebaseable is GitHub's view of the PR, nil while it's still
@@ -97,6 +112,20 @@ func nextLandPath(based, hasMerges bool, rebaseable *bool) landPath {
 	default:
 		// Still computing: try, and GitHub refuses the merge if it can't rebase.
 		return landGitHubRebase
+	}
+}
+
+// nextMergePath picks the land path of `-merge`. mergeable is GitHub's view of the PR, nil while
+// it's still computing it.
+func nextMergePath(based bool, mergeable *bool) landPath {
+	switch {
+	case based:
+		return landFastForward
+	case mergeable != nil && !*mergeable:
+		return landMergeConflict
+	default:
+		// Still computing: try, and GitHub refuses the merge if it can't make it.
+		return landGitHubMerge
 	}
 }
 
@@ -301,11 +330,12 @@ type pullRequest struct {
 	URL    string `json:"url"`
 }
 
-// pullDetails is the part of `repos/{repo}/pulls/{n}` a GitHub merge decides on. Rebaseable is
-// null while GitHub is still working it out.
+// pullDetails is the part of `repos/{repo}/pulls/{n}` a GitHub merge decides on. Rebaseable and
+// Mergeable are null while GitHub is still working them out.
 type pullDetails struct {
 	Merged     bool  `json:"merged"`
 	Rebaseable *bool `json:"rebaseable"`
+	Mergeable  *bool `json:"mergeable"`
 }
 
 // openPR finds the branch's open PR; a closed one is never revived.

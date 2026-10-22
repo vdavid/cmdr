@@ -217,3 +217,30 @@ func TestPushBranchRetriesWithTheHooksCommit(t *testing.T) {
 		t.Errorf("pushed %s, origin has %s, want the hook's commit %s", pushed, originSHA(t, a, "feat"), head)
 	}
 }
+
+// `-merge` exists for a release commit whose tag must stay on `main`'s history; a plain land
+// spots the tag and refuses to rebase it.
+func TestTaggedFindsATagOnTheBranch(t *testing.T) {
+	a := testClone(t, testOrigin(t), "release/v1.2.3")
+	if a.tagged("origin/main..HEAD") {
+		t.Error("no commits, no tags")
+	}
+	mustGit(t, a, "commit", "--quiet", "--allow-empty", "-m", "chore(release): v1.2.3")
+	if a.tagged("origin/main..HEAD") {
+		t.Error("an untagged commit isn't tagged")
+	}
+	mustGit(t, a, "tag", "-a", "-m", "Cmdr v1.2.3", "v1.2.3")
+	if !a.tagged("origin/main..HEAD") {
+		t.Error("an annotated tag on the branch's commit")
+	}
+	mustGit(t, a, "tag", "-d", "v1.2.3")
+	mustGit(t, a, "tag", "light")
+	if !a.tagged("origin/main..HEAD") {
+		t.Error("a lightweight tag on the branch's commit")
+	}
+	mustGit(t, a, "tag", "-d", "light")
+	mustGit(t, a, "tag", "old", "origin/main")
+	if a.tagged("origin/main..HEAD") {
+		t.Error("a tag on main itself isn't on the branch")
+	}
+}
