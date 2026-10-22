@@ -317,7 +317,11 @@ func ciVerdict(runs []workflowRun, checks []checkRun) (verdict, workflowRun) {
 		return verdictRed, run
 	}
 	check := slices.MaxFunc(checks, func(a, b checkRun) int { return cmp.Compare(a.ID, b.ID) })
-	if check.Status == "completed" && check.Conclusion == "success" {
+	// GitHub can report the run completed a moment before its `CI OK` job runs.
+	if check.Status != "completed" {
+		return verdictPending, run
+	}
+	if check.Conclusion == "success" {
 		return verdictGreen, run
 	}
 	return verdictRed, run

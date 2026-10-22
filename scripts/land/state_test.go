@@ -211,6 +211,8 @@ func TestCIVerdict(t *testing.T) {
 		{"red run", []workflowRun{red}, []checkRun{failed}, verdictRed, 1},
 		{"finished with no CI OK at all", []workflowRun{red}, nil, verdictRed, 1},
 		{"a skipped CI OK is not green", []workflowRun{done}, []checkRun{skipped}, verdictRed, 2},
+		// GitHub can mark the run completed while its `CI OK` is still queued (seen 2026-10-22).
+		{"a finished run whose CI OK has not run yet", []workflowRun{done}, []checkRun{{ID: 50, Status: "queued"}}, verdictPending, 2},
 	}
 	for _, c := range cases {
 		got, run := ciVerdict(c.runs, c.checks)
