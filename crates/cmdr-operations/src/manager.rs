@@ -235,6 +235,7 @@ impl ManagerInner {
                 items: rec.descriptor.summary.items.clone(),
                 // Read off the operation's state by `OperationManager::list`.
                 conflict_policy: None,
+                started_at: None,
             });
         let settled_failures = self
             .failures
@@ -818,6 +819,7 @@ impl OperationManager {
                     can_retry: false,
                     items: summary.items,
                     conflict_policy: None,
+                    started_at: None,
                 },
                 retry,
             ));
@@ -906,13 +908,15 @@ impl OperationManager {
     /// The thin registry snapshot (membership + status), FIFO order.
     pub(crate) fn list(&self) -> Vec<OperationSnapshot> {
         let mut rows = self.inner.lock_ignore_poison().snapshot();
-        // The live policy is the operation's own state, joined here after the
-        // records lock is released. A retained failure's state is forgotten, so
-        // its row keeps `None`.
-        for row in &mut rows {
+        // The live policy is the operation's own state, and the start time is the
+        // status cache's admission stamp, both joined here after the records lock
+        // is released. A retained failure has neither left, so its row keeps
+        // `None` for both.
+        for row in rows.iter_mut().filter(|row| row.status != LifecycleStatus::Failed) {
             if let Some(state) = self.registry.get(&OperationId::from(row.operation_id.as_str())) {
                 row.conflict_policy = state.conflict_policy.current();
             }
+            row.started_at = self.status.snapshot(&row.operation_id, None).map(|s| s.started_at);
         }
         rows
     }

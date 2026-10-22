@@ -31,6 +31,7 @@ function row(operationId: string, status: OperationRow['snapshot']['status']): O
       error: null,
       canRetry: false,
       conflictPolicy: null,
+      startedAt: null,
       items: null,
     },
     progress: null,

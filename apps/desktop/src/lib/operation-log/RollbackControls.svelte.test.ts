@@ -111,6 +111,7 @@ function reversalSnapshot(operationId: string, status: OperationSnapshot['status
     error: null,
     canRetry: false,
     conflictPolicy: null,
+    startedAt: null,
     items: null,
   }
 }

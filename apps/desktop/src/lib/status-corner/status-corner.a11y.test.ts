@@ -136,6 +136,7 @@ describe('OperationChip a11y', () => {
       error: null,
       canRetry: false,
       conflictPolicy: null,
+      startedAt: null,
       items: null,
     }
   }
@@ -221,6 +222,7 @@ describe('OperationFailedToastContent a11y', () => {
     error: { type: 'insufficient_space', required: 1073741824, available: 1024, volumeName: 'Backup' },
     canRetry: false,
     conflictPolicy: null,
+    startedAt: null,
     items: null,
   }
 

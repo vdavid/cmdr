@@ -29,6 +29,7 @@ function fixture(lockedSample: string[], lockedCount: number, destination: strin
       error: null,
       canRetry: false,
       conflictPolicy: null,
+      startedAt: null,
       items: null,
     },
   }

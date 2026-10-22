@@ -40,6 +40,7 @@ function snapshot(over: Partial<OperationSnapshot> = {}): OperationSnapshot {
     error: { type: 'read_only_device', path: '/Volumes/Backup', deviceName: 'Backup', side: 'destination' },
     canRetry: false,
     conflictPolicy: null,
+    startedAt: null,
     items: null,
     ...over,
   }

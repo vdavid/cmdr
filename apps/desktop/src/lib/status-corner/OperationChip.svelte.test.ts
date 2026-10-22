@@ -74,6 +74,7 @@ function snapshot(over: Partial<OperationSnapshot> = {}): OperationSnapshot {
     error: null,
     canRetry: false,
     conflictPolicy: null,
+    startedAt: null,
     items: null,
     ...over,
   }
@@ -89,6 +90,7 @@ function failedSnapshot(operationId = 'op-1'): OperationSnapshot {
     error: { type: 'source_not_found', path: '/Users/me/Documents/report.pdf' },
     canRetry: false,
     conflictPolicy: null,
+    startedAt: null,
     items: null,
   })
 }

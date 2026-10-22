@@ -53,6 +53,7 @@ function failedRow(operationId: string): OperationRow {
     error: { type: 'source_not_found', path: '/Users/me/Documents/report.pdf' },
     canRetry: false,
     conflictPolicy: null,
+    startedAt: null,
     items: null,
   }
   return { snapshot, progress: null }

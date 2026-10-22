@@ -47,6 +47,7 @@ function snapshot(id: string, status: OperationSnapshot['status'] = 'running'): 
     error: null,
     canRetry: false,
     conflictPolicy: null,
+    startedAt: null,
     items: null,
   }
 }

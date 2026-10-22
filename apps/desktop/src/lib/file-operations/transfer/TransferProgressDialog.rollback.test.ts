@@ -98,6 +98,7 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
         error: null,
         canRetry: false,
         conflictPolicy: null,
+        startedAt: null,
         items: null,
       },
     ]),

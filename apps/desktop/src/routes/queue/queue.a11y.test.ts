@@ -90,6 +90,7 @@ function op(operationId: string, over: Partial<OperationSnapshot> = {}): Operati
     error: null,
     canRetry: false,
     conflictPolicy: null,
+    startedAt: null,
     items: null,
     ...over,
   }

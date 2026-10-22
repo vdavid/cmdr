@@ -95,6 +95,7 @@ function snapshot(operationId: string, status: OperationSnapshot['status'] = 'ru
     error: null,
     canRetry: false,
     conflictPolicy: null,
+    startedAt: null,
     items: null,
   }
 }

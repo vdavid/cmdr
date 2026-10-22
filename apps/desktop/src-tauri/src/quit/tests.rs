@@ -131,6 +131,7 @@ fn operation(operation_type: WriteOperationType, status: LifecycleStatus) -> Ope
         can_retry: false,
         items: None,
         conflict_policy: None,
+        started_at: None,
     }
 }
 

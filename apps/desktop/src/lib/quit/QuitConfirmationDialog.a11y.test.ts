@@ -29,6 +29,7 @@ function operation(operationId: string, operationType: OperationSnapshot['operat
     error: null,
     canRetry: false,
     conflictPolicy: null,
+    startedAt: null,
     items: null,
   }
 }

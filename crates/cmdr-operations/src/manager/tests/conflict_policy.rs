@@ -53,6 +53,45 @@ async fn a_row_reports_its_policy_and_a_latched_change_is_broadcast_once() {
     let _ = release_tx.send(());
 }
 
+/// When it started running, for the progress dialog's "time taken" (#484): the
+/// moment it was admitted, which a queued row doesn't have yet.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_running_row_says_when_it_started_and_a_queued_one_does_not() {
+    let engine = TestOperations::new();
+    let mgr = engine.manager();
+    let (running, queued) = (OperationId::from("started-a"), OperationId::from("started-b"));
+    let (a_started_tx, a_started_rx) = oneshot::channel();
+    let (a_release_tx, a_release_rx) = oneshot::channel();
+    let (b_started_tx, _b_started_rx) = oneshot::channel();
+    let (b_release_tx, b_release_rx) = oneshot::channel();
+    mgr.spawn_managed(
+        descriptor(&running, vec!["lane"]),
+        engine.new_state(),
+        gated_deferred(running.clone(), a_started_tx, a_release_rx),
+    );
+    a_started_rx.await.expect("A started");
+    mgr.spawn_managed(
+        descriptor(&queued, vec!["lane"]),
+        engine.new_state(),
+        gated_deferred(queued.clone(), b_started_tx, b_release_rx),
+    );
+
+    let started_at = |op: &OperationId| {
+        mgr.list()
+            .into_iter()
+            .find(|row| row.operation_id == op.as_str())
+            .and_then(|row| row.started_at)
+    };
+    assert!(
+        started_at(&running).is_some_and(|ms| ms > 0),
+        "a running op knows when it started"
+    );
+    assert_eq!(started_at(&queued), None, "a queued one hasn't started");
+
+    let _ = a_release_tx.send(());
+    let _ = b_release_tx.send(());
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn an_operation_with_no_policy_reports_none() {
     let engine = TestOperations::new();

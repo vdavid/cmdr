@@ -86,6 +86,7 @@ function row(operationType: WriteOperationType, conflictPolicy: ConflictResoluti
     error: null,
     canRetry: false,
     conflictPolicy,
+    startedAt: null,
     items: null,
   }
 }

@@ -117,6 +117,7 @@ describe('OperationConflictDialog a11y', () => {
       error: null,
       canRetry: false,
       conflictPolicy: null,
+      startedAt: null,
       items: null,
     }
     const event: WriteConflictEvent = {
@@ -270,6 +271,7 @@ describe('SourcesGonePrompt a11y', () => {
           error: null,
           canRetry: false,
           conflictPolicy: null,
+          startedAt: null,
           items: null,
         },
         answering: true,
@@ -346,6 +348,7 @@ describe('LockedSourcesPrompt a11y', () => {
           error: null,
           canRetry: false,
           conflictPolicy: null,
+          startedAt: null,
           items: null,
         },
         answering: true,

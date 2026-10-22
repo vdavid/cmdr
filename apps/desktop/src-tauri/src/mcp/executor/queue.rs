@@ -363,6 +363,7 @@ mod tests {
             can_retry: false,
             items: None,
             conflict_policy: None,
+            started_at: None,
         }
     }
 

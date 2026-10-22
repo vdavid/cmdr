@@ -13037,6 +13037,12 @@ export type OperationSnapshot = {
    *  `conflict_policy_cell.rs`.
    */
   conflictPolicy: ConflictResolution | null
+  /**
+   *  When the operation started running, in Unix milliseconds: the moment the
+   *  manager admitted it, the same clock as [`OperationStatus::started_at`].
+   *  `None` while it waits in the queue, and on a retained failure.
+   */
+  startedAt: number | null
 }
 
 /**

@@ -19,6 +19,7 @@ function snapshot(over: Partial<OperationSnapshot> = {}): OperationSnapshot {
     error: null,
     canRetry: false,
     conflictPolicy: null,
+    startedAt: null,
     items: null,
     ...over,
   }

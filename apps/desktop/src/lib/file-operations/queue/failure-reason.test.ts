@@ -21,6 +21,7 @@ function snapshot(error: WriteOperationError | null, over: Partial<OperationSnap
     error,
     canRetry: false,
     conflictPolicy: null,
+    startedAt: null,
     items: null,
     ...over,
   }

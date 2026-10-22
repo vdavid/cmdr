@@ -160,6 +160,7 @@ function liveRow(id: string): { snapshot: OperationSnapshot } {
       error: null,
       canRetry: false,
       conflictPolicy: null,
+      startedAt: null,
       items: null,
     },
   }

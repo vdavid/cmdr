@@ -245,6 +245,10 @@ pub struct OperationSnapshot {
     /// an operation with no policy, and on a retained failure.
     /// `conflict_policy_cell.rs`.
     pub conflict_policy: Option<ConflictResolution>,
+    /// When the operation started running, in Unix milliseconds: the moment the
+    /// manager admitted it, the same clock as [`OperationStatus::started_at`].
+    /// `None` while it waits in the queue, and on a retained failure.
+    pub started_at: Option<u64>,
 }
 
 // ============================================================================

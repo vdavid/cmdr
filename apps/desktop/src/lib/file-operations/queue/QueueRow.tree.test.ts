@@ -53,6 +53,7 @@ function row(
       error: null,
       canRetry: false,
       conflictPolicy: null,
+      startedAt: null,
       items: null,
       ...over,
     },
