@@ -206,10 +206,12 @@ const SectionTag: React.FC<{ section: SectionPlan; index: number; total: number;
         letterSpacing: 1,
       }}
     >
-      <span style={{ color: COLORS.mustard }}>{String(index).padStart(2, '0')}</span>
-      <span style={{ width: 28, height: 2, background: COLORS.border }} />
+      <span>
+        <span style={{ color: COLORS.mustard }}>{String(index).padStart(2, '0')}</span>
+        <span style={{ opacity: 0.5 }}> / {String(total).padStart(2, '0')}</span>
+      </span>
+      <span style={{ color: COLORS.mustard, opacity: 0.8 }}>·</span>
       <span>{(section.title ?? '').replace(/[.?!]$/, '')}</span>
-      <span style={{ opacity: 0.5 }}>/ {String(total).padStart(2, '0')}</span>
     </div>
   )
 }

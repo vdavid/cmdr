@@ -129,6 +129,21 @@ const EndCard: React.FC<{ t: number }> = ({ t }) => {
           Free for personal use · macOS
         </div>
       </div>
+      {/* CC BY 3.0 needs visible attribution; the license link lives in CREDITS.md and the video description. */}
+      <div
+        style={{
+          position: 'absolute',
+          right: 56,
+          bottom: 44,
+          fontFamily: MONO,
+          fontSize: 20,
+          letterSpacing: 0.5,
+          color: COLORS.textDim,
+          opacity: small * 0.75,
+        }}
+      >
+        Music: "Snaps" by cdk · CC BY 3.0
+      </div>
     </AbsoluteFill>
   )
 }

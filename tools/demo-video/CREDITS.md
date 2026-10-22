@@ -20,7 +20,8 @@ gitignored `assets/` and `public/`.
 - How we edited it (CC BY allows adaptations; say so in the credit): trimmed, two whole-bar jumps, and volume ducking
   under the voice. See `src/timeline.ts`.
 
-**Required attribution**, wherever the video is published (video description, or an end-credit line):
+**Required attribution.** The end card shows a short credit on screen ("Music: "Snaps" by cdk · CC BY 3.0", in
+`src/scenes/Close.tsx`). Wherever the video is published, also put the full credit with links in the description:
 
 > Music: "Snaps (Original RumbleStep Mix)" by cdk (https://ccmixter.org/files/cdk/47643), licensed under CC BY 3.0
 > (https://creativecommons.org/licenses/by/3.0/). Edited for length.

@@ -74,11 +74,21 @@ const Name: React.FC<PanelProps> = () => (
 )
 
 const Years: React.FC<PanelProps> = ({ t }) => {
-  const n = Math.round(25 * ramp(t, 0.15, 1.4))
+  // A fixed number that pops in (a count-up would show other numbers than the 25 the voice says).
+  const pop = ramp(t, 0.1, 0.45)
+  const overshoot = 1 + Math.sin(pop * Math.PI) * 0.08
   return (
     <div style={{ textAlign: 'left' }}>
       <Big size={240} color={COLORS.mustard}>
-        <span style={{ fontVariantNumeric: 'tabular-nums' }}>{n}</span>
+        <span
+          style={{
+            display: 'inline-block',
+            transform: `scale(${(0.6 + pop * 0.4) * overshoot})`,
+            transformOrigin: '50% 80%',
+          }}
+        >
+          25
+        </span>
         <span style={{ fontSize: 120, color: COLORS.text, letterSpacing: -3 }}> years</span>
       </Big>
       <Small>of Total Commander.</Small>
