@@ -329,6 +329,117 @@ export const knownLimitations: string[] = [
   "<strong>Proxy sign-in is limited</strong> to a user name and password in the proxy's address (<code>HTTPS_PROXY</code> or <code>ALL_PROXY</code>).",
 ]
 
+export interface ComplianceBadge {
+  name: string
+  /** One honest line: what kind of claim it is (self-assessed, self-certified) and what it covers. */
+  qualifier: string
+  /** Under `public/`. Official artwork from the program, used as its owner grants. */
+  image: string
+  /** Where a reviewer checks the claim. */
+  href: string
+}
+
+/**
+ * The badges in the `/trust` compliance strip. Only programs Cmdr actually completed, each with the
+ * word that says how ("self-assessment", "self-certified"): a badge that reads as a third-party
+ * audit would be an overstatement. Keep it to a handful; the documents list carries the substance.
+ */
+export const complianceBadges: ComplianceBadge[] = [
+  {
+    name: 'CSA STAR Level 1',
+    qualifier: 'Self-assessment, answers public since 2026-10-15',
+    image: '/images/badges/csa-star-level-1.webp',
+    href: 'https://cloudsecurityalliance.org/star/registry/rymdskottkarra-ab',
+  },
+  {
+    name: 'SLSA Build Level 3',
+    qualifier: 'Signed build provenance on every release file',
+    image: '/images/badges/slsa-build-level-3.svg',
+    href: '#signing',
+  },
+  {
+    name: 'OpenChain ISO/IEC 5230',
+    qualifier: 'Self-certified: open source license compliance',
+    image: '/images/badges/openchain-iso-iec-5230.webp',
+    href: 'https://github.com/vdavid/cmdr/blob/main/docs/open-source-policy.md',
+  },
+  {
+    name: 'OpenChain ISO/IEC 18974',
+    qualifier: 'Self-certified: open source security assurance',
+    image: '/images/badges/openchain-iso-iec-18974.webp',
+    href: 'https://github.com/vdavid/cmdr/blob/main/docs/open-source-policy.md',
+  },
+]
+
+export interface TrustDocument {
+  name: string
+  detail: string
+  /** The link's verb: "Read it", "Ask for it", and so on. */
+  action: string
+  href: string
+}
+
+/**
+ * The documents a reviewer asks for, in the order they usually ask. All public except the DPA,
+ * which is signed per customer.
+ */
+export const trustDocuments: TrustDocument[] = [
+  {
+    name: 'Security questionnaire (CAIQ)',
+    detail: "Cmdr's answers to the Cloud Security Alliance's questions, in the STAR Registry",
+    action: 'Read it',
+    href: 'https://cloudsecurityalliance.org/star/registry/rymdskottkarra-ab',
+  },
+  {
+    name: 'Threat model',
+    detail: 'What Cmdr protects, from whom, and the risks that remain',
+    action: 'Read it',
+    href: 'https://github.com/vdavid/cmdr/blob/main/docs/threat-model.md',
+  },
+  {
+    name: 'Subprocessors',
+    detail: 'Current list, with what each one gets',
+    action: 'See it',
+    href: '#subprocessors',
+  },
+  {
+    name: 'Privacy policy',
+    detail: 'What Cmdr collects and why',
+    action: 'Read it',
+    href: '/privacy-policy',
+  },
+  {
+    name: 'Vulnerability disclosure policy',
+    detail: 'Reports are acknowledged within five business days',
+    action: 'Read it',
+    href: 'https://github.com/vdavid/cmdr/blob/main/SECURITY.md',
+  },
+  {
+    name: 'Open source policy',
+    detail: 'How Cmdr meets its open source licenses and keeps components free of known vulnerabilities',
+    action: 'Read it',
+    href: 'https://github.com/vdavid/cmdr/blob/main/docs/open-source-policy.md',
+  },
+  {
+    name: 'SBOMs and build provenance',
+    detail: 'Signed, attached to every release',
+    action: 'See them',
+    href: 'https://github.com/vdavid/cmdr/releases/latest',
+  },
+  {
+    name: 'Accessibility conformance report',
+    detail: 'WCAG 2.2, Section 508, and EN 301 549 (VPAT® 2.5Rev INT)',
+    action: 'Read it',
+    href: '/trust/accessibility',
+  },
+  {
+    name: 'Data processing agreement',
+    detail: 'Ready to sign for business customers',
+    action: 'Ask for it',
+    href: 'mailto:sales@getcmdr.com',
+  },
+]
+
 /** Response times for vulnerability reports. Keep in sync with the repo-root `SECURITY.md`. */
 export const vulnerabilityResponse: string[] = [
   'Acknowledgment within five business days.',

@@ -8,6 +8,7 @@
 // 🐧 for now (the one deliberate emoji exception).
 
 import AppWindow from '~icons/lucide/app-window'
+import ArrowRight from '~icons/lucide/arrow-right'
 import Bell from '~icons/lucide/bell'
 import Brain from '~icons/lucide/brain'
 import ChartPie from '~icons/lucide/chart-pie'
@@ -24,6 +25,7 @@ import Globe from '~icons/lucide/globe'
 import History from '~icons/lucide/history'
 import Keyboard from '~icons/lucide/keyboard'
 import ListChecks from '~icons/lucide/list-checks'
+import Mail from '~icons/lucide/mail'
 import MessageCircleQuestionMark from '~icons/lucide/message-circle-question-mark'
 import MessagesSquare from '~icons/lucide/messages-square'
 import Monitor from '~icons/lucide/monitor'
@@ -47,6 +49,7 @@ import Zap from '~icons/lucide/zap'
 
 export const ICONS = {
   'app-window': AppWindow,
+  'arrow-right': ArrowRight,
   bell: Bell,
   brain: Brain,
   'chart-pie': ChartPie,
@@ -63,6 +66,7 @@ export const ICONS = {
   history: History,
   keyboard: Keyboard,
   'list-checks': ListChecks,
+  mail: Mail,
   'message-circle-question-mark': MessageCircleQuestionMark,
   'messages-square': MessagesSquare,
   monitor: Monitor,

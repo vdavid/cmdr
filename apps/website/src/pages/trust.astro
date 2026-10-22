@@ -5,14 +5,17 @@
 // render only in `pnpm dev`, never in the built site.
 import LegalLayout from '../layouts/LegalLayout.astro'
 import DevTodo from '../components/DevTodo.astro'
+import Icon from '../components/icons/Icon.astro'
 import {
     allowlistHosts,
     codeRequirement,
+    complianceBadges,
     dataLocations,
     managedPreferenceKeys,
     networkConnections,
     knownLimitations,
     serverRetention,
+    trustDocuments,
     verifiedAgainst,
     vulnerabilityResponse,
 } from '../lib/trust'
@@ -23,6 +26,7 @@ const euLabel = { yes: 'In the EU', no: 'Outside the EU', partly: 'Partly outsid
 
 const toc = [
     { id: 'summary', label: 'Summary' },
+    { id: 'compliance', label: 'Compliance and documents' },
     { id: 'network', label: 'What the app sends over the network' },
     { id: 'mdm', label: 'Central management (MDM)' },
     { id: 'eu', label: 'Does data leave the EU?' },
@@ -106,25 +110,40 @@ const toc = [
         </li>
     </ul>
 
-    <div class="mb-8 flex flex-wrap items-center gap-6">
-        <a href="https://github.com/vdavid/cmdr/blob/main/docs/open-source-policy.md" class="no-underline">
-            <img
-                src="/images/badges/openchain-iso-iec-5230.webp"
-                alt="OpenChain ISO/IEC 5230 conformant: open source license compliance program"
-                width="112"
-                height="120"
-                loading="lazy"
-            />
-        </a>
-        <a href="https://github.com/vdavid/cmdr/blob/main/docs/open-source-policy.md" class="no-underline">
-            <img
-                src="/images/badges/openchain-iso-iec-18974.webp"
-                alt="OpenChain ISO/IEC 18974 conformant: open source security assurance program"
-                width="112"
-                height="120"
-                loading="lazy"
-            />
-        </a>
+    <h2 id="compliance">Compliance and documents</h2>
+    <div class="mb-10 grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
+        {
+            complianceBadges.map((badge) => (
+                <a href={badge.href} class="badge-link flex items-center gap-4">
+                    <img src={badge.image} alt="" width="64" height="64" class="size-16 shrink-0 object-contain" />
+                    <span class="flex flex-col">
+                        <span class="font-semibold text-text-primary">{badge.name}</span>
+                        <span class="text-sm/snug text-text-secondary">{badge.qualifier}</span>
+                    </span>
+                </a>
+            ))
+        }
+    </div>
+    <p>
+        Every document a security review usually asks for is public, with no sign-up or NDA. The one exception is the
+        DPA, which is signed with each customer.
+    </p>
+    <div class="mb-10 border-t border-border">
+        {
+            trustDocuments.map((doc) => (
+                <a
+                    href={doc.href}
+                    class="doc-row grid grid-cols-1 gap-x-6 gap-y-1 border-b border-border py-4 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)_auto] sm:items-center"
+                >
+                    <span class="font-semibold text-text-primary">{doc.name}</span>
+                    <span class="text-sm text-text-secondary">{doc.detail}</span>
+                    <span class="doc-action inline-flex items-center gap-1.5 text-sm whitespace-nowrap">
+                        {doc.action}
+                        <Icon name={doc.href.startsWith('mailto:') ? 'mail' : 'arrow-right'} size={16} />
+                    </span>
+                </a>
+            ))
+        }
     </div>
 
     <h2 id="network">What the app sends over the network</h2>
@@ -881,3 +900,26 @@ const toc = [
         </li>
     </ul>
 </LegalLayout>
+
+<style>
+    /* Whole-row links: drop the legal layout's underlined accent text, keep the accent on the action only. */
+    :global(.legal-content) a.badge-link,
+    :global(.legal-content) a.doc-row {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .doc-action {
+        color: var(--color-accent-text);
+    }
+
+    a.badge-link:hover .font-semibold,
+    a.doc-row:hover .doc-action {
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    a.doc-row:hover .doc-action {
+        color: var(--color-accent-hover);
+    }
+</style>
