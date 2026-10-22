@@ -86,7 +86,7 @@ All on GitHub with `RELEASE_UPDATE_SIGNING=local`, pre-release tags only, nothin
   and CodeQL run 39739638822. The build run 39739661545 started at once with `ci-gate` skipped and `draft`, `sbom`, and
   all three `compile` jobs running while CI ran (the early build). `release-finish.sh -dry-run` refused at 07:21 UTC:
   "the full CI run on 07cc1bd08 is still going". CI then went red for real: the What's new smoke test needs a changelog
-  section for the app version, which test mode didn't write yet (fixed in `e22c6a004`), plus a timeout in a `cmdr-index`
+  section for the app version, which test mode didn't write yet (fixed in `1f03c345d`), plus a timeout in a `cmdr-index`
   test under load. `release.sh -abort` then cancelled all three runs, deleted the SBOM artifact, the draft, the tag
   (GitHub and local), and the branch.
 - **Fail fast** (version suffix `.3`, CI only, no tag pushed): a commit with a deliberately misformatted file on top of
@@ -122,7 +122,7 @@ All on GitHub with `RELEASE_UPDATE_SIGNING=local`, pre-release tags only, nothin
 - **`website-bundle-size` ratcheted its baseline to 0 B after every release.** `update-visual-baselines.sh` mounts a
   container volume over `apps/website/dist`, which leaves an empty `dist/` on the host; the next `pnpm check` read it as
   a 0 B build and rewrote the committed baseline, and `html-validate` failed on no files. Both now skip an empty `dist/`
-  (`cad3ecb93`).
+  (`362d31cc2`).
 - **An abort would have lost the drafted changelog**, since the prep edits live in R once committed. `-abort` puts them
   back.
 
