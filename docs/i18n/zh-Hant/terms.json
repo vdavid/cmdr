@@ -4202,6 +4202,9 @@
     ],
     "chosen": "空白鍵",
     "confidence": "high",
+    "exceptions": {
+      "multiRename.rangeEditor.space": "the space CHARACTER in a file name, read aloud in place of a letter, not the key → 空格 (macOS zh-TW and zh-HK name the character Space 空格, Character Viewer and toolbar 可調整的空格; 鍵 names only the key)"
+    },
     "forms": "按空白鍵 + verb; chord ⇧空白鍵 (macOS: Command + 空白鍵)",
     "sources": "macOS AppKit FunctionKeyNames (Space), SystemSettings Siri/Spotlight SPACEBAR_KEY → 空白鍵; AppKit Date Picker help (空白鍵); Double Commander <空白鍵>; Midnight Commander 空白鍵; TC zh-TW 5139 says 空格鍵"
   },
