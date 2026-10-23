@@ -57,7 +57,7 @@ import type { Take } from './marketing-clips-take.js'
  * The video's main-window look: bigger than the clips, at 125% zoom, so a 1080p export
  * still reads on a phone.
  */
-const VIDEO_LOOK = { size: { width: 1280, height: 800 }, zoom: 125 } as const
+export const VIDEO_LOOK = { size: { width: 1280, height: 800 }, zoom: 125 } as const
 
 /** Slack recorded before the first action and after the last, for the editor's cuts. */
 const SLACK_MS = 1500
@@ -66,7 +66,7 @@ const PROGRESS_DIALOG = '[data-dialog-id="transfer-progress"]'
 const MULTI_RENAME = '[data-dialog-id="multi-rename"]'
 
 /** Opens the entry under the cursor named `name`, the way a person does: cursor there, Enter. */
-async function openEntry(page: TauriPage, pane: 'left' | 'right', name: string): Promise<void> {
+export async function openEntry(page: TauriPage, pane: 'left' | 'right', name: string): Promise<void> {
   await mcpCall('move_cursor', { pane, filename: name })
   await hold(450)
   await ensureExplorerFocused(page)
@@ -79,7 +79,7 @@ async function openEntry(page: TauriPage, pane: 'left' | 'right', name: string):
  * `nav.parent` as a command: that went up TWO levels per dispatch (logged twice,
  * 2026-10-23), a possible app bug reported with this run.
  */
-async function goParent(page: TauriPage): Promise<void> {
+export async function goParent(page: TauriPage): Promise<void> {
   await ensureExplorerFocused(page)
   await pressKey(page, 'Meta+ArrowUp')
 }
@@ -90,7 +90,7 @@ async function goParent(page: TauriPage): Promise<void> {
  * choice, so the menu's absence is fine too. Unanswered, the first take after a fresh
  * launch waited on it until it failed (2026-10-23).
  */
-async function chooseBrowseLikeAFolder(page: TauriPage): Promise<void> {
+export async function chooseBrowseLikeAFolder(page: TauriPage): Promise<void> {
   const state = async (): Promise<'menu' | 'inside' | 'waiting'> =>
     page.evaluate<'menu' | 'inside' | 'waiting'>(`(function () {
       var rows = [...document.querySelectorAll('[data-menu-row]')];
@@ -107,7 +107,7 @@ async function chooseBrowseLikeAFolder(page: TauriPage): Promise<void> {
 }
 
 /** Waits for the focused pane to list `name`. */
-async function waitForRow(page: TauriPage, name: string): Promise<void> {
+export async function waitForRow(page: TauriPage, name: string): Promise<void> {
   await expect
     .poll(
       () =>
@@ -119,7 +119,7 @@ async function waitForRow(page: TauriPage, name: string): Promise<void> {
 }
 
 /** Waits for the focused pane to list at least `min` rows (`..` included). */
-async function waitForRowCount(page: TauriPage, min: number): Promise<void> {
+export async function waitForRowCount(page: TauriPage, min: number): Promise<void> {
   await expect
     .poll(() => page.evaluate<number>(`document.querySelectorAll('.file-pane.is-focused .file-entry').length`), {
       timeout: waitBudget(15000),
@@ -128,7 +128,7 @@ async function waitForRowCount(page: TauriPage, min: number): Promise<void> {
 }
 
 /** Runs a beat's body between slack, start, and end markers. */
-async function beat(take: Take, body: () => Promise<void>): Promise<void> {
+export async function beat(take: Take, body: () => Promise<void>): Promise<void> {
   await inTake(take, async () => {
     await hold(SLACK_MS)
     take.markStart()

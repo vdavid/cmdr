@@ -48,6 +48,14 @@ scrolling, an instant search), `trust`, `rename`, `reach` (a zip and a Git repo'
 file, size, usable span, key frame, and notes in seconds from the master's start
 (`apps/desktop/scripts/marketing-video.ts`).
 
+`pnpm marketing:clips --video2` records the second video's beats ("safe file operations, to and from anywhere") the same
+way, into `brand/clip-masters/video2/`: `smb`, `s3`, `phone`, `archives`, `transfers`, `undo`, `hero2`
+(`marketing-video2-scenes.ts`). ❗ It needs the Docker fixtures up first
+(`apps/desktop/test/smb-servers/start.sh minimal`, `apps/desktop/test/s3-servers/start.sh minimal`). Before the launch
+it refills them to look like a family's (`marketing-video2-fixtures.ts`: the SMB share's seed files are replaced, a
+`family-photos` bucket, a restic `Backups` repo), clears the clips instance's operation log and saved bucket, and
+launches with a virtual MTP phone named `Pixel 8` (`CMDR_VIRTUAL_MTP`, `CMDR_VIRTUAL_MTP_MODEL`).
+
 ## What it produces
 
 Into `apps/website/public/clips/` (or `--out`), per clip and theme:

@@ -162,6 +162,11 @@ export async function stageMain(
     .toBe(look.size.width)
   await waitForIndexedSizes(page, LOG)
   await stageCosmetics(page)
+  // A beat that showed the hidden .git folder may have left hidden files on; the demo
+  // tree's own marker file is hidden and must stay out of frame.
+  await setSetting(page, 'listing.showHiddenFiles', false)
+  // The `undo` video beat turns this on; left on, every later copy's dialog waits for a Close.
+  await setSetting(page, 'fileOperations.keepProgressOpenWhenDone', false)
   await resetTabs('left')
   await resetTabs('right')
   await setViewMode('left', 'full')
@@ -350,7 +355,7 @@ async function startCopy(page: TauriPage, source: string, destination: string): 
  * main window's frame: the take is cropped to that frame, so anything outside it would
  * be cut off.
  */
-async function placeQueueOverMain(page: TauriPage): Promise<void> {
+export async function placeQueueOverMain(page: TauriPage): Promise<void> {
   await setWindowSize(page, 'queue', CLIP_QUEUE.width, CLIP_QUEUE.height)
   await expect
     .poll(async () => (await windowMetrics(page, 'queue')).logical.width, { timeout: waitBudget(5000) })

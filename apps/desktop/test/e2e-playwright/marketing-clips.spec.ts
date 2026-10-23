@@ -25,9 +25,21 @@ import {
   settingsPan,
   viewer,
 } from './marketing-clips-scenes.js'
-import { CLIP_SLUGS, VIDEO_BEATS, VIDEO_TITLE_PREFIX } from './marketing-clips-slugs.js'
-import type { ClipSlug, VideoBeat } from './marketing-clips-slugs.js'
+import { CLIP_SLUGS, VIDEO2_BEATS, VIDEO_BEATS, VIDEO_SETS, VIDEO_TITLE_PREFIX } from './marketing-clips-slugs.js'
+import type { ClipSlug, Video2Beat, VideoBeat } from './marketing-clips-slugs.js'
 import { ai, care, hero, reach, rename, speed, trust } from './marketing-video-scenes.js'
+import { archives, hero2, phone, s3, smb, transfers, undo } from './marketing-video2-scenes.js'
+
+/** The second demo video's scenes, a `Record` for the same reason as `SCENES`. */
+const VIDEO2_SCENES: Record<Video2Beat, (page: TauriPage) => Promise<void>> = {
+  smb,
+  s3,
+  phone,
+  archives,
+  transfers,
+  undo,
+  hero2,
+}
 import type { ClipTheme } from './marketing-clips-take.js'
 
 /**
@@ -95,6 +107,13 @@ test.describe('marketing clips', () => {
   for (const beat of VIDEO_BEATS) {
     test(`${VIDEO_TITLE_PREFIX}${beat} dark`, async ({ tauriPage }) => {
       await VIDEO_SCENES[beat](tauriPage as TauriPage)
+    })
+  }
+
+  // The second demo video's beats (`marketing-video2-scenes.ts`), by `--video2`.
+  for (const beat of VIDEO2_BEATS) {
+    test(`${VIDEO_SETS.video2.prefix}${beat} dark`, async ({ tauriPage }) => {
+      await VIDEO2_SCENES[beat](tauriPage as TauriPage)
     })
   }
 })

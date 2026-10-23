@@ -137,6 +137,7 @@ export function ensureDemoTree(root = DEMO_ROOT): 'kept' | 'staged' {
     resetRawImports(root)
     resetCameraRoll(root)
     resetBackup(root)
+    restoreProjects(root)
     return 'kept'
   }
   stageDemoTree(root)
@@ -277,19 +278,33 @@ function emptyDir(dir: string): void {
 }
 
 function stageProjects(root: string): void {
-  const rand = prng(7)
+  for (const project of QUEUE_SOURCES) stageProject(root, project)
+}
+
+/**
+ * Puts back any project folder a take moved away (the demo video's `transfers` beat moves
+ * one), leaving the ones still there alone so the index never sees them recreated.
+ */
+export function restoreProjects(root = DEMO_ROOT): void {
+  for (const project of QUEUE_SOURCES) {
+    if (!existsSync(join(root, DEMO.projects, project))) stageProject(root, project)
+  }
+}
+
+/** One project folder: 16 files of mixed kinds, deterministic per project. */
+function stageProject(root: string, project: (typeof QUEUE_SOURCES)[number]): void {
+  const p = QUEUE_SOURCES.indexOf(project)
+  const rand = prng(7 + p)
   const kinds = ['.psd', '.pdf', '.key', '.png', '.docx', '.mp3', '.txt'] // allowed-stale-selector: file extensions
-  for (const [p, project] of QUEUE_SOURCES.entries()) {
-    const dir = join(root, DEMO.projects, project)
-    mkdirSync(dir, { recursive: true })
-    for (let i = 0; i < 16; i++) {
-      const ext = kinds[(i + p) % kinds.length]
-      writeSized(join(dir, `${project} ${String(i + 1).padStart(2, '0')}${ext}`), 40_000 + Math.floor(rand() * 900_000))
-    }
+  const dir = join(root, DEMO.projects, project)
+  mkdirSync(dir, { recursive: true })
+  for (let i = 0; i < 16; i++) {
+    const ext = kinds[(i + p) % kinds.length]
+    writeSized(join(dir, `${project} ${String(i + 1).padStart(2, '0')}${ext}`), 40_000 + Math.floor(rand() * 900_000))
   }
   // The search clip's hits live in more than one folder, so the results show paths.
-  writeSized(join(root, DEMO.projects, 'Website redesign', 'Invoice 2026-041 Website redesign.pdf'), 182_000)
-  writeSized(join(root, DEMO.projects, 'Podcast season 3', 'Invoice 2026-052 Podcast mixing.pdf'), 96_000)
+  if (project === 'Website redesign') writeSized(join(dir, 'Invoice 2026-041 Website redesign.pdf'), 182_000)
+  if (project === 'Podcast season 3') writeSized(join(dir, 'Invoice 2026-052 Podcast mixing.pdf'), 96_000)
 }
 
 function stageDocuments(root: string): void {

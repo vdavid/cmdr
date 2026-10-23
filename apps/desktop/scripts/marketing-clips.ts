@@ -53,10 +53,11 @@ import {
 } from './marketing-clips-encode.ts'
 import type { ClipManifestEntry, ClipMarkers } from './marketing-clips-encode.ts'
 import { captureInstance, launchCaptureApp, prepareCaptureInstance, runCaptureShard } from './marketing-launch.ts'
-import { CLIP_SLUGS, VIDEO_BEATS, VIDEO_TITLE_PREFIX } from '../test/e2e-playwright/marketing-clips-slugs.ts'
-import type { ClipSlug, VideoBeat } from '../test/e2e-playwright/marketing-clips-slugs.ts'
+import { CLIP_SLUGS, VIDEO_SETS } from '../test/e2e-playwright/marketing-clips-slugs.ts'
+import type { ClipSlug, VideoSetId } from '../test/e2e-playwright/marketing-clips-slugs.ts'
 import { buildVideoManifest } from './marketing-video.ts'
-import { DEMO_ROOT, MARKER, ensureDemoTree, removeDemoTree } from '../test/e2e-playwright/marketing-clips-demo.ts'
+import { DEMO, DEMO_ROOT, MARKER, ensureDemoTree, removeDemoTree } from '../test/e2e-playwright/marketing-clips-demo.ts'
+import { PHONE, seedResticRepo, seedS3Bucket, seedSmbShare } from '../test/e2e-playwright/marketing-video2-fixtures.ts'
 
 const LOG = '[marketing-clips]'
 
@@ -67,15 +68,15 @@ const RECORDER_SOURCE = join(here, 'marketing-clips-recorder.swift')
 const RECORDER_CACHE = join(homedir(), 'Library', 'Caches', 'com.veszelovszki.cmdr-clips', 'recorder')
 
 interface Options {
-  /** Clip slugs, or with `--video` beat ids. */
+  /** Clip slugs, or with `--video` / `--video2` beat ids. */
   only: string[]
   outDir: string
   mastersDir: string
   dryRun: boolean
   encodeOnly: boolean
   removeDemo: boolean
-  /** The demo video's long-form beats instead of the clips: dark only, masters and a manifest, no encode. */
-  video: boolean
+  /** A demo video's long-form beats instead of the clips: dark only, masters and a manifest, no encode. */
+  video: VideoSetId | null
 }
 
 function parseArgs(argv: string[]): Options {
@@ -86,7 +87,7 @@ function parseArgs(argv: string[]): Options {
     dryRun: false,
     encodeOnly: false,
     removeDemo: false,
-    video: false,
+    video: null,
   }
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
@@ -102,7 +103,8 @@ function parseArgs(argv: string[]): Options {
     else if (arg === '--dry-run') options.dryRun = true
     else if (arg === '--encode-only') options.encodeOnly = true
     else if (arg === '--remove-demo') options.removeDemo = true
-    else if (arg === '--video') options.video = true
+    else if (arg === '--video') options.video = 'video'
+    else if (arg === '--video2') options.video = 'video2'
     else throw new Error(`unknown argument '${arg}'`)
   }
   return validated(options)
@@ -110,14 +112,18 @@ function parseArgs(argv: string[]): Options {
 
 /** Checks what only the whole command line can tell, and fills in the defaults that depend on it. */
 function validated(options: Options): Options {
-  const known: readonly string[] = options.video ? VIDEO_BEATS : CLIP_SLUGS
+  const known: readonly string[] = options.video === null ? CLIP_SLUGS : VIDEO_SETS[options.video].beats
   for (const name of options.only) {
-    if (!known.includes(name))
-      throw new Error(`unknown ${options.video ? 'beat' : 'clip'} '${name}'. Known: ${known.join(', ')}`)
+    if (!known.includes(name)) {
+      throw new Error(`unknown ${options.video === null ? 'clip' : 'beat'} '${name}'. Known: ${known.join(', ')}`)
+    }
   }
-  if (options.video && options.encodeOnly) throw new Error('--video records masters only; there is nothing to encode')
+  if (options.video !== null && options.encodeOnly) {
+    throw new Error('--video and --video2 record masters only; there is nothing to encode')
+  }
   if (options.mastersDir === '') {
-    options.mastersDir = join(repoRoot, 'brand', 'clip-masters', ...(options.video ? ['video'] : []))
+    const sub = options.video === null ? [] : [VIDEO_SETS[options.video].folder]
+    options.mastersDir = join(repoRoot, 'brand', 'clip-masters', ...sub)
   }
   return options
 }
@@ -127,16 +133,55 @@ function selectedSlugs(options: Options): ClipSlug[] {
   return options.only.length > 0 ? (options.only as ClipSlug[]) : [...CLIP_SLUGS]
 }
 
-/** The video beats this run covers. */
-function selectedBeats(options: Options): VideoBeat[] {
-  return options.only.length > 0 ? (options.only as VideoBeat[]) : [...VIDEO_BEATS]
+/** The video beats this run covers (`--video` / `--video2` only). */
+function selectedBeats(options: Options): readonly string[] {
+  if (options.video === null) return []
+  return options.only.length > 0 ? options.only : VIDEO_SETS[options.video].beats
 }
 
-/** What the editor must know about a beat that its footage doesn't say. */
-const BEAT_REMARKS: Partial<Record<VideoBeat, string>> = {
-  ai:
-    'A regular filename search, NOT an AI one: no cloud AI provider was configured for the recording instance. ' +
-    'Re-record once one is set up in its Settings > AI > Provider.',
+/** What the editor must know about a beat that its footage doesn't say, per footage set. */
+const BEAT_REMARKS: Record<VideoSetId, Record<string, string>> = {
+  video: {
+    ai:
+      'A regular filename search, NOT an AI one: no cloud AI provider was configured for the recording instance. ' +
+      'Re-record once one is set up in its Settings > AI > Provider.',
+  },
+  video2: {
+    s3:
+      'A download from the bucket, not an upload, and no cost estimate. The estimate needs a priced provider (AWS, ' +
+      'R2, B2, …) and this bucket is the repo\'s local S3 test server, an unpriced "Other" endpoint; an upload into ' +
+      'it was admitted and then never moved. The copy dialog is skipped (its From field spells the bucket URL with ' +
+      'the access key). Re-record against a real priced bucket for the cost moment.',
+    phone:
+      'MTP only. No ADB moment: the repo has no browsable fake ADB device, only a real phone or emulator would do. ' +
+      'The copy dialog is skipped: its From field spells the virtual device\'s internal "cmdr-e2e-virtual" id.',
+    smb:
+      'The volume picker reads "private on 127.0.0.1:11481": the share is the local SMB test server, and the picker ' +
+      'names a share by its address, not the "Home NAS" name the server was added under.',
+    hero2: 'The NAS pane\'s picker reads "private on 127.0.0.1:11481", as in smb.',
+  },
+}
+
+/**
+ * The launch env and the staging a footage set needs. `video2` reaches the repo's Docker
+ * SMB and S3 fixtures (refilled to look like a family's), a restic repo, and the virtual
+ * MTP phone, which only exists when the app LAUNCHES with `CMDR_VIRTUAL_MTP`.
+ */
+function prepareSet(options: Options): Record<string, string> {
+  if (options.video !== 'video2') return {}
+  console.log(`${LOG} filling the NAS share, the S3 bucket, and the restic repo…`)
+  seedSmbShare()
+  seedS3Bucket(join(DEMO_ROOT, DEMO.trip))
+  seedResticRepo(DEMO_ROOT, [join(DEMO_ROOT, DEMO.documents), join(DEMO_ROOT, DEMO.cameraRoll)])
+  // The `undo` beat opens the operation log on camera: start it empty, so it lists this
+  // run's operations rather than every earlier recording's.
+  const dataDir = captureInstance('clips').dataDir
+  for (const suffix of ['', '-wal', '-shm']) rmSync(join(dataDir, `operation-log.db${suffix}`), { force: true })
+  // The bucket is connected afresh each run: a saved one came back without its secret
+  // and opened the sign-in sheet mid-take (2026-10-23).
+  rmSync(join(dataDir, 's3_known_places.json'), { force: true })
+  rmSync(join(dataDir, 'secrets.json'), { force: true })
+  return { CMDR_VIRTUAL_MTP: PHONE.backingDir, CMDR_VIRTUAL_MTP_MODEL: PHONE.model }
 }
 
 /**
@@ -248,17 +293,19 @@ async function record(options: Options, recorder: string): Promise<boolean> {
   // Before the launch, so the app's startup journal replay indexes a freshly staged tree
   // (`ensureDemoTree` explains why a tree staged under a running app reads `<dir>`).
   console.log(`${LOG} demo tree at ${DEMO_ROOT}: ${ensureDemoTree()}`)
+  const setEnv = prepareSet(options)
 
   const app = await launchCaptureApp({
     binary,
     instance,
     logPrefix: LOG,
-    extraEnv: { CMDR_CLIPS_MASTERS_DIR: options.mastersDir, CMDR_CLIPS_RECORDER: recorder },
+    extraEnv: { CMDR_CLIPS_MASTERS_DIR: options.mastersDir, CMDR_CLIPS_RECORDER: recorder, ...setEnv },
   })
   console.log(`${LOG} socket ready; recording…`)
-  const grep = options.video
-    ? `${VIDEO_TITLE_PREFIX}(${selectedBeats(options).join('|')}) dark$`
-    : `(${selectedSlugs(options).join('|')}) (${CLIP_THEMES.join('|')})$`
+  const grep =
+    options.video === null
+      ? `(${selectedSlugs(options).join('|')}) (${CLIP_THEMES.join('|')})$`
+      : `${VIDEO_SETS[options.video].prefix}(${selectedBeats(options).join('|')}) dark$`
   try {
     runCaptureShard('marketing-clips', { ...app.sharedEnv, CMDR_SHOTS_PID: String(app.pid) }, ['--grep', grep])
     return true
@@ -299,12 +346,13 @@ function encodeAll(options: Options, notBefore: number): string[] {
 }
 
 /** Writes `video-beats.json` beside the video masters, and returns the beats it couldn't list. */
-function writeVideoManifest(options: Options, notBefore: number): string[] {
+function writeVideoManifest(options: Options, set: VideoSetId, notBefore: number): string[] {
+  const order = VIDEO_SETS[set].beats
   const { manifest, missing } = buildVideoManifest({
     mastersDir: options.mastersDir,
     beats: selectedBeats(options),
     notBefore,
-    remarks: BEAT_REMARKS,
+    remarks: BEAT_REMARKS[set],
     probe: probeVideo,
   })
   const path = join(options.mastersDir, 'video-beats.json')
@@ -312,7 +360,7 @@ function writeVideoManifest(options: Options, notBefore: number): string[] {
   const before = existsSync(path) ? (JSON.parse(readFileSync(path, 'utf8')) as typeof manifest).beats : []
   const fresh = new Set(manifest.beats.map((b) => b.id))
   const beats = [...before.filter((b) => !fresh.has(b.id)), ...manifest.beats].sort(
-    (a, b) => VIDEO_BEATS.indexOf(a.id as VideoBeat) - VIDEO_BEATS.indexOf(b.id as VideoBeat),
+    (a, b) => order.indexOf(a.id) - order.indexOf(b.id),
   )
   writeFileSync(path, `${JSON.stringify({ ...manifest, beats }, null, 2)}\n`)
   console.log(`${LOG} ${String(manifest.beats.length)} beat masters listed in ${path}.`)
@@ -321,8 +369,8 @@ function writeVideoManifest(options: Options, notBefore: number): string[] {
 
 /** What a dry run says it would do. */
 function printPlan(options: Options): void {
-  if (options.video) {
-    console.log(`${LOG} would record the demo video's beats: ${selectedBeats(options).join(', ')} (dark)`)
+  if (options.video !== null) {
+    console.log(`${LOG} would record ${options.video}'s beats: ${selectedBeats(options).join(', ')} (dark)`)
     console.log(`${LOG} masters and video-beats.json: ${options.mastersDir}`)
     return
   }
@@ -364,9 +412,10 @@ async function main(): Promise<void> {
     recordedAll = await record(options, recorder)
   }
 
-  const skipped = options.video
-    ? writeVideoManifest(options, started)
-    : encodeAll(options, options.encodeOnly ? 0 : started)
+  const skipped =
+    options.video === null
+      ? encodeAll(options, options.encodeOnly ? 0 : started)
+      : writeVideoManifest(options, options.video, started)
   for (const line of skipped) console.warn(`${LOG} skipped ${line}`)
   if (!recordedAll || skipped.length > 0) throw new Error('not every clip was recorded; see the skipped lines above')
   console.log(`${LOG} done. Review the clips before committing them: they're drafts until David has seen them.`)
