@@ -33,7 +33,9 @@ import {
   SEARCH_INPUT,
   SEARCH_OVERLAY,
   closeSearchDialog,
+  getActiveMode,
   openSearchDialog,
+  pressMetaDigit,
   resetSearchDialog,
 } from './search-helpers.js'
 import { setSetting } from './marketing-stage.js'
@@ -50,7 +52,7 @@ import {
   stageMain,
   typeSlowly,
 } from './marketing-clips-scenes.js'
-import { DEMO, DEMO_ROOT, SENSOR_LOG_QUERY, resetBackup, resetCameraRoll } from './marketing-clips-demo.js'
+import { AI_QUERY, DEMO, DEMO_ROOT, SENSOR_LOG_QUERY, resetBackup, resetCameraRoll } from './marketing-clips-demo.js'
 import type { Take } from './marketing-clips-take.js'
 
 /**
@@ -316,48 +318,100 @@ export async function reach(page: TauriPage): Promise<void> {
   }
 }
 
+/** The local model's runtime facts the AI beat waits on (`get_ai_runtime_status`). */
+interface LocalAiRuntime {
+  serverRunning: boolean
+  modelInstalled: boolean
+}
+
+async function localAiRuntime(page: TauriPage): Promise<LocalAiRuntime> {
+  return page.evaluate<LocalAiRuntime>(`window.__TAURI_INTERNALS__.invoke('get_ai_runtime_status')`)
+}
+
 /**
- * 5. Search by meaning. ❗ Recorded as a strong regular search: a cloud AI provider needs
- * a key set up through the app's own provider settings, which this run doesn't script.
- * `video-beats.json` says so.
+ * Off camera: switches the instance to Cmdr's built-in local model and waits for its
+ * server. On an instance without the model it downloads it first, through the same
+ * `start_ai_download` that Settings > AI > Download calls (about 2 GB; 90 s on a fast
+ * line, 2026-10-23). The model stays in the clips data dir for later runs, and an
+ * interrupted download resumes. No API key anywhere.
+ */
+async function ensureLocalAi(page: TauriPage): Promise<void> {
+  await setSetting(page, 'ai.provider', 'local')
+  if (!(await localAiRuntime(page)).modelInstalled) {
+    console.log('[marketing-video] downloading the local AI model into the clips instance…')
+    // Fire and forget: the command resolves only when the download ends, far past one
+    // `evaluate`'s budget. The runtime status is the probe.
+    await page.evaluate(`(function () { window.__TAURI_INTERNALS__.invoke('start_ai_download'); return true })()`)
+    await expect
+      .poll(async () => (await localAiRuntime(page)).modelInstalled, {
+        timeout: waitBudget(480000),
+        intervals: [5000],
+        message: "the local AI model didn't finish downloading; run the beat again to resume it",
+      })
+      .toBe(true)
+  }
+  await expect
+    .poll(async () => (await localAiRuntime(page)).serverRunning, {
+      timeout: waitBudget(90000),
+      message: "the local AI server didn't start",
+    })
+    .toBe(true)
+}
+
+/**
+ * 5. Search by meaning, on Cmdr's built-in local model: a plain sentence in "Ask anything"
+ * mode becomes a name pattern AND a date range, and only last year's tax files come back,
+ * out of three years of them and beside a decoy (`stageTaxes`). Real inference, nothing
+ * scripted: the model samples (`--temp 0.6`) and once answered with the date range alone,
+ * so a take whose results aren't all tax files fails and Playwright's retry records it
+ * again (2026-10-23).
  */
 export async function ai(page: TauriPage): Promise<void> {
   await stageMain(page, 'dark', DEMO_ROOT, join(DEMO_ROOT, DEMO.documents), VIDEO_LOOK)
-  await openSearchDialog(page)
-  await resetSearchDialog(page)
-  await closeSearchDialog(page)
-  await dismissAllToasts(page)
+  await ensureLocalAi(page)
+  const lastYearsReport = `Tax report ${String(new Date().getUTCFullYear() - 1)}`
   try {
+    await openSearchDialog(page)
+    await resetSearchDialog(page)
+    if ((await getActiveMode(page)) !== 'ai') await pressMetaDigit(page, 1)
+    await expect.poll(() => getActiveMode(page), { timeout: waitBudget(5000) }).toBe('ai')
+    await closeSearchDialog(page)
+    await dismissAllToasts(page)
     const take = await recordWindow(page, { slug: 'ai', theme: 'dark', label: 'main' })
     await beat(take, async () => {
       await hold(800)
-      take.note('search opens on the whole studio drive')
+      take.note('search opens in "Ask anything" mode, on the whole studio drive')
       await openSearchDialog(page)
+      await hold(900)
+      take.note(`typing a plain sentence: "${AI_QUERY}"`)
+      await typeSlowly(page, SEARCH_INPUT, AI_QUERY, 110)
       await hold(700)
-      take.note('typing a query')
-      await typeSlowly(page, SEARCH_INPUT, 'invoice', 130)
-      await page.waitForSelector(`${SEARCH_OVERLAY} .result-row`, waitBudget(30000))
-      take.note('results from every folder, with paths, sizes, and dates')
-      take.markPoster()
-      await hold(3000)
-      take.note('a second query: the budget spreadsheet')
-      await typeSlowly(page, SEARCH_INPUT, 'budget', 130)
+      take.note('Enter: the local model turns it into a name pattern and a date range')
+      await pressKey(page, 'Enter')
       await expect
         .poll(
-          () =>
-            page.evaluate<boolean>(
-              `!!document.querySelector('${SEARCH_OVERLAY} .result-row')?.textContent?.includes('Budget')`,
-            ),
+          async () => {
+            const rows = await page.evaluate<string[]>(
+              `[...document.querySelectorAll('${SEARCH_OVERLAY} .result-row')].map(function (r) { return r.textContent || '' })`,
+            )
+            return rows.some((r) => r.includes(lastYearsReport)) && rows.every((r) => r.includes('Tax '))
+          },
           {
             timeout: waitBudget(30000),
+            message: `the AI search didn't list only tax files, ${lastYearsReport} among them`,
           },
         )
         .toBe(true)
-      await hold(3000)
+      take.note(`only last year's tax files come back (${lastYearsReport}), with the filters it chose`)
+      await hold(1200)
+      take.markPoster()
+      await hold(3600)
       await closeSearchDialog(page)
     })
   } finally {
     await closeSearchDialog(page).catch(() => {})
+    // Off again, so no other beat or clip shows the AI chip or keeps the model running.
+    await setSetting(page, 'ai.provider', 'off')
   }
 }
 

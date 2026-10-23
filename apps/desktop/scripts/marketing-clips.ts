@@ -141,11 +141,7 @@ function selectedBeats(options: Options): readonly string[] {
 
 /** What the editor must know about a beat that its footage doesn't say, per footage set. */
 const BEAT_REMARKS: Record<VideoSetId, Record<string, string>> = {
-  video: {
-    ai:
-      'A regular filename search, NOT an AI one: no cloud AI provider was configured for the recording instance. ' +
-      'Re-record once one is set up in its Settings > AI > Provider.',
-  },
+  video: {},
   video2: {
     s3:
       'A download from the bucket, not an upload, and no cost estimate. The estimate needs a priced provider (AWS, ' +

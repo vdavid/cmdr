@@ -57,6 +57,12 @@ export const QUEUE_SOURCES = [
   'Workshop',
 ] as const
 
+/** Where the demo video's AI beat finds its answer (`stageTaxes`). */
+export const AI_TAX_DIR = join('Documents', 'Taxes')
+
+/** The demo video's AI beat's sentence. */
+export const AI_QUERY = 'tax report from last year'
+
 /** The search clip's query, and the word its demo files are named after. */
 export const SEARCH_QUERY = 'invoice'
 
@@ -119,7 +125,7 @@ export function removeDemoTree(root = DEMO_ROOT): void {
  * What the marker says. Bump the version whenever the staged content changes, so the next
  * run restages instead of keeping a stale tree.
  */
-const MARKER_TEXT = 'Staged by pnpm marketing:clips (demo tree v3). Safe to delete.\n'
+const MARKER_TEXT = 'Staged by pnpm marketing:clips (demo tree v5). Safe to delete.\n'
 
 /**
  * Makes sure the demo tree is there and current, and puts its mutable folders back.
@@ -315,6 +321,7 @@ function stageDocuments(root: string): void {
   }
   writeSized(join(root, DEMO.documents, 'Invoice template.docx'), 48_000)
   writeFileSync(join(root, DEMO.documents, 'Budget 2026.csv'), 'Month,Income,Costs\nJan,12400,8100\nFeb,13900,8650\n')
+  stageTaxes(root)
 
   const notes = join(root, DEMO.fieldNotes)
   mkdirSync(notes, { recursive: true })
@@ -326,6 +333,39 @@ function stageDocuments(root: string): void {
   Buffer.from('CMDRFW\u0001\u0000Studio light controller v2.4\u0000').copy(firmware)
   writeFileSync(join(notes, 'light-controller.bin'), firmware)
   stagePhoto(join(notes, 'glacier.jpg'))
+}
+
+/**
+ * The demo video's AI beat asks for "the tax report from last year", so `Documents/Taxes`
+ * holds a report and receipts per year, each dated in its own year, and `Documents` holds
+ * a non-tax file from last year. Only last year's tax files should come back: the local
+ * model has to turn the sentence into a name pattern AND a date range, the other years
+ * catch a missing date range, and the decoy catches a missing name pattern.
+ *
+ * ❗ "Last year" is relative to the day of staging, so the tree restages (via the marker)
+ * only when its content changes; re-recording in a new year wants `--remove-demo` first.
+ */
+function stageTaxes(root: string): void {
+  const dir = join(root, AI_TAX_DIR)
+  mkdirSync(dir, { recursive: true })
+  const lastYear = new Date().getUTCFullYear() - 1
+  for (const year of [lastYear - 2, lastYear - 1, lastYear]) {
+    const files = [
+      [`Tax report ${String(year)}.pdf`, 310_000 + (year % 7) * 9_100, 3, 28],
+      [`Tax receipts ${String(year)}.xlsx`, 64_000 + (year % 5) * 3_300, 2, 9],
+    ] as const
+    for (const [name, bytes, month, day] of files) {
+      const path = join(dir, name)
+      writeSized(path, bytes)
+      const when = new Date(Date.UTC(year, month, day, 14, 10))
+      utimesSync(path, when, when)
+    }
+  }
+  // Last year's, but not a tax file: an answer that leaned on the date alone lists it too.
+  const decoy = join(root, DEMO.documents, `Insurance policy ${String(lastYear)}.pdf`)
+  writeSized(decoy, 212_000)
+  const decoyDate = new Date(Date.UTC(lastYear, 5, 12, 11, 40))
+  utimesSync(decoy, decoyDate, decoyDate)
 }
 
 /**
