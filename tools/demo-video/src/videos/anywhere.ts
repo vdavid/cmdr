@@ -1,6 +1,15 @@
 // Video 2, "Cmdr, anywhere": safe file operations to and from everything that stores files, cut to a live indie-rock
 // band. Pure data (type-only imports), so Node scripts can load it with type stripping.
-import type { Section, VideoSpec } from './types.ts'
+import type { Section, Shot, VideoSpec } from './types.ts'
+
+/** A shot on this video's recordings, with the main-window still as its placeholder. */
+const shot = (beat: string, weight: number, focus: Shot['focus'], rest: Partial<Shot> = {}): Shot => ({
+  beat,
+  still: 'app-main-dark.webp',
+  weight,
+  focus,
+  ...rest,
+})
 
 const script: Section[] = [
   {
@@ -32,14 +41,16 @@ const script: Section[] = [
         show: 'and copies within a share happen right on the server.',
       },
     ],
+    // The share lists 5,000 photos on "way faster"; the copy within the share lands on "right on the server". The
+    // punch-ins sit low: the volume picker at the top shows the test server's address (see video-beats.json).
     shots: [
-      { beat: 'smb', still: 'app-main-dark.webp', weight: 0.5, focus: { x: 0.25, y: 0.16, zoom: 1.4 } },
-      {
-        beat: 'smb',
-        still: 'app-main-dark.webp',
-        weight: 0.5,
-        focus: { x: 0.5, y: 0.6, zoom: 1.15 },
-      },
+      shot('smb', 0.55, { x: 0.5, y: 0.6, zoom: 1.15 }, { sync: { moment: 'listed: 5,000 files', phrase: 1 } }),
+      shot(
+        'smb',
+        0.45,
+        { x: 0.5, y: 0.62, zoom: 1.2 },
+        { cue: 2, sync: { moment: 'F5: copy "Lisbon trip"', phrase: 2 } },
+      ),
     ],
   },
   {
@@ -54,9 +65,11 @@ const script: Section[] = [
         show: "Before you copy, Cmdr tells you what it'll cost.",
       },
     ],
+    // The cost moment comes from the re-recording against a priced bucket: `key` is its key frame. Recheck the sync
+    // labels against the new video-beats.json when it lands.
     shots: [
-      { beat: 's3', still: 'app-main-dark.webp', weight: 0.5, focus: { x: 0.7, y: 0.4, zoom: 1.3 } },
-      { beat: 's3', still: 'app-main-dark.webp', weight: 0.5, focus: { x: 0.5, y: 0.5, zoom: 1.2 } },
+      shot('s3', 0.5, { x: 0.5, y: 0.55, zoom: 1.15 }, { sync: { moment: 'bucket', phrase: 0 } }),
+      shot('s3', 0.5, { x: 0.5, y: 0.5, zoom: 1.25 }, { cue: 1, sync: { moment: 'key', phrase: 1 } }),
     ],
   },
   {
@@ -73,7 +86,17 @@ const script: Section[] = [
       },
       { say: 'Or go over A D B.', show: 'Or go over ADB.' },
     ],
-    shots: [{ beat: 'phone', still: 'app-main-dark.webp', weight: 1, focus: { x: 0.3, y: 0.45, zoom: 1.3 } }],
+    // Browsing the phone's camera roll, then the copy off it runs under "four times faster". The recording has no ADB
+    // moment, so "Or go over ADB" plays over the finished copy.
+    shots: [
+      shot('phone', 0.4, { x: 0.5, y: 0.55, zoom: 1.15 }, { sync: { moment: 'DCIM/Camera', phrase: 1 } }),
+      shot(
+        'phone',
+        0.6,
+        { x: 0.5, y: 0.55, zoom: 1.25 },
+        { cue: 2, sync: { moment: 'all selected; copy', phrase: 2 } },
+      ),
+    ],
   },
   {
     id: 'archives',
@@ -86,14 +109,17 @@ const script: Section[] = [
       { say: 'unlock once, open any snapshot,', show: 'unlock once, open any snapshot,' },
       { say: 'copy your files back.', show: 'copy your files back.' },
     ],
+    // A zip opens like a folder; then the restic repo, unlocked into snapshots, and a file restored, each on its words.
     shots: [
-      { beat: 'archives', still: 'app-main-dark.webp', weight: 0.5, focus: { x: 0.3, y: 0.5, zoom: 1.25 } },
-      {
-        beat: 'archives',
-        still: 'app-main-dark.webp',
-        weight: 0.5,
-        focus: { x: 0.7, y: 0.5, zoom: 1.3 },
-      },
+      shot('archives', 0.35, { x: 0.5, y: 0.55, zoom: 1.15 }, { sync: { moment: 'Enter on a zip', phrase: 0 } }),
+      shot(
+        'archives',
+        0.15,
+        { x: 0.5, y: 0.5, zoom: 1.2 },
+        { cue: 1, sync: { moment: 'a restic backup repo', phrase: 1 } },
+      ),
+      shot('archives', 0.25, { x: 0.5, y: 0.55, zoom: 1.2 }, { cue: 2, sync: { moment: 'unlocked', phrase: 2 } }),
+      shot('archives', 0.25, { x: 0.5, y: 0.55, zoom: 1.25 }, { cue: 3, sync: { moment: 'restored', phrase: 3 } }),
     ],
   },
   {
@@ -108,14 +134,22 @@ const script: Section[] = [
       { say: 'Queue up more,', show: 'Queue up more,' },
       { say: 'and send them to the background.', show: 'and send them to the background.' },
     ],
+    // A copy with live progress and ETA; Pause and Resume on "Pause, resume"; the Operations window and the queue on
+    // "Queue up more, and send them to the background".
     shots: [
-      { beat: 'transfers', still: 'app-main-dark.webp', weight: 0.55, focus: { x: 0.5, y: 0.55, zoom: 1.2 } },
-      {
-        beat: 'transfers',
-        still: 'app-main-dark.webp',
-        weight: 0.45,
-        focus: { x: 0.5, y: 0.85, zoom: 1.35 },
-      },
+      shot(
+        'transfers',
+        0.4,
+        { x: 0.5, y: 0.55, zoom: 1.15 },
+        { sync: { moment: 'F5: copy "Annual report"', phrase: 0 } },
+      ),
+      shot(
+        'transfers',
+        0.3,
+        { x: 0.5, y: 0.55, zoom: 1.25 },
+        { cue: 2, sync: { moment: 'Pause the running copy', phrase: 2 } },
+      ),
+      shot('transfers', 0.3, { x: 0.5, y: 0.5, zoom: 1.15 }, { cue: 3, sync: { moment: 'Background', phrase: 4 } }),
     ],
   },
   {
@@ -128,7 +162,16 @@ const script: Section[] = [
       { say: 'Undo it.', show: 'Undo it.' },
       { say: 'Or roll it back, even days later.', show: 'Or roll it back, even days later.' },
     ],
-    shots: [{ beat: 'undo', still: 'app-main-dark.webp', weight: 1, focus: { x: 0.68, y: 0.6, zoom: 1.35 } }],
+    // The copy disappears on "Undo it."; the operation log rolls back an older copy on "roll it back".
+    shots: [
+      shot('undo', 0.45, { x: 0.5, y: 0.55, zoom: 1.2 }, { sync: { moment: 'undone', phrase: 1 } }),
+      shot(
+        'undo',
+        0.55,
+        { x: 0.5, y: 0.5, zoom: 1.2 },
+        { cue: 2, sync: { moment: 'Roll back the earlier copy', phrase: 2 } },
+      ),
+    ],
   },
   {
     id: 'close',

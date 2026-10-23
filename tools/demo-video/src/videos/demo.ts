@@ -137,7 +137,7 @@ const script: Section[] = [
         still: 'app-main-dark.webp',
         weight: 0.25,
         focus: { x: 0.5, y: 0.5, zoom: 1.12 },
-        sync: { moment: 'key', phrase: 1 },
+        sync: { moment: 'listed: 5,000 files', phrase: 1 },
       },
       {
         beat: 'phone',
@@ -147,7 +147,7 @@ const script: Section[] = [
         weight: 0.15,
         focus: { x: 0.5, y: 0.5, zoom: 1.12 },
         cue: 2,
-        sync: { moment: 'key', phrase: 2 },
+        sync: { moment: 'copying off the phone', phrase: 2 },
       },
       {
         beat: 'reach',
