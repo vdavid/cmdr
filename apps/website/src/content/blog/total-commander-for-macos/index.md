@@ -1,6 +1,7 @@
 ---
 title: 'Total Commander for Mac'
 date: 2026-06-16
+updated: 2026-10-23
 description: 'Why Cmdr is the best Total Commander alternative for macOS'
 excerpt:
   "There's no official Total Commander for macOS. The closest thing is [Cmdr](https://getcmdr.com): a dual-pane,
@@ -55,27 +56,32 @@ was overall basic; [Double Commander](https://github.com/doublecmd/doublecmd), w
 
 ## How Cmdr compares to Total Commander
 
-|                                       | Total Commander                                      | Cmdr                                                       |
-| ------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------- |
-| Platform                              | :no: macOS<br>:no: Linux<br>:yes: Windows            | :yes: macOS<br>:soon: Linux (soon)<br>:no: Windows (later) |
-| Two panes, keyboard-first             | :yes: Yes                                            | :yes: Yes                                                  |
-| Shortcuts (F3..F8, etc.)              | :yes: Yes                                            | :yes: Yes, plus Finder's                                   |
-| Brief and Full views, sorting         | :yes: Yes                                            | :yes: Yes                                                  |
-| Built-in file viewer (F3)             | :yes: Yes                                            | :yes: Yes                                                  |
-| Tabs, drag and drop, full clipboard   | :yes: Yes                                            | :yes: Yes                                                  |
-| Network drives (SMB)                  | :yes: (if mounted)                                   | :yes: Built-in, fast!                                      |
-| Translations (multi-language)         | :yes: Yes (~45 <span title="languages">langs</span>) | :yes: Yes (10 <span title="languages">langs</span>)        |
-| MTP (Android, Kindle, etc. support)   | :warn: Via plugins                                   | :yes: Built-in                                             |
-| Git browser                           | :warn: Via plugins                                   | :yes: Built-in                                             |
-| Command palette                       | :no: No                                              | :yes: Yes                                                  |
-| Live folder sizes (full-disk index)   | :no: No                                              | :yes: Yes                                                  |
-| Natural-language search and selection | :no: No                                              | :yes: Yes (alpha)                                          |
-| Free for personal use                 | :no: No ([~$50](https://www.ghisler.com/order.htm))  | :yes: [Yes!](/pricing) ($59 once for work)                 |
-| FTP/SFTP                              | :yes: Yes                                            | :soon: [Coming soon](/roadmap#very-soon)                   |
-| Archives (zip, tar, etc.)             | :yes: Yes                                            | :soon: [Coming soon](/roadmap#very-soon)                   |
-| Batch rename                          | :yes: Yes                                            | :soon: [Coming soon](/roadmap#very-soon)                   |
-| Folder sync                           | :yes: Yes                                            | :soon: [Coming soon](/roadmap#also-soon)                   |
-| Plugins                               | :yes: Yes                                            | :soon: [Coming soon](/roadmap#also-soon)                   |
+|                                         | Total Commander                                      | Cmdr                                                                                                                                                                                                                                  |
+| --------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Platform                                | :no: macOS<br>:no: Linux<br>:yes: Windows            | :yes: macOS<br>:soon: Linux (soon)<br>:no: Windows (later)                                                                                                                                                                            |
+| Two panes, keyboard-first               | :yes: Yes                                            | :yes: Yes                                                                                                                                                                                                                             |
+| Shortcuts (F3..F8, etc.)                | :yes: Yes                                            | :yes: Yes, plus Finder's                                                                                                                                                                                                              |
+| Brief and Full views, sorting           | :yes: Yes                                            | :yes: Yes                                                                                                                                                                                                                             |
+| Built-in file viewer (F3)               | :yes: Yes                                            | :yes: Yes                                                                                                                                                                                                                             |
+| Tabs, drag and drop, full clipboard     | :yes: Yes                                            | :yes: Yes                                                                                                                                                                                                                             |
+| Translations (multi-language)           | :yes: Yes (~45 <span title="languages">langs</span>) | :yes: Yes (15 <span title="languages">langs</span>)                                                                                                                                                                                   |
+| Archives (zip, tar, 7z, etc.)           | :yes: Yes                                            | :yes: Yes (alpha)                                                                                                                                                                                                                     |
+| Multi-rename tool                       | :yes: Yes                                            | :yes: Yes (alpha)                                                                                                                                                                                                                     |
+| Compare folders                         | :yes: Yes                                            | :yes: Yes                                                                                                                                                                                                                             |
+| Network drives (SMB, NFS)               | :yes: (if mounted)                                   | :yes: Built-in, fast!                                                                                                                                                                                                                 |
+| SFTP, WebDAV                            | :warn: Via plugins                                   | :yes: Built-in (alpha)                                                                                                                                                                                                                |
+| FTP                                     | :yes: Yes                                            | :no: No :info[No one has requested FTP for Cmdr.&#10;People in 2026 tend to use SFTP and cloud services instead.&#10;That said, feature requests and votes are welcome. If there is need, Cmdr gets FTP.]:                            |
+| Cloud storage (S3 and compatibles)      | :warn: Via plugins                                   | :yes: Built-in (alpha)                                                                                                                                                                                                                |
+| Android (MTP, ADB), Kindle, cameras     | :warn: Via plugins                                   | :yes: Built-in                                                                                                                                                                                                                        |
+| Git browser                             | :warn: Via plugins                                   | :yes: Built-in                                                                                                                                                                                                                        |
+| Command palette                         | :no: No                                              | :yes: Yes                                                                                                                                                                                                                             |
+| Live folder sizes (full-disk index)     | :no: No                                              | :yes: Yes                                                                                                                                                                                                                             |
+| Undo for copy, move, rename, and delete | :no: No                                              | :yes: Yes (alpha)                                                                                                                                                                                                                     |
+| AI assistant (optional, local or cloud) | :no: No                                              | :yes: Yes (alpha)                                                                                                                                                                                                                     |
+| Search inside photos (on-device)        | :no: No                                              | :yes: Yes (alpha)                                                                                                                                                                                                                     |
+| Free for personal use                   | :no: No ([~$50](https://www.ghisler.com/order.htm))  | :yes: [Yes!](/pricing) ($59 once for work)                                                                                                                                                                                            |
+| Folder sync                             | :yes: Yes                                            | :soon: [Coming soon](/roadmap#also-soon)                                                                                                                                                                                              |
+| Plugins                                 | :yes: Yes                                            | :fork: Source-available :info[Cmdr intentionally has no plugin system.&#10;Fork the repo at will and ask your agent to change it.&#10;Ask your agent to keep it updated monthly.&#10;Still needs a paid license for commercial use.]: |
 
 ### The most important similarities
 
@@ -91,8 +97,9 @@ was overall basic; [Double Commander](https://github.com/doublecmd/doublecmd), w
 
 - Total Commander **works on Windows**. I _might_ port Cmdr to Windows eventually, but focusing on macOS for now.
 - Total Commander is 20+ year old software. It's **very mature** and **rock solid**. I love Total Commander. ❤️
-- It has tons of functionality that Cmdr doesn't have yet: **batch rename**, **folder sync**, **FTP/SFTP**, **archive
-  handling**, **plugins**, and several others. Again, very mature and feature-packed.
+- It has some functionality that Cmdr doesn't have yet, although it's decreasing. Today, it's mainly **folder sync**,
+  and a few nuances. Cmdr's newer features like **archives** and **multi-rename** are still in alpha, while TC's have
+  been polished for decades.
 
 ### Where Cmdr is better
 
@@ -105,9 +112,12 @@ was overall basic; [Double Commander](https://github.com/doublecmd/doublecmd), w
   searches immediate, and unlocks features like great live context for AI-initiated, human-supervised file organization.
 - Cmdr has built-in **MTP** (Android, Kindle, cameras, etc.) support. This is actually quite unique on macOS.
 - Cmdr has built-in **Git** support: you can browse your git history, branches, and stash like folders.
-- A ton of (**optional** and **privacy-first**) **AI features** are coming to Cmdr, with some of them like **natural
-  language search** and a built-in [MCP](https://modelcontextprotocol.io/) server already implemented. The _right_ use
-  of an LLM built into the core of the app can make a lot of tasks a lot easier.
+- Cmdr has (**optional** and **privacy-first**) **AI features**: **natural language search**, **AI rename**, a built-in
+  [MCP](https://modelcontextprotocol.io/) server, and **Ask Cmdr**, an agent that finds and reads your files and
+  suggests moves, renames, and cleanups that you approve one by one. It can run on an on-device model, too. The _right_
+  use of an LLM built into the core of the app can make a lot of tasks a lot easier.
+- Cmdr keeps an **operation log**: every copy, move, rename, and delete is recorded, and most of them are one click from
+  rolled back.
 - Cmdr also implements **Finder's shortcuts**, so it's easier to use for people who come from Finder and other macOS
   file managers.
 - Cmdr is [free for personal use](/pricing)! Total Commander [costs about $50](https://www.ghisler.com/order.htm) after

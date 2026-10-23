@@ -7,9 +7,9 @@ description:
 ---
 
 Cmdr is a keyboard-driven file manager I'm building in Rust. (See the rest of this website for details.) One of its
-coolest features is a [background drive index](<>) that tracks every file on your volume so it can show recursive
-directory sizes in file listings. The index lives in SQLite, gets populated by a parallel jwalk scan, and stays current
-via FSEvents ( macOS) or inotify (Linux).
+coolest features is a [background drive index](/blog/cmdr-will-track-your-entire-file-system) that tracks every file on
+your volume so it can show recursive directory sizes in file listings. The index lives in SQLite, gets populated by a
+parallel jwalk scan, and stays current via FSEvents (macOS) or inotify (Linux).
 
 Last week, the index for my dev machine (5.5M entries, 528K directories) was **3.85 GB**. That's embarrassingly large
 for what's essentially a file tree with some metadata.

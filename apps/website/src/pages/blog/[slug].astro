@@ -2,6 +2,7 @@
 import BlogLayout from '../../layouts/BlogLayout.astro'
 import LikeButton from '../../components/LikeButton.astro'
 import BlogNewsletterCta from '../../components/BlogNewsletterCta.astro'
+import BlogNotice from '../../components/BlogNotice.astro'
 import Remark42Comments from '../../components/Remark42Comments.astro'
 import { getCollection, render } from 'astro:content'
 
@@ -21,8 +22,10 @@ const { Content } = await render(post)
     title={post.data.title}
     description={post.data.description}
     date={post.data.date.toISOString().slice(0, 10)}
+    updated={post.data.updated?.toISOString().slice(0, 10)}
     ogImage={`/og/${post.id}.png`}
 >
+    {post.data.notice && <BlogNotice markdown={post.data.notice} />}
     <Content />
     <LikeButton />
     <BlogNewsletterCta />

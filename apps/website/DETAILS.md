@@ -103,6 +103,15 @@ Generated at build time with Satori (JSX to SVG) and resvg (SVG to PNG). Colors 
 support CSS variables; keep them in sync with `global.css` theme values. Fonts (`inter-400.ttf`, `inter-700.ttf`) live
 in `public/fonts/`.
 
+### Content cache
+
+Astro's content layer stores each post's rendered HTML in `.astro/data-store.json` (gitignored), keyed by the post's own
+text. Editing a remark/rehype plugin in `src/plugins/` (a new inline icon, a changed transform) doesn't invalidate it,
+so posts you didn't touch keep their old render in dev AND in a local `astro build`, and a dev server also holds the
+plugin modules it loaded at start. Delete the file and restart dev. CI and deploys build from a clean checkout, so
+production is unaffected. (Verified on Astro 7.3.8, 2026-10-23: a new `:partial:` icon stayed raw text until the file
+was deleted.)
+
 ## Patterns
 
 - **Layouts**: `Layout.astro` (base), `BlogLayout.astro` (posts), `LegalLayout.astro` (terms, privacy)

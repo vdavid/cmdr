@@ -9,6 +9,10 @@
  * Shared by the rehype plugin (blog-media.ts, builds hast) and the dev-editor preview (entry.ts,
  * builds DOM) so both render identically. Each icon is one or more Lucide `<path d>` strings. Icons
  * are decorative (`aria-hidden`); keep the cell's text so screen readers still get the meaning.
+ *
+ * An optional tooltip goes in brackets: `:info[Text shown on hover]:`. That icon becomes focusable, with
+ * the text as its `title` and its accessible name, so it works by mouse, keyboard, and screen reader.
+ * No `]` inside the brackets; write `&#10;` for a line break in the tooltip.
  */
 
 export interface InlineIcon {
@@ -30,13 +34,25 @@ export const INLINE_ICONS: Record<string, InlineIcon> = {
       'M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2',
     ],
   }, // lucide hourglass — blue
+  fork: {
+    paths: [
+      'M9 18a3 3 0 1 0 6 0a3 3 0 1 0-6 0',
+      'M3 6a3 3 0 1 0 6 0a3 3 0 1 0-6 0',
+      'M15 6a3 3 0 1 0 6 0a3 3 0 1 0-6 0',
+      'M18 9v2c0 .6-.4 1-1 1H7c-.6 0-1-.4-1-1V9m6 3v3',
+    ],
+  }, // lucide git-fork (circles as paths) — green, "supported through your fork"
+  info: { paths: ['M2 12a10 10 0 1 0 20 0a10 10 0 1 0-20 0', 'M12 16v-4', 'M12 8h.01'] }, // lucide info (circle as a path) — muted
 }
 
 export const ICON_NAMES: string[] = Object.keys(INLINE_ICONS)
 
-/** Build a fresh global matcher for `:name:` of registered names (callers need their own lastIndex). */
+/**
+ * Build a fresh global matcher for `:name:` and `:name[tooltip]:` of registered names (callers need their
+ * own lastIndex). Group 1 is the name, group 2 the tooltip text when present.
+ */
 export function inlineIconMatcher(): RegExp {
-  return new RegExp(`:(${ICON_NAMES.join('|')}):`, 'g')
+  return new RegExp(`:(${ICON_NAMES.join('|')})(?:\\[([^\\]]+)\\])?:`, 'g')
 }
 
 /** The SVG attributes every inline icon shares (line-art, currentColor — the `.md-icon--*` color). */

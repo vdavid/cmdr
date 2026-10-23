@@ -20,9 +20,9 @@ Marketing site and blog for Cmdr. Astro + Tailwind v4 (CSS-first config in `src/
 
 ## Deployment
 
-Auto-deploys on push to `main` touching `apps/website/**` via `ci.yml`'s `deploy-website` job (signed webhook to
-Hetzner), the only path; releases hit it too. Steps: `docs/guides/deploy-website.md`. `public/latest.json` is a frozen
-dev copy (deploys fetch the live one): ❌ never read the current version from it.
+Auto-deploys from `main` (`apps/website/**` changes and releases) via `ci.yml`'s `deploy-website` job, a signed webhook
+to Hetzner, the only path. Steps: `docs/guides/deploy-website.md`. `public/latest.json` is a frozen dev copy (deploys
+fetch the live one): ❌ never read the current version from it.
 
 ## Analytics (must-knows)
 
@@ -61,6 +61,7 @@ Color scheme.
   transform → add a block to `src/fixtures/visual-fixture.md`. Refresh with
   `apps/website/scripts/update-visual-baselines.sh`; CI verifies inside that same container, so ❌ never move that job
   to the bare runner or install browsers in it. [DETAILS.md](DETAILS.md) § Visual baselines.
+- **Edited `src/plugins/`? Delete `.astro/data-store.json`.** [DETAILS.md](DETAILS.md) § Content cache.
 - **Keep TS generic calls single-line in `.astro` `<script>` blocks** (multi-line breaks astro-eslint).
 - **Typed lint needs `astro sync` first**; the `.astro` block omits the `no-unsafe-*` rules (only false positives
   there). [DETAILS.md](DETAILS.md) § Typed linting.
@@ -68,7 +69,6 @@ Color scheme.
 - Keep `compressHTML: true` (Astro 7's `'jsx'` breaks home + pricing).
 - **A new fetch origin goes in `connect-src`** (`nginx-security-headers.conf`), or prod silently blocks it.
   [DETAILS.md](DETAILS.md) § Security headers.
-- Remark42 comments disabled in dev. Setup: `docs/guides/deploying-remark42.md`.
+- Remark42 comments are off in dev: `docs/guides/deploying-remark42.md`.
 
-Patterns, analytics, and baselines: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
-reorganizing, or advising.
+Patterns, analytics, baselines: `DETAILS.md`. Read it before any non-trivial work here.

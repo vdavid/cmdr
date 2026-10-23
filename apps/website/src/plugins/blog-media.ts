@@ -278,9 +278,11 @@ function buildComparisons(node: Parent): void {
   }
 }
 
-/** An inline colored icon span for a `:name:` token (see blog-icons.ts). */
-function iconSpan(name: string): Element {
-  return el('span', { className: ['md-icon', `md-icon--${name}`] }, [
+/** An inline colored icon span for a `:name:` or `:name[tooltip]:` token (see blog-icons.ts). */
+function iconSpan(name: string, tooltip?: string): Element {
+  const properties: Properties = { className: ['md-icon', `md-icon--${name}`] }
+  if (tooltip) Object.assign(properties, { title: tooltip, ariaLabel: tooltip, role: 'img', tabIndex: 0 })
+  return el('span', properties, [
     icon(
       'md-icon__svg',
       INLINE_ICONS[name].paths.map((d) => el('path', { d })),
@@ -301,7 +303,7 @@ function expandInlineIcons(node: Parent): void {
       let m: RegExpExecArray | null
       while ((m = matcher.exec(child.value))) {
         if (m.index > last) parts.push(text(child.value.slice(last, m.index)))
-        parts.push(iconSpan(m[1]))
+        parts.push(iconSpan(m[1], m[2]))
         last = m.index + m[0].length
       }
       if (parts.length > 0) {

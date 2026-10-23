@@ -580,7 +580,7 @@ function expandInlineIcons(container: HTMLElement) {
       matched = true
       if (match.index > last) fragment.append(textNode.data.slice(last, match.index))
       const holder = document.createElement('div')
-      holder.innerHTML = iconSvgHtml(match[1])
+      holder.innerHTML = iconSvgHtml(match[1], match[2])
       fragment.append(holder.firstChild as Node)
       last = match.index + match[0].length
     }
@@ -590,9 +590,11 @@ function expandInlineIcons(container: HTMLElement) {
   }
 }
 
-function iconSvgHtml(name: string): string {
+function iconSvgHtml(name: string, tooltip?: string): string {
   const paths = INLINE_ICONS[name].paths.map((d) => `<path d="${d}"></path>`).join('')
-  return `<span class="md-icon md-icon--${name}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg></span>`
+  const escaped = tooltip?.replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;')
+  const tooltipAttrs = escaped ? ` title="${escaped}" aria-label="${escaped}" role="img" tabindex="0"` : ''
+  return `<span class="md-icon md-icon--${name}"${tooltipAttrs}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg></span>`
 }
 
 function rewritePreviewImageSources(container: HTMLElement) {

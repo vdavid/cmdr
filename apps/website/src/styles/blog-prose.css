@@ -185,3 +185,22 @@
 .blog-content :global(.md-icon--soon) {
   color: var(--color-icon-soon);
 }
+
+.blog-content :global(.md-icon--fork) {
+  color: var(--color-icon-fork);
+}
+
+.blog-content :global(.md-icon--info) {
+  color: var(--color-text-tertiary);
+}
+
+/* An icon with a `[tooltip]` is focusable: show that hovering or focusing it reveals more. */
+.blog-content :global(.md-icon[title]) {
+  cursor: help;
+  border-radius: 50%;
+}
+
+.blog-content :global(.md-icon[title]:focus-visible) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}

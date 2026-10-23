@@ -77,6 +77,20 @@ the article into the list:
 3. **`description`**: if neither of the above is set, the index falls back to the `description`. So a short post that
    opens straight into a heading can just rely on its `description` and skip both.
 
+## Updated date
+
+**`updated`** frontmatter (`YYYY-MM-DD`) marks a meaningful content refresh. The post header then leads with "Updated on
+…" and shows the original `date` after it, and the structured data gets `dateModified`.
+
+## Update notice
+
+**`notice`** frontmatter (inline markdown) renders as a strip above the post body. Use it for news a reader should see
+first, like "this has shipped" on a post written before it did.
+
+```yaml
+notice: '**Update:** This has shipped! See [the feature](/features#search).'
+```
+
 ## Download dropdown
 
 To drop an inline download link into a post, use the marker `[download](cmdr:download)`. The `rehypeDownloadDropdown`
@@ -153,11 +167,16 @@ The light/dark Cmdr pair must share the `{theme}` filename stem (`cmdr-light.web
 ## Inline icons
 
 Write `:name:` to drop a small brand-colored Lucide icon inline — handy to prefix comparison-table cells for
-scannability. Available: `:yes:` (green check), `:no:` (red x), `:warn:` (amber warning), `:soon:` (blue hourglass).
+scannability. Available: `:yes:` (green check), `:no:` (red x), `:warn:` (amber warning), `:soon:` (blue hourglass),
+`:fork:` (green git fork, for "supported through your own fork"), `:info:` (muted (i)).
 
 ```markdown
 | Network drives | :no: No | :yes: Built-in |
 ```
+
+Any icon takes an optional tooltip in brackets, which makes it focusable and gives it the text as its hover tooltip and
+screen-reader name. The usual one is a trailing (i): `Source-available :info[Fork the repo at will.]:`. No `]` inside
+the brackets; write `&#10;` for a line break in the tooltip.
 
 There's no Markdown standard for inline colored icons, so this is a small controlled set (the `:name:` shortcode form,
 not a free-form `color="…"`) — concise to write and consistent in palette. Add an icon by extending the registry in

@@ -1,0 +1,38 @@
+---
+/**
+ * The strip at the top of a post that carries its `notice` frontmatter (inline markdown), for news
+ * a post's readers should see first, such as "this shipped" on a post written before it did.
+ */
+import { marked } from 'marked'
+
+interface Props {
+    markdown: string
+}
+
+const { markdown } = Astro.props
+const html = await marked.parseInline(markdown)
+---
+
+<aside class="blog-notice" aria-label="Update">
+    <p set:html={html} />
+</aside>
+
+<style>
+    .blog-notice {
+        margin: 0 0 2rem;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--color-accent);
+        border-radius: 0.5rem;
+        background: var(--color-surface);
+        color: var(--color-text-primary);
+    }
+
+    .blog-notice p {
+        margin: 0;
+    }
+
+    .blog-notice :global(a) {
+        color: var(--color-accent);
+        text-decoration: underline;
+    }
+</style>

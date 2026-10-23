@@ -4,6 +4,10 @@ date: 2026-02-18
 description:
   Cmdr will soon scan your drive on startup and watch for changes, keeping a complete live index. This unlocks instant
   search, live dir sizes, treemaps, all built-in.
+notice:
+  '**Update:** This has shipped! Cmdr keeps a [live index](/features#full-disk-index) of your whole drive, with folder
+  sizes everywhere and [search](/features#search) that answers in well under a second. The treemap is still [on the
+  roadmap](/roadmap#also-soon).'
 ---
 
 Last night around 1 am (as you do), I was thinking about displaying dir sizes.

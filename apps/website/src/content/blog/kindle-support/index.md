@@ -24,7 +24,8 @@ like this.
 ## Background: `mtp-rs`
 
 I regularly copy our family photos from our phones, so it's something I needed in Cmdr early. It was also a great excuse
-to abstract away the file system to allow for other stuff like S3 buckets, git repos, etc.
+to abstract away the file system to allow for other stuff like [S3 buckets](/features#s3),
+[git repos](/features#git-browser), etc.
 
 When I started looking into MTP support, I found that the only real option, `libmtp`, is a C library from ~20 years ago.
 I thought: can we do this in pure Rust? Turns out yes. And it's a lot cleaner and faster, too.

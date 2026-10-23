@@ -16,12 +16,14 @@ Smartypants: "curly quotes", an apostrophe's turn, and an ellipsis... A link to
 
 The `:name:` tokens from `src/plugins/blog-icons.ts`, one of each registered glyph:
 
-| State       | Glyph  |
-| ----------- | ------ |
-| Supported   | :yes:  |
-| Unsupported | :no:   |
-| Caveat      | :warn: |
-| Planned     | :soon: |
+| State       | Glyph                       |
+| ----------- | --------------------------- |
+| Supported   | :yes:                       |
+| Unsupported | :no:                        |
+| Caveat      | :warn:                      |
+| Planned     | :soon:                      |
+| Fork it     | :fork:                      |
+| Tooltip     | :info[Text shown on hover]: |
 
 ## Code
 
