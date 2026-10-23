@@ -70,3 +70,75 @@ pnpm marketing:clips --video --only reach,ai  # some of them; the manifest keeps
 ```
 
 Leave the machine alone while it runs, and keep the display awake (`caffeinate -dimsu`).
+
+## Phase 3: the second video, "safe file operations, to and from anywhere"
+
+Recorded by `pnpm marketing:clips --video2` on 2026-10-23, into `brand/clip-masters/video2/` (gitignored, about 3.2 GB)
+with its own `video-beats.json` in the same shape. Same look: dark, 1280x800 at 125% zoom (2560x1600 masters), slack
+around a usable span, named moments in `notes`. The editor-facing caveats are in each beat's `remark`.
+
+### Setup it dresses up
+
+- **NAS**: the repo's Docker SMB fixture with a password (`smb-consumer-auth`, port 11481), refilled with `Photos/2024`
+  (5,000 photos, sparse files), `Photos/2025/Lisbon trip` (36 real-sized photos), `Documents`, `Family videos`, and
+  `Backup`. Added as "Home NAS" and mounted through the production path (`connect_to_server`, `mount_network_share`),
+  which upgrades to a direct smb2 connection.
+- **Bucket**: the VersityGW S3 fixture (port 14480) with a `family-photos` bucket of `2024/Christmas`, `2025/Easter`,
+  and a README.
+- **Phone**: the virtual MTP device, launched as "Pixel 8" (`CMDR_VIRTUAL_MTP_MODEL`, a small addition to `cmdr-mtp`'s
+  virtual device), its `DCIM/Camera` filled with 40 `PXL_…` photos after launch.
+- **Restic**: a `Backups` repo in the demo tree (password in `marketing-video2-fixtures.ts`), two snapshots of the
+  documents and camera roll.
+- ❗ The SMB fixture's own seed files are replaced in the running container; restarting it brings them back for the E2E
+  suites. Both Docker stacks were left running under the `manual` lease (`stop.sh` in each releases it).
+
+### The beats
+
+- `smb` (16.5 s usable): the NAS root, into `Photos/2024` (5,000 files listed at once), End to the last, then F5 on
+  `Lisbon trip` to `Backup` on the same share: a server-side copy, done in well under a second.
+- `s3` (16 s): the bucket browsed into `2025/Easter`, its photos selected and copied down to the Mac.
+- `phone` (11.5 s): `Pixel 8 - Internal Storage`, into `DCIM/Camera`, all selected, copied to the Mac with a progress
+  dialog.
+- `archives` (25 s, trim it): a file copied out of `Brand assets.zip` (including the "Browse like a folder" prompt),
+  then the `Backups` restic repo, its password typed, the snapshots as folders, into `latest`, and a file restored.
+- `transfers` (21 s): with the Operations window over the main window, a copy sent to the background, a move, and a
+  compress queued; the compress paused and resumed; the queue empties.
+- `undo` (14 s, at 100% zoom, see below): a copy finishes, Undo in its dialog rolls it back, then the operation log
+  rolls back an earlier copy of `Raw imports`.
+- `hero2` (10 s): local photos on the left, the NAS's `Lisbon trip` on the right, the cursor walking and Tab-ing across.
+
+### What's missing or different from the ask
+
+- **No S3 cost estimate.** The estimate needs a priced provider (AWS, R2, B2, …); the fixture is an unpriced "Other"
+  endpoint. Recording the moment needs a real priced bucket. The beat is also a DOWNLOAD: an upload into the fixture was
+  admitted and then never moved for two minutes.
+- **No ADB moment.** There's no browsable fake ADB device; a real phone or emulator would be needed.
+- **The NAS shows as "private on 127.0.0.1:11481"**, not "Home NAS": the volume picker names a share by its address.
+  Fixing it needs either a hostname for the fixture (an `/etc/hosts` entry) or the picker to use the server's name.
+- **Two copy dialogs are skipped** (`phone`, `s3`): their From field spells internal ids (the virtual device's
+  `cmdr-e2e-virtual`, the bucket URL with its access key), so those copies start through MCP straight into the progress
+  dialog.
+- **In `transfers` the Operations window covers part of the main window's dialogs.** It sits over the main window's
+  lower right so both are in frame.
+
+### App behavior this phase surfaced (possible bugs, not investigated)
+
+- **An S3 upload into the VersityGW fixture never progressed** (admitted, then nothing for two minutes). The log also
+  warned `couldn't rewrite …/backend-state/s3/unfinished-uploads: No such file or directory` on a fresh data dir.
+- **A server-side SMB copy reports "Copied 1 file … 1 / 36"** with every file in the tree at "0 bytes" while the byte
+  bar reads 100%: the per-file accounting doesn't follow a copy-on-server.
+- **The operation log's "You" wraps to "Yo u"** in its narrow column at 125% zoom. That's why `undo` is recorded at
+  100%.
+- **A queue row's title overlaps its "Running" badge** ("Copying 1 folder" over "Running") at the Operations window's
+  default width.
+- **An S3 bucket connected without remembering its secret asks to sign in again** on the next session's first use.
+- **Settings set right before the app quits may not persist** (`keepProgressOpenWhenDone` and the language both came
+  back at their earlier values on the next launch). Possibly the same root cause as #698.
+
+### Re-recording
+
+```bash
+apps/desktop/test/smb-servers/start.sh minimal && apps/desktop/test/s3-servers/start.sh minimal
+pnpm marketing:clips --video2                      # all seven, about 8 minutes
+pnpm marketing:clips --video2 --only s3,transfers  # some; the manifest keeps the others
+```
