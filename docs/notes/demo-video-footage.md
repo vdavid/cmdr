@@ -30,12 +30,10 @@ night of 2026-10-22. It's input for the video edit, not a deliverable. How the p
 - `reach` (21.5 s): Enter on `Brand assets.zip` and Cmdr's first-time "Browse like a folder / Open with default app"
   menu, inside the zip, into its folder, back out, into the `website` Git repo, into `.git` where the history is
   folders, `commits` (one folder per commit, named by hash and message), back, `branches` (`main`, `redesign`).
-- `ai` (11 s): ❗ **not an AI search.** A regular filename search (`invoice`, then `budget`) over the whole studio. A
-  cloud provider needs a key entered through Settings > AI, and typing David's OpenAI key into the recording instance
-  through the automation layer risked it landing in a log, so I didn't script it. The manifest carries a `remark` saying
-  so. To get the real beat: set up a provider in the clips instance by hand (its data dir is
-  `~/Library/Application Support/com.veszelovszki.cmdr-clips`), then rewrite the `ai` scene in
-  `apps/desktop/test/e2e-playwright/marketing-video-scenes.ts` to type a sentence in AI mode and press Enter.
+- `ai` (12 s): a real natural-language search on Cmdr's built-in local model (Ministral 3B, downloaded into the clips
+  instance through `start_ai_download`; no API key). "tax report from last year" typed in "Ask anything" mode, Enter,
+  and the dialog shows what the model chose (`(?is)tax.*\.(pdf|doc|…)`, modified 2025-01-01 – 2026-01-01) and the two
+  2025 tax files, out of three years of them plus a non-tax decoy from 2025.
 - `hero` (10 s): a calm two-pane window, the cursor walking down the photos, Tab to the other pane, a few rows, Tab
   back.
 - `care` (11 s): the Settings window, the Language picker open, ArrowDown through seven languages (each re-renders the
@@ -45,7 +43,6 @@ night of 2026-10-22. It's input for the video edit, not a deliverable. How the p
 
 - **No network share**: the SMB fixtures aren't trivially available on this machine, so `reach` has no NAS. Phones were
   out of scope.
-- **`ai` is a placeholder**, see above.
 - **`reach` sometimes needs its retry**: on the first take after a launch the zip's open-with menu was slow to appear
   once. The scene now answers the menu, and the last run passed first time.
 - **The masters are big**: ProRes 4444 at 2x is roughly 25–60 MB a second. Transcode before sharing them anywhere.
@@ -96,7 +93,9 @@ around a usable span, named moments in `notes`. The editor-facing caveats are in
 
 - `smb` (16.5 s usable): the NAS root, into `Photos/2024` (5,000 files listed at once), End to the last, then F5 on
   `Lisbon trip` to `Backup` on the same share: a server-side copy, done in well under a second.
-- `s3` (16 s): the bucket browsed into `2025/Easter`, its photos selected and copied down to the Mac.
+- `s3` (116 s, trim it): 1,300 tiny thumbnails selected beside a `family-photos` folder in a real Cloudflare R2 bucket,
+  F5, the copy dialog's "About $0.01 at Cloudflare R2 list prices" (the manifest's `keyFrame`), Start, and the upload
+  running to "Copied 1,300 files." The upload takes about 110 s.
 - `phone` (11.5 s): `Pixel 8 - Internal Storage`, into `DCIM/Camera`, all selected, copied to the Mac with a progress
   dialog.
 - `archives` (25 s, trim it): a file copied out of `Brand assets.zip` (including the "Browse like a folder" prompt),
@@ -109,15 +108,14 @@ around a usable span, named moments in `notes`. The editor-facing caveats are in
 
 ### What's missing or different from the ask
 
-- **No S3 cost estimate.** The estimate needs a priced provider (AWS, R2, B2, …); the fixture is an unpriced "Other"
-  endpoint. Recording the moment needs a real priced bucket. The beat is also a DOWNLOAD: an upload into the fixture was
-  admitted and then never moved for two minutes.
+- **The S3 picker reads `cmdr-s3-test`**, the real test bucket's name: the volume picker names a bucket place by its
+  bucket. The demo folder is `cmdr-clips-demo/family-photos`.
 - **No ADB moment.** There's no browsable fake ADB device; a real phone or emulator would be needed.
 - **The NAS shows as "private on 127.0.0.1:11481"**, not "Home NAS": the volume picker names a share by its address.
   Fixing it needs either a hostname for the fixture (an `/etc/hosts` entry) or the picker to use the server's name.
-- **Two copy dialogs are skipped** (`phone`, `s3`): their From field spells internal ids (the virtual device's
-  `cmdr-e2e-virtual`, the bucket URL with its access key), so those copies start through MCP straight into the progress
-  dialog.
+- **The `phone` copy dialog is skipped**: its From field spells the virtual device's internal `cmdr-e2e-virtual` id, so
+  that copy starts through MCP straight into the progress dialog. (A download from S3 has the same problem, with the
+  access key id in the path, which is why `s3` uploads.)
 - **In `transfers` the Operations window covers part of the main window's dialogs.** It sits over the main window's
   lower right so both are in frame.
 
@@ -134,6 +132,17 @@ around a usable span, named moments in `notes`. The editor-facing caveats are in
 - **An S3 bucket connected without remembering its secret asks to sign in again** on the next session's first use.
 - **Settings set right before the app quits may not persist** (`keepProgressOpenWhenDone` and the language both came
   back at their earlier values on the next launch). Possibly the same root cause as #698.
+- **Cmdr logs S3 app paths, access key id included, at INFO**: one R2 run put the key id (not the secret) into the clips
+  instance's `cmdr.log` 2,641 times (`s3://<key id>@…` in listing and stall-probe lines). Error reports carry logs, so
+  this reaches the reports board too.
+- **The copy dialog's title reads "Copy 1300 files"** while its tally under it reads "1,300 files": the title skips the
+  thousands separator.
+- **The copy dialog's "To" volume picker reads "Select…"** with an S3 bucket as the destination, though the path box is
+  right.
+- **A local AI search may flash "Nothing to filter on yet. Try rephrasing?"** above "Searching…" before its answer lands
+  (seen in one recorded frame; fast-changing UI, so worth a look by hand before calling it a bug).
+- **Stopping the app with SIGTERM leaves its `llama-server` running**; the next launch stops it
+  (`kill_stale_llama_servers`).
 
 ### Re-recording
 
@@ -142,3 +151,28 @@ apps/desktop/test/smb-servers/start.sh minimal && apps/desktop/test/s3-servers/s
 pnpm marketing:clips --video2                      # all seven, about 8 minutes
 pnpm marketing:clips --video2 --only s3,transfers  # some; the manifest keeps the others
 ```
+
+## Overnight follow-ups (2026-10-23)
+
+- **`multi-rename` website clip**: the take now undoes its own rename off camera, so the dark and light takes open the
+  same sheet (neither shows an "Undo rename" the other lacks). Re-recorded and verified on frames from both.
+- **`ai` (video 1) is a real AI search**, on the local model, as described above. The model samples (`--temp 0.6`): one
+  take answered with the date range alone and no "tax" in the pattern, so the demo tree (v5) gained a non-tax decoy from
+  last year, and a take whose results aren't all tax files now fails and retries. "Last year" is the staging day's: in a
+  new year, restage (`--remove-demo`) before re-recording.
+- **`s3` (video 2) shows a real cost estimate**, on Cloudflare R2. Why R2: B2, Wasabi, Hetzner, and Spaces price every
+  request at $0 and an upload has no egress, so their estimate rounds to zero and hides; R2 reaches a cent at ~1,112
+  Class A requests, hence 1,300 tiny files. Why an upload: a download's From field spells the bucket path with the key
+  id. The secret never crossed Playwright, MCP, or IPC (the orchestrator wrote it into the instance's file secret store
+  before launch); a scan of the instance's data dir, the test results, and the masters found it 0 times, and the frames
+  show neither the key id nor the account id. Bucket `cmdr-s3-test`, prefix `cmdr-clips-demo/`: the run deleted the
+  upload and a listing of the prefix found 0 objects; the secret was taken back out of the store.
+- **`copy-rollback` poster: skipped.** Its `≥24.03 MB` is the destination folder being written mid-copy, where the index
+  can only give a lower bound; no wait before the take changes it, and every frame with the progress dialog shows it.
+- **NAS name ("Home NAS" in `smb` / `hero2`): skipped.** A Bonjour proxy
+  (`dns-sd -P "Home NAS" _smb._tcp local 11481 Home-NAS.local 127.0.0.1`) resolves and reaches the fixture, but the
+  label stayed "private on 127.0.0.1:11481": Cmdr swaps an IP for a Bonjour name only from its own mDNS browse, which
+  runs under a discovery lease the take doesn't hold, and it appends `:port` off 445 regardless. Port 445 on 127.0.0.1
+  needs root (only the wildcard address is open to an unprivileged bind, which would put the share on the LAN). So the
+  best reachable label is "private on Home NAS:11481". A clean one needs `/etc/hosts` plus a root-bound 445, or the
+  picker using the saved server's name. `smb` was re-recorded during the attempt; same content as before.
