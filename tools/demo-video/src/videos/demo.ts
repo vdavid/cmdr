@@ -181,13 +181,15 @@ const script: Section[] = [
       { say: 'Just works.', show: 'just works.' },
     ],
     shots: [
+      // A real natural-language search with Cmdr's local model: the sentence types in during "off by default", Enter
+      // (the model turning it into a name pattern and a date range) follows "run fully on your Mac", and last year's
+      // tax files come back exactly on the quoted line.
       {
         beat: 'ai',
         still: 'chat-dark.webp',
         weight: 1,
-        focus: { x: 0.6, y: 0.5, zoom: 1.3 },
-        stillOnly:
-          "The ai recording is a plain filename search (its manifest remark says so), which would contradict the voice; the still shows Ask Cmdr. Drop this once it's re-recorded with an AI provider.",
+        focus: { x: 0.5, y: 0.4, zoom: 1.25 },
+        sync: { moment: "only last year's tax files come back", phrase: 4 },
       },
     ],
   },
