@@ -54,7 +54,11 @@ way, into `brand/clip-masters/video2/`: `smb`, `s3`, `phone`, `archives`, `trans
 (`apps/desktop/test/smb-servers/start.sh minimal`, `apps/desktop/test/s3-servers/start.sh minimal`). Before the launch
 it refills them to look like a family's (`marketing-video2-fixtures.ts`: the SMB share's seed files are replaced, a
 `family-photos` bucket, a restic `Backups` repo), clears the clips instance's operation log and saved bucket, and
-launches with a virtual MTP phone named `Pixel 8` (`CMDR_VIRTUAL_MTP`, `CMDR_VIRTUAL_MTP_MODEL`).
+launches with a virtual MTP phone named `Pixel 8` (`CMDR_VIRTUAL_MTP`, `CMDR_VIRTUAL_MTP_MODEL`). The `s3` beat uploads
+into Cmdr's real R2 test bucket instead when the `secret` CLI supplies the account, since a priced provider is what puts
+a cost estimate in the copy dialog: the orchestrator writes the secret into the clips instance's file secret store
+before launch (it never crosses Playwright or MCP), and after the run deletes the upload and checks that a listing of
+the demo prefix comes back empty (`seedPricedS3` and `cleanUpPricedS3` in `marketing-video2-fixtures.ts`).
 
 ## What it produces
 

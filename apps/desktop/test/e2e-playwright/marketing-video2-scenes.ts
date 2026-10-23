@@ -7,7 +7,7 @@
  */
 
 import { waitBudget } from './wait-budget.js'
-import { mkdirSync, readdirSync, rmSync } from 'node:fs'
+import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 import { mcpCall, mcpOpenMtpStorageRoot, mcpReadResource, mcpSelectVolume } from '../e2e-shared/mcp-client.js'
@@ -34,7 +34,7 @@ import {
   typeSlowly,
 } from './marketing-clips-scenes.js'
 import { DEMO, DEMO_ROOT, resetBackup, restoreProjects } from './marketing-clips-demo.js'
-import { PHONE, RESTIC, S3, SMB, seedPhone } from './marketing-video2-fixtures.js'
+import { PHONE, PRICED_S3, RESTIC, S3, SMB, seedPhone } from './marketing-video2-fixtures.js'
 import {
   VIDEO_LOOK,
   beat,
@@ -153,11 +153,116 @@ export async function smb(page: TauriPage): Promise<void> {
 }
 
 /**
- * 2. S3: browse the bucket, copy photos into it. ❗ The dialog's cost estimate needs a
- * priced provider (AWS, R2, B2, …); the fixture is an unpriced "Other" endpoint, so this
- * take has no cost line (`video-beats.json` says so).
+ * 2. S3: the copy dialog's cost estimate, then the upload. On a real priced bucket (R2)
+ * when the orchestrator seeded one (`seedPricedS3`); without it, a download from the local
+ * fixture, which is an unpriced "Other" endpoint and so shows no estimate.
  */
 export async function s3(page: TauriPage): Promise<void> {
+  const accountId = process.env.CMDR_CLIPS_R2_ACCOUNT
+  const accessKeyId = process.env.CMDR_CLIPS_R2_KEY_ID
+  if (accountId !== undefined && accessKeyId !== undefined) await s3Priced(page, { accountId, accessKeyId })
+  else await s3FromFixture(page)
+}
+
+/**
+ * Connects the R2 bucket with NO secret in the call: the orchestrator put it in the
+ * instance's store before launch, so it never crosses Playwright, MCP, or IPC.
+ */
+async function connectPricedBucket(
+  page: TauriPage,
+  account: { accountId: string; accessKeyId: string },
+): Promise<void> {
+  const outcome = await page.evaluate(
+    `window.__TAURI_INTERNALS__.invoke('connect_server', ${JSON.stringify({
+      target: {
+        protocol: 's3',
+        displayName: PRICED_S3.displayName,
+        provider: { kind: 'r2', accountId: account.accountId },
+        accessKeyId: account.accessKeyId,
+        bucket: PRICED_S3.bucket,
+        autoReconnect: false,
+      },
+      attemptId: `server-connect-clips-${String(Date.now())}`,
+      secret: null,
+    })}).then(function (r) { return r && r.kind ? r.kind : r }, function (e) { return 'refused' })`,
+  )
+  console.log(`[marketing-video2] the R2 bucket's connect answered ${JSON.stringify(outcome)}`)
+}
+
+/**
+ * The priced take: 1,300 tiny thumbnails selected, F5, the dialog's "About $0.01 at
+ * Cloudflare R2 list prices", Start, and the upload running. Uploads, never downloads:
+ * the dialog's From field spells a bucket's app path, key id included, and an upload's
+ * From is the local folder.
+ */
+async function s3Priced(page: TauriPage, account: { accountId: string; accessKeyId: string }): Promise<void> {
+  const thumbnails = join(DEMO_ROOT, DEMO.photos, PRICED_S3.thumbnails)
+  stageThumbnails(thumbnails)
+  try {
+    await connectPricedBucket(page, account)
+    await stageMain(page, 'dark', thumbnails, DEMO_ROOT, VIDEO_LOOK)
+    // The picker names a bucket place by its bucket, whatever the account is called.
+    await mcpSelectVolume('right', PRICED_S3.bucket)
+    // The bucket's app path, read off the pane state. ❗ Never print the state: an S3 app
+    // path carries the access key id.
+    const bucketPath = new RegExp(`s3://\\S*?/${PRICED_S3.bucket}(?=/|\\s|"|$)`)
+    let bucketRoot: string | null = null
+    await expect
+      .poll(
+        async () => {
+          bucketRoot = bucketPath.exec(await mcpReadResource('cmdr://state?include=panes'))?.[0] ?? null
+          return bucketRoot !== null
+        },
+        { timeout: waitBudget(15000), message: `the right pane never opened the ${PRICED_S3.bucket} bucket` },
+      )
+      .toBe(true)
+    const albumPath = `${String(bucketRoot)}/${PRICED_S3.prefix}/${PRICED_S3.album}/`
+    await mcpCall('nav_to_path', { pane: 'right', path: albumPath })
+    await waitForRowIn(page, 1, 'README')
+    await waitForRowIn(page, 0, 'thumb-0001')
+    const take = await recordWindow(page, { slug: 's3', theme: 'dark', label: 'main' })
+    await beat(take, async () => {
+      await hold(800)
+      take.note('a family-photos folder in a Cloudflare R2 bucket, beside 1,300 thumbnails on the Mac')
+      await mcpCall('select', { pane: 'left', all: true })
+      await ensureExplorerFocused(page)
+      await hold(1000)
+      take.note('F5: copy all 1,300 into the bucket')
+      await dispatchMenuCommand(page, 'file.copy')
+      await page.waitForSelector(TRANSFER_DIALOG, waitBudget(10000))
+      await page.waitForSelector(`${TRANSFER_DIALOG} .s3-cost-amount`, waitBudget(30000))
+      take.note('the cost estimate: "About $0.01 at Cloudflare R2 list prices"')
+      take.markPoster()
+      await hold(3200)
+      await clickTransferStart(page)
+      await page.waitForSelector(PROGRESS_DIALOG, waitBudget(10000)).catch(() => {})
+      take.note('uploading')
+      await waitForTransferDone(page, waitBudget(300000))
+      take.note('all 1,300 in the bucket')
+      await hold(1500)
+    })
+  } finally {
+    await drainOperations(page)
+    await dispatchMenuCommand(page, 'selection.deselectAll')
+    await dismissAllToasts(page)
+    rmSync(thumbnails, { recursive: true, force: true })
+  }
+}
+
+/**
+ * `PRICED_S3.count` tiny JPEG-named files, about 4 KB each: enough requests for the
+ * estimate to round to a cent, while the upload stays a few MB.
+ */
+function stageThumbnails(dir: string): void {
+  rmSync(dir, { recursive: true, force: true })
+  mkdirSync(dir, { recursive: true })
+  for (let i = 1; i <= PRICED_S3.count; i++) {
+    writeFileSync(join(dir, `thumb-${String(i).padStart(4, '0')}.jpg`), Buffer.alloc(3_200 + ((i * 977) % 1_800), 0x5a))
+  }
+}
+
+/** The fixture take: browse the local bucket, copy photos down. No estimate (an unpriced endpoint). */
+async function s3FromFixture(page: TauriPage): Promise<void> {
   await connectBucket(page)
   const fromCloud = join(DEMO_ROOT, DEMO.photos, 'From the cloud')
   resetFolder(fromCloud)

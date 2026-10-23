@@ -11,7 +11,7 @@
  */
 
 import { spawnSync } from 'node:child_process'
-import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 /** The SMB fixture with a password, `test/smb-servers/` (`smb-consumer-auth`). */
@@ -33,6 +33,140 @@ export const S3 = {
   secretKey: 'c0de'.repeat(16),
   bucket: 'family-photos',
 } as const
+
+/**
+ * The `s3` beat's priced bucket: Cmdr's Cloudflare R2 test bucket (`test/s3-servers/live-env.sh`),
+ * so the copy dialog shows a real cost estimate. B2, Wasabi, Hetzner, and Spaces price
+ * every request at $0 and an upload has no egress, so their line always rounds to zero
+ * and hides. R2 reads "About $0.01" from ~1,112 Class A requests, hence `THUMBNAILS`.
+ *
+ * ❗ The beat writes only under `prefix` (obviously a demo's), and the run deletes it.
+ */
+export const PRICED_S3 = {
+  bucket: 'cmdr-s3-test',
+  prefix: 'cmdr-clips-demo',
+  album: 'family-photos',
+  /** The account's name in Servers. The volume picker names the place by its bucket. */
+  displayName: 'Family photos',
+  /** The local folder the beat uploads, and how many tiny files it holds. */
+  thumbnails: 'Thumbnails',
+  count: 1_300,
+} as const
+
+/** The R2 account the beat signs in to. The secret stays in the instance's store. */
+export interface PricedS3Account {
+  accountId: string
+  accessKeyId: string
+}
+
+/**
+ * One value from David's sops store through the `secret` CLI, or `null` without it.
+ * ❗ Captured, never printed: a failure message carries only the name.
+ */
+function readSecret(name: string): string | null {
+  const res = spawnSync('secret', [name], { encoding: 'utf8' })
+  if (res.error !== undefined || res.status !== 0) return null
+  const value = res.stdout.trim()
+  return value === '' ? null : value
+}
+
+/** The R2 account id, asked of Cloudflare's API with the account's token (as `live-env.sh` does). */
+async function r2AccountId(): Promise<string | null> {
+  const token = readSecret('CLOUDFLARE_API_TOKEN')
+  if (token === null) return null
+  const res = await fetch('https://api.cloudflare.com/client/v4/accounts', {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) return null
+  const body = (await res.json()) as { result?: { id?: string }[] }
+  return body.result?.[0]?.id ?? null
+}
+
+function r2Endpoint(account: PricedS3Account): string {
+  return `https://${account.accountId}.r2.cloudflarestorage.com`
+}
+
+/** Where the app's file-backed secret store keys the account (`S3ConnectionParams::credential_service`). */
+function r2SecretKey(account: PricedS3Account): string {
+  return `smb://s3+https://${account.accountId}.r2.cloudflarestorage.com:443/${account.accessKeyId}`
+}
+
+/** Runs the aws CLI against R2, the credentials in its env only. */
+function r2Cli(account: PricedS3Account, secretKey: string, args: string[]): string {
+  return run('aws', ['--endpoint-url', r2Endpoint(account), ...args], {
+    AWS_ACCESS_KEY_ID: account.accessKeyId,
+    AWS_SECRET_ACCESS_KEY: secretKey,
+    AWS_DEFAULT_REGION: 'auto',
+    AWS_EC2_METADATA_DISABLED: 'true',
+  })
+}
+
+/**
+ * Readies the priced bucket for the `s3` beat, before the app launches: writes the R2
+ * secret into the clips instance's file-backed secret store (`CMDR_SECRET_STORE=file`,
+ * `secrets.json`), so the scene connects WITHOUT a secret and nothing sensitive crosses
+ * Playwright, MCP, or IPC; empties the demo prefix; and puts a README in the album so
+ * the folder exists. `null` when the `secret` CLI can't supply the account.
+ */
+export async function seedPricedS3(dataDir: string): Promise<PricedS3Account | null> {
+  const accountId = await r2AccountId()
+  const accessKeyId = readSecret('R2_S3_TEST_ACCESS_KEY_ID')
+  const secretKey = readSecret('R2_S3_TEST_SECRET_ACCESS_KEY')
+  if (accountId === null || accessKeyId === null || secretKey === null) return null
+  const account = { accountId, accessKeyId }
+
+  const storePath = join(dataDir, 'secrets.json')
+  const store = existsSync(storePath) ? (JSON.parse(readFileSync(storePath, 'utf8')) as Record<string, number[]>) : {}
+  store[r2SecretKey(account)] = [...Buffer.from(`${accessKeyId}\u0000${secretKey}`, 'utf8')]
+  writeFileSync(storePath, JSON.stringify(store), { mode: 0o600 })
+
+  emptyPricedPrefix(account, secretKey)
+  writeFileSync('/tmp/cmdr-clips-readme.txt', 'Family photo archive. Albums by year.\n')
+  r2Cli(account, secretKey, [
+    's3',
+    'cp',
+    '--quiet',
+    '/tmp/cmdr-clips-readme.txt',
+    `s3://${PRICED_S3.bucket}/${PRICED_S3.prefix}/${PRICED_S3.album}/README.txt`,
+  ])
+  return account
+}
+
+/** Deletes everything under the demo prefix, and returns how many objects a listing still finds there. */
+function emptyPricedPrefix(account: PricedS3Account, secretKey: string): number {
+  const prefix = `s3://${PRICED_S3.bucket}/${PRICED_S3.prefix}/`
+  r2Cli(account, secretKey, ['s3', 'rm', '--quiet', '--recursive', prefix])
+  const left = r2Cli(account, secretKey, [
+    's3api',
+    'list-objects-v2',
+    '--bucket',
+    PRICED_S3.bucket,
+    '--prefix',
+    `${PRICED_S3.prefix}/`,
+    '--query',
+    'KeyCount',
+    '--output',
+    'text',
+  ])
+  return Number(left.trim()) || 0
+}
+
+/**
+ * After the run: deletes what the beat uploaded, confirms with a listing that the prefix
+ * is empty, and takes the secret back out of the instance's store. Returns the
+ * listing's count (0 when clean).
+ */
+export function cleanUpPricedS3(dataDir: string, account: PricedS3Account): number {
+  const secretKey = readSecret('R2_S3_TEST_SECRET_ACCESS_KEY')
+  const left = secretKey === null ? -1 : emptyPricedPrefix(account, secretKey)
+  const storePath = join(dataDir, 'secrets.json')
+  if (existsSync(storePath)) {
+    const store = JSON.parse(readFileSync(storePath, 'utf8')) as Record<string, number[]>
+    delete store[r2SecretKey(account)]
+    writeFileSync(storePath, JSON.stringify(store), { mode: 0o600 })
+  }
+  return left
+}
 
 /** The restic repo's folder name in the demo tree, and its password. */
 export const RESTIC = { folder: 'Backups', password: 'harbour-lights-42' } as const

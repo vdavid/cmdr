@@ -57,7 +57,15 @@ import { CLIP_SLUGS, VIDEO_SETS } from '../test/e2e-playwright/marketing-clips-s
 import type { ClipSlug, VideoSetId } from '../test/e2e-playwright/marketing-clips-slugs.ts'
 import { buildVideoManifest } from './marketing-video.ts'
 import { DEMO, DEMO_ROOT, MARKER, ensureDemoTree, removeDemoTree } from '../test/e2e-playwright/marketing-clips-demo.ts'
-import { PHONE, seedResticRepo, seedS3Bucket, seedSmbShare } from '../test/e2e-playwright/marketing-video2-fixtures.ts'
+import {
+  PHONE,
+  PRICED_S3,
+  cleanUpPricedS3,
+  seedPricedS3,
+  seedResticRepo,
+  seedS3Bucket,
+  seedSmbShare,
+} from '../test/e2e-playwright/marketing-video2-fixtures.ts'
 
 const LOG = '[marketing-clips]'
 
@@ -144,10 +152,9 @@ const BEAT_REMARKS: Record<VideoSetId, Record<string, string>> = {
   video: {},
   video2: {
     s3:
-      'A download from the bucket, not an upload, and no cost estimate. The estimate needs a priced provider (AWS, ' +
-      'R2, B2, …) and this bucket is the repo\'s local S3 test server, an unpriced "Other" endpoint; an upload into ' +
-      'it was admitted and then never moved. The copy dialog is skipped (its From field spells the bucket URL with ' +
-      'the access key). Re-record against a real priced bucket for the cost moment.',
+      'An upload of 1,300 tiny thumbnails (about 5 MB) into a real Cloudflare R2 bucket: that many requests is what ' +
+      'makes the estimate read "About $0.01" (fewer round to zero and the line hides). The bucket is Cmdr\'s R2 test ' +
+      'bucket under a demo prefix, shown as "family-photos"; the run deletes the upload afterwards.',
     phone:
       'MTP only. No ADB moment: the repo has no browsable fake ADB device, only a real phone or emulator would do. ' +
       'The copy dialog is skipped: its From field spells the virtual device\'s internal "cmdr-e2e-virtual" id.',
@@ -163,8 +170,8 @@ const BEAT_REMARKS: Record<VideoSetId, Record<string, string>> = {
  * SMB and S3 fixtures (refilled to look like a family's), a restic repo, and the virtual
  * MTP phone, which only exists when the app LAUNCHES with `CMDR_VIRTUAL_MTP`.
  */
-function prepareSet(options: Options): Record<string, string> {
-  if (options.video !== 'video2') return {}
+async function prepareSet(options: Options): Promise<{ env: Record<string, string>; cleanUp: () => void }> {
+  if (options.video !== 'video2') return { env: {}, cleanUp: () => {} }
   console.log(`${LOG} filling the NAS share, the S3 bucket, and the restic repo…`)
   seedSmbShare()
   seedS3Bucket(join(DEMO_ROOT, DEMO.trip))
@@ -177,7 +184,25 @@ function prepareSet(options: Options): Record<string, string> {
   // and opened the sign-in sheet mid-take (2026-10-23).
   rmSync(join(dataDir, 's3_known_places.json'), { force: true })
   rmSync(join(dataDir, 'secrets.json'), { force: true })
-  return { CMDR_VIRTUAL_MTP: PHONE.backingDir, CMDR_VIRTUAL_MTP_MODEL: PHONE.model }
+  const env: Record<string, string> = { CMDR_VIRTUAL_MTP: PHONE.backingDir, CMDR_VIRTUAL_MTP_MODEL: PHONE.model }
+  if (!selectedBeats(options).includes('s3')) return { env, cleanUp: () => {} }
+
+  // The `s3` beat's priced bucket. Only the account id and the key id reach the scene;
+  // the secret goes straight into the instance's store (`seedPricedS3` says why).
+  const account = await seedPricedS3(dataDir)
+  if (account === null) {
+    console.warn(`${LOG} no R2 test account from the \`secret\` CLI; the s3 beat records the local fixture instead.`)
+    return { env, cleanUp: () => {} }
+  }
+  console.log(`${LOG} the s3 beat uploads into R2 bucket ${PRICED_S3.bucket}, under ${PRICED_S3.prefix}/.`)
+  return {
+    env: { ...env, CMDR_CLIPS_R2_ACCOUNT: account.accountId, CMDR_CLIPS_R2_KEY_ID: account.accessKeyId },
+    cleanUp: () => {
+      const left = cleanUpPricedS3(dataDir, account)
+      if (left === 0) console.log(`${LOG} R2 cleanup: a listing of ${PRICED_S3.prefix}/ finds 0 objects.`)
+      else console.error(`${LOG} R2 cleanup: ${String(left)} objects still under ${PRICED_S3.prefix}/; delete them.`)
+    },
+  }
 }
 
 /**
@@ -289,13 +314,16 @@ async function record(options: Options, recorder: string): Promise<boolean> {
   // Before the launch, so the app's startup journal replay indexes a freshly staged tree
   // (`ensureDemoTree` explains why a tree staged under a running app reads `<dir>`).
   console.log(`${LOG} demo tree at ${DEMO_ROOT}: ${ensureDemoTree()}`)
-  const setEnv = prepareSet(options)
+  const set = await prepareSet(options)
 
   const app = await launchCaptureApp({
     binary,
     instance,
     logPrefix: LOG,
-    extraEnv: { CMDR_CLIPS_MASTERS_DIR: options.mastersDir, CMDR_CLIPS_RECORDER: recorder, ...setEnv },
+    extraEnv: { CMDR_CLIPS_MASTERS_DIR: options.mastersDir, CMDR_CLIPS_RECORDER: recorder, ...set.env },
+  }).catch((e: unknown) => {
+    set.cleanUp()
+    throw e
   })
   console.log(`${LOG} socket ready; recording…`)
   const grep =
@@ -311,6 +339,7 @@ async function record(options: Options, recorder: string): Promise<boolean> {
     return false
   } finally {
     app.stop()
+    set.cleanUp()
   }
 }
 
