@@ -29,6 +29,15 @@ let measuresFontMetrics = false
 const inFlight = new Map<string, Promise<void>>()
 
 /**
+ * The tail of the eager-measurement queue. One size measures at a time, so a size
+ * the zoom has moved past can be skipped when its turn comes instead of holding up
+ * the one the user landed on (`loadIfNeeded`).
+ */
+let eagerQueue: Promise<void> = Promise.resolve()
+/** Eager measurements queued or running. At 0 a new one starts in the same tick. */
+let eagerQueued = 0
+
+/**
  * Code points already sent to the backend per font ID, so a fill-in request
  * repeated across listings measures once. Entries are removed again if the
  * measurement fails, so a transient failure doesn't strand them at the average
@@ -98,15 +107,31 @@ export function ensureFontMetricsLoaded(): Promise<void> {
   // same tick as the lookup above. With an `await` before the `set`, every
   // concurrent caller gets past the check and starts its own pass, which is
   // the duplicate work this map exists to prevent.
-  const run = loadIfNeeded(fontId).finally(() => {
+  // An idle queue starts in the same tick, so the size that's current right now is
+  // measured even if the scale moves again before a queued turn would come.
+  const turn = eagerQueued === 0 ? loadIfNeeded(fontId) : eagerQueue.then(() => loadIfNeeded(fontId))
+  eagerQueued++
+  const run = turn.finally(() => {
+    eagerQueued--
     inFlight.delete(fontId)
   })
   inFlight.set(fontId, run)
+  // A failed run mustn't stall the sizes queued behind it.
+  eagerQueue = run.catch(() => {})
   return run
 }
 
-/** Measures the eager set unless Rust already holds this font's widths. */
+/**
+ * Measures the eager set unless Rust already holds this font's widths, or the text
+ * scale has moved on since this size was queued. A skipped size's waiters re-ask at
+ * the current size; meanwhile the backend answers Brief widths approximately from
+ * the nearest measured size.
+ */
 async function loadIfNeeded(fontId: string): Promise<void> {
+  if (fontId !== getCurrentFontId()) {
+    log.debug('Skipping {fontId}: the text size moved on before its turn', { fontId })
+    return
+  }
   if (await hasFontMetrics(fontId)) {
     log.debug('Metrics already loaded for {fontId}', { fontId })
     return
@@ -189,6 +214,8 @@ export async function fillMissingFontMetrics(fontId: string, codePoints: readonl
 
 /** Test seam: clears the dedup state between cases. */
 export function resetFontMetricsStateForTests(): void {
+  eagerQueue = Promise.resolve()
+  eagerQueued = 0
   inFlight.clear()
   filled.clear()
   measuresFontMetrics = false

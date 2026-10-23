@@ -269,13 +269,28 @@ export function createBriefColumnWidths(deps: BriefColumnWidthsDeps): BriefColum
       if (requestId <= lastAppliedRequestId) return
       lastAppliedRequestId = requestId
 
-      const { widths, missingCodePoints } = result.data
+      const { widths, missingCodePoints, approximate } = result.data
       const wasFirst = !sawWidths
       sawWidths = true
       rawWidths = widths
       status = 'ready'
       if (wasFirst && widths.length > 0) {
         deps.onFirstWidths?.()
+      }
+
+      // This size isn't measured yet, so the backend scaled a neighboring size (right to
+      // ~1%). Paint that now and ask once more when the exact size lands; `afterFontLoad`
+      // bounds it to one extra round. A further zoom change brings its own request.
+      if (approximate && !attempt.afterFontLoad) {
+        void ensureFontMetricsLoaded()
+          .then(() => {
+            if (isStale(capturedEpoch, capturedListingId)) return
+            void run({ ...attempt, afterFontLoad: true }, capturedEpoch)
+          })
+          .catch((err: unknown) => {
+            log.debug('Brief column widths stay approximate: the font measurement failed: {detail}', { detail: err })
+          })
+        return
       }
 
       // Exact unless the backend had to estimate some characters. Measure those off

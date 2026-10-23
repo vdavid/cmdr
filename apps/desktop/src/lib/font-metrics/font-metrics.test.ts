@@ -135,6 +135,35 @@ describe('ensureFontMetricsLoaded', () => {
     expect(codePoints.length).toBeGreaterThan(0)
   })
 
+  it('measures one size at a time, skipping sizes the zoom has already moved past', async () => {
+    // Regression anchor: every pause on the zoom slider queued a full measurement of
+    // that size, and the size the user landed on waited behind all of them (~20 s).
+    const { release } = deferredMeasurement()
+    const setScale = (scale: number) => {
+      document.documentElement.style.setProperty('--font-scale', String(scale))
+    }
+    try {
+      setScale(1.6)
+      const first = ensureFontMetricsLoaded()
+      setScale(1.7)
+      const overtaken = ensureFontMetricsLoaded()
+      setScale(2)
+      const landed = ensureFontMetricsLoaded()
+      for (let i = 0; i < 8; i++) await Promise.resolve()
+      expect(measureOffMainThread, 'one measurement at a time').toHaveBeenCalledTimes(1)
+
+      release()
+      await Promise.all([first, overtaken, landed])
+
+      expect(storeFontMetrics.mock.calls.map(([payload]) => payload.fontId)).toEqual([
+        'system-400-19.2',
+        'system-400-24',
+      ])
+    } finally {
+      document.documentElement.style.removeProperty('--font-scale')
+    }
+  })
+
   it('re-measures after a failure instead of wedging on the in-flight entry', async () => {
     measureOffMainThread.mockRejectedValueOnce(new Error('worker died'))
 

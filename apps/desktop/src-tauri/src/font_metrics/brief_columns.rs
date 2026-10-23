@@ -30,11 +30,18 @@ use cmdr_listing::{ListingId, VisibleRows};
 /// widths are still usable (unmeasured characters counted at the font's average
 /// width), and the caller measures those code points and asks again. Ascending
 /// and deduplicated, from the `BTreeSet` they're gathered in.
+///
+/// `approximate` means this size isn't measured yet, so the widths come from the
+/// nearest measured size of the same font, scaled (text width tracks font size to
+/// within ~1%). The caller shows them at once and asks again once the exact size is
+/// measured. An approximate answer reports no missing code points: a fill-in can
+/// only extend a size that's stored.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct BriefColumnWidths {
     pub widths: Vec<f32>,
     pub missing_code_points: Vec<u32>,
+    pub approximate: bool,
 }
 
 /// Errors from `compute_brief_column_text_widths`. Internal to the backend;
@@ -208,7 +215,7 @@ pub fn compute_brief_column_text_widths(
     let measured = listings().with_rows(&ListingId::new(listing_id), include_hidden, |visible| {
         measure_columns(visible, items_per_column, has_parent, font_id, listing_id)
     });
-    let (widths, missing) = match measured {
+    let (widths, missing, approximate) = match measured {
         Ok(columns) => columns?,
         Err(_) => return Err(BriefColumnsError::ListingNotFound(listing_id.to_string())),
     };
@@ -234,23 +241,27 @@ pub fn compute_brief_column_text_widths(
     Ok(BriefColumnWidths {
         widths,
         missing_code_points: missing.into_iter().collect(),
+        approximate,
     })
 }
 
-/// One text-only width per Brief column over the pane's `visible` rows, plus
-/// every code point the font cache had no width for.
+/// One text-only width per Brief column over the pane's `visible` rows, every
+/// code point the font cache had no width for, and whether the widths are
+/// approximate (borrowed from another size, see `BriefColumnWidths`).
 fn measure_columns(
     visible: &VisibleRows<'_>,
     items_per_column: usize,
     has_parent: bool,
     font_id: &str,
     listing_id: &str,
-) -> Result<(Vec<f32>, BTreeSet<u32>), BriefColumnsError> {
+) -> Result<(Vec<f32>, BTreeSet<u32>, bool), BriefColumnsError> {
     // Total cells (display slots): visible entries + ".." if has_parent.
     let total_cells = visible.len() + usize::from(has_parent);
     if total_cells == 0 {
-        return Ok((Vec::new(), BTreeSet::new()));
+        return Ok((Vec::new(), BTreeSet::new(), false));
     }
+    // Decided once for the whole listing, so every column is costed the same way.
+    let approximate = !super::has_metrics(font_id);
 
     let total_columns = total_cells.div_ceil(items_per_column);
     let mut widths = Vec::with_capacity(total_columns);
@@ -292,7 +303,12 @@ fn measure_columns(
             items.push((entry.name.as_str(), tag_cluster_width(colored_tag_count(entry))));
         }
 
-        let width = super::calculate_max_width_with_suffixes(&items, font_id, &mut missing).ok_or_else(|| {
+        let width = if approximate {
+            super::calculate_max_width_scaled_from_nearest(&items, font_id)
+        } else {
+            super::calculate_max_width_with_suffixes(&items, font_id, &mut missing)
+        };
+        let width = width.ok_or_else(|| {
             log::warn!(
                 target: "brief_columns",
                 "Font metrics not ready for font_id='{}' (listing={}, col={})",
@@ -310,7 +326,7 @@ fn measure_columns(
         let width = if width.is_finite() { width.max(0.0) } else { 0.0 };
         widths.push(width);
     }
-    Ok((widths, missing))
+    Ok((widths, missing, approximate))
 }
 
 #[cfg(test)]

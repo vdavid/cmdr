@@ -26,6 +26,9 @@ consumer is a sibling subsystem at `src-tauri/src/font_metrics/mod.rs` (not nest
   `async`: an `await` before the `inFlight.set` lets every concurrent caller past the check, which is the duplicate work
   the map exists to prevent (three callers can land at once: `DualPaneExplorer` mount, the text-size debounce, and
   `BriefList`'s not-ready retry). Pinned by `font-metrics.test.ts`.
+- **Eager measurements queue one at a time, and a size the zoom moved past is skipped at its turn.** Each slider pause
+  used to queue a full ~3 s pass, and the landed size waited behind them all (~20 s). Meanwhile Rust answers Brief
+  widths from the nearest measured size, scaled (`approximate`), so nothing waits visibly.
 - **The eager set is small on purpose (~5k code points, Latin + symbols + common emoji).** Everything else — CJK,
   Hangul, Ethiopic, Myanmar, the Indic blocks — arrives through the on-demand fill-in instead. Adding a bulk block back
   to `EAGER_RANGES` restores the freeze; `ranges.test.ts` fails if the set grows past 8,000.

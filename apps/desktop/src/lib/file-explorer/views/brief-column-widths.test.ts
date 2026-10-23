@@ -40,9 +40,9 @@ import {
   type BriefColumnWidthsDeps,
 } from './brief-column-widths.svelte'
 
-/** A successful IPC reply. */
-function ok(widths: number[], missingCodePoints: number[] = []) {
-  return { status: 'ok' as const, data: { widths, missingCodePoints } }
+/** A successful IPC reply. `approximate`: borrowed from another measured size, scaled. */
+function ok(widths: number[], missingCodePoints: number[] = [], approximate = false) {
+  return { status: 'ok' as const, data: { widths, missingCodePoints, approximate } }
 }
 
 /** A typed IPC failure. */
@@ -292,6 +292,24 @@ describe('brief column widths', () => {
       await flush()
       expect(ipc.ensureFontMetricsLoaded).toHaveBeenCalledTimes(1)
       expect(store.rawWidths).toEqual([400])
+    })
+
+    it('paints approximate widths at once, then the exact ones once this size is measured', async () => {
+      // Regression anchor: a zoom change left every column at its provisional width until
+      // the new size was measured, which took ~20 s with a few slider stops queued.
+      const measured = deferred<undefined>()
+      ipc.ensureFontMetricsLoaded.mockReturnValue(measured.promise)
+      ipc.getBriefColumnTextWidths.mockResolvedValueOnce(ok([396], [], true)).mockResolvedValueOnce(ok([400]))
+      const { store } = makeStore()
+      store.request()
+      await flush()
+      expect(store.rawWidths).toEqual([396])
+      expect(store.status).toBe('ready')
+
+      measured.resolve(undefined)
+      await flush()
+      expect(store.rawWidths).toEqual([400])
+      expect(ipc.getBriefColumnTextWidths).toHaveBeenCalledTimes(2)
     })
 
     it('survives the font-metrics load itself failing', async () => {

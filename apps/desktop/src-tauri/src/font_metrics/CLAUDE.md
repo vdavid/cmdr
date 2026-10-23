@@ -14,6 +14,8 @@ each Brief column from a cached listing's rows with `calculate_max_width_with_su
 - **`extend_and_persist(app, font_id, widths)`**: merge on-demand measured widths into an existing entry and rewrite
   its file. Errors if the font isn't cached.
 - **`has_metrics(font_id)`**: is this font ID cached?
+- **`calculate_max_width_scaled_from_nearest(items, font_id)`**: the same widest-pair width for an unmeasured size, from
+  the nearest cached size of its family and weight scaled by the size ratio; reports no missing code points.
 - **`calculate_max_width_with_suffixes(items, font_id, missing)`**: widest of `(text, trailing-px-suffix)` pairs
   (suffix `0.0` is the plain widest-string case; the Brief tag-dot reservation passes a per-row cluster width); `None`
   if the font ID isn't cached. Records every unmeasured code point into `missing`. Primary width entry point
@@ -36,10 +38,11 @@ Cache: `METRICS_CACHE: LazyLock<RwLock<HashMap<String, FontMetrics>>>`. `FontMet
 - **Cache key is `"{family}-{weight}-{size}"`** (for example `"system-400-12"`) and MUST match the frontend's
   `getCurrentFontId()`. No validation: a mismatch just returns `None`. Size varies with `appearance.textSize` × system
   Accessibility text size, so several sizes can coexist in cache. If `getCurrentFontId()`'s format changes, width
-  calculation silently breaks. The Brief-column path surfaces a missing key as `BriefColumnsError::FontMetricsNotReady`,
-  which crosses the wire as `BriefColumnsIpcError { kind: fontMetricsNotReady, … }`; the frontend branches on `kind`,
-  calls `ensureFontMetricsLoaded()`, and retries once, leaving the columns at their provisional width until widths
-  arrive.
+  calculation silently breaks. A size not yet measured borrows the nearest measured size of the same family and weight,
+  scaled (`calculate_max_width_scaled_from_nearest`), and the Brief answer says `approximate: true`, so the frontend
+  asks again once `ensureFontMetricsLoaded()` lands. Only with no size of that family cached does it surface as
+  `BriefColumnsError::FontMetricsNotReady` (wire kind `fontMetricsNotReady`), which waits on the measurement and
+  retries once.
 - **Both writes serialize under the lock, then write the file after releasing it.** That's what lets `extend` merge
   into the cached map without cloning it out; a few thousand pairs is not a map you want to copy per call, and this
   path used to clone it twice.

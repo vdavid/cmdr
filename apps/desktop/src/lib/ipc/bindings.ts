@@ -6400,10 +6400,17 @@ export type BreadcrumbEvent =
  *  widths are still usable (unmeasured characters counted at the font's average
  *  width), and the caller measures those code points and asks again. Ascending
  *  and deduplicated, from the `BTreeSet` they're gathered in.
+ *
+ *  `approximate` means this size isn't measured yet, so the widths come from the
+ *  nearest measured size of the same font, scaled (text width tracks font size to
+ *  within ~1%). The caller shows them at once and asks again once the exact size is
+ *  measured. An approximate answer reports no missing code points: a fill-in can
+ *  only extend a size that's stored.
  */
 export type BriefColumnWidths = {
   widths: number[]
   missingCodePoints: number[]
+  approximate: boolean
 }
 
 /**

@@ -160,6 +160,46 @@ pub fn calculate_max_width_with_suffixes(
         .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
 }
 
+/// Splits a font ID into its `family-weight` prefix and its pixel size.
+fn split_font_id(font_id: &str) -> Option<(&str, f32)> {
+    let (prefix, size) = font_id.rsplit_once('-')?;
+    let size: f32 = size.parse().ok()?;
+    (size.is_finite() && size > 0.0).then_some((prefix, size))
+}
+
+/// Like [`calculate_max_width_with_suffixes`] for a size that isn't measured yet:
+/// costs the text with the cached size of the same family and weight nearest
+/// `font_id`'s, scaled by the size ratio. Text width tracks font size to within
+/// about 1%, so this stands in while the exact size is measured, which takes
+/// seconds. `None` if no size of this family and weight is cached.
+///
+/// Reports no missing code points: a fill-in can only extend a stored size, and
+/// the exact size's own query reports them once it's measured. Suffixes are fixed
+/// pixels, so they aren't scaled.
+pub fn calculate_max_width_scaled_from_nearest(items: &[(&str, f32)], font_id: &str) -> Option<f32> {
+    let (prefix, size) = split_font_id(font_id)?;
+    let cache = METRICS_CACHE.read_ignore_poison();
+    // Nearest by ratio, not difference: 12 → 24 is as far as 6 → 12.
+    let distance = |other: f32| (other / size).ln().abs();
+    let (metrics, source_size) = cache
+        .iter()
+        .filter_map(|(id, metrics)| {
+            let (other_prefix, other_size) = split_font_id(id)?;
+            (other_prefix == prefix).then_some((metrics, other_size))
+        })
+        .min_by(|(_, a), (_, b)| {
+            distance(*a)
+                .partial_cmp(&distance(*b))
+                .unwrap_or(std::cmp::Ordering::Equal)
+        })?;
+    let ratio = size / source_size;
+    let mut unreported = BTreeSet::new();
+    items
+        .iter()
+        .map(|(text, suffix)| metrics.calculate_text_width(text, &mut unreported) * ratio + suffix)
+        .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
+}
+
 /// Serializes metrics to the on-disk representation.
 fn serialize(metrics: &FontMetrics) -> Result<Vec<u8>, String> {
     bincode2::serialize(metrics).map_err(|e| format!("Failed to serialize metrics: {e}"))
@@ -299,6 +339,54 @@ mod tests {
         let mut missing = BTreeSet::new();
         assert_eq!(
             calculate_max_width_with_suffixes(&[("a", 0.0)], "never-measured", &mut missing),
+            None
+        );
+    }
+
+    fn seed_size(family: &str, size: f32, width_per_char: f32) {
+        let map: HashMap<u32, f32> = ('a'..='z').map(|c| (c as u32, width_per_char)).collect();
+        store_metrics(format!("{family}-400-{size}"), map).expect("seed metrics");
+    }
+
+    #[test]
+    fn an_unmeasured_size_borrows_the_nearest_measured_one_scaled() {
+        let family = unique_test_id("scaled");
+        seed_size(&family, 12.0, 6.0);
+        seed_size(&family, 20.0, 10.0);
+
+        // 19 px is nearest the measured 20 px: 10 × 19/20 = 9.5 per character.
+        let width = calculate_max_width_scaled_from_nearest(&[("ab", 0.0)], &format!("{family}-400-19"));
+
+        assert_eq!(width, Some(19.0));
+    }
+
+    #[test]
+    fn a_fractional_size_scales_too() {
+        let family = unique_test_id("scaled-fraction");
+        seed_size(&family, 12.0, 6.0);
+
+        // 14.4 / 12 = 1.2, the 120% text size.
+        let width = calculate_max_width_scaled_from_nearest(&[("ab", 1.0)], &format!("{family}-400-14.4"))
+            .expect("a size of this family is measured");
+
+        assert!((width - (12.0 * 1.2 + 1.0)).abs() < 1e-4, "got {width}");
+    }
+
+    #[test]
+    fn another_family_or_weight_is_never_borrowed() {
+        let family = unique_test_id("scaled-other");
+        seed_size(&family, 12.0, 6.0);
+
+        assert_eq!(
+            calculate_max_width_scaled_from_nearest(&[("ab", 0.0)], &format!("{family}x-400-14")),
+            None
+        );
+        assert_eq!(
+            calculate_max_width_scaled_from_nearest(&[("ab", 0.0)], &format!("{family}-600-12")),
+            None
+        );
+        assert_eq!(
+            calculate_max_width_scaled_from_nearest(&[("ab", 0.0)], "never-measured"),
             None
         );
     }

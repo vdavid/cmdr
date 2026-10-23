@@ -291,6 +291,40 @@ fn non_default_font_id_uses_alt_metrics() {
 }
 
 // ============================================================================
+// Font ID not in cache, but another size of it is → approximate widths
+// ============================================================================
+
+#[test]
+fn an_unmeasured_size_answers_at_once_from_a_measured_one() {
+    // Regression anchor: after a zoom change the exact size takes seconds to measure, and
+    // with several slider stops queued it took ~20 s, while every column sat at its
+    // provisional width cutting names short. A neighboring size, scaled, is right to ~1%.
+    let family = unique_test_id("bc-scaled");
+    let mut widths = HashMap::new();
+    for cp in 0x20u32..=0x7Eu32 {
+        widths.insert(cp, 1.0);
+    }
+    crate::font_metrics::store_metrics(format!("{family}-400-10"), widths).expect("store font metrics");
+    let listing = insert_listing("bc_scaled", vec![make_entry("abcd.txt")]);
+
+    let exact = compute_brief_column_text_widths(listing.id(), 5, false, &format!("{family}-400-10"), false)
+        .expect("the measured size answers");
+    assert_eq!((exact.widths, exact.approximate), (vec![8.0], false));
+
+    let scaled = compute_brief_column_text_widths(listing.id(), 5, false, &format!("{family}-400-20"), false)
+        .expect("a neighboring size stands in");
+    assert_eq!(scaled.widths, vec![16.0], "8 characters at 1 px, scaled 20/10");
+    assert!(
+        scaled.approximate,
+        "the frontend asks again once the exact size is measured"
+    );
+    assert!(
+        scaled.missing_code_points.is_empty(),
+        "a fill-in can only extend a stored size, so an approximate answer requests none"
+    );
+}
+
+// ============================================================================
 // Font ID not in cache → FontMetricsNotReady
 // ============================================================================
 
