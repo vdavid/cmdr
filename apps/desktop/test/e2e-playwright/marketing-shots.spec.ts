@@ -56,8 +56,21 @@ const MASTER_TITLE = 'Cmdr'
 
 /** The repository the panes browse. Aesthetic, but a real tree with real sizes. */
 const REPO = process.env.CMDR_SHOTS_BROWSE_ROOT ?? join(process.env.HOME ?? '', 'projects-git', 'vdavid', 'cmdr')
-const LEFT_PANE_PATH = join(REPO, 'apps', 'desktop', 'src', 'lib')
-const RIGHT_PANE_PATH = join(REPO, 'apps', 'desktop', 'src-tauri', 'src')
+
+/**
+ * The staged layout. The defaults mirror the Total Commander shot on the blog's comparison
+ * slider (`src-tauri` left with the cursor on `examples`, `src/lib` right), so the two halves
+ * line up, and 120% text reads well in every downscaled surface. Overrides are for one-off
+ * `--out` runs only (`docs/guides/screenshots.md` § "One-off layouts"): the website hero's
+ * cutouts are measured from whatever this stages. Paths are relative to `REPO`; an empty
+ * cursor name leaves that pane's cursor where it lands.
+ */
+const LEFT_PANE_PATH = join(REPO, process.env.CMDR_SHOTS_LEFT_PATH ?? 'apps/desktop/src-tauri')
+const RIGHT_PANE_PATH = join(REPO, process.env.CMDR_SHOTS_RIGHT_PATH ?? 'apps/desktop/src/lib')
+const LEFT_CURSOR = process.env.CMDR_SHOTS_LEFT_CURSOR ?? 'examples'
+const RIGHT_CURSOR = process.env.CMDR_SHOTS_RIGHT_CURSOR ?? ''
+/** `appearance.textSize`, in percent. */
+const TEXT_SIZE = Number(process.env.CMDR_SHOTS_TEXT_SIZE ?? '120')
 
 // Staging a master takes several UI round-trips plus up to three shots, and the config's
 // 15 s default would cut the first one off. Generous on purpose: on timeout Playwright
@@ -249,8 +262,8 @@ async function waitForIndexedSizes(page: TauriPage): Promise<void> {
 }
 
 /**
- * The two-pane arrangement the masters show: a source tree on the left, the Rust
- * backend on the right behind a pinned tab.
+ * The two-pane arrangement the masters show: the left pane's folder, and the right pane's
+ * behind a pinned tab of the left one.
  *
  * ❗ Unpin before closing. `close` and `close_others` deliberately SKIP pinned tabs, so
  * a "clean up" that forgets this leaves the pane with three tabs and the shot shows a
@@ -290,6 +303,13 @@ async function stageCosmetics(page: TauriPage): Promise<void> {
   // owner's choices, which is how a round once shipped with the wrong scale.
   await setSetting(page, 'listing.sizeUnit', 'dynamic')
   await setSetting(page, 'appearance.fileSizeFormat', 'si')
+
+  // Set on every run, the default included: the data dir would otherwise carry a one-off
+  // run's zoom into the next brand masters.
+  await setSetting(page, 'appearance.textSize', TEXT_SIZE)
+
+  // Dotfiles on, like the Total Commander shot the main master sits beside on the blog.
+  await setSetting(page, 'listing.showHiddenFiles', true)
 }
 
 /**
@@ -323,10 +343,12 @@ async function stagePanes(page: TauriPage): Promise<void> {
   await mcpCall('tab', { pane: 'right', action: 'new' })
   await mcpCall('nav_to_path', { pane: 'right', path: RIGHT_PANE_PATH })
 
-  await mcpCall('move_cursor', { pane: 'left', filename: 'file-explorer' }).catch(() => {
-    // The cursor is aesthetic; a renamed directory shouldn't fail a whole round.
-  })
-  await mcpCall('move_cursor', { pane: 'right', filename: 'file_system' }).catch(() => {})
+  if (LEFT_CURSOR) {
+    await mcpCall('move_cursor', { pane: 'left', filename: LEFT_CURSOR }).catch(() => {
+      // The cursor is aesthetic; a renamed directory shouldn't fail a whole round.
+    })
+  }
+  if (RIGHT_CURSOR) await mcpCall('move_cursor', { pane: 'right', filename: RIGHT_CURSOR }).catch(() => {})
 
   // The left pane focused: its cursor row is the one that reads as "you are here".
   const leftFocused = await page.evaluate<boolean>(

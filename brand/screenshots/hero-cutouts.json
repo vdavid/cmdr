@@ -7,15 +7,15 @@
   "panes": {
     "left": {
       "x": 2,
-      "y": 232,
+      "y": 258,
       "width": 1137,
-      "height": 1052
+      "height": 1016
     },
     "right": {
       "x": 1145,
-      "y": 232,
+      "y": 258,
       "width": 1137,
-      "height": 1052
+      "height": 1016
     }
   }
 }

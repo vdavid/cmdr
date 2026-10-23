@@ -49,7 +49,35 @@ run needs ImageMagick and refuses to start without it. Need a PNG for an uploade
 - **README**: nothing to edit; it points at `brand/screenshots/app-main-{dark,light}.webp`. Commit the new masters.
 - **Website hero**: `apps/website/scripts/regenerate-hero.sh`, which reads the masters and `hero-cutouts.json`. Details
   in `apps/website/public/hero/DETAILS.md`.
+- **Blog's Total Commander comparison**: crop each main-window master to the bare window at 1,400 px wide, the slider's
+  size:
+  `magick brand/screenshots/app-main-$m.webp -crop 2284x1410+112+76 +repage -resize 1400x -quality 85 apps/website/public/blog/total-commander-for-macos/cmdr-$m.webp`
+  for `m` in `dark` and `light`.
 - **App directories**: re-upload on each listing, and update the matching file in `brand/listings/` in the same pass.
+
+## What the masters show
+
+The main window mirrors the Total Commander shot it sits beside on the blog: `apps/desktop/src-tauri` on the left with
+the cursor on `examples`, `apps/desktop/src/lib` on the right (behind a pinned `src-tauri` tab), hidden files shown, and
+text at 120% so it stays readable in every downscaled surface. All of it is staged in `marketing-shots.spec.ts` on every
+run, because the shots data dir is persistent.
+
+## One-off layouts
+
+For a shot that has to match something else, override the staged layout with env vars and ❗ always `--out` somewhere
+outside `brand/`, so the masters (and the hero cut from them) keep the standard layout.
+
+```bash
+CMDR_SHOTS_LEFT_PATH=apps/desktop/src/lib CMDR_SHOTS_LEFT_CURSOR=file-explorer \
+CMDR_SHOTS_RIGHT_PATH=apps/desktop/src-tauri/src CMDR_SHOTS_RIGHT_CURSOR=file_system \
+CMDR_SHOTS_TEXT_SIZE=100 pnpm marketing:shots --out /tmp/one-off
+```
+
+- `CMDR_SHOTS_LEFT_PATH` / `CMDR_SHOTS_RIGHT_PATH`: folders relative to the browsed repo. The right pane's pinned tab
+  behind the active one opens the left path.
+- `CMDR_SHOTS_LEFT_CURSOR` / `CMDR_SHOTS_RIGHT_CURSOR`: the row to put the cursor on; empty leaves it where it lands.
+- `CMDR_SHOTS_TEXT_SIZE`: `appearance.textSize` in percent (default 120). Every run sets it, so a one-off zoom never
+  leaks into the next masters through the persistent shots data dir.
 
 ## How it works, in one paragraph
 
