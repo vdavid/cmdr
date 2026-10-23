@@ -406,10 +406,39 @@ export async function multiRename(page: TauriPage, theme: ClipTheme): Promise<vo
     })
   } finally {
     if (await page.isVisible(MULTI_RENAME)) await clickButtonByText(page, `${MULTI_RENAME} button`, 'Cancel')
+    await undoLastRename(page).catch((e: unknown) => {
+      console.warn(`${LOG} couldn't undo the take's rename: ${String(e)}`)
+    })
     await dispatchMenuCommand(page, 'selection.deselectAll')
     await dismissAllToasts(page)
     resetRawImports()
   }
+}
+
+/**
+ * Off camera: undoes the take's rename through the sheet's own "Undo rename", which also
+ * forgets the run. Without it the next take's sheet (the other theme) shows an "Undo
+ * rename" button the first take's didn't have.
+ */
+async function undoLastRename(page: TauriPage): Promise<void> {
+  await dispatchMenuCommand(page, 'selection.selectAll')
+  await dispatchMenuCommand(page, 'file.multiRename')
+  await page.waitForSelector(MULTI_RENAME, waitBudget(5000))
+  await page.evaluate(`(function(){
+    var b = [...document.querySelectorAll(${JSON.stringify(`${MULTI_RENAME} button`)})].find(function (x) { return (x.textContent || '').trim().indexOf('Undo rename') === 0 });
+    if (b) b.click();
+  })()`)
+  await drainOperations(page)
+  await expect
+    .poll(
+      () =>
+        page.evaluate<boolean>(
+          `![...document.querySelectorAll(${JSON.stringify(`${MULTI_RENAME} button`)})].some(function (x) { return (x.textContent || '').trim().indexOf('Undo rename') === 0 })`,
+        ),
+      { timeout: waitBudget(10000) },
+    )
+    .toBe(true)
+  if (await page.isVisible(MULTI_RENAME)) await clickButtonByText(page, `${MULTI_RENAME} button`, 'Cancel')
 }
 
 /**
