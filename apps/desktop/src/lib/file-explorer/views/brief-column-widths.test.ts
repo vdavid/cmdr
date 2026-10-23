@@ -118,6 +118,14 @@ describe('brief column widths', () => {
       expect(clampColumnWidths([900], 400)).toEqual([400])
     })
 
+    it('grows the icon part of the chrome with the text scale', () => {
+      // Regression anchor: the row's icon is `16px × --font-scale` while its padding and gap
+      // stay fixed. A fixed chrome left every column 3.2 px short at 120%, so names that
+      // filled their column ended in an ellipsis.
+      expect(clampColumnWidths([200], 1000, 1.2)).toEqual([200 + COLUMN_PADDING + 16 * 0.2])
+      expect(clampColumnWidths([200], 1000, 1)).toEqual([200 + COLUMN_PADDING])
+    })
+
     it('re-clamps to a new pane width with no IPC, because the raw widths do not depend on it', async () => {
       ipc.getBriefColumnTextWidths.mockResolvedValue(ok([500, 120]))
       const { store } = makeStore()

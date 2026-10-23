@@ -61,7 +61,7 @@
         getBriefColumnWidthMaxPx,
         getShowTags,
     } from '#lib/settings/reactive-settings.svelte.js'
-    import { onDebouncedScaleChange } from '#lib/text-size.svelte.js'
+    import { getEffectiveScale, onDebouncedScaleChange } from '#lib/text-size.svelte.js'
     import { getSetting } from '#lib/settings/settings-store.js'
     import { formatNumber } from '../selection/selection-info-utils'
     import { isVolumeAggregating, getWalkedGround } from '#lib/indexing/index-state.svelte.js'
@@ -352,10 +352,11 @@
     })
 
     /**
-     * Rendered per-column widths: chrome added, clamped to the live pane. Derived rather
-     * than stored, so a pane resize is pure frontend math and never an IPC round-trip.
+     * Rendered per-column widths: chrome added at the live text scale (the icon grows with
+     * it), clamped to the live pane. Derived rather than stored, so a pane resize is pure
+     * frontend math and never an IPC round-trip.
      */
-    const columnWidths = $derived(clampColumnWidths(widthsStore.rawWidths, capPx))
+    const columnWidths = $derived(clampColumnWidths(widthsStore.rawWidths, capPx, getEffectiveScale()))
 
     /** Width of any column past the measured set: in flight, or given up on. */
     const provisionalWidth = $derived(provisionalColumnWidth(capPx))

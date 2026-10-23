@@ -30,7 +30,8 @@ export function parseFontId(fontId: string): FontSpec {
   const parts = fontId.split('-')
   const family = parts[0] || 'system'
   const weight = Number.parseInt(parts[1] || '400', 10)
-  const size = Number.parseInt(parts[2] || '12', 10)
+  // A float: a scaled list renders at a fractional size (`getCurrentFontId`).
+  const size = Number.parseFloat(parts[2] || '12')
   return {
     fontFamily: family === 'system' ? SYSTEM_FONT_STACK : family,
     fontWeight: Number.isFinite(weight) ? weight : 400,

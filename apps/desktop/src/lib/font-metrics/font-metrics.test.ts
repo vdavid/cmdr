@@ -211,3 +211,20 @@ describe('fillMissingFontMetrics', () => {
     expect(extendFontMetrics).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('getCurrentFontId', () => {
+  it('carries the exact rendered size, fractions included', () => {
+    // Regression anchor: the list renders at 12 px × the scale, so 14.4 px at 120%. A
+    // whole-pixel ID measured at 14 px and cut every long Brief name short.
+    document.documentElement.style.setProperty('--font-scale', '1.2')
+    try {
+      expect(getCurrentFontId()).toBe('system-400-14.4')
+    } finally {
+      document.documentElement.style.removeProperty('--font-scale')
+    }
+  })
+
+  it('stays a stable key at the default scale', () => {
+    expect(getCurrentFontId()).toBe('system-400-12')
+  })
+})

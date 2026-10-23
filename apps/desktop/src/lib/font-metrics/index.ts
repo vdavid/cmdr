@@ -67,9 +67,13 @@ function readEffectiveScale(): number {
  * Accessibility × user setting). The Rust cache keys metrics by this exact
  * string, so a new scale produces a new cache miss and re-measure. The Rust
  * side keeps multiple sizes in memory side-by-side (no eviction needed).
+ *
+ * ❗ The size keeps its fraction (to 0.01 px): the list renders at exactly
+ * `12 px × scale`, so 14.4 px at 120%. Rounding to a whole pixel measured at
+ * 14 px, every Brief column came out ~3% narrow, and long names got an ellipsis.
  */
 export function getCurrentFontId(): string {
-  const size = Math.max(1, Math.round(BASE_FONT_SIZE_PX * readEffectiveScale()))
+  const size = Math.max(1, Math.round(BASE_FONT_SIZE_PX * readEffectiveScale() * 100) / 100)
   return `system-400-${String(size)}`
 }
 

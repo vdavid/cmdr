@@ -31,6 +31,12 @@ describe('parseFontId', () => {
     expect(parseFontId('system-400-24').fontSize).toBe(24)
   })
 
+  it('keeps a fractional size, since a scaled list renders at one', () => {
+    // Regression anchor: at 120% text the list renders at 14.4 px. Measuring at 14 px made
+    // every Brief column ~3% too narrow, so long names ended in an ellipsis.
+    expect(parseFontId('system-400-14.4').fontSize).toBe(14.4)
+  })
+
   it('falls back per component rather than throwing on a malformed ID', () => {
     // A throw here would leave every Brief column unsized; a default won't.
     expect(parseFontId('')).toEqual({

@@ -35,11 +35,15 @@ const log = getAppLogger('fileExplorer')
 /** Floor for a rendered column: narrower than this and a name is all ellipsis. */
 export const MIN_COLUMN_WIDTH = 100
 
+/** The row icon's width at text scale 1 (`--spacing-icon-size` is `16px × --font-scale`). */
+const ICON_PX = 16
+
 /**
- * CSS chrome around the measured text: icon (16) + gap (8) + left padding (8) +
- * right padding (8) + 2 px of rounding buffer for sub-pixel rendering.
+ * CSS chrome around the measured text at text scale 1: icon (16) + gap (8) + left
+ * padding (8) + right padding (8) + 2 px of rounding buffer for sub-pixel rendering.
+ * ❗ Only the icon scales with the text; `clampColumnWidths` adds that growth.
  */
-export const COLUMN_PADDING = 16 + 8 + 8 + 8 + 2
+export const COLUMN_PADDING = ICON_PX + 8 + 8 + 8 + 2
 
 /**
  * Width a column renders at before (or instead of) a measurement.
@@ -74,14 +78,15 @@ export function provisionalColumnWidth(capPx: number): number {
 }
 
 /**
- * Turns backend text widths into rendered widths: add the CSS chrome, then clamp
- * into `[MIN_COLUMN_WIDTH, capPx]`. Pure, and the only place the pane width enters
- * the width math.
+ * Turns backend text widths into rendered widths: add the CSS chrome at the current
+ * text `scale`, then clamp into `[MIN_COLUMN_WIDTH, capPx]`. Pure, and the only place
+ * the pane width enters the width math.
  */
-export function clampColumnWidths(rawTextWidths: readonly number[], capPx: number): number[] {
+export function clampColumnWidths(rawTextWidths: readonly number[], capPx: number, scale = 1): number[] {
+  const chrome = COLUMN_PADDING + ICON_PX * (scale - 1)
   const clamped = new Array<number>(rawTextWidths.length)
   for (let i = 0; i < rawTextWidths.length; i++) {
-    clamped[i] = Math.max(MIN_COLUMN_WIDTH, Math.min(capPx, rawTextWidths[i] + COLUMN_PADDING))
+    clamped[i] = Math.max(MIN_COLUMN_WIDTH, Math.min(capPx, rawTextWidths[i] + chrome))
   }
   return clamped
 }

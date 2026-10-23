@@ -243,11 +243,12 @@ the drag controller.
 
 `brief-column-widths.svelte.ts` owns the RAW backend text widths and the whole fetch policy; `BriefList.svelte` derives
 what renders. `createBriefColumnWidths(deps)` returns `{ rawWidths, status, request, reset, destroy }`, and the pure
-`clampColumnWidths(rawWidths, capPx)` / `provisionalColumnWidth(capPx)` turn raw numbers into rendered ones.
-`get_brief_column_text_widths` answers with `{ widths, missingCodePoints }`; a non-empty `missingCodePoints` means some
-characters were costed at the font's average width, so the store calls `fillMissingFontMetrics` (which measures them off
-the main thread) and re-fetches once for exact widths. The full fill-in contract lives in `#lib/font-metrics/DETAILS.md`
-§ On-demand fill-in.
+`clampColumnWidths(rawWidths, capPx, scale)` / `provisionalColumnWidth(capPx)` turn raw numbers into rendered ones. The
+chrome grows with the live text scale because the row icon does (`16px × --font-scale`) while padding and gap stay
+fixed; a fixed chrome left every column 3.2 px short at 120%. `get_brief_column_text_widths` answers with
+`{ widths, missingCodePoints }`; a non-empty `missingCodePoints` means some characters were costed at the font's average
+width, so the store calls `fillMissingFontMetrics` (which measures them off the main thread) and re-fetches once for
+exact widths. The full fill-in contract lives in `#lib/font-metrics/DETAILS.md` § On-demand fill-in.
 
 **`WidthFetchAttempt` carries one flag per recovery step (`afterFontLoad`, `afterFill`, `retries`), and each bounds only
 its own recursion.** That's load-bearing three ways. A fetch that already filled won't fill again, so a code point that
