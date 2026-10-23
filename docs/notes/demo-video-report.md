@@ -49,10 +49,11 @@ Checked on the final renders, not the previews.
   - Video 2: −17.0 LUFS, peak −3.5 dBFS, voice margin median 14.7 dB, 5th percentile 4.8 dB, worst +1.1 dB.
   - No clipping anywhere. The music opens fully on each drop and ducks under every line.
 
-Fixes made during review: the beat label moved off the app window and fades once the shot settles; SMB shots start
-zoomed in so the test server's address stays out of frame; video 2's S3 beat became one continuous shot so the cost
-estimate lands on its line; the level check had measured the peak on a mono downmix (3 dB too high) and now reads every
-channel.
+Fixes made during review: the beat label is a frosted, near-opaque pill that wipes in and out (a fade let app rows show
+through it mid-transition during punch-ins), checked at two frames in each beat's first 2 s of both final renders; SMB
+shots start zoomed in so the test server's address stays out of frame (video 1's NAS slice now matches video 2's
+framing); video 2's S3 beat became one continuous shot so the cost estimate lands on its line; the level check had
+measured the peak on a mono downmix (3 dB too high) and now reads every channel.
 
 ## For David to judge
 
