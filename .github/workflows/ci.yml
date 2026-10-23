@@ -1337,6 +1337,9 @@ jobs:
       - name: Run html-validate
         run: ./scripts/check/check --check website-html-validate --ci
 
+      - name: Check for dead links
+        run: ./scripts/check/check --check website-dead-links --ci
+
       - name: Check analytics injection
         run: ./scripts/check/check --check website-analytics-injection --ci
 

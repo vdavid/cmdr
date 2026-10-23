@@ -1295,6 +1295,17 @@ var AllChecks = []CheckDefinition{
 		Run:         RunWebsiteHTMLValidate,
 	},
 	{
+		ID:          "website-dead-links",
+		Nickname:    "website-links",
+		DisplayName: "dead links",
+		App:         AppWebsite,
+		Tech:        "🚀 Astro",
+		DependsOn:   []string{"website-build"},
+		IsFast:      true,
+		Inputs:      websiteInputs,
+		Run:         RunWebsiteDeadLinks,
+	},
+	{
 		ID:          "desktop-bundle-size",
 		DisplayName: "bundle size",
 		App:         AppDesktop,
