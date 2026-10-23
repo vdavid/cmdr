@@ -17,6 +17,7 @@
     "poster:anywhere": "remotion still src/index.ts CmdrAnywhere out/cmdr-anywhere-90s-poster.png --frame=2640",
     "stems:anywhere": "remotion render src/index.ts CmdrAnywhere out/anywhere-stem-voice.wav --codec=wav --props=props/stem-voice.json && remotion render src/index.ts CmdrAnywhere out/anywhere-stem-music.wav --codec=wav --props=props/stem-music.json && remotion render src/index.ts CmdrAnywhere out/anywhere-stem-mix.wav --codec=wav",
     "check-levels": "node scripts/check-levels.ts",
+    "web-copy": "node scripts/web-copy.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

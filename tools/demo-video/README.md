@@ -33,7 +33,8 @@ gitignored and comes from these steps. Scripts take `--video=demo` (the default)
 6. `pnpm timeline --video=anywhere`: prints the computed edit (cuts, voice placement, music jumps, which clip span each
    shot plays, total length). Add `--footage-plan` to plan against the masters before transcoding anything.
 7. `pnpm studio` to scrub both, then `pnpm render:demo`, `pnpm render:anywhere`, `pnpm poster:demo`, and
-   `pnpm poster:anywhere` for the final files.
+   `pnpm poster:anywhere` for the final files (each takes about 3 minutes), then `pnpm web-copy --video=<id>` for a ~16
+   MB web-friendly copy next to each master.
 8. Check the mix: `pnpm stems:anywhere && pnpm check-levels --video=anywhere` (voice margin over the music, and the
    peak).
 
