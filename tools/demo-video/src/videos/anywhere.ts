@@ -44,12 +44,17 @@ const script: Section[] = [
     // The share lists 5,000 photos on "way faster"; the copy within the share lands on "right on the server". The
     // punch-ins sit low: the volume picker at the top shows the test server's address (see video-beats.json).
     shots: [
-      shot('smb', 0.55, { x: 0.5, y: 0.6, zoom: 1.15 }, { sync: { moment: 'listed: 5,000 files', phrase: 1 } }),
+      shot(
+        'smb',
+        0.55,
+        { x: 0.5, y: 0.66, zoom: 1.4 },
+        { closeFraming: true, sync: { moment: 'listed: 5,000 files', phrase: 1 } },
+      ),
       shot(
         'smb',
         0.45,
-        { x: 0.5, y: 0.62, zoom: 1.2 },
-        { cue: 2, sync: { moment: 'F5: copy "Lisbon trip"', phrase: 2 } },
+        { x: 0.5, y: 0.62, zoom: 1.3 },
+        { closeFraming: true, cue: 2, sync: { moment: 'F5: copy "Lisbon trip"', phrase: 2 } },
       ),
     ],
   },
@@ -65,12 +70,9 @@ const script: Section[] = [
         show: "Before you copy, Cmdr tells you what it'll cost.",
       },
     ],
-    // The cost moment comes from the re-recording against a priced bucket: `key` is its key frame. Recheck the sync
-    // labels against the new video-beats.json when it lands.
-    shots: [
-      shot('s3', 0.5, { x: 0.5, y: 0.55, zoom: 1.15 }, { sync: { moment: 'bucket', phrase: 0 } }),
-      shot('s3', 0.5, { x: 0.5, y: 0.5, zoom: 1.25 }, { cue: 1, sync: { moment: 'key', phrase: 1 } }),
-    ],
+    // One continuous shot in the R2 bucket: F5 and the cost estimate ("About $0.01") arrive a tenth of a second apart,
+    // so the estimate (the key frame) lands on "tells you what it'll cost" and the bucket view opens the shot.
+    shots: [shot('s3', 1, { x: 0.5, y: 0.6, zoom: 1.4 }, { sync: { moment: 'key', phrase: 1 } })],
   },
   {
     id: 'phone',
@@ -181,7 +183,9 @@ const script: Section[] = [
       { say: 'Commander.', show: 'Cmdr.' },
       { say: 'Free for personal use, at get commander dot com.', show: 'Free for personal use, at getcmdr.com' },
     ],
-    shots: [{ beat: 'hero2', still: 'app-main-dark.webp', weight: 1 }],
+    // The first video's hero clip: hero2's NAS pane shows the SMB test server's address ("private on 127.0.0.1:11481"),
+    // which no punch-in can hide in this perspective view. Switch back to `{ beat: 'hero2' }` once it's re-recorded.
+    shots: [{ beat: 'hero', source: 'demo', still: 'app-main-dark.webp', weight: 1 }],
   },
 ]
 

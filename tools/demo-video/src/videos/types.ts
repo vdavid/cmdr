@@ -21,6 +21,8 @@ export type Shot = {
   sync?: { moment: string; phrase?: number }
   /** Keep the still even when footage exists, with the reason (for example, a recording that shows the wrong thing). */
   stillOnly?: string
+  /** Start already most of the way into the punch-in, to keep something (like the SMB test server's address) out of frame. */
+  closeFraming?: boolean
   /** Borrow `beat` from another video's recordings (its spec `id`). */
   source?: string
   /** When `beat`'s footage doesn't exist (yet), play this beat of this video's own recordings instead (no `sync`). */

@@ -136,7 +136,8 @@ const script: Section[] = [
         fallbackBeat: 'hero',
         still: 'app-main-dark.webp',
         weight: 0.25,
-        focus: { x: 0.5, y: 0.5, zoom: 1.12 },
+        focus: { x: 0.5, y: 0.62, zoom: 1.3 },
+        closeFraming: true,
         sync: { moment: 'listed: 5,000 files', phrase: 1 },
       },
       {

@@ -65,7 +65,7 @@ const Glow: React.FC<{ t: number; pulse: number; colors: [string, string, string
 
 // Base footage box: centered a bit high, leaving the bottom band for captions.
 // The footage box: centered a bit high, leaving the bottom band for captions; at most this wide and tall.
-const BOX = { cx: 960, cy: 470, maxW: 1440, maxH: 820 }
+const BOX = { cx: 960, cy: 488, maxW: 1440, maxH: 780 }
 // The stills carry the window's shadow margins, so their box is the full image.
 const STILL_ASPECT = 2508 / 1634
 
@@ -79,7 +79,8 @@ const Shot: React.FC<{ shot: ShotPlan; t: number; first: boolean }> = ({ shot, t
   const punchAt = shot.syncAt !== undefined ? Math.max(0, shot.syncAt - shot.start - 0.1) : first ? len * 0.45 : 0
   const punches = shot.syncAt !== undefined || first
   const punch = punches ? ramp(local, punchAt, punchAt + 0.45, Easing.bezier(0.2, 1.4, 0.4, 1)) : 1
-  const p = punches ? 0.25 * drift + 0.75 * punch : 0.7 + 0.3 * drift
+  const motion = punches ? 0.25 * drift + 0.75 * punch : 0.7 + 0.3 * drift
+  const p = shot.closeFraming ? 0.85 + 0.15 * motion : motion
   const zoom = 1 + (focus.zoom - 1) * p
   const aspect = shot.footage?.aspect ?? STILL_ASPECT
   const w = Math.min(BOX.maxW, BOX.maxH * aspect)
@@ -304,13 +305,14 @@ const SectionTag: React.FC<{ section: SectionPlan; index: number; total: number;
   t,
   cardOut,
 }) => {
-  const show = ramp(t, cardOut, cardOut + 0.4)
+  // It names the beat while the shot settles, then gets out of the footage's way.
+  const show = ramp(t, cardOut, cardOut + 0.4) * (1 - ramp(t, cardOut + 3.2, cardOut + 3.8))
   return (
     <div
       style={{
         position: 'absolute',
         left: 52,
-        top: 44,
+        top: 28,
         display: 'flex',
         alignItems: 'center',
         gap: 16,
