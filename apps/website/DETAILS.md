@@ -282,8 +282,8 @@ The landing page leads with short screen recordings of the app (`Showcase.astro`
 trust (copy and rollback, the queue), multi-rename, viewer plus a reach strip, optional AI, and craft.
 
 - **Files**: `pnpm marketing:clips` (apps/desktop) writes `public/clips/{slug}-{light,dark}-{av1,h264}.mp4`, a
-  `{slug}-{theme}.webp` poster per theme, and `clips.json` (slug → width, height, duration). The contract and the
-  "available" rule (manifest entry, both H.264 files, and both posters; AV1 optional) live in
+  `{slug}-{theme}.webp` poster per theme, and `clips.json` (`{ clips: [{ slug, width, height, duration, themes }] }`).
+  The contract and the "available" rule (manifest entry, both H.264 files, and both posters; AV1 optional) live in
   `src/build/product-clips.ts`, read at build time.
 - **Player** (`ProductClip.astro`): no `src` until the clip scrolls near the viewport, then AV1 with H.264 as the
   fallback (Safari decodes AV1 only in hardware), for the active theme. A theme toggle swaps the files and keeps the
@@ -292,12 +292,9 @@ trust (copy and rollback, the queue), multi-rename, viewer plus a reach strip, o
   one downloads, the same reasoning as the hero's background images.
 - **Window chrome is CSS**: the recordings have no alpha, so the rounded corners, hairline rim, and shadow come from
   `.clip-window`.
-- **Before a clip exists**, the slot shows a still: the `brand/screenshots/` master for `search` (it carries its own
-  macOS shadow, so it's pulled outward by its transparent margin), else a placeholder card labeled as one. The Docker
-  build copies `brand/screenshots/` in for this (`Dockerfile`, `.dockerignore`).
-- **Gotcha**: Astro emits the full-size original of every imported image into `dist/`, used or not, and lazy
-  `import.meta.glob` imports emit the whole matched set. So `ProductClip.astro` statically imports only the masters a
-  page renders (verified on Astro 7.3.8, comparing `dist/_astro/`, 2026-10-22).
+- **A missing clip** (no manifest entry, or a missing H.264 file or poster) renders a placeholder card labeled as one,
+  so a half-recorded set never breaks the build. The homepage E2E asserts every landing clip renders as a video, which
+  catches a `clips.json` shape drift that would silently turn them all into placeholders.
 
 ## Typed linting
 

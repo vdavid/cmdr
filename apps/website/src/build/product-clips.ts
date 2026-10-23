@@ -6,7 +6,8 @@
 // - `/clips/{slug}-{theme}-av1.mp4`: AV1, preferred where the browser can decode it
 // - `/clips/{slug}-{theme}-h264.mp4`: H.264, the fallback every browser plays
 // - `/clips/{slug}-{theme}.webp`: the poster frame
-// - `/clips/clips.json`: `{ [slug]: { width, height, duration } }`
+// - `/clips/clips.json`: `{ clips: [{ slug, width, height, duration, themes }] }`, as
+//   `apps/desktop/scripts/marketing-clips-encode.ts` writes it
 //
 // A clip counts as available when its clips.json entry, both H.264 files, and both posters exist. The
 // AV1 files are optional per theme: without them the player offers H.264 only.
@@ -63,10 +64,20 @@ function isClipMeta(value: unknown): value is ClipMeta {
   )
 }
 
+/** The manifest's entries, keyed by slug. */
 function readManifest(): Record<string, unknown> {
   try {
     const parsed: unknown = JSON.parse(readFileSync(join(CLIPS_DIR, 'clips.json'), 'utf8'))
-    return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : {}
+    if (typeof parsed !== 'object' || parsed === null) return {}
+    const clips = (parsed as { clips?: unknown }).clips
+    if (!Array.isArray(clips)) return {}
+    const bySlug: Record<string, unknown> = {}
+    for (const entry of clips as unknown[]) {
+      if (typeof entry === 'object' && entry !== null && typeof (entry as { slug?: unknown }).slug === 'string') {
+        bySlug[(entry as { slug: string }).slug] = entry
+      }
+    }
+    return bySlug
   } catch {
     return {}
   }

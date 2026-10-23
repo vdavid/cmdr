@@ -11,9 +11,6 @@
 !CHANGELOG.md
 !feature-status.json
 
-# Screenshot masters: the landing page's product clips fall back to them until a clip is recorded
-!brand/screenshots/
-
 # Allow website app
 !apps/website/
 

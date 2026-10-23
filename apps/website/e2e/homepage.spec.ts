@@ -31,6 +31,18 @@ test.describe('Homepage', () => {
     expect(pageContent).toMatch(/\$59|free.*personal/i)
   })
 
+  test('every landing clip renders as a video, not a placeholder', async ({ page }) => {
+    // A `public/clips/clips.json` shape the build can't read turns every clip into a placeholder
+    // card without failing anything, so this is the guard for the manifest contract.
+    await page.goto('/')
+    await expect(page.locator('.clip-placeholder')).toHaveCount(0)
+    const clips = page.locator('[data-product-clip]')
+    await expect(clips).toHaveCount(6)
+    for (const description of await clips.locator('[data-clip-description]').all()) {
+      await expect(description).toHaveText(/\w/)
+    }
+  })
+
   test('has navigation header', async ({ page }) => {
     await page.goto('/')
 

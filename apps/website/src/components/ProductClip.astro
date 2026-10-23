@@ -6,21 +6,20 @@
  * - Loads and plays only while on screen; pauses offscreen. A play/pause button is always reachable
  *   (WCAG 2.2.2), and with `prefers-reduced-motion` the clip waits on its poster until clicked.
  * - The recordings have no alpha channel, so the rounded corners and the shadow are CSS.
- * - Before a clip is recorded, it falls back to a still: the `brand/screenshots/` master where one
- *   exists (those carry their own window shadow), otherwise a placeholder card that says so.
+ * - A clip missing from `public/clips/` renders a placeholder card that says so.
  *
  * File contract and availability rules: `src/build/product-clips.ts`.
  */
-import { Image } from 'astro:assets'
-import type { ImageMetadata } from 'astro'
 import Icon from './icons/Icon.astro'
 import { getProductClip, type ClipSlug } from '../build/product-clips'
-import searchLight from '../../../../brand/screenshots/search-light.webp'
-import searchDark from '../../../../brand/screenshots/search-dark.webp'
 
 interface Props {
     slug: ClipSlug
-    /** What the clip shows, for screen readers. Becomes the video's `aria-label` and the still's `alt`. */
+    /**
+     * What the clip shows, for screen readers, as visually hidden text beside the video. The video
+     * itself is `aria-hidden`: html-validate rejects naming a `<video>` (`aria-label` and
+     * `aria-labelledby` alike, rule aria-label-misuse), and muted motion has nothing else to expose.
+     */
     label: string
     caption?: string
     class?: string
@@ -38,17 +37,7 @@ const placeholderTitles: Record<ClipSlug, string> = {
     settings: 'Settings',
 }
 
-// Only masters a page renders belong here: Astro emits every imported image's full-size original
-// into `dist/` even when nothing renders it (lazy globs too), so a `settings` still would ship
-// ~330 KB of dead bytes until a page shows that clip. The Docker build copies `brand/screenshots/` in.
-const stills: Partial<Record<ClipSlug, { light: ImageMetadata; dark: ImageMetadata }>> = {
-    search: { light: searchLight, dark: searchDark },
-}
-
 const clip = getProductClip(slug)
-const still = clip ? undefined : stills[slug]
-const stillWidths = [800, 1400]
-const stillSizes = '(min-width: 1024px) 640px, 100vw'
 ---
 
 <figure class:list={['product-clip', className]}>
@@ -91,33 +80,15 @@ const stillSizes = '(min-width: 1024px) 640px, 100vw'
                     playsinline
                     disablepictureinpicture
                     preload="none"
-                    aria-label={label}
+                    aria-hidden="true"
                 />
+                <span class="sr-only" data-clip-description>
+                    {label}
+                </span>
                 <button type="button" class="clip-toggle" data-clip-toggle aria-label="Play clip">
                     <Icon name="play" size={16} class="clip-toggle__play" />
                     <Icon name="pause" size={16} class="clip-toggle__pause" />
                 </button>
-            </div>
-        ) : still ? (
-            <div class="clip-still">
-                <Image
-                    class="clip-still__img clip-still__img--light"
-                    src={still.light}
-                    width={1400}
-                    widths={stillWidths}
-                    sizes={stillSizes}
-                    alt={label}
-                    loading="lazy"
-                />
-                <Image
-                    class="clip-still__img clip-still__img--dark"
-                    src={still.dark}
-                    width={1400}
-                    widths={stillWidths}
-                    sizes={stillSizes}
-                    alt={label}
-                    loading="lazy"
-                />
             </div>
         ) : (
             <div class="clip-placeholder" role="img" aria-label={`Placeholder for a clip: ${label}`}>
@@ -194,28 +165,23 @@ const stillSizes = '(min-width: 1024px) 640px, 100vw'
     }
 
     /* Show only the poster matching the theme. Lazy images that aren't rendered never download. */
-    .clip-poster--light,
-    .clip-still__img--light {
+    .clip-poster--light {
         display: none;
     }
 
     @media (prefers-color-scheme: light) {
-        :global(:root:not([data-theme='dark'])) .clip-poster--dark,
-        :global(:root:not([data-theme='dark'])) .clip-still__img--dark {
+        :global(:root:not([data-theme='dark'])) .clip-poster--dark {
             display: none;
         }
-        :global(:root:not([data-theme='dark'])) .clip-poster--light,
-        :global(:root:not([data-theme='dark'])) .clip-still__img--light {
+        :global(:root:not([data-theme='dark'])) .clip-poster--light {
             display: block;
         }
     }
 
-    :global(:root[data-theme='light']) .clip-poster--dark,
-    :global(:root[data-theme='light']) .clip-still__img--dark {
+    :global(:root[data-theme='light']) .clip-poster--dark {
         display: none;
     }
-    :global(:root[data-theme='light']) .clip-poster--light,
-    :global(:root[data-theme='light']) .clip-still__img--light {
+    :global(:root[data-theme='light']) .clip-poster--light {
         display: block;
     }
 
@@ -256,18 +222,6 @@ const stillSizes = '(min-width: 1024px) 640px, 100vw'
     .clip-window[data-state='playing'] .clip-toggle :global(.clip-toggle__play),
     .clip-window[data-state='paused'] .clip-toggle :global(.clip-toggle__pause) {
         display: none;
-    }
-
-    /* The screenshot masters already include the real macOS window and its shadow on transparency.
-       Pull their transparent margin outward so the window itself lines up with
-       the framed clips beside them. 112 px of 2284 px window width, as a share of the figure. */
-    .clip-still {
-        margin: -4.9%;
-    }
-
-    .clip-still :global(img) {
-        width: 100%;
-        height: auto;
     }
 
     .clip-placeholder {
