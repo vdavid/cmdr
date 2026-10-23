@@ -30,3 +30,5 @@ footage: `README.md`. Licenses and attribution: `CREDITS.md`.
   trim the voice files any other way.
 - Full renders and `pnpm footage` are CPU-heavy: don't run them while a screen recording is going.
 - Remotion's free license covers companies of up to three people (`CREDITS.md`).
+
+Architecture, timeline rules, and the decisions behind the music, voice, and footage edits: `DETAILS.md`.
