@@ -28,6 +28,8 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 
 - `demo-video-footage.md` — the long-form footage `pnpm marketing:clips --video` recorded for the 90-second demo video
   (#693): what each beat shows, where it lives, what's missing, and the app bugs the recording surfaced.
+- `demo-video-report.md` — the two 90-second promos rendered from that footage (`tools/demo-video/`): what's in them,
+  the review's frame and audio-level results, what needs David's ear and eye, and how to swap in real webcam footage.
 
 - `smb2-030-qa-2026-10-14.md` — what the `smb2` 0.30.0 upgrade changed for a share user, how to see each change, and the
   four proposals it didn't build (streamed rows, resumable uploads, atomic landing, rename detection).
