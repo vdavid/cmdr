@@ -69,11 +69,13 @@
   },
   "commands.appToggleCliCommand.install.label": "Install “cmdr” command",
   "@commands.appToggleCliCommand.install.label": {
-    "description": "Command-palette name (macOS only) that puts a terminal command named cmdr on the user's PATH, so typing `cmdr <folder>` in Terminal opens that folder in Cmdr. \"Install\" is a VERB. Keep cmdr exactly as is, lowercase, in your language's quotation marks: it's the literal word the user types. Must match the app-menu item menu.app.cliCommandInstall."
+    "description": "Command-palette name (macOS only) that puts a terminal command named cmdr on the user's PATH, so typing `cmdr <folder>` in Terminal opens that folder in Cmdr. \"Install\" is a VERB. Keep cmdr exactly as is, lowercase, in your language's quotation marks: it's the literal word the user types. Must match the app-menu item menu.app.cliCommandInstall.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.appToggleCliCommand.uninstall.label": "Uninstall “cmdr” command",
   "@commands.appToggleCliCommand.uninstall.label": {
-    "description": "Command-palette name (macOS only), shown instead of commands.appToggleCliCommand.install.label once the cmdr terminal command is installed; running it removes the command. \"Uninstall\" is a VERB. Keep cmdr exactly as is, lowercase. Must match the app-menu item menu.app.cliCommandUninstall."
+    "description": "Command-palette name (macOS only), shown instead of commands.appToggleCliCommand.install.label once the cmdr terminal command is installed; running it removes the command. \"Uninstall\" is a VERB. Keep cmdr exactly as is, lowercase. Must match the app-menu item menu.app.cliCommandUninstall.",
+    "screenshot": "command-palette.png"
   },
   "commands.appToggleCliCommand.homebrew.label": "“cmdr” command installed by Homebrew",
   "@commands.appToggleCliCommand.homebrew.label": {
@@ -287,7 +289,8 @@
   },
   "commands.sortByAdded.label": "Sort by date added",
   "@commands.sortByAdded.label": {
-    "description": "Command name that sorts the file list by when each item was put in its folder (downloaded, copied, or moved there), the date Finder calls \"Date Added\". Appears in the command palette and the keyboard shortcuts settings. Keep it parallel with commands.sortByCreated.label."
+    "description": "Command name that sorts the file list by when each item was put in its folder (downloaded, copied, or moved there), the date Finder calls \"Date Added\". Appears in the command palette and the keyboard shortcuts settings. Keep it parallel with commands.sortByCreated.label.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.sortAscending.label": "Sort ascending",
   "@commands.sortAscending.label": {
@@ -724,11 +727,13 @@
   },
   "commands.viewerGoBack.label": "Go back to the previous document",
   "@commands.viewerGoBack.label": {
-    "description": "Row in the Keyboard shortcuts list: what the key does in the file viewer window. After the user follows a link in a formatted Markdown document to another file, which opens in the same window, this returns to the document they came from, like a web browser's Back button. The user can rebind or remove this key."
+    "description": "Row in the Keyboard shortcuts list: what the key does in the file viewer window. After the user follows a link in a formatted Markdown document to another file, which opens in the same window, this returns to the document they came from, like a web browser's Back button. The user can rebind or remove this key.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.viewerGoForward.label": "Go forward to the next document",
   "@commands.viewerGoForward.label": {
-    "description": "Row in the Keyboard shortcuts list: what the key does in the file viewer window. After going back from a document reached by a link (commands.viewerGoBack.label), this returns to it again, like a web browser's Forward button. The user can rebind or remove this key."
+    "description": "Row in the Keyboard shortcuts list: what the key does in the file viewer window. After going back from a document reached by a link (commands.viewerGoBack.label), this returns to it again, like a web browser's Forward button. The user can rebind or remove this key.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.multiRenameOpenPresets.label": "Open the presets menu",
   "@commands.multiRenameOpenPresets.label": {
@@ -787,7 +792,8 @@
   },
   "commands.multiRenameInsertField.label": "Insert a photo, video, or music field",
   "@commands.multiRenameInsertField.label": {
-    "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). It opens the field picker, a list of information stored inside photo, video, and music files (date taken, camera, artist, title, …) to put into the new name."
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). It opens the field picker, a list of information stored inside photo, video, and music files (date taken, camera, artist, title, …) to put into the new name.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.multiRenameUndoRename.label": "Undo the last multi-rename",
   "@commands.multiRenameUndoRename.label": {
@@ -806,11 +812,13 @@
   },
   "commands.multiRenameMoveRowUp.label": "Move the file up in the rename order",
   "@commands.multiRenameMoveRowUp.label": {
-    "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). In the tool's preview list, it moves the file under the cursor one place earlier in the order the files are renamed in, which is the order the counter numbers them."
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). In the tool's preview list, it moves the file under the cursor one place earlier in the order the files are renamed in, which is the order the counter numbers them.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.multiRenameMoveRowDown.label": "Move the file down in the rename order",
   "@commands.multiRenameMoveRowDown.label": {
-    "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). In the tool's preview list, it moves the file under the cursor one place later in the order the files are renamed in, which is the order the counter numbers them."
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). In the tool's preview list, it moves the file under the cursor one place later in the order the files are renamed in, which is the order the counter numbers them.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.multiRenameRename.label": "Rename the files",
   "@commands.multiRenameRename.label": {
@@ -1030,7 +1038,8 @@
   },
   "commands.resticForgetPassword.label": "Forget backup password",
   "@commands.resticForgetPassword.label": {
-    "description": "Command name that removes a restic backup’s saved password from the macOS Keychain and locks the backup again, so opening it asks for the password. Acts on the backup the user is browsing, or whose snapshots folder is under the cursor. \"backup\" = a restic backup repository, a folder of encrypted backups. VERB phrase, imperative. Appears in the command palette."
+    "description": "Command name that removes a restic backup’s saved password from the macOS Keychain and locks the backup again, so opening it asks for the password. Acts on the backup the user is browsing, or whose snapshots folder is under the cursor. \"backup\" = a restic backup repository, a folder of encrypted backups. VERB phrase, imperative. Appears in the command palette.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.resticForgetPassword.description": "Removes the saved password of the restic backup you’re in from Keychain, and locks the backup again",
   "@commands.resticForgetPassword.description": {

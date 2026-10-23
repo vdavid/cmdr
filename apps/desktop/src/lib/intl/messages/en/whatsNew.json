@@ -14,18 +14,21 @@
     "description": "Short notice at the top of the post-update What's new dialog when the versions installed since the user last saw the dialog fixed one or more security vulnerabilities. Past tense: the fix is already running. Calm and factual, not alarming. {count} is how many; the singular form says \"a security issue\" rather than a numeral. Sentence case.",
     "placeholders": {
       "count": "how many security issues the new versions fixed, 1 or more"
-    }
+    },
+    "screenshot": "whats-new-security-notice.png"
   },
   "whatsNew.securityNotice.readAdvisory": "Read the advisory",
   "@whatsNew.securityNotice.readAdvisory": {
-    "description": "Link under the security notice in the What's new dialog that opens the public security advisory (on GitHub or the Cmdr website) for the one fixed vulnerability. A short link label, not a sentence. Same wording as updates.toast.readAdvisory."
+    "description": "Link under the security notice in the What's new dialog that opens the public security advisory (on GitHub or the Cmdr website) for the one fixed vulnerability. A short link label, not a sentence. Same wording as updates.toast.readAdvisory.",
+    "screenshot": "whats-new-security-notice-only.png"
   },
   "whatsNew.securityNotice.readAdvisoryNamed": "Read advisory {id}",
   "@whatsNew.securityNotice.readAdvisoryNamed": {
     "description": "One link per fixed vulnerability under the security notice in the What's new dialog, used when there are several, so each link says which advisory it opens. A short link label, not a sentence.",
     "placeholders": {
       "id": "the advisory's identifier, never translated: a GitHub advisory ID like GHSA-abcd-1234-efgh, or a date-based ID like 2026-10-16-smb-path"
-    }
+    },
+    "screenshot": "whats-new-security-notice.png"
   },
   "whatsNew.dialog.showMore": "Show more",
   "@whatsNew.dialog.showMore": {

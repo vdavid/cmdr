@@ -16,8 +16,8 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 2929 / 4813 keys have a screenshot (61%):** 1591 direct (33%) and 1338 representative (28%). 1695 remain
-uncoupled, and 189 are native surfaces a webview capture cannot reach.
+**Total: 2982 / 4917 keys have a screenshot (61%):** 1681 direct (34%) and 1301 representative (26%). 1745 remain
+uncoupled, and 190 are native surfaces a webview capture cannot reach.
 
 | Area            | Direct | Representative | Uncoupled | Native | Total | Any % |
 | --------------- | -----: | -------------: | --------: | -----: | ----: | ----: |
@@ -25,23 +25,23 @@ uncoupled, and 189 are native surfaces a webview capture cannot reach.
 | ai              |      0 |            123 |         0 |      0 |   123 |  100% |
 | askCmdr         |     65 |              0 |       135 |      0 |   200 |   33% |
 | commandPalette  |      3 |              2 |         2 |      0 |     7 |   71% |
-| commands        |    215 |              1 |       100 |      0 |   316 |   68% |
-| common          |      9 |              1 |         8 |      0 |    18 |   56% |
+| commands        |    224 |              1 |        93 |      0 |   318 |   71% |
+| common          |      8 |              1 |         9 |      0 |    18 |   50% |
 | crashReporter   |     12 |             11 |         0 |      0 |    23 |  100% |
 | downloads       |     10 |              5 |        21 |      0 |    36 |   42% |
 | errorReporter   |     16 |              0 |        42 |      0 |    58 |   28% |
-| errors          |    116 |            488 |         0 |      0 |   604 |  100% |
-| feedback        |      7 |              6 |         2 |      0 |    15 |   87% |
-| fileExplorer    |    121 |             65 |       330 |      0 |   516 |   36% |
-| fileOperations  |    124 |             84 |       123 |      0 |   331 |   63% |
+| errors          |    151 |            453 |         0 |      0 |   604 |  100% |
+| feedback        |      8 |              5 |         2 |      0 |    15 |   87% |
+| fileExplorer    |    122 |             65 |       336 |      0 |   523 |   36% |
+| fileOperations  |    137 |             83 |       111 |      0 |   331 |   66% |
 | goToPath        |      5 |              6 |         2 |      0 |    13 |   85% |
 | indexing        |     34 |             17 |        20 |      0 |    71 |   72% |
 | licensing       |     49 |             35 |        25 |      0 |   109 |   77% |
 | lowDiskSpace    |      0 |              0 |         5 |      0 |     5 |    0% |
 | main            |      7 |              0 |        46 |      2 |    55 |   13% |
-| menu            |      4 |              0 |         0 |    187 |   191 |    2% |
+| menu            |      4 |              0 |         0 |    188 |   192 |    2% |
 | mtp             |     18 |              2 |         0 |      0 |    20 |  100% |
-| multiRename     |      0 |              0 |       162 |      0 |   162 |    0% |
+| multiRename     |      0 |              0 |       231 |      0 |   231 |    0% |
 | notifications   |      0 |              0 |         1 |      0 |     1 |    0% |
 | onboarding      |     96 |             39 |        25 |      0 |   160 |   84% |
 | operationLog    |     26 |             30 |         0 |      0 |    56 |  100% |
@@ -50,22 +50,22 @@ uncoupled, and 189 are native surfaces a webview capture cannot reach.
 | search          |      9 |             48 |         0 |      0 |    57 |  100% |
 | securityNotices |      0 |              0 |        13 |      0 |    13 |    0% |
 | selection       |     14 |              0 |         1 |      0 |    15 |   93% |
-| servers         |     73 |             27 |       103 |      0 |   203 |   49% |
-| settings        |    404 |             36 |       414 |      0 |   854 |   52% |
+| servers         |     84 |             27 |       116 |      0 |   227 |   49% |
+| settings        |    422 |             36 |       396 |      0 |   854 |   54% |
 | shortcuts       |     35 |             28 |         0 |      0 |    63 |  100% |
-| stateRecovery   |      0 |              0 |        31 |      0 |    31 |    0% |
+| stateRecovery   |      0 |              0 |        32 |      0 |    32 |    0% |
 | suggestedOps    |      0 |              0 |        38 |      0 |    38 |    0% |
 | transfer        |      2 |             22 |         0 |      0 |    24 |  100% |
 | ui              |      8 |              0 |        20 |      0 |    28 |   29% |
 | updates         |      5 |             27 |         0 |      0 |    32 |  100% |
 | viewer          |     30 |             88 |         0 |      0 |   118 |  100% |
-| whatsNew        |      6 |              1 |         4 |      0 |    11 |   64% |
+| whatsNew        |      9 |              1 |         1 |      0 |    11 |   91% |
 
 ## Surfaces to review
 
-The run captured 181 surfaces. This section is regenerated every run, so it stays true as the UI changes.
+The run captured 205 surfaces. This section is regenerated every run, so it stays true as the UI changes.
 
-### No unique keys (27)
+### No unique keys (30)
 
 Every key on these surfaces also renders on another captured surface, so dropping one costs no coverage: its keys would
 simply couple to whichever surface keeps them. Worth considering, NOT an automatic delete. A surface can be the clearest
@@ -77,27 +77,30 @@ staging (or add it to `DROPPED_GALLERY_STATES` for a gallery state) in `test/e2e
 - `onboarding-optional` (110 keys, none unique)
 - `transfer-confirmation-copy` (105 keys, none unique)
 - `bulk-rename-review-all-allowed` (96 keys, none unique)
+- `server-sign-in-add` (94 keys, none unique)
 - `delete-confirm` (93 keys, none unique)
-- `server-sign-in-add` (93 keys, none unique)
 - `onboarding-fda-notgranted` (93 keys, none unique)
 - `onboarding-fda-denied` (93 keys, none unique)
 - `trash-confirm` (91 keys, none unique)
-- `onboarding-fda` (90 keys, none unique)
 - `new-file-dialog` (89 keys, none unique)
+- `onboarding-fda` (89 keys, none unique)
+- `whats-new` (88 keys, none unique)
 - `new-folder-dialog` (86 keys, none unique)
 - `expiration` (86 keys, none unique)
 - `mkdir-confirmation-empty` (85 keys, none unique)
+- `transfer-error-server_connection_lost` (84 keys, none unique)
+- `archive-password-repo-first-attempt` (84 keys, none unique)
 - `favorites-menu` (83 keys, none unique)
 - `transfer-error-source_not_found` (83 keys, none unique)
 - `server-sign-in-sign-in` (83 keys, none unique)
 - `expiration-organization` (83 keys, none unique)
+- `locked-sources-one` (82 keys, none unique)
 - `alert-long` (81 keys, none unique)
 - `sources-gone-move-some` (81 keys, none unique)
-- `indexing-status` (80 keys, none unique)
 - `main-window` (79 keys, none unique)
 - `favorites-menu-empty` (79 keys, none unique)
 - `settings-appearance` (74 keys, none unique)
-- `empty-pane` (73 keys, none unique)
+- `empty-pane` (74 keys, none unique)
 - `viewer-encoding` (20 keys, none unique)
 
 ### Captured at a reduced UI zoom (4)

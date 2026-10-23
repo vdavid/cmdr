@@ -157,11 +157,13 @@
   },
   "servers.hub.nfsHint": "NFS servers don’t announce themselves, so they don’t show up here.",
   "@servers.hub.nfsHint": {
-    "description": "One muted line at the bottom of the servers hub: NFS servers can’t be found automatically on the network, unlike SMB ones. Followed by a link (servers.hub.nfsHintLink) that opens the Add server form on NFS. “NFS” is a protocol name; keep it as-is."
+    "description": "One muted line at the bottom of the servers hub: NFS servers can’t be found automatically on the network, unlike SMB ones. Followed by a link (servers.hub.nfsHintLink) that opens the Add server form on NFS. “NFS” is a protocol name; keep it as-is.",
+    "screenshot": "servers-hub.png"
   },
   "servers.hub.nfsHintLink": "Add one with its address",
   "@servers.hub.nfsHintLink": {
-    "description": "Link after servers.hub.nfsHint in the servers hub. Opens the Add server form with NFS already selected, where the user types the NFS server’s address."
+    "description": "Link after servers.hub.nfsHint in the servers hub. Opens the Add server form with NFS already selected, where the user types the NFS server’s address.",
+    "screenshot": "servers-hub.png"
   },
   "servers.hub.emptyTitle": "No servers yet",
   "@servers.hub.emptyTitle": {
@@ -990,7 +992,7 @@
   "servers.hostKey.changedDisclosure": "I’ve checked it",
   "@servers.hostKey.changedDisclosure": {
     "description": "A collapsed section holding the button that trusts a CHANGED key. Deliberately behind a click, so trusting one is never a reflex. First person: the user speaking.",
-    "screenshot": "server-sign-in-host-key-changed.png"
+    "screenshot": "server-sign-in-host-key-first-contact.png"
   },
   "servers.hostKey.fingerprintLabel": "Key fingerprint",
   "@servers.hostKey.fingerprintLabel": {
@@ -1005,45 +1007,53 @@
   "servers.hostKey.trustNewKey": "Trust the new key",
   "@servers.hostKey.trustNewKey": {
     "description": "Button that records a CHANGED key, behind the disclosure. VERB phrase, imperative.",
-    "screenshot": "server-sign-in-host-key-changed.png"
+    "screenshot": "server-sign-in-host-key-first-contact.png"
   },
   "servers.certificate.firstContactTitle": "macOS doesn’t know the certificate for {host}",
   "@servers.certificate.firstContactTitle": {
     "description": "Heading of the step where the user decides whether to trust a WebDAV server’s HTTPS certificate that macOS doesn’t trust, usually a home NAS (Synology, QNAP) that made its own certificate. Routine, not alarming. \"macOS\" is the operating system’s name.",
     "placeholders": {
       "host": "the server’s hostname or address, like \"nas.local\""
-    }
+    },
+    "screenshot": "server-sign-in-certificate-first-contact.png"
   },
   "servers.certificate.firstContactBody": "Home servers often make their own certificate. Check the fingerprint below against the one your server shows, then trust it.",
   "@servers.certificate.firstContactBody": {
-    "description": "One line under that heading. “Fingerprint” is the short string that identifies the certificate; a person compares it character by character with what the server’s own settings page shows."
+    "description": "One line under that heading. “Fingerprint” is the short string that identifies the certificate; a person compares it character by character with what the server’s own settings page shows.",
+    "screenshot": "server-sign-in-certificate-first-contact.png"
   },
   "servers.certificate.changedTitle": "The certificate for {host} changed",
   "@servers.certificate.changedTitle": {
     "description": "Heading of the same step when the server presents a DIFFERENT certificate than the one the user trusted before. This one is serious: it can mean someone is in the middle.",
     "placeholders": {
       "host": "the server’s hostname or address, like \"nas.local\""
-    }
+    },
+    "screenshot": "server-sign-in-certificate-changed.png"
   },
   "servers.certificate.changedBody": "This can mean the server got a new certificate, or that something is sitting between you and it. Check the fingerprint with the server’s owner before trusting it.",
   "@servers.certificate.changedBody": {
-    "description": "One line under the changed-certificate heading. Says both innocent and serious causes, and what to do first."
+    "description": "One line under the changed-certificate heading. Says both innocent and serious causes, and what to do first.",
+    "screenshot": "server-sign-in-certificate-changed.png"
   },
   "servers.certificate.changedDisclosure": "I’ve checked it",
   "@servers.certificate.changedDisclosure": {
-    "description": "A collapsed section holding the button that trusts a CHANGED certificate. Deliberately behind a click, so trusting one is never a reflex. First person: the user speaking."
+    "description": "A collapsed section holding the button that trusts a CHANGED certificate. Deliberately behind a click, so trusting one is never a reflex. First person: the user speaking.",
+    "screenshot": "server-sign-in-certificate-first-contact.png"
   },
   "servers.certificate.fingerprintLabel": "Certificate fingerprint (SHA-256)",
   "@servers.certificate.fingerprintLabel": {
-    "description": "Label above the certificate’s fingerprint, a long string of letters, digits, and colons. NOUN phrase. \"SHA-256\" is the name of the method that made the fingerprint; keep it as is."
+    "description": "Label above the certificate’s fingerprint, a long string of letters, digits, and colons. NOUN phrase. \"SHA-256\" is the name of the method that made the fingerprint; keep it as is.",
+    "screenshot": "server-sign-in-certificate-first-contact.png"
   },
   "servers.certificate.trustAndConnect": "Trust and connect",
   "@servers.certificate.trustAndConnect": {
-    "description": "Button that trusts a first-seen certificate and carries on connecting. VERB phrase, imperative."
+    "description": "Button that trusts a first-seen certificate and carries on connecting. VERB phrase, imperative.",
+    "screenshot": "server-sign-in-certificate-first-contact.png"
   },
   "servers.certificate.trustNewCertificate": "Trust the new certificate",
   "@servers.certificate.trustNewCertificate": {
-    "description": "Button that trusts a CHANGED certificate, behind the disclosure. VERB phrase, imperative."
+    "description": "Button that trusts a CHANGED certificate, behind the disclosure. VERB phrase, imperative.",
+    "screenshot": "server-sign-in-certificate-first-contact.png"
   },
   "servers.paneState.signedOut": "Signed out of {name}",
   "@servers.paneState.signedOut": {

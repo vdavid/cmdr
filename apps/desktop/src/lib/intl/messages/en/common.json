@@ -5,8 +5,7 @@
     "placeholders": {
       "first": "the sentence (or sentences) that come first, already ending in its full stop",
       "second": "the next sentence"
-    },
-    "screenshot": "mtp-browse.png"
+    }
   },
 
   "common.attachEmail": "Attach my email address ({emailAddress} – <change>change</change>) so you can follow up",

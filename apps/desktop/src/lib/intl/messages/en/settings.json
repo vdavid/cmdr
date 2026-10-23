@@ -627,11 +627,13 @@
   },
   "settings.fileOperations.defaultConflictPolicy.label": "When files already exist",
   "@settings.fileOperations.defaultConflictPolicy.label": {
-    "description": "Label for the picker choosing which option the copy and move dialog starts on when files with the same names are already at the destination. In Settings > Behavior > Navigation & file ops > File operations."
+    "description": "Label for the picker choosing which option the copy and move dialog starts on when files with the same names are already at the destination. In Settings > Behavior > Navigation & file ops > File operations.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.defaultConflictPolicy.description": "The choice the copy and move dialog starts on. Check “Remember this choice” there to change it.",
   "@settings.fileOperations.defaultConflictPolicy.description": {
-    "description": "Help text for the 'When files already exist' setting. Explains that the copy/move (F5/F6) dialog opens on this choice, and that the dialog's 'Remember this choice' checkbox (fileOperations.transferDialog.rememberChoice) also sets it. Quote that checkbox label exactly as translated."
+    "description": "Help text for the 'When files already exist' setting. Explains that the copy/move (F5/F6) dialog opens on this choice, and that the dialog's 'Remember this choice' checkbox (fileOperations.transferDialog.rememberChoice) also sets it. Quote that checkbox label exactly as translated.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.defaultConflictPolicy.keywords": "conflict, clash, exists, duplicate, same name, replace, overwrite, skip, ask, copy, move, remember, default",
   "@settings.fileOperations.defaultConflictPolicy.keywords": {
@@ -639,11 +641,13 @@
   },
   "settings.fileOperations.keepProgressOpenWhenDone.label": "Keep the progress window open when a file operation finishes",
   "@settings.fileOperations.keepProgressOpenWhenDone.label": {
-    "description": "Settings switch label in Settings > Behavior > Navigation & file ops > File operations. When on, the progress window of a copy, move, delete, or move to trash stays on screen after the operation finishes, showing what it did, until the person closes it. \"Progress window\" is the dialog with the progress bars."
+    "description": "Settings switch label in Settings > Behavior > Navigation & file ops > File operations. When on, the progress window of a copy, move, delete, or move to trash stays on screen after the operation finishes, showing what it did, until the person closes it. \"Progress window\" is the dialog with the progress bars.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.keepProgressOpenWhenDone.description": "It shows what the operation did until you close it: how much, how long it took, and anything it skipped.",
   "@settings.fileOperations.keepProgressOpenWhenDone.description": {
-    "description": "Help text under the switch that keeps the progress window open after a copy, move, delete, or move to trash finishes. \"It\" is the progress window; \"the operation\" is the copy, move, delete, or move to trash that just finished."
+    "description": "Help text under the switch that keeps the progress window open after a copy, move, delete, or move to trash finishes. \"It\" is the progress window; \"the operation\" is the copy, move, delete, or move to trash that just finished.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.keepProgressOpenWhenDone.keywords": "progress, done, finished, complete, summary, result, report, stay, keep, close, window, dialog, copy, move, delete, trash",
   "@settings.fileOperations.keepProgressOpenWhenDone.keywords": {
@@ -651,23 +655,28 @@
   },
   "settings.fileOperations.defaultConflictPolicy.opt.skip": "Skip",
   "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
-    "description": "Option of the 'When files already exist' setting: leave every clashing file at the destination untouched. Must match the copy dialog's radio for a single clash, 'Skip' (fileOperations.transferDialog.policySkip, its one-clash form)."
+    "description": "Option of the 'When files already exist' setting: leave every clashing file at the destination untouched. Must match the copy dialog's radio for a single clash, 'Skip' (fileOperations.transferDialog.policySkip, its one-clash form).",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.defaultConflictPolicy.opt.overwrite": "Overwrite",
   "@settings.fileOperations.defaultConflictPolicy.opt.overwrite": {
-    "description": "Option of the 'When files already exist' setting: replace every clashing file at the destination. Must match the copy dialog's radio for a single clash, 'Overwrite' (fileOperations.transferDialog.policyOverwrite, its one-clash form)."
+    "description": "Option of the 'When files already exist' setting: replace every clashing file at the destination. Must match the copy dialog's radio for a single clash, 'Overwrite' (fileOperations.transferDialog.policyOverwrite, its one-clash form).",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.defaultConflictPolicy.opt.overwriteSmaller": "Overwrite if smaller",
   "@settings.fileOperations.defaultConflictPolicy.opt.overwriteSmaller": {
-    "description": "Option of the 'When files already exist' setting: replace a clashing file only when the one already at the destination is smaller. Must match the copy dialog's radio for a single clash, 'Overwrite if smaller' (fileOperations.transferDialog.policyOverwriteSmaller, its one-clash form)."
+    "description": "Option of the 'When files already exist' setting: replace a clashing file only when the one already at the destination is smaller. Must match the copy dialog's radio for a single clash, 'Overwrite if smaller' (fileOperations.transferDialog.policyOverwriteSmaller, its one-clash form).",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.defaultConflictPolicy.opt.overwriteOlder": "Overwrite if older",
   "@settings.fileOperations.defaultConflictPolicy.opt.overwriteOlder": {
-    "description": "Option of the 'When files already exist' setting: replace a clashing file only when the one already at the destination is older. Must match the copy dialog's radio for a single clash, 'Overwrite if older' (fileOperations.transferDialog.policyOverwriteOlder, its one-clash form)."
+    "description": "Option of the 'When files already exist' setting: replace a clashing file only when the one already at the destination is older. Must match the copy dialog's radio for a single clash, 'Overwrite if older' (fileOperations.transferDialog.policyOverwriteOlder, its one-clash form).",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.defaultConflictPolicy.opt.stop": "Ask later",
   "@settings.fileOperations.defaultConflictPolicy.opt.stop": {
-    "description": "Option of the 'When files already exist' setting: decide per clashing file during the copy or move. This is the default. Must match the copy dialog's radio for a single clash, 'Ask later' (fileOperations.transferDialog.policyStop, its one-clash form)."
+    "description": "Option of the 'When files already exist' setting: decide per clashing file during the copy or move. This is the default. Must match the copy dialog's radio for a single clash, 'Ask later' (fileOperations.transferDialog.policyStop, its one-clash form).",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.archives.card.archives": "Archives",
   "@settings.archives.card.archives": {
@@ -2895,11 +2904,13 @@
   },
   "settings.operationLog.enabled.label": "Record file operations",
   "@settings.operationLog.enabled.label": {
-    "description": "Label of the switch that turns the operation log on or off, in the Operation log card of Settings › Behavior › Navigation & file ops. When on, Cmdr records every copy, move, rename, and delete so they can be reviewed and undone. Sentence case."
+    "description": "Label of the switch that turns the operation log on or off, in the Operation log card of Settings › Behavior › Navigation & file ops. When on, Cmdr records every copy, move, rename, and delete so they can be reviewed and undone. Sentence case.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.operationLog.enabled.description": "Undo needs this. While it’s off, Cmdr doesn’t record new copies, moves, renames, or deletes, so you can’t undo them. Your existing history stays, and you can still undo what’s in it.",
   "@settings.operationLog.enabled.description": {
-    "description": "Help text under the switch that turns the operation log on or off (settings.operationLog.enabled.label). It must say plainly that undo stops working for new operations while the switch is off, and that the history already recorded is kept. The apostrophes are curly typographic apostrophes (U+2019)."
+    "description": "Help text under the switch that turns the operation log on or off (settings.operationLog.enabled.label). It must say plainly that undo stops working for new operations while the switch is off, and that the history already recorded is kept. The apostrophes are curly typographic apostrophes (U+2019).",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.operationLog.enabled.keywords": "operation, log, history, record, recording, undo, journal, privacy, turn off",
   "@settings.operationLog.enabled.keywords": {
@@ -3485,15 +3496,18 @@
   },
   "settings.updates.card.securityEvents": "Security events",
   "@settings.updates.card.securityEvents": {
-    "description": "Heading of the security events card (the switch for the local security event log and its 'Show in Finder' button) in Settings > Updates & privacy. Sentence case."
+    "description": "Heading of the security events card (the switch for the local security event log and its 'Show in Finder' button) in Settings > Updates & privacy. Sentence case.",
+    "screenshot": "settings-updates.png"
   },
   "settings.securityLog.enabled.label": "Record security events",
   "@settings.securityLog.enabled.label": {
-    "description": "Label for the switch that turns the local security event log on or off. The log is a small file on the person's Mac listing security-relevant changes and refusals. In Settings > Updates & privacy."
+    "description": "Label for the switch that turns the local security event log on or off. The log is a small file on the person's Mac listing security-relevant changes and refusals. In Settings > Updates & privacy.",
+    "screenshot": "settings-updates.png"
   },
   "settings.securityLog.enabled.description": "Keep a small file on this Mac that notes security-relevant changes and refusals, like cloud AI consent, an installed update, or an app turned away from the MCP server. It holds no file names, contents, or passwords, and it never leaves your Mac.",
   "@settings.securityLog.enabled.description": {
-    "description": "Help text under the 'Record security events' switch. 'MCP server' is a technical feature name (Model Context Protocol): keep it untranslated. 'turned away' = refused access. Reassures that the file stays local and holds nothing private."
+    "description": "Help text under the 'Record security events' switch. 'MCP server' is a technical feature name (Model Context Protocol): keep it untranslated. 'turned away' = refused access. Reassures that the file stays local and holds nothing private.",
+    "screenshot": "settings-updates.png"
   },
   "settings.securityLog.enabled.keywords": "security, log, audit, record, events, access, privacy",
   "@settings.securityLog.enabled.keywords": {
@@ -3501,7 +3515,8 @@
   },
   "settings.securityLog.showInFinder": "Show in Finder",
   "@settings.securityLog.showInFinder": {
-    "description": "Button under the 'Record security events' switch that opens Finder at the security event log file (or its folder when there's no file yet). 'Finder' is the macOS file manager: use the name macOS shows in your language."
+    "description": "Button under the 'Record security events' switch that opens Finder at the security event log file (or its folder when there's no file yet). 'Finder' is the macOS file manager: use the name macOS shows in your language.",
+    "screenshot": "settings-updates.png"
   },
   "settings.updates.showSecurityLog.keywords": "security, log, audit, events, file, open, reveal, show, folder, location",
   "@settings.updates.showSecurityLog.keywords": {
@@ -3900,15 +3915,18 @@
   },
   "settings.dataWipe.card": "Your data on this Mac",
   "@settings.dataWipe.card": {
-    "description": "Heading of a card in Settings > Updates & privacy that holds the button deleting everything Cmdr has stored on this computer. Sentence case."
+    "description": "Heading of a card in Settings > Updates & privacy that holds the button deleting everything Cmdr has stored on this computer. Sentence case.",
+    "screenshot": "settings-updates.png"
   },
   "settings.dataWipe.description": "Delete everything Cmdr keeps on this Mac: settings, saved passwords, histories, indexes, and downloaded models. Cmdr quits afterwards.",
   "@settings.dataWipe.description": {
-    "description": "Explanation under that heading, beside the delete button. \"Cmdr\" is the app's name; don't translate it."
+    "description": "Explanation under that heading, beside the delete button. \"Cmdr\" is the app's name; don't translate it.",
+    "screenshot": "settings-updates.png"
   },
   "settings.dataWipe.button": "Delete all Cmdr data",
   "@settings.dataWipe.button": {
-    "description": "Button in Settings > Updates & privacy that opens a confirmation dialog about deleting all of the app's data on this computer. VERB phrase, sentence case. \"Cmdr\" is the app's name."
+    "description": "Button in Settings > Updates & privacy that opens a confirmation dialog about deleting all of the app's data on this computer. VERB phrase, sentence case. \"Cmdr\" is the app's name.",
+    "screenshot": "settings-updates.png"
   },
   "settings.updates.deleteAllData.keywords": "delete, erase, remove, wipe, reset, uninstall, privacy, data, forget, gdpr",
   "@settings.updates.deleteAllData.keywords": {

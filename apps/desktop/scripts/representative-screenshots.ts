@@ -330,11 +330,6 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
     note: 'The main window, pictured here. Your string is the header of the creation date column in the file list, which this screenshot doesn’t show.',
   },
   {
-    prefix: 'fileExplorer.list.sortColumnsAriaLabel',
-    screenshot: 'main-window.png',
-    note: 'The main window, pictured here. Your string is never shown: a screen reader speaks it for the row of sortable column headers in the file list.',
-  },
-  {
     prefix: 'fileExplorer.diskSpace.used',
     screenshot: 'main-window.png',
     note: 'The main window, pictured here. Your string is one of the disk space figures Cmdr shows for the drive a file pane is on.',
@@ -366,12 +361,6 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
     prefix: 'indexing.run.',
     screenshot: 'indexing-checklist.png',
     note: 'The drive-indexing checklist, pictured here. Your string is the header naming the kind of run in progress, for a run this screenshot doesn’t show.',
-  },
-  {
-    // Before the `indexing.eta.` family, whose "longer waits" note would mislead here.
-    prefix: 'indexing.eta.almostDoneMidSentence',
-    screenshot: 'indexing-checklist.png',
-    note: 'The drive-indexing checklist, pictured here. Your string is what a time-left phrase in it (like the overall line or the one after the percent) reads in the last seconds, in the middle of that line.',
   },
   {
     prefix: 'indexing.eta.',
@@ -408,11 +397,6 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
     prefix: 'settings.appearance.language.opt.',
     screenshot: 'settings-appearance.png',
     note: 'Settings > Appearance, pictured here. Your string is a choice in its language picker.',
-  },
-  {
-    prefix: 'settings.tint.',
-    screenshot: 'settings-appearance.png',
-    note: 'Settings > Appearance, pictured here. Your string is the name of one color in its tint picker, used as the swatch’s label and the name a screen reader speaks.',
   },
   {
     prefix: 'settings.listing.briefColumnWidthMode.',

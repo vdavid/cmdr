@@ -363,8 +363,7 @@
     "placeholders": {
       "rateText": "the files-per-second rate, already formatted for display (e.g. 0.4 or 1,500)",
       "count": "the same rate as a number (drives the singular/plural form of the noun)"
-    },
-    "screenshot": "toast-transfer-complete.png"
+    }
   },
 
   "fileOperations.shared.andJoin": "{a} and {b}",
@@ -683,7 +682,7 @@
   "fileOperations.transferDialog.policyAskEach": "Ask for each",
   "@fileOperations.transferDialog.policyAskEach": {
     "description": "Radio option: decide per clashing file during the transfer instead of choosing now. Shown when folders will merge but nobody knows yet how many files inside them clash, maybe none, maybe many. Short control label.",
-    "screenshot": "transfer-confirmation-copy.png"
+    "screenshot": "conflict-dialog.png"
   },
   "fileOperations.transferDialog.rememberedOverwriteNote": "{reach, select, smaller {Your saved choice overwrites files already there that are smaller.} older {Your saved choice overwrites files already there that are older.} other {Your saved choice overwrites the files already there.}}",
   "@fileOperations.transferDialog.rememberedOverwriteNote": {
@@ -1051,8 +1050,7 @@
     "placeholders": {
       "policy": "the chosen option, worded exactly as in the copy dialog's choices, like 'Skip', 'Overwrite if older', or 'Ask for each'"
     },
-    "screenshot": "transfer-dialog.png",
-    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.titleDone": "{type, select, copy {{count, plural, =0 {Nothing copied} one {Copied {countText} file} other {Copied {countText} files}}} move {{count, plural, =0 {Nothing moved} one {Moved {countText} file} other {Moved {countText} files}}} delete {{count, plural, =0 {Nothing deleted} one {Deleted {countText} file} other {Deleted {countText} files}}} trash {{count, plural, =0 {Nothing moved to the trash} one {Moved {countText} file to the trash} other {Moved {countText} files to the trash}}} compress {{count, plural, =0 {Nothing compressed} one {Compressed {countText} file} other {Compressed {countText} files}}} other {Done}}",
@@ -1460,7 +1458,8 @@
 
   "fileOperations.lockedSources.title": "Move locked items?",
   "@fileOperations.lockedSources.title": {
-    "description": "Title of a prompt that appears when the user moves files or folders and some of them are Locked (the macOS Finder setting in Get Info that stops a file from being changed, renamed, or deleted), or have permissions that forbid deleting them. A move has to take the original away, which a Locked item refuses, so Cmdr asks before it moves anything. \"Locked\" should match the word the language's macOS Finder uses for that checkbox."
+    "description": "Title of a prompt that appears when the user moves files or folders and some of them are Locked (the macOS Finder setting in Get Info that stops a file from being changed, renamed, or deleted), or have permissions that forbid deleting them. A move has to take the original away, which a Locked item refuses, so Cmdr asks before it moves anything. \"Locked\" should match the word the language's macOS Finder uses for that checkbox.",
+    "screenshot": "locked-sources-one.png"
   },
 
   "fileOperations.lockedSources.message": "{count, plural, one {{countText} item you’re moving is locked. Cmdr can unlock it just for the move and lock it again where it lands.} other {{countText} items you’re moving are locked. Cmdr can unlock them just for the move and lock them again where they land.}}",
@@ -1469,7 +1468,8 @@
     "placeholders": {
       "countText": "how many items are Locked, ready to drop into the sentence (for example 3)",
       "count": "the same number, used only to pick singular or plural"
-    }
+    },
+    "screenshot": "locked-sources-one.png"
   },
 
   "fileOperations.lockedSources.moreItems": "{count, plural, one {and {countText} more} other {and {countText} more}}",
@@ -1478,17 +1478,20 @@
     "placeholders": {
       "countText": "how many more items are Locked beyond the listed names, ready to drop into the sentence (for example 17)",
       "count": "the same number, used only to pick singular or plural"
-    }
+    },
+    "screenshot": "locked-sources-many.png"
   },
 
   "fileOperations.lockedSources.moveAnyway": "Move anyway",
   "@fileOperations.lockedSources.moveAnyway": {
-    "description": "Main button of the fileOperations.lockedSources.title prompt. Moves the Locked items too: Cmdr unlocks each one right before moving it and locks it again in its new place. Short button label; a verb phrase."
+    "description": "Main button of the fileOperations.lockedSources.title prompt. Moves the Locked items too: Cmdr unlocks each one right before moving it and locks it again in its new place. Short button label; a verb phrase.",
+    "screenshot": "locked-sources-one.png"
   },
 
   "fileOperations.lockedSources.skip": "Skip locked items",
   "@fileOperations.lockedSources.skip": {
-    "description": "Second button of the fileOperations.lockedSources.title prompt. Leaves the Locked items exactly where they are, still Locked, and moves everything else. Its neighbours are \"Move anyway\" and a plain Cancel, which stops the whole move. Short button label; a verb phrase."
+    "description": "Second button of the fileOperations.lockedSources.title prompt. Leaves the Locked items exactly where they are, still Locked, and moves everything else. Its neighbours are \"Move anyway\" and a plain Cancel, which stops the whole move. Short button label; a verb phrase.",
+    "screenshot": "locked-sources-one.png"
   },
 
   "fileOperations.lockedSources.heldToast": "A move has a question for you about locked items. You’ll see it as soon as the open dialog closes.",
@@ -2165,12 +2168,14 @@
 
   "fileOperations.resticPassword.title": "Unlock this backup",
   "@fileOperations.resticPassword.title": {
-    "description": "Title of the dialog that asks for a restic backup repository’s password. Shown when someone opens the repo’s snapshots, or copies files out of one, and Cmdr doesn’t know the password yet. Short heading. \"backup\" = a restic backup repository, a folder holding someone’s backups."
+    "description": "Title of the dialog that asks for a restic backup repository’s password. Shown when someone opens the repo’s snapshots, or copies files out of one, and Cmdr doesn’t know the password yet. Short heading. \"backup\" = a restic backup repository, a folder holding someone’s backups.",
+    "screenshot": "archive-password-repo-first-attempt.png"
   },
 
   "fileOperations.resticPassword.retryTitle": "That didn’t work",
   "@fileOperations.resticPassword.retryTitle": {
-    "description": "Title of the backup-password dialog when the password just entered (or the one saved in the Keychain) didn’t open the backup, so the user is asked again. Friendly and light, not scolding. Avoid the words \"error\" and \"failed\". Short heading."
+    "description": "Title of the backup-password dialog when the password just entered (or the one saved in the Keychain) didn’t open the backup, so the user is asked again. Friendly and light, not scolding. Avoid the words \"error\" and \"failed\". Short heading.",
+    "screenshot": "archive-password-repo-wrong-attempt.png"
   },
 
   "fileOperations.resticPassword.message": "<repo>{name}</repo> is a restic backup. Enter its password to browse its snapshots.",
@@ -2178,7 +2183,8 @@
     "description": "Body of the backup-password dialog, shown on every attempt (a wrong password adds a note under the field instead of changing this). Names the backup folder being unlocked. <repo> wraps the folder name, which is styled (bold); keep the tag around the name only. Keep \"restic\" as is: it’s the name of the backup tool. \"snapshots\" = the dated backups inside the repository, one per backup run.",
     "placeholders": {
       "name": "the backup repository’s folder name, e.g. m3-macbook-restic"
-    }
+    },
+    "screenshot": "archive-password-repo-first-attempt.png"
   },
 
   "fileOperations.resticPassword.retryMessage": "That password didn’t unlock <repo>{name}</repo>. Give it another go.",
@@ -2186,27 +2192,32 @@
     "description": "Short note right under the password field of the backup-password dialog after a password didn’t open the backup, asking the user to try again. Shown in red and read out by screen readers; the field above keeps the password, selected, so typing replaces it. Friendly and encouraging, not scolding. Avoid the words \"error\" and \"failed\". <repo> wraps the backup folder name, which is styled (bold); keep the tag around the name only.",
     "placeholders": {
       "name": "the backup repository’s folder name, e.g. m3-macbook-restic"
-    }
+    },
+    "screenshot": "archive-password-repo-wrong-attempt.png"
   },
 
   "fileOperations.resticPassword.inputAria": "Backup password",
   "@fileOperations.resticPassword.inputAria": {
-    "description": "Accessible label for the masked password input in the backup-password dialog (there is no visible label next to the field). Short."
+    "description": "Accessible label for the masked password input in the backup-password dialog (there is no visible label next to the field). Short.",
+    "screenshot": "archive-password-repo-first-attempt.png"
   },
 
   "fileOperations.resticPassword.remember": "Remember in Keychain",
   "@fileOperations.resticPassword.remember": {
-    "description": "Checkbox label in the backup-password dialog, checked by default. When checked, Cmdr saves the password in the macOS Keychain so it doesn’t ask again next time. Use the name macOS uses for its password store in your language (Apple calls it \"Keychain\" / \"Keychain Access\")."
+    "description": "Checkbox label in the backup-password dialog, checked by default. When checked, Cmdr saves the password in the macOS Keychain so it doesn’t ask again next time. Use the name macOS uses for its password store in your language (Apple calls it \"Keychain\" / \"Keychain Access\").",
+    "screenshot": "archive-password-repo-first-attempt.png"
   },
 
   "fileOperations.resticPassword.checking": "Checking the password…",
   "@fileOperations.resticPassword.checking": {
-    "description": "Screen-reader label for the small spinner in the backup-password dialog while Cmdr tries the password on the backup (this takes a second or more, longer over a network). Not visible as text."
+    "description": "Screen-reader label for the small spinner in the backup-password dialog while Cmdr tries the password on the backup (this takes a second or more, longer over a network). Not visible as text.",
+    "screenshot": "archive-password-repo-checking.png"
   },
 
   "fileOperations.resticPassword.unreachable": "Cmdr couldn’t check the password just now. Make sure the backup’s drive or server is reachable, then try again.",
   "@fileOperations.resticPassword.unreachable": {
-    "description": "Short note inside the backup-password dialog when Cmdr couldn’t reach the backup to try the password (for example the network drive dropped, or it took too long). The password the user typed stays in the field, since it may be right. Avoid the words \"error\" and \"failed\". Keep \"Cmdr\" as is (the app’s name)."
+    "description": "Short note inside the backup-password dialog when Cmdr couldn’t reach the backup to try the password (for example the network drive dropped, or it took too long). The password the user typed stays in the field, since it may be right. Avoid the words \"error\" and \"failed\". Keep \"Cmdr\" as is (the app’s name).",
+    "screenshot": "archive-password-repo-unreachable.png"
   },
 
   "fileOperations.validation.disallowedChars": "{kind, select, folder {Folder name can’t contain “/” or null characters} other {Filename can’t contain “/” or null characters}}",
