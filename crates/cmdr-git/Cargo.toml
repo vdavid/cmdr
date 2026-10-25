@@ -50,7 +50,7 @@ cmdr-fs = { path = "../cmdr-fs" }
 #   use threads) and both pack caches the rev-walks and tree diffs lean on.
 # - `auto-chain-error`: the default error shape, kept so `FriendlyGitError`'s
 #   wrapped messages don't change.
-gix = { version = "0.89", default-features = false, features = [
+gix = { version = "0.90", default-features = false, features = [
   "sha1",
   "status",
   "revision",
