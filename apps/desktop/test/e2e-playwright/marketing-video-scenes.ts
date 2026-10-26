@@ -108,13 +108,27 @@ export async function chooseBrowseLikeAFolder(page: TauriPage): Promise<void> {
   await pressKey(page, 'Enter')
 }
 
-/** Waits for the focused pane to list `name`. */
-export async function waitForRow(page: TauriPage, name: string): Promise<void> {
+/**
+ * A browser-side predicate over a `.file-entry` element `e`: its name is `name`, or `name`
+ * plus an extension. With `prefix`, any name starting with `name`.
+ *
+ * ❗ Not a bare `startsWith`: leaving `Brand refresh 01` for its parent, a wait for
+ * `Brand refresh` passed at once on the row it was leaving, so the next `nav.parent` fired
+ * in the same millisecond and the take went up two folders (#703).
+ */
+export function rowNamed(name: string, options: { prefix?: boolean } = {}): string {
+  const n = JSON.stringify(name)
+  const text = `(e.querySelector('.col-name')?.textContent ?? e.textContent ?? '').trim()`
+  return options.prefix ? `${text}.startsWith(${n})` : `((t) => t === ${n} || t.startsWith(${n} + '.'))(${text})`
+}
+
+/** Waits for the focused pane to list `name` (see `rowNamed` for what matches). */
+export async function waitForRow(page: TauriPage, name: string, options: { prefix?: boolean } = {}): Promise<void> {
   await expect
     .poll(
       () =>
         page.evaluate<boolean>(`[...document.querySelectorAll('.file-pane.is-focused .file-entry')].some((e) =>
-          (e.querySelector('.col-name')?.textContent ?? e.textContent ?? '').trim().startsWith(${JSON.stringify(name)}))`),
+          ${rowNamed(name, options)})`),
       { timeout: waitBudget(30000), message: `the focused pane never listed '${name}'` },
     )
     .toBe(true)

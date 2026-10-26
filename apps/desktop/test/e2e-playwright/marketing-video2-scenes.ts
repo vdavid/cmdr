@@ -41,6 +41,7 @@ import {
   chooseBrowseLikeAFolder,
   goParent,
   openEntry,
+  rowNamed,
   waitForRow,
   waitForRowCount,
 } from './marketing-video-scenes.js'
@@ -289,7 +290,7 @@ async function s3FromFixture(page: TauriPage): Promise<void> {
     await mcpCall('move_cursor', { pane: 'right', filename: 'Easter' })
     await hold(600)
     await mcpCall('nav_to_path', { pane: 'right', path: `${bucketRoot}/2025/Easter/` })
-    await waitForRowIn(page, 1, 'IMG_')
+    await waitForRowIn(page, 1, 'IMG_', { prefix: true })
     await hold(1500)
     // Downloads, not uploads: an upload into the VersityGW fixture was admitted and then
     // never moved for two minutes (2026-10-23, reported as a possible app bug).
@@ -314,13 +315,18 @@ async function s3FromFixture(page: TauriPage): Promise<void> {
   await dismissAllToasts(page)
 }
 
-/** Waits for pane `index` to list a row starting with `name`. */
-async function waitForRowIn(page: TauriPage, index: 0 | 1, name: string): Promise<void> {
+/** Waits for pane `index` to list `name` (see `rowNamed` for what matches). */
+async function waitForRowIn(
+  page: TauriPage,
+  index: 0 | 1,
+  name: string,
+  options: { prefix?: boolean } = {},
+): Promise<void> {
   await expect
     .poll(
       () =>
         page.evaluate<boolean>(`[...(document.querySelectorAll('.file-pane')[${String(index)}]?.querySelectorAll('.file-entry') ?? [])].some((e) =>
-          (e.querySelector('.col-name')?.textContent ?? e.textContent ?? '').trim().startsWith(${JSON.stringify(name)}))`),
+          ${rowNamed(name, options)})`),
       { timeout: waitBudget(30000) },
     )
     .toBe(true)
@@ -353,7 +359,7 @@ export async function phone(page: TauriPage): Promise<void> {
       await waitForRow(page, 'Camera')
       await hold(800)
       await openEntry(page, 'left', 'Camera')
-      await waitForRow(page, 'PXL_')
+      await waitForRow(page, 'PXL_', { prefix: true })
       take.note("DCIM/Camera: the phone's photos")
       await hold(1500)
       await dispatchMenuCommand(page, 'selection.selectAll')
