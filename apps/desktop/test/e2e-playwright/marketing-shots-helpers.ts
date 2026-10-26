@@ -3,9 +3,9 @@
  *
  * Mirrors `shoot()` in `i18n-capture-helpers.ts` — settle, shoot, verify the PIXELS,
  * retry, fail loudly — and differs in exactly one way: it photographs through
- * `screencapture -l` rather than the Playwright plugin, because the plugin's native
- * capture returns the bare window rect with no macOS shadow, and every marketing
- * master is built on that shadow.
+ * `screencapture -l -o` rather than the Playwright plugin. Both give the window without
+ * its shadow, but only the system shutter gives macOS's own rounded, antialiased corners
+ * on transparency, which every surface the masters feed shows at full size.
  *
  * ❌ Never swap in `page.screenshot()` "just for one shot": a run once wrote 31 blank
  * images with a fully correct DOM and every other gate green. Only the image bytes
@@ -13,12 +13,12 @@
  */
 
 import { spawnSync } from 'node:child_process'
-import { readFileSync, renameSync, rmSync } from 'node:fs'
+import { readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { assessImageContent } from './i18n-capture-png.js'
-import { verifyShadowFrame } from './marketing-shots-frame.js'
-import type { Rect, WindowSize } from './marketing-shots-frame.js'
-import { captureWindow, focusApp, requireWindowId } from './marketing-shots-native.js'
+import { verifyBareFrame, windowOutlineArgs } from './marketing-shots-frame.js'
+import type { Rect, ShotTheme, WindowSize } from './marketing-shots-frame.js'
+import { captureWindow, focusApp, frontmostPid, requireWindowId } from './marketing-shots-native.js'
 
 /** The `evaluate` surface every scoped Playwright page gives us. */
 export interface EvaluatablePage {
@@ -117,18 +117,15 @@ export async function setWindowSize(
  *
  * ❌ Never lossy here. These are the pristine originals every other surface is cut from.
  */
-function writeMaster(stagePath: string, path: string): void {
-  if (!path.endsWith('.webp')) {
-    renameSync(stagePath, path)
-    return
-  }
-  const res = spawnSync('magick', [stagePath, '-define', 'webp:lossless=true', '-define', 'webp:method=6', path], {
-    encoding: 'utf8',
-  })
+function writeMaster(stagePath: string, path: string, theme: ShotTheme): void {
+  // The outline `-o` dropped goes back on here (`windowOutlineArgs` explains it), in the
+  // same lossless pass that writes the file.
+  const format = path.endsWith('.webp')
+    ? ['-define', 'webp:lossless=true', '-define', 'webp:method=6', path]
+    : [`PNG32:${path}`]
+  const res = spawnSync('magick', [stagePath, ...windowOutlineArgs(theme), ...format], { encoding: 'utf8' })
   if (res.error !== undefined || res.status !== 0) {
-    throw new Error(
-      `Converting the shot to WebP failed (\`magick\` from ImageMagick). ${res.stderr || String(res.error)}`,
-    )
+    throw new Error(`Writing the master failed (\`magick\` from ImageMagick). ${res.stderr || String(res.error)}`)
   }
 }
 
@@ -142,18 +139,20 @@ export class ShotRejectedError extends Error {
 
 /**
  * Takes ONE verified master of `label`'s window into `<out>/<filename>`, and returns
- * the window rect inside the canvas.
+ * the window rect inside the capture.
  *
- * Per attempt: bring the app to the front from OUTSIDE (macOS composites and shadows
- * only the key window, and the app cannot claim that itself as a raw binary), let the
- * paint settle, shoot, then judge the BYTES twice — once for content, once for the
- * frame. Three attempts, then a failure that names the cause up front.
+ * Per attempt: bring the app to the front from OUTSIDE (macOS composites only the
+ * frontmost window and draws its traffic lights in colour only while it's key, and the
+ * app cannot claim that itself as a raw binary), let the paint settle, shoot, confirm
+ * the app was still frontmost, then judge the BYTES twice: once for content, once for
+ * the frame. Three attempts, then a failure that names the cause up front.
  */
-export async function shootWithShadow(
+export async function shootWindow(
   page: EvaluatablePage,
   label: string,
   filename: string,
   metrics: WindowMetrics,
+  theme: ShotTheme,
 ): Promise<Rect> {
   const path = join(outputDir(), filename)
   const pid = appPid()
@@ -168,6 +167,12 @@ export async function shootWithShadow(
       await settlePaint(page)
       const windowId = requireWindowId(pid, metrics.logical, label)
       captureWindow(windowId, stagePath)
+      // Without a shadow there's no margin left to prove focus from the pixels, so ask:
+      // a window that lost the front mid-shot has grey traffic lights.
+      if (frontmostPid() !== pid) {
+        reasons.push(`attempt ${String(attempt)}: the window was not focused when it was shot`)
+        continue
+      }
 
       const bytes = readFileSync(stagePath)
       const content = assessImageContent(bytes)
@@ -175,13 +180,13 @@ export async function shootWithShadow(
         reasons.push(`attempt ${String(attempt)}: ${content.reason}`)
         continue
       }
-      const framing = verifyShadowFrame(bytes, metrics.device)
+      const framing = verifyBareFrame(bytes, metrics.device)
       if (!framing.ok) {
         reasons.push(`attempt ${String(attempt)}: ${framing.reason}`)
         continue
       }
 
-      writeMaster(stagePath, path)
+      writeMaster(stagePath, path, theme)
       if (attempt > 1) console.log(`[marketing-shots] ${filename}: usable on attempt ${String(attempt)}`)
       return framing.rect
     } finally {
@@ -191,8 +196,8 @@ export async function shootWithShadow(
 
   throw new ShotRejectedError(
     `Could not get a usable master for \`${filename}\` in ${String(SHOT_ATTEMPTS)} tries. ` +
-      'Quit or hide whatever app is frontmost, leave the machine alone, and re-run: macOS composites and ' +
-      `shadows only the key window. (${reasons.join('; ')})`,
+      'Quit or hide whatever app is frontmost, leave the machine alone, and re-run: macOS composites only the ' +
+      `frontmost window. (${reasons.join('; ')})`,
   )
 }
 

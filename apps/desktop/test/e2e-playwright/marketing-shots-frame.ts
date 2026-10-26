@@ -172,6 +172,115 @@ export function verifyShadowFrame(bytes: Buffer, window: WindowSize): FrameVerdi
 }
 
 /**
+ * Whether `bytes` is a usable SHADOWLESS master (`screencapture -o`): the window alone,
+ * filling a canvas of exactly the staged size, transparent only in its rounded corners.
+ *
+ * A canvas bigger than the window means the shadow came along, which is the one shape
+ * this must never accept, since every consumer now adds its own shadow (or none).
+ */
+export function verifyBareFrame(bytes: Buffer, window: WindowSize): FrameVerdict {
+  const { canvas, rect } = frame(bytes, OPAQUE_ALPHA)
+  if (rect === null) {
+    return {
+      ok: false,
+      reason:
+        'the capture has nothing opaque in it, so no window was photographed. ' +
+        'Quit or hide whatever app is frontmost, leave the machine alone, and re-run.',
+    }
+  }
+  if (canvas.width > window.width || canvas.height > window.height) {
+    return {
+      ok: false,
+      reason:
+        `the canvas is ${String(canvas.width)}x${String(canvas.height)} around a ${String(rect.width)}x` +
+        `${String(rect.height)} window, so the shadow came along. The shutter must pass \`-o\`.`,
+    }
+  }
+  if (rect.x !== 0 || rect.y !== 0 || rect.width !== window.width || rect.height !== window.height) {
+    return {
+      ok: false,
+      reason:
+        `the photographed window is ${String(rect.width)}x${String(rect.height)}, but the app reports ` +
+        `${String(window.width)}x${String(window.height)}. Something resized the window between staging and the shutter.`,
+    }
+  }
+  return { ok: true, rect }
+}
+
+/**
+ * Opacity of the 1 px black outline macOS draws just outside a window, per theme.
+ *
+ * `screencapture -o` drops it along with the shadow (the compositor draws both), and
+ * without it a light window melts into a white page. Measured off the shadowed masters
+ * by taking the shadow's share back out of the outline pixel, `(t - s) / (1 - s)`, on
+ * the left and top edges of both themes, which agreed to within 0.002 (2026-10-26,
+ * macOS 27). Dark mode's outline is near-solid; light mode's is a faint grey.
+ */
+export const WINDOW_OUTLINE_ALPHA = { dark: 0.93, light: 0.21 } as const
+
+export type ShotTheme = keyof typeof WINDOW_OUTLINE_ALPHA
+
+/**
+ * ImageMagick operators that turn a bare `-o` capture (the current image) into one
+ * with the macOS outline restored: pad by 1 px, take the ring the window's own alpha
+ * gains when dilated by 1 px, paint it black at the theme's opacity, and lay the window
+ * back on top. Tracing the window's own alpha is what makes the outline follow the
+ * rounded corners exactly, antialiasing included.
+ */
+export function windowOutlineArgs(theme: ShotTheme): string[] {
+  return [
+    '-bordercolor',
+    'none',
+    '-border',
+    '1',
+    '(',
+    '+clone',
+    '-alpha',
+    'extract',
+    ')',
+    '(',
+    '+clone',
+    '-morphology',
+    'Dilate',
+    'Disk:1',
+    ')',
+    '(',
+    '-clone',
+    '2',
+    '-clone',
+    '1',
+    '-compose',
+    'minus_src',
+    '-composite',
+    '-evaluate',
+    'multiply',
+    String(WINDOW_OUTLINE_ALPHA[theme]),
+    ')',
+    '(',
+    '-clone',
+    '3',
+    '-fill',
+    'black',
+    '-colorize',
+    '100',
+    '-clone',
+    '3',
+    '-alpha',
+    'off',
+    '-compose',
+    'CopyOpacity',
+    '-composite',
+    ')',
+    '-delete',
+    '1-3',
+    '+swap',
+    '-compose',
+    'over',
+    '-composite',
+  ]
+}
+
+/**
  * `rect` pulled in by `inset` device pixels on every side.
  *
  * The hero cutouts use this so the window border and the pane divider stay in the

@@ -12,7 +12,10 @@ import {
   insetRect,
   opaqueBoundingBox,
   pickWindowId,
+  verifyBareFrame,
   verifyShadowFrame,
+  WINDOW_OUTLINE_ALPHA,
+  windowOutlineArgs,
 } from './marketing-shots-frame.js'
 
 /** The committed master, four levels up from `apps/desktop/test/e2e-playwright/`. */
@@ -202,6 +205,57 @@ describe('verifyShadowFrame', () => {
 
     expect(verdict.ok).toBe(false)
     expect(!verdict.ok && verdict.reason).toContain('nothing opaque')
+  })
+})
+
+describe('verifyBareFrame', () => {
+  const window = { width: 240, height: 180 }
+
+  it('accepts a shadowless window filling its canvas, rounded corners and all', () => {
+    const bare = withTransparentCorners(shotWithWindowAt(window, { x: 0, y: 0, ...window }, { haloAlpha: 0 }), window, {
+      x: 0,
+      y: 0,
+      ...window,
+    })
+
+    expect(verifyBareFrame(bare, window)).toEqual({ ok: true, rect: { x: 0, y: 0, ...window } })
+  })
+
+  it('rejects a capture that still carries a shadow', () => {
+    // What `screencapture` gives without `-o`: the window plus transparent margins.
+    const verdict = verifyBareFrame(focusedShotOf(window), window)
+
+    expect(verdict.ok).toBe(false)
+    expect(!verdict.ok && verdict.reason).toContain('shadow')
+  })
+
+  it('rejects a window whose size is not the one the app reports', () => {
+    const shot = shotWithWindowAt({ width: 200, height: 180 }, { x: 0, y: 0, width: 200, height: 180 })
+
+    const verdict = verifyBareFrame(shot, window)
+
+    expect(verdict.ok).toBe(false)
+    expect(!verdict.ok && verdict.reason).toContain('200x180')
+  })
+
+  it('rejects a capture with no window in it at all', () => {
+    const verdict = verifyBareFrame(shotWithWindowAt(window, { x: 0, y: 0, width: 0, height: 0 }), window)
+
+    expect(verdict.ok).toBe(false)
+    expect(!verdict.ok && verdict.reason).toContain('nothing opaque')
+  })
+})
+
+describe('windowOutlineArgs', () => {
+  it('pads the canvas by the outline width and paints the ring at the theme opacity', () => {
+    const args = windowOutlineArgs('dark')
+
+    expect(args).toContain('-border')
+    expect(args.join(' ')).toContain(`-evaluate multiply ${String(WINDOW_OUTLINE_ALPHA.dark)}`)
+  })
+
+  it('draws a lighter outline in light mode, the way macOS does', () => {
+    expect(WINDOW_OUTLINE_ALPHA.light).toBeLessThan(WINDOW_OUTLINE_ALPHA.dark)
   })
 })
 

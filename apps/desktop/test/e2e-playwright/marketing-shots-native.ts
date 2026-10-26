@@ -2,11 +2,10 @@
  * The macOS half of the marketing capture: taking the front position, finding a
  * window's CGWindowID, and working the `screencapture` shutter.
  *
- * Why this exists at all: the Playwright plugin's `native_screenshot` returns the bare
- * window RECT, with no macOS shadow (measured on a committed i18n master: 2160x1440,
- * opaque to the edges, alpha only in the rounded corners). Every marketing master is
- * built on the focused window's shadow, and the website hero's frame layer is mostly
- * that gradient, so the shutter has to be `screencapture -l`.
+ * Why this exists at all: the masters are the window exactly as macOS draws it, minus
+ * the shadow (`-o`), with the system's rounded corners on transparency. Every consumer
+ * adds its own shadow, or none: a baked-in one is invisible on a dark page and only
+ * shrinks the window in a README or a listing.
  *
  * The pure judgement calls live in `marketing-shots-frame.ts`; everything here shells
  * out and is proven by real runs.
@@ -70,8 +69,8 @@ export function listAppWindows(pid: number): NativeWindow[] {
 }
 
 /**
- * Makes `pid`'s app the active one, so macOS composites its window AND draws it the
- * wide key-window shadow.
+ * Makes `pid`'s app the active one, so macOS composites its window AND draws it as the
+ * key window (coloured traffic lights).
  *
  * This is deliberately done from OUTSIDE the app. The app's own
  * `plugin:window|set_focus` cannot take the front position from another app when it
@@ -85,10 +84,24 @@ export function focusApp(pid: number): void {
   ])
 }
 
-/** Photographs window `windowId` (plus its shadow, on transparency) into `path`. */
+/** The unix pid of the frontmost app, as System Events sees it. */
+export function frontmostPid(): number {
+  return Number(
+    runOsascript([
+      '-e',
+      'tell application "System Events" to get unix id of first process whose frontmost is true',
+    ]).trim(),
+  )
+}
+
+/**
+ * Photographs window `windowId` into `path`, WITHOUT its shadow (`-o`): the window
+ * alone, transparent only in its rounded corners. Every consumer adds its own shadow,
+ * or none.
+ */
 export function captureWindow(windowId: number, path: string): void {
   try {
-    execFileSync('screencapture', ['-x', '-t', 'png', '-l', String(windowId), path], {
+    execFileSync('screencapture', ['-x', '-o', '-t', 'png', '-l', String(windowId), path], {
       timeout: NATIVE_TIMEOUT_MS,
     })
   } catch (err) {
@@ -126,8 +139,8 @@ function runOsascript(args: string[], extraEnv: Record<string, string> = {}): st
     throw new Error(
       `\`osascript\` failed: ${messageOf(err)}. ` +
         'If this mentions "not allowed assistive access", grant Accessibility permission to the terminal running ' +
-        'this: the capture asks System Events to bring the app to the front, and macOS draws the wide window ' +
-        'shadow only for the key window.',
+        'this: the capture asks System Events to bring the app to the front, since macOS composites only the ' +
+        'frontmost window and colours the traffic lights only for the key window.',
       { cause: err },
     )
   }

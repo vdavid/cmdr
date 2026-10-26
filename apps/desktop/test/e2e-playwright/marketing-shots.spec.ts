@@ -24,7 +24,16 @@ import { SEARCH_OVERLAY } from './search-helpers.js'
 import { insetRect } from './marketing-shots-frame.js'
 import { indexIsSettled, parsePaneTabs, parsePaneView } from './marketing-shots-state.js'
 import type { Rect } from './marketing-shots-frame.js'
-import { outputDir, setWindowSize, shootWithShadow, shotsDataDir, windowMetrics } from './marketing-shots-helpers.js'
+import {
+  appPid,
+  outputDir,
+  setWindowSize,
+  shootWindow,
+  shotsDataDir,
+  windowMetrics,
+} from './marketing-shots-helpers.js'
+import { focusApp } from './marketing-shots-native.js'
+import { countDownOnceIfAsked } from './capture-countdown-overlay.js'
 import { seedChatThread } from './marketing-shots-thread.js'
 
 /**
@@ -79,7 +88,7 @@ const TEXT_SIZE = Number(process.env.CMDR_SHOTS_TEXT_SIZE ?? '120')
 test.setTimeout(waitBudget(1_200_000))
 
 test.describe('marketing masters', () => {
-  test.skip(process.platform !== 'darwin', 'The masters are macOS window shots: traffic lights and a system shadow.')
+  test.skip(process.platform !== 'darwin', 'The masters are macOS window shots: traffic lights and system corners.')
 
   test.beforeEach(async ({ tauriPage }) => {
     const page = tauriPage as TauriPage
@@ -89,6 +98,14 @@ test.describe('marketing masters', () => {
     await stopVideoRecording(page)
     await page.waitForSelector('.file-pane', 15000)
     await ensureMcpClient(page)
+    // ❗ The index wait FIRST, then the countdown: the reconcile can take five minutes,
+    // and a countdown before it tells David "hands off" five minutes too early (it did).
+    // This is the only index gate; nothing earlier can tell "settled" as reliably.
+    await waitForIndexedSizes(page)
+    // Before the first test drives anything: front Cmdr, then the hands-off countdown.
+    await countDownOnceIfAsked(page, () => {
+      focusApp(appPid())
+    })
   })
 
   test('main window, dark and light', async ({ tauriPage }) => {
@@ -96,7 +113,7 @@ test.describe('marketing masters', () => {
     const metrics = await stageMainWindow(page)
 
     await setTheme(page, 'dark')
-    await shootWithShadow(page, 'main', 'app-main-dark.webp', metrics)
+    await shootWindow(page, 'main', 'app-main-dark.webp', metrics, 'dark')
 
     // Measure the hero cutouts from the SAME staged window that was just photographed.
     // Measuring separately is exactly how the committed rectangles drifted a redesign
@@ -104,7 +121,7 @@ test.describe('marketing masters', () => {
     const [left, right] = await measurePaneCutouts(page, metrics.scale)
 
     await setTheme(page, 'light')
-    await shootWithShadow(page, 'main', 'app-main-light.webp', metrics)
+    await shootWindow(page, 'main', 'app-main-light.webp', metrics, 'light')
 
     writeFileSync(
       join(outputDir(), 'hero-cutouts.json'),
@@ -133,7 +150,7 @@ test.describe('marketing masters', () => {
 
     for (const mode of ['dark', 'light'] as const) {
       await setTheme(page, mode)
-      await shootWithShadow(page, 'main', `search-${mode}.webp`, metrics)
+      await shootWindow(page, 'main', `search-${mode}.webp`, metrics, mode)
     }
 
     await dismissSearch()
@@ -157,7 +174,7 @@ test.describe('marketing masters', () => {
 
     for (const mode of ['dark', 'light'] as const) {
       await setTheme(page, mode)
-      await shootWithShadow(page, 'main', `chat-${mode}.webp`, metrics)
+      await shootWindow(page, 'main', `chat-${mode}.webp`, metrics, mode)
     }
 
     await closeRail(page)
@@ -181,7 +198,7 @@ test.describe('marketing masters', () => {
 
     for (const mode of ['dark', 'light'] as const) {
       await setTheme(page, mode)
-      await shootWithShadow(settings, 'settings', `settings-${mode}.webp`, metrics)
+      await shootWindow(settings, 'settings', `settings-${mode}.webp`, metrics, mode)
     }
 
     await page.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:window|close', { label: 'settings' })`)
