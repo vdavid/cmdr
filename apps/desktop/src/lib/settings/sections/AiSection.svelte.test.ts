@@ -56,10 +56,8 @@ vi.mock('#lib/tauri-commands/index.js', async (importOriginal) => ({
   stopAiServer: vi.fn(() => Promise.resolve()),
   checkAiConnection: vi.fn(() =>
     Promise.resolve({
-      connected: false,
-      authError: false,
       models: [],
-      error: null,
+      problem: { kind: 'unreachable' as const },
       cloudConsentMissing: false,
       managed: null,
     }),

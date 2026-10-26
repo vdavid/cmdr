@@ -27,8 +27,10 @@ controls), `preset-hosts.svelte.ts` (which presets the organization refuses). Pr
   steps and in what order; this file says what they read.
 - **The key never comes back from the backend**, so the field starts empty behind a "your key is saved" placeholder and
   `keyIsSet` (from `getAiApiKeyStatus`) drives the gate. `docs/security.md` § "AI API keys".
-- **Every async answer is compared against `providerId` before it lands.** A keychain read or a check for a provider the
-  user already clicked away from is dropped, ❌ never rendered against the new one.
+- **Every async answer is compared against `providerId` before it lands**, and a check also against `#checkSeq`, so only
+  the LATEST check for the same provider lands (an endpoint edit or Recheck mid-check). ❌ Never render a stale answer.
+- **The backend sends a typed `problem`, never a sentence.** Each surface words every kind with its own key;
+  `providerRefused`'s `detail` is the provider's own text, shown as a secondary line. DETAILS § Connection problems.
 - **The organization's policy is asked, ❌ never derived**: the controller asks `cloud_ai_host_verdicts` before every
   check, and a refusal is `status: 'managed'`, never a connection problem. DETAILS § The organization's policy.
 - **The connection status is NOT rendered here.** Each surface owns that block (the wizard a quiet line, Settings a row

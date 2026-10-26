@@ -6,23 +6,22 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick, unmount, flushSync } from 'svelte'
-import type { ManagedAiRefusal } from '#lib/ipc/bindings.js'
+import type { AiConnectionCheckResult, ManagedAiRefusal } from '#lib/ipc/bindings.js'
 import CloudProviderSetup from './CloudProviderSetup.svelte'
 
-const checkAiConnection = vi.fn<
-  (payload: { baseUrl: string; providerId: string }) => Promise<{
-    connected: boolean
-    authError: boolean
-    models: string[]
-    error: string | null
-  }>
->(() =>
-  Promise.resolve({
-    connected: true,
-    authError: false,
+/** A check answer: connected with two models unless the overrides say otherwise. */
+function checkResult(overrides: Partial<AiConnectionCheckResult>): AiConnectionCheckResult {
+  return {
     models: ['gpt-4.1-mini', 'gpt-4o-mini'],
-    error: null,
-  }),
+    problem: null,
+    cloudConsentMissing: false,
+    managed: null,
+    ...overrides,
+  }
+}
+
+const checkAiConnection = vi.fn<(payload: { baseUrl: string; providerId: string }) => Promise<AiConnectionCheckResult>>(
+  () => Promise.resolve(checkResult({})),
 )
 const saveAiApiKey = vi.fn<(payload: { providerId: string; apiKey: string }) => Promise<null>>(() =>
   Promise.resolve(null),
@@ -98,12 +97,7 @@ describe('CloudProviderSetup', () => {
   beforeEach(() => {
     resetSettings()
     checkAiConnection.mockClear()
-    checkAiConnection.mockResolvedValue({
-      connected: true,
-      authError: false,
-      models: ['gpt-4.1-mini', 'gpt-4o-mini'],
-      error: null,
-    })
+    checkAiConnection.mockResolvedValue(checkResult({}))
     saveAiApiKey.mockReset()
     saveAiApiKey.mockResolvedValue(null)
     getAiApiKeyStatus.mockReset()
@@ -247,22 +241,23 @@ describe('CloudProviderSetup', () => {
     expect(checkAiConnection).toHaveBeenCalled()
   })
 
-  it('an auth-error connection result is shown as a status message', async () => {
-    checkAiConnection.mockResolvedValue({
-      connected: false,
-      authError: true,
-      models: [],
-      error: 'Invalid key',
-    })
+  /** Types `apiKey` into the key field and waits out the save and check debounces. */
+  async function typeKeyAndWait(apiKey: string): Promise<HTMLElement> {
     mountSetup('openai')
     await settle()
     if (!mounted) throw new Error('not mounted')
     const keyInput = mounted.target.querySelector<HTMLInputElement>('input[aria-label="API key"]')
     if (!keyInput) throw new Error('API key input missing')
-    keyInput.value = 'sk-bad'
+    keyInput.value = apiKey
     keyInput.dispatchEvent(new Event('input', { bubbles: true }))
     await advanceTimers(1500)
-    expect(mounted.target.textContent).toContain('Invalid key')
+    return mounted.target
+  }
+
+  it('a rejected key reads as its own translated line', async () => {
+    checkAiConnection.mockResolvedValue(checkResult({ problem: { kind: 'keyRejected' } }))
+    const target = await typeKeyAndWait('sk-bad')
+    expect(target.textContent).toContain('That key didn’t work')
   })
 
   it("says the organization doesn't allow a refused service, and never probes it", async () => {
@@ -274,74 +269,41 @@ describe('CloudProviderSetup', () => {
     expect(checkAiConnection).not.toHaveBeenCalled()
   })
 
-  it('a connection-error result surfaces the error text', async () => {
-    checkAiConnection.mockResolvedValue({
-      connected: false,
-      authError: false,
-      models: [],
-      error: 'Service unreachable',
-    })
-    mountSetup('openai')
-    await settle()
-    if (!mounted) throw new Error('not mounted')
-    const keyInput = mounted.target.querySelector<HTMLInputElement>('input[aria-label="API key"]')
-    if (!keyInput) throw new Error('API key input missing')
-    keyInput.value = 'sk-down'
-    keyInput.dispatchEvent(new Event('input', { bubbles: true }))
-    await advanceTimers(1500)
-    expect(mounted.target.textContent).toContain('Service unreachable')
+  it('an unreachable service reads as the connection line', async () => {
+    checkAiConnection.mockResolvedValue(checkResult({ problem: { kind: 'unreachable' } }))
+    const target = await typeKeyAndWait('sk-down')
+    expect(target.textContent).toContain('Can’t reach the service right now')
   })
 
-  it('a thrown checkAiConnection becomes a generic "Something went wrong" status', async () => {
+  it('an insecure endpoint tells the user to use https://', async () => {
+    checkAiConnection.mockResolvedValue(checkResult({ problem: { kind: 'insecureEndpoint' } }))
+    const target = await typeKeyAndWait('sk-http')
+    expect(target.textContent).toContain('use an address starting with https://')
+  })
+
+  it("a provider's refusal shows a translated lead line plus the provider's own sentence", async () => {
+    checkAiConnection.mockResolvedValue(
+      checkResult({ problem: { kind: 'providerRefused', status: 429, detail: 'Quota exceeded for this project.' } }),
+    )
+    const target = await typeKeyAndWait('sk-quota')
+    expect(target.textContent).toContain('The service turned the request down (code 429).')
+    expect(target.querySelector('.status-detail')?.textContent).toBe('Quota exceeded for this project.')
+  })
+
+  it('a thrown checkAiConnection becomes a generic "Something went wrong" status, never the raw message', async () => {
     checkAiConnection.mockRejectedValue(new Error('boom'))
-    mountSetup('openai')
-    await settle()
-    if (!mounted) throw new Error('not mounted')
-    const keyInput = mounted.target.querySelector<HTMLInputElement>('input[aria-label="API key"]')
-    if (!keyInput) throw new Error('API key input missing')
-    keyInput.value = 'sk-throws'
-    keyInput.dispatchEvent(new Event('input', { bubbles: true }))
-    await advanceTimers(1500)
-    expect(mounted.target.textContent).toContain('boom')
+    const target = await typeKeyAndWait('sk-throws')
+    expect(target.textContent).toContain('Something went wrong')
+    expect(target.textContent).not.toContain('boom')
   })
 
   it('a "connected" result with no models still flips the API-key check; the model field stays usable', async () => {
-    checkAiConnection.mockResolvedValue({
-      connected: true,
-      authError: false,
-      models: [],
-      error: null,
-    })
-    mountSetup('openai')
-    await settle()
-    if (!mounted) throw new Error('not mounted')
-    const keyInput = mounted.target.querySelector<HTMLInputElement>('input[aria-label="API key"]')
-    if (!keyInput) throw new Error('API key input missing')
-    keyInput.value = 'sk-no-models'
-    keyInput.dispatchEvent(new Event('input', { bubbles: true }))
-    await advanceTimers(1500)
-    expect(mounted.target.textContent).toContain('Connected!')
+    checkAiConnection.mockResolvedValue(checkResult({ models: [] }))
+    const target = await typeKeyAndWait('sk-no-models')
+    expect(target.textContent).toContain('Connected!')
     // The model field is always the combobox now (never morphs): it stays present even with no
     // suggestions, so the user can still type a custom model.
-    expect(mounted.target.querySelector('input[aria-label="Model"]')).not.toBeNull()
-  })
-
-  it('an explicit `error` payload with connected=true is treated as an error', async () => {
-    checkAiConnection.mockResolvedValue({
-      connected: true,
-      authError: false,
-      models: ['model-1'],
-      error: 'partial-failure',
-    })
-    mountSetup('openai')
-    await settle()
-    if (!mounted) throw new Error('not mounted')
-    const keyInput = mounted.target.querySelector<HTMLInputElement>('input[aria-label="API key"]')
-    if (!keyInput) throw new Error('API key input missing')
-    keyInput.value = 'sk-warn'
-    keyInput.dispatchEvent(new Event('input', { bubbles: true }))
-    await advanceTimers(1500)
-    expect(mounted.target.textContent).toContain('partial-failure')
+    expect(target.querySelector('input[aria-label="Model"]')).not.toBeNull()
   })
 
   it('clicking a sign-up link calls openExternalUrl', async () => {

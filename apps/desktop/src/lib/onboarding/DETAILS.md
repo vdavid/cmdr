@@ -378,8 +378,8 @@ A failed keychain read logs and returns `false`: a wizard the user can't leave i
 
 The steps, the key persist, and the connection check all belong to `#lib/ai-provider-setup/`, shared with Settings › AI
 › Provider; `apps/desktop/src/lib/ai-provider-setup/DETAILS.md` owns the mechanism. `CloudProviderSetup.svelte` is the
-wizard's frame around it: the provider header, and a quiet status line reading `controller.status` / `controller.error`
-(Settings renders the same states as a row with recheck buttons).
+wizard's frame around it: the provider header, and a quiet status line reading `controller.status` /
+`controller.problem` (Settings renders the same states as a row with recheck buttons).
 
 The one rule that's the wizard's own: it never disables advance based on connection status. The auto-check is purely
 informational, so a user who wants to fetch their key later isn't trapped on step 2.

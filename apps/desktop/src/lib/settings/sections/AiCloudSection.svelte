@@ -6,7 +6,10 @@
     import Select, { type SelectItem } from '#lib/ui/Select.svelte'
     import SectionCard from '#lib/ui/SectionCard.svelte'
     import ProviderSetupSteps from '#lib/ai-provider-setup/ProviderSetupSteps.svelte'
-    import { ProviderSetupController } from '#lib/ai-provider-setup/provider-setup.svelte.js'
+    import {
+        ProviderSetupController,
+        type ConnectionProblem,
+    } from '#lib/ai-provider-setup/provider-setup.svelte.js'
     import { followPresetHostVerdicts } from '#lib/ai-provider-setup/preset-hosts.svelte.js'
     import { managedAiRefusalMessage } from '#lib/managed-policy/ai-refusal.js'
     import { getSetting, setSetting, onSpecificSettingChange, cloudProviderPresets } from '#lib/settings/index.js'
@@ -105,6 +108,26 @@
         }
     })
 
+    /** One line per problem kind, each a literal key so the i18n checks can see it. */
+    function problemMessage(problem: ConnectionProblem): string {
+        switch (problem.kind) {
+            case 'keyRejected':
+                return tString('ai.cloud.authError')
+            case 'unreachable':
+                return tString('ai.cloud.connectionError')
+            case 'timedOut':
+                return tString('ai.cloud.timedOut')
+            case 'invalidEndpoint':
+                return tString('ai.cloud.invalidEndpoint')
+            case 'insecureEndpoint':
+                return tString('ai.cloud.insecureEndpoint')
+            case 'providerRefused':
+                return tString('ai.cloud.providerRefused', { status: String(problem.status) })
+            case 'checkUnavailable':
+                return tString('ai.cloud.genericError')
+        }
+    }
+
     // A service the organization refuses stays listed, disabled, with the reason beside it.
     const presetHosts = followPresetHostVerdicts()
     const providerSelectItems = $derived<SelectItem[]>(
@@ -195,28 +218,16 @@
             <span class="connection-status-text">{tString('ai.cloud.connectedNoModels')}</span>
             <Button size="mini" onclick={() => { controller.checkNow(); }}>{tString('ai.cloud.recheck')}</Button>
         </div>
-    {:else if controller.status === 'auth-error'}
-        <div class="connection-status">
+    {:else if controller.problem}
+        <div class="connection-status connection-problem">
             <span class="connection-status-icon connection-status-error">&#x2717;</span>
-            <span class="connection-status-text connection-status-error-text"
-                >{controller.error ?? tString('ai.cloud.authError')}</span
-            >
-            <Button size="mini" onclick={() => { controller.checkNow(); }}>{tString('ai.cloud.recheck')}</Button>
-        </div>
-    {:else if controller.status === 'connection-error'}
-        <div class="connection-status">
-            <span class="connection-status-icon connection-status-error">&#x2717;</span>
-            <span class="connection-status-text connection-status-error-text"
-                >{controller.error ?? tString('ai.cloud.connectionError')}</span
-            >
-            <Button size="mini" onclick={() => { controller.checkNow(); }}>{tString('ai.cloud.recheck')}</Button>
-        </div>
-    {:else if controller.status === 'error'}
-        <div class="connection-status">
-            <span class="connection-status-icon connection-status-error">&#x2717;</span>
-            <span class="connection-status-text connection-status-error-text"
-                >{controller.error ?? tString('ai.cloud.genericError')}</span
-            >
+            <span class="problem-text">
+                <span class="connection-status-error-text">{problemMessage(controller.problem)}</span>
+                {#if controller.problem.kind === 'providerRefused' && controller.problem.detail}
+                    <!-- The provider's own sentence, untranslated: worth seeing, but secondary. -->
+                    <span class="problem-detail">{controller.problem.detail}</span>
+                {/if}
+            </span>
             <Button size="mini" onclick={() => { controller.checkNow(); }}>{tString('ai.cloud.recheck')}</Button>
         </div>
     {:else if controller.status === 'idle' && controller.hasCheckableConfig}
@@ -292,6 +303,25 @@
 
     .connection-status-text {
         color: var(--color-text-secondary);
+    }
+
+    /* A two-line problem (lead line plus the provider's own detail) keeps the icon and the
+       Recheck button on its first line. */
+    .connection-problem {
+        align-items: flex-start;
+    }
+
+    .problem-text {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xxs);
+        min-width: 0;
+    }
+
+    .problem-detail {
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-xs);
+        overflow-wrap: anywhere;
     }
 
     .secret-error {

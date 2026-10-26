@@ -433,5 +433,17 @@ describe('onboarding cloud provider picker/setup parity (en)', () => {
     expect(tString('onboarding.cloudSetup.status.connectionError')).toBe('Can’t reach the service right now')
     expect(tString('onboarding.cloudSetup.status.genericError')).toBe('Something went wrong')
     expect(tString('onboarding.cloudSetup.status.connected')).toBe('Connected!')
+    expect(tString('onboarding.cloudSetup.status.timedOut')).toBe(
+      'The service is taking too long to answer. Try again in a moment.',
+    )
+    expect(tString('onboarding.cloudSetup.status.invalidEndpoint')).toBe(
+      'That address doesn’t look right. It should start with https://.',
+    )
+    expect(tString('onboarding.cloudSetup.status.insecureEndpoint')).toBe(
+      'Your key only travels over a secure connection, so use an address starting with https://.',
+    )
+    expect(tString('onboarding.cloudSetup.status.providerRefused', { status: '429' })).toBe(
+      'The service turned the request down (code 429).',
+    )
   })
 })

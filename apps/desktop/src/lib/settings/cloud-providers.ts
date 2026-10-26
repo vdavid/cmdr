@@ -21,7 +21,6 @@ export interface CloudProviderPreset {
   baseUrl: string
   defaultModel: string
   requiresApiKey: boolean
-  supportsModelList: boolean
   /** How the setup steps guide the user to this provider. Required: see `ProviderSetup`. */
   setup: ProviderSetup
   description: string
@@ -42,7 +41,6 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
     baseUrl: 'https://api.openai.com/v1',
     defaultModel: 'gpt-4.1-mini',
     requiresApiKey: true,
-    supportsModelList: true,
     setup: {
       kind: 'cloud',
       signupUrl: 'https://platform.openai.com/signup',
@@ -57,7 +55,6 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
     // The current Sonnet (`GET /v1/models`, 2026-10-26). `claude-sonnet-4-5` retires 2026-11-30.
     defaultModel: 'claude-sonnet-5-5',
     requiresApiKey: true,
-    supportsModelList: true,
     setup: {
       kind: 'cloud',
       signupUrl: 'https://platform.claude.com/login',
@@ -68,10 +65,12 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
   {
     id: 'google-gemini',
     name: 'Google Gemini',
-    baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/',
-    defaultModel: 'gemini-2.5-flash',
+    // Gemini's native API (bare `gemini-*` ids route to genai's native adapter, which needs the
+    // `v1/` base; the old `v1beta/openai/` base 404'd on every chat). `gemini-2.5-flash` answers
+    // 404 "no longer available to new users", naming `gemini-3.8-flash` (verified live, 2026-10-26).
+    baseUrl: 'https://generativelanguage.googleapis.com/v1/',
+    defaultModel: 'gemini-3.8-flash',
     requiresApiKey: true,
-    supportsModelList: true,
     setup: {
       kind: 'cloud',
       signupUrl: 'https://aistudio.google.com/',
@@ -87,7 +86,6 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
     // this is its named replacement for the 70B, and a current production model.
     defaultModel: 'openai/gpt-oss-120b',
     requiresApiKey: true,
-    supportsModelList: true,
     setup: {
       kind: 'cloud',
       signupUrl: 'https://console.groq.com/login',
@@ -101,7 +99,6 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
     baseUrl: 'https://api.together.xyz/v1',
     defaultModel: 'meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8',
     requiresApiKey: true,
-    supportsModelList: true,
     setup: {
       kind: 'cloud',
       signupUrl: 'https://api.together.xyz/',
@@ -117,7 +114,6 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
     // 2026-09-04 against `GET /inference/v1/models`).
     defaultModel: 'accounts/fireworks/models/glm-5p3',
     requiresApiKey: true,
-    supportsModelList: true,
     setup: {
       kind: 'cloud',
       signupUrl: 'https://app.fireworks.ai/login',
@@ -131,7 +127,6 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
     baseUrl: 'https://api.mistral.ai/v1',
     defaultModel: 'mistral-small-latest',
     requiresApiKey: true,
-    supportsModelList: true,
     setup: {
       kind: 'cloud',
       signupUrl: 'https://console.mistral.ai/',
@@ -145,7 +140,6 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
     baseUrl: 'https://openrouter.ai/api/v1',
     defaultModel: 'openai/gpt-4.1-mini',
     requiresApiKey: true,
-    supportsModelList: true,
     setup: {
       kind: 'cloud',
       signupUrl: 'https://openrouter.ai/',
@@ -159,7 +153,6 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
     baseUrl: 'https://api.deepseek.com/v1',
     defaultModel: 'deepseek-chat',
     requiresApiKey: true,
-    supportsModelList: true,
     setup: {
       kind: 'cloud',
       signupUrl: 'https://platform.deepseek.com/',
@@ -173,7 +166,6 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
     baseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
     defaultModel: 'qwen-plus',
     requiresApiKey: true,
-    supportsModelList: true,
     // A Model Studio key is bound to the region it was created in, and `dashscope-intl`
     // above is the Singapore (ap-southeast-1) endpoint, so the key page has to be the
     // ap-southeast-1 one. Alibaba's own "How to obtain an API key" page names this exact
@@ -191,7 +183,6 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
     baseUrl: 'https://api.x.ai/v1',
     defaultModel: 'grok-3-mini-fast',
     requiresApiKey: true,
-    supportsModelList: true,
     // Both are the links xAI's own quickstart hands out (docs.x.ai/developers/quickstart,
     // read 2026-09-09), minus its utm parameters. The console scopes keys under a team,
     // which is why the key page carries a team segment.
@@ -208,7 +199,6 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
     baseUrl: 'https://api.perplexity.ai',
     defaultModel: 'sonar',
     requiresApiKey: true,
-    supportsModelList: false,
     // The API console is a separate site from perplexity.ai itself; the key page is the one
     // docs.perplexity.ai's quickstart links (read 2026-09-09).
     setup: {
@@ -224,7 +214,6 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
     baseUrl: 'https://{resource-name}.openai.azure.com/openai/v1',
     defaultModel: 'gpt-4.1-mini',
     requiresApiKey: true,
-    supportsModelList: true,
     // The endpoint above is Azure's v1 API, which needs no `api-version` parameter and takes
     // the same `Authorization: Bearer <key>` every other preset uses, so Cmdr's plain
     // OpenAI-compatible client reaches it unchanged. The catch is the model field: on Azure
@@ -243,7 +232,6 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
     baseUrl: 'http://localhost:11434/v1',
     defaultModel: 'llama3.2',
     requiresApiKey: false,
-    supportsModelList: true,
     setup: {
       kind: 'local',
       downloadUrl: 'https://ollama.com/download',
@@ -257,7 +245,6 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
     baseUrl: 'http://localhost:1234/v1',
     defaultModel: 'loaded-model',
     requiresApiKey: false,
-    supportsModelList: true,
     setup: {
       kind: 'local',
       downloadUrl: 'https://lmstudio.ai/',
@@ -271,7 +258,6 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
     baseUrl: '',
     defaultModel: '',
     requiresApiKey: true,
-    supportsModelList: true,
     setup: { kind: 'byoEndpoint' },
     description: 'Any OpenAI-compatible API endpoint.',
   },

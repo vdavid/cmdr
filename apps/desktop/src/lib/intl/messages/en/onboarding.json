@@ -815,19 +815,46 @@
   },
   "onboarding.cloudSetup.status.authError": "That key didn’t work",
   "@onboarding.cloudSetup.status.authError": {
-    "description": "Fallback status when the API key was rejected by the provider (used when the provider gives no specific message). Gentle, non-blaming. Avoid the words \"error\" or \"failed\".",
+    "description": "Status when the AI provider rejected the API key (it answered that the key is wrong or not allowed). Gentle, non-blaming. Avoid the words \"error\" or \"failed\".",
     "screenshot": "onboarding-ai.png",
     "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
   "onboarding.cloudSetup.status.connectionError": "Can’t reach the service right now",
   "@onboarding.cloudSetup.status.connectionError": {
-    "description": "Fallback status when the app can't connect to the provider's service (used when the provider gives no specific message). Implies a temporary network problem. Avoid the words \"error\" or \"failed\".",
+    "description": "Status when the app can't reach the provider's service at all (no network, unknown address, refused connection, or a secure-connection problem). Implies a temporary network problem. Avoid the words \"error\" or \"failed\".",
     "screenshot": "onboarding-ai.png",
     "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
   "onboarding.cloudSetup.status.genericError": "Something went wrong",
   "@onboarding.cloudSetup.status.genericError": {
-    "description": "Generic fallback status for an unexpected problem checking the key (used when there's no specific message). Avoid the words \"error\" or \"failed\".",
+    "description": "Status when the app couldn't run the key check at all, for a reason it can't name. Avoid the words \"error\" or \"failed\".",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
+  },
+  "onboarding.cloudSetup.status.timedOut": "The service is taking too long to answer. Try again in a moment.",
+  "@onboarding.cloudSetup.status.timedOut": {
+    "description": "Status when the AI provider didn't answer the key check within about 10 seconds. Avoid the words \"error\" or \"failed\".",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
+  },
+  "onboarding.cloudSetup.status.invalidEndpoint": "That address doesn’t look right. It should start with https://.",
+  "@onboarding.cloudSetup.status.invalidEndpoint": {
+    "description": "Status when the endpoint address the user typed for a custom AI service isn't a web address at all. Keep \"https://\" verbatim. Avoid the words \"error\" or \"failed\".",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
+  },
+  "onboarding.cloudSetup.status.insecureEndpoint": "Your key only travels over a secure connection, so use an address starting with https://.",
+  "@onboarding.cloudSetup.status.insecureEndpoint": {
+    "description": "Status when the endpoint address starts with plain \"http://\" to a remote server while an API key is set. The app won't send the key unencrypted, so the user must switch the address to \"https://\" (keep it verbatim). Avoid the words \"error\" or \"failed\".",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
+  },
+  "onboarding.cloudSetup.status.providerRefused": "The service turned the request down (code {status}).",
+  "@onboarding.cloudSetup.status.providerRefused": {
+    "description": "Status when the AI provider answered the key check with a refusal other than a wrong key (for example a bad request or a quota limit). The provider's own explanation, in its own language (usually English), shows on a smaller line underneath. Avoid the words \"error\" or \"failed\".",
+    "placeholders": {
+      "status": "the HTTP status code the service answered with, like 400 or 429 (a number, not translated)"
+    },
     "screenshot": "onboarding-ai.png",
     "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },

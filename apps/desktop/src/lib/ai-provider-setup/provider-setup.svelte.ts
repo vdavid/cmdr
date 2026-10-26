@@ -20,12 +20,11 @@ import {
   getAiApiKeyStatus,
   saveAiApiKey,
 } from '#lib/tauri-commands/index.js'
-import type { ManagedAiRefusal } from '#lib/ipc/bindings.js'
+import type { AiConnectionProblem, ManagedAiRefusal } from '#lib/ipc/bindings.js'
 import { computeModelCacheKey, getCachedModels, setCachedModels } from '#lib/settings/ai-model-cache.js'
 import { describeSecretError, type SecretErrorMessage } from '#lib/settings/sections/ai-secret-error.js'
 import { isE2eRun } from '#lib/app-mode.js'
 import { getAppLogger } from '#lib/logging/logger.js'
-import { tString } from '#lib/intl/messages.svelte.js'
 import { providerHasEditableEndpoint } from './provider-setup-plan'
 
 export type ConnectionStatus =
@@ -38,6 +37,29 @@ export type ConnectionStatus =
   | 'error'
   // The organization's policy refuses this endpoint (`managedRefusal` says which rule); nothing was sent.
   | 'managed'
+
+/**
+ * Why the last check didn't connect, for the surface to word in its own translated copy.
+ * The backend's typed problems, plus `checkUnavailable` for when the IPC call itself threw
+ * (no answer from the backend at all, so there's nothing more specific to say).
+ */
+export type ConnectionProblem = AiConnectionProblem | { kind: 'checkUnavailable' }
+
+/** The coarse status each problem kind reads as. `ConnectionStatus` stays the one gate the surfaces branch on. */
+function statusForProblem(problem: ConnectionProblem): ConnectionStatus {
+  switch (problem.kind) {
+    case 'keyRejected':
+      return 'auth-error'
+    case 'invalidEndpoint':
+    case 'insecureEndpoint':
+    case 'unreachable':
+    case 'timedOut':
+      return 'connection-error'
+    case 'providerRefused':
+    case 'checkUnavailable':
+      return 'error'
+  }
+}
 
 export interface ProviderSetupOptions {
   /** Logger scope, so a warning says which surface it came from. */
@@ -92,7 +114,7 @@ export class ProviderSetupController {
   #baseUrl = $state('')
 
   #status = $state<ConnectionStatus>('idle')
-  #error = $state<string | null>(null)
+  #problem = $state<ConnectionProblem | null>(null)
   #models = $state<string[]>([])
   #managedRefusal = $state<ManagedAiRefusal | null>(null)
   #secretError = $state<SecretErrorMessage | null>(null)
@@ -102,6 +124,13 @@ export class ProviderSetupController {
   /** Captured at schedule time, so switching provider mid-typing still flushes the
    *  trailing keystrokes against the keychain entry they were typed for. */
   #pendingApiKeySave: { providerId: string; value: string } | null = null
+  /**
+   * Bumped by every check and every reset; a check lands only while it still holds the
+   * latest number. The `providerId` guard alone can't tell two checks for the SAME provider
+   * apart: on Custom or Azure, an endpoint edit or a Recheck during a slow (up to 10 s) check
+   * would otherwise let the older answer land last, and cache its models under the old URL.
+   */
+  #checkSeq = 0
 
   constructor(options: ProviderSetupOptions) {
     this.#options = options
@@ -131,8 +160,9 @@ export class ProviderSetupController {
   get status(): ConnectionStatus {
     return this.#status
   }
-  get error(): string | null {
-    return this.#error
+  /** Why the last check didn't connect; set exactly while `status` is a problem status. */
+  get problem(): ConnectionProblem | null {
+    return this.#problem
   }
   get models(): string[] {
     return this.#models
@@ -272,8 +302,10 @@ export class ProviderSetupController {
   async populateOnOpen(): Promise<void> {
     if (!this.hasCheckableConfig) return
     const idAtStart = this.#providerId
+    const seqAtStart = this.#checkSeq
     const fingerprint = await this.#cacheKey(idAtStart, this.resolvedBaseUrl, this.#keyFingerprint)
-    if (idAtStart !== this.#providerId) return
+    // A check that started meanwhile owns the state; a cache hit mustn't paint over it.
+    if (idAtStart !== this.#providerId || seqAtStart !== this.#checkSeq) return
     const cached = fingerprint === null ? undefined : getCachedModels(fingerprint)
     if (cached) {
       this.#models = cached
@@ -369,10 +401,16 @@ export class ProviderSetupController {
       clearTimeout(this.#connectionCheckTimer)
       this.#connectionCheckTimer = null
     }
+    const seq = ++this.#checkSeq
     // The policy first: a typed endpoint is judged once entered, key or no key, and a refused one
     // is never probed.
     if (await this.#refusedByPolicy()) return
-    if (!this.hasCheckableConfig) return
+    if (seq !== this.#checkSeq) return
+    if (!this.hasCheckableConfig) {
+      // An older check this one superseded may have left the spinner up, and it won't land now.
+      if (this.#status === 'checking') this.#status = 'idle'
+      return
+    }
 
     // Captured so the result is cached under the config it was fetched for, even if the
     // user keeps typing while the request is in flight.
@@ -381,7 +419,7 @@ export class ProviderSetupController {
     const idAtStart = this.#providerId
 
     this.#status = 'checking'
-    this.#error = null
+    this.#problem = null
     this.#managedRefusal = null
     // The prior list stays put during a refetch: a suggestion list that blanks mid-check is
     // a regression we forbid.
@@ -390,23 +428,17 @@ export class ProviderSetupController {
       // The backend reads the stored key for this provider, so anything just typed has to
       // be committed first. That's why the check is scheduled from `#persistApiKey`.
       const result = await checkAiConnection(baseUrlAtStart, idAtStart)
-      if (idAtStart !== this.#providerId) return
+      if (seq !== this.#checkSeq || idAtStart !== this.#providerId) return
       if (result.managed) {
         this.#status = 'managed'
         this.#managedRefusal = result.managed
       } else if (result.cloudConsentMissing) {
         // The backend sent nothing: cloud AI isn't allowed yet. Not a connection problem, so
-        // no error line; the section is locked behind the Allow cloud AI switch anyway.
+        // no problem line; the section is locked behind the Allow cloud AI switch anyway.
         this.#status = 'idle'
-      } else if (result.authError) {
-        this.#status = 'auth-error'
-        this.#error = result.error
-      } else if (!result.connected) {
-        this.#status = 'connection-error'
-        this.#error = result.error
-      } else if (result.error) {
-        this.#status = 'error'
-        this.#error = result.error
+      } else if (result.problem) {
+        this.#status = statusForProblem(result.problem)
+        this.#problem = result.problem
       } else if (result.models.length > 0) {
         this.#status = 'connected'
         this.#models = result.models
@@ -415,9 +447,10 @@ export class ProviderSetupController {
         this.#status = 'connected-no-models'
       }
     } catch (e) {
-      if (idAtStart !== this.#providerId) return
-      this.#status = 'error'
-      this.#error = e instanceof Error ? e.message : tString('onboarding.cloudSetup.status.genericError')
+      if (seq !== this.#checkSeq || idAtStart !== this.#providerId) return
+      this.#log.warn("Couldn't run the AI connection check: {error}", { error: e })
+      this.#problem = { kind: 'checkUnavailable' }
+      this.#status = statusForProblem(this.#problem)
     }
   }
 
@@ -447,7 +480,7 @@ export class ProviderSetupController {
     if (refusal !== null) {
       this.#status = 'managed'
       this.#managedRefusal = refusal
-      this.#error = null
+      this.#problem = null
       return true
     }
     if (this.#status === 'managed') {
@@ -478,8 +511,10 @@ export class ProviderSetupController {
   }
 
   #resetConnectionState(): void {
+    // Whatever check is in flight answers for the state just wiped, so it mustn't land.
+    this.#checkSeq++
     this.#status = 'idle'
-    this.#error = null
+    this.#problem = null
     this.#managedRefusal = null
     this.#models = []
     if (this.#connectionCheckTimer) {

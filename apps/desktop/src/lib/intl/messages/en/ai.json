@@ -413,19 +413,46 @@
   },
   "ai.cloud.authError": "API key is invalid",
   "@ai.cloud.authError": {
-    "description": "Fallback status line shown when the cloud AI connection failed authentication and the provider gave no specific message.",
+    "description": "Status line shown when the cloud AI provider rejected the API key (it answered that the key is wrong or not allowed). Sits next to a Recheck button. Avoid the words \"error\" or \"failed\".",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
   "ai.cloud.connectionError": "Can’t reach server",
   "@ai.cloud.connectionError": {
-    "description": "Fallback status line shown when the cloud AI server couldn't be reached and the provider gave no specific message.",
+    "description": "Status line shown when the cloud AI server couldn't be reached at all (no network, unknown address, refused connection, or a secure-connection problem). Sits next to a Recheck button. Avoid the words \"error\" or \"failed\".",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
   "ai.cloud.genericError": "Something went wrong",
   "@ai.cloud.genericError": {
-    "description": "Fallback status line shown when a cloud AI connection test failed for an unspecified reason.",
+    "description": "Status line shown when Cmdr couldn't run the cloud AI connection test at all, for a reason it can't name. Sits next to a Recheck button. Avoid the words \"error\" or \"failed\".",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloud.timedOut": "The server didn’t answer in time. Try again in a moment.",
+  "@ai.cloud.timedOut": {
+    "description": "Status line shown when the cloud AI server took too long to answer the connection test (about 10 seconds). Sits next to a Recheck button. Avoid the words \"error\" or \"failed\".",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloud.invalidEndpoint": "That address doesn’t look right. Use a full web address starting with https://.",
+  "@ai.cloud.invalidEndpoint": {
+    "description": "Status line shown when the endpoint address the user typed for a custom AI service isn't a web address at all. Keep \"https://\" verbatim. Sits next to a Recheck button. Avoid the words \"error\" or \"failed\".",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloud.insecureEndpoint": "Your API key only travels over a secure connection. Change the address to start with https://.",
+  "@ai.cloud.insecureEndpoint": {
+    "description": "Status line shown when the endpoint address starts with plain \"http://\" to a remote server while an API key is set. Cmdr refuses to send the key unencrypted, so the user must switch the address to \"https://\" (keep it verbatim). Sits next to a Recheck button. Avoid the words \"error\" or \"failed\".",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloud.providerRefused": "The service turned the request down (code {status}).",
+  "@ai.cloud.providerRefused": {
+    "description": "Status line shown when the cloud AI service answered the connection test with a refusal other than a wrong key (for example a bad request or a quota limit). The service's own explanation, in its own language (usually English), shows on a smaller line underneath. Sits next to a Recheck button. Avoid the words \"error\" or \"failed\".",
+    "placeholders": {
+      "status": "the HTTP status code the service answered with, like 400 or 429 (a number, not translated)"
+    },
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },

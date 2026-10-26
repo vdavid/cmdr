@@ -2,7 +2,12 @@
 
 import { Channel, invoke } from '@tauri-apps/api/core'
 import { type UnlistenFn } from '@tauri-apps/api/event'
-import type { AiApiKeyError, ManagedAiRefusal, RevealSecurityLogError } from '#lib/ipc/bindings.js'
+import type {
+  AiApiKeyError,
+  AiConnectionCheckResult,
+  ManagedAiRefusal,
+  RevealSecurityLogError,
+} from '#lib/ipc/bindings.js'
 import {
   commands,
   events,
@@ -476,20 +481,11 @@ export async function startAiServer(ctxSize: number): Promise<void> {
   await invoke('start_ai_server', { ctxSize })
 }
 
-/** Result of checking connectivity to an AI API endpoint. */
-export interface AiConnectionCheckResult {
-  connected: boolean
-  authError: boolean
-  models: string[]
-  error: string | null
-  /** The user hasn't allowed cloud AI, so nothing was sent and the other fields are empty. */
-  cloudConsentMissing: boolean
-  /** The organization's policy refuses this endpoint, so nothing was sent. Decided before consent. */
-  managed: ManagedAiRefusal | null
-}
+export type { AiConnectionCheckResult } from '#lib/ipc/bindings.js'
 
 /**
- * Checks connectivity to a cloud provider's endpoint by calling GET {baseUrl}/models.
+ * Checks connectivity to a cloud provider's endpoint. A problem comes back typed
+ * (`AiConnectionProblem`), never as a sentence, so the UI words it in translated copy.
  *
  * Takes the provider's ID, NOT its API key: the backend reads the stored key itself. A key the
  * user has typed but not yet saved isn't visible to this check, so flush the pending save first.

@@ -1,7 +1,10 @@
 <script lang="ts">
     import { onDestroy, untrack } from 'svelte'
     import ProviderSetupSteps from '#lib/ai-provider-setup/ProviderSetupSteps.svelte'
-    import { ProviderSetupController } from '#lib/ai-provider-setup/provider-setup.svelte.js'
+    import {
+        ProviderSetupController,
+        type ConnectionProblem,
+    } from '#lib/ai-provider-setup/provider-setup.svelte.js'
     import { tString } from '#lib/intl/messages.svelte.js'
     import { getCloudProvider } from '#lib/settings/index.js'
     import { managedAiRefusalMessage } from '#lib/managed-policy/ai-refusal.js'
@@ -46,6 +49,26 @@
 
     onDestroy(() => { controller.destroy(); })
 
+    /** One line per problem kind, each a literal key so the i18n checks can see it. */
+    function problemMessage(problem: ConnectionProblem): string {
+        switch (problem.kind) {
+            case 'keyRejected':
+                return tString('onboarding.cloudSetup.status.authError')
+            case 'unreachable':
+                return tString('onboarding.cloudSetup.status.connectionError')
+            case 'timedOut':
+                return tString('onboarding.cloudSetup.status.timedOut')
+            case 'invalidEndpoint':
+                return tString('onboarding.cloudSetup.status.invalidEndpoint')
+            case 'insecureEndpoint':
+                return tString('onboarding.cloudSetup.status.insecureEndpoint')
+            case 'providerRefused':
+                return tString('onboarding.cloudSetup.status.providerRefused', { status: String(problem.status) })
+            case 'checkUnavailable':
+                return tString('onboarding.cloudSetup.status.genericError')
+        }
+    }
+
     const preset = $derived(controller.preset ?? (locked ? getCloudProvider(providerId) : undefined))
 </script>
 
@@ -70,18 +93,14 @@
             <p class="status status-managed" role="status">{managedAiRefusalMessage(controller.managedRefusal)}</p>
         {:else if controller.status === 'checking'}
             <p class="status status-checking">{tString('onboarding.cloudSetup.status.checking')}</p>
-        {:else if controller.status === 'auth-error'}
-            <p class="status status-error">
-                {controller.error ?? tString('onboarding.cloudSetup.status.authError')}
-            </p>
-        {:else if controller.status === 'connection-error'}
-            <p class="status status-error">
-                {controller.error ?? tString('onboarding.cloudSetup.status.connectionError')}
-            </p>
-        {:else if controller.status === 'error'}
-            <p class="status status-error">
-                {controller.error ?? tString('onboarding.cloudSetup.status.genericError')}
-            </p>
+        {:else if controller.problem}
+            <div class="status status-error">
+                <p class="status-line">{problemMessage(controller.problem)}</p>
+                {#if controller.problem.kind === 'providerRefused' && controller.problem.detail}
+                    <!-- The provider's own sentence, untranslated: worth seeing, but secondary. -->
+                    <p class="status-detail">{controller.problem.detail}</p>
+                {/if}
+            </div>
         {:else if controller.isConnected}
             <p class="status status-ok">{tString('onboarding.cloudSetup.status.connected')}</p>
         {/if}
@@ -147,5 +166,16 @@
 
     .status-error {
         color: var(--color-error-text);
+    }
+
+    .status-line {
+        margin: 0;
+    }
+
+    .status-detail {
+        margin: var(--spacing-xxs) 0 0;
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-xs);
+        overflow-wrap: anywhere;
     }
 </style>

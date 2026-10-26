@@ -6,18 +6,11 @@
  */
 
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import type { ManagedAiRefusal } from '#lib/ipc/bindings.js'
+import type { AiConnectionCheckResult, AiConnectionProblem, ManagedAiRefusal } from '#lib/ipc/bindings.js'
 import { ProviderSetupController } from './provider-setup.svelte'
 import { clearModelCache } from '#lib/settings/ai-model-cache.js'
 
-interface CheckResult {
-  connected: boolean
-  authError: boolean
-  models: string[]
-  error: string | null
-  cloudConsentMissing?: boolean
-  managed?: 'aiOff' | 'cloudAiOff' | 'hostNotAllowed' | null
-}
+type CheckResult = AiConnectionCheckResult
 
 // One object payload per spy, so the assertions name the argument they mean and the
 // positional pair can't be silently swapped (`cmdr/no-confusable-callback-params`).
@@ -80,7 +73,23 @@ async function settle(): Promise<void> {
 }
 
 function connected(models: string[]): CheckResult {
-  return { connected: true, authError: false, models, error: null }
+  return { models, problem: null, cloudConsentMissing: false, managed: null }
+}
+
+function withProblem(problem: AiConnectionProblem): CheckResult {
+  return { models: [], problem, cloudConsentMissing: false, managed: null }
+}
+
+/** A check whose answer the test releases by hand, so two checks can overlap in a chosen order. */
+function deferredCheck(): { release: (result: CheckResult) => void } {
+  const handle = { release: (_result: CheckResult) => {} }
+  checkAiConnection.mockImplementationOnce(
+    () =>
+      new Promise<CheckResult>((resolve) => {
+        handle.release = resolve
+      }),
+  )
+  return handle
 }
 
 let controller: ProviderSetupController
@@ -234,47 +243,136 @@ describe('ProviderSetupController', () => {
     expect(controller.secretError).toBeNull()
   })
 
-  it('treats an auth failure as an auth failure, not a generic one', async () => {
-    checkAiConnection.mockResolvedValue({ connected: false, authError: true, models: [], error: 'Invalid key' })
+  it.each([
+    [{ kind: 'keyRejected' }, 'auth-error'],
+    [{ kind: 'invalidEndpoint' }, 'connection-error'],
+    [{ kind: 'insecureEndpoint' }, 'connection-error'],
+    [{ kind: 'unreachable' }, 'connection-error'],
+    [{ kind: 'timedOut' }, 'connection-error'],
+    [{ kind: 'providerRefused', status: 400, detail: 'Bad model' }, 'error'],
+  ] as const)('carries a %o problem through, under the %s status', async (problem, status) => {
+    checkAiConnection.mockResolvedValue(withProblem(problem))
     getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'fp' })
     controller.setProvider('openai')
     await settle()
-    expect(controller.status).toBe('auth-error')
-    expect(controller.error).toBe('Invalid key')
+    expect(controller.status).toBe(status)
+    expect(controller.problem).toEqual(problem)
     expect(controller.isConnected).toBe(false)
+  })
+
+  it('reads a check that threw as a typed problem, never as the raw message', async () => {
+    checkAiConnection.mockRejectedValue(new Error('IPC exploded'))
+    getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'fp' })
+    controller.setProvider('openai')
+    await settle()
+    expect(controller.status).toBe('error')
+    expect(controller.problem).toEqual({ kind: 'checkUnavailable' })
   })
 
   it('reads a refused probe (cloud AI not allowed yet) as idle, not as a connection problem', async () => {
     // The backend sent nothing, so "couldn't connect" would be a false claim about the service.
-    checkAiConnection.mockResolvedValue({
-      connected: false,
-      authError: false,
-      models: [],
-      error: null,
-      cloudConsentMissing: true,
-    })
+    checkAiConnection.mockResolvedValue({ ...connected([]), cloudConsentMissing: true })
     getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'fp' })
     controller.setProvider('openai')
     await settle()
     expect(controller.status).toBe('idle')
-    expect(controller.error).toBeNull()
+    expect(controller.problem).toBeNull()
+  })
+
+  describe('overlapping checks for the same provider', () => {
+    /**
+     * On Custom, an endpoint edit while the old URL's slow check is in flight: the old answer
+     * lands LAST, and must neither render nor cache its models under the old URL.
+     */
+    it('lands only the latest check when an older one answers last', async () => {
+      settingsMap['ai.cloudProviderConfigs'] = JSON.stringify({
+        custom: { model: 'm', baseUrl: 'https://old.test/v1' },
+      })
+      getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'fp' })
+      const oldCheck = deferredCheck()
+      const newCheck = deferredCheck()
+
+      controller.setProvider('custom')
+      await settle()
+      expect(controller.status).toBe('checking')
+
+      controller.saveBaseUrl('https://new.test/v1')
+      controller.checkNow()
+      await settle()
+      expect(checkAiConnection).toHaveBeenLastCalledWith({ baseUrl: 'https://new.test/v1', providerId: 'custom' })
+
+      newCheck.release(withProblem({ kind: 'unreachable' }))
+      await settle()
+      oldCheck.release(connected(['old-model']))
+      await settle()
+
+      expect(controller.status).toBe('connection-error')
+      expect(controller.problem).toEqual({ kind: 'unreachable' })
+      expect(controller.models).toEqual([])
+
+      // Nothing was cached under the old URL either: a fresh visit there checks again.
+      settingsMap['ai.cloudProviderConfigs'] = JSON.stringify({
+        custom: { model: 'm', baseUrl: 'https://old.test/v1' },
+      })
+      const second = new ProviderSetupController({ logScope: 'test' })
+      second.setProvider('custom')
+      await settle()
+      expect(second.models).toEqual(['gpt-4.1-mini'])
+      second.destroy()
+    })
+
+    it('a Recheck supersedes the check already in flight', async () => {
+      getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'fp' })
+      const first = deferredCheck()
+      const second = deferredCheck()
+
+      controller.setProvider('openai')
+      await settle()
+      controller.checkNow()
+      await settle()
+
+      second.release(connected(['fresh']))
+      await settle()
+      first.release(withProblem({ kind: 'timedOut' }))
+      await settle()
+
+      expect(controller.status).toBe('connected')
+      expect(controller.problem).toBeNull()
+      expect(controller.models).toEqual(['fresh'])
+    })
+
+    it("takes the spinner down when the newer check has nothing to check and the older one won't land", async () => {
+      settingsMap['ai.cloudProviderConfigs'] = JSON.stringify({
+        custom: { model: 'm', baseUrl: 'https://old.test/v1' },
+      })
+      getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'fp' })
+      const oldCheck = deferredCheck()
+
+      controller.setProvider('custom')
+      await settle()
+      expect(controller.status).toBe('checking')
+
+      controller.saveBaseUrl('')
+      controller.checkNow()
+      await settle()
+      expect(controller.status).toBe('idle')
+
+      oldCheck.release(connected(['old-model']))
+      await settle()
+      expect(controller.status).toBe('idle')
+      expect(controller.models).toEqual([])
+    })
   })
 
   describe("the organization's policy", () => {
     it('reads a check the policy refused as managed, with the rule, not as a connection problem', async () => {
-      checkAiConnection.mockResolvedValue({
-        connected: false,
-        authError: false,
-        models: [],
-        error: null,
-        managed: 'hostNotAllowed',
-      })
+      checkAiConnection.mockResolvedValue({ ...connected([]), managed: 'hostNotAllowed' })
       getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'fp' })
       controller.setProvider('openai')
       await settle()
       expect(controller.status).toBe('managed')
       expect(controller.managedRefusal).toBe('hostNotAllowed')
-      expect(controller.error).toBeNull()
+      expect(controller.problem).toBeNull()
     })
 
     it('says a refused preset is refused on open, without a key and without probing it', async () => {

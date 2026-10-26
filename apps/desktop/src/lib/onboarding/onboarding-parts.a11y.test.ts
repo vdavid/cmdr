@@ -46,7 +46,9 @@ vi.mock('#lib/settings/index.js', async (importOriginal) => {
 
 vi.mock('#lib/tauri-commands/index.js', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  checkAiConnection: vi.fn(() => Promise.resolve({ connected: false, authError: false, models: [], error: null })),
+  checkAiConnection: vi.fn(() =>
+    Promise.resolve({ models: [], problem: { kind: 'unreachable' }, cloudConsentMissing: false, managed: null }),
+  ),
   saveAiApiKey: vi.fn(() => Promise.resolve(null)),
   getAiApiKeyStatus: vi.fn(() => Promise.resolve({ isSet: false, fingerprint: '' })),
   openExternalUrl: vi.fn(() => Promise.resolve()),

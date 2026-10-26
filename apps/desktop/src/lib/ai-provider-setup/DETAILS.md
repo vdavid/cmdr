@@ -41,7 +41,25 @@ one file. What the two actually share is the state machine and the numbered list
 **Decision / the status block stays per-surface.** Merging it would have orphaned one of the two message-key sets
 (`ai.cloud.status*` vs `onboarding.cloudSetup.status.*`), and the sets differ in more than wording: Settings offers
 "Recheck" and "Test connection" buttons that the wizard deliberately doesn't. So each surface renders its own, reading
-`controller.status` / `controller.error`.
+`controller.status` / `controller.problem`.
+
+## Connection problems and the check sequence
+
+- **The backend sends a typed `AiConnectionProblem`, never a sentence**, so each surface words it in its own translated
+  copy, one key per kind, through a `problemMessage()` switch with literal keys. The controller adds one kind of its
+  own, `checkUnavailable`, for an IPC call that threw (no backend answer, so nothing more specific to say).
+  `ConnectionProblem` is that union.
+- **`providerRefused` is the one kind with text**: the provider's own `detail` sentence (untranslated, key scrubbed by
+  the backend). Both surfaces show a translated lead line with the status code, then the detail as a smaller secondary
+  line, so the user sees the provider's reason without it posing as Cmdr's copy.
+- **`status` still carries the coarse bucket** (`keyRejected` → `auth-error`; `invalidEndpoint`, `insecureEndpoint`,
+  `unreachable`, `timedOut` → `connection-error`; `providerRefused`, `checkUnavailable` → `error`), set by
+  `statusForProblem`, and `problem` is set exactly while `status` is one of those three.
+- **Only the latest check lands (`#checkSeq`).** The `providerId` guard can't tell two checks for the SAME provider
+  apart: on Custom or Azure, an endpoint edit or a Recheck during a slow check (the backend waits up to 10 s) would let
+  the older answer land last and cache its model list under the old URL. Every check takes a number, every reset bumps
+  it, and a result (or a cache hit in `populateOnOpen`) that no longer holds the latest number is dropped. A newer check
+  that stops early (no checkable config) takes down the spinner a superseded one left up.
 
 **Message keys keep their `onboarding.cloudSetup.` prefix** even though the component is shared now. They carry 10
 locales' translations plus stored `@key.sourceHash` values; renaming them would be pure churn for a nicer prefix. A
