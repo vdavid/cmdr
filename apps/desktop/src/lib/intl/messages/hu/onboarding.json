@@ -619,6 +619,22 @@
   "@onboarding.cloudSetup.status.genericError": {
     "sourceHash": "ab827e3"
   },
+  "onboarding.cloudSetup.status.timedOut": "A szolgáltatás túl sokáig nem válaszol. Próbáld újra egy pillanat múlva.",
+  "@onboarding.cloudSetup.status.timedOut": {
+    "sourceHash": "bbfc68f"
+  },
+  "onboarding.cloudSetup.status.invalidEndpoint": "Ez a cím nem tűnik jónak. A cím elejére https:// kell.",
+  "@onboarding.cloudSetup.status.invalidEndpoint": {
+    "sourceHash": "1e0798b"
+  },
+  "onboarding.cloudSetup.status.insecureEndpoint": "A kulcsodat csak biztonságos kapcsolaton küldi el a Cmdr, ezért olyan címet adj meg, amelynek az elején https:// áll.",
+  "@onboarding.cloudSetup.status.insecureEndpoint": {
+    "sourceHash": "b2713ea"
+  },
+  "onboarding.cloudSetup.status.providerRefused": "A szolgáltatás elutasította a kérést (kód: {status}).",
+  "@onboarding.cloudSetup.status.providerRefused": {
+    "sourceHash": "e3496e5"
+  },
   "onboarding.cloudSetup.status.connected": "Kapcsolódva!",
   "@onboarding.cloudSetup.status.connected": {
     "sourceHash": "78ae377"

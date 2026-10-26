@@ -279,6 +279,22 @@
   "@ai.cloud.genericError": {
     "sourceHash": "ab827e3"
   },
+  "ai.cloud.timedOut": "Le serveur n’a pas répondu à temps. Réessayez dans un instant.",
+  "@ai.cloud.timedOut": {
+    "sourceHash": "d6888fb"
+  },
+  "ai.cloud.invalidEndpoint": "Cette adresse ne semble pas correcte. Utilisez une adresse web complète commençant par https://.",
+  "@ai.cloud.invalidEndpoint": {
+    "sourceHash": "a791485"
+  },
+  "ai.cloud.insecureEndpoint": "Votre clé d’API ne transite que par une connexion sécurisée. Modifiez l’adresse pour qu’elle commence par https://.",
+  "@ai.cloud.insecureEndpoint": {
+    "sourceHash": "df152da"
+  },
+  "ai.cloud.providerRefused": "Le service a refusé la requête (code {status}).",
+  "@ai.cloud.providerRefused": {
+    "sourceHash": "e3496e5"
+  },
   "ai.cloud.testConnection": "Tester la connexion",
   "@ai.cloud.testConnection": {
     "sourceHash": "5bcf311"

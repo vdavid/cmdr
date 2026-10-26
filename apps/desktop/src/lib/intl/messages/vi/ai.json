@@ -279,6 +279,22 @@
   "@ai.cloud.genericError": {
     "sourceHash": "ab827e3"
   },
+  "ai.cloud.timedOut": "Máy chủ đã không phản hồi kịp thời. Hãy thử lại sau giây lát.",
+  "@ai.cloud.timedOut": {
+    "sourceHash": "d6888fb"
+  },
+  "ai.cloud.invalidEndpoint": "Địa chỉ đó có vẻ không đúng. Hãy dùng một địa chỉ web đầy đủ bắt đầu bằng https://.",
+  "@ai.cloud.invalidEndpoint": {
+    "sourceHash": "a791485"
+  },
+  "ai.cloud.insecureEndpoint": "Khóa API của bạn chỉ được gửi qua kết nối bảo mật. Hãy đổi địa chỉ để bắt đầu bằng https://.",
+  "@ai.cloud.insecureEndpoint": {
+    "sourceHash": "df152da"
+  },
+  "ai.cloud.providerRefused": "Dịch vụ đã từ chối yêu cầu (mã {status}).",
+  "@ai.cloud.providerRefused": {
+    "sourceHash": "e3496e5"
+  },
   "ai.cloud.testConnection": "Kiểm tra kết nối",
   "@ai.cloud.testConnection": {
     "sourceHash": "5bcf311"

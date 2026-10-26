@@ -123,3 +123,5 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
 - `uninstall` concept: note it's removing software, not unmounting (zh-CN macOS uses `卸载` for both). (zh)
 - `fileOperations.trash.undoGone`: say a language without plural forms may use an `=1` arm when one item and many need
   different words (zh, vi did, following `fileOperations.cancelRollback.doneMovingBack`). (zh, vi)
+- `ai.cloud.timedOut` calls the AI provider "the server", while `ai.cloud.providerRefused` on the same row and both
+  onboarding twins say "the service". Pick one noun; every locale mirrored the split. (all)

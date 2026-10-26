@@ -279,6 +279,22 @@
   "@ai.cloud.genericError": {
     "sourceHash": "ab827e3"
   },
+  "ai.cloud.timedOut": "De server reageerde niet op tijd. Probeer het zo meteen opnieuw.",
+  "@ai.cloud.timedOut": {
+    "sourceHash": "d6888fb"
+  },
+  "ai.cloud.invalidEndpoint": "Dat adres lijkt niet te kloppen. Gebruik een volledig webadres dat begint met https://.",
+  "@ai.cloud.invalidEndpoint": {
+    "sourceHash": "a791485"
+  },
+  "ai.cloud.insecureEndpoint": "Je API-sleutel gaat alleen over een beveiligde verbinding. Pas het adres aan zodat het begint met https://.",
+  "@ai.cloud.insecureEndpoint": {
+    "sourceHash": "df152da"
+  },
+  "ai.cloud.providerRefused": "De service heeft het verzoek geweigerd (code {status}).",
+  "@ai.cloud.providerRefused": {
+    "sourceHash": "e3496e5"
+  },
   "ai.cloud.testConnection": "Test verbinding",
   "@ai.cloud.testConnection": {
     "sourceHash": "5bcf311"

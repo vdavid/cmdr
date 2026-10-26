@@ -279,6 +279,22 @@
   "@ai.cloud.genericError": {
     "sourceHash": "ab827e3"
   },
+  "ai.cloud.timedOut": "A szerver nem válaszolt időben. Próbáld újra egy pillanat múlva.",
+  "@ai.cloud.timedOut": {
+    "sourceHash": "d6888fb"
+  },
+  "ai.cloud.invalidEndpoint": "Ez a cím nem tűnik jónak. Használj teljes webcímet, https:// előtaggal.",
+  "@ai.cloud.invalidEndpoint": {
+    "sourceHash": "a791485"
+  },
+  "ai.cloud.insecureEndpoint": "Az API-kulcsodat csak biztonságos kapcsolaton küldi el a Cmdr. Írd át a címet úgy, hogy https:// legyen az elején.",
+  "@ai.cloud.insecureEndpoint": {
+    "sourceHash": "df152da"
+  },
+  "ai.cloud.providerRefused": "A szolgáltatás elutasította a kérést (kód: {status}).",
+  "@ai.cloud.providerRefused": {
+    "sourceHash": "e3496e5"
+  },
   "ai.cloud.testConnection": "Kapcsolat tesztelése",
   "@ai.cloud.testConnection": {
     "sourceHash": "5bcf311"

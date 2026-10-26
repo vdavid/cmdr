@@ -621,6 +621,22 @@
   "@onboarding.cloudSetup.status.genericError": {
     "sourceHash": "ab827e3"
   },
+  "onboarding.cloudSetup.status.timedOut": "De service doet er te lang over om te reageren. Probeer het zo meteen opnieuw.",
+  "@onboarding.cloudSetup.status.timedOut": {
+    "sourceHash": "bbfc68f"
+  },
+  "onboarding.cloudSetup.status.invalidEndpoint": "Dat adres lijkt niet te kloppen. Het moet beginnen met https://.",
+  "@onboarding.cloudSetup.status.invalidEndpoint": {
+    "sourceHash": "1e0798b"
+  },
+  "onboarding.cloudSetup.status.insecureEndpoint": "Je sleutel gaat alleen over een beveiligde verbinding, dus gebruik een adres dat begint met https://.",
+  "@onboarding.cloudSetup.status.insecureEndpoint": {
+    "sourceHash": "b2713ea"
+  },
+  "onboarding.cloudSetup.status.providerRefused": "De service heeft het verzoek geweigerd (code {status}).",
+  "@onboarding.cloudSetup.status.providerRefused": {
+    "sourceHash": "e3496e5"
+  },
   "onboarding.cloudSetup.status.connected": "Verbonden!",
   "@onboarding.cloudSetup.status.connected": {
     "sourceHash": "78ae377"

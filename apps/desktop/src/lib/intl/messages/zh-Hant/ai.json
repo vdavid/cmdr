@@ -279,6 +279,22 @@
   "@ai.cloud.genericError": {
     "sourceHash": "ab827e3"
   },
+  "ai.cloud.timedOut": "伺服器沒有及時回應。請稍後再試一次。",
+  "@ai.cloud.timedOut": {
+    "sourceHash": "d6888fb"
+  },
+  "ai.cloud.invalidEndpoint": "這個網址看起來不對。請使用以 https:// 開頭的完整網址。",
+  "@ai.cloud.invalidEndpoint": {
+    "sourceHash": "a791485"
+  },
+  "ai.cloud.insecureEndpoint": "你的 API 金鑰只會透過安全連線傳送。請把網址改成以 https:// 開頭。",
+  "@ai.cloud.insecureEndpoint": {
+    "sourceHash": "df152da"
+  },
+  "ai.cloud.providerRefused": "服務拒絕了這個請求（狀態碼 {status}）。",
+  "@ai.cloud.providerRefused": {
+    "sourceHash": "e3496e5"
+  },
   "ai.cloud.testConnection": "測試連線",
   "@ai.cloud.testConnection": {
     "sourceHash": "5bcf311"

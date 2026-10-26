@@ -279,6 +279,22 @@
   "@ai.cloud.genericError": {
     "sourceHash": "ab827e3"
   },
+  "ai.cloud.timedOut": "Сервер не ответил вовремя. Попробуйте еще раз чуть позже.",
+  "@ai.cloud.timedOut": {
+    "sourceHash": "d6888fb"
+  },
+  "ai.cloud.invalidEndpoint": "Похоже, с адресом что-то не так. Укажите полный веб-адрес, который начинается с https://.",
+  "@ai.cloud.invalidEndpoint": {
+    "sourceHash": "a791485"
+  },
+  "ai.cloud.insecureEndpoint": "API-ключ передается только по защищенному соединению. Измените адрес, чтобы он начинался с https://.",
+  "@ai.cloud.insecureEndpoint": {
+    "sourceHash": "df152da"
+  },
+  "ai.cloud.providerRefused": "Сервис отклонил запрос (код {status}).",
+  "@ai.cloud.providerRefused": {
+    "sourceHash": "e3496e5"
+  },
   "ai.cloud.testConnection": "Проверить подключение",
   "@ai.cloud.testConnection": {
     "sourceHash": "5bcf311"

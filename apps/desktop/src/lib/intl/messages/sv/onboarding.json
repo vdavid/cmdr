@@ -619,6 +619,22 @@
   "@onboarding.cloudSetup.status.genericError": {
     "sourceHash": "ab827e3"
   },
+  "onboarding.cloudSetup.status.timedOut": "Tjänsten tar för lång tid på sig att svara. Försök igen om en stund.",
+  "@onboarding.cloudSetup.status.timedOut": {
+    "sourceHash": "bbfc68f"
+  },
+  "onboarding.cloudSetup.status.invalidEndpoint": "Den adressen ser inte rätt ut. Den ska börja med https://.",
+  "@onboarding.cloudSetup.status.invalidEndpoint": {
+    "sourceHash": "1e0798b"
+  },
+  "onboarding.cloudSetup.status.insecureEndpoint": "Din nyckel skickas bara över en säker anslutning, så använd en adress som börjar med https://.",
+  "@onboarding.cloudSetup.status.insecureEndpoint": {
+    "sourceHash": "b2713ea"
+  },
+  "onboarding.cloudSetup.status.providerRefused": "Tjänsten avvisade förfrågan (kod {status}).",
+  "@onboarding.cloudSetup.status.providerRefused": {
+    "sourceHash": "e3496e5"
+  },
   "onboarding.cloudSetup.status.connected": "Ansluten!",
   "@onboarding.cloudSetup.status.connected": {
     "sourceHash": "78ae377"

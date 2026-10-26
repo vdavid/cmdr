@@ -619,6 +619,22 @@
   "@onboarding.cloudSetup.status.genericError": {
     "sourceHash": "ab827e3"
   },
+  "onboarding.cloudSetup.status.timedOut": "Dịch vụ đang mất quá nhiều thời gian để phản hồi. Hãy thử lại sau giây lát.",
+  "@onboarding.cloudSetup.status.timedOut": {
+    "sourceHash": "bbfc68f"
+  },
+  "onboarding.cloudSetup.status.invalidEndpoint": "Địa chỉ đó có vẻ không đúng. Địa chỉ cần bắt đầu bằng https://.",
+  "@onboarding.cloudSetup.status.invalidEndpoint": {
+    "sourceHash": "1e0798b"
+  },
+  "onboarding.cloudSetup.status.insecureEndpoint": "Khóa của bạn chỉ được gửi qua kết nối bảo mật, nên hãy dùng địa chỉ bắt đầu bằng https://.",
+  "@onboarding.cloudSetup.status.insecureEndpoint": {
+    "sourceHash": "b2713ea"
+  },
+  "onboarding.cloudSetup.status.providerRefused": "Dịch vụ đã từ chối yêu cầu (mã {status}).",
+  "@onboarding.cloudSetup.status.providerRefused": {
+    "sourceHash": "e3496e5"
+  },
   "onboarding.cloudSetup.status.connected": "Đã kết nối!",
   "@onboarding.cloudSetup.status.connected": {
     "sourceHash": "78ae377"

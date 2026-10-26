@@ -119,6 +119,10 @@
   "@onboarding.cloudSetup.status.genericError": {
     "sourceHash": "9a2d67e"
   },
+  "onboarding.cloudSetup.status.providerRefused": "El servicio rechazó la solicitud (código {status}).",
+  "@onboarding.cloudSetup.status.providerRefused": {
+    "sourceHash": "e59b6f3"
+  },
   "onboarding.stepBeta.analyticsManaged": "Tu organización desactivó las estadísticas de uso.",
   "@onboarding.stepBeta.analyticsManaged": {
     "sourceHash": "44f4b62"

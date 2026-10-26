@@ -279,6 +279,22 @@
   "@ai.cloud.genericError": {
     "sourceHash": "ab827e3"
   },
+  "ai.cloud.timedOut": "Servern svarade inte i tid. Försök igen om en stund.",
+  "@ai.cloud.timedOut": {
+    "sourceHash": "d6888fb"
+  },
+  "ai.cloud.invalidEndpoint": "Den adressen ser inte rätt ut. Använd en fullständig webbadress som börjar med https://.",
+  "@ai.cloud.invalidEndpoint": {
+    "sourceHash": "a791485"
+  },
+  "ai.cloud.insecureEndpoint": "Din API-nyckel skickas bara över en säker anslutning. Ändra adressen så att den börjar med https://.",
+  "@ai.cloud.insecureEndpoint": {
+    "sourceHash": "df152da"
+  },
+  "ai.cloud.providerRefused": "Tjänsten avvisade förfrågan (kod {status}).",
+  "@ai.cloud.providerRefused": {
+    "sourceHash": "e3496e5"
+  },
   "ai.cloud.testConnection": "Testa anslutning",
   "@ai.cloud.testConnection": {
     "sourceHash": "5bcf311"

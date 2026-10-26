@@ -619,6 +619,22 @@
   "@onboarding.cloudSetup.status.genericError": {
     "sourceHash": "ab827e3"
   },
+  "onboarding.cloudSetup.status.timedOut": "Der Dienst braucht zu lange für eine Antwort. Versuche es gleich noch einmal.",
+  "@onboarding.cloudSetup.status.timedOut": {
+    "sourceHash": "bbfc68f"
+  },
+  "onboarding.cloudSetup.status.invalidEndpoint": "Diese Adresse sieht nicht richtig aus. Die Adresse sollte mit https:// beginnen.",
+  "@onboarding.cloudSetup.status.invalidEndpoint": {
+    "sourceHash": "1e0798b"
+  },
+  "onboarding.cloudSetup.status.insecureEndpoint": "Dein Schlüssel wird nur über eine sichere Verbindung gesendet, also verwende eine Adresse, die mit https:// beginnt.",
+  "@onboarding.cloudSetup.status.insecureEndpoint": {
+    "sourceHash": "b2713ea"
+  },
+  "onboarding.cloudSetup.status.providerRefused": "Der Dienst hat die Anfrage abgelehnt (Code {status}).",
+  "@onboarding.cloudSetup.status.providerRefused": {
+    "sourceHash": "e3496e5"
+  },
   "onboarding.cloudSetup.status.connected": "Verbunden!",
   "@onboarding.cloudSetup.status.connected": {
     "sourceHash": "78ae377"
