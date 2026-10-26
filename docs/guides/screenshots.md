@@ -122,8 +122,10 @@ Folder sizes come from the drive index. While it reconciles, every size cell sho
 `≥`, which is a whole round of unusable masters, so the spec refuses to shoot until the index has settled.
 
 To make that fast, the orchestrator copies the installed production app's index (`index-root.db`) into the shots
-instance before launching. It uses SQLite's online backup, not `cp`: the index is in WAL mode, so copying it out from
-under a running app is a torn read. 930 MB takes about two seconds.
+instance before launching. It uses SQLite's backup API in one step (`node:sqlite`), not `cp`: the index is in WAL mode,
+so copying it out from under a running app is a torn read. 1.1 GB takes about two seconds. Why one step, and not the
+`sqlite3` CLI's `.backup` (which livelocks against a running Cmdr) or `VACUUM INTO` (which needs Cmdr's collation):
+`cloneProdIndex` in `apps/desktop/scripts/marketing-shots.ts`.
 
 ❗ The copy does **not** always skip the wait. Startup rebuilds when the index's stored FSEvents id is more than ten
 million behind the system's current one, and on a machine that compiles all day that gap is hours rather than days
@@ -135,7 +137,7 @@ index and are instant.
 ❌ Don't answer this by writing the current event id into the copied index. That claims it has seen changes it hasn't,
 and trades one five-minute wait for permanently stale sizes.
 
-No production install, no readable index, or no `sqlite3` all fall through to a normal scan, with a line saying so.
+No production install or no readable index both fall through to a normal scan, with a line saying so.
 
 ## Changing what the shots show
 

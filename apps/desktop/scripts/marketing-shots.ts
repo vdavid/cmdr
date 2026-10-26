@@ -39,6 +39,7 @@ import { spawn, spawnSync } from 'node:child_process'
 import type { ChildProcess, SpawnSyncOptions } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
+import { backup, DatabaseSync } from 'node:sqlite'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { startCaptureStopwatch } from './capture-countdown.ts'
@@ -179,11 +180,18 @@ const PROD_LEGACY_INDEX_DIR = join(homedir(), 'Library', 'Application Support', 
 const ROOT_INDEX_DB = 'index-root.db'
 
 /** When an index database last finished a scan, as a unix timestamp; 0 when it can't say. */
-function lastScanAt(db: string): number {
-  const res = spawnSync('sqlite3', [`file:${db}?mode=ro`, "SELECT value FROM meta WHERE key='scan_completed_at';"], {
-    encoding: 'utf8',
-  })
-  return res.status === 0 ? Number(res.stdout.trim()) || 0 : 0
+function lastScanAt(path: string): number {
+  try {
+    const db = new DatabaseSync(path, { readOnly: true })
+    try {
+      const row = db.prepare("SELECT value FROM meta WHERE key='scan_completed_at'").get()
+      return Number(row?.value) || 0
+    } finally {
+      db.close()
+    }
+  } catch {
+    return 0
+  }
 }
 
 /**
@@ -197,12 +205,18 @@ function lastScanAt(db: string): number {
  * million events) or was written by a different schema version, the app throws it away
  * and does a full scan, which is the fallback either way.
  *
- * ❗ `.backup`, not `cp`. The index runs in WAL mode, so a plain copy of the `.db` while
- * production has it open is a torn read — the repo says so at `index-size-probe.rs` and
- * in `docs/tooling/index-query.md`. The online-backup API folds the WAL in and hands
- * back one consistent file; measured at ~2 s for 930 MB, which is close enough to
- * instant. The `-wal` and `-shm` sidecars are deliberately NOT carried across: the
- * destination recreates them, and a stale pair would contradict the snapshot.
+ * ❗ SQLite's backup API in ONE step, not `cp`. The index runs in WAL mode, so a plain
+ * copy of the `.db` while production has it open is a torn read — the repo says so at
+ * `index-size-probe.rs` and in `docs/tooling/index-query.md`. One step copies every page
+ * under a single read lock, so it is a consistent snapshot; measured at 1.9 s for 1.1 GB
+ * against a running production app (2026-10-26).
+ * ❌ Not the `sqlite3` CLI's `.backup`: it copies 100 pages per step, and the backup
+ * RESTARTS whenever another connection writes the source between steps. A running
+ * production Cmdr writes its index every few seconds, so that copy looped for 18 minutes
+ * at full CPU. ❌ Not `VACUUM INTO` either: it rebuilds the indexes, which need Cmdr's
+ * custom `platform_case` collation, so it fails outright.
+ * The `-wal` and `-shm` sidecars are deliberately NOT carried across: the destination
+ * recreates them, and a stale pair would contradict the snapshot.
  *
  * ❗ What the copy does NOT buy: skipping the wait. Startup compares the index's stored
  * FSEvents `last_event_id` against the system's current one and rebuilds when the gap
@@ -218,10 +232,10 @@ function lastScanAt(db: string): number {
  * index has seen changes it hasn't, and the app would then trust stale sizes forever
  * instead of for one reconcile.
  *
- * Best-effort by design. No production install, no readable index, or no `sqlite3` all
- * fall through to a normal scan with a line saying so.
+ * Best-effort by design. No production install or no readable index both fall through
+ * to a normal scan with a line saying so.
  */
-function cloneProdIndex(): void {
+async function cloneProdIndex(): Promise<void> {
   const source =
     [PROD_DRIVE_INDEX_DIR, PROD_LEGACY_INDEX_DIR]
       .map((dir) => join(dir, ROOT_INDEX_DB))
@@ -241,17 +255,19 @@ function cloneProdIndex(): void {
     console.log(`${LOG} the shots index is at least as fresh as production's; keeping it.`)
     return
   }
-  if (target.includes("'") || source.includes("'")) {
-    console.warn(`${LOG} skipping the index copy: a quote in the path would break the sqlite3 command.`)
-    return
-  }
-
   const incoming = `${target}.incoming`
   rmSync(incoming, { force: true })
-  const res = spawnSync('sqlite3', [`file:${source}?mode=ro`, `.backup '${incoming}'`], { encoding: 'utf8' })
-  if (res.status !== 0 || !existsSync(incoming)) {
+  try {
+    const db = new DatabaseSync(source, { readOnly: true })
+    try {
+      // A page budget above any real index makes it ONE step (the ❗ above says why).
+      await backup(db, incoming, { rate: 2 ** 31 - 1 })
+    } finally {
+      db.close()
+    }
+  } catch (err) {
     rmSync(incoming, { force: true })
-    console.warn(`${LOG} couldn't copy the production index (${res.stderr.trim() || 'sqlite3 is missing'}); scanning.`)
+    console.warn(`${LOG} couldn't copy the production index (${(err as Error).message}); scanning.`)
     return
   }
 
@@ -311,7 +327,7 @@ async function main(): Promise<void> {
   pinRunSettings()
   // Before the launch: the app opens its index at startup, so a copy afterwards is a copy
   // the running instance never reads.
-  cloneProdIndex()
+  await cloneProdIndex()
 
   const socket = `/tmp/tauri-playwright-shots-${String(process.pid)}.sock`
   const mcpPort = await reserveFreePort()
