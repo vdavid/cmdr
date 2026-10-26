@@ -17,11 +17,16 @@ pnpm marketing:shots --out ~/Desktop/qa  # somewhere else, leaving brand/ untouc
 It runs on the Playwright lane's E2E binary, rebuilt first only when the tree changed, so a master can never come from a
 stale build.
 
-❗ **Leave the machine alone while it runs.** macOS draws the wide window shadow only for the KEY window, so every shot
-takes the front position first; clicking into another app mid-run costs retries. Unlike `pnpm i18n:shots`, this does not
-refuse to start behind another app, because it claims the front through System Events and then proves it in the pixels.
+❗ **The machine must be left alone while it shoots.** macOS draws the wide window shadow only for the KEY window, so
+every shot takes the front position first; clicking into another app mid-run costs retries. Right before the shoot, Cmdr
+comes to the front with its window covered in orange: a three-second countdown and the expected duration, swallowing
+clicks and typing while it's up. When it clears, hands off. You can keep working until then (the build and any index
+wait come first). Unlike `pnpm i18n:shots`, this does not refuse to start behind another app, because it claims the
+front through System Events and then proves it in the pixels. Overlay and estimate: `apps/desktop/scripts/DETAILS.md` §
+"The pre-capture countdown".
 
-A quiet run takes about 25 seconds and writes nine files. The one exception is the drive index: see § "When it waits".
+A quiet run takes about 25 seconds and writes nine files (the overlay's figure calibrates itself from real runs). The
+one exception is the drive index: see § "When it waits".
 
 ## What it produces
 
@@ -124,7 +129,8 @@ under a running app is a torn read. 930 MB takes about two seconds.
 million behind the system's current one, and on a machine that compiles all day that gap is hours rather than days
 (measured at 28 million overnight). So a copy from a production app that last scanned yesterday still reconciles,
 exactly as production itself would on restart. It costs about five minutes, once, and the run says so while it waits.
-Back-to-back runs reuse the settled index and are instant.
+That wait comes BEFORE the orange countdown, so the machine is yours until it ends. Back-to-back runs reuse the settled
+index and are instant.
 
 ❌ Don't answer this by writing the current event id into the copied index. That claims it has seen changes it hasn't,
 and trades one five-minute wait for permanently stale sizes.

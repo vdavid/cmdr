@@ -27,7 +27,8 @@ import { join } from 'node:path'
 import { test, expect, stopVideoRecording } from './fixtures.js'
 import { dismissAllToasts } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
-import { type SurfaceEntry, fitFindings } from './i18n-capture-helpers.js'
+import { type SurfaceEntry, fitFindings, focusWindow } from './i18n-capture-helpers.js'
+import { countDownOnceIfAsked } from './capture-countdown-overlay.js'
 import {
   screenshotsDir,
   reportPath,
@@ -237,6 +238,10 @@ test.describe('i18n screenshot capture', () => {
     // CPU + CoreGraphics work alongside the very screenshots it would degrade. So
     // stop it unconditionally here.
     await stopVideoRecording(main)
+
+    // The hands-off countdown, before the first surface is staged. Only the main pass's
+    // env asks for it (`scripts/i18n-capture.ts`); a lane run never does.
+    await countDownOnceIfAsked(main, () => focusWindow(main, 'main'))
 
     // surface label → { keys, screenshot filename }, plus the surfaces that threw
     // unexpectedly (`failed`, hard error) and ones deliberately skipped as a

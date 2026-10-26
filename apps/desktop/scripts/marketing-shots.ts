@@ -10,9 +10,11 @@
  * The binary comes from `ensureE2eBinary`: the Playwright lane's E2E binary, rebuilt
  * first only when the tree changed, so a master can never be shot from a stale build.
  *
- * ❗ Leave the machine alone while it runs. macOS draws the wide window shadow only for
- * the KEY window, so every shot takes the front position first, and clicking into
- * another app mid-run costs retries. Unlike `pnpm i18n:shots`, this does NOT refuse to
+ * ❗ The machine must be left alone while it shoots. macOS draws the wide window shadow
+ * only for the KEY window, so every shot takes the front position first, and clicking
+ * into another app mid-run costs retries. The spec fronts Cmdr and covers its window
+ * with a three-second orange countdown before the shoot (`capture-countdown.ts`), so
+ * nobody has to step away in advance. Unlike `pnpm i18n:shots`, this does NOT refuse to
  * start behind another app: it claims the front through System Events, which works
  * across apps, and then proves it in the pixels.
  *
@@ -39,6 +41,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync 
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { startCaptureStopwatch } from './capture-countdown.ts'
 import { ensureE2eBinary, frontmostApp, reserveFreePort, waitForSocket, warnIfForeignCmdr } from './capture-runtime.ts'
 import { EN_US_LOCALE_ARGS, pinUiLanguage } from '../test/e2e-shared/pin-locale.ts'
 
@@ -355,6 +358,9 @@ async function main(): Promise<void> {
   await waitForSocket(socket, 60000)
   console.log(`${LOG} socket ready; staging and shooting…`)
 
+  // The spec waits for the drive index BEFORE its countdown, and the stopwatch times
+  // from the countdown's end, so a reconcile never lands in the estimate.
+  const stopwatch = startCaptureStopwatch('marketing', LOG)
   try {
     // No `--project`: Playwright treats a positional as a project filter when
     // `--project` is set, and the shard's own `testMatch` already restricts the run.
@@ -366,11 +372,13 @@ async function main(): Promise<void> {
         CMDR_SHOTS_PID: String(appProc.pid ?? ''),
         // The chat test seeds its thread into this instance's `main.db`.
         CMDR_SHOTS_DATA_DIR: dataDir,
+        ...stopwatch.env,
       },
     })
   } finally {
     killApp()
   }
+  stopwatch.recordSuccess()
 
   console.log(`${LOG} masters written to ${outDir}.`)
   console.log(`${LOG} next: apps/website/scripts/regenerate-hero.sh, then refresh the listings in brand/listings/.`)

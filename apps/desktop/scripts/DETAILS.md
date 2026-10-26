@@ -70,6 +70,36 @@ staging on that binary, with no camera and no `CMDR_I18N_CAPTURE`: `test/e2e-pla
 capture's staging in the lane". The license passes need no build of their own either: `CMDR_MOCK_LICENSE` compiles into
 `playwright-e2e` builds, and an E2E build never reaches a production server (`src-tauri/src/licensing/DETAILS.md`).
 
+## The pre-capture countdown
+
+Right before a capture spec starts driving the app, it fronts the Cmdr window and covers it in solid orange for three
+seconds: a big "3, 2, 1" and a line like "This will take about 25 seconds." Whoever started the run is usually still
+typing somewhere, and once Cmdr takes the front a stray letter, Tab, Enter, or Space would land in a pane. So while the
+overlay is up, capture-phase listeners on `window` swallow keyboard and pointer input. Menu accelerators the OS handles
+natively can slip through; accepted. Test-side DOM injection only, no app code:
+`apps/desktop/test/e2e-playwright/capture-countdown-overlay.ts`, shared by `marketing-shots.spec.ts` (in its
+`beforeEach`, fronted with `focusApp`) and `i18n-capture.spec.ts` (main pass only, fronted with `focusWindow`).
+
+- **The orchestrator owns it.** `capture-countdown.ts`'s `startCaptureStopwatch` reads the stored estimate, words the
+  line, and hands the spec `CMDR_CAPTURE_COUNTDOWN_S` / `CMDR_CAPTURE_COUNTDOWN_LINE`, plus
+  `CMDR_CAPTURE_COUNTDOWN_ENDED_FILE`, where the spec stamps the moment the countdown ended. A lane run of the same spec
+  sets none of them and never counts down.
+- **It can't strand an orange window or dead input.** The spec removes the overlay and its listeners in a `finally`,
+  then waits two animation frames so the first shutter can't catch it; and the page removes it by itself five seconds
+  past the countdown even if the test process is gone.
+- **The estimate** lives at `~/Library/Caches/com.veszelovszki.cmdr-capture/estimates.json`, per kind (`marketing`,
+  `i18n`, `i18n-overflow`, `i18n-overflow-worst-case`; the overflow passes run only the main pass, so they'd skew the
+  full run's figure). Machine-wide, so a fresh worktree doesn't restart from the seed; deleting it only costs one run
+  with the seed. The stopwatch runs from that stamp to the green finish; a failed run, or one with no stamp, never
+  calibrates. A run more than 20% off the stored figure replaces it outright (the next run looks like the last, so no
+  averaging).
+- **Why marketing counts down only after the index settles**: a cold index reconciles for about five minutes
+  (`docs/guides/screenshots.md` § "When it waits"). The spec's `beforeEach` runs `waitForIndexedSizes` first, then the
+  countdown, so "hands off" comes right before the shoot. ❌ Don't add an orchestrator-side index check instead: right
+  after launch the old index reads `fresh` over MCP before the reconcile starts, so such a check passed at once and the
+  countdown came five minutes early (2026-10-26). And because the clock starts at the countdown's end, no wait before it
+  can teach the estimate the reconcile (that same run stored 324 s for a 25-second shoot).
+
 ## The capture guard
 
 `capture-runtime.ts`'s `createTrackedArtifactGuard` is why a half-finished i18n capture can't leave the repo claiming a

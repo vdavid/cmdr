@@ -11,7 +11,8 @@
  *      It's the Playwright lane's own binary: every E2E build carries the capture
  *      instrumentation, inert until the spec enables it (see
  *      `messages.svelte.ts`), so there is no capture build of its own.
- *   3. create a fresh fixture tree.
+ *   3. create a fresh fixture tree, and start the stopwatch behind the main
+ *      pass's three-second hands-off countdown (`capture-countdown.ts`).
  *   4. launch the binary (E2E mode plus `CMDR_I18N_CAPTURE=1`, which marks the
  *      run with the yellow `SCREENSHOT` title bar; unique socket) and wait for
  *      its socket.
@@ -58,6 +59,8 @@ import {
   warnIfForeignCmdr,
   createTrackedArtifactGuard,
 } from './capture-runtime.ts'
+import { startCaptureStopwatch } from './capture-countdown.ts'
+import type { CaptureKind } from './capture-countdown.ts'
 import { EN_US_LOCALE_ARGS, pinUiLanguage } from '../test/e2e-shared/pin-locale.ts'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -94,6 +97,8 @@ const isOverflow = captureLocale !== 'en'
 // never overwrites the default-size overflow shots. This is the maximal-overflow
 // scenario a translator must fit. `pnpm i18n:shots:overflow --worst-case`.
 const wantWorstCase = process.argv.includes('--worst-case')
+/** Which stored estimate the countdown shows and calibrates: each pass shape runs a different length. */
+const captureKind: CaptureKind = wantWorstCase ? 'i18n-overflow-worst-case' : isOverflow ? 'i18n-overflow' : 'i18n'
 
 /** This run's screenshot dir and report path, matching the spec's own three-way split. */
 const screenshotsDir = wantWorstCase
@@ -277,6 +282,11 @@ async function main() {
   const startPath = createFixtures()
   console.log(`[i18n-capture] fixtures at ${startPath}`)
 
+  // Right before the first launch, so the build and fixtures above stay out of the timed
+  // run. Only the main pass's spec counts down (its env carries the countdown); the mock
+  // passes relaunch into a machine that is already hands-off.
+  const stopwatch = startCaptureStopwatch(captureKind, '[i18n-capture]')
+
   // The MAIN launch captures every default-launch surface and writes the report
   // fresh. `CMDR_MOCK_FDA=granted` opens the FDA gate so the download teaching
   // toast surfaces (its event bridge bails when the gate is pending); every build
@@ -288,7 +298,11 @@ async function main() {
   // `CMDR_I18N_OVERFLOW_LOCALE` (overflow pass only) tells the spec to switch the
   // app to the pseudolocale, redirect screenshots to `overflow/`, and run the
   // clip scan; empty/absent → the normal English coupling capture.
-  const mainEnv: Record<string, string> = { CMDR_MOCK_FDA: 'granted', CMDR_E2E_ASK_CMDR_FAKE: '1' }
+  const mainEnv: Record<string, string> = {
+    CMDR_MOCK_FDA: 'granted',
+    CMDR_E2E_ASK_CMDR_FAKE: '1',
+    ...stopwatch.env,
+  }
   if (isOverflow) mainEnv.CMDR_I18N_OVERFLOW_LOCALE = captureLocale
   // Worst-case overflow pass: the spec reads this to also max the UI zoom and
   // shrink each window to its minimum before each shot + clip scan, and to
@@ -313,6 +327,8 @@ async function main() {
   // surfaces for `@key.screenshot`). An overflow pass only needs the main-pass
   // surfaces rendered in the pseudolocale, so skip them: stop after the main pass.
   if (isOverflow) {
+    if (failedPasses.length > 0) throw new Error(`capture passes failed: ${failedPasses.join(', ')}`)
+    stopwatch.recordSuccess()
     const dir = wantWorstCase ? 'overflow/worst-case' : 'overflow'
     console.log(`[i18n-capture] overflow pass done. See \`screenshots/${dir}/overflow-report.md\` for clip findings.`)
     return
@@ -362,6 +378,7 @@ async function main() {
   // Complete and green: the rewritten report and skip list describe what this run
   // actually photographed, so they stay.
   trackedArtifacts.earn()
+  stopwatch.recordSuccess()
 
   formatTrackedArtifacts()
   console.log('[i18n-capture] done. Next: `pnpm i18n:couple` to write @key.screenshot couplings.')

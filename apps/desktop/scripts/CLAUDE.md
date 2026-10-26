@@ -8,8 +8,7 @@ launch boundary, the llama-server fetch, and the type-drift check.
 - **`tauri-wrapper.ts`**: what `pnpm dev` / `pnpm build` call. Resolves `CMDR_INSTANCE_ID`, reserves ephemeral ports
   (Vite + tauri-MCP bridge), writes the generated `tauri.instance.json` to `$TMPDIR`, exports env, spawns Tauri.
   Dev-only: `CMDR_VIRTUAL_MTP` appends `--features virtual-mtp` (`docs/tooling/virtual-mtp.md`)
-- **`instance-id.ts`**: pure helpers (slug sanitization, instance resolution, per-OS data-dir, bundle-id + productName
-  - config-payload composition, port reservation, port-file write); `instance-id.test.ts` covers them in ~45 cases
+- **`instance-id.ts`**: the wrapper's pure instance-isolation helpers, covered by `instance-id.test.ts`
 - **`download-llama-server.go`**: build-time llama-server downloader, invoked from `src-tauri/build.rs`
 - **`check-type-drift.ts`**: fast-lane check for hand-written types drifting from `bindings.ts`
 - **`gen-shipped-locales.ts`** (+ `-lib.ts`): the Rust locale resolver's tables: shipped catalogs with their CLDR
@@ -26,7 +25,9 @@ launch boundary, the llama-server fetch, and the type-drift check.
 - **`marketing-shots.ts`**: reshoots the brand masters (`pnpm marketing:shots`); `docs/guides/screenshots.md`. Needs
   ImageMagick, and a missing `magick` fails up front
 - **`capture-runtime.ts`**: launch primitives for both capture orchestrators (`ensureE2eBinary`), plus
-  `createTrackedArtifactGuard` (only a green run keeps its rewrite of tracked artifacts; DETAILS § "The capture guard")
+  `createTrackedArtifactGuard` (only a green run keeps its rewrite of tracked artifacts; DETAILS § "The capture guard").
+  `capture-countdown.ts`: the self-calibrating estimate behind the specs' orange hands-off countdown (DETAILS § "The
+  pre-capture countdown")
 - **`e2e-linux.sh`** + its sourced `e2e-linux-fixtures.sh` (fixture stacks): Linux Docker E2E
 
 Wrapper architecture, decisions, instance-isolation reference: `DETAILS.md`, `docs/tooling/instance-isolation.md`.
