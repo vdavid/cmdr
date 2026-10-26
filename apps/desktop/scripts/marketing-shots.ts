@@ -179,12 +179,15 @@ const PROD_LEGACY_INDEX_DIR = join(homedir(), 'Library', 'Application Support', 
  */
 const ROOT_INDEX_DB = 'index-root.db'
 
-/** When an index database last finished a scan, as a unix timestamp; 0 when it can't say. */
-function lastScanAt(path: string): number {
+/**
+ * The FSEvents id an index database has caught up to, 0 when it can't say: the number
+ * the app's startup gate compares against the system's to decide whether to rebuild.
+ */
+function storedEventId(path: string): number {
   try {
     const db = new DatabaseSync(path, { readOnly: true })
     try {
-      const row = db.prepare("SELECT value FROM meta WHERE key='scan_completed_at'").get()
+      const row = db.prepare("SELECT value FROM meta WHERE key='last_event_id'").get()
       return Number(row?.value) || 0
     } finally {
       db.close()
@@ -218,15 +221,17 @@ function lastScanAt(path: string): number {
  * The `-wal` and `-shm` sidecars are deliberately NOT carried across: the destination
  * recreates them, and a stale pair would contradict the snapshot.
  *
- * ❗ What the copy does NOT buy: skipping the wait. Startup compares the index's stored
- * FSEvents `last_event_id` against the system's current one and rebuilds when the gap
- * passes ten million (`JOURNAL_GAP_THRESHOLD`). On a machine that compiles all day that
- * gap is hours, not days — measured 28 million over one night — so an index copied from
- * a production app that last scanned yesterday still gets a reconcile, and production
- * would do the same on its own restart. What the copy buys is CONTENT: the reconcile
- * walks a populated index instead of building one from nothing, and installing it costs
- * two seconds. The wait itself is the spec's job (`waitForIndexedSizes`), which is what
- * actually guarantees no hourglass reaches a master.
+ * ❗ The copy skips the wait only when production is current. Startup compares the
+ * index's stored FSEvents `last_event_id` against the system's current one and rebuilds
+ * when the gap passes ten million (`JOURNAL_GAP_THRESHOLD`). On a machine that compiles
+ * all day that gap is about an hour (14 million in 90 minutes with two E2E builds,
+ * 2026-10-26), so the shots instance's own index is usually too old by the next run,
+ * while a RUNNING production app keeps its own seconds behind. Copy that one in and the
+ * launch replays the journal instead of rebuilding. A production app that was quit
+ * hours ago still leaves a reconcile, and then the copy buys CONTENT: the reconcile walks
+ * a populated index instead of building one from nothing. Either way the wait is the
+ * spec's job (`waitForIndexedSizes`), which is what guarantees no hourglass reaches a
+ * master.
  *
  * ❌ Don't "fix" this by writing the current event id into the copy. That claims the
  * index has seen changes it hasn't, and the app would then trust stale sizes forever
@@ -246,12 +251,14 @@ async function cloneProdIndex(): Promise<void> {
     console.log(`${LOG} no production index at ${source}; the instance will scan the drive itself (~1 min).`)
     return
   }
-  // Never trade a fresher index for an older one. After a shoot, the shots instance's
-  // own index is current; production's may be hours behind, and copying it in would buy
-  // a reconcile the instance didn't need.
-  const sourceScan = lastScanAt(source)
-  const targetScan = existsSync(target) ? lastScanAt(target) : 0
-  if (targetScan >= sourceScan) {
+  // Never trade a fresher index for an older one, judged by the same number the app's
+  // startup gate reads. ❌ Not `scan_completed_at`: a running production Cmdr keeps its
+  // `last_event_id` current through its live watcher without ever finishing a new scan,
+  // so comparing scan times kept a shots index 14 M events behind (a five-minute rebuild)
+  // over a production one that was seconds behind (2026-10-26).
+  const sourceEventId = storedEventId(source)
+  const targetEventId = existsSync(target) ? storedEventId(target) : 0
+  if (targetEventId >= sourceEventId) {
     console.log(`${LOG} the shots index is at least as fresh as production's; keeping it.`)
     return
   }
@@ -303,9 +310,9 @@ async function main(): Promise<void> {
   // needs). This pipeline claims the front position per shot through System Events,
   // which DOES work against another app, so refusing to start behind one would refuse
   // every run: the person starting it is by definition in a terminal that holds the
-  // front. Instead the front grab is attempted and then VERIFIED in the pixels — an
-  // unfocused window's shadow is 68/52 rather than 112/76, and `shootWithShadow`
-  // rejects it by name. A warning is still worth it, because clicking into another app
+  // front. Instead the front grab is attempted and then VERIFIED after each shutter:
+  // `shootWindow` asks System Events whether Cmdr was still frontmost and rejects the
+  // shot by name if not. A warning is still worth it, because clicking into another app
   // mid-run is a real way to spend three retries.
   const front = frontmostApp()
   if (front !== null && front !== 'Cmdr') {
