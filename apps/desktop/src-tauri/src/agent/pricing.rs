@@ -32,27 +32,79 @@ struct ModelPrice {
 /// The provisional Tier-1 price table (USD per million tokens). Ordered so a
 /// longer/more-specific prefix precedes the family it shares a stem with (mini before
 /// the base model). Prices are approximate and MUST be re-verified at release.
+///
+/// Claude prices are Anthropic's first-party rates (verified 2026-10-26 against Anthropic's
+/// published model table, cached 2026-10-06). Generations within a family are priced apart
+/// (Opus 4.5+ costs a third of Opus 4.1), so each generation gets its own row ahead of the
+/// family's catch-all. Haiku 5.5's row is its rate for prompts up to 100K tokens; past that it
+/// costs five times as much, which this flat table doesn't model.
 const ANTHROPIC_PRICES: &[ModelPrice] = &[
-    // Haiku (cheaper) before the broader `claude-` families it doesn't share a stem with.
     ModelPrice {
-        prefix: "claude-3-5-haiku",
-        prompt_usd_per_mtok: 0.80,
-        completion_usd_per_mtok: 4.00,
+        prefix: "claude-fable-",
+        prompt_usd_per_mtok: 10.00,
+        completion_usd_per_mtok: 50.00,
     },
     ModelPrice {
-        prefix: "claude-haiku",
-        prompt_usd_per_mtok: 0.80,
-        completion_usd_per_mtok: 4.00,
+        prefix: "claude-opus-5-5",
+        prompt_usd_per_mtok: 4.00,
+        completion_usd_per_mtok: 20.00,
     },
+    ModelPrice {
+        prefix: "claude-opus-5",
+        prompt_usd_per_mtok: 5.00,
+        completion_usd_per_mtok: 25.00,
+    },
+    ModelPrice {
+        prefix: "claude-opus-4-8",
+        prompt_usd_per_mtok: 5.00,
+        completion_usd_per_mtok: 25.00,
+    },
+    ModelPrice {
+        prefix: "claude-opus-4-7",
+        prompt_usd_per_mtok: 5.00,
+        completion_usd_per_mtok: 25.00,
+    },
+    ModelPrice {
+        prefix: "claude-opus-4-6",
+        prompt_usd_per_mtok: 5.00,
+        completion_usd_per_mtok: 25.00,
+    },
+    ModelPrice {
+        prefix: "claude-opus-4-5",
+        prompt_usd_per_mtok: 5.00,
+        completion_usd_per_mtok: 25.00,
+    },
+    // Opus 4 and 4.1.
     ModelPrice {
         prefix: "claude-opus",
         prompt_usd_per_mtok: 15.00,
         completion_usd_per_mtok: 75.00,
     },
+    // Sonnet 5 and 5.5.
+    ModelPrice {
+        prefix: "claude-sonnet-5",
+        prompt_usd_per_mtok: 2.00,
+        completion_usd_per_mtok: 10.00,
+    },
     ModelPrice {
         prefix: "claude-sonnet",
         prompt_usd_per_mtok: 3.00,
         completion_usd_per_mtok: 15.00,
+    },
+    ModelPrice {
+        prefix: "claude-haiku-5-5",
+        prompt_usd_per_mtok: 0.10,
+        completion_usd_per_mtok: 0.50,
+    },
+    ModelPrice {
+        prefix: "claude-haiku-4-5",
+        prompt_usd_per_mtok: 1.00,
+        completion_usd_per_mtok: 5.00,
+    },
+    ModelPrice {
+        prefix: "claude-3-5-haiku",
+        prompt_usd_per_mtok: 0.80,
+        completion_usd_per_mtok: 4.00,
     },
     ModelPrice {
         prefix: "claude-3-7-sonnet",
@@ -202,6 +254,22 @@ mod tests {
         assert_eq!(mini.cost_micros, 150_000, "gpt-4o-mini prompt is $0.15/Mtok");
         let base = price_call(ProviderTag::OpenAi, "gpt-4o-2024-11-20", 1_000_000, 0);
         assert_eq!(base.cost_micros, 2_500_000, "gpt-4o prompt is $2.50/Mtok");
+    }
+
+    /// Each Claude generation hits its own row, not its family's catch-all: Opus 5.5 once
+    /// priced at the $15 Opus 4.1 rate, almost four times its real cost.
+    #[test]
+    fn claude_generations_price_apart_within_a_family() {
+        let prompt_cost = |model| price_call(ProviderTag::Anthropic, model, 1_000_000, 0).cost_micros;
+        assert_eq!(prompt_cost("claude-opus-5-5"), 4_000_000);
+        assert_eq!(prompt_cost("claude-opus-5"), 5_000_000);
+        assert_eq!(prompt_cost("claude-opus-4-5-20251101"), 5_000_000);
+        assert_eq!(prompt_cost("claude-opus-4-1"), 15_000_000);
+        assert_eq!(prompt_cost("claude-sonnet-5-5"), 2_000_000);
+        assert_eq!(prompt_cost("claude-sonnet-4-6"), 3_000_000);
+        assert_eq!(prompt_cost("claude-haiku-5-5"), 100_000);
+        assert_eq!(prompt_cost("claude-haiku-4-5-20251001"), 1_000_000);
+        assert_eq!(prompt_cost("claude-fable-5-1"), 10_000_000);
     }
 
     #[test]
