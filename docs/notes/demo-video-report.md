@@ -8,8 +8,8 @@ the tool works: `tools/demo-video/CLAUDE.md` and its `DETAILS.md`.
 
 All files are gitignored, in `tools/demo-video/out/`.
 
-- `cmdr-demo-90s.mp4`: "Cmdr in 90 seconds". 89.0 s, 1920 × 1080, 30 fps, H.264 + AAC, 70 MB.
-- `cmdr-anywhere-90s.mp4`: "Cmdr, anywhere" (safe file operations to and from anywhere). 89.0 s, same format, 74 MB.
+- `cmdr-demo-90s.mp4`: "Cmdr in 90 seconds". 89.0 s, 1920 × 1080, 30 fps, H.264 + AAC, 50 MB.
+- `cmdr-anywhere-90s.mp4`: "Cmdr, anywhere" (safe file operations to and from anywhere). 89.0 s, same format, 52 MB.
 - `cmdr-demo-90s-web.mp4`, `cmdr-anywhere-90s-web.mp4`: web copies, 16 MB each (two-pass H.264 at 1.3 Mbps, faststart;
   small UI text stays crisp).
 - `cmdr-demo-90s-poster.png`, `cmdr-anywhere-90s-poster.png`: the end card at 88 s.
