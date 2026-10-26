@@ -313,7 +313,7 @@ async function record(options: Options, recorder: string): Promise<boolean> {
   // AI off at launch: the video's `ai` beat turns the local model on for itself, and its
   // switch back off didn't survive the quit once, which started the model on every later
   // launch and put the "Ask anything" chip in the search clip (2026-10-23).
-  prepareCaptureInstance(instance, LOG, { 'ai.provider': 'off' })
+  await prepareCaptureInstance(instance, LOG, { 'ai.provider': 'off' })
   // Before the launch, so the app's startup journal replay indexes a freshly staged tree
   // (`ensureDemoTree` explains why a tree staged under a running app reads `<dir>`).
   console.log(`${LOG} demo tree at ${DEMO_ROOT}: ${ensureDemoTree()}`)
