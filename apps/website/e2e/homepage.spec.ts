@@ -43,6 +43,79 @@ test.describe('Homepage', () => {
     }
   })
 
+  test('a landing clip seeks and toggles from the keyboard', async ({ page }) => {
+    // Reduced motion keeps the clip from autoplaying, so the position only moves when we move it.
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto('/')
+    const clip = page.locator('[data-product-clip]').first()
+    const slider = clip.getByRole('slider', { name: 'Clip position' })
+    const max = Number(await slider.getAttribute('aria-valuemax'))
+    expect(max).toBeGreaterThan(3)
+
+    await slider.focus()
+    await page.keyboard.press('End')
+    await expect(slider).toHaveAttribute('aria-valuenow', String(max))
+    await page.keyboard.press('Home')
+    await expect(slider).toHaveAttribute('aria-valuenow', '0')
+    await page.keyboard.press('PageUp')
+    await expect(slider).toHaveAttribute('aria-valuenow', '5')
+    await page.keyboard.press('ArrowLeft')
+    await expect(slider).toHaveAttribute('aria-valuenow', '4')
+
+    await page.keyboard.press('Space')
+    await expect(clip).toHaveAttribute('data-state', 'playing')
+    await page.keyboard.press('Space')
+    await expect(clip).toHaveAttribute('data-state', 'paused')
+  })
+
+  test('dragging a landing clip scrubs it, and a plain click toggles it', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto('/')
+    const clip = page.locator('[data-product-clip]').first()
+    const slider = clip.getByRole('slider', { name: 'Clip position' })
+    await slider.scrollIntoViewIfNeeded()
+    const box = await slider.boundingBox()
+    if (!box) throw new Error('The clip slider has no box')
+    const y = box.y + box.height / 2
+    const currentTime = () => clip.locator('video').evaluate((v: HTMLVideoElement) => v.currentTime)
+
+    // Paused before the drag, so paused after it, a quarter of the clip further along.
+    await page.mouse.move(box.x + box.width / 4, y)
+    await page.mouse.down()
+    await page.mouse.move(box.x + box.width / 2, y, { steps: 5 })
+    await expect(clip).toHaveAttribute('data-scrubbing', '')
+    await page.mouse.up()
+    await expect(clip).not.toHaveAttribute('data-scrubbing')
+    await expect(clip).toHaveAttribute('data-state', 'paused')
+    const afterForward = await currentTime()
+    expect(afterForward).toBeGreaterThan(1)
+
+    // Dragging left goes back.
+    await page.mouse.move(box.x + box.width / 2, y)
+    await page.mouse.down()
+    await page.mouse.move(box.x + box.width / 3, y, { steps: 5 })
+    await page.mouse.up()
+    await expect.poll(currentTime).toBeLessThan(afterForward)
+
+    // A click without travel plays; a drag while playing pauses only for its length.
+    await slider.click()
+    await expect(clip).toHaveAttribute('data-state', 'playing')
+    await page.mouse.move(box.x + box.width / 2, y)
+    await page.mouse.down()
+    await page.mouse.move(box.x + box.width * 0.6, y, { steps: 5 })
+    await expect(clip).toHaveAttribute('data-state', 'paused')
+    await page.mouse.up()
+    await expect(clip).toHaveAttribute('data-state', 'playing')
+  })
+
+  test('testimonials name real users', async ({ page }) => {
+    await page.goto('/')
+    const section = page.locator('section', { has: page.getByRole('heading', { name: 'From early users' }) })
+    await expect(section.locator('blockquote')).toHaveCount(3)
+    await expect(section).toContainText('Sven Kopetzki')
+    await expect(section).toContainText('Robert Benedict')
+  })
+
   test('has navigation header', async ({ page }) => {
     await page.goto('/')
 

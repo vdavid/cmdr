@@ -23,8 +23,8 @@ test.describe('Smart quotes', () => {
     // Testimonials.astro renders its quotes with set:html, and one carries a literal apostrophe.
     await page.goto('/')
     const body = (await page.textContent('body')) ?? ''
-    expect(body).toContain('I wouldn’t believe it works')
-    expect(body).not.toContain("I wouldn't believe it works")
+    expect(body).toContain('I’ve tried every Total Commander alternative')
+    expect(body).not.toContain("I've tried every Total Commander alternative")
   })
 
   test('homepage curls an apostrophe in plain .astro template text', async ({ page }) => {
