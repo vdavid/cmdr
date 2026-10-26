@@ -9,7 +9,8 @@ footage: `README.md`. Licenses and attribution: `CREDITS.md`.
   theme (types in `src/videos/types.ts`, list in `src/videos/index.ts`). `src/config.ts` holds shared knobs (presenter
   kind, TTS model, `public/` paths).
 - `src/timeline.ts` lays out a video from its spec (pure, deterministic): cuts on bar lines, the optional lift on
-  `dropOnPhrase`, the ending on the track's final hit. `pnpm timeline --video=<id>` prints it.
+  `dropOnPhrase`, the ending on the track's final hit. `pnpm timeline --video=<id>` prints it. `src/lib/framing.ts`
+  places the app window and its punch-ins, and the timeline build throws if any frame puts the window off-canvas.
 - `src/scenes/`, `src/presenter/` (the swappable stick figure or webcam slot), `src/overlays/`, and
   `src/audio/Soundtrack.tsx` are shared machinery, themed by the spec.
 - `scripts/` produce the gitignored `public/<id>/` inputs (`voice.ts`, `footage.ts`, `prepare-assets.ts`) and analyze

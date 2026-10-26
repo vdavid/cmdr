@@ -31,10 +31,11 @@ file restored), transfers (live progress and ETA, pause and resume, the Operatio
 (Undo, then the operation log's Roll back). A warmer look to match its music: words step in on eighth notes with a
 mustard marker swipe, cards slide, no white flashes, amber/rose/teal haze, and pulses that follow the real drummer.
 
-**In both:** every recorded moment is synced to its spoken line (for example, the rollback cuts in on the big drop and
-"the bar walks back to zero" lands on "watch every file go back"); cuts sit on the music's bar lines; burned-in captions
-light up word by word; and the stick figure lip-syncs to the voice, gestures per phrase, and shrinks into a corner
-"webcam bubble" during the beats.
+**In both:** the app window sits still with a soft Cmdr-gold glow that swells gently on the beat, and punch-ins ease in
+slowly on the moment that matters, always keeping the whole window on screen. Every recorded moment is synced to its
+spoken line (for example, the rollback cuts in on the big drop and "the bar walks back to zero" lands on "watch every
+file go back"); cuts sit on the music's bar lines; burned-in captions light up word by word; and the stick figure
+lip-syncs to the voice, gestures per phrase, and shrinks into a corner "webcam bubble" during the beats.
 
 ## Review
 
@@ -54,6 +55,17 @@ through it mid-transition during punch-ins), checked at two frames in each beat'
 shots start zoomed in so the test server's address stays out of frame (video 1's NAS slice now matches video 2's
 framing); video 2's S3 beat became one continuous shot so the cost estimate lands on its line; the level check had
 measured the peak on a mono downmix (3 dB too high) and now reads every channel.
+
+Fixes after David's first look (2026-10-26):
+
+- **The window no longer pulses.** It used to scale on every beat; now only its gold glow swells.
+- **No more half-off-screen windows.** The punch-ins scaled the whole window toward their focus with no bounds, so the
+  1.3–1.4× zooms pushed it off the top of the canvas (video 2's SMB and S3 shots and most low-focus shots; video 1's NAS
+  and "Made with care" shots), and the close's turning app ran off the right edge in both videos. Punch-ins now grow the
+  window only within the canvas and crop inside it beyond that, and the close's card is smaller and turns less. A
+  frame-by-frame check in the timeline build fails any shot that would put the window off-canvas
+  (`tools/demo-video/DETAILS.md`, "The app window").
+- Checked on stills at every shot's start, middle, and end in both videos, before and after.
 
 ## For David to judge
 

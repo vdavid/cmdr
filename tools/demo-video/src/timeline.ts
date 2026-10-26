@@ -10,6 +10,7 @@
 // - The close ends on the track's final hit (the logo slams on it), reached with a whole-bar jump (plus a measured
 //   nudge for live music) into the track's last section.
 import { FPS } from './config.ts'
+import { framingProblems } from './lib/framing.ts'
 import type { Section, Shot, VideoSpec } from './videos/types.ts'
 
 export type VoicePhrase = { show: string; start: number; end: number }
@@ -279,7 +280,7 @@ export function buildTimeline(
         ]
       : [[drop1, finalHit + 0.1]]
 
-  return {
+  const timeline: Timeline = {
     duration,
     sections,
     voice: voiceClips,
@@ -292,6 +293,10 @@ export function buildTimeline(
     pulses: spec.theme.pulse === 'onsets' && hits.length > 0 ? hits : downbeats,
     highEnergy,
   }
+  // No shot may put the app window off-canvas (`lib/framing.ts`): fail here, before a render ships a broken frame.
+  const problems = framingProblems(timeline, spec)
+  if (problems.length > 0) throw new Error(`${spec.id}: framing problems:\n  ${problems.join('\n  ')}`)
+  return timeline
 }
 
 /** Seconds to frames, rounded the same way everywhere. */

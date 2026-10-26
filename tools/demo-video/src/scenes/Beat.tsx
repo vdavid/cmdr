@@ -1,36 +1,37 @@
 import { AbsoluteFill, Easing, Freeze, Img, OffthreadVideo, Sequence, staticFile } from 'remotion'
 import { useTimeline } from '../context.ts'
 import { COLORS, FONT, MONO, hits, inRanges, ramp } from '../lib/motion.ts'
+import { type Framing, revealAt, shotFraming } from '../lib/framing.ts'
 import { f, type SectionPlan, type ShotPlan } from '../timeline.ts'
 
-// A demo beat: a kinetic title card slams in on the cut, then pushes through into the app footage, which drifts and
-// punches in on the key UI moment. The footage is the real recording when the manifest has it, else a still.
+// A demo beat: a kinetic title card slams in on the cut, then hands over to the app window. The window never moves on
+// the beat: its Cmdr-gold glow swells gently instead. Punch-ins are slow and land on the synced moment, framed by
+// `lib/framing.ts` so the window always stays whole and on-canvas. The footage is the real recording when the manifest
+// has it, else a still.
 export const Beat: React.FC<{ t: number; section: SectionPlan }> = ({ t, section }) => {
   const { timeline, spec } = useTimeline()
   const { theme } = spec
   const local = t - section.start
   const cardOut = section.footageStart - section.start
-  const pulse = inRanges(t, timeline.highEnergy) ? hits(t, timeline.pulses, 0.14) : 0
-  const reveal = ramp(local, cardOut - 0.3, cardOut + 0.25, Easing.bezier(0.16, 1, 0.3, 1))
+  const energy = inRanges(t, timeline.highEnergy)
+  const pulse = energy ? hits(t, timeline.pulses, 0.14) : 0
+  // The glow decays slower than the haze, so it swells rather than flickers.
+  const glow = energy ? hits(t, timeline.pulses, 0.3) * theme.glowPulse : 0
+  const reveal = revealAt(section, t)
   const total = timeline.sections.filter((s) => s.kind === 'beat').length
-  // `zoom` pushes through the card into the footage; `slide` pushes the card out left as the footage slides in.
-  const enter =
-    theme.transition === 'zoom'
-      ? {
-          transform: `scale(${1.35 - 0.35 * reveal + pulse * theme.pulseAmount})`,
-          filter: `blur(${(1 - reveal) * 12}px)`,
-        }
-      : {
-          transform: `translateX(${(1 - reveal) * 360}px) scale(${1 + pulse * theme.pulseAmount})`,
-          filter: `blur(${(1 - reveal) * 6}px)`,
-        }
+  const shot = section.shots.find((s) => t >= s.start && t < s.end)
+  const framing = shot ? shotFraming(shot, section, theme.transition, t) : null
+  // `zoom` settles the window from a little larger; `slide` slides it in as the title leaves left.
+  const e = framing?.enter ?? { scale: 1, x: 0 }
+  const enter = {
+    transform: `translateX(${e.x}px) scale(${e.scale})`,
+    filter: `blur(${(1 - reveal) * (theme.transition === 'zoom' ? 12 : 6)}px)`,
+  }
   return (
     <AbsoluteFill>
       <AbsoluteFill style={{ opacity: reveal, ...enter }}>
         <Glow t={t} pulse={pulse} colors={spec.theme.haze} />
-        {section.shots.map((shot, i) =>
-          t >= shot.start && t < shot.end ? <Shot key={i} shot={shot} t={t} first={i === 0} /> : null,
-        )}
+        {shot && framing && <Shot key={section.shots.indexOf(shot)} shot={shot} framing={framing} glow={glow} />}
       </AbsoluteFill>
       <SectionTag section={section} index={section.index} total={total} t={local} cardOut={cardOut} />
       {local < cardOut + 0.3 &&
@@ -63,55 +64,40 @@ const Glow: React.FC<{ t: number; pulse: number; colors: [string, string, string
   />
 )
 
-// Base footage box: centered a bit high, leaving the bottom band for captions.
-// The footage box: centered a bit high, leaving the bottom band for captions; at most this wide and tall.
-const BOX = { cx: 960, cy: 488, maxW: 1440, maxH: 780 }
-// The stills carry the window's shadow margins, so their box is the full image.
-const STILL_ASPECT = 2508 / 1634
+/**
+ * The app window's frame: a hairline gold edge, a soft drop shadow, and a Cmdr-gold (`COLORS.mustard`) glow whose
+ * spread and strength swell with `glow` (0–1). It clips its content, so a punch-in stays inside it.
+ */
+export const windowChrome = (glow: number): React.CSSProperties => ({
+  boxSizing: 'border-box',
+  borderRadius: 14,
+  overflow: 'hidden',
+  border: `1px solid rgba(255,194,6,${0.3 + 0.2 * glow})`,
+  boxShadow: [
+    '0 40px 120px rgba(0,0,0,0.6)',
+    `0 0 ${50 + 40 * glow}px ${4 + 10 * glow}px rgba(255,194,6,${0.22 + 0.2 * glow})`,
+  ].join(', '),
+})
 
-const Shot: React.FC<{ shot: ShotPlan; t: number; first: boolean }> = ({ shot, t, first }) => {
-  const len = shot.end - shot.start
-  const local = t - shot.start
-  const focus = shot.focus ?? { x: 0.5, y: 0.5, zoom: 1 }
-  // The punch-in lands on the synced moment; without one, the first shot drifts, then punches in at 45 %, and later
-  // shots cut in already close.
-  const drift = ramp(local, 0, len, (x) => x)
-  const punchAt = shot.syncAt !== undefined ? Math.max(0, shot.syncAt - shot.start - 0.1) : first ? len * 0.45 : 0
-  const punches = shot.syncAt !== undefined || first
-  const punch = punches ? ramp(local, punchAt, punchAt + 0.45, Easing.bezier(0.2, 1.4, 0.4, 1)) : 1
-  const motion = punches ? 0.25 * drift + 0.75 * punch : 0.7 + 0.3 * drift
-  const p = shot.closeFraming ? 0.85 + 0.15 * motion : motion
-  const zoom = 1 + (focus.zoom - 1) * p
-  const aspect = shot.footage?.aspect ?? STILL_ASPECT
-  const w = Math.min(BOX.maxW, BOX.maxH * aspect)
-  const h = w / aspect
-  const dx = (0.5 - focus.x) * w * p
-  const dy = (0.5 - focus.y) * h * p
-  const style: React.CSSProperties = {
-    position: 'absolute',
-    left: BOX.cx - w / 2,
-    top: BOX.cy - h / 2,
-    width: w,
-    height: h,
-    transform: `scale(${zoom}) translate(${dx}px, ${dy}px)`,
+const Shot: React.FC<{ shot: ShotPlan; framing: Framing; glow: number }> = ({ shot, framing, glow }) => {
+  const { card, zoom, x, y } = framing
+  const content: React.CSSProperties = {
+    width: '100%',
+    height: '100%',
+    transform: `translate(${x}px, ${y}px) scale(${zoom})`,
     transformOrigin: '50% 50%',
   }
-  if (shot.footage) {
-    return (
-      <div
-        style={{
-          ...style,
-          borderRadius: 14,
-          overflow: 'hidden',
-          border: `1px solid ${COLORS.border}`,
-          boxShadow: '0 40px 120px rgba(0,0,0,0.6)',
-        }}
-      >
-        <FootageClip shot={shot} />
-      </div>
-    )
-  }
-  return <Img src={staticFile(`brand/screenshots/${shot.still}`)} style={style} />
+  return (
+    <div style={{ position: 'absolute', ...card, ...windowChrome(glow) }}>
+      {shot.footage ? (
+        <div style={content}>
+          <FootageClip shot={shot} />
+        </div>
+      ) : (
+        <Img src={staticFile(`brand/screenshots/${shot.still}`)} style={content} />
+      )}
+    </div>
+  )
 }
 
 /**

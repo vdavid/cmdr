@@ -71,9 +71,29 @@ amber/rose/teal haze, pulses on the track's real drum hits). Grain, vignette, an
 (`overlays/Effects.tsx`). The stick figure's lines "boil" (redrawn with a small wobble every three frames), which keeps
 it from reading as a vector template.
 
+## The app window (`src/lib/framing.ts`)
+
+- The window is a card with a hairline gold edge and a Cmdr-gold (`#ffc206`, the website's `--color-accent`) glow
+  (`windowChrome` in `scenes/Beat.tsx`, also used by the close). On the music's pulses only the glow swells (spread and
+  strength, by `theme.glowPulse`, on a 0.3 s decay); the window never scales or moves on the beat. Decision/Why: David
+  found the earlier beat-scaled window too jumpy and wanted it calmer with the beat in the glow (2026-10-26).
+- Punch-ins are slow (a 1.4 s ease that settles 0.5 s after the `sync` moment) and only where a shot has a `sync` and a
+  `focus`. The card first grows toward the focus point, as far as the canvas's safe area (24 px margin) allows; any zoom
+  beyond that crops inside the card, clamped so the footage always covers it. A shot without `sync` holds the whole
+  window.
+- `closeFraming` holds the full punch-in for the whole shot at the card's settled size, so the crop happens inside the
+  window. The SMB shots use a light crop to the bottom left (`zoom` 1.18) that hides the volume picker's server address
+  and keeps the file names and counts.
+- The close's card turns slowly in perspective (`CLOSE`, `closeTurn`), sized so its projected corners stay on-canvas.
+- Guard: `framingProblems` checks every frame of every shot (entrance included) and the close's projected corners, and
+  `buildTimeline` throws on any problem, so `pnpm timeline` and every render fail before a broken frame ships.
+  Gotcha/Why: the old punch-in scaled and shifted the whole window toward its focus with no bounds, so zooms of 1.3–1.4
+  pushed it off the top of the canvas (SMB, S3, and every low-focus shot), and the close's card, hinged on its left edge
+  and turning toward the viewer, ran off the right edge.
+
 ## Footage caveats that shaped the edit
 
 - The SMB test server's address ("private on 127.0.0.1:11481") shows in the volume picker and copy dialog of the
-  `smb`/`hero2` recordings. SMB shots use `closeFraming` to keep the picker out of frame; video 2's close borrows video
-  1's `hero` clip because the perspective view can't hide it. The copy dialog in video 2's SMB shot still names it.
+  `smb`/`hero2` recordings. SMB shots use `closeFraming` to crop the picker off; video 2's close borrows video 1's
+  `hero` clip because the perspective view can't hide it. The copy dialog in video 2's SMB shot still names it.
 - The phone recording has no ADB moment; "Or go over ADB." plays over the finished copy (by decision).

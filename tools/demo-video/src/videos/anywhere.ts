@@ -42,18 +42,20 @@ const script: Section[] = [
       },
     ],
     // The share lists 5,000 photos on "way faster"; the copy within the share lands on "right on the server". The
-    // punch-ins sit low: the volume picker at the top shows the test server's address (see video-beats.json).
+    // shots hold a light crop to the bottom left: the volume picker at the top shows the test server's address (see
+    // video-beats.json), and `closeFraming` keeps it cropped off inside the window for the whole shot, while the file
+    // names and the "5,000 files" count stay in frame.
     shots: [
       shot(
         'smb',
         0.55,
-        { x: 0.5, y: 0.66, zoom: 1.4 },
+        { x: 0.1, y: 0.95, zoom: 1.18 },
         { closeFraming: true, sync: { moment: 'listed: 5,000 files', phrase: 1 } },
       ),
       shot(
         'smb',
         0.45,
-        { x: 0.5, y: 0.62, zoom: 1.3 },
+        { x: 0.1, y: 0.95, zoom: 1.18 },
         { closeFraming: true, cue: 2, sync: { moment: 'F5: copy "Lisbon trip"', phrase: 2 } },
       ),
     ],
@@ -222,7 +224,7 @@ export const anywhere: VideoSpec = {
     transition: 'slide',
     flashes: false,
     pulse: 'onsets',
-    pulseAmount: 0.007,
+    glowPulse: 0.7,
     haze: ['#f59e0b', '#f43f5e', '#14b8a6', '#ffc206'],
     leaks: [
       ['rgba(255,170,60,0.55)', 'rgba(244,63,94,0.3)'],

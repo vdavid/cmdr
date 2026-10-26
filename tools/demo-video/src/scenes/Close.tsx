@@ -1,8 +1,9 @@
 import { AbsoluteFill, Easing, Img, staticFile } from 'remotion'
 import { useTimeline } from '../context.ts'
-import { COLORS, FONT, MONO, hit, ramp } from '../lib/motion.ts'
+import { CLOSE, STILL_ASPECT, closeTurn } from '../lib/framing.ts'
+import { COLORS, FONT, MONO, hit, hits, inRanges, ramp } from '../lib/motion.ts'
 import type { SectionPlan } from '../timeline.ts'
-import { FootageClip } from './Beat.tsx'
+import { FootageClip, windowChrome } from './Beat.tsx'
 
 // The close: the presenter is back full size with the app floating beside them; on the music's final hit the frame
 // clears and the end card slams in (logo, name, URL), then holds through the decay.
@@ -13,22 +14,24 @@ export const Close: React.FC<{ t: number; section: SectionPlan }> = ({ t, sectio
   const cleared = ramp(t, hitT - 0.06, hitT + 0.05)
   const shot = section.shots[0]
   const enter = ramp(local, 0, 0.8)
+  const glow = inRanges(t, timeline.highEnergy) ? hits(t, timeline.pulses, 0.3) * spec.theme.glowPulse : 0
+  const { rotateY, rotateX } = closeTurn(local)
+  const width = CLOSE.width
   return (
     <AbsoluteFill>
-      {/* The app, floating in perspective on the right. */}
-      <AbsoluteFill style={{ perspective: 1800, opacity: (1 - cleared) * enter }}>
+      {/* The app, floating in perspective on the right and turning slowly toward the viewer. `framingProblems` checks
+          its projected corners stay on the canvas. */}
+      <AbsoluteFill style={{ perspective: CLOSE.perspective, opacity: (1 - cleared) * enter }}>
         <div
           style={{
             position: 'absolute',
-            left: 860,
-            top: 150,
-            width: 1180,
-            height: 1180 / (shot?.footage?.aspect ?? 2508 / 1634),
-            transform: `rotateY(${-22 + local * 1.6}deg) rotateX(${5 - local * 0.4}deg) translateX(${(1 - enter) * 160}px)`,
+            left: CLOSE.left,
+            top: CLOSE.top,
+            width,
+            height: width / (shot?.footage?.aspect ?? STILL_ASPECT),
+            transform: `rotateY(${rotateY}deg) rotateX(${rotateX}deg)`,
             transformOrigin: '0% 50%',
-            filter: `drop-shadow(0 0 80px rgba(139,92,246,0.35))`,
-            borderRadius: shot?.footage ? 14 : 0,
-            overflow: shot?.footage ? 'hidden' : 'visible',
+            ...windowChrome(glow),
           }}
         >
           {shot?.footage ? (

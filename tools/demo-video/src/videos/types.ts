@@ -7,7 +7,10 @@ export type Shot = {
   still: string
   /** Fraction of the section's footage time this shot takes (shots split the section in order). */
   weight: number
-  /** Punch-in target, in footage-relative coordinates (0–1), and how far to zoom. */
+  /**
+   * Punch-in target, in footage-relative coordinates (0–1), and how far to zoom (1–2). The punch-in eases in slowly
+   * and lands on the `sync` moment; `src/lib/framing.ts` keeps the window whole and on-canvas whatever this says.
+   */
   focus?: { x: number; y: number; zoom: number }
   /** The shot cuts in just before this phrase (index in the section) starts, snapped to the nearest beat. */
   cue?: number
@@ -21,7 +24,10 @@ export type Shot = {
   sync?: { moment: string; phrase?: number }
   /** Keep the still even when footage exists, with the reason (for example, a recording that shows the wrong thing). */
   stillOnly?: string
-  /** Start already most of the way into the punch-in, to keep something (like the SMB test server's address) out of frame. */
+  /**
+   * Hold the full punch-in for the whole shot, cropped inside the window at its settled size, to keep something (like
+   * the SMB test server's address) out of frame.
+   */
   closeFraming?: boolean
   /** Borrow `beat` from another video's recordings (its spec `id`). */
   source?: string
@@ -87,9 +93,10 @@ export type Theme = {
   transition: 'zoom' | 'slide'
   /** White flashes on the drops. */
   flashes: boolean
-  /** What the footage, haze, and bubble pulse to: computed downbeats, or the track's real drum hits. */
+  /** What the window's glow, the haze, and the bubble pulse to: computed downbeats, or the track's real drum hits. */
   pulse: 'downbeats' | 'onsets'
-  pulseAmount: number
+  /** How far the app window's gold glow swells on a pulse (0–1). The window itself never moves on the beat. */
+  glowPulse: number
   /** Backdrop haze colors, and the light-leak color pairs that sweep through on cuts. */
   haze: [string, string, string, string]
   leaks: [string, string][]

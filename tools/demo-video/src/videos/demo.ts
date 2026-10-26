@@ -136,7 +136,7 @@ const script: Section[] = [
         fallbackBeat: 'hero',
         still: 'app-main-dark.webp',
         weight: 0.25,
-        focus: { x: 0.5, y: 0.66, zoom: 1.4 },
+        focus: { x: 0.1, y: 0.95, zoom: 1.18 },
         closeFraming: true,
         sync: { moment: 'listed: 5,000 files', phrase: 1 },
       },
@@ -281,7 +281,7 @@ export const demo: VideoSpec = {
     transition: 'zoom',
     flashes: true,
     pulse: 'downbeats',
-    pulseAmount: 0.012,
+    glowPulse: 1,
     haze: ['#8b5cf6', '#3b82f6', '#ec4899', '#ffc206'],
     leaks: [
       ['rgba(255,194,6,0.55)', 'rgba(236,72,153,0.35)'],
