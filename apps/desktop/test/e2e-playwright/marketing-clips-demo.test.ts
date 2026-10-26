@@ -4,17 +4,24 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 // Before the import: the module reads it once. Kilobytes instead of ~400 MB per staging.
 process.env.CMDR_CLIPS_DEMO_SIZE_SCALE = '0.001'
-const { DEMO, MARKER, QUEUE_SOURCES, ensureDemoTree, removeDemoTree, resetBackup, resetRawImports, stageDemoTree } =
-  await import('./marketing-clips-demo.js')
-
-const hasMagick = spawnSync('magick', ['-version']).status === 0
+const {
+  BOUQUET_PHOTO,
+  DEMO,
+  MARKER,
+  QUEUE_SOURCES,
+  VIEWER_DOC,
+  ensureDemoTree,
+  removeDemoTree,
+  resetBackup,
+  resetRawImports,
+  stageDemoTree,
+} = await import('./marketing-clips-demo.js')
 
 describe('the demo tree', () => {
   let parent = ''
@@ -38,22 +45,23 @@ describe('the demo tree', () => {
     expect(existsSync(join(root, 'thesis.docx'))).toBe(true)
   })
 
-  it.skipIf(!hasMagick)('stages every folder the clips reach for, then keeps a current tree', () => {
+  it('stages every folder the clips reach for, then keeps a current tree', () => {
     expect(ensureDemoTree(root)).toBe('staged')
     expect(ensureDemoTree(root)).toBe('kept')
     expect(existsSync(join(root, MARKER))).toBe(true)
     for (const dir of Object.values(DEMO)) expect(existsSync(join(root, dir)), dir).toBe(true)
     for (const project of QUEUE_SOURCES) expect(existsSync(join(root, DEMO.projects, project)), project).toBe(true)
-    expect(existsSync(join(root, DEMO.fieldNotes, 'glacier.jpg'))).toBe(true)
+    expect(statSync(join(root, DEMO.fieldNotes, BOUQUET_PHOTO.file)).size).toBeGreaterThan(100_000)
+    expect(readFileSync(join(root, DEMO.fieldNotes, VIEWER_DOC), 'utf8')).toContain(BOUQUET_PHOTO.author)
   })
 
-  it.skipIf(!hasMagick)('restages a tree an older version staged', () => {
+  it('restages a tree an older version staged', () => {
     stageDemoTree(root)
     writeFileSync(join(root, MARKER), 'Staged by an older pnpm marketing:clips.\n')
     expect(ensureDemoTree(root)).toBe('staged')
   })
 
-  it.skipIf(!hasMagick)('puts renamed files and copied ones back between takes, keeping the folders', () => {
+  it('puts renamed files and copied ones back between takes, keeping the folders', () => {
     stageDemoTree(root)
     const raw = join(root, DEMO.rawImports)
     const rawInode = statSync(raw).ino

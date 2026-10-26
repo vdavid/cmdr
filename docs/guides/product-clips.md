@@ -32,11 +32,31 @@ Slugs come from `apps/desktop/test/e2e-playwright/marketing-clips-slugs.ts`; eac
 - `copy-rollback`: a throttled copy of 64 photos, Pause, Resume, Rollback, and the bar walks back to zero.
 - `ops-queue`: the Operations window over the main window, five project folders copied one after the other.
 - `multi-rename`: the name mask typed into Multi-rename (`Iceland [Y-M-D] [C:3]`), the preview filling, then Rename.
-- `search`: a query typed, results landing.
+- `search` (~23 s): "invoice" typed with AI off, results landing; Settings > Provider switched to Local LLM (the
+  built-in model, already downloaded into the clips instance off camera) until its server reads Running; then "Ask
+  anything", "tax report from last year", Enter, and only last year's two tax files come back. Real inference, so a
+  wrong answer fails the take and Playwright's retry records it again. The settings window waits behind the main window,
+  centered inside its frame, from before the take: the recorder only shows windows it was given or that open after it
+  starts.
 - `language-switch`: Settings > Appearance > Language, the list open, ArrowDown twelve times; the picker previews each
   language as it's highlighted, so the window re-renders in each.
-- `viewer`: a Markdown README, a photo, a text file, then a binary as bytes and hex, one after another in one window.
+- `viewer` (~20 s): a real photo (an autumn bouquet), then the same file as Binary (2) and Hex (3), whose first rows
+  read the photo's own caption; then a Markdown README as Text (1), then formatted (0). Two viewer windows stacked on
+  one frame, the README's behind: a window reaches another file only through a Markdown link, and a linked file opens
+  formatted, never as text.
 - `settings`: a pan through seven Settings sections, one per group.
+
+## Credits
+
+Third-party content the clips show. Anything that shows it (the clip, its poster, a page embedding it) owes its credit.
+
+- **"Autumn bouquet"** by Susanne Nilsson, CC BY-SA 2.0 (<https://creativecommons.org/licenses/by-sa/2.0/>), from
+  <https://www.flickr.com/photos/infomastern/30427779760/> via Wikimedia Commons
+  (<https://commons.wikimedia.org/wiki/File:Autumn_bouquet_(30427779760).jpg>). A camera photo (Canon EOS 760D,
+  2016-10-14, per its EXIF), committed as a 2,400 px copy with its metadata kept:
+  `apps/desktop/test/e2e-playwright/marketing-clips-assets/autumn-bouquet.jpg`. Shown in the `viewer` clip. The staged
+  README ends with the credit, but on screen it's only a Text-view line cut off at the window's edge, so a page showing
+  the clip carries the credit itself.
 
 ## Demo video footage (`--video`)
 

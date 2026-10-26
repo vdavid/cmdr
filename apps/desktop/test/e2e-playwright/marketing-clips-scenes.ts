@@ -35,7 +35,9 @@ import {
   SEARCH_INPUT,
   SEARCH_OVERLAY,
   closeSearchDialog,
+  getActiveMode,
   openSearchDialog,
+  pressMetaDigit,
   resetSearchDialog,
 } from './search-helpers.js'
 import { appPid, setWindowSize, windowMetrics } from './marketing-shots-helpers.js'
@@ -49,7 +51,17 @@ import {
   stageCosmetics,
   waitForIndexedSizes,
 } from './marketing-stage.js'
-import { DEMO, DEMO_ROOT, QUEUE_SOURCES, SEARCH_QUERY, resetBackup, resetRawImports } from './marketing-clips-demo.js'
+import {
+  AI_QUERY,
+  BOUQUET_PHOTO,
+  DEMO,
+  DEMO_ROOT,
+  QUEUE_SOURCES,
+  SEARCH_QUERY,
+  VIEWER_DOC,
+  resetBackup,
+  resetRawImports,
+} from './marketing-clips-demo.js'
 import { startTake } from './marketing-clips-take.js'
 import type { ClipTheme, Take } from './marketing-clips-take.js'
 
@@ -67,6 +79,9 @@ const CLIP_VIEWER = { width: 960, height: 680 }
 
 /** The queue window's size, small enough to sit inside the main window's frame. */
 const CLIP_QUEUE = { width: 720, height: 470 }
+
+/** The settings window's size in the search clip: inside the main window's frame, like the queue's. */
+const CLIP_SETTINGS = { width: 800, height: 540 }
 
 /**
  * The still beat after a clip's start marker and before its first action, so a viewer
@@ -167,12 +182,14 @@ export async function stageMain(
   await setSetting(page, 'listing.showHiddenFiles', false)
   // The `undo` video beat turns this on; left on, every later copy's dialog waits for a Close.
   await setSetting(page, 'fileOperations.keepProgressOpenWhenDone', false)
+  await cancelSignInSheet(page)
   await resetTabs('left')
   await resetTabs('right')
   await setViewMode('left', 'full')
   await setViewMode('right', 'full')
   await mcpCall('nav_to_path', { pane: 'left', path: left })
   await mcpCall('nav_to_path', { pane: 'right', path: right })
+  await cancelSignInSheet(page)
   const leftFocused = await page.evaluate<boolean>(
     `document.querySelectorAll('.file-pane')[0]?.classList.contains('is-focused') ?? false`,
   )
@@ -181,6 +198,19 @@ export async function stageMain(
   await pinVolatileChrome(page)
   await setTheme(page, theme)
   await dismissAllToasts(page)
+}
+
+const SIGN_IN_SHEET = '[data-dialog-id="server-sign-in"]'
+
+/**
+ * Cancels a server sign-in sheet if one is up. The app reopens its panes where they were,
+ * and a pane left on the `--video2` run's NAS share asks to sign in again when the SMB
+ * Docker fixture is down; the sheet then blocks every later step (2026-10-26).
+ */
+async function cancelSignInSheet(page: TauriPage): Promise<void> {
+  if (!(await page.isVisible(SIGN_IN_SHEET))) return
+  await clickButtonByText(page, `${SIGN_IN_SHEET} button`, 'Cancel')
+  await expect.poll(async () => !(await page.isVisible(SIGN_IN_SHEET)), { timeout: waitBudget(5000) }).toBeTruthy()
 }
 
 /**
@@ -466,32 +496,187 @@ export async function resetMultiRenameMask(page: TauriPage): Promise<void> {
   await expect.poll(async () => !(await page.isVisible(MULTI_RENAME)), { timeout: waitBudget(5000) }).toBeTruthy()
 }
 
-/** A query typed, results landing. */
+/** The local model's runtime facts the AI scenes wait on (`get_ai_runtime_status`). */
+interface LocalAiRuntime {
+  serverRunning: boolean
+  modelInstalled: boolean
+}
+
+async function localAiRuntime(page: TauriPage): Promise<LocalAiRuntime> {
+  return page.evaluate<LocalAiRuntime>(`window.__TAURI_INTERNALS__.invoke('get_ai_runtime_status')`)
+}
+
+/** Waits until the local model's server answers `running`, on or off. */
+async function waitForLocalAiServer(page: TauriPage, running: boolean): Promise<void> {
+  await expect
+    .poll(async () => (await localAiRuntime(page)).serverRunning, {
+      timeout: waitBudget(90000),
+      message: running ? "the local AI server didn't start" : "the local AI server didn't stop",
+    })
+    .toBe(running)
+}
+
+/**
+ * Off camera: switches the instance to Cmdr's built-in local model and waits for its
+ * server. On an instance without the model it downloads it first, through the same
+ * `start_ai_download` that Settings > AI > Download calls (about 2 GB; 90 s on a fast
+ * line, 2026-10-23). The model stays in the clips data dir for later runs, and an
+ * interrupted download resumes. No API key anywhere.
+ */
+export async function ensureLocalAi(page: TauriPage): Promise<void> {
+  await setSetting(page, 'ai.provider', 'local')
+  if (!(await localAiRuntime(page)).modelInstalled) {
+    console.log(`${LOG} downloading the local AI model into the clips instance…`)
+    // Fire and forget: the command resolves only when the download ends, far past one
+    // `evaluate`'s budget. The runtime status is the probe.
+    await page.evaluate(`(function () { window.__TAURI_INTERNALS__.invoke('start_ai_download'); return true })()`)
+    await expect
+      .poll(async () => (await localAiRuntime(page)).modelInstalled, {
+        timeout: waitBudget(480000),
+        intervals: [5000],
+        message: "the local AI model didn't finish downloading; run the take again to resume it",
+      })
+      .toBe(true)
+  }
+  await waitForLocalAiServer(page, true)
+}
+
+/** The file the AI query should find: last year's tax report (`stageTaxes`). */
+export function lastYearsTaxReport(): string {
+  return `Tax report ${String(new Date().getUTCFullYear() - 1)}`
+}
+
+/**
+ * Waits for the AI search's answer to `AI_QUERY`: last year's tax report listed, and
+ * nothing but tax files. The local model samples (`--temp 0.6`) and once answered with
+ * the date range alone, so a wrong answer fails the take and Playwright's retry records
+ * it again (2026-10-23).
+ */
+export async function waitForTaxAnswer(page: TauriPage): Promise<void> {
+  const report = lastYearsTaxReport()
+  await expect
+    .poll(
+      async () => {
+        const rows = await page.evaluate<string[]>(
+          `[...document.querySelectorAll('${SEARCH_OVERLAY} .result-row')].map(function (r) { return r.textContent || '' })`,
+        )
+        return rows.some((r) => r.includes(report)) && rows.every((r) => r.includes('Tax '))
+      },
+      { timeout: waitBudget(30000), message: `the AI search didn't list only tax files, ${report} among them` },
+    )
+    .toBe(true)
+}
+
+/**
+ * Sizes `label`'s window to `size` and centers it over the main window, inside the main
+ * window's frame: a take is cropped to that frame, so anything outside it would be cut off.
+ */
+async function centerOverMain(page: TauriPage, label: string, size: { width: number; height: number }): Promise<void> {
+  await setWindowSize(page, label, size.width, size.height)
+  await expect
+    .poll(async () => (await windowMetrics(page, label)).logical.width, { timeout: waitBudget(5000) })
+    .toBe(size.width)
+  await page.evaluate(`(async function() {
+    var invoke = window.__TAURI_INTERNALS__.invoke;
+    var pos = await invoke('plugin:window|outer_position', { label: 'main' });
+    var main = await invoke('plugin:window|outer_size', { label: 'main' });
+    var other = await invoke('plugin:window|outer_size', { label: ${JSON.stringify(label)} });
+    await invoke('plugin:window|set_position', {
+      label: ${JSON.stringify(label)},
+      value: { Physical: { x: pos.x + Math.round((main.width - other.width) / 2), y: pos.y + Math.round((main.height - other.height) / 2) } },
+    });
+  })()`)
+}
+
+/**
+ * A filename search with AI off, then AI turned on in Settings (the built-in local model),
+ * then the same dialog asked a plain sentence, and only last year's tax files come back.
+ *
+ * The settings window waits BEHIND the main window, centered inside its frame, from before
+ * the take: the recorder excludes every window that exists when it starts except the ones
+ * it's given, so a window opened mid-take would show up wherever macOS put it. Raising it
+ * and lowering it again is what the viewer sees as Settings opening and closing.
+ */
 export async function search(page: TauriPage, theme: ClipTheme): Promise<void> {
   await stageMain(page, theme, DEMO_ROOT, join(DEMO_ROOT, DEMO.documents))
-  // Off camera: the dialog keeps the last query across opens, so clear it first.
+  // Off camera: the model downloaded and proven to start, then AI off for the clip's opening.
+  await ensureLocalAi(page)
+  await setSetting(page, 'ai.provider', 'off')
+  await waitForLocalAiServer(page, false)
+  // The dialog keeps the last query and mode across opens: clear it, in Filename mode.
   await openSearchDialog(page)
   await resetSearchDialog(page)
+  await expect.poll(() => getActiveMode(page), { timeout: waitBudget(5000) }).toBe('filename')
   await closeSearchDialog(page)
   // The reset can end on a "Couldn't finish that search" toast for the empty query, which
   // otherwise opens the clip (first real run, 2026-10-23).
   await dismissAllToasts(page)
+
+  const settings = await openStagedSettings(page, theme)
   try {
-    const take = await recordWindow(page, { slug: 'search', theme, label: 'main' })
+    await expect
+      .poll(
+        () =>
+          settings.evaluate<boolean>(`(function () {
+            var item = [...document.querySelectorAll('.section-item')].find((s) => s.textContent.trim() === 'Provider');
+            if (item) item.click();
+            return !!document.getElementById('setting-ai.provider');
+          })()`),
+        { timeout: waitBudget(5000) },
+      )
+      .toBe(true)
+    await centerOverMain(page, 'settings', CLIP_SETTINGS)
+    const localOption = `[...document.getElementById('setting-ai.provider').querySelectorAll('button[role="radio"]')].find((b) => b.textContent.trim() === 'Local LLM')`
+
+    const take = await recordWindow(page, { slug: 'search', theme, label: 'main', include: ['settings'] })
+    // Main in front, settings tucked behind it.
+    await invoke(page, 'plugin:window|set_focus', { label: 'main' })
     await inTake(take, async () => {
       await hold(700)
       take.markStart()
       await hold(LEAD_IN_MS)
+
+      // A plain filename search, AI off.
       await openSearchDialog(page)
       await hold(500)
       await typeSlowly(page, SEARCH_INPUT, SEARCH_QUERY, 110)
       await page.waitForSelector(`${SEARCH_OVERLAY} .result-row`, waitBudget(30000))
+      await hold(2600)
+      await closeSearchDialog(page)
+      await hold(600)
+
+      // Settings > Provider: Local LLM, and the model starts.
+      await invoke(page, 'plugin:window|set_focus', { label: 'settings' })
+      await hold(1300)
+      expect(await pointerClick(settings, localOption)).toBe('clicked')
+      await waitForLocalAiServer(page, true)
+      await hold(1600)
+      await invoke(page, 'plugin:window|set_focus', { label: 'main' })
       await hold(700)
+
+      // The same dialog, now with "Ask anything".
+      await openSearchDialog(page)
+      await hold(500)
+      if ((await getActiveMode(page)) !== 'ai') {
+        await pressMetaDigit(page, 1)
+        await expect.poll(() => getActiveMode(page), { timeout: waitBudget(5000) }).toBe('ai')
+      }
+      await hold(700)
+      await typeSlowly(page, SEARCH_INPUT, AI_QUERY, 95)
+      await hold(500)
+      await pressKey(page, 'Enter')
+      await waitForTaxAnswer(page)
+      await hold(1000)
       take.markPoster()
-      await hold(3200)
+      await hold(3000)
+      await closeSearchDialog(page)
+      await hold(800)
     })
   } finally {
     await closeSearchDialog(page).catch(() => {})
+    // Off again, so no other clip shows the AI chip or keeps the model running.
+    await setSetting(page, 'ai.provider', 'off')
+    await closeScopedWindow(page, settings, 'settings')
   }
 }
 
@@ -664,67 +849,154 @@ export async function settingsPan(page: TauriPage, theme: ClipTheme): Promise<vo
   }
 }
 
-/** One file after another in the viewer: Markdown, an image, text, then a binary as bytes and hex. */
+/**
+ * Opens a viewer window on `path` at the clip's size, and returns it with its CGWindowID.
+ * The id is read while the window is a point taller than `CLIP_VIEWER`: the two viewer
+ * windows end up the same size, and `requireWindowId` tells windows apart by size.
+ */
+async function openClipViewer(
+  page: TauriPage,
+  path: string,
+): Promise<{ viewer: TauriPage; label: string; id: number }> {
+  const viewer = await openViewerWindow(page, path)
+  const label = viewer.targetWindow ?? ''
+  const sizeTo = async (height: number): Promise<void> => {
+    await setWindowSize(page, label, CLIP_VIEWER.width, height)
+    await expect
+      .poll(async () => (await windowMetrics(page, label)).logical.height, { timeout: waitBudget(5000) })
+      .toBe(height)
+  }
+  await sizeTo(CLIP_VIEWER.height + 1)
+  // Polled: right after a resize the window server can still list the old frame, or a
+  // frame 2 points bigger (seen once, 2026-10-26), though the webview already reports the new one.
+  let id = 0
+  await expect
+    .poll(
+      () => {
+        try {
+          id = requireWindowId(appPid(), { width: CLIP_VIEWER.width, height: CLIP_VIEWER.height + 1 }, label)
+          return true
+        } catch {
+          return false
+        }
+      },
+      { timeout: waitBudget(5000) },
+    )
+    .toBe(true)
+  await sizeTo(CLIP_VIEWER.height)
+  return { viewer, label, id }
+}
+
+/**
+ * Moves `label`'s window onto `anchor`'s exact position, and re-applies the move until
+ * both report the same origin: a viewer window may still be placing itself just after it
+ * opens.
+ */
+async function stackOn(page: TauriPage, label: string, anchor: string): Promise<void> {
+  const l = JSON.stringify(label)
+  const a = JSON.stringify(anchor)
+  await expect
+    .poll(
+      () =>
+        page.evaluate<boolean>(`(async function() {
+          var invoke = window.__TAURI_INTERNALS__.invoke;
+          var target = await invoke('plugin:window|outer_position', { label: ${a} });
+          var now = await invoke('plugin:window|outer_position', { label: ${l} });
+          if (now.x === target.x && now.y === target.y) return true;
+          await invoke('plugin:window|set_position', { label: ${l}, value: { Physical: { x: target.x, y: target.y } } });
+          return false;
+        })()`),
+      { timeout: waitBudget(5000), intervals: [300] },
+    )
+    .toBe(true)
+}
+
+/** The view mode picker's label in a viewer's toolbar: `Image (0)`, `Text (1)`, `Hex (3)`, … */
+function viewerModeLabel(viewer: TauriPage): Promise<string> {
+  return viewer.evaluate<string>(
+    `(document.querySelector('.select-trigger[aria-label="View mode"]')?.textContent ?? '').trim()`,
+  )
+}
+
+/**
+ * Presses a view key (`0`–`3`) until the toolbar's picker reads `label`. The viewer drops
+ * a mode key while it's still loading, so a single press right after a file opens can
+ * land on nothing.
+ */
+async function switchViewerMode(viewer: TauriPage, digit: '0' | '1' | '2' | '3', label: string): Promise<void> {
+  await expect
+    .poll(
+      async () => {
+        if ((await viewerModeLabel(viewer)).startsWith(label)) return true
+        await pressKey(viewer, digit, `Digit${digit}`)
+        return false
+      },
+      { timeout: waitBudget(10000), intervals: [400] },
+    )
+    .toBe(true)
+}
+
+/** True once every image in `selector` has decoded, so a take never shows one filling in. */
+function imagesLoaded(viewer: TauriPage, selector: string): Promise<boolean> {
+  return viewer.evaluate<boolean>(
+    `(function(){ var imgs = [...document.querySelectorAll(${JSON.stringify(selector)})]; return imgs.length > 0 && imgs.every(function (i) { return i.complete && i.naturalWidth > 0 }) })()`,
+  )
+}
+
+/**
+ * A photo, then the same photo as binary (2) and hex (3); then a Markdown file as plain
+ * text, then formatted (0).
+ *
+ * Two viewer windows, stacked on one frame: the Markdown one behind, already in Text
+ * view, and the photo's in front. A viewer window can only reach another file through a
+ * Markdown link, and one reached that way opens formatted, so raising the second window
+ * is how the clip moves from the photo's hex to the Markdown's text. The take records the
+ * photo's window with the Markdown's included.
+ */
 export async function viewer(page: TauriPage, theme: ClipTheme): Promise<void> {
   await setTheme(page, theme)
-  const notes = join(DEMO_ROOT, DEMO.fieldNotes)
-  const viewerPage = await openViewerWindow(page, join(notes, 'README.md'))
-  const label = viewerPage.targetWindow ?? ''
+  const folder = join(DEMO_ROOT, DEMO.fieldNotes)
+  const doc = await openClipViewer(page, join(folder, VIEWER_DOC))
+  let photo: Awaited<ReturnType<typeof openClipViewer>> | null = null
   try {
-    await setWindowSize(page, label, CLIP_VIEWER.width, CLIP_VIEWER.height)
-    await expect
-      .poll(async () => (await windowMetrics(page, label)).logical.width, { timeout: waitBudget(5000) })
-      .toBe(CLIP_VIEWER.width)
-    await viewerPage.waitForSelector('.markdown-body img', waitBudget(10000))
+    await doc.viewer.waitForSelector('.markdown-body', waitBudget(10000))
+    // Off camera: Text view, what the Markdown window shows when it comes up.
+    await switchViewerMode(doc.viewer, '1', 'Text')
 
-    const take = await recordWindow(page, { slug: 'viewer', theme, label })
-    await invoke(page, 'plugin:window|set_focus', { label })
+    const shown = await openClipViewer(page, join(folder, BOUQUET_PHOTO.file))
+    photo = shown
+    await expect.poll(() => imagesLoaded(shown.viewer, '.media-image'), { timeout: waitBudget(10000) }).toBe(true)
+    await stackOn(page, shown.label, doc.label)
+    // The Markdown window right behind the photo's, both above every other window.
+    await invoke(page, 'plugin:window|set_focus', { label: doc.label })
+    await invoke(page, 'plugin:window|set_focus', { label: shown.label })
+
+    focusApp(appPid())
+    const take = await startTake({ slug: 'viewer', theme, windowId: shown.id, includeWindowIds: [doc.id] })
+    await invoke(page, 'plugin:window|set_focus', { label: shown.label })
     await inTake(take, async () => {
       await hold(600)
       take.markStart()
-      await hold(1800)
+      await hold(1200)
       take.markPoster()
+      await hold(2800)
 
-      await followLink(viewerPage, 'Full-size photo')
-      await viewerPage.waitForSelector('.media-image', waitBudget(10000))
-      await hold(1800)
-      await goBack(viewerPage)
-      await viewerPage.waitForSelector('.markdown-body', waitBudget(10000))
-      await hold(500)
+      await switchViewerMode(shown.viewer, '2', 'Binary')
+      await shown.viewer.waitForSelector('.raw-byte-view .raw-row', waitBudget(10000))
+      await hold(3200)
+      await switchViewerMode(shown.viewer, '3', 'Hex')
+      await shown.viewer.waitForSelector('.raw-byte-view .raw-hex', waitBudget(10000))
+      await hold(3400)
 
-      await followLink(viewerPage, 'Packing list')
-      await viewerPage.waitForSelector('.lines-container', waitBudget(10000))
-      await hold(1800)
-      await goBack(viewerPage)
-      await viewerPage.waitForSelector('.markdown-body', waitBudget(10000))
-      await hold(500)
-
-      await followLink(viewerPage, 'Light controller firmware')
-      await hold(600)
-      await pressKey(viewerPage, '2', 'Digit2')
-      await viewerPage.waitForSelector('.raw-byte-view', waitBudget(10000))
-      await hold(1500)
-      await pressKey(viewerPage, '3', 'Digit3')
-      await hold(1800)
+      await invoke(page, 'plugin:window|set_focus', { label: doc.label })
+      await hold(3600)
+      await switchViewerMode(doc.viewer, '0', 'Markdown')
+      await doc.viewer.waitForSelector('.markdown-body', waitBudget(10000))
+      await expect.poll(() => imagesLoaded(doc.viewer, '.markdown-body img'), { timeout: waitBudget(10000) }).toBe(true)
+      await hold(4400)
     })
   } finally {
-    await closeScopedWindow(page, viewerPage, label)
+    if (photo !== null) await closeScopedWindow(page, photo.viewer, photo.label)
+    await closeScopedWindow(page, doc.viewer, doc.label)
   }
-}
-
-/** Clicks the Markdown link whose text is `text`; the viewer opens its target in this window. */
-async function followLink(viewerPage: TauriPage, text: string): Promise<void> {
-  const clicked = await viewerPage.evaluate<boolean>(`(function(){
-      var links = document.querySelectorAll('.markdown-body a');
-      for (var i = 0; i < links.length; i++) {
-        if (links[i].textContent.trim() === ${JSON.stringify(text)}) { links[i].click(); return true; }
-      }
-      return false;
-    })()`)
-  if (!clicked) throw new Error(`the README has no link reading '${text}'`)
-}
-
-/** ⌘[ (`viewer.goBack`), the viewer's own history step. */
-async function goBack(viewerPage: TauriPage): Promise<void> {
-  await pressKey(viewerPage, 'Meta+[', 'BracketLeft')
 }

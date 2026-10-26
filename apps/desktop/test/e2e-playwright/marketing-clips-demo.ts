@@ -15,8 +15,18 @@
  */
 
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  utimesSync,
+  writeFileSync,
+} from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 export const DEMO_ROOT = process.env.CMDR_CLIPS_DEMO_ROOT ?? '/Users/Shared/Studio'
 
@@ -65,6 +75,27 @@ export const AI_QUERY = 'tax report from last year'
 
 /** The search clip's query, and the word its demo files are named after. */
 export const SEARCH_QUERY = 'invoice'
+
+/**
+ * The viewer clip's photo: a real camera photo (Canon EOS 760D, 2016-10-14, per its EXIF),
+ * committed as a 2,400 px copy of the 6,000 px original, its metadata kept, so the hex
+ * view's first rows read its own caption. ❗ CC BY-SA 2.0: anything showing it carries the
+ * credit below (the staged README does, and `docs/guides/product-clips.md` § "Credits").
+ */
+export const BOUQUET_PHOTO = {
+  file: 'autumn-bouquet.jpg',
+  title: 'Autumn bouquet',
+  author: 'Susanne Nilsson',
+  source: 'https://www.flickr.com/photos/infomastern/30427779760/',
+  commons: 'https://commons.wikimedia.org/wiki/File:Autumn_bouquet_(30427779760).jpg',
+  license: 'CC BY-SA 2.0',
+  licenseUrl: 'https://creativecommons.org/licenses/by-sa/2.0/',
+} as const
+
+/** The Markdown file the viewer clip shows as text, then formatted. */
+export const VIEWER_DOC = 'README.md'
+
+const ASSETS = join(dirname(fileURLToPath(import.meta.url)), 'marketing-clips-assets')
 
 /** How many photos the copy clip copies. Enough to leave room for Pause, Resume, and Rollback. */
 const TRIP_PHOTOS = 64
@@ -125,7 +156,7 @@ export function removeDemoTree(root = DEMO_ROOT): void {
  * What the marker says. Bump the version whenever the staged content changes, so the next
  * run restages instead of keeping a stale tree.
  */
-const MARKER_TEXT = 'Staged by pnpm marketing:clips (demo tree v5). Safe to delete.\n'
+const MARKER_TEXT = 'Staged by pnpm marketing:clips (demo tree v6). Safe to delete.\n'
 
 /**
  * Makes sure the demo tree is there and current, and puts its mutable folders back.
@@ -325,14 +356,8 @@ function stageDocuments(root: string): void {
 
   const notes = join(root, DEMO.fieldNotes)
   mkdirSync(notes, { recursive: true })
-  writeFileSync(join(notes, 'README.md'), FIELD_NOTES_README)
-  writeFileSync(join(notes, 'packing-list.txt'), PACKING_LIST)
-  // Bytes that look like a real binary in the hex view: a header, then a pattern.
-  const firmware = Buffer.alloc(64 * 1024)
-  for (let i = 0; i < firmware.length; i++) firmware[i] = (i * 31 + (i >> 8)) & 0xff
-  Buffer.from('CMDRFW\u0001\u0000Studio light controller v2.4\u0000').copy(firmware)
-  writeFileSync(join(notes, 'light-controller.bin'), firmware)
-  stagePhoto(join(notes, 'glacier.jpg'))
+  writeFileSync(join(notes, VIEWER_DOC), STILL_LIFE_README)
+  copyFileSync(join(ASSETS, BOUQUET_PHOTO.file), join(notes, BOUQUET_PHOTO.file))
 }
 
 /**
@@ -369,88 +394,29 @@ function stageTaxes(root: string): void {
 }
 
 /**
- * A real JPEG for the viewer to render: a calm, drawn landscape (dusk sky, two mountain
- * ridges, a lake), deterministic so every run shows the same picture. A plasma fill read
- * as noise rather than a photo (first real run, 2026-10-22). The clips run requires
- * ImageMagick up front.
+ * The viewer clip's Markdown: headings, bold, a list, and a table read differently as text
+ * and formatted, and the photo it embeds is the one the clip opens first. It carries the
+ * photo's credit, which the license asks of anything showing it.
  */
-function stagePhoto(path: string): void {
-  const res = spawnSync(
-    'magick',
-    [
-      '-size',
-      '1600x1000',
-      'gradient:#3d5a80-#f2c48d',
-      '-fill',
-      '#fff4d6',
-      '-draw',
-      'circle 1180,420 1180,375',
-      '-fill',
-      '#5c6b8a',
-      '-draw',
-      'polygon 0,640 180,470 330,560 520,380 760,600 980,450 1210,610 1420,500 1600,580 1600,760 0,760',
-      '-fill',
-      '#2f3b52',
-      '-draw',
-      'polygon 0,720 260,580 470,690 700,560 940,700 1180,600 1400,720 1600,650 1600,780 0,780',
-      '-fill',
-      '#1c2638',
-      '-draw',
-      'rectangle 0,760 1600,1000',
-      '-fill',
-      '#e9b98066',
-      '-draw',
-      'rectangle 1140,790 1220,800',
-      '-blur',
-      '0x1.2',
-      '-quality',
-      '88',
-      path,
-    ],
-    { encoding: 'utf8' },
-  )
-  if (res.error !== undefined || res.status !== 0) {
-    throw new Error(`magick couldn't render the demo photo: ${res.stderr || String(res.error)}`)
-  }
-}
+const STILL_LIFE_README = `# Autumn still life
 
-const FIELD_NOTES_README = `# Field notes
+One bouquet, one window, a slow afternoon in October.
 
-Two weeks around the Westfjords, August 2026.
+## In the vase
 
-![The edge of Drangajökull](glacier.jpg)
+- **Guelder rose** berries, for the red
+- **Virginia creeper**, halfway through turning
+- **Ivy** seed heads and wild grasses, for texture
+- One stray **Chinese lantern**
 
-## What's in here
+## Shot list
 
-- [Full-size photo](glacier.jpg): the one above, at full resolution
-- [Packing list](packing-list.txt): what came along, and what we'd leave home next time
-- [Light controller firmware](light-controller.bin): for the studio lamp we took on the road
+| Shot   | Lens         | Light         |
+| ------ | ------------ | ------------- |
+| Wide   | 35 mm        | Window, left  |
+| Detail | 100 mm macro | Bounce, right |
 
-## Highlights
+![${BOUQUET_PHOTO.title}](${BOUQUET_PHOTO.file})
 
-1. Dynjandi in the rain
-2. Puffins at Látrabjarg
-3. The hot pot at Hellulaug, after dark
-`
-
-const PACKING_LIST = `Packing list, Westfjords 2026
-=============================
-
-Clothes
-  - Rain shell and rain trousers
-  - Wool base layers (2 sets)
-  - Hiking boots, sandals for the hot pots
-
-Camera
-  - Body, 24-70 and 70-200
-  - Three batteries, two cards
-  - Lens cloths (bring more than you think)
-
-Car
-  - Paper map of the fjords
-  - Thermos, oat bars, dried fish
-
-Leave home next time
-  - The second tripod
-  - The drone (wind, every day)
+*Photo: [${BOUQUET_PHOTO.title}](${BOUQUET_PHOTO.source}) by ${BOUQUET_PHOTO.author}, [${BOUQUET_PHOTO.license}](${BOUQUET_PHOTO.licenseUrl}).*
 `

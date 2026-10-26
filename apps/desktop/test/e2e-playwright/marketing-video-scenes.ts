@@ -41,9 +41,11 @@ import {
 import { setSetting } from './marketing-stage.js'
 import {
   drainOperations,
+  ensureLocalAi,
   hold,
   inTake,
   invoke,
+  lastYearsTaxReport,
   openStagedSettings,
   pickEnglish,
   recordWindow,
@@ -51,6 +53,7 @@ import {
   setThrottles,
   stageMain,
   typeSlowly,
+  waitForTaxAnswer,
 } from './marketing-clips-scenes.js'
 import { AI_QUERY, DEMO, DEMO_ROOT, SENSOR_LOG_QUERY, resetBackup, resetCameraRoll } from './marketing-clips-demo.js'
 import type { Take } from './marketing-clips-take.js'
@@ -332,46 +335,6 @@ export async function reach(page: TauriPage): Promise<void> {
   }
 }
 
-/** The local model's runtime facts the AI beat waits on (`get_ai_runtime_status`). */
-interface LocalAiRuntime {
-  serverRunning: boolean
-  modelInstalled: boolean
-}
-
-async function localAiRuntime(page: TauriPage): Promise<LocalAiRuntime> {
-  return page.evaluate<LocalAiRuntime>(`window.__TAURI_INTERNALS__.invoke('get_ai_runtime_status')`)
-}
-
-/**
- * Off camera: switches the instance to Cmdr's built-in local model and waits for its
- * server. On an instance without the model it downloads it first, through the same
- * `start_ai_download` that Settings > AI > Download calls (about 2 GB; 90 s on a fast
- * line, 2026-10-23). The model stays in the clips data dir for later runs, and an
- * interrupted download resumes. No API key anywhere.
- */
-async function ensureLocalAi(page: TauriPage): Promise<void> {
-  await setSetting(page, 'ai.provider', 'local')
-  if (!(await localAiRuntime(page)).modelInstalled) {
-    console.log('[marketing-video] downloading the local AI model into the clips instance…')
-    // Fire and forget: the command resolves only when the download ends, far past one
-    // `evaluate`'s budget. The runtime status is the probe.
-    await page.evaluate(`(function () { window.__TAURI_INTERNALS__.invoke('start_ai_download'); return true })()`)
-    await expect
-      .poll(async () => (await localAiRuntime(page)).modelInstalled, {
-        timeout: waitBudget(480000),
-        intervals: [5000],
-        message: "the local AI model didn't finish downloading; run the beat again to resume it",
-      })
-      .toBe(true)
-  }
-  await expect
-    .poll(async () => (await localAiRuntime(page)).serverRunning, {
-      timeout: waitBudget(90000),
-      message: "the local AI server didn't start",
-    })
-    .toBe(true)
-}
-
 /**
  * 5. Search by meaning, on Cmdr's built-in local model: a plain sentence in "Ask anything"
  * mode becomes a name pattern AND a date range, and only last year's tax files come back,
@@ -383,7 +346,6 @@ async function ensureLocalAi(page: TauriPage): Promise<void> {
 export async function ai(page: TauriPage): Promise<void> {
   await stageMain(page, 'dark', DEMO_ROOT, join(DEMO_ROOT, DEMO.documents), VIDEO_LOOK)
   await ensureLocalAi(page)
-  const lastYearsReport = `Tax report ${String(new Date().getUTCFullYear() - 1)}`
   try {
     await openSearchDialog(page)
     await resetSearchDialog(page)
@@ -402,21 +364,8 @@ export async function ai(page: TauriPage): Promise<void> {
       await hold(700)
       take.note('Enter: the local model turns it into a name pattern and a date range')
       await pressKey(page, 'Enter')
-      await expect
-        .poll(
-          async () => {
-            const rows = await page.evaluate<string[]>(
-              `[...document.querySelectorAll('${SEARCH_OVERLAY} .result-row')].map(function (r) { return r.textContent || '' })`,
-            )
-            return rows.some((r) => r.includes(lastYearsReport)) && rows.every((r) => r.includes('Tax '))
-          },
-          {
-            timeout: waitBudget(30000),
-            message: `the AI search didn't list only tax files, ${lastYearsReport} among them`,
-          },
-        )
-        .toBe(true)
-      take.note(`only last year's tax files come back (${lastYearsReport}), with the filters it chose`)
+      await waitForTaxAnswer(page)
+      take.note(`only last year's tax files come back (${lastYearsTaxReport()}), with the filters it chose`)
       await hold(1200)
       take.markPoster()
       await hold(3600)

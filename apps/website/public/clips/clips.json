@@ -33,7 +33,7 @@
       "slug": "search",
       "width": 1500,
       "height": 960,
-      "duration": 6.933,
+      "duration": 22.667,
       "themes": ["dark", "light"]
     },
     {
@@ -47,7 +47,7 @@
       "slug": "viewer",
       "width": 1500,
       "height": 1062,
-      "duration": 10.567,
+      "duration": 19.933,
       "themes": ["dark", "light"]
     }
   ]
