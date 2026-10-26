@@ -611,6 +611,15 @@ filter = 'test(ai::client_real_)'
 slow-timeout = { period = "60s", terminate-after = 1 }
 
 [[profile.default.overrides]]
+# The agent seam's live smokes (`agent::llm::live_smoke_test`, `#[ignore]`-gated, hand-run with
+# a provider key). Same exception as the `ai::client_real_` block above: a real LLM round trip
+# is the whole point. The Anthropic tool-loop cells make two to three thinking-model calls each.
+# ❌ Don't read 60 s as a runtime: measured 2026-10-26, Haiku 5.5 3.3 s, Sonnet 5.5 3.9 s,
+# Opus 5.5 6–8 s, already at the global 8 s cap.
+filter = 'test(agent::llm::live_smoke_test::)'
+slow-timeout = { period = "60s", terminate-after = 1 }
+
+[[profile.default.overrides]]
 # The SFTP window measurements, read and write (`crates/cmdr-sftp/src/volume/streams_bench.rs`).
 # ❗ Deliberately NOT `#[ignore]`d — the integration lane runs `--run-ignored only`
 # over that whole package, so an ignored measurement would gate CI on a throughput

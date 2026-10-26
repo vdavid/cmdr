@@ -262,10 +262,12 @@ async fn smoke_openai() {
 #[ignore = "real API call: set GEMINI_API_KEY to run"]
 async fn smoke_gemini() {
     let key = env_or_skip("GEMINI_API_KEY");
+    // The app's Gemini preset: the native `v1/` API (a version-less base 404s) and its default
+    // model (`gemini-2.5-flash` is closed to new users, 2026-10-26).
     let backend = AiBackend::remote_for_tests(
         key,
-        "https://generativelanguage.googleapis.com/".into(),
-        "gemini-2.5-flash".into(),
+        "https://generativelanguage.googleapis.com/v1/".into(),
+        "gemini-3.8-flash".into(),
     );
     let answer = run_one(backend, "Say hello.").await;
     assert!(!answer.trim().is_empty(), "expected a visible answer, got {answer:?}");
