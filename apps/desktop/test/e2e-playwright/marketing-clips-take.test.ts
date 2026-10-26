@@ -43,7 +43,13 @@ describe('startTake', () => {
   })
 
   afterEach(() => {
-    process.env = { ...saved }
+    // In place, ❌ never `process.env = { ...saved }`: a spawned child inherits the real
+    // environment, not a replacement object, so later tests' keys never reached the fake
+    // recorder (Node 25, 2026-10-26).
+    for (const key of Object.keys(process.env)) {
+      if (!(key in saved)) Reflect.deleteProperty(process.env, key)
+    }
+    Object.assign(process.env, saved)
     rmSync(dir, { recursive: true, force: true })
   })
 
