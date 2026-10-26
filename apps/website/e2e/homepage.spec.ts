@@ -108,6 +108,21 @@ test.describe('Homepage', () => {
     await expect(clip).toHaveAttribute('data-state', 'playing')
   })
 
+  test('the viewer clip credits the photo it shows, and only that clip carries a credit', async ({ page }) => {
+    await page.goto('/')
+    const credit = page.locator('[data-clip-credit]')
+    await expect(credit).toHaveCount(1)
+    await expect(credit).toContainText('by Susanne Nilsson')
+    await expect(credit.getByRole('link', { name: 'Autumn bouquet' })).toHaveAttribute(
+      'href',
+      'https://commons.wikimedia.org/wiki/File:Autumn_bouquet_(30427779760).jpg',
+    )
+    await expect(credit.getByRole('link', { name: 'CC BY-SA 2.0' })).toHaveAttribute(
+      'href',
+      'https://creativecommons.org/licenses/by-sa/2.0/',
+    )
+  })
+
   test('testimonials name real users', async ({ page }) => {
     await page.goto('/')
     const section = page.locator('section', { has: page.getByRole('heading', { name: 'From early users' }) })

@@ -297,6 +297,9 @@ trust (copy and rollback, the queue), multi-rename, viewer plus a reach strip, o
   Up/Down (5 s), Home, and End seek while Space and Enter toggle. A seek before the clip has loaded loads it first.
   **Decision/Why**: the slider carries the clip's description through `aria-describedby`, so the `<video>` stays
   `aria-hidden` (html-validate rejects naming a video) and the slider and the play/pause button are the honest controls.
+- **Third-party media in a recording** gets a `credit` prop on its `ProductClip` (kind, linked title, author, linked
+  license), rendered as a small tertiary line under that clip only. The `viewer` clip shows a CC BY-SA 2.0 photo, so it
+  carries one; the homepage E2E pins it.
 - **Window chrome is CSS**: the recordings have no alpha, so the rounded corners, hairline rim, and shadow come from
   `.clip-window`.
 - **A missing clip** (no manifest entry, or a missing H.264 file or poster) renders a placeholder card labeled as one,

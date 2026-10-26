@@ -26,10 +26,22 @@ interface Props {
      */
     label: string
     caption?: string
+    /** Attribution for third-party media the recording shows, rendered as a quiet line under the clip. */
+    credit?: ClipCredit
     class?: string
 }
 
-const { slug, label, caption, class: className } = Astro.props
+interface ClipCredit {
+    /** What the media is, like "Photo". */
+    kind: string
+    title: string
+    titleHref: string
+    author: string
+    license: string
+    licenseHref: string
+}
+
+const { slug, label, caption, credit, class: className } = Astro.props
 
 const placeholderTitles: Record<ClipSlug, string> = {
     'copy-rollback': 'Copy, pause, and roll back',
@@ -123,7 +135,19 @@ const descriptionId = `clip-${slug}-description`
             </div>
         )
     }
-    {caption && <figcaption class="clip-caption">{caption}</figcaption>}
+    {
+        (caption || credit) && (
+            <figcaption>
+                {caption && <span class="clip-caption">{caption}</span>}
+                {credit && (
+                    <span class="clip-credit" data-clip-credit>
+                        {credit.kind}: “<a href={credit.titleHref}>{credit.title}</a>” by {credit.author},{' '}
+                        <a href={credit.licenseHref}>{credit.license}</a>
+                    </span>
+                )}
+            </figcaption>
+        )
+    }
 </figure>
 
 <style>
@@ -348,7 +372,27 @@ const descriptionId = `clip-${slug}-description`
         color: var(--color-text-tertiary);
     }
 
+    .clip-credit {
+        display: block;
+        margin-top: 10px;
+        font-size: 0.75rem;
+        line-height: 1.5;
+        color: var(--color-text-tertiary);
+    }
+
+    .clip-credit a {
+        color: inherit;
+        text-decoration: underline;
+        text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+        text-underline-offset: 2px;
+    }
+
+    .clip-credit a:hover {
+        color: var(--color-text-secondary);
+    }
+
     .clip-caption {
+        display: block;
         margin-top: 14px;
         font-size: 0.9375rem;
         line-height: 1.5;
