@@ -110,8 +110,8 @@ RUN apt-get update && apt-get install -y \
 # Node.js 22 LTS and Rust come from the official images, pinned by digest, so the toolchain is
 # exactly what Renovate last reviewed rather than whatever a `curl | sh` installer served today.
 # Node's binaries are built against an old glibc and run unchanged on Ubuntu.
-COPY --from=node:22-trixie-slim@sha256:154ba2f4d6fec323d28e4f4bb86bba4677f1223391a1979cf521304e03a98dfa /usr/local/bin/node /usr/local/bin/node
-COPY --from=node:22-trixie-slim@sha256:154ba2f4d6fec323d28e4f4bb86bba4677f1223391a1979cf521304e03a98dfa /usr/local/lib/node_modules /usr/local/lib/node_modules
+COPY --from=node:22-trixie-slim@sha256:8eb619e402eaede1748a3c8173bffab391592812e85136452f781741c7242ddf /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:22-trixie-slim@sha256:8eb619e402eaede1748a3c8173bffab391592812e85136452f781741c7242ddf /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
     && ln -s ../lib/node_modules/corepack/dist/corepack.js /usr/local/bin/corepack
