@@ -439,6 +439,9 @@ export class ProviderSetupController {
       } else if (result.problem) {
         this.#status = statusForProblem(result.problem)
         this.#problem = result.problem
+        // The provider answered, and the answer was no: the old list belongs to a config that
+        // no longer works (on Custom or Azure, often another endpoint), so don't offer it.
+        this.#models = []
       } else if (result.models.length > 0) {
         this.#status = 'connected'
         this.#models = result.models

@@ -55,6 +55,10 @@ one file. What the two actually share is the state machine and the numbered list
 - **`status` still carries the coarse bucket** (`keyRejected` → `auth-error`; `invalidEndpoint`, `insecureEndpoint`,
   `unreachable`, `timedOut` → `connection-error`; `providerRefused`, `checkUnavailable` → `error`), set by
   `statusForProblem`, and `problem` is set exactly while `status` is one of those three.
+- **A check that lands with a problem clears the model list.** The list stays put DURING a refetch (a suggestion list
+  that blanks mid-check is a regression we forbid), but once the provider says no, the old models belong to a config
+  that no longer works (on Custom or Azure, often a different endpoint). A thrown IPC call (`checkUnavailable`) is no
+  answer at all, so it keeps the list.
 - **Only the latest check lands (`#checkSeq`).** The `providerId` guard can't tell two checks for the SAME provider
   apart: on Custom or Azure, an endpoint edit or a Recheck during a slow check (the backend waits up to 10 s) would let
   the older answer land last and cache its model list under the old URL. Every check takes a number, every reset bumps

@@ -260,6 +260,27 @@ describe('ProviderSetupController', () => {
     expect(controller.isConnected).toBe(false)
   })
 
+  it('keeps the model list while a refetch runs, then drops it when the check lands with a problem', async () => {
+    settingsMap['ai.cloudProviderConfigs'] = JSON.stringify({ custom: { model: 'm', baseUrl: 'https://good.test/v1' } })
+    getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'fp' })
+    checkAiConnection.mockResolvedValueOnce(connected(['good-model']))
+    controller.setProvider('custom')
+    await settle()
+    expect(controller.models).toEqual(['good-model'])
+
+    const badCheck = deferredCheck()
+    controller.saveBaseUrl('https://bad.test/v1')
+    controller.checkNow()
+    await settle()
+    expect(controller.status).toBe('checking')
+    expect(controller.models).toEqual(['good-model'])
+
+    badCheck.release(withProblem({ kind: 'unreachable' }))
+    await settle()
+    expect(controller.status).toBe('connection-error')
+    expect(controller.models).toEqual([])
+  })
+
   it('reads a check that threw as a typed problem, never as the raw message', async () => {
     checkAiConnection.mockRejectedValue(new Error('IPC exploded'))
     getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'fp' })
