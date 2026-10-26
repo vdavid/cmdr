@@ -1,7 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "treatConfigHintsAsErrors": true,
-  "ignoreBinaries": ["rustc", "oxfmt", "sqlite3", "magick"],
+  "ignoreBinaries": ["rustc", "oxfmt", "magick"],
   "ignore": ["src/lib/ipc/bindings.ts"],
   "ignoreUnresolved": ["~icons/.+"],
   "ignoreDependencies": ["oxlint", "@testing-library/svelte", "@iconify-json/lucide", "cldr-core"],
