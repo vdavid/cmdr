@@ -290,6 +290,13 @@ trust (copy and rollback, the queue), multi-rename, viewer plus a reach strip, o
   position. Offscreen pauses. A play/pause button is always reachable (WCAG 2.2.2); with `prefers-reduced-motion` the
   clip waits on its poster until clicked. Posters are lazy `<img>` pairs hidden per theme by CSS, so only the visible
   one downloads, the same reasoning as the hero's background images.
+- **Progress and scrubbing**: a 2 px accent line along the bottom shows the position, redrawn per animation frame only
+  while playing (with reduced motion it steps on `timeupdate` instead of gliding). The whole frame is a `role="slider"`
+  overlay with `touch-action: pan-y`: a press without travel toggles play, a horizontal drag seeks relative to where it
+  started (full width spans the clip) and pauses only for the drag's length, and when focused, arrows (1 s), Page
+  Up/Down (5 s), Home, and End seek while Space and Enter toggle. A seek before the clip has loaded loads it first.
+  **Decision/Why**: the slider carries the clip's description through `aria-describedby`, so the `<video>` stays
+  `aria-hidden` (html-validate rejects naming a video) and the slider and the play/pause button are the honest controls.
 - **Window chrome is CSS**: the recordings have no alpha, so the rounded corners, hairline rim, and shadow come from
   `.clip-window`.
 - **A missing clip** (no manifest entry, or a missing H.264 file or poster) renders a placeholder card labeled as one,
