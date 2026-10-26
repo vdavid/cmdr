@@ -5844,12 +5844,14 @@ export type AiApiKeyStatus = {
   fingerprint: string
 }
 
-// Result of checking connectivity to an AI API endpoint.
+/**
+ *  Result of checking connectivity to an AI API endpoint. Success is `problem: None` with no
+ *  refusal; `models` may still be empty when the provider has no usable list.
+ */
 export type AiConnectionCheckResult = {
-  connected: boolean
-  authError: boolean
   models: string[]
-  error: string | null
+  // What went wrong, typed so the UI renders its own translated copy.
+  problem: AiConnectionProblem | null
   // The user hasn't allowed cloud AI, so nothing was sent. The other fields are empty.
   cloudConsentMissing: boolean
   /**
@@ -5858,6 +5860,24 @@ export type AiConnectionCheckResult = {
    */
   managed: ManagedAiRefusal | null
 }
+
+/**
+ *  Why a key check didn't succeed. The UI owns the wording; only `ProviderRefused` carries text,
+ *  the provider's own sentence, for a secondary detail line.
+ */
+export type AiConnectionProblem =
+  // The endpoint isn't an `http(s)` URL.
+  | { kind: 'invalidEndpoint' }
+  // Plain `http://` to a non-loopback host while a key is set: [`validate_ai_base_url`].
+  | { kind: 'insecureEndpoint' }
+  // No answer: DNS, a refused connection, TLS, or a redirect the policy stopped.
+  | { kind: 'unreachable' }
+  // No answer within [`PROBE_TIMEOUT`].
+  | { kind: 'timedOut' }
+  // The provider says the key is wrong: 401 or 403, or a provider's own typed signal.
+  | { kind: 'keyRejected' }
+  // Any other refusal. `detail` is the provider's `error.message` (or raw body), key scrubbed.
+  | { kind: 'providerRefused'; status: number; detail: string }
 
 export type AiExtracting = null
 

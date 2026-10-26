@@ -329,6 +329,12 @@ fn clamp_u32(count: i32) -> u32 {
 /// (`gpt-*` / `o1*` / `o3*` / `o4*` / `chatgpt-*`) are left alone so `genai` can auto-route the
 /// `gpt-5*` / `*-codex` / `*-pro` Responses-API models.
 fn remote_model_iden(model: &str) -> String {
+    // Google's OpenAI-compatible model list names its models `models/gemini-…`, which an earlier
+    // key check offered verbatim. The bare id is what the native adapter routes on.
+    let model = match model.strip_prefix("models/") {
+        Some(bare) if bare.starts_with("gemini-") => bare,
+        _ => model,
+    };
     let native_or_openai = model.starts_with("claude-")
         || model.starts_with("gemini-")
         || model.starts_with("gpt-")
@@ -716,7 +722,13 @@ fn ai_error_for_status(status: u16, detail: String) -> AiError {
 /// Anthropic, and Gemini all put the human sentence there), else the raw body, capped so
 /// an HTML error page (a proxy, Cloudflare) can't flood the UI or the logs. Display only,
 /// never control flow: classification stays on the numeric status (`ai_error_for_status`).
-pub(super) fn provider_error_detail(status: impl Display, body: &str) -> String {
+fn provider_error_detail(status: impl Display, body: &str) -> String {
+    format!("HTTP {status}: {}", provider_error_message(body))
+}
+
+/// The human sentence in a failed provider response: the JSON body's `error.message`, else the
+/// raw body, capped at 400 chars. Shared with the key check, which shows it as a detail line.
+pub(super) fn provider_error_message(body: &str) -> String {
     const MAX_CHARS: usize = 400;
     let message = serde_json::from_str::<Value>(body)
         .ok()
@@ -725,9 +737,9 @@ pub(super) fn provider_error_detail(status: impl Display, body: &str) -> String 
     let message = message.trim();
     if message.chars().count() > MAX_CHARS {
         let capped: String = message.chars().take(MAX_CHARS).collect();
-        format!("HTTP {status}: {capped}…")
+        format!("{capped}…")
     } else {
-        format!("HTTP {status}: {message}")
+        message.to_string()
     }
 }
 

@@ -73,7 +73,7 @@ async fn smoke_anthropic_model_list() {
     )
     .await;
 
-    assert_eq!(result.error, None, "the key check failed");
+    assert_eq!(result.problem, None, "the key check failed");
     assert!(
         result.models.iter().any(|id| id == ANTHROPIC.model),
         "the list should include the smoke's own model `{}`, got {:?}",

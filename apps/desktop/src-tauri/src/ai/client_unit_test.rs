@@ -50,6 +50,18 @@ fn remote_model_iden_forces_openai_for_compatible_providers() {
     );
 }
 
+/// A Gemini user who picked `models/gemini-…` from the old OpenAI-compatible list keeps a
+/// working model once the preset moves to Google's native API.
+#[test]
+fn a_models_prefixed_gemini_id_routes_natively_as_its_bare_id() {
+    assert_eq!(remote_model_iden("models/gemini-3.8-flash"), "gemini-3.8-flash");
+    assert_eq!(
+        remote_model_iden("models/text-bison"),
+        "openai::models/text-bison",
+        "only a Gemini id is unwrapped"
+    );
+}
+
 /// The models the real-API smoke lanes call must land on the adapter their test expects,
 /// or a lane goes green against the wrong protocol. Reads the ids from
 /// `ai::smoke_providers` so a decommission stays a one-line fix over there.

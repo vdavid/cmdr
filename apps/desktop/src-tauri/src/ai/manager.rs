@@ -456,7 +456,7 @@ pub fn configure_ai<R: Runtime>(
     // suggestions.rs / search will later send with an Authorization header. Only
     // enforced for the cloud provider with a non-empty base URL.
     if provider == "cloud" && !cloud_base_url.is_empty() {
-        super::connection_check::validate_ai_base_url(&cloud_base_url, &cloud_api_key)?;
+        super::connection_check::validate_ai_base_url(&cloud_base_url, &cloud_api_key).map_err(|e| e.to_string())?;
     }
 
     // Under the organization's `DisableAI` the local server never runs, whatever the provider:

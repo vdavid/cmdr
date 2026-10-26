@@ -309,11 +309,35 @@ const OPENAI_COMPATIBLE_FAMILIES: &[ModelFamily] = &[
     },
 ];
 
-/// Gemini 2.x carries a 1M-token window across flash and pro.
-const GEMINI_FAMILIES: &[ModelFamily] = &[ModelFamily {
-    prefix: "gemini-2",
-    window_tokens: 1_000_000,
-}];
+/// Gemini's chat models carry a 1M-token window across 2.x and 3.x flash and pro; the image
+/// variants are far smaller, so they come first (verified 2026-10-26, `inputTokenLimit` in
+/// `GET /v1/models`).
+const GEMINI_FAMILIES: &[ModelFamily] = &[
+    ModelFamily {
+        prefix: "gemini-3-pro-image",
+        window_tokens: 131_072,
+    },
+    ModelFamily {
+        prefix: "gemini-3.1-flash-image",
+        window_tokens: 65_536,
+    },
+    ModelFamily {
+        prefix: "gemini-3.1-flash-lite-image",
+        window_tokens: 65_536,
+    },
+    ModelFamily {
+        prefix: "gemini-2.5-flash-image",
+        window_tokens: 32_768,
+    },
+    ModelFamily {
+        prefix: "gemini-2",
+        window_tokens: 1_000_000,
+    },
+    ModelFamily {
+        prefix: "gemini-3",
+        window_tokens: 1_000_000,
+    },
+];
 
 /// Which source decided a budget. Carried out of [`resolve_prompt_budget`] and logged at
 /// send, so "60,000 because the table says `claude-` has 200,000" is distinguishable from
@@ -485,6 +509,7 @@ mod tests {
             (ProviderTag::OpenAiResponses, "gpt-5"),
             (ProviderTag::OpenAi, "o4-mini"),
             (ProviderTag::Gemini, "gemini-2.5-flash"),
+            (ProviderTag::Gemini, "gemini-3.8-flash"),
         ] {
             let resolved = automatic(provider, model);
             assert_eq!(
@@ -504,8 +529,8 @@ mod tests {
     fn every_shipped_cloud_preset_is_in_the_family_table() {
         for model in [
             "gpt-4.1-mini",                                      // OpenAI, Azure OpenAI
-            "claude-sonnet-4-5",                                 // Anthropic
-            "gemini-2.5-flash",                                  // Google Gemini
+            "claude-sonnet-5-5",                                 // Anthropic
+            "gemini-3.8-flash",                                  // Google Gemini
             "openai/gpt-oss-120b",                               // Groq
             "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8", // Together AI
             "accounts/fireworks/models/glm-5p3",                 // Fireworks AI
