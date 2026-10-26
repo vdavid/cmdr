@@ -79,21 +79,21 @@ pub(super) const FIREWORKS: SmokeProvider = SmokeProvider {
 /// `content_block_delta` rather than `data:` JSON envelopes. Without this lane we'd only ever
 /// exercise the OpenAI lineage despite shipping Anthropic support.
 ///
-/// (verified on 2026-09-04: `claude-haiku-4-5-20251001` is Active in `GET /v1/models` and on
-/// platform.claude.com/docs/en/about-claude/model-deprecations, which gives it a tentative
-/// retirement "not sooner than 2026-10-15" — the nearest horizon of any Active model, so
-/// expect to refresh this one first. It replaced `claude-3-5-haiku-*`, retired 2026-02-19.)
+/// (verified on 2026-10-26: `claude-haiku-5-5` is listed by `GET /v1/models` and answers a
+/// chat. It's the current Haiku, and cheaper than the Haiku 4.5 it replaced here.)
 ///
-/// **Gotcha**: Anthropic returns HTTP 400 for a request carrying both `temperature` and
-/// `top_p`, and that is not limited to the newest models. Verified live on 2026-09-04:
-/// `claude-haiku-4-5-20251001` and `claude-sonnet-4-5-20250929` both 400 with the pair and
-/// both 200 with temperature alone. `adjust_for_model` drops `top_p` for the Anthropic
-/// adapter, so any model here is safe; don't reintroduce `top_p` on this path.
+/// **Keep this pin on a CURRENT model.** Every Claude model from 4.7 on answers 400
+/// "`temperature` is deprecated for this model" to any non-default `temperature` or `top_p`,
+/// while Haiku 4.5 still accepted them, so a pin on the older model hid that every Claude 5.x
+/// user's suggestions, search, and selection were failing (verified 2026-10-26, `curl` with
+/// `temperature: 0.3` against `claude-{opus,sonnet,haiku}-5-5`: all 400; with `1`: all 200).
+/// `adjust_for_model` drops both knobs for the Anthropic adapter, and the smoke's options set
+/// both, so this lane fails if that ever regresses.
 pub(super) const ANTHROPIC: SmokeProvider = SmokeProvider {
     name: "Anthropic",
     env_var: "ANTHROPIC_API_KEY",
     base_url: "https://api.anthropic.com/v1/",
-    model: "claude-haiku-4-5-20251001",
+    model: "claude-haiku-5-5",
     model_list_url: "https://api.anthropic.com/v1/models",
     const_name: "ANTHROPIC",
     check_nickname: "anthropic-smoke",

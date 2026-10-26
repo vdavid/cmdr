@@ -561,13 +561,14 @@ fn adjust_for_model(options: &ChatOptions, target: &ServiceTarget) -> ChatOption
     let model_name = &*target.model.model_name;
     let adapter = target.model.adapter_kind;
 
-    // Anthropic refuses a request carrying both sampling knobs: HTTP 400, "`temperature` and
-    // `top_p` cannot both be specified for this model". Keep `temperature`, which callers
-    // actually tune, and drop `top_p`, which every call site leaves at a near-default 0.95.
-    // Verified live on 2026-09-04 against `claude-haiku-4-5-20251001` and
-    // `claude-sonnet-4-5-20250929`: both 400 with the pair, both 200 with temperature alone.
+    // Anthropic gets no sampling knobs at all. Every Claude from 4.7 on answers 400
+    // "`temperature` is deprecated for this model" to a non-default `temperature` or `top_p`
+    // (verified 2026-10-26, `curl` against `claude-{opus,sonnet,haiku}-5-5`), older ones 400 on
+    // the pair, and API version `2026-10-21` drops both for every model. Older Claude models
+    // lose a lower temperature, which is the trade Anthropic's own migration guide makes.
     if matches!(adapter, AdapterKind::Anthropic) {
         let mut opts = options.clone();
+        opts.temperature = None;
         opts.top_p = None;
         return opts;
     }

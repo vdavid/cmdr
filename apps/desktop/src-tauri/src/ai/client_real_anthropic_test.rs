@@ -8,8 +8,8 @@
 //! `#[ignore]`-gated: needs a valid `ANTHROPIC_API_KEY`. The `anthropic-smoke` check resolves
 //! the key (env var, else the sops `secret` helper) and skips cleanly without one.
 //!
-//! Endpoint and model id live in `smoke_providers.rs`, not here — including why the pin stays
-//! on Haiku 4.5 rather than a newer Claude.
+//! Endpoint and model id live in `smoke_providers.rs`, not here — including why the pin must
+//! stay on a current Claude.
 //!
 //! Costs ~$0.001 per full run.
 //!
