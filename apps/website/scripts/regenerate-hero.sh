@@ -68,10 +68,10 @@ for variant in dark light; do
   }
 
   # Where the window sits on the canvas, read from the master itself rather than from a
-  # constant: every master carries the focused window's shadow as transparent margin, and
-  # the opaque bounding box IS the window. `-threshold 99%` is the same cut the capture's
-  # own frame check uses, so the two agree on the edge to the pixel.
-  bbox=$(magick "$src" -alpha extract -threshold 99% -format '%@' info:) # 2284x1410+112+76
+  # constant: every master is the window inside a 1 px outline, and the opaque bounding
+  # box IS the window. `-threshold 99%` is the same cut the capture's own frame check
+  # uses, so the two agree on the edge to the pixel.
+  bbox=$(magick "$src" -alpha extract -threshold 99% -format '%@' info:) # 2284x1410+1+1
   offsets=${bbox#*+}
   win_x=${offsets%%+*}
   win_y=${offsets##*+}
@@ -93,8 +93,8 @@ for variant in dark light; do
     "${REPRODUCIBLE[@]}" "$masters/cmdr-hero-right-pane-${variant}.png"
 
   # The frame: the master with both pane rectangles punched out. Multiplying the master's
-  # own alpha by the mask keeps the shadow's soft edge, which a flat `-transparent` would
-  # turn into a hard cut.
+  # own alpha by the mask keeps the outline and the corners' antialiasing, which a flat
+  # `-transparent` would turn into a hard cut. The shadow is CSS (`Hero.astro`).
   magick -size "$canvas" xc:white \
     -fill black -draw "rectangle ${lx},${ly} $((lx + pane_w - 1)),$((ly + pane_h - 1))" \
     -fill black -draw "rectangle ${rx},${ry} $((rx + pane_w - 1)),$((ry + pane_h - 1))" \

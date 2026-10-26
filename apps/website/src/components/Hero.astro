@@ -237,10 +237,19 @@ const currentYear = new Date().getFullYear()
         }
     }
 
-    /* Variant containers fill the hero-base and stack on top of each other */
+    /* Variant containers stack on top of each other inside the hero-base. The masters are the
+       bare window (no baked-in shadow), so the inset keeps the window where and as big as it sat
+       when the shadow margins took up this room (76 and 148 of 1634 px), and the shadow is drawn
+       here instead. A drop-shadow (unlike box-shadow) follows the window's rounded corners.
+       ❗ The shadow must fit inside `.hero-base`: its `mask-image` clips everything outside its box,
+       and the window sits only 42 px below that box's top (81 px above its bottom). A shadow that
+       reaches further is cut off in a hard line. So it's a faint contact shadow plus a soft one
+       pushed DOWN by its offset, which keeps the soft one's top fade inside those 42 px, the way
+       the macOS shadow it replaces was light above and heavy below. */
     .hero-variant {
         position: absolute;
-        inset: 0;
+        inset: 4.65% 0 9.06%;
+        filter: drop-shadow(-1px 2px 3px rgb(0 0 0 / 0.18)) drop-shadow(-8px 26px 30px rgb(0 0 0 / 0.36));
     }
 
     /* Default: show dark, hide light */

@@ -17,7 +17,9 @@ rebuilds them from `brand/screenshots/` in seconds); the regeneration script wri
 | `cmdr-hero-right-pane-{dark,light}.webp` | 2x right pane screenshot content on a transparent canvas                           |
 | `cmdr-hero-*-{dark,light}-1x.webp`       | 1x lossless WebP for 1x-DPR displays                                               |
 
-The 2x WebPs are 2508 x 1634 px (2x retina, the master canvas size); the 1x WebPs are 1254 x 817 px.
+The 2x WebPs are 2286 x 1412 px (2x retina, the master canvas size); the 1x WebPs are 1143 x 706 px. No layer carries a
+shadow: `Hero.astro` draws it as a CSS `drop-shadow` on each variant, and insets the variant so the window keeps its old
+size and place.
 
 ## Guardrails
 

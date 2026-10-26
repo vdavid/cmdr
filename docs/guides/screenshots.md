@@ -17,13 +17,13 @@ pnpm marketing:shots --out ~/Desktop/qa  # somewhere else, leaving brand/ untouc
 It runs on the Playwright lane's E2E binary, rebuilt first only when the tree changed, so a master can never come from a
 stale build.
 
-❗ **The machine must be left alone while it shoots.** macOS draws the wide window shadow only for the KEY window, so
-every shot takes the front position first; clicking into another app mid-run costs retries. Right before the shoot, Cmdr
-comes to the front with its window covered in orange: a three-second countdown and the expected duration, swallowing
-clicks and typing while it's up. When it clears, hands off. You can keep working until then (the build and any index
-wait come first). Unlike `pnpm i18n:shots`, this does not refuse to start behind another app, because it claims the
-front through System Events and then proves it in the pixels. Overlay and estimate: `apps/desktop/scripts/DETAILS.md` §
-"The pre-capture countdown".
+❗ **The machine must be left alone while it shoots.** macOS composites only the frontmost window and colours the
+traffic lights only for the key one, so every shot takes the front position first; clicking into another app mid-run
+costs retries. Right before the shoot, Cmdr comes to the front with its window covered in orange: a three-second
+countdown and the expected duration, swallowing clicks and typing while it's up. When it clears, hands off. You can keep
+working until then (the build and any index wait come first). Unlike `pnpm i18n:shots`, this does not refuse to start
+behind another app, because it claims the front through System Events and then confirms, after every shutter, that Cmdr
+still held it. Overlay and estimate: `apps/desktop/scripts/DETAILS.md` § "The pre-capture countdown".
 
 A quiet run takes about 25 seconds and writes nine files (the overlay's figure calibrates itself from real runs). The
 one exception is the drive index: see § "When it waits".
@@ -39,8 +39,11 @@ Into `brand/screenshots/` (or `--out`):
 - `hero-cutouts.json` — the two pane rectangles, measured off the live DOM in the same test that took the shot, which is
   what keeps the hero geometry from drifting a redesign behind its own screenshot.
 
-Every master is a real macOS window shot: the window plus its focused shadow, on transparency. `app-main` is 2508x1634
-around a 2284x1410 window at `+112+76`.
+Every master is a real macOS window shot WITHOUT its shadow (`screencapture -o`): the window with the system's own
+rounded corners on transparency, plus the 1 px outline macOS draws around a window, which `-o` drops and the run traces
+back on (`windowOutlineArgs` in `marketing-shots-frame.ts`). `app-main` is 2286x1412: a 2284x1410 window at `+1+1`. No
+shadow is baked in on purpose: it was invisible on dark pages and only shrank the window in the README and the listings,
+so each surface that wants one draws it in CSS (the hero, the blog's lightbox).
 
 **Lossless WebP**, so a master is pixel-identical to the PNG the shutter takes (`magick compare -metric AE` reads 0) at
 about a fifth of the bytes. That is what keeps a reshoot from adding ~8 MB of undeltifiable blobs to git every time,
@@ -56,7 +59,7 @@ run needs ImageMagick and refuses to start without it. Need a PNG for an uploade
   in `apps/website/public/hero/DETAILS.md`.
 - **Blog's Total Commander comparison**: crop each main-window master to the bare window at 1,400 px wide, the slider's
   size:
-  `magick brand/screenshots/app-main-$m.webp -crop 2284x1410+112+76 +repage -resize 1400x -quality 85 apps/website/public/blog/total-commander-for-macos/cmdr-$m.webp`
+  `magick brand/screenshots/app-main-$m.webp -crop 2284x1410+1+1 +repage -resize 1400x -quality 85 apps/website/public/blog/total-commander-for-macos/cmdr-$m.webp`
   for `m` in `dark` and `light`.
 - **App directories**: re-upload on each listing, and update the matching file in `brand/listings/` in the same pass.
 
@@ -89,15 +92,15 @@ CMDR_SHOTS_TEXT_SIZE=100 pnpm marketing:shots --out /tmp/one-off
 `apps/desktop/scripts/marketing-shots.ts` launches the Playwright-enabled binary on a persistent data dir of its own
 (`~/Library/Application Support/com.veszelovszki.cmdr-shots`, with its drive index in
 `~/Library/Caches/com.veszelovszki.cmdr-shots/drive-index`), then runs `marketing-shots.spec.ts` on its own shard. The
-spec stages each shot through the real UI and photographs it with `screencapture -l`, verifying the bytes before it
-keeps them. Design and rationale, including the two alternatives that were considered and rejected (a synthesized
-shadow, and a dedicated `shots` app mode): `apps/desktop/test/e2e-playwright/DETAILS.md` § "Key decisions".
+spec stages each shot through the real UI and photographs it with `screencapture -l -o`, verifying the bytes before it
+keeps them. Design and rationale (why no baked-in shadow, and why no dedicated `shots` app mode):
+`apps/desktop/test/e2e-playwright/DETAILS.md` § "Key decisions".
 
 Two deliberate choices worth knowing before you change anything:
 
 - **`CMDR_E2E_MODE` stays unset.** It paints the blue `E2E MODE` title bar and sets `ActivationPolicy::Prohibited`,
-  which makes the window permanently unable to become key, and only a key window gets the wide shadow. So an E2E-mode
-  run could not produce a master even in principle.
+  which makes the window permanently unable to become key, so its traffic lights photograph grey. So an E2E-mode run
+  could not produce a master even in principle.
 - **`CMDR_E2E_START_PATH` stays unset, and the shard skips the fixture machinery.** That variable arms the suite's
   post-test guard, which deletes anything not in the fixture manifest — and this is the one run that photographs real
   folders. ❌ Never set it for this shard.
@@ -106,8 +109,10 @@ Two deliberate choices worth knowing before you change anything:
 
 The failures are named on purpose; read the message before changing anything.
 
-- **"the window was not focused when it was shot"** — its shadow measured 68/52 instead of 112/76. Something took the
-  front position mid-run. Leave the machine alone and re-run.
+- **"the window was not focused when it was shot"** — System Events named another app frontmost right after the shutter.
+  Something took the front position mid-run. Leave the machine alone and re-run.
+- **"…so the shadow came along. The shutter must pass `-o`"** — the capture is bigger than the window; someone dropped
+  `-o` from `captureWindow`.
 - **"the capture has nothing opaque in it"** — a blank frame, same cause: macOS stops compositing a window that isn't
   frontmost.
 - **"the photographed window is NxM, but the app reports…"** — something resized the window between staging and the
@@ -127,12 +132,13 @@ so copying it out from under a running app is a torn read. 1.1 GB takes about tw
 `sqlite3` CLI's `.backup` (which livelocks against a running Cmdr) or `VACUUM INTO` (which needs Cmdr's collation):
 `cloneProdIndex` in `apps/desktop/scripts/marketing-shots.ts`.
 
-❗ The copy does **not** always skip the wait. Startup rebuilds when the index's stored FSEvents id is more than ten
-million behind the system's current one, and on a machine that compiles all day that gap is hours rather than days
-(measured at 28 million overnight). So a copy from a production app that last scanned yesterday still reconciles,
-exactly as production itself would on restart. It costs about five minutes, once, and the run says so while it waits.
-That wait comes BEFORE the orange countdown, so the machine is yours until it ends. Back-to-back runs reuse the settled
-index and are instant.
+❗ The copy skips the wait only when production is current. Startup rebuilds when the index's stored FSEvents id is more
+than ten million behind the system's current one, and on a machine that compiles all day that's about an hour (14
+million in 90 minutes with two E2E builds). A RUNNING production Cmdr keeps its index seconds behind, so the run copies
+whichever index is further along by that same number, and with production open the launch replays the journal instead of
+rebuilding. With production quit for hours, both are behind and the instance reconciles, exactly as production itself
+would on restart: about five minutes, once, and the run says so while it waits. That wait comes BEFORE the orange
+countdown, so the machine is yours until it ends.
 
 ❌ Don't answer this by writing the current event id into the copied index. That claims it has seen changes it hasn't,
 and trades one five-minute wait for permanently stale sizes.

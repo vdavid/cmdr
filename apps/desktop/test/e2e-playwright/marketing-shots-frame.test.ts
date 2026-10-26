@@ -5,16 +5,12 @@ import { describe, expect, it } from 'vitest'
 import { decodePng, encodePng } from './i18n-capture-png.js'
 import { webpCanvasSize } from './webp-size.js'
 import {
-  FOCUSED_CANVAS_GROWTH,
-  FOCUSED_SHADOW_BOTTOM,
-  FOCUSED_SHADOW_TOP,
-  FOCUSED_SHADOW_X,
   insetRect,
   opaqueBoundingBox,
   pickWindowId,
   verifyBareFrame,
-  verifyShadowFrame,
   WINDOW_OUTLINE_ALPHA,
+  WINDOW_OUTLINE_PX,
   windowOutlineArgs,
 } from './marketing-shots-frame.js'
 
@@ -47,12 +43,12 @@ function shotWithWindowAt(
   return encodePng(canvas.width, canvas.height, pixels)
 }
 
-/** A well-formed focused shot of a `window`-sized window, on the canvas macOS would give it. */
-function focusedShotOf(window: { width: number; height: number }): Buffer {
-  return shotWithWindowAt(
-    { width: window.width + FOCUSED_CANVAS_GROWTH, height: window.height + FOCUSED_CANVAS_GROWTH },
-    { x: FOCUSED_SHADOW_X, y: FOCUSED_SHADOW_TOP, ...window },
-  )
+/**
+ * What `screencapture` writes WITHOUT `-o`: the window on a canvas grown by its shadow
+ * (112 px each side, 76 above, 148 below, measured on a focused window, 2026-08-12).
+ */
+function shadowedShotOf(window: { width: number; height: number }): Buffer {
+  return shotWithWindowAt({ width: window.width + 224, height: window.height + 224 }, { x: 112, y: 76, ...window })
 }
 
 /** The window inside the master, which every margin here is measured against. */
@@ -86,36 +82,29 @@ describe('the committed masters', () => {
   // JavaScript. The size assertion reads the container header, so it runs everywhere
   // (including CI, which has no ImageMagick) and still catches the likeliest drift: a
   // reshoot at a different size while the constants stay put.
-  it('are sized exactly as the focused-frame model predicts', () => {
+  it('are the window plus its outline, nothing more', () => {
     expect(webpCanvasSize(readFileSync(MASTER))).toEqual({
-      width: MASTER_WINDOW.width + FOCUSED_CANVAS_GROWTH,
-      height: MASTER_WINDOW.height + FOCUSED_CANVAS_GROWTH,
+      width: MASTER_WINDOW.width + 2 * WINDOW_OUTLINE_PX,
+      height: MASTER_WINDOW.height + 2 * WINDOW_OUTLINE_PX,
     })
   })
 
   // 8 s, not the 5 s default: this is the only test here that shells out to ImageMagick and
-  // then walks 3.6M pixels in JS. It takes ~0.6 s alone, but a full `pnpm check` run has every
+  // then walks 3.2M pixels in JS. It takes ~0.6 s alone, but a full `pnpm check` run has every
   // core busy and it has measured 6.4 s there, which failed on the default budget.
   it.skipIf(!hasMagick)(
-    'measure exactly the focused margins the pipeline gates on',
+    'hold the window just inside the outline, where the hero script looks for it',
     () => {
       const bytes = masterAsPng()
-      const decoded = decodePng(bytes)
 
-      const rect = opaqueBoundingBox(bytes)
-
-      expect(rect).toEqual({ x: FOCUSED_SHADOW_X, y: FOCUSED_SHADOW_TOP, ...MASTER_WINDOW })
-      expect(decoded.width).toBe(MASTER_WINDOW.width + FOCUSED_CANVAS_GROWTH)
-      expect(decoded.height).toBe(MASTER_WINDOW.height + FOCUSED_CANVAS_GROWTH)
-      expect(verifyShadowFrame(bytes, MASTER_WINDOW)).toEqual({ ok: true, rect })
+      expect(opaqueBoundingBox(bytes)).toEqual({ x: WINDOW_OUTLINE_PX, y: WINDOW_OUTLINE_PX, ...MASTER_WINDOW })
+      // Transparent beyond the rounded corner, so every page shows its own background there.
+      const { width, pixels } = decodePng(bytes)
+      expect(pixels[3]).toBe(0)
+      expect(pixels[(width - 1) * 4 + 3]).toBe(0)
     },
     8_000,
   )
-
-  it('grow by the same amount on both axes, which is what one constant assumes', () => {
-    expect(FOCUSED_SHADOW_X * 2).toBe(FOCUSED_SHADOW_TOP + FOCUSED_SHADOW_BOTTOM)
-    expect(FOCUSED_CANVAS_GROWTH).toBe(FOCUSED_SHADOW_TOP + FOCUSED_SHADOW_BOTTOM)
-  })
 })
 
 describe('opaqueBoundingBox', () => {
@@ -143,71 +132,6 @@ describe('opaqueBoundingBox', () => {
   })
 })
 
-describe('verifyShadowFrame', () => {
-  const window = { width: 240, height: 180 }
-  const canvas = { width: window.width + FOCUSED_CANVAS_GROWTH, height: window.height + FOCUSED_CANVAS_GROWTH }
-
-  it('accepts a window sitting at the focused margins', () => {
-    expect(verifyShadowFrame(focusedShotOf(window), window)).toEqual({
-      ok: true,
-      rect: { x: FOCUSED_SHADOW_X, y: FOCUSED_SHADOW_TOP, ...window },
-    })
-  })
-
-  it('rejects the narrower shadow an unfocused window gets', () => {
-    // The whole reason this gate exists: an unfocused window still photographs fine,
-    // just with a thinner shadow, and the hero silently loses half its glow.
-    const bytes = shotWithWindowAt(
-      { width: window.width + 2 * 68, height: window.height + 2 * 52 },
-      { x: 68, y: 52, ...window },
-    )
-
-    const verdict = verifyShadowFrame(bytes, window)
-
-    expect(verdict.ok).toBe(false)
-    expect(!verdict.ok && verdict.reason).toContain('not focused')
-  })
-
-  it('rejects a window whose size is not the one the app reports', () => {
-    const bytes = shotWithWindowAt(canvas, { x: FOCUSED_SHADOW_X, y: FOCUSED_SHADOW_TOP, width: 200, height: 180 })
-
-    const verdict = verifyShadowFrame(bytes, window)
-
-    expect(verdict.ok).toBe(false)
-    expect(!verdict.ok && verdict.reason).toContain('200x180')
-  })
-
-  it('rejects a window shifted off the expected margins', () => {
-    const bytes = shotWithWindowAt(canvas, { x: FOCUSED_SHADOW_X + 6, y: FOCUSED_SHADOW_TOP, ...window })
-
-    const verdict = verifyShadowFrame(bytes, window)
-
-    expect(verdict.ok).toBe(false)
-    expect(!verdict.ok && verdict.reason).toContain('margin')
-  })
-
-  it('rejects a canvas too small to hold the whole shadow', () => {
-    // What a window pushed against a screen edge produces: right margins and a right
-    // window size, but the shadow runs off the bottom of the image.
-    const cropped = { width: canvas.width, height: canvas.height - 30 }
-    const bytes = shotWithWindowAt(cropped, { x: FOCUSED_SHADOW_X, y: FOCUSED_SHADOW_TOP, ...window })
-
-    const verdict = verifyShadowFrame(bytes, window)
-
-    expect(verdict.ok).toBe(false)
-    expect(!verdict.ok && verdict.reason).toContain('canvas')
-  })
-
-  it('rejects a capture with no window in it at all', () => {
-    const bytes = shotWithWindowAt(canvas, { x: 0, y: 0, width: 0, height: 0 }, { haloAlpha: 0 })
-
-    const verdict = verifyShadowFrame(bytes, window)
-
-    expect(verdict.ok).toBe(false)
-    expect(!verdict.ok && verdict.reason).toContain('nothing opaque')
-  })
-})
-
 describe('verifyBareFrame', () => {
   const window = { width: 240, height: 180 }
 
@@ -223,7 +147,7 @@ describe('verifyBareFrame', () => {
 
   it('rejects a capture that still carries a shadow', () => {
     // What `screencapture` gives without `-o`: the window plus transparent margins.
-    const verdict = verifyBareFrame(focusedShotOf(window), window)
+    const verdict = verifyBareFrame(shadowedShotOf(window), window)
 
     expect(verdict.ok).toBe(false)
     expect(!verdict.ok && verdict.reason).toContain('shadow')
@@ -257,7 +181,43 @@ describe('windowOutlineArgs', () => {
   it('draws a lighter outline in light mode, the way macOS does', () => {
     expect(WINDOW_OUTLINE_ALPHA.light).toBeLessThan(WINDOW_OUTLINE_ALPHA.dark)
   })
+
+  // The real pixels, through the same `magick` the shutter uses: a flat 30-grey "window"
+  // must come out with the black outline outside it and, in dark mode, the 2 px white
+  // inner line macOS draws just inside the edge, which is what lifts a dark window off a
+  // dark page (measured 30 → 53 on the old masters).
+  it.skipIf(!hasMagick)('rings a dark window with a black outline and a light inner line', () => {
+    const window = { width: 40, height: 30 }
+    const out = applyEdges(shotWithWindowAt(window, { x: 0, y: 0, ...window }, { haloAlpha: 0 }), 'dark')
+    const { width, pixels } = decodePng(out)
+    const at = (x: number, y: number): number[] => [...pixels.subarray((y * width + x) * 4, (y * width + x) * 4 + 4)]
+
+    expect(width).toBe(window.width + 2 * WINDOW_OUTLINE_PX)
+    expect(at(0, 15)[3]).toBeGreaterThan(230) // the outline, outside the window
+    expect(at(0, 15)[0]).toBe(0)
+    for (const x of [1, 2]) expect(at(x, 15)[0]).toBeGreaterThanOrEqual(50) // the inner line
+    expect(at(3, 15)[0]).toBe(32) // untouched window from here in
+    expect(at(20, 15)).toEqual([32, 32, 32, 255])
+  })
+
+  it.skipIf(!hasMagick)('leaves a light window with the outline only', () => {
+    const window = { width: 40, height: 30 }
+    const out = applyEdges(shotWithWindowAt(window, { x: 0, y: 0, ...window }, { haloAlpha: 0 }), 'light')
+    const { width, pixels } = decodePng(out)
+
+    expect(pixels[(15 * width + 1) * 4]).toBe(32)
+  })
 })
+
+/** Runs `windowOutlineArgs` on PNG bytes through ImageMagick, PNG out. */
+function applyEdges(bytes: Buffer, theme: 'dark' | 'light'): Buffer {
+  const res = spawnSync('magick', ['png:-', ...windowOutlineArgs(theme), 'png32:-'], {
+    input: bytes,
+    maxBuffer: 16 * 1024 * 1024,
+  })
+  if (res.error !== undefined || res.status !== 0) throw new Error(`magick failed: ${String(res.stderr)}`)
+  return res.stdout
+}
 
 describe('insetRect', () => {
   it('shrinks a rect by the inset on every side', () => {

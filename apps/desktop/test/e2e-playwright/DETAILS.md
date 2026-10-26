@@ -310,13 +310,13 @@ Only the layout facts that none of those carry live here:
   `installMtpSpecSetup()`, which each spec calls at module scope: still per-file registration, stated once. Splitting
   for the sake of the `file-length` threshold alone is not worth it; split when the halves answer different questions.
 - **The frame anchor reaches the master through `magick`, and splits so CI still asserts something.**
-  `marketing-shots-frame.test.ts` checks the focused-margin constants against a REAL capture, but the committed master
-  is lossless WebP and nothing here decodes those pixels in JavaScript (`i18n-capture-png.ts` is PNG-only, and a VP8L
-  decoder is not worth hand-rolling). So the pixel assertions render the master with `magick … png32:-`, the same tool
-  that wrote it and that `regenerate-hero.sh` measures it with, and they `skipIf` ImageMagick is missing. The size
+  `marketing-shots-frame.test.ts` checks the window-plus-outline geometry against a REAL capture, but the committed
+  master is lossless WebP and nothing here decodes those pixels in JavaScript (`i18n-capture-png.ts` is PNG-only, and a
+  VP8L decoder is not worth hand-rolling). So the pixel assertions render the master with `magick … png32:-`, the same
+  tool that wrote it and that `regenerate-hero.sh` measures it with, and they `skipIf` ImageMagick is missing. The size
   assertion instead reads the container header (`webp-size.ts`), so it runs on a CI runner with no ImageMagick and still
-  catches the likeliest drift: a reshoot at a different size while `FOCUSED_*` stays put. ❌ Don't collapse them back
-  into one magick-gated test; that leaves CI asserting nothing about the masters.
+  catches the likeliest drift: a reshoot at a different size while the test's window size stays put. ❌ Don't collapse
+  them back into one magick-gated test; that leaves CI asserting nothing about the masters.
 - **❗ Before `pnpm i18n:shots`: quit or hide whatever app is frontmost, then leave the computer alone, and tell David
   both halves.** The main pass opens with an orange in-window countdown (`capture-countdown-overlay.ts`,
   `scripts/DETAILS.md` § "The pre-capture countdown") as the last call to step away. The native screenshot returns the
@@ -816,25 +816,26 @@ session that already ran a query re-runs it on mount, so results can land betwee
 keypress and flip the meaning mid-test. The failure reads as a timeout waiting for a footer button, on an overlay that
 has already closed. `search-open-in-pane.spec.ts` § `typeAndRunSearch` carries the full note.
 
-**Decision**: the marketing capture keeps a REAL macOS shadow rather than synthesizing one. **Why**: the plugin's
-`native_screenshot` returns the bare window rect (measured on a committed i18n master, 2026-08-11: 2160x1440, alpha bbox
-`2160x1440+0+0`, the leftmost columns averaging alpha 254 — rounded-corner antialiasing, not a shadow ring). Painting a
-shadow in ImageMagick from the window's alpha mask would be deterministic and immune to focus, and it was rejected
-anyway: it is a FAKE macOS shadow, so the website hero's look would drift from what users actually see, and every future
-macOS shadow change would silently diverge. `screencapture -l` photographs the window plus its real shadow on
-transparency, so the pixels stay honest and everything downstream (`marketing-shots-frame.ts`, `regenerate-hero.sh`)
-measures the same thing.
+**Decision**: the marketing masters carry NO shadow; each surface draws its own, or none. **Why**: a baked-in macOS
+shadow was invisible on dark pages (the README on GitHub dark, the dark hero) and only shrank the window in every
+surface that shows it at a fixed width, and the directory listings compress screenshots hard, so the window needs every
+pixel. CSS `drop-shadow` follows the rounded corners and can differ per theme. The shutter is `screencapture -l -o` (the
+window alone, with macOS's own antialiased corners on transparency), not the plugin's `native_screenshot`, because only
+the system shutter gives the real corners. `-o` also drops the 1 px outline the compositor draws around a window, so the
+run traces it back on from the window's own alpha (`windowOutlineArgs`), at opacities measured off the old shadowed
+masters (2026-10-26). A cropped-and-masked version of the shadowed capture was tried first and rejected: the crop
+clipped the outline and the mask left the shadow's tint in the corners.
 
 **Decision**: a marketing run drops `CMDR_E2E_MODE` instead of getting a fifth app mode of its own. **Why**: E2E mode is
 what makes the app un-photographable (blue title bar, and `ActivationPolicy::Prohibited` so the window can never become
-key, and only a key window gets the wide shadow). The alternative considered was a `shots` mode beside `capture`, so
-`isE2eRun()` would stay true and every frontend suppression would hold, with only the activation gates refined. It was
-rejected because it puts production code in the app for a marketing tool, and buys nothing the launch environment can't:
-`CMDR_SECRET_STORE=file` forces the plain-file secret store independently of E2E mode, and analytics, the updater,
-whats-new, and the upgrade nudge are all seeded settings. ❗ Revisit if the suppression list grows: the moment this
-needs a THIRD app-code gate, the mode is the cleaner shape. Consequence of the current shape: the run claims the front
-from OUTSIDE, per shot, through System Events (`osascript`), because the harness cannot take the front position from
-inside.
+key, and only a key window gets coloured traffic lights). The alternative considered was a `shots` mode beside
+`capture`, so `isE2eRun()` would stay true and every frontend suppression would hold, with only the activation gates
+refined. It was rejected because it puts production code in the app for a marketing tool, and buys nothing the launch
+environment can't: `CMDR_SECRET_STORE=file` forces the plain-file secret store independently of E2E mode, and analytics,
+the updater, whats-new, and the upgrade nudge are all seeded settings. ❗ Revisit if the suppression list grows: the
+moment this needs a THIRD app-code gate, the mode is the cleaner shape. Consequence of the current shape: the run claims
+the front from OUTSIDE, per shot, through System Events (`osascript`), because the harness cannot take the front
+position from inside.
 
 **Decision**: the plugin's capability is a committed file in `src-tauri/capabilities-e2e/`, which only `playwright-e2e`
 builds glob. **Why**: its IPC permissions (`playwright:default`) exist only when the Cargo feature is enabled, so

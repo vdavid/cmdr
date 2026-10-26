@@ -5,12 +5,13 @@ website, AlternativeTo, newsletter, and any new surface all pull from.
 
 - `logos/`: `cmdr.svg` is the **source of truth** for every icon and logo raster in the repo; `cmdr-{512,128,32}.png`
   are generated from it. The grab-here set. Regenerate with `pnpm icons`, never by hand.
-- `screenshots/`: pristine full-window product shots, all carrying a focused window's 112/76 shadow margins. Regenerate
-  the whole set with **`pnpm marketing:shots`** (~25 s); never reshoot one by hand. `app-main-{dark,light}.webp` is the
-  master pair that feeds the README, the website hero, and AlternativeTo, so they never drift; `search-`, `chat-`, and
-  `settings-` are listings-only. `hero-cutouts.json` rides along: the pane rectangles measured during the same run the
-  masters were shot in, which is what stops the hero geometry drifting. **Lossless WebP**, pixel-identical to the PNG
-  the shutter takes at a fifth of the bytes; an uploader that rejects WebP takes `magick x.webp x.png`.
+- `screenshots/`: pristine full-window product shots: the bare window with macOS's own corners and 1 px outline, no
+  shadow (each surface adds its own in CSS, or none). Regenerate the whole set with **`pnpm marketing:shots`** (~25 s);
+  never reshoot one by hand. `app-main-{dark,light}.webp` is the master pair that feeds the README, the website hero,
+  and AlternativeTo, so they never drift; `search-`, `chat-`, and `settings-` are listings-only. `hero-cutouts.json`
+  rides along: the pane rectangles measured during the same run the masters were shot in, which is what stops the hero
+  geometry drifting. **Lossless WebP**, pixel-identical to the PNG the shutter takes at a fifth of the bytes; an
+  uploader that rejects WebP takes `magick x.webp x.png`.
 - `hero-masters/`: the six intermediate composited hero PNGs (frame + two pane cutouts, per theme) the website hero's
   WebPs are generated from. **Untracked** (`.gitignore`d, like the i18n screenshots): pure output of
   `apps/website/scripts/regenerate-hero.sh`, which reads `screenshots/` and `screenshots/hero-cutouts.json`, so

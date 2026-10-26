@@ -47,7 +47,7 @@ describe('webpCanvasSize', () => {
     // only handles a bare VP8L stream.
     const bytes = readFileSync(join(REPO_ROOT, 'brand', 'screenshots', 'app-main-dark.webp'))
 
-    expect(webpCanvasSize(bytes)).toEqual({ width: 2508, height: 1634 })
+    expect(webpCanvasSize(bytes)).toEqual({ width: 2286, height: 1412 })
   })
 
   it('reads a VP8X canvas', () => {

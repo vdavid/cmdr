@@ -152,7 +152,8 @@ happens on the built site.
 The slider overlays two windows and clips each to its side, so the screenshots must be clean app windows of matching
 size. Don't feed it raw ClearShot exports (those carry a transparent margin, a soft drop shadow, and slightly different
 window sizes — which made the smaller window let the other show through, and left halo specks in the rounded corners).
-Process each source (e.g. `brand/screenshots/app-main-{light,dark}.png` for Cmdr) with `sharp`:
+Cmdr's own masters are already shadowless, so for those the one-liner in `docs/guides/screenshots.md` § "Then refresh
+each consumer" is enough. Process any other source (a competitor's window, a ClearShot export) with `sharp`:
 
 1. **Binarize the alpha**: any pixel below fully opaque (alpha 255) → fully transparent. This drops the soft shadow and
    the semi-transparent corner halo; the later downscale re-adds clean anti-aliasing.
