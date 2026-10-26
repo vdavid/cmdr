@@ -716,7 +716,7 @@ fn ai_error_for_status(status: u16, detail: String) -> AiError {
 /// Anthropic, and Gemini all put the human sentence there), else the raw body, capped so
 /// an HTML error page (a proxy, Cloudflare) can't flood the UI or the logs. Display only,
 /// never control flow: classification stays on the numeric status (`ai_error_for_status`).
-fn provider_error_detail(status: impl Display, body: &str) -> String {
+pub(super) fn provider_error_detail(status: impl Display, body: &str) -> String {
     const MAX_CHARS: usize = 400;
     let message = serde_json::from_str::<Value>(body)
         .ok()

@@ -50,7 +50,38 @@ pub async fn check_ai_connection(
         return refused;
     }
     let (api_key, _) = super::api_keys::read_for_backend(&provider_id);
-    probe_ai_endpoint(base_url, api_key).await
+    probe_ai_endpoint(base_url, api_key, ModelListProtocol::for_provider(&provider_id)).await
+}
+
+/// How a provider's `GET /models` wants to be asked. Chat requests don't need this (`genai` picks
+/// the adapter from the model name), but the probe runs before there's a model to go by.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum ModelListProtocol {
+    /// `Authorization: Bearer <key>`, answering `{ "data": [{ "id": … }] }`. Every preset but one.
+    OpenAiCompatible,
+    /// Anthropic's native API: the key in `x-api-key`, plus a required `anthropic-version`
+    /// header (without it: HTTP 400 "anthropic-version: header is required"). Same `data[].id`
+    /// answer, but paged at 20 by default, so we ask for the maximum page.
+    Anthropic,
+}
+
+/// The API version Anthropic's `GET /v1/models` is asked under. It answers identically on
+/// `2023-06-01` and `2026-10-21` (Anthropic's migration guide limits that version's changes to
+/// Messages, token counting, batches, and the Admin API).
+const ANTHROPIC_API_VERSION: &str = "2023-06-01";
+
+/// Anthropic's largest `/v1/models` page. The whole catalog is 14 models (2026-10-26), so one
+/// page holds it with room to spare.
+const ANTHROPIC_MODEL_PAGE_LIMIT: u32 = 1000;
+
+impl ModelListProtocol {
+    /// Keyed by the preset id the settings UI passes, the same id the key is stored under.
+    fn for_provider(provider_id: &str) -> Self {
+        match provider_id {
+            "anthropic" => Self::Anthropic,
+            _ => Self::OpenAiCompatible,
+        }
+    }
 }
 
 /// The policy half of [`check_ai_connection`], pure so it's testable: `Some` answer when the
@@ -84,7 +115,11 @@ fn refuse_without_consent(cloud_consent: bool) -> Option<AiConnectionCheckResult
 
 /// Probes GET {base_url}/models with an explicit key. Returns connection status, auth status, and
 /// the available model list. Split from the command so it stays pure and testable.
-async fn probe_ai_endpoint(base_url: String, api_key: String) -> AiConnectionCheckResult {
+pub(super) async fn probe_ai_endpoint(
+    base_url: String,
+    api_key: String,
+    protocol: ModelListProtocol,
+) -> AiConnectionCheckResult {
     // Same plaintext-key guard as `configure_ai`: never send the BYOK key over
     // `http://` to a non-loopback host.
     if let Err(message) = validate_ai_base_url(&base_url, &api_key) {
@@ -98,7 +133,11 @@ async fn probe_ai_endpoint(base_url: String, api_key: String) -> AiConnectionChe
         };
     }
 
-    let url = format!("{}/models", base_url.trim_end_matches('/'));
+    let models_url = format!("{}/models", base_url.trim_end_matches('/'));
+    let url = match protocol {
+        ModelListProtocol::OpenAiCompatible => models_url,
+        ModelListProtocol::Anthropic => format!("{models_url}?limit={ANTHROPIC_MODEL_PAGE_LIMIT}"),
+    };
 
     // The policy judged `base_url` above; the redirect guard judges every hop after it.
     let client = match cmdr_http::client_builder()
@@ -120,8 +159,18 @@ async fn probe_ai_endpoint(base_url: String, api_key: String) -> AiConnectionChe
     };
 
     let mut request = client.get(&url);
-    if !api_key.is_empty() {
-        request = request.header("Authorization", format!("Bearer {api_key}"));
+    match protocol {
+        ModelListProtocol::OpenAiCompatible => {
+            if !api_key.is_empty() {
+                request = request.header("Authorization", format!("Bearer {api_key}"));
+            }
+        }
+        ModelListProtocol::Anthropic => {
+            request = request.header("anthropic-version", ANTHROPIC_API_VERSION);
+            if !api_key.is_empty() {
+                request = request.header("x-api-key", api_key.as_str());
+            }
+        }
     }
 
     let response = match request.send().await {
@@ -172,14 +221,16 @@ async fn probe_ai_endpoint(base_url: String, api_key: String) -> AiConnectionChe
         };
     }
 
-    // Other HTTP error
+    // Other HTTP error: the provider's own sentence (`error.message`), not its raw JSON.
     let body = response.text().await.unwrap_or_default();
-    let body_preview = truncate_body_preview(&body, 200);
     AiConnectionCheckResult {
         connected: true,
         auth_error: false,
         models: vec![],
-        error: Some(format!("HTTP {status}: {body_preview}")),
+        error: Some(super::client::provider_error_detail(
+            status,
+            &scrub_secrets(&body, &api_key),
+        )),
         cloud_consent_missing: false,
         managed: None,
     }
@@ -246,24 +297,17 @@ fn parse_model_ids(body: &str) -> Vec<String> {
         .unwrap_or_default()
 }
 
-/// Truncate an error-response body to at most `max` characters for a log/error preview,
-/// appending `...` only when truncation actually happened.
-///
-/// Char-based (not byte-based): slicing `&body[..max]` panics when byte `max` lands inside
-/// a multibyte UTF-8 sequence, which is trivially reachable with a non-ASCII error body from
-/// a user-configured AI endpoint. We also scrub `Bearer <token>`-shaped substrings as
-/// belt-and-suspenders in case a misbehaving proxy reflects the `Authorization` header back
-/// in its error body.
-fn truncate_body_preview(body: &str, max: usize) -> String {
-    let scrubbed = scrub_bearer_tokens(body);
-    let mut chars = scrubbed.chars();
-    let preview: String = chars.by_ref().take(max).collect();
-    // `chars` still has at least one item left iff the body was longer than `max` chars.
-    if chars.next().is_some() {
-        format!("{preview}...")
+/// Takes the key out of an error body before it reaches the UI, as belt-and-suspenders in case a
+/// misbehaving proxy reflects the request's headers back: the key itself wherever it appears
+/// (it travels as `x-api-key` for Anthropic), plus any `Bearer <token>`. Capping the length is
+/// `provider_error_detail`'s job.
+fn scrub_secrets(body: &str, api_key: &str) -> String {
+    let without_key = if api_key.is_empty() {
+        Cow::Borrowed(body)
     } else {
-        preview
-    }
+        Cow::Owned(body.replace(api_key, "<redacted>"))
+    };
+    scrub_bearer_tokens(&without_key).into_owned()
 }
 
 /// Replace the token in any `Bearer <token>` substring with `<redacted>`, leaving the rest
@@ -340,7 +384,12 @@ mod tests {
             ALLOWED_CLOUD_AI_HOSTS,
             plist::Value::Array(vec![plist::Value::String(entry)]),
         )]));
-        let result = probe_ai_endpoint(format!("{}/v1", allowed.uri()), String::new()).await;
+        let result = probe_ai_endpoint(
+            format!("{}/v1", allowed.uri()),
+            String::new(),
+            ModelListProtocol::OpenAiCompatible,
+        )
+        .await;
 
         assert!(result.models.is_empty(), "the probe stopped at the 302");
         let reached = elsewhere.received_requests().await.map_or(0, |r| r.len());
@@ -353,43 +402,130 @@ mod tests {
     }
 
     #[test]
-    fn truncate_body_preview_is_char_safe_on_multibyte_boundary() {
-        // '€' is 3 bytes in UTF-8. A string of 300 of them is 900 bytes; byte 200 lands
-        // mid-codepoint (200 % 3 != 0), so the old `&body[..200]` form would panic here.
-        let body = "€".repeat(300);
-        // The point is simply that this does NOT panic.
-        let out = truncate_body_preview(&body, 200);
-        // 200 chars kept (each still a full '€'), plus the "..." marker.
-        assert_eq!(out.chars().filter(|&c| c == '€').count(), 200);
-        assert!(out.ends_with("..."));
-
-        // '日' is also 3 bytes; same boundary hazard, different codepoint.
-        let body = "日".repeat(300);
-        let out = truncate_body_preview(&body, 200);
-        assert_eq!(out.chars().filter(|&c| c == '日').count(), 200);
-    }
-
-    #[test]
-    fn truncate_body_preview_truncates_ascii() {
-        let body = "a".repeat(500);
-        let out = truncate_body_preview(&body, 200);
-        assert_eq!(out, format!("{}...", "a".repeat(200)));
-    }
-
-    #[test]
-    fn truncate_body_preview_no_ellipsis_when_short() {
-        assert_eq!(truncate_body_preview("short body", 200), "short body");
-        // Exactly `max` chars: no truncation, so no ellipsis.
-        let exact = "x".repeat(200);
-        assert_eq!(truncate_body_preview(&exact, 200), exact);
-    }
-
-    #[test]
-    fn truncate_body_preview_scrubs_bearer_tokens() {
-        let body = "error: invalid auth Bearer sk-abc123secret rejected";
-        let out = truncate_body_preview(body, 200);
+    fn scrub_secrets_removes_bearer_tokens() {
+        let out = scrub_secrets("error: invalid auth Bearer sk-abc123secret rejected", "");
         assert!(out.contains("Bearer <redacted>"), "got: {out}");
         assert!(!out.contains("sk-abc123secret"), "token leaked: {out}");
+    }
+
+    #[test]
+    fn scrub_secrets_removes_the_key_wherever_it_appears() {
+        let out = scrub_secrets(r#"{"echo":{"x-api-key":"sk-ant-secret"}}"#, "sk-ant-secret");
+        assert!(!out.contains("sk-ant-secret"), "key leaked: {out}");
+        assert!(out.contains("<redacted>"), "got: {out}");
+    }
+
+    /// Mounts a `/v1/models` answer on a fresh mock server and returns the server.
+    async fn models_server(response: wiremock::ResponseTemplate) -> wiremock::MockServer {
+        use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer};
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/v1/models"))
+            .respond_with(response)
+            .mount(&server)
+            .await;
+        server
+    }
+
+    fn only_request(requests: Option<Vec<wiremock::Request>>) -> wiremock::Request {
+        let mut requests = requests.expect("request recording is on");
+        assert_eq!(requests.len(), 1, "exactly one probe");
+        requests.remove(0)
+    }
+
+    /// Regression anchor: the probe sent Anthropic only `Authorization: Bearer`, which it answers
+    /// with 400 "anthropic-version: header is required", so every Anthropic user saw an error on
+    /// a working key and never got a model list.
+    #[tokio::test]
+    async fn the_anthropic_probe_sends_its_native_headers_and_lists_models() {
+        let body = r#"{"data":[{"id":"claude-opus-5-5","type":"model"},{"id":"claude-haiku-5-5","type":"model"}],"has_more":false}"#;
+        let server = models_server(wiremock::ResponseTemplate::new(200).set_body_string(body)).await;
+
+        let result = probe_ai_endpoint(
+            format!("{}/v1/", server.uri()),
+            "sk-ant-test".into(),
+            ModelListProtocol::Anthropic,
+        )
+        .await;
+
+        assert_eq!(result.models, ["claude-opus-5-5", "claude-haiku-5-5"]);
+        assert_eq!(result.error, None);
+        let request = only_request(server.received_requests().await);
+        let header = |name: &str| {
+            request
+                .headers
+                .get(name)
+                .and_then(|v| v.to_str().ok())
+                .map(str::to_owned)
+        };
+        assert_eq!(header("x-api-key").as_deref(), Some("sk-ant-test"));
+        assert_eq!(header("anthropic-version").as_deref(), Some(ANTHROPIC_API_VERSION));
+        assert_eq!(
+            header("authorization"),
+            None,
+            "the key travels once, in its native header"
+        );
+        assert_eq!(
+            request.url.query(),
+            Some("limit=1000"),
+            "one page holds the whole catalog"
+        );
+    }
+
+    #[tokio::test]
+    async fn an_openai_compatible_probe_sends_a_bearer_key() {
+        let server =
+            models_server(wiremock::ResponseTemplate::new(200).set_body_string(r#"{"data":[{"id":"gpt-4.1-mini"}]}"#))
+                .await;
+
+        let result = probe_ai_endpoint(
+            format!("{}/v1", server.uri()),
+            "sk-test".into(),
+            ModelListProtocol::OpenAiCompatible,
+        )
+        .await;
+
+        assert_eq!(result.models, ["gpt-4.1-mini"]);
+        let request = only_request(server.received_requests().await);
+        let auth = request.headers.get("authorization").and_then(|v| v.to_str().ok());
+        assert_eq!(auth, Some("Bearer sk-test"));
+        assert!(request.headers.get("x-api-key").is_none());
+        assert!(request.headers.get("anthropic-version").is_none());
+    }
+
+    /// A refusal shows the provider's own sentence, never its JSON envelope, and never the key.
+    #[tokio::test]
+    async fn a_refused_probe_shows_the_providers_sentence() {
+        let body = r#"{"type":"error","error":{"type":"invalid_request_error","message":"Something about sk-ant-test went wrong"}}"#;
+        let server = models_server(wiremock::ResponseTemplate::new(400).set_body_string(body)).await;
+
+        let result = probe_ai_endpoint(
+            format!("{}/v1/", server.uri()),
+            "sk-ant-test".into(),
+            ModelListProtocol::Anthropic,
+        )
+        .await;
+
+        assert_eq!(
+            result.error.as_deref(),
+            Some("HTTP 400 Bad Request: Something about <redacted> went wrong"),
+        );
+    }
+
+    #[test]
+    fn only_the_anthropic_preset_speaks_the_anthropic_protocol() {
+        assert_eq!(
+            ModelListProtocol::for_provider("anthropic"),
+            ModelListProtocol::Anthropic
+        );
+        for id in ["openai", "google-gemini", "openrouter", "custom", "ollama"] {
+            assert_eq!(
+                ModelListProtocol::for_provider(id),
+                ModelListProtocol::OpenAiCompatible,
+                "{id}"
+            );
+        }
     }
 
     #[test]

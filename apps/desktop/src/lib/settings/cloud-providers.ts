@@ -54,9 +54,10 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
     id: 'anthropic',
     name: 'Anthropic',
     baseUrl: 'https://api.anthropic.com/v1/',
-    defaultModel: 'claude-sonnet-4-5',
+    // The current Sonnet (`GET /v1/models`, 2026-10-26). `claude-sonnet-4-5` retires 2026-11-30.
+    defaultModel: 'claude-sonnet-5-5',
     requiresApiKey: true,
-    supportsModelList: false,
+    supportsModelList: true,
     setup: {
       kind: 'cloud',
       signupUrl: 'https://platform.claude.com/login',

@@ -202,13 +202,11 @@ async fn o3_chat_reasoning_model_omits_temperature() {
 }
 
 #[tokio::test]
-async fn anthropic_sends_temperature_but_never_top_p() {
-    // Anthropic rejects a request carrying both with HTTP 400 `temperature` and `top_p`
-    // cannot both be specified for this model. Verified live against
-    // `claude-haiku-4-5-20251001` and `claude-sonnet-4-5-20250929` on 2026-09-04: both 400
-    // with the pair, both 200 with temperature alone. `suggestions.rs` sets both on every
-    // call, so without the fixup every folder and rename suggestion 400s for any user on an
-    // Anthropic key.
+async fn anthropic_sends_no_sampling_knobs() {
+    // Every Claude from 4.7 on answers 400 "`temperature` is deprecated for this model" to a
+    // non-default `temperature` or `top_p`, and older ones 400 on the pair (reasons in
+    // `adjust_for_model`). `suggestions.rs` sets both on every call, so without the fixup every
+    // folder and rename suggestion 400s for any user on an Anthropic key.
     let server = MockServer::start().await;
 
     Mock::given(method("POST"))
@@ -220,7 +218,7 @@ async fn anthropic_sends_temperature_but_never_top_p() {
     let backend = AiBackend::remote(
         String::from("test-key"),
         format!("{}/v1", server.uri()),
-        String::from("claude-haiku-4-5-20251001"),
+        String::from("claude-haiku-5-5"),
     );
 
     chat_completion(&backend, SYSTEM_PROMPT, USER_PROMPT, &opts())
@@ -229,15 +227,11 @@ async fn anthropic_sends_temperature_but_never_top_p() {
 
     let req = take_only_request(&server).await;
     let body: Value = serde_json::from_slice(&req.body).expect("json body");
-    let temperature = body["temperature"].as_f64().expect("temperature set");
     assert!(
-        (temperature - 0.6).abs() < 1e-9,
-        "Anthropic keeps temperature ~0.6, got {temperature}"
+        body.get("temperature").is_none(),
+        "Anthropic must NOT send temperature (HTTP 400)"
     );
-    assert!(
-        body.get("top_p").is_none(),
-        "Anthropic must NOT send top_p alongside temperature (HTTP 400)"
-    );
+    assert!(body.get("top_p").is_none(), "Anthropic must NOT send top_p (HTTP 400)");
 }
 
 #[tokio::test]
