@@ -104,6 +104,14 @@ what's left after the inbound drop fails honestly and persists nothing instead o
   Anthropic adapter never re-serializes the thinking block + signature; the OpenAI-Responses adapter never re-serializes
   reasoning items and forces `store=false`), so a reasoning-on multi-step loop 400s or silently degrades. Off is the
   honest v1 posture. `crate::ai`'s `adjust_for_model` won't override an explicit effort.
+- On Claude 5.x, "off" doesn't mean no thinking. genai 0.6.5 still sends `thinking: {type: "adaptive"}` for
+  `claude-opus-*` ≥4.7 even with `ReasoningEffort::None` (no effort, so the model's default), and Haiku and Sonnet 5.5
+  think adaptively with no `thinking` param at all. The thinking text comes back empty (display omitted), only a
+  signature, so genai captures nothing and the replay carries text + `tool_use` without the thinking block. Anthropic
+  accepts that mid-loop (verified on `claude-haiku-5-5`, `claude-sonnet-5-5`, `claude-opus-5-5`: two-round tool loop
+  through `GenaiAgentLlm` plus a raw-API replay of a signed Opus thinking block dropped before its `tool_result`,
+  2026-10-26). The cost is continuity: the model can't reread its own earlier thinking, which is what the genai
+  capture+replay patch below would buy back.
 - Gemini and everything else: left unset (provider default). Gemini round-trips its per-`functionCall`
   `thoughtSignature` correctly, so its reasoning is preserved end to end; OpenAI chat-completions is stateless (nothing
   to round-trip).
@@ -143,6 +151,8 @@ whose handler changes nothing, so that a wake's outcome is observable typed rath
   reason and usage mapping; tools are never strict.
 - `fake.rs`: scripted-turn sequencing + `calls_seen` recording; `CallRawTool` yields an `Unrecognized` `ToolId`; a
   `Fail` turn returns its typed error.
-- `live_smoke_test.rs`: `#[ignore]`-gated, one real `respond` call per Tier-1 cloud provider + the local slot, run
-  manually with the matching env key (never in CI's critical path). A lightweight preview of the full provider-certification pass.
-  Verify current model ids from each provider's models endpoint at run time — never from training data.
+- `live_smoke_test.rs`: `#[ignore]`-gated, one real `respond` call per Tier-1 cloud provider + the local slot, plus a
+  real two-round `list_dir` tool loop per current Claude model (`smoke_anthropic_tool_loop_*`), run manually with the
+  matching env key (never in CI's critical path). Verify current model ids from each provider's models endpoint at run
+  time — never from training data. The Anthropic base URL must carry `/v1/` (the app's own default); without it genai
+  404s.

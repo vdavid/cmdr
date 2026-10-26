@@ -23,7 +23,8 @@ decision rationale): `DETAILS.md`.
 - **Reasoning is OFF on the Anthropic and OpenAI-Responses paths in v1.** genai drops their reasoning state on replay
   (Gaps A/B), so a reasoning-on loop 400s / degrades. Gemini round-trips its per-`functionCall` `thoughtSignature`
   correctly and keeps reasoning. `build_options` sets `ReasoningEffort::None` for those two adapters — don't "helpfully"
-  turn it on before the genai capture+replay patch lands.
+  turn it on before the genai capture+replay patch lands. Claude 5.x thinks anyway; dropping its thinking blocks on
+  replay is accepted (`DETAILS.md` § Reasoning posture).
 - **`ToolId::Unrecognized` is the read-only choke point, not an error.** A raw provider tool name resolves through
   `ToolId::from_wire_name`; an unknown name becomes `Unrecognized(raw)`, which is never in the agent's tool view, so
   dispatch refuses it. The gate is a typed variant/view check, never a string match on the name.
