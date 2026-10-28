@@ -196,7 +196,7 @@ async fn run(app: AppHandle, slot: ResolvedSlot, turn: &BackgroundTurn) -> WakeC
     // colleague and a nag.
     let memory = crate::agent::memory::read_for_turn(&app, slot.prompt_budget);
     let params = RunWakeParams {
-        memory: memory.as_deref(),
+        memory: &memory,
         now_secs: crate::agent::chat::runtime::now_secs(),
         envelope: &envelope,
         tools: &tools,

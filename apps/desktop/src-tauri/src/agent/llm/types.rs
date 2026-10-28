@@ -570,7 +570,15 @@ pub enum AgentPart {
     /// thread's earlier messages stay byte-identical and the provider's prompt cache holds.
     /// The provider reads it as text; the rail never shows it and search never indexes it.
     Envelope(String),
+    /// The agent's memory files that changed since the thread last carried them, captured at
+    /// send and persisted with the user turn. The provider reads [`MemoryNotes::render`] (the
+    /// fenced, announced block, `chat::context::memory_notes`); the rail never shows it and
+    /// search never indexes it.
+    MemoryNotes(MemoryNotes),
 }
+
+/// Memory's part payload lives beside its fence and its diff (`chat/context/memory_notes.rs`).
+pub use crate::agent::chat::context::{MemoryNote, MemoryNotes};
 
 /// A full message: a role, its ordered typed parts, and its timestamp. Every
 /// message carries `at` (unix secs) so the model can reason about gaps ("this

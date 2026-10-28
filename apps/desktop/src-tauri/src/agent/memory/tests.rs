@@ -16,6 +16,19 @@ fn store() -> (tempfile::TempDir, MemoryStore) {
     (dir, store)
 }
 
+/// What a turn carries, as one string (`None` for nothing): the shape the slice tests assert
+/// on, whichever file a line came from.
+fn carried(store: &MemoryStore, max_bytes: usize) -> Option<String> {
+    let notes = store.read_for_prompt(max_bytes);
+    (!notes.is_empty()).then(|| {
+        notes
+            .iter()
+            .map(|note| note.text.as_str())
+            .collect::<Vec<_>>()
+            .join("\n\n")
+    })
+}
+
 /// Anything the jail turns down must leave the disk exactly as it found it, wherever the path
 /// pointed. Asserting only the `Err` would pass for a refusal that wrote first.
 fn nothing_landed_outside(dir: &Path) {
@@ -196,7 +209,7 @@ fn replacing_a_file_reclaims_what_it_held() {
 fn an_absent_hub_file_reads_as_no_memory() {
     let (_dir, store) = store();
 
-    assert_eq!(store.read_for_prompt(4_096), None);
+    assert_eq!(carried(&store, 4_096), None);
 }
 
 #[test]
@@ -204,18 +217,18 @@ fn a_whitespace_only_hub_file_reads_as_no_memory() {
     let (_dir, store) = store();
     store.write(HUB_FILE, "  \n\t\n ").expect("write");
 
-    assert_eq!(store.read_for_prompt(4_096), None);
+    assert_eq!(carried(&store, 4_096), None);
 }
 
-/// The system string is never elided, so a memory file bigger than its share of the budget
-/// would be a permanent tax the conversation pays. The agent writes this file itself, so
+/// Memory notes are never elided, so a memory file bigger than its share of the budget would be
+/// a permanent tax the conversation pays. The agent writes this file itself, so
 /// without the cut it can degrade its own chat forever.
 #[test]
 fn a_hub_file_over_the_slice_is_cut_and_says_so() {
     let (_dir, store) = store();
     store.write(HUB_FILE, &"m".repeat(4_000)).expect("write");
 
-    let slice = store.read_for_prompt(1_000).expect("something is fed");
+    let slice = carried(&store, 1_000).expect("something is fed");
 
     assert!(slice.len() < 4_000, "the slice is {} bytes", slice.len());
     assert!(slice.starts_with("mmm"), "the head is what survives");
@@ -232,7 +245,7 @@ fn cutting_a_multibyte_hub_file_still_produces_text() {
     let (_dir, store) = store();
     store.write(HUB_FILE, &"\u{2603}".repeat(1_000)).expect("write");
 
-    let slice = store.read_for_prompt(1_000).expect("something is fed");
+    let slice = carried(&store, 1_000).expect("something is fed");
 
     assert!(slice.starts_with('\u{2603}'));
     assert!(slice.contains("Cut off here"));
@@ -245,7 +258,7 @@ fn a_hub_file_that_is_not_text_reads_as_absent_and_is_logged() {
     let (_dir, store) = store();
     std::fs::write(store.root().join(HUB_FILE), [0xff, 0xfe, 0x00, 0x01]).expect("write bytes");
 
-    assert_eq!(store.read_for_prompt(4_096), None);
+    assert_eq!(carried(&store, 4_096), None);
 }
 
 // ── The edit ──────────────────────────────────────────────────────────────────
@@ -348,7 +361,7 @@ fn forgetting_takes_every_note_including_the_nested_ones() {
     let forgotten = store.forget_all().expect("forget");
 
     assert_eq!(forgotten, 2);
-    assert_eq!(store.read_for_prompt(4_096), None, "and the next turn carries nothing");
+    assert_eq!(carried(&store, 4_096), None, "and the next turn carries nothing");
     assert!(!store.root().join("people").join("dora.md").exists());
 }
 
@@ -449,7 +462,7 @@ fn the_decision_ring_stays_inside_its_reserve() {
     assert!(log.contains("trash 299 files"), "the newest decision survived");
 }
 
-/// Both files ride the prefix, so the agent reads what it worked out about the person AND what
+/// Both files ride the turn, so the agent reads what it worked out about the person AND what
 /// they did with its last suggestions. Feeding only the hub is how M4's lesson would be
 /// written and never read.
 #[test]
@@ -458,8 +471,21 @@ fn a_turn_carries_the_hub_and_the_decisions_together() {
     store.write(HUB_FILE, "Prefers ISO dates.").expect("the hub");
     store.record_outcome("2026-08-23 rejected: move 12 files under /Users/x/Downloads");
 
-    let carried = store.read_for_prompt(4_096).expect("something to carry");
+    let carried = carried(&store, 4_096).expect("something to carry");
 
     assert!(carried.contains("Prefers ISO dates."));
     assert!(carried.contains("rejected: move 12 files"));
+}
+
+/// One entry per file, hub first, so a thread re-sends only the file that changed: an approved
+/// suggestion rewrites the decision ring, and must not re-send the whole hub with it.
+#[test]
+fn a_turn_carries_one_entry_per_file_hub_first() {
+    let (_dir, store) = store();
+    store.write(HUB_FILE, "Prefers ISO dates.").expect("the hub");
+    store.record_outcome("2026-08-23 rejected: move 12 files under /Users/x/Downloads");
+
+    let files: Vec<String> = store.read_for_prompt(4_096).into_iter().map(|note| note.file).collect();
+
+    assert_eq!(files, [HUB_FILE, OUTCOMES_FILE]);
 }

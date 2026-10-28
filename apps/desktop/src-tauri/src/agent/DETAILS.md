@@ -86,9 +86,9 @@ structural check can prove a handler stays in the jail, so a human puts each nam
 folder is unreachable from the external MCP transport, whose own security story is "no filesystem access".
 
 ⚠️ The widening also opened an injection surface, because the write path is reachable from text the agent read
-(`image_facts` OCR, file names off disk) and what it writes rides the prefix of every later turn. The defences are in
-`memory/DETAILS.md` § The injection surface; don't weaken the fence in `chat/context.rs` or the placement of memory
-before the rules without reading it.
+(`image_facts` OCR, file names off disk) and what it writes reaches every later thread. The defences are in
+`memory/DETAILS.md` § The injection surface; don't weaken the fence in `chat/context/memory_notes.rs` or move memory
+into the system string without reading it.
 
 **`Access::Session`: the second widening, and what holds it.** "It writes only into its memory folder" gains "and it
 may connect a place you saved, when you ask". A connect touches no file and no config, but it reaches past the app: a

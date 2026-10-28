@@ -72,7 +72,7 @@ impl MemoryStore {
         }
     }
 
-    /// The decision log's text for a turn's prefix, cut to `max_bytes` from the OLD end.
+    /// The decision log's text for a turn, cut to `max_bytes` from the OLD end.
     ///
     /// ⚠️ Cut from the front, ❌ not the back like the hub: the hub's head is the model's own
     /// summary of the person and its tail is detail, while here the tail is the freshest

@@ -212,7 +212,10 @@ fn project_row(message: StoredMessage, facts: RowFacts) -> MessageView {
                         })
                     }
                     // The envelope is the model's context, not something the user wrote.
-                    AgentPart::ToolResult(_) | AgentPart::Reasoning(_) | AgentPart::Envelope(_) => None,
+                    AgentPart::ToolResult(_)
+                    | AgentPart::Reasoning(_)
+                    | AgentPart::Envelope(_)
+                    | AgentPart::MemoryNotes(_) => None,
                     AgentPart::WakeDigest(digest) => Some(MessageBlock::WakeDigest {
                         folders: digest
                             .folders

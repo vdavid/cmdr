@@ -64,7 +64,7 @@ fn params(readiness: WakeReadiness, now: i64, envelope: &ContextEnvelope) -> Wak
         prompt_budget: 16_000,
         chat_memory_tokens: 16_000,
         call: crate::agent::llm::CallSettings::default(),
-        memory: None,
+        memory: &[],
     }
 }
 
@@ -79,7 +79,7 @@ fn run_params<'a>(now: i64, envelope: &'a ContextEnvelope) -> RunWakeParams<'a> 
         prompt_budget: 16_000,
         chat_memory_tokens: 16_000,
         call: crate::agent::llm::CallSettings::default(),
-        memory: None,
+        memory: &[],
     }
 }
 
@@ -730,7 +730,7 @@ async fn a_rail_turn_calling_nothing_to_suggest_deletes_nothing() {
             origin: crate::agent::types::TurnOrigin::Text,
             user: Some(UserTurn::Text("are we good?")),
             cmdr_md: None,
-            memory: None,
+            memory: &[],
             envelope: &env,
             offset: chrono::FixedOffset::east_opt(0).expect("utc"),
             now_secs: 1_000,

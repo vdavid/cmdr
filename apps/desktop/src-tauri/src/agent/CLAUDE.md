@@ -27,7 +27,7 @@ the surface, so every later slice grows here too.
   in `EXPECTED_SESSION_TOOL_NAMES`.
 - **`Access::Memory` is the one write.** The promise is "the agent writes only into its memory folder", held by
   `memory/`'s jail plus a hand-authored allowlist: ❌ never tag a tool `Memory` without adding its name there. Memory
-  rides every prefix, so it is an injection surface: `memory/DETAILS.md`.
+  reaches every thread (in a user turn, never the cached prefix), so it is an injection surface: `memory/DETAILS.md`.
 - **The egress line is structural, and the cloud AI disclosure names every item on it.** Names, paths, and metadata
   reach the provider on every turn; contents only through `search_photos` / `image_facts` (image-derived text) and
   `inspect_file` (text windows, `find` lines, PDF pages plus title and author, archive entry names, EXIF incl. GPS;

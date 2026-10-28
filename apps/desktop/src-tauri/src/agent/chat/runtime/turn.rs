@@ -152,14 +152,16 @@ async fn drive(
             };
         }
     };
-    let mut user_needs_persist = false;
-    if let Some(user) = params.user {
+    // Built ONCE, from the history as it stood before this turn: the memory notes it carries
+    // depend on what the thread already carried, and the row persisted later has to be the
+    // exact message every call of this turn sent.
+    let mut unpersisted_user = params.user.map(|user| user_parts(&user, params, &transcript));
+    if let Some(parts) = &unpersisted_user {
         transcript.push(AgentMessage {
             role: AgentRole::User,
-            parts: user_parts(&user, params),
+            parts: parts.clone(),
             at: params.now_secs,
         });
-        user_needs_persist = true;
     }
 
     let started = Instant::now();
@@ -206,7 +208,6 @@ async fn drive(
         let prefix = PrefixInputs {
             system_prompt: &system_prompt,
             cmdr_md: params.cmdr_md,
-            memory: params.memory,
             tools,
         };
         let mut assembled = context::assemble_prompt(
@@ -314,8 +315,9 @@ async fn drive(
             record_model_transition(conn, params, sink);
             record_chat_memory_transition(conn, params, sink);
         }
-        if user_needs_persist && let Some(user) = params.user {
-            let parts = user_parts(&user, params);
+        if let Some(user) = params.user
+            && let Some(parts) = unpersisted_user.take()
+        {
             match store::append_message(
                 conn,
                 params.conversation_id,
@@ -327,7 +329,6 @@ async fn drive(
                 params.now_secs,
             ) {
                 Ok((message_id, seq)) => {
-                    user_needs_persist = false;
                     let opener = opener_view(message_id, seq, parts, params.now_secs);
                     emit(sink, AgentChatEvent::UserPersisted { opener });
                 }
@@ -486,14 +487,22 @@ fn resolve_calls(
 }
 
 /// A new user turn as it is sent AND persisted: the envelope it was sent with, rendered once,
-/// then the opener. Storing the rendered envelope is what lets every later call replay this turn
-/// byte for byte (`context::build_messages`), so the provider's prompt cache holds across turns;
-/// re-rendering it would also move with the clock offset and the envelope's own format.
-fn user_parts(user: &UserTurn<'_>, params: &TurnParams<'_>) -> Vec<AgentPart> {
-    vec![
-        AgentPart::Envelope(context::render_envelope(params.envelope, params.offset)),
-        user.part(),
-    ]
+/// then the memory files that changed since the thread last carried them (if any), then the
+/// opener. Storing both is what lets every later call replay this turn byte for byte
+/// (`context::build_messages`), so the provider's prompt cache holds across turns; re-rendering
+/// the envelope would also move with the clock offset and the envelope's own format.
+///
+/// `history` is the thread before this turn. Memory sits HERE rather than in the system string
+/// so that a note saved mid-chat moves only what comes after the last call
+/// (`context::memory_notes_for_turn`).
+fn user_parts(user: &UserTurn<'_>, params: &TurnParams<'_>, history: &[AgentMessage]) -> Vec<AgentPart> {
+    let mut parts = vec![AgentPart::Envelope(context::render_envelope(
+        params.envelope,
+        params.offset,
+    ))];
+    parts.extend(context::memory_notes_for_turn(history, params.memory).map(AgentPart::MemoryNotes));
+    parts.push(user.part());
+    parts
 }
 
 /// The persisted opener as the view history shows, for `UserPersisted`.

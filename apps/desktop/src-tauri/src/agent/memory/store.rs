@@ -5,12 +5,13 @@
 
 use std::path::{Path, PathBuf};
 
+use crate::agent::llm::types::MemoryNote;
 use crate::agent::memory::jail;
 use crate::agent::memory::refusal::MemoryRefusal;
 
 const LOG_TARGET: &str = "agent::memory";
 
-/// The hub file. It is auto-fed into every turn's prefix, and for now it is the only file the
+/// The hub file. It is auto-fed into every thread, and for now it is the only file the
 /// agent has any reason to write, which is why there is no read or list tool: every schema
 /// rides in the cached prefix of every turn, the rail's included.
 pub const HUB_FILE: &str = "AGENTS.md";
@@ -69,24 +70,30 @@ impl MemoryStore {
         &self.root
     }
 
-    /// What one turn carries of memory: the hub file and the decision ring, each cut to its
-    /// own share of `max_bytes`. `None` when there is nothing worth prefixing a turn with.
+    /// What one turn carries of memory: the hub file, then the decision ring, each cut to its
+    /// own share of `max_bytes`, one entry per file so a thread re-sends only the file that
+    /// changed (`chat::context::memory_notes_for_turn`). A file with nothing worth carrying is
+    /// left out.
     ///
     /// The ring takes its bounded share FIRST and the hub gets everything left, so a busy week
     /// of approvals can never displace what the agent worked out about the person.
-    pub fn read_for_prompt(&self, max_bytes: usize) -> Option<String> {
+    pub fn read_for_prompt(&self, max_bytes: usize) -> Vec<MemoryNote> {
         let outcomes = self.read_outcomes_for_prompt(max_bytes / OUTCOMES_PROMPT_SHARE);
         let spent = outcomes.as_deref().map_or(0, str::len);
-        match (self.read_hub_for_prompt(max_bytes.saturating_sub(spent)), outcomes) {
-            (None, None) => None,
-            (Some(hub), None) => Some(hub),
-            (None, Some(outcomes)) => Some(outcomes),
-            (Some(hub), Some(outcomes)) => Some(format!("{hub}\n\n{outcomes}")),
-        }
+        let hub = self.read_hub_for_prompt(max_bytes.saturating_sub(spent));
+        [(HUB_FILE, hub), (super::OUTCOMES_FILE, outcomes)]
+            .into_iter()
+            .filter_map(|(file, text)| {
+                text.map(|text| MemoryNote {
+                    file: file.to_string(),
+                    text,
+                })
+            })
+            .collect()
     }
 
-    /// The hub file's text for a turn's prefix, cut to `max_bytes` with a note when it had to
-    /// be. `None` when there is nothing worth prefixing a turn with.
+    /// The hub file's text for a turn, cut to `max_bytes` with a note when it had to
+    /// be. `None` when there is nothing worth carrying.
     ///
     /// ⚠️ **Unreadable is not the same as absent.** Under a bare `read_to_string(..).ok()` a
     /// non-UTF8 or permission-denied file leaves the agent believing it has never remembered

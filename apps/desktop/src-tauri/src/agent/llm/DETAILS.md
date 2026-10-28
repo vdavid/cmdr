@@ -36,6 +36,7 @@ plus an `origin` stamp `{adapter, model}` (`ReasoningOrigin`). Blobs stored befo
 Agent → genai (request / replay), per `agent_part_to_genai`:
 
 - `Text(s)` and `Envelope(s)` → `ContentPart::Text(s)` (the envelope is a user turn's rendered context, replayed verbatim; `chat/DETAILS.md` § Anatomy of one call).
+- `MemoryNotes(notes)` → `ContentPart::Text(notes.render())`, the fenced memory block (`chat/DETAILS.md` § The memory block).
 - `ToolCall{call_id, tool, arguments, reasoning}` → `ContentPart::ToolCall{call_id, fn_name = tool.as_wire_name(),
   fn_arguments = arguments, thought_signatures = blob.thought_signatures}` (the signatures only when the reasoning may
   replay, below), except that a nameless call
@@ -78,6 +79,26 @@ Gotcha: genai's OpenAI streamer (verified on genai 0.6.5, reading its OpenAI ada
 arguments stream in several fragments started several times, the rail keyed two tool lines on one id, and Svelte's
 `each_key_duplicate` took the whole window down (`ERR-FRMAR`, local Ministral 3B on llama-server). The rail's
 `applyToolStarted` is idempotent per call id too, as a second guard.
+
+## Prompt caching
+
+A caching provider bills a repeated prompt prefix at about a tenth of the price, so `build_request` places the
+breakpoints and `chat/` keeps the bytes stable (`chat/DETAILS.md` § Budget enforcement, § The memory block):
+
+- **Every adapter: the last message carries `CacheControl::Ephemeral`** (5-minute TTL). That's the rolling breakpoint:
+  each call caches the whole prompt, and the next one (the same bytes plus one round) reads it back, which Anthropic
+  finds through its block lookback. A 1-hour TTL costs twice the write, so the 5-minute default stays until a thread's
+  pauses are measured.
+- **Anthropic only: the system string goes out as a marked system-role message** (genai lifts it into the request's
+  `system` field; its own `system` slot can't take a marker). Memory never sits there, so this caches the tools plus the
+  system prompt across every thread. Two of Anthropic's four breakpoints.
+- **Where the marker is a no-op**: OpenAI before GPT-5.6 caches automatically and genai drops a message marker there;
+  Gemini (implicit caching) and DeepSeek ignore it. GPT-5.6 and later default to explicit caching in genai, where the
+  marker becomes a `prompt_cache_breakpoint`; without one those models cached nothing.
+- **Not covered**: OpenRouter routing to an Anthropic model goes through the OpenAI adapter, which drops the marker, so
+  that route still re-bills each call.
+
+Tests: `replay_fixtures.rs` (`anthropic_marks_the_system_string_and_the_last_message_for_caching`).
 
 ## Degenerate tool calls
 

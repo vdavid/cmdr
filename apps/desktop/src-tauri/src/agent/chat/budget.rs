@@ -193,9 +193,10 @@ pub fn wake_digest_budget(prompt_tokens: usize) -> usize {
 
 /// What share of a turn's prompt budget the agent's own memory may claim.
 ///
-/// A tenth, and a SHARE rather than a byte count, for a reason a flat cap can't cover: the
-/// system string is never elided (`context::assemble_prompt` tightens tool results only), so
-/// every byte of memory is a permanent tax on every turn of every thread. Run the numbers a
+/// A tenth, and a SHARE rather than a byte count, for a reason a flat cap can't cover: memory
+/// notes are never elided (`context::assemble_prompt` tightens tool results only), so every
+/// byte of memory is a permanent tax on every thread, paid again in each turn whose memory
+/// changed (`context::memory_notes_for_turn`). Run the numbers a
 /// flat 8 KB would give at the smallest window the app supports: [`MIN_LOCAL_CONTEXT_TOKENS`]
 /// resolves to a 17,652-token budget, the fixed overhead takes 7,107 of it, and 8 KB of memory
 /// at [`CHARS_PER_TOKEN_ESTIMATE`] takes 2,048 more, so memory alone would claim about a fifth
@@ -210,7 +211,8 @@ const MEMORY_BUDGET_PERCENT: usize = 10;
 ///
 /// No cap of its own on a large window: from a budget of about 170,000 up, the slice exceeds
 /// `memory::MEMORY_DIR_MAX_BYTES` (64 KB, about 16,000 tokens), so the disk cap is what binds
-/// and the whole folder rides along. That's a cached prefix, a small share of such a window.
+/// and the whole folder rides along: a small share of such a window, cached after the turn
+/// that carries it.
 ///
 /// ⚠️ Not to be confused with `memory::MEMORY_DIR_MAX_BYTES`: that one protects DISK and is a
 /// constant; this one protects the PROMPT and moves with the model.

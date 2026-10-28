@@ -917,7 +917,7 @@ async fn attachments_reach_the_llm_in_the_envelope_and_nothing_more() {
         origin: TurnOrigin::Text,
         user: Some(UserTurn::Text("summarize this")),
         cmdr_md: None,
-        memory: None,
+        memory: &[],
         envelope: &env,
         offset: offset(),
         now_secs: 1_780_000_000,

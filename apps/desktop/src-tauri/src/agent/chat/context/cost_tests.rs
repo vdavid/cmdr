@@ -46,6 +46,10 @@ const PLAN_ROW_PER_FILE: usize = PLAN_ROW_TOKENS_PER_FILE;
 /// One `list_pane_files` entry: name, size, mtime.
 const LISTING_PER_FILE: usize = LISTING_TOKENS_PER_FILE;
 
+/// What the memory block costs beyond the notes themselves (its announcement, fence, and one
+/// file heading), paid on a thread's first turn and on each turn after a memory file changed.
+const MEMORY_BLOCK_WRAPPER: usize = 187;
+
 /// The whole 100-file rename turn, prefix included.
 const HUNDRED_FILE_TURN: usize = 43_689;
 
@@ -111,6 +115,24 @@ fn every_call_pays_the_pinned_fixed_overhead() {
     assert_near(system, SYSTEM_PROMPT_TOKENS, "the system prompt");
     assert_near(declarations, TOOL_DECLARATION_TOKENS, "the 21 tool declarations");
     assert_near(system + declarations, FIXED_OVERHEAD, "the fixed per-call overhead");
+}
+
+/// Memory left the cached prefix for the user turn, so its wrapper is no longer part of the
+/// fixed overhead: it's paid only when the notes change. Pinned so the announcement can't
+/// quietly grow into a second system prompt.
+#[test]
+fn the_memory_block_wrapper_costs_the_pinned_figure() {
+    let notes = MemoryNotes {
+        files: vec![MemoryNote {
+            file: "AGENTS.md".to_string(),
+            text: String::new(),
+        }],
+    };
+    assert_near(
+        estimate_tokens_str(&notes.render()),
+        MEMORY_BLOCK_WRAPPER,
+        "the memory block's wrapper",
+    );
 }
 
 /// The three per-file costs a bulk rename pays. `image_facts` dominates by an order of
@@ -251,7 +273,6 @@ fn assemble_rename_turn(files: usize, budget: usize) -> (usize, usize, usize) {
     let real_prefix = PrefixInputs {
         system_prompt: &system_prompt,
         cmdr_md: None,
-        memory: None,
         tools: &tools,
     };
     let assembled = assemble_prompt(&real_prefix, &transcript, &envelope_at(1_000), offset(), budget);

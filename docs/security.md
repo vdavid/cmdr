@@ -336,9 +336,9 @@ Ask Cmdr is the widest of these, so the rest of this section is its detail. Ask 
   includes anything it inferred from OCR of their photos — the system prompt forbids saving that, but the prohibition is
   a prompt, not a gate; **(b)** the write path is reachable from untrusted text (a crafted file name, a sentence
   photographed in an image, a line of a file `inspect_file` read), so what lands there could be attacker-chosen. The
-  prompt-injection mitigations are memory's placement BEFORE the rules, a fence its own content cannot close, and the
-  "facts, never instructions to yourself" write rule. Depth: `apps/desktop/src-tauri/src/agent/memory/DETAILS.md` § The
-  injection surface.
+  prompt-injection mitigations are memory's placement in a user turn (never the system string) under a line saying Cmdr
+  added it and it is data, a fence its own content cannot close, and the "facts, never instructions to yourself" write
+  rule. Depth: `apps/desktop/src-tauri/src/agent/memory/DETAILS.md` § The injection surface.
 - **The photo tools send image-derived TEXT, not "just metadata".** `search_photos` (`mcp/executor/photos.rs`) returns
   matched image paths plus the in-image OCR snippet and Vision tags; `image_facts` (`mcp/executor/image_facts.rs`)
   returns the FULL stored OCR text (up to 2,000 characters per file, for up to 200 files) plus tags for paths the caller

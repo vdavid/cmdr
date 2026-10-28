@@ -86,7 +86,7 @@ pub(super) fn params<'a>(conversation_id: i64, user_text: Option<&'a str>) -> Tu
         origin: origin_of(user.as_ref()),
         user,
         cmdr_md: None,
-        memory: None,
+        memory: &[],
         envelope: LEAK_ENVELOPE.get_or_init(envelope),
         offset: offset(),
         now_secs: 1_780_000_000,
@@ -173,6 +173,7 @@ pub(super) enum Program {
 pub(super) struct ProgrammableLlm {
     turns: Mutex<VecDeque<Program>>,
     calls_seen: Mutex<Vec<Vec<AgentMessage>>>,
+    prefixes_seen: Mutex<Vec<(String, Vec<ToolDeclaration>)>>,
 }
 
 impl ProgrammableLlm {
@@ -180,25 +181,36 @@ impl ProgrammableLlm {
         Self {
             turns: Mutex::new(programs.into()),
             calls_seen: Mutex::new(Vec::new()),
+            prefixes_seen: Mutex::new(Vec::new()),
         }
     }
 
     pub(super) fn calls_seen(&self) -> Vec<Vec<AgentMessage>> {
         self.calls_seen.lock().expect("lock").clone()
     }
+
+    /// The `system` string and tool declarations of every call, in call order: the span a
+    /// caching provider keys on.
+    pub(super) fn prefixes_seen(&self) -> Vec<(String, Vec<ToolDeclaration>)> {
+        self.prefixes_seen.lock().expect("lock").clone()
+    }
 }
 
 impl AgentLlm for ProgrammableLlm {
     fn respond<'a>(
         &'a self,
-        _system: &'a str,
-        _tools: &'a [ToolDeclaration],
+        system: &'a str,
+        tools: &'a [ToolDeclaration],
         messages: &'a [AgentMessage],
         _call: crate::agent::llm::CallSettings,
         cancel: CancellationToken,
     ) -> BoxFuture<'a, Result<AgentDeltaStream, AgentLlmError>> {
         async move {
             self.calls_seen.lock().expect("lock").push(messages.to_vec());
+            self.prefixes_seen
+                .lock()
+                .expect("lock")
+                .push((system.to_string(), tools.to_vec()));
             let program = self
                 .turns
                 .lock()

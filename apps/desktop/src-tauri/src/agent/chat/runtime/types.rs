@@ -11,7 +11,7 @@ use chrono::FixedOffset;
 
 use super::events::AgentErrorKind;
 use crate::agent::chat::context::ContextEnvelope;
-use crate::agent::llm::types::{AgentPart, CallSettings, ProviderTag, WakeDigest};
+use crate::agent::llm::types::{AgentPart, CallSettings, MemoryNote, ProviderTag, WakeDigest};
 use crate::agent::store::{TurnLimit, TurnStats};
 use crate::agent::types::{ProposalOutcomes, TurnOrigin};
 
@@ -63,10 +63,11 @@ pub struct TurnParams<'a> {
     pub origin: TurnOrigin,
     pub user: Option<UserTurn<'a>>,
     pub cmdr_md: Option<&'a str>,
-    /// What the agent wrote about the user, already cut to this turn's share of the budget
-    /// (`agent::memory`). A separate field from `cmdr_md` on purpose — see
-    /// [`crate::agent::chat::context::PrefixInputs`].
-    pub memory: Option<&'a str>,
+    /// What the agent wrote about the user, one entry per memory file, already cut to this
+    /// turn's share of the budget (`agent::memory::read_for_turn`). Read at send; the files
+    /// that changed since the thread last carried them ride the new user turn
+    /// (`context::memory_notes_for_turn`), never the cached prefix.
+    pub memory: &'a [MemoryNote],
     pub envelope: &'a ContextEnvelope,
     pub offset: FixedOffset,
     /// Wall-clock secs stamped on rows written this turn; also the envelope's clock.

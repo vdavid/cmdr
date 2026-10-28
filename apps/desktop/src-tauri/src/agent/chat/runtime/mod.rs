@@ -174,7 +174,7 @@ impl ChatRuntime {
             origin: TurnOrigin::Text,
             user: Some(UserTurn::Text(&text)),
             cmdr_md: cmdr_md.as_deref(),
-            memory: memory.as_deref(),
+            memory: &memory,
             envelope: &envelope,
             offset,
             now_secs: now,
@@ -277,12 +277,13 @@ impl ChatRuntime {
     }
 }
 
-/// The prefix parts a rail turn reads fresh from disk: the user's `CMDR.md`, the memory slice
-/// for this budget, and the tool declarations. One reader for the send and the rail's baseline
-/// gauge, so the baseline can't drift from what a call actually carries.
+/// What a rail turn reads fresh from disk: the user's `CMDR.md`, the memory slice for this
+/// budget, and the tool declarations. One reader for the send and the rail's baseline gauge, so
+/// the baseline can't drift from what a call actually carries. Memory is read here but rides the
+/// user turn, never the prefix (`context::memory_notes_for_turn`).
 struct PrefixParts {
     cmdr_md: Option<String>,
-    memory: Option<String>,
+    memory: Vec<crate::agent::llm::types::MemoryNote>,
     tools: Vec<crate::agent::llm::types::ToolDeclaration>,
 }
 
@@ -296,17 +297,18 @@ impl PrefixParts {
     }
 }
 
-/// What every rail call costs before the user has said a word, at this budget: the prefix
-/// alone (`context::prefix_tokens`), read the way a send reads it. The gauge's baseline.
+/// What a fresh thread's first call costs before the user has said a word, at this budget: the
+/// prefix plus the memory notes that first turn carries (`context::fresh_thread_tokens`), read
+/// the way a send reads them. The gauge's baseline.
 pub fn baseline_prompt_tokens<R: Runtime>(app: &AppHandle<R>, prompt_budget: usize) -> usize {
     let parts = PrefixParts::read(app, prompt_budget);
     let system_prompt = super::system_prompt::system_prompt();
-    context::prefix_tokens(&context::PrefixInputs {
+    let prefix = context::PrefixInputs {
         system_prompt: &system_prompt,
         cmdr_md: parts.cmdr_md.as_deref(),
-        memory: parts.memory.as_deref(),
         tools: &parts.tools,
-    })
+    };
+    context::fresh_thread_tokens(&prefix, &parts.memory)
 }
 
 /// Mark the thread's turn as running since its last row, for a reload to tell this turn's
@@ -393,6 +395,8 @@ mod test_support;
 mod context_budget_tests;
 #[cfg(test)]
 mod line_events_tests;
+#[cfg(test)]
+mod memory_cache_tests;
 #[cfg(test)]
 mod repeat_tests;
 #[cfg(test)]

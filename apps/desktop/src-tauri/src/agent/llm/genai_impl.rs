@@ -18,9 +18,9 @@ use futures_util::stream::StreamExt;
 use genai::ModelIden;
 use genai::adapter::AdapterKind;
 use genai::chat::{
-    ChatMessage, ChatOptions, ChatRequest, ChatRole, ChatStreamEvent, ContentPart, CustomPart, MessageContent,
-    ReasoningEffort as GenaiReasoningEffort, StopReason as GenaiStopReason, StreamEnd, Tool as GenaiTool,
-    ToolCall as GenaiToolCall, ToolResponse as GenaiToolResponse, Usage as GenaiUsage,
+    CacheControl, ChatMessage, ChatOptions, ChatRequest, ChatRole, ChatStreamEvent, ContentPart, CustomPart,
+    MessageContent, ReasoningEffort as GenaiReasoningEffort, StopReason as GenaiStopReason, StreamEnd,
+    Tool as GenaiTool, ToolCall as GenaiToolCall, ToolResponse as GenaiToolResponse, Usage as GenaiUsage,
 };
 use tokio_util::sync::CancellationToken;
 
@@ -124,6 +124,12 @@ where
 /// their dedicated request slots; the message history maps part-for-part.
 /// `origin` is the model this request goes to: reasoning that some other model produced stays
 /// out of the replay ([`ReasoningOrigin::may_replay`]).
+///
+/// **Prompt-cache breakpoints** (`DETAILS.md` § Prompt caching): the last message is marked, so
+/// a provider that caches only on request caches the whole prompt, and the next call (the same
+/// bytes plus a little) reads it back at a tenth of the price. Anthropic also gets one on the
+/// system string, so the tools and system prompt every thread shares stay cached across threads.
+/// A provider that caches automatically (OpenAI before GPT-5.6, Gemini, DeepSeek) ignores both.
 fn build_request(
     system: &str,
     tools: &[ToolDeclaration],
@@ -134,7 +140,7 @@ fn build_request(
         tool_names: tool_names_by_call_id(messages),
         origin,
     };
-    let chat_messages: Vec<ChatMessage> = messages
+    let mut chat_messages: Vec<ChatMessage> = messages
         .iter()
         .map(|message| agent_message_to_genai(message, &replay))
         // A message whose every part was dropped would go out as an empty turn, which
@@ -142,7 +148,17 @@ fn build_request(
         // thread persisted before the inbound guard existed.
         .filter(|message| !message.content.is_empty())
         .collect();
-    let mut request = ChatRequest::new(chat_messages).with_system(system);
+    if let Some(last) = chat_messages.pop() {
+        chat_messages.push(last.with_options(CacheControl::Ephemeral));
+    }
+    let mut request = if origin.provider == ProviderTag::Anthropic {
+        // genai can't mark the request's `system` slot, only a system-role message, which its
+        // Anthropic adapter lifts into the same `system` field.
+        let system = ChatMessage::system(system).with_options(CacheControl::Ephemeral);
+        ChatRequest::new(std::iter::once(system).chain(chat_messages).collect())
+    } else {
+        ChatRequest::new(chat_messages).with_system(system)
+    };
     if !tools.is_empty() {
         let genai_tools: Vec<GenaiTool> = tools.iter().map(tool_declaration_to_genai).collect();
         request = request.with_tools(genai_tools);
@@ -274,6 +290,7 @@ fn agent_part_to_genai(part: &AgentPart, replay: &Replay<'_>) -> Vec<ContentPart
         AgentPart::WakeDigest(digest) => vec![ContentPart::Text(digest.render())],
         // Same contract as the digest above: the only place a sweep's outcomes become English.
         AgentPart::ProposalOutcomes(outcomes) => vec![ContentPart::Text(outcomes.render())],
+        AgentPart::MemoryNotes(notes) => vec![ContentPart::Text(notes.render())],
         // A nameless call never reaches the wire. Threads persisted before the inbound
         // guard still carry one, and every replay of it 400s, so this is what unwedges
         // them.

@@ -93,7 +93,7 @@ pub struct RunWakeParams<'a> {
     /// What the agent has written about the user, already cut to this turn's share of the
     /// budget (`agent::memory::read_for_turn`). A wake needs it as much as the rail does: it
     /// is what stops the agent re-proposing what was already turned down.
-    pub memory: Option<&'a str>,
+    pub memory: &'a [crate::agent::llm::types::MemoryNote],
 }
 
 /// What a wake needs that it cannot work out for itself, for the whole job in one call.
@@ -116,7 +116,7 @@ pub struct WakeParams<'a> {
     /// (`session::resolve_wake_call_settings`), and the same value the budget was sized with.
     pub call: crate::agent::llm::CallSettings,
     /// What the agent has written about the user, cut to this turn's share of the budget.
-    pub memory: Option<&'a str>,
+    pub memory: &'a [crate::agent::llm::types::MemoryNote],
 }
 
 /// How a wake ended.

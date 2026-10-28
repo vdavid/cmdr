@@ -23,17 +23,17 @@ The tool handlers live with the rest of the toolset (`../tools/memory.rs`); the 
   into the resolver.
 - **This folder is attacker-reachable.** `image_facts` hands the agent the full stored OCR of the user's pictures and
   file names come off disk, so a crafted filename or a photographed sentence is a route to writing here — and what is
-  written rides the prefix of every later turn, surviving restarts and thread deletion. The three defences are the jail
-  (here), the fence and its placement before the rules (`../chat/DETAILS.md` § The memory block), and the prompt's
-  "facts, never instructions to yourself".
+  written reaches every later thread, surviving restarts and thread deletion. The three defences are the jail (here),
+  the fence and its placement in a user turn, outside the system string (`../chat/DETAILS.md` § The memory block), and
+  the prompt's "facts, never instructions to yourself".
 - **Two caps, two reasons.** `MEMORY_DIR_MAX_BYTES` (64 KB across every `.md`) protects DISK;
   `chat::budget::memory_slice_bytes` (a tenth of the resolved prompt budget) protects the PROMPT and moves with the
-  model. ❌ Don't conflate them, and ❌ don't turn the prompt one back into a constant: the system string is never
+  model. ❌ Don't conflate them, and ❌ don't turn the prompt one back into a constant: memory notes are never
   elided, so memory is a permanent tax, and the agent writes the file itself.
 - **One writer here is MECHANICAL, so it cannot be refused.** `outcomes.md` is a ring the app rewrites per decided
   proposal with no model call, and it RESERVES `OUTCOMES_MAX_BYTES` of the folder cap. Tools price against
   `MEMORY_MODEL_MAX_BYTES` (cap minus reserve); a refusal quotes its own `cap`, ❌ never the folder constant.
-- **Both files ride every turn**, which keeps "no read or list tool" true. Add both the moment a file lands here that
+- **Both files ride every thread** (re-sent when they change), which keeps "no read or list tool" true. Add both the moment a file lands here that
   is not auto-fed.
 - **A refusal is TYPED and names a way out.** A full folder tells the model to prune (`DirectoryFull` with its
   numbers); downstream reads the token back through `MemoryRefusalKind::from_token`, never the sentence.
@@ -44,5 +44,5 @@ The tool handlers live with the rest of the toolset (`../tools/memory.rs`); the 
 - **The user has two controls, and both are the user's reach into an app-managed folder**: Settings › Ask Cmdr opens it
   in a pane (`reveal-path`, because the path is `CMDR_DATA_DIR`-dependent and only Rust knows it) and wipes it
   (`forget_all`, `.md` only). `DETAILS.md` § The two controls the user gets.
-- **`~/.cmdr/CMDR.md` is a different thing**: user-authored config fed AFTER the rules; this folder is app-managed
-  state the agent authors, fed before them.
+- **`~/.cmdr/CMDR.md` is a different thing**: user-authored config appended to the system string; this folder is
+  app-managed state the agent authors, fed in user turns, one entry per changed file (`read_for_prompt`).

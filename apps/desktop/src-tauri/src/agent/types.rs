@@ -224,7 +224,7 @@ pub enum ProposalOutcomeKind {
 /// already on disk, not a refactor.
 ///
 /// ❌ **No rationale, no file names, no op paths.** A decision line goes into the agent's memory
-/// ring, which rides the prefix of every later turn; the group's own display text (a path or a
+/// ring, which reaches every later thread; the group's own display text (a path or a
 /// pattern the user already saw) plus a count is the whole of what a lesson needs.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]

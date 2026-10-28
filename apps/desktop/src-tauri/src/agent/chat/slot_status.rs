@@ -5,7 +5,8 @@
 //!   model not downloaded or not running. Cloud consent is the rail's gate's question and a
 //!   managed refusal is the send's, so neither is answered here.
 //! - **The baseline** is the prefix every call carries (system prompt, tool declarations,
-//!   `CMDR.md`, the memory slice) against the budget the next send would resolve. It's the
+//!   `CMDR.md`) plus the memory notes a new chat's first turn carries, against the budget the
+//!   next send would resolve (`context::fresh_thread_tokens`). It's the
 //!   honest floor of the gauge: no call of this chat can cost less.
 //!
 //! The pure decision is [`provider_readiness`]; [`slot_status`] gathers the live facts.

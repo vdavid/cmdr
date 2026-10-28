@@ -243,6 +243,35 @@ async fn a_model_switch_drops_the_old_models_thinking() {
     assert_eq!(content[0]["type"], "tool_use");
 }
 
+/// Anthropic caches only where a request says so. Two breakpoints: the system string (so the
+/// tools and system prompt every thread shares stay cached across threads) and the end of the
+/// last message (so the next call, the same bytes plus a round, reads the rest back cached).
+/// Without them every call re-bills the whole thread at full price.
+#[tokio::test]
+async fn anthropic_marks_the_system_string_and_the_last_message_for_caching() {
+    let (_, body) = two_rounds(
+        "claude-opus-5-5",
+        "claude-opus-5-5",
+        [anthropic_round_one(), anthropic_round_two()],
+    )
+    .await;
+    let ephemeral = json!({ "type": "ephemeral" });
+    assert_eq!(
+        body["system"],
+        json!([{ "type": "text", "text": "sys", "cache_control": ephemeral }]),
+        "the system string goes out as one marked block"
+    );
+    let messages = body["messages"].as_array().expect("a message list");
+    let last_block = messages
+        .last()
+        .and_then(|message| message["content"].as_array())
+        .and_then(|content| content.last())
+        .expect("the last message has content blocks");
+    assert_eq!(last_block["cache_control"], ephemeral, "{last_block}");
+    let marked = body.to_string().matches("cache_control").count();
+    assert_eq!(marked, 2, "two breakpoints, well under Anthropic's four: {body}");
+}
+
 // endregion: --- Anthropic
 
 // region: --- OpenAI Responses

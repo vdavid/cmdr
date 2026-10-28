@@ -94,7 +94,7 @@ mod tests {
             origin: super::super::test_support::origin_of(user.as_ref()),
             user,
             cmdr_md: None,
-            memory: None,
+            memory: &[],
             envelope,
             offset: FixedOffset::east_opt(0).expect("UTC is a valid offset"),
             now_secs: 0,

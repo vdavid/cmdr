@@ -17,12 +17,12 @@ One message in, an answer out, crash-safe and within budget.
 ## Must-knows
 
 - **The prefix stays byte-identical across a thread's calls** (it buys prompt caching): `system`
-  (fenced memory, the prompt, then `CMDR.md`) and the tool declarations never vary. Each user turn
-  carries its envelope as a persisted `AgentPart::Envelope`, rendered once at send and replayed
-  verbatim: ❌ never re-render a stored one (it would bust the cache and move ground truth).
-- **⚠️ Memory LEADS the system string and is fenced; ❌ never append it like `CMDR.md`.** It's the one
-  part of the prefix an attacker can reach, so it precedes the rules, fenced, under a line calling it
-  data. `DETAILS.md` § The memory block; `../memory/DETAILS.md`.
+  (the prompt, then `CMDR.md`) and the tool declarations never vary. Each user turn carries its
+  envelope as a persisted `AgentPart::Envelope`, rendered once at send and replayed verbatim: ❌
+  never re-render a stored one (it would bust the cache and move ground truth).
+- **⚠️ Memory rides the user turn (`AgentPart::MemoryNotes`, changed files only), ❌ never the
+  system string**: there, one note re-billed the whole thread. It's attacker-reachable, so it stays
+  fenced and announced as data. `DETAILS.md` § The memory block.
 - **Keep the pure core pure.** Offset, envelope, `CMDR.md`, memory, and budget arrive as values, so
   every context test runs with no tokio runtime and no filesystem; `context.rs` never learns the model.
 - **Automatic spends the whole window** (less the reply and a 15% margin), from the provider's report, else the

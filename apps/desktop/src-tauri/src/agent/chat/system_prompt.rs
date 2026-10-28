@@ -4,7 +4,7 @@
 //! on the next turn), and this module keeps what it must carry and the tests that pin it.
 //!
 //! This string is part of the byte-identical prefix (context assembly builds the full
-//! `system` from the agent's fenced memory, then this, then `CMDR.md` if present), so it must
+//! `system` from this, then `CMDR.md` if present; memory rides the user turn), so it must
 //! not vary per call. It is our OWN authored asset, not provider output, so the tests that
 //! assert it contains the read-only self-description and the coverage-honesty rule
 //! are guarding our prompt text, NOT classifying an error or provider state.
@@ -21,10 +21,10 @@
 //!   that reads the contents of a file", which `inspect_file` made false; a test fails if
 //!   either phrase comes back,
 //! - **the memory write instruction**: notes record facts about the user and their
-//!   preferences, ❌ never instructions to itself. Memory is fed back at the TOP of every
-//!   later prompt, so a self-directed note would steer every conversation after the one that
-//!   saved it. This is the prompt half of the injection defence; `chat/context.rs`'s fence is
-//!   the other half,
+//!   preferences, ❌ never instructions to itself. Memory is fed back into every later
+//!   conversation, so a self-directed note would steer every one after the one that saved it.
+//!   This is the prompt half of the injection defence; the fence in
+//!   `chat/context/memory_notes.rs` is the other half,
 //! - the coverage-honesty rule (relay the `coverage`/stale/lower-bound caveats the
 //!   tools attach, never answer confidently past them — spec §2.4, load-bearing),
 //! - **how to read a `search` answer's coverage block**, field by field: a walk still
@@ -179,9 +179,23 @@ mod tests {
         );
     }
 
-    /// The write instruction is half the injection defence: memory is fed back at the TOP of
-    /// every later prompt, so a note that reads as an order would steer every conversation
-    /// after the one that saved it. The fence in `chat/context.rs` is the other half.
+    /// The write instruction is half the injection defence: memory is fed back into every
+    /// later conversation, so a note that reads as an order would steer every one after the one
+    /// that saved it. The fence in `chat/context/memory_notes.rs` is the other half.
+    /// Memory arrives in a user message now, and again each time a file changes, so the model
+    /// has to know the newest copy wins and that the block isn't the user talking.
+    #[test]
+    fn prompt_says_where_memory_arrives_and_which_copy_is_current() {
+        assert!(
+            SYSTEM_PROMPT.contains("again whenever a file changes"),
+            "the model must expect a fresh copy after a write"
+        );
+        assert!(
+            SYSTEM_PROMPT.contains("The newest copy of a file is the current one"),
+            "and know which of several copies to believe"
+        );
+    }
+
     #[test]
     fn prompt_says_memory_records_facts_never_instructions_to_itself() {
         assert!(
