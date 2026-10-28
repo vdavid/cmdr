@@ -35,7 +35,7 @@ pub(crate) use consent::set_legacy_ask_cmdr_consent_for_tests;
 pub use consent::{ConsentRecord, ConsentRecordView, clear_cloud_ai_consent, get_consent, set_cloud_ai_consent};
 #[cfg(test)]
 pub use events::append_raw_event_row;
-pub use events::{ConversationEvent, TurnStats, append_event};
+pub use events::{ConversationEvent, TurnLimit, TurnLimitKind, TurnStats, append_event};
 pub use inbox::{StoredInboxRow, clear_inbox, load_inbox, load_inbox_row, replace_inbox, upsert_inbox_row};
 pub use migrations::{MIGRATIONS, Migration, run_migrations};
 pub use query::{

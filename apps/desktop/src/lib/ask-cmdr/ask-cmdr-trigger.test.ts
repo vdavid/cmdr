@@ -277,6 +277,22 @@ describe('sendMessage + streaming', () => {
     })
   })
 
+  /** A turn that reached a per-answer ceiling says so once, in its own bubble from its stats
+   *  (the way a reload shows it), so no vaguer error line joins it. */
+  it('a turn that reached a limit adds no error line beside its own notice', () => {
+    const limited = { ...STATS, limit: { kind: 'toolRounds' as const, max: 25, answered: false } }
+    sendMessage('sort my downloads')
+    fire({ type: 'assistantStarted' })
+    fire({ type: 'toolCallStarted', callId: 'c1', tool: 'list_dir' })
+    fire({ type: 'toolCallsResolved', messageId: 2, calls: [resolved('c1', 'list_dir')] })
+    fire({ type: 'toolCallFinished', messageId: 2, callId: 'c1', outcome: ANSWERED, subject: UNPARSED })
+
+    fire({ type: 'failed', kind: 'budgetExhausted', detail: null, managed: null, turn: limited })
+
+    expect(askCmdrState.messages.map((m) => m.kind)).toEqual(['user', 'assistant'])
+    expect(assistantAt(1)).toMatchObject({ stats: limited })
+  })
+
   it('a typed failure before anything persisted leaves no bubble', () => {
     sendMessage('inspect this folder')
     fire({ type: 'assistantStarted' })

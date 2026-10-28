@@ -24,7 +24,8 @@
     import AskCmdrWakeDigest from './AskCmdrWakeDigest.svelte'
     import AskCmdrProposalDecisions from './AskCmdrProposalDecisions.svelte'
     import { formatInteger } from '#lib/intl/number-format.js'
-    import { undoRename, type RailMessage } from './ask-cmdr-trigger.svelte'
+    import { askCmdrState, sendMessage, undoRename, type RailMessage } from './ask-cmdr-trigger.svelte'
+    import AskCmdrLimitNotice from './AskCmdrLimitNotice.svelte'
 
     interface Props {
         message: RailMessage
@@ -145,6 +146,15 @@
                 <span class="status-glyph"><Spinner size="sm" /></span>
                 <span>{message.stalled ? tString('askCmdr.stalled') : tString('askCmdr.thinking')}</span>
             </div>
+        {/if}
+        {#if message.stats?.limit}
+            <AskCmdrLimitNotice
+                limit={message.stats.limit}
+                canContinue={!askCmdrState.streaming && askCmdrState.messages.at(-1) === message}
+                onContinue={() => {
+                    sendMessage(tString('askCmdr.limit.continueMessage'))
+                }}
+            />
         {/if}
         <AskCmdrTurnStats stats={message.stats} />
         <!-- The bubble's one word on its groups: each group's summary, once, when it settles. The

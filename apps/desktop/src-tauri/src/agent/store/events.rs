@@ -67,6 +67,37 @@ pub struct TurnStats {
     /// too. `false` for a turn recorded before this was stored: its rows can't tell a stop apart.
     #[serde(default)]
     pub stopped: bool,
+    /// The turn's own ceiling that ended its tool loop, so the rail can name it and its value,
+    /// live and after a reload. `None` for a turn no ceiling touched, and for one recorded
+    /// before this was stored.
+    #[serde(default)]
+    pub limit: Option<TurnLimit>,
+}
+
+/// Which per-answer ceiling a turn reached (`chat::context::MAX_TOOL_TURNS` /
+/// `MAX_WALL_TIME`). Both are fixed in Cmdr: no setting moves them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum TurnLimitKind {
+    /// The rounds of tool calls one answer may run.
+    ToolRounds,
+    /// The wall-clock time one answer may take.
+    WallTime,
+}
+
+/// A ceiling a turn reached, with the value that applied to it. The value is stored rather
+/// than read from the constant at render time, so a reloaded thread names the limit that
+/// stopped THAT turn even after a build moves it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct TurnLimit {
+    pub kind: TurnLimitKind,
+    /// Rounds for [`TurnLimitKind::ToolRounds`], seconds for [`TurnLimitKind::WallTime`].
+    pub max: u32,
+    /// The model answered with what it had: past the round cap the turn makes ONE more call
+    /// with no tool allowed to run. `false` when that call still reached for a tool, and
+    /// always for wall time, which makes no further call.
+    pub answered: bool,
 }
 
 /// The `messages.role` token for event rows. Kept OUTSIDE `AgentRole` on purpose: an

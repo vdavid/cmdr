@@ -774,6 +774,17 @@ move it: the highlight marks the row Space acts on.
 - `source_path` + `volume_id` ride the row snapshot for this, and they are DISPLAY data. Apply still sends opaque row
   ids only, and the backend resolves every path from its own stored proposal.
 
+## Limit notice
+
+A turn that reached a per-answer ceiling (rounds of tool calls, or wall time) carries `stats.limit` (`TurnLimit`: kind,
+the value that applied, `answered`), and `AskCmdrMessage` renders `AskCmdrLimitNotice` from it above the stats line. It
+names the limit and its value (`limitNoticeText`), says it's fixed with no setting, links Send feedback
+(`openFeedbackDialog`), and on the thread's latest turn, with nothing running, offers "Keep going", which sends
+`askCmdr.limit.continueMessage` as an ordinary message: the next turn starts with a fresh budget and the whole history.
+Reading it from the stats is what makes live equal reload, since the `TurnFinished` row stores them. A live `failed`
+with `budgetExhausted` and a limit adds no separate error line (`applyFailed`): the notice already says it, better.
+Backend side: `src-tauri/src/agent/chat/DETAILS.md` § Budgets and cancellation.
+
 ## The context gauge (how full the chat is)
 
 `AskCmdrContextGauge.svelte` sits in the footer row beside the cost line, and the two answer different questions on

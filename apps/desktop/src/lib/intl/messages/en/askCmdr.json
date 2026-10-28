@@ -871,6 +871,42 @@
   "@askCmdr.error.budgetExhausted": {
     "description": "Shown when a single answer used up its tool-step or time budget before finishing. Friendly and actionable; avoids the words error and failed."
   },
+  "askCmdr.limit.toolRounds.answered": "This answer reached Cmdr’s limit of {max, plural, one {# round} other {{maxText} rounds}} of lookups, so it stopped looking and answered with what it found.",
+  "@askCmdr.limit.toolRounds.answered": {
+    "description": "First line of a notice under an Ask Cmdr answer. The assistant looks things up in rounds (each round runs one or more lookups such as listing a folder); one answer may run a fixed number of rounds. This answer used all of them, so Cmdr asked it to answer from what it had found, and it did. The answer above may be incomplete. \"Lookup\" is the word the rail already uses for a tool call. Avoids the words error and failed.",
+    "placeholders": {
+      "maxText": "The number of rounds one answer may run, already formatted for the locale (for example 25).",
+      "max": "The same number, to pick the plural form."
+    }
+  },
+  "askCmdr.limit.toolRounds.unfinished": "This answer reached Cmdr’s limit of {max, plural, one {# round} other {{maxText} rounds}} of lookups before it could finish.",
+  "@askCmdr.limit.toolRounds.unfinished": {
+    "description": "First line of a notice under an Ask Cmdr answer that stopped without a final reply: it used all the rounds of lookups one answer may run (each round runs one or more lookups such as listing a folder), and even when asked to answer it still wanted to look further. What it said along the way stays visible above. Avoids the words error and failed.",
+    "placeholders": {
+      "maxText": "The number of rounds one answer may run, already formatted for the locale (for example 25).",
+      "max": "The same number, to pick the plural form."
+    }
+  },
+  "askCmdr.limit.wallTime": "This answer reached Cmdr’s limit of {minutes, plural, one {# minute} other {{minutesText} minutes}} per answer before it could finish.",
+  "@askCmdr.limit.wallTime": {
+    "description": "First line of a notice under an Ask Cmdr answer that stopped because one answer may take only a fixed amount of time, and this one ran out of it. What it said along the way stays visible above. Avoids the words error and failed.",
+    "placeholders": {
+      "minutesText": "How many minutes one answer may take, already formatted for the locale (for example 10).",
+      "minutes": "The same number, to pick the plural form."
+    }
+  },
+  "askCmdr.limit.fixed": "It’s a fixed limit, with no setting to change it. If it gets in your way, <feedback>tell us about it</feedback>.",
+  "@askCmdr.limit.fixed": {
+    "description": "Second line of the notice under an Ask Cmdr answer that reached a per-answer limit (rounds of lookups, or time). Says the user can't raise the limit themselves. The tagged part is a link that opens the app's Send feedback dialog; keep the tags around the words that invite the user to tell the developers."
+  },
+  "askCmdr.limit.continue": "Keep going",
+  "@askCmdr.limit.continue": {
+    "description": "Button in the notice under the latest Ask Cmdr answer that reached a per-answer limit. Pressing it sends a message asking the assistant to carry on from where it stopped, as a fresh answer with a fresh limit. A short verb phrase."
+  },
+  "askCmdr.limit.continueMessage": "Please keep going from where you stopped.",
+  "@askCmdr.limit.continueMessage": {
+    "description": "The chat message the Keep going button sends on the user's behalf, shown in the thread as the user's own message. Written as the user speaking to the assistant, casual and polite."
+  },
   "askCmdr.error.repeatedToolCall": "This one kept retrying the same lookup without getting anywhere. Try asking a different way.",
   "@askCmdr.error.repeatedToolCall": {
     "description": "Shown when a single answer got stuck re-sending the same tool call after it had already come back with a problem, so Cmdr stopped the turn rather than let it spin. Friendly and actionable; avoids the words error and failed. \"Lookup\" is the word the rail already uses for a tool call."

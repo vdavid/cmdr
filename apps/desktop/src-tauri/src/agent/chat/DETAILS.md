@@ -200,9 +200,21 @@ depth, not the main line.
 
 In `context.rs` (turn shape and compaction):
 
-- `MAX_TOOL_TURNS = 8` — per message; the loop stops before the 9th tool respond fires.
-- `MAX_WALL_TIME = 120s` — per message wall-clock ceiling across the whole loop; leaves room for reasoning-heavy
-  OpenAI-compatible models while the tool-turn cap still prevents a runaway loop.
+- `MAX_TOOL_TURNS = 25` — rounds of tool calls per message; past it ONE wrap-up call answers (§ Budgets and
+  cancellation). Why 25: at 8, a real "where should these Downloads go" turn (verified on a dev build, `main.db`
+  conversation 689, 2026-10-28) spent all eight rounds orienting (pane, importance, home, Documents, two cloud
+  folders, volumes, the NAS, then a memory note) and never answered, at a tenth of its window. A cleanup that also
+  reads its destinations and proposes in `files_per_batch` batches needs 15–20 rounds; 25 leaves headroom, and the
+  wrap-up call plus "Keep going" carry a longer job across answers. Spend: a round re-sends the prompt, which grows
+  by what the round read (each result is capped at `MAX_TOOL_RESULT_TOKENS`), so 25 rounds of a turn like 689's
+  (~11k prompt, ~3k growth per round) re-send roughly 1.2M prompt tokens, mostly prompt-cache reads. The cap and the
+  repeat breaker are what bound that; a dollar ceiling per answer is not built.
+- `MAX_WALL_TIME = 600s` — per message wall-clock ceiling across the whole loop: a hang guard, not a spend guard
+  (Stop is the user's). Ten minutes is 25 rounds of a reasoning-heavy model at ~20 s each with room left; it ends
+  the turn with no further call.
+- Neither is a setting: the rail's limit notice says the limit is fixed and links Send feedback. ❌ No token total
+  gates a turn: the per-turn and per-thread token figures are display (the stats line, the cost footer); only the
+  context window bounds one call (`tokens_summed_across_rounds_never_end_a_turn`).
 - `MIN_ELISION_TURNS_BACK = 1` — the floor above; the current turn's results never elide.
 - `THREAD_SOFT_CAP_MESSAGES = 40` — past this the UI nudges "start a fresh one?".
 
@@ -664,11 +676,22 @@ variants carry wording; `crate::ai`'s `provider_error_detail` extracts the JSON 
 
 ### Budgets and cancellation
 
-`MAX_TOOL_TURNS` and `MAX_WALL_TIME` are checked at the TOP of the loop, so the next
-`respond` never fires once a budget is spent — a runaway is impossible by construction, and
-the typed outcome is `BudgetExhausted`. "Answers with what it has" is realized as the text
-already streamed plus that notice; a forced tool-less final answer is a documented
-refinement, deliberately not built in v1 (it would need its own bounding). Cancellation is
+`MAX_TOOL_TURNS` and `MAX_WALL_TIME` are checked at the TOP of the loop, so a runaway is
+impossible by construction. Wall time ends the turn there (`BudgetExhausted`). The round cap
+instead makes ONE wrap-up call: the same assembly plus a trailing user message,
+`context::tool_round_wrap_up_note()`, telling the model no further tool will run and to answer
+from what it found, naming what it didn't get to. The note is appended after assembly, so the
+cached prefix holds, and it is never persisted, so the thread's history stays what was said.
+Its own bounding: the reply's tool calls are stripped before the row persists (no call without
+a result row) and never run; prose alone answers the turn, and prose plus a tool call, or no
+prose, ends it `BudgetExhausted`. Either way `TurnTally::limit` records a `TurnLimit` (kind,
+the value that applied, `answered`), which rides `TurnStats` into the terminal event and the
+`TurnFinished` row, so the rail names the limit live and after a reload
+(`apps/desktop/src/lib/ask-cmdr/DETAILS.md` § Limit notice).
+
+**Decision: the round cap asks for an answer instead of failing.** Why: every round's results
+were already paid for, and failing at the cap threw them away unread, leaving the user a
+"hit its limit" line over 14 lookups and no answer. Cancellation is
 checked at the top of the loop (a clean stop between tool boundaries) and when a stream ends
 without `End` while the token is set (a user stop, distinguished from a crash) — both return
 `TurnResult::Cancelled`, whose one terminal event is `Stopped` (never `Failed`); stream-cancel

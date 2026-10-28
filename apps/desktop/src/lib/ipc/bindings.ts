@@ -19321,6 +19321,33 @@ export type TrustedHostKey = {
 }
 
 /**
+ *  A ceiling a turn reached, with the value that applied to it. The value is stored rather
+ *  than read from the constant at render time, so a reloaded thread names the limit that
+ *  stopped THAT turn even after a build moves it.
+ */
+export type TurnLimit = {
+  kind: TurnLimitKind
+  // Rounds for [`TurnLimitKind::ToolRounds`], seconds for [`TurnLimitKind::WallTime`].
+  max: number
+  /**
+   *  The model answered with what it had: past the round cap the turn makes ONE more call
+   *  with no tool allowed to run. `false` when that call still reached for a tool, and
+   *  always for wall time, which makes no further call.
+   */
+  answered: boolean
+}
+
+/**
+ *  Which per-answer ceiling a turn reached (`chat::context::MAX_TOOL_TURNS` /
+ *  `MAX_WALL_TIME`). Both are fixed in Cmdr: no setting moves them.
+ */
+export type TurnLimitKind =
+  // The rounds of tool calls one answer may run.
+  | 'toolRounds'
+  // The wall-clock time one answer may take.
+  | 'wallTime'
+
+/**
  *  What one turn spent, summed across its rounds: the turn line's footer. Numbers only, so the
  *  rail words it in the user's language and nothing English is frozen in `main.db`.
  *
@@ -19342,6 +19369,12 @@ export type TurnStats = {
    *  too. `false` for a turn recorded before this was stored: its rows can't tell a stop apart.
    */
   stopped?: boolean
+  /**
+   *  The turn's own ceiling that ended its tool loop, so the rail can name it and its value,
+   *  live and after a reload. `None` for a turn no ceiling touched, and for one recorded
+   *  before this was stored.
+   */
+  limit?: TurnLimit | null
 }
 
 /**

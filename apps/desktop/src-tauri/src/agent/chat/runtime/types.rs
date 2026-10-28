@@ -12,7 +12,7 @@ use chrono::FixedOffset;
 use super::events::AgentErrorKind;
 use crate::agent::chat::context::ContextEnvelope;
 use crate::agent::llm::types::{AgentPart, CallSettings, ProviderTag, WakeDigest};
-use crate::agent::store::TurnStats;
+use crate::agent::store::{TurnLimit, TurnStats};
 use crate::agent::types::{ProposalOutcomes, TurnOrigin};
 
 /// What opens a turn: what the person typed, or what a wake noticed.
@@ -117,6 +117,9 @@ pub struct TurnTally {
     /// `suggestion_group_proposed`: turns with proposals but no proposal events downstream
     /// would be a real instrumentation bug, and nothing else could tell us.
     pub proposals: usize,
+    /// The per-answer ceiling the turn reached, if any. It rides the stats, so the rail names
+    /// the limit and its value live and after a reload.
+    pub limit: Option<TurnLimit>,
 }
 
 impl TurnTally {
@@ -130,6 +133,7 @@ impl TurnTally {
             prompt_tokens: self.prompt_tokens,
             completion_tokens: self.completion_tokens,
             stopped,
+            limit: self.limit,
         })
     }
 }

@@ -18,7 +18,7 @@ use super::events::{AgentChatEvent, AgentErrorKind, ChatEventSink, ResolvedCall,
 use super::repeats::{FailedCalls, Repeat};
 use super::types::{TurnParams, TurnResult, TurnTally, UserTurn};
 use super::{LOG_TARGET, context};
-use crate::agent::chat::context::{ElisionFacts, MAX_TOOL_TURNS, MAX_WALL_TIME, PrefixInputs};
+use crate::agent::chat::context::{ElisionFacts, MAX_TOOL_TURNS, MAX_WALL_TIME, PrefixInputs, tool_round_wrap_up_note};
 use crate::agent::chat::message_view::{MessageView, to_message_view};
 use crate::agent::chat::system_prompt::system_prompt;
 use crate::agent::llm::AgentLlm;
@@ -26,7 +26,7 @@ use crate::agent::llm::types::{
     AgentDelta, AgentLlmError, AgentMessage, AgentPart, AgentRole, AgentStopReason, AgentToolCall, AgentToolResult,
     AgentUsage, ToolDeclaration,
 };
-use crate::agent::store::{self, AgentStoreError, TurnStats};
+use crate::agent::store::{self, AgentStoreError, TurnLimit, TurnLimitKind, TurnStats};
 use crate::agent::tools::line::{LineRef, outcome_of, repeat_marks, subject_of};
 
 /// Drive one turn to completion, persisting crash-safely and staying within budget.
@@ -178,12 +178,29 @@ async fn drive(
 
     loop {
         // Cancellation and both budgets are checked at the top, so no `respond` fires
-        // once the user cancelled or a budget is spent — a runaway loop is impossible.
+        // once the user cancelled or the time is spent, and past the round cap only the
+        // one wrap-up call does — a runaway loop is impossible.
         if cancel.is_cancelled() {
             return TurnEnd::Cancelled;
         }
-        if started.elapsed() >= MAX_WALL_TIME || tally.tool_turns >= MAX_TOOL_TURNS {
+        if started.elapsed() >= MAX_WALL_TIME {
+            tally.limit = Some(TurnLimit {
+                kind: TurnLimitKind::WallTime,
+                max: u32::try_from(MAX_WALL_TIME.as_secs()).unwrap_or(u32::MAX),
+                answered: false,
+            });
             return TurnEnd::failed(AgentErrorKind::BudgetExhausted);
+        }
+        // Past the round cap: ONE more call, carrying the wrap-up note, whose reply ends the
+        // turn whatever it holds. Every round's results were paid for, so the user gets an
+        // answer from them rather than a notice over unread results.
+        let wrap_up = tally.tool_turns >= MAX_TOOL_TURNS;
+        if wrap_up {
+            tally.limit = Some(TurnLimit {
+                kind: TurnLimitKind::ToolRounds,
+                max: u32::try_from(MAX_TOOL_TURNS).unwrap_or(u32::MAX),
+                answered: false,
+            });
         }
 
         let prefix = PrefixInputs {
@@ -192,13 +209,22 @@ async fn drive(
             memory: params.memory,
             tools,
         };
-        let assembled = context::assemble_prompt(
+        let mut assembled = context::assemble_prompt(
             &prefix,
             &transcript,
             params.envelope,
             params.offset,
             params.prompt_budget,
         );
+        // The note rides this call only, after everything (so the cached prefix holds), and
+        // never joins the transcript: the thread's history stays what was actually said.
+        if wrap_up {
+            assembled.messages.push(AgentMessage {
+                role: AgentRole::User,
+                parts: vec![AgentPart::Text(tool_round_wrap_up_note())],
+                at: params.now_secs,
+            });
+        }
         announce_context_pressure(&assembled.elision, sink, &mut trim_announced);
         // A result the prompt dropped is a result the model never read: withdraw it as
         // evidence before the call goes out, so nothing downstream can cite its contents.
@@ -237,7 +263,7 @@ async fn drive(
             stream_error,
         } = consume_stream(stream, sink).await;
 
-        let message = match final_message {
+        let mut message = match final_message {
             Some(message) => message,
             None => {
                 // The stream ended without an `End`: partial assistant text is discarded
@@ -261,6 +287,18 @@ async fn drive(
         if message.parts.is_empty() {
             log::warn!(target: LOG_TARGET, "assistant turn ended with no content; treating it as unfinished");
             return TurnEnd::failed(AgentErrorKind::UnfinishedReply);
+        }
+
+        // The wrap-up reply's tool calls never run, so they're never persisted either (a call
+        // with no result row would break the next turn's replay). What prose it wrote stays;
+        // with no prose left there's nothing to keep, and the turn ends on the limit.
+        let wanted_more = wrap_up && message.parts.iter().any(|part| matches!(part, AgentPart::ToolCall(_)));
+        if wrap_up {
+            message.parts.retain(|part| !matches!(part, AgentPart::ToolCall(_)));
+            if !message.parts.iter().any(|part| matches!(part, AgentPart::Text(_))) {
+                log::info!(target: LOG_TARGET, "the wrap-up reply past the round cap still wanted a tool; ending on the limit");
+                return TurnEnd::failed(AgentErrorKind::BudgetExhausted);
+            }
         }
 
         // A completed `respond`: record what the slot changed (first `End` only, BEFORE the
@@ -323,7 +361,13 @@ async fn drive(
                 _ => None,
             })
             .collect();
+        if wanted_more {
+            return TurnEnd::failed(AgentErrorKind::BudgetExhausted);
+        }
         if calls.is_empty() {
+            if let Some(limit) = tally.limit.as_mut() {
+                limit.answered = true;
+            }
             return TurnEnd::Answered {
                 message_id: assistant_id,
                 seq: assistant_seq,

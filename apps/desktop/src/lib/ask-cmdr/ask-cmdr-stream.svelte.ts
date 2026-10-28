@@ -675,6 +675,10 @@ function applyFailed(
   stats: TurnStats | null = null,
 ): void {
   endTurn(stats)
+  // A turn that reached a per-answer ceiling says so in its own bubble, named and valued from
+  // its stats (`AskCmdrLimitNotice`), the way a reload shows it too; a second, vaguer line
+  // under it would only repeat it.
+  if (kind === 'budgetExhausted' && stats?.limit) return
   askCmdrState.messages.push({
     kind: 'error',
     errorKind: kind,

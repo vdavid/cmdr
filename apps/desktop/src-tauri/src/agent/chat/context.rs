@@ -41,14 +41,29 @@ mod digest;
 
 // ── Named constants (§10). Initial values; tune with use. ─────────────────────
 
-/// Per user message: a loop that wants a tool turn past this stops (a final
-/// tool-less answer is forced, then budget-exhausted if even that can't finish).
-/// Makes a runaway loop impossible by construction. Initial value; tune with use.
-pub const MAX_TOOL_TURNS: usize = 8;
+/// Per user message: the rounds of tool calls one answer may run. Past it, ONE more
+/// call goes out carrying [`tool_round_wrap_up_note`] and no tool it asks for runs, so
+/// the user gets an answer from what was found; a reply that still wants a tool ends
+/// the turn on the limit. Makes a runaway loop impossible by construction. Why 25:
+/// `DETAILS.md` § Constants table.
+pub const MAX_TOOL_TURNS: usize = 25;
 
-/// Per user message wall-clock ceiling across the whole tool loop. Initial value;
-/// tune with use.
-pub const MAX_WALL_TIME: Duration = Duration::from_secs(120);
+/// Per user message wall-clock ceiling across the whole tool loop: a hang guard, not a
+/// spend guard (Stop is the user's own). Why 10 minutes: `DETAILS.md` § Constants table.
+pub const MAX_WALL_TIME: Duration = Duration::from_secs(600);
+
+/// What the wrap-up call past [`MAX_TOOL_TURNS`] tells the model, as the call's last
+/// user message. Sent on that one call only and never persisted, so the thread's history
+/// stays what was said.
+pub fn tool_round_wrap_up_note() -> String {
+    let rounds = MAX_TOOL_TURNS;
+    // allowed-pluralize-noun: the cap is a constant far above one
+    let used = format!("this answer has used all {rounds} rounds of tool calls it gets");
+    format!(
+        "[Cmdr: {used}, so no further tool call will run. Answer now from what you've found. Say plainly which \
+         parts you didn't get to, and that the user can send \"continue\" to pick up from here.]"
+    )
+}
 
 /// The floor under every elision threshold: a tool result from the CURRENT turn is never
 /// elided, however tight the budget. It is the model's only view of what it just looked at,

@@ -40,9 +40,9 @@ One message in, an answer out, crash-safe and within budget.
   shape-agnostic and under 80 tokens: a digest describes a delivery, never is one (invariant 6).
 - **Content is written only on `End`; the user row on the FIRST `End`** (crash cases (a)–(d),
   red-guarded). Don't pre-persist either row.
-- **A runaway loop is impossible by construction**: `MAX_TOOL_TURNS` / `MAX_WALL_TIME` are checked at
-  the TOP of the loop, and an identical repeat of a FAILED call isn't re-dispatched (`repeats.rs`).
-  Don't bump one silently.
+- **Runaway loops are impossible**: both caps are checked at the loop's TOP (the round cap buys ONE
+  tool-less wrap-up call); a FAILED call's identical repeat isn't re-dispatched (`repeats.rs`). ❌ No
+  token total gates a turn.
 - **The event seam is `AgentChatEvent` over an `UnboundedSender`**, forwarded onto one
   conversation-keyed event: ❌ never key a turn to the invoke that started it, or a reload loses it.
 - **Terminal events come only from `run_turn`, once per turn** (a panicking rail turn's guard is the

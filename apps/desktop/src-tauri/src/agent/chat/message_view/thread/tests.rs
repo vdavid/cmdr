@@ -325,6 +325,7 @@ fn a_recorded_turn_carries_its_stored_stats_on_its_last_assistant_view() {
         prompt_tokens: 30,
         completion_tokens: 3,
         stopped: false,
+        limit: None,
     };
     let mut thread = Thread::default();
     thread.user("look");
@@ -359,6 +360,7 @@ fn an_old_turn_with_tools_gets_fallback_stats_rebuilt_from_its_rows() {
             prompt_tokens: 30,
             completion_tokens: 3,
             stopped: false,
+            limit: None,
         })
     );
 }

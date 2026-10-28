@@ -20,6 +20,7 @@ import type {
   RefusalReason,
   ToolOutcome,
   ToolSubject,
+  TurnLimit,
   TurnStats,
 } from '#lib/ipc/bindings.js'
 import { managedAiRefusalMessage } from '#lib/managed-policy/ai-refusal.js'
@@ -438,6 +439,22 @@ export function turnStatsTokensTooltip(stats: TurnStats | null): string | undefi
   const tokens = totalTokens(stats)
   if (formatTokenCount(tokens) === formatInteger(tokens)) return undefined
   return tString('askCmdr.cost.tokens', { count: tokens, countText: formatInteger(tokens) })
+}
+
+/**
+ * Which per-answer ceiling a turn reached, and its value, as the first line of its limit notice.
+ * The value is the one stored with the turn, so a reloaded thread names the limit that applied
+ * then. Wall time is stored in seconds and said in whole minutes (the ceiling is minutes long).
+ */
+export function limitNoticeText(limit: TurnLimit): string {
+  if (limit.kind === 'wallTime') {
+    const minutes = Math.max(1, Math.round(limit.max / 60))
+    return tString('askCmdr.limit.wallTime', { minutes, minutesText: formatInteger(minutes) })
+  }
+  const params = { max: limit.max, maxText: formatInteger(limit.max) }
+  return limit.answered
+    ? tString('askCmdr.limit.toolRounds.answered', params)
+    : tString('askCmdr.limit.toolRounds.unfinished', params)
 }
 
 const ERROR_KEYS: Record<AskCmdrErrorKind, MessageKey> = {
