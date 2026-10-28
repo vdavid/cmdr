@@ -379,6 +379,19 @@ describe('the Effort picker in Settings > AI > Provider', () => {
     expect(target.textContent).toContain('the thinking is billed as output')
   })
 
+  it('names the picker in the provider’s own words', async () => {
+    stubs.consent.accepted = true
+    stubs.modelLimits = { contextWindowTokens: null, maxOutputTokens: null, source: null, effort: reasoning }
+    const label = (target: HTMLElement) =>
+      target.querySelector('[id="setting-ai.reasoningEfforts"] .setting-label')?.textContent.trim()
+
+    expect(label(await mountSection())).toBe('Reasoning effort')
+    stubs.settings['ai.cloudProvider'] = 'anthropic'
+    expect(label(await mountSection())).toBe('Effort')
+    stubs.settings['ai.cloudProvider'] = 'google-gemini'
+    expect(label(await mountSection())).toBe('Thinking level')
+  })
+
   it('offers Recommended alone, and says why, when nothing knows the levels', async () => {
     stubs.consent.accepted = true
     stubs.modelLimits = {
@@ -390,7 +403,7 @@ describe('the Effort picker in Settings > AI > Provider', () => {
     const target = await mountSection()
 
     expect(optionLabels(target)).toEqual(['Recommended'])
-    expect(target.textContent).toContain('doesn’t say which effort levels this model takes')
+    expect(target.textContent).toContain('doesn’t say which levels this model takes')
   })
 
   it('hides for a model known not to reason', async () => {
@@ -417,6 +430,6 @@ describe('the Effort picker in Settings > AI > Provider', () => {
     const target = await mountSection()
 
     expect(vi.mocked(getAiModelLimits).mock.calls.some(([, , model]) => model === 'gpt-5.5')).toBe(true)
-    expect(target.textContent).toContain('Ask Cmdr uses its own model, gpt-5.5, so this sets its effort.')
+    expect(target.textContent).toContain('Ask Cmdr uses its own model, gpt-5.5, so this applies to that model.')
   })
 })

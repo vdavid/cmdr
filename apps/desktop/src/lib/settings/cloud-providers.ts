@@ -15,9 +15,27 @@ export type ProviderSetup =
   | { kind: 'local'; downloadUrl: string; guideUrl: string }
   | { kind: 'byoEndpoint' }
 
+/**
+ * What the provider calls the knob for how hard a model reasons, so Settings > AI's picker
+ * reads in the provider's own words. `thinkingLevel` doubles as the fallback for a provider
+ * with no name of its own (and for an id not in this list). Each preset's pick, from the
+ * provider's own docs (read 2026-10-28):
+ * - `reasoningEffort`: OpenAI and Azure OpenAI (`reasoning.effort` / `reasoning_effort`), xAI,
+ *   Groq, OpenRouter, Together, Fireworks, Mistral, DeepSeek, and LM Studio, which all take
+ *   `reasoning_effort` and call it reasoning effort.
+ * - `effort`: Anthropic (`output_config.effort`).
+ * - `thinkingLevel`: Google Gemini (`thinking_level`, its own name), plus the fallback for Qwen
+ *   (`enable_thinking` / `thinking_budget`, no level name), Perplexity (Sonar has no such knob;
+ *   only its separate Agent API takes an `effort`), Ollama (`think`, "thinking controls"), and
+ *   Custom.
+ */
+export type EffortTerm = 'reasoningEffort' | 'effort' | 'thinkingLevel'
+
 export interface CloudProviderPreset {
   id: string
   name: string
+  /** The Settings > AI picker's label for this provider. See `EffortTerm`. */
+  effortTerm: EffortTerm
   baseUrl: string
   defaultModel: string
   requiresApiKey: boolean
@@ -38,6 +56,7 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
   {
     id: 'openai',
     name: 'OpenAI',
+    effortTerm: 'reasoningEffort',
     baseUrl: 'https://api.openai.com/v1',
     defaultModel: 'gpt-4.1-mini',
     requiresApiKey: true,
@@ -51,6 +70,7 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
   {
     id: 'anthropic',
     name: 'Anthropic',
+    effortTerm: 'effort',
     baseUrl: 'https://api.anthropic.com/v1/',
     // The current Sonnet (`GET /v1/models`, 2026-10-26). `claude-sonnet-4-5` retires 2026-11-30.
     defaultModel: 'claude-sonnet-5-5',
@@ -65,6 +85,7 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
   {
     id: 'google-gemini',
     name: 'Google Gemini',
+    effortTerm: 'thinkingLevel',
     // Gemini's native API (bare `gemini-*` ids route to genai's native adapter, which needs the
     // `v1/` base; the old `v1beta/openai/` base 404'd on every chat). `gemini-2.5-flash` answers
     // 404 "no longer available to new users", naming `gemini-3.8-flash` (verified live, 2026-10-26).
@@ -81,6 +102,7 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
   {
     id: 'groq',
     name: 'Groq',
+    effortTerm: 'reasoningEffort',
     baseUrl: 'https://api.groq.com/openai/v1',
     // Groq retired the whole Llama line on 2026-08-16 (console.groq.com/docs/deprecations);
     // this is its named replacement for the 70B, and a current production model.
@@ -96,6 +118,7 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
   {
     id: 'together-ai',
     name: 'Together AI',
+    effortTerm: 'reasoningEffort',
     baseUrl: 'https://api.together.xyz/v1',
     defaultModel: 'meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8',
     requiresApiKey: true,
@@ -109,6 +132,7 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
   {
     id: 'fireworks-ai',
     name: 'Fireworks AI',
+    effortTerm: 'reasoningEffort',
     baseUrl: 'https://api.fireworks.ai/inference/v1',
     // The Llama 3.3 id this used to name 404s: Fireworks no longer serves it (verified
     // 2026-09-04 against `GET /inference/v1/models`).
@@ -124,6 +148,7 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
   {
     id: 'mistral',
     name: 'Mistral AI',
+    effortTerm: 'reasoningEffort',
     baseUrl: 'https://api.mistral.ai/v1',
     defaultModel: 'mistral-small-latest',
     requiresApiKey: true,
@@ -137,6 +162,7 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
   {
     id: 'openrouter',
     name: 'OpenRouter',
+    effortTerm: 'reasoningEffort',
     baseUrl: 'https://openrouter.ai/api/v1',
     defaultModel: 'openai/gpt-4.1-mini',
     requiresApiKey: true,
@@ -150,6 +176,7 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
   {
     id: 'deepseek',
     name: 'DeepSeek',
+    effortTerm: 'reasoningEffort',
     baseUrl: 'https://api.deepseek.com/v1',
     defaultModel: 'deepseek-chat',
     requiresApiKey: true,
@@ -163,6 +190,7 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
   {
     id: 'qwen',
     name: 'Qwen',
+    effortTerm: 'thinkingLevel',
     baseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
     defaultModel: 'qwen-plus',
     requiresApiKey: true,
@@ -180,6 +208,7 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
   {
     id: 'xai',
     name: 'xAI',
+    effortTerm: 'reasoningEffort',
     baseUrl: 'https://api.x.ai/v1',
     defaultModel: 'grok-3-mini-fast',
     requiresApiKey: true,
@@ -196,6 +225,7 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
   {
     id: 'perplexity',
     name: 'Perplexity',
+    effortTerm: 'thinkingLevel',
     baseUrl: 'https://api.perplexity.ai',
     defaultModel: 'sonar',
     requiresApiKey: true,
@@ -211,6 +241,7 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
   {
     id: 'azure-openai',
     name: 'Azure OpenAI',
+    effortTerm: 'reasoningEffort',
     baseUrl: 'https://{resource-name}.openai.azure.com/openai/v1',
     defaultModel: 'gpt-4.1-mini',
     requiresApiKey: true,
@@ -229,6 +260,7 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
   {
     id: 'ollama',
     name: 'Ollama',
+    effortTerm: 'thinkingLevel',
     baseUrl: 'http://localhost:11434/v1',
     defaultModel: 'llama3.2',
     requiresApiKey: false,
@@ -242,6 +274,7 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
   {
     id: 'lm-studio',
     name: 'LM Studio',
+    effortTerm: 'reasoningEffort',
     baseUrl: 'http://localhost:1234/v1',
     defaultModel: 'loaded-model',
     requiresApiKey: false,
@@ -255,6 +288,7 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
   {
     id: 'custom',
     name: 'Custom',
+    effortTerm: 'thinkingLevel',
     baseUrl: '',
     defaultModel: '',
     requiresApiKey: true,

@@ -1223,10 +1223,17 @@
   "@settings.ai.cloudProviderConfigs.description": {
     "sourceHash": "21132a2"
   },
-  "settings.ai.reasoningEfforts.label": "Effort",
-  "@settings.ai.reasoningEfforts.label": {
-    "sourceHash": "4387e5d",
-    "sameAsSourceJustification": "Effort is a native French noun (masc.), the same word MS terminology gives for effort; the picker's options agree with it (Faible, Moyen, Élevé)."
+  "settings.ai.reasoningEfforts.label.reasoningEffort": "Reasoning effort",
+  "@settings.ai.reasoningEfforts.label.reasoningEffort": {
+    "sourceHash": "3236aee"
+  },
+  "settings.ai.reasoningEfforts.label.effort": "Effort",
+  "@settings.ai.reasoningEfforts.label.effort": {
+    "sourceHash": "4387e5d"
+  },
+  "settings.ai.reasoningEfforts.label.thinkingLevel": "Thinking level",
+  "@settings.ai.reasoningEfforts.label.thinkingLevel": {
+    "sourceHash": "96f115b"
   },
   "settings.ai.reasoningEfforts.description": "Durée pendant laquelle le modèle réfléchit avant de répondre. Plus d’effort aide pour les tâches délicates, mais les réponses arrivent plus lentement et la réflexion est facturée comme sortie.",
   "@settings.ai.reasoningEfforts.description": {

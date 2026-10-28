@@ -3,10 +3,27 @@ import type { AiEffortOptions } from '#lib/ipc/bindings.js'
 import {
   effectiveEffortChoice,
   effortChoices,
+  effortLabelKey,
   readEffortChoice,
   showsEffortPicker,
   writeEffortChoice,
 } from './ai-effort'
+
+describe('the picker’s label', () => {
+  it('uses each provider’s own name for the setting', () => {
+    expect(effortLabelKey('openai')).toBe('settings.ai.reasoningEfforts.label.reasoningEffort')
+    expect(effortLabelKey('xai')).toBe('settings.ai.reasoningEfforts.label.reasoningEffort')
+    expect(effortLabelKey('openrouter')).toBe('settings.ai.reasoningEfforts.label.reasoningEffort')
+    expect(effortLabelKey('anthropic')).toBe('settings.ai.reasoningEfforts.label.effort')
+    expect(effortLabelKey('google-gemini')).toBe('settings.ai.reasoningEfforts.label.thinkingLevel')
+  })
+
+  it('falls back to Thinking level for a provider with no name of its own, or an unknown id', () => {
+    expect(effortLabelKey('ollama')).toBe('settings.ai.reasoningEfforts.label.thinkingLevel')
+    expect(effortLabelKey('custom')).toBe('settings.ai.reasoningEfforts.label.thinkingLevel')
+    expect(effortLabelKey('no-such-provider')).toBe('settings.ai.reasoningEfforts.label.thinkingLevel')
+  })
+})
 
 const claude: AiEffortOptions = {
   reasons: true,

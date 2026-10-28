@@ -24,6 +24,7 @@
     import {
         effectiveEffortChoice,
         effortChoices,
+        effortLabelKey,
         readEffortChoice,
         showsEffortPicker,
         writeEffortChoice,
@@ -188,6 +189,8 @@
         const stored = readEffortChoice(reasoningEfforts, controller.providerId, effortModel)
         return effortOptions ? effectiveEffortChoice(effortOptions, stored) : stored
     })
+    // The provider's own name for the knob, with Thinking level as the fallback.
+    const effortLabelText = $derived(tString(effortLabelKey(controller.providerId)))
     const effortItems = $derived<SelectItem[]>(
         effortOptions ? effortChoices(effortOptions).map((choice) => ({ value: choice, label: effortLabel(choice) })) : [],
     )
@@ -313,7 +316,7 @@
     {#if shouldShow('ai.reasoningEfforts') && showsEffortPicker(effortOptions)}
         <SettingRow
             id="ai.reasoningEfforts"
-            label={tString('settings.ai.reasoningEfforts.label')}
+            label={effortLabelText}
             description={tString('settings.ai.reasoningEfforts.description')}
             split
             {searchQuery}
@@ -322,7 +325,7 @@
                 items={effortItems}
                 value={effortChoice}
                 onChange={pickEffort}
-                ariaLabel={tString('settings.ai.reasoningEfforts.label')}
+                ariaLabel={effortLabelText}
             />
         </SettingRow>
         {#if askCmdrModelOverride}

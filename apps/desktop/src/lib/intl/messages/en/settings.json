@@ -1454,17 +1454,25 @@
   "@settings.ai.cloudProviderConfigs.description": {
     "description": "Help text for the per-provider AI configurations. \"API\" = application programming interface; keep the term."
   },
-  "settings.ai.reasoningEfforts.label": "Effort",
-  "@settings.ai.reasoningEfforts.label": {
-    "description": "Label for the picker that sets how hard the chosen cloud AI model thinks before it answers (its reasoning effort). Shown under the model in Settings > AI > Provider. A noun. Sentence case."
+  "settings.ai.reasoningEfforts.label.reasoningEffort": "Reasoning effort",
+  "@settings.ai.reasoningEfforts.label.reasoningEffort": {
+    "description": "Label for the picker that sets how hard the chosen cloud AI model thinks before it answers. Shown under the model in Settings > AI > Provider when the AI service is OpenAI, Azure OpenAI, xAI, Groq, OpenRouter, Together AI, Fireworks AI, Mistral AI, DeepSeek, or LM Studio: that is these services' own name for the setting in their docs, so the label matches what their users already know. The same picker reads “Effort” for Anthropic and “Thinking level” elsewhere (settings.ai.reasoningEfforts.label.effort, settings.ai.reasoningEfforts.label.thinkingLevel). If the target language has an established rendering of OpenAI’s “reasoning effort”, use it. A noun phrase. Sentence case."
+  },
+  "settings.ai.reasoningEfforts.label.effort": "Effort",
+  "@settings.ai.reasoningEfforts.label.effort": {
+    "description": "Label for the picker that sets how hard the chosen cloud AI model thinks before it answers. Shown under the model in Settings > AI > Provider when the AI service is Anthropic (Claude): Anthropic calls this setting “effort” in its docs, so the label matches what Claude users already know. The same picker reads “Reasoning effort” or “Thinking level” for other services (settings.ai.reasoningEfforts.label.reasoningEffort, settings.ai.reasoningEfforts.label.thinkingLevel). Means how much work the model puts into thinking, not physical effort. A noun. Sentence case."
+  },
+  "settings.ai.reasoningEfforts.label.thinkingLevel": "Thinking level",
+  "@settings.ai.reasoningEfforts.label.thinkingLevel": {
+    "description": "Label for the picker that sets how hard the chosen cloud AI model thinks before it answers. Shown under the model in Settings > AI > Provider when the AI service is Google Gemini (Google calls this setting “thinking level” in its docs), and as the general name for services with no name of their own for it (Qwen, Perplexity, Ollama, a custom service). Also this setting’s name in settings search. The same picker reads “Reasoning effort” or “Effort” for other services (settings.ai.reasoningEfforts.label.reasoningEffort, settings.ai.reasoningEfforts.label.effort). Level as in how much, like a dial. A noun phrase. Sentence case."
   },
   "settings.ai.reasoningEfforts.description": "How long the model thinks before it answers. More effort helps with tricky tasks, but replies come slower and the thinking is billed as output.",
   "@settings.ai.reasoningEfforts.description": {
-    "description": "Help text under the Effort picker in Settings > AI > Provider. Says what effort does, and its cost and speed tradeoff: thinking longer gives better answers on hard tasks, but takes longer, and the AI service charges for the thinking like it charges for the answer (as output). Sentence case."
+    "description": "Help text under the reasoning picker in Settings > AI > Provider (labeled Reasoning effort, Effort, or Thinking level depending on the AI service; see settings.ai.reasoningEfforts.label.*). “effort” here is the plain word, how much work the model puts in. Says what effort does, and its cost and speed tradeoff: thinking longer gives better answers on hard tasks, but takes longer, and the AI service charges for the thinking like it charges for the answer (as output). Sentence case."
   },
-  "settings.ai.reasoningEfforts.keywords": "effort, reasoning, thinking, think, speed, cost, quality",
+  "settings.ai.reasoningEfforts.keywords": "reasoning effort, effort, reasoning, thinking, think, speed, cost, quality",
   "@settings.ai.reasoningEfforts.keywords": {
-    "description": "Search keywords for the Effort setting (settings.ai.reasoningEfforts.label) in Settings > AI > Provider. What it does: sets how long the AI model thinks before answering. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats. Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
+    "description": "Search keywords for the reasoning setting (named settings.ai.reasoningEfforts.label.thinkingLevel in search; its row reads Reasoning effort, Effort, or Thinking level depending on the AI service) in Settings > AI > Provider. What it does: sets how long the AI model thinks before answering. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats. Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
   "settings.ai.localContextSize.label": "Context window",
   "@settings.ai.localContextSize.label": {

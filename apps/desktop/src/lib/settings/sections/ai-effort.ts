@@ -1,11 +1,28 @@
 /**
- * The Effort picker's pure half: which options a model gets, and how a pick is stored in
+ * The reasoning picker's pure half (labeled per provider: Reasoning effort, Effort, or Thinking level): which options a model gets, and how a pick is stored in
  * `ai.reasoningEfforts` (a JSON object keyed `"<provider id>/<model>"`). The backend decides what
  * the model can take (`AiEffortOptions`) and maps a stored pick it can't to the nearest one it
  * can (`agent::chat::effort::resolve_effort`), so this menu is a courtesy, never the guard.
  */
 
+import type { MessageKey } from '#lib/intl/keys.gen.js'
 import type { AiEffortLevel, AiEffortOptions } from '#lib/ipc/bindings.js'
+import { getCloudProvider, type EffortTerm } from '../cloud-providers'
+
+/** One literal key per term, so the i18n checks can see every one. */
+const TERM_LABEL_KEYS: Record<EffortTerm, MessageKey> = {
+  reasoningEffort: 'settings.ai.reasoningEfforts.label.reasoningEffort',
+  effort: 'settings.ai.reasoningEfforts.label.effort',
+  thinkingLevel: 'settings.ai.reasoningEfforts.label.thinkingLevel',
+}
+
+/**
+ * The picker's label in the provider's own words (`CloudProviderPreset.effortTerm`), or the
+ * Thinking level fallback for an id no preset knows.
+ */
+export function effortLabelKey(providerId: string): MessageKey {
+  return TERM_LABEL_KEYS[getCloudProvider(providerId)?.effortTerm ?? 'thinkingLevel']
+}
 
 /** What the picker stores: `recommended`, `off`, or a level. */
 export type EffortChoice = 'recommended' | 'off' | AiEffortLevel

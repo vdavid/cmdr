@@ -427,13 +427,13 @@
   },
   "ai.cloud.effort.recommended": "Recommended",
   "@ai.cloud.effort.recommended": {
-    "description": "Option in the Effort picker (Settings > AI > Provider), shown when nothing says what the AI service does by default: let the service decide how hard the model thinks. Sentence case.",
+    "description": "Option in the reasoning picker (Settings > AI > Provider), shown when nothing says what the AI service does by default: let the service decide how hard the model thinks. Sentence case.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
   "ai.cloud.effort.recommendedWithLevel": "Recommended ({level})",
   "@ai.cloud.effort.recommendedWithLevel": {
-    "description": "Option in the Effort picker (Settings > AI > Provider): let the AI service decide how hard the model thinks, with what that amounts to in parentheses. level is one of the other options' names (Low, Medium, High, Max), already translated. Sentence case.",
+    "description": "Option in the reasoning picker (Settings > AI > Provider): let the AI service decide how hard the model thinks, with what that amounts to in parentheses. level is one of the other options' names (Low, Medium, High, Max), already translated. Sentence case.",
     "placeholders": {
       "level": "the effort level the service uses by default, already translated (for example High)"
     },
@@ -442,46 +442,46 @@
   },
   "ai.cloud.effort.off": "Off",
   "@ai.cloud.effort.off": {
-    "description": "Option in the Effort picker (Settings > AI > Provider): the model answers without thinking first. Fastest and cheapest. An adjective (thinking is off), not a verb.",
+    "description": "Option in the reasoning picker (Settings > AI > Provider): the model answers without thinking first. Fastest and cheapest. An adjective (thinking is off), not a verb.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
   "ai.cloud.effort.low": "Low",
   "@ai.cloud.effort.low": {
-    "description": "Option in the Effort picker (Settings > AI > Provider): the model thinks a little before answering. Also used inside ai.cloud.effort.recommendedWithLevel. An adjective.",
+    "description": "Option in the reasoning picker (Settings > AI > Provider): the model thinks a little before answering. Also used inside ai.cloud.effort.recommendedWithLevel. An adjective.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
   "ai.cloud.effort.medium": "Medium",
   "@ai.cloud.effort.medium": {
-    "description": "Option in the Effort picker (Settings > AI > Provider): the model thinks a moderate amount before answering. Also used inside ai.cloud.effort.recommendedWithLevel. An adjective.",
+    "description": "Option in the reasoning picker (Settings > AI > Provider): the model thinks a moderate amount before answering. Also used inside ai.cloud.effort.recommendedWithLevel. An adjective.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
   "ai.cloud.effort.high": "High",
   "@ai.cloud.effort.high": {
-    "description": "Option in the Effort picker (Settings > AI > Provider): the model thinks a lot before answering. Also used inside ai.cloud.effort.recommendedWithLevel. An adjective.",
+    "description": "Option in the reasoning picker (Settings > AI > Provider): the model thinks a lot before answering. Also used inside ai.cloud.effort.recommendedWithLevel. An adjective.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
   "ai.cloud.effort.max": "Max",
   "@ai.cloud.effort.max": {
-    "description": "Option in the Effort picker (Settings > AI > Provider): the most thinking the model can do. Slowest and most expensive. Short for maximum; keep it short. Also used inside ai.cloud.effort.recommendedWithLevel.",
+    "description": "Option in the reasoning picker (Settings > AI > Provider): the most thinking the model can do. Slowest and most expensive. Short for maximum; keep it short. Also used inside ai.cloud.effort.recommendedWithLevel.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloud.effort.forAskCmdrModel": "Ask Cmdr uses its own model, {model}, so this sets its effort.",
+  "ai.cloud.effort.forAskCmdrModel": "Ask Cmdr uses its own model, {model}, so this applies to that model.",
   "@ai.cloud.effort.forAskCmdrModel": {
-    "description": "Note under the Effort picker (Settings > AI > Provider) when Ask Cmdr (the app's chat assistant; keep the name) is set to its own model instead of the one picked above. The picker then sets that model's effort, since effort only affects Ask Cmdr. model is a model id, verbatim (for example gpt-5.5); keep it as is. “its” is Ask Cmdr's model. Sentence case.",
+    "description": "Note under the reasoning picker (Settings > AI > Provider; labeled Reasoning effort, Effort, or Thinking level depending on the AI service, so this note names none of them) when Ask Cmdr (the app's chat assistant; keep the name) is set to its own model instead of the one picked above. The picker then sets how hard that model thinks, since the setting only affects Ask Cmdr. “this” is the picker. model is a model id, verbatim (for example gpt-5.5); keep it as is. Sentence case.",
     "placeholders": {
       "model": "the model id Ask Cmdr uses, verbatim (for example gpt-5.5)"
     },
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloud.effort.levelsUnknown": "This service doesn’t say which effort levels this model takes, so it decides.",
+  "ai.cloud.effort.levelsUnknown": "This service doesn’t say which levels this model takes, so it decides.",
   "@ai.cloud.effort.levelsUnknown": {
-    "description": "Note under the Effort picker (Settings > AI > Provider) when the AI service doesn't report which effort levels the chosen model accepts, so Recommended is the only option and the service picks. “it” is the service. The apostrophe is U+2019. Sentence case.",
+    "description": "Note under the reasoning picker (Settings > AI > Provider; labeled Reasoning effort, Effort, or Thinking level depending on the AI service, so this note names none of them) when the AI service doesn't report which levels (Low, Medium, High, Max) the chosen model accepts, so Recommended is the only option and the service picks. “it” is the service. The apostrophe is U+2019. Sentence case.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },

@@ -1222,9 +1222,17 @@
   "@settings.ai.cloudProviderConfigs.description": {
     "sourceHash": "21132a2"
   },
-  "settings.ai.reasoningEfforts.label": "Aufwand",
-  "@settings.ai.reasoningEfforts.label": {
+  "settings.ai.reasoningEfforts.label.reasoningEffort": "Reasoning effort",
+  "@settings.ai.reasoningEfforts.label.reasoningEffort": {
+    "sourceHash": "3236aee"
+  },
+  "settings.ai.reasoningEfforts.label.effort": "Effort",
+  "@settings.ai.reasoningEfforts.label.effort": {
     "sourceHash": "4387e5d"
+  },
+  "settings.ai.reasoningEfforts.label.thinkingLevel": "Thinking level",
+  "@settings.ai.reasoningEfforts.label.thinkingLevel": {
+    "sourceHash": "96f115b"
   },
   "settings.ai.reasoningEfforts.description": "Wie lange das Modell nachdenkt, bevor es antwortet. Mehr Aufwand hilft bei kniffligen Aufgaben, aber Antworten kommen langsamer, und das Nachdenken wird als Ausgabe berechnet.",
   "@settings.ai.reasoningEfforts.description": {
