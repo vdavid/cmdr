@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest'
 import { DIALOG_GALLERY_ENTRIES } from './gallery-registry'
 import { fixtureRecords } from './fixtures'
 import { serverSignInFixtures } from './fixtures/servers'
+import { seedStore } from './store-seeding'
 
 /** Dialogs that take callbacks only, so they have no fixture record by design. */
 const CALLBACK_ONLY = new Set(['about', 'acknowledgements', 'license', 'commercial-reminder', 'mtp-permission'])
@@ -90,5 +91,33 @@ describe('the sign-in sheet fixtures answer what their rows advertise', () => {
   it('edit mode carries no attempt: Save writes and closes, nothing dials', () => {
     const request = serverSignInFixtures.edit?.request
     expect(request?.mode).toBe('edit')
+  })
+})
+
+/**
+ * Regression: the 60,000-file group held its first 200 rows and paged the rest from the real
+ * store, which has no fixture group and answered a total of 0, so scrolling past row 200
+ * emptied the list. The patch's own `rowSource` answers instead.
+ */
+describe('the AI suggestions fixture pages its 60,000-file group', () => {
+  it('keeps every row and the total as the list scrolls past the held window', async () => {
+    const { suggestedOpsFixtures } = await import('./fixtures/suggested-ops')
+    const trigger = await import('#lib/suggested-ops/suggested-ops-trigger.svelte.js')
+    const hardCases = suggestedOpsFixtures['hard-cases']
+    if (!hardCases) throw new Error('no hard-cases fixture')
+    const undo = seedStore(trigger.suggestedOpsState, hardCases())
+    try {
+      await trigger.showRange(203, 30_000, 30_060)
+
+      const review = trigger.reviewOf(203)
+      expect(review?.windowError).toBe(false)
+      expect(review?.window?.total).toBe(60_000)
+      for (let index = 30_000; index < 30_060; index++) {
+        expect(trigger.opAt(203, index)?.sourcePath).toBe(`/Volumes/SD/DCIM/DSC${String(10_000 + index)}.ARW`)
+        expect(review?.liveFacts.get(index + 1)?.kind).toBe('present')
+      }
+    } finally {
+      undo()
+    }
   })
 })

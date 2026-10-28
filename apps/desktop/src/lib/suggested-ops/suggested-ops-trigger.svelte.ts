@@ -36,6 +36,7 @@ import {
   type ServerApprovalResultView,
   type SuggestedGroupView,
   type SuggestedOpLiveFactsAnswer,
+  type SuggestedOpPage,
   type SuggestedOpView,
   type SuggestedSweepView,
 } from '#lib/tauri-commands/index.js'
@@ -159,6 +160,23 @@ interface SuggestedOpsState {
   /** Groups whose last approval refused to start, keyed by group id. Each one is pending again
    *  and keeps its reason under it until the user answers it again or closes the dialog. */
   refusals: SvelteMap<number, GroupRefusal>
+  /** Where op pages and their live facts come from: `null` reads the suggestion store. The
+   *  dialog gallery seeds its own, so a fixture group bigger than the rows it seeded still pages
+   *  as you scroll (the store has no such group and would answer a total of 0, emptying the list). */
+  rowSource: SuggestedOpRowSource | null
+}
+
+/** One read a `SuggestedOpRowSource` answers: rows `offset` to `offset + limit` of a group. */
+export interface SuggestedOpRowAsk {
+  groupId: number
+  offset: number
+  limit: number
+}
+
+/** A stand-in for the store's two row reads, with the same answers (`suggestedOpsState.rowSource`). */
+export interface SuggestedOpRowSource {
+  page: (ask: SuggestedOpRowAsk) => Promise<SuggestedOpPage>
+  liveFacts: (ask: SuggestedOpRowAsk) => Promise<SuggestedOpLiveFactsAnswer>
 }
 
 export const suggestedOpsState = $state<SuggestedOpsState>({
@@ -170,7 +188,18 @@ export const suggestedOpsState = $state<SuggestedOpsState>({
   busyGroupId: null,
   decisionNotice: null,
   refusals: new SvelteMap<number, GroupRefusal>(),
+  rowSource: null,
 })
+
+function readPage(ask: SuggestedOpRowAsk): Promise<SuggestedOpPage> {
+  const source = suggestedOpsState.rowSource
+  return source ? source.page(ask) : pageSuggestedOps(ask.groupId, ask.offset, ask.limit)
+}
+
+function readLiveFacts(ask: SuggestedOpRowAsk): Promise<SuggestedOpLiveFactsAnswer> {
+  const source = suggestedOpsState.rowSource
+  return source ? source.liveFacts(ask) : liveSuggestedOpFacts(ask.groupId, ask.offset, ask.limit)
+}
 
 /** Op ids whose live facts were already asked for, per group. Not state: nothing renders it,
  *  it only keeps a scroll from asking twice. */
@@ -446,39 +475,44 @@ export async function showRange(groupId: number, start: number, end: number): Pr
   const review = reviewOf(groupId)
   if (!review) return
   review.range = { start, end }
-  await ensureOpWindow(groupId, start)
+  await ensureOpWindow(groupId, start, end)
   await ensureLiveFacts(groupId)
 }
 
 /**
- * Make sure the rows around `startIndex` are loaded, fetching a window when they aren't.
+ * Make sure rows `start` to `end` are loaded, fetching a window when any of them isn't.
  *
- * The list's range changes call this, and so does the retry after a failed read.
+ * The WHOLE range, not its first row alone: checking only `start` left the bottom of the drawn
+ * range on blank placeholders whenever it ran past the held window's end, until the top row
+ * crossed too. The list's range changes call this, and so does the retry after a failed read.
  */
-export async function ensureOpWindow(groupId: number, startIndex: number): Promise<void> {
+export async function ensureOpWindow(groupId: number, start: number, end = start + 1): Promise<void> {
   const review = reviewOf(groupId)
   // A server card has no ops: nothing to page, and with no window, nothing to check on disk.
   if (!review || groupById(groupId)?.server) return
-  if (windowHolds(review.window, startIndex)) return
+  if (windowHolds(review.window, start, end)) return
   if (review.windowLoading) return
 
-  // Centre the window on what was asked for, so scrolling either way stays inside it.
-  const offset = Math.max(0, startIndex - OP_WINDOW_SIZE / 4)
+  // Centre the window on what was asked for, so scrolling either way stays inside it: a
+  // quarter of the room the range leaves goes above it, the rest below.
+  const slack = Math.max(0, OP_WINDOW_SIZE - (end - start))
+  const offset = Math.max(0, start - Math.floor(slack / 4))
   review.windowLoading = true
   review.windowError = false
-  const rangeAtAsk = review.range.start
+  const rangeAtAsk = { ...review.range }
   try {
-    const page = await pageSuggestedOps(groupId, offset, OP_WINDOW_SIZE)
+    const page = await readPage({ groupId, offset, limit: OP_WINDOW_SIZE })
     // The group may have been answered, or the dialog closed, while this was in flight.
     if (reviewOf(groupId) !== review) return
     review.window = { offset: page.offset, ops: page.ops, total: page.total }
-    // A jump made while this page was in flight was turned away above, and the list won't ask
+    // A scroll made while this page was in flight was turned away above, and the list won't ask
     // for that range again, so follow it. Only a range that MOVED meanwhile: one past the
     // group's end is never held, and must not loop.
-    const now = review.range.start
-    if (now !== rangeAtAsk && !windowHolds(review.window, now)) {
+    const now = review.range
+    const moved = now.start !== rangeAtAsk.start || now.end !== rangeAtAsk.end
+    if (moved && !windowHolds(review.window, now.start, now.end)) {
       review.windowLoading = false
-      await ensureOpWindow(groupId, now)
+      await ensureOpWindow(groupId, now.start, now.end)
       return
     }
   } catch (e) {
@@ -494,8 +528,14 @@ export async function ensureOpWindow(groupId: number, startIndex: number): Promi
   await ensureLiveFacts(groupId)
 }
 
-function windowHolds(held: OpWindow | null, index: number): boolean {
-  return held !== null && index >= held.offset && index < held.offset + held.ops.length
+/**
+ * Whether the held window covers rows `start` to `end`. A range wider than one page can't be
+ * held whole, so only its first `OP_WINDOW_SIZE` rows count; otherwise every scroll would page.
+ */
+function windowHolds(held: OpWindow | null, start: number, end: number): boolean {
+  if (held === null) return false
+  const last = Math.max(start, Math.min(end, start + OP_WINDOW_SIZE) - 1)
+  return start >= held.offset && last < held.offset + held.ops.length
 }
 
 /**
@@ -524,7 +564,7 @@ export async function ensureLiveFacts(groupId: number): Promise<void> {
   if (!span) return
   for (const opId of span.opIds) asked.add(opId)
   try {
-    const answer = await liveSuggestedOpFacts(groupId, span.offset, span.opIds.length)
+    const answer = await readLiveFacts({ groupId, offset: span.offset, limit: span.opIds.length })
     if (reviewOf(groupId) !== review) return
     if (takeLiveAnswer(review, answer)) return
   } catch (e) {

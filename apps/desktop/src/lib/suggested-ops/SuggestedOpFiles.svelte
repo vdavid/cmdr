@@ -311,7 +311,7 @@
          back needs its own way to ask. -->
     <div class="files-problem" role="alert">
         <span>{tString('suggestedOps.filesLoadFailed')}</span>
-        <Button size="mini" onclick={() => void ensureOpWindow(group.groupId, review.range.start)}>
+        <Button size="mini" onclick={() => void ensureOpWindow(group.groupId, review.range.start, review.range.end)}>
             {tString('suggestedOps.retryFiles')}
         </Button>
     </div>

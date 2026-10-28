@@ -11,6 +11,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRawSnippet, flushSync, mount, tick, unmount } from 'svelte'
+import { SvelteMap } from 'svelte/reactivity'
 import ColumnList from './ColumnList.svelte'
 import type { ColumnListApi, ColumnListColumn, ColumnListWindowedSource } from './column-list-types'
 import { installLayoutMock, type LayoutMock } from '#lib/test-layout.js'
@@ -190,6 +191,30 @@ describe('ColumnList windowed source', () => {
     const placeholders = target.querySelectorAll('.column-list-row.is-placeholder')
     expect(placeholders).toHaveLength(25)
     expect(placeholders[0].getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('fills a deep scroll of a 60,000-row list once its rows land, with no row left blank', async () => {
+    const loaded = new SvelteMap<number, Item>()
+    const ranges: { start: number; end: number }[] = []
+    const source: ColumnListWindowedSource<Item> = {
+      count: 60_000,
+      getRow: (index) => loaded.get(index),
+      onRangeChange: (range) => ranges.push(range),
+    }
+    const target = await render({ rows: source })
+
+    // Near the end: row 59,500 at the top, 10 in view, 20 overscan each side.
+    layout.scroll(VIEWPORT, 59_500 * ROW_PX)
+    flushSync()
+    expect(ranges.at(-1)).toEqual({ start: 59_480, end: 59_530 })
+    for (let index = 59_480; index < 59_530; index++) loaded.set(index, { id: index, name: `item-${String(index)}` })
+    flushSync()
+
+    expect(target.querySelectorAll('.column-list-row.is-placeholder')).toHaveLength(0)
+    expect(drawnIndices(target)).toEqual(Array.from({ length: 50 }, (_, i) => 59_480 + i))
+    const inner = target.querySelector<HTMLElement>('.column-list-viewport > div')
+    expect(inner?.style.paddingTop).toBe(`${String(59_480 * ROW_PX)}px`)
+    expect(inner?.style.paddingBottom).toBe(`${String((60_000 - 59_530) * ROW_PX)}px`)
   })
 })
 

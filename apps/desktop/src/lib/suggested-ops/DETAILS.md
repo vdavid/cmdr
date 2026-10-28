@@ -89,10 +89,12 @@ A group of 60,000 ops is legitimate, so nothing may grow with it.
 
 **The windows.** Each group has its own `GroupReview` in `suggestedOpsState.reviews`. `COUNT(*)` gives the total and
 only the rows the list draws are fetched (`OP_WINDOW_SIZE`, centred on the request so scrolling either way stays
-inside). `ColumnList` reports the drawn range through `onRangeChange` → `showRange`, which pages, then checks. One page
-is in flight per group; a jump made meanwhile is turned away, so a page that lands follows the range if it moved (the
-list won't report the same range twice). A row whose window isn't loaded renders `ColumnList`'s placeholder and `opAt`
-answers `null` rather than a neighbouring row. Opening the dialog reads every group's first page side by side
+inside). `ColumnList` reports the drawn range through `onRangeChange` → `showRange`, which pages, then checks. A page is
+fetched when ANY row of the range is missing (`windowHolds(start, end)`), ❌ never on `start` alone: that left the
+bottom of the list blank whenever the range ran past the held page's end (regression test "holds every drawn row…"). One
+page is in flight per group; a scroll made meanwhile is turned away, so a page that lands follows the range if it moved
+(the list won't report the same range twice). A row whose window isn't loaded renders `ColumnList`'s placeholder and
+`opAt` answers `null` rather than a neighbouring row. Opening the dialog reads every group's first page side by side
 (`Promise.all`), so seven groups cost one round trip of latency, not seven.
 
 **Live facts** are read for the drawn rows only, once per op (`ensureLiveFacts` →
@@ -206,8 +208,11 @@ the patch sets `open`, `sweeps`, and pre-filled `reviews` (windows and live fact
 backend. The invoices move files three of its five under new names, so a move's `old → new` rows show beside ones that
 keep their name. "Server cards" shows an SFTP add at a new address and a NAS host's edit with its shares line; "Server
 cards given back" shows the same two refused. Seeded live facts are never re-read (`ensureLiveFacts` skips ops it
-already holds). Approve and Reject reach the real store, which has no such group, so the dialog re-reads and shows
-what's really waiting; the row says so.
+already holds). Rows past a seeded window (the 60,000-file "Raw camera files") page through the patch's `rowSource`
+(`suggestedOpsState.rowSource`, `null` in the app), which answers `page` and `liveFacts` from the fixture: the real
+store has no fixture group and answers a total of 0, which emptied the list on the first scroll past row 200 (regression
+test in `dialog-gallery/fixtures.test.ts`). Approve and Reject reach the real store, which has no such group, so the
+dialog re-reads and shows what's really waiting; the row says so.
 
 ## A server card
 

@@ -1730,8 +1730,10 @@ itself, which is exactly what this leaves to the parent.
   which receives `{ row, index, isUnderCursor }`.
 - **Rows**: a plain array, or a `ColumnListWindowedSource<T>`: `count`, a reactive `getRow(index)` (return `undefined`
   for a row not loaded yet, which draws an `aria-hidden` placeholder), and `onRangeChange({ start, end })`, called (in
-  `untrack`) whenever the drawn range moves, so the consumer fetches those rows. `rowKey` keys an array's rows; a
-  windowed source is keyed by index.
+  `untrack`) whenever the drawn range moves, so the consumer fetches those rows. The range is reported ONCE per move, so
+  ❗ the consumer must cover ALL of `start`–`end`, not just `start`: AI suggestions once checked only `start`, and the
+  bottom of the drawn range sat on blank placeholders whenever it ran past the held page's end. `rowKey` keys an array's
+  rows; a windowed source is keyed by index.
 - **Cursor**: the parent owns the index. `cursorIndex` paints `.is-under-cursor` (and `aria-selected` in a listbox or
   grid). The list reports every move it makes through `onCursorChange(index)`: a click on a data row, a `grid`'s own
   cursor keys, and `mouseenter` when `hoverMovesCursor` is on. Writing it back to `cursorIndex` is what makes them one

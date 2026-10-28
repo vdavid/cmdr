@@ -232,6 +232,40 @@ describe('the op window', () => {
     expect(opAt(BIG, 40_000)).not.toBeNull()
   })
 
+  // Regression: only the range's FIRST row was checked, so scrolling the drawn range across
+  // the held window's end left its bottom rows as blank placeholders until the top crossed too.
+  it('holds every drawn row when the range runs past the end of the held window', async () => {
+    await openSuggestedOps()
+    pageMock.mockClear()
+
+    await showRange(BIG, 180, 240)
+
+    expect(pageMock).toHaveBeenCalledTimes(1)
+    for (let index = 180; index < 240; index++) expect(opAt(BIG, index)?.opId).toBe(index)
+  })
+
+  it('follows a range that grew past the window while a page was loading', async () => {
+    await openSuggestedOps()
+    pageMock.mockClear()
+    let land: () => void = () => {}
+    pageMock.mockImplementationOnce(
+      ({ offset }) =>
+        new Promise((resolve) => {
+          land = () => {
+            resolve({ ops: ops(offset, 200), offset, total: 60_000 } as unknown as SuggestedOpPage)
+          }
+        }),
+    )
+
+    const first = showRange(BIG, 5_000, 5_060)
+    // Same first row, but the range now reaches past what the in-flight page will hold.
+    const second = showRange(BIG, 5_000, 5_190)
+    land()
+    await Promise.all([first, second])
+
+    expect(opAt(BIG, 5_189)).not.toBeNull()
+  })
+
   it('answers null for a row whose window is not loaded, rather than a wrong row', async () => {
     await openSuggestedOps()
 
