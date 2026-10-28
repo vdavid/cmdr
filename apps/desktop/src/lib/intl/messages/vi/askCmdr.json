@@ -709,17 +709,17 @@
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
   },
-  "askCmdr.limit.toolRounds.answered": "Câu trả lời này đã đạt giới hạn {max, plural, other {{maxText} vòng tra cứu}} của Cmdr, nên đã ngừng tìm và trả lời bằng những gì tìm được.",
+  "askCmdr.limit.toolRounds.answered": "Câu trả lời này đã đạt giới hạn {maxText} {max, plural, other {vòng tra cứu}} của Cmdr, nên đã ngừng tìm và trả lời bằng những gì tìm được.",
   "@askCmdr.limit.toolRounds.answered": {
-    "sourceHash": "33677c9"
+    "sourceHash": "3e45f64"
   },
-  "askCmdr.limit.toolRounds.unfinished": "Câu trả lời này đã đạt giới hạn {max, plural, other {{maxText} vòng tra cứu}} của Cmdr trước khi kịp hoàn tất.",
+  "askCmdr.limit.toolRounds.unfinished": "Câu trả lời này đã đạt giới hạn {maxText} {max, plural, other {vòng tra cứu}} của Cmdr trước khi kịp hoàn tất.",
   "@askCmdr.limit.toolRounds.unfinished": {
-    "sourceHash": "6c3d9ef"
+    "sourceHash": "ee13e2d"
   },
-  "askCmdr.limit.wallTime": "Câu trả lời này đã đạt giới hạn {minutes, plural, other {{minutesText} phút}} cho mỗi câu trả lời của Cmdr trước khi kịp hoàn tất.",
+  "askCmdr.limit.wallTime": "Câu trả lời này đã đạt giới hạn {minutesText} {minutes, plural, other {phút}} cho mỗi câu trả lời của Cmdr trước khi kịp hoàn tất.",
   "@askCmdr.limit.wallTime": {
-    "sourceHash": "9b4aa5b"
+    "sourceHash": "fc47e07"
   },
   "askCmdr.limit.fixed": "Đây là giới hạn cố định, không có cài đặt nào để thay đổi. Nếu giới hạn này cản trở bạn, <feedback>hãy cho chúng tôi biết</feedback>.",
   "@askCmdr.limit.fixed": {

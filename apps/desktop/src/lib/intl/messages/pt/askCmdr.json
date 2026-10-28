@@ -709,17 +709,17 @@
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
   },
-  "askCmdr.limit.toolRounds.answered": "Esta resposta atingiu o limite de {max, plural, one {# rodada} many {{maxText} rodadas} other {{maxText} rodadas}} de consultas do Cmdr, então parou de procurar e respondeu com o que tinha encontrado.",
+  "askCmdr.limit.toolRounds.answered": "Esta resposta atingiu o limite de {maxText} {max, plural, one {rodada} many {rodadas} other {rodadas}} de consultas do Cmdr, então parou de procurar e respondeu com o que tinha encontrado.",
   "@askCmdr.limit.toolRounds.answered": {
-    "sourceHash": "33677c9"
+    "sourceHash": "3e45f64"
   },
-  "askCmdr.limit.toolRounds.unfinished": "Esta resposta atingiu o limite de {max, plural, one {# rodada} many {{maxText} rodadas} other {{maxText} rodadas}} de consultas do Cmdr antes de terminar.",
+  "askCmdr.limit.toolRounds.unfinished": "Esta resposta atingiu o limite de {maxText} {max, plural, one {rodada} many {rodadas} other {rodadas}} de consultas do Cmdr antes de terminar.",
   "@askCmdr.limit.toolRounds.unfinished": {
-    "sourceHash": "6c3d9ef"
+    "sourceHash": "ee13e2d"
   },
-  "askCmdr.limit.wallTime": "Esta resposta atingiu o limite de {minutes, plural, one {# minuto} many {{minutesText} minutos} other {{minutesText} minutos}} por resposta do Cmdr antes de terminar.",
+  "askCmdr.limit.wallTime": "Esta resposta atingiu o limite de {minutesText} {minutes, plural, one {minuto} many {minutos} other {minutos}} por resposta do Cmdr antes de terminar.",
   "@askCmdr.limit.wallTime": {
-    "sourceHash": "9b4aa5b"
+    "sourceHash": "fc47e07"
   },
   "askCmdr.limit.fixed": "É um limite fixo, sem nenhum ajuste para mudá-lo. Se ele atrapalhar, <feedback>conte para a gente</feedback>.",
   "@askCmdr.limit.fixed": {

@@ -7,9 +7,6 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
 
 ## Open
 
-- `askCmdr.limit.toolRounds.*`, `askCmdr.limit.wallTime`: the plural's `one` arm prints `#` while `other` prints the
-  preformatted `{maxText}` / `{minutesText}`; use the `*Text` param in every arm, so other-only locales don't drop `#`.
-
 - `servers.sheet.nfsExportsEmptyList`: one string covers "the server listed none" and "not asked yet"; split the key if
   the two should read differently. (hu, nl, ru, vi)
 - The termbase matcher now skips paths and domains, but it still can't tell one sense of a word from another (verb

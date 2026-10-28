@@ -710,17 +710,17 @@
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
   },
-  "askCmdr.limit.toolRounds.answered": "Cmdr staat per antwoord maximaal {max, plural, one {# opzoekronde} other {{maxText} opzoekrondes}} toe. Dit antwoord heeft die limiet bereikt, dus het is gestopt met zoeken en heeft geantwoord met wat het had gevonden.",
+  "askCmdr.limit.toolRounds.answered": "Cmdr staat per antwoord maximaal {maxText} {max, plural, one {opzoekronde} other {opzoekrondes}} toe. Dit antwoord heeft die limiet bereikt, dus het is gestopt met zoeken en heeft geantwoord met wat het had gevonden.",
   "@askCmdr.limit.toolRounds.answered": {
-    "sourceHash": "33677c9"
+    "sourceHash": "3e45f64"
   },
-  "askCmdr.limit.toolRounds.unfinished": "Cmdr staat per antwoord maximaal {max, plural, one {# opzoekronde} other {{maxText} opzoekrondes}} toe. Dit antwoord heeft die limiet bereikt voordat het klaar was.",
+  "askCmdr.limit.toolRounds.unfinished": "Cmdr staat per antwoord maximaal {maxText} {max, plural, one {opzoekronde} other {opzoekrondes}} toe. Dit antwoord heeft die limiet bereikt voordat het klaar was.",
   "@askCmdr.limit.toolRounds.unfinished": {
-    "sourceHash": "6c3d9ef"
+    "sourceHash": "ee13e2d"
   },
-  "askCmdr.limit.wallTime": "Cmdr staat per antwoord maximaal {minutes, plural, one {# minuut} other {{minutesText} minuten}} toe. Dit antwoord heeft die limiet bereikt voordat het klaar was.",
+  "askCmdr.limit.wallTime": "Cmdr staat per antwoord maximaal {minutesText} {minutes, plural, one {minuut} other {minuten}} toe. Dit antwoord heeft die limiet bereikt voordat het klaar was.",
   "@askCmdr.limit.wallTime": {
-    "sourceHash": "9b4aa5b"
+    "sourceHash": "fc47e07"
   },
   "askCmdr.limit.fixed": "Het is een vaste limiet, er is geen instelling om hem te wijzigen. Zit hij je in de weg, <feedback>laat het ons weten</feedback>.",
   "@askCmdr.limit.fixed": {

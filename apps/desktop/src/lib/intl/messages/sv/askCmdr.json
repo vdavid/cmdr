@@ -709,17 +709,17 @@
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
   },
-  "askCmdr.limit.toolRounds.answered": "Svaret nådde Cmdrs gräns på {max, plural, one {# sökomgång} other {{maxText} sökomgångar}}, så det slutade söka och svarade med det som hade hittats.",
+  "askCmdr.limit.toolRounds.answered": "Svaret nådde Cmdrs gräns på {maxText} {max, plural, one {sökomgång} other {sökomgångar}}, så det slutade söka och svarade med det som hade hittats.",
   "@askCmdr.limit.toolRounds.answered": {
-    "sourceHash": "33677c9"
+    "sourceHash": "3e45f64"
   },
-  "askCmdr.limit.toolRounds.unfinished": "Svaret nådde Cmdrs gräns på {max, plural, one {# sökomgång} other {{maxText} sökomgångar}} innan det blev klart.",
+  "askCmdr.limit.toolRounds.unfinished": "Svaret nådde Cmdrs gräns på {maxText} {max, plural, one {sökomgång} other {sökomgångar}} innan det blev klart.",
   "@askCmdr.limit.toolRounds.unfinished": {
-    "sourceHash": "6c3d9ef"
+    "sourceHash": "ee13e2d"
   },
-  "askCmdr.limit.wallTime": "Svaret nådde Cmdrs gräns på {minutes, plural, one {# minut} other {{minutesText} minuter}} per svar innan det blev klart.",
+  "askCmdr.limit.wallTime": "Svaret nådde Cmdrs gräns på {minutesText} {minutes, plural, one {minut} other {minuter}} per svar innan det blev klart.",
   "@askCmdr.limit.wallTime": {
-    "sourceHash": "9b4aa5b"
+    "sourceHash": "fc47e07"
   },
   "askCmdr.limit.fixed": "Det är en fast gräns som inte går att ändra i inställningarna. Om den är i vägen, <feedback>berätta det för oss</feedback>.",
   "@askCmdr.limit.fixed": {

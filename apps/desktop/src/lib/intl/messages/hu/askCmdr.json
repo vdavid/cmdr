@@ -709,17 +709,17 @@
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
   },
-  "askCmdr.limit.toolRounds.answered": "Ez a válasz elérte a Cmdr {max, plural, one {# körös} other {{maxText} körös}} keresési korlátját, ezért abbahagyta a keresést, és abból válaszolt, amit addig talált.",
+  "askCmdr.limit.toolRounds.answered": "Ez a válasz elérte a Cmdr {maxText} {max, plural, one {körös} other {körös}} keresési korlátját, ezért abbahagyta a keresést, és abból válaszolt, amit addig talált.",
   "@askCmdr.limit.toolRounds.answered": {
-    "sourceHash": "33677c9"
+    "sourceHash": "3e45f64"
   },
-  "askCmdr.limit.toolRounds.unfinished": "Ez a válasz elérte a Cmdr {max, plural, one {# körös} other {{maxText} körös}} keresési korlátját, mielőtt befejezhette volna.",
+  "askCmdr.limit.toolRounds.unfinished": "Ez a válasz elérte a Cmdr {maxText} {max, plural, one {körös} other {körös}} keresési korlátját, mielőtt befejezhette volna.",
   "@askCmdr.limit.toolRounds.unfinished": {
-    "sourceHash": "6c3d9ef"
+    "sourceHash": "ee13e2d"
   },
-  "askCmdr.limit.wallTime": "Ez a válasz elérte a Cmdr válaszonkénti {minutes, plural, one {# perces} other {{minutesText} perces}} korlátját, mielőtt befejezhette volna.",
+  "askCmdr.limit.wallTime": "Ez a válasz elérte a Cmdr válaszonkénti {minutesText} {minutes, plural, one {perces} other {perces}} korlátját, mielőtt befejezhette volna.",
   "@askCmdr.limit.wallTime": {
-    "sourceHash": "9b4aa5b"
+    "sourceHash": "fc47e07"
   },
   "askCmdr.limit.fixed": "Ez egy rögzített korlát, nincs olyan beállítás, amivel módosíthatnád. Ha útban van, <feedback>szólj nekünk</feedback>.",
   "@askCmdr.limit.fixed": {

@@ -709,17 +709,17 @@
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
   },
-  "askCmdr.limit.toolRounds.answered": "Cmdr erlaubt pro Antwort höchstens {max, plural, one {# Abfragerunde} other {{maxText} Abfragerunden}}. Diese Antwort hat das Limit erreicht, deshalb hat sie aufgehört zu suchen und mit dem geantwortet, was sie gefunden hat.",
+  "askCmdr.limit.toolRounds.answered": "Cmdr erlaubt pro Antwort höchstens {maxText} {max, plural, one {Abfragerunde} other {Abfragerunden}}. Diese Antwort hat das Limit erreicht, deshalb hat sie aufgehört zu suchen und mit dem geantwortet, was sie gefunden hat.",
   "@askCmdr.limit.toolRounds.answered": {
-    "sourceHash": "33677c9"
+    "sourceHash": "3e45f64"
   },
-  "askCmdr.limit.toolRounds.unfinished": "Cmdr erlaubt pro Antwort höchstens {max, plural, one {# Abfragerunde} other {{maxText} Abfragerunden}}. Diese Antwort hat das Limit erreicht, bevor sie fertig war.",
+  "askCmdr.limit.toolRounds.unfinished": "Cmdr erlaubt pro Antwort höchstens {maxText} {max, plural, one {Abfragerunde} other {Abfragerunden}}. Diese Antwort hat das Limit erreicht, bevor sie fertig war.",
   "@askCmdr.limit.toolRounds.unfinished": {
-    "sourceHash": "6c3d9ef"
+    "sourceHash": "ee13e2d"
   },
-  "askCmdr.limit.wallTime": "Cmdr erlaubt pro Antwort höchstens {minutes, plural, one {# Minute} other {{minutesText} Minuten}}. Diese Antwort hat das Limit erreicht, bevor sie fertig war.",
+  "askCmdr.limit.wallTime": "Cmdr erlaubt pro Antwort höchstens {minutesText} {minutes, plural, one {Minute} other {Minuten}}. Diese Antwort hat das Limit erreicht, bevor sie fertig war.",
   "@askCmdr.limit.wallTime": {
-    "sourceHash": "9b4aa5b"
+    "sourceHash": "fc47e07"
   },
   "askCmdr.limit.fixed": "Das Limit ist fest, keine Einstellung ändert es. Wenn es dich stört, <feedback>sag uns Bescheid</feedback>.",
   "@askCmdr.limit.fixed": {

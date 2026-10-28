@@ -708,17 +708,17 @@
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
   },
-  "askCmdr.limit.toolRounds.answered": "这次回答达到了 Cmdr 的 {max, plural, other {{maxText} 轮查询}}上限，所以停止了查找，用已经找到的内容作答。",
+  "askCmdr.limit.toolRounds.answered": "这次回答达到了 Cmdr 的 {maxText} {max, plural, other {轮查询}}上限，所以停止了查找，用已经找到的内容作答。",
   "@askCmdr.limit.toolRounds.answered": {
-    "sourceHash": "33677c9"
+    "sourceHash": "3e45f64"
   },
-  "askCmdr.limit.toolRounds.unfinished": "这次回答还没完成，就达到了 Cmdr 的 {max, plural, other {{maxText} 轮查询}}上限。",
+  "askCmdr.limit.toolRounds.unfinished": "这次回答还没完成，就达到了 Cmdr 的 {maxText} {max, plural, other {轮查询}}上限。",
   "@askCmdr.limit.toolRounds.unfinished": {
-    "sourceHash": "6c3d9ef"
+    "sourceHash": "ee13e2d"
   },
-  "askCmdr.limit.wallTime": "这次回答还没完成，就达到了 Cmdr 每次回答 {minutes, plural, other {{minutesText} 分钟}}的上限。",
+  "askCmdr.limit.wallTime": "这次回答还没完成，就达到了 Cmdr 每次回答 {minutesText} {minutes, plural, other {分钟}}的上限。",
   "@askCmdr.limit.wallTime": {
-    "sourceHash": "9b4aa5b"
+    "sourceHash": "fc47e07"
   },
   "askCmdr.limit.fixed": "这是固定上限，没有设置可以更改。如果它妨碍到你，<feedback>告诉我们</feedback>。",
   "@askCmdr.limit.fixed": {

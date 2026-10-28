@@ -709,17 +709,17 @@
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
   },
-  "askCmdr.limit.toolRounds.answered": "Этот ответ уперся в лимит Cmdr (не больше {max, plural, one {# раунда} few {{maxText} раундов} many {{maxText} раундов} other {{maxText} раунда}} поиска), поэтому поиск остановлен, а ответ собран из того, что удалось найти.",
+  "askCmdr.limit.toolRounds.answered": "Этот ответ уперся в лимит Cmdr (не больше {maxText} {max, plural, one {раунда} few {раундов} many {раундов} other {раунда}} поиска), поэтому поиск остановлен, а ответ собран из того, что удалось найти.",
   "@askCmdr.limit.toolRounds.answered": {
-    "sourceHash": "33677c9"
+    "sourceHash": "3e45f64"
   },
-  "askCmdr.limit.toolRounds.unfinished": "Этот ответ уперся в лимит Cmdr (не больше {max, plural, one {# раунда} few {{maxText} раундов} many {{maxText} раундов} other {{maxText} раунда}} поиска) и не успел завершиться.",
+  "askCmdr.limit.toolRounds.unfinished": "Этот ответ уперся в лимит Cmdr (не больше {maxText} {max, plural, one {раунда} few {раундов} many {раундов} other {раунда}} поиска) и не успел завершиться.",
   "@askCmdr.limit.toolRounds.unfinished": {
-    "sourceHash": "6c3d9ef"
+    "sourceHash": "ee13e2d"
   },
-  "askCmdr.limit.wallTime": "Этот ответ уперся в лимит Cmdr (не больше {minutes, plural, one {# минуты} few {{minutesText} минут} many {{minutesText} минут} other {{minutesText} минуты}} на ответ) и не успел завершиться.",
+  "askCmdr.limit.wallTime": "Этот ответ уперся в лимит Cmdr (не больше {minutesText} {minutes, plural, one {минуты} few {минут} many {минут} other {минуты}} на ответ) и не успел завершиться.",
   "@askCmdr.limit.wallTime": {
-    "sourceHash": "9b4aa5b"
+    "sourceHash": "fc47e07"
   },
   "askCmdr.limit.fixed": "Это фиксированный лимит, и в настройках его не изменить. Если он мешает, <feedback>напишите нам</feedback>.",
   "@askCmdr.limit.fixed": {
