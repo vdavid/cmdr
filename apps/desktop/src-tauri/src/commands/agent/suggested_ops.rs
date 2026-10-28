@@ -10,8 +10,9 @@
 //!   (what the index, or one stat, held when the group froze; the fields say `snapshot`), and
 //!   `suggested_ops_live_facts` answers what the file is NOW, a window at a time. The dialog
 //!   shows both when they differ.
-//! - **What would stop a group running is read NOW from its source volume** (`runBlocker`): a
-//!   trash group on a volume with no Trash can't run at all (`agent/suggested_ops/facts.rs`).
+//! - **What a group would run as is read NOW from its source volume** (`runsAs`): a trash group
+//!   on a volume with no Trash is offered, and approved, as a permanent delete
+//!   (`agent/suggested_ops/facts.rs`).
 //! - **Reversibility and "the target folder will be created" are DISCLOSED, never blocking.**
 //!   Once the user approves, it is exactly as if they started the action.
 //!
@@ -32,7 +33,7 @@ use crate::agent::store::proposals::{
     GroupSummary, ProposalGroup, ProposalOp, ProposalSweep, count_ops, get_sweep, list_groups, page_ops,
 };
 use crate::agent::suggested_ops::bridge::{ApprovalOutcome, ApprovalRefusal};
-use crate::agent::suggested_ops::facts::{RunBlocker, run_blocker};
+use crate::agent::suggested_ops::facts::{RunsAs, runs_as};
 use crate::agent::suggested_ops::server::{SavedServers, ServerProposalView, server_card};
 use crate::agent::types::{OpStatus, ProposalStatus, ProposalVerb, Reversibility};
 use crate::file_system::volume::{Volume, VolumeError};
@@ -131,10 +132,11 @@ pub struct SuggestedGroupView {
     /// How far an approved group could be taken back, once it runs. A fact to DISCLOSE; per the
     /// guiding principle it is never a reason to refuse a group.
     pub reversible: Reversibility,
-    /// What would stop this group from running at all, worked out NOW from its source volume
-    /// (a trash group on a volume with no Trash: the OS refuses every item and deletes
-    /// nothing). `None` when nothing known would. Agrees with the agent's own read.
-    pub run_blocker: Option<RunBlocker>,
+    /// What this group would run as when that isn't its verb, worked out NOW from its source
+    /// volume (a trash group on a volume with no Trash runs as a permanent delete). `None` when
+    /// it runs as itself. Send it back with the approval: the fallback runs only when the user
+    /// approved it. Agrees with the agent's own read.
+    pub runs_as: Option<RunsAs>,
     /// Whether that destination is already there, and so whether approving creates it.
     pub destination_state: DestinationState,
     /// Ops in the live set: what would run.
@@ -258,7 +260,7 @@ struct GroupReadFacts {
     destination_state: DestinationState,
     source_volume_name: Option<String>,
     destination_volume_name: Option<String>,
-    run_blocker: Option<RunBlocker>,
+    runs_as: Option<RunsAs>,
 }
 
 /// Where a group's volume facts come from: the registry for a connected volume, the saved-place
@@ -293,7 +295,7 @@ fn read_facts(group: &ProposalGroup, volumes: VolumeFacts<'_>, destination_state
         destination_state,
         source_volume_name: name_of(&group.source_volume_id),
         destination_volume_name: destination_volume_id_of(group).and_then(name_of),
-        run_blocker: run_blocker(group.verb, source.as_deref()),
+        runs_as: runs_as(group.verb, source.as_deref()),
     }
 }
 
@@ -440,7 +442,7 @@ fn to_group_view(
         destination_volume_id,
         source_folder: group.source_folder,
         reversible: group.reversible,
-        run_blocker: facts.run_blocker,
+        runs_as: facts.runs_as,
         destination_state: facts.destination_state,
         live_op_count: summary.live_op_count,
         total_op_count: summary.total_op_count,
@@ -615,6 +617,9 @@ pub enum ApprovalResultView {
 /// across awaits, which a Tauri command's future can't (it must be `Send`). The result comes
 /// back over a oneshot, so the command still answers the caller directly rather than making the
 /// dialog wait on an event.
+///
+/// `runs_as` is the fallback the review showed (`SuggestedGroupView::runs_as`), so a trash group
+/// on a drive with no Trash deletes permanently only when the user approved it as that delete.
 #[tauri::command]
 #[specta::specta]
 pub async fn suggested_ops_approve(
@@ -622,6 +627,7 @@ pub async fn suggested_ops_approve(
     group_id: i64,
     revision: i64,
     selection: OpSelection,
+    runs_as: Option<RunsAs>,
 ) -> Result<ApprovalResultView, SuggestedOpsError> {
     let db_path = super::db_path(&app).ok_or(SuggestedOpsError::StoreNotOpen)?;
     let now = now_secs();
@@ -645,7 +651,7 @@ pub async fn suggested_ops_approve(
             let reporting = crate::agent::store::open_write_connection(&db_path).map_err(|e| e.to_string())?;
             let sink = std::sync::Arc::new(crate::operations_host::TauriEventSink::new(app));
             crate::agent::suggested_ops::bridge::approve_and_execute(
-                &conn, reporting, sink, group_id, revision, &selection, now, memory,
+                &conn, reporting, sink, group_id, revision, &selection, runs_as, now, memory,
             )
             .await
             .map_err(|e| e.to_string())

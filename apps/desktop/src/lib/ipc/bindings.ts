@@ -3698,10 +3698,26 @@ export const commands = {
    *  across awaits, which a Tauri command's future can't (it must be `Send`). The result comes
    *  back over a oneshot, so the command still answers the caller directly rather than making the
    *  dialog wait on an event.
+   *
+   *  `runs_as` is the fallback the review showed (`SuggestedGroupView::runs_as`), so a trash group
+   *  on a drive with no Trash deletes permanently only when the user approved it as that delete.
    */
-  suggestedOpsApprove: (groupId: number, revision: number, selection: OpSelection) =>
+  suggestedOpsApprove: (
+    groupId: number,
+    revision: number,
+    selection: OpSelection,
+    runsAs:
+      /**
+       *  A trash group whose source volume keeps no Trash (`Volume::has_trash`). Trashing there
+       *  can't work: the OS refuses every item (`TrashRefusalKind::NoTrashForVolume`) and nothing
+       *  happens. So an approval the user gave against a red "Delete" button deletes the files
+       *  permanently (David's call, 2026-10-28): it's a user-approved action, the same answer the
+       *  delete dialog gives a user on a drive with no Trash.
+       */
+      'permanentDelete' | null,
+  ) =>
     typedError<ApprovalResultView, SuggestedOpsError>(
-      __TAURI_INVOKE('suggested_ops_approve', { groupId, revision, selection }),
+      __TAURI_INVOKE('suggested_ops_approve', { groupId, revision, selection, runsAs }),
     ),
   /**
    *  Approve a server card the user read at `revision`: save it, with no password and no contact
@@ -13408,6 +13424,19 @@ export type NetworkHostLost = {
  */
 export type NetworkHostResolved = NetworkHost
 
+/**
+ *  What's at the path a renamed file would land on, now (#774). The run itself still answers a
+ *  collision with the transfer's conflict prompt, as a clicked move would; this says so before
+ *  the click.
+ */
+export type NewNameState =
+  // Nothing is there (or only the file itself, under a rename that only changes case).
+  | 'free'
+  // Something else already has that name there.
+  | 'taken'
+  // The target volume didn't answer, or isn't connected, so Cmdr can't tell.
+  | 'unknown'
+
 export type NextCallPricing = {
   provider: ProviderTag
   priced: boolean
@@ -15601,19 +15630,22 @@ export type RowText =
   | 'logDisplay'
 
 /**
- *  Why an approved group would refuse to run, known before the user approves it.
+ *  What an approved group would run as when that differs from its verb, known before the user
+ *  approves it.
  *
- *  A fact to DISCLOSE before the click, never an execution-path refusal of our own: the engine
- *  already refuses these exactly as it would a user-started action, and the dialog's job is to
- *  say so up front instead of offering a button that can only fail.
+ *  A fact to DISCLOSE before the click. The review shows the action that would really run (its
+ *  button, its undo note), and the approval names the fallback the user saw, so the bridge runs
+ *  it only when that's what the user approved (`bridge::start_for`).
  */
-export type RunBlocker =
+export type RunsAs =
   /**
-   *  A trash group whose source volume keeps no Trash (`Volume::has_trash`). The OS refuses
-   *  every item there (`TrashRefusalKind::NoTrashForVolume`) and NOTHING is deleted, so the
-   *  group can't run at all; it isn't "irreversible".
+   *  A trash group whose source volume keeps no Trash (`Volume::has_trash`). Trashing there
+   *  can't work: the OS refuses every item (`TrashRefusalKind::NoTrashForVolume`) and nothing
+   *  happens. So an approval the user gave against a red "Delete" button deletes the files
+   *  permanently (David's call, 2026-10-28): it's a user-approved action, the same answer the
+   *  delete dialog gives a user on a drive with no Trash.
    */
-  'noTrash'
+  'permanentDelete'
 
 /**
  *  The mimalloc heap split into live data and allocator slack.
@@ -18328,11 +18360,12 @@ export type SuggestedGroupView = {
    */
   reversible: Reversibility
   /**
-   *  What would stop this group from running at all, worked out NOW from its source volume
-   *  (a trash group on a volume with no Trash: the OS refuses every item and deletes
-   *  nothing). `None` when nothing known would. Agrees with the agent's own read.
+   *  What this group would run as when that isn't its verb, worked out NOW from its source
+   *  volume (a trash group on a volume with no Trash runs as a permanent delete). `None` when
+   *  it runs as itself. Send it back with the approval: the fallback runs only when the user
+   *  approved it. Agrees with the agent's own read.
    */
-  runBlocker: RunBlocker | null
+  runsAs: RunsAs | null
   // Whether that destination is already there, and so whether approving creates it.
   destinationState: DestinationState
   // Ops in the live set: what would run.
@@ -18355,6 +18388,12 @@ export type SuggestedGroupView = {
 export type SuggestedOpLiveFact = {
   opId: number
   state: LiveFileState
+  /**
+   *  Whether the name this op gives its file is free where the file lands. `None` when the op
+   *  keeps its name: a plain move's collision is the transfer's own conflict prompt, as for a
+   *  clicked move.
+   */
+  newName: NewNameState | null
 }
 
 // One page of a group's ops, plus the counts that place it in the whole.

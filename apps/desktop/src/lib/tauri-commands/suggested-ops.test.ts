@@ -86,17 +86,17 @@ describe('pageSuggestedOps', () => {
 })
 
 describe('approveSuggestedGroup', () => {
-  it('sends the selection as given and answers what happened', async () => {
+  it('sends the selection and the fallback the review showed as given, and answers what happened', async () => {
     vi.mocked(commands.suggestedOpsApprove).mockResolvedValueOnce({
       status: 'ok',
       data: { kind: 'started', operationId: 'op-9' },
     } as never)
 
-    await expect(approveSuggestedGroup(7, 3, { mode: 'only', opIds: [4, 9] })).resolves.toEqual({
+    await expect(approveSuggestedGroup(7, 3, { mode: 'only', opIds: [4, 9] }, 'permanentDelete')).resolves.toEqual({
       kind: 'started',
       operationId: 'op-9',
     })
-    expect(commands.suggestedOpsApprove).toHaveBeenCalledWith(7, 3, { mode: 'only', opIds: [4, 9] })
+    expect(commands.suggestedOpsApprove).toHaveBeenCalledWith(7, 3, { mode: 'only', opIds: [4, 9] }, 'permanentDelete')
   })
 
   it('passes a refusal through rather than throwing, since each kind means something different', async () => {
@@ -105,7 +105,7 @@ describe('approveSuggestedGroup', () => {
       data: { kind: 'listChanged' },
     } as never)
 
-    await expect(approveSuggestedGroup(7, 3, { mode: 'allExcept', opIds: [] })).resolves.toEqual({
+    await expect(approveSuggestedGroup(7, 3, { mode: 'allExcept', opIds: [] }, null)).resolves.toEqual({
       kind: 'listChanged',
     })
   })
@@ -116,7 +116,7 @@ describe('approveSuggestedGroup', () => {
       error: { message: 'no store' },
     } as never)
 
-    await expect(approveSuggestedGroup(7, 3, { mode: 'allExcept', opIds: [] })).rejects.toThrow()
+    await expect(approveSuggestedGroup(7, 3, { mode: 'allExcept', opIds: [] }, null)).rejects.toThrow()
   })
 })
 

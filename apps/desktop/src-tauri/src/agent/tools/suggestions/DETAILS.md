@@ -125,7 +125,8 @@ renamed invoices are one approval, one queue row, and one undo, which puts every
   FAT's reserved `" * : < > ? \ |`. Proposal-time only: nothing below refuses them first (`crates/cmdr-mtp/DETAILS.md` §
   Names a phone takes).
 - **A collision with a file already at the destination that isn't a source is not refused**: it meets the ordinary
-  conflict policy at run time, as a clicked move would.
+  conflict policy at run time, as a clicked move would. The review dialog warns on the row before the click (#774,
+  `apps/desktop/src/lib/suggested-ops/DETAILS.md` § The file list).
 - Each name is bound by the claim's digest with no change (the digest already hashes `destination` per op), so an amend
   that only renames is a new approval.
 

@@ -385,6 +385,7 @@ async fn an_approval_the_engine_refuses_returns_the_group_to_pending() {
         group_id,
         0,
         &crate::agent::store::proposals::OpSelection::all_except(&[]),
+        None,
         200,
         None,
     )
@@ -484,6 +485,16 @@ fn trash_group_on(dir: &TestDir, volume_id: &str) -> (Connection, Connection, i6
 }
 
 async fn approve(conn: &Connection, reporting: Connection, group_id: i64) -> super::ApprovalOutcome {
+    approve_as(conn, reporting, group_id, None).await
+}
+
+/// [`approve`], naming the fallback the review showed the user.
+async fn approve_as(
+    conn: &Connection,
+    reporting: Connection,
+    group_id: i64,
+    shown: Option<super::RunsAs>,
+) -> super::ApprovalOutcome {
     super::approve_and_execute(
         conn,
         reporting,
@@ -491,11 +502,69 @@ async fn approve(conn: &Connection, reporting: Connection, group_id: i64) -> sup
         group_id,
         0,
         &crate::agent::store::proposals::OpSelection::all_except(&[]),
+        shown,
         200,
         None,
     )
     .await
     .expect("the store answers")
+}
+
+/// A trash group on a drive with no Trash, approved against the red "Delete" button the review
+/// showed, deletes its files: trashing there can't work, and the user approved the delete
+/// (David's call, 2026-10-28).
+#[tokio::test(flavor = "multi_thread")]
+async fn a_trash_group_approved_as_a_permanent_delete_on_a_drive_with_no_trash_deletes_its_files() {
+    use crate::file_system::volume::manager::test_support::TestVolumeRegistration;
+    use crate::file_system::volume::{InMemoryVolume, Volume};
+    let volume_id = "bridge-no-trash-delete-test";
+    let volume = Arc::new(InMemoryVolume::new("naspi"));
+    volume
+        .create_directory(std::path::Path::new("/public"))
+        .await
+        .expect("seed dir");
+    volume
+        .create_file(std::path::Path::new("/public/old.iso"), b"an old image")
+        .await
+        .expect("seed file");
+    let _registration = TestVolumeRegistration::install(volume_id, volume.clone() as Arc<dyn Volume>);
+    let dir = TestDir::new("bridge_no_trash_delete");
+    let (conn, reporting, group_id) = trash_group_on(&dir, volume_id);
+
+    let outcome = approve_as(&conn, reporting, group_id, Some(super::RunsAs::PermanentDelete)).await;
+
+    assert!(matches!(outcome, super::ApprovalOutcome::Started(_)), "{outcome:?}");
+    let gone = || {
+        tokio::task::block_in_place(|| {
+            tokio::runtime::Handle::current()
+                .block_on(volume.get_metadata(std::path::Path::new("/public/old.iso")))
+                .is_err()
+        })
+    };
+    crate::test_support::wait_until_async(std::time::Duration::from_secs(5), "the file is deleted", gone).await;
+}
+
+/// The fallback runs only when the review showed it AND the drive still calls for it, so a
+/// stale review can't turn a trash into a permanent delete nobody saw, and a drive that gained
+/// a Trash since takes the trash the verb asked for.
+#[test]
+fn a_fallback_runs_only_when_the_review_showed_it_and_the_drive_still_needs_it() {
+    use super::RunsAs::PermanentDelete;
+    assert_eq!(
+        super::approved_runs_as(Some(PermanentDelete), Some(PermanentDelete)),
+        Some(PermanentDelete)
+    );
+    assert_eq!(
+        super::approved_runs_as(None, Some(PermanentDelete)),
+        None,
+        "the review offered a trash: never delete for good"
+    );
+    assert_eq!(
+        super::approved_runs_as(Some(PermanentDelete), None),
+        None,
+        "the drive has a Trash now: trash, as the verb asked"
+    );
+    assert_eq!(super::approved_runs_as(None, None), None);
 }
 
 /// A suggestion about a saved share nobody has mounted is refused as NOT CONNECTED, the

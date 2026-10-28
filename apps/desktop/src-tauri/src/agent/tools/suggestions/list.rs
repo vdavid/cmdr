@@ -12,7 +12,7 @@ use tauri::{AppHandle, Manager, Runtime};
 
 use crate::agent::AgentDb;
 use crate::agent::store::proposals::{GroupSummary, ProposalSweep, ServerDraft, get_sweep, list_groups};
-use crate::agent::suggested_ops::facts::{RunBlocker, source_run_blocker};
+use crate::agent::suggested_ops::facts::{RunsAs, source_runs_as};
 use crate::agent::types::{ProposalStatus, ProposalVerb, Reversibility};
 use crate::mcp::{ToolError, ToolResult};
 use crate::search::format_timestamp;
@@ -73,11 +73,12 @@ pub(super) struct GroupSummaryOut {
     /// How far this group could be taken back if the user approves it: a fact the review
     /// dialog discloses, never a reason anything refuses the group.
     pub reversible: Reversibility,
-    /// What would stop this group running at all, read now from its source volume (`noTrash`:
-    /// a trash group on a volume with no Trash, where the OS refuses every item and deletes
-    /// nothing). The same answer the review dialog shows (`suggested_ops::facts`).
+    /// What this group would run as if the user approves it, when that isn't its verb, read now
+    /// from its source volume (`permanentDelete`: a trash group on a volume with no Trash, which
+    /// the user approves as a permanent delete). The same answer the review dialog shows
+    /// (`suggested_ops::facts`).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub run_blocker: Option<RunBlocker>,
+    pub runs_as: Option<RunsAs>,
     /// Ops in the live set. This is what would run.
     pub op_count: u64,
     /// Ops the user deselected. Their rows stay, so the record says what was offered.
@@ -246,7 +247,7 @@ pub(super) fn to_group_summary(summary: GroupSummary) -> GroupSummaryOut {
         total_op_count,
         server,
     } = summary;
-    let run_blocker = source_run_blocker(group.verb, &group.source_volume_id);
+    let runs_as = source_runs_as(group.verb, &group.source_volume_id);
     GroupSummaryOut {
         group_id: group.id,
         sweep_id: group.set_id,
@@ -256,7 +257,7 @@ pub(super) fn to_group_summary(summary: GroupSummary) -> GroupSummaryOut {
         rationale: group.rationale,
         source_volume_id: group.source_volume_id,
         destination: group.destination,
-        run_blocker,
+        runs_as,
         reversible: group.reversible,
         op_count: live_op_count,
         excluded_op_count: total_op_count.saturating_sub(live_op_count),

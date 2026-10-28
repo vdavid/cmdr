@@ -137,38 +137,41 @@ fn classify(answer: Result<cmdr_fs::entry::FileEntry, VolumeError>) -> SourceSta
     }
 }
 
-/// Why an approved group would refuse to run, known before the user approves it.
+/// What an approved group would run as when that differs from its verb, known before the user
+/// approves it.
 ///
-/// A fact to DISCLOSE before the click, never an execution-path refusal of our own: the engine
-/// already refuses these exactly as it would a user-started action, and the dialog's job is to
-/// say so up front instead of offering a button that can only fail.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, specta::Type)]
+/// A fact to DISCLOSE before the click. The review shows the action that would really run (its
+/// button, its undo note), and the approval names the fallback the user saw, so the bridge runs
+/// it only when that's what the user approved (`bridge::start_for`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
-pub enum RunBlocker {
-    /// A trash group whose source volume keeps no Trash (`Volume::has_trash`). The OS refuses
-    /// every item there (`TrashRefusalKind::NoTrashForVolume`) and NOTHING is deleted, so the
-    /// group can't run at all; it isn't "irreversible".
-    NoTrash,
+pub enum RunsAs {
+    /// A trash group whose source volume keeps no Trash (`Volume::has_trash`). Trashing there
+    /// can't work: the OS refuses every item (`TrashRefusalKind::NoTrashForVolume`) and nothing
+    /// happens. So an approval the user gave against a red "Delete" button deletes the files
+    /// permanently (David's call, 2026-10-28): it's a user-approved action, the same answer the
+    /// delete dialog gives a user on a drive with no Trash.
+    PermanentDelete,
 }
 
-/// What would stop a group of `verb` from running on `source`, or `None` when nothing known
-/// would. Pure, so the rule is pinned by tests; [`source_run_blocker`] is the registry lookup
-/// both the dialog and the agent's own read go through.
+/// What a group of `verb` on `source` would run as when that isn't its verb, or `None` when it
+/// runs as itself. Pure, so the rule is pinned by tests; [`source_runs_as`] is the registry
+/// lookup both the dialog and the agent's own read go through.
 ///
-/// An unregistered source (`None`) isn't a blocker here: approving it already refuses with
-/// its own typed reason (`SourceNotConnected`), which the dialog words.
-pub fn run_blocker(verb: ProposalVerb, source: Option<&dyn Volume>) -> Option<RunBlocker> {
+/// An unregistered source (`None`) runs as itself: approving it already refuses with its own
+/// typed reason (`SourceNotConnected`), which the dialog words.
+pub fn runs_as(verb: ProposalVerb, source: Option<&dyn Volume>) -> Option<RunsAs> {
     match (verb, source) {
-        (ProposalVerb::Trash, Some(volume)) if !volume.has_trash() => Some(RunBlocker::NoTrash),
+        (ProposalVerb::Trash, Some(volume)) if !volume.has_trash() => Some(RunsAs::PermanentDelete),
         _ => None,
     }
 }
 
-/// [`run_blocker`] for a stored group, against the volume registered under its source id.
+/// [`runs_as`] for a stored group, against the volume registered under its source id.
 /// No I/O: a registry lookup and a predicate, so every read can ask it per group.
-pub fn source_run_blocker(verb: ProposalVerb, source_volume_id: &str) -> Option<RunBlocker> {
+pub fn source_runs_as(verb: ProposalVerb, source_volume_id: &str) -> Option<RunsAs> {
     let source = crate::file_system::volume::manager::get_volume_manager().get(source_volume_id);
-    run_blocker(verb, source.as_deref())
+    runs_as(verb, source.as_deref())
 }
 
 #[cfg(test)]
@@ -209,21 +212,21 @@ mod tests {
         }
     }
 
-    /// Trash on a volume with no Trash can't run at all: the OS refuses each item and deletes
-    /// nothing (QA on an SMB Downloads cleanup, #747). Saying "can't be undone" there would be
-    /// wrong twice over.
+    /// Trash on a volume with no Trash can't trash anything: the OS refuses each item and
+    /// deletes nothing (QA on an SMB Downloads cleanup, #747). So the review offers it as the
+    /// permanent delete it would have to be.
     #[test]
-    fn a_trash_group_on_a_volume_without_a_trash_cant_run() {
+    fn a_trash_group_on_a_volume_without_a_trash_runs_as_a_permanent_delete() {
         let share = InMemoryVolume::new("naspi");
         let disk = LocalDisk(InMemoryVolume::new("Macintosh HD"));
 
         assert_eq!(
-            run_blocker(ProposalVerb::Trash, Some(&share)),
-            Some(RunBlocker::NoTrash)
+            runs_as(ProposalVerb::Trash, Some(&share)),
+            Some(RunsAs::PermanentDelete)
         );
-        assert_eq!(run_blocker(ProposalVerb::Trash, Some(&disk)), None);
+        assert_eq!(runs_as(ProposalVerb::Trash, Some(&disk)), None);
         assert_eq!(
-            run_blocker(ProposalVerb::Trash, None),
+            runs_as(ProposalVerb::Trash, None),
             None,
             "an unconnected source refuses with its own typed reason at approval"
         );
@@ -231,7 +234,7 @@ mod tests {
 
     /// Only trash depends on a Trash: every other verb runs the same on either volume.
     #[test]
-    fn other_verbs_have_no_trash_blocker() {
+    fn other_verbs_run_as_themselves() {
         let share = InMemoryVolume::new("naspi");
         for verb in [
             ProposalVerb::Move,
@@ -243,7 +246,7 @@ mod tests {
             ProposalVerb::AddServer,
             ProposalVerb::EditServer,
         ] {
-            assert_eq!(run_blocker(verb, Some(&share)), None, "{verb:?}");
+            assert_eq!(runs_as(verb, Some(&share)), None, "{verb:?}");
         }
     }
 

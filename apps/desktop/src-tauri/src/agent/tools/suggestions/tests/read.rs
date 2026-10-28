@@ -200,12 +200,12 @@ fn the_stores_sweep_reader_answers_for_a_sweep_and_for_no_sweep() {
     );
 }
 
-/// The agent reads the same "can't run" the user sees, from the same rule
-/// (`suggested_ops::facts::source_run_blocker`): a trash group on a volume with no Trash is
-/// one it should withdraw or turn into a move, never one it calls undoable (#747).
+/// The agent reads the same "runs as a permanent delete" the user sees, from the same rule
+/// (`suggested_ops::facts::source_runs_as`): a trash group on a volume with no Trash deletes
+/// for good once approved, so the agent never calls it undoable (#747).
 #[test]
-fn the_agent_hears_that_a_trash_group_on_a_volume_without_a_trash_cant_run() {
-    use crate::agent::suggested_ops::facts::RunBlocker;
+fn the_agent_hears_that_a_trash_group_on_a_volume_without_a_trash_runs_as_a_permanent_delete() {
+    use crate::agent::suggested_ops::facts::RunsAs;
     use crate::file_system::volume::InMemoryVolume;
     use crate::file_system::volume::manager::test_support::TestVolumeRegistration;
 
@@ -216,12 +216,12 @@ fn the_agent_hears_that_a_trash_group_on_a_volume_without_a_trash_cant_run() {
 
     let out = to_group_summary(on_share);
 
-    assert_eq!(out.run_blocker, Some(RunBlocker::NoTrash));
+    assert_eq!(out.runs_as, Some(RunsAs::PermanentDelete));
     assert_eq!(
         out.reversible,
         Reversibility::RestoreMove,
         "the verb's own promise, as the dialog shows it"
     );
     let wire = serde_json::to_value(&out).expect("serializes");
-    assert_eq!(wire["runBlocker"], "noTrash");
+    assert_eq!(wire["runsAs"], "permanentDelete");
 }

@@ -36,6 +36,7 @@ use super::super::store::proposals::{
     page_ops, record_acceptance,
 };
 use super::super::types::{OpStatus, ProposalVerb};
+use super::facts::{RunsAs, runs_as};
 use crate::file_system::volume::Volume;
 use crate::operations_host::{operations, refuse_not_installed};
 use cmdr_operation_log::types::Initiator;
@@ -113,6 +114,7 @@ pub async fn approve_and_execute(
     group_id: i64,
     shown_revision: i64,
     selection: &OpSelection,
+    shown_runs_as: Option<RunsAs>,
     now: i64,
     memory: Option<MemoryStore>,
 ) -> Result<ApprovalOutcome, AgentStoreError> {
@@ -162,7 +164,11 @@ pub async fn approve_and_execute(
         memory,
     ));
 
-    match start_for(engine, &claimed.group, sources, &ops, expected, sink).await {
+    // The fallback runs only when the review showed it AND the volume still calls for it: a
+    // drive that gained a Trash since takes the trash the verb asked for, and one that lost it
+    // under a review that offered a trash refuses each item, as a clicked trash there would.
+    let runs = approved_runs_as(shown_runs_as, runs_as(claimed.group.verb, Some(source_volume.as_ref())));
+    match start_for(engine, &claimed.group, runs, sources, &ops, expected, sink).await {
         Ok(operation) => {
             super::started(&claimed);
             // The thread says "running" now, and the decorator's settle rewrites that line.
@@ -291,7 +297,14 @@ fn live_ops(conn: &Connection, group_id: i64) -> Result<Vec<ProposalOp>, AgentSt
     }
 }
 
-/// Turn a claimed group into the executor call its verb describes.
+/// What an approved group runs as: the fallback the review showed, but only while the volume
+/// still calls for it (`now`). Pure, so the two ways a stale review can be wrong are pinned.
+fn approved_runs_as(shown: Option<RunsAs>, now: Option<RunsAs>) -> Option<RunsAs> {
+    if shown == now { now } else { None }
+}
+
+/// Turn a claimed group into the executor call its verb describes, or into the fallback the
+/// user approved instead (`runs`).
 ///
 /// Every cross-volume verb goes through the ROUTED entry points, the same ones the transfer
 /// commands use, so an approved transfer resolves its volumes and its destination path the
@@ -301,11 +314,27 @@ fn live_ops(conn: &Connection, group_id: i64) -> Result<Vec<ProposalOp>, AgentSt
 async fn start_for(
     engine: &Operations,
     group: &ProposalGroup,
+    runs: Option<RunsAs>,
     sources: Vec<PathBuf>,
     ops: &[ProposalOp],
     expected: ExpectedSources,
     events: Arc<dyn OperationEventSink>,
 ) -> Result<WriteOperationStartResult, ApprovalRefusal> {
+    // A trash group on a drive with no Trash, approved as the permanent delete the review
+    // offered: the same delete a user gets there, through the same entry point as `Delete`.
+    if runs == Some(RunsAs::PermanentDelete) {
+        return engine
+            .delete_files_start(
+                events,
+                sources,
+                WriteOperationConfig::default(),
+                Some(group.source_volume_id.clone()),
+                Initiator::Agent,
+                Some(expected),
+            )
+            .await
+            .map_err(ApprovalRefusal::Engine);
+    }
     match group.verb {
         ProposalVerb::Move => {
             let (path, volume) = target_of(group)?;

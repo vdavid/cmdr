@@ -54,7 +54,7 @@ fn each_refusal_keeps_the_recovery_it_implies() {
     ));
 }
 
-/// Every refusal to START reaches the dialog as a reason it can word, ❌ never a sentence
+/// Every refusal to START reaches the dialog as a reason it can word, â never a sentence
 /// it can only log (#184). An unconnected phone keeps the transfer dialogs' own variant, so
 /// the suggestion reads exactly as a clicked copy off that phone would.
 #[test]
@@ -125,7 +125,7 @@ fn facts(destination_state: DestinationState) -> GroupReadFacts {
         destination_state,
         source_volume_name: None,
         destination_volume_name: None,
-        run_blocker: None,
+        runs_as: None,
     }
 }
 
@@ -182,10 +182,10 @@ impl Volume for TrashKeeping {
     }
 }
 
-/// A trash group on a volume with no Trash says it can't run, before anyone approves it: the OS
-/// refuses every item and deletes nothing (#747). The undo promise stays the verb's own.
+/// A trash group on a volume with no Trash says it runs as a permanent delete, before anyone
+/// approves it: trashing there would refuse every item (#747). The undo promise stays the verb's own.
 #[test]
-fn a_trash_group_on_a_volume_without_a_trash_says_it_cant_run() {
+fn a_trash_group_on_a_volume_without_a_trash_says_it_runs_as_a_permanent_delete() {
     let mut trash = group(1, 1, ProposalVerb::Trash).group;
     trash.destination = None;
 
@@ -195,10 +195,10 @@ fn a_trash_group_on_a_volume_without_a_trash_says_it_cant_run() {
     trash.source_volume_id = "smb-saved".into();
     let on_unconnected = read_facts(&trash, volume_facts(), DestinationState::NotApplicable);
 
-    assert_eq!(on_root.run_blocker, None);
-    assert_eq!(on_share.run_blocker, Some(RunBlocker::NoTrash));
+    assert_eq!(on_root.runs_as, None);
+    assert_eq!(on_share.runs_as, Some(RunsAs::PermanentDelete));
     assert_eq!(
-        on_unconnected.run_blocker, None,
+        on_unconnected.runs_as, None,
         "approval refuses an unconnected source with its own typed reason"
     );
 }
@@ -231,7 +231,7 @@ fn the_destination_volume_is_named_even_before_anyone_connects_it() {
 
 /// A group the agent named on a share that isn't connected is stored on the live, signed-in
 /// sibling it was re-addressed onto, so the header names the volume the approval will WRITE
-/// to, ❌ never the one the agent asked for.
+/// to, â never the one the agent asked for.
 #[test]
 fn a_re_addressed_destination_is_named_as_the_volume_written_to() {
     use crate::location::resolve::{IndexSources, VolumeFact};
@@ -310,7 +310,7 @@ fn a_group_view_carries_every_fact_the_user_judges_it_by() {
             destination_state: DestinationState::WillBeCreated,
             source_volume_name: Some("Macintosh HD".into()),
             destination_volume_name: Some("Macintosh HD".into()),
-            run_blocker: Some(RunBlocker::NoTrash),
+            runs_as: Some(RunsAs::PermanentDelete),
         },
         None,
     );
@@ -336,7 +336,7 @@ fn a_group_view_carries_every_fact_the_user_judges_it_by() {
         Reversibility::RestoreMove,
         "the verb's own promise, from the store"
     );
-    assert_eq!(view.run_blocker, Some(RunBlocker::NoTrash));
+    assert_eq!(view.runs_as, Some(RunsAs::PermanentDelete));
     assert_eq!(view.destination_state, DestinationState::WillBeCreated);
     assert_eq!(view.live_op_count, 5);
     assert_eq!(view.total_op_count, 7, "the deselected rows are part of the record");
