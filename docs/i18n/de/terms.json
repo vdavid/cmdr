@@ -75,6 +75,12 @@
     "confidence": "high",
     "sources": "MS terminology (context → Kontext); askCmdr.cost.estimateTooltip"
   },
+  "ai-agent": {
+    "chosen": "Agent",
+    "forms": "masculine: der Agent; Here’s what the agent did → Das hat der Agent gemacht",
+    "confidence": "high",
+    "sources": "Microsoft terminology (agent → Agent); catalog (queryUi.ai.lead); macOS has no AI-agent sense"
+  },
   "ai-feature": {
     "chosen": "KI",
     "confidence": "high",

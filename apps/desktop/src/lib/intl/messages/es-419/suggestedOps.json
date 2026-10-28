@@ -1,11 +1,11 @@
 {
-  "suggestedOps.description": "La IA sugirió esto. No se ejecuta nada hasta que lo apruebes.",
+  "suggestedOps.description": "El agente sugirió las acciones de abajo. Aplícalas solo si estás de acuerdo.",
   "@suggestedOps.description": {
-    "sourceHash": "4bb754a"
+    "sourceHash": "ee854ef"
   },
-  "suggestedOps.loadFailed": "Cmdr no pudo leer las sugerencias. Cierra esto y vuelve a abrirlo.",
+  "suggestedOps.loadFailed": "Cmdr no pudo leer las sugerencias. Cierra este diálogo y vuelve a abrirlo.",
   "@suggestedOps.loadFailed": {
-    "sourceHash": "c9467ea"
+    "sourceHash": "f0c18b7"
   },
   "suggestedOps.destinationUnknown": "Cmdr no pudo comprobar la carpeta de destino",
   "@suggestedOps.destinationUnknown": {
@@ -78,5 +78,17 @@
   "suggestedOps.refusal.nameTaken.message": "Ya hay otro servidor guardado que se llama {name}, así que Cmdr no guardó nada.",
   "@suggestedOps.refusal.nameTaken.message": {
     "sourceHash": "82e8501"
+  },
+  "suggestedOps.action.trash": "Mover al basurero",
+  "@suggestedOps.action.trash": {
+    "sourceHash": "b9a042e"
+  },
+  "suggestedOps.noTrash": "Esta unidad no tiene basurero",
+  "@suggestedOps.noTrash": {
+    "sourceHash": "d7ca3fa"
+  },
+  "suggestedOps.noTrashTooltip": "La unidad donde están estos archivos no tiene basurero, así que, si lo apruebas, se eliminarán para siempre.",
+  "@suggestedOps.noTrashTooltip": {
+    "sourceHash": "91d3e36"
   }
 }

@@ -3,9 +3,9 @@
   "@suggestedOps.title": {
     "sourceHash": "1a1f5b9"
   },
-  "suggestedOps.description": "AI đã đề xuất những thao tác này. Không có gì chạy cho đến khi bạn phê duyệt.",
+  "suggestedOps.description": "Tác nhân đã đề xuất các thao tác bên dưới. Chỉ áp dụng nếu bạn đồng ý.",
   "@suggestedOps.description": {
-    "sourceHash": "73255a0"
+    "sourceHash": "4d98280"
   },
   "suggestedOps.approvalNoticeDismiss": "Không hiển thị ghi chú này nữa",
   "@suggestedOps.approvalNoticeDismiss": {
@@ -35,9 +35,9 @@
   "@suggestedOps.empty": {
     "sourceHash": "b93eccd"
   },
-  "suggestedOps.loadFailed": "Cmdr không đọc được các đề xuất. Hãy đóng lại và mở lần nữa.",
+  "suggestedOps.loadFailed": "Cmdr không đọc được các đề xuất. Hãy đóng hộp thoại này và mở lại.",
   "@suggestedOps.loadFailed": {
-    "sourceHash": "ef0da3e"
+    "sourceHash": "139450e"
   },
   "suggestedOps.agentReason": "Lý do:",
   "@suggestedOps.agentReason": {
@@ -54,6 +54,34 @@
   "suggestedOps.fileCount": "{countText} {count, plural, other {tệp}}",
   "@suggestedOps.fileCount": {
     "sourceHash": "76ef0a6"
+  },
+  "suggestedOps.action.move": "Di chuyển",
+  "@suggestedOps.action.move": {
+    "sourceHash": "6ecc3df"
+  },
+  "suggestedOps.action.copy": "Sao chép",
+  "@suggestedOps.action.copy": {
+    "sourceHash": "e21f935"
+  },
+  "suggestedOps.action.trash": "Chuyển vào thùng rác",
+  "@suggestedOps.action.trash": {
+    "sourceHash": "9adcdf3"
+  },
+  "suggestedOps.action.delete": "Xóa",
+  "@suggestedOps.action.delete": {
+    "sourceHash": "e2d0a54"
+  },
+  "suggestedOps.action.rename": "Đổi tên",
+  "@suggestedOps.action.rename": {
+    "sourceHash": "3064d79"
+  },
+  "suggestedOps.action.compress": "Nén",
+  "@suggestedOps.action.compress": {
+    "sourceHash": "033fc04"
+  },
+  "suggestedOps.action.extract": "Giải nén",
+  "@suggestedOps.action.extract": {
+    "sourceHash": "c15301c"
   },
   "suggestedOps.approve.move": "Di chuyển {countText} {count, plural, other {tệp}}",
   "@suggestedOps.approve.move": {
@@ -146,6 +174,14 @@
   "suggestedOps.irreversible.delete": "Không thể hoàn tác: các tệp bị xóa vĩnh viễn",
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
+  },
+  "suggestedOps.noTrash": "Ổ đĩa này không có thùng rác",
+  "@suggestedOps.noTrash": {
+    "sourceHash": "38a6adc"
+  },
+  "suggestedOps.noTrashTooltip": "Ổ đĩa chứa các tệp này không có thùng rác, nên khi bạn phê duyệt, các tệp sẽ bị xóa vĩnh viễn.",
+  "@suggestedOps.noTrashTooltip": {
+    "sourceHash": "4327cb2"
   },
   "suggestedOps.irreversible.overwrite": "Không thể hoàn tác: thao tác này thay thế một tệp nén hiện có",
   "@suggestedOps.irreversible.overwrite": {
@@ -394,5 +430,13 @@
   "suggestedOps.indicatorTooltip": "Có đề xuất từ AI đang chờ. Bấm để xem lại.",
   "@suggestedOps.indicatorTooltip": {
     "sourceHash": "4508b0b"
+  },
+  "suggestedOps.newNameTaken": "Tên đã được dùng",
+  "@suggestedOps.newNameTaken": {
+    "sourceHash": "58e9841"
+  },
+  "suggestedOps.newNameTakenTooltip": "Ở đó đã có thứ gì đó tên “{name}”.",
+  "@suggestedOps.newNameTakenTooltip": {
+    "sourceHash": "b18f96a"
   }
 }

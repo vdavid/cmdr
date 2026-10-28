@@ -41,6 +41,17 @@
     "confidence": "high",
     "sources": "catalog (six times in errors.json, onboarding.json); macOS Tài khoản Apple"
   },
+  "action": {
+    "chosen": "tác vụ",
+    "exceptions": {
+      "fileOperations.transferDialog.operationAria": "names the Copy / Move / Compress choice, a file operation, so thao tác",
+      "shortcuts.section.searchByNamePlaceholder": "a command’s name in the shortcut list → hành động, the Microsoft form the shortcut list already uses"
+    },
+    "proseAccept": ["thao tác"],
+    "forms": "Dialog actions → Tác vụ hộp thoại; file actions the AI suggested, in prose → các thao tác",
+    "confidence": "high",
+    "sources": "macOS Finder LocalizableMerged SP95/TL26 (Action → Tác vụ); catalog (queryUi.dialog.actionsAria; suggestedOps.description says thao tác, since those actions are file operations)"
+  },
   "activate": {
     "chosen": "kích hoạt",
     "confidence": "high",
@@ -64,6 +75,12 @@
     "chosen": "ngữ cảnh",
     "confidence": "high",
     "sources": "MS terminology (context → ngữ cảnh); askCmdr.cost.estimateTooltip"
+  },
+  "ai-agent": {
+    "chosen": "tác nhân",
+    "forms": "the agent → tác nhân",
+    "confidence": "high",
+    "sources": "Microsoft terminology (agent → tác nhân); catalog (queryUi.ai.lead); macOS has no AI-agent sense"
   },
   "ai-feature": {
     "accept": ["tính năng AI"],

@@ -36,6 +36,16 @@
     "forms": "the account you sign in with → le compte / votre compte",
     "sources": "catalog (errors.json six times, servers.sheet.identityLocked)"
   },
+  "action": {
+    "chosen": "action",
+    "exceptions": {
+      "settings.operationLog.intro": "undo actions → revenir en arrière: French names the rollback, not the actions undone"
+    },
+    "accept": ["actions"],
+    "forms": "Dialog actions → Actions de la boîte de dialogue; the actions below → les actions ci-dessous",
+    "confidence": "high",
+    "sources": "macOS Finder LocalizableMerged SP95/TL26 (Action → Action); catalog (queryUi.dialog.actionsAria)"
+  },
   "activate": {
     "accept": ["activation", "activée", "activé"],
     "chosen": "Activer",
@@ -68,6 +78,12 @@
     "chosen": "contexte",
     "confidence": "high",
     "sources": "MS terminology (context → contexte); askCmdr.cost.estimateTooltip"
+  },
+  "ai-agent": {
+    "chosen": "agent",
+    "forms": "masculine: l’agent",
+    "confidence": "high",
+    "sources": "Microsoft terminology (agent → agent); catalog (queryUi.ai.lead); macOS has no AI-agent sense"
   },
   "ai-feature": {
     "accept": ["l’IA", "d’IA", "une IA"],
@@ -2039,7 +2055,6 @@
       "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "French names what the button no longer does (le retour en arrière n'est plus possible) instead of undoing the move.",
       "operationLog.summary.trash": "English-sense: moving to the trash is placer dans la corbeille.",
       "suggestedOps.approve.trash": "English-sense: moving to the trash is placer dans la corbeille.",
-      "suggestedOps.blocked.noTrashTooltip": "English-sense: moving to the trash is placer dans la corbeille (les y placer).",
       "suggestedOps.reversible.moveBack": "Moving files back where they were is remettre à sa place, the put-back verb Finder uses (Remettre).",
       "queryUi.recent.popoverHint": "English-sense: the arrow keys move the highlight, so naviguer.",
       "transfer.trash": "English-sense: moving to the trash is placer dans la corbeille."

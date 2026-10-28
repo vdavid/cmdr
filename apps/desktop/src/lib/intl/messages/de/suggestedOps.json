@@ -3,9 +3,9 @@
   "@suggestedOps.title": {
     "sourceHash": "1a1f5b9"
   },
-  "suggestedOps.description": "Die KI hat das vorgeschlagen. Nichts läuft, bevor du zustimmst.",
+  "suggestedOps.description": "Der Agent hat die Aktionen unten vorgeschlagen. Wende sie nur an, wenn du einverstanden bist.",
   "@suggestedOps.description": {
-    "sourceHash": "73255a0"
+    "sourceHash": "4d98280"
   },
   "suggestedOps.approvalNoticeDismiss": "Nicht mehr anzeigen",
   "@suggestedOps.approvalNoticeDismiss": {
@@ -35,9 +35,9 @@
   "@suggestedOps.empty": {
     "sourceHash": "b93eccd"
   },
-  "suggestedOps.loadFailed": "Cmdr konnte die Vorschläge nicht lesen. Schließ das und öffne es noch mal.",
+  "suggestedOps.loadFailed": "Cmdr konnte die Vorschläge nicht lesen. Schließ diesen Dialog und öffne ihn noch mal.",
   "@suggestedOps.loadFailed": {
-    "sourceHash": "ef0da3e"
+    "sourceHash": "139450e"
   },
   "suggestedOps.agentReason": "Warum:",
   "@suggestedOps.agentReason": {
@@ -54,6 +54,34 @@
   "suggestedOps.fileCount": "{countText} {count, plural, one {Datei} other {Dateien}}",
   "@suggestedOps.fileCount": {
     "sourceHash": "76ef0a6"
+  },
+  "suggestedOps.action.move": "Bewegen",
+  "@suggestedOps.action.move": {
+    "sourceHash": "6ecc3df"
+  },
+  "suggestedOps.action.copy": "Kopieren",
+  "@suggestedOps.action.copy": {
+    "sourceHash": "e21f935"
+  },
+  "suggestedOps.action.trash": "In den Papierkorb bewegen",
+  "@suggestedOps.action.trash": {
+    "sourceHash": "9adcdf3"
+  },
+  "suggestedOps.action.delete": "Löschen",
+  "@suggestedOps.action.delete": {
+    "sourceHash": "e2d0a54"
+  },
+  "suggestedOps.action.rename": "Umbenennen",
+  "@suggestedOps.action.rename": {
+    "sourceHash": "3064d79"
+  },
+  "suggestedOps.action.compress": "Komprimieren",
+  "@suggestedOps.action.compress": {
+    "sourceHash": "033fc04"
+  },
+  "suggestedOps.action.extract": "Entpacken",
+  "@suggestedOps.action.extract": {
+    "sourceHash": "c15301c"
   },
   "suggestedOps.approve.move": "{countText} {count, plural, one {Datei} other {Dateien}} bewegen",
   "@suggestedOps.approve.move": {
@@ -146,6 +174,14 @@
   "suggestedOps.irreversible.delete": "Das lässt sich nicht widerrufen: Die Dateien werden endgültig gelöscht",
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
+  },
+  "suggestedOps.noTrash": "Dieses Laufwerk hat keinen Papierkorb",
+  "@suggestedOps.noTrash": {
+    "sourceHash": "38a6adc"
+  },
+  "suggestedOps.noTrashTooltip": "Das Laufwerk, auf dem diese Dateien liegen, hat keinen Papierkorb, deshalb werden sie nach deiner Zustimmung endgültig gelöscht.",
+  "@suggestedOps.noTrashTooltip": {
+    "sourceHash": "4327cb2"
   },
   "suggestedOps.irreversible.overwrite": "Das lässt sich nicht widerrufen: Ein vorhandenes Archiv wird ersetzt",
   "@suggestedOps.irreversible.overwrite": {
@@ -397,5 +433,13 @@
   "suggestedOps.indicatorTooltip": "KI-Vorschläge warten auf dich. Zum Ansehen klicken.",
   "@suggestedOps.indicatorTooltip": {
     "sourceHash": "4508b0b"
+  },
+  "suggestedOps.newNameTaken": "Name bereits belegt",
+  "@suggestedOps.newNameTaken": {
+    "sourceHash": "58e9841"
+  },
+  "suggestedOps.newNameTakenTooltip": "Dort gibt es schon etwas namens „{name}“.",
+  "@suggestedOps.newNameTakenTooltip": {
+    "sourceHash": "b18f96a"
   }
 }

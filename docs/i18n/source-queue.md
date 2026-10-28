@@ -151,3 +151,7 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
   Chinese 万 (10⁴), so zh and zh-Hant fall back to Latin K/M. Consider `Intl` compact notation instead. (zh, zh-Hant)
 - Proposed rule: a compact count suffix follows the CLDR short compact form, joined with a no-break space where CLDR
   spaces it (de `Tsd.`/`Mio.`, ru `тыс.`/`млн`, sv `tn`/`mn`, vi `N`/`Tr`). (all)
+- `suggestedOps.action.*`: the label renders in its own span before the AI's title, so verb-final languages can't
+  reorder (`Bewegen Alte Installer`). Add a `{action} {title}` frame key, or call it a chip label. (de, hu, nl)
+- `suggestedOps.newNameTaken` ("Name already taken") and `multiRename.status.targetExists` ("Name is taken") say one
+  thing in two Englishes; align them so `i18n-terms` keeps locales in step. (all)

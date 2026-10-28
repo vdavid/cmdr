@@ -3,9 +3,9 @@
   "@suggestedOps.title": {
     "sourceHash": "1a1f5b9"
   },
-  "suggestedOps.description": "L’IA a suggéré ceci. Rien ne s’exécute tant que vous ne l’avez pas approuvé.",
+  "suggestedOps.description": "L’agent a suggéré les actions ci-dessous. Appliquez-les uniquement si vous êtes d’accord.",
   "@suggestedOps.description": {
-    "sourceHash": "73255a0"
+    "sourceHash": "4d98280"
   },
   "suggestedOps.approvalNoticeDismiss": "Ne plus afficher",
   "@suggestedOps.approvalNoticeDismiss": {
@@ -35,9 +35,9 @@
   "@suggestedOps.empty": {
     "sourceHash": "b93eccd"
   },
-  "suggestedOps.loadFailed": "Cmdr n’a pas pu lire les suggestions. Fermez cette fenêtre et rouvrez-la.",
+  "suggestedOps.loadFailed": "Cmdr n’a pas pu lire les suggestions. Fermez cette boîte de dialogue et rouvrez-la.",
   "@suggestedOps.loadFailed": {
-    "sourceHash": "ef0da3e"
+    "sourceHash": "139450e"
   },
   "suggestedOps.agentReason": "Pourquoi :",
   "@suggestedOps.agentReason": {
@@ -54,6 +54,34 @@
   "suggestedOps.fileCount": "{countText} {count, plural, one {fichier} many {fichiers} other {fichiers}}",
   "@suggestedOps.fileCount": {
     "sourceHash": "76ef0a6"
+  },
+  "suggestedOps.action.move": "Déplacer",
+  "@suggestedOps.action.move": {
+    "sourceHash": "6ecc3df"
+  },
+  "suggestedOps.action.copy": "Copier",
+  "@suggestedOps.action.copy": {
+    "sourceHash": "e21f935"
+  },
+  "suggestedOps.action.trash": "Placer dans la corbeille",
+  "@suggestedOps.action.trash": {
+    "sourceHash": "9adcdf3"
+  },
+  "suggestedOps.action.delete": "Supprimer",
+  "@suggestedOps.action.delete": {
+    "sourceHash": "e2d0a54"
+  },
+  "suggestedOps.action.rename": "Renommer",
+  "@suggestedOps.action.rename": {
+    "sourceHash": "3064d79"
+  },
+  "suggestedOps.action.compress": "Compresser",
+  "@suggestedOps.action.compress": {
+    "sourceHash": "033fc04"
+  },
+  "suggestedOps.action.extract": "Extraire",
+  "@suggestedOps.action.extract": {
+    "sourceHash": "c15301c"
   },
   "suggestedOps.approve.move": "Déplacer {countText} {count, plural, one {fichier} many {fichiers} other {fichiers}}",
   "@suggestedOps.approve.move": {
@@ -147,6 +175,14 @@
   "suggestedOps.irreversible.delete": "Cette opération est irréversible : les fichiers sont supprimés définitivement",
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
+  },
+  "suggestedOps.noTrash": "Ce disque n’a pas de corbeille",
+  "@suggestedOps.noTrash": {
+    "sourceHash": "38a6adc"
+  },
+  "suggestedOps.noTrashTooltip": "Le disque qui contient ces fichiers n’a pas de corbeille, donc si vous approuvez, ils seront supprimés définitivement.",
+  "@suggestedOps.noTrashTooltip": {
+    "sourceHash": "4327cb2"
   },
   "suggestedOps.irreversible.overwrite": "Cette opération est irréversible : elle remplace une archive existante",
   "@suggestedOps.irreversible.overwrite": {
@@ -396,5 +432,13 @@
   "suggestedOps.indicatorTooltip": "Des suggestions de l’IA vous attendent. Cliquez pour les examiner.",
   "@suggestedOps.indicatorTooltip": {
     "sourceHash": "4508b0b"
+  },
+  "suggestedOps.newNameTaken": "Ce nom est déjà pris",
+  "@suggestedOps.newNameTaken": {
+    "sourceHash": "58e9841"
+  },
+  "suggestedOps.newNameTakenTooltip": "Un élément nommé « {name} » existe déjà à cet endroit.",
+  "@suggestedOps.newNameTakenTooltip": {
+    "sourceHash": "b18f96a"
   }
 }

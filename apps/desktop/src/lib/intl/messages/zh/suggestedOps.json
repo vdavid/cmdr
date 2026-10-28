@@ -3,9 +3,9 @@
   "@suggestedOps.title": {
     "sourceHash": "1a1f5b9"
   },
-  "suggestedOps.description": "这些是 AI 建议的操作。在你批准之前，什么都不会执行。",
+  "suggestedOps.description": "代理建议了下面这些操作。只有在你同意时才应用。",
   "@suggestedOps.description": {
-    "sourceHash": "73255a0"
+    "sourceHash": "4d98280"
   },
   "suggestedOps.approvalNoticeDismiss": "不再显示",
   "@suggestedOps.approvalNoticeDismiss": {
@@ -35,9 +35,9 @@
   "@suggestedOps.empty": {
     "sourceHash": "b93eccd"
   },
-  "suggestedOps.loadFailed": "Cmdr 无法读取这些建议。请关闭后重新打开。",
+  "suggestedOps.loadFailed": "Cmdr 无法读取这些建议。请关闭这个对话框后重新打开。",
   "@suggestedOps.loadFailed": {
-    "sourceHash": "ef0da3e"
+    "sourceHash": "139450e"
   },
   "suggestedOps.agentReason": "原因：",
   "@suggestedOps.agentReason": {
@@ -54,6 +54,34 @@
   "suggestedOps.fileCount": "{countText} 个{count, plural, other {文件}}",
   "@suggestedOps.fileCount": {
     "sourceHash": "76ef0a6"
+  },
+  "suggestedOps.action.move": "移动",
+  "@suggestedOps.action.move": {
+    "sourceHash": "6ecc3df"
+  },
+  "suggestedOps.action.copy": "拷贝",
+  "@suggestedOps.action.copy": {
+    "sourceHash": "e21f935"
+  },
+  "suggestedOps.action.trash": "移到废纸篓",
+  "@suggestedOps.action.trash": {
+    "sourceHash": "9adcdf3"
+  },
+  "suggestedOps.action.delete": "删除",
+  "@suggestedOps.action.delete": {
+    "sourceHash": "e2d0a54"
+  },
+  "suggestedOps.action.rename": "重命名",
+  "@suggestedOps.action.rename": {
+    "sourceHash": "3064d79"
+  },
+  "suggestedOps.action.compress": "压缩",
+  "@suggestedOps.action.compress": {
+    "sourceHash": "033fc04"
+  },
+  "suggestedOps.action.extract": "解压",
+  "@suggestedOps.action.extract": {
+    "sourceHash": "c15301c"
   },
   "suggestedOps.approve.move": "移动 {countText} 个{count, plural, other {文件}}",
   "@suggestedOps.approve.move": {
@@ -146,6 +174,14 @@
   "suggestedOps.irreversible.delete": "这项操作无法撤销：文件会被彻底删除",
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
+  },
+  "suggestedOps.noTrash": "这个驱动器没有废纸篓",
+  "@suggestedOps.noTrash": {
+    "sourceHash": "38a6adc"
+  },
+  "suggestedOps.noTrashTooltip": "这些文件所在的驱动器没有废纸篓，所以批准后会彻底删除它们。",
+  "@suggestedOps.noTrashTooltip": {
+    "sourceHash": "4327cb2"
   },
   "suggestedOps.irreversible.overwrite": "这项操作无法撤销：会替换已有的压缩文件",
   "@suggestedOps.irreversible.overwrite": {
@@ -394,5 +430,13 @@
   "suggestedOps.indicatorTooltip": "有 AI 建议在等你。点按即可复查。",
   "@suggestedOps.indicatorTooltip": {
     "sourceHash": "4508b0b"
+  },
+  "suggestedOps.newNameTaken": "名称已被占用",
+  "@suggestedOps.newNameTaken": {
+    "sourceHash": "58e9841"
+  },
+  "suggestedOps.newNameTakenTooltip": "那里已经有名为“{name}”的项目了。",
+  "@suggestedOps.newNameTakenTooltip": {
+    "sourceHash": "b18f96a"
   }
 }

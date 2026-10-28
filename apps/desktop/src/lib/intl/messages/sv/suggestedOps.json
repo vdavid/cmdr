@@ -3,9 +3,9 @@
   "@suggestedOps.title": {
     "sourceHash": "1a1f5b9"
   },
-  "suggestedOps.description": "AI:n föreslog det här. Inget körs förrän du godkänner det.",
+  "suggestedOps.description": "Agenten föreslog åtgärderna nedan. Använd dem bara om du håller med.",
   "@suggestedOps.description": {
-    "sourceHash": "73255a0"
+    "sourceHash": "4d98280"
   },
   "suggestedOps.approvalNoticeDismiss": "Visa inte det här igen",
   "@suggestedOps.approvalNoticeDismiss": {
@@ -35,9 +35,9 @@
   "@suggestedOps.empty": {
     "sourceHash": "b93eccd"
   },
-  "suggestedOps.loadFailed": "Cmdr kunde inte läsa förslagen. Stäng det här och öppna igen.",
+  "suggestedOps.loadFailed": "Cmdr kunde inte läsa förslagen. Stäng dialogen och öppna den igen.",
   "@suggestedOps.loadFailed": {
-    "sourceHash": "ef0da3e"
+    "sourceHash": "139450e"
   },
   "suggestedOps.agentReason": "Varför:",
   "@suggestedOps.agentReason": {
@@ -54,6 +54,34 @@
   "suggestedOps.fileCount": "{countText} {count, plural, one {fil} other {filer}}",
   "@suggestedOps.fileCount": {
     "sourceHash": "76ef0a6"
+  },
+  "suggestedOps.action.move": "Flytta",
+  "@suggestedOps.action.move": {
+    "sourceHash": "6ecc3df"
+  },
+  "suggestedOps.action.copy": "Kopiera",
+  "@suggestedOps.action.copy": {
+    "sourceHash": "e21f935"
+  },
+  "suggestedOps.action.trash": "Flytta till papperskorgen",
+  "@suggestedOps.action.trash": {
+    "sourceHash": "9adcdf3"
+  },
+  "suggestedOps.action.delete": "Radera",
+  "@suggestedOps.action.delete": {
+    "sourceHash": "e2d0a54"
+  },
+  "suggestedOps.action.rename": "Byt namn",
+  "@suggestedOps.action.rename": {
+    "sourceHash": "3064d79"
+  },
+  "suggestedOps.action.compress": "Komprimera",
+  "@suggestedOps.action.compress": {
+    "sourceHash": "033fc04"
+  },
+  "suggestedOps.action.extract": "Extrahera",
+  "@suggestedOps.action.extract": {
+    "sourceHash": "c15301c"
   },
   "suggestedOps.approve.move": "Flytta {countText} {count, plural, one {fil} other {filer}}",
   "@suggestedOps.approve.move": {
@@ -146,6 +174,14 @@
   "suggestedOps.irreversible.delete": "Det här går inte att ångra: filerna raderas permanent",
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
+  },
+  "suggestedOps.noTrash": "Den här enheten har ingen papperskorg",
+  "@suggestedOps.noTrash": {
+    "sourceHash": "38a6adc"
+  },
+  "suggestedOps.noTrashTooltip": "Enheten som filerna ligger på har ingen papperskorg, så om du godkänner det här raderas de permanent.",
+  "@suggestedOps.noTrashTooltip": {
+    "sourceHash": "4327cb2"
   },
   "suggestedOps.irreversible.overwrite": "Det här går inte att ångra: Cmdr skriver över ett befintligt arkiv",
   "@suggestedOps.irreversible.overwrite": {
@@ -396,5 +432,13 @@
   "suggestedOps.indicatorTooltip": "AI-förslag väntar. Klicka för att granska dem.",
   "@suggestedOps.indicatorTooltip": {
     "sourceHash": "4508b0b"
+  },
+  "suggestedOps.newNameTaken": "Namnet är redan taget",
+  "@suggestedOps.newNameTaken": {
+    "sourceHash": "58e9841"
+  },
+  "suggestedOps.newNameTakenTooltip": "Det finns redan något som heter ”{name}” där.",
+  "@suggestedOps.newNameTakenTooltip": {
+    "sourceHash": "b18f96a"
   }
 }

@@ -3,9 +3,9 @@
   "@suggestedOps.title": {
     "sourceHash": "1a1f5b9"
   },
-  "suggestedOps.description": "La IA ha sugerido esto. No se ejecuta nada hasta que lo apruebes.",
+  "suggestedOps.description": "El agente ha sugerido las acciones de abajo. Aplícalas solo si estás de acuerdo.",
   "@suggestedOps.description": {
-    "sourceHash": "73255a0"
+    "sourceHash": "4d98280"
   },
   "suggestedOps.approvalNoticeDismiss": "No volver a mostrar esto",
   "@suggestedOps.approvalNoticeDismiss": {
@@ -35,9 +35,9 @@
   "@suggestedOps.empty": {
     "sourceHash": "b93eccd"
   },
-  "suggestedOps.loadFailed": "Cmdr no ha podido leer las sugerencias. Cierra esto y vuelve a abrirlo.",
+  "suggestedOps.loadFailed": "Cmdr no ha podido leer las sugerencias. Cierra este diálogo y vuelve a abrirlo.",
   "@suggestedOps.loadFailed": {
-    "sourceHash": "ef0da3e"
+    "sourceHash": "139450e"
   },
   "suggestedOps.agentReason": "Por qué:",
   "@suggestedOps.agentReason": {
@@ -54,6 +54,34 @@
   "suggestedOps.fileCount": "{countText} {count, plural, one {archivo} many {archivos} other {archivos}}",
   "@suggestedOps.fileCount": {
     "sourceHash": "76ef0a6"
+  },
+  "suggestedOps.action.move": "Mover",
+  "@suggestedOps.action.move": {
+    "sourceHash": "6ecc3df"
+  },
+  "suggestedOps.action.copy": "Copiar",
+  "@suggestedOps.action.copy": {
+    "sourceHash": "e21f935"
+  },
+  "suggestedOps.action.trash": "Mover a la papelera",
+  "@suggestedOps.action.trash": {
+    "sourceHash": "9adcdf3"
+  },
+  "suggestedOps.action.delete": "Eliminar",
+  "@suggestedOps.action.delete": {
+    "sourceHash": "e2d0a54"
+  },
+  "suggestedOps.action.rename": "Renombrar",
+  "@suggestedOps.action.rename": {
+    "sourceHash": "3064d79"
+  },
+  "suggestedOps.action.compress": "Comprimir",
+  "@suggestedOps.action.compress": {
+    "sourceHash": "033fc04"
+  },
+  "suggestedOps.action.extract": "Extraer",
+  "@suggestedOps.action.extract": {
+    "sourceHash": "c15301c"
   },
   "suggestedOps.approve.move": "Mover {countText} {count, plural, one {archivo} many {archivos} other {archivos}}",
   "@suggestedOps.approve.move": {
@@ -146,6 +174,14 @@
   "suggestedOps.irreversible.delete": "Esto no se puede deshacer: los archivos se eliminan para siempre",
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
+  },
+  "suggestedOps.noTrash": "Esta unidad no tiene papelera",
+  "@suggestedOps.noTrash": {
+    "sourceHash": "38a6adc"
+  },
+  "suggestedOps.noTrashTooltip": "La unidad donde están estos archivos no tiene papelera, así que, si lo apruebas, se eliminarán para siempre.",
+  "@suggestedOps.noTrashTooltip": {
+    "sourceHash": "4327cb2"
   },
   "suggestedOps.irreversible.overwrite": "Esto no se puede deshacer: reemplaza un archivo comprimido existente",
   "@suggestedOps.irreversible.overwrite": {
@@ -395,5 +431,13 @@
   "suggestedOps.indicatorTooltip": "Hay sugerencias de la IA esperando. Haz clic para revisarlas.",
   "@suggestedOps.indicatorTooltip": {
     "sourceHash": "4508b0b"
+  },
+  "suggestedOps.newNameTaken": "El nombre ya está ocupado",
+  "@suggestedOps.newNameTaken": {
+    "sourceHash": "58e9841"
+  },
+  "suggestedOps.newNameTakenTooltip": "Ahí ya hay algo que se llama “{name}”.",
+  "@suggestedOps.newNameTakenTooltip": {
+    "sourceHash": "b18f96a"
   }
 }

@@ -37,6 +37,13 @@
     "sources": "catalog (servers.sheet.identityLocked, errors.json)",
     "decision": "Servidores"
   },
+  "action": {
+    "chosen": "acción",
+    "accept": ["acciones"],
+    "forms": "Dialog actions → Acciones del diálogo; the actions below → las acciones de abajo",
+    "confidence": "high",
+    "sources": "macOS Finder LocalizableMerged SP95/TL26 (Action → Acción); catalog (queryUi.dialog.actionsAria, onboarding.stepAi.comparisonIntro)"
+  },
   "activate": {
     "chosen": "Activar",
     "accept": ["activ", "actív"],
@@ -81,6 +88,12 @@
     "chosen": "contexto",
     "confidence": "high",
     "sources": "MS terminology (context → contexto); askCmdr.cost.estimateTooltip"
+  },
+  "ai-agent": {
+    "chosen": "agente",
+    "forms": "masculine: el agente",
+    "confidence": "high",
+    "sources": "Microsoft terminology (agent → agente); catalog (queryUi.ai.lead); macOS has no AI-agent sense"
   },
   "ai-feature": {
     "chosen": "funciones de IA",
@@ -191,8 +204,8 @@
   },
   "apply": {
     "chosen": "aplicar",
-    "accept": ["aplic"],
-    "forms": "a change that takes effect → aplicarse (es posible que el cambio sí se haya aplicado)",
+    "accept": ["aplic", "aplíc"],
+    "forms": "the tú imperative with an enclitic → Aplícalas; a change that takes effect → aplicarse (es posible que el cambio sí se haya aplicado)",
     "confidence": "high",
     "sources": "macOS es (Estos ajustes se aplicarán…)"
   },

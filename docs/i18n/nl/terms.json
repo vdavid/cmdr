@@ -40,6 +40,17 @@
     "forms": "het account (het-woord)",
     "sources": "catalog (errors.json five times, onboarding.json)"
   },
+  "action": {
+    "chosen": "actie",
+    "exceptions": {
+      "fileOperations.transferDialog.operationAria": "names the Copy / Move / Compress choice, a file operation, so bewerking"
+    },
+    "accept": ["acties"],
+    "forms": "Dialog actions → Dialoogacties; the actions below → de acties hieronder",
+    "confidence": "tentative",
+    "sources": "Microsoft terminology (action → actie); catalog (queryUi.dialog.actionsAria, onboarding.stepAi.comparisonIntro); macOS Finder SP95/TL26 says Taak, but that labels the toolbar Action menu button, a different concept",
+    "note": "macOS Taak names the toolbar’s Action menu; if Cmdr ever names that control, quote Taak there."
+  },
   "activate": {
     "accept": ["activeren", "geactiveerd", "activering"],
     "chosen": "Activeer",
@@ -78,6 +89,12 @@
     "chosen": "context",
     "confidence": "high",
     "sources": "MS terminology (context → context); askCmdr.cost.estimateTooltip"
+  },
+  "ai-agent": {
+    "chosen": "agent",
+    "forms": "de agent",
+    "confidence": "high",
+    "sources": "Microsoft terminology (agent → agent); catalog (queryUi.ai.lead); macOS has no AI-agent sense"
   },
   "ai-feature": {
     "accept": ["de AI", "AI-"],
@@ -217,7 +234,7 @@
     "sources": "macOS Finder (TL5 / GROUP_APPLICATIONS = Apps, Go menu 258.title, TL_HELP_APPS = Ga naar de map 'Apps')"
   },
   "apply": {
-    "accept": ["toepassen", "toegepast", "toe te passen", "past"],
+    "accept": ["toepassen", "toegepast", "toe te passen", "past", "Pas ze"],
     "chosen": "Pas toe",
     "confidence": "high",
     "exceptions": {

@@ -3,9 +3,9 @@
   "@suggestedOps.title": {
     "sourceHash": "1a1f5b9"
   },
-  "suggestedOps.description": "Ezeket az AI javasolta. Semmi nem indul el, amíg jóvá nem hagyod.",
+  "suggestedOps.description": "Az ágens javasolta az alábbi műveleteket. Csak akkor alkalmazd őket, ha egyetértesz velük.",
   "@suggestedOps.description": {
-    "sourceHash": "73255a0"
+    "sourceHash": "4d98280"
   },
   "suggestedOps.approvalNoticeDismiss": "Ne jelenjen meg többé",
   "@suggestedOps.approvalNoticeDismiss": {
@@ -35,9 +35,9 @@
   "@suggestedOps.empty": {
     "sourceHash": "b93eccd"
   },
-  "suggestedOps.loadFailed": "A Cmdr nem tudta beolvasni a javaslatokat. Zárd be, és nyisd meg újra.",
+  "suggestedOps.loadFailed": "A Cmdr nem tudta beolvasni a javaslatokat. Zárd be ezt az ablakot, és nyisd meg újra.",
   "@suggestedOps.loadFailed": {
-    "sourceHash": "ef0da3e"
+    "sourceHash": "139450e"
   },
   "suggestedOps.agentReason": "Miért:",
   "@suggestedOps.agentReason": {
@@ -54,6 +54,34 @@
   "suggestedOps.fileCount": "{countText} {count, plural, one {fájl} other {fájl}}",
   "@suggestedOps.fileCount": {
     "sourceHash": "76ef0a6"
+  },
+  "suggestedOps.action.move": "Áthelyezés",
+  "@suggestedOps.action.move": {
+    "sourceHash": "6ecc3df"
+  },
+  "suggestedOps.action.copy": "Másolás",
+  "@suggestedOps.action.copy": {
+    "sourceHash": "e21f935"
+  },
+  "suggestedOps.action.trash": "Áthelyezés a Kukába",
+  "@suggestedOps.action.trash": {
+    "sourceHash": "9adcdf3"
+  },
+  "suggestedOps.action.delete": "Törlés",
+  "@suggestedOps.action.delete": {
+    "sourceHash": "e2d0a54"
+  },
+  "suggestedOps.action.rename": "Átnevezés",
+  "@suggestedOps.action.rename": {
+    "sourceHash": "3064d79"
+  },
+  "suggestedOps.action.compress": "Tömörítés",
+  "@suggestedOps.action.compress": {
+    "sourceHash": "033fc04"
+  },
+  "suggestedOps.action.extract": "Kicsomagolás",
+  "@suggestedOps.action.extract": {
+    "sourceHash": "c15301c"
   },
   "suggestedOps.approve.move": "{countText} {count, plural, one {fájl} other {fájl}} áthelyezése",
   "@suggestedOps.approve.move": {
@@ -146,6 +174,14 @@
   "suggestedOps.irreversible.delete": "Ezt nem lehet visszavonni: a fájlok véglegesen törlődnek",
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
+  },
+  "suggestedOps.noTrash": "Ezen a meghajtón nincs Kuka",
+  "@suggestedOps.noTrash": {
+    "sourceHash": "38a6adc"
+  },
+  "suggestedOps.noTrashTooltip": "Azon a meghajtón, amelyen ezek a fájlok vannak, nincs Kuka, ezért ha jóváhagyod, véglegesen törlődnek.",
+  "@suggestedOps.noTrashTooltip": {
+    "sourceHash": "4327cb2"
   },
   "suggestedOps.irreversible.overwrite": "Ezt nem lehet visszavonni: lecserél egy meglévő archívumot",
   "@suggestedOps.irreversible.overwrite": {
@@ -396,5 +432,13 @@
   "suggestedOps.indicatorTooltip": "AI-javaslatok várnak rád. Kattints az áttekintésükhöz.",
   "@suggestedOps.indicatorTooltip": {
     "sourceHash": "4508b0b"
+  },
+  "suggestedOps.newNameTaken": "A név már foglalt",
+  "@suggestedOps.newNameTaken": {
+    "sourceHash": "58e9841"
+  },
+  "suggestedOps.newNameTakenTooltip": "Ott már van valami ezzel a névvel: „{name}”.",
+  "@suggestedOps.newNameTakenTooltip": {
+    "sourceHash": "b18f96a"
   }
 }

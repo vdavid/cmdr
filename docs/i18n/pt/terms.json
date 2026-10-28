@@ -34,6 +34,13 @@
     "confidence": "high",
     "sources": "MS terminology pt-BR (account → conta); shipped pt catalog"
   },
+  "action": {
+    "chosen": "ação",
+    "accept": ["ações"],
+    "forms": "the actions below → as ações abaixo",
+    "confidence": "high",
+    "sources": "macOS pt-BR Finder LocalizableMerged SP95/TL26 (Action → Ação); catalog (settings.operationLog.intro, onboarding.stepAi.comparisonIntro)"
+  },
   "activate": {
     "chosen": "Ativar",
     "accept": ["ativa", "ativá", "ativou"],
@@ -64,6 +71,12 @@
     "chosen": "contexto",
     "confidence": "high",
     "sources": "MS terminology (context → contexto); askCmdr.cost.estimateTooltip"
+  },
+  "ai-agent": {
+    "chosen": "agente",
+    "forms": "masculine: o agente",
+    "confidence": "high",
+    "sources": "Microsoft terminology (agent → agente); catalog (queryUi.ai.lead); macOS has no AI-agent sense"
   },
   "ai-feature": {
     "chosen": "recursos de IA",
@@ -162,7 +175,7 @@
   },
   "apply": {
     "chosen": "Aplicar",
-    "accept": ["aplica"],
+    "accept": ["aplica", "aplique"],
     "confidence": "high",
     "sources": "MS terminology pt-BR; shipped pt catalog"
   },

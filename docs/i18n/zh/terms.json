@@ -45,6 +45,13 @@
     "forms": "Apple's own pane is Apple 账户 (see apple-account); the server sign-in account is 账户",
     "sources": "macOS (Apple 账户); catalog errors.json"
   },
+  "action": {
+    "chosen": "操作",
+    "forms": "Dialog actions → 对话框操作; the actions below → 下面这些操作",
+    "confidence": "high",
+    "sources": "macOS zh Finder LocalizableMerged SP95/TL26 (Action → 操作); catalog (queryUi.dialog.actionsAria)",
+    "note": "Shares its Chinese word with operation (操作)."
+  },
   "activate": {
     "accept": ["停用"],
     "chosen": "激活",

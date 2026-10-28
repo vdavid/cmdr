@@ -44,6 +44,17 @@
     "forms": "ett konto, kontot; Apple Account → Apple-konto",
     "sources": "MS terminology (account → konto); catalog (servers.sheet.identityLocked, errors.json)"
   },
+  "action": {
+    "chosen": "åtgärd",
+    "exceptions": {
+      "onboarding.stepAi.comparisonIntro": "common actions → vanliga saker: everyday prose, no named control"
+    },
+    "accept": ["åtgärder"],
+    "forms": "Dialog actions → Dialogåtgärder; the actions below → åtgärderna nedan",
+    "confidence": "high",
+    "sources": "macOS Finder LocalizableMerged SP95/TL26 (Action → Åtgärd); catalog (queryUi.dialog.actionsAria)",
+    "note": "Shares its Swedish word with operation (åtgärd)."
+  },
   "activate": {
     "chosen": "aktivera",
     "confidence": "high",
@@ -95,6 +106,12 @@
     "chosen": "kontext",
     "confidence": "tentative",
     "sources": "MS terminology says sammanhang (the general sense); kontext is the AI-context word; askCmdr.cost.estimateTooltip"
+  },
+  "ai-agent": {
+    "chosen": "agent",
+    "forms": "definite agenten",
+    "confidence": "high",
+    "sources": "Microsoft terminology (agent → agent); catalog (queryUi.ai.lead); macOS has no AI-agent sense"
   },
   "ai-feature": {
     "accept": ["AI:n", "AI-"],
