@@ -851,7 +851,14 @@ what the live one did: the same `tools::line` functions over the stored argument
 
 ### One transport, keyed by conversation (`stream.rs`)
 
-Each wire event leaves as an `AskCmdrTurn { conversation_id, event }`, a `tauri_specta::Event`.
+Each wire event leaves as an `AskCmdrTurn { conversation_id, run, event }`, a `tauri_specta::Event`.
+`run` is the turn's `cancel::TurnRun` (its registration's generation, distinct per turn for the
+process's life), stamped by `forward_to_windows` and every direct emit of a rail send or wake;
+`None` only for a `ProposalDecided`, which no turn owns. The send command answers it beside the
+conversation id (`AskCmdrSendAccepted`). Both register BEFORE `Started`, so every event of a turn
+carries it. Why: the rail correlates a terminal with the turn it belongs to, so a late terminal of
+a turn it already ended can't end one sent since (`apps/desktop/src/lib/ask-cmdr/DETAILS.md` §
+Stop is local first).
 
 **Why not the per-invoke `Channel<T>` this used to be.** Three things it couldn't do, each now a
 test:

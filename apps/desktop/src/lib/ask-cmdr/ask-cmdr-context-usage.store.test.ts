@@ -49,12 +49,12 @@ const THREAD_ID = 1
  * which `ask-cmdr-send-before-id.test.ts` covers on its own. */
 function fire(event: AskCmdrStreamEvent, conversationId: number = askCmdrState.conversationId ?? THREAD_ID): void {
   askCmdrState.conversationId = conversationId
-  handleTurnEvent({ conversationId, event })
+  handleTurnEvent({ conversationId, run: null, event })
 }
 
 beforeEach(() => {
   sendMock.mockReset()
-  sendMock.mockImplementation((c) => Promise.resolve({ accepted: true, conversationId: c ?? THREAD_ID }))
+  sendMock.mockImplementation((c) => Promise.resolve({ accepted: true, conversationId: c ?? THREAD_ID, run: 1 }))
   getConversationMock.mockReset()
   newChat()
   resetTurnBookkeeping()

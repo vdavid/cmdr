@@ -77,10 +77,27 @@ interface PendingStop {
    * coming) takes its stop back. `null` for a turn this rail didn't send (a wake, or one a
    * reload adopted). */
   send: symbol | null
+  /** The stopped turn's run, which its terminal carries; `null` while the rail hadn't learned it
+   * (a turn adopted on reload that has said nothing since). */
+  run: number | null
 }
 
-/** Oldest first: each terminal settles the oldest stop of its thread. */
+/** Oldest first. A terminal settles the stop of its own run, else the oldest of its thread whose
+ * run is unknown. */
 let pendingStops: PendingStop[] = []
+
+/** The run of the turn the rail is streaming, `null` until it is known: from the send's answer,
+ * or from the first event of a turn the rail picked up. */
+let liveRun: number | null = null
+
+/**
+ * Runs whose turn the rail already settled before their terminal arrived (a Stop answered
+ * `live: 0`: the turn had ended, its terminal still on the way). That terminal is swallowed when
+ * it comes, so it can only end its own turn, never one sent since. Capped: a terminal that never
+ * comes (lost to a reload) leaves its run here.
+ */
+let settledRuns: number[] = []
+const SETTLED_RUNS_KEPT = 32
 
 type TypedOpener = Extract<RailMessage, { kind: 'user' }>
 
@@ -124,6 +141,8 @@ export function resetTurnBookkeeping(): void {
   stopsAwaitingId = []
   sendsAwaitingId = 0
   unclaimedEvents = []
+  liveRun = null
+  settledRuns = []
 }
 
 /**
@@ -134,6 +153,7 @@ export function resetTurnBookkeeping(): void {
 export function leaveChat(): void {
   activeSend = null
   typedOpener = null
+  liveRun = null
 }
 
 /**
@@ -147,6 +167,7 @@ export function leaveChat(): void {
  */
 export function resumeThread(conversationId: number, turnRunning: boolean): void {
   pendingStops = pendingStops.filter((stop) => stop.conversationId !== conversationId)
+  liveRun = null
   if (turnRunning) adoptLiveTurn()
 }
 
@@ -172,6 +193,7 @@ export function sendMessage(text: string): void {
   typedOpener = askCmdrState.messages.at(-1) as TypedOpener
   const send = Symbol('send')
   activeSend = send
+  liveRun = null
   askCmdrState.streaming = true
   resetProgressWatchdog()
   askCmdrState.attachments = []
@@ -185,7 +207,7 @@ export function sendMessage(text: string): void {
     (outcome) => {
       if (fresh) sendsAwaitingId--
       if (outcome.accepted) {
-        claimThread(send, outcome.conversationId, fresh)
+        claimThread(send, outcome, fresh)
       } else {
         withdrawStop(send)
         // Only the chat that sent it hears the refusal; one the user left shows nothing.
@@ -213,14 +235,22 @@ export function sendMessage(text: string): void {
  * The backend took `send` into thread `conversationId`. The chat it was typed in takes that
  * thread, unless the user has left it; a Stop pressed before the id was known sends its cancel
  * now; and a fresh chat's events that beat the answer are applied, in order, as if they had
- * arrived just now.
+ * arrived just now. The answer also names the turn's run, which its stop (if any) waits on.
  */
-function claimThread(send: symbol, conversationId: number, fresh: boolean): void {
-  if (activeSend === send) askCmdrState.conversationId = conversationId
+function claimThread(
+  send: symbol,
+  { conversationId, run }: { conversationId: number; run: number },
+  fresh: boolean,
+): void {
+  if (activeSend === send) {
+    askCmdrState.conversationId = conversationId
+    if (askCmdrState.streaming) liveRun = run
+  }
+  for (const pending of pendingStops) if (pending.send === send) pending.run = run
   const stop = stopsAwaitingId.find((candidate) => candidate.send === send)
   if (stop) {
     stopsAwaitingId = stopsAwaitingId.filter((candidate) => candidate !== stop)
-    pendingStops.push({ conversationId, ...stop })
+    pendingStops.push({ conversationId, ...stop, run })
     requestCancel(conversationId)
   }
   if (!fresh) return
@@ -253,16 +283,17 @@ export function stopStreaming(): void {
   const bubble = streamingAssistant()
   const conversationId = askCmdrState.conversationId
   if (conversationId !== null) {
-    pendingStops.push({ conversationId, bubble, opener: typedOpener, send: activeSend })
+    pendingStops.push({ conversationId, bubble, opener: typedOpener, send: activeSend, run: liveRun })
     requestCancel(conversationId)
   } else if (activeSend !== null) {
-    stopsAwaitingId.push({ bubble, opener: typedOpener, send: activeSend })
+    stopsAwaitingId.push({ bubble, opener: typedOpener, send: activeSend, run: liveRun })
   } else {
     // Streaming with no thread is a fresh chat's send, which always has a token: reaching this
     // means a turn the rail can't name, so it can't be stopped from here.
     log.warn('Stop found a running turn with no thread and no send to wait on')
   }
   typedOpener = null
+  liveRun = null
   if (bubble) {
     bubble.streaming = false
     bubble.thinking = false
@@ -285,7 +316,7 @@ export function stopStreaming(): void {
  * to claim it ({@link unclaimedEvents}).
  */
 export function handleTurnEvent(turn: AskCmdrTurn): void {
-  const { conversationId, event } = turn
+  const { conversationId, run, event } = turn
   if (event.type === 'proposalDecided') {
     // Not part of a turn, so it takes none of the turn rules below: it never waits for a fresh
     // chat's id, and a stopped thread still shows it.
@@ -293,15 +324,20 @@ export function handleTurnEvent(turn: AskCmdrTurn): void {
     return
   }
   // Wherever the rail is now: a stop left behind on another thread still needs its terminal.
-  if (settlePendingStop(conversationId, event)) return
+  if (settlePendingStop(conversationId, run, event)) return
   if (askCmdrState.conversationId === null) {
     if (sendsAwaitingId > 0) unclaimedEvents.push(turn)
     return
   }
   if (conversationId !== askCmdrState.conversationId) return
   const stop = pendingStops.find((candidate) => candidate.conversationId === conversationId)
-  if (stop) applyToStoppedTurn(stop, event)
-  else applyStreamEvent(event)
+  if (stop) {
+    applyToStoppedTurn(stop, event)
+    return
+  }
+  // A turn picked up mid-way (a reload, a wake) names its run with its first event.
+  if (liveRun === null) liveRun = run
+  applyStreamEvent(event)
 }
 
 /**
@@ -310,13 +346,16 @@ export function handleTurnEvent(turn: AskCmdrTurn): void {
  * would read it, or it would take the thread's NEXT turn's terminal for its own (a watchdog
  * timeout over a turn that had already ended, or one that died). A Stop that also tripped a turn
  * nobody here waits for (a send queued behind a wake) owes one more terminal per such turn; a
- * placeholder takes each, or it would end a turn sent since.
+ * placeholder takes each, or it would end a turn sent since. A terminal the backend emitted just
+ * before the Stop can still arrive after a `live: 0`: its run goes to {@link settledRuns}, so it
+ * ends nothing when it comes.
  */
 function matchStopsToTerminals(conversationId: number, reach: CancelOutcomeView): void {
   if (reach.live === 0) {
     const settled = pendingStops.filter((stop) => stop.conversationId === conversationId)
     pendingStops = pendingStops.filter((stop) => stop.conversationId !== conversationId)
-    for (const { bubble } of settled) {
+    for (const { bubble, run } of settled) {
+      if (run !== null) settledRuns = [...settledRuns, run].slice(-SETTLED_RUNS_KEPT)
       if (!bubble) continue
       settleAssistant(bubble)
       settleTurnGroups(bubble)
@@ -324,8 +363,16 @@ function matchStopsToTerminals(conversationId: number, reach: CancelOutcomeView)
     return
   }
   for (let extra = 1; extra < reach.tripped; extra++) {
-    pendingStops.push({ conversationId, bubble: null, opener: null, send: null })
+    pendingStops.push({ conversationId, bubble: null, opener: null, send: null, run: null })
   }
+}
+
+/** Which pending stop a terminal of `run` in `conversationId` settles, or -1 for none. */
+function findStopFor(conversationId: number, run: number | null): number {
+  const ofThread = (stop: PendingStop) => stop.conversationId === conversationId
+  if (run === null) return pendingStops.findIndex(ofThread)
+  const own = pendingStops.findIndex((stop) => ofThread(stop) && stop.run === run)
+  return own !== -1 ? own : pendingStops.findIndex((stop) => ofThread(stop) && stop.run === null)
 }
 
 /** A send the backend refused ran no turn, so no terminal will come for a stop the user gave it. */
@@ -340,14 +387,22 @@ function withdrawStop(send: symbol): void {
  * watchdog, the review): those ended at the click, and a send since may own them. A `discarded`
  * takes the thread, stops and all, and goes on to the reducer. Returns whether it consumed the
  * event.
+ *
+ * A terminal ends only its own turn: one of a run the rail already settled is swallowed, a stop
+ * waiting on its run takes it, and only then the oldest stop of the thread whose run is unknown.
+ * An event with no run (a caller that names none) takes the oldest stop of its thread.
  */
-function settlePendingStop(conversationId: number, event: TurnEvent): boolean {
+function settlePendingStop(conversationId: number, run: number | null, event: TurnEvent): boolean {
   if (event.type === 'discarded') {
     pendingStops = pendingStops.filter((stop) => stop.conversationId !== conversationId)
     return false
   }
   if (event.type !== 'done' && event.type !== 'failed' && event.type !== 'stopped') return false
-  const at = pendingStops.findIndex((stop) => stop.conversationId === conversationId)
+  if (run !== null && settledRuns.includes(run)) {
+    settledRuns = settledRuns.filter((settled) => settled !== run)
+    return true
+  }
+  const at = findStopFor(conversationId, run)
   if (at === -1) return false
   const [{ bubble }] = pendingStops.splice(at, 1)
   if (!bubble) return true
@@ -704,6 +759,7 @@ function applyFailed(
  * watchdog calls it a timeout.
  */
 function endTurn(stats: TurnStats | null): void {
+  liveRun = null
   const assistant = streamingAssistant()
   if (assistant) {
     assistant.stats = stats

@@ -3605,7 +3605,7 @@ export const commands = {
     attachments: AttachmentRef[],
     deniedNames: string[],
   ) =>
-    typedError<number, AskCmdrSendRefusal>(
+    typedError<AskCmdrSendAccepted, AskCmdrSendRefusal>(
       __TAURI_INVOKE('ask_cmdr_send_message', { conversationId, text, attachments, deniedNames }),
     ),
   /**
@@ -3824,8 +3824,9 @@ export const commands = {
    *  Tell the gates that `askCmdr.enabled` moved. No value crosses: the send gate reads the
    *  setting fresh per send, but the wake loop's readiness is a cached answer
    *  (`agent::wake::snapshot`), so without this push a switched-off Ask Cmdr would keep storing
-   *  (and a switched-on one keep refusing) until something else refreshed it. Called from
-   *  `settings-applier.ts`.
+   *  (and a switched-on one keep refusing) until something else refreshed it. Switched off, it also
+   *  stops every running turn: the rail's gate replaces the composer, Stop button and all. Called
+   *  from `settings-applier.ts`.
    */
   askCmdrEnabledChanged: () => __TAURI_INVOKE<void>('ask_cmdr_enabled_changed'),
   /**
@@ -6366,6 +6367,16 @@ export type ArchivePromptMode =
 export type ArchiveSubkind = 'compress' | 'edit' | 'extract'
 
 /**
+ *  What a send the backend took answers: the thread it runs in, and the turn's run, which every
+ *  event of that turn carries (`stream::AskCmdrTurn::run`). The rail keys its Stop on the run, so a
+ *  late terminal of a turn it already ended can't end the one it sent since.
+ */
+export type AskCmdrSendAccepted = {
+  conversationId: number
+  run: number
+}
+
+/**
  *  Why a send never started.
  *
  *  Returned rather than streamed, because every one of these is decided before a turn
@@ -6540,6 +6551,12 @@ export type AskCmdrTurn = {
    *  event; one that is applies it, whenever it started listening.
    */
   conversationId: number
+  /**
+   *  The turn this event belongs to (`cancel::TurnRun`), so a terminal can only end its own
+   *  turn: a late one of a turn the rail already ended would otherwise end a turn sent since.
+   *  `None` for an event no turn owns (a suggestion's decision).
+   */
+  run: number | null
   event: AskCmdrStreamEvent
 }
 

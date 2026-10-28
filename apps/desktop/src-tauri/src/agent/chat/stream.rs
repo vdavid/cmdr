@@ -49,6 +49,10 @@ pub struct AskCmdrTurn {
     /// The thread this event belongs to. A subscriber not showing this thread ignores the
     /// event; one that is applies it, whenever it started listening.
     pub conversation_id: i64,
+    /// The turn this event belongs to (`cancel::TurnRun`), so a terminal can only end its own
+    /// turn: a late one of a turn the rail already ended would otherwise end a turn sent since.
+    /// `None` for an event no turn owns (a suggestion's decision).
+    pub run: Option<crate::agent::chat::cancel::TurnRun>,
     pub event: AskCmdrStreamEvent,
 }
 
@@ -396,8 +400,16 @@ pub fn init_turn_event_emitter(app: &tauri::AppHandle) {
 ///
 /// Fire-and-forget on purpose: nobody listening is the ordinary case (the rail is closed, or
 /// the turn is a wake nobody has opened yet), and the turn persists itself either way.
-pub fn emit_turn_event(conversation_id: i64, event: AskCmdrStreamEvent) {
-    let turn = AskCmdrTurn { conversation_id, event };
+pub fn emit_turn_event(
+    conversation_id: i64,
+    run: Option<crate::agent::chat::cancel::TurnRun>,
+    event: AskCmdrStreamEvent,
+) {
+    let turn = AskCmdrTurn {
+        conversation_id,
+        run,
+        event,
+    };
     #[cfg(test)]
     EMITTED_TURNS.with(|emitted| emitted.borrow_mut().push(turn.clone()));
     let Some(app) = TURN_APP.get() else {
@@ -434,10 +446,11 @@ pub(crate) fn take_emitted_turns() -> Vec<AskCmdrTurn> {
 /// `agent/wake/watch.rs` counts the tool CALLS instead.
 pub async fn forward_to_windows(
     conversation_id: i64,
+    run: crate::agent::chat::cancel::TurnRun,
     events: &mut tokio::sync::mpsc::UnboundedReceiver<AgentChatEvent>,
 ) {
     while let Some(event) = events.recv().await {
-        emit_turn_event(conversation_id, to_wire_event(event));
+        emit_turn_event(conversation_id, Some(run), to_wire_event(event));
     }
 }
 

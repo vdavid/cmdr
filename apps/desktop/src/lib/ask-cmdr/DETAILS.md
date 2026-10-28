@@ -166,8 +166,13 @@ Stop reached (`CancelOutcomeView`: `tripped`, the turns it newly stopped; `live`
 - `tripped` above one: the Stop also reached a turn nobody here waits for (a send queued behind a wake), so a
   placeholder stop (no bubble) takes each extra terminal, which would otherwise end a turn sent since.
 - A turn thread that panics still emits a terminal (`Failed`, `unfinishedReply`) before it unregisters.
-- Residual race: a terminal emitted just before the Stop can reach the rail AFTER the `live: 0` answer; it then goes to
-  the reducer as a turn stopped from elsewhere.
+- **A terminal ends only its own turn.** Every event carries its turn's `run` (`AskCmdrTurn.run`, the backend's cancel
+  registration generation), and the send answers it too, so the rail knows the run of the turn it streams (`liveRun`:
+  from the send's answer, or a picked-up turn's first event) and each stop holds its own. A terminal settles the stop of
+  its run, else the oldest of its thread whose run is unknown. A terminal emitted just before the Stop can reach the
+  rail AFTER the `live: 0` answer: that stop's run goes to `settledRuns`, and its terminal is swallowed on arrival.
+  Regression anchor: it used to end whatever turn the user had sent since (`ask-cmdr-stop-and-reload.test.ts`, "a
+  stopped turn's late terminal"). Residual: a turn a reload adopted that said nothing before its Stop has no known run.
 
 A "load earlier" that joins a stopped bubble with its older half builds a new object, so the stop follows it
 (`followJoinedBubble`).

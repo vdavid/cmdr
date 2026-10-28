@@ -108,7 +108,8 @@ export type RenameProposalRow = RenameProposalRowSnapshot
 
 /** What a send answered: the thread it landed in, or why it never started. */
 export type AskCmdrSendOutcome =
-  | { accepted: true; conversationId: number }
+  /** `run` is the turn's, which every event of it carries (`AskCmdrTurn.run`). */
+  | { accepted: true; conversationId: number; run: number }
   /** Decided before the turn existed (Ask Cmdr off, cloud AI not allowed, no slot, a window
    * too small), so it can't arrive as a stream event — some of these happen before there IS a
    * thread to key one on. */
@@ -133,7 +134,7 @@ export async function sendAskCmdrMessage(
   if (res.status === 'error') {
     return { accepted: false, kind: res.error.kind, detail: res.error.detail, managed: res.error.managed }
   }
-  return { accepted: true, conversationId: res.data }
+  return { accepted: true, conversationId: res.data.conversationId, run: res.data.run }
 }
 
 /**

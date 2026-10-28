@@ -40,7 +40,7 @@ use super::{
 };
 use crate::agent::AgentDb;
 use crate::agent::chat::budget;
-use crate::agent::chat::cancel;
+use crate::agent::chat::cancel::{self, TurnRun};
 use crate::agent::chat::runtime::{AgentChatEvent, ChatRuntime, RecordedSlotEvent};
 use crate::agent::chat::session::chat_memory_tokens as resolve_chat_memory_tokens;
 use crate::agent::chat::session::{
@@ -183,6 +183,16 @@ fn slot_event_view(recorded: RecordedSlotEvent) -> MessageView {
 
 // ── Commands ───────────────────────────────────────────────────────────────────
 
+/// What a send the backend took answers: the thread it runs in, and the turn's run, which every
+/// event of that turn carries (`stream::AskCmdrTurn::run`). The rail keys its Stop on the run, so a
+/// late terminal of a turn it already ended can't end the one it sent since.
+#[derive(Debug, Clone, Copy, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct AskCmdrSendAccepted {
+    pub conversation_id: i64,
+    pub run: TurnRun,
+}
+
 /// Send one user message to a thread and stream the answer. `conversation_id` is `None`
 /// to start a fresh thread; the resolved id comes back here, and every event the turn
 /// produces rides `agent::chat::stream` keyed on it.
@@ -206,7 +216,7 @@ pub async fn ask_cmdr_send_message(
     // first. Names only: a reason would be model-authored, and the next batch would inherit
     // the rationalization instead of the fact.
     denied_names: Vec<String>,
-) -> Result<i64, AskCmdrSendRefusal> {
+) -> Result<AskCmdrSendAccepted, AskCmdrSendRefusal> {
     let Some(db_path) = app.try_state::<AgentDb>().map(|db| db.db_path().to_path_buf()) else {
         return Err(AskCmdrSendRefusal::of(AgentErrorKindView::NotConfigured));
     };
@@ -256,27 +266,29 @@ pub async fn ask_cmdr_send_message(
             }
         },
     };
-    emit_turn_event(conversation_id, AskCmdrStreamEvent::Started);
+    // Register the cancel token before spawning so a stop that arrives immediately hits it, and
+    // before `Started` so every event of the turn carries its run. The registration moves onto the
+    // turn's thread and unregisters when it drops there, on every exit.
+    let cancel = cancel::register_cancel(conversation_id);
+    let run = cancel.run();
+    emit_turn_event(conversation_id, Some(run), AskCmdrStreamEvent::Started);
 
     // Now that the conversation id is known, build the LLM so the real backend logs under
     // this thread's `llm-logs/thread-{id}/` directory.
     let llm = llm_kind.into_llm(conversation_id);
 
-    // Register the cancel token before spawning so a stop that arrives immediately hits it. The
-    // registration moves onto the turn's thread and unregisters when it drops there, on every exit.
-    let cancel = cancel::register_cancel(conversation_id);
-
     std::thread::spawn(move || {
         // Locals drop in reverse: a panic emits the turn's terminal BEFORE it unregisters, so a
         // Stop that reached it still gets the terminal it waits for.
         let registration = cancel;
-        let _terminal_on_panic = TerminalOnPanic { conversation_id };
+        let _terminal_on_panic = TerminalOnPanic { conversation_id, run };
         let runtime = match tokio::runtime::Builder::new_current_thread().enable_all().build() {
             Ok(rt) => rt,
             Err(e) => {
                 crate::log_error!(target: LOG_TARGET, "building the chat turn runtime failed: {e}");
                 emit_turn_event(
                     conversation_id,
+                    Some(run),
                     AskCmdrStreamEvent::Failed {
                         kind: AgentErrorKindView::Provider,
                         detail: Some(e.to_string()),
@@ -296,6 +308,7 @@ pub async fn ask_cmdr_send_message(
             chat_memory_tokens.unwrap_or(prompt_budget),
             call,
             conversation_id,
+            run,
             text,
             attachments,
             denied_names,
@@ -303,7 +316,7 @@ pub async fn ask_cmdr_send_message(
         ));
     });
 
-    Ok(conversation_id)
+    Ok(AskCmdrSendAccepted { conversation_id, run })
 }
 
 /// Every turn ends with exactly one terminal event, a panicking one included: `run_turn` emits
@@ -311,6 +324,7 @@ pub async fn ask_cmdr_send_message(
 /// rail would wait forever on a Stop it sent, and take the thread's NEXT turn for its terminal.
 struct TerminalOnPanic {
     conversation_id: i64,
+    run: TurnRun,
 }
 
 impl Drop for TerminalOnPanic {
@@ -318,6 +332,7 @@ impl Drop for TerminalOnPanic {
         if std::thread::panicking() {
             emit_turn_event(
                 self.conversation_id,
+                Some(self.run),
                 AskCmdrStreamEvent::Failed {
                     kind: AgentErrorKindView::UnfinishedReply,
                     detail: None,
@@ -350,6 +365,7 @@ async fn drive_turn(
     // The same, for how hard the model thinks and the reply's ceiling (`session::resolve_call_settings`).
     call: crate::agent::llm::CallSettings,
     conversation_id: i64,
+    run: TurnRun,
     text: String,
     attachments: Vec<AttachmentRef>,
     denied_names: Vec<String>,
@@ -367,6 +383,7 @@ async fn drive_turn(
     let Some(runtime) = app.try_state::<ChatRuntime>() else {
         emit_turn_event(
             conversation_id,
+            Some(run),
             AskCmdrStreamEvent::Failed {
                 kind: AgentErrorKindView::Provider,
                 detail: None,
@@ -382,7 +399,7 @@ async fn drive_turn(
     // went away" exit: a reload takes the webview, not the thread, and the whole point of a
     // conversation-keyed event is that the reloaded rail picks the same stream back up.
     let (tx, mut rx) = unbounded_channel::<AgentChatEvent>();
-    let forward = forward_to_windows(conversation_id, &mut rx);
+    let forward = forward_to_windows(conversation_id, run, &mut rx);
     let drive = runtime.send_message(
         &app,
         llm.as_ref(),
@@ -403,6 +420,7 @@ async fn drive_turn(
         log::warn!(target: LOG_TARGET, "chat turn failed: {e}");
         emit_turn_event(
             conversation_id,
+            Some(run),
             AskCmdrStreamEvent::Failed {
                 kind: AgentErrorKindView::Provider,
                 detail: Some(e.to_string()),

@@ -164,12 +164,20 @@ pub(super) fn spawn(app: AppHandle, slot: ResolvedSlot, turn: BackgroundTurn) {
 async fn run(app: AppHandle, slot: ResolvedSlot, turn: &BackgroundTurn) -> WakeCompletion {
     let conversation_id = turn.conversation_id();
     let (tier, folders) = turn.scale();
+    // ⚠️ A real token, registered under this thread's id. A background turn is a multi-second
+    // action spending the user's money, and `docs/design-principles.md` requires those be
+    // cancelable; the status corner's stop button is `ask_cmdr_cancel` with this id, the same
+    // call the rail's stop makes. The registration clears its entry on every exit below. First,
+    // so every event of the turn, `Started` included, carries its run.
+    let cancel_registration = cancel::register_cancel(conversation_id);
+    let cancel_token = cancel_registration.token();
+    let run_id = cancel_registration.run();
     // A wake's thread was created moments ago, so say so before anything slow: this is what puts
     // it in the session list as it is created rather than on next load. A follow-up speaks in a
     // thread that has been there all along, so announcing one would claim a thread was created
     // that wasn't.
     if matches!(turn, BackgroundTurn::Wake(_)) {
-        emit_turn_event(conversation_id, AskCmdrStreamEvent::Started);
+        emit_turn_event(conversation_id, Some(run_id), AskCmdrStreamEvent::Started);
     }
 
     // ⚠️ Captured exactly as the rail captures it. With no main window (a routine-launched app
@@ -201,13 +209,6 @@ async fn run(app: AppHandle, slot: ResolvedSlot, turn: &BackgroundTurn) -> WakeC
     };
     let dispatcher = AppHandleDispatcher::new(app.clone(), conversation_id);
 
-    // ⚠️ A real token, registered under this thread's id. A background turn is a multi-second
-    // action spending the user's money, and `docs/design-principles.md` requires those be
-    // cancelable; the status corner's stop button is `ask_cmdr_cancel` with this id, the same
-    // call the rail's stop makes. The registration clears its entry on every exit below.
-    let cancel_registration = cancel::register_cancel(conversation_id);
-    let cancel_token = cancel_registration.token();
-
     let Some(runtime) = app.try_state::<ChatRuntime>() else {
         log::warn!(target: LOG_TARGET, "the chat runtime is not registered; the turn has nowhere to run");
         record_outcome(turn.token("unavailable"), tier, folders, 0);
@@ -218,7 +219,7 @@ async fn run(app: AppHandle, slot: ResolvedSlot, turn: &BackgroundTurn) -> WakeC
     // onto the SAME conversation-keyed stream a rail send uses. That is what makes its thread
     // readable while it is still being written.
     let (sink, mut events) = unbounded_channel::<AgentChatEvent>();
-    let draining = forward_to_windows(conversation_id, &mut events);
+    let draining = forward_to_windows(conversation_id, run_id, &mut events);
     // The watch wraps this turn's dispatcher and nothing else's, and answers both questions the
     // turn's own result can't: whether it said there was nothing to raise (a pure read whose
     // handler changes nothing, so acting on it belongs here rather than in the tool), and
@@ -255,7 +256,7 @@ async fn run(app: AppHandle, slot: ResolvedSlot, turn: &BackgroundTurn) -> WakeC
             }
             // ⚠️ Anything subscribed to this conversation is now watching a thread that no
             // longer exists, and re-reading it can't tell them so. Say it.
-            emit_turn_event(conversation_id, AskCmdrStreamEvent::Discarded);
+            emit_turn_event(conversation_id, Some(run_id), AskCmdrStreamEvent::Discarded);
         }
         record_outcome(turn.token("quiet"), tier, folders, proposals);
         return turn.completion();

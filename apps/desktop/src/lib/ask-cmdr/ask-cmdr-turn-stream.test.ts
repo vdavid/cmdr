@@ -66,7 +66,7 @@ const OPEN_THREAD = 7
 const OTHER_THREAD = 99
 
 function fire(conversationId: number, event: AskCmdrStreamEvent): void {
-  routeTurnEvent({ conversationId, event })
+  routeTurnEvent({ conversationId, run: null, event })
 }
 
 function row(id: number): ConversationRow {
@@ -87,7 +87,7 @@ function textOf(item: Extract<RailMessage, { kind: 'assistant' }>): string {
 beforeEach(() => {
   stopAskCmdrTurnStream()
   sendMock.mockReset()
-  sendMock.mockImplementation((c) => Promise.resolve({ accepted: true, conversationId: c ?? OPEN_THREAD }))
+  sendMock.mockImplementation((c) => Promise.resolve({ accepted: true, conversationId: c ?? OPEN_THREAD, run: 1 }))
   listMock.mockReset()
   listMock.mockResolvedValue([])
   getMock.mockReset()
@@ -122,7 +122,7 @@ describe('the main window subscription', () => {
     expect(listenMock).toHaveBeenCalledTimes(1)
 
     askCmdrState.conversationId = OPEN_THREAD
-    listenMock.mock.calls[0][0]({ conversationId: OPEN_THREAD, event: { type: 'textDelta', text: 'live' } })
+    listenMock.mock.calls[0][0]({ conversationId: OPEN_THREAD, run: null, event: { type: 'textDelta', text: 'live' } })
     expect(textOf(assistantAt(0))).toBe('live')
   })
 

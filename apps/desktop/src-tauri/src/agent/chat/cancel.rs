@@ -14,7 +14,7 @@
 //! turn that ends removes only its own.
 
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicI64, Ordering};
 use std::sync::{LazyLock, Mutex};
 
 use tokio_util::sync::CancellationToken;
@@ -24,14 +24,20 @@ use crate::settings::AskCmdrSwitch;
 
 const LOG_TARGET: &str = "agent::chat";
 
+/// Which turn an event belongs to: the generation of the turn's registration, distinct for every
+/// turn for the life of the process. Every event a turn emits carries it (`stream::AskCmdrTurn`),
+/// and the send answers it, so the rail can tell a late terminal of a turn it already ended from
+/// the one it is showing now. `i64` because it crosses to TypeScript as a `number`.
+pub type TurnRun = i64;
+
 /// One thread's live registrations, each tagged with the generation that owns it.
-type Registrations = Vec<(u64, CancellationToken)>;
+type Registrations = Vec<(TurnRun, CancellationToken)>;
 
 /// Every live registration, by conversation.
 static CANCELS: LazyLock<Mutex<HashMap<i64, Registrations>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
 
 /// Hands out a distinct generation per registration, so dropping one never removes another.
-static NEXT_GENERATION: AtomicU64 = AtomicU64::new(0);
+static NEXT_GENERATION: AtomicI64 = AtomicI64::new(0);
 
 /// The running turn's seq high-water mark, by conversation: the thread's last `seq` when the
 /// turn took the single-flight lock. Rows after it belong to that turn.
@@ -42,7 +48,7 @@ static IN_FLIGHT: LazyLock<Mutex<HashMap<i64, i64>>> = LazyLock::new(|| Mutex::n
 /// a token behind for a later turn on the same thread to be stopped by.
 pub struct CancelRegistration {
     conversation_id: i64,
-    generation: u64,
+    generation: TurnRun,
     token: CancellationToken,
 }
 
@@ -50,6 +56,11 @@ impl CancelRegistration {
     /// The token the turn hands to the runtime.
     pub fn token(&self) -> CancellationToken {
         self.token.clone()
+    }
+
+    /// The turn this registration belongs to, which every event it emits carries.
+    pub fn run(&self) -> TurnRun {
+        self.generation
     }
 }
 

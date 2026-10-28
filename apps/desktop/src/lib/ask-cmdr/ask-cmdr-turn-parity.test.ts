@@ -17,7 +17,7 @@ import type { ToolOutcome, ToolSubject, TurnStats } from '#lib/ipc/bindings.js'
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
   sendAskCmdrMessage: vi.fn((c: number | null): Promise<AskCmdrSendOutcome> =>
-    Promise.resolve({ accepted: true, conversationId: c ?? 1 }),
+    Promise.resolve({ accepted: true, conversationId: c ?? 1, run: 1 }),
   ),
   cancelAskCmdr: vi.fn(() => Promise.resolve({ tripped: 1, live: 1 })),
   listAskCmdrConversations: vi.fn(() => Promise.resolve([])),
@@ -56,7 +56,7 @@ const DECISION: ProposalDecision = { verb: 'trash', what: '/Users/dana/old.dmg',
 
 function fire(event: AskCmdrStreamEvent): void {
   askCmdrState.conversationId = THREAD
-  handleTurnEvent({ conversationId: THREAD, event })
+  handleTurnEvent({ conversationId: THREAD, run: null, event })
 }
 
 /** One stored row as the backend projects it; `id` doubles as `seq`. */

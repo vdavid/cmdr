@@ -264,6 +264,8 @@ fn record_in_thread(conn: &Connection, group_id: i64, conversation_id: i64, deci
 fn announce(conversation_id: i64, line: ThreadLine, decision: ProposalDecision) {
     emit_turn_event(
         conversation_id,
+        // A decision belongs to no turn.
+        None,
         AskCmdrStreamEvent::ProposalDecided {
             message_id: line.message_id,
             seq: line.seq,

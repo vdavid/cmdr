@@ -105,7 +105,7 @@ function resolved(callId: string, tool: string): ResolvedCall {
  * which `ask-cmdr-send-before-id.test.ts` covers on its own. */
 function fire(event: AskCmdrStreamEvent, conversationId: number = askCmdrState.conversationId ?? THREAD_ID): void {
   askCmdrState.conversationId = conversationId
-  handleTurnEvent({ conversationId, event })
+  handleTurnEvent({ conversationId, run: null, event })
 }
 
 beforeEach(() => {
@@ -126,7 +126,7 @@ beforeEach(() => {
   growWindowMock.mockResolvedValue()
   shrinkWindowMock.mockResolvedValue()
   listMock.mockResolvedValue([])
-  sendMock.mockImplementation((c) => Promise.resolve({ accepted: true, conversationId: c ?? THREAD_ID }))
+  sendMock.mockImplementation((c) => Promise.resolve({ accepted: true, conversationId: c ?? THREAD_ID, run: 1 }))
   newChat()
   resetTurnBookkeeping()
   askCmdrState.messages = []

@@ -86,7 +86,7 @@ function resolved(callId: string): ResolvedCall {
 
 function fire(event: AskCmdrStreamEvent): void {
   askCmdrState.conversationId = THREAD_ID
-  handleTurnEvent({ conversationId: THREAD_ID, event })
+  handleTurnEvent({ conversationId: THREAD_ID, run: null, event })
 }
 
 const done = (messageId: number): AskCmdrStreamEvent => ({
@@ -133,7 +133,7 @@ function firstGroup(item: AssistantItem = bubble()): { key: string | null; open:
 beforeEach(() => {
   sendMock.mockReset()
   resultMock.mockReset()
-  sendMock.mockImplementation(() => Promise.resolve({ accepted: true, conversationId: THREAD_ID }))
+  sendMock.mockImplementation(() => Promise.resolve({ accepted: true, conversationId: THREAD_ID, run: 1 }))
   newChat()
   resetTurnBookkeeping()
   _resetToolGroupsForTests()

@@ -64,17 +64,21 @@ function resolved(callId: string, tool: string): ResolvedCall {
 }
 
 /** Feed one stream event in as the backend emits it, for the thread the rail is on (or the named
- * one, which the rail is put on first). */
-function fire(event: AskCmdrStreamEvent, conversationId: number = askCmdrState.conversationId ?? THREAD_ID): void {
+ * one, which the rail is put on first), from the named turn (`run`) when the test cares which. */
+function fire(
+  event: AskCmdrStreamEvent,
+  conversationId: number = askCmdrState.conversationId ?? THREAD_ID,
+  run: number | null = null,
+): void {
   askCmdrState.conversationId = conversationId
-  handleTurnEvent({ conversationId, event })
+  handleTurnEvent({ conversationId, run, event })
 }
 
 beforeEach(() => {
   sendMock.mockReset()
   cancelMock.mockReset()
   getMock.mockReset()
-  sendMock.mockImplementation((c) => Promise.resolve({ accepted: true, conversationId: c ?? THREAD_ID }))
+  sendMock.mockImplementation((c) => Promise.resolve({ accepted: true, conversationId: c ?? THREAD_ID, run: 1 }))
   // The usual Stop: it reaches the one turn running, whose terminal is still to come.
   cancelMock.mockResolvedValue({ tripped: 1, live: 1 })
   newChat()
@@ -264,6 +268,45 @@ describe('stopStreaming', () => {
     expect(assistantAt(3)).toMatchObject({ id: 9, streaming: false, stats: STATS })
     expect(textOf(assistantAt(3))).toBe('the new turn')
     expect(askCmdrState.streaming).toBe(false)
+  })
+
+  /** ⚠️ A terminal the backend emitted just before the Stop can reach the rail AFTER the Stop's
+   *  `live: 0` answer already settled the turn. It belongs to the stopped turn, and it used to end
+   *  whatever turn the user had sent since. Each event names its turn's run, so it can't. */
+  describe("a stopped turn's late terminal", () => {
+    async function stopFirstTurnThenSendAgain(): Promise<void> {
+      cancelMock.mockResolvedValue({ tripped: 0, live: 0 })
+      sendMock.mockResolvedValueOnce({ accepted: true, conversationId: 3, run: 1 })
+      askCmdrState.conversationId = 3
+      sendMessage('first')
+      await flushMicrotasks()
+      fire({ type: 'assistantStarted' }, 3, 1)
+      fire({ type: 'textDelta', text: 'partial' }, 3, 1)
+      stopStreaming()
+      await flushMicrotasks()
+      sendMock.mockResolvedValueOnce({ accepted: true, conversationId: 3, run: 2 })
+      sendMessage('next')
+    }
+
+    it('ends nothing once the new send knows its run', async () => {
+      await stopFirstTurnThenSendAgain()
+      await flushMicrotasks()
+
+      fire({ type: 'stopped', turn: null }, 3, 1)
+
+      expect(askCmdrState.streaming).toBe(true)
+      fire({ type: 'assistantStarted' }, 3, 2)
+      fire({ type: 'textDelta', text: 'the new turn' }, 3, 2)
+      expect(textOf(assistantAt(askCmdrState.messages.length - 1))).toBe('the new turn')
+    })
+
+    it("ends nothing even before the new send's answer arrives", async () => {
+      await stopFirstTurnThenSendAgain()
+
+      fire({ type: 'stopped', turn: null }, 3, 1)
+
+      expect(askCmdrState.streaming).toBe(true)
+    })
   })
 
   /** A Stop of a send queued behind a turn the rail wasn't tracking (a wake) trips both, so two

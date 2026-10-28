@@ -360,17 +360,34 @@ fn a_managed_failure_carries_the_organizations_reason() {
 
 /// The conversation id is what a subscriber filters on, so it rides the ENVELOPE rather than
 /// one variant's payload: a rail that had to read it out of `started` would have no way to
-/// tell whose `textDelta` it was holding.
+/// tell whose `textDelta` it was holding. The run rides it too: it is how the rail tells one turn
+/// of a thread from the next, so a late terminal ends only its own.
 #[test]
-fn every_event_crosses_under_the_conversation_it_belongs_to() {
+fn every_event_crosses_under_the_conversation_and_turn_it_belongs_to() {
     let turn = AskCmdrTurn {
         conversation_id: 41,
+        run: Some(7),
         event: AskCmdrStreamEvent::TextDelta { text: "hi".into() },
     };
     assert_eq!(
         serde_json::to_value(turn).expect("serializes"),
-        json!({ "conversationId": 41, "event": { "type": "textDelta", "text": "hi" } })
+        json!({ "conversationId": 41, "run": 7, "event": { "type": "textDelta", "text": "hi" } })
     );
+}
+
+/// ⚠️ Every event a forwarded turn emits carries that turn's run, the terminal included.
+#[tokio::test]
+async fn a_forwarded_turn_stamps_every_event_with_its_run() {
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+    tx.send(AgentChatEvent::AssistantStarted).expect("send");
+    tx.send(AgentChatEvent::Stopped { turn: None }).expect("send");
+    drop(tx);
+    let _ = take_emitted_turns();
+
+    forward_to_windows(41, 9, &mut rx).await;
+
+    let runs: Vec<_> = take_emitted_turns().iter().map(|turn| turn.run).collect();
+    assert_eq!(runs, vec![Some(9), Some(9)]);
 }
 
 /// `Started` and `Discarded` bracket a wake: the first is how the session list hears a thread

@@ -52,14 +52,14 @@ function holdNextSend(): (outcome: AskCmdrSendOutcome) => Promise<void> {
   }
 }
 
-const accepted = (conversationId: number): AskCmdrSendOutcome => ({ accepted: true, conversationId })
+const accepted = (conversationId: number): AskCmdrSendOutcome => ({ accepted: true, conversationId, run: 1 })
 
 async function flushMicrotasks(): Promise<void> {
   for (let i = 0; i < 5; i++) await Promise.resolve()
 }
 
 function fire(conversationId: number, event: AskCmdrStreamEvent): void {
-  handleTurnEvent({ conversationId, event })
+  handleTurnEvent({ conversationId, run: null, event })
 }
 
 function bubbleText(): string {
