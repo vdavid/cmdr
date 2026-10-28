@@ -25,12 +25,8 @@ import { mergeAtSeam } from './ask-cmdr-rounds'
 import { refreshSlotStatus } from './ask-cmdr-slot-status.svelte'
 import { carryGroupStateAcrossSeam, forgetToolDetails } from './ask-cmdr-tool-groups.svelte'
 import { askCmdrState, hasOlderMessages, MESSAGE_PAGE, RAIL_MAX_WIDTH, RAIL_MIN_WIDTH } from './ask-cmdr-state.svelte'
-import {
-  followJoinedBubble,
-  resumeThread,
-  settleDecisionsHeardWhileLoading,
-  stopStreaming,
-} from './ask-cmdr-stream.svelte'
+import { followJoinedBubble, leaveChat, resumeThread, stopStreaming } from './ask-cmdr-stream.svelte'
+import { settleDecisionsHeardWhileLoading } from './ask-cmdr-decisions'
 import { growMainWindowForRail, shrinkMainWindowForRail } from './rail-window'
 import {
   getAskCmdrConversation,
@@ -78,9 +74,9 @@ export function hydrateRail(open: boolean, width: number): void {
  * main window so the panes keep their size (see `rail-window.ts`), except at startup hydration.
  * Also refreshes the rail's gate (`ask-cmdr-gate.svelte.ts`): while Ask Cmdr is off, or Cloud
  * waits for "Allow cloud AI", the rail shows the gate and loads no history. When the gate later
- * opens, the rail calls {@link ensureThreadLoaded} itself. `freshChat` skips that bootstrap: the
- * caller just cleared the thread for a new chat ({@link openNewChat}). */
-export async function openRail(opts: { resizeWindow?: boolean; freshChat?: boolean } = {}): Promise<void> {
+ * opens, the rail calls {@link ensureThreadLoaded} itself. A new chat the user asked for
+ * ({@link openNewChat}) is never bootstrapped over (`askCmdrState.freshChat`). */
+export async function openRail(opts: { resizeWindow?: boolean } = {}): Promise<void> {
   const wasOpen = askCmdrState.open
   askCmdrState.open = true
   explorerState.setRailFocused(true)
@@ -89,7 +85,7 @@ export async function openRail(opts: { resizeWindow?: boolean; freshChat?: boole
   // startup hydration must not.
   if (!wasOpen && opts.resizeWindow !== false) void growMainWindowForRail(askCmdrState.width)
   if ((await refreshRailGate()) !== 'chat') return
-  if (!wasOpen && opts.freshChat !== true) await ensureThreadLoaded()
+  if (!wasOpen) await ensureThreadLoaded()
 }
 
 /** Ask the composer to take focus (it listens on `composerFocusRequest`). A no-op while no
@@ -104,7 +100,8 @@ export function requestComposerFocus(): void {
  */
 export function openNewChat(): void {
   newChat()
-  if (!askCmdrState.open) void openRail({ freshChat: true })
+  askCmdrState.freshChat = true
+  if (!askCmdrState.open) void openRail()
   requestComposerFocus()
 }
 
@@ -117,9 +114,10 @@ export function newChatShortcutText(): string | undefined {
 }
 
 /** Load the most recent thread into an empty rail. A no-op once a thread (or a fresh chat's
- * first message) is showing, or while a load is already running. */
+ * first message) is showing, on a new chat the user asked for, or while a load is already
+ * running. */
 export async function ensureThreadLoaded(): Promise<void> {
-  if (askCmdrState.loadingHistory) return
+  if (askCmdrState.loadingHistory || askCmdrState.freshChat) return
   if (askCmdrState.conversationId !== null || askCmdrState.messages.length > 0) return
   await bootstrapActiveThread()
 }
@@ -164,10 +162,13 @@ function clampWidth(width: number): number {
 
 // ── Threads ────────────────────────────────────────────────────────────────────
 
-/** Start a fresh, unsaved chat (a new thread is created lazily on the first send). */
+/** Start a fresh, unsaved chat (a new thread is created lazily on the first send). A send
+ * still waiting for its thread id stays with the chat it was typed in ({@link leaveChat}). */
 export function newChat(): void {
   if (askCmdrState.streaming) stopStreaming()
+  leaveChat()
   askCmdrState.conversationId = null
+  askCmdrState.freshChat = false
   askCmdrState.messages = []
   askCmdrState.messageTotal = 0
   askCmdrState.historyCount = 0
@@ -183,6 +184,7 @@ export function newChat(): void {
 /** Switch the rail to an existing thread and load its most recent page. */
 export async function switchToThread(id: number): Promise<void> {
   if (askCmdrState.streaming) stopStreaming()
+  leaveChat()
   askCmdrState.attachments = []
   discardRenameReview()
   await loadConversation(id)
@@ -254,6 +256,7 @@ async function loadConversation(id: number): Promise<void> {
     if (load !== latestThreadLoad) return
     if (askCmdrState.conversationId !== id) forgetToolDetails()
     askCmdrState.conversationId = id
+    askCmdrState.freshChat = false
     askCmdrState.messageTotal = detail.totalMessages
     askCmdrState.historyCount = detail.messages.length
     askCmdrState.messages = buildRailMessages(detail)

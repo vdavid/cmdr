@@ -26,11 +26,13 @@ pub fn ask_cmdr_wake_settings_changed() {
 /// Tell the gates that `askCmdr.enabled` moved. No value crosses: the send gate reads the
 /// setting fresh per send, but the wake loop's readiness is a cached answer
 /// (`agent::wake::snapshot`), so without this push a switched-off Ask Cmdr would keep storing
-/// (and a switched-on one keep refusing) until something else refreshed it. Called from
-/// `settings-applier.ts`.
+/// (and a switched-on one keep refusing) until something else refreshed it. Switched off, it also
+/// stops every running turn: the rail's gate replaces the composer, Stop button and all. Called
+/// from `settings-applier.ts`.
 #[tauri::command]
 #[specta::specta]
 pub fn ask_cmdr_enabled_changed(app: tauri::AppHandle) {
+    crate::agent::chat::cancel::stop_all_unless_on(crate::settings::load_ask_cmdr_switch(&app));
     crate::agent::wake::refresh_readiness(&app);
 }
 

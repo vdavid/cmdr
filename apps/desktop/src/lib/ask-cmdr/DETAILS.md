@@ -69,8 +69,8 @@ because call ids collide across rounds as the norm.
 `sendAskCmdrMessage`. Events drive the render (`applyStreamEvent`), each delegating to a tiny mutator so the switch
 stays simple:
 
-- `started` → the thread exists and is being worked on. A fresh chat has no id until this arrives (or until the send's
-  promise resolves, whichever is first); a wake emits it too, which is what tells the session list.
+- `started` → the thread exists and is being worked on; a wake emits it too, which is what tells the session list. It
+  never hands a fresh chat its id: § A send waiting for its thread id.
 - `assistantStarted` → open a round in the current bubble (creating the bubble if needed).
 - **A round with a `messageId` is SEALED** (its row is stored): `textDelta`, `reasoningTick`, and `toolCallStarted`
   arriving on a sealed round open a new one first (`openRound`). That is what makes a reload mid-turn come out right:
@@ -171,6 +171,25 @@ Stop reached (`CancelOutcomeView`: `tripped`, the turns it newly stopped; `live`
 
 A "load earlier" that joins a stopped bubble with its older half builds a new object, so the stop follows it
 (`followJoinedBubble`).
+
+**A send waiting for its thread id** (`ask-cmdr-send-before-id.test.ts`). A brand-new chat has no thread until the send
+command answers (the backend creates it, registers the turn's cancel token, emits `started`, then answers), but the turn
+runs from that moment. Regression anchor #760: Stop sent no cancel in that window (no id to send it to), so the turn ran
+on and spent behind a rail that said it had stopped, and the answer set the thread unconditionally, so a New chat opened
+meanwhile was taken over by the old thread.
+
+- **The id comes from the send's answer alone** (`claimThread`), ❌ never from an event: a wake's `started` in the same
+  moment would hand the fresh chat the wrong thread. Events that arrive while a fresh chat's send waits
+  (`sendsAwaitingId
+  > 0`) and find no thread on screen queue in `unclaimedEvents`; the answer replays its own thread's, in order, and the
+  > rest are dropped once no send waits.
+- **A Stop before the id waits for it** (`stopsAwaitingId`, keyed by send): the answer turns it into an ordinary pending
+  stop and calls `cancelAskCmdr` at once. The backend registers the token before it answers, so that cancel always finds
+  the turn (or `live: 0` if it already ended). A refusal withdraws it like any other stop. The watchdog's timeout takes
+  the same path.
+- **Leaving the chat** (`leaveChat`, from New chat, a thread switch, and `discarded`) clears `activeSend`: a send still
+  in flight keeps its turn and its Stop, but its answer no longer puts its thread on screen, and its refusal paints into
+  nothing (it used to fail whatever turn the new chat had started).
 
 **Terminal events carry the turn's stats.** `done`, `failed`, and `stopped` carry `turn: TurnStats | null` (tool calls,
 wall time, summed tokens), `null` for a turn that ran no tool or a refusal from outside a turn. Each puts it on the
@@ -328,8 +347,8 @@ dynamic-prefix allowlist, and seven literals are cheaper than an allowlist entry
 
 The single-decision row is announced as it is written: `agent/outcomes.rs` emits `proposalDecided` on the turn
 transport, under the conversation the row went into, carrying the row's id and the decision. `handleTurnEvent` takes it
-before any turn rule applies and `showDecision` adds ONE line to the thread on screen. Each case has a test in
-`ask-cmdr-turn-stream.test.ts`.
+before any turn rule applies and hands it to `ask-cmdr-decisions.ts`, whose `showDecision` adds ONE line to the thread
+on screen. Each case has a test in `ask-cmdr-turn-stream.test.ts`.
 
 **Decision: the rail patches from the event's payload, it doesn't re-read the thread.** **Why**: a re-read replaces the
 whole message list. That throws away an answer that is mid-stream (its text isn't persisted until `done`) and the older
@@ -514,17 +533,21 @@ registry lives below `commands/` rather than inside the chat command.
   - A click on rail text or a button: WebKit doesn't focus a clicked button, and with no focusable ancestor it CLEARS
     focus. The `<aside>` is `tabindex="-1"` (out of the tab order, no ring), so a click lands focus on the rail, and its
     `focusin` sets the rail-focused flag.
-  - Send and Stop swap as a turn starts and ends, so a focused one leaves the page: both hand focus to the prompt box.
+  - Send and Stop swap as a turn starts and ends, so a focused one leaves the page: both hand focus to the prompt box. A
+    swap nobody clicked (the turn ended by itself, or a running one was picked up) too: a `$effect.pre` on `streaming`
+    notes whether the button had focus before the swap removes it, and the effect after hands focus to the prompt box
+    (`AskCmdrComposer.swap-focus.test.ts`).
   - The sessions panel unmounts with its focused control: `closeSessions` asks for the composer; a keyboard rename hands
     focus to its row.
-  - "Load earlier" vanishes with the last page: the rail takes focus back. A turn that ends on its own while Stop holds
-    keyboard focus still drops it (nothing to hook without a focus event); the watchdog's log now names the cause ("…
-    left the page while it had focus"), so a new leak points at its component.
+  - "Load earlier" vanishes with the last page: the rail takes focus back. The watchdog's log names the cause of any
+    leak ("… left the page while it had focus"), so a new one points at its component.
 - **New chat** (`openNewChat`: the header button, the getting-long nudge, the sessions panel, and `askCmdr.newChat`,
-  default ⌘N) resets the thread, opens a closed rail on the FRESH chat (`openRail({ freshChat: true })` skips the
-  last-thread bootstrap), and bumps `composerFocusRequest`, which the composer's focus effect follows. ⌘N was free: Cmdr
-  has one main window (macOS's "New window" meaning has nothing to claim), tabs are ⌘T, and the search dialog's own ⌘N
-  runs only while that dialog is up. Not a menu item, so it lives in the registry and handlers only.
+  default ⌘N) resets the thread, marks it `freshChat`, opens a closed rail on it, and bumps `composerFocusRequest`,
+  which the composer's focus effect follows. `ensureThreadLoaded` never bootstraps the last thread over a `freshChat`
+  (only a thread load clears it), whichever path asks: the open, a gate opening, or the rail's first open while cloud
+  consent is still `loading`, whose `loading` → `chat` transition used to load the last thread over the new chat. ⌘N was
+  free: Cmdr has one main window (macOS's "New window" meaning has nothing to claim), tabs are ⌘T, and the search
+  dialog's own ⌘N runs only while that dialog is up. Not a menu item, so it lives in the registry and handlers only.
 
 ## The toggle wiring
 

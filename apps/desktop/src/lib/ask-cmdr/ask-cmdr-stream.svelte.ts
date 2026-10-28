@@ -38,7 +38,8 @@ import {
   openStagedRenameReview,
   stageRenameProposal,
 } from './ask-cmdr-rename-review.svelte'
-import { askCmdrState, settleAssistant, streamingAssistant } from './ask-cmdr-state.svelte'
+import { noteProposalDecided } from './ask-cmdr-decisions'
+import { askCmdrState, insertAboveBubble, settleAssistant, streamingAssistant } from './ask-cmdr-state.svelte'
 import { holdTurnGroupsOpen, settleTurnGroups } from './ask-cmdr-tool-groups.svelte'
 import {
   cancelAskCmdr,
@@ -47,7 +48,6 @@ import {
   type AskCmdrStreamEvent,
   type AskCmdrTurn,
   type MessageView,
-  type ProposalDecision,
 } from '#lib/tauri-commands/index.js'
 
 const log = getAppLogger('askCmdr')
@@ -91,8 +91,29 @@ type TypedOpener = Extract<RailMessage, { kind: 'user' }>
  */
 let typedOpener: TypedOpener | null = null
 
-/** The send now in flight: the token its {@link PendingStop} carries. */
+/** The latest send of the chat on screen: the token its {@link PendingStop} carries. `null` once
+ * the user leaves that chat ({@link leaveChat}), so a send still in flight can't write into the
+ * chat they went to. */
 let activeSend: symbol | null = null
+
+/**
+ * Stops pressed before their send's thread id came back, by send. A brand-new chat has no thread
+ * until the send command answers, but its turn runs all the same, so the stop waits here and
+ * sends its cancel the moment the id arrives.
+ */
+let stopsAwaitingId: Omit<PendingStop, 'conversationId'>[] = []
+
+/** Sends from a chat with no thread yet, still waiting for the id. */
+let sendsAwaitingId = 0
+
+/**
+ * Turn events that arrived while a send waited for its thread id, with no thread on screen to
+ * apply them to. The backend may announce a turn before the command's answer lands; the answer
+ * then claims its own events from here. The rest (another thread's, a wake's) are dropped once no
+ * send waits any more. An id comes from the command's answer alone, ❌ never from an event: a
+ * wake's `started` in the same moment would hand the fresh chat the wrong thread.
+ */
+let unclaimedEvents: AskCmdrTurn[] = []
 
 /** Forget every stopped turn and typed opener. Test isolation only; production clears per
  * thread. */
@@ -100,6 +121,19 @@ export function resetTurnBookkeeping(): void {
   pendingStops = []
   typedOpener = null
   activeSend = null
+  stopsAwaitingId = []
+  sendsAwaitingId = 0
+  unclaimedEvents = []
+}
+
+/**
+ * The user left the chat on screen (New chat, another thread). A send still in flight from it
+ * keeps its turn, and its Stop, but no longer owns what the rail shows: its answer won't put its
+ * thread on screen, and a refusal won't paint into the chat they went to.
+ */
+export function leaveChat(): void {
+  activeSend = null
+  typedOpener = null
 }
 
 /**
@@ -145,25 +179,64 @@ export function sendMessage(text: string): void {
   // response) keeps a retry from re-sending feedback the model already acted on.
   const deniedNames = askCmdrState.deniedNames
   askCmdrState.deniedNames = []
+  const fresh = askCmdrState.conversationId === null
+  if (fresh) sendsAwaitingId++
   void sendAskCmdrMessage(askCmdrState.conversationId, trimmed, attachments, deniedNames).then(
     (outcome) => {
+      if (fresh) sendsAwaitingId--
       if (outcome.accepted) {
-        askCmdrState.conversationId = outcome.conversationId
+        claimThread(send, outcome.conversationId, fresh)
       } else {
         withdrawStop(send)
-        if (askCmdrState.streaming) applyFailed(outcome.kind, outcome.detail, outcome.managed)
+        // Only the chat that sent it hears the refusal; one the user left shows nothing.
+        if (activeSend === send && askCmdrState.streaming) applyFailed(outcome.kind, outcome.detail, outcome.managed)
         // A switch moved since the rail last looked (in Settings, or in another window).
         // Re-reading turns the rail back into its gate, which carries the way out.
         if (outcome.kind === 'askCmdrOff' || outcome.kind === 'noCloudConsent') void refreshRailGate()
       }
+      if (sendsAwaitingId === 0) unclaimedEvents = []
     },
     (e: unknown) => {
       // `sendAskCmdrMessage` turns every Rust refusal into an outcome, so landing here means the
       // invoke itself broke (a missing command, an argument shape that drifted): a Cmdr bug, not
       // the provider. The turn ends as unfinished, with no raw IPC text in front of the person.
       log.error('The send command itself broke, before any provider was involved: {error}', { error: e })
+      if (fresh) sendsAwaitingId--
       withdrawStop(send)
-      if (askCmdrState.streaming) applyFailed('unfinishedReply', null)
+      if (activeSend === send && askCmdrState.streaming) applyFailed('unfinishedReply', null)
+      if (sendsAwaitingId === 0) unclaimedEvents = []
+    },
+  )
+}
+
+/**
+ * The backend took `send` into thread `conversationId`. The chat it was typed in takes that
+ * thread, unless the user has left it; a Stop pressed before the id was known sends its cancel
+ * now; and a fresh chat's events that beat the answer are applied, in order, as if they had
+ * arrived just now.
+ */
+function claimThread(send: symbol, conversationId: number, fresh: boolean): void {
+  if (activeSend === send) askCmdrState.conversationId = conversationId
+  const stop = stopsAwaitingId.find((candidate) => candidate.send === send)
+  if (stop) {
+    stopsAwaitingId = stopsAwaitingId.filter((candidate) => candidate !== stop)
+    pendingStops.push({ conversationId, ...stop })
+    requestCancel(conversationId)
+  }
+  if (!fresh) return
+  const claimed = unclaimedEvents.filter((turn) => turn.conversationId === conversationId)
+  unclaimedEvents = unclaimedEvents.filter((turn) => turn.conversationId !== conversationId)
+  for (const turn of claimed) handleTurnEvent(turn)
+}
+
+/** Ask the backend to stop the thread's turns; its answer says which terminals are still coming. */
+function requestCancel(conversationId: number): void {
+  void cancelAskCmdr(conversationId).then(
+    (reach) => {
+      matchStopsToTerminals(conversationId, reach)
+    },
+    (e: unknown) => {
+      log.warn('Stopping the turn in thread {conversationId} broke: {error}', { conversationId, error: e })
     },
   )
 }
@@ -172,6 +245,8 @@ export function sendMessage(text: string): void {
  * Stop the in-flight turn. The turn ends on screen now: no cursor, no watchdog, and the review
  * opens over what it staged. Its bubble keeps everything the backend may still store, because the
  * round's calls run on after a cancel; the backend's terminal settles it ({@link PendingStop}).
+ * A brand-new chat's turn has no thread id yet: its stop waits for the send's answer and cancels
+ * then ({@link stopsAwaitingId}), so it reaches the turn all the same.
  */
 export function stopStreaming(): void {
   if (!askCmdrState.streaming) return
@@ -179,14 +254,13 @@ export function stopStreaming(): void {
   const conversationId = askCmdrState.conversationId
   if (conversationId !== null) {
     pendingStops.push({ conversationId, bubble, opener: typedOpener, send: activeSend })
-    void cancelAskCmdr(conversationId).then(
-      (reach) => {
-        matchStopsToTerminals(conversationId, reach)
-      },
-      (e: unknown) => {
-        log.warn('Stopping the turn in thread {conversationId} broke: {error}', { conversationId, error: e })
-      },
-    )
+    requestCancel(conversationId)
+  } else if (activeSend !== null) {
+    stopsAwaitingId.push({ bubble, opener: typedOpener, send: activeSend })
+  } else {
+    // Streaming with no thread is a fresh chat's send, which always has a token: reaching this
+    // means a turn the rail can't name, so it can't be stopped from here.
+    log.warn('Stop found a running turn with no thread and no send to wait on')
   }
   typedOpener = null
   if (bubble) {
@@ -207,22 +281,21 @@ export function stopStreaming(): void {
  * drops it otherwise — a wake thinking in another thread must not write into what the user is
  * reading.
  *
- * A fresh chat is the one case where the rail has no id yet, so a `started` arriving while it
- * waits adopts the id. That can in principle catch a wake's `started` in the same tick; the
- * send's own promise assigns the real id right after and corrects it.
+ * A fresh chat has no id until its send answers, so what arrives meanwhile waits for that answer
+ * to claim it ({@link unclaimedEvents}).
  */
 export function handleTurnEvent(turn: AskCmdrTurn): void {
   const { conversationId, event } = turn
   if (event.type === 'proposalDecided') {
-    // Not part of a turn, so it takes none of the turn rules below: it adopts no id for a
-    // fresh chat, and a stopped thread still shows it.
+    // Not part of a turn, so it takes none of the turn rules below: it never waits for a fresh
+    // chat's id, and a stopped thread still shows it.
     noteProposalDecided({ conversationId, messageId: event.messageId, decision: event.decision })
     return
   }
   // Wherever the rail is now: a stop left behind on another thread still needs its terminal.
   if (settlePendingStop(conversationId, event)) return
   if (askCmdrState.conversationId === null) {
-    if (event.type === 'started' && askCmdrState.streaming) askCmdrState.conversationId = conversationId
+    if (sendsAwaitingId > 0) unclaimedEvents.push(turn)
     return
   }
   if (conversationId !== askCmdrState.conversationId) return
@@ -258,6 +331,7 @@ function matchStopsToTerminals(conversationId: number, reach: CancelOutcomeView)
 /** A send the backend refused ran no turn, so no terminal will come for a stop the user gave it. */
 function withdrawStop(send: symbol): void {
   pendingStops = pendingStops.filter((stop) => stop.send !== send)
+  stopsAwaitingId = stopsAwaitingId.filter((stop) => stop.send !== send)
 }
 
 /**
@@ -313,70 +387,6 @@ function applyToStoppedTurn(stop: PendingStop, event: TurnEvent): void {
       return
     default:
   }
-}
-
-/** One answer the user gave to a suggestion, and the thread whose timeline it was written to. */
-interface HeardDecision {
-  conversationId: number
-  /** The decision's timeline row, which is what makes a line heard twice one line. */
-  messageId: number
-  decision: ProposalDecision
-}
-
-/**
- * Decisions heard while a thread load was in flight, for {@link settleDecisionsHeardWhileLoading}
- * to put back. A load replaces the whole message list with what the backend read, and that read
- * can be a moment older than a decision the rail has already heard.
- */
-let heardWhileLoading: HeardDecision[] = []
-
-/**
- * The user answered a suggestion: show the line in the thread that made it, and only there.
- *
- * The event carries the decision itself, so the rail adds ONE line instead of re-reading the
- * thread. That is not only cheaper: a re-read replaces the message list, which would throw
- * away an answer that is mid-stream, and its reply could arrive after the user moved to
- * another thread. Nothing here waits on anything, so neither can happen.
- */
-function noteProposalDecided(heard: HeardDecision): void {
-  if (askCmdrState.loadingHistory) heardWhileLoading.push(heard)
-  if (heard.conversationId === askCmdrState.conversationId) showDecision(heard)
-}
-
-/**
- * Put back what a thread load may have missed. The trigger calls this when a load ends, however
- * it ended: whatever was heard for the thread now on screen is shown (once), and the rest was
- * about threads the rail isn't showing.
- */
-export function settleDecisionsHeardWhileLoading(): void {
-  const heard = heardWhileLoading
-  heardWhileLoading = []
-  for (const decision of heard) {
-    if (decision.conversationId === askCmdrState.conversationId) showDecision(decision)
-  }
-}
-
-/** Add a decision's line, or patch it where it stands when the thread already shows that row.
- * An approval's row is announced twice: "running" at the start, then rewritten with its outcome
- * when it settles. The two come off different threads, and a load can deliver the settled row
- * first, so a late "running" never replaces an outcome. A new line goes above a bubble that is
- * still streaming, which has to stay last for the next chunk to find. */
-function showDecision({ messageId, decision }: HeardDecision): void {
-  const line: RailMessage = { kind: 'proposalDecisions', id: messageId, decisions: [decision] }
-  const at = askCmdrState.messages.findIndex((m) => m.kind === 'proposalDecisions' && m.id === messageId)
-  if (at !== -1) {
-    if (decision.outcome.kind !== 'running') askCmdrState.messages[at] = line
-    return
-  }
-  insertAboveBubble(line)
-}
-
-/** Add `item` just above the streaming bubble, which has to stay last for the next chunk to
- * find, or at the end when no turn is streaming. */
-function insertAboveBubble(item: RailMessage): void {
-  const assistant = streamingAssistant()
-  if (assistant) askCmdrState.messages.splice(askCmdrState.messages.indexOf(assistant), 0, item)
-  else askCmdrState.messages.push(item)
 }
 
 function applyStreamEvent(event: TurnEvent): void {
@@ -714,6 +724,7 @@ function endTurn(stats: TurnStats | null): void {
  * off it into an empty chat rather than showing a thread that no longer exists.
  */
 function applyDiscarded(): void {
+  leaveChat()
   askCmdrState.conversationId = null
   askCmdrState.messages = []
   askCmdrState.messageTotal = 0

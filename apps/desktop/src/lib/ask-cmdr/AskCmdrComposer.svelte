@@ -8,7 +8,7 @@
   reference — see `ask-cmdr-drop.ts` for why this is a native webview drag, not HTML5.
 -->
 <script lang="ts">
-    import { onMount } from 'svelte'
+    import { onMount, untrack } from 'svelte'
     import Icon from '#lib/ui/Icon.svelte'
     import TextArea from '#lib/ui/TextArea.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
@@ -75,7 +75,22 @@
     const attachments = $derived(askCmdrState.attachments)
 
     // Send and Stop swap places as a turn starts and ends, so a focused one leaves the page under
-    // the cursor and focus would fall to `<body>`. Both hand it back to the prompt box.
+    // the cursor and focus would fall to `<body>`. Both hand it back to the prompt box, and so
+    // does a swap nobody clicked (the turn ended by itself, or a running one was picked up):
+    // `$effect.pre` sees the button before the swap removes it, the effect after.
+    let swapButton = $state<HTMLButtonElement | null>(null)
+    let swapHadFocus = false
+    $effect.pre(() => {
+        dependOn(streaming)
+        swapHadFocus = untrack(() => swapButton !== null && document.activeElement === swapButton)
+    })
+    $effect(() => {
+        dependOn(streaming)
+        if (!swapHadFocus) return
+        swapHadFocus = false
+        untrack(() => textarea?.focus())
+    })
+
     function submit(): void {
         if (askCmdrState.streaming || !canSend) return
         sendMessage(text)
@@ -154,7 +169,13 @@
             oncompositionend={() => (composing = false)}
         />
         {#if streaming}
-            <button type="button" class="composer-button stop" onclick={stop} aria-label={tString('askCmdr.composer.stop')}>
+            <button
+                type="button"
+                class="composer-button stop"
+                bind:this={swapButton}
+                onclick={stop}
+                aria-label={tString('askCmdr.composer.stop')}
+            >
                 <Icon name="square" size={16} aria-hidden="true" />
             </button>
         {:else}
@@ -167,6 +188,7 @@
                 <button
                     type="button"
                     class="composer-button"
+                    bind:this={swapButton}
                     onclick={submit}
                     disabled={!canSend}
                     aria-label={tString('askCmdr.composer.send')}

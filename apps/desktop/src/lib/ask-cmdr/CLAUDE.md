@@ -12,15 +12,13 @@ Ask Cmdr's frontend: a right-side chat panel over a BYO-key LLM. Backend: `src-t
   sessions slice.
 - `wake-indicator.svelte.ts` + `WakeIndicator.svelte`: the status corner's word on the PROACTIVE half (its own event).
 - `ask-cmdr-slot-status.svelte.ts`: provider readiness and the gauge's baseline, before any send.
-- `AskCmdrRail.svelte`: the panel, mounted beside `DualPaneExplorer` by `routes/(main)/+page.svelte`, overlaid by
-  `AskCmdrSessions.svelte`, with its `AskCmdrMessage` / `ToolLine` / `TurnStats` / `Composer` / `AttachmentChip` /
-  `WakeDigest` / `ProposalDecisions` parts. `BulkRenameReviewDialog.svelte` is the rename review.
+- `AskCmdrRail.svelte`: the panel (mounted by `routes/(main)/+page.svelte`), overlaid by `AskCmdrSessions.svelte`, with
+  its `AskCmdr*` parts. `BulkRenameReviewDialog.svelte` is the rename review.
 
 ## Must-knows
 
-- **Assistant prose is the XSS boundary.** Model text is untrusted (a crafted filename it echoes is an injection
-  vector), so it renders ONLY through `renderAssistantMarkdown` (`ask-cmdr-markdown.ts`). Everything else (paths, user
-  text, evidence) is plain `{text}`, NEVER `{@html}`.
+- **Assistant prose is the XSS boundary** (a filename it echoes can inject): it renders ONLY through
+  `renderAssistantMarkdown`. Everything else (paths, user text, evidence) is plain `{text}`, NEVER `{@html}`.
 - **Two gates (`railGate`)**: Ask Cmdr off, then Cloud without consent; `loading` shows nothing. ❌ No composer outside
   `chat`, and ❌ neither gate grants cloud consent. The provider notice sits above both.
 - **Footer cost = the backend meter, re-read on `costMetered`.** ❌ Never sum per-call usage in the rail.
@@ -29,6 +27,8 @@ Ask Cmdr's frontend: a right-side chat panel over a BYO-key LLM. Backend: `src-t
 - **No reasoning blob or provider state reaches the frontend**: `MessageView` carries display blocks only.
 - **Turn events are subscribed by CONVERSATION, never per send**, so a reload mid-answer keeps rendering. Any live event
   means a turn runs, except `proposalDecided` and a stopped turn's (its terminal settles it).
+- **A fresh chat's id comes from its send's answer, ❌ never an event** (`DETAILS.md` § A send waiting for its thread
+  id).
 - **A turn is ONE bubble of rounds; live must equal reload** (`ask-cmdr-turn-parity.test.ts`). A line is
   `(messageId, callId)`, ❌ never the call id alone; turn edges come from the backend (`turnId`).
 - **Tool lines: our words per typed variant** (`ask-cmdr-labels.ts`); paths reach the panes ONLY via the `revealPath`

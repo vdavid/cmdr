@@ -83,6 +83,10 @@ interface AskCmdrState {
   width: number
   /** The active thread, or `null` for an unsaved new chat. */
   conversationId: number | null
+  /** The user asked for a new chat (New chat, ⌘N) and it's what the rail shows, so loading
+   * the last thread must never replace it: not on open, and not when a gate opens or cloud
+   * consent finishes loading. A thread load ends it. */
+  freshChat: boolean
   messages: RailMessage[]
   streaming: boolean
   loadingHistory: boolean
@@ -118,6 +122,7 @@ export const askCmdrState = $state<AskCmdrState>({
   open: false,
   width: RAIL_DEFAULT_WIDTH,
   conversationId: null,
+  freshChat: false,
   messages: [],
   streaming: false,
   loadingHistory: false,
@@ -151,6 +156,14 @@ export function hasOlderMessages(): boolean {
 export function streamingAssistant(): AssistantItem | null {
   const last = askCmdrState.messages.at(-1)
   return last?.kind === 'assistant' && last.streaming ? last : null
+}
+
+/** Add `item` just above the streaming bubble, which has to stay last for the next chunk to
+ * find, or at the end when no turn is streaming. */
+export function insertAboveBubble(item: RailMessage): void {
+  const assistant = streamingAssistant()
+  if (assistant) askCmdrState.messages.splice(askCmdrState.messages.indexOf(assistant), 0, item)
+  else askCmdrState.messages.push(item)
 }
 
 /**

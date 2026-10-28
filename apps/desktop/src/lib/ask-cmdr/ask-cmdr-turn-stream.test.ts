@@ -149,13 +149,16 @@ describe('which thread an event belongs to', () => {
     expect(askCmdrState.streaming).toBe(false)
   })
 
-  it("adopts a new thread's id from its own started event", () => {
+  /** The id comes from the send's own answer, never from a `started`: a wake's could arrive in
+   *  the same moment. `ask-cmdr-send-before-id.test.ts` covers what happens in between. */
+  it("takes a new thread's id from its send's answer", async () => {
     sendMessage('first message in a fresh chat')
+    fire(OPEN_THREAD, { type: 'started' })
     expect(askCmdrState.conversationId).toBeNull()
 
-    fire(OPEN_THREAD, { type: 'started' })
-
-    expect(askCmdrState.conversationId).toBe(OPEN_THREAD)
+    await vi.waitFor(() => {
+      expect(askCmdrState.conversationId).toBe(OPEN_THREAD)
+    })
   })
 })
 
@@ -338,8 +341,8 @@ describe('an answer to a suggestion', () => {
     expect(askCmdrState.streaming).toBe(false)
   })
 
-  /** A fresh chat has no thread, so no suggestion was ever made in it. It adopts an id from
-   *  `started` alone: a decision must not hand it one, or paint into it. */
+  /** A fresh chat has no thread, so no suggestion was ever made in it. It takes an id from
+   *  its send's answer alone: a decision must not hand it one, or paint into it. */
   it('never lands in a chat that has no thread yet', () => {
     sendMessage('first message in a fresh chat')
 

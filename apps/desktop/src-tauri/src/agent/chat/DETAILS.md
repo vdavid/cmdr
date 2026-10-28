@@ -691,13 +691,22 @@ the value that applied, `answered`), which rides `TurnStats` into the terminal e
 
 **Decision: the round cap asks for an answer instead of failing.** Why: every round's results
 were already paid for, and failing at the cap threw them away unread, leaving the user a
-"hit its limit" line over 14 lookups and no answer. Cancellation is
-checked at the top of the loop (a clean stop between tool boundaries) and when a stream ends
-without `End` while the token is set (a user stop, distinguished from a crash) — both return
-`TurnResult::Cancelled`, whose one terminal event is `Stopped` (never `Failed`); stream-cancel
-itself drops the reqwest body via the token threaded into `AgentLlm::respond`. Dispatch is NOT
-cancellable: a Stop mid-round still runs and persists the round's remaining calls, and the
-check at the top of the loop then ends the turn.
+"hit its limit" line over 14 lookups and no answer.
+
+**Stop ends the turn wherever it is, so it always stops the spend**: at the top of the loop
+(a clean stop between tool boundaries), while `respond` is still opening the call (raced against the token in
+`turn.rs`: a provider slow to answer, a long queue, used to hold the turn until it did), while
+the stream waits for its next chunk (`consume_stream` races each `next()`, whatever the
+`AgentLlm` does with its own copy of the token: a model thinking before its first token used to
+keep billing), and when a stream ends without `End` while the token is set (a user stop,
+distinguished from a crash). All return `TurnResult::Cancelled`, whose one terminal event is
+`Stopped` (never `Failed`); dropping the call or the stream drops the reqwest body (genai's
+impl also ends its stream on the token). Regression anchor:
+`stop_ends_a_model_call_that_never_answers`. A tool call meets Stop in `dispatch_until_stopped`
+(§ Stop reaches every tool call); a `Propose` or `Memory` call finishes first. Turning Ask Cmdr
+off trips every turn (`cancel::stop_all_unless_on`, from `ask_cmdr_enabled_changed`): the rail
+then shows its gate where the composer was, so a running turn would have no Stop left to press.
+Revoking cloud consent does the same (`ai::cloud_consent`).
 
 The tokens live in `cancel.rs`, one process-global map keyed by conversation id, holding a LIST
 of registrations per thread. ⚠️ **Not one token per thread**: a send registers BEFORE it waits

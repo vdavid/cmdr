@@ -45,8 +45,8 @@ import { handleTurnEvent, resetTurnBookkeeping } from './ask-cmdr-stream.svelte'
 const THREAD_ID = 1
 
 /** Feed one stream event in as the backend emits it, for the thread the rail is on. A rail with
- * no thread yet is put on the named one first: production gets there through `started`, which
- * `adopts a new thread's id from its own started event` covers on its own. */
+ * no thread yet is put on the named one first: production gets there through its send's answer,
+ * which `ask-cmdr-send-before-id.test.ts` covers on its own. */
 function fire(event: AskCmdrStreamEvent, conversationId: number = askCmdrState.conversationId ?? THREAD_ID): void {
   askCmdrState.conversationId = conversationId
   handleTurnEvent({ conversationId, event })

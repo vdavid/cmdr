@@ -455,6 +455,58 @@ async fn a_call_after_stop_is_never_dispatched() {
     assert_eq!(results[1]["miss"], "cancelled", "the second never started");
 }
 
+/// Where a model call can hang: before the provider answers at all, or after it opened the
+/// stream but before its next chunk. Neither watches the turn's token, which is the point: the
+/// turn itself must hear Stop, whatever an `AgentLlm` does with the token it's handed.
+enum Hang {
+    BeforeOpening,
+    AfterOpening,
+}
+
+struct HangingLlm(Hang);
+
+impl AgentLlm for HangingLlm {
+    fn respond<'a>(
+        &'a self,
+        _system: &'a str,
+        _tools: &'a [ToolDeclaration],
+        _messages: &'a [AgentMessage],
+        _call: crate::agent::llm::CallSettings,
+        _cancel: CancellationToken,
+    ) -> BoxFuture<'a, Result<crate::agent::llm::AgentDeltaStream, AgentLlmError>> {
+        match self.0 {
+            Hang::BeforeOpening => futures_util::future::pending().boxed(),
+            Hang::AfterOpening => async { Ok(futures_util::stream::pending().boxed()) }.boxed(),
+        }
+    }
+}
+
+/// ⚠️ Stop must end the turn wherever the model call is, or the turn keeps spending: a provider
+/// that's slow to answer (a long queue, a model thinking before its first token) used to hold the
+/// turn until it did, the user's Stop notwithstanding.
+#[tokio::test]
+async fn stop_ends_a_model_call_that_never_answers() {
+    for hang in [Hang::BeforeOpening, Hang::AfterOpening] {
+        let conn = migrated_conn();
+        let id = conversation(&conn);
+        let llm = HangingLlm(hang);
+        let cancel = CancellationToken::new();
+        let (tx, _rx) = unbounded_channel();
+        let turn_params = params(id, Some("go"));
+        let turn = run_turn(&llm, &OkDispatcher, &conn, &[], &turn_params, &tx, &cancel);
+        let stop = async {
+            tokio::task::yield_now().await;
+            cancel.cancel();
+        };
+
+        let (result, ()) = tokio::time::timeout(Duration::from_secs(5), async { tokio::join!(turn, stop) })
+            .await
+            .expect("Stop must end a model call that never answers");
+
+        assert_eq!(result, TurnResult::Cancelled);
+    }
+}
+
 #[tokio::test]
 async fn every_call_hears_the_origin_its_caller_stated() {
     // The gate reads the origin the CALLER states, never one inferred from the opener: here a

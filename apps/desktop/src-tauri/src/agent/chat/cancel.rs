@@ -20,6 +20,9 @@ use std::sync::{LazyLock, Mutex};
 use tokio_util::sync::CancellationToken;
 
 use crate::ignore_poison::IgnorePoison;
+use crate::settings::AskCmdrSwitch;
+
+const LOG_TARGET: &str = "agent::chat";
 
 /// One thread's live registrations, each tagged with the generation that owns it.
 type Registrations = Vec<(u64, CancellationToken)>;
@@ -124,6 +127,19 @@ pub fn cancel_all() -> usize {
         tripped += 1;
     }
     tripped
+}
+
+/// Ask Cmdr's switch moved: unless it's on, trip every turn, rail and wake alike. Off, the rail
+/// shows its gate where the composer was, so a turn left running would have no Stop to press.
+/// Each tripped turn ends with its own `Stopped`, which is what tells the rail.
+pub fn stop_all_unless_on(switch: AskCmdrSwitch) {
+    if switch == AskCmdrSwitch::On {
+        return;
+    }
+    let tripped = cancel_all();
+    if tripped > 0 {
+        log::info!(target: LOG_TARGET, "Ask Cmdr turned off: stopped {tripped} turn(s)");
+    }
 }
 
 /// Marks a conversation's turn as running since `since_seq` until dropped. Taken by the
@@ -248,6 +264,26 @@ mod tests {
         assert!(
             !token.is_cancelled(),
             "the entry was gone, so there was nothing to trip"
+        );
+    }
+
+    /// ⚠️ With Ask Cmdr off, the rail shows its gate in place of the composer, so a turn still
+    /// running would have no Stop left to press and would keep spending.
+    #[test]
+    fn turning_ask_cmdr_off_stops_every_running_turn() {
+        let running = register_cancel(-9_601);
+
+        stop_all_unless_on(AskCmdrSwitch::On);
+        assert!(!running.token().is_cancelled(), "a switch that stayed on stops nothing");
+
+        stop_all_unless_on(AskCmdrSwitch::Off);
+        assert!(running.token().is_cancelled());
+
+        let managed = register_cancel(-9_602);
+        stop_all_unless_on(AskCmdrSwitch::ManagedOff);
+        assert!(
+            managed.token().is_cancelled(),
+            "a policy pinning it off stops turns too"
         );
     }
 

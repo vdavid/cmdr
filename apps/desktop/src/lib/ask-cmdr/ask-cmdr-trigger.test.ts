@@ -101,8 +101,8 @@ function resolved(callId: string, tool: string): ResolvedCall {
 }
 
 /** Feed one stream event in as the backend emits it, for the thread the rail is on. A rail with
- * no thread yet is put on the named one first: production gets there through `started`, which
- * `adopts a new thread's id from its own started event` covers on its own. */
+ * no thread yet is put on the named one first: production gets there through its send's answer,
+ * which `ask-cmdr-send-before-id.test.ts` covers on its own. */
 function fire(event: AskCmdrStreamEvent, conversationId: number = askCmdrState.conversationId ?? THREAD_ID): void {
   askCmdrState.conversationId = conversationId
   handleTurnEvent({ conversationId, event })
@@ -654,6 +654,40 @@ describe('openRail bootstrap + newChat + hydrate', () => {
     // The most recent thread is NOT bootstrapped over the fresh chat.
     expect(listMock).not.toHaveBeenCalled()
     expect(askCmdrState.composerFocusRequest).toBe(focusBefore + 1)
+  })
+
+  /** ⚠️ On the very first open, cloud consent is still loading, so `openRail` stops at the gate
+   *  and the rail loads the last thread when the gate turns into the chat. That load used to
+   *  replace the new chat the user had just asked for. */
+  it('keeps a new chat opened while consent loads when the gate then opens', async () => {
+    gateMock.gate = 'loading'
+    listMock.mockResolvedValue([conversationRow(9)])
+    try {
+      openNewChat()
+      await vi.waitFor(() => {
+        expect(askCmdrState.open).toBe(true)
+      })
+
+      // What the rail does when its gate turns into the chat.
+      await ensureThreadLoaded()
+
+      expect(listMock).not.toHaveBeenCalled()
+      expect(askCmdrState.conversationId).toBeNull()
+    } finally {
+      gateMock.gate = 'chat'
+    }
+  })
+
+  it('a thread load ends the new chat', async () => {
+    openNewChat()
+    getMock.mockResolvedValue({
+      conversation: conversationRow(9),
+      totalMessages: 0,
+      messages: [],
+      turnInFlightSinceSeq: null,
+    })
+    await switchToThread(9)
+    expect(askCmdrState.freshChat).toBe(false)
   })
 
   it('openNewChat on an open rail clears the thread and asks for the composer again', async () => {

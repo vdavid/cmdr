@@ -232,16 +232,20 @@ async fn drive(
             dispatcher.revoke_evidence(&assembled.elision.elided_call_ids);
         }
 
-        let stream = match llm
-            .respond(
+        // Raced against Stop: a provider slow to answer (a long queue) would otherwise hold the
+        // turn, and its spend, until it did. Dropping the call drops the request.
+        let opened = tokio::select! {
+            biased;
+            () = cancel.cancelled() => return TurnEnd::Cancelled,
+            opened = llm.respond(
                 &assembled.system,
                 &assembled.tools,
                 &assembled.messages,
                 params.call,
                 cancel.clone(),
-            )
-            .await
-        {
+            ) => opened,
+        };
+        let stream = match opened {
             Ok(stream) => stream,
             Err(error) => {
                 // The call never opened, so it never reached `End`: nothing is
@@ -261,7 +265,7 @@ async fn drive(
             stop,
             usage,
             stream_error,
-        } = consume_stream(stream, sink).await;
+        } = consume_stream(stream, sink, cancel).await;
 
         let mut message = match final_message {
             Some(message) => message,
@@ -535,12 +539,26 @@ struct StreamOutcome {
 /// message plus its stop reason and usage (present only on a clean `End`). A stream
 /// error or a drop leaves `final_message` `None` so the caller applies the
 /// crash-case-a discard.
-async fn consume_stream(mut stream: crate::agent::llm::AgentDeltaStream, sink: &ChatEventSink) -> StreamOutcome {
+///
+/// Stop ends the stream here, at once, whatever the `AgentLlm` does with its own copy of the
+/// token: a model thinking before its next chunk would otherwise keep the turn (and the bill)
+/// running until it spoke. Dropping the stream drops the response body, which ends the spend.
+async fn consume_stream(
+    mut stream: crate::agent::llm::AgentDeltaStream,
+    sink: &ChatEventSink,
+    cancel: &CancellationToken,
+) -> StreamOutcome {
     let mut final_message = None;
     let mut stop = AgentStopReason::Completed;
     let mut usage = AgentUsage::default();
     let mut stream_error = None;
-    while let Some(item) = stream.next().await {
+    loop {
+        let next = tokio::select! {
+            biased;
+            () = cancel.cancelled() => None,
+            next = stream.next() => next,
+        };
+        let Some(item) = next else { break };
         match item {
             Ok(AgentDelta::Text(text)) => emit(sink, AgentChatEvent::TextDelta { text }),
             Ok(AgentDelta::ReasoningTick) => emit(sink, AgentChatEvent::ReasoningTick),
