@@ -16,21 +16,21 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 3007 / 5091 keys have a screenshot (59%):** 1680 direct (33%) and 1327 representative (26%). 1894 remain
+**Total: 3018 / 5169 keys have a screenshot (58%):** 1680 direct (33%) and 1338 representative (26%). 1961 remain
 uncoupled, and 190 are native surfaces a webview capture cannot reach.
 
 | Area            | Direct | Representative | Uncoupled | Native | Total | Any % |
 | --------------- | -----: | -------------: | --------: | -----: | ----: | ----: |
 | adb             |      3 |              0 |        17 |      0 |    20 |   15% |
 | ai              |      0 |            139 |         0 |      0 |   139 |  100% |
-| askCmdr         |     64 |              0 |       234 |      0 |   298 |   21% |
+| askCmdr         |     64 |              0 |       268 |      0 |   332 |   19% |
 | commandPalette  |      3 |              2 |         2 |      0 |     7 |   71% |
-| commands        |    224 |              1 |        93 |      0 |   318 |   71% |
+| commands        |    224 |              1 |        95 |      0 |   320 |   70% |
 | common          |      8 |              1 |         9 |      0 |    18 |   50% |
 | crashReporter   |     12 |             11 |         0 |      0 |    23 |  100% |
 | downloads       |     10 |              5 |        21 |      0 |    36 |   42% |
 | errorReporter   |     16 |              0 |        43 |      0 |    59 |   27% |
-| errors          |    151 |            453 |         0 |      0 |   604 |  100% |
+| errors          |    151 |            464 |         0 |      0 |   615 |  100% |
 | feedback        |      8 |              6 |         2 |      0 |    16 |   88% |
 | fileExplorer    |    122 |             65 |       337 |      0 |   524 |   36% |
 | fileOperations  |    137 |             83 |       111 |      0 |   331 |   66% |
@@ -54,7 +54,7 @@ uncoupled, and 190 are native surfaces a webview capture cannot reach.
 | settings        |    422 |             41 |       403 |      0 |   866 |   53% |
 | shortcuts       |     35 |             28 |         0 |      0 |    63 |  100% |
 | stateRecovery   |      0 |              0 |        32 |      0 |    32 |    0% |
-| suggestedOps    |      0 |              0 |        79 |      0 |    79 |    0% |
+| suggestedOps    |      0 |              0 |       110 |      0 |   110 |    0% |
 | transfer        |      2 |             22 |         0 |      0 |    24 |  100% |
 | ui              |      8 |              0 |        20 |      0 |    28 |   29% |
 | updates         |      5 |             27 |         0 |      0 |    32 |  100% |

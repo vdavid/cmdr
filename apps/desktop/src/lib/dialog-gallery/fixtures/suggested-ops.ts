@@ -11,7 +11,12 @@
  * Raw copy on purpose: dev-only, outside the i18n-enforced areas.
  */
 
-import type { SuggestedGroupView, SuggestedOpView, SuggestedSweepView } from '#lib/tauri-commands/index.js'
+import type {
+  NewNameState,
+  SuggestedGroupView,
+  SuggestedOpView,
+  SuggestedSweepView,
+} from '#lib/tauri-commands/index.js'
 import {
   newGroupReview,
   suggestedOpsState,
@@ -135,11 +140,12 @@ function rowSourceFor(groups: FixtureGroup[]): SuggestedOpRowSource {
     liveFacts: ({ groupId, offset, limit }) => {
       const group = byId.get(groupId)
       if (!group) return Promise.resolve({ kind: 'refused', reason: { type: 'unknownGroup' } })
-      const facts = Array.from({ length: limit }, (_, i) => ({
-        opId: offset + i + 1,
-        state: liveOf(fileOf(group, offset + i)),
-        newName: null,
-      }))
+      const facts = Array.from({ length: limit }, (_, i) => {
+        const file = fileOf(group, offset + i)
+        // The same answer `review()` seeds, so a re-read never clears a fixture's taken name.
+        const newName: NewNameState | null = file.nameTaken ? 'taken' : file.newName ? 'free' : null
+        return { opId: offset + i + 1, state: liveOf(file), newName }
+      })
       return Promise.resolve({ kind: 'facts', facts })
     },
   }
