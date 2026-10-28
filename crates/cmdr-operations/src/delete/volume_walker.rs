@@ -10,12 +10,90 @@ use super::super::event_sinks::OperationEventSink;
 use super::super::state::WriteOperationState;
 use super::super::transfer::volume_outage::StartedOn;
 use super::super::types::{
-    CancelRollback, DryRunResult, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig, WriteOperationError,
-    WriteOperationPhase, WriteOperationType, WriteProgressEvent,
+    CancelRollback, DryRunResult, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
+    WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 use super::outage::{EntryStop, Listed, delete_entry};
 use super::volume_scan::{VolumeDeleteEntry, VolumeScanTracker, listed_in_parent_listing, scan_volume_recursive};
 use cmdr_fs::volume::{EntryKind, Volume};
+
+/// Counts each top-level source's entries down as the delete removes them, so
+/// `write-source-item-done` fires once per source, after its LAST entry (a
+/// folder's own, which goes after its files). The local walker's
+/// `SourceItemTracker` does the same over its flat file list; this one keys on
+/// the scan's entries, which include the folders.
+///
+/// ❗ Without it a volume delete reported no source at all, and a caller that
+/// tracks outcomes per source (an approved AI suggestion's ops) read every one
+/// as never reached.
+struct SourceCountdown {
+    remaining: std::collections::HashMap<PathBuf, usize>,
+    /// Sources a folder of which the delete left standing (best effort: a
+    /// folder still holding something refuses, and stays).
+    kept: std::collections::HashSet<PathBuf>,
+}
+
+impl SourceCountdown {
+    fn new(sources: &[PathBuf], entries: &[VolumeDeleteEntry]) -> Self {
+        let mut remaining = std::collections::HashMap::new();
+        for source in sources {
+            remaining.insert(source.clone(), 0);
+        }
+        let mut counted = Self {
+            remaining,
+            kept: std::collections::HashSet::new(),
+        };
+        for entry in entries {
+            if let Some(source) = counted.source_of(&entry.path)
+                && let Some(count) = counted.remaining.get_mut(&source)
+            {
+                *count += 1;
+            }
+        }
+        counted
+    }
+
+    /// The top-level source `path` sits under (or is): the nearest ancestor
+    /// that's a source. Bounded by the path's depth, never by the source count.
+    fn source_of(&self, path: &std::path::Path) -> Option<PathBuf> {
+        path.ancestors()
+            .find(|ancestor| self.remaining.contains_key(*ancestor))
+            .map(std::path::Path::to_path_buf)
+    }
+
+    /// One entry of a source is done (`removed` false: a folder that stayed).
+    /// Emits the source's event when that was its last entry.
+    fn entry_done(
+        &mut self,
+        events: &dyn OperationEventSink,
+        operation_id: &str,
+        path: &std::path::Path,
+        removed: bool,
+    ) {
+        let Some(source) = self.source_of(path) else {
+            return;
+        };
+        if !removed {
+            self.kept.insert(source.clone());
+        }
+        let Some(count) = self.remaining.get_mut(&source) else {
+            return;
+        };
+        *count = count.saturating_sub(1);
+        if *count > 0 {
+            return;
+        }
+        self.remaining.remove(&source);
+        events.emit_source_item_done(WriteSourceItemDoneEvent {
+            operation_id: operation_id.to_string(),
+            source_path: source.display().to_string(),
+            // Delete has no Skip: every file under it is unlinked. Only its own
+            // folder can have stayed.
+            source_removed: !self.kept.contains(&source),
+            outcome: SourceItemOutcome::Done,
+        });
+    }
+}
 
 /// Deletes `batch` in one `delete_files` call, then takes each file the call
 /// couldn't delete into its own outage loop (`outage::delete_entry`), starting
@@ -342,6 +420,7 @@ pub(crate) async fn delete_volume_files_with_progress_inner(
     let mut files_done = 0;
     let mut bytes_done = 0u64;
     let mut last_progress_time = Instant::now();
+    let mut countdown = SourceCountdown::new(sources, &entries);
 
     // Delete files: one at a time, or in the backend's own batches
     // (`Volume::delete_batch_size`, an object store's `DeleteObjects`). A batch
@@ -437,6 +516,7 @@ pub(crate) async fn delete_volume_files_with_progress_inner(
             // with the dedup'd `total_bytes` denominator. See
             // `VolumeDeleteEntry::progress_bytes` for the contract.
             bytes_done += entry.progress_bytes;
+            countdown.entry_done(events, operation_id, &entry.path, true);
         }
         if let Some(failure) = first_failure {
             return Err(failure);
@@ -488,7 +568,7 @@ pub(crate) async fn delete_volume_files_with_progress_inner(
         }
 
         match delete_entry(&volume, state, &entry.path, entry.listed, None).await {
-            Ok(()) => {}
+            Ok(()) => countdown.entry_done(events, operation_id, &entry.path, true),
             Err(EntryStop::Cancelled) => {
                 events.emit_cancelled(WriteCancelledEvent {
                     operation_id: operation_id.to_string(),
@@ -502,7 +582,9 @@ pub(crate) async fn delete_volume_files_with_progress_inner(
             }
             // Best effort, as it always was: a folder still holding something
             // the delete couldn't take refuses, and stays.
-            Err(EntryStop::Failed { error, lost: None }) if error.transport_fault().is_none() => {}
+            Err(EntryStop::Failed { error, lost: None }) if error.transport_fault().is_none() => {
+                countdown.entry_done(events, operation_id, &entry.path, false);
+            }
             // An outage that ended it, or a folder someone else swapped for
             // something else meanwhile: reported, ❌ never swallowed into a
             // delete that reads as complete.

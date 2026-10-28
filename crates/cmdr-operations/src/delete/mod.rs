@@ -66,5 +66,8 @@ mod trash_pause_tests;
 mod volume_cancel_tests;
 #[cfg(test)]
 mod volume_hardlink_progress_tests;
+/// A volume delete reports each top-level source as it finishes.
+#[cfg(test)]
+mod volume_source_done_tests;
 #[cfg(test)]
 mod volume_symlink_tests;

@@ -542,6 +542,59 @@ async fn a_trash_group_approved_as_a_permanent_delete_on_a_drive_with_no_trash_d
         })
     };
     crate::test_support::wait_until_async(std::time::Duration::from_secs(5), "the file is deleted", gone).await;
+    wait_for_op_status(&conn, group_id, OpStatus::Done).await;
+}
+
+/// Waits until the group's one op reads `status`: the decorator writes it as its source settles.
+async fn wait_for_op_status(conn: &Connection, group_id: i64, status: OpStatus) {
+    crate::test_support::wait_until_async(
+        std::time::Duration::from_secs(5),
+        "the op's outcome is recorded",
+        || page_ops(conn, group_id, 10, 0).expect("ops")[0].status == status,
+    )
+    .await;
+}
+
+/// ❗ **A deleted op reads `done`, not `pending`.** The agent hears what happened from these
+/// rows, and the next launch's recovery reads them: an op left `pending` after its file was
+/// deleted says nothing reached it.
+#[tokio::test(flavor = "multi_thread")]
+async fn an_approved_delete_group_on_the_local_disk_records_its_op_done() {
+    ensure_root_volume();
+    let dir = TestDir::new("bridge_root_delete_status");
+    let file = dir.join("old.iso");
+    std::fs::write(&file, b"an old image").expect("seed");
+    let db_path = dir.join("main.db");
+    let conn = open_write_connection(&db_path).expect("open");
+    let set_id = create_sweep(&conn, &NewSweep::default(), 100).expect("sweep");
+    let group_id = create_group(
+        &conn,
+        set_id,
+        &NewGroup {
+            intent: GroupIntent::Delete {
+                sources: vec![NewOp {
+                    source_path: file.display().to_string(),
+                    snapshot: None,
+                }],
+            },
+            source_volume_id: "root".to_string(),
+            display_name: "one disk image".to_string(),
+            rationale: None,
+            selector: None,
+        },
+        100,
+    )
+    .expect("group");
+    let reporting = open_write_connection(&db_path).expect("second connection");
+
+    let outcome = approve(&conn, reporting, group_id).await;
+
+    assert!(matches!(outcome, super::ApprovalOutcome::Started(_)), "{outcome:?}");
+    crate::test_support::wait_until_async(std::time::Duration::from_secs(5), "the file is deleted", || {
+        !file.exists()
+    })
+    .await;
+    wait_for_op_status(&conn, group_id, OpStatus::Done).await;
 }
 
 /// The fallback runs only when the review showed it AND the drive still calls for it, so a

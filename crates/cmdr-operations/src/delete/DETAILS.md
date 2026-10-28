@@ -4,6 +4,12 @@ Depth and rationale. `CLAUDE.md` holds the must-knows; the decision detail lives
 
 ## Volume-delete internals
 
+**Each top-level source reports `write-source-item-done` once its last entry is gone** (`SourceCountdown`, keyed on the
+scan's entries, a folder's own included), as the local walker's `SourceItemTracker` does over its file list. A folder
+the best-effort directory pass left standing reports `source_removed: false`. Without it a volume delete reported no
+source at all, and an approved AI suggestion's ops stayed `pending` with their files gone. Regression anchor:
+`volume_source_done_tests.rs`.
+
 `delete_volume_files_with_progress_inner` consumes the scan preview via `take_cached_scan_result(preview_id, sources)`.
 On hit, top-level files come straight from `CopyScanResult` with no `is_directory` probe; top-level dirs recurse via the
 oracle-aware walker. On no-preview paths (MCP, programmatic), the parent oracle answers the top-level type when the
