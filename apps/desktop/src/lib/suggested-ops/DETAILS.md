@@ -224,13 +224,12 @@ generic path kept only the variant name; the failure's message carries both.
   `tick()` first), for the same teardown read: approving a group used to crash the window the moment its move started.
   Regression anchor: `SuggestedOpsDialog.approve.test.ts`; E2E caught it as every spec after `suggested-ops-named-move`
   failing on the crash panel.
-- **A row never loses its op while it tears down, whatever drops the review** (`drawnOps` in `SuggestedOpFiles.svelte`).
-  The two bullets above each kept ONE path from dropping a review in the flush that unmounts its rows; Debug > Soft
-  dialogs opening one seeded state over another found a third (its seed swaps the whole store in one step), crashing
-  with `undefined is not an object (evaluating 'op.status')`. So the list keeps the ops it drew, pruned to the drawn
-  range, and a group whose review is gone (a group leaving the list) reads its rows from there. No user path is known to
-  reach it today; the guard makes the next one harmless too. Regression anchor:
-  `SuggestedOpsDialog.rows-vanish.test.ts`.
+- **A row never loses its op while it tears down, whatever drops the review.** The two bullets above each kept ONE path
+  from dropping a review in the flush that unmounts its rows; Debug > Soft dialogs opening one seeded state over another
+  found a third (its seed swaps the whole store in one step), crashing with
+  `undefined is not an object (evaluating 'op.status')`. The guard lives in `ColumnList` (`heldRowOf`,
+  `apps/desktop/src/lib/ui/DETAILS.md` § ColumnList), so every list has it: a cell reads the row it drew. No user path
+  is known to reach it today. Regression anchor: `SuggestedOpsDialog.rows-vanish.test.ts`.
 - **Decision: Approve stays enabled while a group's rows are loading or couldn't load** (David, 2026-09-25, #155). Its
   count comes from `COUNT(*)`, so the button says exactly how many ops it approves even before any row shows. ❌ Don't
   gate Approve on the op window.

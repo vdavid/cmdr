@@ -31,8 +31,8 @@ and per-op selection. Backend: `apps/desktop/src-tauri/src/commands/agent/sugges
 - **Each group loads a WINDOW at a time** (`OP_WINDOW_SIZE`), sized by `COUNT(*)`, through `ColumnList`'s windowed
   source. A group of 60,000 is legitimate: ❌ nothing loads a group to show it, "Show all" included.
 - **A gone file is never ticked** (`review.missing`), counted, or sent on.
-- **A row never loses its op while it tears down.** Ark reads `checked` on the way out, so `SuggestedOpFiles` keeps the
-  drawn ops for a group whose review is gone (`drawnOps`). Regression anchor: `SuggestedOpsDialog.rows-vanish.test.ts`.
+- **A row never loses its op while it tears down**: `ColumnList` holds each cell's own row (`heldRowOf`), so `getRow`
+  answers `undefined` honestly. Regression anchor: `SuggestedOpsDialog.rows-vanish.test.ts`.
 - **Selection is the user's hand flips over a base** (`OpSelection`): the stored ticks (`fromStored`, where a review
   opens, so an earlier "no" stays off), or all / none after the header box. ❌ Never enumerate ops the user didn't flip:
   "none" of 60,000 would send them all.

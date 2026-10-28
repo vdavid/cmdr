@@ -98,6 +98,58 @@
         return row !== undefined && rowKey ? rowKey(row) : index
     }
 
+    /** One drawn block: where it sits and the key it's drawn under, fixed when the block is. */
+    interface DrawnItem {
+        index: number
+        key: string | number
+    }
+
+    const drawnItems = $derived<DrawnItem[]>(drawn.map((index) => ({ index, key: keyOf(index) })))
+
+    /**
+     * The row a block is drawn for right now, or `undefined` when its index holds nothing (a
+     * windowed row not loaded) or holds ANOTHER row (the block is leaving, and a neighbour
+     * shifted into its index).
+     */
+    function liveRowOf(item: DrawnItem): ColumnListRow<T> {
+        const row = rowAt(item.index)
+        if (row === undefined) return undefined
+        return keyOf(item.index) === item.key ? row : undefined
+    }
+
+    /**
+     * The row each block last drew, by key, for the one moment a block outlives it.
+     *
+     * A cell may read its row while it tears down (Ark's checkbox reads its props on the way
+     * out), and by then the row can be gone from its index or replaced by a neighbour. A block is
+     * keyed by its row but found it by INDEX, so that read came back `undefined` or wrong, and
+     * the throw took the whole window down to its crash panel (the AI suggestions and bulk
+     * rename reviews both did). Cells read through `heldRowOf`, which answers the block's own
+     * last row then. Not state: nothing renders from it. Pruned to the drawn keys after each
+     * pass, so it holds a viewport's worth at any list size.
+     */
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- bookkeeping for teardown reads; nothing renders from it
+    const heldRows = new Map<string | number, T>()
+
+    /**
+     * `live` is typed as present because only a branch that drew a row asks; it goes
+     * `undefined` only while that branch is on its way out, and then the held row answers.
+     */
+    function heldRowOf(item: DrawnItem, live: T): T {
+        if (live !== undefined) {
+            heldRows.set(item.key, live)
+            return live
+        }
+        return heldRows.get(item.key) ?? live
+    }
+
+    $effect(() => {
+        const keys = new Set(drawnItems.map((item) => item.key))
+        untrack(() => {
+            for (const key of heldRows.keys()) if (!keys.has(key)) heldRows.delete(key)
+        })
+    })
+
     const tracks = createColumnTracks<T>(() => ({
         columns,
         rows: arrayRows,
@@ -279,16 +331,20 @@
         }}
     >
         <div style:padding-top="{padTop}px" style:padding-bottom="{padBottom}px">
-            {#each drawn as index (keyOf(index))}
-                {@const row = rowAt(index)}
-                {#if row === undefined}
+            <!-- Each block reads its row through its own drawn item, by key: a block on its way out
+                 keeps the row it drew (`heldRowOf`), never a neighbour that shifted into its index. -->
+            {#each drawnItems as item (item.key)}
+                {@const index = item.index}
+                {@const live = liveRowOf(item)}
+                {#if live === undefined}
                     <!-- A windowed row that hasn't arrived yet: holds its place, says nothing. -->
                     <div
                         class="column-list-row is-placeholder {rowClass}"
                         aria-hidden="true"
                         style:height={rowHeight}
                     ></div>
-                {:else if isGroupHeading?.(row)}
+                {:else if isGroupHeading?.(live)}
+                    {@const row = heldRowOf(item, live)}
                     <!-- In a listbox a heading can't be a child (options and groups only), so it
                          stays visual there and each option's own label must carry the context. -->
                     <div
@@ -309,6 +365,7 @@
                         </span>
                     </div>
                 {:else}
+                    {@const row = heldRowOf(item, live)}
                     {@const isUnderCursor = index === cursorIndex}
                     <div
                         class="column-list-row is-data {rowClass}"

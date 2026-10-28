@@ -1734,6 +1734,13 @@ itself, which is exactly what this leaves to the parent.
   ❗ the consumer must cover ALL of `start`–`end`, not just `start`: AI suggestions once checked only `start`, and the
   bottom of the drawn range sat on blank placeholders whenever it ran past the held page's end. `rowKey` keys an array's
   rows; a windowed source is keyed by index.
+- **A cell always reads its OWN row, even while it tears down** (`heldRowOf`). Each block reads its row through its
+  drawn item (`{ index, key }`), checks the row at that index still has its key (`liveRowOf`), and hands its cells the
+  last row it drew when it doesn't. Ark's checkbox reads its props on the way out, and a block keyed by its row but
+  reading by INDEX found `undefined` (a dropped window, an emptied list) or the neighbour that shifted in: the AI
+  suggestions and bulk rename reviews each crashed the main window that way from Debug > Soft dialogs. So a consumer's
+  `getRow` may answer `undefined` honestly, and ❌ no consumer keeps its own copy of drawn rows for teardown. Regression
+  anchor: `ColumnList.teardown.svelte.test.ts` (jsdom reproduces the windowed case; the array cases showed in WebKit).
 - **Cursor**: the parent owns the index. `cursorIndex` paints `.is-under-cursor` (and `aria-selected` in a listbox or
   grid). The list reports every move it makes through `onCursorChange(index)`: a click on a data row, a `grid`'s own
   cursor keys, and `mouseenter` when `hoverMovesCursor` is on. Writing it back to `cursorIndex` is what makes them one

@@ -82,32 +82,15 @@
     /** Every op shares one folder, named once in the group's facts, so rows show the name alone. */
     const sharedFolder = $derived(group.sourceFolder !== null)
 
-    /**
-     * The op each drawn row last showed, for the one moment a row outlives its group's review.
-     *
-     * A row's cells re-read their op while they tear down (Ark's checkbox reads `checked` on the
-     * way out), and when the review went in the same flush (a re-read dropping an answered group,
-     * the Debug gallery swapping one seeded state for another), the op was `undefined` and the
-     * throw took the main window down to its crash panel. A group with no review is a group
-     * leaving the list, so its rows keep the ops they drew until they're gone. Not state, and
-     * pruned to the drawn range, so it holds a viewport's worth at any group size.
-     */
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- bookkeeping for teardown reads; nothing renders from it
-    const drawnOps = new Map<number, SuggestedOpView>()
-
+    // A row whose op goes (its review dropped, its window replaced) while its cells tear down
+    // still reads the op it drew: `ColumnList` holds it (`heldRowOf`), so `getRow` can answer
+    // `undefined` honestly.
     const source: ColumnListWindowedSource<SuggestedOpView> = {
         get count() {
             return shownRows(group)
         },
-        getRow: (index) => {
-            if (!reviewOf(group.groupId)) return drawnOps.get(index)
-            const op = opAt(group.groupId, index)
-            if (op) drawnOps.set(index, op)
-            else drawnOps.delete(index)
-            return op ?? undefined
-        },
+        getRow: (index) => opAt(group.groupId, index) ?? undefined,
         onRangeChange: ({ start, end }) => {
-            for (const index of drawnOps.keys()) if (index < start || index >= end) drawnOps.delete(index)
             void showRange(group.groupId, start, end)
         },
     }
