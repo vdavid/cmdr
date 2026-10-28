@@ -9,7 +9,8 @@
 //     commit message, oldest first);
 //  3. pushes the branch and opens its PR, or reuses the open one (the PR is plumbing: CI runs on
 //     `pull_request`, and nobody reviews it);
-//  4. waits for `CI OK` on the head SHA, and on red names the failed jobs and the re-run command;
+//  4. waits for `CI OK` on the head SHA (or the first failure among the jobs it needs), and on
+//     red names the failed jobs and the re-run command;
 //  5. lands the green head: with `git push origin <sha>:main` while it still descends from
 //     `origin/main` (the SHAs stay the same, and GitHub marks the PR merged), else with
 //     `gh pr merge --admin --rebase`, which rebases it onto the `main` that moved under it and
@@ -363,6 +364,8 @@ func ensurePR(r runner, branch string, commits []commit) (pullRequest, error) {
 func waitForCI(r runner, head string, cfg config) error {
 	start := time.Now()
 	announced := false
+	// The jobs `CI OK` needs: once one of them fails, `CI OK` will too, so the wait stops there.
+	required := gateJobs(r, head)
 	// Whether a run on head showed up yet. Once one has, a poll that lists none is GitHub's
 	// list lagging, never a push that started nothing.
 	seen := false
@@ -388,7 +391,8 @@ func waitForCI(r runner, head string, cfg config) error {
 			say("%s is green.", ciCheck)
 			return nil
 		case verdictRed:
-			return ciFailure(r, run, cfg.command())
+			jobs, _ := runJobs(r, run.ID)
+			return ciFailure(run, jobs, false, cfg.command())
 		case verdictMissing:
 			if missingRunGivesUp(seen, time.Since(start)) {
 				return fmt.Errorf("no CI run on %s after %s. Check the PR's Checks tab, then land again: %s", head[:12], appearWithin, cfg.command())
@@ -398,6 +402,9 @@ func waitForCI(r runner, head string, cfg config) error {
 			if !announced {
 				say("Waiting for %s: https://github.com/%s/actions/runs/%d", ciCheck, repo, run.ID)
 				announced = true
+			}
+			if jobs, red := earlyRed(r, run, required); red {
+				return ciFailure(run, jobs, true, cfg.command())
 			}
 		}
 		if time.Since(start) > cfg.timeout {
@@ -419,25 +426,59 @@ func ciRunsPath(head string, merge bool) string {
 	return path
 }
 
-// ciFailure names the failed jobs and how to re-run them; flakes are expected, so that's the
-// first thing to try.
-func ciFailure(r runner, run workflowRun, again string) error {
-	var view struct {
-		Jobs []struct {
-			Name       string `json:"name"`
-			Conclusion string `json:"conclusion"`
-			URL        string `json:"url"`
-		} `json:"jobs"`
+// gateJobs names the jobs `CI OK` needs, read from head's own `ci.yml` (its `ci-ok` job's
+// `needs`, the list the gate itself checks). nil when it can't, and the wait then stops on
+// `CI OK` alone.
+func gateJobs(r runner, head string) []string {
+	ciYml, err := r.git("show", head+":.github/workflows/"+ciWorkflow)
+	if err != nil {
+		say("Couldn't read %s's required jobs from %s, so waiting for %s itself: %v", ciCheck, ciWorkflow, ciCheck, err)
+		return nil
 	}
+	required := requiredJobNames(ciYml)
+	if len(required) == 0 {
+		say("%s has no %s job to read required jobs from, so waiting for %s itself.", ciWorkflow, ciGateJob, ciCheck)
+	}
+	return required
+}
+
+// earlyRed reads a running run's jobs and reports whether one `CI OK` needs already failed, with
+// the jobs for the report. Same cadence, one more call, and most polls of it are a free 304 too.
+// A failed read only skips this poll's look, since `CI OK` still decides in the end.
+func earlyRed(r runner, run workflowRun, required []string) ([]runJob, bool) {
+	if run.Status == "completed" || len(required) == 0 {
+		return nil, false
+	}
+	jobs, err := runJobs(r, run.ID)
+	return jobs, err == nil && len(failedRequiredJobs(jobs, required, run.RunAttempt)) > 0
+}
+
+// runJobs lists the run's jobs in its latest attempt, so a `gh run rerun --failed` reads its
+// re-run jobs, not the red ones they replace.
+func runJobs(r runner, runID int64) ([]runJob, error) {
+	var page struct {
+		Jobs []runJob `json:"jobs"`
+	}
+	err := r.ghAPI(&page, fmt.Sprintf("repos/%s/actions/runs/%d/jobs?filter=latest&per_page=100", repo, runID))
+	return page.Jobs, err
+}
+
+// ciFailure names the failed jobs and how to re-run them; flakes are expected, so that's the
+// first thing to try. early: a job `CI OK` needs failed while the rest still run. The run goes on,
+// so every failure still shows on the PR, and GitHub re-runs only a finished run.
+func ciFailure(run workflowRun, jobs []runJob, early bool, again string) error {
 	msg := fmt.Sprintf("CI is red: https://github.com/%s/actions/runs/%d\n", repo, run.ID)
-	if err := r.ghJSON(&view, "run", "view", fmt.Sprint(run.ID), "-R", repo, "--json", "jobs"); err == nil {
-		for _, job := range view.Jobs {
-			if job.Conclusion != "success" && job.Conclusion != "skipped" {
-				msg += fmt.Sprintf("  %s: %s %s\n", job.Name, job.Conclusion, job.URL)
-			}
+	for _, job := range jobs {
+		if job.Status == "completed" && job.Conclusion != "success" && job.Conclusion != "skipped" {
+			msg += fmt.Sprintf("  %s: %s %s\n", job.Name, job.Conclusion, job.URL)
 		}
 	}
-	msg += fmt.Sprintf("A flake? Re-run the failed jobs, then land again:\n  gh run rerun %d --failed -R %s && %s\nA real failure? Fix it, commit, and land again.", run.ID, repo, again)
+	if early {
+		msg += fmt.Sprintf("%s will fail, so I stopped waiting. The other jobs keep running, so their failures show on the PR too.\nA flake? Once the run finishes, re-run the failed jobs, then land again:\n", ciCheck)
+	} else {
+		msg += "A flake? Re-run the failed jobs, then land again:\n"
+	}
+	msg += fmt.Sprintf("  gh run rerun %d --failed -R %s && %s\nA real failure? Fix it, commit, and land again.", run.ID, repo, again)
 	return errors.New(msg)
 }
 

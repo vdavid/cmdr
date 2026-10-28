@@ -28,9 +28,10 @@ only way commits reach `main`: nobody, admin included, lands a SHA without a gre
   `main` moved while CI ran: `gh pr merge --admin --rebase --match-head-commit <sha>`. Either way the CI ruleset demands
   `CI OK` green on the head, and `main`'s CI trusts it and skips the suite (`DETAILS.md` § Decision: merge a green PR
   onto a moved `main`).
-- **Re-run it at any stage.** A red CI prints the failed jobs and `gh run rerun <id> --failed`. Only a conflict GitHub
-  can't rebase makes it rebase here and run CI again, eight runs at most. A branch GitHub rebased onto `main` counts as
-  landed (`git cherry`, which `remove-worktree.sh` asks too).
+- **Re-run it at any stage.** A red CI prints the failed jobs and `gh run rerun <id> --failed` once a job `ci-ok` needs
+  fails (`DETAILS.md` § Decision: stop waiting at the first required failure). Only a conflict GitHub can't rebase makes
+  it rebase here and run CI again, eight runs at most. A branch GitHub rebased onto `main` counts as landed
+  (`git cherry`, which `remove-worktree.sh` asks too).
 - **It never rebases a merge or a tagged commit**, here or on GitHub. A branch carrying a merge stops when `main` moved;
   a tagged one (a release) needs `-merge`. A contributor PR's record rides no branch: `-record N` builds it on
   `origin/main` (`DETAILS.md` § Decision: record a contributor PR in its own land).
@@ -41,8 +42,8 @@ only way commits reach `main`: nobody, admin included, lands a SHA without a gre
 - **A newer push cancels the PR's running CI** (`cancel-in-progress` in `ci.yml`), so a watcher follows the newest run.
 - **The landing push uses `--no-verify`.** CI passed on that exact SHA, and a pre-push hook that adds a commit would
   land something CI never saw.
-- **Only a lead agent lands.** CI takes 25–35 min, so agents run `pnpm land` in the background, and a background command
-  never wakes a subagent. A subagent runs `-no-wait` and hands over.
+- **Only a lead agent lands**, in the background (CI takes 25–35 min). A subagent runs `-no-wait` and hands over: a
+  background command never wakes it.
 - ❌ **Never commit on local `main`.** It mirrors `origin/main`; `land` fast-forwards it wherever it's checked out, and
   only when that tree is clean.
 

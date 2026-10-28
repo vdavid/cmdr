@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -231,10 +232,12 @@ func needsSquash(commits []commit, msg string) bool {
 
 // workflowRun is one of `repos/{repo}/actions/workflows/{file}/runs`' `workflow_runs`.
 type workflowRun struct {
-	ID             int64     `json:"id"`
-	Status         string    `json:"status"`
-	Conclusion     string    `json:"conclusion"`
-	CreatedAt      time.Time `json:"created_at"`
+	ID         int64     `json:"id"`
+	Status     string    `json:"status"`
+	Conclusion string    `json:"conclusion"`
+	CreatedAt  time.Time `json:"created_at"`
+	// RunAttempt goes up with each `gh run rerun`.
+	RunAttempt     int `json:"run_attempt"`
 	HeadRepository struct {
 		FullName string `json:"full_name"`
 	} `json:"head_repository"`
@@ -325,6 +328,126 @@ func ciVerdict(runs []workflowRun, checks []checkRun) (verdict, workflowRun) {
 		return verdictGreen, run
 	}
 	return verdictRed, run
+}
+
+// runJob is one of `repos/{repo}/actions/runs/{id}/jobs`' `jobs`.
+type runJob struct {
+	Name       string `json:"name"`
+	Status     string `json:"status"`
+	Conclusion string `json:"conclusion"`
+	URL        string `json:"html_url"`
+	RunAttempt int    `json:"run_attempt"`
+}
+
+// ciGateJob is the job ID of `CI OK` in `ci.yml`.
+const ciGateJob = "ci-ok"
+
+var (
+	workflowJobKeyRe = regexp.MustCompile(`^  ([A-Za-z0-9_-]+):\s*(#.*)?$`)
+	jobIDRe          = regexp.MustCompile(`[A-Za-z0-9_][A-Za-z0-9_-]*`)
+)
+
+// requiredJobNames reads `ci.yml` and returns the display names of the jobs `CI OK` needs, the
+// names GitHub's jobs API reports (a job's `name:`, else its ID). nil when there's no `ci-ok`
+// job. Line-based, like `scripts/check/checks/ci-ok-gate.go`: ci.yml keeps the standard
+// two-space layout. A name with an expression in it can't be matched, so it's left out.
+func requiredJobNames(ciYml string) []string {
+	jobs := map[string][]string{}
+	inJobs, current := false, ""
+	for line := range strings.SplitSeq(ciYml, "\n") {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		if !strings.HasPrefix(line, " ") && !strings.HasPrefix(line, "#") {
+			inJobs, current = strings.HasPrefix(line, "jobs:"), ""
+			continue
+		}
+		if !inJobs {
+			continue
+		}
+		if m := workflowJobKeyRe.FindStringSubmatch(line); m != nil {
+			current = m[1]
+			jobs[current] = []string{}
+			continue
+		}
+		if current != "" && strings.HasPrefix(line, "    ") {
+			jobs[current] = append(jobs[current], line)
+		}
+	}
+	gate, ok := jobs[ciGateJob]
+	if !ok {
+		return nil
+	}
+	var names []string
+	for _, id := range gateNeeds(gate) {
+		body, ok := jobs[id]
+		if !ok {
+			continue
+		}
+		name := id
+		for _, line := range body {
+			if v, ok := strings.CutPrefix(line, "    name:"); ok {
+				name = strings.Trim(strings.TrimSpace(v), `'"`)
+				break
+			}
+		}
+		if !strings.Contains(name, "${{") {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
+// gateNeeds returns the job IDs in a job's `needs`: a scalar, a flow sequence on one or several
+// lines, or a block sequence.
+func gateNeeds(body []string) []string {
+	var ids []string
+	collecting := false
+	for _, line := range body {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		if i := strings.Index(trimmed, "#"); i >= 0 {
+			trimmed = trimmed[:i]
+		}
+		if !collecting {
+			if v, ok := strings.CutPrefix(line, "    needs:"); ok {
+				collecting = true
+				ids = append(ids, jobIDRe.FindAllString(v, -1)...)
+			}
+			continue
+		}
+		// A sibling key at the job's own indent ends the value.
+		if !strings.HasPrefix(line, "     ") && !strings.HasPrefix(trimmed, "-") && !strings.HasPrefix(trimmed, "]") {
+			break
+		}
+		ids = append(ids, jobIDRe.FindAllString(trimmed, -1)...)
+	}
+	return ids
+}
+
+// failedRequiredJobs picks the jobs `CI OK` requires that already ended red (`failure` or
+// `timed_out`), so the wait can stop before the rest finish: `CI OK` is bound to fail. Cancelled
+// and skipped don't count (the gate has its own rules for those, and a cancelled job is usually a
+// newer push). Only jobs of the run's current attempt count: right after a
+// `gh run rerun --failed` the list can still hold the red jobs that re-run replaces. A reusable
+// workflow's jobs show as "<caller name> / <job name>" (verified on run 39684718106,
+// `gh api .../jobs`, 2026-10-28), so they match by that prefix; matrix legs don't, since a job
+// outside the gate could share the shape.
+func failedRequiredJobs(jobs []runJob, required []string, attempt int) []runJob {
+	var out []runJob
+	for _, job := range jobs {
+		if job.RunAttempt != attempt || job.Status != "completed" || (job.Conclusion != "failure" && job.Conclusion != "timed_out") {
+			continue
+		}
+		if slices.ContainsFunc(required, func(name string) bool {
+			return job.Name == name || strings.HasPrefix(job.Name, name+" / ")
+		}) {
+			out = append(out, job)
+		}
+	}
+	return out
 }
 
 // pullRequest is one row of `gh pr list --json number,state,url`.

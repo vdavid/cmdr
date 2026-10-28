@@ -68,6 +68,32 @@ it with the release flow (`docs/guides/releasing.md`).
 not red) and the newest `CI OK` check run. Only `success` is green: GitHub would accept a skipped check, which a
 finished run should never produce.
 
+## Decision: stop waiting at the first required failure
+
+Decision: while the run is going, each poll also reads its jobs (`repos/{repo}/actions/runs/{id}/jobs?filter=latest`,
+`runJobs`), and as soon as a job `CI OK` needs has ended `failure` or `timed_out` (`failedRequiredJobs`), the wait stops
+with the usual red report: the failed jobs with links and `gh run rerun <id> --failed`, which works once the run
+finishes. Why: `CI OK` runs only after every job, so run 40670839400 (2026-10-28) reported a type-aware ESLint failure
+from minute four at minute 20.
+
+- **The run isn't cancelled**: the other jobs keep going, so their failures still show on the PR, and one re-run of the
+  failed jobs covers them all.
+- **Required jobs come from head's own `ci.yml`** (`git show <head>:.github/workflows/ci.yml`, `requiredJobNames`): the
+  `ci-ok` job's `needs`, mapped to each job's `name:` (else its ID), which is what the jobs API reports. A line-based
+  read, the same layout `scripts/check/checks/ci-ok-gate.go` relies on. No hardcoded list: `ci-coverage` keeps those
+  `needs` complete, so this follows it. No `ci-ok` job, or no readable `ci.yml`, prints a note and waits for `CI OK`
+  alone.
+- **Names match exactly, or as `<caller name> / <job>`** for a reusable workflow's jobs (the macOS lane, verified on run
+  39684718106, 2026-10-28). Matrix legs (`Name (x)`) don't match: ci.yml has none, and a job outside the gate named that
+  way would stop a land `CI OK` passes. A name holding `${{ }}` can't be matched, so that job only reports through
+  `CI OK`.
+- **Cancelled and skipped jobs aren't failures** (a lane skipped by change detection, a run a newer push replaced); the
+  gate's own rules decide those.
+- **Only the run's current attempt counts** (`run_attempt`): right after `gh run rerun --failed`, the list can still
+  hold the red jobs that re-run replaces, so a re-run then `pnpm land` waits as before.
+- **Cost**: one more call per poll at the same cadence, and an unchanged jobs list is a free 304 (`responseCache`). A
+  failed jobs read skips only that poll's early look.
+
 ## Gotcha: the branch push must never overwrite commits only origin has
 
 Gotcha: a `--force-with-lease` whose expected SHA is read (`ls-remote`) right before the push protects nothing: it
@@ -91,11 +117,12 @@ always matches, so origin's branch gets overwritten whatever it holds. It clobbe
 Many sessions landing at once poll one account, and on 2026-10-20 they spent its 5,000/h REST budget: `gh run list`
 answered 403 after CI was green, and that land was lost. So:
 
-- **One REST call per poll** (`repos/{repo}/actions/workflows/ci.yml/runs?head_sha=`), plus the `CI OK` check runs only
-  once the run finished. `gh run list --workflow` cost two calls (it resolves the workflow first).
+- **One REST call per poll** (`repos/{repo}/actions/workflows/ci.yml/runs?head_sha=`), plus the run's jobs while it runs
+  (§ Decision: stop waiting at the first required failure) and the `CI OK` check runs only once it finished.
+  `gh run list --workflow` cost two calls (it resolves the workflow first).
 - **Poll by run age** (`pollDelay`): 20 s until the run shows up, every 3 min while it's younger than 15 min (CI takes
-  25–35 min), then every minute, each plus up to 25% jitter. About 15–25 calls per CI run, down from ~180 (three calls
-  every 30 s).
+  25–35 min), then every minute, each plus up to 25% jitter. About 15–25 polls per CI run (two calls each, many of them
+  free 304s), down from ~180 calls (three every 30 s).
 - **An unchanged poll is free** (`responseCache`, `ghbudget.go`): `ghAPI` sends the path's last ETag as `If-None-Match`,
   and GitHub answers an unchanged list with a 304 that it doesn't charge to the primary budget (verified 2026-10-21:
   `X-RateLimit-Remaining` stayed at 4,942 across two 304s on the workflow-runs list). Most polls of a running CI see

@@ -2,6 +2,7 @@ package main
 
 import (
 	"slices"
+	"strings"
 	"testing"
 	"time"
 )
@@ -329,6 +330,93 @@ func TestMissingRunGivesUp(t *testing.T) {
 	for _, c := range cases {
 		if got := missingRunGivesUp(c.seen, c.waited); got != c.want {
 			t.Errorf("%s: got %v, want %v", c.name, got, c.want)
+		}
+	}
+}
+
+// The shape of ci.yml's gate: a multi-line flow `needs`, a job with no `name:` (GitHub shows its
+// ID), a quoted name, a commented-out need, and a post-land job the gate leaves out.
+const gateYML = `name: CI
+on:
+  pull_request:
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      name: not-a-job-name
+  lint:
+    name: "Desktop (Svelte, type-aware ESLint)"
+    needs: changes
+  macos:
+    name: Desktop (Rust, macOS)
+    needs: changes
+    uses: ./.github/workflows/macos-lane.yml
+  bare-job:
+    needs: [changes]
+  warm-cache:
+    name: Warm Rust build cache (Linux)
+    needs: changes
+  ci-ok:
+    name: CI OK
+    needs:
+      [
+        changes,
+        lint, # the slow one
+        # retired,
+        macos,
+        bare-job,
+      ]
+    if: always()
+`
+
+func TestRequiredJobNames(t *testing.T) {
+	got := requiredJobNames(gateYML)
+	want := []string{"Detect changes", "Desktop (Svelte, type-aware ESLint)", "Desktop (Rust, macOS)", "bare-job"}
+	if !slices.Equal(got, want) {
+		t.Errorf("got %q, want %q", got, want)
+	}
+	flow := "    needs:\n      [\n        changes,\n        lint, # the slow one\n        # retired,\n        macos,\n        bare-job,\n      ]\n"
+	block := "    needs:\n      - changes\n      - lint\n"
+	if got := requiredJobNames(strings.Replace(gateYML, flow, block, 1)); !slices.Equal(got, []string{"Detect changes", "Desktop (Svelte, type-aware ESLint)"}) {
+		t.Errorf("block sequence: got %q", got)
+	}
+	if got := requiredJobNames("jobs:\n  build:\n    name: Build\n"); got != nil {
+		t.Errorf("no ci-ok job: got %q, want nil", got)
+	}
+}
+
+func TestFailedRequiredJobs(t *testing.T) {
+	required := []string{"Detect changes", "Desktop (Svelte, type-aware ESLint)", "Desktop (Rust, macOS)"}
+	job := func(name, status, conclusion string) runJob {
+		return runJob{Name: name, Status: status, Conclusion: conclusion, RunAttempt: 2}
+	}
+	stale := runJob{Name: "Detect changes", Status: "completed", Conclusion: "failure", RunAttempt: 1}
+	cases := []struct {
+		name string
+		jobs []runJob
+		want []string
+	}{
+		{"all running", []runJob{job("Detect changes", "completed", "success"), job("Desktop (Svelte, type-aware ESLint)", "in_progress", "")}, nil},
+		// Run 40670839400 (2026-10-28): this lane failed at 4 min, and `CI OK` reported 16 min later.
+		{"a required lane failed", []runJob{job("Desktop (Svelte, type-aware ESLint)", "completed", "failure"), job("E2E tests (Playwright, Linux)", "in_progress", "")}, []string{"Desktop (Svelte, type-aware ESLint)"}},
+		{"timed out counts", []runJob{job("Detect changes", "completed", "timed_out")}, []string{"Detect changes"}},
+		{"cancelled and skipped don't", []runJob{job("Detect changes", "completed", "cancelled"), job("Desktop (Rust, macOS)", "completed", "skipped")}, nil},
+		{"a job outside the gate doesn't", []runJob{job("Warm Rust build cache (Linux)", "completed", "failure")}, nil},
+		{"a reusable workflow's inner job counts", []runJob{job("Desktop (Rust, macOS) / Tests", "completed", "failure")}, []string{"Desktop (Rust, macOS) / Tests"}},
+		// Matrix legs ("Name (ubuntu)") don't match either: ci.yml has none, and a job outside the
+		// gate named like one ("Desktop (Rust) (deploy)") would stop a land CI OK passes.
+		{"a name that only shares a prefix doesn't", []runJob{job("Detect changes (deploy)", "completed", "failure"), job("Detect changes again", "completed", "failure")}, nil},
+		{"CI OK itself isn't a lane", []runJob{job("CI OK", "completed", "failure")}, nil},
+		{"the red job a re-run replaces doesn't", []runJob{stale, job("Detect changes", "queued", "")}, nil},
+	}
+	for _, c := range cases {
+		var got []string
+		for _, j := range failedRequiredJobs(c.jobs, required, 2) {
+			got = append(got, j.Name)
+		}
+		if !slices.Equal(got, c.want) {
+			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
 		}
 	}
 }
