@@ -3676,5 +3676,20 @@
     "confidence": "high",
     "sources": "shipped pt catalog (multiRename.removeDiacritics, multiRename.preset.removeDiacritics Remover acentos)",
     "note": "Everyday pt-BR calls every letter mark (´ ` ^ ~ ¨) acento; diacríticos is bookish."
+  },
+  "reasoning-effort": {
+    "chosen": "Esforço de raciocínio",
+    "confidence": "tentative",
+    "sources": "OpenAI docs are English-only; no established rendering, so built from the locale’s reasoning wording"
+  },
+  "reasoning-effort-anthropic": {
+    "chosen": "Esforço",
+    "confidence": "high",
+    "sources": "Anthropic localized docs, platform.claude.com/docs/<lang>/build-with-claude/effort, read 2026-10-28 (pt-BR title Esforço)"
+  },
+  "thinking-level": {
+    "chosen": "Nível de pensamento",
+    "confidence": "tentative",
+    "sources": "Gemini docs (ai.google.dev thinking, machine-translated) keep thinking_level as code; built from this locale’s thinking + level rulings (Pensamento do Gemini)"
   }
 }

@@ -3974,5 +3974,20 @@
     "confidence": "high",
     "forms": "prose de zip (in de zip, de zip openen); English zip archive → zip-archief, lowercase and hyphenated like every format token; Apple's kind name capitalizes (Zip-archief) only as a Finder Kind label",
     "sources": "macOS Archive Utility and Finder (Zip archive → Zip-archief, Zip file → Zip-bestand); catalog errors.write.archive* family (de zip, zip-programma's, 15+ hits)"
+  },
+  "reasoning-effort": {
+    "chosen": "Redeneerinspanning",
+    "confidence": "tentative",
+    "sources": "OpenAI docs are English-only; no established rendering, so built from the locale’s reasoning wording"
+  },
+  "reasoning-effort-anthropic": {
+    "chosen": "Inspanning",
+    "confidence": "tentative",
+    "sources": "Anthropic localized docs, platform.claude.com/docs/<lang>/build-with-claude/effort, read 2026-10-28: no nl docs; the catalog already says inspanning"
+  },
+  "thinking-level": {
+    "chosen": "Denkniveau",
+    "confidence": "tentative",
+    "sources": "Gemini docs (ai.google.dev thinking, machine-translated) keep thinking_level as code; built from this locale’s thinking + level rulings"
   }
 }

@@ -3754,5 +3754,20 @@
     "confidence": "high",
     "forms": "a bare zip in prose → en zip; zip archive → zip-arkiv; the file itself → zip-filen; lowercase in running text (catalog: 17 zip-filen, four zip-arkiv) even though Finder writes Zip-arkiv",
     "sources": "macOS Finder sv (Zip-arkiv, ZIP-fil in CompressWithOptions); catalog (errors.write.archiveEntryNameRefused.title Det här namnet kan inte ligga i en zip, errors.write.namedLeavesRefused.message.routeCannotName zip-arkiv)"
+  },
+  "reasoning-effort": {
+    "chosen": "Ansträngning för resonemang",
+    "confidence": "tentative",
+    "sources": "OpenAI docs are English-only; no established rendering, so built from the locale’s reasoning wording"
+  },
+  "reasoning-effort-anthropic": {
+    "chosen": "Ansträngning",
+    "confidence": "tentative",
+    "sources": "Anthropic localized docs, platform.claude.com/docs/<lang>/build-with-claude/effort, read 2026-10-28: no sv docs; the catalog already says ansträngning"
+  },
+  "thinking-level": {
+    "chosen": "Tankenivå",
+    "confidence": "tentative",
+    "sources": "Gemini docs (ai.google.dev thinking, machine-translated) keep thinking_level as code; built from this locale’s thinking + level rulings"
   }
 }

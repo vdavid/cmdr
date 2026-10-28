@@ -155,3 +155,10 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
   reorder (`Bewegen Alte Installer`). Add a `{action} {title}` frame key, or call it a chip label. (de, hu, nl)
 - `suggestedOps.newNameTaken` ("Name already taken") and `multiRename.status.targetExists` ("Name is taken") say one
   thing in two Englishes; align them so `i18n-terms` keeps locales in step. (all)
+- `settings.ai.reasoningEfforts.keywords`: Settings search matches only the `thinkingLevel` label, so a user whose row
+  reads the Anthropic or OpenAI-style name finds it only through keywords; every locale now lists its two sibling labels
+  there. Proposed rule: when one setting shows per-context labels, its keywords carry every label the search label
+  doesn’t. (all)
+- `settings.ai.reasoningEfforts.description` (“More effort helps…”) is unchanged, so zh / zh-Hant still say `强度越高` /
+  `強度越高`, a word none of the three new labels uses; consider wording the English around thinking time so no locale
+  echoes a label it no longer shows. (zh, zh-Hant)

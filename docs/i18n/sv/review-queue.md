@@ -51,6 +51,8 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   `main · ändringar` reads as a state. Uploading badge → `Skickar` (Finder's column) over `Överför` (Finder's badge).
 - **security advisory → `säkerhetsmeddelande`** (`updates.toast.readAdvisory`, `whatsNew.securityNotice.*`): no pile
   term; Microsoft gives only advisory → `rekommendation`.
+- **`settings.ai.reasoningEfforts.label.*` → `Ansträngning för resonemang` / `Ansträngning` / `Tankenivå`**: no provider
+  ships Swedish docs; confirm the phrase form beats a compound (`Resonemangsinsats`) and that `Tankenivå` reads natural.
 
 ## Phrasing and tone
 

@@ -4230,5 +4230,20 @@
     "forms": "the bare prose noun takes front-vowel suffixes, no hyphen (zipet, zipben, zipből); into or out of a zip archive → zip-archívumba / zip-archívumból (see archive); a capitalized heading keeps macOS's space (Zip archívumok)",
     "confidence": "high",
     "sources": "macOS hu (Zip archívum, ZIP-archívum); Total Commander / Double Commander hu (ZIP fájl); catalog (zipet 3×, zipben 2×, zipből, zip-archívum 3×)"
+  },
+  "reasoning-effort": {
+    "chosen": "Érvelés mértéke",
+    "confidence": "tentative",
+    "sources": "OpenAI docs are English-only; no established rendering, so built from the locale’s reasoning wording; érvelés as in the catalog’s keywords"
+  },
+  "reasoning-effort-anthropic": {
+    "chosen": "Erőfeszítés",
+    "confidence": "tentative",
+    "sources": "Anthropic localized docs, platform.claude.com/docs/<lang>/build-with-claude/effort, read 2026-10-28: no hu docs; the localized ones render the plain word (ru усилие, es esfuerzo, de Aufwand)"
+  },
+  "thinking-level": {
+    "chosen": "Gondolkodási szint",
+    "confidence": "tentative",
+    "sources": "Gemini docs (ai.google.dev thinking, machine-translated) keep thinking_level as code; built from this locale’s thinking + level rulings"
   }
 }

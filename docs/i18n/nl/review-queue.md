@@ -56,6 +56,8 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   "repair". Fallback `terughalen uit koude opslag`.
 - **`Interoperabiliteit`** (`servers.sheet.s3GcsKeyHelp`): assumed to be the Dutch Google Cloud console's tab name;
   unverified.
+- `settings.ai.reasoningEfforts.label.*` → `Redeneerinspanning` / `Inspanning` / `Denkniveau`: no provider ships Dutch
+  docs; confirm the compound `Redeneerinspanning` doesn’t read too heavy.
 
 ## Phrasing and tone
 

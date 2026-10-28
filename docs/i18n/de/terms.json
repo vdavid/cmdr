@@ -4119,5 +4119,20 @@
     "confidence": "high",
     "forms": "neuter: das Zip, ein Zip, des Zips; zip archive → Zip-Archiv (macOS Finder); the file itself → Zip-Datei; zip tools → Zip-Programme",
     "sources": "macOS Finder (Zip-Archiv); catalog (errors.write.archiveEntryNameRefused.title Dieser Name passt nicht in ein Zip)"
+  },
+  "reasoning-effort": {
+    "chosen": "Denkaufwand",
+    "confidence": "tentative",
+    "sources": "OpenAI docs are English-only; no established rendering, so built from the locale’s reasoning wording; Azure’s MT Begründungsaufwand avoided (justification sense)"
+  },
+  "reasoning-effort-anthropic": {
+    "chosen": "Aufwand",
+    "confidence": "high",
+    "sources": "Anthropic localized docs, platform.claude.com/docs/<lang>/build-with-claude/effort, read 2026-10-28 (title Effort, glossed Aufwand)"
+  },
+  "thinking-level": {
+    "chosen": "Denkstufe",
+    "confidence": "tentative",
+    "sources": "Gemini docs (ai.google.dev thinking, machine-translated) keep thinking_level as code; built from this locale’s thinking + level rulings"
   }
 }

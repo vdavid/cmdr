@@ -1223,15 +1223,16 @@
   "@settings.ai.cloudProviderConfigs.description": {
     "sourceHash": "21132a2"
   },
-  "settings.ai.reasoningEfforts.label.reasoningEffort": "Reasoning effort",
+  "settings.ai.reasoningEfforts.label.reasoningEffort": "Effort de raisonnement",
   "@settings.ai.reasoningEfforts.label.reasoningEffort": {
     "sourceHash": "3236aee"
   },
   "settings.ai.reasoningEfforts.label.effort": "Effort",
   "@settings.ai.reasoningEfforts.label.effort": {
-    "sourceHash": "4387e5d"
+    "sourceHash": "4387e5d",
+    "sameAsSourceJustification": "Effort is a native French noun (masc.), and Anthropic's own French docs title this setting Effort (platform.claude.com/docs/fr/build-with-claude/effort, read 2026-10-28)."
   },
-  "settings.ai.reasoningEfforts.label.thinkingLevel": "Thinking level",
+  "settings.ai.reasoningEfforts.label.thinkingLevel": "Niveau de réflexion",
   "@settings.ai.reasoningEfforts.label.thinkingLevel": {
     "sourceHash": "96f115b"
   },
@@ -1239,9 +1240,9 @@
   "@settings.ai.reasoningEfforts.description": {
     "sourceHash": "2c0938f"
   },
-  "settings.ai.reasoningEfforts.keywords": "raisonnement, réfléchir, réflexion, profondeur, vitesse, coût, qualité",
+  "settings.ai.reasoningEfforts.keywords": "effort de raisonnement, effort, raisonnement, réfléchir, réflexion, profondeur, vitesse, coût, qualité",
   "@settings.ai.reasoningEfforts.keywords": {
-    "sourceHash": "e543d08"
+    "sourceHash": "3bbb127"
   },
   "settings.ai.localContextSize.label": "Fenêtre de contexte",
   "@settings.ai.localContextSize.label": {

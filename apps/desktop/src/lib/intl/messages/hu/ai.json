@@ -299,13 +299,13 @@
   "@ai.cloud.effort.max": {
     "sourceHash": "a1a5936"
   },
-  "ai.cloud.effort.forAskCmdrModel": "Az Ask Cmdr saját modellt használ ({model}), így ez annak a gondolkodási szintjét állítja be.",
+  "ai.cloud.effort.forAskCmdrModel": "Az Ask Cmdr saját modellt használ ({model}), így ez a beállítás arra a modellre vonatkozik.",
   "@ai.cloud.effort.forAskCmdrModel": {
-    "sourceHash": "ed98085"
+    "sourceHash": "3a36d6f"
   },
-  "ai.cloud.effort.levelsUnknown": "Ez a szolgáltatás nem adja meg, milyen gondolkodási szinteket fogad el ez a modell, ezért a szolgáltatás dönt.",
+  "ai.cloud.effort.levelsUnknown": "Ez a szolgáltatás nem adja meg, milyen szinteket fogad el ez a modell, ezért a szolgáltatás dönt.",
   "@ai.cloud.effort.levelsUnknown": {
-    "sourceHash": "7bb5384"
+    "sourceHash": "4688a12"
   },
   "ai.cloud.maxOutput": "Leghosszabb válasz: {outputText} {output, plural, one {token} other {token}}",
   "@ai.cloud.maxOutput": {

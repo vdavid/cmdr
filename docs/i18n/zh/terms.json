@@ -720,10 +720,7 @@
     "chosen": "级别",
     "confidence": "high",
     "sources": "MS terminology (级别); shipped settings.archives.compressionLevel.label",
-    "accept": ["缩放"],
-    "exceptions": {
-      "ai.cloud.effort.levelsUnknown": "The effort levels are named by the picker’s own label 思考强度 (settings.ai.reasoningEfforts.label), so 级别 would add a second name for the same setting."
-    }
+    "accept": ["缩放"]
   },
   "link": {
     "chosen": "链接",
@@ -3948,5 +3945,20 @@
     "confidence": "high",
     "forms": "unlock the phone → 解锁 (把它连上并解锁; 如果是手机，解锁它)",
     "sources": "MS terminology (unlock → 解锁, \"to enable an object to be modified\"); the catalog's 24 uses"
+  },
+  "reasoning-effort": {
+    "chosen": "推理强度",
+    "confidence": "tentative",
+    "sources": "OpenAI docs are English-only; no established rendering, so built from the locale’s reasoning wording; Gemini zh MT: 推理工作量"
+  },
+  "reasoning-effort-anthropic": {
+    "chosen": "努力程度",
+    "confidence": "high",
+    "sources": "Anthropic localized docs, platform.claude.com/docs/<lang>/build-with-claude/effort, read 2026-10-28 (zh-CN gloss 努力程度)"
+  },
+  "thinking-level": {
+    "chosen": "思考级别",
+    "confidence": "tentative",
+    "sources": "Gemini docs (ai.google.dev thinking, machine-translated) keep thinking_level as code; built from this locale’s thinking + level rulings (支持的级别)"
   }
 }

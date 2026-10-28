@@ -40,6 +40,9 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
 - **NFS export → `megosztás`**: no Tier-1 or pile source names an NFS export; `megosztott mappa` (Synology, QNAP) or the
   jargon `export` are the alternatives. The quoted NAS label in `servers.refusal.reservedPortRequired`
   (`Kapcsolatok engedélyezése nem privilegizált portokról`) is unverified against a Hungarian NAS UI.
+- **`settings.ai.reasoningEfforts.label.*` → `Érvelés mértéke` / `Erőfeszítés` / `Gondolkodási szint`**: no provider
+  ships Hungarian docs, so all three are built; confirm `Erőfeszítés` reads as the model’s work, not physical effort,
+  and that `Érvelés mértéke` is the natural name for OpenAI’s reasoning effort.
 
 ## Wording
 

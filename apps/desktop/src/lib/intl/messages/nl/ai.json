@@ -299,13 +299,13 @@
   "@ai.cloud.effort.max": {
     "sourceHash": "a1a5936"
   },
-  "ai.cloud.effort.forAskCmdrModel": "Ask Cmdr gebruikt een eigen model ({model}), dus dit stelt de inspanning van dat model in.",
+  "ai.cloud.effort.forAskCmdrModel": "Ask Cmdr gebruikt een eigen model ({model}), dus dit geldt voor dat model.",
   "@ai.cloud.effort.forAskCmdrModel": {
-    "sourceHash": "ed98085"
+    "sourceHash": "3a36d6f"
   },
-  "ai.cloud.effort.levelsUnknown": "Deze service geeft niet aan welke inspanningsniveaus dit model aankan, dus de service beslist zelf.",
+  "ai.cloud.effort.levelsUnknown": "Deze service geeft niet aan welke niveaus dit model aankan, dus de service beslist zelf.",
   "@ai.cloud.effort.levelsUnknown": {
-    "sourceHash": "7bb5384"
+    "sourceHash": "4688a12"
   },
   "ai.cloud.maxOutput": "Langste antwoord: {outputText} {output, plural, one {token} other {tokens}}",
   "@ai.cloud.maxOutput": {

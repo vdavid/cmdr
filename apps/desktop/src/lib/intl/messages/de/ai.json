@@ -299,13 +299,13 @@
   "@ai.cloud.effort.max": {
     "sourceHash": "a1a5936"
   },
-  "ai.cloud.effort.forAskCmdrModel": "Ask Cmdr nutzt ein eigenes Modell ({model}), deshalb legt diese Einstellung dessen Aufwand fest.",
+  "ai.cloud.effort.forAskCmdrModel": "Ask Cmdr nutzt ein eigenes Modell ({model}), deshalb gilt diese Einstellung für dieses Modell.",
   "@ai.cloud.effort.forAskCmdrModel": {
-    "sourceHash": "ed98085"
+    "sourceHash": "3a36d6f"
   },
-  "ai.cloud.effort.levelsUnknown": "Dieser Dienst gibt nicht an, welche Aufwandsstufen dieses Modell unterstützt, also entscheidet er selbst.",
+  "ai.cloud.effort.levelsUnknown": "Dieser Dienst gibt nicht an, welche Stufen dieses Modell unterstützt, also entscheidet er selbst.",
   "@ai.cloud.effort.levelsUnknown": {
-    "sourceHash": "7bb5384"
+    "sourceHash": "4688a12"
   },
   "ai.cloud.maxOutput": "Längste Antwort: {outputText} {output, plural, one {Token} other {Tokens}}",
   "@ai.cloud.maxOutput": {

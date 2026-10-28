@@ -299,13 +299,13 @@
   "@ai.cloud.effort.max": {
     "sourceHash": "a1a5936"
   },
-  "ai.cloud.effort.forAskCmdrModel": "Ask Cmdr använder en egen modell ({model}), så det här ställer in ansträngningen för den modellen.",
+  "ai.cloud.effort.forAskCmdrModel": "Ask Cmdr använder en egen modell ({model}), så det här gäller den modellen.",
   "@ai.cloud.effort.forAskCmdrModel": {
-    "sourceHash": "ed98085"
+    "sourceHash": "3a36d6f"
   },
-  "ai.cloud.effort.levelsUnknown": "Den här tjänsten anger inte vilka ansträngningsnivåer modellen klarar, så tjänsten bestämmer själv.",
+  "ai.cloud.effort.levelsUnknown": "Den här tjänsten anger inte vilka nivåer modellen klarar, så tjänsten bestämmer själv.",
   "@ai.cloud.effort.levelsUnknown": {
-    "sourceHash": "7bb5384"
+    "sourceHash": "4688a12"
   },
   "ai.cloud.maxOutput": "Längsta svar: {outputText} {output, plural, one {token} other {tokens}}",
   "@ai.cloud.maxOutput": {

@@ -1218,15 +1218,15 @@
   "@settings.ai.cloudProviderConfigs.description": {
     "sourceHash": "21132a2"
   },
-  "settings.ai.reasoningEfforts.label.reasoningEffort": "Reasoning effort",
+  "settings.ai.reasoningEfforts.label.reasoningEffort": "Mức nỗ lực suy luận",
   "@settings.ai.reasoningEfforts.label.reasoningEffort": {
     "sourceHash": "3236aee"
   },
-  "settings.ai.reasoningEfforts.label.effort": "Effort",
+  "settings.ai.reasoningEfforts.label.effort": "Mức nỗ lực",
   "@settings.ai.reasoningEfforts.label.effort": {
     "sourceHash": "4387e5d"
   },
-  "settings.ai.reasoningEfforts.label.thinkingLevel": "Thinking level",
+  "settings.ai.reasoningEfforts.label.thinkingLevel": "Mức suy nghĩ",
   "@settings.ai.reasoningEfforts.label.thinkingLevel": {
     "sourceHash": "96f115b"
   },
@@ -1234,9 +1234,9 @@
   "@settings.ai.reasoningEfforts.description": {
     "sourceHash": "2c0938f"
   },
-  "settings.ai.reasoningEfforts.keywords": "nỗ lực, lập luận, suy luận, suy nghĩ, độ sâu, tốc độ, chi phí, chất lượng",
+  "settings.ai.reasoningEfforts.keywords": "nỗ lực suy luận, nỗ lực, lập luận, suy luận, suy nghĩ, độ sâu, tốc độ, chi phí, chất lượng",
   "@settings.ai.reasoningEfforts.keywords": {
-    "sourceHash": "e543d08"
+    "sourceHash": "3bbb127"
   },
   "settings.ai.localContextSize.label": "Cửa sổ ngữ cảnh",
   "@settings.ai.localContextSize.label": {

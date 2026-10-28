@@ -1222,15 +1222,15 @@
   "@settings.ai.cloudProviderConfigs.description": {
     "sourceHash": "21132a2"
   },
-  "settings.ai.reasoningEfforts.label.reasoningEffort": "Reasoning effort",
+  "settings.ai.reasoningEfforts.label.reasoningEffort": "Denkaufwand",
   "@settings.ai.reasoningEfforts.label.reasoningEffort": {
     "sourceHash": "3236aee"
   },
-  "settings.ai.reasoningEfforts.label.effort": "Effort",
+  "settings.ai.reasoningEfforts.label.effort": "Aufwand",
   "@settings.ai.reasoningEfforts.label.effort": {
     "sourceHash": "4387e5d"
   },
-  "settings.ai.reasoningEfforts.label.thinkingLevel": "Thinking level",
+  "settings.ai.reasoningEfforts.label.thinkingLevel": "Denkstufe",
   "@settings.ai.reasoningEfforts.label.thinkingLevel": {
     "sourceHash": "96f115b"
   },
@@ -1238,9 +1238,9 @@
   "@settings.ai.reasoningEfforts.description": {
     "sourceHash": "2c0938f"
   },
-  "settings.ai.reasoningEfforts.keywords": "Denken, Nachdenken, Überlegen, Reasoning, Denkzeit, Tiefe, Geschwindigkeit, Kosten, Qualität",
+  "settings.ai.reasoningEfforts.keywords": "Denkaufwand, Aufwand, Denken, Nachdenken, Überlegen, Reasoning, Denkzeit, Tiefe, Geschwindigkeit, Kosten, Qualität",
   "@settings.ai.reasoningEfforts.keywords": {
-    "sourceHash": "e543d08"
+    "sourceHash": "3bbb127"
   },
   "settings.ai.localContextSize.label": "Kontextfenster",
   "@settings.ai.localContextSize.label": {

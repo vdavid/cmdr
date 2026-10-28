@@ -3859,5 +3859,20 @@
     "forms": "lowercase in prose: un zip, en un zip, un archivo zip; the format name in a label may be Zip as macOS writes it (Archivo Zip)",
     "confidence": "high",
     "sources": "shipped catalog (errors.write.archiveEntryNameRefused.title Este nombre no puede ir en un zip); macOS es (archivo Zip, comprimido Zip; grep over the pile's macOS folder, 2026-10-28)"
+  },
+  "reasoning-effort": {
+    "chosen": "Esfuerzo de razonamiento",
+    "confidence": "tentative",
+    "sources": "OpenAI docs are English-only; no established rendering, so built from the locale’s reasoning wording"
+  },
+  "reasoning-effort-anthropic": {
+    "chosen": "Esfuerzo",
+    "confidence": "high",
+    "sources": "Anthropic localized docs, platform.claude.com/docs/<lang>/build-with-claude/effort, read 2026-10-28 (title Esfuerzo)"
+  },
+  "thinking-level": {
+    "chosen": "Nivel de pensamiento",
+    "confidence": "tentative",
+    "sources": "Gemini docs (ai.google.dev thinking, machine-translated) keep thinking_level as code; built from this locale’s thinking + level rulings (Pensamiento de Gemini)"
   }
 }

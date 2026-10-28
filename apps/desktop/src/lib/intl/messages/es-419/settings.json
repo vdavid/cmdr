@@ -495,8 +495,8 @@
   "@settings.license.enterKey.keywords": {
     "sourceHash": "b539db7"
   },
-  "settings.ai.reasoningEfforts.keywords": "razonamiento, pensar, pensamiento, reflexión, profundidad, velocidad, costo, calidad",
+  "settings.ai.reasoningEfforts.keywords": "esfuerzo de razonamiento, esfuerzo, razonamiento, pensar, pensamiento, reflexión, profundidad, velocidad, costo, calidad",
   "@settings.ai.reasoningEfforts.keywords": {
-    "sourceHash": "f32c329"
+    "sourceHash": "59fad22"
   }
 }

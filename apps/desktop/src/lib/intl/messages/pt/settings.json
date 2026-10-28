@@ -1221,15 +1221,15 @@
   "@settings.ai.cloudProviderConfigs.description": {
     "sourceHash": "21132a2"
   },
-  "settings.ai.reasoningEfforts.label.reasoningEffort": "Reasoning effort",
+  "settings.ai.reasoningEfforts.label.reasoningEffort": "Esforço de raciocínio",
   "@settings.ai.reasoningEfforts.label.reasoningEffort": {
     "sourceHash": "3236aee"
   },
-  "settings.ai.reasoningEfforts.label.effort": "Effort",
+  "settings.ai.reasoningEfforts.label.effort": "Esforço",
   "@settings.ai.reasoningEfforts.label.effort": {
     "sourceHash": "4387e5d"
   },
-  "settings.ai.reasoningEfforts.label.thinkingLevel": "Thinking level",
+  "settings.ai.reasoningEfforts.label.thinkingLevel": "Nível de pensamento",
   "@settings.ai.reasoningEfforts.label.thinkingLevel": {
     "sourceHash": "96f115b"
   },
@@ -1237,9 +1237,9 @@
   "@settings.ai.reasoningEfforts.description": {
     "sourceHash": "2c0938f"
   },
-  "settings.ai.reasoningEfforts.keywords": "raciocínio, pensar, pensamento, profundidade, velocidade, custo, qualidade",
+  "settings.ai.reasoningEfforts.keywords": "esforço de raciocínio, esforço, raciocínio, pensar, pensamento, profundidade, velocidade, custo, qualidade",
   "@settings.ai.reasoningEfforts.keywords": {
-    "sourceHash": "e543d08"
+    "sourceHash": "3bbb127"
   },
   "settings.ai.localContextSize.label": "Janela de contexto",
   "@settings.ai.localContextSize.label": {

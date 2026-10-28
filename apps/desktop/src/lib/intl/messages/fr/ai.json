@@ -299,13 +299,13 @@
   "@ai.cloud.effort.max": {
     "sourceHash": "a1a5936"
   },
-  "ai.cloud.effort.forAskCmdrModel": "Ask Cmdr utilise son propre modèle ({model}), donc ce réglage définit l’effort de ce modèle.",
+  "ai.cloud.effort.forAskCmdrModel": "Ask Cmdr utilise son propre modèle ({model}), donc ce réglage s’applique à ce modèle.",
   "@ai.cloud.effort.forAskCmdrModel": {
-    "sourceHash": "ed98085"
+    "sourceHash": "3a36d6f"
   },
-  "ai.cloud.effort.levelsUnknown": "Ce service n’indique pas quels niveaux d’effort ce modèle accepte : c’est donc le service qui décide.",
+  "ai.cloud.effort.levelsUnknown": "Ce service n’indique pas quels niveaux ce modèle accepte : c’est donc le service qui décide.",
   "@ai.cloud.effort.levelsUnknown": {
-    "sourceHash": "7bb5384"
+    "sourceHash": "4688a12"
   },
   "ai.cloud.maxOutput": "Réponse la plus longue : {outputText} {output, plural, one {jeton} many {jetons} other {jetons}}",
   "@ai.cloud.maxOutput": {

@@ -299,13 +299,13 @@
   "@ai.cloud.effort.max": {
     "sourceHash": "a1a5936"
   },
-  "ai.cloud.effort.forAskCmdrModel": "Ask Cmdr 用的是它自己的模型（{model}），所以這裡設定的是那個模型的思考強度。",
+  "ai.cloud.effort.forAskCmdrModel": "Ask Cmdr 用的是它自己的模型（{model}），所以這裡的設定會套用到那個模型。",
   "@ai.cloud.effort.forAskCmdrModel": {
-    "sourceHash": "ed98085"
+    "sourceHash": "3a36d6f"
   },
-  "ai.cloud.effort.levelsUnknown": "這個服務沒有說明此模型支援哪些思考強度，所以由服務自行決定。",
+  "ai.cloud.effort.levelsUnknown": "這個服務沒有說明此模型支援哪些層級，所以由服務自行決定。",
   "@ai.cloud.effort.levelsUnknown": {
-    "sourceHash": "7bb5384"
+    "sourceHash": "4688a12"
   },
   "ai.cloud.maxOutput": "最長回覆：{outputText} 個 {output, plural, other {token}}",
   "@ai.cloud.maxOutput": {

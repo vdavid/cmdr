@@ -3629,5 +3629,20 @@
     "exceptions": {
       "securityNotices.smbSignatureRefused.body": "English-sense: the reply is an SMB server's signed response (respond concept, phản hồi), not an AI reply"
     }
+  },
+  "reasoning-effort": {
+    "chosen": "Mức nỗ lực suy luận",
+    "confidence": "tentative",
+    "sources": "OpenAI docs are English-only; no established rendering, so built from the locale’s reasoning wording; Gemini vi MT: mức độ nỗ lực suy luận"
+  },
+  "reasoning-effort-anthropic": {
+    "chosen": "Mức nỗ lực",
+    "confidence": "tentative",
+    "sources": "Anthropic localized docs, platform.claude.com/docs/<lang>/build-with-claude/effort, read 2026-10-28: no vi docs; the catalog already says nỗ lực"
+  },
+  "thinking-level": {
+    "chosen": "Mức suy nghĩ",
+    "confidence": "tentative",
+    "sources": "Gemini docs (ai.google.dev thinking, machine-translated) keep thinking_level as code; built from this locale’s thinking + level rulings"
   }
 }

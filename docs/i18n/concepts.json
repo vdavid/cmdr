@@ -3646,6 +3646,7 @@
   "thinking": {
     "en": "Thinking…",
     "match": ["thinking"],
+    "notMatch": ["thinking level"],
     "sense": "The AI's reasoning status line."
   },
   "this-computer": {
@@ -4064,5 +4065,24 @@
     "en": "diacritics",
     "sense": "Accents and other marks on letters (á, ž, ß) that the Multi-Rename Tool can strip to plain letters.",
     "match": ["diacritics", "diacritic"]
+  },
+  "reasoning-effort": {
+    "en": "Reasoning effort",
+    "match": ["=reasoning effort"],
+    "sense": "The reasoning picker’s label for OpenAI-style services, whose docs call the setting reasoning effort (reasoning_effort).",
+    "distinct": ["reasoning-effort-anthropic", "thinking-level"],
+    "note": "One picker, three names, chosen per AI service; keep the three distinguishable, and render each the way that provider’s localized docs do where they exist."
+  },
+  "reasoning-effort-anthropic": {
+    "en": "Effort",
+    "match": ["=effort"],
+    "sense": "The reasoning picker’s label for Anthropic, whose docs call the setting effort: how much work the model puts into thinking, not physical effort.",
+    "distinct": ["reasoning-effort", "thinking-level"]
+  },
+  "thinking-level": {
+    "en": "Thinking level",
+    "match": ["=thinking level"],
+    "sense": "The reasoning picker’s label for Google Gemini (thinking_level) and the fallback name for services with none of their own; also the setting’s name in Settings search.",
+    "distinct": ["reasoning-effort", "reasoning-effort-anthropic", "thinking"]
   }
 }

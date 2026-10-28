@@ -3948,5 +3948,20 @@
       }
     ],
     "sources": "MS terminology FRENCH.tbx (diacritic → signe diacritique); Xfce Thunar (_Match diacritics → Faire correspondre les signes diacritiques); macOS 27.0.1 CoreText FeatureTypeNames (Diacritics → Diacritiques), 2026-10-11"
+  },
+  "reasoning-effort": {
+    "chosen": "Effort de raisonnement",
+    "confidence": "tentative",
+    "sources": "OpenAI docs are English-only; no established rendering, so built from the locale’s reasoning wording; Gemini fr MT: efforts de raisonnement"
+  },
+  "reasoning-effort-anthropic": {
+    "chosen": "Effort",
+    "confidence": "high",
+    "sources": "Anthropic localized docs, platform.claude.com/docs/<lang>/build-with-claude/effort, read 2026-10-28 (title Effort)"
+  },
+  "thinking-level": {
+    "chosen": "Niveau de réflexion",
+    "confidence": "tentative",
+    "sources": "Gemini docs (ai.google.dev thinking, machine-translated) keep thinking_level as code; built from this locale’s thinking + level rulings (Gemini avec réflexion)"
   }
 }

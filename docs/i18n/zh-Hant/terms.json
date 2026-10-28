@@ -2151,10 +2151,7 @@
     "chosen": "層級",
     "confidence": "high",
     "forms": "compression level → 壓縮層級; a log level → debug 層級; reset the zoom level to a percentage → 縮放比例 (reads naturally beside 100%)",
-    "sources": "MS compression level → 壓縮層級; TC WCMD.LNG 5235; AP (75 TW / 47 HK)",
-    "exceptions": {
-      "ai.cloud.effort.levelsUnknown": "The effort levels are named by the picker’s own label 思考強度 (settings.ai.reasoningEfforts.label), so 層級 would add a second name for the same setting."
-    }
+    "sources": "MS compression level → 壓縮層級; TC WCMD.LNG 5235; AP (75 TW / 47 HK)"
   },
   "license": {
     "accept": ["訂閱", "永久", "商業"],
@@ -4530,5 +4527,20 @@
     "confidence": "high",
     "forms": "the window and View-menu item → 操作記錄; in prose, quoted as a window name → 「操作記錄」; its rollback button is 復原 (operationLog.dialog.rollBack)",
     "sources": "catalog (operationLog.dialog.title, menu.view.operationLog, settings.navigationAndFileOps.card.operationLog → 操作記錄); TC zh-TW INC -9 多檔重新命名操作記錄"
+  },
+  "reasoning-effort": {
+    "chosen": "推理強度",
+    "confidence": "tentative",
+    "sources": "OpenAI docs are English-only; no established rendering, so built from the locale’s reasoning wording; Gemini zh-TW MT: 推論工作量"
+  },
+  "reasoning-effort-anthropic": {
+    "chosen": "投入程度",
+    "confidence": "high",
+    "sources": "Anthropic localized docs, platform.claude.com/docs/<lang>/build-with-claude/effort, read 2026-10-28 (zh-TW title Effort（投入程度）)"
+  },
+  "thinking-level": {
+    "chosen": "思考層級",
+    "confidence": "tentative",
+    "sources": "Gemini docs (ai.google.dev thinking, machine-translated) keep thinking_level as code; built from this locale’s thinking + level rulings (支援的層級)"
   }
 }

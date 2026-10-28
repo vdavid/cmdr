@@ -299,13 +299,13 @@
   "@ai.cloud.effort.max": {
     "sourceHash": "a1a5936"
   },
-  "ai.cloud.effort.forAskCmdrModel": "Ask Cmdr использует собственную модель ({model}), поэтому здесь задается глубина размышлений этой модели.",
+  "ai.cloud.effort.forAskCmdrModel": "Ask Cmdr использует собственную модель ({model}), поэтому эта настройка действует для этой модели.",
   "@ai.cloud.effort.forAskCmdrModel": {
-    "sourceHash": "ed98085"
+    "sourceHash": "3a36d6f"
   },
-  "ai.cloud.effort.levelsUnknown": "Этот сервис не сообщает, какие уровни глубины размышлений поддерживает эта модель, поэтому решает сам сервис.",
+  "ai.cloud.effort.levelsUnknown": "Этот сервис не сообщает, какие уровни поддерживает эта модель, поэтому решает сам сервис.",
   "@ai.cloud.effort.levelsUnknown": {
-    "sourceHash": "7bb5384"
+    "sourceHash": "4688a12"
   },
   "ai.cloud.maxOutput": "Самый длинный ответ: {outputText} {output, plural, one {токен} few {токена} many {токенов} other {токена}}",
   "@ai.cloud.maxOutput": {

@@ -6205,5 +6205,20 @@
     "forms": "unlock the phone → разблокируйте телефон; plug it in and unlock it → подключите его … и разблокируйте",
     "confidence": "high",
     "sources": "MS (unlock → разблокировать); catalog (errors.listing.notConnected.suggestion, errors.provider.macDroid.*: Разблокируйте телефон)"
+  },
+  "reasoning-effort": {
+    "chosen": "Глубина рассуждений",
+    "confidence": "tentative",
+    "sources": "OpenAI docs are English-only; no established rendering, so built from the locale’s reasoning wording"
+  },
+  "reasoning-effort-anthropic": {
+    "chosen": "Уровень усилий",
+    "confidence": "high",
+    "sources": "Anthropic localized docs, platform.claude.com/docs/<lang>/build-with-claude/effort, read 2026-10-28 (title Уровень усилий)"
+  },
+  "thinking-level": {
+    "chosen": "Уровень размышлений",
+    "confidence": "tentative",
+    "sources": "Gemini docs (ai.google.dev thinking, machine-translated) keep thinking_level as code; built from this locale’s thinking + level rulings"
   }
 }
