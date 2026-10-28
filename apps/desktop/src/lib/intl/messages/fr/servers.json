@@ -48,6 +48,10 @@
   "@servers.hub.status.saved": {
     "sourceHash": "b5c120b"
   },
+  "servers.hub.status.notConnectedYet": "Pas encore connecté",
+  "@servers.hub.status.notConnectedYet": {
+    "sourceHash": "8985693"
+  },
   "servers.hub.status.foundNearby": "Découvert à proximité",
   "@servers.hub.status.foundNearby": {
     "sourceHash": "a7fdf7d"

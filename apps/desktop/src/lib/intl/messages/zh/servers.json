@@ -47,6 +47,10 @@
   "@servers.hub.status.saved": {
     "sourceHash": "b5c120b"
   },
+  "servers.hub.status.notConnectedYet": "尚未连接",
+  "@servers.hub.status.notConnectedYet": {
+    "sourceHash": "8985693"
+  },
   "servers.hub.status.foundNearby": "在附近发现",
   "@servers.hub.status.foundNearby": {
     "sourceHash": "a7fdf7d"

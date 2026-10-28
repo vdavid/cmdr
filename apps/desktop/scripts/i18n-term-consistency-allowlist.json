@@ -154,6 +154,10 @@
     ],
     "hu": [
       {
+        "source": "Not connected yet",
+        "reason": "Two surfaces with two verbs, per the `connect` ruling in `docs/i18n/hu/terms.json`. The servers hub status cell (`servers.hub.status.notConnectedYet`) sits in one column with `Kapcsolódva` (AppKit SavePanel's `Nem kapcsolódik` stem), so it reads `Még nincs kapcsolódva`. The error titles (`errors.listing.notConnected.title`, `errors.write.notConnected.title`) cover a phone as well as a server, where the attach verb `csatlakoztat` fits, so they keep `Még nincs csatlakoztatva`."
+      },
+      {
         "source": "Archive",
         "reason": "Two parts of speech. `askCmdr.sessions.archive` is the VERB that hides a chat (`Archiválás`, the `archive-chat` ruling); `suggestedOps.facts.archive` is the NOUN label before the zip file a compress suggestion creates (`Archívum`, the `archive` ruling), like `fileExplorer.list.rowKind.archive`."
       },
