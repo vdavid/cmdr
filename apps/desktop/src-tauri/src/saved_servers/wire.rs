@@ -139,7 +139,9 @@ pub struct SavedServer {
     /// An SMB host saved without contact ("Add anyway", an approved Ask Cmdr card)
     /// that no mount has gone through since: nothing lists its shares until the user
     /// connects, and the hub says "Not connected yet". Always `false` for the other
-    /// protocols, whose unconnected save contacts nothing anyway.
+    /// protocols, whose unconnected save contacts nothing anyway. ❗ Absent reads
+    /// `false`, like the store field it mirrors.
+    #[serde(default)]
     pub awaiting_first_connect: bool,
 }
 
