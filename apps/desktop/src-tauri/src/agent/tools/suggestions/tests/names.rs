@@ -286,8 +286,12 @@ fn a_phone_takes_shorter_names_and_none_of_fats_reserved_characters() {
         )
     };
 
-    // 255 UTF-16 units: a fine Mac name, one past what a PTP string holds.
-    let long = format!("{}.pdf", "a".repeat(251));
+    // At `mtp-rs`'s limit it lands; one unit past it (a fine Mac name) is what the device
+    // layer would refuse after approval, so the proposal refuses it first.
+    let at_limit = format!("{}.pdf", "a".repeat(cmdr_mtp::MAX_NAME_UNITS - ".pdf".len()));
+    plan_sweep(&onto_phone(&at_limit), NOW, &facts).expect("a name at the limit lands on a phone");
+    let long = format!("{}.pdf", "a".repeat(cmdr_mtp::MAX_NAME_UNITS + 1 - ".pdf".len()));
+    assert_eq!(long.encode_utf16().count(), 255, "one past what a PTP string holds");
     assert_eq!(
         problem_of(&onto_phone(&long), &facts),
         GroupProblem::NotABareName {

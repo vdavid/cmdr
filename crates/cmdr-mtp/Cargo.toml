@@ -40,9 +40,9 @@ virtual-device = ["mtp-rs/virtual-device"]
 # asks the app through. The only crate below this one.
 cmdr-fs = { path = "../cmdr-fs" }
 # The MTP/PTP client: USB enumeration, the PTP session, and the virtual device.
-# Same version the app pinned before this crate existed, so nothing about the
-# wire behavior moved with the code.
-mtp-rs = "0.35.0"
+# 0.36.0 is the floor: older releases wrap a name past 254 UTF-16 units into a
+# garbled length byte instead of refusing it (`Error::NameTooLong`).
+mtp-rs = "0.36.0"
 # The Mac's time zone, with its DST rules, for reading a phone's zoneless dates
 # (`connection/dates.rs`). Already in the app's graph through `gix-date`, at the
 # same version and default features, so this adds no crate.

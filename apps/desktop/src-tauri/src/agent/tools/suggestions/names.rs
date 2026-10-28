@@ -92,8 +92,9 @@ fn problem_of(clash: LandingClash) -> GroupProblem {
     }
 }
 
-/// What a phone takes in a name beyond a plain leaf. Proposal-time only: nothing below
-/// refuses these before the device does (`crates/cmdr-mtp/DETAILS.md` § Names a phone takes).
+/// What a phone takes in a name beyond a plain leaf, refused before the user approves. Below,
+/// only the length has a typed backstop, at run time (`crates/cmdr-mtp/DETAILS.md` § Names a
+/// phone takes).
 fn phone_name(name: &str) -> Result<(), GroupProblem> {
     if name.encode_utf16().count() > PHONE_NAME_UNITS {
         return Err(not_a_bare_name(name, NameRule::PhoneTooLong));

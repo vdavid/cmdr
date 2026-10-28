@@ -12824,6 +12824,19 @@ export type MtpConnectionError =
       dest_folder: string
     }
   /**
+   *  The name is longer than a PTP string holds ([`mtp_rs::MAX_NAME_UNITS`]
+   *  UTF-16 code units), so `mtp-rs` refused it before anything reached the device.
+   *  Nothing was created or changed, and the session is still usable. Only a
+   *  different name can work, so a retry is pointless.
+   */
+  | {
+      type: 'nameTooLong'
+      // The device this is about.
+      device_id: string
+      // The refused name's length in UTF-16 code units.
+      units: number
+    }
+  /**
    *  mtp-rs reset the device in software to recover from a wedged transfer
    *  cancel. The PTP session is gone, but the device is STILL PLUGGED IN and
    *  reopenable with no replug — ❌ never treat this as a disconnect.

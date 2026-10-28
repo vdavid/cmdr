@@ -32,9 +32,9 @@ SUPPRESSION half of ptpcamerad stayed app-side, because that half is a policy.
 
 ## The public surface is capped
 
-`index-crate-isolation` holds this crate to **20 root promises, 2 public modules, and 12 public items inside them**, set
-on 2026-09-05 to exactly what it exposed the day the extraction finished — no headroom, so the first addition has to be
-argued for.
+`index-crate-isolation` holds this crate to **21 root promises, 2 public modules, and 12 public items inside them**, set
+on 2026-09-05 to exactly what it exposed the day the extraction finished (20 root promises), no headroom, so each
+addition has to be argued for. The one since: `MAX_NAME_UNITS` (2026-10-28, David's OK), below.
 
 **A backend's API is the `Volume` trait it implements**, which is `cmdr-fs`'s promise rather than this crate's, so
 `MtpVolume`'s trait methods aren't counted. What IS counted serves one of four audiences, and a new item should name
@@ -48,9 +48,12 @@ which:
   `specta::Type`.
 - **Reporting lifecycle**: `MtpDeviceEvent` and the `MtpDeviceEvents` trait the app implements.
 - **Finding a device at all**: `list_mtp_devices`, `watch_devices`, and `HotplugEvent`.
+- **What a device takes**: `MAX_NAME_UNITS`, `mtp-rs`'s own limit re-exported, so the app's proposal-time phone-name
+  check (`agent/tools/suggestions/problem.rs`) reads the number the device layer refuses past, ❌ never its own copy.
+  The app has no `mtp-rs` dependency, so this is the one way it can name it.
 
-Those 17, plus the `MtpVolume` re-export the registrar hands the app and the two `pub mod` declarations (a module name
-is itself a promise), are the 20.
+Those 18, plus the `MtpVolume` re-export the registrar hands the app and the two `pub mod` declarations (a module name
+is itself a promise), are the 21.
 
 Two public modules is the whole tree a host can name a path into: `volume` (for `MtpVolume` and, gated, `testing`) and
 `virtual_device`. **❗ `connection` is PRIVATE**, even though the session layer is most of this crate: every name the
@@ -143,16 +146,16 @@ survive the move (the folder cell in the same file).
 
 ### Names a phone takes
 
-A PTP string's length is one byte counting its terminator, so a name holds at most 254 UTF-16 code units. ⚠️ Nothing on
-this side refuses a longer one: `mtp-rs`'s `pack_string` writes the length as `len as u8`, so a 300-unit name sends a
-length byte of 45 followed by 300 units, and what the device makes of that is the device's (verified on `mtp-rs` 0.35.0,
-source read of `ptp/pack/mod.rs::pack_string`, the call under both `ObjectInfo`'s filename on upload and the rename's
-`SetObjectPropValue`, 2026-10-27). Android's shared storage also refuses FAT's reserved `" * : < > ? \ |` (Android's
-FUSE layer; unverified on a device). No create, rename, or upload call here refuses either rule, and the virtual device
-(a folder on the host) takes whatever the host's disk takes, so both are enforced only where an AI proposal names a
-phone destination (`apps/desktop/src-tauri/src/agent/tools/suggestions/names.rs`). An ADB destination takes the same
-proposal rules; its device answers an over-long name with `ENAMETOOLONG`, which `cmdr-adb` maps to
-`VolumeError::InvalidName`.
+A PTP string's length is one byte counting its terminator, so a name holds at most `mtp_rs::MAX_NAME_UNITS` (254) UTF-16
+code units. `mtp-rs` refuses a longer one in `upload`, `create_folder`, and `rename` before anything is sent, with
+`Error::NameTooLong { units }` (0.36.0 and up; older releases wrapped the length byte and garbled the name). Here it
+becomes `MtpConnectionError::NameTooLong`, then `VolumeError::InvalidName` (`volume/mapping.rs`), the same variant
+`cmdr-adb` maps ADB's `ENAMETOOLONG` to: only a different name can work, so ❌ never the retryable `IoError`. Pinned by
+`volume/move_rename_test.rs`. That's the backstop; an AI proposal naming a phone destination refuses the name earlier,
+at proposal time (`apps/desktop/src-tauri/src/agent/tools/suggestions/names.rs`). Android's shared storage also refuses
+FAT's reserved `" * : < > ? \ |` (Android's FUSE layer; unverified on a device). Nothing here refuses those, and the
+virtual device (a folder on the host) takes whatever the host's disk takes, so that rule is enforced only at proposal
+time. An ADB destination takes the same proposal rules.
 
 ## Dates on copies
 

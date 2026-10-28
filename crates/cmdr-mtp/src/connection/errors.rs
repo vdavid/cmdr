@@ -125,6 +125,16 @@ pub enum MtpConnectionError {
         /// Where the upload was headed, so a second failure can still name it.
         dest_folder: String,
     },
+    /// The name is longer than a PTP string holds ([`mtp_rs::MAX_NAME_UNITS`]
+    /// UTF-16 code units), so `mtp-rs` refused it before anything reached the device.
+    /// Nothing was created or changed, and the session is still usable. Only a
+    /// different name can work, so a retry is pointless.
+    NameTooLong {
+        /// The device this is about.
+        device_id: String,
+        /// The refused name's length in UTF-16 code units.
+        units: usize,
+    },
     /// mtp-rs reset the device in software to recover from a wedged transfer
     /// cancel. The PTP session is gone, but the device is STILL PLUGGED IN and
     /// reopenable with no replug — ❌ never treat this as a disconnect.
@@ -215,6 +225,13 @@ impl ErrorLogText for MtpConnectionError {
                 write!(out, "Stale destination folder handle on {device_id}: ")?;
                 out.value(LogPrivate::dir_path(dest_folder))
             }
+            Self::NameTooLong { device_id, units } => {
+                write!(
+                    out,
+                    "Name too long for {device_id}: {units} UTF-16 units, the most a PTP string holds is {}",
+                    mtp_rs::MAX_NAME_UNITS
+                )
+            }
             Self::SessionReset { device_id } => {
                 write!(
                     out,
@@ -290,6 +307,8 @@ pub(super) fn map_mtp_error(e: mtp_rs::Error, device_id: &str) -> MtpConnectionE
             );
             MtpConnectionError::SessionReset { device_id }
         }
+        // Refused by `mtp-rs` before anything was sent, so the session is fine.
+        E::NameTooLong { units } => MtpConnectionError::NameTooLong { device_id, units },
         E::NotFound => MtpConnectionError::ObjectNotFound {
             device_id,
             path: "(not found)".to_string(),
@@ -447,6 +466,10 @@ mod tests {
                 device_id: "test".to_string(),
                 path: "/path".to_string(),
             },
+            MtpConnectionError::NameTooLong {
+                device_id: "test".to_string(),
+                units: 255,
+            },
             MtpConnectionError::Other {
                 device_id: "test".to_string(),
                 message: "other".to_string(),
@@ -468,6 +491,17 @@ mod tests {
         assert!(
             matches!(mapped, MtpConnectionError::SessionReset { .. }),
             "DeviceReset must map to SessionReset, got {mapped:?}"
+        );
+    }
+
+    #[test]
+    fn a_name_too_long_for_mtp_keeps_its_own_variant_and_length() {
+        // mtp-rs refuses it before anything is sent, so only a different name can
+        // work: the catch-all `Other` would hide that from the volume layer.
+        let mapped = map_mtp_error(mtp_rs::Error::NameTooLong { units: 255 }, "mtp-1-5");
+        assert!(
+            matches!(&mapped, MtpConnectionError::NameTooLong { device_id, units: 255 } if device_id == "mtp-1-5"),
+            "got {mapped:?}"
         );
     }
 

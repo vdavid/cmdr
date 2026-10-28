@@ -301,11 +301,15 @@ var surfaceGuardedCrates = []struct {
 		// fixture and is deliberate: the fake phone sits behind `virtual-device` rather
 		// than `testing`, so the E2E build ships it and the counter measures it.
 		//
+		// 21st root promise (2026-10-28, David's OK): `MAX_NAME_UNITS`, re-exported
+		// from `mtp-rs` 0.36.0, so the app's proposal-time phone-name check reads the
+		// one limit the device layer refuses past instead of its own copy of 254.
+		//
 		// Item-by-item, and which of the four audiences each one serves:
 		// `crates/cmdr-mtp/DETAILS.md` § "The public surface is capped".
 		Name: "cmdr-mtp",
 		Ceilings: surfaceCeilings{
-			RootPromises:   20,
+			RootPromises:   21,
 			PublicModules:  2,
 			SubsystemItems: 12,
 		},

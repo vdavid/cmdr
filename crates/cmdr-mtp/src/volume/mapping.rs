@@ -48,6 +48,9 @@ pub(super) fn map_mtp_error(e: MtpConnectionError) -> VolumeError {
             message: ErrorDetail::of(e),
         },
         MtpConnectionError::StoreReadOnly { .. } => VolumeError::ReadOnly(e.to_string()),
+        // Only a different name can work, like ADB's `ENAMETOOLONG`: ❌ never the
+        // retryable `IoError`.
+        MtpConnectionError::NameTooLong { .. } => VolumeError::InvalidName(ErrorDetail::of(e)),
         // The trait contract's refusal, carrying the errno POSIX would have
         // raised, so a caller that classifies on `raw_os_error` sees the same
         // thing here as it does over `LocalPosixVolume` or SMB.

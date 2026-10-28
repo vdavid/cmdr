@@ -49,6 +49,47 @@ async fn a_move_with_a_new_name_spares_a_file_holding_the_old_name_in_the_destin
     device.teardown(test_connection_manager()).await;
 }
 
+/// A name one past what a PTP string holds: `mtp-rs` refuses it before sending
+/// anything (older releases garbled its length byte instead), and the refusal
+/// reaches the caller typed, with the file untouched and the session still usable.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_rename_to_a_name_too_long_for_mtp_is_refused_as_an_invalid_name() {
+    let _guard = device_lock().await;
+    let fixture = setup_virtual_mtp_device();
+    let device = connect_fixture(test_connection_manager(), fixture).await;
+    let volume = volume_for(test_connection_manager(), &device, None).await;
+
+    let long = format!("{}.txt", "a".repeat(mtp_rs::MAX_NAME_UNITS + 1 - ".txt".len()));
+    let refused = volume
+        .rename(
+            Path::new("/Documents/notes.txt"),
+            Path::new(&format!("/Documents/{long}")),
+            false,
+        )
+        .await;
+    assert!(
+        matches!(refused, Err(cmdr_fs::volume::VolumeError::InvalidName(_))),
+        "got {refused:?}"
+    );
+
+    let root = device.root();
+    assert_eq!(
+        on_disk(root, "Documents/notes.txt").as_deref(),
+        Some(NOTES),
+        "untouched"
+    );
+    volume
+        .rename(
+            Path::new("/Documents/notes.txt"),
+            Path::new("/Documents/notes 2.txt"),
+            false,
+        )
+        .await
+        .expect("the session still takes a rename");
+
+    device.teardown(test_connection_manager()).await;
+}
+
 async fn read(volume: &crate::volume::MtpVolume, path: &str) -> Result<Vec<u8>, cmdr_fs::volume::VolumeError> {
     let mut stream = volume.open_read_stream(Path::new(path)).await?;
     let mut bytes = Vec::new();

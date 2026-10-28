@@ -21,6 +21,18 @@ fn same_named_siblings_map_to_a_duplicate_name() {
     );
 }
 
+/// A name past what a PTP string holds can only fail again under the same name, so
+/// it's the destination's name refusal (ADB's `ENAMETOOLONG` lands on the same
+/// variant), ❌ never the retryable `IoError`.
+#[test]
+fn a_name_too_long_for_the_phone_maps_to_an_invalid_name() {
+    let mapped = map_mtp_error(MtpConnectionError::NameTooLong {
+        device_id: "mtp-1".to_string(),
+        units: 255,
+    });
+    assert!(matches!(mapped, VolumeError::InvalidName(_)), "got {mapped:?}");
+}
+
 /// A refusal that names a folder keeps the connection error typed in the volume error's
 /// detail, so a log line marks the folder; the errno a classifier reads stays.
 #[test]

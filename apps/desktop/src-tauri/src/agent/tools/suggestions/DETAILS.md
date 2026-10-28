@@ -122,8 +122,9 @@ renamed invoices are one approval, one queue row, and one undo, which puts every
   takes them. A separate step because the engine is the live volumes' to say and `plan_sweep` stays pure over its
   facts. A selector's sources resolve at the write, so a selector group isn't asked.
 - **A phone's names**: onto an MTP or ADB destination a name is also at most 254 UTF-16 code units and holds none of
-  FAT's reserved `" * : < > ? \ |`. Proposal-time only: nothing below refuses them first (`crates/cmdr-mtp/DETAILS.md` §
-  Names a phone takes).
+  FAT's reserved `" * : < > ? \ |`. Refused here, before the user approves: below, only the length has a backstop (the
+  device layer's typed `VolumeError::InvalidName`, after approval), and the reserved characters have none
+  (`crates/cmdr-mtp/DETAILS.md` § Names a phone takes).
 - **A collision with a file already at the destination that isn't a source is not refused**: it meets the ordinary
   conflict policy at run time, as a clicked move would. The review dialog warns on the row before the click (#774,
   `apps/desktop/src/lib/suggested-ops/DETAILS.md` § The file list).

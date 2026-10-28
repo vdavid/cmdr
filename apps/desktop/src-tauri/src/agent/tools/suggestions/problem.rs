@@ -9,8 +9,10 @@ use cmdr_fs::validation::PlainLeafRefusal;
 use crate::location::miss::LocationMissResult;
 
 /// The most UTF-16 code units a phone takes in a name: a PTP string's 255 count its
-/// terminator (`crates/cmdr-mtp/DETAILS.md` § Names a phone takes).
-pub(super) const PHONE_NAME_UNITS: usize = 254;
+/// terminator. `mtp-rs`'s own number, so a proposal refuses exactly what the device layer
+/// would refuse after approval as `VolumeError::InvalidName` (`crates/cmdr-mtp/DETAILS.md`
+/// § Names a phone takes). An ADB destination takes the same limit.
+pub(super) const PHONE_NAME_UNITS: usize = cmdr_mtp::MAX_NAME_UNITS;
 
 /// What one group got wrong.
 #[derive(Debug, Clone, PartialEq, Eq)]

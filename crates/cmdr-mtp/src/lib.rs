@@ -87,6 +87,11 @@ pub use connection::{
     MtpDeviceEvents, MtpDisconnectReason, MtpObjectInfo, MtpVolumeRegistrar, ResolvedMtpObject, no_device_events,
 };
 pub use discovery::{HotplugEvent, list_mtp_devices, watch_devices};
+/// The most UTF-16 code units a name on the device can have (254: a PTP string's
+/// 255 count its terminator). `mtp-rs` refuses a longer one before sending it,
+/// which reaches the caller as [`MtpConnectionError::NameTooLong`]; a check that
+/// refuses earlier (an AI proposal naming a phone destination) reads this number.
+pub use mtp_rs::MAX_NAME_UNITS;
 pub use types::{MtpDeviceInfo, MtpStorageInfo};
 pub use volume::MtpVolume;
 
