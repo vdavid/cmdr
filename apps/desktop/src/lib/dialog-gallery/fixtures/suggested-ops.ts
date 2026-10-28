@@ -104,7 +104,10 @@ function opOf(group: FixtureGroup, index: number): SuggestedOpView {
 }
 
 function fileOf(group: FixtureGroup, index: number): FixtureFile {
-  return group.files[index] ?? group.moreFiles?.(index) ?? group.files[index % group.files.length]
+  if (index < group.files.length) return group.files[index]
+  // Only reached below the group's `total`, which is `files.length` unless `moreFiles` makes up the rest.
+  if (!group.moreFiles) throw new Error(`Fixture group ${String(group.groupId)} has no file ${String(index)}`)
+  return group.moreFiles(index)
 }
 
 function liveOf(file: FixtureFile): LiveFact {

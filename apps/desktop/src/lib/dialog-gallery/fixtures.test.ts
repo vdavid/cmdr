@@ -103,9 +103,7 @@ describe('the AI suggestions fixture pages its 60,000-file group', () => {
   it('keeps every row and the total as the list scrolls past the held window', async () => {
     const { suggestedOpsFixtures } = await import('./fixtures/suggested-ops')
     const trigger = await import('#lib/suggested-ops/suggested-ops-trigger.svelte.js')
-    const hardCases = suggestedOpsFixtures['hard-cases']
-    if (!hardCases) throw new Error('no hard-cases fixture')
-    const undo = seedStore(trigger.suggestedOpsState, hardCases())
+    const undo = seedStore(trigger.suggestedOpsState, suggestedOpsFixtures['hard-cases']())
     try {
       await trigger.showRange(203, 30_000, 30_060)
 
