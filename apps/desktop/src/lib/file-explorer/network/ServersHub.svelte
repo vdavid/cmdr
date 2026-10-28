@@ -62,6 +62,7 @@
     const STATUS_TEXT_KEY: Record<HubRowStatus, MessageKey> = {
         connected: 'servers.hub.status.connected',
         saved: 'servers.hub.status.saved',
+        not_connected_yet: 'servers.hub.status.notConnectedYet',
         found_nearby: 'servers.hub.status.foundNearby',
         signed_out: 'servers.hub.status.signedOut',
         waiting_for_key: 'servers.hub.status.waitingForKey',

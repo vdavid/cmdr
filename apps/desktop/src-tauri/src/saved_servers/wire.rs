@@ -136,6 +136,11 @@ pub struct SavedServer {
     /// The mountable things under it. One for SFTP and WebDAV; for SMB, the
     /// host's saved shares, possibly none.
     pub places: Vec<SavedPlace>,
+    /// An SMB host saved without contact ("Add anyway", an approved Ask Cmdr card)
+    /// that no mount has gone through since: nothing lists its shares until the user
+    /// connects, and the hub says "Not connected yet". Always `false` for the other
+    /// protocols, whose unconnected save contacts nothing anyway.
+    pub awaiting_first_connect: bool,
 }
 
 /// Which server to dial, in add mode.

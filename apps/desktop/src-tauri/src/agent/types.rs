@@ -385,6 +385,8 @@ impl TurnOrigin {
 
     /// Whether the user started this turn. A background turn runs with nobody watching, so a
     /// tool that reaches past the app (`Access::Session`) waits for one the user did start.
+    /// ❗ An action the user approved counts as user-started (`docs/design-principles.md`,
+    /// "An approved action is the user's own"); a turn the app opens on its own doesn't.
     pub fn user_started(self) -> bool {
         match self {
             TurnOrigin::Text | TurnOrigin::Resume => true,

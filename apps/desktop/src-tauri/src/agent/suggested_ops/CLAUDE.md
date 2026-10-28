@@ -16,7 +16,7 @@ the lifecycle machine, and the claim transaction are `../store/proposals/CLAUDE.
 - **We do not trust the agent.** A suggestion can be formally valid and factually hallucinated, and we can never know
   which, so the job is to lay it all out for the user to decide. ❌ Never add an agent-specific safety behaviour to the
   execution path (no auto-skip on collision, no refusing an overwrite or an irreversible group): once the user
-  approves, it is as if they started the action. Put the effort into disclosure.
+  approves, it is as if they started the action (`docs/design-principles.md`). Put the effort into disclosure.
 - **A selector resolves ONCE, at creation, against the drive INDEX**, never at approval (a test counts the calls):
   that's what makes "what the user saw is what runs" true. ❌ Never by walking the filesystem: a walk blocks on a dead
   mount and reads ground the user never consented to index.

@@ -63,6 +63,7 @@ pub(super) fn s3_accounts(
                 last_connected_at: Some(entry.last_connected_at.clone()),
                 auto_reconnect: Some(entry.auto_reconnect),
                 places: vec![place],
+                awaiting_first_connect: false,
             }),
         }
     }

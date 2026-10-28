@@ -35,6 +35,7 @@ function sftpServer(overrides: Partial<SavedServer> = {}): SavedServer {
         autoReconnect: true,
       },
     ],
+    awaitingFirstConnect: false,
     ...overrides,
   }
 }
@@ -51,6 +52,7 @@ function smbServer(overrides: Partial<SavedServer> = {}): SavedServer {
     lastConnectedAt: null,
     autoReconnect: null,
     places: [],
+    awaitingFirstConnect: false,
     ...overrides,
   }
 }
@@ -275,6 +277,19 @@ describe('buildHubRows: status', () => {
     expect(rows[0].status).toBe('saved')
   })
 
+  /**
+   * ❗ A host saved without contact ("Add anyway", an approved Ask Cmdr card) is
+   * out of the discovery list and nothing lists its shares until the user
+   * connects, so the row says so: "Saved" with no shares read like an add that
+   * didn't work (#777). Even when mDNS happens to see it.
+   */
+  it('calls a saved SMB host nobody connected yet Not connected yet, even when mDNS sees it', () => {
+    const waiting = smbServer({ awaitingFirstConnect: true })
+    expect(buildHubRows({ saved: [waiting], hosts: [], volumes: [] })[0].status).toBe('not_connected_yet')
+    const seen = buildHubRows({ saved: [waiting], hosts: [host({ id: 'attic-smb-tcp-local' })], volumes: [] })
+    expect(seen[0].status).toBe('not_connected_yet')
+  })
+
   it('reads the place’s standing off the volume list, not the saved entry’s stale flag', () => {
     // `SavedPlace.connected` is a snapshot from the moment the listing was built;
     // the volume list is what the switcher and the pane both read.
@@ -356,6 +371,19 @@ describe('savedSmbHostIds', () => {
       ],
     )
     expect([...ids].sort()).toEqual(['bonjour-attic', 'manual-10-0-0-4-445'])
+  })
+
+  /**
+   * ❗ Listing a host's shares signs in to it, so a host saved without contact is
+   * listed only when the person opens it: no prefetch, no stale re-read, even
+   * when mDNS sees a host it matches (#777).
+   */
+  it('leaves out a saved SMB host nobody connected yet', () => {
+    const ids = savedSmbHostIds(
+      [smbServer({ awaitingFirstConnect: true })],
+      [host({ id: 'bonjour-attic', name: 'Attic NAS' })],
+    )
+    expect([...ids]).toEqual([])
   })
 })
 

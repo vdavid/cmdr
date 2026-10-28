@@ -25,9 +25,9 @@ them.
 - **An SMB host is its address AND port**, ❌ never its name or its address alone (`DETAILS.md` § "SMB hosts").
 - **A save refusal writes nothing** (`SavedServerOutcome`), and an address change MOVES the server and its password
   (`server_move.rs`).
-- **An add for Ask Cmdr contacts nothing until the user connects**: `save_target` for an unconnected place, and SMB's
-  `manual_servers::save_manual_server_without_contact` (no discovery injection, no GUID probe). `DETAILS.md` § "Saving
-  without contact".
+- **An unchecked add (Ask Cmdr's, or "Add anyway") contacts nothing until the user connects**: `save_target` for an
+  unconnected place, and SMB's `manual_servers::save_manual_server_without_contact` (no discovery injection, no GUID
+  probe; `SavedServer.awaiting_first_connect`). `DETAILS.md` § "Saving without contact".
 - **The wire types' doc comments ship in `bindings.ts`**: editing one is a bindings change (`pnpm bindings:regen`).
 
 Architecture and decisions: `DETAILS.md`. Read it before any non-trivial work here.

@@ -4201,8 +4201,9 @@ export const commands = {
    *  sign-in, and a host with one is never listed as guest.
    *
    *  `check_reachability: false` is the sheet's "Add anyway", offered only after a check
-   *  answered `Unreachable`: it saves without probing. An address that doesn't parse is
-   *  refused either way.
+   *  answered `Unreachable`: it saves without contact, like an approved Ask Cmdr card
+   *  (`awaitingFirstConnect`: no probe, no discovery entry, no share listing until the
+   *  user connects). An address that doesn't parse is refused either way.
    */
   connectToServer: (address: string, name: string | null, username: string | null, checkReachability: boolean) =>
     typedError<ManualConnectResult, AddServerError>(
@@ -16031,6 +16032,13 @@ export type SavedServer = {
    *  host's saved shares, possibly none.
    */
   places: SavedPlace[]
+  /**
+   *  An SMB host saved without contact ("Add anyway", an approved Ask Cmdr card)
+   *  that no mount has gone through since: nothing lists its shares until the user
+   *  connects, and the hub says "Not connected yet". Always `false` for the other
+   *  protocols, whose unconnected save contacts nothing anyway.
+   */
+  awaitingFirstConnect: boolean
 }
 
 /**

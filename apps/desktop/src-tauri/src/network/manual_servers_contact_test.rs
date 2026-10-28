@@ -1,7 +1,9 @@
 //! A manual server saved without contact: what it writes, what it stays out of, and
 //! the first mount that makes it ordinary.
 
-use super::super::{Contact, ManualServerEntry, ParsedAddress, add_server_entry_to_path, generate_server_id};
+use super::super::{
+    Contact, ManualServerEntry, ParsedAddress, Reachability, add_at, add_server_entry_to_path, generate_server_id,
+};
 use super::*;
 use crate::network::known_shares;
 
@@ -139,4 +141,39 @@ fn an_entry_without_the_field_is_ordinary_and_an_ordinary_one_writes_no_key() {
     assert!(!json.contains("awaitingFirstConnect"), "{json}");
     let waiting = serde_json::to_string(&entry("10.0.9.6", true)).expect("writes");
     assert!(waiting.contains("\"awaitingFirstConnect\":true"), "{waiting}");
+}
+
+/// ❗ **The sheet's "Add anyway" saves the host without contacting it** (#777), the
+/// same save an approved Ask Cmdr card makes: no probe, no dial, and out of the
+/// discovery list (so nothing lists its shares) until the user first connects it.
+/// Saving a server is a store write; contact starts when the user connects.
+#[tokio::test]
+async fn add_anyway_saves_the_host_without_contact() {
+    let (_dir, path) = temp_store();
+    let dials = crate::network::connect_wiring::dials_filed();
+
+    let (saved, contact) = add_at(
+        Some(&path),
+        "smb://nas-asleep.invalid",
+        &HostEdit::default(),
+        Reachability::Skip,
+    )
+    .await
+    .expect("an address that parses saves");
+
+    assert_eq!(
+        contact,
+        Contact::AwaitingFirstConnect,
+        "its host stays out of the discovery list"
+    );
+    let store = read_store_from_path(&path);
+    assert_eq!(store.servers.len(), 1);
+    assert_eq!(store.servers[0].id, saved.host.id);
+    assert!(store.servers[0].awaiting_first_connect);
+    assert_eq!(discoverable(&store.servers).count(), 0, "no load lists it either");
+    assert_eq!(
+        crate::network::connect_wiring::dials_filed(),
+        dials,
+        "no dial was filed"
+    );
 }

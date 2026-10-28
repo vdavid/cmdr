@@ -98,8 +98,9 @@ pub struct ManualServerEntry {
     /// as guest (`typed_username`).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub username: Option<String>,
-    /// Saved without contacting it ([`save_manual_server_without_contact`], an
-    /// approved Ask Cmdr suggestion), and no mount has gone through since. Such a
+    /// Saved without contacting it ([`save_manual_server_without_contact`] for an
+    /// approved Ask Cmdr suggestion, or the sheet's "Add anyway"), and no mount has
+    /// gone through since. Such a
     /// host stays out of the discovery list, so nothing lists its shares on Cmdr's
     /// own initiative, until the user first connects it ([`note_first_connect`]).
     /// ❗ Absent reads `false`: every entry saved before the field is an ordinary
@@ -180,8 +181,11 @@ impl std::fmt::Display for AddServerError {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Reachability {
     /// TCP-connect to the SMB port first; a server that doesn't answer isn't saved.
+    /// A server that does joins the discovery list at once.
     Check,
-    /// Save without asking: the person pressed "Add anyway" after the check failed.
+    /// Save without contact: the person pressed "Add anyway" after the check failed.
+    /// The save an approved Ask Cmdr card makes ([`save_manual_server_without_contact`]):
+    /// no probe, and out of the discovery list until the user first connects it (#777).
     Skip,
 }
 
@@ -479,8 +483,8 @@ fn read_store<R: Runtime>(app: &AppHandle<R>) -> ManualServersStore {
 /// their server behind their back. Renaming is [`name_server_entry_at_path`]'s.
 ///
 /// ❗ A host already saved as an ordinary one stays ordinary: a contact-free save of it
-/// can't take it out of the discovery list. A user's add of a waiting host makes it
-/// ordinary.
+/// can't take it out of the discovery list. A checked add of a waiting host (the probe
+/// reached it) makes it ordinary.
 fn add_server_entry_to_path(path: &Path, mut entry: ManualServerEntry) {
     let _guard = get_store_lock().lock().unwrap_or_else(|e| e.into_inner());
     let mut store = read_store_from_path(path);
@@ -504,7 +508,8 @@ fn add_server_entry_to_path(path: &Path, mut entry: ManualServerEntry) {
 // ---------------------------------------------------------------------------
 
 /// Adds a manual server: parses input, checks reachability, persists, and injects into discovery
-/// state. `details` is what the person typed beside the address: a name (empty
+/// state; an unchecked add (`Reachability::Skip`) saves without contact and injects nothing.
+/// `details` is what the person typed beside the address: a name (empty
 /// leaves it unnamed) and an account, which falls back to the one an
 /// `smb://user@host` address names.
 pub async fn add_manual_server<R: Runtime>(
@@ -513,15 +518,27 @@ pub async fn add_manual_server<R: Runtime>(
     reachability: Reachability,
     app_handle: &AppHandle<R>,
 ) -> Result<ManualConnectResult, AddServerError> {
-    let parsed = checked_parse(input, reachability).await?;
-    let saved = save_parsed_at(
-        get_store_path(app_handle).as_deref(),
-        parsed,
-        details,
-        Contact::Ordinary,
-    );
-    on_host_found(saved.host.clone(), app_handle);
+    let (saved, contact) = add_at(get_store_path(app_handle).as_deref(), input, details, reachability).await?;
+    if contact == Contact::Ordinary {
+        on_host_found(saved.host.clone(), app_handle);
+    }
     Ok(saved)
+}
+
+/// [`add_manual_server`] on the store at `path`: the probe (when the add asks for
+/// one) and the save. Answers the host and whether it may join the discovery list now.
+async fn add_at(
+    path: Option<&Path>,
+    input: &str,
+    details: &HostEdit,
+    reachability: Reachability,
+) -> Result<(ManualConnectResult, Contact), AddServerError> {
+    let parsed = checked_parse(input, reachability).await?;
+    let contact = match reachability {
+        Reachability::Check => Contact::Ordinary,
+        Reachability::Skip => Contact::AwaitingFirstConnect,
+    };
+    Ok((save_parsed_at(path, parsed, details, contact), contact))
 }
 
 /// Whether a save may put its host in the discovery list.

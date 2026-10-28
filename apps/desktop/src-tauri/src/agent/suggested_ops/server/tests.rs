@@ -901,6 +901,7 @@ fn the_saved_facts_draft_each_place_and_its_smb_host() {
             username: None,
             auto_reconnect: None,
         }],
+        awaiting_first_connect: false,
     }];
     let entry = sftp.clone();
     let saved = SavedServers::from_listing(listing, smb_hosts, move |id| {

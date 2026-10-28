@@ -249,6 +249,7 @@ pub(crate) fn smb_host_groups(
                 last_connected_at: None,
                 auto_reconnect: None,
                 places: Vec::new(),
+                awaiting_first_connect: entry.awaiting_first_connect,
             },
             host: entry.address,
             port: entry.port,
@@ -303,6 +304,9 @@ fn unlisted_host(row: &KnownNetworkShare) -> SmbHostGroup {
             last_connected_at: None,
             auto_reconnect: None,
             places: Vec::new(),
+            // A host only the share store names went through a mount, or a share
+            // list the user opened: never one saved without contact.
+            awaiting_first_connect: false,
         },
         host,
         port,

@@ -57,6 +57,7 @@ pub(crate) fn listing(
             pinned: entry.pinned,
             last_connected_at: Some(entry.last_connected_at),
             auto_reconnect: Some(entry.auto_reconnect),
+            awaiting_first_connect: false,
         });
     }
 
@@ -90,6 +91,7 @@ pub(crate) fn listing(
             pinned: entry.pinned,
             last_connected_at: Some(entry.last_connected_at),
             auto_reconnect: Some(entry.auto_reconnect),
+            awaiting_first_connect: false,
         });
     }
 

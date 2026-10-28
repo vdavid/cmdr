@@ -29,5 +29,13 @@
   processes as well, to avoid wasting the user's resources. If rolling back is an option, we should consider that too.
 - Always keep accessibility in mind. Features should be available to people with impaired vision, hearing, and cognitive
   disabilities.
+- **An approved action is the user's own.** When the user approves something Cmdr or Ask Cmdr suggested (a server card,
+  a suggested file operation), it counts as user-initiated, exactly as if they had started it themselves: their stamp is
+  on it, so it may do whatever the same user-started action may, and ❌ nothing downstream treats it as the agent's (no
+  extra refusals, no weaker path). Why: the safety lives in the approval, so the work goes into showing the user what
+  they're approving, and two paths to one action must never behave differently. The flip side holds too: what Cmdr does
+  on its OWN initiative (a background wake, a follow-up turn, a probe nobody asked for) is not user-started, and waits
+  for the user. Saving a server is one example: "Add anyway" and an approved card both save without contact, because
+  saving is a store write and contact starts when the user connects (#777).
 
 For concrete tokens and component patterns, see `design-system.md`.

@@ -30,7 +30,7 @@ impl ServerSaver for HubSaver {
             match save {
                 ServerSave::Add(target) => SaveResult::of_outcome(save_target(target).await),
                 ServerSave::Edit { id, edit } => SaveResult::of_outcome(save_place_edit(&id, edit).await),
-                // ❌ Never `add_manual_server`: that one joins the discovery list at once.
+                // ❌ Never a checked `add_manual_server`: that one probes and joins the discovery list at once.
                 ServerSave::SmbAdd {
                     address,
                     name,

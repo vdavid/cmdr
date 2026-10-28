@@ -313,7 +313,8 @@ only for a named entry, so a Bonjour name still outranks an address nobody chose
 ### A manual server saved without contact
 
 `save_manual_server_without_contact` (`manual_servers_contact.rs`) is the SMB save behind an approved Ask Cmdr
-suggestion: the entry and the share its address names, and NO network contact. No reachability check; no
+suggestion, and the add sheet's "Add anyway" saves the same way (`add_manual_server` with `Reachability::Skip`): the
+entry and the share its address names, and NO network contact. No reachability check; no
 `on_host_found`, since a host in the discovery list is one the servers view may list shares of (signing in, as a guest
 where it can) while it's on screen; and no GUID probe, which skips a share no mount went through (§ "Which server a share
 SMB share is on"). The entry carries `awaitingFirstConnect: true` (absent reads `false`), so `load_manual_servers` (at
@@ -322,10 +323,14 @@ launch and on every network action) leaves it out of the list too.
 - **Its first mount makes it ordinary** (`note_first_connect`, from `smb_saved_shares::remember_mount`, every Cmdr
   mount): the flag clears, and the next load lists it. The hub needs no discovery entry to show or open it: a saved host
   mDNS isn't seeing is drawn from the saved listing (`servers-hub-rows.ts::savedHostFor`).
-- **A contact-free save never hides an ordinary host**, and the user's own add of a waiting host makes it ordinary: a
-  re-save keeps the flag only while both saves say so (`add_server_entry_to_path`).
-- **Decision: the add sheet's "Add anyway" keeps joining the list** (`add_manual_server` with `Reachability::Skip`):
-  the person typed that address and asked for it. Whether it should save contact-free too is David's call (#777).
+- **A contact-free save never hides an ordinary host**, and a checked add of a waiting host (the probe reached it) makes
+  it ordinary: a re-save keeps the flag only while both saves say so (`add_server_entry_to_path`).
+- **The hub says "Not connected yet"** for it: the listing carries `SavedServer.awaitingFirstConnect`, and the frontend
+  keeps its shares out of the prefetch (`apps/desktop/src/lib/file-explorer/network/DETAILS.md`).
+- **Decision: "Add anyway" saves contact-free too** (David, 2026-10-28, #777). **Why**: one rule everywhere, saving a
+  server is a store write and contact starts when the user connects. An approved card is as user-initiated as the
+  sheet (`docs/design-principles.md`, "An approved action is the user's own"), so the two must not differ. The cost: a user's unchecked add
+  no longer shows the host's shares right away; they appear once the user opens it.
 
 ### Mount path disambiguation for same-name shares
 

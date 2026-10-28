@@ -3710,6 +3710,7 @@ export type MessageKey =
   | 'servers.hub.shareAccount'
   | 'servers.hub.status.connected'
   | 'servers.hub.status.foundNearby'
+  | 'servers.hub.status.notConnectedYet'
   | 'servers.hub.status.saved'
   | 'servers.hub.status.signedOut'
   | 'servers.hub.status.waitingForKey'

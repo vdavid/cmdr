@@ -53,8 +53,9 @@
 
 ## Saving without contact
 
-An approved Ask Cmdr suggestion to add a server saves it the way "Add anyway" does, and contacts nothing until the user
-first connects it (the approval: `agent/suggested_ops/DETAILS.md` § Approving a server).
+An approved Ask Cmdr suggestion to add a server saves it the way "Add anyway" does, and both contact nothing until the
+user first connects it (the approval: `agent/suggested_ops/DETAILS.md` § Approving a server). One rule: saving a server
+is a store write, and contact starts when the user connects (#777).
 
 - **SFTP, WebDAV, S3, NFS**: `save_target` already contacts nothing for a place that isn't connected: each wiring's
   `save_without_connecting` writes the store, and only a CONNECTED place's edit talks to the server, over the session

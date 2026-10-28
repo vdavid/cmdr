@@ -734,7 +734,10 @@ and the system prompt requires the model to disclose "returned of total" wheneve
   against a mis-tagged entry; belt to the structural `test_agent_tool_view_never_writes` suspenders).
 - An `Access::Session` tool on a turn the user didn't start (`wake`, `outcomes`) ⇒
   `{ available: false, refusal: "refusedInBackground", … }`: a background connect can spin up a sleeping NAS's disks for
-  a digest nobody asked for (agent invariant 7).
+  a digest nobody asked for (agent invariant 7). "User-started" follows `docs/design-principles.md` ("An approved action
+  is the user's own"): an action the user approved counts as theirs, while a turn the app opens on its own (a wake, the
+  follow-up a rejection earns) doesn't. Today no approval opens a turn, so `TurnOrigin` has no approved-action origin; a
+  feature that runs an approved card's follow-up through the agent adds one that `user_started()` answers `true`.
 - Otherwise `None` ⇒ `dispatch` calls `execute_tool(app, Consumer::Agent, …)`, which itself refuses any name outside the
   agent view (a second, structural backstop).
 

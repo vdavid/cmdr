@@ -57,6 +57,10 @@
   "@servers.hub.status.saved": {
     "description": "Status of a server the user has saved but isn’t connected to. Nothing is wrong; it’s simply idle. One word, ADJECTIVE."
   },
+  "servers.hub.status.notConnectedYet": "Not connected yet",
+  "@servers.hub.status.notConnectedYet": {
+    "description": "Status of a saved file server the user hasn’t connected to since adding it. Cmdr deliberately hasn’t contacted it yet, so its shared folders aren’t listed; connecting is the next step. ❗ NOT a failure or an error: nothing went wrong."
+  },
   "servers.hub.status.foundNearby": "Found nearby",
   "@servers.hub.status.foundNearby": {
     "description": "Status of a server Cmdr can see on the local network right now, whether or not the user saved it. Two words.",

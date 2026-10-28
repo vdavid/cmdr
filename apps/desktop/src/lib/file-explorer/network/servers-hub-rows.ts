@@ -37,6 +37,11 @@ export type HubRowStatus =
   | 'connected'
   /** Saved and idle: nothing in flight, and nothing is wrong. */
   | 'saved'
+  /**
+   * An SMB host saved without contact ("Add anyway", an approved Ask Cmdr card):
+   * nothing has dialed it, and nothing lists its shares until the user connects.
+   */
+  | 'not_connected_yet'
   /** mDNS is seeing it right now. */
   | 'found_nearby'
   /** The session dropped because a credential is what's missing. */
@@ -112,6 +117,7 @@ const STATUS_RANK: Record<HubRowStatus, number> = {
   signed_out: 1,
   waiting_for_key: 1,
   saved: 2,
+  not_connected_yet: 2,
   found_nearby: 3,
 }
 
@@ -266,9 +272,18 @@ function matchingHosts(server: SavedServer, hosts: NetworkHost[]): NetworkHost[]
 /**
  * The ids of the discovery list's hosts that ARE one of the saved servers, by the
  * same match the hub's merge makes. Every other host is one Cmdr merely found.
+ * These are the hosts whose shares may be listed unasked.
+ *
+ * ❗ Minus a host saved without contact (`awaitingFirstConnect`): it's the person's,
+ * but listing signs in to it, and nothing contacts it until they connect (#777).
  */
 export function savedSmbHostIds(saved: SavedServer[], hosts: NetworkHost[]): Set<string> {
-  return new Set(saved.flatMap((server) => matchingHosts(server, hosts)).map((host) => host.id))
+  return new Set(
+    saved
+      .filter((server) => !server.awaitingFirstConnect)
+      .flatMap((server) => matchingHosts(server, hosts))
+      .map((host) => host.id),
+  )
 }
 
 /**
@@ -368,13 +383,20 @@ function nearbyRow(host: NetworkHost): HubRow {
  * ❌ never the host's own manual entry: Cmdr injects every typed-in host into the
  * discovery list at startup, reachable or not, so that entry says nothing about
  * the network. `primaryHost` puts a discovered one first when there is one.
+ *
+ * ❗ A host saved without contact reads `not_connected_yet` even while mDNS sees
+ * it: it has no shares listed, and "Saved" with nothing under it reads like an add
+ * that didn't work (#777).
  */
 function savedStatus(
   server: SavedServer,
   host: NetworkHost | null,
   states: Map<string, ConnectionState | null>,
 ): HubRowStatus {
-  if (server.protocol === 'smb') return host?.source === 'discovered' ? 'found_nearby' : 'saved'
+  if (server.protocol === 'smb') {
+    if (server.awaitingFirstConnect) return 'not_connected_yet'
+    return host?.source === 'discovered' ? 'found_nearby' : 'saved'
+  }
   const placeStatuses = server.places.map((place) => placeStatus(states.get(place.volumeId) ?? null))
   // An S3 account reads as its most urgent place: live if one is, else asking if one asks.
   // A one-place server has exactly one.

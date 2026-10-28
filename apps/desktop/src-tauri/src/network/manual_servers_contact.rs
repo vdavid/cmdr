@@ -1,4 +1,5 @@
-//! A manual server saved without contacting it (an approved Ask Cmdr suggestion),
+//! A manual server saved without contacting it (an approved Ask Cmdr suggestion, or
+//! the add sheet's "Add anyway"),
 //! and the first connect that makes it an ordinary one. A child of `manual_servers`
 //! so it shares that store's lock and file helpers.
 
@@ -20,9 +21,9 @@ use crate::network::server_identity::SmbServer;
 /// share no mount went through). The host joins the discovery list once the user
 /// first connects it ([`note_first_connect`]).
 ///
-/// ❗ The save behind an approved Ask Cmdr suggestion: a host the user hasn't
-/// connected to yet isn't dialed on the agent's say-so. The add sheet's "Add anyway"
-/// is `add_manual_server` with `Reachability::Skip`, which does join the list.
+/// ❗ The save behind an approved Ask Cmdr suggestion. The add sheet's "Add anyway"
+/// (`add_manual_server` with `Reachability::Skip`) saves the same way: saving a
+/// server is a store write, and contact starts when the user connects (#777).
 pub fn save_manual_server_without_contact<R: Runtime>(
     input: &str,
     details: &HostEdit,
