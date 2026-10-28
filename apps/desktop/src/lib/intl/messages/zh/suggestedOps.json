@@ -147,14 +147,6 @@
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
   },
-  "suggestedOps.blocked.noTrash": "无法执行：这个驱动器没有废纸篓",
-  "@suggestedOps.blocked.noTrash": {
-    "sourceHash": "f08e038"
-  },
-  "suggestedOps.blocked.noTrashTooltip": "这些文件所在的驱动器没有废纸篓，所以移到废纸篓行不通，什么都不会发生。你可以拒绝这条建议；如果你确实想删掉这些文件，也可以自己动手删除。",
-  "@suggestedOps.blocked.noTrashTooltip": {
-    "sourceHash": "f2a5d5f"
-  },
   "suggestedOps.irreversible.overwrite": "这项操作无法撤销：会替换已有的压缩文件",
   "@suggestedOps.irreversible.overwrite": {
     "sourceHash": "0d5c5bb"

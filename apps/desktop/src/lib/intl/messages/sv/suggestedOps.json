@@ -147,14 +147,6 @@
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
   },
-  "suggestedOps.blocked.noTrash": "Går inte att köra: den här enheten har ingen papperskorg",
-  "@suggestedOps.blocked.noTrash": {
-    "sourceHash": "f08e038"
-  },
-  "suggestedOps.blocked.noTrashTooltip": "Enheten som filerna ligger på har ingen papperskorg, så det går inte att flytta dem dit och inget skulle hända. Avböj förslaget eller radera filerna själv om det är det du vill.",
-  "@suggestedOps.blocked.noTrashTooltip": {
-    "sourceHash": "f2a5d5f"
-  },
   "suggestedOps.irreversible.overwrite": "Det här går inte att ångra: Cmdr skriver över ett befintligt arkiv",
   "@suggestedOps.irreversible.overwrite": {
     "sourceHash": "0d5c5bb"

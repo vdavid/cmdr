@@ -147,14 +147,6 @@
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
   },
-  "suggestedOps.blocked.noTrash": "Ausführen nicht möglich: Dieses Laufwerk hat keinen Papierkorb",
-  "@suggestedOps.blocked.noTrash": {
-    "sourceHash": "f08e038"
-  },
-  "suggestedOps.blocked.noTrashTooltip": "Das Laufwerk, auf dem diese Dateien liegen, hat keinen Papierkorb. Das Bewegen dorthin kann also nicht klappen, und es würde nichts passieren. Lehne den Vorschlag ab, oder lösche die Dateien selbst, wenn du das möchtest.",
-  "@suggestedOps.blocked.noTrashTooltip": {
-    "sourceHash": "f2a5d5f"
-  },
   "suggestedOps.irreversible.overwrite": "Das lässt sich nicht widerrufen: Ein vorhandenes Archiv wird ersetzt",
   "@suggestedOps.irreversible.overwrite": {
     "sourceHash": "0d5c5bb"

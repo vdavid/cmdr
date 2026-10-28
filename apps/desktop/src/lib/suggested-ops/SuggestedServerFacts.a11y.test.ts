@@ -152,7 +152,7 @@ describe('a refused card', () => {
           displayName: 'Build box',
           rationale: 'You SSH into this box every day.',
           reversible: 'serverSettings',
-          runBlocker: null,
+          runsAs: null,
           destination: null,
           destinationVolumeName: null,
           destinationState: 'notApplicable',
@@ -162,6 +162,7 @@ describe('a refused card', () => {
           fromSelector: false,
           server: addServer,
         } as never,
+        actionLabels: [],
       },
     })
     flushSync()

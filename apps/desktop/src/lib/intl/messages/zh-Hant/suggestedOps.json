@@ -147,14 +147,6 @@
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
   },
-  "suggestedOps.blocked.noTrash": "無法執行：這個磁碟機沒有垃圾桶",
-  "@suggestedOps.blocked.noTrash": {
-    "sourceHash": "f08e038"
-  },
-  "suggestedOps.blocked.noTrashTooltip": "這些檔案所在的磁碟機沒有垃圾桶，所以無法把檔案移過去，什麼都不會發生。請拒絕這項建議，如果你真的想刪掉這些檔案，可以自己刪除。",
-  "@suggestedOps.blocked.noTrashTooltip": {
-    "sourceHash": "f2a5d5f"
-  },
   "suggestedOps.irreversible.overwrite": "無法還原：會取代現有的封存檔",
   "@suggestedOps.irreversible.overwrite": {
     "sourceHash": "0d5c5bb"

@@ -19,8 +19,8 @@
     import { formatTimeOfDay } from '#lib/settings/format-utils.js'
     import { getSetting, setSetting } from '#lib/settings/index.js'
     import type { SuggestedSweepView } from '#lib/tauri-commands/index.js'
-    import { closeSuggestedOps, suggestedOpsState } from './suggested-ops-trigger.svelte'
-    import { sweepHeadingHidden, sweepWhen } from './suggested-ops-copy'
+    import { approvableCount, closeSuggestedOps, pendingGroups, suggestedOpsState } from './suggested-ops-trigger.svelte'
+    import { approveKey, shownVerb, sweepHeadingHidden, sweepWhen } from './suggested-ops-copy'
     import AgentReason from './AgentReason.svelte'
     import SuggestedOpsGroup from './SuggestedOpsGroup.svelte'
 
@@ -32,6 +32,15 @@
         showApprovalNotice = false
         setSetting('suggestedOps.suppressApprovalNotice', true)
     }
+
+    /** Every group's action-button label as it reads now, so each button sizes to the widest
+     *  (`SizedLabel`) and the buttons line up down the dialog. A server card's takes no count. */
+    const actionLabels = $derived(
+        pendingGroups().map((group) => {
+            const count = approvableCount(group.groupId)
+            return tString(approveKey(shownVerb(group.verb, group.runsAs)), { countText: formatInteger(count), count })
+        }),
+    )
 
     /** "Now", ticking once a minute so "15 minutes ago" stays true while the dialog is up. */
     let now = $state(Date.now())
@@ -75,7 +84,9 @@
         <span>{tString('suggestedOps.title')}</span>
     {/snippet}
 
-    {#if showApprovalNotice}
+    <!-- Only over suggestions to approve: over an empty list or a read that didn't come back it
+         would warn about nothing. -->
+    {#if showApprovalNotice && suggestedOpsState.sweeps.length > 0}
         <div class="approval-notice" role="note">
             <span class="approval-notice-icon" aria-hidden="true"><Icon name="triangle-alert" size={16} /></span>
             <p>{tString('suggestedOps.description')}</p>
@@ -124,7 +135,7 @@
                 {/if}
 
                 {#each sweep.groups as group (group.groupId)}
-                    <SuggestedOpsGroup {group} />
+                    <SuggestedOpsGroup {group} {actionLabels} />
                 {/each}
             </section>
         {/each}

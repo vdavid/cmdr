@@ -147,14 +147,6 @@
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
   },
-  "suggestedOps.blocked.noTrash": "Não dá para executar: este disco não tem Lixo",
-  "@suggestedOps.blocked.noTrash": {
-    "sourceHash": "f08e038"
-  },
-  "suggestedOps.blocked.noTrashTooltip": "O disco em que estes arquivos estão não tem Lixo, então movê-los para lá não funcionaria e nada aconteceria. Recuse esta sugestão, ou apague os arquivos por conta própria se for isso que você quer.",
-  "@suggestedOps.blocked.noTrashTooltip": {
-    "sourceHash": "f2a5d5f"
-  },
   "suggestedOps.irreversible.overwrite": "Não dá para desfazer: isto substitui um arquivo compactado que já existe",
   "@suggestedOps.irreversible.overwrite": {
     "sourceHash": "0d5c5bb"

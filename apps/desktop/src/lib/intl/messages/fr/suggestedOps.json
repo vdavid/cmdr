@@ -148,14 +148,6 @@
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
   },
-  "suggestedOps.blocked.noTrash": "Exécution impossible : ce disque n’a pas de corbeille",
-  "@suggestedOps.blocked.noTrash": {
-    "sourceHash": "f08e038"
-  },
-  "suggestedOps.blocked.noTrashTooltip": "Le disque qui contient ces fichiers n’a pas de corbeille : les y placer ne peut pas fonctionner et rien ne se passerait. Refusez cette suggestion ou supprimez vous-même les fichiers si c’est ce que vous voulez.",
-  "@suggestedOps.blocked.noTrashTooltip": {
-    "sourceHash": "f2a5d5f"
-  },
   "suggestedOps.irreversible.overwrite": "Cette opération est irréversible : elle remplace une archive existante",
   "@suggestedOps.irreversible.overwrite": {
     "sourceHash": "0d5c5bb"

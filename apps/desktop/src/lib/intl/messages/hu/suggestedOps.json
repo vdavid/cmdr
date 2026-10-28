@@ -147,14 +147,6 @@
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
   },
-  "suggestedOps.blocked.noTrash": "Nem indítható: ezen a meghajtón nincs Kuka",
-  "@suggestedOps.blocked.noTrash": {
-    "sourceHash": "f08e038"
-  },
-  "suggestedOps.blocked.noTrashTooltip": "Azon a meghajtón, amelyen ezek a fájlok vannak, nincs Kuka, így nem lehet oda áthelyezni őket, és semmi sem történne. Utasítsd el, vagy töröld magad a fájlokat, ha ezt szeretnéd.",
-  "@suggestedOps.blocked.noTrashTooltip": {
-    "sourceHash": "f2a5d5f"
-  },
   "suggestedOps.irreversible.overwrite": "Ezt nem lehet visszavonni: lecserél egy meglévő archívumot",
   "@suggestedOps.irreversible.overwrite": {
     "sourceHash": "0d5c5bb"

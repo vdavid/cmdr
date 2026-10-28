@@ -38,6 +38,8 @@ interface FixtureFile {
   live?: LiveFact
   /** An earlier review turned it off (its approval then refused to start), so it opens unticked. */
   excluded?: boolean
+  /** Something already has its `newName` where it lands (#774). */
+  nameTaken?: boolean
 }
 
 interface FixtureGroup {
@@ -52,7 +54,7 @@ interface FixtureGroup {
    *  connected arrives, so its pill shows the name and the generic icon. */
   destinationVolumeId?: string | null
   reversible?: SuggestedGroupView['reversible']
-  runBlocker?: SuggestedGroupView['runBlocker']
+  runsAs?: SuggestedGroupView['runsAs']
   destinationState?: SuggestedGroupView['destinationState']
   fromSelector?: boolean
   files: FixtureFile[]
@@ -81,7 +83,7 @@ function view(group: FixtureGroup, sweepId: number): SuggestedGroupView {
     destinationVolumeName: group.destinationVolumeName ?? null,
     destinationVolumeId: group.destinationVolumeId ?? null,
     reversible: group.reversible ?? 'restoreMove',
-    runBlocker: group.runBlocker ?? null,
+    runsAs: group.runsAs ?? null,
     destinationState: group.destinationState ?? (group.destination ? 'exists' : 'notApplicable'),
     liveOpCount: total - group.files.filter((file) => file.excluded).length,
     totalOpCount: total,
@@ -153,6 +155,9 @@ function review(group: FixtureGroup): GroupReview {
   group.files.forEach((file, index) => {
     const live = liveOf(file)
     fresh.liveFacts.set(index + 1, live)
+    // What the trigger records from the same live answer (`takeLiveAnswer`).
+    if (live.kind === 'missing') fresh.missing.set(index + 1, ops[index])
+    if (file.nameTaken) fresh.takenNames.add(index + 1)
   })
   return fresh
 }
@@ -209,7 +214,14 @@ const DOWNLOADS_CLEANUP: FixtureGroup[] = [
     // A move that files under new names: the renamed rows draw an arrow, the rest keep theirs.
     files: [
       { name: 'invoice-2026-07.pdf', newName: '2026-07-31 Telia invoice.pdf', size: 184_320, modified: daysAgo(80) },
-      { name: 'invoice-2026-08.pdf', newName: '2026-08-31 Telia invoice.pdf', size: 190_112, modified: daysAgo(52) },
+      // The NAS already has one under that name, so the row warns before the click (#774).
+      {
+        name: 'invoice-2026-08.pdf',
+        newName: '2026-08-31 Telia invoice.pdf',
+        size: 190_112,
+        modified: daysAgo(52),
+        nameTaken: true,
+      },
       {
         name: 'invoice-2026-09.pdf',
         newName: '2026-09-27 OpenAI invoice Rymd.pdf',
@@ -258,7 +270,7 @@ const DOWNLOADS_CLEANUP: FixtureGroup[] = [
     displayName: 'Old exports on the NAS',
     rationale: 'Nobody opened these in over a year.',
     sourceFolder: '/exports/2024',
-    runBlocker: 'noTrash',
+    runsAs: 'permanentDelete',
     files: [
       { name: 'board-deck-2024-q1.key', size: 48 * MB, modified: daysAgo(560) },
       { name: 'board-deck-2024-q2.key', size: 51 * MB, modified: daysAgo(470) },

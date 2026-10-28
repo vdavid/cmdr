@@ -47,6 +47,7 @@ const { actions, store } = vi.hoisted(() => ({
       deselected: new Set<number>(),
       changedUnderReview: false,
       liveFacts: new Map<number, unknown>(),
+      takenNames: new Set<number>(),
       sourceUnreachable: null as string | null,
       range: { start: 0, end: 10 },
     },
@@ -83,7 +84,13 @@ vi.mock('./suggested-ops-trigger.svelte', () => ({
   },
   closeSuggestedOps: actions.close,
   ensureOpWindow: (groupId: number, startIndex: number) => actions.ensure({ groupId, startIndex }),
-  isOpSelected: (_groupId: number, opId: number) => !store.review.deselected.has(opId),
+  isOpSelected: (_groupId: number, op: { opId: number }) =>
+    !store.review.deselected.has(op.opId) &&
+    (store.review.liveFacts.get(op.opId) as { kind?: string } | undefined)?.kind !== 'missing',
+  isOpMissing: (_groupId: number, op: { opId: number }) =>
+    (store.review.liveFacts.get(op.opId) as { kind?: string } | undefined)?.kind === 'missing',
+  isNewNameTaken: (_groupId: number, op: { opId: number }) => store.review.takenNames.has(op.opId),
+  pendingGroups: () => store.state.sweeps.flatMap((sweep) => sweep.groups),
   selectionState: () => (store.review.deselected.size === 0 ? 'all' : 'some'),
   toggleAllOps: actions.toggleAll,
   opAt: (_groupId: number, index: number) => store.ops[index] ?? null,
@@ -123,7 +130,7 @@ function group(overrides: Record<string, unknown> = {}) {
     destination: '/backups/Installers',
     destinationVolumeName: 'Naspolya',
     reversible: 'restoreMove',
-    runBlocker: null,
+    runsAs: null,
     destinationState: 'exists',
     liveOpCount: 3,
     totalOpCount: 3,
@@ -187,6 +194,7 @@ beforeEach(() => {
     deselected: new Set<number>(),
     changedUnderReview: false,
     liveFacts: new Map<number, unknown>(),
+    takenNames: new Set<number>(),
     sourceUnreachable: null,
     range: { start: 0, end: 10 },
   }
@@ -289,16 +297,18 @@ describe('disclosure', () => {
     expect(buttons).toContain('Delete 3 files')
   })
 
-  it('says a trash on a drive with no Trash can’t run, and won’t run it', () => {
-    seed({ verb: 'trash', runBlocker: 'noTrash', destination: null, destinationState: 'notApplicable' })
+  it('offers a trash on a drive with no Trash as the permanent delete it would be', () => {
+    seed({ verb: 'trash', runsAs: 'permanentDelete', destination: null, destinationState: 'notApplicable' })
     const host = mountDialog()
 
-    expect(host.textContent).toContain('Can’t run: this drive has no Trash')
+    expect(host.textContent).toContain('This drive has no Trash')
+    expect(host.textContent).toContain('This can’t be undone')
     expect(host.textContent).not.toContain('You can undo this')
-    const button = [...host.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Move 3 files to Trash')
-    expect(button?.getAttribute('aria-disabled')).toBe('true')
+    expect(host.textContent).not.toContain('The Trash')
+    const button = [...host.querySelectorAll('button')].find((b) => b.textContent.includes('Delete 3 files'))
+    expect(button?.className).toContain('danger')
     button?.click()
-    expect(actions.approve).not.toHaveBeenCalled()
+    expect(actions.approve).toHaveBeenCalled()
   })
 
   it('says when approving would create the target folder', () => {
@@ -327,13 +337,13 @@ describe('the approval note and the sweep heading', () => {
   it('closes the note for good from its ×', () => {
     settings.suppressed = false
     const host = mountDialog()
-    expect(host.textContent).toContain('Nothing runs until you approve it.')
+    expect(host.textContent).toContain('Apply them only if you agree.')
 
     host.querySelector<HTMLButtonElement>('[aria-label="Don’t show this again"]')?.click()
     flushSync()
 
     expect(settings.set).toHaveBeenCalledWith('suggestedOps.suppressApprovalNotice', true)
-    expect(host.textContent).not.toContain('Nothing runs until you approve it.')
+    expect(host.textContent).not.toContain('Apply them only if you agree.')
   })
 
   it('keeps the note hidden once the user closed it', () => {
@@ -341,7 +351,7 @@ describe('the approval note and the sweep heading', () => {
     const host = mountDialog()
     settings.suppressed = false
 
-    expect(host.textContent).not.toContain('Nothing runs until you approve it.')
+    expect(host.textContent).not.toContain('Apply them only if you agree.')
   })
 
   it('heads an older sweep with when it was suggested', () => {
@@ -567,7 +577,8 @@ describe('a server card', () => {
     }
     expect(facts).toContain('A new address')
     expect(host.querySelector('.group-head')?.textContent).toContain('Add a server')
-    expect(host.querySelector('.group-title')?.textContent).toBe('Build box')
+    expect(host.querySelector('.group-title .title-text')?.textContent).toBe('Build box')
+    expect(host.querySelector('.group-title .action')?.textContent).toBe('Add a server')
     expect(host.textContent).toContain('You can undo this: forget the server in Servers')
     await expectNoA11yViolations(host)
   })
@@ -663,7 +674,7 @@ describe('the parts on their own', () => {
   it('SuggestedOpsGroup renders a group with no violations', async () => {
     const SuggestedOpsGroup = (await import('./SuggestedOpsGroup.svelte')).default
     const host = freshHost()
-    mount(SuggestedOpsGroup, { target: host, props: { group: group() as never } })
+    mount(SuggestedOpsGroup, { target: host, props: { group: group() as never, actionLabels: [] } })
     flushSync()
     await expectNoA11yViolations(host)
     expect(host.textContent).toContain('Move 3 files')
@@ -683,7 +694,7 @@ describe('the parts on their own', () => {
     const { createRawSnippet } = await import('svelte')
     const actions = createRawSnippet(() => ({ render: () => '<span></span>' }))
     const host = freshHost()
-    mount(SuggestedOpFiles, { target: host, props: { group: group() as never, actions } })
+    mount(SuggestedOpFiles, { target: host, props: { group: group() as never, undoNote: actions, actions } })
     flushSync()
     await expectNoA11yViolations(host)
     expect(host.textContent).toContain('invoice-jan.pdf')

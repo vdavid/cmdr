@@ -11,12 +11,16 @@
   "@suggestedOps.reversible.trash": {
     "sourceHash": "55bf957"
   },
-  "suggestedOps.blocked.noTrash": "Can’t run: this drive has no Bin",
-  "@suggestedOps.blocked.noTrash": {
-    "sourceHash": "f08e038"
+  "suggestedOps.action.trash": "Move to Bin",
+  "@suggestedOps.action.trash": {
+    "sourceHash": "9adcdf3"
   },
-  "suggestedOps.blocked.noTrashTooltip": "The drive these files are on keeps no Bin, so moving them there can’t work and nothing would happen. Reject this, or delete the files yourself if that’s what you want.",
-  "@suggestedOps.blocked.noTrashTooltip": {
-    "sourceHash": "f2a5d5f"
+  "suggestedOps.noTrash": "This drive has no Bin",
+  "@suggestedOps.noTrash": {
+    "sourceHash": "38a6adc"
+  },
+  "suggestedOps.noTrashTooltip": "The drive these files are on keeps no Bin, so approving this deletes them for good.",
+  "@suggestedOps.noTrashTooltip": {
+    "sourceHash": "4327cb2"
   }
 }

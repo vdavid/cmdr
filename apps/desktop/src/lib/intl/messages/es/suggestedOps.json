@@ -147,14 +147,6 @@
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
   },
-  "suggestedOps.blocked.noTrash": "No se puede ejecutar: esta unidad no tiene papelera",
-  "@suggestedOps.blocked.noTrash": {
-    "sourceHash": "f08e038"
-  },
-  "suggestedOps.blocked.noTrashTooltip": "La unidad donde están estos archivos no tiene papelera, así que moverlos ahí no funcionaría y no pasaría nada. Recházala, o elimina tú los archivos si es lo que quieres.",
-  "@suggestedOps.blocked.noTrashTooltip": {
-    "sourceHash": "f2a5d5f"
-  },
   "suggestedOps.irreversible.overwrite": "Esto no se puede deshacer: reemplaza un archivo comprimido existente",
   "@suggestedOps.irreversible.overwrite": {
     "sourceHash": "0d5c5bb"

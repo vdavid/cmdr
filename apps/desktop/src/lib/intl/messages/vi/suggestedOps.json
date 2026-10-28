@@ -147,14 +147,6 @@
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
   },
-  "suggestedOps.blocked.noTrash": "Không chạy được: ổ đĩa này không có thùng rác",
-  "@suggestedOps.blocked.noTrash": {
-    "sourceHash": "f08e038"
-  },
-  "suggestedOps.blocked.noTrashTooltip": "Ổ đĩa chứa các tệp này không có thùng rác, nên không thể chuyển chúng vào đó và sẽ không có gì xảy ra. Hãy từ chối đề xuất này, hoặc tự xóa các tệp nếu đó là điều bạn muốn.",
-  "@suggestedOps.blocked.noTrashTooltip": {
-    "sourceHash": "f2a5d5f"
-  },
   "suggestedOps.irreversible.overwrite": "Không thể hoàn tác: thao tác này thay thế một tệp nén hiện có",
   "@suggestedOps.irreversible.overwrite": {
     "sourceHash": "0d5c5bb"

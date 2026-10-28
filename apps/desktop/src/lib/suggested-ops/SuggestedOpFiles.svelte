@@ -36,6 +36,8 @@
     import {
         SHOW_MORE_STEP,
         ensureOpWindow,
+        isNewNameTaken,
+        isOpMissing,
         isOpSelected,
         opAt,
         reviewOf,
@@ -55,12 +57,14 @@
 
     interface Props {
         group: SuggestedGroupView
-        /** The group's decision buttons, right-aligned on the row under the list, opposite
-         *  "Show more" / "Show all", so a short group doesn't spend two rows on its footer. */
+        /** Whether the action can be taken back, on the left of the row under the list, filling the
+         *  space beside the buttons (under "Show more" / "Show all" when those show). */
+        undoNote: Snippet
+        /** The group's decision buttons, right-aligned on the row under the list. */
         actions: Snippet
     }
 
-    const { group, actions }: Props = $props()
+    const { group, undoNote, actions }: Props = $props()
 
     const review = $derived(reviewOf(group.groupId))
     const shown = $derived(shownRows(group))
@@ -78,12 +82,32 @@
     /** Every op shares one folder, named once in the group's facts, so rows show the name alone. */
     const sharedFolder = $derived(group.sourceFolder !== null)
 
+    /**
+     * The op each drawn row last showed, for the one moment a row outlives its group's review.
+     *
+     * A row's cells re-read their op while they tear down (Ark's checkbox reads `checked` on the
+     * way out), and when the review went in the same flush (a re-read dropping an answered group,
+     * the Debug gallery swapping one seeded state for another), the op was `undefined` and the
+     * throw took the main window down to its crash panel. A group with no review is a group
+     * leaving the list, so its rows keep the ops they drew until they're gone. Not state, and
+     * pruned to the drawn range, so it holds a viewport's worth at any group size.
+     */
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- bookkeeping for teardown reads; nothing renders from it
+    const drawnOps = new Map<number, SuggestedOpView>()
+
     const source: ColumnListWindowedSource<SuggestedOpView> = {
         get count() {
             return shownRows(group)
         },
-        getRow: (index) => opAt(group.groupId, index) ?? undefined,
+        getRow: (index) => {
+            if (!reviewOf(group.groupId)) return drawnOps.get(index)
+            const op = opAt(group.groupId, index)
+            if (op) drawnOps.set(index, op)
+            else drawnOps.delete(index)
+            return op ?? undefined
+        },
         onRangeChange: ({ start, end }) => {
+            for (const index of drawnOps.keys()) if (index < start || index >= end) drawnOps.delete(index)
             void showRange(group.groupId, start, end)
         },
     }
@@ -184,10 +208,12 @@
     </span>
 {/snippet}
 
+<!-- A file that's gone can't run, so its box is off and can't be ticked back on. -->
 {#snippet includeCell({ row }: ColumnListCellContext<SuggestedOpView>)}
     <span class="include">
         <Checkbox
             checked={isOpSelected(group.groupId, row)}
+            disabled={isOpMissing(group.groupId, row)}
             onCheckedChange={() => {
                 toggleOp(group.groupId, row)
             }}
@@ -222,10 +248,29 @@
         {#if row.newName}
             <span class="arrow" aria-hidden="true"><Icon name="arrow-right" size={12} /></span>
             <span class="sr-only">{tString('suggestedOps.columnNewName')}</span>
-            <span
-                class="shortened new-name"
-                use:useShortenMiddle={{ text: row.newName, preferBreakAt: '.', startRatio: 0.7, tooltipWhenTruncated: true }}
-            ></span>
+            <!-- One half of the cell, glyph included, so every row's arrow stays in one column. -->
+            <span class="new-name-side">
+                {#if isNewNameTaken(group.groupId, row)}
+                    <!-- Something else already has that name where the file lands (#774). Before
+                         the name, as the size and date columns put theirs. -->
+                    <span class="changed-glyph">
+                        <StatusGlyph
+                            name="triangle-alert"
+                            label={tString('suggestedOps.newNameTaken')}
+                            tooltip={tString('suggestedOps.newNameTakenTooltip', { name: row.newName })}
+                        />
+                    </span>
+                {/if}
+                <span
+                    class="shortened new-name"
+                    use:useShortenMiddle={{
+                        text: row.newName,
+                        preferBreakAt: '.',
+                        startRatio: 0.7,
+                        tooltipWhenTruncated: true,
+                    }}
+                ></span>
+            </span>
         {/if}
     </span>
 {/snippet}
@@ -337,9 +382,8 @@
     />
 </div>
 
-<div class="list-footer">
+{#if remaining > 0}
     <div class="more">
-        {#if remaining > 0}
         <LinkButton onclick={() => { showMoreRows(group.groupId) }}>
             {tString('suggestedOps.showMore', {
                 countText: formatInteger(Math.min(SHOW_MORE_STEP, remaining)),
@@ -351,8 +395,11 @@
                 {tString('suggestedOps.showAll', { countText: formatInteger(total), count: total })}
             </LinkButton>
         {/if}
-        {/if}
     </div>
+{/if}
+
+<div class="list-footer">
+    {@render undoNote()}
     {@render actions()}
 </div>
 
@@ -377,9 +424,10 @@
         align-items: center;
         justify-content: space-between;
         gap: var(--spacing-md);
-        margin-top: var(--spacing-sm);
+        margin-top: var(--spacing-xs);
     }
 
+    /* The list's own controls, right under it; the footer below is the group's. */
     .more {
         display: flex;
         gap: var(--spacing-md);
@@ -427,9 +475,16 @@
         min-width: 0;
     }
 
-    .name-cell .shortened {
+    .name-cell .shortened,
+    .new-name-side {
         flex: 1 1 0;
         min-width: 0;
+    }
+
+    .new-name-side {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xxs);
     }
 
     .arrow {

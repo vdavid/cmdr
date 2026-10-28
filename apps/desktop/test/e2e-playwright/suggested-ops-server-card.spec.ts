@@ -68,7 +68,7 @@ test.describe('An AI suggestion to add a server', () => {
         .toBe(true)
       await tauriPage.evaluate(`document.querySelector('.status-corner .indicator').click()`)
 
-      const card = `[...document.querySelectorAll('article.group')].find(g => g.querySelector('.group-title')?.textContent === ${JSON.stringify(name)})`
+      const card = `[...document.querySelectorAll('article.group')].find(g => g.querySelector('.group-title .title-text')?.textContent === ${JSON.stringify(name)})`
       // The facts: the address, port, account, and folder the click saves, the address marked new,
       // and nothing to type into, a password least of all.
       await expect

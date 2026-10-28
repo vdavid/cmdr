@@ -34,7 +34,7 @@ vi.mock('#lib/tauri-commands/index.js', async (importOriginal) => ({
             destination: '/backups/Installers',
             destinationVolumeName: 'Naspolya',
             reversible: 'restoreMove',
-            runBlocker: null,
+            runsAs: null,
             destinationState: 'exists',
             liveOpCount: 3,
             totalOpCount: 3,

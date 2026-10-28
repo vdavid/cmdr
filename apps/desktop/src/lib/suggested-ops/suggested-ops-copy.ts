@@ -1,6 +1,6 @@
 /**
  * The words and facts a group row reads out: which action the button names, why an approval
- * can or can't be taken back (or can't run at all), and what a file's size and date say now against what they said
+ * can or can't be taken back (and what it runs as instead), and what a file's size and date say now against what they said
  * when the AI suggested it.
  *
  * Pure, so the copy each verb gets and the comparison each row makes are pinned by tests rather
@@ -8,7 +8,7 @@
  */
 
 import type { MessageKey } from '#lib/intl/keys.gen.js'
-import type { ProposalVerb, Reversibility, RunBlocker } from '#lib/ipc/bindings.js'
+import type { ProposalVerb, Reversibility, RunsAs } from '#lib/ipc/bindings.js'
 import type { SuggestedOpView } from '#lib/tauri-commands/index.js'
 import type { LiveFact } from './suggested-ops-trigger.svelte'
 
@@ -63,14 +63,57 @@ export function reversibilityKey(verb: ProposalVerb, reversible: Reversibility):
   }
 }
 
-/** The pill and the unavailable button's tooltip for a group the engine would refuse outright. */
-export function runBlockerKeys(blocker: RunBlocker): { pill: MessageKey; tooltip: MessageKey } {
-  return RUN_BLOCKER_KEYS[blocker]
+/**
+ * The action that would really run when the user approves: the verb, or the fallback the review
+ * offers instead (`runsAs`). Every word the group says about its action (its title, its button,
+ * its undo note) reads from this, so a trash on a drive with no Trash says "Delete" everywhere.
+ */
+export function shownVerb(verb: ProposalVerb, runsAs: RunsAs | null): ProposalVerb {
+  switch (runsAs) {
+    case 'permanentDelete':
+      return 'delete'
+    case null:
+      return verb
+  }
 }
 
-/** Keyed by every `RunBlocker`, so a new variant is a compile error until it has its words. */
-const RUN_BLOCKER_KEYS: Record<RunBlocker, { pill: MessageKey; tooltip: MessageKey }> = {
-  noTrash: { pill: 'suggestedOps.blocked.noTrash', tooltip: 'suggestedOps.blocked.noTrashTooltip' },
+/** The undo note's reversibility for the action that would really run (see `shownVerb`). */
+export function shownReversibility(reversible: Reversibility, runsAs: RunsAs | null): Reversibility {
+  return runsAs === 'permanentDelete' ? 'irreversible' : reversible
+}
+
+/** The pill and its tooltip saying why a group runs as something other than its verb. Keyed by
+ *  every `RunsAs`, so a new variant is a compile error until it has its words. */
+export function runsAsKeys(runsAs: RunsAs): { pill: MessageKey; tooltip: MessageKey } {
+  return RUNS_AS_KEYS[runsAs]
+}
+
+const RUNS_AS_KEYS: Record<RunsAs, { pill: MessageKey; tooltip: MessageKey }> = {
+  permanentDelete: { pill: 'suggestedOps.noTrash', tooltip: 'suggestedOps.noTrashTooltip' },
+}
+
+/** The action a group's title leads with, so what happens reads from the title alone. */
+export function actionKey(verb: ProposalVerb): MessageKey {
+  switch (verb) {
+    case 'move':
+      return 'suggestedOps.action.move'
+    case 'copy':
+      return 'suggestedOps.action.copy'
+    case 'trash':
+      return 'suggestedOps.action.trash'
+    case 'delete':
+      return 'suggestedOps.action.delete'
+    case 'rename':
+      return 'suggestedOps.action.rename'
+    case 'compress':
+      return 'suggestedOps.action.compress'
+    case 'extract':
+      return 'suggestedOps.action.extract'
+    case 'addServer':
+      return 'suggestedOps.server.add'
+    case 'editServer':
+      return 'suggestedOps.server.change'
+  }
 }
 
 /**

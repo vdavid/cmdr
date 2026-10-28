@@ -17,54 +17,78 @@ volume as a soft pill with the volume picker's own icon (`VolumePill`, `getIconF
 modified columns. The juxtaposition is the mechanism: a user checks a claim against something the agent could not
 invent. An unlabelled rationale would read as a finding, which is exactly the failure this surface exists to prevent.
 
-**Top to bottom is the order a decision is made in** (`SuggestedOpsGroup.svelte`): title, file count, and the pills that
-change the answer on one header row (wrapping inside a pill when a reason runs long); the facts; the AI's reason; the
-file list; then Reject and the action button. A sweep opens with a heading for the groups under it, in words
-(`sweepWhen`: "Suggested 15 minutes ago", "Suggested yesterday at 14:04", the user's date format for anything older,
-with the exact moment in a tooltip), then the sweep's own reason. A lone sweep from the last ten minutes gets no heading
-(`sweepHeadingHidden`): the user just asked for it, and the line would say nothing.
+**Top to bottom is the order a decision is made in** (`SuggestedOpsGroup.svelte`): the action and the title, the file
+count, and the pills that change the answer on one header row (wrapping inside a pill when a reason runs long); the
+facts; the AI's reason; the file list; then, on one row under it, the undo note on the left and Reject and the action
+button on the right.
 
-**The approval note is a warning the user can close for good.** "The AI suggested these. Nothing runs until you approve
-it." opens the dialog in the house warning look, and its × sets `suggestedOps.suppressApprovalNotice`, the same
+**The title leads with the action** (`actionKey`, in the accent text color: "Move", "Move to Trash", "Delete", "Add a
+server"), so what happens reads from the title alone rather than from the warnings and the button (David, 2026-10-28).
+It names the action that would really run (`shownVerb`), so a trash on a drive with no Trash reads "Delete". A sweep
+opens with a heading for the groups under it, in words (`sweepWhen`: "Suggested 15 minutes ago", "Suggested yesterday at
+14:04", the user's date format for anything older, with the exact moment in a tooltip), then the sweep's own reason. A
+lone sweep from the last ten minutes gets no heading (`sweepHeadingHidden`): the user just asked for it, and the line
+would say nothing.
+
+**The approval note is a warning the user can close for good.** "The agent suggested the actions below. Apply them only
+if you agree." opens the dialog in the house warning look, only while there are suggestions to approve (never over the
+empty list or a read that didn't come back), and its × sets `suggestedOps.suppressApprovalNotice`, the same
 suppress-switch pattern as the other hints in Settings > Advanced > Hints and warnings, which is where it comes back.
-Groups are separated by a hairline, not boxed: seven stacked bordered cards read as busy, and the file list is already
-the one framed well in each group.
+Each group is a `SectionCard`, the settings window's grouping (David, 2026-10-28); the pills inside step back to
+`--color-bg-primary` so they read against the card's `--color-bg-secondary`.
 
 **The button names the action** (`approveKey`): "Move 4 files", "Move 5 files to Trash", "Delete 3 files", "Extract 2
 archives", and the count is what would actually run (`approvableCount`, from the selection). It never changes wording
 with the list's state. An irreversible group's button is the `danger` variant, so the one press that can't be taken back
 looks like it.
 
-**The undo pill says why** (`reversibilityKey`): "You can undo this: they go to the Trash", "…: Cmdr can move them
-back", "…: Cmdr deletes the copies". The pills sit beside the count as real capsules (`--radius-full`, a hairline,
-`--font-size-sm`), so they line up with the header text.
+**Every action button is as wide as the widest one in the dialog** (`SizedLabel`, David, 2026-10-28), so the buttons
+line up down the dialog however their labels differ. Each label holds every group's current label stacked in one grid
+cell, all but its own `visibility: hidden`, so the browser sizes the cell to the widest at the user's own font and text
+size, with nothing measured in script. The dialog hands each group the list (`actionLabels`). Reject is one label
+everywhere, so it's the same width without help. (A CSS `subgrid` can't do this: the groups sit in different sweeps and
+the buttons in different subtrees.)
 
-**Reversibility is disclosed, never enforced.** The pill renders whatever `Reversibility` says, including a permanent
+**The undo note says why** (`reversibilityKey`): "You can undo this: they go to the Trash", "…: Cmdr can move them
+back", "…: Cmdr deletes the copies", or "This can't be undone: …" in the error color. It sits under the list on the
+left, beside the buttons, so it's the last thing read before the click and fills the row the buttons leave empty.
+
+**Reversibility is disclosed, never enforced.** The note renders whatever `Reversibility` says, including a permanent
 delete. Refusing the group there would be an agent-specific safety behaviour on the execution path, which the guiding
 principle rules out: an approved op is a user-started op.
 
-**A group the engine would refuse outright says so before the click** (`runBlocker`, `runBlockerKeys`). A trash group on
-a drive with no Trash can't run at all: the OS refuses every item and NOTHING is deleted, so it isn't "irreversible",
-it's a no-op. Its pill reads "Can't run: this drive has no Trash" in place of the undo pill, and its action button is
-`ariaDisabled` with the reason as its tooltip: still focusable so the reason reaches the keyboard, and pressing it runs
-nothing. This isn't an agent-specific refusal: the engine refuses the same move when a user starts it; the dialog only
-declines to offer a button that can only fail.
+**Decision: a trash on a drive with no Trash is offered as the permanent delete it would have to be** (`runsAs`, David,
+2026-10-28). Trashing there can't work (the OS refuses every item and nothing happens), and a user-approved action
+shouldn't end in a no-op, so the group says "Delete" in its title, its button is the red "Delete N files", its undo note
+says it can't be undone, and a "This drive has no Trash" pill says why. `shownVerb` / `shownReversibility` turn the verb
+into what runs, in one place. Approve sends the `runsAs` the review showed, and the backend deletes only when that and
+the drive still agree (`apps/desktop/src-tauri/src/agent/suggested_ops/DETAILS.md` § What the review reads beside the
+agent's words).
+
+**What's about the destination sits beside it.** "Cmdr will create this folder" (after a `folder-plus` glyph), "The
+target isn't connected", and "Cmdr couldn't check the target folder" follow the target path in the `To` row rather than
+crowding the header's pills.
 
 ## The file list
 
 Every group shows its files right away (`SuggestedOpFiles.svelte`): the first `INITIAL_ROWS` (10), then "Show 20 more"
-and "Show all N" on the row under the list, opposite the group's Reject and action buttons (the group hands them in as
-the `actions` snippet, so a short group spends one row on its footer, not two). The list is a `ColumnList` with `table`
-semantics (its rows hold checkboxes) over a windowed source whose `count` is the rows shown. The frame is sized to
-exactly the shown rows up to `MAX_VISIBLE_ROWS` (20) and scrolls past that, so "Show all" on 60,000 rows is a 20-row
-viewport drawing a window, never 60,000 DOM rows.
+and "Show all N" right under the list, then the group's footer row: the undo note and the buttons (the group hands them
+in as the `undoNote` and `actions` snippets). The list is a `ColumnList` with `table` semantics (its rows hold
+checkboxes) over a windowed source whose `count` is the rows shown. The frame is sized to exactly the shown rows up to
+`MAX_VISIBLE_ROWS` (20) and scrolls past that, so "Show all" on 60,000 rows is a 20-row viewport drawing a window, never
+60,000 DOM rows.
 
 **Rows read like file rows**: the icon from the shared icon cache (keyed `ext:<ext>` like the backend's
 `derive_icon_id`), the name mid-truncated to keep the extension, then the facts. When every op shares one folder
 (`sourceFolder` on the group), the folder is said once in the facts and the rows show names only; when they don't, the
 facts say "Several folders" and a Folder column appears. A new name follows the old one after an arrow, for ANY verb
 whose op carries one (a move or copy that renames on the way, not only a rename), and a screen reader hears "New name"
-for the arrow.
+for the arrow. **A new name that's already taken where the file lands** gets a warning `StatusGlyph` after it,
+"Something called “X” is already there" (#774). The live-facts read answers it per drawn row (`newName`: `free` /
+`taken` / `unknown`, from one more bounded stat on the target volume;
+`commands/agent/suggested_ops_live.rs::new_name_states`). It warns and never blocks: the run answers a collision with
+the transfer's conflict prompt, as a clicked move would. A case-only rename that finds the file itself reads free; a
+name another op of the group is about to vacate still reads taken, since it is right now.
 
 **Sizes read exactly as the file panes show them**: the size column's own `formatSizeForDisplay` with the pane's options
 (`listing.sizeUnit` and the 1000/1024 base), not `<Size>`, which forces the dynamic unit. A user who picked "MB" for
@@ -75,7 +99,10 @@ their panes sees MB here too.
 - **Live, unchanged**: the value, plain.
 - **Live, moved since the suggestion**: a warning `StatusGlyph` beside the value, its tooltip "When suggested: X / Now:
   Y". A suggestion that recorded nothing has nothing to have changed FROM, so it never flags.
-- **Gone**: "Moved or deleted" in the warning color. Approving skips it; the engine re-checks every source.
+- **Gone**: "Moved or deleted" in the warning color, and its box unticked and disabled (David, 2026-10-28): it can't
+  run. The review keeps the op (`missing`, with its stored status, since its window may scroll away), so the count
+  leaves it out and approve sends it turned off as one more flip over the base. The engine re-checks every source
+  anyway.
 - **Couldn't check (or not checked yet)**: the creation snapshot in tertiary text behind a clock `StatusGlyph` labelled
   "From when the AI suggested this". No value at all says "Unknown". ❌ Never a zero: it reads as an empty file.
 
@@ -197,6 +224,13 @@ generic path kept only the variant name; the failure's message carries both.
   `tick()` first), for the same teardown read: approving a group used to crash the window the moment its move started.
   Regression anchor: `SuggestedOpsDialog.approve.test.ts`; E2E caught it as every spec after `suggested-ops-named-move`
   failing on the crash panel.
+- **A row never loses its op while it tears down, whatever drops the review** (`drawnOps` in `SuggestedOpFiles.svelte`).
+  The two bullets above each kept ONE path from dropping a review in the flush that unmounts its rows; Debug > Soft
+  dialogs opening one seeded state over another found a third (its seed swaps the whole store in one step), crashing
+  with `undefined is not an object (evaluating 'op.status')`. So the list keeps the ops it drew, pruned to the drawn
+  range, and a group whose review is gone (a group leaving the list) reads its rows from there. No user path is known to
+  reach it today; the guard makes the next one harmless too. Regression anchor:
+  `SuggestedOpsDialog.rows-vanish.test.ts`.
 - **Decision: Approve stays enabled while a group's rows are loading or couldn't load** (David, 2026-09-25, #155). Its
   count comes from `COUNT(*)`, so the button says exactly how many ops it approves even before any row shows. ❌ Don't
   gate Approve on the op window.

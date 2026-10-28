@@ -147,14 +147,6 @@
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
   },
-  "suggestedOps.blocked.noTrash": "Нельзя выполнить: на этом диске нет Корзины",
-  "@suggestedOps.blocked.noTrash": {
-    "sourceHash": "f08e038"
-  },
-  "suggestedOps.blocked.noTrashTooltip": "На диске с этими файлами нет Корзины, поэтому переместить их туда не получится и ничего не произойдет. Отклоните предложение или, если нужно именно это, удалите файлы сами.",
-  "@suggestedOps.blocked.noTrashTooltip": {
-    "sourceHash": "f2a5d5f"
-  },
   "suggestedOps.irreversible.overwrite": "Это нельзя отменить: существующий архив будет заменен",
   "@suggestedOps.irreversible.overwrite": {
     "sourceHash": "0d5c5bb"

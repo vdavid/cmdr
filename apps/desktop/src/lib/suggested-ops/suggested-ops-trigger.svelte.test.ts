@@ -20,6 +20,7 @@ const approveMock =
   vi.fn<
     (payload: { groupId: number; revision: number; selection: Record<string, unknown> }) => Promise<{ kind: string }>
   >()
+const runsAsMock = vi.fn<(runsAs: string | null) => void>()
 const factsMock = vi.fn<(payload: { groupId: number; offset: number; limit: number }) => Promise<unknown>>()
 const approveServerMock = vi.fn<(payload: { groupId: number; revision: number }) => Promise<ServerApprovalResultView>>()
 
@@ -30,8 +31,10 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
   listSuggestedOps: () => listMock(),
   pageSuggestedOps: (g: number, o: number, l: number) => pageMock({ groupId: g, offset: o, limit: l }),
   rejectSuggestedGroup: (g: number) => rejectMock(g),
-  approveSuggestedGroup: (g: number, revision: number, selection: Record<string, unknown>) =>
-    approveMock({ groupId: g, revision, selection }),
+  approveSuggestedGroup: (g: number, revision: number, selection: Record<string, unknown>, runsAs: string | null) => {
+    runsAsMock(runsAs)
+    return approveMock({ groupId: g, revision, selection })
+  },
   approveSuggestedServer: (g: number, revision: number) => approveServerMock({ groupId: g, revision }),
   liveSuggestedOpFacts: (g: number, o: number, l: number) => factsMock({ groupId: g, offset: o, limit: l }),
   onSuggestionsChanged: (cb: (p: SuggestionsChanged) => void) => {
@@ -52,6 +55,8 @@ import {
   approvableCount,
   canApprove,
   approveGroup,
+  isNewNameTaken,
+  isOpMissing,
   isOpSelected,
   selectionState,
   toggleAllOps,
@@ -988,5 +993,99 @@ describe('closing', () => {
     await openSuggestedOps()
 
     expect(isOpSelected(BIG, pending(1))).toBe(true)
+  })
+})
+
+describe('a file that’s gone', () => {
+  /** Live facts that say op 3 is gone and op 5's new name is taken, the rest present and free. */
+  function factsSaying() {
+    factsMock.mockImplementation(({ offset, limit }) =>
+      Promise.resolve({
+        kind: 'facts',
+        facts: Array.from({ length: limit }, (_, i) => {
+          const opId = offset + i
+          return {
+            opId,
+            state: opId === 3 ? { kind: 'missing' } : { kind: 'present', size: 2048, modified: 1_790_000_000 },
+            newName: opId === 5 ? 'taken' : null,
+          }
+        }),
+      }),
+    )
+  }
+
+  it('reads unticked, can’t be ticked back on, and counts for nothing', async () => {
+    factsSaying()
+    await openSuggestedOps()
+    const gone = opAt(BIG, 3)
+    if (!gone) throw new Error('row 3 is held')
+
+    expect(isOpMissing(BIG, gone)).toBe(true)
+    expect(isOpSelected(BIG, gone)).toBe(false)
+    expect(approvableCount(BIG)).toBe(60_000 - 1)
+    toggleOp(BIG, gone)
+    expect(isOpSelected(BIG, gone)).toBe(false)
+    expect(approvableCount(BIG)).toBe(60_000 - 1)
+  })
+
+  it('goes out turned off, as a flip over the stored ticks', async () => {
+    factsSaying()
+    await openSuggestedOps()
+
+    await approveGroup(BIG)
+
+    expect(approveMock).toHaveBeenCalledWith({
+      groupId: BIG,
+      revision: 1,
+      selection: { mode: 'fromStored', excludeOpIds: [3], includeOpIds: [] },
+    })
+  })
+
+  it('stays out after select all, and isn’t double-counted after select none', async () => {
+    factsSaying()
+    await openSuggestedOps()
+    toggleAllOps(BIG) // all → none
+    expect(approvableCount(BIG)).toBe(0)
+    toggleAllOps(BIG) // none → all
+    expect(approvableCount(BIG)).toBe(60_000 - 1)
+    expect(selectionState(BIG)).toBe('all')
+
+    await approveGroup(BIG)
+
+    expect(approveMock).toHaveBeenCalledWith({
+      groupId: BIG,
+      revision: 1,
+      selection: { mode: 'allExcept', opIds: [3] },
+    })
+  })
+
+  it('marks a row whose new name is already taken where it lands (#774)', async () => {
+    factsSaying()
+    await openSuggestedOps()
+    const taken = opAt(BIG, 5)
+    const free = opAt(BIG, 4)
+    if (!taken || !free) throw new Error('rows are held')
+
+    expect(isNewNameTaken(BIG, taken)).toBe(true)
+    expect(isNewNameTaken(BIG, free)).toBe(false)
+  })
+})
+
+describe('a trash on a drive with no Trash', () => {
+  it('approves with the fallback the review showed, so the backend deletes only then', async () => {
+    listMock.mockResolvedValue([sweep([group(BIG, 3, { verb: 'trash', runsAs: 'permanentDelete' })])])
+    await openSuggestedOps()
+
+    await approveGroup(BIG)
+
+    expect(runsAsMock).toHaveBeenCalledWith('permanentDelete')
+  })
+
+  it('sends no fallback for a group that runs as itself', async () => {
+    await openSuggestedOps()
+
+    await approveGroup(BIG)
+
+    expect(runsAsMock).toHaveBeenCalledWith(null)
   })
 })

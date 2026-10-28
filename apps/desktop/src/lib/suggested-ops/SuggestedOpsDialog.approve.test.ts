@@ -25,7 +25,7 @@ const groupNamed = (groupId: number, displayName: string) => ({
   destination: '/backups/Installers',
   destinationVolumeName: 'Naspolya',
   reversible: 'restoreMove',
-  runBlocker: null,
+  runsAs: null,
   destinationState: 'exists',
   liveOpCount: 3,
   totalOpCount: 3,

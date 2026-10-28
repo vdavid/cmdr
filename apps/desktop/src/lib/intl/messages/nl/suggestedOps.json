@@ -147,14 +147,6 @@
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
   },
-  "suggestedOps.blocked.noTrash": "Niet uitvoerbaar: deze schijf heeft geen prullenmand",
-  "@suggestedOps.blocked.noTrash": {
-    "sourceHash": "f08e038"
-  },
-  "suggestedOps.blocked.noTrashTooltip": "De schijf met deze bestanden heeft geen prullenmand, dus naar de prullenmand verplaatsen kan niet en er zou niets gebeuren. Weiger dit, of verwijder de bestanden zelf als je dat wilt.",
-  "@suggestedOps.blocked.noTrashTooltip": {
-    "sourceHash": "f2a5d5f"
-  },
   "suggestedOps.irreversible.overwrite": "Dit kun je niet ongedaan maken: een bestaand archief wordt vervangen",
   "@suggestedOps.irreversible.overwrite": {
     "sourceHash": "0d5c5bb"

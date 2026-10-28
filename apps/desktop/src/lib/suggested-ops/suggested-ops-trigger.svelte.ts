@@ -23,7 +23,6 @@ import { SvelteMap, SvelteSet } from 'svelte/reactivity'
 import { getAppLogger } from '#lib/logging/logger.js'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
 import {
-  type OpSelection as WireOpSelection,
   approveSuggestedGroup,
   approveSuggestedServer,
   listSuggestedOps,
@@ -41,6 +40,7 @@ import {
   type SuggestedSweepView,
 } from '#lib/tauri-commands/index.js'
 import { asSuggestedOpsError } from './suggested-ops-failure'
+import { type OpSelection, flippedOn, selectionWire, storedSelection } from './suggested-ops-selection.svelte'
 
 const log = getAppLogger('suggestedOps')
 
@@ -84,39 +84,17 @@ export interface GroupReview {
   changedUnderReview: boolean
   /** What the disk says now, per op id, for the rows that have been on screen. */
   liveFacts: SvelteMap<number, LiveFact>
+  /** The ops whose file the disk says is gone, by op id. They can't run, so they read unticked
+   *  and count for nothing, and approve sends them turned off. Holds the op itself, since its
+   *  window may have moved on by the time the user approves. */
+  missing: SvelteMap<number, SuggestedOpView>
+  /** Ops whose NEW name is already taken where the file lands (#774), by op id. */
+  takenNames: SvelteSet<number>
   /** Set when the group's source volume can't be asked at all, so its rows stay on the
    *  snapshot and the dialog says why once, above the list. */
   sourceUnreachable: 'notConnected' | 'gone' | null
   /** The rows the list last drew, so a page that lands late still gets its live facts. */
   range: { start: number; end: number }
-}
-
-/**
- * Which of a group's ops would run, as flips over a base.
- *
- * - `fromStored`: the stored ticks (an op an earlier review turned off arrives `excluded`) with
- *   `exclude` turned off and `include` turned back on. The state a group opens in, so a reopened
- *   review keeps the user's earlier "no"s without loading every op to find them.
- * - `allExcept`: every op but `ids` (after the header's select all).
- * - `only`: just `ids` (after the header's select none).
- *
- * The sets only ever hold rows the user flipped by hand.
- */
-export type OpSelection =
-  | { mode: 'fromStored'; exclude: SvelteSet<number>; include: SvelteSet<number> }
-  | { mode: 'allExcept' | 'only'; ids: SvelteSet<number> }
-
-/** The stored ticks, nothing flipped: the state a group opens in. */
-export function storedSelection(): OpSelection {
-  return { mode: 'fromStored', exclude: new SvelteSet<number>(), include: new SvelteSet<number>() }
-}
-
-/** The selection as approve sends it. */
-function selectionWire(selection: OpSelection): WireOpSelection {
-  if (selection.mode === 'fromStored') {
-    return { mode: 'fromStored', excludeOpIds: [...selection.exclude], includeOpIds: [...selection.include] }
-  }
-  return { mode: selection.mode, opIds: [...selection.ids] }
 }
 
 /** Why the last Approve or Reject didn't happen, as the notice the dialog shows. */
@@ -217,6 +195,8 @@ export function newGroupReview(): GroupReview {
     seenRevision: null,
     changedUnderReview: false,
     liveFacts: new SvelteMap<number, LiveFact>(),
+    missing: new SvelteMap<number, SuggestedOpView>(),
+    takenNames: new SvelteSet<number>(),
     sourceUnreachable: null,
     range: { start: 0, end: INITIAL_ROWS },
   })
@@ -269,16 +249,20 @@ export function showAllRows(groupId: number): void {
  *  backend starts that mode from everything the group offers. */
 export function approvableCount(groupId: number): number {
   const group = groupById(groupId)
-  const selection = reviewOf(groupId)?.selection
+  const review = reviewOf(groupId)
+  const selection = review?.selection
   if (!group) return 0
-  if (!selection) return group.liveOpCount
+  if (!review || !selection) return group.liveOpCount
+  // A file the disk says is gone can't run, so it counts for nothing even where the flips tick it.
+  let gone = 0
+  for (const op of review.missing.values()) if (flippedOn(selection, op)) gone++
   switch (selection.mode) {
     case 'fromStored':
-      return Math.max(0, group.liveOpCount - selection.exclude.size + selection.include.size)
+      return Math.max(0, group.liveOpCount - selection.exclude.size + selection.include.size - gone)
     case 'only':
-      return selection.ids.size
+      return Math.max(0, selection.ids.size - gone)
     case 'allExcept':
-      return Math.max(0, group.totalOpCount - selection.ids.size)
+      return Math.max(0, group.totalOpCount - selection.ids.size - gone)
   }
 }
 
@@ -290,18 +274,23 @@ export function canApprove(groupId: number): boolean {
   return Boolean(groupById(groupId)?.server) || approvableCount(groupId) > 0
 }
 
-/** Whether one op is ticked. Under the stored base, an op an earlier review excluded starts off. */
+/** Whether one op is ticked. Under the stored base, an op an earlier review excluded starts off,
+ *  and one whose file is gone is never ticked: it can't run. */
 export function isOpSelected(groupId: number, op: SuggestedOpView): boolean {
-  const selection = reviewOf(groupId)?.selection
-  if (!selection) return op.status !== 'excluded'
-  switch (selection.mode) {
-    case 'fromStored':
-      return op.status === 'excluded' ? selection.include.has(op.opId) : !selection.exclude.has(op.opId)
-    case 'allExcept':
-      return !selection.ids.has(op.opId)
-    case 'only':
-      return selection.ids.has(op.opId)
-  }
+  const review = reviewOf(groupId)
+  if (!review) return op.status !== 'excluded'
+  if (review.missing.has(op.opId)) return false
+  return flippedOn(review.selection, op)
+}
+
+/** Whether the disk says this op's file is gone, so its row can't be ticked at all. */
+export function isOpMissing(groupId: number, op: SuggestedOpView): boolean {
+  return reviewOf(groupId)?.missing.has(op.opId) === true
+}
+
+/** Whether this op's NEW name is already taken where its file lands (#774). */
+export function isNewNameTaken(groupId: number, op: SuggestedOpView): boolean {
+  return reviewOf(groupId)?.takenNames.has(op.opId) === true
 }
 
 /** The header checkbox: every op ticked, none, or a mix. */
@@ -309,7 +298,9 @@ export function selectionState(groupId: number): 'all' | 'none' | 'some' {
   const group = groupById(groupId)
   const count = approvableCount(groupId)
   if (count === 0) return 'none'
-  if (group && count >= group.totalOpCount) return 'all'
+  // A gone file can't be ticked, so "all" is every op that's still there.
+  const gone = reviewOf(groupId)?.missing.size ?? 0
+  if (group && count >= group.totalOpCount - gone) return 'all'
   return 'some'
 }
 
@@ -456,6 +447,8 @@ export async function reloadGroup(groupId: number): Promise<void> {
   if (!review) return
   review.window = null
   review.liveFacts.clear()
+  review.missing.clear()
+  review.takenNames.clear()
   review.sourceUnreachable = null
   factsRequested.delete(groupId)
   await refreshSuggestions()
@@ -566,7 +559,7 @@ export async function ensureLiveFacts(groupId: number): Promise<void> {
   try {
     const answer = await readLiveFacts({ groupId, offset: span.offset, limit: span.opIds.length })
     if (reviewOf(groupId) !== review) return
-    if (takeLiveAnswer(review, answer)) return
+    if (takeLiveAnswer(review, held, answer)) return
   } catch (e) {
     log.warn("Couldn't check the suggested files on disk: {error}", { error: e })
   }
@@ -594,9 +587,18 @@ function unaskedSpan(
 }
 
 /** Record an answer. `false` means it held nothing to keep, so the rows should be asked again. */
-function takeLiveAnswer(review: GroupReview, answer: SuggestedOpLiveFactsAnswer): boolean {
+function takeLiveAnswer(review: GroupReview, held: OpWindow, answer: SuggestedOpLiveFactsAnswer): boolean {
   if (answer.kind === 'facts') {
-    for (const { opId, state } of answer.facts) review.liveFacts.set(opId, state)
+    for (const { opId, state, newName } of answer.facts) {
+      review.liveFacts.set(opId, state)
+      // The op itself, from the page the span was cut from, so approve can still turn it off
+      // once the list has scrolled that page away.
+      const op = state.kind === 'missing' ? held.ops.find((candidate) => candidate.opId === opId) : undefined
+      if (op) review.missing.set(opId, op)
+      else review.missing.delete(opId)
+      if (newName === 'taken') review.takenNames.add(opId)
+      else review.takenNames.delete(opId)
+    }
     return true
   }
   switch (answer.reason.type) {
@@ -624,8 +626,10 @@ export function opAt(groupId: number, index: number): SuggestedOpView | null {
 
 /** Turn one op off, or back on: flip its membership in whichever set records it against the base. */
 export function toggleOp(groupId: number, op: SuggestedOpView): void {
-  const selection = reviewOf(groupId)?.selection
-  if (!selection) return
+  const review = reviewOf(groupId)
+  // A gone file's box is disabled: there's nothing to tick back on.
+  if (!review || review.missing.has(op.opId)) return
+  const selection = review.selection
   const flips =
     selection.mode !== 'fromStored' ? selection.ids : op.status === 'excluded' ? selection.include : selection.exclude
   if (flips.has(op.opId)) {
@@ -673,8 +677,12 @@ export async function approveGroup(groupId: number): Promise<void> {
 
 /** Approve a file group with the user's selection, then re-read. */
 async function approveFileGroup(groupId: number, revision: number): Promise<void> {
-  const selection = reviewOf(groupId)?.selection ?? storedSelection()
-  const result = await approveSuggestedGroup(groupId, revision, selectionWire(selection))
+  const review = reviewOf(groupId)
+  const selection = review?.selection ?? storedSelection()
+  const wire = selectionWire(selection, review?.missing.values() ?? [])
+  // The fallback the review showed, so a trash on a drive with no Trash deletes only when the
+  // user approved it against the red Delete button.
+  const result = await approveSuggestedGroup(groupId, revision, wire, groupById(groupId)?.runsAs ?? null)
   if (isRefusalToStart(result)) suggestedOpsState.refusals.set(groupId, result)
   if (result.kind !== 'started') {
     log.info('A suggestion group was not approved: {kind}', { kind: result.kind })

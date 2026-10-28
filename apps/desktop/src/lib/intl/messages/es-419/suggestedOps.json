@@ -47,14 +47,6 @@
   "@suggestedOps.reversible.moveBack": {
     "sourceHash": "569c69a"
   },
-  "suggestedOps.blocked.noTrash": "No se puede ejecutar: esta unidad no tiene basurero",
-  "@suggestedOps.blocked.noTrash": {
-    "sourceHash": "3bc085d"
-  },
-  "suggestedOps.blocked.noTrashTooltip": "La unidad donde están estos archivos no tiene basurero, así que moverlos ahí no funcionaría y no pasaría nada. Recházala, o elimina tú los archivos si es lo que quieres.",
-  "@suggestedOps.blocked.noTrashTooltip": {
-    "sourceHash": "26280b9"
-  },
   "suggestedOps.snapshotOnlyTooltip": "Cmdr no pudo comprobar este archivo ahora mismo, así que esto es lo que había cuando la IA lo sugirió.",
   "@suggestedOps.snapshotOnlyTooltip": {
     "sourceHash": "7896f58"

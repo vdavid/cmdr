@@ -7,13 +7,16 @@
 import { describe, expect, it } from 'vitest'
 import type { SuggestedOpView } from '#lib/tauri-commands/index.js'
 import {
+  actionKey,
   approveKey,
   fileIconId,
   fileName,
   parentFolder,
   reversibilityKey,
   rowFacts,
-  runBlockerKeys,
+  runsAsKeys,
+  shownReversibility,
+  shownVerb,
   sweepHeadingHidden,
   sweepWhen,
 } from './suggested-ops-copy'
@@ -61,8 +64,20 @@ describe('the reversibility pill', () => {
     expect(reversibilityKey('extract', 'deleteWhatWasWritten')).toBe('suggestedOps.reversible.removeExtracted')
   })
 
-  it('says a trash on a drive with no Trash can’t run, rather than promising an undo', () => {
-    expect(runBlockerKeys('noTrash').pill).toBe('suggestedOps.blocked.noTrash')
+  it('names a trash on a drive with no Trash as the permanent delete it runs as, everywhere', () => {
+    expect(runsAsKeys('permanentDelete').pill).toBe('suggestedOps.noTrash')
+    expect(shownVerb('trash', 'permanentDelete')).toBe('delete')
+    expect(shownVerb('trash', null)).toBe('trash')
+    expect(shownReversibility('restoreMove', 'permanentDelete')).toBe('irreversible')
+    expect(shownReversibility('restoreMove', null)).toBe('restoreMove')
+    expect(approveKey(shownVerb('trash', 'permanentDelete'))).toBe('suggestedOps.approve.delete')
+    expect(actionKey(shownVerb('trash', 'permanentDelete'))).toBe('suggestedOps.action.delete')
+  })
+
+  it('leads every title with its action', () => {
+    expect(actionKey('move')).toBe('suggestedOps.action.move')
+    expect(actionKey('trash')).toBe('suggestedOps.action.trash')
+    expect(actionKey('addServer')).toBe('suggestedOps.server.add')
   })
 
   it('says why a delete or an overwrite is for good', () => {

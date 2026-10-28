@@ -70,7 +70,7 @@ test.describe('An AI suggestion that renames on the way in', () => {
     await tauriPage.evaluate(`document.querySelector('.status-corner .indicator').click()`)
     try {
       // The renamed row reads old → new; the kept one draws no arrow.
-      const groupSelector = `[...document.querySelectorAll('article.group')].find(g => g.querySelector('.group-title')?.textContent === ${JSON.stringify(displayName)})`
+      const groupSelector = `[...document.querySelectorAll('article.group')].find(g => g.querySelector('.group-title .title-text')?.textContent === ${JSON.stringify(displayName)})`
       await expect
         .poll(
           () =>
