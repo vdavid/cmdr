@@ -871,7 +871,7 @@
   "@askCmdr.error.budgetExhausted": {
     "description": "Shown when a single answer used up its tool-step or time budget before finishing. Friendly and actionable; avoids the words error and failed."
   },
-  "askCmdr.limit.toolRounds.answered": "This answer reached Cmdr’s limit of {max, plural, one {# round} other {{maxText} rounds}} of lookups, so it stopped looking and answered with what it found.",
+  "askCmdr.limit.toolRounds.answered": "This answer reached Cmdr’s limit of {maxText} {max, plural, one {round} other {rounds}} of lookups, so it stopped looking and answered with what it found.",
   "@askCmdr.limit.toolRounds.answered": {
     "description": "First line of a notice under an Ask Cmdr answer. The assistant looks things up in rounds (each round runs one or more lookups such as listing a folder); one answer may run a fixed number of rounds. This answer used all of them, so Cmdr asked it to answer from what it had found, and it did. The answer above may be incomplete. \"Lookup\" is the word the rail already uses for a tool call. Avoids the words error and failed.",
     "placeholders": {
@@ -879,7 +879,7 @@
       "max": "The same number, to pick the plural form."
     }
   },
-  "askCmdr.limit.toolRounds.unfinished": "This answer reached Cmdr’s limit of {max, plural, one {# round} other {{maxText} rounds}} of lookups before it could finish.",
+  "askCmdr.limit.toolRounds.unfinished": "This answer reached Cmdr’s limit of {maxText} {max, plural, one {round} other {rounds}} of lookups before it could finish.",
   "@askCmdr.limit.toolRounds.unfinished": {
     "description": "First line of a notice under an Ask Cmdr answer that stopped without a final reply: it used all the rounds of lookups one answer may run (each round runs one or more lookups such as listing a folder), and even when asked to answer it still wanted to look further. What it said along the way stays visible above. Avoids the words error and failed.",
     "placeholders": {
@@ -887,7 +887,7 @@
       "max": "The same number, to pick the plural form."
     }
   },
-  "askCmdr.limit.wallTime": "This answer reached Cmdr’s limit of {minutes, plural, one {# minute} other {{minutesText} minutes}} per answer before it could finish.",
+  "askCmdr.limit.wallTime": "This answer reached Cmdr’s limit of {minutesText} {minutes, plural, one {minute} other {minutes}} per answer before it could finish.",
   "@askCmdr.limit.wallTime": {
     "description": "First line of a notice under an Ask Cmdr answer that stopped because one answer may take only a fixed amount of time, and this one ran out of it. What it said along the way stays visible above. Avoids the words error and failed.",
     "placeholders": {
