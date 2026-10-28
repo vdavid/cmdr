@@ -33,15 +33,15 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use super::budget::{CHARS_PER_TOKEN_ESTIMATE, estimate_tokens_of_value, estimate_tokens_str};
-use crate::agent::llm::types::{AgentMessage, AgentPart, AgentRole, AgentToolResult, ToolDeclaration};
+use crate::agent::llm::types::{AgentMessage, AgentPart, AgentRole, AgentToolResult, MemoryNote, ToolDeclaration};
 
 /// How an elided result describes itself. Structural and shape-agnostic, so this core keeps
 /// no per-tool knowledge.
 mod digest;
-/// The agent's memory as a user turn carries it: which files changed, and the fenced block.
+// The agent's memory part: see the module's own header.
 mod memory_notes;
 
-pub use memory_notes::{MemoryNote, MemoryNotes, memory_notes_for_turn};
+pub use memory_notes::memory_notes_for_turn;
 
 // ── Named constants (§10). Initial values; tune with use. ─────────────────────
 

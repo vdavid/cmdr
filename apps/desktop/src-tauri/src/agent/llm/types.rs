@@ -577,8 +577,9 @@ pub enum AgentPart {
     MemoryNotes(MemoryNotes),
 }
 
-/// Memory's part payload lives beside its fence and its diff (`chat/context/memory_notes.rs`).
-pub use crate::agent::chat::context::{MemoryNote, MemoryNotes};
+// The agent's memory part: see the module's own header.
+mod memory_notes;
+pub use memory_notes::{MemoryNote, MemoryNotes};
 
 /// A full message: a role, its ordered typed parts, and its timestamp. Every
 /// message carries `at` (unix secs) so the model can reason about gaps ("this

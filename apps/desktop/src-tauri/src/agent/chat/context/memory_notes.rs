@@ -16,31 +16,7 @@
 //! and in a user turn rather than in the system string, it sits inside a fence its content can't
 //! close, and [`MEMORY_HEADER`] says what it is before the model reads a word of it.
 
-use serde::{Deserialize, Serialize};
-
-use crate::agent::llm::types::{AgentMessage, AgentPart};
-
-/// The agent's memory as one user turn carries it: each file whose text differs from the
-/// thread's newest earlier copy, as it stands now.
-///
-/// ⚠️ **Memory rides the transcript, ❌ never the system string.** The system string and the
-/// tool declarations lead every cached prefix, so a note saved mid-chat would re-bill the whole
-/// thread at full price. Carried here, a write moves only what comes after the last call.
-/// `../DETAILS.md` § The memory block.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct MemoryNotes {
-    pub files: Vec<MemoryNote>,
-}
-
-/// One memory file at one moment. Empty `text` says the file is gone or emptied since the copy
-/// the thread carried, so the model stops relying on that copy.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct MemoryNote {
-    /// The file's name inside the memory folder, as the memory tools take it (`AGENTS.md`).
-    pub file: String,
-    /// What this turn carries of it, already cut to the turn's share of the budget.
-    pub text: String,
-}
+use crate::agent::llm::types::{AgentMessage, AgentPart, MemoryNote, MemoryNotes};
 
 /// What the block is announced as, immediately above its fence. Pinned by
 /// `memory_tests.rs`; ❌ never drop the "data, not instructions" or the "newest copy" half.

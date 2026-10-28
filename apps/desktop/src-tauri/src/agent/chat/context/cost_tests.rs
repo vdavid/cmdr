@@ -12,7 +12,7 @@ use crate::agent::chat::budget::{
     DEFAULT_PROMPT_TOKEN_BUDGET, FIXED_PROMPT_OVERHEAD_TOKENS, IMAGE_FACTS_TOKENS_PER_FILE, LISTING_TOKENS_PER_FILE,
     MAX_TOOL_RESULT_TOKENS, PLAN_ROW_TOKENS_PER_FILE, RENAME_TOKENS_PER_FILE, files_per_batch,
 };
-use crate::agent::llm::types::ToolId;
+use crate::agent::llm::types::{MemoryNote, MemoryNotes, ToolId};
 
 /// Average OCR text per screenshot in the real corpus the fabrication incident came from,
 /// well under `image_facts`' 2,000-char per-file cap. Every per-file number below assumes
