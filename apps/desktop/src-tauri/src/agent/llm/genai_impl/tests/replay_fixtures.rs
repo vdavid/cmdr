@@ -457,4 +457,43 @@ async fn openrouter_replays_streamed_reasoning_details_verbatim() {
     assert_eq!(assistant["reasoning_content"], "Read the panes.");
 }
 
+/// Two signed Claude thinking blocks in one answer, every piece at `index: 0`, as some
+/// providers stream them. Regression anchor: merging by `index` fused them into one block
+/// with the first signature, so the next turn's signature check refused the replay.
+fn openrouter_round_one_two_signed_blocks() -> String {
+    let text = |text: &str| json!({"reasoning_details":[{"type":"reasoning.text","text":text,"signature":null,"format":"anthropic-claude-v1","index":0}]});
+    let signature = |signature: &str| json!({"reasoning_details":[{"type":"reasoning.text","signature":signature,"format":"anthropic-claude-v1","index":0}]});
+    let mut body = sse(&[
+        chat_chunk(text("Read the panes."), None),
+        chat_chunk(signature("sig-or-1"), None),
+        chat_chunk(text("Then list them."), None),
+        chat_chunk(signature("sig-or-2"), None),
+        chat_chunk(
+            json!({"tool_calls":[{"index":0,"id":"call_1","type":"function","function":{"name":WIRE,"arguments":"{}"}}]}),
+            None,
+        ),
+        chat_chunk(json!({}), Some("tool_calls")),
+    ]);
+    body.push_str("data: [DONE]\n\n");
+    body
+}
+
+#[tokio::test]
+async fn openrouter_keeps_index_zero_signed_reasoning_blocks_apart() {
+    let (_, body) = two_rounds(
+        "anthropic/claude-sonnet-5.5",
+        "anthropic/claude-sonnet-5.5",
+        [openrouter_round_one_two_signed_blocks(), chat_round_two()],
+    )
+    .await;
+    let assistant = assistant_turn(&body, "messages");
+    assert_eq!(
+        assistant["reasoning_details"],
+        json!([
+            {"type":"reasoning.text","text":"Read the panes.","signature":"sig-or-1","format":"anthropic-claude-v1","index":0},
+            {"type":"reasoning.text","text":"Then list them.","signature":"sig-or-2","format":"anthropic-claude-v1","index":0}
+        ])
+    );
+}
+
 // endregion: --- Chat completions
