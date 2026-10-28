@@ -710,6 +710,30 @@
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
   },
+  "askCmdr.limit.toolRounds.answered": "Cmdr staat per antwoord maximaal {max, plural, one {# opzoekronde} other {{maxText} opzoekrondes}} toe. Dit antwoord heeft die limiet bereikt, dus het is gestopt met zoeken en heeft geantwoord met wat het had gevonden.",
+  "@askCmdr.limit.toolRounds.answered": {
+    "sourceHash": "33677c9"
+  },
+  "askCmdr.limit.toolRounds.unfinished": "Cmdr staat per antwoord maximaal {max, plural, one {# opzoekronde} other {{maxText} opzoekrondes}} toe. Dit antwoord heeft die limiet bereikt voordat het klaar was.",
+  "@askCmdr.limit.toolRounds.unfinished": {
+    "sourceHash": "6c3d9ef"
+  },
+  "askCmdr.limit.wallTime": "Cmdr staat per antwoord maximaal {minutes, plural, one {# minuut} other {{minutesText} minuten}} toe. Dit antwoord heeft die limiet bereikt voordat het klaar was.",
+  "@askCmdr.limit.wallTime": {
+    "sourceHash": "9b4aa5b"
+  },
+  "askCmdr.limit.fixed": "Het is een vaste limiet, er is geen instelling om hem te wijzigen. Zit hij je in de weg, <feedback>laat het ons weten</feedback>.",
+  "@askCmdr.limit.fixed": {
+    "sourceHash": "d0c4bc7"
+  },
+  "askCmdr.limit.continue": "Ga door",
+  "@askCmdr.limit.continue": {
+    "sourceHash": "9d7fd0e"
+  },
+  "askCmdr.limit.continueMessage": "Ga alsjeblieft verder waar je gestopt bent.",
+  "@askCmdr.limit.continueMessage": {
+    "sourceHash": "8c7a012"
+  },
   "askCmdr.error.repeatedToolCall": "Dit antwoord bleef dezelfde opzoeking herhalen zonder verder te komen. Probeer het anders te vragen.",
   "@askCmdr.error.repeatedToolCall": {
     "sourceHash": "ea46ed7"

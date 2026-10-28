@@ -709,6 +709,30 @@
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
   },
+  "askCmdr.limit.toolRounds.answered": "Этот ответ уперся в лимит Cmdr (не больше {max, plural, one {# раунда} few {{maxText} раундов} many {{maxText} раундов} other {{maxText} раунда}} поиска), поэтому поиск остановлен, а ответ собран из того, что удалось найти.",
+  "@askCmdr.limit.toolRounds.answered": {
+    "sourceHash": "33677c9"
+  },
+  "askCmdr.limit.toolRounds.unfinished": "Этот ответ уперся в лимит Cmdr (не больше {max, plural, one {# раунда} few {{maxText} раундов} many {{maxText} раундов} other {{maxText} раунда}} поиска) и не успел завершиться.",
+  "@askCmdr.limit.toolRounds.unfinished": {
+    "sourceHash": "6c3d9ef"
+  },
+  "askCmdr.limit.wallTime": "Этот ответ уперся в лимит Cmdr (не больше {minutes, plural, one {# минуты} few {{minutesText} минут} many {{minutesText} минут} other {{minutesText} минуты}} на ответ) и не успел завершиться.",
+  "@askCmdr.limit.wallTime": {
+    "sourceHash": "9b4aa5b"
+  },
+  "askCmdr.limit.fixed": "Это фиксированный лимит, и в настройках его не изменить. Если он мешает, <feedback>напишите нам</feedback>.",
+  "@askCmdr.limit.fixed": {
+    "sourceHash": "d0c4bc7"
+  },
+  "askCmdr.limit.continue": "Продолжить",
+  "@askCmdr.limit.continue": {
+    "sourceHash": "9d7fd0e"
+  },
+  "askCmdr.limit.continueMessage": "Пожалуйста, продолжайте с того места, где остановились.",
+  "@askCmdr.limit.continueMessage": {
+    "sourceHash": "8c7a012"
+  },
   "askCmdr.error.repeatedToolCall": "Один и тот же поиск повторялся без результата. Попробуйте спросить по-другому.",
   "@askCmdr.error.repeatedToolCall": {
     "sourceHash": "ea46ed7"

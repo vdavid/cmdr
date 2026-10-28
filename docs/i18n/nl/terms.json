@@ -106,6 +106,13 @@
     "forms": "het antwoord; an AI answer and a server reply are both antwoord in this catalog",
     "sources": "catalog (errors.write.replySignatureRefused.title, securityNotices.smbSignatureRefused.*: antwoord); MS terminology reply → beantwoorden (the verb)"
   },
+  "ai-lookup": {
+    "accept": ["opzoekingen", "opzoekronde"],
+    "chosen": "opzoeking",
+    "confidence": "high",
+    "forms": "a round of lookups → opzoekronde / opzoekrondes",
+    "sources": "catalog precedent: `askCmdr.error.repeatedToolCall`, `askCmdr.event.contextTrimmed`"
+  },
   "ai-tool": {
     "accept": ["hulpmiddelen", "tool", "tools"],
     "chosen": "hulpmiddel",

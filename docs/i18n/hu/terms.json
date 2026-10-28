@@ -136,6 +136,13 @@
     "confidence": "high",
     "sources": "catalog (askCmdr.* A válasz nem fejeződött be; errors.volume.signatureInvalid A szerver válasza)"
   },
+  "ai-lookup": {
+    "accept": ["keresési", "keresést"],
+    "chosen": "keresés",
+    "confidence": "high",
+    "forms": "a round of lookups → keresési kör; a limit of N rounds → N körös keresési korlát (the noun stays singular after the numeral)",
+    "sources": "catalog precedent: `askCmdr.error.repeatedToolCall`, `askCmdr.event.contextTrimmed`"
+  },
   "ai-tool": {
     "chosen": "eszköz",
     "forms": "tool status chips: verbal noun while doing (Egy mappa listázása), -va/-ve participle when done (Egy mappa listázva), same object in both; Finding/Found → X keresése / X megtalálva; searching a log or a collection → X átvizsgálása / X átvizsgálva; fallback Working → Folyamatban, Used a tool → Egy eszköz használva; a named chip puts {name} as bare possessor ({name} listázása / {name} listázva) or after ide:/itt:; a query chip → Rákeresés / Rákeresve erre: „{query}” (keresve is no done state); Tried to X → Megpróbált/Megpróbálta X-ni, never Nem sikerült (a reason follows on the line)",

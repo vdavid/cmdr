@@ -102,6 +102,13 @@
     "confidence": "high",
     "sources": "macOS es (respuesta); Microsoft (reply → responder); catalog askCmdr.error.unfinishedReply, errors.volume.signatureInvalid"
   },
+  "ai-lookup": {
+    "accept": ["consultas"],
+    "chosen": "consulta",
+    "confidence": "high",
+    "forms": "a round of lookups → ronda de consultas",
+    "sources": "catalog precedent: `askCmdr.error.repeatedToolCall`, `askCmdr.event.contextTrimmed`"
+  },
   "ai-tool": {
     "chosen": "herramienta",
     "forms": "tool status lines: gerund for doing (Mirando dentro de los archivos), impersonal Se + compound perfect for done (Se ha buscado en tus fotos, Se ha usado una herramienta) and Se ha intentado for a tried line, which es-419 forks to the preterite (Se buscó); a counted tool call → consulta (as lookup in askCmdr.event.contextTrimmed); Android platform tools → herramientas de plataforma de Android",

@@ -88,6 +88,13 @@
     "forms": "same word as reply; a server’s reply too (Réponse du serveur refusée)",
     "sources": "catalog: askCmdr.error.unfinishedReply, errors.shareList.signatureInvalid"
   },
+  "ai-lookup": {
+    "accept": ["consultations"],
+    "chosen": "consultation",
+    "confidence": "high",
+    "forms": "a round of lookups → série de consultations",
+    "sources": "catalog precedent: `askCmdr.error.repeatedToolCall`, `askCmdr.event.contextTrimmed`"
+  },
   "ai-tool": {
     "accept": ["Platform Tools"],
     "chosen": "outil",
@@ -3244,6 +3251,9 @@
     ],
     "chosen": "Arrêter",
     "confidence": "high",
+    "exceptions": {
+      "askCmdr.limit.continueMessage": "the user speaking to the assistant: « là où vous en étiez » avoids « vous vous êtes arrêté », whose participle would guess the assistant’s gender"
+    },
     "forms": "the Stop button → Arrêter; Stop, and … (rollback tooltip) → Arrêter et …; You stopped X → Vous avez arrêté X",
     "sources": "macOS fr (Arrêter la copie, Arrêter le déplacement)"
   },

@@ -78,6 +78,13 @@
     "forms": "AI provider → nhà cung cấp AI",
     "sources": "MS terminology (provider → nhà cung cấp)"
   },
+  "ai-lookup": {
+    "accept": ["lần tra cứu", "vòng tra cứu"],
+    "chosen": "tra cứu",
+    "confidence": "high",
+    "forms": "one lookup → lần tra cứu; a round of lookups → vòng tra cứu",
+    "sources": "catalog precedent: `askCmdr.error.repeatedToolCall`, `askCmdr.event.contextTrimmed`"
+  },
   "ai-tool": {
     "chosen": "công cụ",
     "confidence": "high",

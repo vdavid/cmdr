@@ -120,6 +120,13 @@
     "notMatch": ["so we can reply", "a reply from", "server reply", "server's reply", "trust the reply"],
     "sense": "An Ask Cmdr assistant answer, or an AI provider response."
   },
+  "ai-lookup": {
+    "distinct": ["ai-tool"],
+    "en": "lookup (AI)",
+    "match": ["lookup", "lookups"],
+    "notMatch": ["network discovery, lookup"],
+    "sense": "One call the Ask Cmdr assistant makes to look something up (list a folder, search), as the chat rail names it; a round runs one or more of them."
+  },
   "ai-tool": {
     "en": "tool (AI)",
     "match": ["tool", "tools"],

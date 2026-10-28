@@ -708,6 +708,30 @@
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
   },
+  "askCmdr.limit.toolRounds.answered": "這次回答已達 Cmdr 的 {max, plural, other {{maxText} 輪查詢}}上限，所以停止查找，用已經找到的內容作答。",
+  "@askCmdr.limit.toolRounds.answered": {
+    "sourceHash": "33677c9"
+  },
+  "askCmdr.limit.toolRounds.unfinished": "這次回答還沒完成，就到了 Cmdr 的 {max, plural, other {{maxText} 輪查詢}}上限。",
+  "@askCmdr.limit.toolRounds.unfinished": {
+    "sourceHash": "6c3d9ef"
+  },
+  "askCmdr.limit.wallTime": "這次回答還沒完成，就到了 Cmdr 每次回答 {minutes, plural, other {{minutesText} 分鐘}}的上限。",
+  "@askCmdr.limit.wallTime": {
+    "sourceHash": "9b4aa5b"
+  },
+  "askCmdr.limit.fixed": "這是固定的上限，沒有設定可以更改。如果它礙到你，<feedback>跟我們說一聲</feedback>。",
+  "@askCmdr.limit.fixed": {
+    "sourceHash": "d0c4bc7"
+  },
+  "askCmdr.limit.continue": "繼續",
+  "@askCmdr.limit.continue": {
+    "sourceHash": "9d7fd0e"
+  },
+  "askCmdr.limit.continueMessage": "請從剛才停下的地方繼續。",
+  "@askCmdr.limit.continueMessage": {
+    "sourceHash": "8c7a012"
+  },
   "askCmdr.error.repeatedToolCall": "這一次一直重複同一次查詢，卻沒有任何進展。試著換個方式問問看。",
   "@askCmdr.error.repeatedToolCall": {
     "sourceHash": "ea46ed7"

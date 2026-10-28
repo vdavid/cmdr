@@ -711,6 +711,30 @@
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
   },
+  "askCmdr.limit.toolRounds.answered": "Cette réponse a atteint la limite de {max, plural, one {# série} many {{maxText} séries} other {{maxText} séries}} de consultations prévue par Cmdr. Elle a donc arrêté de chercher et répondu avec ce qu’elle avait trouvé.",
+  "@askCmdr.limit.toolRounds.answered": {
+    "sourceHash": "33677c9"
+  },
+  "askCmdr.limit.toolRounds.unfinished": "Cette réponse a atteint la limite de {max, plural, one {# série} many {{maxText} séries} other {{maxText} séries}} de consultations prévue par Cmdr avant de pouvoir se terminer.",
+  "@askCmdr.limit.toolRounds.unfinished": {
+    "sourceHash": "6c3d9ef"
+  },
+  "askCmdr.limit.wallTime": "Cette réponse a atteint la limite de {minutes, plural, one {# minute} many {{minutesText} minutes} other {{minutesText} minutes}} par réponse prévue par Cmdr avant de pouvoir se terminer.",
+  "@askCmdr.limit.wallTime": {
+    "sourceHash": "9b4aa5b"
+  },
+  "askCmdr.limit.fixed": "Cette limite est fixe et aucun réglage ne permet de la modifier. Si elle vous gêne, <feedback>dites-le-nous</feedback>.",
+  "@askCmdr.limit.fixed": {
+    "sourceHash": "d0c4bc7"
+  },
+  "askCmdr.limit.continue": "Continuer",
+  "@askCmdr.limit.continue": {
+    "sourceHash": "9d7fd0e"
+  },
+  "askCmdr.limit.continueMessage": "Reprenez là où vous en étiez, s’il vous plaît.",
+  "@askCmdr.limit.continueMessage": {
+    "sourceHash": "8c7a012"
+  },
   "askCmdr.error.repeatedToolCall": "Celle-ci a répété la même consultation sans avancer. Essayez de poser la question autrement.",
   "@askCmdr.error.repeatedToolCall": {
     "sourceHash": "ea46ed7"

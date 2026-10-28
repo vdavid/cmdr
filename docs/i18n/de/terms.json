@@ -95,6 +95,13 @@
     "forms": "a reply that stopped mid-stream → Die Antwort wurde nicht abgeschlossen.",
     "sources": "standard German; catalog (askCmdr.error.unfinishedReply)"
   },
+  "ai-lookup": {
+    "accept": ["Abfragen", "Abfragerunde"],
+    "chosen": "Abfrage",
+    "confidence": "high",
+    "forms": "a round of lookups → Abfragerunde (Cmdr erlaubt pro Antwort höchstens 25 Abfragerunden)",
+    "sources": "catalog precedent: `askCmdr.error.repeatedToolCall`, `askCmdr.event.contextTrimmed`"
+  },
   "ai-tool": {
     "accept": ["Werkzeuge"],
     "avoid": [

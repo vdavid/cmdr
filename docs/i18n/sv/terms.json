@@ -118,6 +118,13 @@
     "forms": "neuter ett svar, svaret; a server's reply takes the same word (Serverns svar)",
     "sources": "MS terminology (reply → svar); catalog (Serverns svar, svaret)"
   },
+  "ai-lookup": {
+    "accept": ["sökningar", "sökomgång"],
+    "chosen": "sökning",
+    "confidence": "high",
+    "forms": "a round of lookups → sökomgång / sökomgångar",
+    "sources": "catalog precedent: `askCmdr.error.repeatedToolCall`, `askCmdr.event.contextTrimmed`"
+  },
   "ai-tool": {
     "accept": ["platform tools"],
     "chosen": "verktyg",

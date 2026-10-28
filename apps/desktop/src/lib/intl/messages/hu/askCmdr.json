@@ -709,6 +709,30 @@
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
   },
+  "askCmdr.limit.toolRounds.answered": "Ez a válasz elérte a Cmdr {max, plural, one {# körös} other {{maxText} körös}} keresési korlátját, ezért abbahagyta a keresést, és abból válaszolt, amit addig talált.",
+  "@askCmdr.limit.toolRounds.answered": {
+    "sourceHash": "33677c9"
+  },
+  "askCmdr.limit.toolRounds.unfinished": "Ez a válasz elérte a Cmdr {max, plural, one {# körös} other {{maxText} körös}} keresési korlátját, mielőtt befejezhette volna.",
+  "@askCmdr.limit.toolRounds.unfinished": {
+    "sourceHash": "6c3d9ef"
+  },
+  "askCmdr.limit.wallTime": "Ez a válasz elérte a Cmdr válaszonkénti {minutes, plural, one {# perces} other {{minutesText} perces}} korlátját, mielőtt befejezhette volna.",
+  "@askCmdr.limit.wallTime": {
+    "sourceHash": "9b4aa5b"
+  },
+  "askCmdr.limit.fixed": "Ez egy rögzített korlát, nincs olyan beállítás, amivel módosíthatnád. Ha útban van, <feedback>szólj nekünk</feedback>.",
+  "@askCmdr.limit.fixed": {
+    "sourceHash": "d0c4bc7"
+  },
+  "askCmdr.limit.continue": "Folytatás",
+  "@askCmdr.limit.continue": {
+    "sourceHash": "9d7fd0e"
+  },
+  "askCmdr.limit.continueMessage": "Kérlek, folytasd onnan, ahol abbahagytad.",
+  "@askCmdr.limit.continueMessage": {
+    "sourceHash": "8c7a012"
+  },
   "askCmdr.error.repeatedToolCall": "Ez újra és újra ugyanazt a keresést próbálta, de nem jutott előrébb. Próbáld másképp megkérdezni.",
   "@askCmdr.error.repeatedToolCall": {
     "sourceHash": "ea46ed7"

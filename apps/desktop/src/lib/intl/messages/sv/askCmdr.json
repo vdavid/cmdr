@@ -709,6 +709,30 @@
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
   },
+  "askCmdr.limit.toolRounds.answered": "Svaret nådde Cmdrs gräns på {max, plural, one {# sökomgång} other {{maxText} sökomgångar}}, så det slutade söka och svarade med det som hade hittats.",
+  "@askCmdr.limit.toolRounds.answered": {
+    "sourceHash": "33677c9"
+  },
+  "askCmdr.limit.toolRounds.unfinished": "Svaret nådde Cmdrs gräns på {max, plural, one {# sökomgång} other {{maxText} sökomgångar}} innan det blev klart.",
+  "@askCmdr.limit.toolRounds.unfinished": {
+    "sourceHash": "6c3d9ef"
+  },
+  "askCmdr.limit.wallTime": "Svaret nådde Cmdrs gräns på {minutes, plural, one {# minut} other {{minutesText} minuter}} per svar innan det blev klart.",
+  "@askCmdr.limit.wallTime": {
+    "sourceHash": "9b4aa5b"
+  },
+  "askCmdr.limit.fixed": "Det är en fast gräns som inte går att ändra i inställningarna. Om den är i vägen, <feedback>berätta det för oss</feedback>.",
+  "@askCmdr.limit.fixed": {
+    "sourceHash": "d0c4bc7"
+  },
+  "askCmdr.limit.continue": "Fortsätt",
+  "@askCmdr.limit.continue": {
+    "sourceHash": "9d7fd0e"
+  },
+  "askCmdr.limit.continueMessage": "Fortsätt där du slutade, tack.",
+  "@askCmdr.limit.continueMessage": {
+    "sourceHash": "8c7a012"
+  },
   "askCmdr.error.repeatedToolCall": "Den här fastnade i samma sökning om och om igen. Försök fråga på ett annat sätt.",
   "@askCmdr.error.repeatedToolCall": {
     "sourceHash": "ea46ed7"

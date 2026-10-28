@@ -85,6 +85,13 @@
     "confidence": "high",
     "sources": "MS terminology pt-BR resposta; catalog"
   },
+  "ai-lookup": {
+    "accept": ["consultas"],
+    "chosen": "consulta",
+    "confidence": "high",
+    "forms": "a round of lookups → rodada de consultas",
+    "sources": "catalog precedent: `askCmdr.error.repeatedToolCall`, `askCmdr.event.contextTrimmed`"
+  },
   "ai-tool": {
     "chosen": "ferramenta",
     "confidence": "high",

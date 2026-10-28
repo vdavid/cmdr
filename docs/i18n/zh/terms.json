@@ -111,6 +111,12 @@
     "note": "A cloud-sync company is 云服务商 (cloud-provider), and a generic online service is 服务.",
     "sources": "MS terminology (service provider → 提供方)"
   },
+  "ai-lookup": {
+    "chosen": "查询",
+    "confidence": "high",
+    "forms": "a lookup → 次查询; a round of lookups → 轮查询",
+    "sources": "catalog precedent: `askCmdr.error.repeatedToolCall`, `askCmdr.event.contextTrimmed`"
+  },
   "ai-tool": {
     "chosen": "工具",
     "confidence": "high",

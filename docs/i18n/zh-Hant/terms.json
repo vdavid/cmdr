@@ -146,6 +146,12 @@
     "note": "same word as the `reply` ruling: the catalog writes an AI answer and a server's answer both as 回覆",
     "sources": "MS reply → 回覆; catalog askCmdr.json, ai.json"
   },
+  "ai-lookup": {
+    "chosen": "查詢",
+    "confidence": "high",
+    "forms": "a lookup → 次查詢; a round of lookups → 輪查詢",
+    "sources": "catalog precedent: `askCmdr.error.repeatedToolCall`, `askCmdr.event.contextTrimmed`"
+  },
   "ai-tool": {
     "chosen": "工具",
     "confidence": "high",

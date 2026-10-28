@@ -709,6 +709,30 @@
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
   },
+  "askCmdr.limit.toolRounds.answered": "Cmdr erlaubt pro Antwort höchstens {max, plural, one {# Abfragerunde} other {{maxText} Abfragerunden}}. Diese Antwort hat das Limit erreicht, deshalb hat sie aufgehört zu suchen und mit dem geantwortet, was sie gefunden hat.",
+  "@askCmdr.limit.toolRounds.answered": {
+    "sourceHash": "33677c9"
+  },
+  "askCmdr.limit.toolRounds.unfinished": "Cmdr erlaubt pro Antwort höchstens {max, plural, one {# Abfragerunde} other {{maxText} Abfragerunden}}. Diese Antwort hat das Limit erreicht, bevor sie fertig war.",
+  "@askCmdr.limit.toolRounds.unfinished": {
+    "sourceHash": "6c3d9ef"
+  },
+  "askCmdr.limit.wallTime": "Cmdr erlaubt pro Antwort höchstens {minutes, plural, one {# Minute} other {{minutesText} Minuten}}. Diese Antwort hat das Limit erreicht, bevor sie fertig war.",
+  "@askCmdr.limit.wallTime": {
+    "sourceHash": "9b4aa5b"
+  },
+  "askCmdr.limit.fixed": "Das Limit ist fest, keine Einstellung ändert es. Wenn es dich stört, <feedback>sag uns Bescheid</feedback>.",
+  "@askCmdr.limit.fixed": {
+    "sourceHash": "d0c4bc7"
+  },
+  "askCmdr.limit.continue": "Weitermachen",
+  "@askCmdr.limit.continue": {
+    "sourceHash": "9d7fd0e"
+  },
+  "askCmdr.limit.continueMessage": "Bitte mach da weiter, wo du aufgehört hast.",
+  "@askCmdr.limit.continueMessage": {
+    "sourceHash": "8c7a012"
+  },
   "askCmdr.error.repeatedToolCall": "Diese Antwort hat immer wieder dieselbe Abfrage versucht, ohne weiterzukommen. Frag es anders.",
   "@askCmdr.error.repeatedToolCall": {
     "sourceHash": "ea46ed7"

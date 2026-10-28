@@ -194,6 +194,13 @@
     "confidence": "high",
     "sources": "MS (reply → ответ, 'a response to a message'); macOS live Mail (Reply → Ответить)"
   },
+  "ai-lookup": {
+    "accept": ["поиска", "результат поиска"],
+    "chosen": "поиск",
+    "confidence": "high",
+    "forms": "a round of lookups → раунд поиска (не больше 25 раундов поиска)",
+    "sources": "catalog precedent: `askCmdr.error.repeatedToolCall`, `askCmdr.event.contextTrimmed`"
+  },
   "ai-tool": {
     "chosen": "инструмент",
     "accept": ["инструмент"],

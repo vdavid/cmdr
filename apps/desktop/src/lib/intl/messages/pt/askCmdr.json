@@ -709,6 +709,30 @@
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
   },
+  "askCmdr.limit.toolRounds.answered": "Esta resposta atingiu o limite de {max, plural, one {# rodada} many {{maxText} rodadas} other {{maxText} rodadas}} de consultas do Cmdr, então parou de procurar e respondeu com o que tinha encontrado.",
+  "@askCmdr.limit.toolRounds.answered": {
+    "sourceHash": "33677c9"
+  },
+  "askCmdr.limit.toolRounds.unfinished": "Esta resposta atingiu o limite de {max, plural, one {# rodada} many {{maxText} rodadas} other {{maxText} rodadas}} de consultas do Cmdr antes de terminar.",
+  "@askCmdr.limit.toolRounds.unfinished": {
+    "sourceHash": "6c3d9ef"
+  },
+  "askCmdr.limit.wallTime": "Esta resposta atingiu o limite de {minutes, plural, one {# minuto} many {{minutesText} minutos} other {{minutesText} minutos}} por resposta do Cmdr antes de terminar.",
+  "@askCmdr.limit.wallTime": {
+    "sourceHash": "9b4aa5b"
+  },
+  "askCmdr.limit.fixed": "É um limite fixo, sem nenhum ajuste para mudá-lo. Se ele atrapalhar, <feedback>conte para a gente</feedback>.",
+  "@askCmdr.limit.fixed": {
+    "sourceHash": "d0c4bc7"
+  },
+  "askCmdr.limit.continue": "Continuar",
+  "@askCmdr.limit.continue": {
+    "sourceHash": "9d7fd0e"
+  },
+  "askCmdr.limit.continueMessage": "Por favor, continue de onde você parou.",
+  "@askCmdr.limit.continueMessage": {
+    "sourceHash": "8c7a012"
+  },
   "askCmdr.error.repeatedToolCall": "Esta resposta repetiu a mesma consulta sem avançar. Tente perguntar de outra forma.",
   "@askCmdr.error.repeatedToolCall": {
     "sourceHash": "ea46ed7"
