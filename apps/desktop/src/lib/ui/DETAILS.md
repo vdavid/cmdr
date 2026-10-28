@@ -739,6 +739,12 @@ Every button is a capsule: `border-radius: var(--radius-full)` on `.btn`, both s
 alert's action buttons. `--radius-full` (9999px) rather than `50%`, which curves against the box and goes oval on a wide
 button.
 
+Every variant shares one box: each has a 1px border, and primary's is `transparent`, so a primary beside a secondary or
+danger button matches it to the pixel (borderless, it sat 2px narrower and shorter, and the AI suggestions dialog's
+mixed footer misaligned). The accent fill paints under the transparent border, so the look is unchanged. In
+forced-colors mode the browser paints that border in the system button color, which is deliberate: it gives the primary
+the same visible outline its siblings get there. ❌ Don't add a variant with `border: none`.
+
 `.btn-primary` renders `color: var(--color-accent-fg)` on `background: var(--color-accent)`. Both are derived at runtime
 by `lib/accent-color.ts`:
 

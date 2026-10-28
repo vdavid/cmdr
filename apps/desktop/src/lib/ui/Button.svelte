@@ -194,10 +194,15 @@
     }
 
     /* === Variant: primary === */
+    /* Every variant carries a 1px border so all share one box: without it a primary sat 2px
+       narrower and shorter than its secondary and danger neighbors, and mixed rows misaligned.
+       Transparent, so the accent fill (painted under the border, `background-clip: border-box`)
+       reads edge to edge. In forced-colors mode the browser paints it in the system button
+       color on purpose: that's the one outline a primary has there, like its siblings. */
     .btn-primary {
         background: var(--color-accent);
         color: var(--color-accent-fg);
-        border: none;
+        border: 1px solid transparent;
     }
 
     .btn-primary:hover:not(:disabled, [aria-disabled='true']) {

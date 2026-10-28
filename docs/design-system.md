@@ -508,15 +508,19 @@ Target heights follow macOS conventions: **mini** (22px), **regular** (32px).
 
 ```css
 background: var(--color-accent);
-color: white;
-padding: 7px 20px; /* Yields ~32px total height at 14px/1.0 line-height */
+color: var(--color-accent-fg);
+padding: 7px 20px;
 font-size: var(--font-size-md); /* 14px */
 font-weight: 500;
-line-height: 1;
-border: none;
+line-height: var(--font-line-height-normal);
+border: 1px solid transparent; /* same box as secondary and danger */
 border-radius: var(--radius-full); /* capsule ends, like a macOS alert button */
-transition: background var(--transition-base);
+transition: all var(--transition-base);
 ```
+
+**Every variant has the same box**: each carries a 1px border (primary's is transparent), so a primary beside a
+secondary or danger button matches it in height and in padding-to-edge. A borderless variant would sit 2px smaller and
+misalign a mixed row.
 
 Hover: `background: var(--color-accent-hover)` (derived via `color-mix`, never `brightness()` filter). Disabled:
 `opacity: 0.4; cursor: not-allowed; pointer-events: none;` Focus-visible: uses the two-layer focus ring from the depth
@@ -530,9 +534,9 @@ color: var(--color-text-secondary);
 padding: 7px 20px;
 font-size: var(--font-size-md);
 font-weight: 500;
-line-height: 1;
+line-height: var(--font-line-height-normal);
 border: 1px solid var(--color-border);
-border-radius: var(--radius-md);
+border-radius: var(--radius-full);
 transition: all var(--transition-base);
 ```
 
@@ -546,9 +550,9 @@ Same as secondary but: `color: var(--color-error); border-color: var(--color-err
 **Mini** (for inline/toolbar use):
 
 ```css
-padding: 3px 12px; /* Yields ~22px at 12px/1.0 */
+padding: 3px 12px;
 font-size: var(--font-size-sm); /* 12px */
-border-radius: var(--radius-sm); /* 4px */
+border-radius: var(--radius-full); /* every size is a capsule */
 ```
 
 **All buttons:** `cursor: default`. No `outline: none` on focus; rely on focus-visible ring.
