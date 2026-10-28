@@ -117,8 +117,9 @@ pub(crate) enum LiveMiss {
 }
 
 impl LiveMiss {
-    /// This miss as the location contract's one wire shape.
-    pub(crate) fn into_result(self, location: &Location, volume_name: &str) -> LocationMissResult {
+    /// This miss as the location contract's one wire shape. `reconnects`: the volume is a
+    /// session Cmdr owns ([`reconnects`]), so a dropped read is worth waiting out.
+    pub(crate) fn into_result(self, location: &Location, volume_name: &str, reconnects: bool) -> LocationMissResult {
         let (token, detail) = match self {
             LiveMiss::NeedsDiskAccess(PrivacyGate::Pending) => (
                 MissToken::NeedsDiskAccess,
@@ -139,6 +140,17 @@ impl LiveMiss {
                 MissToken::Unreachable,
                 format!(
                     "An earlier read on {volume_name} is still waiting for it to answer, so this one didn't start. Tell the user it seems unresponsive; retrying right away won't help."
+                ),
+            ),
+            // A session Cmdr owns that drops mid-read comes back on its own (the frontend's
+            // backoff loop), so the miss points at the way to wait for it rather than at the
+            // user. Telling the model to "tell the user" here is how a NAS that reconnected
+            // nine seconds later was written off for the whole answer.
+            LiveMiss::Unreachable(Stall::Failed) if reconnects => (
+                MissToken::Unreachable,
+                format!(
+                    "{volume_name} stopped answering while Cmdr read it, so its connection probably dropped, and Cmdr is reconnecting it. Call `connect_volume` with volumeId `{}` if you have it, which waits for the reconnect; otherwise wait a few seconds. Then read this again. If it doesn't come back, tell the user it seems disconnected.",
+                    location.volume_id
                 ),
             ),
             LiveMiss::Unreachable(Stall::Failed) => (
@@ -544,8 +556,9 @@ pub(crate) async fn answer_live(ask: LiveAsk<'_>) -> ToolResult {
             ask.opts.offset
         )));
     }
+    let reconnects = reconnects(ask.facts, &location.volume_id);
     let Some(volume) = ask.volume else {
-        return to_value(&LiveMiss::Unreachable(Stall::Failed).into_result(location, &ask.resolved.name));
+        return to_value(&LiveMiss::Unreachable(Stall::Failed).into_result(location, &ask.resolved.name, reconnects));
     };
     let target = LiveTarget {
         root: ask.resolved.root.clone(),
@@ -570,8 +583,21 @@ pub(crate) async fn answer_live(ask: LiveAsk<'_>) -> ToolResult {
     let read = move |stop| read_live(volume, target, policy, stop);
     match run_bounded(&location.volume_id, ask.cfg, ask.cancel, read).await {
         Ok(entries) => to_value(&build_live_list_dir(location, entries, ask.view, ask.opts)),
-        Err(miss) => to_value(&miss.into_result(location, &ask.resolved.name)),
+        Err(miss) => to_value(&miss.into_result(location, &ask.resolved.name, reconnects)),
     }
+}
+
+/// Whether `volume_id` is a session Cmdr owns, which the frontend's backoff loop brings back
+/// after a drop and `connect_volume` can wait out. An OS mount or a local disk isn't: Cmdr has
+/// nothing of its own to reconnect there.
+fn reconnects(facts: &VolumeFacts, volume_id: &str) -> bool {
+    use cmdr_fs::volume::ConnectionState;
+    facts.get(volume_id).is_some_and(|v| {
+        matches!(
+            v.connection_state,
+            Some(ConnectionState::Direct | ConnectionState::Disconnected)
+        )
+    })
 }
 
 /// The coverage block for a live read. A complete read is authoritative about

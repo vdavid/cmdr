@@ -569,7 +569,7 @@ mcp_tools! {
         run: app_params crate::agent::tools::read::volumes::execute_list_volumes
     },
     "connect_volume" => {
-        desc: "Connect a saved server or share with its stored credentials. A missing password answers needsCredentials.",
+        desc: "Connect a saved server or share with its stored credentials, or wait out the reconnect of one that dropped. A missing password answers needsCredentials.",
         schema: crate::agent::tools::connect::connect_volume_schema(),
         consumers: &[Consumer::Agent],
         access: Access::Session,

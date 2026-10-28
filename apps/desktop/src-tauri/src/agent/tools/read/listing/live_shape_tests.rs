@@ -241,3 +241,51 @@ async fn a_missing_folder_read_live_is_a_typed_miss_not_an_empty_listing() {
     assert_eq!(answer["location"], json!({ "volumeId": "lan", "path": path }));
     assert!(answer.get("children").is_none());
 }
+
+async fn dropped_read_detail(connection_state: Option<cmdr_fs::volume::ConnectionState>) -> String {
+    let mut facts = facts_for("/Volumes/naspi-1");
+    facts.volumes[0].connection_state = connection_state;
+    let resolved = resolve(
+        &facts,
+        &LocationInput {
+            volume_id: Some("lan".to_string()),
+            path: "/Volumes/naspi-1/papers".to_string(),
+        },
+    )
+    .expect("resolves");
+    let answer = answer_live(LiveAsk {
+        resolved: &resolved,
+        facts: &facts,
+        opts: &ListOptions::default(),
+        view: &unindexed(),
+        // The volume left between the resolve and the read: the dropped-session path.
+        volume: None,
+        cancel: &CancellationToken::new(),
+        cfg: LIVE_READ,
+        policy: open_policy(),
+    })
+    .await
+    .expect("answers");
+    assert_eq!(answer["miss"], "unreachable");
+    answer["detail"].as_str().expect("detail").to_string()
+}
+
+/// A session Cmdr owns that drops mid-read points the model at `connect_volume`, which waits
+/// for the reconnect, instead of at the user. Regression anchor: a NAS whose smb2 session had
+/// gone stale answered one read with "Tell the user it may have disconnected", so the agent
+/// wrote it off for the whole answer while Cmdr reconnected it nine seconds later.
+#[tokio::test]
+async fn a_dropped_session_points_at_connect_volume_and_an_os_mount_at_the_user() {
+    use cmdr_fs::volume::ConnectionState;
+    for state in [ConnectionState::Direct, ConnectionState::Disconnected] {
+        let detail = dropped_read_detail(Some(state)).await;
+        assert!(
+            detail.contains("`connect_volume` with volumeId `lan`"),
+            "{state:?}: {detail}"
+        );
+    }
+    for state in [Some(ConnectionState::OsMount), None] {
+        let detail = dropped_read_detail(state).await;
+        assert!(!detail.contains("connect_volume"), "{state:?}: {detail}");
+    }
+}

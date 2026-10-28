@@ -584,6 +584,15 @@ Its misses ride the same shape as the resolver's (`LocationMissResult::on`, `loc
 `excluded` (names the folder the index skips), `permissionDenied`
 (the folder's own permissions: Full Disk Access won't help), and `cancelled`.
 
+**A dropped session points at `connect_volume`, not at the user.** When the volume is a session Cmdr owns
+(`connectionState` `direct` or `disconnected`, `live.rs::reconnects`), a mid-read drop's `detail` says Cmdr is
+reconnecting it and to call `connect_volume` with its `volumeId` (which waits out the reconnect, § Connecting a saved
+place), or wait a few seconds where that tool isn't offered (AI clients), then read again. An OS mount or a local disk
+keeps "tell the user". Why: a stale smb2 session failed one read with "Tell the user it may have disconnected", the
+agent wrote the NAS off for the whole answer, and the backoff loop had it back nine seconds later (verified on a dev
+build, `main.db` conversation 689 plus `cmdr.log` `ConnectionLost` then `session: established`, 2026-10-28). A location
+miss carries no `problem` key, so the repeat breaker never refuses the retry.
+
 ## The honesty (coverage) contract
 
 `read/listing/source.rs::coverage` is the single builder for index freshness honesty: it reuses `status_token` +
