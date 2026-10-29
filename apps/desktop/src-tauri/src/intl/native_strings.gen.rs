@@ -24,7 +24,7 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
         tag: "de",
         entries: &[
             ("licensing.windowTitle.personalUse", "Cmdr – Nur private Nutzung"),
-            ("main.instanceLock.alertBody", "Eine andere Kopie von Cmdr benutzt diesen Datenordner. Wechsle zur laufenden App oder beende sie und versuche es erneut."),
+            ("main.instanceLock.alertBody", "Es kann nur ein Cmdr gleichzeitig laufen, damit deine Einstellungen, Protokolle und Indizes intakt bleiben. Diese Kopie wird jetzt geschlossen. Wechsle zum bereits geöffneten Cmdr."),
             ("main.instanceLock.alertTitle", "Cmdr läuft bereits"),
             ("menu.app.about", "Über Cmdr"),
             ("menu.app.acknowledgements", "Danksagungen"),
@@ -456,7 +456,7 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
         tag: "es",
         entries: &[
             ("licensing.windowTitle.personalUse", "Cmdr – Solo uso personal"),
-            ("main.instanceLock.alertBody", "Otra copia de Cmdr está usando esta carpeta de datos. Cambia a la app que ya se está ejecutando, o sal de ella e inténtalo de nuevo."),
+            ("main.instanceLock.alertBody", "Solo puede ejecutarse un Cmdr a la vez, para que tus ajustes, registros e índices sigan intactos. Esta copia se cerrará ahora. Cambia al Cmdr que ya está abierto."),
             ("main.instanceLock.alertTitle", "Cmdr ya se está ejecutando"),
             ("menu.app.about", "Acerca de Cmdr"),
             ("menu.app.acknowledgements", "Agradecimientos"),
@@ -655,6 +655,7 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
     LocaleStrings {
         tag: "es-419",
         entries: &[
+            ("main.instanceLock.alertBody", "Solo puede ejecutarse un Cmdr a la vez, para que tu configuración, tus registros y tus índices sigan intactos. Esta copia se cerrará ahora. Cambia al Cmdr que ya está abierto."),
             ("menu.app.licenseEnter", "Ingresar clave de licencia…"),
             ("menu.app.settings", "Configuración…"),
             ("menu.context.addToFavorites", "Agregar a favoritos"),
@@ -678,7 +679,7 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
         tag: "fr",
         entries: &[
             ("licensing.windowTitle.personalUse", "Cmdr – Usage personnel uniquement"),
-            ("main.instanceLock.alertBody", "Une autre copie de Cmdr utilise ce dossier de données. Passez à l’app en cours, ou quittez-la et réessayez."),
+            ("main.instanceLock.alertBody", "Un seul Cmdr peut être ouvert à la fois, pour que vos réglages, journaux et index restent intacts. Cette copie va se fermer maintenant. Passez au Cmdr déjà ouvert."),
             ("main.instanceLock.alertTitle", "Cmdr est déjà ouvert"),
             ("menu.app.about", "À propos de Cmdr"),
             ("menu.app.acknowledgements", "Remerciements"),
@@ -878,7 +879,7 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
         tag: "hu",
         entries: &[
             ("licensing.windowTitle.personalUse", "Cmdr – Csak személyes használat"),
-            ("main.instanceLock.alertBody", "A Cmdr egy másik példánya használja ezt az adatmappát. Válts át a futó alkalmazásra, vagy lépj ki belőle, és próbáld újra."),
+            ("main.instanceLock.alertBody", "Egyszerre csak egy Cmdr futhat, hogy a beállításaid, a naplóid és az indexeid épségben maradjanak. Ez a példány most bezárul. Válts át a már megnyitott Cmdrre."),
             ("main.instanceLock.alertTitle", "A Cmdr már fut"),
             ("menu.app.about", "A Cmdr névjegye"),
             ("menu.app.acknowledgements", "Köszönetnyilvánítás"),
@@ -1078,7 +1079,7 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
         tag: "nl",
         entries: &[
             ("licensing.windowTitle.personalUse", "Cmdr – Alleen persoonlijk gebruik"),
-            ("main.instanceLock.alertBody", "Een andere kopie van Cmdr gebruikt deze gegevensmap. Ga naar de app die al draait, of stop die en probeer het opnieuw."),
+            ("main.instanceLock.alertBody", "Er kan maar één Cmdr tegelijk draaien, zodat je instellingen, logbestanden en indexen intact blijven. Deze kopie wordt nu gesloten. Ga naar de Cmdr die al open is."),
             ("main.instanceLock.alertTitle", "Cmdr draait al"),
             ("menu.app.about", "Over Cmdr"),
             ("menu.app.acknowledgements", "Dankbetuigingen"),
@@ -1278,7 +1279,7 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
         tag: "pt",
         entries: &[
             ("licensing.windowTitle.personalUse", "Cmdr – Apenas uso pessoal"),
-            ("main.instanceLock.alertBody", "Outra cópia do Cmdr está usando esta pasta de dados. Vá para o app em execução, ou encerre-o e tente de novo."),
+            ("main.instanceLock.alertBody", "Só um Cmdr pode estar em execução por vez, para que seus ajustes, registros e índices continuem intactos. Esta cópia vai fechar agora. Vá para o Cmdr que já está aberto."),
             ("main.instanceLock.alertTitle", "O Cmdr já está em execução"),
             ("menu.app.about", "Sobre o Cmdr"),
             ("menu.app.acknowledgements", "Agradecimentos"),
@@ -1478,7 +1479,7 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
         tag: "ru",
         entries: &[
             ("licensing.windowTitle.personalUse", "Cmdr – только для личного использования"),
-            ("main.instanceLock.alertBody", "Другая копия Cmdr использует эту папку данных. Переключитесь на запущенное приложение или завершите его и попробуйте еще раз."),
+            ("main.instanceLock.alertBody", "Одновременно может работать только один Cmdr, чтобы ваши настройки, журналы и индексы оставались в сохранности. Эта копия сейчас закроется. Переключитесь на Cmdr, который уже открыт."),
             ("main.instanceLock.alertTitle", "Cmdr уже запущен"),
             ("menu.app.about", "О приложении Cmdr"),
             ("menu.app.acknowledgements", "Благодарности"),
@@ -1678,7 +1679,7 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
         tag: "sv",
         entries: &[
             ("licensing.windowTitle.personalUse", "Cmdr – Endast personligt bruk"),
-            ("main.instanceLock.alertBody", "En annan kopia av Cmdr använder den här datamappen. Byt till appen som körs eller avsluta den och försök igen."),
+            ("main.instanceLock.alertBody", "Bara en Cmdr kan köras åt gången, så att dina inställningar, loggar och index förblir intakta. Den här kopian stängs nu. Byt till den Cmdr som redan är öppen."),
             ("main.instanceLock.alertTitle", "Cmdr körs redan"),
             ("menu.app.about", "Om Cmdr"),
             ("menu.app.acknowledgements", "Tack till"),
@@ -1878,7 +1879,7 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
         tag: "uk",
         entries: &[
             ("licensing.windowTitle.personalUse", "Cmdr – лише для особистого користування"),
-            ("main.instanceLock.alertBody", "Інша копія Cmdr використовує цю папку даних. Перейдіть до програми, яка вже працює, або завершіть її та спробуйте ще раз."),
+            ("main.instanceLock.alertBody", "Одночасно може працювати лише один Cmdr, щоб ваші параметри, журнали та індекси залишалися неушкодженими. Ця копія зараз закриється. Перейдіть до Cmdr, що вже відкритий."),
             ("main.instanceLock.alertTitle", "Cmdr уже працює"),
             ("menu.app.about", "Про Cmdr"),
             ("menu.app.acknowledgements", "Подяки"),
@@ -2078,7 +2079,7 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
         tag: "vi",
         entries: &[
             ("licensing.windowTitle.personalUse", "Cmdr – Chỉ dùng cá nhân"),
-            ("main.instanceLock.alertBody", "Một bản Cmdr khác đang dùng thư mục dữ liệu này. Hãy chuyển sang ứng dụng đang chạy, hoặc thoát nó rồi thử lại."),
+            ("main.instanceLock.alertBody", "Mỗi lúc chỉ chạy được một Cmdr, để cài đặt, nhật ký và chỉ mục của bạn luôn nguyên vẹn. Bản Cmdr này sẽ đóng ngay bây giờ. Hãy chuyển sang Cmdr đang mở."),
             ("main.instanceLock.alertTitle", "Cmdr đang chạy rồi"),
             ("menu.app.about", "Giới thiệu về Cmdr"),
             ("menu.app.acknowledgements", "Lời cảm ơn"),
@@ -2278,7 +2279,7 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
         tag: "zh",
         entries: &[
             ("licensing.windowTitle.personalUse", "Cmdr – 仅限个人使用"),
-            ("main.instanceLock.alertBody", "另一个 Cmdr 副本正在使用这个数据文件夹。请切换到正在运行的应用，或者退出它再试一次。"),
+            ("main.instanceLock.alertBody", "同一时间只能运行一个 Cmdr，这样你的设置、日志和索引才能保持完好。这个副本现在会关闭。请切换到已经打开的 Cmdr。"),
             ("main.instanceLock.alertTitle", "Cmdr 已在运行"),
             ("menu.app.about", "关于 Cmdr"),
             ("menu.app.acknowledgements", "致谢"),
@@ -2478,7 +2479,7 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
         tag: "zh-Hant",
         entries: &[
             ("licensing.windowTitle.personalUse", "Cmdr – 僅限個人使用"),
-            ("main.instanceLock.alertBody", "另一個 Cmdr 副本正在使用這個資料夾。請切換到正在執行的那一個，或是先結束它再試一次。"),
+            ("main.instanceLock.alertBody", "同一時間只能執行一個 Cmdr，這樣你的設定、記錄和索引才能保持完整。這個副本現在會關閉。請切換到已經開啟的 Cmdr。"),
             ("main.instanceLock.alertTitle", "Cmdr 已經在執行中"),
             ("menu.app.about", "關於 Cmdr"),
             ("menu.app.acknowledgements", "致謝"),
