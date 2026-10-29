@@ -230,6 +230,10 @@ pub fn run() {
     // `crash_reporter::init` resolves the data dir; see `crash_reporter/CLAUDE.md`.
     crash_reporter::install_panic_hook();
 
+    // Every OS-default dir hangs off the build's own identifier (#820): record it first.
+    let context = tauri::generate_context!();
+    config::set_app_identifier(&context.config().identifier);
+
     // Refuse to start an E2E run with no isolated data dir: it would resolve every persisted
     // store to the developer's real prod dir and corrupt it (e.g. a screenshot `favorites.add`
     // bleeding "left" favorites into prod). Must run before anything resolves a data dir.
@@ -292,21 +296,17 @@ pub fn run() {
                 app.set_activation_policy(tauri::ActivationPolicy::Prohibited);
             }
 
-            // Claim the data dir before anything opens a database, AND before the logger. Two
-            // processes on one data dir means two index writers handing out the same entry IDs,
-            // which corrupts the index silently. A refused process exits here without installing
-            // the logger, so it never appends to (or rotates) the running app's `cmdr.log`
-            // (#812); its refusal goes to stderr and the native alert. Tauri already created the
-            // config-declared main window before `setup`, but it's `"visible": false`, and a
-            // refused process exits without ever showing it. See `instance_lock.rs`.
+            // Claim the data dir before anything opens a database AND before the logger: two
+            // processes on one index corrupt it silently, and a refused one must not touch the
+            // running app's `cmdr.log` either (#812). It exits before the (hidden) main window is
+            // ever shown. See `instance_lock.rs`.
             let claim = match config::resolved_app_data_dir(app.handle()) {
                 Ok(dir) => instance_lock::claim_data_dir_or_exit(&dir),
                 Err(error) => instance_lock::Claim::Unresolved { error },
             };
 
             logging::startup::init();
-            // What the claim found, now that there's a logger to record it.
-            claim.log();
+            claim.log(); // what the claim found, now that a logger can record it
 
             // Everything the index needs from this app, in one place. Must run before anything
             // can start background work, and AFTER the instance lock: building the index moves a
@@ -879,7 +879,7 @@ pub fn run() {
         .on_menu_event(menu::handle_menu_event)
         .invoke_handler(invoke_handler)
         .on_window_event(app_lifecycle::on_window_event)
-        .build(tauri::generate_context!())
+        .build(context)
         .expect("error while building tauri application")
         .run(app_lifecycle::on_run_event);
 }

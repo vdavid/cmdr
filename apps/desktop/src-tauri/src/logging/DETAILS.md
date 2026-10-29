@@ -60,12 +60,13 @@ nothing itself: the refusal goes to stderr plus the native alert, and every othe
 how the few host installs above the claim have always run. The panic hook is installed first thing in `run()`, so a
 panic before `init` still reaches stderr; its crash file waits for `crash_reporter::init`, as before.
 
-Directory priority: `CMDR_LOG_DIR`, then `<CMDR_DATA_DIR>/logs`, then the per-OS app log dir
-(`~/Library/Logs/com.veszelovszki.cmdr` on macOS, `dirs::data_local_dir()/com.veszelovszki.cmdr/logs` elsewhere).
-
-**Gotcha**: the early-load helpers MIRROR that resolution rather than calling into it. They run before an `AppHandle`
-exists, so they call `config::standalone_app_data_dir()` (the OS data dir plus `config::BUNDLE_ID`) where
-`startup::init` can use Tauri's `app_data_dir`. The two agree today; a bundle-id change has to touch both.
+Directory priority (`config::app_log_dir`): `CMDR_LOG_DIR`, then `<CMDR_DATA_DIR>/logs`, then the per-OS log dir for
+the build's own identifier (`config::app_identifier`, recorded from `tauri::generate_context!()` first thing in `run()`):
+`~/Library/Logs/<identifier>` on macOS, `dirs::data_local_dir()/<identifier>/logs` elsewhere, the folder Tauri's
+`app_log_dir()` names. The release identifier keeps the release app at `~/Library/Logs/com.veszelovszki.cmdr`; a dev or
+capture build gets its own folder. It used to hardcode the release identifier, so any other build sharing the Mac logged
+into the release app's folder and rotated its files (#812, #820). The early-load helpers read settings from
+`config::standalone_app_data_dir()`, which hangs off the same identifier, so they agree with Tauri's `app_data_dir`.
 
 ## What lives in `mod.rs`
 

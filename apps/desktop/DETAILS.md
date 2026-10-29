@@ -169,13 +169,14 @@ for each of the three above, through `CMDR_CACHE_DIR`. A run that sets only `CMD
 `<CMDR_DATA_DIR>/cache/drive-index/`. Resolution: `src-tauri/src/config.rs` `drive_index_dir`.
 
 - **Logging**: frontend and backend logs land together in the terminal and the log dir (dev: `<CMDR_DATA_DIR>/logs/`,
-  prod: `~/Library/Logs/com.veszelovszki.cmdr/`). Read `docs/tooling/logging.md` before using `RUST_LOG`: it has
-  per-subsystem recipes. Key gotcha: the Rust library target is `cmdr_lib`, not `cmdr`, so use
-  `RUST_LOG=cmdr_lib::module=debug`. `cmdr_lib` (lib) and `Cmdr` (bin) are both in the `cmdr` package, so
-  `Compiling cmdr` in build output covers both targets.
+  prod: `~/Library/Logs/com.veszelovszki.cmdr/`; a build with another identifier and no `CMDR_DATA_DIR` gets
+  `~/Library/Logs/<its identifier>/`). Read `docs/tooling/logging.md` before using `RUST_LOG`: it has per-subsystem
+  recipes. Key gotcha: the Rust library target is `cmdr_lib`, not `cmdr`, so use `RUST_LOG=cmdr_lib::module=debug`.
+  `cmdr_lib` (lib) and `Cmdr` (bin) are both in the `cmdr` package, so `Compiling cmdr` in build output covers both
+  targets.
 - **Dev live log path**: the running dev app's log is
   `~/Library/Application Support/com.veszelovszki.cmdr-dev/logs/cmdr.log` (the data-dir `logs/` subdir), NOT
-  `~/Library/Logs/com.veszelovszki.cmdr-dev/` (which can be stale).
+  `~/Library/Logs/com.veszelovszki.cmdr-dev/` (only a dev build run without the wrapper writes there).
 - **Hard freeze (logs stop)**: when the app wedges and the log goes silent, `sample <pid>` (macOS) the running Cmdr
   process to capture the blocked threads' stacks — that's how a deadlock gets pinpointed when the logger never flushed.
 - **Crash reports**: a crash writes `crash-report.json` to the data dir; the next launch detects it and offers to send.

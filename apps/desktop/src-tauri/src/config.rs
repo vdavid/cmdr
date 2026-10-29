@@ -5,6 +5,7 @@
 use cmdr_fs::log_private::LogPrivate;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 use tauri::{AppHandle, Manager, Runtime};
 
 /// Icon size in pixels (32x32 for retina display)
@@ -49,12 +50,33 @@ fn data_dir_from_env(env_value: Option<&str>) -> Option<PathBuf> {
     }
 }
 
-/// Bundle id from `tauri.conf.json`, which names the OS-default data dir. Keep in sync.
+/// The RELEASE bundle id, from `tauri.conf.json`. Keep in sync. Only the fallback for
+/// [`app_identifier`]: a dev or capture build runs under its own identifier
+/// (`com.veszelovszki.cmdr-dev`, `-dev-<slug>`, …, from `scripts/instance-id.ts`), and every
+/// OS-default dir has to follow that one, or two builds share logs and a drive index (#812, #820).
 pub const BUNDLE_ID: &str = "com.veszelovszki.cmdr";
+
+/// The identifier this binary was built with, set once at the top of `run()`.
+static APP_IDENTIFIER: OnceLock<String> = OnceLock::new();
+
+/// Records the identifier this binary runs under: `tauri::generate_context!()`'s config, the
+/// same value Tauri's `app_data_dir()` / `app_cache_dir()` / `app_log_dir()` join. Call once,
+/// first thing in `run()`, before anything resolves a dir.
+pub fn set_app_identifier(identifier: &str) {
+    // A second call (a double `run`) keeps the first: same binary, same value.
+    let _ = APP_IDENTIFIER.set(identifier.to_string());
+}
+
+/// The identifier the OS-default dirs hang off: the running build's own, or [`BUNDLE_ID`] when
+/// `run()` hasn't recorded one (a unit test).
+pub fn app_identifier() -> &'static str {
+    APP_IDENTIFIER.get().map_or(BUNDLE_ID, String::as_str)
+}
 
 /// The app data dir for code that runs without an `AppHandle` (stores read before setup, or
 /// behind a plain function signature): `CMDR_DATA_DIR` when set, else the OS default for
-/// [`BUNDLE_ID`]. `None` only when the OS has no data dir. Doesn't create it.
+/// [`app_identifier`], the folder Tauri's `app_data_dir()` names. `None` only when the OS has
+/// no data dir. Doesn't create it.
 ///
 /// ❌ Never re-derive this at a call site: one copy that misses the test branch below is a
 /// unit test writing into the developer's real data dir (`volumes::tests` once seeded the real
@@ -72,7 +94,7 @@ fn standalone_dir_from(env_value: Option<&str>) -> Option<PathBuf> {
 
 #[cfg(not(test))]
 fn os_default_data_dir() -> Option<PathBuf> {
-    Some(dirs::data_dir()?.join(BUNDLE_ID))
+    Some(dirs::data_dir()?.join(app_identifier()))
 }
 
 /// Under test, the OS default is a scratch dir of this process's own: a test that didn't
@@ -102,7 +124,7 @@ const DRIVE_INDEX_DIR_NAME: &str = "drive-index";
 /// 1. `CMDR_CACHE_DIR` (set by `tauri-wrapper.ts` for dev, mirroring Tauri's `app_cache_dir()`)
 /// 2. `<CMDR_DATA_DIR>/cache`, so an E2E or capture run that names only a data dir stays wholly
 ///    inside it and never reaches the real cache
-/// 3. the OS cache dir for [`BUNDLE_ID`], the same folder Tauri's `app_cache_dir()` names
+/// 3. the OS cache dir for [`app_identifier`], the same folder Tauri's `app_cache_dir()` names
 ///
 /// `None` only when the OS has no cache dir. Doesn't create it. Why the index's folders are
 /// split this way: `crates/cmdr-index/DETAILS.md` § "Where the stores live".
@@ -130,7 +152,12 @@ fn cache_dir_from(cache_env: Option<&str>, data_env: Option<&str>) -> Option<Pat
 
 #[cfg(not(test))]
 fn os_default_cache_dir() -> Option<PathBuf> {
-    Some(dirs::cache_dir()?.join(BUNDLE_ID))
+    Some(os_cache_dir_for(&dirs::cache_dir()?, app_identifier()))
+}
+
+/// Pure core of the OS cache dir: one folder per identifier (Tauri's `app_cache_dir()`).
+fn os_cache_dir_for(base: &Path, identifier: &str) -> PathBuf {
+    base.join(identifier)
 }
 
 /// Under test, a scratch dir of this process's own, for the same reason as
@@ -138,6 +165,55 @@ fn os_default_cache_dir() -> Option<PathBuf> {
 #[cfg(test)]
 fn os_default_cache_dir() -> Option<PathBuf> {
     os_default_data_dir().map(|dir| dir.join("cache"))
+}
+
+/// Where the log files go, by priority:
+/// 1. `CMDR_LOG_DIR` (explicit override)
+/// 2. `<CMDR_DATA_DIR>/logs` (dev and E2E isolation; `tauri-wrapper.ts` always sets the data dir)
+/// 3. the OS log dir for [`app_identifier`], the folder Tauri's `app_log_dir()` names:
+///    `~/Library/Logs/<identifier>` on macOS, `<data_local_dir>/<identifier>/logs` elsewhere
+///
+/// Falls back to `./logs` only when the OS has no home or local data dir. Doesn't create it.
+pub fn app_log_dir() -> PathBuf {
+    log_dir_from(
+        std::env::var("CMDR_LOG_DIR").ok().as_deref(),
+        std::env::var("CMDR_DATA_DIR").ok().as_deref(),
+    )
+}
+
+fn log_dir_from(log_env: Option<&str>, data_env: Option<&str>) -> PathBuf {
+    if let Some(dir) = data_dir_from_env(log_env) {
+        return dir;
+    }
+    if let Some(data_dir) = data_dir_from_env(data_env) {
+        return data_dir.join("logs");
+    }
+    os_default_log_dir().unwrap_or_else(|| PathBuf::from("./logs"))
+}
+
+#[cfg(not(test))]
+fn os_default_log_dir() -> Option<PathBuf> {
+    #[cfg(target_os = "macos")]
+    let base = dirs::home_dir().map(|home| home.join("Library/Logs"));
+    #[cfg(not(target_os = "macos"))]
+    let base = dirs::data_local_dir();
+    Some(os_log_dir_for(&base?, app_identifier()))
+}
+
+/// Under test, a scratch dir of this process's own, like [`os_default_data_dir`].
+#[cfg(test)]
+fn os_default_log_dir() -> Option<PathBuf> {
+    os_default_data_dir().map(|dir| dir.join("os-logs"))
+}
+
+/// Pure core of the OS log dir: macOS keeps one folder per identifier under `~/Library/Logs`;
+/// elsewhere it's `logs/` inside the identifier's local data folder (Tauri's `app_log_dir()`).
+fn os_log_dir_for(base: &Path, identifier: &str) -> PathBuf {
+    if cfg!(target_os = "macos") {
+        base.join(identifier)
+    } else {
+        base.join(identifier).join("logs")
+    }
 }
 
 /// Logs the resolved data directory once at startup.
@@ -278,6 +354,47 @@ mod tests {
             standalone_dir_from(Some("/tmp/cmdr-p1-test")),
             Some(PathBuf::from("/tmp/cmdr-p1-test"))
         );
+    }
+
+    /// #812 / #820: a dev build and the release app on one Mac used to share the log folder and
+    /// the drive index, because both dirs hardcoded the release identifier. Each identifier now
+    /// gets its own.
+    #[test]
+    fn two_identifiers_get_disjoint_log_and_cache_dirs() {
+        let base = Path::new("/base");
+        let disjoint = |a: PathBuf, b: PathBuf| !a.starts_with(&b) && !b.starts_with(&a);
+        let dev = "com.veszelovszki.cmdr-dev";
+        assert!(disjoint(os_log_dir_for(base, BUNDLE_ID), os_log_dir_for(base, dev)));
+        assert!(disjoint(os_cache_dir_for(base, BUNDLE_ID), os_cache_dir_for(base, dev)));
+        // The release app's dirs don't move, so its logs and index stay where they are.
+        assert_eq!(os_cache_dir_for(base, BUNDLE_ID), base.join("com.veszelovszki.cmdr"));
+        if cfg!(target_os = "macos") {
+            assert_eq!(os_log_dir_for(base, BUNDLE_ID), base.join("com.veszelovszki.cmdr"));
+        }
+    }
+
+    #[test]
+    fn the_log_dir_follows_env_precedence() {
+        assert_eq!(
+            log_dir_from(Some("/tmp/cmdr-logs"), Some("/tmp/cmdr-data")),
+            PathBuf::from("/tmp/cmdr-logs")
+        );
+        assert_eq!(
+            log_dir_from(None, Some("/tmp/cmdr-data")),
+            PathBuf::from("/tmp/cmdr-data/logs")
+        );
+        assert_eq!(
+            log_dir_from(Some(""), Some("/tmp/cmdr-data")),
+            PathBuf::from("/tmp/cmdr-data/logs"),
+            "an empty CMDR_LOG_DIR is unset"
+        );
+    }
+
+    #[test]
+    fn an_unset_log_dir_under_test_is_never_a_real_one() {
+        let resolved = log_dir_from(None, None);
+        // allowed-fixed-temp-dir: asserts the scratch dir sits under the temp root, writes nothing
+        assert!(resolved.starts_with(std::env::temp_dir()), "{}", resolved.display());
     }
 
     #[test]

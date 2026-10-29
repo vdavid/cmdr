@@ -138,7 +138,8 @@ export function computeAppDataDir({
 
 /**
  * Compute the Tauri-equivalent app_cache_dir for an identifier on this OS: where the drive
- * index lives (in its `drive-index/` subfolder). Mirrors `drive_index_dir` in `config.rs`.
+ * index lives (in its `drive-index/` subfolder). Mirrors `drive_index_dir` in `config.rs`, whose OS
+ * default follows the build's own identifier too, so `CMDR_CACHE_DIR` and the backend's default agree.
  * macOS keeps Time Machine out of `~/Library/Caches`, which is the point.
  */
 export function computeAppCacheDir({

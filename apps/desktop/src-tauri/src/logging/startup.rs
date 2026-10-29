@@ -12,10 +12,9 @@
 //! threshold, so the verbose default has to be known first or the first records
 //! go out at the wrong level.
 //!
-//! Gotcha: the `CMDR_LOG_DIR` / `CMDR_DATA_DIR` / per-OS resolution below is
-//! MIRRORED by `settings::loader`'s `early_load_*` helpers, which can't call
-//! into here (no `AppHandle` yet, and they use `dirs::data_dir` + the bundle id
-//! rather than Tauri's `app_data_dir`). A bundle-id change touches both.
+//! The log dir comes from `config::app_log_dir`, and the early-load helpers read
+//! settings from `config::standalone_app_data_dir`; both hang off
+//! `config::app_identifier`, the same identifier Tauri's `app_*_dir()` use.
 
 use crate::logging;
 use crate::pluralize;
@@ -30,28 +29,9 @@ pub fn init() {
     // The verbose toggle bumps stdout to Debug via an AtomicU8, no logger
     // rebuild, no records lost.
     //
-    // Log directory priority:
-    // 1. CMDR_LOG_DIR env var (explicit override)
-    // 2. CMDR_DATA_DIR env var → <CMDR_DATA_DIR>/logs/ (dev and E2E test isolation)
-    // 3. Default per-OS app log dir (production)
-    let resolved_log_dir: std::path::PathBuf = if let Ok(log_dir) = std::env::var("CMDR_LOG_DIR") {
-        std::path::PathBuf::from(log_dir)
-    } else if let Ok(data_dir) = std::env::var("CMDR_DATA_DIR") {
-        std::path::PathBuf::from(data_dir).join("logs")
-    } else {
-        #[cfg(target_os = "macos")]
-        {
-            dirs::home_dir()
-                .map(|h| h.join("Library/Logs/com.veszelovszki.cmdr"))
-                .unwrap_or_else(|| std::path::PathBuf::from("./logs"))
-        }
-        #[cfg(not(target_os = "macos"))]
-        {
-            dirs::data_local_dir()
-                .map(|d| d.join("com.veszelovszki.cmdr/logs"))
-                .unwrap_or_else(|| std::path::PathBuf::from("./logs"))
-        }
-    };
+    // Priority and per-OS defaults: `config::app_log_dir`. The default follows the build's own
+    // identifier, so a dev build never shares the release app's log folder (#820).
+    let resolved_log_dir = crate::config::app_log_dir();
 
     // Read the log-storage cap from settings.json *before* the AppHandle is
     // wired into the rest of setup. 0 = disabled (drop the file chain entirely).

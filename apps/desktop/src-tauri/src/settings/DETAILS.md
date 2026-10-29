@@ -65,7 +65,7 @@ Two helpers in `loader.rs` read `settings.json` before the Tauri `AppHandle` is 
 `logging::dispatch` initializer: `early_load_max_log_storage_mb()` (`Option<u64>`, cap in MB, 0 = disabled) and
 `early_load_verbose_logging()` (`Option<bool>`, sets the initial stdout threshold to Debug if true and `RUST_LOG` is
 unset). Both resolve the data dir via `config::standalone_app_data_dir()` (`CMDR_DATA_DIR`, else the OS default for
-`config::BUNDLE_ID`, kept in sync with `tauri.conf.json` → `identifier`).
+`config::app_identifier()`, the build's own identifier, the same one Tauri's `app_data_dir()` uses).
 
 ## File format
 

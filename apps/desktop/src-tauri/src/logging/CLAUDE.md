@@ -48,4 +48,4 @@ Dispatch-tree shape, why fern, timestamp formats, and decisions: `DETAILS.md`.
   (#812). ❌ `keep_count()` never means "this session writes a file": `debug_log_path()` does.
 - **Trust mtime, not the filename, for log ordering.** `eager_prune(dir, 0)` wipes everything, the live file included.
 - **`startup::init` runs after the instance-lock claim**: a refused instance never touches `cmdr.log` (#812).
-- **Log-dir resolution is mirrored in `settings::loader`'s `early_load_*` helpers**; a bundle-id change touches both.
+- **The default log dir follows the build's identifier** (`config::app_log_dir`), ❌ never the hardcoded release one.
