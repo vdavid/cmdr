@@ -68,13 +68,16 @@ use serde::{Deserialize, Serialize};
 
 /// Returns true if local AI features (llama-server) can run on this hardware.
 ///
-/// Requires Apple Silicon (M1+) because the bundled llama-server binary is ARM64-only.
+/// Requires Apple Silicon (M1+) because the bundled llama-server binary is ARM64-only, and
+/// on macOS, version 14 or later: the binary is built with `minos 14.0` (`vtool -show-build`
+/// on 0.57.0's bundle, 2026-10-29), so an older Mac would download the multi-GB model and
+/// then fail to start the server.
 ///
 /// Only used to gate local-only operations (start_ai_server, start_ai_download).
 /// Provider-agnostic commands (get_ai_status, get_folder_suggestions, etc.) check
 /// the configured provider instead.
 pub fn is_local_ai_supported() -> bool {
-    cfg!(target_arch = "aarch64")
+    cfg!(target_arch = "aarch64") && (!cfg!(target_os = "macos") || crate::platform::macos_at_least(14, 0))
 }
 
 /// Current state of the AI subsystem.

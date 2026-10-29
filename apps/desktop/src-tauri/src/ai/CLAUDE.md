@@ -23,7 +23,7 @@ model windows; a cache), `api_keys.rs`, `suggestions.rs`,
 - **Every LLM backend comes from `resolve_backend(app)` (managed policy, then cloud consent)**, and every request
   re-asks the policy (`check_managed_policy`): a backend outlives its resolution. `AiBackend::remote` stays
   `pub(in crate::ai)`. Bump `CLOUD_AI_CONSENT_VERSION` on a material copy change. DETAILS.md § Managed policy.
-- **Only local AI requires Apple Silicon.** Cloud AI (BYOK) works on Intel too, so gate only local-specific paths
+- **Only local AI requires Apple Silicon (and macOS 14+).** Cloud AI (BYOK) works on Intel too, so gate only local-specific paths
   (`start_ai_server`, `start_ai_download`, `compute_ai_status`'s `Offer` branch) on `is_local_ai_supported()`. Gating
   `Offer` wrong offers Intel users a model they can't run.
 - **Unrecognized model names fall onto OpenAI chat-completions, never Ollama.** `remote_model_iden` forces everything

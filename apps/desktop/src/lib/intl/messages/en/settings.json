@@ -3421,7 +3421,7 @@
   "@settings.ai.tooltipCloud": {
     "description": "Tooltip for the AI \"Cloud AI\" provider option. \"API\" = application programming interface (keep it). All the bracketed and listed names (OpenAI, Anthropic, Claude, Google, Gemini, xAI, Grok, Groq, DeepSeek, OpenRouter, Ollama, LM Studio) are brand/product names; do NOT translate them. \"Cmdr\" is the product name; keep it. \"Bring your own ...\" means the user supplies their own key."
   },
-  "settings.ai.tooltipLocal": "Runs a small language model entirely on your device. Maximum privacy: nothing leaves your computer. Works offline. Uses ~2 GB disk space and ~400 MB memory (varies with context size). Requires Apple silicon (M1+).",
+  "settings.ai.tooltipLocal": "Runs a small language model entirely on your device. Maximum privacy: nothing leaves your computer. Works offline. Uses ~2 GB disk space and ~400 MB memory (varies with context size). Requires Apple silicon (M1+) and macOS 14 or later.",
   "@settings.ai.tooltipLocal": {
     "description": "Tooltip for the AI \"Local LLM\" provider option. \"~2 GB\" and \"~400 MB\" are rough decimal sizes: keep the tilde and write the units as your common.sizeUnit.gigabyte and common.sizeUnit.megabyte. \"M1\" is an Apple chip name; keep it. \"Apple silicon\" is Apple’s name for its own M-series Mac chips: use the form your language’s termbase settles, since Apple frames it in its own words in some languages. \"M1+\" means M1 or later. \"context size\" ties to the local context-window setting."
   },

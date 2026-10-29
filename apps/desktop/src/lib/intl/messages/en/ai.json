@@ -888,7 +888,7 @@
   },
   "ai.managed.localOnlyUnsupported": "Your organization allows only on-device AI, and this Mac can’t run it.",
   "@ai.managed.localOnlyUnsupported": {
-    "description": "Shown under the AI provider choice on a Mac that can't run the on-device AI model (it needs Apple Silicon) when the person's organization allows only on-device AI, so no AI is available at all. One calm sentence. “On-device AI” is the AI that the provider option “Local LLM” (settings.ai.provider.opt.local) runs: the same model on this Mac, so the two names point at one thing.",
+    "description": "Shown under the AI provider choice on a Mac that can't run the on-device AI model (it needs Apple silicon and macOS 14 or later) when the person's organization allows only on-device AI, so no AI is available at all. One calm sentence. “On-device AI” is the AI that the provider option “Local LLM” (settings.ai.provider.opt.local) runs: the same model on this Mac, so the two names point at one thing.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
