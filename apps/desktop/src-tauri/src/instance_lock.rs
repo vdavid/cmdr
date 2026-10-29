@@ -342,7 +342,12 @@ fn app_targets<R: Runtime>(app: &AppHandle<R>) -> Vec<Target> {
 /// that would turn an unrelated filesystem fault into "Cmdr won't start". That dir runs unlocked,
 /// logged loudly, which is exactly the behavior we had before this guard existed.
 pub fn claim_app_dirs_or_exit<R: Runtime>(app: &AppHandle<R>) -> Claim {
-    match claim_within(app_targets(app), ACQUIRE_WINDOW) {
+    let targets = app_targets(app);
+    let data_dir = targets
+        .iter()
+        .find(|target| target.kind == DirKind::Data)
+        .and_then(|target| target.dir.as_ref().ok().cloned());
+    match claim_within(targets, ACQUIRE_WINDOW) {
         Ok((files, mut claim)) => {
             claim.twice = HELD_LOCKS.set(files).is_err();
             claim
@@ -353,11 +358,52 @@ pub fn claim_app_dirs_or_exit<R: Runtime>(app: &AppHandle<R>) -> Claim {
             // "dir already taken" into an opaque harness timeout. The stderr line above is what a
             // test run needs; exit straight away.
             if !crate::test_mode::is_e2e_mode() {
+                if let Some(language) = data_dir.as_deref().and_then(read_saved_language) {
+                    // The "did it move" answer is for rebuilding a menu bar, which never exists in this process.
+                    let _ = crate::intl::set_language_preference(Some(language));
+                }
                 show_already_running_alert();
             }
             std::process::exit(1);
         }
     }
+}
+
+/// The largest `settings.json` the refusal alert reads for the language. Real ones are a few kB.
+const SETTINGS_READ_CAP: u64 = 1024 * 1024;
+
+/// How long the refusal waits for that read before speaking the OS language instead.
+const SETTINGS_READ_TIMEOUT: Duration = Duration::from_millis(500);
+
+/// The language the user pinned in Cmdr, read READ-ONLY from the data dir's `settings.json`, so
+/// the refusal alert speaks it. `menu_t` otherwise only knows the OS language: the frontend pushes
+/// the pin after startup, which a refused copy never reaches. Bounded on both size and time (on a
+/// worker thread, so a stalled data dir can't hold the alert), and `None` for anything off:
+/// missing, unreadable, or slow file, or no usable pin (see [`saved_language`]).
+fn read_saved_language(data_dir: &Path) -> Option<String> {
+    use std::io::Read as _;
+    let path = data_dir.join("settings.json");
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let mut contents = String::new();
+        let read = File::open(&path).and_then(|file| file.take(SETTINGS_READ_CAP).read_to_string(&mut contents));
+        // Best-effort: a receiver that timed out has stopped listening, which is fine.
+        let _ = tx.send(read.ok().map(|_| contents));
+    });
+    rx.recv_timeout(SETTINGS_READ_TIMEOUT)
+        .ok()
+        .flatten()
+        .and_then(|contents| saved_language(&contents))
+}
+
+/// Pure core of [`read_saved_language`]: the pinned `appearance.language` in a `settings.json`
+/// (flat dot-notation keys, `settings::loader`), when it's a catalog this build ships. `'system'`,
+/// an unknown tag, a non-string, or unparseable JSON means "speak the OS language", today's
+/// behavior.
+fn saved_language(settings_json: &str) -> Option<String> {
+    let json: serde_json::Value = serde_json::from_str(settings_json).ok()?;
+    let language = json.get("appearance.language")?.as_str()?;
+    (language != "system" && crate::intl::is_shipped_locale(language)).then(|| language.to_string())
 }
 
 /// The refusal, for a dev's terminal or a test harness's captured stderr. Not the log: a refused
@@ -586,6 +632,30 @@ mod tests {
 
         assert_eq!(files.len(), 2);
         assert!(matches!(claim.outcomes[1].2, Outcome::Unresolved(_)));
+    }
+
+    /// The refusal alert speaks the language the user pinned in Cmdr, else the OS's.
+    #[test]
+    fn the_alert_language_is_a_shipped_pin_and_nothing_else() {
+        assert_eq!(saved_language(r#"{"appearance.language":"hu"}"#).as_deref(), Some("hu"));
+        assert_eq!(
+            saved_language(r#"{"appearance.language":"zh-Hant","x":1}"#).as_deref(),
+            Some("zh-Hant")
+        );
+        assert_eq!(saved_language(r#"{"appearance.language":"system"}"#), None);
+        assert_eq!(saved_language(r#"{"appearance.language":"tlh"}"#), None, "not shipped");
+        assert_eq!(saved_language(r#"{"appearance.language":null}"#), None);
+        assert_eq!(saved_language(r#"{"listing.showHiddenFiles":true}"#), None);
+        assert_eq!(saved_language("{not json"), None);
+        assert_eq!(saved_language(""), None);
+    }
+
+    #[test]
+    fn a_missing_settings_file_reads_as_no_pin() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        assert_eq!(read_saved_language(dir.path()), None);
+        std::fs::write(dir.path().join("settings.json"), r#"{"appearance.language":"de"}"#).expect("seed");
+        assert_eq!(read_saved_language(dir.path()).as_deref(), Some("de"));
     }
 
     #[test]

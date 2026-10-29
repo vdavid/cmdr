@@ -59,9 +59,9 @@ Details worth knowing:
   also waits for the previous process to exit) and the in-app updater's `relaunch()` (spawns the new process before the
   old one exits). A user quitting and immediately relaunching lands in the same window.
 - **On refusal**: a stderr line naming the taken dir and the holder (not the log: the refused process never installs a
-  logger), a native "Cmdr is already running" alert, then `exit(1)` before a single index file is touched. Under
-  `CMDR_E2E_MODE=1` the alert is skipped (nobody clicks OK in a test run, and a stuck modal would surface as an opaque
-  harness timeout).
+  logger), a native "Cmdr is already running" alert in the user's pinned Cmdr language (read-only from the data dir's
+  `settings.json`, else the OS language), then `exit(1)` before a single index file is touched. Under `CMDR_E2E_MODE=1`
+  the alert is skipped (nobody clicks OK in a test run, and a stuck modal would surface as an opaque harness timeout).
 - **The refusal alert must not pump our run loop.** It's `CFUserNotificationDisplayAlert`, drawn by the system's
   `UserNotificationCenter` agent, so the call is a plain blocking wait with a 60 s timeout (plus a watchdog thread that
   exits 10 s later if the call somehow never returns). `NSAlert::runModal` pumps the app's own main run loop, so a

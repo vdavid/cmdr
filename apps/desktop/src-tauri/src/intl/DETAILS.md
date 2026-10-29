@@ -316,7 +316,10 @@ Three surfaces never pass through the webview, so they can't use `t()`:
   `licensing.windowTitle.personalUse`, so they can't drift in wording. The OS-level one is re-applied on every licence
   status change and otherwise stays in the launch language, so a language switch alone doesn't move it;
 - the **already-running alert** (`instance_lock.rs`), which fires before a webview exists at all. That one is the
-  strongest argument for the whole arrangement: no IPC hand-off could ever reach it.
+  strongest argument for the whole arrangement: no IPC hand-off could ever reach it. Since the frontend's push of
+  `appearance.language` never arrives in a refused copy, the refusal reads the pin itself, read-only, from the data
+  dir's `settings.json` (size-capped, 500 ms on a worker thread), and calls `set_language_preference` when it names a
+  shipped catalog (`is_shipped_locale`). Missing, slow, `'system'`, or unknown means the OS language, as before.
 
 They still live in the same message catalogs as everything else, so translators work one pile and one set of checks
 covers the lot. `apps/desktop/scripts/gen-native-strings.ts` lifts the subset Rust needs into `native_strings.gen.rs`,

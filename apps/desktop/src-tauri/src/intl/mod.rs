@@ -80,6 +80,14 @@ pub(crate) struct ShippedLocale {
     pub(crate) covers: &'static [&'static str],
 }
 
+/// Whether `tag` names a catalog this build ships, compared case-insensitively. A pinned
+/// `appearance.language` is always one; anything else is a hand-edited or newer build's value.
+pub(crate) fn is_shipped_locale(tag: &str) -> bool {
+    SHIPPED_LOCALES
+        .iter()
+        .any(|locale| locale.tag.eq_ignore_ascii_case(tag))
+}
+
 impl ShippedLocale {
     /// Whether this catalog is the answer for an already-[`resolve::normalize`]d CLDR
     /// node: it either IS that node, or stands in for it.
