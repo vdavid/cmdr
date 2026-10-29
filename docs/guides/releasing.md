@@ -289,6 +289,10 @@ check.
    gate). A commit landing after this sync ships too, unlisted in the changelog unless you add it.
 3. **Draft the CHANGELOG** from the git commits since the last release, per § Writing the CHANGELOG, and present the
    draft for review.
+   - **Draft the Security section from both sources**: the fix commits since the last release (our own flaws and
+     dependency bumps, whose bodies name the advisory IDs), and any advisory the dependency scanners closed in that
+     range. Each line takes one of the two forms in § Writing the CHANGELOG, with its ID or CVSS v4.0 score, severity,
+     and affected versions worked out from git history and tags. Run `pnpm check changelog-security` on the draft.
    - **Ask David: "Does this release fix a vulnerability users should act on?"** Yes means an entry per fixed
      vulnerability in the security advisory list, beside its CHANGELOG Security line, per § Security advisories. Most
      releases add nothing. Leave the edit uncommitted: it rides the release commit, like the changelog.
@@ -482,13 +486,13 @@ Steps:
    `### Security` entries, per § Writing the CHANGELOG, citing this branch's hashes. Add the fix's entry to the security
    advisory list too (§ Security advisories), and include it in the release commit. Review the trust pages from the last
    release's tag (`./scripts/trust-review.sh -since vX.Y.Z`, `docs/guides/trust-page-review.md`) and stamp
-   `verifiedAgainst` with the new version. Run `pnpm check changelog-links --fresh`, then do by hand every step of
-   `scripts/release.sh` from the version bump (`npm pkg set version=...`) through `git tag -s`, in its order, with the
-   new version: the settings-defaults stamp, `tauri.conf.json`, `Cargo.toml` plus `cargo update --workspace`, the
-   CHANGELOG heading, the `LICENSE` change date, the visual baselines, both `oxfmt` passes, the strict `i18n-stale`
-   check, the `chore(release): vX.Y.Z+1` commit, and the signed tag. Skip its pull, its pushes, and its CI dispatch
-   (step 4 replaced them). The commit subject must match exactly, or the CI gate looks for a full CI run on the release
-   commit itself and fails.
+   `verifiedAgainst` with the new version. Run `pnpm check changelog-links --fresh changelog-security`, then do by hand
+   every step of `scripts/release.sh` from the version bump (`npm pkg set version=...`) through `git tag -s`, in its
+   order, with the new version: the settings-defaults stamp, `tauri.conf.json`, `Cargo.toml` plus
+   `cargo update --workspace`, the CHANGELOG heading, the `LICENSE` change date, the visual baselines, both `oxfmt`
+   passes, the strict `i18n-stale` check, the `chore(release): vX.Y.Z+1` commit, and the signed tag. Skip its pull, its
+   pushes, and its CI dispatch (step 4 replaced them). The commit subject must match exactly, or the CI gate looks for a
+   full CI run on the release commit itself and fails.
 6. **Push the tag only** (`git push origin vX.Y.Z+1`), then follow § The release procedure from step 8 on: in `local`
    mode `release-finish.sh`, run from this worktree so it reads the tag's own `tauri.conf.json` pubkey, then the build
    monitoring, step 12's checks, and step 13's evidence. Step 11 doesn't apply: step 7 below merges the patch back.
@@ -546,10 +550,23 @@ introduced and fixed inside this release window doesn't qualify. `git cat-file -
 - **Each entry is one sentence**, and the headline IS the entry (no `**Bold title:** Body.`). Most land under 20 words,
   many under 10. Only a tentpole feature bundling many commits (think Linux alpha) runs several lines. Wrote a period
   and kept going? Merge with a colon or cut the rest.
-- **A Security entry that fixes a vulnerability names its severity and the affected versions** after a colon, before the
-  hashes: `Fix a path escape in zip extraction: high (CVSS 8.2), 0.31.0–0.53.0 (b626d7a4b)`. The release it sits in is
-  the remediation, so it needs no "update" clause. Hardening with no flaw behind it (a new check, a backup key) stays a
-  plain entry. The contract is `SECURITY.md` § How fixed vulnerabilities are published.
+- **Every Security entry is a fixed vulnerability, with its fields after a colon, before the hashes.** Hardening with no
+  flaw behind it (a new check, a backup key) goes under Changed. The release the entry sits in is the remediation, so it
+  needs no "update" clause. The contract is `SECURITY.md` § How fixed vulnerabilities are published; the
+  `changelog-security` check enforces the form from 0.57.0 on, and `release.sh` runs it before tagging. Two forms:
+  - **A flaw in a dependency**: the crate or package, the upstream advisory ID(s), the upstream severity in parens (or
+    `(unrated)` when the advisory has none), and the affected Cmdr versions. No CVSS of our own, no GitHub advisory:
+    "Stop a malicious `.git/config` from switching off path protections: `gix` GHSA-q54r-jf2p-rfr2 (high), Cmdr
+    0.52.0–0.56.0 (70ae9eb83)". Collect the IDs from the bump commit's body, `cargo deny check advisories` /
+    `osv-scanner` output, and `gh api /advisories/<GHSA>`. A bump that only touched a fuzz or benchmark lockfile, or an
+    advisory whose affected range the shipped version wasn't in, isn't a Cmdr fix: no Security line.
+  - **A flaw in Cmdr's own code**: score it with the [CVSS v4.0 calculator](https://www.first.org/cvss/calculator/4.0)
+    (put the vector in the fix's commit body or issue), then the score, the rating in parens, and the affected versions:
+    `Fix a path escape in zip extraction: CVSS v4.0 8.2 (high), Cmdr 0.31.0–0.53.0 (b626d7a4b)`. It may also need a
+    GitHub advisory and CVE, per `SECURITY.md`.
+  - **Affected versions**: the first release whose shipped tree had the flaw (`git log -S` on `Cargo.lock` or the code,
+    then `git tag --contains <sha> --sort=v:refname`) through the release before this one, joined by an en dash. Two
+    separate windows read `Cmdr 0.3.0–0.10.0 and 0.40.0–0.56.0`.
 - **No trailing benefit clauses**: delete ", so you always know…" and every other ", so [reader benefit]" ending. A
   well-written entry implies the benefit.
 - **No em-dashes**: use parens, commas, colons, or rephrase (en-dashes in ranges are fine). Vary the connector rather
@@ -600,13 +617,14 @@ issue." and links the advisory, and the What's new popup names it after the rest
 `apps/desktop/src-tauri/resources/security-advisories.json`, which ships inside the signed bundle. The list, its
 readers, and why it's never `latest.json`: `apps/desktop/src-tauri/src/security_advisories/DETAILS.md`.
 
-- **What gets an entry**: every fixed vulnerability that has a severity score, the same set that gets a public note
-  under `SECURITY.md` § How fixed vulnerabilities are published. Hardening without a vulnerability gets none, even when
-  it's in the `### Security` section.
+- **What gets an entry**: every `### Security` line that carries a severity rating (all but the `(unrated)` ones), the
+  same notes `SECURITY.md` § How fixed vulnerabilities are published describes.
 - **The entry**: `id` (the GHSA id, or a date slug like `2026-10-16-smb-path` when there's no GitHub advisory),
   `fixedIn` (this release's version, no `v`), `severity` (`low` / `medium` / `high` / `critical`, the CVSS v4.0 rating
   in the CHANGELOG line), and `url` (the GitHub security advisory if there is one, else this release's entry on
-  `https://getcmdr.com/changelog`). Nothing else: the app shows generic, translated text.
+  `https://getcmdr.com/changelog`). For a dependency's flaw, `severity` is the upstream rating from the CHANGELOG line
+  and `url` is the changelog entry (the app's link allowlist admits only Cmdr's own advisories); an `(unrated)` one gets
+  no entry. Nothing else: the app shows generic, translated text.
 - **Append, never prune.** The list is cumulative, which is how an install that skips releases still hears about every
   fix it jumped over.
 - **Leave it uncommitted for `release.sh`**, which lets it through its dirty-tree guard and puts it in the release
@@ -724,12 +742,15 @@ commit.
 ## Release prep checks that abort before tagging
 
 `scripts/release.sh` runs a few hard checks locally before it commits and tags, so a release that can't ship is never
-tagged. Beyond the version/CHANGELOG checks and `oxfmt --ci`, four are worth knowing:
+tagged. Beyond the version/CHANGELOG checks and `oxfmt --ci`, five are worth knowing:
 
 - **Changelog refs must be on `main`.** After its fast-forward pull, the script runs
   `pnpm check changelog-links --fresh`, which fails the release on any ref not reachable from HEAD (a commit cited from
   a branch that was rebased or squashed while landing). Fix: re-derive those refs from `main`, then re-run. Why
   `--fresh`: `scripts/check/checks/DETAILS.md` § "CHANGELOG commit refs".
+- **Every Security line must carry its fields.** Right after, `pnpm check changelog-security` fails the release on a
+  `### Security` line in `[Unreleased]` that lacks an upstream advisory ID or a CVSS v4.0 score, a severity, or the
+  affected Cmdr versions. Fix the line per § Writing the CHANGELOG (or move hardening to Changed), then re-run.
 - **The pre-release lane must be green.** Right after that, before any version bump, the script runs
   `pnpm check --pre-release --ci`: clippy with mimalloc on macOS (`clippy-mimalloc`) and the desktop bundle-size gate
   (`desktop-bundle-size`, which fails when the frontend grew more than 10% past its baseline). A few minutes, mostly the

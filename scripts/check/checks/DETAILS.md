@@ -2256,7 +2256,12 @@ doubles as production code.
 - **Other / Security**: workflows-hardening (SHA-pinning, no `pull_request_target`, job-scoped `id-token: write`,
   read-only workflow-level `permissions:`, CodeQL also on `pull_request`), osv-scanner (every tracked lockfile against
   OSV, the sweep Scorecard's Vulnerabilities check makes; fix-age grace like govulncheck and cargo-deny),
-  scorecard-local (Scorecard's file-based checks on the tracked tree, against `scorecard-local-baseline.json`)
+  scorecard-local (Scorecard's file-based checks on the tracked tree, against `scorecard-local-baseline.json`),
+  changelog-security (every `### Security` line from 0.57.0 on, plus `[Unreleased]`, names an upstream advisory ID with
+  its severity or our own `CVSS v4.0 <score> (<rating>)` with the rating matching the score's band, plus the affected
+  `Cmdr X.Y.Z–X.Y.Z` versions, en-dashed, not reaching the fixing release. The contract is `SECURITY.md` § How fixed
+  vulnerabilities are published, the forms are in `docs/guides/releasing.md` § Writing the CHANGELOG, and `release.sh`
+  runs it before tagging. Older releases stay as shipped)
 - **Desktop / Security**: security-advisories (the committed `apps/desktop/src-tauri/resources/security-advisories.json`
   against the app's own contract: the exact schema, semver `fixedIn` no newer than the `tauri.conf.json` version, a
   known severity, an allowlisted `https` link, and a unique `id`. The app reads the list leniently, so a typo there

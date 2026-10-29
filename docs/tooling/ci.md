@@ -94,7 +94,8 @@ file. Holds the checks whose inputs no per-app filter can cover:
 - `oxfmt` formats the whole monorepo (docs, configs, workflows). Before the hygiene job, a docs-only commit ran zero CI,
   so unformatted markdown could land on main and fail the next unrelated PR's CI. Locally, the git hooks apply all three
   formatters at commit and push time: `docs/tooling/git-hooks.md`.
-- `changelog-commit-links` (previously duplicated across three jobs; needs `fetch-depth: 0`).
+- `changelog-commit-links` (previously duplicated across three jobs; needs `fetch-depth: 0`) and `changelog-security`
+  (each `### Security` line's advisory fields).
 - `workflows-hardening`, `workflows-rustup`, and `ci-coverage` — the workflow files they scan are no app's territory.
 
 **A PR whose head tree equals its base branch's skips it** (`changes`' `same-tree` step, pull requests only). That's a

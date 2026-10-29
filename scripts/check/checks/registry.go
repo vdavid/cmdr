@@ -1830,6 +1830,16 @@ var AllChecks = []CheckDefinition{
 		Run:         RunChangelogCommitLinks,
 	},
 	{
+		ID:          "changelog-security",
+		DisplayName: "CHANGELOG Security lines",
+		App:         AppOther,
+		Tech:        "🔒 Security",
+		DependsOn:   nil,
+		IsFast:      true,
+		Inputs:      inputs([]string{"CHANGELOG.md"}),
+		Run:         RunChangelogSecurity,
+	},
+	{
 		ID:          "workflows-hardening",
 		Nickname:    "workflows",
 		DisplayName: "workflows hardening",

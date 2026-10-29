@@ -157,6 +157,11 @@ prepare_release() {
   # to nothing. `--fresh`: its cache keys on CHANGELOG.md alone, and reachability is about history.
   pnpm check changelog-links -m --fresh
 
+  # Every `### Security` line is a fixed vulnerability's public note, so it must name an upstream
+  # advisory ID or our own CVSS v4.0 score, a severity, and the affected Cmdr versions
+  # (SECURITY.md § How fixed vulnerabilities are published).
+  pnpm check changelog-security -m
+
   # The pre-release lane: gates that guard what a release ships but are too slow or too steady to
   # earn a seat on every run (clippy with mimalloc on macOS, the bundle-size gate). `--ci` so it
   # writes nothing into the still-clean tree; with `set -e` a failure stops the release before any
