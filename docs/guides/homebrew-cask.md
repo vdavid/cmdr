@@ -32,8 +32,9 @@ effort, keeping the tap's `version` and `sha256`. Skipping that once left the ta
 ## Release automation: the tap bump
 
 The `bump-tap` job in `.github/workflows/release-pipeline.yml` runs after the release is published. It downloads the
-universal DMG release asset, computes its sha256, clones the tap, rewrites only the `version` + `sha256` lines in
-`Casks/cmdr.rb`, and pushes a `cmdr <version>` commit. Releases need zero extra work for brew.
+universal DMG release asset, computes its sha256, clones the tap, copies this repo's
+`apps/desktop/packaging/homebrew/cmdr.rb` (at the tagged commit) over `Casks/cmdr.rb`, fills in its `version` + `sha256`
+lines, and pushes a `cmdr <version>` commit. Releases need zero extra work for brew.
 
 ### `HOMEBREW_TAP_DEPLOY_KEY` setup
 

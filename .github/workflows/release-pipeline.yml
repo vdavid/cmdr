@@ -1322,6 +1322,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # The repo's cask is the source of truth for everything but version and sha256, so the tap
+      # gets a fresh copy of it each release. Only that one file, at the tagged commit.
+      - name: Check out the cask
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          sparse-checkout: apps/desktop/packaging/homebrew/cmdr.rb
+          sparse-checkout-cone-mode: false
+
       - name: Bump the cask in vdavid/homebrew-tap
         env:
           # SSH deploy key with write access to vdavid/homebrew-tap and nothing else.
@@ -1348,9 +1357,11 @@ jobs:
           SHA256=$(shasum -a 256 "/tmp/tap-dmg/$DMG" | cut -d' ' -f1)
           echo "Universal DMG sha256: $SHA256"
 
-          # Clone the tap with the deploy key and rewrite ONLY the version + sha256 lines. GitHub's
-          # host keys come from its API over TLS, so the SSH connection is verified, not trusted on
-          # first use.
+          # Clone the tap with the deploy key, copy the repo's cask over it, and fill in version and
+          # sha256. Rewriting only those two lines in the tap's own copy let every other cask change
+          # (the `cmdr` binary, a new zap path) silently never ship. GitHub's host keys come from
+          # its API over TLS, so the SSH connection is verified, not trusted on first use.
+          REPO_CASK="$GITHUB_WORKSPACE/apps/desktop/packaging/homebrew/cmdr.rb"
           SSH_DIR="$RUNNER_TEMP/tap-ssh"
           mkdir -m 700 "$SSH_DIR"
           printf '%s\n' "$HOMEBREW_TAP_DEPLOY_KEY" > "$SSH_DIR/key"
@@ -1360,6 +1371,7 @@ jobs:
           git clone git@github.com:vdavid/homebrew-tap.git /tmp/homebrew-tap
           CASK="/tmp/homebrew-tap/Casks/cmdr.rb"
 
+          cp "$REPO_CASK" "$CASK"
           sed -i -E "s|^(  version \").*(\")|\1${VERSION}\2|" "$CASK"
           sed -i -E "s|^(  sha256 \").*(\")|\1${SHA256}\2|" "$CASK"
 
