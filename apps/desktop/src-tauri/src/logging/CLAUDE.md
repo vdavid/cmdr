@@ -13,7 +13,7 @@ filtering**: the file is locked at Debug, the terminal defaults to Info.
 - **`target_style.rs`**: the terminal target column. **`ram_gauge.rs`**: optional per-line RAM prefix
 - **`rotating_file.rs`**: `RotatingFile`, the size rotation under `CoalescingWriter`
 
-Dispatch-tree shape, why fern, timestamp formats, each file's depth, and decisions: `DETAILS.md`.
+Dispatch-tree shape, why fern, timestamp formats, and decisions: `DETAILS.md`.
 
 ## Adding log calls
 
@@ -42,11 +42,9 @@ Dispatch-tree shape, why fern, timestamp formats, each file's depth, and decisio
   `file_timestamp()` back: the dedup key must stay timestamp-free or identical lines a millisecond apart never coalesce.
 - **ANSI is terminal-only, resolved once at startup.** ❌ `is_terminal()` can't decide it alone: under `pnpm dev` the
   Tauri CLI hands us a piped stderr, so `tauri-wrapper.ts` sets `CLICOLOR_FORCE`; `NO_COLOR` outranks both.
-- **The RAM gauge is off unless `CMDR_LOG_RAM_USE` is truthy.** When on, its number lands in the file dedup key, so
-  floods coalesce less: accepted.
 - **Cap = 0 disables the file chain entirely.** The terminal still works; the error bundle ships an empty `logs/`.
 - **`RotatingFile` never panics or caches the directory's state**: logging runs on every thread, and other processes
-  change the files (a panic there killed the index writer, CRASH-EC4QS). ❌ `keep_count()` never means "this session
-  writes a file": `debug_log_path()` does.
+  change the files (a panic there killed the index writer, CRASH-EC4QS). It renames only the file its fd still holds
+  (#812). ❌ `keep_count()` never means "this session writes a file": `debug_log_path()` does.
 - **Trust mtime, not the filename, for log ordering.** `eager_prune(dir, 0)` wipes everything, the live file included.
 - **Log-dir resolution is mirrored in `settings::loader`'s `early_load_*` helpers**; a bundle-id change touches both.

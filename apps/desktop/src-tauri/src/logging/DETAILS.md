@@ -151,6 +151,13 @@ flush, so a record is never split across files. It removes `cmdr.log.N`, shifts 
   asserted they hadn't changed; when another process had rotated meanwhile, the assertion panicked the thread that was
   logging, which was the drive index writer (CRASH-EC4QS, 0.51.0; that bundle shows two processes' heartbeats
   interleaved in one `cmdr.log`). Pinned by `a_sibling_created_behind_its_back_is_rotated_over_instead_of_panicking`.
+- **It only rotates the file it holds.** Each process keeps its own byte counter, so when two share the directory, the
+  first to reach 50 MB rotates, and the other's open fd now points at `cmdr.log.1`. Before rotating, the writer compares
+  its fd's device and inode (`fstat`) with what's at `cmdr.log` (`stat`); when they differ, or `cmdr.log` is gone, it
+  drops its handle and the next write opens `cmdr.log` fresh, with no rename. Without this, the late process renamed the
+  other's live file to `.1` and each then sat in its own file, `.1` often the newer (#812, ERR-YCZXP). One `stat` per
+  50 MB; off unix there's no std file identity, so it rotates as before. Pinned by
+  `a_writer_rotated_away_by_another_reopens_the_live_file_instead_of_renaming_it` and its no-live-file sibling.
 - **Failure is an `io::Error`, never a panic.** fern reports it on stderr and the record is lost, nothing else. A
   rotation that fails (a read-only directory, say) is retried only after another 50 MB, so a broken directory doesn't
   cost a rename attempt per line.
@@ -185,8 +192,8 @@ startup stays. Restart-to-apply is documented in the settings UI for `0 ↔ non-
 above the baked-in value.
 
 `eager_prune(dir, 0)` (storage turned off) deletes the live `cmdr.log` too. The open handle keeps taking writes into
-the now-unlinked file, so nothing visible stays on disk, and the next rotation finds no `cmdr.log` to move and starts a
-fresh one (pinned by `a_live_file_deleted_underneath_rotates_without_an_error`).
+the now-unlinked file, so nothing visible stays on disk, and at the next 50 MB the writer finds no `cmdr.log`, renames
+nothing, and starts a fresh one (pinned by `a_live_file_deleted_underneath_rotates_without_an_error`).
 
 ## Timestamp formats
 

@@ -11,6 +11,11 @@
 //! Rotation happens on `flush`, after the record that reached the limit. fern ends every record
 //! with exactly one flush (and `CoalescingWriter` forwards it), so a record is never split across
 //! two files. A file ends at most one record past `max_bytes`.
+//!
+//! Before rotating, the writer checks that the file it holds open is still the one at `cmdr.log`
+//! (same device and inode). If it isn't, or `cmdr.log` is gone, another process already rotated
+//! it away: the writer reopens `cmdr.log` and renames nothing, so it never moves another
+//! process's live file (#812).
 
 use std::fs::{File, OpenOptions};
 use std::io::{self, Write};
@@ -56,6 +61,21 @@ impl RotatingFile {
         Ok(self.file.insert(file))
     }
 
+    /// Whether our open file is still the one at `cmdr.log`. With nothing open, there's nothing
+    /// to compare, so it answers yes and rotation goes ahead as before.
+    fn holds_the_live_file(&self) -> bool {
+        let Some(file) = self.file.as_ref() else {
+            return true;
+        };
+        match (file.metadata(), std::fs::metadata(&self.path)) {
+            (Ok(ours), Ok(at_path)) => same_file(&ours, &at_path),
+            // `cmdr.log` is gone: rotated away (or deleted) by someone else.
+            (_, Err(e)) if e.kind() == io::ErrorKind::NotFound => false,
+            // Can't tell: keep the single-process behavior.
+            _ => true,
+        }
+    }
+
     /// `cmdr.log.<n>`.
     fn sibling(&self, n: usize) -> PathBuf {
         let mut name = self.path.as_os_str().to_owned();
@@ -92,6 +112,14 @@ impl Write for RotatingFile {
         if self.len < self.rotate_at {
             return Ok(());
         }
+        if !self.holds_the_live_file() {
+            // Someone else rotated our file away. Join whatever is at `cmdr.log` now; the next
+            // write opens it and counts from its size.
+            self.file = None;
+            self.len = 0;
+            self.rotate_at = self.max_bytes;
+            return Ok(());
+        }
         match self.rotate() {
             Ok(()) => {
                 self.len = 0;
@@ -104,6 +132,18 @@ impl Write for RotatingFile {
             }
         }
     }
+}
+
+#[cfg(unix)]
+fn same_file(a: &std::fs::Metadata, b: &std::fs::Metadata) -> bool {
+    use std::os::unix::fs::MetadataExt as _;
+    a.dev() == b.dev() && a.ino() == b.ino()
+}
+
+/// No stable file identity in std off unix; assume ours, which is the single-process behavior.
+#[cfg(not(unix))]
+fn same_file(_a: &std::fs::Metadata, _b: &std::fs::Metadata) -> bool {
+    true
 }
 
 fn remove_if_present(path: &Path) -> io::Result<()> {

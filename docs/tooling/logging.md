@@ -181,7 +181,8 @@ RUST_LOG=trace pnpm dev
   independent of `RUST_LOG` and the verbose toggle (those only affect the terminal). Error reports always get full debug
   context.
 - **Rotation**: 50 MB per file, keep-N where `N = ceil(cap_mb / 50)`. Our own
-  `apps/desktop/src-tauri/src/logging/rotating_file.rs`.
+  `apps/desktop/src-tauri/src/logging/rotating_file.rs`. A writer whose file another process already rotated away
+  reopens `cmdr.log` instead of rotating again, so two apps sharing the folder don't rename each other's live file.
 - **Cap**: `Advanced > Maximum disk space for log files (MB)`, default 200 MB, range 0–5000. Set to `0` to disable log
   storage entirely. Error reports cannot be sent without logs. Lowering the cap at runtime eagerly prunes excess files.
   `0 ↔ non-zero` transitions (and raising the cap beyond its baked-in value) require an app restart.

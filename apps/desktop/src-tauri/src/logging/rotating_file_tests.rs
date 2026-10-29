@@ -119,3 +119,53 @@ fn a_refused_rotation_is_an_error_not_a_panic_and_logging_continues() {
         Some("before\nover the limit\nstill\n")
     );
 }
+
+/// Regression anchor for #812: two Cmdr processes logged into one directory, each with its own
+/// byte counter. When B rotated, A kept appending to the renamed file (now `cmdr.log.1`), and when
+/// A reached its own limit it renamed B's live `cmdr.log` away and shifted A's own file down. A
+/// writer whose open file isn't the one at `cmdr.log` any more must reopen `cmdr.log` instead.
+#[test]
+fn a_writer_rotated_away_by_another_reopens_the_live_file_instead_of_renaming_it() {
+    let dir = TestDir::new("rotating-file-two-writers");
+    let mut a = RotatingFile::new(dir.join("cmdr.log"), 2, 20);
+    let mut b = RotatingFile::new(dir.join("cmdr.log"), 2, 20);
+    record(&mut a, "a1 aaaaaaaaaaaaa\n"); // 17 bytes, below the limit
+    record(&mut b, "b1 bbbbbbbbbbbbb\n"); // B counts 34 bytes and rotates
+    record(&mut b, "b2\n"); // B's fresh cmdr.log
+
+    record(&mut a, "a2 aaaaaa\n"); // A counts 27 bytes, but its file is now cmdr.log.1
+    record(&mut a, "a3\n");
+
+    assert_eq!(
+        read(&dir, "cmdr.log.1").as_deref(),
+        Some("a1 aaaaaaaaaaaaa\nb1 bbbbbbbbbbbbb\na2 aaaaaa\n"),
+        "A's file is where B rotated it"
+    );
+    assert_eq!(
+        read(&dir, "cmdr.log").as_deref(),
+        Some("b2\na3\n"),
+        "A joins B's live file rather than renaming it away"
+    );
+    assert_eq!(read(&dir, "cmdr.log.2"), None, "nothing was shifted down a second time");
+}
+
+/// The same race, caught before B's next write: B rotated, so no `cmdr.log` exists yet. A still
+/// must not shift the files B just rotated.
+#[test]
+fn a_writer_rotated_away_with_no_live_file_yet_renames_nothing() {
+    let dir = TestDir::new("rotating-file-two-writers-gone");
+    let mut a = RotatingFile::new(dir.join("cmdr.log"), 2, 20);
+    let mut b = RotatingFile::new(dir.join("cmdr.log"), 2, 20);
+    record(&mut a, "a1 aaaaaaaaaaaaa\n");
+    record(&mut b, "b1 bbbbbbbbbbbbb\n"); // B rotates; there's no cmdr.log now
+
+    record(&mut a, "a2 aaaaaa\n");
+    record(&mut a, "a3\n");
+
+    assert_eq!(
+        read(&dir, "cmdr.log.1").as_deref(),
+        Some("a1 aaaaaaaaaaaaa\nb1 bbbbbbbbbbbbb\na2 aaaaaa\n")
+    );
+    assert_eq!(read(&dir, "cmdr.log").as_deref(), Some("a3\n"));
+    assert_eq!(read(&dir, "cmdr.log.2"), None);
+}
