@@ -327,7 +327,7 @@ All under `apps/desktop/src-tauri/src/`.
   holds on it
 - `fda_gate.rs`: Full Disk Access startup gate: blocks TCC reads + `NSWorkspace` icon calls until FDA is decided. See
   `apps/desktop/src-tauri/CLAUDE.md` § Tauri commands and capabilities
-- `instance_lock.rs`: Single-instance guard: one process per data dir, claimed at startup. See
+- `instance_lock.rs`: Single-instance guard: one process per data, cache, and log dir, claimed at startup. See
   `tooling/instance-isolation.md` § Instance lock
 - `quit/`: The quit gate. Every exit path asks it first (the two Tauri handlers and the MCP `quit` tool); with
   non-instant operations in flight it holds the exit, raises the countdown dialog, and runs the teardown on its own

@@ -37,11 +37,16 @@ both seeding their entry-ID counter from `SELECT MAX(id)+1`, handing out the sam
 structurally impossible rather than merely discouraged.
 
 Mechanism: an advisory whole-file lock (`std::fs::File::try_lock`, `flock` on unix, `LockFileEx` on Windows) on
-`<data dir>/.instance.lock`, taken in the Tauri `setup` hook before the logger is installed and before anything opens a
-database (a refused instance must not touch the shared log files either, #812). Tauri creates the config-declared main
-window before `setup` runs, so the guarantee isn't "before a window exists": it's that no database is opened and the
-process exits before the window (`"visible": false` in `tauri.conf.json`) is ever shown. The `File` is parked in a
-process-lifetime `OnceLock`; dropping it would close the descriptor and release the lock, letting a second Cmdr in
+`.instance.lock` in each of the three dirs the app writes: the data dir, the cache dir (the drive index), and the log
+dir. Each can be redirected on its own (`CMDR_DATA_DIR`, `CMDR_CACHE_DIR`, `CMDR_LOG_DIR`), so each gets its own lock,
+and a lock held on ANY of them refuses the launch: two apps with different data dirs but one cache and log dir corrupted
+the index and split each other's logs (#812). The same dir named twice (say `CMDR_LOG_DIR` = the data dir) is locked
+once, since a second `flock` from the same process would refuse itself. All three are taken in the Tauri `setup` hook
+(`instance_lock::claim_app_dirs_or_exit`) before the logger is installed and before anything opens a database, so a
+refused instance touches neither the shared log files nor an index file. Tauri creates the config-declared main window
+before `setup` runs, so the guarantee isn't "before a window exists": it's that no database is opened and the process
+exits before the window (`"visible": false` in `tauri.conf.json`) is ever shown. The `File`s are parked in a
+process-lifetime `OnceLock`; dropping one would close the descriptor and release its lock, letting a second Cmdr in
 mid-session.
 
 Details worth knowing:
@@ -49,11 +54,11 @@ Details worth knowing:
 - **Not a PID file, on purpose.** The kernel releases the lock when the process dies for any reason, `SIGKILL` and
   panics included, so a stale lock can't exist and nothing has to clean one up. The pid written into the file is
   diagnostics only: it names the holder in the refusal line. Unreadable or garbage content means "unknown holder".
-- **Bounded retry, ~5 s at a 50 ms poll**, not a single attempt. Two legitimate flows briefly overlap two processes on
-  one data dir: `apps/desktop/scripts/i18n-capture.ts` (relaunches per capture pass; it also waits for the previous
-  process to exit) and the in-app updater's `relaunch()` (spawns the new process before the old one exits). A user
-  quitting and immediately relaunching lands in the same window.
-- **On refusal**: a stderr line naming the data dir and the holder (not the log: the refused process never installs a
+- **Bounded retry, ~5 s at a 50 ms poll, one budget for all three dirs**, not a single attempt. Two legitimate flows
+  briefly overlap two processes on one data dir: `apps/desktop/scripts/i18n-capture.ts` (relaunches per capture pass; it
+  also waits for the previous process to exit) and the in-app updater's `relaunch()` (spawns the new process before the
+  old one exits). A user quitting and immediately relaunching lands in the same window.
+- **On refusal**: a stderr line naming the taken dir and the holder (not the log: the refused process never installs a
   logger), a native "Cmdr is already running" alert, then `exit(1)` before a single index file is touched. Under
   `CMDR_E2E_MODE=1` the alert is skipped (nobody clicks OK in a test run, and a stuck modal would surface as an opaque
   harness timeout).

@@ -296,14 +296,11 @@ pub fn run() {
                 app.set_activation_policy(tauri::ActivationPolicy::Prohibited);
             }
 
-            // Claim the data dir before anything opens a database AND before the logger: two
+            // Claim the data, cache, and log dirs before anything opens a database AND before the logger: two
             // processes on one index corrupt it silently, and a refused one must not touch the
             // running app's `cmdr.log` either (#812). It exits before the (hidden) main window is
             // ever shown. See `instance_lock.rs`.
-            let claim = match config::resolved_app_data_dir(app.handle()) {
-                Ok(dir) => instance_lock::claim_data_dir_or_exit(&dir),
-                Err(error) => instance_lock::Claim::Unresolved { error },
-            };
+            let claim = instance_lock::claim_app_dirs_or_exit(app.handle());
 
             logging::startup::init();
             claim.log(); // what the claim found, now that a logger can record it

@@ -57,10 +57,10 @@ the toolchain at the same place as the SDK. Use it for every Rust lane.
 
 ### A second launch on one data dir looks exactly like a crash
 
-`instance_lock` refuses a launch when another process already owns the data dir (two processes on one index corrupt it),
-and the refusal is a **modal alert on the user's desktop** plus `exit 143` and one stderr line. From a script's side
-that is indistinguishable from a build failure or a crash — so a launch loop retries, and each retry puts another dialog
-in front of whoever is at the machine. An agent that never sees the alert can do this for an hour.
+`instance_lock` refuses a launch when another process already owns the data, cache, or log dir (two processes on one
+index corrupt it), and the refusal is a **modal alert on the user's desktop** plus `exit 143` and one stderr line. From
+a script's side that is indistinguishable from a build failure or a crash — so a launch loop retries, and each retry
+puts another dialog in front of whoever is at the machine. An agent that never sees the alert can do this for an hour.
 
 So **check before you launch**, and don't trust the exit code to tell you why:
 
