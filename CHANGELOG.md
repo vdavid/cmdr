@@ -85,9 +85,13 @@ The three highlights:
 
 ### Security
 
-- Stop a malicious `.git/config` in a browsed repo from switching off git's path protections (70ae9eb83)
-- Keep S3 access key IDs out of logs and the copy dialog (1981c788b)
-- Update SQLite, zstd, and tokio for upstream security fixes (c01c0dbe5, 4afd0a946, 1e2dec747)
+- Stop a malicious `.git/config` in a browsed repo from switching off git's path protections: `gix` GHSA-q54r-jf2p-rfr2
+  (high), Cmdr 0.52.0–0.56.0 (70ae9eb83)
+- Keep S3 access key IDs out of logs and the copy dialog: CVSS v4.0 2.1 (low), Cmdr 0.50.0–0.56.0 (1981c788b)
+- Close a timing leak in the big-number math behind SFTP and early SMB connections: `crypto-bigint` RUSTSEC-2026-0387
+  (unrated), Cmdr 0.3.0–0.10.0 and 0.40.0–0.56.0 (70ae9eb83)
+- Update the zstd compression library past 13 advisories: `zstd` RUSTSEC-2026-0391 and `zstd-safe`
+  RUSTSEC-2026-0395–0406 (unrated), Cmdr 0.33.0–0.56.0 (4afd0a946)
 
 ### Non-app
 

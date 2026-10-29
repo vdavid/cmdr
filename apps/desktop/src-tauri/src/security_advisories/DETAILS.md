@@ -18,11 +18,11 @@ the message half. It feeds two surfaces:
 
 ## What gets an entry
 
-Every fixed vulnerability with a severity score: the same set that gets a public note under `SECURITY.md` § How fixed
-vulnerabilities are published. Hardening without a vulnerability gets no entry, even when it's in a release's
-`### Security` changelog section (most of those are hardening). So "has a Security section" is never the trigger; the
-entry is a deliberate, per-release decision, made in the release procedure (`docs/guides/releasing.md` § Security
-advisories).
+Every fixed vulnerability with a severity rating: our own CVSS v4.0 one, or a dependency advisory's upstream one (an
+`(unrated)` advisory gets no entry). Those are the public notes in a release's `### Security` changelog section, per
+`SECURITY.md` § How fixed vulnerabilities are published. Releases before 0.57.0 also put hardening there, so "has a
+Security section" was never the trigger; the entry is a deliberate, per-release decision, made in the release procedure
+(`docs/guides/releasing.md` § Security advisories).
 
 ## The file
 
@@ -41,7 +41,8 @@ advisories).
 
 - `id`: stable and unique. The GHSA id when the fix has a GitHub advisory, else a date slug like `2026-10-16-smb-path`.
 - `fixedIn`: the release that fixes it, strict semver (no `v`).
-- `severity`: `low` / `medium` / `high` / `critical`, the CVSS v4.0 rating in the public note.
+- `severity`: `low` / `medium` / `high` / `critical`, the rating in the public note (ours from CVSS v4.0, or the
+  upstream advisory's).
 - `url`: the GitHub security advisory when there is one, else that release's entry on the getcmdr.com changelog.
 - No `summary`: the app shows generic, translated text only, so per-advisory English would be untranslatable copy.
 - Unknown keys at either level make the whole list unparseable (`deny_unknown_fields`), so a typo can't quietly drop

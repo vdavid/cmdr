@@ -61,9 +61,9 @@ part of the company's wider security policy, which is kept as an internal record
 6. **Non-compliance**: fix it in the next release (sooner if the licensor asks), tell the licensor if they raised it,
    and record the cause and the fix. If it can't be fixed, remove the component.
 7. **Vulnerabilities in components**: daily scan and Dependabot, then rank by CVSS, then fix, mitigate, or accept with a
-   reason (`deny.toml` for Rust, the alert dismissal for npm), then release, then a changelog note, plus an advisory and
-   a CVE when `SECURITY.md`'s criteria say so. Shipped versions are covered because the scan runs on what ships, and
-   auto-update moves users to the fix (52% of active installs on day one, 71% by day three).
+   reason (`deny.toml` for Rust, the alert dismissal for npm), then release, then a changelog note in the dependency
+   form of `../SECURITY.md` § How fixed vulnerabilities are published. Shipped versions are covered because the scan
+   runs on what ships, and auto-update moves users to the fix (52% of active installs on day one, 71% by day three).
 8. **Review**: yearly, with the rest of the security policy.
 
 ## Roles, competence, and affirmation

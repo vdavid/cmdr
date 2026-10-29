@@ -56,7 +56,10 @@ under the EU Cyber Resilience Act.
 
 ## How fixed vulnerabilities are published
 
-Every fixed vulnerability gets a public note once the fix has shipped. Every note says:
+Every fixed vulnerability gets a public note once the fix has shipped. What the note says depends on whose code the flaw
+was in.
+
+A flaw in Cmdr's own code gets the full note:
 
 - **What the flaw was** and what it let an attacker do.
 - **How severe it is**: its CVSS v4.0 score and rating (low, medium, high, or critical).
@@ -64,14 +67,26 @@ Every fixed vulnerability gets a public note once the fix has shipped. Every not
 - **What to do**: usually "update to version X.Y.Z", which Cmdr does by itself unless updates are turned off. For a flaw
   on Cmdr's servers, the note says whether users need to do anything, like replacing a key.
 
+A flaw in a dependency (a Rust crate or npm package Cmdr uses, which already has its own published advisory) gets a
+shorter note, since the upstream advisory already explains the flaw:
+
+- **What it let an attacker do in Cmdr**, in one line.
+- **The upstream advisory**: its ID (like `GHSA-…`, `RUSTSEC-…`, or `CVE-…`) and its severity as that advisory rates it,
+  or "unrated" when it gives none.
+- **What it affects**: the Cmdr versions, from the first affected one to the last.
+
+It gets no GitHub security advisory or CVE ID of our own: the upstream one is the record, and a second would only split
+it.
+
 Where the note goes:
 
 - **Fixes in the app** go in the `### Security` section of the [changelog](CHANGELOG.md), in the release that fixes
-  them.
-- **A [GitHub security advisory](https://github.com/vdavid/cmdr/security/advisories) with a CVE ID** comes on top when
-  someone can exploit the flaw without already running code on the user's Mac (for example through a file, a network
-  server, a web page, or the update channel), or when it exposes passwords, keys, or user data to someone other than the
-  user. Fixes that only guard against an attacker who already runs code on the Mac get the changelog note alone.
+  them. Hardening that fixes no flaw goes under "Changed", so every Security line is a fixed vulnerability.
+- **A [GitHub security advisory](https://github.com/vdavid/cmdr/security/advisories) with a CVE ID** comes on top for a
+  flaw in Cmdr's own code when someone can exploit it without already running code on the user's Mac (for example
+  through a file, a network server, a web page, or the update channel), or when it exposes passwords, keys, or user data
+  to someone other than the user. Fixes that only guard against an attacker who already runs code on the Mac get the
+  changelog note alone.
 - **Flaws on Cmdr's servers** (`api.getcmdr.com`, its older alias `license.getcmdr.com`, and `getcmdr.com`, including
   `latest.json`) are part of Cmdr too, so they get a GitHub security advisory on this repository once fixed. There's no
   app version to update, so the advisory gets no CVE ID. If the flaw exposed user data, we also tell the people affected
