@@ -14,8 +14,8 @@ the retry-window callers: `docs/tooling/instance-isolation.md` § Instance lock.
 ## What `lib.rs` is, and what it deliberately isn't
 
 `lib.rs`'s `run()` is the wiring: the `setup` hook's startup sequence and the names of the handlers. It is the ONE place
-a reader can see startup order, and order here is load-bearing (the hosts before any background work, the logger before
-the data-dir claim, settings before the menu bar). So the long linear run of `x::init(app.handle())` calls stays:
+a reader can see startup order, and order here is load-bearing (the hosts before any background work, the data-dir claim
+before the logger, settings before the menu bar). So the long linear run of `x::init(app.handle())` calls stays:
 breaking it into "phases" would hide the sequence behind function names without adding a boundary anybody owns.
 
 Two kinds of block move out. First, anything with a real owner elsewhere:

@@ -176,7 +176,8 @@ RUST_LOG=trace pnpm dev
 
 - **Location**: Prod: `~/Library/Logs/com.veszelovszki.cmdr/`, Dev:
   `~/Library/Application Support/com.veszelovszki.cmdr-dev/logs/`
-- Contains both Rust and frontend logs
+- Contains both Rust and frontend logs. The logger starts right after the instance lock, so a second instance refused
+  the data dir writes nothing here (its refusal goes to stderr).
 - **Level**: Always Debug for the file target. The dispatch tree filters per output, so the file's Debug level is
   independent of `RUST_LOG` and the verbose toggle (those only affect the terminal). Error reports always get full debug
   context.

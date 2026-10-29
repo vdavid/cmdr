@@ -1,7 +1,8 @@
 //! Wiring the logger up at app startup.
 //!
-//! One call, `startup::init()`, run from `lib.rs`'s `setup` before anything can
-//! log. It resolves the log directory, reads the two settings that shape the
+//! One call, `startup::init()`, run from `lib.rs`'s `setup` right after the
+//! instance lock claims the data dir (so a refused second instance never opens
+//! the shared log files, #812). It resolves the log directory, reads the two settings that shape the
 //! logger (the storage cap and the verbose toggle) through the early-load
 //! helpers, installs the fern dispatch tree, sweeps legacy files, and records
 //! what it decided.

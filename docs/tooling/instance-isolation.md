@@ -37,24 +37,26 @@ both seeding their entry-ID counter from `SELECT MAX(id)+1`, handing out the sam
 structurally impossible rather than merely discouraged.
 
 Mechanism: an advisory whole-file lock (`std::fs::File::try_lock`, `flock` on unix, `LockFileEx` on Windows) on
-`<data dir>/.instance.lock`, taken in the Tauri `setup` hook right after the logger is up and before anything opens a
-database. Tauri creates the config-declared main window before `setup` runs, so the guarantee isn't "before a window
-exists": it's that no database is opened and the process exits before the window (`"visible": false` in
-`tauri.conf.json`) is ever shown. The `File` is parked in a process-lifetime `OnceLock`; dropping it would close the
-descriptor and release the lock, letting a second Cmdr in mid-session.
+`<data dir>/.instance.lock`, taken in the Tauri `setup` hook before the logger is installed and before anything opens a
+database (a refused instance must not touch the shared log files either, #812). Tauri creates the config-declared main
+window before `setup` runs, so the guarantee isn't "before a window exists": it's that no database is opened and the
+process exits before the window (`"visible": false` in `tauri.conf.json`) is ever shown. The `File` is parked in a
+process-lifetime `OnceLock`; dropping it would close the descriptor and release the lock, letting a second Cmdr in
+mid-session.
 
 Details worth knowing:
 
 - **Not a PID file, on purpose.** The kernel releases the lock when the process dies for any reason, `SIGKILL` and
   panics included, so a stale lock can't exist and nothing has to clean one up. The pid written into the file is
-  diagnostics only: it names the holder in the refusal log line. Unreadable or garbage content means "unknown holder".
+  diagnostics only: it names the holder in the refusal line. Unreadable or garbage content means "unknown holder".
 - **Bounded retry, ~5 s at a 50 ms poll**, not a single attempt. Two legitimate flows briefly overlap two processes on
   one data dir: `apps/desktop/scripts/i18n-capture.ts` (relaunches per capture pass; it also waits for the previous
   process to exit) and the in-app updater's `relaunch()` (spawns the new process before the old one exits). A user
   quitting and immediately relaunching lands in the same window.
-- **On refusal**: an error log line naming the data dir and the holder, a native "Cmdr is already running" alert, then
-  `exit(1)` before a single index file is touched. Under `CMDR_E2E_MODE=1` the alert is skipped (nobody clicks OK in a
-  test run, and a stuck modal would surface as an opaque harness timeout).
+- **On refusal**: a stderr line naming the data dir and the holder (not the log: the refused process never installs a
+  logger), a native "Cmdr is already running" alert, then `exit(1)` before a single index file is touched. Under
+  `CMDR_E2E_MODE=1` the alert is skipped (nobody clicks OK in a test run, and a stuck modal would surface as an opaque
+  harness timeout).
 - **The refusal alert must not pump our run loop.** It's `CFUserNotificationDisplayAlert`, drawn by the system's
   `UserNotificationCenter` agent, so the call is a plain blocking wait with a 60 s timeout (plus a watchdog thread that
   exits 10 s later if the call somehow never returns). `NSAlert::runModal` pumps the app's own main run loop, so a

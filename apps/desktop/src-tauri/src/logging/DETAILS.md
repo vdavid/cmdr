@@ -44,13 +44,21 @@ third-party, which fails closed.
 
 ## Startup sequence
 
-`startup::init`, called once from `lib.rs`'s `setup` before anything can log, does five things in order: resolve the log
+`startup::init`, called once from `lib.rs`'s `setup` right AFTER the instance lock claims the data dir, does five things
+in order: resolve the log
 directory, read the storage cap and the verbose toggle, install the fern tree via `dispatch::init`, sweep the legacy
 `Cmdr_<timestamp>.log` files an older build left, and log the resolved state.
 
 The order is forced. `dispatch::init` reads `RUST_LOG` and resets the stdout threshold, so the verbose default has to be
 known BEFORE it runs or the first records go out at the wrong level; and this all happens before the full settings load,
 which is why `settings::loader` carries `early_load_max_log_storage_mb` / `early_load_verbose_logging` at all.
+
+**The logger starts after the instance lock, on purpose.** A second instance refused the data dir exits before it
+installs the logger, so it never appends to the running app's `cmdr.log` or rotates it near 50 MB (#812). The claim logs
+nothing itself: the refusal goes to stderr plus the native alert, and every other outcome comes back as an
+`instance_lock::Claim` that `lib.rs` logs right after `init`. Records before `init` are no-ops (no logger yet), which is
+how the few host installs above the claim have always run. The panic hook is installed first thing in `run()`, so a
+panic before `init` still reaches stderr; its crash file waits for `crash_reporter::init`, as before.
 
 Directory priority: `CMDR_LOG_DIR`, then `<CMDR_DATA_DIR>/logs`, then the per-OS app log dir
 (`~/Library/Logs/com.veszelovszki.cmdr` on macOS, `dirs::data_local_dir()/com.veszelovszki.cmdr/logs` elsewhere).

@@ -44,7 +44,8 @@ Dispatch-tree shape, why fern, timestamp formats, and decisions: `DETAILS.md`.
   Tauri CLI hands us a piped stderr, so `tauri-wrapper.ts` sets `CLICOLOR_FORCE`; `NO_COLOR` outranks both.
 - **Cap = 0 disables the file chain entirely.** The terminal still works; the error bundle ships an empty `logs/`.
 - **`RotatingFile` never panics or caches the directory's state**: logging runs on every thread, and other processes
-  change the files (a panic there killed the index writer, CRASH-EC4QS). It renames only the file its fd still holds
+  change the files (CRASH-EC4QS killed the index writer). It renames only the file its fd still holds
   (#812). ❌ `keep_count()` never means "this session writes a file": `debug_log_path()` does.
 - **Trust mtime, not the filename, for log ordering.** `eager_prune(dir, 0)` wipes everything, the live file included.
+- **`startup::init` runs after the instance-lock claim**: a refused instance never touches `cmdr.log` (#812).
 - **Log-dir resolution is mirrored in `settings::loader`'s `early_load_*` helpers**; a bundle-id change touches both.
