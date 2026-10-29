@@ -816,7 +816,7 @@
     "en": "copy",
     "match": ["copy", "copies", "copying", "copied"],
     "note": "\"A copy\" as a noun (the duplicate object) may take a different word than the verb.",
-    "notMatch": ["released copy", "another copy of cmdr", "fresh copy"],
+    "notMatch": ["released copy", "another copy of cmdr", "fresh copy", "this copy will close"],
     "sense": "Duplicating files to another location (F5), or copying text or a path to the clipboard."
   },
   "cost": {

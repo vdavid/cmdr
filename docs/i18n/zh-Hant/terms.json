@@ -248,7 +248,6 @@
     "confidence": "high",
     "decision": "Eject refused",
     "exceptions": {
-      "main.instanceLock.alertBody": "The running app refers back to the other copy: 那一個.",
       "shortcuts.system.appWindows": "Names the macOS reserved shortcut by Apple's own label: 應用程式視窗."
     },
     "forms": "other apps → 其他 App; terminal app → 終端機 App; Choose an app… → 選擇 App⋯; spaced against Han",

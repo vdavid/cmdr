@@ -3,9 +3,9 @@
   "@main.instanceLock.alertTitle": {
     "sourceHash": "7c8f09d"
   },
-  "main.instanceLock.alertBody": "En annan kopia av Cmdr använder den här datamappen. Byt till appen som körs eller avsluta den och försök igen.",
+  "main.instanceLock.alertBody": "Bara en Cmdr kan köras åt gången, så att dina inställningar, loggar och index förblir intakta. Den här kopian stängs nu. Byt till den Cmdr som redan är öppen.",
   "@main.instanceLock.alertBody": {
-    "sourceHash": "140c57d"
+    "sourceHash": "84f0191"
   },
   "main.upgradeNudge.mac": "Vi har lagt till nya alternativ för att komma igång. Öppna Cmdr > Introduktion… för att gå igenom dem.",
   "@main.upgradeNudge.mac": {

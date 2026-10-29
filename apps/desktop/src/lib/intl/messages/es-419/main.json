@@ -1,4 +1,8 @@
 {
+  "main.instanceLock.alertBody": "Solo puede ejecutarse un Cmdr a la vez, para que tu configuración, tus registros y tus índices sigan intactos. Esta copia se cerrará ahora. Cambia al Cmdr que ya está abierto.",
+  "@main.instanceLock.alertBody": {
+    "sourceHash": "c688d05"
+  },
   "main.upgradeNudge.mac": "Hemos agregado nuevas opciones de introducción. Abre Cmdr > Introducción… para revisarlas.",
   "@main.upgradeNudge.mac": {
     "sourceHash": "d982b5c"

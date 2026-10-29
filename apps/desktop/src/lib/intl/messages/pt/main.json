@@ -3,9 +3,9 @@
   "@main.instanceLock.alertTitle": {
     "sourceHash": "7c8f09d"
   },
-  "main.instanceLock.alertBody": "Outra cópia do Cmdr está usando esta pasta de dados. Vá para o app em execução, ou encerre-o e tente de novo.",
+  "main.instanceLock.alertBody": "Só um Cmdr pode estar em execução por vez, para que seus ajustes, registros e índices continuem intactos. Esta cópia vai fechar agora. Vá para o Cmdr que já está aberto.",
   "@main.instanceLock.alertBody": {
-    "sourceHash": "140c57d"
+    "sourceHash": "84f0191"
   },
   "main.upgradeNudge.mac": "Adicionamos novas opções de introdução. Abra Cmdr > Introdução… para revisá-las.",
   "@main.upgradeNudge.mac": {

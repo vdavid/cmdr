@@ -3,9 +3,9 @@
   "@main.instanceLock.alertTitle": {
     "sourceHash": "7c8f09d"
   },
-  "main.instanceLock.alertBody": "Інша копія Cmdr використовує цю папку даних. Перейдіть до програми, яка вже працює, або завершіть її та спробуйте ще раз.",
+  "main.instanceLock.alertBody": "Одночасно може працювати лише один Cmdr, щоб ваші параметри, журнали та індекси залишалися неушкодженими. Ця копія зараз закриється. Перейдіть до Cmdr, що вже відкритий.",
   "@main.instanceLock.alertBody": {
-    "sourceHash": "140c57d"
+    "sourceHash": "84f0191"
   },
   "main.upgradeNudge.mac": "Ми додали нові параметри до початкового налаштування. Відкрийте «Cmdr > Початкове налаштування…», щоб переглянути їх.",
   "@main.upgradeNudge.mac": {

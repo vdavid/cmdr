@@ -3,9 +3,9 @@
   "@main.instanceLock.alertTitle": {
     "sourceHash": "7c8f09d"
   },
-  "main.instanceLock.alertBody": "另一個 Cmdr 副本正在使用這個資料夾。請切換到正在執行的那一個，或是先結束它再試一次。",
+  "main.instanceLock.alertBody": "同一時間只能執行一個 Cmdr，這樣你的設定、記錄和索引才能保持完整。這個副本現在會關閉。請切換到已經開啟的 Cmdr。",
   "@main.instanceLock.alertBody": {
-    "sourceHash": "140c57d"
+    "sourceHash": "84f0191"
   },
   "main.upgradeNudge.mac": "我們新增了入門引導的選項。開啟 Cmdr > 入門引導⋯ 來查看。",
   "@main.upgradeNudge.mac": {
