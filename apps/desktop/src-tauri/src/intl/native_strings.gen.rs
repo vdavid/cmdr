@@ -224,7 +224,7 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
         tag: "en",
         entries: &[
             ("licensing.windowTitle.personalUse", "Cmdr – Personal use only"),
-            ("main.instanceLock.alertBody", "Another copy of Cmdr is using this data folder. Switch to the running app, or quit it and try again."),
+            ("main.instanceLock.alertBody", "Only one Cmdr can run at a time, so your settings, logs, and indexes stay intact. This copy will close now. Switch to the Cmdr that’s already open."),
             ("main.instanceLock.alertTitle", "Cmdr is already running"),
             ("menu.app.about", "About Cmdr"),
             ("menu.app.acknowledgements", "Acknowledgements"),
