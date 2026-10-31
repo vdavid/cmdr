@@ -31,7 +31,7 @@
   "@adb.connect.transport": {
     "sourceHash": "d90c37c"
   },
-  "adb.connect.cancelled": "Otevírání telefonu bylo zastaveno.",
+  "adb.connect.cancelled": "Otevírání telefonu jste zastavili.",
   "@adb.connect.cancelled": {
     "sourceHash": "bc525aa"
   },

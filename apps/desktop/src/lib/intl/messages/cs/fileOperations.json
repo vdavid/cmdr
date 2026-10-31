@@ -977,7 +977,7 @@
   "@fileOperations.backgroundStart.needsPasswordToast": {
     "sourceHash": "d802c26"
   },
-  "fileOperations.transferProgress.foregroundBusyToast": "Tady je otevřené něco jiného. Zavřete to a pak tuto operaci zobraz znovu.",
+  "fileOperations.transferProgress.foregroundBusyToast": "Tady je otevřené něco jiného. Zavřete to a pak tuto operaci zobrazte znovu.",
   "@fileOperations.transferProgress.foregroundBusyToast": {
     "sourceHash": "80d4d61"
   },

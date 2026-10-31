@@ -519,7 +519,7 @@
     "confidence": "high",
     "sources": "macOS CoreTypes (Externí disk, Výměnný disk), SystemSettings (hard drive → pevný disk, external drive → externí disk), Finder (Startovací disk); Total Commander (Seznam disků, Název disku)",
     "decision": "Volume is svazek, drive is disk",
-    "note": "loc. pl. discích (o tvých souborech, discích a historii)"
+    "note": "loc. pl. discích (o vašich souborech, discích a historii)"
   },
   "duplicate": {
     "chosen": "duplikovat",
@@ -2299,7 +2299,7 @@
   "chat": {
     "chosen": "chat",
     "accept": ["chat"],
-    "forms": "m.: Chat s AI o tvých souborech; verb → chatovat",
+    "forms": "m.: Chat s AI o vašich souborech; verb → chatovat",
     "confidence": "tentative",
     "sources": "MS terminology chat → chat, chatovat"
   },

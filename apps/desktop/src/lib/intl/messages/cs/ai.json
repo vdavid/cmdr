@@ -123,7 +123,7 @@
   "@ai.cloudConsent.askCmdr.contentsRule": {
     "sourceHash": "5a378c1"
   },
-  "ai.cloudConsent.askCmdr.memory": "Cmdr si o vás zapisuje poznámky: jak chcete mít věci uspořádané, co už bylo dřív odmítnuto, a cokoli, co si má na vaši žádost zapamatovat. Tyto poznámky se odesílají s každou zprávou, kterou pošlete, dokud existují, a můžou obsahovat text, který Cmdr rozpoznal ve vašich fotkách. Kdykoli si je můžete přečíst nebo vymazat v nastavení Ask Cmdr.",
+  "ai.cloudConsent.askCmdr.memory": "Cmdr si o vás zapisuje poznámky: jak chcete mít věci uspořádané, co jste už dřív odmítli, a cokoli, co si má na vaši žádost zapamatovat. Tyto poznámky se odesílají s každou zprávou, kterou pošlete, dokud existují, a můžou obsahovat text, který Cmdr rozpoznal ve vašich fotkách. Kdykoli si je můžete přečíst nebo vymazat v nastavení Ask Cmdr.",
   "@ai.cloudConsent.askCmdr.memory": {
     "sourceHash": "496c78d"
   },

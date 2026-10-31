@@ -890,7 +890,7 @@
   "@servers.paneState.guestSessionRefused": {
     "sourceHash": "36ad371"
   },
-  "servers.paneState.guestSessionRefusedHint": "Přihlášení mělo proběhnout vaším účtem, ale server místo toho nabídl relaci hosta. Obvykle to znamená, že heslo bylo špatně. Výjimečně to znamená, že někdo zasahuje do připojení.",
+  "servers.paneState.guestSessionRefusedHint": "Chtěli jste se přihlásit svým účtem, ale server místo toho nabídl relaci hosta. Obvykle to znamená, že heslo bylo špatně. Výjimečně to znamená, že někdo zasahuje do připojení.",
   "@servers.paneState.guestSessionRefusedHint": {
     "sourceHash": "172375c"
   },

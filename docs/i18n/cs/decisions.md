@@ -121,17 +121,18 @@ nepodařilo.
 
 ## macOS app and pane names (`errors.listing.diskReadProblem.suggestion`, `errors.write.permissionDenied.suggestion.*`, `errors.write.fileLocked.suggestion.mac`, `settings.behavior.fileSystemWatching.lowDiskSpace*`, `settings.appearance.appColor.*`)
 
-Quote macOS byte for byte: **Disková utilita**, **Záchrana**, Informace > zruš zaškrtnutí políčka Zamčeno, Startovací
+Quote macOS byte for byte: **Disková utilita**, **Záchrana**, Informace > zrušte zaškrtnutí políčka Zamčeno, Startovací
 disk, Barva zvýraznění. balík for bundles, balíček for packages; Apple silicon → čip Apple.
 
 ## System default is Podle systému (`settings.appearance.language.opt.*`, `settings.appearance.dateTimeFormat.opt.system`, `settings.theme.mode.opt.system`, `settings.behavior.textEditorApp.systemDefault*`)
 
 Podle systému over Výchozí systémový: no gender agreement needed and one English, one Czech.
 
-## No gendered past about the user or the assistant (`askCmdr.tool.*`, `askCmdr.decision.*`, `onboarding.stepBeta.terms.consent`, `fileOperations.cancelRollback.reason.*`, `commands.handler.openTerminalHere.*`)
+## No singular gendered past about the user or the assistant (`askCmdr.tool.*`, `askCmdr.decision.*`, `onboarding.stepBeta.terms.consent`, `fileOperations.cancelRollback.reason.*`, `commands.handler.openTerminalHere.*`)
 
 Reflexive passive / participle first (Kontrolují se…, Zkontrolovány…), Odmítnuto:/Schváleno: + verbal noun, Mám přečtené
-…, Cmdr as subject, ručně over sám/sama.
+…, Cmdr as subject, ručně over sám/sama. The plural -li is neutral: a user action stays jste + -li (Toto hledání jste
+zastavili).
 
 ## Two-pane and dialog wording from Total Commander (`fileOperations.transferDialog.*`, `fileOperations.delete.foldersPart`, `multiRename.*`, `viewer.toolbar.*`, `queryUi.ai.patternLabel.*`)
 

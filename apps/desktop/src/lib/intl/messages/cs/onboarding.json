@@ -75,7 +75,7 @@
   "@onboarding.stepFda.welcome.title": {
     "sourceHash": "504b1bb"
   },
-  "onboarding.stepFda.revoked.intro": "Vypadá to, že plný přístup k disku byl dřív udělen, ale potom odvolán.",
+  "onboarding.stepFda.revoked.intro": "Vypadá to, že jste plný přístup k disku dřív udělili, ale potom ho odvolali.",
   "@onboarding.stepFda.revoked.intro": {
     "sourceHash": "9087914"
   },
@@ -187,7 +187,7 @@
   "@onboarding.stepAi.bannerTitle.stuck": {
     "sourceHash": "6e60ae7"
   },
-  "onboarding.stepAi.bannerBody.stuck": "Zvolená byla možnost zapnout plný přístup k disku, ale zdá se, že ho Cmdr nedostal. Možná je potřeba aplikaci znovu spustit (klidně hned, budeme pokračovat odsud!), nebo otevřete <settingsLink>{systemSettings} > Soukromí a zabezpečení > Plný přístup k disku</settingsLink> a najděte Cmdr, případně ho přidejte ručně malým tlačítkem „+“ dole.",
+  "onboarding.stepAi.bannerBody.stuck": "Zvolili jste zapnutí plného přístupu k disku, ale zdá se, že ho Cmdr nedostal. Možná je potřeba aplikaci znovu spustit (klidně hned, budeme pokračovat odsud!), nebo otevřete <settingsLink>{systemSettings} > Soukromí a zabezpečení > Plný přístup k disku</settingsLink> a najděte Cmdr, případně ho přidejte ručně malým tlačítkem „+“ dole.",
   "@onboarding.stepAi.bannerBody.stuck": {
     "sourceHash": "c13bbbe"
   },
@@ -339,7 +339,7 @@
   "@onboarding.stepBeta.footer.continue": {
     "sourceHash": "4024130"
   },
-  "onboarding.stepBeta.title": "Pomoz vylepšit Cmdr!",
+  "onboarding.stepBeta.title": "Pomozte vylepšit Cmdr!",
   "@onboarding.stepBeta.title": {
     "sourceHash": "6e8be73"
   },

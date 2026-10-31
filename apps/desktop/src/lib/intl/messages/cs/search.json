@@ -147,7 +147,7 @@
   "@search.coverage.unresolved": {
     "sourceHash": "6afa798"
   },
-  "search.coverage.walk.cancelled": "Toto hledání bylo na váš pokyn zastaveno, takže ukazuje, co Cmdr do té doby našel. Vše, co cestou přečetl, zůstává uložené, takže další hledání naváže tam, kde přestal.",
+  "search.coverage.walk.cancelled": "Toto hledání jste zastavili, takže ukazuje, co Cmdr do té doby našel. Vše, co cestou přečetl, zůstává uložené, takže další hledání naváže tam, kde přestal.",
   "@search.coverage.walk.cancelled": {
     "sourceHash": "ea9caa1"
   },

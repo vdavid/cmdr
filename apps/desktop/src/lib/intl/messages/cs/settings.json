@@ -3400,7 +3400,7 @@
   "@settings.dataWipe.goes.license": {
     "sourceHash": "90b5b06"
   },
-  "settings.dataWipe.goes.licenseIfAny": "Licence na tomto Macu, pokud nějaká byla aktivovaná. Znovu ji aktivujete licenčním klíčem z e‑mailu o nákupu.",
+  "settings.dataWipe.goes.licenseIfAny": "Licence na tomto Macu, pokud jste nějakou aktivovali. Znovu ji aktivujete licenčním klíčem z e‑mailu o nákupu.",
   "@settings.dataWipe.goes.licenseIfAny": {
     "sourceHash": "db7f6f2"
   },

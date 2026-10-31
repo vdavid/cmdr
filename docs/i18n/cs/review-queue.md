@@ -47,8 +47,8 @@ record the outcome in `terms.json` or `decisions.md`).
 - `commands.cmdrOpenOnboarding.label`: Úvodní průvodce… aligned with menu.app.onboarding; macOS uses úvodní nastavení
   for onboarding
 - `commands.helpWhatsNew.label`: Co je nového aligned with menu.help.whatsNew; Czech macOS System Settings says Novinky
-- `commands.askCmdrToggle.description`: Chat s AI o tvých souborech… is a verbless noun phrase; check it fits beside the
-  other 3rd-person descriptions
+- `commands.askCmdrToggle.description`: Chat s AI o vašich souborech… is a verbless noun phrase; check it fits beside
+  the other 3rd-person descriptions
 - `commands.appSettings.label`: Otevřít Nastavení capitalizes the window name (settings ruling note);
   commands.handler.openTerminalHere.openSettings should match
 - `commands.navFirstInFull.label`: Skočit na první soubor vs commands.navHome.label Přejít na první soubor; check the
@@ -105,7 +105,7 @@ record the outcome in `terms.json` or `decisions.md`).
   slider
 - `settings.mediaIndex.importanceThreshold.floor`: Junk rendered as Smetí (casual); check the tone
 
-- `errors.git.blobTooLarge.suggestion`: „Check out the file from a working tree“ rendered „otevři ho z pracovního
+- `errors.git.blobTooLarge.suggestion`: „Check out the file from a working tree“ rendered „otevřete ho z pracovního
   stromu“ (git checkout not named); check whether a git user expects „checkout“.
 - `errors.git.missingObject.message`: pack files → „balíčkové soubory“; check it reads natural to Czech git users
   (alternative: „soubory pack“).

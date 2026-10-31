@@ -21,9 +21,11 @@ The must-know rules; the rest of this file elaborates them.
   „Opravdu chcete smazat tyto soubory?“, „Stiskněte Esc“, „Můžete to změnit v Nastavení.“ Never `ty` (`chceš`,
   `Stiskni`, `tvůj`), never the epistolary capital `Vy`/`Váš`. This is the upstream ruling for Czech in
   `../formal-informal-decisions.md`: "macOS infinitive labels; never tykání; vy-plural is gender-neutral".
-- **Gender: the vy-plural past is neutral, the impersonal is better.** `jste smazali` (plural `-li`) fits any user, so
-  it's acceptable; still prefer naming the action or the object: `Zkopírováno`, `Soubor byl přesunut do koše`,
-  `Kopírování je hotové`, `Přihlášení proběhlo`. No hedges: never `smazal(a)`, `byl/a`, `jste přihlášen(a)`.
+- **Gender: the vy-plural past is neutral.** `jste smazali` (plural `-li`) fits any user, so use it when the English
+  says the user did something (`Toto hledání jste zastavili`), and don't hide them in a passive
+  (`bylo na váš pokyn zastaveno`). For what the app did, name the action or the object: `Zkopírováno`,
+  `Soubor byl přesunut do koše`, `Kopírování je hotové`, `Přihlášení proběhlo`. No hedges: never `smazal(a)`, `byl/a`,
+  `jste přihlášen(a)`.
 - **Register by UI slot**:
   - buttons, menu items, commands: infinitive, like Finder (`Kopírovat`, `Přejmenovat`, `Vysunout`, `Zrušit`), object
     after the verb (`Přidat server…`, `Přesunout do koše`); never an imperative (`Zkopírujte`) on a button;
