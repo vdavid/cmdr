@@ -328,9 +328,10 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   uninstalled, so the table is all that's left to read a name from. `open_in_editor(path, app_choice,
   ask_about_other_editors)` is F4's launch, passing through to `../file_system/text_editor.rs`: async on macOS (5 s),
   answering an `EditorOpenReport` or a typed `OpenInEditorError`, and a sync `xdg-open` with a plain report on Linux.
-  Beside it sits the macOS-only `list_text_editors(app_choice)` (2 s, `TimedOut`). `open_path`, `open_in_editor`, and
-  `open_terminal_here` all record into `crate::open_mock` instead of launching under `playwright-e2e`, so a suite run
-  leaves no orphan windows.
+  Beside it sits the macOS-only `list_text_editors(app_choice)` (2 s, `TimedOut`). `open_path`, `open_in_editor`,
+  `open_terminal_here`, and `show_in_finder` all record into `crate::open_mock` instead of launching under
+  `playwright-e2e`, so a suite run leaves no orphan windows, and `get_info` skips Finder there too: Finder takes the
+  front position, which blanks capture shots.
 - **`child_window_state.rs`**: also `close_child_window(label)`, the only way a child webview closes itself. It hides
   the window and destroys it 100 ms later, in Rust rather than in the page, because WebKit throttles timers in a hidden
   page to roughly 1 Hz. `docs/notes/child-window-close-webkit-crash.md`.

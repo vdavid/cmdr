@@ -40,6 +40,13 @@ describe('diffFixtureTree', () => {
     expect(diffFixtureTree(makeRoot('clean'))).toBeNull()
   })
 
+  it('ignores a .DS_Store, which Finder writes on its own schedule', () => {
+    const root = makeRoot('ds-store')
+    fs.writeFileSync(path.join(root, 'left', '.DS_Store'), 'noise')
+    fs.writeFileSync(path.join(root, 'left', 'sub-dir', '.DS_Store'), 'noise')
+    expect(diffFixtureTree(root)).toBeNull()
+  })
+
   it('catches a file copied into right/', () => {
     const root = makeRoot('added')
     fs.writeFileSync(path.join(root, 'right/file-a.txt'), 'A'.repeat(1024))
@@ -157,6 +164,14 @@ describe('describeFixtureTreeDiff', () => {
 })
 
 describe('restoreFixtureTree', () => {
+  it('takes a .DS_Store away too, though no diff reports one', () => {
+    const root = makeRoot('restore-ds-store')
+    const noise = path.join(root, 'left', '.DS_Store')
+    fs.writeFileSync(noise, 'noise')
+    restoreFixtureTree(root)
+    expect(fs.existsSync(noise)).toBe(false)
+  })
+
   it('clears every drift shape in one pass', () => {
     const root = makeRoot('restore-all')
     fs.writeFileSync(path.join(root, 'right/copied.txt'), 'x')

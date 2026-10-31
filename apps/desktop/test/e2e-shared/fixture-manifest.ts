@@ -178,11 +178,19 @@ export function diffFixtureTree(rootPath: string): FixtureTreeDiff | null {
   }
 
   for (const rel of actual.keys()) {
-    if (!expected.has(rel)) added.push(rel)
+    if (!expected.has(rel) && !isOsNoise(rel)) added.push(rel)
   }
 
   if (added.length === 0 && removed.length === 0 && changed.length === 0) return null
   return { added: added.sort(), removed: removed.sort(), changed: changed.sort(), reasons }
+}
+
+/**
+ * What the OS leaves in a folder Finder so much as looked at. No spec wrote it, and Finder writes it
+ * on its own schedule, so blaming whichever test was running would name an innocent one.
+ */
+function isOsNoise(rel: string): boolean {
+  return path.basename(rel) === '.DS_Store'
 }
 
 /** Renders a diff as one `<verb>: <path>` line per drifted entry. */
@@ -222,9 +230,15 @@ function restoreEntry(rootPath: string, entry: FixtureSpecEntry): void {
  * A clean tree costs one `diffFixtureTree` and changes nothing at all: no
  * rewrite, no new inode, so a watch an archive spec holds on `sample.zip`
  * survives. Extras are removed deepest-first so a directory's children are
- * gone before the directory itself.
+ * gone before the directory itself. OS noise the diff doesn't report goes too.
  */
 export function restoreFixtureTree(rootPath: string): void {
+  const actual = new Map<string, ActualEntry>()
+  for (const dir of GUARDED_DIRS) walk(rootPath, dir, actual)
+  for (const rel of actual.keys()) {
+    if (isOsNoise(rel)) removeFixtureEntry(path.join(rootPath, rel))
+  }
+
   const diff = diffFixtureTree(rootPath)
   if (!diff) return
 

@@ -5,6 +5,7 @@
 //! that shell out or delegate to `file_system`.
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
+#[cfg(not(all(target_os = "macos", feature = "playwright-e2e")))]
 use std::process::Command;
 use tauri::{AppHandle, Runtime};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -54,7 +55,17 @@ const DEFAULT_APP_NAME_TIMEOUT: Duration = Duration::from_millis(500);
 /// Show a file in Finder (reveal in parent folder)
 #[tauri::command]
 #[specta::specta]
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", feature = "playwright-e2e"))]
+pub fn show_in_finder(path: String) -> Result<(), String> {
+    // Finder would take the front position and write a `.DS_Store` into the fixture tree.
+    crate::open_mock::record(path);
+    Ok(())
+}
+
+/// Show a file in Finder (reveal in parent folder)
+#[tauri::command]
+#[specta::specta]
+#[cfg(all(target_os = "macos", not(feature = "playwright-e2e")))]
 pub fn show_in_finder(path: String) -> Result<(), String> {
     Command::new("open")
         .arg("-R")

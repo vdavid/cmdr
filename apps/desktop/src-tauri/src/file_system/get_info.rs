@@ -60,6 +60,19 @@ pub fn open_get_info(path: &std::path::Path) -> Result<(), GetInfoError> {
         return Err(GetInfoError::AutomationDenied);
     }
 
+    ask_finder_for_info_window(path)
+}
+
+/// In an E2E build, says what it would do and leaves Finder alone: Finder would take the front
+/// position (blanking the capture's shots) and write a `.DS_Store` into the fixture tree.
+#[cfg(all(target_os = "macos", feature = "playwright-e2e"))]
+fn ask_finder_for_info_window(_path: &std::path::Path) -> Result<(), GetInfoError> {
+    log::info!(target: "get_info", "[mock] Finder not asked for a Get Info window");
+    Ok(())
+}
+
+#[cfg(all(target_os = "macos", not(feature = "playwright-e2e")))]
+fn ask_finder_for_info_window(path: &std::path::Path) -> Result<(), GetInfoError> {
     // The path goes in as an argument via `on run argv`, never spliced into the
     // script text, so a quote in a filename can't inject AppleScript.
     let script = r#"on run argv
