@@ -145,11 +145,32 @@ func TestClassifyRustFailuresSeparatesCapKillsFromInTestDeadlines(t *testing.T) 
 	if plain.Class != ClassOther {
 		t.Errorf("plain class = %q, want %q", plain.Class, ClassOther)
 	}
-	if want := "src/downloads/ignore_set.rs:212:9: assertion `left == right` failed"; plain.Panic != want {
+	if want := "src/downloads/ignore_set.rs:212:9: assertion `left == right` failed (left: 3, right: 4)"; plain.Panic != want {
 		t.Errorf("plain panic = %q, want %q", plain.Panic, want)
 	}
 	if capKill.Panic != "" {
 		t.Errorf("a cap kill never panicked, got %q", capKill.Panic)
+	}
+}
+
+// A raced assertion's only record is this message, so it keeps the two values: without
+// them a `(2, 8)` frame count that failed under load left nothing to diagnose (#638).
+func TestClassifyRustFailuresKeepsAnAssertionsValues(t *testing.T) {
+	failures := ClassifyRustFailures(`        FAIL [   0.403s] ( 1/2) cmdr-smb volume::a_frame_count
+  stderr ───
+
+    thread 'volume::a_frame_count' (146031625) panicked at crates/cmdr-smb/src/volume/x.rs:74:5:
+    assertion ` + "`left == right`" + ` failed: one compound frame
+      left: (7, 33)
+     right: (1, 3)
+    note: run with ` + "`RUST_BACKTRACE=1`" + ` environment variable to display a backtrace
+`)
+	if len(failures) != 1 {
+		t.Fatalf("expected 1 failure, got %+v", failures)
+	}
+	want := "crates/cmdr-smb/src/volume/x.rs:74:5: assertion `left == right` failed: one compound frame (left: (7, 33), right: (1, 3))"
+	if failures[0].Panic != want {
+		t.Errorf("panic = %q, want %q", failures[0].Panic, want)
 	}
 }
 

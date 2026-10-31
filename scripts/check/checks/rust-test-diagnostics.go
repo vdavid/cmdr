@@ -201,7 +201,8 @@ func ClassifyRustFailures(output string) []RustFailure {
 }
 
 // findPanic reads a failing test's captured output (up to the next status line) for
-// its panic: the location, then the first non-empty line of the message.
+// its panic: the location, then the first non-empty line of the message, plus an
+// assertion's `left:` and `right:` values, which is what a raced count is read from.
 func findPanic(lines []string, start int) string {
 	for i := start; i < len(lines); i++ {
 		if statusBoundaryRE.MatchString(lines[i]) {
@@ -213,12 +214,26 @@ func findPanic(lines []string, start int) string {
 		}
 		for j := i + 1; j < len(lines) && !statusBoundaryRE.MatchString(lines[j]); j++ {
 			if message := strings.TrimSpace(lines[j]); message != "" {
-				return m[1] + ": " + message
+				return m[1] + ": " + message + assertedValues(lines, j+1)
 			}
 		}
 		return m[1]
 	}
 	return ""
+}
+
+// assertedValues reads the `left:` and `right:` lines an `assert_eq!` prints right
+// under its message, as a suffix for that message, or nothing when they aren't there.
+func assertedValues(lines []string, start int) string {
+	if start+1 >= len(lines) {
+		return ""
+	}
+	left, hasLeft := strings.CutPrefix(strings.TrimSpace(lines[start]), "left: ")
+	right, hasRight := strings.CutPrefix(strings.TrimSpace(lines[start+1]), "right: ")
+	if !hasLeft || !hasRight {
+		return ""
+	}
+	return " (left: " + left + ", right: " + right + ")"
 }
 
 // findInTestDeadline scans a failing test's captured output (which runs until the next
