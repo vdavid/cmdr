@@ -1,0 +1,115 @@
+{
+  "ui.alertDialog.defaultButton": "OK",
+  "@ui.alertDialog.defaultButton": {
+    "sourceHash": "565339b",
+    "sameAsSourceJustification": "macOS cs AppKit buttons say OK (pile: macOS/AppKit \"OK\"); Czech uses OK as-is."
+  },
+  "ui.alertDialog.copyPathAria": "Zkopírovat cestu do schránky",
+  "@ui.alertDialog.copyPathAria": {
+    "sourceHash": "333608a"
+  },
+  "ui.modalDialog.close": "Zavřít",
+  "@ui.modalDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "ui.popover.defaultAriaLabel": "Možnosti",
+  "@ui.popover.defaultAriaLabel": {
+    "sourceHash": "d0db8b5"
+  },
+  "ui.select.placeholder": "Vybrat…",
+  "@ui.select.placeholder": {
+    "sourceHash": "731fe04"
+  },
+  "ui.combobox.emptyText": "Žádné shody. Pokračujte v psaní a použije se vaše vlastní hodnota.",
+  "@ui.combobox.emptyText": {
+    "sourceHash": "d41f776"
+  },
+  "ui.combobox.loadingSuggestions": "Načítání návrhů",
+  "@ui.combobox.loadingSuggestions": {
+    "sourceHash": "6fcf509"
+  },
+  "ui.combobox.showSuggestions": "Zobrazit návrhy",
+  "@ui.combobox.showSuggestions": {
+    "sourceHash": "a80b6a6"
+  },
+  "ui.copyBox.copyAria": "Zkopírovat příkaz do schránky",
+  "@ui.copyBox.copyAria": {
+    "sourceHash": "334c24c"
+  },
+  "ui.copyBox.copy": "Zkopírovat",
+  "@ui.copyBox.copy": {
+    "sourceHash": "e21f935"
+  },
+  "ui.copyBox.copied": "Zkopírováno!",
+  "@ui.copyBox.copied": {
+    "sourceHash": "ea61bc1"
+  },
+  "ui.shortcutChip.customizeAria": "Upravit zkratku pro příkaz {commandName}",
+  "@ui.shortcutChip.customizeAria": {
+    "sourceHash": "a1d00b2"
+  },
+  "ui.shortcutChip.customizeTooltip": "Upravit tuto zkratku",
+  "@ui.shortcutChip.customizeTooltip": {
+    "sourceHash": "9a7817d"
+  },
+  "ui.toast.dismissAria": "Zavřít oznámení",
+  "@ui.toast.dismissAria": {
+    "sourceHash": "b7bb3f3"
+  },
+  "ui.toast.noneToFocus": "Žádná oznámení",
+  "@ui.toast.noneToFocus": {
+    "sourceHash": "cbce204"
+  },
+  "ui.toast.age": "před {durationText}",
+  "@ui.toast.age": {
+    "sourceHash": "6dcfed0"
+  },
+  "ui.loadingIcon.finalizing": "{count, plural, one {Načten {countText} soubor} few {Načteny všechny {countText} soubory} many {Načteno všech {countText} souboru} other {Načteno všech {countText} souborů}}. Soubory se řadí a připravuje se zobrazení…",
+  "@ui.loadingIcon.finalizing": {
+    "sourceHash": "0de5a42"
+  },
+  "ui.loadingIcon.loaded": "{count, plural, one {Načten {countText} soubor} few {Načteny {countText} soubory} many {Načteno {countText} souboru} other {Načteno {countText} souborů}}…",
+  "@ui.loadingIcon.loaded": {
+    "sourceHash": "69d2b22"
+  },
+  "ui.loadingIcon.loadingBackupIndex": "Načítá se index zálohy: {amountText}",
+  "@ui.loadingIcon.loadingBackupIndex": {
+    "sourceHash": "965d284"
+  },
+  "ui.loadingIcon.backupIndexAmount": "{doneText} z {totalText}",
+  "@ui.loadingIcon.backupIndexAmount": {
+    "sourceHash": "edce3be"
+  },
+  "ui.loadingIcon.backupIndexAria": "Index zálohy",
+  "@ui.loadingIcon.backupIndexAria": {
+    "sourceHash": "661044a"
+  },
+  "ui.loadingIcon.openingFolder": "Otevírání složky…",
+  "@ui.loadingIcon.openingFolder": {
+    "sourceHash": "c3ab98e"
+  },
+  "ui.loadingIcon.loading": "Načítání…",
+  "@ui.loadingIcon.loading": {
+    "sourceHash": "ba3bbbe"
+  },
+  "ui.loadingIcon.cancelHint": "Stiskněte <key></key> pro zrušení a návrat zpět",
+  "@ui.loadingIcon.cancelHint": {
+    "sourceHash": "400dd28"
+  },
+  "ui.numberInput.decrease": "Snížit hodnotu {label}",
+  "@ui.numberInput.decrease": {
+    "sourceHash": "995a5d6"
+  },
+  "ui.numberInput.increase": "Zvýšit hodnotu {label}",
+  "@ui.numberInput.increase": {
+    "sourceHash": "bbf5fc9"
+  },
+  "ui.confirmDialog.cancel": "Zrušit",
+  "@ui.confirmDialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "ui.dialogBoundary.closedToast": "Dialogové okno narazilo na problém, a tak jsme ho zavřeli. Zkuste to prosím znovu.",
+  "@ui.dialogBoundary.closedToast": {
+    "sourceHash": "b735ae2"
+  }
+}

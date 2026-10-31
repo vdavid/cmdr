@@ -1,0 +1,659 @@
+{
+  "onboarding.fdaBadge.label": "Bez plného přístupu k disku",
+  "@onboarding.fdaBadge.label": {
+    "sourceHash": "0aa10cf"
+  },
+  "onboarding.fdaBadge.tooltip": "Udělit ho nemusíte, ale Cmdr s ním funguje mnohem líp: hledání na celém disku, čtení cloudových složek i změny souborů, které si macOS nechává pro sebe. Klikněte a projděte si tuhle volbu znovu.",
+  "@onboarding.fdaBadge.tooltip": {
+    "sourceHash": "d7ff906"
+  },
+  "onboarding.fdaBadge.ariaLabel": "Bez plného přístupu k disku. Otevře krok úvodního průvodce věnovaný plnému přístupu k disku.",
+  "@onboarding.fdaBadge.ariaLabel": {
+    "sourceHash": "60ee833"
+  },
+  "onboarding.wizard.title": "Úvodní průvodce Cmdru",
+  "@onboarding.wizard.title": {
+    "sourceHash": "3b97a1b"
+  },
+  "onboarding.wizard.progressLabel": "Průběh úvodního průvodce",
+  "@onboarding.wizard.progressLabel": {
+    "sourceHash": "ad8a0da"
+  },
+  "onboarding.wizard.stepProgress": "Krok {step} z {total}{isOptional, select, true { (nepovinný)} other {}}",
+  "@onboarding.wizard.stepProgress": {
+    "sourceHash": "41705d0"
+  },
+  "onboarding.moreAbout": "Další informace o volbě „{topic}“",
+  "@onboarding.moreAbout": {
+    "sourceHash": "b4d183a"
+  },
+  "onboarding.wizard.stepTooltip": "Krok {step} z {mandatory}+1{note, select, remaining {, zbývá jeden nepovinný krok} last {, tohle je poslední, nepovinný krok} other {}}",
+  "@onboarding.wizard.stepTooltip": {
+    "sourceHash": "53f848a"
+  },
+  "onboarding.wizard.back": "Zpět",
+  "@onboarding.wizard.back": {
+    "sourceHash": "76900f1"
+  },
+  "onboarding.wizard.backAria": "Přejít na předchozí krok",
+  "@onboarding.wizard.backAria": {
+    "sourceHash": "a729451"
+  },
+  "onboarding.wizard.next": "Další",
+  "@onboarding.wizard.next": {
+    "sourceHash": "1ff57a2"
+  },
+  "onboarding.wizard.finish": "Dokončit",
+  "@onboarding.wizard.finish": {
+    "sourceHash": "a6c7a84"
+  },
+  "onboarding.wizard.restart": "Znovu spustit Cmdr",
+  "@onboarding.wizard.restart": {
+    "sourceHash": "e62c550"
+  },
+  "onboarding.stepFda.granted.title": "Plný přístup k disku je udělený!",
+  "@onboarding.stepFda.granted.title": {
+    "sourceHash": "6740141"
+  },
+  "onboarding.stepFda.granted.body": "Super, nic dalšího Cmdr nepotřebuje. Teď ho znovu spusťte a můžete začít používat všechno.",
+  "@onboarding.stepFda.granted.body": {
+    "sourceHash": "1f59b5f"
+  },
+  "onboarding.stepFda.granted.hint": "Cmdr nové oprávnění načte při příštím spuštění. Vaše místo v úvodním průvodci je uložené, takže se vrátíte přesně sem.",
+  "@onboarding.stepFda.granted.hint": {
+    "sourceHash": "dc1d332"
+  },
+  "onboarding.stepFda.alreadyGranted.title": "Cmdr má momentálně plný přístup k disku",
+  "@onboarding.stepFda.alreadyGranted.title": {
+    "sourceHash": "403273d"
+  },
+  "onboarding.stepFda.alreadyGranted.body": "Kdykoli ho můžete odvolat v {systemSettings}.",
+  "@onboarding.stepFda.alreadyGranted.body": {
+    "sourceHash": "98fb9f4"
+  },
+  "onboarding.stepFda.welcome.title": "Vítejte v Cmdru!",
+  "@onboarding.stepFda.welcome.title": {
+    "sourceHash": "504b1bb"
+  },
+  "onboarding.stepFda.revoked.intro": "Vypadá to, že plný přístup k disku byl dřív udělen, ale potom odvolán.",
+  "@onboarding.stepFda.revoked.intro": {
+    "sourceHash": "9087914"
+  },
+  "onboarding.stepFda.revoked.noAccess": "Aplikace momentálně nemá plný přístup k disku.",
+  "@onboarding.stepFda.revoked.noAccess": {
+    "sourceHash": "415a3f3"
+  },
+  "onboarding.stepFda.revoked.ifIntentional": "Pokud to byl záměr, klikněte na <deny>Zamítnout</deny> a aplikace vás už nebude otravovat.",
+  "@onboarding.stepFda.revoked.ifIntentional": {
+    "sourceHash": "6ab4c94"
+  },
+  "onboarding.stepFda.revoked.ifNot": "Pokud to <em>nebyl</em> záměr, zvažte, jestli plný přístup k disku znovu nepovolit. Tady jsou výhody a nevýhody:",
+  "@onboarding.stepFda.revoked.ifNot": {
+    "sourceHash": "b40412b"
+  },
+  "onboarding.stepFda.firstAsk.lede": "<strong>Nejspíš chcete rovnou začít aplikaci používat.</strong> Promiňte, že vás s tímhle zdržuju hned na začátku, ale je to potřeba.",
+  "@onboarding.stepFda.firstAsk.lede": {
+    "sourceHash": "4f2f392"
+  },
+  "onboarding.stepFda.firstAsk.explain": "Cmdr je totiž správce souborů a potřebuje přístup k disku, aby viděl všechny vaše soubory. macOS k tomu oprávnění automaticky neudělí.",
+  "@onboarding.stepFda.firstAsk.explain": {
+    "sourceHash": "4196968"
+  },
+  "onboarding.stepFda.firstAsk.askPermission": "Chcete této aplikaci udělit plný přístup k disku? Co to znamená:",
+  "@onboarding.stepFda.firstAsk.askPermission": {
+    "sourceHash": "28a5c77"
+  },
+  "onboarding.stepFda.why": "Proč?",
+  "@onboarding.stepFda.why": {
+    "sourceHash": "5d8a995"
+  },
+  "onboarding.stepFda.pro.label": "Výhoda:",
+  "@onboarding.stepFda.pro.label": {
+    "sourceHash": "4fc6650"
+  },
+  "onboarding.stepFda.pro.body": "Aplikace bude mít přístup k celému disku, aniž by vás otravovala žádostmi o oprávnění ke každé složce, jako jsou Stahování, Dokumenty a Plocha.",
+  "@onboarding.stepFda.pro.body": {
+    "sourceHash": "c624227"
+  },
+  "onboarding.stepFda.con.label": "Nevýhoda:",
+  "@onboarding.stepFda.con.label": {
+    "sourceHash": "ebfc77d"
+  },
+  "onboarding.stepFda.con.body": "Plný přístup k disku je dost silné oprávnění. Aplikace díky němu může číst jakýkoli soubor na vašem Macu. Udělte ho, jen pokud Cmdru důvěřujete. Cmdr s tímto oprávněním zachází ohleduplně a pokud máte pochybnosti, jeho <sourceLink>zdrojový kód je veřejně dostupný</sourceLink>.",
+  "@onboarding.stepFda.con.body": {
+    "sourceHash": "af7f0de"
+  },
+  "onboarding.stepFda.ifAllow": "Tři kroky:",
+  "@onboarding.stepFda.ifAllow": {
+    "sourceHash": "2e6fb66"
+  },
+  "onboarding.stepFda.openSettings": "Otevřít {systemSettings}",
+  "@onboarding.stepFda.openSettings": {
+    "sourceHash": "f735c5c"
+  },
+  "onboarding.stepFda.step1": "Klikněte níže na <strong>Otevřít {systemSettings}</strong>",
+  "@onboarding.stepFda.step1": {
+    "sourceHash": "1e462a1"
+  },
+  "onboarding.stepFda.step2.ventura": "Najděte v seznamu <strong>Cmdr</strong> a zapněte ho",
+  "@onboarding.stepFda.step2.ventura": {
+    "sourceHash": "03e71c6"
+  },
+  "onboarding.stepFda.step2.older": "Najděte <strong>Cmdr</strong> na konci seznamu a zapněte ho",
+  "@onboarding.stepFda.step2.older": {
+    "sourceHash": "0dd40f1"
+  },
+  "onboarding.stepFda.step2.tip": "Cmdr v seznamu není? Klikněte dole na tlačítko „+“ a ve složce <strong>Aplikace</strong> vyberte <strong>Cmdr</strong>.",
+  "@onboarding.stepFda.step2.tip": {
+    "sourceHash": "ffc4289"
+  },
+  "onboarding.stepFda.step3": "Potvrďte a klikněte na <strong>Ukončit a znovu spustit</strong>",
+  "@onboarding.stepFda.step3": {
+    "sourceHash": "cf59f30"
+  },
+  "onboarding.stepFda.deny": "Zamítnout",
+  "@onboarding.stepFda.deny": {
+    "sourceHash": "05a2d73"
+  },
+  "onboarding.stepFda.postAction.intro": "Aby nové oprávnění začalo platit, je potřeba Cmdr znovu spustit.",
+  "@onboarding.stepFda.postAction.intro": {
+    "sourceHash": "cac5247"
+  },
+  "onboarding.stepFda.postAction.body": "Až budete chtít, klikněte níže na <restart>Znovu spustit Cmdr</restart>. Pokud si to rozmyslíte, klikněte místo toho nahoře na <deny>Zamítnout</deny>.",
+  "@onboarding.stepFda.postAction.body": {
+    "sourceHash": "7a5c238"
+  },
+  "onboarding.stepFda.openSettingsFailed": "Cmdr nedokázal otevřít {systemSettings}. Otevřete tuto aplikaci ručně, přejděte do části <strong>{privacyAndSecurity}</strong>, vyberte <strong>{fullDiskAccess}</strong> a zapněte <strong>Cmdr</strong>.",
+  "@onboarding.stepFda.openSettingsFailed": {
+    "sourceHash": "7da3acc"
+  },
+  "onboarding.stepAi.bannerTitle.granted": "Plný přístup k disku udělen",
+  "@onboarding.stepAi.bannerTitle.granted": {
+    "sourceHash": "f5872be"
+  },
+  "onboarding.stepAi.bannerBody.granted": "Díky za udělení plného přístupu k disku! Aplikace teď má k disku přístup. Skvělé!",
+  "@onboarding.stepAi.bannerBody.granted": {
+    "sourceHash": "236f3f5"
+  },
+  "onboarding.stepAi.bannerTitle.denied": "Bez plného přístupu k disku",
+  "@onboarding.stepAi.bannerTitle.denied": {
+    "sourceHash": "0aa10cf"
+  },
+  "onboarding.stepAi.bannerBody.denied": "Plný přístup k disku tedy zůstane vypnutý. To respektujeme. macOS vám brzy zobrazí několik žádostí o oprávnění, aby měl Cmdr přístup ke složkám Plocha, Stahování a podobným. Povolte je, nebo odmítněte, jak uznáte za vhodné. Všechno tohle můžete později změnit v {systemSettings}.",
+  "@onboarding.stepAi.bannerBody.denied": {
+    "sourceHash": "fa85a39"
+  },
+  "onboarding.stepAi.bannerTitle.stuck": "Zdá se, že Cmdr zatím nemá plný přístup k disku",
+  "@onboarding.stepAi.bannerTitle.stuck": {
+    "sourceHash": "6e60ae7"
+  },
+  "onboarding.stepAi.bannerBody.stuck": "Zvolená byla možnost zapnout plný přístup k disku, ale zdá se, že ho Cmdr nedostal. Možná je potřeba aplikaci znovu spustit (klidně hned, budeme pokračovat odsud!), nebo otevřete <settingsLink>{systemSettings} > Soukromí a zabezpečení > Plný přístup k disku</settingsLink> a najděte Cmdr, případně ho přidejte ručně malým tlačítkem „+“ dole.",
+  "@onboarding.stepAi.bannerBody.stuck": {
+    "sourceHash": "c13bbbe"
+  },
+  "onboarding.stepAi.welcomeLinux.title": "Vítejte v Cmdru!",
+  "@onboarding.stepAi.welcomeLinux.title": {
+    "sourceHash": "504b1bb"
+  },
+  "onboarding.stepAi.welcomeLinux.subtitle": "Pojďme nastavit AI.",
+  "@onboarding.stepAi.welcomeLinux.subtitle": {
+    "sourceHash": "e4c4251"
+  },
+  "onboarding.stepAi.title": "A teď si promluvme o AI",
+  "@onboarding.stepAi.title": {
+    "sourceHash": "7fb7b12"
+  },
+  "onboarding.stepAi.intro": "Cmdr má spoustu funkcí AI, které <em>možná</em> chcete a možná ne. AI je dnes kontroverzní téma.",
+  "@onboarding.stepAi.intro": {
+    "sourceHash": "3b6b6c6"
+  },
+  "onboarding.stepAi.comparisonIntro": "Takhle se běžné akce dělají s AI a bez ní:",
+  "@onboarding.stepAi.comparisonIntro": {
+    "sourceHash": "440ea64"
+  },
+  "onboarding.stepAi.table.colFeature": "Funkce",
+  "@onboarding.stepAi.table.colFeature": {
+    "sourceHash": "3d377ae"
+  },
+  "onboarding.stepAi.table.colWithout": "Bez AI",
+  "@onboarding.stepAi.table.colWithout": {
+    "sourceHash": "aadb0ba"
+  },
+  "onboarding.stepAi.table.colWith": "S AI",
+  "@onboarding.stepAi.table.colWith": {
+    "sourceHash": "c83835a"
+  },
+  "onboarding.stepAi.table.rowSearch": "Hledání",
+  "@onboarding.stepAi.table.rowSearch": {
+    "sourceHash": "49c266b"
+  },
+  "onboarding.stepAi.table.searchWithout": "Napíšete třeba <code>*fish*.ppt</code> a vyberete filtr „po 1. tohoto měsíce“.",
+  "@onboarding.stepAi.table.searchWithout": {
+    "sourceHash": "ebd8f45"
+  },
+  "onboarding.stepAi.table.searchWith": "Řeknete „moje poslední prezentace o rybách“ a agent vám nastaví filtry.",
+  "@onboarding.stepAi.table.searchWith": {
+    "sourceHash": "457e19a"
+  },
+  "onboarding.stepAi.table.rowRename": "Přejmenování mnoha souborů",
+  "@onboarding.stepAi.table.rowRename": {
+    "sourceHash": "5cc5e7f"
+  },
+  "onboarding.stepAi.table.renameWithout": "V Hromadném přejmenování ručně nastavíte masku, výsledek posoudíte a použijete.",
+  "@onboarding.stepAi.table.renameWithout": {
+    "sourceHash": "e7531dc"
+  },
+  "onboarding.stepAi.table.renameWith": "Řeknete „přidej na začátek datum ve formátu ISO“, agent nastaví masku přejmenování a vy výsledek posoudíte a podle uvážení použijete.",
+  "@onboarding.stepAi.table.renameWith": {
+    "sourceHash": "5287ae3"
+  },
+  "onboarding.stepAi.table.rowSelect": "Výběr",
+  "@onboarding.stepAi.table.rowSelect": {
+    "sourceHash": "2a78025"
+  },
+  "onboarding.stepAi.table.selectWithoutBound": "Stisknete klávesu <chip></chip>, napíšete třeba <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, výsledek posoudíte a použijete.",
+  "@onboarding.stepAi.table.selectWithoutBound": {
+    "sourceHash": "83f83b9"
+  },
+  "onboarding.stepAi.table.selectWithoutUnbound": "Otevřete „Vybrat soubory…“, napíšete třeba <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, výsledek posoudíte a použijete.",
+  "@onboarding.stepAi.table.selectWithoutUnbound": {
+    "sourceHash": "bf9239a"
+  },
+  "onboarding.stepAi.table.selectWith": "Řeknete „vyber všechny soubory s obrázky“, agent připraví návrh výběru a vy ho posoudíte a podle uvážení použijete.",
+  "@onboarding.stepAi.table.selectWith": {
+    "sourceHash": "c1cc90b"
+  },
+  "onboarding.stepAi.resumeCue": "Tohle je vaše volba z minula. Potvrďte ji, nebo ji níže změňte.",
+  "@onboarding.stepAi.resumeCue": {
+    "sourceHash": "586e2ae"
+  },
+  "onboarding.stepAi.choiceGroupAria": "Volba AI",
+  "@onboarding.stepAi.choiceGroupAria": {
+    "sourceHash": "9083caa"
+  },
+  "onboarding.stepAi.cloud.label": "Ano, chci AI",
+  "@onboarding.stepAi.cloud.label": {
+    "sourceHash": "ba08450"
+  },
+  "onboarding.stepAi.cloud.recommended": "Doporučeno",
+  "@onboarding.stepAi.cloud.recommended": {
+    "sourceHash": "d70604e"
+  },
+  "onboarding.stepAi.cloud.help": "Použijte libovolného cloudového poskytovatele s vlastním klíčem API, nebo vlastní server ollama či jiný vlastní LLM. Nastavíte to níže.",
+  "@onboarding.stepAi.cloud.help": {
+    "sourceHash": "0841a0d"
+  },
+  "onboarding.stepAi.cloud.pickerTitle": "Vyberte poskytovatele",
+  "@onboarding.stepAi.cloud.pickerTitle": {
+    "sourceHash": "71e2ca7"
+  },
+  "onboarding.stepAi.local.label": "Ano, chci AI, ale super soukromě, s jednoduchým místním modelem.",
+  "@onboarding.stepAi.local.label": {
+    "sourceHash": "2ee5605"
+  },
+  "onboarding.stepAi.local.tooltip": "Místní model je výrazně hloupější než cloudové modely, zabere asi 2 GB místa a při každém použití si vezme trochu RAM a CPU.\nNa oplátku žádná data neopustí váš počítač.\nCmdr se snaží vydávat aktualizace, aby byl k dispozici ten nejlepší dostupný malý model. Pokud ale chcete soukromí <em>a</em> zároveň slušný model, nejlepší volbou je vlastní server ollama nastavený přes možnost <strong>Ano, chci AI</strong> níže.",
+  "@onboarding.stepAi.local.tooltip": {
+    "sourceHash": "ddc1a76"
+  },
+  "onboarding.stepAi.local.note": "Stahování místního modelu začalo na pozadí. Úvodního průvodce teď můžete dokončit, oznámení v rohu vás bude průběžně informovat.",
+  "@onboarding.stepAi.local.note": {
+    "sourceHash": "af89d60"
+  },
+  "onboarding.stepAi.localTooltip": "Místní LLM vyžaduje Mac s čipem Apple a macOS 14 nebo novější. Cloudová AI funguje na každém Macu.",
+  "@onboarding.stepAi.localTooltip": {
+    "sourceHash": "f95b4a9"
+  },
+  "onboarding.stepAi.missingKeyWarning": "AI je zapnutá, ale chybí klíč API. AI nebude fungovat a uvidíte varování. Doplňte ho prosím výše.\n\n<strong>Pokud to chcete přeskočit a pokračovat dál, klikněte znovu na „{nextLabel}“.</strong>",
+  "@onboarding.stepAi.missingKeyWarning": {
+    "sourceHash": "b942278"
+  },
+  "onboarding.stepAi.cloudConsentOffNote": "Cloudová AI zůstane vypnutá, dokud ji nepovolíte. Můžete to udělat později v Nastavení > AI.",
+  "@onboarding.stepAi.cloudConsentOffNote": {
+    "sourceHash": "82d27b6"
+  },
+  "onboarding.stepAi.off.label": "Díky, ale ne, AI nechci",
+  "@onboarding.stepAi.off.label": {
+    "sourceHash": "c2a8322"
+  },
+  "onboarding.stepAi.off.help": "Cmdr bez AI plně funguje. Zapnout ji můžete později v Nastavení.",
+  "@onboarding.stepAi.off.help": {
+    "sourceHash": "3f261be"
+  },
+  "onboarding.localDownloadFailed.title": "Stahování místního modelu AI se nepodařilo dokončit",
+  "@onboarding.localDownloadFailed.title": {
+    "sourceHash": "9612750"
+  },
+  "onboarding.localDownloadFailed.body": "Spusťte ho znovu v Nastavení > AI.",
+  "@onboarding.localDownloadFailed.body": {
+    "sourceHash": "6601872"
+  },
+  "onboarding.localDownloadFailed.openSettings": "Otevřít Nastavení",
+  "@onboarding.localDownloadFailed.openSettings": {
+    "sourceHash": "3f94010"
+  },
+  "onboarding.stepBeta.footer.start": "Začít používat Cmdr!",
+  "@onboarding.stepBeta.footer.start": {
+    "sourceHash": "e29bbc7"
+  },
+  "onboarding.stepBeta.footer.continue": "Ještě jeden nepovinný krok nastavení",
+  "@onboarding.stepBeta.footer.continue": {
+    "sourceHash": "4024130"
+  },
+  "onboarding.stepBeta.title": "Pomoz vylepšit Cmdr!",
+  "@onboarding.stepBeta.title": {
+    "sourceHash": "6e8be73"
+  },
+  "onboarding.stepBeta.greeting": "Dobrý den, jsem <david>David</david>! Vyvíjím Cmdr a vy patříte mezi úplně první lidi, kteří ho používají. Díky za důvěru! ❤️",
+  "@onboarding.stepBeta.greeting": {
+    "sourceHash": "2736b42"
+  },
+  "onboarding.stepBeta.openBeta": "Cmdr je v otevřené betě: celkově je spolehlivý a použitelný, ale některé části ještě nejsou vyladěné. Štítky <alpha></alpha> označují oblasti, na kterých se ještě nejvíc pracuje. Váš názor mi pomáhá opravovat chyby a určovat, které funkce mají přednost.",
+  "@onboarding.stepBeta.openBeta": {
+    "sourceHash": "f3bed8c"
+  },
+  "onboarding.stepBeta.checklist.title": "Seznam úkolů úvodního průvodce, každý zabere 30 sekund:",
+  "@onboarding.stepBeta.checklist.title": {
+    "sourceHash": "6c0fc62"
+  },
+  "onboarding.stepBeta.checklist.star": "Dejte repozitáři hvězdičku na GitHubu",
+  "@onboarding.stepBeta.checklist.star": {
+    "sourceHash": "c271317"
+  },
+  "onboarding.stepBeta.checklist.starNote": "Homebrew zpřístupní <code>brew install cmdr</code>, až bude mít Cmdr 225 hvězdiček",
+  "@onboarding.stepBeta.checklist.starNote": {
+    "sourceHash": "6553ce2"
+  },
+  "onboarding.stepBeta.checklist.alternativeTo": "Dejte Cmdru lajk na AlternativeTo",
+  "@onboarding.stepBeta.checklist.alternativeTo": {
+    "sourceHash": "c9b1e1e"
+  },
+  "onboarding.stepBeta.checklist.alternativeToNote": "Úplně nahoře na stránce, vedle nadpisu „Cmdr“. Díky tomu si Cmdru všimnou lidé i Google!",
+  "@onboarding.stepBeta.checklist.alternativeToNote": {
+    "sourceHash": "ee4aed4"
+  },
+  "onboarding.stepBeta.checklist.email": "Zadejte svou e‑mailovou adresu <field></field> a jen zřídka dostanete novinky a otázky",
+  "@onboarding.stepBeta.checklist.email": {
+    "sourceHash": "e53bd44"
+  },
+  "onboarding.stepBeta.checklist.emailSave": "Uložit",
+  "@onboarding.stepBeta.checklist.emailSave": {
+    "sourceHash": "1509f56"
+  },
+  "onboarding.stepBeta.checklist.emailMark": "E‑mailová adresa je uložená",
+  "@onboarding.stepBeta.checklist.emailMark": {
+    "sourceHash": "1bf8647"
+  },
+  "onboarding.stepBeta.analyticsLede": "Aby bylo vidět, co funguje a co ne, odesílá Cmdr během otevřené bety statistiky využití: které funkce se používají a jak často, nikdy nic z vašich souborů.\nStatistiky jsou spojené s náhodným ID, ne s vaším jménem ani e‑mailem.\nTeď je to zapnuté a kdykoli to můžete vypnout.",
+  "@onboarding.stepBeta.analyticsLede": {
+    "sourceHash": "7544e4c"
+  },
+  "onboarding.stepBeta.analyticsTitle": "Odesílat statistiky využití",
+  "@onboarding.stepBeta.analyticsTitle": {
+    "sourceHash": "89b309e"
+  },
+  "onboarding.stepBeta.analyticsCaption": "Všimněte si, že během bety je to ve výchozím stavu ZAPNUTÉ, aby mi lidé data opravdu posílali.\nKdykoli to můžete změnit v Nastavení.",
+  "@onboarding.stepBeta.analyticsCaption": {
+    "sourceHash": "06ce4eb"
+  },
+  "onboarding.stepBeta.crashReportsNote": "Zprávy o haváriích jsou taky zapnuté: když Cmdr spadne, odešle verzi aplikace, vaši verzi macOS a místo, kde se kód zastavil.\nNikdy ne vaše soubory.\nObojí můžete v Nastavení vypnout, kdykoli budete chtít.",
+  "@onboarding.stepBeta.crashReportsNote": {
+    "sourceHash": "9be0be1"
+  },
+  "onboarding.stepBeta.analyticsManaged": "Vaše organizace vypnula statistiky využití.",
+  "@onboarding.stepBeta.analyticsManaged": {
+    "sourceHash": "49484ee"
+  },
+  "onboarding.stepBeta.crashReportsNoteAlone": "Zprávy o haváriích jsou zapnuté: když Cmdr spadne, odešle verzi aplikace, vaši verzi macOS a místo, kde se kód zastavil.\nNikdy ne vaše soubory.\nMůžete je v Nastavení vypnout, kdykoli budete chtít.",
+  "@onboarding.stepBeta.crashReportsNoteAlone": {
+    "sourceHash": "5084dd0"
+  },
+  "onboarding.stepBeta.emailTitle": "Zůstaňme v kontaktu (nepovinné)",
+  "@onboarding.stepBeta.emailTitle": {
+    "sourceHash": "cf691fa"
+  },
+  "onboarding.stepBeta.emailPlaceholder": "jmeno@example.com",
+  "@onboarding.stepBeta.emailPlaceholder": {
+    "sourceHash": "53e6cdc"
+  },
+  "onboarding.stepBeta.signup.success": "Zkontrolujte doručenou poštu a potvrďte svůj e‑mail. Díky za pomoc!",
+  "@onboarding.stepBeta.signup.success": {
+    "sourceHash": "b96010e"
+  },
+  "onboarding.stepBeta.signup.failure": "Promiňte, přihlášení k odběru se teď nepodařilo. Zkusíte to znovu?",
+  "@onboarding.stepBeta.signup.failure": {
+    "sourceHash": "14adb30"
+  },
+  "onboarding.stepBeta.signup.rejected": "Seznam adresátů tuto adresu nepřijal. Zkontrolujte, jestli v ní není překlep, a pak znovu klikněte na Uložit.",
+  "@onboarding.stepBeta.signup.rejected": {
+    "sourceHash": "5a1bca7"
+  },
+  "onboarding.stepBeta.signup.unreachable": "Server pro přihlášení k odběru byl teď nedostupný, takže na seznamu zatím nejste. Adresa je uložená na tomto Macu: za chvíli znovu klikněte na Uložit, nebo to kdykoli zkuste v Nastavení > Aktualizace a soukromí.",
+  "@onboarding.stepBeta.signup.unreachable": {
+    "sourceHash": "e4d8f67"
+  },
+  "onboarding.stepBeta.emailNote": "Nechte mi tu svůj e‑mail a občas se vám ozvu s otázkou nebo novinkou.\nE‑mailová adresa, kterou sem zadáte, je uložená jen na vašem Macu a nikdy se nespojuje se statistikami využití: jsou to záměrně dva oddělené subsystémy.",
+  "@onboarding.stepBeta.emailNote": {
+    "sourceHash": "0a793b1"
+  },
+  "onboarding.stepBeta.terms.title": "Jo, a ještě tohle, prosím",
+  "@onboarding.stepBeta.terms.title": {
+    "sourceHash": "f2a6e08"
+  },
+  "onboarding.stepBeta.terms.lede": "Musí to tu být ze zákona.",
+  "@onboarding.stepBeta.terms.lede": {
+    "sourceHash": "26e1bbf"
+  },
+  "onboarding.stepBeta.terms.consent": "Mám přečtené <terms>smluvní podmínky</terms> a souhlasím s nimi.",
+  "@onboarding.stepBeta.terms.consent": {
+    "sourceHash": "7becd05"
+  },
+  "onboarding.stepBeta.terms.blockedTooltip": "Pokud chcete pokračovat, přijměte smluvní podmínky.",
+  "@onboarding.stepBeta.terms.blockedTooltip": {
+    "sourceHash": "f03426e"
+  },
+  "onboarding.stepOptional.footer.start": "Začít používat Cmdr",
+  "@onboarding.stepOptional.footer.start": {
+    "sourceHash": "d11e058"
+  },
+  "onboarding.stepOptional.title": "Ještě kousek a můžete začít",
+  "@onboarding.stepOptional.title": {
+    "sourceHash": "a7bb760"
+  },
+  "onboarding.stepOptional.lede": "Jdete cestou podrobného nastavení, takže tady je pár rychlých voleb. Pokud vám na tom moc nezáleží, klikněte na tlačítko níže. Všechno je to nepovinné a výchozí hodnoty jsou nastavené tak, aby vám co nejvíc vyhovovaly.",
+  "@onboarding.stepOptional.lede": {
+    "sourceHash": "94c3a5a"
+  },
+  "onboarding.stepOptional.recommendedOn": "Doporučeno: zapnuto",
+  "@onboarding.stepOptional.recommendedOn": {
+    "sourceHash": "d91a6df"
+  },
+  "onboarding.stepOptional.changeAnytime": "Kdykoli to můžete změnit v Nastavení.",
+  "@onboarding.stepOptional.changeAnytime": {
+    "sourceHash": "895d675"
+  },
+  "onboarding.stepOptional.networking.title": "Síťové funkce",
+  "@onboarding.stepOptional.networking.title": {
+    "sourceHash": "204de4b"
+  },
+  "onboarding.stepOptional.networking.summary": "Jednou je potřeba povolit „Místní síť“",
+  "@onboarding.stepOptional.networking.summary": {
+    "sourceHash": "f49fbc6"
+  },
+  "onboarding.stepOptional.networking.desc": "Když je tohle <em>zapnuté</em>, můžete se připojovat k serverům SMB, jako jsou firemní sdílené síťové složky, domácí NAS a podobně.\nStojí to jen dialogové okno macOS s žádostí o oprávnění, které vyskočí a požádá o povolení „Místní síť“, a ještě jedno kvůli „Přijímání příchozích připojení“.\nObě dialogová okna jsou neškodná, ale pokud nevíte, co znamenají, můžou působit děsivě nebo otravně.",
+  "@onboarding.stepOptional.networking.desc": {
+    "sourceHash": "d473c62"
+  },
+  "onboarding.stepOptional.indexing.title": "Indexování disků",
+  "@onboarding.stepOptional.indexing.title": {
+    "sourceHash": "38d916b"
+  },
+  "onboarding.stepOptional.indexing.summary": "Zabere 1 GB místa, zrychlí hledání, ukáže velikosti složek",
+  "@onboarding.stepOptional.indexing.summary": {
+    "sourceHash": "6413c6f"
+  },
+  "onboarding.stepOptional.indexing.descIntro": "Indexování disků je fakt super! Přináší vám dvě hlavní věci:",
+  "@onboarding.stepOptional.indexing.descIntro": {
+    "sourceHash": "6b86a1f"
+  },
+  "onboarding.stepOptional.indexing.benefit1": "Okamžité hledání na celém disku. Jako Spotlight, jen ještě rychlejší.",
+  "@onboarding.stepOptional.indexing.benefit1": {
+    "sourceHash": "5fa0e9f"
+  },
+  "onboarding.stepOptional.indexing.benefit2": "Velikosti složek na celém disku v reálném čase. Vždycky víte, kolik toho máte v které složce.",
+  "@onboarding.stepOptional.indexing.benefit2": {
+    "sourceHash": "6fe5223"
+  },
+  "onboarding.stepOptional.indexing.descCost": "Když tohle vypnete, uvidíte u velikostí jen <code>{dirPlaceholder}</code>.\nStojí to zhruba 1 GB indexu na disku na pár milionů souborů, ale po prvních 2–3 minutách od prvního spuštění aplikace (nebo spuštění po dlouhé době) už žádné další využití CPU ani paměti.\nVzhledem k výhodám je to levná funkce.",
+  "@onboarding.stepOptional.indexing.descCost": {
+    "sourceHash": "954cf6b"
+  },
+  "onboarding.stepOptional.updates.title": "Automatické aktualizace",
+  "@onboarding.stepOptional.updates.title": {
+    "sourceHash": "147b1b6"
+  },
+  "onboarding.stepOptional.updates.summary": "Jedna drobná kontrola při spuštění aplikace a jednou denně, takže budete mít vždy aktuální verzi",
+  "@onboarding.stepOptional.updates.summary": {
+    "sourceHash": "c44fcd4"
+  },
+  "onboarding.stepOptional.updates.desc": "Když tohle zapnete, Cmdr při každém spuštění aplikace a navíc jednou za 24 hodin pošle drobný síťový požadavek na centrální licenční server a vy budete mít vždy nejnovější aktualizace.\nKdyž to vypnete, zůstane vám současná verze a Cmdr nebude posílat vůbec žádné automatické síťové požadavky (kromě pravidelných kontrol licence, pokud máte komerční licenci).",
+  "@onboarding.stepOptional.updates.desc": {
+    "sourceHash": "e1a0582"
+  },
+  "onboarding.stepOptional.mtp.title": "MTP (telefony s Androidem, Kindle, fotoaparáty)",
+  "@onboarding.stepOptional.mtp.title": {
+    "sourceHash": "473e8e9"
+  },
+  "onboarding.stepOptional.mtp.summary": "Umožní připojit telefony s Androidem a podobně, potlačí nativní obsluhu v macOS",
+  "@onboarding.stepOptional.mtp.summary": {
+    "sourceHash": "d5b9a6e"
+  },
+  "onboarding.stepOptional.mtp.desc": "Když tohle zapnete, Cmdr se může <strong>připojit k telefonům s Androidem, čtečkám Kindle a fotoaparátům</strong>, některým hudebním přehrávačům a jakémukoli dalšímu zařízení, které podporuje protokoly MTP nebo PTP.\nStojí to jen tohle: macOS se k nim <em>taky</em> chce připojit (a většinou se mu to nepovede, proto taky nejde fotky z telefonu s Androidem jednoduše zkopírovat ve Finderu), takže Cmdr musí po dobu svého běhu tenhle proces macOS potlačit.\nAž Cmdr ukončíte, proces se zase zdvořile obnoví.",
+  "@onboarding.stepOptional.mtp.desc": {
+    "sourceHash": "8a60e7f"
+  },
+  "onboarding.cloudPicker.listAria": "Poskytovatelé cloudové AI",
+  "@onboarding.cloudPicker.listAria": {
+    "sourceHash": "9494a49"
+  },
+  "onboarding.cloudSetup.title": "Nastavení poskytovatele {provider}",
+  "@onboarding.cloudSetup.title": {
+    "sourceHash": "c10333a"
+  },
+  "onboarding.cloudSetup.step.signup": "Zaregistrujte se na webu <signupLink>{provider}</signupLink> (pokud ještě nemáte účet)",
+  "@onboarding.cloudSetup.step.signup": {
+    "sourceHash": "06a92f1"
+  },
+  "onboarding.cloudSetup.step.createKey": "Vytvořte si klíč API <keyLink>tady</keyLink>",
+  "@onboarding.cloudSetup.step.createKey": {
+    "sourceHash": "5705da6"
+  },
+  "onboarding.cloudSetup.step.install": "Stáhněte a nainstalujte aplikaci <installLink>{provider}</installLink>",
+  "@onboarding.cloudSetup.step.install": {
+    "sourceHash": "cd0221c"
+  },
+  "onboarding.cloudSetup.step.ollamaModel": "Stáhněte si model v terminálu příkazem ollama pull llama3.2, nebo si <libraryLink>prohlédněte knihovnu modelů</libraryLink>",
+  "@onboarding.cloudSetup.step.ollamaModel": {
+    "sourceHash": "5999d6a"
+  },
+  "onboarding.cloudSetup.step.lmStudioServer": "V aplikaci LM Studio načtěte model a pak spusťte její <serverLink>místní server</serverLink>",
+  "@onboarding.cloudSetup.step.lmStudioServer": {
+    "sourceHash": "447957a"
+  },
+  "onboarding.cloudSetup.hint.azureEndpoint": "Zástupný symbol v adrese je potřeba nahradit názvem vašeho prostředku Azure OpenAI. Tento koncový bod nepotřebuje parametr api-version.",
+  "@onboarding.cloudSetup.hint.azureEndpoint": {
+    "sourceHash": "b1d408e"
+  },
+  "onboarding.cloudSetup.hint.azureModel": "V Azure je to název vašeho nasazení, který se může lišit od názvu modelu, který v něm běží.",
+  "@onboarding.cloudSetup.hint.azureModel": {
+    "sourceHash": "e856224"
+  },
+  "onboarding.cloudSetup.step.endpoint": "Adresa URL koncového bodu",
+  "@onboarding.cloudSetup.step.endpoint": {
+    "sourceHash": "2578179"
+  },
+  "onboarding.cloudSetup.step.endpointPlaceholder": "Příklad: https://api.example.com/v1",
+  "@onboarding.cloudSetup.step.endpointPlaceholder": {
+    "sourceHash": "dbc7343"
+  },
+  "onboarding.cloudSetup.step.pasteKey": "Vložte svůj klíč API",
+  "@onboarding.cloudSetup.step.pasteKey": {
+    "sourceHash": "e35b296"
+  },
+  "onboarding.cloudSetup.apiKeyAria": "Klíč API",
+  "@onboarding.cloudSetup.apiKeyAria": {
+    "sourceHash": "16f0ee4"
+  },
+  "onboarding.cloudSetup.removeKey": "Odstranit klíč",
+  "@onboarding.cloudSetup.removeKey": {
+    "sourceHash": "81c45fd"
+  },
+  "onboarding.cloudSetup.apiKeyPlaceholder.openai": "Příklad: sk-abc123…",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.openai": {
+    "sourceHash": "9352883"
+  },
+  "onboarding.cloudSetup.apiKeyPlaceholder.anthropic": "Příklad: sk-ant-abc123…",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.anthropic": {
+    "sourceHash": "89347d5"
+  },
+  "onboarding.cloudSetup.apiKeyPlaceholder.generic": "Klíč API",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.generic": {
+    "sourceHash": "16f0ee4"
+  },
+  "onboarding.cloudSetup.apiKeyPlaceholder.saved": "Váš klíč je uložený. Pokud ho chcete nahradit, napište nový.",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.saved": {
+    "sourceHash": "974ffdf"
+  },
+  "onboarding.cloudSetup.status.checking": "Kontroluje se klíč…",
+  "@onboarding.cloudSetup.status.checking": {
+    "sourceHash": "e8c3a83"
+  },
+  "onboarding.cloudSetup.status.authError": "Tento klíč nefungoval",
+  "@onboarding.cloudSetup.status.authError": {
+    "sourceHash": "b93b44a"
+  },
+  "onboarding.cloudSetup.status.connectionError": "Služba je teď nedostupná",
+  "@onboarding.cloudSetup.status.connectionError": {
+    "sourceHash": "fcab672"
+  },
+  "onboarding.cloudSetup.status.genericError": "Něco se nečekaně pokazilo",
+  "@onboarding.cloudSetup.status.genericError": {
+    "sourceHash": "ab827e3"
+  },
+  "onboarding.cloudSetup.status.timedOut": "Služba odpovídá příliš dlouho. Zkuste to za chvíli znovu.",
+  "@onboarding.cloudSetup.status.timedOut": {
+    "sourceHash": "bbfc68f"
+  },
+  "onboarding.cloudSetup.status.invalidEndpoint": "Tahle adresa nevypadá správně. Měla by začínat https://.",
+  "@onboarding.cloudSetup.status.invalidEndpoint": {
+    "sourceHash": "1e0798b"
+  },
+  "onboarding.cloudSetup.status.insecureEndpoint": "Klíč se posílá jen přes zabezpečené připojení, takže použijte adresu, která začíná https://.",
+  "@onboarding.cloudSetup.status.insecureEndpoint": {
+    "sourceHash": "b2713ea"
+  },
+  "onboarding.cloudSetup.status.providerRefused": "Služba požadavek odmítla (kód {status}).",
+  "@onboarding.cloudSetup.status.providerRefused": {
+    "sourceHash": "e3496e5"
+  },
+  "onboarding.cloudSetup.status.connected": "Připojeno!",
+  "@onboarding.cloudSetup.status.connected": {
+    "sourceHash": "78ae377"
+  },
+  "onboarding.cloudSetup.step.pickModel": "Vyberte model",
+  "@onboarding.cloudSetup.step.pickModel": {
+    "sourceHash": "f159730"
+  },
+  "onboarding.cloudSetup.modelAria": "Model",
+  "@onboarding.cloudSetup.modelAria": {
+    "sourceHash": "5e2c614",
+    "sameAsSourceJustification": "Model is the standard Czech word (cs termbase ruling model; same as ai.local.modelLabel)"
+  },
+  "onboarding.cloudSetup.modelPlaceholderExample": "Příklad: {model}",
+  "@onboarding.cloudSetup.modelPlaceholderExample": {
+    "sourceHash": "2287b9f"
+  },
+  "onboarding.cloudSetup.modelPlaceholder": "Název modelu",
+  "@onboarding.cloudSetup.modelPlaceholder": {
+    "sourceHash": "a3c3370"
+  }
+}

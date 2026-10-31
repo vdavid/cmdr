@@ -376,7 +376,7 @@ mod tests {
 
     #[test]
     fn no_match_returns_none_so_the_caller_uses_english() {
-        assert_eq!(resolve_ui_locale(&prefs(&["pl-PL", "cs-CZ"]), SHIPPED), None);
+        assert_eq!(resolve_ui_locale(&prefs(&["pl-PL", "ro-RO"]), SHIPPED), None);
     }
 
     #[test]

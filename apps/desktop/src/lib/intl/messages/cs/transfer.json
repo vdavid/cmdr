@@ -1,0 +1,98 @@
+{
+  "transfer.trash": "Přesunuto do koše: {countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}}",
+  "@transfer.trash": {
+    "sourceHash": "0be2310"
+  },
+  "transfer.delete": "Mazání dokončeno: {countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}}",
+  "@transfer.delete": {
+    "sourceHash": "dc69b52"
+  },
+  "transfer.compress.split": "Zkomprimováno: {phrase}.",
+  "@transfer.compress.split": {
+    "sourceHash": "daf7381"
+  },
+  "transfer.compress.fileOnly": "Zkomprimováno: {countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}}.",
+  "@transfer.compress.fileOnly": {
+    "sourceHash": "af9d928"
+  },
+  "transfer.movedPhrase": "{kind, select, both {{filesText} {files, plural, one {soubor} few {soubory} many {souboru} other {souborů}} a {foldersText} {folders, plural, one {složka} few {složky} many {složky} other {složek}}} foldersOnly {{foldersText} {folders, plural, one {složka} few {složky} many {složky} other {složek}}} other {{filesText} {files, plural, one {soubor} few {soubory} many {souboru} other {souborů}}}}",
+  "@transfer.movedPhrase": {
+    "sourceHash": "e43d866"
+  },
+  "transfer.split.clean": "{verb, select, copy {Zkopírováno} other {Přesunuto}}: {phrase}.",
+  "@transfer.split.clean": {
+    "sourceHash": "5241e2a"
+  },
+  "transfer.split.skipped": "{verb, select, copy {Zkopírováno} other {Přesunuto}}: {phrase}. Přeskočeno (už v cíli): {skippedText} {skipped, plural, one {soubor} few {soubory} many {souboru} other {souborů}}.",
+  "@transfer.split.skipped": {
+    "sourceHash": "5fe3ee2"
+  },
+  "transfer.fileOnly.allDone": "{verb, select, copy {Kopírování dokončeno: {transferred, plural, one {zkopírován {transferredText} soubor} few {zkopírovány {transferredText} soubory} many {zkopírováno {transferredText} souboru} other {zkopírováno {transferredText} souborů}}} other {Přesun dokončen: {transferred, plural, one {přesunut {transferredText} soubor} few {přesunuty {transferredText} soubory} many {přesunuto {transferredText} souboru} other {přesunuto {transferredText} souborů}}}}.",
+  "@transfer.fileOnly.allDone": {
+    "sourceHash": "19c9b7d"
+  },
+  "transfer.fileOnly.allSkippedSingle": "{verb, select, copy {Kopírování dokončeno: soubor už je v cíli, nebyl zkopírován} other {Přesun dokončen: soubor už je v cíli, nebyl přesunut}}.",
+  "@transfer.fileOnly.allSkippedSingle": {
+    "sourceHash": "9ed3c9a"
+  },
+  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Kopírování dokončeno} other {Přesun dokončen}}: {skipped, plural, one {přeskočen {skippedText} soubor (už je v cíli)} few {přeskočeny všechny {skippedText} soubory (už jsou v cíli)} many {přeskočeno všech {skippedText} souboru (už jsou v cíli)} other {přeskočeno všech {skippedText} souborů (už jsou v cíli)}}, nic se {verb, select, copy {nezkopírovalo} other {nepřesunulo}}.",
+  "@transfer.fileOnly.allSkippedMany": {
+    "sourceHash": "5b688cf"
+  },
+  "transfer.fileOnly.mixedCopy": "Kopírování dokončeno (zkopírováno: {transferredText}, přeskočeno: {skippedText}). {processed, plural, one {{processedText} vybraný soubor je teď v cíli} few {Všechny {processedText} vybrané soubory jsou teď v cíli} many {Všech {processedText} vybraného souboru je teď v cíli} other {Všech {processedText} vybraných souborů je teď v cíli}}.",
+  "@transfer.fileOnly.mixedCopy": {
+    "sourceHash": "b00606b"
+  },
+  "transfer.fileOnly.mixedMove": "Přesun dokončen (přesunuto: {transferredText}, přeskočeno: {skippedText}). {skipped, plural, one {{skippedText} soubor už v cíli byl} few {{skippedText} soubory už v cíli byly} many {{skippedText} souboru už v cíli bylo} other {{skippedText} souborů už v cíli bylo}}.",
+  "@transfer.fileOnly.mixedMove": {
+    "sourceHash": "1457a4f"
+  },
+  "transfer.appearedDuringMove": "{count, plural, one {{countText} položka se během přesunu objevila} few {{countText} položky se během přesunu objevily} many {{countText} položky se během přesunu objevilo} other {{countText} položek se během přesunu objevilo}} {scope, select, manyFolders {ve složce {folderName} a dalších zdrojových složkách} other {ve složce {folderName}}} a {count, plural, one {zůstává} few {zůstávají} many {zůstává} other {zůstává}} na místě.",
+  "@transfer.appearedDuringMove": {
+    "sourceHash": "b884882"
+  },
+  "transfer.changedDuringMove": "{count, plural, one {{countText} položka se během přesunu změnila a zůstává} few {{countText} položky se během přesunu změnily a zůstávají} many {{countText} položky se během přesunu změnilo a zůstává} other {{countText} položek se během přesunu změnilo a zůstává}} {scope, select, manyFolders {ve složce {folderName} a dalších zdrojových složkách} other {ve složce {folderName}}}.",
+  "@transfer.changedDuringMove": {
+    "sourceHash": "b446f54"
+  },
+  "transfer.durabilityUnconfirmed": "Cmdr nedostal potvrzení, že jsou kopie v umístění {volumeName} úplně zapsané. Pokud byl disk odpojen nebo selhává, zkontrolujte je, než se na ně budete spoléhat.",
+  "@transfer.durabilityUnconfirmed": {
+    "sourceHash": "48f67b4"
+  },
+  "transfer.durabilityUnconfirmedUnnamed": "Cmdr nedostal potvrzení, že jsou kopie na disku úplně zapsané. Pokud byl disk odpojen nebo selhává, zkontrolujte je, než se na ně budete spoléhat.",
+  "@transfer.durabilityUnconfirmedUnnamed": {
+    "sourceHash": "20e5d33"
+  },
+  "transfer.metadataLeftBehind": "Tento server neumí uložit {classes}, takže zůstaly jen u originálů.",
+  "@transfer.metadataLeftBehind": {
+    "sourceHash": "e8c3789"
+  },
+  "transfer.lockedSkipped": "{count, plural, one {{countText} zamčená položka zůstala na místě.} few {{countText} zamčené položky zůstaly na místě.} many {{countText} zamčené položky zůstalo na místě.} other {{countText} zamčených položek zůstalo na místě.}}",
+  "@transfer.lockedSkipped": {
+    "sourceHash": "5b9d086"
+  },
+  "transfer.systemLockedKept": "{count, plural, one {{countText} položka je zamčená systémem macOS, takže zůstala na místě.} few {{countText} položky jsou zamčené systémem macOS, takže zůstaly na místě.} many {{countText} položky je zamčeno systémem macOS, takže zůstalo na místě.} other {{countText} položek je zamčeno systémem macOS, takže zůstaly na místě.}}",
+  "@transfer.systemLockedKept": {
+    "sourceHash": "5aa9499"
+  },
+  "transfer.metadataClass.creationDates": "data vytvoření",
+  "@transfer.metadataClass.creationDates": {
+    "sourceHash": "4b3c6e7"
+  },
+  "transfer.metadataClass.permissions": "oprávnění",
+  "@transfer.metadataClass.permissions": {
+    "sourceHash": "4fe3cdd"
+  },
+  "transfer.metadataClass.lockedAndHidden": "příznaky Zamčeno a Skryté",
+  "@transfer.metadataClass.lockedAndHidden": {
+    "sourceHash": "18174cd"
+  },
+  "transfer.metadataClass.extendedAttributes": "značky Finderu",
+  "@transfer.metadataClass.extendedAttributes": {
+    "sourceHash": "fd34d8e"
+  },
+  "transfer.metadataClass.folderDates": "data složek",
+  "@transfer.metadataClass.folderDates": {
+    "sourceHash": "a5ea852"
+  }
+}

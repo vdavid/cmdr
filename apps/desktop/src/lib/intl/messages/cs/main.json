@@ -1,0 +1,222 @@
+{
+  "main.instanceLock.alertTitle": "Cmdr už běží",
+  "@main.instanceLock.alertTitle": {
+    "sourceHash": "7c8f09d"
+  },
+  "main.instanceLock.alertBody": "Najednou může běžet jen jeden Cmdr, aby vaše nastavení, protokoly a indexy zůstaly v pořádku. Tato kopie se teď zavře. Přepněte se do Cmdru, který už je otevřený.",
+  "@main.instanceLock.alertBody": {
+    "sourceHash": "84f0191"
+  },
+  "main.upgradeNudge.mac": "Přidali jsme do úvodního průvodce nové možnosti. Otevřete Cmdr > Úvodní průvodce… a projděte si je.",
+  "@main.upgradeNudge.mac": {
+    "sourceHash": "439adfd"
+  },
+  "main.upgradeNudge.other": "Přidali jsme do úvodního průvodce nové možnosti. Otevřete paletu příkazů, spusťte Úvodní průvodce… a projděte si je.",
+  "@main.upgradeNudge.other": {
+    "sourceHash": "5afe1d2"
+  },
+  "main.dockPinNudge.title": "Ponechat Cmdr v Docku?",
+  "@main.dockPinNudge.title": {
+    "sourceHash": "3a6ce9f"
+  },
+  "main.dockPinNudge.body": "Cmdr používáte už pár dní, takže vám nejspíš vyhovuje. Chcete ho mít připnutý tam dole vedle Finderu?",
+  "@main.dockPinNudge.body": {
+    "sourceHash": "7f4265e"
+  },
+  "main.dockPinNudge.unpinNote": "Pokud změníte názor, můžete ho kdykoli odepnout.",
+  "@main.dockPinNudge.unpinNote": {
+    "sourceHash": "28748d3"
+  },
+  "main.dockPinNudge.decline": "Ne, díky",
+  "@main.dockPinNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.dockPinNudge.accept": "Ano, přidat do Docku",
+  "@main.dockPinNudge.accept": {
+    "sourceHash": "8fbdc76"
+  },
+  "main.dockPinNudge.added": "Cmdr je teď v Docku.",
+  "@main.dockPinNudge.added": {
+    "sourceHash": "61bec58"
+  },
+  "main.dockPinNudge.addedButDockDidNotRestart": "Ikona Cmdru je na místě, ale Dock se nepodařilo znovu načíst. Objeví se, až se příště přihlásíte.",
+  "@main.dockPinNudge.addedButDockDidNotRestart": {
+    "sourceHash": "7a4e3bb"
+  },
+  "main.dockPinNudge.managedDock": "Váš Dock spravuje konfigurační profil, takže se do něj Cmdr nemůže přidat sám. Změnit to může ten, kdo tento Mac spravuje.",
+  "@main.dockPinNudge.managedDock": {
+    "sourceHash": "4781787"
+  },
+  "main.dockPinNudge.notAdded": "Cmdr se tentokrát do Docku nedostal. Kdykoli ho tam můžete přetáhnout ze složky Aplikace.",
+  "@main.dockPinNudge.notAdded": {
+    "sourceHash": "0b863ad"
+  },
+  "main.revealNudge.title": "Otevírat „Zobrazit ve Finderu“ v Cmdru?",
+  "@main.revealNudge.title": {
+    "sourceHash": "45a5b47"
+  },
+  "main.revealNudge.body": "Cmdr už nějakou dobu používáte. Když jiná aplikace spustí „Zobrazit ve Finderu“, může tu složku místo Finderu otevřít Cmdr, se souborem rovnou pod kurzorem.",
+  "@main.revealNudge.body": {
+    "sourceHash": "1934a04"
+  },
+  "main.revealNudge.switchBackNote": "V Nastavení to můžete kdykoli přepnout zpátky.",
+  "@main.revealNudge.switchBackNote": {
+    "sourceHash": "48c2bca"
+  },
+  "main.revealNudge.decline": "Ne, díky",
+  "@main.revealNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.revealNudge.accept": "Ano, otevírat v Cmdru",
+  "@main.revealNudge.accept": {
+    "sourceHash": "3291bb4"
+  },
+  "main.revealNudge.turnedOn": "Cmdr teď otevírá „Zobrazit ve Finderu“ z jiných aplikací.",
+  "@main.revealNudge.turnedOn": {
+    "sourceHash": "27c0ea2"
+  },
+  "main.revealNudge.heldByOtherApp": "Příkaz „Zobrazit ve Finderu“ teď přebírá aplikace {app}. V Nastavení ho můžete kdykoli předat Cmdru.",
+  "@main.revealNudge.heldByOtherApp": {
+    "sourceHash": "0893821"
+  },
+  "main.revealNudge.notTurnedOn": "Cmdr tentokrát „Zobrazit ve Finderu“ nepřevzal. Přepínač najdete v Nastavení, kdykoli to budete chtít zkusit znovu.",
+  "@main.revealNudge.notTurnedOn": {
+    "sourceHash": "0f572c0"
+  },
+  "main.revealActivation.title": "Příkaz „Zobrazit ve Finderu“ se otevřel tady",
+  "@main.revealActivation.title": {
+    "sourceHash": "6bb18bb"
+  },
+  "main.revealActivation.body": "Cmdr je nastavený tak, aby tyto požadavky přebíral, takže soubor skončil v panelu místo ve Finderu. Všechno ostatní se dál otevírá stejně jako dřív.",
+  "@main.revealActivation.body": {
+    "sourceHash": "19ea7d6"
+  },
+  "main.revealActivation.openSettings": "Změnit v Nastavení",
+  "@main.revealActivation.openSettings": {
+    "sourceHash": "673f711"
+  },
+  "main.quit.title": "{count, plural, one {Ukončit, i když ještě běží operace?} few {Ukončit, i když ještě běží {countText} operace?} many {Ukončit, i když ještě běží {countText} operace?} other {Ukončit, i když ještě běží {countText} operací?}}",
+  "@main.quit.title": {
+    "sourceHash": "2671a89"
+  },
+  "main.quit.body": "Co je hotové, zůstane hotové. Co se ještě zapisuje, se zastaví tam, kde je, a Cmdr uklidí všechno, co zůstane zapsané jen napůl.",
+  "@main.quit.body": {
+    "sourceHash": "79a69f9"
+  },
+  "main.quit.countdown": "{seconds, plural, one {Cmdr se ukončí za {secondsText} sekundu, aby restart nebo odhlášení nikdy nečekaly na Cmdr.} few {Cmdr se ukončí za {secondsText} sekundy, aby restart nebo odhlášení nikdy nečekaly na Cmdr.} many {Cmdr se ukončí za {secondsText} sekundy, aby restart nebo odhlášení nikdy nečekaly na Cmdr.} other {Cmdr se ukončí za {secondsText} sekund, aby restart nebo odhlášení nikdy nečekaly na Cmdr.}}",
+  "@main.quit.countdown": {
+    "sourceHash": "a389e0c"
+  },
+  "main.quit.countdownAria": "Čas do automatického ukončení Cmdru",
+  "@main.quit.countdownAria": {
+    "sourceHash": "6b0b5c2"
+  },
+  "main.quit.keepWorking": "Pokračovat v práci",
+  "@main.quit.keepWorking": {
+    "sourceHash": "5ed03f2"
+  },
+  "main.quit.quitNow": "Ukončit hned",
+  "@main.quit.quitNow": {
+    "sourceHash": "c96bcc8"
+  },
+  "main.quit.operationsHeading": "Stále běží",
+  "@main.quit.operationsHeading": {
+    "sourceHash": "89acce5"
+  },
+  "main.oldWebkit.title": "Cmdr potřebuje novější Safari",
+  "@main.oldWebkit.title": {
+    "sourceHash": "03e502b"
+  },
+  "main.oldWebkit.body": "Rozhraní Cmdru vyžaduje Safari 15.4 nebo novější a tento Mac má starší verzi. Otevřete nastavení Aktualizace softwaru a nainstalujte všechny čekající aktualizace. To by mělo pomoct.",
+  "@main.oldWebkit.body": {
+    "sourceHash": "a7112ec"
+  },
+  "main.oldMacos.title": "Cmdr v systému macOS {version}",
+  "@main.oldMacos.title": {
+    "sourceHash": "e75f925"
+  },
+  "main.oldMacos.body": "Cmdr oficiálně podporuje macOS 12 a novější, takže tady jde o podporu bez záruk. Většina věcí funguje, ale některé barvy a drobné podrobnosti rozložení můžou vypadat divně a opravy pro starší systémy přicházejí na řadu až nakonec. Když narazíte na něco rozbitého, určitě mi o tom dejte vědět.",
+  "@main.oldMacos.body": {
+    "sourceHash": "f9b4185"
+  },
+  "main.oldMacos.gotIt": "Rozumím",
+  "@main.oldMacos.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
+  "main.oldWebkit.quit": "Ukončit",
+  "@main.oldWebkit.quit": {
+    "sourceHash": "b3eb37a"
+  },
+  "main.escapeFullScreenHint.message": "Klávesa Esc ukončila v Cmdru režim celé obrazovky.",
+  "@main.escapeFullScreenHint.message": {
+    "sourceHash": "f7b4c55"
+  },
+  "main.escapeFullScreenHint.switchLabel": "Ukončit režim celé obrazovky klávesou Esc",
+  "@main.escapeFullScreenHint.switchLabel": {
+    "sourceHash": "f98be5e"
+  },
+  "main.escapeFullScreenHint.settingsLine": "Můžete to změnit i v <settingsLink>Nastavení > Pokročilé</settingsLink>.",
+  "@main.escapeFullScreenHint.settingsLine": {
+    "sourceHash": "a7fc48a"
+  },
+  "main.escapeFullScreenHint.onceNote": "Tohle uvidíte jen jednou.",
+  "@main.escapeFullScreenHint.onceNote": {
+    "sourceHash": "210b892"
+  },
+  "main.cliCommand.installed": "Příkaz „cmdr“ je připravený. Napište v terminálu „cmdr .“ a otevře se složka, ve které jste.",
+  "@main.cliCommand.installed": {
+    "sourceHash": "5b72efe"
+  },
+  "main.cliCommand.uninstalled": "Příkaz „cmdr“ je odinstalovaný.",
+  "@main.cliCommand.uninstalled": {
+    "sourceHash": "edac691"
+  },
+  "main.cliCommand.alreadyInstalled": "Příkaz „cmdr“ už je nainstalovaný.",
+  "@main.cliCommand.alreadyInstalled": {
+    "sourceHash": "4a67949"
+  },
+  "main.cliCommand.alreadyUninstalled": "Příkaz „cmdr“ už byl odstraněný.",
+  "@main.cliCommand.alreadyUninstalled": {
+    "sourceHash": "7d49c8f"
+  },
+  "main.cliCommand.canceled": "Nic se nezměnilo. K instalaci nebo odinstalaci příkazu „cmdr“ je potřeba heslo správce.",
+  "@main.cliCommand.canceled": {
+    "sourceHash": "31fd0a0"
+  },
+  "main.cliCommand.installFailed": "Příkaz „cmdr“ se nepodařilo nainstalovat. Zkontrolujte, že do /usr/local/bin jde zapisovat, a zkuste to znovu.",
+  "@main.cliCommand.installFailed": {
+    "sourceHash": "de500b0"
+  },
+  "main.cliCommand.uninstallFailed": "Příkaz „cmdr“ se nepodařilo odinstalovat. Zkontrolujte, že do /usr/local/bin jde zapisovat, a zkuste to znovu.",
+  "@main.cliCommand.uninstallFailed": {
+    "sourceHash": "fe4f2fe"
+  },
+  "main.cliCommand.homebrew": "Příkaz „cmdr“ nainstaloval Homebrew spolu s Cmdrem, takže už ho v terminálu máte. Zmizí, až Cmdr přes Homebrew odinstalujete.",
+  "@main.cliCommand.homebrew": {
+    "sourceHash": "1525744"
+  },
+  "main.cliCommand.takenByOther": "V /usr/local/bin už je jiný „cmdr“, takže ho Cmdr nechal být. Odstraňte ho nebo přejmenujte a zkuste to znovu.",
+  "@main.cliCommand.takenByOther": {
+    "sourceHash": "bd4877c"
+  },
+  "main.cliCommand.notInApplications": "Nejdřív přesuňte Cmdr do složky Aplikace. Pokud příkaz „cmdr“ nainstalujete odjinud, přestane fungovat, jakmile se Cmdr přesune.",
+  "@main.cliCommand.notInApplications": {
+    "sourceHash": "e011785"
+  },
+  "main.cliCommand.notProductionBuild": "Tohle je vývojová verze Cmdru, takže příkaz „cmdr“ nechává být. Použijte k tomu Cmdr ve složce Aplikace.",
+  "@main.cliCommand.notProductionBuild": {
+    "sourceHash": "f3187b3"
+  },
+  "main.cliCommand.unavailable": "Příkaz „cmdr“ se teď nepodařilo zkontrolovat. Zkuste to za chvíli znovu.",
+  "@main.cliCommand.unavailable": {
+    "sourceHash": "58814f2"
+  },
+  "main.cliCommand.adminPromptInstall": "Cmdr chce přidat příkaz „cmdr“ do /usr/local/bin.",
+  "@main.cliCommand.adminPromptInstall": {
+    "sourceHash": "3c16e21"
+  },
+  "main.cliCommand.adminPromptUninstall": "Cmdr chce odstranit příkaz „cmdr“ z /usr/local/bin.",
+  "@main.cliCommand.adminPromptUninstall": {
+    "sourceHash": "df420ea"
+  }
+}

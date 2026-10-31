@@ -1,0 +1,2191 @@
+{
+  "fileExplorer.archiveEnterMenu.ariaLabel": "Otevřít archiv nebo balíček",
+  "@fileExplorer.archiveEnterMenu.ariaLabel": {
+    "sourceHash": "df385c5"
+  },
+  "fileExplorer.archiveEnterMenu.browse": "Procházet jako složku",
+  "@fileExplorer.archiveEnterMenu.browse": {
+    "sourceHash": "8da5c95"
+  },
+  "fileExplorer.archiveEnterMenu.open": "Otevřít ve výchozí aplikaci",
+  "@fileExplorer.archiveEnterMenu.open": {
+    "sourceHash": "d3d5d6e"
+  },
+  "fileExplorer.archiveEnterMenu.configure": "Nastavit…",
+  "@fileExplorer.archiveEnterMenu.configure": {
+    "sourceHash": "37d7822"
+  },
+  "fileExplorer.breadcrumb.navigateTooltip": "Kliknutím přejdete do složky {path}",
+  "@fileExplorer.breadcrumb.navigateTooltip": {
+    "sourceHash": "9d08428"
+  },
+  "fileExplorer.doubleClickHint.title": "Co se právě stalo?",
+  "@fileExplorer.doubleClickHint.title": {
+    "sourceHash": "865b71e"
+  },
+  "fileExplorer.doubleClickHint.body": "Dvojitým kliknutím na pozadí panelu přejdete do nadřazené složky.",
+  "@fileExplorer.doubleClickHint.body": {
+    "sourceHash": "cfbc7d3"
+  },
+  "fileExplorer.doubleClickHint.dontLikeIt": "Nelíbí se vám to?",
+  "@fileExplorer.doubleClickHint.dontLikeIt": {
+    "sourceHash": "4801954"
+  },
+  "fileExplorer.doubleClickHint.neverAgain": "Už to nikdy nedělat",
+  "@fileExplorer.doubleClickHint.neverAgain": {
+    "sourceHash": "5026f4a"
+  },
+  "fileExplorer.doubleClickHint.iLikeIt": "Líbí se mi",
+  "@fileExplorer.doubleClickHint.iLikeIt": {
+    "sourceHash": "6859406"
+  },
+  "fileExplorer.pane.filePaneAriaLabel": "{side, select, left {Levý} other {Pravý}} panel souborů",
+  "@fileExplorer.pane.filePaneAriaLabel": {
+    "sourceHash": "77f3961"
+  },
+  "fileExplorer.pane.locationBarAriaLabel": "Umístění",
+  "@fileExplorer.pane.locationBarAriaLabel": {
+    "sourceHash": "15b6197"
+  },
+  "fileExplorer.pane.location": "{side, select, left {Levý panel, {folder}} other {Pravý panel, {folder}}}",
+  "@fileExplorer.pane.location": {
+    "sourceHash": "8b5ce0b"
+  },
+  "fileExplorer.pane.locationEmpty": "{location}, prázdná složka",
+  "@fileExplorer.pane.locationEmpty": {
+    "sourceHash": "4c4231e"
+  },
+  "fileExplorer.pane.selectedCount": "{count, plural, =0 {Nic není vybráno} one {Vybrána {countText} položka} few {Vybrány {countText} položky} many {Vybráno {countText} položky} other {Vybráno {countText} položek}}",
+  "@fileExplorer.pane.selectedCount": {
+    "sourceHash": "f88241d"
+  },
+  "fileExplorer.pane.filterMatches": "{count, plural, =0 {Žádný název neobsahuje „{pattern}“} one {„{pattern}“ obsahuje {countText} název} few {„{pattern}“ obsahují {countText} názvy} many {„{pattern}“ obsahuje {countText} názvu} other {„{pattern}“ obsahuje {countText} názvů}}",
+  "@fileExplorer.pane.filterMatches": {
+    "sourceHash": "22e1cd2"
+  },
+  "fileExplorer.pane.filterCleared": "{count, plural, =0 {Filtr vymazán} one {Filtr vymazán, {countText} název} few {Filtr vymazán, {countText} názvy} many {Filtr vymazán, {countText} názvu} other {Filtr vymazán, {countText} názvů}}",
+  "@fileExplorer.pane.filterCleared": {
+    "sourceHash": "f63111f"
+  },
+  "fileExplorer.pane.searchResultsLocation": "Výsledky hledání",
+  "@fileExplorer.pane.searchResultsLocation": {
+    "sourceHash": "e978b00"
+  },
+  "fileExplorer.pane.diskUsageAriaLabel": "Využití disku",
+  "@fileExplorer.pane.diskUsageAriaLabel": {
+    "sourceHash": "4fe60c1"
+  },
+  "fileExplorer.restrictedFolder.tooltip": "Přístup k této složce je omezený. Všechna taková omezení odstraníte, když Cmdru udělíte {fullDiskAccess} v {systemSettings} → {privacyAndSecurity} → {fullDiskAccess}. Nebo udělte přístup jen ke konkrétní složce v {systemSettings} → {privacyAndSecurity} → {filesAndFolders} → Cmdr.",
+  "@fileExplorer.restrictedFolder.tooltip": {
+    "sourceHash": "27b86a9"
+  },
+  "fileExplorer.restrictedFolder.label": "Omezená složka",
+  "@fileExplorer.restrictedFolder.label": {
+    "sourceHash": "bbcf72f"
+  },
+  "fileExplorer.archivedFile.label": "Archivováno",
+  "@fileExplorer.archivedFile.label": {
+    "sourceHash": "bdb8650"
+  },
+  "fileExplorer.archivedFile.tooltip": "Soubor je v archivním úložišti. Než ho otevřete nebo zkopírujete, obnovte ho v konzoli svého poskytovatele úložiště.",
+  "@fileExplorer.archivedFile.tooltip": {
+    "sourceHash": "8897d71"
+  },
+  "fileExplorer.diskSpace.free": "Volno {freeText} z {totalText} ({percentText} %)",
+  "@fileExplorer.diskSpace.free": {
+    "sourceHash": "97781f4"
+  },
+  "fileExplorer.diskSpace.freeShort": "Volno {freeText} z {totalText}",
+  "@fileExplorer.diskSpace.freeShort": {
+    "sourceHash": "b8f52a6"
+  },
+  "fileExplorer.diskSpace.used": "Využito {usedText}",
+  "@fileExplorer.diskSpace.used": {
+    "sourceHash": "6285805"
+  },
+  "fileExplorer.diskSpace.noLimitNote": "Toto úložiště nemá žádný limit velikosti, takže tu není pruh, který by se plnil.",
+  "@fileExplorer.diskSpace.noLimitNote": {
+    "sourceHash": "7e2a153"
+  },
+  "fileExplorer.diskSpace.lowNote": "Tento pruh je červený, protože na svazku dochází volné místo.",
+  "@fileExplorer.diskSpace.lowNote": {
+    "sourceHash": "4f558cd"
+  },
+  "fileExplorer.diskSpace.somewhatLowNote": "Tento pruh je žlutý, protože na svazku začíná ubývat volné místo.",
+  "@fileExplorer.diskSpace.somewhatLowNote": {
+    "sourceHash": "4f24bbf"
+  },
+  "fileExplorer.diskSpace.barTooltip": "{hasNotes, select, yes {{sizes}. {notes}} other {{sizes}}}",
+  "@fileExplorer.diskSpace.barTooltip": {
+    "sourceHash": "3bc0afc",
+    "sameAsSourceJustification": "Placeholder-only assembly frame; Czech ends a sentence with a full stop and space like English (style.md typography)"
+  },
+  "fileExplorer.pane.resizePanesAriaLabel": "Změnit velikost panelů",
+  "@fileExplorer.pane.resizePanesAriaLabel": {
+    "sourceHash": "ff22a46"
+  },
+  "fileExplorer.pane.fileExplorerAriaLabel": "Správce souborů",
+  "@fileExplorer.pane.fileExplorerAriaLabel": {
+    "sourceHash": "bfd3c67"
+  },
+  "fileExplorer.pane.disconnectFailedToast": "Odpojení se nepodařilo: {message}",
+  "@fileExplorer.pane.disconnectFailedToast": {
+    "sourceHash": "e394098"
+  },
+  "fileExplorer.pane.connectedDirectlyToast": "Připojeno přímo pro rychlejší přístup",
+  "@fileExplorer.pane.connectedDirectlyToast": {
+    "sourceHash": "5c6bcd2"
+  },
+  "fileExplorer.pane.directConnectionUnreachableToast": "Server „{server}“ je teď nedostupný, takže tato sdílená složka dál používá systémové připojení.",
+  "@fileExplorer.pane.directConnectionUnreachableToast": {
+    "sourceHash": "4a5ca66"
+  },
+  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "Něco na tomto Macu brání Cmdru připojit se k serveru „{server}“ přímo, takže tato sdílená složka dál používá systémové připojení. Zkuste Cmdr v části {localNetwork} vypnout a znovu zapnout, nebo zkontrolujte svou aplikaci firewallu.",
+  "@fileExplorer.pane.directConnectionBlockedByThisMacToast": {
+    "sourceHash": "74f758e"
+  },
+  "fileExplorer.pane.openLocalNetworkSettings": "Otevřít nastavení {localNetwork}",
+  "@fileExplorer.pane.openLocalNetworkSettings": {
+    "sourceHash": "c3931df"
+  },
+  "fileExplorer.pane.directConnectionTooSlowToast": "Server „{server}“ neodpověděl včas, takže tato sdílená složka dál používá systémové připojení.",
+  "@fileExplorer.pane.directConnectionTooSlowToast": {
+    "sourceHash": "bb5baea"
+  },
+  "fileExplorer.pane.directConnectionUnexpectedToast": "Přímé připojení k serveru „{server}“ se nepodařilo navázat, takže tato sdílená složka dál používá systémové připojení.",
+  "@fileExplorer.pane.directConnectionUnexpectedToast": {
+    "sourceHash": "1b14bd0"
+  },
+  "fileExplorer.pane.directConnectionShareNotOnServerToast": "Server „{server}“ hlásí, že tuto sdílenou složku nemá, takže sdílená složka dál používá systémové připojení.",
+  "@fileExplorer.pane.directConnectionShareNotOnServerToast": {
+    "sourceHash": "1936abc"
+  },
+  "fileExplorer.pane.directConnectionUnavailableToast": "Přímé připojení se teď nepodařilo navázat, takže tato sdílená složka dál používá systémové připojení.",
+  "@fileExplorer.pane.directConnectionUnavailableToast": {
+    "sourceHash": "282f96d"
+  },
+  "fileExplorer.pane.directConnectionShareGoneToast": "Sdílená složka „{share}“ už není připojená, takže není co zrychlovat.",
+  "@fileExplorer.pane.directConnectionShareGoneToast": {
+    "sourceHash": "d562549"
+  },
+  "fileExplorer.pane.directConnectionMountNotRespondingToast": "Sdílená složka „{share}“ teď nereaguje, takže se k ní Cmdr nemůže připojit přímo. Zkuste to za chvíli znovu.",
+  "@fileExplorer.pane.directConnectionMountNotRespondingToast": {
+    "sourceHash": "baa6b1a"
+  },
+  "fileExplorer.pane.directConnectionNotNetworkShareToast": "Svazek „{volume}“ není síťová sdílená složka, takže není co zrychlovat.",
+  "@fileExplorer.pane.directConnectionNotNetworkShareToast": {
+    "sourceHash": "f634743"
+  },
+  "fileExplorer.pane.trashUnconfirmedToast": "Nepodařilo se potvrdit, že se soubor přesunul do koše. Svazek může být pomalý, ale soubor se možná přesto přesunul. Pro jistotu zkontrolujte koš.",
+  "@fileExplorer.pane.trashUnconfirmedToast": {
+    "sourceHash": "6764112"
+  },
+  "fileExplorer.pane.refreshStillRunningToast": "Tato složka se pořád načítá. Seznam se aktualizuje, jakmile bude načtená.",
+  "@fileExplorer.pane.refreshStillRunningToast": {
+    "sourceHash": "0636af4"
+  },
+  "fileExplorer.paneBoundary.title": "Tento panel narazil na problém",
+  "@fileExplorer.paneBoundary.title": {
+    "sourceHash": "b448d1e"
+  },
+  "fileExplorer.paneBoundary.body": "Druhý panel dál funguje. Načtěte tento panel znovu a jeho složka se znovu otevře.",
+  "@fileExplorer.paneBoundary.body": {
+    "sourceHash": "949e6b2"
+  },
+  "fileExplorer.paneBoundary.reload": "Znovu načíst panel",
+  "@fileExplorer.paneBoundary.reload": {
+    "sourceHash": "a53cfeb"
+  },
+  "fileExplorer.pane.ejectedDriveStaysToast": "Svazek „{volumeName}“ je vysunutý, ale disk zatím neodpojujte: jiné svazky na něm jsou pořád připojené.",
+  "@fileExplorer.pane.ejectedDriveStaysToast": {
+    "sourceHash": "12eac5d"
+  },
+  "fileExplorer.pane.ejectAllFailedToast": "Všechno na tomto disku se nepodařilo vysunout: {message}",
+  "@fileExplorer.pane.ejectAllFailedToast": {
+    "sourceHash": "d824a11"
+  },
+  "fileExplorer.pane.ejectAllHeldToast": "Z tohoto disku se nic nevysunulo: {message}",
+  "@fileExplorer.pane.ejectAllHeldToast": {
+    "sourceHash": "9ef094c"
+  },
+  "fileExplorer.pane.ejectFailedToast": "Svazek „{volumeName}“ se nepodařilo vysunout: {message}",
+  "@fileExplorer.pane.ejectFailedToast": {
+    "sourceHash": "f4072a7"
+  },
+  "fileExplorer.errorPane.tryAgain": "Zkusit znovu",
+  "@fileExplorer.errorPane.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.errorPane.openSystemSettings": "Otevřít {systemSettings}",
+  "@fileExplorer.errorPane.openSystemSettings": {
+    "sourceHash": "f735c5c"
+  },
+  "fileExplorer.errorPane.goBack": "Přejít zpět",
+  "@fileExplorer.errorPane.goBack": {
+    "sourceHash": "6aadac2"
+  },
+  "fileExplorer.errorPane.goHome": "Přejít do domovské složky",
+  "@fileExplorer.errorPane.goHome": {
+    "sourceHash": "74b2a8b"
+  },
+  "fileExplorer.errorPane.technicalDetails": "Technické podrobnosti",
+  "@fileExplorer.errorPane.technicalDetails": {
+    "sourceHash": "890ab35"
+  },
+  "fileExplorer.errorPane.aMomentAgo": "před okamžikem",
+  "@fileExplorer.errorPane.aMomentAgo": {
+    "sourceHash": "65b0cae"
+  },
+  "fileExplorer.errorPane.secondsAgo": "před {seconds} s",
+  "@fileExplorer.errorPane.secondsAgo": {
+    "sourceHash": "b5907e4"
+  },
+  "fileExplorer.errorPane.minutesAgo": "před {minutes} min",
+  "@fileExplorer.errorPane.minutesAgo": {
+    "sourceHash": "0e91828"
+  },
+  "fileExplorer.errorPane.hoursAgo": "před {hours} hod",
+  "@fileExplorer.errorPane.hoursAgo": {
+    "sourceHash": "bbfb1e5"
+  },
+  "fileExplorer.errorPane.retryInfo": "Zkoušeno znovu {count}× · poprvé {firstAgo}",
+  "@fileExplorer.errorPane.retryInfo": {
+    "sourceHash": "03bb746"
+  },
+  "fileExplorer.errorPane.retryInfoWithLast": "Zkoušeno znovu {count}× · poprvé {firstAgo} · naposledy {lastAgo}",
+  "@fileExplorer.errorPane.retryInfoWithLast": {
+    "sourceHash": "e11bb94"
+  },
+  "fileExplorer.functionKeyBar.toolbarAriaLabel": "Funkční klávesy",
+  "@fileExplorer.functionKeyBar.toolbarAriaLabel": {
+    "sourceHash": "f69e00d"
+  },
+  "fileExplorer.functionKeyBar.noShiftAction": "{fnKey} (bez akce s klávesou Shift)",
+  "@fileExplorer.functionKeyBar.noShiftAction": {
+    "sourceHash": "83b9f17"
+  },
+  "fileExplorer.functionKeyBar.newFileLabel": "Nový soubor",
+  "@fileExplorer.functionKeyBar.newFileLabel": {
+    "sourceHash": "44dedd0"
+  },
+  "fileExplorer.functionKeyBar.renameLabel": "Přejmenovat",
+  "@fileExplorer.functionKeyBar.renameLabel": {
+    "sourceHash": "3064d79"
+  },
+  "fileExplorer.functionKeyBar.permanentlyLabel": "Trvale",
+  "@fileExplorer.functionKeyBar.permanentlyLabel": {
+    "sourceHash": "d06138e"
+  },
+  "fileExplorer.functionKeyBar.viewLabel": "Zobrazit",
+  "@fileExplorer.functionKeyBar.viewLabel": {
+    "sourceHash": "dcc839a"
+  },
+  "fileExplorer.functionKeyBar.editLabel": "Upravit",
+  "@fileExplorer.functionKeyBar.editLabel": {
+    "sourceHash": "464c4ff"
+  },
+  "fileExplorer.functionKeyBar.copyLabel": "Kopírovat",
+  "@fileExplorer.functionKeyBar.copyLabel": {
+    "sourceHash": "e21f935"
+  },
+  "fileExplorer.functionKeyBar.moveLabel": "Přesunout",
+  "@fileExplorer.functionKeyBar.moveLabel": {
+    "sourceHash": "6ecc3df"
+  },
+  "fileExplorer.functionKeyBar.newFolderLabel": "Nová složka",
+  "@fileExplorer.functionKeyBar.newFolderLabel": {
+    "sourceHash": "cf28f49"
+  },
+  "fileExplorer.functionKeyBar.deleteLabel": "Smazat",
+  "@fileExplorer.functionKeyBar.deleteLabel": {
+    "sourceHash": "e2d0a54"
+  },
+  "fileExplorer.openingToast.withApp": "Soubor {fileName} se otevírá v aplikaci {appName}…",
+  "@fileExplorer.openingToast.withApp": {
+    "sourceHash": "68aaf91"
+  },
+  "fileExplorer.openingToast.noApp": "Otevírá se {fileName}…",
+  "@fileExplorer.openingToast.noApp": {
+    "sourceHash": "45d83ec"
+  },
+  "fileExplorer.functionKeyBar.terminalLabel": "Terminál",
+  "@fileExplorer.functionKeyBar.terminalLabel": {
+    "sourceHash": "e0926fd"
+  },
+  "fileExplorer.functionKeyBar.hiddenToast": "Lišta funkčních kláves je teď skrytá. Kdykoli ji můžete znovu zapnout v <settingsLink>Nastavení</settingsLink>.",
+  "@fileExplorer.functionKeyBar.hiddenToast": {
+    "sourceHash": "f961d3b"
+  },
+  "fileExplorer.typeToJump.prefix": "Skok: ",
+  "@fileExplorer.typeToJump.prefix": {
+    "sourceHash": "e9e3412"
+  },
+  "fileExplorer.quickFilter.prefix": "Filtr: ",
+  "@fileExplorer.quickFilter.prefix": {
+    "sourceHash": "b549365"
+  },
+  "fileExplorer.searchResults.unavailableTitle": "Výsledky hledání už nejsou k dispozici",
+  "@fileExplorer.searchResults.unavailableTitle": {
+    "sourceHash": "ebcc5a7"
+  },
+  "fileExplorer.searchResults.unavailableBody": "Výsledky tohoto hledání byly vymazány. Otevřete nové hledání a začněte znovu.",
+  "@fileExplorer.searchResults.unavailableBody": {
+    "sourceHash": "3e4cfa2"
+  },
+  "fileExplorer.network.connect": "Připojit",
+  "@fileExplorer.network.connect": {
+    "sourceHash": "1a2303e"
+  },
+  "fileExplorer.network.connecting": "Připojování…",
+  "@fileExplorer.network.connecting": {
+    "sourceHash": "72021eb"
+  },
+  "fileExplorer.network.back": "Zpět",
+  "@fileExplorer.network.back": {
+    "sourceHash": "76900f1"
+  },
+  "fileExplorer.network.retry": "Zkusit znovu",
+  "@fileExplorer.network.retry": {
+    "sourceHash": "942087c"
+  },
+  "fileExplorer.network.signIn": "Přihlásit se",
+  "@fileExplorer.network.signIn": {
+    "sourceHash": "bfd402b"
+  },
+  "fileExplorer.network.osMountFallback.message": "Ke sdílené složce <shareName>{share}</shareName> se nepodařilo připojit přímo. Připojení funguje, ale jen přes nativní síťové připojení SMB v macOS, které je u většiny připojení 4× pomalejší (někdy i 100×) než přímé připojení Cmdru. Kliknutím na tlačítko níže to zkusíte znovu.",
+  "@fileExplorer.network.osMountFallback.message": {
+    "sourceHash": "cb53372"
+  },
+  "fileExplorer.network.osMountFallback.shareNotOnServer": "Ke sdílené složce <shareName>{share}</shareName> se nepodařilo připojit přímo, protože server hlásí, že žádnou sdílenou složku s tímto názvem nemá. Připojení dál běží přes nativní síťové připojení SMB v macOS, které je mnohem pomalejší. Tohle se samo nevyřeší: sdílená složka mohla být na serveru přejmenována nebo odstraněna, takže se vyplatí to zkontrolovat přímo tam.",
+  "@fileExplorer.network.osMountFallback.shareNotOnServer": {
+    "sourceHash": "3ae984e"
+  },
+  "fileExplorer.network.osMountFallback.retry": "Zkusit se připojit přímo",
+  "@fileExplorer.network.osMountFallback.retry": {
+    "sourceHash": "fb3905d"
+  },
+  "fileExplorer.network.osMountFallback.closeTooltip": "Zavřít",
+  "@fileExplorer.network.osMountFallback.closeTooltip": {
+    "sourceHash": "48845bf"
+  },
+  "fileExplorer.network.browser.searching": "Hledání…",
+  "@fileExplorer.network.browser.searching": {
+    "sourceHash": "c31723a"
+  },
+  "fileExplorer.network.browser.refresh": "Znovu načíst",
+  "@fileExplorer.network.browser.refresh": {
+    "sourceHash": "0e91610"
+  },
+  "fileExplorer.network.browser.refreshHint": "Stiskněte <key></key> nebo sem klikněte a seznam se obnoví",
+  "@fileExplorer.network.browser.refreshHint": {
+    "sourceHash": "7f65c7d"
+  },
+  "fileExplorer.network.browser.status.resolving": "Zjišťování…",
+  "@fileExplorer.network.browser.status.resolving": {
+    "sourceHash": "6d2b99e"
+  },
+  "fileExplorer.network.browser.status.waitingForNetwork": "Čeká se na síť…",
+  "@fileExplorer.network.browser.status.waitingForNetwork": {
+    "sourceHash": "d1c5574"
+  },
+  "fileExplorer.network.browser.status.notChecked": "Nezkontrolováno",
+  "@fileExplorer.network.browser.status.notChecked": {
+    "sourceHash": "d16948e"
+  },
+  "fileExplorer.network.browser.status.loggedIn": "Přihlášeno",
+  "@fileExplorer.network.browser.status.loggedIn": {
+    "sourceHash": "55a8cd8"
+  },
+  "fileExplorer.network.browser.status.loginFailed": "Přihlášení se nepodařilo",
+  "@fileExplorer.network.browser.status.loginFailed": {
+    "sourceHash": "5a96e84"
+  },
+  "fileExplorer.network.browser.status.loginNeeded": "Vyžaduje přihlášení",
+  "@fileExplorer.network.browser.status.loginNeeded": {
+    "sourceHash": "de0b59e"
+  },
+  "fileExplorer.network.browser.status.timeout": "Vypršel časový limit",
+  "@fileExplorer.network.browser.status.timeout": {
+    "sourceHash": "70594d9"
+  },
+  "fileExplorer.network.browser.status.unreachable": "Nedostupný",
+  "@fileExplorer.network.browser.status.unreachable": {
+    "sourceHash": "abaa46a"
+  },
+  "fileExplorer.network.browser.status.error": "Problém",
+  "@fileExplorer.network.browser.status.error": {
+    "sourceHash": "54a0e8c"
+  },
+  "fileExplorer.network.browser.status.loggedInOk": "Přihlášeno",
+  "@fileExplorer.network.browser.status.loggedInOk": {
+    "sourceHash": "55a8cd8"
+  },
+  "fileExplorer.network.browser.status.guest": "Host",
+  "@fileExplorer.network.browser.status.guest": {
+    "sourceHash": "5ed8944"
+  },
+  "fileExplorer.network.browser.status.connected": "Připojeno",
+  "@fileExplorer.network.browser.status.connected": {
+    "sourceHash": "2296556"
+  },
+  "fileExplorer.network.browser.tooltip.resolving": "Zjišťuje se název hostitele a IP adresa…",
+  "@fileExplorer.network.browser.tooltip.resolving": {
+    "sourceHash": "cac249d"
+  },
+  "fileExplorer.network.browser.tooltip.waitingForNetwork": "Čeká se, až síť přeloží název hostitele",
+  "@fileExplorer.network.browser.tooltip.waitingForNetwork": {
+    "sourceHash": "81ac569"
+  },
+  "fileExplorer.network.browser.tooltip.doubleClickToConnect": "Dvojitým kliknutím se připojíte a zobrazíte sdílené složky",
+  "@fileExplorer.network.browser.tooltip.doubleClickToConnect": {
+    "sourceHash": "a068f74"
+  },
+  "fileExplorer.network.browser.tooltip.credsStored": "Přihlašovací údaje jsou uložené. Dvojitým kliknutím se připojíte.",
+  "@fileExplorer.network.browser.tooltip.credsStored": {
+    "sourceHash": "ff82a32"
+  },
+  "fileExplorer.network.browser.tooltip.credsRejected": "Uložené přihlašovací údaje byly odmítnuty. Přihlaste se prosím s aktualizovanými údaji.",
+  "@fileExplorer.network.browser.tooltip.credsRejected": {
+    "sourceHash": "a3d55a2"
+  },
+  "fileExplorer.network.browser.tooltip.requiresLogin": "Tento hostitel vyžaduje přihlášení. Dvojitým kliknutím zadáte přihlašovací údaje.",
+  "@fileExplorer.network.browser.tooltip.requiresLogin": {
+    "sourceHash": "8e64ac0"
+  },
+  "fileExplorer.network.browser.tooltip.authFailed": "Ověření se nepodařilo. Zkontrolujte přihlašovací údaje a zkuste to znovu.",
+  "@fileExplorer.network.browser.tooltip.authFailed": {
+    "sourceHash": "b8620ab"
+  },
+  "fileExplorer.network.browser.cannotRemoveDiscovered": "Nalezené hostitele nelze odstranit",
+  "@fileExplorer.network.browser.cannotRemoveDiscovered": {
+    "sourceHash": "bde1b3c"
+  },
+  "fileExplorer.network.browser.removeHostConfirm": "Zapomenout hostitele {hostName}? Cmdr přestane vypisovat tohoto hostitele i sdílené složky uložené pod ním. Nic připojeného se neodpojí.",
+  "@fileExplorer.network.browser.removeHostConfirm": {
+    "sourceHash": "25262e0"
+  },
+  "fileExplorer.network.browser.hostRemoved": "Zapomenuto: {hostName}",
+  "@fileExplorer.network.browser.hostRemoved": {
+    "sourceHash": "51e025a"
+  },
+  "fileExplorer.network.browser.hostRemoveFailed": "Hostitele {hostName} se nepodařilo zapomenout",
+  "@fileExplorer.network.browser.hostRemoveFailed": {
+    "sourceHash": "4411547"
+  },
+  "fileExplorer.network.forgotPassword": "Uložené heslo pro {hostName} bylo zapomenuto",
+  "@fileExplorer.network.forgotPassword": {
+    "sourceHash": "6b53741"
+  },
+  "fileExplorer.network.deletePasswordFailed": "Uložené heslo se nepodařilo smazat",
+  "@fileExplorer.network.deletePasswordFailed": {
+    "sourceHash": "e9c0375"
+  },
+  "fileExplorer.network.browser.disconnected": "Odpojeno od hostitele {hostName}",
+  "@fileExplorer.network.browser.disconnected": {
+    "sourceHash": "6cb30d3"
+  },
+  "fileExplorer.network.browser.noMountedShares": "Hostitel {hostName} nemá žádné připojené sdílené složky",
+  "@fileExplorer.network.browser.noMountedShares": {
+    "sourceHash": "913c7e6"
+  },
+  "fileExplorer.network.browser.disconnectFailed": "Odpojení se nepodařilo: {message}",
+  "@fileExplorer.network.browser.disconnectFailed": {
+    "sourceHash": "e394098"
+  },
+  "fileExplorer.network.share.credentialsStoredLocally": "Přihlašovací údaje jsou uložené místně (systémový svazek klíčů nebyl nalezen)",
+  "@fileExplorer.network.share.credentialsStoredLocally": {
+    "sourceHash": "18dd24e"
+  },
+  "fileExplorer.network.share.notFound": "Sdílená složka „{shareName}“ na hostiteli {hostName} nebyla nalezena",
+  "@fileExplorer.network.share.notFound": {
+    "sourceHash": "afdd472"
+  },
+  "fileExplorer.network.share.connecting": "Připojování k hostiteli {hostName}…",
+  "@fileExplorer.network.share.connecting": {
+    "sourceHash": "fe38aec"
+  },
+  "fileExplorer.network.share.connectFailedTitle": "K hostiteli {hostName} se nepodařilo připojit",
+  "@fileExplorer.network.share.connectFailedTitle": {
+    "sourceHash": "4c3d88d"
+  },
+  "fileExplorer.network.share.signInTitle": "Přihlášení k serveru {hostName}",
+  "@fileExplorer.network.share.signInTitle": {
+    "sourceHash": "c6ff588"
+  },
+  "fileExplorer.network.share.signInMessage": "Tento server zobrazí své sdílené složky, jakmile se přihlásíte.",
+  "@fileExplorer.network.share.signInMessage": {
+    "sourceHash": "a07c053"
+  },
+  "fileExplorer.network.share.noSharesTitle": "Žádné dostupné sdílené složky",
+  "@fileExplorer.network.share.noSharesTitle": {
+    "sourceHash": "56890aa"
+  },
+  "fileExplorer.network.share.noSharesMessage": "Tento hostitel nemá žádné přístupné sdílené složky, nebo je potřeba ověření.",
+  "@fileExplorer.network.share.noSharesMessage": {
+    "sourceHash": "6633416"
+  },
+  "fileExplorer.network.share.backArrow": "Zpět",
+  "@fileExplorer.network.share.backArrow": {
+    "sourceHash": "76900f1"
+  },
+  "fileExplorer.network.share.forgetPasswordTooltip": "Odstranit uložené heslo ze svazku klíčů",
+  "@fileExplorer.network.share.forgetPasswordTooltip": {
+    "sourceHash": "f067186"
+  },
+  "fileExplorer.network.share.useGuest": "Procházet jako host",
+  "@fileExplorer.network.share.useGuest": {
+    "sourceHash": "58aa8c3"
+  },
+  "fileExplorer.network.share.signInAs": "Přihlásit se jako…",
+  "@fileExplorer.network.share.signInAs": {
+    "sourceHash": "6a34e17"
+  },
+  "fileExplorer.network.share.forgetPassword": "Zapomenout uložené heslo",
+  "@fileExplorer.network.share.forgetPassword": {
+    "sourceHash": "ed68566"
+  },
+  "fileExplorer.network.share.shareCount": "{count, plural, one {{countText} sdílená složka} few {{countText} sdílené složky} many {{countText} sdílené složky} other {{countText} sdílených složek}}",
+  "@fileExplorer.network.share.shareCount": {
+    "sourceHash": "4cc6002"
+  },
+  "fileExplorer.network.reconnect.once": "jednou",
+  "@fileExplorer.network.reconnect.once": {
+    "sourceHash": "200651a"
+  },
+  "fileExplorer.network.reconnect.twice": "dvakrát",
+  "@fileExplorer.network.reconnect.twice": {
+    "sourceHash": "dc8ffdb"
+  },
+  "fileExplorer.network.reconnect.times": "{count, plural, one {{countText}krát} few {{countText}krát} many {{countText}krát} other {{countText}krát}}",
+  "@fileExplorer.network.reconnect.times": {
+    "sourceHash": "bf5fc9c"
+  },
+  "fileExplorer.network.reconnect.finalAttempt": "Opakováno {retried}, tohle je poslední pokus. Pokud se nezdaří, připojení se přeruší.",
+  "@fileExplorer.network.reconnect.finalAttempt": {
+    "sourceHash": "7418a78"
+  },
+  "fileExplorer.network.reconnect.willTryMore": "Opakováno {retried}, po tomto pokusu to zkusí ještě {remaining}.",
+  "@fileExplorer.network.reconnect.willTryMore": {
+    "sourceHash": "a7d887a"
+  },
+  "fileExplorer.networkMount.mountingSlow": "Pořád se čeká, až se macOS připojí. Můžete to kdykoli zrušit.",
+  "@fileExplorer.networkMount.mountingSlow": {
+    "sourceHash": "e8e9040"
+  },
+  "fileExplorer.networkMount.mountFailedTitle": "Sdílenou složku se nepodařilo připojit",
+  "@fileExplorer.networkMount.mountFailedTitle": {
+    "sourceHash": "d04d142"
+  },
+  "fileExplorer.networkMount.signInTitle": "Pro otevření sdílené složky „{share}“ se přihlaste",
+  "@fileExplorer.networkMount.signInTitle": {
+    "sourceHash": "8e161f1"
+  },
+  "fileExplorer.networkMount.signInMessage": "Server „{server}“ tuto sdílenou složku otevře jen přihlášeným účtům.",
+  "@fileExplorer.networkMount.signInMessage": {
+    "sourceHash": "bec2bf7"
+  },
+  "fileExplorer.networkMount.tryAgain": "Zkusit znovu",
+  "@fileExplorer.networkMount.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.networkMount.back": "Zpět",
+  "@fileExplorer.networkMount.back": {
+    "sourceHash": "76900f1"
+  },
+  "fileExplorer.unreachable.title": "Cesta {path} je nedostupná",
+  "@fileExplorer.unreachable.title": {
+    "sourceHash": "5fa39ab"
+  },
+  "fileExplorer.unreachable.detailGaveUp": "Cmdr se několikrát pokusil znovu připojit, ale server se už neozval. Připojení zatím zůstává k dispozici. Zkuste to znovu, nebo připojení odpojte a zrušte.",
+  "@fileExplorer.unreachable.detailGaveUp": {
+    "sourceHash": "720e642"
+  },
+  "fileExplorer.unreachable.detailTimeout": "Svazek pro tuto cestu neodpověděl včas. Možná jde o síťový disk, který je teď nedostupný.",
+  "@fileExplorer.unreachable.detailTimeout": {
+    "sourceHash": "c68d5d3"
+  },
+  "fileExplorer.unreachable.retrying": "Zkouší se znovu…",
+  "@fileExplorer.unreachable.retrying": {
+    "sourceHash": "a16c8b1"
+  },
+  "fileExplorer.unreachable.retry": "Zkusit znovu",
+  "@fileExplorer.unreachable.retry": {
+    "sourceHash": "942087c"
+  },
+  "fileExplorer.unreachable.disconnect": "Odpojit",
+  "@fileExplorer.unreachable.disconnect": {
+    "sourceHash": "acfc5be"
+  },
+  "fileExplorer.unreachable.openHome": "Otevřít domovskou složku",
+  "@fileExplorer.unreachable.openHome": {
+    "sourceHash": "a178b4d"
+  },
+  "fileExplorer.listingStalled.title": "Pořád se čeká na tuto složku",
+  "@fileExplorer.listingStalled.title": {
+    "sourceHash": "2c288e7"
+  },
+  "fileExplorer.listingStalled.detail": "Server nebo disk, na kterém složka je, neodpovídá. Cmdr to dál zkouší na pozadí a složku otevře, jakmile server nebo disk odpoví.",
+  "@fileExplorer.listingStalled.detail": {
+    "sourceHash": "3d5ca69"
+  },
+  "fileExplorer.listingStalled.detailServer": "Server, na kterém složka je, neodpovídá. Cmdr to dál zkouší na pozadí a složku otevře, jakmile server odpoví.",
+  "@fileExplorer.listingStalled.detailServer": {
+    "sourceHash": "f8f8837"
+  },
+  "fileExplorer.listingStalled.detailDrive": "Disk, na kterém složka je, neodpovídá. Cmdr to dál zkouší na pozadí a složku otevře, jakmile disk odpoví.",
+  "@fileExplorer.listingStalled.detailDrive": {
+    "sourceHash": "e2f3046"
+  },
+  "fileExplorer.listingStalled.tryAgain": "Zkusit znovu",
+  "@fileExplorer.listingStalled.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.listingStalled.goBack": "Přejít zpět",
+  "@fileExplorer.listingStalled.goBack": {
+    "sourceHash": "6aadac2"
+  },
+  "fileExplorer.clipboard.copied": "{count, plural, one {Zkopírována {countText} položka} few {Zkopírovány {countText} položky} many {Zkopírováno {countText} položky} other {Zkopírováno {countText} položek}}.",
+  "@fileExplorer.clipboard.copied": {
+    "sourceHash": "7d932e1"
+  },
+  "fileExplorer.compareDirectories.marked": "Vybrány soubory, které se liší: {leftCount, plural, one {{leftCountText} soubor} few {{leftCountText} soubory} many {{leftCountText} souboru} other {{leftCountText} souborů}} vlevo a {rightCount, plural, one {{rightCountText} soubor} few {{rightCountText} soubory} many {{rightCountText} souboru} other {{rightCountText} souborů}} vpravo.",
+  "@fileExplorer.compareDirectories.marked": {
+    "sourceHash": "73e3ccf"
+  },
+  "fileExplorer.compareDirectories.noDifferences.newerAndMissing": "Není co vybrat: všechny soubory jsou v obou složkách a žádná kopie není novější. Podsložky se neporovnávají.",
+  "@fileExplorer.compareDirectories.noDifferences.newerAndMissing": {
+    "sourceHash": "c2960d8"
+  },
+  "fileExplorer.compareDirectories.noDifferences.missing": "Není co vybrat: všechny soubory jsou v obou složkách. Podsložky se neporovnávají.",
+  "@fileExplorer.compareDirectories.noDifferences.missing": {
+    "sourceHash": "ed2e696"
+  },
+  "fileExplorer.compareDirectories.noDifferences.sizeAndMissing": "Není co vybrat: všechny soubory jsou v obou složkách a mají stejnou velikost. Podsložky se neporovnávají.",
+  "@fileExplorer.compareDirectories.noDifferences.sizeAndMissing": {
+    "sourceHash": "5f7b808"
+  },
+  "fileExplorer.compareDirectories.keptChanging": "Složky se během porovnávání pořád měnily. Zkuste to znovu, až se ustálí.",
+  "@fileExplorer.compareDirectories.keptChanging": {
+    "sourceHash": "3051074"
+  },
+  "fileExplorer.compareDirectories.needsTwoFolders": "Pro porovnání otevřete složku v obou panelech",
+  "@fileExplorer.compareDirectories.needsTwoFolders": {
+    "sourceHash": "c04ef80"
+  },
+  "fileExplorer.compareDirectories.couldNotFinish": "Porovnání složek se nepodařilo dokončit. Zkuste to za chvíli znovu.",
+  "@fileExplorer.compareDirectories.couldNotFinish": {
+    "sourceHash": "0900bc9"
+  },
+  "fileExplorer.folderSizes.notConnected": "Tady nelze spočítat velikosti složek: toto umístění teď není připojené.",
+  "@fileExplorer.folderSizes.notConnected": {
+    "sourceHash": "8b51988"
+  },
+  "fileExplorer.clipboard.cutReady": "{count, plural, one {{countText} položka je připravená k přesunu} few {{countText} položky jsou připravené k přesunu} many {{countText} položky je připraveno k přesunu} other {{countText} položek je připraveno k přesunu}}. Přesun dokončíte vložením.",
+  "@fileExplorer.clipboard.cutReady": {
+    "sourceHash": "846d8af"
+  },
+  "fileExplorer.clipboard.copyFromDevice": "Schránka nedokáže přenést soubory z tohoto zařízení. Zkopírujete je klávesou {copyKey}.",
+  "@fileExplorer.clipboard.copyFromDevice": {
+    "sourceHash": "ba69ee7"
+  },
+  "fileExplorer.clipboard.moveFromDevice": "Schránka nedokáže přenést soubory z tohoto zařízení. Přesunete je klávesou {moveKey}.",
+  "@fileExplorer.clipboard.moveFromDevice": {
+    "sourceHash": "e7da049"
+  },
+  "fileExplorer.clipboard.copyFromServer": "Schránka nedokáže přenést soubory z tohoto serveru. Zkopírujete je klávesou {copyKey}.",
+  "@fileExplorer.clipboard.copyFromServer": {
+    "sourceHash": "12cb39f"
+  },
+  "fileExplorer.clipboard.moveFromServer": "Schránka nedokáže přenést soubory z tohoto serveru. Přesunete je klávesou {moveKey}.",
+  "@fileExplorer.clipboard.moveFromServer": {
+    "sourceHash": "4ae83d7"
+  },
+  "fileExplorer.clipboard.copyFromUnknown": "Tyto soubory nejde dát do schránky. Zkopírujete je klávesou {copyKey}.",
+  "@fileExplorer.clipboard.copyFromUnknown": {
+    "sourceHash": "7aaabdb"
+  },
+  "fileExplorer.clipboard.moveFromUnknown": "Tyto soubory nejde dát do schránky. Přesunete je klávesou {moveKey}.",
+  "@fileExplorer.clipboard.moveFromUnknown": {
+    "sourceHash": "7fed360"
+  },
+  "fileExplorer.edit.notOnThisMac": "Cmdr zatím nedokáže tento soubor otevřít v editoru, protože to není běžný soubor na vašem Macu. Zobrazíte ho klávesou F3.",
+  "@fileExplorer.edit.notOnThisMac": {
+    "sourceHash": "710100c"
+  },
+  "fileExplorer.edit.hint": "Otevřeno v aplikaci {app}. Chcete příště jiný editor? Vyberte ho v Nastavení.",
+  "@fileExplorer.edit.hint": {
+    "sourceHash": "3632f06"
+  },
+  "fileExplorer.edit.hintUnnamed": "Otevřeno ve vašem výchozím textovém editoru. Chcete příště jiný? Vyberte ho v Nastavení.",
+  "@fileExplorer.edit.hintUnnamed": {
+    "sourceHash": "6216471"
+  },
+  "fileExplorer.edit.dismiss": "Zavřít",
+  "@fileExplorer.edit.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "fileExplorer.edit.openSettings": "Otevřít Nastavení",
+  "@fileExplorer.edit.openSettings": {
+    "sourceHash": "ca381c1"
+  },
+  "fileExplorer.edit.appMissing": "Cmdr nemůže najít vybraný editor, proto se tento soubor otevřel v aplikaci {app}.",
+  "@fileExplorer.edit.appMissing": {
+    "sourceHash": "9a21bc7"
+  },
+  "fileExplorer.edit.appMissingUnnamed": "Cmdr nemůže najít vybraný editor, proto se tento soubor otevřel ve vašem výchozím textovém editoru.",
+  "@fileExplorer.edit.appMissingUnnamed": {
+    "sourceHash": "c61458b"
+  },
+  "fileExplorer.edit.launchRefused": "Cmdr nedokázal spustit váš textový editor. Zkuste ho jednou otevřít ručně a pak se vraťte.",
+  "@fileExplorer.edit.launchRefused": {
+    "sourceHash": "8a18c5c"
+  },
+  "fileExplorer.edit.timedOut": "Spouštění vašeho textového editoru chvíli trvá. Ještě se možná otevře.",
+  "@fileExplorer.edit.timedOut": {
+    "sourceHash": "70d283f"
+  },
+  "fileExplorer.clipboard.copyToDevice": "Soubory na toto zařízení zkopírujete klávesou {copyKey}.",
+  "@fileExplorer.clipboard.copyToDevice": {
+    "sourceHash": "f56d0c4"
+  },
+  "fileExplorer.clipboard.copyToServer": "Soubory na tento server zkopírujete klávesou {copyKey}.",
+  "@fileExplorer.clipboard.copyToServer": {
+    "sourceHash": "f6002a0"
+  },
+  "fileExplorer.clipboard.empty": "Ve schránce nejsou žádné soubory. Nejdřív soubory zkopírujte pomocí ⌘C.",
+  "@fileExplorer.clipboard.empty": {
+    "sourceHash": "0cbe304"
+  },
+  "fileExplorer.clipboard.stillPasting": "Vytváření souboru ze schránky pořád probíhá. Svazek odpovídá pomalu.",
+  "@fileExplorer.clipboard.stillPasting": {
+    "sourceHash": "0e98ca7"
+  },
+  "fileExplorer.clipboard.notPasted": "Cmdr nemohl vytvořit soubor ze schránky. {reason}",
+  "@fileExplorer.clipboard.notPasted": {
+    "sourceHash": "a6e63c7"
+  },
+  "fileExplorer.clipboard.pastedAsFile": "{kind, select, image {Obrázek ze schránky byl vložen} pdf {PDF ze schránky bylo vloženo} other {Text ze schránky byl vložen}} jako {filename}",
+  "@fileExplorer.clipboard.pastedAsFile": {
+    "sourceHash": "d61d4b5"
+  },
+  "fileExplorer.clipboard.pastedAsFileSettings": "Nastavení",
+  "@fileExplorer.clipboard.pastedAsFileSettings": {
+    "sourceHash": "74a883a"
+  },
+  "fileExplorer.clipboard.copiedPath": "Cesta je zkopírovaná, teď ji máte ve schránce:",
+  "@fileExplorer.clipboard.copiedPath": {
+    "sourceHash": "a2eec16"
+  },
+  "fileExplorer.clipboard.copiedPaths": "{count, plural, one {Zkopírována {countText} cesta} few {Zkopírovány {countText} cesty} many {Zkopírováno {countText} cesty} other {Zkopírováno {countText} cest}}.",
+  "@fileExplorer.clipboard.copiedPaths": {
+    "sourceHash": "aed343a"
+  },
+  "fileExplorer.clipboard.selectionChanged": "Složka se právě změnila, takže se nic nezkopírovalo. Zkuste to znovu.",
+  "@fileExplorer.clipboard.selectionChanged": {
+    "sourceHash": "6f31115"
+  },
+  "fileExplorer.tabs.limitReached": "Dosažen limit záložek",
+  "@fileExplorer.tabs.limitReached": {
+    "sourceHash": "2d4205a"
+  },
+  "fileExplorer.tabs.movePinnedRefused": "Připnuté záložky zůstávají na místě. Pokud ji chcete přesunout, odepněte ji.",
+  "@fileExplorer.tabs.movePinnedRefused": {
+    "sourceHash": "6743a2e"
+  },
+  "fileExplorer.tabs.moveOnlyTabRefused": "Tohle je jediná záložka v panelu, takže zůstane.",
+  "@fileExplorer.tabs.moveOnlyTabRefused": {
+    "sourceHash": "c7f36a0"
+  },
+  "fileExplorer.tabs.closePinnedConfirm": "Tato záložka je připnutá. Přesto ji zavřít?",
+  "@fileExplorer.tabs.closePinnedConfirm": {
+    "sourceHash": "d5757f9"
+  },
+  "fileExplorer.tabs.closePinnedTitle": "Zavřít připnutou záložku",
+  "@fileExplorer.tabs.closePinnedTitle": {
+    "sourceHash": "5d22e58"
+  },
+  "fileExplorer.readOnly.volumeTitle": "Svazek jen ke čtení",
+  "@fileExplorer.readOnly.volumeTitle": {
+    "sourceHash": "e2d3bf1"
+  },
+  "fileExplorer.readOnly.renameMessage": "Tento svazek je jen ke čtení. Přejmenovávat se tu nedá.",
+  "@fileExplorer.readOnly.renameMessage": {
+    "sourceHash": "5806c75"
+  },
+  "fileExplorer.readOnly.mkdirMessage": "Tento svazek je jen ke čtení. Vytvářet složky se tu nedá.",
+  "@fileExplorer.readOnly.mkdirMessage": {
+    "sourceHash": "6385636"
+  },
+  "fileExplorer.readOnly.mkfileMessage": "Tento svazek je jen ke čtení. Vytvářet soubory se tu nedá.",
+  "@fileExplorer.readOnly.mkfileMessage": {
+    "sourceHash": "32e1afa"
+  },
+  "fileExplorer.readOnly.deleteMessage": "Tento svazek je jen ke čtení. Mazat soubory se tu nedá.",
+  "@fileExplorer.readOnly.deleteMessage": {
+    "sourceHash": "a456b51"
+  },
+  "fileExplorer.readOnly.archiveTitle": "Archiv jen ke čtení",
+  "@fileExplorer.readOnly.archiveTitle": {
+    "sourceHash": "56ff9e9"
+  },
+  "fileExplorer.readOnly.archiveMessage": "Cmdr umí archivy TAR a 7z procházet a extrahovat, ale upravovat jdou jen archivy ZIP.",
+  "@fileExplorer.readOnly.archiveMessage": {
+    "sourceHash": "32a03f0"
+  },
+  "fileExplorer.readOnly.deviceTitle": "Zařízení jen ke čtení",
+  "@fileExplorer.readOnly.deviceTitle": {
+    "sourceHash": "3f79690"
+  },
+  "fileExplorer.readOnly.deviceMessage": "Zařízení „{name}“ je jen ke čtení. Soubory z něj můžete kopírovat, ale ne na něj.",
+  "@fileExplorer.readOnly.deviceMessage": {
+    "sourceHash": "5582a47"
+  },
+  "fileExplorer.readOnly.gitPortalTitle": "Portál gitu jen ke čtení",
+  "@fileExplorer.readOnly.gitPortalTitle": {
+    "sourceHash": "d4bd9c1"
+  },
+  "fileExplorer.readOnly.gitPortalMessage": "Větve, značky a commity jsou snímky vaší historie gitu, takže je můžete procházet a kopírovat z nich, ale ne je měnit.",
+  "@fileExplorer.readOnly.gitPortalMessage": {
+    "sourceHash": "87bc79d"
+  },
+  "fileExplorer.readOnly.resticTitle": "Záloha jen ke čtení",
+  "@fileExplorer.readOnly.resticTitle": {
+    "sourceHash": "55cd4b4"
+  },
+  "fileExplorer.readOnly.resticMessage": "Snímky uchovávají soubory tak, jak byly v době každé zálohy, takže je můžete procházet a kopírovat z nich, ale ne měnit.",
+  "@fileExplorer.readOnly.resticMessage": {
+    "sourceHash": "68f4b46"
+  },
+  "fileExplorer.restic.useTransferToCopyOut": "Soubory ze zálohy zkopírujete klávesou F5.",
+  "@fileExplorer.restic.useTransferToCopyOut": {
+    "sourceHash": "b3674bd"
+  },
+  "fileExplorer.restic.snapshot.host": "Zálohováno z počítače {host}",
+  "@fileExplorer.restic.snapshot.host": {
+    "sourceHash": "eecc25c"
+  },
+  "fileExplorer.restic.snapshot.tags": "{count, plural, one {Značka} few {Značky} many {Značky} other {Značky}}: {tags}",
+  "@fileExplorer.restic.snapshot.tags": {
+    "sourceHash": "4c868f9"
+  },
+  "fileExplorer.restic.snapshot.paths": "{count, plural, one {Zálohovaná cesta} few {Zálohované cesty} many {Zálohované cesty} other {Zálohované cesty}}: {paths}",
+  "@fileExplorer.restic.snapshot.paths": {
+    "sourceHash": "c90db90"
+  },
+  "fileExplorer.restic.forgetPassword.forgotten": "Heslo k záloze {name} je zapomenuto. Při příštím otevření se vás na něj Cmdr zeptá.",
+  "@fileExplorer.restic.forgetPassword.forgotten": {
+    "sourceHash": "bd4ac8e"
+  },
+  "fileExplorer.restic.forgetPassword.keychainKeptIt": "Cmdr zálohu {name} zatím zamkl, ale svazek klíčů si uložené heslo ponechal. Pokud ho chcete odstranit natrvalo, smažte ho v Klíčence.",
+  "@fileExplorer.restic.forgetPassword.keychainKeptIt": {
+    "sourceHash": "56adfb0"
+  },
+  "fileExplorer.restic.forgetPassword.unreachable": "Záloha {name} je teď pro Cmdr nedostupná, takže její heslo zůstává uložené. Zkuste to za chvíli znovu.",
+  "@fileExplorer.restic.forgetPassword.unreachable": {
+    "sourceHash": "bce4808"
+  },
+  "fileExplorer.restic.forgetPassword.noBackup": "Pokud chcete zapomenout heslo zálohy, nejdřív zálohu otevřete, nebo dejte kurzor na její složku „Browse snapshots“.",
+  "@fileExplorer.restic.forgetPassword.noBackup": {
+    "sourceHash": "50d7aff"
+  },
+  "fileExplorer.archive.useTransferToCopyOut": "Soubory z archivu zkopírujete klávesou F5, nebo přesunete klávesou F6.",
+  "@fileExplorer.archive.useTransferToCopyOut": {
+    "sourceHash": "3edbc36"
+  },
+  "fileExplorer.git.portalIntro.title": "Cmdr pro vás má pár kouzel s gitem!",
+  "@fileExplorer.git.portalIntro.title": {
+    "sourceHash": "406c0d7"
+  },
+  "fileExplorer.git.portalIntro.what": "Větve, značky, worktree a staré commity můžete procházet jako složku.",
+  "@fileExplorer.git.portalIntro.what": {
+    "sourceHash": "440fe11"
+  },
+  "fileExplorer.git.portalIntro.where": "Najdete je ve (skryté) složce <code>.git</code>.",
+  "@fileExplorer.git.portalIntro.where": {
+    "sourceHash": "ae450f3"
+  },
+  "fileExplorer.git.portalIntro.dismiss": "Zavřít",
+  "@fileExplorer.git.portalIntro.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "fileExplorer.git.portalIntro.showHidden": "Zobrazit skryté soubory",
+  "@fileExplorer.git.portalIntro.showHidden": {
+    "sourceHash": "b5ede7f"
+  },
+  "fileExplorer.git.portalIntro.goToGitDir": "Otevřít .git",
+  "@fileExplorer.git.portalIntro.goToGitDir": {
+    "sourceHash": "e05a0af"
+  },
+  "fileExplorer.git.status.modified": "Změněno",
+  "@fileExplorer.git.status.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "fileExplorer.git.status.added": "Přidáno",
+  "@fileExplorer.git.status.added": {
+    "sourceHash": "6b02e0d"
+  },
+  "fileExplorer.git.status.deleted": "Smazáno",
+  "@fileExplorer.git.status.deleted": {
+    "sourceHash": "b48ff39"
+  },
+  "fileExplorer.git.status.renamed": "Přejmenováno",
+  "@fileExplorer.git.status.renamed": {
+    "sourceHash": "05487af"
+  },
+  "fileExplorer.git.status.copied": "Zkopírováno",
+  "@fileExplorer.git.status.copied": {
+    "sourceHash": "8d525e5"
+  },
+  "fileExplorer.git.status.typechange": "Změněn typ",
+  "@fileExplorer.git.status.typechange": {
+    "sourceHash": "a949ceb"
+  },
+  "fileExplorer.git.status.untracked": "Nesledováno",
+  "@fileExplorer.git.status.untracked": {
+    "sourceHash": "c7ba547"
+  },
+  "fileExplorer.git.status.ignored": "Ignorováno",
+  "@fileExplorer.git.status.ignored": {
+    "sourceHash": "7d648f5"
+  },
+  "fileExplorer.git.status.conflicted": "V konfliktu",
+  "@fileExplorer.git.status.conflicted": {
+    "sourceHash": "916a464"
+  },
+  "fileExplorer.git.useTransferToCopyOut": "Soubory ze snímku gitu zkopírujete klávesou F5, nebo přesunete klávesou F6.",
+  "@fileExplorer.git.useTransferToCopyOut": {
+    "sourceHash": "a0d65fe"
+  },
+  "fileExplorer.openWith.copyRefused.tooLarge": "Soubor {fileName} je větší než {limit}, takže ho Cmdr nemůže otevřít v aplikaci {appName} přímo z archivu.",
+  "@fileExplorer.openWith.copyRefused.tooLarge": {
+    "sourceHash": "43399e6"
+  },
+  "fileExplorer.openWith.copyRefused.tooLargeInRepoHistory": "Soubor {fileName} je větší než {limit}, takže ho Cmdr nemůže otevřít v aplikaci {appName} přímo z historie repozitáře.",
+  "@fileExplorer.openWith.copyRefused.tooLargeInRepoHistory": {
+    "sourceHash": "aab64d0"
+  },
+  "fileExplorer.openWith.copyRefused.tooLargeInBackup": "Soubor {fileName} je větší než {limit}, takže ho Cmdr nemůže ze zálohy otevřít v aplikaci {appName}.",
+  "@fileExplorer.openWith.copyRefused.tooLargeInBackup": {
+    "sourceHash": "071fe99"
+  },
+  "fileExplorer.openWith.copyRefused.notEnoughSpace": "Na disku tohoto Macu není místo pro kopii souboru {fileName} o velikosti {size}, takže ho Cmdr nemůže otevřít v aplikaci {appName}. Uvolněte trochu místa a zkuste to znovu.",
+  "@fileExplorer.openWith.copyRefused.notEnoughSpace": {
+    "sourceHash": "5cd8e49"
+  },
+  "fileExplorer.openWith.copyRefused.needsPassword": "Soubor {fileName} je v archivu chráněném heslem. Nejdřív ho zkopírujte do složky (Cmdr se zeptá na heslo) a pak ho otevřete v aplikaci {appName}.",
+  "@fileExplorer.openWith.copyRefused.needsPassword": {
+    "sourceHash": "882a23f"
+  },
+  "fileExplorer.openWith.copyRefused.archiveUnreadable": "Soubor {fileName} se nepodařilo dostat z archivu a otevřít v aplikaci {appName}. Archiv může být poškozený nebo používat formát, který Cmdr neumí přečíst.",
+  "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
+    "sourceHash": "4ff2573"
+  },
+  "fileExplorer.openWith.copyRefused.unreadable": "Soubor {fileName} se nepodařilo přečíst a otevřít v aplikaci {appName}. Zkontrolujte, že je jeho disk pořád připojený, a zkuste to znovu.",
+  "@fileExplorer.openWith.copyRefused.unreadable": {
+    "sourceHash": "8af2399"
+  },
+  "fileExplorer.openWith.readOnlyCopy": "{count, plural, one {Aplikace {appName} otevřela kopii souboru {fileName} jen ke čtení. Změny, které v ní uložíte, se do originálu nepřenesou.} few {Aplikace {appName} otevřela kopie {countText} souborů jen ke čtení. Změny, které v nich uložíte, se do originálů nepřenesou.} many {Aplikace {appName} otevřela kopie {countText} souboru jen ke čtení. Změny, které v nich uložíte, se do originálů nepřenesou.} other {Aplikace {appName} otevřela kopie {countText} souborů jen ke čtení. Změny, které v nich uložíte, se do originálů nepřenesou.}}",
+  "@fileExplorer.openWith.readOnlyCopy": {
+    "sourceHash": "8abdd0e"
+  },
+  "fileExplorer.rename.fieldAriaLabel": "Přejmenovat {name}",
+  "@fileExplorer.rename.fieldAriaLabel": {
+    "sourceHash": "e84e258"
+  },
+  "fileExplorer.rename.hiddenAfterRename": "Soubor zmizel z dohledu, protože se skryté soubory nezobrazují.",
+  "@fileExplorer.rename.hiddenAfterRename": {
+    "sourceHash": "6258274"
+  },
+  "fileExplorer.rename.keptOriginalName": "{reason}. Původní název byl ponechán.",
+  "@fileExplorer.rename.keptOriginalName": {
+    "sourceHash": "27acd0a"
+  },
+  "fileExplorer.rename.chainKeptOriginalName": "Název „{name}“ byl ponechán: {reason}",
+  "@fileExplorer.rename.chainKeptOriginalName": {
+    "sourceHash": "174ff14"
+  },
+  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{others, plural, one {Názvy byly ponechány u jednoho dalšího souboru} few {Názvy byly ponechány u {othersText} dalších souborů} many {Názvy byly ponechány u {othersText} dalšího souboru} other {Názvy byly ponechány u {othersText} dalších souborů}} a také u „{name}“: {reason}",
+  "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
+    "sourceHash": "016797b"
+  },
+  "fileExplorer.rename.needsOwnMoveDialog": "přejmenování tu znamená kopírování na serveru, které potřebuje vlastní dialogové okno přesunu. Přejmenujte tuto položku znovu samostatně.",
+  "@fileExplorer.rename.needsOwnMoveDialog": {
+    "sourceHash": "87110e0"
+  },
+  "fileExplorer.rename.stillRenaming": "Pořád se přejmenovává „{name}“. Svazek odpovídá pomalu.",
+  "@fileExplorer.rename.stillRenaming": {
+    "sourceHash": "a05cca5"
+  },
+  "fileExplorer.rename.stillRenamingAndOthers": "Pořád se přejmenovává „{name}“ a {kind, select, folders {{others, plural, one {jedna další složka} few {{othersText} další složky} many {{othersText} další složky} other {{othersText} dalších složek}}} files {{others, plural, one {jeden další soubor} few {{othersText} další soubory} many {{othersText} dalšího souboru} other {{othersText} dalších souborů}}} other {{others, plural, one {{othersText} další soubor nebo složka} few {{othersText} další soubory a složky} many {{othersText} dalších souborů a složek} other {{othersText} dalších souborů a složek}}}}. Svazek odpovídá pomalu.",
+  "@fileExplorer.rename.stillRenamingAndOthers": {
+    "sourceHash": "933be25"
+  },
+  "fileExplorer.columns.name": "Název",
+  "@fileExplorer.columns.name": {
+    "sourceHash": "dcd1d52"
+  },
+  "fileExplorer.columns.ext": "Přípona",
+  "@fileExplorer.columns.ext": {
+    "sourceHash": "8c92eec"
+  },
+  "fileExplorer.columns.size": "Velikost",
+  "@fileExplorer.columns.size": {
+    "sourceHash": "1af8519"
+  },
+  "fileExplorer.columns.modified": "Datum změny",
+  "@fileExplorer.columns.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "fileExplorer.columns.created": "Datum vytvoření",
+  "@fileExplorer.columns.created": {
+    "sourceHash": "d70b9e2"
+  },
+  "fileExplorer.columns.added": "Datum přidání",
+  "@fileExplorer.columns.added": {
+    "sourceHash": "6b02e0d"
+  },
+  "fileExplorer.columns.dateSortMenu": "Vybrat datum, podle kterého řadit",
+  "@fileExplorer.columns.dateSortMenu": {
+    "sourceHash": "bd7d8ef"
+  },
+  "fileExplorer.columns.sortByRelevance": "Seřadit podle relevance",
+  "@fileExplorer.columns.sortByRelevance": {
+    "sourceHash": "20632dd"
+  },
+  "fileExplorer.columns.sortState": "{column}, {order, select, ascending {seřazeno vzestupně} descending {seřazeno sestupně} other {neseřazeno}}",
+  "@fileExplorer.columns.sortState": {
+    "sourceHash": "b4787e7"
+  },
+  "fileExplorer.columns.sortStateFallback": "{state} ({fallback})",
+  "@fileExplorer.columns.sortStateFallback": {
+    "sourceHash": "29aa530",
+    "sameAsSourceJustification": "Placeholder-only string: the spoken state, then the reason in parentheses; Czech uses the same parentheses."
+  },
+  "fileExplorer.columns.git": "Git",
+  "@fileExplorer.columns.git": {
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "Git is the version-control tool name, kept verbatim per the @key description; settings.section.git ships identically."
+  },
+  "fileExplorer.columns.gitTitle": "Stav gitu u každého souboru",
+  "@fileExplorer.columns.gitTitle": {
+    "sourceHash": "c4cc002"
+  },
+  "fileExplorer.list.empty": "Prázdná složka",
+  "@fileExplorer.list.empty": {
+    "sourceHash": "ca1fd45"
+  },
+  "fileExplorer.list.fileListAriaLabel": "Seznam souborů",
+  "@fileExplorer.list.fileListAriaLabel": {
+    "sourceHash": "0728b8e"
+  },
+  "fileExplorer.list.sortColumnsAriaLabel": "Sloupce řazení",
+  "@fileExplorer.list.sortColumnsAriaLabel": {
+    "sourceHash": "21f76f8"
+  },
+  "fileExplorer.list.parentRowName": "Nadřazená složka",
+  "@fileExplorer.list.parentRowName": {
+    "sourceHash": "158f5a0"
+  },
+  "fileExplorer.list.parentRowSize": "tato složka {size}",
+  "@fileExplorer.list.parentRowSize": {
+    "sourceHash": "a7a54c8"
+  },
+  "fileExplorer.list.rowKind.folder": "složka",
+  "@fileExplorer.list.rowKind.folder": {
+    "sourceHash": "034a006"
+  },
+  "fileExplorer.list.rowKind.symlink": "symbolický odkaz",
+  "@fileExplorer.list.rowKind.symlink": {
+    "sourceHash": "cc52c0d"
+  },
+  "fileExplorer.list.rowKind.package": "balík",
+  "@fileExplorer.list.rowKind.package": {
+    "sourceHash": "bc4a711"
+  },
+  "fileExplorer.list.rowKind.archive": "archiv",
+  "@fileExplorer.list.rowKind.archive": {
+    "sourceHash": "0eb3e36"
+  },
+  "fileExplorer.list.rowModified": "změněno {date}",
+  "@fileExplorer.list.rowModified": {
+    "sourceHash": "974427b"
+  },
+  "fileExplorer.list.rowCreated": "vytvořeno {date}",
+  "@fileExplorer.list.rowCreated": {
+    "sourceHash": "99d5771"
+  },
+  "fileExplorer.list.rowAdded": "přidáno {date}",
+  "@fileExplorer.list.rowAdded": {
+    "sourceHash": "5347d04"
+  },
+  "fileExplorer.list.rowGitStatus": "{status} v gitu",
+  "@fileExplorer.list.rowGitStatus": {
+    "sourceHash": "8c3bdc9"
+  },
+  "fileExplorer.dirSize.updatingIndexTooltip": "Aktualizuje se index: velikost se může změnit.",
+  "@fileExplorer.dirSize.updatingIndexTooltip": {
+    "sourceHash": "2689358"
+  },
+  "fileExplorer.dirSize.scanProgressTooltip": "Velikosti se doplní, jak bude prohledávání pokračovat",
+  "@fileExplorer.dirSize.scanProgressTooltip": {
+    "sourceHash": "8151629"
+  },
+  "fileExplorer.dirSize.contentLabel": "Obsah",
+  "@fileExplorer.dirSize.contentLabel": {
+    "sourceHash": "47bd290"
+  },
+  "fileExplorer.dirSize.onDiskLabel": "Na disku",
+  "@fileExplorer.dirSize.onDiskLabel": {
+    "sourceHash": "00ca4da"
+  },
+  "fileExplorer.dirSize.noPerms": "'<'bez práv>",
+  "@fileExplorer.dirSize.noPerms": {
+    "sourceHash": "bf8fb9d"
+  },
+  "fileExplorer.dirSize.noPermsTooltip": "Cmdr nemá oprávnění číst tuto složku",
+  "@fileExplorer.dirSize.noPermsTooltip": {
+    "sourceHash": "4920b4f"
+  },
+  "fileExplorer.dirSize.noFiles": "Žádné soubory",
+  "@fileExplorer.dirSize.noFiles": {
+    "sourceHash": "c219d96"
+  },
+  "fileExplorer.dirSize.noFolders": "žádné složky",
+  "@fileExplorer.dirSize.noFolders": {
+    "sourceHash": "055fa42"
+  },
+  "fileExplorer.dirSize.fileCount": "{count, plural, one {{countText} soubor} few {{countText} soubory} many {{countText} souboru} other {{countText} souborů}}",
+  "@fileExplorer.dirSize.fileCount": {
+    "sourceHash": "3c08428"
+  },
+  "fileExplorer.dirSize.folderCount": "{count, plural, one {{countText} složka} few {{countText} složky} many {{countText} složky} other {{countText} složek}}",
+  "@fileExplorer.dirSize.folderCount": {
+    "sourceHash": "3c46f04"
+  },
+  "fileExplorer.dirSize.updatingIndexLine": "Aktualizuje se index, takže se velikost může změnit.",
+  "@fileExplorer.dirSize.updatingIndexLine": {
+    "sourceHash": "ddb01a2"
+  },
+  "fileExplorer.dirSize.dirPlaceholder": "'<'dir>",
+  "@fileExplorer.dirSize.dirPlaceholder": {
+    "sourceHash": "1cb5400",
+    "sameAsSourceJustification": "Total Commander cs keeps the <DIR> size placeholder untranslated (WCMD.LNG 677); the narrow column wants the short form."
+  },
+  "fileExplorer.dirSize.mismatchTooltipPrefix": "Velikost obsahu a velikost na disku se výrazně liší.",
+  "@fileExplorer.dirSize.mismatchTooltipPrefix": {
+    "sourceHash": "3ff9147"
+  },
+  "fileExplorer.dirSize.lowerBoundLine": "Nejméně tolik: některé podsložky ještě nebyly prohledány, takže skutečný součet může být větší.",
+  "@fileExplorer.dirSize.lowerBoundLine": {
+    "sourceHash": "2aaea43"
+  },
+  "fileExplorer.dirSize.unknownTooltip": "Velikost neznámá: tato složka ještě nebyla prohledána.",
+  "@fileExplorer.dirSize.unknownTooltip": {
+    "sourceHash": "f5771e5"
+  },
+  "fileExplorer.dirSize.staleLine": "Tyto velikosti pocházejí ze staršího prohledávání a můžou být zastaralé.",
+  "@fileExplorer.dirSize.staleLine": {
+    "sourceHash": "4d6d21c"
+  },
+  "fileExplorer.git.size.branches": "{count, plural, one {{countText} větev} few {{countText} větve} many {{countText} větve} other {{countText} větví}}",
+  "@fileExplorer.git.size.branches": {
+    "sourceHash": "ea4d085"
+  },
+  "fileExplorer.git.size.tags": "{count, plural, one {{countText} značka} few {{countText} značky} many {{countText} značky} other {{countText} značek}}",
+  "@fileExplorer.git.size.tags": {
+    "sourceHash": "f9c07cd"
+  },
+  "fileExplorer.git.size.commits": "{count, plural, one {{countText} commit} few {{countText} commity} many {{countText} commitu} other {{countText} commitů}}",
+  "@fileExplorer.git.size.commits": {
+    "sourceHash": "cfdb4be"
+  },
+  "fileExplorer.git.size.stashEntries": "{count, plural, one {{countText} záznam ve stashi} few {{countText} záznamy ve stashi} many {{countText} záznamu ve stashi} other {{countText} záznamů ve stashi}}",
+  "@fileExplorer.git.size.stashEntries": {
+    "sourceHash": "d9f98ff"
+  },
+  "fileExplorer.git.size.linkedWorktrees": "{count, plural, one {{countText} propojený worktree} few {{countText} propojené worktree} many {{countText} propojeného worktree} other {{countText} propojených worktree}}",
+  "@fileExplorer.git.size.linkedWorktrees": {
+    "sourceHash": "7bc228e"
+  },
+  "fileExplorer.git.size.submodules": "{count, plural, one {{countText} submodul} few {{countText} submoduly} many {{countText} submodulu} other {{countText} submodulů}}",
+  "@fileExplorer.git.size.submodules": {
+    "sourceHash": "b1b847e"
+  },
+  "fileExplorer.git.size.filesChanged": "{count, plural, one {{countText} soubor} few {{countText} soubory} many {{countText} souboru} other {{countText} souborů}}",
+  "@fileExplorer.git.size.filesChanged": {
+    "sourceHash": "3c08428"
+  },
+  "fileExplorer.git.size.aheadBehind": "+{aheadText} / -{behindText}",
+  "@fileExplorer.git.size.aheadBehind": {
+    "sourceHash": "6ff31ac",
+    "sameAsSourceJustification": "Only placeholders and the +/- signs, which Czech git usage reads the same (@key: keep the shape)."
+  },
+  "fileExplorer.git.size.onBranch": "větev {branch}",
+  "@fileExplorer.git.size.onBranch": {
+    "sourceHash": "b94a28d"
+  },
+  "fileExplorer.git.tooltip.branches": "{count, plural, one {{countText} větev} few {{countText} větve} many {{countText} větve} other {{countText} větví}} v tomto repozitáři",
+  "@fileExplorer.git.tooltip.branches": {
+    "sourceHash": "a3372d8"
+  },
+  "fileExplorer.git.tooltip.tags": "{count, plural, one {{countText} značka} few {{countText} značky} many {{countText} značky} other {{countText} značek}} v tomto repozitáři",
+  "@fileExplorer.git.tooltip.tags": {
+    "sourceHash": "cac35ae"
+  },
+  "fileExplorer.git.tooltip.commits": "{count, plural, one {{countText} commit dosažitelný z HEAD} few {{countText} commity dosažitelné z HEAD} many {{countText} commitu dosažitelného z HEAD} other {{countText} commitů dosažitelných z HEAD}}",
+  "@fileExplorer.git.tooltip.commits": {
+    "sourceHash": "4d9cea8"
+  },
+  "fileExplorer.git.sizeSortTooManyCommits": "Řazení podle velikosti funguje nejvýš pro {limitText} commitů a tahle historie jich má víc.",
+  "@fileExplorer.git.sizeSortTooManyCommits": {
+    "sourceHash": "b3c0038"
+  },
+  "fileExplorer.sortFallback.created": "Toto umístění nezaznamenává, kdy byly položky vytvořeny, takže tu Cmdr řadí podle data změny.",
+  "@fileExplorer.sortFallback.created": {
+    "sourceHash": "fd60c89"
+  },
+  "fileExplorer.sortFallback.added": "Toto umístění nezaznamenává, kdy byly položky přidány, takže tu Cmdr řadí podle data změny.",
+  "@fileExplorer.sortFallback.added": {
+    "sourceHash": "977f69d"
+  },
+  "fileExplorer.git.tooltip.filesChangedPending": "Počítají se soubory, které tento commit změnil…",
+  "@fileExplorer.git.tooltip.filesChangedPending": {
+    "sourceHash": "32a9a1d"
+  },
+  "fileExplorer.git.tooltip.filesChanged": "{count, plural, one {{countText} soubor změněný oproti rodičovskému commitu} few {{countText} soubory změněné oproti rodičovskému commitu} many {{countText} souboru změněného oproti rodičovskému commitu} other {{countText} souborů změněných oproti rodičovskému commitu}}",
+  "@fileExplorer.git.tooltip.filesChanged": {
+    "sourceHash": "9808044"
+  },
+  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} commit} few {{aheadText} commity} many {{aheadText} commitu} other {{aheadText} commitů}} napřed, {behind, plural, one {{behindText} commit} few {{behindText} commity} many {{behindText} commitu} other {{behindText} commitů}} pozadu oproti „{vs}“",
+  "@fileExplorer.git.tooltip.aheadBehind": {
+    "sourceHash": "6a24049"
+  },
+  "fileExplorer.git.tooltip.taggedCommit": "Označený commit {id}",
+  "@fileExplorer.git.tooltip.taggedCommit": {
+    "sourceHash": "39e11d5"
+  },
+  "fileExplorer.git.tooltip.pinnedCommit": "Zafixováno na commitu {id}",
+  "@fileExplorer.git.tooltip.pinnedCommit": {
+    "sourceHash": "f80ccba"
+  },
+  "fileExplorer.git.tooltip.stashedOnBranch": "Vytvořeno na větvi „{branch}“",
+  "@fileExplorer.git.tooltip.stashedOnBranch": {
+    "sourceHash": "5a1ad8d"
+  },
+  "fileExplorer.git.tooltip.worktreeOnBranch": "Je přepnuto na větev „{branch}“",
+  "@fileExplorer.git.tooltip.worktreeOnBranch": {
+    "sourceHash": "4941fa5"
+  },
+  "fileExplorer.git.tooltip.worktreeDetached": "Odpojený HEAD na commitu {id}",
+  "@fileExplorer.git.tooltip.worktreeDetached": {
+    "sourceHash": "8455479"
+  },
+  "fileExplorer.git.repoChip.unbornLabel": "{branch} (zatím bez commitů)",
+  "@fileExplorer.git.repoChip.unbornLabel": {
+    "sourceHash": "e36dc64"
+  },
+  "fileExplorer.git.repoChip.detachedLabel": "(odpojeno) {id}",
+  "@fileExplorer.git.repoChip.detachedLabel": {
+    "sourceHash": "bb85fcf"
+  },
+  "fileExplorer.git.repoChip.detachedLabelNoId": "(odpojeno)",
+  "@fileExplorer.git.repoChip.detachedLabelNoId": {
+    "sourceHash": "6cd215c"
+  },
+  "fileExplorer.git.repoChip.dirty": "neuloženo",
+  "@fileExplorer.git.repoChip.dirty": {
+    "sourceHash": "d0c92c7"
+  },
+  "fileExplorer.git.repoChip.tooltip.onBranch": "Na větvi „{branch}“.",
+  "@fileExplorer.git.repoChip.tooltip.onBranch": {
+    "sourceHash": "1315a9e"
+  },
+  "fileExplorer.git.repoChip.tooltip.unborn": "Na nové větvi „{branch}“ (zatím bez commitů).",
+  "@fileExplorer.git.repoChip.tooltip.unborn": {
+    "sourceHash": "49537ff"
+  },
+  "fileExplorer.git.repoChip.tooltip.detached": "Odpojený HEAD na commitu {id}.",
+  "@fileExplorer.git.repoChip.tooltip.detached": {
+    "sourceHash": "fa6e940"
+  },
+  "fileExplorer.git.repoChip.tooltip.aheadBehind": "Oproti „{upstream}“: o {ahead, plural, one {{aheadText} commit} few {{aheadText} commity} many {{aheadText} commitu} other {{aheadText} commitů}} napřed, o {behind, plural, one {{behindText} commit} few {{behindText} commity} many {{behindText} commitu} other {{behindText} commitů}} pozadu.",
+  "@fileExplorer.git.repoChip.tooltip.aheadBehind": {
+    "sourceHash": "0c36306"
+  },
+  "fileExplorer.git.repoChip.tooltip.dirty": "Pracovní strom obsahuje necommitnuté změny.",
+  "@fileExplorer.git.repoChip.tooltip.dirty": {
+    "sourceHash": "360c5e5"
+  },
+  "fileExplorer.selectionTooltip.selected": "Vybráno",
+  "@fileExplorer.selectionTooltip.selected": {
+    "sourceHash": "57fd7a0"
+  },
+  "fileExplorer.selectionTooltip.ofTotal": "Celkem",
+  "@fileExplorer.selectionTooltip.ofTotal": {
+    "sourceHash": "1269b5a"
+  },
+  "fileExplorer.selectionTooltip.onDiskHeader": "Na disku:",
+  "@fileExplorer.selectionTooltip.onDiskHeader": {
+    "sourceHash": "9795f99"
+  },
+  "fileExplorer.entry.brokenSymlink": "(nefunkční symlink)",
+  "@fileExplorer.entry.brokenSymlink": {
+    "sourceHash": "a7ffd43"
+  },
+  "fileExplorer.dateTooltip.created": "Datum vytvoření",
+  "@fileExplorer.dateTooltip.created": {
+    "sourceHash": "d70b9e2"
+  },
+  "fileExplorer.dateTooltip.dateAdded": "Datum přidání",
+  "@fileExplorer.dateTooltip.dateAdded": {
+    "sourceHash": "3321b9f"
+  },
+  "fileExplorer.dateTooltip.displayedLabel": "{label} (zobrazeno)",
+  "@fileExplorer.dateTooltip.displayedLabel": {
+    "sourceHash": "975a232"
+  },
+  "fileExplorer.dateTooltip.lastModified": "Naposledy změněno",
+  "@fileExplorer.dateTooltip.lastModified": {
+    "sourceHash": "0fe1058"
+  },
+  "fileExplorer.fileIcon.symlinkBadge": "Symbolický odkaz",
+  "@fileExplorer.fileIcon.symlinkBadge": {
+    "sourceHash": "fbd07df"
+  },
+  "fileExplorer.fileIcon.sync.synced": "Synchronizováno",
+  "@fileExplorer.fileIcon.sync.synced": {
+    "sourceHash": "5da22fe"
+  },
+  "fileExplorer.fileIcon.sync.onlineOnly": "Jen online",
+  "@fileExplorer.fileIcon.sync.onlineOnly": {
+    "sourceHash": "1500a6d"
+  },
+  "fileExplorer.fileIcon.sync.uploading": "Nahrává se",
+  "@fileExplorer.fileIcon.sync.uploading": {
+    "sourceHash": "8b898ca"
+  },
+  "fileExplorer.fileIcon.sync.downloading": "Stahování",
+  "@fileExplorer.fileIcon.sync.downloading": {
+    "sourceHash": "37b3455"
+  },
+  "fileExplorer.imageIndex.file.indexed": "Zaindexováno pro hledání obrázků",
+  "@fileExplorer.imageIndex.file.indexed": {
+    "sourceHash": "9b72aa0"
+  },
+  "fileExplorer.imageIndex.file.pending": "Čeká na indexování",
+  "@fileExplorer.imageIndex.file.pending": {
+    "sourceHash": "73eb99a"
+  },
+  "fileExplorer.imageIndex.file.indexing": "Právě se indexuje",
+  "@fileExplorer.imageIndex.file.indexing": {
+    "sourceHash": "44501db"
+  },
+  "fileExplorer.imageIndex.file.stale": "Od indexování změněno, bude znovu zaindexováno",
+  "@fileExplorer.imageIndex.file.stale": {
+    "sourceHash": "1766bc3"
+  },
+  "fileExplorer.imageIndex.file.failed": "Nepodařilo se zaindexovat",
+  "@fileExplorer.imageIndex.file.failed": {
+    "sourceHash": "0ca54ae"
+  },
+  "fileExplorer.imageIndex.file.excluded": "Není zahrnuto v hledání obrázků",
+  "@fileExplorer.imageIndex.file.excluded": {
+    "sourceHash": "1f68cee"
+  },
+  "fileExplorer.imageIndex.folder.allIndexed": "{total, plural, one {Zaindexován {totalText} obrázek} few {Zaindexovány všechny {totalText} obrázky} many {Zaindexováno všech {totalText} obrázku} other {Zaindexováno všech {totalText} obrázků}}",
+  "@fileExplorer.imageIndex.folder.allIndexed": {
+    "sourceHash": "c19fe12"
+  },
+  "fileExplorer.imageIndex.folder.someIndexed": "Zaindexováno {doneText} z {totalText} {total, plural, one {obrázku} few {obrázků} many {obrázku} other {obrázků}}",
+  "@fileExplorer.imageIndex.folder.someIndexed": {
+    "sourceHash": "c7fd5ca"
+  },
+  "fileExplorer.imageIndex.drive.ariaLabel": "Stav hledání obrázků na tomto disku",
+  "@fileExplorer.imageIndex.drive.ariaLabel": {
+    "sourceHash": "bea5d87"
+  },
+  "fileExplorer.imageIndex.drive.off": "Hledání obrázků je pro tento disk vypnuté.",
+  "@fileExplorer.imageIndex.drive.off": {
+    "sourceHash": "a7f3c42"
+  },
+  "fileExplorer.imageIndex.drive.indexing": "Na tomto disku zaindexováno {doneText} z {totalText} {total, plural, one {obrázku} few {obrázků} many {obrázku} other {obrázků}}, indexování pokračuje.",
+  "@fileExplorer.imageIndex.drive.indexing": {
+    "sourceHash": "23d351d"
+  },
+  "fileExplorer.imageIndex.drive.done": "{total, plural, one {Na tomto disku je zaindexovaný {totalText} obrázek.} few {Na tomto disku jsou zaindexované všechny {totalText} obrázky.} many {Na tomto disku je zaindexováno všech {totalText} obrázku.} other {Na tomto disku je zaindexováno všech {totalText} obrázků.}}",
+  "@fileExplorer.imageIndex.drive.done": {
+    "sourceHash": "0f4f795"
+  },
+  "fileExplorer.selectionInfo.nothingHere": "Nic tu není.",
+  "@fileExplorer.selectionInfo.nothingHere": {
+    "sourceHash": "140a431"
+  },
+  "fileExplorer.selectionInfo.dir": "DIR",
+  "@fileExplorer.selectionInfo.dir": {
+    "sourceHash": "d313ad9",
+    "sameAsSourceJustification": "Total Commander cs keeps the folder marker verbatim (WCMD.LNG 677 \"<DIR>\"); the cs catalog already keeps fileExplorer.dirSize.dirPlaceholder as <dir>"
+  },
+  "fileExplorer.selectionInfo.sizeNotReadyAriaLabel": "Velikost se ještě počítá",
+  "@fileExplorer.selectionInfo.sizeNotReadyAriaLabel": {
+    "sourceHash": "4f2542d"
+  },
+  "fileExplorer.selectionInfo.sizeUpdatingAriaLabel": "Velikost se aktualizuje",
+  "@fileExplorer.selectionInfo.sizeUpdatingAriaLabel": {
+    "sourceHash": "f237144"
+  },
+  "fileExplorer.selectionInfo.indexUpdatingTooltip": "Aktualizuje se index, velikost se může změnit.",
+  "@fileExplorer.selectionInfo.indexUpdatingTooltip": {
+    "sourceHash": "2f69a1b"
+  },
+  "fileExplorer.selectionInfo.symlinkHint": "Tato složka obsahuje symbolické odkazy. Obsah symbolických odkazů se do celkové velikosti nezapočítává, aby se nic nepočítalo dvakrát.",
+  "@fileExplorer.selectionInfo.symlinkHint": {
+    "sourceHash": "414ed75"
+  },
+  "fileExplorer.selectionInfo.noSelectionFiles": "{count, plural, one {{countText} soubor} few {{countText} soubory} many {{countText} souboru} other {{countText} souborů}}",
+  "@fileExplorer.selectionInfo.noSelectionFiles": {
+    "sourceHash": "3c08428"
+  },
+  "fileExplorer.selectionInfo.noSelectionDirs": " a {count, plural, one {{countText} složka} few {{countText} složky} many {{countText} složky} other {{countText} složek}}",
+  "@fileExplorer.selectionInfo.noSelectionDirs": {
+    "sourceHash": "e1259ef"
+  },
+  "fileExplorer.selectionInfo.noSelection": "Nic není vybráno, {files}{dirs}.",
+  "@fileExplorer.selectionInfo.noSelection": {
+    "sourceHash": "beea8ac"
+  },
+  "fileExplorer.selectionInfo.noSelectionOfMatches": "Nic není vybráno, {shownText} z {count, plural, one {{totalText} shody} few {{totalText} shod} many {{totalText} shody} other {{totalText} shod}}.",
+  "@fileExplorer.selectionInfo.noSelectionOfMatches": {
+    "sourceHash": "4063c2b"
+  },
+  "fileExplorer.tabBar.paneTabsAriaLabel": "{paneId, select, left {Záložky levého panelu} other {Záložky pravého panelu}}",
+  "@fileExplorer.tabBar.paneTabsAriaLabel": {
+    "sourceHash": "3b08b68"
+  },
+  "fileExplorer.tabBar.unreachableAriaLabel": "Nedostupný",
+  "@fileExplorer.tabBar.unreachableAriaLabel": {
+    "sourceHash": "abaa46a"
+  },
+  "fileExplorer.tabBar.pinnedAriaLabel": "Připnuto",
+  "@fileExplorer.tabBar.pinnedAriaLabel": {
+    "sourceHash": "f20c879"
+  },
+  "fileExplorer.tabBar.closeTabTooltip": "Zavřít záložku",
+  "@fileExplorer.tabBar.closeTabTooltip": {
+    "sourceHash": "50a3f95"
+  },
+  "fileExplorer.tabBar.newTabAriaLabel": "Nová záložka",
+  "@fileExplorer.tabBar.newTabAriaLabel": {
+    "sourceHash": "1e08fda"
+  },
+  "fileExplorer.summary.fileNoun": "{count, plural, one {souboru} few {souborů} many {souboru} other {souborů}}",
+  "@fileExplorer.summary.fileNoun": {
+    "sourceHash": "46012b1"
+  },
+  "fileExplorer.summary.dirNoun": "{count, plural, one {složky} few {složek} many {složky} other {složek}}",
+  "@fileExplorer.summary.dirNoun": {
+    "sourceHash": "1c5273d"
+  },
+  "fileExplorer.summary.of": "z",
+  "@fileExplorer.summary.of": {
+    "sourceHash": "28391d3"
+  },
+  "fileExplorer.summary.percentSelectedIn": "({percent} %) vybráno:",
+  "@fileExplorer.summary.percentSelectedIn": {
+    "sourceHash": "7e01a02"
+  },
+  "fileExplorer.summary.and": "a",
+  "@fileExplorer.summary.and": {
+    "sourceHash": "6201111"
+  },
+  "fileExplorer.summary.selectedSuffix": "vybráno",
+  "@fileExplorer.summary.selectedSuffix": {
+    "sourceHash": "d7cbbb6"
+  },
+  "fileExplorer.contextMenu.itemCount": "{countText} {count, plural, one {položka} few {položky} many {položky} other {položek}}",
+  "@fileExplorer.contextMenu.itemCount": {
+    "sourceHash": "66337df"
+  },
+  "fileExplorer.renameConflict.title": "Soubor s tímto názvem už existuje",
+  "@fileExplorer.renameConflict.title": {
+    "sourceHash": "92ae292"
+  },
+  "fileExplorer.renameConflict.titleFolder": "Složka s tímto názvem už existuje",
+  "@fileExplorer.renameConflict.titleFolder": {
+    "sourceHash": "f49da17"
+  },
+  "fileExplorer.renameConflict.description": "Položka „{name}“ už v této složce existuje. Co chcete udělat?",
+  "@fileExplorer.renameConflict.description": {
+    "sourceHash": "e3f2532"
+  },
+  "fileExplorer.renameConflict.yours": "{name} (vaše verze)",
+  "@fileExplorer.renameConflict.yours": {
+    "sourceHash": "e907024"
+  },
+  "fileExplorer.renameConflict.existing": "{name} (existující)",
+  "@fileExplorer.renameConflict.existing": {
+    "sourceHash": "0ff925b"
+  },
+  "fileExplorer.renameConflict.size": "Velikost",
+  "@fileExplorer.renameConflict.size": {
+    "sourceHash": "1af8519"
+  },
+  "fileExplorer.renameConflict.modified": "Datum změny",
+  "@fileExplorer.renameConflict.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "fileExplorer.renameConflict.overwriteTrash": "Přepsat a starý soubor přesunout do koše",
+  "@fileExplorer.renameConflict.overwriteTrash": {
+    "sourceHash": "e0192f6"
+  },
+  "fileExplorer.renameConflict.overwriteTrashFolder": "Přepsat a starou složku přesunout do koše",
+  "@fileExplorer.renameConflict.overwriteTrashFolder": {
+    "sourceHash": "7f94bfa"
+  },
+  "fileExplorer.renameConflict.overwriteDelete": "Přepsat a starý soubor smazat",
+  "@fileExplorer.renameConflict.overwriteDelete": {
+    "sourceHash": "02093d5"
+  },
+  "fileExplorer.renameConflict.cancel": "Zrušit",
+  "@fileExplorer.renameConflict.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "fileExplorer.renameConflict.continueRenaming": "Pokračovat v přejmenování",
+  "@fileExplorer.renameConflict.continueRenaming": {
+    "sourceHash": "96480ec"
+  },
+  "fileExplorer.extensionChange.title": "Změnit příponu souboru?",
+  "@fileExplorer.extensionChange.title": {
+    "sourceHash": "799828d"
+  },
+  "fileExplorer.extensionChange.description": "Opravdu chcete změnit příponu z „.{oldExt}“ na „.{newExt}“? Soubor se příště možná otevře v jiné aplikaci.",
+  "@fileExplorer.extensionChange.description": {
+    "sourceHash": "ef7ac59"
+  },
+  "fileExplorer.extensionChange.descriptionRemove": "{kind, select, folder {Opravdu chcete odstranit příponu „.{oldExt}“? macOS pak tuto položku bude zobrazovat jako obyčejnou složku, ne jako jednu položku.} other {Opravdu chcete odstranit příponu „.{oldExt}“? Váš Mac pak možná nebude vědět, která aplikace má soubor otevřít.}}",
+  "@fileExplorer.extensionChange.descriptionRemove": {
+    "sourceHash": "8c87a3d"
+  },
+  "fileExplorer.extensionChange.descriptionAdd": "{kind, select, folder {Opravdu chcete přidat příponu „.{newExt}“? macOS pak může tuto složku zobrazovat jako jednu položku.} other {Opravdu chcete přidat příponu „.{newExt}“? Soubor se příště možná otevře v jiné aplikaci.}}",
+  "@fileExplorer.extensionChange.descriptionAdd": {
+    "sourceHash": "c18c736"
+  },
+  "fileExplorer.extensionChange.keepNone": "Ponechat bez přípony",
+  "@fileExplorer.extensionChange.keepNone": {
+    "sourceHash": "4ad7a49"
+  },
+  "fileExplorer.extensionChange.removeExtension": "Odstranit .{oldExt}",
+  "@fileExplorer.extensionChange.removeExtension": {
+    "sourceHash": "3913e62"
+  },
+  "fileExplorer.extensionChange.alwaysAllow": "Vždy povolit změny přípony",
+  "@fileExplorer.extensionChange.alwaysAllow": {
+    "sourceHash": "52a5c5e"
+  },
+  "fileExplorer.extensionChange.keepOld": "Ponechat .{oldExt}",
+  "@fileExplorer.extensionChange.keepOld": {
+    "sourceHash": "08808e4"
+  },
+  "fileExplorer.extensionChange.useNew": "Použít .{newExt}",
+  "@fileExplorer.extensionChange.useNew": {
+    "sourceHash": "b1c0e92"
+  },
+  "fileExplorer.quickLookHint.spaceSelects": "V Cmdru <space></space> ve výchozím nastavení vybírá soubor pod kurzorem.",
+  "@fileExplorer.quickLookHint.spaceSelects": {
+    "sourceHash": "192689a"
+  },
+  "fileExplorer.quickLookHint.finderComparison": "Pokud přicházíte z Finderu, může vám to připadat neobvyklé, protože Finder na <space></space> otevírá Rychlý náhled.",
+  "@fileExplorer.quickLookHint.finderComparison": {
+    "sourceHash": "c9d0ac7"
+  },
+  "fileExplorer.quickLookHint.quickView": "V Cmdru otevřete Rychlý náhled zkratkou <key></key>. (Mimochodem, <key></key> funguje i ve Finderu!)",
+  "@fileExplorer.quickLookHint.quickView": {
+    "sourceHash": "5ddbea1"
+  },
+  "fileExplorer.quickLookHint.enterOpens": "Klávesou <enter></enter> můžete soubory také otevřít ve výchozí aplikaci.",
+  "@fileExplorer.quickLookHint.enterOpens": {
+    "sourceHash": "5c1f2a3"
+  },
+  "fileExplorer.quickLookHint.configurable": "Tohle všechno můžete změnit v <settingsLink>Nastavení > Klávesové zkratky</settingsLink>.",
+  "@fileExplorer.quickLookHint.configurable": {
+    "sourceHash": "a382250"
+  },
+  "fileExplorer.quickLookHint.dontShowAgain": "Už nezobrazovat",
+  "@fileExplorer.quickLookHint.dontShowAgain": {
+    "sourceHash": "f6f62e0"
+  },
+  "fileExplorer.navigation.groupFavorites": "Oblíbené",
+  "@fileExplorer.navigation.groupFavorites": {
+    "sourceHash": "7a1f2a8"
+  },
+  "fileExplorer.navigation.groupVolumes": "Svazky",
+  "@fileExplorer.navigation.groupVolumes": {
+    "sourceHash": "53a480e"
+  },
+  "fileExplorer.navigation.groupCloud": "Cloud",
+  "@fileExplorer.navigation.groupCloud": {
+    "sourceHash": "b977b95",
+    "sameAsSourceJustification": "Cloud is the established Czech word; macOS Finder cs writes do cloudu / cloudovou službu, and the heading needs the bare noun"
+  },
+  "fileExplorer.navigation.groupMobile": "Mobilní zařízení",
+  "@fileExplorer.navigation.groupMobile": {
+    "sourceHash": "cbaad3c"
+  },
+  "fileExplorer.navigation.groupNetwork": "Síť",
+  "@fileExplorer.navigation.groupNetwork": {
+    "sourceHash": "1744b96"
+  },
+  "fileExplorer.navigation.networkVolume": "Servery",
+  "@fileExplorer.navigation.networkVolume": {
+    "sourceHash": "68d7beb"
+  },
+  "fileExplorer.navigation.searchResultsVolume": "Výsledky hledání",
+  "@fileExplorer.navigation.searchResultsVolume": {
+    "sourceHash": "e978b00"
+  },
+  "fileExplorer.navigation.volumeFallback": "Svazek",
+  "@fileExplorer.navigation.volumeFallback": {
+    "sourceHash": "b10fb96"
+  },
+  "fileExplorer.navigation.favoritesEmpty": "(Tady se zobrazí vaše oblíbené položky)",
+  "@fileExplorer.navigation.favoritesEmpty": {
+    "sourceHash": "b4f099e"
+  },
+  "fileExplorer.navigation.favoritesAddCurrent": "Přidat aktuální složku do oblíbených",
+  "@fileExplorer.navigation.favoritesAddCurrent": {
+    "sourceHash": "7d7e21c"
+  },
+  "fileExplorer.navigation.favoritesAlreadyAdded": "Tato složka už je v oblíbených",
+  "@fileExplorer.navigation.favoritesAlreadyAdded": {
+    "sourceHash": "731a929"
+  },
+  "fileExplorer.navigation.favoritesCantAddHere": "Tato složka nemůže být v oblíbených: oblíbené položky odkazují na složky na discích, sdílených složkách, serverech a telefonech",
+  "@fileExplorer.navigation.favoritesCantAddHere": {
+    "sourceHash": "03886b7"
+  },
+  "fileExplorer.navigation.switcherFavorites": "Oblíbené",
+  "@fileExplorer.navigation.switcherFavorites": {
+    "sourceHash": "7a1f2a8"
+  },
+  "fileExplorer.navigation.favoriteTooltip": "{path}\nPřetažením změníte pořadí, nebo použijte {reorder}. Přejmenovat nebo odstranit položku můžete v místní nabídce po kliknutí pravým tlačítkem.",
+  "@fileExplorer.navigation.favoriteTooltip": {
+    "sourceHash": "88d54d3"
+  },
+  "fileExplorer.navigation.favoriteTooltipWithStatus": "{path}\n{status}\nPřetažením změníte pořadí, nebo použijte {reorder}. Přejmenovat nebo odstranit položku můžete v místní nabídce po kliknutí pravým tlačítkem.",
+  "@fileExplorer.navigation.favoriteTooltipWithStatus": {
+    "sourceHash": "4ef9623"
+  },
+  "fileExplorer.navigation.renameFavoriteAriaLabel": "Přejmenovat oblíbenou položku",
+  "@fileExplorer.navigation.renameFavoriteAriaLabel": {
+    "sourceHash": "5f4fcbb"
+  },
+  "fileExplorer.navigation.favoriteShortcutPrompt": "A–Z nebo Delete",
+  "@fileExplorer.navigation.favoriteShortcutPrompt": {
+    "sourceHash": "51f3d7d"
+  },
+  "fileExplorer.navigation.favoriteShortcutAriaLabel": "Zkratka pro oblíbenou položku {name}. Stiskněte A–Z, nebo zkratku vymažte klávesou Delete.",
+  "@fileExplorer.navigation.favoriteShortcutAriaLabel": {
+    "sourceHash": "31515c1"
+  },
+  "fileExplorer.navigation.favoriteShortcutSaveFailed": "Tuto zkratku se nepodařilo uložit. Zkusíte to znovu?",
+  "@fileExplorer.navigation.favoriteShortcutSaveFailed": {
+    "sourceHash": "38e7225"
+  },
+  "fileExplorer.navigation.removeFavoriteFailed": "Tuto oblíbenou položku se nepodařilo odstranit. Zkusíte to znovu?",
+  "@fileExplorer.navigation.removeFavoriteFailed": {
+    "sourceHash": "a3c8665"
+  },
+  "fileExplorer.navigation.renameFavoriteFailed": "Tuto oblíbenou položku se nepodařilo přejmenovat. Zkusíte to znovu?",
+  "@fileExplorer.navigation.renameFavoriteFailed": {
+    "sourceHash": "cbf60d7"
+  },
+  "fileExplorer.navigation.reorderFavoritesFailed": "Pořadí oblíbených položek se nepodařilo změnit. Zkusíte to znovu?",
+  "@fileExplorer.navigation.reorderFavoritesFailed": {
+    "sourceHash": "875befb"
+  },
+  "fileExplorer.navigation.favoriteStatus.connects": "Nepřipojeno. Po otevření se Cmdr připojí k umístění {place}.",
+  "@fileExplorer.navigation.favoriteStatus.connects": {
+    "sourceHash": "a30b8cd"
+  },
+  "fileExplorer.navigation.favoriteStatus.notFound": "Tato složka už neexistuje.",
+  "@fileExplorer.navigation.favoriteStatus.notFound": {
+    "sourceHash": "48710a9"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": "Zařízení „{device}“ není připojené. Připojte ho kabelem USB, odemkněte ho a zkuste to znovu.",
+  "@fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": {
+    "sourceHash": "00f7bf0"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.storageUnplugged": "Úložiště, na kterém tato složka byla, teď v zařízení {device} není k dispozici.",
+  "@fileExplorer.navigation.favoriteUnreachable.storageUnplugged": {
+    "sourceHash": "a06d5ae"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.driveUnplugged": "Disk „{drive}“ není připojený. Připojte ho a zkuste to znovu.",
+  "@fileExplorer.navigation.favoriteUnreachable.driveUnplugged": {
+    "sourceHash": "4b44a30"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.mtpOff": "Přístup k telefonům a fotoaparátům přes MTP je v Nastavení vypnutý.",
+  "@fileExplorer.navigation.favoriteUnreachable.mtpOff": {
+    "sourceHash": "53be5f6"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.adbOff": "Přístup k telefonům s Androidem je v Nastavení vypnutý.",
+  "@fileExplorer.navigation.favoriteUnreachable.adbOff": {
+    "sourceHash": "4fba610"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr už neví, jak se dostat k umístění „{place}“. Připojte se k němu znovu ze Serverů a tato oblíbená položka bude zase fungovat.",
+  "@fileExplorer.navigation.favoriteUnreachable.forgotten": {
+    "sourceHash": "842858c"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.notFound": "Složka „{name}“ už na cestě {path} není.",
+  "@fileExplorer.navigation.favoriteUnreachable.notFound": {
+    "sourceHash": "0fd2e21"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.openSettings": "Otevřít Nastavení",
+  "@fileExplorer.navigation.favoriteUnreachable.openSettings": {
+    "sourceHash": "ca381c1"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.openServers": "Zobrazit servery",
+  "@fileExplorer.navigation.favoriteUnreachable.openServers": {
+    "sourceHash": "092283a"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.removeFavorite": "Odstranit z oblíbených",
+  "@fileExplorer.navigation.favoriteUnreachable.removeFavorite": {
+    "sourceHash": "5bc0aa0"
+  },
+  "fileExplorer.navigation.locationUnreachableToast": "Disk, na kterém je toto umístění, je nedostupný. Možná je odpojený.",
+  "@fileExplorer.navigation.locationUnreachableToast": {
+    "sourceHash": "61da177"
+  },
+  "fileExplorer.navigation.connectionTooltipDirect": "Připojeno přímo pro rychlé operace se soubory",
+  "@fileExplorer.navigation.connectionTooltipDirect": {
+    "sourceHash": "a69a3ad"
+  },
+  "fileExplorer.navigation.connectionTooltipConnected": "Připojeno",
+  "@fileExplorer.navigation.connectionTooltipConnected": {
+    "sourceHash": "2296556"
+  },
+  "fileExplorer.navigation.connectionTooltipSystem": "Používá se systémové připojení. Pro rychlejší přístup použijte položku nabídky „Připojit se přímo pro rychlejší přístup“.",
+  "@fileExplorer.navigation.connectionTooltipSystem": {
+    "sourceHash": "e4ac697"
+  },
+  "fileExplorer.navigation.connectDirectly": "Připojit se přímo pro rychlejší přístup",
+  "@fileExplorer.navigation.connectDirectly": {
+    "sourceHash": "3fbb55a"
+  },
+  "fileExplorer.navigation.useDirectConnection": "Používat rychlé přímé připojení Cmdru",
+  "@fileExplorer.navigation.useDirectConnection": {
+    "sourceHash": "68ff111"
+  },
+  "fileExplorer.navigation.connectDirectlyNow": "Připojit se přímo hned teď",
+  "@fileExplorer.navigation.connectDirectlyNow": {
+    "sourceHash": "e81ea20"
+  },
+  "fileExplorer.navigation.connectDirectlyNowTooltip": "Tato sdílená složka pořád používá pomalejší systémové připojení. Pro rychlejší přístup přepněte na přímé připojení.",
+  "@fileExplorer.navigation.connectDirectlyNowTooltip": {
+    "sourceHash": "42b6bcc"
+  },
+  "fileExplorer.navigation.connectingDirectly": "Navazuje se přímé připojení…",
+  "@fileExplorer.navigation.connectingDirectly": {
+    "sourceHash": "1f2d487"
+  },
+  "fileExplorer.navigation.connectingWithSavedPassword": "Připojování s uloženým heslem…",
+  "@fileExplorer.navigation.connectingWithSavedPassword": {
+    "sourceHash": "0fb0ca3"
+  },
+  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr může znovu použít heslo, které macOS už uložil pro sdílenou složku „{displayName}“. Zobrazí se systémová výzva k povolení přístupu ke svazku klíčů. To je v pořádku, klikněte na Povolit.",
+  "@fileExplorer.navigation.useSavedPasswordMessage": {
+    "sourceHash": "96fa0b9"
+  },
+  "fileExplorer.navigation.useSavedPasswordTitle": "Použít uložené heslo?",
+  "@fileExplorer.navigation.useSavedPasswordTitle": {
+    "sourceHash": "44b60f6"
+  },
+  "fileExplorer.navigation.useSavedPasswordConfirm": "Použít uložené heslo",
+  "@fileExplorer.navigation.useSavedPasswordConfirm": {
+    "sourceHash": "95f07b4"
+  },
+  "fileExplorer.navigation.useSavedPasswordCancel": "Zadat ho ručně",
+  "@fileExplorer.navigation.useSavedPasswordCancel": {
+    "sourceHash": "d54c488"
+  },
+  "fileExplorer.navigation.readOnlyTooltip": "Jen ke čtení",
+  "@fileExplorer.navigation.readOnlyTooltip": {
+    "sourceHash": "72bb908"
+  },
+  "fileExplorer.navigation.volumeChooserButtonLabel": "{name}, vybrat svazek",
+  "@fileExplorer.navigation.volumeChooserButtonLabel": {
+    "sourceHash": "fd14c96"
+  },
+  "fileExplorer.navigation.volumeOptionsTooltip": "Možnosti svazku",
+  "@fileExplorer.navigation.volumeOptionsTooltip": {
+    "sourceHash": "570fb94"
+  },
+  "fileExplorer.navigation.connectionTooltipDisconnected": "Připojení vypadlo. Cmdr se ho snaží obnovit.",
+  "@fileExplorer.navigation.connectionTooltipDisconnected": {
+    "sourceHash": "58af304"
+  },
+  "fileExplorer.navigation.connectionTooltipNeedsSignIn": "Odhlášeno. Otevřete tento server a přihlaste se znovu.",
+  "@fileExplorer.navigation.connectionTooltipNeedsSignIn": {
+    "sourceHash": "6105b01"
+  },
+  "fileExplorer.navigation.connectionTooltipNeedsHostKey": "Klíč tohoto serveru se změnil. Otevřete server a klíč si prohlédněte.",
+  "@fileExplorer.navigation.connectionTooltipNeedsHostKey": {
+    "sourceHash": "a657aa4"
+  },
+  "fileExplorer.navigation.connectionTooltipSaved": "Uloženo. Otevřete ho a připojíte se.",
+  "@fileExplorer.navigation.connectionTooltipSaved": {
+    "sourceHash": "4d94616"
+  },
+  "fileExplorer.navigation.disconnectPlaceAriaLabel": "Odpojit server {name}",
+  "@fileExplorer.navigation.disconnectPlaceAriaLabel": {
+    "sourceHash": "8f755cb"
+  },
+  "fileExplorer.navigation.disconnectBusyTooltip": "Cmdr ještě pracuje se soubory na tomto serveru. Odpojíte ho, až bude hotovo.",
+  "@fileExplorer.navigation.disconnectBusyTooltip": {
+    "sourceHash": "bd52d60"
+  },
+  "fileExplorer.navigation.serverPinnedToast": "Server {name} je teď ve vašem přepínači svazků.",
+  "@fileExplorer.navigation.serverPinnedToast": {
+    "sourceHash": "d09b133"
+  },
+  "fileExplorer.navigation.serverUnpinnedToast": "Server {name} už není ve vašem přepínači svazků. Pořád je ale uložený.",
+  "@fileExplorer.navigation.serverUnpinnedToast": {
+    "sourceHash": "7fa97b2"
+  },
+  "fileExplorer.navigation.pinRefusedToast": "Cmdr nedokázal změnit, kde se server {name} zobrazuje.",
+  "@fileExplorer.navigation.pinRefusedToast": {
+    "sourceHash": "59f1f8b"
+  },
+  "fileExplorer.navigation.disconnectRefusedToast": "Cmdr se nedokázal odpojit od serveru {name}.",
+  "@fileExplorer.navigation.disconnectRefusedToast": {
+    "sourceHash": "375b424"
+  },
+  "fileExplorer.navigation.forgetServerConfirmTitle": "Zapomenout server",
+  "@fileExplorer.navigation.forgetServerConfirmTitle": {
+    "sourceHash": "e43c85d"
+  },
+  "fileExplorer.navigation.forgetConfirmButton": "Zapomenout",
+  "@fileExplorer.navigation.forgetConfirmButton": {
+    "sourceHash": "a6bd489"
+  },
+  "fileExplorer.navigation.forgetServerConfirm": "Zapomenout server {name}? Cmdr ukončí připojení a přestane server vypisovat. Vaše soubory na serveru zůstanou.",
+  "@fileExplorer.navigation.forgetServerConfirm": {
+    "sourceHash": "6a43f67"
+  },
+  "fileExplorer.navigation.forgetPasswordToo": "Zapomenout i uložené heslo",
+  "@fileExplorer.navigation.forgetPasswordToo": {
+    "sourceHash": "6d79654"
+  },
+  "fileExplorer.navigation.forgetServerRefusedToast": "Cmdr nedokázal zapomenout server {name}.",
+  "@fileExplorer.navigation.forgetServerRefusedToast": {
+    "sourceHash": "f7c6c64"
+  },
+  "fileExplorer.navigation.forgetSecretConfirmTitle": "Zapomenout uložené heslo",
+  "@fileExplorer.navigation.forgetSecretConfirmTitle": {
+    "sourceHash": "ed68566"
+  },
+  "fileExplorer.navigation.forgetSecretConfirm": "Zapomenout uložené heslo pro server {name}? Při příštím připojení se na něj Cmdr zeptá.",
+  "@fileExplorer.navigation.forgetSecretConfirm": {
+    "sourceHash": "300d043"
+  },
+  "fileExplorer.navigation.forgetSecretRefusedToast": "Cmdr nedokázal zapomenout uložené heslo pro server {name}.",
+  "@fileExplorer.navigation.forgetSecretRefusedToast": {
+    "sourceHash": "b7a15b2"
+  },
+  "fileExplorer.navigation.forgetSecretNoneToast": "Pro server {name} nebylo uložené žádné heslo.",
+  "@fileExplorer.navigation.forgetSecretNoneToast": {
+    "sourceHash": "3d40a09"
+  },
+  "fileExplorer.navigation.ejectOneVolumeTooltip": "Vysune jen tento svazek. Disk zůstane připojený, dokud se nevysunou i ostatní svazky.",
+  "@fileExplorer.navigation.ejectOneVolumeTooltip": {
+    "sourceHash": "e1dd1cc"
+  },
+  "fileExplorer.navigation.ejectAllTooltip": "Vysune všechny svazky na tomto disku, takže ho pak můžete odpojit.",
+  "@fileExplorer.navigation.ejectAllTooltip": {
+    "sourceHash": "9e86249"
+  },
+  "fileExplorer.navigation.ejectVolumeAriaLabel": "Vysunout svazek {name}",
+  "@fileExplorer.navigation.ejectVolumeAriaLabel": {
+    "sourceHash": "61db18b"
+  },
+  "fileExplorer.navigation.ejectBusyTooltip": "Cmdr ještě pracuje se soubory na tomto zařízení. Vysunete ho, až bude hotovo.",
+  "@fileExplorer.navigation.ejectBusyTooltip": {
+    "sourceHash": "3da6312"
+  },
+  "fileExplorer.navigation.ejectingVolumeAriaLabel": "Vysouvání svazku {name}…",
+  "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
+    "sourceHash": "e8bca64"
+  },
+  "fileExplorer.navigation.usbSpeed": "{label} (max. {mbps} MB/s)",
+  "@fileExplorer.navigation.usbSpeed": {
+    "sourceHash": "07cb80b"
+  },
+  "fileExplorer.navigation.usbSpeedNegotiated": "Vyjednáno pro tento kabel, port a zařízení",
+  "@fileExplorer.navigation.usbSpeedNegotiated": {
+    "sourceHash": "3731939"
+  },
+  "fileExplorer.navigation.spaceRetryingAuto": "Automaticky se zkouší znovu…",
+  "@fileExplorer.navigation.spaceRetryingAuto": {
+    "sourceHash": "aa9f4b8"
+  },
+  "fileExplorer.navigation.spaceRetrying": "Zkouší se znovu…",
+  "@fileExplorer.navigation.spaceRetrying": {
+    "sourceHash": "a16c8b1"
+  },
+  "fileExplorer.navigation.spaceRetryingText": "Zkouší se znovu",
+  "@fileExplorer.navigation.spaceRetryingText": {
+    "sourceHash": "f8fe6f8"
+  },
+  "fileExplorer.navigation.spaceStillUnavailable": "Pořád nedostupné. Klikněte a zkuste to znovu",
+  "@fileExplorer.navigation.spaceStillUnavailable": {
+    "sourceHash": "1c37064"
+  },
+  "fileExplorer.navigation.spaceFetchFailed": "Volné místo na disku se nepodařilo zjistit. Klikněte a zkuste to znovu",
+  "@fileExplorer.navigation.spaceFetchFailed": {
+    "sourceHash": "55f2eab"
+  },
+  "fileExplorer.navigation.spaceUnavailableText": "Nedostupné",
+  "@fileExplorer.navigation.spaceUnavailableText": {
+    "sourceHash": "ca18449"
+  },
+  "fileExplorer.navigation.spaceMtpHint": "Na telefonu se sem počítají i aplikace a systémové soubory. Přes USB má Cmdr přístup jen k vašim sdíleným souborům, takže složky tady dohromady zabírají méně, než kolik místa je využito.",
+  "@fileExplorer.navigation.spaceMtpHint": {
+    "sourceHash": "43ec861"
+  },
+  "fileExplorer.navigation.volumesStillUnreachable": "Pořád nedostupné. Zkuste to později",
+  "@fileExplorer.navigation.volumesStillUnreachable": {
+    "sourceHash": "e4661d2"
+  },
+  "fileExplorer.navigation.volumesMayBeMissing": "Některé svazky možná chybí",
+  "@fileExplorer.navigation.volumesMayBeMissing": {
+    "sourceHash": "a5b5792"
+  },
+  "fileExplorer.navigation.refreshVolumeList": "Znovu načíst seznam svazků",
+  "@fileExplorer.navigation.refreshVolumeList": {
+    "sourceHash": "f668a8c"
+  },
+  "fileExplorer.navigation.driveIndex.ariaLabel": "Stav indexu disku",
+  "@fileExplorer.navigation.driveIndex.ariaLabel": {
+    "sourceHash": "ff831be"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipDisabled": "Indexování je pro tento disk vypnuté. Zapněte ho a uvidíte tady velikosti složek a budete tu moct hledat.",
+  "@fileExplorer.navigation.driveIndex.tooltipDisabled": {
+    "sourceHash": "61d11e9"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipFresh": "Zaindexováno a aktuální. Naposledy indexováno {date}, trvalo to {duration}.",
+  "@fileExplorer.navigation.driveIndex.tooltipFresh": {
+    "sourceHash": "d036851"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipFreshNoScan": "Zaindexováno a aktuální.",
+  "@fileExplorer.navigation.driveIndex.tooltipFreshNoScan": {
+    "sourceHash": "fedc5ae"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipStale": "Tento disk se mohl změnit, zatímco byl odpojený. Velikosti a hledání můžou být trochu nepřesné. Prohledejte ho znovu a údaje se obnoví.",
+  "@fileExplorer.navigation.driveIndex.tooltipStale": {
+    "sourceHash": "0d85b0b"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipStalePhone": "Cmdr udržuje tento index aktuální podle změn, které sám provede. Změny provedené přímo v telefonu se projeví po novém prohledání.",
+  "@fileExplorer.navigation.driveIndex.tooltipStalePhone": {
+    "sourceHash": "d5a58a7"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipFailed": "Indexování se zastavilo kvůli problému s ukládáním indexu tohoto disku. Prohledejte disk znovu a index se sestaví znovu.",
+  "@fileExplorer.navigation.driveIndex.tooltipFailed": {
+    "sourceHash": "7c7e776"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS {count, plural, one {jednou} few {{countText}krát} many {{countText}krát} other {{countText}krát}} za {hours, plural, one {poslední hodinu} few {poslední {hoursText} hodiny} many {posledních {hoursText} hodiny} other {posledních {hoursText} hodin}} ztratil přehled o změnách v souborovém systému, takže velikosti některých složek můžou být mírně nepřesné. Obvykle jde o mezipaměti plné malých souborů a Cmdr to napraví při příští úplné kontrole {remaining, plural, one {za hodinu} few {za {remainingText} hodiny} many {za {remainingText} hodiny} other {za {remainingText} hodin}}.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
+    "sourceHash": "eb09aed"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "macOS {count, plural, one {jednou} few {{countText}krát} many {{countText}krát} other {{countText}krát}} ztratil přehled o změnách v souborovém systému, takže velikosti některých složek můžou být mírně nepřesné. Obvykle jde o mezipaměti plné malých souborů a kontrola, která právě běží, velikosti opraví.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": {
+    "sourceHash": "0ff330c"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "macOS {count, plural, one {jednou} few {{countText}krát} many {{countText}krát} other {{countText}krát}} za {hours, plural, one {poslední hodinu} few {poslední {hoursText} hodiny} many {posledních {hoursText} hodiny} other {posledních {hoursText} hodin}} ztratil přehled o změnách v souborovém systému, takže velikosti některých složek můžou být mírně nepřesné. Obvykle jde o mezipaměti plné malých souborů, takže o nic vážného nejde.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
+    "sourceHash": "68420b0"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipUnreadable": "Cmdr nedokázal přečíst {count, plural, one {jedno místo} few {{countText} místa} many {{countText} místa} other {{countText} míst}} na tomto disku, takže hledání tady nemusí najít úplně všechno.",
+  "@fileExplorer.navigation.driveIndex.tooltipUnreadable": {
+    "sourceHash": "6523d04"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "Cmdr nedokázal přečíst {count, plural, one {jedno místo} few {{countText} místa} many {{countText} místa} other {{countText} míst}} na tomto disku, takže hledání tady nemusí najít úplně všechno. {count, plural, one {Cmdr se k němu sám vrátí.} few {Cmdr se k nim sám vrátí.} many {Cmdr se k nim sám vrátí.} other {Cmdr se k nim sám vrátí.}}",
+  "@fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": {
+    "sourceHash": "f1ea5cb"
+  },
+  "fileExplorer.navigation.driveIndex.menuEnable": "Zapnout indexování tohoto disku",
+  "@fileExplorer.navigation.driveIndex.menuEnable": {
+    "sourceHash": "4e06151"
+  },
+  "fileExplorer.navigation.driveIndex.menuRescan": "Znovu prohledat teď",
+  "@fileExplorer.navigation.driveIndex.menuRescan": {
+    "sourceHash": "c07d16a"
+  },
+  "fileExplorer.navigation.driveIndex.menuDisable": "Vypnout indexování tohoto disku",
+  "@fileExplorer.navigation.driveIndex.menuDisable": {
+    "sourceHash": "d14cf11"
+  },
+  "fileExplorer.navigation.driveIndex.menuStop": "Zastavit indexování",
+  "@fileExplorer.navigation.driveIndex.menuStop": {
+    "sourceHash": "70ae907"
+  },
+  "fileExplorer.navigation.driveIndex.menuForget": "Zapomenout index tohoto disku",
+  "@fileExplorer.navigation.driveIndex.menuForget": {
+    "sourceHash": "90c53ac"
+  },
+  "fileExplorer.navigation.driveIndex.footer": "Naposledy indexováno: {date} · trvalo {duration}",
+  "@fileExplorer.navigation.driveIndex.footer": {
+    "sourceHash": "9877397"
+  },
+  "fileExplorer.navigation.driveIndex.durationMinSec": "{minutes} min, {seconds} s",
+  "@fileExplorer.navigation.driveIndex.durationMinSec": {
+    "sourceHash": "57a57d1",
+    "sameAsSourceJustification": "Czech abbreviates minutes and seconds as min and s too (macOS SystemSettings před %lld min / před %lld s; cs fileExplorer.errorPane.minutesAgo / secondsAgo)"
+  },
+  "fileExplorer.navigation.driveIndex.durationSec": "{seconds} s",
+  "@fileExplorer.navigation.driveIndex.durationSec": {
+    "sourceHash": "fde82d3",
+    "sameAsSourceJustification": "Placeholder plus the SI unit s, which Czech writes the same (cs fileExplorer.errorPane.secondsAgo: před {seconds} s)"
+  },
+  "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr se nedokázal připojit přímo ke sdílené složce {name}, a to k jejímu indexování potřebuje. Zkontrolujte, že je sdílená složka dostupná, a zkuste to znovu.",
+  "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
+    "sourceHash": "79a31a4"
+  },
+  "fileExplorer.navigation.driveIndex.refusedDisconnected": "Umístění {name} teď není připojené. Připojte ho a pak zapněte indexování.",
+  "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
+    "sourceHash": "ed05e59"
+  },
+  "fileExplorer.navigation.driveIndex.deferredRescan": "Cmdr právě hledá na disku {name}. Nové prohledání začne, jakmile hledání skončí.",
+  "@fileExplorer.navigation.driveIndex.deferredRescan": {
+    "sourceHash": "4e0f748"
+  },
+  "fileExplorer.navigation.driveIndex.deferredEnable": "Cmdr právě hledá na disku {name}. Indexování začne, jakmile hledání skončí.",
+  "@fileExplorer.navigation.driveIndex.deferredEnable": {
+    "sourceHash": "b27d24c"
+  },
+  "fileExplorer.navigation.driveIndex.enabled": "Indexování pro {name} je zapnuté.",
+  "@fileExplorer.navigation.driveIndex.enabled": {
+    "sourceHash": "9136041"
+  },
+  "fileExplorer.navigation.driveIndex.queuedBehindScan": "Cmdr právě indexuje disk {name}. Požadované prohledání začne, jakmile indexování skončí.",
+  "@fileExplorer.navigation.driveIndex.queuedBehindScan": {
+    "sourceHash": "09106ce"
+  },
+  "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr teď nemůže indexovat disk {name}. Znovu připojte disk a zkuste to znovu.",
+  "@fileExplorer.navigation.driveIndex.refusedGeneric": {
+    "sourceHash": "83bd66e"
+  },
+  "fileExplorer.navigation.driveIndex.refusedNotIndexable": "Cmdr zatím nedokáže indexovat {name}. Indexování funguje na místních discích, sdílených složkách SMB a telefonech.",
+  "@fileExplorer.navigation.driveIndex.refusedNotIndexable": {
+    "sourceHash": "4ef8487"
+  },
+  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Indexování disků je v Nastavení vypnuté, takže disk {name} zůstává neindexovaný. Zapněte ho v části Indexování > Indexování disků.",
+  "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
+    "sourceHash": "ce0d45c"
+  },
+  "fileExplorer.navigation.driveIndex.driveLeaving": "Disk {name} se odpojuje, takže Cmdr nechal index tohoto disku beze změny. Pokud disk zůstane připojený, zkuste to za chvíli znovu.",
+  "@fileExplorer.navigation.driveIndex.driveLeaving": {
+    "sourceHash": "99f19f9"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "Indexování disků je v Nastavení vypnuté, takže se teď neindexuje žádný disk.",
+  "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
+    "sourceHash": "6ebf6f4"
+  },
+  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Indexování disků je v Nastavení vypnuté. Zapněte ho v části Indexování > Indexování disků a tento disk naváže tam, kde skončil.",
+  "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
+    "sourceHash": "e045664"
+  },
+  "fileExplorer.dragOut.failed": "{count, plural, =1 {Položku „{name}“ se nepodařilo zkopírovat.} one {{countText} položku se nepodařilo zkopírovat.} few {{countText} položky se nepodařilo zkopírovat.} many {{countText} položky se nepodařilo zkopírovat.} other {{countText} položek se nepodařilo zkopírovat.}}",
+  "@fileExplorer.dragOut.failed": {
+    "sourceHash": "73468bd"
+  },
+  "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Položku „{name}“ se nepodařilo zkopírovat.} one {{countText} položku se nepodařilo zkopírovat.} few {{countText} položky se nepodařilo zkopírovat.} many {{countText} položky se nepodařilo zkopírovat.} other {{countText} položek se nepodařilo zkopírovat.}}",
+  "@fileExplorer.dragOut.partial": {
+    "sourceHash": "9215226"
+  },
+  "fileExplorer.folderSizes.unreadable": "{count, plural, one {# složku se nepodařilo úplně přečíst, takže její velikost může být neúplná.} few {# složky se nepodařilo úplně přečíst, takže jejich velikosti můžou být neúplné.} many {# složky se nepodařilo úplně přečíst, takže jejich velikosti můžou být neúplné.} other {# složek se nepodařilo úplně přečíst, takže jejich velikosti můžou být neúplné.}}",
+  "@fileExplorer.folderSizes.unreadable": {
+    "sourceHash": "ad31a56"
+  },
+  "fileExplorer.quickFilter.modeFilter": "Filtr: zobrazují se jen odpovídající názvy",
+  "@fileExplorer.quickFilter.modeFilter": {
+    "sourceHash": "3febd29"
+  },
+  "fileExplorer.typeToJump.modeJump": "Skok: zobrazují se všechny názvy a kurzor přejde na shodu",
+  "@fileExplorer.typeToJump.modeJump": {
+    "sourceHash": "292fdf5"
+  },
+  "fileExplorer.typeToJump.clear": "Vymazat skok",
+  "@fileExplorer.typeToJump.clear": {
+    "sourceHash": "42ec82f"
+  },
+  "fileExplorer.quickFilter.clear": "Vymazat filtr",
+  "@fileExplorer.quickFilter.clear": {
+    "sourceHash": "ba59e2d"
+  },
+  "fileExplorer.quickFilter.intro.title": "Psaní vyfiltrovalo tento panel",
+  "@fileExplorer.quickFilter.intro.title": {
+    "sourceHash": "eef3e92"
+  },
+  "fileExplorer.quickFilter.intro.body": "Po napsání několika písmen teď panel zobrazuje jen soubory a složky, jejichž názvy je obsahují.",
+  "@fileExplorer.quickFilter.intro.body": {
+    "sourceHash": "e406349"
+  },
+  "fileExplorer.quickFilter.intro.escape": "Stiskněte Esc a znovu uvidíte všechny své soubory.",
+  "@fileExplorer.quickFilter.intro.escape": {
+    "sourceHash": "af749ad"
+  },
+  "fileExplorer.quickFilter.intro.jumpNote": "Chcete raději jen přesunout kurzor na odpovídající název a nic neskrývat? Přepněte na Skok, tady nebo v Nastavení.",
+  "@fileExplorer.quickFilter.intro.jumpNote": {
+    "sourceHash": "ac6d3c8"
+  },
+  "fileExplorer.quickFilter.intro.switchToJump": "Přepnout na Skok",
+  "@fileExplorer.quickFilter.intro.switchToJump": {
+    "sourceHash": "38642f9"
+  },
+  "fileExplorer.quickFilter.intro.openSettings": "Nastavení…",
+  "@fileExplorer.quickFilter.intro.openSettings": {
+    "sourceHash": "7a04083"
+  },
+  "fileExplorer.quickFilter.intro.gotIt": "Rozumím",
+  "@fileExplorer.quickFilter.intro.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
+  "fileExplorer.tags.skipped": "{count, plural, one {Značky jedné položky zůstaly beze změny, protože Cmdr nemohl přečíst značky, které už má. Zkontrolujte, že ji můžete otevřít, nebo ji označte ve Finderu.} few {Značky {countText} položek zůstaly beze změny, protože Cmdr nemohl přečíst značky, které už mají. Zkontrolujte, že je můžete otevřít, nebo je označte ve Finderu.} many {Značky {countText} položky zůstaly beze změny, protože Cmdr nemohl přečíst značky, které už mají. Zkontrolujte, že je můžete otevřít, nebo je označte ve Finderu.} other {Značky {countText} položek zůstaly beze změny, protože Cmdr nemohl přečíst značky, které už mají. Zkontrolujte, že je můžete otevřít, nebo je označte ve Finderu.}}",
+  "@fileExplorer.tags.skipped": {
+    "sourceHash": "31363ee"
+  },
+  "fileExplorer.errorPane.reviewLinkSignIn": "Posoudit přihlášení",
+  "@fileExplorer.errorPane.reviewLinkSignIn": {
+    "sourceHash": "25a3cfe"
+  },
+  "fileExplorer.pane.directConnectionOtherServerNotAllowedToast": "Server „{server}“ hlásí, že soubory této sdílené složky jsou na jiném serveru. Cmdr se tam sám nepřihlásí, takže sdílená složka dál používá systémové připojení.",
+  "@fileExplorer.pane.directConnectionOtherServerNotAllowedToast": {
+    "sourceHash": "c350d80"
+  },
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "Ke sdílené složce <shareName>{share}</shareName> se nepodařilo připojit přímo, protože její soubory jsou na jiném serveru a Cmdr se tam sám nepřihlásí. Připojení dál běží přes nativní síťové připojení SMB v macOS, které je mnohem pomalejší.",
+  "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
+    "sourceHash": "9c9c5a5"
+  },
+  "fileExplorer.smbLinkConsent.title": "Přihlásit se k jinému serveru?",
+  "@fileExplorer.smbLinkConsent.title": {
+    "sourceHash": "91458ea"
+  },
+  "fileExplorer.smbLinkConsent.message": "Odkaz na serveru {server} vede do složky na serveru {target}. Pokud ji chcete otevřít, Cmdr se k serveru {target} přihlásí účtem, který používáte pro server {server}.",
+  "@fileExplorer.smbLinkConsent.message": {
+    "sourceHash": "848be1b"
+  },
+  "fileExplorer.smbLinkConsent.warning": "Povolte to, jen pokud serveru {target} důvěřujete. Neznámý server by mohl odkaz jako tento zneužít k získání vašeho hesla.",
+  "@fileExplorer.smbLinkConsent.warning": {
+    "sourceHash": "295e81e"
+  },
+  "fileExplorer.smbLinkConsent.note": "Cmdr si vaši odpověď pro tyto dva servery zapamatuje. Zapomenout ji můžete v Nastavení v části Servery.",
+  "@fileExplorer.smbLinkConsent.note": {
+    "sourceHash": "3f9615a"
+  },
+  "fileExplorer.smbLinkConsent.allow": "Povolit a přihlásit se",
+  "@fileExplorer.smbLinkConsent.allow": {
+    "sourceHash": "d8192ad"
+  },
+  "fileExplorer.smbLinkConsent.notNow": "Teď ne",
+  "@fileExplorer.smbLinkConsent.notNow": {
+    "sourceHash": "a0e63d7"
+  }
+}

@@ -1,0 +1,227 @@
+{
+  "operationLog.dialog.title": "Protokol operací",
+  "@operationLog.dialog.title": {
+    "sourceHash": "2c97965"
+  },
+  "operationLog.dialog.loading": "Načítání…",
+  "@operationLog.dialog.loading": {
+    "sourceHash": "ba3bbbe"
+  },
+  "operationLog.dialog.loadError": "Historii operací se nepodařilo načíst. Zkuste to za chvíli znovu.",
+  "@operationLog.dialog.loadError": {
+    "sourceHash": "cf26c51"
+  },
+  "operationLog.dialog.empty": "Zatím tu nejsou žádné operace. Něco zkopírujte, přesuňte, přejmenujte nebo smažte a objeví se tady.",
+  "@operationLog.dialog.empty": {
+    "sourceHash": "2dea414"
+  },
+  "operationLog.dialog.recordingOff": "Protokol operací teď nic nezaznamenává, takže se tu nové kopírování, přesuny, přejmenování a mazání neobjeví a nedají se odvolat. Aby se znovu zaznamenávaly, zapněte ho v Nastavení.",
+  "@operationLog.dialog.recordingOff": {
+    "sourceHash": "0519736"
+  },
+  "operationLog.dialog.itemsError": "Tyto položky se nepodařilo načíst.",
+  "@operationLog.dialog.itemsError": {
+    "sourceHash": "596819e"
+  },
+  "operationLog.dialog.noItems": "Tato operace nemá žádné zaznamenané položky.",
+  "@operationLog.dialog.noItems": {
+    "sourceHash": "c7d7bfb"
+  },
+  "operationLog.dialog.moreItems": "{count, plural, one {a {countText} další položka} few {a {countText} další položky} many {a {countText} další položky} other {a {countText} dalších položek}}",
+  "@operationLog.dialog.moreItems": {
+    "sourceHash": "c39507d"
+  },
+  "operationLog.dialog.loadMore": "Načíst dalších 50",
+  "@operationLog.dialog.loadMore": {
+    "sourceHash": "baef697"
+  },
+  "operationLog.dialog.rollBack": "Vrátit změny",
+  "@operationLog.dialog.rollBack": {
+    "sourceHash": "931f703"
+  },
+  "operationLog.dialog.finishRollBack": "Dokončit vrácení změn",
+  "@operationLog.dialog.finishRollBack": {
+    "sourceHash": "dbe3771"
+  },
+  "operationLog.dialog.rollbackOf": "Vrácení změn operace „<operationLink>{operation}</operationLink>“ z {time}",
+  "@operationLog.dialog.rollbackOf": {
+    "sourceHash": "4885c73"
+  },
+  "operationLog.dialog.rollbackOfUnlisted": "Vrácení změn starší operace",
+  "@operationLog.dialog.rollbackOfUnlisted": {
+    "sourceHash": "50d060d"
+  },
+  "operationLog.dialog.latestRollback": "Poslední vrácení změn: „<operationLink>{operation}</operationLink>“ z {time}",
+  "@operationLog.dialog.latestRollback": {
+    "sourceHash": "a8275f9"
+  },
+  "operationLog.dialog.close": "Zavřít",
+  "@operationLog.dialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "operationLog.summary.copy": "{count, plural, one {Zkopírována {countText} položka} few {Zkopírovány {countText} položky} many {Zkopírováno {countText} položky} other {Zkopírováno {countText} položek}}",
+  "@operationLog.summary.copy": {
+    "sourceHash": "c296979"
+  },
+  "operationLog.summary.move": "{count, plural, one {Přesunuta {countText} položka} few {Přesunuty {countText} položky} many {Přesunuto {countText} položky} other {Přesunuto {countText} položek}}",
+  "@operationLog.summary.move": {
+    "sourceHash": "a6a88d9"
+  },
+  "operationLog.summary.delete": "{count, plural, one {Smazána {countText} položka} few {Smazány {countText} položky} many {Smazáno {countText} položky} other {Smazáno {countText} položek}}",
+  "@operationLog.summary.delete": {
+    "sourceHash": "97ec6b7"
+  },
+  "operationLog.summary.trash": "{count, plural, one {Do koše přesunuta {countText} položka} few {Do koše přesunuty {countText} položky} many {Do koše přesunuto {countText} položky} other {Do koše přesunuto {countText} položek}}",
+  "@operationLog.summary.trash": {
+    "sourceHash": "34b4457"
+  },
+  "operationLog.summary.rename": "{count, plural, one {Přejmenována {countText} položka} few {Přejmenovány {countText} položky} many {Přejmenováno {countText} položky} other {Přejmenováno {countText} položek}}",
+  "@operationLog.summary.rename": {
+    "sourceHash": "73f6409"
+  },
+  "operationLog.summary.createFolder": "{count, plural, one {Vytvořena {countText} složka} few {Vytvořeny {countText} složky} many {Vytvořeno {countText} složky} other {Vytvořeno {countText} složek}}",
+  "@operationLog.summary.createFolder": {
+    "sourceHash": "275bbc1"
+  },
+  "operationLog.summary.createFile": "{count, plural, one {Vytvořen {countText} soubor} few {Vytvořeny {countText} soubory} many {Vytvořeno {countText} souboru} other {Vytvořeno {countText} souborů}}",
+  "@operationLog.summary.createFile": {
+    "sourceHash": "ad16d52"
+  },
+  "operationLog.summary.compress": "{count, plural, one {Zkomprimována {countText} položka} few {Zkomprimovány {countText} položky} many {Zkomprimováno {countText} položky} other {Zkomprimováno {countText} položek}}",
+  "@operationLog.summary.compress": {
+    "sourceHash": "24d78df"
+  },
+  "operationLog.summary.archiveEdit": "Upraven archiv",
+  "@operationLog.summary.archiveEdit": {
+    "sourceHash": "a1bbfcb"
+  },
+  "operationLog.summary.archiveExtract": "Extrahován archiv",
+  "@operationLog.summary.archiveExtract": {
+    "sourceHash": "ab99337"
+  },
+  "operationLog.initiator.user": "Vy",
+  "@operationLog.initiator.user": {
+    "sourceHash": "08b0419"
+  },
+  "operationLog.initiator.aiClient": "Klient AI",
+  "@operationLog.initiator.aiClient": {
+    "sourceHash": "caf5878"
+  },
+  "operationLog.initiator.agent": "Agent",
+  "@operationLog.initiator.agent": {
+    "sourceHash": "11b39c9",
+    "sameAsSourceJustification": "Agent is the Czech word too (cs terms.json ai-agent ruling chosen: agent; queryUi.ai.lead „Agent udělal tohle“)."
+  },
+  "operationLog.initiator.agentEdited": "Agent s vašimi úpravami",
+  "@operationLog.initiator.agentEdited": {
+    "sourceHash": "16c4cd2"
+  },
+  "operationLog.status.queued": "Čeká",
+  "@operationLog.status.queued": {
+    "sourceHash": "661ff40"
+  },
+  "operationLog.status.running": "Běží",
+  "@operationLog.status.running": {
+    "sourceHash": "f4ccae2"
+  },
+  "operationLog.status.done": "Hotovo",
+  "@operationLog.status.done": {
+    "sourceHash": "11a6767"
+  },
+  "operationLog.status.failed": "Nedokončeno",
+  "@operationLog.status.failed": {
+    "sourceHash": "59ea57b"
+  },
+  "operationLog.status.canceled": "Zrušeno",
+  "@operationLog.status.canceled": {
+    "sourceHash": "13ca2ee"
+  },
+  "operationLog.rollback.notRollbackable": "Změny nelze vrátit",
+  "@operationLog.rollback.notRollbackable": {
+    "sourceHash": "c6f78ba"
+  },
+  "operationLog.rollback.rollbackable": "Změny lze vrátit",
+  "@operationLog.rollback.rollbackable": {
+    "sourceHash": "6e87942"
+  },
+  "operationLog.rollback.rollingBack": "Vracení změn",
+  "@operationLog.rollback.rollingBack": {
+    "sourceHash": "8b9e964"
+  },
+  "operationLog.rollback.rolledBack": "Změny vráceny",
+  "@operationLog.rollback.rolledBack": {
+    "sourceHash": "7159223"
+  },
+  "operationLog.rollback.partiallyRolledBack": "Změny částečně vráceny",
+  "@operationLog.rollback.partiallyRolledBack": {
+    "sourceHash": "ea54c83"
+  },
+  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr vrátil, co šlo, a zbytek nechal tak, jak byl. Dokončení projde operaci ještě jednou a přeskočí vše, čím si Cmdr pořád není jistý.",
+  "@operationLog.rollback.partiallyRolledBackNotice": {
+    "sourceHash": "77e6f25"
+  },
+  "operationLog.rollback.refusalAlreadyRollingBack": "U této operace se změny už vracejí. Průběh uvidíte ve frontě operací.",
+  "@operationLog.rollback.refusalAlreadyRollingBack": {
+    "sourceHash": "282a49a"
+  },
+  "operationLog.rollback.refusalAlreadyRolledBack": "U této operace už je všechno zpátky tak, jak bylo.",
+  "@operationLog.rollback.refusalAlreadyRolledBack": {
+    "sourceHash": "36844e7"
+  },
+  "operationLog.rollback.refusalOverwrote": "Tato operace nahradila soubory, které už v cíli byly. Cmdr si kopie nahrazených souborů neuchovává, takže původní soubory už nepůjde obnovit.",
+  "@operationLog.rollback.refusalOverwrote": {
+    "sourceHash": "c4fb3c4"
+  },
+  "operationLog.rollback.refusalPermanentDelete": "Po trvalém smazání není co vrátit zpět.",
+  "@operationLog.rollback.refusalPermanentDelete": {
+    "sourceHash": "5073539"
+  },
+  "operationLog.rollback.refusalArchiveOverwrite": "Tento archiv nahradil starší archiv se stejným názvem. Cmdr si kopie nahrazených souborů neuchovává, takže starší archiv už nepůjde obnovit.",
+  "@operationLog.rollback.refusalArchiveOverwrite": {
+    "sourceHash": "86a374d"
+  },
+  "operationLog.rollback.refusalZipEditUnsupported": "Cmdr zatím neumí odvolat změny provedené uvnitř archivu.",
+  "@operationLog.rollback.refusalZipEditUnsupported": {
+    "sourceHash": "e0892dd"
+  },
+  "operationLog.rollback.refusalJournalIncomplete": "Cmdr nemá o této operaci úplný záznam, takže by vrácení změn mohlo zasáhnout nesprávné soubory.",
+  "@operationLog.rollback.refusalJournalIncomplete": {
+    "sourceHash": "4176739"
+  },
+  "operationLog.rollback.refusalDirectoryMerge": "Tento přesun sloučil složku s jinou, která už v cíli byla. Cmdr nedokáže rozlišit, které soubory přibyly a které tam už byly, takže bezpečná cesta zpět neexistuje.",
+  "@operationLog.rollback.refusalDirectoryMerge": {
+    "sourceHash": "2dad38d"
+  },
+  "operationLog.rollback.refusalStagedConflictResolved": "Tento přesun narazil na název, který už byl obsazený, a zeptal se, co s tím. Tahle odpověď je teď součástí výsledku, takže jednoznačná cesta zpět neexistuje.",
+  "@operationLog.rollback.refusalStagedConflictResolved": {
+    "sourceHash": "03ddd6e"
+  },
+  "operationLog.rollback.refusalVolumeUnavailable": "Připojte disk, který tato operace používala, a zkuste to znovu.",
+  "@operationLog.rollback.refusalVolumeUnavailable": {
+    "sourceHash": "935d109"
+  },
+  "operationLog.rollback.refusalUnknown": "Tato operace už ve vaší historii není.",
+  "@operationLog.rollback.refusalUnknown": {
+    "sourceHash": "f94c33d"
+  },
+  "operationLog.rollback.refusalUnexpected": "Cmdr nedokázal spustit vrácení změn. Zkuste to za chvíli znovu.",
+  "@operationLog.rollback.refusalUnexpected": {
+    "sourceHash": "bef54f1"
+  },
+  "operationLog.outcome.done": "Hotovo",
+  "@operationLog.outcome.done": {
+    "sourceHash": "11a6767"
+  },
+  "operationLog.outcome.skipped": "Přeskočeno",
+  "@operationLog.outcome.skipped": {
+    "sourceHash": "12698ce"
+  },
+  "operationLog.outcome.failed": "Nedokončeno",
+  "@operationLog.outcome.failed": {
+    "sourceHash": "59ea57b"
+  },
+  "operationLog.outcome.rolledBack": "Změny vráceny",
+  "@operationLog.outcome.rolledBack": {
+    "sourceHash": "7159223"
+  }
+}

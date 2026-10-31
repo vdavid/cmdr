@@ -1,0 +1,134 @@
+{
+  "stateRecovery.settings.title": "Cmdr nemohl přečíst vaše nastavení, takže začal s výchozím",
+  "@stateRecovery.settings.title": {
+    "sourceHash": "b5b4b8e"
+  },
+  "stateRecovery.settings.body": "Statistiky využití a zprávy o havárii zůstanou vypnuté, dokud je znovu nezapnete v Nastavení > Aktualizace a soukromí.",
+  "@stateRecovery.settings.body": {
+    "sourceHash": "20439e1"
+  },
+  "stateRecovery.settings.openSettings": "Otevřít Nastavení",
+  "@stateRecovery.settings.openSettings": {
+    "sourceHash": "3f94010"
+  },
+  "stateRecovery.shortcuts.title": "Cmdr nemohl přečíst vaše klávesové zkratky, takže jsou zase výchozí",
+  "@stateRecovery.shortcuts.title": {
+    "sourceHash": "35093bd"
+  },
+  "stateRecovery.license.title": "Cmdr nemohl přečíst svůj licenční soubor",
+  "@stateRecovery.license.title": {
+    "sourceHash": "64726c1"
+  },
+  "stateRecovery.license.body": "Pokud se teď Cmdr ukazuje jako nelicencovaný, zadejte znovu licenční klíč v Nastavení > Licence.",
+  "@stateRecovery.license.body": {
+    "sourceHash": "ea51589"
+  },
+  "stateRecovery.license.openSettings": "Otevřít Nastavení",
+  "@stateRecovery.license.openSettings": {
+    "sourceHash": "3f94010"
+  },
+  "stateRecovery.appStatus.title": "Cmdr nemohl přečíst, které složky měly panely otevřené, takže začínají v domovské složce",
+  "@stateRecovery.appStatus.title": {
+    "sourceHash": "521f5eb"
+  },
+  "stateRecovery.operationLog.title": "Cmdr nemohl přečíst váš protokol operací, takže začíná nanovo",
+  "@stateRecovery.operationLog.title": {
+    "sourceHash": "0bfa904"
+  },
+  "stateRecovery.chatHistory.title": "Cmdr nemohl přečíst vaše chaty s Ask Cmdr, takže seznam chatů začíná prázdný",
+  "@stateRecovery.chatHistory.title": {
+    "sourceHash": "14d6612"
+  },
+  "stateRecovery.favorites.title": "Cmdr nemohl přečíst vaše oblíbené položky, takže seznam začíná prázdný",
+  "@stateRecovery.favorites.title": {
+    "sourceHash": "1048c2b"
+  },
+  "stateRecovery.goToPathHistory.title": "Cmdr nemohl přečíst nedávné položky v Otevřít složku, takže seznam začíná nanovo",
+  "@stateRecovery.goToPathHistory.title": {
+    "sourceHash": "c1c95a1"
+  },
+  "stateRecovery.searchHistory.title": "Cmdr nemohl přečíst vaše nedávná hledání, takže seznam začíná nanovo",
+  "@stateRecovery.searchHistory.title": {
+    "sourceHash": "75fe9db"
+  },
+  "stateRecovery.selectionHistory.title": "Cmdr nemohl přečíst vaše nedávné výběry, takže seznam začíná nanovo",
+  "@stateRecovery.selectionHistory.title": {
+    "sourceHash": "a93f574"
+  },
+  "stateRecovery.multiRenamePresets.title": "Cmdr nemohl přečíst vaše uložené předvolby hromadného přejmenování, takže seznam začíná prázdný",
+  "@stateRecovery.multiRenamePresets.title": {
+    "sourceHash": "b6f2a3b"
+  },
+  "stateRecovery.multiRenameLastSettings.title": "Cmdr nemohl přečíst vaše poslední nastavení hromadného přejmenování, takže se nástroj otevře s výchozím",
+  "@stateRecovery.multiRenameLastSettings.title": {
+    "sourceHash": "b830e12"
+  },
+  "stateRecovery.multiRenameFieldHistory.title": "Cmdr nemohl přečíst historii polí hromadného přejmenování, takže začíná nanovo",
+  "@stateRecovery.multiRenameFieldHistory.title": {
+    "sourceHash": "7b31c57"
+  },
+  "stateRecovery.launchDays.title": "Cmdr nemohl přečíst svůj záznam dnů, kdy byl otevřený, takže počítá znovu od začátku",
+  "@stateRecovery.launchDays.title": {
+    "sourceHash": "00f947b"
+  },
+  "stateRecovery.s3Places.title": "Cmdr nemohl přečíst všechna vaše uložená místa S3, takže některá můžou chybět",
+  "@stateRecovery.s3Places.title": {
+    "sourceHash": "6957175"
+  },
+  "stateRecovery.nfsPlaces.title": "Cmdr nemohl přečíst všechna vaše uložená místa NFS, takže některá můžou chybět",
+  "@stateRecovery.nfsPlaces.title": {
+    "sourceHash": "f045d38"
+  },
+  "stateRecovery.sftpServers.title": "Cmdr nemohl přečíst všechny vaše uložené servery SFTP, takže některé můžou chybět",
+  "@stateRecovery.sftpServers.title": {
+    "sourceHash": "f4426dd"
+  },
+  "stateRecovery.webdavServers.title": "Cmdr nemohl přečíst všechny vaše uložené servery WebDAV, takže některé můžou chybět",
+  "@stateRecovery.webdavServers.title": {
+    "sourceHash": "c37ebaf"
+  },
+  "stateRecovery.smbShares.title": "Cmdr nemohl přečíst všechny vaše uložené sdílené složky SMB, takže některé můžou chybět",
+  "@stateRecovery.smbShares.title": {
+    "sourceHash": "90fa873"
+  },
+  "stateRecovery.smbServers.title": "Cmdr nemohl přečíst všechny servery přidané podle adresy, takže některé můžou chybět",
+  "@stateRecovery.smbServers.title": {
+    "sourceHash": "2d6f960"
+  },
+  "stateRecovery.sftpHostKeys.title": "Cmdr nemohl přečíst všechny servery SFTP, kterým důvěřujete, takže se na některé může zeptat znovu",
+  "@stateRecovery.sftpHostKeys.title": {
+    "sourceHash": "5f3d270"
+  },
+  "stateRecovery.webdavCertificates.title": "Cmdr nemohl přečíst všechny certifikáty serverů, kterým důvěřujete, takže se na některé může zeptat znovu",
+  "@stateRecovery.webdavCertificates.title": {
+    "sourceHash": "ca138aa"
+  },
+  "stateRecovery.localAi.title": "Cmdr nemohl přečíst nastavení místní AI, takže může nabídnout její nastavení znovu",
+  "@stateRecovery.localAi.title": {
+    "sourceHash": "7d4a0cb"
+  },
+  "stateRecovery.credentials.title": "Cmdr nemohl přečíst vaše uložená hesla a klíče, takže začíná nanovo",
+  "@stateRecovery.credentials.title": {
+    "sourceHash": "e4821b8"
+  },
+  "stateRecovery.credentials.body": "To se stává po přechodu na nový počítač. Cmdr se na každé heslo znovu zeptá, až ho bude příště potřebovat.",
+  "@stateRecovery.credentials.body": {
+    "sourceHash": "afac266"
+  },
+  "stateRecovery.keptCopy": "Cmdr ponechal starý soubor na cestě {path}.",
+  "@stateRecovery.keptCopy": {
+    "sourceHash": "634e87d"
+  },
+  "stateRecovery.showInFinder": "Zobrazit ve Finderu",
+  "@stateRecovery.showInFinder": {
+    "sourceHash": "c2a9c77"
+  },
+  "stateRecovery.dismiss": "Zavřít",
+  "@stateRecovery.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "stateRecovery.smbLinkConsents.title": "Cmdr nemohl přečíst všechny servery, ke kterým se odkazy SMB smí přihlásit, takže se na některé může zeptat znovu",
+  "@stateRecovery.smbLinkConsents.title": {
+    "sourceHash": "2e0f9fd"
+  }
+}

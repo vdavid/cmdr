@@ -1,0 +1,54 @@
+{
+  "goToPath.dialog.title": "Otevřít složku",
+  "@goToPath.dialog.title": {
+    "sourceHash": "26fc1cf"
+  },
+  "goToPath.dialog.inputAriaLabel": "Cesta, kam přejít",
+  "@goToPath.dialog.inputAriaLabel": {
+    "sourceHash": "ac4d152"
+  },
+  "goToPath.dialog.inputPlaceholder": "Zadejte nebo vložte cestu, např. ~/Documents",
+  "@goToPath.dialog.inputPlaceholder": {
+    "sourceHash": "d84d343"
+  },
+  "goToPath.dialog.recentsAriaLabel": "Poslední cesty",
+  "@goToPath.dialog.recentsAriaLabel": {
+    "sourceHash": "b698143"
+  },
+  "goToPath.dialog.removeFromList": "Odstranit ze seznamu",
+  "@goToPath.dialog.removeFromList": {
+    "sourceHash": "82963c7"
+  },
+  "goToPath.dialog.cancel": "Zrušit",
+  "@goToPath.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "goToPath.dialog.confirm": "Otevřít",
+  "@goToPath.dialog.confirm": {
+    "sourceHash": "6cc8519"
+  },
+  "goToPath.dialog.ancestorHint": "Tato cesta neexistuje. Nejbližší místo, kam můžete přejít: {dir}.",
+  "@goToPath.dialog.ancestorHint": {
+    "sourceHash": "e6eefca"
+  },
+  "goToPath.toast.landedOnAncestor": "Cesta <req>{requested}</req> neexistuje, takže se otevřela nejbližší složka <land>{landed}</land>.",
+  "@goToPath.toast.landedOnAncestor": {
+    "sourceHash": "9af3d3a"
+  },
+  "goToPath.toast.pressToGoBack": "Stiskněte <chip></chip> a přejdete zpět.",
+  "@goToPath.toast.pressToGoBack": {
+    "sourceHash": "ee851b2"
+  },
+  "goToPath.dialog.opensServer": "Otevře se {name}",
+  "@goToPath.dialog.opensServer": {
+    "sourceHash": "e3fb00e"
+  },
+  "goToPath.dialog.addsServer": "Přidá server",
+  "@goToPath.dialog.addsServer": {
+    "sourceHash": "8e73f74"
+  },
+  "goToPath.dialog.snapshotNotAPath": "Výsledky hledání nejsou cesta, na kterou se dá přejít.",
+  "@goToPath.dialog.snapshotNotAPath": {
+    "sourceHash": "1332610"
+  }
+}

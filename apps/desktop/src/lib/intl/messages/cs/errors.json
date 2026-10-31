@@ -1,0 +1,2568 @@
+{
+  "errors.listing.interrupted.title": "Přerušeno",
+  "@errors.listing.interrupted.title": {
+    "sourceHash": "132d124"
+  },
+  "errors.listing.interrupted.explanation": "Systémová operace byla přerušena dřív, než se stihla dokončit. Skoro vždy jde o ojedinělou věc: na okamžik se do cesty připletl signál nebo proces na pozadí.",
+  "@errors.listing.interrupted.explanation": {
+    "sourceHash": "7f88a37"
+  },
+  "errors.listing.interrupted.suggestion": "Zkuste sem přejít znovu. Takové přerušení se skoro nikdy nestane dvakrát po sobě.",
+  "@errors.listing.interrupted.suggestion": {
+    "sourceHash": "2fe74e8"
+  },
+  "errors.listing.notEnoughMemory.title": "Nedostatek paměti",
+  "@errors.listing.notEnoughMemory.title": {
+    "sourceHash": "96dc194"
+  },
+  "errors.listing.notEnoughMemory.explanation": "Při čtení této složky došla systému dostupná paměť (RAM). To se může stát, když je najednou otevřeno hodně aplikací nebo když složka obsahuje velmi mnoho souborů.",
+  "@errors.listing.notEnoughMemory.explanation": {
+    "sourceHash": "ff103cd"
+  },
+  "errors.listing.notEnoughMemory.suggestion": "Co můžete zkusit:\n- Zavřete některé aplikace a uvolněte paměť, hlavně ty, které spotřebovávají hodně prostředků (prohlížeče s mnoha záložkami, editory, multimediální aplikace)\n- Zkontrolujte využití paměti v aplikaci **Monitor aktivity** (vyhledejte ji ve Spotlightu)\n- Zkuste sem přejít znovu",
+  "@errors.listing.notEnoughMemory.suggestion": {
+    "sourceHash": "d05a4e4"
+  },
+  "errors.listing.resourceBusy.title": "Prostředek je zaneprázdněný",
+  "@errors.listing.resourceBusy.title": {
+    "sourceHash": "3ad6486"
+  },
+  "errors.listing.resourceBusy.explanation": "Cmdr nemá přístup ke složce `{path}`, protože ji právě výhradně používá jiná aplikace nebo proces. Obvykle je to jen dočasné.",
+  "@errors.listing.resourceBusy.explanation": {
+    "sourceHash": "18a07d9"
+  },
+  "errors.listing.resourceBusy.suggestion": "Chvíli počkejte a pak sem přejděte znovu. Pokud se to opakuje, zkontrolujte, která aplikace může mít soubor otevřený (v Terminálu spusťte `lsof +D <folder-path>` a uvidíte, které procesy tuto složku používají).",
+  "@errors.listing.resourceBusy.suggestion": {
+    "sourceHash": "fa266e6"
+  },
+  "errors.listing.temporarilyUnavailable.title": "Dočasně nedostupné",
+  "@errors.listing.temporarilyUnavailable.title": {
+    "sourceHash": "3c86be3"
+  },
+  "errors.listing.temporarilyUnavailable.explanation": "Systém je momentálně příliš zaneprázdněný, než aby tento požadavek zpracoval. Jde o přechodný stav, který obvykle během několika sekund sám odezní.",
+  "@errors.listing.temporarilyUnavailable.explanation": {
+    "sourceHash": "2193876"
+  },
+  "errors.listing.temporarilyUnavailable.suggestion": "Zkuste sem přejít znovu. Obvykle se to vyřeší samo. Pokud se to opakuje, systém může být silně vytížený. V aplikaci **Monitor aktivity** zkontrolujte, které aplikace spotřebovávají hodně prostředků.",
+  "@errors.listing.temporarilyUnavailable.suggestion": {
+    "sourceHash": "1ec4aef"
+  },
+  "errors.listing.networkDown.title": "Síť nefunguje",
+  "@errors.listing.networkDown.title": {
+    "sourceHash": "399ab40"
+  },
+  "errors.listing.networkDown.explanation": "Síťové připojení vašeho Macu nefunguje, takže je tento svazek pro Cmdr nedostupný. Může to znamenat, že je Wi-Fi odpojená, kabel Ethernet vytažený nebo síťové rozhraní vypnuté.",
+  "@errors.listing.networkDown.explanation": {
+    "sourceHash": "179f8bb"
+  },
+  "errors.listing.networkDown.suggestion": "Co můžete zkusit:\n- Zkontrolujte stav Wi-Fi nebo Ethernetu v **{system_settings} > Síť**\n- Pokud jste na Wi-Fi, zkuste ji vypnout a znovu zapnout\n- V Terminálu spusťte `ping google.com` a otestujte připojení\n- Až budete zase online, přejděte sem znovu",
+  "@errors.listing.networkDown.suggestion": {
+    "sourceHash": "bf4b517"
+  },
+  "errors.listing.networkConnectionDropped.title": "Síťové připojení vypadlo",
+  "@errors.listing.networkConnectionDropped.title": {
+    "sourceHash": "5654be9"
+  },
+  "errors.listing.networkConnectionDropped.explanation": "Síťové připojení se nečekaně přerušilo, když Cmdr četl tuto složku. To se může stát, když se restartuje router, VPN se znovu připojuje nebo je síť dočasně nestabilní.",
+  "@errors.listing.networkConnectionDropped.explanation": {
+    "sourceHash": "b155930"
+  },
+  "errors.listing.networkConnectionDropped.suggestion": "Co můžete zkusit:\n- Zkontrolujte síťové připojení\n- Pokud používáte VPN, ověřte, že je pořád připojená\n- Zkuste sem přejít znovu",
+  "@errors.listing.networkConnectionDropped.suggestion": {
+    "sourceHash": "228b9a8"
+  },
+  "errors.listing.connectionDropped.title": "Připojení vypadlo",
+  "@errors.listing.connectionDropped.title": {
+    "sourceHash": "9049f3d"
+  },
+  "errors.listing.connectionDropped.explanation": "Připojení přerušil server nebo síť dřív, než Cmdr stihl dokončit čtení. Často to znamená, že je server přetížený nebo se restartuje.",
+  "@errors.listing.connectionDropped.explanation": {
+    "sourceHash": "2d447c3"
+  },
+  "errors.listing.connectionDropped.suggestion": "Co můžete zkusit:\n- Zkontrolujte, že server běží a reaguje\n- Zkontrolujte síťové připojení\n- Zkuste sem přejít znovu",
+  "@errors.listing.connectionDropped.suggestion": {
+    "sourceHash": "3e3446f"
+  },
+  "errors.listing.connectionReset.title": "Připojení bylo resetováno",
+  "@errors.listing.connectionReset.title": {
+    "sourceHash": "6346f08"
+  },
+  "errors.listing.connectionReset.explanation": "Vzdálený server nečekaně ukončil připojení. To se může stát, když se server restartuje, vyprší mu časový limit nebo narazí na vnitřní problém.",
+  "@errors.listing.connectionReset.explanation": {
+    "sourceHash": "3ccfa1c"
+  },
+  "errors.listing.connectionReset.suggestion": "Co můžete zkusit:\n- Zkontrolujte, že server běží\n- V Terminálu zkuste `ping <hostname>` a ověřte, jestli je server dostupný\n- Zkuste sem přejít znovu",
+  "@errors.listing.connectionReset.suggestion": {
+    "sourceHash": "d980663"
+  },
+  "errors.listing.connectionTimedOutErrno.title": "Časový limit připojení vypršel",
+  "@errors.listing.connectionTimedOutErrno.title": {
+    "sourceHash": "2e0b4a7"
+  },
+  "errors.listing.connectionTimedOutErrno.explanation": "Cmdr se pokusil přečíst tuto složku, ale připojení neodpovědělo včas. Obvykle to znamená, že server nebo zařízení je pomalé či nedostupné, nebo že je síť mezi vámi a ním přetížená.",
+  "@errors.listing.connectionTimedOutErrno.explanation": {
+    "sourceHash": "c088c41"
+  },
+  "errors.listing.connectionTimedOutErrno.suggestion": "Co můžete zkusit:\n- Zkontrolujte, že zařízení nebo server je zapnutý a dostupný\n- Zkontrolujte připojení Wi-Fi nebo Ethernet\n- V Terminálu zkuste `ping <hostname>` a otestujte připojení\n- Zkuste sem přejít znovu",
+  "@errors.listing.connectionTimedOutErrno.suggestion": {
+    "sourceHash": "230ef64"
+  },
+  "errors.listing.hostDown.title": "Hostitel nereaguje",
+  "@errors.listing.hostDown.title": {
+    "sourceHash": "a99606a"
+  },
+  "errors.listing.hostDown.explanation": "Vzdálený hostitel (počítač nebo server, na kterém je tento svazek) neodpovídá. Může být vypnutý, v režimu spánku nebo dočasně nedostupný.",
+  "@errors.listing.hostDown.explanation": {
+    "sourceHash": "e175712"
+  },
+  "errors.listing.hostDown.suggestion": "Co můžete zkusit:\n- Zkontrolujte, že je hostitel zapnutý a připojený k síti\n- V Terminálu zkuste `ping <hostname>` a ověřte, jestli je dostupný\n- Pokud jde o NAS nebo server, zkontrolujte jeho rozhraní pro správu\n- Až bude hostitel zase dostupný, přejděte sem znovu",
+  "@errors.listing.hostDown.suggestion": {
+    "sourceHash": "7a8ecd8"
+  },
+  "errors.listing.staleConnection.title": "Zastaralé připojení",
+  "@errors.listing.staleConnection.title": {
+    "sourceHash": "f03c43c"
+  },
+  "errors.listing.staleConnection.explanation": "Cmdr se pokouší o přístup k této složce přes starý identifikátor, který server už nezná. Často se to stává u síťových disků (NFS, SMB), když se server restartuje, sdílená složka se znovu připojí nebo se připojení přerušilo.",
+  "@errors.listing.staleConnection.explanation": {
+    "sourceHash": "3712df2"
+  },
+  "errors.listing.staleConnection.suggestion": "Co můžete zkusit:\n- Přejděte z této složky jinam a pak se do ní vraťte\n- Pokud jde o síťový disk, zkuste ho ve Finderu odpojit a znovu připojit\n- Zkontrolujte, že server, na kterém tato složka je, běží\n- V Terminálu spusťte `mount` a uvidíte právě připojené svazky",
+  "@errors.listing.staleConnection.suggestion": {
+    "sourceHash": "73de81d"
+  },
+  "errors.listing.lockUnavailable.title": "Zámek není k dispozici",
+  "@errors.listing.lockUnavailable.title": {
+    "sourceHash": "3123ad5"
+  },
+  "errors.listing.lockUnavailable.explanation": "Systému došly zámky souborů. Pomocí zámků souborů si aplikace koordinují přístup ke sdíleným souborům (aby dvě aplikace nezapisovaly do stejného souboru najednou). Když dojdou, obvykle to znamená, že k souborům přistupuje současně příliš mnoho aplikací.",
+  "@errors.listing.lockUnavailable.explanation": {
+    "sourceHash": "154df3c"
+  },
+  "errors.listing.lockUnavailable.suggestion": "Co můžete zkusit:\n- Zavřete některé aplikace, hlavně ty, které pracují s mnoha soubory (editory, IDE, zálohovací nástroje)\n- V Terminálu spusťte `lsof | wc -l` a uvidíte, kolik souborů mají všechny aplikace dohromady otevřeno\n- Pokud se problém opakuje, můžete limit zvýšit příkazem `ulimit -n 4096` v Terminálu\n- Zkuste sem přejít znovu",
+  "@errors.listing.lockUnavailable.suggestion": {
+    "sourceHash": "a9f23bd"
+  },
+  "errors.listing.cancelledErrno.title": "Zrušeno",
+  "@errors.listing.cancelledErrno.title": {
+    "sourceHash": "13ca2ee"
+  },
+  "errors.listing.cancelledErrno.explanation": "Operace byla zrušena dřív, než se stihla dokončit.",
+  "@errors.listing.cancelledErrno.explanation": {
+    "sourceHash": "da19c15"
+  },
+  "errors.listing.cancelledErrno.suggestion": "Až budete chtít, zkuste sem přejít znovu.",
+  "@errors.listing.cancelledErrno.suggestion": {
+    "sourceHash": "d9107b5"
+  },
+  "errors.listing.notPermitted.title": "Není povoleno",
+  "@errors.listing.notPermitted.title": {
+    "sourceHash": "8ec5f4b"
+  },
+  "errors.listing.notPermitted.explanation": "macOS zablokoval Cmdru přístup ke složce `{path}`. Obvykle to znamená, že je složka chráněná bezpečnostními zásadami macOS, nebo že Cmdr zatím nedostal potřebná oprávnění.",
+  "@errors.listing.notPermitted.explanation": {
+    "sourceHash": "e28dd0e"
+  },
+  "errors.listing.notPermitted.suggestion": "Co můžete zkusit:\n- Otevřete **{system_settings} > {privacy_and_security} > {files_and_folders}** a udělte Cmdru přístup\n- Pokud jde o složku chráněnou systémem, možná budete muset Cmdru udělit **{full_disk_access}** v sekci {privacy_and_security}\n- V Terminálu spusťte `ls -la` pro tuto cestu a zkontrolujte vlastníka a oprávnění",
+  "@errors.listing.notPermitted.suggestion": {
+    "sourceHash": "2926956"
+  },
+  "errors.listing.pathNotFoundErrno.title": "Cesta nebyla nalezena",
+  "@errors.listing.pathNotFoundErrno.title": {
+    "sourceHash": "cce25f6"
+  },
+  "errors.listing.pathNotFoundErrno.explanation": "Cmdr nemůže najít `{path}`. Mohlo to být přesunuto, přejmenováno nebo smazáno, zatímco se k tomu Cmdr pokoušel získat přístup.",
+  "@errors.listing.pathNotFoundErrno.explanation": {
+    "sourceHash": "bfb9636"
+  },
+  "errors.listing.pathNotFoundErrno.suggestion": "Co můžete zkusit:\n- Zkontrolujte, že je cesta napsaná správně\n- Pokud je na síťovém disku, ověřte, že je disk připojený a sdílená složka dostupná\n- Přejděte do nadřazené složky a podívejte se po položce tam\n- V Terminálu spusťte `ls -la` v nadřazené složce a uvidíte, co v ní je",
+  "@errors.listing.pathNotFoundErrno.suggestion": {
+    "sourceHash": "8a51477"
+  },
+  "errors.listing.noPermissionErrno.title": "Chybí oprávnění",
+  "@errors.listing.noPermissionErrno.title": {
+    "sourceHash": "201c89b"
+  },
+  "errors.listing.noPermissionErrno.explanation": "Cmdr nemá oprávnění k přístupu ke složce `{path}`. macOS určuje, které aplikace mají přístup ke kterým složkám, a Cmdr k této složce zatím přístup nedostal.",
+  "@errors.listing.noPermissionErrno.explanation": {
+    "sourceHash": "3871273"
+  },
+  "errors.listing.noPermissionErrno.suggestion": "Co můžete zkusit:\n- Otevřete **{system_settings} > {privacy_and_security} > {files_and_folders}** a udělte Cmdru přístup\n- Zkontrolujte oprávnění složky ve Finderu: klikněte na ni pravým tlačítkem, vyberte Informace a podívejte se do sekce Sdílení a oprávnění\n- Pokud jde o sdílenou složku, požádejte jejího vlastníka o úpravu oprávnění\n- V Terminálu spusťte `ls -la` pro tuto cestu a uvidíte aktuální oprávnění",
+  "@errors.listing.noPermissionErrno.suggestion": {
+    "sourceHash": "4b513ef"
+  },
+  "errors.listing.alreadyExistsErrno.title": "Už existuje",
+  "@errors.listing.alreadyExistsErrno.title": {
+    "sourceHash": "2dbc546"
+  },
+  "errors.listing.alreadyExistsErrno.explanation": "Na cestě `{path}` už existuje soubor nebo složka, takže tam Cmdr nemůže vytvořit novou položku.",
+  "@errors.listing.alreadyExistsErrno.explanation": {
+    "sourceHash": "630e6d8"
+  },
+  "errors.listing.alreadyExistsErrno.suggestion": "Přejmenujte existující položku, nebo vyberte pro tu novou jiný název.",
+  "@errors.listing.alreadyExistsErrno.suggestion": {
+    "sourceHash": "8761a72"
+  },
+  "errors.listing.crossDeviceOperation.title": "Operace mezi svazky",
+  "@errors.listing.crossDeviceOperation.title": {
+    "sourceHash": "a50dc58"
+  },
+  "errors.listing.crossDeviceOperation.explanation": "Cmdr nemůže tuto položku přesunout přímo, protože zdroj a cíl jsou na různých svazcích (třeba na interním disku a na USB disku). Přesun mezi svazky vyžaduje zkopírovat data a pak odstranit originál.",
+  "@errors.listing.crossDeviceOperation.explanation": {
+    "sourceHash": "a6742d3"
+  },
+  "errors.listing.crossDeviceOperation.suggestion": "Místo přesunu položku do cíle zkopírujte. Kopírování Cmdr zařídí automaticky.",
+  "@errors.listing.crossDeviceOperation.suggestion": {
+    "sourceHash": "7700cc3"
+  },
+  "errors.listing.notAFolder.title": "Není to složka",
+  "@errors.listing.notAFolder.title": {
+    "sourceHash": "78a92a5"
+  },
+  "errors.listing.notAFolder.explanation": "Cmdr očekával, že `{path}` bude složka, ale je to soubor. To se může stát, když bylo něco nedávno přejmenováno nebo nahrazeno.",
+  "@errors.listing.notAFolder.explanation": {
+    "sourceHash": "7ab65a3"
+  },
+  "errors.listing.notAFolder.suggestion": "Zkontrolujte cestu a ověřte, že vede ke složce, ne k souboru.",
+  "@errors.listing.notAFolder.suggestion": {
+    "sourceHash": "433a2d7"
+  },
+  "errors.listing.isAFolderErrno.title": "Je to složka",
+  "@errors.listing.isAFolderErrno.title": {
+    "sourceHash": "6deee63"
+  },
+  "errors.listing.isAFolderErrno.explanation": "Cmdr očekával, že `{path}` bude soubor, ale je to složka. To se může stát, když bylo něco nedávno přejmenováno nebo nahrazeno.",
+  "@errors.listing.isAFolderErrno.explanation": {
+    "sourceHash": "8c3b294"
+  },
+  "errors.listing.isAFolderErrno.suggestion": "Zkontrolujte cestu a ověřte, že vede k souboru, ne ke složce.",
+  "@errors.listing.isAFolderErrno.suggestion": {
+    "sourceHash": "c12c3c1"
+  },
+  "errors.listing.diskFullErrno.title": "Disk je plný",
+  "@errors.listing.diskFullErrno.title": {
+    "sourceHash": "293beb8"
+  },
+  "errors.listing.diskFullErrno.explanation": "Na tomto svazku není dost volného místa pro dokončení operace.",
+  "@errors.listing.diskFullErrno.explanation": {
+    "sourceHash": "3915993"
+  },
+  "errors.listing.diskFullErrno.suggestion": "Co můžete zkusit:\n- Uvolněte místo přesunutím nebo smazáním souborů, které už nepotřebujete\n- Vysypejte koš (klikněte pravým tlačítkem na ikonu koše v Docku)\n- V Terminálu spusťte `df -h` a uvidíte, kolik místa zbývá na jednotlivých svazcích\n- Zkontrolujte **{system_settings} > Obecné > Úložiště**, kde najdete přehled, co zabírá místo",
+  "@errors.listing.diskFullErrno.suggestion": {
+    "sourceHash": "f2eb27b"
+  },
+  "errors.listing.readOnlyVolumeErrno.title": "Svazek jen ke čtení",
+  "@errors.listing.readOnlyVolumeErrno.title": {
+    "sourceHash": "e2d3bf1"
+  },
+  "errors.listing.readOnlyVolumeErrno.explanation": "Tento svazek je připojený jen ke čtení, takže v něm Cmdr nemůže nic měnit. Může to být tím, že zařízení má fyzický přepínač ochrany proti zápisu, obraz disku byl připojen jen ke čtení, nebo souborový systém zápis nepodporuje.",
+  "@errors.listing.readOnlyVolumeErrno.explanation": {
+    "sourceHash": "e6bcf10"
+  },
+  "errors.listing.readOnlyVolumeErrno.suggestion": "Co můžete zkusit:\n- Pokud má zařízení fyzický přepínač ochrany proti zápisu (běžný u SD karet), vypněte ho\n- Pokud jde o obraz disku, připojte ho znovu s přístupem pro zápis\n- Jinak nejdřív zkopírujte soubory do umístění, kam lze zapisovat",
+  "@errors.listing.readOnlyVolumeErrno.suggestion": {
+    "sourceHash": "15fa759"
+  },
+  "errors.listing.notSupportedErrno.title": "Nepodporováno",
+  "@errors.listing.notSupportedErrno.title": {
+    "sourceHash": "74e8477"
+  },
+  "errors.listing.notSupportedErrno.explanation": "Tato operace není na tomto souborovém systému podporovaná. Různé souborové systémy (třeba FAT32, NTFS nebo síťové sdílené složky) podporují různé funkce a tento nepodporuje to, o co se Cmdr pokouší.",
+  "@errors.listing.notSupportedErrno.explanation": {
+    "sourceHash": "a0ca28f"
+  },
+  "errors.listing.notSupportedErrno.suggestion": "Zkuste to jinak, nebo pro tuto operaci použijte Finder. Pokud pracujete s externím diskem, může být naformátovaný souborovým systémem s omezeními (třeba FAT32 neumí uložit soubory o velikosti 4 GiB a víc).",
+  "@errors.listing.notSupportedErrno.suggestion": {
+    "sourceHash": "8fea918"
+  },
+  "errors.listing.networkUnreachable.title": "Síť je nedostupná",
+  "@errors.listing.networkUnreachable.title": {
+    "sourceHash": "7b83c7c"
+  },
+  "errors.listing.networkUnreachable.explanation": "Síť, ve které je tento svazek, je pro Cmdr nedostupná. Často to znamená, že Mac není připojený ke správné síti, nebo že není aktivní VPN.",
+  "@errors.listing.networkUnreachable.explanation": {
+    "sourceHash": "d3c1975"
+  },
+  "errors.listing.networkUnreachable.suggestion": "Co můžete zkusit:\n- Zkontrolujte připojení Wi-Fi nebo Ethernet\n- Ověřte, že jste ve správné síti (třeba ve firemní Wi-Fi nebo VPN)\n- V Terminálu zkuste `ping <hostname>` a ověřte, jestli je server dostupný\n- Až se připojíte, přejděte sem znovu",
+  "@errors.listing.networkUnreachable.suggestion": {
+    "sourceHash": "7feb3cb"
+  },
+  "errors.listing.connectionRefused.title": "Připojení bylo odmítnuto",
+  "@errors.listing.connectionRefused.title": {
+    "sourceHash": "1a28032"
+  },
+  "errors.listing.connectionRefused.explanation": "Server připojení aktivně odmítl. Obvykle to znamená, že serverový software (třeba služba SMB nebo NFS) neběží, nebo je nastavený tak, aby odmítal připojení z tohoto Macu.",
+  "@errors.listing.connectionRefused.explanation": {
+    "sourceHash": "88e1ac7"
+  },
+  "errors.listing.connectionRefused.suggestion": "Co můžete zkusit:\n- Zkontrolujte, že server běží a jeho služba sdílení souborů je aktivní\n- Ověřte, že adresa serveru a port jsou správné\n- V Terminálu zkuste `ping <hostname>` a ověřte, jestli je server vůbec dostupný\n- Zkuste sem přejít znovu",
+  "@errors.listing.connectionRefused.suggestion": {
+    "sourceHash": "17decc3"
+  },
+  "errors.listing.symlinkLoopErrno.title": "Smyčka symbolických odkazů",
+  "@errors.listing.symlinkLoopErrno.title": {
+    "sourceHash": "3d41981"
+  },
+  "errors.listing.symlinkLoopErrno.explanation": "Cmdr na cestě `{path}` našel kruhový řetězec symbolických odkazů (zástupců, které ukazují na další zástupce). Sledování těchto odkazů vede v kruhu, takže se Cmdr nedostane ke skutečnému souboru nebo složce.",
+  "@errors.listing.symlinkLoopErrno.explanation": {
+    "sourceHash": "4157be6"
+  },
+  "errors.listing.symlinkLoopErrno.suggestion": "Co můžete zkusit:\n- V Terminálu spusťte `ls -la` pro tuto cestu a uvidíte, kam symbolické odkazy vedou\n- Najděte a opravte odkaz, který smyčku vytváří\n- Pokud nevíte, který odkaz za problémem stojí, projděte je jeden po druhém příkazem `readlink <path>`",
+  "@errors.listing.symlinkLoopErrno.suggestion": {
+    "sourceHash": "eed9a5a"
+  },
+  "errors.listing.nameTooLongErrno.title": "Příliš dlouhý název",
+  "@errors.listing.nameTooLongErrno.title": {
+    "sourceHash": "de4bc1d"
+  },
+  "errors.listing.nameTooLongErrno.explanation": "Název souboru nebo složky překračuje limit systému (na většině svazků Macu je to 255 znaků). Může se to stát i tehdy, když celá cesta (všechny složky dohromady) překročí maximální délku cesty v systému.",
+  "@errors.listing.nameTooLongErrno.explanation": {
+    "sourceHash": "8b9a6ff"
+  },
+  "errors.listing.nameTooLongErrno.suggestion": "Přejmenujte položku na kratší název. Pokud název vypadá rozumně, může být příliš dlouhá celá cesta (včetně všech nadřazených složek). Zkuste položku přesunout někam s kratší cestou.",
+  "@errors.listing.nameTooLongErrno.suggestion": {
+    "sourceHash": "a0497b1"
+  },
+  "errors.listing.hostUnreachable.title": "Hostitel je nedostupný",
+  "@errors.listing.hostUnreachable.title": {
+    "sourceHash": "eae08c7"
+  },
+  "errors.listing.hostUnreachable.explanation": "Cmdr nemůže najít síťovou trasu k hostiteli, na kterém je tento svazek. Obvykle to znamená, že je hostitel v jiné síti nebo za firewallem, nebo že je potřeba aktualizovat nastavení směrování.",
+  "@errors.listing.hostUnreachable.explanation": {
+    "sourceHash": "184b0fc"
+  },
+  "errors.listing.hostUnreachable.suggestion": "Co můžete zkusit:\n- Zkontrolujte, že je hostitel zapnutý a ve stejné síti\n- Pokud se k němu dostanete jen přes VPN, ověřte, že je VPN připojená\n- V Terminálu zkuste `ping <hostname>` a otestujte připojení\n- Až bude hostitel dostupný, přejděte sem znovu",
+  "@errors.listing.hostUnreachable.suggestion": {
+    "sourceHash": "c222f76"
+  },
+  "errors.listing.folderNotEmpty.title": "Složka není prázdná",
+  "@errors.listing.folderNotEmpty.title": {
+    "sourceHash": "a8c9ac6"
+  },
+  "errors.listing.folderNotEmpty.explanation": "Cmdr nemůže odstranit složku `{path}`, protože ještě obsahuje soubory nebo podsložky. Systém vyžaduje, aby byla složka před odstraněním tímto způsobem prázdná.",
+  "@errors.listing.folderNotEmpty.explanation": {
+    "sourceHash": "26871a4"
+  },
+  "errors.listing.folderNotEmpty.suggestion": "Nejdřív smažte obsah složky a pak ji zkuste odstranit znovu.",
+  "@errors.listing.folderNotEmpty.suggestion": {
+    "sourceHash": "a440845"
+  },
+  "errors.listing.quotaExceeded.title": "Kvóta překročena",
+  "@errors.listing.quotaExceeded.title": {
+    "sourceHash": "a940827"
+  },
+  "errors.listing.quotaExceeded.explanation": "Na tomto svazku je vyčerpaná vaše disková kvóta (maximální množství místa přidělené vašemu uživatelskému účtu). To je běžné na sdílených serverech a síťových discích, kde správce nastavuje limity pro jednotlivé uživatele.",
+  "@errors.listing.quotaExceeded.explanation": {
+    "sourceHash": "b9b0b0e"
+  },
+  "errors.listing.quotaExceeded.suggestion": "Co můžete zkusit:\n- Uvolněte místo odstraněním souborů, které už na tomto svazku nepotřebujete\n- Požádejte správce systému o navýšení kvóty\n- V Terminálu spusťte `quota` a uvidíte své aktuální využití a limit",
+  "@errors.listing.quotaExceeded.suggestion": {
+    "sourceHash": "1b5f0df"
+  },
+  "errors.listing.authRequiredEauth.title": "Je potřeba ověření",
+  "@errors.listing.authRequiredEauth.title": {
+    "sourceHash": "0fcfb12"
+  },
+  "errors.listing.authRequiredEauth.explanation": "Cmdr se u tohoto svazku nemohl ověřit. Platnost uložených přihlašovacích údajů možná vypršela, nebo server aktuální přihlášení odmítá.",
+  "@errors.listing.authRequiredEauth.explanation": {
+    "sourceHash": "654cbb2"
+  },
+  "errors.listing.authRequiredEauth.suggestion": "Co můžete zkusit:\n- Odpojte svazek a znovu připojte, pak zadejte znovu uživatelské jméno a heslo\n- Zkontrolujte, že se vaše heslo nezměnilo a že mu nevypršela platnost\n- Pokud jde o firemní server, obraťte se na IT oddělení",
+  "@errors.listing.authRequiredEauth.suggestion": {
+    "sourceHash": "3469202"
+  },
+  "errors.listing.authRequiredEneedauth.title": "Je potřeba ověření",
+  "@errors.listing.authRequiredEneedauth.title": {
+    "sourceHash": "0fcfb12"
+  },
+  "errors.listing.authRequiredEneedauth.explanation": "Tento svazek vyžaduje přihlášení, ale zatím nebyly zadány žádné přihlašovací údaje.",
+  "@errors.listing.authRequiredEneedauth.explanation": {
+    "sourceHash": "b4e86e5"
+  },
+  "errors.listing.authRequiredEneedauth.suggestion": "Co můžete zkusit:\n- Ve Finderu svazek odpojte a znovu připojte\n- Až se zobrazí výzva, zadejte uživatelské jméno a heslo\n- Pokud nevíte, jaké přihlašovací údaje použít, obraťte se na správce serveru",
+  "@errors.listing.authRequiredEneedauth.suggestion": {
+    "sourceHash": "a90b520"
+  },
+  "errors.listing.devicePoweredOff.title": "Zařízení je vypnuté",
+  "@errors.listing.devicePoweredOff.title": {
+    "sourceHash": "d0b7a88"
+  },
+  "errors.listing.devicePoweredOff.explanation": "Zařízení je vypnuté nebo v hlubokém spánku, takže s ním Cmdr nemůže komunikovat.",
+  "@errors.listing.devicePoweredOff.explanation": {
+    "sourceHash": "782a157"
+  },
+  "errors.listing.devicePoweredOff.suggestion": "Zapněte zařízení, počkejte, až úplně naběhne, a pak sem přejděte znovu.",
+  "@errors.listing.devicePoweredOff.suggestion": {
+    "sourceHash": "39fc3b5"
+  },
+  "errors.listing.attributeNotFound.title": "Atribut nenalezen",
+  "@errors.listing.attributeNotFound.title": {
+    "sourceHash": "e12f4be"
+  },
+  "errors.listing.attributeNotFound.explanation": "Cmdr se pokusil přečíst atribut souboru (doplňková metadata, třeba značky nebo oprávnění), který u této položky neexistuje. To se může stát, když souborový systém nepodporuje rozšířené atributy nebo když byl atribut odstraněn.",
+  "@errors.listing.attributeNotFound.explanation": {
+    "sourceHash": "ee39dd8"
+  },
+  "errors.listing.attributeNotFound.suggestion": "Tento souborový systém možná nepodporuje metadata, která Cmdr potřebuje. Zkuste operaci provést na jiném svazku, nebo nejdřív zkopírujte soubor na interní disk vašeho Macu.",
+  "@errors.listing.attributeNotFound.suggestion": {
+    "sourceHash": "463ee44"
+  },
+  "errors.listing.diskReadProblem.title": "Problém se čtením disku",
+  "@errors.listing.diskReadProblem.title": {
+    "sourceHash": "b953ef4"
+  },
+  "errors.listing.diskReadProblem.explanation": "Při čtení z cesty `{path}` narazil Cmdr na hardwarový problém. Znamená to, že disk nebo zařízení mělo potíže se čtením dat. Může jít o dočasnou závadu, nebo o známku toho, že disk začíná selhávat.",
+  "@errors.listing.diskReadProblem.explanation": {
+    "sourceHash": "9e9cd43"
+  },
+  "errors.listing.diskReadProblem.suggestion": "Co můžete zkusit:\n- Zkontrolujte, že je disk nebo zařízení pořád správně připojené\n- Otevřete aplikaci **Disková utilita** (vyhledejte ji ve Spotlightu) a spusťte pro tento svazek nástroj **Záchrana**\n- Pokud se to opakuje, co nejdřív si zazálohujte data. Na disku se možná objevují vadné sektory, nebo se začíná opotřebovávat.",
+  "@errors.listing.diskReadProblem.suggestion": {
+    "sourceHash": "614a5fe"
+  },
+  "errors.listing.unexpectedSystemResponse.title": "Neočekávaná odpověď systému",
+  "@errors.listing.unexpectedSystemResponse.title": {
+    "sourceHash": "e854b77"
+  },
+  "errors.listing.unexpectedSystemResponse.explanation": "Systém vrátil na tuto operaci neočekávanou odpověď. To se může stát, když souborový systém svazku obsahuje nesrovnalosti nebo když je svazek v neobvyklém stavu.",
+  "@errors.listing.unexpectedSystemResponse.explanation": {
+    "sourceHash": "a834896"
+  },
+  "errors.listing.unexpectedSystemResponse.suggestion": "Co můžete zkusit:\n- Zkuste sem přejít znovu\n- Pokud se to opakuje, otevřete aplikaci **Disková utilita** (vyhledejte ji ve Spotlightu) a spusťte pro tento svazek nástroj **Záchrana**, který zkontroluje problémy souborového systému",
+  "@errors.listing.unexpectedSystemResponse.suggestion": {
+    "sourceHash": "f63d225"
+  },
+  "errors.listing.deviceProblem.title": "Problém se zařízením",
+  "@errors.listing.deviceProblem.title": {
+    "sourceHash": "3febba2"
+  },
+  "errors.listing.deviceProblem.explanation": "Zařízení nahlásilo problém s hardwarem. Může jít o uvolněné připojení, opotřebovaný kabel nebo o závadu samotného zařízení.",
+  "@errors.listing.deviceProblem.explanation": {
+    "sourceHash": "a809613"
+  },
+  "errors.listing.deviceProblem.suggestion": "Co můžete zkusit:\n- Odpojte zařízení a znovu připojte\n- Zkuste jiný port USB nebo jiný kabel\n- Pokud jde o externí disk, zkuste ho připojit k jinému počítači a zjistit, jestli se problém projeví i tam\n- Pokud se to opakuje, zařízení možná potřebuje opravu nebo výměnu",
+  "@errors.listing.deviceProblem.suggestion": {
+    "sourceHash": "5ce793b"
+  },
+  "errors.listing.couldntReadUnknown.title": "Tuto složku se nepodařilo přečíst",
+  "@errors.listing.couldntReadUnknown.title": {
+    "sourceHash": "af30f30"
+  },
+  "errors.listing.couldntReadUnknown.explanation": "Při čtení z cesty `{path}` narazil Cmdr na neočekávaný problém. Konkrétní systémový kód zjistíte níže v technických podrobnostech; může pomoct při hledání příčiny.",
+  "@errors.listing.couldntReadUnknown.explanation": {
+    "sourceHash": "80b9ff5"
+  },
+  "errors.listing.couldntReadUnknown.suggestion": "Co můžete zkusit:\n- Zkontrolujte, že je disk nebo zařízení pořád připojené\n- Zkuste sem přejít znovu\n- Pokud se to opakuje, otevřete aplikaci **Disková utilita** a spusťte pro tento svazek nástroj **Záchrana**",
+  "@errors.listing.couldntReadUnknown.suggestion": {
+    "sourceHash": "5155626"
+  },
+  "errors.listing.notFound.title": "Cesta nebyla nalezena",
+  "@errors.listing.notFound.title": {
+    "sourceHash": "cce25f6"
+  },
+  "errors.listing.notFound.explanation": "Cmdr nemůže najít `{path}`. Mohlo to být přesunuto, přejmenováno nebo smazáno, zatímco se k tomu Cmdr pokoušel získat přístup.",
+  "@errors.listing.notFound.explanation": {
+    "sourceHash": "bfb9636"
+  },
+  "errors.listing.notFound.suggestion": "Co můžete zkusit:\n- Zkontrolujte, že je cesta napsaná správně\n- Pokud je na síťovém disku, ověřte, že je disk připojený a sdílená složka dostupná\n- Přejděte do nadřazené složky a podívejte se po položce tam\n- V Terminálu spusťte `ls -la` v nadřazené složce a uvidíte, co v ní je",
+  "@errors.listing.notFound.suggestion": {
+    "sourceHash": "8a51477"
+  },
+  "errors.listing.tccRestricted.title": "Tuto složku omezuje macOS",
+  "@errors.listing.tccRestricted.title": {
+    "sourceHash": "26b5166"
+  },
+  "errors.listing.tccRestricted.explanation": "Cmdr nemůže číst složku `{path}`, protože macOS k ní zatím neudělil přístup. Jde o ochranu soukromí, ne o chybu Cmdru.",
+  "@errors.listing.tccRestricted.explanation": {
+    "sourceHash": "1f3fc35"
+  },
+  "errors.listing.tccRestricted.suggestion": "Dvě možnosti nápravy:\n- Otevřete **{system_settings} → {privacy_and_security} → {full_disk_access}** a udělte Cmdru **{full_disk_access}**. Tím odstraníte všechna taková omezení najednou.\n- Nebo udělte přístup jen k této jedné složce: **{system_settings} → {privacy_and_security} → {files_and_folders} → Cmdr**.",
+  "@errors.listing.tccRestricted.suggestion": {
+    "sourceHash": "6d9d93d"
+  },
+  "errors.listing.permissionDenied.title": "Chybí oprávnění",
+  "@errors.listing.permissionDenied.title": {
+    "sourceHash": "201c89b"
+  },
+  "errors.listing.permissionDenied.explanation": "Cmdr nemá oprávnění k přístupu ke složce `{path}`. macOS určuje, které aplikace mají přístup ke kterým složkám, a Cmdr k této složce zatím přístup nedostal.",
+  "@errors.listing.permissionDenied.explanation": {
+    "sourceHash": "3871273"
+  },
+  "errors.listing.permissionDenied.suggestion": "Co můžete zkusit:\n- Otevřete **{system_settings} > {privacy_and_security} > {files_and_folders}** a udělte Cmdru přístup\n- Zkontrolujte oprávnění složky ve Finderu: klikněte na složku pravým tlačítkem, vyberte Informace a podívejte se do sekce Sdílení a oprávnění\n- Pokud jde o sdílenou složku, požádejte jejího vlastníka o úpravu oprávnění\n- V Terminálu spusťte `ls -la` pro tuto cestu a uvidíte aktuální oprávnění",
+  "@errors.listing.permissionDenied.suggestion": {
+    "sourceHash": "3450aff"
+  },
+  "errors.listing.objectStoreRefused.title": "Poskytovatel úložiště odmítl přístup",
+  "@errors.listing.objectStoreRefused.title": {
+    "sourceHash": "2c26546"
+  },
+  "errors.listing.objectStoreRefused.explanation": "`{path}` je v cloudovém úložišti a poskytovatel požadavek odmítl. Buď přístupový klíč nemá k tomuto umístění oprávnění, nebo poskytovatel pozastavil přístup k účtu, třeba po dosažení limitu využití nebo kvůli problému s platbou.",
+  "@errors.listing.objectStoreRefused.explanation": {
+    "sourceHash": "b9f0f12"
+  },
+  "errors.listing.objectStoreRefused.suggestion": "Zkontrolujte oprávnění přístupového klíče, nebo se v konzoli poskytovatele podívejte, jestli nejde o vyčerpaný limit využití nebo upozornění k platbě.",
+  "@errors.listing.objectStoreRefused.suggestion": {
+    "sourceHash": "718da2a"
+  },
+  "errors.listing.remotePermissionDenied.title": "Server tuto složku neotevře",
+  "@errors.listing.remotePermissionDenied.title": {
+    "sourceHash": "f9cb7bd"
+  },
+  "errors.listing.remotePermissionDenied.explanation": "Složka `{path}` je na síťové sdílené složce a účet použitý k připojení nemá oprávnění ji otevřít. Server požadavek odmítne dřív, než se do toho zapojí macOS, takže nejde o nastavení soukromí na vašem Macu.",
+  "@errors.listing.remotePermissionDenied.explanation": {
+    "sourceHash": "d8463b0"
+  },
+  "errors.listing.remotePermissionDenied.suggestion": "Co můžete zkusit:\n- Zkontrolujte oprávnění složky na serveru a to, jakým účtem je sdílená složka připojená\n- Některé složky patří vlastnímu systémovému účtu serveru (třeba `lost+found` na sdílené složce s Linuxem) a pro všechny ostatní zůstávají zavřené\n- Pokud se chcete přihlásit jako někdo jiný, sdílenou složku vysuňte a připojte ji znovu s přihlašovacími údaji toho uživatele",
+  "@errors.listing.remotePermissionDenied.suggestion": {
+    "sourceHash": "3e6497d"
+  },
+  "errors.listing.phoneRefused.title": "Tuto složku si telefon nechává pro sebe",
+  "@errors.listing.phoneRefused.title": {
+    "sourceHash": "f41a6b7"
+  },
+  "errors.listing.phoneRefused.explanation": "Android tuto složku vyhrazuje systému a jeho aplikacím, takže ji Cmdr nemůže otevřít. S telefonem ani s připojením není nic v nepořádku.",
+  "@errors.listing.phoneRefused.explanation": {
+    "sourceHash": "d3da350"
+  },
+  "errors.listing.phoneRefused.suggestion": "Vaše fotky, stažené soubory a další soubory jsou ve sdíleném úložišti telefonu, takže zkuste některou složku tam.",
+  "@errors.listing.phoneRefused.suggestion": {
+    "sourceHash": "a2a9025"
+  },
+  "errors.listing.serverRefused.title": "Server tuto složku neotevře",
+  "@errors.listing.serverRefused.title": {
+    "sourceHash": "f9cb7bd"
+  },
+  "errors.listing.serverRefused.explanation": "Tato složka je na serveru a účet použitý pro připojení nemá oprávnění ji otevřít. Rozhoduje o tom server, takže to žádné nastavení na tomto počítači nezmění.",
+  "@errors.listing.serverRefused.explanation": {
+    "sourceHash": "bba853c"
+  },
+  "errors.listing.serverRefused.suggestion": "Co můžete zkusit:\n- Zkontrolujte oprávnění složky na serveru\n- Některé složky patří vlastnímu systémovému účtu serveru a pro všechny ostatní zůstávají zavřené\n- Připojte se účtem, který má přístup",
+  "@errors.listing.serverRefused.suggestion": {
+    "sourceHash": "e750b94"
+  },
+  "errors.listing.alreadyExists.title": "Už existuje",
+  "@errors.listing.alreadyExists.title": {
+    "sourceHash": "2dbc546"
+  },
+  "errors.listing.alreadyExists.explanation": "Na cestě `{path}` už existuje soubor nebo složka, takže tam Cmdr nemůže vytvořit novou položku.",
+  "@errors.listing.alreadyExists.explanation": {
+    "sourceHash": "630e6d8"
+  },
+  "errors.listing.alreadyExists.suggestion": "Přejmenujte existující položku, nebo vyberte pro tu novou jiný název.",
+  "@errors.listing.alreadyExists.suggestion": {
+    "sourceHash": "8761a72"
+  },
+  "errors.listing.cancelled.title": "Zrušeno",
+  "@errors.listing.cancelled.title": {
+    "sourceHash": "13ca2ee"
+  },
+  "errors.listing.cancelled.explanation": "Operace byla zrušena dřív, než se stihla dokončit.",
+  "@errors.listing.cancelled.explanation": {
+    "sourceHash": "da19c15"
+  },
+  "errors.listing.cancelled.suggestion": "Až budete chtít, zkuste sem přejít znovu.",
+  "@errors.listing.cancelled.suggestion": {
+    "sourceHash": "d9107b5"
+  },
+  "errors.listing.deviceDisconnected.title": "Zařízení bylo odpojeno",
+  "@errors.listing.deviceDisconnected.title": {
+    "sourceHash": "f0acd34"
+  },
+  "errors.listing.deviceDisconnected.explanation": "Zařízení, na kterém je `{path}`, se během operace odpojilo. To se může stát, když se uvolní kabel USB, telefon přejde do režimu spánku nebo síťový disk ztratí připojení.",
+  "@errors.listing.deviceDisconnected.explanation": {
+    "sourceHash": "c8b7b10"
+  },
+  "errors.listing.deviceDisconnected.suggestion": "Co můžete zkusit:\n- Znovu připojte zařízení a ověřte, že kabel pevně drží\n- Pokud jde o telefon, odemkněte ho a ověřte, že je zapnutý režim přenosu souborů\n- Až bude zařízení zase připojené, přejděte sem znovu",
+  "@errors.listing.deviceDisconnected.suggestion": {
+    "sourceHash": "6940094"
+  },
+  "errors.listing.notConnected.title": "Zatím nepřipojeno",
+  "@errors.listing.notConnected.title": {
+    "sourceHash": "8985693"
+  },
+  "errors.listing.notConnected.explanation": "Cmdr se zatím nepřipojil k telefonu nebo serveru, na kterém je `{path}`, takže tu není co zobrazit. Nic se neodpojilo a nic se nesmazalo.",
+  "@errors.listing.notConnected.explanation": {
+    "sourceHash": "93ca2df"
+  },
+  "errors.listing.notConnected.suggestion": "Co můžete zkusit:\n- Otevřete telefon nebo server v přepínači svazků, tím se k němu Cmdr připojí\n- Pokud jde o telefon, odemkněte ho a potvrďte všechny výzvy, které telefon zobrazí\n- Až bude připojení hotové, přejděte sem znovu",
+  "@errors.listing.notConnected.suggestion": {
+    "sourceHash": "652f289"
+  },
+  "errors.listing.linkTargetUnreachable.title": "Server této složky je mimo dosah",
+  "@errors.listing.linkTargetUnreachable.title": {
+    "sourceHash": "8aee94c"
+  },
+  "errors.listing.linkTargetUnreachable.explanation": "`{path}` je za odkazem na jiný server a ten server je teď pro Cmdr nedostupný. Zbytek této sdílené složky je v pořádku a nic se nesmazalo.",
+  "@errors.listing.linkTargetUnreachable.explanation": {
+    "sourceHash": "394e1e8"
+  },
+  "errors.listing.linkTargetUnreachable.suggestion": "Co můžete zkusit:\n- Zkontrolujte, že druhý server běží a že je z vaší sítě dostupný\n- Zkuste sem přejít znovu",
+  "@errors.listing.linkTargetUnreachable.suggestion": {
+    "sourceHash": "99d873e"
+  },
+  "errors.listing.deviceReconnecting.title": "Opětovné připojování k zařízení",
+  "@errors.listing.deviceReconnecting.title": {
+    "sourceHash": "6157c60"
+  },
+  "errors.listing.deviceReconnecting.explanation": "Připojení k zařízení, na kterém je `{path}`, se restartovalo, takže tato akce neproběhla. Zařízení je pořád připojené a Cmdr ho právě znovu otevírá. Obvykle se to stane po zrušeném nebo přerušeném přenosu.",
+  "@errors.listing.deviceReconnecting.explanation": {
+    "sourceHash": "0327639"
+  },
+  "errors.listing.deviceReconnecting.suggestion": "Dejte tomu pár sekund a pak to zkuste znovu. Nic odpojovat nemusíte.",
+  "@errors.listing.deviceReconnecting.suggestion": {
+    "sourceHash": "4dac2e7"
+  },
+  "errors.listing.readOnly.title": "Jen ke čtení",
+  "@errors.listing.readOnly.title": {
+    "sourceHash": "72bb908"
+  },
+  "errors.listing.readOnly.explanation": "Tento svazek je jen ke čtení, takže v něm Cmdr nemůže nic měnit. Může to být tím, že zařízení má fyzický přepínač ochrany proti zápisu, obraz disku byl připojen jen ke čtení, nebo souborový systém zápis nepodporuje.",
+  "@errors.listing.readOnly.explanation": {
+    "sourceHash": "d8080b8"
+  },
+  "errors.listing.readOnly.suggestion": "Co můžete zkusit:\n- Pokud má zařízení fyzický přepínač ochrany proti zápisu (běžný u SD karet), vypněte ho\n- Pokud jde o obraz disku, připojte ho znovu s přístupem pro zápis\n- Jinak nejdřív zkopírujte soubory do umístění, kam lze zapisovat",
+  "@errors.listing.readOnly.suggestion": {
+    "sourceHash": "15fa759"
+  },
+  "errors.listing.storageFull.title": "Disk je plný",
+  "@errors.listing.storageFull.title": {
+    "sourceHash": "293beb8"
+  },
+  "errors.listing.storageFull.explanation": "Na tomto svazku není dost volného místa pro dokončení operace.",
+  "@errors.listing.storageFull.explanation": {
+    "sourceHash": "3915993"
+  },
+  "errors.listing.storageFull.suggestion": "Co můžete zkusit:\n- Uvolněte místo přesunutím nebo smazáním souborů, které už nepotřebujete\n- Vysypejte koš (klikněte pravým tlačítkem na ikonu koše v Docku)\n- V Terminálu spusťte `df -h` a uvidíte, kolik místa zbývá na jednotlivých svazcích",
+  "@errors.listing.storageFull.suggestion": {
+    "sourceHash": "101099b"
+  },
+  "errors.listing.connectionTimedOut.title": "Časový limit připojení vypršel",
+  "@errors.listing.connectionTimedOut.title": {
+    "sourceHash": "2e0b4a7"
+  },
+  "errors.listing.connectionTimedOut.explanation": "Cmdr se pokusil o přístup k tomuto prostředku, ale připojení neodpovědělo včas. Obvykle to znamená, že server nebo zařízení odpovídá pomalu, nebo že je síťové připojení nestabilní.",
+  "@errors.listing.connectionTimedOut.explanation": {
+    "sourceHash": "15d3054"
+  },
+  "errors.listing.connectionTimedOut.suggestion": "Co můžete zkusit:\n- Zkontrolujte, že zařízení nebo server je zapnutý a dostupný\n- Zkontrolujte připojení Wi-Fi nebo Ethernet\n- V Terminálu zkuste `ping <hostname>` a ověřte, jestli je server dostupný\n- Zkuste to znovu",
+  "@errors.listing.connectionTimedOut.suggestion": {
+    "sourceHash": "f474938"
+  },
+  "errors.listing.notSupported.title": "Nepodporováno",
+  "@errors.listing.notSupported.title": {
+    "sourceHash": "74e8477"
+  },
+  "errors.listing.notSupported.explanation": "Tato operace není na tomto typu svazku podporovaná. Některé svazky (třeba úložiště telefonu nebo určité síťové disky) nepodporují všechny operace.",
+  "@errors.listing.notSupported.explanation": {
+    "sourceHash": "d074574"
+  },
+  "errors.listing.notSupported.suggestion": "Zkuste to jinak, nebo pro tuto operaci použijte Finder.",
+  "@errors.listing.notSupported.suggestion": {
+    "sourceHash": "d4e3965"
+  },
+  "errors.listing.deletePending.title": "Soubor se právě odstraňuje",
+  "@errors.listing.deletePending.title": {
+    "sourceHash": "1e5741a"
+  },
+  "errors.listing.deletePending.explanation": "`{path}` brzy zmizí. Server položku označil ke smazání, ale dokud se nezavře jiný otevřený popisovač souboru, položka zůstane na místě.",
+  "@errors.listing.deletePending.explanation": {
+    "sourceHash": "047ad2f"
+  },
+  "errors.listing.deletePending.suggestion": "Co můžete zkusit:\n- Chvíli počkejte a zkuste to znovu – jakmile se zavře poslední popisovač, soubor zmizí\n- Zavřete všechny ostatní aplikace, které můžou mít tento soubor otevřený\n- Pokud soubor nezmizí, restartujte Cmdr, aby uvolnil všechny popisovače, které ještě může držet",
+  "@errors.listing.deletePending.suggestion": {
+    "sourceHash": "0531cd8"
+  },
+  "errors.listing.coldStorage.title": "Tento soubor je archivovaný",
+  "@errors.listing.coldStorage.title": {
+    "sourceHash": "73da082"
+  },
+  "errors.listing.coldStorage.explanation": "Soubor `{path}` je archivovaný, takže jeho obsah nejde přečíst, dokud se soubor neobnoví.",
+  "@errors.listing.coldStorage.explanation": {
+    "sourceHash": "78f52d7"
+  },
+  "errors.listing.coldStorage.suggestion": "Co můžete zkusit:\n- Obnovte soubor v konzoli poskytovatele úložiště a pak ho znovu otevřete\n- Obnovení může trvat od několika minut až po dva dny",
+  "@errors.listing.coldStorage.suggestion": {
+    "sourceHash": "0becf43"
+  },
+  "errors.listing.invalidName.title": "Tento název tady nejde použít",
+  "@errors.listing.invalidName.title": {
+    "sourceHash": "7ced906"
+  },
+  "errors.listing.invalidName.explanation": "Položka `{path}` má název, který cíl nedokáže uložit, takže cíl tento název odmítl a soubor ani nehledal.",
+  "@errors.listing.invalidName.explanation": {
+    "sourceHash": "ac27ddb"
+  },
+  "errors.listing.invalidName.suggestion": "Co můžete zkusit:\n- Přejmenujte položku na něco kratšího a jednoduššího\n- Některé cíle odmítají vyhrazené názvy jako `CON`, `NUL` nebo `LPT1`\n- Velmi dlouhý název může překročit vlastní limit cíle, i když je každý znak v něm v pořádku",
+  "@errors.listing.invalidName.suggestion": {
+    "sourceHash": "f5cf683"
+  },
+  "errors.listing.ambiguousName.title": "Tomuto názvu odpovídá víc položek",
+  "@errors.listing.ambiguousName.title": {
+    "sourceHash": "b72d687"
+  },
+  "errors.listing.ambiguousName.explanation": "Cestě `{path}` na serveru odpovídá víc položek. Jejich názvy vypadají stejně, ale server je ukládá v různém zápisu (písmeno s diakritikou jde uložit dvěma způsoby a některé servery rozlišují velká a malá písmena), takže Cmdr za vás žádnou nevybral.",
+  "@errors.listing.ambiguousName.explanation": {
+    "sourceHash": "f1e1509"
+  },
+  "errors.listing.ambiguousName.suggestion": "Co můžete zkusit:\n- Otevřete nadřazenou složku a vyberte v seznamu položku, kterou chcete\n- Aby se to příště nestalo, přejmenujte jednu z nich tak, aby se názvy jasně lišily",
+  "@errors.listing.ambiguousName.suggestion": {
+    "sourceHash": "55b960c"
+  },
+  "errors.listing.duplicateName.title": "Tento název má víc položek",
+  "@errors.listing.duplicateName.title": {
+    "sourceHash": "3ce4c53"
+  },
+  "errors.listing.duplicateName.explanation": "`{path}` označuje na tomto zařízení víc položek. Telefony a fotoaparáty můžou mít v jedné složce několik souborů s přesně stejným názvem, takže Cmdr za vás žádný nevybral.",
+  "@errors.listing.duplicateName.explanation": {
+    "sourceHash": "cea78b8"
+  },
+  "errors.listing.duplicateName.suggestion": "Co můžete zkusit:\n- Otevřete složku, ve které jsou, a vyberte ze seznamu tu, kterou myslíte\n- Nebo jednu z nich přejmenujte, aby měla každá vlastní název",
+  "@errors.listing.duplicateName.suggestion": {
+    "sourceHash": "1059be1"
+  },
+  "errors.listing.ioSerious.title": "Tuto složku se nepodařilo přečíst",
+  "@errors.listing.ioSerious.title": {
+    "sourceHash": "af30f30"
+  },
+  "errors.listing.ioSerious.explanation": "Na cestě `{path}` narazil Cmdr na problém: {osMessage}. Může jít o dočasnou závadu, nebo o známku toho, že disk nebo zařízení potřebuje pozornost.",
+  "@errors.listing.ioSerious.explanation": {
+    "sourceHash": "6c3b625"
+  },
+  "errors.listing.ioSerious.suggestion": "Co můžete zkusit:\n- Zkontrolujte, že je disk nebo zařízení pořád připojené\n- Zkuste to znovu\n- Pokud se to opakuje, zkuste pro tento svazek spustit **Disková utilita > Záchrana**",
+  "@errors.listing.ioSerious.suggestion": {
+    "sourceHash": "6e83ebb"
+  },
+  "errors.listing.isADirectory.title": "Tohle je složka, ne soubor",
+  "@errors.listing.isADirectory.title": {
+    "sourceHash": "7ca2cdd"
+  },
+  "errors.listing.isADirectory.explanation": "Cmdr se pokusil otevřít `{path}` jako soubor, ale je to složka.",
+  "@errors.listing.isADirectory.explanation": {
+    "sourceHash": "03331bd"
+  },
+  "errors.listing.isADirectory.suggestion": "Do složky přejděte, neotvírejte ji jako soubor.",
+  "@errors.listing.isADirectory.suggestion": {
+    "sourceHash": "fcf6f9d"
+  },
+  "errors.listing.archiveUnreadable.title": "Tento archiv nejde otevřít",
+  "@errors.listing.archiveUnreadable.title": {
+    "sourceHash": "939ba84"
+  },
+  "errors.listing.archiveUnreadable.explanation": "Tento soubor vypadá jako archiv, ale Cmdr nedokázal přečíst jeho obsah. Možná je poškozený, zašifrovaný nebo ve formátu archivu, který Cmdr zatím neumí otevřít.",
+  "@errors.listing.archiveUnreadable.explanation": {
+    "sourceHash": "b1e7d8b"
+  },
+  "errors.listing.archiveUnreadable.suggestion": "Zkuste ho otevřít v jiné aplikaci, nebo požádejte toho, kdo vám ho poslal, o novou kopii.",
+  "@errors.listing.archiveUnreadable.suggestion": {
+    "sourceHash": "67b7e70"
+  },
+  "errors.listing.archiveNeedsPassword.title": "Tento archiv vyžaduje heslo",
+  "@errors.listing.archiveNeedsPassword.title": {
+    "sourceHash": "d6d0ad4"
+  },
+  "errors.listing.archiveNeedsPassword.explanation": "Tento archiv je chráněný, takže jeho obsah zůstane zamčený, dokud ho neodemknete.",
+  "@errors.listing.archiveNeedsPassword.explanation": {
+    "sourceHash": "f566496"
+  },
+  "errors.listing.archiveNeedsPassword.suggestion": "Pro procházení archivu zadejte heslo.",
+  "@errors.listing.archiveNeedsPassword.suggestion": {
+    "sourceHash": "4043af6"
+  },
+  "errors.listing.resticRepoNeedsPassword.title": "Tato záloha potřebuje heslo",
+  "@errors.listing.resticRepoNeedsPassword.title": {
+    "sourceHash": "8d09953"
+  },
+  "errors.listing.resticRepoNeedsPassword.explanation": "Tato záloha restic je šifrovaná, takže její snímky zůstanou zamčené, dokud ji neodemknete.",
+  "@errors.listing.resticRepoNeedsPassword.explanation": {
+    "sourceHash": "8b4fb1b"
+  },
+  "errors.listing.resticRepoNeedsPassword.suggestion": "Zadejte heslo a procházejte její snímky.",
+  "@errors.listing.resticRepoNeedsPassword.suggestion": {
+    "sourceHash": "dc91e8c"
+  },
+  "errors.listing.emptyRootICloud.title": "iCloud Drive vypadá jako prázdný",
+  "@errors.listing.emptyRootICloud.title": {
+    "sourceHash": "413a7d1"
+  },
+  "errors.listing.emptyRootICloud.explanation": "Cmdr otevřel iCloud Drive, ale nevrátily se žádné soubory. macOS skrývá obsah iCloud Drivu před aplikacemi, které nemají **{full_disk_access}**, takže nejpravděpodobnějším řešením je udělit Cmdru toto oprávnění.\n\nPokud je váš iCloud Drive opravdu prázdný, můžete toto upozornění ignorovat.",
+  "@errors.listing.emptyRootICloud.explanation": {
+    "sourceHash": "4222270"
+  },
+  "errors.listing.emptyRootICloud.suggestion": "Co můžete zkusit:\n- Otevřete [**{system_settings} > {privacy_and_security}**](x-apple.systempreferences:com.apple.preference.security?Privacy) a vyberte **{full_disk_access}**\n- Přidejte Cmdr (tlačítkem **+**) a zapněte ho\n- Ukončete Cmdr a znovu ho otevřete\n- Vraťte se sem a zkuste to znovu",
+  "@errors.listing.emptyRootICloud.suggestion": {
+    "sourceHash": "2e6e702"
+  },
+  "errors.git.notARepo.title": "Tady není žádný repozitář gitu",
+  "@errors.git.notARepo.title": {
+    "sourceHash": "e2b31ec"
+  },
+  "errors.git.notARepo.message": "Cmdr prošel strom složek směrem nahoru a nenašel tu žádnou složku `.git`.",
+  "@errors.git.notARepo.message": {
+    "sourceHash": "736d43c"
+  },
+  "errors.git.notARepo.suggestion": "Otevřete složku uvnitř klonu gitu a uvidíte štítek repozitáře.",
+  "@errors.git.notARepo.suggestion": {
+    "sourceHash": "f50fd0b"
+  },
+  "errors.git.orphanedWorktree.title": "Tento worktree je osiřelý",
+  "@errors.git.orphanedWorktree.title": {
+    "sourceHash": "158755e"
+  },
+  "errors.git.orphanedWorktree.message": "Tohle je propojený worktree, ale jeho hlavní repozitář chybí, takže git nemůže propojení dohledat.",
+  "@errors.git.orphanedWorktree.message": {
+    "sourceHash": "a29d806"
+  },
+  "errors.git.orphanedWorktree.suggestion": "Zkuste otevřít hlavní repozitář, nebo osiřelý worktree odstraňte příkazem `git worktree prune`.",
+  "@errors.git.orphanedWorktree.suggestion": {
+    "sourceHash": "5da694d"
+  },
+  "errors.git.corruptRepo.title": "Tento repozitář je zřejmě poškozený",
+  "@errors.git.corruptRepo.title": {
+    "sourceHash": "b270cef"
+  },
+  "errors.git.corruptRepo.message": "Část dat repozitáře na disku nejde přečíst. Složku možná někdo upravoval mimo git.",
+  "@errors.git.corruptRepo.message": {
+    "sourceHash": "6dd5095"
+  },
+  "errors.git.corruptRepo.suggestion": "Spusťte `git fsck` a prozkoumejte repozitář. Často pomůže čerstvý klon.",
+  "@errors.git.corruptRepo.suggestion": {
+    "sourceHash": "fa12c36"
+  },
+  "errors.git.indexLocked.title": "Jiný git právě zapisuje",
+  "@errors.git.indexLocked.title": {
+    "sourceHash": "2b4fd84"
+  },
+  "errors.git.indexLocked.message": "Index gitu je zamčený, což obvykle znamená, že ještě běží jiný příkaz gitu.",
+  "@errors.git.indexLocked.message": {
+    "sourceHash": "95399bb"
+  },
+  "errors.git.indexLocked.suggestion": "Počkejte, až běžící příkaz gitu skončí, a pak sem přejděte znovu.",
+  "@errors.git.indexLocked.suggestion": {
+    "sourceHash": "deba96c"
+  },
+  "errors.git.permissionDenied.title": "Cmdr nemůže číst tento repozitář",
+  "@errors.git.permissionDenied.title": {
+    "sourceHash": "2fb725c"
+  },
+  "errors.git.permissionDenied.message": "Operační systém nedovolí Cmdru otevřít složku `.git`, takže informace z gitu nejsou k dispozici.",
+  "@errors.git.permissionDenied.message": {
+    "sourceHash": "53012e9"
+  },
+  "errors.git.permissionDenied.suggestion": "Otevřete **{system_settings} > {privacy_and_security} > {files_and_folders}** a udělte Cmdru přístup ke složce.",
+  "@errors.git.permissionDenied.suggestion": {
+    "sourceHash": "7396b5a"
+  },
+  "errors.git.bareRepo.title": "Holé repozitáře zatím nejsou podporované",
+  "@errors.git.bareRepo.title": {
+    "sourceHash": "a378648"
+  },
+  "errors.git.bareRepo.message": "Holé repozitáře nemají pracovní strom a prohlížeč gitu je postavený právě na něm.",
+  "@errors.git.bareRepo.message": {
+    "sourceHash": "1839f25"
+  },
+  "errors.git.bareRepo.suggestion": "Naklonujte repozitář do pracovní složky a budete moct používat prohlížeč gitu.",
+  "@errors.git.bareRepo.suggestion": {
+    "sourceHash": "8ae4757"
+  },
+  "errors.git.blobTooLarge.title": "Tento soubor je příliš velký na načtení z historie",
+  "@errors.git.blobTooLarge.title": {
+    "sourceHash": "480f6ba"
+  },
+  "errors.git.blobTooLarge.message": "Cmdr čte bloby gitu vždy jako celé soubory najednou a tenhle překračuje bezpečnostní limit.",
+  "@errors.git.blobTooLarge.message": {
+    "sourceHash": "d5609a4"
+  },
+  "errors.git.blobTooLarge.suggestion": "Pokud si soubor chcete přečíst, otevřete ho z pracovního stromu.",
+  "@errors.git.blobTooLarge.suggestion": {
+    "sourceHash": "cae2b3d"
+  },
+  "errors.git.shallowBoundary.title": "Za hranicí mělkého klonu",
+  "@errors.git.shallowBoundary.title": {
+    "sourceHash": "9fc0175"
+  },
+  "errors.git.shallowBoundary.message": "Tento commit leží za hranicí vašeho mělkého klonu, takže jeho data nejsou na disku.",
+  "@errors.git.shallowBoundary.message": {
+    "sourceHash": "66bac24"
+  },
+  "errors.git.shallowBoundary.suggestion": "Spusťte `git fetch --unshallow` (nebo `--depth=N`) a stáhněte do klonu víc historie.",
+  "@errors.git.shallowBoundary.suggestion": {
+    "sourceHash": "7b8888e"
+  },
+  "errors.git.missingObject.title": "Chybí objekt gitu",
+  "@errors.git.missingObject.title": {
+    "sourceHash": "c12863e"
+  },
+  "errors.git.missingObject.message": "Git hledá objekt, který už v balíčkových souborech není. Repozitář je možná stažený jen částečně, nebo je poškozený.",
+  "@errors.git.missingObject.message": {
+    "sourceHash": "1eb902f"
+  },
+  "errors.git.missingObject.suggestion": "Zkuste `git fetch`, který chybějící objekt znovu stáhne, nebo `git fsck`, který poškození prozkoumá.",
+  "@errors.git.missingObject.suggestion": {
+    "sourceHash": "b221f85"
+  },
+  "errors.git.gitDirPermissionDenied.title": "Cmdr nemůže otevřít složku `.git`",
+  "@errors.git.gitDirPermissionDenied.title": {
+    "sourceHash": "23c216a"
+  },
+  "errors.git.gitDirPermissionDenied.message": "Operační systém odepřel přístup ke složce `.git`, i když pracovní strom jde číst.",
+  "@errors.git.gitDirPermissionDenied.message": {
+    "sourceHash": "2db5cf0"
+  },
+  "errors.git.gitDirPermissionDenied.suggestion": "Otevřete **{system_settings} > {privacy_and_security} > {files_and_folders}** a udělte Cmdru přístup. V Terminálu příkaz `ls -la .git` zobrazí aktuálního vlastníka a režim.",
+  "@errors.git.gitDirPermissionDenied.suggestion": {
+    "sourceHash": "b091738"
+  },
+  "errors.git.volumeGone.title": "Disk s tímto repozitářem zmizel",
+  "@errors.git.volumeGone.title": {
+    "sourceHash": "cf5deff"
+  },
+  "errors.git.volumeGone.message": "Cmdr četl tento repozitář, když se jeho disk odpojil. Tam se zastavil, takže neuvidíte nic napůl načteného.",
+  "@errors.git.volumeGone.message": {
+    "sourceHash": "10914cd"
+  },
+  "errors.git.volumeGone.suggestion": "Znovu připojte disk a pak složku otevřete znovu.",
+  "@errors.git.volumeGone.suggestion": {
+    "sourceHash": "44f27e8"
+  },
+  "errors.provider.dropbox.displayName": "Dropbox",
+  "@errors.provider.dropbox.displayName": {
+    "sourceHash": "4750d0a",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.dropbox.appName": "Dropbox",
+  "@errors.provider.dropbox.appName": {
+    "sourceHash": "4750d0a",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.googleDrive.displayName": "Google Drive",
+  "@errors.provider.googleDrive.displayName": {
+    "sourceHash": "915ef4b",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.googleDrive.appName": "Google Drive",
+  "@errors.provider.googleDrive.appName": {
+    "sourceHash": "915ef4b",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.oneDrive.displayName": "OneDrive",
+  "@errors.provider.oneDrive.displayName": {
+    "sourceHash": "8a7a54d",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.oneDrive.appName": "OneDrive",
+  "@errors.provider.oneDrive.appName": {
+    "sourceHash": "8a7a54d",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.box.displayName": "Box",
+  "@errors.provider.box.displayName": {
+    "sourceHash": "512fd3c",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.box.appName": "Box Drive",
+  "@errors.provider.box.appName": {
+    "sourceHash": "93fe945",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.pCloud.displayName": "pCloud",
+  "@errors.provider.pCloud.displayName": {
+    "sourceHash": "8cfc474",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.pCloud.appName": "pCloud Drive",
+  "@errors.provider.pCloud.appName": {
+    "sourceHash": "bfaba70",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.nextcloud.displayName": "Nextcloud",
+  "@errors.provider.nextcloud.displayName": {
+    "sourceHash": "337128a",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.nextcloud.appName": "Nextcloud",
+  "@errors.provider.nextcloud.appName": {
+    "sourceHash": "337128a",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.synologyDrive.displayName": "Synology Drive",
+  "@errors.provider.synologyDrive.displayName": {
+    "sourceHash": "118537c",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.synologyDrive.appName": "Synology Drive",
+  "@errors.provider.synologyDrive.appName": {
+    "sourceHash": "118537c",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.tresorit.displayName": "Tresorit",
+  "@errors.provider.tresorit.displayName": {
+    "sourceHash": "9189473",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.tresorit.appName": "Tresorit",
+  "@errors.provider.tresorit.appName": {
+    "sourceHash": "9189473",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.protonDrive.displayName": "Proton Drive",
+  "@errors.provider.protonDrive.displayName": {
+    "sourceHash": "ae94a23",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.protonDrive.appName": "Proton Drive",
+  "@errors.provider.protonDrive.appName": {
+    "sourceHash": "ae94a23",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.sync.displayName": "Sync.com",
+  "@errors.provider.sync.displayName": {
+    "sourceHash": "31eb68b",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.sync.appName": "Sync.com",
+  "@errors.provider.sync.appName": {
+    "sourceHash": "31eb68b",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.egnyte.displayName": "Egnyte",
+  "@errors.provider.egnyte.displayName": {
+    "sourceHash": "daa69d3",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.egnyte.appName": "Egnyte Connect",
+  "@errors.provider.egnyte.appName": {
+    "sourceHash": "6beb18f",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.macDroid.displayName": "MacDroid",
+  "@errors.provider.macDroid.displayName": {
+    "sourceHash": "99388b1",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.macDroid.appName": "MacDroid",
+  "@errors.provider.macDroid.appName": {
+    "sourceHash": "99388b1",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.iCloud.displayName": "iCloud Drive",
+  "@errors.provider.iCloud.displayName": {
+    "sourceHash": "416264f",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.pCloudFuse.displayName": "pCloud",
+  "@errors.provider.pCloudFuse.displayName": {
+    "sourceHash": "8cfc474",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.pCloudFuse.appName": "pCloud Drive",
+  "@errors.provider.pCloudFuse.appName": {
+    "sourceHash": "bfaba70",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.macFuse.displayName": "macFUSE",
+  "@errors.provider.macFuse.displayName": {
+    "sourceHash": "229fed1",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.veraCrypt.displayName": "VeraCrypt",
+  "@errors.provider.veraCrypt.displayName": {
+    "sourceHash": "46eeb7a",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.veraCrypt.appName": "VeraCrypt",
+  "@errors.provider.veraCrypt.appName": {
+    "sourceHash": "46eeb7a",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim per the @key description (\"A brand name; do NOT translate\"); the cloud client's own Czech UI keeps the same name."
+  },
+  "errors.provider.cmVolumes.displayName": "Připojený cloudový svazek",
+  "@errors.provider.cmVolumes.displayName": {
+    "sourceHash": "8dabeba"
+  },
+  "errors.provider.genericCloudStorage.displayName": "vaše cloudová služba",
+  "@errors.provider.genericCloudStorage.displayName": {
+    "sourceHash": "1066349"
+  },
+  "errors.provider.macDroid.transient": "Tuto složku spravuje **MacDroid**. Co můžete zkusit:\n- Otevřete MacDroid a zkontrolujte, že je telefon připojený\n- Ověřte, že je telefon odemčený a nastavený na režim přenosu souborů\n- Vytáhněte kabel USB, zase ho zapojte a pak sem přejděte znovu",
+  "@errors.provider.macDroid.transient": {
+    "sourceHash": "5df1c20"
+  },
+  "errors.provider.macDroid.needsAction": "Tuto složku spravuje **MacDroid**. Co můžete zkusit:\n- Otevřete MacDroid a zkontrolujte, že je telefon připojený\n- Ověřte, že je telefon odemčený a má zapnutou obrazovku\n- Zkontrolujte, že je v telefonu zapnutý režim přenosu souborů přes USB",
+  "@errors.provider.macDroid.needsAction": {
+    "sourceHash": "5fe56e6"
+  },
+  "errors.provider.macDroid.serious": "Tuto složku spravuje **MacDroid**. Co můžete zkusit:\n- Vytáhněte kabel USB a zase ho zapojte\n- Znovu spusťte MacDroid\n- Zkuste jiný port USB nebo jiný kabel",
+  "@errors.provider.macDroid.serious": {
+    "sourceHash": "a79e0b6"
+  },
+  "errors.provider.iCloud.transient": "Tuto složku spravuje **{name}**. Co můžete zkusit:\n- Zkontrolujte připojení k internetu\n- Zkontrolujte v {system_settings} přihlášení k iCloudu\n- Zkuste sem přejít znovu",
+  "@errors.provider.iCloud.transient": {
+    "sourceHash": "6a98b24"
+  },
+  "errors.provider.iCloud.needsAction": "Tuto složku spravuje **{name}**. Co můžete zkusit:\n- Zkontrolujte, že je iCloud Drive zapnutý v **{system_settings} > Účet Apple > iCloud**\n- Ověřte, že je přihlášený správný účet Apple\n- Zkontrolujte, že vaše úložiště na iCloudu není plné",
+  "@errors.provider.iCloud.needsAction": {
+    "sourceHash": "48c7123"
+  },
+  "errors.provider.iCloud.serious": "Tuto složku spravuje **{name}**. Co můžete zkusit:\n- V {system_settings} se odhlaste z iCloudu a znovu se přihlaste\n- Zkontrolujte [stránku se stavem systémů Apple](https://www.apple.com/support/systemstatus/)",
+  "@errors.provider.iCloud.serious": {
+    "sourceHash": "4f730c7"
+  },
+  "errors.provider.macFuse.transient": "Tohle je svazek připojený přes **macFUSE**. Vzdálený server může být pomalý nebo nedostupný. Co můžete zkusit:\n- Zkontrolujte síťové připojení\n- Zkontrolujte, že vzdálený server běží\n- Zkuste sem přejít znovu",
+  "@errors.provider.macFuse.transient": {
+    "sourceHash": "66fcc6b"
+  },
+  "errors.provider.macFuse.needsAction": "Tohle je svazek připojený přes **macFUSE**. Co můžete zkusit:\n- Zkontrolujte, že proces FUSE, na kterém tento svazek závisí, pořád běží\n- Pokud je to potřeba, svazek vynuceně odpojte a znovu připojte\n- Ověřte v **{system_settings} > Obecné > Aktivace položek a rozšíření při přihlášení**, že je macFUSE aktuální",
+  "@errors.provider.macFuse.needsAction": {
+    "sourceHash": "0c2981f"
+  },
+  "errors.provider.macFuse.serious": "Tohle je svazek připojený přes **macFUSE**. Proces FUSE, na kterém závisí, nejspíš spadl nebo se odpojil. Co můžete zkusit:\n- Vynuceně svazek odpojte: v Terminálu spusťte `umount -f /Volumes/<name>`\n- Připojte ho znovu původním příkazem pro připojení\n- Pokud se to opakuje, zkontrolujte, že je macFUSE aktuální",
+  "@errors.provider.macFuse.serious": {
+    "sourceHash": "8da8430"
+  },
+  "errors.provider.pCloudFuse.transient": "Tato složka je na virtuálním disku služby **pCloud**. Co můžete zkusit:\n- Zkontrolujte připojení k internetu\n- Ověřte, že aplikace pCloud běží\n- Zkuste sem přejít znovu",
+  "@errors.provider.pCloudFuse.transient": {
+    "sourceHash": "b51abf9"
+  },
+  "errors.provider.pCloudFuse.needsAction": "Tato složka je na virtuálním disku služby **pCloud**. Co můžete zkusit:\n- Ověřte, že aplikace pCloud běží a je v ní přihlášený váš účet\n- Zkontrolujte připojení k internetu\n- Po aktualizaci macOS znovu povolte rozšíření systému aplikace pCloud v **{system_settings} > Obecné > Aktivace položek a rozšíření při přihlášení**",
+  "@errors.provider.pCloudFuse.needsAction": {
+    "sourceHash": "42ff4c9"
+  },
+  "errors.provider.pCloudFuse.serious": "Tato složka je na virtuálním disku služby **pCloud**. Proces FUSE aplikace pCloud mohl spadnout. Co můžete zkusit:\n- Ukončete aplikaci pCloud a znovu ji otevřete\n- Pokud se disk znovu neobjeví, vynuceně ho odpojte: v Terminálu spusťte `umount -f /Volumes/pCloudDrive`\n- Po aktualizaci macOS znovu povolte rozšíření systému aplikace pCloud v **{system_settings} > Obecné > Aktivace položek a rozšíření při přihlášení**",
+  "@errors.provider.pCloudFuse.serious": {
+    "sourceHash": "232d806"
+  },
+  "errors.provider.veraCrypt.transient": "Tohle je zašifrovaný svazek **{name}**. Co můžete zkusit:\n- Zkontrolujte, že je svazek VeraCrypt pořád připojený\n- Zkuste sem přejít znovu",
+  "@errors.provider.veraCrypt.transient": {
+    "sourceHash": "125eaf9"
+  },
+  "errors.provider.veraCrypt.needsAction": "Tohle je zašifrovaný svazek **{name}**. Co můžete zkusit:\n- Otevřete VeraCrypt a zkontrolujte, že je tento svazek připojený\n- Pokud je to potřeba, svazek odpojte a znovu připojte",
+  "@errors.provider.veraCrypt.needsAction": {
+    "sourceHash": "09d12a7"
+  },
+  "errors.provider.veraCrypt.serious": "Tohle je zašifrovaný svazek **{name}**. Co můžete zkusit:\n- V aplikaci VeraCrypt svazek odpojte a znovu připojte\n- Pokud má svazek dál potíže, zkontrolujte ho nástroji pro opravu v aplikaci VeraCrypt",
+  "@errors.provider.veraCrypt.serious": {
+    "sourceHash": "a0737db"
+  },
+  "errors.provider.cmVolumes.transient": "Tohle je připojený cloudový svazek. Co můžete zkusit:\n- Zkontrolujte připojení k internetu\n- Zkontrolujte, že software pro připojení (CloudMounter, Mountain Duck apod.) běží\n- Zkuste sem přejít znovu",
+  "@errors.provider.cmVolumes.transient": {
+    "sourceHash": "b7ae13e"
+  },
+  "errors.provider.cmVolumes.nonTransient": "Tohle je připojený cloudový svazek. Co můžete zkusit:\n- Zkontrolujte, že software pro připojení (CloudMounter, Mountain Duck apod.) běží\n- Svazek odpojte a znovu připojte\n- Zkontrolujte, že nevypršela platnost vašich přihlašovacích údajů",
+  "@errors.provider.cmVolumes.nonTransient": {
+    "sourceHash": "4474047"
+  },
+  "errors.provider.genericCloudStorage.transient": "Tuto složku spravuje cloudová služba. Co můžete zkusit:\n- Zkontrolujte připojení k internetu\n- Zkontrolujte, že synchronizační aplikace běží\n- Zkuste sem přejít znovu",
+  "@errors.provider.genericCloudStorage.transient": {
+    "sourceHash": "9a454cf"
+  },
+  "errors.provider.genericCloudStorage.nonTransient": "Tuto složku spravuje cloudová služba. Co můžete zkusit:\n- Zkontrolujte, že synchronizační aplikace běží\n- V cloudové aplikaci se odhlaste a znovu se přihlaste\n- Zkontrolujte připojení k internetu",
+  "@errors.provider.genericCloudStorage.nonTransient": {
+    "sourceHash": "3b8d2a6"
+  },
+  "errors.provider.appBased.transient": "Tuto složku spravuje **{name}**. Co můžete zkusit:\n- Zkontrolujte připojení k internetu\n- Otevřete aplikaci {app} a ověřte, že běží a je synchronizovaná\n- Zkuste sem přejít znovu",
+  "@errors.provider.appBased.transient": {
+    "sourceHash": "ba634b7"
+  },
+  "errors.provider.appBased.needsAction": "Tuto složku spravuje **{name}**. Co můžete zkusit:\n- Otevřete aplikaci {app} a zkontrolujte stav synchronizace\n- Ověřte, že je v aplikaci {app} přihlášený váš účet\n- Ověřte, že máte ve službě {name} přístup k této složce",
+  "@errors.provider.appBased.needsAction": {
+    "sourceHash": "f69fe61"
+  },
+  "errors.provider.appBased.serious": "Tuto složku spravuje **{name}**. Co můžete zkusit:\n- Ukončete aplikaci {app} a znovu ji otevřete\n- V aplikaci {app} se odhlaste a znovu se přihlaste\n- Na stránce se stavem služby {name} zkontrolujte, jestli nehlásí výpadek",
+  "@errors.provider.appBased.serious": {
+    "sourceHash": "5a4e14e"
+  },
+  "errors.write.sourceNotFound.title": "Soubor se nepodařilo najít",
+  "@errors.write.sourceNotFound.title": {
+    "sourceHash": "eff005a"
+  },
+  "errors.write.sourceNotFound.message.copy": "Soubor nebo složka, kterou se pokoušíte zkopírovat, už neexistuje.",
+  "@errors.write.sourceNotFound.message.copy": {
+    "sourceHash": "e572507"
+  },
+  "errors.write.sourceNotFound.message.move": "Soubor nebo složka, kterou se pokoušíte přesunout, už neexistuje.",
+  "@errors.write.sourceNotFound.message.move": {
+    "sourceHash": "4c07735"
+  },
+  "errors.write.sourceNotFound.message.delete": "Soubor nebo složka, kterou se pokoušíte smazat, už neexistuje.",
+  "@errors.write.sourceNotFound.message.delete": {
+    "sourceHash": "cb0ab8f"
+  },
+  "errors.write.sourceNotFound.message.trash": "Soubor nebo složka, kterou se pokoušíte přesunout do koše, už neexistuje.",
+  "@errors.write.sourceNotFound.message.trash": {
+    "sourceHash": "dbc0bbe"
+  },
+  "errors.write.sourceNotFound.suggestion": "Mohlo to být přesunuto, přejmenováno nebo smazáno. Zkuste znovu načíst seznam souborů.",
+  "@errors.write.sourceNotFound.suggestion": {
+    "sourceHash": "1a6cd17"
+  },
+  "errors.write.destinationNotFound.title": "Cílovou složku se nepodařilo najít",
+  "@errors.write.destinationNotFound.title": {
+    "sourceHash": "ae77ee8"
+  },
+  "errors.write.destinationNotFound.message.copy": "Složka, do které kopírujete, už není k dispozici, takže soubory nebylo kam uložit. Původní soubory zůstaly beze změny.",
+  "@errors.write.destinationNotFound.message.copy": {
+    "sourceHash": "b747547"
+  },
+  "errors.write.destinationNotFound.message.move": "Složka, do které přesouváte, už není k dispozici, takže soubory nebylo kam uložit. Původní soubory zůstaly beze změny.",
+  "@errors.write.destinationNotFound.message.move": {
+    "sourceHash": "20fb725"
+  },
+  "errors.write.destinationNotFound.suggestion": "Složka mohla být přejmenována nebo smazána, nebo se mohl odpojit disk. Vyberte jiný cíl, nebo složku otevřete znovu a zkuste to ještě jednou.",
+  "@errors.write.destinationNotFound.suggestion": {
+    "sourceHash": "2e99059"
+  },
+  "errors.write.destinationNotAFolder.title": "V cestě je soubor",
+  "@errors.write.destinationNotAFolder.title": {
+    "sourceHash": "d371870"
+  },
+  "errors.write.destinationNotAFolder.message": "Cmdr nemohl vytvořit cílovou složku, protože na cestě „{path}“ je soubor, a ne složka. Nic se nezapsalo a původní soubory zůstaly beze změny.",
+  "@errors.write.destinationNotAFolder.message": {
+    "sourceHash": "98178cb"
+  },
+  "errors.write.destinationNotAFolder.suggestion": "Vyberte jiný cíl, nebo ten soubor přejmenujte či přesuňte a zkuste to znovu.",
+  "@errors.write.destinationNotAFolder.suggestion": {
+    "sourceHash": "c410ecf"
+  },
+  "errors.write.notConnected.title": "Zatím nepřipojeno",
+  "@errors.write.notConnected.title": {
+    "sourceHash": "8985693"
+  },
+  "errors.write.notConnected.message.source": "Cmdr se zatím nepřipojil k telefonu nebo serveru, na kterém jsou tyto soubory, takže se nic nezměnilo.",
+  "@errors.write.notConnected.message.source": {
+    "sourceHash": "7869dce"
+  },
+  "errors.write.notConnected.message.destination": "Cmdr se zatím nepřipojil k cílovému telefonu nebo serveru, takže se nic nezměnilo. Vaše soubory zůstaly beze změny.",
+  "@errors.write.notConnected.message.destination": {
+    "sourceHash": "3b5063d"
+  },
+  "errors.write.notConnected.suggestion": "Otevřete telefon nebo server v přepínači svazků, tím se k němu Cmdr připojí, a pak to zkuste znovu. Pokud jde o telefon, odemkněte ho a potvrďte všechny výzvy, které telefon zobrazí.",
+  "@errors.write.notConnected.suggestion": {
+    "sourceHash": "3fdc936"
+  },
+  "errors.write.noLongerConnected.title": "Už není připojeno",
+  "@errors.write.noLongerConnected.title": {
+    "sourceHash": "3974fa0"
+  },
+  "errors.write.noLongerConnected.message": "Telefon nebo server, na kterém jsou tyto soubory, už není připojený, takže se nic nezměnilo.",
+  "@errors.write.noLongerConnected.message": {
+    "sourceHash": "d0827c4"
+  },
+  "errors.write.noLongerConnected.suggestion": "Telefon znovu připojte kabelem, nebo otevřete server v přepínači svazků, a pak to zkuste znovu.",
+  "@errors.write.noLongerConnected.suggestion": {
+    "sourceHash": "850ecdb"
+  },
+  "errors.write.destinationExists.title": "Soubor už existuje",
+  "@errors.write.destinationExists.title": {
+    "sourceHash": "ae71a9a"
+  },
+  "errors.write.destinationExists.message": "V cíli už je soubor se stejným názvem.",
+  "@errors.write.destinationExists.message": {
+    "sourceHash": "cdcfb7b"
+  },
+  "errors.write.destinationExists.suggestion": "Vyberte jiný název nebo umístění, nebo nejdřív smažte existující soubor.",
+  "@errors.write.destinationExists.suggestion": {
+    "sourceHash": "37d7702"
+  },
+  "errors.write.destinationInsideSource.title.copy": "Složku nelze zkopírovat do sebe samé",
+  "@errors.write.destinationInsideSource.title.copy": {
+    "sourceHash": "f8dd7f6"
+  },
+  "errors.write.destinationInsideSource.title.move": "Složku nelze přesunout do sebe samé",
+  "@errors.write.destinationInsideSource.title.move": {
+    "sourceHash": "48b9b42"
+  },
+  "errors.write.destinationInsideSource.message.copy": "Pokoušíte se zkopírovat složku do jedné z jejích vlastních podsložek.",
+  "@errors.write.destinationInsideSource.message.copy": {
+    "sourceHash": "26785f5"
+  },
+  "errors.write.destinationInsideSource.message.move": "Pokoušíte se přesunout složku do jedné z jejích vlastních podsložek.",
+  "@errors.write.destinationInsideSource.message.move": {
+    "sourceHash": "4fcd446"
+  },
+  "errors.write.destinationInsideSource.suggestion.copy": "Vyberte cíl mimo složku, kterou kopírujete.",
+  "@errors.write.destinationInsideSource.suggestion.copy": {
+    "sourceHash": "9c446bf"
+  },
+  "errors.write.destinationInsideSource.suggestion.move": "Vyberte cíl mimo složku, kterou přesouváte.",
+  "@errors.write.destinationInsideSource.suggestion.move": {
+    "sourceHash": "ab985a6"
+  },
+  "errors.write.symlinkLoop.title": "Nalezena smyčka odkazů",
+  "@errors.write.symlinkLoop.title": {
+    "sourceHash": "0bbdc9c"
+  },
+  "errors.write.symlinkLoop.message": "Tato složka obsahuje symbolické odkazy, které vytvářejí nekonečnou smyčku.",
+  "@errors.write.symlinkLoop.message": {
+    "sourceHash": "00931eb"
+  },
+  "errors.write.symlinkLoop.suggestion": "Struktura složek obsahuje kruhové odkazy. Možná bude potřeba některé symbolické odkazy odstranit.",
+  "@errors.write.symlinkLoop.suggestion": {
+    "sourceHash": "87ddbca"
+  },
+  "errors.write.cancelled.title.copy": "Kopírování zrušeno",
+  "@errors.write.cancelled.title.copy": {
+    "sourceHash": "7edfd40"
+  },
+  "errors.write.cancelled.title.move": "Přesun zrušen",
+  "@errors.write.cancelled.title.move": {
+    "sourceHash": "8b7eec1"
+  },
+  "errors.write.cancelled.title.delete": "Mazání zrušeno",
+  "@errors.write.cancelled.title.delete": {
+    "sourceHash": "546aac1"
+  },
+  "errors.write.cancelled.title.trash": "Přesun do koše zrušen",
+  "@errors.write.cancelled.title.trash": {
+    "sourceHash": "52a8954"
+  },
+  "errors.write.cancelled.message.copy": "Operace kopírování byla zrušena.",
+  "@errors.write.cancelled.message.copy": {
+    "sourceHash": "da308bc"
+  },
+  "errors.write.cancelled.message.move": "Operace přesunu byla zrušena.",
+  "@errors.write.cancelled.message.move": {
+    "sourceHash": "6369672"
+  },
+  "errors.write.cancelled.message.delete": "Operace mazání byla zrušena.",
+  "@errors.write.cancelled.message.delete": {
+    "sourceHash": "8e573dc"
+  },
+  "errors.write.cancelled.message.trash": "Operace přesunu do koše byla zrušena.",
+  "@errors.write.cancelled.message.trash": {
+    "sourceHash": "9585f1b"
+  },
+  "errors.write.cancelled.suggestion": "Můžete to zkusit znovu, až se vám to bude hodit.",
+  "@errors.write.cancelled.suggestion": {
+    "sourceHash": "21cafca"
+  },
+  "errors.write.deviceDisconnected.title": "Zařízení bylo odpojeno",
+  "@errors.write.deviceDisconnected.title": {
+    "sourceHash": "f0acd34"
+  },
+  "errors.write.deviceDisconnected.message.copy": "Zařízení bylo odpojeno během kopírování.",
+  "@errors.write.deviceDisconnected.message.copy": {
+    "sourceHash": "828908f"
+  },
+  "errors.write.deviceDisconnected.message.move": "Zařízení bylo odpojeno během přesunu.",
+  "@errors.write.deviceDisconnected.message.move": {
+    "sourceHash": "4177ee9"
+  },
+  "errors.write.deviceDisconnected.message.delete": "Zařízení bylo odpojeno během mazání.",
+  "@errors.write.deviceDisconnected.message.delete": {
+    "sourceHash": "195562e"
+  },
+  "errors.write.deviceDisconnected.message.trash": "Zařízení bylo odpojeno během přesunu do koše.",
+  "@errors.write.deviceDisconnected.message.trash": {
+    "sourceHash": "9d5a47a"
+  },
+  "errors.write.deviceDisconnected.suggestion": "Ověřte, že je zařízení správně připojené, a zkuste to znovu.",
+  "@errors.write.deviceDisconnected.suggestion": {
+    "sourceHash": "f003d9c"
+  },
+  "errors.write.deviceDisconnected.sided.destination.copy": "Disk {volumeName} se odpojil, když na něj Cmdr kopíroval soubory. Zkopírováno souborů: {done} z {total}. Vaše původní soubory zůstaly beze změny tam, kde byly, takže se nic neztratilo.",
+  "@errors.write.deviceDisconnected.sided.destination.copy": {
+    "sourceHash": "37342c4"
+  },
+  "errors.write.deviceDisconnected.sided.destination.move": "Disk {volumeName} se odpojil dřív, než Cmdr stihl přesun dokončit, takže všechny vaše soubory jsou pořád na disku {counterpart}.",
+  "@errors.write.deviceDisconnected.sided.destination.move": {
+    "sourceHash": "7da0918"
+  },
+  "errors.write.deviceDisconnected.sided.source.copy": "Disk {volumeName} se odpojil, když z něj Cmdr kopíroval soubory na disk {counterpart}. Zkopírováno souborů: {done} z {total}. Zbývající soubory jsou pořád na disku {volumeName}.",
+  "@errors.write.deviceDisconnected.sided.source.copy": {
+    "sourceHash": "70d4976"
+  },
+  "errors.write.deviceDisconnected.sided.source.move": "Disk {volumeName} se odpojil, když z něj Cmdr přesouval soubory na disk {counterpart}. Přesunuto souborů: {done} z {total}. Zbývající soubory jsou pořád na disku {volumeName}.",
+  "@errors.write.deviceDisconnected.sided.source.move": {
+    "sourceHash": "bf2d6e7"
+  },
+  "errors.write.moveNotConfirmed.title": "Přesun se nepodařilo potvrdit",
+  "@errors.write.moveNotConfirmed.title": {
+    "sourceHash": "8f1fe29"
+  },
+  "errors.write.moveNotConfirmed.message.named": "Cmdr nemohl potvrdit, že se přesunuté soubory uložily na disku {volumeName}, proto ponechal vaše původní soubory tam, kde byly.",
+  "@errors.write.moveNotConfirmed.message.named": {
+    "sourceHash": "442f2fe"
+  },
+  "errors.write.moveNotConfirmed.message.unnamed": "Cmdr nemohl potvrdit, že se přesunuté soubory uložily v cíli, proto ponechal vaše původní soubory tam, kde byly.",
+  "@errors.write.moveNotConfirmed.message.unnamed": {
+    "sourceHash": "565e4b8"
+  },
+  "errors.write.moveNotConfirmed.suggestion": "Podívejte se do cíle a pak zkuste přesun znovu. Vaše původní soubory zůstaly na svém místě.",
+  "@errors.write.moveNotConfirmed.suggestion": {
+    "sourceHash": "4d7fedc"
+  },
+  "errors.write.trashNotSupported.title": "Koš není podporovaný",
+  "@errors.write.trashNotSupported.title": {
+    "sourceHash": "af90a02"
+  },
+  "errors.write.trashNotSupported.message": "Tento svazek nepodporuje koš.",
+  "@errors.write.trashNotSupported.message": {
+    "sourceHash": "911688a"
+  },
+  "errors.write.trashNotSupported.suggestion": "Místo toho můžete položky trvale smazat zkratkou {deletePermanentlyKey}.",
+  "@errors.write.trashNotSupported.suggestion": {
+    "sourceHash": "450dd8f"
+  },
+  "errors.write.connectionInterrupted.title": "Připojení přerušeno",
+  "@errors.write.connectionInterrupted.title": {
+    "sourceHash": "183383d"
+  },
+  "errors.write.connectionInterrupted.message": "Připojení bylo přerušeno.",
+  "@errors.write.connectionInterrupted.message": {
+    "sourceHash": "286af83"
+  },
+  "errors.write.connectionInterrupted.suggestion": "Zkontrolujte připojení a zkuste to znovu. Pokud kopírujete do síťového umístění, ověřte, že je server dostupný.",
+  "@errors.write.connectionInterrupted.suggestion": {
+    "sourceHash": "d8d3c79"
+  },
+  "errors.write.serverConnectionLost.title": "Připojení k serveru {volumeName} se přerušilo",
+  "@errors.write.serverConnectionLost.title": {
+    "sourceHash": "6e49126"
+  },
+  "errors.write.serverConnectionLost.message.gaveUp.copy": "Cmdr čekal {duration}, jestli se server {volumeName} vrátí, a pak se zastavil. Právě kopíroval soubor {fileName}.",
+  "@errors.write.serverConnectionLost.message.gaveUp.copy": {
+    "sourceHash": "6792b15"
+  },
+  "errors.write.serverConnectionLost.message.gaveUp.move": "Cmdr čekal {duration}, jestli se server {volumeName} vrátí, a pak se zastavil. Právě přesouval soubor {fileName}.",
+  "@errors.write.serverConnectionLost.message.gaveUp.move": {
+    "sourceHash": "6d31e2f"
+  },
+  "errors.write.serverConnectionLost.message.dropped.copy": "Připojení k serveru {volumeName} spadlo, zatímco Cmdr kopíroval soubor {fileName}.",
+  "@errors.write.serverConnectionLost.message.dropped.copy": {
+    "sourceHash": "d231ea7"
+  },
+  "errors.write.serverConnectionLost.message.dropped.move": "Připojení k serveru {volumeName} spadlo, zatímco Cmdr přesouval soubor {fileName}.",
+  "@errors.write.serverConnectionLost.message.dropped.move": {
+    "sourceHash": "52b2997"
+  },
+  "errors.write.serverConnectionLost.suggestion.copy": "Zkontrolujte, že server běží a síť funguje, a zkuste to znovu. Soubory, které se stihly zkopírovat, už v cíli jsou.",
+  "@errors.write.serverConnectionLost.suggestion.copy": {
+    "sourceHash": "f042899"
+  },
+  "errors.write.serverConnectionLost.suggestion.move": "Zkontrolujte, že server běží a síť funguje, a zkuste to znovu. Soubory, které se stihly přesunout, už v cíli jsou.",
+  "@errors.write.serverConnectionLost.suggestion.move": {
+    "sourceHash": "fc87dc3"
+  },
+  "errors.write.serverConnectionLost.message.gaveUp.delete": "Cmdr čekal {duration}, jestli se server {volumeName} vrátí, a pak se zastavil. Probíhalo mazání souboru {fileName}.",
+  "@errors.write.serverConnectionLost.message.gaveUp.delete": {
+    "sourceHash": "d8b7332"
+  },
+  "errors.write.serverConnectionLost.message.dropped.delete": "Připojení k serveru {volumeName} spadlo, zatímco Cmdr prováděl mazání souboru {fileName}.",
+  "@errors.write.serverConnectionLost.message.dropped.delete": {
+    "sourceHash": "2f9bcba"
+  },
+  "errors.write.serverConnectionLost.suggestion.delete": "Zkontrolujte, že server běží a síť funguje, a zkuste to znovu. Soubory, které Cmdr už smazal, jsou pryč.",
+  "@errors.write.serverConnectionLost.suggestion.delete": {
+    "sourceHash": "a683a38"
+  },
+  "errors.write.serverConnectionLost.message.gaveUp.compress": "Cmdr čekal {duration}, jestli se server {volumeName} vrátí, a pak se zastavil. Právě vytvářel soubor {fileName}.",
+  "@errors.write.serverConnectionLost.message.gaveUp.compress": {
+    "sourceHash": "0637cfc"
+  },
+  "errors.write.serverConnectionLost.message.dropped.compress": "Připojení k serveru {volumeName} spadlo, zatímco Cmdr vytvářel soubor {fileName}.",
+  "@errors.write.serverConnectionLost.message.dropped.compress": {
+    "sourceHash": "1617cf2"
+  },
+  "errors.write.serverConnectionLost.suggestion.compress": "Zkontrolujte, že server běží a síť funguje, a zkuste to znovu.",
+  "@errors.write.serverConnectionLost.suggestion.compress": {
+    "sourceHash": "a21db21"
+  },
+  "errors.write.serverConnectionLost.message.gaveUp.archiveEdit": "Cmdr čekal {duration}, jestli se server {volumeName} vrátí, a pak se zastavil. Právě aktualizoval soubor {fileName}.",
+  "@errors.write.serverConnectionLost.message.gaveUp.archiveEdit": {
+    "sourceHash": "85da906"
+  },
+  "errors.write.serverConnectionLost.message.dropped.archiveEdit": "Připojení k serveru {volumeName} spadlo, zatímco Cmdr aktualizoval soubor {fileName}.",
+  "@errors.write.serverConnectionLost.message.dropped.archiveEdit": {
+    "sourceHash": "86f371f"
+  },
+  "errors.write.serverConnectionLost.suggestion.archiveEdit": "Zkontrolujte, že server běží a síť funguje, a zkuste to znovu.",
+  "@errors.write.serverConnectionLost.suggestion.archiveEdit": {
+    "sourceHash": "a21db21"
+  },
+  "errors.write.changedWhileDisconnected.title": "Cmdr nechal změněný soubor být",
+  "@errors.write.changedWhileDisconnected.title": {
+    "sourceHash": "eab1f60"
+  },
+  "errors.write.changedWhileDisconnected.message": "Během mazání spadlo připojení k umístění {volumeName}. Když se obnovilo, soubor {fileName} už nebyl ten, který měl Cmdr v seznamu, takže ho nechal být a zastavil se.",
+  "@errors.write.changedWhileDisconnected.message": {
+    "sourceHash": "d9c623c"
+  },
+  "errors.write.changedWhileDisconnected.suggestion": "Zkontrolujte, co tam teď je, a pokud to pořád chcete smazat, smažte to znovu. Soubory, které Cmdr smazal předtím, jsou pryč.",
+  "@errors.write.changedWhileDisconnected.suggestion": {
+    "sourceHash": "15f35df"
+  },
+  "errors.write.replySignatureRefused.title": "Odpověď serveru odmítnuta",
+  "@errors.write.replySignatureRefused.title": {
+    "sourceHash": "829a591"
+  },
+  "errors.write.replySignatureRefused.message": "Odpověď serveru neměla platný podpis, takže se Cmdr zastavil.",
+  "@errors.write.replySignatureRefused.message": {
+    "sourceHash": "299f4c3"
+  },
+  "errors.write.replySignatureRefused.suggestion": "Může to způsobit nespolehlivé síťové zařízení, ale také někdo, kdo zasahuje do provozu mezi vámi a serverem. Znovu připojte sdílenou složku, a pokud se to zopakuje, zkontrolujte svou síť.",
+  "@errors.write.replySignatureRefused.suggestion": {
+    "sourceHash": "1fc6259"
+  },
+  "errors.write.readError.title.copy": "Kopírování se nepodařilo",
+  "@errors.write.readError.title.copy": {
+    "sourceHash": "dbb854f"
+  },
+  "errors.write.readError.title.move": "Přesun se nepodařil",
+  "@errors.write.readError.title.move": {
+    "sourceHash": "ceb5c7e"
+  },
+  "errors.write.readError.title.delete": "Smazání se nepodařilo",
+  "@errors.write.readError.title.delete": {
+    "sourceHash": "b1165b2"
+  },
+  "errors.write.readError.title.trash": "Přesun do koše se nepodařil",
+  "@errors.write.readError.title.trash": {
+    "sourceHash": "44e3a2e"
+  },
+  "errors.write.readError.message": "Ze zdroje se nepodařilo číst.",
+  "@errors.write.readError.message": {
+    "sourceHash": "ead860d"
+  },
+  "errors.write.readError.suggestion": "Zkuste to znovu. Pokud problém přetrvává, zkontrolujte technické podrobnosti níže.",
+  "@errors.write.readError.suggestion": {
+    "sourceHash": "791f737"
+  },
+  "errors.write.writeError.title.copy": "Kopírování se nepodařilo",
+  "@errors.write.writeError.title.copy": {
+    "sourceHash": "dbb854f"
+  },
+  "errors.write.writeError.title.move": "Přesun se nepodařil",
+  "@errors.write.writeError.title.move": {
+    "sourceHash": "ceb5c7e"
+  },
+  "errors.write.writeError.title.delete": "Smazání se nepodařilo",
+  "@errors.write.writeError.title.delete": {
+    "sourceHash": "b1165b2"
+  },
+  "errors.write.writeError.title.trash": "Přesun do koše se nepodařil",
+  "@errors.write.writeError.title.trash": {
+    "sourceHash": "44e3a2e"
+  },
+  "errors.write.writeError.message": "Do cíle se nepodařilo zapisovat.",
+  "@errors.write.writeError.message": {
+    "sourceHash": "ec1a179"
+  },
+  "errors.write.writeError.suggestion": "Zkuste to znovu. Pokud problém přetrvává, zkontrolujte technické podrobnosti níže.",
+  "@errors.write.writeError.suggestion": {
+    "sourceHash": "791f737"
+  },
+  "errors.write.nameTooLong.title": "Příliš dlouhý název",
+  "@errors.write.nameTooLong.title": {
+    "sourceHash": "de4bc1d"
+  },
+  "errors.write.nameTooLong.message": "Název souboru je pro cíl příliš dlouhý.",
+  "@errors.write.nameTooLong.message": {
+    "sourceHash": "03258f0"
+  },
+  "errors.write.nameTooLong.suggestion": "Zkuste soubor přejmenovat na kratší název.",
+  "@errors.write.nameTooLong.suggestion": {
+    "sourceHash": "840936a"
+  },
+  "errors.write.archiveEntryNameRefused.title": "Tento název nejde uložit do zipu",
+  "@errors.write.archiveEntryNameRefused.title": {
+    "sourceHash": "14570b6"
+  },
+  "errors.write.archiveEntryNameRefused.message.parentTraversal": "Položka {entry} má název, který vede mimo zip, když se zpětné lomítko bere jako oddělovač složek. Přesně tak ho nástroje pro zip čtou. Při otevření zipu by se položka skryla a některé nástroje by ji při rozbalování uložily mimo cílovou složku.",
+  "@errors.write.archiveEntryNameRefused.message.parentTraversal": {
+    "sourceHash": "9f2ba46"
+  },
+  "errors.write.archiveEntryNameRefused.message.tooDeep": "Položka {entry} je vnořená do více složek, než zip dokáže bezpečně pojmout, takže by se při otevření zipu skryla.",
+  "@errors.write.archiveEntryNameRefused.message.tooDeep": {
+    "sourceHash": "1bf6d16"
+  },
+  "errors.write.archiveEntryNameRefused.message.empty": "Položka {entry} má název, ze kterého uvnitř zipu nic nezbude, takže by se při otevření zipu skryla.",
+  "@errors.write.archiveEntryNameRefused.message.empty": {
+    "sourceHash": "01e89c2"
+  },
+  "errors.write.archiveEntryNameRefused.suggestion": "Přejmenujte ji, nebo ji vynechte z výběru a pak komprimujte znovu.",
+  "@errors.write.archiveEntryNameRefused.suggestion": {
+    "sourceHash": "c306071"
+  },
+  "errors.write.archiveEntryNamesCollide.title": "Dvě položky by v zipu měly stejný název",
+  "@errors.write.archiveEntryNamesCollide.title": {
+    "sourceHash": "3d59f36"
+  },
+  "errors.write.archiveEntryNamesCollide.message": "Položky {entry} a {other} by v zipu obě obsadily cestu {archivePath}, protože nástroje pro zip čtou zpětné lomítko jako oddělovač složek. Při otevření zipu by se zobrazila jen jedna z nich.",
+  "@errors.write.archiveEntryNamesCollide.message": {
+    "sourceHash": "59d028d"
+  },
+  "errors.write.archiveEntryNamesCollide.suggestion": "Jednu z nich přejmenujte, nebo ji vynechte z výběru a pak komprimujte znovu.",
+  "@errors.write.archiveEntryNamesCollide.suggestion": {
+    "sourceHash": "33fd97c"
+  },
+  "errors.write.archiveDuplicateEntryName.title": "Tento zip obsahuje dvě položky se stejným názvem",
+  "@errors.write.archiveDuplicateEntryName.title": {
+    "sourceHash": "19c70ac"
+  },
+  "errors.write.archiveDuplicateEntryName.message": "Archiv {path} obsahuje dvě položky s názvem {name}. Cmdr zobrazuje jen tu pozdější a změnou zipu by se ta dřívější natrvalo ztratila.",
+  "@errors.write.archiveDuplicateEntryName.message": {
+    "sourceHash": "9159f89"
+  },
+  "errors.write.archiveDuplicateEntryName.messageUnnamed": "Archiv {path} obsahuje dvě položky se stejným názvem. Cmdr zobrazuje jen tu pozdější a změnou zipu by se ta dřívější natrvalo ztratila.",
+  "@errors.write.archiveDuplicateEntryName.messageUnnamed": {
+    "sourceHash": "a4acaaa"
+  },
+  "errors.write.archiveDuplicateEntryName.suggestion": "Přejmenujte jednu z nich v jiném nástroji pro zip a zkuste to znovu.",
+  "@errors.write.archiveDuplicateEntryName.suggestion": {
+    "sourceHash": "f34b1f1"
+  },
+  "errors.write.archiveEncryptedEntry.title": "Tento zip obsahuje položku chráněnou heslem",
+  "@errors.write.archiveEncryptedEntry.title": {
+    "sourceHash": "32bf063"
+  },
+  "errors.write.archiveEncryptedEntry.message": "Položka {name} v archivu {path} je chráněná heslem a Cmdr ji při změně zipu nedokáže zachovat neporušenou. Zip nechal tak, jak byl.",
+  "@errors.write.archiveEncryptedEntry.message": {
+    "sourceHash": "4787626"
+  },
+  "errors.write.archiveEncryptedEntry.suggestion": "Místo toho zkopírujte ven, co potřebujete, nebo zip upravte v nástroji, který umí hesla.",
+  "@errors.write.archiveEncryptedEntry.suggestion": {
+    "sourceHash": "349350a"
+  },
+  "errors.write.archiveEntryUnderFile.title": "Cmdr nemůže vložit položku do souboru",
+  "@errors.write.archiveEntryUnderFile.title": {
+    "sourceHash": "e0d0138"
+  },
+  "errors.write.archiveEntryUnderFile.message": "Položka {entry} by patřila do položky {file} v archivu {path}, jenže {file} je tam soubor, takže by ji žádný nástroj pro zip nedokázal zobrazit ani otevřít. Cmdr nechal zip tak, jak byl.",
+  "@errors.write.archiveEntryUnderFile.message": {
+    "sourceHash": "556f6a3"
+  },
+  "errors.write.archiveEntryUnderFile.suggestion": "Přejmenujte ten soubor v zipu, nebo dejte položku jinam, a zkuste to znovu.",
+  "@errors.write.archiveEntryUnderFile.suggestion": {
+    "sourceHash": "6ae33d1"
+  },
+  "errors.write.invalidName.title": "Neplatný název souboru",
+  "@errors.write.invalidName.title": {
+    "sourceHash": "1fb1e45"
+  },
+  "errors.write.invalidName.message": "Položka {path} má název, který cíl nedokáže uložit.",
+  "@errors.write.invalidName.message": {
+    "sourceHash": "ad395af"
+  },
+  "errors.write.invalidName.suggestion": "Přejmenujte ji na něco kratšího a jednoduššího a zkuste to znovu. Některé cíle v názvu odmítají tabulátory nebo zalomení řádků a některé odmítají vyhrazené názvy jako CON, NUL nebo LPT1.",
+  "@errors.write.invalidName.suggestion": {
+    "sourceHash": "77cff09"
+  },
+  "errors.write.trashRefused.title": "Přesun do koše se nepodařil",
+  "@errors.write.trashRefused.title": {
+    "sourceHash": "44e3a2e"
+  },
+  "errors.write.trashRefused.message.notPermitted": "Vybrané položky, na které macOS Cmdru nedovolil sáhnout: {count}.",
+  "@errors.write.trashRefused.message.notPermitted": {
+    "sourceHash": "57a38d7"
+  },
+  "errors.write.trashRefused.message.locked": "macOS nepřesouvá zamčené položky, a proto zůstalo na místě {count} z vybraných položek.",
+  "@errors.write.trashRefused.message.locked": {
+    "sourceHash": "5733f47"
+  },
+  "errors.write.trashRefused.message.folderNotWritable": "Cmdr nemá povoleno měnit složku, ve které je {count} z vybraných položek, takže zůstaly na místě.",
+  "@errors.write.trashRefused.message.folderNotWritable": {
+    "sourceHash": "d2f7954"
+  },
+  "errors.write.trashRefused.message.noTrashForVolume": "Vybrané položky, pro které macOS nenašel koš: {count}.",
+  "@errors.write.trashRefused.message.noTrashForVolume": {
+    "sourceHash": "702ae17"
+  },
+  "errors.write.trashRefused.message.other": "Vybrané položky, které macOS odmítl přesunout do koše: {count}.",
+  "@errors.write.trashRefused.message.other": {
+    "sourceHash": "6f71e12"
+  },
+  "errors.write.trashRefused.suggestion.notPermitted": "Položky můžou být na místě, které si macOS hlídá jen pro sebe.",
+  "@errors.write.trashRefused.suggestion.notPermitted": {
+    "sourceHash": "f544942"
+  },
+  "errors.write.trashRefused.suggestion.locked": "Pokud je chcete přesunout, nejdřív je ve Finderu odemkněte: Informace, pak zrušte zaškrtnutí políčka Zamčeno.",
+  "@errors.write.trashRefused.suggestion.locked": {
+    "sourceHash": "ece70f5"
+  },
+  "errors.write.trashRefused.suggestion.folderNotWritable": "Aby šly přesunout, potřebujete oprávnění měnit jejich složku. Kdo ho má, ukáže Finder v Informacích o složce v části Sdílení a oprávnění.",
+  "@errors.write.trashRefused.suggestion.folderNotWritable": {
+    "sourceHash": "8614665"
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolume": "Některá místa nemají vlastní koš, třeba cloudové složky a většina síťových disků. Pořád můžete položky trvale smazat zkratkou Shift+F8.",
+  "@errors.write.trashRefused.suggestion.noTrashForVolume": {
+    "sourceHash": "b6d08fa"
+  },
+  "errors.write.trashRefused.suggestion.other": "Zkontrolujte níže v technických podrobnostech, co macOS nahlásil.",
+  "@errors.write.trashRefused.suggestion.other": {
+    "sourceHash": "b61b3c1"
+  },
+  "errors.write.trashRefused.suggestion.noFullDiskAccess": "Cmdr navíc na tomto Macu nemá plný přístup k disku, což bývá častá příčina. Odznak „Bez plného přístupu k disku“ v záhlaví okna vás k této volbě dovede.",
+  "@errors.write.trashRefused.suggestion.noFullDiskAccess": {
+    "sourceHash": "ee5e9f7"
+  },
+  "errors.write.ioError.title.copy": "Kopírování se nepodařilo",
+  "@errors.write.ioError.title.copy": {
+    "sourceHash": "dbb854f"
+  },
+  "errors.write.ioError.title.move": "Přesun se nepodařil",
+  "@errors.write.ioError.title.move": {
+    "sourceHash": "ceb5c7e"
+  },
+  "errors.write.ioError.title.delete": "Smazání se nepodařilo",
+  "@errors.write.ioError.title.delete": {
+    "sourceHash": "b1165b2"
+  },
+  "errors.write.ioError.title.trash": "Přesun do koše se nepodařil",
+  "@errors.write.ioError.title.trash": {
+    "sourceHash": "44e3a2e"
+  },
+  "errors.write.ioError.message.copy": "Soubor se nepodařilo zkopírovat.",
+  "@errors.write.ioError.message.copy": {
+    "sourceHash": "f25dd52"
+  },
+  "errors.write.ioError.message.move": "Soubor se nepodařilo přesunout.",
+  "@errors.write.ioError.message.move": {
+    "sourceHash": "5f929ee"
+  },
+  "errors.write.ioError.message.delete": "Soubor se nepodařilo smazat.",
+  "@errors.write.ioError.message.delete": {
+    "sourceHash": "9e79007"
+  },
+  "errors.write.ioError.message.trash": "Soubor se nepodařilo přesunout do koše.",
+  "@errors.write.ioError.message.trash": {
+    "sourceHash": "948e289"
+  },
+  "errors.write.ioError.suggestion": "Zkuste to znovu. Pokud problém přetrvává, zkontrolujte technické podrobnosti níže.",
+  "@errors.write.ioError.suggestion": {
+    "sourceHash": "791f737"
+  },
+  "errors.write.permissionDenied.title": "K tomuto umístění se nepodařilo získat přístup",
+  "@errors.write.permissionDenied.title": {
+    "sourceHash": "bc7f0ff"
+  },
+  "errors.write.permissionDenied.message.copy": "Nemáte oprávnění sem kopírovat soubory.",
+  "@errors.write.permissionDenied.message.copy": {
+    "sourceHash": "91272c0"
+  },
+  "errors.write.permissionDenied.message.move": "Nemáte oprávnění sem přesouvat soubory.",
+  "@errors.write.permissionDenied.message.move": {
+    "sourceHash": "5b0fc94"
+  },
+  "errors.write.permissionDenied.message.delete": "Nemáte oprávnění tady mazat soubory.",
+  "@errors.write.permissionDenied.message.delete": {
+    "sourceHash": "0c03fc4"
+  },
+  "errors.write.permissionDenied.message.trash": "Nemáte oprávnění tady přesouvat soubory do koše.",
+  "@errors.write.permissionDenied.message.trash": {
+    "sourceHash": "cca028a"
+  },
+  "errors.write.permissionDenied.suggestion.deleteMac": "Zkontrolujte, že máte do nadřazené složky přístup pro zápis. Soubor může být zamčený. Odemkněte ho ve Finderu (Informace > zrušte zaškrtnutí políčka Zamčeno) a zkuste to znovu.",
+  "@errors.write.permissionDenied.suggestion.deleteMac": {
+    "sourceHash": "1e6e123"
+  },
+  "errors.write.permissionDenied.suggestion.deleteOther": "Zkontrolujte, že máte do nadřazené složky přístup pro zápis. Soubor může být chráněný. Zkontrolujte jeho oprávnění (např. příkazem chmod nebo ve správci souborů) a zkuste to znovu.",
+  "@errors.write.permissionDenied.suggestion.deleteOther": {
+    "sourceHash": "650bb53"
+  },
+  "errors.write.permissionDenied.suggestion.default": "Zkontrolujte, že máte do cílové složky přístup pro zápis. Možná bude potřeba odemknout zařízení nebo změnit oprávnění složky.",
+  "@errors.write.permissionDenied.suggestion.default": {
+    "sourceHash": "ec02093"
+  },
+  "errors.write.permissionDenied.message.named": "Váš uživatelský účet v macOS nemůže měnit složku {folder}.",
+  "@errors.write.permissionDenied.message.named": {
+    "sourceHash": "0ffd79b"
+  },
+  "errors.write.permissionDenied.suggestion.phone": "Android toto umístění vyhrazuje systému a jeho aplikacím. Vaše fotky, stažené soubory a další soubory jsou ve sdíleném úložišti telefonu, takže zkuste některou složku tam.",
+  "@errors.write.permissionDenied.suggestion.phone": {
+    "sourceHash": "e19fb67"
+  },
+  "errors.write.permissionDenied.suggestion.server": "Server to účtu použitému pro připojení nepovolil. Zkontrolujte oprávnění složky na serveru, nebo se připojte účtem, který má přístup.",
+  "@errors.write.permissionDenied.suggestion.server": {
+    "sourceHash": "0ca6fc7"
+  },
+  "errors.write.permissionDenied.suggestion.objectStoreAccount": "Poskytovatel požadavek odmítl, což může znamenat dvě věci. Zkontrolujte oprávnění přístupového klíče, nebo se v konzoli poskytovatele podívejte, jestli nejde o vyčerpaný limit využití nebo upozornění k platbě.",
+  "@errors.write.permissionDenied.suggestion.objectStoreAccount": {
+    "sourceHash": "31deca5"
+  },
+  "errors.write.permissionDenied.suggestion.needsAdminMac": "K této změně jsou potřeba oprávnění správce. Pokud chcete svému účtu udělit přístup, vyberte složku ve Finderu, zvolte Informace a podívejte se do sekce Sdílení a oprávnění.",
+  "@errors.write.permissionDenied.suggestion.needsAdminMac": {
+    "sourceHash": "674192a"
+  },
+  "errors.write.permissionDenied.suggestion.needsAdminOther": "K této změně jsou potřeba oprávnění správce. Pokud chcete svému účtu udělit přístup, upravte oprávnění složky (například příkazem chmod) a zkuste to znovu.",
+  "@errors.write.permissionDenied.suggestion.needsAdminOther": {
+    "sourceHash": "5ce034b"
+  },
+  "errors.write.permissionDenied.suggestion.systemProtectedMac": "Tuto položku chrání sám macOS, takže na ní nic nezmění ani oprávnění správce. Položka může být zamčená: vyberte ji ve Finderu, zvolte Informace a zrušte zaškrtnutí políčka Zamčeno.",
+  "@errors.write.permissionDenied.suggestion.systemProtectedMac": {
+    "sourceHash": "64a71c8"
+  },
+  "errors.write.permissionDenied.suggestion.systemProtectedOther": "Tuto položku chrání sám systém, takže na ní nic nezmění ani oprávnění správce. Položka může mít příznak ochrany, který je potřeba nejdřív zrušit.",
+  "@errors.write.permissionDenied.suggestion.systemProtectedOther": {
+    "sourceHash": "a4856dc"
+  },
+  "errors.write.permissionDenied.message.sourceCopy": "Nemáte oprávnění číst tuto položku, takže ji nelze zkopírovat.",
+  "@errors.write.permissionDenied.message.sourceCopy": {
+    "sourceHash": "849f411"
+  },
+  "errors.write.permissionDenied.message.sourceMove": "Nemáte oprávnění přesunout tuto položku z její složky.",
+  "@errors.write.permissionDenied.message.sourceMove": {
+    "sourceHash": "7704fca"
+  },
+  "errors.write.permissionDenied.suggestion.sourceRead": "Zkontrolujte, že máte přístup k této položce i ke složce, ve které je.",
+  "@errors.write.permissionDenied.suggestion.sourceRead": {
+    "sourceHash": "978e180"
+  },
+  "errors.write.insufficientSpace.title": "V cíli možná není dost místa",
+  "@errors.write.insufficientSpace.title": {
+    "sourceHash": "9db6685"
+  },
+  "errors.write.insufficientSpace.message": "Kopírování může zabrat až {required} a v cíli je volno {available}.",
+  "@errors.write.insufficientSpace.message": {
+    "sourceHash": "931f1e0"
+  },
+  "errors.write.insufficientSpace.suggestion": "Soubory, které už v cíli jsou, můžou znamenat, že kopírování bude potřebovat méně místa. Pokud se cíl zaplní, Cmdr kopírování zastaví a dá vám vědět. Pro jistotu uvolněte trochu místa, nebo vyberte jiné umístění.",
+  "@errors.write.insufficientSpace.suggestion": {
+    "sourceHash": "91fafd3"
+  },
+  "errors.write.destinationFull.title": "Cíl je plný",
+  "@errors.write.destinationFull.title": {
+    "sourceHash": "1a2382d"
+  },
+  "errors.write.destinationFull.message": "V cíli došlo místo dřív, než se všechno zapsalo.",
+  "@errors.write.destinationFull.message": {
+    "sourceHash": "1271eab"
+  },
+  "errors.write.destinationFull.suggestion": "Uvolněte v cíli trochu místa, nebo vyberte jiné umístění. Pokud má cíl nastavenou kvótu úložiště, možná je už vyčerpaná.",
+  "@errors.write.destinationFull.suggestion": {
+    "sourceHash": "6aead38"
+  },
+  "errors.write.filesTooLargeForFilesystem.title.one": "Soubor je pro tento disk příliš velký",
+  "@errors.write.filesTooLargeForFilesystem.title.one": {
+    "sourceHash": "d8e95aa"
+  },
+  "errors.write.filesTooLargeForFilesystem.title.many": "Některé soubory jsou pro tento disk příliš velké",
+  "@errors.write.filesTooLargeForFilesystem.title.many": {
+    "sourceHash": "6b148d5"
+  },
+  "errors.write.filesTooLargeForFilesystem.message.one": "Soubor {name} má {size}, ale tento disk je naformátovaný jako FAT32, který neumí uložit soubory větší než {maxSize}.",
+  "@errors.write.filesTooLargeForFilesystem.message.one": {
+    "sourceHash": "f5c262a"
+  },
+  "errors.write.filesTooLargeForFilesystem.message.many": "Souborů příliš velkých pro tento disk: {count}. Disk je naformátovaný jako FAT32, který neumí uložit soubory větší než {maxSize}.",
+  "@errors.write.filesTooLargeForFilesystem.message.many": {
+    "sourceHash": "9720069"
+  },
+  "errors.write.filesTooLargeForFilesystem.suggestion": "Pokud chcete ukládat takto velké soubory, použijte disk naformátovaný jako exFAT, který takový limit nemá.",
+  "@errors.write.filesTooLargeForFilesystem.suggestion": {
+    "sourceHash": "bb4ac05"
+  },
+  "errors.write.readOnlyDevice.destination.title": "Zařízení jen ke čtení",
+  "@errors.write.readOnlyDevice.destination.title": {
+    "sourceHash": "3f79690"
+  },
+  "errors.write.readOnlyDevice.destination.message": "{deviceName} je jen ke čtení. Z tohoto zařízení můžete soubory kopírovat, ale na něj ne.",
+  "@errors.write.readOnlyDevice.destination.message": {
+    "sourceHash": "932e2ed"
+  },
+  "errors.write.readOnlyDevice.destination.suggestion": "Vyberte jiný cíl, který podporuje zápis.",
+  "@errors.write.readOnlyDevice.destination.suggestion": {
+    "sourceHash": "caced4a"
+  },
+  "errors.write.destinationNotWritable.readOnlyFilesystem.title": "Složka jen ke čtení",
+  "@errors.write.destinationNotWritable.readOnlyFilesystem.title": {
+    "sourceHash": "24c9063"
+  },
+  "errors.write.destinationNotWritable.readOnlyFilesystem.message": "Tato složka je jen ke čtení, takže do ní nelze nic kopírovat ani přesouvat.",
+  "@errors.write.destinationNotWritable.readOnlyFilesystem.message": {
+    "sourceHash": "0c50a60"
+  },
+  "errors.write.destinationNotWritable.readOnlyFilesystem.suggestion": "Vyberte jinou cílovou složku.",
+  "@errors.write.destinationNotWritable.readOnlyFilesystem.suggestion": {
+    "sourceHash": "a41f65a"
+  },
+  "errors.write.destinationNotWritable.noPermission.title": "Chybí oprávnění přidávat sem soubory",
+  "@errors.write.destinationNotWritable.noPermission.title": {
+    "sourceHash": "19f57db"
+  },
+  "errors.write.destinationNotWritable.noPermission.message": "Nemáte oprávnění přidávat soubory do této složky.",
+  "@errors.write.destinationNotWritable.noPermission.message": {
+    "sourceHash": "a7e0efa"
+  },
+  "errors.write.destinationNotWritable.noPermission.suggestion": "Vyberte jinou cílovou složku, nebo změňte oprávnění této složky a zkuste to znovu.",
+  "@errors.write.destinationNotWritable.noPermission.suggestion": {
+    "sourceHash": "3851384"
+  },
+  "errors.write.destinationNotWritable.unexplained.title": "Tato složka nepřijímá soubory",
+  "@errors.write.destinationNotWritable.unexplained.title": {
+    "sourceHash": "c98e2c3"
+  },
+  "errors.write.destinationNotWritable.unexplained.message": "Tato složka nepřijímá nové soubory, takže do ní nelze nic kopírovat ani přesouvat.",
+  "@errors.write.destinationNotWritable.unexplained.message": {
+    "sourceHash": "13b79ec"
+  },
+  "errors.write.destinationNotWritable.unexplained.suggestion": "Vyberte jinou cílovou složku.",
+  "@errors.write.destinationNotWritable.unexplained.suggestion": {
+    "sourceHash": "a41f65a"
+  },
+  "errors.write.readOnlyDevice.destination.fallbackName": "Cílové zařízení",
+  "@errors.write.readOnlyDevice.destination.fallbackName": {
+    "sourceHash": "ef2429e"
+  },
+  "errors.write.fileLocked.title": "Soubor je zamčený",
+  "@errors.write.fileLocked.title": {
+    "sourceHash": "5a38c61"
+  },
+  "errors.write.fileLocked.message": "Soubor je zamčený a nelze ho smazat.",
+  "@errors.write.fileLocked.message": {
+    "sourceHash": "84925b0"
+  },
+  "errors.write.fileLocked.suggestion.mac": "Odemkněte ho ve Finderu (Informace > zrušte zaškrtnutí políčka Zamčeno) a zkuste to znovu.",
+  "@errors.write.fileLocked.suggestion.mac": {
+    "sourceHash": "8f84de5"
+  },
+  "errors.write.fileLocked.suggestion.other": "Soubor může být chráněný. Zkontrolujte jeho oprávnění (např. příkazem chmod nebo ve správci souborů) a zkuste to znovu.",
+  "@errors.write.fileLocked.suggestion.other": {
+    "sourceHash": "6856879"
+  },
+  "errors.write.deletePending.title": "Soubor se právě odstraňuje",
+  "@errors.write.deletePending.title": {
+    "sourceHash": "1e5741a"
+  },
+  "errors.write.deletePending.message": "Soubor na cestě {path} brzy zmizí. Server ho označil ke smazání, ale dokud se nezavře jiný otevřený popisovač souboru, soubor zůstane na místě.",
+  "@errors.write.deletePending.message": {
+    "sourceHash": "7e73fd6"
+  },
+  "errors.write.deletePending.suggestion": "Chvíli počkejte a zkuste to znovu. Jakmile se zavře poslední popisovač, soubor zmizí. Pokud nezmizí, zavřete ostatní aplikace, které můžou mít tento soubor otevřený.",
+  "@errors.write.deletePending.suggestion": {
+    "sourceHash": "39e64a9"
+  },
+  "errors.write.sourceInColdStorage.title": "Tento soubor je archivovaný",
+  "@errors.write.sourceInColdStorage.title": {
+    "sourceHash": "73da082"
+  },
+  "errors.write.sourceInColdStorage.message": "Soubor na cestě {path} je archivovaný, takže ho nejde přečíst, dokud se neobnoví.",
+  "@errors.write.sourceInColdStorage.message": {
+    "sourceHash": "1015fe5"
+  },
+  "errors.write.sourceInColdStorage.suggestion": "Obnovte ho v konzoli poskytovatele úložiště a pak to zkuste znovu. Obnovení může trvat od několika minut až po dva dny.",
+  "@errors.write.sourceInColdStorage.suggestion": {
+    "sourceHash": "f279603"
+  },
+  "errors.write.mountedVolumeInside.title": "V cestě je připojený disk",
+  "@errors.write.mountedVolumeInside.title": {
+    "sourceHash": "eedcbbc"
+  },
+  "errors.write.mountedVolumeInside.message.delete": "Na cestě {mountPoint} je připojený disk nebo server a smazáním by se smazalo všechno, co na něm je. Cmdr se zastavil dřív, než cokoli smazal.",
+  "@errors.write.mountedVolumeInside.message.delete": {
+    "sourceHash": "b7dc0f0"
+  },
+  "errors.write.mountedVolumeInside.message.replace": "Na cestě {mountPoint} je připojený disk nebo server, takže nahrazením složky, která ho obsahuje, by se smazalo všechno na disku. Cmdr nechal tu složku i disk tak, jak byly.",
+  "@errors.write.mountedVolumeInside.message.replace": {
+    "sourceHash": "39a5185"
+  },
+  "errors.write.mountedVolumeInside.message.move": "Na cestě {mountPoint} je připojený disk nebo server, takže přesunutím složky, která ho obsahuje, by se z disku přesunulo všechno. Cmdr se zastavil dřív, než cokoli přesunul.",
+  "@errors.write.mountedVolumeInside.message.move": {
+    "sourceHash": "6e79bae"
+  },
+  "errors.write.mountedVolumeInside.suggestion.delete": "Vysuňte ten disk a smažte to znovu. Pokud chcete vyprázdnit samotný disk, otevřete ho a smažte jeho obsah tam.",
+  "@errors.write.mountedVolumeInside.suggestion.delete": {
+    "sourceHash": "9825fac"
+  },
+  "errors.write.mountedVolumeInside.suggestion.replace": "Vysuňte ten disk a zkuste to znovu. Pokud chcete složku zachovat, zvolte místo Přepsat možnost Přeskočit nebo Přejmenovat.",
+  "@errors.write.mountedVolumeInside.suggestion.replace": {
+    "sourceHash": "4f08af3"
+  },
+  "errors.write.mountedVolumeInside.suggestion.move": "Vysuňte ten disk a přesuňte to znovu. Pokud chcete přesunout obsah disku, otevřete ho a přesuňte soubory odtamtud.",
+  "@errors.write.mountedVolumeInside.suggestion.move": {
+    "sourceHash": "a5d37f6"
+  },
+  "errors.write.sourceChanged.title": "Tento soubor se během kopírování změnil",
+  "@errors.write.sourceChanged.title": {
+    "sourceHash": "1c63c8b"
+  },
+  "errors.write.sourceChanged.message": "Soubor na cestě {path} se změnil, zatímco ho Cmdr kopíroval, takže Cmdr nic neuložil. Soubor zůstává tam, kde byl.",
+  "@errors.write.sourceChanged.message": {
+    "sourceHash": "4c404e0"
+  },
+  "errors.write.sourceChanged.suggestion": "Zkuste to znovu a zkopíruje se verze, která tam je teď.",
+  "@errors.write.sourceChanged.suggestion": {
+    "sourceHash": "97fc945"
+  },
+  "errors.write.landingNotRecorded.title": "Cmdr tento soubor nenahradil",
+  "@errors.write.landingNotRecorded.title": {
+    "sourceHash": "c4a4940"
+  },
+  "errors.write.landingNotRecorded.message": "Cmdr nemohl uložit svou poznámku o nahrazení souboru {path}, takže soubor nechal na místě. Nic se tam nezměnilo.",
+  "@errors.write.landingNotRecorded.message": {
+    "sourceHash": "6ca4881"
+  },
+  "errors.write.landingNotRecorded.suggestion": "Zkuste to znovu. Pokud se to opakuje, zkontrolujte, že je na disku tohoto Macu volné místo, a restartujte Cmdr.",
+  "@errors.write.landingNotRecorded.suggestion": {
+    "sourceHash": "e99aa6e"
+  },
+  "errors.write.newDataKeptAt.title": "Váš nový soubor má jiný název",
+  "@errors.write.newDataKeptAt.title": {
+    "sourceHash": "06bc297"
+  },
+  "errors.write.newDataKeptAt.message": "Nový soubor {path} je celý zapsaný, ale cíl mu nedovolil převzít tento název a soubor, který měl nahradit, už neexistuje. Nový soubor je na cestě {keptAt}.",
+  "@errors.write.newDataKeptAt.message": {
+    "sourceHash": "93d07be"
+  },
+  "errors.write.newDataKeptAt.suggestion": "Otevřete soubor {keptAt}, zkontrolujte ho a pak ho přejmenujte. Pokud je cílem sdílená složka nebo telefon, nejdřív cíl znovu připojte a přejmenování projde.",
+  "@errors.write.newDataKeptAt.suggestion": {
+    "sourceHash": "54c279d"
+  },
+  "errors.write.originalsKeptAside.title": "Váš soubor má nový název",
+  "@errors.write.originalsKeptAside.title": {
+    "sourceHash": "1db5ba0"
+  },
+  "errors.write.originalsKeptAside.message.one": "Název {path} převzala složka, takže váš soubor je teď na cestě {keptAt}. Nic se nezahodilo.",
+  "@errors.write.originalsKeptAside.message.one": {
+    "sourceHash": "e3bc267"
+  },
+  "errors.write.originalsKeptAside.message.many": "Složky převzaly názvy vašich souborů, takže tyto soubory mají teď nové názvy. Počet souborů: {count}. Nic se nezahodilo a seznam všech souborů najdete v technických podrobnostech níže.",
+  "@errors.write.originalsKeptAside.message.many": {
+    "sourceHash": "9430f63"
+  },
+  "errors.write.originalsKeptAside.suggestion.one": "Otevřete soubor {keptAt} a zkontrolujte ho. Až složku přesunete jinam, můžete svůj soubor přejmenovat zpátky.",
+  "@errors.write.originalsKeptAside.suggestion.one": {
+    "sourceHash": "5cbe5bb"
+  },
+  "errors.write.originalsKeptAside.suggestion.many": "Kde je který soubor, najdete v podrobnostech níže. Až složky přesunete jinam, můžete soubory přejmenovat zpátky.",
+  "@errors.write.originalsKeptAside.suggestion.many": {
+    "sourceHash": "2b05c26"
+  },
+  "errors.write.sourceNotRemoved.title": "Kopie dorazila, ale původní položka zůstala",
+  "@errors.write.sourceNotRemoved.title": {
+    "sourceHash": "ac5a888"
+  },
+  "errors.write.sourceNotRemoved.message": "Všechno je v umístění {landedAt}, ale Cmdr nemohl odstranit původní položku {path}, takže je teď na obou místech. Nic se neztratilo.",
+  "@errors.write.sourceNotRemoved.message": {
+    "sourceHash": "6800fe4"
+  },
+  "errors.write.sourceNotRemoved.suggestion": "Přesun dokončíte tak, že původní položku smažete ručně.",
+  "@errors.write.sourceNotRemoved.suggestion": {
+    "sourceHash": "8d2fc8b"
+  },
+  "errors.write.newFilesKept.landing.one": "Soubor {name} je v umístění {volumeName} celý pod dočasným názvem a vlastní název dostane, až se Cmdr k umístění {volumeName} příště připojí.",
+  "@errors.write.newFilesKept.landing.one": {
+    "sourceHash": "ae7aea2"
+  },
+  "errors.write.newFilesKept.landing.many": "V umístění {volumeName} čekají pod dočasnými názvy úplné soubory (počet: {count}). Každý dostane vlastní název, až se Cmdr k umístění {volumeName} příště připojí.",
+  "@errors.write.newFilesKept.landing.many": {
+    "sourceHash": "51da3d5"
+  },
+  "errors.write.newFilesKept.rescued.one": "Cmdr uložil v umístění {volumeName} úplný nový soubor jako {name}, protože nemohl dostat vlastní název. Zkontrolujte ho a pak mu dejte název, jaký chcete.",
+  "@errors.write.newFilesKept.rescued.one": {
+    "sourceHash": "4c10d90"
+  },
+  "errors.write.newFilesKept.rescued.many": "Cmdr uložil v umístění {volumeName} úplné nové soubory (počet: {count}) pod názvy s „(recovered)“, protože nemohly dostat vlastní názvy. Zkontrolujte je a pak jim dejte názvy, jaké chcete.",
+  "@errors.write.newFilesKept.rescued.many": {
+    "sourceHash": "37f1a4b"
+  },
+  "errors.write.fallback.title.copy": "Kopírování se nepodařilo",
+  "@errors.write.fallback.title.copy": {
+    "sourceHash": "dbb854f"
+  },
+  "errors.write.fallback.title.move": "Přesun se nepodařil",
+  "@errors.write.fallback.title.move": {
+    "sourceHash": "ceb5c7e"
+  },
+  "errors.write.fallback.title.delete": "Smazání se nepodařilo",
+  "@errors.write.fallback.title.delete": {
+    "sourceHash": "b1165b2"
+  },
+  "errors.write.fallback.title.trash": "Přesun do koše se nepodařil",
+  "@errors.write.fallback.title.trash": {
+    "sourceHash": "44e3a2e"
+  },
+  "errors.write.fallback.message.copy": "Něco se pokazilo při kopírování.",
+  "@errors.write.fallback.message.copy": {
+    "sourceHash": "271fa92"
+  },
+  "errors.write.fallback.message.move": "Něco se pokazilo při přesouvání.",
+  "@errors.write.fallback.message.move": {
+    "sourceHash": "a2cf93f"
+  },
+  "errors.write.fallback.message.delete": "Něco se pokazilo při mazání.",
+  "@errors.write.fallback.message.delete": {
+    "sourceHash": "9a08b89"
+  },
+  "errors.write.fallback.message.trash": "Něco se pokazilo při přesouvání do koše.",
+  "@errors.write.fallback.message.trash": {
+    "sourceHash": "63f8393"
+  },
+  "errors.write.fallback.suggestion": "Zkuste to znovu, nebo pro víc informací zkontrolujte technické podrobnosti níže.",
+  "@errors.write.fallback.suggestion": {
+    "sourceHash": "23de5a9"
+  },
+  "errors.mutation.notFound": "Na cestě „{path}“ už nic není.",
+  "@errors.mutation.notFound": {
+    "sourceHash": "9c068a2"
+  },
+  "errors.mutation.cantRenameVolumeRoot": "Kořenovou složku svazku odsud nelze přejmenovat.",
+  "@errors.mutation.cantRenameVolumeRoot": {
+    "sourceHash": "0845c57"
+  },
+  "errors.mutation.parentNotWritable": "Cmdr nemůže zapisovat do složky „{path}“. Zkontrolujte oprávnění složky ve Finderu.",
+  "@errors.mutation.parentNotWritable": {
+    "sourceHash": "e0a7ad6"
+  },
+  "errors.mutation.fileLocked": "Tato položka je zamčená. Odemkněte ji ve Finderu v okně Informace a pak to zkuste znovu.",
+  "@errors.mutation.fileLocked": {
+    "sourceHash": "4be163f"
+  },
+  "errors.mutation.sipProtected": "macOS tuto položku chrání ochranou integrity systému, takže ji nelze přejmenovat.",
+  "@errors.mutation.sipProtected": {
+    "sourceHash": "2189822"
+  },
+  "errors.mutation.volumeGone": "Tento svazek už není k dispozici, takže se nic nezměnilo.",
+  "@errors.mutation.volumeGone": {
+    "sourceHash": "2d24729"
+  },
+  "errors.mutation.archiveNotEditable": "Cmdr teď nemůže tento archiv otevřít pro úpravy.",
+  "@errors.mutation.archiveNotEditable": {
+    "sourceHash": "47c44dd"
+  },
+  "errors.mutation.archiveReadOnly": "Měnit lze jen archivy ZIP a tento je jen ke čtení.",
+  "@errors.mutation.archiveReadOnly": {
+    "sourceHash": "a636f2a"
+  },
+  "errors.mutation.renameOutOfArchive": "Přejmenováním nelze položku dostat z archivu ven. Místo toho ji přesuňte.",
+  "@errors.mutation.renameOutOfArchive": {
+    "sourceHash": "5e82283"
+  },
+  "errors.mutation.renameAcrossArchives": "Přejmenováním nelze položku dostat z jednoho archivu do jiného. Místo toho ji přesuňte.",
+  "@errors.mutation.renameAcrossArchives": {
+    "sourceHash": "89b3231"
+  },
+  "errors.mutation.archiveEditNotReady": "Cmdr se ještě spouští, takže úpravy archivů zatím nejsou připravené.",
+  "@errors.mutation.archiveEditNotReady": {
+    "sourceHash": "1a71ae7"
+  },
+  "errors.mutation.archiveEditCouldntStart": "Úpravu archivu se nepodařilo spustit.",
+  "@errors.mutation.archiveEditCouldntStart": {
+    "sourceHash": "c67e249"
+  },
+  "errors.mutation.timedOut": "Svazek zatím neodpověděl, takže se změna ještě může provést.",
+  "@errors.mutation.timedOut": {
+    "sourceHash": "94a8419"
+  },
+  "errors.mutation.unexpected": "Něco se pokazilo a Cmdr nezjistil co.",
+  "@errors.mutation.unexpected": {
+    "sourceHash": "2978e2a"
+  },
+  "errors.volume.notFound": "Na cestě „{path}“ už nic není.",
+  "@errors.volume.notFound": {
+    "sourceHash": "9c068a2"
+  },
+  "errors.volume.permissionDenied": "Cmdr nemá přístup k umístění „{path}“.",
+  "@errors.volume.permissionDenied": {
+    "sourceHash": "2c188b6"
+  },
+  "errors.volume.alreadyExists": "Na cestě „{path}“ už něco je.",
+  "@errors.volume.alreadyExists": {
+    "sourceHash": "8763243"
+  },
+  "errors.volume.notSupported": "Tento svazek to nepodporuje.",
+  "@errors.volume.notSupported": {
+    "sourceHash": "b645086"
+  },
+  "errors.volume.deviceDisconnected": "Zařízení se odpojilo dřív, než se změna provedla.",
+  "@errors.volume.deviceDisconnected": {
+    "sourceHash": "50b46bf"
+  },
+  "errors.volume.notConnected": "Cmdr se k tomuto telefonu nebo serveru zatím nepřipojil, takže ho nejdřív otevřete.",
+  "@errors.volume.notConnected": {
+    "sourceHash": "e128225"
+  },
+  "errors.volume.linkTargetUnreachable": "Tato položka je za odkazem na jiný server a ten server je teď pro Cmdr nedostupný.",
+  "@errors.volume.linkTargetUnreachable": {
+    "sourceHash": "5bd2fe8"
+  },
+  "errors.volume.deviceSessionReset": "Zařízení restartovalo připojení. Dejte mu pár sekund a zkuste to znovu.",
+  "@errors.volume.deviceSessionReset": {
+    "sourceHash": "e5ad77d"
+  },
+  "errors.volume.readOnly": "Tento svazek je jen ke čtení.",
+  "@errors.volume.readOnly": {
+    "sourceHash": "240b952"
+  },
+  "errors.volume.storageFull": "Na tomto svazku už není žádné volné místo.",
+  "@errors.volume.storageFull": {
+    "sourceHash": "1fcdb67"
+  },
+  "errors.volume.connectionTimeout": "Připojení neodpovědělo včas.",
+  "@errors.volume.connectionTimeout": {
+    "sourceHash": "f21c934"
+  },
+  "errors.volume.cancelled": "Cmdr to na vaši žádost zastavil.",
+  "@errors.volume.cancelled": {
+    "sourceHash": "a88c4fc"
+  },
+  "errors.volume.isADirectory": "Položka „{path}“ je složka, ne soubor.",
+  "@errors.volume.isADirectory": {
+    "sourceHash": "224ae5e"
+  },
+  "errors.volume.notADirectory": "Na cestě „{path}“ je soubor, ale má tam být složka.",
+  "@errors.volume.notADirectory": {
+    "sourceHash": "2f66bc8"
+  },
+  "errors.volume.invalidNameNamed": "Název „{name}“ tady nejde uložit. Vyberte jiný název.",
+  "@errors.volume.invalidNameNamed": {
+    "sourceHash": "6f65c40"
+  },
+  "errors.volume.invalidName": "Cíl tento název nedokáže uložit. Vyberte jiný.",
+  "@errors.volume.invalidName": {
+    "sourceHash": "531488f"
+  },
+  "errors.volume.deletePending": "Tento soubor brzy zmizí a něco ho ještě má otevřený. Zkuste to za chvíli znovu.",
+  "@errors.volume.deletePending": {
+    "sourceHash": "f7d0ab7"
+  },
+  "errors.volume.coldStorage": "Soubor „{path}“ je archivovaný. Nejdřív ho obnovte v konzoli poskytovatele úložiště.",
+  "@errors.volume.coldStorage": {
+    "sourceHash": "c742f7c"
+  },
+  "errors.volume.sourceChanged": "Soubor „{path}“ se změnil, zatímco ho Cmdr kopíroval, takže Cmdr nic neuložil. Zkuste to znovu a zkopíruje se nová verze.",
+  "@errors.volume.sourceChanged": {
+    "sourceHash": "18062cb"
+  },
+  "errors.volume.noContent": "„{path}“ je symbolický odkaz nebo speciální soubor, takže nemá žádný obsah, který by Cmdr mohl zkopírovat.",
+  "@errors.volume.noContent": {
+    "sourceHash": "8b56bde"
+  },
+  "errors.volume.ambiguousName": "Cestě „{path}“ odpovídá na serveru víc položek, takže Cmdr žádnou nevybral. Vyberte tu správnou přímo v její složce.",
+  "@errors.volume.ambiguousName": {
+    "sourceHash": "0f0e74d"
+  },
+  "errors.volume.duplicateName": "„{path}“ označuje na zařízení víc položek, takže Cmdr žádnou nevybral. Vyberte tu, kterou myslíte, v její složce, nebo jednu přejmenujte, aby měla každá vlastní název.",
+  "@errors.volume.duplicateName": {
+    "sourceHash": "c68223a"
+  },
+  "errors.volume.staleDestinationHandle": "Cmdr ztratil přehled o cílové složce na zařízení. Otevřete ji znovu a pak to zkuste ještě jednou.",
+  "@errors.volume.staleDestinationHandle": {
+    "sourceHash": "b31958a"
+  },
+  "errors.volume.signatureInvalid": "Odpověď serveru neměla platný podpis, takže se Cmdr zastavil.",
+  "@errors.volume.signatureInvalid": {
+    "sourceHash": "299f4c3"
+  },
+  "errors.volume.ioError": "Svazku se to nepodařilo dokončit.",
+  "@errors.volume.ioError": {
+    "sourceHash": "59e7d6a"
+  },
+  "errors.volume.needsPassword": "Tento archiv je chráněný heslem.",
+  "@errors.volume.needsPassword": {
+    "sourceHash": "8d9f648"
+  },
+  "errors.volume.passwordRejected": "Toto heslo nefungovalo.",
+  "@errors.volume.passwordRejected": {
+    "sourceHash": "fe9b44a"
+  },
+  "errors.mutation.trashNotSupported": "Tento svazek nemá koš, takže položku jde jen trvale smazat.",
+  "@errors.mutation.trashNotSupported": {
+    "sourceHash": "525ef25"
+  },
+  "errors.mutation.trashRefused": "macOS tuto položku odmítl přesunout do koše.",
+  "@errors.mutation.trashRefused": {
+    "sourceHash": "7a6d1a5"
+  },
+  "errors.serverRequest.unreachable": "Server aplikace Cmdr je nedostupný. Zkontrolujte připojení k internetu a zkuste to znovu.",
+  "@errors.serverRequest.unreachable": {
+    "sourceHash": "186a0f6"
+  },
+  "errors.serverRequest.timedOut": "Server aplikace Cmdr neodpověděl včas. Zkuste to za chvíli znovu.",
+  "@errors.serverRequest.timedOut": {
+    "sourceHash": "1413608"
+  },
+  "errors.serverRequest.serverBusy": "Server aplikace Cmdr má teď potíže. Zkuste to později.",
+  "@errors.serverRequest.serverBusy": {
+    "sourceHash": "1f21e5d"
+  },
+  "errors.serverRequest.refused": "Server aplikace Cmdr tento požadavek odmítl. Pokud se to opakuje, stáhněte si nejnovější Cmdr z getcmdr.com.",
+  "@errors.serverRequest.refused": {
+    "sourceHash": "6a83e2a"
+  },
+  "errors.serverRequest.unexpected": "Cmdr narazil na problém na své straně. Zkuste to znovu, a pokud se to bude opakovat, znovu spusťte Cmdr.",
+  "@errors.serverRequest.unexpected": {
+    "sourceHash": "5be7ebd"
+  },
+  "errors.serverRequest.blockedByPolicy": "Vaše organizace tuto funkci v Cmdru vypnula.",
+  "@errors.serverRequest.blockedByPolicy": {
+    "sourceHash": "acbeb5b"
+  },
+  "errors.eject.busy": "Cmdr tam pořád pracuje se soubory. Zkuste to znovu, až to dokončí.",
+  "@errors.eject.busy": {
+    "sourceHash": "4054483"
+  },
+  "errors.eject.volumeNotFound": "Disk už není připojený, takže není co vysunout.",
+  "@errors.eject.volumeNotFound": {
+    "sourceHash": "75b7870"
+  },
+  "errors.eject.notEjectable": "Tento disk není vyměnitelný, takže zůstane připojený.",
+  "@errors.eject.notEjectable": {
+    "sourceHash": "cc7e9ee"
+  },
+  "errors.eject.notAnSmbVolume": "Tohle není síťová sdílená složka, takže není co odpojit.",
+  "@errors.eject.notAnSmbVolume": {
+    "sourceHash": "230d2dc"
+  },
+  "errors.eject.remoteNotConnected": "Tento server už není připojený, takže není co zavřít.",
+  "@errors.eject.remoteNotConnected": {
+    "sourceHash": "3f38dd0"
+  },
+  "errors.eject.deviceDisconnectRefused": "Zařízení odmítlo ukončit připojení. Odpojte ho, až bude nečinné.",
+  "@errors.eject.deviceDisconnectRefused": {
+    "sourceHash": "5b99318"
+  },
+  "errors.eject.unmountRefused": "Něco se tam pořád používá. Zavřete všechny otevřené soubory a aplikace a zkuste to znovu.",
+  "@errors.eject.unmountRefused": {
+    "sourceHash": "f855a33"
+  },
+  "errors.eject.unmountRefusedByApp": "{app} tam pořád něco používá. Zavřete to a zkuste to znovu.",
+  "@errors.eject.unmountRefusedByApp": {
+    "sourceHash": "6ccda65"
+  },
+  "errors.eject.unmountRefusedByApps": "{apps} tam pořád něco používají. Zavřete je a zkuste to znovu.",
+  "@errors.eject.unmountRefusedByApps": {
+    "sourceHash": "f46e410"
+  },
+  "errors.eject.otherApps": "další aplikace",
+  "@errors.eject.otherApps": {
+    "sourceHash": "09fe5b1"
+  },
+  "errors.eject.unmountRefusedByProcess": "Proces s názvem {process} tam pořád něco používá. (Cmdr nezná název aplikace, jen název procesu.)",
+  "@errors.eject.unmountRefusedByProcess": {
+    "sourceHash": "a1a2c6d"
+  },
+  "errors.eject.unmountRefusedByProcesses": "Procesy s názvy {processes} (počet: {countText}) tam pořád něco používají. (Cmdr nezná názvy aplikací, jen názvy procesů.)",
+  "@errors.eject.unmountRefusedByProcesses": {
+    "sourceHash": "a40d1c0"
+  },
+  "errors.eject.otherProcesses": "další",
+  "@errors.eject.otherProcesses": {
+    "sourceHash": "01db91d"
+  },
+  "errors.eject.unmountRefusedByDiskImage": "Je tam uložený obraz disku, který je pořád otevřený. Nejdřív ten obraz vysuňte a pak to zkuste znovu.",
+  "@errors.eject.unmountRefusedByDiskImage": {
+    "sourceHash": "1fa3d53"
+  },
+  "errors.eject.unmountRefusedBySystem": "macOS tam pořád něco používá. Počkejte minutku a zkuste to znovu.",
+  "@errors.eject.unmountRefusedBySystem": {
+    "sourceHash": "9b066c9"
+  },
+  "errors.eject.unmountRefusedByCmdr": "Samotný Cmdr tam pořád něco používá. Chvíli počkejte a zkuste to znovu, nebo pošlete hlášení, pokud se to bude opakovat.",
+  "@errors.eject.unmountRefusedByCmdr": {
+    "sourceHash": "1f682f4"
+  },
+  "errors.eject.timedOut": "Disk zatím neodpověděl, takže se může ještě vysunout sám.",
+  "@errors.eject.timedOut": {
+    "sourceHash": "3feb944"
+  },
+  "errors.eject.notResponding": "Disk nereaguje, takže zůstává připojený. Zkuste to za chvíli znovu.",
+  "@errors.eject.notResponding": {
+    "sourceHash": "a3d9d82"
+  },
+  "errors.eject.unexpected": "Něco se pokazilo a Cmdr nezjistil co.",
+  "@errors.eject.unexpected": {
+    "sourceHash": "2978e2a"
+  },
+  "errors.mount.hostUnreachable": "Server „{server}“ je pro Cmdr nedostupný. Zkontrolujte, že je zapnutý a ve stejné síti jako tento počítač.",
+  "@errors.mount.hostUnreachable": {
+    "sourceHash": "45ac92c"
+  },
+  "errors.mount.timeout": "Cmdr čekal, ale server „{server}“ neodpověděl včas. Zkontrolujte, že je zapnutý a dostupný, a zkuste to znovu.",
+  "@errors.mount.timeout": {
+    "sourceHash": "d0629fe"
+  },
+  "errors.mount.signInHelperStuck": "Server „{server}“ odpovídá, ale pomocník macOS pro přihlášení k síti se nejspíš zasekl, takže se teď nepřipojí žádná sdílená složka. Restartujete ho tak, že otevřete Terminál, spustíte killall NetAuthSysAgent a zkusíte to znovu. macOS pomocníka spustí znovu sám.",
+  "@errors.mount.signInHelperStuck": {
+    "sourceHash": "90a4cf1"
+  },
+  "errors.mount.shareNotFound": "Na serveru „{server}“ není žádná sdílená složka „{share}“. Vraťte se zpět a vyberte některou ze seznamu.",
+  "@errors.mount.shareNotFound": {
+    "sourceHash": "10f3c59"
+  },
+  "errors.mount.authRequired": "Pro otevření sdílené složky „{share}“ na serveru „{server}“ se přihlaste.",
+  "@errors.mount.authRequired": {
+    "sourceHash": "b2af295"
+  },
+  "errors.mount.authFailed": "Toto uživatelské jméno a heslo na serveru „{server}“ nefungují. Zkontrolujte je a přihlaste se znovu.",
+  "@errors.mount.authFailed": {
+    "sourceHash": "b88b224"
+  },
+  "errors.mount.permissionDenied": "Na serveru „{server}“ je přihlášený účet „{username}“, ale ten nemůže otevřít sdílenou složku „{share}“. Přihlaste se jiným účtem.",
+  "@errors.mount.permissionDenied": {
+    "sourceHash": "05611b7"
+  },
+  "errors.mount.cancelled": "Připojování ke sdílené složce „{share}“ se zastavilo před dokončením. Až budete chtít, zkuste to znovu.",
+  "@errors.mount.cancelled": {
+    "sourceHash": "bc771b3"
+  },
+  "errors.mount.unsupportedProtocol": "Tento počítač a server „{server}“ nemají žádnou společnou verzi SMB. Zapněte v nastavení serveru SMB 2 nebo novější a zkuste to znovu.",
+  "@errors.mount.unsupportedProtocol": {
+    "sourceHash": "8afe4cb"
+  },
+  "errors.mount.mountRefused": "Přihlášení k serveru „{server}“ proběhlo, ale server odmítl otevřít sdílenou složku „{share}“. Zkontrolujte nastavení sdílené složky na serveru a zkuste to znovu.",
+  "@errors.mount.mountRefused": {
+    "sourceHash": "6cf694d"
+  },
+  "errors.mount.mountMissing": "Váš počítač hlásil, že je sdílená složka „{share}“ na serveru „{server}“ připojená, ale nikdy se neobjevila. Zkuste to znovu.",
+  "@errors.mount.mountMissing": {
+    "sourceHash": "72ab946"
+  },
+  "errors.mount.gvfsMissing": "Připojování sdílených složek v Linuxu vyžaduje GVFS. Nainstalujte balíček gvfs-smb ze své distribuce a zkuste to znovu.",
+  "@errors.mount.gvfsMissing": {
+    "sourceHash": "b67831e"
+  },
+  "errors.mount.unexpected": "Při připojování ke sdílené složce „{share}“ na serveru „{server}“ se něco pokazilo. Zkuste to za chvíli znovu.",
+  "@errors.mount.unexpected": {
+    "sourceHash": "1ab5cca"
+  },
+  "errors.shareList.hostUnreachable": "Server „{server}“ je pro Cmdr nedostupný. Zkontrolujte, že je zapnutý a ve stejné síti jako tento počítač.",
+  "@errors.shareList.hostUnreachable": {
+    "sourceHash": "45ac92c"
+  },
+  "errors.shareList.timeout": "Cmdr čekal, ale server „{server}“ neodpověděl včas. Zkuste to za chvíli znovu.",
+  "@errors.shareList.timeout": {
+    "sourceHash": "0c2c6ec"
+  },
+  "errors.shareList.authRequired": "Pro zobrazení sdílených složek na serveru „{server}“ se přihlaste.",
+  "@errors.shareList.authRequired": {
+    "sourceHash": "68f86c4"
+  },
+  "errors.shareList.signingRequired": "Server „{server}“ hostům své sdílené složky nezobrazuje. Přihlaste se a uvidíte je.",
+  "@errors.shareList.signingRequired": {
+    "sourceHash": "6e92125"
+  },
+  "errors.shareList.authFailed": "Toto uživatelské jméno a heslo na serveru „{server}“ nefungují. Zkontrolujte je a přihlaste se znovu.",
+  "@errors.shareList.authFailed": {
+    "sourceHash": "b88b224"
+  },
+  "errors.shareList.signatureInvalid": "Server „{server}“ odpověděl bez platného podpisu, takže Cmdr odpovědi nedůvěřoval. Může to způsobit nespolehlivé síťové zařízení, ale také někdo, kdo zasahuje do připojení. Zkuste to znovu, a pokud se to opakuje, zkontrolujte svou síť.",
+  "@errors.shareList.signatureInvalid": {
+    "sourceHash": "6523e32"
+  },
+  "errors.shareList.protocolError": "Při zjišťování sdílených složek na serveru „{server}“ se něco pokazilo. Zkuste to za chvíli znovu.",
+  "@errors.shareList.protocolError": {
+    "sourceHash": "da302ca"
+  },
+  "errors.shareList.resolutionFailed": "Cmdr nenašel server „{server}“ v síti. Zkontrolujte jeho název, nebo to zkuste znovu, až bude zase online.",
+  "@errors.shareList.resolutionFailed": {
+    "sourceHash": "9be124a"
+  },
+  "errors.shareList.missingDependency": "Pro výpis sdílených složek potřebuje tento počítač smbclient, který není nainstalovaný. Nainstalujte ho a zkuste to znovu.",
+  "@errors.shareList.missingDependency": {
+    "sourceHash": "6ffa8a9"
+  },
+  "errors.write.readOnlyDevice.source.title": "Zdroj jen ke čtení",
+  "@errors.write.readOnlyDevice.source.title": {
+    "sourceHash": "5d77aa4"
+  },
+  "errors.write.readOnlyDevice.source.message": "{deviceName} je jen ke čtení. Soubory odtud můžete zkopírovat, ale ne přesunout.",
+  "@errors.write.readOnlyDevice.source.message": {
+    "sourceHash": "ec7d263"
+  },
+  "errors.write.readOnlyDevice.source.suggestion": "Místo toho soubory zkopírujte. Původní soubory zůstanou tam, kde jsou.",
+  "@errors.write.readOnlyDevice.source.suggestion": {
+    "sourceHash": "f6a307b"
+  },
+  "errors.write.readOnlyDevice.source.fallbackName": "Zdroj",
+  "@errors.write.readOnlyDevice.source.fallbackName": {
+    "sourceHash": "599f98e"
+  },
+  "errors.write.duplicateSourceNames.title": "Dvě položky mají stejný název",
+  "@errors.write.duplicateSourceNames.title": {
+    "sourceHash": "518672d"
+  },
+  "errors.write.duplicateSourceNames.message": "Mezi vybranými položkami jsou dvě s názvem {name}, takže by obě skončily na stejném místě: {first} a {second}.",
+  "@errors.write.duplicateSourceNames.message": {
+    "sourceHash": "f4517fc"
+  },
+  "errors.write.duplicateSourceNames.suggestion.copy": "Zkopírujte je po jedné, nebo jednu z nich nejdřív přejmenujte.",
+  "@errors.write.duplicateSourceNames.suggestion.copy": {
+    "sourceHash": "8bc2d76"
+  },
+  "errors.write.sourcesSpanVolumes.title": "Část výběru je uvnitř zobrazení",
+  "@errors.write.sourcesSpanVolumes.title": {
+    "sourceHash": "0dad5e0"
+  },
+  "errors.write.sourcesSpanVolumes.message": "Položka {path} je uvnitř snímků zálohy, archivu nebo historie repozitáře a zbytek výběru ne, takže je Cmdr nemůže číst společně. Nic se nezměnilo.",
+  "@errors.write.sourcesSpanVolumes.message": {
+    "sourceHash": "46a2988"
+  },
+  "errors.write.sourcesSpanVolumes.suggestion": "Rozdělte to na dva kroky: nejdřív samotné položky uvnitř zobrazení, pak zbytek.",
+  "@errors.write.sourcesSpanVolumes.suggestion": {
+    "sourceHash": "c2f9729"
+  },
+  "errors.write.duplicateSourceNames.suggestion.move": "Přesuňte je po jedné, nebo jednu z nich nejdřív přejmenujte.",
+  "@errors.write.duplicateSourceNames.suggestion.move": {
+    "sourceHash": "8af755e"
+  },
+  "errors.write.namedLeavesRefused.title": "Tyto nové názvy nejde použít",
+  "@errors.write.namedLeavesRefused.title": {
+    "sourceHash": "08c8600"
+  },
+  "errors.write.namedLeavesRefused.message.notASource": "Jeden z nových názvů je pro položku {path}, která do tohoto návrhu nepatří, takže se nic nespustilo.",
+  "@errors.write.namedLeavesRefused.message.notASource": {
+    "sourceHash": "12b2cb4"
+  },
+  "errors.write.namedLeavesRefused.message.sameName": "Dvě položky by skončily jako {path}. Mnoho disků to považuje za jeden název, takže by jedna nahradila druhou.",
+  "@errors.write.namedLeavesRefused.message.sameName": {
+    "sourceHash": "95e02b9"
+  },
+  "errors.write.namedLeavesRefused.message.ontoASource": "Jedna položka by skončila jako {path}, což je jiná položka z tohoto návrhu, a nahradila by ji.",
+  "@errors.write.namedLeavesRefused.message.ontoASource": {
+    "sourceHash": "724f9c3"
+  },
+  "errors.write.namedLeavesRefused.message.alreadyInDestination": "Položka {path} už je v cílové složce, takže dát jí tam nový název znamená ji přejmenovat.",
+  "@errors.write.namedLeavesRefused.message.alreadyInDestination": {
+    "sourceHash": "06a0593"
+  },
+  "errors.write.namedLeavesRefused.message.routeCannotName": "Cmdr nedokáže při přesunu do archivu ZIP nebo z něj dát každé položce vlastní název, takže do složky {path} nic nešlo.",
+  "@errors.write.namedLeavesRefused.message.routeCannotName": {
+    "sourceHash": "f2e48ca"
+  },
+  "errors.write.namedLeavesRefused.suggestion.notASource": "Požádejte Cmdr, ať to navrhne znovu.",
+  "@errors.write.namedLeavesRefused.suggestion.notASource": {
+    "sourceHash": "c1dbe85"
+  },
+  "errors.write.namedLeavesRefused.suggestion.sameName": "Požádejte Cmdr o jiný název pro každou položku.",
+  "@errors.write.namedLeavesRefused.suggestion.sameName": {
+    "sourceHash": "76257a9"
+  },
+  "errors.write.namedLeavesRefused.suggestion.ontoASource": "Požádejte Cmdr o názvy, které se neshodují s přesouvanými nebo kopírovanými položkami.",
+  "@errors.write.namedLeavesRefused.suggestion.ontoASource": {
+    "sourceHash": "9ab88ec"
+  },
+  "errors.write.namedLeavesRefused.suggestion.alreadyInDestination": "Přejmenujte položky, které už v té složce jsou, a pak přesuňte nebo zkopírujte zbytek.",
+  "@errors.write.namedLeavesRefused.suggestion.alreadyInDestination": {
+    "sourceHash": "8917a8e"
+  },
+  "errors.write.namedLeavesRefused.suggestion.routeCannotName": "Přesuňte nebo zkopírujte je pod jejich vlastními názvy a pak je tam přejmenujte.",
+  "@errors.write.namedLeavesRefused.suggestion.routeCannotName": {
+    "sourceHash": "b1e881c"
+  },
+  "errors.listing.linkNeedsConsent.title": "Tato složka je na jiném serveru",
+  "@errors.listing.linkNeedsConsent.title": {
+    "sourceHash": "c37d453"
+  },
+  "errors.listing.linkNeedsConsent.explanation": "`{path}` je odkaz na serveru **{server}**, který vede na server **{target}**. Cmdr se tam nepřihlásil, takže server {target} od vás nic nedostal.",
+  "@errors.listing.linkNeedsConsent.explanation": {
+    "sourceHash": "91b0171"
+  },
+  "errors.listing.linkNeedsConsent.suggestion": "Pokud chcete tuto složku otevřít, musí se Cmdr přihlásit k serveru {target} účtem, který používáte pro server {server}. Pokud serveru {target} důvěřujete, posuďte to. Zbytek této sdílené složky funguje jako obvykle.",
+  "@errors.listing.linkNeedsConsent.suggestion": {
+    "sourceHash": "991cb6c"
+  },
+  "errors.volume.linkNeedsConsent": "Tato položka je za odkazem na jiný server a Cmdr zatím nemá povoleno se tam přihlásit. Otevřete složku v panelu a rozhodněte.",
+  "@errors.volume.linkNeedsConsent": {
+    "sourceHash": "79ff9fe"
+  },
+  "errors.write.linkNeedsConsent.title": "Tento soubor je na jiném serveru",
+  "@errors.write.linkNeedsConsent.title": {
+    "sourceHash": "ff31c7f"
+  },
+  "errors.write.linkNeedsConsent.message": "Odkaz na serveru {server} vede na server {target} a Cmdr zatím nemá povoleno se tam přihlásit, takže na ten server nic nešlo.",
+  "@errors.write.linkNeedsConsent.message": {
+    "sourceHash": "7893ce9"
+  },
+  "errors.write.linkNeedsConsent.suggestion": "Otevřete složku v panelu, a pokud tomu serveru důvěřujete, povolte přihlášení. Pak to zkuste znovu.",
+  "@errors.write.linkNeedsConsent.suggestion": {
+    "sourceHash": "cc25854"
+  }
+}

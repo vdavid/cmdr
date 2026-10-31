@@ -1,0 +1,780 @@
+{
+  "menu.bar.file": "Soubor",
+  "@menu.bar.file": {
+    "sourceHash": "50009ce"
+  },
+  "menu.bar.edit": "Úpravy",
+  "@menu.bar.edit": {
+    "sourceHash": "464c4ff"
+  },
+  "menu.bar.select": "Vybrat",
+  "@menu.bar.select": {
+    "sourceHash": "2a78025"
+  },
+  "menu.bar.view": "Zobrazení",
+  "@menu.bar.view": {
+    "sourceHash": "dcc839a"
+  },
+  "menu.bar.go": "Otevřít",
+  "@menu.bar.go": {
+    "sourceHash": "6cc8519"
+  },
+  "menu.bar.tab": "Záložka",
+  "@menu.bar.tab": {
+    "sourceHash": "90ddf19"
+  },
+  "menu.bar.window": "Okno",
+  "@menu.bar.window": {
+    "sourceHash": "19734a1"
+  },
+  "menu.bar.help": "Nápověda",
+  "@menu.bar.help": {
+    "sourceHash": "b79cac9"
+  },
+  "menu.app.about": "O aplikaci Cmdr",
+  "@menu.app.about": {
+    "sourceHash": "efe010f"
+  },
+  "menu.app.acknowledgements": "Poděkování",
+  "@menu.app.acknowledgements": {
+    "sourceHash": "c9015d5"
+  },
+  "menu.app.licenseDetails": "Zobrazit podrobnosti licence",
+  "@menu.app.licenseDetails": {
+    "sourceHash": "0e660e8"
+  },
+  "menu.app.licenseEnter": "Zadat licenční klíč…",
+  "@menu.app.licenseEnter": {
+    "sourceHash": "24a8d77"
+  },
+  "menu.app.checkForUpdates": "Vyhledat aktualizace…",
+  "@menu.app.checkForUpdates": {
+    "sourceHash": "52d6f7d"
+  },
+  "menu.app.changelog": "Seznam změn",
+  "@menu.app.changelog": {
+    "sourceHash": "ead07c8"
+  },
+  "menu.app.onboarding": "Úvodní průvodce…",
+  "@menu.app.onboarding": {
+    "sourceHash": "c4cc4aa"
+  },
+  "menu.app.cliCommandInstall": "Nainstalovat příkaz „cmdr“",
+  "@menu.app.cliCommandInstall": {
+    "sourceHash": "b99e6c4"
+  },
+  "menu.app.cliCommandUninstall": "Odinstalovat příkaz „cmdr“",
+  "@menu.app.cliCommandUninstall": {
+    "sourceHash": "ac1052e"
+  },
+  "menu.app.cliCommandHomebrew": "Příkaz „cmdr“ nainstalovaný přes Homebrew",
+  "@menu.app.cliCommandHomebrew": {
+    "sourceHash": "cc4c0fd"
+  },
+  "menu.app.settings": "Nastavení…",
+  "@menu.app.settings": {
+    "sourceHash": "7a04083"
+  },
+  "menu.app.services": "Služby",
+  "@menu.app.services": {
+    "sourceHash": "604dce4"
+  },
+  "menu.app.hide": "Skrýt Cmdr",
+  "@menu.app.hide": {
+    "sourceHash": "8f86f89"
+  },
+  "menu.app.hideOthers": "Skrýt ostatní",
+  "@menu.app.hideOthers": {
+    "sourceHash": "74376e4"
+  },
+  "menu.app.showAll": "Zobrazit vše",
+  "@menu.app.showAll": {
+    "sourceHash": "2150d8d"
+  },
+  "menu.app.quit": "Ukončit Cmdr",
+  "@menu.app.quit": {
+    "sourceHash": "b3455b4"
+  },
+  "menu.file.open": "Otevřít",
+  "@menu.file.open": {
+    "sourceHash": "ed077f3"
+  },
+  "menu.file.view": "Zobrazit",
+  "@menu.file.view": {
+    "sourceHash": "dcc839a"
+  },
+  "menu.file.edit": "Upravit v editoru",
+  "@menu.file.edit": {
+    "sourceHash": "691ca0f"
+  },
+  "menu.file.copy": "Kopírovat…",
+  "@menu.file.copy": {
+    "sourceHash": "7f743d4"
+  },
+  "menu.file.move": "Přesunout…",
+  "@menu.file.move": {
+    "sourceHash": "cd799da"
+  },
+  "menu.file.duplicate": "Duplikovat",
+  "@menu.file.duplicate": {
+    "sourceHash": "02cdaab"
+  },
+  "menu.file.compress": "Komprimovat…",
+  "@menu.file.compress": {
+    "sourceHash": "66b9d2c"
+  },
+  "menu.file.newFolder": "Nová složka…",
+  "@menu.file.newFolder": {
+    "sourceHash": "6cca529"
+  },
+  "menu.file.newFile": "Nový soubor…",
+  "@menu.file.newFile": {
+    "sourceHash": "6b2727f"
+  },
+  "menu.file.delete": "Smazat",
+  "@menu.file.delete": {
+    "sourceHash": "e2d0a54"
+  },
+  "menu.file.deletePermanently": "Smazat trvale",
+  "@menu.file.deletePermanently": {
+    "sourceHash": "280b10c"
+  },
+  "menu.file.rename": "Přejmenovat",
+  "@menu.file.rename": {
+    "sourceHash": "3064d79"
+  },
+  "menu.context.showInFolder": "Zobrazit ve složce",
+  "@menu.context.showInFolder": {
+    "sourceHash": "da47876"
+  },
+  "menu.file.showInFinder": "Zobrazit ve Finderu",
+  "@menu.file.showInFinder": {
+    "sourceHash": "c2a9c77"
+  },
+  "menu.file.showInFileManager": "Zobrazit ve správci souborů",
+  "@menu.file.showInFileManager": {
+    "sourceHash": "3ca4dad"
+  },
+  "menu.file.openTerminalHere": "Otevřít terminál zde",
+  "@menu.file.openTerminalHere": {
+    "sourceHash": "b7eda27"
+  },
+  "menu.file.getInfo": "Informace",
+  "@menu.file.getInfo": {
+    "sourceHash": "91c64ca"
+  },
+  "menu.file.quickLook": "Rychlý náhled",
+  "@menu.file.quickLook": {
+    "sourceHash": "f5616ce"
+  },
+  "menu.edit.undo": "Odvolat akci",
+  "@menu.edit.undo": {
+    "sourceHash": "a8283ad"
+  },
+  "menu.edit.redo": "Opakovat akci",
+  "@menu.edit.redo": {
+    "sourceHash": "7427398"
+  },
+  "menu.edit.undoTrash": "Odvolat přesunutí do koše",
+  "@menu.edit.undoTrash": {
+    "sourceHash": "c6fea33"
+  },
+  "menu.edit.undoTrashOne": "Odvolat přesunutí „{name}“ do koše",
+  "@menu.edit.undoTrashOne": {
+    "sourceHash": "45494c8"
+  },
+  "menu.edit.undoTrashMany": "Odvolat přesunutí položek do koše ({countText})",
+  "@menu.edit.undoTrashMany": {
+    "sourceHash": "bb9192a"
+  },
+  "menu.edit.cut": "Vyjmout",
+  "@menu.edit.cut": {
+    "sourceHash": "1f45f02"
+  },
+  "menu.edit.copy": "Zkopírovat",
+  "@menu.edit.copy": {
+    "sourceHash": "e21f935"
+  },
+  "menu.edit.paste": "Vložit",
+  "@menu.edit.paste": {
+    "sourceHash": "f3380f7"
+  },
+  "menu.edit.moveHere": "Přesunout sem",
+  "@menu.edit.moveHere": {
+    "sourceHash": "56f1247"
+  },
+  "menu.edit.copyPath": "Zkopírovat cestu",
+  "@menu.edit.copyPath": {
+    "sourceHash": "720ff41"
+  },
+  "menu.edit.copyFilename": "Zkopírovat název souboru",
+  "@menu.edit.copyFilename": {
+    "sourceHash": "5cdf7f8"
+  },
+  "menu.edit.searchFiles": "Hledat soubory…",
+  "@menu.edit.searchFiles": {
+    "sourceHash": "149a9d1"
+  },
+  "menu.select.all": "Vybrat vše",
+  "@menu.select.all": {
+    "sourceHash": "1fc9a38"
+  },
+  "menu.select.deselectAll": "Zrušit výběr všech",
+  "@menu.select.deselectAll": {
+    "sourceHash": "9675494"
+  },
+  "menu.select.sameKind": "Vybrat vše stejného druhu",
+  "@menu.select.sameKind": {
+    "sourceHash": "9933028"
+  },
+  "menu.select.compareDirectories": "Porovnat složky",
+  "@menu.select.compareDirectories": {
+    "sourceHash": "5cf3985"
+  },
+  "menu.select.allFolders": "Vybrat všechny složky",
+  "@menu.select.allFolders": {
+    "sourceHash": "5351f8b"
+  },
+  "menu.select.sameExtension": "Vybrat vše s příponou *.{extension}",
+  "@menu.select.sameExtension": {
+    "sourceHash": "7809a58"
+  },
+  "menu.select.noExtension": "Vybrat všechny soubory bez přípony",
+  "@menu.select.noExtension": {
+    "sourceHash": "d04751e"
+  },
+  "menu.select.invert": "Invertovat výběr",
+  "@menu.select.invert": {
+    "sourceHash": "d2e128a"
+  },
+  "menu.select.files": "Vybrat soubory…",
+  "@menu.select.files": {
+    "sourceHash": "b7f202e"
+  },
+  "menu.select.deselectFiles": "Zrušit výběr souborů…",
+  "@menu.select.deselectFiles": {
+    "sourceHash": "6fb10d5"
+  },
+  "menu.view.leftPane": "Levý panel",
+  "@menu.view.leftPane": {
+    "sourceHash": "1c5078a"
+  },
+  "menu.view.rightPane": "Pravý panel",
+  "@menu.view.rightPane": {
+    "sourceHash": "b2d98e6"
+  },
+  "menu.view.fullView": "Podrobnosti",
+  "@menu.view.fullView": {
+    "sourceHash": "93f9dde"
+  },
+  "menu.view.briefView": "Seznam",
+  "@menu.view.briefView": {
+    "sourceHash": "7bfd572"
+  },
+  "menu.view.showHiddenFiles": "Zobrazit skryté soubory",
+  "@menu.view.showHiddenFiles": {
+    "sourceHash": "b5ede7f"
+  },
+  "menu.view.sortBy": "Seřadit podle",
+  "@menu.view.sortBy": {
+    "sourceHash": "c912902"
+  },
+  "menu.view.zoom": "Zvětšení",
+  "@menu.view.zoom": {
+    "sourceHash": "509c517"
+  },
+  "menu.view.switchPane": "Přepnout panel",
+  "@menu.view.switchPane": {
+    "sourceHash": "377471f"
+  },
+  "menu.view.swapPanes": "Zaměnit panely",
+  "@menu.view.swapPanes": {
+    "sourceHash": "cc29396"
+  },
+  "menu.view.clonePane": "Klonovat panel",
+  "@menu.view.clonePane": {
+    "sourceHash": "74b2c7f"
+  },
+  "menu.view.calculateFolderSizes": "Spočítat velikosti složek",
+  "@menu.view.calculateFolderSizes": {
+    "sourceHash": "d2a83da"
+  },
+  "menu.view.commandPalette": "Paleta příkazů…",
+  "@menu.view.commandPalette": {
+    "sourceHash": "6b1c93d"
+  },
+  "menu.view.operationQueue": "Fronta operací",
+  "@menu.view.operationQueue": {
+    "sourceHash": "fa91417"
+  },
+  "menu.view.operationLog": "Protokol operací",
+  "@menu.view.operationLog": {
+    "sourceHash": "2c97965"
+  },
+  "menu.view.suggestedOps": "Návrhy AI",
+  "@menu.view.suggestedOps": {
+    "sourceHash": "1a1f5b9"
+  },
+  "menu.view.askCmdr": "Ask Cmdr",
+  "@menu.view.askCmdr": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Ask Cmdr is the AI panel’s product name, kept verbatim in every language (cs terms.json ask-cmdr ruling)."
+  },
+  "menu.sort.name": "Názvu",
+  "@menu.sort.name": {
+    "sourceHash": "dcd1d52"
+  },
+  "menu.sort.extension": "Přípony",
+  "@menu.sort.extension": {
+    "sourceHash": "395aeb9"
+  },
+  "menu.sort.dateModified": "Data změny",
+  "@menu.sort.dateModified": {
+    "sourceHash": "eb5e7a5"
+  },
+  "menu.sort.size": "Velikosti",
+  "@menu.sort.size": {
+    "sourceHash": "1af8519"
+  },
+  "menu.sort.dateCreated": "Data vytvoření",
+  "@menu.sort.dateCreated": {
+    "sourceHash": "fa91f76"
+  },
+  "menu.sort.dateAdded": "Data přidání",
+  "@menu.sort.dateAdded": {
+    "sourceHash": "3321b9f"
+  },
+  "menu.sort.ascending": "Vzestupně",
+  "@menu.sort.ascending": {
+    "sourceHash": "7718459"
+  },
+  "menu.sort.descending": "Sestupně",
+  "@menu.sort.descending": {
+    "sourceHash": "79479a6"
+  },
+  "menu.zoom.percent75": "75 %",
+  "@menu.zoom.percent75": {
+    "sourceHash": "10963ac"
+  },
+  "menu.zoom.percent100": "100 %",
+  "@menu.zoom.percent100": {
+    "sourceHash": "32e4899"
+  },
+  "menu.zoom.percent125": "125 %",
+  "@menu.zoom.percent125": {
+    "sourceHash": "38cb31c"
+  },
+  "menu.zoom.percent150": "150 %",
+  "@menu.zoom.percent150": {
+    "sourceHash": "00a4e80"
+  },
+  "menu.zoom.in": "Zvětšit",
+  "@menu.zoom.in": {
+    "sourceHash": "0e47f09"
+  },
+  "menu.zoom.out": "Zmenšit",
+  "@menu.zoom.out": {
+    "sourceHash": "bc7b631"
+  },
+  "menu.go.back": "Zpět",
+  "@menu.go.back": {
+    "sourceHash": "76900f1"
+  },
+  "menu.go.forward": "Vpřed",
+  "@menu.go.forward": {
+    "sourceHash": "f1c65e1"
+  },
+  "menu.go.parentFolder": "Nadřazená složka",
+  "@menu.go.parentFolder": {
+    "sourceHash": "158f5a0"
+  },
+  "menu.go.rootFolder": "Kořenová složka",
+  "@menu.go.rootFolder": {
+    "sourceHash": "6d92528"
+  },
+  "menu.go.home": "Domov",
+  "@menu.go.home": {
+    "sourceHash": "3a78695"
+  },
+  "menu.go.goToPath": "Otevřít složku…",
+  "@menu.go.goToPath": {
+    "sourceHash": "33de610"
+  },
+  "menu.go.goToLatestDownload": "Přejít na poslední stažený soubor",
+  "@menu.go.goToLatestDownload": {
+    "sourceHash": "492d0b6"
+  },
+  "menu.go.showFavorites": "Zobrazit oblíbené",
+  "@menu.go.showFavorites": {
+    "sourceHash": "f4dfe9b"
+  },
+  "menu.go.addToFavorites": "Přidat do oblíbených",
+  "@menu.go.addToFavorites": {
+    "sourceHash": "7f3c078"
+  },
+  "menu.go.connectToServer": "Připojit k serveru…",
+  "@menu.go.connectToServer": {
+    "sourceHash": "6188f47"
+  },
+  "menu.go.showServers": "Zobrazit servery",
+  "@menu.go.showServers": {
+    "sourceHash": "092283a"
+  },
+  "menu.tab.newTab": "Nová záložka",
+  "@menu.tab.newTab": {
+    "sourceHash": "1e08fda"
+  },
+  "menu.tab.closeTab": "Zavřít záložku",
+  "@menu.tab.closeTab": {
+    "sourceHash": "50a3f95"
+  },
+  "menu.tab.reopenClosedTab": "Znovu otevřít zavřenou záložku",
+  "@menu.tab.reopenClosedTab": {
+    "sourceHash": "5ca5397"
+  },
+  "menu.tab.nextTab": "Další záložka",
+  "@menu.tab.nextTab": {
+    "sourceHash": "1ef9522"
+  },
+  "menu.tab.previousTab": "Předchozí záložka",
+  "@menu.tab.previousTab": {
+    "sourceHash": "c88d5e7"
+  },
+  "menu.tab.pinTab": "Připnout záložku",
+  "@menu.tab.pinTab": {
+    "sourceHash": "bf5083a"
+  },
+  "menu.tab.unpinTab": "Odepnout záložku",
+  "@menu.tab.unpinTab": {
+    "sourceHash": "20553dd"
+  },
+  "menu.tab.closeOtherTabs": "Zavřít ostatní záložky",
+  "@menu.tab.closeOtherTabs": {
+    "sourceHash": "0ddc2c5"
+  },
+  "menu.window.minimize": "Minimalizovat",
+  "@menu.window.minimize": {
+    "sourceHash": "d72e311"
+  },
+  "menu.window.zoom": "Přepnout velikost",
+  "@menu.window.zoom": {
+    "sourceHash": "509c517"
+  },
+  "menu.help.keyboardShortcuts": "Klávesové zkratky",
+  "@menu.help.keyboardShortcuts": {
+    "sourceHash": "e9bef0b"
+  },
+  "menu.help.accessibility": "Průvodce zpřístupněním",
+  "@menu.help.accessibility": {
+    "sourceHash": "eee67fa"
+  },
+  "menu.help.whatsNew": "Co je nového",
+  "@menu.help.whatsNew": {
+    "sourceHash": "37e6112"
+  },
+  "menu.help.sendFeedback": "Odeslat názor…",
+  "@menu.help.sendFeedback": {
+    "sourceHash": "60e1072"
+  },
+  "menu.help.sendErrorReport": "Odeslat zprávu o chybě…",
+  "@menu.help.sendErrorReport": {
+    "sourceHash": "063c94e"
+  },
+  "menu.context.edit": "Upravit",
+  "@menu.context.edit": {
+    "sourceHash": "464c4ff"
+  },
+  "menu.context.selection": "Výběr",
+  "@menu.context.selection": {
+    "sourceHash": "ca40670"
+  },
+  "menu.context.toggleSelection": "Přepnout výběr",
+  "@menu.context.toggleSelection": {
+    "sourceHash": "6cb5515"
+  },
+  "menu.context.copyNamed": "Zkopírovat „{name}“",
+  "@menu.context.copyNamed": {
+    "sourceHash": "2131c34"
+  },
+  "menu.context.addToFavorites": "Přidat do oblíbených",
+  "@menu.context.addToFavorites": {
+    "sourceHash": "7f3c078"
+  },
+  "menu.context.hideFunctionKeyBar": "Skrýt lištu funkčních kláves",
+  "@menu.context.hideFunctionKeyBar": {
+    "sourceHash": "343a561"
+  },
+  "menu.context.makeAvailableOffline": "Zpřístupnit offline",
+  "@menu.context.makeAvailableOffline": {
+    "sourceHash": "b75c09f"
+  },
+  "menu.context.removeDownload": "Odstranit stažené",
+  "@menu.context.removeDownload": {
+    "sourceHash": "5dfc369"
+  },
+  "menu.context.openInGoogleDrive": "Otevřít v Google Drive",
+  "@menu.context.openInGoogleDrive": {
+    "sourceHash": "98c7516"
+  },
+  "menu.context.copyGoogleDriveLink": "Zkopírovat odkaz na Google Drive",
+  "@menu.context.copyGoogleDriveLink": {
+    "sourceHash": "070b383"
+  },
+  "menu.context.copyShareLink": "Zkopírovat odkaz ke sdílení",
+  "@menu.context.copyShareLink": {
+    "sourceHash": "d31483e"
+  },
+  "menu.context.shareLinkSevenDays": "Vyprší za sedm dní",
+  "@menu.context.shareLinkSevenDays": {
+    "sourceHash": "06949d8"
+  },
+  "menu.context.shareLinkOneDay": "Vyprší za jeden den",
+  "@menu.context.shareLinkOneDay": {
+    "sourceHash": "5ff3dbc"
+  },
+  "menu.context.shareLinkOneHour": "Vyprší za jednu hodinu",
+  "@menu.context.shareLinkOneHour": {
+    "sourceHash": "faf9c50"
+  },
+  "menu.context.askGemini": "Zeptat se Gemini",
+  "@menu.context.askGemini": {
+    "sourceHash": "7eec77f"
+  },
+  "menu.context.share": "Sdílet",
+  "@menu.context.share": {
+    "sourceHash": "29887a5"
+  },
+  "menu.context.shareLoading": "Hledání možností sdílení…",
+  "@menu.context.shareLoading": {
+    "sourceHash": "1db46ae"
+  },
+  "menu.context.shareNone": "Žádné možnosti sdílení",
+  "@menu.context.shareNone": {
+    "sourceHash": "cd12a10"
+  },
+  "menu.context.editExtensions": "Upravit rozšíření…",
+  "@menu.context.editExtensions": {
+    "sourceHash": "c1d99c8"
+  },
+  "menu.context.openWithLoading": "Hledání aplikací…",
+  "@menu.context.openWithLoading": {
+    "sourceHash": "5bcff61"
+  },
+  "menu.context.openWith": "Otevřít v aplikaci",
+  "@menu.context.openWith": {
+    "sourceHash": "fe94d58"
+  },
+  "menu.context.openWithDefault": "{app} (výchozí)",
+  "@menu.context.openWithDefault": {
+    "sourceHash": "32a7cca"
+  },
+  "menu.context.openWithOther": "Jiné…",
+  "@menu.context.openWithOther": {
+    "sourceHash": "1e37529"
+  },
+  "menu.tag.red": "Červená",
+  "@menu.tag.red": {
+    "sourceHash": "ba19e9c"
+  },
+  "menu.tag.orange": "Oranžová",
+  "@menu.tag.orange": {
+    "sourceHash": "78e7771"
+  },
+  "menu.tag.yellow": "Žlutá",
+  "@menu.tag.yellow": {
+    "sourceHash": "19dd83f"
+  },
+  "menu.tag.green": "Zelená",
+  "@menu.tag.green": {
+    "sourceHash": "d486dfb"
+  },
+  "menu.tag.blue": "Modrá",
+  "@menu.tag.blue": {
+    "sourceHash": "ec7d56a"
+  },
+  "menu.tag.purple": "Fialová",
+  "@menu.tag.purple": {
+    "sourceHash": "7d465fb"
+  },
+  "menu.tag.gray": "Šedá",
+  "@menu.tag.gray": {
+    "sourceHash": "0d5adda"
+  },
+  "menu.tag.rowLabel": "Značky",
+  "@menu.tag.rowLabel": {
+    "sourceHash": "1331275"
+  },
+  "menu.tag.addNamed": "Přidat značku „{color}“",
+  "@menu.tag.addNamed": {
+    "sourceHash": "3be3f57"
+  },
+  "menu.tag.removeNamed": "Odstranit značku „{color}“",
+  "@menu.tag.removeNamed": {
+    "sourceHash": "7a067fb"
+  },
+  "menu.mediaIndex.addFolder": "Přidat do indexovaných složek",
+  "@menu.mediaIndex.addFolder": {
+    "sourceHash": "c0a87cd"
+  },
+  "menu.mediaIndex.addFolderExcluded": "Přidat do indexovaných složek (vyloučeno)",
+  "@menu.mediaIndex.addFolderExcluded": {
+    "sourceHash": "fc7c7ce"
+  },
+  "menu.mediaIndex.coveredByParent": "Indexováno přes nadřazenou složku",
+  "@menu.mediaIndex.coveredByParent": {
+    "sourceHash": "9dffdcd"
+  },
+  "menu.mediaIndex.removeFolder": "Odstranit z indexovaných složek",
+  "@menu.mediaIndex.removeFolder": {
+    "sourceHash": "7079859"
+  },
+  "menu.mediaIndex.excludeFolder": "Neindexovat obrázky v této složce",
+  "@menu.mediaIndex.excludeFolder": {
+    "sourceHash": "9119500"
+  },
+  "menu.mediaIndex.includeFolder": "Znovu indexovat obrázky v této složce",
+  "@menu.mediaIndex.includeFolder": {
+    "sourceHash": "0a8a3a0"
+  },
+  "menu.breadcrumb.copyPath": "Zkopírovat cestu",
+  "@menu.breadcrumb.copyPath": {
+    "sourceHash": "720ff41"
+  },
+  "menu.volume.eject": "Vysunout ({name})",
+  "@menu.volume.eject": {
+    "sourceHash": "913d6ea"
+  },
+  "menu.volume.ejectBusy": "Vysunout ({name}) (probíhá operace)",
+  "@menu.volume.ejectBusy": {
+    "sourceHash": "e2145a6"
+  },
+  "menu.volume.ejectAll": "Vysunout vše",
+  "@menu.volume.ejectAll": {
+    "sourceHash": "7adbe9a"
+  },
+  "menu.volume.ejectAllBusy": "Vysunout vše (probíhá operace)",
+  "@menu.volume.ejectAllBusy": {
+    "sourceHash": "8b91f8f"
+  },
+  "menu.volume.renameFavorite": "Přejmenovat",
+  "@menu.volume.renameFavorite": {
+    "sourceHash": "3064d79"
+  },
+  "menu.volume.editFavoriteShortcut": "Nastavit klávesovou zkratku…",
+  "@menu.volume.editFavoriteShortcut": {
+    "sourceHash": "c61559e"
+  },
+  "menu.volume.removeFavorite": "Odstranit",
+  "@menu.volume.removeFavorite": {
+    "sourceHash": "c3812fc"
+  },
+  "menu.network.open": "Otevřít",
+  "@menu.network.open": {
+    "sourceHash": "ed077f3"
+  },
+  "menu.network.edit": "Upravit server…",
+  "@menu.network.edit": {
+    "sourceHash": "a3282a7"
+  },
+  "menu.network.disconnect": "Odpojit",
+  "@menu.network.disconnect": {
+    "sourceHash": "acfc5be"
+  },
+  "menu.network.pinToSwitcher": "Připnout do přepínače svazků",
+  "@menu.network.pinToSwitcher": {
+    "sourceHash": "868b68d"
+  },
+  "menu.network.unpin": "Odepnout z přepínače svazků",
+  "@menu.network.unpin": {
+    "sourceHash": "82297d8"
+  },
+  "menu.network.forgetServer": "Zapomenout server",
+  "@menu.network.forgetServer": {
+    "sourceHash": "e43c85d"
+  },
+  "menu.network.forgetSavedPassword": "Zapomenout uložené heslo",
+  "@menu.network.forgetSavedPassword": {
+    "sourceHash": "ed68566"
+  },
+  "menu.volume.disconnectBusy": "Odpojit (probíhá operace)",
+  "@menu.volume.disconnectBusy": {
+    "sourceHash": "598ba81"
+  },
+  "menu.volume.forgetSavedPasswordBusy": "Zapomenout uložené heslo (probíhá operace)",
+  "@menu.volume.forgetSavedPasswordBusy": {
+    "sourceHash": "2a05847"
+  },
+  "menu.volume.forgetServerBusy": "Zapomenout server (probíhá operace)",
+  "@menu.volume.forgetServerBusy": {
+    "sourceHash": "53df26b"
+  },
+  "menu.viewer.close": "Zavřít",
+  "@menu.viewer.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "menu.viewer.wordWrap": "Zalamování řádků",
+  "@menu.viewer.wordWrap": {
+    "sourceHash": "9e210f3"
+  },
+  "menu.dock.openCmdr": "Otevřít Cmdr",
+  "@menu.dock.openCmdr": {
+    "sourceHash": "f898c5b"
+  },
+  "menu.dock.searchFiles": "Hledat soubory…",
+  "@menu.dock.searchFiles": {
+    "sourceHash": "149a9d1"
+  },
+  "menu.dock.connectToServer": "Připojit k serveru…",
+  "@menu.dock.connectToServer": {
+    "sourceHash": "6188f47"
+  },
+  "menu.dock.locationInParent": "{name} ({parent})",
+  "@menu.dock.locationInParent": {
+    "sourceHash": "0bf83e2",
+    "sameAsSourceJustification": "Placeholder-only label; the name (parent) shape with round brackets reads naturally in Czech, as Finder writes disambiguating parentheses."
+  },
+  "menu.help.viewDebugLog": "Zobrazit ladicí protokol",
+  "@menu.help.viewDebugLog": {
+    "sourceHash": "007c98d"
+  },
+  "menu.file.multiRename": "Hromadné přejmenování…",
+  "@menu.file.multiRename": {
+    "sourceHash": "36b1dc2"
+  },
+  "menu.queue.moveUp": "Posunout nahoru",
+  "@menu.queue.moveUp": {
+    "sourceHash": "c66feb5"
+  },
+  "menu.queue.moveDown": "Posunout dolů",
+  "@menu.queue.moveDown": {
+    "sourceHash": "40bb50d"
+  },
+  "menu.queue.select": "Vybrat",
+  "@menu.queue.select": {
+    "sourceHash": "2a78025"
+  },
+  "menu.queue.cancel": "Zrušit",
+  "@menu.queue.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "menu.queue.dismiss": "Zavřít",
+  "@menu.queue.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "menu.queue.show": "Zobrazit",
+  "@menu.queue.show": {
+    "sourceHash": "0df6f1c"
+  },
+  "menu.queue.pause": "Pozastavit",
+  "@menu.queue.pause": {
+    "sourceHash": "858e4ba"
+  },
+  "menu.queue.resume": "Pokračovat",
+  "@menu.queue.resume": {
+    "sourceHash": "d640c74"
+  },
+  "menu.queue.rollback": "Vrátit změny…",
+  "@menu.queue.rollback": {
+    "sourceHash": "3a943f5"
+  }
+}

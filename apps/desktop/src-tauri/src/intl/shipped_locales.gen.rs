@@ -20,6 +20,13 @@ use super::ShippedLocale;
 #[rustfmt::skip]
 pub(crate) const SHIPPED_LOCALES: &[ShippedLocale] = &[
     ShippedLocale {
+        tag: "cs",
+        script: "latn",
+        default_script: "latn",
+        region_scripts: &[],
+        covers: &[],
+    },
+    ShippedLocale {
         tag: "de",
         script: "latn",
         default_script: "latn",

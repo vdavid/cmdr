@@ -761,6 +761,84 @@
         "source": "Zoom",
         "reason": "Two features: the View menu’s text zoom («Масштаб»), and the Window menu’s Zoom, which Ukrainian macOS calls «Оптимізувати»."
       }
+    ],
+    "cs": [
+      {
+        "source": "{count, plural, one {file} other {files}}",
+        "reason": "`fileExplorer.summary.fileNoun` follows the z connector of the selection summary (3 z 10 souborů), so it needs the genitive; the scan counters (`fileOperations.delete.scanFile`, `fileOperations.scanPhase.scanFile`, `fileOperations.transferDialog.scanFile`) count in the nominative (2 soubory). `file` exceptions in `docs/i18n/cs/terms.json`, `docs/i18n/cs/decisions.md` § Selection summary in the genitive."
+      },
+      {
+        "source": "Copy",
+        "reason": "Two acts. The F5 file command (`commands.fileCopy.label`, `menu.file.copy`, `fileExplorer.functionKeyBar.copyLabel`, `fileOperations.transferDialog.confirmCopy`) is Total Commander's imperfective `Kopírovat`; clipboard buttons (`menu.edit.copy`, `ui.copyBox.copy`, `crashReporter.dialog.copy`, `errorReporter.dialog.copy`, `viewer.copyDialog.copy`) are macOS Edit menu's perfective `Zkopírovat`. `copy` ruling and § Copy in `docs/i18n/cs/decisions.md`."
+      },
+      {
+        "source": "Disconnect {name}",
+        "reason": "The head noun carries the gender the placeholder can't: `adb.disconnectDeviceAriaLabel` disconnects a phone (`Odpojit zařízení {name}`), `fileExplorer.navigation.disconnectPlaceAriaLabel` a server (`Odpojit server {name}`). `docs/i18n/cs/decisions.md` § Disconnect names what it disconnects."
+      },
+      {
+        "source": "Edit",
+        "reason": "`menu.bar.edit` is the native Edit menu, which Czech macOS (Finder MenuBar) titles with the noun `Úpravy`; F4 (`fileExplorer.functionKeyBar.editLabel`) and `menu.context.edit` are the verb `Upravit`. `edit` ruling forms in `docs/i18n/cs/terms.json`."
+      },
+      {
+        "source": "Extension",
+        "reason": "`menu.sort.extension` completes the sentence Seřadit podle, so it takes Finder's genitive `Přípony`; `multiRename.extensionMask` is a nominative field label (`Přípona`, TC Ctrl+M). § Sort by takes Finder's genitive."
+      },
+      {
+        "source": "Modified",
+        "reason": "`Datum změny` is Finder's date column and every date filter (`fileExplorer.columns.modified`, `queryUi.results.col.modified`); `shortcuts.section.filterModified` filters shortcuts the user changed, no date involved, so `Změněné` (agrees with zkratky). `modified` exceptions in `docs/i18n/cs/terms.json`. `fileExplorer.git.status.modified` is a git state in the Git column tooltip (`{status} v gitu`), so the neuter participle `Změněno`, like the other git states (Přidáno, Smazáno)."
+      },
+      {
+        "source": "Name",
+        "reason": "`menu.sort.name` completes Seřadit podle with Finder's genitive `Názvu` (ArrangeBy menu); column headers and fields (`fileExplorer.columns.name`, `servers.sheet.name`) stay nominative `Název`. § Sort by takes Finder's genitive."
+      },
+      {
+        "source": "Search",
+        "reason": "`Hledat` is the button that runs the search (`queryUi.bar.runLabel`, a verb as Finder's button); the dialog title, Settings section, snapshot label, and onboarding feature row (`search.dialog.title`, `settings.section.search`, `onboarding.stepAi.table.rowSearch`) name the feature with the noun `Hledání`. `search` ruling forms."
+      },
+      {
+        "source": "Select",
+        "reason": "`menu.bar.select` is Total Commander's `Vybrat` menu and `ui.select.placeholder` the dropdown prompt `Vybrat…`; `onboarding.stepAi.table.rowSelect` is a feature-name row beside `Hledání` and `Hromadné přejmenování`, so it takes the noun `Výběr`. `select` exceptions in `docs/i18n/cs/terms.json`."
+      },
+      {
+        "source": "Size",
+        "reason": "`menu.sort.size` completes Seřadit podle with Finder's genitive `Velikosti`; column headers and filter chips (`fileExplorer.columns.size`, `queryUi.filters.chip.size`) stay nominative `Velikost`. § Sort by takes Finder's genitive."
+      },
+      {
+        "source": "View",
+        "reason": "`menu.bar.view` is the native View menu, which Czech macOS (Finder MenuBar) titles with the noun `Zobrazení`; the F3 action (`commands.fileView.label`, `fileExplorer.functionKeyBar.viewLabel`, `menu.file.view`) is the verb `Zobrazit`. § Native macOS menu names."
+      },
+      {
+        "source": "Zoom",
+        "reason": "`menu.window.zoom` is macOS's Window > Zoom (the green button), which Czech macOS calls `Přepnout velikost`; `menu.view.zoom` is Cmdr's text-size submenu, the noun `Zvětšení`. `zoom` exceptions in `docs/i18n/cs/terms.json`."
+      },
+      {
+        "source": "Added",
+        "reason": "`fileExplorer.columns.added` names a date column, so Finder's `Datum přidání` (like Datum změny, Datum vytvoření); `fileExplorer.git.status.added` and `shortcuts.list.addedTooltip` are states, the neuter participle `Přidáno`."
+      },
+      {
+        "source": "Archive",
+        "reason": "`askCmdr.sessions.archive` is a verb button (archive a chat → `Archivovat`); `suggestedOps.facts.archive` is a noun label before the archive file's path (`Archiv`)."
+      },
+      {
+        "source": "Date added",
+        "reason": "`menu.sort.dateAdded` completes Seřadit podle with Finder's genitive `Data přidání`; the date tooltip label `fileExplorer.dateTooltip.dateAdded` stays nominative `Datum přidání`. § Sort by takes Finder's genitive."
+      },
+      {
+        "source": "Unknown",
+        "reason": "`ai.local.modelUnknown` agrees with model (m., `Neznámý`); `suggestedOps.factUnknown` stands in for a size (f.) or a date (n.) alike, so the gender-free adverb `Neznámo`."
+      },
+      {
+        "source": "{countText} {count, plural, one {file} other {files}}",
+        "reason": "`queue.row.fileCount` follows the row's verbal noun (Kopírování 1 souboru, Mazání 3 souborů), so it takes the genitive; standalone counts (`suggestedOps.fileCount`, `fileOperations.transferTree.filesTotal`, `fileOperations.transferDialog.filesPart`) are nominative."
+      },
+      {
+        "source": "{countText} {count, plural, one {folder} other {folders}}",
+        "reason": "`queue.row.folderCount` follows the row's verbal noun (Kopírování 2 složek), so genitive; `fileOperations.*.foldersPart` follows a verb in titles, so accusative (smazat 1 složku)."
+      },
+      {
+        "source": "{countText} {count, plural, one {item} other {items}}",
+        "reason": "`queue.row.itemCount` follows the row's verbal noun (Mazání 3 položek), so genitive; `fileExplorer.contextMenu.itemCount` stands alone, nominative."
+      }
     ]
   },
   "notYetReviewed": {

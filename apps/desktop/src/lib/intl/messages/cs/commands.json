@@ -1,0 +1,1291 @@
+{
+  "commands.appQuit.label": "Ukončit Cmdr",
+  "@commands.appQuit.label": {
+    "sourceHash": "b3455b4"
+  },
+  "commands.appHide.label": "Skrýt Cmdr",
+  "@commands.appHide.label": {
+    "sourceHash": "8f86f89"
+  },
+  "commands.appHideOthers.label": "Skrýt ostatní",
+  "@commands.appHideOthers.label": {
+    "sourceHash": "74376e4"
+  },
+  "commands.appShowAll.label": "Zobrazit vše",
+  "@commands.appShowAll.label": {
+    "sourceHash": "2150d8d"
+  },
+  "commands.appAbout.label": "O aplikaci Cmdr",
+  "@commands.appAbout.label": {
+    "sourceHash": "efe010f"
+  },
+  "commands.appAcknowledgements.label": "Poděkování…",
+  "@commands.appAcknowledgements.label": {
+    "sourceHash": "7d0e506"
+  },
+  "commands.appLicenseKey.seeDetails.label": "Zobrazit podrobnosti licence",
+  "@commands.appLicenseKey.seeDetails.label": {
+    "sourceHash": "0e660e8"
+  },
+  "commands.appLicenseKey.enterKey.label": "Zadat licenční klíč",
+  "@commands.appLicenseKey.enterKey.label": {
+    "sourceHash": "357d05e"
+  },
+  "commands.appCommandPalette.label": "Otevřít paletu příkazů",
+  "@commands.appCommandPalette.label": {
+    "sourceHash": "c022b19"
+  },
+  "commands.appSettings.label": "Otevřít Nastavení",
+  "@commands.appSettings.label": {
+    "sourceHash": "ca381c1"
+  },
+  "commands.appCheckForUpdates.label": "Vyhledat aktualizace…",
+  "@commands.appCheckForUpdates.label": {
+    "sourceHash": "52d6f7d"
+  },
+  "commands.appCheckForUpdates.description": "Zjistí, jestli je k dispozici novější verze aplikace Cmdr, a pokud ano, stáhne ji",
+  "@commands.appCheckForUpdates.description": {
+    "sourceHash": "c53dab0"
+  },
+  "commands.cmdrOpenOnboarding.label": "Úvodní průvodce…",
+  "@commands.cmdrOpenOnboarding.label": {
+    "sourceHash": "c4cc4aa"
+  },
+  "commands.cmdrOpenOnboarding.description": "Znovu otevře úvodního průvodce, kde si můžete projít nebo změnit možnosti nastavené při prvním spuštění",
+  "@commands.cmdrOpenOnboarding.description": {
+    "sourceHash": "a45c542"
+  },
+  "commands.appToggleCliCommand.install.label": "Nainstalovat příkaz „cmdr“",
+  "@commands.appToggleCliCommand.install.label": {
+    "sourceHash": "b99e6c4"
+  },
+  "commands.appToggleCliCommand.uninstall.label": "Odinstalovat příkaz „cmdr“",
+  "@commands.appToggleCliCommand.uninstall.label": {
+    "sourceHash": "ac1052e"
+  },
+  "commands.appToggleCliCommand.homebrew.label": "Příkaz „cmdr“ nainstalovaný přes Homebrew",
+  "@commands.appToggleCliCommand.homebrew.label": {
+    "sourceHash": "cc4c0fd"
+  },
+  "commands.appToggleCliCommand.description": "Zadejte v terminálu cmdr a cestu a soubor nebo složka se otevře v Cmdru",
+  "@commands.appToggleCliCommand.description": {
+    "sourceHash": "ce7efbd"
+  },
+  "commands.helpOpenShortcuts.label": "Klávesové zkratky",
+  "@commands.helpOpenShortcuts.label": {
+    "sourceHash": "e9bef0b"
+  },
+  "commands.helpOpenShortcuts.description": "Otevře okno jen ke čtení se seznamem všech klávesových zkratek, průběžně synchronizované s vašimi úpravami",
+  "@commands.helpOpenShortcuts.description": {
+    "sourceHash": "a9a1e0d"
+  },
+  "commands.helpAccessibility.label": "Průvodce zpřístupněním",
+  "@commands.helpAccessibility.label": {
+    "sourceHash": "eee67fa"
+  },
+  "commands.helpAccessibility.description": "Otevřít průvodce funkcemi zpřístupnění Cmdru na getcmdr.com",
+  "@commands.helpAccessibility.description": {
+    "sourceHash": "2ece797"
+  },
+  "commands.helpSendErrorReport.label": "Odeslat zprávu o chybě…",
+  "@commands.helpSendErrorReport.label": {
+    "sourceHash": "063c94e"
+  },
+  "commands.helpSendErrorReport.description": "Odešle týmu protokoly aplikace Cmdr, které pomohou opravit, co se pokazilo",
+  "@commands.helpSendErrorReport.description": {
+    "sourceHash": "021d333"
+  },
+  "commands.queueShow.label": "Fronta operací",
+  "@commands.queueShow.label": {
+    "sourceHash": "fa91417"
+  },
+  "commands.queueShow.description": "Otevře okno se všemi běžícími a čekajícími operacemi, kde je můžete pozastavit, pokračovat v nich nebo je zrušit",
+  "@commands.queueShow.description": {
+    "sourceHash": "37b616a"
+  },
+  "commands.helpWhatsNew.label": "Co je nového",
+  "@commands.helpWhatsNew.label": {
+    "sourceHash": "37e6112"
+  },
+  "commands.helpWhatsNew.description": "Zobrazí, co se změnilo v posledních verzích aplikace Cmdr",
+  "@commands.helpWhatsNew.description": {
+    "sourceHash": "f8ad411"
+  },
+  "commands.logOperationLog.label": "Protokol operací",
+  "@commands.logOperationLog.label": {
+    "sourceHash": "2c97965"
+  },
+  "commands.logOperationLog.description": "Zobrazí historii vašich operací se soubory a umožní je vrátit zpět",
+  "@commands.logOperationLog.description": {
+    "sourceHash": "ea2d082"
+  },
+  "commands.askCmdrToggle.label": "Ask Cmdr",
+  "@commands.askCmdrToggle.label": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name, kept verbatim in every language (ask-cmdr ruling, cs terms.json)."
+  },
+  "commands.askCmdrToggle.description": "Chat s AI o vašich souborech, discích a historii",
+  "@commands.askCmdrToggle.description": {
+    "sourceHash": "c520468"
+  },
+  "commands.askCmdrNewChat.label": "Nový chat v Ask Cmdr",
+  "@commands.askCmdrNewChat.label": {
+    "sourceHash": "54ebf70"
+  },
+  "commands.askCmdrNewChat.description": "Začne nový chat v Ask Cmdr, a pokud je panel zavřený, otevře ho",
+  "@commands.askCmdrNewChat.description": {
+    "sourceHash": "957741b"
+  },
+  "commands.feedbackSend.label": "Odeslat názor",
+  "@commands.feedbackSend.label": {
+    "sourceHash": "8235980"
+  },
+  "commands.feedbackSend.description": "Napište tvůrci aplikace Cmdr, co si myslíte: nápady, přání, cokoli",
+  "@commands.feedbackSend.description": {
+    "sourceHash": "89d08a8"
+  },
+  "commands.searchOpen.label": "Hledat soubory",
+  "@commands.searchOpen.label": {
+    "sourceHash": "179fed8"
+  },
+  "commands.navGoToPath.label": "Otevřít složku…",
+  "@commands.navGoToPath.label": {
+    "sourceHash": "33de610"
+  },
+  "commands.navGoToPath.description": "Přejde v aktivním panelu na napsanou, vloženou nebo nedávno použitou cestu.",
+  "@commands.navGoToPath.description": {
+    "sourceHash": "fc6a00c"
+  },
+  "commands.favoritesAdd.label": "Přidat do oblíbených",
+  "@commands.favoritesAdd.label": {
+    "sourceHash": "7f3c078"
+  },
+  "commands.favoritesAdd.description": "Přidá aktuální složku aktivního panelu do oblíbených, takže se do ní vrátíte z nabídky oblíbených.",
+  "@commands.favoritesAdd.description": {
+    "sourceHash": "999aa52"
+  },
+  "commands.favoritesOpen.label": "Zobrazit oblíbené",
+  "@commands.favoritesOpen.label": {
+    "sourceHash": "f4dfe9b"
+  },
+  "commands.favoritesOpen.description": "Otevře nabídku oblíbených v aktivním panelu; stiskem čísla pak přejdete na oblíbenou položku s tímto číslem.",
+  "@commands.favoritesOpen.description": {
+    "sourceHash": "d188872"
+  },
+  "commands.favoritesOpenByNumber.label": "Otevřít oblíbenou položku s tímto číslem",
+  "@commands.favoritesOpenByNumber.label": {
+    "sourceHash": "e74b98f"
+  },
+  "commands.downloadsGoToLatest.label": "Přejít na poslední stažený soubor",
+  "@commands.downloadsGoToLatest.label": {
+    "sourceHash": "492d0b6"
+  },
+  "commands.downloadsGoToLatest.description": "Otevře ~/Downloads a vybere naposledy stažený soubor.",
+  "@commands.downloadsGoToLatest.description": {
+    "sourceHash": "42a26a2"
+  },
+  "commands.viewShowHidden.label": "Zobrazit nebo skrýt skryté soubory",
+  "@commands.viewShowHidden.label": {
+    "sourceHash": "6aa9b55"
+  },
+  "commands.viewCalculateFolderSizes.label": "Spočítat velikosti složek",
+  "@commands.viewCalculateFolderSizes.label": {
+    "sourceHash": "d2a83da"
+  },
+  "commands.viewCalculateFolderSizes.description": "Zobrazí velikost každé složky v tomto panelu, která ji ještě nemá. Esc výpočet zastaví.",
+  "@commands.viewCalculateFolderSizes.description": {
+    "sourceHash": "2a7568d"
+  },
+  "commands.viewBriefMode.label": "Přepnout na zobrazení Seznam",
+  "@commands.viewBriefMode.label": {
+    "sourceHash": "bcf6636"
+  },
+  "commands.viewFullMode.label": "Přepnout na zobrazení Podrobnosti",
+  "@commands.viewFullMode.label": {
+    "sourceHash": "b44150e"
+  },
+  "commands.viewSetMode.label": "Nastavit režim zobrazení panelu",
+  "@commands.viewSetMode.label": {
+    "sourceHash": "1e050a6"
+  },
+  "commands.viewZoomSet75.label": "Nastavit zvětšení na 75 %",
+  "@commands.viewZoomSet75.label": {
+    "sourceHash": "70ac915"
+  },
+  "commands.viewZoomSet100.label": "Nastavit zvětšení na 100 %",
+  "@commands.viewZoomSet100.label": {
+    "sourceHash": "c23bdb4"
+  },
+  "commands.viewZoomSet125.label": "Nastavit zvětšení na 125 %",
+  "@commands.viewZoomSet125.label": {
+    "sourceHash": "9191980"
+  },
+  "commands.viewZoomSet150.label": "Nastavit zvětšení na 150 %",
+  "@commands.viewZoomSet150.label": {
+    "sourceHash": "2e247da"
+  },
+  "commands.viewZoomIn.label": "Zvětšit",
+  "@commands.viewZoomIn.label": {
+    "sourceHash": "0e47f09"
+  },
+  "commands.viewZoomOut.label": "Zmenšit",
+  "@commands.viewZoomOut.label": {
+    "sourceHash": "bc7b631"
+  },
+  "commands.sortByName.label": "Seřadit podle názvu",
+  "@commands.sortByName.label": {
+    "sourceHash": "588a082"
+  },
+  "commands.sortByExtension.label": "Seřadit podle přípony",
+  "@commands.sortByExtension.label": {
+    "sourceHash": "bb899db"
+  },
+  "commands.sortByModified.label": "Seřadit podle data změny",
+  "@commands.sortByModified.label": {
+    "sourceHash": "d9349cb"
+  },
+  "commands.sortBySize.label": "Seřadit podle velikosti",
+  "@commands.sortBySize.label": {
+    "sourceHash": "b5fa7af"
+  },
+  "commands.sortByCreated.label": "Seřadit podle data vytvoření",
+  "@commands.sortByCreated.label": {
+    "sourceHash": "9bdaf4e"
+  },
+  "commands.sortByAdded.label": "Seřadit podle data přidání",
+  "@commands.sortByAdded.label": {
+    "sourceHash": "d89aba6"
+  },
+  "commands.sortAscending.label": "Seřadit vzestupně",
+  "@commands.sortAscending.label": {
+    "sourceHash": "ec3c9c7"
+  },
+  "commands.sortDescending.label": "Seřadit sestupně",
+  "@commands.sortDescending.label": {
+    "sourceHash": "8993b78"
+  },
+  "commands.sortToggleOrder.label": "Obrátit pořadí řazení",
+  "@commands.sortToggleOrder.label": {
+    "sourceHash": "e0eb85f"
+  },
+  "commands.sortSet.label": "Nastavit řazení panelu",
+  "@commands.sortSet.label": {
+    "sourceHash": "64232ef"
+  },
+  "commands.paneSwitch.label": "Přepnout panel",
+  "@commands.paneSwitch.label": {
+    "sourceHash": "377471f"
+  },
+  "commands.paneSwap.label": "Zaměnit panely",
+  "@commands.paneSwap.label": {
+    "sourceHash": "cc29396"
+  },
+  "commands.paneClone.label": "Klonovat panel",
+  "@commands.paneClone.label": {
+    "sourceHash": "74b2c7f"
+  },
+  "commands.paneClone.description": "Otevře složku tohoto panelu i v druhém panelu.",
+  "@commands.paneClone.description": {
+    "sourceHash": "8a13dc9"
+  },
+  "commands.paneFocusControls.label": "Přesunout fokus na ovládací prvky panelu",
+  "@commands.paneFocusControls.label": {
+    "sourceHash": "b71f4ad"
+  },
+  "commands.paneFocusControls.description": "Z klávesnice se dostanete k záložkám, řádku umístění a tlačítkům řazení aktivního panelu. Šipkami se mezi nimi pohybujete a Escape vás vrátí zpět k souborům.",
+  "@commands.paneFocusControls.description": {
+    "sourceHash": "e5828ae"
+  },
+  "commands.appFocusNotifications.label": "Přesunout fokus na oznámení",
+  "@commands.appFocusNotifications.label": {
+    "sourceHash": "628f0e5"
+  },
+  "commands.appFocusNotifications.description": "Z klávesnice se dostanete k oznámením a jejich tlačítkům, třeba Odvolat. Šipkami se mezi nimi pohybujete a Escape vás vrátí zpět.",
+  "@commands.appFocusNotifications.description": {
+    "sourceHash": "87886a4"
+  },
+  "commands.editUndoTrash.label": "Odvolat přesunutí do koše",
+  "@commands.editUndoTrash.label": {
+    "sourceHash": "c6fea33"
+  },
+  "commands.editUndoTrash.one": "Odvolat přesunutí „{name}“ do koše",
+  "@commands.editUndoTrash.one": {
+    "sourceHash": "45494c8"
+  },
+  "commands.editUndoTrash.many": "Odvolat přesunutí {count, plural, one {{countText} položky} few {{countText} položek} many {{countText} položky} other {{countText} položek}} do koše",
+  "@commands.editUndoTrash.many": {
+    "sourceHash": "69c4966"
+  },
+  "commands.editUndoTrash.description": "Vrátit zpět soubory naposledy přesunuté do koše",
+  "@commands.editUndoTrash.description": {
+    "sourceHash": "3aa756f"
+  },
+  "commands.paneLeftVolumeChooser.label": "Otevřít levý přepínač svazků",
+  "@commands.paneLeftVolumeChooser.label": {
+    "sourceHash": "6210f8e"
+  },
+  "commands.paneRightVolumeChooser.label": "Otevřít pravý přepínač svazků",
+  "@commands.paneRightVolumeChooser.label": {
+    "sourceHash": "6103296"
+  },
+  "commands.paneCopyPathLeftToRight.label": "Kopírovat cestu z levého do pravého panelu",
+  "@commands.paneCopyPathLeftToRight.label": {
+    "sourceHash": "d1376f6"
+  },
+  "commands.paneCopyPathLeftToRight.description": "Otevře umístění levého panelu vpravo. Když je aktivní levý panel a kurzor stojí na složce, otevře se vpravo místo toho tato složka.",
+  "@commands.paneCopyPathLeftToRight.description": {
+    "sourceHash": "07ac6a1"
+  },
+  "commands.paneCopyPathRightToLeft.label": "Kopírovat cestu z pravého do levého panelu",
+  "@commands.paneCopyPathRightToLeft.label": {
+    "sourceHash": "266a30d"
+  },
+  "commands.paneCopyPathRightToLeft.description": "Otevře umístění pravého panelu vlevo. Když je aktivní pravý panel a kurzor stojí na složce, otevře se vlevo místo toho tato složka.",
+  "@commands.paneCopyPathRightToLeft.description": {
+    "sourceHash": "95c566f"
+  },
+  "commands.paneRefresh.label": "Znovu načíst panel",
+  "@commands.paneRefresh.label": {
+    "sourceHash": "42ce075"
+  },
+  "commands.paneMoveDividerLeft.label": "Přesunout dělič panelů doleva",
+  "@commands.paneMoveDividerLeft.label": {
+    "sourceHash": "863b17a"
+  },
+  "commands.paneMoveDividerRight.label": "Přesunout dělič panelů doprava",
+  "@commands.paneMoveDividerRight.label": {
+    "sourceHash": "d3e8092"
+  },
+  "commands.paneResetDivider.label": "Resetovat dělič panelů",
+  "@commands.paneResetDivider.label": {
+    "sourceHash": "eab918a"
+  },
+  "commands.tabNew.label": "Nová záložka",
+  "@commands.tabNew.label": {
+    "sourceHash": "1e08fda"
+  },
+  "commands.tabClose.label": "Zavřít záložku",
+  "@commands.tabClose.label": {
+    "sourceHash": "50a3f95"
+  },
+  "commands.tabReopen.label": "Znovu otevřít zavřenou záložku",
+  "@commands.tabReopen.label": {
+    "sourceHash": "5ca5397"
+  },
+  "commands.tabNext.label": "Další záložka",
+  "@commands.tabNext.label": {
+    "sourceHash": "1ef9522"
+  },
+  "commands.tabPrev.label": "Předchozí záložka",
+  "@commands.tabPrev.label": {
+    "sourceHash": "c88d5e7"
+  },
+  "commands.tabTogglePin.label": "Připnout nebo odepnout záložku",
+  "@commands.tabTogglePin.label": {
+    "sourceHash": "3fdfcd1"
+  },
+  "commands.tabCloseOthers.label": "Zavřít ostatní záložky",
+  "@commands.tabCloseOthers.label": {
+    "sourceHash": "0ddc2c5"
+  },
+  "commands.tabMoveLeft.label": "Přesunout záložku doleva",
+  "@commands.tabMoveLeft.label": {
+    "sourceHash": "6a55f1c"
+  },
+  "commands.tabMoveRight.label": "Přesunout záložku doprava",
+  "@commands.tabMoveRight.label": {
+    "sourceHash": "a0f125f"
+  },
+  "commands.tabMoveToOtherPane.label": "Přesunout záložku do druhého panelu",
+  "@commands.tabMoveToOtherPane.label": {
+    "sourceHash": "c604acb"
+  },
+  "commands.tabMcpAction.label": "Akce záložky panelu",
+  "@commands.tabMcpAction.label": {
+    "sourceHash": "405ed9c"
+  },
+  "commands.navUp.label": "Přejít na předchozí soubor",
+  "@commands.navUp.label": {
+    "sourceHash": "40dca00"
+  },
+  "commands.navDown.label": "Přejít na další soubor",
+  "@commands.navDown.label": {
+    "sourceHash": "61e81ee"
+  },
+  "commands.navOpen.label": "Otevřít soubor nebo složku",
+  "@commands.navOpen.label": {
+    "sourceHash": "ef8d6a5"
+  },
+  "commands.navParent.label": "Přejít do nadřazené složky",
+  "@commands.navParent.label": {
+    "sourceHash": "7d4c500"
+  },
+  "commands.navHome.label": "Přejít na první soubor",
+  "@commands.navHome.label": {
+    "sourceHash": "5750de6"
+  },
+  "commands.navEnd.label": "Přejít na poslední soubor",
+  "@commands.navEnd.label": {
+    "sourceHash": "f39205a"
+  },
+  "commands.navPageUp.label": "O stránku nahoru",
+  "@commands.navPageUp.label": {
+    "sourceHash": "43f41b5"
+  },
+  "commands.navPageDown.label": "O stránku dolů",
+  "@commands.navPageDown.label": {
+    "sourceHash": "72a825f"
+  },
+  "commands.navBack.label": "Přejít zpět",
+  "@commands.navBack.label": {
+    "sourceHash": "6aadac2"
+  },
+  "commands.navForward.label": "Přejít vpřed",
+  "@commands.navForward.label": {
+    "sourceHash": "8121136"
+  },
+  "commands.navGoToRoot.label": "Přejít do kořenové složky",
+  "@commands.navGoToRoot.label": {
+    "sourceHash": "3822d7b"
+  },
+  "commands.navGoHome.label": "Přejít do domovské složky",
+  "@commands.navGoHome.label": {
+    "sourceHash": "74b2a8b"
+  },
+  "commands.errorPaneToggleTechnicalDetails.label": "Zobrazit technické podrobnosti",
+  "@commands.errorPaneToggleTechnicalDetails.label": {
+    "sourceHash": "bde0de8"
+  },
+  "commands.navOpenUnderCursor.label": "Otevřít položku pod kurzorem",
+  "@commands.navOpenUnderCursor.label": {
+    "sourceHash": "6b54df9"
+  },
+  "commands.cursorMoveTo.label": "Přesunout kurzor panelu",
+  "@commands.cursorMoveTo.label": {
+    "sourceHash": "4c196ef"
+  },
+  "commands.cursorScrollTo.label": "Posunout panel na řádek s indexem",
+  "@commands.cursorScrollTo.label": {
+    "sourceHash": "98ca70c"
+  },
+  "commands.navLeft.label": "Přejít do levého sloupce",
+  "@commands.navLeft.label": {
+    "sourceHash": "db46f08"
+  },
+  "commands.navRight.label": "Přejít do pravého sloupce",
+  "@commands.navRight.label": {
+    "sourceHash": "21b59f0"
+  },
+  "commands.navFirstInFull.label": "Skočit na první soubor",
+  "@commands.navFirstInFull.label": {
+    "sourceHash": "f0ea135"
+  },
+  "commands.navLastInFull.label": "Skočit na poslední soubor",
+  "@commands.navLastInFull.label": {
+    "sourceHash": "e6d6a52"
+  },
+  "commands.fileRename.label": "Přejmenovat",
+  "@commands.fileRename.label": {
+    "sourceHash": "3064d79"
+  },
+  "commands.paneQuickFilter.label": "Rychlý filtr",
+  "@commands.paneQuickFilter.label": {
+    "sourceHash": "e731882"
+  },
+  "commands.paneQuickFilter.description": "Otevře odznak filtru s aktuálním vzorem. Dalším stisknutím přepnete mezi režimy Filtr a Skok",
+  "@commands.paneQuickFilter.description": {
+    "sourceHash": "2778526"
+  },
+  "commands.fileMultiRename.label": "Hromadné přejmenování",
+  "@commands.fileMultiRename.label": {
+    "sourceHash": "5ceb1a2"
+  },
+  "commands.fileMultiRename.description": "Přejmenuje vybrané soubory (nebo soubor pod kurzorem) pomocí masky názvu, počítadla a hledání a nahrazování",
+  "@commands.fileMultiRename.description": {
+    "sourceHash": "d3a52f1"
+  },
+  "commands.queueCursorUp.label": "Předchozí operace",
+  "@commands.queueCursorUp.label": {
+    "sourceHash": "122b454"
+  },
+  "commands.queueCursorDown.label": "Další operace",
+  "@commands.queueCursorDown.label": {
+    "sourceHash": "d1cfd93"
+  },
+  "commands.queueCursorFirst.label": "První operace",
+  "@commands.queueCursorFirst.label": {
+    "sourceHash": "73ee5d6"
+  },
+  "commands.queueCursorLast.label": "Poslední operace",
+  "@commands.queueCursorLast.label": {
+    "sourceHash": "1d9403f"
+  },
+  "commands.queueExtendUp.label": "Rozšířit výběr nahoru",
+  "@commands.queueExtendUp.label": {
+    "sourceHash": "973e25b"
+  },
+  "commands.queueExtendDown.label": "Rozšířit výběr dolů",
+  "@commands.queueExtendDown.label": {
+    "sourceHash": "0a20670"
+  },
+  "commands.queueToggleSelected.label": "Přidat operaci do výběru, nebo ji z něj odebrat",
+  "@commands.queueToggleSelected.label": {
+    "sourceHash": "0e245e6"
+  },
+  "commands.queueSelectAll.label": "Vybrat všechny operace",
+  "@commands.queueSelectAll.label": {
+    "sourceHash": "0661f6b"
+  },
+  "commands.queueShowInMainWindow.label": "Zobrazit operaci v hlavním okně",
+  "@commands.queueShowInMainWindow.label": {
+    "sourceHash": "9e15137"
+  },
+  "commands.queuePauseOrResume.label": "Pozastavit operaci nebo v ní pokračovat",
+  "@commands.queuePauseOrResume.label": {
+    "sourceHash": "3fa23cb"
+  },
+  "commands.queueCancel.label": "Zrušit operaci",
+  "@commands.queueCancel.label": {
+    "sourceHash": "5dcca55"
+  },
+  "commands.queueRollback.label": "Vrátit změny operace",
+  "@commands.queueRollback.label": {
+    "sourceHash": "e88417c"
+  },
+  "commands.queueCancelOrDismiss.label": "Zrušit operaci, nebo zavřít tu, která se nedokončila",
+  "@commands.queueCancelOrDismiss.label": {
+    "sourceHash": "eed155a"
+  },
+  "commands.queueMoveEarlier.label": "Posunout čekající operaci ve frontě dopředu",
+  "@commands.queueMoveEarlier.label": {
+    "sourceHash": "d95d881"
+  },
+  "commands.queueMoveLater.label": "Posunout čekající operaci ve frontě dozadu",
+  "@commands.queueMoveLater.label": {
+    "sourceHash": "b5a8d86"
+  },
+  "commands.queueNextControl.label": "Další tlačítko v řádku",
+  "@commands.queueNextControl.label": {
+    "sourceHash": "2915ed9"
+  },
+  "commands.queuePreviousControl.label": "Předchozí tlačítko v řádku",
+  "@commands.queuePreviousControl.label": {
+    "sourceHash": "9c0113d"
+  },
+  "commands.queueClose.label": "Zavřít frontu operací",
+  "@commands.queueClose.label": {
+    "sourceHash": "d7b8c22"
+  },
+  "commands.viewerToggleWordWrap.label": "Zapnout nebo vypnout zalamování řádků",
+  "@commands.viewerToggleWordWrap.label": {
+    "sourceHash": "80a6fa2"
+  },
+  "commands.viewerToggleTail.label": "Zapnout nebo vypnout sledování konce",
+  "@commands.viewerToggleTail.label": {
+    "sourceHash": "b711266"
+  },
+  "commands.viewerViewAsMedia.label": "Zobrazit jako obrázek nebo PDF",
+  "@commands.viewerViewAsMedia.label": {
+    "sourceHash": "5e713d3"
+  },
+  "commands.viewerViewAsText.label": "Zobrazit jako text",
+  "@commands.viewerViewAsText.label": {
+    "sourceHash": "a0059b8"
+  },
+  "commands.viewerViewAsBinary.label": "Zobrazit binárně",
+  "@commands.viewerViewAsBinary.label": {
+    "sourceHash": "6720507"
+  },
+  "commands.viewerViewAsHex.label": "Zobrazit hexadecimálně",
+  "@commands.viewerViewAsHex.label": {
+    "sourceHash": "974e5dc"
+  },
+  "commands.viewerZoomIn.label": "Zvětšit obrázek",
+  "@commands.viewerZoomIn.label": {
+    "sourceHash": "bd95659"
+  },
+  "commands.viewerZoomOut.label": "Zmenšit obrázek",
+  "@commands.viewerZoomOut.label": {
+    "sourceHash": "f4b62c5"
+  },
+  "commands.viewerToggleImageZoom.label": "Přepnout obrázek mezi přizpůsobením oknu a skutečnou velikostí",
+  "@commands.viewerToggleImageZoom.label": {
+    "sourceHash": "1bd79eb"
+  },
+  "commands.viewerGoBack.label": "Zpět na předchozí dokument",
+  "@commands.viewerGoBack.label": {
+    "sourceHash": "a76f589"
+  },
+  "commands.viewerGoForward.label": "Vpřed na další dokument",
+  "@commands.viewerGoForward.label": {
+    "sourceHash": "a07317a"
+  },
+  "commands.multiRenameOpenPresets.label": "Otevřít nabídku Předvolby",
+  "@commands.multiRenameOpenPresets.label": {
+    "sourceHash": "ca9ede6"
+  },
+  "commands.multiRenameSavePreset.label": "Uložit aktuální nastavení jako předvolbu",
+  "@commands.multiRenameSavePreset.label": {
+    "sourceHash": "f8101a3"
+  },
+  "commands.multiRenameLetterCase.label": "Otevřít nabídku velikosti písmen",
+  "@commands.multiRenameLetterCase.label": {
+    "sourceHash": "da7409c"
+  },
+  "commands.multiRenameRemoveDiacritics.label": "Zapnout nebo vypnout Odstranit diakritiku",
+  "@commands.multiRenameRemoveDiacritics.label": {
+    "sourceHash": "3f5cf53"
+  },
+  "commands.multiRenameGreekToLatin.label": "Zapnout nebo vypnout Převést řečtinu do latinky",
+  "@commands.multiRenameGreekToLatin.label": {
+    "sourceHash": "1785eea"
+  },
+  "commands.multiRenameNormalizeUnicode.label": "Zapnout nebo vypnout Normalizovat Unicode",
+  "@commands.multiRenameNormalizeUnicode.label": {
+    "sourceHash": "fc2b801"
+  },
+  "commands.multiRenameMatchCase.label": "Zapnout nebo vypnout Rozlišovat velká a malá písmena",
+  "@commands.multiRenameMatchCase.label": {
+    "sourceHash": "25d478f"
+  },
+  "commands.multiRenameFirstMatchOnly.label": "Zapnout nebo vypnout Jen první shoda",
+  "@commands.multiRenameFirstMatchOnly.label": {
+    "sourceHash": "7641a7b"
+  },
+  "commands.multiRenameIncludeExtension.label": "Zapnout nebo vypnout Včetně přípony",
+  "@commands.multiRenameIncludeExtension.label": {
+    "sourceHash": "2d47826"
+  },
+  "commands.multiRenameRegex.label": "Zapnout nebo vypnout Regulární výraz",
+  "@commands.multiRenameRegex.label": {
+    "sourceHash": "b41d110"
+  },
+  "commands.multiRenameReplaceWholeName.label": "Zapnout nebo vypnout Nahradit celý název",
+  "@commands.multiRenameReplaceWholeName.label": {
+    "sourceHash": "016c572"
+  },
+  "commands.multiRenameInsertField.label": "Vložit pole z fotky, videa nebo hudby",
+  "@commands.multiRenameInsertField.label": {
+    "sourceHash": "4b9e9de"
+  },
+  "commands.multiRenameUndoRename.label": "Odvolat poslední hromadné přejmenování",
+  "@commands.multiRenameUndoRename.label": {
+    "sourceHash": "e5a0975"
+  },
+  "commands.multiRenameResults.label": "Upravit nové názvy v textovém editoru",
+  "@commands.multiRenameResults.label": {
+    "sourceHash": "0061b58"
+  },
+  "commands.multiRenameFieldHistory.label": "Zobrazit dřívější hodnoty pole",
+  "@commands.multiRenameFieldHistory.label": {
+    "sourceHash": "75fb21f"
+  },
+  "commands.multiRenameMoveRowUp.label": "Posunout soubor v pořadí přejmenování nahoru",
+  "@commands.multiRenameMoveRowUp.label": {
+    "sourceHash": "d476ae3"
+  },
+  "commands.multiRenameMoveRowDown.label": "Posunout soubor v pořadí přejmenování dolů",
+  "@commands.multiRenameMoveRowDown.label": {
+    "sourceHash": "b4c44b3"
+  },
+  "commands.multiRenameRename.label": "Přejmenovat soubory",
+  "@commands.multiRenameRename.label": {
+    "sourceHash": "da881fb"
+  },
+  "commands.fileView.label": "Zobrazit",
+  "@commands.fileView.label": {
+    "sourceHash": "dcc839a"
+  },
+  "commands.fileEdit.label": "Upravit ve výchozím editoru",
+  "@commands.fileEdit.label": {
+    "sourceHash": "badc768"
+  },
+  "commands.fileCopy.label": "Kopírovat",
+  "@commands.fileCopy.label": {
+    "sourceHash": "e21f935"
+  },
+  "commands.fileMove.label": "Přesunout",
+  "@commands.fileMove.label": {
+    "sourceHash": "6ecc3df"
+  },
+  "commands.fileDuplicate.label": "Duplikovat",
+  "@commands.fileDuplicate.label": {
+    "sourceHash": "02cdaab"
+  },
+  "commands.fileDuplicate.description": "Vytvoří kopii vybraných souborů ve stejné složce",
+  "@commands.fileDuplicate.description": {
+    "sourceHash": "2c038a2"
+  },
+  "commands.fileCompress.label": "Komprimovat",
+  "@commands.fileCompress.label": {
+    "sourceHash": "033fc04"
+  },
+  "commands.editCopy.label": "Zkopírovat do schránky",
+  "@commands.editCopy.label": {
+    "sourceHash": "b749e20"
+  },
+  "commands.editCopy.description": "Zkopíruje vybrané soubory do schránky, odkud je můžete vložit",
+  "@commands.editCopy.description": {
+    "sourceHash": "5c769a7"
+  },
+  "commands.editCut.label": "Vyjmout do schránky",
+  "@commands.editCut.label": {
+    "sourceHash": "a954b4a"
+  },
+  "commands.editCut.description": "Vyjme vybrané soubory (vložením se přesunou)",
+  "@commands.editCut.description": {
+    "sourceHash": "5bc3870"
+  },
+  "commands.editPaste.label": "Vložit",
+  "@commands.editPaste.label": {
+    "sourceHash": "f3380f7"
+  },
+  "commands.editPaste.description": "Vloží soubory ze schránky do aktuální složky",
+  "@commands.editPaste.description": {
+    "sourceHash": "32545d7"
+  },
+  "commands.editPasteAsMove.label": "Přesunout sem",
+  "@commands.editPasteAsMove.label": {
+    "sourceHash": "56f1247"
+  },
+  "commands.editPasteAsMove.description": "Vloží soubory ze schránky jako přesun",
+  "@commands.editPasteAsMove.description": {
+    "sourceHash": "961316d"
+  },
+  "commands.fileNewFolder.label": "Nová složka",
+  "@commands.fileNewFolder.label": {
+    "sourceHash": "cf28f49"
+  },
+  "commands.fileNewFile.label": "Vytvořit nový soubor",
+  "@commands.fileNewFile.label": {
+    "sourceHash": "6e70b95"
+  },
+  "commands.fileDelete.label": "Smazat",
+  "@commands.fileDelete.label": {
+    "sourceHash": "e2d0a54"
+  },
+  "commands.fileDeletePermanently.label": "Smazat trvale",
+  "@commands.fileDeletePermanently.label": {
+    "sourceHash": "280b10c"
+  },
+  "commands.fileGoToTrash.label": "Přejít do koše",
+  "@commands.fileGoToTrash.label": {
+    "sourceHash": "5332858"
+  },
+  "commands.fileGoToTrash.description": "Otevře koš na disku, který právě procházíte",
+  "@commands.fileGoToTrash.description": {
+    "sourceHash": "73eae92"
+  },
+  "commands.dialogConfirm.label": "Potvrdit dialogové okno na obrazovce",
+  "@commands.dialogConfirm.label": {
+    "sourceHash": "fef0684"
+  },
+  "commands.fileShowInFinder.mac.label": "Zobrazit ve Finderu",
+  "@commands.fileShowInFinder.mac.label": {
+    "sourceHash": "c2a9c77"
+  },
+  "commands.fileShowInFinder.other.label": "Zobrazit ve správci souborů",
+  "@commands.fileShowInFinder.other.label": {
+    "sourceHash": "3ca4dad"
+  },
+  "commands.fileOpenTerminalHere.label": "Otevřít terminál zde",
+  "@commands.fileOpenTerminalHere.label": {
+    "sourceHash": "b7eda27"
+  },
+  "commands.fileOpenTerminalHere.description": "Otevře vaši terminálovou aplikaci ve složce, kterou právě prohlížíte",
+  "@commands.fileOpenTerminalHere.description": {
+    "sourceHash": "ac0ddb8"
+  },
+  "commands.fileCopyPath.label": "Zkopírovat cestu do schránky",
+  "@commands.fileCopyPath.label": {
+    "sourceHash": "333608a"
+  },
+  "commands.fileCopyCurrentDirectoryPath.label": "Zkopírovat cestu k aktuální složce",
+  "@commands.fileCopyCurrentDirectoryPath.label": {
+    "sourceHash": "5ec6586"
+  },
+  "commands.fileCopyFilename.label": "Zkopírovat název souboru",
+  "@commands.fileCopyFilename.label": {
+    "sourceHash": "5cdf7f8"
+  },
+  "commands.fileGetInfo.mac.label": "Informace",
+  "@commands.fileGetInfo.mac.label": {
+    "sourceHash": "91c64ca"
+  },
+  "commands.fileGetInfo.other.label": "Vlastnosti souboru",
+  "@commands.fileGetInfo.other.label": {
+    "sourceHash": "5d9ebf2"
+  },
+  "commands.fileQuickLook.mac.label": "Rychlý náhled",
+  "@commands.fileQuickLook.mac.label": {
+    "sourceHash": "f5616ce"
+  },
+  "commands.fileQuickLook.other.label": "Náhled",
+  "@commands.fileQuickLook.other.label": {
+    "sourceHash": "324b134"
+  },
+  "commands.fileContextMenu.label": "Otevřít místní nabídku",
+  "@commands.fileContextMenu.label": {
+    "sourceHash": "c07efaf"
+  },
+  "commands.fileContextMenu.description": "Otevře místní nabídku pro soubor pod kurzorem",
+  "@commands.fileContextMenu.description": {
+    "sourceHash": "8fb1721"
+  },
+  "commands.cloudMakeOffline.label": "Zpřístupnit offline",
+  "@commands.cloudMakeOffline.label": {
+    "sourceHash": "b75c09f"
+  },
+  "commands.cloudMakeOffline.description": "Stáhne soubor uložený v cloudu, aby zůstal dostupný i bez připojení k internetu",
+  "@commands.cloudMakeOffline.description": {
+    "sourceHash": "d5cd793"
+  },
+  "commands.cloudRemoveDownload.label": "Odstranit stažené",
+  "@commands.cloudRemoveDownload.label": {
+    "sourceHash": "5dfc369"
+  },
+  "commands.cloudRemoveDownload.description": "Odstraní místní kopii souboru z cloudu, takže zůstane dostupný jen online",
+  "@commands.cloudRemoveDownload.description": {
+    "sourceHash": "470afd2"
+  },
+  "commands.cloudOpenInGoogleDrive.label": "Otevřít v Google Drive",
+  "@commands.cloudOpenInGoogleDrive.label": {
+    "sourceHash": "98c7516"
+  },
+  "commands.cloudOpenInGoogleDrive.description": "Otevře vybranou položku na webu Google Drive, kde se spravuje sdílení",
+  "@commands.cloudOpenInGoogleDrive.description": {
+    "sourceHash": "0328e04"
+  },
+  "commands.cloudCopyGoogleDriveLink.label": "Zkopírovat odkaz na Google Drive",
+  "@commands.cloudCopyGoogleDriveLink.label": {
+    "sourceHash": "070b383"
+  },
+  "commands.cloudCopyGoogleDriveLink.description": "Zkopíruje webovou adresu vybrané položky, připravenou k vložení do zprávy",
+  "@commands.cloudCopyGoogleDriveLink.description": {
+    "sourceHash": "920f0d4"
+  },
+  "commands.cloudAskGemini.label": "Zeptat se Gemini",
+  "@commands.cloudAskGemini.label": {
+    "sourceHash": "7eec77f"
+  },
+  "commands.cloudAskGemini.description": "Otevře asistenta Gemini v Google Drive s vybraným souborem jako tématem",
+  "@commands.cloudAskGemini.description": {
+    "sourceHash": "37d4e7c"
+  },
+  "commands.resticForgetPassword.label": "Zapomenout heslo zálohy",
+  "@commands.resticForgetPassword.label": {
+    "sourceHash": "8065fcb"
+  },
+  "commands.resticForgetPassword.description": "Odstraní uložené heslo zálohy restic, ve které právě jste, ze svazku klíčů a zálohu znovu zamkne",
+  "@commands.resticForgetPassword.description": {
+    "sourceHash": "e51ac69"
+  },
+  "commands.fileCopyShareLink.label": "Zkopírovat odkaz ke sdílení (na sedm dní)",
+  "@commands.fileCopyShareLink.label": {
+    "sourceHash": "314bee8"
+  },
+  "commands.fileCopyShareLink.description": "Zkopíruje odkaz platný sedm dní, který může kdokoli otevřít a stáhnout si soubor",
+  "@commands.fileCopyShareLink.description": {
+    "sourceHash": "99e912e"
+  },
+  "commands.fileCopyShareLinkOneDay.label": "Zkopírovat odkaz ke sdílení (na jeden den)",
+  "@commands.fileCopyShareLinkOneDay.label": {
+    "sourceHash": "468010c"
+  },
+  "commands.fileCopyShareLinkOneDay.description": "Zkopíruje odkaz platný jeden den, který může kdokoli otevřít a stáhnout si soubor",
+  "@commands.fileCopyShareLinkOneDay.description": {
+    "sourceHash": "c2a30be"
+  },
+  "commands.fileCopyShareLinkOneHour.label": "Zkopírovat odkaz ke sdílení (na jednu hodinu)",
+  "@commands.fileCopyShareLinkOneHour.label": {
+    "sourceHash": "ffea990"
+  },
+  "commands.fileCopyShareLinkOneHour.description": "Zkopíruje odkaz platný jednu hodinu, který může kdokoli otevřít a stáhnout si soubor",
+  "@commands.fileCopyShareLinkOneHour.description": {
+    "sourceHash": "c334535"
+  },
+  "commands.tagsToggleGrey.label": "Přepnout šedou značku",
+  "@commands.tagsToggleGrey.label": {
+    "sourceHash": "1309c09"
+  },
+  "commands.tagsToggleGrey.description": "Přidá nebo odstraní šedou značku Finderu u vybraných souborů",
+  "@commands.tagsToggleGrey.description": {
+    "sourceHash": "ca38860"
+  },
+  "commands.tagsToggleGreen.label": "Přepnout zelenou značku",
+  "@commands.tagsToggleGreen.label": {
+    "sourceHash": "397b880"
+  },
+  "commands.tagsToggleGreen.description": "Přidá nebo odstraní zelenou značku Finderu u vybraných souborů",
+  "@commands.tagsToggleGreen.description": {
+    "sourceHash": "fa8396b"
+  },
+  "commands.tagsTogglePurple.label": "Přepnout fialovou značku",
+  "@commands.tagsTogglePurple.label": {
+    "sourceHash": "ee137d2"
+  },
+  "commands.tagsTogglePurple.description": "Přidá nebo odstraní fialovou značku Finderu u vybraných souborů",
+  "@commands.tagsTogglePurple.description": {
+    "sourceHash": "c6872a8"
+  },
+  "commands.tagsToggleBlue.label": "Přepnout modrou značku",
+  "@commands.tagsToggleBlue.label": {
+    "sourceHash": "11ba925"
+  },
+  "commands.tagsToggleBlue.description": "Přidá nebo odstraní modrou značku Finderu u vybraných souborů",
+  "@commands.tagsToggleBlue.description": {
+    "sourceHash": "7a21c5f"
+  },
+  "commands.tagsToggleYellow.label": "Přepnout žlutou značku",
+  "@commands.tagsToggleYellow.label": {
+    "sourceHash": "2afc261"
+  },
+  "commands.tagsToggleYellow.description": "Přidá nebo odstraní žlutou značku Finderu u vybraných souborů",
+  "@commands.tagsToggleYellow.description": {
+    "sourceHash": "16a2608"
+  },
+  "commands.tagsToggleRed.label": "Přepnout červenou značku",
+  "@commands.tagsToggleRed.label": {
+    "sourceHash": "f2d314d"
+  },
+  "commands.tagsToggleRed.description": "Přidá nebo odstraní červenou značku Finderu u vybraných souborů",
+  "@commands.tagsToggleRed.description": {
+    "sourceHash": "c6e0bee"
+  },
+  "commands.tagsToggleOrange.label": "Přepnout oranžovou značku",
+  "@commands.tagsToggleOrange.label": {
+    "sourceHash": "d0c0702"
+  },
+  "commands.tagsToggleOrange.description": "Přidá nebo odstraní oranžovou značku Finderu u vybraných souborů",
+  "@commands.tagsToggleOrange.description": {
+    "sourceHash": "79e5c97"
+  },
+  "commands.selectionToggle.label": "Přepnout výběr",
+  "@commands.selectionToggle.label": {
+    "sourceHash": "6cb5515"
+  },
+  "commands.selectionToggleAndDown.label": "Přepnout výběr a přejít dolů",
+  "@commands.selectionToggleAndDown.label": {
+    "sourceHash": "72ccb36"
+  },
+  "commands.selectionToggleAndDown.description": "Vybere soubor pod kurzorem nebo zruší výběr tohoto souboru a pak přejde o řádek dolů (jako v programu Total Commander)",
+  "@commands.selectionToggleAndDown.description": {
+    "sourceHash": "378bb7a"
+  },
+  "commands.selectionSelectAll.label": "Vybrat vše",
+  "@commands.selectionSelectAll.label": {
+    "sourceHash": "1fc9a38"
+  },
+  "commands.selectionDeselectAll.label": "Zrušit výběr všech",
+  "@commands.selectionDeselectAll.label": {
+    "sourceHash": "9675494"
+  },
+  "commands.selectionInvert.label": "Invertovat výběr",
+  "@commands.selectionInvert.label": {
+    "sourceHash": "d2e128a"
+  },
+  "commands.selectionInvert.description": "Vybere všechny nevybrané soubory a zruší výběr všech vybraných",
+  "@commands.selectionInvert.description": {
+    "sourceHash": "b63ce32"
+  },
+  "commands.selectionSelectSameKind.label": "Vybrat vše stejného druhu",
+  "@commands.selectionSelectSameKind.label": {
+    "sourceHash": "9933028"
+  },
+  "commands.selectionSelectSameKind.description": "Přidá do výběru všechny položky stejného druhu jako ta pod kurzorem a stávající výběr ponechá",
+  "@commands.selectionSelectSameKind.description": {
+    "sourceHash": "9a95212"
+  },
+  "commands.selectionCompareDirectories.label": "Porovnat složky",
+  "@commands.selectionCompareDirectories.label": {
+    "sourceHash": "5cf3985"
+  },
+  "commands.selectionCompareDirectories.description": "V každém panelu vybere soubory, které v druhém panelu chybějí, a u ostatních novější kopie",
+  "@commands.selectionCompareDirectories.description": {
+    "sourceHash": "190d99f"
+  },
+  "commands.selectionCompareDirectoriesMissing.label": "Porovnat složky: jen chybějící soubory",
+  "@commands.selectionCompareDirectoriesMissing.label": {
+    "sourceHash": "d03d3c1"
+  },
+  "commands.selectionCompareDirectoriesMissing.description": "V každém panelu vybere jen soubory, které v druhém panelu chybějí",
+  "@commands.selectionCompareDirectoriesMissing.description": {
+    "sourceHash": "e61c71b"
+  },
+  "commands.selectionCompareDirectoriesSize.label": "Porovnat složky: rozdílná velikost",
+  "@commands.selectionCompareDirectoriesSize.label": {
+    "sourceHash": "6c8fd21"
+  },
+  "commands.selectionCompareDirectoriesSize.description": "V každém panelu vybere soubory, které v druhém panelu chybějí, a obě kopie souborů, jejichž velikost se liší",
+  "@commands.selectionCompareDirectoriesSize.description": {
+    "sourceHash": "ac31996"
+  },
+  "commands.selectionSelectSameKind.allFolders": "Vybrat všechny složky",
+  "@commands.selectionSelectSameKind.allFolders": {
+    "sourceHash": "5351f8b"
+  },
+  "commands.selectionSelectSameKind.sameExtension": "Vybrat vše s příponou *.{extension}",
+  "@commands.selectionSelectSameKind.sameExtension": {
+    "sourceHash": "7809a58"
+  },
+  "commands.selectionSelectSameKind.noExtension": "Vybrat všechny soubory bez přípony",
+  "@commands.selectionSelectSameKind.noExtension": {
+    "sourceHash": "d04751e"
+  },
+  "commands.selectionSelectFiles.label": "Vybrat soubory…",
+  "@commands.selectionSelectFiles.label": {
+    "sourceHash": "b7f202e"
+  },
+  "commands.selectionSelectFiles.description": "Otevře dialogové okno Vybrat soubory, kde můžete přidat do výběru odpovídající soubory",
+  "@commands.selectionSelectFiles.description": {
+    "sourceHash": "7695f3e"
+  },
+  "commands.selectionDeselectFiles.label": "Zrušit výběr souborů…",
+  "@commands.selectionDeselectFiles.label": {
+    "sourceHash": "6fb10d5"
+  },
+  "commands.selectionDeselectFiles.description": "Otevře dialogové okno Zrušit výběr souborů, kde můžete odebrat z výběru odpovídající soubory",
+  "@commands.selectionDeselectFiles.description": {
+    "sourceHash": "2a6f82f"
+  },
+  "commands.selectionMcpSelect.label": "Vybrat rozsah v panelu",
+  "@commands.selectionMcpSelect.label": {
+    "sourceHash": "d8bb646"
+  },
+  "commands.selectionMcpSelectByNames.label": "Vybrat soubory podle názvu v panelu",
+  "@commands.selectionMcpSelectByNames.label": {
+    "sourceHash": "8cfc75d"
+  },
+  "commands.networkSelectHost.label": "Vybrat síťového hostitele",
+  "@commands.networkSelectHost.label": {
+    "sourceHash": "4a9ede5"
+  },
+  "commands.serversShow.label": "Zobrazit servery",
+  "@commands.serversShow.label": {
+    "sourceHash": "092283a"
+  },
+  "commands.serversTogglePin.label": "Připnout nebo odepnout server",
+  "@commands.serversTogglePin.label": {
+    "sourceHash": "7d800c8"
+  },
+  "commands.serversDisconnect.label": "Odpojit server",
+  "@commands.serversDisconnect.label": {
+    "sourceHash": "8656022"
+  },
+  "commands.serversForgetSecret.label": "Zapomenout uložené heslo",
+  "@commands.serversForgetSecret.label": {
+    "sourceHash": "ed68566"
+  },
+  "commands.serversEdit.label": "Upravit server…",
+  "@commands.serversEdit.label": {
+    "sourceHash": "a3282a7"
+  },
+  "commands.serversConnect.label": "Připojit k serveru…",
+  "@commands.serversConnect.label": {
+    "sourceHash": "6188f47"
+  },
+  "commands.networkRefresh.label": "Znovu načíst síťové hostitele",
+  "@commands.networkRefresh.label": {
+    "sourceHash": "73966bd"
+  },
+  "commands.shareBack.label": "Zpět na seznam hostitelů",
+  "@commands.shareBack.label": {
+    "sourceHash": "42c44d5"
+  },
+  "commands.shareSelectShare.label": "Připojit se ke sdílené složce",
+  "@commands.shareSelectShare.label": {
+    "sourceHash": "6c48c8c"
+  },
+  "commands.volumeSelect.label": "Vybrat svazek",
+  "@commands.volumeSelect.label": {
+    "sourceHash": "60f5ce1"
+  },
+  "commands.volumeClose.label": "Zavřít přepínač svazků",
+  "@commands.volumeClose.label": {
+    "sourceHash": "075481e"
+  },
+  "commands.volumeSelectByName.label": "Vybrat svazek panelu podle názvu",
+  "@commands.volumeSelectByName.label": {
+    "sourceHash": "9f16865"
+  },
+  "commands.aboutOpenWebsite.label": "Otevřít webovou stránku",
+  "@commands.aboutOpenWebsite.label": {
+    "sourceHash": "3451735"
+  },
+  "commands.aboutOpenUpgrade.label": "Otevřít stránku upgradu",
+  "@commands.aboutOpenUpgrade.label": {
+    "sourceHash": "9df3bf0"
+  },
+  "commands.aboutClose.label": "Zavřít okno O aplikaci",
+  "@commands.aboutClose.label": {
+    "sourceHash": "d0096c3"
+  },
+  "commands.paletteUp.label": "Předchozí výsledek",
+  "@commands.paletteUp.label": {
+    "sourceHash": "965bc32"
+  },
+  "commands.paletteDown.label": "Další výsledek",
+  "@commands.paletteDown.label": {
+    "sourceHash": "bf56a19"
+  },
+  "commands.paletteExecute.label": "Spustit příkaz",
+  "@commands.paletteExecute.label": {
+    "sourceHash": "20f9b97"
+  },
+  "commands.paletteClose.label": "Zavřít paletu příkazů",
+  "@commands.paletteClose.label": {
+    "sourceHash": "2e75050"
+  },
+  "commands.handler.favoriteAdded": "Složka „{name}“ byla přidána do oblíbených",
+  "@commands.handler.favoriteAdded": {
+    "sourceHash": "ee59953"
+  },
+  "commands.handler.favoriteAddFailed": "Tuto složku se nepodařilo přidat do oblíbených. Zkusíte to znovu?",
+  "@commands.handler.favoriteAddFailed": {
+    "sourceHash": "0792537"
+  },
+  "commands.handler.favoriteAddSlow": "Tahle složka teď odpovídá pomalu, takže zatím není v oblíbených. Zkusíte to za chvíli znovu?",
+  "@commands.handler.favoriteAddSlow": {
+    "sourceHash": "50a9944"
+  },
+  "commands.handler.tabLimitReached": "Dosažen limit záložek",
+  "@commands.handler.tabLimitReached": {
+    "sourceHash": "2d4205a"
+  },
+  "commands.handler.noRecentlyClosedTabs": "V tomto panelu nejsou žádné naposledy zavřené záložky.",
+  "@commands.handler.noRecentlyClosedTabs": {
+    "sourceHash": "e560789"
+  },
+  "commands.handler.cloudDownloadFailed": "Stažení z cloudu se nepodařilo. {detail}",
+  "@commands.handler.cloudDownloadFailed": {
+    "sourceHash": "9efe237"
+  },
+  "commands.handler.cloudRemoveDownloadFailed": "Staženou kopii se nepodařilo odstranit. {detail}",
+  "@commands.handler.cloudRemoveDownloadFailed": {
+    "sourceHash": "11189fb"
+  },
+  "commands.handler.googleDriveLinkMissing": "Tato položka nemá odkaz na Google Drive.",
+  "@commands.handler.googleDriveLinkMissing": {
+    "sourceHash": "7be9109"
+  },
+  "commands.handler.googleDriveOpenFailed": "Tuto položku se nepodařilo otevřít v Google Drive. {detail}",
+  "@commands.handler.googleDriveOpenFailed": {
+    "sourceHash": "e7fd439"
+  },
+  "commands.handler.googleDriveLinkCopied": "Odkaz na Google Drive byl zkopírován.",
+  "@commands.handler.googleDriveLinkCopied": {
+    "sourceHash": "0997eb8"
+  },
+  "commands.handler.googleDriveCopyFailed": "Odkaz na Google Drive se nepodařilo zkopírovat. {detail}",
+  "@commands.handler.googleDriveCopyFailed": {
+    "sourceHash": "0af1fd3"
+  },
+  "commands.handler.shareLinkCopied.sevenDays": "Odkaz ke sdílení byl zkopírován. Platí sedm dní.",
+  "@commands.handler.shareLinkCopied.sevenDays": {
+    "sourceHash": "6f4055b"
+  },
+  "commands.handler.shareLinkCopied.oneDay": "Odkaz ke sdílení byl zkopírován. Platí jeden den.",
+  "@commands.handler.shareLinkCopied.oneDay": {
+    "sourceHash": "ca08c52"
+  },
+  "commands.handler.shareLinkCopied.oneHour": "Odkaz ke sdílení byl zkopírován. Platí jednu hodinu.",
+  "@commands.handler.shareLinkCopied.oneHour": {
+    "sourceHash": "8b9f0cc"
+  },
+  "commands.handler.shareLinkUnavailable": "Chcete-li zkopírovat odkaz ke sdílení, přesuňte kurzor na soubor v bucketu S3.",
+  "@commands.handler.shareLinkUnavailable": {
+    "sourceHash": "c4ea112"
+  },
+  "commands.handler.shareLinkFailed": "Odkaz ke sdílení se nepodařilo vytvořit. {detail}",
+  "@commands.handler.shareLinkFailed": {
+    "sourceHash": "5ff44b7"
+  },
+  "commands.handler.openTerminalHere.hint": "Tato složka se otevřela ve vaší terminálové aplikaci. Chcete, aby Cmdr příště otevřel jinou aplikaci? Vyberte ji v Nastavení v části Navigace a operace se soubory.",
+  "@commands.handler.openTerminalHere.hint": {
+    "sourceHash": "b29b744"
+  },
+  "commands.handler.openTerminalHere.dismiss": "Zavřít",
+  "@commands.handler.openTerminalHere.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "commands.handler.openTerminalHere.openSettings": "Otevřít Nastavení",
+  "@commands.handler.openTerminalHere.openSettings": {
+    "sourceHash": "ca381c1"
+  },
+  "commands.handler.openTerminalHere.appMissing": "Aplikace {app} už není nainstalovaná, proto se složka otevřela v Terminálu.",
+  "@commands.handler.openTerminalHere.appMissing": {
+    "sourceHash": "770ded9"
+  },
+  "commands.handler.openTerminalHere.appMissingUnnamed": "Vaše terminálová aplikace už není nainstalovaná, proto se složka otevřela v Terminálu.",
+  "@commands.handler.openTerminalHere.appMissingUnnamed": {
+    "sourceHash": "8e40ade"
+  },
+  "commands.handler.openTerminalHere.noPath": "Tato složka nemá cestu, kterou by terminál mohl otevřít.",
+  "@commands.handler.openTerminalHere.noPath": {
+    "sourceHash": "7851182"
+  },
+  "commands.handler.openTerminalHere.launchRefused": "Cmdr nedokázal spustit vaši terminálovou aplikaci. Zkuste ji jednou otevřít ručně a pak se vraťte.",
+  "@commands.handler.openTerminalHere.launchRefused": {
+    "sourceHash": "dd7296e"
+  },
+  "commands.handler.openTerminalHere.timedOut": "Spouštění vaší terminálové aplikace chvíli trvá. Ještě se možná otevře.",
+  "@commands.handler.openTerminalHere.timedOut": {
+    "sourceHash": "ed36313"
+  },
+  "commands.handler.getInfo.automationOff": "Informace potřebují, aby Cmdr mohl ovládat Finder, a to je vypnuté. Zapněte Finder pod Cmdrem v {systemSettings} > {privacyAndSecurity} > {automation}.",
+  "@commands.handler.getInfo.automationOff": {
+    "sourceHash": "4973ae2"
+  },
+  "commands.handler.getInfo.openAutomationSettings": "Otevřít nastavení {automation}",
+  "@commands.handler.getInfo.openAutomationSettings": {
+    "sourceHash": "f2708a0"
+  },
+  "commands.handler.getInfo.notReached": "Finder byl pro Cmdr nedostupný, takže se Informace neotevřely. Zkuste to ještě jednou.",
+  "@commands.handler.getInfo.notReached": {
+    "sourceHash": "9cbc272"
+  },
+  "commands.handler.zoomResetHintShortcut": "Úroveň zvětšení resetujete na 100 % zkratkou {shortcut}.",
+  "@commands.handler.zoomResetHintShortcut": {
+    "sourceHash": "efdd715"
+  },
+  "commands.handler.zoomResetHintMenu": "Úroveň zvětšení resetujete na 100 % v nabídce Zobrazení > Zvětšení > 100 %.",
+  "@commands.handler.zoomResetHintMenu": {
+    "sourceHash": "f10315d"
+  },
+  "commands.handler.zoomReset": "Zvětšení bylo resetováno na 100 %.",
+  "@commands.handler.zoomReset": {
+    "sourceHash": "8c6bf82"
+  },
+  "commands.handler.zoomIncreased": "Zvětšení zvýšeno na {size} %. {hint}",
+  "@commands.handler.zoomIncreased": {
+    "sourceHash": "39fea10"
+  },
+  "commands.handler.zoomDecreased": "Zvětšení sníženo na {size} %. {hint}",
+  "@commands.handler.zoomDecreased": {
+    "sourceHash": "71404cb"
+  },
+  "commands.suggestedOpsShow.label": "Návrhy AI",
+  "@commands.suggestedOpsShow.label": {
+    "sourceHash": "1a1f5b9"
+  },
+  "commands.suggestedOpsShow.description": "Zobrazí operace se soubory navržené AI k posouzení a nechá vás rozhodnout, co se spustí",
+  "@commands.suggestedOpsShow.description": {
+    "sourceHash": "7efe8c9"
+  },
+  "commands.helpViewDebugLog.label": "Zobrazit ladicí protokol",
+  "@commands.helpViewDebugLog.label": {
+    "sourceHash": "007c98d"
+  },
+  "commands.helpViewDebugLog.description": "Zobrazí v prohlížeči souborů ladicí protokol aplikace Cmdr, který se průběžně aktualizuje",
+  "@commands.helpViewDebugLog.description": {
+    "sourceHash": "a937e6e"
+  },
+  "commands.handler.viewDebugLog.disabled": "Ukládání protokolů je vypnuté. Chcete-li zobrazit ladicí protokol, nastavte v Nastavení > Pokročilé limit místa na disku větší než 0 a restartujte Cmdr.",
+  "@commands.handler.viewDebugLog.disabled": {
+    "sourceHash": "96f16fc"
+  },
+  "commands.handler.viewDebugLog.unavailable": "Ladicí protokol se nepodařilo otevřít. Zkuste to znovu.",
+  "@commands.handler.viewDebugLog.unavailable": {
+    "sourceHash": "794a5b3"
+  }
+}

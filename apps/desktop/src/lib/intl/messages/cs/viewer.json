@@ -1,0 +1,489 @@
+{
+  "viewer.window.fallbackTitle": "Prohlížeč",
+  "@viewer.window.fallbackTitle": {
+    "sourceHash": "678bfa6"
+  },
+  "viewer.window.titleSuffix": "{fileName} | Prohlížeč",
+  "@viewer.window.titleSuffix": {
+    "sourceHash": "5ebd7f4"
+  },
+  "viewer.srHeading": "Prohlížeč souborů",
+  "@viewer.srHeading": {
+    "sourceHash": "b32f632"
+  },
+  "viewer.loading": "Načítání…",
+  "@viewer.loading": {
+    "sourceHash": "ba3bbbe"
+  },
+  "viewer.error.noPath": "Nebyla zadána cesta k souboru",
+  "@viewer.error.noPath": {
+    "sourceHash": "2b069fc"
+  },
+  "viewer.error.readFailed": "Tento soubor se nepodařilo přečíst. Zkusíte to znovu?",
+  "@viewer.error.readFailed": {
+    "sourceHash": "8c420fd"
+  },
+  "viewer.error.notFound": "Tento soubor se nepodařilo najít. Mohl být přesunut, přejmenován nebo smazán.",
+  "@viewer.error.notFound": {
+    "sourceHash": "9257fab"
+  },
+  "viewer.error.isDirectory": "Toto je složka, takže tu není co zobrazit. Otevřete ji v hlavním okně a uvidíte, co obsahuje.",
+  "@viewer.error.isDirectory": {
+    "sourceHash": "5abb771"
+  },
+  "viewer.error.timeout": "Soubor se nepodařilo načíst. Svazek může být pomalý nebo neodpovídá.",
+  "@viewer.error.timeout": {
+    "sourceHash": "74b9656"
+  },
+  "viewer.error.tooLargeToPreview": "Tento soubor je příliš velký, aby se odsud dal zobrazit v náhledu. Nejdřív ho zkopírujte jinam a pak ho otevřete.",
+  "@viewer.error.tooLargeToPreview": {
+    "sourceHash": "8696039"
+  },
+  "viewer.error.archiveUnreadable": "Tento soubor se nepodařilo otevřít z archivu. Může být zašifrovaný, poškozený nebo ve formátu, který Cmdr neumí přečíst.",
+  "@viewer.error.archiveUnreadable": {
+    "sourceHash": "e0b8f4e"
+  },
+  "viewer.error.coldStorage": "Tento soubor je archivovaný, takže dokud se neobnoví, není co zobrazit. Obnovte ho v konzoli svého poskytovatele úložiště a pak ho otevřete znovu.",
+  "@viewer.error.coldStorage": {
+    "sourceHash": "236cd1b"
+  },
+  "viewer.error.linkTargetUnreachable": "Tento soubor je za odkazem na jiný server a ten server je teď pro Cmdr nedostupný. Zkontrolujte, že server běží, a zkuste to znovu.",
+  "@viewer.error.linkTargetUnreachable": {
+    "sourceHash": "8dcb736"
+  },
+  "viewer.error.retry": "Zkusit znovu",
+  "@viewer.error.retry": {
+    "sourceHash": "942087c"
+  },
+  "viewer.error.cancel": "Zrušit",
+  "@viewer.error.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "viewer.error.stoppedResponding": "Přenos souboru přestal postupovat. Zkontrolujte, že je telefon nebo server pořád připojený, a zkuste to znovu.",
+  "@viewer.error.stoppedResponding": {
+    "sourceHash": "f88b690"
+  },
+  "viewer.pull.title": "Získává se soubor {fileName} pro náhled",
+  "@viewer.pull.title": {
+    "sourceHash": "3a02768"
+  },
+  "viewer.pull.progress": "{doneText} z {totalText}",
+  "@viewer.pull.progress": {
+    "sourceHash": "edce3be"
+  },
+  "viewer.pull.progressUnknownTotal": "Zatím {doneText}",
+  "@viewer.pull.progressUnknownTotal": {
+    "sourceHash": "548095e"
+  },
+  "viewer.content.ariaLabel": "Obsah souboru: {fileName}",
+  "@viewer.content.ariaLabel": {
+    "sourceHash": "57b8613"
+  },
+  "viewer.binaryWarning.body": "Toto je surové zobrazení souboru. Možná bude lepší zobrazit skutečný <kindName>{category, select, image {obrázek} document {dokument} other {soubor {ext}}}</kindName>. Zavřete toto okno a stiskněte <quickLookKey></quickLookKey>, čímž otevřete Rychlý náhled, nebo stiskněte <openKey></openKey> (případně na soubor dvakrát klikněte) a otevřete ho v přiřazené aplikaci.",
+  "@viewer.binaryWarning.body": {
+    "sourceHash": "fd5cfb7"
+  },
+  "viewer.binaryWarning.dismiss": "Zavřít",
+  "@viewer.binaryWarning.dismiss": {
+    "sourceHash": "7d9eb7a"
+  },
+  "viewer.binaryWarning.suppressForever": "Toto varování už nikdy nezobrazovat",
+  "@viewer.binaryWarning.suppressForever": {
+    "sourceHash": "b85b92b"
+  },
+  "viewer.search.placeholder": "Hledat v souboru…",
+  "@viewer.search.placeholder": {
+    "sourceHash": "a3268b3"
+  },
+  "viewer.search.ariaLabel": "Hledat text",
+  "@viewer.search.ariaLabel": {
+    "sourceHash": "38d268a"
+  },
+  "viewer.search.caseSensitive": "Rozlišovat velká a malá písmena",
+  "@viewer.search.caseSensitive": {
+    "sourceHash": "e124ba4"
+  },
+  "viewer.search.regex": "Regex",
+  "@viewer.search.regex": {
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "Regex is the ruled short mode label (terms.json regex forms); queryUi.mode.regex.label also ships Regex"
+  },
+  "viewer.search.matchPosition": "{current} z {total}{more, select, yes {+} other {}}",
+  "@viewer.search.matchPosition": {
+    "sourceHash": "ec24db4"
+  },
+  "viewer.search.searching": "Hledání…",
+  "@viewer.search.searching": {
+    "sourceHash": "c31723a"
+  },
+  "viewer.search.partial": "(neúplné)",
+  "@viewer.search.partial": {
+    "sourceHash": "d0ffde3"
+  },
+  "viewer.search.noMatches": "Žádné shody",
+  "@viewer.search.noMatches": {
+    "sourceHash": "2df01a0"
+  },
+  "viewer.search.stop": "Zastavit hledání",
+  "@viewer.search.stop": {
+    "sourceHash": "c48cf72"
+  },
+  "viewer.search.stopTooltip": "Zastavit procházení a ponechat nalezené shody",
+  "@viewer.search.stopTooltip": {
+    "sourceHash": "b86629c"
+  },
+  "viewer.search.previous": "Předchozí shoda",
+  "@viewer.search.previous": {
+    "sourceHash": "daa2f8c"
+  },
+  "viewer.search.next": "Další shoda",
+  "@viewer.search.next": {
+    "sourceHash": "825e5ab"
+  },
+  "viewer.search.close": "Zavřít hledání",
+  "@viewer.search.close": {
+    "sourceHash": "55656b5"
+  },
+  "viewer.search.closeTooltip": "Zavřít",
+  "@viewer.search.closeTooltip": {
+    "sourceHash": "7d9eb7a"
+  },
+  "viewer.toolbar.viewMode.ariaLabel": "Režim zobrazení",
+  "@viewer.toolbar.viewMode.ariaLabel": {
+    "sourceHash": "18997f2"
+  },
+  "viewer.toolbar.viewMode.text": "Text",
+  "@viewer.toolbar.viewMode.text": {
+    "sourceHash": "71988c4",
+    "sameAsSourceJustification": "Czech uses the same word Text (Total Commander Lister 2075/1761 Text)"
+  },
+  "viewer.toolbar.viewMode.binary": "Binární",
+  "@viewer.toolbar.viewMode.binary": {
+    "sourceHash": "ee1c827"
+  },
+  "viewer.toolbar.viewMode.hex": "Hexadecimální",
+  "@viewer.toolbar.viewMode.hex": {
+    "sourceHash": "69493e6"
+  },
+  "viewer.toolbar.viewMode.viewAsText": "Zobrazit jako text",
+  "@viewer.toolbar.viewMode.viewAsText": {
+    "sourceHash": "a0059b8"
+  },
+  "viewer.toolbar.viewMode.viewAsImage": "Zobrazit jako obrázek",
+  "@viewer.toolbar.viewMode.viewAsImage": {
+    "sourceHash": "ae04259"
+  },
+  "viewer.toolbar.viewMode.viewAsPdf": "Zobrazit jako PDF",
+  "@viewer.toolbar.viewMode.viewAsPdf": {
+    "sourceHash": "ee89800"
+  },
+  "viewer.kind.image": "Obrázek",
+  "@viewer.kind.image": {
+    "sourceHash": "1aa4cb0"
+  },
+  "viewer.kind.pdf": "PDF",
+  "@viewer.kind.pdf": {
+    "sourceHash": "1d393b0",
+    "sameAsSourceJustification": "PDF is a format name, kept verbatim (macOS cs writes PDF)"
+  },
+  "viewer.kind.text": "Text",
+  "@viewer.kind.text": {
+    "sourceHash": "71988c4",
+    "sameAsSourceJustification": "Czech uses the same word Text (Total Commander Lister 2075 Text)"
+  },
+  "viewer.kind.markdown": "Markdown",
+  "@viewer.kind.markdown": {
+    "sourceHash": "0e52f6b",
+    "sameAsSourceJustification": "Markdown is the name of a text format; the @key description says don't translate it."
+  },
+  "viewer.toolbar.viewMode.viewFormatted": "Zobrazit formátovaně",
+  "@viewer.toolbar.viewMode.viewFormatted": {
+    "sourceHash": "475194e"
+  },
+  "viewer.markdown.loading": "Načítá se dokument",
+  "@viewer.markdown.loading": {
+    "sourceHash": "990df85"
+  },
+  "viewer.markdown.error": "Promiňte, tento dokument se nepodařilo naformátovat. Pořád si ho můžete přečíst jako text.",
+  "@viewer.markdown.error": {
+    "sourceHash": "c06f373"
+  },
+  "viewer.markdown.remoteImages.notice": "Obrázky z webu jsou skryté. Když je načtete, uvidí tyto weby vaši IP adresu.",
+  "@viewer.markdown.remoteImages.notice": {
+    "sourceHash": "4cff98e"
+  },
+  "viewer.markdown.remoteImages.load": "Načíst obrázky z webu",
+  "@viewer.markdown.remoteImages.load": {
+    "sourceHash": "ec1b218"
+  },
+  "viewer.markdown.image.remote": "Obrázek z webu",
+  "@viewer.markdown.image.remote": {
+    "sourceHash": "b698d98"
+  },
+  "viewer.markdown.image.blocked": "Obrázek se nezobrazuje",
+  "@viewer.markdown.image.blocked": {
+    "sourceHash": "22d87c7"
+  },
+  "viewer.markdown.image.missing": "Obrázek nenalezen",
+  "@viewer.markdown.image.missing": {
+    "sourceHash": "c837039"
+  },
+  "viewer.markdown.link.missing": "Soubor, na který tento odkaz vede, se nepodařilo najít.",
+  "@viewer.markdown.link.missing": {
+    "sourceHash": "e89bea2"
+  },
+  "viewer.markdown.link.folder": "Tento odkaz vede na složku, takže tu není co zobrazit.",
+  "@viewer.markdown.link.folder": {
+    "sourceHash": "a8740f1"
+  },
+  "viewer.markdown.link.blocked": "Prohlížeč otevírá jen webové odkazy a odkazy na soubory na tomto disku.",
+  "@viewer.markdown.link.blocked": {
+    "sourceHash": "f931a8d"
+  },
+  "viewer.markdown.link.unreadable": "To, na co tento odkaz vede, se nepodařilo otevřít.",
+  "@viewer.markdown.link.unreadable": {
+    "sourceHash": "e199e8c"
+  },
+  "viewer.toolbar.encoding.placeholder": "Kódování",
+  "@viewer.toolbar.encoding.placeholder": {
+    "sourceHash": "4d25a47"
+  },
+  "viewer.toolbar.encoding.group.unicode": "Unicode",
+  "@viewer.toolbar.encoding.group.unicode": {
+    "sourceHash": "f922e0d",
+    "sameAsSourceJustification": "Unicode is a standard name, kept verbatim (Total Commander cs 5944 Unicode)"
+  },
+  "viewer.toolbar.encoding.group.western": "Západní",
+  "@viewer.toolbar.encoding.group.western": {
+    "sourceHash": "d7d2f0f"
+  },
+  "viewer.toolbar.encoding.detectedSuffix": "{label} (rozpoznáno)",
+  "@viewer.toolbar.encoding.detectedSuffix": {
+    "sourceHash": "2096536"
+  },
+  "viewer.toolbar.tail.label": "Sledovat",
+  "@viewer.toolbar.tail.label": {
+    "sourceHash": "ae9c3bd"
+  },
+  "viewer.toolbar.tail.ariaLabel": "Režim sledování: sledovat změny souboru",
+  "@viewer.toolbar.tail.ariaLabel": {
+    "sourceHash": "af0477f"
+  },
+  "viewer.toolbar.tail.tooltip": "Automaticky sledovat změny souboru",
+  "@viewer.toolbar.tail.tooltip": {
+    "sourceHash": "733e57f"
+  },
+  "viewer.toolbar.reindexing": "Znovu se indexuje…",
+  "@viewer.toolbar.reindexing": {
+    "sourceHash": "f668818"
+  },
+  "viewer.statusBar.ariaLabel": "Informace o souboru",
+  "@viewer.statusBar.ariaLabel": {
+    "sourceHash": "375b97d"
+  },
+  "viewer.statusBar.lineCount": "{count} {count, plural, one {řádek} few {řádky} many {řádku} other {řádků}}",
+  "@viewer.statusBar.lineCount": {
+    "sourceHash": "1af08ec"
+  },
+  "viewer.statusBar.badge.inMemory": "v paměti",
+  "@viewer.statusBar.badge.inMemory": {
+    "sourceHash": "d9b8483"
+  },
+  "viewer.statusBar.badge.inMemoryTooltip": "Celý soubor je v paměti. Můžete se rychle posunout na libovolný řádek.",
+  "@viewer.statusBar.badge.inMemoryTooltip": {
+    "sourceHash": "4eb50b8"
+  },
+  "viewer.statusBar.badge.indexed": "zaindexováno",
+  "@viewer.statusBar.badge.indexed": {
+    "sourceHash": "658a3e8"
+  },
+  "viewer.statusBar.badge.indexedTooltip": "Soubor je zaindexovaný, takže čísla řádků jsou přesná a můžete se rychle posunout kamkoli.",
+  "@viewer.statusBar.badge.indexedTooltip": {
+    "sourceHash": "2604f1a"
+  },
+  "viewer.statusBar.badge.streamingIndexing": "streamování, indexování…",
+  "@viewer.statusBar.badge.streamingIndexing": {
+    "sourceHash": "db1718e"
+  },
+  "viewer.statusBar.badge.streamingIndexingTooltip": "Toto je velký soubor v režimu streamování. Na pozadí se vytváří index (max. {seconds} s)… Čísla řádků jsou zatím přibližná.",
+  "@viewer.statusBar.badge.streamingIndexingTooltip": {
+    "sourceHash": "60095b8"
+  },
+  "viewer.statusBar.badge.streaming": "streamování",
+  "@viewer.statusBar.badge.streaming": {
+    "sourceHash": "b304adc"
+  },
+  "viewer.statusBar.badge.streamingTooltip": "Toto je velký soubor v režimu streamování. Indexování by trvalo déle než {seconds} s, takže neproběhlo. Čísla řádků jsou jen odhad.",
+  "@viewer.statusBar.badge.streamingTooltip": {
+    "sourceHash": "b1a14ac"
+  },
+  "viewer.statusBar.badge.wrap": "zalamování",
+  "@viewer.statusBar.badge.wrap": {
+    "sourceHash": "f0a2899"
+  },
+  "viewer.statusBar.badge.wrapTooltip": "Řádky se zalamují na okraji okna",
+  "@viewer.statusBar.badge.wrapTooltip": {
+    "sourceHash": "af2ca76"
+  },
+  "viewer.statusBar.hint.image": "Kliknutí: 100 % / přizpůsobit · Posouvání: zvětšení · Tažení: posun",
+  "@viewer.statusBar.hint.image": {
+    "sourceHash": "bca0205"
+  },
+  "viewer.statusBar.hint.wrap": "{key} zalomení",
+  "@viewer.statusBar.hint.wrap": {
+    "sourceHash": "b30ce00"
+  },
+  "viewer.statusBar.hint.tail": "{key} sledovat",
+  "@viewer.statusBar.hint.tail": {
+    "sourceHash": "63d25d1"
+  },
+  "viewer.statusBar.hint.search": "{key} hledat",
+  "@viewer.statusBar.hint.search": {
+    "sourceHash": "1cf8c07"
+  },
+  "viewer.media.dimensions": "{width} × {height}",
+  "@viewer.media.dimensions": {
+    "sourceHash": "ece2cad",
+    "sameAsSourceJustification": "Placeholder-only string with the multiplication sign, identical in Czech"
+  },
+  "viewer.image.loading": "Načítání obrázku",
+  "@viewer.image.loading": {
+    "sourceHash": "65999b8"
+  },
+  "viewer.image.error": "Promiňte, tento obrázek se nepodařilo zobrazit. Soubor může být poškozený nebo ve formátu, který Cmdr neumí zobrazit.",
+  "@viewer.image.error": {
+    "sourceHash": "1e8c6d9"
+  },
+  "viewer.pdf.loading": "Načítání PDF",
+  "@viewer.pdf.loading": {
+    "sourceHash": "7f9acf3"
+  },
+  "viewer.copyDialog.confirmTitleKnown": "Zkopírovat {size} do schránky?",
+  "@viewer.copyDialog.confirmTitleKnown": {
+    "sourceHash": "7f97ebf"
+  },
+  "viewer.copyDialog.confirmTitleUnknown": "Zkopírovat tento výběr do schránky?",
+  "@viewer.copyDialog.confirmTitleUnknown": {
+    "sourceHash": "0956c8b"
+  },
+  "viewer.copyDialog.confirmBody": "Vložení velkého množství dat může zpomalit ostatní aplikace. Zkuste výběr zúžit hledáním (⌘F).",
+  "@viewer.copyDialog.confirmBody": {
+    "sourceHash": "c1f2927"
+  },
+  "viewer.copyDialog.cancel": "Zrušit",
+  "@viewer.copyDialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "viewer.copyDialog.saveAsFile": "Uložit jako soubor…",
+  "@viewer.copyDialog.saveAsFile": {
+    "sourceHash": "7b9b279"
+  },
+  "viewer.copyDialog.copy": "Zkopírovat",
+  "@viewer.copyDialog.copy": {
+    "sourceHash": "e21f935"
+  },
+  "viewer.copyDialog.refuseBody": "Výběr je příliš velký, limit schránky je 100 MB. Zkuste hledáním (⌘F) najít, co potřebujete, nebo uložte výběr jako soubor.",
+  "@viewer.copyDialog.refuseBody": {
+    "sourceHash": "3eaf921"
+  },
+  "viewer.reloadToast.grew": "Soubor se na disku změnil. Znovu načíst?",
+  "@viewer.reloadToast.grew": {
+    "sourceHash": "d66b013"
+  },
+  "viewer.reloadToast.rotated": "Soubor byl na disku nahrazen. Načtěte ho znovu a uvidíte nový obsah.",
+  "@viewer.reloadToast.rotated": {
+    "sourceHash": "50804c2"
+  },
+  "viewer.reloadToast.reload": "Znovu načíst",
+  "@viewer.reloadToast.reload": {
+    "sourceHash": "bdc090e"
+  },
+  "viewer.reloadToast.dismissTooltip": "Zavřít bez opětovného načtení",
+  "@viewer.reloadToast.dismissTooltip": {
+    "sourceHash": "7f829ed"
+  },
+  "viewer.copy.onClipboard": "{size} ve schránce",
+  "@viewer.copy.onClipboard": {
+    "sourceHash": "45934ed"
+  },
+  "viewer.copy.clipboardUnreachable": "Schránka je nedostupná. Zkusíte to znovu?",
+  "@viewer.copy.clipboardUnreachable": {
+    "sourceHash": "3c8ddb8"
+  },
+  "viewer.copy.readTooLong": "Čtení trvalo příliš dlouho. Zkusíte menší výběr?",
+  "@viewer.copy.readTooLong": {
+    "sourceHash": "2275e83"
+  },
+  "viewer.copy.copyFailed": "Výběr se nepodařilo zkopírovat. Zkusíte to znovu?",
+  "@viewer.copy.copyFailed": {
+    "sourceHash": "b08416d"
+  },
+  "viewer.copy.readFailed": "Výběr se nepodařilo přečíst. Zkusíte to znovu?",
+  "@viewer.copy.readFailed": {
+    "sourceHash": "24ea14a"
+  },
+  "viewer.saveAs.title": "Uložit výběr",
+  "@viewer.saveAs.title": {
+    "sourceHash": "dd183ea"
+  },
+  "viewer.saveAs.defaultName": "výběr",
+  "@viewer.saveAs.defaultName": {
+    "sourceHash": "6504513"
+  },
+  "viewer.saveAs.panelFailed": "Panel pro ukládání se nepodařilo otevřít. Zkusíte to znovu?",
+  "@viewer.saveAs.panelFailed": {
+    "sourceHash": "ade021c"
+  },
+  "viewer.saveAs.saved": "Výběr byl uložen do souboru {name}",
+  "@viewer.saveAs.saved": {
+    "sourceHash": "5083c12"
+  },
+  "viewer.saveAs.savedInSourceEncoding": "Výběr je uložený do souboru {name} v původním kódování souboru, protože některé znaky nešly převést.",
+  "@viewer.saveAs.savedInSourceEncoding": {
+    "sourceHash": "9ac85a1"
+  },
+  "viewer.saveAs.tooLong": "Ukládání trvalo příliš dlouho. Zkusíte menší výběr?",
+  "@viewer.saveAs.tooLong": {
+    "sourceHash": "f31d7f4"
+  },
+  "viewer.saveAs.saveFailed": "Výběr se nepodařilo uložit. Zkusíte to znovu?",
+  "@viewer.saveAs.saveFailed": {
+    "sourceHash": "ca5709f"
+  },
+  "viewer.saveAs.destinationReadOnly": "Toto umístění je jen ke čtení. Zvolíte jinou složku, kam výběr uložit?",
+  "@viewer.saveAs.destinationReadOnly": {
+    "sourceHash": "8d627aa"
+  },
+  "viewer.row.continuesTooltip": "Cmdr tento řádek rozdělil, protože byl velmi dlouhý. Soubor tu ve skutečnosti žádné zalomení řádku nemá.",
+  "@viewer.row.continuesTooltip": {
+    "sourceHash": "7df69ed"
+  },
+  "viewer.row.continuesLabel": "Cmdr tento řádek rozdělil, protože byl velmi dlouhý. Soubor tu ve skutečnosti žádné zalomení řádku nemá.",
+  "@viewer.row.continuesLabel": {
+    "sourceHash": "7df69ed"
+  },
+  "viewer.selection.toEndOfFile": "Vybráno od řádku {line} do konce souboru",
+  "@viewer.selection.toEndOfFile": {
+    "sourceHash": "62d95be"
+  },
+  "viewer.selection.singleLine": "{chars, plural, one {Vybrán # znak} few {Vybrány # znaky} many {Vybráno # znaku} other {Vybráno # znaků}} na řádku {line}",
+  "@viewer.selection.singleLine": {
+    "sourceHash": "eb11697"
+  },
+  "viewer.selection.multiLine": "Vybrány řádky {startLine} až {endLine}, {chars, plural, one {# znak} few {# znaky} many {# znaku} other {# znaků}}",
+  "@viewer.selection.multiLine": {
+    "sourceHash": "5ba7791"
+  },
+  "viewer.selection.charsOnly": "{chars, plural, one {Vybrán # znak} few {Vybrány # znaky} many {Vybráno # znaku} other {Vybráno # znaků}}",
+  "@viewer.selection.charsOnly": {
+    "sourceHash": "3db2c4e"
+  },
+  "viewer.selection.toEndOfFileNoLine": "Vybráno až do konce souboru",
+  "@viewer.selection.toEndOfFileNoLine": {
+    "sourceHash": "e7e0442"
+  },
+  "viewer.error.linkNeedsConsent": "Tento soubor je za odkazem na jiný server a Cmdr zatím nemá povoleno se tam přihlásit. Otevřete jeho složku v panelu a rozhodněte.",
+  "@viewer.error.linkNeedsConsent": {
+    "sourceHash": "b9b3e1f"
+  }
+}

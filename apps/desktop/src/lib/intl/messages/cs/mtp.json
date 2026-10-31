@@ -1,0 +1,91 @@
+{
+  "mtp.connectedToast.title": "Připojeno: {deviceName}",
+  "@mtp.connectedToast.title": {
+    "sourceHash": "562319d"
+  },
+  "mtp.connectedToast.bodyMac": "Cmdr kvůli přístupu k tomuto zařízení pozastavil systémový proces macOS pro fotoaparáty (ptpcamerad). Pokud chcete zařízení používat v jiné aplikaci, vypněte v Nastavení podporu MTP.",
+  "@mtp.connectedToast.bodyMac": {
+    "sourceHash": "3ace37b"
+  },
+  "mtp.connectedToast.bodyOther": "Pokud chcete toto zařízení používat v jiné aplikaci, vypněte v Nastavení podporu MTP.",
+  "@mtp.connectedToast.bodyOther": {
+    "sourceHash": "6f42620"
+  },
+  "mtp.connectedToast.dontShowAgain": "Už nezobrazovat",
+  "@mtp.connectedToast.dontShowAgain": {
+    "sourceHash": "f6f62e0"
+  },
+  "mtp.connectedToast.disableMtp": "Vypnout MTP…",
+  "@mtp.connectedToast.disableMtp": {
+    "sourceHash": "17c54f2"
+  },
+  "mtp.connectedToast.ok": "OK",
+  "@mtp.connectedToast.ok": {
+    "sourceHash": "565339b",
+    "sameAsSourceJustification": "OK is the standard Czech button label (macOS cs and the cs catalog: fileOperations.button.ok, ui.alertDialog.defaultButton)."
+  },
+  "mtp.permissionDialog.title": "Nelze získat přístup k zařízení USB",
+  "@mtp.permissionDialog.title": {
+    "sourceHash": "1b440ed"
+  },
+  "mtp.permissionDialog.description": "Cmdr nemá oprávnění přistupovat k tomuto zařízení. Aby Linux udělil přístup k zařízením MTP, potřebuje pravidla udev.",
+  "@mtp.permissionDialog.description": {
+    "sourceHash": "fdb8772"
+  },
+  "mtp.permissionDialog.explanation": "Spusťte v terminálu tento příkaz, který pravidla nainstaluje a znovu načte:",
+  "@mtp.permissionDialog.explanation": {
+    "sourceHash": "6bc70dd"
+  },
+  "mtp.permissionDialog.helpText": "Po spuštění příkazu zařízení odpojte, zase ho připojte a zkuste to znovu.",
+  "@mtp.permissionDialog.helpText": {
+    "sourceHash": "519f195"
+  },
+  "mtp.permissionDialog.close": "Zavřít",
+  "@mtp.permissionDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "mtp.permissionDialog.retry": "Zkusit se znovu připojit",
+  "@mtp.permissionDialog.retry": {
+    "sourceHash": "eccee4e"
+  },
+  "mtp.ptpcameradDialog.title": "K zařízení MTP se nelze připojit",
+  "@mtp.ptpcameradDialog.title": {
+    "sourceHash": "8cb1f59"
+  },
+  "mtp.ptpcameradDialog.inUseBy": "Zařízení používá <processName>{process}</processName>.",
+  "@mtp.ptpcameradDialog.inUseBy": {
+    "sourceHash": "5b97c25"
+  },
+  "mtp.ptpcameradDialog.inUseGeneric": "K zařízení má výhradní přístup jiný proces.",
+  "@mtp.ptpcameradDialog.inUseGeneric": {
+    "sourceHash": "cfba635"
+  },
+  "mtp.ptpcameradDialog.explanation": "V macOS si zařízení s Androidem automaticky zabírá systémový proces <code>ptpcamerad</code>. Obejdete to tak, že v Terminálu spustíte následující příkaz (nechte ho běžet, dokud používáte Cmdr):",
+  "@mtp.ptpcameradDialog.explanation": {
+    "sourceHash": "65b6ee3"
+  },
+  "mtp.ptpcameradDialog.helpText": "Tento příkaz po celou dobu běhu průběžně zastavuje ptpcamerad. Až bude hotovo, zastavte ho v Terminálu klávesami <key>Ctrl+C</key>.",
+  "@mtp.ptpcameradDialog.helpText": {
+    "sourceHash": "85b5060"
+  },
+  "mtp.ptpcameradDialog.close": "Zavřít",
+  "@mtp.ptpcameradDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "mtp.ptpcameradDialog.retry": "Zkusit se znovu připojit",
+  "@mtp.ptpcameradDialog.retry": {
+    "sourceHash": "eccee4e"
+  },
+  "mtp.readiness.connecting": "Pořád se připojuje. Odemkněte telefon, a pokud se zeptá, klepněte na „Povolit“.",
+  "@mtp.readiness.connecting": {
+    "sourceHash": "389b779"
+  },
+  "mtp.readiness.connectingTooltip": "Cmdr to zkouší, dokud je telefon zapojený, a jakmile se připojí, můžete ho otevřít.",
+  "@mtp.readiness.connectingTooltip": {
+    "sourceHash": "4f4066b"
+  },
+  "mtp.deviceFallbackName": "Zařízení MTP",
+  "@mtp.deviceFallbackName": {
+    "sourceHash": "8ba7a69"
+  }
+}

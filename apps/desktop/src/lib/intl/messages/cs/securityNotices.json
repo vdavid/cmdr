@@ -1,0 +1,54 @@
+{
+  "securityNotices.count": "{count, plural, one {{countText}krát} few {{countText}krát} many {{countText}krát} other {{countText}krát}} od otevření Cmdru",
+  "@securityNotices.count": {
+    "sourceHash": "f766fdb"
+  },
+  "securityNotices.dismiss": "Zavřít",
+  "@securityNotices.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "securityNotices.mcpForeignOrigin.title": "Cmdr zabránil webové stránce v přístupu k serveru MCP",
+  "@securityNotices.mcpForeignOrigin.title": {
+    "sourceHash": "8ce6bad"
+  },
+  "securityNotices.mcpForeignOrigin.body": "Webová stránka otevřená v prohlížeči se pokusila komunikovat s Cmdrem. Nic se nedostalo dovnitř. Pokud se to opakuje, zavřete záložky prohlížeče, kterým nedůvěřujete.",
+  "@securityNotices.mcpForeignOrigin.body": {
+    "sourceHash": "6264738"
+  },
+  "securityNotices.mcpForeignOrigin.openSettings": "Nastavení MCP",
+  "@securityNotices.mcpForeignOrigin.openSettings": {
+    "sourceHash": "c63c58c"
+  },
+  "securityNotices.smbSignatureRefused.title": "Cmdr odmítl odpověď ze sdílené složky {name}",
+  "@securityNotices.smbSignatureRefused.title": {
+    "sourceHash": "aedb947"
+  },
+  "securityNotices.smbSignatureRefused.titleUnnamed": "Cmdr odmítl odpověď od serveru",
+  "@securityNotices.smbSignatureRefused.titleUnnamed": {
+    "sourceHash": "17685e9"
+  },
+  "securityNotices.smbSignatureRefused.body": "Odpověď neměla podpis serveru, takže jí Cmdr nedůvěřoval. Může to způsobit nespolehlivé síťové zařízení, ale také někdo, kdo zasahuje do provozu mezi vámi a serverem. Znovu připojte sdílenou složku, a pokud se to zopakuje, zkontrolujte svou síť.",
+  "@securityNotices.smbSignatureRefused.body": {
+    "sourceHash": "d1b8716"
+  },
+  "securityNotices.smbSignatureRefused.reconnect": "Znovu připojit",
+  "@securityNotices.smbSignatureRefused.reconnect": {
+    "sourceHash": "bf8a9ea"
+  },
+  "securityNotices.smbSignatureRefused.disconnect": "Odpojit",
+  "@securityNotices.smbSignatureRefused.disconnect": {
+    "sourceHash": "acfc5be"
+  },
+  "securityNotices.updateNotGenuine.title": "Cmdr tuto aktualizaci nenainstaloval: není to pravá verze Cmdru",
+  "@securityNotices.updateNotGenuine.title": {
+    "sourceHash": "be55b39"
+  },
+  "securityNotices.updateNotGenuine.body": "Každá aktualizace musí mít podpis Cmdru a tahle ho nemá. Nic se nenainstalovalo a váš současný Cmdr zůstal beze změny. Stáhněte si nejnovější verzi z getcmdr.com a dejte prosím vědět Davidovi: může to znamenat, že někdo manipuluje s aktualizacemi.",
+  "@securityNotices.updateNotGenuine.body": {
+    "sourceHash": "53936ec"
+  },
+  "securityNotices.updateNotGenuine.openWebsite": "Otevřít getcmdr.com",
+  "@securityNotices.updateNotGenuine.openWebsite": {
+    "sourceHash": "077f325"
+  }
+}
