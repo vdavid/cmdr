@@ -368,6 +368,8 @@ impl SmbVolume {
             }
 
             let mut finished = false;
+            // Held until the CLOSE's answer, so a delete of this file waits for it.
+            let mut closing = None;
             loop {
                 tokio::select! {
                     biased;
@@ -382,13 +384,18 @@ impl SmbVolume {
                     }
                     chunk = download.next_chunk() => match chunk {
                         Some(Ok(bytes)) => {
+                            // The last byte. smb2 put the CLOSE on the wire before
+                            // handing it out; only its answer is left. Registered
+                            // before the consumer can have it.
+                            let last = download.bytes_received() == total_size;
+                            if last {
+                                closing = Some(share.closing_reads.begin(&smb_path_owned));
+                            }
                             if chunk_tx.send(Ok(bytes)).await.is_err() {
                                 // Consumer dropped; stop pumping.
                                 break;
                             }
-                            if download.bytes_received() == total_size {
-                                // The last byte. smb2 put the CLOSE on the wire
-                                // before handing it out; only its answer is left.
+                            if last {
                                 finished = true;
                                 break;
                             }
@@ -410,10 +417,7 @@ impl SmbVolume {
             }
             // End the consumer's stream NOW, before the CLOSE's answer: waiting
             // for it cost every streamed file one round trip. That's safe for a
-            // move that deletes the source next: the CLOSE went out on this
-            // connection's socket before the last chunk was handed out, so any
-            // request the consumer sends afterwards is behind it on the wire,
-            // and the download opened with `FILE_SHARE_DELETE` anyway.
+            // move that deletes the source next: the delete waits for `closing`.
             drop(chunk_tx);
             if finished && let Err(e) = finish_download(download).await {
                 // The consumer has every byte, so there's nobody to hand this to.
@@ -426,6 +430,7 @@ impl SmbVolume {
                     e
                 );
             }
+            drop(closing);
             // `download` drops here. After the last byte its handle is closed
             // (the CLOSE is out); a download stopped earlier (cancel, consumer
             // gone, error) queues its CLOSE on the drop (smb2 0.32.0).

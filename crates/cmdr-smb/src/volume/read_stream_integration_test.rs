@@ -18,6 +18,51 @@ use super::test_support::*;
 use super::*;
 use cmdr_fs::volume::StreamLength;
 
+/// A read stream's CLOSE travels on the transfer session while a delete and a
+/// listing travel on the main one, so nothing orders them on the wire. A file
+/// deleted while its reader's handle is still open stays listed (delete-pending)
+/// until that CLOSE lands: an undo then read the folder as not empty and left it
+/// behind (`DirNotEmpty`, #638).
+///
+/// A race on the wire, so the cell runs many at once to catch it: before the fix
+/// this read 10 of 4,800 rounds as still listed. Its unit half, the wait itself, is
+/// `closing_reads.rs`.
+#[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_a_file_deleted_right_after_its_read_is_gone_from_the_listing() {
+    let vol = Arc::new(make_docker_volume().await);
+    let root = test_dir_name();
+    ensure_clean(&vol, &root).await;
+    vol.create_directory(Path::new(&root)).await.unwrap();
+
+    let mut loops = Vec::new();
+    for reader in 0..16 {
+        let vol = Arc::clone(&vol);
+        let dir = format!("{root}/reader-{reader}");
+        loops.push(tokio::spawn(async move {
+            vol.create_directory(Path::new(&dir)).await.unwrap();
+            let path = format!("{dir}/page.png");
+            for round in 0..200 {
+                vol.create_file(Path::new(&path), b"page").await.unwrap();
+                let read = drain(vol.open_read_stream(Path::new(&path)).await.unwrap()).await;
+                assert_eq!(read, b"page");
+                vol.delete(Path::new(&path)).await.unwrap();
+                let listed = vol.list_directory_impl(Path::new(&dir)).await.unwrap();
+                assert!(
+                    listed.is_empty(),
+                    "{dir}, round {round}: {} entries after the delete",
+                    listed.len()
+                );
+            }
+        }));
+    }
+    for one_loop in loops {
+        one_loop.await.unwrap();
+    }
+
+    ensure_clean(&vol, &root).await;
+}
+
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_open_read_stream() {

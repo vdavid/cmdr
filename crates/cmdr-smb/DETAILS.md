@@ -1444,12 +1444,14 @@ CLOSE's answer **Why**: smb2's `FileDownload::next_chunk` puts the CLOSE on the 
 and only the call after it waits for the answer. Waiting for that `None` before dropping `chunk_tx` cost every streamed
 file one round trip (+200 ms: 4 MiB about 830 → 630 ms). The producer breaks on `bytes_received() == total_size`, drops
 `chunk_tx`, then collects the CLOSE's answer, logging an error at debug and feeding a dead connection to the volume's
-state. A file that shrank mid-download still ends on `None`, which smb2 sends its CLOSE for inline. **Move safety**: a
-move deletes the source after the copy's stream ends. That's safe without the answer: `send_and_count` returns only once
-the per-socket FIFO writer task has written the CLOSE, so any delete issued afterwards on any clone of the connection
-sits behind it on the wire, and `Tree::open_file` opens with `FILE_SHARE_DELETE`, so even a delete overtaking it would
-only mark the file delete-pending until the CLOSE lands (verified against smb2 0.24.2's `stream.rs` and `connection.rs`,
-2026-09-23). Pinned by `smb_integration_a_streamed_read_ends_before_the_close_is_answered` on the `slow` fixture.
+state. A file that shrank mid-download still ends on `None`, which smb2 sends its CLOSE for inline. Pinned by
+`smb_integration_a_streamed_read_ends_before_the_close_is_answered` on the `slow` fixture. **Delete safety**: the read
+rides the transfer session and a delete the main one, so nothing orders that CLOSE against the delete on the wire, and a
+delete that overtakes it leaves the file delete-pending: still listed, its folder refusing removal, until the CLOSE
+lands (`closing_reads.rs`, pinned by `smb_integration_a_file_deleted_right_after_its_read_is_gone_from_the_listing`). An
+undo read such a folder as not empty and left it behind (#638, about 2 in 1,000 under 16 concurrent loops). So the read
+registers its path before handing out the last byte, and `delete_impl` waits for that path alone, which keeps both this
+round trip's saving and "a delete that returned means the file is gone".
 
 **Decision**: streaming-write progress reports the SERVER-CONFIRMED byte count (`FileWriter::bytes_written()`), never
 the count handed to the pipeline **Why**: `write_chunk` returns as soon as a chunk's WRITEs are on the wire, inside
@@ -1615,7 +1617,9 @@ Which side each one lives on, and why: § "Which side a test lives on" above.
     `write_is_single_shot` predicate behind it, kept together, and where that promise stops: one upload chunk on a cold
     connection, what a measured uplink moves in 250 ms after, with a staged write over it streaming and a promised one
     still `(2, 9)`), the copy-slot clamp, and a delete's one frame (§ "Junctions and symlinks"). Its frame assertions
-    read `test_support.rs::request_counts`, the diagnostics-metric reader. **Every cell here asserts on the PAIR
+    read `test_support.rs::request_counts`, the diagnostics-metric reader, on a volume with no watcher
+    (`make_counting_volume`: a watcher stats every change on the fixture's shared share over the main session, so
+    another suite's writes landed in a count, #638). **Every cell here asserts on the PAIR
     `(compound_requests_sent, requests_sent)`, because `requests_sent` alone reads like a frame count and is not one**:
     smb2 ticks it once per sub-op of a chain (`allocate_msg_id` is the funnel every send path goes through), while
     `compound_requests_sent` counts the chain, and `execute_compound` hands the whole chain to one `send_and_count`. So

@@ -24,6 +24,7 @@ use std::sync::RwLock as StdRwLock;
 use std::sync::atomic::{AtomicBool, AtomicUsize};
 
 mod attributes;
+mod closing_reads;
 mod copy;
 mod dfs_links;
 mod foreground_yield;
@@ -331,6 +332,9 @@ struct SmbVolumeInner {
     /// The watches on DFS links a pane shows a folder behind, each held by the
     /// listings open there (`link_watch.rs`).
     link_watches: Arc<link_watch::LinkWatches>,
+    /// The streamed reads whose CLOSE is on its way, which a delete of the same
+    /// path waits for (`closing_reads.rs`).
+    closing_reads: Arc<closing_reads::ClosingReads>,
     /// The connection the current `client` owns, readable without the client
     /// mutex, so the transfer watchdog can ask whether the server is still talking
     /// (`Volume::connection_liveness`) and how many bytes it has sent. Swapped in
@@ -410,6 +414,7 @@ impl SmbVolume {
                 spellings: spelling::SpellingCache::default(),
                 link_paths: dfs_links::LinkPaths::default(),
                 link_watches: Arc::default(),
+                closing_reads: Arc::default(),
                 live_connection,
                 transfer,
                 active_mount_path: Arc::new(StdRwLock::new(mount_path)),
