@@ -49,11 +49,15 @@
     /**
      * The strip lies over the right pane's edge, and a wheel over it would stop here. It scrolls
      * what's under the strip instead: the wheel's default action only looks at this element's own
-     * ancestors, and the list isn't one.
+     * ancestors, and the list isn't one. The line itself has its own 1px column in the layout, so
+     * no pane lies under it when the split lands on a whole pixel (any odd window width at 50%):
+     * it reads the point just past the line, the same pane the strip it belongs to scrolls.
      */
     function handleWheel(event: WheelEvent) {
+        const line = (event.currentTarget as HTMLElement).getBoundingClientRect()
+        const isOnLine = event.clientX >= Math.floor(line.left) && event.clientX < line.right
         const under = document
-            .elementsFromPoint(event.clientX, event.clientY)
+            .elementsFromPoint(isOnLine ? Math.ceil(line.right) : event.clientX, event.clientY)
             .find((element) => !element.closest('.pane-resizer'))
         for (let element = under ?? null; element; element = element.parentElement) {
             const style = getComputedStyle(element)

@@ -2044,7 +2044,10 @@ than its own 12px gutter.
 
 What else looks at those areas: `drag/drop-target-hit-testing.ts` hit-tests past them, or a drop on the right pane's
 gutter would land on the resizer and do nothing; the drag keeps its grab offset, so a press on the pad doesn't jump the
-line; a wheel over the strip scrolls whatever's under it (`handleWheel`).
+line; a wheel over the strip scrolls whatever's under it (`handleWheel`). The line itself has its own 1px layout column,
+so when the split lands on a whole pixel (any odd window width at 50%) no pane lies under it, and `handleWheel` reads
+the point just past it: the right pane, as for the strip. Only real layout shows this, so `pane-divider-wheel.spec.ts`
+pins it in the running app (real wheels through this path verified on macOS 27 with CGEvent line ticks, 2026-10-31).
 
 - **Acceleration**: the first step is 1%, then ×1.5 per press up to 8%, while the key is held (auto-repeat) or tapped
   within 150 ms of the previous press. A slower re-press, or the other direction, starts at 1% again.

@@ -93,6 +93,73 @@ describe('a wheel over the divider', () => {
     void unmount(instance)
     explorer.remove()
   })
+
+  /**
+   * `elementsFromPoint` answers as the running app does (Full view, 1081-wide window at 50%): the line has its own
+   * column, so at x 540 no pane lies under it, only the explorer, and the right pane starts at x 541. The geometry
+   * itself is pinned against real layout by `pane-divider-wheel.spec.ts`.
+   */
+  function mountOverStack(stackAt: (x: number) => Element[]): { resizer: HTMLElement; cleanup: () => void } {
+    const explorer = document.createElement('div')
+    document.body.appendChild(explorer)
+    const instance = mount(PaneResizer, {
+      target: explorer,
+      props: { onResize: () => {}, onResizeEnd: () => {}, onReset: () => {} },
+    })
+    flushSync()
+    const resizer = explorer.querySelector<HTMLElement>('.pane-resizer')
+    if (!resizer) throw new Error('resizer not found')
+    resizer.getBoundingClientRect = () => ({ left: 540, right: 541 }) as DOMRect
+    document.elementsFromPoint = (x: number) => [resizer, ...stackAt(x)]
+    return {
+      resizer,
+      cleanup: () => {
+        void unmount(instance)
+        explorer.remove()
+        scrollers.splice(0).forEach((element) => {
+          element.remove()
+        })
+      },
+    }
+  }
+
+  const scrollers: HTMLElement[] = []
+
+  function scroller(): { element: HTMLElement; scrollBy: ReturnType<typeof vi.fn> } {
+    const element = document.createElement('div')
+    const scrollBy = vi.fn()
+    element.scrollBy = scrollBy as typeof element.scrollBy
+    element.style.overflowY = 'auto'
+    Object.defineProperty(element, 'scrollHeight', { value: 5000 })
+    Object.defineProperty(element, 'clientHeight', { value: 500 })
+    // Detached, it has no computed overflow.
+    document.body.appendChild(element)
+    scrollers.push(element)
+    return { element, scrollBy }
+  }
+
+  function wheelAt(clientX: number): Event {
+    return Object.assign(new Event('wheel', { bubbles: true }), { clientX, clientY: 200, deltaX: 0, deltaY: 120 })
+  }
+
+  it('on the line itself, where no pane lies under it, scrolls the right pane as the strip does', () => {
+    const rightList = scroller()
+    const nothingScrollable = document.createElement('div')
+    const { resizer, cleanup } = mountOverStack((x) => (x >= 541 ? [rightList.element] : [nothingScrollable]))
+    resizer.dispatchEvent(wheelAt(540))
+    expect(rightList.scrollBy).toHaveBeenCalledWith(0, 120)
+    cleanup()
+  })
+
+  it('left of the line (the handle’s overhang, the foot pad) still scrolls what’s there', () => {
+    const leftList = scroller()
+    const rightList = scroller()
+    const { resizer, cleanup } = mountOverStack((x) => (x >= 541 ? [rightList.element] : [leftList.element]))
+    resizer.dispatchEvent(wheelAt(538))
+    expect(leftList.scrollBy).toHaveBeenCalledWith(0, 120)
+    expect(rightList.scrollBy).not.toHaveBeenCalled()
+    cleanup()
+  })
 })
 
 describe('path segment hit area', () => {
