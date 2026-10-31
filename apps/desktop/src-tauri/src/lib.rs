@@ -252,6 +252,8 @@ pub fn run() {
     // internally), so we grab it here before moving `specta_builder` into the
     // `setup` closure where `mount_events` registers the typed events.
     let invoke_handler = specta_builder.invoke_handler();
+    #[cfg(feature = "playwright-e2e")]
+    let invoke_handler = commands::e2e::answering_stubbed_ipc(invoke_handler);
 
     // The `cmdr-media://` scheme and every plugin. Order-free by construction, so
     // it lives in one place off the spine; see `tauri_builder.rs`.

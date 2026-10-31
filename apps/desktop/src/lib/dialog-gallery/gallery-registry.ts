@@ -551,6 +551,11 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
         label: 'Add: a pasted S3 address',
         note: 'Opens on S3 with the AWS preset, the key, and the bucket filled in; a secret typed and Add and open answers that the bucket lives in us-east-2, with the one-press switch.',
       },
+      {
+        id: 'add-local-network',
+        label: 'Add: blocked by the Mac’s Local Network switch',
+        note: 'Answers "couldn’t reach it", with the hint that this Mac’s Local Network setting is why.',
+      },
       { id: 'sign-in', label: 'Sign in: password' },
       { id: 'sign-in-s3', label: 'Sign in: S3 secret access key' },
       { id: 'sign-in-guest', label: 'Sign in: username, password, or guest' },

@@ -48,6 +48,13 @@ export const serverSignInFixtures: Record<string, SignInSheetFixture | undefined
       attempt: answering({ kind: 'refused', refusal: 'not_a_webdav_server' }),
     },
   },
+  'add-local-network': {
+    request: {
+      mode: 'add',
+      prefill: 'sftp://ada@nas.local',
+      attempt: answering({ kind: 'refused', refusal: 'unreachable', hint: 'local_network_permission' }),
+    },
+  },
   'add-s3': {
     request: {
       mode: 'add',

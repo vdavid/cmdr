@@ -367,7 +367,12 @@
     {:else if plan?.kind === 'archive-password'}
         <UnlockDialog {...plan.props} onSubmit={closeGalleryDialog} onCancel={closeGalleryDialog} />
     {:else if plan?.kind === 'transfer-error'}
-        <TransferErrorDialog {...plan.props} onClose={closeGalleryDialog} onRetry={closeGalleryDialog} />
+        <TransferErrorDialog
+            {...plan.props}
+            onClose={closeGalleryDialog}
+            onRetry={closeGalleryDialog}
+            onCopyAnyway={closeGalleryDialog}
+        />
     {:else if plan?.kind === 'server-sign-in'}
         <SignInSheet request={plan.props.request} onDone={closeGalleryDialog} />
     {:else if plan?.kind === 'mtp-permission'}

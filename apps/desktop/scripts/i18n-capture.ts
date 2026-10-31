@@ -138,6 +138,9 @@ let captureDataDir: string | null = null
 function ensureCaptureDataDir() {
   if (captureDataDir == null) {
     captureDataDir = mkdtempSync(join(tmpdir(), 'cmdr-i18n-capture-data-'))
+    // Where a capture writes a managed policy for the surfaces that photograph one. Absent until
+    // then, which reads as no policy. On `process.env` so the app and the spec both inherit it.
+    process.env.CMDR_MANAGED_PREFS_FILE = join(captureDataDir, 'managed-prefs.plist')
     // Default settings except the language, which is pinned: the app resolves it
     // from the machine's preference list, so a capture on a non-English Mac would
     // photograph every coupling screenshot in that language. The overflow pass
@@ -469,6 +472,8 @@ async function launchAndCapture(
   // The locale args make this an en-US machine for this process alone, so the
   // shots carry US dates and number grouping whatever the developer's region is.
   // See `test/e2e-shared/pin-locale.ts`.
+  // Before the spread below: this is also what puts `CMDR_MANAGED_PREFS_FILE` on `process.env`.
+  const dataDir = ensureCaptureDataDir()
   appProc = spawn(binary, [...EN_US_LOCALE_ARGS], {
     cwd: desktopDir,
     stdio: 'inherit',
@@ -483,7 +488,7 @@ async function launchAndCapture(
       ...mcpEnv,
       // Isolated, fresh data dir → default settings, reproducible, never the
       // developer's real prod store. See `ensureCaptureDataDir`.
-      CMDR_DATA_DIR: ensureCaptureDataDir(),
+      CMDR_DATA_DIR: dataDir,
       ...extraEnv,
     },
   })

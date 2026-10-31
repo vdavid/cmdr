@@ -282,3 +282,58 @@ pub async fn flush_file_watcher(listing_ids: Vec<String>) -> Result<(), String> 
     crate::file_system::flush_all_watchers().await;
     Ok(())
 }
+
+/// One stubbed IPC answer ([`set_test_ipc_answer`]): `Ok` resolves the call, `Err` rejects it.
+#[cfg(feature = "playwright-e2e")]
+type StubbedIpcAnswer = Result<serde_json::Value, serde_json::Value>;
+
+#[cfg(feature = "playwright-e2e")]
+static STUBBED_IPC_ANSWERS: std::sync::LazyLock<std::sync::Mutex<std::collections::HashMap<String, StubbedIpcAnswer>>> =
+    std::sync::LazyLock::new(Default::default);
+
+/// Makes `command` answer `answer` instead of running, until a call with `answer: None` clears it.
+///
+/// For a surface whose trigger is a backend state no fixture can produce (a server wanting an
+/// account, the Automation refusal macOS stored, an S3 price): the frontend's real code then renders
+/// the answer. Tauri's webview-side `invoke` can't be replaced from a test, so the seam sits here.
+/// Feature-gated to `playwright-e2e` so the command isn't available in production binaries.
+#[cfg(feature = "playwright-e2e")]
+#[tauri::command]
+#[specta::specta]
+pub fn set_test_ipc_answer(command: String, answer: Option<serde_json::Value>, is_error: bool) {
+    use crate::ignore_poison::IgnorePoison;
+    let mut answers = STUBBED_IPC_ANSWERS.lock_ignore_poison();
+    match answer {
+        Some(value) => {
+            answers.insert(command, if is_error { Err(value) } else { Ok(value) });
+        }
+        None => {
+            answers.remove(&command);
+        }
+    }
+}
+
+/// Wraps the app's invoke handler so a stubbed command answers from [`set_test_ipc_answer`].
+#[cfg(feature = "playwright-e2e")]
+pub fn answering_stubbed_ipc<R: tauri::Runtime>(
+    handler: impl Fn(tauri::ipc::Invoke<R>) -> bool + Send + Sync + 'static,
+) -> impl Fn(tauri::ipc::Invoke<R>) -> bool + Send + Sync + 'static {
+    use crate::ignore_poison::IgnorePoison;
+    move |invoke| {
+        let stubbed = STUBBED_IPC_ANSWERS
+            .lock_ignore_poison()
+            .get(invoke.message.command())
+            .cloned();
+        match stubbed {
+            Some(Ok(value)) => {
+                invoke.resolver.resolve(value);
+                true
+            }
+            Some(Err(value)) => {
+                invoke.resolver.reject(value);
+                true
+            }
+            None => handler(invoke),
+        }
+    }
+}

@@ -200,14 +200,14 @@ function writeOverflowReport(): void {
 }
 
 test.describe('i18n screenshot capture', () => {
-  // Drives ~65 surfaces across several windows (main, dialogs, a separate
+  // Drives ~100 surfaces across several windows (main, dialogs, a separate
   // Settings window iterating 18 sections, the viewer, the shortcuts and queue
   // windows), with window open/close throughout, well over the 15s per-test
   // default. As the surface set grows, bump this. (A normal interaction test fits
   // in 15s; this is a multi-surface capture driver, not a normal test.)
   test('captures representative surfaces and writes the coupling report', async ({ tauriPage }) => {
-    // ❗ 300s, NOT the 180s this used to be, and ❌ don't "optimize" it back. A
-    // clean pass finishes in ~90s, so the headroom is entirely for a DISTURBED
+    // ❗ 420s, NOT the 180s this used to be, and ❌ don't "optimize" it back. A
+    // clean pass finishes in about two minutes, so the headroom is entirely for a DISTURBED
     // run: someone using the computer mid-run backgrounds the window, and each
     // affected surface then spends up to 3 verified attempts, which overran 180s.
     // The cost of overrunning is not just a slow failure — on timeout Playwright
@@ -216,7 +216,7 @@ test.describe('i18n screenshot capture', () => {
     // message written precisely to explain what happened. A too-tight timeout
     // replaces this run's own diagnostic with noise. The worst-case pass adds
     // per-surface zoom + resize + an extra reflow settle on top.
-    test.setTimeout(waitBudget(isWorstCasePass ? 480000 : 300000))
+    test.setTimeout(waitBudget(isWorstCasePass ? 600000 : 420000))
     const main = tauriPage as TauriPage
     mkdirSync(screenshotsDir, { recursive: true })
 

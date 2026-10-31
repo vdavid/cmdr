@@ -997,6 +997,8 @@ macro_rules! ipc_command_manifest {
                     crate::commands::e2e::stage_agent_rollup,
                 ]
                 dispatch_only: [
+                    // The i18n capture's stubbed answers (`i18n-capture-ipc-stub.ts`).
+                    crate::commands::e2e::set_test_ipc_answer,
                     // The specs read these two through raw `__TAURI_INTERNALS__.invoke`
                     // (`test/e2e-playwright/helpers/core.ts`).
                     crate::commands::file_actions::e2e_opened_paths,

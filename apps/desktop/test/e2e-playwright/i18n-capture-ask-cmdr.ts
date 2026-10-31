@@ -16,6 +16,8 @@
  *     expanded, so tool lines, group headers, the preview, and the stats line render.
  *  5. `ask-cmdr-sessions`: the threads panel over a thread that exists.
  *
+ * The rail's less common states are their own steps: `i18n-capture-ask-cmdr-turns.ts`.
+ *
  * The replies come from the scripted fake LLM, not a real provider: the capture
  * launch sets `CMDR_E2E_ASK_CMDR_FAKE=1`, which is the single source of truth for
  * both `resolve_agent_llm` (which answers) and the composer's provider gate (which
@@ -37,7 +39,7 @@ import { ensureAppReady, dispatchMenuCommand, waitForAskCmdrOnInBackend } from '
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 import { type SurfaceEntry, captureCall, captureSurface } from './i18n-capture-helpers.js'
 
-const RAIL = '.ask-cmdr-rail'
+export const RAIL = '.ask-cmdr-rail'
 
 /** True once the rail is mounted (open), whatever it's showing inside. */
 function railOpen(main: TauriPage): Promise<boolean> {
@@ -50,7 +52,7 @@ function railOpen(main: TauriPage): Promise<boolean> {
  * (`dispatch-dedup.ts`, 300 ms) can swallow a fire that lands right after another
  * toggle. Idempotent once open.
  */
-async function openRail(main: TauriPage): Promise<void> {
+export async function openRail(main: TauriPage): Promise<void> {
   await expect
     .poll(
       async () => {
@@ -64,7 +66,7 @@ async function openRail(main: TauriPage): Promise<void> {
 }
 
 /** Closes the rail via its header close button, so it can't bleed into a later surface. */
-async function closeRail(main: TauriPage): Promise<void> {
+export async function closeRail(main: TauriPage): Promise<void> {
   if (!(await railOpen(main))) return
   await main.evaluate(`document.querySelector('${RAIL} .header-actions button:last-child')?.click()`)
   await expect.poll(() => railOpen(main), { timeout: waitBudget(3000) }).toBe(false)
@@ -92,7 +94,7 @@ function replyCount(main: TauriPage): Promise<number> {
  * The gate resolves asynchronously on open, so the composer isn't there on the
  * first tick even when the switch was already on: always poll.
  */
-async function unlockChat(main: TauriPage): Promise<void> {
+export async function unlockChat(main: TauriPage): Promise<void> {
   await expect
     .poll(
       async () => {
@@ -108,6 +110,18 @@ async function unlockChat(main: TauriPage): Promise<void> {
   // The rail flips at once; the backend learns the switch a save and a push later, and the
   // chat surface's send would otherwise be refused as off inside that window.
   await waitForAskCmdrOnInBackend(main)
+}
+
+/** Types a message into the composer and sends it. */
+export async function sendToRail(main: TauriPage, text: string): Promise<void> {
+  await main.evaluate(`(function(){
+    var ta = document.querySelector('${RAIL} textarea');
+    if (!ta) throw new Error('no composer');
+    ta.focus();
+    ta.value = ${JSON.stringify(text)};
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+    ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  })()`)
 }
 
 /**
@@ -180,14 +194,7 @@ export async function captureAskCmdrSurfaces(
     await captureCall(main, 'setSurface', 'ask-cmdr-chat')
     await captureCall<boolean>(main, 'enable')
     const before = await replyCount(main)
-    await main.evaluate(`(function(){
-      var ta = document.querySelector('${RAIL} textarea');
-      if (!ta) throw new Error('no composer');
-      ta.focus();
-      ta.value = 'Which of these folders is the biggest?';
-      ta.dispatchEvent(new Event('input', { bubbles: true }));
-      ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-    })()`)
+    await sendToRail(main, 'Which of these folders is the biggest?')
     await expect.poll(() => replyCount(main), { timeout: waitBudget(15000) }).toBeGreaterThan(before)
     return { page: main }
   })
@@ -204,14 +211,7 @@ export async function captureAskCmdrSurfaces(
     await captureCall(main, 'setSurface', 'ask-cmdr-tools')
     await captureCall<boolean>(main, 'enable')
     await main.evaluate(`document.querySelector('${RAIL} .header-actions [aria-label="New chat"]')?.click()`)
-    await main.evaluate(`(function(){
-      var ta = document.querySelector('${RAIL} textarea');
-      if (!ta) throw new Error('no composer');
-      ta.focus();
-      ta.value = '[tools] Which of my drives has the most room?';
-      ta.dispatchEvent(new Event('input', { bubbles: true }));
-      ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-    })()`)
+    await sendToRail(main, '[tools] Which of my drives has the most room?')
     await main.waitForSelector(`${RAIL} .msg .turn-stats`, waitBudget(15000))
     await expect
       .poll(

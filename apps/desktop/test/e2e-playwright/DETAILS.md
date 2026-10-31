@@ -470,14 +470,19 @@ the capture walks, one test per step.
   documented skip). The license and FDA passes each need an app launched with their own mock env, and a shard launches
   its app once. Linux skips the whole spec: the capture runs on macOS only, and its staging branches on the platform
   (the FDA onboarding step, the Shift glyph, the Quick Look hint).
+- **A surface whose trigger is a backend state no fixture produces stubs that one IPC answer**
+  (`i18n-capture-ipc-stub.ts`: a server wanting an account, Finder's Automation refusal, an S3 price, a slot with no
+  provider). A webview can't replace Tauri's `invoke`, so the `playwright-e2e` backend holds the stub, and the
+  frontend's real code renders the answer. Restore from a `finally`: the app is shared.
 - **A step leaves the shared app as it found it**: overlays and windows closed, toasts dismissed, synthetic events
-  ended, and the favorite it added removed. The spec's `afterEach` drains operations and restores the fixture tree.
-  Checked by running `archive-editing.spec.ts` straight after it on the same app (2026-09-12).
+  ended, stubs restored, and the favorite, preset, and policy it added removed. The spec's `afterEach` drains operations
+  and restores the fixture tree. Checked by running `archive-editing.spec.ts` straight after it on the same app
+  (2026-09-12).
 - **Every step fits the 2 s duration budget**, which is why the main-window overlays are six steps, the conflict step
   cancels its parked copy before dismissing (the dialog never closes on Escape during a clash, so dismissing first waits
   out a 3 s poll), and `queue-failed` drains the throttled copies before starting its doomed ones. ❌ Don't regroup
-  steps to shorten the list; split one that grows past the budget. The spec costs about 14 s for 27 tests (two runs,
-  2026-09-12).
+  steps to shorten the list; split one that grows past the budget. The spec costs about 25 s for 45 tests (two runs,
+  2026-10-31).
 
 ## Real SFTP and WebDAV servers
 

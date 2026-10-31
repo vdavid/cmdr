@@ -227,6 +227,12 @@ fn scripted_fake_llm(slot: AgentSlot) -> FakeAgentLlm {
 
 /// What a rail message starting with this plays: [`rail_fake_turn`]'s tool-running turn.
 const RAIL_FAKE_TOOLS_MARKER: &str = "[tools]";
+/// A rail message `[every-tool] <folder>` plays [`every_tool_round`], then the answer.
+const RAIL_FAKE_EVERY_TOOL_MARKER: &str = "[every-tool]";
+/// A rail message `[rename] <folder>` stages [`rename_plan_call`]'s plan, then signs off.
+const RAIL_FAKE_RENAME_MARKER: &str = "[rename]";
+/// A rail message `[fail:<kind>]` fails its call with [`rail_fake_failure`]'s typed error.
+const RAIL_FAKE_FAIL_MARKER: &str = "[fail:";
 
 /// The rail fake's turn for the prompt it's handed. A message starting with
 /// [`RAIL_FAKE_TOOLS_MARKER`] runs three rounds, so `ask-cmdr.spec.ts` can pin a tool-running
@@ -237,10 +243,33 @@ const RAIL_FAKE_TOOLS_MARKER: &str = "[tools]";
 /// The round comes from the prompt (`latest_user_turn`), never a counter, so a retry or a second
 /// thread can't desync it. `app_state` and `list_volumes` read the machine's real state: a spec
 /// asserts their shape, never their values.
+///
+/// The other markers exist for the i18n capture (`i18n-capture-ask-cmdr.ts`), which needs every
+/// tool line, a staged rename plan, and the typed failures on screen. Each carries what it needs
+/// in the message text, since a fake has no other way to learn the fixture tree's path.
 fn rail_fake_turn(messages: &[crate::agent::llm::types::AgentMessage]) -> crate::agent::llm::fake::ScriptedTurn {
     use crate::agent::llm::fake::{ScriptedTurn, latest_user_turn};
     use crate::agent::llm::types::ToolId;
     let no_args = || serde_json::json!({});
+    let (text, round) = latest_user_turn(messages).unwrap_or(("", 0));
+    if let Some(folder) = text.strip_prefix(RAIL_FAKE_EVERY_TOOL_MARKER) {
+        return match round {
+            0 => every_tool_round(folder.trim()),
+            _ => say(&["That's every tool, ", "from the test assistant."]),
+        };
+    }
+    if let Some(folder) = text.strip_prefix(RAIL_FAKE_RENAME_MARKER) {
+        return match round {
+            0 => rename_plan_call(folder.trim()),
+            _ => say(&["Here's the plan, ", "from the test assistant."]),
+        };
+    }
+    if let Some(kind) = text
+        .strip_prefix(RAIL_FAKE_FAIL_MARKER)
+        .and_then(|rest| rest.split(']').next())
+    {
+        return ScriptedTurn::Fail(rail_fake_failure(kind));
+    }
     match latest_user_turn(messages) {
         Some((text, round)) if text.starts_with(RAIL_FAKE_TOOLS_MARKER) => match round {
             0 => ScriptedTurn::SayThenCall {
@@ -258,6 +287,83 @@ fn rail_fake_turn(messages: &[crate::agent::llm::types::AgentMessage]) -> crate:
             _ => say(&["That's all, ", "from the test assistant."]),
         },
         _ => say(&["Hi! ", "I'm the ", "test assistant."]),
+    }
+}
+
+/// One round calling every read tool the `[tools]` script doesn't, plus the two memory tools, so
+/// their tool lines render with their subjects. It stays harmless on a shared app: the memory calls
+/// aim outside the jail and refuse, `connect_volume` names a place nobody saved, and the search is
+/// scoped to `folder` so it can't walk the drive. Results read the machine's real state, so a spec
+/// asserts their shape, never their values.
+fn every_tool_round(folder: &str) -> crate::agent::llm::fake::ScriptedTurn {
+    use crate::agent::llm::fake::ScriptedTurn;
+    use crate::agent::llm::types::ToolId;
+    use serde_json::json;
+    let file = format!("{folder}/file-a.txt");
+    ScriptedTurn::SayThenCall {
+        say: vec!["Let me use ".into(), "everything I have.".into()],
+        calls: vec![
+            (ToolId::ListDir, json!({ "path": folder })),
+            (ToolId::ListPaneFiles, json!({})),
+            (ToolId::ImportantFolders, json!({})),
+            (ToolId::FolderImportance, json!({ "path": folder })),
+            (ToolId::OperationsList, json!({})),
+            (ToolId::OperationsGet, json!({ "operationId": "no-such-operation" })),
+            (ToolId::Search, json!({ "pattern": "file", "scope": folder })),
+            (ToolId::SearchPhotos, json!({ "query": "a red bicycle" })),
+            (ToolId::InspectFile, json!({ "paths": [file.clone()] })),
+            (ToolId::ImageFacts, json!({ "paths": [file] })),
+            (ToolId::ListSuggestions, json!({})),
+            (ToolId::GetSuggestionGroup, json!({ "groupId": "no-such-group" })),
+            (
+                ToolId::MemoryWrite,
+                json!({ "path": "../outside.md", "content": "Refused." }),
+            ),
+            (
+                ToolId::MemoryEdit,
+                json!({ "path": "../outside.md", "oldString": "a", "newString": "b" }),
+            ),
+            (ToolId::ConnectVolume, json!({ "volumeId": "no-such-place" })),
+        ],
+    }
+}
+
+/// A plan renaming the E2E fixture tree's two files in `folder`, which has to be what the focused
+/// pane shows or the tool refuses it. Names come from the file names (`filename` evidence), so no
+/// content claim needs backing.
+fn rename_plan_call(folder: &str) -> crate::agent::llm::fake::ScriptedTurn {
+    use crate::agent::llm::fake::ScriptedTurn;
+    use crate::agent::llm::types::ToolId;
+    let row = |from: &str, to: &str| {
+        serde_json::json!({
+            "sourcePath": format!("{folder}/{from}"),
+            "volumeId": "root",
+            "destinationName": to,
+            "evidence": { "source": "filename", "detail": format!("The old name, {from}") },
+        })
+    };
+    ScriptedTurn::SayThenCall {
+        say: vec!["I'd name ".into(), "these two like this.".into()],
+        calls: vec![(
+            ToolId::ProposeRenamePlan,
+            serde_json::json!({ "renames": [row("file-a.txt", "notes-a.txt"), row("file-b.txt", "notes-b.txt")] }),
+        )],
+    }
+}
+
+/// The typed failure a `[fail:<kind>]` message asks for, by its `AskCmdrErrorKind` name, with
+/// `provider` for anything else.
+fn rail_fake_failure(kind: &str) -> crate::agent::llm::types::AgentLlmError {
+    use crate::agent::llm::types::AgentLlmError;
+    match kind {
+        "noKey" => AgentLlmError::NoKey,
+        "notConfigured" => AgentLlmError::NotConfigured,
+        "unavailable" => AgentLlmError::Unavailable,
+        "timeout" => AgentLlmError::Timeout,
+        "authFailed" => AgentLlmError::AuthFailed("Scripted key refusal".to_string()),
+        "rateLimited" => AgentLlmError::RateLimited("Scripted rate limit".to_string()),
+        "budgetExhausted" => AgentLlmError::BudgetExhausted,
+        _ => AgentLlmError::Provider("Scripted provider failure".to_string()),
     }
 }
 
@@ -585,6 +691,53 @@ mod tests {
             panic!("a plain message gets the one-line reply");
         };
         assert_eq!(chunks.concat(), "Hi! I'm the test assistant.");
+    }
+
+    /// The capture's scripts: `i18n-capture-ask-cmdr.ts` sends these markers and waits on "test
+    /// assistant" (`ask-cmdr.spec.ts` matches the same words).
+    #[test]
+    fn the_rail_fake_plays_the_capture_scripts() {
+        use crate::agent::llm::fake::ScriptedTurn;
+        use crate::agent::llm::types::{AgentLlmError, AgentMessage, AgentPart, AgentRole, ToolId};
+        let message = |role, text: &str| AgentMessage {
+            role,
+            parts: vec![AgentPart::Text("<envelope>".into()), AgentPart::Text(text.into())],
+            at: 0,
+        };
+        let answer = message(AgentRole::Assistant, "…");
+
+        let rename = message(AgentRole::User, "[rename] /fixtures/left");
+        let ScriptedTurn::SayThenCall { calls, .. } = rail_fake_turn(std::slice::from_ref(&rename)) else {
+            panic!("a rename message opens with its plan");
+        };
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].0, ToolId::ProposeRenamePlan);
+        assert_eq!(calls[0].1["renames"][0]["sourcePath"], "/fixtures/left/file-a.txt");
+        let ScriptedTurn::Say(chunks) = rail_fake_turn(&[rename, answer.clone()]) else {
+            panic!("a rename message signs off after its plan");
+        };
+        assert!(chunks.concat().contains("test assistant"));
+
+        let every = message(AgentRole::User, "[every-tool] /fixtures/left");
+        let ScriptedTurn::SayThenCall { calls, .. } = rail_fake_turn(std::slice::from_ref(&every)) else {
+            panic!("an every-tool message opens with its round");
+        };
+        let tools: Vec<ToolId> = calls.into_iter().map(|(tool, _)| tool).collect();
+        assert!(tools.contains(&ToolId::MemoryWrite) && tools.contains(&ToolId::ConnectVolume));
+        assert!(
+            !tools.contains(&ToolId::ProposeRenamePlan) && !tools.contains(&ToolId::ProposeSuggestions),
+            "nothing in this round may stage anything for the user to answer"
+        );
+        let ScriptedTurn::Say(chunks) = rail_fake_turn(&[every, answer]) else {
+            panic!("an every-tool message signs off after its round");
+        };
+        assert!(chunks.concat().contains("test assistant"));
+
+        let fail = message(AgentRole::User, "[fail:timeout] anything");
+        assert!(matches!(
+            rail_fake_turn(std::slice::from_ref(&fail)),
+            ScriptedTurn::Fail(AgentLlmError::Timeout)
+        ));
     }
 
     /// A slot refusal reaches the rail as its OWN wire kind: a missing cloud consent must not

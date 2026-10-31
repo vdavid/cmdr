@@ -49,6 +49,29 @@ import { captureErrorPaneExample, captureMainExplorerSurfaces } from './i18n-cap
 import { captureGalleryDialogs } from './i18n-capture-gallery.js'
 import { captureAskCmdrSurfaces } from './i18n-capture-ask-cmdr.js'
 import {
+  captureAskCmdrDecisions,
+  captureAskCmdrErrors,
+  captureAskCmdrEveryTool,
+  captureAskCmdrProviderOff,
+  captureAskCmdrRename,
+  captureAskCmdrSessionStates,
+  captureAskCmdrWakeDigest,
+} from './i18n-capture-ask-cmdr-turns.js'
+import {
+  captureCompareToasts,
+  captureFavoriteUnreachable,
+  captureFolderSizesToast,
+  captureGetInfoToasts,
+  captureListingStalled,
+  captureManagedSurfaces,
+  captureMultiRenameSurfaces,
+  captureNetworkSurfaces,
+  captureQuickFilterSurfaces,
+  captureS3CostLine,
+  captureServerSheetRefusals,
+  captureShareLinkToast,
+} from './i18n-capture-translator-requests.js'
+import {
   captureMtpBrowse,
   captureMtpConnectedToast,
   captureDownloadToasts,
@@ -90,6 +113,27 @@ async function switchToOverflowLocaleIfNeeded(page: TauriPage): Promise<void> {
   if (!isOverflowPass) return
   await captureCall(page, 'setLocale', overflowLocale)
   await settlePaint(page)
+}
+
+/**
+ * A step whose staging spans several surfaces and may throw between them. A throw out of a step
+ * would abort the whole capture and roll back its report, so it fails this step's surfaces instead.
+ */
+function isolatedStep(step: {
+  name: string
+  capture: (main: TauriPage, report: PassLedger['report'], failed: string[]) => Promise<void>
+}): MainPassStep {
+  return {
+    name: step.name,
+    run: async (main, { report, failed }) => {
+      try {
+        await step.capture(main, report, failed)
+      } catch (err) {
+        failed.push(step.name)
+        console.warn(`[i18n-capture] step ${step.name} FAILED: ${err instanceof Error ? err.message : String(err)}`)
+      }
+    },
+  }
 }
 
 export const MAIN_PASS_STEPS: readonly MainPassStep[] = [
@@ -159,6 +203,18 @@ export const MAIN_PASS_STEPS: readonly MainPassStep[] = [
       await captureAskCmdrSurfaces(main, report, failed, skipped)
     },
   },
+
+  // The rail's less common states, narrow to broad, so the shared chrome stays on the rail's
+  // first surfaces above (`i18n-capture-ask-cmdr-turns.ts`).
+  ...[
+    { name: 'ask-cmdr-every-tool', capture: captureAskCmdrEveryTool },
+    { name: 'ask-cmdr-rename', capture: captureAskCmdrRename },
+    { name: 'ask-cmdr-errors', capture: captureAskCmdrErrors },
+    { name: 'ask-cmdr-decisions', capture: captureAskCmdrDecisions },
+    { name: 'ask-cmdr-wake-digest', capture: captureAskCmdrWakeDigest },
+    { name: 'ask-cmdr-session-states', capture: captureAskCmdrSessionStates },
+    { name: 'ask-cmdr-provider-off', capture: captureAskCmdrProviderOff },
+  ].map(isolatedStep),
 
   // The Settings window, every section.
   {
@@ -341,6 +397,22 @@ export const MAIN_PASS_STEPS: readonly MainPassStep[] = [
       await captureDownloadToasts(main, report, failed)
     },
   },
+
+  // What translators asked to see (`i18n-capture-translator-requests.ts`).
+  ...[
+    { name: 'compare-toasts', capture: captureCompareToasts },
+    { name: 'folder-sizes-toast', capture: captureFolderSizesToast },
+    { name: 'get-info-toasts', capture: captureGetInfoToasts },
+    { name: 'share-link-toast', capture: captureShareLinkToast },
+    { name: 'quick-filter', capture: captureQuickFilterSurfaces },
+    { name: 'favorite-unreachable', capture: captureFavoriteUnreachable },
+    { name: 'multi-rename', capture: captureMultiRenameSurfaces },
+    { name: 'listing-stalled', capture: captureListingStalled },
+    { name: 's3-cost-line', capture: captureS3CostLine },
+    { name: 'network-surfaces', capture: captureNetworkSurfaces },
+    { name: 'server-sheet-refusals', capture: captureServerSheetRefusals },
+    { name: 'managed-surfaces', capture: captureManagedSurfaces },
+  ].map(isolatedStep),
 
   // One real friendly-error pane, the representative image for the whole `errors.*`
   // family (`REPRESENTATIVE_SCREENSHOTS` in `scripts/couple-screenshots.ts`), staged
