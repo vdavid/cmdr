@@ -60,7 +60,7 @@ var SMB = &Stack{
 		"GUEST": 11480, "AUTH": 11481, "BOTH": 11482, "50SHARES": 11483,
 		"UNICODE": 11484, "LONGNAMES": 11485, "DEEPNEST": 11486, "MANYFILES": 11487,
 		"READONLY": 11488, "WINDOWS": 11489, "SYNOLOGY": 11490, "LINUX": 11491,
-		"FLAKY": 11492, "SLOW": 11493, "MAXREADSIZE": 11494,
+		"FLAKY": 11492, "SLOW": 11493, "MAXREADSIZE": 11494, "FRUIT": 11495,
 	},
 	modeServices: map[string][]string{
 		ModeMinimal: {"smb-consumer-guest", "smb-consumer-auth"},
@@ -72,7 +72,7 @@ var SMB = &Stack{
 			"smb-consumer-guest", "smb-consumer-auth", "smb-consumer-both",
 			"smb-consumer-readonly", "smb-consumer-flaky", "smb-consumer-slow",
 			"smb-consumer-maxreadsize", "smb-consumer-50shares",
-			"smb-consumer-unicode",
+			"smb-consumer-unicode", "smb-consumer-fruit",
 		},
 		ModeAll: nil,
 	},

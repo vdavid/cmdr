@@ -58,6 +58,8 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 		// catch a regression in the escaping macOS's SMB stack requires of every
 		// mount URL (`network/mount.rs::build_smb_mount_url`).
 		"smb-consumer-unicode",
+		// Named streams and `vfs_fruit`: the Finder tag cells (`cmdr-smb`'s `xattrs_integration_test.rs`).
+		"smb-consumer-fruit",
 	}
 	if err := waitForContainers("smb-consumer", expected, 120*time.Second); err != nil {
 		return CheckResult{}, err

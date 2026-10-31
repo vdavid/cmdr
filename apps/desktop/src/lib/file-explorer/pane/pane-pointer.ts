@@ -24,7 +24,13 @@ import { boundShortcuts } from '#lib/shortcuts/index.js'
 import type { FileEntry, SelectPayload } from '../types'
 import { getSetting, setSetting } from '#lib/settings/index.js'
 import { addToast } from '#lib/ui/toast/index.js'
-import { capabilitiesFor, paneFolderCanBeFavorited, rowCanShareLink, rowIsOsVisible } from './volume-capabilities'
+import {
+  capabilitiesFor,
+  paneFolderCanBeFavorited,
+  rowCanShareLink,
+  rowCanHoldTags,
+  rowIsOsVisible,
+} from './volume-capabilities'
 import { canOpenTerminalIn } from '#lib/open-terminal/terminal-target.js'
 import { isFileListBackgroundClick } from './pane-background-dblclick'
 import { sameKindTargetFor } from './select-same-kind'
@@ -161,9 +167,9 @@ export function createPanePointer(deps: PanePointerDeps): PanePointer {
         // folder to `cd` into but lists real files, and an archive's insides are the
         // other way round.
         canShare: rowsAreOsPaths,
-        // The tag colors write an xattr through the row's path, so they ask the same
-        // question: a phone or a protocol-only server would take the click and store nothing.
-        canTag: rowsAreOsPaths,
+        // The tag colors write through the volume, so they ask it: a phone or a
+        // protocol-only server would take the click and store nothing.
+        canTag: rowCanHoldTags(volumeId, entry.path),
         // "Add to favorites" acts on the right-clicked FOLDER, and asks a stricter
         // question than sharing does: not just whether the OS can read it now, but
         // whether it's still there next launch. A snapshot row fails exactly there.

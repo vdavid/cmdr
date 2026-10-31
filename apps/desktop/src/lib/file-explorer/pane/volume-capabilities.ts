@@ -171,6 +171,12 @@ export interface VolumeCapabilities {
    * one-call rename. The backend's `renamesCanCopy`, folded like the others.
    */
   renamesCanCopy: boolean
+  /**
+   * Finder tags can be stored here, because the backend stores extended attributes
+   * (`Volume::supports_xattrs`), folded like the others. `true` for a search-results
+   * snapshot: its rows are real files, each on a drive that answers for itself.
+   */
+  canStoreXattrs: boolean
 }
 
 /**
@@ -193,6 +199,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     pollsForDeletedFolder: true,
     canShareLinks: false,
     renamesCanCopy: false,
+    canStoreXattrs: true,
   }),
   smb: Object.freeze({
     kind: 'smb',
@@ -207,6 +214,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     pollsForDeletedFolder: true,
     canShareLinks: false,
     renamesCanCopy: false,
+    canStoreXattrs: true,
   }),
   sftp: Object.freeze({
     // A server: a real backend listing over a session Cmdr owns, with `..` and a
@@ -227,6 +235,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     pollsForDeletedFolder: false,
     canShareLinks: false,
     renamesCanCopy: false,
+    canStoreXattrs: false,
   }),
   webdav: Object.freeze({
     // The `sftp` row, for the same reasons: a session-backed listing with no OS
@@ -241,6 +250,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     pollsForDeletedFolder: false,
     canShareLinks: false,
     renamesCanCopy: false,
+    canStoreXattrs: false,
   }),
   s3: Object.freeze({
     // The `webdav` row's shape, plus share links. The backend's published answer
@@ -256,6 +266,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     pollsForDeletedFolder: false,
     canShareLinks: true,
     renamesCanCopy: true,
+    canStoreXattrs: false,
   }),
   nfs: Object.freeze({
     // The `webdav` row: a session-backed listing with no OS mount behind it. ❗ Not an
@@ -270,6 +281,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     pollsForDeletedFolder: false,
     canShareLinks: false,
     renamesCanCopy: false,
+    canStoreXattrs: false,
   }),
   mtp: Object.freeze({
     kind: 'mtp',
@@ -283,6 +295,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     pollsForDeletedFolder: false,
     canShareLinks: false,
     renamesCanCopy: false,
+    canStoreXattrs: false,
   }),
   adb: Object.freeze({
     // Same shape as `mtp`: a device-anchored real listing. The transport differs
@@ -299,6 +312,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     pollsForDeletedFolder: false,
     canShareLinks: false,
     renamesCanCopy: false,
+    canStoreXattrs: false,
   }),
   network: Object.freeze({
     kind: 'network',
@@ -315,6 +329,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     pollsForDeletedFolder: false,
     canShareLinks: false,
     renamesCanCopy: false,
+    canStoreXattrs: false,
   }),
   'search-results': Object.freeze({
     kind: 'search-results',
@@ -333,6 +348,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     pollsForDeletedFolder: false,
     canShareLinks: false,
     renamesCanCopy: false,
+    canStoreXattrs: true,
   }),
   archive: Object.freeze({
     kind: 'archive',
@@ -360,6 +376,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     pollsForDeletedFolder: true,
     canShareLinks: false,
     renamesCanCopy: false,
+    canStoreXattrs: false,
   }),
   'git-portal': Object.freeze({
     kind: 'git-portal',
@@ -385,6 +402,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     pollsForDeletedFolder: false,
     canShareLinks: false,
     renamesCanCopy: false,
+    canStoreXattrs: false,
   }),
   restic: Object.freeze({
     kind: 'restic',
@@ -402,6 +420,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     pollsForDeletedFolder: false,
     canShareLinks: false,
     renamesCanCopy: false,
+    canStoreXattrs: false,
   }),
 })
 
@@ -531,7 +550,8 @@ export function withBackendCapabilities(
     published.canExport === row.canBeSource &&
     published.canBeIndexed === row.canBeIndexed &&
     published.canShareLinks === row.canShareLinks &&
-    published.renamesCanCopy === row.renamesCanCopy
+    published.renamesCanCopy === row.renamesCanCopy &&
+    published.canStoreXattrs === row.canStoreXattrs
   ) {
     return row
   }
@@ -542,6 +562,7 @@ export function withBackendCapabilities(
     canBeIndexed: published.canBeIndexed,
     canShareLinks: published.canShareLinks,
     renamesCanCopy: published.renamesCanCopy,
+    canStoreXattrs: published.canStoreXattrs,
   })
 }
 
@@ -586,6 +607,19 @@ export function capabilitiesForInfo(info: VolumeInfo): VolumeCapabilities {
  */
 export function rowIsOsVisible(volumeId: string, rowPath: string): boolean {
   if (!paneRowsAreOsVisible(capabilitiesFor(volumeId).kind)) return false
+  if (pathInsideArchive(rowPath)) return false
+  if (isVirtualResticPath(rowPath)) return false
+  return !rowIsServedByGitPortal(rowPath)
+}
+
+/**
+ * Whether a tag can be stored on one row, the gate on the context menu's tag colors: the
+ * volume has to store xattrs, and the row has to be a real entry on it. Not
+ * `rowIsOsVisible`: a tag goes through the volume, so a share whose macOS mount is gone
+ * still takes one, and a share reached only through a phone's or server's protocol doesn't.
+ */
+export function rowCanHoldTags(volumeId: string, rowPath: string): boolean {
+  if (!capabilitiesFor(volumeId).canStoreXattrs) return false
   if (pathInsideArchive(rowPath)) return false
   if (isVirtualResticPath(rowPath)) return false
   return !rowIsServedByGitPortal(rowPath)

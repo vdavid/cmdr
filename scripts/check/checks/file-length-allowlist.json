@@ -238,7 +238,7 @@
       "reason": "TODO: split along the section banners the file already draws, into the per-concern `*_tests.rs` siblings this directory keeps (`kick_tests.rs`, `live_tests.rs`, `reclaim_tests.rs`, `coalescing_tests.rs`). The CLIP two-part-staleness group (`clip_state`, `clip_pass`, `model_absent_is_vision_only_no_clip_embedding`, `installing_clip_embeds_without_re_running_vision`, `a_clip_model_bump_re_embeds_without_touching_vision`, `delete_clip_model_removes_the_model_and_every_volumes_embeddings`) is roughly 210 lines over a different pass, and the live scoped-walk group (`seed_media`, `touched`, the two `walk_in_dirs_*`, `scoped_gc_spares_rows_in_untouched_dirs`, `whole_store_gc_over_a_scoped_walk_would_wipe_untouched_dirs`, `a_scoped_tick_promotes_a_lone_raw_and_gcs_the_deleted_jpg`) another roughly 205. Move them to `enrich_clip_tests.rs` and `enrich_scoped_tests.rs`, importing `build_index` / `media_writer` / `no_op_hooks` from here the way `live_tests.rs` already imports from `kick_tests.rs`, leaving roughly 850 lines of core-pass, GC, throttle, and progress tests."
     },
     "crates/cmdr-local/src/local_posix.rs": {
-      "lines": 820,
+      "lines": 940,
       "reason": "TODO: the `impl Volume for LocalPosixVolume` block plus the query and mutation bodies it can't spread across files. `scan` and `streams` already moved to `local_posix/`; the mutation bodies (create, delete, rename, `apply_metadata`) should follow into `local_posix/mutations.rs` as `pub(super)` inherent methods with one-line delegators here, the shape `cmdr-sftp` and `cmdr-smb` use. (The crate-root `mutation.rs` is the listing patch, a different concern.)"
     },
     "crates/cmdr-mtp/src/connection/directory_ops.rs": {
@@ -308,6 +308,10 @@
     "crates/cmdr-s3/src/volume/server_copy.rs": {
       "lines": 800,
       "reason": "One cohesive job: the server-side copy (one `CopyObject`, or an `UploadPartCopy` multipart with its retry window and abort). It reached the limit when its log lines started marking every key by kind (one value per line); splitting the retry window from the part sender would cut the one loop that owns both."
+    },
+    "crates/cmdr-smb/src/volume/volume_impl.rs": {
+      "lines": 832,
+      "reason": "The one `impl Volume for SmbVolume`, which Rust needs in one block: one-line delegators plus the capability answers, whose doc comments are their whole content. Every body already lives in its concern module (`DETAILS.md` § Layout), so a split could only move delegators."
     },
     "crates/cmdr-sftp/src/transport.rs": {
       "lines": 945,

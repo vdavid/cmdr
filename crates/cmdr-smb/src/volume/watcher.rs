@@ -52,6 +52,20 @@ fn needs_stat(action: FileNotifyAction) -> bool {
     )
 }
 
+/// What a named-stream event means to a listing: its file changed. A server that
+/// reports the stream actions (neither Samba tested does: `DETAILS.md` § "Extended
+/// attributes") may name the stream too, as `file.txt:stream`; a real name can't hold
+/// a `:` on the wire, since smb2 maps it to the private-use area.
+fn fold_stream_event(action: FileNotifyAction, filename: &str) -> (FileNotifyAction, &str) {
+    match action {
+        FileNotifyAction::StreamAdded | FileNotifyAction::StreamRemoved | FileNotifyAction::StreamModified => (
+            FileNotifyAction::Modified,
+            filename.split_once(':').map_or(filename, |(file, _stream)| file),
+        ),
+        other => (other, filename),
+    }
+}
+
 /// Converts a SHARE-relative watcher path to the display path under this mount
 /// that the listing cache is keyed on.
 ///
@@ -264,12 +278,25 @@ async fn process_event_batch_with<Stat, StatFuture>(
                     // safe-overwrite path) also refreshes any open inner listing.
                     maybe_refresh_archive_listings(host, volume_id, &entry_path).await;
                 }
+                // Folded into `Modified` as the event came in (`fold_stream_event`).
+                other => debug!("smb_watcher: ignoring event {other} in a batch"),
             }
         }
 
         // If we have a dangling old name with no new name, treat as remove
         if let Some(old_name) = pending_old_name {
             listings.directory_changed(volume_id, parent_path, DirectoryChange::Removed(old_name));
+        }
+
+        // Another client's tag: the stat above can't tell, since a tag moves neither the
+        // size nor, on a QNAP, the date.
+        let retagged: Vec<PathBuf> = events
+            .iter()
+            .filter(|(action, _)| *action == FileNotifyAction::Modified)
+            .filter_map(|(_, filename)| to_display_path(anchor, filename))
+            .collect();
+        if !retagged.is_empty() {
+            listings.row_xattrs_may_have_changed(volume_id, parent_path, retagged);
         }
     }
 }
@@ -391,7 +418,8 @@ pub(super) async fn run_smb_watcher(
     // `Watcher` is `'static` (owns a `Connection` clone of `client`'s), and
     // keeps one CHANGE_NOTIFY request pre-issued at all times so events that
     // arrive while we process the previous batch don't fall in a re-arm gap.
-    let watcher = match client.watch(&tree, "", true).await {
+    let watch = smb2::WatchOptions::new().recursive(true).metadata(true);
+    let watcher = match client.watch_with(&tree, "", watch).await {
         Ok(w) => {
             info!(
                 "smb_watcher share={:?}: connected, starting watch",
@@ -519,7 +547,8 @@ impl EventFeed<'_> {
             // so a `\` left in one is a real character in a file's NAME. ❌ Don't
             // re-normalize it away: that renames the file into a path and the
             // cache lookup misses forever.
-            let share_path = readdress(self.root, &event.filename);
+            let (action, filename) = fold_stream_event(event.action, &event.filename);
+            let share_path = readdress(self.root, filename);
             let parent = Path::new(&share_path)
                 .parent()
                 .map(|p| p.to_string_lossy().to_string())
@@ -531,7 +560,7 @@ impl EventFeed<'_> {
             events_by_dir
                 .entry(parent_display)
                 .or_default()
-                .push((event.action, share_path));
+                .push((action, share_path));
         }
     }
 }

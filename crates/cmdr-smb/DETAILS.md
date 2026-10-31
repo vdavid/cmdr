@@ -163,11 +163,11 @@ on", not by watching a number.
   which the file viewer keeps for a whole session, #303), `scan`, `scan_pool`, `transfer_session` (the extra session
   byte-moving calls ride), `dfs_links` (any call through a DFS link inside the share), `link_watch` (a shown link's own
   watch), `watcher`, `foreground_yield`, `links` (what a stat reads as through a link), `slow_calls` (the rolled-up
-  `warn` for a metadata call the server held over a second), `attributes` (Hidden and Locked by path), and the stateless
-  `mapping`. Splitting further needs a responsibility you can name the same way; a line count is not one. `e5ea10d02`
-  reverted four splits invented to satisfy the counter, and every one of them had widened a visibility or torn a struct
-  from its trait impl to do it. These carry the same `pub(super)` the crate already used and leave no module reaching
-  into another's internals.
+  `warn` for a metadata call the server held over a second), `attributes` (Hidden and Locked by path), `xattrs`
+  (`Volume`'s xattr methods, over named streams), and the stateless `mapping`. Splitting further needs a responsibility
+  you can name the same way; a line count is not one. `e5ea10d02` reverted four splits invented to satisfy the counter,
+  and every one of them had widened a visibility or torn a struct from its trait impl to do it. These carry the same
+  `pub(super)` the crate already used and leave no module reaching into another's internals.
 - **`volume/foreground_yield.rs` answers "should a background transfer stand aside?" from the WORK, not the transport.**
   MTP has an explicit holder for its single scarce USB pipe; SMB frames just interleave over a connection, so there is
   nothing on the transport to count. It survives the transfer session because the copy and the pane still share the link
@@ -986,13 +986,44 @@ Append-only and no-dump have no attribute and drop.
   app's pipeline: `apps/desktop/src-tauri/src/operations_host/backend_suites/smb_flags_test.rs` (onto and off the share,
   and a rollback of Locked copies). The QNAP answer is unverified.
 
+## Extended attributes
+
+`src/volume/xattrs.rs`, behind `Volume::read_xattr_many` / `write_xattr` / `remove_xattr`. An xattr is a named stream of
+the same name, stored the way macOS's own client stores it, so a mount of the same share sees it byte for byte. Finder
+tags are their one caller today (`apps/desktop/src-tauri/src/file_system/DETAILS.md` § "Finder tags"). What each server
+does, measured by smb2: `~/projects-git/vdavid/smb2/docs/notes/named-streams-and-xattrs.md`. Sweep numbers:
+`docs/notes/smb-finder-tags-2026-10-31.md`.
+
+- **The batch rides the MAIN session** with smb2's window of 16, which keeps it fair to what else is on that connection:
+  past 16 only adds latency. A sweep is 500 paths per call, and a scan-pool session for it would cost a login nearly
+  every time a folder opens.
+- **A path behind a DFS link answers `DfsReferral` in a batch**, so each such item retries by itself through
+  `or_through_link`.
+- **Every failure funnels with its lease's generation**, like every other call. A store's own refusal doesn't:
+  `NamedStreamsUnsupported` (a plain Samba) and `StreamDeleteIgnored` (a QNAP keeping a stream it reported deleted) are
+  `VolumeError::NotSupported`, an answer rather than a failing session.
+- **`supports_xattrs` is the share's `supports_named_streams` bit**, asked once at connect (`learn_xattr_support`, one
+  round trip). `FileFsAttributeInformation`'s NAME says `NTFS` on every Samba tested, so only the bit means anything. A
+  failed ask keeps the optimistic `true`.
+- ❗ **A QNAP keeps two streams it reports deleted**: `_kMDItemUserTags` and `AFP_Resource`. So `remove_xattr` on a tag
+  answers `NotSupported` there, and tags clear by writing the empty plist. (verified on QTS hero with Samba 4.20, by
+  smb2, 2026-10-31)
+- **A stream write moves the modification date on `streams_xattr` and not on a QNAP** (`qnap_macea`), which is why a tag
+  writer skips a file already in the target state, and why the watcher's follow-up stat can't notice a tag.
+- **The watcher opts into the metadata bits** (`WatchOptions::metadata`). Another client's tag then arrives as a
+  `Modified` under the plain file name; `listings.row_xattrs_may_have_changed` is how a pane reads it again. Neither
+  Samba tested sends the stream actions (6–8), which `watcher.rs::fold_stream_event` folds into `Modified` for a server
+  that does.
+- Pinned by `xattrs_integration_test.rs` against `smb-consumer-fruit`: the shared contract, a batch's order, working
+  with the mount gone, another client's tag reaching the listing host, and against the plain guest fixture, a server
+  with no streams saying so.
+
 ## Finder tags and other xattrs on copies (open gap)
 
 A direct-SMB copy keeps no xattrs either way: Finder tags, comments, custom icons (FinderInfo), and resource forks stay
-behind, and the loss note says so (`METADATA_CAPS` claims no `XATTRS`). Tracked as
-[#405](https://github.com/vdavid/cmdr/issues/405), blocked on `smb2` named streams
-([vdavid/smb2#9](https://github.com/vdavid/smb2/issues/9)); Finder tags alone on a share are
-[#289](https://github.com/vdavid/cmdr/issues/289), which shares the trait capability.
+behind, and the loss note says so (`METADATA_CAPS` claims no `XATTRS`; a tag lost both ways verified on the QNAP,
+2026-10-31, `docs/notes/smb-finder-tags-2026-10-31.md`). Tracked as [#405](https://github.com/vdavid/cmdr/issues/405);
+the streams it needs are § "Extended attributes".
 
 - **What it has to write**: what `smbfs` writes, so Finder on any Mac sees it: `AFP_AfpInfo`, `AFP_Resource`, and each
   other xattr as a stream whose name carries the `U+F022` mapping for `:` (#289's verified QNAP finding).
@@ -1000,10 +1031,10 @@ behind, and the loss note says so (`METADATA_CAPS` claims no `XATTRS`). Tracked 
   claim would lie, and a refusal counts as a reported loss.
 - **Ordering**: written as streams on the staged temp before its landing rename, like any staged xattr; read off the
   CREATE plus a stream enumeration the read can compound.
-- **The Finder-mounted share already keeps them** (the native chunked arm through `smbfs`; on the Docker fixture, which
+- **The Finder-mounted share already keeps them** (the native chunked arm through `smbfs`; on the guest fixture, which
   has no `vfs_fruit`, as `._` sidecars, and a resource fork is lost: `crates/cmdr-operations/src/transfer/DETAILS.md` §
-  "Local copies stage"). The QNAP-shaped `vfs_fruit` answer is unverified until a `fruit` fixture exists, which comes
-  with smb2#9.
+  "Local copies stage"). The `vfs_fruit` answer through a mount is unchecked; `smb-consumer-fruit` is the fixture to
+  ask.
 
 ## Server-side copy (copychunk)
 

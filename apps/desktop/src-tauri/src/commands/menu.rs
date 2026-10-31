@@ -180,6 +180,7 @@ pub fn show_file_context_menu<R: Runtime>(
         is_icloud_drive,
         can_share: pane.can_share,
         can_tag: pane.can_tag,
+        listing_id: pane.listing_id.clone(),
     });
 
     // Update menu context so on_menu_event has paths + bundle map for the new items.

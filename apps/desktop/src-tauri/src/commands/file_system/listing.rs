@@ -5,10 +5,10 @@ use cmdr_fs::entry::FileEntry;
 use cmdr_listing::{
     CompareDirectoriesError, CompareDirectoriesMode, CompareDirectoriesResult, DirectorySortMode, FuzzyJumpError,
     ListingId, ListingLookupError, ListingRequest, ListingStats, NameFilterResult, OnNoMatch, PaneMarks, ResortResult,
-    RowBeside, RowFacts, RowSpan, SelectionSnapshot, SortColumn, SortOrder,
+    RowBeside, RowSpan, SelectionSnapshot, SortColumn, SortOrder,
 };
 use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use tokio::time::Duration;
 
 use crate::file_system::volume::manager::get_volume_manager;
@@ -16,16 +16,10 @@ use crate::font_metrics::brief_columns::{
     BriefColumnWidths, BriefColumnsError, BriefColumnsIpcError, compute_brief_column_text_widths,
 };
 use crate::listing_index_sizes::count::{CountFolderSizesError, FolderSizeCountOutcome};
-use cmdr_fs::deadline::{TimedOut, blocking_typed_result_with_timeout, blocking_with_timeout_flag};
+use cmdr_fs::deadline::{TimedOut, blocking_typed_result_with_timeout};
 use cmdr_fs::volume::WatchCoverage;
 
 use super::expand_tilde;
-
-const TAGS_TIMEOUT: Duration = Duration::from_secs(2);
-/// Tag writes are the 5 s "write" tier per `commands/CLAUDE.md`. A `setxattr` on a
-/// hung mount can block; the timeout keeps it off the IPC thread (the blocking task
-/// runs to completion, but the IPC handler returns).
-const TAGS_WRITE_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Status of a streaming directory listing
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
@@ -56,17 +50,7 @@ pub struct StreamingListingStartResult {
 #[tauri::command]
 #[specta::specta]
 pub async fn enrich_tags(listing_id: String, paths: Vec<String>) -> TimedOut<()> {
-    blocking_with_timeout_flag(TAGS_TIMEOUT, (), move || {
-        let updates: Vec<(String, Vec<cmdr_fs::entry::TagRef>)> = paths
-            .into_iter()
-            .map(|p| {
-                let tags = crate::file_system::tags::read_tags(Path::new(&p));
-                (p, tags)
-            })
-            .collect();
-        listings().apply_row_facts(&ListingId::new(listing_id), RowFacts::Tags(updates));
-    })
-    .await
+    crate::file_system::tags_io::enrich_listing(listing_id, paths).await
 }
 
 /// Asks macOS which of the given VISIBLE paths of `listing_id` are packages the
@@ -96,23 +80,7 @@ pub async fn enrich_packages(listing_id: String, paths: Vec<String>) -> TimedOut
 #[tauri::command]
 #[specta::specta]
 pub async fn toggle_tags(app: tauri::AppHandle, listing_id: String, paths: Vec<String>, color: u8) -> TimedOut<()> {
-    blocking_with_timeout_flag(TAGS_WRITE_TIMEOUT, (), move || {
-        match crate::file_system::tags::toggle_color(&paths, color) {
-            Ok(outcome) => {
-                crate::file_system::tags::report_skips(&app, &outcome.skipped);
-                if !outcome.updates.is_empty() {
-                    listings().apply_row_facts(&ListingId::new(listing_id), RowFacts::Tags(outcome.updates));
-                }
-            }
-            // A write failure (permission, dead mount) is logged, not surfaced as a
-            // hard error: tags are low-stakes, each `setxattr` is atomic, and the
-            // panes stay correct (they reflect what's actually on disk on next read).
-            Err(e) => {
-                log::warn!(target: "tags", "toggle_tags failed (color={color}): {e}");
-            }
-        }
-    })
-    .await
+    crate::file_system::tags_io::toggle_for_command(app, listing_id, paths, color).await
 }
 
 // ============================================================================

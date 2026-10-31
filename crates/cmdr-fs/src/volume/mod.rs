@@ -1067,6 +1067,52 @@ pub trait Volume: Send + Sync {
         self.supports_local_fs_access()
     }
 
+    /// Whether this volume stores extended attributes: the byte-level store behind
+    /// Finder tags, and later FinderInfo and copy-preserving. Default `false`, whose
+    /// `*_xattr*` methods answer [`VolumeError::NotSupported`]. Who answers what, and
+    /// the servers' quirks: `crates/cmdr-fs/DETAILS.md` § "Extended attributes".
+    fn supports_xattrs(&self) -> bool {
+        false
+    }
+
+    /// Reads xattr `name` from each of `paths`, one result per path in input order,
+    /// each independent of the others. `Ok(None)` is a file with no such attribute;
+    /// what a missing file answers is `mode`'s call.
+    ///
+    /// Async and possibly network-bound, so a caller on a wait of its own bounds it
+    /// from outside (`cmdr_fs::deadline`), ❌ never by dropping this future.
+    fn read_xattr_many<'a>(
+        &'a self,
+        paths: &'a [PathBuf],
+        _name: &'a str,
+        _mode: XattrReadMode,
+    ) -> Pin<Box<dyn Future<Output = Vec<XattrAnswer>> + Send + 'a>> {
+        Box::pin(async move { paths.iter().map(|_| Err(VolumeError::NotSupported)).collect() })
+    }
+
+    /// Creates or replaces xattr `name` on `path`. A missing file is
+    /// [`VolumeError::NotFound`], and is ❌ never created.
+    fn write_xattr<'a>(
+        &'a self,
+        _path: &'a Path,
+        _name: &'a str,
+        _value: &'a [u8],
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async { Err(VolumeError::NotSupported) })
+    }
+
+    /// Removes xattr `name` from `path`. Removing one that isn't there succeeds; a
+    /// missing file is [`VolumeError::NotFound`]. [`VolumeError::NotSupported`] when
+    /// the store keeps what it was told to delete, as a QNAP does with Finder tags:
+    /// ❗ so clearing tags writes an empty plist instead (`tags.rs`).
+    fn remove_xattr<'a>(
+        &'a self,
+        _path: &'a Path,
+        _name: &'a str,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async { Err(VolumeError::NotSupported) })
+    }
+
     /// Whether moving one of this volume's paths to the Trash can land it in a
     /// Trash the user restores from.
     ///
@@ -1269,6 +1315,7 @@ pub trait Volume: Send + Sync {
                 && self.mount_class().is_none_or(MountClass::can_be_indexed),
             renames_can_copy: self.renames_can_copy(),
             has_os_mount_fallback: self.backend_kind().has_os_mount_fallback(),
+            can_store_xattrs: self.supports_xattrs(),
         }
     }
 
@@ -2277,6 +2324,7 @@ mod transfer_hold;
 mod transport_fault;
 mod types;
 mod usb_speed;
+mod xattr_read_mode;
 
 // Docs live in the file's own `//!` header. ❌ Never add an outer `///` here on
 // top of it: rustdoc resolves the concatenated fragments in THIS module's scope,
@@ -2335,6 +2383,7 @@ pub use transfer_hold::TransferHold;
 pub use transport_fault::{TransportFault, is_transport_errno};
 pub use types::*;
 pub use usb_speed::UsbSpeed;
+pub use xattr_read_mode::{XattrAnswer, XattrReadMode};
 
 #[cfg(test)]
 mod capabilities_test;

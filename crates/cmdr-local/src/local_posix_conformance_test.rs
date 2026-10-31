@@ -422,3 +422,18 @@ async fn a_link_lands_verbatim() {
     let volume = LocalPosixVolume::local_folder("Conformance", dir.to_path_buf(), VolumeHost::detached());
     cmdr_fs::volume::conformance::assert_a_link_lands_verbatim(&volume, Path::new("/")).await;
 }
+
+/// The contract under `user.*`, a name both macOS and Linux take. The reading of a Finder
+/// tag lives with the rest of the tag rules (`file_system/tags_write_test.rs`).
+#[tokio::test]
+async fn xattrs_keep_the_shared_contract() {
+    let test_dir = TestDir::new("xattrs_contract_test");
+    let volume = LocalPosixVolume::local_folder("Test", &*test_dir, VolumeHost::detached());
+    volume.create_file(Path::new("plain.txt"), b"x").await.unwrap();
+    cmdr_fs::volume::conformance::assert_xattrs_keep_their_promises(
+        &volume,
+        Path::new("plain.txt"),
+        Path::new("gone.txt"),
+    )
+    .await;
+}

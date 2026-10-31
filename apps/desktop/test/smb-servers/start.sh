@@ -6,8 +6,8 @@
 # the requested containers.
 #
 # Usage:
-#   ./start.sh           # Start core containers (guest, auth, both, readonly, flaky, slow, unicode)
-#   ./start.sh all       # Start all 14 containers
+#   ./start.sh           # Start core containers (guest, auth, both, readonly, flaky, slow, unicode, fruit)
+#   ./start.sh all       # Start all 16 containers
 #   ./start.sh minimal   # Start just guest + auth
 #   ./start.sh e2e       # Start containers needed by E2E tests (guest, auth, 50shares, unicode)
 
@@ -43,10 +43,10 @@ case "$mode" in
         services=(smb-consumer-guest smb-consumer-auth smb-consumer-both \
                   smb-consumer-readonly smb-consumer-flaky smb-consumer-slow \
                   smb-consumer-maxreadsize smb-consumer-50shares \
-                  smb-consumer-unicode)
+                  smb-consumer-unicode smb-consumer-fruit)
         ;;
     all)
-        echo "Starting all SMB servers (15 containers)..."
+        echo "Starting all SMB servers (16 containers)..."
         # Empty services list means "all defined in compose" for both `up` and
         # the post-up probe loop. We resolve the actual set via `compose ps`.
         ;;

@@ -446,13 +446,13 @@ folder” footer hint, so a shortcut rebind updates the clue without remounting 
 volume-id string. The record has two halves, and which half answers is the whole design:
 
 - **Rust answers "what can it do."** `Volume::capabilities()` publishes `backendCanWrite`, `canExport`, `canShareLinks`,
-  `canBeIndexed`, and `renamesCanCopy` per volume; they ride on `VolumeInfo.capabilities` and land on the record as
-  `canWrite` / `canBeSource` / `canShareLinks` / `canBeIndexed` / `renamesCanCopy` via `withBackendCapabilities`.
-  `renamesCanCopy` (S3) makes the Move dialog scan a same-volume move (`file-operations/transfer/DETAILS.md`).
-  `canShareLinks` gates "Copy share link" (S3): the context menu asks `rowCanShareLink` (a file, not inside an archive),
-  the palette asks it through `capabilitiesForPane` for the focused pane. `canBeIndexed` gates the switcher's index
-  affordances (`navigation/drive-index-manager.svelte.ts::isDriveRow`), and its per-kind default carries real weight for
-  a phone, whose row is clicked before it's dialed and so before any backend has published. Canonical:
+  `canBeIndexed`, `renamesCanCopy`, and `canStoreXattrs` per volume; they ride on `VolumeInfo.capabilities` and land on
+  the record under `canWrite` / `canBeSource` and their own names via `withBackendCapabilities`. `renamesCanCopy` (S3)
+  makes the Move dialog scan a same-volume move (`file-operations/transfer/DETAILS.md`). `canShareLinks` gates "Copy
+  share link" (S3): the context menu asks `rowCanShareLink` (a file, not inside an archive), the palette asks it through
+  `capabilitiesForPane` for the focused pane. `canBeIndexed` gates the switcher's index affordances
+  (`navigation/drive-index-manager.svelte.ts::isDriveRow`), and its per-kind default carries real weight for a phone,
+  whose row is clicked before it's dialed and so before any backend has published. Canonical:
   `apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` § "Trait capability model".
 - **This module classifies "what is it."** `volumeKindOf` picks a closed `VolumeKind` (`local` / `smb` / `sftp` /
   `webdav` / `mtp` / `adb` / `network` / `search-results`), which keys a frozen, by-reference table of per-kind defaults
@@ -2138,8 +2138,9 @@ directory owns is whether the item MAY appear, pushed as `PaneContextMenuFacts.c
 `pane-pointer.ts::handleContextMenu`. Rust adds one more condition of its own: macOS has to actually offer a service.
 The same flag gates the context menu's `Services` submenu, which asks the same question for the same reason (a macOS
 service takes file URLs too): `src-tauri/src/menu/DETAILS.md` § "Services in the right-click menu".
-`PaneContextMenuFacts.canTag`, the Finder tag colors, carries the same `rowIsOsVisible` answer as its own flag (a tag is
-an xattr written through the row's path). Why: `src-tauri/src/file_system/DETAILS.md` § "Finder tags".
+`PaneContextMenuFacts.canTag`, the Finder tag colors, is `rowCanHoldTags`: the volume's `canStoreXattrs` plus the same
+row checks, ❌ not `rowIsOsVisible` (a tag goes through the volume, so a share whose mount is gone still takes one).
+Why: `src-tauri/src/file_system/DETAILS.md` § "Finder tags".
 
 A share service takes file URLs, so the question is whether the right-clicked ROW has a real file behind it, and it
 needs three inputs rather than one kind lookup (`rowIsOsVisible` in `volume-capabilities.ts`):

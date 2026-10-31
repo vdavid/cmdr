@@ -51,6 +51,7 @@ fn registered(row: LocationInfo) -> LocationInfo {
             can_be_indexed: true,
             renames_can_copy: false,
             has_os_mount_fallback: false,
+            can_store_xattrs: true,
         }),
         ..row
     }

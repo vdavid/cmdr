@@ -259,6 +259,7 @@ describe('createDeviceConnect', () => {
       canShareLinks: false,
       renamesCanCopy: false,
       hasOsMountFallback: false,
+      canStoreXattrs: false,
     }
     setInfo({ ...phone({ kind: 'ready' }), capabilities: registered })
     expect(sub.holdsListing).toBe(false)

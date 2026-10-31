@@ -21,7 +21,7 @@ use cmdr_fs::log_private::LogPrivate;
 use cmdr_fs::volume::{
     BatchScanResult, ConnectionLiveness, CopyScanResult, EntryKind, LaneKey, MutationEvent, ScanBoundary, ScanConflict,
     ServerCopyProgress, SourceItemInfo, SpaceInfo, StreamLength, StreamWriteProgress, StreamWritten, Volume,
-    VolumeError, VolumeRandomReader, VolumeReadStream, WatchCoverage, WriteMode,
+    VolumeError, VolumeRandomReader, VolumeReadStream, WatchCoverage, WriteMode, XattrAnswer, XattrReadMode,
 };
 use cmdr_fs::volume::{ListingProgress, ListingWatch, Retirement};
 use log::debug;
@@ -184,6 +184,39 @@ impl Volume for SmbVolume {
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<EntryKind, VolumeError>> + Send + 'a>> {
         Box::pin(self.entry_kind_impl(path))
+    }
+
+    /// Whether the share has named streams, which is what an xattr is here. A plain
+    /// Samba has none, and this hides the tag colors there rather than offering a
+    /// click that can only fail.
+    fn supports_xattrs(&self) -> bool {
+        self.inner.stores_xattrs.load(Ordering::Relaxed)
+    }
+
+    fn read_xattr_many<'a>(
+        &'a self,
+        paths: &'a [PathBuf],
+        name: &'a str,
+        mode: XattrReadMode,
+    ) -> Pin<Box<dyn Future<Output = Vec<XattrAnswer>> + Send + 'a>> {
+        Box::pin(self.read_xattr_many_impl(paths, name, mode))
+    }
+
+    fn write_xattr<'a>(
+        &'a self,
+        path: &'a Path,
+        name: &'a str,
+        value: &'a [u8],
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(self.write_xattr_impl(path, name, value))
+    }
+
+    fn remove_xattr<'a>(
+        &'a self,
+        path: &'a Path,
+        name: &'a str,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(self.remove_xattr_impl(path, name))
     }
 
     fn can_watch_listings(&self) -> bool {

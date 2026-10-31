@@ -297,6 +297,8 @@ export interface VolumeBackendCapabilities {
   renamesCanCopy: boolean
   /** The same place can also be reached through the OS's own mount (SMB), so a live session is the "direct" one of two. */
   hasOsMountFallback: boolean
+  /** Finder tags can be stored here: the backend stores extended attributes. */
+  canStoreXattrs: boolean
 }
 
 /**

@@ -1,5 +1,5 @@
 # Every port publishes to 127.0.0.1, not 0.0.0.0. Without the `${SMB_BIND_ADDR}` prefix, Docker binds
-# all interfaces, which puts 15 Samba servers (several with guest shares, one writable) on the LAN and
+# all interfaces, which puts 16 Samba servers (several with guest shares, one writable) on the LAN and
 # the tailnet of whoever runs the tests. The fixtures hold no real data, but an unauthenticated smbd
 # reachable from the local network is surface nobody asked for, and these containers routinely outlive
 # the test run that started them.
@@ -102,3 +102,9 @@ services:
       context: smb-consumer-maxreadsize
     ports:
       - "${SMB_BIND_ADDR:-127.0.0.1}:${SMB_CONSUMER_MAXREADSIZE_PORT:-10494}:445"
+
+  smb-consumer-fruit:
+    build:
+      context: smb-consumer-fruit
+    ports:
+      - "${SMB_BIND_ADDR:-127.0.0.1}:${SMB_CONSUMER_FRUIT_PORT:-10495}:445"

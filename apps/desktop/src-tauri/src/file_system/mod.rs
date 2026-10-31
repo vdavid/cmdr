@@ -23,6 +23,9 @@ pub mod share;
 #[cfg(target_os = "macos")]
 pub mod sync_status;
 pub mod tags;
+pub mod tags_io;
+#[cfg(all(test, target_os = "macos"))]
+mod tags_io_integration_test;
 #[cfg(target_os = "macos")]
 pub mod terminal;
 /// Ungated: `open_in_editor` answers with its wire types on every platform.

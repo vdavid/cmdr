@@ -62,4 +62,8 @@ pub struct VolumeCapabilities {
     /// connection dot may say so. `BackendKind::has_os_mount_fallback` is the
     /// one decider.
     pub has_os_mount_fallback: bool,
+    /// Finder tags can be stored here, because the backend stores extended
+    /// attributes (`Volume::supports_xattrs`). What the context menu's tag colors
+    /// ask.
+    pub can_store_xattrs: bool,
 }

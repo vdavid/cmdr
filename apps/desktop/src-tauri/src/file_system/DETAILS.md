@@ -33,7 +33,7 @@ restic backup's snapshots: the overlay row, the parked hub, and the write guards
 - `packages.rs`: asks macOS (`NSURLIsPackageKey`, on its own 8 MB-stack pool) which visible dotted folders are packages
   the list doesn't know, for `enrich_packages`; local volumes only. The rule: `crates/cmdr-fs/DETAILS.md` § "What
   counts as an extension".
-- `tags.rs`: Finder tags. `terminal.rs`: "open terminal here". `text_editor.rs`: which app F4 opens a file in (wire
+- `tags.rs`: Finder tags, the pure half. `tags_io.rs`: their I/O, through the volume. `terminal.rs`: "open terminal here". `text_editor.rs`: which app F4 opens a file in (wire
   types; the macOS half in `text_editor_macos.rs`, its tests in `text_editor_test.rs`).
 
 ## Local disk or not (`filesystem_kind.rs`)
@@ -472,43 +472,39 @@ Which app F4 opens a file in: the regular pane, the search-results pane, and the
   every `e2e_opened_paths` consumer is untouched. On macOS that's `text_editor_macos.rs`'s own `launch`; off macOS it's the
   command's E2E arm.
 
-## Finder tags (`tags.rs`)
+## Finder tags (`tags.rs`, `tags_io.rs`)
 
 What a tag is, why reading them is deferred, and how the listing carries them forward across a re-stat:
 `crates/cmdr-listing/DETAILS.md` § "Finder tags". This is the app's half: reading and writing the xattr.
 
-**Write path.** `tags.rs::set_tags(path, &[TagRef])` encodes the full desired set as a **binary** plist
-(`plist::Value::to_writer_binary` — `plist` defaults to XML, which is NOT Finder-compatible) of `"Name\nN"` strings
-(always with the `\nN` suffix, even color 0, matching Finder), and `xattr::set`s it. An empty set REMOVES the xattr
-(matching Finder clearing all tags), guarded so an already-untagged file doesn't surface a spurious ENOATTR. The
-encode↔decode round-trip is verified **semantically** (re-`read_tags` equals the input), not byte-for-byte against a
-Finder reference — valid bplists differ in object-table ordering/dedup.
+**Split.** `tags.rs` is pure (the plist both ways, the toggle rule, the applied-colors rule, the skip vocabulary). `tags_io.rs` is the I/O, through `Volume::read_xattr_many` / `write_xattr`, so a direct SMB share reads over smb2 and works with its macOS mount gone. ❌ `tags::read_tags` (a local `getxattr`) is for a caller already in OS paths, a custom folder's icon, and never for a row.
 
-**Where the menu offers tags.** Only on rows that are real OS paths (`PaneContextMenuFacts.can_tag`, the frontend's
-`rowIsOsVisible`, the same reading `Share…` takes). Decision/Why: hiding an action that can't work beats explaining
-after the click, and the write is an `xattr::set` through the path, so a phone, an ADB device, an SFTP or WebDAV server,
-an archive's insides, or a `.git`-portal row takes the click and stores nothing. Keyed on the capability, ❌ never a
-list of backends, so a new protocol-only backend (S3) hides them for free. A share Cmdr talks to directly over smb2
-keeps them: its share stays mounted by macOS, its rows are `/Volumes/…` paths, and the xattr goes through that mount. A
-macOS-mounted filesystem that can't store xattrs still shows them; only trying can tell. Reading tags (`enrich_tags`)
-still runs everywhere, since an empty read is harmless.
+**Which volume.** `tag_store_for` asks `VolumeManager::resolve` about the row's PARENT with the listing's volume id: `photos.zip` is a file on the drive, and resolving the row itself would route to the archive inside it. A routed or undecided parent (an archive's insides, the `.git` portal, a restic view) stores nothing, and neither does a backend without xattrs. With no listing to ask (a search hit), the registered volume with the longest root over the path answers. A batch resolves each folder once.
 
-**Two readers.** `read_tags` is lenient, for display: a read error, a bad plist, or a non-array root reads as no tags,
-and non-string elements are dropped. `read_tags_strict` is the write path's: `Ok(None)` for no xattr, `Ok(Some(_))` for
-a fully decoded array, and a typed `TagReadError` (`Unreadable(io::Error)` / `Undecodable`) otherwise. Decision/Why: a
+**Timeouts.** Every wait is on the reply, ❌ never the work (`timeout_detached_typed`): the read or write lands behind a reply that gave up, and it's the work that patches the listing. The wait is `io_budget(state, tier)`: the 2 s read and 5 s write tiers on a disk or an OS mount, at least 10 s on a live session, whose transport tells slow from dead. All reads share `TAG_READS`, a `BlockingBudget` of four, so a sweep chunk that outran its reply keeps its place and a slow share slows the sweep down rather than piling up behind it.
+
+**Reading for display.** Paths a listing just named, so `XattrReadMode::AssumePathsExist`. Decision/Why: a steady cost whatever share of the folder is tagged: about 10% slower than `Verified` at 5% tagged, about twice as fast when every file is, with a tighter p99 under load, and a row gone since the listing is the same answer ("no tags"). Numbers: `docs/notes/smb-finder-tags-2026-10-31.md`. ❌ A failed read leaves its path out of the update rather than reading as empty: the listing replaces unconditionally, so a dropped connection would otherwise blank every dot in the pane.
+
+**Write path.** `tags_io::write_tags` encodes the full desired set as a **binary** plist (`plist::Value::to_writer_binary`; `plist` defaults to XML, which is NOT Finder-compatible) of `"Name\nN"` strings (always with the `\nN` suffix, even color 0, matching Finder) and writes it through the volume. The encode↔decode round-trip is verified **semantically**, not byte-for-byte against a Finder reference, since valid bplists differ in object-table ordering and dedup.
+
+**Clearing writes, ❌ never deletes.** An empty set is the 42-byte empty-array plist, on every volume. It's what macOS's own API leaves behind (verified on macOS 27.0.1, `NSURLTagNamesKey` = `[]`, then `xattr -px`, on APFS, 2026-10-31; `tags.rs::clearing_encodes_to_the_empty_plist_macos_writes` pins the bytes), and it's the only thing that works on a QNAP, which answers success to a delete and keeps the attribute (`crates/cmdr-smb/DETAILS.md` § "Extended attributes"). So the empty array reads as no tags everywhere. A file already in the target state is not written, whichever write got it there: no attribute or an empty array counts as cleared, and the merge writers compare first, since a stream write bumps the date on a `streams_xattr` server.
+
+**Where the menu offers tags.** Only where the volume stores xattrs (`Volume::supports_xattrs`, published as `canStoreXattrs`) and the row is a real entry on it (`PaneContextMenuFacts.can_tag`, the frontend's `rowCanHoldTags`). Decision/Why: hiding an action that can't work beats explaining after the click, so a phone, an ADB device, an SFTP or WebDAV server, an archive's insides, or a `.git`-portal row shows no circles. Keyed on the capability, ❌ never a list of backends, so a new protocol-only backend (S3) hides them for free. A direct SMB share keeps them with or without its mount, unless the server has no named streams (a plain Samba, asked at connect). (A deliberate unmount unregisters the volume, so "without its mount" means one proven dead while the session lives: `docs/notes/smb-finder-tags-2026-10-31.md`.) A macOS-mounted filesystem that can't store xattrs still shows them; only trying can tell.
+
+**Two readers.** `parse_tags_plist` is lenient, for display: a bad plist or a non-array root reads as no tags, and non-string elements are dropped. `tags_io::read_for_merge` is the write path's: `XattrReadMode::Verified`, so a missing file is an error, then `parse_tags_plist_strict`, and a typed `TagReadError` (`Unreadable(VolumeError)` / `Undecodable`) otherwise. Decision/Why: a
 read-modify-write that took "couldn't read" for "untagged" replaced every tag on the file with the one being toggled
 (#541; reachable through write-without-read permission, an ACL, or a value another tool wrote oddly). Every merging
-write (`toggle_color`, the MCP `set` and `toggle`) goes through the strict one and SKIPS a file it refuses, listing it
+write (`tags_io::toggle_color`, the MCP `set` and `toggle`) goes through it and SKIPS a file it refuses, listing it
 in `TagToggleOutcome.skipped`; a skipped file also stays out of the all-have decision. `report_skips` logs each one and
 emits `tags-skipped { count }` to the main window, which raises the `fileExplorer.tags.skipped` warning toast
 (`apps/desktop/src/lib/file-explorer/pane/tags-skipped-toast.ts`). Pinned in `tags_write_test.rs` (malformed, non-string element, mode
 `0200`, mixed selection).
 
-`tags.rs::toggle_color(paths, color)` is the higher-level op behind both triggers: it reads each path's current tags,
+`tags_io::toggle_color(volume_id, paths, color)` is the higher-level op behind both triggers: it reads each path's current tags,
 applies Finder's multi-file rule (if EVERY path already carries the color, remove it from all; otherwise add the
 canonical system tag — `Red\n6`, …, `Gray\n1` — to every path that lacks it), preserves all other tags, skips rewriting
 files already in the target state, and returns the new per-path sets. The `toggle_tags(listing_id, paths, color)` IPC
-command wraps it in the 5 s write-timeout tier and feeds the result to `Listings::apply_row_facts` (`RowFacts::Tags`) so the panes refresh
+command wraps it in the write tier above and feeds the result to `Listings::apply_row_facts` (`RowFacts::Tags`) so the panes refresh
 immediately. A same-color _custom_ tag counts as "applied" (no duplicate system tag is added; removing strips every tag
 of that color).
 
@@ -516,10 +512,12 @@ of that color).
 blob carries `kHasCustomIcon` (`0x0400` at offset 8, see `icons/per_path.rs`) plus type/creator codes; zeroing it would
 destroy custom folder icons and break `custom_folder_icon`. Modern Finder reads tags straight from
 `_kMDItemUserTags`, so the dot/color shows without the legacy label bits — verified to survive in
-`tags_write_test.rs::tagging_preserves_finder_info_custom_icon_flag`. `setxattr` is atomic per attribute, so a single
+`tags_write_test.rs::tagging_preserves_finder_info_custom_icon_flag`. A write is atomic per attribute, so a single
 file is never half-written; a multi-file toggle that fails mid-loop leaves earlier files updated and propagates the
 error (the IPC command logs it rather than surfacing a hard failure — tags are low-stakes and the panes still reflect
 what's on disk).
+
+**Other clients' tags.** The share watcher opts into the metadata bits (`smb2::WatchOptions::metadata`), and a change on a row asks `ListingHost::row_xattrs_may_have_changed`, which `tags_io::refresh_rows` answers by reading those rows again for any pane showing their folder. Apart from `directory_changed` because a re-stat can't see a tag: no new size, and on a QNAP no new date either. A pane on an OS-mounted share hears no such thing: FSEvents on `smbfs` sees only this machine.
 
 ### Finder tags MCP consumer
 

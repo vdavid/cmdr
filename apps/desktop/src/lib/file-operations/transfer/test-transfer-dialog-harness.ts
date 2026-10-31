@@ -149,6 +149,7 @@ vi.mock('#lib/stores/volume-store.svelte.js', () => ({
         canBeIndexed: false,
         renamesCanCopy: true,
         hasOsMountFallback: false,
+        canStoreXattrs: false,
       },
     },
   ],

@@ -44,6 +44,10 @@ impl ListingHost for AppListings {
         super::listings().open_listing_paths(volume_id)
     }
 
+    fn row_xattrs_may_have_changed(&self, volume_id: &str, parent_path: &Path, paths: Vec<PathBuf>) {
+        crate::file_system::tags_io::refresh_rows(volume_id, parent_path, paths);
+    }
+
     fn refresh_archive_listings<'a>(
         &'a self,
         volume_id: &'a str,

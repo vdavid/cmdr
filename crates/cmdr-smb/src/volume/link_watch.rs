@@ -272,7 +272,9 @@ async fn arm(
 ) -> Result<(SmbClient, smb2::Watcher), smb2::Error> {
     let (mut client, share) = build_session(params, replaces).await?;
     let (tree, path) = target_of(&mut client, &share, root).await?;
-    let watcher = client.watch(&tree, &path, true).await?;
+    let watcher = client
+        .watch_with(&tree, &path, smb2::WatchOptions::new().recursive(true).metadata(true))
+        .await?;
     Ok((client, watcher))
 }
 

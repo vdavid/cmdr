@@ -265,7 +265,7 @@ pub const ROW_LABEL_KEY: &str = "menu.tag.rowLabel";
 
 /// The label line's catalog key while a circle is hovered: what a click on it does.
 ///
-/// Exactly the toggle `file_system::tags::toggle_color` performs: "applied" means every
+/// Exactly the toggle `file_system::tags_io::toggle_color` performs: "applied" means every
 /// right-clicked row carries the color, and then the click removes it; otherwise it adds it.
 pub fn hover_label_key(applied: bool) -> &'static str {
     if applied {

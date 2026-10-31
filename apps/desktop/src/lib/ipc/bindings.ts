@@ -18983,7 +18983,7 @@ export type TagRef = {
 /**
  *  `tags-skipped`: a color-tag toggle (keyboard command or context-menu circle) left
  *  `count` files alone because their existing tags couldn't be read or fully decoded
- *  (`file_system::tags::toggle_color`). Emitted to the main window, which raises a
+ *  (`file_system::tags_io::toggle_color`). Emitted to the main window, which raises a
  *  warning toast, so the person learns why those files didn't change color.
  */
 export type TagsSkipped = {
@@ -20441,6 +20441,12 @@ export type VolumeCapabilities = {
    *  one decider.
    */
   hasOsMountFallback: boolean
+  /**
+   *  Finder tags can be stored here, because the backend stores extended
+   *  attributes (`Volume::supports_xattrs`). What the context menu's tag colors
+   *  ask.
+   */
+  canStoreXattrs: boolean
 }
 
 /**

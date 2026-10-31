@@ -523,6 +523,7 @@ describe('a server search can’t cover', () => {
       canShareLinks: false,
       renamesCanCopy: false,
       hasOsMountFallback: false,
+      canStoreXattrs: false,
     },
   }
   const SCOPE = 'sftp://ada@nas.local:22/srv/data'

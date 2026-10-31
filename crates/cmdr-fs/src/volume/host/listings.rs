@@ -80,6 +80,15 @@ pub trait ListingHost: Send + Sync {
         Vec::new()
     }
 
+    /// `paths`, all in the directory `parent_path` of `volume_id`, changed in a way
+    /// that may have touched their xattrs, so a pane showing them should read their
+    /// Finder tags again. One call per directory per batch, never per entry.
+    ///
+    /// Apart from [`directory_changed`](Self::directory_changed) because a re-stat
+    /// can't see it: a tag lands with no new size, and on a QNAP no new date either.
+    /// The default does nothing, the right answer for a host with no panes.
+    fn row_xattrs_may_have_changed(&self, _volume_id: &str, _parent_path: &Path, _paths: Vec<PathBuf>) {}
+
     /// The archive file at `archive_path` on `volume_id` changed, so re-read
     /// every open pane at or INSIDE it.
     ///
@@ -181,6 +190,7 @@ mod recording {
         open_paths: Mutex<Vec<(String, PathBuf)>>,
         authoritative_lookups: AtomicUsize,
         archive_refreshes: Mutex<Vec<(String, PathBuf)>>,
+        retagged: Mutex<Vec<PathBuf>>,
         local_coverage: Mutex<Vec<(PathBuf, WatchCoverage)>>,
     }
 
@@ -267,6 +277,11 @@ mod recording {
             self.authoritative_lookups.load(Ordering::Relaxed)
         }
 
+        /// Every row a re-read of its tags was asked for.
+        pub fn retagged(&self) -> Vec<PathBuf> {
+            self.retagged.lock_ignore_poison().clone()
+        }
+
         /// Every `(volume_id, archive_path)` an archive refresh was asked for.
         pub fn archive_refreshes(&self) -> Vec<(String, PathBuf)> {
             self.archive_refreshes.lock_ignore_poison().clone()
@@ -274,6 +289,10 @@ mod recording {
     }
 
     impl ListingHost for RecordingListings {
+        fn row_xattrs_may_have_changed(&self, _volume_id: &str, _parent_path: &Path, paths: Vec<PathBuf>) {
+            self.retagged.lock_ignore_poison().extend(paths);
+        }
+
         fn directory_changed(&self, volume_id: &str, parent_path: &Path, change: DirectoryChange) {
             self.changes
                 .lock_ignore_poison()

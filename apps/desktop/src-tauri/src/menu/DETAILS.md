@@ -222,17 +222,17 @@ Exceptions that do NOT use `"execute-command"`:
   bundles and launches the chosen app the same way. `launch_with` swaps a file inside an archive for a fresh read-only
   copy first, off the main thread (`../file_viewer/DETAILS.md` § "Open with on a routed file").
 - **Finder tag colors** (macOS): the file context menu carries seven circle items
-  (`file_context_menu.rs::append_tag_color_group`, shown for files AND folders wherever `can_tag` says the rows are
-  real OS paths: hidden on a phone, ADB, SFTP, WebDAV, an archive's insides, and a `.git`-portal row, where the write
-  would store nothing and say nothing), IDs `tag-color:<1..=7>`,
+  (`file_context_menu.rs::append_tag_color_group`, shown for files AND folders wherever `can_tag` says the row can hold one:
+  hidden on a phone, ADB, SFTP, WebDAV, an archive's insides, and a `.git`-portal row, and on a share with no named
+  streams, where the write would store nothing), IDs `tag-color:<1..=7>`,
   which `tag_row/` draws as Finder's one row of circles once the menu tracks ("The tag row"). Like "Open with", they're
   prefix-routed
   (`on_menu_event` matches `tag-color:`) — NOT in `menu_id_to_command` — and call
-  `file_system::tags::toggle_color` on the RIGHT-CLICKED selection (`MenuState.context.paths`),
-  then `Listings::apply_row_facts(MenuState.context.tags_listing_id, …)`. Acting on the right-clicked set
+  `file_system::tags_io::toggle_from_menu` on the RIGHT-CLICKED selection (`MenuState.context.paths`), which then calls
+  `Listings::apply_row_facts(MenuState.context.tags_listing_id, …)`. Acting on the right-clicked set
   is why they can't route through `execute-command`: a frontend command reads the *focused-pane*
-  selection, which differs when the right-click lands on an unselected row. The xattr write runs on
-  `spawn_blocking` (off the main/menu thread). The keyboard-assignable `tags.toggle*` commands cover
+  selection, which differs when the right-click lands on an unselected row. The write runs on
+  its own task (off the main/menu thread). The keyboard-assignable `tags.toggle*` commands cover
   the focused-selection case via the frontend (`pane-commands.ts::toggleTagOnFocusedSelection` →
   `toggle_tags` IPC); no default shortcut.
   - **Applied = every selected path carries the color** (`FileContextInfo.applied_tag_colors`, computed from
@@ -758,7 +758,7 @@ same fact `Share` rides on: both hand file URLs to something outside Cmdr).
 ### Slow facts and the live menu
 
 The file context menu opens within the grace period, whatever the disk does. Six things it shows depend on asking the
-rows' storage: the tag checks (`getxattr` per row), the Google Drive items (a Drive xattr and two `stat`s), the File
+rows' storage: the tag checks (a read per row, through the volume, under `tags_io::MENU_READ_TIMEOUT`), the Google Drive items (a Drive xattr and two `stat`s), the File
 Provider actions, "Open with" (LaunchServices), `Share` (ShareKit reads each file's attributes), and the iCloud eviction
 pair (sync status). On a network share each is a round trip. A sample of the running app on an SMB share over Tailscale
 (2026-09-23, five right-clicks, 1 ms interval) spent 3.4 s of main-thread time in the Drive read, 2.1 s in `Share`,

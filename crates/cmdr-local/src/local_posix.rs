@@ -10,6 +10,7 @@
 mod links;
 mod scan;
 mod streams;
+mod xattrs;
 
 use crate::reading::{ListingTally, get_single_entry, list_directory_core_with_tally, supported_dates_of};
 use crate::space::{get_space_info_for_path, live_space_info_for_path};
@@ -26,7 +27,7 @@ use cmdr_fs::volume::{
 };
 use cmdr_fs::volume::{
     EntryKind, ListingProgress, NodeIdentity, StreamLength, StreamWriteProgress, StreamWritten, SupportedDates,
-    WriteMode,
+    WriteMode, XattrAnswer, XattrReadMode,
 };
 use std::future::Future;
 use std::io;
@@ -397,6 +398,43 @@ impl Volume for LocalPosixVolume {
     #[cfg(feature = "playwright-e2e")]
     fn inject_error(&self, errno: i32) {
         *self.injected_error.lock_ignore_poison() = Some(errno);
+    }
+
+    /// `xattr` on the path, whatever the mount under it: a share the OS mounted reads
+    /// through `smbfs`, one round trip per file, and each call can block on a hung
+    /// mount, so the caller bounds the wait (`Volume::read_xattr_many`).
+    fn supports_xattrs(&self) -> bool {
+        true
+    }
+
+    fn read_xattr_many<'a>(
+        &'a self,
+        paths: &'a [PathBuf],
+        name: &'a str,
+        mode: XattrReadMode,
+    ) -> Pin<Box<dyn Future<Output = Vec<XattrAnswer>> + Send + 'a>> {
+        Box::pin(xattrs::read_many(
+            paths.iter().map(|path| self.resolve(path)).collect(),
+            name.to_string(),
+            mode,
+        ))
+    }
+
+    fn write_xattr<'a>(
+        &'a self,
+        path: &'a Path,
+        name: &'a str,
+        value: &'a [u8],
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(xattrs::write(self.resolve(path), name.to_string(), value.to_vec()))
+    }
+
+    fn remove_xattr<'a>(
+        &'a self,
+        path: &'a Path,
+        name: &'a str,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(xattrs::remove(self.resolve(path), name.to_string()))
     }
 
     fn get_metadata<'a>(

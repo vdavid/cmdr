@@ -41,6 +41,8 @@ keychain, mounts, and human-facing words stay in the app's `network/`.
 - **A path call follows a DFS link only via `or_through_link`**; ❌ a bare `Tree` call fails there.
 - ❗ **A link to another host sends nothing until a person allows the pair** (`link_consent.rs`, DETAILS § "Signing in
   through a link"): ❌ never `FollowAll`.
+- **An xattr is a named stream** (`xattrs.rs`, DETAILS § "Extended attributes"): no mount needed, and ❌ never
+  `remove_xattr` to clear a Finder tag (a QNAP keeps it).
 - **A link is `is_link()`, ❌ never the `REPARSE_POINT` bit** (dedup and cloud files carry it; DETAILS § "Junctions and
   symlinks").
 - **Path conversion matches whole COMPONENTS both ways** (`to_smb_path` / `to_display_path` join and strip

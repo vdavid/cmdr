@@ -58,6 +58,7 @@ describe('answersNow', () => {
     canShareLinks: false,
     renamesCanCopy: false,
     hasOsMountFallback: false,
+    canStoreXattrs: false,
   }
 
   it('answers for a local drive, which has no session to wait for', () => {

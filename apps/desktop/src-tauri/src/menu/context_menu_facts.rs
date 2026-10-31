@@ -107,6 +107,8 @@ pub struct FactsRequest {
     pub can_share: bool,
     /// Whether the menu shows the tag colors, so their applied state is worth reading.
     pub can_tag: bool,
+    /// The pane's listing, whose volume stores the rows' tags. Empty for a search hit.
+    pub listing_id: String,
 }
 
 impl FactsRequest {
@@ -377,6 +379,7 @@ fn jobs_for(request: FactsRequest) -> Vec<(FactKind, FactJob)> {
         primary,
         paths,
         is_directory,
+        listing_id,
         ..
     } = &request;
     let kinds = request.kinds();
@@ -384,6 +387,7 @@ fn jobs_for(request: FactsRequest) -> Vec<(FactKind, FactJob)> {
     for kind in kinds {
         let primary = primary.clone();
         let paths = paths.clone();
+        let listing_id = listing_id.clone();
         let is_directory = *is_directory;
         let job: FactJob = match kind {
             FactKind::SyncStatus => Box::new(move || {
@@ -414,11 +418,8 @@ fn jobs_for(request: FactsRequest) -> Vec<(FactKind, FactJob)> {
             FactKind::Tags => Box::new(move || {
                 // Which colors the WHOLE selection carries: each path's tags read once, and a
                 // color counts only when every path has it.
-                let per_path: Vec<_> = paths
-                    .iter()
-                    .map(|path| crate::file_system::tags::read_tags(path))
-                    .collect();
-                Fact::Tags(crate::file_system::tags::applied_colors(&per_path))
+                let paths = paths.iter().map(|path| path.to_string_lossy().into_owned()).collect();
+                Fact::Tags(crate::file_system::tags_io::applied_colors_blocking(listing_id, paths))
             }),
         };
         jobs.push((kind, job));
@@ -588,6 +589,7 @@ mod tests {
             is_icloud_drive,
             can_share: rows_are_os_paths,
             can_tag: rows_are_os_paths,
+            listing_id: String::new(),
         };
         // A folder on a phone: no Open with, no Share, no tag colors, no eviction pair.
         assert_eq!(

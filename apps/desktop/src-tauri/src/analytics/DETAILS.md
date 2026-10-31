@@ -232,7 +232,7 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
 - `mtp_connected` (backend, `crates/cmdr-mtp/src/connection/mod.rs` `connect`): no device/product props.
 - `adb_connected` (backend, `crates/cmdr-adb/src/volume/mod.rs`): no serial/model/Android-version props. Rides the
   same `AnalyticsSink` seam as the other two crate-side connection events.
-- `tag_toggled` (backend, `file_system/tags.rs` `toggle_color`, at its single exit): `action` (`applied` / `removed`),
+- `tag_toggled` (backend, `apps/desktop/src-tauri/src/file_system/tags_io.rs` `toggle_color`, at its single exit): `action` (`applied` / `removed`),
   `color` (the Finder palette's canonical name, lowercased: a closed set of seven), `item_count` bucket, `succeeded`
   bool; NEVER a tag's own text, which is user-authored content. `toggle_color` is the one op behind all three triggers
   (the seven keyboard commands, the context-menu circles, and the MCP `tag` tool), so instrumenting it covers them

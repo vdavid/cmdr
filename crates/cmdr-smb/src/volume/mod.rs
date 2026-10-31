@@ -50,6 +50,7 @@ mod transfer_session;
 mod volume_impl;
 mod watcher;
 mod write_stream;
+mod xattrs;
 
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
@@ -260,6 +261,9 @@ struct SmbVolumeInner {
     /// the next `spawn_watcher`, whose session names it to the server
     /// (`session_build::retired_session_id`). The watcher's own predecessor only.
     retired_watcher_session: std::sync::Mutex<Option<smb2::types::SessionId>>,
+    /// Whether the share has named streams, which is what an xattr is here. Learned
+    /// once at connect (`xattrs.rs`), `true` until then.
+    stores_xattrs: AtomicBool,
     /// Single-flight guard for `attempt_reconnect`. Concurrent callers (FE
     /// backoff cycle + lazy nav-time retry) wait on the same in-flight attempt
     /// instead of dog-piling the server.
@@ -404,6 +408,7 @@ impl SmbVolume {
                 state: SessionCell::new(ConnectionState::Direct, SessionGeneration::FIRST),
                 watcher_cancel: std::sync::Mutex::new(None),
                 retired_watcher_session: std::sync::Mutex::new(None),
+                stores_xattrs: AtomicBool::new(true),
                 reconnect_lock: Arc::new(tokio::sync::Mutex::new(())),
                 unmounted: Arc::new(AtomicBool::new(false)),
                 retirement: Arc::new(Retirement::new()),
@@ -585,6 +590,7 @@ pub async fn connect_smb_volume(
 ) -> Result<SmbVolume, smb2::Error> {
     let (client, tree) = build_session(&params, None).await?;
     let vol = SmbVolume::new(name, anchor, volume_id, params.clone(), client, tree, host);
+    vol.learn_xattr_support().await;
     vol.inner.spawn_watcher(&params, SessionGeneration::FIRST);
     // PII-free analytics: a direct SMB connection succeeded. No host / share / credential
     // identifiers ever cross.
@@ -721,3 +727,5 @@ mod unicode_names_integration_test;
 mod wire_shape_integration_test;
 #[cfg(test)]
 mod write_stream_integration_test;
+#[cfg(test)]
+mod xattrs_integration_test;

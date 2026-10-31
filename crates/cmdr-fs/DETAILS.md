@@ -47,9 +47,9 @@ the next section.
   spelling, and the ONE translation); `friendly_error/` (typed, word-free classification); `usb_speed.rs` (❗ its doc
   comment reaches `bindings.ts`); `in_memory.rs` (the store and its knobs; `in_memory/volume_impl.rs` is its
   `impl Volume`); `conformance.rs` (+ `conformance/directory_creation.rs`, the three `create_directory_all` promises,
-  and `conformance/modification_date.rs`, the two date ones, and `src/volume/conformance/link_landing.rs`, what
-  `can_hold_links` promises); and `host/` (what a backend needs from the app, as named traits; read
-  `src/volume/host/CLAUDE.md` before writing a backend).
+  and `conformance/modification_date.rs`, the two date ones, `src/volume/conformance/xattrs.rs`, the xattr one, and
+  `src/volume/conformance/link_landing.rs`, what `can_hold_links` promises); and `host/` (what a backend needs from the
+  app, as named traits; read `src/volume/host/CLAUDE.md` before writing a backend).
 - `entry.rs` + `icons/`: `FileEntry` and the classifiers behind `get_icon_id`.
 - `sqlite_util.rs`: the ONE process-wide page-cache slab, the connection factories every store opens through, and the
   one way a database file is deleted. `src/sqlite_util/thread_conn_cache.rs` is the per-thread read-connection cache and
@@ -851,6 +851,22 @@ readings (`resolved`, server-side, and `stripped`, volume-relative) for the tran
 shorter path" button. It only fires for a scheme-shaped root with a folder below the server's `/`: a mounted root
 (`/Volumes/naspi`) is matched by `root_anchored`'s pass-through arm, and a root at `/` reads the same both ways. Folders
 match by whole components.
+
+## Extended attributes
+
+`Volume::supports_xattrs`, `read_xattr_many`, `write_xattr`, and `remove_xattr` are byte-level and know nothing about
+tags, so FinderInfo and copy-preserving can use them later. The default is unsupported. Decision/Why:
+
+- **Answers per path.** A batch of 500 rows must not fail because one row vanished, and a store that overlaps its reads
+  (smb2) answers as they finish.
+- **`XattrReadMode` is the caller's statement about the paths.** `Verified`: a missing file is `NotFound`, for a read
+  that decides a write. `AssumePathsExist`: a missing file is `Ok(None)`, for paths a listing just named, and a server
+  spends less to say it.
+- **Who answers**: `LocalPosixVolume` (`xattr`, so a kernel mount of a share goes through `smbfs`), `SmbVolume` (named
+  streams, `crates/cmdr-smb/DETAILS.md` § "Extended attributes"), `InMemoryVolume` (the reference). Every other backend
+  keeps the default, and an archive, the `.git` portal, and a restic view can't hold one by design.
+- `conformance::assert_xattrs_keep_their_promises` holds the contract, under a plain name a server deletes as told; a
+  Finder tag on a QNAP isn't one (`Volume::remove_xattr`).
 
 ## `InMemoryVolume` honors the contracts data safety leans on
 

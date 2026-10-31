@@ -10,7 +10,7 @@ use crate::metadata::{CarriedMetadata, ClassOutcome, MetadataCaps, MetadataClass
 use crate::volume::{
     BackendKind, ConnectionState, CopyScanResult, IndexWalk, LaneKey, NodeIdentity, RenameWork, ScanConflict,
     SourceItemInfo, SpaceInfo, StreamLength, StreamWriteProgress, StreamWritten, SupportedDates, Volume, VolumeError,
-    VolumeReadStream, WriteAccess, WriteMode,
+    VolumeReadStream, WriteAccess, WriteMode, XattrAnswer, XattrReadMode,
 };
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -283,6 +283,36 @@ impl Volume for InMemoryVolume {
     /// folder's date only with `folder_dates`), like the reference it is: a listing shows the dates and the mode,
     /// [`InMemoryVolume::carried_metadata`] the rest. A class outside its caps
     /// is `NotApplicable`; a path that isn't there refuses every class.
+    fn supports_xattrs(&self) -> bool {
+        true
+    }
+
+    fn read_xattr_many<'a>(
+        &'a self,
+        paths: &'a [PathBuf],
+        name: &'a str,
+        mode: XattrReadMode,
+    ) -> Pin<Box<dyn Future<Output = Vec<XattrAnswer>> + Send + 'a>> {
+        Box::pin(async move { self.read_xattr_many_impl(paths, name, mode) })
+    }
+
+    fn write_xattr<'a>(
+        &'a self,
+        path: &'a Path,
+        name: &'a str,
+        value: &'a [u8],
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move { self.write_xattr_impl(path, name, value) })
+    }
+
+    fn remove_xattr<'a>(
+        &'a self,
+        path: &'a Path,
+        name: &'a str,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move { self.remove_xattr_impl(path, name) })
+    }
+
     fn apply_metadata<'a>(
         &'a self,
         path: &'a Path,

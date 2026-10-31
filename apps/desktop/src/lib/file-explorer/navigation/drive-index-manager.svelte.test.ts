@@ -221,6 +221,7 @@ describe('isDriveRow — index-affordance eligibility', () => {
       canShareLinks: false,
       renamesCanCopy: false,
       hasOsMountFallback: false,
+      canStoreXattrs: false,
     }
     expect(isDriveRow(vol({ ...phone, capabilities: dialed }))).toBe(true)
   })
@@ -242,6 +243,7 @@ describe('isDriveRow — index-affordance eligibility', () => {
       canShareLinks: false,
       renamesCanCopy: false,
       hasOsMountFallback: false,
+      canStoreXattrs: false,
     }
     expect(isDriveRow(vol({ category: 'attached_volume', capabilities: declines }))).toBe(false)
   })

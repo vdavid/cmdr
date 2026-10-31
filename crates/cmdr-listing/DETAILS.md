@@ -909,22 +909,25 @@ What the local reader fetches eagerly and what it defers: `crates/cmdr-local/DET
 ## Finder tags
 
 `FileEntry.tags` holds macOS Finder tags (`com.apple.metadata:_kMDItemUserTags`), which the app reads and writes in
-`apps/desktop/src-tauri/src/file_system/tags.rs`. Each tag is `(name, color)` where color `0` = none (a colorless named
-tag), `1` grey, `2` green, `3` purple, `4` blue, `5` yellow, `6` red, `7` orange. The per-file xattr is the display
-source of truth — Finder rewrites every file's xattr on a recolor, so we never read the system tag registry.
+`apps/desktop/src-tauri/src/file_system/tags_io.rs`, through the volume. Each tag is `(name, color)` where color `0` =
+none (a colorless named tag), `1` grey, `2` green, `3` purple, `4` blue, `5` yellow, `6` red, `7` orange. The per-file
+xattr is the display source of truth — Finder rewrites every file's xattr on a recolor, so we never read the system tag
+registry.
 
 **Why deferred, visible-range-first.** A `getxattr` for tags costs **~15 µs/file** (benchmarked 2026-06-28, synthetic
 200k-file dir, warm), ≈6× the per-entry `lstat` the core listing already pays (the `_kMDItemUserTags` namespace isn't
 free). So `list_directory_core` never touches tags; the frontend calls `enrich_tags(listing_id, paths)` for the visible
 range (mirroring the custom-folder-icon prefetch), and a background sweep backfills the rest. Visible range (~100 rows)
-≈ 1.5 ms; a full 200k sweep ≈ 3 s, off the render path.
+≈ 1.5 ms; a full 200k sweep ≈ 3 s, off the render path. On a direct SMB share the same read is a network round trip,
+pipelined over smb2: about 1,100 files a second (`docs/notes/smb-finder-tags-2026-10-31.md`).
 
 **Flow.** The app's `enrich_tags` command reads tags for the batch and calls `Listings::apply_row_facts` with
 `RowFacts::Tags` (`mutate.rs`'s `apply_tags_to_listing`), which mutates entries in place (tags are sort-irrelevant — no
 reorder), replaces **unconditionally** (clearing to empty so an external removal propagates), and emits one coalesced
 `modify` diff for the rows that actually changed (so re-enriching an unchanged visible range is silent). It's
-timeout-guarded and degrades to empty on non-local/hung paths. The whole batch resolves against the listing's path map
-in one pass, and the write it does leaves both maps standing: § "Entries by path".
+timeout-guarded, and a path whose read failed stays out of the update, so its dots stay until a read answers. The whole
+batch resolves against the listing's path map in one pass, and the write it does leaves both maps standing: § "Entries
+by path".
 
 **Packages macOS reports** ride the same deferred shape: the app asks macOS about the visible dotted folders the package
 list doesn't know (`enrich_packages`) and hands the answers over as `RowFacts::Packages` (`apply_packages_to_listing`).

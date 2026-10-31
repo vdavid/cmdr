@@ -40,6 +40,7 @@ import {
   volumeKindOf,
   capabilitiesForKind,
   capabilitiesFor,
+  rowCanHoldTags,
   rowCanShareLink,
   capabilitiesForPane,
   withBackendCapabilities,
@@ -73,6 +74,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       pollsForDeletedFolder: true,
       canShareLinks: false,
       renamesCanCopy: false,
+      canStoreXattrs: true,
     },
     smb: {
       kind: 'smb',
@@ -85,6 +87,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       pollsForDeletedFolder: true,
       canShareLinks: false,
       renamesCanCopy: false,
+      canStoreXattrs: true,
     },
     sftp: {
       kind: 'sftp',
@@ -98,6 +101,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       pollsForDeletedFolder: false,
       canShareLinks: false,
       renamesCanCopy: false,
+      canStoreXattrs: false,
     },
     webdav: {
       kind: 'webdav',
@@ -110,6 +114,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       pollsForDeletedFolder: false,
       canShareLinks: false,
       renamesCanCopy: false,
+      canStoreXattrs: false,
     },
     s3: {
       kind: 's3',
@@ -122,6 +127,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       pollsForDeletedFolder: false,
       canShareLinks: true,
       renamesCanCopy: true,
+      canStoreXattrs: false,
     },
     nfs: {
       kind: 'nfs',
@@ -134,6 +140,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       pollsForDeletedFolder: false,
       canShareLinks: false,
       renamesCanCopy: false,
+      canStoreXattrs: false,
     },
     mtp: {
       kind: 'mtp',
@@ -146,6 +153,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       pollsForDeletedFolder: false,
       canShareLinks: false,
       renamesCanCopy: false,
+      canStoreXattrs: false,
     },
     adb: {
       kind: 'adb',
@@ -159,6 +167,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       pollsForDeletedFolder: false,
       canShareLinks: false,
       renamesCanCopy: false,
+      canStoreXattrs: false,
     },
     network: {
       kind: 'network',
@@ -173,6 +182,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       pollsForDeletedFolder: false,
       canShareLinks: false,
       renamesCanCopy: false,
+      canStoreXattrs: false,
     },
     'search-results': {
       kind: 'search-results',
@@ -189,6 +199,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       pollsForDeletedFolder: false,
       canShareLinks: false,
       renamesCanCopy: false,
+      canStoreXattrs: true,
     },
     archive: {
       kind: 'archive',
@@ -203,6 +214,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       pollsForDeletedFolder: true,
       canShareLinks: false,
       renamesCanCopy: false,
+      canStoreXattrs: false,
     },
     'git-portal': {
       kind: 'git-portal',
@@ -219,6 +231,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       pollsForDeletedFolder: false,
       canShareLinks: false,
       renamesCanCopy: false,
+      canStoreXattrs: false,
     },
     restic: {
       kind: 'restic',
@@ -234,6 +247,7 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       pollsForDeletedFolder: false,
       canShareLinks: false,
       renamesCanCopy: false,
+      canStoreXattrs: false,
     },
   }
 
@@ -480,6 +494,7 @@ describe("withBackendCapabilities — the backend's answer wins over the per-kin
         canShareLinks: false,
         renamesCanCopy: false,
         hasOsMountFallback: false,
+        canStoreXattrs: true,
       }),
     ).toBe(row)
   })
@@ -493,6 +508,7 @@ describe("withBackendCapabilities — the backend's answer wins over the per-kin
       canShareLinks: false,
       renamesCanCopy: false,
       hasOsMountFallback: false,
+      canStoreXattrs: false,
     })
     expect(folded.canWrite).toBe(false)
     expect(folded.canBeSource).toBe(false)
@@ -513,6 +529,7 @@ describe("withBackendCapabilities — the backend's answer wins over the per-kin
       canShareLinks: false,
       renamesCanCopy: false,
       hasOsMountFallback: false,
+      canStoreXattrs: false,
     })
     expect(folded.canBeIndexed).toBe(false)
     expect(folded.canWrite).toBe(true)
@@ -532,6 +549,7 @@ describe("withBackendCapabilities — the backend's answer wins over the per-kin
           canShareLinks: false,
           renamesCanCopy: false,
           hasOsMountFallback: false,
+          canStoreXattrs: false,
         },
       }),
     ]
@@ -555,6 +573,7 @@ describe("withBackendCapabilities — the backend's answer wins over the per-kin
           canShareLinks: false,
           renamesCanCopy: false,
           hasOsMountFallback: false,
+          canStoreXattrs: false,
         },
       }),
     ]
@@ -577,6 +596,7 @@ describe("withBackendCapabilities — the backend's answer wins over the per-kin
           canShareLinks: true,
           renamesCanCopy: true,
           hasOsMountFallback: false,
+          canStoreXattrs: false,
         },
       }),
       vol({
@@ -590,6 +610,7 @@ describe("withBackendCapabilities — the backend's answer wins over the per-kin
           canShareLinks: false,
           renamesCanCopy: false,
           hasOsMountFallback: false,
+          canStoreXattrs: false,
         },
       }),
     ]
@@ -610,6 +631,7 @@ describe("withBackendCapabilities — the backend's answer wins over the per-kin
           canShareLinks: true,
           renamesCanCopy: true,
           hasOsMountFallback: false,
+          canStoreXattrs: false,
         },
       }),
     ]
@@ -638,6 +660,7 @@ describe("withBackendCapabilities — the backend's answer wins over the per-kin
           canShareLinks: false,
           renamesCanCopy: false,
           hasOsMountFallback: false,
+          canStoreXattrs: false,
         },
       }),
     ]
@@ -673,6 +696,7 @@ describe('capabilitiesForPane — kind-from-path resolution', () => {
           canShareLinks: false,
           renamesCanCopy: false,
           hasOsMountFallback: false,
+          canStoreXattrs: false,
         },
       }),
     ]
@@ -725,6 +749,7 @@ describe('capabilitiesForPane — kind-from-path resolution', () => {
           canShareLinks: false,
           renamesCanCopy: false,
           hasOsMountFallback: false,
+          canStoreXattrs: false,
         },
       }),
     ]
@@ -762,6 +787,7 @@ describe('capabilitiesForPane — kind-from-path resolution', () => {
           canShareLinks: false,
           renamesCanCopy: false,
           hasOsMountFallback: false,
+          canStoreXattrs: false,
         },
       }),
     ]
@@ -897,6 +923,46 @@ describe('paneRowsAreOsVisible — what the share sheet needs', () => {
     for (const kind of kinds) {
       expect(typeof paneRowsAreOsVisible(kind), kind).toBe('boolean')
     }
+  })
+})
+
+describe('rowCanHoldTags — the per-ROW tag gate', () => {
+  const published = (canStoreXattrs: boolean) => ({
+    backendCanWrite: true,
+    canExport: true,
+    canShareLinks: false,
+    canBeIndexed: true,
+    renamesCanCopy: false,
+    hasOsMountFallback: false,
+    canStoreXattrs,
+  })
+
+  it('follows what the backend publishes, whatever the kind', () => {
+    volumes.list = [
+      vol({ id: 'share', category: 'network', fsType: 'smbfs', capabilities: published(true) }),
+      vol({ id: 'plain-samba', category: 'network', fsType: 'smbfs', capabilities: published(false) }),
+    ]
+    expect(rowCanHoldTags('share', '/Volumes/share/a.txt')).toBe(true)
+    expect(rowCanHoldTags('plain-samba', '/Volumes/plain-samba/a.txt')).toBe(false)
+  })
+
+  it('says no on a phone and on the protocol-only servers before a backend publishes', () => {
+    for (const kind of ['mtp', 'adb', 'sftp', 'webdav', 's3', 'nfs'] as const) {
+      expect(capabilitiesForKind(kind).canStoreXattrs, kind).toBe(false)
+    }
+    expect(capabilitiesForKind('smb').canStoreXattrs).toBe(true)
+  })
+
+  it('takes the archive file itself, and not what is inside it', () => {
+    volumes.list = [vol({ id: 'disk1', category: 'main_volume' })]
+    expect(rowCanHoldTags('disk1', '/Users/me/trip.zip')).toBe(true)
+    expect(rowCanHoldTags('disk1', '/Users/me/trip.zip/IMG_0001.jpg')).toBe(false)
+  })
+
+  it('says no for a row the git portal serves', () => {
+    volumes.list = [vol({ id: 'disk1', category: 'main_volume' })]
+    gitPortal.on = true
+    expect(rowCanHoldTags('disk1', '/repo/.git/branches/main/src/main.rs')).toBe(false)
   })
 })
 

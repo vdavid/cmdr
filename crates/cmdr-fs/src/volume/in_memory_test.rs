@@ -891,3 +891,10 @@ async fn a_store_with_no_links_refuses_to_make_one() {
         Err(VolumeError::NotSupported)
     ));
 }
+
+#[tokio::test]
+async fn xattrs_keep_the_shared_contract() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_file(Path::new("/plain.txt"), b"x").await.unwrap();
+    conformance::assert_xattrs_keep_their_promises(&volume, Path::new("/plain.txt"), Path::new("/gone.txt")).await;
+}

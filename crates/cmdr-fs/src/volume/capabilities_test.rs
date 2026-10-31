@@ -111,6 +111,10 @@ impl Volume for WritableExportingVolume {
     fn renames_can_copy(&self) -> bool {
         true
     }
+
+    fn supports_xattrs(&self) -> bool {
+        true
+    }
 }
 
 #[test]
@@ -125,6 +129,7 @@ fn an_undeclared_backend_gets_the_conservative_answer_to_everything() {
             can_be_indexed: true,
             renames_can_copy: false,
             has_os_mount_fallback: false,
+            can_store_xattrs: false,
         }
     );
 }
@@ -140,6 +145,7 @@ fn declaring_a_predicate_moves_the_published_surface() {
             can_be_indexed: true,
             renames_can_copy: true,
             has_os_mount_fallback: false,
+            can_store_xattrs: true,
         }
     );
 }
@@ -156,6 +162,7 @@ fn the_in_memory_double_publishes_the_read_write_surface_a_test_expects() {
             can_be_indexed: true,
             renames_can_copy: false,
             has_os_mount_fallback: false,
+            can_store_xattrs: true,
         }
     );
 }

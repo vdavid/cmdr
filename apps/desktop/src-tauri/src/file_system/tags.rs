@@ -1,12 +1,12 @@
-//! macOS Finder tags: reading `com.apple.metadata:_kMDItemUserTags`.
+//! macOS Finder tags: the pure half of `com.apple.metadata:_kMDItemUserTags`. The I/O,
+//! routed through the volume, is `tags_io.rs`.
 //!
 //! The xattr is a binary plist holding an array of strings, each `"Name\nN"`
 //! where `N` is the color index (`0` none, `1` grey, `2` green, `3` purple,
 //! `4` blue, `5` yellow, `6` red, `7` orange). A colorless tag may omit the
 //! `\nN` suffix entirely (treated as color `0`).
 //!
-//! This is the read side. Writing lives in `set_tags` (see the write path), and
-//! the display source of truth is the per-file xattr — Finder keeps colors
+//! The display source of truth is the per-file xattr: Finder keeps colors
 //! consistent across files, so we never consult the system tag registry.
 
 use cmdr_fs::entry::TagRef;
@@ -18,10 +18,10 @@ use std::path::Path;
 #[cfg(target_os = "macos")]
 pub const TAGS_XATTR: &str = "com.apple.metadata:_kMDItemUserTags";
 
-/// Reads and parses a path's Finder tags. Returns an empty vec when the xattr is
-/// absent (the common case), on any read error (permission, dead mount), or off
-/// macOS. Never blocks beyond a single `getxattr`; callers still gate this to
-/// local volumes and wrap it in a timeout (a `getxattr` on a hung mount blocks).
+/// Reads and parses a LOCAL path's Finder tags through `getxattr`, for a caller that
+/// already works in OS paths (a custom folder's icon). Returns an empty vec when the
+/// xattr is absent, on any read error, or off macOS. ❌ A row in a pane goes through
+/// `tags_io` instead, which also works with no mount under it.
 #[cfg(target_os = "macos")]
 pub fn read_tags(path: &Path) -> Vec<TagRef> {
     match xattr::get(path, TAGS_XATTR) {
@@ -68,11 +68,12 @@ pub fn parse_tags_plist(bytes: &[u8]) -> Vec<TagRef> {
 #[derive(Debug)]
 #[cfg_attr(
     not(target_os = "macos"),
-    allow(dead_code, reason = "only the macOS strict reader builds these")
+    allow(dead_code, reason = "only the macOS read path builds these")
 )]
 pub enum TagReadError {
-    /// `getxattr` failed: no read permission, an ACL, a dead mount.
-    Unreadable(std::io::Error),
+    /// The store refused the read: no read permission, an ACL, a dead mount, or nothing
+    /// here stores tags (`VolumeError::NotSupported`).
+    Unreadable(cmdr_fs::volume::VolumeError),
     /// The value isn't a plist array of strings, so Cmdr can't write it back whole.
     Undecodable,
 }
@@ -80,22 +81,13 @@ pub enum TagReadError {
 impl std::fmt::Display for TagReadError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Unreadable(e) => write!(f, "couldn't read the existing tags ({e})"),
+            Self::Unreadable(e) => write!(
+                f,
+                "couldn't read the existing tags ({:?})",
+                cmdr_fs::log_error::LogError(e)
+            ),
             Self::Undecodable => f.write_str("the existing tags are in a format Cmdr can't decode"),
         }
-    }
-}
-
-/// The write path's reader. Unlike the lenient `read_tags` (display), it tells "no
-/// tags" (`Ok(None)`) apart from "couldn't read them" (`Err`), and it refuses a value
-/// it can't decode completely, so a read-modify-write never drops what it didn't
-/// understand.
-#[cfg(target_os = "macos")]
-pub fn read_tags_strict(path: &Path) -> Result<Option<Vec<TagRef>>, TagReadError> {
-    match xattr::get(path, TAGS_XATTR) {
-        Ok(Some(bytes)) => parse_tags_plist_strict(&bytes).map(Some),
-        Ok(None) => Ok(None),
-        Err(e) => Err(TagReadError::Unreadable(e)),
     }
 }
 
@@ -177,8 +169,11 @@ pub fn applied_colors(per_file_tags: &[Vec<TagRef>]) -> [bool; 8] {
 /// round-trip is unit-testable. `plist` defaults to XML, so we MUST call
 /// `to_writer_binary` here — an XML body would not be Finder-compatible.
 ///
+/// An empty set encodes to macOS's own 42-byte empty array, which is how tags clear
+/// (`tags_io::write_tags`).
+///
 /// macOS-only: the `plist` crate is a macOS-only dependency, and the only caller
-/// (`set_tags`) is itself macOS-only.
+/// (`tags_io`) is itself macOS-only.
 #[cfg(target_os = "macos")]
 pub fn encode_tags_plist(tags: &[TagRef]) -> std::io::Result<Vec<u8>> {
     let array: Vec<plist::Value> = tags
@@ -192,107 +187,22 @@ pub fn encode_tags_plist(tags: &[TagRef]) -> std::io::Result<Vec<u8>> {
     Ok(buf)
 }
 
-/// Writes the full desired tag set to a path's `_kMDItemUserTags` xattr, replacing
-/// whatever was there. An empty set REMOVES the xattr (matching Finder clearing all
-/// tags), so no empty-array husk lingers.
-///
-/// Touches ONLY `_kMDItemUserTags`, never `com.apple.FinderInfo` (D11): that 32-byte
-/// blob holds `kHasCustomIcon` plus type/creator codes, and modern Finder reads tags
-/// straight from `_kMDItemUserTags`, so a custom folder icon survives a tag write.
-/// `setxattr` is atomic per attribute, so there's no partial-write window for a single
-/// file.
+/// One file's tags after a toggle. Adding appends the canonical system tag only when the
+/// file lacks the color (no duplicate, and a same-color custom tag is left intact);
+/// removing strips every tag of that color. "Has the color" means any tag of it, a custom
+/// tag included. Pure, so the rule is unit-testable. `tags_io::toggle_color` decides `add`.
 #[cfg(target_os = "macos")]
-pub fn set_tags(path: &Path, tags: &[TagRef]) -> std::io::Result<()> {
-    if tags.is_empty() {
-        // Clear: drop the xattr entirely. Skip the remove when it's already absent so
-        // an untagged file doesn't surface a spurious ENOATTR.
-        if xattr::get(path, TAGS_XATTR)?.is_some() {
-            xattr::remove(path, TAGS_XATTR)?;
-        }
-        return Ok(());
+pub(super) fn toggled_tags(tags: &[TagRef], color: u8, color_name: &str, add: bool) -> Vec<TagRef> {
+    let mut new_tags = tags.to_vec();
+    if !add {
+        new_tags.retain(|tag| tag.color != color);
+    } else if !new_tags.iter().any(|tag| tag.color == color) {
+        new_tags.push(TagRef {
+            name: color_name.to_string(),
+            color,
+        });
     }
-    let bytes = encode_tags_plist(tags)?;
-    xattr::set(path, TAGS_XATTR, &bytes)
-}
-
-/// Toggles one system color tag across a (possibly multi-file) selection, preserving
-/// every OTHER tag on every file, and returns the resulting per-path tag sets so the
-/// caller can patch the listing cache.
-///
-/// "Applied" for a file = it carries any tag of `color` (a custom tag with the same
-/// color counts). Finder's multi-file rule, mirrored here: if ALL paths already carry
-/// the color, remove it from all; otherwise add it to all. Removing strips every tag
-/// of that color; adding appends the canonical system tag only to files that lack the
-/// color (no duplicate, and a same-color custom tag is left intact). A file already in
-/// the target state isn't rewritten, so we don't churn its mtime.
-///
-/// `color` must be 1..=7 (a real color); 0 (colorless) has no system tag to toggle.
-/// On a partial failure (one file's write errors mid-loop), earlier files keep their
-/// new tags and the error propagates; each per-file `setxattr` is atomic, so no single
-/// file is left half-written.
-///
-/// A file whose current tags can't be read or fully decoded (`read_tags_strict`) is
-/// left untouched and listed in `skipped`, and it doesn't count toward the all-have
-/// decision: writing it would replace tags we never saw.
-#[cfg(target_os = "macos")]
-pub fn toggle_color(paths: &[String], color: u8) -> std::io::Result<TagToggleOutcome> {
-    let Some(color_name) = system_color_name(color) else {
-        return Err(std::io::Error::new(
-            std::io::ErrorKind::InvalidInput,
-            format!("tag color index must be 1..=7, got {color}"),
-        ));
-    };
-
-    let mut current: Vec<(String, Vec<TagRef>)> = Vec::with_capacity(paths.len());
-    let mut skipped = Vec::new();
-    for p in paths {
-        match read_tags_strict(Path::new(p)) {
-            Ok(tags) => current.push((p.clone(), tags.unwrap_or_default())),
-            Err(reason) => skipped.push(TagSkip {
-                path: p.clone(),
-                reason,
-            }),
-        }
-    }
-
-    // "Add" unless every path already carries the color (Finder's all-have → remove).
-    let all_have = !current.is_empty() && current.iter().all(|(_, tags)| tags.iter().any(|t| t.color == color));
-    let add = !all_have;
-
-    let path_count = paths.len();
-    let mut results = Vec::with_capacity(current.len());
-    let mut write_error = None;
-    for (path, original) in current {
-        let mut tags = original.clone();
-        if add {
-            if !tags.iter().any(|t| t.color == color) {
-                tags.push(TagRef {
-                    name: color_name.to_string(),
-                    color,
-                });
-            }
-        } else {
-            tags.retain(|t| t.color != color);
-        }
-        // Only write the files that actually change, so re-toggling a mixed selection
-        // doesn't needlessly rewrite (and re-mtime) the already-correct ones.
-        if tags != original
-            && let Err(e) = set_tags(Path::new(&path), &tags)
-        {
-            write_error = Some(e);
-            break;
-        }
-        results.push((path, tags));
-    }
-
-    emit_tag_analytics(add, color_name, path_count, write_error.is_none() && skipped.is_empty());
-    match write_error {
-        Some(e) => Err(e),
-        None => Ok(TagToggleOutcome {
-            updates: results,
-            skipped,
-        }),
-    }
+    new_tags
 }
 
 /// Tells the person a toggle left some files alone (`tags-skipped`, a warning toast in
@@ -334,7 +244,7 @@ pub struct TagSkip {
     pub reason: TagReadError,
 }
 
-/// Reports one tag toggle, PII-free. Called from `toggle_color`'s single exit, so
+/// Reports one tag toggle, PII-free. Called from `tags_io::toggle_color`'s single exit, so
 /// it covers all three triggers (the keyboard commands, the context-menu circles,
 /// and the MCP `tag` tool) without any of them having to remember.
 ///
@@ -347,7 +257,7 @@ pub struct TagSkip {
 /// its new tags and a later one didn't, and the skipped-unreadable case: a tagging feature that keeps bouncing off
 /// permissions reads as "unused" otherwise.
 #[cfg(target_os = "macos")]
-fn emit_tag_analytics(applied: bool, color: &str, item_count: usize, succeeded: bool) {
+pub(super) fn emit_tag_analytics(applied: bool, color: &str, item_count: usize, succeeded: bool) {
     crate::analytics::events::capture(
         "tag_toggled",
         serde_json::json!({
@@ -357,12 +267,6 @@ fn emit_tag_analytics(applied: bool, color: &str, item_count: usize, succeeded: 
             "succeeded": succeeded,
         }),
     );
-}
-
-/// Non-macOS: no Finder tags, so nothing to toggle.
-#[cfg(not(target_os = "macos"))]
-pub fn toggle_color(_paths: &[String], _color: u8) -> std::io::Result<TagToggleOutcome> {
-    Ok(TagToggleOutcome::default())
 }
 
 // macOS-only: every test here exercises tag parsing/encoding/applied-colors logic
@@ -547,6 +451,14 @@ mod tests {
         assert_eq!(parse_tags_plist(&bytes), tags);
     }
 
+    /// What macOS writes to clear a file's tags, byte for byte (`xattr -px` after
+    /// `NSURLTagNamesKey` = [], macOS 27.0.1, APFS and a QNAP alike, 2026-10-31).
+    #[test]
+    fn clearing_encodes_to_the_empty_plist_macos_writes() {
+        let macos = hex("62706c6973743030a0080000000000000101000000000000000100000000000000000000000000000009");
+        assert_eq!(encode_tags_plist(&[]).expect("encode"), macos);
+    }
+
     #[test]
     fn encode_decode_round_trip_empty_is_no_tags() {
         let bytes = encode_tags_plist(&[]).expect("encode");
@@ -617,7 +529,7 @@ mod macos_fs_tests {
     /// only proves Cmdr reads Cmdr. Colors carry implicitly via the `"Name\nN"`
     /// payload; this asserts the names surface through the system API.
     #[test]
-    fn set_tags_is_readable_via_finder_url_api() {
+    fn encoded_tags_are_readable_via_finder_url_api() {
         use objc2::rc::Retained;
         use objc2::runtime::AnyObject;
         use objc2_foundation::{NSArray, NSString, NSURL};
@@ -626,20 +538,18 @@ mod macos_fs_tests {
         let file = dir.join("written.txt");
         std::fs::write(&file, b"x").unwrap();
 
-        set_tags(
-            &file,
-            &[
-                TagRef {
-                    name: "Red".to_string(),
-                    color: 6,
-                },
-                TagRef {
-                    name: "Work".to_string(),
-                    color: 0,
-                },
-            ],
-        )
-        .expect("set_tags");
+        let bytes = encode_tags_plist(&[
+            TagRef {
+                name: "Red".to_string(),
+                color: 6,
+            },
+            TagRef {
+                name: "Work".to_string(),
+                color: 0,
+            },
+        ])
+        .expect("encode");
+        xattr::set(&file, TAGS_XATTR, &bytes).expect("set tag xattr");
 
         let ns_path = NSString::from_str(file.to_str().unwrap());
         let url = NSURL::fileURLWithPath(&ns_path);

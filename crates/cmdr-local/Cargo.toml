@@ -32,6 +32,8 @@ playwright-e2e = ["cmdr-fs/playwright-e2e"]
 # copy, the listing-progress sampler, the benchmark log). The only crate below
 # this one.
 cmdr-fs = { path = "../cmdr-fs" }
+# Reading and writing extended attributes for `Volume`'s xattr methods (Finder tags).
+xattr = "1"
 log = "0.4"
 # `spawn_blocking` for every `std::fs` call a `Volume` method makes, so a slow
 # disk never stalls the async executor. `rt` only: the backend builds no runtime.

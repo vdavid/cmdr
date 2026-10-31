@@ -1,6 +1,6 @@
 //! The `tag` tool: set macOS Finder color tags on files.
 //!
-//! Thin adapter over `file_system::tags` (`toggle_color` / `set_tags`) — the same
+//! Thin adapter over `file_system::tags_io` (`toggle_color` / `apply_merge`) — the same
 //! primitives the context-menu tag toggle uses. It resolves target paths off the
 //! pane state (names / selection / cursor, via `resolve_pane_target_paths`), then
 //! patches the cached listing so the panes re-render the colored dots (reusing
@@ -63,7 +63,8 @@ async fn execute_tag_macos<R: Runtime>(app: &AppHandle<R>, params: &Value) -> To
     let (_pane, state) = super::target_pane_state(app, params)?;
     let paths = super::resolve_pane_target_paths(&state, names.as_deref())?;
 
-    let outcome = apply_tag_action(action, &paths, &colors)?;
+    let volume_id = state.volume_id.as_deref();
+    let outcome = apply_tag_action(volume_id, action, &paths, &colors).await?;
     refresh_listing_tags(&state, outcome.updates);
 
     // Flush the pane's MCP state so the `[tags:…]` marker shows in cmdr://state
@@ -163,22 +164,20 @@ fn color_index(name: &str) -> Option<u8> {
 /// untagged (that would drop its custom tags). `clear` reads nothing to keep: the
 /// caller asked for every tag gone, so it writes regardless.
 #[cfg(target_os = "macos")]
-fn apply_tag_action(
+async fn apply_tag_action(
+    volume_id: Option<&str>,
     action: &str,
     paths: &[String],
     colors: &[u8],
 ) -> Result<crate::file_system::tags::TagToggleOutcome, ToolError> {
-    use crate::file_system::tags::{TagSkip, TagToggleOutcome, read_tags_strict, set_tags, toggle_color};
-    use std::path::Path;
+    use crate::file_system::tags::{TagSkip, TagToggleOutcome};
+    use crate::file_system::tags_io::{apply_merge, clear_tags, read_for_merge, toggle_color};
 
     match action {
         "clear" => {
-            let mut updates = Vec::with_capacity(paths.len());
-            for p in paths {
-                set_tags(Path::new(p), &[])
-                    .map_err(|e| ToolError::internal(format!("Couldn't clear tags on {p}: {e}")))?;
-                updates.push((p.clone(), Vec::new()));
-            }
+            let updates = clear_tags(volume_id, paths.to_vec())
+                .await
+                .map_err(|e| ToolError::internal(format!("Couldn't clear tags: {e}")))?;
             Ok(TagToggleOutcome {
                 updates,
                 skipped: Vec::new(),
@@ -194,35 +193,20 @@ fn apply_tag_action(
             let mut last = TagToggleOutcome::default();
             let mut skipped: Option<Vec<TagSkip>> = None;
             for &color in colors {
-                last =
-                    toggle_color(paths, color).map_err(|e| ToolError::internal(format!("Couldn't toggle tag: {e}")))?;
+                last = toggle_color(volume_id, paths.to_vec(), color)
+                    .await
+                    .map_err(|e| ToolError::internal(format!("Couldn't toggle tag: {e}")))?;
                 skipped.get_or_insert(std::mem::take(&mut last.skipped));
             }
             last.skipped = skipped.unwrap_or_default();
             Ok(last)
         }
         "set" => {
-            let mut outcome = TagToggleOutcome::default();
-            for p in paths {
-                let current = match read_tags_strict(Path::new(p)) {
-                    Ok(tags) => tags.unwrap_or_default(),
-                    Err(reason) => {
-                        outcome.skipped.push(TagSkip {
-                            path: p.clone(),
-                            reason,
-                        });
-                        continue;
-                    }
-                };
-                let desired = desired_tags_for_set(&current, colors);
-                // Skip files already in the target state so we don't churn mtimes.
-                if desired != current {
-                    set_tags(Path::new(p), &desired)
-                        .map_err(|e| ToolError::internal(format!("Couldn't set tags on {p}: {e}")))?;
-                }
-                outcome.updates.push((p.clone(), desired));
-            }
-            Ok(outcome)
+            let (current, skipped) = read_for_merge(volume_id, paths.to_vec()).await;
+            let updates = apply_merge(current, |tags| desired_tags_for_set(tags, colors))
+                .await
+                .map_err(|e| ToolError::internal(format!("Couldn't set tags: {e}")))?;
+            Ok(TagToggleOutcome { updates, skipped })
         }
         _ => Err(ToolError::internal("unreachable: action validated by caller")),
     }
@@ -335,9 +319,13 @@ mod tests {
 
     /// #541: `set` merges with the file's existing tags, so one it can't decode is
     /// skipped and named in the result, its bytes untouched.
-    #[test]
-    fn set_and_toggle_skip_a_file_with_undecodable_tags() {
+    #[tokio::test]
+    async fn set_and_toggle_skip_a_file_with_undecodable_tags() {
         use crate::file_system::tags::TAGS_XATTR;
+        const DISK: &str = "mcp-tags-test-disk";
+        let disk =
+            cmdr_local::LocalPosixVolume::local_folder("Disk", "/", cmdr_fs::volume::host::VolumeHost::detached());
+        crate::file_system::volume::manager::get_volume_manager().register(DISK, std::sync::Arc::new(disk));
         let dir = crate::test_support::TestDir::new(&format!("mcp_tags_skip_{}", std::process::id()));
         let bad = dir.join("bad.txt");
         let good = dir.join("good.txt");
@@ -347,7 +335,7 @@ mod tests {
         let paths = vec![bad.to_string_lossy().into_owned(), good.to_string_lossy().into_owned()];
 
         for action in ["set", "toggle"] {
-            let outcome = apply_tag_action(action, &paths, &[6, 4]).unwrap();
+            let outcome = apply_tag_action(Some(DISK), action, &paths, &[6, 4]).await.unwrap();
             assert_eq!(
                 xattr::get(&bad, TAGS_XATTR).unwrap().as_deref(),
                 Some(&b"garbage"[..]),

@@ -26,6 +26,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 mod links;
 mod transfer_holds;
 mod volume_impl;
+mod xattrs;
 
 /// Entry in the in-memory file system.
 struct InMemoryEntry {

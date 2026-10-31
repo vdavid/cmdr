@@ -1802,6 +1802,7 @@ dependencies = [
  "objc2-foundation 0.3.2",
  "tokio",
  "walkdir",
+ "xattr",
 ]
 
 [[package]]
@@ -1991,6 +1992,7 @@ dependencies = [
  "tokio",
  "tokio-util",
  "unicode-normalization",
+ "xattr",
 ]
 
 [[package]]
@@ -10002,9 +10004,9 @@ checksum = "8ed6a63f02c8539c91a8685a86f4099661ba3da017932f6ebbea6de3f0fa7c90"
 
 [[package]]
 name = "smb2"
-version = "0.38.0"
+version = "0.39.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b2f914e00b2e36b4f686df97b259c8d5a7c4df5be2f7d4bf59be5616834c7e3"
+checksum = "fdf2efe6ebfe83abf0813ef2de818ed1095cb36a19e7b2f6d44b3226238b202f"
 dependencies = [
  "aes 0.9.3",
  "aes-gcm 0.11.0",

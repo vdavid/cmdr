@@ -192,3 +192,28 @@ async fn an_accented_anchor_still_matches_what_the_server_sends() {
         "MountAnchor::new folds the anchor to NFC, which is what the event path is in"
     );
 }
+
+/// A stream event is a change to the file that holds it, under the file's own name, so it
+/// takes the `Modified` path and reaches the listing host's re-read.
+#[test]
+fn a_stream_event_folds_into_a_change_on_its_file() {
+    use super::fold_stream_event;
+    for action in [
+        FileNotifyAction::StreamAdded,
+        FileNotifyAction::StreamRemoved,
+        FileNotifyAction::StreamModified,
+    ] {
+        assert_eq!(
+            fold_stream_event(action, "a/f.txt:com.apple.metadata_kMDItemUserTags"),
+            (FileNotifyAction::Modified, "a/f.txt")
+        );
+        assert_eq!(
+            fold_stream_event(action, "a/f.txt"),
+            (FileNotifyAction::Modified, "a/f.txt")
+        );
+    }
+    assert_eq!(
+        fold_stream_event(FileNotifyAction::Added, "a/f.txt"),
+        (FileNotifyAction::Added, "a/f.txt")
+    );
+}
