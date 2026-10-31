@@ -1,0 +1,24 @@
+{
+  "$comment": "Czech typography. Quotes „…“ primary as macOS cs writes them (839 „…“ pairs across the pile's Finder/AppKit/System Settings strings), ‚…‘ nested (AppKit NSSpellChecker quote styles show ‚abc‘). Ellipsis is the single … hugging its word (macOS cs: Hledat frází…). Apostrophe ’ declared for the rare foreign word. Spacing: Czech typographic norm (ČSN 01 6910) keeps a one-letter preposition or conjunction (k s v z o u a i) off the line end, so it takes a no-break space U+00A0, not a plain space; a deliberate typographic choice, since macOS itself writes plain spaces there. Multipliers spell 4× or 4krát, never 4x. Hedges: bracketed or slashed gender/plural endings. Percent is left free: Czech spaces a noun percent (42 %) and writes the adjective tight (42%), and macOS cs mixes both. Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
+  "quotes": { "primary": ["„", "“"], "nested": ["‚", "‘"] },
+  "ellipsis": { "glyph": "…" },
+  "apostrophes": ["’"],
+  "spacing": [
+    {
+      "pattern": "(?<![\\p{L}\\p{N}_.\\-/\\\\+⌘⌥⇧⌃])[KkSsVvZzOoUuAaIi] ",
+      "why": "a one-letter preposition or conjunction (k s v z o u a i) takes a no-break space U+00A0 after it, never a plain space (ČSN 01 6910)"
+    },
+    { "pattern": "„\\s|\\s“", "why": "Czech quotes hug their text: no space inside „…“" },
+    { "pattern": "\\b\\d+x\\b", "why": "a multiplier is 4× or 4krát, never 4x" }
+  ],
+  "hedges": [
+    {
+      "pattern": "\\p{L}\\((?:a|o|y|i|e|é|á|ů|ch|ou|la|lo|li|ly|na|no|ny)\\)",
+      "why": "a bracketed gender or plural ending (soubor(y), smazán(a), byl(a)); use ICU plural/select, or restructure (Zkopírováno)"
+    },
+    {
+      "pattern": "\\p{Ll}/(?:a|o|y|i|é|á|la|lo|li|ly|na|no|ny)\\b",
+      "why": "a slashed ending (byl/a, smazán/a); restructure impersonally or use ICU select"
+    }
+  ]
+}

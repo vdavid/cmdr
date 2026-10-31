@@ -1,140 +1,166 @@
 # Czech (cs) translation style guide
 
 Working notes for translating Cmdr into Czech. Read `../README.md` for how this fits the translation process, and the
-app-wide `docs/style-guide.md` for the English voice these notes carry into Czech.
+app-wide `docs/style-guide.md` for the English voice these notes carry into Czech. Term rulings live in `terms.json`
+(keyed by the shared `../concepts.json`), their rationale in `decisions.md`, typography in `mechanics.json`, and open
+questions in `review-queue.md`.
 
-Well-sourced: the pile has macOS Finder/AppKit (highest authority), MS terminology, MS style guide, GNOME Nautilus, and
-Xfce Thunar (`_ignored/i18n/cs/`). Evidence verified against the pile on 2026-06-20.
+Well-sourced: the pile (`_ignored/i18n/cs/` in the main clone) has macOS (Finder, AppKit, CoreTypes, System Settings;
+highest authority for general macOS terms), Microsoft terminology and the Microsoft Czech style guide, GNOME Nautilus,
+Xfce Thunar, KDE Dolphin, and the orthodox two-pane family Total Commander, Double Commander, and Midnight Commander.
+Total Commander is the primary reference for two-pane concepts (panel, rychlý filtr, porovnat složky…); macOS Finder for
+general macOS terms (Složka, Koš, Informace…). The pile's Total Commander files are already UTF-8: never apply
+how-to-mine.md's windows-1252 re-decode. Sources are read to decide a term, never copied verbatim: Cmdr writes its own
+value.
+
+## Digest
+
+The must-know rules; the rest of this file elaborates them.
+
+- **Address: neutral vy-plural, lowercase; never tykání.** Sentences addressed to the user use the 2nd person plural:
+  „Opravdu chcete smazat tyto soubory?“, „Stiskněte Esc“, „Můžete to změnit v Nastavení.“ Never `ty` (`chceš`,
+  `Stiskni`, `tvůj`), never the epistolary capital `Vy`/`Váš`. This is the upstream ruling for Czech in
+  `../formal-informal-decisions.md`: "macOS infinitive labels; never tykání; vy-plural is gender-neutral".
+- **Gender: the vy-plural past is neutral, the impersonal is better.** `jste smazali` (plural `-li`) fits any user, so
+  it's acceptable; still prefer naming the action or the object: `Zkopírováno`, `Soubor byl přesunut do koše`,
+  `Kopírování je hotové`, `Přihlášení proběhlo`. No hedges: never `smazal(a)`, `byl/a`, `jste přihlášen(a)`.
+- **Register by UI slot**:
+  - buttons, menu items, commands: infinitive, like Finder (`Kopírovat`, `Přejmenovat`, `Vysunout`, `Zrušit`), object
+    after the verb (`Přidat server…`, `Přesunout do koše`); never an imperative (`Zkopírujte`) on a button;
+  - instructions inside a sentence or hint: imperative 2nd pl (`Stiskněte`, `Klikněte`, `Vyberte`, `Zadejte`,
+    `Zkuste to znovu`);
+  - progress lines: verbal noun or reflexive passive (`Kopírování…`, `Načítá se…`, `Prohledává se disk…`);
+  - status chips: terse participles/adjectives in the neuter or agreeing with the named thing (`Čeká`, `Běží`,
+    `Pozastaveno`, `Hotovo`, `Nedokončeno`).
+- **Voice**: friendly, concise, active, calm; the neutral plural is polite without being stiff, so keep the wording
+  everyday. Error copy states the problem and a next step; never a bare `Chyba` or `Selhalo` as a label. „Couldn't X“ →
+  `X se nepodařilo` / `Nelze X`; „Something went wrong“ → `Něco se pokazilo`.
+- **Capitalization**: sentence case everywhere; only the first word and proper nouns are capitalized.
+- **Typography** (`mechanics.json`): quotes `„…“` (U+201E, U+201C), nested `‚…‘`; never `"…"`. Ellipsis is the single
+  `…`, hugging its word (`Otevřít…`). One-letter prepositions and conjunctions `k s v z o u a i` (and capitals) take a
+  no-break space U+00A0 after them, not a plain space (`v panelu`, `s názvem`). Multipliers: `4×` or `4krát`, never
+  `4x`.
+- **No hedged grammar**: Czech tempts `soubor(y)`, `smazán(a)`, `byl/a`, `-l(a)`. Use ICU `plural`/`select` when Cmdr
+  knows the value, otherwise rephrase.
+- **Plurals**: CLDR `one` / `few` / `many` / `other`, write all four. `one` = 1, `few` = 2–4, `many` = DECIMALS only
+  (`1,5 souboru`), `other` = 0 and 5+ (`5 souborů`). Keep agreement inside each branch.
+- **Placeholders**: a `{name}`, `{path}`, `{volumeName}` has unknown gender and cannot be declined. Keep it in the
+  nominative behind a declinable head noun or a colon: `soubor „{name}“`, `ve složce {path}`, `na svazku {volumeName}`,
+  `Cíl: {path}`. Never decline the placeholder itself or make a verb agree with it.
+- **Brand**: `Cmdr` stays verbatim and may inflect where natural (`v Cmdru`, `Cmdr vám ukáže`); prefer constructions
+  where it stays nominative. Keep `macOS`, `GitHub`, `SMB`, `MTP`, Finder, Spotlight verbatim. Apple's localized names
+  follow Czech macOS (`Rychlý náhled` for Quick Look, `Informace` for Get Info, `Koš`, `Nastavení systému`).
+- **Two-pane terms follow Total Commander** (pane = `panel`, quick filter = `rychlý filtr`), general macOS terms follow
+  Finder. Rulings live in `terms.json`; the brief shows the ones in play.
+- **Aria labels** must contain the visible label verbatim and in order; pick the label's case form to be the one the
+  aria sentence uses.
 
 ## Decisions to confirm with David
 
-The calls a translator can't make alone. Only the first is a true open flag; the rest carry a confident default and are
-listed so they're never relitigated.
+The calls a translator can't make alone. None is open; each carries a confident default and is listed so it's never
+relitigated.
 
-- **Address form: neutral second-person plural (vykání-shaped, gender-neutral) recommended, needs a sign-off (high).**
-  Czech distinguishes formal `vy` (vykání) from informal `ty` (tykání). MS Czech is explicit: "use the neutral 'you'
-  (second-person plural) whenever possible; don't use the informal 'you' (tykání) unless appropriate (a Skype chat
-  between friends)" (verified 2026-06-20). The neutral plural is what software uses, and its past-tense participle is
-  gender-neutral, which solves the gender problem too (see decision point). Recommended default: **neutral second-person
-  plural throughout.** Flagging because Cmdr's English voice is warm-and-informal, so David may want to confirm the
-  register shift is intended.
-- **`volume` term (tentative).** No clean macOS "volume" string in the Czech pile; candidates are `svazek` (literal
-  volume) or `oddíl` (partition/section). See the glossary; worth a native check.
-
-## Voice and tone
-
-Friendly, concise, active, calm, but **neutral-formal in address** (vykání-shaped plural). The warmth comes from clear,
-short, helpful phrasing, not from informal `ty`. MS Czech says the Microsoft voice "avoids an unnecessarily formal tone"
-and to "look for more informal or colloquial wording" while still using the neutral plural (verified 2026-06-20) - so
-keep sentences light and everyday, just not tykání. Error messages stay calm and actionable: phrase the problem and the
-next step, and don't use "chyba" (error) or "selhalo" (failed) as a bare status label the way English avoids
-"error"/"failed".
+- **Address form: neutral vy-plural (settled).** Ruled in `../formal-informal-decisions.md` (row `cs`): macOS Czech is
+  mostly vykání (in the pile, `Chcete` 266× vs `Chceš` 9×, `můžete` 237× vs `můžeš` 29×), the Microsoft Czech style
+  guide prescribes "the neutral 'you' (second-person plural) whenever possible" and tykání only between friends, and
+  Czech retail (IKEA cz, Netflix, Spotify) writes vykání. Its plural past participle (`-li`) is also the gender fix.
+  Cmdr's English voice is warm and informal; in Czech the warmth comes from short, plain wording, not from `ty`.
+- **No-break space after one-letter prepositions (confident default).** Czech typesetting keeps `k s v z o u a i` off
+  the line end (ČSN 01 6910), so the catalog writes U+00A0 after them and `mechanics.json` flags a plain space. macOS
+  Czech writes plain spaces there, so this is a deliberate typographic choice, not a macOS match.
+- **Volume is `svazek`, tab is `záložka` (confident defaults).** `svazek` per macOS CoreTypes and Time Machine;
+  `záložka` per Total Commander and Double Commander, because macOS's own `panel` is taken by the pane.
+  `review-queue.md` keeps both for a native reviewer.
 
 ## Formality
 
-- **Neutral second-person plural, throughout. Never tykání (informal `ty`).** The formal uppercase `Vy`/`Vás` (vykání
-  proper) belongs to personal correspondence (emails, letters to a specific named user), not product UI; MS Czech
-  reserves it for exactly that (verified 2026-06-20). In Cmdr UI, use the lowercase neutral plural.
-- **Action labels (buttons, menu items): infinitive, not imperative.** This is the Slavic UI norm and what macOS Czech
-  shows: "Kopírovat" (Copy), "Uložit" (Save), "Smazat" (Delete), "Otevřít" (Open), "Zrušit" (Cancel), "Odpojit"
-  (Disconnect) (macOS AppKit, verified 2026-06-20). Avoid bare imperatives like "Kopíruj"/"Ulož": they bark a command
-  and read as tykání-flavored.
-- **Full sentences addressed to the user: neutral vy-plural.** "Opravdu chcete odstranit tyto soubory?" (Are you sure
-  you want to delete these files?). So the rule is dual: **standalone labels = infinitive; sentences to the user =
-  neutral vy-plural.** Confidence: high (macOS and MS agree).
+- **Neutral 2nd person plural, lowercase, throughout. Never tykání.** "Opravdu chcete smazat tyto soubory?", "Tuto akci
+  nelze vrátit.", "Můžete to kdykoli změnit v Nastavení." The capital `Vy`/`Vás`/`Váš` belongs to letters to one named
+  person, not to product UI (Microsoft Czech reserves it for exactly that).
+- **Standalone labels (buttons, menu items, commands, setting names): infinitive**, as Finder and Total Commander do
+  ("Kopírovat", "Uložit", "Smazat", "Otevřít", "Zrušit", "Odpojit"). The infinitive is address-neutral. Avoid bare
+  imperatives as button labels ("Kopírujte", "Uložte", and never "Kopíruj").
+- **Instructions in prose and hints: imperative 2nd pl.** "Stiskněte ⏎ pro otevření", "Klikněte sem", "Přetáhněte
+  soubory sem", "Zkuste to znovu".
+- **Past tense about the user**: the plural participle is gender-neutral ("Pokud jste ho smazali…"), so it's allowed; an
+  impersonal phrasing usually reads better ("Soubor byl smazán", "Odmítnuto: …").
+- Possessives lowercase: `váš`, `vaše`, `vašem Macu`.
+
+## Voice and tone
+
+Friendly, concise, active, calm. The neutral plural sets the politeness; keep the wording plain and everyday so it never
+turns bureaucratic. Prefer a verb to a verbal-noun chain ("Hledat", not "Provést vyhledávání"). Error messages stay calm
+and actionable: phrase the problem and the next step, and don't use "chyba" (error) or "selhalo" (failed) as a bare
+status label the way English avoids "error"/"failed". No apologies where Cmdr made a deliberate choice; where regret is
+due, "Bohužel…" or "Promiňte", never "Sorry". Onboarding and a few notes speak as David in the first person ("Vyvíjím
+Cmdr…"); the first person is singular and masculine there, because it's David.
 
 ## Decision points
 
 - **Script: Latin, no decision.** Czech is written in the Latin alphabet with diacritics (á, č, ď, é, ě, í, ň, ó, ř, š,
-  ť, ú, ů, ý, ž). No script choice. Confidence: high.
-- **Regional variant: one, `cs` (`cs-CZ`).** Czech is standardized only in Czechia; no second national standard, no
-  pt-BR/pt-PT-style split. Don't build a variant matrix. (Slovak is a separate language, `sk`, not a variant.)
-  Confidence: high.
-- **Gender / inclusive language: the neutral vy-plural already solves most of it (high on the problem, high on the
-  fix).** Czech past tense uses gendered l-participles (-l masc, -la fem). A singular-addressed "you deleted" forces a
-  gender guess, but the neutral second-person plural participle is `-li`, which is **gender-neutral**: "Smazali jste 3
-  soubory" works for any user. This is a second reason the neutral plural is the right call. Where a singular
-  adjective/participle would still agree with the user's gender, **rewrite impersonally**: "Kopírování dokončeno"
-  (Copying complete) or "Soubor byl odstraněn" (The file was deleted) rather than "Odstranili jste…". Recommendation:
-  lean on the gender-neutral vy-plural for user actions, and impersonal/nominal phrasing for system-state messages.
-  Confidence: high.
+  ť, ú, ů, ý, ž). Confidence: high.
+- **Regional variant: one, `cs` (`cs-CZ`).** Czech is standardized only in Czechia; no variant matrix. (Slovak is a
+  separate language, `sk`, not a variant.) Confidence: high.
+- **Gender / inclusive language: vy-plural plus impersonal (high).** Czech past tense uses gendered l-participles (-l
+  masc, -la fem). The vy-plural participle `-li` is gender-neutral ("Smazali jste 3 soubory"), which is the second
+  reason the plural is the right register. Where a singular adjective or participle would still agree with the user,
+  rewrite impersonally:
+  - impersonal participle or verbal noun: "Zkopírováno", "Přesunuto do koše", "Kopírování dokončeno";
+  - the object as subject: "Soubor byl přejmenován", "3 soubory byly smazány" (the object's gender is known from the
+    noun, or handled by ICU plural);
+  - a state of the thing, not the person: "Přihlášení proběhlo", "Účet je připojený". If no natural restructuring
+    exists, flag the key in `review-queue.md` instead of shipping a hedge.
 - **Capitalization: sentence case everywhere (high).** Czech capitalizes only the first word and proper nouns in titles,
-  menu items, labels, and buttons. English title case is wrong ("Zobrazit skryté soubory", not "Zobrazit Skryté
-  Soubory"). Matches Cmdr's sentence-case rule with no friction.
+  menu items, labels, and buttons ("Zobrazit skryté soubory", not "Zobrazit Skryté Soubory").
 
-## Terminology and glossary
+## Terminology
 
-Format per term: `chosen · sources · confidence`. Evidence verified against `_ignored/i18n/cs/` (macOS Finder/AppKit, MS
-terminology, GNOME Nautilus, Xfce Thunar) on 2026-06-20; macOS strings cited are what Czech Finder/AppKit actually show.
-Sources decide the term; Cmdr writes its own value (Apple/MS copyrighted, GNOME/Xfce GPL, never copied verbatim).
+Rulings live in `terms.json` (one per concept from `../concepts.json`; schema in `../termbase.md`), with the rationale
+in `decisions.md`. Source every ruling from the pile, never guess. Precedence: Total Commander (then Double Commander)
+for two-pane concepts Finder lacks; macOS Finder/AppKit for general macOS and file terms; Microsoft as a tiebreak; the
+explorer family (Nautilus, Thunar, Dolphin) for general file operations where the first two are silent.
 
-Settled terms (sources agree):
+Cross-term notes:
 
-- **folder: `složka`** · macOS Finder ("Složka"), GNOME ("Složka"). Plural "složky". `high`.
-- **file: `soubor`** · macOS, GNOME ("Soubor"). Plural "soubory" (few), "souborů" (other/genitive). `high`.
-- **directory: `adresář`** · MS terminology; use only where the technical filesystem sense matters, else "složka".
-  `high`.
-- **trash: `koš`** · macOS Finder maps both "Trash" and "Bin" to "Koš". `high`.
-- **move to trash: `přesunout do koše`** · aligns with macOS "Koš"; GNOME phrasing. `high`.
-- **delete (permanent): `smazat`** · macOS AppKit ("Smazat"). Reserve for destructive delete; use "přesunout do koše"
-  for the safe move. `high`.
-- **eject: `vysunout`** · macOS Finder. Infinitive label "Vysunout". `high`.
-- **copy: `kopírovat`** · macOS AppKit ("Kopírovat"). `high`.
-- **cancel: `zrušit`** · macOS AppKit ("Zrušit"). `high`.
-- **open: `otevřít`** · macOS AppKit ("Otevřít"). `high`.
-- **save: `uložit`** · macOS AppKit ("Uložit"). `high`.
-- **disconnect: `odpojit`** · macOS AppKit ("Odpojit"). `high`.
-- **search: `hledat` (verb) / `hledání` (noun)** · macOS Finder ("Hledat ve Finderu"). `high`.
-- **network: `síť`** · macOS Finder ("Síť"). `high`.
-- **shared: `sdíleno`** · macOS Finder ("Sdíleno"). `high`.
-
-Tentative / needs a native check:
-
-- **volume: `svazek`** · no clean macOS reference; `svazek` is the literal "volume", `oddíl` is "partition/section".
-  Default to `svazek` for a mounted disk. `tentative`.
-- **tab (UI tab): `karta`** · MS/GNOME convention; the macOS "Tab" string is the keyboard Tab key (Tabulátor), wrong
-  sense. Use `karta` for the pane tab. `tentative`.
-- **pane: `panel`** · GNOME uses "panel" for window regions; the two file lists are "panely". `tentative`.
+- Czech compounds rarely; English noun stacks become a head noun plus genitive or adjective ("historie operací", "rychlý
+  filtr", "nastavení panelu").
+- Short labels drop articles naturally (Czech has none) and keep the verb first ("Přidat do oblíbených").
 
 ## Brand and do-not-translate
 
-Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
-tokens. The curated list (BRAND_WORDS + SYSTEM_TOKENS) is enforced by `desktop-i18n-dont-translate`; see
-`apps/desktop/scripts/i18n-catalog-lib.ts`. macOS UI names Cmdr opens into should match what a Czech macOS shows ("Koš",
-"Nastavení").
+Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Finder, Spotlight, AirDrop, plus the
+`{system_settings}`-style tokens. The curated list (BRAND_WORDS + SYSTEM_TOKENS) is enforced by
+`desktop-i18n-dont-translate`; see `apps/desktop/scripts/i18n-catalog-lib.ts`. Quick Look is NOT kept English: Czech
+macOS calls it "Rychlý náhled", and Cmdr follows what the user sees. macOS UI names Cmdr opens into must match Czech
+macOS ("Koš", "Nastavení systému", "Soukromí a zabezpečení").
 
 ## Plurals
 
 CLDR categories for `cs`: `one`, `few`, `many`, `other` (verified with `new Intl.PluralRules('cs')`). Write all four.
 
-- **one**: integer 1 only (`i=1, v=0`). "1 soubor".
-- **few**: integers 2-4 (`i=2..4, v=0`). "2 soubory".
-- **many**: any number with a decimal fraction (`v≠0`). "1,5 souboru". This is the **decimal/fraction** bucket, not the
-  large-number bucket.
-- **other**: everything else, including 0 and 5+ (`5 souborů`, `0 souborů`, `100 souborů`).
-- **Trap: `many` is the decimal form, not "lots".** Translators from a Polish/Russian background (where "many" is the
-  big-number bucket) get this backwards. In Czech, 5+ integers go to `other`; `many` only fires on decimals. (Same trap
-  as Slovak.)
-- Forms map to cases: 1 = nominative sg, 2-4 = nominative pl, 5+/0 = genitive pl, decimals = genitive sg. Keep
-  article/adjective agreement inside each branch. The `desktop-i18n-plural` check requires all four.
+- **one**: integer 1 only. "1 soubor".
+- **few**: integers 2–4. "2 soubory".
+- **many**: any number with a decimal fraction. "1,5 souboru". This is the decimal bucket, not the large-number bucket.
+- **other**: everything else, including 0 and 5+ ("5 souborů", "0 souborů").
+- **Trap: `many` is the decimal form, not "lots".** Translators from a Polish/Russian background get this backwards.
+- Forms map to cases: 1 = nominative sg, 2–4 = nominative pl, 5+/0 = genitive pl, decimals = genitive sg. Keep adjective
+  and verb agreement inside each branch ("byl smazán 1 soubor", "byly smazány 2 soubory", "bylo smazáno 5 souborů").
 
 ## Notes and decisions
 
-- **Quotation marks: `„…"`** (low-9 opening U+201E, high-6 closing U+201C), the standard Czech form (same shape as
-  German/Slovak). Avoid straight ASCII `"` and English `"…"`.
-- **Numbers and dates come from the formatter layer.** Czech uses a comma decimal and space thousands separator (1 000);
-  `formatNumber()`/`formatByteSize()` produce these from the locale. Never hardcode separators in a string.
-- **Length.** Czech runs somewhat longer than English (case endings, longer compounds), so overflow-check the layout
-  against the pseudolocale (`en-XA`).
-- **ICU mechanics** (catalog-level): double every apostrophe in a value (`'` becomes `''`) and keep every
-  `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in `docs/guides/i18n-translation.md` and
-  `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
-- Record any case-by-case rulings here so they aren't relitigated.
+- **Quotation marks: `„…“`** (U+201E low-9 opening, U+201C high-6 closing; macOS cs writes this pair, 839 hits in the
+  pile), nested `‚…‘`. Never straight `"` or English `“…”`.
+- **No-break space after one-letter prepositions and conjunctions** (`k s v z o u a i`, any case): write U+00A0, not a
+  plain space, so the word never ends a line ("v panelu"). Czech typographic norm (ČSN 01 6910); declared in
+  `mechanics.json` so the check flags misses. In JSON you may write it as the escape ` ` or the raw character.
+- **Numbers and dates come from the formatter layer.** Czech uses a comma decimal and a space thousands separator (1
+  000); `formatNumber()` / `formatByteSize()` produce these. Never hardcode separators.
+- **Length.** Czech runs longer than English; overflow-check against the pseudolocale (`en-XA`).
+- **ICU mechanics**: double every apostrophe in an ICU value (`'` → `''`) and keep every `{placeholder}` and `<tag>`
+  verbatim. Full rules: `docs/i18n/translator-instructions.md` and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+- Case-by-case rulings go in `decisions.md` under a heading citing their keys.
 
-## Termbase
+## Termbase files
 
-This language has no termbase yet. On its first translation pass, copy `terms.json`, `decisions.md`, and
-`review-queue.md` from `docs/i18n/_template/` into this folder, and add a `## Digest` to this guide (the template
-`style.md` shows it). Each term ruling goes in `terms.json`, keyed by a concept from `docs/i18n/concepts.json` and
-sourced from the reference pile (`_ignored/i18n/cs/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`); never guess
-a term. Any terminology notes above are seeds to verify and move there. Schema: `docs/i18n/termbase.md`.
+`terms.json` (rulings), `decisions.md` (distilled rationale), `mechanics.json` (typography), `review-queue.md` (open
+flags for a native reviewer). Schema and tooling: `../termbase.md`.
