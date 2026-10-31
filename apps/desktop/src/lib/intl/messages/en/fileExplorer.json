@@ -215,7 +215,9 @@
     "placeholders": {
       "server": "the server's friendly name or IP address, for example Naspolya or 192.168.1.111",
       "localNetwork": "the OS-localized macOS \"Local Network\" permission name, as System Settings shows it under Privacy & Security, injected at runtime (it follows the Mac’s system language, which can differ from Cmdr’s, so it may arrive in English)"
-    }
+    },
+    "screenshot": "toast-transfer-complete.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what Connect directly says there when something on this Mac refused the connection, with a button that opens System Settings."
   },
   "fileExplorer.pane.openLocalNetworkSettings": "Open {localNetwork} settings",
   "@fileExplorer.pane.openLocalNetworkSettings": {
@@ -968,27 +970,39 @@
   },
   "fileExplorer.listingStalled.title": "Still waiting for this folder",
   "@fileExplorer.listingStalled.title": {
-    "description": "Heading shown in place of a file list when a folder has stopped answering for several seconds while opening, usually because the network server it lives on went silent. Cmdr keeps waiting and retrying in the background. Calm, not alarming."
+    "description": "Heading shown in place of a file list when a folder has stopped answering for several seconds while opening, usually because the network server it lives on went silent. Cmdr keeps waiting and retrying in the background. Calm, not alarming.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "This shows a different screen in the same place: your string is on the screen a file pane shows while a folder’s volume has gone quiet mid-read, with a spinner, Try again, and Go back."
   },
   "fileExplorer.listingStalled.detail": "The server or drive it’s on isn’t answering. Cmdr keeps trying in the background and opens the folder as soon as it answers.",
   "@fileExplorer.listingStalled.detail": {
-    "description": "Explanation under the “Still waiting for this folder” heading, shown when Cmdr can’t tell whether the folder is on a network server or a local drive (for example a phone, or a cloud or other add-on mount). “it” is the folder. The server is usually a NAS or file server; the drive is a disk. Promises that the folder opens by itself once the server or drive responds again, with no action needed. Sibling lines name only the server (fileExplorer.listingStalled.detailServer) or only the drive (fileExplorer.listingStalled.detailDrive); keep the three worded alike."
+    "description": "Explanation under the “Still waiting for this folder” heading, shown when Cmdr can’t tell whether the folder is on a network server or a local drive (for example a phone, or a cloud or other add-on mount). “it” is the folder. The server is usually a NAS or file server; the drive is a disk. Promises that the folder opens by itself once the server or drive responds again, with no action needed. Sibling lines name only the server (fileExplorer.listingStalled.detailServer) or only the drive (fileExplorer.listingStalled.detailDrive); keep the three worded alike.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "This shows a different screen in the same place: your string is on the screen a file pane shows while a folder’s volume has gone quiet mid-read, with a spinner, Try again, and Go back."
   },
   "fileExplorer.listingStalled.detailServer": "The server it’s on isn’t answering. Cmdr keeps trying in the background and opens the folder as soon as it answers.",
   "@fileExplorer.listingStalled.detailServer": {
-    "description": "Explanation under the “Still waiting for this folder” heading, shown when the folder is on a network server: a NAS or file server reached over SMB, NFS, AFP, WebDAV, SFTP, and so on. “it” is the folder; the second “it” is the server. Promises that the folder opens by itself once the server responds again, with no action needed. Word it like fileExplorer.listingStalled.detail, naming only the server."
+    "description": "Explanation under the “Still waiting for this folder” heading, shown when the folder is on a network server: a NAS or file server reached over SMB, NFS, AFP, WebDAV, SFTP, and so on. “it” is the folder; the second “it” is the server. Promises that the folder opens by itself once the server responds again, with no action needed. Word it like fileExplorer.listingStalled.detail, naming only the server.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "This shows a different screen in the same place: your string is on the screen a file pane shows while a folder’s volume has gone quiet mid-read, with a spinner, Try again, and Go back."
   },
   "fileExplorer.listingStalled.detailDrive": "The drive it’s on isn’t answering. Cmdr keeps trying in the background and opens the folder as soon as it answers.",
   "@fileExplorer.listingStalled.detailDrive": {
-    "description": "Explanation under the “Still waiting for this folder” heading, shown when the folder is on a local drive: the Mac’s own disk or one plugged into it (USB, Thunderbolt, an SD card). “it” is the folder; the second “it” is the drive. Promises that the folder opens by itself once the drive responds again, with no action needed. Word it like fileExplorer.listingStalled.detail, naming only the drive."
+    "description": "Explanation under the “Still waiting for this folder” heading, shown when the folder is on a local drive: the Mac’s own disk or one plugged into it (USB, Thunderbolt, an SD card). “it” is the folder; the second “it” is the drive. Promises that the folder opens by itself once the drive responds again, with no action needed. Word it like fileExplorer.listingStalled.detail, naming only the drive.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "This shows a different screen in the same place: your string is on the screen a file pane shows while a folder’s volume has gone quiet mid-read, with a spinner, Try again, and Go back."
   },
   "fileExplorer.listingStalled.tryAgain": "Try again",
   "@fileExplorer.listingStalled.tryAgain": {
-    "description": "Button on the “Still waiting for this folder” screen. Starts opening the folder again right away instead of waiting for the next automatic attempt."
+    "description": "Button on the “Still waiting for this folder” screen. Starts opening the folder again right away instead of waiting for the next automatic attempt.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "This shows a different screen in the same place: your string is on the screen a file pane shows while a folder’s volume has gone quiet mid-read, with a spinner, Try again, and Go back."
   },
   "fileExplorer.listingStalled.goBack": "Go back",
   "@fileExplorer.listingStalled.goBack": {
-    "description": "Button on the “Still waiting for this folder” screen. Stops waiting and returns the pane to the folder it showed before. Shown with the Esc key, which does the same."
+    "description": "Button on the “Still waiting for this folder” screen. Stops waiting and returns the pane to the folder it showed before. Shown with the Esc key, which does the same.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "This shows a different screen in the same place: your string is on the screen a file pane shows while a folder’s volume has gone quiet mid-read, with a spinner, Try again, and Go back."
   },
   "fileExplorer.clipboard.copied": "Copied {countText} {count, plural, one {item} other {items}}.",
   "@fileExplorer.clipboard.copied": {
@@ -1006,35 +1020,51 @@
       "leftCount": "the same number (drives the singular/plural form)",
       "rightCountText": "how many files were selected in the right pane, already formatted for display",
       "rightCount": "the same number, for the right pane"
-    }
+    },
+    "screenshot": "toast-transfer-complete.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what Compare directories says there when it finishes or can’t."
   },
   "fileExplorer.compareDirectories.noDifferences.newerAndMissing": "Nothing to select: every file is in both folders, and neither copy is newer. Subfolders aren’t compared.",
   "@fileExplorer.compareDirectories.noDifferences.newerAndMissing": {
-    "description": "Toast after Compare directories (⇧F2) in its default mode found nothing to select: no file is missing on either side and no copy has a newer modification time. Folders and their contents aren't compared, only the files directly in each folder, by name and the listed modification time or size, so the copy must not promise the files are identical."
+    "description": "Toast after Compare directories (⇧F2) in its default mode found nothing to select: no file is missing on either side and no copy has a newer modification time. Folders and their contents aren't compared, only the files directly in each folder, by name and the listed modification time or size, so the copy must not promise the files are identical.",
+    "screenshot": "toast-transfer-complete.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what Compare directories says there when it finishes or can’t."
   },
   "fileExplorer.compareDirectories.noDifferences.missing": "Nothing to select: every file is in both folders. Subfolders aren’t compared.",
   "@fileExplorer.compareDirectories.noDifferences.missing": {
-    "description": "Toast after Compare directories in its \"only missing files\" mode found nothing to select: no file is missing on either side. Folders and their contents aren't compared, only the files directly in each folder, by name and the listed modification time or size, so the copy must not promise the files are identical."
+    "description": "Toast after Compare directories in its \"only missing files\" mode found nothing to select: no file is missing on either side. Folders and their contents aren't compared, only the files directly in each folder, by name and the listed modification time or size, so the copy must not promise the files are identical.",
+    "screenshot": "toast-transfer-complete.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what Compare directories says there when it finishes or can’t."
   },
   "fileExplorer.compareDirectories.noDifferences.sizeAndMissing": "Nothing to select: every file is in both folders, at the same size. Subfolders aren’t compared.",
   "@fileExplorer.compareDirectories.noDifferences.sizeAndMissing": {
-    "description": "Toast after Compare directories in its \"missing or different size\" mode found nothing to select: no file is missing on either side and each pair has the same size. Folders and their contents aren't compared, only the files directly in each folder, by name and the listed modification time or size, so the copy must not promise the files are identical."
+    "description": "Toast after Compare directories in its \"missing or different size\" mode found nothing to select: no file is missing on either side and each pair has the same size. Folders and their contents aren't compared, only the files directly in each folder, by name and the listed modification time or size, so the copy must not promise the files are identical.",
+    "screenshot": "toast-transfer-complete.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what Compare directories says there when it finishes or can’t."
   },
   "fileExplorer.compareDirectories.keptChanging": "The folders kept changing while they were being compared. Try again once they settle.",
   "@fileExplorer.compareDirectories.keptChanging": {
-    "description": "Warning toast when Compare directories (⇧F2) gave up because files kept appearing or disappearing in one of the two folders, so it couldn't select the right files safely."
+    "description": "Warning toast when Compare directories (⇧F2) gave up because files kept appearing or disappearing in one of the two folders, so it couldn't select the right files safely.",
+    "screenshot": "toast-transfer-complete.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what Compare directories says there when it finishes or can’t."
   },
   "fileExplorer.compareDirectories.needsTwoFolders": "Open a folder in both panes to compare them",
   "@fileExplorer.compareDirectories.needsTwoFolders": {
-    "description": "Toast when Compare directories (Shift+F2) can't run because one pane shows something other than a folder, such as the server list or search results."
+    "description": "Toast when Compare directories (Shift+F2) can't run because one pane shows something other than a folder, such as the server list or search results.",
+    "screenshot": "toast-transfer-complete.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what Compare directories says there when it finishes or can’t."
   },
   "fileExplorer.compareDirectories.couldNotFinish": "Couldn’t finish comparing the folders. Try again in a moment.",
   "@fileExplorer.compareDirectories.couldNotFinish": {
-    "description": "Toast when Compare directories (Shift+F2) ran out of time or stopped unexpectedly, so nothing was selected."
+    "description": "Toast when Compare directories (Shift+F2) ran out of time or stopped unexpectedly, so nothing was selected.",
+    "screenshot": "toast-transfer-complete.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what Compare directories says there when it finishes or can’t."
   },
   "fileExplorer.folderSizes.notConnected": "Can’t calculate folder sizes here: this location isn’t connected right now.",
   "@fileExplorer.folderSizes.notConnected": {
-    "description": "Toast when Calculate folder sizes (Alt+Shift+Enter) can't start because the pane's drive or server is no longer connected."
+    "description": "Toast when Calculate folder sizes (Alt+Shift+Enter) can't start because the pane's drive or server is no longer connected.",
+    "screenshot": "toast-transfer-complete.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what Calculate folder sizes says there when something got in its way."
   },
   "fileExplorer.clipboard.cutReady": "{countText} {count, plural, one {item} other {items}} ready to move. Paste to complete.",
   "@fileExplorer.clipboard.cutReady": {
@@ -2513,47 +2543,63 @@
     "description": "Second line of the hover tooltip on a dimmed favorite in the favorites menu, under the folder's path. The favorite is on a saved network share, server, or phone that isn't connected right now; picking it still works, because Cmdr connects first and then opens the folder. Reassure, don't warn.",
     "placeholders": {
       "place": "the name of the share, server, or phone the favorite lives on, for example \"naspi on nas.local\" or \"Pixel 7\""
-    }
+    },
+    "screenshot": "favorites-menu.png",
+    "screenshotNote": "The favorites menu, pictured here. Your string is the line under a favorite’s path in its tooltip, for a row that can’t open right away."
   },
   "fileExplorer.navigation.favoriteStatus.notFound": "This folder isn’t there anymore.",
   "@fileExplorer.navigation.favoriteStatus.notFound": {
-    "description": "Second line of the hover tooltip on a dimmed favorite in the favorites menu, under the folder's path: the folder was moved or deleted, or Cmdr can't tell which disk it was on. \"Anymore\" means \"no longer\"."
+    "description": "Second line of the hover tooltip on a dimmed favorite in the favorites menu, under the folder's path: the folder was moved or deleted, or Cmdr can't tell which disk it was on. \"Anymore\" means \"no longer\".",
+    "screenshot": "favorites-menu.png",
+    "screenshotNote": "The favorites menu, pictured here. Your string is the line under a favorite’s path in its tooltip, for a row that can’t open right away."
   },
   "fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": "“{device}” isn’t connected. Plug it in with a USB cable and unlock it, then try again.",
   "@fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": {
     "description": "Info toast after the user picked a favorite folder on a phone that isn't plugged in, so the pane stayed where it was. Also the second line of that favorite's tooltip in the favorites menu. Says how to fix it: plug in by USB and unlock the phone.",
     "placeholders": {
       "device": "the phone's name, for example \"Pixel 7\""
-    }
+    },
+    "screenshot": "toast-favorite.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what picking a favorite says there when its place can’t be reached, with the one button that helps."
   },
   "fileExplorer.navigation.favoriteUnreachable.storageUnplugged": "The storage this folder was on isn’t available on {device} right now.",
   "@fileExplorer.navigation.favoriteUnreachable.storageUnplugged": {
     "description": "Info toast after the user picked a favorite folder on a phone that IS connected, but the storage the folder lived on (typically an SD card) isn't there now, so the pane stayed where it was. Also the second line of that favorite's tooltip in the favorites menu.",
     "placeholders": {
       "device": "the phone's name, for example \"Pixel 7\""
-    }
+    },
+    "screenshot": "toast-favorite.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what picking a favorite says there when its place can’t be reached, with the one button that helps."
   },
   "fileExplorer.navigation.favoriteUnreachable.driveUnplugged": "“{drive}” isn’t connected. Connect it, then try again.",
   "@fileExplorer.navigation.favoriteUnreachable.driveUnplugged": {
     "description": "Info toast after the user picked a favorite folder on an external drive (or a network mount Cmdr can't connect itself) that isn't connected, so the pane stayed where it was. Also the second line of that favorite's tooltip in the favorites menu.",
     "placeholders": {
       "drive": "the drive's name, for example \"Samsung T7\""
-    }
+    },
+    "screenshot": "toast-favorite.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what picking a favorite says there when its place can’t be reached, with the one button that helps."
   },
   "fileExplorer.navigation.favoriteUnreachable.mtpOff": "Phone and camera access over MTP is turned off in Settings.",
   "@fileExplorer.navigation.favoriteUnreachable.mtpOff": {
-    "description": "Info toast after the user picked a favorite folder on a phone or camera, while Cmdr's MTP support (the USB protocol phones and cameras use for file transfer) is switched off in Settings, so the pane stayed where it was. It's that Cmdr feature that's off, not the device. The toast's button opens that setting. Keep \"MTP\" as is."
+    "description": "Info toast after the user picked a favorite folder on a phone or camera, while Cmdr's MTP support (the USB protocol phones and cameras use for file transfer) is switched off in Settings, so the pane stayed where it was. It's that Cmdr feature that's off, not the device. The toast's button opens that setting. Keep \"MTP\" as is.",
+    "screenshot": "toast-favorite.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what picking a favorite says there when its place can’t be reached, with the one button that helps."
   },
   "fileExplorer.navigation.favoriteUnreachable.adbOff": "Android phone access is turned off in Settings.",
   "@fileExplorer.navigation.favoriteUnreachable.adbOff": {
-    "description": "Info toast after the user picked a favorite folder on an Android phone, while Cmdr's Android (ADB) support is switched off in Settings, so the pane stayed where it was. It's that Cmdr feature that's off, not the phone. The toast's button opens that setting."
+    "description": "Info toast after the user picked a favorite folder on an Android phone, while Cmdr's Android (ADB) support is switched off in Settings, so the pane stayed where it was. It's that Cmdr feature that's off, not the phone. The toast's button opens that setting.",
+    "screenshot": "toast-favorite.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what picking a favorite says there when its place can’t be reached, with the one button that helps."
   },
   "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr doesn’t know how to reach “{place}” anymore. Connect to it again from Servers, and this favorite works again.",
   "@fileExplorer.navigation.favoriteUnreachable.forgotten": {
     "description": "Info toast after the user picked a favorite folder on a network share or server that was removed (forgotten) from Cmdr's saved servers, so Cmdr has no way to connect to it; the pane stayed where it was. Connecting to the same place again brings the favorite back. \"Servers\" is the name of the place in Cmdr that lists servers (use the same word as fileExplorer.navigation.networkVolume); the toast's button opens it. \"Anymore\" means \"no longer\".",
     "placeholders": {
       "place": "the share or server's name, for example \"naspi on nas.local\""
-    }
+    },
+    "screenshot": "toast-favorite.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what picking a favorite says there when its place can’t be reached, with the one button that helps."
   },
   "fileExplorer.navigation.favoriteUnreachable.notFound": "“{name}” isn’t at {path} anymore.",
   "@fileExplorer.navigation.favoriteUnreachable.notFound": {
@@ -2561,19 +2607,27 @@
     "placeholders": {
       "name": "the favorite's name as shown in the favorites menu, for example \"Projects\"",
       "path": "where the folder used to be, for example \"/Users/ada/Projects\""
-    }
+    },
+    "screenshot": "toast-favorite.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what picking a favorite says there when its place can’t be reached, with the one button that helps."
   },
   "fileExplorer.navigation.favoriteUnreachable.openSettings": "Open settings",
   "@fileExplorer.navigation.favoriteUnreachable.openSettings": {
-    "description": "VERB phrase. Button on the toast saying phone access is turned off in Settings: opens Cmdr's Settings at that switch."
+    "description": "VERB phrase. Button on the toast saying phone access is turned off in Settings: opens Cmdr's Settings at that switch.",
+    "screenshot": "toast-favorite.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what picking a favorite says there when its place can’t be reached, with the one button that helps."
   },
   "fileExplorer.navigation.favoriteUnreachable.openServers": "Show servers",
   "@fileExplorer.navigation.favoriteUnreachable.openServers": {
-    "description": "VERB phrase. Button on the toast saying Cmdr doesn't know how to reach a favorite's server anymore: puts this pane on the Servers list, where the user can connect to it again."
+    "description": "VERB phrase. Button on the toast saying Cmdr doesn't know how to reach a favorite's server anymore: puts this pane on the Servers list, where the user can connect to it again.",
+    "screenshot": "toast-favorite.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what picking a favorite says there when its place can’t be reached, with the one button that helps."
   },
   "fileExplorer.navigation.favoriteUnreachable.removeFavorite": "Remove favorite",
   "@fileExplorer.navigation.favoriteUnreachable.removeFavorite": {
-    "description": "VERB phrase. Button on the toast saying a favorite's folder isn't there anymore: removes that favorite from the favorites menu. Doesn't touch any files."
+    "description": "VERB phrase. Button on the toast saying a favorite's folder isn't there anymore: removes that favorite from the favorites menu. Doesn't touch any files.",
+    "screenshot": "toast-favorite.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what picking a favorite says there when its place can’t be reached, with the one button that helps."
   },
   "fileExplorer.navigation.locationUnreachableToast": "Couldn’t reach that location’s drive. It might be disconnected.",
   "@fileExplorer.navigation.locationUnreachableToast": {
@@ -3072,7 +3126,9 @@
     "description": "Info toast after Calculate folder sizes (⌥⇧⏎, or Space on a folder) when some folders, or parts of them, couldn't be read (no permission, or gone). A partly read folder shows a lower bound (≥); a wholly unreadable one keeps whatever it showed before (an older size, or no size). Either way its size may be incomplete, so don't say it's missing. {count} is how many folders. The singular branch is for exactly one folder: in a language whose `one` category also covers 21, 31, …, use an `=1` arm for the singular wording.",
     "placeholders": {
       "count": "how many folders couldn't be read, wholly or in part"
-    }
+    },
+    "screenshot": "toast-transfer-complete.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what Calculate folder sizes says there when something got in its way."
   },
   "fileExplorer.quickFilter.modeFilter": "Filter: only matching names show",
   "@fileExplorer.quickFilter.modeFilter": {
@@ -3142,7 +3198,9 @@
     "description": "Body of the same notification as \"osMountFallback.message\", for a share (a DFS namespace) that lives on a different server the person hasn’t allowed Cmdr to sign in to. There is no retry button. <shareName> wraps the share’s name and renders it bold; keep the tag around the name wherever your grammar puts it. \"macOS\", \"SMB\", and \"Cmdr\" are names; keep them.",
     "placeholders": {
       "share": "the name of the network share, for example archive or Photos"
-    }
+    },
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.smbLinkConsent.title": "Sign in to another server?",
   "@fileExplorer.smbLinkConsent.title": {

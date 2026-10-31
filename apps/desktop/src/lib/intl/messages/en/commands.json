@@ -1428,26 +1428,36 @@
   },
   "commands.handler.shareLinkCopied.sevenDays": "Copied a share link. It works for seven days.",
   "@commands.handler.shareLinkCopied.sevenDays": {
-    "description": "Success toast after copying a share link to a file in an S3 bucket that works for seven days. A share link is a web address anyone can open to download that one file, without signing in, until it expires. It copies a link, not the file."
+    "description": "Success toast after copying a share link to a file in an S3 bucket that works for seven days. A share link is a web address anyone can open to download that one file, without signing in, until it expires. It copies a link, not the file.",
+    "screenshot": "toast-transfer-complete.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what Copy share link says there, for a file in an S3 bucket."
   },
   "commands.handler.shareLinkCopied.oneDay": "Copied a share link. It works for one day.",
   "@commands.handler.shareLinkCopied.oneDay": {
-    "description": "Success toast after copying a share link that works for one day. A share link is a web address anyone can open to download that one file, without signing in, until it expires. It copies a link, not the file."
+    "description": "Success toast after copying a share link that works for one day. A share link is a web address anyone can open to download that one file, without signing in, until it expires. It copies a link, not the file.",
+    "screenshot": "toast-transfer-complete.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what Copy share link says there, for a file in an S3 bucket."
   },
   "commands.handler.shareLinkCopied.oneHour": "Copied a share link. It works for one hour.",
   "@commands.handler.shareLinkCopied.oneHour": {
-    "description": "Success toast after copying a share link that works for one hour. A share link is a web address anyone can open to download that one file, without signing in, until it expires. It copies a link, not the file."
+    "description": "Success toast after copying a share link that works for one hour. A share link is a web address anyone can open to download that one file, without signing in, until it expires. It copies a link, not the file.",
+    "screenshot": "toast-transfer-complete.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what Copy share link says there, for a file in an S3 bucket."
   },
   "commands.handler.shareLinkUnavailable": "Move the cursor to a file in an S3 bucket to copy a share link.",
   "@commands.handler.shareLinkUnavailable": {
-    "description": "Warning toast when \"Copy share link\" runs but the cursor isn't on a file in an S3 bucket (a folder, or a pane somewhere else). \"S3 bucket\" is cloud storage; \"S3\" is a product name and stays in English."
+    "description": "Warning toast when \"Copy share link\" runs but the cursor isn't on a file in an S3 bucket (a folder, or a pane somewhere else). \"S3 bucket\" is cloud storage; \"S3\" is a product name and stays in English.",
+    "screenshot": "toast-transfer-complete.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what Copy share link says there, for a file in an S3 bucket."
   },
   "commands.handler.shareLinkFailed": "Couldn’t make a share link. {detail}",
   "@commands.handler.shareLinkFailed": {
     "description": "Error toast when a share link to a file in an S3 bucket couldn't be made or copied. Uses a contraction (\"Couldn't\").",
     "placeholders": {
       "detail": "a sentence saying why, already in the user's language (for example that the bucket isn't connected)"
-    }
+    },
+    "screenshot": "toast-transfer-complete.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what Copy share link says there, for a file in an S3 bucket."
   },
   "commands.handler.openTerminalHere.hint": "Opened this folder in your terminal app. Want Cmdr to open a different app next time? Pick one in Settings, under Navigation & file ops.",
   "@commands.handler.openTerminalHere.hint": {

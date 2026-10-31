@@ -233,243 +233,333 @@
     "description": "Shown in the pane when the server refused the credential Cmdr offered. Factual, not accusing: the password may have changed on the server side.",
     "placeholders": {
       "username": "the account name on the server, like \"ada\""
-    }
+    },
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.needsCredentials": "This server asks for a password.",
   "@servers.refusal.needsCredentials": {
-    "description": "Shown in the pane when the server wants a credential and Cmdr has none stored. ❗ NOT a rejection: nothing was ever offered, so don’t word it as a wrong password."
+    "description": "Shown in the pane when the server wants a credential and Cmdr has none stored. ❗ NOT a rejection: nothing was ever offered, so don’t word it as a wrong password.",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.accountNotPermitted": "{username} doesn’t have access here. Try a different account.",
   "@servers.refusal.accountNotPermitted": {
     "description": "Shown in the sign-in sheet when the server accepted the account, but the place being opened (for example a network share) doesn’t let that account in. ❗ NOT a wrong password: the sign-in worked, so don’t word it as a rejected credential. \"Here\" is the place named in the sheet’s header.",
     "placeholders": {
       "username": "the account name on the server, like \"ada\""
-    }
+    },
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.authMethodUnsupported": "This server uses a sign-in method Cmdr doesn’t support yet.",
   "@servers.refusal.authMethodUnsupported": {
-    "description": "Shown in the pane when the server challenged with an authentication scheme Cmdr doesn’t speak. The secret was never sent, so nothing about it is known to be wrong. ❌ Don’t name the scheme: it means nothing to the reader."
+    "description": "Shown in the pane when the server challenged with an authentication scheme Cmdr doesn’t speak. The secret was never sent, so nothing about it is known to be wrong. ❌ Don’t name the scheme: it means nothing to the reader.",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.certificateUntrusted": "macOS doesn’t trust this server’s certificate. Add it in Keychain Access, then try again.",
   "@servers.refusal.certificateUntrusted": {
-    "description": "Shown in the pane when a WebDAV server’s TLS certificate isn’t trusted by the operating system. \"Keychain Access\" is the macOS app name, which the OS ships translated; use the name your language’s macOS uses."
+    "description": "Shown in the pane when a WebDAV server’s TLS certificate isn’t trusted by the operating system. \"Keychain Access\" is the macOS app name, which the OS ships translated; use the name your language’s macOS uses.",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.notAWebdavServer": "Nothing at this address answers WebDAV.",
   "@servers.refusal.notAWebdavServer": {
-    "description": "Shown in the pane when the address answers as a web server but doesn’t speak WebDAV. \"WebDAV\" is a protocol name; don’t translate it."
+    "description": "Shown in the pane when the address answers as a web server but doesn’t speak WebDAV. \"WebDAV\" is a protocol name; don’t translate it.",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.invalidUrl": "That doesn’t look like a server address.",
   "@servers.refusal.invalidUrl": {
-    "description": "Shown in the pane when the saved address isn’t a usable web address at all."
+    "description": "Shown in the pane when the saved address isn’t a usable web address at all.",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.timedOut": "{host} didn’t answer in time.",
   "@servers.refusal.timedOut": {
     "description": "Shown in the pane when the server didn’t finish the handshake inside Cmdr’s budget.",
     "placeholders": {
       "host": "the server’s hostname or address, like \"nas.local\""
-    }
+    },
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.signInHelperStuck": "{host} is answering, but macOS’s network sign-in helper looks stuck. To restart it, open Terminal, run killall NetAuthSysAgent, then try again. macOS starts the helper again on its own.",
   "@servers.refusal.signInHelperStuck": {
     "description": "Shown in the pane when a saved network share (SMB) waited a long time without connecting while the server itself is reachable: a macOS background helper called NetAuthSysAgent is stuck, and only restarting it helps. “Network sign-in helper” isn’t a name macOS shows anywhere: it describes a nameless background process, so describe it in your language’s words (a service or a process). Keep \"killall NetAuthSysAgent\" exactly as written, untranslated: it’s a command the person types into Terminal. \"Terminal\" is the macOS app’s name; use the name macOS shows for it in your language.",
     "placeholders": {
       "host": "the server’s hostname or address, like \"nas.local\""
-    }
+    },
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.unreachable": "Cmdr couldn’t reach {host}.",
   "@servers.refusal.unreachable": {
     "description": "Shown in the Add server form and the sign-in form when there was no route to the server at all: it’s off, the name doesn’t resolve, or the network is down. Names the address the person typed (a pane standing on a saved server says servers.paneState.unreachable instead). \"Cmdr\" is the product name.",
     "placeholders": {
       "host": "the server’s hostname or address, like \"nas.local\""
-    }
+    },
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.localNetworkHint": "If the server is on, check that Cmdr is allowed under {localNetwork}.",
   "@servers.refusal.localNetworkHint": {
     "description": "A softer second line under \"Cmdr couldn’t reach {host}.\" (\"servers.refusal.unreachable\") in the Add server form, shown only when this Mac itself refused the route to a local-network address. That is also how a stuck macOS Local Network privacy permission shows, but a server that’s switched off can look the same, so this only suggests checking. \"Cmdr\" is the product name.",
     "placeholders": {
       "localNetwork": "the OS-localized macOS \"Local Network\" permission name, as System Settings shows it under Privacy & Security, injected at runtime (it follows the Mac’s system language, which can differ from Cmdr’s, so it may arrive in English)"
-    }
+    },
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.certificateUnapproved": "Cmdr hasn’t trusted the certificate for {host} yet.",
   "@servers.refusal.certificateUnapproved": {
     "description": "Shown in the pane when a WebDAV server (often a home NAS) uses an HTTPS certificate macOS doesn’t trust, and the person hasn’t told Cmdr to trust it yet. Opening the server again shows the certificate’s fingerprint to check and trust. \"Certificate\" is the server’s HTTPS security certificate.",
     "placeholders": {
       "host": "the server’s hostname or address, like \"nas.local\""
-    }
+    },
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.hostKeyUntrusted": "Cmdr hasn’t trusted the key for {host} yet.",
   "@servers.refusal.hostKeyUntrusted": {
     "description": "Shown in the pane when an SSH server presents a host key this Mac hasn’t approved. \"Key\" is the server’s SSH host key, the fingerprint a person checks before trusting the server.",
     "placeholders": {
       "host": "the server’s hostname or address, like \"nas.local\""
-    }
+    },
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.hostKeyRevoked": "The key for {host} is marked as compromised in your SSH settings on this Mac. Cmdr won’t connect to it.",
   "@servers.refusal.hostKeyRevoked": {
     "description": "Shown in the pane when the server’s SSH host key is listed as revoked in the user’s own known_hosts file. This one is deliberately final: there is no button that can safely undo it. \"SSH\" is a protocol name; don’t translate it.",
     "placeholders": {
       "host": "the server’s hostname or address, like \"nas.local\""
-    }
+    },
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.startFolderOutsideRoot": "The start folder has to be the root folder or a folder inside it.",
   "@servers.refusal.startFolderOutsideRoot": {
-    "description": "Shown under the Start folder field of the add or edit server sheet when the typed start folder is neither the root folder nor a folder inside it. Nothing was saved or dialed. Calm and instructive. \"Start folder\" and \"root folder\" must use the same words as the field labels (servers.sheet.startFolder and servers.sheet.rootFolder)."
+    "description": "Shown under the Start folder field of the add or edit server sheet when the typed start folder is neither the root folder nor a folder inside it. Nothing was saved or dialed. Calm and instructive. \"Start folder\" and \"root folder\" must use the same words as the field labels (servers.sheet.startFolder and servers.sheet.rootFolder).",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.rootNotFound": "Cmdr can’t open this folder on {host}. Check that it exists and that your account can read it.",
   "@servers.refusal.rootNotFound": {
     "description": "Shown under the Root folder field when the user saves an edit to a server that is connected right now, and the server has no folder at that path this account can open: it is missing, it is a file, or access is refused. Nothing was saved. \"Cmdr\" is the product name.",
     "placeholders": {
       "host": "the server’s hostname or address, like \"nas.local\""
-    }
+    },
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.startFolderNotFound": "Cmdr can’t open this start folder on {host}. Check that it exists and that your account can read it.",
   "@servers.refusal.startFolderNotFound": {
     "description": "Shown under the Start folder field when the user saves an edit to a server that is connected right now, and the server has no folder at the start folder path this account can open: it is missing, it is a file, or access is refused. Nothing was saved. \"start folder\" must match the servers.sheet.startFolder label. \"Cmdr\" is the product name.",
     "placeholders": {
       "host": "the server’s hostname or address, like \"nas.local\""
-    }
+    },
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.passwordMissing": "Enter the password for {username}.",
   "@servers.refusal.passwordMissing": {
     "description": "Under the password field of the Add server sheet, when the field is empty and Cmdr has no saved password for this account, so nothing was sent to the server yet. {username} is the account name, never translated.",
     "placeholders": {
       "username": "the account name, like ada"
-    }
+    },
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.saveUnconfirmed": "{host} didn’t answer in time, so nothing was saved. Try again in a moment.",
   "@servers.refusal.saveUnconfirmed": {
     "description": "Shown above the buttons of the edit server sheet when saving needed the connected server to confirm a folder and it did not answer within a few seconds. Nothing was saved, and trying again is safe.",
     "placeholders": {
       "host": "the server’s hostname or address, like \"nas.local\""
-    }
+    },
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.secretNotStored": "Cmdr couldn’t store this password in your Keychain. Try again, or turn off “Remember in Keychain” to sign in without storing it.",
   "@servers.refusal.secretNotStored": {
-    "description": "Shown under the password field of the sign-in sheet when the user turned on “Remember in Keychain” and the system’s password store refused to keep the password: the user clicked Deny on the system prompt, the keychain is locked, or no password store is available. Cmdr hasn’t tried to sign in yet, and nothing else changed. “Remember in Keychain” must match the servers.sheet.remember checkbox label word for word, inside the quotation marks your language uses. “Keychain” is Apple’s name for the password store; use the name your language’s macOS uses."
+    "description": "Shown under the password field of the sign-in sheet when the user turned on “Remember in Keychain” and the system’s password store refused to keep the password: the user clicked Deny on the system prompt, the keychain is locked, or no password store is available. Cmdr hasn’t tried to sign in yet, and nothing else changed. “Remember in Keychain” must match the servers.sheet.remember checkbox label word for word, inside the quotation marks your language uses. “Keychain” is Apple’s name for the password store; use the name your language’s macOS uses.",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.savedSecretNotUpdated": "Cmdr saved your changes but couldn’t update the password in your Keychain. Save again to try once more.",
   "@servers.refusal.savedSecretNotUpdated": {
-    "description": "Shown under the password field of the edit server sheet when the server’s other settings were saved, but the system’s password store refused to keep or remove the password: the user clicked Deny on the system prompt, the keychain is locked, or no password store is available. ❗ The other changes DID save, so don’t word it as if nothing was saved. Pressing Save again is safe and only retries the password. “Save” is the sheet’s button (servers.sheet.save). “Keychain” is Apple’s name for the password store; use the name your language’s macOS uses."
+    "description": "Shown under the password field of the edit server sheet when the server’s other settings were saved, but the system’s password store refused to keep or remove the password: the user clicked Deny on the system prompt, the keychain is locked, or no password store is available. ❗ The other changes DID save, so don’t word it as if nothing was saved. Pressing Save again is safe and only retries the password. “Save” is the sheet’s button (servers.sheet.save). “Keychain” is Apple’s name for the password store; use the name your language’s macOS uses.",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.s3AuthenticationRejected": "That secret access key didn’t work.",
   "@servers.refusal.s3AuthenticationRejected": {
-    "description": "Shown when an S3 storage server refused the secret access key Cmdr offered for this access key ID. Factual, not accusing. “Secret access key” is the credential name S3 providers use; match the provider console’s term in your language if it has one, and use the same words as servers.sheet.secretAccessKey."
+    "description": "Shown when an S3 storage server refused the secret access key Cmdr offered for this access key ID. Factual, not accusing. “Secret access key” is the credential name S3 providers use; match the provider console’s term in your language if it has one, and use the same words as servers.sheet.secretAccessKey.",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.s3NeedsCredentials": "This account asks for a secret access key.",
   "@servers.refusal.s3NeedsCredentials": {
-    "description": "Shown when an S3 account wants its secret access key and Cmdr has none stored. ❗ NOT a rejection: nothing was ever offered, so don’t word it as a wrong key. Same term as servers.sheet.secretAccessKey."
+    "description": "Shown when an S3 account wants its secret access key and Cmdr has none stored. ❗ NOT a rejection: nothing was ever offered, so don’t word it as a wrong key. Same term as servers.sheet.secretAccessKey.",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.s3SecretMissing": "Enter the secret access key.",
   "@servers.refusal.s3SecretMissing": {
-    "description": "Under the secret access key field of the Add server sheet, when the field is empty and Cmdr has no stored key for this account, so nothing was sent yet. Same term as servers.sheet.secretAccessKey."
+    "description": "Under the secret access key field of the Add server sheet, when the field is empty and Cmdr has no stored key for this account, so nothing was sent yet. Same term as servers.sheet.secretAccessKey.",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.s3SecretNotStored": "Cmdr couldn’t store this secret access key in your Keychain. Try again, or turn off “Remember in Keychain” to sign in without storing it.",
   "@servers.refusal.s3SecretNotStored": {
-    "description": "The S3 twin of servers.refusal.secretNotStored: the user turned on “Remember in Keychain” and the system’s password store refused to keep the key (Deny on the system prompt, a locked keychain, or no store). Nothing else changed. “Remember in Keychain” must match the servers.sheet.remember label word for word. “Keychain” is Apple’s name; use the name your language’s macOS uses."
+    "description": "The S3 twin of servers.refusal.secretNotStored: the user turned on “Remember in Keychain” and the system’s password store refused to keep the key (Deny on the system prompt, a locked keychain, or no store). Nothing else changed. “Remember in Keychain” must match the servers.sheet.remember label word for word. “Keychain” is Apple’s name; use the name your language’s macOS uses.",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.s3SavedSecretNotUpdated": "Cmdr saved your changes but couldn’t update the secret access key in your Keychain. Save again to try once more.",
   "@servers.refusal.s3SavedSecretNotUpdated": {
-    "description": "The S3 twin of servers.refusal.savedSecretNotUpdated: the edit DID save, and only writing the secret access key to the system’s password store didn’t. Pressing Save again is safe. “Save” is servers.sheet.save. “Keychain” is Apple’s name; use the name your language’s macOS uses."
+    "description": "The S3 twin of servers.refusal.savedSecretNotUpdated: the edit DID save, and only writing the secret access key to the system’s password store didn’t. Pressing Save again is safe. “Save” is servers.sheet.save. “Keychain” is Apple’s name; use the name your language’s macOS uses.",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.accessDenied": "This key can’t reach this bucket. Check the bucket name and the secret access key, and that the key may read the bucket.",
   "@servers.refusal.accessDenied": {
-    "description": "Under the secret access key field when an S3 bucket refused the key. The server can’t say whether the bucket name is mistyped (Cloudflare R2 answers this way for a bucket that doesn’t exist), the secret is wrong, or the key has no rights to this bucket, so the sentence asks about all three. “Key” is the S3 access key; “bucket” is the S3 term for a top-level storage container; keep the provider console’s terms."
+    "description": "Under the secret access key field when an S3 bucket refused the key. The server can’t say whether the bucket name is mistyped (Cloudflare R2 answers this way for a bucket that doesn’t exist), the secret is wrong, or the key has no rights to this bucket, so the sentence asks about all three. “Key” is the S3 access key; “bucket” is the S3 term for a top-level storage container; keep the provider console’s terms.",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.bucketListRefused": "This key can’t list the buckets on this account. Type a bucket name to open that bucket, or check the secret access key.",
   "@servers.refusal.bucketListRefused": {
-    "description": "Under the Bucket field when the user left it empty (which opens the whole account and lists its buckets) and the key isn’t allowed to list buckets. On some servers a wrong secret answers the same way, so it mentions both. “Bucket” is the S3 term; keep the provider console’s term."
+    "description": "Under the Bucket field when the user left it empty (which opens the whole account and lists its buckets) and the key isn’t allowed to list buckets. On some servers a wrong secret answers the same way, so it mentions both. “Bucket” is the S3 term; keep the provider console’s term.",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.bucketNotFound": "There’s no bucket by that name at {host}.",
   "@servers.refusal.bucketNotFound": {
     "description": "Under the Bucket field when the S3 server has no bucket with the typed name. “Bucket” is the S3 term; keep the provider console’s term.",
     "placeholders": {
       "host": "the storage server’s host name, like \"s3.eu-west-1.amazonaws.com\""
-    }
+    },
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.regionMismatch": "This bucket is in a different region. Pick its region and try again.",
   "@servers.refusal.regionMismatch": {
-    "description": "Under the Region field when the S3 bucket lives in another region than the one chosen, and the server didn’t say which. “Region” must match servers.sheet.s3Region."
+    "description": "Under the Region field when the S3 bucket lives in another region than the one chosen, and the server didn’t say which. “Region” must match servers.sheet.s3Region.",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.regionMismatchNamed": "This bucket is in {region}. Pick that region and try again.",
   "@servers.refusal.regionMismatchNamed": {
     "description": "Under the Region field when the S3 bucket lives in another region than the one chosen. “Region” matches servers.sheet.s3Region.",
     "placeholders": {
       "region": "a region code, like \"us-east-2\"; never translated"
-    }
+    },
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.clockSkewed": "This Mac’s clock is off by more than 15 minutes, so the server won’t accept Cmdr’s requests. Set the date and time automatically in System Settings, then try again.",
   "@servers.refusal.clockSkewed": {
-    "description": "Shown when an S3 server refused the request because this Mac’s clock is too far off: S3 signatures carry a timestamp. “System Settings” is the macOS app name; use the name your language’s macOS uses."
+    "description": "Shown when an S3 server refused the request because this Mac’s clock is too far off: S3 signatures carry a timestamp. “System Settings” is the macOS app name; use the name your language’s macOS uses.",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.notAnS3Endpoint": "Nothing at this address answers as S3 storage.",
   "@servers.refusal.notAnS3Endpoint": {
-    "description": "Under the endpoint field when the address answers as a web server but not as S3-compatible storage. “S3” is a protocol name; don’t translate it."
+    "description": "Under the endpoint field when the address answers as a web server but not as S3-compatible storage. “S3” is a protocol name; don’t translate it.",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.exportNotFound": "{host} has no export at that path. Pick one from the list, or check the spelling.",
   "@servers.refusal.exportNotFound": {
     "description": "Under the Export field when the NFS server has no export (shared folder) at the path the user picked or typed. “Export” is the NFS term for a folder a server shares; use the word your language’s NAS apps use.",
     "placeholders": {
       "host": "the NFS server’s hostname or address, like \"nas.local\""
-    }
+    },
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.exportRefused": "{host} doesn’t let this Mac open that export. Check which computers the export allows in the server’s NFS settings.",
   "@servers.refusal.exportRefused": {
     "description": "Under the Export field when the NFS server refused this Mac the export: its list of allowed computers or its rules leave this Mac out. The fix is on the server, in its NFS sharing settings.",
     "placeholders": {
       "host": "the NFS server’s hostname or address, like \"nas.local\""
-    }
+    },
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.reservedPortRequired": "{host} only accepts connections from a privileged port, which Cmdr can’t open here. Turn on the export’s “insecure” option on the server (some NAS apps call it “Allow connections from non-privileged ports”), then try again.",
   "@servers.refusal.reservedPortRequired": {
     "description": "Under the Export field when the NFS export only accepts requests from a privileged network port (below 1024) and Cmdr couldn’t use one. “insecure” is the literal name of the NFS export option, keep it in English inside the quotes; the second quoted name is how some NAS apps label the same switch, translate it the way those apps do, and keep it in English if no NAS app you can find has your language. “Cmdr” is the product name.",
     "placeholders": {
       "host": "the NFS server’s hostname or address, like \"nas.local\""
-    }
+    },
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.noNfsV3": "{host} doesn’t offer NFS version 3, the version Cmdr speaks.",
   "@servers.refusal.noNfsV3": {
     "description": "Shown when the server answers but doesn’t speak NFS version 3, the only NFS version Cmdr supports: under the address in the Add server form, and under the Export field while the form asks the server for its exports. “NFS” is a protocol name; keep it as-is. “Cmdr” is the product name.",
     "placeholders": {
       "host": "the NFS server’s hostname or address, like \"nas.local\""
-    }
+    },
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.s3FieldMalformed": "Use only a–z, 0–9, and dashes here.",
   "@servers.refusal.s3FieldMalformed": {
-    "description": "Under the Region, Location, or Account ID field of the S3 form, before anything was sent, when the typed value holds other characters. Only lowercase Latin letters a to z, the digits 0 to 9, and dashes pass, so keep the two ranges as written. Short and instructive."
+    "description": "Under the Region, Location, or Account ID field of the S3 form, before anything was sent, when the typed value holds other characters. Only lowercase Latin letters a to z, the digits 0 to 9, and dashes pass, so keep the two ranges as written. Short and instructive.",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.endpointMalformed": "Enter the endpoint as http:// or https:// plus a host name, like https://s3.example.com.",
   "@servers.refusal.endpointMalformed": {
-    "description": "Under the Endpoint field of the S3 form (“Other S3-compatible”), before anything was sent, when the typed value isn’t a web address made of a scheme, a host, and an optional port. Keep http://, https://, and the example address as they are."
+    "description": "Under the Endpoint field of the S3 form (“Other S3-compatible”), before anything was sent, when the typed value isn’t a web address made of a scheme, a host, and an optional port. Keep http://, https://, and the example address as they are.",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.addressTaken": "You already saved this address as {name}. Open that one instead, or forget it first to move this server here.",
   "@servers.refusal.addressTaken": {
     "description": "Under the Address field of the edit server sheet, when the user changed a saved server's address to one another saved server already uses. Nothing was saved. The user can either use the other saved server, or remove it and then save this edit again. “Forget” is the exact word on the menu item that removes a saved server (“Forget server”), so use the same word your translation uses there.",
     "placeholders": {
       "name": "what the OTHER saved server is called in the Servers list, like \"Naspolya\" or \"ada@nas.local\""
-    }
+    },
+    "screenshot": "server-sign-in-edit.png",
+    "screenshotNote": "The server edit sheet, pictured here. Your string is the one line that replaces the help under its address field when another saved server already has that address."
   },
   "servers.refusal.secretNotMoved": "Cmdr couldn’t take the saved password along to the new address, so nothing changed. Check that your Keychain is unlocked, then save again.",
   "@servers.refusal.secretNotMoved": {
-    "description": "Under the password field of the edit server sheet, when the user changed a saved server's address and Cmdr couldn't copy its stored password to the new address (the user clicked Deny on the system prompt, the keychain is locked, or no password store is available). ❗ NOTHING was saved, not even the other changes, so don't word it as if anything was. Saving again is safe. “Keychain” is Apple’s name for the password store; use the name your language’s macOS uses."
+    "description": "Under the password field of the edit server sheet, when the user changed a saved server's address and Cmdr couldn't copy its stored password to the new address (the user clicked Deny on the system prompt, the keychain is locked, or no password store is available). ❗ NOTHING was saved, not even the other changes, so don't word it as if anything was. Saving again is safe. “Keychain” is Apple’s name for the password store; use the name your language’s macOS uses.",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.s3SecretNotMoved": "Cmdr couldn’t take the saved secret access key along to the new endpoint, so nothing changed. Check that your Keychain is unlocked, then save again.",
   "@servers.refusal.s3SecretNotMoved": {
-    "description": "The S3 twin of servers.refusal.secretNotMoved: under the secret access key field of the edit sheet for an S3 account, when the user changed the account's endpoint and Cmdr couldn't copy its stored secret access key to the new endpoint. ❗ NOTHING was saved. Saving again is safe. “Secret access key” is the S3 term; use the same words as servers.sheet.secretAccessKey. “Keychain” is Apple’s name for the password store; use the name your language’s macOS uses."
+    "description": "The S3 twin of servers.refusal.secretNotMoved: under the secret access key field of the edit sheet for an S3 account, when the user changed the account's endpoint and Cmdr couldn't copy its stored secret access key to the new endpoint. ❗ NOTHING was saved. Saving again is safe. “Secret access key” is the S3 term; use the same words as servers.sheet.secretAccessKey. “Keychain” is Apple’s name for the password store; use the name your language’s macOS uses.",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.accountChanged": "A different account is a different server, so nothing was saved. Add it as a new server instead.",
   "@servers.refusal.accountChanged": {
-    "description": "Above the buttons of the edit server sheet, when a save asked to change which account or which protocol a saved server uses. The sheet doesn't let the user type either, so this is rare. Nothing was saved. “Add” refers to adding a server from the Servers list."
+    "description": "Above the buttons of the edit server sheet, when a save asked to change which account or which protocol a saved server uses. The sheet doesn't let the user type either, so this is rare. Nothing was saved. “Add” refers to adding a server from the Servers list.",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.operationRunning": "Cmdr is still working with files on this server, so nothing was saved. Let that finish or cancel it, then save the new address.",
   "@servers.refusal.operationRunning": {
-    "description": "Above the buttons of the edit server sheet, when the user changed a saved server's address while a copy, move, or delete on that server is still running, paused, or waiting its turn. Moving the server would cut that work off, so nothing was saved. The user can let it finish, or cancel it from its progress window, then press Save again. Keep the opening the same as fileExplorer.navigation.disconnectBusyTooltip (“Cmdr is still working with files on this server”), which says the same thing about Disconnect."
+    "description": "Above the buttons of the edit server sheet, when the user changed a saved server's address while a copy, move, or delete on that server is still running, paused, or waiting its turn. Moving the server would cut that work off, so nothing was saved. The user can let it finish, or cancel it from its progress window, then press Save again. Keep the opening the same as fileExplorer.navigation.disconnectBusyTooltip (“Cmdr is still working with files on this server”), which says the same thing about Disconnect.",
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.shareMounted": "The share {name} is still mounted from the old address. Eject it, then save again.",
   "@servers.refusal.shareMounted": {
     "description": "Under the Address field of the edit server sheet, when the user changed a saved SMB server's address while one of its shares (shared folders) is still mounted (connected as a disk) from the OLD address. Cmdr won't disconnect it on its own, since other apps may be using it, so nothing was saved. The user ejects the share (the same “Eject” as on the sidebar and in Finder), then presses Save again.",
     "placeholders": {
       "name": "the share's name, like \"Photos\" or \"public\""
-    }
+    },
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.refusal.shareEjectRefused": "Cmdr couldn’t eject {name}, so nothing was saved. {reason}",
   "@servers.refusal.shareEjectRefused": {
@@ -477,7 +567,9 @@
     "placeholders": {
       "name": "the share's name, like \"Photos\" or \"public\"",
       "reason": "one or two full sentences from errors.eject.*, saying why the eject didn't happen and what to do"
-    }
+    },
+    "screenshot": "server-sign-in-add.png",
+    "screenshotNote": "The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down."
   },
   "servers.sheet.addTitle": "Add server",
   "@servers.sheet.addTitle": {
@@ -714,7 +806,9 @@
   },
   "servers.sheet.s3EndpointMoveHelp": "Did the server move? Type its new endpoint. Every bucket under this key comes along with its favorites and open tabs, and the saved secret access key comes too.",
   "@servers.sheet.s3EndpointMoveHelp": {
-    "description": "One line under the Endpoint field when the user is EDITING a saved S3 account on a self-hosted (“Other S3-compatible”) server, saying they can type the server's new endpoint (for example after it got a new IP address) and that every bucket saved under the same access key moves with it, losing nothing: favorites pointing into the buckets and tabs open on them come with each bucket, and the stored secret access key, which belongs to the account rather than to any one bucket, comes too. “Secret access key” is the S3 term; use the same words as servers.sheet.secretAccessKey."
+    "description": "One line under the Endpoint field when the user is EDITING a saved S3 account on a self-hosted (“Other S3-compatible”) server, saying they can type the server's new endpoint (for example after it got a new IP address) and that every bucket saved under the same access key moves with it, losing nothing: favorites pointing into the buckets and tabs open on them come with each bucket, and the stored secret access key, which belongs to the account rather than to any one bucket, comes too. “Secret access key” is the S3 term; use the same words as servers.sheet.secretAccessKey.",
+    "screenshot": "server-sign-in-edit.png",
+    "screenshotNote": "The server edit sheet, pictured here for another kind of server. Your string is the help under its address field when the server is an S3 bucket, saying what changing the endpoint does."
   },
   "servers.sheet.addressMoveHelp": "Did the server move? Type its new address. Its favorites, open tabs, and saved password come along.",
   "@servers.sheet.addressMoveHelp": {
@@ -835,7 +929,9 @@
   },
   "servers.sheet.s3GcsKeyHelp": "Sign in with an HMAC key from the Interoperability tab of your Cloud Storage settings.",
   "@servers.sheet.s3GcsKeyHelp": {
-    "description": "One line under the S3 Provider dropdown when Google Cloud Storage is picked: the access key ID and secret it asks for are an HMAC key, made in the Google Cloud console under Cloud Storage › Settings › Interoperability. “HMAC”, “Interoperability”, and “Cloud Storage” are Google’s own terms: keep “HMAC” as-is, and use the console’s own wording in your language for the tab and the settings if it has one."
+    "description": "One line under the S3 Provider dropdown when Google Cloud Storage is picked: the access key ID and secret it asks for are an HMAC key, made in the Google Cloud console under Cloud Storage › Settings › Interoperability. “HMAC”, “Interoperability”, and “Cloud Storage” are Google’s own terms: keep “HMAC” as-is, and use the console’s own wording in your language for the tab and the settings if it has one.",
+    "screenshot": "server-sign-in-add-s3.png",
+    "screenshotNote": "The server sheet for S3, pictured here. Your string belongs to a provider this shot doesn’t pick: a custom endpoint, an account ID, or the help under one of those fields."
   },
   "servers.sheet.s3ProviderOther": "Other S3-compatible",
   "@servers.sheet.s3ProviderOther": {
@@ -849,31 +945,45 @@
   },
   "servers.sheet.s3RegionOptionalPlaceholder": "Optional. Leave empty to use us-east-1",
   "@servers.sheet.s3RegionOptionalPlaceholder": {
-    "description": "Placeholder inside the Region field for “Other S3-compatible” storage, where the region is optional. Keep us-east-1 as-is: it’s a region code. Short: it has to fit inside a text field."
+    "description": "Placeholder inside the Region field for “Other S3-compatible” storage, where the region is optional. Keep us-east-1 as-is: it’s a region code. Short: it has to fit inside a text field.",
+    "screenshot": "server-sign-in-add-s3.png",
+    "screenshotNote": "The server sheet for S3, pictured here. Your string belongs to a provider this shot doesn’t pick: a custom endpoint, an account ID, or the help under one of those fields."
   },
   "servers.sheet.s3AccountId": "Account ID",
   "@servers.sheet.s3AccountId": {
-    "description": "Label of the field in the S3 form, Cloudflare R2 selected, where the user types their Cloudflare account ID. Use the term Cloudflare’s dashboard uses in your language."
+    "description": "Label of the field in the S3 form, Cloudflare R2 selected, where the user types their Cloudflare account ID. Use the term Cloudflare’s dashboard uses in your language.",
+    "screenshot": "server-sign-in-add-s3.png",
+    "screenshotNote": "The server sheet for S3, pictured here. Your string belongs to a provider this shot doesn’t pick: a custom endpoint, an account ID, or the help under one of those fields."
   },
   "servers.sheet.s3AccountIdHelp": "The account ID on your Cloudflare R2 overview page.",
   "@servers.sheet.s3AccountIdHelp": {
-    "description": "One line under the Account ID field (Cloudflare R2 selected) saying where to find it. “Cloudflare R2” is a product name; keep it as-is."
+    "description": "One line under the Account ID field (Cloudflare R2 selected) saying where to find it. “Cloudflare R2” is a product name; keep it as-is.",
+    "screenshot": "server-sign-in-add-s3.png",
+    "screenshotNote": "The server sheet for S3, pictured here. Your string belongs to a provider this shot doesn’t pick: a custom endpoint, an account ID, or the help under one of those fields."
   },
   "servers.sheet.s3Location": "Location",
   "@servers.sheet.s3Location": {
-    "description": "Label of the dropdown in the S3 form, Hetzner Object Storage selected, that picks the data center location (fsn1, nbg1, hel1). One word, NOUN."
+    "description": "Label of the dropdown in the S3 form, Hetzner Object Storage selected, that picks the data center location (fsn1, nbg1, hel1). One word, NOUN.",
+    "screenshot": "server-sign-in-add-s3.png",
+    "screenshotNote": "The server sheet for S3, pictured here. Your string belongs to a provider this shot doesn’t pick: a custom endpoint, an account ID, or the help under one of those fields."
   },
   "servers.sheet.s3Endpoint": "Endpoint",
   "@servers.sheet.s3Endpoint": {
-    "description": "Label of the field in the S3 form, “Other S3-compatible” selected, where the user types the storage server’s web address, like https://s3.example.com. One word, NOUN; use the term S3 tools use in your language."
+    "description": "Label of the field in the S3 form, “Other S3-compatible” selected, where the user types the storage server’s web address, like https://s3.example.com. One word, NOUN; use the term S3 tools use in your language.",
+    "screenshot": "server-sign-in-add-s3.png",
+    "screenshotNote": "The server sheet for S3, pictured here. Your string belongs to a provider this shot doesn’t pick: a custom endpoint, an account ID, or the help under one of those fields."
   },
   "servers.sheet.s3PathStyle": "Use path-style addressing",
   "@servers.sheet.s3PathStyle": {
-    "description": "Checkbox in the S3 form, “Other S3-compatible” selected, on by default: the bucket name goes in the web address’s path rather than in the host name. “Path-style” is the S3 term for it; keep it recognizable. Sentence case, no final period."
+    "description": "Checkbox in the S3 form, “Other S3-compatible” selected, on by default: the bucket name goes in the web address’s path rather than in the host name. “Path-style” is the S3 term for it; keep it recognizable. Sentence case, no final period.",
+    "screenshot": "server-sign-in-add-s3.png",
+    "screenshotNote": "The server sheet for S3, pictured here. Your string belongs to a provider this shot doesn’t pick: a custom endpoint, an account ID, or the help under one of those fields."
   },
   "servers.sheet.s3PathStyleHelp": "Most self-hosted servers, like MinIO and Garage, need this.",
   "@servers.sheet.s3PathStyleHelp": {
-    "description": "One line under the “Use path-style addressing” checkbox. MinIO and Garage are product names; keep them as-is."
+    "description": "One line under the “Use path-style addressing” checkbox. MinIO and Garage are product names; keep them as-is.",
+    "screenshot": "server-sign-in-add-s3.png",
+    "screenshotNote": "The server sheet for S3, pictured here. Your string belongs to a provider this shot doesn’t pick: a custom endpoint, an account ID, or the help under one of those fields."
   },
   "servers.sheet.s3Bucket": "Bucket",
   "@servers.sheet.s3Bucket": {
@@ -890,7 +1000,9 @@
     "description": "Button under the Region field when the bucket turned out to live in another region and the server said which. It switches the Region field to that region and tries again. VERB phrase, imperative.",
     "placeholders": {
       "region": "a region code, like \"us-east-2\"; never translated"
-    }
+    },
+    "screenshot": "server-sign-in-add-s3.png",
+    "screenshotNote": "The server sheet for S3, pictured here. Your string belongs to a provider this shot doesn’t pick: a custom endpoint, an account ID, or the help under one of those fields."
   },
   "servers.sheet.accessKeyId": "Access key ID",
   "@servers.sheet.accessKeyId": {

@@ -218,6 +218,12 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
       'launched from the operation history, rather than a copy or a move.',
   },
   {
+    // Compressing to a remote place needs a server, so the phases read off the same dialog. The note names them, since no shot shows them.
+    prefix: 'fileOperations.transferProgress.stage',
+    screenshot: 'transfer-dialog.png',
+    note: 'The copy/move progress dialog, pictured here on a plain copy. Your string is the line above its progress bar during a compress: Compressing, then Finishing compression, then Transferring the archive, then Finishing the transfer, each with "Step 1 of 2" or "Step 2 of 2" in front when the archive goes to a remote place.',
+  },
+  {
     // The transfer progress dialog's other phases (scan, pause, queue, flush).
     prefix: 'fileOperations.transferProgress.',
     screenshot: 'transfer-dialog.png',
@@ -471,5 +477,124 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
     note:
       'Settings > Behavior > Notifications, pictured here. Your string is the hint at the top of this section that appears ' +
       'only while Cmdr can’t watch the Downloads folder for lack of Full Disk Access, with a link that opens System Settings.',
+  },
+  {
+    // The tool lines, turn stats, and thread rows no surface reaches (a phone, a server, a state only a real provider gets to) read off the shots of their siblings.
+    prefix: 'askCmdr.tool.',
+    screenshot: 'ask-cmdr-tools.png',
+    note: 'An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place.',
+  },
+  {
+    prefix: 'askCmdr.toolGroup.',
+    screenshot: 'ask-cmdr-tools.png',
+    note: 'The Ask Cmdr tool group header pictured here, which sums up the tool lines under it. This shows other kinds of tools.',
+  },
+  {
+    prefix: 'askCmdr.turnStats.',
+    screenshot: 'ask-cmdr-tools.png',
+    note: 'The quiet stats line at the end of an Ask Cmdr reply, pictured here. Your string is another form of it.',
+  },
+  {
+    prefix: 'askCmdr.sessions.',
+    screenshot: 'ask-cmdr-sessions.png',
+    note: 'The Ask Cmdr chats panel, pictured here. Your string belongs to another state of it: nothing to list, an archived chat, or a row being renamed.',
+  },
+  {
+    prefix: 'askCmdr.renameReview.',
+    screenshot: 'bulk-rename-review-all-allowed.png',
+    note: 'The rename review, pictured here. Your string is one of its states: checking the names, a check that didn’t finish, or a note about a name it couldn’t keep.',
+  },
+  {
+    prefix: 'askCmdr.renameUndo.',
+    screenshot: 'ask-cmdr-chat.png',
+    note: 'A line in the Ask Cmdr thread, under a reply like the one pictured here, saying how a rename went and offering to undo it. This screenshot doesn’t show that line.',
+  },
+  {
+    prefix: 'askCmdr.error.',
+    screenshot: 'ask-cmdr-chat.png',
+    note: 'A line in the Ask Cmdr thread, under a message like the one pictured here, saying why the assistant couldn’t answer. This screenshot doesn’t show that line.',
+  },
+  {
+    prefix: 'askCmdr.decision.',
+    screenshot: 'ask-cmdr-chat.png',
+    note: 'A line in the Ask Cmdr thread, between messages like the ones pictured here, recording how someone answered a suggestion. This screenshot doesn’t show that line.',
+  },
+  {
+    prefix: 'askCmdr.wakeDigest.',
+    screenshot: 'ask-cmdr-chat.png',
+    note: 'The fold at the top of a thread the assistant started by itself, above messages like the ones pictured here: what changed in which folders. This screenshot doesn’t show that fold.',
+  },
+  {
+    prefix: 'askCmdr.providerNotice.',
+    screenshot: 'ask-cmdr-empty.png',
+    note: 'A yellow notice at the top of the Ask Cmdr panel pictured here, shown while no AI provider is ready, with a link to the settings. This screenshot doesn’t show it.',
+  },
+  {
+    // Toasts whose other outcomes share a corner with one the run has.
+    prefix: 'fileExplorer.compareDirectories.',
+    screenshot: 'toast-transfer-complete.png',
+    note: 'This shows a different toast in the same corner of the window; your string is what Compare directories says there when it finishes or can’t.',
+  },
+  {
+    prefix: 'fileExplorer.folderSizes.',
+    screenshot: 'toast-transfer-complete.png',
+    note: 'This shows a different toast in the same corner of the window; your string is what Calculate folder sizes says there when something got in its way.',
+  },
+  {
+    // Needs a live SMB connection to upgrade, so no surface reaches it.
+    prefix: 'fileExplorer.pane.directConnectionBlockedByThisMacToast',
+    screenshot: 'toast-transfer-complete.png',
+    note: 'This shows a different toast in the same corner of the window; your string is what Connect directly says there when something on this Mac refused the connection, with a button that opens System Settings.',
+  },
+  {
+    prefix: 'commands.handler.shareLink',
+    screenshot: 'toast-transfer-complete.png',
+    note: 'This shows a different toast in the same corner of the window; your string is what Copy share link says there, for a file in an S3 bucket.',
+  },
+  {
+    prefix: 'fileExplorer.navigation.favoriteUnreachable.',
+    screenshot: 'toast-favorite.png',
+    note: 'This shows a different toast in the same corner of the window; your string is what picking a favorite says there when its place can’t be reached, with the one button that helps.',
+  },
+  {
+    prefix: 'fileExplorer.navigation.favoriteStatus.',
+    screenshot: 'favorites-menu.png',
+    note: 'The favorites menu, pictured here. Your string is the line under a favorite’s path in its tooltip, for a row that can’t open right away.',
+  },
+  {
+    prefix: 'fileExplorer.listingStalled.',
+    screenshot: 'error-message-example.png',
+    note: 'This shows a different screen in the same place: your string is on the screen a file pane shows while a folder’s volume has gone quiet mid-read, with a spinner, Try again, and Go back.',
+  },
+  {
+    prefix: 'servers.refusal.addressTaken',
+    screenshot: 'server-sign-in-edit.png',
+    note: 'The server edit sheet, pictured here. Your string is the one line that replaces the help under its address field when another saved server already has that address.',
+  },
+  {
+    prefix: 'servers.refusal.',
+    screenshot: 'server-sign-in-add.png',
+    note: 'The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down.',
+  },
+  {
+    // Edit mode reads the real saved-server store, so a gallery row can't show a saved bucket's form.
+    prefix: 'servers.sheet.s3EndpointMoveHelp',
+    screenshot: 'server-sign-in-edit.png',
+    note: 'The server edit sheet, pictured here for another kind of server. Your string is the help under its address field when the server is an S3 bucket, saying what changing the endpoint does.',
+  },
+  {
+    prefix: 'servers.sheet.s3',
+    screenshot: 'server-sign-in-add-s3.png',
+    note: 'The server sheet for S3, pictured here. Your string belongs to a provider this shot doesn’t pick: a custom endpoint, an account ID, or the help under one of those fields.',
+  },
+  {
+    prefix: 'settings.managed.',
+    screenshot: 'settings-updates.png',
+    note: 'Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr.',
+  },
+  {
+    prefix: 'indexing.overall.',
+    screenshot: 'indexing-checklist.png',
+    note: 'The drive-indexing checklist, pictured here. Your string is its Overall line while it’s still working out how long is left.',
   },
 ]

@@ -1184,28 +1184,28 @@
   "@fileOperations.transferProgress.stageCompressing": {
     "description": "Phase label for a compression operation while Cmdr reads the selected source files and writes their compressed contents into the zip. It appears in the progress dialog, operation queue row, and background operation chip. A determinate source-byte progress bar is visible in this phase. Short present-continuous action, with no trailing punctuation.",
     "screenshot": "transfer-dialog.png",
-    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+    "screenshotNote": "The copy/move progress dialog, pictured here on a plain copy. Your string is the line above its progress bar during a compress: Compressing, then Finishing compression, then Transferring the archive, then Finishing the transfer, each with \"Step 1 of 2\" or \"Step 2 of 2\" in front when the archive goes to a remote place."
   },
 
   "fileOperations.transferProgress.stageFinishingCompression": "Finishing compression…",
   "@fileOperations.transferProgress.stageFinishingCompression": {
     "description": "Indeterminate phase label shown after every selected source byte has been compressed, while Cmdr finishes the zip: it closes the archive, checks it, and puts it in place. When the zip streams straight to a network share or phone, that includes closing the remote file, checking it on the remote, and putting it in place there. It appears beside a spinner, never a percentage or ETA, in the progress dialog, operation queue row, and background operation chip. Keep the trailing ellipsis.",
     "screenshot": "transfer-dialog.png",
-    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+    "screenshotNote": "The copy/move progress dialog, pictured here on a plain copy. Your string is the line above its progress bar during a compress: Compressing, then Finishing compression, then Transferring the archive, then Finishing the transfer, each with \"Step 1 of 2\" or \"Step 2 of 2\" in front when the archive goes to a remote place."
   },
 
   "fileOperations.transferProgress.stageTransferringArchive": "Transferring archive",
   "@fileOperations.transferProgress.stageTransferringArchive": {
     "description": "Phase label while Cmdr uploads a finished zip to a remote destination such as a network share or phone: a newly compressed archive, or an existing remote archive after files were added to, moved into, or deleted from it. It appears in the progress dialog, operation queue row, and background operation chip. A determinate byte progress bar over the zip's size is visible in this phase. Short present-continuous action, with no trailing punctuation.",
     "screenshot": "transfer-dialog.png",
-    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+    "screenshotNote": "The copy/move progress dialog, pictured here on a plain copy. Your string is the line above its progress bar during a compress: Compressing, then Finishing compression, then Transferring the archive, then Finishing the transfer, each with \"Step 1 of 2\" or \"Step 2 of 2\" in front when the archive goes to a remote place."
   },
 
   "fileOperations.transferProgress.stageFinishingTransfer": "Finishing transfer…",
   "@fileOperations.transferProgress.stageFinishingTransfer": {
     "description": "Indeterminate phase label shown after every byte of a zip has been uploaded to a remote destination (a newly compressed archive, or an existing remote archive Cmdr just edited), while Cmdr closes the upload, checks it, and puts it in place. It appears beside a spinner, never a percentage or ETA, in the progress dialog, operation queue row, and background operation chip. Keep the trailing ellipsis.",
     "screenshot": "transfer-dialog.png",
-    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+    "screenshotNote": "The copy/move progress dialog, pictured here on a plain copy. Your string is the line above its progress bar during a compress: Compressing, then Finishing compression, then Transferring the archive, then Finishing the transfer, each with \"Step 1 of 2\" or \"Step 2 of 2\" in front when the archive goes to a remote place."
   },
 
   "fileOperations.transferProgress.stageCompressingStep": "Step {step, number} of {total, number}: Compressing",
@@ -1216,7 +1216,7 @@
       "total": "the number of steps (2)"
     },
     "screenshot": "transfer-dialog.png",
-    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+    "screenshotNote": "The copy/move progress dialog, pictured here on a plain copy. Your string is the line above its progress bar during a compress: Compressing, then Finishing compression, then Transferring the archive, then Finishing the transfer, each with \"Step 1 of 2\" or \"Step 2 of 2\" in front when the archive goes to a remote place."
   },
 
   "fileOperations.transferProgress.stageFinishingCompressionStep": "Step {step, number} of {total, number}: Finishing compression…",
@@ -1227,7 +1227,7 @@
       "total": "the number of steps (2)"
     },
     "screenshot": "transfer-dialog.png",
-    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+    "screenshotNote": "The copy/move progress dialog, pictured here on a plain copy. Your string is the line above its progress bar during a compress: Compressing, then Finishing compression, then Transferring the archive, then Finishing the transfer, each with \"Step 1 of 2\" or \"Step 2 of 2\" in front when the archive goes to a remote place."
   },
 
   "fileOperations.transferProgress.stageTransferringArchiveStep": "Step {step, number} of {total, number}: Transferring archive",
@@ -1238,7 +1238,7 @@
       "total": "the number of steps (2)"
     },
     "screenshot": "transfer-dialog.png",
-    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+    "screenshotNote": "The copy/move progress dialog, pictured here on a plain copy. Your string is the line above its progress bar during a compress: Compressing, then Finishing compression, then Transferring the archive, then Finishing the transfer, each with \"Step 1 of 2\" or \"Step 2 of 2\" in front when the archive goes to a remote place."
   },
 
   "fileOperations.transferProgress.stageFinishingTransferStep": "Step {step, number} of {total, number}: Finishing transfer…",
@@ -1249,7 +1249,7 @@
       "total": "the number of steps (2)"
     },
     "screenshot": "transfer-dialog.png",
-    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+    "screenshotNote": "The copy/move progress dialog, pictured here on a plain copy. Your string is the line above its progress bar during a compress: Compressing, then Finishing compression, then Transferring the archive, then Finishing the transfer, each with \"Step 1 of 2\" or \"Step 2 of 2\" in front when the archive goes to a remote place."
   },
 
   "fileOperations.transferProgress.warningFileOverFolder": "The target exists and is a <strong>folder</strong>. You’re about to replace it with a <strong>file</strong> by the same name. Everything inside the folder would be gone. What to do?",

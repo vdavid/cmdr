@@ -3196,89 +3196,125 @@
   },
   "settings.managed.rowNote": "Your organization manages this setting.",
   "@settings.managed.rowNote": {
-    "description": "A note under a setting the person can't change because their organization's IT department set it through device management (MDM, a configuration profile). Shown with an info icon under a greyed-out switch. Plain and calm, not alarming; 'organization' means the employer or school that manages the Mac."
+    "description": "A note under a setting the person can't change because their organization's IT department set it through device management (MDM, a configuration profile). Shown with an info icon under a greyed-out switch. Plain and calm, not alarming; 'organization' means the employer or school that manages the Mac.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
   },
   "settings.managed.sectionNote": "Your organization manages some of these settings.",
   "@settings.managed.sectionNote": {
-    "description": "A line at the top of a settings page (for example Updates & privacy, or AI) when the person's organization locked one or more of the settings below it through device management (MDM). Screen-reader users hear it before reaching the disabled controls. 'Organization' means the employer or school that manages the Mac."
+    "description": "A line at the top of a settings page (for example Updates & privacy, or AI) when the person's organization locked one or more of the settings below it through device management (MDM). Screen-reader users hear it before reaching the disabled controls. 'Organization' means the employer or school that manages the Mac.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
   },
   "settings.managed.summary.title": "Managed by your organization",
   "@settings.managed.summary.title": {
-    "description": "Title of a small read-only card in Settings > Updates & privacy, shown only when the person's organization (their employer's or school's IT team) restricts Cmdr through device management (MDM, a configuration profile). The card lists what is restricted, one line each, so a help-desk person can check it at a glance. Sentence case, no ending period."
+    "description": "Title of a small read-only card in Settings > Updates & privacy, shown only when the person's organization (their employer's or school's IT team) restricts Cmdr through device management (MDM, a configuration profile). The card lists what is restricted, one line each, so a help-desk person can check it at a glance. Sentence case, no ending period.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
   },
   "settings.managed.summary.usageStats": "Usage stats",
   "@settings.managed.summary.usageStats": {
-    "description": "Row label in the 'Managed by your organization' card: the anonymous usage statistics Cmdr can send. The value beside it says what the organization set (for example 'Off'). Short, sentence case."
+    "description": "Row label in the 'Managed by your organization' card: the anonymous usage statistics Cmdr can send. The value beside it says what the organization set (for example 'Off'). Short, sentence case.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
   },
   "settings.managed.summary.usageStatsOff": "Off",
   "@settings.managed.summary.usageStatsOff": {
     "description": "Value beside the row label 'Usage stats' (the anonymous usage statistics Cmdr can send) in the 'Managed by your organization' card (Settings > Updates & privacy). The organization turned this off. Each row has its own 'Off' key so the word can agree in gender and number with that row's label: use the form your language's macOS Settings shows for a switched-off feature, agreeing with the label where your grammar asks for it. One or two words.",
-    "agreesWith": "settings.managed.summary.usageStats"
+    "agreesWith": "settings.managed.summary.usageStats",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
   },
   "settings.managed.summary.reports": "Crash and error reports",
   "@settings.managed.summary.reports": {
-    "description": "Row label in the 'Managed by your organization' card: the crash reports and error reports Cmdr can send to its developer. The value beside it says what the organization set (for example 'Off'). Short, sentence case."
+    "description": "Row label in the 'Managed by your organization' card: the crash reports and error reports Cmdr can send to its developer. The value beside it says what the organization set (for example 'Off'). Short, sentence case.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
   },
   "settings.managed.summary.reportsOff": "Off",
   "@settings.managed.summary.reportsOff": {
     "description": "Value beside the row label 'Crash and error reports' (the crash and error reports Cmdr can send to its developer) in the 'Managed by your organization' card (Settings > Updates & privacy). The organization turned this off. Each row has its own 'Off' key so the word can agree in gender and number with that row's label: use the form your language's macOS Settings shows for a switched-off feature, agreeing with the label where your grammar asks for it. One or two words.",
-    "agreesWith": "settings.managed.summary.reports"
+    "agreesWith": "settings.managed.summary.reports",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
   },
   "settings.managed.summary.securityLog": "Security events",
   "@settings.managed.summary.securityLog": {
-    "description": "Row label in the 'Managed by your organization' card: the local security event log (a file on the Mac noting security-relevant changes and refusals). The value beside it says what the organization set. Short, sentence case."
+    "description": "Row label in the 'Managed by your organization' card: the local security event log (a file on the Mac noting security-relevant changes and refusals). The value beside it says what the organization set. Short, sentence case.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
   },
   "settings.managed.summary.securityLogRequired": "Always recorded",
   "@settings.managed.summary.securityLogRequired": {
     "description": "Value beside the row label 'Security events' in the 'Managed by your organization' card (Settings > Updates & privacy). The organization requires the security event log, so the person can't turn it off. One to three words.",
-    "agreesWith": "settings.managed.summary.securityLog"
+    "agreesWith": "settings.managed.summary.securityLog",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
   },
   "settings.managed.summary.updates": "Updates",
   "@settings.managed.summary.updates": {
-    "description": "Row label in the 'Managed by your organization' card: Cmdr's own app updates. The value beside it says what the organization set (for example 'Off' or 'Up to version 0.52'). Short, sentence case."
+    "description": "Row label in the 'Managed by your organization' card: Cmdr's own app updates. The value beside it says what the organization set (for example 'Off' or 'Up to version 0.52'). Short, sentence case.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
   },
   "settings.managed.summary.updatesOff": "Off",
   "@settings.managed.summary.updatesOff": {
     "description": "Value beside the row label 'Updates' (Cmdr's own app updates, switched off entirely) in the 'Managed by your organization' card (Settings > Updates & privacy). The organization turned this off. Each row has its own 'Off' key so the word can agree in gender and number with that row's label: use the form your language's macOS Settings shows for a switched-off feature, agreeing with the label where your grammar asks for it. One or two words.",
-    "agreesWith": "settings.managed.summary.updates"
+    "agreesWith": "settings.managed.summary.updates",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
   },
   "settings.managed.summary.ai": "AI",
   "@settings.managed.summary.ai": {
-    "description": "Row label in the 'Managed by your organization' card: Cmdr's AI features. The value beside it says what the organization set (for example 'Off' or 'On-device only'). Keep it as short as the English."
+    "description": "Row label in the 'Managed by your organization' card: Cmdr's AI features. The value beside it says what the organization set (for example 'Off' or 'On-device only'). Keep it as short as the English.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
   },
   "settings.managed.summary.aiOff": "Off",
   "@settings.managed.summary.aiOff": {
     "description": "Value beside the row label 'AI' (Cmdr's AI features, switched off entirely) in the 'Managed by your organization' card (Settings > Updates & privacy). The organization turned this off. Each row has its own 'Off' key so the word can agree in gender and number with that row's label: use the form your language's macOS Settings shows for a switched-off feature, agreeing with the label where your grammar asks for it. One or two words.",
-    "agreesWith": "settings.managed.summary.ai"
+    "agreesWith": "settings.managed.summary.ai",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
   },
   "settings.managed.summary.upTo": "Up to version {ceiling}",
   "@settings.managed.summary.upTo": {
     "description": "Value beside 'Updates' in the 'Managed by your organization' card: the organization lets Cmdr update only up to this version, never past it. “Up to” includes that version itself. Short.",
     "placeholders": {
       "ceiling": "the highest Cmdr version the organization allows, as its IT team wrote it (for example 0.52 or 0.52.3); not translated"
-    }
+    },
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
   },
   "settings.managed.summary.manualChecksOnly": "Checked by hand only",
   "@settings.managed.summary.manualChecksOnly": {
-    "description": "Value beside 'Updates' in the 'Managed by your organization' card: the organization turned off Cmdr's automatic update checks, so updates arrive only when the person picks 'Check for updates' themselves. Short."
+    "description": "Value beside 'Updates' in the 'Managed by your organization' card: the organization turned off Cmdr's automatic update checks, so updates arrive only when the person picks 'Check for updates' themselves. Short.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
   },
   "settings.managed.summary.upToManualChecksOnly": "Up to version {ceiling}, checked by hand only",
   "@settings.managed.summary.upToManualChecksOnly": {
     "description": "Value beside 'Updates' in the 'Managed by your organization' card, combining two rules: Cmdr may update only up to this version (that version included), and only when the person picks 'Check for updates' themselves (no automatic checks). Short.",
     "placeholders": {
       "ceiling": "the highest Cmdr version the organization allows, as its IT team wrote it (for example 0.52 or 0.52.3); not translated"
-    }
+    },
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
   },
   "settings.managed.summary.onDeviceOnly": "On-device only",
   "@settings.managed.summary.onDeviceOnly": {
-    "description": "Value beside 'AI' in the 'Managed by your organization' card: the organization allows only the AI model that runs on this Mac, so nothing goes to a cloud AI service. Short. “On-device AI” is the AI that the provider option “Local LLM” (settings.ai.provider.opt.local) runs: the same model on this Mac, so the two names point at one thing."
+    "description": "Value beside 'AI' in the 'Managed by your organization' card: the organization allows only the AI model that runs on this Mac, so nothing goes to a cloud AI service. Short. “On-device AI” is the AI that the provider option “Local LLM” (settings.ai.provider.opt.local) runs: the same model on this Mac, so the two names point at one thing.",
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
   },
   "settings.managed.summary.cloudHostsOnly": "Cloud AI only through {hosts}",
   "@settings.managed.summary.cloudHostsOnly": {
     "description": "Value beside 'AI' in the 'Managed by your organization' card: the organization allows cloud AI only through these internet hosts (server addresses). Short.",
     "placeholders": {
       "hosts": "a list of host names joined in the UI language, for example 'api.openai.com and *.openai.azure.com'; the host names themselves are never translated"
-    }
+    },
+    "screenshot": "settings-updates.png",
+    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
   },
   "settings.sidebar.searchPlaceholder": "Search settings…",
   "@settings.sidebar.searchPlaceholder": {

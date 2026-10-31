@@ -228,7 +228,9 @@
 
   "indexing.overall.estimating": "Overall: estimating…",
   "@indexing.overall.estimating": {
-    "description": "Placeholder for the whole-run time-left line ('Overall: 12m left') in the drive-indexing checklist, shown for the few seconds the current step has no estimate of its own yet (for example right after a step starts) while more steps are still to come. The trailing '…' signals ongoing work; keep it."
+    "description": "Placeholder for the whole-run time-left line ('Overall: 12m left') in the drive-indexing checklist, shown for the few seconds the current step has no estimate of its own yet (for example right after a step starts) while more steps are still to come. The trailing '…' signals ongoing work; keep it.",
+    "screenshot": "indexing-checklist.png",
+    "screenshotNote": "The drive-indexing checklist, pictured here. Your string is its Overall line while it’s still working out how long is left."
   },
 
   "indexing.eta.almostDone": "Almost done",
