@@ -25,6 +25,7 @@
 //!   run when the test process is SIGKILLed. See `reclaim_orphans` for why that's safe
 //!   only there.
 
+mod create;
 mod error;
 mod facts;
 mod file_holder;
@@ -229,6 +230,58 @@ impl DiskImageSession {
         parse(&call, &finished.stdout)
     }
 
+    /// The physical whole disk of the image backed by `image_path`, resolved fresh from
+    /// `hdiutil info` and `diskutil`.
+    fn whole_of(&self, image_path: &Path) -> Result<String, HarnessError> {
+        let refused = |refusal| HarnessError::Refused {
+            call: format!("resolving the whole disk of {}", image_path.display()),
+            refusal,
+        };
+        let attached = self.attached_images()?;
+        let entity = attached
+            .images
+            .iter()
+            .find(|image| image.image_path == image_path)
+            .ok_or_else(|| refused(Refusal::ImageNotAttached))?
+            .entities
+            .first()
+            .ok_or_else(|| refused(Refusal::ImageNotAttached))?;
+        let facts = self.disk_facts(&entity.dev_entry).ok_or_else(|| {
+            refused(Refusal::UnknownTarget {
+                target: entity.dev_entry.clone(),
+            })
+        })?;
+        facts::physical_whole(&facts, &mut |node| self.disk_facts(node)).map_err(|stuck_at| {
+            refused(Refusal::UnresolvedWhole {
+                target: entity.dev_entry.clone(),
+                stuck_at,
+            })
+        })
+    }
+
+    /// Waits for `hdiutil info` to stop listing `image_path`, after a detach answered
+    /// success. Answers an error rather than panicking: `Drop` may already be unwinding.
+    fn until_unlisted(&self, image_path: &Path) -> Result<(), HarnessError> {
+        let mut unreadable = None;
+        let unlisted = holds_within(TOOL_DEADLINE, || match self.attached_images() {
+            Ok(attached) => {
+                unreadable = None;
+                !attached.images.iter().any(|image| image.image_path == image_path)
+            }
+            Err(error) => {
+                unreadable = Some(error);
+                false
+            }
+        });
+        match (unlisted, unreadable) {
+            (true, _) => Ok(()),
+            (false, Some(error)) => Err(error),
+            (false, None) => Err(HarnessError::StillListed {
+                image: image_path.to_path_buf(),
+            }),
+        }
+    }
+
     /// `diskutil info -plist` for a node or mount point; `None` when `diskutil`
     /// doesn't know it or couldn't answer, which every caller treats as "not
     /// proven ours".
@@ -407,7 +460,7 @@ impl DiskImage {
     ) -> Result<Self, HarnessError> {
         let dir = TestDir::new("disk_image");
         let image_path = dir.join(if sparse { "image.sparseimage" } else { "image.dmg" });
-        session.run(
+        session.create_image(
             &image_path,
             Call::Create {
                 image: &image_path,
@@ -449,7 +502,7 @@ impl DiskImage {
     pub fn attach_stored_here(&self, session: &Arc<DiskImageSession>) -> Result<Self, HarnessError> {
         let volume_name = session.unique_volume_name();
         let image_path = self.volume(0)?.mount_point.join("image.dmg");
-        session.run(
+        session.create_image(
             &image_path,
             Call::Create {
                 image: &image_path,
@@ -635,30 +688,7 @@ impl DiskImage {
     /// This image's physical whole disk, resolved fresh from `hdiutil info` and
     /// `diskutil`.
     fn whole(&self) -> Result<String, HarnessError> {
-        let refused = |refusal| HarnessError::Refused {
-            call: format!("resolving the whole disk of {}", self.image_path.display()),
-            refusal,
-        };
-        let attached = self.session.attached_images()?;
-        let entity = attached
-            .images
-            .iter()
-            .find(|image| image.image_path == self.image_path)
-            .ok_or_else(|| refused(Refusal::ImageNotAttached))?
-            .entities
-            .first()
-            .ok_or_else(|| refused(Refusal::ImageNotAttached))?;
-        let facts = self.session.disk_facts(&entity.dev_entry).ok_or_else(|| {
-            refused(Refusal::UnknownTarget {
-                target: entity.dev_entry.clone(),
-            })
-        })?;
-        facts::physical_whole(&facts, &mut |node| self.session.disk_facts(node)).map_err(|stuck_at| {
-            refused(Refusal::UnresolvedWhole {
-                target: entity.dev_entry.clone(),
-                stuck_at,
-            })
-        })
+        self.session.whole_of(&self.image_path)
     }
 
     /// The node of this image's volume named `name`, mounted or not.
@@ -727,36 +757,13 @@ impl DiskImage {
             whole: &whole,
             force: false,
         }) {
-            Ok(_) => self.until_unlisted(),
+            Ok(_) => self.session.until_unlisted(&self.image_path),
             Err(error) if error.refusal() == Some(&Refusal::ImageNotAttached) => Ok(()),
             Err(_) => match self.force_detach() {
-                Ok(()) => self.until_unlisted(),
+                Ok(()) => self.session.until_unlisted(&self.image_path),
                 Err(error) if error.refusal() == Some(&Refusal::ImageNotAttached) => Ok(()),
                 Err(error) => Err(error),
             },
-        }
-    }
-
-    /// Waits for `hdiutil info` to stop listing this image, after a detach answered
-    /// success. Answers an error rather than panicking: `Drop` may already be unwinding.
-    fn until_unlisted(&self) -> Result<(), HarnessError> {
-        let mut unreadable = None;
-        let unlisted = holds_within(TOOL_DEADLINE, || match self.is_attached() {
-            Ok(attached) => {
-                unreadable = None;
-                !attached
-            }
-            Err(error) => {
-                unreadable = Some(error);
-                false
-            }
-        });
-        match (unlisted, unreadable) {
-            (true, _) => Ok(()),
-            (false, Some(error)) => Err(error),
-            (false, None) => Err(HarnessError::StillListed {
-                image: self.image_path.clone(),
-            }),
         }
     }
 }

@@ -64,6 +64,20 @@ impl HarnessError {
             _ => None,
         }
     }
+
+    /// Whether `hdiutil create` answered that something holds the image it's building.
+    ///
+    /// The tool offers only text here: the same exit code 1 covers every create failure
+    /// (verified on macOS 27.0.1, a read-only hold on the transient `/dev/rdiskN`,
+    /// 2026-10-31). The runner pins `LC_ALL=C`, and `real_images` snapshots the line.
+    pub(super) fn says_resource_busy(&self) -> bool {
+        match self {
+            Self::Failed { stderr, .. } => stderr
+                .lines()
+                .any(|line| line == "hdiutil: create failed - Resource busy"),
+            _ => false,
+        }
+    }
 }
 
 impl std::fmt::Display for HarnessError {

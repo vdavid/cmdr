@@ -1286,6 +1286,19 @@ would drift apart.
   mounts both browsable, so each is unmounted and remounted nobrowse. A volume `addVolume` or `partitionDisk` made is
   found by its unique name among the nodes `hdiutil info` lists under the image (it lists them at once), ❌ never parsed
   from the tool's text. Names are `CMDR<pid><n>`.
+- **A busy create (`create.rs`).** `hdiutil create` attaches the image it's building, runs `newfs_hfs` on it, and
+  detaches it, all inside about a second. Any process with the transient `/dev/rdiskN` open at that detach makes the
+  tool answer `hdiutil: create failed - Resource busy`, exit 1, and ❗ the image STAYS attached and unmounted under the
+  path asked for (verified on macOS 27.0.1, a read-only hold on the node, 4 of 4 creates, 2026-10-31; a plain `open` of
+  the backing file changes nothing, and a `flock` on it answers "Resource temporarily unavailable" instead). So a bare
+  retry can't work: `create_image` clears the leftover with a plain detach, polled up to 10 s since the detach going
+  through is the signal that the holder let go, deletes the file, and tries again, four attempts in all. Every failed
+  create clears its leftover, retried or not. The exit code can't tell busy from anything else, so `says_resource_busy`
+  reads the line, under the `LC_ALL=C` the runner sets, snapshotted by a `real_images` cell. The machine-wide lock
+  already serializes creates, so the holder isn't another image of ours; a same-uid sample during healthy creates saw
+  only `newfs_hfs`, and naming a root daemon takes `fs_usage`, so who holds it in the wild is unproven (others blame
+  `XProtectBehaviorService`, GitHub `actions/runner-images#7522`). It came once in a `disk-images` lane (#832), and 80
+  plain creates under load 55–64 didn't reproduce it, so the pins drive it with their own holder.
 - **Teardown.** `DiskImage`'s `Drop` resolves the whole disk fresh, detaches, falls back to a guarded `-force`, waits
   until `hdiutil info` stops listing the image, and then its `TestDir` deletes the file. The wait is load-bearing: a
   detach can exit 0 while `hdiutil info` still lists the image, which flaked a test asserting "detached" right after the

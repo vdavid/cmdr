@@ -180,6 +180,128 @@ fn renaming_a_mounted_hfs_volume_moves_its_mount_point_and_keeps_its_filesystem_
     a_rename_moves_the_mount_point_of_a_filesystem_that_stays_mounted(ImageSpec::Hfs);
 }
 
+/// Holds the first new whole-disk `/dev/rdiskN` read-only for [`DeviceHolder::HOLD`], the
+/// shape of whatever opens an image's device while `hdiutil create` is still building it.
+/// Dropping it waits out the hold.
+struct DeviceHolder {
+    stop: Arc<std::sync::atomic::AtomicBool>,
+    thread: Option<std::thread::JoinHandle<()>>,
+}
+
+impl DeviceHolder {
+    /// Long enough to outlast the create's own detach, which is what it has to overlap.
+    const HOLD: Duration = Duration::from_secs(3);
+
+    fn whole_disk_nodes() -> Vec<std::ffi::OsString> {
+        std::fs::read_dir("/dev")
+            .expect("list /dev")
+            .flatten()
+            .map(|entry| entry.file_name())
+            .filter(|name| {
+                name.to_str()
+                    .and_then(|name| name.strip_prefix("rdisk"))
+                    .is_some_and(|unit| !unit.contains('s'))
+            })
+            .collect()
+    }
+
+    /// ❗ Start it with the session held: the lock is what makes a new node this test's.
+    fn start(_session: &DiskImageSession) -> Self {
+        use std::os::unix::fs::OpenOptionsExt;
+
+        let before = Self::whole_disk_nodes();
+        let stop = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let thread = std::thread::spawn({
+            let stop = Arc::clone(&stop);
+            move || {
+                while !stop.load(Ordering::Relaxed) {
+                    let new_node = Self::whole_disk_nodes().into_iter().find(|node| !before.contains(node));
+                    let held = new_node.and_then(|node| {
+                        File::options()
+                            .read(true)
+                            .custom_flags(libc::O_NONBLOCK)
+                            .open(Path::new("/dev").join(node))
+                            .ok()
+                    });
+                    if held.is_some() {
+                        // allowed-test-sleep: the hold IS the fixture; `held` drops when it ends
+                        std::thread::sleep(Self::HOLD);
+                        return;
+                    }
+                    // allowed-test-sleep: polling /dev tightly enough to land inside the create's one-second window
+                    std::thread::sleep(Duration::from_millis(2));
+                }
+            }
+        });
+        Self {
+            stop,
+            thread: Some(thread),
+        }
+    }
+}
+
+impl Drop for DeviceHolder {
+    fn drop(&mut self) {
+        self.stop.store(true, Ordering::Relaxed);
+        if let Some(thread) = self.thread.take() {
+            let _ = thread.join();
+        }
+    }
+}
+
+/// The snapshot `HarnessError::says_resource_busy` relies on: the tool's real words, and
+/// the attachment a busy create leaves under the path it was given. Rounds, since the
+/// holder can lose the race on a loaded Mac, and a create it missed simply works.
+#[test]
+#[ignore = "attaches a real HFS+ disk image via hdiutil; run with --run-ignored"]
+fn a_held_device_makes_hdiutil_create_answer_busy_and_leave_its_image_attached() {
+    let session = DiskImageSession::acquire();
+    for _ in 0..5 {
+        let dir = TestDir::new("disk_image");
+        let image_path = dir.join("image.dmg");
+        let name = session.unique_volume_name();
+        let holder = DeviceHolder::start(&session);
+        let answer = session.run(
+            &image_path,
+            Call::Create {
+                image: &image_path,
+                size: "64m",
+                fs: CreateFs::HfsPlus,
+                layout: CreateLayout::Gpt,
+                volume_name: &name,
+                sparse: false,
+            },
+        );
+        let Err(error) = answer else {
+            continue;
+        };
+        assert!(error.says_resource_busy(), "got {error}");
+        let listed = |session: &DiskImageSession| {
+            let attached = session.attached_images().expect("hdiutil info");
+            attached.images.iter().any(|image| image.image_path == image_path)
+        };
+        assert!(listed(&session), "a busy create leaves its image attached");
+
+        drop(holder);
+        session.settle_failed_create(&image_path).expect("the leftover goes");
+        assert!(!listed(&session), "the settle detaches the leftover");
+        assert!(!image_path.exists(), "and removes its file, so a retry can create it");
+        return;
+    }
+    panic!("the holder never got in during five creates, so this pinned nothing");
+}
+
+/// The whole fix: the first create loses to a holder, and the image still attaches.
+#[test]
+#[ignore = "attaches a real HFS+ disk image via hdiutil; run with --run-ignored"]
+fn an_image_attaches_even_when_something_holds_its_device_during_the_create() {
+    let session = DiskImageSession::acquire();
+    let holder = DeviceHolder::start(&session);
+    let image = DiskImage::attach(&session, ImageSpec::Hfs).expect("attach the image");
+    assert!(image.is_attached().expect("hdiutil info"));
+    drop(holder);
+}
+
 #[test]
 #[ignore = "attaches a real APFS disk image via hdiutil; run with --run-ignored"]
 fn an_eject_aimed_at_a_volume_that_isnt_this_images_is_refused_before_diskutil_runs() {

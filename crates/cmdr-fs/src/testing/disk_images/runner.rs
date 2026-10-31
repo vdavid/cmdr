@@ -281,6 +281,8 @@ fn run_program(program: &str, args: &[String], deadline: Duration) -> Result<Fin
     let mut stderr = tempfile::tempfile().map_err(RunError::CouldNotStart)?;
     let mut child = Command::new(program)
         .args(args)
+        // The tools' messages stay English, which `HarnessError::says_resource_busy` reads.
+        .env("LC_ALL", "C")
         .stdin(Stdio::null())
         .stdout(Stdio::from(stdout.try_clone().map_err(RunError::CouldNotStart)?))
         .stderr(Stdio::from(stderr.try_clone().map_err(RunError::CouldNotStart)?))
@@ -362,6 +364,18 @@ mod tests {
         assert_eq!(finished.code, Some(3));
         assert_eq!(finished.stdout, b"out\n");
         assert_eq!(finished.stderr, b"err\n");
+    }
+
+    /// `says_resource_busy` reads English, so a localized Mac must still get English.
+    #[test]
+    fn a_tool_runs_in_the_c_locale() {
+        let finished = run_program(
+            "/bin/sh",
+            &["-c".to_string(), "printf %s \"$LC_ALL\"".to_string()],
+            Duration::from_secs(5),
+        )
+        .expect("sh runs");
+        assert_eq!(finished.stdout, b"C");
     }
 
     #[test]
