@@ -570,8 +570,21 @@ describe('TransferDialog data-scan-state marker', () => {
 /* Destination path: home long-form + "will be created" warning             */
 /* ------------------------------------------------------------------------- */
 
+/**
+ * Waits for the dialog's next debounced destination check to run and land.
+ *
+ * ❌ Not a fixed sleep past the debounce: this helper's timer starts before the mount's effect
+ * flush starts the debounce's, so a stall in that flush ate the margin and the test read the
+ * dialog before the answer arrived. A test asserting something is ABSENT would pass that way.
+ */
 async function settleExistsCheck(): Promise<void> {
-  await new Promise<void>((resolve) => setTimeout(resolve, 350))
+  const asked = destinationExistsMock.mock.calls.length
+  await vi.waitFor(
+    () => {
+      expect(destinationExistsMock.mock.calls.length).toBeGreaterThan(asked)
+    },
+    { timeout: 4000 },
+  )
   await flushMicrotasks()
 }
 
@@ -650,11 +663,14 @@ describe('TransferDialog destination path', () => {
   it('lets the red error win over the yellow warning for an invalid path', async () => {
     destinationExistsMock.mockResolvedValue({ data: false, timedOut: false })
     const target = mountDialog({ destinationPath: 'relative/path' })
-    await settleExistsCheck()
+    // An invalid path is never probed, so there's no answer to wait for: outlast the debounce instead.
+    await new Promise<void>((resolve) => setTimeout(resolve, 350))
+    await flushMicrotasks()
 
     // Structurally invalid → red error shows, yellow warning suppressed.
     expect(target.querySelector('.path-error')).not.toBeNull()
     expect(target.querySelector('.path-warning')).toBeNull()
+    expect(destinationExistsMock).not.toHaveBeenCalled()
   })
 
   describe('a path repeating the place’s own root folder (#164)', () => {
