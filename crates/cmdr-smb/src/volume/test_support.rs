@@ -10,6 +10,7 @@
 //! no server, no Docker, no wire. [`make_docker_volume`] is the connected path.
 
 use super::*;
+use cmdr_fs::ignore_poison::IgnorePoison;
 
 pub(super) use super::MountAnchor;
 pub(super) use super::session::{SessionLease, TransferLease};
@@ -125,7 +126,13 @@ pub(super) async fn drain(mut stream: Box<dyn VolumeReadStream>) -> Vec<u8> {
 ///
 /// Opens the transfer session first, so its login lands before the count a
 /// suite takes as "before", never inside the call it measures.
+///
+/// ❌ Refuses a watched volume: see [`make_counting_volume`].
 pub(super) async fn request_counts(vol: &SmbVolume) -> (u64, u64) {
+    assert!(
+        vol.inner.watcher_cancel.lock_ignore_poison().is_none(),
+        "a watcher's stats land in the count, so count on `make_counting_volume`"
+    );
     drop(vol.transfer_lease().await.expect("a connected volume leases"));
     let d = vol.diagnostics().await.expect("a connected volume has diagnostics");
     let mut counts = (
@@ -138,6 +145,28 @@ pub(super) async fn request_counts(vol: &SmbVolume) -> (u64, u64) {
         counts.1 += t.primary.metrics.compound_requests_sent;
     }
     counts
+}
+
+/// [`make_docker_volume`] with no watcher, for a suite counting frames.
+///
+/// A share's watcher stats every change it hears about over the MAIN session, and
+/// the fixture's share is everyone's: another suite's writes alongside landed in a
+/// count as extra `(1, 5)` frames, up to 20 of them in one window (#638).
+pub(super) async fn make_counting_volume() -> SmbVolume {
+    let params = docker_guest_params();
+    let volume_id = cmdr_fs::volume::smb_volume_id("127.0.0.1", params.port, "public");
+    let (client, tree) = build_session(&params, None)
+        .await
+        .unwrap_or_else(|e| panic!("Couldn't connect to the Docker SMB container. Is it running? ({e:?})"));
+    SmbVolume::new(
+        "public",
+        MountAnchor::at_share_root(TEST_MOUNT_ROOT),
+        &volume_id,
+        params,
+        client,
+        tree,
+        VolumeHost::detached(),
+    )
 }
 
 /// Runs `command` inside the guest fixture container, as root, against the

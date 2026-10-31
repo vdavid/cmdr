@@ -261,7 +261,7 @@ async fn smb_integration_a_cancelled_listing_stops_between_batches() {
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_a_forced_rename_replaces_the_file_in_one_frame() {
-    let vol = make_docker_volume().await;
+    let vol = make_counting_volume().await;
     let dir = test_dir_name();
     ensure_clean(&vol, &dir).await;
     vol.create_directory(Path::new(&dir)).await.unwrap();

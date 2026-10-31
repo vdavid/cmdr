@@ -519,6 +519,8 @@ async fn smb_dfs_a_call_under_a_known_link_skips_the_refused_round_trip() {
     }
     let vol = dfs_volume().await;
     vol.list_directory(Path::new("data"), None).await.unwrap();
+    // A watcher's stats would land in the count (`make_counting_volume`).
+    drop(vol.inner.watcher_cancel.lock_ignore_poison().take());
 
     let before = request_counts(&vol).await;
     let file = vol.get_metadata(Path::new("data/hello.txt")).await.unwrap();

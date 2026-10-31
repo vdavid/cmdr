@@ -42,7 +42,7 @@ use cmdr_fs::volume::{StreamLength, WriteMode};
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_a_hinted_read_leaves_as_one_compound_frame() {
-    let vol = make_docker_volume().await;
+    let vol = make_counting_volume().await;
     let dir = test_dir_name();
     ensure_clean(&vol, &dir).await;
     vol.create_directory(Path::new(&dir)).await.unwrap();
@@ -94,7 +94,7 @@ async fn smb_integration_a_hinted_read_leaves_as_one_compound_frame() {
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_the_compound_read_stops_at_one_download_chunk() {
-    let vol = make_docker_volume().await;
+    let vol = make_counting_volume().await;
     let dir = test_dir_name();
     ensure_clean(&vol, &dir).await;
     vol.create_directory(Path::new(&dir)).await.unwrap();
@@ -151,7 +151,7 @@ async fn smb_integration_the_compound_read_stops_at_one_download_chunk() {
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_a_measured_fast_link_compounds_a_multi_chunk_file() {
-    let vol = make_docker_volume().await;
+    let vol = make_counting_volume().await;
     let dir = test_dir_name();
     ensure_clean(&vol, &dir).await;
     vol.create_directory(Path::new(&dir)).await.unwrap();
@@ -259,7 +259,7 @@ async fn smb_integration_a_streamed_read_ends_before_the_close_is_answered() {
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_a_single_shot_write_leaves_as_one_compound_frame() {
-    let vol = make_docker_volume().await;
+    let vol = make_counting_volume().await;
     let dir = test_dir_name();
     ensure_clean(&vol, &dir).await;
     vol.create_directory(Path::new(&dir)).await.unwrap();
@@ -325,7 +325,7 @@ async fn smb_integration_a_single_shot_write_leaves_as_one_compound_frame() {
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_a_dated_single_shot_write_adds_one_frame_for_its_date() {
-    let vol = make_docker_volume().await;
+    let vol = make_counting_volume().await;
     let dir = test_dir_name();
     ensure_clean(&vol, &dir).await;
     vol.create_directory(Path::new(&dir)).await.unwrap();
@@ -460,7 +460,7 @@ async fn smb_integration_a_staged_write_over_the_quick_write_limit_streams() {
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_a_warm_uplink_lifts_the_promise_and_the_promised_write_is_one_frame() {
-    let vol = make_docker_volume().await;
+    let vol = make_counting_volume().await;
     let dir = test_dir_name();
     ensure_clean(&vol, &dir).await;
     vol.create_directory(Path::new(&dir)).await.unwrap();
@@ -867,7 +867,7 @@ async fn smb_integration_a_prefetch_the_credit_window_cant_fund_streams_on_the_m
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_a_delete_is_one_compound_frame_for_a_file_and_a_folder() {
-    let vol = make_docker_volume().await;
+    let vol = make_counting_volume().await;
     let dir = test_dir_name();
     ensure_clean(&vol, &dir).await;
     vol.create_directory(Path::new(&dir)).await.unwrap();

@@ -89,7 +89,7 @@ async fn smb_integration_samba_lists_a_symlink_as_its_target() {
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_entry_kind_names_a_listed_folder_link_in_one_frame() {
-    let vol = make_docker_volume().await;
+    let vol = make_counting_volume().await;
     let dir = test_dir_name();
     ensure_clean(&vol, &dir).await;
     seed_links(&vol, &dir).await;
