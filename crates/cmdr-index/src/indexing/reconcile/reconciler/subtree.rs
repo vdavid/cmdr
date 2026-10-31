@@ -306,6 +306,12 @@ pub(in crate::indexing) fn reconcile_subtree(
         if let Some(heartbeat) = heartbeat {
             heartbeat.entering(&dir_path);
         }
+        // ⚠️ **The rows BEFORE the listing, ❌ never after.** A row the live path
+        // adds after a listing was taken isn't in it, so diffing that listing
+        // against newer rows reaps a file that's right there on disk: gone from
+        // the index, its folder reading 0 bytes, with no event left to heal it.
+        let db_children =
+            IndexStore::list_children_on(dir_id, conn).map_err(|e| format!("list_children_on({dir_id}): {e}"))?;
         let listing = match read_fs_children(&dir_path, space) {
             Some(listing) => listing,
             None => {
@@ -313,6 +319,9 @@ pub(in crate::indexing) fn reconcile_subtree(
                 continue;
             }
         };
+        // A test's gate (`rescan/gate.rs`): the listing is taken, and the diff isn't.
+        #[cfg(test)]
+        super::rescan::gate::pass_after_listing(&dir_path);
         // We successfully listed this dir's direct contents (an empty listing
         // still counts). Stamp it at the current epoch after the walk.
         listed_dir_ids.push(dir_id);
@@ -342,9 +351,6 @@ pub(in crate::indexing) fn reconcile_subtree(
         } else {
             MissingRows::Keep
         };
-
-        let db_children =
-            IndexStore::list_children_on(dir_id, conn).map_err(|e| format!("list_children_on({dir_id}): {e}"))?;
 
         // Normalize the local listing into source-agnostic `LiveChild`s and run
         // the shared per-dir diff (same logic the network walk uses).

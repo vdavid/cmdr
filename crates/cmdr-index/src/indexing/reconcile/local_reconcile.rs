@@ -504,6 +504,9 @@ fn run_local_reconcile(
             continue;
         }
 
+        // The rows BEFORE the listing, ❌ never after: see `reconcile_subtree`.
+        let db_children =
+            IndexStore::list_children_on(dir_id, &conn).map_err(|e| ScanError::WriterSend(e.to_string()))?;
         let (listing, read_duration) = reader.read(&dir_path);
         // The entry count is half the cost signal: it's what tells a slow
         // filesystem apart from a big directory. An unlistable read returned
@@ -585,8 +588,6 @@ fn run_local_reconcile(
             MissingRows::Keep
         };
 
-        let db_children =
-            IndexStore::list_children_on(dir_id, &conn).map_err(|e| ScanError::WriterSend(e.to_string()))?;
         let live_children = build_live_children(
             listing.children,
             space,

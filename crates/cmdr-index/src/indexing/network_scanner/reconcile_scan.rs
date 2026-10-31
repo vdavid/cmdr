@@ -128,11 +128,16 @@ pub(crate) async fn reconcile_volume_via_trait(
         // processing (diff, writes) stays serial on this task and the DB read conn.
         while inflight.len() < pacer.listing_budget() {
             let Some((dir, id)) = queue.pop_front() else { break };
+            // The rows BEFORE the listing, ❌ never after: the share's live watch
+            // writes while this waits on the wire, and diffing an older listing
+            // against newer rows reaps a file that's there (`reconcile_subtree`).
+            let db_children =
+                IndexStore::list_children_on(id, &conn).map_err(|e| VolumeScanError::Context(e.to_string()))?;
             let vol = Arc::clone(&volume);
             let cancel = cancel.clone();
             inflight.push(async move {
                 let r = list_one_directory(vol, dir.clone(), cancel).await;
-                ((dir, id), r)
+                ((dir, id, db_children), r)
             });
         }
 
@@ -168,7 +173,7 @@ pub(crate) async fn reconcile_volume_via_trait(
             continue;
         }
 
-        let ((dir_path, dir_id), result) = match inflight.next().await {
+        let ((dir_path, dir_id, db_children), result) = match inflight.next().await {
             Some(v) => v,
             None => break,
         };
@@ -284,9 +289,6 @@ pub(crate) async fn reconcile_volume_via_trait(
                 },
             });
         }
-
-        let db_children =
-            IndexStore::list_children_on(dir_id, &conn).map_err(|e| VolumeScanError::Context(e.to_string()))?;
 
         // A trait-scanned volume keeps today's behavior: SMB and MTP deletes come
         // from their own protocols, and this walk's listing is whole or it errored.

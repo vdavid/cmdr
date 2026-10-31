@@ -178,22 +178,26 @@ synthetic-record tests build packed records with attributes withheld or the reco
 symlink, a hardlink pair, a unicode name, a fifo, and an excluded basename.
 
 **The shared per-dir diff.** `reconciler::diff_dir_against_db(dir_id, live_children, db_children, missing, writer)` is
-the one place the add/remove/modify/type-change diff lives. `missing` is a `MissingRows`, and it governs ONLY the
-reaping of rows the listing didn't mention: adds and updates are driven by what the walk actually saw and always run (§
-"The delete gates"). It hands back the children it CREATED (`DirDiff::added_children`, borrowed from the listing, empty
-on an unchanged dir so the no-op-cheap property survives) alongside the counts. ⚠️ That set is NOT
-`new_child_dir_names`: a child that was a file and is now a directory is an UPDATE whose subtree still has to be walked,
-so it is in the second list and not the first. `reconcile_subtree`'s optional `scanner::LiveWalk` is who is watching the
-pass happen: `emit` takes the created rows in `EMIT_CHUNK` batches, and `heartbeat` takes one `entering` per directory
-read. ❌ Both or neither, which is why they travel as one parameter — a pass with rows but no pulse fills a search's
-list under "0 folders scanned", and a run waiting on that ground reads the unmoving zero as a stall. It lives in
-`../scanner/` because both walks that report through it are downstream of the two primitives it pairs. That is what the
-cover walk's repair path needs; see `../lifecycle/cover/DETAILS.md` § "The repair path REPORTS". THREE walk sources feed
-the diff source-agnostic `LiveChild`s: the local live small-scope reconcile (`reconcile_subtree`), the local full-tree
-rescan (`local_reconcile::run_local_reconcile`, a BFS), and the network full rescan
-(`network_scanner::reconcile_volume_via_trait`, `Volume::list_directory` BFS). It keeps `next_id` from the shared
-`Arc<AtomicI64>` (never `MAX(id)`). The shared FINISH (stamp listed dirs → ONE `ComputeAllAggregates`) lives once in
-`reconciler::finish_reconcile`/`send_marks`, called by both full-rescan walkers so they can't drift on the
+the one place the add/remove/modify/type-change diff lives. **Every caller reads `db_children` before its listing**
+(Why: the live path keeps writing during a walk. A row that lands after the listing was taken is absent from it, so
+diffing the older listing against the newer rows reaps a file that's on disk, with no event left to heal it: a folder
+created live read 0 bytes, #638, pinned by `a_file_indexed_while_a_walk_holds_its_listing_stays_indexed`. Rows read
+first can only be older than the listing, and a row the listing also shows is an idempotent upsert.) `missing` is a
+`MissingRows`, and it governs ONLY the reaping of rows the listing didn't mention: adds and updates are driven by what
+the walk actually saw and always run (§ "The delete gates"). It hands back the children it CREATED
+(`DirDiff::added_children`, borrowed from the listing, empty on an unchanged dir so the no-op-cheap property survives)
+alongside the counts. ⚠️ That set is NOT `new_child_dir_names`: a child that was a file and is now a directory is an
+UPDATE whose subtree still has to be walked, so it is in the second list and not the first. `reconcile_subtree`'s
+optional `scanner::LiveWalk` is who is watching the pass happen: `emit` takes the created rows in `EMIT_CHUNK` batches,
+and `heartbeat` takes one `entering` per directory read. ❌ Both or neither, which is why they travel as one parameter —
+a pass with rows but no pulse fills a search's list under "0 folders scanned", and a run waiting on that ground reads
+the unmoving zero as a stall. It lives in `../scanner/` because both walks that report through it are downstream of the
+two primitives it pairs. That is what the cover walk's repair path needs; see `../lifecycle/cover/DETAILS.md` § "The
+repair path REPORTS". THREE walk sources feed the diff source-agnostic `LiveChild`s: the local live small-scope
+reconcile (`reconcile_subtree`), the local full-tree rescan (`local_reconcile::run_local_reconcile`, a BFS), and the
+network full rescan (`network_scanner::reconcile_volume_via_trait`, `Volume::list_directory` BFS). It keeps `next_id`
+from the shared `Arc<AtomicI64>` (never `MAX(id)`). The shared FINISH (stamp listed dirs → ONE `ComputeAllAggregates`)
+lives once in `reconciler::finish_reconcile`/`send_marks`, called by both full-rescan walkers so they can't drift on the
 marks-before-aggregate ordering.
 
 **Recursion set is decoupled from the write decision (load-bearing).** `diff_dir_against_db` returns

@@ -4,7 +4,9 @@
 //! A test arms it for one anchor. The next rescan walk of exactly that anchor stops
 //! just before its first read, with its share of the volume's hold already taken,
 //! until the test opens the gate. That's what lets a test prove the thread holds the
-//! drive while it runs, without racing a walk over a tiny tree to its end.
+//! drive while it runs, without racing a walk over a tiny tree to its end. Armed
+//! with [`GateHandle::arm_after_listing`], it stops instead between one directory's
+//! listing and its diff, which is where a live write can land in between.
 
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Condvar, Mutex};
@@ -24,8 +26,19 @@ pub(crate) struct GateHandle {
 impl GateHandle {
     /// Holds the next rescan walk of exactly `anchor` before its first read.
     pub(crate) fn arm(anchor: &Path) -> Self {
+        Self::armed_at(anchor, Point::BeforeWalk)
+    }
+
+    /// Holds the next rescan walk that lists exactly `dir`, once the listing is
+    /// taken and before it's diffed.
+    pub(crate) fn arm_after_listing(dir: &Path) -> Self {
+        Self::armed_at(dir, Point::AfterListing)
+    }
+
+    fn armed_at(anchor: &Path, point: Point) -> Self {
         let gate = Arc::new(Gate {
             anchor: anchor.to_path_buf(),
+            point,
             state: Mutex::new(State::default()),
             cv: Condvar::new(),
         });
@@ -62,9 +75,17 @@ impl Drop for GateHandle {
 /// One armed gate, shared by the handle and the walk that meets it.
 struct Gate {
     anchor: PathBuf,
+    point: Point,
     state: Mutex<State>,
     /// Wakes the held walk on open, and the test's wait when a walk arrives.
     cv: Condvar,
+}
+
+/// Where in a walk a gate holds it.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Point {
+    BeforeWalk,
+    AfterListing,
 }
 
 #[derive(Default)]
@@ -78,10 +99,20 @@ struct State {
 /// The point a rescan walk passes before its first read: a no-op unless a test armed
 /// a gate for `anchor`, in which case it waits there until the test opens it.
 pub(super) fn pass(anchor: &Path) {
+    wait_at(Point::BeforeWalk, anchor);
+}
+
+/// The point a walk passes between `dir`'s listing and its diff: the same no-op
+/// unless a test armed [`GateHandle::arm_after_listing`] for `dir`.
+pub(in crate::indexing::reconcile::reconciler) fn pass_after_listing(dir: &Path) {
+    wait_at(Point::AfterListing, dir);
+}
+
+fn wait_at(point: Point, anchor: &Path) {
     let Some(gate) = ARMED
         .lock_ignore_poison()
         .iter()
-        .find(|gate| gate.anchor == anchor)
+        .find(|gate| gate.point == point && gate.anchor == anchor)
         .cloned()
     else {
         return;

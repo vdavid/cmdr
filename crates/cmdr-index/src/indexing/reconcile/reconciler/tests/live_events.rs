@@ -768,3 +768,60 @@ async fn a_folder_created_live_gets_walked_and_reads_exact() {
 
     writer.shutdown();
 }
+
+/// The race that made the cell above read 0 bytes under load: a walk lists the new
+/// folder, the file's own event lands while that listing is in hand, and diffing the
+/// older listing against the newer rows reaped a file that's right there on disk.
+#[tokio::test]
+async fn a_file_indexed_while_a_walk_holds_its_listing_stays_indexed() {
+    let (writer, dir, conn) = setup_test_writer();
+    let db_path = dir.path().join("test-reconciler.db");
+    let base = non_excluded_tempdir();
+    let space = IndexPathSpace::root();
+    ensure_path_in_db(&db_path, &space.absolute(&base.path().to_string_lossy()), &writer);
+
+    let mut reconciler = EventReconciler::new();
+    reconciler.switch_to_live();
+    reconciler.disable_rescan_throttle_for_test();
+    let mut origins = HashSet::new();
+
+    let tree = base.path().join("tree");
+    std::fs::create_dir(&tree).unwrap();
+    let gate = rescan::gate::GateHandle::arm_after_listing(Path::new(&space.absolute(&tree.to_string_lossy())));
+    let created_dir = make_event(&tree.to_string_lossy(), 1, created_dir_flags());
+    reconciler.process_live_event(&created_dir, &conn, &writer, &mut origins);
+    writer.flush_blocking().unwrap();
+    assert!(
+        gate.wait_until_held(Duration::from_secs(30)),
+        "the walk takes its listing of the still-empty folder"
+    );
+
+    let file = tree.join("file.bin");
+    std::fs::write(&file, vec![0u8; 4096]).unwrap();
+    let created_file = make_event(&file.to_string_lossy(), 2, created_file_flags());
+    reconciler.process_live_event(&created_file, &conn, &writer, &mut origins);
+    writer.flush_blocking().unwrap();
+
+    gate.open();
+    cmdr_fs::testing::wait_until_async(Duration::from_secs(30), "the rescan queue to drain", || {
+        !reconciler.is_rescan_active_for_test() && reconciler.pending_rescans_snapshot().is_empty()
+    })
+    .await;
+    crate::indexing::writer::tests::settle_the_writer(&writer);
+
+    assert!(
+        store::resolve_path(&conn, &space.absolute(&file.to_string_lossy()))
+            .unwrap()
+            .is_some(),
+        "a file on disk stays indexed"
+    );
+    let tree_id = store::resolve_path(&conn, &space.absolute(&tree.to_string_lossy()))
+        .unwrap()
+        .expect("the folder is indexed");
+    let stats = IndexStore::get_dir_stats_by_id(&conn, tree_id)
+        .unwrap()
+        .expect("dir_stats row");
+    assert_eq!(stats.recursive_logical_size, 4096);
+
+    writer.shutdown();
+}

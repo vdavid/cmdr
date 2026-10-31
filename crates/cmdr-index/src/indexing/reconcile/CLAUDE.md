@@ -13,6 +13,8 @@ the serial full-tree rescan-in-place; `verifier.rs` the per-navigation `read_dir
 - **A rescan of a populated+completed index RECONCILES in place, ❌ never truncates.** LOCAL:
   `entry_count > 1 && prior_scan_completed`, unless it predates the exclusion policy; NETWORK: `entry_count > 1`. Keep
   the two predicates in lock-step.
+- **A diff reads its rows BEFORE its listing, ❌ never after**: a row the live path adds in between isn't in the
+  listing, so the older listing would reap a file that's on disk. `DETAILS.md` § "The shared per-dir diff".
 - **A row is reaped only from a WHOLE observation**: the listing saw everything (`Listing::complete`) AND the drive was
   still listed after the read (`MissingRows`). ❌ Never read presence BEFORE the listing — an unmounted `/Volumes/X`
   whose mount-point folder survives lists as empty and complete. `DETAILS.md` § "The delete gates".
