@@ -1,5 +1,9 @@
 /**
- * Turns the bare commit hashes in `CHANGELOG.md` into GitHub links.
+ * Renders `CHANGELOG.md` for the website: bare commit hashes become GitHub links, and each release
+ * heading gets a stable `v<version>` anchor.
+ *
+ * The anchors are a public contract: the app's security notices link to them from already shipped
+ * builds (`apps/desktop/src-tauri/src/security_advisories/DETAILS.md`), so ❌ don't change their form.
  *
  * The changelog stores each entry's commit references as a bare trailing group,
  * `- Some change (b626d7a4, 2d41cc14)`, because the linked form cost about 40% of
@@ -13,6 +17,8 @@
  * is 6–40 lowercase hex chars. Anchoring to the end is what keeps prose safe, so
  * an aside like `(~40x speed-up!)` or a mid-sentence `(added)` is never touched.
  */
+
+import { Marked } from 'marked'
 
 const REPO_URL = 'https://github.com/vdavid/cmdr'
 
@@ -80,4 +86,23 @@ export function linkifyCommitHashes(markdown: string): string {
   flush()
 
   return lines.join('\n')
+}
+
+/** A release heading's text, like `[0.58.0] - 2026-10-31`. Group 1 is the version. */
+const releaseHeadingPattern = /^\[(\d+\.\d+\.\d+[0-9A-Za-z.+-]*)\]/
+
+const changelogMarked = new Marked({
+  renderer: {
+    heading({ tokens, depth, text }) {
+      const version = depth === 2 ? releaseHeadingPattern.exec(text)?.[1] : undefined
+      // `false` falls back to marked's own rendering, for every other heading.
+      if (version === undefined) return false
+      return `<h2 id="v${version}">${this.parser.parseInline(tokens)}</h2>\n`
+    },
+  },
+})
+
+/** Renders changelog markdown to HTML, with commit links and release anchors. */
+export function renderChangelog(markdown: string): string {
+  return changelogMarked.parse(linkifyCommitHashes(markdown), { async: false })
 }

@@ -624,10 +624,11 @@ readers, and why it's never `latest.json`: `apps/desktop/src-tauri/src/security_
   same notes `SECURITY.md` § How fixed vulnerabilities are published describes.
 - **The entry**: `id` (the GHSA id, or a date slug like `2026-10-16-smb-path` when there's no GitHub advisory),
   `fixedIn` (this release's version, no `v`), `severity` (`low` / `medium` / `high` / `critical`, the CVSS v4.0 rating
-  in the CHANGELOG line), and `url` (the GitHub security advisory if there is one, else this release's entry on
-  `https://getcmdr.com/changelog`). For a dependency's flaw, `severity` is the upstream rating from the CHANGELOG line
-  and `url` is the changelog entry (the app's link allowlist admits only Cmdr's own advisories); an `(unrated)` one gets
-  no entry. Nothing else: the app shows generic, translated text.
+  in the CHANGELOG line), and `url` (the GitHub security advisory if there is one, else this release's changelog entry,
+  `https://getcmdr.com/changelog#v<fixedIn>`, like `#v0.58.0`; `desktop-security-advisories` fails any other changelog
+  form). For a dependency's flaw, `severity` is the upstream rating from the CHANGELOG line and `url` is the changelog
+  entry (the app's link allowlist admits only Cmdr's own advisories); an `(unrated)` one gets no entry. Nothing else:
+  the app shows generic, translated text.
 - **Append, never prune.** The list is cumulative, which is how an install that skips releases still hears about every
   fix it jumped over.
 - **Leave it uncommitted for `release.sh`**, which lets it through its dirty-tree guard and puts it in the release

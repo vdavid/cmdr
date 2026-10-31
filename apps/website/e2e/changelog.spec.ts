@@ -38,4 +38,42 @@ test.describe('Changelog', () => {
     // Prose that merely ends in a parenthetical must survive untouched.
     expect(body).toContain('(~40x speed-up!)')
   })
+
+  test('gives every release heading a `v<version>` anchor and keeps its visible text', async ({ page }) => {
+    await page.goto('/changelog')
+
+    const headings = await page.$$eval('.changelog-content h2', (nodes) =>
+      nodes.map((node) => ({ id: node.id, text: (node.textContent ?? '').trim() })),
+    )
+
+    expect(headings.length).toBeGreaterThan(0)
+    for (const heading of headings) {
+      const version = /^\[(\d+\.\d+\.\d+)\] - \d{4}-\d{2}-\d{2}$/.exec(heading.text)?.[1]
+      expect(version, `visible heading "${heading.text}"`).toBeDefined()
+      expect(heading.id).toBe(`v${version}`)
+    }
+    expect(new Set(headings.map((heading) => heading.id)).size).toBe(headings.length)
+
+    // The app's security notices link to this exact anchor from already shipped builds.
+    await expect(page.locator('h2#v0\\.58\\.0')).toHaveText(/^\[0\.58\.0\] - 2026-10-31$/)
+  })
+
+  test('a jump to a release anchor leaves the heading visible below the fixed header', async ({ page }) => {
+    // Reduced motion turns off the page's smooth scrolling, so the jump lands at once.
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    // An old release, so the jump has to scroll far from the top of the page.
+    await page.goto('/changelog#v0.3.0')
+
+    const position = await page.evaluate(() => ({
+      headingTop: document.getElementById('v0.3.0')?.getBoundingClientRect().top ?? -1,
+      headerBottom: document.querySelector('body header')?.getBoundingClientRect().bottom ?? -1,
+      scrollY: window.scrollY,
+    }))
+
+    expect(position.scrollY).toBeGreaterThan(0)
+    expect(position.headerBottom).toBeGreaterThan(0)
+    expect(position.headingTop).toBeGreaterThanOrEqual(position.headerBottom)
+    // Not merely clear of the header: it sits right under it, with no overshoot.
+    expect(position.headingTop).toBeLessThan(position.headerBottom + 64)
+  })
 })

@@ -43,7 +43,10 @@ Security section" was never the trigger; the entry is a deliberate, per-release 
 - `fixedIn`: the release that fixes it, strict semver (no `v`).
 - `severity`: `low` / `medium` / `high` / `critical`, the rating in the public note (ours from CVSS v4.0, or the
   upstream advisory's).
-- `url`: the GitHub security advisory when there is one, else that release's entry on the getcmdr.com changelog.
+- `url`: the GitHub security advisory when there is one, else that release's changelog entry,
+  `https://getcmdr.com/changelog#v<fixedIn>` (like `https://getcmdr.com/changelog#v0.58.0`). The website gives every
+  release heading that anchor (`apps/website/src/lib/changelog.ts`), and `desktop-security-advisories` fails any other
+  changelog form, because the bare page opens at the newest release, far from a fix in an older one.
 - No `summary`: the app shows generic, translated text only, so per-advisory English would be untranslatable copy.
 - Unknown keys at either level make the whole list unparseable (`deny_unknown_fields`), so a typo can't quietly drop
   a field.
@@ -64,7 +67,8 @@ current). Both are cumulative over skipped releases.
 
 - `https://github.com/vdavid/cmdr/security/advisories/<something>` (an advisory, never the bare index),
 - the same under `https://github.com/getcmdr/cmdr/`, and
-- `https://getcmdr.com/changelog`, or anything below it, fragment included.
+- `https://getcmdr.com/changelog`, or anything below it, fragment included. The allowlist stays this wide because it's
+  a safety rule, and a list entry's exact form (§ The file) is the check's job.
 
 **Decision**: both repo names pass. **Why**: the repo may move to the `getcmdr` org (#476), and the update toast vets a
 staged list's links with the RUNNING app's allowlist, so a build that only knows `vdavid/cmdr` drops a `getcmdr/cmdr`

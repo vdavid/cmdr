@@ -2264,10 +2264,10 @@ doubles as production code.
   runs it before tagging. Older releases stay as shipped)
 - **Desktop / Security**: security-advisories (the committed `apps/desktop/src-tauri/resources/security-advisories.json`
   against the app's own contract: the exact schema, semver `fixedIn` no newer than the `tauri.conf.json` version, a
-  known severity, an allowlisted `https` link, and a unique `id`. The app reads the list leniently, so a typo there
-  would silently drop a notice users should act on; this is where it fails loudly instead. The allowlist is a Go mirror
-  of `security_advisories::is_allowed_advisory_url`, which also refuses `.` / `..` path segments because Go's parser
-  keeps what the app's resolves)
+  known severity, an allowlisted `https` link (a changelog one exactly `https://getcmdr.com/changelog#v<fixedIn>`), and
+  a unique `id`. The app reads the list leniently, so a typo there would silently drop a notice users should act on;
+  this is where it fails loudly instead. The allowlist is a Go mirror of `security_advisories::is_allowed_advisory_url`,
+  which also refuses `.` / `..` path segments because Go's parser keeps what the app's resolves)
 
 ## The single source for the Go version
 

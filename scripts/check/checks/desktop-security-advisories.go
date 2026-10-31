@@ -108,7 +108,8 @@ func securityAdvisoryProblems(data []byte, appVersion string) []string {
 }
 
 // securityAdvisoryEntryProblems judges one entry on its own: every field present,
-// `fixedIn` strict semver and not past the app, a known severity, an allowed link.
+// `fixedIn` strict semver and not past the app, a known severity, an allowed link, and a
+// changelog link that opens the release naming the fix.
 func securityAdvisoryEntryProblems(entry securityAdvisoryEntry, label string, app strictSemver, appVersion string) []string {
 	var problems []string
 	for _, field := range []struct {
@@ -131,11 +132,22 @@ func securityAdvisoryEntryProblems(entry securityAdvisoryEntry, label string, ap
 	if severity := advisoryField(entry.Severity); severity != "" && !securitySeverities[severity] {
 		problems = append(problems, fmt.Sprintf("%s: `severity` %q isn't one of low, medium, high, critical", label, severity))
 	}
-	if link := advisoryField(entry.URL); link != "" && !isAllowedAdvisoryURL(link) {
-		problems = append(problems, fmt.Sprintf("%s: `url` %q isn't an allowed advisory link (https://github.com/vdavid/cmdr/security/advisories/<id>, the same under getcmdr/cmdr, or https://getcmdr.com/changelog…)", label, link))
+	link, fixedIn := advisoryField(entry.URL), advisoryField(entry.FixedIn)
+	switch {
+	case link == "":
+	case !isAllowedAdvisoryURL(link):
+		problems = append(problems, fmt.Sprintf("%s: `url` %q isn't an allowed advisory link (https://github.com/vdavid/cmdr/security/advisories/<id>, the same under getcmdr/cmdr, or %s#v<fixedIn>)", label, link, advisoryChangelogURL))
+	case strings.HasPrefix(link, advisoryChangelogURL) && fixedIn != "" && link != advisoryChangelogURL+"#v"+fixedIn:
+		// Allowed and canonical, so this is the changelog. The bare page reads as a working
+		// link but drops the reader at the newest release, far from the fix.
+		problems = append(problems, fmt.Sprintf("%s: `url` %q has to open the release that fixes it: %s#v%s", label, link, advisoryChangelogURL, fixedIn))
 	}
 	return problems
 }
+
+// advisoryChangelogURL is the page a changelog advisory link opens. The website gives each
+// release heading the `v<version>` anchor the link has to carry (`apps/website/src/lib/changelog.ts`).
+const advisoryChangelogURL = "https://getcmdr.com/changelog"
 
 // advisoryField reads an optional JSON string, "" when absent.
 func advisoryField(value *string) string {

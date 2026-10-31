@@ -126,6 +126,12 @@ was deleted.)
   `stripEmptySrcsetIntegration` (`src/plugins/strip-empty-srcset.ts`) removes it at `astro:build:done` (a rehype plugin
   can't — Astro injects the srcset after user plugins run).
 - **External links**: `rehype-external-links` auto-adds `target="_blank" rel="noopener noreferrer"`
+- **Changelog rendering**: `src/lib/changelog.ts` linkifies `CHANGELOG.md`'s bare commit hashes
+  (`scripts/check/checks/DETAILS.md` § "CHANGELOG commit refs") and gives each release heading the anchor `v<version>`,
+  like `#v0.58.0`. ❌ Don't change that form: the app's security notices link to it from already shipped builds
+  (`apps/desktop/src-tauri/src/security_advisories/DETAILS.md`). The dots are why `.htmlvalidate.json` sets `valid-id`
+  to `relaxed`: HTML allows them, the rule's stricter default doesn't. `scroll-margin-top` on the page's `h2` keeps a
+  jumped-to heading clear of the fixed header.
 - **Download dropdown**: the split-button + arch menu. `DownloadButton.astro` holds only markup (variants
   `hero`/`card`/`header`/`mobile`/`pricing`); its styling is global in `src/styles/download-button.css` and its
   open/close + keyboard JS is a global `astro:page-load` script in `Layout.astro`, both keyed off
