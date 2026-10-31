@@ -113,7 +113,7 @@ impl Installed {
             drop(index);
             free_off_the_runtime(&self.runtime, replaced);
         }
-        slot.touch();
+        slot.touch_index();
         if let Some(repos) = self.repos.upgrade() {
             evict_indexes(&repos, &slot, &self.tuning, &self.runtime);
         }
@@ -154,7 +154,7 @@ impl Drop for HeldForTransfer {
         let mut index = lock(&self.0.index);
         index.transfer_holds = index.transfer_holds.saturating_sub(1);
         drop(index);
-        self.0.touch();
+        self.0.touch_index();
     }
 }
 
@@ -174,7 +174,7 @@ fn evict_indexes(
     let mut others: Vec<(Instant, Arc<RepoSlot>)> = slots
         .into_iter()
         .filter(|slot| !Arc::ptr_eq(slot, keep) && lock(&slot.index).ready.is_some())
-        .map(|slot| (slot.last_used(), slot))
+        .map(|slot| (slot.index_last_used(), slot))
         .collect();
     let mut over = (others.len() + 1).saturating_sub(tuning.max_indexed);
     others.sort_by_key(|(used, _)| *used);
@@ -208,7 +208,7 @@ async fn drop_when_idle(slot: Weak<RepoSlot>, generation: u64, tuning: Tuning, r
         let Some(ready) = index.ready.as_ref().filter(|ready| ready.generation == generation) else {
             return;
         };
-        let idle_for = slot.last_used().elapsed();
+        let idle_for = slot.index_last_used().elapsed();
         if idle_for < tuning.index_idle_drop {
             wait = tuning.index_idle_drop - idle_for;
             continue;
@@ -240,7 +240,7 @@ pub(crate) fn free_off_the_runtime(runtime: &Handle, ready: Option<Ready>) {
 /// open read stream, a listing in flight), or something used the repo a moment
 /// ago (the gap between a scan's listings, or a copy's files).
 fn in_use(slot: &RepoSlot, ready: &Ready, grace: Duration) -> bool {
-    Arc::strong_count(&ready.repo) > 1 || slot.last_used().elapsed() < grace
+    Arc::strong_count(&ready.repo) > 1 || slot.index_last_used().elapsed() < grace
 }
 
 /// Locks a std mutex, taking the data over from a thread that panicked holding

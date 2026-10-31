@@ -424,7 +424,7 @@ impl ResticRepos {
         snapshot: &Snapshot,
         on_progress: Option<&(dyn Fn(ListingProgress) + Sync)>,
     ) -> Result<Arc<IndexedRepo>, VolumeError> {
-        slot.touch();
+        slot.touch_index();
         if let Some(repo) = lock(&slot.index).serving(parent, snapshot) {
             return Ok(repo);
         }
@@ -441,7 +441,7 @@ impl ResticRepos {
             }
         };
         let outcome = waiter.outcome(on_progress).await;
-        slot.touch();
+        slot.touch_index();
         outcome.map_err(|err| Self::refused(slot, err))
     }
 
@@ -585,6 +585,10 @@ pub(crate) struct RepoSlot {
     latest: Mutex<LatestPin>,
     /// When anything last listed, stat'ed, or opened something in this repo.
     last_used: Mutex<Instant>,
+    /// When the loaded index last served (or was installed or released by) a
+    /// read, apart from `last_used` so a root listing, which never needs the
+    /// index, doesn't push its idle drop out.
+    index_used: Mutex<Instant>,
     /// How many times the person forgot its password ([`Self::forgets`]).
     forgets: AtomicU64,
 }
@@ -602,6 +606,7 @@ impl RepoSlot {
             snapshots: Mutex::new(None),
             latest: Mutex::new(LatestPin::default()),
             last_used: Mutex::new(Instant::now()),
+            index_used: Mutex::new(Instant::now()),
             forgets: AtomicU64::new(0),
         }
     }
@@ -640,6 +645,17 @@ impl RepoSlot {
 
     pub(crate) fn last_used(&self) -> Instant {
         *lock(&self.last_used)
+    }
+
+    /// Counts as a use of the repo AND of its loaded index.
+    pub(crate) fn touch_index(&self) {
+        let now = Instant::now();
+        *lock(&self.last_used) = now;
+        *lock(&self.index_used) = now;
+    }
+
+    pub(crate) fn index_last_used(&self) -> Instant {
+        *lock(&self.index_used)
     }
 
     /// The snapshot the `latest` folder shows, in `list`, for a path under

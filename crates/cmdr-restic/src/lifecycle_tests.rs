@@ -645,6 +645,38 @@ async fn an_idle_index_is_dropped_and_its_password_kept() {
         .expect("lists again without a password prompt");
 }
 
+/// ❗ Listing the `Browse snapshots` root doesn't need the index, so it doesn't
+/// count as using it (#742): a pane parked there, re-listed on each new backup,
+/// would otherwise push the idle drop out by a full period every time.
+#[tokio::test(flavor = "multi_thread")]
+async fn root_listings_dont_keep_an_idle_index_loaded() {
+    let rig = Rig::new(RigOptions {
+        tuning: Tuning {
+            index_idle_drop: Duration::from_millis(200),
+            ..tight_tuning()
+        },
+        ..RigOptions::default()
+    })
+    .await;
+    rig.volume.list_directory(&latest(ROOT), None).await.expect("lists");
+    let slot = rig.volume.slot_for_tests();
+    assert!(ResticRepos::is_indexed(&slot));
+
+    let deadline = std::time::Instant::now() + WITHIN;
+    while ResticRepos::is_indexed(&slot) {
+        assert!(
+            std::time::Instant::now() < deadline,
+            "the index drops despite root listings"
+        );
+        rig.volume
+            .list_directory(&view(ROOT), None)
+            .await
+            .expect("lists the root");
+        // allowed-test-sleep: the pane's re-lists arrive over time
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+}
+
 /// A reload for a newer snapshot runs beside the index already loaded; a reader
 /// holding the old one finishes on it.
 #[tokio::test(flavor = "multi_thread")]

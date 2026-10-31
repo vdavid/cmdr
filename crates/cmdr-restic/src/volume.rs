@@ -105,6 +105,9 @@ impl ResticVolume {
 
     /// The snapshot `which` names. `refresh` reads the snapshot list afresh.
     async fn resolve(&self, which: &SnapshotRef, path: &Path, refresh: bool) -> Result<Resolved, VolumeError> {
+        // Anything inside a snapshot counts as using the index; the root
+        // listing, which never needs it, doesn't (it goes to `snapshots` directly).
+        self.slot.touch_index();
         let list = self.hub.snapshots(&self.slot, &self.parent, refresh).await?;
         let found = match which {
             SnapshotRef::Latest => self.slot.latest_in(&list),
