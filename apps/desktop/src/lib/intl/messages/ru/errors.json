@@ -2536,5 +2536,33 @@
   "errors.write.namedLeavesRefused.suggestion.routeCannotName": "Переместите или скопируйте объекты под их собственными именами, а затем переименуйте их на новом месте.",
   "@errors.write.namedLeavesRefused.suggestion.routeCannotName": {
     "sourceHash": "b1e881c"
+  },
+  "errors.listing.linkNeedsConsent.title": "Эта папка находится на другом сервере",
+  "@errors.listing.linkNeedsConsent.title": {
+    "sourceHash": "c37d453"
+  },
+  "errors.listing.linkNeedsConsent.explanation": "`{path}` — это ссылка на сервере **{server}**, которая ведет на **{target}**. Cmdr там не входил, поэтому {target} ничего от вас не получил.",
+  "@errors.listing.linkNeedsConsent.explanation": {
+    "sourceHash": "91b0171"
+  },
+  "errors.listing.linkNeedsConsent.suggestion": "Чтобы открыть эту папку, Cmdr должен войти на {target} с учетной записью, которую вы используете для {server}. Проверьте это, если доверяете {target}. Остальная часть этой общей папки работает как обычно.",
+  "@errors.listing.linkNeedsConsent.suggestion": {
+    "sourceHash": "991cb6c"
+  },
+  "errors.volume.linkNeedsConsent": "Это находится за ссылкой на другой сервер, куда Cmdr пока нельзя входить. Чтобы решить, откройте папку на панели.",
+  "@errors.volume.linkNeedsConsent": {
+    "sourceHash": "79ff9fe"
+  },
+  "errors.write.linkNeedsConsent.title": "Этот файл находится на другом сервере",
+  "@errors.write.linkNeedsConsent.title": {
+    "sourceHash": "ff31c7f"
+  },
+  "errors.write.linkNeedsConsent.message": "Ссылка на сервере {server} ведет на {target}, а входить туда Cmdr пока нельзя, поэтому на этот сервер ничего не отправлено.",
+  "@errors.write.linkNeedsConsent.message": {
+    "sourceHash": "7893ce9"
+  },
+  "errors.write.linkNeedsConsent.suggestion": "Откройте папку на панели и разрешите вход, если доверяете этому серверу, затем повторите попытку.",
+  "@errors.write.linkNeedsConsent.suggestion": {
+    "sourceHash": "cc25854"
   }
 }

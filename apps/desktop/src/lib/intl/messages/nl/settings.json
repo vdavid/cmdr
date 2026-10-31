@@ -3526,5 +3526,33 @@
   "settings.license.getLicense.keywords": "licentie, kopen, aanschaffen, prijs, prijzen, commercieel, zakelijk, persoonlijk, privé, upgrade",
   "@settings.license.getLicense.keywords": {
     "sourceHash": "5454f6d"
+  },
+  "settings.servers.card.smbLinkConsents": "Inloggen via SMB-links",
+  "@settings.servers.card.smbLinkConsents": {
+    "sourceHash": "831477d"
+  },
+  "settings.network.smbLinkConsents.keywords": "SMB, DFS, link, inloggen, andere server, toestaan, vertrouwen, vergeten",
+  "@settings.network.smbLinkConsents.keywords": {
+    "sourceHash": "d88f7c7"
+  },
+  "settings.servers.smbLinkConsents.description": "Een link in een gedeelde SMB-map kan naar een map op een andere server leiden. Cmdr vraagt het je voordat het daar inlogt, en onthoudt je antwoord hier.",
+  "@settings.servers.smbLinkConsents.description": {
+    "sourceHash": "03ed8ee"
+  },
+  "settings.servers.smbLinkConsents.empty": "Nog niets toegestaan. Als een link in een gedeelde map naar een andere server leidt, vraagt Cmdr het eerst.",
+  "@settings.servers.smbLinkConsents.empty": {
+    "sourceHash": "16326ce"
+  },
+  "settings.servers.smbLinkConsents.pair": "Links op {server} mogen inloggen bij {target}",
+  "@settings.servers.smbLinkConsents.pair": {
+    "sourceHash": "093a03d"
+  },
+  "settings.servers.smbLinkConsents.confirmTitle": "Dit inloggen vergeten?",
+  "@settings.servers.smbLinkConsents.confirmTitle": {
+    "sourceHash": "edc2567"
+  },
+  "settings.servers.smbLinkConsents.confirm": "De volgende keer dat een link op {server} naar {target} leidt, vraagt Cmdr het opnieuw.",
+  "@settings.servers.smbLinkConsents.confirm": {
+    "sourceHash": "0218465"
   }
 }

@@ -32,6 +32,11 @@ interface Certificate {
 const listTrustedSftpHostKeys = vi.fn<() => Promise<HostKey[]>>()
 const listTrustedWebdavCertificates = vi.fn<() => Promise<Certificate[]>>(() => Promise.resolve([]))
 const forgetWebdavCertificate = vi.fn<(host: string, port: number) => Promise<boolean>>()
+const listSmbLinkConsents = vi.fn<() => Promise<{ server: string; target: string; approvedAt: string }[]>>(() =>
+  Promise.resolve([]),
+)
+// eslint-disable-next-line cmdr/no-confusable-callback-params -- mirrors the real `forgetSmbLinkTarget(server, target)`, whose shape the test exists to pin
+const forgetSmbLinkTarget = vi.fn<(server: string, target: string) => Promise<boolean>>()
 // eslint-disable-next-line cmdr/no-confusable-callback-params -- mirrors the real `forgetSftpHostKey(host, port, algorithm)`, whose shape the test exists to pin
 const forgetSftpHostKey = vi.fn<(host: string, port: number, algorithm: string) => Promise<boolean>>()
 // eslint-disable-next-line cmdr/no-confusable-callback-params -- mirrors the real `confirmDialog(message, title)`
@@ -51,6 +56,8 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
   forgetSftpHostKey: (host: string, port: number, algorithm: string) => forgetSftpHostKey(host, port, algorithm),
   listTrustedWebdavCertificates: () => listTrustedWebdavCertificates(),
   forgetWebdavCertificate: (host: string, port: number) => forgetWebdavCertificate(host, port),
+  listSmbLinkConsents: () => listSmbLinkConsents(),
+  forgetSmbLinkTarget: (server: string, target: string) => forgetSmbLinkTarget(server, target),
 }))
 
 vi.mock('#lib/utils/confirm-dialog.js', () => ({
@@ -96,6 +103,47 @@ const synology: Certificate = {
   fingerprint: 'CD:6F:DC:7C:4B:21:C9:B5:28:58:69:B3:4E:5C:68:B8:55:26:2C:0A:5C:06:7A:8A:2D:BF:BD:FA:AE:C2:9B:E7',
   approvedAt: '2026-10-20T10:00:00Z',
 }
+
+// `vi.clearAllMocks` keeps a resolved value, and only one describe wants these rows.
+beforeEach(() => {
+  listSmbLinkConsents.mockResolvedValue([])
+})
+
+describe('the SMB link sign-ins list', () => {
+  const pair = { server: 'nas.local', target: 'fs01.example.com', approvedAt: '2026-10-31T10:00:00Z' }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    confirmDialog.mockResolvedValue(true)
+    forgetSmbLinkTarget.mockResolvedValue(true)
+    listTrustedSftpHostKeys.mockResolvedValue([])
+    listSmbLinkConsents.mockResolvedValue([pair])
+  })
+
+  it('names both servers, and Forget takes that pair back after confirming', async () => {
+    const target = await mountSection()
+    const list = target.querySelector('[data-testid="smb-link-consents"]')
+    expect(list?.textContent).toContain('nas.local')
+    expect(list?.textContent).toContain('fs01.example.com')
+
+    list?.querySelector('button')?.click()
+    await vi.waitFor(() => {
+      expect(forgetSmbLinkTarget).toHaveBeenCalledWith('nas.local', 'fs01.example.com')
+    })
+    target.remove()
+  })
+
+  it('keeps the pair when the confirmation is declined', async () => {
+    confirmDialog.mockResolvedValue(false)
+    const target = await mountSection()
+    target.querySelector<HTMLButtonElement>('[data-testid="smb-link-consents"] button')?.click()
+    await vi.waitFor(() => {
+      expect(confirmDialog).toHaveBeenCalledOnce()
+    })
+    expect(forgetSmbLinkTarget).not.toHaveBeenCalled()
+    target.remove()
+  })
+})
 
 describe('the trusted-key list', () => {
   beforeEach(() => {

@@ -2536,5 +2536,33 @@
   "errors.write.namedLeavesRefused.suggestion.routeCannotName": "Hãy di chuyển hoặc sao chép các mục với tên hiện tại, rồi đổi tên chúng ở nơi mới.",
   "@errors.write.namedLeavesRefused.suggestion.routeCannotName": {
     "sourceHash": "b1e881c"
+  },
+  "errors.listing.linkNeedsConsent.title": "Thư mục này nằm trên máy chủ khác",
+  "@errors.listing.linkNeedsConsent.title": {
+    "sourceHash": "c37d453"
+  },
+  "errors.listing.linkNeedsConsent.explanation": "`{path}` là một liên kết trên **{server}** dẫn tới **{target}**. Cmdr chưa đăng nhập vào đó, nên {target} chưa nhận được gì từ bạn.",
+  "@errors.listing.linkNeedsConsent.explanation": {
+    "sourceHash": "91b0171"
+  },
+  "errors.listing.linkNeedsConsent.suggestion": "Để mở thư mục này, Cmdr phải đăng nhập vào {target} bằng tài khoản bạn dùng cho {server}. Hãy xem lại nếu bạn tin cậy {target}. Phần còn lại của mục chia sẻ này vẫn hoạt động bình thường.",
+  "@errors.listing.linkNeedsConsent.suggestion": {
+    "sourceHash": "991cb6c"
+  },
+  "errors.volume.linkNeedsConsent": "Mục này nằm sau một liên kết tới máy chủ khác mà Cmdr chưa được phép đăng nhập. Hãy mở thư mục trong một khung để quyết định.",
+  "@errors.volume.linkNeedsConsent": {
+    "sourceHash": "79ff9fe"
+  },
+  "errors.write.linkNeedsConsent.title": "Tệp này nằm trên máy chủ khác",
+  "@errors.write.linkNeedsConsent.title": {
+    "sourceHash": "ff31c7f"
+  },
+  "errors.write.linkNeedsConsent.message": "Một liên kết trên {server} dẫn tới {target}, và Cmdr chưa được phép đăng nhập vào đó, nên không có gì được gửi tới máy chủ đó.",
+  "@errors.write.linkNeedsConsent.message": {
+    "sourceHash": "7893ce9"
+  },
+  "errors.write.linkNeedsConsent.suggestion": "Hãy mở thư mục trong một khung và cho phép đăng nhập nếu bạn tin cậy máy chủ đó, rồi thử lại.",
+  "@errors.write.linkNeedsConsent.suggestion": {
+    "sourceHash": "cc25854"
   }
 }

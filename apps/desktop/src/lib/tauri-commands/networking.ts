@@ -15,6 +15,7 @@ import type {
   SignedInReply,
   SmbCredentials,
   SmbFellBackToOsMount,
+  SmbLinkConsent,
   SmbOsMountNoticeWithdrawn,
   UpgradeResult,
 } from '#lib/ipc/bindings.js'
@@ -245,6 +246,24 @@ export async function getUsernameHint(serverName: string): Promise<string | null
 // ============================================================================
 // Keychain operations (macOS only)
 // ============================================================================
+
+/**
+ * Lets links on `server` sign in to `target`. Call only on a person's yes.
+ * `false` when Cmdr refuses to ask about that name.
+ */
+export async function allowSmbLinkTarget(server: string, target: string): Promise<boolean> {
+  return await commands.allowSmbLinkTarget(server, target)
+}
+
+/** Takes a pair back, so links on `server` ask again on their next call. */
+export async function forgetSmbLinkTarget(server: string, target: string): Promise<boolean> {
+  return await commands.forgetSmbLinkTarget(server, target)
+}
+
+/** Every pair a person allowed, for the settings screen. */
+export async function listSmbLinkConsents(): Promise<SmbLinkConsent[]> {
+  return await commands.listSmbLinkConsents()
+}
 
 /**
  * Saves SMB credentials to the Keychain.

@@ -3512,5 +3512,33 @@
   "settings.license.getLicense.keywords": "授權, 購買, 價格, 定價, 商業, 商用, 個人, 升級",
   "@settings.license.getLicense.keywords": {
     "sourceHash": "5454f6d"
+  },
+  "settings.servers.card.smbLinkConsents": "SMB 連結登入",
+  "@settings.servers.card.smbLinkConsents": {
+    "sourceHash": "831477d"
+  },
+  "settings.network.smbLinkConsents.keywords": "SMB, DFS, 連結, 登入, 其他伺服器, 允許, 信任, 忘記",
+  "@settings.network.smbLinkConsents.keywords": {
+    "sourceHash": "d88f7c7"
+  },
+  "settings.servers.smbLinkConsents.description": "SMB 共享資料夾中的連結可能指向另一個伺服器上的資料夾。Cmdr 會先問你再登入那裡，並把你的回答記在這裡。",
+  "@settings.servers.smbLinkConsents.description": {
+    "sourceHash": "03ed8ee"
+  },
+  "settings.servers.smbLinkConsents.empty": "還沒有允許任何登入。當共享資料夾中的連結指向另一個伺服器時，Cmdr 會先詢問。",
+  "@settings.servers.smbLinkConsents.empty": {
+    "sourceHash": "16326ce"
+  },
+  "settings.servers.smbLinkConsents.pair": "{server} 上的連結可以登入 {target}",
+  "@settings.servers.smbLinkConsents.pair": {
+    "sourceHash": "093a03d"
+  },
+  "settings.servers.smbLinkConsents.confirmTitle": "要忘記這次登入嗎？",
+  "@settings.servers.smbLinkConsents.confirmTitle": {
+    "sourceHash": "edc2567"
+  },
+  "settings.servers.smbLinkConsents.confirm": "下次 {server} 上的連結指向 {target} 時，Cmdr 會再次詢問。",
+  "@settings.servers.smbLinkConsents.confirm": {
+    "sourceHash": "0218465"
   }
 }

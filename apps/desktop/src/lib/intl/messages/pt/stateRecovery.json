@@ -126,5 +126,9 @@
   "stateRecovery.dismiss": "Dispensar",
   "@stateRecovery.dismiss": {
     "sourceHash": "48845bf"
+  },
+  "stateRecovery.smbLinkConsents.title": "O Cmdr não conseguiu ler todos os servidores em que você deixou links SMB iniciarem sessão, então pode perguntar de novo sobre alguns",
+  "@stateRecovery.smbLinkConsents.title": {
+    "sourceHash": "2e0f9fd"
   }
 }

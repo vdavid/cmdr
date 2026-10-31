@@ -50,6 +50,9 @@ const bindingCommands = vi.hoisted(() => ({
       },
     ]),
   ),
+  listSmbLinkConsents: vi.fn(() =>
+    Promise.resolve([{ server: 'nas.local', target: 'fs01.example.com', approvedAt: '2026-10-31T10:00:00Z' }]),
+  ),
   listTrustedSftpHostKeys: vi.fn(() =>
     Promise.resolve([
       {

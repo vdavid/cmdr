@@ -478,5 +478,9 @@
   "viewer.selection.toEndOfFileNoLine": "Вибрано до кінця файлу",
   "@viewer.selection.toEndOfFileNoLine": {
     "sourceHash": "e7e0442"
+  },
+  "viewer.error.linkNeedsConsent": "Цей файл розташовано за посиланням на інший сервер, куди Cmdr поки що не можна входити. Щоб вирішити, відкрийте його папку на панелі.",
+  "@viewer.error.linkNeedsConsent": {
+    "sourceHash": "b9b3e1f"
   }
 }

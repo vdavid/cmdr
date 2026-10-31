@@ -2163,5 +2163,41 @@
   "fileExplorer.tags.skipped": "{count, plural, one {Cmdr heeft de tags van één onderdeel gelaten zoals ze waren, omdat de tags die er al op zaten niet te lezen waren. Controleer of je het onderdeel kunt openen, of geef het in Finder een tag.} other {Cmdr heeft de tags van {countText} onderdelen gelaten zoals ze waren, omdat de tags die er al op zaten niet te lezen waren. Controleer of je de onderdelen kunt openen, of geef ze in Finder een tag.}}",
   "@fileExplorer.tags.skipped": {
     "sourceHash": "31363ee"
+  },
+  "fileExplorer.errorPane.reviewLinkSignIn": "Inloggen bekijken",
+  "@fileExplorer.errorPane.reviewLinkSignIn": {
+    "sourceHash": "25a3cfe"
+  },
+  "fileExplorer.pane.directConnectionOtherServerNotAllowedToast": "{server} zegt dat de bestanden van deze gedeelde map op een andere server staan. Cmdr logt daar niet uit zichzelf in, dus die blijft op de systeemverbinding.",
+  "@fileExplorer.pane.directConnectionOtherServerNotAllowedToast": {
+    "sourceHash": "c350d80"
+  },
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "Geen directe verbinding met <shareName>{share}</shareName> gelukt, omdat de bestanden op een andere server staan en Cmdr daar niet uit zichzelf inlogt. Je bent nog steeds verbonden via de eigen SMB-netwerkverbinding van macOS, die een stuk langzamer is.",
+  "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
+    "sourceHash": "9c9c5a5"
+  },
+  "fileExplorer.smbLinkConsent.title": "Inloggen bij een andere server?",
+  "@fileExplorer.smbLinkConsent.title": {
+    "sourceHash": "91458ea"
+  },
+  "fileExplorer.smbLinkConsent.message": "Een link op {server} leidt naar een map op {target}. Om die te openen, logt Cmdr bij {target} in met het account dat je voor {server} gebruikt.",
+  "@fileExplorer.smbLinkConsent.message": {
+    "sourceHash": "848be1b"
+  },
+  "fileExplorer.smbLinkConsent.warning": "Sta dit alleen toe als je {target} vertrouwt. Een server die je niet kent, kan met zo’n link je wachtwoord bemachtigen.",
+  "@fileExplorer.smbLinkConsent.warning": {
+    "sourceHash": "295e81e"
+  },
+  "fileExplorer.smbLinkConsent.note": "Cmdr onthoudt je antwoord voor deze twee servers. Je kunt het vergeten in Instellingen, onder Servers.",
+  "@fileExplorer.smbLinkConsent.note": {
+    "sourceHash": "3f9615a"
+  },
+  "fileExplorer.smbLinkConsent.allow": "Toestaan en inloggen",
+  "@fileExplorer.smbLinkConsent.allow": {
+    "sourceHash": "d8192ad"
+  },
+  "fileExplorer.smbLinkConsent.notNow": "Niet nu",
+  "@fileExplorer.smbLinkConsent.notNow": {
+    "sourceHash": "a0e63d7"
   }
 }

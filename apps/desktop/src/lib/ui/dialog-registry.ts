@@ -95,6 +95,11 @@ export const SOFT_DIALOG_REGISTRY = [
     whileOpen: BLOCKS_OPERATIONS,
   },
   {
+    id: 'smb-link-consent',
+    description: 'Asks whether Cmdr may sign in to the other server a link in an SMB share leads to',
+    whileOpen: BLOCKS_OPERATIONS,
+  },
+  {
     id: 'archive-password',
     description: 'Prompts for an encrypted archive password before extracting',
     whileOpen: BLOCKS_OPERATIONS,

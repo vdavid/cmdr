@@ -3511,5 +3511,33 @@
   "settings.license.getLicense.keywords": "giấy phép, mua, giá, bảng giá, thương mại, cá nhân, nâng cấp, bản quyền",
   "@settings.license.getLicense.keywords": {
     "sourceHash": "5454f6d"
+  },
+  "settings.servers.card.smbLinkConsents": "Đăng nhập qua liên kết SMB",
+  "@settings.servers.card.smbLinkConsents": {
+    "sourceHash": "831477d"
+  },
+  "settings.network.smbLinkConsents.keywords": "SMB, DFS, liên kết, đăng nhập, máy chủ khác, cho phép, tin cậy, quên",
+  "@settings.network.smbLinkConsents.keywords": {
+    "sourceHash": "d88f7c7"
+  },
+  "settings.servers.smbLinkConsents.description": "Một liên kết trong mục chia sẻ SMB có thể dẫn tới thư mục trên máy chủ khác. Cmdr hỏi trước khi đăng nhập vào đó, và ghi nhớ câu trả lời của bạn ở đây.",
+  "@settings.servers.smbLinkConsents.description": {
+    "sourceHash": "03ed8ee"
+  },
+  "settings.servers.smbLinkConsents.empty": "Chưa cho phép gì. Khi một liên kết trong mục chia sẻ dẫn tới máy chủ khác, Cmdr sẽ hỏi trước.",
+  "@settings.servers.smbLinkConsents.empty": {
+    "sourceHash": "16326ce"
+  },
+  "settings.servers.smbLinkConsents.pair": "Liên kết trên {server} được đăng nhập vào {target}",
+  "@settings.servers.smbLinkConsents.pair": {
+    "sourceHash": "093a03d"
+  },
+  "settings.servers.smbLinkConsents.confirmTitle": "Quên lần đăng nhập này?",
+  "@settings.servers.smbLinkConsents.confirmTitle": {
+    "sourceHash": "edc2567"
+  },
+  "settings.servers.smbLinkConsents.confirm": "Lần tới khi một liên kết trên {server} dẫn tới {target}, Cmdr sẽ hỏi lại.",
+  "@settings.servers.smbLinkConsents.confirm": {
+    "sourceHash": "0218465"
   }
 }

@@ -2144,5 +2144,41 @@
   "fileExplorer.tags.skipped": "{count, plural, other {Cmdr 讓 {countText} 個項目的標籤維持原樣，因為讀不到上面已有的標籤。確認一下你能開啟相關項目，或者改在 Finder 中加入標籤。}}",
   "@fileExplorer.tags.skipped": {
     "sourceHash": "31363ee"
+  },
+  "fileExplorer.errorPane.reviewLinkSignIn": "檢視登入",
+  "@fileExplorer.errorPane.reviewLinkSignIn": {
+    "sourceHash": "25a3cfe"
+  },
+  "fileExplorer.pane.directConnectionOtherServerNotAllowedToast": "{server} 說這個共享資料夾的檔案在另一個伺服器上。Cmdr 不會自行登入那裡，所以會繼續使用系統連線。",
+  "@fileExplorer.pane.directConnectionOtherServerNotAllowedToast": {
+    "sourceHash": "c350d80"
+  },
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "無法直接連線到 <shareName>{share}</shareName>，因為它的檔案在另一個伺服器上，而 Cmdr 不會自行登入那裡。你仍透過 macOS 原生的 SMB 網路連線存取，速度慢很多。",
+  "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
+    "sourceHash": "9c9c5a5"
+  },
+  "fileExplorer.smbLinkConsent.title": "要登入另一個伺服器嗎？",
+  "@fileExplorer.smbLinkConsent.title": {
+    "sourceHash": "91458ea"
+  },
+  "fileExplorer.smbLinkConsent.message": "{server} 上的連結指向 {target} 上的資料夾。要開啟它，Cmdr 會用你在 {server} 使用的帳號登入 {target}。",
+  "@fileExplorer.smbLinkConsent.message": {
+    "sourceHash": "848be1b"
+  },
+  "fileExplorer.smbLinkConsent.warning": "只有在你信任 {target} 時才允許。你不認識的伺服器可能利用這種連結取得你的密碼。",
+  "@fileExplorer.smbLinkConsent.warning": {
+    "sourceHash": "295e81e"
+  },
+  "fileExplorer.smbLinkConsent.note": "Cmdr 會記住你對這兩個伺服器的回答。你可以在「設定」的「伺服器」中忘記它。",
+  "@fileExplorer.smbLinkConsent.note": {
+    "sourceHash": "3f9615a"
+  },
+  "fileExplorer.smbLinkConsent.allow": "允許並登入",
+  "@fileExplorer.smbLinkConsent.allow": {
+    "sourceHash": "d8192ad"
+  },
+  "fileExplorer.smbLinkConsent.notNow": "以後再說",
+  "@fileExplorer.smbLinkConsent.notNow": {
+    "sourceHash": "a0e63d7"
   }
 }

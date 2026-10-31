@@ -3521,5 +3521,33 @@
   "settings.license.getLicense.keywords": "licens, köp, köpa, pris, priser, kommersiell, personlig, uppgradera",
   "@settings.license.getLicense.keywords": {
     "sourceHash": "5454f6d"
+  },
+  "settings.servers.card.smbLinkConsents": "Inloggningar via SMB-länkar",
+  "@settings.servers.card.smbLinkConsents": {
+    "sourceHash": "831477d"
+  },
+  "settings.network.smbLinkConsents.keywords": "SMB, DFS, länk, logga in, annan server, tillåt, lita på, glöm",
+  "@settings.network.smbLinkConsents.keywords": {
+    "sourceHash": "d88f7c7"
+  },
+  "settings.servers.smbLinkConsents.description": "En länk i en delad SMB-mapp kan leda till en mapp på en annan server. Cmdr frågar innan den loggar in där, och kommer ihåg ditt svar här.",
+  "@settings.servers.smbLinkConsents.description": {
+    "sourceHash": "03ed8ee"
+  },
+  "settings.servers.smbLinkConsents.empty": "Inget tillåtet än. När en länk i en delad mapp leder till en annan server frågar Cmdr först.",
+  "@settings.servers.smbLinkConsents.empty": {
+    "sourceHash": "16326ce"
+  },
+  "settings.servers.smbLinkConsents.pair": "Länkar på {server} får logga in på {target}",
+  "@settings.servers.smbLinkConsents.pair": {
+    "sourceHash": "093a03d"
+  },
+  "settings.servers.smbLinkConsents.confirmTitle": "Glöm den här inloggningen?",
+  "@settings.servers.smbLinkConsents.confirmTitle": {
+    "sourceHash": "edc2567"
+  },
+  "settings.servers.smbLinkConsents.confirm": "Nästa gång en länk på {server} leder till {target} frågar Cmdr igen.",
+  "@settings.servers.smbLinkConsents.confirm": {
+    "sourceHash": "0218465"
   }
 }

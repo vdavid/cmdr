@@ -122,6 +122,23 @@ pub(super) fn map_smb_error(err: smb2::Error, path: &str) -> VolumeError {
         };
     }
 
+    // This path alone, and nothing went to that server. A name no person could
+    // read gets no prompt at all: it's a plain refusal.
+    if let smb2::Error::DfsTargetNotAllowed { server, target, .. } = &err {
+        return if crate::link_consent::is_presentable_host(target) {
+            VolumeError::LinkNeedsConsent(Box::new(cmdr_fs::volume::LinkSignIn {
+                path: path.to_string(),
+                server: server.clone(),
+                target: target.clone(),
+            }))
+        } else {
+            VolumeError::PermissionDenied {
+                path: path.to_string(),
+                raw_os_error: None,
+            }
+        };
+    }
+
     match err.kind() {
         ErrorKind::NotFound => VolumeError::NotFound(path.to_string()),
         ErrorKind::AlreadyExists => VolumeError::AlreadyExists(path.to_string()),

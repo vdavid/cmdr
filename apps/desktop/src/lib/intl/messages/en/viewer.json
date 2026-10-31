@@ -759,5 +759,9 @@
     "description": "Screen-reader announcement for a very large selection that reaches the end of the file when the viewer can’t work out which line it starts on, so no line number is named. Sibling of viewer.selection.toEndOfFile, which does name one.",
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
+  },
+  "viewer.error.linkNeedsConsent": "This file sits behind a link to another server, and Cmdr hasn’t been allowed to sign in there. Open its folder in a pane to decide.",
+  "@viewer.error.linkNeedsConsent": {
+    "description": "Shown in the file viewer when a file is behind a link (a DFS link in an SMB share) to another server the person hasn’t allowed Cmdr to sign in to. \"pane\" is one of the main window’s two file lists."
   }
 }

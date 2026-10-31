@@ -30,6 +30,9 @@ function openFailureCopy(e: unknown): OpenFailure {
     if (ve.kind === 'tooLargeToPreview') return { message: tString('viewer.error.tooLargeToPreview'), canRetry: false }
     if (ve.kind === 'archive') return { message: tString('viewer.error.archiveUnreadable'), canRetry: false }
     if (ve.kind === 'coldStorage') return { message: tString('viewer.error.coldStorage'), canRetry: false }
+    if (ve.kind === 'linkNeedsConsent') {
+      return { message: tString('viewer.error.linkNeedsConsent'), canRetry: false }
+    }
     if (ve.kind === 'linkTargetUnreachable') {
       return { message: tString('viewer.error.linkTargetUnreachable'), canRetry: true }
     }
@@ -48,6 +51,7 @@ function openFailureCopy(e: unknown): OpenFailure {
  * repository that dropped mid-read). The error side can't reach an open at all: no live
  * session, a line past the end, a save-only refusal.
  */
+// eslint-disable-next-line complexity -- one exhaustive switch, a case per variant, which is its point
 function logLevelFor(ve: ViewerError): 'warn' | 'error' {
   switch (ve.kind) {
     case 'timedOut':
@@ -58,6 +62,7 @@ function logLevelFor(ve: ViewerError): 'warn' | 'error' {
     case 'archive':
     case 'coldStorage':
     case 'linkTargetUnreachable':
+    case 'linkNeedsConsent':
     case 'notEnoughSpace': // only an "Open with" pull checks for room, so a viewer open never meets it
     case 'cancelled':
     case 'io':

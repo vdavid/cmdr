@@ -2536,5 +2536,33 @@
   "errors.write.namedLeavesRefused.suggestion.routeCannotName": "Déplacez-les ou copiez-les sous leurs propres noms, puis renommez-les à cet endroit.",
   "@errors.write.namedLeavesRefused.suggestion.routeCannotName": {
     "sourceHash": "b1e881c"
+  },
+  "errors.listing.linkNeedsConsent.title": "Ce dossier se trouve sur un autre serveur",
+  "@errors.listing.linkNeedsConsent.title": {
+    "sourceHash": "c37d453"
+  },
+  "errors.listing.linkNeedsConsent.explanation": "`{path}` est un lien sur **{server}** qui mène à **{target}**. Cmdr ne s’y est pas identifié, donc {target} n’a rien reçu de votre part.",
+  "@errors.listing.linkNeedsConsent.explanation": {
+    "sourceHash": "91b0171"
+  },
+  "errors.listing.linkNeedsConsent.suggestion": "Pour ouvrir ce dossier, Cmdr doit s’identifier sur {target} avec le compte que vous utilisez pour {server}. Examinez cela si vous faites confiance à {target}. Le reste de ce partage fonctionne normalement.",
+  "@errors.listing.linkNeedsConsent.suggestion": {
+    "sourceHash": "991cb6c"
+  },
+  "errors.volume.linkNeedsConsent": "Cet élément se trouve derrière un lien vers un autre serveur sur lequel Cmdr n’a pas encore le droit de s’identifier. Ouvrez le dossier dans un panneau pour décider.",
+  "@errors.volume.linkNeedsConsent": {
+    "sourceHash": "79ff9fe"
+  },
+  "errors.write.linkNeedsConsent.title": "Ce fichier se trouve sur un autre serveur",
+  "@errors.write.linkNeedsConsent.title": {
+    "sourceHash": "ff31c7f"
+  },
+  "errors.write.linkNeedsConsent.message": "Un lien sur {server} mène à {target}, et Cmdr n’a pas encore le droit de s’y identifier, donc rien n’a été envoyé à ce serveur.",
+  "@errors.write.linkNeedsConsent.message": {
+    "sourceHash": "7893ce9"
+  },
+  "errors.write.linkNeedsConsent.suggestion": "Ouvrez le dossier dans un panneau et autorisez l’identification si vous faites confiance à ce serveur, puis réessayez.",
+  "@errors.write.linkNeedsConsent.suggestion": {
+    "sourceHash": "cc25854"
   }
 }

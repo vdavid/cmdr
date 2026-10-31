@@ -146,6 +146,10 @@ pub enum UpgradeFailure {
     /// by switching it off and on), or a firewall app. Read by [`Self::of_dial`],
     /// ❌ never from the errno alone.
     BlockedByThisMac,
+    /// The share is a DFS namespace on another server, and nobody has allowed
+    /// signing in there, so Cmdr didn't. Repeating can't help: it stays on the
+    /// system connection.
+    OtherServerNotAllowed,
 }
 
 /// The longest one dial attempt may take to fail and still count as this Mac
@@ -231,6 +235,9 @@ impl UpgradeFailure {
                 Io::TimedOut => Self::TooSlow,
                 _ => Self::Unexpected,
             };
+        }
+        if err.kind() == ErrorKind::DfsTargetNotAllowed {
+            return Self::OtherServerNotAllowed;
         }
         // ❌ Read the kind AND the command, like `RefusedAt::of` above: the same
         // kind at another command is another thing entirely. At TreeConnect,

@@ -126,5 +126,9 @@
   "stateRecovery.dismiss": "Закрыть",
   "@stateRecovery.dismiss": {
     "sourceHash": "48845bf"
+  },
+  "stateRecovery.smbLinkConsents.title": "Cmdr не удалось прочитать все серверы, на которые вы разрешили входить по ссылкам SMB, поэтому он может снова спросить о некоторых из них",
+  "@stateRecovery.smbLinkConsents.title": {
+    "sourceHash": "2e0f9fd"
   }
 }

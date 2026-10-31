@@ -830,6 +830,10 @@ using the app: `announce_os_mount_fallback` emits `SmbFellBackToOsMount { volume
 raises a notice with a "Try connecting directly" button (`src/lib/file-explorer/network/DETAILS.md` § "The OS-mount
 fallback notice").
 
+**A namespace on another server nobody allowed is `UpgradeFailure::OtherServerNotAllowed`**, which also drops the button,
+with its own sentence: repeating can't help, and nothing on this path can ask (`crates/cmdr-smb/DETAILS.md` § "Signing in
+through a link").
+
 **The reason rides along so the notice can drop that button.** `UpgradeFailure::ShareNotOnServer` (the server answering
 `STATUS_BAD_NETWORK_NAME` at TreeConnect) is the one failure here that repeating cannot fix: the same identity asking
 the same server for the same share gets the same answer. Every other variant is a condition that can pass on its own,

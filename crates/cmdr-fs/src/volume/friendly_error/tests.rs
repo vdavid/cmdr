@@ -247,6 +247,18 @@ fn volume_error_variants_map_correctly() {
             |r| matches!(r, ListingErrorReason::LinkTargetUnreachable { .. }),
         ),
         (
+            // A retry can't help until a person allows it, which the pane's own
+            // button does.
+            VolumeError::LinkNeedsConsent(Box::new(crate::volume::LinkSignIn {
+                path: "x".into(),
+                server: "nas".into(),
+                target: "fs01".into(),
+            })),
+            ErrorCategory::NeedsAction,
+            false,
+            |r| matches!(r, ListingErrorReason::LinkNeedsConsent { .. }),
+        ),
+        (
             // ❌ Deliberately NOT the `DeviceDisconnected` classification: the
             // device is still attached and a reopen is already running, so the
             // user needs to wait and retry, not go re-plug anything.

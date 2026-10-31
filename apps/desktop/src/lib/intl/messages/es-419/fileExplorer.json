@@ -470,5 +470,13 @@
   "fileExplorer.pane.ejectAllHeldToast": "No se expulsó nada de este disco: {message}",
   "@fileExplorer.pane.ejectAllHeldToast": {
     "sourceHash": "3011356"
+  },
+  "fileExplorer.smbLinkConsent.note": "Cmdr recuerda tu respuesta para estos dos servidores. Puedes olvidarla en Configuración, en Servidores.",
+  "@fileExplorer.smbLinkConsent.note": {
+    "sourceHash": "7e85e0c"
+  },
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "No se pudo conectar directamente a <shareName>{share}</shareName>, porque sus archivos están en otro servidor y Cmdr no inicia sesión allí por su cuenta. Sigues conectado a través de la conexión de red SMB nativa de macOS, que es mucho más lenta.",
+  "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
+    "sourceHash": "14cb9b9"
   }
 }

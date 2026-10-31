@@ -189,6 +189,9 @@ export interface FriendlyError {
   /** The typed listing reason this was rendered from, which "Send error report…" names.
    *  Unset on one that came from anywhere else (a debug injection). */
   listingReason?: ListingErrorReason['reason']
+  /** Set on a folder behind a link to another server nobody allowed: the pair the error
+   *  screen's button asks about. */
+  linkConsent?: { server: string; target: string }
 }
 
 /**

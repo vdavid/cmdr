@@ -1,7 +1,8 @@
 <script lang="ts">
     /**
-     * `File systems > Servers (SFTP, WebDAV)`: two cards, the SSH host keys and
-     * the server certificates this Mac has trusted, each with a Forget button.
+     * `File systems > Servers (SFTP, WebDAV)`: three cards, the SSH host keys and
+     * the server certificates this Mac has trusted, and the other servers a person
+     * let SMB links sign in to, each with a Forget button.
      *
      * ❗ **Saved servers are NOT here.** They live in the hub, the switcher's
      * "Servers" row, which is a pane state so a person can navigate, sort, and act
@@ -20,11 +21,13 @@
     import { createShouldShow } from '#lib/settings/settings-search.js'
     import {
         forgetSftpHostKey,
+        forgetSmbLinkTarget,
         forgetWebdavCertificate,
         listTrustedSftpHostKeys,
+        listSmbLinkConsents,
         listTrustedWebdavCertificates,
     } from '#lib/tauri-commands/index.js'
-    import type { TrustedCertificate, TrustedHostKey } from '#lib/ipc/bindings.js'
+    import type { SmbLinkConsent, TrustedCertificate, TrustedHostKey } from '#lib/ipc/bindings.js'
     import { confirmDialog } from '#lib/utils/confirm-dialog.js'
     import { getAppLogger } from '#lib/logging/logger.js'
 
@@ -42,6 +45,7 @@
     // front of someone who does have trusted keys.
     let keys = $state<TrustedHostKey[] | null>(null)
     let certificates = $state<TrustedCertificate[] | null>(null)
+    let linkConsents = $state<SmbLinkConsent[] | null>(null)
     let forgetting = $state<string | null>(null)
 
     /** What a key is filed under: host, port, and algorithm together. */
@@ -72,9 +76,24 @@
         }
     }
 
+    /** What an allowed link sign-in is filed under: the two servers. */
+    function linkConsentId(consent: SmbLinkConsent): string {
+        return `link-consent:${consent.server}/${consent.target}`
+    }
+
+    async function loadLinkConsents(): Promise<void> {
+        try {
+            linkConsents = await listSmbLinkConsents()
+        } catch (error) {
+            log.warn('Could not read the allowed SMB link sign-ins: {error}', { error })
+            linkConsents = []
+        }
+    }
+
     onMount(() => {
         void load()
         void loadCertificates()
+        void loadLinkConsents()
     })
 
     // Confirmed, because the next connection to that server stops being routine:
@@ -109,6 +128,24 @@
             await loadCertificates()
         } catch (error) {
             log.warn('Could not forget a trusted certificate: {error}', { error })
+        } finally {
+            forgetting = null
+        }
+    }
+
+    // Confirmed for the same reason: those links ask again.
+    async function handleForgetLinkConsent(consent: SmbLinkConsent): Promise<void> {
+        const confirmed = await confirmDialog(
+            tString('settings.servers.smbLinkConsents.confirm', { server: consent.server, target: consent.target }),
+            tString('settings.servers.smbLinkConsents.confirmTitle'),
+        )
+        if (!confirmed) return
+        forgetting = linkConsentId(consent)
+        try {
+            await forgetSmbLinkTarget(consent.server, consent.target)
+            await loadLinkConsents()
+        } catch (error) {
+            log.warn('Could not forget an allowed SMB link sign-in: {error}', { error })
         } finally {
             forgetting = null
         }
@@ -189,6 +226,46 @@
                                     disabled={forgetting === certificateId(certificate)}
                                     aria-describedby={certificateId(certificate)}
                                     onclick={() => void handleForgetCertificate(certificate)}
+                                >
+                                    {tString('settings.servers.trustedHostKeys.forget')}
+                                </Button>
+                            </li>
+                        {/each}
+                    </ul>
+                {/if}
+            {/if}
+        </SectionCard>
+    {/if}
+
+    {#if shouldShow('row:network.smbLinkConsents')}
+        <SectionCard label={tString('settings.servers.card.smbLinkConsents')}>
+            <p class="card-description">{tString('settings.servers.smbLinkConsents.description')}</p>
+
+            {#if linkConsents !== null}
+                {#if linkConsents.length === 0}
+                    <p class="empty">{tString('settings.servers.smbLinkConsents.empty')}</p>
+                {:else}
+                    <ul class="key-list" data-testid="smb-link-consents">
+                        {#each linkConsents as consent (linkConsentId(consent))}
+                            <li class="key-row">
+                                <div class="key-facts">
+                                    <span class="key-host" id={linkConsentId(consent)}
+                                        >{tString('settings.servers.smbLinkConsents.pair', {
+                                            server: consent.server,
+                                            target: consent.target,
+                                        })}</span
+                                    >
+                                    <span class="key-approved">
+                                        {tString('settings.servers.trustedHostKeys.approvedPrefix')}
+                                        <DateLabel modifiedAt={approvedSeconds(consent)} />
+                                    </span>
+                                </div>
+                                <Button
+                                    variant="secondary"
+                                    size="mini"
+                                    disabled={forgetting === linkConsentId(consent)}
+                                    aria-describedby={linkConsentId(consent)}
+                                    onclick={() => void handleForgetLinkConsent(consent)}
                                 >
                                     {tString('settings.servers.trustedHostKeys.forget')}
                                 </Button>

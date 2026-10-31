@@ -240,6 +240,40 @@ fn map_smb_error_dead_link_target_refuses_the_path_and_leaves_the_session() {
     }
 }
 
+/// A link nobody allowed refuses its path with both servers named, so a pane can
+/// ask, and reads as nothing that ends the session.
+#[test]
+fn map_smb_error_link_without_consent_refuses_the_path_and_leaves_the_session() {
+    let err = smb2::Error::DfsTargetNotAllowed {
+        path: "data/a".to_string(),
+        server: "nas".to_string(),
+        target: "fs01".to_string(),
+    };
+    assert!(!super::super::state::ends_the_session(&err));
+    match map_smb_error(err, "/Volumes/share/data/a") {
+        VolumeError::LinkNeedsConsent(sign_in) => {
+            assert_eq!(sign_in.path, "/Volumes/share/data/a");
+            assert_eq!(sign_in.server, "nas");
+            assert_eq!(sign_in.target, "fs01");
+        }
+        other => panic!("got: {other:?}"),
+    }
+}
+
+/// A target name that could spoof the prompt gets no prompt at all.
+#[test]
+fn map_smb_error_unreadable_link_target_is_a_plain_refusal() {
+    let err = smb2::Error::DfsTargetNotAllowed {
+        path: "data/a".to_string(),
+        server: "nas".to_string(),
+        target: "fs01\u{202E}evil".to_string(),
+    };
+    assert!(matches!(
+        map_smb_error(err, "/Volumes/share/data/a"),
+        VolumeError::PermissionDenied { .. }
+    ));
+}
+
 /// A tree or handle from a session that has ended reads as a lost connection:
 /// that's what sends the volume through its one reconnect path and lets the
 /// transfer layer retry the file on the rebuilt session, both of which heal it.

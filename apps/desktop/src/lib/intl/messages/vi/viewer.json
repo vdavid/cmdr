@@ -479,5 +479,9 @@
   "viewer.selection.toEndOfFileNoLine": "Đã chọn đến cuối tệp",
   "@viewer.selection.toEndOfFileNoLine": {
     "sourceHash": "e7e0442"
+  },
+  "viewer.error.linkNeedsConsent": "Tệp này nằm sau một liên kết tới máy chủ khác mà Cmdr chưa được phép đăng nhập. Hãy mở thư mục của tệp trong một khung để quyết định.",
+  "@viewer.error.linkNeedsConsent": {
+    "sourceHash": "b9b3e1f"
   }
 }

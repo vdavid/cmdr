@@ -114,7 +114,9 @@ fn open_through_volume(
             os_visible,
         })),
         Err(VolumeError::NotSupported) => Ok(None),
-        Err(e @ VolumeError::LinkTargetUnreachable(_)) => Err(map_volume_error(e, None)),
+        Err(e @ (VolumeError::LinkTargetUnreachable(_) | VolumeError::LinkNeedsConsent(_))) => {
+            Err(map_volume_error(e, None))
+        }
         Err(e) => {
             debug!(
                 "viewer: {} doesn't open through its volume ({e}); opening it the usual way",

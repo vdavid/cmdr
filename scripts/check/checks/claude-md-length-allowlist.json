@@ -1,6 +1,14 @@
 {
   "$comment": "Files under `files` are exempt from the claude-md-length check up to their recorded word count (plus a 10% growth buffer). Each entry is {\"words\": N, \"reason\": \"…\"}: the reason is mandatory and says why this doc gets to be long, or starts with `TODO: ` when it should be trimmed and the reason says what moves to the sibling DETAILS.md. The push-tier CLAUDE.md is auto-injected into agent context, so it has a ~600-word budget; the pull-tier DETAILS.md is unlimited and not checked. The check shrink-wraps the numbers on local runs, so a reason is the only part written by hand. See `scripts/check/checks/DETAILS.md § Allowlist consent`.",
   "files": {
+    "apps/desktop/src-tauri/src/network/CLAUDE.md": {
+      "words": 615,
+      "reason": "TODO: trim to roughly 400 words; `DETAILS.md` has a section per bullet. Fold the keychain, NetFS, and subprocess rules into one line each pointing at their sections, and move the saved-share and re-register bullets' detail there."
+    },
+    "crates/cmdr-smb/CLAUDE.md": {
+      "words": 624,
+      "reason": "TODO: trim to roughly 400 words; the write-path rules (`write_from_stream`, date stamping, unknown lengths, the forced rename, the one-frame limits) are one concern, and `DETAILS.md` already explains each. Fold them into one line pointing there, saving roughly 120 words."
+    },
     "apps/desktop/src/lib/file-explorer/drag/CLAUDE.md": {
       "words": 608,
       "reason": "TODO: trim to roughly 430 words; `DETAILS.md` carries a section per bullet here, one of them titled identically to the longest. Compress the self-drag bullet (roughly 120 words of MTP round-trip narrative) to the guardrail plus a pointer at § Self-drag identity, saving roughly 80; move the wry `collect_paths` explanation and the wry#1723 link out of the `NSFilenamesPboardType` bullet and the promise-provider explanation out of the pasteboard-layout bullet into § Key decisions, roughly 60 more; fold the source-op-mask and `public.file-url` `setString:` bullets into one two-line pasteboard wire-format rule with the AppKit reasons in DETAILS, roughly 40 more. Keep the issue #28 warning, the `clearSelfDragIdentity()` never-on-leave rule, the destination-guard-first ordering, and the `catch_unwind` guard verbatim, since each names something that fails without a symptom."

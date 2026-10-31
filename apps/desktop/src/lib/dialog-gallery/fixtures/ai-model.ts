@@ -38,6 +38,16 @@ export const forgetMemoryFixtures: Record<string, ForgetMemoryFixture | undefine
   forgetting: { isForgetting: true },
 }
 
+/** Fixtures for `smb-link-consent` (`#lib/file-explorer/network/SmbLinkConsentDialog.svelte`). Prop-driven. */
+export interface SmbLinkConsentFixture {
+  server: string
+  target: string
+}
+
+export const smbLinkConsentFixtures: Record<string, SmbLinkConsentFixture | undefined> = {
+  default: { server: 'naspolya.local', target: 'fs01.example.com' },
+}
+
 /**
  * Fixtures for `delete-all-data` (`#lib/settings/sections/DeleteAllDataDialog.svelte`), the
  * settings-window "Delete all Cmdr data" dialog. Prop-driven: every view is a `DataWipeView`.

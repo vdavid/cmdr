@@ -2150,5 +2150,41 @@
   "fileExplorer.tags.skipped": "{count, plural, other {Cmdr đã giữ nguyên thẻ của {countText} mục vì không đọc được thẻ đang có. Hãy kiểm tra xem bạn có mở được không, hoặc gắn thẻ trong Finder.}}",
   "@fileExplorer.tags.skipped": {
     "sourceHash": "31363ee"
+  },
+  "fileExplorer.errorPane.reviewLinkSignIn": "Xem lại đăng nhập",
+  "@fileExplorer.errorPane.reviewLinkSignIn": {
+    "sourceHash": "25a3cfe"
+  },
+  "fileExplorer.pane.directConnectionOtherServerNotAllowedToast": "{server} cho biết các tệp của mục chia sẻ này nằm trên máy chủ khác. Cmdr không tự đăng nhập vào đó, nên mục này vẫn dùng kết nối hệ thống.",
+  "@fileExplorer.pane.directConnectionOtherServerNotAllowedToast": {
+    "sourceHash": "c350d80"
+  },
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "Không thể kết nối trực tiếp tới <shareName>{share}</shareName>, vì các tệp nằm trên máy chủ khác và Cmdr không tự đăng nhập vào đó. Bạn vẫn đang kết nối qua kết nối mạng SMB sẵn có của macOS, vốn chậm hơn nhiều.",
+  "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
+    "sourceHash": "9c9c5a5"
+  },
+  "fileExplorer.smbLinkConsent.title": "Đăng nhập vào máy chủ khác?",
+  "@fileExplorer.smbLinkConsent.title": {
+    "sourceHash": "91458ea"
+  },
+  "fileExplorer.smbLinkConsent.message": "Một liên kết trên {server} dẫn tới một thư mục trên {target}. Để mở thư mục đó, Cmdr đăng nhập vào {target} bằng tài khoản bạn dùng cho {server}.",
+  "@fileExplorer.smbLinkConsent.message": {
+    "sourceHash": "848be1b"
+  },
+  "fileExplorer.smbLinkConsent.warning": "Chỉ cho phép nếu bạn tin cậy {target}. Một máy chủ bạn không biết có thể dùng liên kết như vậy để lấy mật khẩu của bạn.",
+  "@fileExplorer.smbLinkConsent.warning": {
+    "sourceHash": "295e81e"
+  },
+  "fileExplorer.smbLinkConsent.note": "Cmdr ghi nhớ câu trả lời của bạn cho hai máy chủ này. Bạn có thể quên nó trong Cài đặt, mục Máy chủ.",
+  "@fileExplorer.smbLinkConsent.note": {
+    "sourceHash": "3f9615a"
+  },
+  "fileExplorer.smbLinkConsent.allow": "Cho phép và đăng nhập",
+  "@fileExplorer.smbLinkConsent.allow": {
+    "sourceHash": "d8192ad"
+  },
+  "fileExplorer.smbLinkConsent.notNow": "Để sau",
+  "@fileExplorer.smbLinkConsent.notNow": {
+    "sourceHash": "a0e63d7"
   }
 }

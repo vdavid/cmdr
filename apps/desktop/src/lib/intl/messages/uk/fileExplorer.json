@@ -2146,5 +2146,41 @@
   "fileExplorer.tags.skipped": "{count, plural, =1 {Теги одного елемента залишено без змін, бо Cmdr не вдалося прочитати теги, які на ньому вже є. Перевірте, чи можна його відкрити, або додайте тег у Finder.} one {Теги на {countText} елементі залишено без змін, бо Cmdr не вдалося прочитати теги, які на них уже є. Перевірте, чи можна їх відкрити, або додайте теги у Finder.} few {Теги на {countText} елементах залишено без змін, бо Cmdr не вдалося прочитати теги, які на них уже є. Перевірте, чи можна їх відкрити, або додайте теги у Finder.} many {Теги на {countText} елементах залишено без змін, бо Cmdr не вдалося прочитати теги, які на них уже є. Перевірте, чи можна їх відкрити, або додайте теги у Finder.} other {Теги на {countText} елемента залишено без змін, бо Cmdr не вдалося прочитати теги, які на них уже є. Перевірте, чи можна їх відкрити, або додайте теги у Finder.}}",
   "@fileExplorer.tags.skipped": {
     "sourceHash": "31363ee"
+  },
+  "fileExplorer.errorPane.reviewLinkSignIn": "Переглянути вхід",
+  "@fileExplorer.errorPane.reviewLinkSignIn": {
+    "sourceHash": "25a3cfe"
+  },
+  "fileExplorer.pane.directConnectionOtherServerNotAllowedToast": "Сервер «{server}» повідомляє, що файли цієї спільної папки на іншому сервері. Cmdr не входить туди сам, тому вона залишається на системному підʼєднанні.",
+  "@fileExplorer.pane.directConnectionOtherServerNotAllowedToast": {
+    "sourceHash": "c350d80"
+  },
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "Не вдалося підʼєднатися напряму до <shareName>{share}</shareName>: файли на іншому сервері, а Cmdr не входить туди сам. Ви й далі підʼєднані через вбудоване мережеве підʼєднання SMB у macOS, яке набагато повільніше.",
+  "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
+    "sourceHash": "9c9c5a5"
+  },
+  "fileExplorer.smbLinkConsent.title": "Увійти на інший сервер?",
+  "@fileExplorer.smbLinkConsent.title": {
+    "sourceHash": "91458ea"
+  },
+  "fileExplorer.smbLinkConsent.message": "Посилання на сервері {server} веде до папки на {target}. Щоб відкрити її, Cmdr входить на {target} з обліковим записом, який ви використовуєте для {server}.",
+  "@fileExplorer.smbLinkConsent.message": {
+    "sourceHash": "848be1b"
+  },
+  "fileExplorer.smbLinkConsent.warning": "Дозволяйте це, лише якщо довіряєте {target}. Незнайомий сервер може використати таке посилання, щоб отримати ваш пароль.",
+  "@fileExplorer.smbLinkConsent.warning": {
+    "sourceHash": "295e81e"
+  },
+  "fileExplorer.smbLinkConsent.note": "Cmdr запамʼятовує вашу відповідь для цих двох серверів. Забути її можна в налаштуваннях, у розділі «Сервери».",
+  "@fileExplorer.smbLinkConsent.note": {
+    "sourceHash": "3f9615a"
+  },
+  "fileExplorer.smbLinkConsent.allow": "Дозволити й увійти",
+  "@fileExplorer.smbLinkConsent.allow": {
+    "sourceHash": "d8192ad"
+  },
+  "fileExplorer.smbLinkConsent.notNow": "Не зараз",
+  "@fileExplorer.smbLinkConsent.notNow": {
+    "sourceHash": "a0e63d7"
   }
 }

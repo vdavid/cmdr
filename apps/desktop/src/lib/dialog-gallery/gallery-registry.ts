@@ -248,6 +248,7 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
       { id: 'file_locked', label: 'File locked' },
       { id: 'trash_not_supported', label: 'Trash not supported' },
       { id: 'connection_interrupted', label: 'Connection interrupted' },
+      { id: 'link_needs_consent', label: 'Link to a server nobody allowed' },
       { id: 'server_connection_lost', label: 'Lost the connection to a server' },
       { id: 'server_connection_lost-delete', label: 'Lost the connection to a server (delete)' },
       { id: 'changed_while_disconnected', label: 'Delete left a file that changed while disconnected' },
@@ -490,6 +491,14 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
         note: 'Title, body, and both buttons all change; Escape and Enter are dead here.',
       },
     ],
+  },
+  {
+    dialogId: 'smb-link-consent',
+    label: 'Sign in through an SMB link',
+    hostWindow: 'main',
+    status: 'ready',
+    note: 'Allowing nothing: the gallery passes the two names and closes on either button. In the app this opens from the error screen of a pane standing on a folder behind a link to another server.',
+    states: [{ id: 'default', label: 'Ask' }],
   },
   {
     dialogId: 'forget-memory',

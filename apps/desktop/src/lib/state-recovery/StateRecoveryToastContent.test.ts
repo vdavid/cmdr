@@ -106,6 +106,7 @@ describe('every other file', () => {
     'smb_shares',
     'smb_servers',
     'sftp_host_keys',
+    'smb_link_consents',
     'webdav_certificates',
     'local_ai',
   ]

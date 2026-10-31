@@ -329,7 +329,11 @@ async fn run_link_watch(link: WatchedLink, mut cancel_rx: oneshot::Receiver<()>)
                     failures = 0;
                 }
             }
-            Err(error) if crate::errors::is_auth_error(&error) => {
+            // Nobody allowed signing in there, so trying again can't help until
+            // someone does, and then the next listing opens a new watch.
+            Err(error)
+                if crate::errors::is_auth_error(&error) || matches!(error, smb2::Error::DfsTargetNotAllowed { .. }) =>
+            {
                 // The main session owns the credential dance; a refused watch
                 // just leaves the listings behind the link re-reading.
                 info!(

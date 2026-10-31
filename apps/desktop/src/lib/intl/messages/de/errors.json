@@ -2536,5 +2536,33 @@
   "errors.write.namedLeavesRefused.suggestion.routeCannotName": "Bewege oder kopiere die Objekte unter ihren eigenen Namen und benenne sie dann dort um.",
   "@errors.write.namedLeavesRefused.suggestion.routeCannotName": {
     "sourceHash": "b1e881c"
+  },
+  "errors.listing.linkNeedsConsent.title": "Dieser Ordner liegt auf einem anderen Server",
+  "@errors.listing.linkNeedsConsent.title": {
+    "sourceHash": "c37d453"
+  },
+  "errors.listing.linkNeedsConsent.explanation": "`{path}` ist ein Link auf **{server}**, der zu **{target}** führt. Cmdr hat sich dort nicht angemeldet, {target} hat also nichts von dir erhalten.",
+  "@errors.listing.linkNeedsConsent.explanation": {
+    "sourceHash": "91b0171"
+  },
+  "errors.listing.linkNeedsConsent.suggestion": "Um diesen Ordner zu öffnen, muss sich Cmdr bei {target} mit dem Konto anmelden, das du für {server} verwendest. Prüfe das, wenn du {target} vertraust. Der Rest dieser Freigabe funktioniert wie gewohnt.",
+  "@errors.listing.linkNeedsConsent.suggestion": {
+    "sourceHash": "991cb6c"
+  },
+  "errors.volume.linkNeedsConsent": "Das liegt hinter einem Link zu einem anderen Server, bei dem sich Cmdr noch nicht anmelden darf. Öffne den Ordner in einem Bereich, um zu entscheiden.",
+  "@errors.volume.linkNeedsConsent": {
+    "sourceHash": "79ff9fe"
+  },
+  "errors.write.linkNeedsConsent.title": "Diese Datei liegt auf einem anderen Server",
+  "@errors.write.linkNeedsConsent.title": {
+    "sourceHash": "ff31c7f"
+  },
+  "errors.write.linkNeedsConsent.message": "Ein Link auf {server} führt zu {target}, und Cmdr darf sich dort noch nicht anmelden, daher ging nichts an diesen Server.",
+  "@errors.write.linkNeedsConsent.message": {
+    "sourceHash": "7893ce9"
+  },
+  "errors.write.linkNeedsConsent.suggestion": "Öffne den Ordner in einem Bereich, erlaube die Anmeldung, wenn du diesem Server vertraust, und versuche es dann erneut.",
+  "@errors.write.linkNeedsConsent.suggestion": {
+    "sourceHash": "cc25854"
   }
 }

@@ -126,5 +126,9 @@
   "stateRecovery.dismiss": "Ignorer",
   "@stateRecovery.dismiss": {
     "sourceHash": "48845bf"
+  },
+  "stateRecovery.smbLinkConsents.title": "Cmdr n’a pas pu lire tous les serveurs sur lesquels vous avez autorisé les liens SMB à s’identifier, et pourrait donc redemander pour certains",
+  "@stateRecovery.smbLinkConsents.title": {
+    "sourceHash": "2e0f9fd"
   }
 }

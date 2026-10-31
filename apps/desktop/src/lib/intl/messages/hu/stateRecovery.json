@@ -126,5 +126,9 @@
   "stateRecovery.dismiss": "Elvetés",
   "@stateRecovery.dismiss": {
     "sourceHash": "48845bf"
+  },
+  "stateRecovery.smbLinkConsents.title": "A Cmdr nem tudta beolvasni az összes szervert, ahová engedted az SMB-linkek bejelentkezését, ezért néhányról újra rákérdezhet",
+  "@stateRecovery.smbLinkConsents.title": {
+    "sourceHash": "2e0f9fd"
   }
 }

@@ -152,9 +152,11 @@ var surfaceGuardedCrates = []struct {
 		// that same DETAILS section.
 		// Items 22 -> 23 for `connection::probe_server_guid` (one NAS by two
 		// addresses proven one share): why, in that same DETAILS section.
+		// Root 16 -> 17 for `LinkConsents` (a DFS link's sign-in on another host needs a
+		// person's yes, and the app holds the record): why, in that same DETAILS section.
 		Name: "cmdr-smb",
 		Ceilings: surfaceCeilings{
-			RootPromises:   16,
+			RootPromises:   17,
 			PublicModules:  4,
 			SubsystemItems: 23,
 		},

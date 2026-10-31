@@ -37,9 +37,16 @@ pub mod server_list_file;
 pub mod sftp_host_keys;
 pub mod sftp_known_servers;
 pub mod sftp_volume_wiring;
+pub mod smb_link_consents;
 pub mod webdav_certificates;
 pub mod webdav_known_servers;
 pub mod webdav_volume_wiring;
+
+/// Reads the servers a person let SMB links sign in to off disk. One call at
+/// startup, ❗ before any volume is built, or an allowed link asks again.
+pub fn load_smb_link_consents<R: tauri::Runtime>(app: &AppHandle<R>) {
+    smb_link_consents::load_smb_link_consents(app);
+}
 
 /// Reads both SFTP stores off disk: the host keys the user has approved and the
 /// servers they've connected to.

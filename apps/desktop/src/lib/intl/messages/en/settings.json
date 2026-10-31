@@ -4194,5 +4194,41 @@
   "settings.license.getLicense.keywords": "license, buy, purchase, pricing, commercial, personal, upgrade",
   "@settings.license.getLicense.keywords": {
     "description": "Search keywords for the “Get a license” row (licensing.section.getLicense) in Settings > License. What it does: a button that opens the page where you can buy a license. Never shown. Search already matches its label, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
+  },
+  "settings.servers.card.smbLinkConsents": "SMB link sign-ins",
+  "@settings.servers.card.smbLinkConsents": {
+    "description": "Title of a settings card listing the other servers the person let links in SMB shares sign in to. \"SMB\" is a protocol name."
+  },
+  "settings.network.smbLinkConsents.keywords": "SMB, DFS, link, sign in, other server, allow, trust, forget",
+  "@settings.network.smbLinkConsents.keywords": {
+    "description": "Comma-separated search keywords for that settings card. Not shown to the person. Keep SMB and DFS."
+  },
+  "settings.servers.smbLinkConsents.description": "A link in an SMB share can lead to a folder on another server. Cmdr asks before it signs in there, and remembers your answer here.",
+  "@settings.servers.smbLinkConsents.description": {
+    "description": "Help text under that card’s title."
+  },
+  "settings.servers.smbLinkConsents.empty": "Nothing allowed yet. When a link in a share leads to another server, Cmdr asks first.",
+  "@settings.servers.smbLinkConsents.empty": {
+    "description": "Shown in that card when the list is empty."
+  },
+  "settings.servers.smbLinkConsents.pair": "Links on {server} can sign in to {target}",
+  "@settings.servers.smbLinkConsents.pair": {
+    "description": "One row of that card.",
+    "placeholders": {
+      "server": "the server the share is on",
+      "target": "the other server the links lead to"
+    }
+  },
+  "settings.servers.smbLinkConsents.confirmTitle": "Forget this sign-in?",
+  "@settings.servers.smbLinkConsents.confirmTitle": {
+    "description": "Title of the confirmation before removing one row of that card."
+  },
+  "settings.servers.smbLinkConsents.confirm": "The next time a link on {server} leads to {target}, Cmdr will ask again.",
+  "@settings.servers.smbLinkConsents.confirm": {
+    "description": "Body of that confirmation: what changes if they go ahead. States a consequence; nothing is lost.",
+    "placeholders": {
+      "server": "the server the share is on",
+      "target": "the other server the link leads to"
+    }
   }
 }

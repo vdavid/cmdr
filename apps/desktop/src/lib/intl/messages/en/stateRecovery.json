@@ -129,5 +129,9 @@
   "stateRecovery.dismiss": "Dismiss",
   "@stateRecovery.dismiss": {
     "description": "Button on any of the notices above that closes it. The notice doesn't come back. VERB, imperative, short control label. Pop-up notice (toast) in the corner of Cmdr's main window."
+  },
+  "stateRecovery.smbLinkConsents.title": "Cmdr couldn’t read all the servers you let SMB links sign in to, so it may ask about some of them again",
+  "@stateRecovery.smbLinkConsents.title": {
+    "description": "Headline of a notice shown once: Cmdr remembers which other servers the person let links in SMB shares sign in to, and that file couldn’t be read. \"SMB\" is a protocol name; \"Cmdr\" the product name. Sentence case, no full stop. Avoid the words \"error\" and \"failed\". Pop-up notice (toast)."
   }
 }

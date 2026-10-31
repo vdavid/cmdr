@@ -758,6 +758,17 @@ fn a_dead_link_target_says_so_rather_than_a_bare_read_failure() {
         map_volume_error(VolumeError::LinkTargetUnreachable("/smb/nas/data/a.jpg".into()), None),
         ViewerError::LinkTargetUnreachable
     ));
+    assert!(matches!(
+        map_volume_error(
+            VolumeError::LinkNeedsConsent(Box::new(cmdr_fs::volume::LinkSignIn {
+                path: "/smb/nas/data/a.jpg".into(),
+                server: "nas".into(),
+                target: "fs01".into(),
+            })),
+            None
+        ),
+        ViewerError::LinkNeedsConsent
+    ));
 }
 
 /// A refusal the viewer has no twin for keeps the volume error typed, so a log line marks the

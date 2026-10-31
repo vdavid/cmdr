@@ -501,6 +501,12 @@ pub(crate) fn map_volume_error(context_path: &str, role: PathRole, e: VolumeErro
         VolumeError::LinkTargetUnreachable(_) => WriteOperationError::ConnectionInterrupted {
             path: context_path.to_string(),
         },
+        // Nobody allowed signing in to the link's other server, so nothing went
+        // there and trying again can't help until someone does.
+        VolumeError::LinkNeedsConsent(sign_in) => {
+            let cmdr_fs::volume::LinkSignIn { path, server, target } = *sign_in;
+            WriteOperationError::LinkNeedsConsent { path, server, target }
+        }
         VolumeError::Cancelled(_) => WriteOperationError::Cancelled {
             message: "Operation cancelled by user".into(),
         },

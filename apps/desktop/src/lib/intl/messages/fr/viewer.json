@@ -482,5 +482,9 @@
   "viewer.selection.toEndOfFileNoLine": "Sélection jusqu’à la fin du fichier",
   "@viewer.selection.toEndOfFileNoLine": {
     "sourceHash": "e7e0442"
+  },
+  "viewer.error.linkNeedsConsent": "Ce fichier se trouve derrière un lien vers un autre serveur sur lequel Cmdr n’a pas encore le droit de s’identifier. Ouvrez son dossier dans un panneau pour décider.",
+  "@viewer.error.linkNeedsConsent": {
+    "sourceHash": "b9b3e1f"
   }
 }

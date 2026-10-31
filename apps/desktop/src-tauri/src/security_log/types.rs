@@ -190,6 +190,8 @@ pub enum StateFile {
     SmbServers,
     /// `known-sftp-hosts.json`: the SSH host keys the person approved.
     SftpHostKeys,
+    /// `smb-link-consents.json`: the other servers the person let SMB links sign in to.
+    SmbLinkConsents,
     /// `known-webdav-certificates.json`: the server certificates the person pinned.
     WebdavCertificates,
     /// `ai/ai-state.json`: whether local AI is installed, its server, and a dismissed offer.

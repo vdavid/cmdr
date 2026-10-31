@@ -2536,5 +2536,33 @@
   "errors.write.namedLeavesRefused.suggestion.routeCannotName": "Muévelos o cópialos con sus propios nombres y luego renómbralos ahí.",
   "@errors.write.namedLeavesRefused.suggestion.routeCannotName": {
     "sourceHash": "b1e881c"
+  },
+  "errors.listing.linkNeedsConsent.title": "Esta carpeta está en otro servidor",
+  "@errors.listing.linkNeedsConsent.title": {
+    "sourceHash": "c37d453"
+  },
+  "errors.listing.linkNeedsConsent.explanation": "`{path}` es un enlace en **{server}** que lleva a **{target}**. Cmdr no ha iniciado sesión allí, así que {target} no ha recibido nada de ti.",
+  "@errors.listing.linkNeedsConsent.explanation": {
+    "sourceHash": "91b0171"
+  },
+  "errors.listing.linkNeedsConsent.suggestion": "Para abrir esta carpeta, Cmdr tiene que iniciar sesión en {target} con la cuenta que usas para {server}. Revísalo si confías en {target}. El resto de este recurso compartido funciona como siempre.",
+  "@errors.listing.linkNeedsConsent.suggestion": {
+    "sourceHash": "991cb6c"
+  },
+  "errors.volume.linkNeedsConsent": "Esto está detrás de un enlace a otro servidor en el que Cmdr aún no tiene permiso para iniciar sesión. Abre la carpeta en un panel para decidir.",
+  "@errors.volume.linkNeedsConsent": {
+    "sourceHash": "79ff9fe"
+  },
+  "errors.write.linkNeedsConsent.title": "Este archivo está en otro servidor",
+  "@errors.write.linkNeedsConsent.title": {
+    "sourceHash": "ff31c7f"
+  },
+  "errors.write.linkNeedsConsent.message": "Un enlace en {server} lleva a {target}, y Cmdr aún no tiene permiso para iniciar sesión allí, así que no se ha enviado nada a ese servidor.",
+  "@errors.write.linkNeedsConsent.message": {
+    "sourceHash": "7893ce9"
+  },
+  "errors.write.linkNeedsConsent.suggestion": "Abre la carpeta en un panel y permite el inicio de sesión si confías en ese servidor. Luego vuelve a intentarlo.",
+  "@errors.write.linkNeedsConsent.suggestion": {
+    "sourceHash": "cc25854"
   }
 }

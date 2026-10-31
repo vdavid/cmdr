@@ -4206,10 +4206,6 @@ export const commands = {
    *  the filesystem.
    */
   getVolumeSpace: (path: string) => __TAURI_INVOKE<TimedOut<SpaceInfo | null>>('get_volume_space', { path }),
-  /**
-   *  Gets every host discovery knows, including ones a stopped browse found: the
-   *  Servers view shows them straight away while a fresh browse runs.
-   */
   listNetworkHosts: () => __TAURI_INVOKE<NetworkHost[]>('list_network_hosts'),
   /**
    *  Resolves a network host by ID, returning the host with hostname and IP address populated.
@@ -4373,6 +4369,20 @@ export const commands = {
    *  last, and Edit is where it changes.
    */
   getUsernameHint: (serverName: string) => __TAURI_INVOKE<string | null>('get_username_hint', { serverName }),
+  /**
+   *  Gets every host discovery knows, including ones a stopped browse found: the
+   *  Servers view shows them straight away while a fresh browse runs.
+   *  Lets links on `server` sign in to `target`, after a person said yes in the
+   *  pane. ❌ Only the frontend's dialog calls this: no MCP or Ask Cmdr tool may.
+   *  `false` for a name Cmdr refuses to ask about.
+   */
+  allowSmbLinkTarget: (server: string, target: string) =>
+    __TAURI_INVOKE<boolean>('allow_smb_link_target', { server, target }),
+  // Takes a pair back, so links on `server` ask again on their next call.
+  forgetSmbLinkTarget: (server: string, target: string) =>
+    __TAURI_INVOKE<boolean>('forget_smb_link_target', { server, target }),
+  // Every pair a person allowed, for a settings screen.
+  listSmbLinkConsents: () => __TAURI_INVOKE<SmbLinkConsent[]>('list_smb_link_consents'),
   /**
    *  Saves SMB credentials to the Keychain.
    *  Credentials are stored under "Cmdr" service name.
@@ -11100,6 +11110,16 @@ export type LineRef = {
   callId: string
 }
 
+// A sign-in on another server, through a link, that nobody has allowed.
+export type LinkSignIn = {
+  // The path that was refused.
+  path: string
+  // The server the share is on.
+  server: string
+  // The other server the link leads to.
+  target: string
+}
+
 // Cancelled event payload
 export type ListingCancelledEvent = {
   listingId: string
@@ -11398,6 +11418,19 @@ export type ListingErrorReason =
       reason: 'linkTargetUnreachable'
       // The path the failure was about.
       path: string
+    }
+  /**
+   *  `VolumeError::LinkNeedsConsent`: the folder sits behind a link to another server, and nobody
+   *  has allowed signing in there.
+   */
+  | {
+      reason: 'linkNeedsConsent'
+      // The path the failure was about.
+      path: string
+      // The server the share is on.
+      server: string
+      // The other server the link leads to.
+      target: string
     }
   // The volume or device is read-only.
   | { reason: 'readOnly' }
@@ -18196,6 +18229,19 @@ export type SmbFellBackToOsMount = {
 }
 
 /**
+ *  One allowed pair: links on `server` may sign in to `target`, with the account
+ *  used for `server`.
+ */
+export type SmbLinkConsent = {
+  // The server the share is on.
+  server: string
+  // The other server the link leads to.
+  target: string
+  // When it was allowed, ISO 8601, so the settings screen can show it.
+  approvedAt: string
+}
+
+/**
  *  Typed `smb-os-mount-notice-withdrawn` Tauri event: the notice a
  *  [`SmbFellBackToOsMount`] raised for this volume has nothing left to offer, so
  *  the frontend takes it down.
@@ -18523,6 +18569,8 @@ export type StateFile =
   | 'smb_servers'
   // `known-sftp-hosts.json`: the SSH host keys the person approved.
   | 'sftp_host_keys'
+  // `smb-link-consents.json`: the other servers the person let SMB links sign in to.
+  | 'smb_link_consents'
   // `known-webdav-certificates.json`: the server certificates the person pinned.
   | 'webdav_certificates'
   // `ai/ai-state.json`: whether local AI is installed, its server, and a dismissed offer.
@@ -19978,6 +20026,12 @@ export type UpgradeFailure =
    *  ❌ never from the errno alone.
    */
   | 'blockedByThisMac'
+  /**
+   *  The share is a DFS namespace on another server, and nobody has allowed
+   *  signing in there, so Cmdr didn't. Repeating can't help: it stays on the
+   *  system connection.
+   */
+  | 'otherServerNotAllowed'
 
 /**
  *  Where a "Connect directly" left the volume.
@@ -20196,6 +20250,11 @@ export type ViewerError =
    *  server is out of reach. Retry can help; nothing was deleted, so ❌ never `NotFound`.
    */
   | { kind: 'linkTargetUnreachable' }
+  /**
+   *  The file sits behind a link to another server (a DFS link in an SMB share), and nobody
+   *  has allowed signing in there. Opening its folder in a pane is where a person can.
+   */
+  | { kind: 'linkNeedsConsent' }
   | { kind: 'notEnoughSpace'; needed: number; available: number }
 
 /**
@@ -20604,6 +20663,19 @@ export type VolumeError =
    *  today.
    */
   | { type: 'linkTargetUnreachable'; data: string }
+  /**
+   *  The path sits behind a link to another server (a DFS link inside an SMB
+   *  share), and nobody has allowed signing in there, so nothing went to it.
+   *
+   *  The refusal is about this path alone. Only a pane navigation may ask the
+   *  person; everything else refuses. ❌ Never `DeviceDisconnected` or
+   *  `NotFound`, for the same reasons as [`Self::LinkTargetUnreachable`]. SMB-only
+   *  today.
+   *
+   *  Boxed: this is the rare error, and three strings inline would grow every
+   *  `Result` a volume returns.
+   */
+  | { type: 'linkNeedsConsent'; data: LinkSignIn }
   /**
    *  The device's session died mid-operation but the device itself is still
    *  attached, and a reopen is already running in the background (MTP: a PTP
@@ -21744,6 +21816,19 @@ export type WriteOperationError =
   | { type: 'trash_not_supported'; path: string }
   // Network connection was interrupted or timed out.
   | { type: 'connection_interrupted'; path: string }
+  /**
+   *  The file sits behind a link to another server (a DFS link in an SMB share),
+   *  and nobody has allowed signing in there, so nothing went to it. Opening the
+   *  folder in a pane is where a person can.
+   */
+  | {
+      type: 'link_needs_consent'
+      path: string
+      // The server the share is on.
+      server: string
+      // The other server the link leads to.
+      target: string
+    }
   /**
    *  The connection to a SERVER (SMB, SFTP, WebDAV, S3) ended the operation:
    *  Cmdr waited for it to come back and gave up, or couldn't wait at all.

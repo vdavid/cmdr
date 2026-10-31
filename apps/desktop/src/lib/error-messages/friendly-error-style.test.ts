@@ -114,6 +114,7 @@ const LISTING_REASONS: ListingErrorReason[] = [
   { reason: 'deviceReconnecting', path: PATH },
   { reason: 'notConnected', path: PATH },
   { reason: 'linkTargetUnreachable', path: PATH },
+  { reason: 'linkNeedsConsent', path: PATH, server: 'nas.local', target: 'fs01.local' },
   { reason: 'readOnly' },
   { reason: 'storageFull' },
   { reason: 'connectionTimedOut' },

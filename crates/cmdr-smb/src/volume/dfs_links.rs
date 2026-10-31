@@ -220,8 +220,9 @@ pub(super) enum LinkRoute {
 /// smb2's resolver: where `smb_path` on `tree` really lives, `Ok(None)` when
 /// it sits behind no link or the referral couldn't be had (the caller's own
 /// answer stands, as smb2's follow keeps it), and an error only for a link
-/// whose targets all failed (`DfsTargetUnreachable`), which refuses that path
-/// and leaves the session alone.
+/// whose targets all failed (`DfsTargetUnreachable`) or that leads to a server no
+/// one allowed signing in to (`DfsTargetNotAllowed`), each of which refuses that
+/// path and leaves the session alone.
 pub(super) async fn resolve_link(
     client: &mut SmbClient,
     tree: &Tree,
@@ -229,7 +230,7 @@ pub(super) async fn resolve_link(
 ) -> Result<Option<smb2::DfsLink>, smb2::Error> {
     match client.resolve_dfs_link(tree, smb_path).await {
         Ok(link) => Ok(link),
-        Err(e @ smb2::Error::DfsTargetUnreachable { .. }) => Err(e),
+        Err(e @ (smb2::Error::DfsTargetUnreachable { .. } | smb2::Error::DfsTargetNotAllowed { .. })) => Err(e),
         Err(e) => {
             log::debug!(
                 "dfs: couldn't resolve the link, keeping the server's answer ({:?})",

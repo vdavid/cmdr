@@ -251,6 +251,15 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'copy',
     error: { type: 'connection_interrupted', path: 'smb://naspolya.local/media/photos/2026' },
   },
+  link_needs_consent: {
+    operationType: 'copy',
+    error: {
+      type: 'link_needs_consent',
+      path: 'smb://naspolya.local/media/archive/2026.zip',
+      server: 'naspolya.local',
+      target: 'fs01.example.com',
+    },
+  },
   // The NAS dropped mid-copy and stayed gone for the whole outage wait (15 minutes).
   server_connection_lost: {
     operationType: 'copy',

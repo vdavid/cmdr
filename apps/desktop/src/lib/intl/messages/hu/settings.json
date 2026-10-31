@@ -3513,5 +3513,33 @@
   "settings.license.getLicense.keywords": "licenc, vásárlás, megvásárlás, vétel, ár, árak, árazás, kereskedelmi, személyes, magáncélú, előfizetés, frissítés",
   "@settings.license.getLicense.keywords": {
     "sourceHash": "5454f6d"
+  },
+  "settings.servers.card.smbLinkConsents": "SMB-linkek bejelentkezései",
+  "@settings.servers.card.smbLinkConsents": {
+    "sourceHash": "831477d"
+  },
+  "settings.network.smbLinkConsents.keywords": "SMB, DFS, link, bejelentkezés, másik szerver, engedélyezés, megbízható, elfelejtés",
+  "@settings.network.smbLinkConsents.keywords": {
+    "sourceHash": "d88f7c7"
+  },
+  "settings.servers.smbLinkConsents.description": "Egy SMB-megosztásban lévő link egy másik szerveren lévő mappához is vezethet. A Cmdr rákérdez, mielőtt bejelentkezne oda, és itt jegyzi meg a válaszodat.",
+  "@settings.servers.smbLinkConsents.description": {
+    "sourceHash": "03ed8ee"
+  },
+  "settings.servers.smbLinkConsents.empty": "Még nincs engedélyezve semmi. Ha egy megosztásban lévő link másik szerverre vezet, a Cmdr előbb rákérdez.",
+  "@settings.servers.smbLinkConsents.empty": {
+    "sourceHash": "16326ce"
+  },
+  "settings.servers.smbLinkConsents.pair": "Innen: {server}, a linkek bejelentkezhetnek ide: {target}",
+  "@settings.servers.smbLinkConsents.pair": {
+    "sourceHash": "093a03d"
+  },
+  "settings.servers.smbLinkConsents.confirmTitle": "Elfelejted ezt a bejelentkezést?",
+  "@settings.servers.smbLinkConsents.confirmTitle": {
+    "sourceHash": "edc2567"
+  },
+  "settings.servers.smbLinkConsents.confirm": "Amikor legközelebb egy link innen: {server}, ide vezet: {target}, a Cmdr újra rákérdez.",
+  "@settings.servers.smbLinkConsents.confirm": {
+    "sourceHash": "0218465"
   }
 }

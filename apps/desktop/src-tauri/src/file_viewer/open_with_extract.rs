@@ -301,7 +301,8 @@ impl From<&ViewerError> for OpenWithCopyRefusal {
             | ViewerError::DestinationIsReadOnly
             // An archive in S3 cold storage can't be opened to copy a row out of it.
             | ViewerError::ColdStorage
-            | ViewerError::LinkTargetUnreachable => Self::Unreadable,
+            | ViewerError::LinkTargetUnreachable
+            | ViewerError::LinkNeedsConsent => Self::Unreadable,
         }
     }
 }

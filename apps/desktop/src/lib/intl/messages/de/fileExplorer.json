@@ -2155,5 +2155,41 @@
   "fileExplorer.tags.skipped": "{count, plural, one {Cmdr hat die Tags eines Objekts unverändert gelassen, weil es die vorhandenen Tags nicht lesen konnte. Prüfe, ob du das Objekt öffnen kannst, oder füge den Tag im Finder hinzu.} other {Cmdr hat die Tags von {countText} Objekten unverändert gelassen, weil es die vorhandenen Tags nicht lesen konnte. Prüfe, ob du die Objekte öffnen kannst, oder füge den Tag im Finder hinzu.}}",
   "@fileExplorer.tags.skipped": {
     "sourceHash": "31363ee"
+  },
+  "fileExplorer.errorPane.reviewLinkSignIn": "Anmeldung prüfen",
+  "@fileExplorer.errorPane.reviewLinkSignIn": {
+    "sourceHash": "25a3cfe"
+  },
+  "fileExplorer.pane.directConnectionOtherServerNotAllowedToast": "{server} sagt, dass die Dateien dieser Freigabe auf einem anderen Server liegen. Cmdr meldet sich dort nicht von selbst an, daher bleibt sie bei der Systemverbindung.",
+  "@fileExplorer.pane.directConnectionOtherServerNotAllowedToast": {
+    "sourceHash": "c350d80"
+  },
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "Keine direkte Verbindung zu <shareName>{share}</shareName>, weil die Dateien auf einem anderen Server liegen und Cmdr sich dort nicht von selbst anmeldet. Du bist weiterhin über die native SMB-Netzwerkverbindung von macOS verbunden, die deutlich langsamer ist.",
+  "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
+    "sourceHash": "9c9c5a5"
+  },
+  "fileExplorer.smbLinkConsent.title": "Bei einem anderen Server anmelden?",
+  "@fileExplorer.smbLinkConsent.title": {
+    "sourceHash": "91458ea"
+  },
+  "fileExplorer.smbLinkConsent.message": "Ein Link auf {server} führt zu einem Ordner auf {target}. Um ihn zu öffnen, meldet sich Cmdr bei {target} mit dem Konto an, das du für {server} verwendest.",
+  "@fileExplorer.smbLinkConsent.message": {
+    "sourceHash": "848be1b"
+  },
+  "fileExplorer.smbLinkConsent.warning": "Erlaube das nur, wenn du {target} vertraust. Ein Server, den du nicht kennst, könnte mit so einem Link dein Passwort abgreifen.",
+  "@fileExplorer.smbLinkConsent.warning": {
+    "sourceHash": "295e81e"
+  },
+  "fileExplorer.smbLinkConsent.note": "Cmdr merkt sich deine Antwort für diese beiden Server. Du kannst sie in den Einstellungen unter „Server“ vergessen.",
+  "@fileExplorer.smbLinkConsent.note": {
+    "sourceHash": "3f9615a"
+  },
+  "fileExplorer.smbLinkConsent.allow": "Erlauben und anmelden",
+  "@fileExplorer.smbLinkConsent.allow": {
+    "sourceHash": "d8192ad"
+  },
+  "fileExplorer.smbLinkConsent.notNow": "Nicht jetzt",
+  "@fileExplorer.smbLinkConsent.notNow": {
+    "sourceHash": "a0e63d7"
   }
 }

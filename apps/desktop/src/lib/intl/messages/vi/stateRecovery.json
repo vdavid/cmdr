@@ -126,5 +126,9 @@
   "stateRecovery.dismiss": "Bỏ qua",
   "@stateRecovery.dismiss": {
     "sourceHash": "48845bf"
+  },
+  "stateRecovery.smbLinkConsents.title": "Cmdr không đọc được tất cả máy chủ mà bạn cho phép liên kết SMB đăng nhập, nên có thể sẽ hỏi lại về một số máy chủ",
+  "@stateRecovery.smbLinkConsents.title": {
+    "sourceHash": "2e0f9fd"
   }
 }

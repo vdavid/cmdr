@@ -126,5 +126,9 @@
   "stateRecovery.dismiss": "Sluit",
   "@stateRecovery.dismiss": {
     "sourceHash": "48845bf"
+  },
+  "stateRecovery.smbLinkConsents.title": "Cmdr kon niet alle servers lezen waar je SMB-links liet inloggen, dus het kan over sommige opnieuw vragen",
+  "@stateRecovery.smbLinkConsents.title": {
+    "sourceHash": "2e0f9fd"
   }
 }

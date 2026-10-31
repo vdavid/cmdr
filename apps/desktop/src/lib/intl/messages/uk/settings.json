@@ -3508,5 +3508,33 @@
   "settings.license.getLicense.keywords": "ліцензія, купити, придбати, покупка, ціна, вартість, комерційна, особиста",
   "@settings.license.getLicense.keywords": {
     "sourceHash": "5454f6d"
+  },
+  "settings.servers.card.smbLinkConsents": "Вхід за посиланнями SMB",
+  "@settings.servers.card.smbLinkConsents": {
+    "sourceHash": "831477d"
+  },
+  "settings.network.smbLinkConsents.keywords": "SMB, DFS, посилання, вхід, інший сервер, дозволити, довіряти, забути",
+  "@settings.network.smbLinkConsents.keywords": {
+    "sourceHash": "d88f7c7"
+  },
+  "settings.servers.smbLinkConsents.description": "Посилання у спільній папці SMB може вести до папки на іншому сервері. Cmdr запитує, перш ніж увійти туди, і запамʼятовує вашу відповідь тут.",
+  "@settings.servers.smbLinkConsents.description": {
+    "sourceHash": "03ed8ee"
+  },
+  "settings.servers.smbLinkConsents.empty": "Поки що нічого не дозволено. Коли посилання у спільній папці веде на інший сервер, Cmdr спершу запитує.",
+  "@settings.servers.smbLinkConsents.empty": {
+    "sourceHash": "16326ce"
+  },
+  "settings.servers.smbLinkConsents.pair": "Посилання на {server} можуть входити на {target}",
+  "@settings.servers.smbLinkConsents.pair": {
+    "sourceHash": "093a03d"
+  },
+  "settings.servers.smbLinkConsents.confirmTitle": "Забути цей вхід?",
+  "@settings.servers.smbLinkConsents.confirmTitle": {
+    "sourceHash": "edc2567"
+  },
+  "settings.servers.smbLinkConsents.confirm": "Коли посилання на {server} наступного разу поведе на {target}, Cmdr запитає знову.",
+  "@settings.servers.smbLinkConsents.confirm": {
+    "sourceHash": "0218465"
   }
 }

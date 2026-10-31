@@ -64,8 +64,9 @@ export async function startOsMountNoticeBridge(): Promise<UnlistenFn> {
 function raiseNotice(payload: SmbFellBackToOsMount): void {
   // `shareNotOnServer` is the server saying it has no such share. The same
   // identity asking again gets the same answer, so the notice explains and
-  // offers nothing, instead of a button that is certain to fail.
-  const retryable = payload.reason !== 'shareNotOnServer'
+  // offers nothing, instead of a button that is certain to fail. A namespace on
+  // another server nobody allowed gets the same answer until someone does.
+  const retryable = payload.reason !== 'shareNotOnServer' && payload.reason !== 'otherServerNotAllowed'
   log.info(
     retryable
       ? 'Offering a direct-connection retry for the share stuck on the kernel mount: {share}'
@@ -81,6 +82,7 @@ function raiseNotice(payload: SmbFellBackToOsMount): void {
       volumeId: payload.volumeId,
       share: payload.share,
       retryable,
+      otherServerNotAllowed: payload.reason === 'otherServerNotAllowed' ? true : undefined,
       // This Mac refused the route to a server its own mount reaches: the notice
       // names the server and the permission to switch.
       blockedServer: payload.reason === 'blockedByThisMac' ? payload.displayName : undefined,

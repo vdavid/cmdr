@@ -3508,5 +3508,33 @@
   "settings.license.getLicense.keywords": "лицензия, купить, покупка, цена, стоимость, коммерческая, личная, некоммерческая, расширить",
   "@settings.license.getLicense.keywords": {
     "sourceHash": "5454f6d"
+  },
+  "settings.servers.card.smbLinkConsents": "Вход по ссылкам SMB",
+  "@settings.servers.card.smbLinkConsents": {
+    "sourceHash": "831477d"
+  },
+  "settings.network.smbLinkConsents.keywords": "SMB, DFS, ссылка, вход, другой сервер, разрешить, доверять, забыть",
+  "@settings.network.smbLinkConsents.keywords": {
+    "sourceHash": "d88f7c7"
+  },
+  "settings.servers.smbLinkConsents.description": "Ссылка в общей папке SMB может вести к папке на другом сервере. Cmdr спрашивает, прежде чем войти туда, и запоминает ответ здесь.",
+  "@settings.servers.smbLinkConsents.description": {
+    "sourceHash": "03ed8ee"
+  },
+  "settings.servers.smbLinkConsents.empty": "Пока ничего не разрешено. Когда ссылка в общей папке ведет на другой сервер, Cmdr сначала спрашивает.",
+  "@settings.servers.smbLinkConsents.empty": {
+    "sourceHash": "16326ce"
+  },
+  "settings.servers.smbLinkConsents.pair": "Ссылки на {server} могут входить на {target}",
+  "@settings.servers.smbLinkConsents.pair": {
+    "sourceHash": "093a03d"
+  },
+  "settings.servers.smbLinkConsents.confirmTitle": "Забыть этот вход?",
+  "@settings.servers.smbLinkConsents.confirmTitle": {
+    "sourceHash": "edc2567"
+  },
+  "settings.servers.smbLinkConsents.confirm": "Когда ссылка на {server} в следующий раз поведет на {target}, Cmdr спросит снова.",
+  "@settings.servers.smbLinkConsents.confirm": {
+    "sourceHash": "0218465"
   }
 }

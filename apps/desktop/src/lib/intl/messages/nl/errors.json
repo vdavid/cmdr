@@ -2536,5 +2536,33 @@
   "errors.write.namedLeavesRefused.suggestion.routeCannotName": "Verplaats of kopieer ze onder hun eigen namen en wijzig de namen daarna ter plekke.",
   "@errors.write.namedLeavesRefused.suggestion.routeCannotName": {
     "sourceHash": "b1e881c"
+  },
+  "errors.listing.linkNeedsConsent.title": "Deze map staat op een andere server",
+  "@errors.listing.linkNeedsConsent.title": {
+    "sourceHash": "c37d453"
+  },
+  "errors.listing.linkNeedsConsent.explanation": "`{path}` is een link op **{server}** die naar **{target}** leidt. Cmdr heeft daar niet ingelogd, dus {target} heeft niets van je ontvangen.",
+  "@errors.listing.linkNeedsConsent.explanation": {
+    "sourceHash": "91b0171"
+  },
+  "errors.listing.linkNeedsConsent.suggestion": "Om deze map te openen, moet Cmdr bij {target} inloggen met het account dat je voor {server} gebruikt. Bekijk dit als je {target} vertrouwt. De rest van deze gedeelde map werkt zoals gewoonlijk.",
+  "@errors.listing.linkNeedsConsent.suggestion": {
+    "sourceHash": "991cb6c"
+  },
+  "errors.volume.linkNeedsConsent": "Dit ligt achter een link naar een andere server waar Cmdr nog niet mag inloggen. Open de map in een paneel om te beslissen.",
+  "@errors.volume.linkNeedsConsent": {
+    "sourceHash": "79ff9fe"
+  },
+  "errors.write.linkNeedsConsent.title": "Dit bestand staat op een andere server",
+  "@errors.write.linkNeedsConsent.title": {
+    "sourceHash": "ff31c7f"
+  },
+  "errors.write.linkNeedsConsent.message": "Een link op {server} leidt naar {target}, en Cmdr mag daar nog niet inloggen, dus er is niets naar die server gegaan.",
+  "@errors.write.linkNeedsConsent.message": {
+    "sourceHash": "7893ce9"
+  },
+  "errors.write.linkNeedsConsent.suggestion": "Open de map in een paneel en sta het inloggen toe als je die server vertrouwt. Probeer het daarna opnieuw.",
+  "@errors.write.linkNeedsConsent.suggestion": {
+    "sourceHash": "cc25854"
   }
 }

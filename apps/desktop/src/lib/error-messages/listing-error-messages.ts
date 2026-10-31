@@ -112,6 +112,7 @@ export type ListingErrorReason =
   | { reason: 'deviceReconnecting'; path: string }
   | { reason: 'notConnected'; path: string }
   | { reason: 'linkTargetUnreachable'; path: string }
+  | { reason: 'linkNeedsConsent'; path: string; server: string; target: string }
   | { reason: 'readOnly' }
   | { reason: 'storageFull' }
   | { reason: 'connectionTimedOut' }
@@ -154,5 +155,7 @@ export function getListingErrorMessage(r: ListingErrorReason, where?: ListingErr
   const params: Record<string, string> = {}
   if ('path' in r) params.path = esc(r.path)
   if ('osMessage' in r) params.osMessage = esc(r.osMessage)
+  if ('server' in r) params.server = esc(r.server)
+  if ('target' in r) params.target = esc(r.target)
   return compose(r.reason, params)
 }

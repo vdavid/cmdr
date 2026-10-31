@@ -38,6 +38,8 @@
          * so the notice explains instead of offering a retry.
          */
         retryable: boolean
+        /** The share is a namespace on another server nobody allowed signing in to. */
+        otherServerNotAllowed?: boolean
         /**
          * The server's friendly name, set when something on this Mac is what
          * blocked the connection (`blockedByThisMac`). The notice then says what
@@ -46,7 +48,7 @@
         blockedServer?: string
     }
 
-    const { toastId, volumeId, share, retryable, blockedServer }: Props = $props()
+    const { toastId, volumeId, share, retryable, otherServerNotAllowed = false, blockedServer }: Props = $props()
 
     let connecting = $state(false)
 
@@ -72,6 +74,12 @@
             {directConnectionUnavailableMessage('blockedByThisMac', blockedServer)}
         {:else if retryable}
             <Trans key="fileExplorer.network.osMountFallback.message" snippets={{ shareName }} params={{ share }} />
+        {:else if otherServerNotAllowed}
+            <Trans
+                key="fileExplorer.network.osMountFallback.otherServerNotAllowed"
+                snippets={{ shareName }}
+                params={{ share }}
+            />
         {:else}
             <Trans
                 key="fileExplorer.network.osMountFallback.shareNotOnServer"

@@ -178,6 +178,8 @@ export interface ErrorDisplayMeta {
 const errorDisplayMetaMap: Record<WriteOperationError['type'], ErrorDisplayMeta> = {
   cancelled: { category: 'transient', retryHint: true },
   connection_interrupted: { category: 'transient', retryHint: true },
+  // Only a person's yes in a pane changes the answer, so the same request here can't.
+  link_needs_consent: { category: 'needs_action', retryHint: false },
   // Retry: once the server is back, the same transfer picks up where the files
   // that already landed leave off. It needs the person to check the server first.
   server_connection_lost: { category: 'needs_action', retryHint: true },
@@ -533,6 +535,25 @@ function trashRefusedMessage(error: Extract<WriteOperationError, { type: 'trash_
  * `null` means "not one of mine", never "no message".
  */
 function fieldDrivenMessage(error: WriteOperationError): FriendlyErrorMessage | null {
+  if (error.type === 'link_needs_consent') return linkNeedsConsentMessage(error)
+  return otherFieldDrivenMessage(error)
+}
+
+/**
+ * A link to another server nobody allowed. Nothing went there, and only a person's
+ * yes in a pane changes the answer, so the suggestion sends them there.
+ */
+function linkNeedsConsentMessage(
+  error: Extract<WriteOperationError, { type: 'link_needs_consent' }>,
+): FriendlyErrorMessage {
+  return {
+    title: w('linkNeedsConsent.title'),
+    message: w('linkNeedsConsent.message', { server: error.server, target: error.target }),
+    suggestion: w('linkNeedsConsent.suggestion'),
+  }
+}
+
+function otherFieldDrivenMessage(error: WriteOperationError): FriendlyErrorMessage | null {
   switch (error.type) {
     case 'trash_refused':
       return trashRefusedMessage(error)

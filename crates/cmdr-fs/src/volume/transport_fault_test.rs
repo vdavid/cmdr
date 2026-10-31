@@ -104,6 +104,17 @@ fn a_dead_link_target_is_not_a_transport_fault() {
     );
 }
 
+/// A link nobody allowed isn't an outage either: only a person's yes changes it.
+#[test]
+fn a_link_without_consent_is_not_a_transport_fault() {
+    let err = VolumeError::LinkNeedsConsent(Box::new(crate::volume::LinkSignIn {
+        path: "/smb/nas/data".into(),
+        server: "nas".into(),
+        target: "fs01".into(),
+    }));
+    assert_eq!(err.transport_fault(), None);
+}
+
 /// Refusals and facts about the data: asking again fails the same way.
 #[test]
 fn refusals_and_data_facts_are_not_transport_faults() {

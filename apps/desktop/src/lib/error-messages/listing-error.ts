@@ -49,6 +49,10 @@ export function renderListingError(error: ListingError, where?: ListingErrorPlac
     retryHint: error.retryHint,
     actionKind: error.actionKind,
     listingReason: error.reason.reason,
+    linkConsent:
+      error.reason.reason === 'linkNeedsConsent'
+        ? { server: error.reason.server, target: error.reason.target }
+        : undefined,
   }
 }
 
@@ -62,6 +66,7 @@ const REFUSALS: ReadonlySet<ListingErrorReason['reason']> = new Set([
   'serverRefused',
   'remotePermissionDenied',
   'objectStoreRefused',
+  'linkNeedsConsent',
 ])
 
 /** Whether the error screen offers "Send error report…". An untyped failure does: it may be a bug. */

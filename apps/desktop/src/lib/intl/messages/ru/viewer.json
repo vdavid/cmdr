@@ -480,5 +480,9 @@
   "viewer.selection.toEndOfFileNoLine": "Выделено до конца файла",
   "@viewer.selection.toEndOfFileNoLine": {
     "sourceHash": "e7e0442"
+  },
+  "viewer.error.linkNeedsConsent": "Этот файл находится за ссылкой на другой сервер, куда Cmdr пока нельзя входить. Чтобы решить, откройте его папку на панели.",
+  "@viewer.error.linkNeedsConsent": {
+    "sourceHash": "b9b3e1f"
   }
 }

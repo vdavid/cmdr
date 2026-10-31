@@ -301,6 +301,9 @@ pub enum ViewerError {
     /// The file sits behind a link to another server (a DFS link in an SMB share), and that
     /// server is out of reach. Retry can help; nothing was deleted, so ❌ never `NotFound`.
     LinkTargetUnreachable,
+    /// The file sits behind a link to another server (a DFS link in an SMB share), and nobody
+    /// has allowed signing in there. Opening its folder in a pane is where a person can.
+    LinkNeedsConsent,
     NotEnoughSpace {
         needed: u64,
         available: u64,
@@ -346,6 +349,7 @@ impl ErrorLogText for ViewerError {
             Self::Archive { message, .. } => out.error(message),
             Self::ColdStorage => write!(out, "The file is archived and needs a restore before it can be read"),
             Self::LinkTargetUnreachable => write!(out, "A link's other server is out of reach"),
+            Self::LinkNeedsConsent => write!(out, "A link's other server isn't allowed yet"),
             Self::NotEnoughSpace { needed, available } => {
                 write!(
                     out,

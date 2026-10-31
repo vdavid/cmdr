@@ -2535,5 +2535,33 @@
   "errors.write.namedLeavesRefused.suggestion.routeCannotName": "先用原来的名称移动或拷贝它们，再在那里重命名。",
   "@errors.write.namedLeavesRefused.suggestion.routeCannotName": {
     "sourceHash": "b1e881c"
+  },
+  "errors.listing.linkNeedsConsent.title": "这个文件夹在另一台服务器上",
+  "@errors.listing.linkNeedsConsent.title": {
+    "sourceHash": "c37d453"
+  },
+  "errors.listing.linkNeedsConsent.explanation": "`{path}` 是 **{server}** 上的一个链接，指向 **{target}**。Cmdr 没有登录那里，所以 {target} 没有收到你的任何信息。",
+  "@errors.listing.linkNeedsConsent.explanation": {
+    "sourceHash": "91b0171"
+  },
+  "errors.listing.linkNeedsConsent.suggestion": "要打开这个文件夹，Cmdr 需要用你在 {server} 上使用的账户登录 {target}。如果你信任 {target}，可以查看并决定。这个共享的其余部分照常工作。",
+  "@errors.listing.linkNeedsConsent.suggestion": {
+    "sourceHash": "991cb6c"
+  },
+  "errors.volume.linkNeedsConsent": "这个项目位于指向另一台服务器的链接之后，Cmdr 还未获准登录那台服务器。请在窗格中打开文件夹来决定。",
+  "@errors.volume.linkNeedsConsent": {
+    "sourceHash": "79ff9fe"
+  },
+  "errors.write.linkNeedsConsent.title": "这个文件在另一台服务器上",
+  "@errors.write.linkNeedsConsent.title": {
+    "sourceHash": "ff31c7f"
+  },
+  "errors.write.linkNeedsConsent.message": "{server} 上的一个链接指向 {target}，而 Cmdr 还未获准登录那里，所以没有任何内容发送到那台服务器。",
+  "@errors.write.linkNeedsConsent.message": {
+    "sourceHash": "7893ce9"
+  },
+  "errors.write.linkNeedsConsent.suggestion": "请在窗格中打开文件夹，如果你信任那台服务器就允许登录，然后重试。",
+  "@errors.write.linkNeedsConsent.suggestion": {
+    "sourceHash": "cc25854"
   }
 }

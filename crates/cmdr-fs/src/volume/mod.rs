@@ -2305,7 +2305,7 @@ pub use connection::{BackendKind, ConnectionState, DeviceReadiness, DeviceUnavai
 pub use connection_cell::{CellState, ConnectionCell};
 pub use connection_reporter::{ConnectionReporter, ReportedState};
 pub use entry_kind::EntryKind;
-pub use error::{ErrnoField, VolumeError};
+pub use error::{ErrnoField, LinkSignIn, VolumeError};
 pub use ids::*;
 pub use server_side::{RenameWork, ServerCopyProgress, SubtreeTally};
 pub use share_link::{ShareLink, ShareLinkExpiry};

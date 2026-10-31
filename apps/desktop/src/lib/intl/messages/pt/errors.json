@@ -2536,5 +2536,33 @@
   "errors.write.namedLeavesRefused.suggestion.routeCannotName": "Mova ou copie os itens com os nomes que eles já têm e depois renomeie-os lá.",
   "@errors.write.namedLeavesRefused.suggestion.routeCannotName": {
     "sourceHash": "b1e881c"
+  },
+  "errors.listing.linkNeedsConsent.title": "Esta pasta está em outro servidor",
+  "@errors.listing.linkNeedsConsent.title": {
+    "sourceHash": "c37d453"
+  },
+  "errors.listing.linkNeedsConsent.explanation": "`{path}` é um link em **{server}** que leva a **{target}**. O Cmdr não iniciou sessão lá, então {target} não recebeu nada de você.",
+  "@errors.listing.linkNeedsConsent.explanation": {
+    "sourceHash": "91b0171"
+  },
+  "errors.listing.linkNeedsConsent.suggestion": "Para abrir esta pasta, o Cmdr precisa iniciar sessão em {target} com a conta que você usa em {server}. Revise isso se você confia em {target}. O resto deste compartilhamento funciona normalmente.",
+  "@errors.listing.linkNeedsConsent.suggestion": {
+    "sourceHash": "991cb6c"
+  },
+  "errors.volume.linkNeedsConsent": "Isto está atrás de um link para outro servidor em que o Cmdr ainda não pode iniciar sessão. Abra a pasta em um painel para decidir.",
+  "@errors.volume.linkNeedsConsent": {
+    "sourceHash": "79ff9fe"
+  },
+  "errors.write.linkNeedsConsent.title": "Este arquivo está em outro servidor",
+  "@errors.write.linkNeedsConsent.title": {
+    "sourceHash": "ff31c7f"
+  },
+  "errors.write.linkNeedsConsent.message": "Um link em {server} leva a {target}, e o Cmdr ainda não pode iniciar sessão lá, então nada foi para esse servidor.",
+  "@errors.write.linkNeedsConsent.message": {
+    "sourceHash": "7893ce9"
+  },
+  "errors.write.linkNeedsConsent.suggestion": "Abra a pasta em um painel e permita o início de sessão se você confia nesse servidor, depois tente novamente.",
+  "@errors.write.linkNeedsConsent.suggestion": {
+    "sourceHash": "cc25854"
   }
 }

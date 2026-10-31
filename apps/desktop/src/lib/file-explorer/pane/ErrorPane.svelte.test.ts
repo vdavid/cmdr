@@ -33,6 +33,32 @@ const base = {
   rawDetail: 'EIO',
 } satisfies Omit<FriendlyError, 'category' | 'retryHint'>
 
+describe('a folder behind a link to another server', () => {
+  const friendly: FriendlyError = {
+    ...base,
+    category: 'needs_action',
+    retryHint: false,
+    linkConsent: { server: 'nas', target: 'fs01' },
+  }
+
+  it('offers the review, which asks through its callback', async () => {
+    const onReviewLinkConsent = vi.fn()
+    const target = mountPane({ friendly, onReviewLinkConsent })
+    await tick()
+    const review = [...target.querySelectorAll('button')].find((b) => b.textContent.includes('Review sign-in'))
+    review?.click()
+    expect(onReviewLinkConsent).toHaveBeenCalledOnce()
+    target.remove()
+  })
+
+  it('offers no review on any other error', async () => {
+    const target = mountPane({ friendly: { ...base, category: 'transient', retryHint: true } })
+    await tick()
+    expect(target.textContent).not.toContain('Review sign-in')
+    target.remove()
+  })
+})
+
 function mountPane(props: Partial<Parameters<typeof ErrorPane>[1]> & { friendly: FriendlyError }): HTMLDivElement {
   const target = document.createElement('div')
   document.body.appendChild(target)

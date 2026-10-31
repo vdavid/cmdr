@@ -2536,5 +2536,33 @@
   "errors.write.namedLeavesRefused.suggestion.routeCannotName": "Helyezd át vagy másold át őket a saját nevükön, aztán ott nevezd át őket.",
   "@errors.write.namedLeavesRefused.suggestion.routeCannotName": {
     "sourceHash": "b1e881c"
+  },
+  "errors.listing.linkNeedsConsent.title": "Ez a mappa egy másik szerveren van",
+  "@errors.listing.linkNeedsConsent.title": {
+    "sourceHash": "c37d453"
+  },
+  "errors.listing.linkNeedsConsent.explanation": "`{path}` egy link ezen a szerveren: **{server}**, és ide vezet: **{target}**. A Cmdr nem jelentkezett be oda, így {target} semmit sem kapott tőled.",
+  "@errors.listing.linkNeedsConsent.explanation": {
+    "sourceHash": "91b0171"
+  },
+  "errors.listing.linkNeedsConsent.suggestion": "A mappa megnyitásához a Cmdr-nek be kell jelentkeznie ide: {target}, azzal a fiókkal, amit ehhez használsz: {server}. Nézd át, ha megbízol ebben: {target}. A megosztás többi része a szokásos módon működik.",
+  "@errors.listing.linkNeedsConsent.suggestion": {
+    "sourceHash": "991cb6c"
+  },
+  "errors.volume.linkNeedsConsent": "Ez egy másik szerverre mutató link mögött van, ahová a Cmdr még nem jelentkezhet be. A döntéshez nyisd meg a mappát egy panelen.",
+  "@errors.volume.linkNeedsConsent": {
+    "sourceHash": "79ff9fe"
+  },
+  "errors.write.linkNeedsConsent.title": "Ez a fájl egy másik szerveren van",
+  "@errors.write.linkNeedsConsent.title": {
+    "sourceHash": "ff31c7f"
+  },
+  "errors.write.linkNeedsConsent.message": "Egy link ezen a szerveren: {server}, ide vezet: {target}. A Cmdr oda még nem jelentkezhet be, ezért semmi sem ment arra a szerverre.",
+  "@errors.write.linkNeedsConsent.message": {
+    "sourceHash": "7893ce9"
+  },
+  "errors.write.linkNeedsConsent.suggestion": "Nyisd meg a mappát egy panelen, és engedélyezd a bejelentkezést, ha megbízol abban a szerverben, aztán próbáld újra.",
+  "@errors.write.linkNeedsConsent.suggestion": {
+    "sourceHash": "cc25854"
   }
 }

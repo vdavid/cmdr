@@ -63,6 +63,7 @@ impl VolumeError {
             // The volume's own connection is fine, so an outage wait would never
             // end and a retry can't tell when the other server's back.
             | Self::LinkTargetUnreachable(_)
+            | Self::LinkNeedsConsent(_) // the answer changes only when a person allows it
             | Self::NotFound(_)
             | Self::PermissionDenied { .. }
             | Self::AlreadyExists(_)

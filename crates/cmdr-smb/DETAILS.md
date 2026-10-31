@@ -91,7 +91,7 @@ Whichever crate's test target enables the feature, the one `smb2` gets it.
 
 ## The public surface is capped
 
-`index-crate-isolation` holds this crate to 16 root promises, 4 public modules, and 22 public items inside them. The
+`index-crate-isolation` holds this crate to 17 root promises, 4 public modules, and 23 public items inside them. The
 numbers were set to exactly what the crate exposed the day the extraction finished, with no headroom, so an addition has
 to be argued for, and each raise since carries its argument below.
 
@@ -103,6 +103,9 @@ after one, and a new item should name which of three audiences it serves:
   `try_list_shares_*` calls, `try_open_share`, `probe_server_guid` (the server GUID a NEGOTIATE answers; a live
   session's comes off `SmbVolume::diagnostics`), the three `classify_*` / `is_auth_error` readers, `convert_shares`, and
   the four vocabulary types that cross IPC.
+- **Recording a person's yes**: `LinkConsents` (§ "Signing in through a link"). Every smb2 session here has to read the
+  set, and the app owns the file and the question, so one type crosses, with no module and no reader: only the crate can
+  ask it.
 - **Constructing and asking after a share**, for `network/smb_upgrade.rs` and the debug window's diagnostics dashboard:
   `connect_smb_volume`, `SmbVolume` with `volume_id` / `session_state` / `diagnostics`, `SmbConnectionParams` with its
   five fields, and `ConnectionState`. `SmbVolume::new` is `pub(crate)`: outside, a share is dialed, which is the only
@@ -707,10 +710,11 @@ is the invariant the anchor is built on.
 
 ## A DFS link inside the share
 
-A share can hold an `msdfs:` link to a folder on another server. smb2 follows one on every `SmbClient` call that takes a
-path (0.27.0, vdavid/smb2#15), but Cmdr drives the lock-free `Tree` API on cloned connections, which doesn't, and the
-`SmbClient` calls take `&mut SmbClient`. `dfs_links.rs` bridges it for every call that takes a path (vdavid/cmdr#133 for
-the transfers, vdavid/cmdr#815 for the rest):
+A share can hold an `msdfs:` link to a folder on another server (one to a different host only with a person's consent: §
+"Signing in through a link"). smb2 follows one on every `SmbClient` call that takes a path (0.27.0, vdavid/smb2#15), but
+Cmdr drives the lock-free `Tree` API on cloned connections, which doesn't, and the `SmbClient` calls take
+`&mut SmbClient`. `dfs_links.rs` bridges it for every call that takes a path (vdavid/cmdr#133 for the transfers,
+vdavid/cmdr#815 for the rest):
 
 - **A known link goes straight to its target; any other path, Tree first.** Every path a call followed a link from is
   remembered by its link folder (`LinkPaths`). A call under one asks smb2's resolver (`SmbClient::resolve_dfs_link`,
@@ -796,6 +800,48 @@ the transfers, vdavid/cmdr#815 for the rest):
   change reaching a shown folder behind a link in `smb_dfs_a_shown_folder_behind_a_link_hears_another_clients_change`.
   The target's container name reaches loopback through `session::TEST_DFS_TARGET_OVERRIDES` (`testing` builds only; a
   shipped build overrides nothing).
+
+## Signing in through a link
+
+A link's target comes from the share's server, and following one signs in there with the share's credentials. So a
+malicious or compromised server could point a link at a machine of its own and capture that sign-in. **Nothing goes to a
+different host until a person allows that (share's server, target host) pair**: not a sign-in, not a TCP connect.
+
+- **smb2 asks before it dials** (`ClientConfig::dfs_target_policy`, smb2 0.38.0): its one target dial, its pooled-target
+  lookup, and a target's reviver. Namespace roots and Interlinks go through the same dial. Every `ClientConfig` here
+  with `dfs_enabled` carries `link_consent::dfs_target_policy()`, an `Ask` over the in-memory set; a config that forgets
+  refuses everything different, since smb2's default is `SameServerOnly`.
+- **"The same server" takes proof** (smb2's `same_server`): the same host once ASCII case, one trailing dot, and an IP's
+  spelling are set aside, and the same port. A short name and its FQDN, or a name and its IP, count as different, and ❌
+  `network::server_identity` stays out of this: it pairs names through mDNS, which anyone on the network can answer.
+- **A refusal is that path's alone.** smb2's `DfsTargetNotAllowed` isn't in `ends_the_session`, and `resolve_link` lets
+  it through, unlike a referral that couldn't be had. `map_smb_error` makes it
+  `VolumeError::LinkNeedsConsent { path, server, target }`, which `transport_fault` doesn't count, so nothing waits on
+  it either. A target name no person could read (control, bidi, or zero-width characters; `is_presentable_host`) is
+  plain `PermissionDenied` with no prompt, because it could make the prompt read as another host.
+- **Only a pane asks**, and only when a person presses something. A listing's refusal renders the `linkNeedsConsent`
+  error screen, whose "Review sign-in" button opens `SmbLinkConsentDialog`; Allow calls `allow_smb_link_target` and
+  re-lists. It's a button, ❌ not a dialog raised by the failure: a restored tab, a refresh, and an agent's
+  `nav_to_path` all land on that screen, and none of them may put a password prompt in front of someone. Transfers
+  (`WriteOperationError::LinkNeedsConsent`), the index walk, the viewer, Ask Cmdr, and MCP take the typed refusal; no
+  agent tool can call the allow command.
+- **Remembered in `network::smb_link_consents`** (`smb-link-consents.json`), loaded before any volume is built,
+  forgotten in Settings > Servers. A file that doesn't read allows nothing. Forgetting stops a link on its next call,
+  since smb2 asks every time; a handle already open through it finishes, and the pooled connection stays open with no
+  new sign-in.
+- **A link watch ends on the refusal** (`link_watch.rs`): only a yes changes the answer, and the next listing starts a
+  new one.
+- **Known limits**:
+  - A share that IS a namespace on another host refuses at `connect_share`, so the direct connection fails with
+    `UpgradeFailure::OtherServerNotAllowed` and the share stays on the OS mount, with a notice and no retry. Nothing
+    there can ask, because the pane works through the mount: such a share has no way to go direct today.
+  - The OS mount follows DFS by itself (macOS `smbfs`, Linux `gio`). Cmdr doesn't drive that sign-in, so this gate can't
+    see it.
+- Pinned by smb2's `dfs_consent` (a counting listener, 0 accepted connections) and
+  `smb_dfs_a_link_to_another_host_hears_nothing_without_consent` (every call family against the fixture, connected as
+  `localhost` so the pair differs from the one `dfs_volume` allows), plus
+  `smb_dfs_a_link_to_another_host_stops_when_consent_is_forgotten` (verified against smb2 0.38.0, Samba on Alpine 3.21,
+  2026-10-31).
 
 ## Re-rooting a share
 

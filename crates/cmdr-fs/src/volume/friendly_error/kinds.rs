@@ -226,6 +226,24 @@ pub(super) fn link_target_unreachable(path_display: &str, raw_detail: String) ->
     }
 }
 
+/// The folder lives on another server, through a link in this share, and nobody
+/// has allowed signing in there. Nothing went to that server. The pane's error
+/// screen is where a person can allow it, and a plain retry can't help until then.
+pub(super) fn link_needs_consent(path_display: &str, server: &str, target: &str, raw_detail: String) -> ListingError {
+    ListingError {
+        category: ErrorCategory::NeedsAction,
+        reason: ListingErrorReason::LinkNeedsConsent {
+            path: path_display.to_string(),
+            server: server.to_string(),
+            target: target.to_string(),
+        },
+        provider: None,
+        action_kind: None,
+        retry_hint: false,
+        raw_detail,
+    }
+}
+
 pub(super) fn connection_timeout(raw_detail: String) -> ListingError {
     ListingError {
         category: ErrorCategory::Transient,

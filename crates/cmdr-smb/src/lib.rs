@@ -47,9 +47,11 @@ use cmdr_smb as _;
 
 pub mod connection;
 pub mod errors;
+mod link_consent;
 pub mod types;
 pub mod volume;
 
 pub use connection::{build_smb_addr, try_list_shares_as_guest, try_list_shares_authenticated, try_open_share};
 pub use errors::{classify_authenticated_error, classify_error, is_auth_error};
+pub use link_consent::LinkConsents;
 pub use types::{AuthMode, ShareInfo, ShareListError, ShareListResult, convert_shares};

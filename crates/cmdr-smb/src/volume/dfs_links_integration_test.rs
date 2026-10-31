@@ -14,6 +14,10 @@
 //! lane runs EVERY ignored cell in `package(cmdr-smb)` against the consumer
 //! stack, which has no DFS containers. Without the variable each cell says
 //! "skipped" and passes ([`dfs_fixture_not_requested`]).
+//!
+//! ❗ The link's target is another host, so every cell that follows it allows the
+//! pair first ([`dfs_volume_with_host`]); `smb_dfs_a_link_to_another_host_*` pin
+//! what happens without that.
 
 use super::session_build::TEST_DFS_TARGET_OVERRIDES;
 use super::test_support::*;
@@ -57,6 +61,7 @@ async fn dfs_volume_with_host(host: VolumeHost) -> SmbVolume {
         .lock_ignore_poison()
         .get_or_insert_with(Default::default)
         .insert("smb-dfs-target".to_string(), DFS_TARGET_ADDR.to_string());
+    assert!(crate::LinkConsents::allow("127.0.0.1", "smb-dfs-target"));
     let params = SmbConnectionParams::new("127.0.0.1", "dfs", DFS_ROOT_PORT, None, None);
     connect_smb_volume(
         "dfs",
@@ -103,6 +108,7 @@ async fn smb_dfs_a_dead_link_target_refuses_the_path_and_leaves_the_share_up() {
         .lock_ignore_poison()
         .get_or_insert_with(Default::default)
         .insert("smb-dfs-target".to_string(), "127.0.0.1:1".to_string());
+    assert!(crate::LinkConsents::allow("127.0.0.1", "smb-dfs-target"));
     let params = SmbConnectionParams::new("127.0.0.1", "dfs", DFS_ROOT_PORT, None, None);
     let vol = connect_smb_volume(
         "dfs",
@@ -129,6 +135,168 @@ async fn smb_dfs_a_dead_link_target_refuses_the_path_and_leaves_the_share_up() {
     vol.list_directory(Path::new(""), None)
         .await
         .expect("a path outside the link still answers");
+}
+
+/// Whether `result` is the typed refusal naming both servers.
+#[track_caller]
+fn assert_needs_consent<T: std::fmt::Debug>(result: Result<T, VolumeError>, server: &str, what: &str) {
+    match result {
+        Err(VolumeError::LinkNeedsConsent(sign_in)) => {
+            assert_eq!(sign_in.server, server, "{what}");
+            assert_eq!(sign_in.target, "smb-dfs-target", "{what}");
+        }
+        other => panic!("expected a consent refusal from {what}: {other:?}"),
+    }
+}
+
+/// The security line: a link to another host, with nobody's consent. Every call
+/// family refuses that path alone, typed, the other host accepts not one
+/// connection (so no sign-in could have gone there), and the share stays up.
+///
+/// Connects as `localhost`, so the pair differs from the one [`dfs_volume`] allows.
+#[tokio::test]
+#[ignore = "Requires smb2's smb-dfs-root and smb-dfs-target containers and CMDR_SMB_DFS_FIXTURE=1 (see this file's header)"]
+async fn smb_dfs_a_link_to_another_host_hears_nothing_without_consent() {
+    if dfs_fixture_not_requested() {
+        return;
+    }
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let target_addr = listener.local_addr().unwrap().to_string();
+    let accepted = Arc::new(AtomicUsize::new(0));
+    let counter = Arc::clone(&accepted);
+    tokio::spawn(async move {
+        while let Ok((socket, _)) = listener.accept().await {
+            counter.fetch_add(1, Ordering::SeqCst);
+            drop(socket);
+        }
+    });
+    TEST_DFS_TARGET_OVERRIDES
+        .lock_ignore_poison()
+        .get_or_insert_with(Default::default)
+        .insert("smb-dfs-target".to_string(), target_addr);
+    let params = SmbConnectionParams::new("localhost", "dfs", DFS_ROOT_PORT, None, None);
+    let vol = connect_smb_volume(
+        "dfs",
+        MountAnchor::at_share_root(TEST_MOUNT_ROOT),
+        &cmdr_fs::volume::smb_volume_id("localhost", DFS_ROOT_PORT, "dfs"),
+        params,
+        VolumeHost::detached(),
+    )
+    .await
+    .expect("the share itself connects");
+    let server = "localhost";
+
+    assert_needs_consent(vol.list_directory(Path::new("data"), None).await, server, "a listing");
+    assert_needs_consent(vol.get_metadata(Path::new("data/hello.txt")).await, server, "a stat");
+    assert_needs_consent(vol.is_directory(Path::new("data/subdir")).await, server, "is_directory");
+    assert_needs_consent(vol.entry_kind(Path::new("data/subdir")).await, server, "entry_kind");
+    assert!(!vol.exists(Path::new("data/hello.txt")).await, "exists can't say yes");
+    assert_needs_consent(
+        vol.attributes_impl(Path::new("data/hello.txt")).await,
+        server,
+        "attributes",
+    );
+    assert_needs_consent(
+        vol.read_range(Path::new("data/hello.txt"), 0, 4).await,
+        server,
+        "read_range",
+    );
+    assert_needs_consent(
+        vol.open_random_reader(Path::new("data/hello.txt")).await.map(|_| ()),
+        server,
+        "a random reader",
+    );
+    assert_needs_consent(
+        vol.open_read_stream(Path::new("data/hello.txt")).await.map(|_| ()),
+        server,
+        "a streamed read",
+    );
+    assert_needs_consent(
+        vol.open_read_stream_with_hint(Path::new("data/hello.txt"), Some(23))
+            .await
+            .map(|_| ()),
+        server,
+        "a hinted read",
+    );
+    assert_needs_consent(
+        vol.write_from_stream(
+            Path::new("data/upload.bin"),
+            WriteMode::CreateNew,
+            StreamLength::Known(5 * 1024 * 1024),
+            inline_read_stream(payload(5 * 1024 * 1024)),
+            &|_| std::ops::ControlFlow::Continue(()),
+        )
+        .await
+        .map(|w| w.bytes),
+        server,
+        "a streamed upload",
+    );
+    assert_needs_consent(
+        vol.create_file(Path::new("data/small.bin"), b"hi").await,
+        server,
+        "a one-frame create",
+    );
+    assert_needs_consent(vol.create_directory(Path::new("data/new")).await, server, "a mkdir");
+    assert_needs_consent(vol.delete(Path::new("data/hello.txt")).await, server, "a delete");
+    assert_needs_consent(
+        vol.rename(Path::new("data/hello.txt"), Path::new("data/other.txt"), false)
+            .await,
+        server,
+        "a rename",
+    );
+    assert_needs_consent(vol.scan_for_copy(Path::new("data/subdir")).await, server, "a copy scan");
+
+    vol.begin_scan_session().await;
+    let listed = vol
+        .list_directory_for_scan(
+            Path::new("data/subdir"),
+            None,
+            &cmdr_fs::volume::ScanListingClock::start(),
+        )
+        .await;
+    let prefetched = vol
+        .open_read_stream_for_scan(Path::new("data/subdir/nested.txt"), Some(12))
+        .await
+        .map(|_| ());
+    vol.end_scan_session().await;
+    assert_needs_consent(listed, server, "an index walk");
+    assert_needs_consent(prefetched, server, "an enrichment prefetch");
+
+    assert!(
+        vol.watch_listing(Path::new("data/subdir")).is_none(),
+        "no link was followed, so nothing starts a watch there"
+    );
+
+    assert_eq!(accepted.load(Ordering::SeqCst), 0, "the other host heard nothing");
+    assert_eq!(vol.inner.state.state(), ConnectionState::Direct, "the share stays up");
+    vol.list_directory(Path::new(""), None)
+        .await
+        .expect("a path outside the link still answers");
+}
+
+/// Taking consent back stops a link that already worked on its next call, and
+/// allowing it again brings it back.
+#[tokio::test]
+#[ignore = "Requires smb2's smb-dfs-root and smb-dfs-target containers and CMDR_SMB_DFS_FIXTURE=1 (see this file's header)"]
+async fn smb_dfs_a_link_to_another_host_stops_when_consent_is_forgotten() {
+    if dfs_fixture_not_requested() {
+        return;
+    }
+    let vol = dfs_volume().await;
+    vol.list_directory(Path::new("data"), None).await.expect("allowed");
+
+    assert!(crate::LinkConsents::forget("127.0.0.1", "smb-dfs-target"));
+    assert_needs_consent(
+        vol.list_directory(Path::new("data"), None).await,
+        "127.0.0.1",
+        "a known link, forgotten",
+    );
+    assert_eq!(vol.inner.state.state(), ConnectionState::Direct, "the share stays up");
+
+    assert!(crate::LinkConsents::allow("127.0.0.1", "smb-dfs-target"));
+    vol.list_directory(Path::new("data"), None)
+        .await
+        .expect("allowed again");
 }
 
 #[tokio::test]

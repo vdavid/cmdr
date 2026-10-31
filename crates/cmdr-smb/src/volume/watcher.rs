@@ -344,6 +344,7 @@ pub(super) async fn run_smb_watcher(
         // namespace-backed volume would index but never notice a change.
         dfs_enabled: true,
         dfs_target_overrides: Default::default(),
+        dfs_target_policy: crate::link_consent::dfs_target_policy(),
         // The watcher session that died before this one (its own predecessor,
         // never the main session's), so the server ends it and its watch handle.
         previous_session_id: replaces,

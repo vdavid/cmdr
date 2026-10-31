@@ -2146,5 +2146,41 @@
   "fileExplorer.tags.skipped": "{count, plural, =1 {Один объект остался с прежними тегами: Cmdr не удалось прочитать уже имеющиеся на нем теги. Проверьте, можете ли вы открыть этот объект, или добавьте тег в Finder.} one {{countText} объект остался с прежними тегами: Cmdr не удалось прочитать уже имеющиеся на них теги. Проверьте, можете ли вы открыть эти объекты, или добавьте тег в Finder.} few {{countText} объекта остались с прежними тегами: Cmdr не удалось прочитать уже имеющиеся на них теги. Проверьте, можете ли вы открыть эти объекты, или добавьте тег в Finder.} many {{countText} объектов остались с прежними тегами: Cmdr не удалось прочитать уже имеющиеся на них теги. Проверьте, можете ли вы открыть эти объекты, или добавьте тег в Finder.} other {{countText} объекта остались с прежними тегами: Cmdr не удалось прочитать уже имеющиеся на них теги. Проверьте, можете ли вы открыть эти объекты, или добавьте тег в Finder.}}",
   "@fileExplorer.tags.skipped": {
     "sourceHash": "31363ee"
+  },
+  "fileExplorer.errorPane.reviewLinkSignIn": "Проверить вход",
+  "@fileExplorer.errorPane.reviewLinkSignIn": {
+    "sourceHash": "25a3cfe"
+  },
+  "fileExplorer.pane.directConnectionOtherServerNotAllowedToast": "Сервер {server} сообщает, что файлы этой общей папки находятся на другом сервере. Cmdr не входит туда сам, поэтому она продолжает работать через системное подключение.",
+  "@fileExplorer.pane.directConnectionOtherServerNotAllowedToast": {
+    "sourceHash": "c350d80"
+  },
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "Не удалось напрямую подключиться к <shareName>{share}</shareName>: файлы находятся на другом сервере, а Cmdr не входит туда сам. Вы по-прежнему подключены через встроенное сетевое подключение SMB в macOS, которое намного медленнее.",
+  "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
+    "sourceHash": "9c9c5a5"
+  },
+  "fileExplorer.smbLinkConsent.title": "Войти на другой сервер?",
+  "@fileExplorer.smbLinkConsent.title": {
+    "sourceHash": "91458ea"
+  },
+  "fileExplorer.smbLinkConsent.message": "Ссылка на сервере {server} ведет к папке на {target}. Чтобы открыть ее, Cmdr входит на {target} с учетной записью, которую вы используете для {server}.",
+  "@fileExplorer.smbLinkConsent.message": {
+    "sourceHash": "848be1b"
+  },
+  "fileExplorer.smbLinkConsent.warning": "Разрешайте это, только если доверяете {target}. Незнакомый сервер может использовать такую ссылку, чтобы получить ваш пароль.",
+  "@fileExplorer.smbLinkConsent.warning": {
+    "sourceHash": "295e81e"
+  },
+  "fileExplorer.smbLinkConsent.note": "Cmdr запоминает ваш ответ для этих двух серверов. Забыть его можно в настройках, в разделе «Серверы».",
+  "@fileExplorer.smbLinkConsent.note": {
+    "sourceHash": "3f9615a"
+  },
+  "fileExplorer.smbLinkConsent.allow": "Разрешить и войти",
+  "@fileExplorer.smbLinkConsent.allow": {
+    "sourceHash": "d8192ad"
+  },
+  "fileExplorer.smbLinkConsent.notNow": "Не сейчас",
+  "@fileExplorer.smbLinkConsent.notNow": {
+    "sourceHash": "a0e63d7"
   }
 }

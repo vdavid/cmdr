@@ -31,4 +31,14 @@ export const serversRows: SearchableRow[] = [
     keywordsKey: 'settings.network.trustedCertificates.keywords',
     terms: ['webdav', 'https', 'tls', 'ssl'],
   },
+  {
+    // The SMB link sign-ins card: each (share's server, other server) pair a person
+    // allowed, with the Forget that makes those links ask again.
+    id: 'row:network.smbLinkConsents',
+    section: ['File systems', 'Servers (SFTP, WebDAV)'],
+    labelKey: 'settings.servers.card.smbLinkConsents',
+    cardKey: 'settings.servers.card.smbLinkConsents',
+    keywordsKey: 'settings.network.smbLinkConsents.keywords',
+    terms: ['smb', 'dfs'],
+  },
 ]

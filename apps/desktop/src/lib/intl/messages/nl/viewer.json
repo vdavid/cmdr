@@ -482,5 +482,9 @@
   "viewer.selection.toEndOfFileNoLine": "Geselecteerd tot het einde van het bestand",
   "@viewer.selection.toEndOfFileNoLine": {
     "sourceHash": "e7e0442"
+  },
+  "viewer.error.linkNeedsConsent": "Dit bestand ligt achter een link naar een andere server waar Cmdr nog niet mag inloggen. Open de map ervan in een paneel om te beslissen.",
+  "@viewer.error.linkNeedsConsent": {
+    "sourceHash": "b9b3e1f"
   }
 }

@@ -2536,5 +2536,33 @@
   "errors.write.namedLeavesRefused.suggestion.routeCannotName": "Flytta eller kopiera dem med sina egna namn och byt namn på dem där efteråt.",
   "@errors.write.namedLeavesRefused.suggestion.routeCannotName": {
     "sourceHash": "b1e881c"
+  },
+  "errors.listing.linkNeedsConsent.title": "Den här mappen finns på en annan server",
+  "@errors.listing.linkNeedsConsent.title": {
+    "sourceHash": "c37d453"
+  },
+  "errors.listing.linkNeedsConsent.explanation": "`{path}` är en länk på **{server}** som leder till **{target}**. Cmdr har inte loggat in där, så {target} har inte fått något från dig.",
+  "@errors.listing.linkNeedsConsent.explanation": {
+    "sourceHash": "91b0171"
+  },
+  "errors.listing.linkNeedsConsent.suggestion": "För att öppna den här mappen måste Cmdr logga in på {target} med kontot du använder för {server}. Granska det om du litar på {target}. Resten av den här delade mappen fungerar som vanligt.",
+  "@errors.listing.linkNeedsConsent.suggestion": {
+    "sourceHash": "991cb6c"
+  },
+  "errors.volume.linkNeedsConsent": "Det här ligger bakom en länk till en annan server som Cmdr inte får logga in på ännu. Öppna mappen i en panel för att bestämma.",
+  "@errors.volume.linkNeedsConsent": {
+    "sourceHash": "79ff9fe"
+  },
+  "errors.write.linkNeedsConsent.title": "Den här filen finns på en annan server",
+  "@errors.write.linkNeedsConsent.title": {
+    "sourceHash": "ff31c7f"
+  },
+  "errors.write.linkNeedsConsent.message": "En länk på {server} leder till {target}, och Cmdr får inte logga in där ännu, så inget gick till den servern.",
+  "@errors.write.linkNeedsConsent.message": {
+    "sourceHash": "7893ce9"
+  },
+  "errors.write.linkNeedsConsent.suggestion": "Öppna mappen i en panel och tillåt inloggningen om du litar på den servern. Försök sedan igen.",
+  "@errors.write.linkNeedsConsent.suggestion": {
+    "sourceHash": "cc25854"
   }
 }

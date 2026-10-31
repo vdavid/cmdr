@@ -15,6 +15,18 @@ use crate::log_error::{ErrorLogText, ErrorText, write_plain};
 use crate::log_private::LogPrivate;
 use crate::volume::git_error::FriendlyGitError;
 
+/// A sign-in on another server, through a link, that nobody has allowed.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct LinkSignIn {
+    /// The path that was refused.
+    pub path: String,
+    /// The server the share is on.
+    pub server: String,
+    /// The other server the link leads to.
+    pub target: String,
+}
+
 /// Error type for volume operations, and the value the frontend renders words
 /// from.
 ///
@@ -76,6 +88,17 @@ pub enum VolumeError {
     /// `NotFound`, which the frontend reads as "this folder was deleted". SMB-only
     /// today.
     LinkTargetUnreachable(String),
+    /// The path sits behind a link to another server (a DFS link inside an SMB
+    /// share), and nobody has allowed signing in there, so nothing went to it.
+    ///
+    /// The refusal is about this path alone. Only a pane navigation may ask the
+    /// person; everything else refuses. ❌ Never `DeviceDisconnected` or
+    /// `NotFound`, for the same reasons as [`Self::LinkTargetUnreachable`]. SMB-only
+    /// today.
+    ///
+    /// Boxed: this is the rare error, and three strings inline would grow every
+    /// `Result` a volume returns.
+    LinkNeedsConsent(Box<LinkSignIn>),
     /// The device's session died mid-operation but the device itself is still
     /// attached, and a reopen is already running in the background (MTP: a PTP
     /// `DeviceReset`, typically after a cancelled or timed-out transfer). The
@@ -257,6 +280,10 @@ impl ErrorLogText for VolumeError {
             Self::AlreadyExists(path) => ("Already exists: ", LogPrivate::path(path)),
             Self::NotConnected(path) => ("Not connected yet: ", LogPrivate::path(path)),
             Self::LinkTargetUnreachable(path) => ("A link's other server is out of reach: ", LogPrivate::path(path)),
+            Self::LinkNeedsConsent(sign_in) => (
+                "A link's other server isn't allowed yet: ",
+                LogPrivate::path(&sign_in.path),
+            ),
             Self::ReadOnly(path) => ("Read-only: ", LogPrivate::path(path)),
             Self::IsADirectory(path) => ("Is a directory: ", LogPrivate::dir_path(path)),
             Self::NotADirectory(path) => ("Not a directory: ", LogPrivate::path(path)),

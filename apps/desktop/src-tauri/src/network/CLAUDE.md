@@ -48,6 +48,7 @@ PLACE for S3 and NFS, a `*_volume_wiring.rs` that dials and registers), and thei
   on ITS port, plus a port-less entry only when a lookup noted finding its password there
   (`note_found_under_portless`). ❌ Never delete a port-less key blind: it's also the 445 server's key.
 - **Saved-server lists: `server_list_file::{read, save}`, `lenient_entries` fields**, ❌ never `unwrap_or_default`.
+- **Only a person's yes adds an SMB link consent** (`smb_link_consents.rs`): ❌ no agent tool may reach `allow`.
 - **Only Cmdr's own mounts (and a favorite on an unsaved share) save an SMB share** (`smb_saved_shares.rs`), keyed by
   server + share with the id the mount reported, ❌ never by account. An upgrade or watcher writing one invents history
   (`DETAILS.md` § "Saved SMB shares").

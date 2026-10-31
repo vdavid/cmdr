@@ -3525,5 +3525,33 @@
   "settings.license.getLicense.keywords": "licence, acheter, achat, prix, tarifs, commercial, professionnel, personnel, mettre à niveau",
   "@settings.license.getLicense.keywords": {
     "sourceHash": "5454f6d"
+  },
+  "settings.servers.card.smbLinkConsents": "Identifications par liens SMB",
+  "@settings.servers.card.smbLinkConsents": {
+    "sourceHash": "831477d"
+  },
+  "settings.network.smbLinkConsents.keywords": "SMB, DFS, lien, s’identifier, autre serveur, autoriser, confiance, oublier",
+  "@settings.network.smbLinkConsents.keywords": {
+    "sourceHash": "d88f7c7"
+  },
+  "settings.servers.smbLinkConsents.description": "Un lien dans un partage SMB peut mener à un dossier sur un autre serveur. Cmdr vous demande avant de s’y identifier, et mémorise votre réponse ici.",
+  "@settings.servers.smbLinkConsents.description": {
+    "sourceHash": "03ed8ee"
+  },
+  "settings.servers.smbLinkConsents.empty": "Rien d’autorisé pour l’instant. Quand un lien dans un partage mène à un autre serveur, Cmdr vous demande d’abord.",
+  "@settings.servers.smbLinkConsents.empty": {
+    "sourceHash": "16326ce"
+  },
+  "settings.servers.smbLinkConsents.pair": "Les liens sur {server} peuvent s’identifier sur {target}",
+  "@settings.servers.smbLinkConsents.pair": {
+    "sourceHash": "093a03d"
+  },
+  "settings.servers.smbLinkConsents.confirmTitle": "Oublier cette identification ?",
+  "@settings.servers.smbLinkConsents.confirmTitle": {
+    "sourceHash": "edc2567"
+  },
+  "settings.servers.smbLinkConsents.confirm": "La prochaine fois qu’un lien sur {server} mènera à {target}, Cmdr redemandera.",
+  "@settings.servers.smbLinkConsents.confirm": {
+    "sourceHash": "0218465"
   }
 }

@@ -3964,5 +3964,46 @@
     "description": "Recovery suggestion for the reason this one's explanation gives (routeCannotName). Shown when Ask Cmdr's suggestion to move or copy files, each under a new name the AI chose, can't use those names. Cmdr refuses before anything is moved or copied. Plain text. This is a raw errors.* string (no ICU).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.listing.linkNeedsConsent.title": "This folder is on another server",
+  "@errors.listing.linkNeedsConsent.title": {
+    "description": "Title of the listing error panel when a folder in an SMB network share is really a link (a DFS link) to a folder on a different server, and the person hasn’t allowed Cmdr to sign in there yet. Plain text."
+  },
+  "errors.listing.linkNeedsConsent.explanation": "`{path}` is a link on **{server}** that leads to **{target}**. Cmdr hasn’t signed in there, so {target} received nothing from you.",
+  "@errors.listing.linkNeedsConsent.explanation": {
+    "description": "Explanation in that panel. Raw catalog string with markdown (keep the backticks and asterisks) and literal tokens {path}, {server}, {target}.",
+    "placeholders": {
+      "path": "the folder’s path",
+      "server": "the server the share is on, like nas.local",
+      "target": "the other server the link leads to, like fs01.example.com"
+    }
+  },
+  "errors.listing.linkNeedsConsent.suggestion": "To open this folder, Cmdr has to sign in to {target} with the account you use for {server}. Review that if you trust {target}. The rest of this share works as usual.",
+  "@errors.listing.linkNeedsConsent.suggestion": {
+    "description": "Suggestion in that panel, above a button labeled \"Review sign-in\". Raw catalog string with literal tokens {server} and {target}.",
+    "placeholders": {
+      "server": "the server the share is on",
+      "target": "the other server the link leads to"
+    }
+  },
+  "errors.volume.linkNeedsConsent": "This sits behind a link to another server, and Cmdr hasn’t been allowed to sign in there. Open the folder in a pane to decide.",
+  "@errors.volume.linkNeedsConsent": {
+    "description": "Shown when creating, renaming, or deleting something failed because it sits behind a link (a DFS link in an SMB share) to another server the person hasn’t allowed Cmdr to sign in to. \"pane\" is one of the two file lists."
+  },
+  "errors.write.linkNeedsConsent.title": "This file is on another server",
+  "@errors.write.linkNeedsConsent.title": {
+    "description": "Title of the dialog when a copy or move stopped at a file behind a link (a DFS link in an SMB share) to another server the person hasn’t allowed Cmdr to sign in to."
+  },
+  "errors.write.linkNeedsConsent.message": "A link on {server} leads to {target}, and Cmdr hasn’t been allowed to sign in there, so nothing went to that server.",
+  "@errors.write.linkNeedsConsent.message": {
+    "description": "Message in that dialog.",
+    "placeholders": {
+      "server": "the server the share is on",
+      "target": "the other server the link leads to"
+    }
+  },
+  "errors.write.linkNeedsConsent.suggestion": "Open the folder in a pane and allow the sign-in if you trust that server, then try again.",
+  "@errors.write.linkNeedsConsent.suggestion": {
+    "description": "Suggestion in that dialog. \"pane\" is one of the two file lists."
   }
 }

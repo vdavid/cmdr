@@ -3512,5 +3512,33 @@
   "settings.license.getLicense.keywords": "许可证、授权、购买、价格、定价、商业、商用、个人、升级",
   "@settings.license.getLicense.keywords": {
     "sourceHash": "5454f6d"
+  },
+  "settings.servers.card.smbLinkConsents": "SMB 链接登录",
+  "@settings.servers.card.smbLinkConsents": {
+    "sourceHash": "831477d"
+  },
+  "settings.network.smbLinkConsents.keywords": "SMB，DFS，链接，登录，其他服务器，允许，信任，忘记",
+  "@settings.network.smbLinkConsents.keywords": {
+    "sourceHash": "d88f7c7"
+  },
+  "settings.servers.smbLinkConsents.description": "SMB 共享中的链接可能指向另一台服务器上的文件夹。Cmdr 会先问过你再登录那里，并把你的答复记在这里。",
+  "@settings.servers.smbLinkConsents.description": {
+    "sourceHash": "03ed8ee"
+  },
+  "settings.servers.smbLinkConsents.empty": "还没有允许任何登录。当共享中的链接指向另一台服务器时，Cmdr 会先询问。",
+  "@settings.servers.smbLinkConsents.empty": {
+    "sourceHash": "16326ce"
+  },
+  "settings.servers.smbLinkConsents.pair": "{server} 上的链接可以登录 {target}",
+  "@settings.servers.smbLinkConsents.pair": {
+    "sourceHash": "093a03d"
+  },
+  "settings.servers.smbLinkConsents.confirmTitle": "要忘记这次登录吗？",
+  "@settings.servers.smbLinkConsents.confirmTitle": {
+    "sourceHash": "edc2567"
+  },
+  "settings.servers.smbLinkConsents.confirm": "下次 {server} 上的链接指向 {target} 时，Cmdr 会再次询问。",
+  "@settings.servers.smbLinkConsents.confirm": {
+    "sourceHash": "0218465"
   }
 }

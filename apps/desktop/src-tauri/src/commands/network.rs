@@ -13,6 +13,29 @@ use crate::network::smb_upgrade::register_smb_volume;
 
 /// Gets every host discovery knows, including ones a stopped browse found: the
 /// Servers view shows them straight away while a fresh browse runs.
+/// Lets links on `server` sign in to `target`, after a person said yes in the
+/// pane. ❌ Only the frontend's dialog calls this: no MCP or Ask Cmdr tool may.
+/// `false` for a name Cmdr refuses to ask about.
+#[tauri::command]
+#[specta::specta]
+pub fn allow_smb_link_target(server: String, target: String) -> bool {
+    crate::network::smb_link_consents::allow(&server, &target)
+}
+
+/// Takes a pair back, so links on `server` ask again on their next call.
+#[tauri::command]
+#[specta::specta]
+pub fn forget_smb_link_target(server: String, target: String) -> bool {
+    crate::network::smb_link_consents::forget(&server, &target)
+}
+
+/// Every pair a person allowed, for a settings screen.
+#[tauri::command]
+#[specta::specta]
+pub fn list_smb_link_consents() -> Vec<crate::network::smb_link_consents::SmbLinkConsent> {
+    crate::network::smb_link_consents::list()
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn list_network_hosts() -> Vec<NetworkHost> {

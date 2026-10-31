@@ -467,6 +467,16 @@ pub enum WriteOperationError {
     ConnectionInterrupted {
         path: String,
     },
+    /// The file sits behind a link to another server (a DFS link in an SMB share),
+    /// and nobody has allowed signing in there, so nothing went to it. Opening the
+    /// folder in a pane is where a person can.
+    LinkNeedsConsent {
+        path: String,
+        /// The server the share is on.
+        server: String,
+        /// The other server the link leads to.
+        target: String,
+    },
     /// The connection to a SERVER (SMB, SFTP, WebDAV, S3) ended the operation:
     /// Cmdr waited for it to come back and gave up, or couldn't wait at all.
     /// The connection is the cause; `path` (the file it was on) is context only.
@@ -697,6 +707,7 @@ macro_rules! item_path_of {
             | WriteOperationError::PermissionDenied { path, .. }
             | WriteOperationError::DestinationFull { path }
             | WriteOperationError::ConnectionInterrupted { path }
+            | WriteOperationError::LinkNeedsConsent { path, .. }
             | WriteOperationError::ServerConnectionLost { path, .. }
             | WriteOperationError::ChangedWhileDisconnected { path, .. }
             | WriteOperationError::ReplySignatureRefused { path, .. }

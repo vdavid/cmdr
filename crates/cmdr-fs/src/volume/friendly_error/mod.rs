@@ -289,6 +289,16 @@ pub enum ListingErrorReason {
         /// The path the failure was about.
         path: String,
     },
+    /// `VolumeError::LinkNeedsConsent`: the folder sits behind a link to another server, and nobody
+    /// has allowed signing in there.
+    LinkNeedsConsent {
+        /// The path the failure was about.
+        path: String,
+        /// The server the share is on.
+        server: String,
+        /// The other server the link leads to.
+        target: String,
+    },
     /// The volume or device is read-only.
     ReadOnly,
     /// The device is out of storage.

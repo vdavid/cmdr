@@ -2,6 +2,21 @@
 //! and what each refusal says about who was turned away.
 
 use super::*;
+
+/// A namespace on another server nobody allowed stays on the system connection,
+/// with its own typed reason.
+#[test]
+fn a_namespace_on_another_server_without_consent_has_its_own_reason() {
+    let err = smb2::Error::DfsTargetNotAllowed {
+        path: r"\\nas\ns".to_string(),
+        server: "nas".to_string(),
+        target: "fs01".to_string(),
+    };
+    assert_eq!(
+        UpgradeFailure::from_smb_error(&err),
+        UpgradeFailure::OtherServerNotAllowed
+    );
+}
 use smb2::types::status::NtStatus;
 
 fn protocol(status: NtStatus, command: Command) -> smb2::Error {

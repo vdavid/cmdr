@@ -41,6 +41,8 @@
         canGoBack?: boolean
         onGoBack?: () => void
         onGoHome?: () => void
+        /** Asks the person about the sign-in `friendly.linkConsent` names. */
+        onReviewLinkConsent?: () => void
         /** Whether this pane is the focused one, gating the ⌘D key handler. */
         isFocused?: boolean
     }
@@ -52,6 +54,7 @@
         canGoBack = false,
         onGoBack,
         onGoHome,
+        onReviewLinkConsent,
         isFocused = false,
     }: Props = $props()
 
@@ -172,6 +175,12 @@
         <div class="cta">
             {#if showRetryButton}
                 <Button variant="primary" onclick={handleRetry}>{tString('fileExplorer.errorPane.tryAgain')}</Button>
+            {/if}
+
+            {#if friendly.linkConsent}
+                <Button variant="primary" onclick={() => onReviewLinkConsent?.()}
+                    >{tString('fileExplorer.errorPane.reviewLinkSignIn')}</Button
+                >
             {/if}
 
             {#if isPermissionDenied && isMacOS()}

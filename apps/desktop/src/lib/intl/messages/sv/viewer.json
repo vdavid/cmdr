@@ -483,5 +483,9 @@
   "viewer.selection.toEndOfFileNoLine": "Markerat till slutet av filen",
   "@viewer.selection.toEndOfFileNoLine": {
     "sourceHash": "e7e0442"
+  },
+  "viewer.error.linkNeedsConsent": "Den här filen ligger bakom en länk till en annan server som Cmdr inte får logga in på ännu. Öppna dess mapp i en panel för att bestämma.",
+  "@viewer.error.linkNeedsConsent": {
+    "sourceHash": "b9b3e1f"
   }
 }

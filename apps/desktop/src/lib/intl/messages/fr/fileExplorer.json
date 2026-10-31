@@ -2157,5 +2157,41 @@
   "fileExplorer.tags.skipped": "{count, plural, one {Cmdr n’a pas pu lire les tags déjà présents sur un élément et les a donc laissés tels quels. Vérifiez que vous pouvez ouvrir cet élément, ou ajoutez le tag dans le Finder.} many {Cmdr n’a pas pu lire les tags déjà présents sur {countText} éléments et les a donc laissés tels quels. Vérifiez que vous pouvez ouvrir ces éléments, ou ajoutez le tag dans le Finder.} other {Cmdr n’a pas pu lire les tags déjà présents sur {countText} éléments et les a donc laissés tels quels. Vérifiez que vous pouvez ouvrir ces éléments, ou ajoutez le tag dans le Finder.}}",
   "@fileExplorer.tags.skipped": {
     "sourceHash": "31363ee"
+  },
+  "fileExplorer.errorPane.reviewLinkSignIn": "Examiner l’identification",
+  "@fileExplorer.errorPane.reviewLinkSignIn": {
+    "sourceHash": "25a3cfe"
+  },
+  "fileExplorer.pane.directConnectionOtherServerNotAllowedToast": "{server} indique que les fichiers de ce partage se trouvent sur un autre serveur. Cmdr ne s’y identifie pas de lui-même, donc le partage reste sur la connexion système.",
+  "@fileExplorer.pane.directConnectionOtherServerNotAllowedToast": {
+    "sourceHash": "c350d80"
+  },
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "Impossible de se connecter directement à <shareName>{share}</shareName>, car ses fichiers se trouvent sur un autre serveur et Cmdr ne s’y identifie pas de lui-même. Vous restez connecté via la connexion réseau SMB native de macOS, qui est bien plus lente.",
+  "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
+    "sourceHash": "9c9c5a5"
+  },
+  "fileExplorer.smbLinkConsent.title": "S’identifier sur un autre serveur ?",
+  "@fileExplorer.smbLinkConsent.title": {
+    "sourceHash": "91458ea"
+  },
+  "fileExplorer.smbLinkConsent.message": "Un lien sur {server} mène à un dossier sur {target}. Pour l’ouvrir, Cmdr s’identifie sur {target} avec le compte que vous utilisez pour {server}.",
+  "@fileExplorer.smbLinkConsent.message": {
+    "sourceHash": "848be1b"
+  },
+  "fileExplorer.smbLinkConsent.warning": "Autorisez cela seulement si vous faites confiance à {target}. Un serveur que vous ne connaissez pas pourrait utiliser un tel lien pour récupérer votre mot de passe.",
+  "@fileExplorer.smbLinkConsent.warning": {
+    "sourceHash": "295e81e"
+  },
+  "fileExplorer.smbLinkConsent.note": "Cmdr mémorise votre réponse pour ces deux serveurs. Vous pouvez l’oublier dans les Réglages, sous Serveurs.",
+  "@fileExplorer.smbLinkConsent.note": {
+    "sourceHash": "3f9615a"
+  },
+  "fileExplorer.smbLinkConsent.allow": "Autoriser et s’identifier",
+  "@fileExplorer.smbLinkConsent.allow": {
+    "sourceHash": "d8192ad"
+  },
+  "fileExplorer.smbLinkConsent.notNow": "Pas maintenant",
+  "@fileExplorer.smbLinkConsent.notNow": {
+    "sourceHash": "a0e63d7"
   }
 }

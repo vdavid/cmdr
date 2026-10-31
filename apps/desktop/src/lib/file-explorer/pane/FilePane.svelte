@@ -44,6 +44,7 @@
     import { createListingPresentation } from './listing-presentation.svelte'
     import { createSmbViewState } from './smb-view-state.svelte'
     import { createVolumeSpace } from './volume-space.svelte'
+    import SmbLinkConsentDialog from '../network/SmbLinkConsentDialog.svelte'
     import ErrorPane from './ErrorPane.svelte'
     import ListingStalledView from './ListingStalledView.svelte'
     import type { ListingPhase, StalledOn } from '#lib/ipc/bindings.js'
@@ -275,6 +276,8 @@
     let loading = $state(true)
     let error = $state<string | null>(null)
     let friendlyError = $state<FriendlyError | null>(null)
+    /** The sign-in the error screen's button is asking about, while its dialog is up. */
+    let linkConsentPair = $state<{ server: string; target: string } | null>(null)
 
     let cursorIndex = $state(0)
 
@@ -2244,8 +2247,24 @@
                 {canGoBack}
                 onGoBack={() => onGoBack?.()}
                 onGoHome={() => onOpenHome?.()}
+                onReviewLinkConsent={() => {
+                    linkConsentPair = friendlyError?.linkConsent ?? null
+                }}
                 {isFocused}
             />
+            {#if linkConsentPair}
+                <SmbLinkConsentDialog
+                    server={linkConsentPair.server}
+                    target={linkConsentPair.target}
+                    onAllowed={() => {
+                        linkConsentPair = null
+                        void navigateToPath(currentPath)
+                    }}
+                    onCancel={() => {
+                        linkConsentPair = null
+                    }}
+                />
+            {/if}
         {:else if error && !showLoadingView}
             <div class="error-message">{error}</div>
         {:else if viewMode === 'brief'}

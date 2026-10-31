@@ -165,6 +165,7 @@ pub async fn try_open_share(params: &SmbConnectionParams, timeout: Duration) -> 
         // about a share the caller can actually open.
         dfs_enabled: true,
         dfs_target_overrides: Default::default(),
+        dfs_target_policy: crate::link_consent::dfs_target_policy(),
         // What makes "`timeout` bounds each protocol step" hold for the
         // handshake and TreeConnect, not only the TCP connect.
         response_timeout: Some(timeout),

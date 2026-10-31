@@ -479,5 +479,9 @@
   "viewer.selection.toEndOfFileNoLine": "Selecionado até o fim do arquivo",
   "@viewer.selection.toEndOfFileNoLine": {
     "sourceHash": "e7e0442"
+  },
+  "viewer.error.linkNeedsConsent": "Este arquivo está atrás de um link para outro servidor em que o Cmdr ainda não pode iniciar sessão. Abra a pasta dele em um painel para decidir.",
+  "@viewer.error.linkNeedsConsent": {
+    "sourceHash": "b9b3e1f"
   }
 }

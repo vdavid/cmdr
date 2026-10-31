@@ -2147,5 +2147,41 @@
   "fileExplorer.tags.skipped": "{count, plural, one {A Cmdr változatlanul hagyta egy elem címkéit, mert nem tudta beolvasni a már rajta lévőket. Ellenőrizd, hogy meg tudod-e nyitni, vagy címkézd fel a Finderben.} other {A Cmdr változatlanul hagyta {countText} elem címkéit, mert nem tudta beolvasni a már rajtuk lévőket. Ellenőrizd, hogy meg tudod-e nyitni őket, vagy címkézd fel őket a Finderben.}}",
   "@fileExplorer.tags.skipped": {
     "sourceHash": "31363ee"
+  },
+  "fileExplorer.errorPane.reviewLinkSignIn": "Bejelentkezés áttekintése",
+  "@fileExplorer.errorPane.reviewLinkSignIn": {
+    "sourceHash": "25a3cfe"
+  },
+  "fileExplorer.pane.directConnectionOtherServerNotAllowedToast": "{server} szerint ennek a megosztásnak a fájljai egy másik szerveren vannak. A Cmdr magától nem jelentkezik be oda, ezért a rendszerkapcsolaton marad.",
+  "@fileExplorer.pane.directConnectionOtherServerNotAllowedToast": {
+    "sourceHash": "c350d80"
+  },
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "Nem sikerült közvetlenül csatlakozni ehhez: <shareName>{share}</shareName>, mert a fájljai egy másik szerveren vannak, és a Cmdr magától nem jelentkezik be oda. Továbbra is a macOS natív SMB-hálózati kapcsolatán keresztül csatlakozol, ami jóval lassabb.",
+  "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
+    "sourceHash": "9c9c5a5"
+  },
+  "fileExplorer.smbLinkConsent.title": "Bejelentkezel egy másik szerverre?",
+  "@fileExplorer.smbLinkConsent.title": {
+    "sourceHash": "91458ea"
+  },
+  "fileExplorer.smbLinkConsent.message": "Egy link ezen a szerveren: {server}, egy mappához vezet itt: {target}. A megnyitásához a Cmdr bejelentkezik ide: {target}, azzal a fiókkal, amit ehhez használsz: {server}.",
+  "@fileExplorer.smbLinkConsent.message": {
+    "sourceHash": "848be1b"
+  },
+  "fileExplorer.smbLinkConsent.warning": "Csak akkor engedélyezd, ha megbízol ebben: {target}. Egy ismeretlen szerver egy ilyen linkkel megszerezheti a jelszavadat.",
+  "@fileExplorer.smbLinkConsent.warning": {
+    "sourceHash": "295e81e"
+  },
+  "fileExplorer.smbLinkConsent.note": "A Cmdr megjegyzi a válaszodat erre a két szerverre. A Beállítások Szerverek oldalán elfelejtheted.",
+  "@fileExplorer.smbLinkConsent.note": {
+    "sourceHash": "3f9615a"
+  },
+  "fileExplorer.smbLinkConsent.allow": "Engedélyezés és bejelentkezés",
+  "@fileExplorer.smbLinkConsent.allow": {
+    "sourceHash": "d8192ad"
+  },
+  "fileExplorer.smbLinkConsent.notNow": "Most nem",
+  "@fileExplorer.smbLinkConsent.notNow": {
+    "sourceHash": "a0e63d7"
   }
 }

@@ -7,7 +7,14 @@ import {
   openLocalNetworkSettingsLabel,
 } from './upgrade-messages'
 
-const ALL_REASONS: UpgradeFailure[] = ['unreachable', 'tooSlow', 'shareNotOnServer', 'unexpected', 'blockedByThisMac']
+const ALL_REASONS: UpgradeFailure[] = [
+  'unreachable',
+  'tooSlow',
+  'shareNotOnServer',
+  'otherServerNotAllowed',
+  'unexpected',
+  'blockedByThisMac',
+]
 
 describe('directConnectionUnavailableMessage', () => {
   it('names the server so the user knows which one to check', () => {

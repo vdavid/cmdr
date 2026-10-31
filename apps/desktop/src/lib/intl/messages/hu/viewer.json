@@ -479,5 +479,9 @@
   "viewer.selection.toEndOfFileNoLine": "Kijelölve a fájl végéig",
   "@viewer.selection.toEndOfFileNoLine": {
     "sourceHash": "e7e0442"
+  },
+  "viewer.error.linkNeedsConsent": "Ez a fájl egy másik szerverre mutató link mögött van, ahová a Cmdr még nem jelentkezhet be. A döntéshez nyisd meg a mappáját egy panelen.",
+  "@viewer.error.linkNeedsConsent": {
+    "sourceHash": "b9b3e1f"
   }
 }

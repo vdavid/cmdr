@@ -2152,5 +2152,41 @@
   "fileExplorer.tags.skipped": "{count, plural, one {Cmdr ha dejado las etiquetas de un elemento como estaban, porque no ha podido leer las que ya tenía. Comprueba que puedes abrirlo o etiquétalo en el Finder.} many {Cmdr ha dejado las etiquetas de {countText} elementos como estaban, porque no ha podido leer las que ya tenían. Comprueba que puedes abrirlos o etiquétalos en el Finder.} other {Cmdr ha dejado las etiquetas de {countText} elementos como estaban, porque no ha podido leer las que ya tenían. Comprueba que puedes abrirlos o etiquétalos en el Finder.}}",
   "@fileExplorer.tags.skipped": {
     "sourceHash": "31363ee"
+  },
+  "fileExplorer.errorPane.reviewLinkSignIn": "Revisar el inicio de sesión",
+  "@fileExplorer.errorPane.reviewLinkSignIn": {
+    "sourceHash": "25a3cfe"
+  },
+  "fileExplorer.pane.directConnectionOtherServerNotAllowedToast": "{server} dice que los archivos de este recurso compartido están en otro servidor. Cmdr no inicia sesión allí por su cuenta, así que sigue usando la conexión del sistema.",
+  "@fileExplorer.pane.directConnectionOtherServerNotAllowedToast": {
+    "sourceHash": "c350d80"
+  },
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "No se ha podido conectar directamente a <shareName>{share}</shareName>, porque sus archivos están en otro servidor y Cmdr no inicia sesión allí por su cuenta. Sigues conectado a través de la conexión de red SMB nativa de macOS, que es mucho más lenta.",
+  "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
+    "sourceHash": "9c9c5a5"
+  },
+  "fileExplorer.smbLinkConsent.title": "¿Iniciar sesión en otro servidor?",
+  "@fileExplorer.smbLinkConsent.title": {
+    "sourceHash": "91458ea"
+  },
+  "fileExplorer.smbLinkConsent.message": "Un enlace en {server} lleva a una carpeta en {target}. Para abrirla, Cmdr inicia sesión en {target} con la cuenta que usas para {server}.",
+  "@fileExplorer.smbLinkConsent.message": {
+    "sourceHash": "848be1b"
+  },
+  "fileExplorer.smbLinkConsent.warning": "Permítelo solo si confías en {target}. Un servidor que no conoces podría usar un enlace así para obtener tu contraseña.",
+  "@fileExplorer.smbLinkConsent.warning": {
+    "sourceHash": "295e81e"
+  },
+  "fileExplorer.smbLinkConsent.note": "Cmdr recuerda tu respuesta para estos dos servidores. Puedes olvidarla en Ajustes, en Servidores.",
+  "@fileExplorer.smbLinkConsent.note": {
+    "sourceHash": "3f9615a"
+  },
+  "fileExplorer.smbLinkConsent.allow": "Permitir e iniciar sesión",
+  "@fileExplorer.smbLinkConsent.allow": {
+    "sourceHash": "d8192ad"
+  },
+  "fileExplorer.smbLinkConsent.notNow": "Ahora no",
+  "@fileExplorer.smbLinkConsent.notNow": {
+    "sourceHash": "a0e63d7"
   }
 }

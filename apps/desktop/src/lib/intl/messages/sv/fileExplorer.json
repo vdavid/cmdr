@@ -2150,5 +2150,41 @@
   "fileExplorer.tags.skipped": "{count, plural, one {Cmdr lämnade taggarna på ett objekt som de var, eftersom taggarna som redan fanns där inte gick att läsa. Kontrollera att du kan öppna objektet, annars kan du lägga till taggen i Finder.} other {Cmdr lämnade taggarna på {countText} objekt som de var, eftersom taggarna som redan fanns där inte gick att läsa. Kontrollera att du kan öppna objekten, annars kan du lägga till taggen i Finder.}}",
   "@fileExplorer.tags.skipped": {
     "sourceHash": "31363ee"
+  },
+  "fileExplorer.errorPane.reviewLinkSignIn": "Granska inloggning",
+  "@fileExplorer.errorPane.reviewLinkSignIn": {
+    "sourceHash": "25a3cfe"
+  },
+  "fileExplorer.pane.directConnectionOtherServerNotAllowedToast": "{server} säger att filerna i den här delade mappen finns på en annan server. Cmdr loggar inte in där av sig själv, så den ligger kvar på systemanslutningen.",
+  "@fileExplorer.pane.directConnectionOtherServerNotAllowedToast": {
+    "sourceHash": "c350d80"
+  },
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "Kunde inte ansluta direkt till <shareName>{share}</shareName>, eftersom filerna finns på en annan server och Cmdr inte loggar in där av sig själv. Du är fortfarande ansluten via macOS egen SMB-nätverksanslutning, som är mycket långsammare.",
+  "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
+    "sourceHash": "9c9c5a5"
+  },
+  "fileExplorer.smbLinkConsent.title": "Logga in på en annan server?",
+  "@fileExplorer.smbLinkConsent.title": {
+    "sourceHash": "91458ea"
+  },
+  "fileExplorer.smbLinkConsent.message": "En länk på {server} leder till en mapp på {target}. För att öppna den loggar Cmdr in på {target} med kontot du använder för {server}.",
+  "@fileExplorer.smbLinkConsent.message": {
+    "sourceHash": "848be1b"
+  },
+  "fileExplorer.smbLinkConsent.warning": "Tillåt det här bara om du litar på {target}. En server du inte känner till kan använda en sådan länk för att komma över ditt lösenord.",
+  "@fileExplorer.smbLinkConsent.warning": {
+    "sourceHash": "295e81e"
+  },
+  "fileExplorer.smbLinkConsent.note": "Cmdr kommer ihåg ditt svar för de här två servrarna. Du kan glömma det i Inställningar, under Servrar.",
+  "@fileExplorer.smbLinkConsent.note": {
+    "sourceHash": "3f9615a"
+  },
+  "fileExplorer.smbLinkConsent.allow": "Tillåt och logga in",
+  "@fileExplorer.smbLinkConsent.allow": {
+    "sourceHash": "d8192ad"
+  },
+  "fileExplorer.smbLinkConsent.notNow": "Inte nu",
+  "@fileExplorer.smbLinkConsent.notNow": {
+    "sourceHash": "a0e63d7"
   }
 }

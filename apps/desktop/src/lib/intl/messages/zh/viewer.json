@@ -479,5 +479,9 @@
   "viewer.selection.toEndOfFileNoLine": "已选择到文件末尾的内容",
   "@viewer.selection.toEndOfFileNoLine": {
     "sourceHash": "e7e0442"
+  },
+  "viewer.error.linkNeedsConsent": "这个文件位于指向另一台服务器的链接之后，Cmdr 还未获准登录那台服务器。请在窗格中打开它所在的文件夹来决定。",
+  "@viewer.error.linkNeedsConsent": {
+    "sourceHash": "b9b3e1f"
   }
 }

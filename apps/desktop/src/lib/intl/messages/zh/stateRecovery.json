@@ -126,5 +126,9 @@
   "stateRecovery.dismiss": "关闭",
   "@stateRecovery.dismiss": {
     "sourceHash": "48845bf"
+  },
+  "stateRecovery.smbLinkConsents.title": "Cmdr 无法读取你允许 SMB 链接登录的所有服务器，所以可能会再次询问其中一些",
+  "@stateRecovery.smbLinkConsents.title": {
+    "sourceHash": "2e0f9fd"
   }
 }

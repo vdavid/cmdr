@@ -3513,5 +3513,33 @@
   "settings.license.getLicense.keywords": "licencia, comprar, compra, precio, precios, comercial, personal, mejorar",
   "@settings.license.getLicense.keywords": {
     "sourceHash": "5454f6d"
+  },
+  "settings.servers.card.smbLinkConsents": "Inicios de sesión de enlaces SMB",
+  "@settings.servers.card.smbLinkConsents": {
+    "sourceHash": "831477d"
+  },
+  "settings.network.smbLinkConsents.keywords": "SMB, DFS, enlace, iniciar sesión, otro servidor, permitir, confiar, olvidar",
+  "@settings.network.smbLinkConsents.keywords": {
+    "sourceHash": "d88f7c7"
+  },
+  "settings.servers.smbLinkConsents.description": "Un enlace en un recurso compartido SMB puede llevar a una carpeta en otro servidor. Cmdr pregunta antes de iniciar sesión allí, y aquí recuerda tu respuesta.",
+  "@settings.servers.smbLinkConsents.description": {
+    "sourceHash": "03ed8ee"
+  },
+  "settings.servers.smbLinkConsents.empty": "Aún no hay nada permitido. Cuando un enlace en un recurso compartido lleve a otro servidor, Cmdr te preguntará primero.",
+  "@settings.servers.smbLinkConsents.empty": {
+    "sourceHash": "16326ce"
+  },
+  "settings.servers.smbLinkConsents.pair": "Los enlaces en {server} pueden iniciar sesión en {target}",
+  "@settings.servers.smbLinkConsents.pair": {
+    "sourceHash": "093a03d"
+  },
+  "settings.servers.smbLinkConsents.confirmTitle": "¿Olvidar este inicio de sesión?",
+  "@settings.servers.smbLinkConsents.confirmTitle": {
+    "sourceHash": "edc2567"
+  },
+  "settings.servers.smbLinkConsents.confirm": "La próxima vez que un enlace en {server} lleve a {target}, Cmdr volverá a preguntar.",
+  "@settings.servers.smbLinkConsents.confirm": {
+    "sourceHash": "0218465"
   }
 }

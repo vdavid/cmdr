@@ -3125,5 +3125,54 @@
       "countText": "how many files were left unchanged, already formatted for display (e.g. 1,204)",
       "count": "the same number (drives the singular/plural form)"
     }
+  },
+  "fileExplorer.errorPane.reviewLinkSignIn": "Review sign-in",
+  "@fileExplorer.errorPane.reviewLinkSignIn": {
+    "description": "Button on the error screen shown in place of a file list, for a folder behind a link to another server. Opens a dialog that asks whether Cmdr may sign in there."
+  },
+  "fileExplorer.pane.directConnectionOtherServerNotAllowedToast": "{server} says this share’s files live on another server. Cmdr won’t sign in there on its own, so it stays on the system connection.",
+  "@fileExplorer.pane.directConnectionOtherServerNotAllowedToast": {
+    "description": "Toast shown when connecting a network share directly found that the share (a DFS namespace) lives on a different server the person hasn’t allowed Cmdr to sign in to. Not temporary, so avoid wording like \"try again\".",
+    "placeholders": {
+      "server": "the server’s friendly name or IP address, for example Naspolya or 192.168.1.111"
+    }
+  },
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "Couldn’t directly connect to <shareName>{share}</shareName>, because its files live on another server and Cmdr won’t sign in there on its own. You are still connected through macOS’s native SMB network connection, which is a lot slower.",
+  "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
+    "description": "Body of the same notification as \"osMountFallback.message\", for a share (a DFS namespace) that lives on a different server the person hasn’t allowed Cmdr to sign in to. There is no retry button. <shareName> wraps the share’s name and renders it bold; keep the tag around the name wherever your grammar puts it. \"macOS\", \"SMB\", and \"Cmdr\" are names; keep them.",
+    "placeholders": {
+      "share": "the name of the network share, for example archive or Photos"
+    }
+  },
+  "fileExplorer.smbLinkConsent.title": "Sign in to another server?",
+  "@fileExplorer.smbLinkConsent.title": {
+    "description": "Title of a security dialog: a link in an SMB share leads to a folder on a different server, and Cmdr asks before it signs in there."
+  },
+  "fileExplorer.smbLinkConsent.message": "A link on {server} leads to a folder on {target}. To open it, Cmdr signs in to {target} with the account you use for {server}.",
+  "@fileExplorer.smbLinkConsent.message": {
+    "description": "Body of that dialog: what would happen.",
+    "placeholders": {
+      "server": "the server the share is on, like nas.local",
+      "target": "the other server the link leads to, like fs01.example.com"
+    }
+  },
+  "fileExplorer.smbLinkConsent.warning": "Allow this only if you trust {target}. A server you don’t know could use a link like this to collect your password.",
+  "@fileExplorer.smbLinkConsent.warning": {
+    "description": "Second paragraph of that dialog: the risk, stated calmly.",
+    "placeholders": {
+      "target": "the other server the link leads to"
+    }
+  },
+  "fileExplorer.smbLinkConsent.note": "Cmdr remembers your answer for these two servers. You can forget it in Settings, under Servers.",
+  "@fileExplorer.smbLinkConsent.note": {
+    "description": "Small note at the end of that dialog. \"Settings\" is the app’s settings window, \"Servers\" its page; translate them the way the settings window does."
+  },
+  "fileExplorer.smbLinkConsent.allow": "Allow and sign in",
+  "@fileExplorer.smbLinkConsent.allow": {
+    "description": "The dialog’s confirming button."
+  },
+  "fileExplorer.smbLinkConsent.notNow": "Not now",
+  "@fileExplorer.smbLinkConsent.notNow": {
+    "description": "The dialog’s cancel button. Nothing is sent, and it will ask again next time."
   }
 }

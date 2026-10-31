@@ -3524,5 +3524,33 @@
   "settings.license.getLicense.keywords": "Lizenz, kaufen, erwerben, Kauf, Preis, Preise, kommerziell, gewerblich, privat, persönlich, Upgrade",
   "@settings.license.getLicense.keywords": {
     "sourceHash": "5454f6d"
+  },
+  "settings.servers.card.smbLinkConsents": "Anmeldungen über SMB-Links",
+  "@settings.servers.card.smbLinkConsents": {
+    "sourceHash": "831477d"
+  },
+  "settings.network.smbLinkConsents.keywords": "SMB, DFS, Link, anmelden, anderer Server, erlauben, vertrauen, vergessen",
+  "@settings.network.smbLinkConsents.keywords": {
+    "sourceHash": "d88f7c7"
+  },
+  "settings.servers.smbLinkConsents.description": "Ein Link in einer SMB-Freigabe kann zu einem Ordner auf einem anderen Server führen. Cmdr fragt nach, bevor es sich dort anmeldet, und merkt sich deine Antwort hier.",
+  "@settings.servers.smbLinkConsents.description": {
+    "sourceHash": "03ed8ee"
+  },
+  "settings.servers.smbLinkConsents.empty": "Noch nichts erlaubt. Wenn ein Link in einer Freigabe zu einem anderen Server führt, fragt Cmdr zuerst.",
+  "@settings.servers.smbLinkConsents.empty": {
+    "sourceHash": "16326ce"
+  },
+  "settings.servers.smbLinkConsents.pair": "Links auf {server} dürfen sich bei {target} anmelden",
+  "@settings.servers.smbLinkConsents.pair": {
+    "sourceHash": "093a03d"
+  },
+  "settings.servers.smbLinkConsents.confirmTitle": "Diese Anmeldung vergessen?",
+  "@settings.servers.smbLinkConsents.confirmTitle": {
+    "sourceHash": "edc2567"
+  },
+  "settings.servers.smbLinkConsents.confirm": "Wenn ein Link auf {server} das nächste Mal zu {target} führt, fragt Cmdr erneut.",
+  "@settings.servers.smbLinkConsents.confirm": {
+    "sourceHash": "0218465"
   }
 }

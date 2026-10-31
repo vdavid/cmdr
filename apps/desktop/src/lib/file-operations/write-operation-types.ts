@@ -256,6 +256,7 @@ export type WriteOperationError =
   | { type: 'file_locked'; path: string }
   | { type: 'trash_not_supported'; path: string }
   | { type: 'connection_interrupted'; path: string }
+  | { type: 'link_needs_consent'; path: string; server: string; target: string }
   // The connection to a SERVER (SMB, SFTP, WebDAV, S3) ended the operation, as the
   // backend's outage wait saw it: the connection is the cause, `path` (the file it was
   // on) only context. `gaveUpAfterSecs` is how long Cmdr waited, `null` when it didn't

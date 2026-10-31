@@ -118,5 +118,9 @@
   "stateRecovery.nfsPlaces.title": "Cmdr no pudo leer todas tus ubicaciones NFS guardadas, así que puede que falten algunas",
   "@stateRecovery.nfsPlaces.title": {
     "sourceHash": "06d14d3"
+  },
+  "stateRecovery.smbLinkConsents.title": "Cmdr no pudo leer todos los servidores en los que permitiste iniciar sesión a los enlaces SMB, así que puede volver a preguntar por algunos",
+  "@stateRecovery.smbLinkConsents.title": {
+    "sourceHash": "5c526fb"
   }
 }

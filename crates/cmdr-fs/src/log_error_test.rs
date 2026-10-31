@@ -15,6 +15,11 @@ fn errors(path: &str) -> Vec<VolumeError> {
         VolumeError::AlreadyExists(p()),
         VolumeError::NotConnected(p()),
         VolumeError::LinkTargetUnreachable(p()),
+        VolumeError::LinkNeedsConsent(Box::new(crate::volume::LinkSignIn {
+            path: p(),
+            server: "nas".into(),
+            target: "fs01".into(),
+        })),
         VolumeError::ReadOnly(p()),
         VolumeError::IsADirectory(p()),
         VolumeError::NotADirectory(p()),

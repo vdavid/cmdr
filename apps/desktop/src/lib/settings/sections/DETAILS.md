@@ -196,11 +196,12 @@ sections compose).
   (same pattern as FSW above).
 - **`ServersSection.svelte`**: `File systems > Servers (SFTP, WebDAV)`: a "Trusted host keys" `SectionCard` listing
   `listTrustedSftpHostKeys()`, a row per key (host with port, algorithm, fingerprint, the date it was trusted) with a
-  confirmed Forget, and a "Trusted certificates" card the same shape over `listTrustedWebdavCertificates()` (a pin per
-  host and port, the SHA-256). ❗ The page has NO setting: saved servers live in the hub, so its sidebar row and each
-  card's `shouldShow` gate come from the rows in `ServersSection.rows.ts` (`../DETAILS.md` § Searchable rows). The list
-  is `null` until the read answers, so the empty sentence can't flash in front of someone who has keys; a read that
-  throws lands on the same sentence rather than an eternal blank.
+  confirmed Forget, and a "Trusted certificates" card the same shape over `listTrustedWebdavCertificates()`, and an "SMB
+  link sign-ins" card over `listSmbLinkConsents()` (`crates/cmdr-smb/DETAILS.md` § "Signing in through a link") (a
+  certificate pin per host and port, the SHA-256). ❗ The page has NO setting: saved servers live in the hub, so its
+  sidebar row and each card's `shouldShow` gate come from the rows in `ServersSection.rows.ts` (`../DETAILS.md` §
+  Searchable rows). The list is `null` until the read answers, so the empty sentence can't flash in front of someone who
+  has keys; a read that throws lands on the same sentence rather than an eternal blank.
 - **`MtpSection.svelte`**: `File systems > MTP (Android/Kindle/cameras)`: one unlabeled `SectionCard`, gated via
   `anyVisible(shouldShow, ...)`
 - **`AdbSection.svelte`**: `File systems > Android (ADB)`: one unlabeled `SectionCard` holding the
