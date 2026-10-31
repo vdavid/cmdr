@@ -1,0 +1,1356 @@
+{
+  "fileOperations.button.cancel": "Zrušit",
+  "@fileOperations.button.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "fileOperations.button.close": "Zavřít",
+  "@fileOperations.button.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "fileOperations.button.ok": "OK",
+  "@fileOperations.button.ok": {
+    "sourceHash": "565339b",
+    "sameAsSourceJustification": "OK is the standard macOS Czech button label (AppKit cs keeps „OK“); already shipped identically in ui.alertDialog.defaultButton and mtp.connectedToast.ok."
+  },
+  "fileOperations.delete.fromPath": "Odkud: {path}",
+  "@fileOperations.delete.fromPath": {
+    "sourceHash": "12851d4"
+  },
+  "fileOperations.delete.noTrashWarningStrong": "Tento svazek nepodporuje koš.",
+  "@fileOperations.delete.noTrashWarningStrong": {
+    "sourceHash": "911688a"
+  },
+  "fileOperations.delete.noTrashWarningRest": "Soubory budou trvale smazány.",
+  "@fileOperations.delete.noTrashWarningRest": {
+    "sourceHash": "0d73f99"
+  },
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Část výběru je dostupná jen online. Přesunutí těchto položek do koše by je <strong>nejdřív stáhlo</strong>. V takovém případě Cmdr nabízí jen <strong>smazání</strong> celého výběru. V koši nezůstanou žádné kopie, ale cloudové služby obvykle mají vlastní koš, kde smazané soubory drží asi 30 dní. Pokud vám smazání nevadí, klikněte na „Smazat“. Jinak toto dialogové okno zrušte a buď nejdřív všechny soubory zpřístupněte offline, nebo zrušte výběr všech souborů dostupných jen online.",
+  "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
+    "sourceHash": "2468db5"
+  },
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Všechno, co máte vybrané, je dostupné jen online. Přesunutí do koše by to <strong>nejdřív stáhlo</strong>. V takovém případě Cmdr nabízí jen <strong>smazání</strong> celého výběru. V koši nezůstanou žádné kopie, ale cloudové služby obvykle mají vlastní koš, kde smazané soubory drží asi 30 dní. Pokud vám smazání nevadí, klikněte na „Smazat“. Jinak toto dialogové okno zrušte a tyto soubory nejdřív zpřístupněte offline.",
+  "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
+    "sourceHash": "dd04d39"
+  },
+  "fileOperations.delete.cloudOnlineOnlyHandedBack": "Ukázalo se, že výběr obsahuje i položky dostupné jen online, takže tlačítko níže teď nabízí „Smazat“. Přečtěte si upozornění nahoře, a pokud vám to nevadí, stiskněte tlačítko znovu.",
+  "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
+    "sourceHash": "d3f4a7a"
+  },
+  "fileOperations.delete.archiveWarningStrong": "V archivu žádný koš není.",
+  "@fileOperations.delete.archiveWarningStrong": {
+    "sourceHash": "d25cd46"
+  },
+  "fileOperations.delete.archiveWarningRest": "Tyto položky budou z archivu ZIP natrvalo smazány.",
+  "@fileOperations.delete.archiveWarningRest": {
+    "sourceHash": "5fa93f5"
+  },
+  "fileOperations.trash.undoAction": "Odvolat akci",
+  "@fileOperations.trash.undoAction": {
+    "sourceHash": "a8283ad"
+  },
+  "fileOperations.trash.goToTrashAction": "Přejít do koše",
+  "@fileOperations.trash.goToTrashAction": {
+    "sourceHash": "5332858"
+  },
+  "fileOperations.trash.undoing": "Vrací se zpět…",
+  "@fileOperations.trash.undoing": {
+    "sourceHash": "3272a7a"
+  },
+  "fileOperations.trash.undone": "{count, plural, one {Vrácen zpět {countText} soubor} few {Vráceny zpět {countText} soubory} many {Vráceno zpět {countText} souboru} other {Vráceno zpět {countText} souborů}}.",
+  "@fileOperations.trash.undone": {
+    "sourceHash": "a76ffee"
+  },
+  "fileOperations.trash.undonePartial": "{restored, plural, one {Vrácen zpět {restoredText} soubor} few {Vráceny zpět {restoredText} soubory} many {Vráceno zpět {restoredText} souboru} other {Vráceno zpět {restoredText} souborů}}; {skippedText} {skipped, plural, one {položka zůstala} few {položky zůstaly} many {položky zůstalo} other {položek zůstalo}} v koši.",
+  "@fileOperations.trash.undonePartial": {
+    "sourceHash": "371413d"
+  },
+  "fileOperations.trash.undoUnavailable": "Není co vrátit zpět. Tyto položky už možná jsou zpátky na svém místě, nebo jejich disk není připojený.",
+  "@fileOperations.trash.undoUnavailable": {
+    "sourceHash": "ee17b5f"
+  },
+  "fileOperations.trash.undoGone": "Není co vrátit zpět: {count, plural, one {položka už v koši nebyla} few {položky už v koši nebyly} many {položky už v koši nebyly} other {položky už v koši nebyly}}.",
+  "@fileOperations.trash.undoGone": {
+    "sourceHash": "69a90c2"
+  },
+  "fileOperations.trash.undoPartlyGone": "{count, plural, one {{countText} položka už v koši nebyla} few {{countText} položky už v koši nebyly} many {{countText} položky už v koši nebylo} other {{countText} položek už v koši nebylo}}.",
+  "@fileOperations.trash.undoPartlyGone": {
+    "sourceHash": "2e23577"
+  },
+  "fileOperations.trash.noTrashHere": "Tento disk nemá koš.",
+  "@fileOperations.trash.noTrashHere": {
+    "sourceHash": "f58bdab"
+  },
+  "fileOperations.delete.trashSwitch": "Přesunout do koše",
+  "@fileOperations.delete.trashSwitch": {
+    "sourceHash": "b250a45"
+  },
+  "fileOperations.delete.overflowMore": "… a {countText} {count, plural, one {další položka} few {další položky} many {další položky} other {dalších položek}}",
+  "@fileOperations.delete.overflowMore": {
+    "sourceHash": "3b9968a"
+  },
+  "fileOperations.delete.scanFile": "{count, plural, one {soubor} few {soubory} many {souboru} other {souborů}}",
+  "@fileOperations.delete.scanFile": {
+    "sourceHash": "46012b1"
+  },
+  "fileOperations.delete.scanDir": "{count, plural, one {složka} few {složky} many {složky} other {složek}}",
+  "@fileOperations.delete.scanDir": {
+    "sourceHash": "46b23b5"
+  },
+  "fileOperations.delete.confirmDelete": "Smazat",
+  "@fileOperations.delete.confirmDelete": {
+    "sourceHash": "e2d0a54"
+  },
+  "fileOperations.delete.confirmMoveToTrash": "Přesunout do koše",
+  "@fileOperations.delete.confirmMoveToTrash": {
+    "sourceHash": "b250a45"
+  },
+  "fileOperations.delete.titleCursorFile": "Smazat 1 soubor pod kurzorem",
+  "@fileOperations.delete.titleCursorFile": {
+    "sourceHash": "ab3d591"
+  },
+  "fileOperations.delete.titleCursorFolder": "Smazat 1 složku pod kurzorem",
+  "@fileOperations.delete.titleCursorFolder": {
+    "sourceHash": "91acb54"
+  },
+  "fileOperations.delete.titleFallback": "Smazat",
+  "@fileOperations.delete.titleFallback": {
+    "sourceHash": "e2d0a54"
+  },
+  "fileOperations.delete.titleSelected": "Smazat {phrase}",
+  "@fileOperations.delete.titleSelected": {
+    "sourceHash": "66cbe54"
+  },
+  "fileOperations.delete.selectedFilesPart": "{countText} {count, plural, one {vybraný soubor} few {vybrané soubory} many {vybraného souboru} other {vybraných souborů}}",
+  "@fileOperations.delete.selectedFilesPart": {
+    "sourceHash": "c444d06"
+  },
+  "fileOperations.delete.foldersPart": "{countText} {count, plural, one {složku} few {složky} many {složky} other {složek}}",
+  "@fileOperations.delete.foldersPart": {
+    "sourceHash": "9bd56b2"
+  },
+  "fileOperations.delete.symlinkNoticeSingle": "Tato položka je symbolický odkaz. Smaže se jen odkaz, ne jeho cíl.",
+  "@fileOperations.delete.symlinkNoticeSingle": {
+    "sourceHash": "c5a4259"
+  },
+  "fileOperations.delete.symlinkNoticeMany": "Výběr obsahuje {countText} {count, plural, one {symbolický odkaz} few {symbolické odkazy} many {symbolického odkazu} other {symbolických odkazů}}. Smažou se jen samotné odkazy, ne jejich cíle.",
+  "@fileOperations.delete.symlinkNoticeMany": {
+    "sourceHash": "56b3f52"
+  },
+  "fileOperations.mkfile.notCreatedToast": "Cmdr nemohl vytvořit soubor „{name}“. {reason}",
+  "@fileOperations.mkfile.notCreatedToast": {
+    "sourceHash": "4f30e62"
+  },
+  "fileOperations.newEntry.stillCreating": "Pořád se vytváří „{name}“. Svazek odpovídá pomalu. Klidně toto dialogové okno zavřete, vytváření poběží dál a teď už ho nejde zrušit.",
+  "@fileOperations.newEntry.stillCreating": {
+    "sourceHash": "74e376f"
+  },
+  "fileOperations.mkfile.title": "Nový soubor",
+  "@fileOperations.mkfile.title": {
+    "sourceHash": "44dedd0"
+  },
+  "fileOperations.mkfile.createIn": "Vytvořit nový soubor ve složce <dir>{name}</dir>",
+  "@fileOperations.mkfile.createIn": {
+    "sourceHash": "20f4a68"
+  },
+  "fileOperations.mkfile.nameAria": "Název souboru",
+  "@fileOperations.mkfile.nameAria": {
+    "sourceHash": "3efed3d"
+  },
+  "fileOperations.mkfile.placeholder": "Příklad: poznámky.txt",
+  "@fileOperations.mkfile.placeholder": {
+    "sourceHash": "f6b4613"
+  },
+  "fileOperations.mkdir.title": "Nová složka",
+  "@fileOperations.mkdir.title": {
+    "sourceHash": "cf28f49"
+  },
+  "fileOperations.mkdir.createIn": "Vytvořit novou složku ve složce <dir>{name}</dir>",
+  "@fileOperations.mkdir.createIn": {
+    "sourceHash": "392aa18"
+  },
+  "fileOperations.mkdir.nameAria": "Název složky",
+  "@fileOperations.mkdir.nameAria": {
+    "sourceHash": "14d34ed"
+  },
+  "fileOperations.mkdir.placeholder": "Příklad: můj-projekt",
+  "@fileOperations.mkdir.placeholder": {
+    "sourceHash": "7612b56"
+  },
+  "fileOperations.mkdir.notCreatedToast": "Cmdr nemohl vytvořit složku „{name}“. {reason}",
+  "@fileOperations.mkdir.notCreatedToast": {
+    "sourceHash": "517ef4b"
+  },
+  "fileOperations.mkdir.aiSuggestionsAria": "Návrhy AI",
+  "@fileOperations.mkdir.aiSuggestionsAria": {
+    "sourceHash": "1a1f5b9"
+  },
+  "fileOperations.mkdir.aiSuggestionsHeader": "Návrhy AI:",
+  "@fileOperations.mkdir.aiSuggestionsHeader": {
+    "sourceHash": "5232616"
+  },
+  "fileOperations.shared.conflictExistsFolder": "V této složce už je složka s tímto názvem.",
+  "@fileOperations.shared.conflictExistsFolder": {
+    "sourceHash": "32999f3"
+  },
+  "fileOperations.shared.conflictExistsFile": "V této složce už je soubor s tímto názvem.",
+  "@fileOperations.shared.conflictExistsFile": {
+    "sourceHash": "3046c16"
+  },
+  "fileOperations.shared.byteRate": "<size></size>/s",
+  "@fileOperations.shared.byteRate": {
+    "sourceHash": "4a55710",
+    "sameAsSourceJustification": "Only a size widget plus the unit „/s“ (za sekundu), which Czech writes the same (SI symbol)."
+  },
+  "fileOperations.shared.fileRate": "{count, plural, one {{rateText} soubor/s} few {{rateText} soubory/s} many {{rateText} souboru/s} other {{rateText} souborů/s}}",
+  "@fileOperations.shared.fileRate": {
+    "sourceHash": "ca7c75b"
+  },
+  "fileOperations.shared.andJoin": "{a} a {b}",
+  "@fileOperations.shared.andJoin": {
+    "sourceHash": "04f767b"
+  },
+  "fileOperations.shared.scanningTooltip": "Prohledávání…",
+  "@fileOperations.shared.scanningTooltip": {
+    "sourceHash": "38d96da"
+  },
+  "fileOperations.transferDialog.toggleCopy": "Kopírovat",
+  "@fileOperations.transferDialog.toggleCopy": {
+    "sourceHash": "e21f935"
+  },
+  "fileOperations.transferDialog.toggleMove": "Přesunout",
+  "@fileOperations.transferDialog.toggleMove": {
+    "sourceHash": "6ecc3df"
+  },
+  "fileOperations.transferDialog.toggleCompress": "Komprimovat",
+  "@fileOperations.transferDialog.toggleCompress": {
+    "sourceHash": "033fc04"
+  },
+  "fileOperations.transferDialog.sourceGroupTitle": "Odkud",
+  "@fileOperations.transferDialog.sourceGroupTitle": {
+    "sourceHash": "2181976"
+  },
+  "fileOperations.transferDialog.targetGroupTitle": "Kam",
+  "@fileOperations.transferDialog.targetGroupTitle": {
+    "sourceHash": "f4b06ef"
+  },
+  "fileOperations.transferDialog.operationAria": "Akce",
+  "@fileOperations.transferDialog.operationAria": {
+    "sourceHash": "64cff13"
+  },
+  "fileOperations.transferDialog.destVolumeAria": "Cílový svazek",
+  "@fileOperations.transferDialog.destVolumeAria": {
+    "sourceHash": "e13cc1d"
+  },
+  "fileOperations.transferDialog.destPathAria": "Cílová cesta",
+  "@fileOperations.transferDialog.destPathAria": {
+    "sourceHash": "b7c2fd2"
+  },
+  "fileOperations.transferDialog.spaceInfo": "Volno {free} z {total}",
+  "@fileOperations.transferDialog.spaceInfo": {
+    "sourceHash": "a46cd4e"
+  },
+  "fileOperations.transferDialog.spaceInfoUnbounded": "Využito {used}, bez limitu velikosti",
+  "@fileOperations.transferDialog.spaceInfoUnbounded": {
+    "sourceHash": "5d74d4d"
+  },
+  "fileOperations.transferDialog.smbNativeNote": "Tato sdílená složka používá systémové připojení. Zrušení se může zpozdit. Pro rychlejší přenosy a spolehlivé rušení použijte ve výběru svazku „Připojit přímo“.",
+  "@fileOperations.transferDialog.smbNativeNote": {
+    "sourceHash": "60af535"
+  },
+  "fileOperations.transferDialog.targetWillBeCreatedCopy": "Tato složka zatím neexistuje. Cmdr ji vytvoří během kopírování.",
+  "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
+    "sourceHash": "4e8d166"
+  },
+  "fileOperations.transferDialog.renameByMoveHint": "Při přejmenování se na serveru zkopíruje celý obsah, takže proběhne jako přesun, který můžete pozastavit nebo zrušit.",
+  "@fileOperations.transferDialog.renameByMoveHint": {
+    "sourceHash": "31987cc"
+  },
+  "fileOperations.transferDialog.targetWillBeCreatedMove": "Tato složka zatím neexistuje. Cmdr ji vytvoří během přesouvání.",
+  "@fileOperations.transferDialog.targetWillBeCreatedMove": {
+    "sourceHash": "1246331"
+  },
+  "fileOperations.transferDialog.rootEchoWarning": "Cesty tady už začínají ve složce {rootFolder}, takže tahle vede do {resolvedPath}. Nemyslíte spíš {strippedPath}?",
+  "@fileOperations.transferDialog.rootEchoWarning": {
+    "sourceHash": "43aace3"
+  },
+  "fileOperations.transferDialog.rootEchoUseStripped": "Použít kratší cestu",
+  "@fileOperations.transferDialog.rootEchoUseStripped": {
+    "sourceHash": "66972e3"
+  },
+  "fileOperations.transferDialog.destinationReadOnly": "Tato složka je jen ke čtení, takže sem nelze nic uložit.",
+  "@fileOperations.transferDialog.destinationReadOnly": {
+    "sourceHash": "f30522f"
+  },
+  "fileOperations.transferDialog.destinationNoPermission": "Nemáte oprávnění přidávat soubory do této složky.",
+  "@fileOperations.transferDialog.destinationNoPermission": {
+    "sourceHash": "a7e0efa"
+  },
+  "fileOperations.transferDialog.destinationNotWritable": "Tato složka nepřijímá nové soubory.",
+  "@fileOperations.transferDialog.destinationNotWritable": {
+    "sourceHash": "07094f6"
+  },
+  "fileOperations.transferDialog.targetWillBeOverwritten": "Soubor s tímto názvem tu už je. Cmdr ho nahradí.",
+  "@fileOperations.transferDialog.targetWillBeOverwritten": {
+    "sourceHash": "32c9a21"
+  },
+  "fileOperations.transferDialog.scanFile": "{count, plural, one {soubor} few {soubory} many {souboru} other {souborů}}",
+  "@fileOperations.transferDialog.scanFile": {
+    "sourceHash": "46012b1"
+  },
+  "fileOperations.transferDialog.scanDir": "{count, plural, one {složka} few {složky} many {složky} other {složek}}",
+  "@fileOperations.transferDialog.scanDir": {
+    "sourceHash": "46b23b5"
+  },
+  "fileOperations.transferDialog.hardlinkNote": "Zapíše se <written></written>. Zdroj zabírá na disku <ondisk></ondisk> – rozdíl tvoří soubory s pevnými odkazy, které mezi disky nemůžou zůstat propojené.",
+  "@fileOperations.transferDialog.hardlinkNote": {
+    "sourceHash": "acac507"
+  },
+  "fileOperations.transferDialog.compressLevelCaption": "Vyšší úroveň dá menší archiv ZIP, ale balení trvá déle.",
+  "@fileOperations.transferDialog.compressLevelCaption": {
+    "sourceHash": "58924a1"
+  },
+  "fileOperations.transferDialog.estimatedSize": "Odhadovaná velikost",
+  "@fileOperations.transferDialog.estimatedSize": {
+    "sourceHash": "d5f39d7"
+  },
+  "fileOperations.transferDialog.estimatedSizeTooltip": "Hrubý odhad velikosti výsledného archivu ZIP. Skutečná velikost se může lišit.",
+  "@fileOperations.transferDialog.estimatedSizeTooltip": {
+    "sourceHash": "2e8ba70"
+  },
+  "fileOperations.s3Cost.line": "Přibližně {amount} podle ceníku poskytovatele {provider}",
+  "@fileOperations.s3Cost.line": {
+    "sourceHash": "e8db02b"
+  },
+  "fileOperations.s3Cost.infoLabel": "O tomto odhadu",
+  "@fileOperations.s3Cost.infoLabel": {
+    "sourceHash": "19637c5"
+  },
+  "fileOperations.s3Cost.infoText": "Odhad vychází z veřejného ceníku poskytovatele. Bezplatné tarify, slevy, objemy zahrnuté v ceně a minimální poplatky můžou vaše vyúčtování snížit i zvýšit.",
+  "@fileOperations.s3Cost.infoText": {
+    "sourceHash": "379665c"
+  },
+  "fileOperations.transferDialog.scanUnresponsive": "Zdroj neodpovídá, takže tato velikost zahrnuje jen to, co se podařilo spočítat.",
+  "@fileOperations.transferDialog.scanUnresponsive": {
+    "sourceHash": "ec3beb2"
+  },
+  "fileOperations.transferDialog.scanStopped": "Zdroj se nepodařilo celý změřit, takže tato velikost zahrnuje jen to, co se podařilo spočítat.",
+  "@fileOperations.transferDialog.scanStopped": {
+    "sourceHash": "f7d3029"
+  },
+  "fileOperations.transferDialog.scanRetry": "Zkusit znovu",
+  "@fileOperations.transferDialog.scanRetry": {
+    "sourceHash": "d8b8392"
+  },
+  "fileOperations.transferDialog.sourceNoLongerConnected": "Telefon nebo server s těmito soubory už není připojený, takže z něj Cmdr nemůže kopírovat.",
+  "@fileOperations.transferDialog.sourceNoLongerConnected": {
+    "sourceHash": "4741405"
+  },
+  "fileOperations.transferDialog.conflictsUnknown": "Nepodařilo se zkontrolovat, co už v cíli je. Na každý konflikt, na který přenos narazí, se vás Cmdr zeptá.",
+  "@fileOperations.transferDialog.conflictsUnknown": {
+    "sourceHash": "d42db28"
+  },
+  "fileOperations.transferDialog.checkingConflicts": "Kontrola konfliktů…",
+  "@fileOperations.transferDialog.checkingConflicts": {
+    "sourceHash": "11be123"
+  },
+  "fileOperations.transferDialog.mergeInfoSingle": "1 složka už v cíli existuje, takže se její obsah sloučí.",
+  "@fileOperations.transferDialog.mergeInfoSingle": {
+    "sourceHash": "8331da7"
+  },
+  "fileOperations.transferDialog.namedFolderHint": "„{target}“ je existující složka, takže by položka „{name}“ dostala její název. Pokud chcete „{name}“ vložit dovnitř, ukončete cestu znakem „/“.",
+  "@fileOperations.transferDialog.namedFolderHint": {
+    "sourceHash": "41dc88c"
+  },
+  "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, one {složka už v cíli existuje, takže se její obsah sloučí} few {složky už v cíli existují, takže se jejich obsah sloučí} many {složky už v cíli existuje, takže se jejich obsah sloučí} other {složek už v cíli existuje, takže se jejich obsah sloučí}}.",
+  "@fileOperations.transferDialog.mergeInfoMany": {
+    "sourceHash": "e3c130c"
+  },
+  "fileOperations.transferDialog.mergeQuestion": "{count, plural, one {Pokud v ní soubor už existuje:} few {Pokud v nich soubor už existuje:} many {Pokud v nich soubor už existuje:} other {Pokud v nich soubor už existuje:}}",
+  "@fileOperations.transferDialog.mergeQuestion": {
+    "sourceHash": "98b10eb"
+  },
+  "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {soubor už existuje. Co s ním chcete udělat?} few {soubory už existují. Co s nimi chcete udělat?} many {souboru už existuje. Co s nimi chcete udělat?} other {souborů už existuje. Co s nimi chcete udělat?}}",
+  "@fileOperations.transferDialog.conflictsSummary": {
+    "sourceHash": "f93d158"
+  },
+  "fileOperations.transferDialog.policySkip": "{count, plural, one {Přeskočit} few {Přeskočit vše} many {Přeskočit vše} other {Přeskočit vše}}",
+  "@fileOperations.transferDialog.policySkip": {
+    "sourceHash": "af89aba"
+  },
+  "fileOperations.transferDialog.policyOverwrite": "{count, plural, one {Přepsat} few {Přepsat vše} many {Přepsat vše} other {Přepsat vše}}",
+  "@fileOperations.transferDialog.policyOverwrite": {
+    "sourceHash": "e81a8ec"
+  },
+  "fileOperations.transferDialog.policyOverwriteSmaller": "{count, plural, one {Přepsat, pokud je menší} few {Přepsat všechny menší} many {Přepsat všechny menší} other {Přepsat všechny menší}}",
+  "@fileOperations.transferDialog.policyOverwriteSmaller": {
+    "sourceHash": "6b53558"
+  },
+  "fileOperations.transferDialog.policyOverwriteOlder": "{count, plural, one {Přepsat, pokud je starší} few {Přepsat všechny starší} many {Přepsat všechny starší} other {Přepsat všechny starší}}",
+  "@fileOperations.transferDialog.policyOverwriteOlder": {
+    "sourceHash": "97128f3"
+  },
+  "fileOperations.transferDialog.policyStop": "{count, plural, one {Zeptat se později} few {Ptát se u každého} many {Ptát se u každého} other {Ptát se u každého}}",
+  "@fileOperations.transferDialog.policyStop": {
+    "sourceHash": "61a6295"
+  },
+  "fileOperations.transferDialog.policyAskEach": "Ptát se u každého",
+  "@fileOperations.transferDialog.policyAskEach": {
+    "sourceHash": "4302843"
+  },
+  "fileOperations.transferDialog.rememberedOverwriteNote": "{reach, select, smaller {Vaše uložená volba přepíše menší soubory, které už v cíli jsou.} older {Vaše uložená volba přepíše starší soubory, které už v cíli jsou.} other {Vaše uložená volba přepíše soubory, které už v cíli jsou.}}",
+  "@fileOperations.transferDialog.rememberedOverwriteNote": {
+    "sourceHash": "7456023"
+  },
+  "fileOperations.transferDialog.rememberChoice": "Zapamatovat si tuto volbu",
+  "@fileOperations.transferDialog.rememberChoice": {
+    "sourceHash": "4208548"
+  },
+  "fileOperations.transferDialog.rememberChoiceInfoLabel": "Další informace o volbě „Zapamatovat si tuto volbu“",
+  "@fileOperations.transferDialog.rememberChoiceInfoLabel": {
+    "sourceHash": "30496d1"
+  },
+  "fileOperations.transferDialog.rememberChoiceHelp": "Příště Cmdr začne s touto volbou a v Nastavení ji můžete změnit. Pokud přepisuje soubory, nejdřív uvidíte upozornění.",
+  "@fileOperations.transferDialog.rememberChoiceHelp": {
+    "sourceHash": "c26d762"
+  },
+  "fileOperations.transferDialog.typeMismatchWarning": "Některé konflikty kombinují soubor a složku se stejným názvem. Přepsání nahradí i položky jiného typu, včetně celého obsahu složky.",
+  "@fileOperations.transferDialog.typeMismatchWarning": {
+    "sourceHash": "76f1ab1"
+  },
+  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {Kopírovat} move {Přesunout} compress {Komprimovat} delete {Smazat} other {Přesunout do koše}}",
+  "@fileOperations.transferDialog.titleVerbOnly": {
+    "sourceHash": "b18b6e3"
+  },
+  "fileOperations.transferDialog.titleWithCounts": "{verb, select, copy {Kopírovat} move {Přesunout} compress {Komprimovat} delete {Smazat} other {Přesunout do koše}} {phrase}",
+  "@fileOperations.transferDialog.titleWithCounts": {
+    "sourceHash": "d21c910"
+  },
+  "fileOperations.transferDialog.filesPart": "{countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}}",
+  "@fileOperations.transferDialog.filesPart": {
+    "sourceHash": "76ef0a6"
+  },
+  "fileOperations.transferDialog.foldersPart": "{countText} {count, plural, one {složku} few {složky} many {složky} other {složek}}",
+  "@fileOperations.transferDialog.foldersPart": {
+    "sourceHash": "9bd56b2"
+  },
+  "fileOperations.transferDialog.pathErrorSubfolder": "Položku „{name}“ nelze {verb, select, copy {zkopírovat} other {přesunout}} do její vlastní podsložky",
+  "@fileOperations.transferDialog.pathErrorSubfolder": {
+    "sourceHash": "96c81d6"
+  },
+  "fileOperations.transferDialog.pathErrorAlreadyThere": "Položka „{name}“ už v tomto umístění je",
+  "@fileOperations.transferDialog.pathErrorAlreadyThere": {
+    "sourceHash": "1bf762e"
+  },
+  "fileOperations.transferDialog.pathErrorNotZip": "Název archivu musí končit na „.zip“.",
+  "@fileOperations.transferDialog.pathErrorNotZip": {
+    "sourceHash": "7700864"
+  },
+  "fileOperations.transferDialog.confirmCopy": "Kopírovat",
+  "@fileOperations.transferDialog.confirmCopy": {
+    "sourceHash": "e21f935"
+  },
+  "fileOperations.transferDialog.confirmMove": "Přesunout",
+  "@fileOperations.transferDialog.confirmMove": {
+    "sourceHash": "6ecc3df"
+  },
+  "fileOperations.transferDialog.confirmCompress": "Komprimovat",
+  "@fileOperations.transferDialog.confirmCompress": {
+    "sourceHash": "033fc04"
+  },
+  "fileOperations.scanPhase.fromLabel": "Odkud:",
+  "@fileOperations.scanPhase.fromLabel": {
+    "sourceHash": "dc45d36"
+  },
+  "fileOperations.scanPhase.scanFile": "{count, plural, one {soubor} few {soubory} many {souboru} other {souborů}}",
+  "@fileOperations.scanPhase.scanFile": {
+    "sourceHash": "46012b1"
+  },
+  "fileOperations.scanPhase.scanDir": "{count, plural, one {složka} few {složky} many {složky} other {složek}}",
+  "@fileOperations.scanPhase.scanDir": {
+    "sourceHash": "46b23b5"
+  },
+  "fileOperations.transferProgress.scanTitleCopy": "Kontrola před kopírováním…",
+  "@fileOperations.transferProgress.scanTitleCopy": {
+    "sourceHash": "f641ae3"
+  },
+  "fileOperations.transferProgress.scanTitleMove": "Kontrola před přesunem…",
+  "@fileOperations.transferProgress.scanTitleMove": {
+    "sourceHash": "2d904be"
+  },
+  "fileOperations.transferProgress.scanTitleCompress": "Kontrola před komprimováním…",
+  "@fileOperations.transferProgress.scanTitleCompress": {
+    "sourceHash": "c610c90"
+  },
+  "fileOperations.transferProgress.scanTitleDelete": "Počítání položek ke smazání…",
+  "@fileOperations.transferProgress.scanTitleDelete": {
+    "sourceHash": "d64adf2"
+  },
+  "fileOperations.transferProgress.scanTitleTrash": "Počítání položek k přesunutí do koše…",
+  "@fileOperations.transferProgress.scanTitleTrash": {
+    "sourceHash": "6df6c7f"
+  },
+  "fileOperations.transferProgress.rollbackUnavailableCrossVolumeTooltip": "Při přesunu mezi svazky nejde vrátit změny. Cmdr odstraní každý originál, jakmile je jeho kopie bezpečně na místě, takže není k čemu se vrátit. Zrušit přesun zastaví a každý soubor zůstane celý na jedné nebo druhé straně.",
+  "@fileOperations.transferProgress.rollbackUnavailableCrossVolumeTooltip": {
+    "sourceHash": "901b77a"
+  },
+  "fileOperations.transferProgress.rollbackUnavailableSameVolumeTooltip": "Při přesunu v rámci jednoho svazku nejde vrátit změny. Svazek přesouvá každou položku sám a Cmdr je nedokáže vrátit jen zčásti. Zrušit přesun zastaví: co je přesunuté, zůstane přesunuté, a zbytek zůstane, kde byl.",
+  "@fileOperations.transferProgress.rollbackUnavailableSameVolumeTooltip": {
+    "sourceHash": "a182b8a"
+  },
+  "fileOperations.transferProgress.rollbackUnavailableArchiveRewriteTooltip": "Tady není co vracet. Cmdr archiv přepíše najednou až na konci, takže ho Zrušit nechá přesně tak, jak byl.",
+  "@fileOperations.transferProgress.rollbackUnavailableArchiveRewriteTooltip": {
+    "sourceHash": "1705cab"
+  },
+  "fileOperations.transferProgress.rollbackUnavailableArchiveMoveOutTooltip": "Tady není co vracet. Cmdr položky z archivu odstraní, až když jsou všechny venku, takže Zrušit nechá archiv tak, jak byl. Co už je extrahované, zůstane v cíli jako kopie.",
+  "@fileOperations.transferProgress.rollbackUnavailableArchiveMoveOutTooltip": {
+    "sourceHash": "ad17dc7"
+  },
+  "fileOperations.transferProgress.rollbackUnavailableOtherTooltip": "U této operace nejde vrátit změny.",
+  "@fileOperations.transferProgress.rollbackUnavailableOtherTooltip": {
+    "sourceHash": "e9f64aa"
+  },
+  "fileOperations.transferProgress.titleRollingBack": "Vracení změn…",
+  "@fileOperations.transferProgress.titleRollingBack": {
+    "sourceHash": "f89ef2e"
+  },
+  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {Vracení souborů zpět} one {Vracení souboru zpět} few {Vracení {countText} souborů zpět} many {Vracení {countText} souboru zpět} other {Vracení {countText} souborů zpět}}…",
+  "@fileOperations.transferProgress.titleReversalMovingBack": {
+    "sourceHash": "4de9c69"
+  },
+  "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {Mazání toho, co operace vytvořila} one {Mazání souboru, který operace vytvořila} few {Mazání {countText} souborů, které operace vytvořila} many {Mazání {countText} souboru, které operace vytvořila} other {Mazání {countText} souborů, které operace vytvořila}}…",
+  "@fileOperations.transferProgress.titleReversalDeleting": {
+    "sourceHash": "587f4a3"
+  },
+  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Vracení původních názvů} one {Vracení původního názvu} few {Vracení {countText} původních názvů} many {Vracení {countText} původního názvu} other {Vracení {countText} původních názvů}}…",
+  "@fileOperations.transferProgress.titleReversalRenamingBack": {
+    "sourceHash": "2ad8510"
+  },
+  "fileOperations.transferProgress.titleCancelling": "Rušení…",
+  "@fileOperations.transferProgress.titleCancelling": {
+    "sourceHash": "7d0901a"
+  },
+  "fileOperations.transferProgress.canceledAlertTitle": "{type, select, copy {Kopírování zrušeno} move {Přesun zrušen} compress {Komprimování zrušeno} delete {Mazání zrušeno} trash {Přesun do koše zrušen} other {Zrušeno}}",
+  "@fileOperations.transferProgress.canceledAlertTitle": {
+    "sourceHash": "3cba939"
+  },
+  "fileOperations.transferProgress.canceledAlertMessage": "{type, select, copy {Kopírování je zrušené. Soubory, které se už zkopírovaly, zůstávají, kde jsou.} move {Přesun je zrušený. Soubory, které se už přesunuly, zůstávají tam, kam se dostaly.} compress {Komprimování je zrušené.} delete {Mazání je zrušené. Soubory, které se už smazaly, jsou pryč, a zbytek je pořád na místě.} trash {Přesun do koše je zrušený. Soubory, které se už přesunuly, zůstávají v koši, a zbytek je tam, kde byl.} other {Operace je zrušená.}}",
+  "@fileOperations.transferProgress.canceledAlertMessage": {
+    "sourceHash": "1d1de76"
+  },
+  "fileOperations.transferProgress.titleCancellingSlow": "Rušení… (uklidí se rozpracované soubory)",
+  "@fileOperations.transferProgress.titleCancellingSlow": {
+    "sourceHash": "afeb3a3"
+  },
+  "fileOperations.transferProgress.close": "Zavřít",
+  "@fileOperations.transferProgress.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "fileOperations.transferProgress.openingSource": "Čeká se, až zdroj začne odesílat ({duration})",
+  "@fileOperations.transferProgress.openingSource": {
+    "sourceHash": "d0ad98c"
+  },
+  "fileOperations.transferProgress.sourceReceiving": "Příjem ze zdroje rychlostí <size></size>/s",
+  "@fileOperations.transferProgress.sourceReceiving": {
+    "sourceHash": "0552601"
+  },
+  "fileOperations.transferProgress.waitingForVolume": "Čeká se, až se {volume} vrátí…",
+  "@fileOperations.transferProgress.waitingForVolume": {
+    "sourceHash": "41d20d0"
+  },
+  "fileOperations.transferProgress.stallNotice": "Průběh stojí už {duration}",
+  "@fileOperations.transferProgress.stallNotice": {
+    "sourceHash": "4b3c8e6"
+  },
+  "fileOperations.transferProgress.stallWaitingDestination": "Čeká se, až cíl odpoví.",
+  "@fileOperations.transferProgress.stallWaitingDestination": {
+    "sourceHash": "1cb8f39"
+  },
+  "fileOperations.transferProgress.stallWaitingSource": "Čeká se, až zdroj odpoví.",
+  "@fileOperations.transferProgress.stallWaitingSource": {
+    "sourceHash": "efb8d93"
+  },
+  "fileOperations.transferProgress.stallUnknown": "Přenos přestal postupovat. Zrušte ho, nebo ho nechte běžet na pozadí.",
+  "@fileOperations.transferProgress.stallUnknown": {
+    "sourceHash": "37e23a5"
+  },
+  "fileOperations.transferProgress.stallInFlight": "{count, plural, one {# soubor je pořád otevřený} few {# soubory jsou pořád otevřené} many {# souboru je pořád otevřeno} other {# souborů je pořád otevřeno}} a část jejich dat už může být zapsaná.",
+  "@fileOperations.transferProgress.stallInFlight": {
+    "sourceHash": "c4bf553"
+  },
+  "fileOperations.transferProgress.stallLogHint": "Podrobnosti najdete v protokolu.",
+  "@fileOperations.transferProgress.stallLogHint": {
+    "sourceHash": "a766f0d"
+  },
+  "fileOperations.transferProgress.titleConflict": "Soubor už existuje",
+  "@fileOperations.transferProgress.titleConflict": {
+    "sourceHash": "ae71a9a"
+  },
+  "fileOperations.transferProgress.titleRefusedNameTooLong": "Název je pro cíl příliš dlouhý",
+  "@fileOperations.transferProgress.titleRefusedNameTooLong": {
+    "sourceHash": "3c19ce6"
+  },
+  "fileOperations.transferProgress.titleRefusedNameNotAllowed": "Název není v cíli povolený",
+  "@fileOperations.transferProgress.titleRefusedNameNotAllowed": {
+    "sourceHash": "df8d74a"
+  },
+  "fileOperations.transferProgress.refusedNameTooLongBody": "Cíl nedokáže uložit takhle dlouhý název. Přeskočte tuto položku a pokračujte se zbytkem, pak ji přejmenujte a zkuste to znovu.",
+  "@fileOperations.transferProgress.refusedNameTooLongBody": {
+    "sourceHash": "7577475"
+  },
+  "fileOperations.transferProgress.refusedNameNotAllowedBody": "Cíl tento název nedokáže uložit. Může být příliš dlouhý, může jít o vyhrazený název, nebo obsahuje znak, který cíl nepovoluje. Přeskočte tuto položku a pokračujte se zbytkem, pak ji přejmenujte a zkuste to znovu.",
+  "@fileOperations.transferProgress.refusedNameNotAllowedBody": {
+    "sourceHash": "9fe85ec"
+  },
+  "fileOperations.transferProgress.conflictPolicyCaption": "Pokud soubor už existuje: {policy}",
+  "@fileOperations.transferProgress.conflictPolicyCaption": {
+    "sourceHash": "cec5c27"
+  },
+  "fileOperations.transferProgress.titleDone": "{type, select, copy {{count, plural, =0 {Nic se nezkopírovalo} one {Zkopírován {countText} soubor} few {Zkopírovány {countText} soubory} many {Zkopírováno {countText} souboru} other {Zkopírováno {countText} souborů}}} move {{count, plural, =0 {Nic se nepřesunulo} one {Přesunut {countText} soubor} few {Přesunuty {countText} soubory} many {Přesunuto {countText} souboru} other {Přesunuto {countText} souborů}}} delete {{count, plural, =0 {Nic se nesmazalo} one {Smazán {countText} soubor} few {Smazány {countText} soubory} many {Smazáno {countText} souboru} other {Smazáno {countText} souborů}}} trash {{count, plural, =0 {Nic se nepřesunulo do koše} one {Do koše přesunut {countText} soubor} few {Do koše přesunuty {countText} soubory} many {Do koše přesunuto {countText} souboru} other {Do koše přesunuto {countText} souborů}}} compress {{count, plural, =0 {Nic se nezkomprimovalo} one {Zkomprimován {countText} soubor} few {Zkomprimovány {countText} soubory} many {Zkomprimováno {countText} souboru} other {Zkomprimováno {countText} souborů}}} other {Hotovo}}",
+  "@fileOperations.transferProgress.titleDone": {
+    "sourceHash": "3db0154"
+  },
+  "fileOperations.transferProgress.doneSummaryRate": "<size></size> za {duration}, průměrně <rate></rate>/s",
+  "@fileOperations.transferProgress.doneSummaryRate": {
+    "sourceHash": "4f6d910"
+  },
+  "fileOperations.transferProgress.doneSummarySize": "Celkem <size></size>",
+  "@fileOperations.transferProgress.doneSummarySize": {
+    "sourceHash": "01f3008"
+  },
+  "fileOperations.transferProgress.doneSummaryTime": "Trvalo to {duration}",
+  "@fileOperations.transferProgress.doneSummaryTime": {
+    "sourceHash": "ddbfd5f"
+  },
+  "fileOperations.transferProgress.doneSkipped": "{count, plural, one {Přeskočen {countText} soubor, který už existoval} few {Přeskočeny {countText} soubory, které už existovaly} many {Přeskočeno {countText} souboru, které už existovaly} other {Přeskočeno {countText} souborů, které už existovaly}}",
+  "@fileOperations.transferProgress.doneSkipped": {
+    "sourceHash": "a6d800b"
+  },
+  "fileOperations.transferProgress.undo": "Odvolat akci",
+  "@fileOperations.transferProgress.undo": {
+    "sourceHash": "a8283ad"
+  },
+  "fileOperations.transferProgress.undoWaitingTooltip": "Odvolání bude připravené za chvíli, až Cmdr dokončí záznam toho, co se provedlo.",
+  "@fileOperations.transferProgress.undoWaitingTooltip": {
+    "sourceHash": "54fe565"
+  },
+  "fileOperations.transferProgress.undoUnavailableTooltip": "Tuto operaci nejde odvolat.",
+  "@fileOperations.transferProgress.undoUnavailableTooltip": {
+    "sourceHash": "9b61717"
+  },
+  "fileOperations.transferProgress.titleFlushing": "Zapisuje se poslední část…",
+  "@fileOperations.transferProgress.titleFlushing": {
+    "sourceHash": "3aa5686"
+  },
+  "fileOperations.transferProgress.titleRemovingOriginals": "Odstraňování původních souborů…",
+  "@fileOperations.transferProgress.titleRemovingOriginals": {
+    "sourceHash": "15a457d"
+  },
+  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Kopírování} move {Přesouvání} compress {Komprimování} delete {Mazání} other {Přesouvání do koše}}…",
+  "@fileOperations.transferProgress.titleActive": {
+    "sourceHash": "0c636e5"
+  },
+  "fileOperations.transferProgress.stageScanning": "Prohledávání",
+  "@fileOperations.transferProgress.stageScanning": {
+    "sourceHash": "474ad81"
+  },
+  "fileOperations.transferProgress.stageCompressing": "Komprimování",
+  "@fileOperations.transferProgress.stageCompressing": {
+    "sourceHash": "c4c202f"
+  },
+  "fileOperations.transferProgress.stageFinishingCompression": "Dokončování komprese…",
+  "@fileOperations.transferProgress.stageFinishingCompression": {
+    "sourceHash": "6cd500b"
+  },
+  "fileOperations.transferProgress.stageTransferringArchive": "Přenos archivu",
+  "@fileOperations.transferProgress.stageTransferringArchive": {
+    "sourceHash": "28ed9e3"
+  },
+  "fileOperations.transferProgress.stageFinishingTransfer": "Dokončování přenosu…",
+  "@fileOperations.transferProgress.stageFinishingTransfer": {
+    "sourceHash": "6c39b41"
+  },
+  "fileOperations.transferProgress.stageCompressingStep": "Krok {step, number} z {total, number}: Komprimování",
+  "@fileOperations.transferProgress.stageCompressingStep": {
+    "sourceHash": "7451fa9"
+  },
+  "fileOperations.transferProgress.stageFinishingCompressionStep": "Krok {step, number} z {total, number}: Dokončování komprese…",
+  "@fileOperations.transferProgress.stageFinishingCompressionStep": {
+    "sourceHash": "6f40fb0"
+  },
+  "fileOperations.transferProgress.stageTransferringArchiveStep": "Krok {step, number} z {total, number}: Přenos archivu",
+  "@fileOperations.transferProgress.stageTransferringArchiveStep": {
+    "sourceHash": "0d9a25c"
+  },
+  "fileOperations.transferProgress.stageFinishingTransferStep": "Krok {step, number} z {total, number}: Dokončování přenosu…",
+  "@fileOperations.transferProgress.stageFinishingTransferStep": {
+    "sourceHash": "1f28724"
+  },
+  "fileOperations.transferProgress.warningFileOverFolder": "Cíl už existuje a je to <strong>složka</strong>. Chystáte se ji nahradit <strong>souborem</strong> se stejným názvem. Všechno uvnitř složky by zmizelo. Co chcete udělat?",
+  "@fileOperations.transferProgress.warningFileOverFolder": {
+    "sourceHash": "bacab9d"
+  },
+  "fileOperations.transferProgress.warningFolderOverFile": "Cíl už existuje a je to <strong>soubor</strong>. Chystáte se ho nahradit <strong>složkou</strong> se stejným názvem. Jakmile složka zaujme jeho místo, soubor zmizí. Co chcete udělat?",
+  "@fileOperations.transferProgress.warningFolderOverFile": {
+    "sourceHash": "b681083"
+  },
+  "fileOperations.transferProgress.lookAlikeHint": "Tyto názvy vypadají stejně, ale server je ukládá v různém zápisu. „Přepsat“ nahradí položku, která tam už je.",
+  "@fileOperations.transferProgress.lookAlikeHint": {
+    "sourceHash": "01ed9ad"
+  },
+  "fileOperations.transferProgress.existingFolderLabel": "Existující složka:",
+  "@fileOperations.transferProgress.existingFolderLabel": {
+    "sourceHash": "4d8ade6"
+  },
+  "fileOperations.transferProgress.existingFileLabel": "Existující soubor:",
+  "@fileOperations.transferProgress.existingFileLabel": {
+    "sourceHash": "38ee239"
+  },
+  "fileOperations.transferProgress.existingLabel": "Existující:",
+  "@fileOperations.transferProgress.existingLabel": {
+    "sourceHash": "4dda67f"
+  },
+  "fileOperations.transferProgress.newFolderLabel": "Příchozí složka:",
+  "@fileOperations.transferProgress.newFolderLabel": {
+    "sourceHash": "5239894"
+  },
+  "fileOperations.transferProgress.newFileLabel": "Příchozí soubor:",
+  "@fileOperations.transferProgress.newFileLabel": {
+    "sourceHash": "4a8d0b3"
+  },
+  "fileOperations.transferProgress.newLabel": "Příchozí:",
+  "@fileOperations.transferProgress.newLabel": {
+    "sourceHash": "161dcd3"
+  },
+  "fileOperations.transferProgress.sizeUnknown": "(neznámá)",
+  "@fileOperations.transferProgress.sizeUnknown": {
+    "sourceHash": "8fe7794"
+  },
+  "fileOperations.transferProgress.annotationLarger": "(větší)",
+  "@fileOperations.transferProgress.annotationLarger": {
+    "sourceHash": "71a1ffa"
+  },
+  "fileOperations.transferProgress.annotationNewer": "(novější)",
+  "@fileOperations.transferProgress.annotationNewer": {
+    "sourceHash": "92afdbd"
+  },
+  "fileOperations.transferProgress.smallerDisabledTooltip": "Nelze porovnat: velikost cílové složky je neznámá.",
+  "@fileOperations.transferProgress.smallerDisabledTooltip": {
+    "sourceHash": "ad5025c"
+  },
+  "fileOperations.transferProgress.conflictSkip": "Přeskočit",
+  "@fileOperations.transferProgress.conflictSkip": {
+    "sourceHash": "28d0359"
+  },
+  "fileOperations.transferProgress.conflictSkipAll": "Přeskočit vše",
+  "@fileOperations.transferProgress.conflictSkipAll": {
+    "sourceHash": "5fc4280"
+  },
+  "fileOperations.transferProgress.conflictRename": "Přejmenovat",
+  "@fileOperations.transferProgress.conflictRename": {
+    "sourceHash": "3064d79"
+  },
+  "fileOperations.transferProgress.conflictRenameAll": "Přejmenovat vše",
+  "@fileOperations.transferProgress.conflictRenameAll": {
+    "sourceHash": "c58387b"
+  },
+  "fileOperations.transferProgress.conflictOverwrite": "Přepsat",
+  "@fileOperations.transferProgress.conflictOverwrite": {
+    "sourceHash": "b24963e"
+  },
+  "fileOperations.transferProgress.conflictOverwriteAll": "Přepsat vše",
+  "@fileOperations.transferProgress.conflictOverwriteAll": {
+    "sourceHash": "4662d17"
+  },
+  "fileOperations.transferProgress.conflictOverwriteFolderWithFile": "Přepsat složku souborem",
+  "@fileOperations.transferProgress.conflictOverwriteFolderWithFile": {
+    "sourceHash": "0589e60"
+  },
+  "fileOperations.transferProgress.conflictOverwriteFoldersWithFiles": "Přepsat složky soubory",
+  "@fileOperations.transferProgress.conflictOverwriteFoldersWithFiles": {
+    "sourceHash": "9f4661a"
+  },
+  "fileOperations.transferProgress.conflictOverwriteAllSmaller": "Přepsat všechny menší",
+  "@fileOperations.transferProgress.conflictOverwriteAllSmaller": {
+    "sourceHash": "2c9bbed"
+  },
+  "fileOperations.transferProgress.conflictOverwriteAllOlder": "Přepsat všechny starší",
+  "@fileOperations.transferProgress.conflictOverwriteAllOlder": {
+    "sourceHash": "b07b06a"
+  },
+  "fileOperations.transferProgress.conflictCancel": "Zrušit",
+  "@fileOperations.transferProgress.conflictCancel": {
+    "sourceHash": "19766ed"
+  },
+  "fileOperations.transferProgress.conflictRollback": "Vrátit změny",
+  "@fileOperations.transferProgress.conflictRollback": {
+    "sourceHash": "c591f55"
+  },
+  "fileOperations.operationConflict.context": "{hasDestination, select, yes {{type, select, copy {Kopírování do složky {destination}} move {Přesouvání do složky {destination}} archive_edit {Úprava archivu {destination}} other {Operace ve složce {destination}}}} other {{type, select, copy {Kopírování} move {Přesouvání} archive_edit {Úprava archivu} other {Probíhá operace}}}}",
+  "@fileOperations.operationConflict.context": {
+    "sourceHash": "ff68b4d"
+  },
+  "fileOperations.operationConflict.pausedNote": "Všechno ostatní je pozastavené, dokud neodpovíte.",
+  "@fileOperations.operationConflict.pausedNote": {
+    "sourceHash": "1f6444b"
+  },
+  "fileOperations.sourcesGone.title": "Některé položky zmizely",
+  "@fileOperations.sourcesGone.title": {
+    "sourceHash": "9f8e2cb"
+  },
+  "fileOperations.sourcesGone.message": "{type, select, copy {Z {totalText} položek, na které čekalo toto kopírování, {gone, plural, one {byla od zařazení do fronty přesunuta nebo smazána {goneText}} few {byly od zařazení do fronty přesunuty nebo smazány {goneText}} many {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}} other {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}}}.} move {Z {totalText} položek, na které čekal tento přesun, {gone, plural, one {byla od zařazení do fronty přesunuta nebo smazána {goneText}} few {byly od zařazení do fronty přesunuty nebo smazány {goneText}} many {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}} other {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}}}.} delete {Z {totalText} položek, na které čekalo toto mazání, {gone, plural, one {byla od zařazení do fronty přesunuta nebo smazána {goneText}} few {byly od zařazení do fronty přesunuty nebo smazány {goneText}} many {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}} other {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}}}.} trash {Z {totalText} položek, na které čekal tento přesun do koše, {gone, plural, one {byla od zařazení do fronty přesunuta nebo smazána {goneText}} few {byly od zařazení do fronty přesunuty nebo smazány {goneText}} many {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}} other {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}}}.} other {Z {totalText} položek, na které čekala tato operace, {gone, plural, one {byla od zařazení do fronty přesunuta nebo smazána {goneText}} few {byly od zařazení do fronty přesunuty nebo smazány {goneText}} many {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}} other {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}}}.}}",
+  "@fileOperations.sourcesGone.message": {
+    "sourceHash": "0512078"
+  },
+  "fileOperations.sourcesGone.moreItems": "{count, plural, one {a {countText} další položka} few {a {countText} další položky} many {a {countText} další položky} other {a {countText} dalších položek}}",
+  "@fileOperations.sourcesGone.moreItems": {
+    "sourceHash": "c39507d"
+  },
+  "fileOperations.sourcesGone.continue": "{type, select, copy {Zkopírovat zbytek} move {Přesunout zbytek} delete {Smazat zbytek} trash {Přesunout zbytek do koše} other {Provést zbytek}}",
+  "@fileOperations.sourcesGone.continue": {
+    "sourceHash": "2790bfb"
+  },
+  "fileOperations.sourcesGone.heldToast": "{type, select, copy {Kopírování ve frontě se vás na něco ptá. Dotaz uvidíte, jakmile se zavře otevřené dialogové okno.} move {Přesun ve frontě se vás na něco ptá. Dotaz uvidíte, jakmile se zavře otevřené dialogové okno.} delete {Mazání ve frontě se vás na něco ptá. Dotaz uvidíte, jakmile se zavře otevřené dialogové okno.} trash {Přesun do koše ve frontě se vás na něco ptá. Dotaz uvidíte, jakmile se zavře otevřené dialogové okno.} other {Operace ve frontě se vás na něco ptá. Dotaz uvidíte, jakmile se zavře otevřené dialogové okno.}}",
+  "@fileOperations.sourcesGone.heldToast": {
+    "sourceHash": "75f645d"
+  },
+  "fileOperations.sourcesGone.nothingLeftToast": "{type, select, copy {Není co kopírovat: {total, plural, one {položka, na kterou kopírování čekalo, se} few {všechny {totalText} položky, na které kopírování čekalo, se} many {všech {totalText} položky, na které kopírování čekalo, se} other {všech {totalText} položek, na které kopírování čekalo, se}} od zařazení do fronty přesunulo nebo smazalo.} move {Není co přesouvat: {total, plural, one {položka, na kterou přesun čekal, se} few {všechny {totalText} položky, na které přesun čekal, se} many {všech {totalText} položky, na které přesun čekal, se} other {všech {totalText} položek, na které přesun čekal, se}} od zařazení do fronty přesunulo nebo smazalo.} delete {Není co mazat: {total, plural, one {položka, na kterou mazání čekalo, se} few {všechny {totalText} položky, na které mazání čekalo, se} many {všech {totalText} položky, na které mazání čekalo, se} other {všech {totalText} položek, na které mazání čekalo, se}} od zařazení do fronty přesunulo nebo smazalo.} trash {Není co přesouvat do koše: {total, plural, one {položka, na kterou přesun do koše čekal, se} few {všechny {totalText} položky, na které přesun do koše čekal, se} many {všech {totalText} položky, na které přesun do koše čekal, se} other {všech {totalText} položek, na které přesun do koše čekal, se}} od zařazení do fronty přesunulo nebo smazalo.} other {Není co dělat: {total, plural, one {položka, na kterou operace čekala, se} few {všechny {totalText} položky, na které operace čekala, se} many {všech {totalText} položky, na které operace čekala, se} other {všech {totalText} položek, na které operace čekala, se}} od zařazení do fronty přesunulo nebo smazalo.}}",
+  "@fileOperations.sourcesGone.nothingLeftToast": {
+    "sourceHash": "4d62b7d"
+  },
+  "fileOperations.alreadyGone.one": "Položka „{name}“ už neexistovala. Nejspíš ji přesunula nebo smazala jiná aplikace.",
+  "@fileOperations.alreadyGone.one": {
+    "sourceHash": "3bdd241"
+  },
+  "fileOperations.alreadyGone.many": "{count, plural, one {{countText} položka už neexistovala. Nejspíš ji přesunula nebo smazala jiná aplikace.} few {{countText} položky už neexistovaly. Nejspíš je přesunula nebo smazala jiná aplikace.} many {{countText} položky už neexistovalo. Nejspíš je přesunula nebo smazala jiná aplikace.} other {{countText} položek už neexistovalo. Nejspíš je přesunula nebo smazala jiná aplikace.}}",
+  "@fileOperations.alreadyGone.many": {
+    "sourceHash": "564fc09"
+  },
+  "fileOperations.alreadyGone.neverShowAgain": "Už nezobrazovat",
+  "@fileOperations.alreadyGone.neverShowAgain": {
+    "sourceHash": "c9e19cb"
+  },
+  "fileOperations.lockedSources.title": "Přesunout zamčené položky?",
+  "@fileOperations.lockedSources.title": {
+    "sourceHash": "69c0785"
+  },
+  "fileOperations.lockedSources.message": "{count, plural, one {{countText} přesouvaná položka je zamčená. Cmdr ji může odemknout jen pro přesun a v cíli ji znovu zamknout.} few {{countText} přesouvané položky jsou zamčené. Cmdr je může odemknout jen pro přesun a v cíli je znovu zamknout.} many {{countText} přesouvané položky je zamčeno. Cmdr je může odemknout jen pro přesun a v cíli je znovu zamknout.} other {{countText} přesouvaných položek je zamčených. Cmdr je může odemknout jen pro přesun a v cíli je znovu zamknout.}}",
+  "@fileOperations.lockedSources.message": {
+    "sourceHash": "a82868b"
+  },
+  "fileOperations.lockedSources.moreItems": "{count, plural, one {a {countText} další} few {a {countText} další} many {a {countText} další} other {a {countText} dalších}}",
+  "@fileOperations.lockedSources.moreItems": {
+    "sourceHash": "ef18403"
+  },
+  "fileOperations.lockedSources.moveAnyway": "Přesto přesunout",
+  "@fileOperations.lockedSources.moveAnyway": {
+    "sourceHash": "c3d9351"
+  },
+  "fileOperations.lockedSources.skip": "Přeskočit zamčené položky",
+  "@fileOperations.lockedSources.skip": {
+    "sourceHash": "e70b85a"
+  },
+  "fileOperations.lockedSources.heldToast": "Přesun se vás ptá na zamčené položky. Dotaz uvidíte, jakmile se zavře otevřené dialogové okno.",
+  "@fileOperations.lockedSources.heldToast": {
+    "sourceHash": "c76d27a"
+  },
+  "fileOperations.transferProgress.progressBytes": "Bajty",
+  "@fileOperations.transferProgress.progressBytes": {
+    "sourceHash": "4d80003"
+  },
+  "fileOperations.transferProgress.progressItems": "Položky",
+  "@fileOperations.transferProgress.progressItems": {
+    "sourceHash": "fb8e7a1"
+  },
+  "fileOperations.transferProgress.progressFiles": "Soubory",
+  "@fileOperations.transferProgress.progressFiles": {
+    "sourceHash": "abc7e98"
+  },
+  "fileOperations.transferProgress.sizeProgressAria": "Průběh podle velikosti",
+  "@fileOperations.transferProgress.sizeProgressAria": {
+    "sourceHash": "60ec57d"
+  },
+  "fileOperations.transferProgress.fileProgressAria": "Průběh podle souborů",
+  "@fileOperations.transferProgress.fileProgressAria": {
+    "sourceHash": "07db117"
+  },
+  "fileOperations.transferProgress.sizeProgressValueText": "{doneText} z {totalText}",
+  "@fileOperations.transferProgress.sizeProgressValueText": {
+    "sourceHash": "edce3be"
+  },
+  "fileOperations.transferProgress.fileProgressValueText": "{count, plural, one {{doneText} z {totalText} souboru} few {{doneText} z {totalText} souborů} many {{doneText} z {totalText} souboru} other {{doneText} z {totalText} souborů}}",
+  "@fileOperations.transferProgress.fileProgressValueText": {
+    "sourceHash": "56bd593"
+  },
+  "fileOperations.transferProgress.itemProgressValueText": "{count, plural, one {{doneText} z {totalText} položky} few {{doneText} z {totalText} položek} many {{doneText} z {totalText} položky} other {{doneText} z {totalText} položek}}",
+  "@fileOperations.transferProgress.itemProgressValueText": {
+    "sourceHash": "e5c35e6"
+  },
+  "fileOperations.transferProgress.etaRemaining": "Zbývá {duration}",
+  "@fileOperations.transferProgress.etaRemaining": {
+    "sourceHash": "a6b154c"
+  },
+  "fileOperations.transferProgress.filesLeft": "{count, plural, one {zbývá {countText} soubor} few {zbývají {countText} soubory} many {zbývá {countText} souboru} other {zbývá {countText} souborů}}",
+  "@fileOperations.transferProgress.filesLeft": {
+    "sourceHash": "0e5ad5f"
+  },
+  "fileOperations.transferProgress.itemsLeft": "{count, plural, one {zbývá {countText} položka} few {zbývají {countText} položky} many {zbývá {countText} položky} other {zbývá {countText} položek}}",
+  "@fileOperations.transferProgress.itemsLeft": {
+    "sourceHash": "679ebc1"
+  },
+  "fileOperations.transferProgress.smbNativeNote": "Tato sdílená složka používá systémové připojení. Zrušení a vrácení změn se může zpozdit.",
+  "@fileOperations.transferProgress.smbNativeNote": {
+    "sourceHash": "5344d07"
+  },
+  "fileOperations.transferProgress.rollbackTooltip": "Zastavit a smazat všechny dosud zapsané soubory",
+  "@fileOperations.transferProgress.rollbackTooltip": {
+    "sourceHash": "fa64117"
+  },
+  "fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": "Zastavit a vrátit zpět všechny dosud přesunuté soubory",
+  "@fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": {
+    "sourceHash": "193c682"
+  },
+  "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Všechny soubory už jsou v cíli, takže Cmdr teď přesun nemůže odvolat. „Zrušit“ ale Cmdr pořád zastaví dřív, než odstraní zbývající původní soubory.",
+  "@fileOperations.transferProgress.rollbackAlreadyLandedTooltip": {
+    "sourceHash": "da51356"
+  },
+  "fileOperations.transferProgress.titlePaused": "Pozastaveno",
+  "@fileOperations.transferProgress.titlePaused": {
+    "sourceHash": "e159b06"
+  },
+  "fileOperations.transferProgress.pause": "Pozastavit",
+  "@fileOperations.transferProgress.pause": {
+    "sourceHash": "858e4ba"
+  },
+  "fileOperations.transferProgress.resume": "Pokračovat",
+  "@fileOperations.transferProgress.resume": {
+    "sourceHash": "d640c74"
+  },
+  "fileOperations.transferProgress.pauseAria": "Pozastavit tento přenos",
+  "@fileOperations.transferProgress.pauseAria": {
+    "sourceHash": "16504ec"
+  },
+  "fileOperations.transferProgress.resumeAria": "Pokračovat v tomto přenosu",
+  "@fileOperations.transferProgress.resumeAria": {
+    "sourceHash": "bbf3253"
+  },
+  "fileOperations.transferProgress.background": "Na pozadí",
+  "@fileOperations.transferProgress.background": {
+    "sourceHash": "ea2b8a8"
+  },
+  "fileOperations.transferProgress.queue": "Do fronty",
+  "@fileOperations.transferProgress.queue": {
+    "sourceHash": "3b2fe03"
+  },
+  "fileOperations.transferProgress.queueTooltip": "Nechat operaci běžet na pozadí a spravovat ji ve frontě operací (F2)",
+  "@fileOperations.transferProgress.queueTooltip": {
+    "sourceHash": "89ce770"
+  },
+  "fileOperations.transferProgress.queuedToast": "Před touto operací je ve frontě ještě: {countText}. Čeká, až na ni přijde řada.",
+  "@fileOperations.transferProgress.queuedToast": {
+    "sourceHash": "e35148a"
+  },
+  "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# operace} few {# operace} many {# operace} other {# operací}}",
+  "@fileOperations.transferProgress.queuedToastCount": {
+    "sourceHash": "85023e6"
+  },
+  "fileOperations.transferProgress.backgroundedToast": "Operace dál běží na pozadí.",
+  "@fileOperations.transferProgress.backgroundedToast": {
+    "sourceHash": "b898845"
+  },
+  "fileOperations.backgroundStart.background": "Na pozadí",
+  "@fileOperations.backgroundStart.background": {
+    "sourceHash": "ea2b8a8"
+  },
+  "fileOperations.backgroundStart.queue": "Do fronty",
+  "@fileOperations.backgroundStart.queue": {
+    "sourceHash": "3b2fe03"
+  },
+  "fileOperations.backgroundStart.tooltip": "Spustit bez okna s průběhem a sledovat ve frontě operací (F2)",
+  "@fileOperations.backgroundStart.tooltip": {
+    "sourceHash": "06543f5"
+  },
+  "fileOperations.backgroundStart.startedToast": "Spuštěno na pozadí.",
+  "@fileOperations.backgroundStart.startedToast": {
+    "sourceHash": "6d85cb1"
+  },
+  "fileOperations.backgroundStart.needsPasswordToast": "„{archiveName}“ potřebuje heslo. Zeptá se vás na něj, jakmile se zavře otevřené dialogové okno.",
+  "@fileOperations.backgroundStart.needsPasswordToast": {
+    "sourceHash": "d802c26"
+  },
+  "fileOperations.transferProgress.foregroundBusyToast": "Tady je otevřené něco jiného. Zavřete to a pak tuto operaci zobraz znovu.",
+  "@fileOperations.transferProgress.foregroundBusyToast": {
+    "sourceHash": "80d4d61"
+  },
+  "fileOperations.transferProgress.operationBlockedToast": "Tady je otevřené něco jiného. Zavřete to a zkuste to znovu.",
+  "@fileOperations.transferProgress.operationBlockedToast": {
+    "sourceHash": "bc6efa8"
+  },
+  "fileOperations.transferProgress.rowsStillSettlingToast": "Seznam se tu ještě aktualizuje, takže se nic nespustilo. Zkuste to za chvíli znovu.",
+  "@fileOperations.transferProgress.rowsStillSettlingToast": {
+    "sourceHash": "b91f199"
+  },
+  "fileOperations.rollbackConfirm.title": "Vrátit změny této operace?",
+  "@fileOperations.rollbackConfirm.title": {
+    "sourceHash": "13ff3ea"
+  },
+  "fileOperations.rollbackConfirm.body": "Tímto se smažou všechny soubory, které operace dosud zapsala, a soubory, které nahradila, už nepůjde obnovit. Cmdr přeskočí vše, čím si není jistý, takže pár položek může zůstat.",
+  "@fileOperations.rollbackConfirm.body": {
+    "sourceHash": "1d3328f"
+  },
+  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "Tímto se vrátí zpět vše, co operace dosud přesunula, a soubory, které nahradila, už nepůjde obnovit. Cmdr přeskočí vše, čím si není jistý, takže pár položek může zůstat tam, kde je.",
+  "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
+    "sourceHash": "a058f98"
+  },
+  "fileOperations.rollbackConfirm.titleFinish": "Dokončit vrácení změn?",
+  "@fileOperations.rollbackConfirm.titleFinish": {
+    "sourceHash": "cfc998a"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByDeleting": "Tímto se smažou soubory a složky, které operace vytvořila. Cmdr přeskočí vše, čím si není jistý, takže pár položek může zůstat.",
+  "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
+    "sourceHash": "9afb3e2"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "Tímto se soubory vrátí zpět, odkud přišly. Cmdr přeskočí vše, čím si není jistý, takže pár položek může zůstat tam, kde je.",
+  "@fileOperations.rollbackConfirm.bodyUndoByMovingBack": {
+    "sourceHash": "5c3f276"
+  },
+  "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "Tímto se souborům vrátí jejich původní názvy. Cmdr přeskočí vše, čím si není jistý, takže pár souborů si může ponechat současné názvy.",
+  "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
+    "sourceHash": "37932e7"
+  },
+  "fileOperations.rollbackConfirm.leaveAsIs": "Nechat, jak to je",
+  "@fileOperations.rollbackConfirm.leaveAsIs": {
+    "sourceHash": "2352119"
+  },
+  "fileOperations.rollbackConfirm.keep": "Ponechat je",
+  "@fileOperations.rollbackConfirm.keep": {
+    "sourceHash": "0d472b0"
+  },
+  "fileOperations.rollbackConfirm.rollBack": "Vrátit změny",
+  "@fileOperations.rollbackConfirm.rollBack": {
+    "sourceHash": "931f703"
+  },
+  "fileOperations.rollbackConfirm.finishRollBack": "Dokončit vrácení změn",
+  "@fileOperations.rollbackConfirm.finishRollBack": {
+    "sourceHash": "dbe3771"
+  },
+  "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {Položka, kterou Cmdr zapsal, byla odstraněna.} few {Všechny {countText} položky, které Cmdr zapsal, byly odstraněny.} many {Všech {countText} položky, které Cmdr zapsal, bylo odstraněno.} other {Všech {countText} položek, které Cmdr zapsal, bylo odstraněno.}}",
+  "@fileOperations.cancelRollback.doneDeleting": {
+    "sourceHash": "e9aa918"
+  },
+  "fileOperations.cancelRollback.doneMovingBack": "{count, plural, one {Položka byla vrácena zpět.} few {Všechny {countText} položky byly vráceny zpět.} many {Všech {countText} položky bylo vráceno zpět.} other {Všech {countText} položek bylo vráceno zpět.}}",
+  "@fileOperations.cancelRollback.doneMovingBack": {
+    "sourceHash": "5c4f4f3"
+  },
+  "fileOperations.cancelRollback.someDeleted": "{count, plural, one {Odstraněna {countText} položka} few {Odstraněny {countText} položky} many {Odstraněno {countText} položky} other {Odstraněno {countText} položek}}.",
+  "@fileOperations.cancelRollback.someDeleted": {
+    "sourceHash": "58cda63"
+  },
+  "fileOperations.cancelRollback.someMovedBack": "{count, plural, one {Vrácena zpět {countText} položka} few {Vráceny zpět {countText} položky} many {Vráceno zpět {countText} položky} other {Vráceno zpět {countText} položek}}.",
+  "@fileOperations.cancelRollback.someMovedBack": {
+    "sourceHash": "0099d44"
+  },
+  "fileOperations.cancelRollback.stoppedDeleting": "Zastaveno po odstranění {countText} {count, plural, one {položky} few {položek} many {položky} other {položek}}. Ostatní položky zůstaly tam, kam je Cmdr zapsal.",
+  "@fileOperations.cancelRollback.stoppedDeleting": {
+    "sourceHash": "f9767ae"
+  },
+  "fileOperations.cancelRollback.stoppedMovingBack": "Zastaveno po vrácení {countText} {count, plural, one {položky} few {položek} many {položky} other {položek}} zpět. Ostatní položky zůstaly tam, kam je přesun přenesl.",
+  "@fileOperations.cancelRollback.stoppedMovingBack": {
+    "sourceHash": "f536342"
+  },
+  "fileOperations.cancelRollback.moveAlreadyLanded": "Cmdr se zastavil při odstraňování původních souborů, ale všechno, co přesunul, už je v cíli a zůstane tam. {count, plural, one {Jeden původní soubor je pořád na svém místě.} few {{countText} původní soubory jsou pořád na svém místě.} many {{countText} původního souboru je pořád na svém místě.} other {{countText} původních souborů je pořád na svém místě.}}",
+  "@fileOperations.cancelRollback.moveAlreadyLanded": {
+    "sourceHash": "88dcf83"
+  },
+  "fileOperations.cancelRollback.leftBehind": "Cmdr přeskočí vše, čím si není jistý, takže tyto položky zůstaly tam, kde jsou:",
+  "@fileOperations.cancelRollback.leftBehind": {
+    "sourceHash": "bab6eb4"
+  },
+  "fileOperations.cancelRollback.recoveredOriginal": "Cmdr uchoval původní položku z cesty {path} jako {keptAt}.",
+  "@fileOperations.cancelRollback.recoveredOriginal": {
+    "sourceHash": "f0df327"
+  },
+  "fileOperations.cancelRollback.reason.drift.named": "Cmdr nechal položku „{name}“ beze změny: změnila se poté, co ji tam zapsal.",
+  "@fileOperations.cancelRollback.reason.drift.named": {
+    "sourceHash": "e227f3b"
+  },
+  "fileOperations.cancelRollback.reason.drift.counted": "Cmdr nechal {countText} {count, plural, one {položku} few {položky} many {položky} other {položek}} beze změny: změnily se poté, co je tam zapsal.",
+  "@fileOperations.cancelRollback.reason.drift.counted": {
+    "sourceHash": "233b2f5"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.named": "Cmdr nechal položku „{name}“ beze změny: nemohl ověřit, jestli se změnila.",
+  "@fileOperations.cancelRollback.reason.unverifiable.named": {
+    "sourceHash": "3e553b2"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "Cmdr nechal {countText} {count, plural, one {položku} few {položky} many {položky} other {položek}} beze změny: nemohl ověřit, jestli se změnily.",
+  "@fileOperations.cancelRollback.reason.unverifiable.counted": {
+    "sourceHash": "25fe620"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.named": "Cmdr nechal položku „{name}“ tam, kde je: na jejím původním místě je teď něco jiného.",
+  "@fileOperations.cancelRollback.reason.spotTaken.named": {
+    "sourceHash": "5e38d8d"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "Cmdr nechal {countText} {count, plural, one {položku} few {položky} many {položky} other {položek}} tam, kde jsou: na jejich původním místě je teď něco jiného.",
+  "@fileOperations.cancelRollback.reason.spotTaken.counted": {
+    "sourceHash": "a55ac9a"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.named": "Cmdr nechal složku „{name}“ beze změny: teď v ní něco je.",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
+    "sourceHash": "b487d24"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "Cmdr nechal {countText} {count, plural, one {složku} few {složky} many {složky} other {složek}} beze změny: teď v nich něco je.",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
+    "sourceHash": "d2c9f56"
+  },
+  "fileOperations.cancelRollback.reason.failed.named": "Změnu u položky „{name}“ se nepodařilo vrátit. Její disk je možná odpojený nebo jen ke čtení.",
+  "@fileOperations.cancelRollback.reason.failed.named": {
+    "sourceHash": "d22eda5"
+  },
+  "fileOperations.cancelRollback.reason.failed.counted": "Změny u {countText} {count, plural, one {položky} few {položek} many {položky} other {položek}} se nepodařilo vrátit. Jejich disk je možná odpojený nebo jen ke čtení.",
+  "@fileOperations.cancelRollback.reason.failed.counted": {
+    "sourceHash": "fa172fb"
+  },
+  "fileOperations.cancelRollback.reason.locked.named": "Cmdr nechal položku „{name}“ na místě: je zamčená a Cmdr ji nedokáže odemknout.",
+  "@fileOperations.cancelRollback.reason.locked.named": {
+    "sourceHash": "5d36672"
+  },
+  "fileOperations.cancelRollback.reason.locked.counted": "{count, plural, one {{countText} položka zůstává na místě: je zamčená} few {{countText} položky zůstávají na místě: jsou zamčené} many {{countText} položky zůstává na místě: jsou zamčené} other {{countText} položek zůstává na místě: jsou zamčené}} a Cmdr je nedokáže odemknout.",
+  "@fileOperations.cancelRollback.reason.locked.counted": {
+    "sourceHash": "4830a5e"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.named": "Nedokončenou kopii „{name}“ v cíli se nepodařilo odstranit. Můžete ji bez obav smazat a Cmdr to zkusí znovu, až se tam příště připojí.",
+  "@fileOperations.cancelRollback.stagedLeftover.named": {
+    "sourceHash": "dbf80b7"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.counted": "{count, plural, one {{countText} nedokončenou kopii} few {{countText} nedokončené kopie} many {{countText} nedokončené kopie} other {{countText} nedokončených kopií}} v cíli se nepodařilo odstranit. Můžete je bez obav smazat a Cmdr to zkusí znovu, až se tam příště připojí.",
+  "@fileOperations.cancelRollback.stagedLeftover.counted": {
+    "sourceHash": "1f4dec3"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.waiting.named": "Nedokončená kopie „{name}“ zatím zůstává v umístění {volumeName}. Cmdr ji odstraní, jakmile se {volumeName} vrátí.",
+  "@fileOperations.cancelRollback.stagedLeftover.waiting.named": {
+    "sourceHash": "661c42a"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.waiting.counted": "{count, plural, one {{countText} nedokončená kopie zatím zůstává} few {{countText} nedokončené kopie zatím zůstávají} many {{countText} nedokončené kopie zatím zůstává} other {{countText} nedokončených kopií zatím zůstává}} v umístění {volumeName}. Cmdr je odstraní, jakmile se {volumeName} vrátí.",
+  "@fileOperations.cancelRollback.stagedLeftover.waiting.counted": {
+    "sourceHash": "d360188"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.landing.named": "Soubor {name} je v umístění {volumeName} celý pod dočasným názvem a vlastní název dostane, až se Cmdr k umístění {volumeName} příště připojí.",
+  "@fileOperations.cancelRollback.stagedLeftover.landing.named": {
+    "sourceHash": "ae7aea2"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.landing.counted": "{count, plural, one {{countText} úplný soubor čeká} few {{countText} úplné soubory čekají} many {{countText} úplného souboru čeká} other {{countText} úplných souborů čeká}} v umístění {volumeName} pod dočasnými názvy. Každý dostane vlastní název, až se Cmdr k umístění {volumeName} příště připojí.",
+  "@fileOperations.cancelRollback.stagedLeftover.landing.counted": {
+    "sourceHash": "eb3d194"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.rescued.named": "Cmdr uložil v umístění {volumeName} úplný nový soubor jako {name}, protože nemohl dostat vlastní název. Zkontrolujte ho a pak mu dejte název, jaký chcete.",
+  "@fileOperations.cancelRollback.stagedLeftover.rescued.named": {
+    "sourceHash": "4c10d90"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.rescued.counted": "Cmdr uložil v umístění {volumeName} {count, plural, one {{countText} úplný nový soubor} few {{countText} úplné nové soubory} many {{countText} úplného nového souboru} other {{countText} úplných nových souborů}} pod názvy s „(recovered)“, protože nemohly dostat vlastní názvy. Zkontrolujte je a pak jim dejte názvy, jaké chcete.",
+  "@fileOperations.cancelRollback.stagedLeftover.rescued.counted": {
+    "sourceHash": "a1ebb20"
+  },
+  "fileOperations.leftovers.unfinishedLandingKept": "Cmdr našel v umístění {volumeName} nedokončenou kopii souboru {fileName}, která nemá správnou velikost, takže ji místo dokončení ponechal jako {keptName}.",
+  "@fileOperations.leftovers.unfinishedLandingKept": {
+    "sourceHash": "92ebd0a"
+  },
+  "fileOperations.leftovers.stagingFolderKept": "Cmdr našel na svazku {volumeName} soubory z nedokončeného přesunu a nechal je na místě, ve skryté složce {folderName}.",
+  "@fileOperations.leftovers.stagingFolderKept": {
+    "sourceHash": "fd848b8"
+  },
+  "fileOperations.errorDialog.technicalDetails": "Technické podrobnosti",
+  "@fileOperations.errorDialog.technicalDetails": {
+    "sourceHash": "890ab35"
+  },
+  "fileOperations.errorDialog.technicalDetailsAria": "Technické podrobnosti o chybě",
+  "@fileOperations.errorDialog.technicalDetailsAria": {
+    "sourceHash": "708186c"
+  },
+  "fileOperations.errorDialog.retry": "Zkusit znovu",
+  "@fileOperations.errorDialog.retry": {
+    "sourceHash": "942087c"
+  },
+  "fileOperations.errorDialog.copyAnyway": "Přesto kopírovat",
+  "@fileOperations.errorDialog.copyAnyway": {
+    "sourceHash": "f794181"
+  },
+  "fileOperations.errorDialog.close": "Zavřít",
+  "@fileOperations.errorDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "fileOperations.errorDialog.tooLargeAndMore": "a {countText} {count, plural, one {další soubor} few {další soubory} many {dalšího souboru} other {dalších souborů}}",
+  "@fileOperations.errorDialog.tooLargeAndMore": {
+    "sourceHash": "ff109f8"
+  },
+  "fileOperations.archivePassword.title": "Je potřeba heslo",
+  "@fileOperations.archivePassword.title": {
+    "sourceHash": "54fd670"
+  },
+  "fileOperations.archivePassword.retryTitle": "Tohle nevyšlo",
+  "@fileOperations.archivePassword.retryTitle": {
+    "sourceHash": "a12d349"
+  },
+  "fileOperations.archivePassword.message": "Archiv <archive>{name}</archive> je chráněný heslem. Zadejte jeho heslo a odemkněte ho.",
+  "@fileOperations.archivePassword.message": {
+    "sourceHash": "ba28841"
+  },
+  "fileOperations.archivePassword.retryMessage": "Tímto heslem se archiv <archive>{name}</archive> odemknout nepodařilo. Zkuste to ještě jednou.",
+  "@fileOperations.archivePassword.retryMessage": {
+    "sourceHash": "3d62c0c"
+  },
+  "fileOperations.archivePassword.inputAria": "Heslo archivu",
+  "@fileOperations.archivePassword.inputAria": {
+    "sourceHash": "3c652b7"
+  },
+  "fileOperations.archivePassword.placeholder": "Heslo",
+  "@fileOperations.archivePassword.placeholder": {
+    "sourceHash": "e7cf3ef"
+  },
+  "fileOperations.archivePassword.unlock": "Odemknout",
+  "@fileOperations.archivePassword.unlock": {
+    "sourceHash": "4ac709a"
+  },
+  "fileOperations.resticPassword.title": "Odemknout tuto zálohu",
+  "@fileOperations.resticPassword.title": {
+    "sourceHash": "53b2b18"
+  },
+  "fileOperations.resticPassword.retryTitle": "Tohle nevyšlo",
+  "@fileOperations.resticPassword.retryTitle": {
+    "sourceHash": "a12d349"
+  },
+  "fileOperations.resticPassword.message": "<repo>{name}</repo> je záloha restic. Zadejte její heslo a procházejte její snímky.",
+  "@fileOperations.resticPassword.message": {
+    "sourceHash": "c4dd0c2"
+  },
+  "fileOperations.resticPassword.retryMessage": "Toto heslo zálohu <repo>{name}</repo> neodemklo. Zkuste to ještě jednou.",
+  "@fileOperations.resticPassword.retryMessage": {
+    "sourceHash": "7440c4a"
+  },
+  "fileOperations.resticPassword.inputAria": "Heslo zálohy",
+  "@fileOperations.resticPassword.inputAria": {
+    "sourceHash": "3e39703"
+  },
+  "fileOperations.resticPassword.remember": "Pamatovat si ve svazku klíčů",
+  "@fileOperations.resticPassword.remember": {
+    "sourceHash": "3fd7384"
+  },
+  "fileOperations.resticPassword.checking": "Kontroluje se heslo…",
+  "@fileOperations.resticPassword.checking": {
+    "sourceHash": "adfc852"
+  },
+  "fileOperations.resticPassword.unreachable": "Cmdr teď heslo nemohl ověřit. Zkontrolujte, že je disk nebo server se zálohou dostupný, a zkuste to znovu.",
+  "@fileOperations.resticPassword.unreachable": {
+    "sourceHash": "cc4542d"
+  },
+  "fileOperations.validation.disallowedChars": "{kind, select, folder {Název složky nesmí obsahovat „/“ ani znaky null} other {Název souboru nesmí obsahovat „/“ ani znaky null}}",
+  "@fileOperations.validation.disallowedChars": {
+    "sourceHash": "1a3c594"
+  },
+  "fileOperations.validation.empty": "{kind, select, folder {Název složky nesmí být prázdný} other {Název souboru nesmí být prázdný}}",
+  "@fileOperations.validation.empty": {
+    "sourceHash": "2a25343"
+  },
+  "fileOperations.validation.nameTooLong": "{kind, select, folder {Název složky je příliš dlouhý ({byteCount}/{maxBytes} bajtů)} other {Název souboru je příliš dlouhý ({byteCount}/{maxBytes} bajtů)}}",
+  "@fileOperations.validation.nameTooLong": {
+    "sourceHash": "76a85fd"
+  },
+  "fileOperations.validation.pathTooLong": "Celá cesta je příliš dlouhá ({byteCount}/{maxBytes} bajtů)",
+  "@fileOperations.validation.pathTooLong": {
+    "sourceHash": "1658c7a"
+  },
+  "fileOperations.validation.extensionChangeBlocked": "Změna přípony souboru není povolená (původně „{oldExt}“)",
+  "@fileOperations.validation.extensionChangeBlocked": {
+    "sourceHash": "e81362d"
+  },
+  "fileOperations.validation.conflict": "Položka „{name}“ už v této složce existuje",
+  "@fileOperations.validation.conflict": {
+    "sourceHash": "842d02d"
+  },
+  "fileOperations.validation.nameNotUsable": "{kind, select, folder {Tento název složky nelze použít} other {Tento název souboru nelze použít}}",
+  "@fileOperations.validation.nameNotUsable": {
+    "sourceHash": "6c50bb6"
+  },
+  "fileOperations.validation.pathEmpty": "Cesta nesmí být prázdná",
+  "@fileOperations.validation.pathEmpty": {
+    "sourceHash": "c7afbbc"
+  },
+  "fileOperations.validation.pathNotAbsolute": "Cesta musí být absolutní (začínat znakem /)",
+  "@fileOperations.validation.pathNotAbsolute": {
+    "sourceHash": "3c08374"
+  },
+  "fileOperations.validation.pathNullChar": "Cesta obsahuje znak null",
+  "@fileOperations.validation.pathNullChar": {
+    "sourceHash": "271149f"
+  },
+  "fileOperations.validation.pathTotalTooLong": "Cesta je příliš dlouhá ({byteCount}/{maxBytes} bajtů)",
+  "@fileOperations.validation.pathTotalTooLong": {
+    "sourceHash": "30aca7d"
+  },
+  "fileOperations.validation.pathSegmentTooLong": "Název složky v cestě je příliš dlouhý ({byteCount}/{maxBytes} bajtů)",
+  "@fileOperations.validation.pathSegmentTooLong": {
+    "sourceHash": "75b2602"
+  },
+  "fileOperations.transferTree.treeLabel": "Soubory a složky v tomto přenosu",
+  "@fileOperations.transferTree.treeLabel": {
+    "sourceHash": "29a637d"
+  },
+  "fileOperations.transferTree.preparing": "Načítá se seznam souborů…",
+  "@fileOperations.transferTree.preparing": {
+    "sourceHash": "e6dc842"
+  },
+  "fileOperations.transferTree.empty": "Žádné soubory k zobrazení",
+  "@fileOperations.transferTree.empty": {
+    "sourceHash": "cd0bf08"
+  },
+  "fileOperations.transferTree.follow": "Sledovat",
+  "@fileOperations.transferTree.follow": {
+    "sourceHash": "641d1ef"
+  },
+  "fileOperations.transferTree.followTooltip": "Posunout zpět na zpracovávané soubory a dál je sledovat",
+  "@fileOperations.transferTree.followTooltip": {
+    "sourceHash": "0ff230b"
+  },
+  "fileOperations.transferTree.filesTotal": "{countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}}",
+  "@fileOperations.transferTree.filesTotal": {
+    "sourceHash": "76ef0a6"
+  },
+  "fileOperations.transferTree.filesProgress": "{doneText} / {totalText} {total, plural, one {souboru} few {souborů} many {souboru} other {souborů}}",
+  "@fileOperations.transferTree.filesProgress": {
+    "sourceHash": "48675a6"
+  },
+  "fileOperations.transferTree.skippedCount": "{count, plural, one {{countText} přeskočen} few {{countText} přeskočeny} many {{countText} přeskočeno} other {{countText} přeskočeno}}",
+  "@fileOperations.transferTree.skippedCount": {
+    "sourceHash": "3cb9b95"
+  },
+  "fileOperations.transferTree.failedCount": "{count, plural, one {{countText} nedokončen} few {{countText} nedokončeny} many {{countText} nedokončeno} other {{countText} nedokončeno}}",
+  "@fileOperations.transferTree.failedCount": {
+    "sourceHash": "367fc30"
+  },
+  "fileOperations.transferTree.state.waiting": "Čeká",
+  "@fileOperations.transferTree.state.waiting": {
+    "sourceHash": "6e293a8"
+  },
+  "fileOperations.transferTree.state.copying": "Kopíruje se",
+  "@fileOperations.transferTree.state.copying": {
+    "sourceHash": "82bc68a"
+  },
+  "fileOperations.transferTree.state.moving": "Přesouvá se",
+  "@fileOperations.transferTree.state.moving": {
+    "sourceHash": "8dac743"
+  },
+  "fileOperations.transferTree.state.compressing": "Komprimování",
+  "@fileOperations.transferTree.state.compressing": {
+    "sourceHash": "c4c202f"
+  },
+  "fileOperations.transferTree.state.done": "Hotovo",
+  "@fileOperations.transferTree.state.done": {
+    "sourceHash": "11a6767"
+  },
+  "fileOperations.transferTree.state.skipped": "Přeskočeno",
+  "@fileOperations.transferTree.state.skipped": {
+    "sourceHash": "12698ce"
+  },
+  "fileOperations.transferTree.state.failed": "Nedokončeno",
+  "@fileOperations.transferTree.state.failed": {
+    "sourceHash": "a59364b"
+  }
+}

@@ -1,0 +1,194 @@
+{
+  "queue.windowTitle": "Fronta operací",
+  "@queue.windowTitle": {
+    "sourceHash": "fa91417"
+  },
+  "queue.heading": "Operace",
+  "@queue.heading": {
+    "sourceHash": "358cc20"
+  },
+  "queue.empty.title": "Fronta je prázdná",
+  "@queue.empty.title": {
+    "sourceHash": "ef2b1ef"
+  },
+  "queue.empty.body": "Kopírování, přesouvání, mazání a další operace se soubory se tu zobrazují, dokud běží, takže je můžete pozastavit, pokračovat v nich nebo je zrušit.",
+  "@queue.empty.body": {
+    "sourceHash": "89e6045"
+  },
+  "queue.row.label": "{type, select, copy {Kopírování} move {Přesouvání} delete {Mazání} trash {Přesouvání do koše} rename {Přejmenovávání} create_folder {Vytváření složky} create_file {Vytváření souboru} archive_edit {Úprava archivu} compress {Komprimování} other {Probíhá operace}}",
+  "@queue.row.label": {
+    "sourceHash": "3c8e776"
+  },
+  "queue.row.reversalMovingBack": "Vracení souborů zpět",
+  "@queue.row.reversalMovingBack": {
+    "sourceHash": "19ac5eb"
+  },
+  "queue.row.reversalDeleting": "Mazání toho, co operace vytvořila",
+  "@queue.row.reversalDeleting": {
+    "sourceHash": "f88d220"
+  },
+  "queue.row.reversalRenamingBack": "Vracení původních názvů",
+  "@queue.row.reversalRenamingBack": {
+    "sourceHash": "3e00fd5"
+  },
+  "queue.row.reversalInFolder": "ve složce {folder}",
+  "@queue.row.reversalInFolder": {
+    "sourceHash": "da9d7fa"
+  },
+  "queue.row.itemCount": "{countText} {count, plural, one {položky} few {položek} many {položky} other {položek}}",
+  "@queue.row.itemCount": {
+    "sourceHash": "66337df"
+  },
+  "queue.row.folderCount": "{countText} {count, plural, one {složky} few {složek} many {složky} other {složek}}",
+  "@queue.row.folderCount": {
+    "sourceHash": "9bd56b2"
+  },
+  "queue.row.fileCount": "{countText} {count, plural, one {souboru} few {souborů} many {souboru} other {souborů}}",
+  "@queue.row.fileCount": {
+    "sourceHash": "76ef0a6"
+  },
+  "queue.row.foldersAndFiles": "{folders} a {files}",
+  "@queue.row.foldersAndFiles": {
+    "sourceHash": "7eae0a3"
+  },
+  "queue.row.itemsMore": "{count, plural, other {… a další: {countText}}}",
+  "@queue.row.itemsMore": {
+    "sourceHash": "4a4022c"
+  },
+  "queue.row.itemsInFolder": "ve složce {folder}",
+  "@queue.row.itemsInFolder": {
+    "sourceHash": "da9d7fa"
+  },
+  "queue.row.status": "{status, select, queued {Čeká} running {Běží} paused {Pozastaveno} done {Hotovo} cancelled {Zrušeno} failed {Nedokončeno} other {Běží}}",
+  "@queue.row.status": {
+    "sourceHash": "d7a7517"
+  },
+  "queue.row.statusAwaitingAnswer": "Potřebuje odpověď",
+  "@queue.row.statusAwaitingAnswer": {
+    "sourceHash": "84ec74a"
+  },
+  "queue.row.awaitingAnswerTooltip": "Odpověz na dotaz v hlavním okně a operace bude pokračovat.",
+  "@queue.row.awaitingAnswerTooltip": {
+    "sourceHash": "bf51776"
+  },
+  "queue.row.pause": "Pozastavit",
+  "@queue.row.pause": {
+    "sourceHash": "858e4ba"
+  },
+  "queue.row.resume": "Pokračovat",
+  "@queue.row.resume": {
+    "sourceHash": "d640c74"
+  },
+  "queue.row.foreground": "Zobrazit",
+  "@queue.row.foreground": {
+    "sourceHash": "0df6f1c"
+  },
+  "queue.row.foregroundTooltip": "Zobrazit dialogové okno s průběhem této operace v hlavním okně a přenést to okno do popředí. Operace v obou případech poběží dál.",
+  "@queue.row.foregroundTooltip": {
+    "sourceHash": "88c52de"
+  },
+  "queue.row.cancel": "Zrušit",
+  "@queue.row.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "queue.row.dismiss": "Zavřít",
+  "@queue.row.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "queue.row.dismissAria": "Zavřít tuto operaci",
+  "@queue.row.dismissAria": {
+    "sourceHash": "ff1b528"
+  },
+  "queue.row.treeToggleAria": "Soubory v této operaci",
+  "@queue.row.treeToggleAria": {
+    "sourceHash": "6c35afe"
+  },
+  "queue.row.treeToggleTooltip": "{open, select, yes {Skrýt soubory} other {Zobrazit soubory}}",
+  "@queue.row.treeToggleTooltip": {
+    "sourceHash": "71ba668"
+  },
+  "queue.row.retry": "Zkusit znovu",
+  "@queue.row.retry": {
+    "sourceHash": "942087c"
+  },
+  "queue.row.retryAria": "Zkusit znovu tuto operaci",
+  "@queue.row.retryAria": {
+    "sourceHash": "7694afb"
+  },
+  "queue.row.selectAria": "Vybrat tuto operaci",
+  "@queue.row.selectAria": {
+    "sourceHash": "6618ecc"
+  },
+  "queue.list.aria": "Operace",
+  "@queue.list.aria": {
+    "sourceHash": "358cc20"
+  },
+  "queue.reorder.moved": "{direction, select, earlier {Posunuto nahoru.} other {Posunuto dolů.}} Teď {position}. z {waiting} ve frontě.",
+  "@queue.reorder.moved": {
+    "sourceHash": "00e58dc"
+  },
+  "queue.reorder.atEdge": "{direction, select, earlier {Už je ve frontě první.} other {Už je ve frontě poslední.}}",
+  "@queue.reorder.atEdge": {
+    "sourceHash": "768e3f3"
+  },
+  "queue.reorder.notQueued": "Posouvat jde jen čekající operace.",
+  "@queue.reorder.notQueued": {
+    "sourceHash": "8097038"
+  },
+  "queue.toolbar.pauseAll": "Pozastavit vše",
+  "@queue.toolbar.pauseAll": {
+    "sourceHash": "0b6258b"
+  },
+  "queue.toolbar.resumeAll": "Pokračovat ve všech",
+  "@queue.toolbar.resumeAll": {
+    "sourceHash": "43e673c"
+  },
+  "queue.toolbar.cancelSelected": "Zrušit vybrané",
+  "@queue.toolbar.cancelSelected": {
+    "sourceHash": "34e18e5"
+  },
+  "queue.toolbar.dismissAll": "Zavřít vše",
+  "@queue.toolbar.dismissAll": {
+    "sourceHash": "97fac9e"
+  },
+  "queue.toolbar.selectedCount": "{count, plural, one {# vybraná} few {# vybrané} many {# vybrané} other {# vybraných}}",
+  "@queue.toolbar.selectedCount": {
+    "sourceHash": "5f13640"
+  },
+  "queue.failureToast.title": "{type, select, copy {Kopírování se nepodařilo dokončit} move {Přesouvání se nepodařilo dokončit} delete {Mazání se nepodařilo dokončit} trash {Přesouvání do koše se nepodařilo dokončit} rename {Přejmenovávání se nepodařilo dokončit} create_folder {Vytvoření složky se nepodařilo dokončit} create_file {Vytvoření souboru se nepodařilo dokončit} archive_edit {Úpravu archivu se nepodařilo dokončit} other {Operaci se nepodařilo dokončit}}",
+  "@queue.failureToast.title": {
+    "sourceHash": "b5f2b47"
+  },
+  "queue.failureToast.action": "Zobrazit ve frontě operací",
+  "@queue.failureToast.action": {
+    "sourceHash": "607fbb1"
+  },
+  "queue.handoffToast.action": "Zobrazit ve frontě operací",
+  "@queue.handoffToast.action": {
+    "sourceHash": "607fbb1"
+  },
+  "queue.failureToast.summary": "{count, plural, one {{countText} operaci se nepodařilo dokončit} few {{countText} operace se nepodařilo dokončit} many {{countText} operace se nepodařilo dokončit} other {{countText} operací se nepodařilo dokončit}}",
+  "@queue.failureToast.summary": {
+    "sourceHash": "a55d85a"
+  },
+  "queue.chip.failed": "{count, plural, one {{countText} operaci se nepodařilo dokončit} few {{countText} operace se nepodařilo dokončit} many {{countText} operace se nepodařilo dokončit} other {{countText} operací se nepodařilo dokončit}}. Otevřete frontu operací a zobrazí se důvod.",
+  "@queue.chip.failed": {
+    "sourceHash": "9c0036b"
+  },
+  "queue.chip.ariaLabel": "{label}, {percentText} %. Otevřít frontu operací.",
+  "@queue.chip.ariaLabel": {
+    "sourceHash": "3ff7a01"
+  },
+  "queue.chip.scanningAriaLabel": "{label}, prohledávání. Otevřít frontu operací.",
+  "@queue.chip.scanningAriaLabel": {
+    "sourceHash": "791fc9f"
+  },
+  "queue.chip.indeterminateAriaLabel": "{label}. Otevřít frontu operací.",
+  "@queue.chip.indeterminateAriaLabel": {
+    "sourceHash": "d35fc3f"
+  },
+  "queue.chip.tooltip": "{label}{count, plural, =0 {} one { · {countText} položka} few { · {countText} položky} many { · {countText} položky} other { · {countText} položek}}{hasDestination, select, yes { · do složky {destination}} other {}} · {percentText} %{hasDetail, select, yes { · {detail}} other {}}",
+  "@queue.chip.tooltip": {
+    "sourceHash": "6680100"
+  }
+}

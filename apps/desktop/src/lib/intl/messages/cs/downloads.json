@@ -1,0 +1,146 @@
+{
+  "downloads.toast.downloaded": "Staženo: <file>{fileName}</file>",
+  "@downloads.toast.downloaded": {
+    "sourceHash": "7bc4ace"
+  },
+  "downloads.toast.inSubdir": "ve složce {subdir}",
+  "@downloads.toast.inSubdir": {
+    "sourceHash": "eea56f4"
+  },
+  "downloads.toast.learnIntro": "Šikovný tip, jak rychle přejít na stažené soubory",
+  "@downloads.toast.learnIntro": {
+    "sourceHash": "3a06888"
+  },
+  "downloads.toast.inAppHint": "V aplikaci: stiskněte <chip>{key}</chip> a přejdete sem",
+  "@downloads.toast.inAppHint": {
+    "sourceHash": "5b70d9c"
+  },
+  "downloads.toast.globalHint": "V <em>jakékoli</em> aplikaci (globální zkratka) stiskněte <chip>{key}</chip>",
+  "@downloads.toast.globalHint": {
+    "sourceHash": "785e1f3"
+  },
+  "downloads.toast.summaryBoth": "Přejděte zkratkou <inApp>{inAppKey}</inApp> v aplikaci, <global>{globalKey}</global> globálně.",
+  "@downloads.toast.summaryBoth": {
+    "sourceHash": "59c4131"
+  },
+  "downloads.toast.summaryInApp": "Přejděte zkratkou <inApp>{inAppKey}</inApp> v aplikaci.",
+  "@downloads.toast.summaryInApp": {
+    "sourceHash": "2c0fd22"
+  },
+  "downloads.toast.summaryGlobal": "Přejděte zkratkou <global>{globalKey}</global> globálně.",
+  "@downloads.toast.summaryGlobal": {
+    "sourceHash": "1bd00be"
+  },
+  "downloads.toast.expandTip": "Zobrazit tip ke zkratce",
+  "@downloads.toast.expandTip": {
+    "sourceHash": "9dfbe32"
+  },
+  "downloads.toast.collapseTip": "Zobrazit toto oznámení kompaktněji",
+  "@downloads.toast.collapseTip": {
+    "sourceHash": "b404794"
+  },
+  "downloads.toast.stopShowing": "Tato oznámení už nezobrazovat",
+  "@downloads.toast.stopShowing": {
+    "sourceHash": "36faf9f"
+  },
+  "downloads.toast.jumpToFile": "Přejít na soubor",
+  "@downloads.toast.jumpToFile": {
+    "sourceHash": "4511f65"
+  },
+  "downloads.notification.title": "Staženo: {fileName}",
+  "@downloads.notification.title": {
+    "sourceHash": "a2b74bc"
+  },
+  "downloads.notification.titleMultiple": "{count, plural, one {Stažen {countText} soubor} few {Staženy {countText} soubory} many {Staženo {countText} souboru} other {Staženo {countText} souborů}}",
+  "@downloads.notification.titleMultiple": {
+    "sourceHash": "f52e460"
+  },
+  "downloads.notification.mostRecent": "Naposledy stažený: {fileName}",
+  "@downloads.notification.mostRecent": {
+    "sourceHash": "4aa3b6e"
+  },
+  "downloads.empty.message": "Složka Stahování je prázdná. Chcete ji přesto otevřít?",
+  "@downloads.empty.message": {
+    "sourceHash": "83e7e07"
+  },
+  "downloads.empty.dismiss": "Zavřít",
+  "@downloads.empty.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "downloads.empty.goToDownloads": "Přejít do složky Stahování",
+  "@downloads.empty.goToDownloads": {
+    "sourceHash": "5c72aeb"
+  },
+  "downloads.fda.message": "Cmdr potřebuje plný přístup k disku, aby mohl sledovat vaši složku Stahování.",
+  "@downloads.fda.message": {
+    "sourceHash": "82c82c6"
+  },
+  "downloads.fda.dismiss": "Zavřít",
+  "@downloads.fda.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "downloads.fda.openSystemSettings": "Otevřít Nastavení systému",
+  "@downloads.fda.openSystemSettings": {
+    "sourceHash": "18196b3"
+  },
+  "downloads.warnToast.message": "Zkratkou {binding} přejdete odkudkoli na poslední stažený soubor. Chcete ji nechat zapnutou?",
+  "@downloads.warnToast.message": {
+    "sourceHash": "b174604"
+  },
+  "downloads.warnToast.turnOff": "Vypnout",
+  "@downloads.warnToast.turnOff": {
+    "sourceHash": "74039ed"
+  },
+  "downloads.warnToast.keepOn": "Nechat zapnutou",
+  "@downloads.warnToast.keepOn": {
+    "sourceHash": "cbfff78"
+  },
+  "downloads.shortcutRow.scopeTitle": "Globální",
+  "@downloads.shortcutRow.scopeTitle": {
+    "sourceHash": "a258b30"
+  },
+  "downloads.shortcutRow.commandName": "Přejít na poslední stažený soubor <marker>(globální)</marker>",
+  "@downloads.shortcutRow.commandName": {
+    "sourceHash": "83f6d4b"
+  },
+  "downloads.shortcutRow.modifiedTooltip": "Změněno oproti výchozímu nastavení",
+  "@downloads.shortcutRow.modifiedTooltip": {
+    "sourceHash": "3d86215"
+  },
+  "downloads.shortcutRow.resetTooltip": "Obnovit výchozí",
+  "@downloads.shortcutRow.resetTooltip": {
+    "sourceHash": "bc5b45a"
+  },
+  "downloads.shortcutRow.pressKeys": "Stiskněte klávesy…",
+  "@downloads.shortcutRow.pressKeys": {
+    "sourceHash": "7f34202"
+  },
+  "downloads.shortcutRow.registered": "Zaregistrováno",
+  "@downloads.shortcutRow.registered": {
+    "sourceHash": "2351ee9"
+  },
+  "downloads.shortcutRow.notRegistered": "Nezaregistrováno",
+  "@downloads.shortcutRow.notRegistered": {
+    "sourceHash": "ca374c2"
+  },
+  "downloads.shortcutRow.invalidCombo": "Nelze zaregistrovat: neplatná kombinace kláves",
+  "@downloads.shortcutRow.invalidCombo": {
+    "sourceHash": "d2601f3"
+  },
+  "downloads.shortcutRow.unavailable": "Tuto kombinaci kláves možná používá jiná aplikace",
+  "@downloads.shortcutRow.unavailable": {
+    "sourceHash": "8882532"
+  },
+  "downloads.shortcutRow.addModifier": "Přidejte modifikační klávesu (⌘, ⌃, ⌥ nebo ⇧)",
+  "@downloads.shortcutRow.addModifier": {
+    "sourceHash": "28a5ba2"
+  },
+  "downloads.toggleDescription.bound": "Stiskněte {binding} v jakékoli aplikaci a přejdete na naposledy stažený soubor.",
+  "@downloads.toggleDescription.bound": {
+    "sourceHash": "be43b35"
+  },
+  "downloads.toggleDescription.unbound": "Přejděte na naposledy stažený soubor z jakékoli aplikace.",
+  "@downloads.toggleDescription.unbound": {
+    "sourceHash": "187cdec"
+  }
+}

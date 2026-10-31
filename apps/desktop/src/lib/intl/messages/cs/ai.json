@@ -1,0 +1,558 @@
+{
+  "ai.toast.downloadingTitle": "Stahování modelu AI…",
+  "@ai.toast.downloadingTitle": {
+    "sourceHash": "85d48ae"
+  },
+  "ai.toast.startingDownload": "Zahajuje se stahování…",
+  "@ai.toast.startingDownload": {
+    "sourceHash": "22309b1"
+  },
+  "ai.toast.progress": "{percentText} · {downloaded} / {total} · {speed}/s{eta, select, none {} other { · zbývá {eta}}}",
+  "@ai.toast.progress": {
+    "sourceHash": "93d798b"
+  },
+  "ai.toast.cancel": "Zrušit",
+  "@ai.toast.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "ai.toast.installingTitle": "Nastavování AI…",
+  "@ai.toast.installingTitle": {
+    "sourceHash": "85f7001"
+  },
+  "ai.toast.installingDescription": "Spouštění serveru",
+  "@ai.toast.installingDescription": {
+    "sourceHash": "8a0f9d9"
+  },
+  "ai.toast.readyTitle": "AI je připravená",
+  "@ai.toast.readyTitle": {
+    "sourceHash": "276c384"
+  },
+  "ai.toast.readyDescription": "Zkuste vytvořit novou složku (F7) a uvidíte návrhy názvů od AI.",
+  "@ai.toast.readyDescription": {
+    "sourceHash": "b3ae1b2"
+  },
+  "ai.toast.gotIt": "Rozumím",
+  "@ai.toast.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
+  "ai.toast.startingTitle": "Spouštění AI…",
+  "@ai.toast.startingTitle": {
+    "sourceHash": "d0a6a15"
+  },
+  "ai.toast.startingDescription": "Načítá se model, potrvá to pár sekund",
+  "@ai.toast.startingDescription": {
+    "sourceHash": "94ecf6d"
+  },
+  "ai.toast.downloadCloseTooltip": "Zavřít toto oznámení; stahování bude pokračovat na pozadí",
+  "@ai.toast.downloadCloseTooltip": {
+    "sourceHash": "16db2bd"
+  },
+  "ai.translateError.off.title": "AI je vypnutá",
+  "@ai.translateError.off.title": {
+    "sourceHash": "99ce709"
+  },
+  "ai.translateError.off.body": "Pokud chcete hledat pomocí AI, zapněte poskytovatele v Nastavení > AI.",
+  "@ai.translateError.off.body": {
+    "sourceHash": "d8d6368"
+  },
+  "ai.cloudConsent.label": "Povolit cloudovou AI",
+  "@ai.cloudConsent.label": {
+    "sourceHash": "9947821"
+  },
+  "ai.cloudConsent.description": "Dokud tohle nezapnete, Cmdr do služby cloudové AI nic neodešle.",
+  "@ai.cloudConsent.description": {
+    "sourceHash": "2f568e5"
+  },
+  "ai.cloudConsent.disclosureTitle": "Co Cmdr odesílá",
+  "@ai.cloudConsent.disclosureTitle": {
+    "sourceHash": "6907e64"
+  },
+  "ai.cloudConsent.intro": "Když je tohle zapnuté, Cmdr odesílá službě AI, kterou nastavíte níže, následující údaje:",
+  "@ai.cloudConsent.intro": {
+    "sourceHash": "9462a5a"
+  },
+  "ai.cloudConsent.whereItGoes": "Kam vaše data putují a co se s nimi tam děje, záleží na službě, kterou vyberete, a na vaší dohodě s ní. To se týká i služeb Ollama, LM Studio a vlastních koncových bodů: data jdou tam, kde daný server běží. Vlastní servery Cmdru z toho nikdy nic neuvidí.",
+  "@ai.cloudConsent.whereItGoes": {
+    "sourceHash": "44dd8ba"
+  },
+  "ai.cloudConsent.folderSuggestions": "<b>Návrhy názvů nové složky</b>: cesta k aktuální složce a až 100 názvů v ní",
+  "@ai.cloudConsent.folderSuggestions": {
+    "sourceHash": "e2c592a"
+  },
+  "ai.cloudConsent.search": "<b>Hledání běžnými slovy</b>: text, který napíšete",
+  "@ai.cloudConsent.search": {
+    "sourceHash": "e6d4ef9"
+  },
+  "ai.cloudConsent.selection": "<b>Výběr podle popisu</b>: co napíšete, plus až 240 názvů z aktuální složky",
+  "@ai.cloudConsent.selection": {
+    "sourceHash": "1e1c3c3"
+  },
+  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, když chatujete nebo když sám zahájí konverzaci:",
+  "@ai.cloudConsent.askCmdr.title": {
+    "sourceHash": "26e139c"
+  },
+  "ai.cloudConsent.askCmdr.item.messages": "Vaše zprávy",
+  "@ai.cloudConsent.askCmdr.item.messages": {
+    "sourceHash": "befc6e9"
+  },
+  "ai.cloudConsent.askCmdr.item.names": "Názvy a cesty souborů a složek, na které se Cmdr podívá, aby vám odpověděl",
+  "@ai.cloudConsent.askCmdr.item.names": {
+    "sourceHash": "ce3259d"
+  },
+  "ai.cloudConsent.askCmdr.item.sizes": "Jejich velikosti a datumy",
+  "@ai.cloudConsent.askCmdr.item.sizes": {
+    "sourceHash": "2484530"
+  },
+  "ai.cloudConsent.askCmdr.item.contents": "Části souborů, které Cmdr otevře, aby vám odpověděl: kousek textu, stránky PDF, co je uvnitř archivu, a u fotky údaje z fotoaparátu a místo pořízení",
+  "@ai.cloudConsent.askCmdr.item.contents": {
+    "sourceHash": "fcd0b73"
+  },
+  "ai.cloudConsent.askCmdr.item.envelope": "Na co se právě díváte: vaše aktuální složka, kurzor, výběr a připojené disky",
+  "@ai.cloudConsent.askCmdr.item.envelope": {
+    "sourceHash": "2e5a0ef"
+  },
+  "ai.cloudConsent.askCmdr.item.attachments": "Soubory a složky, které přiložíte k otázce, ale jen jejich název a cesta",
+  "@ai.cloudConsent.askCmdr.item.attachments": {
+    "sourceHash": "b9ad2af"
+  },
+  "ai.cloudConsent.askCmdr.item.memory": "Poznámky, které si o vás Cmdr vede, odesílané znovu s každou zprávou",
+  "@ai.cloudConsent.askCmdr.item.memory": {
+    "sourceHash": "7779513"
+  },
+  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr nikdy neodesílá celé soubory, fotky ani miniatury. Když se zeptáte na nějaký soubor, může z něj přečíst omezenou část: několik řádků textu, jen některé stránky PDF spolu s jeho názvem a autorem, seznam souborů v archivu nebo u fotky údaje z fotoaparátu včetně místa, kde byla pořízena. Hledání ve fotkách funguje stejně: text, který Cmdr rozpoznal v odpovídajících fotkách, a jejich značky putují k vašemu poskytovateli, aby je mohl najít. Cmdr může navrhovat přejmenování, přesunutí a úklid, ale se souborem se nic nestane, dokud to neschválíte.",
+  "@ai.cloudConsent.askCmdr.contentsRule": {
+    "sourceHash": "5a378c1"
+  },
+  "ai.cloudConsent.askCmdr.memory": "Cmdr si o vás zapisuje poznámky: jak chcete mít věci uspořádané, co už bylo dřív odmítnuto, a cokoli, co si má na vaši žádost zapamatovat. Tyto poznámky se odesílají s každou zprávou, kterou pošlete, dokud existují, a můžou obsahovat text, který Cmdr rozpoznal ve vašich fotkách. Kdykoli si je můžete přečíst nebo vymazat v nastavení Ask Cmdr.",
+  "@ai.cloudConsent.askCmdr.memory": {
+    "sourceHash": "496c78d"
+  },
+  "ai.cloudConsent.askCmdr.proactive": "Cmdr navíc sleduje složky, které používáte, a když má co navrhnout, sám zahájí konverzaci, takže zprávy se můžou dostat k vašemu poskytovateli i bez vašeho dotazu. Můžete to vypnout v nastavení Ask Cmdr v části „Z vlastní iniciativy“.",
+  "@ai.cloudConsent.askCmdr.proactive": {
+    "sourceHash": "abfa80b"
+  },
+  "ai.cloudConsent.askCmdr.chatsStayLocal": "Vaše chaty v panelu Ask Cmdr zůstávají na vašem Macu, v místní databázi, kterou můžete otevřít a přečíst.",
+  "@ai.cloudConsent.askCmdr.chatsStayLocal": {
+    "sourceHash": "283cdd7"
+  },
+  "ai.cloudConsent.logsNote": "Pokud v nastavení Pokročilé zapnete protokolování volání LLM, Cmdr navíc ukládá každý požadavek a odpověď do složky na vašem Macu. Tyto protokoly taky zůstávají místně a nikdy se nikam neodesílají.",
+  "@ai.cloudConsent.logsNote": {
+    "sourceHash": "7e211fc"
+  },
+  "ai.cloudConsent.turnOffAnyTime": "Vypnout to můžete kdykoli a Cmdr okamžitě zastaví odesílání. Vaše služba, klíč i chaty zůstanou tak, jak jsou.",
+  "@ai.cloudConsent.turnOffAnyTime": {
+    "sourceHash": "464c39f"
+  },
+  "ai.cloudConsent.notSaved": "Cmdr nedokázal uložit vaši volbu. Zkusíte to znovu?",
+  "@ai.cloudConsent.notSaved": {
+    "sourceHash": "6bd80e9"
+  },
+  "ai.translateError.notConfigured.title": "AI je potřeba ještě trochu nastavit",
+  "@ai.translateError.notConfigured.title": {
+    "sourceHash": "bf5688a"
+  },
+  "ai.translateError.notConfigured.body": "Dokončete nastavení poskytovatele v Nastavení > AI a zkuste to znovu.",
+  "@ai.translateError.notConfigured.body": {
+    "sourceHash": "65133a8"
+  },
+  "ai.translateError.noCloudConsent.title": "Cloudová AI je vypnutá",
+  "@ai.translateError.noCloudConsent.title": {
+    "sourceHash": "2e56781"
+  },
+  "ai.translateError.noCloudConsent.body": "Povolte ji v Nastavení > AI a zkuste to znovu.",
+  "@ai.translateError.noCloudConsent.body": {
+    "sourceHash": "fde3eb5"
+  },
+  "ai.translateError.authFailed.title": "Tenhle klíč API byl odmítnut",
+  "@ai.translateError.authFailed.title": {
+    "sourceHash": "93e6261"
+  },
+  "ai.translateError.authFailed.body": "Zkontrolujte klíč v Nastavení > AI – může být chybný nebo odvolaný.",
+  "@ai.translateError.authFailed.body": {
+    "sourceHash": "2159d5e"
+  },
+  "ai.translateError.rateLimited.title": "Vašemu poskytovateli AI došla kapacita",
+  "@ai.translateError.rateLimited.title": {
+    "sourceHash": "26e286e"
+  },
+  "ai.translateError.rateLimited.body": "Omezuje rychlost požadavků, nebo je vyčerpaná kvóta vašeho tarifu. Zkontrolujte tarif a fakturaci a zkuste to znovu.",
+  "@ai.translateError.rateLimited.body": {
+    "sourceHash": "ca3616b"
+  },
+  "ai.translateError.timeout.title": "AI to trvalo moc dlouho",
+  "@ai.translateError.timeout.title": {
+    "sourceHash": "d684e3f"
+  },
+  "ai.translateError.timeout.body": "Časový limit požadavku vypršel. Zkuste to za chvíli znovu.",
+  "@ai.translateError.timeout.body": {
+    "sourceHash": "249b720"
+  },
+  "ai.translateError.unavailable.title": "Váš poskytovatel AI je nedostupný",
+  "@ai.translateError.unavailable.title": {
+    "sourceHash": "74e6ba8"
+  },
+  "ai.translateError.unavailable.body": "Zkontrolujte připojení k internetu nebo stav poskytovatele a zkuste to znovu.",
+  "@ai.translateError.unavailable.body": {
+    "sourceHash": "c44a8ed"
+  },
+  "ai.translateError.emptyResponse.title": "AI vrátila prázdnou odpověď",
+  "@ai.translateError.emptyResponse.title": {
+    "sourceHash": "61afc33"
+  },
+  "ai.translateError.emptyResponse.body": "Váš model na to možná potřebuje větší limit. Zkuste rychlejší model, třeba gpt-4.1-mini, v Nastavení > AI.",
+  "@ai.translateError.emptyResponse.body": {
+    "sourceHash": "f1704cc"
+  },
+  "ai.translateError.serverError.title": "Váš poskytovatel AI narazil na problém",
+  "@ai.translateError.serverError.title": {
+    "sourceHash": "1b98f6a"
+  },
+  "ai.translateError.serverError.body": "Vrátil něco nečekaného. Zkuste to za chvíli znovu.",
+  "@ai.translateError.serverError.body": {
+    "sourceHash": "3f4af5c"
+  },
+  "ai.translateError.parseError.title": "Odpověď AI se nepodařilo přečíst",
+  "@ai.translateError.parseError.title": {
+    "sourceHash": "02af146"
+  },
+  "ai.translateError.parseError.body": "Zkuste to znovu, nebo vyberte jiný model v Nastavení > AI.",
+  "@ai.translateError.parseError.body": {
+    "sourceHash": "c299ec6"
+  },
+  "ai.translateError.unknownProvider.title": "Tohoto poskytovatele AI Cmdr nezná",
+  "@ai.translateError.unknownProvider.title": {
+    "sourceHash": "794a4c7"
+  },
+  "ai.translateError.unknownProvider.body": "Vyberte poskytovatele v Nastavení > AI.",
+  "@ai.translateError.unknownProvider.body": {
+    "sourceHash": "7042a75"
+  },
+  "ai.translateError.managed.title": "AI v Cmdru spravuje vaše organizace",
+  "@ai.translateError.managed.title": {
+    "sourceHash": "12f8233"
+  },
+  "ai.translateError.managed.body": "Vaše IT oddělení vám řekne, které služby AI můžete používat.",
+  "@ai.translateError.managed.body": {
+    "sourceHash": "cb7e811"
+  },
+  "ai.cloud.serviceAria": "Služba cloudové AI",
+  "@ai.cloud.serviceAria": {
+    "sourceHash": "7dec1e0"
+  },
+  "ai.cloud.apiKeyPlaceholderAnthropic": "Příklad: sk-ant-abc123…",
+  "@ai.cloud.apiKeyPlaceholderAnthropic": {
+    "sourceHash": "89347d5"
+  },
+  "ai.cloud.askCmdrOverrideHint": "Chat používá vlastní model ({model}), ne tento. Změníte ho v části Ask Cmdr.",
+  "@ai.cloud.askCmdrOverrideHint": {
+    "sourceHash": "5a5539a"
+  },
+  "ai.cloud.modelPlaceholderExample": "Příklad: {model}",
+  "@ai.cloud.modelPlaceholderExample": {
+    "sourceHash": "2287b9f"
+  },
+  "ai.cloud.checking": "Kontrola…",
+  "@ai.cloud.checking": {
+    "sourceHash": "ec963ff"
+  },
+  "ai.cloud.connected": "Připojeno",
+  "@ai.cloud.connected": {
+    "sourceHash": "2296556"
+  },
+  "ai.cloud.connectedNoModels": "Připojeno (seznam modelů není k dispozici)",
+  "@ai.cloud.connectedNoModels": {
+    "sourceHash": "54f2b6f"
+  },
+  "ai.cloud.contextWindow": "Kontextové okno: {windowText} {window, plural, one {token} few {tokeny} many {tokenu} other {tokenů}}",
+  "@ai.cloud.contextWindow": {
+    "sourceHash": "fad1fe6"
+  },
+  "ai.cloud.contextWindowEstimate": "Kontextové okno: přibližně {windowText} {window, plural, one {token} few {tokeny} many {tokenu} other {tokenů}} (z vestavěného seznamu Cmdru)",
+  "@ai.cloud.contextWindowEstimate": {
+    "sourceHash": "999230f"
+  },
+  "ai.cloud.effort.recommended": "Doporučeno",
+  "@ai.cloud.effort.recommended": {
+    "sourceHash": "d70604e"
+  },
+  "ai.cloud.effort.recommendedWithLevel": "Doporučeno ({level})",
+  "@ai.cloud.effort.recommendedWithLevel": {
+    "sourceHash": "e9e8984"
+  },
+  "ai.cloud.effort.low": "Nízká",
+  "@ai.cloud.effort.low": {
+    "sourceHash": "f793de2"
+  },
+  "ai.cloud.effort.medium": "Střední",
+  "@ai.cloud.effort.medium": {
+    "sourceHash": "8e588cd"
+  },
+  "ai.cloud.effort.high": "Vysoká",
+  "@ai.cloud.effort.high": {
+    "sourceHash": "c4ebc6d"
+  },
+  "ai.cloud.effort.max": "Maximální",
+  "@ai.cloud.effort.max": {
+    "sourceHash": "a1a5936"
+  },
+  "ai.cloud.effort.forAskCmdrModel": "Ask Cmdr používá vlastní model, {model}, takže tohle nastavení platí pro tento model.",
+  "@ai.cloud.effort.forAskCmdrModel": {
+    "sourceHash": "3a36d6f"
+  },
+  "ai.cloud.effort.levelsUnknown": "Tato služba neuvádí, které úrovně tento model podporuje, takže rozhoduje sama.",
+  "@ai.cloud.effort.levelsUnknown": {
+    "sourceHash": "4688a12"
+  },
+  "ai.cloud.maxOutput": "Nejdelší odpověď: {outputText} {output, plural, one {token} few {tokeny} many {tokenu} other {tokenů}}",
+  "@ai.cloud.maxOutput": {
+    "sourceHash": "16bd61d"
+  },
+  "ai.cloud.recheck": "Zkontrolovat znovu",
+  "@ai.cloud.recheck": {
+    "sourceHash": "1f47d83"
+  },
+  "ai.cloud.authError": "Klíč API je neplatný",
+  "@ai.cloud.authError": {
+    "sourceHash": "74a88e4"
+  },
+  "ai.cloud.connectionError": "Server je nedostupný",
+  "@ai.cloud.connectionError": {
+    "sourceHash": "79d79fb"
+  },
+  "ai.cloud.genericError": "Něco se nečekaně pokazilo",
+  "@ai.cloud.genericError": {
+    "sourceHash": "ab827e3"
+  },
+  "ai.cloud.timedOut": "Server neodpověděl včas. Zkuste to za chvíli znovu.",
+  "@ai.cloud.timedOut": {
+    "sourceHash": "d6888fb"
+  },
+  "ai.cloud.invalidEndpoint": "Tahle adresa nevypadá správně. Zadejte celou webovou adresu, která začíná https://.",
+  "@ai.cloud.invalidEndpoint": {
+    "sourceHash": "a791485"
+  },
+  "ai.cloud.insecureEndpoint": "Klíč API se posílá jen přes zabezpečené připojení. Změňte adresu tak, aby začínala https://.",
+  "@ai.cloud.insecureEndpoint": {
+    "sourceHash": "df152da"
+  },
+  "ai.cloud.providerRefused": "Služba požadavek odmítla (kód {status}).",
+  "@ai.cloud.providerRefused": {
+    "sourceHash": "e3496e5"
+  },
+  "ai.cloud.testConnection": "Otestovat připojení",
+  "@ai.cloud.testConnection": {
+    "sourceHash": "5bcf311"
+  },
+  "ai.local.memoryWarningAria": "Varování ohledně paměti",
+  "@ai.local.memoryWarningAria": {
+    "sourceHash": "7688d6a"
+  },
+  "ai.local.warningDanger": "Tohle přesahuje dostupnou paměť. Systém se může výrazně zpomalit.",
+  "@ai.local.warningDanger": {
+    "sourceHash": "dd5c518"
+  },
+  "ai.local.warningCaution": "Tohle zabere většinu dostupné paměti. Ostatní aplikace se můžou zpomalit.",
+  "@ai.local.warningCaution": {
+    "sourceHash": "f8070e9"
+  },
+  "ai.local.statusRestarting": "Restartování…",
+  "@ai.local.statusRestarting": {
+    "sourceHash": "75d0f14"
+  },
+  "ai.local.statusStarting": "Spouštění…",
+  "@ai.local.statusStarting": {
+    "sourceHash": "bbe5fc3"
+  },
+  "ai.local.statusRunning": "Běží",
+  "@ai.local.statusRunning": {
+    "sourceHash": "f4ccae2"
+  },
+  "ai.local.statusStopped": "Zastaveno",
+  "@ai.local.statusStopped": {
+    "sourceHash": "1a4f630"
+  },
+  "ai.local.installStepExtracting": "Krok 1 ze 4: extrahování modulu runtime…",
+  "@ai.local.installStepExtracting": {
+    "sourceHash": "44fc84b"
+  },
+  "ai.local.installStepDownloading": "Krok 2 ze 4: stahování modelu…",
+  "@ai.local.installStepDownloading": {
+    "sourceHash": "99d712f"
+  },
+  "ai.local.installStepVerifying": "Krok 3 ze 4: ověřování staženého souboru…",
+  "@ai.local.installStepVerifying": {
+    "sourceHash": "302f79a"
+  },
+  "ai.local.installStepStarting": "Krok 4 ze 4: spouštění serveru…",
+  "@ai.local.installStepStarting": {
+    "sourceHash": "696bd5e"
+  },
+  "ai.local.startingDownload": "Zahajuje se stahování…",
+  "@ai.local.startingDownload": {
+    "sourceHash": "22309b1"
+  },
+  "ai.local.etaSeconds": "Zbývá ~{value} s",
+  "@ai.local.etaSeconds": {
+    "sourceHash": "045b712"
+  },
+  "ai.local.etaMinutes": "Zbývá ~{value} min",
+  "@ai.local.etaMinutes": {
+    "sourceHash": "978afd8"
+  },
+  "ai.local.etaHours": "Zbývá ~{value} h",
+  "@ai.local.etaHours": {
+    "sourceHash": "b1944ec"
+  },
+  "ai.local.modelLabel": "Model",
+  "@ai.local.modelLabel": {
+    "sourceHash": "5e2c614",
+    "sameAsSourceJustification": "Model is the standard Czech word (MS terminology model; cs termbase ruling model)"
+  },
+  "ai.local.serverLabel": "Server",
+  "@ai.local.serverLabel": {
+    "sourceHash": "aef7de2",
+    "sameAsSourceJustification": "Server is the standard Czech word (cs termbase ruling server; macOS cs Připojit k serveru)"
+  },
+  "ai.local.modelUnknown": "Neznámý",
+  "@ai.local.modelUnknown": {
+    "sourceHash": "b764cdc"
+  },
+  "ai.local.modelSizeUnknown": "?",
+  "@ai.local.modelSizeUnknown": {
+    "sourceHash": "8a8de82",
+    "sameAsSourceJustification": "A lone question mark is language-neutral"
+  },
+  "ai.local.notInstalled": "Nenainstalováno. Místní model ({modelName}, {modelSize}) běží výhradně na vašem zařízení, takže máte maximální soukromí. Vyžaduje Mac s čipem Apple.",
+  "@ai.local.notInstalled": {
+    "sourceHash": "c865b94"
+  },
+  "ai.local.applyContextSize": "Použít",
+  "@ai.local.applyContextSize": {
+    "sourceHash": "31e392d"
+  },
+  "ai.local.ramGaugeAria": "Ukazatel využití paměti",
+  "@ai.local.ramGaugeAria": {
+    "sourceHash": "d6d09e9"
+  },
+  "ai.local.ramLegendSystem": "Systém {size}",
+  "@ai.local.ramLegendSystem": {
+    "sourceHash": "1497c04"
+  },
+  "ai.local.ramLegendApps": "Aplikace {size}",
+  "@ai.local.ramLegendApps": {
+    "sourceHash": "d02b14c"
+  },
+  "ai.local.ramLegendCmdrAi": "Cmdr AI {size}",
+  "@ai.local.ramLegendCmdrAi": {
+    "sourceHash": "93e2741",
+    "sameAsSourceJustification": "Cmdr is a brand and AI is the Czech abbreviation too (cs termbase ai-feature); only the formatted size follows"
+  },
+  "ai.local.ramLegendProjected": "Odhad navíc",
+  "@ai.local.ramLegendProjected": {
+    "sourceHash": "e394afa"
+  },
+  "ai.local.ramLegendFreed": "Uvolněno",
+  "@ai.local.ramLegendFreed": {
+    "sourceHash": "c8affca"
+  },
+  "ai.local.ramLegendFree": "Volno {size}",
+  "@ai.local.ramLegendFree": {
+    "sourceHash": "afe9c0d"
+  },
+  "ai.local.cancel": "Zrušit",
+  "@ai.local.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "ai.local.stopServer": "Zastavit server",
+  "@ai.local.stopServer": {
+    "sourceHash": "a21bf60"
+  },
+  "ai.local.startServer": "Spustit server",
+  "@ai.local.startServer": {
+    "sourceHash": "7b7da6f"
+  },
+  "ai.local.deleteModel": "Smazat model",
+  "@ai.local.deleteModel": {
+    "sourceHash": "b7828ba"
+  },
+  "ai.local.downloadModel": "Stáhnout model",
+  "@ai.local.downloadModel": {
+    "sourceHash": "9979bea"
+  },
+  "ai.local.deleteDialogTitleDeleting": "Mazání modelu…",
+  "@ai.local.deleteDialogTitleDeleting": {
+    "sourceHash": "d3a7e58"
+  },
+  "ai.local.deleteDialogTitle": "Smazat model AI?",
+  "@ai.local.deleteDialogTitle": {
+    "sourceHash": "c486f0c"
+  },
+  "ai.local.deletingStatus": "Zastavování serveru a mazání souborů…",
+  "@ai.local.deletingStatus": {
+    "sourceHash": "e9de1ca"
+  },
+  "ai.local.deleteConfirmMessage": "Tím uvolníte {modelSize} volného místa na disku. Pokud budete chtít znovu používat místní AI, budete muset model stáhnout znovu.",
+  "@ai.local.deleteConfirmMessage": {
+    "sourceHash": "b295742"
+  },
+  "ai.local.deleteButtonDeleting": "Mazání…",
+  "@ai.local.deleteButtonDeleting": {
+    "sourceHash": "43b5894"
+  },
+  "ai.local.deleteButton": "Smazat",
+  "@ai.local.deleteButton": {
+    "sourceHash": "e2d0a54"
+  },
+  "ai.secretError.keychainTitle": "{op, select, save {Klíč API se nepodařilo uložit: svazek klíčů v macOS odepřel přístup} other {Uložený klíč API se nepodařilo přečíst: svazek klíčů v macOS odepřel přístup}}",
+  "@ai.secretError.keychainTitle": {
+    "sourceHash": "2b2ef89"
+  },
+  "ai.secretError.keychainBody": "{op, select, save {Otevřete Klíčenku a zkontrolujte záznam „Cmdr“, nebo ho smažte a zkuste klíč uložit znovu.} other {Otevřete Klíčenku, najděte záznam „Cmdr“ a udělte přístup, nebo záznam smažte a zadejte klíč znovu.}}",
+  "@ai.secretError.keychainBody": {
+    "sourceHash": "8f1380e"
+  },
+  "ai.secretError.keyringTitle": "{op, select, save {Klíč API se nepodařilo uložit: systémová klíčenka odepřela přístup} other {Uložený klíč API se nepodařilo přečíst: systémová klíčenka odepřela přístup}}",
+  "@ai.secretError.keyringTitle": {
+    "sourceHash": "60f5401"
+  },
+  "ai.secretError.keyringBody": "Odemkněte klíčenku (v aplikaci Hesla a klíče nebo podobné) a zkuste to znovu.",
+  "@ai.secretError.keyringBody": {
+    "sourceHash": "023bde3"
+  },
+  "ai.secretError.genericTitle": "{op, select, save {Klíč API se nepodařilo uložit.} other {Uložený klíč API se nepodařilo přečíst.}}",
+  "@ai.secretError.genericTitle": {
+    "sourceHash": "c343e42"
+  },
+  "ai.secretError.genericBody": "Zkontrolujte, že je systémová klíčenka dostupná, a zkuste to znovu. Pokud problém přetrvává, restartujte aplikaci.",
+  "@ai.secretError.genericBody": {
+    "sourceHash": "2ee417d"
+  },
+  "ai.secretError.removeTitle": "Uložený klíč API se nepodařilo odstranit.",
+  "@ai.secretError.removeTitle": {
+    "sourceHash": "5986628"
+  },
+  "ai.secretError.removeKeychainBody": "Otevřete Klíčenku, najděte záznam „Cmdr“ a smažte ho tam.",
+  "@ai.secretError.removeKeychainBody": {
+    "sourceHash": "4e3abe7"
+  },
+  "ai.managed.aiOff": "Vaše organizace vypnula AI v Cmdru.",
+  "@ai.managed.aiOff": {
+    "sourceHash": "25b7aef"
+  },
+  "ai.managed.cloudAiOff": "Vaše organizace povoluje jen AI, která běží přímo na Macu.",
+  "@ai.managed.cloudAiOff": {
+    "sourceHash": "894c53d"
+  },
+  "ai.managed.hostNotAllowed": "Vaše organizace tuto službu AI nepovoluje. Vaše IT oddělení vám řekne, které služby můžete používat.",
+  "@ai.managed.hostNotAllowed": {
+    "sourceHash": "845a19f"
+  },
+  "ai.managed.localOnlyUnsupported": "Vaše organizace povoluje jen AI, která běží přímo na Macu, a tento Mac ji spustit nedokáže.",
+  "@ai.managed.localOnlyUnsupported": {
+    "sourceHash": "b760ca4"
+  },
+  "ai.managed.serviceNotAllowed": "nepovoleno vaší organizací",
+  "@ai.managed.serviceNotAllowed": {
+    "sourceHash": "026e7e3"
+  }
+}

@@ -1,0 +1,444 @@
+{
+  "suggestedOps.title": "Návrhy AI",
+  "@suggestedOps.title": {
+    "sourceHash": "1a1f5b9"
+  },
+  "suggestedOps.description": "Akce níže jsou návrhy agenta. Použijte je, jen pokud s nimi souhlasíte.",
+  "@suggestedOps.description": {
+    "sourceHash": "4d98280"
+  },
+  "suggestedOps.approvalNoticeDismiss": "Už nezobrazovat",
+  "@suggestedOps.approvalNoticeDismiss": {
+    "sourceHash": "2c23c21"
+  },
+  "suggestedOps.sweepWhen.justNow": "Navrženo právě teď",
+  "@suggestedOps.sweepWhen.justNow": {
+    "sourceHash": "4606788"
+  },
+  "suggestedOps.sweepWhen.minutesAgo": "Navrženo před {countText} {count, plural, one {minutou} few {minutami} many {minuty} other {minutami}}",
+  "@suggestedOps.sweepWhen.minutesAgo": {
+    "sourceHash": "96782e0"
+  },
+  "suggestedOps.sweepWhen.today": "Navrženo dnes v {time}",
+  "@suggestedOps.sweepWhen.today": {
+    "sourceHash": "105ec27"
+  },
+  "suggestedOps.sweepWhen.yesterday": "Navrženo včera v {time}",
+  "@suggestedOps.sweepWhen.yesterday": {
+    "sourceHash": "a0d2061"
+  },
+  "suggestedOps.sweepWhen.earlier": "Navrženo {date}",
+  "@suggestedOps.sweepWhen.earlier": {
+    "sourceHash": "cbe0d5f"
+  },
+  "suggestedOps.empty": "Teď na vás nic nečeká.",
+  "@suggestedOps.empty": {
+    "sourceHash": "b93eccd"
+  },
+  "suggestedOps.loadFailed": "Cmdr nedokázal přečíst návrhy. Zavřete tento dialog a otevřete ho znovu.",
+  "@suggestedOps.loadFailed": {
+    "sourceHash": "139450e"
+  },
+  "suggestedOps.agentReason": "Proč:",
+  "@suggestedOps.agentReason": {
+    "sourceHash": "ad389aa"
+  },
+  "suggestedOps.agentReasonTooltip": "Vlastní slova AI. Cmdr je nekontroloval.",
+  "@suggestedOps.agentReasonTooltip": {
+    "sourceHash": "aadab2c"
+  },
+  "suggestedOps.agentReasonSpoken": "Proč, podle AI:",
+  "@suggestedOps.agentReasonSpoken": {
+    "sourceHash": "0c0a448"
+  },
+  "suggestedOps.fileCount": "{countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}}",
+  "@suggestedOps.fileCount": {
+    "sourceHash": "76ef0a6"
+  },
+  "suggestedOps.action.move": "Přesunout",
+  "@suggestedOps.action.move": {
+    "sourceHash": "6ecc3df"
+  },
+  "suggestedOps.action.copy": "Kopírovat",
+  "@suggestedOps.action.copy": {
+    "sourceHash": "e21f935"
+  },
+  "suggestedOps.action.trash": "Přesunout do koše",
+  "@suggestedOps.action.trash": {
+    "sourceHash": "9adcdf3"
+  },
+  "suggestedOps.action.delete": "Smazat",
+  "@suggestedOps.action.delete": {
+    "sourceHash": "e2d0a54"
+  },
+  "suggestedOps.action.rename": "Přejmenovat",
+  "@suggestedOps.action.rename": {
+    "sourceHash": "3064d79"
+  },
+  "suggestedOps.action.compress": "Komprimovat",
+  "@suggestedOps.action.compress": {
+    "sourceHash": "033fc04"
+  },
+  "suggestedOps.action.extract": "Extrahovat",
+  "@suggestedOps.action.extract": {
+    "sourceHash": "c15301c"
+  },
+  "suggestedOps.approve.move": "Přesunout {countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}}",
+  "@suggestedOps.approve.move": {
+    "sourceHash": "4c89041"
+  },
+  "suggestedOps.approve.copy": "Kopírovat {countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}}",
+  "@suggestedOps.approve.copy": {
+    "sourceHash": "e10c490"
+  },
+  "suggestedOps.approve.trash": "Přesunout {countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}} do koše",
+  "@suggestedOps.approve.trash": {
+    "sourceHash": "3c82946"
+  },
+  "suggestedOps.approve.delete": "Smazat {countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}}",
+  "@suggestedOps.approve.delete": {
+    "sourceHash": "218cf04"
+  },
+  "suggestedOps.approve.rename": "Přejmenovat {countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}}",
+  "@suggestedOps.approve.rename": {
+    "sourceHash": "412518d"
+  },
+  "suggestedOps.approve.compress": "Komprimovat {countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}}",
+  "@suggestedOps.approve.compress": {
+    "sourceHash": "7df0dfc"
+  },
+  "suggestedOps.approve.extract": "Extrahovat {countText} {count, plural, one {archiv} few {archivy} many {archivu} other {archivů}}",
+  "@suggestedOps.approve.extract": {
+    "sourceHash": "0bf7541"
+  },
+  "suggestedOps.approve.addServer": "Uložit server",
+  "@suggestedOps.approve.addServer": {
+    "sourceHash": "726b9af"
+  },
+  "suggestedOps.approve.editServer": "Uložit změny",
+  "@suggestedOps.approve.editServer": {
+    "sourceHash": "dd0ae7a"
+  },
+  "suggestedOps.reject": "Odmítnout",
+  "@suggestedOps.reject": {
+    "sourceHash": "ab604a3"
+  },
+  "suggestedOps.facts.from": "Odkud",
+  "@suggestedOps.facts.from": {
+    "sourceHash": "2181976"
+  },
+  "suggestedOps.facts.to": "Kam",
+  "@suggestedOps.facts.to": {
+    "sourceHash": "f4b06ef"
+  },
+  "suggestedOps.facts.folder": "Složka",
+  "@suggestedOps.facts.folder": {
+    "sourceHash": "74ccd43"
+  },
+  "suggestedOps.facts.archive": "Archiv",
+  "@suggestedOps.facts.archive": {
+    "sourceHash": "66f4804"
+  },
+  "suggestedOps.facts.trash": "Koš",
+  "@suggestedOps.facts.trash": {
+    "sourceHash": "4e42c6e"
+  },
+  "suggestedOps.facts.severalFolders": "Několik složek",
+  "@suggestedOps.facts.severalFolders": {
+    "sourceHash": "7c32950"
+  },
+  "suggestedOps.reversible.trash": "Dá se to odvolat: {count, plural, one {soubor jde} few {soubory jdou} many {soubory jdou} other {soubory jdou}} do koše",
+  "@suggestedOps.reversible.trash": {
+    "sourceHash": "55bf957"
+  },
+  "suggestedOps.reversible.moveBack": "Dá se to odvolat: Cmdr {count, plural, one {ho} few {je} many {je} other {je}} může přesunout zpět",
+  "@suggestedOps.reversible.moveBack": {
+    "sourceHash": "14c0a31"
+  },
+  "suggestedOps.reversible.renameBack": "Dá se to odvolat: Cmdr může vrátit {count, plural, one {původní název} few {původní názvy} many {původní názvy} other {původní názvy}}",
+  "@suggestedOps.reversible.renameBack": {
+    "sourceHash": "4c7e3c3"
+  },
+  "suggestedOps.reversible.removeCopies": "Dá se to odvolat: Cmdr kopie smaže",
+  "@suggestedOps.reversible.removeCopies": {
+    "sourceHash": "0ec3b08"
+  },
+  "suggestedOps.reversible.removeArchive": "Dá se to odvolat: Cmdr nový archiv smaže",
+  "@suggestedOps.reversible.removeArchive": {
+    "sourceHash": "2c8278f"
+  },
+  "suggestedOps.reversible.removeExtracted": "Dá se to odvolat: Cmdr smaže, co extrahoval",
+  "@suggestedOps.reversible.removeExtracted": {
+    "sourceHash": "977a513"
+  },
+  "suggestedOps.irreversible.delete": "Nedá se to odvolat: soubory se smažou natrvalo",
+  "@suggestedOps.irreversible.delete": {
+    "sourceHash": "e32da9a"
+  },
+  "suggestedOps.noTrash": "Tento disk nemá koš",
+  "@suggestedOps.noTrash": {
+    "sourceHash": "38a6adc"
+  },
+  "suggestedOps.noTrashTooltip": "Disk, na kterém tyto soubory jsou, nemá koš, takže je schválením trvale smažete.",
+  "@suggestedOps.noTrashTooltip": {
+    "sourceHash": "4327cb2"
+  },
+  "suggestedOps.irreversible.overwrite": "Nedá se to odvolat: nahradí existující archiv",
+  "@suggestedOps.irreversible.overwrite": {
+    "sourceHash": "0d5c5bb"
+  },
+  "suggestedOps.irreversible.other": "Nedá se to odvolat",
+  "@suggestedOps.irreversible.other": {
+    "sourceHash": "b583829"
+  },
+  "suggestedOps.reversible.forgetServer": "Dá se to odvolat: zapomeňte server v seznamu Servery",
+  "@suggestedOps.reversible.forgetServer": {
+    "sourceHash": "892c381"
+  },
+  "suggestedOps.reversible.changeServerBack": "Dá se to odvolat: vraťte nastavení serveru zpět v seznamu Servery",
+  "@suggestedOps.reversible.changeServerBack": {
+    "sourceHash": "ff1ea36"
+  },
+  "suggestedOps.folderWillBeCreated": "Cmdr tuto složku vytvoří",
+  "@suggestedOps.folderWillBeCreated": {
+    "sourceHash": "26243e5"
+  },
+  "suggestedOps.folderWillBeCreatedTooltip": "Cílová složka zatím neexistuje. Schválením se vytvoří, přesně jako při přesunu spuštěném ručně.",
+  "@suggestedOps.folderWillBeCreatedTooltip": {
+    "sourceHash": "2d28b7c"
+  },
+  "suggestedOps.destinationUnknown": "Cmdr nedokázal zkontrolovat cílovou složku",
+  "@suggestedOps.destinationUnknown": {
+    "sourceHash": "dc78d1d"
+  },
+  "suggestedOps.destinationNotConnected": "Cíl není připojený",
+  "@suggestedOps.destinationNotConnected": {
+    "sourceHash": "51dcf8e"
+  },
+  "suggestedOps.destinationNotConnectedTooltip": "Cmdr se k tomuto disku nebo serveru zatím nepřipojil. Po schválení se nic nespustí, dokud nebude připojený, stejně jako když tam soubory přesouváte ručně.",
+  "@suggestedOps.destinationNotConnectedTooltip": {
+    "sourceHash": "af06219"
+  },
+  "suggestedOps.fromPattern": "Vybráno podle vzoru",
+  "@suggestedOps.fromPattern": {
+    "sourceHash": "20e88a9"
+  },
+  "suggestedOps.changedUnderReview": "AI tento návrh změnila, zatímco ho čtete.",
+  "@suggestedOps.changedUnderReview": {
+    "sourceHash": "5d07c7c"
+  },
+  "suggestedOps.showNewVersion": "Zobrazit novou verzi",
+  "@suggestedOps.showNewVersion": {
+    "sourceHash": "2b92d18"
+  },
+  "suggestedOps.filesLabel": "Soubory v „{name}“",
+  "@suggestedOps.filesLabel": {
+    "sourceHash": "adf93b7"
+  },
+  "suggestedOps.columnInclude": "Zahrnout",
+  "@suggestedOps.columnInclude": {
+    "sourceHash": "7285576"
+  },
+  "suggestedOps.includeAll": "Zahrnout všechny soubory",
+  "@suggestedOps.includeAll": {
+    "sourceHash": "ac6c70c"
+  },
+  "suggestedOps.columnName": "Název",
+  "@suggestedOps.columnName": {
+    "sourceHash": "dcd1d52"
+  },
+  "suggestedOps.columnFolder": "Složka",
+  "@suggestedOps.columnFolder": {
+    "sourceHash": "74ccd43"
+  },
+  "suggestedOps.columnNewName": "Nový název",
+  "@suggestedOps.columnNewName": {
+    "sourceHash": "04eea2a"
+  },
+  "suggestedOps.columnSize": "Velikost",
+  "@suggestedOps.columnSize": {
+    "sourceHash": "1af8519"
+  },
+  "suggestedOps.columnModified": "Naposledy změněno",
+  "@suggestedOps.columnModified": {
+    "sourceHash": "0fe1058"
+  },
+  "suggestedOps.factChanged": "Změněno od návrhu",
+  "@suggestedOps.factChanged": {
+    "sourceHash": "958780a"
+  },
+  "suggestedOps.factChangedTooltip": "Při návrhu: {then} / Teď: {now}",
+  "@suggestedOps.factChangedTooltip": {
+    "sourceHash": "8bf4166"
+  },
+  "suggestedOps.fileMissing": "Přesunuto nebo smazáno",
+  "@suggestedOps.fileMissing": {
+    "sourceHash": "2073c5b"
+  },
+  "suggestedOps.snapshotOnly": "Z doby návrhu AI",
+  "@suggestedOps.snapshotOnly": {
+    "sourceHash": "f6b2d27"
+  },
+  "suggestedOps.snapshotOnlyTooltip": "Cmdr teď tento soubor nemohl zkontrolovat, takže to je stav z doby návrhu AI.",
+  "@suggestedOps.snapshotOnlyTooltip": {
+    "sourceHash": "d6a081c"
+  },
+  "suggestedOps.sourceNotConnected": "Cmdr není připojený k disku s těmito soubory, takže jejich velikosti a data jsou z doby návrhu AI.",
+  "@suggestedOps.sourceNotConnected": {
+    "sourceHash": "07d5134"
+  },
+  "suggestedOps.sourceGone": "Disk, na kterém tyto soubory byly, už tu není, takže jejich velikosti a data jsou z doby návrhu AI.",
+  "@suggestedOps.sourceGone": {
+    "sourceHash": "1b30de5"
+  },
+  "suggestedOps.factUnknown": "Neznámo",
+  "@suggestedOps.factUnknown": {
+    "sourceHash": "b764cdc"
+  },
+  "suggestedOps.includeFile": "Zahrnout {name}",
+  "@suggestedOps.includeFile": {
+    "sourceHash": "a44fb71"
+  },
+  "suggestedOps.showMore": "Zobrazit dalších {countText}",
+  "@suggestedOps.showMore": {
+    "sourceHash": "4061571"
+  },
+  "suggestedOps.showAll": "Zobrazit všech {countText}",
+  "@suggestedOps.showAll": {
+    "sourceHash": "912b5d0"
+  },
+  "suggestedOps.loadingFiles": "Načítání souborů…",
+  "@suggestedOps.loadingFiles": {
+    "sourceHash": "83257e6"
+  },
+  "suggestedOps.filesLoadFailed": "Cmdr nedokázal načíst tyto soubory.",
+  "@suggestedOps.filesLoadFailed": {
+    "sourceHash": "01f1b86"
+  },
+  "suggestedOps.retryFiles": "Zkusit znovu",
+  "@suggestedOps.retryFiles": {
+    "sourceHash": "d8b8392"
+  },
+  "suggestedOps.decisionNotRecorded": "Cmdr nedokázal uložit vaši odpověď. Zkuste to znovu.",
+  "@suggestedOps.decisionNotRecorded": {
+    "sourceHash": "9eae594"
+  },
+  "suggestedOps.approvalUnsure": "Cmdr si není jistý, jestli schválení prošlo. Než návrh schválíte znovu, zkontrolujte frontu operací.",
+  "@suggestedOps.approvalUnsure": {
+    "sourceHash": "fba515a"
+  },
+  "suggestedOps.refusal.label": "Proč se to nespustilo",
+  "@suggestedOps.refusal.label": {
+    "sourceHash": "e176570"
+  },
+  "suggestedOps.refusal.nothingToRun.message": "Při schválení Cmdr nedokázal přečíst žádný z těchto souborů, takže se nic nespustilo.",
+  "@suggestedOps.refusal.nothingToRun.message": {
+    "sourceHash": "3018819"
+  },
+  "suggestedOps.refusal.nothingToRun.suggestion": "Zkontrolujte, že tyto soubory pořád existují, a pak návrh schvalte znovu, nebo ho odmítněte.",
+  "@suggestedOps.refusal.nothingToRun.suggestion": {
+    "sourceHash": "f4cfc9e"
+  },
+  "suggestedOps.refusal.nothingSelected.message": "Žádný ze zaškrtnutých souborů už v tomto návrhu není, takže se nic nespustilo.",
+  "@suggestedOps.refusal.nothingSelected.message": {
+    "sourceHash": "7de9324"
+  },
+  "suggestedOps.refusal.nothingSelected.suggestion": "Zaškrtněte soubory, které chcete, a návrh schvalte znovu.",
+  "@suggestedOps.refusal.nothingSelected.suggestion": {
+    "sourceHash": "db90f78"
+  },
+  "suggestedOps.refusal.couldNotStart.message": "Cmdr nedokázal z tohoto návrhu vytvořit operaci, takže se nic nespustilo.",
+  "@suggestedOps.refusal.couldNotStart.message": {
+    "sourceHash": "77ef48b"
+  },
+  "suggestedOps.refusal.couldNotStart.suggestion": "Odmítněte ho a požádejte Cmdr, ať ho navrhne znovu.",
+  "@suggestedOps.refusal.couldNotStart.suggestion": {
+    "sourceHash": "1d2b1bd"
+  },
+  "suggestedOps.refusal.serverLabel": "Proč se to neuložilo",
+  "@suggestedOps.refusal.serverLabel": {
+    "sourceHash": "c1958af"
+  },
+  "suggestedOps.refusal.serverChanged.message": "Tento server se od návrhu AI změnil, takže Cmdr nic neuložil.",
+  "@suggestedOps.refusal.serverChanged.message": {
+    "sourceHash": "a346372"
+  },
+  "suggestedOps.refusal.serverChanged.suggestion": "Požádejte Cmdr, ať to navrhne znovu, nebo upravte server v seznamu Servery.",
+  "@suggestedOps.refusal.serverChanged.suggestion": {
+    "sourceHash": "cab1352"
+  },
+  "suggestedOps.refusal.alreadySaved.message": "Tento server už je v seznamu vašich serverů, takže Cmdr nic neuložil.",
+  "@suggestedOps.refusal.alreadySaved.message": {
+    "sourceHash": "111276b"
+  },
+  "suggestedOps.refusal.alreadySaved.suggestion": "Otevřete ho ze seznamu Servery, nebo místo toho požádejte Cmdr, ať navrhne jeho změnu.",
+  "@suggestedOps.refusal.alreadySaved.suggestion": {
+    "sourceHash": "6ec8bdc"
+  },
+  "suggestedOps.refusal.nameTaken.message": "Jiný uložený server se už jmenuje „{name}“, takže Cmdr nic neuložil.",
+  "@suggestedOps.refusal.nameTaken.message": {
+    "sourceHash": "1d0c01c"
+  },
+  "suggestedOps.refusal.nameTaken.suggestion": "Požádejte Cmdr, ať navrhne jiný název.",
+  "@suggestedOps.refusal.nameTaken.suggestion": {
+    "sourceHash": "e366b0c"
+  },
+  "suggestedOps.server.add": "Přidat server",
+  "@suggestedOps.server.add": {
+    "sourceHash": "8667e21"
+  },
+  "suggestedOps.server.change": "Změnit nastavení serveru",
+  "@suggestedOps.server.change": {
+    "sourceHash": "187a941"
+  },
+  "suggestedOps.server.field.port": "Port",
+  "@suggestedOps.server.field.port": {
+    "sourceHash": "72e9a59",
+    "sameAsSourceJustification": "Czech writes the networking term port exactly like English (termbase port: port); same as settings.developer.mcpPort.label."
+  },
+  "suggestedOps.server.field.account": "Účet",
+  "@suggestedOps.server.field.account": {
+    "sourceHash": "7e1b0d5"
+  },
+  "suggestedOps.server.field.share": "Sdílená složka",
+  "@suggestedOps.server.field.share": {
+    "sourceHash": "4268344"
+  },
+  "suggestedOps.server.field.bucket": "Bucket",
+  "@suggestedOps.server.field.bucket": {
+    "sourceHash": "c83b657",
+    "sameAsSourceJustification": "S3 term kept untranslated in Czech (termbase bucket: bucket, MS kbelík avoided); same label as servers.sheet.s3Bucket."
+  },
+  "suggestedOps.server.notSet": "Bez hodnoty",
+  "@suggestedOps.server.notSet": {
+    "sourceHash": "4895f73"
+  },
+  "suggestedOps.server.changesTo": "se mění na",
+  "@suggestedOps.server.changesTo": {
+    "sourceHash": "8c0db20"
+  },
+  "suggestedOps.server.newAddress": "Nová adresa",
+  "@suggestedOps.server.newAddress": {
+    "sourceHash": "5fc5498"
+  },
+  "suggestedOps.server.newAddressTooltip": "Na této adrese není žádný z vašich uložených serverů. Zkontrolujte, že je to ten, který myslíte.",
+  "@suggestedOps.server.newAddressTooltip": {
+    "sourceHash": "16d851c"
+  },
+  "suggestedOps.server.sharesAffected": "Tato změna se týká {count, plural, one {{countText} uložené sdílené složky} few {{countText} uložených sdílených složek} many {{countText} uložené sdílené složky} other {{countText} uložených sdílených složek}} na tomto serveru.",
+  "@suggestedOps.server.sharesAffected": {
+    "sourceHash": "390f931"
+  },
+  "suggestedOps.indicatorTooltip": "Čekají návrhy od AI. Klikněte a posuďte je.",
+  "@suggestedOps.indicatorTooltip": {
+    "sourceHash": "4508b0b"
+  },
+  "suggestedOps.newNameTaken": "Název je už obsazený",
+  "@suggestedOps.newNameTaken": {
+    "sourceHash": "58e9841"
+  },
+  "suggestedOps.newNameTakenTooltip": "Něco s názvem „{name}“ už tam je.",
+  "@suggestedOps.newNameTakenTooltip": {
+    "sourceHash": "b18f96a"
+  }
+}

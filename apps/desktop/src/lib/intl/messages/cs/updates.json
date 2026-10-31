@@ -1,0 +1,131 @@
+{
+  "updates.failure.check": "Cmdru se nepodařilo vyhledat aktualizace. {reason}",
+  "@updates.failure.check": {
+    "sourceHash": "5fb454c"
+  },
+  "updates.failure.checkUntyped": "Cmdru se nepodařilo vyhledat aktualizace. Zkontrolujte připojení k internetu a zkuste to později znovu.",
+  "@updates.failure.checkUntyped": {
+    "sourceHash": "233f5d9"
+  },
+  "updates.failure.download": "Cmdru se nepodařilo stáhnout aktualizaci. Zkuste to později znovu.",
+  "@updates.failure.download": {
+    "sourceHash": "1becb1b"
+  },
+  "updates.failure.install": "Cmdru se nepodařilo nainstalovat aktualizaci. Zkuste to později znovu, nebo si stáhněte nejnovější Cmdr z getcmdr.com.",
+  "@updates.failure.install": {
+    "sourceHash": "05a4714"
+  },
+  "updates.failure.notGenuine": "Cmdr tuto aktualizaci nenainstaloval: není to pravá verze Cmdru.",
+  "@updates.failure.notGenuine": {
+    "sourceHash": "1858e23"
+  },
+  "updates.toast.ready": "Nová verze Cmdru je připravená.",
+  "@updates.toast.ready": {
+    "sourceHash": "622668e"
+  },
+  "updates.toast.readyDetail": "Znovu spusťte Cmdr hned teď, nebo novou verzi dostanete, až ho příště otevřete.",
+  "@updates.toast.readyDetail": {
+    "sourceHash": "42ce099"
+  },
+  "updates.toast.securityFix": "Tato aktualizace {count, plural, one {opravuje bezpečnostní problém} few {opravuje # bezpečnostní problémy} many {opravuje # bezpečnostního problému} other {opravuje # bezpečnostních problémů}}.",
+  "@updates.toast.securityFix": {
+    "sourceHash": "3033a3b"
+  },
+  "updates.toast.securityFixDetail": "Instalaci dokončíte restartováním Cmdru.",
+  "@updates.toast.securityFixDetail": {
+    "sourceHash": "8070021"
+  },
+  "updates.toast.readAdvisory": "Přečíst bezpečnostní upozornění",
+  "@updates.toast.readAdvisory": {
+    "sourceHash": "a96f533"
+  },
+  "updates.toast.versionChange": "v{prev} → v{next}",
+  "@updates.toast.versionChange": {
+    "sourceHash": "41b26f1",
+    "sameAsSourceJustification": "Version numbers and an arrow only; Czech writes version numbers the same way."
+  },
+  "updates.toast.versionChangeAria": "Aktualizace z verze {prev} na verzi {next}",
+  "@updates.toast.versionChangeAria": {
+    "sourceHash": "911d79c"
+  },
+  "updates.toast.later": "Později",
+  "@updates.toast.later": {
+    "sourceHash": "73b6e48"
+  },
+  "updates.toast.restart": "Znovu spustit teď",
+  "@updates.toast.restart": {
+    "sourceHash": "09af100"
+  },
+  "updates.unwritable.adminHeadline": "Vyšel Cmdr {version}, ale Cmdr ho nedokáže nainstalovat sám",
+  "@updates.unwritable.adminHeadline": {
+    "sourceHash": "8e6aecc"
+  },
+  "updates.unwritable.adminDetail": "{path} patří jinému účtu. Pokud chcete aktualizovat, stáhněte Cmdr z <website>getcmdr.com</website> a přetáhněte ho do složky Aplikace. macOS se zeptá na vaše heslo.",
+  "@updates.unwritable.adminDetail": {
+    "sourceHash": "66ecdd2"
+  },
+  "updates.unwritable.standardHeadline": "Vyšel Cmdr {version}",
+  "@updates.unwritable.standardHeadline": {
+    "sourceHash": "02ffda7"
+  },
+  "updates.unwritable.standardDetail": "Váš účet nemůže na tomto Macu aktualizovat Cmdr. Požádejte o aktualizaci IT oddělení nebo toho, kdo tento Mac spravuje.",
+  "@updates.unwritable.standardDetail": {
+    "sourceHash": "d3148ea"
+  },
+  "updates.moveToApplicationsDialog.title": "Přesunout Cmdr do složky Aplikace",
+  "@updates.moveToApplicationsDialog.title": {
+    "sourceHash": "97f87a0"
+  },
+  "updates.moveToApplicationsDialog.translocated": "Nová verze je připravená, ale macOS spouští Cmdr z dočasné kopie jen ke čtení. To se stává, když aplikaci otevřete přímo z místa, kam se stáhla, a znamená to, že se aktualizace nemají kam nainstalovat.",
+  "@updates.moveToApplicationsDialog.translocated": {
+    "sourceHash": "ed64953"
+  },
+  "updates.moveToApplicationsDialog.readOnlyVolume": "Nová verze je připravená, ale Cmdr běží z místa jen ke čtení, obvykle z obrazu disku, který je pořád připojený. Aktualizace se proto nemají kam nainstalovat.",
+  "@updates.moveToApplicationsDialog.readOnlyVolume": {
+    "sourceHash": "a23ef5a"
+  },
+  "updates.moveToApplicationsDialog.howTo": "Ukončete Cmdr, přetáhněte ho do složky Aplikace a otevřete ho odtamtud. Každá další aktualizace pak dorazí sama.",
+  "@updates.moveToApplicationsDialog.howTo": {
+    "sourceHash": "76a136d"
+  },
+  "updates.moveToApplicationsDialog.gotIt": "Rozumím",
+  "@updates.moveToApplicationsDialog.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
+  "updates.status.noUpdates": "Nebyly nalezeny žádné aktualizace. Aktuální verze: v{version}",
+  "@updates.status.noUpdates": {
+    "sourceHash": "63a4ecb"
+  },
+  "updates.status.checking": "Kontrola…",
+  "@updates.status.checking": {
+    "sourceHash": "ec963ff"
+  },
+  "updates.status.downloading": "Nalezena aktualizace, stahování v{next} (aktuální: v{prev})…",
+  "@updates.status.downloading": {
+    "sourceHash": "480c6da"
+  },
+  "updates.status.installing": "Instaluje se v{next} (aktuální: v{prev})…",
+  "@updates.status.installing": {
+    "sourceHash": "214ef12"
+  },
+  "updates.status.managedOff": "Aktualizace Cmdru spravuje vaše organizace.",
+  "@updates.status.managedOff": {
+    "sourceHash": "aa342dc"
+  },
+  "updates.status.heldByPolicy": "Vyšla verze Cmdr {available}, ale vaše organizace drží tento Mac na verzi {ceiling} nebo starší.",
+  "@updates.status.heldByPolicy": {
+    "sourceHash": "5c9b196"
+  },
+  "updates.status.unwritableAdmin": "Vyšel Cmdr {version}, ale Cmdr ho nedokáže nainstalovat sám. Stáhněte ho z getcmdr.com a přetáhněte do složky Aplikace.",
+  "@updates.status.unwritableAdmin": {
+    "sourceHash": "9524e82"
+  },
+  "updates.status.unwritableStandard": "Vyšel Cmdr {version}, ale váš účet nemůže na tomto Macu Cmdr aktualizovat.",
+  "@updates.status.unwritableStandard": {
+    "sourceHash": "64ce45c"
+  },
+  "updates.status.ready": "Aktualizace v{next} je připravená. Použije se po restartu.",
+  "@updates.status.ready": {
+    "sourceHash": "2c226ff"
+  }
+}

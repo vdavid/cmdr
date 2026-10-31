@@ -1,0 +1,444 @@
+{
+  "licensing.windowTitle.personalUse": "Cmdr – Jen pro osobní použití",
+  "@licensing.windowTitle.personalUse": {
+    "sourceHash": "2b855d7"
+  },
+  "licensing.acknowledgements.srTitle": "Poděkování",
+  "@licensing.acknowledgements.srTitle": {
+    "sourceHash": "c9015d5"
+  },
+  "licensing.acknowledgements.note": "Podívejte, jak dlouhý je tenhle seznam! Moc si vážím práce autorů a správců všech těch knihoven, na kterých Cmdr stojí.",
+  "@licensing.acknowledgements.note": {
+    "sourceHash": "7d0542d"
+  },
+  "licensing.acknowledgements.thanks": "Díky vám všem za váš přínos světu open source! ❤️",
+  "@licensing.acknowledgements.thanks": {
+    "sourceHash": "302273d"
+  },
+  "licensing.acknowledgements.signature": "David",
+  "@licensing.acknowledgements.signature": {
+    "sourceHash": "a6b54c2",
+    "sameAsSourceJustification": "Developer’s first name; the note says not to translate (personal name)."
+  },
+  "licensing.acknowledgements.rustHeading": "Rust crates ({count, number})",
+  "@licensing.acknowledgements.rustHeading": {
+    "sourceHash": "b2f91ff",
+    "sameAsSourceJustification": "Rust term „crate“ is used untranslated by the Czech Rust community (crates.io); the key note says keep it if used untranslated."
+  },
+  "licensing.acknowledgements.npmHeading": "Balíčky npm ({count, number})",
+  "@licensing.acknowledgements.npmHeading": {
+    "sourceHash": "44bdf59"
+  },
+  "licensing.acknowledgements.vendoredHeading": "Ikony a další soubory ({count, number})",
+  "@licensing.acknowledgements.vendoredHeading": {
+    "sourceHash": "f5bcd78"
+  },
+  "licensing.acknowledgements.jumpToRust": "Přejít na Rust crates",
+  "@licensing.acknowledgements.jumpToRust": {
+    "sourceHash": "60d4a21"
+  },
+  "licensing.acknowledgements.jumpToNpm": "Přejít na balíčky npm",
+  "@licensing.acknowledgements.jumpToNpm": {
+    "sourceHash": "9f55ebb"
+  },
+  "licensing.acknowledgements.fullTexts": "Úplná znění licencí jsou součástí Cmdru v souboru <notices>THIRD-PARTY-NOTICES.md</notices>.",
+  "@licensing.acknowledgements.fullTexts": {
+    "sourceHash": "1760aeb"
+  },
+  "licensing.acknowledgements.loading": "Načítání seznamu…",
+  "@licensing.acknowledgements.loading": {
+    "sourceHash": "0b6efaa"
+  },
+  "licensing.about.srTitle": "O aplikaci Cmdr",
+  "@licensing.about.srTitle": {
+    "sourceHash": "efe010f"
+  },
+  "licensing.about.appName": "Cmdr",
+  "@licensing.about.appName": {
+    "sourceHash": "40c6a1b",
+    "sameAsSourceJustification": "Product name Cmdr, kept verbatim (BRAND_WORDS)."
+  },
+  "licensing.about.tagline": "Správce souborů ovládaný klávesnicí",
+  "@licensing.about.tagline": {
+    "sourceHash": "e399865"
+  },
+  "licensing.about.version": "Verze {version} (otevřená beta)",
+  "@licensing.about.version": {
+    "sourceHash": "1496c81"
+  },
+  "licensing.about.betaNote": "Něco nefunguje, jak má? Napište mi na <github>GitHubu</github>. Čtu každé hlášení!",
+  "@licensing.about.betaNote": {
+    "sourceHash": "49a09cb"
+  },
+  "licensing.about.noLicense": "Bez licence – povoleno jen osobní použití",
+  "@licensing.about.noLicense": {
+    "sourceHash": "e2ce8da"
+  },
+  "licensing.about.perpetual": "Časově neomezená komerční licence pro {org}",
+  "@licensing.about.perpetual": {
+    "sourceHash": "591d7a8"
+  },
+  "licensing.about.commercial": "Komerční licence pro {org}",
+  "@licensing.about.commercial": {
+    "sourceHash": "577f55b"
+  },
+  "licensing.about.commercialUntil": "Komerční licence pro {org}, platná do {date}",
+  "@licensing.about.commercialUntil": {
+    "sourceHash": "eb44f8d"
+  },
+  "licensing.about.fallbackOrg": "vaši organizaci",
+  "@licensing.about.fallbackOrg": {
+    "sourceHash": "bb0bdf0"
+  },
+  "licensing.about.aiAttribution": "AI využívá model Falcon-H1R-7B od Technology Innovation Institute (TII)",
+  "@licensing.about.aiAttribution": {
+    "sourceHash": "54d9ac4"
+  },
+  "licensing.about.linkWebsite": "Webová stránka",
+  "@licensing.about.linkWebsite": {
+    "sourceHash": "b5a229a"
+  },
+  "licensing.about.linkGetLicense": "Získat licenci",
+  "@licensing.about.linkGetLicense": {
+    "sourceHash": "fab19d3"
+  },
+  "licensing.about.linkGithub": "GitHub",
+  "@licensing.about.linkGithub": {
+    "sourceHash": "f911e41",
+    "sameAsSourceJustification": "Brand name GitHub, kept verbatim (BRAND_WORDS)."
+  },
+  "licensing.about.linkDiscord": "Discord",
+  "@licensing.about.linkDiscord": {
+    "sourceHash": "053bc65",
+    "sameAsSourceJustification": "Brand name Discord, kept verbatim per the key note."
+  },
+  "licensing.about.copyright": "© 2024-2026 David Veszelovszki",
+  "@licensing.about.copyright": {
+    "sourceHash": "e6ab7e3",
+    "sameAsSourceJustification": "© sign, literal year range, and a personal name; nothing translatable."
+  },
+  "licensing.commercialReminder.title": "Díky, že používáte Cmdr!",
+  "@licensing.commercialReminder.title": {
+    "sourceHash": "6898650"
+  },
+  "licensing.commercialReminder.usingPersonal": "Používáte osobní licenci.",
+  "@licensing.commercialReminder.usingPersonal": {
+    "sourceHash": "3aa6518"
+  },
+  "licensing.commercialReminder.askCommercial": "Pokud Cmdr používáte v práci, pořiďte si prosím komerční licenci, ať dodržíte licenční podmínky.",
+  "@licensing.commercialReminder.askCommercial": {
+    "sourceHash": "84b372c"
+  },
+  "licensing.commercialReminder.priceInfo": "Komerční licence stojí $59, platí se jen jednou a podporuje další vývoj.",
+  "@licensing.commercialReminder.priceInfo": {
+    "sourceHash": "55bd2ed"
+  },
+  "licensing.commercialReminder.declinePersonal": "Cmdr používám<break></break>jen pro osobní účely",
+  "@licensing.commercialReminder.declinePersonal": {
+    "sourceHash": "49641ff"
+  },
+  "licensing.commercialReminder.getCommercial": "Získat komerční licenci",
+  "@licensing.commercialReminder.getCommercial": {
+    "sourceHash": "07f081b"
+  },
+  "licensing.expiration.title": "Platnost vaší komerční licence vypršela",
+  "@licensing.expiration.title": {
+    "sourceHash": "7067c40"
+  },
+  "licensing.expiration.orgName": "Licence pro: <strong>{org}</strong>",
+  "@licensing.expiration.orgName": {
+    "sourceHash": "a5f0bab"
+  },
+  "licensing.expiration.message": "Platnost vašeho komerčního předplatného vypršela <strong>{date}</strong>.",
+  "@licensing.expiration.message": {
+    "sourceHash": "92b6b97"
+  },
+  "licensing.expiration.info": "Cmdr teď běží v režimu pro osobní použití. Pokud ho pořád používáte k práci, prodlužte si prosím licenci.",
+  "@licensing.expiration.info": {
+    "sourceHash": "274de6c"
+  },
+  "licensing.expiration.renew": "Prodloužit licenci",
+  "@licensing.expiration.renew": {
+    "sourceHash": "1ee8746"
+  },
+  "licensing.expiration.continue": "Pokračovat v osobním režimu",
+  "@licensing.expiration.continue": {
+    "sourceHash": "b5c90b4"
+  },
+  "licensing.dialog.loading": "Načítání…",
+  "@licensing.dialog.loading": {
+    "sourceHash": "ba3bbbe"
+  },
+  "licensing.dialog.detailsTitle": "Podrobnosti licence",
+  "@licensing.dialog.detailsTitle": {
+    "sourceHash": "57327bb"
+  },
+  "licensing.dialog.enterTitle": "Zadat licenční klíč",
+  "@licensing.dialog.enterTitle": {
+    "sourceHash": "357d05e"
+  },
+  "licensing.dialog.serverInvalidBanner": "Tento klíč se na serveru nepodařilo ověřit. Zkuste prosím jiný klíč, nebo nám napište na e‑mail <supportEmail>{email}</supportEmail>.",
+  "@licensing.dialog.serverInvalidBanner": {
+    "sourceHash": "fa68511"
+  },
+  "licensing.dialog.labelType": "Typ licence",
+  "@licensing.dialog.labelType": {
+    "sourceHash": "72f256a"
+  },
+  "licensing.dialog.labelOrganization": "Organizace",
+  "@licensing.dialog.labelOrganization": {
+    "sourceHash": "d764d42"
+  },
+  "licensing.dialog.labelValidity": "Platnost",
+  "@licensing.dialog.labelValidity": {
+    "sourceHash": "9c3050e"
+  },
+  "licensing.dialog.labelKey": "Licenční klíč",
+  "@licensing.dialog.labelKey": {
+    "sourceHash": "f73a795"
+  },
+  "licensing.dialog.typeCommercialPerpetual": "Komerční, časově neomezená",
+  "@licensing.dialog.typeCommercialPerpetual": {
+    "sourceHash": "2c6933c"
+  },
+  "licensing.dialog.typeCommercialSubscription": "Komerční předplatné",
+  "@licensing.dialog.typeCommercialSubscription": {
+    "sourceHash": "e521480"
+  },
+  "licensing.dialog.validityNotYetVerified": "Zatím neověřeno",
+  "@licensing.dialog.validityNotYetVerified": {
+    "sourceHash": "5b2f7a6"
+  },
+  "licensing.dialog.validityPerpetualUntil": "Časově neomezená: aktualizace do {date}",
+  "@licensing.dialog.validityPerpetualUntil": {
+    "sourceHash": "cde0711"
+  },
+  "licensing.dialog.validityPerpetual": "Časově neomezená",
+  "@licensing.dialog.validityPerpetual": {
+    "sourceHash": "2d34320"
+  },
+  "licensing.dialog.validityValidUntil": "Platná do {date}",
+  "@licensing.dialog.validityValidUntil": {
+    "sourceHash": "d658db0"
+  },
+  "licensing.dialog.validityActive": "Aktivní",
+  "@licensing.dialog.validityActive": {
+    "sourceHash": "9234069"
+  },
+  "licensing.dialog.validityExpiredOn": "Platnost vypršela {date}",
+  "@licensing.dialog.validityExpiredOn": {
+    "sourceHash": "f8383a3"
+  },
+  "licensing.dialog.pendingHint": "Licenci automaticky ověříme na serveru do {days} dní.",
+  "@licensing.dialog.pendingHint": {
+    "sourceHash": "b4bbb38"
+  },
+  "licensing.dialog.useDifferentKey": "Použít jiný klíč",
+  "@licensing.dialog.useDifferentKey": {
+    "sourceHash": "b0a5362"
+  },
+  "licensing.dialog.close": "Zavřít",
+  "@licensing.dialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "licensing.dialog.resetConfirm": "Tímto deaktivujete současnou licenci na tomto zařízení. Platným klíčem ji můžete kdykoli znovu aktivovat.",
+  "@licensing.dialog.resetConfirm": {
+    "sourceHash": "2d77d69"
+  },
+  "licensing.dialog.cancel": "Zrušit",
+  "@licensing.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "licensing.dialog.continue": "Pokračovat",
+  "@licensing.dialog.continue": {
+    "sourceHash": "31fbef1"
+  },
+  "licensing.dialog.enterPrompt": "Vložte licenční klíč z e‑mailu, který vám přišel po nákupu. Ještě ho nemáte? <getLicense>Získejte licenci</getLicense>.",
+  "@licensing.dialog.enterPrompt": {
+    "sourceHash": "4e3a096"
+  },
+  "licensing.dialog.inputPlaceholder": "Příklad: CMDR-ABCD-EFGH-1234",
+  "@licensing.dialog.inputPlaceholder": {
+    "sourceHash": "3fb5cf9"
+  },
+  "licensing.dialog.retryExhausted": "Zkusili jsme to {count}krát a nepovedlo se. Omlouváme se za potíže. Pošlete nám prosím zprávu na <supportEmail>{email}</supportEmail> a vyřešíme to.",
+  "@licensing.dialog.retryExhausted": {
+    "sourceHash": "d2aa21a"
+  },
+  "licensing.dialog.serverInvalidHelp": "Pokud si myslíte, že jde o omyl, napište nám na e‑mail <supportEmail>{email}</supportEmail> a vyřešíme to.",
+  "@licensing.dialog.serverInvalidHelp": {
+    "sourceHash": "743cbed"
+  },
+  "licensing.dialog.genericHelp": "Pokud potřebujete pomoct, ozvěte se nám na <supportEmail>{email}</supportEmail>.",
+  "@licensing.dialog.genericHelp": {
+    "sourceHash": "145df34"
+  },
+  "licensing.dialog.cancelButton": "Zrušit",
+  "@licensing.dialog.cancelButton": {
+    "sourceHash": "19766ed"
+  },
+  "licensing.dialog.checking": "Kontrola…",
+  "@licensing.dialog.checking": {
+    "sourceHash": "ec963ff"
+  },
+  "licensing.dialog.tryAgain": "Zkusit znovu",
+  "@licensing.dialog.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "licensing.dialog.activating": "Aktivace…",
+  "@licensing.dialog.activating": {
+    "sourceHash": "230f6d1"
+  },
+  "licensing.dialog.activate": "Aktivovat",
+  "@licensing.dialog.activate": {
+    "sourceHash": "24433c7"
+  },
+  "licensing.dialog.activatedToast": "Licence je aktivovaná. Díky za podporu! ❤️",
+  "@licensing.dialog.activatedToast": {
+    "sourceHash": "af76e26"
+  },
+  "licensing.dialog.activatedToastNamed": "Vítejte na palubě, {org}! Díky za podporu. ❤️",
+  "@licensing.dialog.activatedToastNamed": {
+    "sourceHash": "d0c136a"
+  },
+  "licensing.dialog.networkFallbackError": "Licenci se nepodařilo ověřit na serveru. Zkuste to prosím později.",
+  "@licensing.dialog.networkFallbackError": {
+    "sourceHash": "fc7e124"
+  },
+  "licensing.dialog.expiredOnError": "Platnost této licence vypršela {date}.",
+  "@licensing.dialog.expiredOnError": {
+    "sourceHash": "130a045"
+  },
+  "licensing.dialog.expiredOnHelp": "Předplatné můžete prodloužit nebo si koupit novou licenci na getcmdr.com.",
+  "@licensing.dialog.expiredOnHelp": {
+    "sourceHash": "036bb88"
+  },
+  "licensing.dialog.serverInvalidError": "Tento klíč známe, ale když jsme ho ověřovali u našeho poskytovatele plateb, nerozpoznal ho. To se může stát, když byla platba vrácena nebo ještě neprošla.",
+  "@licensing.dialog.serverInvalidError": {
+    "sourceHash": "58f1457"
+  },
+  "licensing.dialog.emptyKeyError": "Zadejte prosím licenční klíč",
+  "@licensing.dialog.emptyKeyError": {
+    "sourceHash": "2b36779"
+  },
+  "licensing.dialog.mailtoSubject": "Problém s licenčním klíčem",
+  "@licensing.dialog.mailtoSubject": {
+    "sourceHash": "685a80d"
+  },
+  "licensing.dialog.mailtoBody": "Dobrý den,\n\nmám potíže s aktivací licenčního klíče:\n{key}\n\n",
+  "@licensing.dialog.mailtoBody": {
+    "sourceHash": "c076655"
+  },
+  "licensing.error.badSignature": "Tento licenční klíč neprošel ověřením podpisu, takže to nevypadá na platný klíč.",
+  "@licensing.error.badSignature": {
+    "sourceHash": "3bcac8e"
+  },
+  "licensing.error.badSignatureHint": "Zkontrolujte prosím překlepy a zkuste klíč znovu vložit z e‑mailu o nákupu.",
+  "@licensing.error.badSignatureHint": {
+    "sourceHash": "8734aa5"
+  },
+  "licensing.error.badFormat": "Naše licenční klíče mají jiný formát.",
+  "@licensing.error.badFormat": {
+    "sourceHash": "6012f8b"
+  },
+  "licensing.error.badFormatHint": "Licenční klíč je buď krátký kód (CMDR-XXXX-XXXX-XXXX), nebo delší kryptografický klíč z e‑mailu o nákupu.",
+  "@licensing.error.badFormatHint": {
+    "sourceHash": "a62b901"
+  },
+  "licensing.error.shortCodeNotFound": "Tahle licence vypadá v pořádku, ale ani po důkladném hledání jsme ji v naší databázi nenašli.",
+  "@licensing.error.shortCodeNotFound": {
+    "sourceHash": "0f9ccbf"
+  },
+  "licensing.error.shortCodeNotFoundHint": "Zkontrolujte prosím, jestli vložený klíč odpovídá tomu z e‑mailu o nákupu.",
+  "@licensing.error.shortCodeNotFoundHint": {
+    "sourceHash": "a2f07d2"
+  },
+  "licensing.error.network": "Jejda, licenční server je tentokrát nedostupný.",
+  "@licensing.error.network": {
+    "sourceHash": "d03567c"
+  },
+  "licensing.error.networkHint": "Zkontrolujte prosím připojení k internetu a zkuste to znovu.",
+  "@licensing.error.networkHint": {
+    "sourceHash": "67cba62"
+  },
+  "licensing.error.server": "Hmm, licenční server odpověděl něčím divným. Omlouváme se.",
+  "@licensing.error.server": {
+    "sourceHash": "89870f9"
+  },
+  "licensing.error.serverHint": "Zkuste to prosím později.",
+  "@licensing.error.serverHint": {
+    "sourceHash": "386b914"
+  },
+  "licensing.error.generic": "Něco se pokazilo při aktivaci tohoto klíče.",
+  "@licensing.error.generic": {
+    "sourceHash": "436e264"
+  },
+  "licensing.error.genericHint": "Zkuste to prosím znovu. Pokud problém přetrvává, napište nám e‑mail a pomůžeme vám.",
+  "@licensing.error.genericHint": {
+    "sourceHash": "be0771c"
+  },
+  "licensing.section.title": "Licence",
+  "@licensing.section.title": {
+    "sourceHash": "c011d60"
+  },
+  "licensing.section.loading": "Načítání…",
+  "@licensing.section.loading": {
+    "sourceHash": "ba3bbbe"
+  },
+  "licensing.section.labelType": "Typ licence",
+  "@licensing.section.labelType": {
+    "sourceHash": "72f256a"
+  },
+  "licensing.section.labelOrganization": "Organizace",
+  "@licensing.section.labelOrganization": {
+    "sourceHash": "d764d42"
+  },
+  "licensing.section.labelStatus": "Stav",
+  "@licensing.section.labelStatus": {
+    "sourceHash": "920e413"
+  },
+  "licensing.section.labelKey": "Licenční klíč",
+  "@licensing.section.labelKey": {
+    "sourceHash": "f73a795"
+  },
+  "licensing.section.manageKey": "Spravovat licenční klíč",
+  "@licensing.section.manageKey": {
+    "sourceHash": "501cc54"
+  },
+  "licensing.section.enterKey": "Zadat licenční klíč",
+  "@licensing.section.enterKey": {
+    "sourceHash": "357d05e"
+  },
+  "licensing.section.getLicense": "Získat licenci",
+  "@licensing.section.getLicense": {
+    "sourceHash": "fab19d3"
+  },
+  "licensing.section.typePersonal": "Osobní (zdarma)",
+  "@licensing.section.typePersonal": {
+    "sourceHash": "4af5ca9"
+  },
+  "licensing.section.typeCommercialPerpetual": "Komerční, časově neomezená",
+  "@licensing.section.typeCommercialPerpetual": {
+    "sourceHash": "2c6933c"
+  },
+  "licensing.section.typeCommercialSubscription": "Komerční předplatné",
+  "@licensing.section.typeCommercialSubscription": {
+    "sourceHash": "e521480"
+  },
+  "licensing.section.statusExpiredOn": "Platnost vypršela {date}",
+  "@licensing.section.statusExpiredOn": {
+    "sourceHash": "f8383a3"
+  },
+  "licensing.section.statusUpdatesUntil": "Aktualizace do {date}",
+  "@licensing.section.statusUpdatesUntil": {
+    "sourceHash": "7b84d1c"
+  },
+  "licensing.section.statusValidUntil": "Platná do {date}",
+  "@licensing.section.statusValidUntil": {
+    "sourceHash": "d658db0"
+  },
+  "licensing.section.statusActive": "Aktivní",
+  "@licensing.section.statusActive": {
+    "sourceHash": "9234069"
+  }
+}

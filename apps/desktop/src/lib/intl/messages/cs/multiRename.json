@@ -1,0 +1,924 @@
+{
+  "multiRename.title": "Hromadné přejmenování",
+  "@multiRename.title": {
+    "sourceHash": "5ceb1a2"
+  },
+  "multiRename.noFileSelected": "Není vybraný žádný soubor",
+  "@multiRename.noFileSelected": {
+    "sourceHash": "26bfbd5"
+  },
+  "multiRename.nameMask": "Maska názvu",
+  "@multiRename.nameMask": {
+    "sourceHash": "3dcc6e4"
+  },
+  "multiRename.extensionMask": "Přípona",
+  "@multiRename.extensionMask": {
+    "sourceHash": "395aeb9"
+  },
+  "multiRename.insertPlaceholder": "Vložit zástupný symbol",
+  "@multiRename.insertPlaceholder": {
+    "sourceHash": "f467cda"
+  },
+  "multiRename.mediaButton": "média",
+  "@multiRename.mediaButton": {
+    "sourceHash": "721c952"
+  },
+  "multiRename.mediaButtonName": "Pole médií",
+  "@multiRename.mediaButtonName": {
+    "sourceHash": "7f448e6"
+  },
+  "multiRename.search": "Hledat",
+  "@multiRename.search": {
+    "sourceHash": "6ea8f74"
+  },
+  "multiRename.replace": "Nahradit za",
+  "@multiRename.replace": {
+    "sourceHash": "8382d31"
+  },
+  "multiRename.caseSensitive": "Rozlišovat velká a malá písmena",
+  "@multiRename.caseSensitive": {
+    "sourceHash": "6198801"
+  },
+  "multiRename.firstOnly": "Jen první shoda",
+  "@multiRename.firstOnly": {
+    "sourceHash": "1ddb563"
+  },
+  "multiRename.includeExtension": "Včetně přípony",
+  "@multiRename.includeExtension": {
+    "sourceHash": "10c3dc5"
+  },
+  "multiRename.regex": "Regulární výraz",
+  "@multiRename.regex": {
+    "sourceHash": "9f896c3"
+  },
+  "multiRename.substitute": "Nahradit celý název",
+  "@multiRename.substitute": {
+    "sourceHash": "1cee1b2"
+  },
+  "multiRename.searchOptions": "Možnosti hledání",
+  "@multiRename.searchOptions": {
+    "sourceHash": "556a085"
+  },
+  "multiRename.searchOptionHelp.setup": "Nahrazení <code>{search}</code> za <code>{replace}</code> v <code>{name}</code>:",
+  "@multiRename.searchOptionHelp.setup": {
+    "sourceHash": "28e2893"
+  },
+  "multiRename.searchOptionHelp.on": "Zapnuto",
+  "@multiRename.searchOptionHelp.on": {
+    "sourceHash": "1300117"
+  },
+  "multiRename.searchOptionHelp.off": "Vypnuto",
+  "@multiRename.searchOptionHelp.off": {
+    "sourceHash": "ca7981b"
+  },
+  "multiRename.case": "Velikost písmen",
+  "@multiRename.case": {
+    "sourceHash": "9785096"
+  },
+  "multiRename.case.unchanged": "Beze změny",
+  "@multiRename.case.unchanged": {
+    "sourceHash": "88b6f74"
+  },
+  "multiRename.case.lower": "malá písmena",
+  "@multiRename.case.lower": {
+    "sourceHash": "46ede93"
+  },
+  "multiRename.case.upper": "VELKÁ PÍSMENA",
+  "@multiRename.case.upper": {
+    "sourceHash": "9755f22"
+  },
+  "multiRename.case.firstUpper": "První písmeno velké",
+  "@multiRename.case.firstUpper": {
+    "sourceHash": "4da45d5"
+  },
+  "multiRename.case.words": "Každé Slovo Velkým Písmenem",
+  "@multiRename.case.words": {
+    "sourceHash": "fdeb85e"
+  },
+  "multiRename.removeDiacritics": "Odstranit diakritiku",
+  "@multiRename.removeDiacritics": {
+    "sourceHash": "4103ca1"
+  },
+  "multiRename.greekToLatin": "Převést řečtinu do latinky",
+  "@multiRename.greekToLatin": {
+    "sourceHash": "84f2cdc"
+  },
+  "multiRename.normalizeUnicode": "Normalizovat Unicode",
+  "@multiRename.normalizeUnicode": {
+    "sourceHash": "6e1c97e"
+  },
+  "multiRename.presets.title": "Předvolby",
+  "@multiRename.presets.title": {
+    "sourceHash": "954f93f"
+  },
+  "multiRename.presets.edited": "{preset} (upraveno)",
+  "@multiRename.presets.edited": {
+    "sourceHash": "6247d29"
+  },
+  "multiRename.presets.tooltip": "Načíst, uložit a spravovat předvolby",
+  "@multiRename.presets.tooltip": {
+    "sourceHash": "e63a28f"
+  },
+  "multiRename.presets.saved": "Vaše předvolby",
+  "@multiRename.presets.saved": {
+    "sourceHash": "e83f142"
+  },
+  "multiRename.presets.reset": "Resetovat všechna pole",
+  "@multiRename.presets.reset": {
+    "sourceHash": "39bf87f"
+  },
+  "multiRename.presets.saveAs": "Uložit jako předvolbu…",
+  "@multiRename.presets.saveAs": {
+    "sourceHash": "da93e96"
+  },
+  "multiRename.presets.rename": "Přejmenovat…",
+  "@multiRename.presets.rename": {
+    "sourceHash": "6fa62b3"
+  },
+  "multiRename.presets.update": "Aktualizovat podle aktuálního nastavení",
+  "@multiRename.presets.update": {
+    "sourceHash": "7440a35"
+  },
+  "multiRename.presets.moveUp": "Posunout nahoru",
+  "@multiRename.presets.moveUp": {
+    "sourceHash": "c66feb5"
+  },
+  "multiRename.presets.moveDown": "Posunout dolů",
+  "@multiRename.presets.moveDown": {
+    "sourceHash": "40bb50d"
+  },
+  "multiRename.presets.delete": "Smazat",
+  "@multiRename.presets.delete": {
+    "sourceHash": "e2d0a54"
+  },
+  "multiRename.presets.saveTitle": "Uložit předvolbu",
+  "@multiRename.presets.saveTitle": {
+    "sourceHash": "362a137"
+  },
+  "multiRename.presets.renameTitle": "Přejmenovat předvolbu",
+  "@multiRename.presets.renameTitle": {
+    "sourceHash": "0e7392e"
+  },
+  "multiRename.presets.save": "Uložit",
+  "@multiRename.presets.save": {
+    "sourceHash": "1509f56"
+  },
+  "multiRename.presets.renameConfirm": "Přejmenovat",
+  "@multiRename.presets.renameConfirm": {
+    "sourceHash": "3064d79"
+  },
+  "multiRename.presets.clash": "Předvolba „{preset}“ už existuje. Nahradit ji?",
+  "@multiRename.presets.clash": {
+    "sourceHash": "7b084a2"
+  },
+  "multiRename.presets.listFull": "Máte {max, number} předvoleb, což je nejvíc, kolik jich Cmdr uchová. Pokud chcete uložit tuto, jednu smažte.",
+  "@multiRename.presets.listFull": {
+    "sourceHash": "36531ed"
+  },
+  "multiRename.presets.replace": "Nahradit",
+  "@multiRename.presets.replace": {
+    "sourceHash": "95e1543"
+  },
+  "multiRename.preset.dateAndTime": "Datum a čas",
+  "@multiRename.preset.dateAndTime": {
+    "sourceHash": "a079c3b"
+  },
+  "multiRename.preset.removeDiacritics": "Odstranit diakritiku",
+  "@multiRename.preset.removeDiacritics": {
+    "sourceHash": "4103ca1"
+  },
+  "multiRename.preset.greekToLatin": "Převést řečtinu do latinky",
+  "@multiRename.preset.greekToLatin": {
+    "sourceHash": "84f2cdc"
+  },
+  "multiRename.preset.normalizeUnicode": "Normalizovat Unicode",
+  "@multiRename.preset.normalizeUnicode": {
+    "sourceHash": "6e1c97e"
+  },
+  "multiRename.presetName": "Název předvolby",
+  "@multiRename.presetName": {
+    "sourceHash": "e534a66"
+  },
+  "multiRename.preview": "Náhled",
+  "@multiRename.preview": {
+    "sourceHash": "324b134"
+  },
+  "multiRename.readingTags": "Čtou se tagy: {readText} z {totalText}",
+  "@multiRename.readingTags": {
+    "sourceHash": "a15c17f"
+  },
+  "multiRename.oldName": "Původní název",
+  "@multiRename.oldName": {
+    "sourceHash": "f192b20"
+  },
+  "multiRename.newName": "Nový název",
+  "@multiRename.newName": {
+    "sourceHash": "04eea2a"
+  },
+  "multiRename.statusColumn": "Stav",
+  "@multiRename.statusColumn": {
+    "sourceHash": "920e413"
+  },
+  "multiRename.status.unchanged": "Beze změny",
+  "@multiRename.status.unchanged": {
+    "sourceHash": "41f9d57"
+  },
+  "multiRename.status.duplicate": "Stejný název jako jiný soubor",
+  "@multiRename.status.duplicate": {
+    "sourceHash": "ff0347b"
+  },
+  "multiRename.status.targetExists": "Název je obsazený",
+  "@multiRename.status.targetExists": {
+    "sourceHash": "629f53b"
+  },
+  "multiRename.status.invalidName": "Neplatný název",
+  "@multiRename.status.invalidName": {
+    "sourceHash": "f1e6391"
+  },
+  "multiRename.status.disallowedCharacter": "Nesmí obsahovat znak {character}",
+  "@multiRename.status.disallowedCharacter": {
+    "sourceHash": "2f21c26"
+  },
+  "multiRename.error.unclosed": "Zástupnému symbolu chybí uzavírací „]“",
+  "@multiRename.error.unclosed": {
+    "sourceHash": "aa4efba"
+  },
+  "multiRename.error.unknown": "Cmdr nezná zástupný symbol [{placeholder}]",
+  "@multiRename.error.unknown": {
+    "sourceHash": "7845fb5"
+  },
+  "multiRename.error.badRegex": "Regulární výraz není platný",
+  "@multiRename.error.badRegex": {
+    "sourceHash": "176cb2f"
+  },
+  "multiRename.error.gone": "Tato složka už není otevřená. Zavřete Hromadné přejmenování a otevřete ho znovu.",
+  "@multiRename.error.gone": {
+    "sourceHash": "8420f29"
+  },
+  "multiRename.error.nothingToRename": "Není co přejmenovat: všechny nové názvy jsou stejné jako původní, nebo mají problém",
+  "@multiRename.error.nothingToRename": {
+    "sourceHash": "cf68ee2"
+  },
+  "multiRename.error.notConnected": "Toto umístění teď není připojené",
+  "@multiRename.error.notConnected": {
+    "sourceHash": "21b3bd0"
+  },
+  "multiRename.error.couldntStart": "Přejmenování se nepodařilo spustit. Zkuste to za chvíli znovu.",
+  "@multiRename.error.couldntStart": {
+    "sourceHash": "4b123be"
+  },
+  "multiRename.error.timedOut": "Trvalo to příliš dlouho, takže Cmdr přestal čekat a zastavil se. Zkuste to znovu, nebo vyberte méně souborů.",
+  "@multiRename.error.timedOut": {
+    "sourceHash": "a336ee5"
+  },
+  "multiRename.summary": "{ready, plural, one {# k přejmenování} few {# k přejmenování} many {# k přejmenování} other {# k přejmenování}} · {unchanged, plural, one {# beze změny} few {# beze změny} many {# beze změny} other {# beze změny}} · <problemsToggle>{problems, plural, one {# problém} few {# problémy} many {# problému} other {# problémů}}</problemsToggle>",
+  "@multiRename.summary": {
+    "sourceHash": "ca7be9b"
+  },
+  "multiRename.summaryReading": "{ready, plural, one {# k přejmenování} few {# k přejmenování} many {# k přejmenování} other {# k přejmenování}} · {unchanged, plural, one {# beze změny} few {# beze změny} many {# beze změny} other {# beze změny}} · <problemsToggle>{problems, plural, one {# problém} few {# problémy} many {# problému} other {# problémů}}</problemsToggle> · {reading, plural, one {# se ještě čte} few {# se ještě čtou} many {# se ještě čte} other {# se ještě čte}}",
+  "@multiRename.summaryReading": {
+    "sourceHash": "4c73b60"
+  },
+  "multiRename.cancel": "Zrušit",
+  "@multiRename.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "multiRename.undo": "Odvolat přejmenování",
+  "@multiRename.undo": {
+    "sourceHash": "4e0f79b"
+  },
+  "multiRename.undoTooltip": "{count, plural, one {Vrátí # souboru původní název} few {Vrátí # souborům původní názvy} many {Vrátí # souboru původní názvy} other {Vrátí # souborům původní názvy}}",
+  "@multiRename.undoTooltip": {
+    "sourceHash": "522ad32"
+  },
+  "multiRename.undoStarted": "{count, plural, one {Vrací se původní název # souboru} few {Vracejí se původní názvy # souborů} many {Vracejí se původní názvy # souboru} other {Vracejí se původní názvy # souborů}}.",
+  "@multiRename.undoStarted": {
+    "sourceHash": "b6bd565"
+  },
+  "multiRename.results": "Výsledky…",
+  "@multiRename.results": {
+    "sourceHash": "0140aa5"
+  },
+  "multiRename.results.editing": "Upravte nové názvy v textovém editoru a soubor uložte. Zobrazí se tady, až se do tohoto okna vrátíte.",
+  "@multiRename.results.editing": {
+    "sourceHash": "0a54cdc"
+  },
+  "multiRename.movedRow": "Přesunuto na pozici {positionText} z {totalText}",
+  "@multiRename.movedRow": {
+    "sourceHash": "cc7f474"
+  },
+  "multiRename.results.edited": "{count, plural, one {# název pochází z vašeho upraveného seznamu} few {# názvy pocházejí z vašeho upraveného seznamu} many {# názvu pochází z vašeho upraveného seznamu} other {# názvů pochází z vašeho upraveného seznamu}}.",
+  "@multiRename.results.edited": {
+    "sourceHash": "9899216"
+  },
+  "multiRename.results.readNow": "Načíst názvy hned",
+  "@multiRename.results.readNow": {
+    "sourceHash": "aaa6bd2"
+  },
+  "multiRename.results.discard": "Znovu použít nastavení",
+  "@multiRename.results.discard": {
+    "sourceHash": "dc20f4f"
+  },
+  "multiRename.results.gone": "Seznam názvů zmizel. Otevřete znovu Výsledky a nový se zapíše.",
+  "@multiRename.results.gone": {
+    "sourceHash": "8aa255a"
+  },
+  "multiRename.error.couldntWriteNames": "Seznam názvů se nepodařilo zapsat. Zkontrolujte, že je na startovacím disku volné místo.",
+  "@multiRename.error.couldntWriteNames": {
+    "sourceHash": "bb5e415"
+  },
+  "multiRename.resultsTooltip": "Upravte nové názvy v textovém editoru a pak se sem vraťte a použijte je.",
+  "@multiRename.resultsTooltip": {
+    "sourceHash": "cc9b9ff"
+  },
+  "multiRename.editedName": "Název napsaný ručně ve Výsledcích",
+  "@multiRename.editedName": {
+    "sourceHash": "346c8d8"
+  },
+  "multiRename.history": "Historie",
+  "@multiRename.history": {
+    "sourceHash": "0e76960"
+  },
+  "multiRename.rename": "{count, plural, =0 {Přejmenovat} one {Přejmenovat # soubor} few {Přejmenovat # soubory} many {Přejmenovat # souboru} other {Přejmenovat # souborů}}",
+  "@multiRename.rename": {
+    "sourceHash": "9789ca5"
+  },
+  "multiRename.starting": "Spouštění…",
+  "@multiRename.starting": {
+    "sourceHash": "bbe5fc3"
+  },
+  "multiRename.renameWaitsTooltip": "Tagy některých souborů se ještě čtou. Přejmenování na ně počká a pak se spustí.",
+  "@multiRename.renameWaitsTooltip": {
+    "sourceHash": "208afe0"
+  },
+  "multiRename.startingTooltip": "Přejmenování se spustí, až se přečtou tagy všech souborů. Dalším kliknutím ho zrušíte.",
+  "@multiRename.startingTooltip": {
+    "sourceHash": "bbeb76e"
+  },
+  "multiRename.queuedAnnounce": "Přejmenování se spustí, až se přečtou tagy",
+  "@multiRename.queuedAnnounce": {
+    "sourceHash": "7c11af5"
+  },
+  "multiRename.queueCanceled": "Přejmenování zrušeno",
+  "@multiRename.queueCanceled": {
+    "sourceHash": "cdd1d0e"
+  },
+  "multiRename.started": "{count, plural, one {Přejmenovává se # soubor} few {Přejmenovávají se # soubory} many {Přejmenovává se # souboru} other {Přejmenovává se # souborů}}. Změny můžete vrátit v protokolu operací (Vrátit změny).",
+  "@multiRename.started": {
+    "sourceHash": "55b4878"
+  },
+  "multiRename.error.previewOutOfDate": "Složka se od zobrazení náhledu změnila. Zkontrolujte nový náhled a pak přejmenujte znovu.",
+  "@multiRename.error.previewOutOfDate": {
+    "sourceHash": "46432fe"
+  },
+  "multiRename.error.readOnly": "V této složce nelze přejmenovávat: je uvnitř archivu nebo na jiném místě jen ke čtení",
+  "@multiRename.error.readOnly": {
+    "sourceHash": "f576c74"
+  },
+  "multiRename.status.missing": "Už není v této složce",
+  "@multiRename.status.missing": {
+    "sourceHash": "80d16af"
+  },
+  "multiRename.status.ready": "Připraveno k přejmenování",
+  "@multiRename.status.ready": {
+    "sourceHash": "f032574"
+  },
+  "multiRename.reason.duplicate": "Jiná položka v této dávce dostane stejný nový název, takže se nepřejmenuje ani jedna.",
+  "@multiRename.reason.duplicate": {
+    "sourceHash": "de3e331"
+  },
+  "multiRename.reason.targetExists": "Tento název už má položka, která v této složce zůstává, takže si tahle ponechá svůj název.",
+  "@multiRename.reason.targetExists": {
+    "sourceHash": "2356c66"
+  },
+  "multiRename.reason.missing": "Tato položka byla po otevření Hromadného přejmenování přesunuta nebo smazána, takže se vynechá.",
+  "@multiRename.reason.missing": {
+    "sourceHash": "8697aa3"
+  },
+  "multiRename.status.reading": "Čte se…",
+  "@multiRename.status.reading": {
+    "sourceHash": "874bfa5"
+  },
+  "multiRename.status.noValue": "{field}: bez hodnoty",
+  "@multiRename.status.noValue": {
+    "sourceHash": "619464f"
+  },
+  "multiRename.reason.noValue": "Tato položka nemá hodnotu „{field}“, takže si ponechá svůj název.",
+  "@multiRename.reason.noValue": {
+    "sourceHash": "25d9a0f"
+  },
+  "multiRename.reason.noDate": "Tato položka nemá hodnotu „{field}“, takže si ponechá svůj název. Editor zástupného symbolu může místo toho použít datum poslední změny souboru.",
+  "@multiRename.reason.noDate": {
+    "sourceHash": "239bc84"
+  },
+  "multiRename.status.unreadable": "Nelze přečíst tagy",
+  "@multiRename.status.unreadable": {
+    "sourceHash": "fe6ad18"
+  },
+  "multiRename.reason.unreadable": "Hromadné přejmenování nemohlo přečíst tagy ani informace fotky, takže položka nemá hodnotu „{field}“ a ponechá si svůj název.",
+  "@multiRename.reason.unreadable": {
+    "sourceHash": "099ce1f"
+  },
+  "multiRename.mediaField.exifTaken": "Datum pořízení",
+  "@multiRename.mediaField.exifTaken": {
+    "sourceHash": "a2f4fe8"
+  },
+  "multiRename.mediaField.exifCamera": "Fotoaparát",
+  "@multiRename.mediaField.exifCamera": {
+    "sourceHash": "03494b0"
+  },
+  "multiRename.mediaField.exifMake": "Výrobce fotoaparátu",
+  "@multiRename.mediaField.exifMake": {
+    "sourceHash": "78929e9"
+  },
+  "multiRename.mediaField.exifModel": "Model fotoaparátu",
+  "@multiRename.mediaField.exifModel": {
+    "sourceHash": "ddbfabf"
+  },
+  "multiRename.mediaField.exifLens": "Objektiv",
+  "@multiRename.mediaField.exifLens": {
+    "sourceHash": "4317a99"
+  },
+  "multiRename.mediaField.exifIso": "ISO",
+  "@multiRename.mediaField.exifIso": {
+    "sourceHash": "6dc87bf",
+    "sameAsSourceJustification": "ISO is the international film-speed unit name; Czech photo apps and camera menus write ISO."
+  },
+  "multiRename.mediaField.exifFocal": "Ohnisková vzdálenost (mm)",
+  "@multiRename.mediaField.exifFocal": {
+    "sourceHash": "6a87ca3"
+  },
+  "multiRename.mediaField.exifWidth": "Šířka (pixely)",
+  "@multiRename.mediaField.exifWidth": {
+    "sourceHash": "7929f0d"
+  },
+  "multiRename.mediaField.exifHeight": "Výška (pixely)",
+  "@multiRename.mediaField.exifHeight": {
+    "sourceHash": "37d0cb6"
+  },
+  "multiRename.mediaField.exifOrientation": "Orientace",
+  "@multiRename.mediaField.exifOrientation": {
+    "sourceHash": "e3d1124"
+  },
+  "multiRename.mediaField.tagTitle": "Název",
+  "@multiRename.mediaField.tagTitle": {
+    "sourceHash": "7e8cd20"
+  },
+  "multiRename.mediaField.tagArtist": "Interpret",
+  "@multiRename.mediaField.tagArtist": {
+    "sourceHash": "1d3981b"
+  },
+  "multiRename.mediaField.tagAlbumArtist": "Interpret alba",
+  "@multiRename.mediaField.tagAlbumArtist": {
+    "sourceHash": "334ae82"
+  },
+  "multiRename.mediaField.tagAlbum": "Album",
+  "@multiRename.mediaField.tagAlbum": {
+    "sourceHash": "f05e840",
+    "sameAsSourceJustification": "Album is the standard Czech word for a music album (shipped neighbours Interpret alba; Czech tag editors label the field Album)."
+  },
+  "multiRename.mediaField.tagTrack": "Číslo stopy",
+  "@multiRename.mediaField.tagTrack": {
+    "sourceHash": "de8de0b"
+  },
+  "multiRename.mediaField.tagDisc": "Číslo disku",
+  "@multiRename.mediaField.tagDisc": {
+    "sourceHash": "0fd0aef"
+  },
+  "multiRename.mediaField.tagYear": "Rok",
+  "@multiRename.mediaField.tagYear": {
+    "sourceHash": "89f6832"
+  },
+  "multiRename.mediaField.tagGenre": "Žánr",
+  "@multiRename.mediaField.tagGenre": {
+    "sourceHash": "6da795a"
+  },
+  "multiRename.mediaField.tagComment": "Komentář",
+  "@multiRename.mediaField.tagComment": {
+    "sourceHash": "44f5e3f"
+  },
+  "multiRename.mediaPicker.title": "Vložit pole",
+  "@multiRename.mediaPicker.title": {
+    "sourceHash": "b722b94"
+  },
+  "multiRename.mediaPicker.filter": "Filtrovat pole",
+  "@multiRename.mediaPicker.filter": {
+    "sourceHash": "184a51b"
+  },
+  "multiRename.mediaPicker.photos": "Fotky a videa (EXIF)",
+  "@multiRename.mediaPicker.photos": {
+    "sourceHash": "b41c23d"
+  },
+  "multiRename.mediaPicker.music": "Hudba (ID3, MP4, FLAC…)",
+  "@multiRename.mediaPicker.music": {
+    "sourceHash": "357e580"
+  },
+  "multiRename.mediaPicker.none": "v těchto souborech není",
+  "@multiRename.mediaPicker.none": {
+    "sourceHash": "9d56c00"
+  },
+  "multiRename.mediaPicker.noneYet": "zatím není",
+  "@multiRename.mediaPicker.noneYet": {
+    "sourceHash": "35c2dfa"
+  },
+  "multiRename.mediaPicker.noMatch": "Žádné pole neodpovídá „{filter}“",
+  "@multiRename.mediaPicker.noMatch": {
+    "sourceHash": "2003efb"
+  },
+  "multiRename.mediaPicker.inserted": "Vloženo: {field}",
+  "@multiRename.mediaPicker.inserted": {
+    "sourceHash": "d5f2afb"
+  },
+  "multiRename.mediaPicker.insertedMark": "vloženo",
+  "@multiRename.mediaPicker.insertedMark": {
+    "sourceHash": "e8dd664"
+  },
+  "multiRename.mediaEditor.marker": "Upravit pole",
+  "@multiRename.mediaEditor.marker": {
+    "sourceHash": "652e08e"
+  },
+  "multiRename.mediaEditor.title": "Pole",
+  "@multiRename.mediaEditor.title": {
+    "sourceHash": "f45fc1d"
+  },
+  "multiRename.mediaEditor.format": "Formát",
+  "@multiRename.mediaEditor.format": {
+    "sourceHash": "2f34366"
+  },
+  "multiRename.mediaEditor.dateHint": "Y, M a D pro datum, h, m a s pro čas, mezi nimi - . _ nebo mezery. Pokud pole necháte prázdné, použije se datum a čas.",
+  "@multiRename.mediaEditor.dateHint": {
+    "sourceHash": "11b97ec"
+  },
+  "multiRename.mediaEditor.presets": "Běžné formáty",
+  "@multiRename.mediaEditor.presets": {
+    "sourceHash": "0998319"
+  },
+  "multiRename.mediaEditor.preset.dateTime": "Datum a čas",
+  "@multiRename.mediaEditor.preset.dateTime": {
+    "sourceHash": "a079c3b"
+  },
+  "multiRename.mediaEditor.preset.date": "Datum",
+  "@multiRename.mediaEditor.preset.date": {
+    "sourceHash": "99c40ab"
+  },
+  "multiRename.mediaEditor.preset.time": "Čas",
+  "@multiRename.mediaEditor.preset.time": {
+    "sourceHash": "33b9347"
+  },
+  "multiRename.mediaEditor.preset.compact": "Kompaktní",
+  "@multiRename.mediaEditor.preset.compact": {
+    "sourceHash": "9945264"
+  },
+  "multiRename.mediaEditor.digits": "Počet číslic",
+  "@multiRename.mediaEditor.digits": {
+    "sourceHash": "9cd500d"
+  },
+  "multiRename.mediaEditor.digitsHint": "Doplní úvodní nuly, takže při 2 se z 3 stane 03. Pokud pole necháte prázdné, číslo zůstane, jak je.",
+  "@multiRename.mediaEditor.digitsHint": {
+    "sourceHash": "d71b7d7"
+  },
+  "multiRename.mediaEditor.characters": "Znaky",
+  "@multiRename.mediaEditor.characters": {
+    "sourceHash": "6fac39e"
+  },
+  "multiRename.mediaEditor.charactersHint": "Třeba 1-10 pro prvních deset nebo -3- pro poslední tři. Pokud pole necháte prázdné, použije se celé.",
+  "@multiRename.mediaEditor.charactersHint": {
+    "sourceHash": "ed8b2a6"
+  },
+  "multiRename.mediaEditor.fallback": "Když soubor datum nemá: použít datum poslední změny",
+  "@multiRename.mediaEditor.fallback": {
+    "sourceHash": "8978898"
+  },
+  "multiRename.mediaEditor.usesModified": "{count, plural, one {{countText} soubor používá datum poslední změny} few {{countText} soubory používají datum poslední změny} many {{countText} souboru používá datum poslední změny} other {{countText} souborů používá datum poslední změny}}",
+  "@multiRename.mediaEditor.usesModified": {
+    "sourceHash": "588993a"
+  },
+  "multiRename.mediaEditor.missing": "{count, plural, one {{countText} soubor hodnotu nemá a ponechá si název} few {{countText} soubory hodnotu nemají a ponechají si názvy} many {{countText} souboru hodnotu nemá a ponechá si názvy} other {{countText} souborů hodnotu nemá a ponechá si názvy}}",
+  "@multiRename.mediaEditor.missing": {
+    "sourceHash": "6356576"
+  },
+  "multiRename.mediaEditor.stillReading": "{count, plural, one {{countText} soubor se ještě čte} few {{countText} soubory se ještě čtou} many {{countText} souboru se ještě čte} other {{countText} souborů se ještě čte}}",
+  "@multiRename.mediaEditor.stillReading": {
+    "sourceHash": "44bea1c"
+  },
+  "multiRename.mediaEditor.gap.reading": "čte se…",
+  "@multiRename.mediaEditor.gap.reading": {
+    "sourceHash": "6ab8da1"
+  },
+  "multiRename.mediaEditor.gap.noValue": "bez hodnoty",
+  "@multiRename.mediaEditor.gap.noValue": {
+    "sourceHash": "140bedb"
+  },
+  "multiRename.mediaEditor.gap.unreadable": "nelze přečíst",
+  "@multiRename.mediaEditor.gap.unreadable": {
+    "sourceHash": "f6daf78"
+  },
+  "multiRename.reason.empty": "Nový název je prázdný.",
+  "@multiRename.reason.empty": {
+    "sourceHash": "1ba05d4"
+  },
+  "multiRename.reason.tooLong": "Nový název je na název souboru příliš dlouhý.",
+  "@multiRename.reason.tooLong": {
+    "sourceHash": "b709218"
+  },
+  "multiRename.reason.reserved": "„.“ a „..“ nemůžou být názvy souborů.",
+  "@multiRename.reason.reserved": {
+    "sourceHash": "dcca507"
+  },
+  "multiRename.reason.disallowedCharacter": "Názvy souborů nesmí obsahovat znak {character}.",
+  "@multiRename.reason.disallowedCharacter": {
+    "sourceHash": "66a09f6"
+  },
+  "multiRename.selectionChanged": "Složka se změnila, zatímco se Hromadné přejmenování otevíralo. Zkontrolujte výběr a zkuste to znovu.",
+  "@multiRename.selectionChanged": {
+    "sourceHash": "357470f"
+  },
+  "multiRename.swapsSkipped": "{count, plural, one {Přeskočeno # přejmenování, které prohazuje názvy} few {Přeskočena # přejmenování, která prohazují názvy} many {Přeskočeno # přejmenování, která prohazují názvy} other {Přeskočeno # přejmenování, která prohazují názvy}}. Přejmenujte je po jednom.",
+  "@multiRename.swapsSkipped": {
+    "sourceHash": "49fb1cc"
+  },
+  "multiRename.archiveTitle": "Hromadné přejmenování uvnitř archivů nefunguje",
+  "@multiRename.archiveTitle": {
+    "sourceHash": "709e0ec"
+  },
+  "multiRename.archiveMessage": "Soubory v tomto zipu přejmenujte po jednom.",
+  "@multiRename.archiveMessage": {
+    "sourceHash": "2486bf3"
+  },
+  "multiRename.counterEditor.marker": "Upravit počítadlo",
+  "@multiRename.counterEditor.marker": {
+    "sourceHash": "8c3998f"
+  },
+  "multiRename.counterEditor.title": "Počítadlo",
+  "@multiRename.counterEditor.title": {
+    "sourceHash": "a78cfdf"
+  },
+  "multiRename.counterEditor.start": "Začátek",
+  "@multiRename.counterEditor.start": {
+    "sourceHash": "e4bb9f1"
+  },
+  "multiRename.counterEditor.step": "Krok",
+  "@multiRename.counterEditor.step": {
+    "sourceHash": "8e6a6cc"
+  },
+  "multiRename.counterEditor.digits": "Počet číslic",
+  "@multiRename.counterEditor.digits": {
+    "sourceHash": "9cd500d"
+  },
+  "multiRename.counterEditor.counts": "Čísla {first}, {second}, {third}…",
+  "@multiRename.counterEditor.counts": {
+    "sourceHash": "1e814e0"
+  },
+  "multiRename.placeholderHelp.name": "Název souboru bez přípony",
+  "@multiRename.placeholderHelp.name": {
+    "sourceHash": "64ccdbf"
+  },
+  "multiRename.placeholderHelp.extension": "Aktuální přípona souboru",
+  "@multiRename.placeholderHelp.extension": {
+    "sourceHash": "47411f5"
+  },
+  "multiRename.placeholderHelp.parent": "Název složky, ve které soubor je",
+  "@multiRename.placeholderHelp.parent": {
+    "sourceHash": "cd08701"
+  },
+  "multiRename.placeholderHelp.counter": "Číslo, které se u každého souboru zvýší o jeden krok, v pořadí seznamu",
+  "@multiRename.placeholderHelp.counter": {
+    "sourceHash": "2d7fbf4"
+  },
+  "multiRename.placeholderHelp.date": "Datum poslední změny souboru: rok, měsíc a den",
+  "@multiRename.placeholderHelp.date": {
+    "sourceHash": "d4f6468"
+  },
+  "multiRename.placeholderHelp.time": "Čas poslední změny souboru: hodiny, minuty a sekundy",
+  "@multiRename.placeholderHelp.time": {
+    "sourceHash": "69c80a0"
+  },
+  "multiRename.placeholderHelp.media": "Vlastní informace fotky, videa nebo skladby: EXIF, ID3, MP4, FLAC, Ogg a další",
+  "@multiRename.placeholderHelp.media": {
+    "sourceHash": "b7ba607"
+  },
+  "multiRename.placeholderHelp.mediaTaken": "Datum pořízení fotky nebo videa",
+  "@multiRename.placeholderHelp.mediaTaken": {
+    "sourceHash": "b0eea95"
+  },
+  "multiRename.placeholderHelp.mediaFallback": "Pro soubor bez něj datum poslední změny",
+  "@multiRename.placeholderHelp.mediaFallback": {
+    "sourceHash": "292616f"
+  },
+  "multiRename.placeholderHelp.mediaCamera": "Výrobce a model fotoaparátu",
+  "@multiRename.placeholderHelp.mediaCamera": {
+    "sourceHash": "9da2073"
+  },
+  "multiRename.placeholderHelp.mediaSong": "Číslo stopy, interpret a název skladby",
+  "@multiRename.placeholderHelp.mediaSong": {
+    "sourceHash": "f1a8bf1"
+  },
+  "multiRename.placeholderHelp.mediaHint": "Kliknutím vyberete z polí, u každého s hodnotou z vašich souborů.",
+  "@multiRename.placeholderHelp.mediaHint": {
+    "sourceHash": "8f7db2f"
+  },
+  "multiRename.placeholderHelp.oneChar": "Jen znak č. {at}",
+  "@multiRename.placeholderHelp.oneChar": {
+    "sourceHash": "79e798e"
+  },
+  "multiRename.placeholderHelp.charRange": "Znaky {from} až {to}",
+  "@multiRename.placeholderHelp.charRange": {
+    "sourceHash": "60bd1e5"
+  },
+  "multiRename.placeholderHelp.allButLast": "{count, plural, one {Vše kromě posledního znaku} few {Vše kromě posledních # znaků} many {Vše kromě posledních # znaku} other {Vše kromě posledních # znaků}}",
+  "@multiRename.placeholderHelp.allButLast": {
+    "sourceHash": "1452dc2"
+  },
+  "multiRename.placeholderHelp.charsFrom": "{count, plural, one {# znak} few {# znaky} many {# znaku} other {# znaků}} od znaku č. {from}",
+  "@multiRename.placeholderHelp.charsFrom": {
+    "sourceHash": "2308c77"
+  },
+  "multiRename.placeholderHelp.lastChars": "{count, plural, one {Poslední znak} few {Poslední # znaky} many {Posledních # znaku} other {Posledních # znaků}}",
+  "@multiRename.placeholderHelp.lastChars": {
+    "sourceHash": "9f073f8"
+  },
+  "multiRename.placeholderHelp.firstChar": "Jen první znak",
+  "@multiRename.placeholderHelp.firstChar": {
+    "sourceHash": "99755d8"
+  },
+  "multiRename.placeholderHelp.firstChars": "{count, plural, one {První znak} few {První # znaky} many {Prvních # znaku} other {Prvních # znaků}}",
+  "@multiRename.placeholderHelp.firstChars": {
+    "sourceHash": "340917c"
+  },
+  "multiRename.placeholderHelp.grandparent": "Název složky nad složkou souboru",
+  "@multiRename.placeholderHelp.grandparent": {
+    "sourceHash": "450e079"
+  },
+  "multiRename.placeholderHelp.counterStart": "Začíná na {start}",
+  "@multiRename.placeholderHelp.counterStart": {
+    "sourceHash": "f581c27"
+  },
+  "multiRename.placeholderHelp.counterStep": "Pokaždé se zvýší o {step}",
+  "@multiRename.placeholderHelp.counterStep": {
+    "sourceHash": "435eafd"
+  },
+  "multiRename.placeholderHelp.counterDigits": "{digits, plural, one {Aspoň # číslice} few {Aspoň # číslice} many {Aspoň # číslice} other {Aspoň # číslic}}, s úvodními nulami",
+  "@multiRename.placeholderHelp.counterDigits": {
+    "sourceHash": "cb37674"
+  },
+  "multiRename.placeholderHelp.counterAll": "Všechny tři najednou; záporný krok počítá dolů",
+  "@multiRename.placeholderHelp.counterAll": {
+    "sourceHash": "60be18c"
+  },
+  "multiRename.placeholderHelp.isoDate": "Celé datum s pomlčkami",
+  "@multiRename.placeholderHelp.isoDate": {
+    "sourceHash": "d5d3357"
+  },
+  "multiRename.placeholderHelp.dateSeparators": "Libovolné části, mezi nimi pomlčky, tečky, podtržítka nebo mezery",
+  "@multiRename.placeholderHelp.dateSeparators": {
+    "sourceHash": "a8192a0"
+  },
+  "multiRename.placeholderHelp.shortYear": "S dvoumístným rokem",
+  "@multiRename.placeholderHelp.shortYear": {
+    "sourceHash": "c042ccb"
+  },
+  "multiRename.placeholderHelp.datePart": "Jen den; [Y] a [M] fungují stejně",
+  "@multiRename.placeholderHelp.datePart": {
+    "sourceHash": "ce0ba83"
+  },
+  "multiRename.placeholderHelp.dottedTime": "Celý čas s tečkami",
+  "@multiRename.placeholderHelp.dottedTime": {
+    "sourceHash": "0edc240"
+  },
+  "multiRename.placeholderHelp.hoursMinutes": "Jen hodiny a minuty",
+  "@multiRename.placeholderHelp.hoursMinutes": {
+    "sourceHash": "55998f6"
+  },
+  "multiRename.placeholderHelp.forFile": "Pro „{file}“:",
+  "@multiRename.placeholderHelp.forFile": {
+    "sourceHash": "44f23bc"
+  },
+  "multiRename.placeholderHelp.forSampleDate": "Pro soubor naposledy změněný {date}:",
+  "@multiRename.placeholderHelp.forSampleDate": {
+    "sourceHash": "f2032cc"
+  },
+  "multiRename.placeholderHelp.forFirstFiles": "Pro první tři soubory:",
+  "@multiRename.placeholderHelp.forFirstFiles": {
+    "sourceHash": "012bd5a"
+  },
+  "multiRename.placeholderHelp.counterEditHint": "Dejte kurzor do počítadla nebo na něj najeďte myší a změňte jeho čísla.",
+  "@multiRename.placeholderHelp.counterEditHint": {
+    "sourceHash": "6ba268e"
+  },
+  "multiRename.rangeEditor.marker": "Vybrat znaky",
+  "@multiRename.rangeEditor.marker": {
+    "sourceHash": "fdfe315"
+  },
+  "multiRename.rangeEditor.title": "Znaky, které se použijí",
+  "@multiRename.rangeEditor.title": {
+    "sourceHash": "e1e72f0"
+  },
+  "multiRename.rangeEditor.selectCharacters": "Vyberte znaky, které se použijí",
+  "@multiRename.rangeEditor.selectCharacters": {
+    "sourceHash": "8b07e2a"
+  },
+  "multiRename.rangeEditor.start": "Začátek",
+  "@multiRename.rangeEditor.start": {
+    "sourceHash": "e4bb9f1"
+  },
+  "multiRename.rangeEditor.end": "Konec",
+  "@multiRename.rangeEditor.end": {
+    "sourceHash": "f4db1e4"
+  },
+  "multiRename.rangeEditor.writeAs": "Zapsat jako",
+  "@multiRename.rangeEditor.writeAs": {
+    "sourceHash": "39dfb5b"
+  },
+  "multiRename.rangeEditor.form.span": "Od začátku do konce",
+  "@multiRename.rangeEditor.form.span": {
+    "sourceHash": "bb96ea7"
+  },
+  "multiRename.rangeEditor.form.length": "Začátek a délka",
+  "@multiRename.rangeEditor.form.length": {
+    "sourceHash": "2830961"
+  },
+  "multiRename.rangeEditor.fromStart": "Od začátku",
+  "@multiRename.rangeEditor.fromStart": {
+    "sourceHash": "109d4ab"
+  },
+  "multiRename.rangeEditor.fromEnd": "Od konce",
+  "@multiRename.rangeEditor.fromEnd": {
+    "sourceHash": "577185f"
+  },
+  "multiRename.rangeEditor.positionFromStart": "{at, selectordinal, other {#.}}",
+  "@multiRename.rangeEditor.positionFromStart": {
+    "sourceHash": "a20af9d"
+  },
+  "multiRename.rangeEditor.positionFromEnd": "{at, selectordinal, =1 {Poslední} other {#. od konce}}",
+  "@multiRename.rangeEditor.positionFromEnd": {
+    "sourceHash": "4c9ee08"
+  },
+  "multiRename.rangeEditor.endFollowsStart": "Když se začátek počítá od konce, konec se počítá od konce také.",
+  "@multiRename.rangeEditor.endFollowsStart": {
+    "sourceHash": "379bd45"
+  },
+  "multiRename.rangeEditor.reading.whole": "Celé",
+  "@multiRename.rangeEditor.reading.whole": {
+    "sourceHash": "f5062de"
+  },
+  "multiRename.rangeEditor.reading.one": "Jen {at, selectordinal, other {#.}} znak",
+  "@multiRename.rangeEditor.reading.one": {
+    "sourceHash": "815c40c"
+  },
+  "multiRename.rangeEditor.reading.oneFromEnd": "Jen {at, selectordinal, =1 {poslední} other {#. od konce}} znak",
+  "@multiRename.rangeEditor.reading.oneFromEnd": {
+    "sourceHash": "e0b450d"
+  },
+  "multiRename.rangeEditor.reading.toEnd": "Od {at, selectordinal, other {#.}} znaku do konce",
+  "@multiRename.rangeEditor.reading.toEnd": {
+    "sourceHash": "f28d18b"
+  },
+  "multiRename.rangeEditor.reading.lastChars": "{count, plural, one {Poslední znak} few {Poslední # znaky} many {Posledních # znaku} other {Posledních # znaků}}",
+  "@multiRename.rangeEditor.reading.lastChars": {
+    "sourceHash": "9f073f8"
+  },
+  "multiRename.rangeEditor.reading.span": "Od {from, selectordinal, other {#.}} do {to, selectordinal, other {#.}} znaku",
+  "@multiRename.rangeEditor.reading.span": {
+    "sourceHash": "d68204f"
+  },
+  "multiRename.rangeEditor.reading.spanToFromEnd": "Od {from, selectordinal, other {#.}} do {to, selectordinal, =1 {posledního} other {#. od konce}} znaku",
+  "@multiRename.rangeEditor.reading.spanToFromEnd": {
+    "sourceHash": "b7714db"
+  },
+  "multiRename.rangeEditor.reading.spanFromEnd": "Od {from, selectordinal, =1 {posledního} other {#. od konce}} do {to, selectordinal, =1 {posledního} other {#. od konce}} znaku",
+  "@multiRename.rangeEditor.reading.spanFromEnd": {
+    "sourceHash": "20f1163"
+  },
+  "multiRename.rangeEditor.reading.length": "{count, plural, one {# znak} few {# znaky} many {# znaku} other {# znaků}} od {at, selectordinal, other {#.}} znaku",
+  "@multiRename.rangeEditor.reading.length": {
+    "sourceHash": "9bb683a"
+  },
+  "multiRename.rangeEditor.reading.lengthFromEnd": "{count, plural, one {# znak} few {# znaky} many {# znaku} other {# znaků}} od {at, selectordinal, =1 {posledního} other {#. od konce}} znaku",
+  "@multiRename.rangeEditor.reading.lengthFromEnd": {
+    "sourceHash": "8c3c882"
+  },
+  "multiRename.rangeEditor.takesNothing": "Z tohoto souboru nic nepoužije",
+  "@multiRename.rangeEditor.takesNothing": {
+    "sourceHash": "be62d05"
+  },
+  "multiRename.rangeEditor.emptyField": "U tohoto souboru prázdné",
+  "@multiRename.rangeEditor.emptyField": {
+    "sourceHash": "ccb5be2"
+  },
+  "multiRename.rangeEditor.onYourFiles": "Na vašich souborech",
+  "@multiRename.rangeEditor.onYourFiles": {
+    "sourceHash": "e8c0d5e"
+  },
+  "multiRename.rangeEditor.nothing": "nic",
+  "@multiRename.rangeEditor.nothing": {
+    "sourceHash": "1785cfc"
+  },
+  "multiRename.rangeEditor.gives": "dává",
+  "@multiRename.rangeEditor.gives": {
+    "sourceHash": "64ea62d"
+  },
+  "multiRename.placeholderHelp.rangeEditHint": "Dejte kurzor do zástupného symbolu jako [N] a stiskněte ↓ a vyberte jeho znaky.",
+  "@multiRename.placeholderHelp.rangeEditHint": {
+    "sourceHash": "f1ef6fc"
+  }
+}

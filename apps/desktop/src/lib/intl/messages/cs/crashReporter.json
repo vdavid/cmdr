@@ -1,0 +1,94 @@
+{
+  "crashReporter.dialog.title.crash": "Odeslat zprávu o havárii?",
+  "@crashReporter.dialog.title.crash": {
+    "sourceHash": "06ba6fb"
+  },
+  "crashReporter.dialog.title.report": "Odeslat zprávu?",
+  "@crashReporter.dialog.title.report": {
+    "sourceHash": "d8b86d2"
+  },
+  "crashReporter.dialog.body.ended": "Cmdr minule neočekávaně skončil. Tady je zpráva o havárii s podrobnostmi, které můžou pomoct s opravou.",
+  "@crashReporter.dialog.body.ended": {
+    "sourceHash": "d67f8cb"
+  },
+  "crashReporter.dialog.body.keptRunning": "Cmdr minule na pozadí narazil na problém a běžel dál. Tady je zpráva s podrobnostmi, které můžou pomoct s opravou.",
+  "@crashReporter.dialog.body.keptRunning": {
+    "sourceHash": "a972339"
+  },
+  "crashReporter.dialog.body.unknown": "Cmdr minule narazil na problém. Tady je zpráva s podrobnostmi, které můžou pomoct s opravou.",
+  "@crashReporter.dialog.body.unknown": {
+    "sourceHash": "bed6934"
+  },
+  "crashReporter.dialog.privacyNote": "Obsahuje verzi aplikace, verzi macOS a místo v kódu, kde k problému došlo. Žádné názvy souborů ani osobní údaje.",
+  "@crashReporter.dialog.privacyNote": {
+    "sourceHash": "c6875a7"
+  },
+  "crashReporter.dialog.reportIdLabel": "Referenční ID zprávy:",
+  "@crashReporter.dialog.reportIdLabel": {
+    "sourceHash": "df3d47e"
+  },
+  "crashReporter.dialog.reportIdHelp": "Když se na nás kvůli tomu obrátíte, uveďte toto ID.",
+  "@crashReporter.dialog.reportIdHelp": {
+    "sourceHash": "c63b08a"
+  },
+  "crashReporter.dialog.showDetails": "Zobrazit podrobnosti zprávy",
+  "@crashReporter.dialog.showDetails": {
+    "sourceHash": "11756f2"
+  },
+  "crashReporter.dialog.copy": "Zkopírovat",
+  "@crashReporter.dialog.copy": {
+    "sourceHash": "e21f935"
+  },
+  "crashReporter.dialog.copied": "Zkopírováno",
+  "@crashReporter.dialog.copied": {
+    "sourceHash": "8d525e5"
+  },
+  "crashReporter.dialog.alwaysSend": "Vždy odesílat zprávy o haváriích",
+  "@crashReporter.dialog.alwaysSend": {
+    "sourceHash": "8306c0e"
+  },
+  "crashReporter.dialog.dismiss": "Zavřít",
+  "@crashReporter.dialog.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "crashReporter.dialog.send": "Odeslat zprávu",
+  "@crashReporter.dialog.send": {
+    "sourceHash": "a44d353"
+  },
+  "crashReporter.dialog.sending": "Odesílání…",
+  "@crashReporter.dialog.sending": {
+    "sourceHash": "b8ed527"
+  },
+  "crashReporter.dialog.notSent": "Zprávu se nepodařilo odeslat. {reason}",
+  "@crashReporter.dialog.notSent": {
+    "sourceHash": "56fe2bc"
+  },
+  "crashReporter.sentToast.message.crash": "Zpráva o havárii byla odeslána. Díky, že pomáháte vylepšovat Cmdr.",
+  "@crashReporter.sentToast.message.crash": {
+    "sourceHash": "734d62a"
+  },
+  "crashReporter.sentToast.message.report": "Zpráva byla odeslána. Díky, že pomáháte vylepšovat Cmdr.",
+  "@crashReporter.sentToast.message.report": {
+    "sourceHash": "a676ed5"
+  },
+  "crashReporter.sentToast.changeSettings": "Změnit v Nastavení",
+  "@crashReporter.sentToast.changeSettings": {
+    "sourceHash": "144d0bd"
+  },
+  "crashReporter.sentToast.sendLog": "Přiložit protokoly",
+  "@crashReporter.sentToast.sendLog": {
+    "sourceHash": "61a9b1a"
+  },
+  "crashReporter.sentToast.sendLogHint": "Chcete pomoct s diagnostikou a přiložit i úryvek protokolu Cmdru? Protokol obsahuje mnohem víc podrobností. Soukromé informace, jako jsou názvy souborů a složek, se před odesláním anonymizují.",
+  "@crashReporter.sentToast.sendLogHint": {
+    "sourceHash": "aec472c"
+  },
+  "crashReporter.sentToast.logSent": "Protokol byl odeslán jako {id}. Díky tomu bude mnohem snazší problém dohledat.",
+  "@crashReporter.sentToast.logSent": {
+    "sourceHash": "9a0dc9e"
+  },
+  "crashReporter.sentToast.logNotSent": "Protokol se nepodařilo odeslat. {reason}",
+  "@crashReporter.sentToast.logNotSent": {
+    "sourceHash": "a9f5323"
+  }
+}

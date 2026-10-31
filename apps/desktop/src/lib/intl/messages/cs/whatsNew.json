@@ -1,0 +1,46 @@
+{
+  "whatsNew.dialog.title": "Co je nového v Cmdru",
+  "@whatsNew.dialog.title": {
+    "sourceHash": "12b2a68"
+  },
+  "whatsNew.dialog.empty": "Zatím tu nic není. Nové změny se tu objeví po aktualizaci.",
+  "@whatsNew.dialog.empty": {
+    "sourceHash": "31a5a2e"
+  },
+  "whatsNew.securityNotice.title": "Poslední aktualizace {count, plural, one {opravily bezpečnostní problém} few {opravily # bezpečnostní problémy} many {opravily # bezpečnostního problému} other {opravily # bezpečnostních problémů}}.",
+  "@whatsNew.securityNotice.title": {
+    "sourceHash": "7926316"
+  },
+  "whatsNew.securityNotice.readAdvisory": "Přečíst bezpečnostní upozornění",
+  "@whatsNew.securityNotice.readAdvisory": {
+    "sourceHash": "a96f533"
+  },
+  "whatsNew.securityNotice.readAdvisoryNamed": "Přečíst upozornění {id}",
+  "@whatsNew.securityNotice.readAdvisoryNamed": {
+    "sourceHash": "58d606c"
+  },
+  "whatsNew.dialog.showMore": "Zobrazit více",
+  "@whatsNew.dialog.showMore": {
+    "sourceHash": "f5c9bd1"
+  },
+  "whatsNew.dialog.showLess": "Zobrazit méně",
+  "@whatsNew.dialog.showLess": {
+    "sourceHash": "94ea9b1"
+  },
+  "whatsNew.dialog.seeFullChangelog": "Zobrazit celý seznam změn",
+  "@whatsNew.dialog.seeFullChangelog": {
+    "sourceHash": "66a59ed"
+  },
+  "whatsNew.dialog.optOut": "Seznamy změn mě nezajímají",
+  "@whatsNew.dialog.optOut": {
+    "sourceHash": "f1259e9"
+  },
+  "whatsNew.dialog.close": "Zavřít",
+  "@whatsNew.dialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "whatsNew.optOutToast": "Dobře, poznámky k verzím se už nebudou zobrazovat. Znovu je můžete kdykoli zapnout v Nastavení > Aktualizace a soukromí.",
+  "@whatsNew.optOutToast": {
+    "sourceHash": "368591b"
+  }
+}

@@ -1,0 +1,286 @@
+{
+  "indexing.status.ariaLabel": "Stav indexování disku",
+  "@indexing.status.ariaLabel": {
+    "sourceHash": "49edebb"
+  },
+  "indexing.drive.heading": "{name}",
+  "@indexing.drive.heading": {
+    "sourceHash": "5e291d7",
+    "sameAsSourceJustification": "Placeholder-only: the drive’s own display name, nothing to translate."
+  },
+  "indexing.scan.label": "Indexuje se váš disk…",
+  "@indexing.scan.label": {
+    "sourceHash": "5b0433c"
+  },
+  "indexing.scan.counters": "{entriesText} {entries, plural, one {záznam} few {záznamy} many {záznamu} other {záznamů}}, {dirsText} {dirs, plural, one {složka} few {složky} many {složky} other {složek}}",
+  "@indexing.scan.counters": {
+    "sourceHash": "ecf47f2"
+  },
+  "indexing.scan.countersElapsed": "{counters} · {elapsed}",
+  "@indexing.scan.countersElapsed": {
+    "sourceHash": "aeb0b57",
+    "sameAsSourceJustification": "Placeholder-only join with a middle-dot separator; Czech uses the same spaced · separator."
+  },
+  "indexing.scan.etaRough": "odhadem {eta}",
+  "@indexing.scan.etaRough": {
+    "sourceHash": "6f92820"
+  },
+  "indexing.phase.priorityFolders": "Indexování složek, které používáte nejvíc",
+  "@indexing.phase.priorityFolders": {
+    "sourceHash": "09dd19d"
+  },
+  "indexing.phase.home": "Indexování zbytku domovské složky",
+  "@indexing.phase.home": {
+    "sourceHash": "8c31671"
+  },
+  "indexing.phase.wholeDrive": "Indexování zbytku disku",
+  "@indexing.phase.wholeDrive": {
+    "sourceHash": "1e1d606"
+  },
+  "indexing.run.firstIndex": "První indexování",
+  "@indexing.run.firstIndex": {
+    "sourceHash": "4de62ce"
+  },
+  "indexing.run.firstScan": "První úplné prohledání",
+  "@indexing.run.firstScan": {
+    "sourceHash": "bb804db"
+  },
+  "indexing.run.rescan": "Úplné nové prohledání",
+  "@indexing.run.rescan": {
+    "sourceHash": "f8cd103"
+  },
+  "indexing.run.changeCheck": "Kontrola změn",
+  "@indexing.run.changeCheck": {
+    "sourceHash": "9b43638"
+  },
+  "indexing.run.update": "Rychlá aktualizace",
+  "@indexing.run.update": {
+    "sourceHash": "97ac3e3"
+  },
+  "indexing.step.findFiles": "Najít soubory",
+  "@indexing.step.findFiles": {
+    "sourceHash": "15d12bc"
+  },
+  "indexing.step.saveFileList": "Uložit seznam souborů",
+  "@indexing.step.saveFileList": {
+    "sourceHash": "92af072"
+  },
+  "indexing.step.updateFileList": "Aktualizovat seznam souborů",
+  "@indexing.step.updateFileList": {
+    "sourceHash": "ef0a3d2"
+  },
+  "indexing.step.computeFolderSizes": "Spočítat velikosti složek",
+  "@indexing.step.computeFolderSizes": {
+    "sourceHash": "65c86f6"
+  },
+  "indexing.step.catchUp": "Doplnit nedávné změny",
+  "@indexing.step.catchUp": {
+    "sourceHash": "ef74b56"
+  },
+  "indexing.step.updateIndex": "Aktualizovat index",
+  "@indexing.step.updateIndex": {
+    "sourceHash": "494e5b8"
+  },
+  "indexing.summary.found": "Nalezeno: {countText}",
+  "@indexing.summary.found": {
+    "sourceHash": "fe3038e"
+  },
+  "indexing.step.findFilesPhased": "Je to poprvé, takže to chvíli potrvá. Ve vašich složkách půjde hledat, jakmile se k nim Cmdr dostane.",
+  "@indexing.step.findFilesPhased": {
+    "sourceHash": "dbeb379"
+  },
+  "indexing.step.findFilesFirstScan": "Je to první prohledání, takže to může chvíli trvat",
+  "@indexing.step.findFilesFirstScan": {
+    "sourceHash": "5e9ea25"
+  },
+  "indexing.step.findFilesChangeCheck": "Každá složka se porovnává s indexem. Velikosti složek zůstanou po celou dobu kontroly vidět.",
+  "@indexing.step.findFilesChangeCheck": {
+    "sourceHash": "8c23f1f"
+  },
+  "indexing.step.statusDone": "Hotovo",
+  "@indexing.step.statusDone": {
+    "sourceHash": "11a6767"
+  },
+  "indexing.step.statusActive": "Probíhá",
+  "@indexing.step.statusActive": {
+    "sourceHash": "c1f88e9"
+  },
+  "indexing.step.statusPending": "Nezahájeno",
+  "@indexing.step.statusPending": {
+    "sourceHash": "ba35f0c"
+  },
+  "indexing.aggregation.loading": "Načítání složek…",
+  "@indexing.aggregation.loading": {
+    "sourceHash": "d0aa0da"
+  },
+  "indexing.aggregation.sorting": "Řazení složek…",
+  "@indexing.aggregation.sorting": {
+    "sourceHash": "5c5a247"
+  },
+  "indexing.aggregation.computing": "Počítání velikostí složek…",
+  "@indexing.aggregation.computing": {
+    "sourceHash": "d693bcf"
+  },
+  "indexing.aggregation.writing": "Ukládání velikostí složek…",
+  "@indexing.aggregation.writing": {
+    "sourceHash": "4cec9d8"
+  },
+  "indexing.replay.detail": "{events, plural, one {Zpracována {eventsText} událost} few {Zpracovány {eventsText} události} many {Zpracováno {eventsText} události} other {Zpracováno {eventsText} událostí}}",
+  "@indexing.replay.detail": {
+    "sourceHash": "1c2a534"
+  },
+  "indexing.progress.percentEta": "{percent} %, {eta}",
+  "@indexing.progress.percentEta": {
+    "sourceHash": "26b29da"
+  },
+  "indexing.overall.eta": "Celkem: {eta}",
+  "@indexing.overall.eta": {
+    "sourceHash": "a9a2ffc"
+  },
+  "indexing.overall.estimating": "Celkem: odhaduje se…",
+  "@indexing.overall.estimating": {
+    "sourceHash": "9dac967"
+  },
+  "indexing.eta.almostDone": "Skoro hotovo",
+  "@indexing.eta.almostDone": {
+    "sourceHash": "506f162"
+  },
+  "indexing.eta.almostDoneMidSentence": "skoro hotovo",
+  "@indexing.eta.almostDoneMidSentence": {
+    "sourceHash": "1d2fb48"
+  },
+  "indexing.eta.secondsLeft": "zbývá {secondsText} s",
+  "@indexing.eta.secondsLeft": {
+    "sourceHash": "3a67288"
+  },
+  "indexing.eta.minutesLeft": "zbývá {minutesText} min",
+  "@indexing.eta.minutesLeft": {
+    "sourceHash": "bcb3615"
+  },
+  "indexing.eta.hoursMinutesLeft": "{hours, plural, one {zbývá {hoursText} hodina} few {zbývají {hoursText} hodiny} many {zbývá {hoursText} hodiny} other {zbývá {hoursText} hodin}} {minutes, plural, one {{minutesText} minuta} few {{minutesText} minuty} many {{minutesText} minuty} other {{minutesText} minut}}",
+  "@indexing.eta.hoursMinutesLeft": {
+    "sourceHash": "8b2b4c0"
+  },
+  "indexing.eta.hoursLeft": "{hours, plural, one {zbývá {hoursText} hodina} few {zbývají {hoursText} hodiny} many {zbývá {hoursText} hodiny} other {zbývá {hoursText} hodin}}",
+  "@indexing.eta.hoursLeft": {
+    "sourceHash": "1d50900"
+  },
+  "indexing.rescan.journalGap": "Systémový protokol změn souborů nesahá dost daleko do minulosti. Spouští se nové prohledání, které index sestaví znovu.",
+  "@indexing.rescan.journalGap": {
+    "sourceHash": "a697c86"
+  },
+  "indexing.rescan.replayOverflow": "Od posledního spuštění se změnilo hodně souborů. Spouští se nové prohledání, aby se změny nemusely přehrávat jedna po druhé.",
+  "@indexing.rescan.replayOverflow": {
+    "sourceHash": "70c7481"
+  },
+  "indexing.rescan.watcherStartFailed": "Sledování změn souborů se nepodařilo spustit. Spouští se nové prohledání, aby byl index aktuální.",
+  "@indexing.rescan.watcherStartFailed": {
+    "sourceHash": "07fb462"
+  },
+  "indexing.rescan.reconcilerBufferOverflow": "Velká aktivita v souborovém systému zahltila vyrovnávací paměť událostí. Spouští se nové prohledání, aby index zůstal přesný.",
+  "@indexing.rescan.reconcilerBufferOverflow": {
+    "sourceHash": "d6000e4"
+  },
+  "indexing.rescan.incompletePreviousScan": "Předchozí prohledání zůstalo nedokončené (aplikace se možná zavřela). Prohledávání proto začíná od začátku.",
+  "@indexing.rescan.incompletePreviousScan": {
+    "sourceHash": "804084a"
+  },
+  "indexing.rescan.watcherChannelOverflow": "Nával aktivity v souborovém systému zahltil kanál sledování změn. Spouští se nové prohledání, aby index zůstal přesný.",
+  "@indexing.rescan.watcherChannelOverflow": {
+    "sourceHash": "b7ce086"
+  },
+  "indexing.rescan.fallback": "Spouští se nové prohledání disku, aby index zůstal přesný.",
+  "@indexing.rescan.fallback": {
+    "sourceHash": "cd99826"
+  },
+  "indexing.needsFreshScan.afterDisconnect": "Disk {name} se odpojil, zatímco Cmdr aktualizoval index tohoto disku. Příští prohledání disku proto začne od začátku a velikosti složek budou zase správné.",
+  "@indexing.needsFreshScan.afterDisconnect": {
+    "sourceHash": "a90dbdf"
+  },
+  "indexing.memoryStop.paused": "Cmdr pozastavil indexování disků, protože používal příliš mnoho paměti. Velikosti složek můžou být zastaralé, než Cmdr znovu spustíte.",
+  "@indexing.memoryStop.paused": {
+    "sourceHash": "32d225a"
+  },
+  "indexing.firstConnect.title": "Indexovat disk {name}?",
+  "@indexing.firstConnect.title": {
+    "sourceHash": "0734a24"
+  },
+  "indexing.firstConnect.body": "Cmdr může tento disk indexovat na pozadí, aby tu fungovaly velikosti složek a hledání. Indexování běží jen tehdy, když je disk připojený.",
+  "@indexing.firstConnect.body": {
+    "sourceHash": "56ec1e5"
+  },
+  "indexing.firstConnect.enable": "Zapnout indexování",
+  "@indexing.firstConnect.enable": {
+    "sourceHash": "3dc7ddf"
+  },
+  "indexing.firstConnect.silenceDrive": "U tohoto disku se už neptat",
+  "@indexing.firstConnect.silenceDrive": {
+    "sourceHash": "8d7a674"
+  },
+  "indexing.firstConnect.silenceAll": "U žádného disku se už neptat",
+  "@indexing.firstConnect.silenceAll": {
+    "sourceHash": "0e10003"
+  },
+  "indexing.staleDialog.title": "Index tohoto disku může být zastaralý",
+  "@indexing.staleDialog.title": {
+    "sourceHash": "7de163b"
+  },
+  "indexing.staleDialog.body": "Zatímco byl disk {name} odpojený, mohly se na něm změnit soubory. Velikosti složek a výsledky hledání můžou být trochu nepřesné, dokud disk znovu neprohledáte. Kdykoli se to stane, ukáže to žlutý indikátor stavu vedle disku, a nové prohledání ho obnoví.",
+  "@indexing.staleDialog.body": {
+    "sourceHash": "c04519a"
+  },
+  "indexing.staleDialog.titlePhone": "Index tohoto telefonu může být zastaralý",
+  "@indexing.staleDialog.titlePhone": {
+    "sourceHash": "1f41e08"
+  },
+  "indexing.staleDialog.bodyPhone": "Telefon {name} Cmdru nehlásí změny svých souborů, takže Cmdr udržuje index aktuální podle změn, které sám provede. Změny provedené přímo v telefonu, třeba nové fotky, se ve velikostech složek a v hledání projeví po novém prohledání. Žlutý indikátor stavu vedle telefonu zůstane jako připomínka.",
+  "@indexing.staleDialog.bodyPhone": {
+    "sourceHash": "2751fdf"
+  },
+  "indexing.staleDialog.neverShowAgain": "Už nikdy nezobrazovat",
+  "@indexing.staleDialog.neverShowAgain": {
+    "sourceHash": "f2d1044"
+  },
+  "indexing.staleDialog.close": "Zavřít",
+  "@indexing.staleDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "indexing.enrich.label": "Indexování obrázků",
+  "@indexing.enrich.label": {
+    "sourceHash": "442068b"
+  },
+  "indexing.enrich.progress": "{done, plural, one {Obrázky: {doneText} z {totalText}} few {Obrázky: {doneText} z {totalText}} many {Obrázky: {doneText} z {totalText}} other {Obrázky: {doneText} z {totalText}}}",
+  "@indexing.enrich.progress": {
+    "sourceHash": "b307416"
+  },
+  "indexing.enrich.rate": "{rateText}/min",
+  "@indexing.enrich.rate": {
+    "sourceHash": "255f3b4",
+    "sameAsSourceJustification": "Placeholder plus „/min“; min is also the Czech abbreviation for minuta (cs fileExplorer.navigation.driveIndex.durationMinSec „{minutes} min“)."
+  },
+  "indexing.enrich.rateEta": "{rate} · {eta}",
+  "@indexing.enrich.rateEta": {
+    "sourceHash": "ac6a373",
+    "sameAsSourceJustification": "Placeholder-only join with a spaced middle dot; same separator in Czech."
+  },
+  "indexing.enrich.pausedIdle": "Čeká, až bude aplikace nečinná",
+  "@indexing.enrich.pausedIdle": {
+    "sourceHash": "ee9b2e9"
+  },
+  "indexing.enrich.pausedDisconnected": "Pozastaveno, pokračuje po opětovném připojení",
+  "@indexing.enrich.pausedDisconnected": {
+    "sourceHash": "1483989"
+  },
+  "indexing.enrich.queued": "Indexování obrázků začne po prohledání disku",
+  "@indexing.enrich.queued": {
+    "sourceHash": "09e94f5"
+  },
+  "indexing.enrich.imagesBarLabel": "Zaindexované obrázky",
+  "@indexing.enrich.imagesBarLabel": {
+    "sourceHash": "f4b2ca5"
+  },
+  "indexing.enrich.bytesBarLabel": "Zpracovaná data obrázků",
+  "@indexing.enrich.bytesBarLabel": {
+    "sourceHash": "58952a9"
+  }
+}

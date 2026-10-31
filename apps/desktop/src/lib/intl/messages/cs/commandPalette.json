@@ -1,0 +1,30 @@
+{
+  "commandPalette.searchPlaceholder": "Hledat příkazy…",
+  "@commandPalette.searchPlaceholder": {
+    "sourceHash": "baad3d0"
+  },
+  "commandPalette.searchAriaLabel": "Hledat příkazy",
+  "@commandPalette.searchAriaLabel": {
+    "sourceHash": "00ff739"
+  },
+  "commandPalette.noResults": "Žádný příkaz nenalezen",
+  "@commandPalette.noResults": {
+    "sourceHash": "eac0d09"
+  },
+  "commandPalette.resultCount": "{count, plural, one {{countText} příkaz} few {{countText} příkazy} many {{countText} příkazu} other {{countText} příkazů}}",
+  "@commandPalette.resultCount": {
+    "sourceHash": "d65fc7d"
+  },
+  "commandPalette.resultsAriaLabel": "Příkazy",
+  "@commandPalette.resultsAriaLabel": {
+    "sourceHash": "b269dc4"
+  },
+  "commandPalette.groupRecent": "Naposledy použité",
+  "@commandPalette.groupRecent": {
+    "sourceHash": "690dbe9"
+  },
+  "commandPalette.groupAll": "Všechny příkazy",
+  "@commandPalette.groupAll": {
+    "sourceHash": "f9c4287"
+  }
+}
