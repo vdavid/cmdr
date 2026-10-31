@@ -171,9 +171,8 @@ type cargoJSONMessage struct {
 //
 // Cargo caps a registry crate's lints, so its warnings never print. A vendored
 // copy is a PATH dependency, which cargo treats as local: its own `[lints]` table
-// applies uncapped, and `rustic_core`'s names a lint our toolchain has removed.
-// That's third-party code we don't edit to please a lint, so it's dropped here,
-// by the package each diagnostic names. Cargo's own lines (stderr text, not JSON)
+// applies uncapped. That's third-party code we don't rewrite to please a lint, so
+// it's dropped here, by the package each diagnostic names. Cargo's own lines (stderr text, not JSON)
 // pass through; non-diagnostic JSON (artifacts, the build summary) is dropped.
 func rustdocOwnOutput(output string, vendored []string) string {
 	var out strings.Builder
