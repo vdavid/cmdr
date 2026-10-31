@@ -88,3 +88,7 @@ version = "3.25.76"
 ecosystem = "npm"
 vulnerability.ignore = true
 reason = "zod 3.25.76 (GHSA-mrhx-c7xc-m3w5, memory exhaustion validating oversized collections), via chromium-bidi under puppeteer-core under Lighthouse CI (@lhci/cli, a website devDependency), validating protocol messages from the Chrome it launched against our own built site. The only fix is zod 4.6.6, a major chromium-bidi doesn't take yet. Verified with `pnpm why zod -r`, 2026-10-25."
+
+[[IgnoredVulns]]
+id = "GHSA-g3hv-75wg-m249"
+reason = "minimatch 3.1.5 and 10.2.6 (glob-pattern amplification in preprocessing, a CPU and memory denial of service for an attacker-supplied pattern). Both are devDependencies only: 10.2.6 via eslint's config-array and typescript-eslint in every app's lint run, 3.1.5 via glob 7 under Lighthouse CI's chrome-launcher and via serve-handler under `serve` (website devDependencies). They only ever see our own checked-in patterns (eslint file globs, serve's own config), never input from outside, and nothing here ships in the app or the website. The fix is 11.0.1, a major that eslint 10 and glob 7 don't accept (a forced override wasn't taken in #855). Verified with `pnpm why minimatch -r`, 2026-10-31."
