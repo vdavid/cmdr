@@ -174,6 +174,27 @@ mod bulk;
 	}
 }
 
+// A macOS module with a stand-in of the same name for everywhere else: the name resolves in
+// the Linux lane, so naming it outside a gate compiles there. That the stand-in carries
+// what's named is clippy-linux's job; a text scan can't see into it.
+func TestRunCfgGate_IgnoresAMacOSModuleWithAnOffMacOSStandIn(t *testing.T) {
+	root := writeCfgGateModuleWorkspace(t, "use crate::tags_io::enrich_listing;\n\nfn main() {}\n")
+	appSrc := filepath.Join(root, "apps", "desktop", "src-tauri", "src")
+	mustWrite(t, filepath.Join(appSrc, "lib.rs"), `mod commands;
+#[cfg(target_os = "macos")]
+pub mod tags_io;
+#[cfg(not(target_os = "macos"))]
+#[path = "tags_io_off_macos.rs"]
+pub mod tags_io;
+`)
+	mustWrite(t, filepath.Join(appSrc, "tags_io.rs"), "pub fn enrich_listing() {}\n")
+	mustWrite(t, filepath.Join(appSrc, "tags_io_off_macos.rs"), "pub fn enrich_listing() {}\n")
+
+	if _, err := RunCfgGate(&CheckContext{RootDir: root}); err != nil {
+		t.Fatalf("a module with an off-macOS stand-in exists on Linux, got: %v", err)
+	}
+}
+
 func TestMacOSOnlyModulePaths_NestedModule(t *testing.T) {
 	srcDir := t.TempDir()
 	mustWrite(t, filepath.Join(srcDir, "lib.rs"), "#[cfg(any(target_os = \"macos\", target_os = \"linux\"))]\nmod mtp;\n")
