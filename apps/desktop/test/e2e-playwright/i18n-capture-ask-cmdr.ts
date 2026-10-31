@@ -243,6 +243,14 @@ export async function captureAskCmdrSurfaces(
     return { page: main }
   })
   await captureCall(main, 'disable').catch(() => {})
+  // Back to the thread: the panel stays open across closing the rail, and would cover every later
+  // surface's thread.
+  await main.evaluate(`document.querySelector('${RAIL} .sessions-header button')?.click()`)
+  await expect
+    .poll(() => main.evaluate<boolean>(`document.querySelector('${RAIL} .sessions') === null`), {
+      timeout: waitBudget(3000),
+    })
+    .toBe(true)
 
   await closeRail(main).catch(() => {})
 }

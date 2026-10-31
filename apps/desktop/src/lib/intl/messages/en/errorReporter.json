@@ -281,7 +281,7 @@
   "errorReporter.offer.send": "Send error report…",
   "@errorReporter.offer.send": {
     "description": "Button or link that opens the Send error report dialog, pre-filled with what just went wrong. It sits on error notifications, the copy and move error dialog, the screen a folder shows when it can’t be listed, a refused new folder or file, and a stopped operation in the operation queue window. Same wording as the Help menu item Send error report…; keep the two the same in your language. The trailing … is U+2026 and must stay.",
-    "screenshot": "error-message-example.png"
+    "screenshot": "toast-get-info-not-reached.png"
   },
 
   "errorReporter.offer.slow": "Taking long? Send a report",

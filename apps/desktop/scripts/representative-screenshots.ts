@@ -515,11 +515,6 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
     note: 'A line in the Ask Cmdr thread, under a message like the one pictured here, saying why the assistant couldn’t answer. This screenshot doesn’t show that line.',
   },
   {
-    prefix: 'askCmdr.decision.',
-    screenshot: 'ask-cmdr-chat.png',
-    note: 'A line in the Ask Cmdr thread, between messages like the ones pictured here, recording how someone answered a suggestion. This screenshot doesn’t show that line.',
-  },
-  {
     prefix: 'askCmdr.wakeDigest.',
     screenshot: 'ask-cmdr-chat.png',
     note: 'The fold at the top of a thread the assistant started by itself, above messages like the ones pictured here: what changed in which folders. This screenshot doesn’t show that fold.',
@@ -573,8 +568,8 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
   },
   {
     prefix: 'servers.refusal.',
-    screenshot: 'server-sign-in-add.png',
-    note: 'The server sheet, pictured here. Your string is the one line that appears above its buttons or under a field when a server turns the connection down.',
+    screenshot: 'server-sign-in-refused-local-network.png',
+    note: 'The server sheet, pictured here turning down a connection with a different message. Your string is a line like that one, under a field or above the sheet’s buttons.',
   },
   {
     // Edit mode reads the real saved-server store, so a gallery row can't show a saved bucket's form.
@@ -584,7 +579,7 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
   },
   {
     prefix: 'servers.sheet.s3',
-    screenshot: 'server-sign-in-add-s3.png',
+    screenshot: 'server-sign-in-refused-s3.png',
     note: 'The server sheet for S3, pictured here. Your string belongs to a provider this shot doesn’t pick: a custom endpoint, an account ID, or the help under one of those fields.',
   },
   {

@@ -547,17 +547,20 @@
     "placeholders": {
       "amount": "the estimated cost, already formatted with its currency (e.g. $0.02 or €1.50)",
       "provider": "the cloud storage provider's name (e.g. AWS, Cloudflare R2, Backblaze B2, Wasabi, Hetzner); a brand name, never translated"
-    }
+    },
+    "screenshot": "transfer-s3-cost.png"
   },
 
   "fileOperations.s3Cost.infoLabel": "About this estimate",
   "@fileOperations.s3Cost.infoLabel": {
-    "description": "Accessible name (read by screen readers) of the ⓘ button after the cloud storage cost estimate in the Copy, Move, and Delete dialogs. Hovering or focusing it shows the explanation in fileOperations.s3Cost.infoText. Here \"About\" means \"regarding\", not \"approximately\"."
+    "description": "Accessible name (read by screen readers) of the ⓘ button after the cloud storage cost estimate in the Copy, Move, and Delete dialogs. Hovering or focusing it shows the explanation in fileOperations.s3Cost.infoText. Here \"About\" means \"regarding\", not \"approximately\".",
+    "screenshot": "transfer-s3-cost.png"
   },
 
   "fileOperations.s3Cost.infoText": "This uses the provider’s public list prices. Free tiers, discounts, included allowances, and minimum charges can make your bill lower or higher.",
   "@fileOperations.s3Cost.infoText": {
-    "description": "Tooltip behind the ⓘ after the cloud storage cost estimate in the Copy, Move, and Delete dialogs. Explains that the estimate uses the provider's published prices, so the real bill can differ. \"Free tiers\" are a provider's no-cost usage allowances; \"minimum charges\" are fees a provider bills even for tiny usage."
+    "description": "Tooltip behind the ⓘ after the cloud storage cost estimate in the Copy, Move, and Delete dialogs. Explains that the estimate uses the provider's published prices, so the real bill can differ. \"Free tiers\" are a provider's no-cost usage allowances; \"minimum charges\" are fees a provider bills even for tiny usage.",
+    "screenshot": "transfer-s3-cost.png"
   },
 
   "fileOperations.transferDialog.scanUnresponsive": "The source isn’t responding, so this size is all we could count.",
@@ -2148,7 +2151,8 @@
 
   "fileOperations.errorDialog.copyAnyway": "Copy anyway",
   "@fileOperations.errorDialog.copyAnyway": {
-    "description": "Button on the \"destination may not have enough space\" dialog that starts the same copy again without the free-space check. The space figure is only an estimate, so the user may go ahead; the copy stops if the destination really fills up. Short control label."
+    "description": "Button on the \"destination may not have enough space\" dialog that starts the same copy again without the free-space check. The space figure is only an estimate, so the user may go ahead; the copy stops if the destination really fills up. Short control label.",
+    "screenshot": "transfer-error-insufficient_space.png"
   },
 
   "fileOperations.errorDialog.close": "Close",

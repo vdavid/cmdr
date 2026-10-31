@@ -3197,46 +3197,39 @@
   "settings.managed.rowNote": "Your organization manages this setting.",
   "@settings.managed.rowNote": {
     "description": "A note under a setting the person can't change because their organization's IT department set it through device management (MDM, a configuration profile). Shown with an info icon under a greyed-out switch. Plain and calm, not alarming; 'organization' means the employer or school that manages the Mac.",
-    "screenshot": "settings-updates.png",
-    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
+    "screenshot": "settings-updates-managed.png"
   },
   "settings.managed.sectionNote": "Your organization manages some of these settings.",
   "@settings.managed.sectionNote": {
     "description": "A line at the top of a settings page (for example Updates & privacy, or AI) when the person's organization locked one or more of the settings below it through device management (MDM). Screen-reader users hear it before reaching the disabled controls. 'Organization' means the employer or school that manages the Mac.",
-    "screenshot": "settings-updates.png",
-    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
+    "screenshot": "settings-updates-managed.png"
   },
   "settings.managed.summary.title": "Managed by your organization",
   "@settings.managed.summary.title": {
     "description": "Title of a small read-only card in Settings > Updates & privacy, shown only when the person's organization (their employer's or school's IT team) restricts Cmdr through device management (MDM, a configuration profile). The card lists what is restricted, one line each, so a help-desk person can check it at a glance. Sentence case, no ending period.",
-    "screenshot": "settings-updates.png",
-    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
+    "screenshot": "settings-updates-managed.png"
   },
   "settings.managed.summary.usageStats": "Usage stats",
   "@settings.managed.summary.usageStats": {
     "description": "Row label in the 'Managed by your organization' card: the anonymous usage statistics Cmdr can send. The value beside it says what the organization set (for example 'Off'). Short, sentence case.",
-    "screenshot": "settings-updates.png",
-    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
+    "screenshot": "settings-updates-managed.png"
   },
   "settings.managed.summary.usageStatsOff": "Off",
   "@settings.managed.summary.usageStatsOff": {
     "description": "Value beside the row label 'Usage stats' (the anonymous usage statistics Cmdr can send) in the 'Managed by your organization' card (Settings > Updates & privacy). The organization turned this off. Each row has its own 'Off' key so the word can agree in gender and number with that row's label: use the form your language's macOS Settings shows for a switched-off feature, agreeing with the label where your grammar asks for it. One or two words.",
     "agreesWith": "settings.managed.summary.usageStats",
-    "screenshot": "settings-updates.png",
-    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
+    "screenshot": "settings-updates-managed.png"
   },
   "settings.managed.summary.reports": "Crash and error reports",
   "@settings.managed.summary.reports": {
     "description": "Row label in the 'Managed by your organization' card: the crash reports and error reports Cmdr can send to its developer. The value beside it says what the organization set (for example 'Off'). Short, sentence case.",
-    "screenshot": "settings-updates.png",
-    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
+    "screenshot": "settings-updates-managed.png"
   },
   "settings.managed.summary.reportsOff": "Off",
   "@settings.managed.summary.reportsOff": {
     "description": "Value beside the row label 'Crash and error reports' (the crash and error reports Cmdr can send to its developer) in the 'Managed by your organization' card (Settings > Updates & privacy). The organization turned this off. Each row has its own 'Off' key so the word can agree in gender and number with that row's label: use the form your language's macOS Settings shows for a switched-off feature, agreeing with the label where your grammar asks for it. One or two words.",
     "agreesWith": "settings.managed.summary.reports",
-    "screenshot": "settings-updates.png",
-    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
+    "screenshot": "settings-updates-managed.png"
   },
   "settings.managed.summary.securityLog": "Security events",
   "@settings.managed.summary.securityLog": {
@@ -3254,21 +3247,18 @@
   "settings.managed.summary.updates": "Updates",
   "@settings.managed.summary.updates": {
     "description": "Row label in the 'Managed by your organization' card: Cmdr's own app updates. The value beside it says what the organization set (for example 'Off' or 'Up to version 0.52'). Short, sentence case.",
-    "screenshot": "settings-updates.png",
-    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
+    "screenshot": "settings-updates-managed.png"
   },
   "settings.managed.summary.updatesOff": "Off",
   "@settings.managed.summary.updatesOff": {
     "description": "Value beside the row label 'Updates' (Cmdr's own app updates, switched off entirely) in the 'Managed by your organization' card (Settings > Updates & privacy). The organization turned this off. Each row has its own 'Off' key so the word can agree in gender and number with that row's label: use the form your language's macOS Settings shows for a switched-off feature, agreeing with the label where your grammar asks for it. One or two words.",
     "agreesWith": "settings.managed.summary.updates",
-    "screenshot": "settings-updates.png",
-    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
+    "screenshot": "settings-updates-managed.png"
   },
   "settings.managed.summary.ai": "AI",
   "@settings.managed.summary.ai": {
     "description": "Row label in the 'Managed by your organization' card: Cmdr's AI features. The value beside it says what the organization set (for example 'Off' or 'On-device only'). Keep it as short as the English.",
-    "screenshot": "settings-updates.png",
-    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
+    "screenshot": "settings-updates-managed.png"
   },
   "settings.managed.summary.aiOff": "Off",
   "@settings.managed.summary.aiOff": {
@@ -3304,8 +3294,7 @@
   "settings.managed.summary.onDeviceOnly": "On-device only",
   "@settings.managed.summary.onDeviceOnly": {
     "description": "Value beside 'AI' in the 'Managed by your organization' card: the organization allows only the AI model that runs on this Mac, so nothing goes to a cloud AI service. Short. “On-device AI” is the AI that the provider option “Local LLM” (settings.ai.provider.opt.local) runs: the same model on this Mac, so the two names point at one thing.",
-    "screenshot": "settings-updates.png",
-    "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
+    "screenshot": "settings-updates-managed.png"
   },
   "settings.managed.summary.cloudHostsOnly": "Cloud AI only through {hosts}",
   "@settings.managed.summary.cloudHostsOnly": {
@@ -3448,23 +3437,28 @@
   },
   "settings.ai.loading": "Loading…",
   "@settings.ai.loading": {
-    "description": "Shown while the AI section's state is loading. The trailing ellipsis signals an in-progress action; keep it."
+    "description": "Shown while the AI section's state is loading. The trailing ellipsis signals an in-progress action; keep it.",
+    "screenshot": "settings-ai-provider-managed.png"
   },
   "settings.ai.tooltipOff": "AI features are turned off. Cmdr works fully without AI: suggestions and smart features are simply hidden.",
   "@settings.ai.tooltipOff": {
-    "description": "Tooltip for the AI \"Off\" provider option. \"Cmdr\" is the product name; keep it. \"AI\" = artificial intelligence. Avoid implying AI is required."
+    "description": "Tooltip for the AI \"Off\" provider option. \"Cmdr\" is the product name; keep it. \"AI\" = artificial intelligence. Avoid implying AI is required.",
+    "screenshot": "settings-ai-provider-managed.png"
   },
   "settings.ai.tooltipCloud": "Bring your own API key for fast, high-quality AI. Works with OpenAI, Anthropic (Claude), Google (Gemini), xAI (Grok), Groq, DeepSeek, OpenRouter, or any local server you’re running (Ollama, LM Studio, etc.). Requires an internet connection (unless using a local server). No disk space or memory used by Cmdr.",
   "@settings.ai.tooltipCloud": {
-    "description": "Tooltip for the AI \"Cloud AI\" provider option. \"API\" = application programming interface (keep it). All the bracketed and listed names (OpenAI, Anthropic, Claude, Google, Gemini, xAI, Grok, Groq, DeepSeek, OpenRouter, Ollama, LM Studio) are brand/product names; do NOT translate them. \"Cmdr\" is the product name; keep it. \"Bring your own ...\" means the user supplies their own key."
+    "description": "Tooltip for the AI \"Cloud AI\" provider option. \"API\" = application programming interface (keep it). All the bracketed and listed names (OpenAI, Anthropic, Claude, Google, Gemini, xAI, Grok, Groq, DeepSeek, OpenRouter, Ollama, LM Studio) are brand/product names; do NOT translate them. \"Cmdr\" is the product name; keep it. \"Bring your own ...\" means the user supplies their own key.",
+    "screenshot": "settings-ai-provider-managed.png"
   },
   "settings.ai.tooltipLocal": "Runs a small language model entirely on your device. Maximum privacy: nothing leaves your computer. Works offline. Uses ~2 GB disk space and ~400 MB memory (varies with context size). Requires Apple silicon (M1+) and macOS 14 or later.",
   "@settings.ai.tooltipLocal": {
-    "description": "Tooltip for the AI \"Local LLM\" provider option. \"~2 GB\" and \"~400 MB\" are rough decimal sizes: keep the tilde and write the units as your common.sizeUnit.gigabyte and common.sizeUnit.megabyte. \"M1\" is an Apple chip name; keep it. \"Apple silicon\" is Apple’s name for its own M-series Mac chips: use the form your language’s termbase settles, since Apple frames it in its own words in some languages. \"M1+\" means M1 or later. \"context size\" ties to the local context-window setting."
+    "description": "Tooltip for the AI \"Local LLM\" provider option. \"~2 GB\" and \"~400 MB\" are rough decimal sizes: keep the tilde and write the units as your common.sizeUnit.gigabyte and common.sizeUnit.megabyte. \"M1\" is an Apple chip name; keep it. \"Apple silicon\" is Apple’s name for its own M-series Mac chips: use the form your language’s termbase settles, since Apple frames it in its own words in some languages. \"M1+\" means M1 or later. \"context size\" ties to the local context-window setting.",
+    "screenshot": "settings-ai-provider-managed.png"
   },
   "settings.ai.tooltipLocalDisabled": "Local AI requires Apple silicon (M1 or later). Use Cloud AI instead.",
   "@settings.ai.tooltipLocalDisabled": {
-    "description": "Tooltip shown when the Local LLM option is disabled because the hardware is unsupported. \"M1\" is an Apple chip name; keep it. \"Apple silicon\" is Apple’s name for its own M-series Mac chips: use the form your language’s termbase settles, since Apple frames it in its own words in some languages. \"Cloud AI\" is this section's own option name; translate consistently with settings.ai.provider.opt.cloud."
+    "description": "Tooltip shown when the Local LLM option is disabled because the hardware is unsupported. \"M1\" is an Apple chip name; keep it. \"Apple silicon\" is Apple’s name for its own M-series Mac chips: use the form your language’s termbase settles, since Apple frames it in its own words in some languages. \"Cloud AI\" is this section's own option name; translate consistently with settings.ai.provider.opt.cloud.",
+    "screenshot": "settings-ai-provider-managed.png"
   },
   "settings.fileSystemWatching.indexSize": "Index size",
   "@settings.fileSystemWatching.indexSize": {

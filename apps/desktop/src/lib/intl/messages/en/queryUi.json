@@ -132,7 +132,7 @@
       "countText": "the number of indexed entries, already formatted for display (for example 1,234,567)",
       "count": "the same number of entries (drives the singular/plural form of the noun)"
     },
-    "screenshot": "filter-popover.png"
+    "screenshot": "search-dialog.png"
   },
   "queryUi.ai.lead": "Here’s what the agent did:",
   "@queryUi.ai.lead": {

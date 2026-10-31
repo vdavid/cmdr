@@ -592,7 +592,8 @@
   },
   "commands.paneQuickFilter.label": "Quick filter",
   "@commands.paneQuickFilter.label": {
-    "description": "Command name (Ctrl+S, like Total Commander) in the command palette and the keyboard-shortcuts list: opens the small badge in the pane that holds the typed text which narrows the file list, or, pressed again, switches that badge between filtering and jumping. Same words as fileExplorer.quickFilter.prefix (Filter) and fileExplorer.typeToJump.prefix (Jump)."
+    "description": "Command name (Ctrl+S, like Total Commander) in the command palette and the keyboard-shortcuts list: opens the small badge in the pane that holds the typed text which narrows the file list, or, pressed again, switches that badge between filtering and jumping. Same words as fileExplorer.quickFilter.prefix (Filter) and fileExplorer.typeToJump.prefix (Jump).",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.paneQuickFilter.description": "Opens the filter badge on the current pattern. Press again to switch between Filter and Jump",
   "@commands.paneQuickFilter.description": {
@@ -1447,8 +1448,7 @@
   "commands.handler.shareLinkUnavailable": "Move the cursor to a file in an S3 bucket to copy a share link.",
   "@commands.handler.shareLinkUnavailable": {
     "description": "Warning toast when \"Copy share link\" runs but the cursor isn't on a file in an S3 bucket (a folder, or a pane somewhere else). \"S3 bucket\" is cloud storage; \"S3\" is a product name and stays in English.",
-    "screenshot": "toast-transfer-complete.png",
-    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what Copy share link says there, for a file in an S3 bucket."
+    "screenshot": "toast-share-link-unavailable.png"
   },
   "commands.handler.shareLinkFailed": "Couldn’t make a share link. {detail}",
   "@commands.handler.shareLinkFailed": {
@@ -1501,18 +1501,21 @@
       "systemSettings": "the localized OS name of the System Settings app, injected at runtime (it follows the Mac’s system language, which can differ from Cmdr’s, so it may arrive in English)",
       "privacyAndSecurity": "the localized OS name of the Privacy & Security pane, injected at runtime the same way",
       "automation": "the localized OS name of the Automation permission under Privacy & Security, injected at runtime the same way"
-    }
+    },
+    "screenshot": "toast-get-info-automation-off.png"
   },
   "commands.handler.getInfo.openAutomationSettings": "Open {automation} settings",
   "@commands.handler.getInfo.openAutomationSettings": {
     "description": "Button in the Get info toast (commands.handler.getInfo.automationOff) that opens System Settings at Privacy & Security > Automation, where the user lets Cmdr control Finder.",
     "placeholders": {
       "automation": "the OS-localized macOS \"Automation\" permission name, as System Settings shows it, injected at runtime (it follows the Mac’s system language, which can differ from Cmdr’s, so it may arrive in English)"
-    }
+    },
+    "screenshot": "toast-get-info-automation-off.png"
   },
   "commands.handler.getInfo.notReached": "Cmdr couldn’t reach Finder to open Get info. Give it another try.",
   "@commands.handler.getInfo.notReached": {
-    "description": "Toast shown when Cmdr couldn't ask Finder to open its Get info window (the helper didn't start, or didn't answer in a few seconds). Usually a one-off; the second sentence suggests trying again. \"Get info\" matches the File menu item (menu.file.getInfo). Conversational; avoid the words \"error\" and \"failed\"."
+    "description": "Toast shown when Cmdr couldn't ask Finder to open its Get info window (the helper didn't start, or didn't answer in a few seconds). Usually a one-off; the second sentence suggests trying again. \"Get info\" matches the File menu item (menu.file.getInfo). Conversational; avoid the words \"error\" and \"failed\".",
+    "screenshot": "toast-get-info-not-reached.png"
   },
   "commands.handler.zoomResetHintShortcut": "You can reset the zoom level to 100% by {shortcut}.",
   "@commands.handler.zoomResetHintShortcut": {

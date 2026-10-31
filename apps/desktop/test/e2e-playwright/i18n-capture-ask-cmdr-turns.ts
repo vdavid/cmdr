@@ -46,6 +46,10 @@ async function onFreshThread(main: TauriPage, label: string): Promise<void> {
   await captureCall<boolean>(main, 'enable')
   await main.evaluate(`document.querySelector('${NEW_CHAT}')?.click()`)
   await main.waitForSelector(`${RAIL} .empty .empty-title`, 5000)
+  // The thread renders under the chats panel too, so the wait above can't tell it's covered.
+  if (await main.evaluate<boolean>(`document.querySelector('${RAIL} .sessions') !== null`)) {
+    throw new Error('the chats panel is covering the thread this surface photographs')
+  }
 }
 
 async function openChat(main: TauriPage): Promise<void> {

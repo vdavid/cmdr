@@ -6,8 +6,7 @@
   },
   "whatsNew.dialog.empty": "Nothing to see here yet. New changes will show up here after an update.",
   "@whatsNew.dialog.empty": {
-    "description": "Empty-state message in the What's new dialog when there are no changelog entries to show (reachable only via manual reopen).",
-    "screenshot": "whats-new-empty.png"
+    "description": "Empty-state message in the What's new dialog when there are no changelog entries to show (reachable only via manual reopen)."
   },
   "whatsNew.securityNotice.title": "Recent updates fixed {count, plural, one {a security issue} other {# security issues}}.",
   "@whatsNew.securityNotice.title": {
@@ -15,7 +14,7 @@
     "placeholders": {
       "count": "how many security issues the new versions fixed, 1 or more"
     },
-    "screenshot": "whats-new-security-notice.png"
+    "screenshot": "whats-new.png"
   },
   "whatsNew.securityNotice.readAdvisory": "Read the advisory",
   "@whatsNew.securityNotice.readAdvisory": {
@@ -28,7 +27,7 @@
     "placeholders": {
       "id": "the advisory's identifier, never translated: a GitHub advisory ID like GHSA-abcd-1234-efgh, or a date-based ID like 2026-10-16-smb-path"
     },
-    "screenshot": "whats-new-security-notice.png"
+    "screenshot": "whats-new.png"
   },
   "whatsNew.dialog.showMore": "Show more",
   "@whatsNew.dialog.showMore": {

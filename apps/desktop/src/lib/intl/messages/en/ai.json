@@ -877,8 +877,7 @@
   "ai.managed.cloudAiOff": "Your organization allows only on-device AI.",
   "@ai.managed.cloudAiOff": {
     "description": "Shown wherever cloud AI is unavailable because the person's organization (their IT team, through a device management profile) allows only the AI model that runs on this Mac: under the AI provider choice, in onboarding, and in toasts. \"On-device\" means running on this computer, with nothing sent away. One calm sentence. “On-device AI” is the AI that the provider option “Local LLM” (settings.ai.provider.opt.local) runs: the same model on this Mac, so the two names point at one thing.",
-    "screenshot": "settings-ai-provider.png",
-    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+    "screenshot": "settings-ai-provider-managed.png"
   },
   "ai.managed.hostNotAllowed": "Your organization doesn’t allow this AI service. Your IT team can tell you which ones you can use.",
   "@ai.managed.hostNotAllowed": {

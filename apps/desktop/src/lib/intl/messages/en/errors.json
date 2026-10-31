@@ -4001,8 +4001,7 @@
   "errors.write.linkNeedsConsent.title": "This file is on another server",
   "@errors.write.linkNeedsConsent.title": {
     "description": "Title of the dialog when a copy or move stopped at a file behind a link (a DFS link in an SMB share) to another server the person hasn’t allowed Cmdr to sign in to.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-link_needs_consent.png"
   },
   "errors.write.linkNeedsConsent.message": "A link on {server} leads to {target}, and Cmdr hasn’t been allowed to sign in there, so nothing went to that server.",
   "@errors.write.linkNeedsConsent.message": {
@@ -4011,13 +4010,11 @@
       "server": "the server the share is on",
       "target": "the other server the link leads to"
     },
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-link_needs_consent.png"
   },
   "errors.write.linkNeedsConsent.suggestion": "Open the folder in a pane and allow the sign-in if you trust that server, then try again.",
   "@errors.write.linkNeedsConsent.suggestion": {
     "description": "Suggestion in that dialog. \"pane\" is one of the two file lists.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-link_needs_consent.png"
   }
 }
