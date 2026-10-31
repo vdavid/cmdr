@@ -65,11 +65,8 @@ pub fn parse_tags_plist(bytes: &[u8]) -> Vec<TagRef> {
 /// Why the write path couldn't learn a file's current tags. A file in either state is
 /// skipped and reported, never written: treating it as untagged would replace every
 /// tag it carries with the one being toggled.
+#[cfg(target_os = "macos")]
 #[derive(Debug)]
-#[cfg_attr(
-    not(target_os = "macos"),
-    allow(dead_code, reason = "only the macOS read path builds these")
-)]
 pub enum TagReadError {
     /// The store refused the read: no read permission, an ACL, a dead mount, or nothing
     /// here stores tags (`VolumeError::NotSupported`).
@@ -78,6 +75,7 @@ pub enum TagReadError {
     Undecodable,
 }
 
+#[cfg(target_os = "macos")]
 impl std::fmt::Display for TagReadError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -208,6 +206,7 @@ pub(super) fn toggled_tags(tags: &[TagRef], color: u8, color_name: &str, add: bo
 /// Tells the person a toggle left some files alone (`tags-skipped`, a warning toast in
 /// the main window) and logs each one with its reason. The keyboard command and the
 /// context-menu circles both call this; the MCP `tag` tool reports skips in its result.
+#[cfg(target_os = "macos")]
 pub fn report_skips<R: tauri::Runtime>(app: &tauri::AppHandle<R>, skipped: &[TagSkip]) {
     if skipped.is_empty() {
         return;
@@ -230,7 +229,8 @@ pub fn report_skips<R: tauri::Runtime>(app: &tauri::AppHandle<R>, skipped: &[Tag
 /// What a tag write did: the resulting tag set per written-or-unchanged path (for the
 /// listing cache), and the paths left alone because their tags couldn't be read.
 // DEFAULT-OK: empty lists claim nothing about the disk: no file written, none skipped
-// (the off-macOS toggle, and the MCP adapter's starting accumulator).
+// (the MCP adapter's starting accumulator).
+#[cfg(target_os = "macos")]
 #[derive(Debug, Default)]
 pub struct TagToggleOutcome {
     pub updates: Vec<(String, Vec<TagRef>)>,
@@ -238,6 +238,7 @@ pub struct TagToggleOutcome {
 }
 
 /// One file a tag write left alone, and why.
+#[cfg(target_os = "macos")]
 #[derive(Debug)]
 pub struct TagSkip {
     pub path: String,

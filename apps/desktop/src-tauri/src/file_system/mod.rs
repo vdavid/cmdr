@@ -23,6 +23,10 @@ pub mod share;
 #[cfg(target_os = "macos")]
 pub mod sync_status;
 pub mod tags;
+#[cfg(target_os = "macos")]
+pub mod tags_io;
+#[cfg(not(target_os = "macos"))]
+#[path = "tags_io_off_macos.rs"]
 pub mod tags_io;
 #[cfg(all(test, target_os = "macos"))]
 mod tags_io_integration_test;

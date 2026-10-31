@@ -477,7 +477,7 @@ Which app F4 opens a file in: the regular pane, the search-results pane, and the
 What a tag is, why reading them is deferred, and how the listing carries them forward across a re-stat:
 `crates/cmdr-listing/DETAILS.md` § "Finder tags". This is the app's half: reading and writing the xattr.
 
-**Split.** `tags.rs` is pure (the plist both ways, the toggle rule, the applied-colors rule, the skip vocabulary). `tags_io.rs` is the I/O, through `Volume::read_xattr_many` / `write_xattr`, so a direct SMB share reads over smb2 and works with its macOS mount gone. ❌ `tags::read_tags` (a local `getxattr`) is for a caller already in OS paths, a custom folder's icon, and never for a row.
+**Split.** `tags.rs` is pure (the plist both ways, the toggle rule, the applied-colors rule, the skip vocabulary). `tags_io.rs` is the I/O, through `Volume::read_xattr_many` / `write_xattr`, so a direct SMB share reads over smb2 and works with its macOS mount gone. It's macOS only: elsewhere `tags_io_off_macos.rs` takes the module's name and its commands answer "nothing to do", so callers stay `#[cfg]`-free. ❌ `tags::read_tags` (a local `getxattr`) is for a caller already in OS paths, a custom folder's icon, and never for a row.
 
 **Which volume.** `tag_store_for` asks `VolumeManager::resolve` about the row's PARENT with the listing's volume id: `photos.zip` is a file on the drive, and resolving the row itself would route to the archive inside it. A routed or undecided parent (an archive's insides, the `.git` portal, a restic view) stores nothing, and neither does a backend without xattrs. With no listing to ask (a search hit), the registered volume with the longest root over the path answers. A batch resolves each folder once.
 
