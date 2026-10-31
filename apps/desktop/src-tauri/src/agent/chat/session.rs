@@ -244,7 +244,7 @@ const RAIL_FAKE_FAIL_MARKER: &str = "[fail:";
 /// thread can't desync it. `app_state` and `list_volumes` read the machine's real state: a spec
 /// asserts their shape, never their values.
 ///
-/// The other markers exist for the i18n capture (`i18n-capture-ask-cmdr.ts`), which needs every
+/// The other markers exist for the i18n capture (`i18n-capture-ask-cmdr-turns.ts`), which needs every
 /// tool line, a staged rename plan, and the typed failures on screen. Each carries what it needs
 /// in the message text, since a fake has no other way to learn the fixture tree's path.
 fn rail_fake_turn(messages: &[crate::agent::llm::types::AgentMessage]) -> crate::agent::llm::fake::ScriptedTurn {
@@ -290,11 +290,9 @@ fn rail_fake_turn(messages: &[crate::agent::llm::types::AgentMessage]) -> crate:
     }
 }
 
-/// One round calling every read tool the `[tools]` script doesn't, plus the two memory tools, so
-/// their tool lines render with their subjects. It stays harmless on a shared app: the memory calls
-/// aim outside the jail and refuse, `connect_volume` names a place nobody saved, and the search is
-/// scoped to `folder` so it can't walk the drive. Results read the machine's real state, so a spec
-/// asserts their shape, never their values.
+/// One round through every read tool the `[tools]` script skips, plus the two memory tools. Harmless
+/// on a shared app: the memory calls aim outside the jail and refuse, `connect_volume` names a place
+/// nobody saved, and the search stays in `folder`.
 fn every_tool_round(folder: &str) -> crate::agent::llm::fake::ScriptedTurn {
     use crate::agent::llm::fake::ScriptedTurn;
     use crate::agent::llm::types::ToolId;
@@ -693,8 +691,7 @@ mod tests {
         assert_eq!(chunks.concat(), "Hi! I'm the test assistant.");
     }
 
-    /// The capture's scripts: `i18n-capture-ask-cmdr.ts` sends these markers and waits on "test
-    /// assistant" (`ask-cmdr.spec.ts` matches the same words).
+    /// The capture sends these markers (`i18n-capture-ask-cmdr-turns.ts`) and waits on "test assistant".
     #[test]
     fn the_rail_fake_plays_the_capture_scripts() {
         use crate::agent::llm::fake::ScriptedTurn;
