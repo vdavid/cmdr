@@ -248,6 +248,24 @@ describe('McpServerSection', () => {
       void unmount(component)
     })
 
+    it('takes the backend off when the row resets, so no item outlives the setting', async () => {
+      settingsState.directMode = true
+      tauriState.directMode = true
+      const { component } = await render()
+      await flushMicrotasks()
+
+      // What `resetSetting` tells its listeners: the default.
+      settingsState.directMode = false
+      tauriState.directMode = false
+      settingChangeCallbacks.get('developer.mcpDirectMode')?.(false)
+      await flushMicrotasks()
+      await tick()
+
+      expect(setMcpDirectMode).toHaveBeenCalledTimes(1)
+      expect(setMcpDirectMode).toHaveBeenCalledWith(false)
+      void unmount(component)
+    })
+
     it('shows what the backend really has, since the saved value alone proves nothing', async () => {
       // `settings.json` says on, and launch found nothing behind it.
       settingsState.directMode = true

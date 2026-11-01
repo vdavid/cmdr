@@ -133,6 +133,10 @@ The switch that lets an outside client use the tools that go past a person (`pol
 - **The Settings row is the only writer** (`McpServerSection.svelte`, `set_mcp_direct_mode`). The setting is
   `mcpSettable: false`, and the row shows what `get_mcp_direct_mode` answers, so a JSON value alone doesn't read as on.
   Each real change, and a launch that comes up on, lands in the security log.
+- **A reset takes the item with it.** The row's reset reaches `set_mcp_direct_mode(false)` through
+  `McpServerSection`'s listener, and a recovered `settings.json` clears it at launch (`seed_direct_mode_at_launch`).
+- **A launch that comes up on tells the person** (`AccessNotice::McpDirectModeOnAtLaunch`), so direct mode is never on
+  quietly. It's raised in `setup()`, so the main window drains it through `take_security_notices_from_launch`.
 
 ## The `Session` tier
 

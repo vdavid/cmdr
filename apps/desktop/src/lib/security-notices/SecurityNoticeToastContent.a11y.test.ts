@@ -21,6 +21,7 @@ import SecurityNoticeToastContent from './SecurityNoticeToastContent.svelte'
 
 const notices: AccessNotice[] = [
   { kind: 'mcpForeignOrigin' },
+  { kind: 'mcpDirectModeOnAtLaunch' },
   { kind: 'smbSignatureRefused', volumeId: 'smb-nas-photos' },
   { kind: 'updateNotGenuine', version: '0.53.0', check: 'code_signature' },
 ]

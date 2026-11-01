@@ -19,7 +19,7 @@ use tauri::AppHandle;
 use tauri_specta::Event;
 
 use crate::ignore_poison::IgnorePoison;
-use crate::security_log::{self, Heard, McpRejection, SecurityEvent, SignatureCheck};
+use crate::security_log::{self, Heard, Initiator, McpRejection, SecurityEvent, SignatureCheck};
 
 const LOG_TARGET: &str = "security_notices";
 
@@ -39,6 +39,9 @@ pub enum AccessNotice {
     SmbSignatureRefused { volume_id: String },
     /// An offered update didn't carry Cmdr's signature, so nothing was installed.
     UpdateNotGenuine { version: String, check: SignatureCheck },
+    /// Cmdr came up with MCP direct mode on, so outside clients can go past a person. Said at every
+    /// launch it's true, so direct mode is never on quietly (`tools/DETAILS.md` § Direct mode).
+    McpDirectModeOnAtLaunch,
 }
 
 /// Typed `security-notice-raised` event: tell the person about `notice`, seen `count` times
@@ -69,6 +72,10 @@ fn notice_for(event: &SecurityEvent) -> Option<AccessNotice> {
             version: version.clone(),
             check: *check,
         }),
+        SecurityEvent::McpDirectModeChanged {
+            on: true,
+            by: Initiator::Launch,
+        } => Some(AccessNotice::McpDirectModeOnAtLaunch),
         SecurityEvent::McpRejectionsStarted {
             reason: McpRejection::MissingToken | McpRejection::WrongToken | McpRejection::NoTokenConfigured,
         }
@@ -96,6 +103,9 @@ fn notice_for(event: &SecurityEvent) -> Option<AccessNotice> {
 static APP: OnceLock<AppHandle> = OnceLock::new();
 static GATE: LazyLock<Mutex<gate::NoticeGate>> = LazyLock::new(|| Mutex::new(gate::NoticeGate::new(WINDOW)));
 static FLUSH_SCHEDULED: AtomicBool = AtomicBool::new(false);
+/// Raises from `setup()`, before any window listens, where an event alone would be lost. The main
+/// window drains them once it does ([`take_security_notices_from_launch`]).
+static RAISED_AT_LAUNCH: Mutex<Vec<SecurityNoticeRaised>> = Mutex::new(Vec::new());
 
 /// Starts listening to the security log. Call once from `setup()`, after `security_log::init`.
 pub fn init(app: &AppHandle) {
@@ -118,16 +128,28 @@ fn on_event(event: &SecurityEvent, _heard: Heard) {
 }
 
 fn emit(raise: gate::Raise) {
-    let Some(app) = APP.get() else {
-        return;
-    };
     let event = SecurityNoticeRaised {
         notice: raise.notice,
         count: raise.count,
     };
+    if matches!(event.notice, AccessNotice::McpDirectModeOnAtLaunch) {
+        RAISED_AT_LAUNCH.lock_ignore_poison().push(event);
+        return;
+    }
+    let Some(app) = APP.get() else {
+        return;
+    };
     if let Err(e) = event.emit(app) {
         log::warn!(target: LOG_TARGET, "A security notice didn't reach the windows: {e}");
     }
+}
+
+/// Hands over what was raised before any window listened. The main window calls this once it
+/// listens, and a second call answers nothing, so a reloaded webview doesn't say it twice.
+#[tauri::command]
+#[specta::specta]
+pub fn take_security_notices_from_launch() -> Vec<SecurityNoticeRaised> {
+    std::mem::take(&mut *RAISED_AT_LAUNCH.lock_ignore_poison())
 }
 
 /// Raises the held counts once their window ends, on a short-lived thread that exits when
@@ -195,6 +217,41 @@ mod tests {
                 })
             );
         }
+    }
+
+    #[test]
+    fn a_launch_in_direct_mode_reaches_the_person_and_a_toggle_stays_in_the_record() {
+        assert_eq!(
+            notice_for(&SecurityEvent::McpDirectModeChanged {
+                on: true,
+                by: Initiator::Launch
+            }),
+            Some(AccessNotice::McpDirectModeOnAtLaunch)
+        );
+        for on in [true, false] {
+            let toggle = SecurityEvent::McpDirectModeChanged {
+                on,
+                by: Initiator::User,
+            };
+            assert_eq!(notice_for(&toggle), None, "the person just did this themselves");
+        }
+    }
+
+    #[test]
+    fn a_launch_notice_waits_for_the_window_and_is_handed_over_once() {
+        // Launch records it in setup(), before any window listens, so an event alone would be lost.
+        take_security_notices_from_launch();
+        on_event(
+            &SecurityEvent::McpDirectModeChanged {
+                on: true,
+                by: Initiator::Launch,
+            },
+            Heard::Recorded,
+        );
+        let raised = take_security_notices_from_launch();
+        assert_eq!(raised.len(), 1);
+        assert_eq!(raised[0].notice, AccessNotice::McpDirectModeOnAtLaunch);
+        assert!(take_security_notices_from_launch().is_empty(), "handed over once");
     }
 
     /// A missing or wrong MCP token is the record's alone (cases 1 and 2 of #457), and so is

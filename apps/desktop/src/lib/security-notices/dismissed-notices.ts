@@ -12,6 +12,8 @@ export function securityNoticeId(notice: AccessNotice): string {
   switch (notice.kind) {
     case 'mcpForeignOrigin':
       return 'security-notice:mcp-foreign-origin'
+    case 'mcpDirectModeOnAtLaunch':
+      return 'security-notice:mcp-direct-mode-on'
     case 'smbSignatureRefused':
       return `security-notice:smb-signature:${notice.volumeId}`
     case 'updateNotGenuine':

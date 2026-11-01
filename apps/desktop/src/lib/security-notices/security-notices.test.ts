@@ -12,11 +12,13 @@ vi.mock('#lib/ui/toast/index.js', () => ({ addToast, dismissToast }))
 
 const unlisten = vi.fn()
 let raised: ((payload: SecurityNoticeRaised) => void) | null = null
+let fromLaunch: SecurityNoticeRaised[] = []
 vi.mock('#lib/tauri-commands/index.js', () => ({
   onSecurityNoticeRaised: (callback: (payload: SecurityNoticeRaised) => void) => {
     raised = callback
     return Promise.resolve(unlisten)
   },
+  takeSecurityNoticesFromLaunch: () => Promise.resolve(fromLaunch),
 }))
 
 import {
@@ -45,6 +47,19 @@ beforeEach(() => {
   _resetSecurityNoticesForTest()
   vi.clearAllMocks()
   raised = null
+  fromLaunch = []
+})
+
+describe('what launch raised before any window listened', () => {
+  it('reaches the person once the main window listens', async () => {
+    fromLaunch = [{ notice: { kind: 'mcpDirectModeOnAtLaunch' }, count: 1 }]
+    await startSecurityNotices()
+    expect(lastToast().options).toMatchObject({
+      id: 'security-notice:mcp-direct-mode-on',
+      level: 'warn',
+      dismissal: 'persistent',
+    })
+  })
 })
 
 describe('announceSecurityNotice', () => {

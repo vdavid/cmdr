@@ -516,7 +516,7 @@ export {
   onAgentWakeStatus,
   onAgentWakeStaged,
 } from './ask-cmdr'
-export { onSecurityNoticeRaised } from './security-notices'
+export { onSecurityNoticeRaised, takeSecurityNoticesFromLaunch } from './security-notices'
 export { onStateRecoveryQueued, takeStateRecoveries } from './state-recovery'
 export type {
   BulkRenameCheckProgress,

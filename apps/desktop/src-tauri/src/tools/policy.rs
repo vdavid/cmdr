@@ -99,9 +99,20 @@ fn item_backs_direct_mode(store: &dyn SecretStore) -> bool {
     }
 }
 
+/// A reset of `settings.json` takes the item with it, so a reset setting stays reset. This is
+/// for the recovery that replaces the file; the Settings row's own reset goes through
+/// [`set_direct_mode`].
+fn forget_item_after_settings_reset(store: &dyn SecretStore) {
+    // allowed-discarded-outcome: it logs a refusal, and launch has nobody to answer
+    persist_direct_mode(store, false, false);
+}
+
 /// Reads the saved setting into the atomic, before the MCP server starts. Records a launch that came
 /// up in direct mode.
 pub fn seed_direct_mode_at_launch(saved: Option<bool>) {
+    if crate::state_recovery::settings_file_recovered() {
+        forget_item_after_settings_reset(crate::secrets::store().vouching());
+    }
     let on = direct_mode_at_launch(saved == Some(true), crate::secrets::is_file_backed, || {
         item_backs_direct_mode(crate::secrets::store().vouching())
     });
@@ -260,6 +271,20 @@ mod tests {
         assert!(persist_direct_mode(store, false, false));
         assert!(!item_backs_direct_mode(store), "off removes it");
         assert!(persist_direct_mode(store, false, false), "off while off is fine");
+    }
+
+    #[test]
+    fn a_recovered_settings_file_takes_the_item_with_it() {
+        let _guard = crate::test_support::isolate_secrets();
+        let store = crate::secrets::store().vouching();
+        assert!(persist_direct_mode(store, false, true));
+
+        forget_item_after_settings_reset(store);
+
+        assert!(
+            !item_backs_direct_mode(store),
+            "nothing is left to vouch for a later JSON value"
+        );
     }
 
     #[test]

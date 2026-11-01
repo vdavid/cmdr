@@ -2632,6 +2632,11 @@ export const commands = {
    *  value alone doesn't say. An automated run's direct mode doesn't show here.
    */
   getMcpDirectMode: () => __TAURI_INVOKE<boolean>('get_mcp_direct_mode'),
+  /**
+   *  Hands over what was raised before any window listened. The main window calls this once it
+   *  listens, and a second call answers nothing, so a reloaded webview doesn't say it twice.
+   */
+  takeSecurityNoticesFromLaunch: () => __TAURI_INVOKE<SecurityNoticeRaised[]>('take_security_notices_from_launch'),
   // Returns whether the MCP server is currently running.
   getMcpRunning: () => __TAURI_INVOKE<boolean>('get_mcp_running'),
   // Returns the port the MCP server is actually listening on, or null if not running.
@@ -5783,6 +5788,11 @@ export type AccessNotice =
   | { kind: 'smbSignatureRefused'; volumeId: string }
   // An offered update didn't carry Cmdr's signature, so nothing was installed.
   | { kind: 'updateNotGenuine'; version: string; check: SignatureCheck }
+  /**
+   *  Cmdr came up with MCP direct mode on, so outside clients can go past a person. Said at every
+   *  launch it's true, so direct mode is never on quietly (`tools/DETAILS.md` § Direct mode).
+   */
+  | { kind: 'mcpDirectModeOnAtLaunch' }
 
 // Active settings snapshot cached at startup for inclusion in crash reports.
 export type ActiveSettings = {

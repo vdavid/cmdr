@@ -32,10 +32,14 @@ Issue #457. Must-knows in `CLAUDE.md`.
 - **Update, signature doesn't hold** (minisign on the archive, or the Developer ID on the bundle): `UpdateNotGenuine
   { version, check }`, one per offered version. The updater also stops fetching that version for the session
   (`../updater/DETAILS.md` § "A version that isn't genuine"). No report is sent on its own: the toast offers one.
+- **MCP direct mode, on at launch**: `McpDirectModeOnAtLaunch`, at every launch it's true. It isn't a refusal; it keeps
+  direct mode from being on quietly (`../tools/DETAILS.md` § Direct mode). A person's own toggle stays in the record.
 - **Update, older signed release offered** (`installer::refuse_unless_newer`): no notice; it already stops the install.
 
 ## Decisions
 
+- **A launch notice waits in a queue.** It's raised in `setup()`, before any window listens, so an event alone would be
+  lost. The main window drains it (`take_security_notices_from_launch`) right after it starts listening.
 - **The gate is backend-side** so a misbehaving client can't spam the IPC bridge or the screen; the frontend never sees
   more than one raise per notice per minute.
 - **Trailing raise.** Without the flush, a burst that ends inside the first minute would leave the toast saying "once"

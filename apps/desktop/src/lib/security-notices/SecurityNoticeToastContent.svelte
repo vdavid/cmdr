@@ -50,6 +50,8 @@
         switch (notice.kind) {
             case 'mcpForeignOrigin':
                 return tString('securityNotices.mcpForeignOrigin.title')
+            case 'mcpDirectModeOnAtLaunch':
+                return tString('securityNotices.mcpDirectModeOn.title')
             case 'smbSignatureRefused':
                 return serverName === null
                     ? tString('securityNotices.smbSignatureRefused.titleUnnamed')
@@ -63,6 +65,8 @@
         switch (notice.kind) {
             case 'mcpForeignOrigin':
                 return tString('securityNotices.mcpForeignOrigin.body')
+            case 'mcpDirectModeOnAtLaunch':
+                return tString('securityNotices.mcpDirectModeOn.body')
             case 'smbSignatureRefused':
                 return tString('securityNotices.smbSignatureRefused.body')
             case 'updateNotGenuine':
@@ -130,6 +134,17 @@
             >
             <Button variant="primary" size="mini" onclick={() => void openMcpSettings()}>
                 {tString('securityNotices.mcpForeignOrigin.openSettings')}
+            </Button>
+        {:else if notice.kind === 'mcpDirectModeOnAtLaunch'}
+            <Button
+                variant="secondary"
+                size="mini"
+                onclick={() => {
+                    dismissSecurityNotice(notice)
+                }}>{tString('securityNotices.dismiss')}</Button
+            >
+            <Button variant="primary" size="mini" onclick={() => void openMcpSettings()}>
+                {tString('securityNotices.mcpDirectModeOn.openSettings')}
             </Button>
         {:else if notice.kind === 'smbSignatureRefused'}
             {@const volumeId = notice.volumeId}
