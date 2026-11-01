@@ -4,7 +4,7 @@
  * focused grid naming its cursor row.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import PreviewList from './PreviewList.svelte'
 import type { PreviewRow } from '#lib/tauri-commands/index.js'
@@ -67,9 +67,12 @@ describe('PreviewList a11y', () => {
     const grid = target.querySelector<HTMLElement>('[role="grid"]')
     grid?.focus()
     // The cursor row's id lands a frame after focus (`deferred-active-descendant.svelte.ts`).
-    await new Promise((resolve) => setTimeout(resolve, 150))
-    await tick()
-    expect(grid?.getAttribute('aria-activedescendant')).toBeTruthy()
+    await vi.waitFor(
+      () => {
+        expect(grid?.getAttribute('aria-activedescendant')).toBeTruthy()
+      },
+      { timeout: 4000 },
+    )
     await expectNoA11yViolations(target)
   })
 })

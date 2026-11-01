@@ -166,9 +166,13 @@ describe('the media field picker', () => {
     expect(document.querySelector('.ui-popover')).not.toBeNull()
     expect(document.getElementById('media-field-tagArtist')?.textContent).toContain('inserted')
     expect(document.getElementById('media-field-tagTitle')?.textContent).toContain('inserted')
-    await new Promise((resolve) => setTimeout(resolve, 150))
-    const spoken = [...root.querySelectorAll('[data-live-announcer]')].map((region) => region.textContent)
-    expect(spoken).toContain('Inserted Title')
+    await vi.waitFor(
+      () => {
+        const spoken = [...root.querySelectorAll('[data-live-announcer]')].map((region) => region.textContent)
+        expect(spoken).toContain('Inserted Title')
+      },
+      { timeout: 4000 },
+    )
   })
 
   it('a click inserts and keeps it open; Enter inserts and closes back to the mask', async () => {

@@ -310,7 +310,8 @@ The session reads its files' EXIF and tags in the background from the moment it 
   `tool.update({ nameMask })`), `ariaLabel`, `invalid`, and bindable `inputElement` (the `<input>`, for focus and
   `insertPlaceholder`'s caret). It renders `TextInput mono` itself.
 - **Opening on its own** (`token-editor-rules.ts`, a pure reducer over caret, hover, request, engage, tokens, and
-  dismiss events; the delays are the component's):
+  dismiss events, plus the delays' lengths; their timers are the component's, and tests run them on a fake clock,
+  `mask-input-test-clock.ts`, so "stays shut" means the delay really passed):
   - The caret resting strictly inside a token (`tokenInside`: `from < caret < to`) for 250 ms opens it, `passive`: focus
     stays in the field and typing goes on. The caret leaving, Tab or a click away, or the token stopping being one
     (`[C1x]`) closes it. Right after `]` doesn't count, so typing a token through never pops its editor.

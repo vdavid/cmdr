@@ -216,8 +216,15 @@ describe('MultiRenameDialog a11y', () => {
       props: { spec: { ...DEFAULT_SPEC, caseSensitive: true, regex: true }, onToggle: () => {}, rendered },
     })
     await tick()
-    target.querySelector<HTMLButtonElement>('button')?.focus()
-    await new Promise((resolve) => setTimeout(resolve, 450))
+    const chip = target.querySelector<HTMLButtonElement>('button')
+    chip?.focus()
+    // On the real clock: axe drives its own timers.
+    await vi.waitFor(
+      () => {
+        expect(chip?.getAttribute('aria-describedby')).toBeTruthy()
+      },
+      { timeout: 4000 },
+    )
     await expectNoA11yViolations(document.body)
   })
 

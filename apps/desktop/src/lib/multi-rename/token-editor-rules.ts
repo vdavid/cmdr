@@ -1,9 +1,16 @@
 /**
  * When `MaskInput`'s token editor opens and closes on its own: the caret sitting inside a token, the
- * pointer resting on one, or the user working in the editor. The timing (open delays) is the
- * component's; this is which token's editor is open, and why. Pure.
+ * pointer resting on one, or the user working in the editor: which token's editor is open, why, and
+ * how long each rest takes. The timers running them are the component's. Pure.
  */
 import type { PlaceholderSpan } from './mask-tokens'
+
+/** How long the caret rests inside a token before its editor opens. */
+export const CARET_OPEN_MS = 250
+/** How long the pointer rests on a token before its editor opens. */
+export const HOVER_OPEN_MS = 300
+/** How long after the pointer left the token and the editor the editor closes. */
+export const HOVER_CLOSE_MS = 300
 
 /**
  * Why the editor is open, which decides what closes it.
