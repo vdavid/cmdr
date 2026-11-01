@@ -100,7 +100,7 @@ live here:
   `overwrite_smaller_all` — with neither spelling reachable through any tool, so nothing surfaced it. The drift matters
   because the fallback is silent: a name the map doesn't know becomes `skip`, so a caller asking to be asked per file
   would instead watch every clash get skipped. The backend validates the name against one list
-  (`mcp/executor/mod.rs::CONFLICT_POLICIES`), and both callers now log a name this map has never heard of.
+  (`tools/actions/mod.rs::CONFLICT_POLICIES`), and both callers now log a name this map has never heard of.
 - **The progress dialog's Rollback is a controller plus a button.** `transfer-rollback.svelte.ts` owns the one reversal
   decision (blocked or live, what it promises, the confirmation's asked state) and `TransferRollbackControls.svelte`
   renders the button in its three readings. It's split that way because the two halves can't share a subtree: the button
@@ -560,7 +560,7 @@ copy/move:
   `confirmed` and leaves the dialog open for the user to decide. The MCP tool's start round trip
   (`mcp_await_operation_start`: the FE replies with the spawned `operationId`, or without one when the dialog stayed
   open) honestly reflects both outcomes; see `execute_compress` in
-  `apps/desktop/src-tauri/src/mcp/executor/file_ops.rs`. Don't refactor this gate away.
+  `apps/desktop/src-tauri/src/tools/actions/file_ops.rs`. Don't refactor this gate away.
 - **Confirm routes to `compressFiles`**, not `copyBetweenVolumes` (`transfer-dispatch.ts::dispatchCompress`). One
   command handles local and (later) remote sources; the scan preview still runs for the Size bar.
 - **A compression-level slider shows in compress mode only** (`CompressLevelControl.svelte`, below the scan tallies). It
@@ -1436,4 +1436,4 @@ change, but it holds the slot until the id lands and can flash a frame.
 `ConfirmPress`. The request id rides the payload into `background.start`, so `startTransferOperation` answers the agent
 with the operation's id; the delete one answers `refusedPermanentDelete` instead of pressing, and a press a guard stops
 answers `notStarted`, both reaching the agent as `data.refusal`. Flow and contract:
-`apps/desktop/src-tauri/src/mcp/DETAILS.md` (the dialogs entry).
+`apps/desktop/src-tauri/src/tools/actions/DETAILS.md` (the dialogs entry).

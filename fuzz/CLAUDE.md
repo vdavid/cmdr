@@ -18,7 +18,7 @@ per target); CI runs the same lane in `slow-checks.yml`.
   one, so keep the shared crates' versions in step. ❗ The root `[patch.crates-io]` doesn't reach here: a vendored crate
   a target links (today `rc-zip` and `zip`) needs its line repeated in `Cargo.toml`, or the lane stops building.
 - **Every command passes `-O -a`** (optimized, debug assertions on). Mixing flags rebuilds everything.
-- **`pdf` and `image_headers` MIRROR app code** (`agent/tools/read/inspect/pdf.rs`, `exif.rs`, `file_viewer/media.rs`):
+- **`pdf` and `image_headers` MIRROR app code** (`tools/read/inspect/pdf.rs`, `exif.rs`, `file_viewer/media.rs`):
   instrumenting the Tauri app isn't worth it. Change those calls, change the target.
 - **In `pdf`, a panic is not a finding**: the app contains them. Aborts, OOMs, and hangs are.
 - **A finding in OUR code gets a red regression test in the crate, then the fix.** One in a third-party crate gets

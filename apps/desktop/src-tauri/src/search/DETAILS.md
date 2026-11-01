@@ -52,7 +52,7 @@ Depth for the search backend. `CLAUDE.md` holds the must-knows; this file holds 
   `count_only_volume_total`, which subtracts the directories outside the filter. Net: an exact count in every case,
   materializing only the matching directories (never the -- usually far larger -- file set), and never building rows.
   The MCP `search` tool answers a count-only run with an empty `entries`, the number in `matchCount` and
-  `matchCountHuman`, and the same typed coverage block every other run carries (`mcp/executor/search/result.rs`); the
+  `matchCountHuman`, and the same typed coverage block every other run carries (`tools/actions/search/result.rs`); the
   dialog shows it as a prominent count instead of the list (`QueryResults` count-only branch).
 - **`_schemaVersion` mismatch quarantines instead of migrating in place**: there's only schema v1, so a migrator would
   be speculative. When v2 lands, replace the quarantine branch with a `match` on the version calling a
@@ -110,7 +110,7 @@ pure.
   its `volumeId` through `crate::location` and hands over the index to read, so the paths aren't routed again. It's
   the one way to reach a share that isn't connected: its last root routes to `root` once nothing is mounted there.
   Nothing walks it (`cover` answers `NotIndexed` for an unmounted volume), so the answer is the on-disk arena's rows
-  and an `Interrupted` walk, a lower bound. Caller side: `mcp/executor/DETAILS.md` § The search result.
+  and an `Interrupted` walk, a lower bound. Caller side: `tools/actions/DETAILS.md` § The search result.
 
 **The engine's two diagnostic lines carry the query's SHAPE plus its SCOPE, never the pattern text.**
 `query.rs::summarize_query_for_diagnostics` reports pattern mode and length (character count, plus byte count when they
@@ -229,7 +229,7 @@ If it's ever worth doing: reconcile AFTER the fact (on a direct SMB session, rec
 
 The read-time half of that reconciliation exists: the server GUID is recorded on each saved share row (`serverGuid`,
 `../network/smb_server_guid.rs`), and Ask Cmdr's tools treat address-keyed ids proven one share as one
-(`../location/same_share.rs`, `../agent/tools/DETAILS.md` § The location contract). The indexes stay keyed per address.
+(`../location/same_share.rs`, `../tools/DETAILS.md` § The location contract). The indexes stay keyed per address.
 
 ### Per-volume load (`volumes.rs`)
 
@@ -307,7 +307,7 @@ counting past the ceiling either way, which is what lets the UI say "first N of 
 
 Two TYPED sibling fields on `SearchResult` (callers branch on emptiness, never string-match), for the two ways a scoped
 search returns nothing for a STRUCTURAL reason rather than a genuine "no matches". Both the dialog
-(`apps/desktop/src/lib/search/CoverageNote.svelte`) and MCP (`mcp/executor/search/result.rs`) render them, with distinct copy per
+(`apps/desktop/src/lib/search/CoverageNote.svelte`) and MCP (`tools/actions/search/result.rs`) render them, with distinct copy per
 field:
 
 - **`uncovered_scopes`** — a `from_scope` target whose volume has no persisted index (`VolumeLoad::NotIndexed`). An
@@ -373,7 +373,7 @@ exclusion rule kept out of `total_count`: the system/build/cache tier (`SYSTEM_D
 my disk space going", where `node_modules`, `Caches`, and `.git` ARE the answer. A caller that can't see the number
 reads "27 files match" as the whole truth and states a wrong conclusion confidently; with it, MCP reports the number in
 `coverage.hiddenByExcludes` and names the flag that reveals them in a note beside it
-(`mcp/executor/search/result.rs`).
+(`tools/actions/search/result.rs`).
 
 Counted across BOTH halves of a live run, or it would under-report the very case the walk exists for: the arena scan
 counts in `engine::search_ranked` (via `ScopeVerdict::Excluded`) and rides back on `engine::Ranked`; the walk counts in

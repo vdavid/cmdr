@@ -1,12 +1,13 @@
 # MCP server developer guide
 
 This guide explains how to extend the Cmdr MCP server with new tools and test your changes. For the architecture, flows,
-and decision rationale, read `apps/desktop/src-tauri/src/mcp/DETAILS.md`; for the must-know invariants, its
-`apps/desktop/src-tauri/src/mcp/CLAUDE.md` and the executor's `apps/desktop/src-tauri/src/mcp/executor/CLAUDE.md`.
+and decision rationale, read `apps/desktop/src-tauri/src/tools/DETAILS.md` (the tools) and
+`apps/desktop/src-tauri/src/mcp/DETAILS.md` (the transport); for the must-know invariants, their `CLAUDE.md` files and
+`apps/desktop/src-tauri/src/tools/actions/CLAUDE.md`.
 
 ## Architecture
 
-The MCP server lives under `apps/desktop/src-tauri/src/mcp/`:
+The transport lives under `apps/desktop/src-tauri/src/mcp/`, and the tools under `apps/desktop/src-tauri/src/tools/`:
 
 ```
 mcp/
@@ -15,17 +16,22 @@ mcp/
 ├── server.rs         # HTTP server (axum), bind/rebind lifecycle, request dispatch
 ├── auth.rs           # Bearer-token lifecycle + per-request validation
 ├── protocol.rs       # JSON-RPC message handling
-├── tool_registry/    # THE single source: one authored table → per-consumer lists and dispatch
-│   ├── mod.rs        #   the `mcp_tools!` macro, the table, the `Tool` struct, the `Consumer`/`Access` dimensions, accessors
-│   └── schemas/      #   per-tool `fn <tool>_schema()` blocks, grouped by category
-├── executor/         # Tool handlers, grouped by category (app.rs, nav.rs, file_ops.rs, …)
+└── tests/            # Transport test suite, split by category
+
+tools/
+├── table.rs          # THE single source: one authored table → per-consumer lists and dispatch
+├── registry.rs       #   the `mcp_tools!` macro, the `Tool` struct, the `Consumer`/`Access` dimensions
+├── params.rs         #   the schema gate
+├── schemas/          #   per-tool `fn <tool>_schema()` blocks, grouped by category
+├── actions/          # Tool handlers, grouped by category (app.rs, nav.rs, file_ops.rs, …)
 ├── resources/        # Read-only resources (cmdr://state, logs, indexing, settings)
-├── pane_state.rs     # Frontend → backend state sync store
-└── tests/            # Test suite, split by category
+└── tests/            # Tool and resource test suite, split by category
+
+ui_state/             # Frontend → backend state sync stores (pane_state.rs and friends)
 ```
 
-Every tool is authored **exactly once** in the `mcp_tools!` table in `tool_registry/table.rs`. That one table generates
-every view, so they can't drift:
+Every tool is authored **exactly once** in the `mcp_tools!` table in `tools/table.rs`. That one table generates every
+view, so they can't drift:
 
 - `get_all_tools()` — the ai_client `tools/list` payload (entries whose `consumers` include `AiClient`).
 - `agent_tool_view()` — the in-process agent's tool set (entries whose `consumers` include `Agent`): the read-only
@@ -35,16 +41,16 @@ every view, so they can't drift:
 - `tool_consumers()` / `tool_access()` — the `consumers` (exposure) and `access` (read/write) dimensions.
 
 Two AI consumers share this one registry (agent decision D49: extend it, don't fork a parallel agent table). See
-`src/mcp/DETAILS.md` § Consumer and access views for the model.
+`apps/desktop/src-tauri/src/tools/DETAILS.md` § Consumer and access views for the model.
 
 ### Data flow
 
 1. **HTTP request** → `server.rs` receives the JSON-RPC request and validates Origin.
 2. **Auth** → every `/mcp` GET or POST requires the bearer token before session handling or dispatch.
 3. **Parsing** → `protocol.rs` parses and validates the authenticated request.
-4. **Routing** → `tools/call` dispatches through the generated `execute_tool()` (the macro in `tool_registry/mod.rs`
+4. **Routing** → `tools/call` dispatches through the generated `execute_tool()` (the macro in `tools/registry.rs`
    expands it over `table.rs`).
-5. **Execution** → the handler in the matching `executor/` category file emits a Tauri event (or queries state) and
+5. **Execution** → the handler in the matching `tools/actions/` category file emits a Tauri event (or queries state) and
    waits for the frontend ack before returning `OK`.
 6. **Frontend** → `mcp-listeners.ts` validate-parses the event payload and dispatches on the typed command bus, then
    syncs state back to `pane_state.rs`.
@@ -53,21 +59,21 @@ Two AI consumers share this one registry (agent decision D49: extend it, don't f
 
 Two edits: one registry entry, and one handler function.
 
-### Step 1: add the handler to the right `executor/` category file
+### Step 1: add the handler to the right `tools/actions/` category file
 
 Handlers take `&Value` and do their own extraction/validation. Pick the category file that fits (`nav.rs`,
 `file_ops.rs`, `view.rs`, `app.rs`, `dialogs.rs`, `search.rs`, `async_tools.rs`, `downloads.rs`) — or add a new one and
-declare it `pub(crate) mod …` in `executor/mod.rs` so the generated dispatch can reach it.
+declare it `pub(crate) mod …` in `tools/actions/mod.rs` so the generated dispatch can reach it.
 
 ```rust
-// in executor/view.rs
+// in tools/actions/view.rs
 pub async fn execute_my_action<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
     let target = params
         .get("target")
         .and_then(|v| v.as_str())
         .ok_or_else(|| ToolError::invalid_params("Missing 'target'"))?;
 
-    // Emit an event and wait for the frontend ack (see executor/CLAUDE.md for the ack contract).
+    // Emit an event and wait for the frontend ack (see tools/actions/CLAUDE.md for the ack contract).
     mcp_round_trip(app, "mcp-my-action", json!({ "target": target }), format!("OK: did {target}")).await
 }
 ```
@@ -75,7 +81,7 @@ pub async fn execute_my_action<R: Runtime>(app: &AppHandle<R>, params: &Value) -
 Follow the executor must-knows: read path params through `user_path_param`, choose the right ack (`wait_for_ack` vs
 `mcp_round_trip`), and never return `OK` without waiting for the ack.
 
-### Step 2: add the schema to `schemas/` and ONE entry to the `mcp_tools!` table in `tool_registry/table.rs`
+### Step 2: add the schema to `schemas/` and ONE entry to the `mcp_tools!` table in `tools/table.rs`
 
 Add a `fn <tool>_schema() -> Value` to the matching `schemas/<category>.rs` (a no-parameter tool reuses
 `schemas::no_params_schema()`):
@@ -127,15 +133,15 @@ the registry and automatically covers every entry.
   `app_params` (`handler(app, params).await`, most tools), `app_only` (`handler(app).await`, no params), `params_only`
   (`handler(params).await`, no `app` — `search`, `ai_search`), `sync_app` / `sync_app_params` (sync handlers, no
   `.await`), and `nav` / `nav_params` (the nav family, which routes several tools through one handler by passing the
-  tool name). See the macro doc comment in `tool_registry/mod.rs` for the full list.
+  tool name). See the macro doc comment in `tools/registry.rs` for the full list.
 - **Schema keys** serialize alphabetically (serde_json `Map` is a `BTreeMap`), so authored key order doesn't affect the
-  wire bytes. A tools/list snapshot test (`tests/tool_snapshot_tests.rs`) pins the exact output; run it after any schema
-  edit and update the fixture when the change is intentional.
+  wire bytes. A tools/list snapshot test (`tools/tests/tool_snapshot_tests.rs`) pins the exact output; run it after any
+  schema edit and update the fixture when the change is intentional.
 - **The schema is ENFORCED, so author it as the truth.** `validate_params` refuses a call whose params miss a `required`
   property, and (on a schema declaring `additionalProperties: false`) one carrying a property `properties` doesn't list,
   before your handler runs. Don't mark a field `required` the handler is happy without. An `[Agent]` tool MUST declare
   `additionalProperties: false` (a structural test fails otherwise): its calls reach a person as facts, and a swallowed
-  argument becomes a confident wrong answer. `mcp/DETAILS.md` § The schema gate.
+  argument becomes a confident wrong answer. `apps/desktop/src-tauri/src/tools/DETAILS.md` § The schema gate.
 
 That's the whole change. No separate dispatch match and no hand-bumped tool count — the count and coverage tests are
 cheap guards over a property that's now true by construction.
@@ -149,8 +155,8 @@ payload into a typed command and dispatches on the command bus. No business logi
 ### Step 4: add tests
 
 Look tools up by name in `get_all_tools()`; there are no per-category list functions. Schema-shape tests live in
-`tests/tool_registry_tests/` (beside the other suites, so the authored `mcp_tools!` table stays a lean, single-purpose
-source); cross-cutting checks (name charset, no `fs.`/`shell.` tools) live in `tests/security_tests.rs`.
+`tools/tests/tool_registry_tests/` (beside the other suites, so the authored `mcp_tools!` table stays a lean,
+single-purpose source); cross-cutting checks (name charset, no `fs.`/`shell.` tools) live in `tests/security_tests.rs`.
 
 ```rust
 #[test]
@@ -233,7 +239,7 @@ Ok(json!("OK"))
 ```
 
 `OK` means "the frontend accepted the dispatched action," not "the operation completed." See
-`apps/desktop/src-tauri/src/mcp/executor/CLAUDE.md` for the ack contract.
+`apps/desktop/src-tauri/src/tools/actions/CLAUDE.md` for the ack contract.
 
 ## Troubleshooting development
 
@@ -257,6 +263,6 @@ cargo test mcp::tests::tool_registry_tests::schemas::test_my_action_schema -- --
 
 ### tools/list snapshot mismatch
 
-`tests/tool_snapshot_tests.rs` pins the exact `tools/list` bytes. A mismatch means a schema, name, description, or the
-tool set changed. If the change is intentional, update the committed fixture; otherwise you drifted the wire output.
+`tools/tests/tool_snapshot_tests.rs` pins the exact `tools/list` bytes. A mismatch means a schema, name, description, or
+the tool set changed. If the change is intentional, update the committed fixture; otherwise you drifted the wire output.
 </content>

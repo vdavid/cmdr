@@ -459,6 +459,7 @@ export type MessageKey =
   | 'askCmdr.tool.preview.status.missing'
   | 'askCmdr.tool.preview.status.noVolumeAtPath'
   | 'askCmdr.tool.preview.status.notIndexed'
+  | 'askCmdr.tool.preview.status.protected'
   | 'askCmdr.tool.preview.status.unreachable'
   | 'askCmdr.tool.preview.status.unreadable'
   | 'askCmdr.tool.preview.status.unsupportedVolume'

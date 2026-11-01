@@ -72,7 +72,7 @@ Asserting only the `Err` would pass for a refusal that wrote first.
 
 **`shown_location(root, requested)` is steps 1 and 2 only**, joined onto the root: no syscall, no directory created.
 It exists so the rail's tool line can turn the path a memory call named into a place to go
-(`../tools/line/DETAILS.md`), and `None` keeps the path plain text. ❌ Never a write gate: it skips the symlink walk
+(`../line/DETAILS.md`), and `None` keeps the path plain text. ❌ Never a write gate: it skips the symlink walk
 and the containment re-check.
 
 ## Refusal tokens (`refusal.rs`)

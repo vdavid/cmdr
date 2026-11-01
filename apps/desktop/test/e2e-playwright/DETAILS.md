@@ -1415,13 +1415,13 @@ Both halves matter, and both have bitten:
   → `handleFocus(side)` either does nothing or lands exactly the side you asked for.
 - **Read `.file-pane.is-focused`, ❌ never `cmdr://state`'s `focused:` field.** They are two different variables. The
   class renders off `explorerState.focusedPane`, which is what `openSearchSnapshotInPane` and every other focused-pane
-  action reads. The MCP field is a backend mirror in `mcp/pane_state.rs`, written by exactly two paths: the FE's
+  action reads. The MCP field is a backend mirror in `ui_state/pane_state.rs`, written by exactly two paths: the FE's
   fire-and-forget `updateFocusedPane` IPC (from `handleFocus` / `switchPane`), and the backend MCP executor, which sets
-  it optimistically for its own tools (`executor/nav.rs`). Which means a spec that emits an `mcp-*` event STRAIGHT at
-  the FE listener — `mcp-nav-to-path`, `mcp-volume-select`, what every reset helper here does — takes the FE-side focus
-  shift (`mcp-listeners.ts` calls the store-only `setFocusedPane`) without the backend half, and the two disagree until
-  something calls `handleFocus`. Production is consistent, because a real agent goes through the executor; the harness's
-  shortcut is what splits them.
+  it optimistically for its own tools (`apps/desktop/src-tauri/src/tools/actions/nav.rs`). Which means a spec that emits
+  an `mcp-*` event STRAIGHT at the FE listener — `mcp-nav-to-path`, `mcp-volume-select`, what every reset helper here
+  does — takes the FE-side focus shift (`mcp-listeners.ts` calls the store-only `setFocusedPane`) without the backend
+  half, and the two disagree until something calls `handleFocus`. Production is consistent, because a real agent goes
+  through the executor; the harness's shortcut is what splits them.
 
 Getting both wrong at once cost this suite a long-lived flake: `search-open-in-pane.spec.ts` answered a mirror read with
 a toggle, so "Open in pane" promoted the snapshot into the LEFT pane while the focus helper reported success, and the

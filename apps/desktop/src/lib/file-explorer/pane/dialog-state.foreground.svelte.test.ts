@@ -75,6 +75,7 @@ function makeState(sourcePaneAt = SOURCE_FOLDER) {
 /** A move the RIGHT pane started, from the folder it is showing. */
 function moveProps(): TransferProgressPropsData {
   return {
+    initiator: 'user',
     operationType: 'move',
     sourcePaths: [`${SOURCE_FOLDER}/a.jpg`, `${SOURCE_FOLDER}/b.jpg`],
     sourceFolderPath: SOURCE_FOLDER,
@@ -94,6 +95,7 @@ function moveProps(): TransferProgressPropsData {
  *  dialog on screen. */
 function archiveCopyProps(): TransferProgressPropsData {
   return {
+    initiator: 'user',
     operationType: 'copy',
     sourcePaths: ['/Users/me/secret.zip/inner/report.pdf'],
     sourceFolderPath: '/Users/me/secret.zip/inner',
@@ -208,6 +210,7 @@ describe('adopting an operation into the progress dialog', () => {
   it('refuses while a confirmation dialog is up', () => {
     const { dialogs } = makeState()
     dialogs.showDeleteConfirmation({
+      initiator: 'user',
       sourceItems: [],
       sourcePaths: [`${SOURCE_FOLDER}/a.jpg`],
       sourceFolderPath: SOURCE_FOLDER,
@@ -242,6 +245,7 @@ describe('an operation born while an adopted one is showing', () => {
     const { dialogs } = makeState()
     dialogs.foregroundOperation(adopted())
     dialogs.showDeleteConfirmation({
+      initiator: 'user',
       sourceItems: [],
       sourcePaths: [`${SOURCE_FOLDER}/a.jpg`],
       sourceFolderPath: SOURCE_FOLDER,
@@ -261,6 +265,7 @@ describe('an operation born while an adopted one is showing', () => {
   it('hands an MCP confirm’s round-trip id to the delete it starts', () => {
     const { dialogs } = makeState()
     dialogs.showDeleteConfirmation({
+      initiator: 'user',
       sourceItems: [],
       sourcePaths: [`${SOURCE_FOLDER}/a.jpg`],
       sourceFolderPath: SOURCE_FOLDER,

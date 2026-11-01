@@ -82,7 +82,7 @@ pub const MIN_LOCAL_CONTEXT_TOKENS: u32 = 32_768;
 /// asymmetry is load-bearing.
 ///
 /// A tool over the ceiling returns FEWER items plus `returned` / `total` /
-/// `truncated: true`, never a silent cut — see `mcp::executor::fit_to_result_budget`.
+/// `truncated: true`, never a silent cut — see `tools::actions::fit_to_result_budget`.
 pub const MAX_TOOL_RESULT_TOKENS: usize = DEFAULT_PROMPT_TOKEN_BUDGET / 2;
 
 /// A single tool result must leave the conversation around it room to fit. Checked at

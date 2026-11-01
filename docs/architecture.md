@@ -216,7 +216,11 @@ All under `apps/desktop/src-tauri/src/`.
 - `listing_index_sizes/`: delivers the drive index's folder-size updates only to the open listings they touch
   (`listing-index-sizes-changed`), through a `ListingObserver` of its own. See
   `apps/desktop/src-tauri/src/listing_index_sizes/CLAUDE.md`
-- `mcp/`: MCP server (tools, YAML resources, agent-centric API)
+- `mcp/`: MCP transport: bind, auth, and the wire protocol. See `apps/desktop/src-tauri/src/mcp/CLAUDE.md`
+- `tools/`: every AI-callable tool, for both callers: the one table, the handlers, the sensitive-content gate, and the
+  `cmdr://` resources. See `apps/desktop/src-tauri/src/tools/CLAUDE.md`
+- `ui_state/`: a mirror of what the UI knows (panes, soft dialogs, the archive password prompt, recent listing and write
+  outcomes). See `apps/desktop/src-tauri/src/ui_state/CLAUDE.md`
 - `ai/`: llama-server lifecycle, model download, inference client
 - `analytics/`: Anonymous beta usage analytics: a `/heartbeat` at most every 3 h (true DAU, uptime, a PII-free
   config-shape snapshot built by allowlist, and the spooled feature events), tri-state consent gate, dev/CI suppression.
@@ -270,12 +274,12 @@ All under `apps/desktop/src-tauri/src/`.
   plus the thread that owns the inbox, the timer, and the wakes it hands off. Its `agent/memory/` is the one place the
   agent writes: a jailed, capped Markdown folder under the app data dir, fed back into every turn's prefix. Its
   `agent/outcomes.rs` closes the loop, recording what the user did with each proposal on the two channels that reach
-  them and the agent. Its `agent/tools/` is the in-process toolset the chat dispatches, gated by access tier (`Read`,
+  them and the agent. Its `agent/tool_gate.rs` dispatches the top-level `tools/` toolset, gated by access tier (`Read`,
   `Propose`, `Memory`, and `Session`, whose one tool, `connect_volume`, connects a saved place only on a turn the user
   started, in one flight with the pane's own dial (`saved_servers/`), and `propose_server` stages a server for the user
   to save, contacting nothing, which the user's click saves through the hub's own cores (`agent/suggested_ops/server/`);
-  invariant 7 in `apps/desktop/src-tauri/src/agent/DETAILS.md`); `agent/tools/read/inspect/` is the one tool that reads
-  file contents, through `file_viewer`'s headless seam. See its `apps/desktop/src-tauri/src/agent/CLAUDE.md`
+  invariant 7 in `apps/desktop/src-tauri/src/agent/DETAILS.md`); `tools/read/inspect/` is the one tool that reads file
+  contents, through `file_viewer`'s headless seam. See its `apps/desktop/src-tauri/src/agent/CLAUDE.md`
 - `downloads/`: `notify`-based `~/Downloads` watcher, FDA-gated, browser-rename-aware filter, Cmdr-own-write ignore set
 - `search/`: In-memory search index (lazy load, rayon parallel scan, glob/regex) + AI query translation (`search/ai/`)
 - `selection/`: Selection dialog backend: recent-selections store + cloud AI translation (`selection/ai/`); the matcher
@@ -320,7 +324,7 @@ All under `apps/desktop/src-tauri/src/`.
   `volumeId` on one volume or answers a typed miss with `nearby` candidates, the one volume-root function, and the
   in-memory volume facts and earlier-roots record it reads, plus the same-share proof (server GUID + share name) that
   lets one NAS's two ids answer for each other, and the app-path ↔ importance-store-path seam (`store_path.rs`).
-  Contract: `agent/tools/DETAILS.md` § The location contract
+  Contract: `tools/DETAILS.md` § The location contract
 - `space_poller/`: Live disk-space polling (per-volume-type intervals, emitting only what the readout would draw
   differently, paused while the main window is hidden) plus the low-disk-space hysteresis warning
 - `main_window_visibility.rs`: whether the main window can be seen, as its webview reports it; the idle redraw work
@@ -332,7 +336,7 @@ All under `apps/desktop/src-tauri/src/`.
 - `quit/`: The quit gate. Every exit path asks it first (the two Tauri handlers and the MCP `quit` tool); with
   non-instant operations in flight it holds the exit, raises the countdown dialog, and runs the teardown on its own
   deadline. See `apps/desktop/src-tauri/src/quit/CLAUDE.md`, the frontend `apps/desktop/src/lib/quit/CLAUDE.md`, and the
-  agent-facing surface in `apps/desktop/src-tauri/src/mcp/executor/quit.rs`
+  agent-facing surface in `apps/desktop/src-tauri/src/tools/actions/quit.rs`
 - `app_lifecycle.rs`: The two Tauri builder handlers `lib.rs` names: `on_window_event` (main-window focus, close, and
   destroy; viewer-window teardown) and `on_run_event` (ready, an OS reveal arriving, exit requested, exit), plus the
   shared stop-background-services path all three shutdown routes take

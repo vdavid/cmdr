@@ -2056,9 +2056,10 @@ notices file.
 
 Checks by app and tech:
 
-- **Desktop / Rust**: rustfmt, clippy, clippy-mimalloc (pre-release lane, macOS only, CI every six days; clippy with
-  `cmdr/mimalloc` in a private target dir, so the global-allocator path macOS doesn't ship can't rot), rustdoc
-  (`cargo doc --all-features --document-private-items` over every first-party member, with every doc lint in
+- **Desktop / Rust**: tools-module-boundary (`mcp` imports no `agent`, `tools` imports no `mcp`, and `tools` imports
+  only the `agent` modules on its list), rustfmt, clippy, clippy-mimalloc (pre-release lane, macOS only, CI every six
+  days; clippy with `cmdr/mimalloc` in a private target dir, so the global-allocator path macOS doesn't ship can't rot),
+  rustdoc (`cargo doc --all-features --document-private-items` over every first-party member, with every doc lint in
   `rustdocDeniedLints` denied and any leftover warning failing the check too; the vendored fork is skipped because
   `--all-features` turns on two mutually exclusive arms there), cargo-deny, cargo-machete, cargo-udeps (CI-only), fuzz
   (CI-only and slow: every target in `fuzz/` for `CMDR_FUZZ_SECONDS`, default 60, `fuzz/DETAILS.md`; a target loosens

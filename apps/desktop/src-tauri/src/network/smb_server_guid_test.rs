@@ -115,7 +115,7 @@ async fn smb_integration_a_direct_session_records_its_server_guid() {
 fn no_tool_handler_reaches_the_probe() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
     let mut offenders = Vec::new();
-    for dir in ["agent", "mcp", "location"] {
+    for dir in ["agent", "tools", "mcp", "location"] {
         let mut stack = vec![root.join(dir)];
         while let Some(path) = stack.pop() {
             for entry in std::fs::read_dir(&path).expect("readable source dir") {

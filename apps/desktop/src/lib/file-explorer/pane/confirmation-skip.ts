@@ -29,14 +29,17 @@
  *   either fail later or do nothing, silently.
  * - S3 on either side: the dialog's cost line is the only place the price
  *   shows.
- * - Anything an agent started over MCP: its contract is the dialog (an
- *   auto-confirm confirms it, a plain call waits for `dialog confirm`).
+ * - Anything a person didn't start: only a `user` initiator skips, so a new
+ *   initiator, or a payload that names none, gets the dialog. An MCP round-trip's
+ *   contract is the dialog too (an auto-confirm confirms it, a plain call waits
+ *   for `dialog confirm`).
  */
 
 import { getPathValidationError } from '#lib/file-operations/transfer/transfer-dialog-logic.js'
 import { toVolumeRelativePath } from '#lib/file-operations/transfer/transfer-dialog-utils.js'
 import { validateDirectoryPath } from '#lib/utils/filename-validation.js'
 import { capabilitiesFor, capabilitiesForInfo } from './volume-capabilities'
+import type { Initiator } from '#lib/tauri-commands/index.js'
 import type { DeleteDialogPropsData, TransferConfirmPayload } from './dialog-props'
 import type { TransferDialogPropsData } from './transfer-operations'
 import type { VolumeInfo } from '../types'
@@ -47,8 +50,8 @@ export interface DeleteConfirmAnswer {
   isPermanent: false
 }
 
-function isFromAgent(props: { initiator?: string; autoConfirm?: boolean; mcpRequestId?: string }): boolean {
-  return props.initiator === 'aiClient' || props.autoConfirm === true || props.mcpRequestId !== undefined
+function isFromAgent(props: { initiator: Initiator; autoConfirm?: boolean; mcpRequestId?: string }): boolean {
+  return props.initiator !== 'user' || props.autoConfirm === true || props.mcpRequestId !== undefined
 }
 
 function isS3(volumeId: string, volumes: readonly VolumeInfo[]): boolean {

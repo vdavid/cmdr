@@ -26,6 +26,7 @@ import type { SplitDirection } from '#lib/file-explorer/pane/pane-split.js'
 import type {
   CopyPathBetweenPanesArgs,
   OpenDeleteDialogArgs,
+  OpenNamingDialogArgs,
   OpenTransferDialogArgs,
   StartRenameOptions,
 } from '#lib/file-explorer/pane/types.js'
@@ -269,17 +270,17 @@ export interface ExplorerAPI {
   /** Push both panes' tab lists to the backend now, past the mirror's debounce. */
   syncTabsToMcp: () => Promise<void>
   startRename: (options?: StartRenameOptions) => void
-  openCopyDialog: (args?: OpenTransferDialogArgs) => Promise<void>
+  openCopyDialog: (args: OpenTransferDialogArgs) => Promise<void>
   /** Copies the focused pane's selection (or cursor item) into the folder it
    *  already lives in. No dialog, no rename editor: `file-operation-commands.ts`. */
   duplicateInPlace: () => Promise<void>
-  openMoveDialog: (args?: OpenTransferDialogArgs) => Promise<void>
-  openCompressDialog: (args?: OpenTransferDialogArgs) => Promise<void>
+  openMoveDialog: (args: OpenTransferDialogArgs) => Promise<void>
+  openCompressDialog: (args: OpenTransferDialogArgs) => Promise<void>
   copyToClipboard: () => Promise<void>
   cutToClipboard: () => Promise<void>
   pasteFromClipboard: (forceMove: boolean) => Promise<void>
-  openNewFolderDialog: (name?: string, pane?: 'left' | 'right', initiator?: Initiator) => Promise<void>
-  openNewFileDialog: (name?: string, pane?: 'left' | 'right', initiator?: Initiator) => Promise<void>
+  openNewFolderDialog: (args: OpenNamingDialogArgs) => Promise<void>
+  openNewFileDialog: (args: OpenNamingDialogArgs) => Promise<void>
   createFolderDirect: (name: string, pane?: 'left' | 'right', initiator?: Initiator) => Promise<void>
   createFileDirect: (name: string, pane?: 'left' | 'right', initiator?: Initiator) => Promise<void>
   openDeleteDialog: (args: OpenDeleteDialogArgs) => Promise<void>

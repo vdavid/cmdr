@@ -286,7 +286,7 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   agent's north-star metric, which is why the proposal and both outcomes are all counted; `approved` counts a group
   whose operation STARTED, not a claim (`agent/suggested_ops/DETAILS.md` § The metric). Never a path, file name,
   rationale, or selector pattern.
-- `rename_plan_from_cut_listing` (backend, `../agent/tools/propose/rename/cut_listing.rs`, when a rename plan stages):
+- `rename_plan_from_cut_listing` (backend, `../tools/propose/rename/cut_listing.rs`, when a rename plan stages):
   fires only when the thread's latest `list_pane_files` result was cut (`returned < total`) and the plan renames files
   in that folder. `rows` (the plan's rows in that folder), `listing_returned`, and `listing_total` buckets, plus
   `coverage` (`within_returned` / `beyond_returned` / `matches_total` / `beyond_total`). It exists to decide #214's

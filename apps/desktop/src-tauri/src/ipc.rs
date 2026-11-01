@@ -47,7 +47,6 @@ use tauri_specta::{Builder, collect_events};
 
 use crate::agent::chat::stream::AskCmdrTurn;
 use crate::agent::suggested_ops::SuggestionsChanged;
-use crate::agent::tools::propose::rename::BulkRenameCheckProgress;
 use crate::agent::wake::{AgentWakeStaged, AgentWakeStatus};
 use crate::clipboard::ClipboardPasteSettled;
 use crate::commands::search::SearchIndexReadyEvent;
@@ -82,6 +81,7 @@ use crate::search::live::events::{SearchCancelledEvent, SearchCompleteEvent, Sea
 use crate::security_notices::SecurityNoticeRaised;
 use crate::space_poller::{LowDiskSpacePayload, VolumeSpaceChanged};
 use crate::state_recovery::StateRecoveryQueued;
+use crate::tools::propose::rename::BulkRenameCheckProgress;
 use crate::volume_broadcast::{
     ServerPlaceMoved, VolumeContextAction, VolumeMounted, VolumeRootChanged, VolumeUnmounted, VolumesChanged,
 };
@@ -304,15 +304,15 @@ macro_rules! ipc_command_manifest {
                     crate::commands::share_link::copy_share_link,
                     crate::commands::file_actions::cloud_make_available_offline,
                     crate::commands::file_actions::cloud_remove_download,
-                    crate::mcp::pane_state::update_left_pane_state,
-                    crate::mcp::pane_state::update_right_pane_state,
-                    crate::mcp::pane_state::update_focused_pane,
-                    crate::mcp::pane_state::update_pane_tabs,
-                    crate::mcp::dialog_state::notify_dialog_opened,
-                    crate::mcp::dialog_state::notify_dialog_closed,
-                    crate::mcp::dialog_state::register_known_dialogs,
-                    crate::mcp::archive_password::notify_archive_password_prompt,
-                    crate::mcp::archive_password::notify_archive_password_dismissed,
+                    crate::ui_state::pane_state::update_left_pane_state,
+                    crate::ui_state::pane_state::update_right_pane_state,
+                    crate::ui_state::pane_state::update_focused_pane,
+                    crate::ui_state::pane_state::update_pane_tabs,
+                    crate::ui_state::dialog_state::notify_dialog_opened,
+                    crate::ui_state::dialog_state::notify_dialog_closed,
+                    crate::ui_state::dialog_state::register_known_dialogs,
+                    crate::ui_state::archive_password::notify_archive_password_prompt,
+                    crate::ui_state::archive_password::notify_archive_password_dismissed,
                     crate::commands::sync_status::get_sync_status,
                     crate::commands::smb_diagnostics::list_smb_volumes,
                     crate::commands::smb_diagnostics::get_smb_diagnostics,
@@ -1131,7 +1131,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             // Operation manager registry snapshot (crates/cmdr-operations/src/manager.rs).
             wire::OperationsChanged,
             SuggestionsChanged,
-            // How far a rename review's check has got (agent/tools/propose/rename/check.rs).
+            // How far a rename review's check has got (tools/propose/rename/check.rs).
             BulkRenameCheckProgress,
             // Every Ask Cmdr turn's progress, keyed by conversation: rail sends and wakes
             // alike (agent/chat/stream.rs).
@@ -1297,7 +1297,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             SessionCompleteEvent,          // event_name = "drag-out-session-complete"
             ErrorReportAutoSent,
             // Window management: `emit_to`-targeted window lifecycle
-            // (mcp/executor/, menu/menu_handlers.rs, commands/settings.rs). Struct
+            // (tools/actions/, menu/menu_handlers.rs, commands/settings.rs). Struct
             // names kebab-case directly to the wire names, so no `event_name`
             // overrides. `execute-command` is also FE-emitted (LicenseSection).
             ExecuteCommand,

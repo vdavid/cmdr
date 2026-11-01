@@ -38,7 +38,7 @@ comes through the same door as a `cmdr-cli://` URL, sharing the buffer and the p
   giving it up, or a moved copy is stranded holding it. `DETAILS.md` § "The uninstall problem".
 - **This is not a stored setting.** The state reads through to the OS every time: the user can change the handler
   outside Cmdr, and a cached flag would lie.
-- **The pane move is `crate::mcp::go_to_in_pane`**, shared with `go_to_latest_download`; a terminal request carries its
+- **The pane move is `crate::tools::go_to_in_pane`**, shared with `go_to_latest_download`; a terminal request carries its
   own `GoToTarget`. ❌ Don't grow a second navigate-then-cursor path; `DETAILS.md` says why it lives over there.
 - **The drain call has to run AFTER the frontend's `mcp-*` listeners are up** (`routes/(main)/window-services.ts`,
   phase 2). Draining earlier emits `mcp-nav-to-path` into a window with nothing listening, and the reveal is lost.

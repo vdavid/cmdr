@@ -12,10 +12,10 @@ use tauri::{AppHandle, Runtime};
 
 use super::LOG_TARGET;
 use crate::agent::llm::types::{AgentToolCall, AgentToolResult};
-use crate::agent::tools::propose::evidence::EvidenceScope;
-use crate::agent::tools::propose::rename::RenameProposalSnapshot;
-pub use crate::agent::tools::view::CallContext;
-use crate::mcp::{Access, tool_access};
+pub use crate::agent::tool_gate::CallContext;
+use crate::tools::propose::evidence::EvidenceScope;
+use crate::tools::propose::rename::RenameProposalSnapshot;
+use crate::tools::{Access, tool_access};
 
 /// How the runtime executes one tool call. The real impl routes through the agent's
 /// read-only dispatch view ([`AppHandleDispatcher`]); tests inject a scripted double,
@@ -39,7 +39,7 @@ pub trait ToolDispatcher: Send + Sync {
     }
 
     /// The memory folder, so a tool line can name a `memory_write` path as a place to go
-    /// (`tools::line::subject_of`). App state, so it rides this seam beside the evidence. Default
+    /// (`agent::line::subject_of`). App state, so it rides this seam beside the evidence. Default
     /// `None`: the path then shows as plain text, which costs a test double nothing. ⚠️ A
     /// wrapping dispatcher must forward it.
     fn memory_root(&self) -> Option<PathBuf> {
@@ -109,7 +109,7 @@ fn cancelled(call: &AgentToolCall) -> ToolDispatchOutcome {
     }
 }
 
-/// The production dispatcher: every call goes through `agent::tools::view::dispatch`,
+/// The production dispatcher: every call goes through `agent::tool_gate::dispatch`,
 /// the read-only choke point (an unknown or write name is refused before `execute_tool`).
 pub struct AppHandleDispatcher<R: Runtime> {
     app: AppHandle<R>,
@@ -130,7 +130,7 @@ impl<R: Runtime> AppHandleDispatcher<R> {
 impl<R: Runtime> ToolDispatcher for AppHandleDispatcher<R> {
     fn dispatch<'a>(&'a self, call: &'a AgentToolCall, turn: CallContext<'a>) -> BoxFuture<'a, ToolDispatchOutcome> {
         async move {
-            let outcome = crate::agent::tools::view::dispatch(&self.app, self.scope, call, turn).await;
+            let outcome = crate::agent::tool_gate::dispatch(&self.app, self.scope, call, turn).await;
             ToolDispatchOutcome {
                 result: outcome.result,
                 proposal: outcome.proposal,
@@ -148,7 +148,7 @@ impl<R: Runtime> ToolDispatcher for AppHandleDispatcher<R> {
             "revoking evidence for {} dropped tool result(s): {call_ids:?}",
             call_ids.len()
         );
-        crate::agent::tools::propose::rename::revoke_image_facts_evidence(&self.app, call_ids);
+        crate::tools::propose::rename::revoke_image_facts_evidence(&self.app, call_ids);
     }
 
     fn memory_root(&self) -> Option<PathBuf> {
@@ -158,8 +158,8 @@ impl<R: Runtime> ToolDispatcher for AppHandleDispatcher<R> {
 
 /// True when a dispatch result is a real answer rather than a refusal or a handler problem.
 ///
-/// The judgement itself is [`AgentToolResult::reports_a_problem`], on the type, since the tools
-/// view asks the same question and importing this module from there would point `agent::tools`
+/// The judgement itself is [`AgentToolResult::reports_a_problem`], on the type, since the tool
+/// gate asks the same question and importing this module from there would point `agent::tool_gate`
 /// back at `agent::chat`.
 pub fn dispatch_ok(result: &AgentToolResult) -> bool {
     !result.reports_a_problem()

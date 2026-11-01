@@ -590,7 +590,7 @@ There's no Search-specific capabilities shim — `lib/search/capabilities.ts` ke
   `totalFiles` is the snapshot's own count, and `hasParentRow: false` tells the backend gate that one counted row is one
   real file. ❌ Don't turn that push back off: MCP's copy/move/delete pre-check reasons on this store, so a pane that
   pushes nothing leaves it describing whatever directory the pane came FROM, and an old cursor parked on that
-  directory's `..` refused a delete over rows the user could see. Gate: `src-tauri/src/mcp/executor/DETAILS.md` §
+  directory's `..` refused a delete over rows the user could see. Gate: `src-tauri/src/tools/actions/DETAILS.md` §
   "Empty-operation fast-fail".
 - **The mirrored rows carry the pane's OWN "is this size still moving" answer**, as `recursiveSizeUpdating`.
   `inFluxAnswerFor(volumeId)` composes it exactly as `FullList` composes its hourglass
@@ -601,7 +601,7 @@ There's no Search-specific capabilities shim — `lib/search/capabilities.ts` ke
   to 56 KB). Read outside a reactive context on purpose — a push is triggered, not subscribed, and the index storm that
   moves these numbers fires the `listing-index-sizes-changed` ticks that re-push (throttled to one push per 5 s in
   `FilePane.applyIndexSizes`, since each push re-reads and ships the visible range). The rendering side:
-  `src-tauri/src/mcp/resources/DETAILS.md` § "Directory sizes say how much they're worth".
+  `src-tauri/src/tools/resources/DETAILS.md` § "Directory sizes say how much they're worth".
 - **`has-parent.ts`**: `computeHasParent` folds ONLY the snapshot rule via `hasParentRow`; the two PATH comparisons
   (`=== '/'`, `=== root`) stay.
 - **FilePane alt-view chain** (`FilePane.svelte`): the kind-structural view selection resolves through a `paneViewKind`
@@ -1050,8 +1050,15 @@ funnels through (F5/F6/F8, the F-key bar, the palette, the menus, drag and drop)
   snapshot, and the operation gate behave exactly as after a click.
 - **The dialog still shows whenever it's the only place something gets seen or decided**: any permanent delete, a cloud
   folder that may turn a trash into a delete mid-scan, compress, rename mode, a destination its path check refuses, S3
-  on either side (the cost line), and anything from MCP. The list and the why live in `confirmation-skip.ts`'s module
-  doc; pinned by `confirmation-skip.test.ts` and `dialog-state.confirmation-skip.svelte.test.ts`.
+  on either side (the cost line), and anything a person didn't start. The list and the why live in
+  `confirmation-skip.ts`'s module doc; pinned by `confirmation-skip.test.ts` and
+  `dialog-state.confirmation-skip.svelte.test.ts`.
+- **Only `initiator: 'user'` skips, and it fails closed.** `initiator` is required from the `file.*` command payloads
+  down to the dialog props. Only the command handlers read an absent payload as a person (`PRESSED_BY_A_PERSON` in
+  `file-handlers.ts`), so a new entry point that names nobody is a compile error, and an untyped payload still gets the
+  dialog. Why no `?? 'user'` lower down: it would make any untagged dispatch a person. Paste, Duplicate, drag, and the
+  rename-as-move handoff state `user` at their own call sites. An approved proposal never comes through here: it runs in
+  Rust (`agent/suggested_ops/bridge`), recording its own `Initiator::Agent`.
 - **Accepted gap**: a destination that refuses writes (read-only folder, no permission) is a red notice in the dialog,
   found by an async probe. A skipped transfer meets the backend's typed refusal in the error dialog instead, which says
   the same thing one step later. Read-only VOLUMES are refused before any of this by the entry guard.
@@ -1146,9 +1153,9 @@ here. `handleSubmit` (someone typing into the dialog) re-dispatches the parked c
 through the same confirmation and token gate as every other write instead of falling out of an unlock. It also dodges
 the stale-context hazard below, since a fresh `copy` reads current pane state rather than context captured before the
 prompt. Browse mode has no such split: re-listing is a read, so both answers retry. Whole contract, including why the
-parked operation is already settled: `src-tauri/src/mcp/DETAILS.md` § "Answering the password prompt". Raising or
-clearing the prompt also mirrors it to the backend (`notifyArchivePasswordPrompt` / `-Dismissed`), which is what lets
-`cmdr://state` name the archive at all; ❌ the password is never part of that mirror.
+parked operation is already settled: `apps/desktop/src-tauri/src/tools/actions/DETAILS.md` § "Answering the password
+prompt". Raising or clearing the prompt also mirrors it to the backend (`notifyArchivePasswordPrompt` / `-Dismissed`),
+which is what lets `cmdr://state` name the archive at all; ❌ the password is never part of that mirror.
 
 **The unlock flow can't aim the re-dispatch either.** `unlock-flow.svelte.ts` owns the prompt and both its modes but
 holds no reference to birth context: it asks `hasBirthContext()` and then calls `redispatchBirthOperation()` or
@@ -1235,7 +1242,7 @@ registration.
 
 **MCP surface.** `FilePane` mirrors `{ buffer, indicatorVisible, indicatorStale, lastMatchedName }` into the synced
 `PaneState.typeToJump` whenever the buffer or indicator is live, so MCP-driven E2E can assert without DOM poking. See
-`src-tauri/src/mcp/DETAILS.md` § State stores.
+`apps/desktop/src-tauri/src/ui_state/DETAILS.md` § State stores.
 
 `NetworkMountView` mirrors a mount that didn't go through the same way, as `PaneState.mountError`
 (`{ share, reason, message }`: the typed `MountError` tag beside the sentence the pane shows, which is in the UI's
@@ -1653,8 +1660,8 @@ passing through any of the others.
   does, and nothing about the mouse earns it an exemption. The drop's gate sits in `handleFileDrop`, after the drag
   lifecycle has been torn down and before any stat or volume-resolution work, so the refusal costs one toast and no
   syscalls. `triggerFileDrop` (the E2E entry) goes through the same function, so the gate is on that path too.
-- **MCP** is refused in Rust before dispatching (`mcp/executor/mod.rs::refuse_while_dialog_blocks`), which is what turns
-  a ten-second round-trip timeout into an immediate answer. The blocking dialog's id rides in the JSON-RPC error's
+- **MCP** is refused in Rust before dispatching (`tools/actions/mod.rs::refuse_while_dialog_blocks`), which is what
+  turns a ten-second round-trip timeout into an immediate answer. The blocking dialog's id rides in the JSON-RPC error's
   `data.blockingDialog`, a TYPED field: an agent acts on it to decide what to close, so it's a contract, and the
   `no-error-string-match` rule applies to a sentence an agent parses just as it does to one our own code would. The
   conversational sentence stays alongside it for the human reading the transcript, and stops at "close it first": ❌

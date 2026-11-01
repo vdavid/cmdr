@@ -4,7 +4,7 @@
 //! earlier round, a turn's stats ride its last assistant row), while the history pages by rows.
 //! So the page arrives with the rows around it that complete its first and last turns
 //! (`store::turn_context`), and everything is derived over that window by the same pure
-//! functions the live stream runs (`tools::line`), so a reloaded line says what the live one did.
+//! functions the live stream runs (`agent::line`), so a reloaded line says what the live one did.
 //!
 //! **Pairing.** Results persist in call order (`runtime/turn.rs`), so the k-th call with an id in
 //! an assistant row pairs with the k-th result carrying that id after it, before the next
@@ -16,9 +16,9 @@ use std::path::Path;
 use serde::Serialize;
 
 use super::{CallFacts, MessageView, RowFacts, project_row};
+use crate::agent::line::{LineRef, ToolPreview, outcome_of, preview_of, repeat_marks, subject_of};
 use crate::agent::llm::types::{AgentPart, AgentRole, AgentToolCall, AgentToolResult};
 use crate::agent::store::{ConversationEvent, StoredContent, StoredMessage, TurnContext, TurnStats};
-use crate::agent::tools::line::{LineRef, ToolPreview, outcome_of, preview_of, repeat_marks, subject_of};
 
 /// What the page's projection needs beyond the rows.
 pub struct PageContext<'a> {

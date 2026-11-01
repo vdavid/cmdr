@@ -75,6 +75,7 @@ describe('dialog render-failure recovery', () => {
   it('un-suppresses the pane keyboard after a confirmation dialog throws', () => {
     const dialogs = makeState()
     dialogs.showNewFolder({
+      initiator: 'user',
       currentPath: '/tmp',
       listingId: 'listing-1',
       showHiddenFiles: false,

@@ -71,6 +71,10 @@ var rustScannerJurisdictions = map[string]ScannerJurisdiction{
 		Kinds: []MemberKind{KindApp},
 		Why:   "`pluralize` is a private module of the app crate, so a tool crate can't reach the helper this check directs it to",
 	},
+	"tools-module-boundary": {
+		AppTreeOnly: true,
+		Why:         "it pins how the app crate's `tools`, `mcp`, and `agent` modules import each other, which no other member has",
+	},
 	"desktop-rust-log-error-macro": {
 		AppTreeOnly: true,
 		Why:         "`log_error!` is a crate-root `macro_rules!` no separate crate can invoke, so a crate has no legal alternative to `log::error!`",

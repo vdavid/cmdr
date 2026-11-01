@@ -85,7 +85,10 @@ fn notice_for(event: &SecurityEvent) -> Option<AccessNotice> {
         | SecurityEvent::RecordingTurnedOff { .. }
         // The recovery notice has its own channel, since it names where the copy went:
         // `crate::state_recovery`.
-        | SecurityEvent::StateFileRecovered { .. } => None,
+        | SecurityEvent::StateFileRecovered { .. }
+        // The tool result already tells the person, on the rail; a notice would only repeat it.
+        | SecurityEvent::ContentRefusalsStarted { .. }
+        | SecurityEvent::ContentRefusalsEnded { .. } => None,
     }
 }
 

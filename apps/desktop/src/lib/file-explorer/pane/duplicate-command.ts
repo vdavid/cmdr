@@ -97,5 +97,7 @@ export async function duplicateInPlace(access: PaneAccess, dialogs: DialogState)
     fileCount: props.fileCount,
     folderCount: props.folderCount,
     duplicateFollowUp: 'nothing',
+    // Arg-less and only ever bound to a person's gesture.
+    initiator: 'user',
   })
 }

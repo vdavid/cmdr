@@ -593,6 +593,10 @@
   "@askCmdr.tool.preview.status.unsupportedVolume": {
     "sourceHash": "945bf7c"
   },
+  "askCmdr.tool.preview.status.protected": "залишається приватним",
+  "@askCmdr.tool.preview.status.protected": {
+    "sourceHash": "6a22c60"
+  },
   "askCmdr.tool.preview.status.noVolumeAtPath": "на диску, який не підʼєднано",
   "@askCmdr.tool.preview.status.noVolumeAtPath": {
     "sourceHash": "3b32abe"

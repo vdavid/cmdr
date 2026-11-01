@@ -609,7 +609,34 @@ export const DELEGATE_ROWS: DelegateRow[] = [
   {
     id: 'file.copy',
     expect: (e) => {
-      expect(e.openCopyDialog).toHaveBeenCalledExactlyOnceWith(undefined)
+      expect(e.openCopyDialog).toHaveBeenCalledExactlyOnceWith({ initiator: 'user' })
+    },
+  },
+  {
+    // Only an ABSENT payload is a person. A payload that names nobody stays
+    // unnamed, so it fails closed at `confirmation-skip.ts`.
+    id: 'file.copy',
+    args: { onConflict: 'skip_all' },
+    expect: (e) => {
+      expect(e.openCopyDialog).toHaveBeenCalledExactlyOnceWith({ onConflict: 'skip_all' })
+    },
+  },
+  {
+    id: 'file.delete',
+    args: { permanent: true },
+    expect: (e) => {
+      expect(e.openDeleteDialog).toHaveBeenCalledExactlyOnceWith({
+        permanent: true,
+        autoConfirm: undefined,
+        mcpRequestId: undefined,
+        initiator: undefined,
+      })
+    },
+  },
+  {
+    id: 'file.compress',
+    expect: (e) => {
+      expect(e.openCompressDialog).toHaveBeenCalledExactlyOnceWith({ initiator: 'user' })
     },
   },
   {
@@ -634,7 +661,7 @@ export const DELEGATE_ROWS: DelegateRow[] = [
   {
     id: 'file.move',
     expect: (e) => {
-      expect(e.openMoveDialog).toHaveBeenCalledExactlyOnceWith(undefined)
+      expect(e.openMoveDialog).toHaveBeenCalledExactlyOnceWith({ initiator: 'user' })
     },
   },
   {
@@ -651,27 +678,27 @@ export const DELEGATE_ROWS: DelegateRow[] = [
   {
     id: 'file.newFolder',
     expect: (e) => {
-      expect(e.openNewFolderDialog).toHaveBeenCalledExactlyOnceWith(undefined, undefined, undefined)
+      expect(e.openNewFolderDialog).toHaveBeenCalledExactlyOnceWith({ initiator: 'user' })
     },
   },
   {
     id: 'file.newFolder',
     args: { initiator: 'aiClient' },
     expect: (e) => {
-      expect(e.openNewFolderDialog).toHaveBeenCalledExactlyOnceWith(undefined, undefined, 'aiClient')
+      expect(e.openNewFolderDialog).toHaveBeenCalledExactlyOnceWith({ initiator: 'aiClient' })
     },
   },
   {
     id: 'file.newFile',
     expect: (e) => {
-      expect(e.openNewFileDialog).toHaveBeenCalledExactlyOnceWith(undefined, undefined, undefined)
+      expect(e.openNewFileDialog).toHaveBeenCalledExactlyOnceWith({ initiator: 'user' })
     },
   },
   {
     id: 'file.newFile',
     args: { initiator: 'aiClient' },
     expect: (e) => {
-      expect(e.openNewFileDialog).toHaveBeenCalledExactlyOnceWith(undefined, undefined, 'aiClient')
+      expect(e.openNewFileDialog).toHaveBeenCalledExactlyOnceWith({ initiator: 'aiClient' })
     },
   },
   {
@@ -681,7 +708,7 @@ export const DELEGATE_ROWS: DelegateRow[] = [
         permanent: false,
         autoConfirm: undefined,
         mcpRequestId: undefined,
-        initiator: undefined,
+        initiator: 'user',
       })
     },
   },
@@ -700,7 +727,7 @@ export const DELEGATE_ROWS: DelegateRow[] = [
   {
     id: 'file.deletePermanently',
     expect: (e) => {
-      expect(e.openDeleteDialog).toHaveBeenCalledExactlyOnceWith({ permanent: true })
+      expect(e.openDeleteDialog).toHaveBeenCalledExactlyOnceWith({ permanent: true, initiator: 'user' })
     },
   },
   {

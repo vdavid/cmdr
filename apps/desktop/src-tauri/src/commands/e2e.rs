@@ -201,7 +201,7 @@ pub async fn e2e_propose_suggestions(
     app: tauri::AppHandle,
     params: serde_json::Value,
 ) -> Result<serde_json::Value, String> {
-    crate::agent::tools::suggestions::execute_propose_suggestions(&app, &params)
+    crate::tools::suggestions::execute_propose_suggestions(&app, &params)
         .await
         .map_err(|e| format!("{e:?}"))
 }
@@ -217,14 +217,9 @@ pub async fn e2e_propose_suggestions(
 #[cfg(feature = "playwright-e2e")]
 #[tauri::command]
 pub async fn e2e_propose_server(app: tauri::AppHandle, params: serde_json::Value) -> Result<serde_json::Value, String> {
-    crate::agent::tools::suggestions::propose_server_in_thread(
-        &app,
-        None,
-        &params,
-        crate::agent::types::TurnOrigin::Text,
-    )
-    .await
-    .map_err(|e| format!("{e:?}"))
+    crate::tools::suggestions::propose_server_in_thread(&app, None, &params, crate::agent::types::TurnOrigin::Text)
+        .await
+        .map_err(|e| format!("{e:?}"))
 }
 
 /// Hand one folder's activity to the wake loop the way the indexer's tap does: through

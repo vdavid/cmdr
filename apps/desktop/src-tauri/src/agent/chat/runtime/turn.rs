@@ -25,12 +25,12 @@ use crate::agent::chat::context::{
 use crate::agent::chat::message_view::{MessageView, to_message_view};
 use crate::agent::chat::spend_pause::{PauseOutcome, next_pause_at};
 use crate::agent::chat::system_prompt::system_prompt;
+use crate::agent::line::{LineRef, outcome_of, repeat_marks, subject_of};
 use crate::agent::llm::AgentLlm;
 use crate::agent::llm::types::{
     AgentMessage, AgentPart, AgentRole, AgentStopReason, AgentToolCall, AgentToolResult, AgentUsage, ToolDeclaration,
 };
 use crate::agent::store::{self, AgentStoreError, TurnLimit, TurnLimitKind, TurnStats};
-use crate::agent::tools::line::{LineRef, outcome_of, repeat_marks, subject_of};
 
 /// Drive one turn to completion, persisting crash-safely and staying within budget.
 /// Pure of Tauri: it needs only the seams (`llm`, `dispatcher`), a write `Connection`,

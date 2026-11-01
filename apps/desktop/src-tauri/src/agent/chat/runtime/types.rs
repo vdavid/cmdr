@@ -60,7 +60,7 @@ impl UserTurn<'_> {
 pub struct TurnParams<'a> {
     pub conversation_id: i64,
     /// Who started the turn, stated by the caller rather than read off `user`'s shape: the
-    /// dispatch gate reads it per call (`agent::tools::view`).
+    /// dispatch gate reads it per call (`agent::tool_gate`).
     pub origin: TurnOrigin,
     pub user: Option<UserTurn<'a>>,
     pub cmdr_md: Option<&'a str>,

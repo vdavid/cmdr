@@ -51,8 +51,8 @@ A durable, cross-volume journal of every file mutation Cmdr performs: one `opera
 with the pipeline's `operation_id`), many `operation_items` rows beneath it. It answers "what did I do to my files, and
 can I undo it?" — provenance, rollback, indexed name search, and retention. Shipped: the durable store, capture at the
 chokepoint, the rollback engine, the read/search API + retention enforcement, and the MCP tools (`operations_list` /
-`operations_get` / `operations_rollback` — see `mcp/DETAILS.md`). The UI (the Debug panel and the alpha dialog) builds
-on the read side.
+`operations_get` / `operations_rollback` — see `apps/desktop/src-tauri/src/tools/actions/DETAILS.md`). The UI (the Debug
+panel and the alpha dialog) builds on the read side.
 
 ## Why a separate durable DB
 
@@ -903,7 +903,7 @@ panel / alpha dialog / MCP tools. Two kinds of caller open their own short-lived
 `query.rs` (business logic — filtering, paging, dir-path resolution — lives there, never in the callers): the FE IPC
 surface is two thin pass-throughs (`commands/operation_log.rs`): `get_recent_operation_log_entries(limit, offset)` and
 `get_operation_log_detail(operation_id, item_limit, item_offset)`; the MCP `operations_list` / `operations_get` handlers
-(`mcp/executor/operation_log.rs`) do the same off the MCP task.
+(`tools/actions/operation_log.rs`) do the same off the MCP task.
 
 - **Within one second, "newest first" has no defined order.** `get_recent_operation_log_entries` sorts
   `started_at DESC, op_id DESC`, and `op_id` is a random UUID, so operations that start in the same second come back in

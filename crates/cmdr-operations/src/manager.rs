@@ -252,7 +252,7 @@ impl ManagerInner {
 const LANE_BUDGET: usize = 1;
 
 /// How many failed operations stay readable after they settle. Mirrors
-/// `mcp::terminal_ops::CAPACITY` and its reasoning: enough that a user coming
+/// `ui_state::terminal_ops::CAPACITY` and its reasoning: enough that a user coming
 /// back from lunch still finds what went wrong, small enough that a busy batch
 /// session pays a bounded memory cost. Runtime-only — a restart clears them, and
 /// the operation log is where a failure lives permanently.

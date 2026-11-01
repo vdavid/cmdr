@@ -91,7 +91,7 @@ export function announceRowsStillSettling(mcpRequestId: string | undefined): voi
  * returns whether the caller should stop.
  *
  * The MCP tools are refused in Rust before they ever reach the frontend
- * (`mcp/executor/mod.rs::refuse_while_dialog_blocks`), so in practice this catches
+ * (`tools/actions/mod.rs::refuse_while_dialog_blocks`), so in practice this catches
  * the native menu, whose items stay clickable whatever is on screen.
  */
 export function operationStartIsBlocked(mcpRequestId?: string): boolean {

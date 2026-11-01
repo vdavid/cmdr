@@ -70,7 +70,7 @@ export interface PanePlace {
 /**
  * What the pane did with the navigation, as the `mcp-response` reports it. The Rust
  * `nav_to_path` handler turns each into the tool's result — mirrored by `NavAck` in
- * `apps/desktop/src-tauri/src/mcp/executor/mod.rs`, and matched on the discriminant
+ * `apps/desktop/src-tauri/src/tools/actions/mod.rs`, and matched on the discriminant
  * rather than on any message text.
  */
 export type NavLandingOutcome = { outcome: 'navigated' | 'fell-back' | 'did-not-settle' | 'stalled' } & PanePlace

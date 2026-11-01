@@ -100,7 +100,7 @@ permissive path predicate, which would refuse a copy into a real folder named `B
   no volume id, so `local_path_is_in_a_restic_view` asks the memo for the boot volume and otherwise reads the candidate
   folder with `std::fs`, giving up past 32 entries. It's the write path, not the listing hot path, and an unconfirmed
   miss that wrote would put a real `Browse snapshots` folder inside someone's repo.
-- **The agent's rename plan** (`agent/tools/propose/rename/plan.rs`) must never probe a mount, so
+- **The agent's rename plan** (`tools/propose/rename/plan.rs`) must never probe a mount, so
   `memo_says_in_a_restic_view` answers from the memo alone, under the focused pane's volume id. A pane only stands
   inside a view after the route confirmed its repo.
 
@@ -139,5 +139,5 @@ an `index/` or `data/` read):
   the password, so it never prompts.
 - **F3** (`apps/desktop/src-tauri/src/file_viewer/session_test.rs`): materializes the file through the view's stream into the bounded temp, like
   a file in a git snapshot; a restic read failure is a plain I/O error.
-- **`inspect_file`** (`apps/desktop/src-tauri/src/agent/tools/read/inspect/restic_snapshot_tests.rs`): the same temp, a text window, and the temp
+- **`inspect_file`** (`apps/desktop/src-tauri/src/tools/read/inspect/restic_snapshot_tests.rs`): the same temp, a text window, and the temp
   gone afterwards. No new kind of content leaves.

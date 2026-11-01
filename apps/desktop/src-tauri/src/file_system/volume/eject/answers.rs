@@ -31,7 +31,7 @@ pub enum EjectAction {
 ///
 /// ❗ The answer an automated caller reads: the MCP `eject` tool returns this as
 /// a typed tag rather than a sentence, so an agent learns which teardown ran
-/// (`mcp/executor/eject.rs`). The frontend ignores it; its feedback is the
+/// (`tools/actions/eject.rs`). The frontend ignores it; its feedback is the
 /// volume leaving the switcher.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]

@@ -81,7 +81,7 @@ All of this is `delivery.rs`, which is macOS-only like the rest of the mechanism
    launch there is no window yet and this does nothing, which is correct: the window is on its way up anyway.
 3. Park the requests in `PendingReveals`, and deliver them right away if the frontend has drained at least once.
    Delivery is one task per batch, moving the pane request by request, so two can't race for the same pane.
-4. `plan_reveal` decides the pane move, then `crate::mcp::go_to_in_pane` makes it with the request's `GoToTarget`.
+4. `plan_reveal` decides the pane move, then `crate::tools::go_to_in_pane` makes it with the request's `GoToTarget`.
 5. On success, and only for a Finder request, `RevealDelivered` goes out. **Decision: after the move, ❌ never before
    it, and ❌ never for a terminal open.** The frontend spends a once-ever "Show in Finder now lands here" notice on the
    first one it sees (`apps/desktop/src/lib/reveal/DETAILS.md`); a reveal onto a dead mount, an unreadable path, or a
@@ -128,7 +128,7 @@ not await the move: the frontend that has to answer `mcp-nav-to-path` is the sam
 
 ## Where the pane primitive lives
 
-`go_to_in_pane` sits in `mcp/executor/nav.rs` and is re-exported from `mcp` (with `GoToTarget` and `PaneChoice`) as a
+`go_to_in_pane` sits in `tools/actions/nav.rs` and is re-exported from `mcp` (with `GoToTarget` and `PaneChoice`) as a
 named seam. Two callers: the `go_to_latest_download` MCP tool (`GoToTarget::FOCUSED`), which reaches `executor::nav`
 directly from inside the module, and this one, which is the seam's only user. That's why the re-export itself carries a
 `#[cfg(target_os = "macos")]`: without it the export is dead on Linux and `-D unused` fails the build. For the same
@@ -141,7 +141,7 @@ at its tab limit refuses, and the move then happens in the current tab, logged.
 
 **Decision: it lives with the MCP executor rather than here or in a neutral module.** "Take a pane there and point at
 that" is spoken entirely in the `mcp-*` frontend protocol (`mcp-tab`, `mcp-nav-to-path`, `mcp-move-cursor`,
-`mcp-select-names`) and needs the round-trip machinery that only exists inside `mcp::executor` — the request-id
+`mcp-select-names`) and needs the round-trip machinery that only exists inside `tools::actions` — the request-id
 correlation, the typed `NavAck` landing check, the ack budgets. Moving it out would mean either widening `executor`'s
 surface or duplicating that machinery. The name `mcp` is about the protocol these events are named for, not about who
 is allowed to speak it; an OS reveal makes the same move a user or an agent does.

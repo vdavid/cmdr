@@ -114,7 +114,7 @@ struct WatchEntry {
 /// A READ of the poll cache, never a fresh `statfs`. That's the point: the MCP
 /// resources and the agent's read tools answer "how full is this drive" without
 /// a syscall that a hung NAS could park them on for two minutes
-/// (`agent/tools/CLAUDE.md`: handlers read stores, never the filesystem).
+/// (`tools/CLAUDE.md`: handlers read stores, never the filesystem).
 ///
 /// A volume has an entry while something is watching it: the boot volume
 /// permanently (the low-disk-space watcher, on by default), and any volume a pane

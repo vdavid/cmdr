@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 use super::test_support::*;
 use super::*;
 use crate::agent::llm::types::ToolId;
-use crate::agent::tools::propose::evidence::{
+use crate::tools::propose::evidence::{
     EvidenceProblem, EvidenceScope, EvidenceSource, ImageFactsLedger, RenameEvidence,
 };
 

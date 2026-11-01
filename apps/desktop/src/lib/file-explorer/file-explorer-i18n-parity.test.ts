@@ -86,7 +86,7 @@ describe('en-US parity: interpolating / plural / select fileExplorer keys (golde
   })
 
   it('the hub row is named exactly what the Rust `SERVERS_VOLUME_NAME` const spells', () => {
-    // `mcp/executor/nav.rs` waits for the frontend-pushed pane name to equal that
+    // `tools/actions/nav.rs` waits for the frontend-pushed pane name to equal that
     // const before it reports a `select_volume` done, so a drift here is a 30 s
     // MCP timeout rather than a wrong word.
     expect(tString('fileExplorer.navigation.networkVolume')).toBe('Servers')

@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use tauri::{AppHandle, Manager};
 
 use super::{AttachmentKindView, AttachmentRef};
-use crate::mcp::PaneStateStore;
+use crate::ui_state::PaneStateStore;
 
 /// Resolve dragged local paths into typed attachment refs. Kinds come from the known
 /// pane files (left + right) — no filesystem stat — defaulting to `File` for an unknown

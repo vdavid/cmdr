@@ -63,8 +63,8 @@ still good, and only a re-weighting consumer loses the raw vector for that one r
 - **The MCP `cmdr://importance` resource.** It exposes `lookup` / `top_under` / `explain` / `scored_folder_count` to
   agents, enumerating scored volumes offline via `scored_volume_ids` (the `importance-{id}.db` files on disk) and
   opening each index with the kind's `signal_availability` mask so `explain` sums to the stored score. It's the
-  offline-unmounted read made a user-facing feature. Builder and modes: `apps/desktop/src-tauri/src/mcp/DETAILS.md` §
-  "Resources" (the `cmdr://importance` builder).
+  offline-unmounted read made a user-facing feature. Builder and modes:
+  `apps/desktop/src-tauri/src/tools/resources/DETAILS.md` (the `cmdr://importance` builder).
 - **Media-ML enrichment.** It orders its passes by importance and asks "has importance scored this volume?" through the
   row count, not the generation (`ImportanceIndex::is_scored`).
 

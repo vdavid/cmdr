@@ -93,7 +93,7 @@ async function paneConnectText(tauriPage: PageLike): Promise<string> {
 /**
  * Lands the focused pane on the phone.
  *
- * ❗ The `select_volume` TOOL can't reach it: `mcp/executor/nav.rs` validates the
+ * ❗ The `select_volume` TOOL can't reach it: `tools/actions/nav.rs` validates the
  * name against the BACKEND's own listing, and a synthetic volume exists only in
  * the frontend store. The event the tool emits does reach it.
  */

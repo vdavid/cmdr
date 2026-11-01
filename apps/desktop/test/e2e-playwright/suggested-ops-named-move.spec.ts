@@ -5,7 +5,7 @@
  *
  * The group is staged through the real `propose_suggestions` handler (`e2e_propose_suggestions`,
  * `playwright-e2e` only), so what the dialog shows is exactly what a model's call would have
- * staged. Contract: `src-tauri/src/agent/tools/suggestions/DETAILS.md` § Moving or copying under
+ * staged. Contract: `src-tauri/src/tools/suggestions/DETAILS.md` § Moving or copying under
  * a new name.
  *
  * Fixture layout (at $CMDR_E2E_START_PATH): `left/` and `right/`; this spec adds its two files

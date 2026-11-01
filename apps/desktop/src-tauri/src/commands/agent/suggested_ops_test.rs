@@ -236,8 +236,8 @@ fn the_destination_volume_is_named_even_before_anyone_connects_it() {
 fn a_re_addressed_destination_is_named_as_the_volume_written_to() {
     use crate::location::resolve::{IndexSources, VolumeFact};
     use crate::location::share_identity::ShareIdentity;
-    use crate::mcp::resources::volumes::VolumeKind;
     use crate::network::server_guid::GuidProof;
+    use crate::tools::resources::volumes::VolumeKind;
 
     let nas = |id: &str, root: &str, live: bool| VolumeFact {
         id: id.to_string(),
@@ -268,7 +268,7 @@ fn a_re_addressed_destination_is_named_as_the_volume_written_to() {
     };
     let conn = crate::sqlite_util::open_in_memory().expect("in-memory db");
     crate::agent::store::run_migrations(&conn, crate::agent::store::MIGRATIONS).expect("migrate");
-    let group_id = crate::agent::tools::suggestions::stage_for_test(
+    let group_id = crate::tools::suggestions::stage_for_test(
         &conn,
         &serde_json::json!({ "groups": [{
             "verb": "move",

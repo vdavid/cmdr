@@ -37,7 +37,7 @@ before `index_host::install`, and capturing `index()` would win its slot with an
 - `events.rs`, `TauriListingEvents`: the only place the engine's facts become wire events, and every policy on them.
   `finished(Failed)` classifies the error into the typed `listing-error` (with the damaged-archive, password, and
   cloud-provider readings), computes the PII-free analytics category, records into the MCP recent-errors ring
-  (`mcp/DETAILS.md`), records a TCC denial, and asks `note_root_failure` whether the mount went stale.
+  (`ui_state/DETAILS.md`), records a TCC denial, and asks `note_root_failure` whether the mount went stale.
   `finished(Complete)` adds the TCC restricted-empty-root hint and clears the path from the restricted set, as a cancel
   does. Split in two so a test drives the whole policy without an `AppHandle`: payloads go through a `ListingWire`
   (the `AppHandle` in the app, `WireCollector` in tests), bookkeeping through `ListingEndEffects`. The wire structs

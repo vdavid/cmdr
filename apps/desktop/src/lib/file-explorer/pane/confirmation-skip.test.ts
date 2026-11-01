@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { skippedDeleteConfirmation, skippedTransferConfirmation } from './confirmation-skip'
 import type { DeleteDialogPropsData } from './dialog-props'
 import type { TransferDialogPropsData } from './transfer-operations'
+import type { Initiator } from '#lib/tauri-commands/index.js'
 import type { VolumeInfo } from '../types'
 
 const VOLUMES: VolumeInfo[] = [
@@ -30,6 +31,7 @@ function transferProps(overrides: Partial<TransferDialogPropsData> = {}): Transf
     sourceVolumeId: 'root',
     destVolumeId: 'root',
     duplicateFollowUp: 'openRenameEditor',
+    initiator: 'user',
     ...overrides,
   }
 }
@@ -43,8 +45,16 @@ function deleteProps(overrides: Partial<DeleteDialogPropsData> = {}): DeleteDial
     supportsTrash: true,
     isFromCursor: true,
     sourceVolumeId: 'root',
+    initiator: 'user',
     ...overrides,
   }
+}
+
+const NON_USER_INITIATORS: readonly Exclude<Initiator, 'user'>[] = ['agent', 'agentEdited', 'aiClient']
+
+/** A payload that slipped past the types (an untyped dispatch) has to fail closed. */
+function withoutInitiator<T extends { initiator: Initiator }>(props: T): T {
+  return { ...props, initiator: undefined }
 }
 
 describe('skippedTransferConfirmation', () => {
@@ -80,8 +90,19 @@ describe('skippedTransferConfirmation', () => {
     expect(skippedTransferConfirmation(transferProps({ operationType: 'move', newName: 'b' }), VOLUMES)).toBeNull()
   })
 
-  it('shows the dialog for anything an agent started over MCP', () => {
-    expect(skippedTransferConfirmation(transferProps({ initiator: 'aiClient' }), VOLUMES)).toBeNull()
+  it.each(NON_USER_INITIATORS)('shows the dialog when %s started it', (initiator) => {
+    expect(skippedTransferConfirmation(transferProps({ initiator }), VOLUMES)).toBeNull()
+  })
+
+  it('skips for a person', () => {
+    expect(skippedTransferConfirmation(transferProps({ initiator: 'user' }), VOLUMES)).not.toBeNull()
+  })
+
+  it('shows the dialog when nothing says who started it', () => {
+    expect(skippedTransferConfirmation(withoutInitiator(transferProps()), VOLUMES)).toBeNull()
+  })
+
+  it('shows the dialog for an MCP round-trip, whoever it names', () => {
     expect(skippedTransferConfirmation(transferProps({ autoConfirm: true }), VOLUMES)).toBeNull()
     expect(skippedTransferConfirmation(transferProps({ mcpRequestId: 'req-1' }), VOLUMES)).toBeNull()
   })
@@ -160,8 +181,20 @@ describe('skippedDeleteConfirmation', () => {
     expect(skippedDeleteConfirmation(deleteProps({ cloudOnlineOnly: 'mixed' }))).toBeNull()
   })
 
-  it('never skips for an agent', () => {
-    expect(skippedDeleteConfirmation(deleteProps({ initiator: 'aiClient' }))).toBeNull()
+  it.each(NON_USER_INITIATORS)('never skips when %s started it', (initiator) => {
+    expect(skippedDeleteConfirmation(deleteProps({ initiator }))).toBeNull()
+  })
+
+  it('skips for a person', () => {
+    expect(skippedDeleteConfirmation(deleteProps({ initiator: 'user' }))).not.toBeNull()
+  })
+
+  it('never skips when nothing says who started it', () => {
+    expect(skippedDeleteConfirmation(withoutInitiator(deleteProps()))).toBeNull()
+  })
+
+  it('never skips an MCP round-trip, whoever it names', () => {
     expect(skippedDeleteConfirmation(deleteProps({ autoConfirm: true }))).toBeNull()
+    expect(skippedDeleteConfirmation(deleteProps({ mcpRequestId: 'req-1' }))).toBeNull()
   })
 })

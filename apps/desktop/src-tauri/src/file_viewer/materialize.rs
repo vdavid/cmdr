@@ -29,7 +29,7 @@
 //! - **One temp per window's file.** A fresh open pulls; a view switch in the same
 //!   window shares the copy its session already holds ([`PreviewTemp`], behind an
 //!   `Arc`), and the temp goes when the last session holding it closes. The second
-//!   caller, the agent's `inspect_file` (`agent/tools/read/inspect/`), owns its
+//!   caller, the agent's `inspect_file` (`tools/read/inspect/`), owns its
 //!   temp for one read and removes it in a `Drop` guard; the contract is the same:
 //!   whoever receives a [`MaterializedFile`] removes `cleanup_dir`.
 //! - **Bounded, refuse-before-extract.** The volume reports the file's size UP

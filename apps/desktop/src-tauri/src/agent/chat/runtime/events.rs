@@ -11,10 +11,10 @@ use tokio::sync::mpsc::UnboundedSender;
 use serde::Serialize;
 
 use crate::agent::chat::message_view::MessageView;
+use crate::agent::line::{LineRef, ToolOutcome, ToolSubject};
 use crate::agent::llm::types::{AgentStopReason, AgentUsage, ToolId};
 use crate::agent::store::TurnStats;
-use crate::agent::tools::line::{LineRef, ToolOutcome, ToolSubject};
-use crate::agent::tools::propose::rename::RenameProposalSnapshot;
+use crate::tools::propose::rename::RenameProposalSnapshot;
 
 /// The sink the runtime emits progress through. A plain unbounded channel; the IPC command forwards
 /// it to a Tauri `Channel`. Send failures (a closed receiver, e.g. the rail was closed)

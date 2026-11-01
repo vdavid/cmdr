@@ -44,7 +44,7 @@ const GUEST_HOST_NAME = 'SMB Test (Guest)'
 
 type PageLike = Parameters<typeof ensureAppReady>[0]
 
-/** One `favorites:` entry of `cmdr://state`, the shape `mcp/resources/favorites.rs` writes. */
+/** One `favorites:` entry of `cmdr://state`, the shape `tools/resources/favorites.rs` writes. */
 interface StateFavorite {
   id: string
   name: string

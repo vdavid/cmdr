@@ -28,7 +28,7 @@ import { duplicateInPlace } from './duplicate-command'
 import { openRenameAsMove } from './rename-as-move'
 import type { RenameAsMoveRequest } from './rename-flow.svelte'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
-import type { OpenDeleteDialogArgs, OpenTransferDialogArgs, StartRenameOptions } from './types'
+import type { OpenDeleteDialogArgs, OpenNamingDialogArgs, OpenTransferDialogArgs, StartRenameOptions } from './types'
 import type { TransferOperationType } from '../types'
 import type { createDialogState } from './dialog-state.svelte'
 import type { PaneAccess } from './pane-access'
@@ -218,13 +218,13 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    * or with `nameOverride` (the MCP `mkdir` tool's `name`) when given. `pane`
    * defaults to the focused pane; the MCP `mkdir` tool passes it explicitly so
    * the dialog targets the right pane regardless of focus timing. `initiator`
-   * carries provenance (`aiClient` for MCP-originated writes).
+   * carries provenance.
    */
-  async function openNewFolderDialog(
-    nameOverride?: string,
-    pane: 'left' | 'right' = access.getFocusedPane(),
-    initiator?: Initiator,
-  ) {
+  async function openNewFolderDialog({
+    name: nameOverride,
+    pane = access.getFocusedPane(),
+    initiator,
+  }: OpenNamingDialogArgs) {
     if (operationStartIsBlocked()) return
 
     const paneRef = access.getPaneRef(pane)
@@ -262,13 +262,13 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    * Opens the new file dialog. Pre-fills with the filename under the cursor, or
    * with `nameOverride` (the MCP `mkfile` tool's `name`) when given. `pane`
    * defaults to the focused pane; the MCP `mkfile` tool passes it explicitly.
-   * `initiator` carries provenance (`aiClient` for MCP-originated writes).
+   * `initiator` carries provenance.
    */
-  async function openNewFileDialog(
-    nameOverride?: string,
-    pane: 'left' | 'right' = access.getFocusedPane(),
-    initiator?: Initiator,
-  ) {
+  async function openNewFileDialog({
+    name: nameOverride,
+    pane = access.getFocusedPane(),
+    initiator,
+  }: OpenNamingDialogArgs) {
     if (operationStartIsBlocked()) return
 
     const paneRef = access.getPaneRef(pane)
@@ -359,17 +359,11 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
   }
 
   /** Opens the transfer dialog with the current selection info. */
-  async function openTransferDialog(
-    operationType: TransferOperationType,
-    autoConfirm?: boolean,
-    onConflict?: string,
-    mcpRequestId?: string,
-    initiator?: Initiator,
-  ) {
+  async function openTransferDialog(operationType: TransferOperationType, args: OpenTransferDialogArgs) {
     // Nothing new starts behind a dialog: the confirmation would stack over what
     // the user is reading, and this command reaches us from the native menu, whose
     // items stay clickable whatever is on screen. `operation-start-gate.ts`.
-    if (operationStartIsBlocked(mcpRequestId)) return
+    if (operationStartIsBlocked(args.mcpRequestId)) return
 
     const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
     const destPane = access.otherPane(access.getFocusedPane())
@@ -390,30 +384,22 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       return
     }
 
-    await openUnifiedTransferDialog(
-      operationType,
-      sourcePaneRef,
-      access.getFocusedPane(),
-      autoConfirm,
-      onConflict,
-      mcpRequestId,
-      initiator,
-    )
+    await openUnifiedTransferDialog(operationType, sourcePaneRef, access.getFocusedPane(), args)
   }
 
   /** Opens the copy dialog (convenience wrapper for MCP/key binding). */
-  async function openCopyDialog(args?: OpenTransferDialogArgs) {
-    await openTransferDialog('copy', args?.autoConfirm, args?.onConflict, args?.mcpRequestId, args?.initiator)
+  async function openCopyDialog(args: OpenTransferDialogArgs) {
+    await openTransferDialog('copy', args)
   }
 
   /** Opens the move dialog (convenience wrapper for MCP/key binding). */
-  async function openMoveDialog(args?: OpenTransferDialogArgs) {
-    await openTransferDialog('move', args?.autoConfirm, args?.onConflict, args?.mcpRequestId, args?.initiator)
+  async function openMoveDialog(args: OpenTransferDialogArgs) {
+    await openTransferDialog('move', args)
   }
 
   /** Opens the compress dialog (convenience wrapper for the ⌥F5 command/MCP). */
-  async function openCompressDialog(args?: OpenTransferDialogArgs) {
-    await openTransferDialog('compress', args?.autoConfirm, args?.onConflict, args?.mcpRequestId, args?.initiator)
+  async function openCompressDialog(args: OpenTransferDialogArgs) {
+    await openTransferDialog('compress', args)
   }
 
   /**

@@ -688,6 +688,7 @@ describe('pasteFromClipboard', () => {
       operationType: 'copy',
       sourcePaths: ['/x/a.txt'],
       destinationPath: '/x/foo.zip/inner',
+      initiator: 'user',
     })
   })
 

@@ -368,7 +368,7 @@ fn migrate_v4_proposal_spine(tx: &Transaction<'_>) -> rusqlite::Result<()> {
 /// Version 5: what each proposed rename NAME is based on, one row per rename op.
 ///
 /// A sidecar rather than columns on `proposal_ops`, because evidence is a rename-producer
-/// concern and the spine stays verb-agnostic: only `agent/tools/propose/rename/` writes or
+/// concern and the spine stays verb-agnostic: only `tools/propose/rename/` writes or
 /// reads this table. It cascades with its op, so a re-proposed or deleted group takes its
 /// evidence with it.
 ///

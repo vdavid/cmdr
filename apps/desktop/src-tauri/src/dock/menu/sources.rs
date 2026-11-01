@@ -8,7 +8,7 @@
 //!   `list_cached`, which `try_lock`s and answers `None` rather than waiting. The
 //!   ordinary `list` is ❌ off limits here: on a cold cache it reads the file, seeds
 //!   it, and holds the store's disk lock while it does.
-//! - **Tabs** come out of the backend's pane mirror (`mcp::pane_state`), which the
+//! - **Tabs** come out of the backend's pane mirror (`ui_state::pane_state`), which the
 //!   frontend pushes on every tab change. `tabs_focused_first` `try_read`s all three
 //!   locks and answers `None` rather than waiting; the writers only ever move a value
 //!   in memory, so a contended read is already vanishingly unlikely.
@@ -20,7 +20,7 @@
 use tauri::{AppHandle, Manager};
 
 use super::rows::Candidate;
-use crate::mcp::pane_state::PaneStateStore;
+use crate::ui_state::pane_state::PaneStateStore;
 
 /// The favorites, in the order the user keeps them.
 pub fn bookmarks() -> Vec<Candidate> {

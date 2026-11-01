@@ -8832,7 +8832,7 @@ export type EjectError =
  *
  *  ❗ The answer an automated caller reads: the MCP `eject` tool returns this as
  *  a typed tag rather than a sentence, so an agent learns which teardown ran
- *  (`mcp/executor/eject.rs`). The frontend ignores it; its feedback is the
+ *  (`tools/actions/eject.rs`). The frontend ignores it; its feedback is the
  *  volume leaving the switcher.
  */
 export type EjectOutcome =
@@ -9120,7 +9120,7 @@ export type EvidenceSource =
 /**
  *  `execute-command`: the single unified menu/cross-window command relay. The
  *  native menu (`menu/menu_handlers.rs`), the MCP dialog/app tools
- *  (`mcp/executor/`), and the settings window's License section all emit this to
+ *  (`tools/actions/`), and the settings window's License section all emit this to
  *  the main window, which narrows `command_id` to a registry `CommandId` and
  *  dispatches it. Wire key stays `commandId` via `rename_all`.
  */
@@ -12529,7 +12529,7 @@ export type MessageBlock =
   /**
    *  A tool the model invoked, as its line says it: what it looked at, what came back (`None`
    *  while no result row exists: still running, or a turn that never finished), and the
-   *  turn's earlier identical call it repeats. Typed facts from `tools::line`, never the raw
+   *  turn's earlier identical call it repeats. Typed facts from `agent::line`, never the raw
    *  arguments or result; the line is `(this row's id, call_id)`. Its result rides this block,
    *  so a tool-role row projects to no blocks.
    */
@@ -19155,6 +19155,8 @@ export type ToolPreviewRowStatus =
   // Under a mount point with nothing mounted there: the volume isn't connected.
   | 'noVolumeAtPath'
   | 'notIndexed'
+  // The sensitive-content gate kept the file's contents from the assistant.
+  | 'protected'
 
 /**
  *  What an expanded tool line shows: the curated preview, plus the raw result pretty-printed for

@@ -294,7 +294,7 @@ describe('openNewFolderDialog', () => {
     const access = buildAccess({ volumes: [volume({ mountIsReadOnly: true })] })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openNewFolderDialog()
+    await create(access, dialogs).openNewFolderDialog({ initiator: 'user' })
 
     expect(dialogs.showAlert).toHaveBeenCalledWith(
       'Read-only volume',
@@ -312,7 +312,7 @@ describe('openNewFolderDialog', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openNewFolderDialog()
+    await create(access, dialogs).openNewFolderDialog({ initiator: 'user' })
 
     // No refusal: creating a folder inside a zip runs the real managed
     // archive-edit flow, so the dialog opens like any writable destination.
@@ -323,6 +323,7 @@ describe('openNewFolderDialog', () => {
       showHiddenFiles: true,
       initialName: 'seed',
       volumeId: 'root',
+      initiator: 'user',
     })
   })
 
@@ -330,7 +331,7 @@ describe('openNewFolderDialog', () => {
     const access = buildAccess({ paneRefs: { left: buildPaneRef({ listingId: null }) }, volumes: [volume()] })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openNewFolderDialog()
+    await create(access, dialogs).openNewFolderDialog({ initiator: 'user' })
 
     expect(dialogs.showNewFolder).not.toHaveBeenCalled()
   })
@@ -345,7 +346,7 @@ describe('openNewFolderDialog', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openNewFolderDialog()
+    await create(access, dialogs).openNewFolderDialog({ initiator: 'user' })
 
     expect(dialogs.showNewFolder).toHaveBeenCalledWith({
       currentPath: '/left/dir',
@@ -353,6 +354,7 @@ describe('openNewFolderDialog', () => {
       showHiddenFiles: false,
       initialName: 'seed',
       volumeId: 'root',
+      initiator: 'user',
     })
   })
 })
@@ -362,7 +364,7 @@ describe('openNewFileDialog', () => {
     const access = buildAccess({ volumes: [volume({ mountIsReadOnly: true })] })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openNewFileDialog()
+    await create(access, dialogs).openNewFileDialog({ initiator: 'user' })
 
     expect(dialogs.showAlert).toHaveBeenCalledWith(
       'Read-only volume',
@@ -380,7 +382,7 @@ describe('openNewFileDialog', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openNewFileDialog()
+    await create(access, dialogs).openNewFileDialog({ initiator: 'user' })
 
     // No refusal: creating a file inside a zip runs the managed archive-edit flow.
     expect(dialogs.showAlert).not.toHaveBeenCalled()
@@ -390,6 +392,7 @@ describe('openNewFileDialog', () => {
       showHiddenFiles: true,
       initialName: 'seed',
       volumeId: 'root',
+      initiator: 'user',
     })
   })
 
@@ -397,7 +400,7 @@ describe('openNewFileDialog', () => {
     const access = buildAccess({ paneRefs: { left: buildPaneRef({ listingId: null }) }, volumes: [volume()] })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openNewFileDialog()
+    await create(access, dialogs).openNewFileDialog({ initiator: 'user' })
 
     expect(dialogs.showNewFile).not.toHaveBeenCalled()
   })
@@ -411,7 +414,7 @@ describe('openNewFileDialog', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openNewFileDialog()
+    await create(access, dialogs).openNewFileDialog({ initiator: 'user' })
 
     expect(dialogs.showNewFile).toHaveBeenCalledWith({
       currentPath: '/left/dir',
@@ -419,6 +422,7 @@ describe('openNewFileDialog', () => {
       showHiddenFiles: true,
       initialName: 'seed.txt',
       volumeId: 'root',
+      initiator: 'user',
     })
   })
 })
@@ -497,7 +501,7 @@ describe('openTransferDialog', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openTransferDialog('copy')
+    await create(access, dialogs).openTransferDialog('copy', { initiator: 'user' })
 
     expect(dialogs.showAlert).toHaveBeenCalledWith(
       'Read-only device',
@@ -519,7 +523,7 @@ describe('openTransferDialog', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openTransferDialog('copy')
+    await create(access, dialogs).openTransferDialog('copy', { initiator: 'user' })
 
     expect(dialogs.showAlert).not.toHaveBeenCalled()
     expect(dialogs.showTransfer).toHaveBeenCalledWith(expect.objectContaining({ operationType: 'copy' }))
@@ -531,7 +535,7 @@ describe('openTransferDialog', () => {
     const access = buildAccess({ focusedPane: 'left', paneRefs: { left: paneRef }, volumes: [volume()] })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openTransferDialog('copy')
+    await create(access, dialogs).openTransferDialog('copy', { initiator: 'user' })
 
     // Selection branch builds from the selected indices; the cursor branch is untouched.
     expect(buildFromSelectionSpy).toHaveBeenCalled()
@@ -545,7 +549,7 @@ describe('openTransferDialog', () => {
     const access = buildAccess({ focusedPane: 'left', paneRefs: { left: paneRef }, volumes: [volume()] })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openTransferDialog('copy')
+    await create(access, dialogs).openTransferDialog('copy', { initiator: 'user' })
 
     expect(buildFromSelectionSpy).not.toHaveBeenCalled()
     expect(buildFromCursorSpy).toHaveBeenCalled()
@@ -563,14 +567,33 @@ describe('openTransferDialog', () => {
     const dialogs = buildDialogs()
     const commands = create(access, dialogs)
 
-    await commands.openTransferDialog('copy')
+    await commands.openTransferDialog('copy', { initiator: 'user' })
     expect(dialogs.showTransfer).toHaveBeenLastCalledWith(
       expect.objectContaining({ duplicateFollowUp: 'openRenameEditor' }),
     )
 
-    await commands.openTransferDialog('copy', true, 'overwrite_all', 'mcp-1', 'aiClient')
+    await commands.openTransferDialog('copy', {
+      autoConfirm: true,
+      onConflict: 'overwrite_all',
+      mcpRequestId: 'mcp-1',
+      initiator: 'aiClient',
+    })
     expect(dialogs.showTransfer).toHaveBeenLastCalledWith(expect.objectContaining({ duplicateFollowUp: 'nothing' }))
   })
+
+  it.each(['user', 'agent', 'agentEdited', 'aiClient'] as const)(
+    'stamps %s onto the dialog props',
+    async (initiator) => {
+      buildFromCursorSpy.mockResolvedValue({ operationType: 'copy' })
+      const paneRef = buildPaneRef({ listingId: 'lst-1', selectedIndices: [], cursorIndex: 1 })
+      const access = buildAccess({ focusedPane: 'left', paneRefs: { left: paneRef }, volumes: [volume()] })
+      const dialogs = buildDialogs()
+
+      await create(access, dialogs).openTransferDialog('copy', { initiator })
+
+      expect(dialogs.showTransfer).toHaveBeenCalledWith(expect.objectContaining({ initiator }))
+    },
+  )
 
   it('bails on a non-snapshot pane without a listing id', async () => {
     const access = buildAccess({
@@ -580,7 +603,7 @@ describe('openTransferDialog', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openTransferDialog('move')
+    await create(access, dialogs).openTransferDialog('move', { initiator: 'user' })
 
     expect(dialogs.showTransfer).not.toHaveBeenCalled()
   })
@@ -609,7 +632,7 @@ describe('openTransferDialog while the source rows settle', () => {
     const access = buildAccess({ focusedPane: 'left', paneRefs: { left: paneRef }, volumes: [volume()] })
     const dialogs = buildDialogs()
 
-    const opening = create(access, dialogs).openTransferDialog('copy')
+    const opening = create(access, dialogs).openTransferDialog('copy', { initiator: 'user' })
     await Promise.resolve()
     expect(dialogs.showTransfer).not.toHaveBeenCalled()
 
@@ -630,7 +653,7 @@ describe('openTransferDialog while the source rows settle', () => {
     const access = buildAccess({ focusedPane: 'left', paneRefs: { left: paneRef }, volumes: [volume()] })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openTransferDialog('copy')
+    await create(access, dialogs).openTransferDialog('copy', { initiator: 'user' })
 
     expect(dialogs.showTransfer).not.toHaveBeenCalled()
     expect(buildFromSelectionSpy).not.toHaveBeenCalled()
@@ -652,7 +675,7 @@ describe('openTransferDialog while the source rows settle', () => {
     const access = buildAccess({ focusedPane: 'left', paneRefs: { left: paneRef }, volumes: [volume()] })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openTransferDialog('copy')
+    await create(access, dialogs).openTransferDialog('copy', { initiator: 'user' })
 
     expect(buildFromSelectionSpy).toHaveBeenCalledTimes(2)
     expect(dialogs.showTransfer).toHaveBeenCalledTimes(1)
@@ -667,7 +690,7 @@ describe('openCopyDialog / openMoveDialog', () => {
     const access = buildAccess({ focusedPane: 'left', volumes: [volume()] })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openCopyDialog()
+    await create(access, dialogs).openCopyDialog({ initiator: 'user' })
 
     expect(buildFromCursorSpy.mock.calls[0]?.[0]).toBe('copy')
     expect(dialogs.showTransfer.mock.calls[0]?.[0]).toMatchObject({ operationType: 'copy' })
@@ -680,7 +703,7 @@ describe('openCopyDialog / openMoveDialog', () => {
     const access = buildAccess({ focusedPane: 'left', volumes: [volume()] })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openMoveDialog()
+    await create(access, dialogs).openMoveDialog({ initiator: 'user' })
 
     expect(buildFromCursorSpy.mock.calls[0]?.[0]).toBe('move')
     expect(dialogs.showTransfer.mock.calls[0]?.[0]).toMatchObject({ operationType: 'move' })
@@ -692,7 +715,7 @@ describe('openDeleteDialog', () => {
     const access = buildAccess({ paneRefs: { left: buildPaneRef({ listingId: null }) }, volumes: [volume()] })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
+    await create(access, dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
   })
@@ -704,7 +727,7 @@ describe('openDeleteDialog', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
+    await create(access, dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(dialogs.showAlert).toHaveBeenCalledWith(
       'Read-only volume',
@@ -726,7 +749,7 @@ describe('openDeleteDialog', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
+    await create(access, dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(dialogs.showAlert).not.toHaveBeenCalled()
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
@@ -747,7 +770,7 @@ describe('openDeleteDialog', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog({ permanent: true })
+    await create(access, dialogs).openDeleteDialog({ permanent: true, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation).toHaveBeenCalledTimes(1)
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
@@ -764,7 +787,7 @@ describe('openDeleteDialog', () => {
     const access = buildAccess({ paneRefs: { left: paneRef }, volumes: [volume()] })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
+    await create(access, dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({ isFromCursor: true })
   })
@@ -778,7 +801,7 @@ describe('openDeleteDialog', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
+    await create(access, dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({ supportsTrash: false })
   })
@@ -789,7 +812,7 @@ describe('openDeleteDialog', () => {
     const access = buildAccess({ paneRefs: { left: paneRef }, volumes: [volume()] })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
+    await create(access, dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
   })
@@ -800,7 +823,7 @@ describe('openDeleteDialog', () => {
     const access = buildAccess({ paneRefs: { left: paneRef }, volumes: [volume()] })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
+    await create(access, dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
   })
@@ -822,7 +845,7 @@ describe('openDeleteDialog when the rows moved under the press', () => {
     const paneRef = { ...buildPaneRef({ listingId: moved.MOVED_LISTING_ID }), ...pane } as unknown as FilePaneAPI
     const access = buildAccess({ paneRefs: { left: paneRef }, volumes: [volume()] })
     const dialogs = buildDialogs()
-    await create(access, dialogs).openDeleteDialog({ permanent: true })
+    await create(access, dialogs).openDeleteDialog({ permanent: true, initiator: 'user' })
     return { dialogs, moved }
   }
 
@@ -873,7 +896,7 @@ describe('openDeleteDialog in a cloud-storage folder', () => {
     trashRoutingSpy.mockResolvedValue({ routing: 'permanentDeleteAllOnlineOnly', folderMayHoldOnlineOnly: false })
     const dialogs = buildDialogs()
 
-    await create(cloudAccess(), dialogs).openDeleteDialog({ permanent: false })
+    await create(cloudAccess(), dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(trashRoutingSpy).toHaveBeenCalledWith([
       '/Users/x/Library/CloudStorage/Dropbox/Work/a.pkg',
@@ -892,7 +915,7 @@ describe('openDeleteDialog in a cloud-storage folder', () => {
     trashRoutingSpy.mockResolvedValue({ routing: 'permanentDeleteAllOnlineOnly', folderMayHoldOnlineOnly: false })
     const dialogs = buildDialogs()
 
-    await create(cloudAccess(), dialogs).openDeleteDialog({ permanent: true })
+    await create(cloudAccess(), dialogs).openDeleteDialog({ permanent: true, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
       isPermanent: true,
@@ -907,7 +930,7 @@ describe('openDeleteDialog in a cloud-storage folder', () => {
     trashRoutingSpy.mockResolvedValue({ routing: 'permanentDeleteMixedOnlineOnly', folderMayHoldOnlineOnly: false })
     const dialogs = buildDialogs()
 
-    await create(cloudAccess(), dialogs).openDeleteDialog({ permanent: false })
+    await create(cloudAccess(), dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
       isPermanent: true,
@@ -922,7 +945,7 @@ describe('openDeleteDialog in a cloud-storage folder', () => {
     trashRoutingSpy.mockResolvedValue({ routing: 'trash', folderMayHoldOnlineOnly: false })
     const dialogs = buildDialogs()
 
-    await create(cloudAccess(), dialogs).openDeleteDialog({ permanent: false })
+    await create(cloudAccess(), dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
       isPermanent: false,
@@ -938,7 +961,7 @@ describe('openDeleteDialog in a cloud-storage folder', () => {
     trashRoutingSpy.mockResolvedValue({ routing: 'trash', folderMayHoldOnlineOnly: true })
     const dialogs = buildDialogs()
 
-    await create(cloudAccess(), dialogs).openDeleteDialog({ permanent: false })
+    await create(cloudAccess(), dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
       isPermanent: false,
@@ -952,7 +975,7 @@ describe('openDeleteDialog in a cloud-storage folder', () => {
     trashRoutingSpy.mockRejectedValue(new Error('IPC gone'))
     const dialogs = buildDialogs()
 
-    await create(cloudAccess(), dialogs).openDeleteDialog({ permanent: false })
+    await create(cloudAccess(), dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
       isPermanent: false,

@@ -33,9 +33,10 @@ export interface TransferDialogPropsData {
   /** MCP round-trip id, present only for an auto-confirmed MCP op. Threaded to the
    *  progress state, which replies `mcp-response` with the spawned operationId. */
   mcpRequestId?: string
-  /** Who triggered this operation (`aiClient` for MCP-originated writes). Carried
-   *  into the progress dialog's write config so the backend records provenance. */
-  initiator?: Initiator
+  /** Who started this operation. Carried into the progress dialog's write config so
+   *  the backend records provenance, and only `user` may skip the confirmation.
+   *  Required, like `duplicateFollowUp`: each trigger states it. */
+  initiator: Initiator
   /**
    * What happens when this transfer duplicates ONE item in the folder it already
    * lived in. Forwarded to the progress dialog's config on confirm; see
@@ -54,11 +55,11 @@ export interface TransferDialogPropsData {
  * Dialog props before the TRIGGER has had its say.
  *
  * The builders below describe the transfer (what, from where, to where); only
- * the gesture that asked for it knows whether a single-item duplicate should end
- * in the rename editor. Leaving that field out here is what makes each call site
- * state it, rather than inheriting a default nobody chose.
+ * the gesture that asked for it knows who started it and whether a single-item
+ * duplicate should end in the rename editor. Leaving those fields out here is what
+ * makes each call site state them, rather than inheriting a default nobody chose.
  */
-export type TransferDialogPropsDraft = Omit<TransferDialogPropsData, 'duplicateFollowUp'>
+export type TransferDialogPropsDraft = Omit<TransferDialogPropsData, 'duplicateFollowUp' | 'initiator'>
 
 /**
  * The transfer of what the press names: the pane's selection, or with

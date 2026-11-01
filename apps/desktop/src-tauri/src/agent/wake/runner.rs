@@ -190,7 +190,7 @@ async fn run(app: AppHandle, slot: ResolvedSlot, turn: &BackgroundTurn) -> WakeC
         budget::files_per_batch(slot.prompt_budget),
     )
     .await;
-    let tools = crate::agent::tools::agent_tool_declarations();
+    let tools = crate::tools::agent_tool_declarations();
     // A wake reads the same memory the rail does. It is what keeps the agent from proposing
     // again what the user already turned down, which is the whole difference between a
     // colleague and a nag.

@@ -181,7 +181,7 @@ pub struct ReasoningState {
 /// The known variants map 1:1 onto the registry's `agent_tool_view()` entries (the
 /// read-only families: live app state, drive-index listing + stats, importance,
 /// operation-log search + detail, and the volume list). A structural test in
-/// `agent/tools` pins that 1:1 mapping so a variant and its registry entry can't
+/// `tools/mod.rs` pins that 1:1 mapping so a variant and its registry entry can't
 /// drift.
 ///
 /// [`ToolId::Unrecognized`] is the read-only choke point: a provider returns each
@@ -391,7 +391,7 @@ impl AgentToolCall {
     /// object, keys sorted at every depth ([`canonical_json`]), so two calls that mean the same
     /// thing render the same bytes whatever order the provider emitted their keys in. The call id
     /// is NOT part of it (ids collide across rounds). One definition for the repeat breaker
-    /// (`chat/runtime/repeats.rs`) and the rail's repeat mark (`agent/tools/line/`).
+    /// (`chat/runtime/repeats.rs`) and the rail's repeat mark (`agent/line/`).
     pub fn identity_key(&self) -> String {
         // A unit separator, so no tool name plus arguments can collide with another pair.
         format!("{}\u{1f}{}", self.tool.as_wire_name(), canonical_json(&self.arguments))

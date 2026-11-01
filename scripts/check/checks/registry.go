@@ -352,6 +352,15 @@ var AllChecks = []CheckDefinition{
 		Run:         RunLockPoison,
 	},
 	{
+		ID:          "tools-module-boundary",
+		DisplayName: "the tool layer's boundary",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		IsFast:      true,
+		Inputs:      rustAppTreeInputs,
+		Run:         RunToolsModuleBoundary,
+	},
+	{
 		ID:          "desktop-rust-log-private-values",
 		Nickname:    "log-private-values",
 		DisplayName: "log-private-values",

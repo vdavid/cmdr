@@ -94,7 +94,7 @@ describe('openTransferDialog on a search-results pane', () => {
     const access = buildAccess({ focusedPane: 'left', volumeIds: { left: 'root', right: 'search-results' } })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openTransferDialog('copy')
+    await create(access, dialogs).openTransferDialog('copy', { initiator: 'user' })
 
     expect(addToastSpy).toHaveBeenCalledWith("Search results aren't a folder. Pick a real destination.", {
       level: 'warn',
@@ -114,7 +114,7 @@ describe('openTransferDialog on a search-results pane', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openTransferDialog('copy')
+    await create(access, dialogs).openTransferDialog('copy', { initiator: 'user' })
 
     expect(addToastSpy).not.toHaveBeenCalledWith("Search results aren't a folder. Pick a real destination.", {
       level: 'warn',
@@ -133,7 +133,7 @@ describe('openTransferDialog on a search-results pane', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openTransferDialog('move')
+    await create(access, dialogs).openTransferDialog('move', { initiator: 'user' })
 
     expect(dialogs.showTransfer).toHaveBeenCalledTimes(1)
     expect(dialogs.showTransfer.mock.calls[0][0]).toMatchObject({
@@ -159,7 +159,7 @@ describe('openTransferDialog on a search-results pane', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openTransferDialog('move')
+    await create(access, dialogs).openTransferDialog('move', { initiator: 'user' })
 
     expect(dialogs.showTransfer.mock.calls[0][0]).toMatchObject({ sourceVolumeId: 'vol-stick' })
   })
@@ -183,7 +183,7 @@ describe('openTransferDialog on a search-results pane', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openTransferDialog('copy')
+    await create(access, dialogs).openTransferDialog('copy', { initiator: 'user' })
 
     expect(dialogs.showTransfer.mock.calls[0][0]).toMatchObject({ sourceVolumeId: 'adb-r58m' })
   })
@@ -198,7 +198,7 @@ describe('openTransferDialog on a search-results pane', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openTransferDialog('move')
+    await create(access, dialogs).openTransferDialog('move', { initiator: 'user' })
 
     expect(dialogs.showTransfer).not.toHaveBeenCalled()
   })
@@ -213,7 +213,7 @@ describe('openTransferDialog on a search-results pane', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openTransferDialog('copy')
+    await create(access, dialogs).openTransferDialog('copy', { initiator: 'user' })
 
     expect(dialogs.showTransfer).not.toHaveBeenCalled()
     expect(dialogs.showAlert).not.toHaveBeenCalled()
@@ -229,7 +229,7 @@ describe('openTransferDialog on a search-results pane', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openTransferDialog('move')
+    await create(access, dialogs).openTransferDialog('move', { initiator: 'user' })
 
     expect(dialogs.showTransfer).not.toHaveBeenCalled()
   })
@@ -261,7 +261,7 @@ describe('openDeleteDialog on a search-results pane', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog({ permanent: true })
+    await create(access, dialogs).openDeleteDialog({ permanent: true, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({ sourceVolumeId: 'vol-stick' })
   })
@@ -287,7 +287,7 @@ describe('openDeleteDialog on a search-results pane', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
+    await create(access, dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({ supportsTrash: false })
   })
@@ -313,7 +313,7 @@ describe('openDeleteDialog on a search-results pane', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
+    await create(access, dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
       isPermanent: true,
@@ -337,7 +337,7 @@ describe('openDeleteDialog on a search-results pane', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
+    await create(access, dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
       sourceVolumeId: 'root',
@@ -365,7 +365,7 @@ describe('openDeleteDialog on a search-results pane', () => {
     })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
+    await create(access, dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
       sourceVolumeId: 'adb-r58m',
@@ -381,7 +381,7 @@ describe('openDeleteDialog on a search-results pane', () => {
     const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog({ permanent: true })
+    await create(access, dialogs).openDeleteDialog({ permanent: true, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation).toHaveBeenCalledTimes(1)
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
@@ -409,7 +409,7 @@ describe('openDeleteDialog on a search-results pane', () => {
     const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
+    await create(access, dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation).toHaveBeenCalledTimes(1)
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
@@ -436,7 +436,7 @@ describe('openDeleteDialog on a search-results pane', () => {
     const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
+    await create(access, dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
       sourceFolderPath: '/Users/me',
@@ -451,7 +451,7 @@ describe('openDeleteDialog on a search-results pane', () => {
     const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
+    await create(access, dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({ sourcePaths: ['/real/a.txt'] })
   })
@@ -462,7 +462,7 @@ describe('openDeleteDialog on a search-results pane', () => {
     const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
+    await create(access, dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
   })
@@ -473,7 +473,7 @@ describe('openDeleteDialog on a search-results pane', () => {
     const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
+    await create(access, dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
   })
@@ -487,7 +487,7 @@ describe('openDeleteDialog on a search-results pane', () => {
     const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
+    await create(access, dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
     expect(dialogs.showAlert).not.toHaveBeenCalled()
@@ -505,7 +505,7 @@ describe('openDeleteDialog on a search-results pane', () => {
     const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
+    await create(access, dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
       sourcePaths: [odd],
@@ -519,7 +519,7 @@ describe('openDeleteDialog on a search-results pane', () => {
     const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
     const dialogs = buildDialogs()
 
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
+    await create(access, dialogs).openDeleteDialog({ permanent: false, initiator: 'user' })
 
     expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
   })

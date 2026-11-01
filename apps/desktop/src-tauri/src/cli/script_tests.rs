@@ -10,8 +10,8 @@ use std::process::{Command, Output};
 use tauri::Url;
 
 use super::open_url::{CliOpen, parse_cli_url};
-use crate::mcp::{GoToTarget, PaneChoice};
 use crate::test_support::TestDir;
+use crate::tools::{GoToTarget, PaneChoice};
 
 fn script() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("resources/bin/cmdr")

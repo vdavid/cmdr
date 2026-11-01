@@ -1,6 +1,6 @@
 //! The two reads the app runs on any image a user opens, with no panic containment:
 //! the header-only dimensions (`file_viewer::media::read_image_dimensions`) and the
-//! EXIF block, shaped through `display_value` (`agent::tools::read::inspect::exif`).
+//! EXIF block, shaped through `display_value` (`tools::read::inspect::exif`).
 //! Mirrored here because fuzzing the app crate itself would instrument all of Tauri;
 //! keep the calls in step with those two functions.
 #![no_main]

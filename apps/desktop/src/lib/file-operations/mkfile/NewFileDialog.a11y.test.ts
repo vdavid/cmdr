@@ -27,6 +27,7 @@ describe('NewFileDialog a11y', () => {
     mount(NewFileDialog, {
       target,
       props: {
+        initiator: 'user',
         currentPath: '/Users/test/Projects',
         listingId: 'listing-1',
         showHiddenFiles: false,
@@ -46,6 +47,7 @@ describe('NewFileDialog a11y', () => {
     mount(NewFileDialog, {
       target,
       props: {
+        initiator: 'user',
         currentPath: '/Users/test/Projects',
         listingId: 'listing-2',
         showHiddenFiles: false,

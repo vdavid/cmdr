@@ -14,7 +14,7 @@
 //! The tools' location resolver lives here too: `resolve.rs` (the pure core and
 //! the one root function), `facts.rs` (the in-memory volume facts it reads, and
 //! the earlier-roots record), and `miss.rs` (a miss as a tool result). Its
-//! contract: `agent/tools/DETAILS.md` § The location contract. `store_path.rs`
+//! contract: `tools/DETAILS.md` § The location contract. `store_path.rs`
 //! translates app paths to and from an importance store's path space, and
 //! `same_share.rs` proves two volumes one share and picks which may answer (and
 //! which member a connect acts on), over the `share_identity.rs` each fact carries.

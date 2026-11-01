@@ -49,6 +49,7 @@ const STATUS_KEYS: Record<ToolPreviewRowStatus, MessageKey> = {
   unsupportedVolume: 'askCmdr.tool.preview.status.unsupportedVolume',
   noVolumeAtPath: 'askCmdr.tool.preview.status.noVolumeAtPath',
   notIndexed: 'askCmdr.tool.preview.status.notIndexed',
+  protected: 'askCmdr.tool.preview.status.protected',
 }
 
 export function previewStatusText(status: ToolPreviewRowStatus): string {

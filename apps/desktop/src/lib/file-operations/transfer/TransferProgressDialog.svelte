@@ -92,7 +92,9 @@
          *  queue row can say "2 folders and 1 file". */
         fileCount?: number
         folderCount?: number
-        /** Who triggered this operation (`aiClient` for MCP-originated writes). */
+        /** Who started this operation, for the backend's provenance record. Required
+         *  on its birth props (`TransferProgressPropsData`); an adopted view starts
+         *  nothing, so it has none. */
         initiator?: Initiator
         /** Rename mode: the one source moves into `destinationPath` under this name. */
         newName?: string

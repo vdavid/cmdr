@@ -123,7 +123,7 @@ debounce for the same reason, and triggers off `createSelectionState`'s exact `o
 mutation) rather than an effect on `selectedIndices.size`, which would miss a gesture that swaps which rows are
 selected without changing how many.
 
-**Rejected: reading the MCP pane mirror** (`mcp/pane_state.rs`). It looks like it already has the answer, and doesn't:
+**Rejected: reading the MCP pane mirror** (`ui_state/pane_state.rs`). It looks like it already has the answer, and doesn't:
 its `files` are capped at 100 mirrored rows, it carries no `listing_id` to resolve indices against, its push is gated
 on the `syncsToMcp` capability (so some panes never appear), and it exists to describe the app to agents. Writing the
 wrong files into a service is a correctness bug a user feels immediately, so this path owns its own state.

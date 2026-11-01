@@ -32,6 +32,7 @@ function mountDialog(onCreated: (name: string) => void): HTMLElement {
   mount(NewFolderDialog, {
     target,
     props: {
+      initiator: 'user',
       currentPath: '/Volumes/naspi/photos',
       listingId: 'listing-1',
       showHiddenFiles: false,

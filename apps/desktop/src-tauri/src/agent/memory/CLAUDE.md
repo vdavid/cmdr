@@ -13,7 +13,7 @@ Depth: `DETAILS.md`.
 - `refusal.rs`: `MemoryRefusal` and `MemoryRefusalKind` (the token read back), apart to avoid a module cycle.
 - `mod.rs`: `memory_root` / `store_for` / `read_for_turn`, the only lines that need an `AppHandle`.
 
-The tool handlers live with the rest of the toolset (`../tools/memory.rs`); the prompt fence lives with prompt assembly
+The tool handlers live with the rest of the toolset (`../../tools/memory.rs`); the prompt fence lives with prompt assembly
 (`../chat/context.rs`).
 
 ## Must-knows

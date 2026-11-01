@@ -67,6 +67,7 @@ describe('openRenameAsMove', () => {
         folderCount: 0,
         direction: 'left',
         newName: 'big-2.iso',
+        initiator: 'user',
       }),
     )
   })

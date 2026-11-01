@@ -1,0 +1,11 @@
+mod ack_system_tests;
+mod agent_view_tests;
+mod resource_indexing_tests;
+mod resource_log_tests;
+mod resource_operations_tests;
+mod resource_operations_tree_tests;
+mod resource_state_tests;
+mod resource_tests;
+mod tool_category_tests;
+mod tool_registry_tests;
+mod tool_snapshot_tests;

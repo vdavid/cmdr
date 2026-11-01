@@ -1,4 +1,4 @@
-//! The PDF reads `agent::tools::read::inspect::pdf` makes, under the same panic
+//! The PDF reads `tools::read::inspect::pdf` makes, under the same panic
 //! containment: `pdf-extract` panics on hostile input by design, and the app wraps
 //! every call in `crash_reporter::contain_panics` (a `catch_unwind`). So a panic is
 //! NOT a finding here; what is: a stack overflow, an abort, a runaway allocation, or

@@ -593,6 +593,10 @@
   "@askCmdr.tool.preview.status.unsupportedVolume": {
     "sourceHash": "945bf7c"
   },
+  "askCmdr.tool.preview.status.protected": "hålls privat",
+  "@askCmdr.tool.preview.status.protected": {
+    "sourceHash": "6a22c60"
+  },
   "askCmdr.tool.preview.status.noVolumeAtPath": "på en enhet som inte är ansluten",
   "@askCmdr.tool.preview.status.noVolumeAtPath": {
     "sourceHash": "3b32abe"

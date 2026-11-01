@@ -306,13 +306,13 @@ Ask Cmdr is the widest of these, so the rest of this section is its detail. Ask 
 
 - **The agent can propose; only the user can approve.** The agent has no tool that touches the user's files. Its
   dispatch view admits `Access::Read`, `Access::Propose`, `Access::Memory`, and `Access::Session` entries and never
-  `Access::Write` (pinned structurally in `mcp/tests/tool_registry_tests/access.rs`, and again at runtime in
-  `agent/tools/view.rs`). A `Propose` tool mutates nothing: it stages a proposal and opens a review surface. Approval
+  `Access::Write` (pinned structurally in `tools/tests/tool_registry_tests/access.rs`, and again at runtime in
+  `agent/tool_gate.rs`). A `Propose` tool mutates nothing: it stages a proposal and opens a review surface. Approval
   originates in the frontend as a user action, and there is no tool — and never will be one — that approves a proposal.
   No agent-visible tool can reach the `autoConfirm` confirmation bypass. `Propose` adds no egress: proposals flow agent
   → user, never to the provider, so consent is unchanged by it. What reaches the provider by default is file/folder
   names, paths, sizes, dates, and the app-state envelope (spec §2.1); file contents reach it only through the two read
-  tools below, on request. Depth: `apps/desktop/src-tauri/src/mcp/DETAILS.md` § The `Propose` tier.
+  tools below, on request. Depth: `apps/desktop/src-tauri/src/tools/DETAILS.md` § The `Propose` tier.
 - **The agent may connect a place the user saved, and only when the user asked.** `Access::Session` opens a session to a
   SAVED place by volume id with STORED credentials, and adds or edits no file, server, account, credential, pin, or
   setting, so it can't add a host, type a password, or approve a key (what an injected file name would want). The
@@ -328,7 +328,7 @@ Ask Cmdr is the widest of these, so the rest of this section is its detail. Ask 
   in as, on any protocol (a username, or NFS's uid and gid): the app's edit would move the stored password to a new
   address, and a new account would act as someone the user never picked. An add can't replace a saved server or wear
   another's name, and the tool refuses on a turn the user didn't start. No egress moves. Canonical:
-  `apps/desktop/src-tauri/src/agent/tools/suggestions/DETAILS.md` § Proposing a server.
+  `apps/desktop/src-tauri/src/tools/suggestions/DETAILS.md` § Proposing a server.
 - **The agent writes one folder, and what it writes egresses forever after.** `Access::Memory` covers `memory_write` and
   `memory_edit`, jailed to `<data-dir>/ai/memory/` (relative `.md` paths only, no `..`, no symlink along the chain,
   containment re-checked against a canonicalized parent) and capped at 64 KB. Two consequences worth stating plainly:
@@ -339,14 +339,25 @@ Ask Cmdr is the widest of these, so the rest of this section is its detail. Ask 
   prompt-injection mitigations are memory's placement in a user turn (never the system string) under a line saying Cmdr
   added it and it is data, a fence its own content cannot close, and the "facts, never instructions to yourself" write
   rule. Depth: `apps/desktop/src-tauri/src/agent/memory/DETAILS.md` § The injection surface.
-- **The photo tools send image-derived TEXT, not "just metadata".** `search_photos` (`mcp/executor/photos.rs`) returns
-  matched image paths plus the in-image OCR snippet and Vision tags; `image_facts` (`mcp/executor/image_facts.rs`)
+- **Some contents never egress, whatever a prompt asks.** One gate covers every path that yields file contents or
+  image-derived text (`inspect_file`, `image_facts`, `search_photos`, and `multi_rename`'s media fields), so a
+  prompt-injected file name can't get them read. Blocked: SSH, GPG, and password-store folders at any depth (a NAS
+  backup of a home folder counts), cloud and tool credentials (AWS, Azure, Kubernetes, gcloud, `gh`, Docker, `.netrc`,
+  `.npmrc`, `.pypirc`, `.git-credentials`, `.git/config`, `.env*`, `.pgpass`, Vault, Cargo, Claude, `rclone.conf`, sops
+  age keys), the OS keychains and keyrings, browser profile data, Mail, Messages, and Notes, Cmdr's own data dir
+  (tokens, databases, raw logs; every instance's), and any file whose text holds a private key, wherever it sits,
+  including OCR text and PDF pages. It checks the real path after following symlinks where it can open the file, and
+  contents only: file names in those folders may still reach the provider. A refusal is typed, says why, and lands in
+  the security event log with no path. Rules, call sites, and why each tool checks where it does:
+  `apps/desktop/src-tauri/src/tools/DETAILS.md` § The sensitive-content gate.
+- **The photo tools send image-derived TEXT, not "just metadata".** `search_photos` (`tools/actions/photos.rs`) returns
+  matched image paths plus the in-image OCR snippet and Vision tags; `image_facts` (`tools/actions/image_facts.rs`)
   returns the FULL stored OCR text (up to 2,000 characters per file, for up to 200 files) plus tags for paths the caller
   names. A passport scan's OCR text IS the passport number, so this is sensitive derived content, gated by the same
   consent above and named in its disclosure.
 - **`inspect_file` sends bounded parts of a file's contents, on request.** The one tool that reads inside a file
-  (`apps/desktop/src-tauri/src/agent/tools/read/inspect/`), for up to 200 paths per call, each row typed by what the
-  bytes really are. What egresses, per kind:
+  (`apps/desktop/src-tauri/src/tools/read/inspect/`), for up to 200 paths per call, each row typed by what the bytes
+  really are. What egresses, per kind:
   - text (any encoding the viewer decodes): a window of lines (`startLine` + `maxLines`, default 200, at most 2,000;
     16,000 characters per row, 2,000 per line);
   - PDF: the text of the requested pages (default three, at most 20 per call, 8,000 characters a page under the row's

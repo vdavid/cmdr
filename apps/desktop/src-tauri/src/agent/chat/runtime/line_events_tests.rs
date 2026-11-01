@@ -8,9 +8,9 @@ use std::path::PathBuf;
 
 use super::test_support::*;
 use super::*;
+use crate::agent::line::{LinePath, LineRef, ToolOutcome, ToolSubject};
 use crate::agent::llm::fake::{FakeAgentLlm, ScriptedTurn};
 use crate::agent::store::TurnStats;
-use crate::agent::tools::line::{LinePath, LineRef, ToolOutcome, ToolSubject};
 
 fn usage(prompt_tokens: u32, completion_tokens: u32) -> AgentUsage {
     AgentUsage {

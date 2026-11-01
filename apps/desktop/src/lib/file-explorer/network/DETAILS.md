@@ -707,7 +707,7 @@ the hosts it found, so a view opens on them at once and the fresh browse adds an
   key `fileExplorer.navigation.networkVolume`, Rust's `volume_listing::SERVERS_VOLUME_NAME`,
   `../pane/volume-selection.ts::selectVolumeByName` (which special-cases the hub because it is synthetic and no
   `findIndex` over the volume list reaches it), and `DualPaneExplorer`'s `leftVolumeName` / `rightVolumeName`. ❗ A
-  fifth spelling is not a wrong word on screen, it is a 30 s MCP timeout: `mcp/executor/nav.rs` waits for the
+  fifth spelling is not a wrong word on screen, it is a 30 s MCP timeout: `tools/actions/nav.rs` waits for the
   frontend-pushed pane name to equal the const before it calls a `select_volume` done.
 
 ## Dependencies

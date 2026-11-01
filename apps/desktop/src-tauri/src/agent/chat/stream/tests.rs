@@ -277,7 +277,7 @@ fn user_persisted_carries_the_opener_as_history_shows_it() {
 /// subject and outcome cross as typed facts, never a sentence.
 #[test]
 fn tool_line_events_carry_the_line_identity_and_typed_facts() {
-    use crate::agent::tools::line::LineRef;
+    use crate::agent::line::LineRef;
     let resolved = wire(AgentChatEvent::ToolCallsResolved {
         message_id: 12,
         calls: vec![ResolvedCall {

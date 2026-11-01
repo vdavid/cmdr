@@ -110,6 +110,7 @@ describe('duplicateInPlace', () => {
         // that same pane, so both sides name it.
         direction: 'left',
         sourcePaneSide: 'left',
+        initiator: 'user',
       }),
     )
   })

@@ -484,6 +484,8 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
         // the rename editor: the user just directed this copy here, so naming the
         // copy is one keystroke sequence away and Esc keeps the generated name.
         duplicateFollowUp: 'openRenameEditor',
+        // Paste is arg-less and only ever bound to a person's gesture.
+        initiator: 'user',
       })
 
       if (result.isCut) {

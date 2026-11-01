@@ -7,7 +7,7 @@
  * - A disabled item's accelerator still fires (`menu/CLAUDE.md`), so F5 reaches the
  *   frontend whatever the File menu looks like.
  * - The menu is one of several ways in. MCP is refused in Rust
- *   (`mcp/executor/mod.rs`), the command entry points refuse in
+ *   (`tools/actions/mod.rs`), the command entry points refuse in
  *   `pane/operation-start-gate.ts`, and the start itself refuses in
  *   `pane/dialog-state.svelte.ts`. Those are the guard; this only stops the app
  *   from offering something it would then turn down.

@@ -593,6 +593,10 @@
   "@askCmdr.tool.preview.status.unsupportedVolume": {
     "sourceHash": "945bf7c"
   },
+  "askCmdr.tool.preview.status.protected": "bleibt privat",
+  "@askCmdr.tool.preview.status.protected": {
+    "sourceHash": "6a22c60"
+  },
   "askCmdr.tool.preview.status.noVolumeAtPath": "auf einem Laufwerk, das nicht verbunden ist",
   "@askCmdr.tool.preview.status.noVolumeAtPath": {
     "sourceHash": "3b32abe"

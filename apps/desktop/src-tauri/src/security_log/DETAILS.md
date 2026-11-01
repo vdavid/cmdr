@@ -45,7 +45,12 @@ Issue #456. Must-knows in `CLAUDE.md`; this is the why and the catalog.
   `../state_recovery/mod.rs` `report`, once per file Cmdr couldn't read and started fresh. Never the path. Its notice
   rides `state_recovery`'s own queue, since it names where the copy went.
 
-Not recorded: reads of file data. The operation log covers modifications; journaling every read would cost privacy and
+- `content_refusals_started` / `content_refusals_ended` (`tool`: `inspect_file` | `image_facts` | `search_photos` |
+  `multi_rename`, `reason`: `credentials` | `browser_data` | `message_store` | `cmdr_data` | `private_key`):
+  `../tools/sensitive.rs` `note_refusal`, one episode per tool and reason. Never the path, or the log would list
+  what an injected prompt went looking for.
+
+Not recorded: reads of file data that went ahead. The operation log covers modifications; journaling every read would cost privacy and
 performance for little security value. Also not yet: `installer::refuse_unless_newer` (an older signed release offered,
 which a rollback attempt looks like), because its refusal is still a `String` inside `UpdateInstallError::Failed`.
 
@@ -72,7 +77,8 @@ closer hasn't swept yet ends the old episode before starting the new one, so two
   side would open and close an episode on every alternation, which is the flood this exists to stop.
 - The closer is a thread that starts with the first open episode, ticks every minute, and exits once nothing is open,
   so an idle app runs no thread for it. `on_exit` ends every open episode so its count lands.
-- MCP keys by reason (a local process can't be told apart reliably), SMB by volume id.
+- MCP keys by reason (a local process can't be told apart reliably), SMB by volume id, content refusals by tool and
+  reason.
 
 ## Consumers
 

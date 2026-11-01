@@ -676,7 +676,7 @@ engine's exclusive final rename remains the data-safety boundary.
 Checking and applying used to get a fixed five seconds, so a 500-row job on a NAS could time out every time while
 working fine. David's call (#152): no hard cap. A slow check shows a count and Stop checking, and a stuck stat can't
 hold the review hostage. Mechanism, including why the waiter owns the progress clock and how a stop detaches the scan:
-`apps/desktop/src-tauri/src/agent/tools/propose/rename/check.rs`.
+`apps/desktop/src-tauri/src/tools/propose/rename/check.rs`.
 
 - **Progress**: `bulk-rename-check-progress` lands in `proposal.checkProgress`, and `renameCheckProgress` sums the
   batches that reported. A finished batch stays in the sum at its full count until the last one ends, so the job's total
@@ -780,9 +780,9 @@ source to its catalog string; the raw `detail` renders below it.
 Three properties this column exists for:
 
 - **A name with no content behind it must look like one.** `imageText` / `imageTags` are the only sources the backend
-  verified against delivered image content (`agent/tools/propose/DETAILS.md`); the other three say plainly that nothing
-  inside the file was read ("File details, not contents", "The old name", "What you asked for"). Rewording one of those
-  into something that implies content would undo the guardrail's user-facing half.
+  verified against delivered image content (`tools/propose/DETAILS.md`); the other three say plainly that nothing inside
+  the file was read ("File details, not contents", "The old name", "What you asked for"). Rewording one of those into
+  something that implies content would undo the guardrail's user-facing half.
 - **A thin match must LOOK thin.** A bare quote made a 14-character hit inside 3,140 characters of recognized text read
   exactly as strong as a decisive one, which is the half of the failure no backend check can close: validation proves
   the model READ something, never that the name is right. So an `imageText` row with a `coverage` renders the quote

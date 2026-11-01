@@ -304,7 +304,7 @@ impl PrefixParts {
         Self {
             cmdr_md: read_cmdr_md(),
             memory: crate::agent::memory::read_for_turn(app, prompt_budget),
-            tools: crate::agent::tools::agent_tool_declarations(),
+            tools: crate::tools::agent_tool_declarations(),
         }
     }
 }

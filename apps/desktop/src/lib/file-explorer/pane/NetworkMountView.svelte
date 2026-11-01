@@ -42,7 +42,7 @@
      * The hub row's own name, for the `volumeName` this pane pushes to MCP.
      *
      * ❗ One source with the switcher's label AND with Rust's
-     * `volume_listing::SERVERS_VOLUME_NAME`: `mcp/executor/nav.rs` waits for this
+     * `volume_listing::SERVERS_VOLUME_NAME`: `tools/actions/nav.rs` waits for this
      * pushed name to equal that const before it reports a `select_volume` done, so
      * a second spelling here is a 30 s timeout in the MCP tool.
      */

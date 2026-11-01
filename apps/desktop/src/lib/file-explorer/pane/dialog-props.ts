@@ -182,8 +182,8 @@ export interface TransferProgressPropsData {
    *  or a `dialog confirm`). Forwarded to the start, which replies `mcp-response`
    *  with the spawned operationId. */
   mcpRequestId?: string
-  /** Who triggered this operation (`aiClient` for MCP-originated writes). */
-  initiator?: Initiator
+  /** Who started this operation, for the backend's provenance record. */
+  initiator: Initiator
   /**
    * What happens when this operation duplicates ONE item in the folder it
    * already lived in: `openRenameEditor` (paste and F5) or `nothing`.
@@ -251,8 +251,8 @@ export interface NewFolderDialogPropsData {
   showHiddenFiles: boolean
   initialName: string
   volumeId: string
-  /** Who triggered this create (`aiClient` for the MCP `mkdir` tool). */
-  initiator?: Initiator
+  /** Who started this create. */
+  initiator: Initiator
 }
 
 export interface NewFileDialogPropsData {
@@ -261,8 +261,8 @@ export interface NewFileDialogPropsData {
   showHiddenFiles: boolean
   initialName: string
   volumeId: string
-  /** Who triggered this create (`aiClient` for the MCP `mkfile` tool). */
-  initiator?: Initiator
+  /** Who started this create. */
+  initiator: Initiator
 }
 
 export interface AlertDialogPropsData {
@@ -357,8 +357,8 @@ export interface DeleteDialogPropsData {
   /** MCP round-trip id, present only for an auto-confirmed MCP delete/trash.
    *  Forwarded to the progress state so it replies with the spawned operationId. */
   mcpRequestId?: string
-  /** Who triggered this delete (`aiClient` for the MCP `delete` tool). */
-  initiator?: Initiator
+  /** Who started this delete. Only `user` may skip the confirmation. */
+  initiator: Initiator
 }
 
 export interface DialogStateDeps {

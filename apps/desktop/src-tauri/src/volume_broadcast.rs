@@ -113,7 +113,7 @@ pub(crate) fn last_volume_gone() -> Option<(String, u64)> {
 /// anything asked for a republish") or on "nothing was announced". A sibling cell
 /// forgetting or pinning in parallel bumps one and appends to the other, so under
 /// a thread-per-test runner those assertions read a neighbour's work. Same shape
-/// as `mcp/terminal_ops.rs`'s ring lock.
+/// as `ui_state/terminal_ops.rs`'s ring lock.
 ///
 /// ❗ `pnpm check` will never catch a miss here: nextest is process-per-test, so
 /// each cell gets its own recorders. A bare `cargo test --lib commands::servers`

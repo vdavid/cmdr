@@ -136,7 +136,7 @@ test.describe('The servers hub', () => {
 
   test('the switcher offers one row called "Servers", inside a group still called Network', async ({ tauriPage }) => {
     // The Rust `SERVERS_VOLUME_NAME` const has to equal this byte for byte:
-    // `mcp/executor/nav.rs` waits for the frontend-pushed pane name to match it
+    // `tools/actions/nav.rs` waits for the frontend-pushed pane name to match it
     // before it reports a `select_volume` done.
     expect(await switcherNames(tauriPage)).toContain(SERVERS_VOLUME_NAME)
     const groups = await tauriPage.evaluate<string[]>(`(function () {
@@ -279,7 +279,7 @@ test.describe('A saved server in the switcher and the pane', () => {
       .toBeTruthy()
     await closeVolumePicker(tauriPage)
 
-    // ❗ The `select_volume` TOOL can't reach this row: `mcp/executor/nav.rs`
+    // ❗ The `select_volume` TOOL can't reach this row: `tools/actions/nav.rs`
     // validates the name against the BACKEND's own listing, and a synthetic
     // volume exists only in the frontend store. The event the tool emits does
     // reach it, and `selectVolumeByName` looks the name up in that store.

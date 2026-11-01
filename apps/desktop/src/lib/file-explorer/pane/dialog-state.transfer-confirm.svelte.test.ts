@@ -97,6 +97,7 @@ const SOURCE_FOLDER = '/Users/me/photos'
 
 function transferProps(operationType: TransferDialogPropsData['operationType'] = 'copy'): TransferDialogPropsData {
   return {
+    initiator: 'user',
     operationType,
     sourcePaths: [`${SOURCE_FOLDER}/first.jpg`],
     destinationPath: '/Users/me/backup',

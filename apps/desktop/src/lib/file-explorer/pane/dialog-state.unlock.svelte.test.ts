@@ -97,6 +97,7 @@ function makeState() {
 /** A copy op sourced from inside an encrypted zip on the `root` volume. */
 function copyProps(): TransferProgressPropsData {
   return {
+    initiator: 'user',
     operationType: 'copy',
     sourcePaths: ['/Users/me/secret.zip/inner/report.pdf'],
     sourceFolderPath: '/Users/me/secret.zip/inner',

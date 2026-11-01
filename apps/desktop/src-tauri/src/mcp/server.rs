@@ -33,10 +33,10 @@ use super::auth::{
 use super::config::McpConfig;
 use super::port_file::{remove_port_file, write_port_file, write_secret_file};
 use super::protocol::{INVALID_PARAMS, INVALID_REQUEST, METHOD_NOT_FOUND, McpRequest, McpResponse, ServerCapabilities};
-use super::resources::{get_all_resources, read_resource};
 use super::safe_headers::SafeHeaders;
-use super::tool_registry::get_all_tools;
-use super::tool_registry::{Consumer, execute_tool};
+use crate::tools::get_all_tools;
+use crate::tools::resources::{get_all_resources, read_resource};
+use crate::tools::{Consumer, execute_tool};
 
 /// File name written under `<data_dir>` so external readers (CLI, E2E fixtures, agent
 /// helpers) can discover the actual bound port. See `port_file.rs` for the protocol.
@@ -809,7 +809,7 @@ async fn process_request<R: Runtime>(
             // allowed-log-private: an MCP tool name of our own
             log::debug!("MCP: executing tool {name}");
             // The HTTP transport is the ai_client consumer: it dispatches only the ai_client
-            // view (an agent-only name is refused before dispatch). See `tool_registry`.
+            // view (an agent-only name is refused before dispatch). See `tools/registry.rs`.
             let result = execute_tool(&state.app, Consumer::AiClient, name, &arguments).await;
 
             match result {

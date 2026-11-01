@@ -2,7 +2,7 @@
 //!
 //! Ported from `importance/read` (`ImportanceIndex`): the ONE way a consumer
 //! (`search/`, and the Ask Cmdr / MCP `search_photos` tool via
-//! `mcp::executor::photos`) reaches image-enrichment results (media_index Decision 8). No
+//! `tools::actions::photos`) reaches image-enrichment results (media_index Decision 8). No
 //! consumer takes a raw `rusqlite` dep on `media.db`; they call
 //! this. It owns a `platform_case`-registered read connection and reads the DB
 //! directly, so it answers OFFLINE from `media.db` after the volume unmounts.
@@ -65,7 +65,7 @@ const PATH_CHUNK: usize = 900;
 ///
 /// The OCR text is image-derived USER CONTENT (a passport scan's text IS the passport
 /// number). Anything shipping this off-device needs the Ask Cmdr consent gate; see
-/// `mcp/executor/image_facts.rs` and `docs/security.md`.
+/// `tools/actions/image_facts.rs` and `docs/security.md`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ImageFacts {
     /// The path exactly as requested (not the stored spelling).

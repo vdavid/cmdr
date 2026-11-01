@@ -14,6 +14,10 @@ Read this before adding, wiping, or reorganizing a spec.
 
 ## The specs
 
+- `unified-ai-tools-plan.md`: **Ask Cmdr and outside MCP clients see two mostly separate tool lists by accident, so the
+  built-in agent can't do most of what Cmdr does.** One tool surface with one approval rule (the agent can start
+  anything; a person finishes anything sensitive), lazy tool loading, a sensitive-path gate, and the official `rmcp`
+  SDK. Issue: [#874](https://github.com/vdavid/cmdr/issues/874).
 - `saved-smb-shares.md`: **A saved SMB server holds only a host, not the user and share the person wants.** A share row
   under its server, recorded at mount time, pinnable and openable like an SFTP place. Issue:
   [cmdr-reports#7](https://github.com/vdavid/cmdr-reports/issues/7).

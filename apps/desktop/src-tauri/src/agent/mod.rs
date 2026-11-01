@@ -11,12 +11,14 @@
 //! - `suggested_ops`: the service over the proposal spine (selector resolution against the
 //!   drive index, and the acceptance-rate metric).
 //! - `memory`: the Markdown folder the agent writes about the user, jailed and capped.
-//! - `tools`: the in-process toolset (the agent's registry view).
+//! - `line`: what the rail's tool line says about a call.
+//! - `tool_gate`: the gated dispatch into `crate::tools`, the one choke point for an agent call.
 //! - `chat`: the chat runtime and the pure context-assembly core.
 //!
 //! See `CLAUDE.md` for must-knows and `DETAILS.md` for the map.
 
 pub mod chat;
+pub mod line;
 pub mod llm;
 pub mod memory;
 pub mod outcomes;
@@ -24,7 +26,7 @@ pub mod pricing;
 pub mod prompts;
 pub mod store;
 pub mod suggested_ops;
-pub mod tools;
+pub mod tool_gate;
 pub mod types;
 pub mod wake;
 
@@ -93,10 +95,10 @@ pub fn start(app: &AppHandle) {
             app.manage(AgentDb {
                 db_path: db_path.clone(),
             });
-            app.manage(tools::propose::rename::AcceptedRenamePreflights::default());
-            app.manage(tools::propose::rename::RenameChecks::default());
-            app.manage(tools::propose::evidence::ImageFactsLedger::default());
-            app.manage(tools::propose::rename::PaneListingCuts::default());
+            app.manage(crate::tools::propose::rename::AcceptedRenamePreflights::default());
+            app.manage(crate::tools::propose::rename::RenameChecks::default());
+            app.manage(crate::tools::propose::evidence::ImageFactsLedger::default());
+            app.manage(crate::tools::propose::rename::PaneListingCuts::default());
             // Register the chat runtime against the same DB so the IPC command is a
             // thin pass-through (`app.state::<chat::runtime::ChatRuntime>()`).
             chat::runtime::register(app, db_path.clone());

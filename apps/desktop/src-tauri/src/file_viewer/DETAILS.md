@@ -371,7 +371,7 @@ Pinned by `materialize_test::switching_the_view_mode_reuses_the_windows_temp_and
 counting slow volume: zero chunks on the switch, one shared temp, gone after the last close) and
 `another_window_on_the_same_file_pulls_its_own_copy`.
 
-**The second caller: the agent's `inspect_file`** (`agent/tools/read/inspect/`). Archives route first because they have
+**The second caller: the agent's `inspect_file`** (`tools/read/inspect/`). Archives route first because they have
 richer rows to give; every remaining route or non-OS-visible connected volume goes through
 `materialize_for_inspect(path, volume_id, cancel)`, then the per-kind pipeline reads `temp_file`. Its `Drop` guard
 removes `cleanup_dir`, so the temp lives for one read rather than a session. The inspector's five-second per-path
@@ -534,7 +534,7 @@ archive-inner (archives are read-only this phase): the command rejects it with `
 matching the write-path guards. Covered by `commands/file_viewer.rs` tests; the extraction, cap, cleanup, and media
 paths by `materialize_test.rs`, and the git half by
 `file_viewer::session_test::opens_a_file_out_of_a_git_snapshot_and_reads_its_lines` plus
-`agent::tools::read::inspect::git_snapshot_tests`.
+`tools::read::inspect::git_snapshot_tests`.
 
 ## Rows, not lines
 
@@ -673,7 +673,7 @@ and building one would read a large file twice; the viewer's own `search_start` 
 The only thing unknown past the threshold is `total_lines`.
 
 **Decision**: a separate seam rather than a flag on `open_session`. **Why**: the one caller today is the Ask Cmdr
-`inspect_file` tool (`agent/tools/read/inspect/`), which reads up to 200 files per call on blocking threads under a
+`inspect_file` tool (`tools/read/inspect/`), which reads up to 200 files per call on blocking threads under a
 per-path deadline. A session per file would mean 200 `SESSIONS` entries, watcher subscriptions, and upgrade threads to
 tear down, for windows nobody scrolls. Kept free of session concerns on purpose so `open_session_core` could ride it too
 if it were ever split. Tests: `headless_test.rs` (the three picks, that the fallback leaves the caller's flag set, and

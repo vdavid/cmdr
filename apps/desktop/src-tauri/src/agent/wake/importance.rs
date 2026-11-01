@@ -71,7 +71,7 @@ fn read_importance(data_dir: &std::path::Path, volume_id: &str, folder: &str) ->
     let index = ImportanceIndex::open(
         data_dir,
         volume_id,
-        crate::mcp::resources::importance::available_for(volume_id),
+        crate::tools::resources::importance::available_for(volume_id),
     );
     match index.lookup(folder) {
         Ok(lookup) => from_weight_lookup(&lookup),

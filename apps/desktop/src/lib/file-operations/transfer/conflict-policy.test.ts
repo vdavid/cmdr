@@ -2,7 +2,7 @@
  * The MCP policy names, and what they mean to the transfer dialog.
  *
  * This map is half of a cross-language contract (the backend validates the name
- * in `mcp/executor/mod.rs::CONFLICT_POLICIES`), and the failure mode when the
+ * in `tools/actions/mod.rs::CONFLICT_POLICIES`), and the failure mode when the
  * halves drift is silent: an unknown name falls back to `skip`, so "ask me about
  * each file" becomes "skip every file" over somebody's data. It drifted once
  * already, in two private copies of this map that spelled the conditional
@@ -14,7 +14,7 @@ import { conflictPolicyFromMcpName } from './conflict-policy'
 
 describe('conflictPolicyFromMcpName', () => {
   it('maps every name the backend accepts', () => {
-    // Kept in step with `CONFLICT_POLICIES` in `mcp/executor/mod.rs`.
+    // Kept in step with `CONFLICT_POLICIES` in `tools/actions/mod.rs`.
     expect(conflictPolicyFromMcpName('stop')).toBe('stop')
     expect(conflictPolicyFromMcpName('skip_all')).toBe('skip')
     expect(conflictPolicyFromMcpName('overwrite_all')).toBe('overwrite')

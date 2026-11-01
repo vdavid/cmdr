@@ -98,6 +98,7 @@ function makeState() {
 
 function transferDialogProps(): TransferDialogPropsData {
   return {
+    initiator: 'user',
     operationType: 'copy',
     sourcePaths: [`${SOURCE_FOLDER}/a.jpg`, `${SOURCE_FOLDER}/b.jpg`],
     destinationPath: '/Users/me/backup',
@@ -126,6 +127,7 @@ function confirmPayload(over: Partial<TransferConfirmPayload> = {}): TransferCon
 
 function deleteDialogProps(): DeleteDialogPropsData {
   return {
+    initiator: 'user',
     sourceItems: [{ name: 'a.jpg', isDirectory: false, isSymlink: false, size: 10 }],
     sourcePaths: [`${SOURCE_FOLDER}/a.jpg`],
     sourceFolderPath: SOURCE_FOLDER,
@@ -240,7 +242,7 @@ describe('F2 in the delete dialog', () => {
       [`${SOURCE_FOLDER}/a.jpg`],
       [10],
       expect.objectContaining({ previewId: 'preview-9' }),
-      undefined,
+      'user',
     )
     expect(deleteFiles).not.toHaveBeenCalled()
     expect(dialogs.showDeleteDialog).toBe(false)
@@ -541,6 +543,7 @@ describe('an archive password, for a job with no dialog', () => {
   it('restarts a permanent delete sent off with Queue in the progress dialog, never out of sight', async () => {
     const { dialogs } = makeState()
     dialogs.startTransferProgress({
+      initiator: 'user',
       operationType: 'delete',
       sourcePaths: [`${SOURCE_FOLDER}/a.jpg`],
       sourceFolderPath: SOURCE_FOLDER,

@@ -373,7 +373,7 @@ export async function setupDialogListeners(ctx: ListenerSetupContext): Promise<v
   const listenTauri = makeListenTauri(scope)
 
   // Settings with section (MCP-specific: "dialog open settings --section shortcuts").
-  // The Rust MCP executor (`mcp/executor/dialogs.rs`) emits `{ section: <string> }`
+  // The Rust MCP executor (`tools/actions/dialogs.rs`) emits `{ section: <string> }`
   // — a BARE string, no anchor (the `dialog` tool has no anchor param, so MCP can't
   // deep-link to a row today; that's future work). Parse defensively (no `as` cast,
   // same discipline as `mcp-listeners.ts`) and wrap the bare string in an array.

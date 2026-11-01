@@ -544,6 +544,8 @@ describe('drag-drop-controller', () => {
         // A drop ends with the mouse, so even the same-folder duplicate it now
         // allows never steals focus into the rename editor.
         expect(props.duplicateFollowUp).toBe('nothing')
+        // A drag is a person's, so "Skip confirmation" applies.
+        expect(props.initiator).toBe('user')
       })
 
       it('reaches the transfer dialog when the drag crosses into the other pane showing the same folder', async () => {

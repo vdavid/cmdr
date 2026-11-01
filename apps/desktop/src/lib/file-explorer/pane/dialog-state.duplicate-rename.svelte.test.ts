@@ -78,6 +78,7 @@ function makeState() {
 /** What ⌘V of one file into the folder it already lives in dispatches. */
 function pasteDuplicateProps(overrides: Partial<TransferProgressPropsData> = {}): TransferProgressPropsData {
   return {
+    initiator: 'user',
     operationType: 'copy',
     sourcePaths: [`${FOLDER}/photo.jpg`],
     sourceFolderPath: FOLDER,

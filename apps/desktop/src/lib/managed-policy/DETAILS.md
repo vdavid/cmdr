@@ -39,7 +39,7 @@ window shows the backend's answer.
   section keeps a list of its lockable ids.
 - MCP: the `cmdr://settings` YAML marks a managed setting `managed: true` beside its effective `value`, and the bridge
   refuses a ruled-out write with `refusal: 'managedByOrganization'` (the backend's own refusal comes first,
-  `src-tauri/src/mcp/DETAILS.md`).
+  `src-tauri/src/tools/actions/DETAILS.md`).
 - The "Managed by your organization" card (`ManagedPolicySummary.svelte`) tops Settings › Updates & privacy while no
   search is active, so a help desk has one place to check the profile took. `managedPolicySummary(view)` builds its
   lines in a fixed order (usage stats, reports, updates, AI), one per area the view restricts, from the view's typed

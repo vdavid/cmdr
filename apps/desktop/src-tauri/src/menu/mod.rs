@@ -426,7 +426,7 @@ pub struct MenuState<R: Runtime> {
     /// (`routes/(main)/menu-operation-gate.svelte.ts`), which is the only writer.
     ///
     /// ⚠️ Greying items is CHROME. A disabled item's accelerator still fires, so this
-    /// is never the guard: the refusals in `mcp/executor`, `pane/operation-start-gate.ts`,
+    /// is never the guard: the refusals in `tools/actions`, `pane/operation-start-gate.ts`,
     /// and `pane/dialog-state.svelte.ts` are.
     pub file_operations_blocked: AtomicBool,
     /// Whether the FOCUSED PANE sits somewhere a shell can `cd` into, deciding

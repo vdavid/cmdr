@@ -34,7 +34,7 @@ spike before M2 starts.
   question parks the same way.
 - **MCP writes without a dialog**: `copy` / `move` / `delete` with `autoConfirm: true` plus the token from
   `<data_dir>/mcp.token`, and `dialog` with `action: "confirm"`, apply an operation with no human click
-  (`apps/desktop/src-tauri/src/mcp/auth.rs`, `apps/desktop/src-tauri/src/mcp/executor/file_ops.rs`). Seven Playwright
+  (`apps/desktop/src-tauri/src/mcp/auth.rs`, `apps/desktop/src-tauri/src/tools/actions/file_ops.rs`). Seven Playwright
   specs use `autoConfirm` (34 call sites) and two more use `dialog confirm`. The in-app agent can only propose.
 - **Signing**: `apps/desktop/src-tauri/Entitlements.plist` is an empty dict, so the hardened runtime has no holes and
   nothing can inject code into Cmdr. That's what makes decision 8's "trust whatever runs inside Cmdr" sound.

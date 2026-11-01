@@ -22,7 +22,7 @@ use tauri_specta::Event;
 
 /// `execute-command`: the single unified menu/cross-window command relay. The
 /// native menu (`menu/menu_handlers.rs`), the MCP dialog/app tools
-/// (`mcp/executor/`), and the settings window's License section all emit this to
+/// (`tools/actions/`), and the settings window's License section all emit this to
 /// the main window, which narrows `command_id` to a registry `CommandId` and
 /// dispatches it. Wire key stays `commandId` via `rename_all`.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]

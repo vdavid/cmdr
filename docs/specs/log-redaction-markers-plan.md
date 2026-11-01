@@ -42,8 +42,8 @@ macro sees it stays on the regex fallback). The lead made these calls; they're y
 - ❗ **A marked string is log text, never data.** It must never become a filesystem path, a persisted value, or UI copy.
   Wrappers are for log formatting only.
 - ❌ **One policy.** The span pass runs inside the shared dispatch, so unsalted `redact_line` (MCP `cmdr://logs`, the
-  crash hook, `agent/tools/quiet.rs`) and `RedactionContext::redact_line` behave the same, modulo token salt. ❌ Never
-  branch on `context.is_none()`.
+  crash hook, `tools/quiet.rs`) and `RedactionContext::redact_line` behave the same, modulo token salt. ❌ Never branch
+  on `context.is_none()`.
 - ❌ **No string matching** to classify errors or state (`error-string-match`, `cmdr/no-error-string-match`). The span
   parser matches marker CHARACTERS, which is a lexical grammar, not error classification.
 - ❌ **Don't edit `crates/cmdr-operations/src/transfer/`, `crates/cmdr-smb/`, `crates/cmdr-sftp/`, `cmdr-webdav/`,
@@ -340,7 +340,7 @@ exactly. Inert until milestone 4.
 
 **Landmines**:
 
-- Every `redact_line` caller gets the pass (MCP, crash hook, `os_crash_report.rs`, `agent/tools/quiet.rs`,
+- Every `redact_line` caller gets the pass (MCP, crash hook, `os_crash_report.rs`, `tools/quiet.rs`,
   `redact_panic_message`). Check each still passes its own tests.
 - `detail="…"` fields are unescaped and re-escaped by `detail.rs`; a span inside one arrives in escaped form, and its
   token must leave the quoting valid. The 200-char detail cap runs AFTER span hashing, never before.
@@ -351,7 +351,7 @@ exactly. Inert until milestone 4.
   computed on text the user doesn't see. Byte offsets (`ChunkEnd`, `end_byte_offset`) stay raw-file offsets. Say what
   copy and "save range" do (raw or stripped) and test it.
 - The `CoalescingWriter` dedup key and the RAM gauge are unaffected (markers are in the message); verify.
-- **`cmdr://logs` filters BEFORE it redacts** (`mcp/resources/logs.rs` `select_log_lines`: `line.contains(filter)` on
+- **`cmdr://logs` filters BEFORE it redacts** (`tools/resources/logs.rs` `select_log_lines`: `line.contains(filter)` on
   the raw line), so a loopback caller can probe whether a path appears by watching the line count, which defeats the
   "redaction is mandatory" comment there. Pre-existing; fix it here (filter the redacted lines) since this milestone
   touches every `redact_line` caller anyway, with a red cell first. Two costs to handle: (1) the window is 5 MiB
@@ -649,7 +649,7 @@ WebDAV's root URL, an S3 destination key, archive sidecar names, adb stderr, a N
 can't depend on `cmdr-fs`, so its PAC line logs a keyed `host={:?}` and opts out. `redact/CLAUDE.md` leads with marking;
 the regex reads as the fallback. Conformance: every invariant below has cells (`redact/markers_tests.rs`,
 `bundle_leak_tests.rs`, `fe_bridge_tests.rs`, `error_producer_tests.rs`, `logging/dispatch_tests.rs`,
-`mcp/tests/resource_log_tests.rs`, `logging/provenance.rs`); "the ratchet only shrinks" became "the check is strict".
+`tools/tests/resource_log_tests.rs`, `logging/provenance.rs`); "the ratchet only shrinks" became "the check is strict".
 
 ## Invariants (the conformance review checks these)
 

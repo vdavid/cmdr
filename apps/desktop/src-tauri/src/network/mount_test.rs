@@ -858,7 +858,7 @@ fn a_mount_gets_its_own_session_when_the_machine_has_another_servers_or_accounts
 /// What Ask Cmdr's `connect_volume` dials: a SAVED share, with no secret offered, so only
 /// what's stored. A stored password connects it; with none stored it answers
 /// `NeedsCredentials` before any mount starts, so nothing can raise a dialog
-/// (`agent/tools/DETAILS.md` § Connecting a saved place). The `auth` fixture lets only
+/// (`tools/DETAILS.md` § Connecting a saved place). The `auth` fixture lets only
 /// `testuser` in. The secret store is a file in a scratch dir, ❌ never the login Keychain.
 #[cfg(target_os = "macos")]
 #[tokio::test]

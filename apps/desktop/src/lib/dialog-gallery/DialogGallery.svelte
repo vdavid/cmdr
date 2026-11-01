@@ -400,9 +400,9 @@
     {:else if plan?.kind === 'transfer'}
         <TransferDialog {...plan.props} onConfirm={closeGalleryDialog} onCancel={closeGalleryDialog} />
     {:else if plan?.kind === 'mkdir'}
-        <NewFolderDialog {...plan.props} onCreated={closeGalleryDialog} onCancel={closeGalleryDialog} />
+        <NewFolderDialog {...plan.props} initiator="user" onCreated={closeGalleryDialog} onCancel={closeGalleryDialog} />
     {:else if plan?.kind === 'mkfile'}
-        <NewFileDialog {...plan.props} onCreated={closeGalleryDialog} onCancel={closeGalleryDialog} />
+        <NewFileDialog {...plan.props} initiator="user" onCreated={closeGalleryDialog} onCancel={closeGalleryDialog} />
     {:else if plan?.kind === 'go-to-path'}
         <GoToPathDialog {...plan.props} onGo={closeGoToPathPreview} onCancel={closeGalleryDialog} />
     {:else if plan?.kind === 'transfer-progress'}

@@ -36,7 +36,7 @@ Transitions:
 
 ### Answering from outside the dialog
 
-An MCP agent asks to quit (`../mcp/executor/quit.rs`) and answers the confirmation through the same two gate methods the
+An MCP agent asks to quit (`../tools/actions/quit.rs`) and answers the confirmation through the same two gate methods the
 dialog calls. That's parity with ⌘Q by design: an agent must not have a quieter, more destructive exit than the keyboard
 does. Three consequences the gate has to carry:
 

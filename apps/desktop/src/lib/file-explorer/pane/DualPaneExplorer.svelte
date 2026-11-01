@@ -10,6 +10,7 @@
         CopyPathBetweenPanesArgs,
         FilePaneAPI,
         OpenDeleteDialogArgs,
+        OpenNamingDialogArgs,
         OpenTransferDialogArgs,
         StartRenameOptions,
         VolumeChangePayload,
@@ -748,13 +749,13 @@
     }
 
     /** Opens the new folder dialog, prefilled with `name` or the cursor entry. `pane` defaults to focused. */
-    export async function openNewFolderDialog(name?: string, pane?: 'left' | 'right', initiator?: Initiator) {
-        await fileOps.openNewFolderDialog(name, pane, initiator)
+    export async function openNewFolderDialog(args: OpenNamingDialogArgs) {
+        await fileOps.openNewFolderDialog(args)
     }
 
     /** Opens the new file dialog, prefilled with `name` or the cursor entry. `pane` defaults to focused. */
-    export async function openNewFileDialog(name?: string, pane?: 'left' | 'right', initiator?: Initiator) {
-        await fileOps.openNewFileDialog(name, pane, initiator)
+    export async function openNewFileDialog(args: OpenNamingDialogArgs) {
+        await fileOps.openNewFileDialog(args)
     }
 
     /** Creates a folder directly on the target pane's live path (MCP autoConfirm). `pane` defaults to focused. */
@@ -803,18 +804,12 @@
     }
 
     /** Opens the transfer dialog with the current selection info. */
-    export async function openTransferDialog(
-        operationType: TransferOperationType,
-        autoConfirm?: boolean,
-        onConflict?: string,
-        mcpRequestId?: string,
-        initiator?: Initiator,
-    ) {
-        await fileOps.openTransferDialog(operationType, autoConfirm, onConflict, mcpRequestId, initiator)
+    export async function openTransferDialog(operationType: TransferOperationType, args: OpenTransferDialogArgs) {
+        await fileOps.openTransferDialog(operationType, args)
     }
 
     /** Opens the copy dialog (convenience wrapper for MCP/key binding). */
-    export async function openCopyDialog(args?: OpenTransferDialogArgs) {
+    export async function openCopyDialog(args: OpenTransferDialogArgs) {
         await fileOps.openCopyDialog(args)
     }
 
@@ -824,12 +819,12 @@
     }
 
     /** Opens the move dialog (convenience wrapper for MCP/key binding). */
-    export async function openMoveDialog(args?: OpenTransferDialogArgs) {
+    export async function openMoveDialog(args: OpenTransferDialogArgs) {
         await fileOps.openMoveDialog(args)
     }
 
     /** Opens the compress dialog (convenience wrapper for the ⌥F5 command/MCP). */
-    export async function openCompressDialog(args?: OpenTransferDialogArgs) {
+    export async function openCompressDialog(args: OpenTransferDialogArgs) {
         await fileOps.openCompressDialog(args)
     }
 

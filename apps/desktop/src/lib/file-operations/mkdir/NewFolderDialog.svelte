@@ -30,7 +30,7 @@
         /** Volume ID for the filesystem (like "root" for local, "mtp-336592896:65537" for MTP) */
         volumeId?: string
         /** Who triggered this create (`aiClient` for the MCP `mkdir` tool). */
-        initiator?: Initiator
+        initiator: Initiator
         onCreated: (folderName: string) => void
         onCancel: () => void
     }

@@ -686,7 +686,7 @@ there to be looked at again.
 
 The agent is allowed to look and decide none of it is worth a person's attention, and when it does
 the user's session list must look exactly as it did. It says so by calling `nothing_to_suggest`
-(`agent/tools/quiet.rs`), and this module acts on the call.
+(`tools/quiet.rs`), and this module acts on the call.
 
 **Typed, never phrased.** Reading "nothing to report" out of the model's prose would classify
 control flow by text, which `error-string-match` forbids and which breaks on the first copy edit

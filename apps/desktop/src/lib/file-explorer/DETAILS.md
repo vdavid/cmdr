@@ -419,7 +419,8 @@ top-5 principle 3 ("the user is always in control").
 
 **MCP surface**: when the buffer or indicator is live, `FilePane` mirrors
 `{ buffer, indicatorVisible, indicatorStale, lastMatchedName }` into the synced `PaneState.typeToJump`, so MCP-driven
-E2E tests can assert the feature without poking at the DOM. See `src-tauri/src/mcp/DETAILS.md` § State stores.
+E2E tests can assert the feature without poking at the DOM. See `apps/desktop/src-tauri/src/ui_state/DETAILS.md` § State
+stores.
 
 ### Live disk space
 

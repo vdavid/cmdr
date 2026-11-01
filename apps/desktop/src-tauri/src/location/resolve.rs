@@ -2,7 +2,7 @@
 //!
 //! Pure over [`VolumeFacts`], so every rule here is a table test (`resolve_tests.rs`);
 //! `facts.rs` gathers the facts. The rules, and why each one exists:
-//! `agent/tools/DETAILS.md` § The location contract.
+//! `tools/DETAILS.md` § The location contract.
 //!
 //! - A NAMED volume resolves whether or not it's connected. Its path is checked
 //!   against the volume's root, and a path under a root the volume held earlier
@@ -21,7 +21,7 @@ use serde_json::Value;
 
 use super::Location;
 use super::share_identity::ShareIdentity;
-use crate::mcp::resources::volumes::{VolumeKind, connection_state_token};
+use crate::tools::resources::volumes::{VolumeKind, connection_state_token};
 
 /// How many volumes a miss's `nearby` names at most.
 const NEARBY_CAP: usize = 8;
