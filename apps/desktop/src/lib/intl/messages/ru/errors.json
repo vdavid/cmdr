@@ -2549,7 +2549,7 @@
   "@errors.listing.linkNeedsConsent.suggestion": {
     "sourceHash": "991cb6c"
   },
-  "errors.volume.linkNeedsConsent": "Это находится за ссылкой на другой сервер, куда Cmdr пока нельзя входить. Чтобы решить, откройте папку на панели.",
+  "errors.volume.linkNeedsConsent": "Это находится за ссылкой на другой сервер, куда Cmdr пока не разрешено входить. Чтобы решить, откройте папку на панели.",
   "@errors.volume.linkNeedsConsent": {
     "sourceHash": "79ff9fe"
   },
@@ -2557,7 +2557,7 @@
   "@errors.write.linkNeedsConsent.title": {
     "sourceHash": "ff31c7f"
   },
-  "errors.write.linkNeedsConsent.message": "Ссылка на сервере {server} ведет на {target}, а входить туда Cmdr пока нельзя, поэтому на этот сервер ничего не отправлено.",
+  "errors.write.linkNeedsConsent.message": "Ссылка на сервере {server} ведет на {target}, а входить туда Cmdr пока не разрешено, поэтому на этот сервер ничего не отправлено.",
   "@errors.write.linkNeedsConsent.message": {
     "sourceHash": "7893ce9"
   },

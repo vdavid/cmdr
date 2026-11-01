@@ -2549,7 +2549,7 @@
   "@errors.listing.linkNeedsConsent.suggestion": {
     "sourceHash": "991cb6c"
   },
-  "errors.volume.linkNeedsConsent": "Ez egy másik szerverre mutató link mögött van, ahová a Cmdr még nem jelentkezhet be. A döntéshez nyisd meg a mappát egy panelen.",
+  "errors.volume.linkNeedsConsent": "Ez egy másik szerverre mutató link mögött van, és a Cmdr még nem kapott engedélyt arra, hogy ott bejelentkezzen. A döntéshez nyisd meg a mappát egy panelen.",
   "@errors.volume.linkNeedsConsent": {
     "sourceHash": "79ff9fe"
   },
@@ -2557,7 +2557,7 @@
   "@errors.write.linkNeedsConsent.title": {
     "sourceHash": "ff31c7f"
   },
-  "errors.write.linkNeedsConsent.message": "Egy link ezen a szerveren: {server}, ide vezet: {target}. A Cmdr oda még nem jelentkezhet be, ezért semmi sem ment arra a szerverre.",
+  "errors.write.linkNeedsConsent.message": "Egy link ezen a szerveren: {server}, ide vezet: {target}. A Cmdr még nem kapott engedélyt arra, hogy ott bejelentkezzen, ezért semmi sem ment arra a szerverre.",
   "@errors.write.linkNeedsConsent.message": {
     "sourceHash": "7893ce9"
   },

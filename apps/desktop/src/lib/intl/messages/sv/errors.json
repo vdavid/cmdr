@@ -2549,7 +2549,7 @@
   "@errors.listing.linkNeedsConsent.suggestion": {
     "sourceHash": "991cb6c"
   },
-  "errors.volume.linkNeedsConsent": "Det här ligger bakom en länk till en annan server som Cmdr inte får logga in på ännu. Öppna mappen i en panel för att bestämma.",
+  "errors.volume.linkNeedsConsent": "Det här ligger bakom en länk till en annan server, och Cmdr har inte tillåtelse att logga in där ännu. Öppna mappen i en panel för att bestämma.",
   "@errors.volume.linkNeedsConsent": {
     "sourceHash": "79ff9fe"
   },
@@ -2557,7 +2557,7 @@
   "@errors.write.linkNeedsConsent.title": {
     "sourceHash": "ff31c7f"
   },
-  "errors.write.linkNeedsConsent.message": "En länk på {server} leder till {target}, och Cmdr får inte logga in där ännu, så inget gick till den servern.",
+  "errors.write.linkNeedsConsent.message": "En länk på {server} leder till {target}, och Cmdr har inte tillåtelse att logga in där ännu, så inget gick till den servern.",
   "@errors.write.linkNeedsConsent.message": {
     "sourceHash": "7893ce9"
   },

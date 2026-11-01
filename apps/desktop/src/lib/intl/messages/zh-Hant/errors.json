@@ -2549,7 +2549,7 @@
   "@errors.listing.linkNeedsConsent.suggestion": {
     "sourceHash": "991cb6c"
   },
-  "errors.volume.linkNeedsConsent": "這個項目在指向另一個伺服器的連結後面，Cmdr 還沒獲准登入那個伺服器。請在窗格中開啟資料夾來決定。",
+  "errors.volume.linkNeedsConsent": "這個項目在指向另一個伺服器的連結後面，你還沒允許 Cmdr 登入那個伺服器。請在窗格中開啟資料夾來決定。",
   "@errors.volume.linkNeedsConsent": {
     "sourceHash": "79ff9fe"
   },
@@ -2557,7 +2557,7 @@
   "@errors.write.linkNeedsConsent.title": {
     "sourceHash": "ff31c7f"
   },
-  "errors.write.linkNeedsConsent.message": "{server} 上的連結指向 {target}，而 Cmdr 還沒獲准登入那裡，所以沒有任何內容傳到那個伺服器。",
+  "errors.write.linkNeedsConsent.message": "{server} 上的連結指向 {target}，而你還沒允許 Cmdr 登入那裡，所以沒有任何內容傳到那個伺服器。",
   "@errors.write.linkNeedsConsent.message": {
     "sourceHash": "7893ce9"
   },

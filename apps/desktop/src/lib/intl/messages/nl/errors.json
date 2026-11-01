@@ -2549,7 +2549,7 @@
   "@errors.listing.linkNeedsConsent.suggestion": {
     "sourceHash": "991cb6c"
   },
-  "errors.volume.linkNeedsConsent": "Dit ligt achter een link naar een andere server waar Cmdr nog niet mag inloggen. Open de map in een paneel om te beslissen.",
+  "errors.volume.linkNeedsConsent": "Dit ligt achter een link naar een andere server waar inloggen voor Cmdr nog niet is toegestaan. Open de map in een paneel om te beslissen.",
   "@errors.volume.linkNeedsConsent": {
     "sourceHash": "79ff9fe"
   },
@@ -2557,7 +2557,7 @@
   "@errors.write.linkNeedsConsent.title": {
     "sourceHash": "ff31c7f"
   },
-  "errors.write.linkNeedsConsent.message": "Een link op {server} leidt naar {target}, en Cmdr mag daar nog niet inloggen, dus er is niets naar die server gegaan.",
+  "errors.write.linkNeedsConsent.message": "Een link op {server} leidt naar {target}, en inloggen is daar voor Cmdr nog niet toegestaan, dus er is niets naar die server gegaan.",
   "@errors.write.linkNeedsConsent.message": {
     "sourceHash": "7893ce9"
   },

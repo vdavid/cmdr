@@ -2159,7 +2159,7 @@
   "@fileExplorer.pane.directConnectionOtherServerNotAllowedToast": {
     "sourceHash": "c350d80"
   },
-  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "Không thể kết nối trực tiếp tới <shareName>{share}</shareName>, vì các tệp nằm trên máy chủ khác và Cmdr không tự đăng nhập vào đó. Bạn vẫn đang kết nối qua kết nối mạng SMB sẵn có của macOS, vốn chậm hơn nhiều.",
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "Không thể kết nối trực tiếp tới <shareName>{share}</shareName>, vì các tệp nằm trên máy chủ khác và Cmdr không tự đăng nhập vào đó. Bạn vẫn đang kết nối, nhưng qua kết nối mạng SMB tích hợp sẵn của macOS, vốn chậm hơn nhiều.",
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "9c9c5a5"
   },

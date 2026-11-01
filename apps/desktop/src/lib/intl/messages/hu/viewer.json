@@ -480,7 +480,7 @@
   "@viewer.selection.toEndOfFileNoLine": {
     "sourceHash": "e7e0442"
   },
-  "viewer.error.linkNeedsConsent": "Ez a fájl egy másik szerverre mutató link mögött van, ahová a Cmdr még nem jelentkezhet be. A döntéshez nyisd meg a mappáját egy panelen.",
+  "viewer.error.linkNeedsConsent": "Ez a fájl egy másik szerverre mutató link mögött van, és a Cmdr még nem kapott engedélyt arra, hogy ott bejelentkezzen. A döntéshez nyisd meg a mappáját egy panelen.",
   "@viewer.error.linkNeedsConsent": {
     "sourceHash": "b9b3e1f"
   }

@@ -2078,6 +2078,7 @@
     "confidence": "high",
     "exceptions": {
       "fileExplorer.network.osMountFallback.message": "macOS inbyggda SMB-anslutning drops network on purpose: SMB is a network, and a triple compound reads heavy.",
+      "fileExplorer.network.osMountFallback.otherServerNotAllowed": "macOS inbyggda SMB-anslutning drops network on purpose: SMB is a network, and a triple compound reads heavy.",
       "fileExplorer.network.osMountFallback.shareNotOnServer": "macOS inbyggda SMB-anslutning drops network on purpose: SMB is a network, and a triple compound reads heavy."
     },
     "forms": "the volume-switcher group Nätverk; network hosts → nätverksvärdar",
@@ -3005,7 +3006,7 @@
     "sources": "Thunar (Sidopanel)"
   },
   "sign-in": {
-    "accept": ["loggar in", "loggat in", "loggade inte in", "inlogg"],
+    "accept": ["loggar in", "loggar Cmdr in", "loggat in", "loggade inte in", "inlogg"],
     "chosen": "logga in",
     "confidence": "high",
     "exceptions": {

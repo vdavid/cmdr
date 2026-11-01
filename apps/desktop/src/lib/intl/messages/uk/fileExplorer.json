@@ -2147,7 +2147,7 @@
   "@fileExplorer.tags.skipped": {
     "sourceHash": "31363ee"
   },
-  "fileExplorer.errorPane.reviewLinkSignIn": "Переглянути вхід",
+  "fileExplorer.errorPane.reviewLinkSignIn": "Перевірити вхід",
   "@fileExplorer.errorPane.reviewLinkSignIn": {
     "sourceHash": "25a3cfe"
   },
@@ -2155,7 +2155,7 @@
   "@fileExplorer.pane.directConnectionOtherServerNotAllowedToast": {
     "sourceHash": "c350d80"
   },
-  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "Не вдалося підʼєднатися напряму до <shareName>{share}</shareName>: файли на іншому сервері, а Cmdr не входить туди сам. Ви й далі підʼєднані через вбудоване мережеве підʼєднання SMB у macOS, яке набагато повільніше.",
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "Не вдалося підʼєднатися напряму до спільної папки <shareName>{share}</shareName>: файли на іншому сервері, а Cmdr не входить туди сам. Ви й далі підʼєднані через системне мережеве SMB-підʼєднання macOS, а воно значно повільніше.",
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "9c9c5a5"
   },
@@ -2171,7 +2171,7 @@
   "@fileExplorer.smbLinkConsent.warning": {
     "sourceHash": "295e81e"
   },
-  "fileExplorer.smbLinkConsent.note": "Cmdr запамʼятовує вашу відповідь для цих двох серверів. Забути її можна в налаштуваннях, у розділі «Сервери».",
+  "fileExplorer.smbLinkConsent.note": "Cmdr запамʼятовує вашу відповідь для цих двох серверів. Забути її можна в Параметрах, у розділі «Сервери».",
   "@fileExplorer.smbLinkConsent.note": {
     "sourceHash": "3f9615a"
   },

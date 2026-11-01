@@ -2549,7 +2549,7 @@
   "@errors.listing.linkNeedsConsent.suggestion": {
     "sourceHash": "991cb6c"
   },
-  "errors.volume.linkNeedsConsent": "Cet élément se trouve derrière un lien vers un autre serveur sur lequel Cmdr n’a pas encore le droit de s’identifier. Ouvrez le dossier dans un panneau pour décider.",
+  "errors.volume.linkNeedsConsent": "Cet élément se trouve derrière un lien vers un autre serveur sur lequel Cmdr n’est pas encore autorisé à s’identifier. Ouvrez le dossier dans un panneau pour décider.",
   "@errors.volume.linkNeedsConsent": {
     "sourceHash": "79ff9fe"
   },
@@ -2557,7 +2557,7 @@
   "@errors.write.linkNeedsConsent.title": {
     "sourceHash": "ff31c7f"
   },
-  "errors.write.linkNeedsConsent.message": "Un lien sur {server} mène à {target}, et Cmdr n’a pas encore le droit de s’y identifier, donc rien n’a été envoyé à ce serveur.",
+  "errors.write.linkNeedsConsent.message": "Un lien sur {server} mène à {target}, et Cmdr n’est pas encore autorisé à s’y identifier, donc rien n’a été envoyé à ce serveur.",
   "@errors.write.linkNeedsConsent.message": {
     "sourceHash": "7893ce9"
   },

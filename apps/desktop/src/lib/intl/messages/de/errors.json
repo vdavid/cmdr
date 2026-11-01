@@ -2549,7 +2549,7 @@
   "@errors.listing.linkNeedsConsent.suggestion": {
     "sourceHash": "991cb6c"
   },
-  "errors.volume.linkNeedsConsent": "Das liegt hinter einem Link zu einem anderen Server, bei dem sich Cmdr noch nicht anmelden darf. Öffne den Ordner in einem Bereich, um zu entscheiden.",
+  "errors.volume.linkNeedsConsent": "Das liegt hinter einem Link zu einem anderen Server, und Cmdr hat noch keine Erlaubnis, sich dort anzumelden. Öffne den Ordner in einem Bereich, um zu entscheiden.",
   "@errors.volume.linkNeedsConsent": {
     "sourceHash": "79ff9fe"
   },
@@ -2557,7 +2557,7 @@
   "@errors.write.linkNeedsConsent.title": {
     "sourceHash": "ff31c7f"
   },
-  "errors.write.linkNeedsConsent.message": "Ein Link auf {server} führt zu {target}, und Cmdr darf sich dort noch nicht anmelden, daher ging nichts an diesen Server.",
+  "errors.write.linkNeedsConsent.message": "Ein Link auf {server} führt zu {target}, und Cmdr hat noch keine Erlaubnis, sich dort anzumelden, daher ging nichts an diesen Server.",
   "@errors.write.linkNeedsConsent.message": {
     "sourceHash": "7893ce9"
   },

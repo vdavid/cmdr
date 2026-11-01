@@ -2744,7 +2744,7 @@
   },
   "review": {
     "chosen": "revisar",
-    "accept": ["revis"],
+    "accept": ["revis", "revís"],
     "confidence": "high",
     "sources": "catalog"
   },

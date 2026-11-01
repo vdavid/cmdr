@@ -3103,11 +3103,12 @@
       "log in",
       "log opnieuw in",
       "log één keer in",
-      "in te loggen"
+      "in te loggen",
+      "logt "
     ],
     "chosen": "Log in",
     "confidence": "high",
-    "forms": "button Log in / Log in…; Sign in to X → Log in bij X; sign in with → Log in met …; sign-in method → inlogmethode (tentative); status Ingelogd",
+    "forms": "button Log in / Log in…; Sign in to X → Log in bij X; sign in with → Log in met …; sign-in method → inlogmethode (tentative); status Ingelogd; finite separable verb in prose: Cmdr logt daar … in",
     "sources": "macOS Finder (Log In… → Log in…), CloudKit (Sign In to %1$@ → Log in bij %1$@)"
   },
   "sign-out": {

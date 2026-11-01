@@ -2544,11 +2544,11 @@
   "@errors.listing.linkNeedsConsent.explanation": {
     "sourceHash": "91b0171"
   },
-  "errors.listing.linkNeedsConsent.suggestion": "要打开这个文件夹，Cmdr 需要用你在 {server} 上使用的账户登录 {target}。如果你信任 {target}，可以查看并决定。这个共享的其余部分照常工作。",
+  "errors.listing.linkNeedsConsent.suggestion": "要打开这个文件夹，Cmdr 需要用你在 {server} 上使用的账户登录 {target}。如果你信任 {target}，可以复查并决定。这个共享的其余部分照常工作。",
   "@errors.listing.linkNeedsConsent.suggestion": {
     "sourceHash": "991cb6c"
   },
-  "errors.volume.linkNeedsConsent": "这个项目位于指向另一台服务器的链接之后，Cmdr 还未获准登录那台服务器。请在窗格中打开文件夹来决定。",
+  "errors.volume.linkNeedsConsent": "这个项目位于指向另一台服务器的链接之后，你还没有允许 Cmdr 登录那台服务器。请在窗格中打开文件夹来决定。",
   "@errors.volume.linkNeedsConsent": {
     "sourceHash": "79ff9fe"
   },
@@ -2556,7 +2556,7 @@
   "@errors.write.linkNeedsConsent.title": {
     "sourceHash": "ff31c7f"
   },
-  "errors.write.linkNeedsConsent.message": "{server} 上的一个链接指向 {target}，而 Cmdr 还未获准登录那里，所以没有任何内容发送到那台服务器。",
+  "errors.write.linkNeedsConsent.message": "{server} 上的一个链接指向 {target}，而你还没有允许 Cmdr 登录那里，所以没有任何内容发送到那台服务器。",
   "@errors.write.linkNeedsConsent.message": {
     "sourceHash": "7893ce9"
   },

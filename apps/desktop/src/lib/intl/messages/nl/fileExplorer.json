@@ -2172,7 +2172,7 @@
   "@fileExplorer.pane.directConnectionOtherServerNotAllowedToast": {
     "sourceHash": "c350d80"
   },
-  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "Geen directe verbinding met <shareName>{share}</shareName> gelukt, omdat de bestanden op een andere server staan en Cmdr daar niet uit zichzelf inlogt. Je bent nog steeds verbonden via de eigen SMB-netwerkverbinding van macOS, die een stuk langzamer is.",
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "Direct verbinden met <shareName>{share}</shareName> lukte niet, omdat de bestanden op een andere server staan en Cmdr daar niet uit zichzelf inlogt. Je bent nog steeds verbonden, maar via de systeemeigen SMB-netwerkverbinding van macOS, die een stuk langzamer is.",
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "9c9c5a5"
   },
