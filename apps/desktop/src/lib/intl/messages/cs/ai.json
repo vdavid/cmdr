@@ -99,7 +99,7 @@
   "@ai.cloudConsent.askCmdr.item.names": {
     "sourceHash": "ce3259d"
   },
-  "ai.cloudConsent.askCmdr.item.sizes": "Jejich velikosti a datumy",
+  "ai.cloudConsent.askCmdr.item.sizes": "Jejich velikost a datum",
   "@ai.cloudConsent.askCmdr.item.sizes": {
     "sourceHash": "2484530"
   },
@@ -371,7 +371,7 @@
   "@ai.local.statusStopped": {
     "sourceHash": "1a4f630"
   },
-  "ai.local.installStepExtracting": "Krok 1 ze 4: extrahování modulu runtime…",
+  "ai.local.installStepExtracting": "Krok 1 ze 4: extrahování běhového prostředí…",
   "@ai.local.installStepExtracting": {
     "sourceHash": "44fc84b"
   },
@@ -447,7 +447,7 @@
     "sourceHash": "93e2741",
     "sameAsSourceJustification": "Cmdr is a brand and AI is the Czech abbreviation too (cs termbase ai-feature); only the formatted size follows"
   },
-  "ai.local.ramLegendProjected": "Odhad navíc",
+  "ai.local.ramLegendProjected": "Odhad",
   "@ai.local.ramLegendProjected": {
     "sourceHash": "e394afa"
   },

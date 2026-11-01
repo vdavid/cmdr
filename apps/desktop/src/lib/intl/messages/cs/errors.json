@@ -83,7 +83,7 @@
   "@errors.listing.connectionDropped.suggestion": {
     "sourceHash": "3e3446f"
   },
-  "errors.listing.connectionReset.title": "Připojení bylo resetováno",
+  "errors.listing.connectionReset.title": "Připojení bylo přerušeno",
   "@errors.listing.connectionReset.title": {
     "sourceHash": "6346f08"
   },
@@ -123,7 +123,7 @@
   "@errors.listing.staleConnection.title": {
     "sourceHash": "f03c43c"
   },
-  "errors.listing.staleConnection.explanation": "Cmdr se pokouší o přístup k této složce přes starý identifikátor, který server už nezná. Často se to stává u síťových disků (NFS, SMB), když se server restartuje, sdílená složka se znovu připojí nebo se připojení přerušilo.",
+  "errors.listing.staleConnection.explanation": "Cmdr se pokouší o přístup k této složce přes zastaralý identifikátor, který server už nezná. Často se to stává u síťových disků (NFS, SMB), když se server restartuje, sdílená složka se znovu připojí nebo se připojení přerušilo.",
   "@errors.listing.staleConnection.explanation": {
     "sourceHash": "3712df2"
   },
@@ -435,7 +435,7 @@
   "@errors.listing.deviceProblem.title": {
     "sourceHash": "3febba2"
   },
-  "errors.listing.deviceProblem.explanation": "Zařízení nahlásilo problém s hardwarem. Může jít o uvolněné připojení, opotřebovaný kabel nebo o závadu samotného zařízení.",
+  "errors.listing.deviceProblem.explanation": "Zařízení nahlásilo problém s hardwarem. Může jít o uvolněný konektor, opotřebovaný kabel nebo o závadu samotného zařízení.",
   "@errors.listing.deviceProblem.explanation": {
     "sourceHash": "a809613"
   },
@@ -495,7 +495,7 @@
   "@errors.listing.objectStoreRefused.title": {
     "sourceHash": "2c26546"
   },
-  "errors.listing.objectStoreRefused.explanation": "`{path}` je v cloudovém úložišti a poskytovatel požadavek odmítl. Buď přístupový klíč nemá k tomuto umístění oprávnění, nebo poskytovatel pozastavil přístup k účtu, třeba po dosažení limitu využití nebo kvůli problému s platbou.",
+  "errors.listing.objectStoreRefused.explanation": "`{path}` je v cloudovém úložišti a poskytovatel požadavek odmítl. Buď přístupový klíč nemá k tomuto umístění oprávnění, nebo poskytovatel pozastavil přístup k účtu, třeba po vyčerpání limitu nebo kvůli problému s platbou.",
   "@errors.listing.objectStoreRefused.explanation": {
     "sourceHash": "b9f0f12"
   },
@@ -575,7 +575,7 @@
   "@errors.listing.deviceDisconnected.suggestion": {
     "sourceHash": "6940094"
   },
-  "errors.listing.notConnected.title": "Zatím nepřipojeno",
+  "errors.listing.notConnected.title": "Zatím není připojeno",
   "@errors.listing.notConnected.title": {
     "sourceHash": "8985693"
   },
@@ -599,7 +599,7 @@
   "@errors.listing.linkTargetUnreachable.suggestion": {
     "sourceHash": "99d873e"
   },
-  "errors.listing.deviceReconnecting.title": "Opětovné připojování k zařízení",
+  "errors.listing.deviceReconnecting.title": "Znovu se připojuje k zařízení…",
   "@errors.listing.deviceReconnecting.title": {
     "sourceHash": "6157c60"
   },
@@ -871,7 +871,7 @@
   "@errors.git.blobTooLarge.message": {
     "sourceHash": "d5609a4"
   },
-  "errors.git.blobTooLarge.suggestion": "Pokud si soubor chcete přečíst, otevřete ho z pracovního stromu.",
+  "errors.git.blobTooLarge.suggestion": "Pokud si soubor chcete přečíst, otevřete ho z pracovního stromu (git checkout).",
   "@errors.git.blobTooLarge.suggestion": {
     "sourceHash": "cae2b3d"
   },
@@ -1209,7 +1209,7 @@
   "@errors.write.destinationNotFound.suggestion": {
     "sourceHash": "2e99059"
   },
-  "errors.write.destinationNotAFolder.title": "V cestě je soubor",
+  "errors.write.destinationNotAFolder.title": "Překáží tu soubor",
   "@errors.write.destinationNotAFolder.title": {
     "sourceHash": "d371870"
   },
@@ -1221,7 +1221,7 @@
   "@errors.write.destinationNotAFolder.suggestion": {
     "sourceHash": "c410ecf"
   },
-  "errors.write.notConnected.title": "Zatím nepřipojeno",
+  "errors.write.notConnected.title": "Zatím není připojeno",
   "@errors.write.notConnected.title": {
     "sourceHash": "8985693"
   },
@@ -1565,7 +1565,7 @@
   "@errors.write.archiveEntryNameRefused.title": {
     "sourceHash": "14570b6"
   },
-  "errors.write.archiveEntryNameRefused.message.parentTraversal": "Položka {entry} má název, který vede mimo zip, když se zpětné lomítko bere jako oddělovač složek. Přesně tak ho nástroje pro zip čtou. Při otevření zipu by se položka skryla a některé nástroje by ji při rozbalování uložily mimo cílovou složku.",
+  "errors.write.archiveEntryNameRefused.message.parentTraversal": "Položka {entry} má název, který vede mimo zip, když se zpětné lomítko čte jako oddělovač složek (tak ho nástroje pro zip čtou). Při otevření zipu by se položka skryla a některé nástroje by ji při rozbalování uložily mimo cílovou složku.",
   "@errors.write.archiveEntryNameRefused.message.parentTraversal": {
     "sourceHash": "9f2ba46"
   },
@@ -1841,7 +1841,7 @@
   "@errors.write.filesTooLargeForFilesystem.message.one": {
     "sourceHash": "f5c262a"
   },
-  "errors.write.filesTooLargeForFilesystem.message.many": "Souborů příliš velkých pro tento disk: {count}. Disk je naformátovaný jako FAT32, který neumí uložit soubory větší než {maxSize}.",
+  "errors.write.filesTooLargeForFilesystem.message.many": "Soubory, které jsou pro tento disk příliš velké: {count}. Disk je naformátovaný jako FAT32, který neumí uložit soubory větší než {maxSize}.",
   "@errors.write.filesTooLargeForFilesystem.message.many": {
     "sourceHash": "9720069"
   },
@@ -2013,7 +2013,7 @@
   "@errors.write.originalsKeptAside.message.one": {
     "sourceHash": "e3bc267"
   },
-  "errors.write.originalsKeptAside.message.many": "Složky převzaly názvy vašich souborů, takže tyto soubory mají teď nové názvy. Počet souborů: {count}. Nic se nezahodilo a seznam všech souborů najdete v technických podrobnostech níže.",
+  "errors.write.originalsKeptAside.message.many": "Složky převzaly názvy některých vašich souborů (počet: {count}), takže tyto soubory mají teď nové názvy. Nic se nezahodilo a seznam všech souborů najdete v technických podrobnostech níže.",
   "@errors.write.originalsKeptAside.message.many": {
     "sourceHash": "9430f63"
   },
@@ -2293,7 +2293,7 @@
   "@errors.eject.volumeNotFound": {
     "sourceHash": "75b7870"
   },
-  "errors.eject.notEjectable": "Tento disk není vyměnitelný, takže zůstane připojený.",
+  "errors.eject.notEjectable": "Tento disk nejde vysunout, takže zůstane připojený.",
   "@errors.eject.notEjectable": {
     "sourceHash": "cc7e9ee"
   },
@@ -2329,7 +2329,7 @@
   "@errors.eject.unmountRefusedByProcess": {
     "sourceHash": "a1a2c6d"
   },
-  "errors.eject.unmountRefusedByProcesses": "Procesy s názvy {processes} (počet: {countText}) tam pořád něco používají. (Cmdr nezná názvy aplikací, jen názvy procesů.)",
+  "errors.eject.unmountRefusedByProcesses": "Na disku pořád něco používají tyto procesy ({countText}): {processes}. (Cmdr nezná názvy aplikací, jen názvy procesů.)",
   "@errors.eject.unmountRefusedByProcesses": {
     "sourceHash": "a40d1c0"
   },

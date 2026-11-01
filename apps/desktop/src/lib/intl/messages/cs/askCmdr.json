@@ -60,7 +60,7 @@
   "@askCmdr.tool.listDir.doing": {
     "sourceHash": "64aa697"
   },
-  "askCmdr.tool.listDir.done": "Vypsána složka",
+  "askCmdr.tool.listDir.done": "Složka vypsána",
   "@askCmdr.tool.listDir.done": {
     "sourceHash": "5746fef"
   },
@@ -68,7 +68,7 @@
   "@askCmdr.tool.importantFolders.doing": {
     "sourceHash": "866aa38"
   },
-  "askCmdr.tool.importantFolders.done": "Nalezeny vaše důležité složky",
+  "askCmdr.tool.importantFolders.done": "Vaše důležité složky nalezeny",
   "@askCmdr.tool.importantFolders.done": {
     "sourceHash": "1fd5db6"
   },
@@ -76,7 +76,7 @@
   "@askCmdr.tool.folderImportance.doing": {
     "sourceHash": "594deff"
   },
-  "askCmdr.tool.folderImportance.done": "Zkontrolována důležitost složky",
+  "askCmdr.tool.folderImportance.done": "Důležitost složky zkontrolována",
   "@askCmdr.tool.folderImportance.done": {
     "sourceHash": "c7f397f"
   },
@@ -84,7 +84,7 @@
   "@askCmdr.tool.listVolumes.doing": {
     "sourceHash": "2ed1808"
   },
-  "askCmdr.tool.listVolumes.done": "Zkontrolovány vaše disky",
+  "askCmdr.tool.listVolumes.done": "Vaše disky zkontrolovány",
   "@askCmdr.tool.listVolumes.done": {
     "sourceHash": "b13a0b3"
   },
@@ -92,7 +92,7 @@
   "@askCmdr.tool.operationsList.doing": {
     "sourceHash": "4e8c41a"
   },
-  "askCmdr.tool.operationsList.done": "Prohledána historie souborů",
+  "askCmdr.tool.operationsList.done": "Historie souborů prohledána",
   "@askCmdr.tool.operationsList.done": {
     "sourceHash": "03021d5"
   },
@@ -100,7 +100,7 @@
   "@askCmdr.tool.operationsGet.doing": {
     "sourceHash": "10be41f"
   },
-  "askCmdr.tool.operationsGet.done": "Vyhledána operace",
+  "askCmdr.tool.operationsGet.done": "Operace vyhledána",
   "@askCmdr.tool.operationsGet.done": {
     "sourceHash": "80fe1e9"
   },
@@ -108,7 +108,7 @@
   "@askCmdr.tool.search.doing": {
     "sourceHash": "892be3e"
   },
-  "askCmdr.tool.search.done": "Vyhledány vaše soubory",
+  "askCmdr.tool.search.done": "Vaše soubory vyhledány",
   "@askCmdr.tool.search.done": {
     "sourceHash": "995a356"
   },
@@ -116,7 +116,7 @@
   "@askCmdr.tool.searchPhotos.doing": {
     "sourceHash": "da1265d"
   },
-  "askCmdr.tool.searchPhotos.done": "Vyhledány vaše fotky",
+  "askCmdr.tool.searchPhotos.done": "Vaše fotky vyhledány",
   "@askCmdr.tool.searchPhotos.done": {
     "sourceHash": "cb3dede"
   },
@@ -140,7 +140,7 @@
   "@askCmdr.tool.proposeRenamePlan.doing": {
     "sourceHash": "540f1d9"
   },
-  "askCmdr.tool.proposeRenamePlan.done": "Připraven plán přejmenování",
+  "askCmdr.tool.proposeRenamePlan.done": "Plán přejmenování připraven",
   "@askCmdr.tool.proposeRenamePlan.done": {
     "sourceHash": "a271302"
   },
@@ -148,7 +148,7 @@
   "@askCmdr.tool.listSuggestions.doing": {
     "sourceHash": "8eddcd5"
   },
-  "askCmdr.tool.listSuggestions.done": "Zkontrolovány návrhy",
+  "askCmdr.tool.listSuggestions.done": "Návrhy zkontrolovány",
   "@askCmdr.tool.listSuggestions.done": {
     "sourceHash": "073df6b"
   },
@@ -156,7 +156,7 @@
   "@askCmdr.tool.getSuggestionGroup.doing": {
     "sourceHash": "791e75c"
   },
-  "askCmdr.tool.getSuggestionGroup.done": "Prohlédnut návrh",
+  "askCmdr.tool.getSuggestionGroup.done": "Návrh prohlédnut",
   "@askCmdr.tool.getSuggestionGroup.done": {
     "sourceHash": "2373235"
   },
@@ -164,7 +164,7 @@
   "@askCmdr.tool.proposeSuggestions.doing": {
     "sourceHash": "aa27c17"
   },
-  "askCmdr.tool.proposeSuggestions.done": "Připraveny návrhy",
+  "askCmdr.tool.proposeSuggestions.done": "Návrhy připraveny",
   "@askCmdr.tool.proposeSuggestions.done": {
     "sourceHash": "42457d2"
   },
@@ -172,7 +172,7 @@
   "@askCmdr.tool.proposeServer.doing": {
     "sourceHash": "cf8e5f0"
   },
-  "askCmdr.tool.proposeServer.done": "Připraven návrh serveru",
+  "askCmdr.tool.proposeServer.done": "Návrh serveru připraven",
   "@askCmdr.tool.proposeServer.done": {
     "sourceHash": "b075032"
   },
@@ -188,15 +188,15 @@
   "@askCmdr.tool.memoryWrite.doing": {
     "sourceHash": "9c2a59e"
   },
-  "askCmdr.tool.memoryWrite.done": "Uložena poznámka o vás",
+  "askCmdr.tool.memoryWrite.done": "Poznámka o vás uložena",
   "@askCmdr.tool.memoryWrite.done": {
     "sourceHash": "cb3d875"
   },
-  "askCmdr.tool.memoryEdit.doing": "Aktualizují se vlastní poznámky",
+  "askCmdr.tool.memoryEdit.doing": "Aktualizuje si poznámky",
   "@askCmdr.tool.memoryEdit.doing": {
     "sourceHash": "9cfe004"
   },
-  "askCmdr.tool.memoryEdit.done": "Aktualizovány vlastní poznámky",
+  "askCmdr.tool.memoryEdit.done": "Poznámky aktualizovány",
   "@askCmdr.tool.memoryEdit.done": {
     "sourceHash": "5fdfbdc"
   },
@@ -216,7 +216,7 @@
   "@askCmdr.tool.unknown.doing": {
     "sourceHash": "a92f044"
   },
-  "askCmdr.tool.unknown.done": "Použit nástroj",
+  "askCmdr.tool.unknown.done": "Nástroj použit",
   "@askCmdr.tool.unknown.done": {
     "sourceHash": "05cc2be"
   },
@@ -224,7 +224,7 @@
   "@askCmdr.tool.listDir.folder.doing": {
     "sourceHash": "d9a6c6c"
   },
-  "askCmdr.tool.listDir.folder.done": "Vypsána složka <place>{name}</place>",
+  "askCmdr.tool.listDir.folder.done": "Složka <place>{name}</place> vypsána",
   "@askCmdr.tool.listDir.folder.done": {
     "sourceHash": "f079af1"
   },
@@ -232,7 +232,7 @@
   "@askCmdr.tool.listPaneFiles.selection.doing": {
     "sourceHash": "7beaf97"
   },
-  "askCmdr.tool.listPaneFiles.selection.done": "Vypsán váš výběr ve složce <place>{name}</place>",
+  "askCmdr.tool.listPaneFiles.selection.done": "Váš výběr ve složce <place>{name}</place> vypsán",
   "@askCmdr.tool.listPaneFiles.selection.done": {
     "sourceHash": "497e22a"
   },
@@ -240,7 +240,7 @@
   "@askCmdr.tool.folderImportance.folder.doing": {
     "sourceHash": "59d84ca"
   },
-  "askCmdr.tool.folderImportance.folder.done": "Zkontrolována důležitost složky <place>{name}</place>",
+  "askCmdr.tool.folderImportance.folder.done": "Důležitost složky <place>{name}</place> zkontrolována",
   "@askCmdr.tool.folderImportance.folder.done": {
     "sourceHash": "f167904"
   },
@@ -280,7 +280,7 @@
   "@askCmdr.tool.search.inFolders.doing": {
     "sourceHash": "0989f2a"
   },
-  "askCmdr.tool.search.inFolders.done": "{folders, plural, one {Prohledána složka <places>{placesText}</places>} few {Prohledány složky <places>{placesText}</places>} many {Prohledány složky <places>{placesText}</places>} other {Prohledány složky <places>{placesText}</places>}}",
+  "askCmdr.tool.search.inFolders.done": "{folders, plural, one {Složka <places>{placesText}</places> prohledána} few {Složky <places>{placesText}</places> prohledány} many {Složky <places>{placesText}</places> prohledány} other {Složky <places>{placesText}</places> prohledány}}",
   "@askCmdr.tool.search.inFolders.done": {
     "sourceHash": "017aef4"
   },
@@ -296,7 +296,7 @@
   "@askCmdr.tool.proposeRenamePlan.count.doing": {
     "sourceHash": "30c839d"
   },
-  "askCmdr.tool.proposeRenamePlan.count.done": "{count, plural, one {Připraven plán přejmenování {countText} souboru} few {Připraven plán přejmenování {countText} souborů} many {Připraven plán přejmenování {countText} souboru} other {Připraven plán přejmenování {countText} souborů}}",
+  "askCmdr.tool.proposeRenamePlan.count.done": "{count, plural, one {Plán přejmenování {countText} souboru připraven} few {Plán přejmenování {countText} souborů připraven} many {Plán přejmenování {countText} souboru připraven} other {Plán přejmenování {countText} souborů připraven}}",
   "@askCmdr.tool.proposeRenamePlan.count.done": {
     "sourceHash": "2e2e790"
   },
@@ -304,7 +304,7 @@
   "@askCmdr.tool.proposeSuggestions.count.doing": {
     "sourceHash": "971e695"
   },
-  "askCmdr.tool.proposeSuggestions.count.done": "{count, plural, one {Připraven {countText} návrh} few {Připraveny {countText} návrhy} many {Připraveno {countText} návrhu} other {Připraveno {countText} návrhů}}",
+  "askCmdr.tool.proposeSuggestions.count.done": "{count, plural, one {{countText} návrh připraven} few {{countText} návrhy připraveny} many {{countText} návrhu připraveno} other {{countText} návrhů připraveno}}",
   "@askCmdr.tool.proposeSuggestions.count.done": {
     "sourceHash": "cbb1273"
   },
@@ -312,7 +312,7 @@
   "@askCmdr.tool.memoryWrite.file.doing": {
     "sourceHash": "364c7ec"
   },
-  "askCmdr.tool.memoryWrite.file.done": "Uložena poznámka do souboru <place>{name}</place>",
+  "askCmdr.tool.memoryWrite.file.done": "Poznámka uložena do souboru <place>{name}</place>",
   "@askCmdr.tool.memoryWrite.file.done": {
     "sourceHash": "8e7a923"
   },
@@ -328,7 +328,7 @@
   "@askCmdr.tool.memoryEdit.file.doing": {
     "sourceHash": "17b6898"
   },
-  "askCmdr.tool.memoryEdit.file.done": "Aktualizován soubor <place>{name}</place>",
+  "askCmdr.tool.memoryEdit.file.done": "Soubor <place>{name}</place> aktualizován",
   "@askCmdr.tool.memoryEdit.file.done": {
     "sourceHash": "9dc9f76"
   },
@@ -873,7 +873,7 @@
   "@askCmdr.composer.selectionCapped": {
     "sourceHash": "8abeced"
   },
-  "askCmdr.composer.dropHint": "Pusťte sem pro přiložení",
+  "askCmdr.composer.dropHint": "Pusťte soubory sem",
   "@askCmdr.composer.dropHint": {
     "sourceHash": "34a7a63"
   },
@@ -1037,7 +1037,7 @@
   "@askCmdr.renameReview.evidence.userInstruction": {
     "sourceHash": "c8e3674"
   },
-  "askCmdr.renameReview.evidence.userEdited": "Váš vlastní název",
+  "askCmdr.renameReview.evidence.userEdited": "Tento název jste zadali vy",
   "@askCmdr.renameReview.evidence.userEdited": {
     "sourceHash": "3f3a179"
   },
@@ -1177,11 +1177,11 @@
   "@askCmdr.renameUndo.swapsSkipped": {
     "sourceHash": "90e8dfc"
   },
-  "askCmdr.renameUndo.notRecorded": "Protokol operací je vypnutý, takže tuto akci nelze odvolat.",
+  "askCmdr.renameUndo.notRecorded": "Historie operací je vypnutá, takže tuto akci nelze odvolat.",
   "@askCmdr.renameUndo.notRecorded": {
     "sourceHash": "eb01aff"
   },
-  "askCmdr.renameUndo.undo": "Odvolat akci",
+  "askCmdr.renameUndo.undo": "Odvolat",
   "@askCmdr.renameUndo.undo": {
     "sourceHash": "a8283ad"
   },
@@ -1261,7 +1261,7 @@
   "@askCmdr.renameUndo.skipReason.failed.counted": {
     "sourceHash": "f13c021"
   },
-  "askCmdr.renameUndo.refusedBatches": "Cmdr nemohl odvolat {countText} {count, plural, one {dávku} few {dávky} many {dávky} other {dávek}}. Podrobnosti najdete v protokolu operací.",
+  "askCmdr.renameUndo.refusedBatches": "Cmdr nemohl odvolat {countText} {count, plural, one {dávku} few {dávky} many {dávky} other {dávek}}. Podrobnosti najdete v historii operací.",
   "@askCmdr.renameUndo.refusedBatches": {
     "sourceHash": "16fde72"
   },
@@ -1341,11 +1341,11 @@
   "@askCmdr.wakeToast.openThread": {
     "sourceHash": "0a641f8"
   },
-  "askCmdr.decision.rejected": "Odmítnuto: {verbName} {countText} {count, plural, one {položky} few {položek} many {položky} other {položek}}",
+  "askCmdr.decision.rejected": "Odmítli jste: {verbName} {countText} {count, plural, one {položky} few {položek} many {položky} other {položek}}",
   "@askCmdr.decision.rejected": {
     "sourceHash": "19d12c1"
   },
-  "askCmdr.decision.approved": "Schváleno: {verbName} {countText} {count, plural, one {položky} few {položek} many {položky} other {položek}}",
+  "askCmdr.decision.approved": "Schválili jste: {verbName} {countText} {count, plural, one {položky} few {položek} many {položky} other {položek}}",
   "@askCmdr.decision.approved": {
     "sourceHash": "aa911e6"
   },
