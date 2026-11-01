@@ -865,6 +865,10 @@ fn format_tool_result(value: &Value) -> String {
 mod server_http_auth;
 
 #[cfg(test)]
+#[path = "tests/transport_characterization.rs"]
+mod transport_characterization;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use axum::http::HeaderMap;

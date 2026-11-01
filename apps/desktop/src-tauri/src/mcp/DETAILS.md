@@ -61,6 +61,10 @@ Directory module split by test category. Tool, resource, and store tests live wi
 - `spec_compliance_tests.rs`: MCP spec 2025-11-25 compliance, origin validation, SSE events
 - `server_http_auth.rs`: the real listener's auth, registered from `server.rs` with `#[path]` because `build_router` is
   private
+- `transport_characterization.rs`: everything an outside client can see of the transport, black-box over a real listener
+  and registered the same way: binding, the discovery files, Origin, the token, logs, typed errors, and dispatch. A cell
+  marked `// changes with the SDK:` is one the `rmcp` swap is meant to change; every other cell must survive it. A cell
+  can't see the refused-Origin toast (it needs a real `AppHandle`), so it pins the security event that raises it
 
 ## Key decisions
 
