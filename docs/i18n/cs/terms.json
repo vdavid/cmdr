@@ -4,7 +4,10 @@
     "accept": ["přístup", "přistup", "přístupn"],
     "forms": "m.: access to files → přístup k souborům; grant access → udělit přístup",
     "confidence": "high",
-    "sources": "macOS NetAuthAgent (Pro přístup k tomuto serveru nemáte oprávnění), SystemSettings; Nautilus (Přístup); MS (přístup)"
+    "sources": "macOS NetAuthAgent (Pro přístup k tomuto serveru nemáte oprávnění), SystemSettings; Nautilus (Přístup); MS (přístup)",
+    "exceptions": {
+      "settings.network.localNetworkAccessLabel": "the macOS permission is named oprávnění, as in settings.network.permissionIntroPrefix"
+    }
   },
   "account": {
     "chosen": "účet",
@@ -187,8 +190,8 @@
     "chosen": "klonovat panel",
     "accept": ["klonov", "cíl = zdroj"],
     "forms": "command (menu.view.clonePane) → Klonovat panel",
-    "confidence": "tentative",
-    "sources": "Double Commander (Clone → Klonovat); TC's equivalent command is Cíl = zdroj"
+    "confidence": "confirmed",
+    "sources": "Double Commander (Clone → Klonovat); TC's equivalent command is Cíl = zdroj; confirmed by native reviewer (cs review queue, 2026-11)"
   },
   "close": {
     "chosen": "zavřít",
@@ -276,7 +279,10 @@
     "accept": ["připoj"],
     "forms": "button → Připojit; reflexive in prose → připojit se k serveru; progress → Připojování…; status → Připojeno; noun → připojení",
     "confidence": "high",
-    "sources": "macOS Finder (Připojit k serveru, Připojit), NetAuthAgent (Připojit), SystemSettings; MS (připojit); DC (Připojit k:)"
+    "sources": "macOS Finder (Připojit k serveru, Připojit), NetAuthAgent (Připojit), SystemSettings; MS (připojit); DC (Připojit k:)",
+    "exceptions": {
+      "errors.listing.deviceProblem.explanation": "loose connection is a physical connector: uvolněný konektor"
+    }
   },
   "context-menu": {
     "chosen": "místní nabídka",
@@ -519,7 +525,10 @@
     "confidence": "high",
     "sources": "macOS CoreTypes (Externí disk, Výměnný disk), SystemSettings (hard drive → pevný disk, external drive → externí disk), Finder (Startovací disk); Total Commander (Seznam disků, Název disku)",
     "decision": "Volume is svazek, drive is disk",
-    "note": "loc. pl. discích (o vašich souborech, discích a historii)"
+    "note": "loc. pl. discích (o vašich souborech, discích a historii)",
+    "exceptions": {
+      "search.coverage.unnamedDrive": "the fallback stands for a drive or a server: toto umístění"
+    }
   },
   "duplicate": {
     "chosen": "duplikovat",
@@ -714,7 +723,7 @@
     "forms": "the macOS row, quoted → „Plný přístup k disku“; prose → plný přístup k disku",
     "confidence": "tentative",
     "sources": "macOS SystemSettings search term (full disk access → plný přístup k disku); the Privacy row label itself is not in the pile",
-    "note": "macOS 27 may label the row differently (ru shows a shortened label); verify against the live Privacy & Security pane before quoting it."
+    "note": "macOS 27 may label the row differently (ru shows a shortened label); verify against the live Privacy & Security pane before quoting it. Kept by the native reviewer; still to verify on a device (review-queue.md)."
   },
   "full-screen": {
     "chosen": "režim celé obrazovky",
@@ -914,8 +923,8 @@
         "why": "Microsoft product branding"
       }
     ],
-    "confidence": "tentative",
-    "sources": "Total Commander (registrační klíč, licenční číslo); MS (product key → kód Product Key, a Microsoft brand form)"
+    "confidence": "confirmed",
+    "sources": "Total Commander (registrační klíč, licenční číslo); MS (product key → kód Product Key, a Microsoft brand form); confirmed by native reviewer (cs review queue, 2026-11)"
   },
   "list": {
     "chosen": "seznam",
@@ -966,7 +975,10 @@
     "accept": ["protokol", "log"],
     "forms": "m.: log file → soubor protokolu; Logging settings → Protokolování",
     "confidence": "high",
-    "sources": "macOS SystemSettings (protokol); Double Commander (Protokol); Total Commander (Protokol činností); MS (protokol)"
+    "sources": "macOS SystemSettings (protokol); Double Commander (Protokol); Total Commander (Protokol činností); MS (protokol)",
+    "exceptions": {
+      "settings.operationLog.intro": "the log here is the operation log, which is historie operací"
+    }
   },
   "look-inside": {
     "chosen": "nahlédnout",
@@ -1148,7 +1160,10 @@
     "forms": "command → Otevřít; progress → Otevírání…",
     "confidence": "high",
     "sources": "macOS Finder (Otevřít); Double Commander; Nautilus; MS (otevřít)",
-    "note": "Finder's Go menu is also titled Otevřít in Czech macOS; see the native menu decision."
+    "note": "Finder's Go menu is also titled Otevřít in Czech macOS; see the native menu decision.",
+    "exceptions": {
+      "main.revealActivation.title": "a command doesn’t open: „Zobrazit ve Finderu“ teď vede sem"
+    }
   },
   "open-with": {
     "chosen": "otevřít v aplikaci",
@@ -1165,12 +1180,18 @@
     "sources": "macOS Finder (Operace můžete zrušit nebo zastavit); MS terminology (operace)"
   },
   "operation-log": {
-    "chosen": "protokol operací",
-    "accept": ["protokol"],
-    "proseAccept": ["histori"],
-    "forms": "m.: the window and command (menu.view.operationLog) → Protokol operací; in prose may say historie operací",
-    "confidence": "tentative",
-    "sources": "log → protokol in macOS SystemSettings, Double Commander (Protokol) and TC (Protokol činností); the phrase itself is unsourced"
+    "chosen": "historie operací",
+    "accept": ["histori"],
+    "forms": "f.: the window, command, and Settings card → Historie operací; in prose v historii operací, vaši historii operací",
+    "confidence": "confirmed",
+    "sources": "log → protokol in macOS SystemSettings, Double Commander (Protokol) and TC (Protokol činností); the phrase itself is unsourced; confirmed by native reviewer (cs review queue, 2026-11)",
+    "decision": "Operation log is Historie operací",
+    "avoid": [
+      {
+        "form": "protokol operací",
+        "why": "protokol is the technical log (ladicí protokol); the undoable list of the user’s operations reads as a history"
+      }
+    ]
   },
   "operation-queue": {
     "chosen": "fronta operací",
@@ -1244,7 +1265,10 @@
     "accept": ["cest"],
     "forms": "f.: gen. cesty, pl. cesty, gen. pl. cest; Copy path → Zkopírovat cestu; path to the folder → cesta ke složce",
     "confidence": "high",
-    "sources": "macOS Finder/AppKit (Cesta); Double Commander (Cesta:); Dolphin; MS (cesta); TC (cesta)"
+    "sources": "macOS Finder/AppKit (Cesta); Double Commander (Cesta:); Dolphin; MS (cesta); TC (cesta)",
+    "exceptions": {
+      "servers.sheet.s3PathStyle": "path-style is the S3 addressing term, kept in English"
+    }
   },
   "pause": {
     "chosen": "pozastavit",
@@ -1307,7 +1331,10 @@
     "accept": ["průběh"],
     "forms": "m.: progress window → okno průběhu",
     "confidence": "high",
-    "sources": "MS (Průběh); Double Commander (Průběh); macOS Finder (Zobrazit okno průběhu, zastavit průběh)"
+    "sources": "MS (Průběh); Double Commander (Průběh); macOS Finder (Zobrazit okno průběhu, zastavit průběh)",
+    "exceptions": {
+      "fileOperations.transferProgress.stallNotice": "No progress for X fits the narrow ETA slot as Stojí už X"
+    }
   },
   "put-back": {
     "chosen": "vrátit zpět",
@@ -1374,10 +1401,16 @@
   },
   "reconnect": {
     "chosen": "znovu připojit",
-    "accept": ["znovu připoj", "opětovn", "obnovit připojení"],
-    "forms": "button → Znovu připojit; progress → Opětovné připojování… / Znovu se připojuje…",
+    "accept": ["znovu připoj", "opětovn", "obnovit připojení", "znovu se připoj"],
+    "forms": "button → Znovu připojit; progress → Znovu se připojuje…",
     "confidence": "high",
-    "sources": "macOS SystemSettings (Automaticky znovu připojovat, budete muset znovu připojit)"
+    "sources": "macOS SystemSettings (Automaticky znovu připojovat, budete muset znovu připojit)",
+    "avoid": [
+      {
+        "form": "opětovné připojování",
+        "why": "officialese for a panel title"
+      }
+    ]
   },
   "redo": {
     "chosen": "opakovat",
@@ -1458,14 +1491,18 @@
     "accept": ["znovu", "zkus"],
     "forms": "button → Zkusit znovu; in a sentence → zkuste to znovu",
     "confidence": "high",
-    "sources": "macOS Finder/SystemSettings (Try Again → Zkusit znovu); MS (zkusit znovu)"
+    "sources": "macOS Finder/SystemSettings (Try Again → Zkusit znovu); MS (zkusit znovu)",
+    "exceptions": {
+      "fileExplorer.errorPane.retryInfo": "Retry #n is the attempt number: Opakování č. n",
+      "fileExplorer.errorPane.retryInfoWithLast": "Retry #n is the attempt number: Opakování č. n"
+    }
   },
   "rollback": {
     "chosen": "vrátit změny",
     "accept": ["vrát", "vrác", "vrac"],
     "forms": "button (operationLog.dialog.rollBack) → Vrátit změny; noun → vrácení změn; progress → Vracení změn…; roll them back in prose → vrátit je zpět",
-    "confidence": "tentative",
-    "sources": "MS terminology (roll back → vrátit zpět / vrátit změny / vrácení zpět); no macOS or TC term",
+    "confidence": "confirmed",
+    "sources": "MS terminology (roll back → vrátit zpět / vrátit změny / vrácení zpět); no macOS or TC term; confirmed by native reviewer (cs review queue, 2026-11)",
     "decision": "Undo, put back, roll back",
     "note": "the ruling's own progress form Vracení změn… (fileOperations.transferProgress.titleRollingBack) has vrac, not vrác"
   },
@@ -1587,11 +1624,17 @@
     "sources": "macOS Finder (Show in Finder → Zobrazit ve Finderu), AppKit (Zobrazit „%@“ ve Finderu), Services menu"
   },
   "side-panel": {
-    "chosen": "postranní panel",
-    "accept": ["postran"],
-    "forms": "in the side panel → v postranním panelu",
-    "confidence": "tentative",
-    "sources": "Nautilus (sidebar → Postranní panel); chosen to keep Ask Cmdr's panel apart from the macOS sidebar (boční panel) and from the file panes (panel)"
+    "chosen": "panel Ask Cmdr",
+    "accept": ["panel"],
+    "forms": "in the side panel → v panelu Ask Cmdr (name the panel instead of a postranní/boční adjective)",
+    "confidence": "confirmed",
+    "sources": "Nautilus (sidebar → Postranní panel); chosen to keep Ask Cmdr's panel apart from the macOS sidebar (boční panel) and from the file panes (panel); confirmed by native reviewer (cs review queue, 2026-11)",
+    "avoid": [
+      {
+        "form": "postranní panel",
+        "why": "a plain synonym of the macOS sidebar boční panel; nobody hears the difference"
+      }
+    ]
   },
   "sidebar": {
     "chosen": "boční panel",
@@ -1742,10 +1785,13 @@
         "why": "explorer-family and MS word; the two-pane lineage (TC, DC) says záložka"
       }
     ],
-    "confidence": "tentative",
-    "sources": "Total Commander (Otevřít novou záložku, Zavřít tuto záložku, Konfigurace: Záložky); Double Commander (Zavřít záložku, Otevřít v nové záložce); conflicting: macOS Finder/AppKit tab → panel (Nový panel), MS/Nautilus/Dolphin/Thunar → karta",
+    "confidence": "confirmed",
+    "sources": "Total Commander (Otevřít novou záložku, Zavřít tuto záložku, Konfigurace: Záložky); Double Commander (Zavřít záložku, Otevřít v nové záložce); conflicting: macOS Finder/AppKit tab → panel (Nový panel), MS/Nautilus/Dolphin/Thunar → karta; confirmed by native reviewer (cs review queue, 2026-11)",
     "note": "The Tab KEY stays Tab (macOS KeyboardSettings Tab, AppKit tabulátor in prose).",
-    "decision": "Pane is panel, tab is záložka"
+    "decision": "Pane is panel, tab is záložka",
+    "exceptions": {
+      "servers.sheet.s3GcsKeyHelp": "Google Cloud console’s own tab, which Google Czech calls karta"
+    }
   },
   "tag": {
     "chosen": "značka",
@@ -1992,8 +2038,8 @@
     "chosen": "Vadnutí",
     "accept": ["vadn"],
     "forms": "n.: option label → Vadnutí; quoted in prose → „Vadnutí“",
-    "confidence": "tentative",
-    "sources": "No pile source (Cmdr-coined metaphor); vadnutí is the plain Czech noun for a plant wilting"
+    "confidence": "confirmed",
+    "sources": "No pile source (Cmdr-coined metaphor); vadnutí is the plain Czech noun for a plant wilting; confirmed by native reviewer (cs review queue, 2026-11)"
   },
   "example": {
     "chosen": "např.",
@@ -2049,16 +2095,16 @@
     "chosen": "pruhované řádky",
     "accept": ["pruhovan", "střídav"],
     "forms": "setting label → Pruhované řádky; prose → střídavé stínování řádků",
-    "confidence": "tentative",
-    "sources": "No pile hit for striped/alternating rows; built from MS row → řádek plus the plain adjective"
+    "confidence": "confirmed",
+    "sources": "No pile hit for striped/alternating rows; built from MS row → řádek plus the plain adjective; confirmed by native reviewer (cs review queue, 2026-11)"
   },
   "tint": {
     "chosen": "tónování",
     "accept": ["tónován", "nádech"],
     "proseAccept": ["barevný nádech"],
     "forms": "n.: Tint local-volume panes → Tónování panelů místních svazků; Pane tints → Tónování panelů; Tint colors → Barvy tónování; Background tint → barevné tónování pozadí",
-    "confidence": "tentative",
-    "sources": "macOS Accessibility (Barevné tónování, odstín barevného tónování); MS terminology (tint → barevný nádech, nádech)"
+    "confidence": "confirmed",
+    "sources": "macOS Accessibility (Barevné tónování, odstín barevného tónování); MS terminology (tint → barevný nádech, nádech); confirmed by native reviewer (cs review queue, 2026-11)"
   },
   "calculate": {
     "chosen": "spočítat",
@@ -2079,14 +2125,16 @@
     "accept": ["ladění přes USB", "ladění USB"],
     "forms": "n.: has USB debugging turned on → má zapnuté ladění přes USB",
     "confidence": "tentative",
-    "sources": "AOSP Settings cs (Ladění přes USB) from memory; not in the pile, needs a native check against a Czech Android phone"
+    "sources": "AOSP Settings cs (Ladění přes USB) from memory; not in the pile, needs a native check against a Czech Android phone",
+    "note": "Kept by the native reviewer; still to verify on a device (review-queue.md)."
   },
   "android-platform-tools": {
     "chosen": "nástroje platformy Android",
     "accept": ["nástroje platformy", "platform tools"],
     "forms": "m. pl.: the Android platform tools → nástroje platformy Android; short → nástroje platformy",
     "confidence": "tentative",
-    "sources": "No Czech Google source in the pile; Google's SDK docs keep 'SDK Platform Tools' English, so this is a descriptive rendering"
+    "sources": "No Czech Google source in the pile; Google's SDK docs keep 'SDK Platform Tools' English, so this is a descriptive rendering",
+    "note": "Kept by the native reviewer; still to verify on a device (review-queue.md)."
   },
   "limit": {
     "chosen": "limit",
@@ -2103,12 +2151,19 @@
     "sources": "macOS Finder MenuBar (About Finder → O aplikaci Finder)"
   },
   "available-offline": {
-    "chosen": "zpřístupnit offline",
-    "accept": ["offline"],
-    "forms": "menu item (menu.context.makeAvailableOffline) → Zpřístupnit offline; its opposite Remove download → Odstranit stažené (Finder)",
-    "confidence": "tentative",
-    "sources": "macOS AppKit (Sdíleno (offline)) for the word offline; Finder has no same-shaped item (Stáhnout nyní / Zachovat stažené / Odstranit stažené)",
-    "note": "Finder's Zachovat stažené is the pinning sense; Cmdr's item downloads a cloud-only file, so the literal reading stays."
+    "chosen": "stáhnout nyní",
+    "accept": ["stáhnout nyní"],
+    "proseAccept": ["stáh"],
+    "forms": "menu item and command (menu.context.makeAvailableOffline, commands.cloudMakeOffline.label) → Stáhnout nyní, Finder’s Download Now; its opposite Remove download → Odstranit stažené",
+    "confidence": "high",
+    "sources": "macOS Finder (N153.3 Download Now → Stáhnout nyní, N153.7 Keep Downloaded → Zachovat stažené, N153.4 Remove Download → Odstranit stažené); confirmed by native reviewer (cs review queue, 2026-11)",
+    "note": "Cmdr calls startDownloadingUbiquitousItem, a one-time download like Download Now, not Keep Downloaded pinning.",
+    "avoid": [
+      {
+        "form": "zpřístupnit offline",
+        "why": "literal MS/Google wording; a Mac user knows Finder’s items"
+      }
+    ]
   },
   "back": {
     "chosen": "Zpět",
@@ -2140,8 +2195,8 @@
         "why": "MS term, but protokol is Cmdr's word for log (protokol operací, ladicí protokol)"
       }
     ],
-    "confidence": "tentative",
-    "sources": "MS terminology (changelog → protokol změn), rejected for the log clash"
+    "confidence": "confirmed",
+    "sources": "MS terminology (changelog → protokol změn), rejected for the log clash; confirmed by native reviewer (cs review queue, 2026-11)"
   },
   "debugging": {
     "chosen": "ladicí",
@@ -2201,8 +2256,8 @@
         "why": "loanword; the description asks for the welcome or setup guide"
       }
     ],
-    "confidence": "tentative",
-    "sources": "MS terminology (wizard → průvodce; onboarding → zprovoznění/zaškolení)"
+    "confidence": "confirmed",
+    "sources": "MS terminology (wizard → průvodce; onboarding → zprovoznění/zaškolení); confirmed by native reviewer (cs review queue, 2026-11)"
   },
   "options": {
     "chosen": "možnosti",
@@ -2262,8 +2317,8 @@
   },
   "toggle": {
     "chosen": "přepnout",
-    "accept": ["přepn", "přepín", "obrát", "nebo skrýt", "nebo vypnout", "nebo odepnout"],
-    "forms": "a two-state switch → Přepnout (Toggle selection → Přepnout výběr, Toggle red tag → Přepnout červenou značku); a command whose two states have names → TC's „X nebo Y“ (Toggle hidden files → Zobrazit nebo skrýt skryté soubory, Toggle pin tab → Připnout nebo odepnout záložku); sort direction → Obrátit pořadí řazení",
+    "accept": ["přepn", "přepín", "obrát", "nebo skrýt", "nebo vypnout", "nebo odepnout", "nebo odstranit"],
+    "forms": "a two-state switch → Přepnout (Toggle selection → Přepnout výběr); a tag has two named states → Přidat nebo odstranit červenou značku; a command whose two states have names → TC's „X nebo Y“ (Toggle hidden files → Zobrazit nebo skrýt skryté soubory, Toggle pin tab → Připnout nebo odepnout záložku); sort direction → Obrátit pořadí řazení",
     "confidence": "high",
     "sources": "Total Commander (3013 Zobrazit nebo skrýt skryté soubory, 2901–2911 Zobrazit nebo skrýt …, 2012 Zapnout nebo vypnout …; cm_SrcNegOrder Obrácené pořadí); Nautilus (Obrátit pořadí řazení); MS (toggle → přepnout)",
     "decision": "Toggle commands follow Total Commander"
@@ -2272,8 +2327,8 @@
     "chosen": "Co je nového",
     "accept": ["co je nového", "novink"],
     "forms": "Help menu item (menu.help.whatsNew) → Co je nového",
-    "confidence": "high",
-    "sources": "MS terminology (What's New → Co je nového)"
+    "confidence": "confirmed",
+    "sources": "MS terminology (What's New → Co je nového); confirmed by native reviewer (cs review queue, 2026-11)"
   },
   "word-wrap": {
     "chosen": "zalamování řádků",
@@ -2350,8 +2405,8 @@
     "chosen": "přepínač svazků",
     "accept": ["přepínač svazk", "přepínači svazk", "seznam svazk", "přepínače svazk"],
     "forms": "m.: Open left volume switcher → Otevřít levý přepínač svazků; in the volume switcher → v přepínači svazků",
-    "confidence": "tentative",
-    "sources": "TC 131/231 Levý/Pravý panel: Rozevírací seznam disků; DC Open left drive list → Otevřít levý seznam disků; volume ruling svazek; switcher → přepínač (English insists on one name, switcher)",
+    "confidence": "confirmed",
+    "sources": "TC 131/231 Levý/Pravý panel: Rozevírací seznam disků; DC Open left drive list → Otevřít levý seznam disků; volume ruling svazek; switcher → přepínač (English insists on one name, switcher); confirmed by native reviewer (cs review queue, 2026-11)",
     "note": "seznam svazků is the TC/DC-shaped fallback if a reviewer prefers it"
   },
   "wizard": {
@@ -2527,18 +2582,24 @@
     "sources": "macOS ErrnoErrors (Prostředek dočasně nedostupný); TC (dočasná složka)"
   },
   "removable": {
-    "chosen": "vyměnitelný",
-    "accept": ["vyměniteln", "vysunout"],
-    "forms": "adj.: removable drive → vyměnitelný disk",
-    "confidence": "tentative",
-    "sources": "MS (removable drive → vyměnitelná jednotka); macOS pile has no adjective (DiskArbitration not in pile)"
+    "chosen": "nejde vysunout",
+    "accept": ["vysunout", "vyměniteln"],
+    "forms": "isn’t removable → nejde vysunout (the user thinks in the Vysunout button)",
+    "confidence": "confirmed",
+    "sources": "MS (removable drive → vyměnitelná jednotka); macOS pile has no adjective (DiskArbitration not in pile); confirmed by native reviewer (cs review queue, 2026-11)",
+    "avoid": [
+      {
+        "form": "vyměnitelný",
+        "why": "MS jargon; a Mac user ejects, so say whether the disk can be ejected"
+      }
+    ]
   },
   "idle": {
     "chosen": "nečinný",
     "accept": ["nečinn", "neaktivn"],
     "forms": "adj.: až bude nečinné",
-    "confidence": "tentative",
-    "sources": "macOS SystemSettings (Doba nečinnosti, při nečinnosti); MS (idle → neaktivní)"
+    "confidence": "confirmed",
+    "sources": "macOS SystemSettings (Doba nečinnosti, při nečinnosti); MS (idle → neaktivní); confirmed by native reviewer (cs review queue, 2026-11)"
   },
   "respond": {
     "chosen": "odpovídat",
@@ -2618,7 +2679,11 @@
     "accept": ["využit"],
     "forms": "n.: memory usage → využití paměti",
     "confidence": "high",
-    "sources": "MS (usage → využití)"
+    "sources": "MS (usage → využití)",
+    "exceptions": {
+      "errors.listing.objectStoreRefused.explanation": "usage cap → vyčerpání limitu",
+      "settings.askCmdr.spend.title": "Spending heads a per-day spend list: Výdaje"
+    }
   },
   "software": {
     "chosen": "software",
@@ -2673,8 +2738,8 @@
         "why": "Azure's name for its own storage unit (MS bucket → kontejner); an S3 user knows the AWS word"
       }
     ],
-    "confidence": "tentative",
-    "sources": "MS terminology bucket → kbelík, kontejner; no hit in macOS or the file-manager pile; AWS ships no Czech console, so Czech S3 users say bucket"
+    "confidence": "confirmed",
+    "sources": "MS terminology bucket → kbelík, kontejner; no hit in macOS or the file-manager pile; AWS ships no Czech console, so Czech S3 users say bucket; confirmed by native reviewer (cs review queue, 2026-11)"
   },
   "dismiss": {
     "chosen": "zavřít",
@@ -2728,26 +2793,32 @@
     "sources": "MS terminology store → uložit (verb), úložiště (noun)"
   },
   "upgrade": {
-    "chosen": "upgrade",
-    "accept": ["upgrad"],
-    "forms": "m.: upgrade page → stránka upgradu; verb → upgradovat",
-    "confidence": "tentative",
-    "sources": "macOS Upgradovat úložiště (paying for a bigger iCloud plan, the same paid-tier sense), Upgradovat teď; MS upgrade → upgradovat, upgrade"
+    "chosen": "nákup licence",
+    "accept": ["nákup", "upgrad"],
+    "forms": "upgrade page → stránka s nákupem licence",
+    "confidence": "confirmed",
+    "sources": "macOS Upgradovat úložiště (paying for a bigger iCloud plan, the same paid-tier sense), Upgradovat teď; MS upgrade → upgradovat, upgrade; confirmed by native reviewer (cs review queue, 2026-11)",
+    "avoid": [
+      {
+        "form": "stránka upgradu",
+        "why": "anglicism that hides that the page sells a license"
+      }
+    ]
   },
   "got-it": {
     "chosen": "Rozumím",
     "accept": ["rozumím"],
     "forms": "button only, first person, gender-neutral",
-    "confidence": "tentative",
-    "sources": "no pile hit (macOS uses OK; MS has no entry); Rozumím is the common Czech acknowledgement button and needs no gender agreement",
+    "confidence": "confirmed",
+    "sources": "no pile hit (macOS uses OK; MS has no entry); Rozumím is the common Czech acknowledgement button and needs no gender agreement; confirmed by native reviewer (cs review queue, 2026-11)",
     "note": "OK would be the macOS fallback if a reviewer prefers it"
   },
   "cold-storage": {
     "chosen": "archivní úložiště",
     "accept": ["archivní úložiš", "archivním úložiš", "archivován"],
     "forms": "n.: in cold storage → v archivním úložišti; Archived (glyph label) → Archivováno",
-    "confidence": "tentative",
-    "sources": "MS (cold storage → úložiště málo používaných dat; Archive Storage → Archiv služby Storage); shortened to the everyday archivní úložiště",
+    "confidence": "confirmed",
+    "sources": "MS (cold storage → úložiště málo používaných dat; Archive Storage → Archiv služby Storage); shortened to the everyday archivní úložiště; confirmed by native reviewer (cs review queue, 2026-11)",
     "note": "Never archiv (that is a zip file, see archive)."
   },
   "provider-console": {
@@ -2966,8 +3037,8 @@
     "chosen": "dotaz",
     "accept": ["dotaz", "výzv", "zadání"],
     "forms": "m.: a question Cmdr itself asks → dotaz (the indexing prompt → dotaz na indexování; turned the prompt off → dotaz je vypnutý); a prompt macOS or a connected device shows → výzva (system prompt → systémová výzva; accept any prompt it shows → potvrď všechny výzvy); text sent to an AI model → zadání (macOS cs prompt → zadání)",
-    "confidence": "tentative",
-    "sources": "MS (prompt → výzva / zadání); macOS cs Writing Tools (prompt → zadání); dotaz for Cmdr's own question, as it reads naturally next to zeptat se",
+    "confidence": "confirmed",
+    "sources": "MS (prompt → výzva / zadání); macOS cs Writing Tools (prompt → zadání); dotaz for Cmdr's own question, as it reads naturally next to zeptat se; confirmed by native reviewer (cs review queue, 2026-11)",
     "note": "Split by who asks: Cmdr → dotaz, the system or a device → výzva. Never výzva for Cmdr's own question."
   },
   "reclaim": {
@@ -3124,8 +3195,8 @@
     "chosen": "repozitář",
     "accept": ["repozit"],
     "forms": "m.: gen. repozitáře; git repo → repozitář gitu; bare repo → holý repozitář",
-    "confidence": "tentative",
-    "sources": "Czech git usage (Pro Git cs: repozitář, holý repozitář); MS repository → úložiště rejected because úložiště is the storage ruling",
+    "confidence": "confirmed",
+    "sources": "Czech git usage (Pro Git cs: repozitář, holý repozitář); MS repository → úložiště rejected because úložiště is the storage ruling; confirmed by native reviewer (cs review queue, 2026-11)",
     "avoid": [
       {
         "form": "úložiště",
@@ -3145,15 +3216,15 @@
     "chosen": "pracovní strom",
     "accept": ["pracovní strom", "pracovního strom", "pracovním strom"],
     "forms": "m.: gen. pracovního stromu; working directory → pracovní složka",
-    "confidence": "tentative",
-    "sources": "literal git term; Pro Git cs calls the working directory pracovní adresář (adresář avoided per the folder ruling)"
+    "confidence": "confirmed",
+    "sources": "literal git term; Pro Git cs calls the working directory pracovní adresář (adresář avoided per the folder ruling); confirmed by native reviewer (cs review queue, 2026-11)"
   },
   "git-commit": {
     "chosen": "commit",
     "accept": ["commit"],
     "forms": "m., inflects: commitu, commity",
-    "confidence": "tentative",
-    "sources": "Czech developer usage keeps commit; MS commit → zápis rejected (collides with the write ruling zápis)",
+    "confidence": "confirmed",
+    "sources": "Czech developer usage keeps commit; MS commit → zápis rejected (collides with the write ruling zápis); confirmed by native reviewer (cs review queue, 2026-11)",
     "avoid": [
       {
         "form": "zápis",
@@ -3172,8 +3243,8 @@
     "chosen": "štítek",
     "accept": ["štít"],
     "forms": "m.: repo chip → štítek repozitáře",
-    "confidence": "tentative",
-    "sources": "MS chip → integrovaný obvod is the hardware sense; štítek is the everyday word for a small UI label and stays clear of tag (značka)"
+    "confidence": "confirmed",
+    "sources": "MS chip → integrovaný obvod is the hardware sense; štítek is the everyday word for a small UI label and stays clear of tag (značka); confirmed by native reviewer (cs review queue, 2026-11)"
   },
   "from-to": {
     "chosen": "Odkud / Kam",
@@ -3297,10 +3368,16 @@
   },
   "git-dirty": {
     "chosen": "necommitované změny",
-    "accept": ["necommit", "neuložen", "změn"],
-    "forms": "f. pl.: dirty state → necommitované změny",
-    "confidence": "tentative",
-    "sources": "no pile form; follows the git-commit ruling (commit kept); DC's Compressed dirty file → „dirty“ soubor keeps the English, which reads as jargon"
+    "accept": ["necommit", "změn"],
+    "forms": "f. pl.: dirty state → necommitované změny; the repo chip (fileExplorer.git.repoChip.dirty) → necommitováno",
+    "confidence": "confirmed",
+    "sources": "no pile form; follows the git-commit ruling (commit kept); DC's Compressed dirty file → „dirty“ soubor keeps the English, which reads as jargon; confirmed by native reviewer (cs review queue, 2026-11)",
+    "avoid": [
+      {
+        "form": "neuloženo",
+        "why": "claims the files aren’t saved, which is wrong for a git working tree"
+      }
+    ]
   },
   "global": {
     "chosen": "globální",
@@ -3338,7 +3415,8 @@
     "accept": ["procent", "%"],
     "forms": "n.: below this percent → pod toto procento; 15 percent → 15 %",
     "confidence": "tentative",
-    "sources": "standard Czech; mechanics.json leaves the % spacing free"
+    "sources": "standard Czech; mechanics.json leaves the % spacing free",
+    "note": "Kept by the native reviewer; still to verify on a device (review-queue.md)."
   },
   "line": {
     "chosen": "řádek",
@@ -3352,7 +3430,8 @@
     "accept": ["Delete"],
     "forms": "key name kept with the glyph: klávesou Delete (⌫)",
     "confidence": "tentative",
-    "sources": "Microsoft terminology (DELETE key → klávesa Delete); Czech Mac keyboards print delete on ⌫; AppKit FunctionKeyNames has no localized name for it"
+    "sources": "Microsoft terminology (DELETE key → klávesa Delete); Czech Mac keyboards print delete on ⌫; AppKit FunctionKeyNames has no localized name for it",
+    "note": "Kept by the native reviewer; still to verify on a device (review-queue.md)."
   },
   "enter-key": {
     "chosen": "Enter",
@@ -3375,7 +3454,11 @@
     "forms": "f.: with the screen on → má zapnutou obrazovku; Lock Screen → zamknutá obrazovka",
     "confidence": "high",
     "sources": "macOS SystemSettings (Spořič obrazovky, snímek obrazovky, záznam obrazovky); MS (display → obrazovka)",
-    "note": "loc. sg. obrazovce (na obrazovce) does not contain the obrazovk stem."
+    "note": "loc. sg. obrazovce (na obrazovce) does not contain the obrazovk stem.",
+    "exceptions": {
+      "adb.readiness.offline": "a phone’s screen is displej in Czech",
+      "commands.dialogConfirm.label": "on screen → zobrazené (Potvrdit zobrazené dialogové okno)"
+    }
   },
   "title-bar": {
     "chosen": "záhlaví okna",
@@ -3461,9 +3544,9 @@
   "stall": {
     "chosen": "přestat postupovat",
     "accept": ["postup", "stojí"],
-    "forms": "the transfer stopped moving → Přenos přestal postupovat; No progress for X → Průběh stojí už X",
-    "confidence": "tentative",
-    "sources": "no pile hit for stalled in MS/TC/Nautilus; built from progress ruling (průběh)"
+    "forms": "the transfer stopped moving → Přenos přestal postupovat; No progress for X → Stojí už X",
+    "confidence": "confirmed",
+    "sources": "no pile hit for stalled in MS/TC/Nautilus; built from progress ruling (průběh); confirmed by native reviewer (cs review queue, 2026-11)"
   },
   "step": {
     "chosen": "krok",
@@ -3593,7 +3676,10 @@
     "accept": ["přílo", "přilož", "přikl"],
     "forms": "f. noun: Remove attachment → Odstranit přílohu; verb attach → přiložit (Attach logs → Přiložit protokoly), imperf. přikládat (Attach my email by default → přikládat … můj e‑mail); Drop to attach → Pusť sem pro přiložení",
     "confidence": "high",
-    "sources": "MS terminology (attachment → příloha); macOS Quick Look (Rychlý náhled přílohy), Mail (Původní příloha v Mailu); standard Czech mail-client verb přiložit"
+    "sources": "MS terminology (attachment → příloha); macOS Quick Look (Rychlý náhled přílohy), Mail (Původní příloha v Mailu); standard Czech mail-client verb přiložit",
+    "exceptions": {
+      "askCmdr.composer.dropHint": "the drop overlay already reads as attaching: Pusťte soubory sem"
+    }
   },
   "conversation": {
     "chosen": "konverzace",
@@ -3734,12 +3820,17 @@
     "sources": "MS terminology revoke → odvolat"
   },
   "runtime": {
-    "chosen": "modul runtime",
-    "accept": ["runtime", "běhov"],
-    "forms": "m.: gen. modulu runtime",
-    "confidence": "tentative",
-    "sources": "MS terminology runtime → modul runtime (only pile hit)",
-    "note": "běhové prostředí is the common Czech alternative; no pile evidence, left to a reviewer"
+    "chosen": "běhové prostředí",
+    "accept": ["běhov", "runtime"],
+    "forms": "n.: gen. běhového prostředí",
+    "confidence": "confirmed",
+    "sources": "MS terminology runtime → modul runtime (only pile hit); confirmed by native reviewer (cs review queue, 2026-11)",
+    "avoid": [
+      {
+        "form": "modul runtime",
+        "why": "MS calque; běhové prostředí is the established Czech term"
+      }
+    ]
   },
   "camera-details": {
     "chosen": "údaje z fotoaparátu",
@@ -3781,8 +3872,8 @@
     "chosen": "Přemýšlí…",
     "accept": ["přemýšl"],
     "forms": "3rd sg like a messenger's typing indicator (píše…), subject is the assistant",
-    "confidence": "tentative",
-    "sources": "MS terminology (thinking → přemýšlím, emoticon); no macOS/TC hit"
+    "confidence": "confirmed",
+    "sources": "MS terminology (thinking → přemýšlím, emoticon); no macOS/TC hit; confirmed by native reviewer (cs review queue, 2026-11)"
   },
   "trust": {
     "chosen": "důvěřovat",
@@ -3831,8 +3922,8 @@
         "why": "MS terminology's rendering, but it reads as at risk, too weak for a key revoked in known_hosts"
       }
     ],
-    "confidence": "tentative",
-    "sources": "MS terminology (compromised → ohrožený, rejected as too weak); no macOS/TC/DC/MC/explorer hit; kompromitovaný is the standard Czech security term"
+    "confidence": "confirmed",
+    "sources": "MS terminology (compromised → ohrožený, rejected as too weak); no macOS/TC/DC/MC/explorer hit; kompromitovaný is the standard Czech security term; confirmed by native reviewer (cs review queue, 2026-11)"
   },
   "applications-folder": {
     "chosen": "Aplikace",
@@ -4051,21 +4142,21 @@
     "sources": "Total Commander Lister 5951 „Kódování“, 1680 „Kódování (znaková stránka):“, 2058 „…|Západní|…“; macOS AppKit „Kódování:“, „Západní (Mac)“; Double Commander and Midnight Commander „Encoding“ → „Kódování“"
   },
   "fetch": {
-    "chosen": "získat",
-    "accept": ["získ"],
-    "forms": "progress → Získává se soubor {fileName} pro náhled",
+    "chosen": "stáhnout",
+    "accept": ["stáh", "stah", "získ"],
+    "forms": "progress → Stahuje se soubor {fileName} pro náhled (a remote file is downloaded to preview it)",
     "avoid": [
-      {
-        "form": "stáhnout",
-        "why": "that is the download concept"
-      },
       {
         "form": "načíst",
         "why": "that is the load concept"
+      },
+      {
+        "form": "získává se",
+        "why": "bookish; for a remote file stahovat is exact"
       }
     ],
-    "confidence": "tentative",
-    "sources": "Midnight Commander „Cannot fetch a local copy of %s“ → „Nedaří se získat místní kopii souboru %s“"
+    "confidence": "confirmed",
+    "sources": "Midnight Commander „Cannot fetch a local copy of %s“ → „Nedaří se získat místní kopii souboru %s“; confirmed by native reviewer (cs review queue, 2026-11)"
   },
   "reload": {
     "chosen": "znovu načíst",
@@ -4092,15 +4183,15 @@
         "why": "Double Commander‘s „Použít proud“ reads as a data-stream API term, not a viewing mode"
       }
     ],
-    "confidence": "tentative",
-    "sources": "No Czech file manager in the pile names a streaming viewer mode; Double Commander „Use stream for search“ → „Použit proud“. Chosen as the everyday Czech IT loan; review alternative „postupné čtení“."
+    "confidence": "confirmed",
+    "sources": "No Czech file manager in the pile names a streaming viewer mode; Double Commander „Use stream for search“ → „Použit proud“. Chosen as the everyday Czech IT loan; review alternative „postupné čtení“.; confirmed by native reviewer (cs review queue, 2026-11)"
   },
   "tail": {
     "chosen": "Sledovat",
     "accept": ["sledov"],
     "forms": "toggle label → Sledovat; Tail mode → režim sledování; F tail hint → F sledování; Auto-follow → Automaticky sledovat",
-    "confidence": "tentative",
-    "sources": "No tail equivalent in TC/DC/MC; Midnight Commander/Dolphin/Double Commander render follow as „Následovat“ (symlinks, dir switch) and the catalog uses „sledování změn souborů“ for the file watcher (settings.advanced.card.fileWatching), so „sledovat“ is the natural verb for following a growing file",
+    "confidence": "confirmed",
+    "sources": "No tail equivalent in TC/DC/MC; Midnight Commander/Dolphin/Double Commander render follow as „Následovat“ (symlinks, dir switch) and the catalog uses „sledování změn souborů“ for the file watcher (settings.advanced.card.fileWatching), so „sledovat“ is the natural verb for following a growing file; confirmed by native reviewer (cs review queue, 2026-11)",
     "note": "Aria pair: viewer.toolbar.tail.label „Sledovat“ is contained in viewer.toolbar.tail.ariaLabel „Režim sledování: sledovat změny souboru“ via the substring „sledovat“."
   },
   "checklist": {
@@ -4188,7 +4279,7 @@
     "forms": "the macOS picker as the user sees it in Edit menu → Emotikony a symboly",
     "confidence": "tentative",
     "sources": "macOS AppKit/InputManager.json and TextTouchBar.json Emoji & Symbols → Emotikony a symboly; no Czech string for the Character Viewer window title in the pile",
-    "note": "Verify on a live Czech Mac whether the Input-menu window is titled Prohlížeč znaků; if so switch."
+    "note": "Verify on a live Czech Mac whether the Input-menu window is titled Prohlížeč znaků; if so switch. Kept by the native reviewer; still to verify on a device (review-queue.md)."
   },
   "force-quit": {
     "chosen": "Vynutit ukončení",
@@ -4289,8 +4380,8 @@
         "why": "MS term from a PHI/NLP API; reads as editing a document, unfamiliar in UI"
       }
     ],
-    "confidence": "tentative",
-    "sources": "MS terminology (redact → redigovat, NLP sense only); macOS cs privacy prose (odesílány … v anonymizované podobě, 8×)",
+    "confidence": "confirmed",
+    "sources": "MS terminology (redact → redigovat, NLP sense only); macOS cs privacy prose (odesílány … v anonymizované podobě, 8×); confirmed by native reviewer (cs review queue, 2026-11)",
     "note": "errorReporter.dialog.description, errorReporter.dialog.totalLines"
   },
   "reference-id": {
@@ -4369,9 +4460,12 @@
   "wake": {
     "chosen": "probudit",
     "accept": ["probud", "probuď", "probuz"],
-    "forms": "imperative → probuď jeho obrazovku; noun → probuzení",
+    "forms": "noun → probuzení (Povolit probuzení přes síť); a phone’s screen is woken with rozsvítit displej",
     "confidence": "high",
-    "sources": "macOS cs System Settings: Wake for network access → Povolit probuzení přes síť; „Spustit nebo probudit:“"
+    "sources": "macOS cs System Settings: Wake for network access → Povolit probuzení přes síť; „Spustit nebo probudit:“",
+    "exceptions": {
+      "adb.readiness.offline": "a phone screen is lit, not woken: Rozsviťte jeho displej"
+    }
   },
   "anonymous": {
     "chosen": "anonymizovat",
@@ -4390,10 +4484,13 @@
   "register-shortcut": {
     "chosen": "zaregistrovat",
     "accept": ["registr"],
-    "forms": "status Registered → Zaregistrováno; Not registered → Nezaregistrováno; Couldn't register → Nelze zaregistrovat",
-    "confidence": "tentative",
-    "sources": "macOS SystemSettings: „Když své jméno zaregistrujete…“, „zaregistrovaný v programu Apple Beta Software“; MS terminology: register → registrovat (335540, 1367522); Total Commander: Jak se zaregistrovat.",
-    "note": "Perfective zaregistrovat as macOS writes it; a reviewer might prefer Aktivní/Neaktivní for the status chips."
+    "forms": "Couldn’t register → Nelze zaregistrovat; the status chips Registered / Not registered say whether the shortcut works → Aktivní / Neaktivní",
+    "confidence": "confirmed",
+    "sources": "macOS SystemSettings: „Když své jméno zaregistrujete…“, „zaregistrovaný v programu Apple Beta Software“; MS terminology: register → registrovat (335540, 1367522); Total Commander: Jak se zaregistrovat.; confirmed by native reviewer (cs review queue, 2026-11)",
+    "exceptions": {
+      "downloads.shortcutRow.notRegistered": "status chip says whether the shortcut works: Aktivní / Neaktivní",
+      "downloads.shortcutRow.registered": "status chip says whether the shortcut works: Aktivní / Neaktivní"
+    }
   },
   "media-tag": {
     "chosen": "tag",

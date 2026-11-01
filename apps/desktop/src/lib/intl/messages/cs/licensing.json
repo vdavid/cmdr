@@ -112,10 +112,9 @@
     "sourceHash": "053bc65",
     "sameAsSourceJustification": "Brand name Discord, kept verbatim per the key note."
   },
-  "licensing.about.copyright": "© 2024-2026 David Veszelovszki",
+  "licensing.about.copyright": "© 2024–2026 David Veszelovszki",
   "@licensing.about.copyright": {
-    "sourceHash": "e6ab7e3",
-    "sameAsSourceJustification": "© sign, literal year range, and a personal name; nothing translatable."
+    "sourceHash": "e6ab7e3"
   },
   "licensing.commercialReminder.title": "Díky, že používáte Cmdr!",
   "@licensing.commercialReminder.title": {
@@ -129,7 +128,7 @@
   "@licensing.commercialReminder.askCommercial": {
     "sourceHash": "84b372c"
   },
-  "licensing.commercialReminder.priceInfo": "Komerční licence stojí $59, platí se jen jednou a podporuje další vývoj.",
+  "licensing.commercialReminder.priceInfo": "Komerční licence stojí 59 $, platí se jen jednou a podporuje další vývoj.",
   "@licensing.commercialReminder.priceInfo": {
     "sourceHash": "55bd2ed"
   },

@@ -119,11 +119,11 @@
   "@search.walkHandoff.finished": {
     "sourceHash": "0cbc210"
   },
-  "search.walkHandoff.stoppedShort": "Výsledky hledání {label} nemusí být úplné: Cmdr všechno neprošel.",
+  "search.walkHandoff.stoppedShort": "Výsledky hledání „{label}“ nemusí být úplné: Cmdr všechno neprošel.",
   "@search.walkHandoff.stoppedShort": {
     "sourceHash": "d196ce2"
   },
-  "search.walkHandoff.superseded": "Cmdr přestal přidávat výsledky hledání {label}, protože přednost dostalo vaše nové hledání.",
+  "search.walkHandoff.superseded": "Cmdr přestal přidávat výsledky hledání „{label}“, protože přednost dostalo vaše nové hledání.",
   "@search.walkHandoff.superseded": {
     "sourceHash": "83aa5a2"
   },
@@ -183,7 +183,7 @@
   "@search.coverage.stillCovering": {
     "sourceHash": "acd21dc"
   },
-  "search.coverage.unnamedDrive": "tento disk",
+  "search.coverage.unnamedDrive": "toto umístění",
   "@search.coverage.unnamedDrive": {
     "sourceHash": "5092f21"
   },
@@ -195,7 +195,7 @@
   "@search.coverage.dontAskAgain": {
     "sourceHash": "3f6e4da"
   },
-  "search.coverage.toast.started": "Disk {drive} se teď indexuje. Až indexování skončí, bude tu hledání okamžité.",
+  "search.coverage.toast.started": "Teď se indexuje {drive}. Až indexování skončí, bude tu hledání okamžité.",
   "@search.coverage.toast.started": {
     "sourceHash": "fb6978e"
   },
@@ -203,11 +203,11 @@
   "@search.coverage.toast.indexingOff": {
     "sourceHash": "abfe24b"
   },
-  "search.coverage.toast.deferredUntilSearchEnds": "Cmdr už hledá na disku {drive}. Indexování začne, jakmile hledání skončí.",
+  "search.coverage.toast.deferredUntilSearchEnds": "Cmdr už prohledává {drive}. Indexování začne, jakmile hledání skončí.",
   "@search.coverage.toast.deferredUntilSearchEnds": {
     "sourceHash": "d62392a"
   },
-  "search.coverage.toast.notStarted": "Cmdr teď nemůže indexovat disk {drive}. Můžete to zkusit znovu z nabídky disku.",
+  "search.coverage.toast.notStarted": "Cmdr teď nemůže indexovat {drive}. Můžete to zkusit znovu z nabídky disku.",
   "@search.coverage.toast.notStarted": {
     "sourceHash": "7b98412"
   },

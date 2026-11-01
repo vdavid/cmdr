@@ -270,7 +270,7 @@
   "@queryUi.results.live.matchesSoFar": {
     "sourceHash": "5c09eb4"
   },
-  "queryUi.results.live.foldersScanned": "{countText} {count, plural, one {složka prohledána} few {složky prohledány} many {složky prohledáno} other {složek prohledáno}}",
+  "queryUi.results.live.foldersScanned": "{count, plural, one {Prohledána {countText} složka} few {Prohledány {countText} složky} many {Prohledáno {countText} složky} other {Prohledáno {countText} složek}}",
   "@queryUi.results.live.foldersScanned": {
     "sourceHash": "5a3247d"
   },
@@ -326,7 +326,7 @@
   "@queryUi.recent.listboxAria": {
     "sourceHash": "228c84b"
   },
-  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> pohyb · <selectKey>Enter</selectKey> vložit do pole · pravým tlačítkem odstranit",
+  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> přejít · <selectKey>Enter</selectKey> vložit do pole · pravým tlačítkem odstranit",
   "@queryUi.recent.popoverHint": {
     "sourceHash": "a7ccaef"
   },
@@ -622,11 +622,11 @@
   "@queryUi.date.preset.lastWeek": {
     "sourceHash": "1e4419c"
   },
-  "queryUi.date.preset.thisMonth": "{month}, 1. den {time}",
+  "queryUi.date.preset.thisMonth": "1. den tohoto měsíce ({month}) {time}",
   "@queryUi.date.preset.thisMonth": {
     "sourceHash": "030ee23"
   },
-  "queryUi.date.preset.lastMonth": "{month} {year}, 1. den {time}",
+  "queryUi.date.preset.lastMonth": "1. den minulého měsíce ({month} {year}) {time}",
   "@queryUi.date.preset.lastMonth": {
     "sourceHash": "0838509"
   },

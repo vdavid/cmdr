@@ -51,7 +51,7 @@
   "@adb.unnamedPhone": {
     "sourceHash": "fae4ea5"
   },
-  "adb.readiness.offline": "Váš telefon neodpovídá. Probuďte jeho obrazovku, nebo vytáhněte kabel a zase ho zapojte.",
+  "adb.readiness.offline": "Váš telefon neodpovídá. Rozsviťte jeho displej, nebo vytáhněte kabel a znovu ho zapojte.",
   "@adb.readiness.offline": {
     "sourceHash": "6061885"
   },

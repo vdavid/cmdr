@@ -31,7 +31,7 @@
   "@stateRecovery.appStatus.title": {
     "sourceHash": "521f5eb"
   },
-  "stateRecovery.operationLog.title": "Cmdr nemohl přečíst váš protokol operací, takže začíná nanovo",
+  "stateRecovery.operationLog.title": "Cmdr nemohl přečíst vaši historii operací, takže začíná nanovo",
   "@stateRecovery.operationLog.title": {
     "sourceHash": "0bfa904"
   },

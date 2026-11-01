@@ -115,11 +115,11 @@
   "@downloads.shortcutRow.pressKeys": {
     "sourceHash": "7f34202"
   },
-  "downloads.shortcutRow.registered": "Zaregistrováno",
+  "downloads.shortcutRow.registered": "Aktivní",
   "@downloads.shortcutRow.registered": {
     "sourceHash": "2351ee9"
   },
-  "downloads.shortcutRow.notRegistered": "Nezaregistrováno",
+  "downloads.shortcutRow.notRegistered": "Neaktivní",
   "@downloads.shortcutRow.notRegistered": {
     "sourceHash": "ca374c2"
   },

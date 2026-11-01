@@ -28,7 +28,7 @@
     "sourceHash": "36ca789",
     "sameAsSourceJustification": "Two already-formatted numbers around a slash; nothing to translate"
   },
-  "errorReporter.dialog.notePlaceholder": "Co se snažíte udělat? Co by se podle vás mělo stát?",
+  "errorReporter.dialog.notePlaceholder": "Co jste se pokoušeli udělat? Co mělo podle vás nastat?",
   "@errorReporter.dialog.notePlaceholder": {
     "sourceHash": "003300b"
   },

@@ -363,7 +363,7 @@
   "@multiRename.queueCanceled": {
     "sourceHash": "cdd1d0e"
   },
-  "multiRename.started": "{count, plural, one {Přejmenovává se # soubor} few {Přejmenovávají se # soubory} many {Přejmenovává se # souboru} other {Přejmenovává se # souborů}}. Změny můžete vrátit v protokolu operací (Vrátit změny).",
+  "multiRename.started": "{count, plural, one {Přejmenovává se # soubor} few {Přejmenovávají se # soubory} many {Přejmenovává se # souboru} other {Přejmenovává se # souborů}}. Změny můžete vrátit v historii operací (Vrátit změny).",
   "@multiRename.started": {
     "sourceHash": "55b4878"
   },

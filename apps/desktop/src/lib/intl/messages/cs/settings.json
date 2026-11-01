@@ -55,7 +55,7 @@
   "@settings.appearance.appColor.opt.system": {
     "sourceHash": "5a7bc86"
   },
-  "settings.appearance.appColor.opt.cmdrGold": "Zlatá barva Cmdru",
+  "settings.appearance.appColor.opt.cmdrGold": "Zlatá (Cmdr)",
   "@settings.appearance.appColor.opt.cmdrGold": {
     "sourceHash": "3ae5711"
   },
@@ -844,7 +844,7 @@
   "@settings.mediaIndex.importanceThreshold.description": {
     "sourceHash": "2dc9c8b"
   },
-  "settings.mediaIndex.parallelism.label": "Souběžné úlohy",
+  "settings.mediaIndex.parallelism.label": "Počet souběžných úloh",
   "@settings.mediaIndex.parallelism.label": {
     "sourceHash": "ded85c9"
   },
@@ -1571,7 +1571,7 @@
   "@settings.analytics.enabled.keywords": {
     "sourceHash": "85d82ce"
   },
-  "settings.analytics.email.label": "Kontaktní e‑mail pro betu",
+  "settings.analytics.email.label": "Kontaktní e‑mail pro betaverzi",
   "@settings.analytics.email.label": {
     "sourceHash": "71e5c9a"
   },
@@ -1611,7 +1611,7 @@
   "@settings.updates.attachEmailToReports.label": {
     "sourceHash": "76c512e"
   },
-  "settings.updates.attachEmailToReports.description": "Když odesíláte zprávu o havárii nebo o chybě, přiloží se k ní váš kontaktní e‑mail pro betu, abychom vám mohli odpovědět. U každé zprávy to můžete změnit zvlášť.",
+  "settings.updates.attachEmailToReports.description": "Když odesíláte zprávu o havárii nebo o chybě, přiloží se k ní váš kontaktní e‑mail pro betaverzi, abychom vám mohli odpovědět. U každé zprávy to můžete změnit zvlášť.",
   "@settings.updates.attachEmailToReports.description": {
     "sourceHash": "dd23637"
   },
@@ -2099,7 +2099,7 @@
   "@settings.revealHandler.notInApplications": {
     "sourceHash": "1a380cf"
   },
-  "settings.revealHandler.notProductionBuild": "Zapnout to může jen vydaná verze Cmdru. Vývojová a testovací sestavení přicházejí a odcházejí a smazání některého z nich by nechalo každé kliknutí na „Zobrazit ve Finderu“ mířit do prázdna.",
+  "settings.revealHandler.notProductionBuild": "Zapnout to může jen vydaná verze Cmdru. Vývojové a testovací verze přicházejí a odcházejí, a kdyby se některá smazala, každé kliknutí na „Zobrazit ve Finderu“ by vedlo do prázdna.",
   "@settings.revealHandler.notProductionBuild": {
     "sourceHash": "7195002"
   },
@@ -2298,7 +2298,7 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name, kept verbatim in every language (ask-cmdr ruling, cs terms.json)."
   },
-  "settings.askCmdr.enabled.description": "Chatujte s Cmdrem o svých souborech v postranním panelu.",
+  "settings.askCmdr.enabled.description": "Chatujte s Cmdrem o svých souborech v panelu Ask Cmdr.",
   "@settings.askCmdr.enabled.description": {
     "sourceHash": "a1116db"
   },
@@ -2446,7 +2446,7 @@
   "@settings.askCmdr.memory.notAllForgotten": {
     "sourceHash": "3ae9870"
   },
-  "settings.askCmdr.spend.title": "Využití a náklady",
+  "settings.askCmdr.spend.title": "Výdaje",
   "@settings.askCmdr.spend.title": {
     "sourceHash": "c2c7ae2"
   },
@@ -2488,11 +2488,11 @@
   "@settings.section.viewer": {
     "sourceHash": "678bfa6"
   },
-  "settings.navigationAndFileOps.card.operationLog": "Protokol operací",
+  "settings.navigationAndFileOps.card.operationLog": "Historie operací",
   "@settings.navigationAndFileOps.card.operationLog": {
     "sourceHash": "2c97965"
   },
-  "settings.operationLog.intro": "Cmdr zaznamenává vaše operace se soubory, takže si můžete projít historii a odvolat akce. Vyberte, jestli se mají zaznamenávat, jak dlouho se má protokol uchovávat a kolik místa na disku smí zabrat.",
+  "settings.operationLog.intro": "Cmdr zaznamenává vaše operace se soubory, takže si můžete projít historii a odvolat akce. Vyberte, jestli se mají zaznamenávat, jak dlouho se má historie uchovávat a kolik místa na disku smí zabrat.",
   "@settings.operationLog.intro": {
     "sourceHash": "2185fcd"
   },
@@ -2540,7 +2540,7 @@
   "@settings.operationLog.maxSize.label": {
     "sourceHash": "5a9f1ff"
   },
-  "settings.operationLog.maxSize.description": "Maximální místo na disku, které smí protokol operací zabrat. Když se zaplní, Cmdr odstraní nejdřív nejstarší operace.",
+  "settings.operationLog.maxSize.description": "Maximální místo na disku, které smí historie operací zabrat. Když se zaplní, Cmdr odstraní nejdřív nejstarší operace.",
   "@settings.operationLog.maxSize.description": {
     "sourceHash": "ad5152a"
   },
@@ -3039,7 +3039,7 @@
   "@settings.fileSystemWatching.globalShortcutHint": {
     "sourceHash": "1af3da4"
   },
-  "settings.network.localNetworkAccessLabel": "Přístup: {localNetwork}",
+  "settings.network.localNetworkAccessLabel": "Oprávnění „{localNetwork}“",
   "@settings.network.localNetworkAccessLabel": {
     "sourceHash": "61ce300"
   },
@@ -3412,7 +3412,7 @@
   "@settings.dataWipe.goes.histories": {
     "sourceHash": "10b27a1"
   },
-  "settings.dataWipe.goes.operationLog": "Protokol operací s vašimi kopiemi, přesuny a mazáními",
+  "settings.dataWipe.goes.operationLog": "Historie operací s vašimi kopiemi, přesuny a mazáními",
   "@settings.dataWipe.goes.operationLog": {
     "sourceHash": "d73e0a5"
   },
