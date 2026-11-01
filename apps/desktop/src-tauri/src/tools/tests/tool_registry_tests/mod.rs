@@ -5,7 +5,7 @@
 //! - `access.rs` — the consumer and access dimensions: the agent's view, and the no-write gate.
 //! - `schema_gate.rs` — `validate_params`, which refuses a call its tool's schema never allowed.
 //!
-//! They live beside the table rather than inline in `tool_registry/`, so that authored source
+//! They live beside the table rather than inline in `table.rs`, so that authored source
 //! stays a lean, single-purpose declaration (the `file-length` scanner flags it otherwise), and
 //! they drive only the public registry surface, so no `super` access is needed.
 

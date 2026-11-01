@@ -29,7 +29,7 @@ schema, `consumers`, `access`, and handler per entry. That one table generates `
 dispatch), and `tool_consumers()` / `tool_access()`, so the facets can't drift and adding a tool is a single entry.
 `registry.rs` also defines `Tool`, the `tools/list` element every view returns. Read the entries
 for the exact schemas (don't transcribe them here); the sections below summarize behavior. Wire output is byte-identical
-and pinned by `../mcp/tests/tool_snapshot_tests.rs`.
+and pinned by `tests/tool_snapshot_tests.rs`.
 
 **Directory split (`tools/`).** The table's `json!` schema blocks dominate the line count and serialize
 identically wherever they live, so they're hoisted into `schemas/*.rs` (one `fn <tool>_schema() -> Value` per tool,
@@ -129,7 +129,7 @@ silent config mutation. That is its entire power.
 Three things make it hold rather than merely be intended:
 
 - **A hand-authored allowlist, not inference.** No structural check can prove a handler doesn't mutate, so
-  `EXPECTED_PROPOSE_TOOL_NAMES` (in `../mcp/tests/tool_registry_tests/access.rs`) lists every `Propose` tool by name, and
+  `EXPECTED_PROPOSE_TOOL_NAMES` (in `tests/tool_registry_tests/access.rs`) lists every `Propose` tool by name, and
   `test_propose_tools_are_an_explicit_allowlist` fails if a registry entry in EITHER view is tagged `Propose` without
   being listed: the agent's `propose_rename_plan`, `propose_suggestions`, and `propose_server`, and the ai-client's
   `multi_rename`.
@@ -194,6 +194,24 @@ Security via parity: agents can only do what users can do. Giving agents `fs.rea
 **Decision.** This surface deliberately exposes NO tool or resource that returns file *contents*, even though "understand this folder" tempts one. Listings, sizes, tags, and importance scores are fair game (the user can see them in the UI); reading a file's bytes is not.
 
 **Why.** File-content access is the privacy + prompt-injection surface that needs real guardrails — size caps, per-read budgets, a sensitive-path denylist, per-read logging, and explicit consent. Those belong with the future in-app agent (its own registry and storage), not bolted onto the parity MCP server, where a content read would ship the attack surface without the defenses. So it arrives with the agent effort, gated per-consumer, not here. The denylist is `DETAILS.md` § The sensitive-content gate. Don't add a `read_file` tool or a `cmdr://file?path=` resource to this server.
+
+## Tests (`tests/`)
+
+Directory module split by test category:
+
+- `tool_registry_tests/`: the `mcp_tools!` table's structural tests, one file per property pinned: `schemas.rs` (the tool
+  set and each declared schema), `access.rs` (the consumer views and the no-write gate), `schema_gate.rs`
+  (`validate_params`). Kept out of `table.rs` so the authored table stays lean
+- `tool_snapshot_tests.rs`: the exact `tools/list` bytes against `fixtures/tools_list_snapshot.json`
+- `tool_category_tests.rs`: tool existence by category, schema checks
+- `ack_system_tests.rs`: the primitives the ack contract relies on
+- `resource_tests.rs`: resource URI validation, count, mime types (the public `get_all_resources` surface)
+- `resource_state_tests.rs`: `cmdr://state` builder: URI/query parsing, pane/tab/file formatting, and exact
+  compatibility-policy bytes for recent listing failures
+- `resource_log_tests.rs`: `cmdr://logs` builder: option parsing, line selection, `since` filter, and exact
+  compatibility-policy bytes
+- `resource_indexing_tests.rs`: `cmdr://indexing` builder: duration/number formatting helpers
+- `resource_operations_tests.rs`, `resource_operations_tree_tests.rs`: `cmdr://state` `operations:` builder
 
 ## The tool catalog
 

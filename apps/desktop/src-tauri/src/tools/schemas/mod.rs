@@ -3,7 +3,7 @@
 //! Hoisted out of the table so the authored registry (`../mod.rs`) stays a lean declaration:
 //! the schema blocks dominate the line count and read the same wherever they live. Each function
 //! returns the exact `json!` block the wire fixture pins, so the split changes no bytes
-//! (`tests/tool_snapshot_tests.rs`). Grouped by the table's tool categories.
+//! (`../tests/tool_snapshot_tests.rs`). Grouped by the table's tool categories.
 
 use serde_json::{Value, json};
 

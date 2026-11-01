@@ -649,7 +649,7 @@ WebDAV's root URL, an S3 destination key, archive sidecar names, adb stderr, a N
 can't depend on `cmdr-fs`, so its PAC line logs a keyed `host={:?}` and opts out. `redact/CLAUDE.md` leads with marking;
 the regex reads as the fallback. Conformance: every invariant below has cells (`redact/markers_tests.rs`,
 `bundle_leak_tests.rs`, `fe_bridge_tests.rs`, `error_producer_tests.rs`, `logging/dispatch_tests.rs`,
-`mcp/tests/resource_log_tests.rs`, `logging/provenance.rs`); "the ratchet only shrinks" became "the check is strict".
+`tools/tests/resource_log_tests.rs`, `logging/provenance.rs`); "the ratchet only shrinks" became "the check is strict".
 
 ## Invariants (the conformance review checks these)
 

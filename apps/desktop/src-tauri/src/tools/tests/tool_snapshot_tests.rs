@@ -21,7 +21,7 @@ fn tools_list_matches_snapshot() {
     if std::env::var_os("UPDATE_SNAPSHOT").is_some() {
         let path = concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/src/mcp/tests/fixtures/tools_list_snapshot.json"
+            "/src/tools/tests/fixtures/tools_list_snapshot.json"
         );
         std::fs::write(path, &actual).unwrap();
         return;

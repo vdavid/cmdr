@@ -11,6 +11,9 @@ pub mod listing_errors;
 pub mod pane_state;
 pub mod terminal_ops;
 
+#[cfg(test)]
+mod pane_state_tests;
+
 pub use archive_password::ArchivePasswordPromptStore;
 pub use dialog_state::SoftDialogTracker;
 pub use pane_state::PaneStateStore;

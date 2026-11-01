@@ -52,19 +52,15 @@ values through `Deref`. Why this is a type and not a rule: § Authentication.
 
 ### Tests (`tests/`)
 
-Directory module split by test category:
+Directory module split by test category. Tool, resource, and store tests live with their code (`../tools/tests/`,
+`../ui_state/pane_state_tests.rs`).
+
 - `protocol_tests.rs`: tool name validation, schema checks, tool count
-- `tool_registry_tests/`: the `mcp_tools!` table's structural tests, one file per property pinned — `schemas.rs` (the tool set and each declared schema), `gate.rs` (the token classification), `access.rs` (the consumer views and the no-write gate), `schema_gate.rs` (`validate_params`). Kept out of `tool_registry/` so the authored table stays lean
-- `resource_tests.rs`: resource URI validation, count, mime types (the public `get_all_resources` surface)
-- `resource_state_tests.rs`: `cmdr://state` builder — URI/query parsing, pane/tab/file formatting, and exact compatibility-policy bytes for recent listing failures
-- `resource_log_tests.rs`: `cmdr://logs` builder — option parsing, line selection, `since` filter, and exact compatibility-policy bytes
-- `resource_indexing_tests.rs`: `cmdr://indexing` builder — duration/number formatting helpers
-- `resource_operations_tests.rs`: `cmdr://state` `operations:` builder — running/paused/queued formatting
-- `tool_category_tests.rs`: tool existence by category, schema checks
 - `security_tests.rs`: shell injection, forbidden tool patterns, input injection
 - `request_response_tests.rs`: McpRequest parsing, McpResponse serialization
-- `pane_state_tests.rs`: PaneStateStore CRUD, edge cases, concurrency, PaneFileEntry serialization
 - `spec_compliance_tests.rs`: MCP spec 2025-11-25 compliance, origin validation, SSE events
+- `server_http_auth.rs`: the real listener's auth, registered from `server.rs` with `#[path]` because `build_router` is
+  private
 
 ## Key decisions
 

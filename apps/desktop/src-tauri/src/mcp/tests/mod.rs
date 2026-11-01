@@ -1,15 +1,4 @@
-mod ack_system_tests;
-mod pane_state_tests;
 mod protocol_tests;
 mod request_response_tests;
-mod resource_indexing_tests;
-mod resource_log_tests;
-mod resource_operations_tests;
-mod resource_operations_tree_tests;
-mod resource_state_tests;
-mod resource_tests;
 mod security_tests;
 mod spec_compliance_tests;
-mod tool_category_tests;
-mod tool_registry_tests;
-mod tool_snapshot_tests;

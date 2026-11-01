@@ -593,7 +593,7 @@ branch.
   renders that as silence rather than a stand-in a poller would act on. Pinned by
   `status_cache_tests.rs::a_settled_operation_reports_no_activity`,
   `state_tests.rs::an_operation_with_nothing_to_say_reports_no_activity`, and
-  `mcp/tests/resource_operations_tests.rs::a_backend_that_cannot_classify_its_wait_says_nothing_rather_than_moving`.
+  `apps/desktop/src-tauri/src/tools/tests/resource_operations_tests.rs::a_backend_that_cannot_classify_its_wait_says_nothing_rather_than_moving`.
 - **`enrich_progress` leaves an activity a caller already set alone.** The stall watchdog emits from the probe it is
   stepping (`transfer_probe::emit_heartbeat`), and its copy is the one that just decided the transfer is wedged; a
   second lookup there would cost the re-emitted event the very activity it exists to carry. Pinned by

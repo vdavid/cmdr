@@ -135,8 +135,8 @@ the registry and automatically covers every entry.
   `.await`), and `nav` / `nav_params` (the nav family, which routes several tools through one handler by passing the
   tool name). See the macro doc comment in `tools/registry.rs` for the full list.
 - **Schema keys** serialize alphabetically (serde_json `Map` is a `BTreeMap`), so authored key order doesn't affect the
-  wire bytes. A tools/list snapshot test (`tests/tool_snapshot_tests.rs`) pins the exact output; run it after any schema
-  edit and update the fixture when the change is intentional.
+  wire bytes. A tools/list snapshot test (`tools/tests/tool_snapshot_tests.rs`) pins the exact output; run it after any
+  schema edit and update the fixture when the change is intentional.
 - **The schema is ENFORCED, so author it as the truth.** `validate_params` refuses a call whose params miss a `required`
   property, and (on a schema declaring `additionalProperties: false`) one carrying a property `properties` doesn't list,
   before your handler runs. Don't mark a field `required` the handler is happy without. An `[Agent]` tool MUST declare
@@ -155,8 +155,8 @@ payload into a typed command and dispatches on the command bus. No business logi
 ### Step 4: add tests
 
 Look tools up by name in `get_all_tools()`; there are no per-category list functions. Schema-shape tests live in
-`tests/tool_registry_tests/` (beside the other suites, so the authored `mcp_tools!` table stays a lean, single-purpose
-source); cross-cutting checks (name charset, no `fs.`/`shell.` tools) live in `tests/security_tests.rs`.
+`tools/tests/tool_registry_tests/` (beside the other suites, so the authored `mcp_tools!` table stays a lean,
+single-purpose source); cross-cutting checks (name charset, no `fs.`/`shell.` tools) live in `tests/security_tests.rs`.
 
 ```rust
 #[test]
@@ -263,6 +263,6 @@ cargo test mcp::tests::tool_registry_tests::schemas::test_my_action_schema -- --
 
 ### tools/list snapshot mismatch
 
-`tests/tool_snapshot_tests.rs` pins the exact `tools/list` bytes. A mismatch means a schema, name, description, or the
-tool set changed. If the change is intentional, update the committed fixture; otherwise you drifted the wire output.
+`tools/tests/tool_snapshot_tests.rs` pins the exact `tools/list` bytes. A mismatch means a schema, name, description, or
+the tool set changed. If the change is intentional, update the committed fixture; otherwise you drifted the wire output.
 </content>
