@@ -4,13 +4,13 @@
 //! description, JSON input schema, consumer exposure, access class, and handler. The macro
 //! expands that one table into every consumer, so the facets can't drift:
 //!
-//! - [`get_all_tools`] — the AI-client `tools/list` payload (entries whose `consumers` include
+//! - [`get_all_tools`](super::get_all_tools) — the AI-client `tools/list` payload (entries whose `consumers` include
 //!   [`Consumer::AiClient`]; non-generic; server + tests read it).
-//! - [`agent_tool_view`] — the in-process agent's tool set (entries whose `consumers` include
+//! - [`agent_tool_view`](super::agent_tool_view) — the in-process agent's tool set (entries whose `consumers` include
 //!   [`Consumer::Agent`]): the read (and, once authored, propose) families the chat agent dispatches.
-//! - [`execute_tool`] — the `tools/call` dispatch (generic over `Runtime`), gated to the caller's
+//! - [`execute_tool`](super::execute_tool) — the `tools/call` dispatch (generic over `Runtime`), gated to the caller's
 //!   consumer view: a name outside the caller's view is refused before dispatch.
-//! - [`tool_consumers`] / [`tool_access`] — the two new dimensions, read by the structural tests.
+//! - [`tool_consumers`] / [`tool_access`](super::tool_access) — the two new dimensions, read by the structural tests.
 //!
 //! Adding a tool means adding one entry: you can't add it without supplying a schema, consumers,
 //! an access class, and a handler, and you can't add a handler the dispatch doesn't know about.
@@ -27,7 +27,7 @@
 //! and the only session it opens is to a place the user saved.
 //!
 //! Wire output must stay byte-identical: each schema is the exact `json!` block (hoisted into
-//! [`schemas`] verbatim), and the tool order is the historical category concatenation. The
+//! [`schemas`](super::schemas) verbatim), and the tool order is the historical category concatenation. The
 //! `tool_snapshot_tests` fixture pins it. Schema keys serialize in authored order: genai turns on
 //! serde_json's `preserve_order` for the whole build, so reordering a `json!` block's keys changes the
 //! bytes (and the snapshot). Anything a model reads as a key LIST sorts explicitly (`params.rs`).
@@ -57,20 +57,20 @@ pub struct Tool {
 /// Which AI consumer a tool is exposed to. One authored registry, per-consumer views (D49):
 /// the MCP HTTP server dispatches the [`AiClient`](Consumer::AiClient) view, the in-process agent
 /// runtime dispatches the [`Agent`](Consumer::Agent) view, and neither can reach the other's
-/// tools ([`execute_tool`] refuses a name outside the caller's view).
+/// tools ([`execute_tool`](super::execute_tool) refuses a name outside the caller's view).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Consumer {
     /// External MCP clients over the HTTP transport (dev tooling, Claude Code, E2E).
     AiClient,
     /// The in-process Ask Cmdr agent runtime, which dispatches the agent view via
-    /// [`execute_tool`] with this identity (`crate::agent::tool_gate`).
+    /// [`execute_tool`](super::execute_tool) with this identity (`crate::agent::tool_gate`).
     Agent,
 }
 
 /// Whether a tool reads, asks, remembers, connects, or mutates. The agent view admits `Read`,
 /// `Propose`, `Memory`, and `Session`, and must contain zero `Write` tools (see the module docs).
 ///
-/// The agent dispatch (`crate::agent::tool_gate`) reads [`tool_access`] as a runtime backstop: it
+/// The agent dispatch (`crate::agent::tool_gate`) reads [`tool_access`](super::tool_access) as a runtime backstop: it
 /// refuses to execute any tool classified `Write`, so "the agent can't act" holds even against a
 /// mis-tagged entry. It's registry metadata, not a field on the emitted `Tool`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -112,7 +112,7 @@ pub enum Access {
 }
 
 /// Whether `name` is listable/dispatchable by `consumer` — its authored `consumers` set includes
-/// it. The choke point [`execute_tool`] consults before dispatch, and the invariant the
+/// it. The choke point [`execute_tool`](super::execute_tool) consults before dispatch, and the invariant the
 /// structural tests pin ("no transport dispatches a name outside its consumer view"). The
 /// decision is on the typed [`Consumer`] set, never a string.
 pub fn tool_available_to(name: &str, consumer: Consumer) -> bool {
