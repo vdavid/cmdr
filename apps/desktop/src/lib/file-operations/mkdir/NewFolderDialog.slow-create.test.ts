@@ -7,7 +7,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import NewFolderDialog from './NewFolderDialog.svelte'
-import { createDirectory, type MutationWaitOptions } from '#lib/tauri-commands/index.js'
+import { createDirectory, findFileIndex, type MutationWaitOptions } from '#lib/tauri-commands/index.js'
 import { MutationFailure } from '#lib/file-operations/mutation-error.js'
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
@@ -171,15 +171,22 @@ describe('NewFolderDialog on a slow volume', () => {
     await settle()
     create.refuse(new MutationFailure({ type: 'parentNotWritable', path: '/Volumes/naspi/photos' }))
     await settle()
+    const sendButton = () =>
+      [...target.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Send error report…')
+    expect(sendButton(), 'the refusal offers its report first').toBeDefined()
 
     const input = target.querySelector('input')
     if (!input) throw new Error('name field missing')
     input.value = 'autumn'
     input.dispatchEvent(new Event('input', { bubbles: true }))
-    // Past the name check's debounce, which is what replaces the message.
-    await new Promise((resolve) => setTimeout(resolve, 150))
+    // The name check's debounced lookup of the new name is what replaces the message.
+    await vi.waitFor(
+      () => {
+        expect(findFileIndex).toHaveBeenCalledWith('listing-1', 'autumn', false)
+      },
+      { timeout: 4000 },
+    )
     await settle()
-    const send = [...target.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Send error report…')
-    expect(send).toBeUndefined()
+    expect(sendButton()).toBeUndefined()
   })
 })

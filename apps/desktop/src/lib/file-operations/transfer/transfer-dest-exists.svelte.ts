@@ -37,6 +37,9 @@ import { validateDirectoryPath } from '#lib/utils/filename-validation.js'
 import { createDebounce } from '#lib/utils/timing.js'
 import type { Logger } from '#lib/logging/logger.js'
 
+/** How long the user has to pause typing before the destination gets probed. */
+export const DEST_CHECK_DEBOUNCE_MS = 300
+
 export interface TransferDestExistsCheckDeps {
   /** Current destination path (volume-relative, or `~`-rooted for the home volume). */
   getEditedPath: () => string
@@ -114,7 +117,7 @@ export function createTransferDestExistsCheck(deps: TransferDestExistsCheckDeps)
     }
   }
 
-  const debounced = createDebounce(() => void run(), 300)
+  const debounced = createDebounce(() => void run(), DEST_CHECK_DEBOUNCE_MS)
 
   // Re-run the check whenever the destination path or volume changes.
   $effect(() => {

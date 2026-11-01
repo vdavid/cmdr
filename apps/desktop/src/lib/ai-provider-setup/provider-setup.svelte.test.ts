@@ -7,7 +7,7 @@
 
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import type { AiConnectionCheckResult, AiConnectionProblem, ManagedAiRefusal } from '#lib/ipc/bindings.js'
-import { ProviderSetupController } from './provider-setup.svelte'
+import { API_KEY_SAVE_DEBOUNCE_MS, ProviderSetupController } from './provider-setup.svelte'
 import { clearModelCache } from '#lib/settings/ai-model-cache.js'
 
 type CheckResult = AiConnectionCheckResult
@@ -521,13 +521,23 @@ describe('ProviderSetupController', () => {
       getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'fp' })
       controller.setProvider('openai')
       await settle()
-      controller.handleApiKeyChange('sk-half-typed')
+      vi.useFakeTimers()
+      try {
+        controller.handleApiKeyChange('sk-half-typed')
 
-      await controller.removeApiKey()
-      await new Promise((resolve) => setTimeout(resolve, 400))
+        await controller.removeApiKey()
+        await vi.advanceTimersByTimeAsync(API_KEY_SAVE_DEBOUNCE_MS)
 
-      expect(saveAiApiKey).not.toHaveBeenCalled()
-      expect(controller.apiKey).toBe('')
+        expect(saveAiApiKey).not.toHaveBeenCalled()
+        expect(controller.apiKey).toBe('')
+
+        // The same wait saves a key nothing removed, so the silence above is the removal's, not the clock's.
+        controller.handleApiKeyChange('sk-typed-after')
+        await vi.advanceTimersByTimeAsync(API_KEY_SAVE_DEBOUNCE_MS)
+        expect(saveAiApiKey).toHaveBeenCalledWith({ providerId: 'openai', apiKey: 'sk-typed-after' })
+      } finally {
+        vi.useRealTimers()
+      }
     })
 
     it('keeps the key on screen and says why when the store refuses', async () => {

@@ -82,6 +82,11 @@ function setup(overrides: { baseDir?: string; onGo?: ReturnType<typeof vi.fn<GoF
   }
 }
 
+/** Waits for the debounced preview to land; `landed` asserts on what it put on screen. */
+async function waitForPreview(landed: () => void): Promise<void> {
+  await vi.waitFor(landed, { timeout: 4000 })
+}
+
 describe('GoToPathDialog', () => {
   beforeEach(() => {
     getRecentPathsListMock.mockReset().mockReturnValue([])
@@ -272,13 +277,12 @@ describe('GoToPathDialog', () => {
     const input = target.querySelector('input') as HTMLInputElement
     input.value = 'smb://naspolya'
     input.dispatchEvent(new Event('input', { bubbles: true }))
-    // Past the preview debounce.
-    await new Promise((resolve) => setTimeout(resolve, 260))
-    await flush()
 
     // ❗ "Adds a server", ❌ never "this path doesn't exist": the local resolver
     // would say the second about an address that is about to work.
-    expect(target.textContent).toContain('Adds a server')
+    await waitForPreview(() => {
+      expect(target.textContent).toContain('Adds a server')
+    })
     expect(resolveGoToPathMock).not.toHaveBeenCalled()
     cleanup()
   })
@@ -296,11 +300,11 @@ describe('GoToPathDialog', () => {
     const input = target.querySelector('input') as HTMLInputElement
     input.value = 'smb://naspolya'
     input.dispatchEvent(new Event('input', { bubbles: true }))
-    await new Promise((resolve) => setTimeout(resolve, 260))
-    await flush()
+    await waitForPreview(() => {
+      expect(target.querySelector('#go-to-path-hint')?.textContent).toContain('Adds a server')
+    })
 
     const schemeHint = target.querySelector('#go-to-path-hint') as HTMLElement
-    expect(schemeHint.textContent).toContain('Adds a server')
     expect(schemeHint.classList.contains('warning')).toBe(false)
 
     // The same slot, for a path the resolver could only answer with an ancestor.
@@ -311,11 +315,9 @@ describe('GoToPathDialog', () => {
     })
     input.value = '/nope/missing'
     input.dispatchEvent(new Event('input', { bubbles: true }))
-    await new Promise((resolve) => setTimeout(resolve, 260))
-    await flush()
-
-    const ancestorHint = target.querySelector('#go-to-path-hint') as HTMLElement
-    expect(ancestorHint.classList.contains('warning')).toBe(true)
+    await waitForPreview(() => {
+      expect(target.querySelector('#go-to-path-hint')?.classList.contains('warning')).toBe(true)
+    })
     cleanup()
   })
 

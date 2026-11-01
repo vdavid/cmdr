@@ -20,6 +20,7 @@ import {
   destinationWriteAccessMock,
   flushMicrotasks,
   mountDialog,
+  settleExistsCheck,
   startScanPreviewMock,
   type ConfirmFn,
 } from './test-transfer-dialog-harness'
@@ -52,12 +53,6 @@ function buttonWord(button: HTMLButtonElement | null): string | undefined {
     chip.remove()
   })
   return copy?.textContent.trim()
-}
-
-/** The write-access probe runs on a 300 ms debounce. */
-async function settleExistsCheck(): Promise<void> {
-  await new Promise<void>((resolve) => setTimeout(resolve, 350))
-  await flushMicrotasks()
 }
 
 async function confirmWith(key: KeyboardEventInit): Promise<TransferConfirmPayload[]> {
