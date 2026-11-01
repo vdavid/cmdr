@@ -16,17 +16,23 @@ below and the files left out:
 
 - `src/adapter/adapters/openai/streamer.rs`: a streamed chat-completions answer keeps OpenRouter's
   `delta.reasoning_details` blocks, under the `capture_reasoning_content` opt-in. This file is byte for byte the one on
-  the upstream PR branch `openai-stream-reasoning-details` of `vdavid/rust-genai` (commit `7ad48ba`; 0.7.2 left the
-  file untouched, so it drops onto 0.7.1 as is). `merge_reasoning_details` follows OpenRouter's own AI SDK rule
+  the upstream PR (jeremychone/rust-genai#360) branch `openai-stream-reasoning-details` of `vdavid/rust-genai` (commit
+  `9e8988a`; upstream's `main` has left the file untouched since 0.7.1, so it drops on as is). `merge_reasoning_details` follows OpenRouter's own AI SDK rule
   (OpenRouterTeam/ai-sdk-provider#583): a `reasoning.text` or `reasoning.summary` piece extends the last block of the
   same type unless that block is already signed (a signature closes its block), and any other piece
-  (`reasoning.encrypted`) is a whole block. ❌ Never merge by `index`: some providers send `index: 0` on every piece,
-  which fused two signed Claude thinking blocks into one and broke the signature check on the next turn. At `[DONE]`
+  (`reasoning.encrypted`) is a whole block. A content piece with a different `index` also starts a new block, which
+  goes further than the SDK. ❌ Never treat a matching `index` as the same block: some providers send `index: 0` on every
+  piece, which fused two signed Claude thinking blocks into one and broke the signature check on the next turn. At `[DONE]`
   the blocks become `captured_thought_blocks` as `Custom` parts, so `StreamEnd` leads the captured content with them,
   exactly the parts the non-streaming path (`adapter_impl.rs`, upstream PR #301) already makes, and the request side
   already echoes them back as `reasoning_details`. Tests: `test_merge_reasoning_details_*` in the same file, and
   Cmdr's `apps/desktop/src-tauri/src/agent/llm/genai_impl/tests/replay_fixtures.rs`
   (`openrouter_replays_streamed_reasoning_details_verbatim`, `openrouter_keeps_index_zero_signed_reasoning_blocks_apart`).
+- The same file: streamed tool calls live in a `BTreeMap` by the stream's `index`, where a `Vec` used to `resize` to it.
+  A gap made phantom copies of a call that an agent would run, and a huge `index` asked for ~4 billion calls.
+
+The PR's other commit (`54f7182`: don't send `reasoning.*` parts to providers that refuse them) touches other files
+and isn't vendored, since Ask Cmdr's own `may_replay` already keeps a reasoning part on its origin's model.
 
 ## Why
 
@@ -37,7 +43,7 @@ lost the model's earlier reasoning (verified on upstream `main` at the 2026-10-2
 `src/adapter/adapters/openai/streamer.rs`; issue #298 is closed by the non-streaming fix). Streaming shape: OpenRouter's
 reasoning-tokens guide, "Streaming Response" (checked 2026-10-27).
 
-The upstream PR is drafted on that branch, not filed yet. Verified live only on an unsigned model
+Verified live only on an unsigned model
 (`nvidia/nemotron-3.5-lightning:free`); a signed model is unverified live, since the OpenRouter key has no credits.
 
 ## Running this crate's tests
