@@ -12,11 +12,18 @@ use std::sync::atomic::AtomicBool;
 
 use serde::Serialize;
 
-use super::find::find_hits;
-use super::{MAX_LINE_CHARS, MAX_WINDOW_CHARS, TextAsk, TextContent, WindowOpts};
+use super::find::{KeyScan, find_hits_within, prescan_for_private_key};
+use super::{MAX_LINE_CHARS, MAX_WINDOW_CHARS, ReadFailure, TextAsk, TextContent, WindowOpts};
+use crate::agent::tools::read::sensitive::{Protected, refuse_private_key_text};
 use crate::file_viewer::encoding::FileEncoding;
 use crate::file_viewer::headless::{open_scan_backend, open_text_backend};
-use crate::file_viewer::{LineChunk, SeekTarget, ViewerError};
+use crate::file_viewer::{ChunkEnd, FileViewerBackend, LineChunk, SeekTarget};
+
+/// How far behind a window the private-key check reads. An RSA 4096 key is about 50 lines, so
+/// a `startLine` this deep into a body still sees its `BEGIN`.
+const KEY_LOOKBACK_LINES: usize = 200;
+/// Rows per fetch of that look. The chunk budget can cut a fetch shorter.
+const LOOKBACK_CHUNK_ROWS: usize = 256;
 
 /// A window of lines from a text file, as the model reads it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -42,12 +49,15 @@ pub struct TextWindow {
 /// A window rides `open_text_backend` (the line index, for exact line seeking). A `find`
 /// rides `open_scan_backend`: the scan streams from byte 0 and numbers lines exactly as it
 /// goes, so it needs no index, and building one would read a large file twice.
+///
+/// Either way a private key refuses the whole file: `refuse_key_near_window` for a window,
+/// `find`'s pre-scan for the hits.
 pub(super) fn read_text(
     path: &Path,
     encoding: FileEncoding,
     ask: &TextAsk,
     cancel: &AtomicBool,
-) -> Result<TextContent, ViewerError> {
+) -> Result<TextContent, ReadFailure> {
     match ask {
         TextAsk::Window(opts) => {
             let opened = open_text_backend(path, encoding, cancel)?;
@@ -62,6 +72,7 @@ pub(super) fn read_text(
                     opts.max_lines + 1,
                     &AtomicBool::new(false),
                 )?;
+            refuse_key_near_window(opened.backend.as_ref(), opts.start_line - 1, &chunk)?;
             Ok(TextContent {
                 encoding: encoding.label().to_string(),
                 total_lines: opened.backend.total_lines(),
@@ -72,15 +83,62 @@ pub(super) fn read_text(
         }
         TextAsk::Find(matcher) => {
             let backend = open_scan_backend(path, encoding)?;
+            let clean_until = match prescan_for_private_key(backend.as_ref(), cancel)? {
+                KeyScan::Clean => None,
+                KeyScan::Found => return Err(Protected::PrivateKey.into()),
+                KeyScan::StoppedAt(scanned) => Some(scanned),
+            };
             Ok(TextContent {
                 encoding: encoding.label().to_string(),
                 total_lines: backend.total_lines(),
                 line_numbers_approximate: false,
                 window: None,
-                find: Some(find_hits(backend.as_ref(), matcher, cancel)?),
+                find: Some(find_hits_within(backend.as_ref(), matcher, cancel, clean_until)?),
             })
         }
     }
+}
+
+/// Refuses a window with a private key in it or just behind it. The window alone isn't
+/// enough: a `startLine` inside a key's body shows neither `BEGIN` nor, with a small `maxLines`,
+/// `END`. A head scan isn't either: it misses a key past 64 KB, and the raw head can't see a
+/// UTF-16 one. So the look goes through the backend's decoder, from [`KEY_LOOKBACK_LINES`]
+/// before the window up to where the window's chunk starts, byte by byte: on the ByteSeek
+/// fallback a row number is an estimate, so a row count could leave a gap.
+fn refuse_key_near_window(
+    backend: &dyn FileViewerBackend,
+    start_row: usize,
+    window: &LineChunk,
+) -> Result<(), ReadFailure> {
+    refuse_private_key_text(&joined_rows(window))?;
+    if start_row == 0 {
+        return Ok(());
+    }
+    let uncancelled = AtomicBool::new(false);
+    let mut target = SeekTarget::Row(start_row.saturating_sub(KEY_LOOKBACK_LINES));
+    loop {
+        let chunk = backend.get_lines(&target, LOOKBACK_CHUNK_ROWS, &uncancelled)?;
+        refuse_private_key_text(&joined_rows(&chunk))?;
+        let reached_window = chunk.end_byte_offset >= window.byte_offset;
+        let stuck = chunk.end_byte_offset <= chunk.byte_offset;
+        if reached_window || stuck || matches!(chunk.end, ChunkEnd::EndOfFile) {
+            return Ok(());
+        }
+        target = SeekTarget::ByteOffset(chunk.end_byte_offset);
+    }
+}
+
+/// A chunk's rows as the file holds them: a row Cmdr broke at a segment boundary continues into
+/// the next, so armor straddling one still reads whole.
+fn joined_rows(chunk: &LineChunk) -> String {
+    let mut text = String::new();
+    for row in &chunk.rows {
+        text.push_str(&row.text);
+        if !row.continues {
+            text.push('\n');
+        }
+    }
+    text
 }
 
 /// Shape a chunk (fetched with `opts.max_lines + 1` lines) into a window. Pure.

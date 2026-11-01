@@ -7,14 +7,18 @@
 //! turned into a byte index by `range_read::clamp_utf16_offset_to_byte`, the one such
 //! conversion in the tree.
 
-use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{LazyLock, Mutex};
 
 use serde::Serialize;
 
 use crate::agent::tools::read::is_false;
+use crate::agent::tools::read::sensitive::PRIVATE_KEY_PATTERN;
 use crate::file_viewer::range_read::clamp_utf16_offset_to_byte;
-use crate::file_viewer::{FileViewerBackend, MAX_SEARCH_MATCHES, Matcher, SearchMatch, SeekTarget, ViewerError};
+use crate::file_viewer::{
+    FileViewerBackend, MAX_SEARCH_MATCHES, Matcher, SearchMatch, SearchMode, SeekTarget, ViewerError,
+};
+use crate::ignore_poison::IgnorePoison;
 use crate::search::format_size;
 
 /// The most matching lines one row carries. `totalMatches` stays honest above it: the
@@ -106,17 +110,80 @@ fn group_by_line(matches: &[SearchMatch]) -> Vec<LineGroup> {
     groups
 }
 
-/// Search `backend` with `matcher` under `cancel` and shape the hits. Blocking: streams
-/// the whole file (or as much as the flag allows), then reads one line per carried hit.
+/// What the private-key pre-scan saw.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum KeyScan {
+    /// The whole file, and no key.
+    Clean,
+    Found,
+    /// The deadline stopped the scan here, with no key before this byte.
+    StoppedAt(u64),
+}
+
+/// The viewer's matcher over [`PRIVATE_KEY_PATTERN`]. It's a scan of its own because
+/// `backend.search` returns matches only: there's no seam to watch the user's scan stream, and a
+/// needle matching a base64 fragment of a key's body would never see the armor.
+static PRIVATE_KEY_MATCHER: LazyLock<Matcher> = LazyLock::new(|| {
+    Matcher::build(
+        PRIVATE_KEY_PATTERN,
+        SearchMode {
+            use_regex: true,
+            case_sensitive: true,
+        },
+    )
+    .expect("the private-key pattern is a constant the matcher accepts")
+});
+
+/// Scan the whole file for a private key, before `find` looks at anything.
+pub(super) fn prescan_for_private_key(
+    backend: &dyn FileViewerBackend,
+    cancel: &AtomicBool,
+) -> Result<KeyScan, ViewerError> {
+    let found: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
+    let progress = Mutex::new(0u64);
+    let scanned = backend.search(&PRIVATE_KEY_MATCHER, cancel, &found, &progress)?;
+    if !found.lock_ignore_poison().is_empty() {
+        return Ok(KeyScan::Found);
+    }
+    if cancel.load(Ordering::Relaxed) && scanned < backend.total_bytes() {
+        return Ok(KeyScan::StoppedAt(scanned));
+    }
+    Ok(KeyScan::Clean)
+}
+
+/// [`find_hits_within`] over a file with nothing to keep clear of.
+#[cfg(test)]
 pub(crate) fn find_hits(
     backend: &dyn FileViewerBackend,
     matcher: &Matcher,
     cancel: &AtomicBool,
 ) -> Result<FindHits, ViewerError> {
+    find_hits_within(backend, matcher, cancel, None)
+}
+
+/// Search `backend` with `matcher` under `cancel` and shape the hits. Blocking: streams
+/// the whole file (or as much as the flag allows), then reads one line per carried hit.
+///
+/// `clean_until` is where a stopped pre-scan got to: a hit at or past it is dropped and the
+/// scan reads as incomplete, because a key's body always follows its `BEGIN`, so what's before
+/// that byte is known clean and what's after it isn't.
+pub(super) fn find_hits_within(
+    backend: &dyn FileViewerBackend,
+    matcher: &Matcher,
+    cancel: &AtomicBool,
+    clean_until: Option<u64>,
+) -> Result<FindHits, ViewerError> {
     let found: Mutex<Vec<SearchMatch>> = Mutex::new(Vec::new());
     let progress = Mutex::new(0u64);
     let scanned = backend.search(matcher, cancel, &found, &progress)?;
-    let found = found.into_inner().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let mut found = found.into_inner().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let (scanned, cut_short) = match clean_until {
+        Some(limit) => {
+            found.retain(|m| m.byte_offset < limit);
+            (scanned.min(limit), true)
+        }
+        None => (scanned, false),
+    };
 
     let total_matches = found.len();
     let matches_capped = total_matches >= MAX_SEARCH_MATCHES;
@@ -125,7 +192,7 @@ pub(crate) fn find_hits(
     // end is incomplete. (`scanned` is the backend's progress count: raw bytes for the
     // streaming backends, decoded lengths for the in-memory one, which never goes
     // through the deadline anyway.)
-    let scan_incomplete = !matches_capped && cancel.load(Ordering::Relaxed) && scanned < total_bytes;
+    let scan_incomplete = !matches_capped && (cut_short || cancel.load(Ordering::Relaxed)) && scanned < total_bytes;
 
     let groups = group_by_line(&found);
     let mut lines = Vec::with_capacity(groups.len().min(MAX_FIND_LINES));

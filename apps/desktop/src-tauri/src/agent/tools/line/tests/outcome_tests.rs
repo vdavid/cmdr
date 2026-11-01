@@ -57,7 +57,7 @@ fn success_table() -> Vec<(ToolId, Value, ToolOutcome)> {
             ToolOutcome::Answered,
         ),
         (ToolId::ListVolumes, fixtures::list_volumes(), items(2, Some(2))),
-        (ToolId::InspectFile, fixtures::inspect_with_find(), items(4, Some(5))),
+        (ToolId::InspectFile, fixtures::inspect_with_find(), items(5, Some(6))),
         (ToolId::OperationsList, fixtures::operations_list(), items(1, Some(3))),
         (
             ToolId::OperationsGet,
@@ -113,7 +113,7 @@ fn success_table() -> Vec<(ToolId, Value, ToolOutcome)> {
                 reason: IndexUnavailableReason::SemanticModelNotInstalled,
             },
         ),
-        (ToolId::ImageFacts, fixtures::image_facts(), items(2, Some(2))),
+        (ToolId::ImageFacts, fixtures::image_facts(), items(3, Some(3))),
         (
             ToolId::ImageFacts,
             json!({ "status": "imageIndexingOff", "note": "…" }),

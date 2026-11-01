@@ -455,7 +455,7 @@ Security via parity: agents can only do what users can do. Giving agents `fs.rea
 
 **Decision.** This surface deliberately exposes NO tool or resource that returns file *contents*, even though "understand this folder" tempts one. Listings, sizes, tags, and importance scores are fair game (the user can see them in the UI); reading a file's bytes is not.
 
-**Why.** File-content access is the privacy + prompt-injection surface that needs real guardrails — size caps, per-read budgets, a sensitive-path denylist, per-read logging, and explicit consent. Those belong with the future in-app agent (its own registry and storage), not bolted onto the parity MCP server, where a content read would ship the attack surface without the defenses. So it arrives with the agent effort, gated per-consumer, not here. Don't add a `read_file` tool or a `cmdr://file?path=` resource to this server.
+**Why.** File-content access is the privacy + prompt-injection surface that needs real guardrails — size caps, per-read budgets, a sensitive-path denylist, per-read logging, and explicit consent. Those belong with the future in-app agent (its own registry and storage), not bolted onto the parity MCP server, where a content read would ship the attack surface without the defenses. So it arrives with the agent effort, gated per-consumer, not here. The denylist is `../agent/tools/DETAILS.md` § The sensitive-content gate. Don't add a `read_file` tool or a `cmdr://file?path=` resource to this server.
 
 ### Why localhost only?
 

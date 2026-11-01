@@ -24,7 +24,7 @@
 //! - **empty** / **binary**: metadata only.
 //!
 //! Every path gets a typed status (`ok` / `folder` / `missing` / `noVolumeAtPath` /
-//! `unreadable` / `unreachable` / `unsupportedVolume`) and the `volumeId` it's on
+//! `unreadable` / `unreachable` / `unsupportedVolume` / `protected`) and the `volumeId` it's on
 //! (`place.rs`), the whole answer is cut to the tool-result budget, and `unanswered`
 //! names each path that got no row, so the model can ask again for the rest. Reuse map and the seams this rides: `../../DETAILS.md` § Reading a file
 //! the way the viewer does.
@@ -33,7 +33,8 @@
 //!
 //! The one tool that hands a provider the CONTENTS of arbitrary user files (bounded, on
 //! request). It rides the Ask Cmdr consent gate; the consent copy has to name it before
-//! this ships to users.
+//! this ships to users. Credentials, browser data, message stores, Cmdr's own data, and any
+//! file holding a private key answer `protected` instead (`../sensitive.rs`).
 //!
 //! ## Never hangs the turn
 //!
@@ -60,6 +61,8 @@ mod place;
 mod restic_snapshot_tests;
 mod runner;
 #[cfg(test)]
+mod sensitive_tests;
+#[cfg(test)]
 mod tests;
 mod text;
 
@@ -74,6 +77,7 @@ use serde::Serialize;
 use serde_json::Value;
 use tauri::{AppHandle, Runtime};
 
+use crate::agent::tools::read::sensitive::{self, PROTECTED_NOTE, Protected};
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_viewer::content_kind::{
     CLASSIFY_HEAD_LEN, ViewerContentKind, classify_viewer_content, looks_binary, media_mime,
@@ -84,6 +88,7 @@ use crate::file_viewer::media::read_image_dimensions;
 use crate::file_viewer::{ArchiveFailureKind, Matcher, SearchMode, ViewerError};
 use crate::mcp::{ToolError, ToolResult, fit_to_result_budget, is_virtual_path};
 use crate::search::{format_size, format_timestamp};
+use crate::security_log::ContentTool;
 
 pub use archive::{ArchiveContent, ArchiveEntry};
 use archive::{ExtractFn, Routed};
@@ -255,9 +260,23 @@ pub enum FileRow {
     /// A virtual path with no registered owning volume, so there is no connection to
     /// read it through. Connected volumes are materialized into a bounded local temp.
     UnsupportedVolume { path: String },
+    /// The sensitive-content gate refused the file: its name may flow, its contents don't.
+    Protected {
+        path: String,
+        reason: Protected,
+        note: &'static str,
+    },
 }
 
 impl FileRow {
+    fn protected(path: String, reason: Protected) -> Self {
+        Self::Protected {
+            path,
+            reason,
+            note: PROTECTED_NOTE,
+        }
+    }
+
     /// The requested path this row answers for.
     pub(crate) fn path(&self) -> &str {
         match self {
@@ -267,7 +286,8 @@ impl FileRow {
             | Self::NoVolumeAtPath { path }
             | Self::Unreadable { path, .. }
             | Self::Unreachable { path }
-            | Self::UnsupportedVolume { path } => path,
+            | Self::UnsupportedVolume { path }
+            | Self::Protected { path, .. } => path,
         }
     }
 }
@@ -477,9 +497,18 @@ fn parse_params(params: &Value) -> Result<Params, ToolError> {
 // ── One path, on a blocking thread ────────────────────────────────────────────
 
 /// Why one path's read stopped short of a row.
-enum ReadFailure {
+#[derive(Debug)]
+pub(crate) enum ReadFailure {
     Io(std::io::Error),
     Viewer(ViewerError),
+    /// The text being read holds a private key.
+    Protected(Protected),
+}
+
+impl From<Protected> for ReadFailure {
+    fn from(reason: Protected) -> Self {
+        Self::Protected(reason)
+    }
 }
 
 impl From<std::io::Error> for ReadFailure {
@@ -504,6 +533,11 @@ pub(crate) fn inspect_path(path: &str, ask: &TextAsk, cancel: &AtomicBool) -> Fi
 /// redirect its temp).
 pub(crate) fn inspect_path_with(path: &str, ask: &TextAsk, cancel: &AtomicBool, extract: ExtractFn) -> FileRow {
     let owned = path.to_string();
+    // Before anything opens the file, an archive's temp extraction included. A hung mount holds
+    // this thread, and the runner abandons it (`unreachable`), which reads nothing either.
+    if let Err(reason) = sensitive::path_gate(path) {
+        return FileRow::protected(owned, reason);
+    }
     // The volume that holds the path: the longest registered mount root over it, else the
     // main drive. It is the archive's parent for routing, and the one place a path with no
     // scheme can still be unreadable through `std::fs` (a device volume's namespace).
@@ -633,6 +667,7 @@ fn spoken_modified(secs: Option<u64>) -> (Option<String>, Option<String>) {
 /// The typed status for a read that stopped short.
 fn status_for(path: String, failure: ReadFailure) -> FileRow {
     match failure {
+        ReadFailure::Protected(reason) => FileRow::protected(path, reason),
         ReadFailure::Io(e) => match e.kind() {
             ErrorKind::NotFound | ErrorKind::NotADirectory => FileRow::Missing { path },
             ErrorKind::PermissionDenied => FileRow::Unreadable {
@@ -744,6 +779,11 @@ pub(crate) async fn run(params: &Value) -> Result<InspectResult, ToolError> {
     let Params { paths, ask } = parse_params(params)?;
     let inspect: InspectFn = Arc::new(move |path, cancel| inspect_path(path, &ask, cancel));
     let rows = runner::run_paths(&paths, &RUNNER, inspect).await;
+    for row in rows.iter().flatten() {
+        if let FileRow::Protected { reason, .. } = row {
+            sensitive::note_refusal(ContentTool::InspectFile, *reason);
+        }
+    }
     // Facts only for a `missing` row to classify, so a call that found every file
     // pays nothing for placement.
     let facts = match needs_facts(&rows) {

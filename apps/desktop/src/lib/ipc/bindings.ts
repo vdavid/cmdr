@@ -19155,6 +19155,8 @@ export type ToolPreviewRowStatus =
   // Under a mount point with nothing mounted there: the volume isn't connected.
   | 'noVolumeAtPath'
   | 'notIndexed'
+  // The sensitive-content gate kept the file's contents from the assistant.
+  | 'protected'
 
 /**
  *  What an expanded tool line shows: the curated preview, plus the raw result pretty-printed for

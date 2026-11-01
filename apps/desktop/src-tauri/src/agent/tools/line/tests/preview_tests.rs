@@ -107,7 +107,7 @@ fn inspect_shows_a_row_per_find_hit_and_each_paths_status() {
     let shown = preview(ToolId::InspectFile, fixtures::inspect_with_find());
     assert_eq!(
         names(&shown),
-        vec!["notes.txt", "notes.txt", "gone.txt", "locked.txt", "tax.pdf"]
+        vec!["notes.txt", "notes.txt", "gone.txt", "locked.txt", "id_rsa", "tax.pdf"]
     );
     assert_eq!(
         (shown.rows[0].line, shown.rows[0].snippet.as_deref()),
@@ -118,9 +118,10 @@ fn inspect_shows_a_row_per_find_hit_and_each_paths_status() {
     assert_eq!(shown.rows[2].status, Some(ToolPreviewRowStatus::Missing));
     assert_eq!(shown.rows[2].path.as_deref(), Some("/Users/u/gone.txt"));
     assert_eq!(shown.rows[3].status, Some(ToolPreviewRowStatus::Unreadable));
-    assert_eq!(shown.rows[4].status, Some(ToolPreviewRowStatus::NoVolumeAtPath));
-    assert_eq!(shown.rows[4].path.as_deref(), Some("/Volumes/naspi/papers/tax.pdf"));
-    assert_eq!((shown.rows_given_to_model, shown.total), (Some(4), Some(5)));
+    assert_eq!(shown.rows[4].status, Some(ToolPreviewRowStatus::Protected));
+    assert_eq!(shown.rows[5].status, Some(ToolPreviewRowStatus::NoVolumeAtPath));
+    assert_eq!(shown.rows[5].path.as_deref(), Some("/Volumes/naspi/papers/tax.pdf"));
+    assert_eq!((shown.rows_given_to_model, shown.total), (Some(5), Some(6)));
 }
 
 #[test]
@@ -134,6 +135,7 @@ fn photo_tools_show_their_recognized_text_and_not_indexed_paths() {
     assert_eq!(facts.rows[0].snippet.as_deref(), Some("TOTAL 42.00"));
     assert_eq!(facts.rows[0].status, None);
     assert_eq!(facts.rows[1].status, Some(ToolPreviewRowStatus::NotIndexed));
+    assert_eq!(facts.rows[2].status, Some(ToolPreviewRowStatus::Protected));
 }
 
 #[test]

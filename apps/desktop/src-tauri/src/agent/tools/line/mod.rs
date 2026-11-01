@@ -290,6 +290,8 @@ pub enum ToolPreviewRowStatus {
     /// Under a mount point with nothing mounted there: the volume isn't connected.
     NoVolumeAtPath,
     NotIndexed,
+    /// The sensitive-content gate kept the file's contents from the assistant.
+    Protected,
 }
 
 /// The longest any untrusted string on a line gets: a path, a name, a query, a snippet.

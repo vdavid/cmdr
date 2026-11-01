@@ -123,10 +123,14 @@ fn rows_of(tool: &ToolId, content: &Value) -> Vec<ToolPreviewRow> {
             .collect(),
         ToolId::ImageFacts => items(content, "facts")
             .filter_map(|facts| {
-                let indexed = facts.get("state").and_then(Value::as_str) != Some("notIndexed");
+                let status = match facts.get("state").and_then(Value::as_str) {
+                    Some("notIndexed") => Some(ToolPreviewRowStatus::NotIndexed),
+                    Some("protected") => Some(ToolPreviewRowStatus::Protected),
+                    _ => None,
+                };
                 Some(ToolPreviewRow {
                     snippet: facts.get("text").and_then(Value::as_str).map(bounded),
-                    status: (!indexed).then_some(ToolPreviewRowStatus::NotIndexed),
+                    status,
                     ..path_row(facts, ToolPreviewRowKind::File)?
                 })
             })
@@ -180,6 +184,7 @@ fn inspect_rows(content: &Value) -> Vec<ToolPreviewRow> {
             Some("unreachable") => Some(ToolPreviewRowStatus::Unreachable),
             Some("unsupportedVolume") => Some(ToolPreviewRowStatus::UnsupportedVolume),
             Some("noVolumeAtPath") => Some(ToolPreviewRowStatus::NoVolumeAtPath),
+            Some("protected") => Some(ToolPreviewRowStatus::Protected),
             _ => None,
         };
         let kind = if file.get("status").and_then(Value::as_str) == Some("folder") {

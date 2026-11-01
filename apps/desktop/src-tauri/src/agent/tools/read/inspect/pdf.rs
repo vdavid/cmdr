@@ -8,6 +8,7 @@
 //! `warn` line and an `unparseable` mark, never a crash report. The closures wrap the
 //! foreign calls only; the shapers around them are ours and keep reporting.
 
+use std::cell::Cell;
 use std::collections::{BTreeMap, HashSet};
 use std::ops::ControlFlow;
 use std::path::Path;
@@ -18,8 +19,9 @@ use serde::Serialize;
 
 use super::find::{FIND_SNIPPET_CHARS, FindHits, FindLine, MAX_FIND_LINES, snippet_around_byte};
 use super::text::cut_chars;
-use super::{MAX_WINDOW_CHARS, TextAsk, WindowOpts};
+use super::{MAX_WINDOW_CHARS, ReadFailure, TextAsk, WindowOpts};
 use crate::agent::tools::read::is_false;
+use crate::agent::tools::read::sensitive::{Protected, refuse_private_key_text};
 use crate::crash_reporter::contain_panics;
 use crate::file_viewer::{MAX_SEARCH_MATCHES, Matcher};
 
@@ -38,6 +40,9 @@ pub(crate) const MAX_PDF_BYTES: u64 = 64 * 1024 * 1024;
 /// can't (there is no offset inside a page).
 pub(crate) const MAX_PAGE_CHARS: usize = 8_000;
 const _: () = assert!(MAX_PAGE_CHARS * 2 <= MAX_WINDOW_CHARS, "two dense pages fit one row");
+/// Pages behind a window the private-key check decodes. A key that spills past a page still
+/// sits within this of its `BEGIN`.
+const KEY_LOOKBACK_PAGES: usize = 2;
 
 // ── Result DTOs ─────────────────────────────────────────────────────────────
 
@@ -144,7 +149,7 @@ pub(super) fn read_pdf(
     head: &[u8],
     ask: &TextAsk,
     cancel: &AtomicBool,
-) -> Result<PdfContent, std::io::Error> {
+) -> Result<PdfContent, ReadFailure> {
     read_pdf_with_cap(path, size, head, ask, cancel, MAX_PDF_BYTES)
 }
 
@@ -160,7 +165,7 @@ pub(super) fn read_pdf_with_cap(
     ask: &TextAsk,
     cancel: &AtomicBool,
     cap: u64,
-) -> Result<PdfContent, std::io::Error> {
+) -> Result<PdfContent, ReadFailure> {
     let header_version = header_version(head);
     if size > cap {
         return Ok(PdfContent::without_text(header_version, PdfTextUnavailable::TooLarge));
@@ -188,9 +193,24 @@ pub(super) fn read_pdf_with_cap(
         });
     }
 
-    let extract = |page: usize| extract_page(&doc, &page_ids, page);
+    // Every page decoded for this answer passes the private-key check, whole, before its cut.
+    // `find` walks from page 1 and only carries hits from pages already checked; a window also
+    // looks behind itself, since a `pageStart` inside a key shows neither armor line.
+    let saw_key = Cell::new(false);
+    let extract = |page: usize| {
+        let text = extract_page(&doc, &page_ids, page);
+        if let PageText::Text(raw) = &text
+            && refuse_private_key_text(raw).is_err()
+        {
+            saw_key.set(true);
+        }
+        text
+    };
     let (pages, find, has_text_layer) = match ask {
         TextAsk::Window(opts) => {
+            for page in opts.page_start.saturating_sub(KEY_LOOKBACK_PAGES).max(1)..opts.page_start.min(page_count + 1) {
+                extract(page);
+            }
             let (window, has_text) =
                 window_from_pages(page_count, *opts, cancel, MAX_WINDOW_CHARS, MAX_PAGE_CHARS, extract);
             (Some(window), None, has_text)
@@ -200,11 +220,19 @@ pub(super) fn read_pdf_with_cap(
             (None, Some(hits), has_text)
         }
     };
+    let (title, author) = (info_string(&doc, b"Title"), info_string(&doc, b"Author"));
+    let key_in_info = [&title, &author]
+        .into_iter()
+        .flatten()
+        .any(|text| refuse_private_key_text(text).is_err());
+    if saw_key.get() || key_in_info {
+        return Err(Protected::PrivateKey.into());
+    }
     Ok(PdfContent {
         version,
         page_count: Some(page_count),
-        title: info_string(&doc, b"Title"),
-        author: info_string(&doc, b"Author"),
+        title,
+        author,
         has_text_layer,
         text_unavailable: None,
         pages,

@@ -26,6 +26,10 @@ use tauri::{AppHandle, Runtime};
 
 use super::photos::{VolumeCoverage, build_note, derive_coverage, resolve_search_volumes};
 use super::{ToolError, ToolResult};
+use crate::agent::tools::read::sensitive::{
+    PROTECTED_NOTE, Protected, classify, note_refusal, refuse_private_key_text,
+};
+use crate::security_log::ContentTool;
 use cmdr_index::media_index::read::{ImageFacts, ImageTag, MediaIndex};
 
 /// The most paths one call accepts. Over this is a hard `INVALID_PARAMS` rather than a
@@ -58,6 +62,8 @@ pub enum FactsState {
     Indexed,
     /// No enrichment row on any searched volume: not indexed yet, excluded, or not an image.
     NotIndexed,
+    /// The sensitive-content gate refused it: `reason` says why, and no text or tags cross.
+    Protected,
 }
 
 /// One stored tag: label + confidence.
@@ -88,6 +94,12 @@ pub struct FileFacts {
     /// `true` when `text` was cut at the cap, so the model knows it's reading a prefix.
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub text_truncated: bool,
+    /// Why a `protected` row carries nothing.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<Protected>,
+    /// What to tell the user about a `protected` row.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub note: Option<&'static str>,
 }
 
 /// The tool result. A typed status the model relays honestly — never a bare list of
@@ -158,8 +170,24 @@ fn not_indexed_slots(paths: &[String]) -> Vec<FileFacts> {
             text: None,
             tags: Vec::new(),
             text_truncated: false,
+            reason: None,
+            note: None,
         })
         .collect()
+}
+
+/// Turn a slot into a refusal, clearing anything it held.
+fn mark_protected(slot: &mut FileFacts, reason: Protected) {
+    *slot = FileFacts {
+        path: std::mem::take(&mut slot.path),
+        state: FactsState::Protected,
+        volume: None,
+        text: None,
+        tags: Vec::new(),
+        text_truncated: false,
+        reason: Some(reason),
+        note: Some(PROTECTED_NOTE),
+    };
 }
 
 /// Cut `text` to `cap` CHARACTERS (never mid-codepoint), reporting whether it was cut.
@@ -178,6 +206,11 @@ fn truncate_text(text: String, cap: usize) -> (String, bool) {
 fn merge_volume(out: &mut [FileFacts], volume: &str, facts: Vec<ImageFacts>, text_cap: usize) {
     for (slot, found) in out.iter_mut().zip(facts) {
         if slot.state != FactsState::NotIndexed || !found.indexed {
+            continue;
+        }
+        // Over the whole stored text, before the cap: a key past it still refuses the file.
+        if let Some(Err(reason)) = found.ocr_text.as_deref().map(refuse_private_key_text) {
+            mark_protected(slot, reason);
             continue;
         }
         let (text, text_truncated) = match found.ocr_text {
@@ -245,6 +278,9 @@ pub async fn execute_image_facts<R: Runtime>(app: &AppHandle<R>, params: &Value)
     let facts = tauri::async_runtime::spawn_blocking(move || run_lookup(&data_dir, &volumes, &paths))
         .await
         .map_err(|e| ToolError::internal(format!("image facts task panicked: {e}")))?;
+    for reason in facts.iter().filter_map(|row| row.reason) {
+        note_refusal(ContentTool::ImageFacts, reason);
+    }
 
     let note = build_note(false, &coverage);
     shape(&shape_ok(facts, coverage, note))
@@ -274,12 +310,19 @@ fn shape(result: &ImageFactsResult) -> ToolResult {
 /// Read each volume's media index and fold the answers together. A path lives on exactly
 /// one volume, so the first volume that has a row for it wins; an un-enriched volume
 /// short-circuits on its missing `media.db`, making the extra volumes cheap. Pure DB work
-/// — no live `statfs`/`readdir`.
+/// — no live `statfs`/`readdir`, which is why the gate is `classify` alone: this promises a
+/// dead NAS can't hang it, and `facts_for_paths` matches paths exactly, so a symlink's path
+/// only finds what the index stored under that same path.
 fn run_lookup(data_dir: &Path, volumes: &[String], paths: &[String]) -> Vec<FileFacts> {
     let refs: Vec<&str> = paths.iter().map(String::as_str).collect();
     let mut out = not_indexed_slots(paths);
+    for slot in &mut out {
+        if let Some(reason) = classify(&slot.path) {
+            mark_protected(slot, reason);
+        }
+    }
     for vid in volumes {
-        if out.iter().all(|f| f.state == FactsState::Indexed) {
+        if out.iter().all(|f| f.state != FactsState::NotIndexed) {
             break;
         }
         let facts = MediaIndex::open(data_dir, vid)
@@ -293,6 +336,8 @@ fn run_lookup(data_dir: &Path, volumes: &[String], paths: &[String]) -> Vec<File
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::TestDir;
+    use cmdr_index::media_index::testing::seed_ocr_row;
     use serde_json::json;
 
     #[test]
@@ -395,6 +440,49 @@ mod tests {
         assert!(out.iter().all(|f| f.state == FactsState::NotIndexed));
     }
 
+    /// A protected stored path answers `protected`, whatever the index holds for it, and the
+    /// row says why.
+    #[test]
+    fn a_protected_path_answers_a_protected_row_with_nothing_in_it() {
+        let dir = TestDir::new("image-facts-protected");
+        let path = "/Volumes/naspi/backup/home/.ssh/key.png";
+        seed_ocr_row(&dir, "root", path, "secret words");
+
+        let rows = run_lookup(&dir, &["root".to_string()], &[path.to_string()]);
+
+        assert_eq!(rows[0].state, FactsState::Protected);
+        assert_eq!(rows[0].reason, Some(Protected::Credentials));
+        assert_eq!(rows[0].text, None);
+        let json = serde_json::to_value(&rows[0]).unwrap();
+        assert_eq!(json["state"], "protected");
+        assert_eq!(json["reason"], "credentials");
+        assert!(json["note"].is_string());
+        assert!(json.get("text").is_none());
+    }
+
+    /// OCR of a photographed or screenshotted key: no path rule can see that one.
+    #[test]
+    fn recognized_text_holding_a_private_key_refuses_the_row() {
+        let dir = TestDir::new("image-facts-ocr-key");
+        let plain = "/Users/someone/Pictures/receipt.png";
+        let keyed = "/Users/someone/Pictures/shot.png";
+        // The armor sits past the row's text cap: the check reads the whole stored text.
+        let long = format!(
+            "{} -----BEGIN OPENSSH PRIVATE KEY-----",
+            "words ".repeat(MAX_TEXT_CHARS)
+        );
+        seed_ocr_row(&dir, "root", plain, "total 42");
+        seed_ocr_row(&dir, "root", keyed, &long);
+
+        let rows = run_lookup(&dir, &["root".to_string()], &[plain.to_string(), keyed.to_string()]);
+
+        assert_eq!(rows[0].state, FactsState::Indexed);
+        assert_eq!(rows[0].text.as_deref(), Some("total 42"));
+        assert_eq!(rows[1].state, FactsState::Protected);
+        assert_eq!(rows[1].reason, Some(Protected::PrivateKey));
+        assert_eq!(rows[1].text, None);
+    }
+
     #[test]
     fn honest_statuses_serialize_with_a_typed_status_tag() {
         let off = serde_json::to_value(ImageFactsResult::ImageIndexingOff { note: "n".into() }).unwrap();
@@ -490,7 +578,16 @@ mod tests {
         );
         let json = serde_json::to_value(&out[0]).unwrap();
         let obj = json.as_object().expect("a JSON object");
-        let allowed = ["path", "state", "volume", "text", "tags", "textTruncated"];
+        let allowed = [
+            "path",
+            "state",
+            "volume",
+            "text",
+            "tags",
+            "textTruncated",
+            "reason",
+            "note",
+        ];
         for key in obj.keys() {
             assert!(allowed.contains(&key.as_str()), "unexpected field '{key}' on FileFacts");
         }

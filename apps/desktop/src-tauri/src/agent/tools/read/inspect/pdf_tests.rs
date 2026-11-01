@@ -641,6 +641,60 @@ fn params_default_and_clamp_the_page_range_and_reject_junk() {
     );
 }
 
+/// A key printed to PDF, whatever the window or `find` asks for.
+#[test]
+fn a_pdf_holding_a_private_key_is_refused() {
+    let dir = TestDir::new("inspect_pdf_key");
+    let path = write(
+        &dir,
+        "backup.pdf",
+        &pdf_bytes(author_pdf(
+            &[
+                text_page("Cover page"),
+                text_page("-----BEGIN OPENSSH PRIVATE KEY-----"),
+                text_page("b3BlbnNzaC1rZXktdjEAAAAA"),
+                text_page("b3BlbnNzaC1rZXktdjEBBBBB"),
+                text_page("Closing page"),
+            ],
+            None,
+        )),
+    );
+    let at_page = |page_start: usize, max_pages: usize| {
+        TextAsk::Window(WindowOpts {
+            page_start,
+            max_pages,
+            ..WindowOpts::default()
+        })
+    };
+
+    for (ask, why) in [
+        (at_page(1, 3), "the window holds the armor"),
+        (at_page(3, 1), "a page of body right after the armor"),
+        (at_page(4, 1), "two pages of body behind it, within the look back"),
+        (literal("b3BlbnNzaC1rZXktdjEBBBBB"), "find on a fragment"),
+        (literal("no such needle"), "find with no hit still scans for it"),
+    ] {
+        assert!(matches!(inspect(&path, &ask), FileRow::Protected { .. }), "{why}");
+    }
+}
+
+#[test]
+fn a_pdf_title_holding_a_private_key_is_refused() {
+    let dir = TestDir::new("inspect_pdf_key_title");
+    let path = write(
+        &dir,
+        "backup.pdf",
+        &pdf_bytes(author_pdf(
+            &[text_page("Plain page")],
+            Some(("-----BEGIN RSA PRIVATE KEY-----", "Someone")),
+        )),
+    );
+    assert!(matches!(
+        inspect(&path, &TextAsk::Window(WindowOpts::default())),
+        FileRow::Protected { .. }
+    ));
+}
+
 #[test]
 fn a_pdf_row_is_text_only() {
     let dir = TestDir::new("inspect_pdf_text_only");

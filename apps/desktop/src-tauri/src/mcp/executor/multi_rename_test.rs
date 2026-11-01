@@ -448,4 +448,155 @@ mod media {
         let cancel = seen.lock_ignore_poison().clone().expect("the reader started");
         assert!(cancel.load(Ordering::Relaxed), "dropping the call cancels the read");
     }
+
+    // ── The sensitive-content gate ──────────────────────────────────────────────
+
+    /// A cached listing over `dir/.ssh`, holding `files`.
+    fn protected_folder(dir: &TestDir, tag: &str, files: &[&str]) -> (PathBuf, Vec<FileEntry>, TestListingGuard) {
+        let folder = dir.join(".ssh");
+        std::fs::create_dir(&folder).expect("scratch dir is writable");
+        for name in files {
+            std::fs::write(folder.join(name), b"x").expect("scratch dir is writable");
+        }
+        let entries = list_directory_core(&folder, &crate::listing_host::backends::AppListings).expect("the dir lists");
+        let listing = TestListing::new()
+            .volume("root")
+            .path(folder.clone())
+            .entries(entries.clone())
+            .insert(crate::listing_host::listings(), tag);
+        (folder, entries, listing)
+    }
+
+    fn title_mask() -> Compiled {
+        compile(
+            &parse_request(&json!({ "nameMask": "[=tag.title]" }))
+                .expect("valid")
+                .spec,
+        )
+        .expect("compiles")
+    }
+
+    /// `tag.comment` and `tag.title` are file-derived text, so a media row in a protected
+    /// folder doesn't read the file at all.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_media_row_on_a_protected_path_reads_nothing() {
+        let dir = TestDir::new("mcp-rename-gate");
+        let (folder, entries, _listing) = protected_folder(&dir, "mcp-rename-gate", &["song.mp3"]);
+        let calls = Calls::default();
+        let refused = RefusedReads::default();
+
+        let media = read_media(
+            &folder,
+            &names(&entries),
+            &entries,
+            &[],
+            gated(loader(&calls, facts), &refused),
+            MAX_MEDIA_READS,
+        )
+        .await
+        .expect("the tool reads");
+
+        assert!(calls.is_empty(), "the gate comes before the file is opened");
+        assert_eq!(refused.take(), vec![Protected::Credentials]);
+        let rows = preview(&title_mask(), &folder, &names(&entries), &entries, Some(&media));
+        assert_eq!(
+            rows[0].status,
+            RowStatus::Unreadable {
+                field: MediaField::TagTitle
+            }
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_symlink_to_a_protected_file_reads_nothing() {
+        let (dir, _, _listing) = folder("mcp-rename-gate-link", &[]);
+        std::fs::create_dir(dir.join(".ssh")).unwrap();
+        std::fs::write(dir.join(".ssh/song.mp3"), b"x").unwrap();
+        std::os::unix::fs::symlink(dir.join(".ssh/song.mp3"), dir.join("song.mp3")).unwrap();
+        let entries = list_directory_core(&dir, &crate::listing_host::backends::AppListings).unwrap();
+        let wanted = vec!["song.mp3".to_string()];
+        let calls = Calls::default();
+        let refused = RefusedReads::default();
+
+        read_media(
+            &dir,
+            &wanted,
+            &entries,
+            &[],
+            gated(loader(&calls, facts), &refused),
+            MAX_MEDIA_READS,
+        )
+        .await
+        .expect("the tool reads");
+
+        assert!(calls.is_empty());
+        assert_eq!(refused.take(), vec![Protected::Credentials]);
+    }
+
+    /// An open sheet read those files for a person. Taking its answers would walk straight past
+    /// the gate, since no reader runs for them.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn answers_an_open_sheet_read_past_the_gate_are_not_taken() {
+        let dir = TestDir::new("mcp-rename-gate-sheet");
+        let (folder, entries, listing) = protected_folder(&dir, "mcp-rename-gate-sheet", &["song.mp3"]);
+        let sheet = read_sheet(&listing, loader(&Calls::default(), facts)).await;
+        let open = session::media_over("root", &folder);
+        assert_eq!(open.len(), 1, "the sheet's session is over this folder");
+        let calls = Calls::default();
+        let refused = RefusedReads::default();
+
+        let media = read_media(
+            &folder,
+            &names(&entries),
+            &entries,
+            &open,
+            gated(loader(&calls, facts), &refused),
+            MAX_MEDIA_READS,
+        )
+        .await
+        .expect("the tool reads");
+
+        assert_eq!(refused.take(), vec![Protected::Credentials]);
+        let rows = preview(&title_mask(), &folder, &names(&entries), &entries, Some(&media));
+        assert_ne!(
+            rows[0].new_name, "Harder.mp3",
+            "the sheet's answer stayed with the sheet"
+        );
+        assert_eq!(
+            rows[0].status,
+            RowStatus::Unreadable {
+                field: MediaField::TagTitle
+            }
+        );
+        session::close(&sheet);
+    }
+
+    /// A folder's worth of refusals is no sign the volume is dying: the rest still read.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn refused_rows_do_not_make_the_loader_give_up_on_the_volume() {
+        let (dir, _, _listing) = folder("mcp-rename-gate-many", &["photo.jpg"]);
+        std::fs::create_dir(dir.join(".ssh")).unwrap();
+        let mut wanted = Vec::new();
+        for n in 0..6 {
+            let name = format!("link{n}.jpg");
+            std::fs::write(dir.join(".ssh").join(&name), b"x").unwrap();
+            std::os::unix::fs::symlink(dir.join(".ssh").join(&name), dir.join(&name)).unwrap();
+            wanted.push(name);
+        }
+        wanted.push("photo.jpg".to_string());
+        let entries = list_directory_core(&dir, &crate::listing_host::backends::AppListings).unwrap();
+        let calls = Calls::default();
+        let refused = RefusedReads::default();
+        let serial = Loader {
+            parallel: 1,
+            ..loader(&calls, facts)
+        };
+
+        read_media(&dir, &wanted, &entries, &[], gated(serial, &refused), MAX_MEDIA_READS)
+            .await
+            .expect("the tool reads");
+
+        assert_eq!(refused.take().len(), 6);
+        assert_eq!(*calls.0.lock_ignore_poison(), vec!["photo.jpg".to_string()]);
+    }
 }

@@ -78,6 +78,43 @@ pub enum SecurityEvent {
     StateFileRecovered {
         file: StateFile,
     },
+    /// The first read of protected contents `tool` refused for `reason` since the last quiet
+    /// spell. Never the path: a refused path is often exactly what shouldn't be written down.
+    ContentRefusalsStarted {
+        tool: ContentTool,
+        reason: ProtectedContent,
+    },
+    ContentRefusalsEnded {
+        tool: ContentTool,
+        reason: ProtectedContent,
+        count: u64,
+    },
+}
+
+/// An AI tool that reads file contents or image-derived text.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ContentTool {
+    InspectFile,
+    ImageFacts,
+    SearchPhotos,
+    MultiRename,
+}
+
+/// Why an AI tool wasn't given a file's contents.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ProtectedContent {
+    /// SSH, GPG, cloud, and tool credentials, and the OS keychains.
+    Credentials,
+    /// A browser's profile.
+    BrowserData,
+    /// Mail, Messages, or Notes.
+    MessageStore,
+    /// Cmdr's own data dir.
+    CmdrData,
+    /// The file's text holds a private key.
+    PrivateKey,
 }
 
 /// Who started or stopped something.
@@ -239,6 +276,8 @@ mod tests {
             SecurityEvent::SmbSignatureRejectionsEnded { .. } => &["volume_id", "count"],
             SecurityEvent::RecordingTurnedOn { .. } | SecurityEvent::RecordingTurnedOff { .. } => &["by"],
             SecurityEvent::StateFileRecovered { .. } => &["file"],
+            SecurityEvent::ContentRefusalsStarted { .. } => &["tool", "reason"],
+            SecurityEvent::ContentRefusalsEnded { .. } => &["tool", "reason", "count"],
         }
     }
 
@@ -316,6 +355,21 @@ mod tests {
                     count: 3,
                 },
                 r#"{"kind":"smb_signature_rejections_ended","volume_id":"smb-nas","count":3}"#,
+            ),
+            (
+                SecurityEvent::ContentRefusalsStarted {
+                    tool: ContentTool::InspectFile,
+                    reason: ProtectedContent::PrivateKey,
+                },
+                r#"{"kind":"content_refusals_started","tool":"inspect_file","reason":"private_key"}"#,
+            ),
+            (
+                SecurityEvent::ContentRefusalsEnded {
+                    tool: ContentTool::MultiRename,
+                    reason: ProtectedContent::CmdrData,
+                    count: 4,
+                },
+                r#"{"kind":"content_refusals_ended","tool":"multi_rename","reason":"cmdr_data","count":4}"#,
             ),
             (
                 SecurityEvent::RecordingTurnedOn {

@@ -19,12 +19,13 @@ use tauri::{AppHandle, Runtime};
 use crate::ignore_poison::RwLockIgnorePoison;
 use crate::managed_policy::ManagedPolicy;
 
-pub use episodes::{note_mcp_rejection, note_smb_signature_rejection};
+pub use episodes::{note_content_refusal, note_mcp_rejection, note_smb_signature_rejection};
 // Only the macOS updater records a policy refusal, so the re-export would be unused elsewhere.
 #[cfg(target_os = "macos")]
 pub use types::PolicyRefusal;
 pub use types::{
-    Initiator, LogLine, McpRejection, PolicyTrigger, RecordingSwitch, SecurityEvent, SignatureCheck, StateFile,
+    ContentTool, Initiator, LogLine, McpRejection, PolicyTrigger, ProtectedContent, RecordingSwitch, SecurityEvent,
+    SignatureCheck, StateFile,
 };
 pub use writer::file_path;
 
@@ -243,13 +244,14 @@ pub mod testing {
     use std::cell::RefCell;
 
     use super::episodes::Episodes;
-    use super::{McpRejection, SecurityEvent};
+    use super::{ContentTool, McpRejection, ProtectedContent, SecurityEvent};
 
     pub(super) struct Captured {
         pub events: Vec<SecurityEvent>,
         pub repeats: Vec<SecurityEvent>,
         pub mcp: Episodes<McpRejection>,
         pub smb: Episodes<String>,
+        pub content: Episodes<(ContentTool, ProtectedContent)>,
     }
 
     thread_local! {
@@ -269,6 +271,7 @@ pub mod testing {
                 repeats: Vec::new(),
                 mcp: Episodes::new(super::episodes::QUIET),
                 smb: Episodes::new(super::episodes::QUIET),
+                content: Episodes::new(super::episodes::QUIET),
             });
         });
         CaptureGuard(())

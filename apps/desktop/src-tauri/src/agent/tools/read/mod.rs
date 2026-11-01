@@ -21,6 +21,7 @@ pub mod importance;
 pub mod inspect;
 pub mod listing;
 pub mod pane_listing;
+pub mod sensitive;
 pub mod state;
 pub mod volumes;
 

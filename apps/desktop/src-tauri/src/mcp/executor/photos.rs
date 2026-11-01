@@ -17,6 +17,7 @@
 //! tool structurally can't hand a provider a thumbnail or pixel buffer — pinned by
 //! `tests::photo_hit_is_text_only_no_byte_fields`.
 
+use std::collections::HashMap;
 use std::path::Path;
 
 use serde::Serialize;
@@ -24,14 +25,19 @@ use serde_json::Value;
 use tauri::{AppHandle, Runtime};
 
 use super::{ToolError, ToolResult};
+use crate::agent::tools::read::sensitive::{Protected, classify, note_refusal, refuse_private_key_text};
 use crate::commands::media_index::MediaIndexVolumeState;
 use crate::mcp::resources::volumes::{VolumeKind, snapshot_volumes};
+use crate::security_log::ContentTool;
 use cmdr_index::media_index::read::{MediaIndex, OcrHit, SemanticHit, TagHit};
 
 /// The default hit cap when the caller doesn't specify one, and the hard ceiling on any
 /// caller value (an agent never needs a huge grid, and it bounds the payload the LLM reads).
 const DEFAULT_LIMIT: usize = 30;
 const MAX_LIMIT: usize = 200;
+/// How far one volume's read may widen to make up for hidden hits. A folder of protected
+/// images past this leaves the answer short, and `protectedHidden` says why.
+const MAX_HIDING_FETCH: usize = 4 * MAX_LIMIT;
 
 /// Honest note when image indexing is off entirely.
 const OFF_NOTE: &str = "Image indexing is off, so there are no photos to search. The user can turn it on under Settings › AI › Image search.";
@@ -109,7 +115,15 @@ pub enum SearchPhotosResult {
         /// because no model is installed, or a searched volume is still indexing).
         #[serde(skip_serializing_if = "Option::is_none")]
         note: Option<String>,
+        /// Hits the sensitive-content gate dropped, since a snippet in a hit would leak. They
+        /// don't count in `total`.
+        #[serde(rename = "protectedHidden", skip_serializing_if = "is_zero")]
+        protected_hidden: usize,
     },
+}
+
+fn is_zero(count: &usize) -> bool {
+    *count == 0
 }
 
 // ── Mode resolution (pure) ────────────────────────────────────────────────────
@@ -371,12 +385,16 @@ pub async fn execute_search_photos<R: Runtime>(app: &AppHandle<R>, params: &Valu
 
     // The DB reads + the CLIP text encode run OFF the IPC thread; they answer from
     // `media.db` + the resident cache, so a dead NAS can't hang the tool.
-    let hits = tauri::async_runtime::spawn_blocking(move || run_search(&data_dir, &volumes, &query, mode, limit))
-        .await
-        .map_err(|e| ToolError::internal(format!("photo search task panicked: {e}")))?;
+    let (hits, hidden) =
+        tauri::async_runtime::spawn_blocking(move || run_search(&data_dir, &volumes, &query, mode, limit))
+            .await
+            .map_err(|e| ToolError::internal(format!("photo search task panicked: {e}")))?;
+    for reason in &hidden {
+        note_refusal(ContentTool::SearchPhotos, *reason);
+    }
 
     let note = build_note(degraded_to_ocr, &coverage);
-    shape(&shape_ok(mode.wire().to_string(), hits, coverage, note))
+    shape(&shape_ok(mode.wire().to_string(), hits, coverage, note, hidden.len()))
 }
 
 /// Build the `Ok` answer, cut to what one tool result may carry: OCR snippets make a
@@ -387,6 +405,7 @@ fn shape_ok(
     hits: Vec<PhotoHit>,
     coverage: Vec<VolumeCoverage>,
     note: Option<String>,
+    protected_hidden: usize,
 ) -> SearchPhotosResult {
     let fitted = super::fit_to_result_budget(hits);
     SearchPhotosResult::Ok {
@@ -397,6 +416,7 @@ fn shape_ok(
         truncated: fitted.truncated,
         coverage,
         note,
+        protected_hidden,
     }
 }
 
@@ -424,354 +444,101 @@ pub(super) async fn resolve_search_volumes(volume_filter: Option<String>) -> Vec
 /// Run the reads for each volume and merge. Encodes the text query once (semantic modes);
 /// a missing/unavailable model yields no semantic hits, so `SemanticThenOcr` degrades to the
 /// OCR hits it already gathered. Pure DB work — no live `statfs`/`readdir`.
-fn run_search(data_dir: &Path, volumes: &[String], query: &str, mode: EffectiveMode, limit: usize) -> Vec<PhotoHit> {
+///
+/// Answers the hits and each one the gate hid. It hides them BEFORE [`sort_and_cap`], and reads
+/// a volume again with a bigger window while hiding left it short, since the read API's own
+/// limit would otherwise let a hidden hit eat the answer.
+fn run_search(
+    data_dir: &Path,
+    volumes: &[String],
+    query: &str,
+    mode: EffectiveMode,
+    limit: usize,
+) -> (Vec<PhotoHit>, Vec<Protected>) {
     let query_vec = if mode.uses_semantic() {
         cmdr_index::media_index::clip::encode_text_query(query).ok()
     } else {
         None
     };
     let mut all = Vec::new();
+    let mut hidden = Vec::new();
     for vid in volumes {
         let index = MediaIndex::open(data_dir, vid);
-        let semantic = match &query_vec {
-            Some(qv) if mode.uses_semantic() => index.search_semantic(qv, limit),
-            _ => Vec::new(),
-        };
-        let ocr = if mode.uses_ocr() {
-            index.search_ocr(query, limit).unwrap_or_default()
-        } else {
-            Vec::new()
-        };
-        let tags = if mode == EffectiveMode::Tag {
-            index.images_with_tag(query, 0.0).unwrap_or_default()
-        } else {
-            Vec::new()
-        };
-        all.extend(merge_hits(vid, mode, semantic, ocr, tags));
+        let mut fetch = limit;
+        loop {
+            let semantic = match &query_vec {
+                Some(qv) if mode.uses_semantic() => index.search_semantic(qv, fetch),
+                _ => Vec::new(),
+            };
+            let ocr = if mode.uses_ocr() {
+                index.search_ocr(query, fetch).unwrap_or_default()
+            } else {
+                Vec::new()
+            };
+            let tags = if mode == EffectiveMode::Tag {
+                index.images_with_tag(query, 0.0).unwrap_or_default()
+            } else {
+                Vec::new()
+            };
+            let hits = merge_hits(vid, mode, semantic, ocr, tags);
+            let index_ran_out = hits.len() < fetch;
+            let mut hidden_here = Vec::new();
+            let kept = hide_protected(hits, &index, &mut hidden_here);
+            let short = kept.len() < limit && !hidden_here.is_empty();
+            if !short || index_ran_out || fetch >= MAX_HIDING_FETCH {
+                all.extend(kept);
+                hidden.extend(hidden_here);
+                break;
+            }
+            fetch = fetch.saturating_mul(2).saturating_add(hidden_here.len());
+        }
     }
-    sort_and_cap(all, limit)
+    (sort_and_cap(all, limit), hidden)
+}
+
+/// Drops the hits the gate refuses. `classify` is enough for a path: this tool promises a dead
+/// NAS can't hang it, so no realpath, and a stored path is what the index knows.
+///
+/// A text hit carries a snippet of its image's OCR, and a query matching a key's body gets a
+/// snippet with no armor in it, so the check reads the whole stored text behind each one. When
+/// that read fails, the hit stays and its snippet goes.
+fn hide_protected(hits: Vec<PhotoHit>, index: &MediaIndex, hidden: &mut Vec<Protected>) -> Vec<PhotoHit> {
+    let mut kept: Vec<PhotoHit> = Vec::with_capacity(hits.len());
+    for hit in hits {
+        match classify(&hit.path) {
+            Some(reason) => hidden.push(reason),
+            None => kept.push(hit),
+        }
+    }
+    let with_text: Vec<&str> = kept
+        .iter()
+        .filter(|hit| hit.match_text.is_some())
+        .map(|hit| hit.path.as_str())
+        .collect();
+    let stored: HashMap<String, Option<String>> = index
+        .facts_for_paths(&with_text)
+        .unwrap_or_default()
+        .into_iter()
+        .map(|facts| (facts.path, facts.ocr_text))
+        .collect();
+    let mut clean = Vec::with_capacity(kept.len());
+    for mut hit in kept {
+        if hit.match_text.is_some() {
+            let Some(text) = stored.get(&hit.path) else {
+                hit.match_text = None;
+                clean.push(hit);
+                continue;
+            };
+            if let Some(Err(reason)) = text.as_deref().map(refuse_private_key_text) {
+                hidden.push(reason);
+                continue;
+            }
+        }
+        clean.push(hit);
+    }
+    clean
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn semantic(path: &str, score: f32) -> SemanticHit {
-        SemanticHit {
-            path: path.to_string(),
-            score,
-        }
-    }
-    fn ocr(path: &str, snippet: &str) -> OcrHit {
-        OcrHit {
-            path: path.to_string(),
-            snippet: snippet.to_string(),
-        }
-    }
-    fn tag(path: &str, score: f32) -> TagHit {
-        TagHit {
-            path: path.to_string(),
-            score,
-        }
-    }
-
-    #[test]
-    fn parse_requested_mode_maps_known_and_rejects_unknown() {
-        assert_eq!(parse_requested_mode(None).unwrap(), RequestedMode::Auto);
-        assert_eq!(parse_requested_mode(Some("semantic")).unwrap(), RequestedMode::Semantic);
-        assert_eq!(parse_requested_mode(Some("ocr")).unwrap(), RequestedMode::Ocr);
-        assert_eq!(parse_requested_mode(Some("tag")).unwrap(), RequestedMode::Tag);
-        assert!(parse_requested_mode(Some("faces")).is_err());
-    }
-
-    #[test]
-    fn resolve_effective_mode_mirrors_ui_and_is_honest_about_the_model() {
-        // Auto with a model composes semantic + OCR; without a model it degrades to OCR.
-        assert_eq!(
-            resolve_effective_mode(RequestedMode::Auto, true),
-            ModeResolution::Search {
-                mode: EffectiveMode::SemanticThenOcr,
-                degraded_to_ocr: false
-            }
-        );
-        assert_eq!(
-            resolve_effective_mode(RequestedMode::Auto, false),
-            ModeResolution::Search {
-                mode: EffectiveMode::OcrOnly,
-                degraded_to_ocr: true
-            }
-        );
-        // An EXPLICIT semantic ask with no model is an honest status, not a silent OCR swap.
-        assert_eq!(
-            resolve_effective_mode(RequestedMode::Semantic, false),
-            ModeResolution::SemanticModelMissing
-        );
-        assert_eq!(
-            resolve_effective_mode(RequestedMode::Semantic, true),
-            ModeResolution::Search {
-                mode: EffectiveMode::SemanticOnly,
-                degraded_to_ocr: false
-            }
-        );
-        // OCR and tag never depend on the model.
-        assert_eq!(
-            resolve_effective_mode(RequestedMode::Ocr, false),
-            ModeResolution::Search {
-                mode: EffectiveMode::OcrOnly,
-                degraded_to_ocr: false
-            }
-        );
-        assert_eq!(
-            resolve_effective_mode(RequestedMode::Tag, false),
-            ModeResolution::Search {
-                mode: EffectiveMode::Tag,
-                degraded_to_ocr: false
-            }
-        );
-    }
-
-    #[test]
-    fn merge_hits_leads_with_semantic_then_dedups_ocr_by_path() {
-        // A path matched by BOTH semantic and OCR appears once, as the description hit.
-        let hits = merge_hits(
-            "root",
-            EffectiveMode::SemanticThenOcr,
-            vec![semantic("/a.jpg", 0.9), semantic("/b.jpg", 0.8)],
-            vec![ocr("/a.jpg", "[a]"), ocr("/c.jpg", "[c]")],
-            vec![],
-        );
-        let paths: Vec<&str> = hits.iter().map(|h| h.path.as_str()).collect();
-        assert_eq!(paths, vec!["/a.jpg", "/b.jpg", "/c.jpg"]);
-        assert_eq!(hits[0].match_kind, "description");
-        assert_eq!(hits[0].score, Some(0.9));
-        assert_eq!(hits[0].match_text, None);
-        // The deduped /a.jpg stays a description hit (semantic leads), not re-added as text.
-        assert_eq!(hits.iter().filter(|h| h.path == "/a.jpg").count(), 1);
-        // /c.jpg is an OCR text hit carrying its snippet.
-        let c = hits.iter().find(|h| h.path == "/c.jpg").unwrap();
-        assert_eq!(c.match_kind, "text");
-        assert_eq!(c.match_text.as_deref(), Some("[c]"));
-        assert_eq!(c.score, None);
-    }
-
-    #[test]
-    fn merge_hits_ocr_only_and_tag_only_carry_the_right_kind() {
-        let ocr_hits = merge_hits(
-            "root",
-            EffectiveMode::OcrOnly,
-            vec![],
-            vec![ocr("/x.jpg", "[x]")],
-            vec![],
-        );
-        assert_eq!(ocr_hits.len(), 1);
-        assert_eq!(ocr_hits[0].match_kind, "text");
-        assert_eq!(ocr_hits[0].match_text.as_deref(), Some("[x]"));
-
-        let tag_hits = merge_hits("root", EffectiveMode::Tag, vec![], vec![], vec![tag("/dog.jpg", 0.77)]);
-        assert_eq!(tag_hits.len(), 1);
-        assert_eq!(tag_hits[0].match_kind, "tag");
-        assert_eq!(tag_hits[0].score, Some(0.77));
-        assert_eq!(tag_hits[0].match_text, None);
-
-        // OcrOnly never emits semantic hits even when some are passed.
-        let no_semantic = merge_hits(
-            "root",
-            EffectiveMode::OcrOnly,
-            vec![semantic("/s.jpg", 0.5)],
-            vec![],
-            vec![],
-        );
-        assert!(no_semantic.is_empty());
-    }
-
-    #[test]
-    fn sort_and_cap_orders_by_score_then_caps() {
-        let hits = vec![
-            PhotoHit {
-                path: "/low.jpg".into(),
-                volume: "root".into(),
-                match_kind: "description".into(),
-                score: Some(0.3),
-                match_text: None,
-            },
-            PhotoHit {
-                path: "/text.jpg".into(),
-                volume: "root".into(),
-                match_kind: "text".into(),
-                score: None,
-                match_text: Some("[t]".into()),
-            },
-            PhotoHit {
-                path: "/high.jpg".into(),
-                volume: "root".into(),
-                match_kind: "description".into(),
-                score: Some(0.95),
-                match_text: None,
-            },
-        ];
-        let capped = sort_and_cap(hits, 2);
-        assert_eq!(capped.len(), 2);
-        // Highest score first; the scoreless text hit sinks below the scored ones.
-        assert_eq!(capped[0].path, "/high.jpg");
-        assert_eq!(capped[1].path, "/low.jpg");
-    }
-
-    fn state(indexing: bool, enriched: u64, qualifying: Option<u64>) -> MediaIndexVolumeState {
-        MediaIndexVolumeState {
-            enabled: true,
-            indexing,
-            enriched_count: enriched,
-            qualifying_count: qualifying,
-            network_opt_in: false,
-            always_indexed: false,
-            paused: false,
-            waiting_for_importance: false,
-            covered_qualifying_count: None,
-            kept_count: None,
-        }
-    }
-
-    #[test]
-    fn derive_coverage_flags_incomplete_when_indexing_or_short() {
-        // A running pass ⇒ incomplete regardless of counts.
-        assert!(derive_coverage("root", &state(true, 10, Some(10))).incomplete);
-        // Fewer enriched than qualify ⇒ incomplete.
-        assert!(derive_coverage("root", &state(false, 5, Some(20))).incomplete);
-        // Done and idle ⇒ complete.
-        assert!(!derive_coverage("root", &state(false, 20, Some(20))).incomplete);
-        // Unknown denominator, idle ⇒ not flagged incomplete off a missing count.
-        assert!(!derive_coverage("root", &state(false, 20, None)).incomplete);
-    }
-
-    /// The scope-aware denominator wins over the volume total. In the "only folders I
-    /// choose" scope, fully-indexed chosen folders are a handful of images against the
-    /// whole drive's qualifying count, so comparing against the volume total reports
-    /// incomplete forever and the agent tells the user their indexed folder isn't
-    /// indexed. Regression anchor for exactly that.
-    #[test]
-    fn derive_coverage_prefers_the_scope_aware_denominator() {
-        let mut covered = state(false, 4, Some(229_945));
-        covered.covered_qualifying_count = Some(4);
-        let coverage = derive_coverage("root", &covered);
-        assert!(
-            !coverage.incomplete,
-            "4 of 4 covered images is complete, not incomplete"
-        );
-        assert_eq!(coverage.qualifying_count, Some(4), "reports the covered denominator");
-
-        // Still short within the covered set ⇒ genuinely incomplete.
-        let mut partial = state(false, 3, Some(229_945));
-        partial.covered_qualifying_count = Some(10);
-        assert!(derive_coverage("root", &partial).incomplete);
-
-        // No scope-aware count ⇒ fall back to the volume total, unchanged behaviour.
-        let mut fallback = state(false, 5, Some(20));
-        fallback.covered_qualifying_count = None;
-        assert!(derive_coverage("root", &fallback).incomplete);
-    }
-
-    #[test]
-    fn build_note_leads_with_degradation_then_indexing() {
-        let complete = vec![VolumeCoverage {
-            volume: "root".into(),
-            indexing: false,
-            enriched_count: 10,
-            qualifying_count: Some(10),
-            incomplete: false,
-        }];
-        assert!(build_note(false, &complete).is_none());
-
-        let incomplete = vec![VolumeCoverage {
-            volume: "root".into(),
-            indexing: true,
-            enriched_count: 3,
-            qualifying_count: Some(10),
-            incomplete: true,
-        }];
-        assert!(build_note(false, &incomplete).unwrap().contains("still indexing"));
-        // Degradation wins the note slot even when a volume is also incomplete.
-        assert!(build_note(true, &incomplete).unwrap().contains("in-image text only"));
-    }
-
-    #[test]
-    fn honest_statuses_serialize_with_a_typed_status_tag() {
-        let off = serde_json::to_value(SearchPhotosResult::ImageIndexingOff { note: "n".into() }).unwrap();
-        assert_eq!(off["status"], "imageIndexingOff");
-
-        let missing = serde_json::to_value(SearchPhotosResult::SemanticModelNotInstalled { note: "n".into() }).unwrap();
-        assert_eq!(missing["status"], "semanticModelNotInstalled");
-
-        let ok = serde_json::to_value(shape_ok("semantic+ocr".into(), vec![], vec![], None)).unwrap();
-        assert_eq!(ok["status"], "ok");
-        // An absent note doesn't clutter the payload.
-        assert!(ok.get("note").is_none());
-    }
-
-    #[test]
-    fn a_wall_of_ocr_hits_pages_instead_of_blowing_the_context() {
-        use crate::agent::chat::budget::{MAX_TOOL_RESULT_TOKENS, estimate_serialized_tokens};
-
-        // `limit: 200` OCR hits, each carrying a snippet, is far more than one tool result
-        // may hold. The answer keeps the best-ranked hits and says how many it left.
-        let hits: Vec<PhotoHit> = (0..MAX_LIMIT)
-            .map(|i| PhotoHit {
-                path: format!("/photos/some/quite/deep/folder/receipt-{i}.jpg"),
-                volume: "root".into(),
-                match_kind: "text".into(),
-                score: None,
-                match_text: Some(format!(
-                    "[total] 42.00 EUR — line {i} of a dense receipt {}",
-                    "x".repeat(300)
-                )),
-            })
-            .collect();
-
-        let SearchPhotosResult::Ok {
-            hits,
-            total,
-            returned,
-            truncated,
-            ..
-        } = shape_ok("ocr".into(), hits, vec![], None)
-        else {
-            panic!("expected an ok result");
-        };
-        assert_eq!(total, MAX_LIMIT);
-        assert_eq!(returned, hits.len());
-        assert!(truncated, "the cut must be visible to the model");
-        assert!(returned < MAX_LIMIT);
-        assert!(hits[0].path.ends_with("receipt-0.jpg"), "rank order survives");
-        let spent: usize = hits.iter().map(estimate_serialized_tokens).sum();
-        assert!(
-            spent <= MAX_TOOL_RESULT_TOKENS,
-            "the hits must fit the tool-result ceiling (spent {spent})"
-        );
-    }
-
-    /// The load-bearing privacy property: a hit is TEXT-ONLY, so the tool structurally
-    /// can't hand a provider image bytes or a thumbnail. Every serialized value is a
-    /// string or number (never a JSON array, which could smuggle a byte vector), and the
-    /// keys are exactly the allowed text/number fields.
-    #[test]
-    fn photo_hit_is_text_only_no_byte_fields() {
-        let hit = PhotoHit {
-            path: "/passport.jpg".into(),
-            volume: "root".into(),
-            match_kind: "text".into(),
-            score: Some(0.5),
-            match_text: Some("[passport]".into()),
-        };
-        let json = serde_json::to_value(&hit).unwrap();
-        let obj = json.as_object().expect("a JSON object");
-        let allowed = ["path", "volume", "matchKind", "score", "matchText"];
-        for key in obj.keys() {
-            assert!(allowed.contains(&key.as_str()), "unexpected field '{key}' on PhotoHit");
-        }
-        for (key, value) in obj {
-            assert!(
-                value.is_string() || value.is_number(),
-                "field '{key}' must be text or a number (no bytes), got {value}"
-            );
-        }
-    }
-}
+#[path = "photos_tests.rs"]
+mod tests;

@@ -96,7 +96,7 @@ the model saw rows it didn't.
   `mountPath`, absent for a phone), suggestion groups' display names, a group's ops (`snippet` = the new name).
 - `inspect_file`: one row per file, or one per `find` hit (`line` + `snippet`; a PDF hit's `line` counts within its
   page, so it's dropped). A path that didn't read carries `status` (`missing`, `noVolumeAtPath`, `unreadable`,
-  `unreachable`, `unsupportedVolume`); a folder is `kind: folder`. A location miss has no list, so no rows.
+  `unreachable`, `unsupportedVolume`, `protected`); a folder is `kind: folder`. A location miss has no list, so no rows.
 - No rows for tools with no list (`app_state`, `folder_importance`, `operations_*`, memory, propose, quiet,
   `connect_volume`). An
   operation row carries ids and tokens, nothing a person reads, so `operations_list` shows counts only.

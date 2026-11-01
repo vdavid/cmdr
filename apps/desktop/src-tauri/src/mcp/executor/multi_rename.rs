@@ -17,9 +17,10 @@
 //!   user approves or rejects it there; the bridge renames on approval, with its live drift
 //!   check. Rows that aren't ready are left out and counted.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use serde::Serialize;
 use serde_json::{Value, json};
@@ -28,9 +29,13 @@ use tauri::{AppHandle, Manager, Runtime};
 use super::{ToolError, ToolResult, fit_to_result_budget, resolve_pane_target_paths, target_pane_state};
 use crate::agent::AgentDb;
 use crate::agent::store::proposals::{GroupIntent, NewGroup, NewRename, NewSweep, OpSnapshot};
-use crate::multi_rename::media::{Loader, SessionMedia};
+use crate::agent::tools::read::sensitive::{GateStop, Protected, classify, note_refusal, path_gate_within};
+use crate::ignore_poison::IgnorePoison;
+use crate::multi_rename::media::{FileJob, Loader, SessionMedia};
 use crate::multi_rename::plan::{Compiled, MultiRenameSpec, NameEdits, NoMedia, PreviewRow, RowStatus, preview_names};
+use crate::security_log::ContentTool;
 use cmdr_fs::entry::FileEntry;
+use cmdr_media_meta::ReadError;
 
 /// Rows a dry run returns when the caller doesn't say.
 const DEFAULT_LIMIT: usize = 50;
@@ -215,6 +220,14 @@ struct DryRun {
     /// More rows the filter keeps sit past this page (by the limit or the size cut).
     truncated: bool,
     rows: Vec<RowOut>,
+    /// Files the sensitive-content gate kept this call from reading: their rows read
+    /// `unreadable`, and this is why.
+    #[serde(skip_serializing_if = "is_zero")]
+    protected_files: usize,
+}
+
+fn is_zero(count: &usize) -> bool {
+    *count == 0
 }
 
 fn dry_run_page(folder: &Path, rows: &[PreviewRow], start: usize, limit: usize, filter: RowFilter) -> DryRun {
@@ -246,6 +259,7 @@ fn dry_run_page(folder: &Path, rows: &[PreviewRow], start: usize, limit: usize, 
         returned,
         truncated: start.saturating_add(returned) < total,
         rows: fitted.items,
+        protected_files: 0,
     }
 }
 
@@ -331,6 +345,52 @@ impl Drop for CancelOnDrop {
     }
 }
 
+/// How long one file's gate may wait on its path resolving: a hung mount, past which the file
+/// reads as timed out, which counts toward the loader giving up on the volume.
+const GATE_BUDGET: Duration = Duration::from_secs(5);
+
+/// The reasons the gate refused a call's media reads, for the answer and the security log.
+#[derive(Clone, Default)]
+struct RefusedReads(Arc<Mutex<Vec<Protected>>>);
+
+impl RefusedReads {
+    fn take(&self) -> Vec<Protected> {
+        std::mem::take(&mut *self.0.lock_ignore_poison())
+    }
+}
+
+/// `loader` with the sensitive-content gate in front of every read, since a media field is
+/// file-derived text (`tag.comment`, `tag.title`, EXIF) and `Propose` runs on wakes too.
+/// It runs here, on the read's own blocking thread, never on the dispatch task. A refusal is
+/// `NotSupported` so that a folder of refused files isn't read as a dying volume.
+fn gated(loader: Loader, refused: &RefusedReads) -> Loader {
+    let inner = loader.reader;
+    let refused = refused.clone();
+    Loader {
+        reader: Arc::new(
+            move |job: &FileJob| match path_gate_within(&job.path.to_string_lossy(), GATE_BUDGET) {
+                Ok(()) => inner(job),
+                Err(GateStop::Protected(reason)) => {
+                    refused.0.lock_ignore_poison().push(reason);
+                    Err(ReadError::NotSupported)
+                }
+                Err(GateStop::TimedOut) => Err(ReadError::TimedOut),
+            },
+        ),
+        ..loader
+    }
+}
+
+/// Whether the folder itself passes the gate, off the dispatch task. Anything but a clear yes
+/// is a no: this only decides whether another session's answers may be taken.
+async fn folder_passes_gate(folder: &Path) -> bool {
+    let folder = folder.to_string_lossy().into_owned();
+    matches!(
+        tokio::task::spawn_blocking(move || path_gate_within(&folder, GATE_BUDGET)).await,
+        Ok(Ok(()))
+    )
+}
+
 /// The EXIF and tags behind a media mask's preview, through the sheet's own cache and
 /// loader (`multi_rename::media`), so every value, `NoValue`, `Unreadable`, and
 /// `|modified` fallback is the sheet's. Seeded from the same `siblings` the preview
@@ -350,8 +410,18 @@ async fn read_media(
         names,
         siblings,
     ));
-    for sheet in open {
-        media.adopt(sheet);
+    // A sheet read for a person, past the gate. So an answer is taken only where nothing needs
+    // resolving, and whatever isn't taken reads through the gated loader, which refuses it.
+    if !open.is_empty() && folder_passes_gate(folder).await {
+        let links: HashSet<&str> = siblings
+            .iter()
+            .filter(|entry| entry.is_symlink)
+            .map(|entry| entry.name.as_str())
+            .collect();
+        let may_take = |name: &str| !links.contains(name) && classify(&folder.join(name).to_string_lossy()).is_none();
+        for sheet in open {
+            media.adopt_where(sheet, may_take);
+        }
     }
     let progress = media.progress();
     let to_read = progress.total - progress.read;
@@ -416,14 +486,19 @@ pub async fn execute_multi_rename<R: Runtime>(app: &AppHandle<R>, params: &Value
         .cached_entries(&volume_id, &folder)
         .ok_or_else(|| ToolError::internal("The pane's listing isn't available yet"))?;
     let compiled = compile(&request.spec)?;
+    let refused = RefusedReads::default();
     let media = if compiled.uses_media() {
         let open = crate::multi_rename::session::media_over(&volume_id, &folder);
         // No one watches this read's progress: the call's answer is its end.
-        let loader = Loader::for_volume(volume_id.clone(), Arc::new(|_| {}));
+        let loader = gated(Loader::for_volume(volume_id.clone(), Arc::new(|_| {})), &refused);
         Some(read_media(&folder, &names, &siblings, &open, loader, MAX_MEDIA_READS).await?)
     } else {
         None
     };
+    let refused = refused.take();
+    for reason in &refused {
+        note_refusal(ContentTool::MultiRename, *reason);
+    }
 
     // A mask and a regex per row: off the async worker for a big folder.
     let (rows, siblings) = tokio::task::spawn_blocking({
@@ -437,7 +512,10 @@ pub async fn execute_multi_rename<R: Runtime>(app: &AppHandle<R>, params: &Value
     .map_err(|e| ToolError::internal(e.to_string()))?;
 
     if request.dry_run {
-        let page = dry_run_page(&folder, &rows, request.start, request.limit, request.filter);
+        let page = DryRun {
+            protected_files: refused.len(),
+            ..dry_run_page(&folder, &rows, request.start, request.limit, request.filter)
+        };
         return serde_json::to_value(page).map_err(|e| ToolError::internal(e.to_string()));
     }
 
@@ -484,6 +562,7 @@ pub async fn execute_multi_rename<R: Runtime>(app: &AppHandle<R>, params: &Value
         "groupId": proposed.group_ids.first(),
         "renames": op_count,
         "counts": counts,
+        "protectedFiles": refused.len(),
         "note": "Nothing was renamed. The user reviews the proposal in Cmdr and approves or rejects it.",
     }))
 }

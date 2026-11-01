@@ -108,6 +108,11 @@ pub(super) fn inspect_with_find() -> Value {
                 path: "/Users/u/locked.txt".into(),
                 reason: crate::agent::tools::read::inspect::UnreadableReason::Permission,
             }),
+            on_root_row(FileRow::Protected {
+                path: "/Users/u/.ssh/id_rsa".into(),
+                reason: crate::agent::tools::read::sensitive::Protected::Credentials,
+                note: crate::agent::tools::read::sensitive::PROTECTED_NOTE,
+            }),
             InspectRow {
                 volume_id: None,
                 row: FileRow::NoVolumeAtPath {
@@ -115,8 +120,8 @@ pub(super) fn inspect_with_find() -> Value {
                 },
             },
         ],
-        total: 5,
-        returned: 4,
+        total: 6,
+        returned: 5,
         truncated: true,
         unanswered: vec!["/Users/u/slow.txt".into()],
         nearby: Some(Vec::new()),
@@ -244,10 +249,11 @@ pub(super) fn image_facts() -> Value {
         "status": "ok",
         "facts": [
             { "path": "/Users/u/Pictures/a.jpg", "state": "indexed", "volume": "root", "text": "TOTAL 42.00" },
-            { "path": "/Users/u/Pictures/b.jpg", "state": "notIndexed" }
+            { "path": "/Users/u/Pictures/b.jpg", "state": "notIndexed" },
+            { "path": "/Users/u/.ssh/c.jpg", "state": "protected", "reason": "credentials" }
         ],
-        "total": 2,
-        "returned": 2,
+        "total": 3,
+        "returned": 3,
         "truncated": false,
         "coverage": []
     })

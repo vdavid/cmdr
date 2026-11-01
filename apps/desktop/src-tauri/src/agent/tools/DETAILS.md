@@ -120,7 +120,8 @@ tool-result JSON the model reads. Every tool maps 1:1 to a `ToolId` variant.
   FILE inside an archive is read as its own kind through the viewer's bounded temp; empty and binary carry metadata
   only. Per-path statuses: `ok` / `folder` / `missing` / `noVolumeAtPath` /
   `unreadable { permission | io | encrypted | corrupt | unsupported | tooLargeToExtract }` / `unreachable` /
-  `unsupportedVolume`, and every row echoes the `volumeId` it's on (§ The location contract). The call reports
+  `unsupportedVolume` / `protected { reason, note }` (§ The sensitive-content gate), and every row echoes the
+  `volumeId` it's on (§ The location contract). The call reports
   `total` / `returned` / `truncated` and names every path with no row in `unanswered`. One of two disk readers among the handlers (the other is `list_dir`'s live source); how it reads and how it times out: § Reading a
   file the way the viewer does.
 - **`list_volumes`** (`read/volumes.rs`) — the map a model plans from: `{ volumes, favorites }`. Every volume with
@@ -409,6 +410,59 @@ by `path` and asks again for exactly `unanswered`.
 
 **Text-only by construction**: no field on any row can hold bytes; `tests::every_row_shape_is_text_only_no_byte_fields`
 walks the serialized result and requires every leaf to be a string, a number, or a flag.
+
+## The sensitive-content gate
+
+`read/sensitive.rs` is the one gate for every path that yields file contents or image-derived text, for every caller. A
+prompt-injected file name could otherwise get `~/.ssh/id_rsa` or Cmdr's `mcp.token` read and sent to the provider. It
+blocks contents only: names in these folders may still flow. A new tool that yields contents goes through it.
+
+**The rules** live in `RULES` and `CREDENTIAL_FILE_NAMES`: case-folded, NFC-normalized component runs at any depth, so a
+NAS backup of a home folder counts. File names match the last component alone, since a `.env` FOLDER is a Python venv.
+Browsers stay anchored under `Library/Application Support` or `.config`, because a bare `Notes`, `Chrome`, or `Arc`,
+case-folded at any depth, would refuse `~/Documents/notes/*`. `com.veszelovszki.cmdr*` matches every instance's data dir,
+so a dev build can't read the prod `mcp.token`.
+
+**Three entry points, by what the caller can afford:**
+
+- `classify(path)`: pure. The whole check for `mtp://`, routed, and `.git` portal paths, and for the DB-only photo tools.
+- `path_gate(path)`: also checks `config::standalone_app_data_dir()` (a custom `CMDR_DATA_DIR` has no telling component)
+  and the path after following symlinks. It resolves the longest prefix that exists, which is what makes
+  `~/link.zip/inner` and `~/link-to-ssh/gone` resolve at all. Blocking, so it runs only under a deadline.
+- `path_gate_within(path, budget)`: the same on a thread it abandons at `budget`, failing closed, for a caller with no
+  deadline of its own. `multi_rename`'s loader joins its reads, so a hung resolve there would wedge the call.
+
+**Where each tool checks:**
+
+- `inspect_file`: `inspect_path_with` runs `path_gate` first, on the runner's blocking thread, before anything opens the
+  file or materializes an archive entry. `foo.zip/.ssh/id_rsa` is caught on the virtual path. A hung mount makes the row
+  `unreachable`, which reads nothing either.
+- `image_facts`, `search_photos`: `classify` on stored paths. They run DB-only and promise a dead NAS can't hang them, and
+  that's enough: `facts_for_paths` matches paths exactly, so a symlink's path only finds what the index stored under that
+  same path. `image_facts` answers a `protected` row. `search_photos` drops the hit and reports `protectedHidden`, since a
+  snippet in a hit would leak, and widens its read when hiding left a volume short: the read API's own limit would
+  otherwise let a hidden hit eat the answer.
+- `multi_rename`: `gated` wraps the loader's reader, so media fields (`tag.comment`, `tag.title`, EXIF) are gated where
+  the file is read, on wakes too since `Propose` runs there. A refusal is `ReadError::NotSupported`, not `Io`: a folder of
+  refused files mustn't read as a dying volume. The row reads `unreadable`, and `protectedFiles` says why.
+  - **Gotcha/Why:** taking an open sheet's answers (`adopt_where`) runs no reader, so it would walk past the gate. The
+    tool only takes answers when the folder passes the gate and the file is neither protected nor a symlink.
+
+**The private-key check** (`refuse_private_key_text`, both armor lines) catches a copy in `~/Desktop/backup` that no path
+rule can see. A hit refuses the whole file, and neither `startLine` nor a `find` needle can skip it:
+
+- **Windows** (`text.rs`): the window plus a look of about 200 lines behind it, through the backend's decoder. A head scan
+  isn't enough: it misses a key past 64 KB, a UTF-16 key slips through raw bytes, and `startLine` inside a key's body shows
+  neither armor line. The look walks by byte offset, because a row number is only an estimate on the ByteSeek fallback.
+- **`find`** (`find.rs`): `backend.search` returns matches only, so there's no seam to watch the user's scan. A pre-scan
+  with its own matcher runs first. If the deadline stops it, hits past its offset are dropped, because a key's body always
+  follows its `BEGIN`. Cost: a `find` on a large file reads it twice.
+- **PDF** (`pdf.rs`): every decoded page, whole, before its cut, plus two pages behind a window, and the title and author.
+- **OCR**: `image_facts` reads the full stored text before its cap. `search_photos` reads it behind every text hit, because
+  a query matching a key's body gets a snippet with no armor in it.
+
+**Refusals** are typed, never a false "not found", and reach the security log as tool and reason, with no path
+(`note_refusal`, coalesced per tool and reason: an injected turn can ask for a thousand files).
 
 ## One tool, both questions (`list_dir`)
 

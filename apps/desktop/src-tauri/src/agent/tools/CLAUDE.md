@@ -42,9 +42,9 @@ and typed result shapes colocated here.
 - **Handlers never touch a live filesystem, except `inspect_file` and `list_dir`'s live read**: bounded, the thread
   ABANDONED past a deadline (`unreachable`). Stop abandons any call but a `Propose` / `Memory` one
   (`../chat/DETAILS.md`). `list_dir`'s live read is FDA-gated and index-shaped (`DETAILS.md` § The live source).
-  `inspect_file` alone egresses contents (text windows, `find` snippets, PDF pages, archive entry names,
-  EXIF incl. GPS; never bytes), each named in the cloud AI disclosure; a new KIND is a copy change plus a
-  `CLOUD_AI_CONSENT_VERSION` bump. § Reading a file the way the viewer does.
+  `inspect_file` egresses contents, never bytes, each kind named in the cloud AI disclosure; a new KIND is a copy
+  change plus a `CLOUD_AI_CONSENT_VERSION` bump. § Reading a file the way the viewer does.
+- **Anything yielding file contents passes `read/sensitive.rs`.** § The sensitive-content gate.
 - **New agent tool** = registry entry + handler/schema/result here + a `ToolId` variant + `EXPECTED_AGENT_TOOL_NAMES`
   + `ToolId::KNOWN` + a `line/` subject, outcome, and preview arm + a rail label in `ask-cmdr-labels.ts`.
 

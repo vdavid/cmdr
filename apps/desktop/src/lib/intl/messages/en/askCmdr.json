@@ -922,6 +922,12 @@
     "screenshot": "ask-cmdr-tools.png",
     "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
   },
+  "askCmdr.tool.preview.status.protected": "kept private",
+  "@askCmdr.tool.preview.status.protected": {
+    "description": "Beside a file in an opened Ask Cmdr tool line: Cmdr didn’t show the assistant what’s in this file, because it holds passwords, keys, private messages, or browser data. The file’s name still shows. Lowercase where your language allows. It describes the file.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
   "askCmdr.tool.preview.status.noVolumeAtPath": "on a drive that isn’t connected",
   "@askCmdr.tool.preview.status.noVolumeAtPath": {
     "description": "Beside a file in an opened Ask Cmdr tool line: the file’s path points into a drive or network share that isn’t connected right now. Lowercase where your language allows.",
