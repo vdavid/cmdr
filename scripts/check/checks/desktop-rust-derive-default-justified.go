@@ -154,7 +154,7 @@ func deriveDefaultTrees(srcDir string) []string {
 	case strings.HasSuffix(slashed, appRustSrcSuffix):
 		return []string{
 			filepath.Join(srcDir, "file_system"),
-			filepath.Join(srcDir, "mcp", "pane_state.rs"),
+			filepath.Join(srcDir, "ui_state", "pane_state.rs"),
 		}
 	}
 	return nil
