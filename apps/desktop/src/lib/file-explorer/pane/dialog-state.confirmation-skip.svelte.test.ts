@@ -57,6 +57,7 @@ function makeState(skip: boolean) {
 
 function transferProps(overrides: Partial<TransferDialogPropsData> = {}): TransferDialogPropsData {
   return {
+    initiator: 'user',
     operationType: 'copy',
     sourcePaths: [`${SOURCE_FOLDER}/first.jpg`],
     destinationPath: '/Users/me/backup',
@@ -74,6 +75,7 @@ function transferProps(overrides: Partial<TransferDialogPropsData> = {}): Transf
 
 function deleteProps(overrides: Partial<DeleteDialogPropsData> = {}): DeleteDialogPropsData {
   return {
+    initiator: 'user',
     sourceItems: [{ name: 'first.jpg', size: 10, isDirectory: false, isSymlink: false }],
     sourcePaths: [`${SOURCE_FOLDER}/first.jpg`],
     sourceFolderPath: SOURCE_FOLDER,
@@ -118,6 +120,18 @@ describe('showTransfer with confirmations skipped', () => {
     expect(dialogs.showTransferProgressDialog).toBe(false)
   })
 
+  it.each(['agent', 'agentEdited', 'aiClient'] as const)(
+    'starts nothing when %s asked: a person decides',
+    (initiator) => {
+      const dialogs = makeState(true)
+
+      dialogs.showTransfer(transferProps({ initiator }))
+
+      expect(dialogs.showTransferDialog).toBe(true)
+      expect(dialogs.showTransferProgressDialog).toBe(false)
+    },
+  )
+
   it('shows the dialog when the setting is off', () => {
     const dialogs = makeState(false)
 
@@ -143,6 +157,18 @@ describe('showDeleteConfirmation with confirmations skipped', () => {
       itemSizes: [10],
     })
   })
+
+  it.each(['agent', 'agentEdited', 'aiClient'] as const)(
+    'trashes nothing when %s asked: a person decides',
+    (initiator) => {
+      const dialogs = makeState(true)
+
+      dialogs.showDeleteConfirmation(deleteProps({ initiator }))
+
+      expect(dialogs.showDeleteDialog).toBe(true)
+      expect(dialogs.showTransferProgressDialog).toBe(false)
+    },
+  )
 
   it('always asks before a permanent delete', () => {
     const dialogs = makeState(true)

@@ -1,4 +1,3 @@
-import type { Initiator } from '#lib/tauri-commands/index.js'
 import { getSnapshot, resolveSnapshotEntries, snapshotIdFromPanePath } from '#lib/search/snapshot-store.svelte.js'
 import {
   type TransferContext,
@@ -11,7 +10,7 @@ import { capabilitiesFor } from './volume-capabilities'
 import { announceRowsStillSettling } from './operation-start-gate'
 import { ROW_SETTLE_BUDGET_MS } from './pressed-rows'
 import type { DuplicateFollowUp } from './duplicate-rename'
-import type { FilePaneAPI } from './types'
+import type { FilePaneAPI, OpenTransferDialogArgs } from './types'
 import type { TransferOperationType } from '../types'
 import type { createDialogState } from './dialog-state.svelte'
 import type { PaneAccess } from './pane-access'
@@ -97,27 +96,19 @@ export function createTransferDialogOpener(access: PaneAccess, dialogs: Pick<Dia
     )
   }
 
-  /** Who asked, and how: stamped onto the dialog props whichever source built them. */
-  interface Trigger {
-    autoConfirm?: boolean
-    onConflict?: string
-    mcpRequestId?: string
-    initiator?: Initiator
-  }
-
-  function showWithTrigger(props: TransferDialogPropsDraft, trigger: Trigger): void {
+  /** Stamps who asked, and how, onto the dialog props, whichever source built them. */
+  function showWithTrigger(props: TransferDialogPropsDraft, trigger: OpenTransferDialogArgs): void {
     if (trigger.autoConfirm) {
       props.autoConfirm = true
       props.autoConfirmOnConflict = trigger.onConflict
       props.mcpRequestId = trigger.mcpRequestId
     }
-    props.initiator = trigger.initiator
     // F5/F6 is a person at the keyboard directing this transfer, so a single-item
     // duplicate ends in the rename editor. An auto-confirmed one is MCP: an agent's
     // copy has no business pulling focus into a text field in front of whoever is
     // watching, so it takes the same route every other trigger does.
     const duplicateFollowUp: DuplicateFollowUp = trigger.autoConfirm ? 'nothing' : 'openRenameEditor'
-    dialogs.showTransfer({ ...props, duplicateFollowUp })
+    dialogs.showTransfer({ ...props, initiator: trigger.initiator, duplicateFollowUp })
   }
 
   /**
@@ -165,12 +156,9 @@ export function createTransferDialogOpener(access: PaneAccess, dialogs: Pick<Dia
     operationType: TransferOperationType,
     sourcePaneRef: FilePaneAPI | undefined,
     pane: 'left' | 'right',
-    autoConfirm?: boolean,
-    onConflict?: string,
-    mcpRequestId?: string,
-    initiator?: Initiator,
+    trigger: OpenTransferDialogArgs,
   ) {
-    const trigger: Trigger = { autoConfirm, onConflict, mcpRequestId, initiator }
+    const { mcpRequestId } = trigger
 
     // Snapshot source pane: no backend listing exists, so the listing-id-driven
     // builders don't apply — build from the snapshot's selected (or cursor)

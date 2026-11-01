@@ -54,6 +54,7 @@ const SOURCE_FOLDER = '/Users/me/photos'
 
 function copyProps(over: Partial<TransferProgressPropsData> = {}): TransferProgressPropsData {
   return {
+    initiator: 'user',
     operationType: 'copy',
     sourcePaths: [`${SOURCE_FOLDER}/a.jpg`],
     sourceFolderPath: SOURCE_FOLDER,
@@ -123,7 +124,7 @@ describe('starting in the background', () => {
       'root',
       '/Users/me/backup',
       expect.objectContaining({ conflictResolution: 'stop', previewId: 'preview-1', preKnownConflicts: [] }),
-      undefined,
+      'user',
     )
   })
 

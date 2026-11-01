@@ -88,6 +88,7 @@ function makeState() {
 
 function props(operationType: TransferProgressPropsData['operationType']): TransferProgressPropsData {
   return {
+    initiator: 'user',
     operationType,
     sourcePaths: [`${FOLDER}/photo.jpg`],
     sourceFolderPath: FOLDER,

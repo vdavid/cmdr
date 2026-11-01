@@ -1050,8 +1050,15 @@ funnels through (F5/F6/F8, the F-key bar, the palette, the menus, drag and drop)
   snapshot, and the operation gate behave exactly as after a click.
 - **The dialog still shows whenever it's the only place something gets seen or decided**: any permanent delete, a cloud
   folder that may turn a trash into a delete mid-scan, compress, rename mode, a destination its path check refuses, S3
-  on either side (the cost line), and anything from MCP. The list and the why live in `confirmation-skip.ts`'s module
-  doc; pinned by `confirmation-skip.test.ts` and `dialog-state.confirmation-skip.svelte.test.ts`.
+  on either side (the cost line), and anything a person didn't start. The list and the why live in
+  `confirmation-skip.ts`'s module doc; pinned by `confirmation-skip.test.ts` and
+  `dialog-state.confirmation-skip.svelte.test.ts`.
+- **Only `initiator: 'user'` skips, and it fails closed.** `initiator` is required from the `file.*` command payloads
+  down to the dialog props. Only the command handlers read an absent payload as a person (`PRESSED_BY_A_PERSON` in
+  `file-handlers.ts`), so a new entry point that names nobody is a compile error, and an untyped payload still gets the
+  dialog. Why no `?? 'user'` lower down: it would make any untagged dispatch a person. Paste, Duplicate, drag, and the
+  rename-as-move handoff state `user` at their own call sites. An approved proposal never comes through here: it runs in
+  Rust (`agent/suggested_ops/bridge`), recording its own `Initiator::Agent`.
 - **Accepted gap**: a destination that refuses writes (read-only folder, no permission) is a red notice in the dialog,
   found by an async probe. A skipped transfer meets the backend's typed refusal in the error dialog instead, which says
   the same thing one step later. Read-only VOLUMES are refused before any of this by the entry guard.

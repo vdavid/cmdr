@@ -126,7 +126,7 @@ export interface OpenTransferDialogArgs {
   autoConfirm?: boolean
   onConflict?: string
   mcpRequestId?: string
-  initiator?: Initiator
+  initiator: Initiator
 }
 
 /**
@@ -138,7 +138,14 @@ export interface OpenDeleteDialogArgs {
   permanent: boolean
   autoConfirm?: boolean
   mcpRequestId?: string
-  initiator?: Initiator
+  initiator: Initiator
+}
+
+/** Args for `ExplorerAPI.openNewFolderDialog` and `.openNewFileDialog`. */
+export interface OpenNamingDialogArgs {
+  name?: string
+  pane?: 'left' | 'right'
+  initiator: Initiator
 }
 
 /** State snapshot for swapping panes without backend calls. */

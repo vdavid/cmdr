@@ -41,6 +41,14 @@ import { detached } from './detached'
 import { confirmDialogForMcp } from '../mcp-dialog-confirm'
 import type { CommandHandlerContext, CommandHandlerRecord } from './types'
 
+/**
+ * What an arg-less `file.*` dispatch means: a person's F-key, menu, or palette press.
+ * Only an ABSENT payload maps here, in these handlers and nowhere below them. A
+ * payload always names its own `initiator`, so one that somehow doesn't stays
+ * unnamed and fails closed at `confirmation-skip.ts`.
+ */
+const PRESSED_BY_A_PERSON = { initiator: 'user' } as const
+
 /** The file entry the focused pane's cursor sits on (path + filename). */
 type EntryUnderCursor = { path: string; filename: string }
 
@@ -184,10 +192,9 @@ export const fileHandlers = {
 
   'file.copy': ({ explorerRef, dispatchArgs }) => {
     // Arg-less from the F-bar / palette / keyboard (open the dialog with no
-    // preset); the MCP `copy` tool may pass `{ autoConfirm, onConflict, initiator }`
-    // to pre-answer the conflict policy and tag provenance. `dispatchArgs` is
-    // `undefined` in the arg-less case, so the openers default them all.
-    const copyArgs = dispatchArgs as CommandArgs['file.copy'] | undefined
+    // preset); the MCP `copy` tool passes `{ autoConfirm, onConflict, initiator }`
+    // to pre-answer the conflict policy and tag provenance.
+    const copyArgs = (dispatchArgs ?? PRESSED_BY_A_PERSON) as CommandArgs['file.copy']
     detached(explorerRef?.openCopyDialog(copyArgs))
   },
 
@@ -198,12 +205,12 @@ export const fileHandlers = {
   },
 
   'file.move': ({ explorerRef, dispatchArgs }) => {
-    const moveArgs = dispatchArgs as CommandArgs['file.move'] | undefined
+    const moveArgs = (dispatchArgs ?? PRESSED_BY_A_PERSON) as CommandArgs['file.move']
     detached(explorerRef?.openMoveDialog(moveArgs))
   },
 
   'file.compress': ({ explorerRef, dispatchArgs }) => {
-    const compressArgs = dispatchArgs as CommandArgs['file.compress'] | undefined
+    const compressArgs = (dispatchArgs ?? PRESSED_BY_A_PERSON) as CommandArgs['file.compress']
     detached(explorerRef?.openCompressDialog(compressArgs))
   },
 
@@ -211,31 +218,31 @@ export const fileHandlers = {
     // Arg-less from F7 / the palette; the MCP `mkdir` tool may pass `{ name }` to
     // prefill the dialog and `{ pane }` to target a specific pane, plus `{ initiator }`
     // to tag provenance. (autoConfirm creates directly in Rust, never reaching here.)
-    const args = dispatchArgs as CommandArgs['file.newFolder'] | undefined
-    detached(explorerRef?.openNewFolderDialog(args?.name, args?.pane, args?.initiator))
+    const args = (dispatchArgs ?? PRESSED_BY_A_PERSON) as CommandArgs['file.newFolder']
+    detached(explorerRef?.openNewFolderDialog(args))
   },
 
   'file.newFile': ({ explorerRef, dispatchArgs }) => {
-    const args = dispatchArgs as CommandArgs['file.newFile'] | undefined
-    detached(explorerRef?.openNewFileDialog(args?.name, args?.pane, args?.initiator))
+    const args = (dispatchArgs ?? PRESSED_BY_A_PERSON) as CommandArgs['file.newFile']
+    detached(explorerRef?.openNewFileDialog(args))
   },
 
   'file.delete': ({ explorerRef, dispatchArgs }) => {
     // The MCP `delete` tool may pass `permanent` (from its `mode`); F8 omits it
     // (trash-default). The dialog still clamps to permanent on no-trash volumes.
-    const deleteArgs = dispatchArgs as CommandArgs['file.delete'] | undefined
+    const deleteArgs = (dispatchArgs ?? PRESSED_BY_A_PERSON) as CommandArgs['file.delete']
     detached(
       explorerRef?.openDeleteDialog({
-        permanent: deleteArgs?.permanent ?? false,
-        autoConfirm: deleteArgs?.autoConfirm,
-        mcpRequestId: deleteArgs?.mcpRequestId,
-        initiator: deleteArgs?.initiator,
+        permanent: deleteArgs.permanent ?? false,
+        autoConfirm: deleteArgs.autoConfirm,
+        mcpRequestId: deleteArgs.mcpRequestId,
+        initiator: deleteArgs.initiator,
       }),
     )
   },
 
   'file.deletePermanently': ({ explorerRef }) => {
-    detached(explorerRef?.openDeleteDialog({ permanent: true }))
+    detached(explorerRef?.openDeleteDialog({ permanent: true, initiator: 'user' }))
   },
 
   'dialog.confirm': ({ explorerRef, dispatchArgs }) => {

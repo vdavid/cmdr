@@ -177,6 +177,7 @@ describe('DialogManager progress dialog', () => {
   }
 
   const dispatching: TransferProgressPropsData = {
+    initiator: 'user',
     operationType: 'copy',
     sourcePaths: ['/src/a.txt'],
     sourceFolderPath: '/src',
@@ -254,6 +255,7 @@ describe('DialogManager transfer error Retry', () => {
   })
 
   const failedMove: TransferProgressPropsData = {
+    initiator: 'user',
     operationType: 'move',
     sourcePaths: ['/Users/me/a.jpg'],
     sourceFolderPath: '/Users/me',

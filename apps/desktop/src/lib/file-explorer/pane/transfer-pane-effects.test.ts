@@ -34,6 +34,7 @@ function makePaneRef(currentPath: string, listingId: string, snapshot: string[] 
 /** A move the RIGHT pane started, going left. */
 function moveProps(): TransferProgressPropsData {
   return {
+    initiator: 'user',
     operationType: 'move',
     sourcePaths: [`${BIRTH_FOLDER}/a.jpg`],
     sourceFolderPath: BIRTH_FOLDER,

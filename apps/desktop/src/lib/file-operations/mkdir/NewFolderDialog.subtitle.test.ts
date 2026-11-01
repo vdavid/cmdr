@@ -40,6 +40,7 @@ function subtitleIn(currentPath: string): string {
   mount(NewFolderDialog, {
     target,
     props: {
+      initiator: 'user',
       currentPath,
       listingId: 'listing-1',
       showHiddenFiles: false,

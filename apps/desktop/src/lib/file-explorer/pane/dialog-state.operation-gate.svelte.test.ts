@@ -73,6 +73,7 @@ function makeState() {
 
 function copyProps(overrides: Partial<TransferProgressPropsData> = {}): TransferProgressPropsData {
   return {
+    initiator: 'user',
     operationType: 'copy',
     sourcePaths: [`${SOURCE_FOLDER}/first.jpg`],
     sourceFolderPath: SOURCE_FOLDER,
@@ -90,6 +91,7 @@ function copyProps(overrides: Partial<TransferProgressPropsData> = {}): Transfer
 /** The confirmation dialog's payload, the shape `handleTransferConfirm` reads. */
 function transferConfirmationProps(mcpRequestId?: string): TransferDialogPropsData {
   return {
+    initiator: 'user',
     operationType: 'copy',
     sourcePaths: [`${SOURCE_FOLDER}/second.jpg`],
     destinationPath: '/Users/me/elsewhere',

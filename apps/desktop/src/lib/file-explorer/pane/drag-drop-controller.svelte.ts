@@ -210,6 +210,7 @@ export function createDragDropController(deps: DragDropControllerDeps) {
           undefined,
         ),
         duplicateFollowUp: DROP_DUPLICATE_FOLLOW_UP,
+        initiator: 'user',
       })
       return
     }
@@ -241,6 +242,7 @@ export function createDragDropController(deps: DragDropControllerDeps) {
         isDirectoryFlags,
       ),
       duplicateFollowUp: DROP_DUPLICATE_FOLLOW_UP,
+      initiator: 'user',
     })
   }
 

@@ -79,6 +79,7 @@ function makeState() {
 
 function copyProps(): TransferProgressPropsData {
   return {
+    initiator: 'user',
     operationType: 'copy',
     sourcePaths: ['/Users/me/photos/a.raw'],
     sourceFolderPath: '/Users/me/photos',

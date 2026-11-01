@@ -57,6 +57,7 @@ function setup(sourcePanePath = FOLDER) {
 
 function moveProps(overrides: Partial<TransferDialogPropsData> = {}): TransferDialogPropsData {
   return {
+    initiator: 'user',
     operationType: 'move',
     sourcePaths: [`${FOLDER}/notes.txt`],
     destinationPath: '/Users/me/elsewhere',

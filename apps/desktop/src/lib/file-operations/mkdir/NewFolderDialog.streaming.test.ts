@@ -76,6 +76,7 @@ function mountDialog() {
   const component = mount(NewFolderDialog, {
     target,
     props: {
+      initiator: 'user',
       currentPath: '/Users/test/Projects',
       listingId: 'listing-1',
       showHiddenFiles: false,
