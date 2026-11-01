@@ -592,6 +592,10 @@
   "@askCmdr.tool.preview.status.unsupportedVolume": {
     "sourceHash": "945bf7c"
   },
+  "askCmdr.tool.preview.status.protected": "不公开",
+  "@askCmdr.tool.preview.status.protected": {
+    "sourceHash": "6a22c60"
+  },
   "askCmdr.tool.preview.status.noVolumeAtPath": "在没有连接的驱动器上",
   "@askCmdr.tool.preview.status.noVolumeAtPath": {
     "sourceHash": "3b32abe"

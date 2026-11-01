@@ -592,6 +592,10 @@
   "@askCmdr.tool.preview.status.unsupportedVolume": {
     "sourceHash": "945bf7c"
   },
+  "askCmdr.tool.preview.status.protected": "不公開",
+  "@askCmdr.tool.preview.status.protected": {
+    "sourceHash": "6a22c60"
+  },
   "askCmdr.tool.preview.status.noVolumeAtPath": "在沒有連線的磁碟機上",
   "@askCmdr.tool.preview.status.noVolumeAtPath": {
     "sourceHash": "3b32abe"
