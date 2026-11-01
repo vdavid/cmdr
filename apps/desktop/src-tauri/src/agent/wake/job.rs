@@ -334,8 +334,8 @@ pub async fn run_wake(
     .await;
 
     // The delete happens HERE, after the turn, rather than in the tool: the tool is a pure
-    // `Access::Read` signal, and one that mutated would be `Write` under the registry's
-    // tiebreaker and would reach the rail's threads too.
+    // `Access::Read` signal, and one that mutated couldn't be `Read`, and would reach the rail's
+    // threads too.
     if watch.stayed_quiet() {
         discard_quiet_thread(conn, prepared.conversation_id);
         return WakeOutcome::Quiet {

@@ -134,6 +134,11 @@ impl SecretStore for PlainFileStore {
             .map_err(|e| SecretStoreError::Other(format!("Lock error: {}", e)))?;
         Ok(read_store(&self.path)?.0.into_keys().collect())
     }
+
+    /// Dev and E2E only (or a platform with no keyring, which `is_file_backed` already refuses).
+    fn vouching(&self) -> &dyn SecretStore {
+        self
+    }
 }
 
 #[cfg(test)]

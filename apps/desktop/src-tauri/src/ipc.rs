@@ -374,6 +374,8 @@ macro_rules! ipc_command_manifest {
                     crate::ai::api_keys::get_ai_api_key_status,
                     crate::ai::api_keys::delete_ai_api_key,
                     // set_mcp_enabled, set_mcp_port are generic (<R: Runtime>): excluded from specta
+                    crate::commands::mcp::set_mcp_direct_mode,
+                    crate::commands::mcp::get_mcp_direct_mode,
                     crate::commands::mcp::get_mcp_running,
                     crate::commands::mcp::get_mcp_port,
                     crate::commands::mcp::get_mcp_token,

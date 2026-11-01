@@ -108,6 +108,14 @@ fn restricted_window_settings_parse_set_values() {
 }
 
 #[test]
+fn direct_mode_reads_from_its_dotted_key_and_stays_unset_when_absent() {
+    let on = parse_settings(r#"{ "developer.mcpDirectMode": true }"#).expect("parses");
+    assert_eq!(on.developer_mcp_direct_mode, Some(true));
+    let absent = parse_settings("{}").expect("parses");
+    assert_eq!(absent.developer_mcp_direct_mode, None);
+}
+
+#[test]
 fn restricted_window_settings_carry_the_size_format() {
     // The operation queue window is restricted (no `store:default`) but renders
     // `<Size>`, so it needs the binary/SI choice in the snapshot. Without it

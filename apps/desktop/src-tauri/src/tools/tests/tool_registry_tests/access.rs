@@ -6,8 +6,8 @@ use crate::tools::{Access, Consumer, agent_tool_view, get_all_tools, tool_access
 //
 // One authored registry, two consumer views (agent decisions D49/D59). `consumers` is the exposure
 // axis; `access` is the capability axis. These tests pin the agent view to exactly its authored
-// `[agent]` entries AND require every one to be `Access::Read`, `Access::Propose`, `Access::Memory`,
-// or `Access::Session`, never `Access::Write`.
+// `[agent]` entries AND require every one to be `Access::Read`, `Access::ReadContents`,
+// `Access::Propose`, `Access::Memory`, or `Access::Session`.
 //
 // The agent can propose; only the user can approve. `Propose` widens what the agent may ASK for,
 // never what it may DO — so these tests also pin the hand-authored Propose allowlist and the
@@ -100,7 +100,73 @@ const EXPECTED_MEMORY_TOOL_NAMES: &[&str] = &["memory_write", "memory_edit"];
 /// `connect_volume` (`tools/connect.rs`): dials only a saved, unregistered place through
 /// `saved_servers::connect_saved_place` with no secret and no account, hands a dropped one to the
 /// frontend's reconnect manager, and takes no address, secret, or account parameter.
-const EXPECTED_SESSION_TOOL_NAMES: &[&str] = &["connect_volume"];
+///
+/// `upgrade_smb_to_direct` (`tools/actions/async_tools.rs`): moves a share that's already mounted
+/// to a direct session, with credentials the user stored.
+const EXPECTED_SESSION_TOOL_NAMES: &[&str] = &["connect_volume", "upgrade_smb_to_direct"];
+
+/// Tools that read inside files, or image-derived text. Hand-authored, because this class is what
+/// keeps an outside client from reading through Cmdr's Full Disk Access (direct mode only, from
+/// M12), and a content tool classified `Read` would slip past that with no other signal.
+const EXPECTED_READ_CONTENTS_TOOL_NAMES: &[&str] = &["inspect_file", "image_facts", "search_photos"];
+
+/// Tools that open a dialog or editor a person confirms. Hand-authored, because a handler that
+/// starts the operation anyway would quietly break the rule.
+const EXPECTED_INITIATE_TOOL_NAMES: &[&str] = &["copy", "move", "compress", "delete", "rename", "operations_rollback"];
+
+/// The ONE written exception to "nothing writes without a person". David accepted it, including
+/// that `tag` has no undo, so a new name here is a new decision of his.
+const EXPECTED_LIGHT_WRITE_TOOL_NAMES: &[&str] = &["tag", "mkdir", "mkfile"];
+
+/// Tools that run only after a person confirms an Ask.
+const EXPECTED_SENSITIVE_TOOL_NAMES: &[&str] = &[
+    "open_under_cursor",
+    "set_setting",
+    "quit",
+    "eject",
+    "remove_manual_server",
+    "indexing",
+];
+
+/// Each hand-authored class equals the registry's, in both views.
+#[test]
+fn test_each_hand_authored_class_is_exactly_its_allowlist() {
+    for (access, allowlist) in [
+        (Access::ReadContents, EXPECTED_READ_CONTENTS_TOOL_NAMES),
+        (Access::Initiate, EXPECTED_INITIATE_TOOL_NAMES),
+        (Access::LightWrite, EXPECTED_LIGHT_WRITE_TOOL_NAMES),
+        (Access::Sensitive, EXPECTED_SENSITIVE_TOOL_NAMES),
+    ] {
+        assert!(
+            matches_allowlist(&shipped_tools(), access, allowlist),
+            "the registry's {access:?} tools differ from the hand-authored allowlist"
+        );
+    }
+}
+
+/// A `DevOnly` tool carries its one-line reason, and is never in the agent's view.
+#[test]
+fn test_every_dev_only_tool_says_why_and_stays_away_from_the_agent() {
+    let mut names = Vec::new();
+    for tool in get_all_tools() {
+        if let Some(Access::DevOnly(reason)) = tool_access(&tool.name) {
+            assert!(!reason.trim().is_empty(), "'{}' gives no reason", tool.name);
+            assert!(!reason.contains('\n'), "'{}' takes more than one line", tool.name);
+            assert!(!tool_available_to(&tool.name, Consumer::Agent), "'{}'", tool.name);
+            names.push(tool.name);
+        }
+    }
+    names.sort();
+    assert_eq!(names, ["ai_search", "connect_to_server", "resolve_conflict"]);
+}
+
+/// The contents class reads as `Read` for the agent: the view holds it, on every origin.
+#[test]
+fn test_the_agent_keeps_every_contents_tool() {
+    for name in EXPECTED_READ_CONTENTS_TOOL_NAMES {
+        assert!(tool_available_to(name, Consumer::Agent), "'{name}'");
+    }
+}
 
 /// Every registry entry in either view, with its access class.
 fn shipped_tools() -> Vec<(String, Option<Access>)> {
@@ -128,8 +194,9 @@ fn matches_allowlist(tools: &[(String, Option<Access>)], access: Access, allowli
 
 /// The agent can propose; only the user can approve; it writes only its own notes; and it
 /// connects only places the user saved. Structurally: every tool in the agent's view is
-/// `Access::Read`, `Access::Propose`, `Access::Memory`, or `Access::Session`, and NEVER
-/// `Access::Write`. The regression anchor for "the agent still can't touch the user's files".
+/// `Access::Read`, `Access::ReadContents`, `Access::Propose`, `Access::Memory`, or
+/// `Access::Session`, and nothing else. The regression anchor for "the agent still can't touch the
+/// user's files".
 #[test]
 fn test_agent_tool_view_never_writes() {
     for tool in agent_tool_view() {
@@ -137,9 +204,13 @@ fn test_agent_tool_view_never_writes() {
         assert!(
             matches!(
                 access,
-                Some(Access::Read) | Some(Access::Propose) | Some(Access::Memory) | Some(Access::Session)
+                Some(Access::Read)
+                    | Some(Access::ReadContents)
+                    | Some(Access::Propose)
+                    | Some(Access::Memory)
+                    | Some(Access::Session)
             ),
-            "agent-visible tool '{}' is {access:?} — the agent view admits Read, Propose, Memory, and Session, never Write",
+            "agent-visible tool '{}' is {access:?} — the agent view admits Read, ReadContents, Propose, Memory, and Session only",
             tool.name
         );
     }

@@ -803,6 +803,8 @@ export {
   setMcpPort,
   getMcpRunning,
   getMcpPort,
+  setMcpDirectMode,
+  getMcpDirectMode,
   updateFileWatcherDebounce,
   updateServiceResolveTimeout,
   setDirectSmbConnection,

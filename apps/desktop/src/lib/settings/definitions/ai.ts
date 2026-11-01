@@ -316,6 +316,21 @@ export const aiSettings: SettingDefinitionSource[] = [
     component: 'switch',
   },
   {
+    // Lets an outside client past a person, so only `McpServerSection` writes it, and only a
+    // `secrets` item it writes makes it count at launch: this value is display only.
+    // `src-tauri/src/tools/DETAILS.md` § Direct mode.
+    id: 'developer.mcpDirectMode',
+    section: ['AI', 'MCP server'],
+    labelKey: 'settings.developer.mcpDirectMode.label',
+    descriptionKey: 'settings.developer.mcpDirectMode.description',
+    keywordsKey: 'settings.developer.mcpDirectMode.keywords',
+    terms: ['mcp'],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    mcpSettable: false,
+  },
+  {
     id: 'developer.mcpPort',
     section: ['AI', 'MCP server'],
     labelKey: 'settings.developer.mcpPort.label',

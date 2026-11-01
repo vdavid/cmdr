@@ -1,11 +1,16 @@
 //! macOS Keychain backend via `security-framework`.
 
 use super::{SecretStore, SecretStoreError};
+use crate::ignore_poison::IgnorePoison;
 use cmdr_fs::log_private::LogPrivate;
 use log::debug;
 use security_framework::item::{ItemClass, ItemSearchOptions, Limit, SearchResult};
+use security_framework::os::macos::keychain::SecKeychain;
 use security_framework::passwords::{delete_generic_password, get_generic_password, set_generic_password};
-use std::sync::OnceLock;
+use std::ffi::CStr;
+use std::os::unix::ffi::OsStrExt;
+use std::path::{Path, PathBuf};
+use std::sync::{Mutex, OnceLock};
 
 /// Prod (unsuffixed) service name. Prod runs leave `CMDR_INSTANCE_ID` unset and land here so
 /// existing Keychain entries keep working bit-for-bit.
@@ -82,6 +87,107 @@ impl SecretStore for KeychainStore {
             Err(e) => Err(classify_security_error(service_name(), e)),
         }
     }
+
+    fn vouching(&self) -> &dyn SecretStore {
+        &PinnedKeychainStore
+    }
+}
+
+/// The Keychain for an item whose being there has to say Cmdr put it there: only the login
+/// keychain, by the path the user database gives, with every prompt refused.
+/// `DETAILS.md` § Vouching.
+struct PinnedKeychainStore;
+
+/// One no-prompt stretch at a time, since the switch is process-wide and dropping its lock turns
+/// prompts back on: two overlapping stretches would end each other early.
+static NO_PROMPT_STRETCH: Mutex<()> = Mutex::new(());
+
+/// Runs `action` on the login keychain with prompts off. Another thread's Keychain call during this
+/// stretch would fail rather than prompt, so keep `action` to one call.
+fn with_login_keychain_no_prompt<T>(
+    key: &str,
+    action: impl FnOnce(&SecKeychain) -> security_framework::base::Result<T>,
+) -> Result<T, SecretStoreError> {
+    let path = login_keychain_path(&account_home_dir()?);
+    let _one_at_a_time = NO_PROMPT_STRETCH.lock_ignore_poison();
+    let _no_prompts = SecKeychain::disable_user_interaction().map_err(|e| classify_security_error(key, e))?;
+    let keychain = SecKeychain::open(&path).map_err(|e| classify_security_error(key, e))?;
+    action(&keychain).map_err(|e| classify_security_error(key, e))
+}
+
+impl SecretStore for PinnedKeychainStore {
+    fn set(&self, key: &str, value: &[u8]) -> Result<(), SecretStoreError> {
+        debug!("Keychain: setting pinned secret for key: {}", LogPrivate::host(key));
+        with_login_keychain_no_prompt(key, |keychain| {
+            keychain.set_generic_password(service_name(), key, value)
+        })
+    }
+
+    fn get(&self, key: &str) -> Result<Vec<u8>, SecretStoreError> {
+        debug!("Keychain: getting pinned secret for key: {}", LogPrivate::host(key));
+        with_login_keychain_no_prompt(key, |keychain| {
+            keychain
+                .find_generic_password(service_name(), key)
+                .map(|(password, _item)| password.as_ref().to_vec())
+        })
+    }
+
+    fn delete(&self, key: &str) -> Result<(), SecretStoreError> {
+        debug!("Keychain: deleting pinned secret for key: {}", LogPrivate::host(key));
+        with_login_keychain_no_prompt(key, |keychain| {
+            let (_password, item) = keychain.find_generic_password(service_name(), key)?;
+            item.delete();
+            // `delete` answers nothing, so ask whether it's gone: an item that stayed must not
+            // read as turned off.
+            match keychain.find_generic_password(service_name(), key) {
+                Ok(_) => Err(security_framework::base::Error::from(ERR_SEC_AUTH_FAILED)),
+                Err(e) if e.code() == ERR_SEC_ITEM_NOT_FOUND => Ok(()),
+                Err(e) => Err(e),
+            }
+        })
+    }
+
+    fn keys(&self) -> Result<Vec<String>, SecretStoreError> {
+        KeychainStore.keys()
+    }
+
+    fn vouching(&self) -> &dyn SecretStore {
+        self
+    }
+}
+
+/// The login keychain's file under `home`. ❌ Never `SecKeychainCopyDefault` or a bare search:
+/// this store names one keychain.
+fn login_keychain_path(home: &Path) -> PathBuf {
+    home.join("Library/Keychains/login.keychain-db")
+}
+
+/// This account's home folder from the user database. ❌ Never `HOME` or `dirs::home_dir`: whoever
+/// launches Cmdr picks those.
+fn account_home_dir() -> Result<PathBuf, SecretStoreError> {
+    let mut passwd = std::mem::MaybeUninit::<libc::passwd>::uninit();
+    let mut buffer = vec![0 as libc::c_char; 16 * 1024];
+    let mut found: *mut libc::passwd = std::ptr::null_mut();
+    // SAFETY: `passwd` and `found` are valid for writes, and `buffer` is valid for its stated
+    // length and outlives every read of the strings `getpwuid_r` points into it below.
+    let status = unsafe {
+        libc::getpwuid_r(
+            libc::getuid(),
+            passwd.as_mut_ptr(),
+            buffer.as_mut_ptr(),
+            buffer.len(),
+            &raw mut found,
+        )
+    };
+    if status != 0 || found.is_null() {
+        return Err(SecretStoreError::Other(
+            "This account isn't in the user database".to_string(),
+        ));
+    }
+    // SAFETY: a zero status with a non-null `found` means `getpwuid_r` filled `passwd`, whose
+    // `pw_dir` is a NUL-terminated string inside `buffer`, still alive here.
+    let home = unsafe { CStr::from_ptr((*found).pw_dir) };
+    Ok(PathBuf::from(std::ffi::OsStr::from_bytes(home.to_bytes())))
 }
 
 /// `kSecAttrAccount`'s key in a simplified attribute dictionary: where a generic password keeps
@@ -155,6 +261,19 @@ mod tests {
             classify_security_error("ai.apiKey.openai", unknown),
             SecretStoreError::Other(_)
         ));
+    }
+
+    #[test]
+    fn the_pinned_store_names_the_login_keychain_under_the_given_home() {
+        assert_eq!(
+            login_keychain_path(Path::new("/Users/someone")),
+            Path::new("/Users/someone/Library/Keychains/login.keychain-db")
+        );
+    }
+
+    #[test]
+    fn the_account_home_is_an_absolute_path_from_the_user_database() {
+        assert!(account_home_dir().expect("the test's account exists").is_absolute());
     }
 
     #[test]

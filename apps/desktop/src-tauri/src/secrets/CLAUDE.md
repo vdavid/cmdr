@@ -30,6 +30,8 @@ and ignores both, so an env var can't downgrade a user's Keychain to plaintext);
   backend. Consume it only from user-initiated commands (`upgrade_to_smb_volume_using_saved_password` /
   `system_has_saved_smb_password`). `account_for_any` only probes attributes (no dialog); `read_password` reads data (a
   dialog; "Always Allow" adds Cmdr to the item ACL for silence after).
+- **An item whose presence must mean "Cmdr wrote this" goes through `store().vouching()`**, ❌ never plain `get`.
+  `DETAILS.md` § Vouching.
 - **`keyring-core` needs a process-wide default store**: installed lazily via a `Once` in `ensure_default_store()`,
   called from every public `KeyringStore` method. Use `set_secret`/`get_secret` (binary) over `set_password`/
   `get_password` (forces UTF-8).

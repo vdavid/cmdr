@@ -26,8 +26,8 @@
 //! every tool not tagged `[agent]`, so its write path is absent by construction, not policy.
 //! `access` classifies what a tool can do independently of transport authentication. The
 //! structural tests pin the agent view to exactly its authored `[agent]` entries AND require
-//! every one to be [`Access::Read`], [`Access::Propose`], [`Access::Memory`], or
-//! [`Access::Session`], never [`Access::Write`]. **The agent can propose; only the user can
+//! every one to be [`Access::Read`], [`Access::ReadContents`], [`Access::Propose`],
+//! [`Access::Memory`], or [`Access::Session`]. **The agent can propose; only the user can
 //! approve** — no tool approves a proposal, the only thing it writes is its own memory folder,
 //! and the only session it opens is to a place the user saved.
 //!
@@ -72,16 +72,19 @@ pub enum Consumer {
     Agent,
 }
 
-/// Whether a tool reads, asks, remembers, connects, or mutates. The agent view admits `Read`,
-/// `Propose`, `Memory`, and `Session`, and must contain zero `Write` tools (see the module docs).
-///
-/// The agent dispatch (`crate::agent::tool_gate`) reads [`tool_access`](super::tool_access) as a runtime backstop: it
-/// refuses to execute any tool classified `Write`, so "the agent can't act" holds even against a
-/// mis-tagged entry. It's registry metadata, not a field on the emitted `Tool`.
+/// What a tool does, whoever calls it. The agent's gate (`crate::agent::tool_gate`) reads it through
+/// [`tool_access`](super::tool_access) as a runtime backstop, and admits only [`Access::Read`],
+/// [`Access::ReadContents`], [`Access::Propose`], [`Access::Memory`], and [`Access::Session`], so
+/// "the agent can't act" holds even against a mis-tagged entry. It's registry metadata, not a field
+/// on the emitted `Tool`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Access {
     /// Reads state and mutates nothing.
     Read,
+    /// Reads inside file contents, or image-derived text. Exactly [`Access::Read`] for the agent.
+    /// Authored by hand into `EXPECTED_READ_CONTENTS_TOOL_NAMES`, because it's the class that decides
+    /// what an outside client can read through Cmdr's Full Disk Access.
+    ReadContents,
     /// Stages a proposal and opens a review surface for the user. Mutates nothing: no filesystem
     /// write, no silent config change. **The agent can propose; only the user can approve** —
     /// approval originates in the frontend as a user action, and there is no tool that approves a
@@ -110,10 +113,23 @@ pub enum Access {
     /// (`crate::agent::tool_gate`), since a background connect can wake a sleeping NAS for a
     /// digest nobody asked for. Agent invariant 7 (`agent/DETAILS.md`) is the promise.
     Session,
-    /// Mutates the filesystem OR app state (nav, cursor, selection, tabs, dialogs, settings,
-    /// connect/eject, file ops, rollback-cancel); when in doubt a tool is `Write`. Never reachable
-    /// from the agent view.
-    Write,
+    /// Changes what's on screen, never data: navigation, cursor, selection, tabs, view, and queue
+    /// steering. Refused by the agent's gate for now.
+    AppState,
+    /// Opens a dialog or editor a person must confirm. Refused by the agent's gate for now.
+    /// Hand-allowlisted (`EXPECTED_INITIATE_TOOL_NAMES`).
+    Initiate,
+    /// Writes with no confirmation, the ONE written exception to "nothing writes without a person":
+    /// `mkdir` and `mkfile` with a name, and `tag`, which has no undo. Refused by the agent's gate for
+    /// now. Hand-allowlisted (`EXPECTED_LIGHT_WRITE_TOOL_NAMES`).
+    LightWrite,
+    /// Runs only after a person confirms an Ask. Refused by the agent's gate for now.
+    /// Hand-allowlisted (`EXPECTED_SENSITIVE_TOOL_NAMES`).
+    Sensitive,
+    /// Never the agent, and an outside client only in direct mode
+    /// ([`policy::direct_mode`](super::policy::direct_mode)). The string is the one-line reason, so
+    /// the table carries it.
+    DevOnly(&'static str),
 }
 
 /// What a call's tool line names, read off its arguments by `agent/line/`. The strings are argument
@@ -343,6 +359,14 @@ macro_rules! mcp_tools {
         ) -> ToolResult {
             if !tool_available_to(name, consumer) {
                 return Err(ToolError::invalid_params(format!("Unknown tool: {name}")));
+            }
+            if let Some(refusal) = super::policy::dev_only_refusal(
+                consumer,
+                name,
+                tool_access(name),
+                super::policy::direct_mode(),
+            ) {
+                return Err(refusal);
             }
             validate_params(name, params)?;
             match name {

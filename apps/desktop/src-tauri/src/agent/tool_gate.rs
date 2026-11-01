@@ -6,7 +6,8 @@
 //! into a typed "not available" tool-result WITHOUT ever calling `execute_tool`. So the boundary
 //! holds at runtime, not just structurally: the `consumers` check is the gate, backed by a
 //! `tool_access` check that refuses anything the registry doesn't classify [`Access::Read`],
-//! [`Access::Propose`], or [`Access::Memory`] even if it entered the view.
+//! [`Access::ReadContents`], [`Access::Propose`], [`Access::Memory`], or [`Access::Session`] even if
+//! it entered the view.
 //!
 //! **The agent can propose; only the user can approve.** A [`Access::Propose`] tool
 //! stages a proposal and opens a review surface; it mutates nothing. Approval originates
@@ -52,23 +53,26 @@ enum Admission {
     RefusedInBackground,
 }
 
-/// The gate's access axis, per turn origin. [`Access::Read`], [`Access::Propose`], and
-/// [`Access::Memory`] dispatch on every turn; [`Access::Session`] only on one the user started;
-/// [`Access::Write`] and an unclassified name (`None`) never. Pure, so the rule is
-/// unit-testable against every variant and origin without an authored tool per variant.
+/// The gate's access axis, per turn origin. [`Access::Read`], [`Access::ReadContents`],
+/// [`Access::Propose`], and [`Access::Memory`] dispatch on every turn; [`Access::Session`] only on
+/// one the user started; everything that changes something else and an unclassified name (`None`)
+/// never. Pure, so the rule is unit-testable against every variant and origin without an authored
+/// tool per variant.
 fn admit(access: Option<Access>, origin: TurnOrigin) -> Admission {
     match access {
-        Some(Access::Read | Access::Propose | Access::Memory) => Admission::Dispatch,
+        Some(Access::Read | Access::ReadContents | Access::Propose | Access::Memory) => Admission::Dispatch,
         Some(Access::Session) if origin.user_started() => Admission::Dispatch,
         Some(Access::Session) => Admission::RefusedInBackground,
-        Some(Access::Write) | None => Admission::Unavailable,
+        Some(Access::AppState | Access::Initiate | Access::LightWrite | Access::Sensitive | Access::DevOnly(_))
+        | None => Admission::Unavailable,
     }
 }
 
 /// The refusal tool-result for a call the gate stops, or `None` when dispatch should run it.
 /// Refused as unavailable: any name outside the agent's view (hallucinated, a typo, or a table entry
 /// it isn't given, like `delete`/`copy`), AND — as a runtime backstop — any name in the view the
-/// registry classifies [`Access::Write`] or doesn't classify at all. Refused as
+/// registry classifies as changing something other than a proposal, a note, or a saved session, or
+/// doesn't classify at all. Refused as
 /// `refusedInBackground`: an [`Access::Session`] tool on a turn the user didn't start.
 /// Returning `Some` here means `execute_tool` is never reached.
 pub fn refuse_unavailable(call_id: &str, tool: &ToolId, origin: TurnOrigin) -> Option<AgentToolResult> {
@@ -270,7 +274,7 @@ mod tests {
     ];
 
     #[test]
-    fn the_access_gate_admits_read_propose_and_memory_on_every_turn_and_never_write() {
+    fn the_access_gate_admits_read_contents_propose_and_memory_on_every_turn_and_never_a_change() {
         // The gate's access axis, exercised directly against every `Access` variant. The
         // name-based tests below can only reach the variants some tool is actually authored
         // with, so a variant nothing carries yet would be covered vacuously. This one pins
@@ -293,10 +297,23 @@ mod tests {
                 "the agent writes its own notes on any turn ({origin:?})"
             );
             assert_eq!(
-                admit(Some(Access::Write), origin),
-                Admission::Unavailable,
-                "a write tool never dispatches through the agent view ({origin:?})"
+                admit(Some(Access::ReadContents), origin),
+                Admission::Dispatch,
+                "contents read as Read for the agent, or inspect_file stops working ({origin:?})"
             );
+            for write in [
+                Access::AppState,
+                Access::Initiate,
+                Access::LightWrite,
+                Access::Sensitive,
+                Access::DevOnly("a reason"),
+            ] {
+                assert_eq!(
+                    admit(Some(write), origin),
+                    Admission::Unavailable,
+                    "{write:?} never dispatches through the agent view ({origin:?})"
+                );
+            }
             assert_eq!(
                 admit(None, origin),
                 Admission::Unavailable,
@@ -443,8 +460,8 @@ mod tests {
 
     #[test]
     fn every_known_tool_outside_the_agents_view_is_refused_whatever_its_access_class() {
-        // `await` and `ai_search` are `Read`, so the access axis alone would dispatch them: being
-        // known must not mean being available. The model sees exactly what it saw when these names
+        // `await` is `Read`, so the access axis alone would dispatch it: being known must not mean
+        // being available. The model sees exactly what it saw when these names
         // parsed as Unrecognized.
         let mut outside = 0;
         for tool in ToolId::KNOWN {

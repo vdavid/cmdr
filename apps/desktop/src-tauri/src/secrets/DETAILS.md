@@ -21,6 +21,24 @@ notes.
   is unreachable from any shipped build. Which tests need the helper, and why the reach is wider than it looks:
   `docs/testing.md` § "Secret-store isolation (Rust)".
 
+## Vouching
+
+`SecretStore::vouching()` is for an item whose being there has to say Cmdr put it there (today only direct mode's,
+`../tools/DETAILS.md` § Direct mode). On macOS it's `PinnedKeychainStore`.
+
+- **It refuses prompts**, through `SecKeychain::disable_user_interaction`, the process-wide switch, so a launch can't
+  raise a Keychain dialog. `kSecUseAuthenticationUIFail` isn't enough on the file keychain. Another thread's Keychain
+  call during the stretch fails rather than prompts, so each stretch holds one call.
+- **It names one keychain**, at a path from the user database, since whoever launches Cmdr picks `HOME`.
+
+Gaps in this check are tracked privately and reviewed before every release.
+
+Test this through the seam with a fake: ❌ a test here must not touch the real Keychain, which can raise a dialog nobody's
+there to click.
+
+Elsewhere `vouching()` is the store itself. Linux has no Full Disk Access to gain through Cmdr, so nothing there depends
+on this check. `is_file_backed()` tells callers a fallback file vouches for nothing.
+
 ## Linux migration notes
 
 - **Encrypted-file path**: `~/.local/share/com.veszelovszki.cmdr/credentials.enc`, matching the app data dir

@@ -22,6 +22,8 @@ Issue #456. Must-knows in `CLAUDE.md`; this is the why and the catalog.
 - `mcp_server_turned_on` / `mcp_server_turned_off` (`by`: `user` | `launch`): `commands/mcp.rs` `toggle_event` (only a
   real start or stop) and `mcp/server.rs` `start_mcp_server_background`, so a log that starts mid-session still says
   the server runs.
+- `mcp_direct_mode_changed` (`on`, `by`: `user` | `launch`): `commands/mcp.rs` `direct_mode_event` (only a real change)
+  and `../tools/policy.rs` `seed_direct_mode_at_launch` (only a launch that came up on).
 - `mcp_rejections_started` / `mcp_rejections_ended` (`reason`: `missing_token` | `wrong_token` |
   `no_token_configured` | `foreign_origin`): `mcp/auth.rs` `validate_token` and `validate_origin`. Never the token,
   the origin, or the request.

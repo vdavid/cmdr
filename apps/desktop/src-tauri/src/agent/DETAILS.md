@@ -73,7 +73,7 @@ file does not contain, and the model would reason about a file shape that isn't 
 `file_viewer/DETAILS.md` § "Rows, not lines"; this note exists because the agent path is the one that looks like it
 could ignore it. This is the privacy line and it is structural, not a runtime guard. The registry's `consumers` + `access`
 dimensions pin the agent's view to exactly its authored `[agent]` entries, every one `Access::Read`,
-`Access::Propose`, `Access::Memory`, or `Access::Session`, never `Access::Write`; `tool_gate.rs` is the runtime choke
+`Access::ReadContents`, `Access::Propose`, `Access::Memory`, or `Access::Session`; `tool_gate.rs` is the runtime choke
 point (any name outside the agent view, known to the table or not, is refused before dispatch). A new KIND of content egress (a new tool, or a new field on an existing one) is a disclosure-copy change plus a
 `CLOUD_AI_CONSENT_VERSION` bump (`ai::cloud_consent`), never a silent widening; `docs/security.md` § Cloud AI egress,
 the user-facing account, has to move with it.

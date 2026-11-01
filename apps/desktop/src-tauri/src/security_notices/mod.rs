@@ -78,6 +78,7 @@ fn notice_for(event: &SecurityEvent) -> Option<AccessNotice> {
         | SecurityEvent::CloudAiConsentWithdrawn
         | SecurityEvent::McpServerTurnedOn { .. }
         | SecurityEvent::McpServerTurnedOff { .. }
+        | SecurityEvent::McpDirectModeChanged { .. }
         | SecurityEvent::ManagedPolicyApplied { .. }
         | SecurityEvent::UpdateInstalled { .. }
         | SecurityEvent::UpdateRefusedByPolicy { .. }

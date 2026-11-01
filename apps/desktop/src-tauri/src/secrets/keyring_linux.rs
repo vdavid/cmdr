@@ -104,4 +104,10 @@ impl SecretStore for KeyringStore {
             })
             .collect()
     }
+
+    /// Secret Service can't say who wrote an item, but Linux has no Full Disk Access for a same-user
+    /// process to gain through Cmdr, so nothing here depends on it.
+    fn vouching(&self) -> &dyn SecretStore {
+        self
+    }
 }

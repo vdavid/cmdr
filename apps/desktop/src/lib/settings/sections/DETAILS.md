@@ -236,11 +236,14 @@ sections compose).
   `formatModifiers`/`handleKeyFilterKeyDown`/`handleKeyFilterKeyUp`). It imports the pure `keyboard-shortcuts-grouping`
   and `keyboard-shortcuts-banner` helpers rather than duplicating them. The `getSearchQuery` arg is an accessor (not a
   snapshot) so the name-search derivation stays reactive to the parent-driven global search prop
-- **`McpServerSection.svelte`**: `AI > MCP server`: one unlabeled `SectionCard` wrapping the enable switch, port row,
-  and the live port-status block, gated via `anyVisible(shouldShow, 'developer.mcpEnabled', 'developer.mcpPort')`. (The
-  `developer.mcp*` id prefix is a stable persistence key; homing the setting under AI doesn't touch it.) Verbose logging
-  is NOT a section here: `developer.verboseLogging` lives in Advanced's "Logging" card (see `AdvancedSection` below),
-  whose open-log and copy-diagnostics action buttons ride the Advanced per-card "extra content" mechanism.
+- **`McpServerSection.svelte`**: `AI > MCP server`: one unlabeled `SectionCard` wrapping the enable switch, the direct
+  mode switch, port row, and the live port-status block, gated via
+  `anyVisible(shouldShow, 'developer.mcpEnabled', 'developer.mcpDirectMode', 'developer.mcpPort')`. (The
+  `developer.mcp*` id prefix is a stable persistence key; homing the setting under AI doesn't touch it.) It's the only
+  writer of direct mode, and the toggle follows what the backend really has, since the saved value alone doesn't count
+  (`src-tauri/src/tools/DETAILS.md` § Direct mode). Verbose logging is NOT a section here: `developer.verboseLogging`
+  lives in Advanced's "Logging" card (see `AdvancedSection` below), whose open-log and copy-diagnostics action buttons
+  ride the Advanced per-card "extra content" mechanism.
 - **`UpdatesSection.svelte`**: `Updates & privacy`: on a managed Mac, the "Managed by your organization" card
   (`ManagedPolicySummary`, `../../managed-policy/DETAILS.md` § The UI) tops the page while no search is active; it has
   no search entry, since a static one would hit on every unmanaged Mac. Under `DisableUpdates` the check button stays

@@ -120,6 +120,8 @@ vi.mock('#lib/tauri-commands/index.js', async (importOriginal) => ({
   setMcpPort: vi.fn(() => Promise.resolve()),
   getMcpRunning: vi.fn(() => Promise.resolve(false)),
   getMcpPort: vi.fn(() => Promise.resolve(57821)),
+  getMcpDirectMode: vi.fn(() => Promise.resolve(false)),
+  setMcpDirectMode: vi.fn(() => Promise.resolve({ on: false, survivesRestart: true })),
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
 }))

@@ -88,14 +88,22 @@ agent-only table**). Two per-entry dimensions express the split:
   `list_pane_files`, `important_folders`, `folder_importance`, `list_volumes`) plus `list_dir`, `operations_list` /
   `operations_get`, `search_photos`, and `image_facts`, shared into `[AiClient, Agent]` because their read schemas fit
   both readers unchanged. Agent handlers/schemas live under `CLAUDE.md`, named by path from the entry.
-- **`access`** (`Read` / `Propose` / `Memory` / `Session` / `Write`): whether the tool reads, asks, remembers,
-  connects, or mutates. `Write` covers any mutation of the filesystem OR app state — nav, cursor, selection, tabs,
-  dialogs, settings, connect/eject, file ops, rollback-cancel; when in doubt, `Write`. Only genuine read surfaces
-  (`search`, `ai_search`, `await`, `operations_list`, `operations_get`) are `Read`. `Propose` is the third tier,
-  described below; `Memory` is the fourth, and the only one that writes anything at all. `Session` is the fifth: it
-  opens a session to a place the user saved, with stored credentials, and the agent's gate admits it only on a turn the
-  user started (agent invariant 7, `DETAILS.md` § The dispatch gate). It's hand-allowlisted in
-  `EXPECTED_SESSION_TOOL_NAMES` (§ The `Session` tier).
+- **`access`** says what the tool does, whoever calls it:
+  - `Read`: reads state.
+  - `ReadContents`: reads inside files, or image-derived text (`inspect_file`, `image_facts`, `search_photos`).
+    Exactly `Read` for the agent.
+  - `Propose`: stages a proposal, described below.
+  - `Memory`: writes only the agent's memory folder.
+  - `Session`: opens a session to a place the user saved, with stored credentials. The agent's gate admits it only on a
+    turn the user started (agent invariant 7, `DETAILS.md` § The dispatch gate; § The `Session` tier below).
+  - `AppState`: changes what's on screen, never data.
+  - `Initiate`: opens a dialog or editor a person confirms.
+  - `LightWrite`: writes with no confirmation, the ONE written exception (`tag`, and `mkdir` and `mkfile` with a name).
+  - `Sensitive`: runs after a person confirms an Ask.
+  - `DevOnly(reason)`: never the agent, and an outside client only in direct mode (§ Direct mode).
+
+  The agent's gate refuses `AppState`, `Initiate`, `LightWrite`, `Sensitive`, and `DevOnly` today. Every class except
+  `Read` and `AppState` is hand-allowlisted (`EXPECTED_*_TOOL_NAMES`), and `DevOnly` is pinned by name.
 
 ⚠️ **`Access::Memory` was a deliberate widening of the app's central agent-safety invariant.** "The agent never changes
 anything" became "the agent writes only into `<data-dir>/ai/memory/`". Three things hold the narrowed promise: the jail
@@ -105,12 +113,33 @@ canonicalized parent); the hand-authored `EXPECTED_MEMORY_TOOL_NAMES` allowlist,
 read it); and `consumers: [Agent]` on both entries, pinned by a test — a `Memory` tool must never reach the HTTP
 transport, whose security story is "no filesystem access". Depth: `../agent/memory/DETAILS.md`.
 
+## Direct mode
+
+The switch that lets an outside client use the tools that go past a person (`policy.rs`). The agent never gets it.
+
+- **On** when an E2E or capture run happens in a build that honors it (`E2E_HONORED`: debug or `playwright-e2e`), or when
+  `developer.mcpDirectMode` is on. A release build ignores the environment, since `CMDR_E2E_MODE` is readable in every
+  build.
+- **Off**, a `DevOnly` tool refuses with `data: { reason: "directModeOff", setting: "developer.mcpDirectMode" }`, checked
+  in `execute_tool` for `Consumer::AiClient`. `tools/list` still lists it. The handler reads an atomic per request, so a
+  toggle applies to the next call.
+- **Decision: the JSON value never turns it on by itself.** A same-user process with no Full Disk Access can write
+  `settings.json` or launch Cmdr with a crafted `CMDR_DATA_DIR`, then read `~/Documents` through Cmdr's Full Disk Access.
+  So launch seeds the atomic only when the JSON says on AND `secrets`'s `mcp.directMode` item reads through
+  `store().vouching()`. It reads the item only when the JSON says on, so nobody else gets a Keychain touch at launch. A
+  fallback file store vouches for nothing, so there the toggle lasts the session and the row says so.
+  The check itself: `../secrets/DETAILS.md` § Vouching.
+- **The Settings row is the only writer** (`McpServerSection.svelte`, `set_mcp_direct_mode`). The setting is
+  `mcpSettable: false`, and the row shows what `get_mcp_direct_mode` answers, so a JSON value alone doesn't read as on.
+  Each real change, and a launch that comes up on, lands in the security log.
+
 ## The `Session` tier
 
-`connect_volume` is its one tool, and it's `consumers: [Agent]`. **Decision: AI clients don't get it, because they
+`upgrade_smb_to_direct` moves a share that's already mounted to a direct session, and it's an outside client's tool.
+`connect_volume` is the agent's, `consumers: [Agent]`. **Decision: AI clients don't get it, because they
 already have the power.** `select_volume` on a saved place (a pinned server or share in `cmdr://state`) switches a pane
 to it, and the pane brings it to life itself (`place-connect.svelte.ts`, through `servers/connect-flow.ts`), with the
-sign-in sheet for anything missing. Parity holds, and the HTTP transport takes on no new access class. The agent needs
+sign-in sheet for anything missing. Parity holds. The agent needs
 its own tool because it has no pane to steer and must not take one over to connect. Handler and rules:
 `DETAILS.md` § Connecting a saved place.
 
@@ -123,7 +152,7 @@ equals its list view (`test_dispatch_view_equals_list_view_per_consumer`).
 **Why `access` is independent of HTTP authentication.** Authenticating an external client says who may reach the MCP
 surface, not what the in-process Ask Cmdr agent may do. The explicit `access` dimension is the capability guarantee:
 the agent view must equal exactly its authored `[agent]` entries **and** every one must be `Access::Read`,
-`Access::Propose`, `Access::Memory`, or `Access::Session`, never `Access::Write`. The two structural tests
+`Access::ReadContents`, `Access::Propose`, `Access::Memory`, or `Access::Session`. The two structural tests
 (`test_agent_tool_view_is_exactly_expected_set` + `test_agent_tool_view_never_writes`) pin both halves against
 `EXPECTED_AGENT_TOOL_NAMES`. This is the line the plan calls the effort's most safety-critical invariant; the runtime
 side (`agent::tool_gate::admit`) adds

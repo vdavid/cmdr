@@ -879,6 +879,37 @@ async fn a_tool_errors_typed_data_reaches_the_client() {
 }
 
 #[tokio::test(flavor = "current_thread")]
+async fn a_dev_only_tool_refuses_off_direct_mode_and_the_setting_toggles_it_live() {
+    let _token_guard = TOKEN_TEST_LOCK.lock().await;
+    let app = app_with_stores();
+    let server = TestServer::start(&app).await;
+    let unset_after = isolate_secrets();
+
+    for name in ["resolve_conflict", "connect_to_server", "ai_search"] {
+        let refused = server.tool(name, json!({})).await;
+        assert_eq!(refused["error"]["code"], json!(INVALID_PARAMS), "{name}");
+        assert_eq!(
+            refused["error"]["data"],
+            json!({"reason":"directModeOff","setting":"developer.mcpDirectMode"}),
+            "{name}"
+        );
+    }
+
+    crate::tools::policy::set_direct_mode(true);
+    let past_the_gate = server.tool("resolve_conflict", json!({})).await;
+    assert_ne!(
+        past_the_gate["error"]["data"]["reason"],
+        json!("directModeOff"),
+        "{past_the_gate}"
+    );
+
+    crate::tools::policy::set_direct_mode(false);
+    let refused_again = server.tool("resolve_conflict", json!({})).await;
+    assert_eq!(refused_again["error"]["data"]["reason"], json!("directModeOff"));
+    drop(unset_after);
+}
+
+#[tokio::test(flavor = "current_thread")]
 async fn no_reply_shows_a_twins_nul_pick() {
     let _token_guard = TOKEN_TEST_LOCK.lock().await;
     let twin = format!("/DCIM/{}/IMG_1.JPG", cmdr_fs::twin_path::pick_segment(4242));

@@ -25,7 +25,7 @@ mcp_tools! {
         schema: schemas::select_volume_schema(),
         subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::AppState,
         run: nav_params nav::execute_nav_command_with_params
     },
     "nav_to_path" => {
@@ -35,7 +35,7 @@ mcp_tools! {
         schema: schemas::nav_to_path_schema(),
         subject: SubjectSpec::Path("path"),
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::AppState,
         run: nav_params nav::execute_nav_command_with_params
     },
     "nav_to_parent" => {
@@ -45,7 +45,7 @@ mcp_tools! {
         schema: schemas::no_params_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::AppState,
         run: nav nav::execute_nav_command
     },
     "nav_back" => {
@@ -55,7 +55,7 @@ mcp_tools! {
         schema: schemas::no_params_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::AppState,
         run: nav nav::execute_nav_command
     },
     "nav_forward" => {
@@ -65,7 +65,7 @@ mcp_tools! {
         schema: schemas::no_params_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::AppState,
         run: nav nav::execute_nav_command
     },
     "scroll_to" => {
@@ -75,7 +75,7 @@ mcp_tools! {
         schema: schemas::scroll_to_schema(),
         subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::AppState,
         run: nav_params nav::execute_nav_command_with_params
     },
 
@@ -87,7 +87,7 @@ mcp_tools! {
         schema: schemas::move_cursor_schema(),
         subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::AppState,
         run: nav_params nav::execute_nav_command_with_params
     },
     "open_under_cursor" => {
@@ -97,7 +97,7 @@ mcp_tools! {
         schema: schemas::no_params_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::Sensitive,
         run: nav nav::execute_nav_command
     },
 
@@ -109,7 +109,7 @@ mcp_tools! {
         schema: schemas::select_schema(),
         subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::AppState,
         run: app_params file_ops::execute_select_command
     },
 
@@ -121,7 +121,7 @@ mcp_tools! {
         schema: schemas::copy_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::Initiate,
         run: app_params file_ops::execute_copy
     },
     "move" => {
@@ -131,7 +131,7 @@ mcp_tools! {
         schema: schemas::move_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::Initiate,
         run: app_params file_ops::execute_move
     },
     "compress" => {
@@ -141,7 +141,7 @@ mcp_tools! {
         schema: schemas::compress_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::Initiate,
         run: app_params file_ops::execute_compress
     },
     "delete" => {
@@ -151,7 +151,7 @@ mcp_tools! {
         schema: schemas::delete_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::Initiate,
         run: app_params file_ops::execute_delete
     },
     "rename" => {
@@ -163,10 +163,10 @@ mcp_tools! {
         schema: schemas::rename_schema(),
         subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::Initiate,
         run: app_params file_ops::execute_rename
     },
-    // The Multi-Rename Tool (⌃M) for an agent: `Propose`, never `Write`. A dry run previews; a
+    // The Multi-Rename Tool (⌃M) for an agent: `Propose`, never a write. A dry run previews; a
     // real run stages the ready rows as one rename group on the suggested-ops spine, which the
     // user approves or rejects in Cmdr. See `executor/multi_rename.rs`.
     "multi_rename" => {
@@ -188,7 +188,7 @@ mcp_tools! {
         schema: schemas::mkdir_schema(),
         subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::LightWrite,
         run: app_params file_ops::execute_mkdir
     },
     "mkfile" => {
@@ -200,7 +200,7 @@ mcp_tools! {
         schema: schemas::mkfile_schema(),
         subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::LightWrite,
         run: app_params file_ops::execute_mkfile
     },
     "refresh" => {
@@ -210,7 +210,7 @@ mcp_tools! {
         schema: schemas::no_params_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::AppState,
         run: app_only file_ops::execute_refresh
     },
     "tag" => {
@@ -222,7 +222,7 @@ mcp_tools! {
         schema: schemas::tag_schema(),
         subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::LightWrite,
         run: app_params tags::execute_tag
     },
 
@@ -234,7 +234,7 @@ mcp_tools! {
         schema: schemas::no_params_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::AppState,
         run: app_only view::execute_toggle_hidden
     },
     "set_view_mode" => {
@@ -244,7 +244,7 @@ mcp_tools! {
         schema: schemas::set_view_mode_schema(),
         subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::AppState,
         run: app_params view::execute_set_view_mode
     },
     "sort" => {
@@ -254,7 +254,7 @@ mcp_tools! {
         schema: schemas::sort_schema(),
         subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::AppState,
         run: app_params view::execute_sort
     },
 
@@ -266,7 +266,7 @@ mcp_tools! {
         schema: schemas::tab_schema(),
         subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::AppState,
         run: app_params app::execute_tab
     },
 
@@ -278,7 +278,7 @@ mcp_tools! {
         schema: schemas::dialog_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::AppState,
         run: app_params dialogs::execute_dialog_command
     },
     "open_search_dialog" => {
@@ -288,7 +288,7 @@ mcp_tools! {
         schema: schemas::open_search_dialog_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::AppState,
         run: app_params dialogs::execute_open_search_dialog
     },
 
@@ -300,7 +300,7 @@ mcp_tools! {
         schema: schemas::no_params_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::Sensitive,
         run: sync_app quit::execute_quit
     },
     "switch_pane" => {
@@ -310,7 +310,7 @@ mcp_tools! {
         schema: schemas::no_params_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::AppState,
         run: sync_app app::execute_switch_pane
     },
     "swap_panes" => {
@@ -320,7 +320,7 @@ mcp_tools! {
         schema: schemas::no_params_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::AppState,
         run: sync_app app::execute_swap_panes
     },
 
@@ -346,7 +346,7 @@ mcp_tools! {
         schema: schemas::ai_search_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
-        access: Access::Read,
+        access: Access::DevOnly("the agent is already an LLM; a nested call bills twice and hides the translation"),
         run: app_params search::execute_ai_search
     },
 
@@ -359,7 +359,7 @@ mcp_tools! {
         schema: schemas::set_setting_schema(),
         subject: SubjectSpec::Setting,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::Sensitive,
         run: app_params async_tools::execute_set_setting
     },
 
@@ -373,7 +373,7 @@ mcp_tools! {
         schema: schemas::indexing_schema(),
         subject: SubjectSpec::Volume("volumeId"),
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::Sensitive,
         run: params_only indexing::execute_indexing
     },
 
@@ -389,7 +389,7 @@ mcp_tools! {
         schema: schemas::queue_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::AppState,
         run: params_only queue::execute_queue
     },
     "resolve_conflict" => {
@@ -401,7 +401,7 @@ mcp_tools! {
         schema: schemas::resolve_conflict_schema(),
         subject: SubjectSpec::Operation("operationId"),
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::DevOnly("the question is already in front of the person"),
         run: params_only conflicts::execute_resolve_conflict
     },
     "unlock" => {
@@ -414,7 +414,7 @@ mcp_tools! {
         schema: schemas::unlock_schema(),
         subject: SubjectSpec::Path("path"),
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::AppState,
         run: app_params unlock::execute_unlock
     },
 
@@ -428,7 +428,7 @@ mcp_tools! {
         schema: schemas::favorites_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::AppState,
         run: params_only favorites::execute_favorites
     },
 
@@ -440,7 +440,7 @@ mcp_tools! {
         schema: schemas::connect_to_server_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::DevOnly("a model-chosen address would be an exfiltration channel; the agent has propose_server"),
         run: app_params async_tools::execute_connect_to_server
     },
     "remove_manual_server" => {
@@ -450,7 +450,7 @@ mcp_tools! {
         schema: schemas::remove_manual_server_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::Sensitive,
         run: sync_app_params async_tools::execute_remove_manual_server
     },
     "upgrade_smb_to_direct" => {
@@ -463,7 +463,7 @@ mcp_tools! {
         schema: schemas::upgrade_smb_to_direct_schema(),
         subject: SubjectSpec::Volume("volumeId"),
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::Session,
         run: app_params async_tools::execute_upgrade_smb_to_direct
     },
     "eject" => {
@@ -478,7 +478,7 @@ mcp_tools! {
         schema: schemas::eject_schema(),
         subject: SubjectSpec::Volume("volumeId"),
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::Sensitive,
         run: params_only eject::execute_eject
     },
 
@@ -502,7 +502,7 @@ mcp_tools! {
         schema: schemas::no_params_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::AppState,
         run: app_only downloads::execute_go_to_latest_download
     },
 
@@ -536,7 +536,7 @@ mcp_tools! {
         schema: schemas::operations_rollback_schema(),
         subject: SubjectSpec::Operation("operationId"),
         consumers: &[Consumer::AiClient],
-        access: Access::Write,
+        access: Access::Initiate,
         run: app_params operation_log::execute_operations_rollback
     },
 
@@ -553,7 +553,7 @@ mcp_tools! {
         schema: photos::search_photos_schema(),
         subject: SubjectSpec::Custom,
         consumers: &[Consumer::AiClient, Consumer::Agent],
-        access: Access::Read,
+        access: Access::ReadContents,
         run: app_params photos::execute_search_photos
     },
     // The LOOKUP direction of the same index (`search_photos` is the query direction): the
@@ -568,7 +568,7 @@ mcp_tools! {
         schema: image_facts::image_facts_schema(),
         subject: SubjectSpec::Custom,
         consumers: &[Consumer::AiClient, Consumer::Agent],
-        access: Access::Read,
+        access: Access::ReadContents,
         run: app_params image_facts::execute_image_facts
     },
 
@@ -629,7 +629,7 @@ mcp_tools! {
         schema: crate::tools::read::inspect::inspect_file_schema(),
         subject: SubjectSpec::Custom,
         consumers: &[Consumer::Agent],
-        access: Access::Read,
+        access: Access::ReadContents,
         run: app_params crate::tools::read::inspect::execute_inspect_file
     },
     "propose_rename_plan" => {

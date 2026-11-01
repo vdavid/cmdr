@@ -13,6 +13,8 @@
         setMcpPort,
         getMcpRunning,
         getMcpPort,
+        setMcpDirectMode,
+        getMcpDirectMode,
         type McpServerOutcome,
     } from '#lib/tauri-commands/index.js'
     import { createShouldShow, anyVisible } from '#lib/settings/settings-search.js'
@@ -28,12 +30,18 @@
     const log = getAppLogger('mcp-settings')
 
     const shouldShow = $derived(createShouldShow(searchQuery))
-    const cardVisible = $derived(anyVisible(shouldShow, 'developer.mcpEnabled', 'developer.mcpPort'))
+    const cardVisible = $derived(
+        anyVisible(shouldShow, 'developer.mcpEnabled', 'developer.mcpDirectMode', 'developer.mcpPort'),
+    )
 
     const defaultDef = { label: '', description: '' }
     const mcpEnabledDef = getSettingDefinition('developer.mcpEnabled') ?? defaultDef
+    const mcpDirectModeDef = getSettingDefinition('developer.mcpDirectMode') ?? defaultDef
     const mcpPortDef = getSettingDefinition('developer.mcpPort') ?? defaultDef
 
+    /** What the backend really has. The saved value is display only: launch ignores it without its item. */
+    let directModeOn = $state(false)
+    let directModeThisSessionOnly = $state(false)
     let serverRunning = $state(false)
     /** The port the running server is actually bound to (may differ from the setting during changes) */
     let runningPort = $state<number | null>(null)
@@ -66,8 +74,23 @@
         }
     }
 
+    /** Sync the direct mode toggle from what the backend really has. */
+    async function syncDirectMode(): Promise<void> {
+        directModeOn = await getMcpDirectMode()
+        if (getSetting('developer.mcpDirectMode') !== directModeOn) {
+            setSetting('developer.mcpDirectMode', directModeOn)
+        }
+    }
+
+    async function applyDirectMode(enabled: boolean): Promise<void> {
+        const outcome = await setMcpDirectMode(enabled)
+        directModeThisSessionOnly = outcome.on && !outcome.survivesRestart
+        await syncDirectMode()
+    }
+
     onMount(() => {
         void syncState()
+        void syncDirectMode()
 
         const unsubEnabled = onSpecificSettingChange('developer.mcpEnabled', (value) => {
             // Ignore echoes from our own syncState calls (sync + cross-window).
@@ -75,11 +98,17 @@
             if (value === serverRunning) return
             enqueue(() => applyMcpEnabled(value))
         })
+        const unsubDirectMode = onSpecificSettingChange('developer.mcpDirectMode', (value) => {
+            // The same echo guard as above.
+            if (value === directModeOn) return
+            enqueue(() => applyDirectMode(value))
+        })
         const unsubPort = onSpecificSettingChange('developer.mcpPort', () => {
             debounceMcpPortChange()
         })
         return () => {
             unsubEnabled()
+            unsubDirectMode()
             unsubPort()
             clearTimeout(portDebounceTimer)
         }
@@ -205,6 +234,20 @@
                 >
                     <SettingSwitch id="developer.mcpEnabled" />
                 </SettingRow>
+            {/if}
+
+            {#if shouldShow('developer.mcpDirectMode')}
+                <SettingRow
+                    id="developer.mcpDirectMode"
+                    label={mcpDirectModeDef.label}
+                    description={mcpDirectModeDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="developer.mcpDirectMode" />
+                </SettingRow>
+                {#if directModeThisSessionOnly}
+                    <div class="port-status warning">{tString('settings.mcp.directModeThisSessionOnly')}</div>
+                {/if}
             {/if}
 
             {#if shouldShow('developer.mcpPort')}

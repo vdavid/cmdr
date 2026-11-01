@@ -88,7 +88,17 @@ pub(super) async fn dispatch_until_stopped(
 /// is a decision here.
 fn stop_may_abandon(access: Option<Access>) -> bool {
     match access {
-        Some(Access::Read | Access::Session | Access::Write) | None => true,
+        Some(
+            Access::Read
+            | Access::ReadContents
+            | Access::Session
+            | Access::AppState
+            | Access::Initiate
+            | Access::LightWrite
+            | Access::Sensitive
+            | Access::DevOnly(_),
+        )
+        | None => true,
         Some(Access::Propose | Access::Memory) => false,
     }
 }

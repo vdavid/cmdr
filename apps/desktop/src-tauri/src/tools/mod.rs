@@ -6,6 +6,7 @@
 //!   every view and the dispatch.
 //! - `actions/`: the handlers behind most tools. `read/`, `propose/`, `suggestions/`, `memory.rs`,
 //!   `connect.rs`, and `quiet.rs`: the handlers written for the agent.
+//! - [`policy`]: direct mode, the switch that lets an outside client past a person.
 //! - [`sensitive`]: the one gate every path yielding file contents passes.
 //! - [`resources`]: the read-only `cmdr://` views.
 //! - [`agent_tool_declarations`]: the `ToolDeclaration`s handed to the provider, built from the
@@ -18,6 +19,7 @@ pub mod connect;
 pub mod error_codes;
 pub mod memory;
 pub mod params;
+pub mod policy;
 pub mod propose;
 pub mod quiet;
 pub mod read;

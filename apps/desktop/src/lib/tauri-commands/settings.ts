@@ -13,6 +13,7 @@ import {
   commands,
   events,
   type AutomatedRun,
+  type McpDirectModeOutcome,
   type RestrictedWindowPersistableSetting,
   type RestrictedWindowSettings,
   type SettingsChanged,
@@ -248,6 +249,16 @@ export async function getMcpRunning(): Promise<boolean> {
 /** Returns the port the MCP server is actually listening on, or null if not running. */
 export async function getMcpPort(): Promise<number | null> {
   return commands.getMcpPort()
+}
+
+/** Turns direct mode on or off, and says whether that survives a restart. */
+export async function setMcpDirectMode(enabled: boolean): Promise<McpDirectModeOutcome> {
+  return commands.setMcpDirectMode(enabled)
+}
+
+/** Returns whether direct mode's setting is really on, which the saved value alone doesn't say. */
+export async function getMcpDirectMode(): Promise<boolean> {
+  return commands.getMcpDirectMode()
 }
 
 // ============================================================================

@@ -20,8 +20,9 @@ the surface, so every later slice grows here too.
 
 ## Must-knows
 
-- **The agent can propose; only the user can approve** (invariant 7). Dispatch admits `Read`, `Propose`, `Memory`, and
-  `Session`, never `Write`; a `Propose` tool mutates nothing, approval is a frontend user action, and no tool approves.
+- **The agent can propose; only the user can approve** (invariant 7). Dispatch admits `Read`, `ReadContents`, `Propose`,
+  `Memory`, and `Session`, nothing else; a `Propose` tool mutates nothing, approval is a frontend user action, and no tool
+  approves.
   `Propose` doesn't touch consent (proposals flow agent → user), so don't re-litigate that.
 - **`Access::Session` only connects a SAVED place, and only on a turn the user started** (`text`, retries included; `resume` is reserved, unset in production; a wake or
   follow-up gets `refusedInBackground`). The gate reads `TurnParams::origin`, ❌ never the opener's shape. Hand-allowlisted

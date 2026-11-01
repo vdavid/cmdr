@@ -4,6 +4,7 @@ use tauri::{AppHandle, Runtime};
 
 use crate::mcp;
 use crate::security_log::{self, Initiator, SecurityEvent};
+use crate::tools;
 
 /// Start or stop the MCP server based on the user's setting. On enable, binds the requested
 /// port exactly: a busy port returns `McpServerOutcome::PortInUse` (server left as it was)
@@ -40,6 +41,51 @@ fn toggle_event(was_running: bool, outcome: &mcp::McpServerOutcome) -> Option<Se
         (true, mcp::McpServerOutcome::Stopped) => Some(SecurityEvent::McpServerTurnedOff { by: Initiator::User }),
         _ => None,
     }
+}
+
+/// What turning direct mode on or off came to. `survives_restart` is false when this store can't
+/// back the setting, so it lasts until Cmdr quits.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct McpDirectModeOutcome {
+    pub on: bool,
+    pub survives_restart: bool,
+}
+
+/// Turn direct mode on or off, called only by `McpServerSection.svelte`: the setting is
+/// `mcpSettable: false`, so no tool can reach it. Blocks on the secret store, off the IPC thread.
+#[tauri::command]
+#[specta::specta]
+pub async fn set_mcp_direct_mode(enabled: bool) -> McpDirectModeOutcome {
+    let change = tokio::task::spawn_blocking(move || tools::policy::set_direct_mode(enabled))
+        .await
+        .unwrap_or(tools::policy::DirectModeChange {
+            changed: false,
+            survives_restart: false,
+        });
+    if let Some(event) = direct_mode_event(enabled, change.changed) {
+        security_log::record(event);
+    }
+    McpDirectModeOutcome {
+        on: tools::policy::direct_mode_setting(),
+        survives_restart: change.survives_restart,
+    }
+}
+
+/// What the security log notes about a direct mode toggle: only a real change.
+fn direct_mode_event(on: bool, changed: bool) -> Option<SecurityEvent> {
+    changed.then_some(SecurityEvent::McpDirectModeChanged {
+        on,
+        by: Initiator::User,
+    })
+}
+
+/// Returns whether the person's direct mode setting is really on in this process, which the JSON
+/// value alone doesn't say. An automated run's direct mode doesn't show here.
+#[tauri::command]
+#[specta::specta]
+pub fn get_mcp_direct_mode() -> bool {
+    tools::policy::direct_mode_setting()
 }
 
 /// Restart the running MCP server on a new port (zero-downtime: the new listener binds
@@ -97,5 +143,25 @@ mod tests {
             None
         );
         assert_eq!(toggle_event(false, &McpServerOutcome::Stopped), None);
+    }
+
+    #[test]
+    fn only_a_real_direct_mode_change_reaches_the_security_log() {
+        assert_eq!(
+            direct_mode_event(true, true),
+            Some(SecurityEvent::McpDirectModeChanged {
+                on: true,
+                by: Initiator::User
+            })
+        );
+        assert_eq!(
+            direct_mode_event(false, true),
+            Some(SecurityEvent::McpDirectModeChanged {
+                on: false,
+                by: Initiator::User
+            })
+        );
+        assert_eq!(direct_mode_event(true, false), None);
+        assert_eq!(direct_mode_event(false, false), None);
     }
 }

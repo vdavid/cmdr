@@ -26,6 +26,12 @@ pub enum SecurityEvent {
     McpServerTurnedOff {
         by: Initiator,
     },
+    /// Direct mode went on or off: outside clients may then go past a person. `by: launch` means this
+    /// launch came up with it on.
+    McpDirectModeChanged {
+        on: bool,
+        by: Initiator,
+    },
     /// The first MCP request turned away for `reason` since the last quiet spell.
     McpRejectionsStarted {
         reason: McpRejection,
@@ -266,6 +272,7 @@ mod tests {
         match event {
             SecurityEvent::CloudAiConsentGiven | SecurityEvent::CloudAiConsentWithdrawn => &[],
             SecurityEvent::McpServerTurnedOn { .. } | SecurityEvent::McpServerTurnedOff { .. } => &["by"],
+            SecurityEvent::McpDirectModeChanged { .. } => &["on", "by"],
             SecurityEvent::McpRejectionsStarted { .. } => &["reason"],
             SecurityEvent::McpRejectionsEnded { .. } => &["reason", "count"],
             SecurityEvent::ManagedPolicyApplied { .. } => &["trigger", "keys_before", "keys_after"],
@@ -300,6 +307,13 @@ mod tests {
             (
                 SecurityEvent::McpServerTurnedOff { by: Initiator::User },
                 r#"{"kind":"mcp_server_turned_off","by":"user"}"#,
+            ),
+            (
+                SecurityEvent::McpDirectModeChanged {
+                    on: true,
+                    by: Initiator::Launch,
+                },
+                r#"{"kind":"mcp_direct_mode_changed","on":true,"by":"launch"}"#,
             ),
             (
                 SecurityEvent::McpRejectionsStarted {

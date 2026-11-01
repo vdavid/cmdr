@@ -1773,6 +1773,22 @@
   "@settings.developer.mcpEnabled.keywords": {
     "description": "Search keywords for the “Enable MCP server” setting (settings.developer.mcpEnabled.label) in Settings > AI > MCP server. What it does: turns on a local server that lets AI assistants (like coding agents) control Cmdr. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
+  "settings.developer.mcpDirectMode.label": "Direct mode",
+  "@settings.developer.mcpDirectMode.label": {
+    "description": "Label for a toggle in Settings > AI > MCP server. When on, outside AI tools connected to Cmdr can read file contents, write their own notes, and confirm dialogs without a person. \"Direct\" means no person in between; the Ask Cmdr agent never gets this."
+  },
+  "settings.developer.mcpDirectMode.description": "Let connected AI tools read your files and confirm dialogs without asking you. Only turn this on while you’re testing or developing with them.",
+  "@settings.developer.mcpDirectMode.description": {
+    "description": "Help text for the \"Direct mode\" toggle in Settings > AI > MCP server. A warning in plain words: it removes the person from the loop for outside AI tools, which is why it should stay off in everyday use."
+  },
+  "settings.developer.mcpDirectMode.keywords": "testing, automation, confirm, bypass, developer",
+  "@settings.developer.mcpDirectMode.keywords": {
+    "description": "Search keywords for the “Direct mode” setting (settings.developer.mcpDirectMode.label) in Settings > AI > MCP server. What it does: lets outside AI tools read file contents and confirm dialogs with no person involved, for testing and development. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
+  },
+  "settings.mcp.directModeThisSessionOnly": "Direct mode stays on until you quit Cmdr, since this computer can’t keep it safely across a restart.",
+  "@settings.mcp.directModeThisSessionOnly": {
+    "description": "Note shown under the \"Direct mode\" toggle in Settings > AI > MCP server, when the system's password store can't back the setting. It means the person has to turn it on again after the next launch."
+  },
   "settings.developer.mcpPort.label": "Port",
   "@settings.developer.mcpPort.label": {
     "description": "Label for the MCP-server network port number input. \"Port\" is a networking term. In Settings > Developer > MCP server. Short label.",
