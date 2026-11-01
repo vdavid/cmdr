@@ -251,9 +251,6 @@ Where a lead's review refined one of David's decisions, the refined form is writ
 - David, once: a real direct mode toggle and restart on a Developer ID build. Executors test the Keychain only through
   the seam.
 - M12: `developer.mcpDirectMode`'s `ReadContents` and `Memory` refusals arrive with `admit`; M7a gates only `DevOnly`.
-
-## Carried from M7a
-
 - M7b also does two direct-mode things. A settings reset clears the Keychain item. And direct mode coming up on at
   launch shows the person a notice through `security_notices`.
 - `SecretStore::vouching()` is the one seam for the Keychain read. Where the Keychain can't keep it (a build without a
