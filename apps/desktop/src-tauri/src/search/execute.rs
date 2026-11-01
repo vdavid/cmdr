@@ -122,7 +122,7 @@ fn resolve_target(query: &SearchQuery) -> Result<Target, ScopeError> {
 }
 
 /// The target for a query its caller already placed on one volume's index
-/// (`mcp/executor/search/placement.rs`), so its paths aren't routed again.
+/// (`tools/actions/search/placement.rs`), so its paths aren't routed again.
 ///
 /// The one case path routing can't express: a share that isn't connected. Its
 /// locations sit under its last root (`/Volumes/naspi`), which routes to the boot

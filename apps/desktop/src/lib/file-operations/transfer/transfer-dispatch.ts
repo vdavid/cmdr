@@ -114,7 +114,7 @@ export function isVolumeMove(config: TransferDispatchConfig): boolean {
 
 export interface TransferStartConfig extends TransferDispatchConfig {
   /** The MCP round-trip request id, present only for an operation an agent
-   *  started (`mcp/executor/file_ops.rs`), which waits for the spawned id. */
+   *  started (`tools/actions/file_ops.rs`), which waits for the spawned id. */
   mcpRequestId?: string
 }
 
@@ -123,7 +123,7 @@ export interface TransferStartConfig extends TransferDispatchConfig {
  * slowly on purpose: the press is waiting up to `holdMs` on something it must
  * know before it may start anything (a cloud folder's walk deciding trash versus
  * delete). The round-trip moves its deadline out by that much (`mcp_round_trip_parsed`
- * in `mcp/executor/mod.rs`), and the start still answers the moment it can.
+ * in `tools/actions/mod.rs`), and the start still answers the moment it can.
  */
 export function holdOperationStartReply(mcpRequestId: string, holdMs: number): void {
   void emit('mcp-response', { requestId: mcpRequestId, holdMs })

@@ -1,6 +1,6 @@
 //! What happens when a wake decides there is nothing worth raising.
 //!
-//! The model says so by calling `nothing_to_suggest` (`agent/tools/quiet.rs`), a pure signal
+//! The model says so by calling `nothing_to_suggest` (`tools/quiet.rs`), a pure signal
 //! whose handler changes nothing. Acting on it lives HERE, on the wake path, for two reasons:
 //! the tool is `Access::Read` and must stay that way, and the rail shares the one
 //! `agent_tool_view()`, so a tool that deleted its own conversation would delete a user's

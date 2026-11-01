@@ -2,7 +2,7 @@
 //! folder and file a running transfer is in, read off the transfer tree's
 //! follow-the-work window.
 
-use crate::mcp::resources::operations::{OperationRow, build_operations_yaml};
+use crate::tools::resources::operations::{OperationRow, build_operations_yaml};
 use cmdr_operations::testing::{ProgressAxis, TransferTreeAncestor};
 use cmdr_operations::{
     LifecycleStatus, OperationSnapshot, TransferTreeRow, TransferTreeView, TreeRowKind, TreeRowState,

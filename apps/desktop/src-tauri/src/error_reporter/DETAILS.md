@@ -471,7 +471,7 @@ clones typed in-memory facts into an eight-entry, oldest-first ring:
 
 - **Panes**: path, volume, backend, connection, view/sort, counts, the cursor entry, selection split.
 - **Operations**: type, lifecycle, phase, source/destination, current file, progress counts.
-- **Volumes**: every row `mcp::resources::volumes::snapshot_volumes` lists (the app's own volume pipeline,
+- **Volumes**: every row `tools::resources::volumes::snapshot_volumes` lists (the app's own volume pipeline,
   timeout-guarded), with kind, connection state, and device readiness read back from its wire words
   (`from_token`, unknown ones absent; a test pins the round trip).
 - **Recent listing failures**: the newest five from `ui_state::listing_errors`, each with its timestamp, volume, the

@@ -47,7 +47,7 @@ Issue #456. Must-knows in `CLAUDE.md`; this is the why and the catalog.
 
 - `content_refusals_started` / `content_refusals_ended` (`tool`: `inspect_file` | `image_facts` | `search_photos` |
   `multi_rename`, `reason`: `credentials` | `browser_data` | `message_store` | `cmdr_data` | `private_key`):
-  `../agent/tools/read/sensitive.rs` `note_refusal`, one episode per tool and reason. Never the path, or the log would list
+  `../tools/sensitive.rs` `note_refusal`, one episode per tool and reason. Never the path, or the log would list
   what an injected prompt went looking for.
 
 Not recorded: reads of file data that went ahead. The operation log covers modifications; journaling every read would cost privacy and

@@ -7,7 +7,7 @@ use super::{
     count_u32, location_path, outcome_of,
 };
 use crate::agent::llm::types::{AgentToolResult, ToolId};
-use crate::agent::tools::read::join_child_path;
+use crate::tools::read::join_child_path;
 
 /// How many rows a preview carries. A taste of what the model saw, not a second listing: the
 /// whole result is one Copy away.

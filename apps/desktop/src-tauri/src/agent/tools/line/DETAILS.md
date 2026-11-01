@@ -31,7 +31,7 @@ model read in its own turn.
 - `Unrecognized(name)` → `UnknownTool { name }`; a legacy nameless call is `Unrecognized("")`.
 - Arguments missing what a tool needs → `Unparsed`. Paths are `~`-expanded with `read::expand_tilde`. A place's
   `volumeId` argument is not part of the subject: the path is an app path the panes know either way.
-- **A result's place is `location.path`** (the location contract, `../DETAILS.md` § The location contract), read
+- **A result's place is `location.path`** (the location contract, `../../../tools/DETAILS.md` § The location contract), read
   through `mod.rs::location_path`, which falls back to the bare `path` a thread stored before results carried a
   `location`, so an old thread still names its folder.
 - **Every subject path is a `LinePath { text, linkable }`** (`LinePath::of`): `linkable` only for an absolute path
@@ -68,7 +68,7 @@ Per-tool success shapes:
   `list_dir` read sets `totalIsLowerBound`, which makes the count a `lowerBound`.
 - `search` → `Matches { returned, matchCount, lowerBound }`, or `NothingFound { lowerBound }` at zero. `lowerBound` is
   `!coverage.complete || coverage.capped`, the same rule that puts the `≥` on `matchCountHuman`
-  (`mcp/executor/DETAILS.md` § The search result). `countOnly` gives `returned: 0` with a real count.
+  (`tools/actions/DETAILS.md` § The search result). `countOnly` gives `returned: 0` with a real count.
 - `search_photos` → the same pair over its `total`, a lower bound when any volume is `incomplete` or `indexing`.
 - `imageIndexingOff` / `semanticModelNotInstalled` (both photo tools) → `IndexUnavailable { reason }`, which is ok:
   the tool answered honestly that the index can't.

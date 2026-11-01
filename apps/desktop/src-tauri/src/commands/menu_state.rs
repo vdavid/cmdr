@@ -296,7 +296,7 @@ pub fn set_open_terminal_here_enabled<R: Runtime>(app: AppHandle<R>, enabled: bo
 /// Called by the main window whenever a dialog opens or closes, or the Ask Cmdr
 /// composer takes or gives up focus. ⚠️ CHROME only: a disabled item's accelerator
 /// still fires, so this stops the app OFFERING what it would refuse; the refusals
-/// themselves live in `mcp/executor/mod.rs` and the two frontend gates.
+/// themselves live in `tools/actions/mod.rs` and the two frontend gates.
 #[tauri::command]
 #[specta::specta]
 pub fn set_file_operations_blocked<R: Runtime>(app: AppHandle<R>, blocked: bool) -> Result<(), String> {

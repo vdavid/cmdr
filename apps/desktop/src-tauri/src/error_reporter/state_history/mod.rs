@@ -6,8 +6,8 @@
 
 use crate::file_system::volume::friendly_error::{ErrorCategory, ListingErrorReason};
 use crate::ignore_poison::IgnorePoison;
-use crate::mcp::resources::volumes::VolumeSummary;
 use crate::redact::RedactionContext;
+use crate::tools::resources::volumes::VolumeSummary;
 use crate::ui_state::PaneStateStore;
 use crate::ui_state::listing_errors::RecentListingError;
 use crate::ui_state::pane_state::PaneState;
@@ -108,7 +108,7 @@ pub(super) fn capture_if_due(app: tauri::AppHandle<tauri::Wry>) {
     tauri::async_runtime::spawn(async move {
         // The same volume pipeline `cmdr://state` reads, timeout-guarded inside, so a hung
         // mount can't wedge this task.
-        let volumes = crate::mcp::resources::volumes::snapshot_volumes().await;
+        let volumes = crate::tools::resources::volumes::snapshot_volumes().await;
         let Some(snapshot) = capture(&app, sequence, Utc::now(), &volumes) else {
             return;
         };
@@ -123,7 +123,7 @@ pub(super) async fn capture_for_report<R: tauri::Runtime>(app: &tauri::AppHandle
     let Some(sequence) = HISTORY.lock_ignore_poison().reserve_for_report(report_id) else {
         return;
     };
-    let volumes = crate::mcp::resources::volumes::snapshot_volumes().await;
+    let volumes = crate::tools::resources::volumes::snapshot_volumes().await;
     if let Some(snapshot) = capture(app, sequence, Utc::now(), &volumes) {
         HISTORY.lock_ignore_poison().store(snapshot);
     }

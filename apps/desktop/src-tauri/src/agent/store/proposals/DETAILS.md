@@ -115,7 +115,7 @@ run leaves no `approved` rows.
   little: nearly every op in a live group is `pending`.
 - **The creation snapshot (`snapshot_size` / `snapshot_mtime` / `snapshot_inode`) is nullable.** A selector fills it
   from the index row; an explicit path list (and a rename plan) gets one bounded stat per path through the source volume before the write
-  (`../../tools/suggestions/snapshot.rs`), and a path that was missing, refused, or too slow stays `NULL`. Display
+  (`../../../tools/suggestions/snapshot.rs`), and a path that was missing, refused, or too slow stays `NULL`. Display
   only: execution binds a LIVE stat at preflight (`../../suggested_ops/CLAUDE.md`).
 - **`selector` holds the selector's JSON**, for display and provenance. It is never re-run, and that half needs no
   rule: `../../suggested_ops/tests.rs::a_selector_freezes_at_creation_and_is_never_resolved_again` counts the
@@ -130,7 +130,7 @@ run leaves no `approved` rows.
 
 A verb whose review needs more than a path and a destination keeps it in its OWN table, keyed by op id and cascading with
 it, rather than widening `proposal_ops`. Rename does exactly that: `proposal_rename_evidence` (migration v5) holds why
-each proposed name is believable, and only `agent/tools/propose/rename/` writes or reads it. The spine stays
+each proposed name is believable, and only `tools/propose/rename/` writes or reads it. The spine stays
 verb-agnostic, so adding a verb never means adding a column every other verb leaves NULL.
 
 The catch a producer owns: `create_group` is its own transaction, so a sidecar row can only be written afterwards. State

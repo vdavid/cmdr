@@ -13,7 +13,7 @@ mod access;
 mod schema_gate;
 mod schemas;
 
-use crate::mcp::tool_registry::Tool;
+use crate::tools::Tool;
 
 fn tool<'a>(tools: &'a [Tool], name: &str) -> &'a Tool {
     tools.iter().find(|t| t.name == name).expect("tool present")

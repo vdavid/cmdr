@@ -232,7 +232,7 @@ else confirm stays exactly as instant as before.
 
 **An agent waiting on that press is told to hold.** Before the wait, a press an agent made (a `dialog confirm`'s
 `mcpRequestId`, or the auto-confirm's own) sends `holdOperationStartReply(id, ONLINE_ONLY_ANSWER_TIMEOUT_MS)`, which
-moves the MCP round-trip's deadline out by that much (the Holds bullet in `src-tauri/src/mcp/executor/DETAILS.md`).
+moves the MCP round-trip's deadline out by that much (the Holds bullet in `src-tauri/src/tools/actions/DETAILS.md`).
 Without it the agent's 10 s start budget ran out mid-walk while the trash still went ahead, so it got a timeout and no
 `operationId`. The id can't be minted earlier: until the walk answers, the press may yet start a trash, a delete, or
 nothing at all.

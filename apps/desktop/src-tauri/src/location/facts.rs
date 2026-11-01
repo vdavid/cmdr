@@ -21,10 +21,10 @@ use super::share_identity::ShareIdentity;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::ignore_poison::IgnorePoison;
 use crate::index_host::index;
-use crate::mcp::resources::volumes::VolumeKind;
 use crate::network::known_shares::KnownNetworkShare;
 use crate::network::server_guid::ServerGuid;
 use crate::network::smb_server_guid::LiveShare;
+use crate::tools::resources::volumes::VolumeKind;
 
 /// Every root each volume answered at this session, by volume id, oldest first.
 ///

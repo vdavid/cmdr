@@ -3,7 +3,7 @@
 //!
 //! `view::dispatch` flattens a `ToolError` to `{ problem }`, which a model can't
 //! branch on, so every tool that can't place or read a location answers this one
-//! shape (`agent/tools/DETAILS.md` § The location contract):
+//! shape (`tools/DETAILS.md` § The location contract):
 //! `{ miss, location, detail, root?, nearby?, sameShareAs? }`.
 
 use serde::{Deserialize, Serialize};

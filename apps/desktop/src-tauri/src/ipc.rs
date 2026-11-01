@@ -47,7 +47,6 @@ use tauri_specta::{Builder, collect_events};
 
 use crate::agent::chat::stream::AskCmdrTurn;
 use crate::agent::suggested_ops::SuggestionsChanged;
-use crate::agent::tools::propose::rename::BulkRenameCheckProgress;
 use crate::agent::wake::{AgentWakeStaged, AgentWakeStatus};
 use crate::clipboard::ClipboardPasteSettled;
 use crate::commands::search::SearchIndexReadyEvent;
@@ -82,6 +81,7 @@ use crate::search::live::events::{SearchCancelledEvent, SearchCompleteEvent, Sea
 use crate::security_notices::SecurityNoticeRaised;
 use crate::space_poller::{LowDiskSpacePayload, VolumeSpaceChanged};
 use crate::state_recovery::StateRecoveryQueued;
+use crate::tools::propose::rename::BulkRenameCheckProgress;
 use crate::volume_broadcast::{
     ServerPlaceMoved, VolumeContextAction, VolumeMounted, VolumeRootChanged, VolumeUnmounted, VolumesChanged,
 };
@@ -1131,7 +1131,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             // Operation manager registry snapshot (crates/cmdr-operations/src/manager.rs).
             wire::OperationsChanged,
             SuggestionsChanged,
-            // How far a rename review's check has got (agent/tools/propose/rename/check.rs).
+            // How far a rename review's check has got (tools/propose/rename/check.rs).
             BulkRenameCheckProgress,
             // Every Ask Cmdr turn's progress, keyed by conversation: rail sends and wakes
             // alike (agent/chat/stream.rs).
@@ -1297,7 +1297,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             SessionCompleteEvent,          // event_name = "drag-out-session-complete"
             ErrorReportAutoSent,
             // Window management: `emit_to`-targeted window lifecycle
-            // (mcp/executor/, menu/menu_handlers.rs, commands/settings.rs). Struct
+            // (tools/actions/, menu/menu_handlers.rs, commands/settings.rs). Struct
             // names kebab-case directly to the wire names, so no `event_name`
             // overrides. `execute-command` is also FE-emitted (LicenseSection).
             ExecuteCommand,

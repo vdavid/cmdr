@@ -12,10 +12,10 @@ use tauri::{AppHandle, Runtime};
 
 use super::LOG_TARGET;
 use crate::agent::llm::types::{AgentToolCall, AgentToolResult};
-use crate::agent::tools::propose::evidence::EvidenceScope;
-use crate::agent::tools::propose::rename::RenameProposalSnapshot;
 pub use crate::agent::tools::view::CallContext;
-use crate::mcp::{Access, tool_access};
+use crate::tools::propose::evidence::EvidenceScope;
+use crate::tools::propose::rename::RenameProposalSnapshot;
+use crate::tools::{Access, tool_access};
 
 /// How the runtime executes one tool call. The real impl routes through the agent's
 /// read-only dispatch view ([`AppHandleDispatcher`]); tests inject a scripted double,
@@ -148,7 +148,7 @@ impl<R: Runtime> ToolDispatcher for AppHandleDispatcher<R> {
             "revoking evidence for {} dropped tool result(s): {call_ids:?}",
             call_ids.len()
         );
-        crate::agent::tools::propose::rename::revoke_image_facts_evidence(&self.app, call_ids);
+        crate::tools::propose::rename::revoke_image_facts_evidence(&self.app, call_ids);
     }
 
     fn memory_root(&self) -> Option<PathBuf> {

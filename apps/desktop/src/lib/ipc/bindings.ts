@@ -8832,7 +8832,7 @@ export type EjectError =
  *
  *  ❗ The answer an automated caller reads: the MCP `eject` tool returns this as
  *  a typed tag rather than a sentence, so an agent learns which teardown ran
- *  (`mcp/executor/eject.rs`). The frontend ignores it; its feedback is the
+ *  (`tools/actions/eject.rs`). The frontend ignores it; its feedback is the
  *  volume leaving the switcher.
  */
 export type EjectOutcome =
@@ -9120,7 +9120,7 @@ export type EvidenceSource =
 /**
  *  `execute-command`: the single unified menu/cross-window command relay. The
  *  native menu (`menu/menu_handlers.rs`), the MCP dialog/app tools
- *  (`mcp/executor/`), and the settings window's License section all emit this to
+ *  (`tools/actions/`), and the settings window's License section all emit this to
  *  the main window, which narrows `command_id` to a registry `CommandId` and
  *  dispatches it. Wire key stays `commandId` via `rename_all`.
  */

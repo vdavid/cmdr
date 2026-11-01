@@ -1,7 +1,7 @@
 //! Tests for the `cmdr://logs` builder: option parsing, line selection, the
 //! `since` timestamp filter, and the mandatory PII redaction contract.
 
-use crate::mcp::resources::logs::{
+use crate::tools::resources::logs::{
     LOG_DEFAULT_LIMIT, LOG_MAX_LIMIT, LogOptions, line_timestamp_passes_since, parse_log_options, select_log_lines,
 };
 

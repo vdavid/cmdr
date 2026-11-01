@@ -6,7 +6,7 @@ use serde_json::Value;
 
 use super::{LinePath, ToolSubject, bounded, len_u32};
 use crate::agent::llm::types::{AgentToolCall, ToolId};
-use crate::agent::tools::read::expand_tilde;
+use crate::tools::read::expand_tilde;
 
 /// What `call` looked at. `result` refines it where the arguments can't say (`list_pane_files`
 /// takes none: its folder lives in its answer). `memory_root` is the memory folder, so a memory

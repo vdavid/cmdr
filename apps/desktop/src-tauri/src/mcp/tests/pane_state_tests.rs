@@ -1,4 +1,4 @@
-use crate::mcp::tool_registry::get_all_tools;
+use crate::tools::get_all_tools;
 use crate::ui_state::pane_state::{PaneFileEntry, PaneState, PaneStateStore};
 
 // =============================================================================

@@ -23,7 +23,7 @@ use crate::agent::llm::genai_impl::GenaiAgentLlm;
 use crate::agent::llm::types::{CallSettings, ProviderTag};
 use crate::ai::client::AiBackend;
 use crate::ai::llm_log::LlmLogContext;
-use crate::mcp::resources::volumes::{VolumeSummary, snapshot_volumes};
+use crate::tools::resources::volumes::{VolumeSummary, snapshot_volumes};
 use crate::ui_state::PaneStateStore;
 
 const LOG_TARGET: &str = "agent::chat";

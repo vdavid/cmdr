@@ -99,8 +99,8 @@ banner's Sign in.
   `needs_host_key_approval`, `needs_credentials`, or `authentication_rejected`, the place goes to the sheet as an ABSENT
   one, carrying the outcome so the sheet opens on the right step.
 
-**Ask Cmdr takes the same arms from the backend** (`connect_volume`, `src-tauri/src/agent/tools/DETAILS.md` § Connecting
-a saved place): for arm 1 it emits `volume-reconnect-requested`, which `smbReconnectManager` answers with the same
+**Ask Cmdr takes the same arms from the backend** (`connect_volume`, `src-tauri/src/tools/DETAILS.md` § Connecting a
+saved place): for arm 1 it emits `volume-reconnect-requested`, which `smbReconnectManager` answers with the same
 `startCycle`; arm 2 answers the model "needs credentials"; arm 3 dials through the same command body. Every dial of a
 saved place is ONE flight per place in the backend (`src-tauri/src/network/dial_flights.rs`): a caller with no typed
 secret joins a dial already out, one carrying a secret dials its own after it, and each caller's Cancel (or Stop) lets

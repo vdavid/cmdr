@@ -49,8 +49,8 @@ which:
 - **Reporting lifecycle**: `MtpDeviceEvent` and the `MtpDeviceEvents` trait the app implements.
 - **Finding a device at all**: `list_mtp_devices`, `watch_devices`, and `HotplugEvent`.
 - **What a device takes**: `MAX_NAME_UNITS`, `mtp-rs`'s own limit re-exported, so the app's proposal-time phone-name
-  check (`agent/tools/suggestions/problem.rs`) reads the number the device layer refuses past, ❌ never its own copy.
-  The app has no `mtp-rs` dependency, so this is the one way it can name it.
+  check (`tools/suggestions/problem.rs`) reads the number the device layer refuses past, ❌ never its own copy. The app
+  has no `mtp-rs` dependency, so this is the one way it can name it.
 
 Those 18, plus the `MtpVolume` re-export the registrar hands the app and the two `pub mod` declarations (a module name
 is itself a promise), are the 21.
@@ -152,10 +152,10 @@ code units. `mtp-rs` refuses a longer one in `upload`, `create_folder`, and `ren
 becomes `MtpConnectionError::NameTooLong`, then `VolumeError::InvalidName` (`volume/mapping.rs`), the same variant
 `cmdr-adb` maps ADB's `ENAMETOOLONG` to: only a different name can work, so ❌ never the retryable `IoError`. Pinned by
 `volume/move_rename_test.rs`. That's the backstop; an AI proposal naming a phone destination refuses the name earlier,
-at proposal time (`apps/desktop/src-tauri/src/agent/tools/suggestions/names.rs`). Android's shared storage also refuses
-FAT's reserved `" * : < > ? \ |` (Android's FUSE layer; unverified on a device). Nothing here refuses those, and the
-virtual device (a folder on the host) takes whatever the host's disk takes, so that rule is enforced only at proposal
-time. An ADB destination takes the same proposal rules.
+at proposal time (`apps/desktop/src-tauri/src/tools/suggestions/names.rs`). Android's shared storage also refuses FAT's
+reserved `" * : < > ? \ |` (Android's FUSE layer; unverified on a device). Nothing here refuses those, and the virtual
+device (a folder on the host) takes whatever the host's disk takes, so that rule is enforced only at proposal time. An
+ADB destination takes the same proposal rules.
 
 ## Dates on copies
 

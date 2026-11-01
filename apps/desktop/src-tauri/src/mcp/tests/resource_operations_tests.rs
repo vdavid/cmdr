@@ -1,7 +1,7 @@
 //! Tests for the `cmdr://state` `operations:` section builder (the two-source
 //! join of registry membership/status and the live progress cache).
 
-use crate::mcp::resources::operations::{OperationRow, build_operations_yaml};
+use crate::tools::resources::operations::{OperationRow, build_operations_yaml};
 use cmdr_operations::testing::{SourcesGoneNext, TransferWaitReason};
 use cmdr_operations::{
     ConflictId, KnownSize, LifecycleStatus, OperationSnapshot, OperationStatus, TransferActivity, WriteConflictEvent,

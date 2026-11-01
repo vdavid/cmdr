@@ -25,7 +25,7 @@ export interface DialogGateQuestion {
 /** Whether the dispatch core refuses `commandId` from `source` with `onScreen` up. */
 export function isRefusedOverDialog({ commandId, source, onScreen, textInputFocused }: DialogGateQuestion): boolean {
   // MCP answers for itself: its file-operation tools refuse with a typed reason while a blocking
-  // dialog is up (`mcp/executor`), and `dialog.confirm` exists to act on the open dialog. A
+  // dialog is up (`tools/actions`), and `dialog.confirm` exists to act on the open dialog. A
   // refusal here would be silent, so the agent would read it as success.
   if (source === 'mcp') return false
   // The palette closes on the way to its row's handler, so it never stands in its own way.

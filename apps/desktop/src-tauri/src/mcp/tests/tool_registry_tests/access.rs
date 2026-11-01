@@ -1,6 +1,6 @@
 //! The two view dimensions: the agent's consumer view, and the no-write access gate.
 
-use crate::mcp::tool_registry::{Access, Consumer, agent_tool_view, get_all_tools, tool_access, tool_available_to};
+use crate::tools::{Access, Consumer, agent_tool_view, get_all_tools, tool_access, tool_available_to};
 
 // ── Consumer + access dimensions (the no-write gate) ──────
 //
@@ -64,13 +64,13 @@ fn test_agent_tool_view_is_exactly_expected_set() {
 ///
 /// A `Propose` tool must also cap its payload the way `image_facts` caps at 200 paths — a proposal
 /// the user can't review is a proposal they can only rubber-stamp. That contract can't be enforced
-/// generically; see `mcp/DETAILS.md` § Consumer and access views.
+/// generically; see `apps/desktop/src-tauri/src/tools/DETAILS.md` § Consumer and access views.
 ///
 /// `multi_rename` is the one external-client entry: it stages its ready rows as a rename group
 /// on the same spine, and its handler (`executor/multi_rename.rs`) only reads the pane's cached
 /// listing and writes the proposal rows.
 ///
-/// `propose_server` (`agent/tools/suggestions/server.rs`) stages one zero-op server group: it
+/// `propose_server` (`tools/suggestions/server.rs`) stages one zero-op server group: it
 /// reads the saved-server stores in memory, writes the proposal rows, takes no secret, contacts no
 /// server, and refuses on a turn the user didn't start. The user's click is what saves.
 const EXPECTED_PROPOSE_TOOL_NAMES: &[&str] = &[
@@ -97,7 +97,7 @@ const EXPECTED_MEMORY_TOOL_NAMES: &[&str] = &["memory_write", "memory_edit"];
 /// and edits no server, credential, pin, or setting, so a human puts each name here on purpose,
 /// having read the handler.
 ///
-/// `connect_volume` (`agent/tools/connect.rs`): dials only a saved, unregistered place through
+/// `connect_volume` (`tools/connect.rs`): dials only a saved, unregistered place through
 /// `saved_servers::connect_saved_place` with no secret and no account, hands a dropped one to the
 /// frontend's reconnect manager, and takes no address, secret, or account parameter.
 const EXPECTED_SESSION_TOOL_NAMES: &[&str] = &["connect_volume"];

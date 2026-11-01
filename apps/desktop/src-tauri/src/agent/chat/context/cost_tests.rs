@@ -106,7 +106,7 @@ fn assert_near(measured: usize, documented: usize, what: &str) {
 /// an 11-file `image_facts` batch fit and a 12-file one did not.
 #[test]
 fn every_call_pays_the_pinned_fixed_overhead() {
-    let tools = crate::agent::tools::agent_tool_declarations();
+    let tools = crate::tools::agent_tool_declarations();
     assert_eq!(tools.len(), 21, "the overhead below is the cost of THESE declarations");
 
     let system = estimate_prompt_tokens(&crate::agent::chat::system_prompt::system_prompt(), &[], &[]);
@@ -268,7 +268,7 @@ fn assemble_rename_turn(files: usize, budget: usize) -> (usize, usize, usize) {
         1_100,
     ));
 
-    let tools = crate::agent::tools::agent_tool_declarations();
+    let tools = crate::tools::agent_tool_declarations();
     let system_prompt = crate::agent::chat::system_prompt::system_prompt();
     let real_prefix = PrefixInputs {
         system_prompt: &system_prompt,

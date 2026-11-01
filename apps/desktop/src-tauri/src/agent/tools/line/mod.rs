@@ -25,8 +25,8 @@ pub use repeat::repeat_marks;
 pub use subject::subject_of;
 
 use crate::agent::memory::MemoryRefusalKind;
-use crate::agent::tools::connect::ConnectOutcome;
 use crate::location::miss::MissToken;
+use crate::tools::connect::ConnectOutcome;
 
 /// A line's identity: the assistant row that made the call, plus the call's id. ❌ Never the
 /// call id alone: ids collide across rounds (the fake mints `fake-call-{index}` per round, and

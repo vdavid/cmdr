@@ -27,10 +27,10 @@ use tauri::{AppHandle, Runtime};
 use tokio_util::sync::CancellationToken;
 
 use crate::agent::llm::types::{AgentToolCall, AgentToolResult, ToolId};
-use crate::agent::tools::propose::evidence::EvidenceScope;
-use crate::agent::tools::propose::rename::{RenameDispatchOutcome, RenameProposalSnapshot};
 use crate::agent::types::TurnOrigin;
-use crate::mcp::{Access, Consumer, execute_tool, tool_access, validate_params};
+use crate::tools::propose::evidence::EvidenceScope;
+use crate::tools::propose::rename::{RenameDispatchOutcome, RenameProposalSnapshot};
+use crate::tools::{Access, Consumer, execute_tool, tool_access, validate_params};
 
 /// What a tool call knows about the turn it runs in: who started it, for the gate, and the
 /// turn's Stop. One value, so a dispatch path can't take one and forget the other.
@@ -206,7 +206,7 @@ async fn route_call<R: Runtime>(
     }
     if call.tool == ToolId::ProposeRenamePlan {
         let RenameDispatchOutcome { result, proposal } =
-            crate::agent::tools::propose::rename::dispatch(app, scope, &call.call_id, &call.arguments).await;
+            crate::tools::propose::rename::dispatch(app, scope, &call.call_id, &call.arguments).await;
         return DispatchOutcome { result, proposal };
     }
     // `propose_suggestions` is the one registry tool that needs to know WHICH thread asked:
@@ -216,20 +216,15 @@ async fn route_call<R: Runtime>(
     // folder a live read was reading, `outcome: cancelled`). Everything else goes through the
     // plain dispatch.
     let outcome = if call.tool == ToolId::ProposeSuggestions {
-        crate::agent::tools::suggestions::propose_in_thread(app, scope.conversation_id(), &call.arguments).await
+        crate::tools::suggestions::propose_in_thread(app, scope.conversation_id(), &call.arguments).await
     } else if call.tool == ToolId::ProposeServer {
         // It holds the turn's origin itself: a server card only on a turn the user started.
-        crate::agent::tools::suggestions::propose_server_in_thread(
-            app,
-            scope.conversation_id(),
-            &call.arguments,
-            turn.origin,
-        )
-        .await
+        crate::tools::suggestions::propose_server_in_thread(app, scope.conversation_id(), &call.arguments, turn.origin)
+            .await
     } else if call.tool == ToolId::ListDir {
-        crate::agent::tools::read::listing::execute_list_dir_cancellable(app, &call.arguments, turn.cancel).await
+        crate::tools::read::listing::execute_list_dir_cancellable(app, &call.arguments, turn.cancel).await
     } else if call.tool == ToolId::ConnectVolume {
-        crate::agent::tools::connect::execute_connect_volume_cancellable(app, &call.arguments, turn.cancel).await
+        crate::tools::connect::execute_connect_volume_cancellable(app, &call.arguments, turn.cancel).await
     } else {
         execute_tool(app, Consumer::Agent, call.tool.as_wire_name(), &call.arguments).await
     };
@@ -249,12 +244,12 @@ async fn route_call<R: Runtime>(
     // the ledger records what this call actually handed the model. See
     // `propose/evidence.rs` for the guardrail and its revocation seam.
     if call.tool == ToolId::ImageFacts {
-        crate::agent::tools::propose::rename::note_image_facts_delivered(app, scope, &result);
+        crate::tools::propose::rename::note_image_facts_delivered(app, scope, &result);
     }
     // A later rename plan is compared against the listing the model last saw, to count plans
     // built from a cut one (`propose/rename/cut_listing.rs`).
     if call.tool == ToolId::ListPaneFiles {
-        crate::agent::tools::propose::rename::note_pane_listing(app, scope, &result);
+        crate::tools::propose::rename::note_pane_listing(app, scope, &result);
     }
     DispatchOutcome { result, proposal: None }
 }

@@ -92,7 +92,7 @@ pub async fn media_index_volume_state(app: AppHandle, volume_id: String) -> Resu
 
 /// The honest per-volume enrichment state — the shared derivation behind both the
 /// `media_index_volume_state` command (the search UI) and the Ask Cmdr / MCP
-/// `search_photos` tool (`mcp::executor::photos`). Generic over the Tauri runtime so
+/// `search_photos` tool (`tools::actions::photos`). Generic over the Tauri runtime so
 /// the agent tool dispatch (also generic) reuses this ONE source rather than deriving
 /// coverage a second time (the reuse-the-core rule).
 pub(crate) async fn volume_state<R: tauri::Runtime>(

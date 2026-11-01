@@ -150,7 +150,7 @@ What this means for automation:
 - A `nav_to_path` that fell back or didn't settle is a real answer about the pane, not a transport failure. Don't retry
   it blindly: read `cmdr://state` first, since the pane usually holds the reason (a mount failure, an error pane).
 
-Architecture details: `apps/desktop/src-tauri/src/mcp/executor/DETAILS.md` § "Ack contract".
+Architecture details: `apps/desktop/src-tauri/src/tools/actions/DETAILS.md` § "Ack contract".
 
 ## Why isn't this operation moving?
 
@@ -237,7 +237,7 @@ What happens next depends on `mode`:
 Storing an archive password proves nothing about it. Re-read `cmdr://state` either way: the prompt is back with
 `wrongAttempt: true` when it was wrong. A restic repo checks first: a wrong one answers `outcome: "wrong_password"`,
 keeps nothing, and leaves the prompt up; a right one answers with `verified: true`. An agent's unlock never saves to the
-Keychain. The full contract: `apps/desktop/src-tauri/src/mcp/DETAILS.md` § "Answering the password prompt".
+Keychain. The full contract: `apps/desktop/src-tauri/src/tools/actions/DETAILS.md` § "Answering the password prompt".
 `dialog close archive-password` cancels instead, and forgets the password.
 
 ## Quitting the app

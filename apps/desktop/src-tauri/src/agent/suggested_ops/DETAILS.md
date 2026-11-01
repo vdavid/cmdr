@@ -99,7 +99,7 @@ said no.
 - The **creation snapshot** on `proposal_ops` came from the drive index when the agent proposed the group. It answers "has this changed since the agent looked at it?" — a stale BELIEF, surfaced in the review so the user can re-judge. Second precision is plenty: it is noticing a file that moved on days ago, and it is nullable because the index does not always hold all three fields.
 - The **preflight fingerprint** answers "has this changed since I showed it to you?" That is a RACE. The window is the review plus however long the operation then waits for its lane, which with `LANE_BUDGET = 1` can be well past an hour, and catching it needs the full nanosecond mtime a live `stat` gives.
 
-Converting the first into the second cannot work: whole seconds turn into a `modified_nanos` with a zero sub-second part, so it would mismatch nearly every real file and a bound group would skip everything. `capture_expected_sources` stats live instead, picking the namespace by `local_path()` exactly as the binding documents, and the fingerprints never reach the database — a restart must force a fresh preflight rather than resurrect one. This is the same rule, for the same reason, that `agent/tools/propose/rename/` already keeps its `AcceptedRenamePreflights` in memory.
+Converting the first into the second cannot work: whole seconds turn into a `modified_nanos` with a zero sub-second part, so it would mismatch nearly every real file and a bound group would skip everything. `capture_expected_sources` stats live instead, picking the namespace by `local_path()` exactly as the binding documents, and the fingerprints never reach the database — a restart must force a fresh preflight rather than resurrect one. This is the same rule, for the same reason, that `tools/propose/rename/` already keeps its `AcceptedRenamePreflights` in memory.
 
 A source that cannot be read at preflight simply gets no entry, and the binding drops what it does not name, so it is skipped and reported rather than acted on.
 
@@ -109,7 +109,7 @@ clicked one does, and the audit trail is the one place the difference is worth k
 make "what did the agent talk me into?" permanently unanswerable, at no benefit. `AgentEdited` marks the mixed case,
 where the user typed the name themselves (invariant 10) and the row would otherwise credit the model for it.
 
-**A move or copy with names is still one executor call.** `named_config` is the default config a click gets plus `TransferLeaves::per_source`, built by `transfer_names` from each op's stored NAME (`proposal_ops.destination`; `NULL` keeps the source's own). Its keys are EXACTLY the sources the binding keeps: a source preflight couldn't fingerprint, which the binding drops, takes its name with it. The engine validates the map once at the routed start (`crates/cmdr-operations/src/transfer/DETAILS.md` § Named destinations), the same rules the proposal already checked (`../tools/suggestions/DETAILS.md` § Moving or copying under a new name), so an approved group refusing there means something changed since. ❌ Never split a named group into several operations: one group is one call, one queue row, and one undo.
+**A move or copy with names is still one executor call.** `named_config` is the default config a click gets plus `TransferLeaves::per_source`, built by `transfer_names` from each op's stored NAME (`proposal_ops.destination`; `NULL` keeps the source's own). Its keys are EXACTLY the sources the binding keeps: a source preflight couldn't fingerprint, which the binding drops, takes its name with it. The engine validates the map once at the routed start (`crates/cmdr-operations/src/transfer/DETAILS.md` § Named destinations), the same rules the proposal already checked (`../../tools/suggestions/DETAILS.md` § Moving or copying under a new name), so an approved group refusing there means something changed since. ❌ Never split a named group into several operations: one group is one call, one queue row, and one undo.
 
 **Rename routes like every other verb.** Its executor is the one that takes per-row destinations and a fingerprint per row, and the live capture supplies exactly that: `rename_rows` rejoins the group's shared parent with each op's stored NAME (the executor refuses a row whose parents differ) and reads the fingerprint out of the binding rather than stat-ing the same files twice.
 
@@ -161,7 +161,7 @@ still stores one (`mark_server_group_completed`), ready for a core that grows a 
 
 - An SFTP, WebDAV, NFS, or S3 add: `save_target` with the draft plus the add form's defaults ("Reconnect
   automatically" on, no key file), which dials nothing for a place nobody connected. The SSH agent is the one
-  exception, saved OFF (`placement::target_of`): `../tools/suggestions/DETAILS.md` § Proposing a server says why.
+  exception, saved OFF (`placement::target_of`): `../../tools/suggestions/DETAILS.md` § Proposing a server says why.
 - An SMB add: `manual_servers::save_manual_server_without_contact` on `smb://host:port[/share]` (the same save the
   sheet's "Add anyway" makes), ❌ never `add_manual_server` with `Reachability::Check` (it probes, and joins
   discovery at once).

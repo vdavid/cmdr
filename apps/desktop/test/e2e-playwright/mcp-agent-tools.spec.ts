@@ -12,7 +12,7 @@
  *   3. refresh as a round-trip that forces a backend re-read.
  *   4. The `operations:` section exists in `cmdr://state` (empty at idle).
  *
- * Unit coverage for the pieces lives in `mcp/executor/tests.rs` and
+ * Unit coverage for the pieces lives in `tools/actions/tests.rs` and
  * `pane-commands.test.ts`; this spec pins the cross-layer wiring (backend tool
  * → Tauri event → adapter → command bus → pane → state store → reply).
  */

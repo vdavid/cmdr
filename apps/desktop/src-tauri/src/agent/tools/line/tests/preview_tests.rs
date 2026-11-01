@@ -8,7 +8,7 @@ use crate::agent::llm::types::{AgentToolResult, ToolId};
 use crate::agent::tools::line::{
     MAX_TEXT_CHARS, PREVIEW_ROWS, ToolPreview, ToolPreviewRow, ToolPreviewRowKind, ToolPreviewRowStatus, preview_of,
 };
-use crate::agent::tools::read::pane_listing::PaneListingScope;
+use crate::tools::read::pane_listing::PaneListingScope;
 
 fn preview(tool: ToolId, content: Value) -> ToolPreview {
     preview_of(&tool, &result(content))
@@ -172,7 +172,7 @@ fn a_tool_with_no_list_shows_no_rows_and_no_counts() {
         (ToolId::ProposeRenamePlan, json!({ "readyForReview": true, "count": 3 })),
         (
             ToolId::ConnectVolume,
-            fixtures::connect(crate::agent::tools::connect::ConnectOutcome::Connected),
+            fixtures::connect(crate::tools::connect::ConnectOutcome::Connected),
         ),
     ] {
         let shown = preview(tool.clone(), content);

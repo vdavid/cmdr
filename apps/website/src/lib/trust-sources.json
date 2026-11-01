@@ -94,7 +94,7 @@
         "apps/desktop/src/lib/settings/components/**",
         "apps/desktop/src/lib/intl/messages/en/settings.json",
         "apps/desktop/src/lib/intl/messages/en/updates.json",
-        "apps/desktop/src-tauri/src/mcp/executor/async_tools.rs",
+        "apps/desktop/src-tauri/src/tools/actions/async_tools.rs",
         "apps/desktop/src-tauri/src/server_request.rs",
         "apps/desktop/src-tauri/src/analytics/**",
         "apps/desktop/src-tauri/src/crash_reporter/**",

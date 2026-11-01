@@ -40,7 +40,7 @@ enum-to-value mappings, and an assembler. The LLM only classifies intent; Rust c
 - **`folders` ≠ the `type` enum.** `folders: yes|no` is the file-vs-folder dimension (→ `is_directory`); `type:` is the
   file CATEGORY (photos, code, …). Rust returns `is_directory: Option<bool>`; the "keep the user's choice when omitted"
   semantics live on the FRONTEND (`applyTypeFromAi`). Don't add a Rust-side default that forces `yes`/`no`.
-- **`iso_date_to_timestamp` is re-exported for the MCP executor** (`crate::mcp::executor` calls it for date arguments
+- **`iso_date_to_timestamp` is re-exported for the MCP executor** (`crate::tools::actions` calls it for date arguments
   from MCP clients). It looks like an internal assembler helper but isn't; don't move it into `query_builder` private
   scope.
 - **`KNOWN_EXTENSIONS` lives in `mappings/mod.rs`, not `keyword_mapping.rs`.** `keywords_to_pattern` reads it to detect

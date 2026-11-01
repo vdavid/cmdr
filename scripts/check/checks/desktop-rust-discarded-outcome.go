@@ -91,7 +91,7 @@ var rustStatementKeywords = map[string]bool{
 // RunDiscardedOutcome scans the desktop app's Rust tree for a unit-returning
 // function that throws away a typed answer from the function it delegates to.
 // Rationale and the full rule: the comment on `discardedOutcomeDirective`, and
-// `apps/desktop/src-tauri/src/mcp/DETAILS.md` § Queue for the case that motivated
+// `apps/desktop/src-tauri/src/tools/actions/DETAILS.md` § Queue for the case that motivated
 // it.
 func RunDiscardedOutcome(ctx *CheckContext) (CheckResult, error) {
 	roots, err := ScannerRoots(ctx.RootDir, "desktop-rust-discarded-outcome")

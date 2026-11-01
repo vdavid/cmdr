@@ -333,7 +333,7 @@ portal no, each switch exhaustive), so a change to one is a prompt to check the 
 
 The MCP `favorites` tool wraps the `commands::favorites` pass-throughs (add / rename / remove / reorder), and
 `cmdr://state` `favorites:` reads the favorite rows of the completed listing (id, volume, reach), falling back to
-`store::list()` when discovery timed out (`mcp/resources/favorites.rs`). See `mcp/DETAILS.md`.
+`store::list()` when discovery timed out (`tools/resources/favorites.rs`). See `tools/resources/DETAILS.md`.
 
 ## Analytics
 

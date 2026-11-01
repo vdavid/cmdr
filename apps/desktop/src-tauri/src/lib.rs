@@ -180,6 +180,7 @@ pub mod test_mode;
 pub(crate) mod test_support;
 #[cfg(target_os = "macos")]
 mod text_size;
+pub mod tools;
 mod ui_state;
 /// Why a volume id has no registered volume: not connected yet, or gone.
 mod unregistered_volumes;

@@ -4,7 +4,7 @@
 
 use crate::file_system::volume::friendly_error::ErrorCategory;
 use crate::file_system::volume::{BackendKind, ConnectionState};
-use crate::mcp::resources::volumes::VolumeKind;
+use crate::tools::resources::volumes::VolumeKind;
 use cmdr_operations::{LifecycleStatus, WriteOperationPhase, WriteOperationType};
 use serde::{Deserialize, Serialize};
 
@@ -238,7 +238,7 @@ impl From<ConnectionState> for ReportConnectionState {
 }
 
 impl ReportConnectionState {
-    /// Read back the `cmdr://state` wire word (`mcp::resources::volumes::connection_state_token`).
+    /// Read back the `cmdr://state` wire word (`tools::resources::volumes::connection_state_token`).
     /// An unknown word maps to absent.
     pub(super) fn from_token(token: &str) -> Option<Self> {
         match token {
@@ -294,7 +294,7 @@ pub enum ReportDeviceReadiness {
 }
 
 impl ReportDeviceReadiness {
-    /// Read back the `cmdr://state` wire word (`mcp::resources::volumes::device_readiness_token`).
+    /// Read back the `cmdr://state` wire word (`tools::resources::volumes::device_readiness_token`).
     /// An unknown word maps to absent.
     pub(super) fn from_token(token: &str) -> Option<Self> {
         match token {

@@ -137,7 +137,7 @@ answer alike about the same folder, so change the two together.
 its ground by then and reports through no per-volume read, so a caller that needs the whole "still moving" answer adds
 its own terms: the frontend ORs in `isVolumeAggregating` plus the per-folder `recursiveSizePending`
 (`views/FullList.svelte`), and `list_dir` leans on its coverage block for that window
-(`apps/desktop/src-tauri/src/agent/tools/DETAILS.md` § The honesty (coverage) contract).
+(`apps/desktop/src-tauri/src/tools/DETAILS.md` § The honesty (coverage) contract).
 
 `RescanReason` lives here too: `JournalGap`, `ReplayOverflow`, `WatcherStartFailed`, `ReconcilerBufferOverflow`,
 `IncompletePreviousScan`, `WatcherChannelOverflow`, `IngestionBacklog`. Every path that falls back to a full rescan

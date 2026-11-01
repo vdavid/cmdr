@@ -3,7 +3,7 @@
 //!
 //! A NAS mounted over its LAN IP and over Tailscale is two volumes with two ids,
 //! two indexes, and two importance stores. Two rules, both proof-based
-//! (`agent/tools/DETAILS.md` § The location contract):
+//! (`tools/DETAILS.md` § The location contract):
 //!
 //! - **Same share** (`sameShareAs`): both record the same server GUID (non-zero:
 //!   `ServerGuid` can't hold the all-zero one) AND the same share name, ignoring

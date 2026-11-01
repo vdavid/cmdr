@@ -3,7 +3,7 @@
 use serde_json::json;
 
 use super::{EXPECTED_TOOL_NAMES, tool};
-use crate::mcp::tool_registry::get_all_tools;
+use crate::tools::get_all_tools;
 
 #[test]
 fn test_all_tools_count() {

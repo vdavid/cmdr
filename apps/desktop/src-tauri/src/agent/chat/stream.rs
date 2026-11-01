@@ -99,7 +99,7 @@ pub enum AskCmdrStreamEvent {
     /// Display-only rename rows for the review surface. The frontend must send
     /// only opaque ids back when a later user action approves them.
     ProposalReady {
-        proposal: crate::agent::tools::propose::rename::RenameProposalSnapshot,
+        proposal: crate::tools::propose::rename::RenameProposalSnapshot,
     },
     /// The turn produced its final answer, carrying the persisted assistant id. `usage` is the
     /// last model call's; `turn` is what the whole turn spent, `None` when it ran no tool.

@@ -8,7 +8,7 @@ use super::call;
 use super::fixtures;
 use crate::agent::llm::types::ToolId;
 use crate::agent::tools::line::{LinePath, MAX_TEXT_CHARS, ToolSubject, subject_of};
-use crate::agent::tools::read::pane_listing::PaneListingScope;
+use crate::tools::read::pane_listing::PaneListingScope;
 
 fn subject(tool: ToolId, args: Value) -> ToolSubject {
     subject_of(&call(tool, args), None, None)

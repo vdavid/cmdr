@@ -501,7 +501,7 @@ that imports a symbol newer than the floor now.
 
 **Both answers are typed, because an agent reads them.** The MCP `eject` tool reaches this same pipeline, and
 `no-error-string-match` applies to an agent parsing us too, so success answers `EjectOutcome` (which teardown ran) and
-every refusal carries its variant's tag in the tool's `data.outcome` (`mcp/executor/eject.rs`). The two vocabularies are
+every refusal carries its variant's tag in the tool's `data.outcome` (`tools/actions/eject.rs`). The two vocabularies are
 pinned to each other by a test rather than by discipline: the tool's tag for a variant must equal that variant's own
 serde name.
 
@@ -837,7 +837,7 @@ ago, or an ID that never existed (an MCP caller's typo), and with no mount root 
 answering `Ok` would hand automation a false success. The UI's own controls reach it only in a narrow race, and its copy
 ("That drive isn't connected any more, so there's nothing to eject") already reads right there.
 
-The MCP `eject` tool wraps `eject::eject` directly (not the command), surfacing `Busy` / non-ejectable as honest tool errors; see `mcp/DETAILS.md`.
+The MCP `eject` tool wraps `eject::eject` directly (not the command), surfacing `Busy` / non-ejectable as honest tool errors; see `tools/actions/DETAILS.md`.
 
 Errors are the typed `EjectError` (`Busy`, `VolumeNotFound`, `NotEjectable`,
 `NotAnSmbVolume`, `DeviceDisconnectRefused`, `UnmountRefused`, `HeldBeforeEject`, `TimedOut`, `NotResponding`, `Unexpected`), and it IS the wire type:

@@ -524,7 +524,7 @@ what's on disk).
 The MCP `tag` tool wraps `tags::toggle_color` / `set_tags` (and `system_color_name` for canonical names), resolving
 target paths off the pane state and refreshing via `Listings::apply_row_facts` (`RowFacts::Tags`). `set` and `toggle` merge, so they skip
 unreadable files and name them in the tool result; `clear` writes regardless (removing every tag is what was asked). `cmdr://state` file entries also surface a
-`[tags:…]` marker mirrored from `PaneFileEntry.tags`. See `mcp/DETAILS.md`.
+`[tags:…]` marker mirrored from `PaneFileEntry.tags`. See `tools/resources/DETAILS.md`.
 
 ## Threading
 

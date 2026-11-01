@@ -25,7 +25,7 @@ const log = getAppLogger('fileExplorer')
 
 /**
  * What a programmatic confirm did, for the MCP reply. Mirrored by `ConfirmAck`
- * in `src-tauri/src/mcp/executor/dialogs.rs`: the refusal crosses as this typed
+ * in `src-tauri/src/tools/actions/dialogs.rs`: the refusal crosses as this typed
  * field, ❌ never as message text. `pressed` reached the start, and the start
  * answers the round-trip with its operation id (`options.mcpRequestId`).
  */
@@ -95,7 +95,7 @@ export function createProgrammaticConfirm(deps: ProgrammaticConfirmDeps) {
      *  `startInBackground` it presses the dialog's Background button (F2)
      *  instead, under the same rules. Resolves once the press reached the start
      *  or a guard, and the verdict says which: the MCP tool answers the agent
-     *  from it (`mcp/executor/dialogs.rs`). */
+     *  from it (`tools/actions/dialogs.rs`). */
     async confirmOpenDialog(
       dialogType: string,
       onConflict?: string,

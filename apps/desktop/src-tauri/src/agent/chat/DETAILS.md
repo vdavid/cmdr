@@ -15,7 +15,7 @@ Pull-tier docs for `agent/chat/`. Must-knows live in `CLAUDE.md`.
    **Each rule that forbids something also names the action to take instead** — a prohibition
    alone leaves the next token to chance, which is how a batch of screenshots got 12
    fabricated names.
-2. **Tool declarations** (`tools` arg): `agent::tools::agent_tool_declarations()`. Stable,
+2. **Tool declarations** (`tools` arg): `tools::agent_tool_declarations()`. Stable,
    cached.
 3. **History**: every persisted turn, each user turn opening with the envelope it was sent with
    (an `AgentPart::Envelope`, replayed verbatim; a row from before envelopes were stored gets a
@@ -199,7 +199,7 @@ Summarize-on-overflow is still deferred (spec §3).
 
 `propose_rename_plan` items carry typed evidence, and a content claim (`imageText` /
 `imageTags`) is verified against what `image_facts` actually delivered (the `ImageFactsLedger`
-under `agent/tools/propose/`). Delivery is recorded at DISPATCH, but only assembly knows what
+under `tools/propose/`). Delivery is recorded at DISPATCH, but only assembly knows what
 the model ends up reading, so `run_turn` calls
 `ToolDispatcher::revoke_evidence(&elision.elided_call_ids)` right after each assembly, before
 the `respond` goes out.
@@ -282,7 +282,7 @@ In `budget.rs` (how many tokens a prompt and a tool result may spend):
   `files_per_batch` divides. See § Sizing a batch from the budget.
 - `MAX_TOOL_RESULT_TOKENS = DEFAULT_PROMPT_TOKEN_BUDGET / 2` — the most ONE tool result may spend. Derived from the
   conservative default, not the resolved budget, because a tool handler doesn't know the model (and may be answering an
-  external MCP client). Enforced via `mcp::executor::fit_to_result_budget`. **The asymmetry is load-bearing**, not an
+  external MCP client). Enforced via `tools::actions::fit_to_result_budget`. **The asymmetry is load-bearing**, not an
   oversight to tidy up: at a user-chosen 200,000 a proportional ceiling would let one result claim 100,000, and the same
   handler would hand that result to an MCP client whose window is a tenth of it. The `budget.rs` header says so too,
   since that's where a reader meets the constant.
@@ -550,7 +550,7 @@ handed the original problem rather than a silence, varying the arguments at all 
 normally, and a turn a user is waiting on stops burning its whole budget on one payload.
 
 The other half of the same fix is that a refusal has to be worth reading. The rename boundary
-now names WHICH rows and WHICH field (`../tools/propose/rename/plan.rs`, `rows_problem`), so a
+now names WHICH rows and WHICH field (`../../tools/propose/rename/plan.rs`, `rows_problem`), so a
 model that reads it can act on it and never reaches step 2.
 
 ### The turn event (`analytics.rs`), and why it is the funnel's denominator
@@ -594,7 +594,7 @@ follow-up turn a rejection opens), and `resume`, RESERVED: no production caller 
 retry in the rail is a fresh send, so it runs and counts as `text`. It is `TurnParams::origin`
 (`agent::types::TurnOrigin`), stated by each caller rather than read off the opener, because the
 dispatch gate reads the same value per call: `Access::Session` tools run only on a user-started
-origin (`agent/tools/DETAILS.md` § The dispatch gate). `resume` is kept for a replay the USER asks
+origin (`tools/DETAILS.md` § The dispatch gate). `resume` is kept for a replay the USER asks
 for from a stored transcript (no opener, so it would otherwise inflate whichever origin it was
 folded into), which is why it counts as user-started. ⚠️ A replay the APP starts on its own (say,
 after a crash, or of a wake thread) is not that, and needs an origin of its own. A refusal is always `text`; a wake never
@@ -826,7 +826,7 @@ every dispatcher, test doubles included. A call that hasn't started when Stop la
 dispatched; one in flight is raced against the token and abandoned (its future dropped), answering
 `{ miss: "cancelled", detail }`. Either way the call keeps its result row, so the next turn loads
 a whole call/result pair (crash case c). The race polls the call FIRST, so a handler holding the
-token (`list_dir`'s live read, `agent/tools/DETAILS.md` § The live source) answers with its own,
+token (`list_dir`'s live read, `tools/DETAILS.md` § The live source) answers with its own,
 more specific `cancelled` in the same poll.
 
 ⚠️ **A `Propose` or `Memory` call is never abandoned mid-flight** (`stop_may_abandon`, exhaustive

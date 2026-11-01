@@ -1,4 +1,4 @@
-use crate::mcp::tool_registry::get_all_tools;
+use crate::tools::get_all_tools;
 
 #[test]
 fn test_all_tool_names_are_valid_identifiers() {

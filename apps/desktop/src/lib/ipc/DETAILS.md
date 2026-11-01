@@ -61,7 +61,7 @@ the only place outside `lib/ipc/` that calls `events.*.emit`.
 
 ### Two families stay string-based (can't be typed)
 
-- **The `mcp-*` MCP-dispatch relay** (`mcp/executor/mod.rs`, `mcp/resources/mod.rs`): a generic
+- **The `mcp-*` MCP-dispatch relay** (`tools/actions/mod.rs`, `tools/resources/mod.rs`): a generic
   `mcp_round_trip_with_timeout(app, event: &str, payload: Value, …)` emits a runtime-built name with a free-form
   `serde_json::Value` payload, both specta blockers. The test is "goes through the generic relay", NOT "starts with
   `mcp-`": `mcp-settings-close` is named `mcp-*` but is a distinct static `emit_to("settings", …)` with a unit payload,

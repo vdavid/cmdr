@@ -218,7 +218,7 @@ func TestDeriveDefault_IgnoresTreesOutsideTheFilesystemOnes(t *testing.T) {
 #[derive(Default)]
 pub struct Prefs {}
 `,
-		"mcp/executor.rs": `
+		"tools/actions.rs": `
 #[derive(Default)]
 pub struct Plan {}
 `,

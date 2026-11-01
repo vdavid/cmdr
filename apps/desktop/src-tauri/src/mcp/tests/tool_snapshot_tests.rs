@@ -8,7 +8,7 @@
 //! To regenerate after a *deliberate* schema/tool change, run the suite with
 //! `UPDATE_SNAPSHOT=1` set, review the diff, and commit the updated fixture.
 
-use crate::mcp::tool_registry::get_all_tools;
+use crate::tools::get_all_tools;
 use serde_json::json;
 
 const SNAPSHOT: &str = include_str!("fixtures/tools_list_snapshot.json");

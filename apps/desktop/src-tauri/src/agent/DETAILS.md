@@ -29,10 +29,10 @@ The backend modules:
   modeled on `operation_log_host::start`. Depth: `store/DETAILS.md`, `store/proposals/DETAILS.md`.
 - `suggested_ops/`: the service over the spine — resolving a selector to a frozen op list against the drive index,
   wrapping the store's claim, and the acceptance-rate metric. Depth: `suggested_ops/DETAILS.md`.
-- `tools/`: the in-process toolset — the read families authored as `consumers: [Agent]` entries in the consolidated
+- `../tools/`: the in-process toolset — the read families authored as `consumers: [Agent]` entries in the consolidated
   registry (agent decision D49, extend-don't-fork), their handlers/result shapes that reuse the shipped cores (drive index,
   importance, operation log, volumes, app state, the file viewer), the propose and memory tiers, and the gated dispatch
-  that refuses any non-view name before `execute_tool`. Depth: `tools/DETAILS.md`.
+  that refuses any non-view name before `execute_tool`. Depth: `../tools/DETAILS.md`.
 - `chat/`: the chat runtime (single-flight per thread, per-message budgets, cancellation, typed errors,
   crash-safe persistence, the `AgentChatEvent` seam) and the pure, TDD-heavy context-assembly core (stable prefix,
   elide-only compaction, the fresh context envelope on the latest user turn only). `chat/session.rs` is what a turn
@@ -100,12 +100,12 @@ follow-up gets a typed `refusedInBackground`
 (`EXPECTED_SESSION_TOOL_NAMES`), for the reason the other two have one. Third, what a `Session` tool may dial: a SAVED
 place, by volume id, with STORED credentials only. It can't add a host, type a password, or approve a key, which is
 exactly what an injected file name would want. `connect_volume` is the one tool on the allowlist
-(`tools/DETAILS.md` § Connecting a saved place). No egress moves, so consent doesn't either (invariant 8).
+(`../tools/DETAILS.md` § Connecting a saved place). No egress moves, so consent doesn't either (invariant 8).
 
 **Where a proposal LIVES.** `store/proposals/`, the durable spine in `main.db`, for every verb including rename. Its
 claim transaction binds an approval to a server-owned acceptance record rather than to the client's word. Proposals have
 no expiry; the one thing deliberately held in memory instead is a rename's ACCEPTED preflight, so a restart forces a
-fresh one (`tools/propose/DETAILS.md`).
+fresh one (`../tools/propose/DETAILS.md`).
 
 **What a `Propose` tool may do.** Stage a proposal and open a review surface. That is its entire power: no filesystem
 write, no silent config mutation, no self-approval. Because no structural check can prove a handler doesn't mutate,
@@ -113,7 +113,7 @@ write, no silent config mutation, no self-approval. Because no structural check 
 `mcp/tests/tool_registry_tests/access.rs`) rather than something inferred — adding one is a deliberate act a human signs off,
 having read the handler. It holds three names: `propose_rename_plan`, `propose_suggestions`, and `propose_server`
 (a server to save, or a change to a saved one: no secret in either direction, no contact with any server, and only on a
-turn the user started; `tools/suggestions/DETAILS.md` § Proposing a server).
+turn the user started; `../tools/suggestions/DETAILS.md` § Proposing a server).
 
 **Consent is unaffected.** Proposals flow agent → user, never to the provider. `Propose` adds no egress, so the
 provider-egress question and `CLOUD_AI_CONSENT_VERSION` are unchanged by this tier. Don't re-litigate it: only a change to
@@ -142,7 +142,7 @@ Each line is a pointer, not a restatement: the mechanism lives in the doc named 
 5. **Assistant prose is never modified.** A tool CALL may be collapsed when it is a rename plan the store no longer
    holds live; prose never. Nothing collapses calls today, so the narrowed form is a contract for whoever builds it.
 6. **A content claim needs a delivery the ledger recorded, in that thread.** Digests, envelopes, patterns, and
-   summaries describe deliveries and are never deliveries. `tools/propose/CLAUDE.md`, `tools/propose/DETAILS.md`
+   summaries describe deliveries and are never deliveries. `../tools/propose/CLAUDE.md`, `../tools/propose/DETAILS.md`
    § Evidence.
 7. **The agent proposes; only the user approves.** Approval originates in the frontend as a user action, and there is
    no tool that approves. The agent writes in one place only, its own memory folder (jailed and hand-allowlisted), and
@@ -153,20 +153,20 @@ Each line is a pointer, not a restatement: the mechanism lives in the doc named 
    missing credential answers `needsCredentials` and raises nothing. A proposal may describe a server to save or a
    change to a saved one; it carries no secret, and only the user's approval saves it. `CLAUDE.md`, § The agent can
    propose above,
-   `memory/DETAILS.md`, `tools/DETAILS.md` § The dispatch gate.
+   `memory/DETAILS.md`, `../tools/DETAILS.md` § The dispatch gate.
 8. **No new egress category without a `CLOUD_AI_CONSENT_VERSION` bump**, and no bump without revisiting the whole
    disclosure (`ai::cloud_consent`, `../ai/DETAILS.md` § Cloud AI consent). `CLAUDE.md`.
 9. **Every cut, cap, or trim is visible** in the result, the log, and (where the user could be misled) the UI.
    `chat/CLAUDE.md`, `chat/DETAILS.md` § Reporting what a turn cost.
 10. **A user-edited name needs no evidence, never claims any, and never inherits the model's**, and it invalidates the
-    accepted preflight so no name reaches the filesystem unchecked. `tools/propose/CLAUDE.md`,
-    `tools/propose/DETAILS.md` § Revising one row.
+    accepted preflight so no name reaches the filesystem unchecked. `../tools/propose/CLAUDE.md`,
+    `../tools/propose/DETAILS.md` § Revising one row.
 11. **Every row that reaches the filesystem was preflighted with a fingerprint the writer rechecks.** No path around the
     proposal may skip it. `store/proposals/CLAUDE.md`, `suggested_ops/DETAILS.md` § The approval bridge. Compress is the
     documented single exception, and that `DETAILS.md` says what would make it stop being safe.
 12. **Evidence validation proves the model READ something, never that the name is right.** So the review surface must
     show how thin a match is, and the offline eval targets the genuine-quote-wrong-name case rather than asserting a
-    refusal that is impossible without understanding the image. `tools/propose/DETAILS.md` § Coverage,
+    refusal that is impossible without understanding the image. `../tools/propose/DETAILS.md` § Coverage,
     § The name-quality eval.
 
 ## Principles
@@ -217,14 +217,14 @@ Vocabulary: "the agent" is this feature; external MCP consumers are "AI clients"
 - **D5**: Everything keys by `(volume_id, rel_path)`, and a `volumes` table ships early. Why: NAS, S3, and FTP need
   arrives soon, and retrofitting keys is brutal. Partly built: agent rows key by volume, and the tools speak the
   `Location` vocabulary (`src/location/`): inputs take `path` + optional `volumeId`, outputs carry `location`, and one
-  resolver places both (`tools/DETAILS.md` § The location contract). No `volumes` table, no stable volume identity yet.
+  resolver places both (`../tools/DETAILS.md` § The location contract). No `volumes` table, no stable volume identity yet.
   ❌ Never mint a parallel pair type.
 - **D6**: Only the local volume is active at first; SMB, MTP, and S3 knowledge deferred. Why: staleness and reconnect
   semantics differ per volume type; don't block the spine on them.
 - **D7**: Staleness is per volume and first-class; the agent caveats answers ("as of May 28"). Why: it makes answering
   about unmounted volumes possible (an offline index of the NAS). Built for reads: `list_volumes` dates a
   not-connected volume's index (`stale` + `asOf`), and `list_dir` and `search` answer from it (`source:
-  offlineIndex`, `tools/DETAILS.md` § The honesty contract).
+  offlineIndex`, `../tools/DETAILS.md` § The honesty contract).
 - **D8**: A deterministic importance scorer gates summaries and event interest, and informs the model. Why: fast, free,
   testable. Built, superseded in placement: a neutral subsystem (`crates/cmdr-index/src/importance/`) with its own
   per-volume `importance.db`, not a column in the drive index.
@@ -339,7 +339,7 @@ Vocabulary: "the agent" is this feature; external MCP consumers are "AI clients"
   revisit: the main UI may keep ~3 dials with the tail in an advanced section.
 - **D59**: Consumer gating is structural: each registry entry declares its consumers and access, and the agent's
   dispatch view is pinned by set-equality tests. Why: "holds the token but doesn't use it" is policy, not construction.
-  Built (`mcp/tool_registry/`).
+  Built (`../tools/`).
 - **D60**: User-granted autonomy is an auto-apply policy on the proposal pipeline's apply step (a Settings toggle,
   default off), never raw tool exposure; the toggle is changeable only in the Settings UI, never via `set_setting` or
   the agent. A CLI flag was rejected: it's invisible to whoever reviews what the app may do. Why: drop only the review

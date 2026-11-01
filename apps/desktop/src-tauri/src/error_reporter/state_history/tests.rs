@@ -251,7 +251,7 @@ fn a_captured_listing_failure_keeps_the_variant_and_drops_the_message_and_path_f
 #[test]
 fn volume_wire_words_read_back_to_report_enums_and_unknown_ones_are_absent() {
     use crate::file_system::volume::{ConnectionState as S, DeviceReadiness as R, DeviceUnavailableReason as Why};
-    use crate::mcp::resources::volumes::{connection_state_token, device_readiness_token};
+    use crate::tools::resources::volumes::{connection_state_token, device_readiness_token};
     for state in [
         S::Direct,
         S::OsMount,

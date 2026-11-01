@@ -191,8 +191,8 @@ required. It's the one `tab` action that is a round-trip. The others wait on a g
 refused, and the rules live here in the frontend, so `apps/desktop/src/routes/(main)/mcp-tab-move.ts` replies on the
 request id with a typed `outcome` (`moved` + `toIndex`, `unchanged`, `pinned`, `onlyTab`, `targetFull`, `notFound`)
 after flushing both panes' tab lists past the mirror's debounce (`tab-mcp-sync`'s `syncTabsNow`). The backend words it
-(`apps/desktop/src-tauri/src/mcp/executor/app.rs`): a refusal is an error whose `data.reason` is `tabPinned` / `onlyTab`
-/ `tabLimitReached` / `tabNotFound`.
+(`apps/desktop/src-tauri/src/tools/actions/app.rs`): a refusal is an error whose `data.reason` is `tabPinned` /
+`onlyTab` / `tabLimitReached` / `tabNotFound`.
 
 ## Double-click empty tab bar to open a new tab
 

@@ -211,7 +211,7 @@ export const bulkRenameFixtures: Record<string, Patch<typeof askCmdrState>> = {
         evidence: {
           source: 'imageText',
           detail:
-            'warning: unused import: `EvidenceProblem` --> src/agent/tools/propose/rename.rs:899 warning: `cmdr` generated 1 warning',
+            'warning: unused import: `EvidenceProblem` --> src/tools/propose/rename.rs:899 warning: `cmdr` generated 1 warning',
         },
         coverage: {
           matchOffset: 1_284,
@@ -219,7 +219,7 @@ export const bulkRenameFixtures: Record<string, Patch<typeof askCmdrState>> = {
           deliveredChars: 3_140,
           contextBefore: 'Compiling cmdr v0.36.2 ',
           matchedText:
-            'warning: unused import: `EvidenceProblem` --> src/agent/tools/propose/rename.rs:899 warning: `cmdr` generated 1 warning',
+            'warning: unused import: `EvidenceProblem` --> src/tools/propose/rename.rs:899 warning: `cmdr` generated 1 warning',
           contextAfter: ' Finished dev profile',
           trimmedBefore: true,
           trimmedAfter: true,

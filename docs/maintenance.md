@@ -148,7 +148,7 @@ Newest-first. Tab-separated columns: `date`, `hash(es)`, `task`, `comment`.
 2026-04-15	3734502a	Security advisory sweep	rustls-webpki 0.103.11→0.103.12 (RUSTSEC-2026-0098/0099) and bitstream-io 4.9.0→4.10.0 (drops yanked core2); compacted cargo-audit output via JSON in same pass.
 2026-04-14	315609a3	Split files that grew too big	Split four large files: friendly_error.rs (1805) → provider.rs; ai/manager.rs → system_memory.rs; AiSection.svelte (1582) → AiCloud/AiLocal; +page.svelte (1222→750) → command-dispatch + mcp-listeners + explorer-api.
 2026-04-14	2939bfee	Split files that grew too big	Split eight more files into sub-800-line modules: volume_copy.rs, scan.rs, smb.rs, stress_tests.rs, mcp/tests.rs, search/ai/mappings.rs, integration.test.ts, debug/+page.svelte.
-2026-04-14	4514a832	Split files that grew too big	Split four large files: mcp/executor.rs (1718), commands/file_system.rs (1196), api-server/src/index.ts (1099), write_operations/integration_test.rs (1564).
+2026-04-14	4514a832	Split files that grew too big	Split four large files: tools/actions.rs (1718), commands/file_system.rs (1196), api-server/src/index.ts (1099), write_operations/integration_test.rs (1564).
 2026-04-14	7514cb4e	Cut back the file-length allowlist	Initial baseline: seeded 31 entries when the file-length check was first added.
 2026-04-08	e5820bb1	Bump GitHub Actions	actions/checkout v4→v6, jdx/mise-action v2→v4 (Node 20→24); cleared deprecation warnings.
 2026-03-31	995f8c8e	Tighten linter rules	Replaced prettier with oxfmt across the entire repo (10–20× faster).

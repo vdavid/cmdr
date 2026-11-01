@@ -14,7 +14,7 @@ use tauri::{AppHandle, Manager};
 
 use crate::agent::AgentDb;
 use crate::agent::store::proposals::ClaimOutcome;
-use crate::agent::tools::propose::rename::{
+use crate::tools::propose::rename::{
     AcceptedRenamePreflights, BulkRenamePreflight, BulkRenamePreflightStatus, PreflightStopped, RenameChecks,
     RenameSourceFingerprint, ReviseRefusal,
 };
@@ -117,7 +117,7 @@ pub async fn preflight_bulk_rename(
     revision: i64,
     allowed_row_ids: Vec<String>,
 ) -> Result<BulkRenamePreflight, BulkRenameError> {
-    crate::agent::tools::propose::rename::preflight(&app, proposal_id, revision, allowed_row_ids)
+    crate::tools::propose::rename::preflight(&app, proposal_id, revision, allowed_row_ids)
         .await
         .map_err(BulkRenameError::from)
 }
@@ -151,13 +151,9 @@ pub async fn apply_bulk_rename(
     // and a stale client with anything: both rerun the authoritative check for exactly these
     // rows rather than trust old ones. It reports progress and stops like any other check.
     if accepted_preflights.matching(&proposal_id, &allowed_row_ids).is_none() {
-        let preflight = crate::agent::tools::propose::rename::preflight(
-            &app,
-            proposal_id.clone(),
-            revision,
-            allowed_row_ids.clone(),
-        )
-        .await?;
+        let preflight =
+            crate::tools::propose::rename::preflight(&app, proposal_id.clone(), revision, allowed_row_ids.clone())
+                .await?;
         match preflight.status {
             BulkRenamePreflightStatus::Ready => {}
             BulkRenamePreflightStatus::ListChanged => return Err(BulkRenameError::ListChanged),
@@ -169,7 +165,7 @@ pub async fn apply_bulk_rename(
         return Err(review_is_over());
     };
     let conn = db.open_write_connection().map_err(store_hiccup)?;
-    let Some(proposal) = crate::agent::tools::propose::rename::load(&conn, &proposal_id).map_err(store_hiccup)? else {
+    let Some(proposal) = crate::tools::propose::rename::load(&conn, &proposal_id).map_err(store_hiccup)? else {
         return Err(review_is_over());
     };
     // The plan the user read, or nothing: an amend since the review (even one that landed after
@@ -246,7 +242,7 @@ pub async fn apply_bulk_rename(
 }
 
 fn group_id_of(proposal_id: &str) -> Result<i64, BulkRenameError> {
-    crate::agent::tools::propose::rename::numeric_id(proposal_id).ok_or(BulkRenameError::ReviewExpired)
+    crate::tools::propose::rename::numeric_id(proposal_id).ok_or(BulkRenameError::ReviewExpired)
 }
 
 fn review_is_over() -> BulkRenameError {
@@ -284,11 +280,11 @@ pub async fn revise_bulk_rename_row(
     proposal_id: String,
     row_id: String,
     destination_name: String,
-) -> Result<crate::agent::tools::propose::rename::RenameProposalRowSnapshot, BulkRenameError> {
+) -> Result<crate::tools::propose::rename::RenameProposalRowSnapshot, BulkRenameError> {
     // Off the IPC thread: the edit lands in `main.db`, and a command that opens a database
     // must not block the handler.
     tauri::async_runtime::spawn_blocking(move || {
-        crate::agent::tools::propose::rename::revise_row(&app, &proposal_id, &row_id, &destination_name)
+        crate::tools::propose::rename::revise_row(&app, &proposal_id, &row_id, &destination_name)
             .map_err(BulkRenameError::from)
     })
     .await
@@ -299,11 +295,11 @@ pub async fn revise_bulk_rename_row(
 /// retyped in the review was the user's own choice, so a batch carrying one is mixed
 /// provenance rather than the agent's work.
 fn bulk_rename_initiator(
-    rows: &[&crate::agent::tools::propose::rename::RenameProposalRow],
+    rows: &[&crate::tools::propose::rename::RenameProposalRow],
 ) -> cmdr_operation_log::types::Initiator {
     let user_edited = rows
         .iter()
-        .any(|row| row.evidence.source == crate::agent::tools::propose::evidence::EvidenceSource::UserEdited);
+        .any(|row| row.evidence.source == crate::tools::propose::evidence::EvidenceSource::UserEdited);
     if user_edited {
         cmdr_operation_log::types::Initiator::AgentEdited
     } else {
@@ -367,7 +363,7 @@ pub async fn cancel_bulk_rename_proposal(app: AppHandle, proposal_id: String) {
     }
     let (Some(db_path), Some(group_id)) = (
         app.try_state::<AgentDb>().map(|db| db.db_path().to_path_buf()),
-        crate::agent::tools::propose::rename::numeric_id(&proposal_id),
+        crate::tools::propose::rename::numeric_id(&proposal_id),
     ) else {
         return;
     };
@@ -397,8 +393,8 @@ pub async fn cancel_bulk_rename_proposal(app: AppHandle, proposal_id: String) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::agent::tools::propose::evidence::{EvidenceSource, RenameEvidence};
-    use crate::agent::tools::propose::rename::RenameProposalRow;
+    use crate::tools::propose::evidence::{EvidenceSource, RenameEvidence};
+    use crate::tools::propose::rename::RenameProposalRow;
     use cmdr_operation_log::types::Initiator;
 
     fn row_from(source: EvidenceSource) -> RenameProposalRow {

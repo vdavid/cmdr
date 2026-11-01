@@ -12,7 +12,7 @@
  * `skip`, which turns "ask me about each file" into "skip every file" against
  * somebody's data.
  *
- * The backend validates the name (`mcp/executor/dialogs.rs`, `file_ops.rs`), so
+ * The backend validates the name (`tools/actions/dialogs.rs`, `file_ops.rs`), so
  * this map is the second half of one contract: keep the two lists together.
  */
 

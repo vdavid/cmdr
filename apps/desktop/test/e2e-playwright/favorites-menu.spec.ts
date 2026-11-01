@@ -40,7 +40,7 @@ async function readFavorites(): Promise<{ id: string; name: string; path: string
   const state = await mcpReadResource('cmdr://state?include=favorites')
   const rows: { id: string; name: string; path: string }[] = []
   // `  - id: <id>` then `    name: "..."` then `    path: "..."`, the shape
-  // `mcp/resources/mod.rs` writes.
+  // `tools/resources/mod.rs` writes.
   const pattern = /^\s+- id: (\S+)\n\s+name: "([^"]*)"\n\s+path: "([^"]*)"$/gm
   for (const match of state.matchAll(pattern)) {
     rows.push({ id: match[1], name: match[2], path: match[3] })

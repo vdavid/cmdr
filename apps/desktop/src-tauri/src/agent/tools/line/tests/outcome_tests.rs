@@ -6,10 +6,10 @@ use super::fixtures;
 use super::result;
 use crate::agent::llm::types::{AgentToolResult, ToolId};
 use crate::agent::memory::MemoryRefusalKind;
-use crate::agent::tools::connect::ConnectOutcome;
 use crate::agent::tools::line::{IndexUnavailableReason, RefusalReason, ToolOutcome, outcome_of};
-use crate::agent::tools::read::pane_listing::PaneListingScope;
 use crate::location::miss::MissToken;
+use crate::tools::connect::ConnectOutcome;
+use crate::tools::read::pane_listing::PaneListingScope;
 
 fn outcome(tool: ToolId, content: Value) -> ToolOutcome {
     outcome_of(&tool, &result(content))

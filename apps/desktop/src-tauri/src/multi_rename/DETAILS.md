@@ -161,7 +161,7 @@ it today), "next step" chaining, and editing names in an editor.
 - The preview runs off the IPC thread with a 5 s deadline, two at a time (`BlockingBudget`), since the sheet re-issues
   it on every edit.
 - `plan::preview_names` is the preview BY FILE NAME (a gone name is `Missing` in place; the counter numbers only the
-  files still there). The session and the MCP `multi_rename` tool (`../mcp/executor/multi_rename.rs`) both call it, so
+  files still there). The session and the MCP `multi_rename` tool (`../tools/actions/multi_rename.rs`) both call it, so
   an agent's dry run shows exactly the statuses the sheet would. The tool needs no session: it previews against the
   pane's cached listing and, for a real run, stages the ready rows as a rename proposal rather than calling `run.rs`.
 
@@ -179,7 +179,7 @@ answers the sheet.
 - **The MCP `multi_rename` tool shares this cache and loader** with no sheet: it seeds its own `SessionMedia`, takes an
   open session's answers over the same folder (`SessionMedia::adopt`, same listing stamp only, one lock at a time),
   and awaits `SessionMedia::read_all` (the same `run`, inline, no re-queue behind it). Cap and cancel:
-  `../mcp/executor/DETAILS.md`.
+  `../tools/actions/DETAILS.md`.
 - **The cache** (`SessionMedia`, one per session, `Arc`-shared with its loader): each file's `MediaRead` (`Reading`,
   `Read(Arc<MediaFacts>)`, `Unreadable`, `NotMedia`) with the listing's size and modified time it was read for, the
   read queue, the files in flight, and running counts for `MediaProgress`. `session::open` seeds it from the listing:

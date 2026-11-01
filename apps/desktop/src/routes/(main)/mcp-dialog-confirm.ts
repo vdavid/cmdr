@@ -3,7 +3,7 @@
  * `startInBackground` its Background button (F2), and answer the agent with the
  * operation that press started.
  *
- * Every confirm is a round-trip (`mcp/executor/dialogs.rs`). Its id rides the
+ * Every confirm is a round-trip (`tools/actions/dialogs.rs`). Its id rides the
  * press into the start, and a press that got there is answered by the START
  * (`transfer-dispatch.ts::startTransferOperation`) with the spawned
  * `operationId`, or by the start gate with what's in the way, exactly as an

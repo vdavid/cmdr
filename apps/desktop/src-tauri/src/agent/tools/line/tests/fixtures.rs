@@ -1,18 +1,18 @@
 //! Real result shapes, one per tool. Built from the handler's own result struct where it's
 //! reachable from here (pane listing, inspect, important folders); the rest copy their serde
-//! field names (`mcp/executor/` keeps its structs private, and the memory and propose results
+//! field names (`tools/actions/` keeps its structs private, and the memory and propose results
 //! are `json!` in their handlers).
 
 use serde_json::{Value, json};
 
 use super::to_json;
-use crate::agent::tools::connect::{ConnectAnswer, ConnectOutcome};
-use crate::agent::tools::read::importance::{ImportantFoldersResult, RankedFolderOut};
-use crate::agent::tools::read::inspect::{
+use crate::location::Location;
+use crate::tools::connect::{ConnectAnswer, ConnectOutcome};
+use crate::tools::read::importance::{ImportantFoldersResult, RankedFolderOut};
+use crate::tools::read::inspect::{
     Content, FileRow, FindHits, FindLine, InspectResult, InspectRow, InspectedFile, TextContent,
 };
-use crate::agent::tools::read::pane_listing::{PaneListingEntry, PaneListingResult, PaneListingScope};
-use crate::location::Location;
+use crate::tools::read::pane_listing::{PaneListingEntry, PaneListingResult, PaneListingScope};
 
 fn on_root(path: &str) -> Location {
     Location {
@@ -106,12 +106,12 @@ pub(super) fn inspect_with_find() -> Value {
             }),
             on_root_row(FileRow::Unreadable {
                 path: "/Users/u/locked.txt".into(),
-                reason: crate::agent::tools::read::inspect::UnreadableReason::Permission,
+                reason: crate::tools::read::inspect::UnreadableReason::Permission,
             }),
             on_root_row(FileRow::Protected {
                 path: "/Users/u/.ssh/id_rsa".into(),
-                reason: crate::agent::tools::read::sensitive::Protected::Credentials,
-                note: crate::agent::tools::read::sensitive::PROTECTED_NOTE,
+                reason: crate::tools::sensitive::Protected::Credentials,
+                note: crate::tools::sensitive::PROTECTED_NOTE,
             }),
             InspectRow {
                 volume_id: None,
@@ -195,7 +195,7 @@ pub(super) fn connect(outcome: ConnectOutcome) -> Value {
     })
 }
 
-/// `search` (`mcp/executor/search/result.rs::SearchResult`).
+/// `search` (`tools/actions/search/result.rs::SearchResult`).
 pub(super) fn search(match_count: u64, returned: usize, complete: bool, capped: bool) -> Value {
     let entries: Vec<Value> = (0..returned)
         .map(|i| {
@@ -225,7 +225,7 @@ pub(super) fn search(match_count: u64, returned: usize, complete: bool, capped: 
     })
 }
 
-/// `search_photos` (`mcp/executor/photos.rs::SearchPhotosResult::Ok`).
+/// `search_photos` (`tools/actions/photos.rs::SearchPhotosResult::Ok`).
 pub(super) fn search_photos(total: usize, indexing: bool) -> Value {
     let hits: Vec<Value> = (0..total.min(3))
         .map(|i| {
@@ -243,7 +243,7 @@ pub(super) fn search_photos(total: usize, indexing: bool) -> Value {
     })
 }
 
-/// `image_facts` (`mcp/executor/image_facts.rs::ImageFactsResult::Ok`).
+/// `image_facts` (`tools/actions/image_facts.rs::ImageFactsResult::Ok`).
 pub(super) fn image_facts() -> Value {
     json!({
         "status": "ok",
@@ -259,7 +259,7 @@ pub(super) fn image_facts() -> Value {
     })
 }
 
-/// `operations_list` (`mcp/executor/operation_log.rs`).
+/// `operations_list` (`tools/actions/operation_log.rs`).
 pub(super) fn operations_list() -> Value {
     json!({ "operations": [{ "opId": "op-1" }], "count": 1, "total": 3, "returned": 1, "truncated": true })
 }

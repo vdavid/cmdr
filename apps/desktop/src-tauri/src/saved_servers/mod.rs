@@ -1,6 +1,6 @@
 //! The servers and shares the user saved, below every caller: the servers hub's
 //! commands (`commands::servers`, thin IPC over this) and Ask Cmdr
-//! (`agent::tools::connect`) read, save, edit, and dial them through the same
+//! (`tools::connect`) read, save, edit, and dial them through the same
 //! functions. Module map and must-knows: `CLAUDE.md`.
 
 mod dial;

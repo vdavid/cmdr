@@ -23,8 +23,8 @@ use futures_util::future::BoxFuture;
 
 use crate::agent::chat::runtime::{CallContext, ToolDispatchOutcome, ToolDispatcher, dispatch_ok};
 use crate::agent::llm::types::{AgentToolCall, ToolId};
-use crate::agent::tools::quiet::reason_of;
 use crate::ignore_poison::IgnorePoison;
+use crate::tools::quiet::reason_of;
 
 /// A dispatcher wrapper that notices what a wake's turn decided.
 pub struct WakeToolWatch<'a> {

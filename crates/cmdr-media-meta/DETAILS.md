@@ -139,5 +139,5 @@ dev-dependencies turn it on.
 
 ## Overlap with the agent's EXIF reader
 
-`apps/desktop/src-tauri/src/agent/tools/read/inspect/exif.rs` also reads EXIF, but shapes model-facing strings
-(`1/250 s`); this crate answers typed values. They stay separate for now.
+`apps/desktop/src-tauri/src/tools/read/inspect/exif.rs` also reads EXIF, but shapes model-facing strings (`1/250 s`);
+this crate answers typed values. They stay separate for now.

@@ -20,7 +20,7 @@ use tauri_specta::Event;
 
 use crate::cli::open_url::{SCHEME as CLI_SCHEME, parse_cli_url};
 use crate::ignore_poison::IgnorePoison;
-use crate::mcp::GoToTarget;
+use crate::tools::GoToTarget;
 
 use super::RevealDelivered;
 
@@ -244,7 +244,7 @@ async fn deliver<R: Runtime>(app: &AppHandle<R>, request: RevealRequest) {
         );
     }
     let dir = plan.dir.to_string_lossy().to_string();
-    if let Err(err) = crate::mcp::go_to_in_pane(app, target, &dir, &plan.entries).await {
+    if let Err(err) = crate::tools::go_to_in_pane(app, target, &dir, &plan.entries).await {
         log::warn!(
             target: "reveal",
             "Couldn't show {dir}: {}",
@@ -266,7 +266,7 @@ async fn deliver<R: Runtime>(app: &AppHandle<R>, request: RevealRequest) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mcp::PaneChoice;
+    use crate::tools::PaneChoice;
 
     fn dirs(paths: &[&str]) -> impl Fn(&Path) -> bool + use<> {
         let dirs: Vec<PathBuf> = paths.iter().map(PathBuf::from).collect();

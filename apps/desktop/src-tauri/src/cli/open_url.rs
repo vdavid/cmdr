@@ -13,7 +13,7 @@ use std::path::{Component, PathBuf};
 
 use tauri::Url;
 
-use crate::mcp::{GoToTarget, PaneChoice};
+use crate::tools::{GoToTarget, PaneChoice};
 
 /// The URL scheme the `cmdr` script speaks. ❗ Must match `SCHEME` in `resources/bin/cmdr`.
 pub(crate) const SCHEME: &str = "cmdr-cli";

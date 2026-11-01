@@ -1,4 +1,4 @@
-use crate::mcp::resources::{format_archive_password_dialog, format_available_dialogs_yaml, get_all_resources};
+use crate::tools::resources::{format_archive_password_dialog, format_available_dialogs_yaml, get_all_resources};
 use crate::ui_state::archive_password::{ArchivePasswordPrompt, ArchivePromptMode, LockedContainer};
 use crate::ui_state::dialog_state::KnownDialog;
 

@@ -580,8 +580,9 @@ volumes. It ranks under a pause and a prompt (both deliberate, both named elsewh
 **One classifier, two readers.** `WriteOperationState::activity(operation_id)` is the only place a wait is decided.
 `enrich_progress` puts it on every `write-progress` event; `status_cache::get_operation_status` puts it on every
 `OperationStatus`, which is what `cmdr://state`'s `operations:` rows render as `waitingOn` / `stillForSeconds` /
-`inFlight` (`mcp/DETAILS.md` § Resources). A poller and a subscriber therefore can't disagree: a snapshot saying
-`moving` while the event stream said `destination` sends an agent down the wrong branch.
+`inFlight` (`apps/desktop/src-tauri/src/tools/resources/DETAILS.md` § Resources). A poller and a subscriber therefore
+can't disagree: a snapshot saying `moving` while the event stream said `destination` sends an agent down the wrong
+branch.
 
 - **Classified at READ time, never cached.** The status cache echoes the last progress tick's counters; the wait is
   recomputed on every read, because a wait that is over is worth nothing and a stale one is worse than none. This is
@@ -1338,8 +1339,8 @@ at the `TauriEventSink` emit sites for `write-complete` / `write-cancelled` / `w
 `await operation_complete` can report a settled op's status. It has to tap these terminal events specifically:
 `operations-changed` fires AFTER removal-on-terminal, so a completed or cancelled op leaves the snapshot entirely. A
 FAILED op is the one exception — it stays on the snapshot as a retained row (see
-[Retained failures](#retained-failures)) — but the ring still owns `Completed` / `Cancelled`. See `mcp/DETAILS.md` §
-State stores.
+[Retained failures](#retained-failures)) — but the ring still owns `Completed` / `Cancelled`. See
+`apps/desktop/src-tauri/src/ui_state/DETAILS.md` § State stores.
 
 ## Operation manager
 

@@ -7,7 +7,7 @@
 //! the user saw is what runs" true.
 //!
 //! Resolution reads the **drive index**, ❌ never a live filesystem walk (the no-live-FS rule
-//! in `agent/tools/CLAUDE.md`): a tool handler that walked the filesystem would block on a
+//! in `tools/CLAUDE.md`): a tool handler that walked the filesystem would block on a
 //! dead mount and would read ground the user never consented to index.
 
 use serde::{Deserialize, Serialize};

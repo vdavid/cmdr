@@ -179,7 +179,7 @@ through a local helper, a fully-qualified call inline in an expression, a `use` 
   total from `getrusage` (exited threads included), and the task's wakeup and context-switch counters.
   `CpuCensus::between` diffs two snapshots and is pure; exited threads are the process delta minus the live threads'
   deltas. ❌ Don't read `proc_taskinfo.pti_total_user` as nanoseconds: it's Mach ticks (125/3 ns on Apple silicon). Its
-  consumer is the `cpu_diagnostics` MCP tool (`apps/desktop/src-tauri/src/mcp/executor/cpu.rs`). Verified on macOS 27.0
+  consumer is the `cpu_diagnostics` MCP tool (`apps/desktop/src-tauri/src/tools/actions/cpu.rs`). Verified on macOS 27.0
   by `process_cpu::macos`'s live tests (a named busy thread lands on its name; a thread exiting inside the window lands
   in the exited share), 2026-10-20.
 - **`utility_pool`.** The pooled half of `thread_qos`: a thread that runs only `Utility` work for its whole life can be

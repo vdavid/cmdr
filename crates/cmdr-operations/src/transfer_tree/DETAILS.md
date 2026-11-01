@@ -139,7 +139,7 @@ a subtree-at-once report holds for as long as the subtree is big.
 
 The other reader is `cmdr://state`: each running or paused operation row asks for
 `TransferTreeViewRequest::following_the_work()` (no toggles, `Follow { lead: 0 }`, `MAX_LIMIT` rows) and renders its
-active files grouped by folder (`mcp/resources/DETAILS.md`, the `activeFolders:` paragraph).
+active files grouped by folder (`tools/resources/DETAILS.md`, the `activeFolders:` paragraph).
 
 ## How drivers report (`report.rs`)
 

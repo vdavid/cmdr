@@ -2,7 +2,7 @@
 
 use serde_json::json;
 
-use crate::mcp::tool_registry::{agent_tool_view, get_all_tools, tool_schema, validate_params};
+use crate::tools::{agent_tool_view, get_all_tools, tool_schema, validate_params};
 
 #[test]
 fn a_call_carrying_a_property_the_schema_never_declared_is_refused() {
@@ -19,7 +19,7 @@ fn a_call_carrying_a_property_the_schema_never_declared_is_refused() {
     )
     .expect_err("a call carrying undeclared properties is refused");
 
-    assert_eq!(error.code, crate::mcp::protocol::INVALID_PARAMS);
+    assert_eq!(error.code, crate::tools::error_codes::INVALID_PARAMS);
     for offender in ["name", "nameMatch"] {
         assert!(
             error.message.contains(offender),

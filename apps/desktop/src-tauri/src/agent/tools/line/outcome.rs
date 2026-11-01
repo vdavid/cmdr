@@ -6,8 +6,8 @@ use serde_json::Value;
 use super::{IndexUnavailableReason, RefusalReason, ToolOutcome, count_u32, len_u32};
 use crate::agent::llm::types::{AgentToolResult, ToolId};
 use crate::agent::memory::MemoryRefusalKind;
-use crate::agent::tools::connect::ConnectOutcome;
 use crate::location::miss::MissToken;
+use crate::tools::connect::ConnectOutcome;
 
 /// What `result` says happened. The check order is the contract:
 ///

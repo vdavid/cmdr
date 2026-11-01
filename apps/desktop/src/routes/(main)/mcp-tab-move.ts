@@ -7,7 +7,7 @@
  * frontend owns those rules: `moveTab` in `#lib/file-explorer/tabs/tab-state-manager.svelte`
  * is the one place they live, shared with the mouse. So the reply is a round-trip on the
  * request id carrying a typed `outcome`, which `parse_tab_move_response`
- * (`src-tauri/src/mcp/executor/app.rs`) reads. ❌ Never a sentence the backend would have
+ * (`src-tauri/src/tools/actions/app.rs`) reads. ❌ Never a sentence the backend would have
  * to match on.
  *
  * A move that went through replies only after both panes' tab lists reached the backend,

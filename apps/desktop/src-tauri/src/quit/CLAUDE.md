@@ -9,7 +9,7 @@ stops everything and exits inside a hard budget.
   ordering), `TauriQuitHost` (the real outside world), the `quit-requested` and `quit-called-off` events.
 - `commands.rs`: `quit_confirm` / `quit_cancel`, both thin, both returning the gate's `QuitAnswer`.
 - Frontend counterpart: `apps/desktop/src/lib/quit/CLAUDE.md`. MCP surface (the `quit` tool and the two answers):
-  `../mcp/executor/quit.rs`.
+  `../tools/actions/quit.rs`.
 
 ## Must-knows
 
