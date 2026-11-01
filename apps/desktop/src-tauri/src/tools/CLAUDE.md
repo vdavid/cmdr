@@ -6,7 +6,7 @@ transport for outside clients; `../agent/` is the in-process runtime, with the g
 ## Module map
 
 - `registry.rs` + `table.rs`: the `mcp_tools!` mechanism and the one authored table, which generates each consumer's
-  view and the dispatch. `params.rs`: the schema gate. `schemas/`: per-tool `json!` blocks. `error_codes.rs`: JSON-RPC codes.
+  view, `ToolId`, and the dispatch. `params.rs`: the schema gate. `schemas/`: per-tool `json!` blocks. `error_codes.rs`: JSON-RPC codes.
 - `actions/`: the handlers shared with outside clients, with the ack contract. `actions/CLAUDE.md`.
 - `resources/`: the read-only `cmdr://` views. `resources/CLAUDE.md`.
 - `read/`: the agent's reads (`state`, `pane_listing`, `listing`, `importance`, `volumes`, `inspect/`).
@@ -35,7 +35,7 @@ transport for outside clients; `../agent/` is the in-process runtime, with the g
 - **Handlers never touch a live filesystem, except `inspect_file` and `list_dir`'s live read**: bounded, the thread
   abandoned past a deadline. A new content KIND is a copy change plus a `CLOUD_AI_CONSENT_VERSION` bump.
 - **Anything yielding file contents passes `sensitive.rs`.**
-- **New agent tool** = table entry + handler/schema/result + a `ToolId` variant + `EXPECTED_AGENT_TOOL_NAMES` +
-  `ToolId::KNOWN` + `../agent/line/` arms + a rail label in `ask-cmdr-labels.ts`.
+- **New tool** = table entry (`ToolId` generates from it) + handler/schema/result + `EXPECTED_AGENT_TOOL_NAMES` when the agent
+  gets it + a rail label in `ask-cmdr-tool-label-keys.ts`. `../agent/line/` arms only with `subject: SubjectSpec::Custom`.
 
 Depth: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

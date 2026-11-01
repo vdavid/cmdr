@@ -11089,6 +11089,9 @@ export type LineChunk = {
   totalBytes: number
 }
 
+// A pane a call names.
+export type LinePane = 'left' | 'right'
+
 // A path a line names: its text, and whether it's a place the panes can go.
 export type LinePath = {
   // `~` expanded, bounded.
@@ -15234,6 +15237,10 @@ export type RefusalReason =
   | { kind: 'repeatedCall' }
   // The schema gate or the handler said no (the JSON can't tell those two apart).
   | { kind: 'problem' }
+  // A person answered "no" to what the call asked them.
+  | { kind: 'declined' }
+  // The sensitive-content gate kept what the call asked for from the assistant.
+  | { kind: 'protected' }
   | { kind: 'memory'; refusal: MemoryRefusalKind }
 
 /**
@@ -19094,6 +19101,11 @@ export type ToolOutcome =
   | { kind: 'staged'; count: number }
   // A propose tool staged nothing (`readyForReview: false`).
   | { kind: 'notStaged' }
+  /**
+   *  Nothing has happened yet: a dialog or editor is open, waiting for a person. `dialog` is its
+   *  id, a token of ours.
+   */
+  | { kind: 'awaitingPerson'; dialog: string | null }
   // A memory note landed.
   | { kind: 'saved' }
   | { kind: 'refused'; reason: RefusalReason }
@@ -19188,11 +19200,19 @@ export type ToolSubject =
   | { kind: 'importantFolders' }
   // `list_volumes`.
   | { kind: 'drives' }
-  // `connect_volume`: the volume id the model asked to connect.
+  // A tool whose words already say it all.
+  | { kind: 'nothing' }
+  // A place a tool aims at (`SubjectSpec::Path`): `nav_to_path`, `unlock`.
+  | { kind: 'place'; path: LinePath }
+  // A pane a tool acts in; `None` is the focused one, or a name that isn't a pane.
+  | { kind: 'pane'; pane: LinePane | null }
+  // `set_setting`: the setting's id.
+  | { kind: 'setting'; id: string }
+  // The volume id a tool names: `connect_volume`, or `SubjectSpec::Volume`.
   | { kind: 'volume'; id: string }
   // `operations_list`.
   | { kind: 'operationLog' }
-  // `operations_get`.
+  // The operation a tool names: `operations_get`, or `SubjectSpec::Operation`.
   | { kind: 'operation'; id: string }
   // `propose_rename_plan`: how many renames the plan carries.
   | { kind: 'renamePlan'; count: number }
@@ -19212,8 +19232,8 @@ export type ToolSubject =
    */
   | { kind: 'memoryFile'; path: string; absolute: string | null }
   /**
-   *  A name outside the agent's view (hallucinated, a typo). An empty `name` is a legacy
-   *  nameless call.
+   *  A name outside the tool table (hallucinated, a typo). An empty `name` is a legacy nameless
+   *  call.
    */
   | { kind: 'unknownTool'; name: string }
   // A known tool whose arguments don't carry what it needs.

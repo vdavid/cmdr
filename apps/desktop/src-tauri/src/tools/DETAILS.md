@@ -23,18 +23,28 @@ exactly that list.
 
 ## The table
 
-Every AI-callable tool is authored once in the `mcp_tools!` table in `table.rs` — name, description, JSON
-schema, `consumers`, `access`, and handler per entry. That one table generates `get_all_tools()`
+Every AI-callable tool is authored once in the `mcp_tools!` table in `table.rs` — name, `id`, `brief`, description, JSON
+schema, `subject`, `consumers`, `access`, and handler per entry. That one table generates `get_all_tools()`
 (the ai_client `tools/list`), `agent_tool_view()` (the in-process agent's set), `execute_tool()` (consumer-gated
-dispatch), and `tool_consumers()` / `tool_access()`, so the facets can't drift and adding a tool is a single entry.
-`registry.rs` also defines `Tool`, the `tools/list` element every view returns. Read the entries
+dispatch), `tool_consumers()` / `tool_access()`, and `ToolId` (the enum, `KNOWN`, the wire-name conversions, and serde),
+so the facets can't drift and adding a tool is a single entry. `registry.rs` also defines `Tool`, the `tools/list`
+element every view returns. Read the entries
 for the exact schemas (don't transcribe them here); the sections below summarize behavior. Wire output is byte-identical
 and pinned by `tests/tool_snapshot_tests.rs`.
 
+**The per-entry columns that aren't dispatch.**
+
+- `id`: the entry's `ToolId` variant. `KNOWN` is every entry, whichever caller it's listed for, so a name parsing as
+  known says nothing about who may run it: that's the gate's call (§ The dispatch gate).
+- `brief`: one line, at most 100 characters (test-capped), for a tool a model hasn't loaded in full. It describes what
+  the tool does for anyone holding it, so it never names a parameter.
+- `subject`: what the tool line names (`../agent/line/DETAILS.md` § The table's subject column). `Custom` is the only
+  value that needs code outside the table.
+
 **Directory split (`tools/`).** The table's `json!` schema blocks dominate the line count and serialize
 identically wherever they live, so they're hoisted into `schemas/*.rs` (one `fn <tool>_schema() -> Value` per tool,
-grouped by category) and the entries call them (`schema: schemas::copy_schema()`). `mod.rs` holds the mechanism (the
-macro, the `Consumer` / `Access` dimensions, the params gate) and re-exports what the macro generates; `table.rs`
+grouped by category) and the entries call them (`schema: schemas::copy_schema()`). `registry.rs` holds the mechanism (the
+macro, the `Consumer` / `Access` dimensions, `SubjectSpec`, the params gate), `mod.rs` re-exports what the macro generates, and `table.rs`
 holds nothing but the authored entries, so the file that grows per tool is pure data. The
 splits changed no wire bytes — the snapshot passes unmodified.
 
@@ -217,7 +227,7 @@ Directory module split by test category:
 
 Each handler is `async fn(&AppHandle<R>, &Value) -> ToolResult` (the `app_params` macro shape; `search` is the only one here
 authored `params_only`, since it needs no `AppHandle`), reuses a shipped core, and returns a typed serde shape as the
-tool-result JSON the model reads. Every tool maps 1:1 to a `ToolId` variant.
+tool-result JSON the model reads.
 
 - **`app_state`** (`read/state.rs`) — both panes (path, cursor item, selection count, view/sort) plus the volume list.
   Built from `PaneStateStore` (`get_focused_pane` returns the SIDE; the path comes from that side's state) +
@@ -975,9 +985,10 @@ and the system prompt requires the model to disclose "returned of total" wheneve
 
 `../agent/tool_gate.rs::refuse_unavailable(call_id, tool, origin)` is the runtime enforcement point:
 
-- `ToolId::Unrecognized(_)` (any non-view name — a hallucinated `delete`, a typo) ⇒ a typed `{ available: false, … }`
-  result, returned BEFORE `execute_tool`. The parse (`ToolId::from_wire_name`) is the choke point.
-- A known name the registry classifies `Access::Write`, or doesn't classify at all ⇒ also refused (a runtime backstop
+- Any name outside the agent's view (a table entry it isn't given, like `delete`, or a hallucinated name) ⇒ a typed
+  `{ available: false, … }` result, returned BEFORE `execute_tool`. It reads `consumers`, since `ToolId` knows the whole
+  table, and `await` and `ai_search` are `Read`, so the access check alone would let them through.
+- A name in the view the registry classifies `Access::Write`, or doesn't classify at all ⇒ also refused (a runtime backstop
   against a mis-tagged entry; belt to the structural `test_agent_tool_view_never_writes` suspenders).
 - An `Access::Session` tool on a turn the user didn't start (`wake`, `outcomes`) ⇒
   `{ available: false, refusal: "refusedInBackground", … }`: a background connect can spin up a sleeping NAS's disks for

@@ -8,6 +8,7 @@ use crate::agent::line::{IndexUnavailableReason, RefusalReason, ToolOutcome, out
 use crate::agent::llm::types::{AgentToolResult, ToolId};
 use crate::agent::memory::MemoryRefusalKind;
 use crate::location::miss::MissToken;
+use crate::tools::SubjectSpec;
 use crate::tools::connect::ConnectOutcome;
 use crate::tools::read::pane_listing::PaneListingScope;
 
@@ -27,8 +28,19 @@ fn refused(reason: RefusalReason) -> ToolOutcome {
     ToolOutcome::Refused { reason }
 }
 
-/// Every tool's success shape, paired with the outcome it reads as.
+/// Every tool's success shape, paired with the outcome it reads as. A tool with no hand arm answers
+/// whatever it answers (often a sentence), and reads as a plain answer.
 fn success_table() -> Vec<(ToolId, Value, ToolOutcome)> {
+    let generic = ToolId::KNOWN
+        .into_iter()
+        .filter(|tool| tool.subject_spec() != Some(SubjectSpec::Custom))
+        .map(|tool| (tool, json!("OK: done"), ToolOutcome::Answered));
+    let mut table = hand_success_table();
+    table.extend(generic);
+    table
+}
+
+fn hand_success_table() -> Vec<(ToolId, Value, ToolOutcome)> {
     vec![
         (
             ToolId::AppState,
@@ -125,6 +137,16 @@ fn success_table() -> Vec<(ToolId, Value, ToolOutcome)> {
             ToolId::ProposeRenamePlan,
             json!({ "readyForReview": true, "count": 12 }),
             ToolOutcome::Staged { count: 12 },
+        ),
+        (
+            ToolId::MultiRename,
+            json!({ "dryRun": true, "rows": [], "total": 0, "returned": 0 }),
+            ToolOutcome::Answered,
+        ),
+        (
+            ToolId::MultiRename,
+            json!({ "dryRun": false, "proposed": true, "renames": 9, "note": "Nothing was renamed." }),
+            ToolOutcome::Staged { count: 9 },
         ),
         (ToolId::ListSuggestions, fixtures::list_suggestions(), items(1, Some(1))),
         (
@@ -241,9 +263,99 @@ fn a_connect_reads_as_how_it_went_and_only_a_live_volume_is_ok() {
 #[test]
 fn a_hallucinated_tool_is_refused_as_unavailable() {
     assert_eq!(
-        outcome(ToolId::Unrecognized("delete".into()), fixtures::unavailable()),
+        outcome(ToolId::Unrecognized("format_drive".into()), fixtures::unavailable()),
         refused(RefusalReason::ToolUnavailable)
     );
+}
+
+/// A table name the agent isn't given answers the gate's refusal, so its line reads the same way a
+/// made-up one does, with its own label.
+#[test]
+fn a_table_tool_the_gate_refused_is_refused_as_unavailable() {
+    assert_eq!(
+        outcome(ToolId::Delete, fixtures::unavailable()),
+        refused(RefusalReason::ToolUnavailable)
+    );
+}
+
+/// A multi-rename problem is a propose problem: `ensure_review_verdict` stamps it, and it reads as
+/// having staged nothing, the same as its siblings.
+#[test]
+fn a_multi_rename_problem_stages_nothing() {
+    assert_eq!(
+        outcome(
+            ToolId::MultiRename,
+            json!({ "problem": "Nothing is ready.", "readyForReview": false })
+        ),
+        ToolOutcome::NotStaged
+    );
+}
+
+#[test]
+fn the_propose_check_reads_the_tables_access_class() {
+    let propose: Vec<ToolId> = ToolId::KNOWN
+        .into_iter()
+        .filter(|tool| crate::tools::tool_access(tool.as_wire_name()) == Some(crate::tools::Access::Propose))
+        .collect();
+    assert!(propose.contains(&ToolId::MultiRename) && propose.contains(&ToolId::ProposeServer));
+    for tool in propose {
+        assert_eq!(
+            outcome(tool.clone(), json!({ "readyForReview": false })),
+            ToolOutcome::NotStaged,
+            "{tool:?}"
+        );
+    }
+    // A `readyForReview` on anything else claims nothing.
+    assert_eq!(
+        outcome(ToolId::AppState, json!({ "readyForReview": false })),
+        ToolOutcome::Answered
+    );
+}
+
+#[test]
+fn a_dialog_waiting_for_a_person_reads_as_waiting_and_as_fine() {
+    let read = outcome(
+        ToolId::Copy,
+        json!({ "awaitingPerson": true, "dialog": "transfer-confirmation" }),
+    );
+    assert_eq!(
+        read,
+        ToolOutcome::AwaitingPerson {
+            dialog: Some("transfer-confirmation".into()),
+        }
+    );
+    assert!(read.ok(), "nothing went wrong, and nothing has happened yet");
+    assert_eq!(
+        outcome(ToolId::Mkdir, json!({ "awaitingPerson": true })),
+        ToolOutcome::AwaitingPerson { dialog: None }
+    );
+    assert_eq!(
+        outcome(ToolId::Copy, json!({ "awaitingPerson": false })),
+        ToolOutcome::Answered
+    );
+}
+
+#[test]
+fn a_typed_refusal_token_wins_over_the_problem_it_rides_beside() {
+    let declined = outcome(
+        ToolId::Quit,
+        json!({ "problem": "The user said no.", "data": { "refusal": "declined" } }),
+    );
+    assert_eq!(declined, refused(RefusalReason::Declined));
+    assert!(!declined.ok());
+    assert_eq!(
+        outcome(ToolId::InspectFile, json!({ "refusal": "protected" })),
+        refused(RefusalReason::Protected)
+    );
+    // A token this build has no words for stays what the rest of the result says.
+    assert_eq!(
+        outcome(
+            ToolId::Quit,
+            json!({ "problem": "No.", "data": { "refusal": "somethingElse" } })
+        ),
+        refused(RefusalReason::Problem)
+    );
+    assert_eq!(outcome(ToolId::Quit, json!({ "refusal": 7 })), ToolOutcome::Answered);
 }
 
 #[test]
@@ -358,7 +470,7 @@ fn ok_agrees_with_dispatch_ok_except_typed_refusals_without_a_problem_key() {
         .map(|(tool, content, _)| (tool, content))
         .collect();
     agreeing.extend([
-        (ToolId::Unrecognized("delete".into()), fixtures::unavailable()),
+        (ToolId::Unrecognized("format_drive".into()), fixtures::unavailable()),
         (ToolId::ListDir, fixtures::repeated()),
         (ToolId::ListDir, fixtures::problem()),
         (

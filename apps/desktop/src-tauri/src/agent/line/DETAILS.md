@@ -12,6 +12,28 @@ projection call the same functions, which is what makes a live bubble and a relo
 Elision doesn't get in the way: it's assembly-only (`chat/context.rs`), so the stored content is the full result the
 model read in its own turn.
 
+## The table's subject column
+
+Each table entry says `subject: SubjectSpec::…` (`../../tools/registry.rs`), so a new tool is one entry with no arm here:
+
+- `None` → `Nothing`; `Path(key)` → `Place { path }`; `Volume(key)` → `Volume { id }`; `Operation(key)` →
+  `Operation { id }`; `Pane` → `Pane { pane }` (`None` when absent or not a pane, which is what the handlers default to
+  the focused one); `Setting` → `Setting { id }`. Arguments missing what it names → `Unparsed`.
+- Its outcome is `Answered` past the shared check order, and it has no rows. Many of these tools answer a plain "OK: …"
+  sentence, so there's nothing typed to read.
+- `Custom` is the 22 rich tools. `hand_subject`, `hand_answer`, and `hand_rows` return `Arm::Hand` for those plus
+  `Unrecognized`, and `Arm::Generic` for the rest. `only_custom_tools_have_hand_arms_…` holds that set equal to the
+  table's `Custom` entries, both ways, in all three.
+
+**Decision/Why an `Arm` return over `debug_assert!` or a parallel list**: a third list of "the custom tools" could drift
+from the two sets it's meant to tie, and an assert only fires for a shape someone tests. The arm is the function's own
+answer, so the test reads it directly, and nothing can panic in production.
+
+**Decision/Why the catalog has no `Paths` spec**: only `inspect_file` and `image_facts` take a `paths` list, and both are
+`Custom`. A variant nothing constructs is dead code. Add it with the first non-`Custom` tool that needs it.
+
+`unlock`'s `Path` reads `path` and nothing else: its `password` argument must never reach a line. A test pins it.
+
 ## `subject_of(call, result, memory_root)`
 
 - `app_state` → `Panes`; `list_pane_files` → `FocusedPane`, read off its RESULT (it takes no arguments), both fields
@@ -28,6 +50,7 @@ model read in its own turn.
   folder. `absolute` comes from `memory::shown_location`, the jail's LEXICAL checks only (inside, Markdown), joined onto
   `memory_root`: no syscall, no directory created. `None` (an escape, a non-Markdown name, or no root) keeps the path
   plain text.
+- `multi_rename` → `Pane { pane }`, the same fact the generic `Pane` gives.
 - `Unrecognized(name)` → `UnknownTool { name }`; a legacy nameless call is `Unrecognized("")`.
 - Arguments missing what a tool needs → `Unparsed`. Paths are `~`-expanded with `read::expand_tilde`. A place's
   `volumeId` argument is not part of the subject: the path is an app path the panes know either way.
@@ -50,15 +73,20 @@ Taking it as a value keeps the function pure; a caller with no root passes `None
    `setAside` flag covers the case.
 2. `available: false` → `Refused(ToolUnavailable)`, the view gate (a hallucinated tool).
 3. `repeatedCall: true` → `Refused(RepeatedCall)`. The breaker KEEPS the original `problem`, so this must win.
-4. A propose tool with `readyForReview` → `Staged { count }` or `NotStaged`. `ensure_review_verdict` stamps `false` onto
-   every propose problem, so a propose problem is `NotStaged`, its sentence still in the preview. A `propose_suggestions`
-   location refusal carries the read tools' `miss` instead of a `problem` (`suggestions/DETAILS.md` § Where a proposal
-   may point), so it reads as `LocationMiss { miss }`: still not staged, and the line says why.
-5. `problem` → `Refused(Problem)`: the schema gate and a handler problem look the same, and we won't add a key.
-6. `refused: <token>` → `Refused(Memory { refusal })` via `MemoryRefusalKind::from_token` (unknown → `Other`).
-7. `miss: <token>` → `LocationMiss { miss }`, the location contract's typed miss (`location/miss.rs::MissToken`), on
+4. A `refusal` token we word ourselves, at the top level or in a `ToolError`'s `data`: `declined` → `Refused(Declined)`,
+   `protected` → `Refused(Protected)`. One rides beside `problem`, so this comes first. Any other token falls through.
+5. `awaitingPerson: true` → `AwaitingPerson { dialog }`: a dialog or editor is open, nothing has happened yet, and that's
+   `ok()`.
+6. A propose tool (`tool_access` says `Propose`) with `readyForReview` → `Staged { count }` or `NotStaged`.
+   `ensure_review_verdict` stamps `false` onto every propose problem, so a propose problem is `NotStaged`, its sentence
+   still in the preview. A `propose_suggestions` location refusal carries the read tools' `miss` instead of a `problem`
+   (`suggestions/DETAILS.md` § Where a proposal may point), so it reads as `LocationMiss { miss }`: still not staged, and
+   the line says why.
+7. `problem` → `Refused(Problem)`: the schema gate and a handler problem look the same, and we won't add a key.
+8. `refused: <token>` → `Refused(Memory { refusal })` via `MemoryRefusalKind::from_token` (unknown → `Other`).
+9. `miss: <token>` → `LocationMiss { miss }`, the location contract's typed miss (`location/miss.rs::MissToken`), on
    any tool that takes a place. A token this build doesn't know falls through to the success shapes, so to `Answered`.
-8. The per-tool success shape, else `Answered`.
+10. The per-tool success shape, else `Answered`.
 
 Per-tool success shapes:
 
@@ -76,6 +104,8 @@ Per-tool success shapes:
 - `propose_suggestions` staged → `Staged { count }` summing its groups' `opCount`; the rename plan reads its `count`;
   `propose_server` counts its card (its group has no ops), `0` when the user answered it first.
   So `count` is OPERATIONS staged for both.
+- `multi_rename`: `proposed: true` → `Staged { count }` from its `renames`. A dry run stages nothing and isn't a failure, so
+  it's `Answered`, and `ensure_review_verdict` leaves it alone: it stamps problems only, and a dry run carries none.
 - Memory `saved: true` → `Saved`.
 - `connect_volume` → `Connection { outcome }`, its own `outcome` token (`connect.rs::ConnectOutcome`).
 
@@ -93,7 +123,8 @@ the model saw rows it didn't.
 
 - Rows: a listing's children (path joined onto the result's folder), search entries, photo hits (`snippet` = the OCR
   match), `image_facts` (`snippet` = recognized text, `status: notIndexed`), important folders, volumes (`path` =
-  `mountPath`, absent for a phone), suggestion groups' display names, a group's ops (`snippet` = the new name).
+  `mountPath`, absent for a phone), suggestion groups' display names, a group's ops (`snippet` = the new name), a
+  `multi_rename` dry run's rows (`name` = the old name, `snippet` = the new one).
 - `inspect_file`: one row per file, or one per `find` hit (`line` + `snippet`; a PDF hit's `line` counts within its
   page, so it's dropped). A path that didn't read carries `status` (`missing`, `noVolumeAtPath`, `unreadable`,
   `unreachable`, `unsupportedVolume`, `protected`); a folder is `kind: folder`. A location miss has no list, so no rows.

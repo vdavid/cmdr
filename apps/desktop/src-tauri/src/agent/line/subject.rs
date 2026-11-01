@@ -4,8 +4,9 @@ use std::path::Path;
 
 use serde_json::Value;
 
-use super::{LinePath, ToolSubject, bounded, len_u32};
+use super::{Arm, LinePane, LinePath, ToolSubject, bounded, len_u32};
 use crate::agent::llm::types::{AgentToolCall, ToolId};
+use crate::tools::SubjectSpec;
 use crate::tools::read::expand_tilde;
 
 /// What `call` looked at. `result` refines it where the arguments can't say (`list_pane_files`
@@ -14,8 +15,37 @@ use crate::tools::read::expand_tilde;
 ///
 /// Total: arguments of any shape give a subject, falling back to [`ToolSubject::Unparsed`].
 pub fn subject_of(call: &AgentToolCall, result: Option<&Value>, memory_root: Option<&Path>) -> ToolSubject {
+    let parsed = match hand_subject(call, result, memory_root) {
+        Arm::Hand(parsed) => parsed,
+        Arm::Generic => call
+            .tool
+            .subject_spec()
+            .and_then(|spec| generic_subject(spec, &call.arguments)),
+    };
+    parsed.unwrap_or(ToolSubject::Unparsed)
+}
+
+/// What the table's [`SubjectSpec`] says to read off the arguments. `None` when they don't carry it.
+fn generic_subject(spec: SubjectSpec, args: &Value) -> Option<ToolSubject> {
+    match spec {
+        SubjectSpec::None => Some(ToolSubject::Nothing),
+        SubjectSpec::Path(key) => path_arg(args, key).map(|path| ToolSubject::Place { path }),
+        SubjectSpec::Volume(key) => str_arg(args, key).map(|id| ToolSubject::Volume { id: bounded(id) }),
+        SubjectSpec::Operation(key) => str_arg(args, key).map(|id| ToolSubject::Operation { id: bounded(id) }),
+        SubjectSpec::Pane => Some(ToolSubject::Pane { pane: pane_arg(args) }),
+        SubjectSpec::Setting => str_arg(args, "id").map(|id| ToolSubject::Setting { id: bounded(id) }),
+        SubjectSpec::Custom => None,
+    }
+}
+
+/// The rich tools' subjects, and the refusal case's. Every other tool is [`Arm::Generic`].
+pub(super) fn hand_subject(
+    call: &AgentToolCall,
+    result: Option<&Value>,
+    memory_root: Option<&Path>,
+) -> Arm<Option<ToolSubject>> {
     let args = &call.arguments;
-    let parsed = match &call.tool {
+    Arm::Hand(match &call.tool {
         ToolId::AppState => Some(ToolSubject::Panes),
         ToolId::ListPaneFiles => Some(focused_pane(result)),
         ToolId::ListDir | ToolId::FolderImportance => path_arg(args, "path").map(|path| ToolSubject::Folder { path }),
@@ -34,9 +64,10 @@ pub fn subject_of(call: &AgentToolCall, result: Option<&Value>, memory_root: Opt
         ToolId::ProposeServer => Some(ToolSubject::ServerSuggestion),
         ToolId::NothingToSuggest => Some(ToolSubject::NothingToSuggest),
         ToolId::MemoryWrite | ToolId::MemoryEdit => str_arg(args, "path").map(|path| memory_file(path, memory_root)),
+        ToolId::MultiRename => Some(ToolSubject::Pane { pane: pane_arg(args) }),
         ToolId::Unrecognized(name) => Some(ToolSubject::UnknownTool { name: bounded(name) }),
-    };
-    parsed.unwrap_or(ToolSubject::Unparsed)
+        _ => return Arm::Generic,
+    })
 }
 
 /// `list_pane_files`' folder and scope, read off its success shape. A refusal or a still-running
@@ -92,6 +123,16 @@ fn memory_file(path: &str, memory_root: Option<&Path>) -> ToolSubject {
         absolute: memory_root
             .and_then(|root| crate::agent::memory::shown_location(root, path))
             .and_then(|absolute| LinePath::linkable_text(&absolute.to_string_lossy())),
+    }
+}
+
+/// The `pane` argument, when it names one. Anything else reads as the focused pane, as the handlers
+/// default it.
+fn pane_arg(args: &Value) -> Option<LinePane> {
+    match args.get("pane").and_then(Value::as_str) {
+        Some("left") => Some(LinePane::Left),
+        Some("right") => Some(LinePane::Right),
+        _ => None,
     }
 }
 

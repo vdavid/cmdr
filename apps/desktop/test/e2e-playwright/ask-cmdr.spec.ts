@@ -426,7 +426,7 @@ test.describe('Ask Cmdr rail', () => {
   // A tool-running turn reads the same live and reopened (the live stream and the history
   // projection are two halves that must agree). The fake's `[tools]` script (`chat/session.rs`,
   // `rail_fake_turn`) plays three rounds: narration + `app_state`, `list_volumes`, and a refused
-  // `delete`; narration + `list_volumes` twice, reusing round one's call ids; then the answer.
+  // `format_drive`; narration + `list_volumes` twice, reusing round one's call ids; then the answer.
   // `app_state` and `list_volumes` read this machine, so only their shape is asserted.
   test('shows a tool-running turn the same live and after reopening the thread', async ({ tauriPage }) => {
     const page = tauriPage as TauriPage
@@ -451,12 +451,12 @@ test.describe('Ask Cmdr rail', () => {
     expect(answer).toEqual({ kind: 'text', text: "That's all, from the test assistant." })
     if (firstTools.kind !== 'tools' || secondTools.kind !== 'tools') throw new Error('expected tool runs')
 
-    // Round one: each line names what it looked at; the hallucinated `delete` is refused.
+    // Round one: each line names what it looked at; the hallucinated `format_drive` is refused.
     expect(firstTools.summary).toMatch(/^Looked around: /)
     expect(firstTools.lines.map((line) => line.label)).toEqual([
       'Looked at what you’re looking at',
       'Checked your drives',
-      'Asked for “delete”',
+      'Asked for “format_drive”',
     ])
     expect(firstTools.lines[1].outcome).toMatch(/^\d[\d,]* items?$/)
     expect(firstTools.lines[2].outcome).toBe('not a tool it has')

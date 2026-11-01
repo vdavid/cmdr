@@ -176,16 +176,110 @@ describe('toolLineLabel', () => {
     )
   })
 
-  it('names what a call outside the agent’s view asked for, and keeps the generic words for a nameless one', () => {
-    expect(said('delete', { kind: 'unknownTool', name: 'delete' })).toBe('Asked for “delete”')
+  it('names what a call outside the tool table asked for, and keeps the generic words for a nameless one', () => {
+    expect(said('format_drive', { kind: 'unknownTool', name: 'format_drive' })).toBe('Asked for “format_drive”')
     expect(said('', { kind: 'unknownTool', name: '' })).toBe('Used a tool')
     expect(said('', { kind: 'unknownTool', name: '' }, { running: true, outcome: null })).toBe('Working')
+  })
+
+  it.each([
+    'select_volume',
+    'nav_to_path',
+    'nav_to_parent',
+    'nav_back',
+    'nav_forward',
+    'scroll_to',
+    'move_cursor',
+    'open_under_cursor',
+    'select',
+    'copy',
+    'move',
+    'compress',
+    'delete',
+    'rename',
+    'multi_rename',
+    'mkdir',
+    'mkfile',
+    'refresh',
+    'tag',
+    'toggle_hidden',
+    'set_view_mode',
+    'sort',
+    'tab',
+    'dialog',
+    'open_search_dialog',
+    'quit',
+    'switch_pane',
+    'swap_panes',
+    'ai_search',
+    'set_setting',
+    'indexing',
+    'queue',
+    'resolve_conflict',
+    'unlock',
+    'favorites',
+    'connect_to_server',
+    'remove_manual_server',
+    'upgrade_smb_to_direct',
+    'eject',
+    'await',
+    'go_to_latest_download',
+    'operations_rollback',
+    'memory_diagnostics',
+    'cpu_diagnostics',
+  ])('gives %s its own words, running and done', (tool) => {
+    const running = said(tool, { kind: 'nothing' }, { running: true, outcome: null })
+    const done = said(tool, { kind: 'nothing' })
+    expect(running).not.toBe('Working')
+    expect(done).not.toBe('Used a tool')
+    expect(done).not.toBe(running)
+  })
+
+  it('never claims a write happened when the call was refused', () => {
+    const refused: ToolOutcome = { kind: 'refused', reason: { kind: 'toolUnavailable' } }
+    expect(said('copy', { kind: 'nothing' })).toBe('Opened the copy dialog')
+    expect(said('copy', { kind: 'nothing' }, { outcome: refused })).toBe('Tried to open the copy dialog')
+    expect(said('sort', { kind: 'pane', pane: 'left' }, { outcome: refused })).toBe('Tried to sort a pane')
+    expect(said('set_setting', { kind: 'setting', id: 'appearance.theme' }, { outcome: refused })).toBe(
+      'Tried to change a setting',
+    )
+    expect(said('eject', { kind: 'volume', id: 'disk-1' }, { outcome: refused })).toBe('Tried to detach a drive')
+  })
+
+  it('names the place a pane went to or a password was for, as a place to go', () => {
+    const place: ToolSubject = { kind: 'place', path: { text: '/Users/me/Downloads', linkable: true } }
+    expect(said('nav_to_path', place, { running: true, outcome: null })).toBe('Going to Downloads')
+    expect(said('nav_to_path', place)).toBe('Went to Downloads')
+    expect(said('nav_to_path', place, { outcome: { kind: 'refused', reason: { kind: 'problem' } } })).toBe(
+      'Tried to go to Downloads',
+    )
+    expect(toolLineLabel(call('nav_to_path', place)).place).toEqual({
+      path: '/Users/me/Downloads',
+      kind: 'folder',
+      shown: 'Downloads',
+      linked: true,
+    })
+    expect(said('unlock', place)).toBe('Sent the password for Downloads')
+    expect(said('nav_to_path', { kind: 'unparsed' })).toBe('Went to a folder')
+  })
+
+  it('says a naming dialog opened when mkdir or mkfile left the name to a person', () => {
+    const waiting: ToolOutcome = { kind: 'awaitingPerson', dialog: 'mkdir-confirmation' }
+    const pane: ToolSubject = { kind: 'pane', pane: 'left' }
+    expect(said('mkdir', pane)).toBe('Created a folder')
+    expect(said('mkdir', pane, { outcome: waiting })).toBe('Opened the new folder dialog')
+    expect(said('mkfile', pane, { outcome: waiting })).toBe('Opened the new file dialog')
+    expect(said('copy', { kind: 'nothing' }, { outcome: waiting })).toBe('Opened the copy dialog')
   })
 
   /** Exhaustive by type: a new subject kind fails to compile here until it has a sample. */
   it('says something for every subject kind, running and done', () => {
     const samples: Record<ToolSubject['kind'], [string, ToolSubject]> = {
       panes: ['app_state', { kind: 'panes' }],
+      nothing: ['nav_back', { kind: 'nothing' }],
+      place: ['nav_to_path', { kind: 'place', path: { text: '/a', linkable: true } }],
+      pane: ['sort', { kind: 'pane', pane: 'left' }],
+      setting: ['set_setting', { kind: 'setting', id: 'appearance.theme' }],
       focusedPane: [
         'list_pane_files',
         { kind: 'focusedPane', folder: { text: '/a', linkable: true }, selectionOnly: false },
@@ -261,6 +355,12 @@ describe('toolOutcomeText', () => {
     ).toBe('2 items')
   })
 
+  it('says a dialog is waiting, that a person said no, and that contents stayed private', () => {
+    expect(settled({ kind: 'awaitingPerson', dialog: null })).toBe('waiting for you')
+    expect(settled({ kind: 'refused', reason: { kind: 'declined' } })).toBe('you said no')
+    expect(settled({ kind: 'refused', reason: { kind: 'protected' } })).toBe('kept private')
+  })
+
   it('says nothing while the call runs, and that no answer was recorded for a settled one without', () => {
     expect(toolOutcomeText(call('list_dir', null, { running: true, outcome: null }))).toBeNull()
     expect(settled(null)).toBe('no answer recorded')
@@ -279,6 +379,7 @@ describe('toolOutcomeText', () => {
       ],
       staged: [{ kind: 'staged', count: 4 }],
       notStaged: [{ kind: 'notStaged' }],
+      awaitingPerson: [{ kind: 'awaitingPerson', dialog: null }],
       saved: [],
       refused: [],
       locationMiss: [],
@@ -308,6 +409,8 @@ describe('toolOutcomeText', () => {
       cancelled: true,
     }
     const reasons: Record<Exclude<RefusalReason['kind'], 'memory'>, RefusalReason> = {
+      declined: { kind: 'declined' },
+      protected: { kind: 'protected' },
       toolUnavailable: { kind: 'toolUnavailable' },
       repeatedCall: { kind: 'repeatedCall' },
       problem: { kind: 'problem' },

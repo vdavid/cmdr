@@ -230,3 +230,36 @@ fn rows_are_bounded_and_odd_shapes_never_panic() {
         }
     }
 }
+
+#[test]
+fn a_multi_rename_dry_run_shows_each_old_name_with_its_new_one() {
+    let shown = preview(
+        ToolId::MultiRename,
+        json!({ "dryRun": true, "rows": [
+            { "oldName": "a.txt", "newName": "b.txt", "status": "ok", "isDirectory": false },
+            { "oldName": "dir", "newName": "Dir", "status": "ok", "isDirectory": true },
+            { "newName": "no old name" },
+        ] }),
+    );
+    let rows: Vec<(&str, Option<&str>, ToolPreviewRowKind)> = shown
+        .rows
+        .iter()
+        .map(|row| (row.name.as_str(), row.snippet.as_deref(), row.kind))
+        .collect();
+    assert_eq!(
+        rows,
+        [
+            ("a.txt", Some("b.txt"), ToolPreviewRowKind::File),
+            ("dir", Some("Dir"), ToolPreviewRowKind::Folder),
+        ]
+    );
+}
+
+#[test]
+fn a_tool_with_no_hand_arm_shows_no_rows() {
+    let shown = preview(
+        ToolId::Sort,
+        json!({ "entries": [{ "name": "a" }], "rows": [{ "oldName": "a" }] }),
+    );
+    assert!(shown.rows.is_empty());
+}

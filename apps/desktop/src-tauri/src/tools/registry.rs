@@ -11,10 +11,15 @@
 //! - [`execute_tool`](super::execute_tool) — the `tools/call` dispatch (generic over `Runtime`), gated to the caller's
 //!   consumer view: a name outside the caller's view is refused before dispatch.
 //! - [`tool_consumers`] / [`tool_access`](super::tool_access) — the two new dimensions, read by the structural tests.
+//! - [`ToolId`](super::ToolId) — the typed name of every entry, with `KNOWN`, the wire-name
+//!   conversions, and serde. `agent::llm::types` re-exports it.
+//! - [`SubjectSpec`] — what a call's tool line names (`agent/line/`).
 //!
-//! Adding a tool means adding one entry: you can't add it without supplying a schema, consumers,
-//! an access class, and a handler, and you can't add a handler the dispatch doesn't know about.
-//! The count and coverage tests are then cheap guards over a property that's true by construction.
+//! Adding a tool means adding one entry: you can't add it without supplying an id, a brief, a schema,
+//! a subject, consumers, an access class, and a handler, and you can't add a handler the dispatch
+//! doesn't know about. No enum, no `KNOWN`, and no `agent/line/` arm unless it says
+//! [`SubjectSpec::Custom`]. The count and coverage tests are then cheap guards over a property that's
+//! true by construction.
 //!
 //! **Two view dimensions, why both (agent decisions D49/D59):** one authored registry feeds two
 //! consumers. `consumers` is the exposure axis — the agent's dispatch view physically excludes
@@ -111,6 +116,27 @@ pub enum Access {
     Write,
 }
 
+/// What a call's tool line names, read off its arguments by `agent/line/`. The strings are argument
+/// keys. A tool here flows through the line's one generic arm: its subject comes from this, its
+/// outcome reads as an answer unless its result carries a typed refusal, and its preview has no rows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SubjectSpec {
+    /// Nothing to name: the tool's own words say it all.
+    None,
+    /// A place, at this argument.
+    Path(&'static str),
+    /// A volume id, at this argument.
+    Volume(&'static str),
+    /// An operation id, at this argument.
+    Operation(&'static str),
+    /// The pane the `pane` argument names; an absent one means the focused pane.
+    Pane,
+    /// The setting the `id` argument names.
+    Setting,
+    /// A rich tool: `agent/line/` has hand arms for its subject, outcome, and preview.
+    Custom,
+}
+
 /// Whether `name` is listable/dispatchable by `consumer` — its authored `consumers` set includes
 /// it. The choke point [`execute_tool`](super::execute_tool) consults before dispatch, and the invariant the
 /// structural tests pin ("no transport dispatches a name outside its consumer view"). The
@@ -137,7 +163,11 @@ pub fn validate_params(name: &str, params: &Value) -> Result<(), ToolError> {
 /// `tool_consumers`, `tool_access`).
 ///
 /// Entry form:
-/// `"name" => { desc, schema, consumers: &[..], access: .., run: <shape> <handler-path> }`.
+/// `"name" => { id: <Variant>, brief, desc, schema, subject: .., consumers: &[..], access: .., run: <shape> <handler-path> }`.
+///
+/// `id` becomes the entry's [`ToolId`](super::ToolId) variant. `brief` is the one line (at most 100
+/// characters, test-capped) a model reads for a tool it hasn't loaded in full. `desc` is what it reads
+/// once it has.
 ///
 /// The `run` shape tag selects how the generated dispatch calls the handler, sidestepping
 /// `macro_rules!` hygiene (call-site idents from the table can't bind to the def-site fn params,
@@ -155,12 +185,98 @@ pub fn validate_params(name: &str, params: &Value) -> Result<(), ToolError> {
 /// dispatch this replaced.
 macro_rules! mcp_tools {
     ( $( $name:literal => {
+        id: $id:ident,
+        brief: $brief:expr,
         desc: $desc:expr,
         schema: $schema:expr,
+        subject: $subject:expr,
         consumers: $consumers:expr,
         access: $access:expr,
         run: $shape:tt $path:path
     } ),* $(,)? ) => {
+        /// A tool's typed name, one variant per table entry.
+        ///
+        /// [`ToolId::Unrecognized`] holds any name outside the table: a provider returns each tool
+        /// call's name as a raw string, and a hallucinated or mistyped one has to stay representable
+        /// for the transparent UI and the typed refusal. It carries no dispatch path. A name in the
+        /// table parses as known whether or not the agent may run it: that's the gate's call
+        /// (`crate::agent::tool_gate`), never this parse's.
+        ///
+        /// Serializes transparently as its wire name (a bare string), so the DB token, the genai
+        /// `fn_name`, and the IPC form are one identical value. A stored name reloads through the
+        /// same parse, so a thread that once asked for a tool keeps that tool's line.
+        #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+        pub enum ToolId {
+            $( $id, )*
+            /// A name outside the table. Always refused by dispatch.
+            Unrecognized(String),
+        }
+
+        impl ToolId {
+            /// Every table entry, in wire order. Excludes [`ToolId::Unrecognized`] by design: it's
+            /// the refusal case, never an entry.
+            pub const KNOWN: [ToolId; <[&str]>::len(&[$( $name ),*])] = [ $( ToolId::$id ),* ];
+
+            /// The wire name for this tool: the genai `fn_name`, the DB token, and the IPC
+            /// string, all one value.
+            pub fn as_wire_name(&self) -> &str {
+                match self {
+                    $( ToolId::$id => $name, )*
+                    ToolId::Unrecognized(name) => name.as_str(),
+                }
+            }
+
+            /// Resolves a raw provider-supplied tool name to a typed [`ToolId`]. Total: a name
+            /// outside the table resolves to [`ToolId::Unrecognized`] rather than failing.
+            pub fn from_wire_name(name: &str) -> Self {
+                match name {
+                    $( $name => ToolId::$id, )*
+                    other => ToolId::Unrecognized(other.to_string()),
+                }
+            }
+
+            /// True for a table entry. Says nothing about who may run it.
+            pub fn is_known(&self) -> bool {
+                !matches!(self, ToolId::Unrecognized(_))
+            }
+
+            /// True when the provider named no function at all. A nameless call is never a real
+            /// invocation: nothing can dispatch it, and providers that validate the field reject
+            /// it on replay, so both directions of `genai_impl` drop it rather than carry it.
+            pub fn is_nameless(&self) -> bool {
+                self.as_wire_name().trim().is_empty()
+            }
+
+            /// What this tool's line names, or `None` for a name outside the table.
+            pub fn subject_spec(&self) -> Option<SubjectSpec> {
+                match self {
+                    $( ToolId::$id => Some($subject), )*
+                    ToolId::Unrecognized(_) => None,
+                }
+            }
+
+            /// This tool's one-line summary, or `None` for a name outside the table.
+            pub fn brief(&self) -> Option<&'static str> {
+                match self {
+                    $( ToolId::$id => Some($brief), )*
+                    ToolId::Unrecognized(_) => None,
+                }
+            }
+        }
+
+        impl serde::Serialize for ToolId {
+            fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+                serializer.serialize_str(self.as_wire_name())
+            }
+        }
+
+        impl<'de> serde::Deserialize<'de> for ToolId {
+            fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+                let name = <String as serde::Deserialize>::deserialize(deserializer)?;
+                Ok(ToolId::from_wire_name(&name))
+            }
+        }
+
         /// The AI-client `tools/list` payload: every `[ai_client]` tool in wire order. Agent-only
         /// entries are filtered out, so this stays byte-identical to the pre-dimension output for
         /// the tools it already contained.

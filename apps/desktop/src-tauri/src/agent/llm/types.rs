@@ -15,7 +15,7 @@
 //! **backend-only** value: it is persisted and replayed, but never crosses to the
 //! frontend (the wire `MessageView` carries display parts only).
 
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 
 /// The role of a message in the conversation. DB token form is snake_case (the
 /// `messages.role` column); IPC uses the wire `MessageView`, not this type.
@@ -176,203 +176,9 @@ pub struct ReasoningState {
     pub blob: serde_json::Value,
 }
 
-/// A typed identifier for a read-only agent tool.
-///
-/// The known variants map 1:1 onto the registry's `agent_tool_view()` entries (the
-/// read-only families: live app state, drive-index listing + stats, importance,
-/// operation-log search + detail, and the volume list). A structural test in
-/// `tools/mod.rs` pins that 1:1 mapping so a variant and its registry entry can't
-/// drift.
-///
-/// [`ToolId::Unrecognized`] is the read-only choke point: a provider returns each
-/// tool call's name as a raw string, and any name that is not a known read-only
-/// tool resolves here. `Unrecognized` is never a member of `agent_tool_view()` and
-/// carries no dispatch path, so the runtime refuses it before ever reaching
-/// `execute_tool` — the gate is this typed parse step, never a string match on the
-/// name. It is deliberately excluded from [`ToolId::KNOWN`]
-/// and the 1:1 test.
-///
-/// Serializes transparently as its wire name (a bare string) so the DB token, the
-/// genai `fn_name`, and the IPC form are one identical value.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum ToolId {
-    /// Live app-state snapshot: both panes' path/cursor/selection plus the volumes.
-    AppState,
-    /// One directory's immediate children plus its recursive size stats, from the
-    /// drive index.
-    ListDir,
-    /// Up to 200 entries from the focused pane's current backend listing cache,
-    /// scoped to the selection when present.
-    ListPaneFiles,
-    /// The most important folders across scored volumes (top-N or above a
-    /// threshold), offline-capable.
-    ImportantFolders,
-    /// One folder's importance: scored (with the signal breakdown), floored, or
-    /// unscored.
-    FolderImportance,
-    /// The volume list with per-volume index freshness and SMB connectivity.
-    ListVolumes,
-    InspectFile,
-    /// Search the durable operation log (shared with the ai-client view).
-    OperationsList,
-    /// One logged operation's header plus a page of its item rows (shared).
-    OperationsGet,
-    /// Find files and folders on ONE drive by name pattern, size, date, or type
-    /// (shared with the ai-client view). Reads the index where it covers the scope and
-    /// walks the rest, so the result is a lower bound until its coverage says otherwise.
-    Search,
-    /// Search the user's photos by description, in-image text, or tag (shared with the
-    /// ai-client view). Reads the media index; text-only, no image bytes.
-    SearchPhotos,
-    /// What the media index stored for images the agent already has: the full recognized
-    /// text plus tags, per path (shared with the ai-client view). Text-only, no image bytes.
-    ImageFacts,
-    /// Stages a same-folder rename plan for the user to review. It never applies
-    /// a rename and has no approval path.
-    ProposeRenamePlan,
-    /// The suggested-ops sweeps and groups already waiting on the user, as
-    /// summaries with counts.
-    ListSuggestions,
-    /// One suggestion group's ops, a page at a time.
-    GetSuggestionGroup,
-    /// Stages a sweep of proposed file operations, or amends a pending group of
-    /// one. It changes no file and cannot approve anything.
-    ProposeSuggestions,
-    /// Stages a server to save, or a change to a saved one, for the user to approve. It saves
-    /// nothing, contacts no server, and refuses on a turn the user didn't start.
-    ProposeServer,
-    /// A wake's typed way of saying it looked and found nothing worth raising. A pure
-    /// signal: the handler changes nothing, and only the wake path acts on the call.
-    NothingToSuggest,
-    /// Saves a note about the user in the agent's own memory folder, creating the file or
-    /// replacing it whole. The only write in the view, jailed to `<data-dir>/ai/memory/`.
-    MemoryWrite,
-    /// Changes or drops one exact, unique passage inside one memory file.
-    MemoryEdit,
-    /// Brings a place the user saved to life with stored credentials, on a turn the user
-    /// started. The one `Session` tool: it dials only a saved place and asks for nothing.
-    ConnectVolume,
-    /// A tool name the agent does not recognize (hallucinated, a typo, or a
-    /// write/non-view tool). Carries the raw name for the transparent UI and the
-    /// typed "tool not available" result; always refused by dispatch.
-    Unrecognized(String),
-}
-
-impl ToolId {
-    /// Every known read-only variant, in wire order. Excludes [`ToolId::Unrecognized`]
-    /// by design (it's the refusal case, never a view entry). The 1:1 structural test
-    /// asserts these map exactly onto `agent_tool_view()`.
-    pub const KNOWN: [ToolId; 21] = [
-        ToolId::AppState,
-        ToolId::ListDir,
-        ToolId::ListPaneFiles,
-        ToolId::ImportantFolders,
-        ToolId::FolderImportance,
-        ToolId::ListVolumes,
-        ToolId::InspectFile,
-        ToolId::OperationsList,
-        ToolId::OperationsGet,
-        ToolId::Search,
-        ToolId::SearchPhotos,
-        ToolId::ImageFacts,
-        ToolId::ProposeRenamePlan,
-        ToolId::ListSuggestions,
-        ToolId::GetSuggestionGroup,
-        ToolId::ProposeSuggestions,
-        ToolId::ProposeServer,
-        ToolId::NothingToSuggest,
-        ToolId::MemoryWrite,
-        ToolId::MemoryEdit,
-        ToolId::ConnectVolume,
-    ];
-
-    /// The wire name for this tool: the genai `fn_name`, the DB token, and the IPC
-    /// string, all one value.
-    pub fn as_wire_name(&self) -> &str {
-        match self {
-            ToolId::AppState => "app_state",
-            ToolId::ListDir => "list_dir",
-            ToolId::ListPaneFiles => "list_pane_files",
-            ToolId::ImportantFolders => "important_folders",
-            ToolId::FolderImportance => "folder_importance",
-            ToolId::ListVolumes => "list_volumes",
-            ToolId::InspectFile => "inspect_file",
-            ToolId::OperationsList => "operations_list",
-            ToolId::OperationsGet => "operations_get",
-            ToolId::Search => "search",
-            ToolId::SearchPhotos => "search_photos",
-            ToolId::ImageFacts => "image_facts",
-            ToolId::ProposeRenamePlan => "propose_rename_plan",
-            ToolId::ListSuggestions => "list_suggestions",
-            ToolId::GetSuggestionGroup => "get_suggestion_group",
-            ToolId::ProposeSuggestions => "propose_suggestions",
-            ToolId::ProposeServer => "propose_server",
-            ToolId::NothingToSuggest => "nothing_to_suggest",
-            ToolId::MemoryWrite => "memory_write",
-            ToolId::MemoryEdit => "memory_edit",
-            ToolId::ConnectVolume => "connect_volume",
-            ToolId::Unrecognized(name) => name.as_str(),
-        }
-    }
-
-    /// Resolves a raw provider-supplied tool name to a typed [`ToolId`]. Total: an
-    /// unknown name resolves to [`ToolId::Unrecognized`] rather than failing, so the
-    /// raw name stays representable for the transparent UI and the refusal result.
-    /// The known set is exactly `agent_tool_view()`, pinned by the 1:1 test.
-    pub fn from_wire_name(name: &str) -> Self {
-        match name {
-            "app_state" => ToolId::AppState,
-            "list_dir" => ToolId::ListDir,
-            "list_pane_files" => ToolId::ListPaneFiles,
-            "important_folders" => ToolId::ImportantFolders,
-            "folder_importance" => ToolId::FolderImportance,
-            "list_volumes" => ToolId::ListVolumes,
-            "inspect_file" => ToolId::InspectFile,
-            "operations_list" => ToolId::OperationsList,
-            "operations_get" => ToolId::OperationsGet,
-            "search" => ToolId::Search,
-            "search_photos" => ToolId::SearchPhotos,
-            "image_facts" => ToolId::ImageFacts,
-            "propose_rename_plan" => ToolId::ProposeRenamePlan,
-            "list_suggestions" => ToolId::ListSuggestions,
-            "get_suggestion_group" => ToolId::GetSuggestionGroup,
-            "propose_suggestions" => ToolId::ProposeSuggestions,
-            "propose_server" => ToolId::ProposeServer,
-            "nothing_to_suggest" => ToolId::NothingToSuggest,
-            "memory_write" => ToolId::MemoryWrite,
-            "memory_edit" => ToolId::MemoryEdit,
-            "connect_volume" => ToolId::ConnectVolume,
-            other => ToolId::Unrecognized(other.to_string()),
-        }
-    }
-
-    /// True when this is a recognized read-only tool. `Unrecognized` is the only
-    /// false case. The authoritative gate is `agent_tool_view()` membership, which
-    /// this shape mirrors.
-    pub fn is_known(&self) -> bool {
-        !matches!(self, ToolId::Unrecognized(_))
-    }
-
-    /// True when the provider named no function at all. A nameless call is never a real
-    /// invocation: nothing can dispatch it, and providers that validate the field reject
-    /// it on replay, so both directions of `genai_impl` drop it rather than carry it.
-    pub fn is_nameless(&self) -> bool {
-        self.as_wire_name().trim().is_empty()
-    }
-}
-
-impl Serialize for ToolId {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(self.as_wire_name())
-    }
-}
-
-impl<'de> Deserialize<'de> for ToolId {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let name = String::deserialize(deserializer)?;
-        Ok(ToolId::from_wire_name(&name))
-    }
-}
+/// The typed name of a tool, generated from the tool table. Re-exported here because a tool call
+/// is part of this message model.
+pub use crate::tools::ToolId;
 
 /// A single tool invocation the model emitted. `reasoning` carries any opaque
 /// state that provider attaches to the call itself (e.g. Gemini's per-`functionCall`
@@ -742,28 +548,31 @@ mod tests {
     fn tool_id_serializes_as_bare_wire_name() {
         assert_eq!(serde_json::to_string(&ToolId::AppState).unwrap(), "\"app_state\"");
         assert_eq!(
-            serde_json::to_string(&ToolId::Unrecognized("delete".into())).unwrap(),
-            "\"delete\""
+            serde_json::to_string(&ToolId::Unrecognized("format_drive".into())).unwrap(),
+            "\"format_drive\""
         );
     }
 
     #[test]
     fn tool_id_from_wire_name_gate_shape() {
-        // A known name resolves to its variant; an unknown one is `Unrecognized`,
-        // never a valid view entry — the shape the read-only gate builds on.
+        // A table name resolves to its variant, whoever may run it; any other is `Unrecognized`.
         assert_eq!(ToolId::from_wire_name("app_state"), ToolId::AppState);
         assert!(ToolId::from_wire_name("app_state").is_known());
-        assert_eq!(ToolId::from_wire_name("delete"), ToolId::Unrecognized("delete".into()));
-        assert!(!ToolId::from_wire_name("delete").is_known());
+        assert_eq!(ToolId::from_wire_name("delete"), ToolId::Delete);
+        assert_eq!(
+            ToolId::from_wire_name("format_drive"),
+            ToolId::Unrecognized("format_drive".into())
+        );
+        assert!(!ToolId::from_wire_name("format_drive").is_known());
         // Round-trips through serde as the same bare string.
         let round: ToolId = serde_json::from_str("\"copy\"").unwrap();
-        assert_eq!(round, ToolId::Unrecognized("copy".into()));
+        assert_eq!(round, ToolId::Copy);
     }
 
     #[test]
     fn tool_id_known_wire_names_round_trip() {
         // Every KNOWN variant round-trips through its wire name, and none collapses
-        // to Unrecognized — the invariant the 1:1 registry test relies on.
+        // to Unrecognized.
         for tool in ToolId::KNOWN {
             let name = tool.as_wire_name();
             assert_eq!(ToolId::from_wire_name(name), tool);

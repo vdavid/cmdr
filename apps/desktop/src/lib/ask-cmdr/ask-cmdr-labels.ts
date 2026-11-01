@@ -27,96 +27,16 @@ import { managedAiRefusalMessage } from '#lib/managed-policy/ai-refusal.js'
 import { formatTokenCount, totalTokens } from './ask-cmdr-cost'
 import type { RailToolCall } from './ask-cmdr-messages'
 import { outcomeOk, placeName, type PathTarget } from './ask-cmdr-tool-line'
-
-/**
- * A tool line's label keys: present tense while it runs, past tense once it's done, and, where
- * the past tense would claim a success a refusal didn't have ("Saved a note"), the words for
- * having tried.
- */
-interface PhaseKeys {
-  doing: MessageKey
-  done: MessageKey
-  tried?: MessageKey
-}
-
-/** Param-less label keys per read-only tool: what a line says when its subject names nothing. */
-const TOOL_LABEL_KEYS: Partial<Record<string, PhaseKeys>> = {
-  app_state: { doing: 'askCmdr.tool.appState.doing', done: 'askCmdr.tool.appState.done' },
-  list_dir: { doing: 'askCmdr.tool.listDir.doing', done: 'askCmdr.tool.listDir.done' },
-  list_pane_files: { doing: 'askCmdr.tool.listDir.doing', done: 'askCmdr.tool.listDir.done' },
-  important_folders: { doing: 'askCmdr.tool.importantFolders.doing', done: 'askCmdr.tool.importantFolders.done' },
-  folder_importance: { doing: 'askCmdr.tool.folderImportance.doing', done: 'askCmdr.tool.folderImportance.done' },
-  list_volumes: { doing: 'askCmdr.tool.listVolumes.doing', done: 'askCmdr.tool.listVolumes.done' },
-  inspect_file: { doing: 'askCmdr.tool.inspectFile.doing', done: 'askCmdr.tool.inspectFile.done' },
-  operations_list: { doing: 'askCmdr.tool.operationsList.doing', done: 'askCmdr.tool.operationsList.done' },
-  operations_get: { doing: 'askCmdr.tool.operationsGet.doing', done: 'askCmdr.tool.operationsGet.done' },
-  search: { doing: 'askCmdr.tool.search.doing', done: 'askCmdr.tool.search.done' },
-  search_photos: { doing: 'askCmdr.tool.searchPhotos.doing', done: 'askCmdr.tool.searchPhotos.done' },
-  image_facts: { doing: 'askCmdr.tool.imageFacts.doing', done: 'askCmdr.tool.imageFacts.done' },
-  propose_rename_plan: { doing: 'askCmdr.tool.proposeRenamePlan.doing', done: 'askCmdr.tool.proposeRenamePlan.done' },
-  list_suggestions: { doing: 'askCmdr.tool.listSuggestions.doing', done: 'askCmdr.tool.listSuggestions.done' },
-  get_suggestion_group: {
-    doing: 'askCmdr.tool.getSuggestionGroup.doing',
-    done: 'askCmdr.tool.getSuggestionGroup.done',
-  },
-  propose_suggestions: { doing: 'askCmdr.tool.proposeSuggestions.doing', done: 'askCmdr.tool.proposeSuggestions.done' },
-  propose_server: { doing: 'askCmdr.tool.proposeServer.doing', done: 'askCmdr.tool.proposeServer.done' },
-  nothing_to_suggest: {
-    doing: 'askCmdr.tool.nothingToSuggest.doing',
-    done: 'askCmdr.tool.nothingToSuggest.done',
-  },
-  memory_write: {
-    doing: 'askCmdr.tool.memoryWrite.doing',
-    done: 'askCmdr.tool.memoryWrite.done',
-    tried: 'askCmdr.tool.memoryWrite.tried',
-  },
-  memory_edit: {
-    doing: 'askCmdr.tool.memoryEdit.doing',
-    done: 'askCmdr.tool.memoryEdit.done',
-    tried: 'askCmdr.tool.memoryEdit.tried',
-  },
-  connect_volume: {
-    doing: 'askCmdr.tool.connectVolume.doing',
-    done: 'askCmdr.tool.connectVolume.done',
-    tried: 'askCmdr.tool.connectVolume.tried',
-  },
-}
-
-const UNKNOWN_TOOL_KEYS: PhaseKeys = { doing: 'askCmdr.tool.unknown.doing', done: 'askCmdr.tool.unknown.done' }
-
-const LIST_FOLDER_KEYS: PhaseKeys = {
-  doing: 'askCmdr.tool.listDir.folder.doing',
-  done: 'askCmdr.tool.listDir.folder.done',
-}
-
-/** Label keys that name one folder, per tool whose subject is a `folder`. */
-const FOLDER_KEYS: Partial<Record<string, PhaseKeys>> = {
-  list_dir: LIST_FOLDER_KEYS,
-  folder_importance: {
-    doing: 'askCmdr.tool.folderImportance.folder.doing',
-    done: 'askCmdr.tool.folderImportance.folder.done',
-  },
-}
-
-/** Label keys that name the first of a call's files, per tool whose subject is `files`. */
-const FILES_KEYS: Partial<Record<string, PhaseKeys>> = {
-  inspect_file: { doing: 'askCmdr.tool.inspectFile.files.doing', done: 'askCmdr.tool.inspectFile.files.done' },
-  image_facts: { doing: 'askCmdr.tool.imageFacts.files.doing', done: 'askCmdr.tool.imageFacts.files.done' },
-}
-
-/** Label keys that name a note file, per tool whose subject is a `memoryFile`. */
-const MEMORY_FILE_KEYS: Partial<Record<string, PhaseKeys>> = {
-  memory_write: {
-    doing: 'askCmdr.tool.memoryWrite.file.doing',
-    done: 'askCmdr.tool.memoryWrite.file.done',
-    tried: 'askCmdr.tool.memoryWrite.file.tried',
-  },
-  memory_edit: {
-    doing: 'askCmdr.tool.memoryEdit.file.doing',
-    done: 'askCmdr.tool.memoryEdit.file.done',
-    tried: 'askCmdr.tool.memoryEdit.file.tried',
-  },
-}
+import {
+  FILES_KEYS,
+  FOLDER_KEYS,
+  LIST_FOLDER_KEYS,
+  MEMORY_FILE_KEYS,
+  PLACE_KEYS,
+  TOOL_LABEL_KEYS,
+  UNKNOWN_TOOL_KEYS,
+  type PhaseKeys,
+} from './ask-cmdr-tool-label-keys'
 
 /** A path a tool line names, and how the line shows it. */
 export interface LinePlace extends PathTarget {
@@ -207,6 +127,7 @@ const SUBJECT_WORDS: { [K in ToolSubject['kind']]: (subject: SubjectOf<K>, tool:
     return placeWords(keys, folderPlace(subject.folder))
   },
   folder: (subject, tool) => placeWords(FOLDER_KEYS[tool], folderPlace(subject.path)),
+  place: (subject, tool) => placeWords(PLACE_KEYS[tool], folderPlace(subject.path)),
   files: (subject, tool) => {
     const words = placeWords(FILES_KEYS[tool], linePlace(subject.firstPath, 'file'))
     const others = Math.max(subject.count - 1, 0)
@@ -242,6 +163,11 @@ const SUBJECT_WORDS: { [K in ToolSubject['kind']]: (subject: SubjectOf<K>, tool:
     return { keys, params: { name: subject.name } }
   },
   panes: noWords,
+  nothing: noWords,
+  // The label reads the same in either pane.
+  pane: noWords,
+  // An id is a token (`appearance.theme`), not the name the person knows the setting by.
+  setting: noWords,
   importantFolders: noWords,
   drives: noWords,
   // A volume id is a token (`smb-192-168-1-5-…`), not a name a person knows the server by.
@@ -280,6 +206,7 @@ export function toolLineLabel(call: RailToolCall): LineLabel {
 
 function phaseKey(keys: PhaseKeys, call: RailToolCall): MessageKey {
   if (call.running) return keys.doing
+  if (keys.waiting !== undefined && call.outcome?.kind === 'awaitingPerson') return keys.waiting
   if (keys.tried !== undefined && call.outcome !== null && !outcomeOk(call.outcome)) return keys.tried
   return keys.done
 }
@@ -295,6 +222,8 @@ const REFUSAL_KEYS: Record<Exclude<RefusalReason['kind'], 'memory'>, MessageKey>
   toolUnavailable: 'askCmdr.tool.outcome.toolUnavailable',
   repeatedCall: 'askCmdr.tool.outcome.repeatedCall',
   problem: 'askCmdr.tool.outcome.problem',
+  declined: 'askCmdr.tool.outcome.declined',
+  protected: 'askCmdr.tool.outcome.protected',
 }
 
 const MEMORY_REFUSAL_KEYS: Record<MemoryRefusalKind, MessageKey> = {
@@ -392,6 +321,7 @@ const OUTCOME_TEXT: { [K in ToolOutcome['kind']]: (outcome: OutcomeOf<K>) => str
   indexUnavailable: (outcome) => tString(INDEX_UNAVAILABLE_KEYS[outcome.reason]),
   staged: (outcome) => tString('askCmdr.tool.outcome.staged', counts(outcome.count)),
   notStaged: () => tString('askCmdr.tool.outcome.notStaged'),
+  awaitingPerson: () => tString('askCmdr.tool.outcome.awaitingPerson'),
   refused: ({ reason }) =>
     tString(reason.kind === 'memory' ? MEMORY_REFUSAL_KEYS[reason.refusal] : REFUSAL_KEYS[reason.kind]),
   locationMiss: ({ miss }) => tString(MISS_KEYS[miss]),

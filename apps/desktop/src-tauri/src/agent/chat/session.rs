@@ -237,7 +237,7 @@ const RAIL_FAKE_FAIL_MARKER: &str = "[fail:";
 /// The rail fake's turn for the prompt it's handed. A message starting with
 /// [`RAIL_FAKE_TOOLS_MARKER`] runs three rounds, so `ask-cmdr.spec.ts` can pin a tool-running
 /// turn's view live and after a reload: narration plus `app_state`, `list_volumes`, and a
-/// hallucinated `delete` (refused); narration plus `list_volumes` twice (both repeats of round
+/// hallucinated `format_drive` (refused); narration plus `list_volumes` twice (both repeats of round
 /// one's, and reusing its call ids); then the answer. Anything else gets the one-line reply.
 ///
 /// The round comes from the prompt (`latest_user_turn`), never a counter, so a retry or a second
@@ -277,7 +277,7 @@ fn rail_fake_turn(messages: &[crate::agent::llm::types::AgentMessage]) -> crate:
                 calls: vec![
                     (ToolId::AppState, no_args()),
                     (ToolId::ListVolumes, no_args()),
-                    (ToolId::Unrecognized("delete".into()), no_args()),
+                    (ToolId::Unrecognized("format_drive".into()), no_args()),
                 ],
             },
             1 => ScriptedTurn::SayThenCall {
@@ -674,7 +674,7 @@ mod tests {
             [
                 ToolId::AppState,
                 ToolId::ListVolumes,
-                ToolId::Unrecognized("delete".into())
+                ToolId::Unrecognized("format_drive".into())
             ]
         );
         assert_eq!(

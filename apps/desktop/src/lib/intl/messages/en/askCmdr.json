@@ -522,13 +522,13 @@
   "askCmdr.tool.unknown.named.doing": "Asking for “{name}”",
   "@askCmdr.tool.unknown.named.doing": {
     "description": "Present-tense label on a tool line in the Ask Cmdr chat rail when the assistant asked for a tool Ask Cmdr doesn’t have (a made-up or mistyped name). {name} is that name exactly as the assistant wrote it; keep the quotes, in your language’s quote marks, and never translate the name. Pairs with askCmdr.tool.unknown.named.done.",
-    "placeholders": { "name": "The tool name the assistant asked for, for example delete." },
+    "placeholders": { "name": "The tool name the assistant asked for, for example format_drive." },
     "screenshot": "ask-cmdr-tools.png"
   },
   "askCmdr.tool.unknown.named.done": "Asked for “{name}”",
   "@askCmdr.tool.unknown.named.done": {
     "description": "Past-tense label on the same tool line once the request came back (a short note follows saying it isn’t a tool it has). {name} is the name exactly as the assistant wrote it; keep the quotes. Pairs with askCmdr.tool.unknown.named.doing.",
-    "placeholders": { "name": "The tool name the assistant asked for, for example delete." },
+    "placeholders": { "name": "The tool name the assistant asked for, for example format_drive." },
     "screenshot": "ask-cmdr-tools.png"
   },
   "askCmdr.tool.showInPane": "Show {path} in a pane",
@@ -2226,5 +2226,845 @@
   "askCmdr.railBoundary.closedToast": "Ask Cmdr ran into a problem and closed. Open it again to keep going.",
   "@askCmdr.railBoundary.closedToast": {
     "description": "Toast shown when the Ask Cmdr chat rail broke unexpectedly, while opening, in use, or while closing. The app has already closed the rail and put keyboard focus back on the file list; reopening the rail brings the conversation back. \"Ask Cmdr\" is the product name; keep it as-is."
+  },
+  "askCmdr.tool.selectVolume.doing": "Switching a pane’s drive",
+  "@askCmdr.tool.selectVolume.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant switches one of the two file panes to another drive, share, or phone. Pairs with askCmdr.tool.selectVolume.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.selectVolume.done": "Switched a pane’s drive",
+  "@askCmdr.tool.selectVolume.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.selectVolume.doing; askCmdr.tool.selectVolume.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.selectVolume.tried": "Tried to switch a pane’s drive",
+  "@askCmdr.tool.selectVolume.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.navToPath.doing": "Going to a folder",
+  "@askCmdr.tool.navToPath.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant takes one of the two file panes to a folder. Pairs with askCmdr.tool.navToPath.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.navToPath.done": "Went to a folder",
+  "@askCmdr.tool.navToPath.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.navToPath.doing; askCmdr.tool.navToPath.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.navToPath.tried": "Tried to go to a folder",
+  "@askCmdr.tool.navToPath.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.navToParent.doing": "Going up a folder",
+  "@askCmdr.tool.navToParent.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant takes the focused file pane up to the folder that holds the current one. Pairs with askCmdr.tool.navToParent.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.navToParent.done": "Went up a folder",
+  "@askCmdr.tool.navToParent.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.navToParent.doing; askCmdr.tool.navToParent.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.navToParent.tried": "Tried to go up a folder",
+  "@askCmdr.tool.navToParent.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.navBack.doing": "Stepping back",
+  "@askCmdr.tool.navBack.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant takes the focused file pane back to the folder it showed before, like a browser’s Back. Pairs with askCmdr.tool.navBack.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.navBack.done": "Stepped back",
+  "@askCmdr.tool.navBack.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.navBack.doing; askCmdr.tool.navBack.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.navBack.tried": "Tried to step back",
+  "@askCmdr.tool.navBack.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.navForward.doing": "Stepping forward",
+  "@askCmdr.tool.navForward.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant takes the focused file pane forward again after going back, like a browser’s Forward. Pairs with askCmdr.tool.navForward.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.navForward.done": "Stepped forward",
+  "@askCmdr.tool.navForward.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.navForward.doing; askCmdr.tool.navForward.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.navForward.tried": "Tried to step forward",
+  "@askCmdr.tool.navForward.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.scrollTo.doing": "Scrolling a pane",
+  "@askCmdr.tool.scrollTo.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant scrolls a file pane to a position in a long folder. Pairs with askCmdr.tool.scrollTo.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.scrollTo.done": "Scrolled a pane",
+  "@askCmdr.tool.scrollTo.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.scrollTo.doing; askCmdr.tool.scrollTo.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.scrollTo.tried": "Tried to scroll a pane",
+  "@askCmdr.tool.scrollTo.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.moveCursor.doing": "Moving the cursor",
+  "@askCmdr.tool.moveCursor.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant moves the highlighted row (the cursor) in a file pane. Pairs with askCmdr.tool.moveCursor.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.moveCursor.done": "Moved the cursor",
+  "@askCmdr.tool.moveCursor.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.moveCursor.doing; askCmdr.tool.moveCursor.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.moveCursor.tried": "Tried to move the cursor",
+  "@askCmdr.tool.moveCursor.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.openUnderCursor.doing": "Opening the highlighted item",
+  "@askCmdr.tool.openUnderCursor.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant opens the file or folder under the cursor, as if the person pressed Enter. Pairs with askCmdr.tool.openUnderCursor.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.openUnderCursor.done": "Opened the highlighted item",
+  "@askCmdr.tool.openUnderCursor.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.openUnderCursor.doing; askCmdr.tool.openUnderCursor.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.openUnderCursor.tried": "Tried to open the highlighted item",
+  "@askCmdr.tool.openUnderCursor.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.select.doing": "Selecting files",
+  "@askCmdr.tool.select.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant selects files in a file pane. Nothing happens to the files themselves. Pairs with askCmdr.tool.select.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.select.done": "Selected files",
+  "@askCmdr.tool.select.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.select.doing; askCmdr.tool.select.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.select.tried": "Tried to select files",
+  "@askCmdr.tool.select.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.copy.doing": "Opening the copy dialog",
+  "@askCmdr.tool.copy.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant opens the copy dialog for the person to confirm. It says “opened” on purpose: nothing has been copied at this point, and only the person can start the copy. Pairs with askCmdr.tool.copy.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.copy.done": "Opened the copy dialog",
+  "@askCmdr.tool.copy.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.copy.doing; askCmdr.tool.copy.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.copy.tried": "Tried to open the copy dialog",
+  "@askCmdr.tool.copy.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.move.doing": "Opening the move dialog",
+  "@askCmdr.tool.move.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant opens the move dialog for the person to confirm. It says “opened” on purpose: nothing has moved at this point, and only the person can start the move. Pairs with askCmdr.tool.move.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.move.done": "Opened the move dialog",
+  "@askCmdr.tool.move.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.move.doing; askCmdr.tool.move.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.move.tried": "Tried to open the move dialog",
+  "@askCmdr.tool.move.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.compress.doing": "Opening the compress dialog",
+  "@askCmdr.tool.compress.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant opens the dialog that zips files into an archive, for the person to confirm. It says “opened” on purpose: no archive exists at this point. Pairs with askCmdr.tool.compress.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.compress.done": "Opened the compress dialog",
+  "@askCmdr.tool.compress.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.compress.doing; askCmdr.tool.compress.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.compress.tried": "Tried to open the compress dialog",
+  "@askCmdr.tool.compress.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.delete.doing": "Opening the delete dialog",
+  "@askCmdr.tool.delete.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant opens the delete dialog for the person to confirm. It says “opened” on purpose: nothing has been deleted at this point, and only the person can start it. Pairs with askCmdr.tool.delete.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.delete.done": "Opened the delete dialog",
+  "@askCmdr.tool.delete.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.delete.doing; askCmdr.tool.delete.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.delete.tried": "Tried to open the delete dialog",
+  "@askCmdr.tool.delete.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.rename.doing": "Opening the rename editor",
+  "@askCmdr.tool.rename.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant opens the inline editor on a file’s name, for the person to finish. It says “opened” on purpose: nothing has been renamed at this point. Pairs with askCmdr.tool.rename.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.rename.done": "Opened the rename editor",
+  "@askCmdr.tool.rename.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.rename.doing; askCmdr.tool.rename.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.rename.tried": "Tried to open the rename editor",
+  "@askCmdr.tool.rename.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.multiRename.doing": "Working out new names",
+  "@askCmdr.tool.multiRename.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant works out new names for a batch of files with Cmdr’s Multi-Rename Tool. Nothing is renamed: the person reviews any proposal and approves it. Pairs with askCmdr.tool.multiRename.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.multiRename.done": "Worked out new names",
+  "@askCmdr.tool.multiRename.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.multiRename.doing; askCmdr.tool.multiRename.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.multiRename.tried": "Tried to work out new names",
+  "@askCmdr.tool.multiRename.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.mkdir.doing": "Creating a folder",
+  "@askCmdr.tool.mkdir.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant creates a new folder with a name it chose. Pairs with askCmdr.tool.mkdir.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.mkdir.done": "Created a folder",
+  "@askCmdr.tool.mkdir.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.mkdir.doing; askCmdr.tool.mkdir.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.mkdir.tried": "Tried to create a folder",
+  "@askCmdr.tool.mkdir.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.mkfile.doing": "Creating a file",
+  "@askCmdr.tool.mkfile.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant creates a new empty file with a name it chose. Pairs with askCmdr.tool.mkfile.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.mkfile.done": "Created a file",
+  "@askCmdr.tool.mkfile.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.mkfile.doing; askCmdr.tool.mkfile.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.mkfile.tried": "Tried to create a file",
+  "@askCmdr.tool.mkfile.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.refresh.doing": "Refreshing a pane",
+  "@askCmdr.tool.refresh.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant makes a file pane read its folder again. Pairs with askCmdr.tool.refresh.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.refresh.done": "Refreshed a pane",
+  "@askCmdr.tool.refresh.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.refresh.doing; askCmdr.tool.refresh.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.refresh.tried": "Tried to refresh a pane",
+  "@askCmdr.tool.refresh.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.tag.doing": "Changing Finder tags",
+  "@askCmdr.tool.tag.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant sets, flips, or clears macOS Finder color tags on files. Pairs with askCmdr.tool.tag.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.tag.done": "Changed Finder tags",
+  "@askCmdr.tool.tag.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.tag.doing; askCmdr.tool.tag.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.tag.tried": "Tried to change Finder tags",
+  "@askCmdr.tool.tag.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.toggleHidden.doing": "Changing whether hidden files show",
+  "@askCmdr.tool.toggleHidden.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant shows or hides hidden files in the file panes. Pairs with askCmdr.tool.toggleHidden.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.toggleHidden.done": "Changed whether hidden files show",
+  "@askCmdr.tool.toggleHidden.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.toggleHidden.doing; askCmdr.tool.toggleHidden.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.toggleHidden.tried": "Tried to change whether hidden files show",
+  "@askCmdr.tool.toggleHidden.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.setViewMode.doing": "Changing a pane’s view",
+  "@askCmdr.tool.setViewMode.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant switches a file pane between its brief and full views. Pairs with askCmdr.tool.setViewMode.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.setViewMode.done": "Changed a pane’s view",
+  "@askCmdr.tool.setViewMode.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.setViewMode.doing; askCmdr.tool.setViewMode.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.setViewMode.tried": "Tried to change a pane’s view",
+  "@askCmdr.tool.setViewMode.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.sort.doing": "Sorting a pane",
+  "@askCmdr.tool.sort.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant changes the order a file pane lists its files in. Pairs with askCmdr.tool.sort.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.sort.done": "Sorted a pane",
+  "@askCmdr.tool.sort.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.sort.doing; askCmdr.tool.sort.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.sort.tried": "Tried to sort a pane",
+  "@askCmdr.tool.sort.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.tab.doing": "Changing a pane’s tabs",
+  "@askCmdr.tool.tab.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant opens, closes, pins, or moves a tab in a file pane. Pairs with askCmdr.tool.tab.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.tab.done": "Changed a pane’s tabs",
+  "@askCmdr.tool.tab.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.tab.doing; askCmdr.tool.tab.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.tab.tried": "Tried to change a pane’s tabs",
+  "@askCmdr.tool.tab.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.dialog.doing": "Using a dialog",
+  "@askCmdr.tool.dialog.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant opens, focuses, or closes one of Cmdr’s dialogs or windows, such as Settings. Pairs with askCmdr.tool.dialog.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.dialog.done": "Used a dialog",
+  "@askCmdr.tool.dialog.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.dialog.doing; askCmdr.tool.dialog.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.dialog.tried": "Tried to use a dialog",
+  "@askCmdr.tool.dialog.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.openSearchDialog.doing": "Opening search",
+  "@askCmdr.tool.openSearchDialog.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant opens Cmdr’s search dialog. Pairs with askCmdr.tool.openSearchDialog.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.openSearchDialog.done": "Opened search",
+  "@askCmdr.tool.openSearchDialog.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.openSearchDialog.doing; askCmdr.tool.openSearchDialog.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.openSearchDialog.tried": "Tried to open search",
+  "@askCmdr.tool.openSearchDialog.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.quit.doing": "Quitting Cmdr",
+  "@askCmdr.tool.quit.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant quits the app. The past tense says “asked” because a running copy can hold the quit until the person answers. Pairs with askCmdr.tool.quit.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.quit.done": "Asked Cmdr to quit",
+  "@askCmdr.tool.quit.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.quit.doing; askCmdr.tool.quit.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.quit.tried": "Tried to quit Cmdr",
+  "@askCmdr.tool.quit.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.switchPane.doing": "Switching panes",
+  "@askCmdr.tool.switchPane.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant moves keyboard focus to the other file pane. Pairs with askCmdr.tool.switchPane.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.switchPane.done": "Switched panes",
+  "@askCmdr.tool.switchPane.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.switchPane.doing; askCmdr.tool.switchPane.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.switchPane.tried": "Tried to switch panes",
+  "@askCmdr.tool.switchPane.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.swapPanes.doing": "Swapping the panes",
+  "@askCmdr.tool.swapPanes.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant swaps what the left and right file panes show. Pairs with askCmdr.tool.swapPanes.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.swapPanes.done": "Swapped the panes",
+  "@askCmdr.tool.swapPanes.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.swapPanes.doing; askCmdr.tool.swapPanes.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.swapPanes.tried": "Tried to swap the panes",
+  "@askCmdr.tool.swapPanes.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.aiSearch.doing": "Searching with AI",
+  "@askCmdr.tool.aiSearch.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant asks the configured AI service to turn a request in plain words into a file search. Nothing changes. Pairs with askCmdr.tool.aiSearch.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.aiSearch.done": "Searched with AI",
+  "@askCmdr.tool.aiSearch.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.aiSearch.doing.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.setSetting.doing": "Changing a setting",
+  "@askCmdr.tool.setSetting.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant changes one of Cmdr’s settings. Pairs with askCmdr.tool.setSetting.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.setSetting.done": "Changed a setting",
+  "@askCmdr.tool.setSetting.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.setSetting.doing; askCmdr.tool.setSetting.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.setSetting.tried": "Tried to change a setting",
+  "@askCmdr.tool.setSetting.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.indexing.doing": "Changing a drive’s indexing",
+  "@askCmdr.tool.indexing.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant turns Cmdr’s index of a drive on or off, starts a fresh scan of it, or forgets it. Pairs with askCmdr.tool.indexing.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.indexing.done": "Changed a drive’s indexing",
+  "@askCmdr.tool.indexing.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.indexing.doing; askCmdr.tool.indexing.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.indexing.tried": "Tried to change a drive’s indexing",
+  "@askCmdr.tool.indexing.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.queue.doing": "Adjusting running operations",
+  "@askCmdr.tool.queue.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant pauses, resumes, or cancels file operations that are running, such as a copy. Pairs with askCmdr.tool.queue.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.queue.done": "Adjusted running operations",
+  "@askCmdr.tool.queue.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.queue.doing; askCmdr.tool.queue.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.queue.tried": "Tried to adjust running operations",
+  "@askCmdr.tool.queue.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.resolveConflict.doing": "Answering a name clash",
+  "@askCmdr.tool.resolveConflict.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant answers a running copy or move’s question about a file with the same name at the destination. Pairs with askCmdr.tool.resolveConflict.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.resolveConflict.done": "Answered a name clash",
+  "@askCmdr.tool.resolveConflict.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.resolveConflict.doing; askCmdr.tool.resolveConflict.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.resolveConflict.tried": "Tried to answer a name clash",
+  "@askCmdr.tool.resolveConflict.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.unlock.doing": "Sending a password",
+  "@askCmdr.tool.unlock.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant answers Cmdr’s password prompt for a locked archive or backup. The past tense says “sent” because the password may still turn out to be wrong. Pairs with askCmdr.tool.unlock.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.unlock.done": "Sent a password",
+  "@askCmdr.tool.unlock.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.unlock.doing; askCmdr.tool.unlock.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.unlock.tried": "Tried to send a password",
+  "@askCmdr.tool.unlock.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.favorites.doing": "Changing your favorites",
+  "@askCmdr.tool.favorites.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant adds, renames, removes, or reorders the person’s favorite folders. Pairs with askCmdr.tool.favorites.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.favorites.done": "Changed your favorites",
+  "@askCmdr.tool.favorites.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.favorites.doing; askCmdr.tool.favorites.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.favorites.tried": "Tried to change your favorites",
+  "@askCmdr.tool.favorites.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.connectToServer.doing": "Adding a server",
+  "@askCmdr.tool.connectToServer.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant adds a network server to Cmdr’s list of hosts by its address. Pairs with askCmdr.tool.connectToServer.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.connectToServer.done": "Added a server",
+  "@askCmdr.tool.connectToServer.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.connectToServer.doing; askCmdr.tool.connectToServer.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.connectToServer.tried": "Tried to add a server",
+  "@askCmdr.tool.connectToServer.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.removeManualServer.doing": "Removing a server",
+  "@askCmdr.tool.removeManualServer.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant removes a server the person added by hand from Cmdr’s list of hosts. Pairs with askCmdr.tool.removeManualServer.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.removeManualServer.done": "Removed a server",
+  "@askCmdr.tool.removeManualServer.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.removeManualServer.doing; askCmdr.tool.removeManualServer.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.removeManualServer.tried": "Tried to remove a server",
+  "@askCmdr.tool.removeManualServer.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.upgradeSmbToDirect.doing": "Asking for a direct connection to a share",
+  "@askCmdr.tool.upgradeSmbToDirect.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant asks Cmdr to reach a mounted network share over its own faster connection. The past tense says “asked” because the share may still need a sign-in. Pairs with askCmdr.tool.upgradeSmbToDirect.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.upgradeSmbToDirect.done": "Asked for a direct connection to a share",
+  "@askCmdr.tool.upgradeSmbToDirect.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.upgradeSmbToDirect.doing; askCmdr.tool.upgradeSmbToDirect.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.upgradeSmbToDirect.tried": "Tried to ask for a direct connection to a share",
+  "@askCmdr.tool.upgradeSmbToDirect.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.eject.doing": "Detaching a drive",
+  "@askCmdr.tool.eject.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant ejects a disk, unmounts a share, or disconnects a phone or server. Pairs with askCmdr.tool.eject.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.eject.done": "Detached a drive",
+  "@askCmdr.tool.eject.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.eject.doing; askCmdr.tool.eject.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.eject.tried": "Tried to detach a drive",
+  "@askCmdr.tool.eject.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.await.doing": "Waiting for Cmdr",
+  "@askCmdr.tool.await.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant waits for something in Cmdr to finish, such as a folder loading or a copy ending. Nothing changes. Pairs with askCmdr.tool.await.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.await.done": "Waited for Cmdr",
+  "@askCmdr.tool.await.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.await.doing.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.goToLatestDownload.doing": "Going to your latest download",
+  "@askCmdr.tool.goToLatestDownload.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant takes the focused file pane to the newest file in the Downloads folder. Pairs with askCmdr.tool.goToLatestDownload.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.goToLatestDownload.done": "Went to your latest download",
+  "@askCmdr.tool.goToLatestDownload.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.goToLatestDownload.doing; askCmdr.tool.goToLatestDownload.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.goToLatestDownload.tried": "Tried to go to your latest download",
+  "@askCmdr.tool.goToLatestDownload.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.operationsRollback.doing": "Opening the rollback dialog",
+  "@askCmdr.tool.operationsRollback.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant opens the dialog that undoes a past file operation, for the person to confirm. It says “opened” on purpose: nothing has been undone at this point. Pairs with askCmdr.tool.operationsRollback.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.operationsRollback.done": "Opened the rollback dialog",
+  "@askCmdr.tool.operationsRollback.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.operationsRollback.doing; askCmdr.tool.operationsRollback.tried replaces it when it didn’t work.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.operationsRollback.tried": "Tried to open the rollback dialog",
+  "@askCmdr.tool.operationsRollback.tried": {
+    "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.memoryDiagnostics.doing": "Checking Cmdr’s memory use",
+  "@askCmdr.tool.memoryDiagnostics.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant reads how much of the computer’s memory Cmdr itself is using. Nothing changes. Pairs with askCmdr.tool.memoryDiagnostics.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.memoryDiagnostics.done": "Checked Cmdr’s memory use",
+  "@askCmdr.tool.memoryDiagnostics.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.memoryDiagnostics.doing.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.cpuDiagnostics.doing": "Checking Cmdr’s CPU use",
+  "@askCmdr.tool.cpuDiagnostics.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant reads how much processor time Cmdr itself is using. Nothing changes. Pairs with askCmdr.tool.cpuDiagnostics.done.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.cpuDiagnostics.done": "Checked Cmdr’s CPU use",
+  "@askCmdr.tool.cpuDiagnostics.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.cpuDiagnostics.doing.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.navToPath.place.doing": "Going to <place>{name}</place>",
+  "@askCmdr.tool.navToPath.place.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant takes one of the two file panes to a named folder. {name} is that folder’s name; the <place> tag links it. The tag may wrap the name alone: put a type noun (“folder”, “file”, “photo”, “note”) outside it where your language needs one for case, gender, or elision.",
+    "placeholders": { "name": "The last part of the path, for example Downloads." },
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.navToPath.place.done": "Went to <place>{name}</place>",
+  "@askCmdr.tool.navToPath.place.done": {
+    "description": "Past-tense label on the same tool line once the pane got there. {name} is the folder’s name, linked by the <place> tag. The tag may wrap the name alone: put a type noun (“folder”, “file”, “photo”, “note”) outside it where your language needs one for case, gender, or elision.",
+    "placeholders": { "name": "The last part of the path, for example Downloads." },
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.navToPath.place.tried": "Tried to go to <place>{name}</place>",
+  "@askCmdr.tool.navToPath.place.tried": {
+    "description": "Label on the same tool line when the pane did NOT get there (a short reason follows it on the line). {name} is the folder’s name, linked by the <place> tag. The tag may wrap the name alone: put a type noun (“folder”, “file”, “photo”, “note”) outside it where your language needs one for case, gender, or elision.",
+    "placeholders": { "name": "The last part of the path, for example Downloads." },
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.unlock.place.doing": "Sending the password for <place>{name}</place>",
+  "@askCmdr.tool.unlock.place.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant answers Cmdr’s password prompt for a locked archive or backup. {name} is its name; the <place> tag links it. The tag may wrap the name alone: put a type noun (“folder”, “file”, “photo”, “note”) outside it where your language needs one for case, gender, or elision.",
+    "placeholders": { "name": "The last part of the path, for example Downloads." },
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.unlock.place.done": "Sent the password for <place>{name}</place>",
+  "@askCmdr.tool.unlock.place.done": {
+    "description": "Past-tense label on the same tool line. It says “sent” because the password may still turn out to be wrong. {name} is the archive’s or backup’s name, linked by the <place> tag. The tag may wrap the name alone: put a type noun (“folder”, “file”, “photo”, “note”) outside it where your language needs one for case, gender, or elision.",
+    "placeholders": { "name": "The last part of the path, for example Downloads." },
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.unlock.place.tried": "Tried to send the password for <place>{name}</place>",
+  "@askCmdr.tool.unlock.place.tried": {
+    "description": "Label on the same tool line when the password did NOT get through (a short reason follows it on the line). {name} is the archive’s or backup’s name, linked by the <place> tag. The tag may wrap the name alone: put a type noun (“folder”, “file”, “photo”, “note”) outside it where your language needs one for case, gender, or elision.",
+    "placeholders": { "name": "The last part of the path, for example Downloads." },
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.mkdir.waiting": "Opened the new folder dialog",
+  "@askCmdr.tool.mkdir.waiting": {
+    "description": "Label on a tool line in the Ask Cmdr chat rail when the assistant opened the dialog where the person names a new folder. No folder exists yet: only the person can create it.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.mkfile.waiting": "Opened the new file dialog",
+  "@askCmdr.tool.mkfile.waiting": {
+    "description": "Label on a tool line in the Ask Cmdr chat rail when the assistant opened the dialog where the person names a new file. No file exists yet: only the person can create it.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.outcome.awaitingPerson": "waiting for you",
+  "@askCmdr.tool.outcome.awaitingPerson": {
+    "description": "What came back, after a tool line’s label: a dialog or editor is open, and nothing happens until the person finishes it. Lowercase where your language allows it, since it follows the label on one line.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.outcome.declined": "you said no",
+  "@askCmdr.tool.outcome.declined": {
+    "description": "What came back, after a tool line’s label: the assistant asked the person to confirm something, and they declined. Friendly and neutral, not a reproach. Lowercase where your language allows it, since it follows the label on one line.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.outcome.protected": "kept private",
+  "@askCmdr.tool.outcome.protected": {
+    "description": "What came back, after a tool line’s label: Cmdr kept a sensitive file’s contents from the assistant (a key, a password store, mail). It’s a safety feature working, not a failure. Lowercase where your language allows it, since it follows the label on one line.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
   }
 }

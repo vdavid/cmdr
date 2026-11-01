@@ -6,5 +6,17 @@
   "askCmdr.error.managedByOrganization": "Your organisation doesn’t allow this AI service. Your IT team can tell you which ones you can use.",
   "@askCmdr.error.managedByOrganization": {
     "sourceHash": "845a19f"
+  },
+  "askCmdr.tool.favorites.doing": "Changing your favourites",
+  "@askCmdr.tool.favorites.doing": {
+    "sourceHash": "e7a267b"
+  },
+  "askCmdr.tool.favorites.done": "Changed your favourites",
+  "@askCmdr.tool.favorites.done": {
+    "sourceHash": "e5b7117"
+  },
+  "askCmdr.tool.favorites.tried": "Tried to change your favourites",
+  "@askCmdr.tool.favorites.tried": {
+    "sourceHash": "cd7fc23"
   }
 }

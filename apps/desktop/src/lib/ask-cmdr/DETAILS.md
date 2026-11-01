@@ -224,7 +224,9 @@ a mid-turn and a post-turn decision).
 
 `AskCmdrToolLine.svelte` is one calm row: a glyph, the label naming what the call looked at, a "Same as above" tag, and
 a quieter note saying what came back. Every word is ours: the backend sends typed facts (`ToolSubject`, `ToolOutcome`,
-`repeatOf`, `TurnStats`) and `ask-cmdr-labels.ts` picks the catalog message per variant.
+`repeatOf`, `TurnStats`) and `ask-cmdr-labels.ts` picks the catalog message per variant. Every entry in the tool table
+has its own label in `ask-cmdr-tool-label-keys.ts`, whether or not the agent may run it yet: a refused call shows what
+it asked for, in `tried` words.
 
 - **The label** (`toolLineLabel`): keys stay per TOOL (doing while running, done after), and a subject that names
   something swaps in a key with params (`SUBJECT_WORDS`, a `Record` over every subject kind, so a new kind is a compile
@@ -995,7 +997,8 @@ sends" list moved to `ai.cloudConsent.askCmdr.*` in `ai.json`), the settings cop
 (`settings.askCmdr.*`, `settings.section.askCmdr`), and the command label in `commands.json`
 (`commands.askCmdrToggle.*`, `commands.askCmdrNewChat.*`), each with an `@key` translator description. The name, the
 gate, and the provider-notice copy are the re-translation surface if David adjusts the product calls. Tool + error
-labels are literal-keyed records in `ask-cmdr-labels.ts` (a computed prefix would trip the unused-key check).
+labels are literal-keyed records in `ask-cmdr-labels.ts` and `ask-cmdr-tool-label-keys.ts` (a computed prefix would trip
+the unused-key check).
 
 ## Decisions
 

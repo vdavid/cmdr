@@ -3,8 +3,8 @@
 use serde_json::Value;
 
 use super::{
-    LinePath, ToolOutcome, ToolPreview, ToolPreviewRow, ToolPreviewRowKind, ToolPreviewRowStatus, bounded, bounded_to,
-    count_u32, location_path, outcome_of,
+    Arm, LinePath, ToolOutcome, ToolPreview, ToolPreviewRow, ToolPreviewRowKind, ToolPreviewRowStatus, bounded,
+    bounded_to, count_u32, location_path, outcome_of,
 };
 use crate::agent::llm::types::{AgentToolResult, ToolId};
 use crate::tools::read::join_child_path;
@@ -62,7 +62,15 @@ pub fn preview_of(tool: &ToolId, result: &AgentToolResult) -> ToolPreview {
 /// The rows of a list-carrying result, in the order the model read them. Builds at most
 /// [`PREVIEW_ROWS`] from each list, so a 200-row answer costs 20.
 fn rows_of(tool: &ToolId, content: &Value) -> Vec<ToolPreviewRow> {
-    match tool {
+    match hand_rows(tool, content) {
+        Arm::Hand(rows) => rows,
+        Arm::Generic => Vec::new(),
+    }
+}
+
+/// The rich tools' rows, and the refusal case's. Every other tool is [`Arm::Generic`].
+pub(super) fn hand_rows(tool: &ToolId, content: &Value) -> Arm<Vec<ToolPreviewRow>> {
+    Arm::Hand(match tool {
         ToolId::ListDir | ToolId::ListPaneFiles => {
             let parent = location_path(content);
             let list = if matches!(tool, ToolId::ListDir) {
@@ -143,6 +151,16 @@ fn rows_of(tool: &ToolId, content: &Value) -> Vec<ToolPreviewRow> {
                 })
             })
             .collect(),
+        // A dry run's page: what each file is called, and what it would become.
+        ToolId::MultiRename => items(content, "rows")
+            .filter_map(|row_out| {
+                Some(ToolPreviewRow {
+                    kind: file_or_folder(row_out, "isDirectory"),
+                    snippet: row_out.get("newName").and_then(Value::as_str).map(bounded),
+                    ..row(row_out.get("oldName")?.as_str()?)
+                })
+            })
+            .collect(),
         ToolId::ListSuggestions => items(content, "sweeps")
             .flat_map(|sweep| sweep.get("groups").and_then(Value::as_array).into_iter().flatten())
             .take(PREVIEW_ROWS)
@@ -161,7 +179,8 @@ fn rows_of(tool: &ToolId, content: &Value) -> Vec<ToolPreviewRow> {
         | ToolId::MemoryWrite
         | ToolId::MemoryEdit
         | ToolId::Unrecognized(_) => Vec::new(),
-    }
+        _ => return Arm::Generic,
+    })
 }
 
 /// `inspect_file`: one row per file, or one per `find` hit, carrying the per-path status.

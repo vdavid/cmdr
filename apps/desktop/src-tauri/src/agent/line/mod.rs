@@ -64,6 +64,22 @@ impl LinePath {
     }
 }
 
+/// Whether a line's hand-written arm covers a tool, or the tool flows through the generic one
+/// ([`SubjectSpec`](crate::tools::SubjectSpec)). Returned by the three hand arms, so a test can hold
+/// them to the table's `Custom` entries in both directions.
+enum Arm<T> {
+    Hand(T),
+    Generic,
+}
+
+/// A pane a call names.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum LinePane {
+    Left,
+    Right,
+}
+
 /// What one call looked at. Every string is bounded; every path is a [`LinePath`].
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
@@ -97,13 +113,27 @@ pub enum ToolSubject {
     ImportantFolders,
     /// `list_volumes`.
     Drives,
-    /// `connect_volume`: the volume id the model asked to connect.
+    /// A tool whose words already say it all.
+    Nothing,
+    /// A place a tool aims at (`SubjectSpec::Path`): `nav_to_path`, `unlock`.
+    Place {
+        path: LinePath,
+    },
+    /// A pane a tool acts in; `None` is the focused one, or a name that isn't a pane.
+    Pane {
+        pane: Option<LinePane>,
+    },
+    /// `set_setting`: the setting's id.
+    Setting {
+        id: String,
+    },
+    /// The volume id a tool names: `connect_volume`, or `SubjectSpec::Volume`.
     Volume {
         id: String,
     },
     /// `operations_list`.
     OperationLog,
-    /// `operations_get`.
+    /// The operation a tool names: `operations_get`, or `SubjectSpec::Operation`.
     Operation {
         id: String,
     },
@@ -129,8 +159,8 @@ pub enum ToolSubject {
         path: String,
         absolute: Option<String>,
     },
-    /// A name outside the agent's view (hallucinated, a typo). An empty `name` is a legacy
-    /// nameless call.
+    /// A name outside the tool table (hallucinated, a typo). An empty `name` is a legacy nameless
+    /// call.
     UnknownTool {
         name: String,
     },
@@ -172,6 +202,11 @@ pub enum ToolOutcome {
     },
     /// A propose tool staged nothing (`readyForReview: false`).
     NotStaged,
+    /// Nothing has happened yet: a dialog or editor is open, waiting for a person. `dialog` is its
+    /// id, a token of ours.
+    AwaitingPerson {
+        dialog: Option<String>,
+    },
     /// A memory note landed.
     Saved,
     Refused {
@@ -206,6 +241,7 @@ impl ToolOutcome {
             | ToolOutcome::Answered
             | ToolOutcome::IndexUnavailable { .. }
             | ToolOutcome::Staged { .. }
+            | ToolOutcome::AwaitingPerson { .. }
             | ToolOutcome::Saved => true,
         }
     }
@@ -221,6 +257,10 @@ pub enum RefusalReason {
     RepeatedCall,
     /// The schema gate or the handler said no (the JSON can't tell those two apart).
     Problem,
+    /// A person answered "no" to what the call asked them.
+    Declined,
+    /// The sensitive-content gate kept what the call asked for from the assistant.
+    Protected,
     Memory {
         refusal: MemoryRefusalKind,
     },

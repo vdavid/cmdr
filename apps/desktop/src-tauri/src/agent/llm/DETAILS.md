@@ -270,18 +270,18 @@ Provider transport errors are classified by HTTP status once, upstream, in `crat
 (`../../ai/DETAILS.md` § Managed policy). `AgentLlmError::NoKey` /
 `NotConfigured` / `BudgetExhausted` are pre-flight/runtime states the runtime raises, not transport errors.
 
-## `ToolId` and the read-only gate
+## `ToolId` and the gate
 
 `ToolId` is a typed tool name with an `Unrecognized(String)` fallback, serialized transparently as its bare wire name
-(the genai `fn_name`, the DB token, and the IPC string are one identical value). `from_wire_name` is total: an unknown
-name resolves to `Unrecognized` rather than failing, so the raw name stays representable for the transparent UI and the
-typed "tool not available" result. The read-only guarantee is that `Unrecognized` (and any future write tool) is never
-in `agent_tool_view()`, so dispatch refuses it — a typed view-membership check, not a string match. The known variants
-are the read-only families, pinned 1:1 to `agent_tool_view()` by a structural test in `tools/mod.rs` (so the catalog
-lives in `tools/DETAILS.md` and this list can't rot beside it); `ToolId::KNOWN` excludes `Unrecognized` by design.
-`ProposeRenamePlan` and `ProposeSuggestions` are the proposing variants: they stage a reviewable plan and remain subject
-to the same typed-view gate, never an approval or write route. `NothingToSuggest` is the odd one out — a pure SIGNAL
-whose handler changes nothing, so that a wake's outcome is observable typed rather than read out of the model's wording.
+(the genai `fn_name`, the DB token, and the IPC string are one identical value). `mcp_tools!` generates it from the tool
+table, one variant per entry; `types.rs` re-exports it (`../../tools/DETAILS.md` § The table). `from_wire_name` is total:
+a name outside the table resolves to `Unrecognized` rather than failing, so the raw name stays representable for the
+transparent UI and the typed "tool not available" result. Being known says nothing about being allowed: `delete` parses
+as `ToolId::Delete`, and the gate refuses it by a typed view-membership check, never a string match
+(`../tool_gate.rs::refuse_unavailable`). `ToolId::KNOWN` is every table entry and excludes `Unrecognized` by design. A
+stored call reloads through the same parse, so an old thread's refused `delete` line now reads as that tool, refused.
+`NothingToSuggest` is the odd one out — a pure SIGNAL whose handler changes nothing, so that a wake's outcome is
+observable typed rather than read out of the model's wording.
 
 ## Tests
 

@@ -1,13 +1,12 @@
 //! The agent's gated tool-dispatch view: the no-write choke point at runtime.
 //!
 //! A provider returns each tool call's name as a raw string. The runtime parses it
-//! into a typed [`ToolId`] (`from_wire_name`) BEFORE dispatch; a name that isn't a
-//! known agent-view tool becomes [`ToolId::Unrecognized`], which [`refuse_unavailable`]
-//! turns into a typed "not available" tool-result WITHOUT ever calling
-//! `execute_tool`. So the boundary holds at runtime, not just structurally: the parse
-//! step is the gate, backed by a `tool_access` check that refuses anything the registry
-//! doesn't classify [`Access::Read`], [`Access::Propose`], or [`Access::Memory`] even if it
-//! entered the view.
+//! into a typed [`ToolId`] (`from_wire_name`) BEFORE dispatch, and [`refuse_unavailable`] turns
+//! any tool outside the agent's view (a table entry it isn't given, or a name outside the table)
+//! into a typed "not available" tool-result WITHOUT ever calling `execute_tool`. So the boundary
+//! holds at runtime, not just structurally: the `consumers` check is the gate, backed by a
+//! `tool_access` check that refuses anything the registry doesn't classify [`Access::Read`],
+//! [`Access::Propose`], or [`Access::Memory`] even if it entered the view.
 //!
 //! **The agent can propose; only the user can approve.** A [`Access::Propose`] tool
 //! stages a proposal and opens a review surface; it mutates nothing. Approval originates
@@ -30,7 +29,7 @@ use crate::agent::llm::types::{AgentToolCall, AgentToolResult, ToolId};
 use crate::agent::types::TurnOrigin;
 use crate::tools::propose::evidence::EvidenceScope;
 use crate::tools::propose::rename::{RenameDispatchOutcome, RenameProposalSnapshot};
-use crate::tools::{Access, Consumer, execute_tool, tool_access, validate_params};
+use crate::tools::{Access, Consumer, execute_tool, tool_access, tool_available_to, validate_params};
 
 /// What a tool call knows about the turn it runs in: who started it, for the gate, and the
 /// turn's Stop. One value, so a dispatch path can't take one and forget the other.
@@ -67,13 +66,13 @@ fn admit(access: Option<Access>, origin: TurnOrigin) -> Admission {
 }
 
 /// The refusal tool-result for a call the gate stops, or `None` when dispatch should run it.
-/// Refused as unavailable: any [`ToolId::Unrecognized`] name (hallucinated, a typo, or a
-/// write/non-view tool like `delete`/`copy`), AND — as a runtime backstop — any known name the
+/// Refused as unavailable: any name outside the agent's view (hallucinated, a typo, or a table entry
+/// it isn't given, like `delete`/`copy`), AND — as a runtime backstop — any name in the view the
 /// registry classifies [`Access::Write`] or doesn't classify at all. Refused as
 /// `refusedInBackground`: an [`Access::Session`] tool on a turn the user didn't start.
 /// Returning `Some` here means `execute_tool` is never reached.
 pub fn refuse_unavailable(call_id: &str, tool: &ToolId, origin: TurnOrigin) -> Option<AgentToolResult> {
-    let admission = if tool.is_known() {
+    let admission = if tool_available_to(tool.as_wire_name(), Consumer::Agent) {
         admit(tool_access(tool.as_wire_name()), origin)
     } else {
         Admission::Unavailable
@@ -407,12 +406,12 @@ mod tests {
 
     #[test]
     fn refuses_a_write_tool_name_without_dispatching() {
-        // A hallucinated write name parses to Unrecognized and is refused: the
-        // refusal carries the read-only reason and the requested name, and it
-        // returns BEFORE execute_tool could run.
-        for raw in ["delete", "copy", "definitely_not_a_tool"] {
+        // `delete` and `copy` are table entries the agent isn't given, so they parse as known; a
+        // made-up name stays Unrecognized. Each is refused the same way: the refusal carries the
+        // reason and the requested name, and it returns BEFORE execute_tool could run.
+        for (raw, known) in [("delete", true), ("copy", true), ("definitely_not_a_tool", false)] {
             let tool = ToolId::from_wire_name(raw);
-            assert!(!tool.is_known(), "{raw} must not be a known agent tool");
+            assert_eq!(tool.is_known(), known, "{raw}");
             for origin in ALL_ORIGINS {
                 let refusal = refuse_unavailable("call-1", &tool, origin).expect("refused");
                 assert_eq!(refusal.content["available"], false);
@@ -422,21 +421,65 @@ mod tests {
     }
 
     #[test]
-    fn passes_every_shipped_tool_through_to_dispatch_on_the_turns_it_may_run() {
-        // No shipped tool is refused on a turn the user started, and only `Session` tools are
+    fn passes_every_tool_in_the_agents_view_through_to_dispatch_on_the_turns_it_may_run() {
+        // No tool in the view is refused on a turn the user started, and only `Session` tools are
         // refused on one Cmdr started.
         for tool in ToolId::KNOWN {
-            let session = tool_access(tool.as_wire_name()) == Some(Access::Session);
+            let name = tool.as_wire_name();
+            if !tool_available_to(name, Consumer::Agent) {
+                continue;
+            }
+            let session = tool_access(name) == Some(Access::Session);
             for origin in ALL_ORIGINS {
                 let refused = refuse_unavailable("call-1", &tool, origin);
                 assert_eq!(
                     refused.is_some(),
                     session && !origin.user_started(),
-                    "{} on {origin:?}",
-                    tool.as_wire_name()
+                    "{name} on {origin:?}"
                 );
             }
         }
+    }
+
+    #[test]
+    fn every_known_tool_outside_the_agents_view_is_refused_whatever_its_access_class() {
+        // `await` and `ai_search` are `Read`, so the access axis alone would dispatch them: being
+        // known must not mean being available. The model sees exactly what it saw when these names
+        // parsed as Unrecognized.
+        let mut outside = 0;
+        for tool in ToolId::KNOWN {
+            let name = tool.as_wire_name();
+            if tool_available_to(name, Consumer::Agent) {
+                continue;
+            }
+            outside += 1;
+            for origin in ALL_ORIGINS {
+                let refusal = refuse_unavailable("call-1", &tool, origin).expect("refused");
+                assert_eq!(
+                    refusal.content,
+                    unavailable("call-1", &ToolId::Unrecognized(name.to_string())).content,
+                    "{name} on {origin:?}"
+                );
+            }
+        }
+        assert!(
+            outside > 0,
+            "the view is narrower than the table until the two surfaces merge"
+        );
+        assert_eq!(tool_access("await"), Some(Access::Read));
+        assert!(refuse_unavailable("call-1", &ToolId::Await, TurnOrigin::Text).is_some());
+    }
+
+    #[test]
+    fn a_dry_run_owes_no_review_verdict_and_a_multi_rename_problem_owes_one() {
+        // `outcome_of` reads a dry run as an answer, so the stamp must leave it alone.
+        let mut dry_run = result(json!({ "dryRun": true, "rows": [], "total": 0 }));
+        ensure_review_verdict(&ToolId::MultiRename, &mut dry_run);
+        assert!(dry_run.content.get("readyForReview").is_none());
+
+        let mut problem = result(json!({ "problem": "Nothing is ready." }));
+        ensure_review_verdict(&ToolId::MultiRename, &mut problem);
+        assert_eq!(problem.content["readyForReview"], false);
     }
 
     #[test]
@@ -452,9 +495,9 @@ mod tests {
 
     #[tokio::test]
     async fn raw_provider_name_delete_is_parsed_and_refused_end_to_end() {
-        // The full parse gate: a provider emitting the raw name "delete" (via the
-        // fake's CallRawTool) yields a ToolCall whose ToolId is Unrecognized, which
-        // the dispatch gate refuses — execute_tool is never involved.
+        // A provider emitting the raw name "delete" (via the fake's CallRawTool) yields a
+        // ToolCall naming that table entry, which the dispatch gate refuses, since the agent's
+        // view doesn't hold it — execute_tool is never involved.
         let fake = FakeAgentLlm::script(vec![ScriptedTurn::CallRawTool("delete".into(), json!({ "path": "/" }))]);
         let stream = fake
             .respond(
@@ -474,7 +517,7 @@ mod tests {
         let crate::agent::llm::types::AgentPart::ToolCall(call) = &message.parts[0] else {
             panic!("expected a tool call part");
         };
-        assert_eq!(call.tool, ToolId::Unrecognized("delete".into()));
+        assert_eq!(call.tool, ToolId::Delete);
 
         let refusal =
             refuse_unavailable(&call.call_id, &call.tool, TurnOrigin::Text).expect("dispatch refuses the write name");

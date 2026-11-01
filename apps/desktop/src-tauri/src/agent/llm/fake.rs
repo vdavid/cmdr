@@ -34,7 +34,7 @@ pub enum ScriptedTurn {
         say: Vec<String>,
         calls: Vec<(ToolId, serde_json::Value)>,
     },
-    /// Emit a tool call under an arbitrary raw name (e.g. `"delete"`), to exercise
+    /// Emit a tool call under an arbitrary raw name (e.g. `"format_drive"`), to exercise
     /// the runtime's read-only parse gate. The name resolves through
     /// [`ToolId::from_wire_name`], so an unknown name becomes [`ToolId::Unrecognized`].
     CallRawTool(String, serde_json::Value),
@@ -290,7 +290,7 @@ mod tests {
     async fn call_raw_tool_carries_unrecognized_tool_id() {
         // The seam the read-only negative test builds on: a raw name the agent
         // doesn't know resolves to `Unrecognized`, which dispatch will refuse.
-        let fake = FakeAgentLlm::script(vec![ScriptedTurn::CallRawTool("delete".into(), json!({}))]);
+        let fake = FakeAgentLlm::script(vec![ScriptedTurn::CallRawTool("format_drive".into(), json!({}))]);
         let stream = fake
             .respond(
                 "sys",
@@ -306,7 +306,7 @@ mod tests {
         let AgentDelta::ToolCallStarted { tool, .. } = &deltas[0] else {
             panic!("expected a ToolCallStarted");
         };
-        assert_eq!(*tool, ToolId::Unrecognized("delete".into()));
+        assert_eq!(*tool, ToolId::Unrecognized("format_drive".into()));
         assert!(!tool.is_known());
 
         let AgentDelta::End { message, .. } = deltas.last().unwrap() else {
@@ -315,7 +315,7 @@ mod tests {
         let AgentPart::ToolCall(call) = &message.parts[0] else {
             panic!("expected a tool call part");
         };
-        assert_eq!(call.tool, ToolId::Unrecognized("delete".into()));
+        assert_eq!(call.tool, ToolId::Unrecognized("format_drive".into()));
     }
 
     /// genai's `StreamEnd` order: whatever the wire interleaved, the stored message holds ONE text,
@@ -326,7 +326,7 @@ mod tests {
             say: vec!["Let me ".into(), "look.".into()],
             calls: vec![
                 (ToolId::AppState, json!({})),
-                (ToolId::Unrecognized("delete".into()), json!({})),
+                (ToolId::Unrecognized("format_drive".into()), json!({})),
             ],
         }]);
         let stream = fake
@@ -372,7 +372,7 @@ mod tests {
                 other => panic!("expected a call, got {other:?}"),
             })
             .collect();
-        assert_eq!(tools, [&ToolId::AppState, &ToolId::Unrecognized("delete".into())]);
+        assert_eq!(tools, [&ToolId::AppState, &ToolId::Unrecognized("format_drive".into())]);
     }
 
     /// A fake that picks each turn from the prompt it's handed, so a retry or a second thread can't

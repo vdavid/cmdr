@@ -6,8 +6,8 @@ decision rationale): `DETAILS.md`.
 
 ## Module map
 
-- `types.rs`: the typed message-part model (`AgentMessage`/`AgentPart`/`AgentToolCall`/`ReasoningState`/`ToolId`/…),
-  pure data + serde, no `genai`/`ai` dependency.
+- `types.rs`: the typed message-part model (`AgentMessage`/`AgentPart`/`AgentToolCall`/`ReasoningState`/…), pure data +
+  serde, no `genai`/`ai` dependency.
 - `mod.rs`: the `AgentLlm` trait + `AgentDeltaStream`.
 - `genai_impl.rs`: the genai-backed impl over `crate::ai::AiBackend` — the ONE place `genai` types touch the agent.
 - `fake.rs`: the deterministic, zero-network `FakeAgentLlm` (scripted turns; records every `messages` slice).
@@ -28,9 +28,9 @@ decision rationale): `DETAILS.md`.
 - **A model that doesn't reason must say so: `CallSettings.model_reasons = Some(false)`.** An explicit effort 400s on
   it, and on the OpenAI Responses API so does asking for reasoning back, even under `ProviderDefault`.
   `DETAILS.md` § Reasoning effort.
-- **`ToolId::Unrecognized` is the read-only choke point, not an error.** A raw provider tool name resolves through
-  `ToolId::from_wire_name`; an unknown name becomes `Unrecognized(raw)`, which is never in the agent's tool view, so
-  dispatch refuses it. The gate is a typed variant/view check, never a string match on the name.
+- **`ToolId` comes from the tool table; `types.rs` only re-exports it.** A raw provider tool name resolves through
+  `ToolId::from_wire_name`, and a name outside the table becomes `Unrecognized(raw)`, which is a refusal, not an error.
+  ❌ Known doesn't mean allowed: `../tool_gate.rs` decides that with a typed view check, never a string match on the name.
 - **A nameless tool call is dropped BOTH ways, and arguments always leave as a JSON object.** Qwen sometimes stops with
   a tool call that has an id and no `fn_name`; replaying it 400s that thread forever. Inbound keeps it out of the store,
   outbound drops what old threads already stored (the call plus its result). Keep both halves.

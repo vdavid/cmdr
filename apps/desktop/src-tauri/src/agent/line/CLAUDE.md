@@ -7,7 +7,7 @@ Named after the UI's "tool line".
 ## Module map
 
 - `mod.rs`: the wire vocabulary (`LineRef`, the enums, `ToolPreviewRow`) and the string bound.
-- `subject.rs` / `outcome.rs` / `preview.rs` / `repeat.rs`: one pure function each. `tests/`: a table per tool.
+- `subject.rs` / `outcome.rs` / `preview.rs` / `repeat.rs`: one pure function each. `tests/`: tables per tool.
 
 ## Must-knows
 
@@ -22,7 +22,8 @@ Named after the UI's "tool line".
 - **A line is `(messageId, callId)`, never the call id alone**: ids collide across rounds.
 - **Every derivation is total and bounded**: any argument or result shape gives a fallback (`Unparsed`, `Answered`),
   never a panic; untrusted strings are cut at `MAX_TEXT_CHARS`.
-- **New agent tool** = a `subject_of` arm, an `outcome.rs::answered` arm, a `preview.rs::rows_of` arm (all
-  exhaustive, no `_`), and a success fixture (`every_known_tool_has_a_success_row` pins it).
+- **A new tool needs no arm here.** The table's `subject` column drives one generic arm. Only `SubjectSpec::Custom` gets
+  hand arms, in all three functions, and a test holds the two sets equal both ways. `DETAILS.md` § The table's subject
+  column.
 
 Per-tool mapping, the decisions, and what the preview may claim: `DETAILS.md`.

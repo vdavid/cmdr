@@ -6,7 +6,7 @@ use serde_json::{Value, json};
 
 use super::call;
 use super::fixtures;
-use crate::agent::line::{LinePath, MAX_TEXT_CHARS, ToolSubject, subject_of};
+use crate::agent::line::{LinePane, LinePath, MAX_TEXT_CHARS, ToolSubject, subject_of};
 use crate::agent::llm::types::ToolId;
 use crate::tools::read::pane_listing::PaneListingScope;
 
@@ -110,9 +110,11 @@ fn argument_only_subjects_per_tool() {
             ToolSubject::NothingToSuggest,
         ),
         (
-            ToolId::Unrecognized("delete".into()),
+            ToolId::Unrecognized("format_drive".into()),
             json!({ "path": "/" }),
-            ToolSubject::UnknownTool { name: "delete".into() },
+            ToolSubject::UnknownTool {
+                name: "format_drive".into(),
+            },
         ),
         (
             ToolId::Unrecognized(String::new()),
@@ -123,6 +125,75 @@ fn argument_only_subjects_per_tool() {
     for (tool, args, expected) in table {
         assert_eq!(subject(tool.clone(), args), expected, "{tool:?}");
     }
+}
+
+#[test]
+fn the_tables_subject_column_names_what_a_generic_tool_aims_at() {
+    let place = |path: &str| ToolSubject::Place {
+        path: LinePath::of(path),
+    };
+    let table = [
+        (ToolId::NavBack, json!({}), ToolSubject::Nothing),
+        (
+            ToolId::NavToPath,
+            json!({ "pane": "left", "path": "/a/b" }),
+            place("/a/b"),
+        ),
+        (
+            ToolId::Unlock,
+            json!({ "path": "/a/b.zip", "password": "hunter2" }),
+            place("/a/b.zip"),
+        ),
+        (
+            ToolId::Eject,
+            json!({ "volumeId": "disk-1" }),
+            ToolSubject::Volume { id: "disk-1".into() },
+        ),
+        (
+            ToolId::OperationsRollback,
+            json!({ "operationId": "op-1" }),
+            ToolSubject::Operation { id: "op-1".into() },
+        ),
+        (
+            ToolId::Sort,
+            json!({ "pane": "right", "by": "size" }),
+            ToolSubject::Pane {
+                pane: Some(LinePane::Right),
+            },
+        ),
+        (ToolId::Mkdir, json!({}), ToolSubject::Pane { pane: None }),
+        (ToolId::Tag, json!({ "pane": "up" }), ToolSubject::Pane { pane: None }),
+        (
+            ToolId::MultiRename,
+            json!({ "pane": "left" }),
+            ToolSubject::Pane {
+                pane: Some(LinePane::Left),
+            },
+        ),
+        (
+            ToolId::SetSetting,
+            json!({ "id": "appearance.theme", "value": "dark" }),
+            ToolSubject::Setting {
+                id: "appearance.theme".into(),
+            },
+        ),
+        // Missing what its column names.
+        (ToolId::NavToPath, json!({}), ToolSubject::Unparsed),
+        (ToolId::Eject, json!({ "volumeId": 7 }), ToolSubject::Unparsed),
+        (ToolId::ResolveConflict, json!({}), ToolSubject::Unparsed),
+        (ToolId::SetSetting, json!({ "id": "  " }), ToolSubject::Unparsed),
+    ];
+    for (tool, args, expected) in table {
+        assert_eq!(subject(tool.clone(), args), expected, "{tool:?}");
+    }
+}
+
+/// `unlock`'s password rides in the same arguments its path does, and this line reaches the rail,
+/// the store's projection, and the frontend's log.
+#[test]
+fn unlocks_password_never_reaches_its_subject() {
+    let read = subject(ToolId::Unlock, json!({ "path": "/a.zip", "password": "hunter2" }));
+    assert!(!format!("{read:?}").contains("hunter2"), "{read:?}");
 }
 
 #[test]

@@ -3,11 +3,12 @@
 use serde::Deserialize;
 use serde_json::Value;
 
-use super::{IndexUnavailableReason, RefusalReason, ToolOutcome, count_u32, len_u32};
+use super::{Arm, IndexUnavailableReason, RefusalReason, ToolOutcome, bounded, count_u32, len_u32};
 use crate::agent::llm::types::{AgentToolResult, ToolId};
 use crate::agent::memory::MemoryRefusalKind;
 use crate::location::miss::MissToken;
 use crate::tools::connect::ConnectOutcome;
+use crate::tools::{Access, tool_access};
 
 /// What `result` says happened. The check order is the contract:
 ///
@@ -16,10 +17,12 @@ use crate::tools::connect::ConnectOutcome;
 /// 2. `available: false`: the view gate.
 /// 3. `repeatedCall`: the repeat breaker KEEPS the original `problem` beside it, so it has to
 ///    win over `problem`.
-/// 4. `readyForReview` on a propose tool: `ensure_review_verdict` stamps `false` onto every
+/// 4. A typed `refusal` token we word ourselves (`declined`, `protected`), since one also carries
+///    `problem`, then `awaitingPerson`.
+/// 5. `readyForReview` on a propose tool: `ensure_review_verdict` stamps `false` onto every
 ///    propose problem, so a propose problem is `NotStaged`, or `LocationMiss` when it's a
 ///    place that can't run now (it carries the read tools' `miss`).
-/// 5. `problem`, then 6. `refused` (memory), then 7. `miss` (the location contract's typed
+/// 6. `problem`, then 7. `refused` (memory), then 8. `miss` (the location contract's typed
 ///    miss, any tool that takes a place), then the per-tool success shapes.
 ///
 /// Total: a shape it doesn't recognize reads as [`ToolOutcome::Answered`].
@@ -33,6 +36,14 @@ pub fn outcome_of(tool: &ToolId, result: &AgentToolResult) -> ToolOutcome {
     }
     if content.get("repeatedCall") == Some(&Value::Bool(true)) {
         return refused(RefusalReason::RepeatedCall);
+    }
+    if let Some(reason) = typed_refusal(content) {
+        return refused(reason);
+    }
+    if content.get("awaitingPerson") == Some(&Value::Bool(true)) {
+        return ToolOutcome::AwaitingPerson {
+            dialog: content.get("dialog").and_then(Value::as_str).map(bounded),
+        };
     }
     if is_propose(tool)
         && let Some(ready) = content.get("readyForReview").and_then(Value::as_bool)
@@ -69,11 +80,22 @@ fn refused(reason: RefusalReason) -> ToolOutcome {
     ToolOutcome::Refused { reason }
 }
 
+/// A refusal the line has its own words for, read off the `refusal` token where a result carries
+/// it, at the top level or in a `ToolError`'s `data`. Any other token isn't this function's:
+/// `refusedInBackground` already read as a gate refusal, by its `available: false`.
+fn typed_refusal(content: &Value) -> Option<RefusalReason> {
+    let token = content
+        .get("refusal")
+        .or_else(|| content.get("data").and_then(|data| data.get("refusal")))?;
+    match token.as_str()? {
+        "declined" => Some(RefusalReason::Declined),
+        "protected" => Some(RefusalReason::Protected),
+        _ => None,
+    }
+}
+
 fn is_propose(tool: &ToolId) -> bool {
-    matches!(
-        tool,
-        ToolId::ProposeRenamePlan | ToolId::ProposeSuggestions | ToolId::ProposeServer
-    )
+    tool_access(tool.as_wire_name()) == Some(Access::Propose)
 }
 
 /// A staged plan's count: the rename plan says `count`; a sweep sums its groups' `opCount`; a
@@ -103,7 +125,15 @@ fn staged(tool: &ToolId, content: &Value) -> ToolOutcome {
 
 /// The success shape per tool. `None` when the shape isn't the one expected.
 fn answered(tool: &ToolId, content: &Value) -> Option<ToolOutcome> {
-    match tool {
+    match hand_answer(tool, content) {
+        Arm::Hand(outcome) => outcome,
+        Arm::Generic => Some(ToolOutcome::Answered),
+    }
+}
+
+/// The rich tools' success shapes, and the refusal case's. Every other tool is [`Arm::Generic`].
+pub(super) fn hand_answer(tool: &ToolId, content: &Value) -> Arm<Option<ToolOutcome>> {
+    Arm::Hand(match tool {
         ToolId::AppState
         | ToolId::FolderImportance
         | ToolId::OperationsGet
@@ -117,67 +147,94 @@ fn answered(tool: &ToolId, content: &Value) -> Option<ToolOutcome> {
         | ToolId::InspectFile
         | ToolId::OperationsList
         | ToolId::ListSuggestions => paged(content),
+        // A dry run stages nothing and isn't a failure, so it's a plain answer; a real run says
+        // `proposed` and how many renames it staged.
+        ToolId::MultiRename => match content.get("proposed") {
+            Some(Value::Bool(true)) => Some(ToolOutcome::Staged {
+                count: count_u32(content.get("renames")).unwrap_or(0),
+            }),
+            _ => Some(ToolOutcome::Answered),
+        },
         ToolId::GetSuggestionGroup => match content.get("found") {
             Some(Value::Bool(false)) => Some(ToolOutcome::NothingFound { lower_bound: false }),
             _ => paged(content),
         },
-        ToolId::ImportantFolders => {
-            let folders = content.get("folders")?.as_array()?;
-            let truncated = content.get("truncated").and_then(Value::as_bool).unwrap_or(false);
-            Some(ToolOutcome::Items {
-                returned: len_u32(folders.len()),
-                total: (!truncated).then_some(folders.len() as u64),
-                lower_bound: false,
-            })
-        }
-        ToolId::ListVolumes => {
-            let volumes = content.get("volumes")?.as_array()?;
-            Some(ToolOutcome::Items {
-                returned: len_u32(volumes.len()),
-                total: Some(volumes.len() as u64),
-                lower_bound: false,
-            })
-        }
-        ToolId::Search => {
-            let coverage = content.get("coverage");
-            let complete = flag(coverage, "complete");
-            let lower_bound = !complete || flag(coverage, "capped");
-            matches_of(
-                count_u32(content.get("returned"))?,
-                content.get("matchCount")?.as_u64()?,
-                lower_bound,
-            )
-        }
-        ToolId::SearchPhotos => match content.get("status")?.as_str()? {
-            "ok" => {
-                let lower_bound = content
-                    .get("coverage")
-                    .and_then(Value::as_array)
-                    .is_some_and(|volumes| {
-                        volumes
-                            .iter()
-                            .any(|volume| flag(Some(volume), "incomplete") || flag(Some(volume), "indexing"))
-                    });
-                matches_of(
-                    count_u32(content.get("returned"))?,
-                    content.get("total")?.as_u64()?,
-                    lower_bound,
-                )
-            }
-            other => index_unavailable(other),
-        },
-        ToolId::ImageFacts => match content.get("status")?.as_str()? {
-            "ok" => paged(content),
-            other => index_unavailable(other),
-        },
-        ToolId::ConnectVolume => Some(ToolOutcome::Connection {
-            outcome: ConnectOutcome::deserialize(content.get("outcome")?).ok()?,
-        }),
+        ToolId::ImportantFolders => important_folders(content),
+        ToolId::ListVolumes => list_volumes(content),
+        ToolId::Search => search(content),
+        ToolId::SearchPhotos => search_photos(content),
+        ToolId::ImageFacts => image_facts(content),
+        ToolId::ConnectVolume => connection(content),
         ToolId::MemoryWrite | ToolId::MemoryEdit => match content.get("saved") {
             Some(Value::Bool(true)) => Some(ToolOutcome::Saved),
             _ => None,
         },
+        _ => return Arm::Generic,
+    })
+}
+
+fn important_folders(content: &Value) -> Option<ToolOutcome> {
+    let folders = content.get("folders")?.as_array()?;
+    let truncated = content.get("truncated").and_then(Value::as_bool).unwrap_or(false);
+    Some(ToolOutcome::Items {
+        returned: len_u32(folders.len()),
+        total: (!truncated).then_some(folders.len() as u64),
+        lower_bound: false,
+    })
+}
+
+fn list_volumes(content: &Value) -> Option<ToolOutcome> {
+    let volumes = content.get("volumes")?.as_array()?;
+    Some(ToolOutcome::Items {
+        returned: len_u32(volumes.len()),
+        total: Some(volumes.len() as u64),
+        lower_bound: false,
+    })
+}
+
+fn search(content: &Value) -> Option<ToolOutcome> {
+    let coverage = content.get("coverage");
+    let complete = flag(coverage, "complete");
+    let lower_bound = !complete || flag(coverage, "capped");
+    matches_of(
+        count_u32(content.get("returned"))?,
+        content.get("matchCount")?.as_u64()?,
+        lower_bound,
+    )
+}
+
+fn search_photos(content: &Value) -> Option<ToolOutcome> {
+    match content.get("status")?.as_str()? {
+        "ok" => {
+            let lower_bound = content
+                .get("coverage")
+                .and_then(Value::as_array)
+                .is_some_and(|volumes| {
+                    volumes
+                        .iter()
+                        .any(|volume| flag(Some(volume), "incomplete") || flag(Some(volume), "indexing"))
+                });
+            matches_of(
+                count_u32(content.get("returned"))?,
+                content.get("total")?.as_u64()?,
+                lower_bound,
+            )
+        }
+        other => index_unavailable(other),
     }
+}
+
+fn image_facts(content: &Value) -> Option<ToolOutcome> {
+    match content.get("status")?.as_str()? {
+        "ok" => paged(content),
+        other => index_unavailable(other),
+    }
+}
+
+fn connection(content: &Value) -> Option<ToolOutcome> {
+    Some(ToolOutcome::Connection {
+        outcome: ConnectOutcome::deserialize(content.get("outcome")?).ok()?,
+    })
 }
 
 /// The paged-list contract every list tool shares: `returned` of `total`, a lower bound when a

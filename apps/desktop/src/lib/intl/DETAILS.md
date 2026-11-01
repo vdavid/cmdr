@@ -204,8 +204,8 @@ of a ternary or `||`/`??`, or a `const` (`$derived`, concise `$derived.by`, or p
 a call, a block-bodied `$derived.by`, `let`/`$state`, props, or object args (`use:tooltip={{ text }}`). The rule file's
 header is canonical.
 
-Ask Cmdr tool labels are literal-keyed in `ask-cmdr-labels.ts`, so proposal status remains localized without dynamic
-message-key construction. New English keys require translated catalog entries and a regenerated `keys.gen.ts`.
+Ask Cmdr tool labels are literal-keyed in `ask-cmdr-tool-label-keys.ts`, so proposal status remains localized without
+dynamic message-key construction. New English keys require translated catalog entries and a regenerated `keys.gen.ts`.
 
 ## The locale-aware formatting layer
 

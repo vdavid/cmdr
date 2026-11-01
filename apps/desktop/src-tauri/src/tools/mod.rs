@@ -52,13 +52,12 @@ pub(crate) use actions::{ToolError, ToolResult, fit_to_result_budget, is_virtual
 // the whole build there.
 #[cfg(target_os = "macos")]
 pub(crate) use actions::nav::{GoToTarget, PaneChoice, go_to_in_pane};
-#[cfg(test)]
-use registry::tool_available_to;
-pub(crate) use registry::{Access, Consumer, Tool, validate_params};
+pub(crate) use registry::{Access, Consumer, SubjectSpec, Tool, tool_available_to, validate_params};
+pub use table::ToolId;
 pub(crate) use table::{agent_tool_view, execute_tool, get_all_tools, tool_access};
 use table::{tool_consumers, tool_schema};
 
-use crate::agent::llm::types::{ToolDeclaration, ToolId};
+use crate::agent::llm::types::ToolDeclaration;
 
 /// The tool declarations the agent hands the provider, one per `agent_tool_view()`
 /// entry. Each name resolves to a typed [`ToolId`] (the 1:1 test pins that every

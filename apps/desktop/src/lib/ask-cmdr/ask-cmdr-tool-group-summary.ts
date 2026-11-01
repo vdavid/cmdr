@@ -19,8 +19,12 @@ type GroupCategory = (typeof CATEGORIES)[number]
  * variant is a compile error here rather than a header that silently skips it. */
 export const SUBJECT_CATEGORY: Record<ToolSubject['kind'], GroupCategory> = {
   panes: 'check',
+  nothing: 'other',
+  pane: 'other',
+  setting: 'other',
   focusedPane: 'folder',
   folder: 'folder',
+  place: 'folder',
   files: 'file',
   search: 'search',
   photoSearch: 'search',
