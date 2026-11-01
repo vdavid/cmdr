@@ -157,7 +157,10 @@ fn test_every_dev_only_tool_says_why_and_stays_away_from_the_agent() {
         }
     }
     names.sort();
-    assert_eq!(names, ["ai_search", "connect_to_server", "resolve_conflict"]);
+    assert_eq!(
+        names,
+        ["ai_search", "connect_to_server", "dialog_confirm", "resolve_conflict"]
+    );
 }
 
 /// The contents class reads as `Read` for the agent: the view holds it, on every origin.

@@ -331,7 +331,21 @@ describe('TransferDialog MCP paths keep their own policy', () => {
     expect(setSettingMock).not.toHaveBeenCalled()
   })
 
-  it('a `dialog confirm` sends the agent’s policy and writes nothing, even over a person’s ticked pick', async () => {
+  it('a `dialog_confirm` with no policy named sends the one the dialog shows', async () => {
+    settingsState.policy = 'overwrite_older'
+    const confirmer: { press: TransferConfirmer | null } = { press: null }
+    const { sent } = await mountWithClash({
+      registerConfirmer: (confirm) => {
+        confirmer.press = confirm
+        return () => {}
+      },
+    })
+    void confirmer.press?.(undefined)
+    await flushMicrotasks()
+    expect(sent()).toBe('overwrite_older')
+  })
+
+  it('a `dialog_confirm` sends the agent’s policy and writes nothing, even over a person’s ticked pick', async () => {
     const confirmer: { press: TransferConfirmer | null } = { press: null }
     const { target, sent } = await mountWithClash({
       registerConfirmer: (confirm) => {

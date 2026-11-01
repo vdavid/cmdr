@@ -1,7 +1,7 @@
 //! The `resolve_conflict` tool: answer ONE name clash a running operation is
 //! parked on.
 //!
-//! The counterpart to `dialog confirm`'s bulk policies. Those decide every clash
+//! The counterpart to `dialog_confirm`'s bulk policies. Those decide every clash
 //! an operation will ever hit before it starts; this decides the one it is
 //! standing on, which is the only way to reach the state a person reaches by
 //! leaving the policy on "Ask for each" and clicking Skip on one file.

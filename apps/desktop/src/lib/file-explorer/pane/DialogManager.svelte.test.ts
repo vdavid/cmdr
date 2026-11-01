@@ -66,6 +66,8 @@ function baseProps(onDismissAll: () => void): DialogManagerProps {
     onTransferConfirm: noop,
     registerTransferConfirmer: () => noop,
     registerDeleteConfirmer: () => noop,
+    registerNewFolderConfirmer: () => noop,
+    registerNewFileConfirmer: () => noop,
     onTransferCancel: noop,
     onTransferComplete: noop,
     onTransferDoneClosed: noop,

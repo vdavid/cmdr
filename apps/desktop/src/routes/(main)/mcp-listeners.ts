@@ -129,7 +129,12 @@ export function parseViewMode(value: unknown): ViewMode | undefined {
 
 /** Confirm-dialog type. */
 export function parseConfirmDialogType(value: unknown): ConfirmDialogType | undefined {
-  return value === 'transfer-confirmation' || value === 'delete-confirmation' || value === 'archive-password'
+  return value === 'transfer-confirmation' ||
+    value === 'delete-confirmation' ||
+    value === 'archive-password' ||
+    value === 'rename' ||
+    value === 'mkdir-confirmation' ||
+    value === 'new-file-confirmation'
     ? value
     : undefined
 }
@@ -710,8 +715,9 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     // A background confirm is a round-trip, so it carries a request id to answer on.
     const startInBackground = raw.startInBackground === true ? true : undefined
     const mcpRequestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
+    const name = typeof raw.name === 'string' ? raw.name : undefined
     if (!type) return
-    void dispatch(dialogConfirmCommand, { type, onConflict, startInBackground, mcpRequestId })
+    void dispatch(dialogConfirmCommand, { type, onConflict, startInBackground, name, mcpRequestId })
   })
 
   await listenTauri('mcp-tab', (event) => {

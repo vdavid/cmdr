@@ -2,16 +2,74 @@ import { describe, expect, it, vi } from 'vitest'
 import { createProgrammaticConfirm, type ProgrammaticConfirmDeps } from './programmatic-confirm'
 import type { ConfirmPress } from './dialog-props'
 
-function makeDeps(open: 'transfer' | 'delete' | 'none'): ProgrammaticConfirmDeps {
+function makeDeps(open: 'transfer' | 'delete' | 'newFolder' | 'newFile' | 'none'): ProgrammaticConfirmDeps {
   return {
     isTransferDialogOpen: () => open === 'transfer',
     isDeleteDialogOpen: () => open === 'delete',
+    isNewFolderDialogOpen: () => open === 'newFolder',
+    isNewFileDialogOpen: () => open === 'newFile',
     isArchivePasswordOpen: () => false,
     supplyStoredPassword: vi.fn(),
   }
 }
 
 const answering = (press: ConfirmPress) => vi.fn(() => Promise.resolve(press))
+
+describe('confirmOpenDialog on the transfer dialog, and its policy', () => {
+  it('hands the dialog no policy when none was named, so it keeps the one it shows', async () => {
+    const confirmer = createProgrammaticConfirm(makeDeps('transfer'))
+    const press = answering('pressed')
+    confirmer.registerTransferConfirmer(press)
+
+    await confirmer.confirmOpenDialog('transfer-confirmation')
+
+    expect(press).toHaveBeenCalledWith(undefined, {})
+  })
+
+  it('starts nothing under a policy it has never heard of', async () => {
+    const confirmer = createProgrammaticConfirm(makeDeps('transfer'))
+    const press = answering('pressed')
+    confirmer.registerTransferConfirmer(press)
+
+    const verdict = await confirmer.confirmOpenDialog('transfer-confirmation', 'keep_both')
+
+    expect(press).not.toHaveBeenCalled()
+    expect(verdict).toEqual({ pressed: false, refusal: 'notStarted' })
+  })
+})
+
+describe('confirmOpenDialog on a naming dialog', () => {
+  it.each([
+    ['newFolder', 'mkdir-confirmation', 'registerNewFolderConfirmer'],
+    ['newFile', 'new-file-confirmation', 'registerNewFileConfirmer'],
+  ] as const)('presses %s with the name and answers with how it ended', async (open, type, register) => {
+    const confirmer = createProgrammaticConfirm(makeDeps(open))
+    const press = vi.fn(() => Promise.resolve({ kind: 'done' as const }))
+    confirmer[register](press)
+
+    const verdict = await confirmer.confirmOpenDialog(type, undefined, { name: 'notes' })
+
+    expect(press).toHaveBeenCalledWith('notes')
+    expect(verdict).toEqual({ pressed: true, committed: true, stillRunning: false })
+  })
+
+  it('carries a refused name with its reason', async () => {
+    const confirmer = createProgrammaticConfirm(makeDeps('newFile'))
+    confirmer.registerNewFileConfirmer(() => Promise.resolve({ kind: 'refused', reason: 'Taken.' }))
+
+    const verdict = await confirmer.confirmOpenDialog('new-file-confirmation', undefined, { name: 'a' })
+
+    expect(verdict).toEqual({ pressed: false, refusal: 'nameRefused', reason: 'Taken.' })
+  })
+
+  it('is not ready before the dialog registered its confirm', async () => {
+    const confirmer = createProgrammaticConfirm(makeDeps('newFolder'))
+
+    const verdict = await confirmer.confirmOpenDialog('mkdir-confirmation', undefined, { name: 'a' })
+
+    expect(verdict).toEqual({ pressed: false, refusal: 'notReady' })
+  })
+})
 
 describe('confirmOpenDialog on the transfer dialog, in the background', () => {
   it('presses the Background button under the named policy, with the round-trip id', async () => {

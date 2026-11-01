@@ -626,7 +626,7 @@ resets cleanly between scans.
 ## A dialog's async start can outlive it
 
 `DeleteDialog` and `TransferDialog` (through `transfer/transfer-scan-state.svelte.ts`) start a scan preview on mount:
-four listener registrations, then the `startScanPreview` IPC. A quick Escape, an MCP close, or an MCP `dialog confirm`
+four listener registrations, then the `startScanPreview` IPC. A quick Escape, an MCP close, or an MCP `dialog_confirm`
 unmounts the dialog partway through, and the async function keeps running.
 
 - **Why a prop read then throws.** A Svelte 5 prop without a fallback compiles to a direct `$$props.x` read, which calls

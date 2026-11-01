@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MutationWaitOptions } from '#lib/tauri-commands/index.js'
 import { MutationFailure } from './mutation-error'
 import { CreateSubmission } from './create-submission.svelte'
+import type { NewEntryNameCheck } from './new-entry-name-check.svelte'
 
 const addToast = vi.fn()
 vi.mock('#lib/ui/toast/index.js', () => ({
@@ -47,6 +48,81 @@ function setup() {
   const submission = new CreateSubmission({ kind: 'folder', create: backend.create, onCreated, onRefused })
   return { backend, onCreated, onRefused, submission }
 }
+
+/** The name check, as far as a tool's press reads it. */
+function checkAnswering(errorMessage: string) {
+  return { errorMessage, validate: vi.fn(() => Promise.resolve()) } as unknown as NewEntryNameCheck
+}
+
+describe('a press from the MCP `dialog_confirm`', () => {
+  it('answers once the create landed', async () => {
+    const { backend, onCreated, submission } = setup()
+    const press = submission.pressFromTool('photos', checkAnswering(''))
+    await vi.waitFor(() => {
+      expect(backend.create).toHaveBeenCalled()
+    })
+
+    backend.land()
+
+    expect(await press).toEqual({ kind: 'done' })
+    expect(onCreated).toHaveBeenCalledExactlyOnceWith('photos')
+  })
+
+  it('answers while a slow volume is still on it, and the create carries on', async () => {
+    const { backend, onCreated, submission } = setup()
+    const press = submission.pressFromTool('photos', checkAnswering(''))
+    await vi.waitFor(() => {
+      expect(backend.create).toHaveBeenCalled()
+    })
+
+    backend.stillRunning()
+
+    expect(await press).toEqual({ kind: 'stillRunning' })
+    expect(submission.phase).toBe('stillCreating')
+    backend.land()
+    await vi.waitFor(() => {
+      expect(onCreated).toHaveBeenCalled()
+    })
+  })
+
+  it('refuses what the field would refuse, with its sentence, and creates nothing', async () => {
+    const { backend, submission } = setup()
+    const check = checkAnswering('There is already a folder by this name in this folder.')
+
+    expect(await submission.pressFromTool('photos', check)).toEqual({
+      kind: 'refused',
+      reason: 'There is already a folder by this name in this folder.',
+    })
+    expect(backend.create).not.toHaveBeenCalled()
+  })
+
+  it('refuses an empty name', async () => {
+    const { backend, submission } = setup()
+
+    const end = await submission.pressFromTool('', checkAnswering(''))
+
+    expect(end.kind).toBe('refused')
+    expect(backend.create).not.toHaveBeenCalled()
+  })
+
+  it('carries a volume’s refusal, with the dialog back on editing', async () => {
+    const { backend, onRefused, submission } = setup()
+    const check = checkAnswering('')
+    onRefused.mockImplementation((refusal: { message: string }) => {
+      check.errorMessage = refusal.message
+    })
+    const press = submission.pressFromTool('photos', check)
+    await vi.waitFor(() => {
+      expect(backend.create).toHaveBeenCalled()
+    })
+
+    backend.refuse(new Error('no'))
+
+    const end = await press
+    expect(end.kind).toBe('refused')
+    expect(submission.phase).toBe('editing')
+  })
+})
 
 describe('CreateSubmission', () => {
   beforeEach(() => {

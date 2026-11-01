@@ -186,6 +186,11 @@ export const TOOL_LABEL_KEYS: Partial<Record<string, PhaseKeys>> = {
     done: 'askCmdr.tool.dialog.done',
     tried: 'askCmdr.tool.dialog.tried',
   },
+  dialog_confirm: {
+    doing: 'askCmdr.tool.dialogConfirm.doing',
+    done: 'askCmdr.tool.dialogConfirm.done',
+    tried: 'askCmdr.tool.dialogConfirm.tried',
+  },
   open_search_dialog: {
     doing: 'askCmdr.tool.openSearchDialog.doing',
     done: 'askCmdr.tool.openSearchDialog.done',

@@ -53,12 +53,12 @@ export interface TransferConfirmPayload {
   /** F2 or the Background button: start the operation with no progress dialog
    *  (`background-operations.svelte.ts`). Everything else is what Enter sends. */
   startInBackground?: boolean
-  /** Pressed by an MCP `dialog confirm`: its round-trip id, which the start
+  /** Pressed by an MCP `dialog_confirm`: its round-trip id, which the start
    *  answers with the operation's id. Wins over the dialog's own. */
   mcpRequestId?: string
 }
 
-/** Who waits on a confirm's start: an MCP `dialog confirm`, by its round-trip id. */
+/** Who waits on a confirm's start: an MCP `dialog_confirm`, by its round-trip id. */
 export interface ConfirmOrigin {
   mcpRequestId?: string
 }
@@ -67,7 +67,23 @@ export interface ConfirmOrigin {
  *  `startInBackground`) the Background button beside it. */
 export interface ConfirmOptions extends ConfirmOrigin {
   startInBackground?: boolean
+  /** The name to commit, for the rename editor and the naming dialogs. Omitted, what the field holds. */
+  name?: string
 }
+
+/**
+ * How a programmatic commit of a name ended: the rename or create is `done`, a slow
+ * volume is still on it, or the name was `refused` with the sentence the field would
+ * show a person. `needsMoveDialog`: a rename that moved on to the Move dialog.
+ */
+export type CreatePress =
+  | { kind: 'done' }
+  | { kind: 'stillRunning' }
+  | { kind: 'refused'; reason: string }
+  | { kind: 'needsMoveDialog' }
+
+/** A naming dialog's own OK, as something a caller outside it can press, under `name` when given. */
+export type CreateConfirmer = (name?: string) => Promise<CreatePress>
 
 /**
  * What a programmatic press did. `pressed`: it reached the start, which answers
@@ -79,19 +95,19 @@ export type ConfirmPress = 'pressed' | 'notStarted' | 'refusedPermanentDelete'
 
 /**
  * The transfer dialog's own confirm, as something a caller outside it can press
- * (the MCP `dialog confirm`): the same function its button runs, under the
- * conflict policy the caller names. `startInBackground` presses the Background
+ * (the MCP `dialog_confirm`): the same function its button runs, under the conflict
+ * policy the caller names, or with none named the one it shows. `startInBackground` presses the Background
  * button instead, with the same guards F2 has. Resolves once the press reached
  * the start or a guard.
  */
 export type TransferConfirmer = (
-  conflictResolution: ConflictResolution,
+  conflictResolution: ConflictResolution | undefined,
   options?: ConfirmOptions,
 ) => Promise<ConfirmPress>
 
 /**
  * The delete dialog's own confirm, as something a caller outside it can press
- * (the MCP `dialog confirm`): the same function its button runs.
+ * (the MCP `dialog_confirm`): the same function its button runs.
  * `startInBackground` presses the Background button instead, which exists only
  * for a TRASH: on a permanent delete it does nothing, as F2 does, and says so.
  */
@@ -179,7 +195,7 @@ export interface TransferProgressPropsData {
   /** Top-level folders the operation will transfer (for the completion toast's per-type split). */
   folderCount?: number
   /** MCP round-trip id, present only for an op an agent started (an auto-confirm,
-   *  or a `dialog confirm`). Forwarded to the start, which replies `mcp-response`
+   *  or a `dialog_confirm`). Forwarded to the start, which replies `mcp-response`
    *  with the spawned operationId. */
   mcpRequestId?: string
   /** Who started this operation, for the backend's provenance record. */

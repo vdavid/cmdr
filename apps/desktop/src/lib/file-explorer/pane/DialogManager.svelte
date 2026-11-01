@@ -21,6 +21,7 @@
         TransferConfirmPayload,
         TransferConfirmer,
         DeleteConfirmer,
+        CreateConfirmer,
         ConfirmOrigin,
         TransferCompletePayload,
         CompletionView,
@@ -50,6 +51,8 @@
         onTransferConfirm,
         registerTransferConfirmer,
         registerDeleteConfirmer,
+        registerNewFolderConfirmer,
+        registerNewFileConfirmer,
         onTransferCancel,
         onTransferComplete,
         onTransferDoneClosed,
@@ -95,10 +98,13 @@
         showDeleteDialog: boolean
         deleteDialogProps: DeleteDialogPropsData | null
         onTransferConfirm: (payload: TransferConfirmPayload) => void
-        /** Hands the mounted transfer dialog's own confirm to the dialog state, for the MCP `dialog confirm`. */
+        /** Hands the mounted transfer dialog's own confirm to the dialog state, for the MCP `dialog_confirm`. */
         registerTransferConfirmer: (confirm: TransferConfirmer) => () => void
         /** The delete dialog's twin of `registerTransferConfirmer`. */
         registerDeleteConfirmer: (confirm: DeleteConfirmer) => () => void
+        /** The naming dialogs' twins of `registerTransferConfirmer`. */
+        registerNewFolderConfirmer: (confirm: CreateConfirmer) => () => void
+        registerNewFileConfirmer: (confirm: CreateConfirmer) => () => void
         onTransferCancel: () => void
         onTransferComplete: (payload: TransferCompletePayload, view: CompletionView) => void
         /** The person closed a finished operation's done state (the progress
@@ -257,6 +263,7 @@
             initialName={newFolderDialogProps.initialName}
             volumeId={newFolderDialogProps.volumeId}
             initiator={newFolderDialogProps.initiator}
+            registerConfirmer={registerNewFolderConfirmer}
             onCreated={onNewFolderCreated}
             onCancel={onNewFolderCancel}
         />
@@ -270,6 +277,7 @@
             initialName={newFileDialogProps.initialName}
             volumeId={newFileDialogProps.volumeId}
             initiator={newFileDialogProps.initiator}
+            registerConfirmer={registerNewFileConfirmer}
             onCreated={onNewFileCreated}
             onCancel={onNewFileCancel}
         />

@@ -26,8 +26,7 @@ Full details (save flow, validation tiers, cursor tracking, decisions): `DETAILS
   that it may have succeeded, and refreshes.
 - **Thread `volumeId` through `renameFile` / `checkRenameValidity` / `checkRenamePermission`.** Conflict checks ride the
   Volume trait; the permission check is LOCAL, so whether it applies is Rust's call per volume. ❌ Never re-classify
-  volumes here by id prefix: an `mtp-` test was the whole gate once, and F2 died on every SFTP, WebDAV, and ADB pane
-  (ERR-KVERS). `DETAILS.md` § Permission check on activation.
+  volumes here by id prefix (ERR-KVERS). `DETAILS.md` § Permission check on activation.
 - **Async work carries the session id it started with; a superseded session may only toast and refresh.** A save,
   permission check, or editor cancel landing after a newer activation must never cancel, focus, shake, move the cursor,
   or open a dialog over the live editor (a `confirm-move` Move dialog waits for it to close). `DETAILS.md` § Rename
@@ -44,6 +43,8 @@ Full details (save flow, validation tiers, cursor tracking, decisions): `DETAILS
   `FilePane.handlePaneClick` and `isFileListBackgroundClick` skip `.rename-input`, or a click kills the rename.
 - **The editor mounts BY PATH** (`shouldMountRenameEditor`), so it follows its file through a watcher diff; only a diff
   removing that file cancels (`listing-diff-sync`).
+- **An open editor is the soft dialog `rename`** (`rename-editor-presence.ts`), synchronously, ❌ never from an effect.
+  `DETAILS.md` § The editor as a state.
 - **Double-click opens, never renames**: the click-to-rename timer cancels on it.
 - **The ⌥ arrow dot stop fires only where the native word move would cross the dot**: ❌ never reimplement word
   movement. `DETAILS.md` § Selection.

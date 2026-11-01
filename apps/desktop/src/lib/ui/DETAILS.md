@@ -436,8 +436,8 @@ The same paired announcement feeds a reactive `SvelteSet` that anything can ask:
 `blockingSoftDialog()` (the topmost one that blocks a file operation), and `isDialogOpen(id)` for one named dialog. The
 last one is how an ambient affordance steps aside for the dialog it points at, without the hosting component threading
 its own visibility flag down: `#lib/onboarding/`'s FDA badge hides while the onboarding wizard's own FDA step is up.
-Reads only. ❌ Marking a dialog open from anywhere but `ModalDialog` (or `OnboardingWizard`, the one hand-registrar)
-breaks the set's exhaustiveness.
+Reads only. ❌ Marking a dialog open from anywhere but `ModalDialog` (or the two hand-registrars, `OnboardingWizard` and
+`rename-editor-presence.ts`) breaks the set's exhaustiveness.
 
 ### Generic close (`dialog-close-registry.ts`)
 

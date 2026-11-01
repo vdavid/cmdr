@@ -244,8 +244,8 @@ export const COMMAND_IDS = [
   'file.delete',
   'file.deletePermanently',
   'file.goToTrash',
-  // Programmatically confirm an already-open transfer/delete dialog, carried by
-  // the MCP `dialog confirm` tool.
+  // Programmatically confirm an already-open dialog or the rename editor, carried
+  // by the MCP `dialog_confirm` tool.
   'dialog.confirm',
   'file.showInFinder',
   'file.openTerminalHere',

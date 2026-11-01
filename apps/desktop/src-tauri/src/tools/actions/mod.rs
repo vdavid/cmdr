@@ -11,6 +11,7 @@ pub(crate) mod app;
 pub(crate) mod async_tools;
 pub(crate) mod conflicts;
 pub(crate) mod cpu;
+pub(crate) mod dialog_confirm;
 pub(crate) mod dialogs;
 pub(crate) mod downloads;
 pub(crate) mod eject;
@@ -122,7 +123,7 @@ impl From<tauri::Error> for ToolError {
 /// the per-file prompt was reachable only by hand — which is where a wedging bug
 /// sat unfound for months.
 ///
-/// ONE list, shared by `copy` / `move` (`file_ops.rs`) and `dialog confirm`
+/// ONE list, shared by `copy` / `move` (`file_ops.rs`) and `dialog_confirm`
 /// (`dialogs.rs`), and mirrored once on the frontend
 /// (`#lib/file-operations/transfer/conflict-policy.ts`). ❌ Don't grow a second
 /// copy: the two frontend maps that predated this one had drifted on the

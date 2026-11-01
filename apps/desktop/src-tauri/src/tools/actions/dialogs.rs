@@ -20,18 +20,9 @@
 //!   an `invalid_params` up front.
 //! - `focus file-viewer|about` → window is present (no-op fast path; if the window isn't there, the
 //!   wait_for_ack times out, which is the correct contract for focusing a non-existent dialog).
-//! - `confirm <transfer|delete>` (with or without `background`) → a round-trip the START answers:
-//!   the FE threads the request id into the operation the press starts, which replies with its
-//!   `operationId` (or its refusal), like an auto-confirmed `copy`; a press the dialog refused
-//!   replies typed (`refusal`). Then the soft dialog is no longer in `SoftDialogTracker`: the FE
-//!   takes it down in the same tick it starts the operation. ❌ Not a pane-generation wait: a
-//!   compress, or a copy onto a slow volume, changes nothing in either pane until its first file
-//!   lands. No such dialog open is an `invalid_params` up front.
-//! - `confirm quit-confirmation` → no ack: the answer goes to the quit gate, which starts a
-//!   teardown that ends the process. `close quit-confirmation` is the other answer ("keep
-//!   working"); it waits for the soft dialog to go, but reports that as a typed
-//!   `promptClosed` rather than failing, since the gate already took the answer. Both in
-//!   `quit.rs`.
+//! - `close quit-confirmation` is the "keep working" answer: it waits for the soft dialog to go, but
+//!   reports that as a typed `promptClosed` rather than failing, since the gate already took the
+//!   answer (`quit.rs`). Confirming anything is `dialog_confirm.rs`.
 //! - `open_search_dialog` → soft dialog `search` appears in `SoftDialogTracker`. The frontend
 //!   already calls `notifyDialogOpened('search')` from `SearchDialog.svelte::onMount`. If the
 //!   dialog is mid-close when the event arrives, the new mount may race; the ack times out within
@@ -47,14 +38,12 @@ use crate::window_events::{
 };
 
 use super::{
-    AckSignal, DEFAULT_ACK_TIMEOUT, OperationStartAck, ToolError, ToolResult, expand_user_path, mcp_round_trip_parsed,
-    operation_start_result, parse_operation_start_response, snapshot_window_count, validate_conflict_policy,
+    AckSignal, DEFAULT_ACK_TIMEOUT, ToolError, ToolResult, expand_user_path, snapshot_window_count,
     validate_path_exists, wait_for_ack,
 };
 use crate::ui_state::dialog_state::SoftDialogTracker;
 
-/// Execute the unified dialog command.
-/// Handles opening, focusing, and closing dialogs.
+/// Execute the `dialog` tool: open, focus, or close a dialog. Confirming one is `dialog_confirm`.
 pub async fn execute_dialog_command<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
     let action = params
         .get("action")
@@ -76,15 +65,11 @@ pub async fn execute_dialog_command<R: Runtime>(app: &AppHandle<R>, params: &Val
     let section = params.get("section").and_then(|v| v.as_str());
     let path = params.get("path").and_then(|v| v.as_str()).map(expand_user_path);
     let path = path.as_deref();
-    let on_conflict = params.get("onConflict").and_then(|v| v.as_str());
-    let background = params.get("background").and_then(|v| v.as_bool()).unwrap_or(false);
 
     match action {
         "open" => execute_dialog_open(app, dialog_type, section, path).await,
         "focus" => execute_dialog_focus(app, dialog_type, path).await,
         "close" => execute_dialog_close(app, dialog_type, path).await,
-        "confirm" if background => execute_dialog_confirm_in_background(app, dialog_type, on_conflict).await,
-        "confirm" => execute_dialog_confirm(app, dialog_type, on_conflict).await,
         _ => Err(ToolError::invalid_params(format!("Invalid action: {action}"))),
     }
 }
@@ -362,201 +347,6 @@ async fn execute_generic_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_typ
     )
     .await?;
     Ok(json!(format!("OK: Closed {dialog_type} dialog")))
-}
-
-/// Refuses up front when `dialog_type` isn't open: `SoftDialogDisappeared` is true
-/// of a dialog that was never there, so a confirm of nothing would otherwise ack.
-fn require_open_dialog<R: Runtime>(app: &AppHandle<R>, dialog_type: &str) -> Result<(), ToolError> {
-    let is_open = app
-        .try_state::<SoftDialogTracker>()
-        .is_some_and(|tracker| tracker.get_open_types().iter().any(|open| open == dialog_type));
-    if is_open {
-        Ok(())
-    } else {
-        Err(ToolError::invalid_params(format!(
-            "No {dialog_type} dialog is open to confirm. Read cmdr://state dialogs for what is open."
-        )))
-    }
-}
-
-/// What a transfer or delete confirm led to, as the frontend answers it. The
-/// refusals mirror `ProgrammaticConfirmVerdict` in
-/// `src/lib/file-explorer/pane/programmatic-confirm.ts`; a press that went
-/// through is answered by the START it led to, with what an auto-confirmed
-/// `copy` gets back.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum ConfirmAck {
-    /// The press reached a start, which answered: with the spawned `operationId`
-    /// (`None` for a move that renamed in place), or a gate that refused it.
-    Started(OperationStartAck),
-    /// A background press on a delete dialog that would delete PERMANENTLY, which
-    /// never starts out of sight. The dialog stays open, untouched.
-    RefusedPermanentDelete,
-    /// The dialog took the press and started nothing, by a guard it holds for a
-    /// person too: a refused source, a cloud folder's walk turning the trash into
-    /// a delete, a press already in flight. The dialog stays open.
-    NotStarted,
-}
-
-/// Parse an `mcp-response` for a transfer or delete confirm. Same `requestId`
-/// correlation as the other round-trips; a refusal keeps its typed identity in
-/// `refusal`, ❌ never in the message text. Anything else reads as an operation
-/// start's answer, so a missing `ok` is a failure.
-fn parse_confirm_response(payload: &str, expected_id: &str) -> Option<Result<ConfirmAck, String>> {
-    let resp = serde_json::from_str::<Value>(payload).ok()?;
-    if resp.get("requestId").and_then(|v| v.as_str()) != Some(expected_id) {
-        return None;
-    }
-    match resp.get("refusal").and_then(|v| v.as_str()) {
-        Some("permanentDelete") => Some(Ok(ConfirmAck::RefusedPermanentDelete)),
-        Some("notStarted") => Some(Ok(ConfirmAck::NotStarted)),
-        _ => parse_operation_start_response(payload, expected_id).map(|ack| ack.map(ConfirmAck::Started)),
-    }
-}
-
-/// Budget for a confirm to report its operation's id. Same as an auto-confirmed
-/// `copy`'s (`file_ops.rs`), and for the same reason: it spans the dialog's wait
-/// for its scan preview to start and the write-op IPC that mints the id. A cloud
-/// folder's trash that must wait on its walk first asks the round-trip to hold
-/// (`holdMs`, see `mcp_round_trip_parsed`), so it still answers with its id.
-const CONFIRM_START_TIMEOUT_SECS: u64 = 10;
-
-/// Presses the open transfer or delete dialog's own confirm, or with
-/// `background` its Background button (F2), and answers with the operation that
-/// press started, so the agent can `await operation_complete` or `queue` it.
-///
-/// The frontend threads this request's id into the start (the way an
-/// auto-confirmed `copy` does), so the answer is the start's own: the spawned
-/// `operationId` or the refusal, ❌ never a guess. A press the dialog refused
-/// answers at once, typed. Then the confirmation goes away like any confirm's.
-///
-/// The dialog has to be open FIRST: `SoftDialogDisappeared` is true of a dialog
-/// that was never there.
-async fn confirm_and_await_start<R: Runtime>(
-    app: &AppHandle<R>,
-    dialog_type: &str,
-    payload: Value,
-    background: bool,
-) -> ToolResult {
-    require_open_dialog(app, dialog_type)?;
-    let ack = mcp_round_trip_parsed(
-        app,
-        "mcp-confirm-dialog",
-        payload,
-        CONFIRM_START_TIMEOUT_SECS,
-        parse_confirm_response,
-    )
-    .await?;
-    let operation_id = match ack {
-        ConfirmAck::Started(start) => operation_start_result("confirm", start)?,
-        ConfirmAck::RefusedPermanentDelete => {
-            return Err(ToolError::invalid_params(
-                "The delete dialog would delete permanently, which never runs in the background. Confirm it without \
-                 background, switch it to trash, or close it.",
-            )
-            .with_data(json!({ "refusal": "permanentDelete" })));
-        }
-        ConfirmAck::NotStarted => {
-            return Err(ToolError::invalid_params(format!(
-                "The {dialog_type} dialog took the confirm but started nothing, and it's still open. Read \
-                 cmdr://state dialogs for what it shows, then confirm again or close it."
-            ))
-            .with_data(json!({ "refusal": "notStarted" })));
-        }
-    };
-    wait_for_ack(
-        app,
-        AckSignal::SoftDialogDisappeared(dialog_type.to_string()),
-        DEFAULT_ACK_TIMEOUT,
-    )
-    .await?;
-    Ok(confirm_ok(dialog_type, background, operation_id))
-}
-
-/// The OK line for a confirm, naming the started `operationId` the way an
-/// auto-confirmed `copy` does. `None` is a move that renamed in place.
-fn confirm_ok(dialog_type: &str, background: bool, operation_id: Option<String>) -> Value {
-    let noun = if dialog_type == "delete-confirmation" {
-        "Delete"
-    } else {
-        "Transfer"
-    };
-    match (background, operation_id) {
-        (false, Some(id)) => json!(format!("OK: {noun} dialog confirmed (operationId: {id}).")),
-        (false, None) => json!(format!("OK: {noun} dialog confirmed.")),
-        (true, Some(id)) => json!(format!(
-            "OK: Started in the background (operationId: {id}). Await operation_complete on it, or find it in \
-             cmdr://state operations."
-        )),
-        (true, None) => json!("OK: Confirmed. It needed no operation, so nothing runs in the background."),
-    }
-}
-
-/// The `mcp-confirm-dialog` payload for a transfer or delete confirm, or `None`
-/// for any other dialog.
-fn transfer_or_delete_confirm_payload(
-    dialog_type: &str,
-    on_conflict: Option<&str>,
-    background: bool,
-) -> Result<Option<Value>, ToolError> {
-    let mut payload = match dialog_type {
-        "transfer-confirmation" => {
-            let conflict_policy = on_conflict.unwrap_or("skip_all");
-            validate_conflict_policy(conflict_policy)?;
-            json!({"type": dialog_type, "onConflict": conflict_policy})
-        }
-        "delete-confirmation" => json!({"type": dialog_type}),
-        _ => return Ok(None),
-    };
-    if background {
-        payload["startInBackground"] = true.into();
-    }
-    Ok(Some(payload))
-}
-
-/// `dialog confirm` with `background: true`: press the open dialog's Background
-/// button (F2) instead of Confirm, so the operation starts with no progress
-/// dialog. Transfer and trash only, under the dialog's own rules.
-async fn execute_dialog_confirm_in_background<R: Runtime>(
-    app: &AppHandle<R>,
-    dialog_type: &str,
-    on_conflict: Option<&str>,
-) -> ToolResult {
-    let Some(payload) = transfer_or_delete_confirm_payload(dialog_type, on_conflict, true)? else {
-        return Err(ToolError::invalid_params(format!(
-            "Cannot confirm '{dialog_type}' in the background. Only 'transfer-confirmation' and a trashing \
-             'delete-confirmation' have a background start."
-        )));
-    };
-    confirm_and_await_start(app, dialog_type, payload, true).await
-}
-
-/// Execute dialog confirm action.
-/// Programmatically confirms an already-open dialog.
-async fn execute_dialog_confirm<R: Runtime>(
-    app: &AppHandle<R>,
-    dialog_type: &str,
-    on_conflict: Option<&str>,
-) -> ToolResult {
-    if let Some(payload) = transfer_or_delete_confirm_payload(dialog_type, on_conflict, false)? {
-        return confirm_and_await_start(app, dialog_type, payload, false).await;
-    }
-    match dialog_type {
-        // Confirming the quit means quitting NOW, skipping the rest of the countdown.
-        // Answered on the gate rather than the dialog, and with no ack: the process is on
-        // its way out, so there is nothing left to observe. See `quit.rs`.
-        "quit-confirmation" => super::quit::confirm_quit(),
-        // Confirming this one means supplying a password, which needs a value
-        // this tool has nowhere to put. `unlock` is the whole answer.
-        "archive-password" => Err(ToolError::invalid_params(
-            "The archive-password prompt is answered with the unlock tool, which takes the password. \
-             Read cmdr://state dialogs for the archive or repo it's asking about; dialog close cancels it instead.",
-        )),
-        _ => Err(ToolError::invalid_params(format!(
-            "Cannot confirm dialog type '{}'. Only 'transfer-confirmation', 'delete-confirmation', and 'quit-confirmation' support confirm.",
-            dialog_type
-        ))),
-    }
 }
 
 /// Execute the `open_search_dialog` tool.

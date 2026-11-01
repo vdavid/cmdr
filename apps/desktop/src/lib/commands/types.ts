@@ -66,11 +66,17 @@ export interface McpTabMoveArgs {
 }
 
 /**
- * Dialog kind an MCP tool can confirm. The first two come from `dialog confirm`;
+ * Dialog kind an MCP tool can confirm. All but one come from `dialog_confirm`;
  * `archive-password` comes from `unlock`, which stores the password on
  * the backend first and then confirms the prompt to trigger the follow-up.
  */
-export type ConfirmDialogType = 'transfer-confirmation' | 'delete-confirmation' | 'archive-password'
+export type ConfirmDialogType =
+  | 'transfer-confirmation'
+  | 'delete-confirmation'
+  | 'archive-password'
+  | 'rename'
+  | 'mkdir-confirmation'
+  | 'new-file-confirmation'
 
 /**
  * Override slot for commands whose dispatch payload is REQUIRED. Each key is the
@@ -98,7 +104,13 @@ export interface CommandArgsOverrides {
   'tab.mcpAction': { pane: PaneId; action: McpTabAction; tabId?: string; pinned?: boolean } | McpTabMoveArgs
   /** `startInBackground` presses the dialog's Background button (F2); `mcpRequestId`
    *  rides along so the handler can answer what the press did. */
-  'dialog.confirm': { type: ConfirmDialogType; onConflict?: string; startInBackground?: boolean; mcpRequestId?: string }
+  'dialog.confirm': {
+    type: ConfirmDialogType
+    onConflict?: string
+    startInBackground?: boolean
+    name?: string
+    mcpRequestId?: string
+  }
 }
 
 /**

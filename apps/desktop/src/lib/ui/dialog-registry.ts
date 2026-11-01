@@ -107,6 +107,13 @@ export const SOFT_DIALOG_REGISTRY = [
   { id: 'expiration', description: 'Shown when a commercial license expires', whileOpen: BLOCKS_OPERATIONS },
   { id: 'onboarding', description: 'First-launch (and re-openable) setup wizard', whileOpen: BLOCKS_OPERATIONS },
   { id: 'license', description: 'License key entry and viewing', whileOpen: BLOCKS_OPERATIONS },
+  // Not a ModalDialog, but a state like one: an edit waiting on a person. It blocks a start, since
+  // the start's dialog would take focus and silently end the edit (`rename-editor-presence.ts`).
+  {
+    id: 'rename',
+    description: 'The inline rename editor, opened by the rename tool or F2',
+    whileOpen: BLOCKS_OPERATIONS,
+  },
   {
     id: 'mkdir-confirmation',
     description: 'Opened by the mkdir tool, not directly',

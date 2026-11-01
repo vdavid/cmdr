@@ -8,9 +8,10 @@
  * shows up here. Svelte guarantees the pairing, and a missed close would leave file
  * operations blocked for the rest of the session.
  *
- * `OnboardingWizard.svelte` is the ONE other registrar: it wears `ModalDialog`'s
- * chrome but not the component (bespoke sheet, no Escape, a portal target of its own),
- * so it makes the same paired `onMount` / `onDestroy` announcement by hand. A third one
+ * Two others register by hand. `OnboardingWizard.svelte` wears `ModalDialog`'s chrome but
+ * not the component (bespoke sheet, no Escape, a portal target of its own), so it makes
+ * the same paired `onMount` / `onDestroy` announcement. The inline rename editor isn't a
+ * dialog at all, but it waits on a person like one (`rename-editor-presence.ts`). A fourth
  * would be a bad sign; reach for `ModalDialog` instead. ❌ Never mark a dialog open from
  * anywhere else.
  *

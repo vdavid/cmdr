@@ -11,6 +11,7 @@
     import { NewEntryNameCheck } from '#lib/file-operations/new-entry-name-check.svelte.js'
     import NewEntryNameField from '#lib/file-operations/NewEntryNameField.svelte'
     import StillCreatingNotice from '#lib/file-operations/StillCreatingNotice.svelte'
+    import type { CreateConfirmer } from '#lib/file-explorer/pane/dialog-props.js'
     import ModalDialog from '#lib/ui/ModalDialog.svelte'
     import Button from '#lib/ui/Button.svelte'
     import { tooltip } from '#lib/tooltip/tooltip.js'
@@ -31,12 +32,23 @@
         volumeId?: string
         /** Who triggered this create (`aiClient` for the MCP `mkdir` tool). */
         initiator: Initiator
+        /** Hands this dialog's OK to the dialog state, for the MCP `dialog_confirm`. */
+        registerConfirmer?: (confirm: CreateConfirmer) => () => void
         onCreated: (folderName: string) => void
         onCancel: () => void
     }
 
-    const { currentPath, listingId, showHiddenFiles, initialName, volumeId, initiator, onCreated, onCancel }: Props =
-        $props()
+    const {
+        currentPath,
+        listingId,
+        showHiddenFiles,
+        initialName,
+        volumeId,
+        initiator,
+        registerConfirmer,
+        onCreated,
+        onCancel,
+    }: Props = $props()
 
     let folderName = $state(initialName)
     let nameInputRef: HTMLInputElement | undefined = $state()
@@ -67,7 +79,14 @@
         void fetchAiSuggestions()
     })
 
+    // An MCP `dialog_confirm` is the OK button, under the name it brings.
+    const unregisterConfirmer = registerConfirmer?.((name) => {
+        if (name !== undefined) folderName = name
+        return submission.pressFromTool(folderName.trim(), check)
+    })
+
     onDestroy(() => {
+        unregisterConfirmer?.()
         // A create still running carries on; its end no longer steers this dialog.
         submission.close()
         // Cancel the in-flight stream. Tauri 2's `Channel::send` is fire-and-forget;

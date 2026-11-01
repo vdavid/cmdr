@@ -1,5 +1,5 @@
 /**
- * An MCP `dialog confirm` on the transfer dialog, at each point of its startup.
+ * An MCP `dialog_confirm` on the transfer dialog, at each point of its startup.
  *
  * The confirm presses the dialog's OWN confirm (`registerTransferConfirmer`), so
  * it dispatches what the button would: the path in the box (for a compress, the
@@ -216,6 +216,8 @@ describe('an MCP confirm on the transfer dialog', () => {
       },
       registerTransferConfirmer: (confirm: TransferConfirmer) => dialogs.registerTransferConfirmer(confirm),
       registerDeleteConfirmer: () => noop,
+      registerNewFolderConfirmer: () => noop,
+      registerNewFileConfirmer: () => noop,
       onTransferCancel: () => {
         dialogs.handleTransferCancel()
       },
@@ -250,7 +252,7 @@ describe('an MCP confirm on the transfer dialog', () => {
     return { dialogs, target, onDismissAll }
   }
 
-  /** What an MCP `dialog confirm` does: presses the open dialog's own confirm, through the dialog state. */
+  /** What an MCP `dialog_confirm` does: presses the open dialog's own confirm, through the dialog state. */
   function confirmFromMcp(dialogs: ReturnType<typeof createDialogState>, onConflict?: string): void {
     void dialogs.confirmOpenDialog('transfer-confirmation', onConflict)
   }
@@ -338,7 +340,7 @@ describe('an MCP confirm on the transfer dialog', () => {
     expect(dialogs.transferProgressProps?.conflictResolution).toBe('overwrite_older')
   })
 
-  it('skips clashes when the agent named no policy, without waiting on a destination listing still in flight', async () => {
+  it('keeps the dialog’s policy when the agent named none, without waiting on a destination listing still in flight', async () => {
     vi.mocked(commands.scanVolumeForConflicts).mockReturnValue(new Promise(() => {}))
     registrations.resolve(undefined)
     const { dialogs, target } = openTransferDialog()
@@ -349,7 +351,8 @@ describe('an MCP confirm on the transfer dialog', () => {
     confirmFromMcp(dialogs)
     await operationStarted(dialogs, target)
 
-    expect(dialogs.transferProgressProps?.conflictResolution).toBe('skip')
+    // `stop` is what nothing remembered shows: it decides nothing behind a person's back.
+    expect(dialogs.transferProgressProps?.conflictResolution).toBe('stop')
     expect(dialogs.transferProgressProps?.preKnownConflicts).toEqual([])
   })
 

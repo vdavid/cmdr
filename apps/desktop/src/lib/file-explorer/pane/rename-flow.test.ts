@@ -33,6 +33,8 @@ const {
 }))
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
+  notifyDialogOpened: vi.fn(() => Promise.resolve()),
+  notifyDialogClosed: vi.fn(() => Promise.resolve()),
   getFileAt: vi.fn(),
   getFileRange: vi.fn(),
   refreshListing: vi.fn(),
@@ -87,6 +89,108 @@ beforeEach(() => {
   // The user's global extension-change setting; the suppression must override it.
   getSettingSpy.mockImplementation((id) => (id === 'fileOperations.allowFileExtensionChanges' ? 'ask' : undefined))
   executeRenameSaveSpy.mockResolvedValue({ type: 'success', newName: 'notes.md' })
+})
+
+describe('a commit from the MCP `dialog_confirm`', () => {
+  it('saves the name it brought, skips the extension question, and answers once it landed', async () => {
+    const { flow, rename } = buildFlow()
+    flow.startRename()
+
+    const end = await flow.commitFromTool('notes.md')
+
+    expect(end).toEqual({ kind: 'done' })
+    expect(executeRenameSaveSpy.mock.calls[0]?.[1]).toBe('notes.md')
+    expect(executeRenameSaveSpy.mock.calls[0]?.[3]).toBe(true)
+    expect(rename.active).toBe(false)
+  })
+
+  it('commits what the field holds when it brought no name', async () => {
+    const { flow } = buildFlow()
+    flow.startRename()
+    flow.handleRenameInput('typed.txt')
+
+    await flow.commitFromTool()
+
+    expect(executeRenameSaveSpy.mock.calls[0]?.[1]).toBe('typed.txt')
+  })
+
+  it('closes on no change, with nothing saved', async () => {
+    const { flow, rename } = buildFlow()
+    flow.startRename()
+
+    expect(await flow.commitFromTool()).toEqual({ kind: 'done' })
+
+    expect(executeRenameSaveSpy).not.toHaveBeenCalled()
+    expect(rename.active).toBe(false)
+  })
+
+  it('refuses an invalid name, editor open and nothing sent', async () => {
+    const { flow, rename } = buildFlow()
+    flow.startRename()
+    validateFilenameSpy.mockReturnValue(ERROR_VALIDATION)
+
+    const end = await flow.commitFromTool('a/b')
+
+    expect(end).toEqual({ kind: 'refused', reason: ERROR_VALIDATION.message })
+    expect(executeRenameSaveSpy).not.toHaveBeenCalled()
+    expect(rename.active).toBe(true)
+  })
+
+  it('refuses a taken name without raising the conflict dialog over nobody', async () => {
+    const { flow, rename } = buildFlow()
+    flow.startRename()
+    executeRenameSaveSpy.mockResolvedValue({ type: 'conflict', validity: {} })
+
+    const end = await flow.commitFromTool('taken.txt')
+
+    expect(end.kind).toBe('refused')
+    expect(flow.conflictDialogState).toBeNull()
+    expect(rename.active).toBe(true)
+  })
+
+  it('carries the volume’s refusal, editor open', async () => {
+    const { flow, rename } = buildFlow()
+    flow.startRename()
+    executeRenameSaveSpy.mockResolvedValue({ type: 'error', message: 'Read-only' })
+
+    expect(await flow.commitFromTool('x.txt')).toEqual({ kind: 'refused', reason: 'Read-only' })
+    expect(rename.active).toBe(true)
+  })
+
+  it('says a slow volume is still on it, and lets go', async () => {
+    const { flow, rename } = buildFlow()
+    flow.startRename()
+    executeRenameSaveSpy.mockResolvedValue({
+      type: 'still-renaming',
+      settled: new Promise(() => {}),
+    })
+
+    expect(await flow.commitFromTool('x.txt')).toEqual({ kind: 'stillRunning' })
+    expect(rename.active).toBe(false)
+  })
+
+  it('says when it moved on to the Move dialog', async () => {
+    const { flow, onConfirmRenameAsMove } = buildFlow()
+    flow.startRename()
+    executeRenameSaveSpy.mockResolvedValue({ type: 'confirm-move', newName: 'x.txt' })
+
+    expect(await flow.commitFromTool('x.txt')).toEqual({ kind: 'needsMoveDialog' })
+    expect(onConfirmRenameAsMove).toHaveBeenCalled()
+  })
+
+  it('owns the session while it saves, so a click-away can’t send a second save', async () => {
+    const { flow } = buildFlow()
+    flow.startRename()
+    const held = deferred<{ type: 'noop' }>()
+    executeRenameSaveSpy.mockReturnValue(held.promise)
+
+    const end = flow.commitFromTool('x.txt')
+    flow.handleRenameClickAway()
+
+    expect(executeRenameSaveSpy).toHaveBeenCalledTimes(1)
+    held.resolve({ type: 'noop' })
+    await end
+  })
 })
 
 describe('rename pre-flight permission check (archive-inner paths skip it)', () => {

@@ -24,6 +24,8 @@ import { getAppLogger } from '#lib/logging/logger.js'
 import { asMutationError } from './mutation-error'
 import { renderMutationError } from './mutation-error-messages'
 import type { ReportIncident } from '#lib/error-reporter/report-incident.js'
+import type { CreatePress } from '#lib/file-explorer/pane/dialog-props.js'
+import type { NewEntryNameCheck } from './new-entry-name-check.svelte'
 
 const log = getAppLogger('fileOperations')
 
@@ -65,7 +67,29 @@ export class CreateSubmission {
 
   /** Creates `name`. A second submit while one is in flight is ignored. */
   async submit(name: string): Promise<void> {
-    if (this.busy) return
+    await this.#create(name, () => {})
+  }
+
+  /**
+   * The MCP `dialog_confirm`: OK, with the checks a person gets from the field and the button.
+   * Answers when the create ended or a slow volume is still on it, for the tool's reply.
+   */
+  async pressFromTool(name: string, check: NewEntryNameCheck): Promise<CreatePress> {
+    await check.validate(name)
+    if (name === '') return { kind: 'refused', reason: 'The name is empty.' }
+    if (check.errorMessage) return { kind: 'refused', reason: check.errorMessage }
+    if (this.busy) return { kind: 'stillRunning' }
+    return new Promise((resolve) => {
+      void this.#create(name, () => {
+        resolve({ kind: 'stillRunning' })
+      }).then((end) => {
+        resolve(end === 'created' ? { kind: 'done' } : { kind: 'refused', reason: check.errorMessage })
+      })
+    })
+  }
+
+  async #create(name: string, onStillRunning: () => void): Promise<'created' | 'refused' | 'ignored'> {
+    if (this.busy) return 'ignored'
     this.submittedName = name
     this.submittedAt = Date.now()
     this.phase = 'creating'
@@ -73,13 +97,15 @@ export class CreateSubmission {
       await this.#deps.create(name, {
         onStillRunning: () => {
           if (!this.#closed) this.phase = 'stillCreating'
+          onStillRunning()
         },
       })
     } catch (e) {
       this.#refused(name, e)
-      return
+      return 'refused'
     }
     if (!this.#closed) this.#deps.onCreated(name)
+    return 'created'
   }
 
   /** The dialog is going away. A create still running carries on without it. */

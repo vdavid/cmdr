@@ -21,6 +21,7 @@ transport for outside clients; `../agent/` is the in-process runtime, with the g
   can approve**: `[agent]` entries are `Read`, `ReadContents`, `Propose`, `Memory`, or `Session` (pinned structurally).
 - **Every class but `Read` and `AppState` is hand-allowlisted** (`EXPECTED_*_TOOL_NAMES`): nothing proves a handler doesn't
   mutate, stays jailed, or dials only a saved place. ❌ Never give AI clients `Memory`.
+- **`dialog_confirm` is the only way past a person** (`DevOnly`), and `dialog` has no `confirm`.
 - **`DevOnly` tools refuse an outside client off direct mode** (`policy.rs`), and ❌ the JSON setting alone never turns it
   on. `DETAILS.md` § Direct mode.
 - **A call is checked against its declared schema before a handler sees it** (`params.rs`). An agent tool closes itself

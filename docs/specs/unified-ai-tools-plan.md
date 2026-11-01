@@ -258,6 +258,18 @@ Where a lead's review refined one of David's decisions, the refined form is writ
 - `docs/security.md` is M18's.
 - The translator step must cover the keys `sync-locale-keys` would pull in (143 pending when M7a finished).
 
+## Carried from M7b
+
+- M8: `dialog_confirm`'s `name` covers `rename` too, which is how E2E names one once `rename` only opens the editor.
+  `execute_rename` now waits for the `rename` soft dialog after the round trip, so a call on a row the frontend refuses
+  (portal, read-only) answers `outcome_unknown` after 1.5 s: M8 should refuse those typed. `file_ops.rs:106` still
+  defaults to skip.
+- M9: add `rollback-confirmation` to `dialog_confirm.rs`'s match, and to `ConfirmDialogType`.
+- M10: the guard goes on `InlineRenameEditor`; `rename-editor-presence.ts` is where the editor registers. App State
+  tools other than operation starts (`nav_to_path`, `sort`) still end an open editor.
+- M18: `docs/security.md` should mention the launch notice and the recovery clearing the item.
+  `tools/actions/DETAILS.md`'s `autoConfirm` paragraphs are still M18's.
+
 ## Running unattended
 
 David may be away, and nobody can click a macOS dialog. Executors run nothing that can raise a macOS prompt (Keychain,

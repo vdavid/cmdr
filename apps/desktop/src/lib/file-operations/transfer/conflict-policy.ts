@@ -4,7 +4,7 @@
  *
  * Two surfaces start a transfer programmatically — `copy` / `move` with
  * `autoConfirm` (the dialog confirms itself on mount, `TransferDialog.svelte`)
- * and `dialog confirm` on an already-open one (`dialog-state.svelte.ts`) — and
+ * and `dialog_confirm` on an already-open one (`dialog-state.svelte.ts`) — and
  * they each used to carry their own copy of this map. The copies had drifted:
  * one spelled the conditional policies `overwrite_all_smaller`, the other
  * `overwrite_smaller_all`, and neither spelling was reachable, so nobody found

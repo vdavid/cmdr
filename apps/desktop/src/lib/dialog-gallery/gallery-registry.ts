@@ -395,6 +395,15 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
 
   // ── Ask Cmdr and AI ───────────────────────────────────────────────────────
   {
+    dialogId: 'rename',
+    label: 'Inline rename editor',
+    hostWindow: 'main',
+    status: 'not-triggerable',
+    reason:
+      'It isn’t an overlay: the input sits on a real row, so there’s nothing to preview apart from a listing. Press F2 on any file.',
+    states: [],
+  },
+  {
     dialogId: 'multi-rename',
     label: 'Multi-rename',
     hostWindow: 'main',

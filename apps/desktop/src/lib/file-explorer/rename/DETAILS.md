@@ -386,6 +386,23 @@ whole listing (500 rows per IPC round trip), so doing it per activation is what 
   names, because mid-chain the list can call a name taken that is perfectly free. The full argument is in "What becomes
   of the edit being stepped away from" above.
 
+## The editor as a state
+
+An open editor shows up as the soft dialog `rename` (`rename-editor-presence.ts`): in this window's `open-dialogs` set
+and the backend's `SoftDialogTracker`, so `cmdr://state` lists it and the operation-start gate refuses behind it.
+
+**Why it blocks.** A start's dialog takes focus, the blur discards the edit, and an agent that had just opened the
+editor believed it was still waiting. Now the start refuses, typed (`data.blockingDialog`), with the edit intact. A
+second `rename` tool call gets `data.refusal: "alreadyEditing"` on top.
+
+**How it's answered.** `dialog close rename` is Escape, through `registerDialogClose`. `dialog_confirm rename` is Enter
+with nobody there to ask (`../pane/rename-tool-commit.ts`): the extension question is skipped, a taken name refuses
+rather than raising the conflict dialog, and an invalid or refused name leaves the editor open.
+
+**Decision: synchronous in `rename-state`, not an effect on `active`.** `closeEditor` opens a waiting Move dialog in the
+same tick, and that open passes the gate. `FilePane`'s teardown calls `dispose()`, or a pane that goes with its editor
+up would block file operations for the session.
+
 ## Ending a rename session
 
 Four ways in, each with a different meaning:

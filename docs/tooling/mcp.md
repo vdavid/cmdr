@@ -200,7 +200,7 @@ answer, which is what a person gets by leaving the dialog on "Ask for each". Dri
 The reply carries a typed `outcome`: `resolved` (yours is the answer the operation used) or `already_resolved` (somebody
 answered the same clash first). A refusal carries `data.outcome` instead: `stale_answer` (the operation has moved on,
 re-read `cmdr://state`), `no_pending_conflict`, or `unknown_operation`. Branch on those, never on the sentence.
-`applyToAll: true` answers the rest of the operation's clashes the same way. Both `dialog confirm` and
+`applyToAll: true` answers the rest of the operation's clashes the same way. Both `dialog_confirm` and
 `resolve_conflict` require the authenticated connection, so route them through `./scripts/mcp-call.sh`.
 
 ## Unlocking an encrypted archive or a restic backup

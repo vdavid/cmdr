@@ -47,7 +47,7 @@ Copy (F5), move (F6), compress (⌥F5): setup, conflict scan, progress, errors. 
   overwrites.
 - **Only a confirm saves the remembered policy, per "Remember this choice"**; ❌ never MCP. DETAILS § "The remembered
   conflict policy".
-- **ONE map from an MCP `onConflict` name to a policy** (`conflict-policy.ts`), and ONE confirm path: `dialog confirm`
+- **ONE map from an MCP `onConflict` name to a policy** (`conflict-policy.ts`), and ONE confirm path: `dialog_confirm`
   presses `handleConfirm` via `registerConfirmer`. ❌ Never a second map (an unmapped name silently becomes `skip`) or a
   payload built from the opening props.
 

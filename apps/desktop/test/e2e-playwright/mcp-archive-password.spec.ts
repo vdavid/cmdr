@@ -145,7 +145,7 @@ test.describe('MCP archive password', () => {
     await mcpNavToPath('right', path.join(fixtureRoot, 'right'))
     await mcpCall('select', { pane: 'left', names: [INNER_FILE] })
     await mcpCall('copy', {})
-    await mcpCall('dialog', { action: 'confirm', type: 'transfer-confirmation' })
+    await mcpCall('dialog_confirm', { type: 'transfer-confirmation' })
 
     const prompt = await waitForPasswordPrompt()
     expect(prompt.name).toBe(ENCRYPTED_ZIP)
@@ -186,7 +186,7 @@ test.describe('MCP archive password', () => {
     //    and the stored password lets it read the entry this time.
     await mcpCall('select', { pane: 'left', names: [INNER_FILE] })
     await mcpCall('copy', {})
-    await mcpCall('dialog', { action: 'confirm', type: 'transfer-confirmation' })
+    await mcpCall('dialog_confirm', { type: 'transfer-confirmation' })
     await expect.poll(() => fs.existsSync(destination), { timeout: waitBudget(20_000) }).toBeTruthy()
     expect(fs.readFileSync(destination, 'utf8')).toBe(INNER_CONTENT)
 

@@ -13,9 +13,8 @@
 //! situations for a caller, and an agent that can't tell them apart walks away
 //! from a countdown that ends in a stopped transfer.
 //!
-//! Both answers are reached through the `dialog` tool
-//! (`confirm` / `close` on `quit-confirmation`, wired in `dialogs.rs`), so the
-//! quit confirmation is answered the way every other dialog is.
+//! Both answers are reached the way every other dialog's are: `dialog_confirm`
+//! and `dialog close` on `quit-confirmation` (`dialog_confirm.rs`, `dialogs.rs`).
 
 use serde_json::json;
 use tauri::{AppHandle, Runtime};
@@ -49,7 +48,7 @@ pub fn execute_quit<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
     }
 }
 
-/// `dialog confirm quit-confirmation`: quit now, stopping what's running.
+/// `dialog_confirm quit-confirmation`: quit now, stopping what's running.
 pub fn confirm_quit() -> ToolResult {
     report_answer(Answer::Quit, crate::quit::gate().confirm())
 }

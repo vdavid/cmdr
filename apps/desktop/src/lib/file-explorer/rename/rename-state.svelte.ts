@@ -2,6 +2,7 @@
 
 import type { NameKind } from '#lib/utils/file-extension.js'
 import type { ValidationResult, ValidationSeverity } from '#lib/utils/filename-validation.js'
+import { createRenameEditorPresence } from './rename-editor-presence'
 
 /**
  * Identifies one rename session: one activation of the inline editor, from the
@@ -63,8 +64,10 @@ function createInitialState(sessionId: RenameSessionId): RenameState {
   }
 }
 
-export function createRenameState() {
+/** @param dismiss How the `dialog close rename` ends this editor, focus handed back included. */
+export function createRenameState(dismiss: () => void = () => {}) {
   let state = $state<RenameState>(createInitialState(0))
+  const presence = createRenameEditorPresence(dismiss)
 
   return {
     get active() {
@@ -105,6 +108,7 @@ export function createRenameState() {
         target,
         currentName: target.originalName,
       }
+      presence.opened()
     },
 
     /** Updates the current input value. */
@@ -132,6 +136,12 @@ export function createRenameState() {
     /** Deactivates rename mode, resetting all state but the session id. */
     cancel() {
       state = createInitialState(state.sessionId)
+      presence.closed()
+    },
+
+    /** The pane is going away, so nothing will close this editor later. */
+    dispose() {
+      presence.closed()
     },
 
     /** Returns whether the current name (trimmed) differs from the original. */

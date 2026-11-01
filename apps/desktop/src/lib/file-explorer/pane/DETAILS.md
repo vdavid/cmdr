@@ -1009,14 +1009,15 @@ below rather than merely spreading lines:
 - `background-operations.svelte.ts`: operations with NO progress dialog, started there (F2 in a setup dialog) or sent
   there (Queue). Holds their birth context privately and watches each for the one stop nobody else asks about.
 - `transfer-op-label.ts`: the log-line label for an operation type, shared by the two families.
-- `programmatic-confirm.ts`: the MCP `dialog confirm`, owning the transfer and delete dialogs' registered confirms.
+- `programmatic-confirm.ts`: the MCP `dialog_confirm`, owning the transfer, delete, and naming dialogs' registered
+  confirms. `rename-tool-commit.ts` is its rename half, through `pane-commands.ts`, since the editor belongs to a pane.
 - `confirmation-skip.ts`: which copy, move, and trash confirmations the "Skip confirmation" setting leaves out, and the
   answer a skipped one gives.
 
 `dialog-state.svelte.ts` keeps birth context, the confirmation / alert / error dialogs, and the cross-cutting queries
 (`anyDialogOpen`, `isConfirmationDialogOpen`, `dismissAllAfterDialogFailure`).
 
-**An MCP `dialog confirm` on the transfer or delete dialog presses the dialog's own confirm**, ❌ never a payload built
+**An MCP `dialog_confirm` on the transfer or delete dialog presses the dialog's own confirm**, ❌ never a payload built
 from `transferDialogProps` / `deleteDialogProps`. The mounted `TransferDialog` registers its `handleConfirm` through
 `registerTransferConfirmer`, and `confirmOpenDialog` calls it with the mapped conflict policy; `DeleteDialog` does the
 same through `registerDeleteConfirmer`, so the press carries the scan preview and the mode the trash switch shows now,
@@ -1685,9 +1686,10 @@ menu operations, which is a deliberate product call rather than a side effect.
 pair that already tells the Rust `SoftDialogTracker`. Exhaustive by construction: rendering a soft dialog means
 rendering a `ModalDialog` with a `SoftDialogId`. ❌ Don't replace it with a hand-written open/close pair — one missed
 close would block every file operation for the rest of the session, which is why the pairing is left to Svelte.
-`OnboardingWizard` is the one exception (bespoke chrome, no `ModalDialog`), and it makes the same announcement by hand
-from its own `onMount` / `onDestroy` pair. `anyDialogOpen()` reads that set first; the local `show*` flags beside it are
-the same-tick guard between `show* = true` and the mount that registers it, ❌ not a second inventory.
+`OnboardingWizard` is one exception (bespoke chrome, no `ModalDialog`), and it makes the same announcement by hand from
+its own `onMount` / `onDestroy` pair. The inline rename editor is the other (`../rename/DETAILS.md` § The editor as a
+state). `anyDialogOpen()` reads that set first; the local `show*` flags beside it are the same-tick guard between
+`show* = true` and the mount that registers it, ❌ not a second inventory.
 
 **Ask Cmdr is not a dialog**, so it never reaches the set. It blocks the menu items only while the composer has FOCUS
 (`explorerState.getRailFocused()`), ❌ never while it's merely visible: the rail is docked next to the panes most of the

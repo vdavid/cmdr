@@ -132,7 +132,7 @@ describe('a Move inside its own folder', () => {
     expect(dialogs.showTransferProgressDialog).toBe(true)
   })
 
-  it('keeps the transfer for an agent’s `dialog confirm` on a person’s dialog, which waits the same way', () => {
+  it('keeps the transfer for an agent’s `dialog_confirm` on a person’s dialog, which waits the same way', () => {
     const { dialogs, left } = setup()
     dialogs.showTransfer(moveProps())
 

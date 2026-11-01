@@ -95,7 +95,7 @@
         newName?: string
         onConfirm: (payload: TransferConfirmPayload) => void
         /** Takes this dialog's own confirm for as long as it's mounted, so an MCP
-         *  `dialog confirm` presses the same button a person does. Returns the
+         *  `dialog_confirm` presses the same button a person does. Returns the
          *  unregister. */
         registerConfirmer?: (confirm: TransferConfirmer) => () => void
         onCancel: () => void
@@ -193,7 +193,7 @@
 
     // An auto-confirming caller's named policy ("Ask for each" when it named none),
     // else the person's saved one (`remembered-conflict-policy.ts`). The MCP map is
-    // shared with the `dialog confirm` path (`conflict-policy.ts`); the two used
+    // shared with the `dialog_confirm` path (`conflict-policy.ts`); the two used
     // to keep private copies that had drifted on the conditional names.
     const savedConflictPolicy = autoConfirm ? null : readRememberedConflictPolicy()
     let conflictPolicy = $state<ConflictResolution>(
@@ -555,7 +555,7 @@
 
         // Focus and select the path input
         await tick()
-        // Closed while resolving the home dir (an MCP `dialog confirm`, or a quick
+        // Closed while resolving the home dir (an MCP `dialog_confirm`, or a quick
         // Escape): the props are already gone, so start nothing. The scan start's
         // own reads would throw. `../DETAILS.md` § "A dialog's async start can
         // outlive it".
@@ -620,7 +620,7 @@
      * Only the auto-confirm waits for them: it fires on mount, before the check
      * can have answered, and nobody is watching the button. A person can't reach
      * `skip` while the check is running (the policy radios only render once it's
-     * done), and an MCP `dialog confirm` answers within its ack budget, so both
+     * done), and an MCP `dialog_confirm` answers within its ack budget, so both
      * dispatch with whatever names the check has by then. A dest listing can take
      * minutes on a big remote folder.
      */
@@ -641,7 +641,7 @@
     }
 
     /** Resolves `true` once the press reached `onConfirm`, `false` when a guard
-     *  stopped it (an MCP `dialog confirm` answers the agent from that). */
+     *  stopped it (an MCP `dialog_confirm` answers the agent from that). */
     async function handleConfirm(
         isAuto = false,
         { startInBackground = false, mcpRequestId: confirmRequestId }: ConfirmOptions = {},
@@ -723,15 +723,17 @@
         })
     }
 
-    // An MCP `dialog confirm` is the Confirm button under a policy the agent named:
-    // same path, same box contents, same preview. Registered during init, so a
+    // An MCP `dialog_confirm` is the Confirm button, under a policy the caller named
+    // or else the one on show: same path, same box contents, same preview. Registered during init, so a
     // confirm that lands while the mount is still resolving the home dir finds it.
     // Asking for the background presses the Background button instead. The
     // agent's round-trip id rides the payload, so the start answers it with the
     // operation's id; a press a guard stopped says so here.
     const unregisterConfirmer = registerConfirmer?.(async (policy, options) => {
-        conflictPolicy = policy
-        conflictPolicySource = 'explicit'
+        if (policy !== undefined) {
+            conflictPolicy = policy
+            conflictPolicySource = 'explicit'
+        }
         return (await handleConfirm(false, options)) ? 'pressed' : 'notStarted'
     })
 

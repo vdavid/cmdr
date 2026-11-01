@@ -47,6 +47,7 @@ const EXPECTED_TOOL_NAMES: &[&str] = &[
     "sort",
     "tab",
     "dialog",
+    "dialog_confirm",
     "open_search_dialog",
     "quit",
     "switch_pane",

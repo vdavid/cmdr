@@ -24,8 +24,15 @@ import path from 'path'
 import { test, expect } from './fixtures.js'
 import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { ensureAppReady, expectAndDismissToast, getFixtureRoot } from './helpers.js'
-import { ensureMcpClient, mcpCall, mcpReadResource, mcpNavToPath, mcpAwaitItem } from '../e2e-shared/mcp-client.js'
+import { dispatchMenuCommand, ensureAppReady, expectAndDismissToast, getFixtureRoot } from './helpers.js'
+import {
+  ensureMcpClient,
+  mcpCall,
+  mcpCallRaw,
+  mcpReadResource,
+  mcpNavToPath,
+  mcpAwaitItem,
+} from '../e2e-shared/mcp-client.js'
 
 // Putting the shared `left/` + `right/` tree back is this spec's job: the
 // post-test leak guard fails whoever leaves it dirty, and the restore is
@@ -188,6 +195,91 @@ test.describe('MCP agent tools', () => {
 
     expect(fs.existsSync(path.join(fixtureRoot, 'right', dirName))).toBe(true)
     expect(fs.existsSync(path.join(fixtureRoot, 'left', dirName))).toBe(false)
+  })
+
+  test('dialog_confirm presses the transfer dialog, keeping the policy it shows', async ({ tauriPage }) => {
+    test.setTimeout(waitBudget(30_000))
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+    await mcpNavToPath('left', path.join(fixtureRoot, 'left'))
+    await mcpNavToPath('right', path.join(fixtureRoot, 'right'))
+    await mcpCall('select', { pane: 'left', names: ['file-a.txt'] })
+
+    await mcpCall('copy', {})
+    // A bad policy refuses before anything happens, and the dialog stays up.
+    await expect(mcpCall('dialog_confirm', { type: 'transfer-confirmation', onConflict: 'keep_both' })).rejects.toThrow(
+      'onConflict',
+    )
+    const started = await mcpCall('dialog_confirm', { type: 'transfer-confirmation' })
+    expect(started).toContain('operationId')
+
+    await mcpAwaitItem('right', 'file-a.txt')
+    await expectAndDismissToast(tauriPage, 'Copied')
+    // `confirm` left the `dialog` tool with this move.
+    await expect(mcpCall('dialog', { action: 'confirm', type: 'transfer-confirmation' })).rejects.toThrow()
+  })
+
+  test('dialog_confirm names and creates through the mkdir and mkfile dialogs', async ({ tauriPage }) => {
+    test.setTimeout(waitBudget(30_000))
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+    await mcpNavToPath('left', path.join(fixtureRoot, 'left'))
+
+    await mcpCall('mkdir', { pane: 'left' })
+    await mcpCall('dialog_confirm', { type: 'mkdir-confirmation', name: 'via-dialog-confirm' })
+    expect(fs.statSync(path.join(fixtureRoot, 'left', 'via-dialog-confirm')).isDirectory()).toBe(true)
+
+    await mcpCall('mkfile', { pane: 'left' })
+    await mcpCall('dialog_confirm', { type: 'new-file-confirmation', name: 'via-dialog-confirm.txt' })
+    expect(fs.statSync(path.join(fixtureRoot, 'left', 'via-dialog-confirm.txt')).isFile()).toBe(true)
+
+    // A taken name refuses typed, and the dialog stays open to fix or close.
+    await mcpCall('mkfile', { pane: 'left' })
+    const taken = await mcpCallRaw('dialog_confirm', { type: 'new-file-confirmation', name: 'via-dialog-confirm.txt' })
+    expect(JSON.stringify(taken)).toContain('nameRefused')
+    await mcpCall('dialog', { action: 'close', type: 'new-file-confirmation' })
+  })
+
+  test('the rename editor is a state: seen, blocking a start, confirmed, and closable', async ({ tauriPage }) => {
+    test.setTimeout(waitBudget(30_000))
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+    await mcpNavToPath('left', path.join(fixtureRoot, 'left'))
+    await mcpNavToPath('right', path.join(fixtureRoot, 'right'))
+    await mcpCall('move_cursor', { pane: 'left', filename: 'file-a.txt' })
+
+    await dispatchMenuCommand(tauriPage, 'file.rename')
+    await tauriPage.waitForSelector('.rename-input', waitBudget(3000))
+    await expect
+      .poll(async () => mcpReadResource('cmdr://state?include=dialogs'), { timeout: waitBudget(3000) })
+      .toContain('rename')
+
+    // Starting an operation refuses, typed, and leaves the edit intact.
+    const refused = await mcpCallRaw('copy', {})
+    expect(JSON.stringify(refused)).toContain('blockingDialog')
+    expect(await tauriPage.isVisible('.rename-input')).toBe(true)
+
+    // A second rename says it's already editing.
+    const second = await mcpCallRaw('rename', { newName: 'other.txt' })
+    expect(JSON.stringify(second)).toContain('alreadyEditing')
+    expect(await tauriPage.isVisible('.rename-input')).toBe(true)
+
+    await mcpCall('dialog_confirm', { type: 'rename', name: 'file-a-renamed.txt' })
+    expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-a-renamed.txt'))).toBe(true)
+    await expect
+      .poll(async () => !(await tauriPage.isVisible('.rename-input')), { timeout: waitBudget(3000) })
+      .toBeTruthy()
+
+    // Close ends the next editor with nothing saved, and the start gate opens up again.
+    await mcpCall('move_cursor', { pane: 'left', filename: 'file-b.txt' })
+    await dispatchMenuCommand(tauriPage, 'file.rename')
+    await tauriPage.waitForSelector('.rename-input', waitBudget(3000))
+    await mcpCall('dialog', { action: 'close', type: 'rename' })
+    expect(await tauriPage.isVisible('.rename-input')).toBe(false)
+    expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-b.txt'))).toBe(true)
   })
 
   test('open_search_dialog then generic dialog close dismisses it', async ({ tauriPage }) => {

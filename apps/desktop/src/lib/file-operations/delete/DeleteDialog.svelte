@@ -57,9 +57,9 @@
         /** When true, dialog auto-confirms without user interaction (MCP). */
         autoConfirm?: boolean
         /** The auto-confirming agent's round-trip id, which the start answers with
-         *  the operation's id. A `dialog confirm` brings its own in `ConfirmOptions`. */
+         *  the operation's id. A `dialog_confirm` brings its own in `ConfirmOptions`. */
         mcpRequestId?: string
-        /** `origin` names the MCP `dialog confirm` that pressed it, whose round-trip
+        /** `origin` names the MCP `dialog_confirm` that pressed it, whose round-trip
          *  the start answers with the operation's id. */
         onConfirm: (previewId: string | null, isPermanent: boolean, origin?: ConfirmOrigin) => void
         /** F2 or the Background button: TRASH with no progress dialog. No mode
@@ -68,7 +68,7 @@
          *  start at all. */
         onConfirmInBackground?: (previewId: string | null, origin?: ConfirmOrigin) => void
         /** Takes this dialog's own confirm for as long as it's mounted, so an MCP
-         *  `dialog confirm` presses the same button a person does. Returns the
+         *  `dialog_confirm` presses the same button a person does. Returns the
          *  unregister. */
         registerConfirmer?: (confirm: DeleteConfirmer) => () => void
         onCancel: () => void
@@ -228,14 +228,14 @@
         cleanup()
     })
 
-    /** The agent waiting on this press for its operation id: a `dialog confirm`'s
+    /** The agent waiting on this press for its operation id: a `dialog_confirm`'s
      *  own `mcpRequestId`, or the auto-confirm's. */
     function agentWaitingOnPress(mcpRequestId: string | undefined): string | undefined {
         return mcpRequestId ?? autoConfirmRequestId
     }
 
     /** Resolves `true` once the press reached `onConfirm` / `onConfirmInBackground`,
-     *  `false` when a guard stopped it (an MCP `dialog confirm` answers the agent
+     *  `false` when a guard stopped it (an MCP `dialog_confirm` answers the agent
      *  from that). */
     async function handleConfirm({ startInBackground = false, mcpRequestId }: ConfirmOptions = {}): Promise<boolean> {
         if (confirming) return false
@@ -288,7 +288,7 @@
         return true
     }
 
-    // An MCP `dialog confirm` is the Confirm button: same preview, same mode.
+    // An MCP `dialog_confirm` is the Confirm button: same preview, same mode.
     // Registered during init, so a confirm that lands while the scan is still
     // starting finds it and waits for the id like a fast Enter does. Asking for
     // the background presses the Background button, under the same trash-only rule.

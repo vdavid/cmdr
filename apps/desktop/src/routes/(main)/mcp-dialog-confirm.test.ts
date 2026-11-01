@@ -1,5 +1,5 @@
 /**
- * MCP `dialog confirm`'s reply: the open dialog's Confirm (or, with
+ * MCP `dialog_confirm`'s reply: the open dialog's Confirm (or, with
  * `startInBackground`, its Background button) is pressed with the round-trip's
  * id, and a press that went through replies NOTHING here: the start it led to
  * answers with its `operationId` (`transfer-dispatch.ts`). Only a press that
@@ -37,6 +37,7 @@ describe('a confirm over MCP', () => {
 
     expect(explorer.confirmDialog).toHaveBeenCalledWith('transfer-confirmation', 'skip_all', {
       startInBackground: true,
+      name: undefined,
       mcpRequestId: 'req-1',
     })
     expect(emit).not.toHaveBeenCalled()
@@ -49,6 +50,7 @@ describe('a confirm over MCP', () => {
 
     expect(explorer.confirmDialog).toHaveBeenCalledWith('delete-confirmation', undefined, {
       startInBackground: undefined,
+      name: undefined,
       mcpRequestId: 'req-5',
     })
     expect(emit).not.toHaveBeenCalled()
@@ -68,6 +70,58 @@ describe('a confirm over MCP', () => {
     await confirmDialogForMcp({ explorer, type: 'transfer-confirmation', requestId: 'req-6' })
 
     expect(emit).toHaveBeenCalledWith('mcp-response', { requestId: 'req-6', ok: false, refusal: 'notStarted' })
+  })
+
+  it('answers a rename or a create itself, since no start will', async () => {
+    const explorer = explorerAnswering({ pressed: true, committed: true, stillRunning: false })
+
+    await confirmDialogForMcp({ explorer, type: 'rename', name: 'notes.txt', requestId: 'req-7' })
+
+    expect(explorer.confirmDialog).toHaveBeenCalledWith('rename', undefined, {
+      startInBackground: undefined,
+      name: 'notes.txt',
+      mcpRequestId: 'req-7',
+    })
+    expect(emit).toHaveBeenCalledWith('mcp-response', {
+      requestId: 'req-7',
+      ok: true,
+      committed: true,
+      stillRunning: false,
+    })
+  })
+
+  it('says when a slow volume is still on it', async () => {
+    const explorer = explorerAnswering({ pressed: true, committed: true, stillRunning: true })
+
+    await confirmDialogForMcp({ explorer, type: 'mkdir-confirmation', name: 'slow', requestId: 'req-8' })
+
+    expect(emit).toHaveBeenCalledWith('mcp-response', {
+      requestId: 'req-8',
+      ok: true,
+      committed: true,
+      stillRunning: true,
+    })
+  })
+
+  it('carries a refused name with the sentence the field would show', async () => {
+    const explorer = explorerAnswering({ pressed: false, refusal: 'nameRefused', reason: 'That name is taken.' })
+
+    await confirmDialogForMcp({ explorer, type: 'new-file-confirmation', name: 'a.txt', requestId: 'req-9' })
+
+    expect(emit).toHaveBeenCalledWith('mcp-response', {
+      requestId: 'req-9',
+      ok: false,
+      refusal: 'nameRefused',
+      reason: 'That name is taken.',
+    })
+  })
+
+  it('says, typed, when the rename moved on to the Move dialog', async () => {
+    const explorer = explorerAnswering({ pressed: false, refusal: 'needsMoveDialog' })
+
+    await confirmDialogForMcp({ explorer, type: 'rename', requestId: 'req-10' })
+
+    expect(emit).toHaveBeenCalledWith('mcp-response', { requestId: 'req-10', ok: false, refusal: 'needsMoveDialog' })
   })
 
   it('fails the round-trip when no dialog was there to press', async () => {

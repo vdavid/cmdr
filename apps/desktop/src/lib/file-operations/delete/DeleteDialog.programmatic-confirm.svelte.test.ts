@@ -1,5 +1,5 @@
 /**
- * An MCP `dialog confirm` on the delete dialog presses the dialog's OWN confirm
+ * An MCP `dialog_confirm` on the delete dialog presses the dialog's OWN confirm
  * (`registerConfirmer`), so it sends what the button would: the scan preview the
  * dialog started, and the mode the dialog shows NOW rather than the one it opened
  * with. The transfer dialog's twin: `pane/dialog-state.transfer-confirm.svelte.test.ts`.

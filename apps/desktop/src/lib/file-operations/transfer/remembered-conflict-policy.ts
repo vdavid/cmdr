@@ -15,7 +15,7 @@
  *   person never saw it, so the confirm asks per file (`stop`) instead, and the
  *   box, off screen too, saves nothing.
  * - Only a person's confirm writes. A policy an MCP caller named (`autoConfirm`,
- *   `dialog confirm`) is the agent's, not the person's habit.
+ *   `dialog_confirm`) is the agent's, not the person's habit.
  * - A remembered policy that overwrites wears a note until the person picks.
  *
  * Why each rule: `DETAILS.md` § "The remembered conflict policy".

@@ -32,7 +32,7 @@
  * - Anything a person didn't start: only a `user` initiator skips, so a new
  *   initiator, or a payload that names none, gets the dialog. An MCP round-trip's
  *   contract is the dialog too (an auto-confirm confirms it, a plain call waits
- *   for `dialog confirm`).
+ *   for `dialog_confirm`).
  */
 
 import { getPathValidationError } from '#lib/file-operations/transfer/transfer-dialog-logic.js'

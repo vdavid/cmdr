@@ -351,7 +351,7 @@
         onPlainFilterStarted: maybeShowQuickFilterIntro,
     })
 
-    const rename = createRenameState()
+    const rename = createRenameState(() => { renameFlow.cancelRename() })
 
     // The streaming loader reads pane lifecycle state through deferred accessors.
     const loader = createListingLoader({
@@ -482,6 +482,7 @@
 
     import type { ListViewAPI, VolumeBreadcrumbAPI, NetworkMountViewAPI, NetworkCursorEntry } from './types'
     import type { StartRenameOptions } from './types'
+    import type { CreatePress } from './dialog-props'
     import type { DragAutoScrollFrameResult, DragAutoScrollPointer } from '../drag/drag-auto-scroll'
 
     // Component refs for keyboard navigation
@@ -1287,6 +1288,11 @@
         renameFlow.cancelRename()
     }
 
+    /** The MCP `dialog_confirm`: commits the open editor, under `name` when given. */
+    export function commitRenameFromTool(name?: string): Promise<CreatePress> {
+        return renameFlow.commitFromTool(name)
+    }
+
     // Cache generation counter — bumped on **cold context changes** (sort,
     // hidden-files toggle, explicit refresh, listing swap). The List components
     // treat this as a hard refresh: invalidate cold-context metadata, force a
@@ -2083,6 +2089,7 @@
         overlays.cleanup()
         selectionInfo.cleanup()
         debouncedMenuContext.cancel()
+        rename.dispose()
         debouncedServicesSelection.cancel()
         debouncedSyncMcp.cancel()
         indexSizesSyncMcp.cancel()

@@ -150,7 +150,7 @@ To let an external MCP client (for example Claude Code) connect, export `CMDR_MC
 }
 ```
 
-Without that header the client still works for everything else (reads, nav, search, and destructive ops that prompt in the app); only auto-confirm and `dialog` confirm are rejected (as the in-band JSON-RPC error above).
+Without that header the client still works for everything else (reads, nav, search, and destructive ops that prompt in the app); only auto-confirm and `dialog_confirm` are rejected (as the in-band JSON-RPC error above).
 
 ## Gotchas
 

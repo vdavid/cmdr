@@ -5,6 +5,7 @@
     import { NewEntryNameCheck } from '#lib/file-operations/new-entry-name-check.svelte.js'
     import NewEntryNameField from '#lib/file-operations/NewEntryNameField.svelte'
     import StillCreatingNotice from '#lib/file-operations/StillCreatingNotice.svelte'
+    import type { CreateConfirmer } from '#lib/file-explorer/pane/dialog-props.js'
     import ModalDialog from '#lib/ui/ModalDialog.svelte'
     import Button from '#lib/ui/Button.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
@@ -22,12 +23,23 @@
         volumeId: string
         /** Who triggered this create (`aiClient` for the MCP `mkfile` tool). */
         initiator: Initiator
+        /** Hands this dialog's OK to the dialog state, for the MCP `dialog_confirm`. */
+        registerConfirmer?: (confirm: CreateConfirmer) => () => void
         onCreated: (fileName: string) => void
         onCancel: () => void
     }
 
-    const { currentPath, listingId, showHiddenFiles, initialName, volumeId, initiator, onCreated, onCancel }: Props =
-        $props()
+    const {
+        currentPath,
+        listingId,
+        showHiddenFiles,
+        initialName,
+        volumeId,
+        initiator,
+        registerConfirmer,
+        onCreated,
+        onCancel,
+    }: Props = $props()
 
     let fileName = $state(initialName)
 
@@ -44,8 +56,15 @@
         },
     })
 
+    // An MCP `dialog_confirm` is the OK button, under the name it brings.
+    const unregisterConfirmer = registerConfirmer?.((name) => {
+        if (name !== undefined) fileName = name
+        return submission.pressFromTool(fileName.trim(), check)
+    })
+
     // A create still running carries on; its end no longer steers this dialog.
     onDestroy(() => {
+        unregisterConfirmer?.()
         submission.close()
     })
 

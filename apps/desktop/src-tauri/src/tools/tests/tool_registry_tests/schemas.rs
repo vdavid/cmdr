@@ -7,11 +7,11 @@ use crate::tools::get_all_tools;
 
 #[test]
 fn test_all_tools_count() {
-    // 6 nav + 2 cursor + 1 selection + 8 file_op + 1 tag + 3 view + 1 tab + 2 dialog + 3 app
+    // 6 nav + 2 cursor + 1 selection + 8 file_op + 1 tag + 3 view + 1 tab + 3 dialog + 3 app
     // + 2 search + 1 settings + 1 indexing + 1 queue + 1 conflict + 1 archive unlock + 1 favorites
     // + 3 network + 1 eject + 1 await + 1 downloads + 3 operation_log + 2 photo (search + facts)
-    // + 1 index listing (list_dir) + 2 diagnostics (memory_diagnostics, cpu_diagnostics) + 1 multi_rename = 50
-    assert_eq!(get_all_tools().len(), 50);
+    // + 1 index listing (list_dir) + 2 diagnostics (memory_diagnostics, cpu_diagnostics) + 1 multi_rename = 51
+    assert_eq!(get_all_tools().len(), 51);
 }
 
 #[test]
@@ -148,20 +148,19 @@ fn test_dialog_tool_schema() {
     assert!(props.get("type").is_some());
     assert!(props.get("section").is_some());
     assert!(props.get("path").is_some());
-    assert!(props.get("onConflict").is_some());
-    assert_eq!(props["background"]["type"], json!("boolean"));
-    // Optional: a plain confirm is still Enter's.
-    assert!(!schema["required"].as_array().unwrap().contains(&json!("background")));
+    // Confirming is `dialog_confirm`'s alone, so `dialog`'s access is honest.
+    assert!(props.get("onConflict").is_none());
+    assert!(props.get("background").is_none());
 
     let action_enum = props.get("action").unwrap().get("enum").unwrap().as_array().unwrap();
     assert!(action_enum.contains(&json!("open")));
     assert!(action_enum.contains(&json!("focus")));
     assert!(action_enum.contains(&json!("close")));
-    assert!(action_enum.contains(&json!("confirm")));
+    assert!(!action_enum.contains(&json!("confirm")));
 
     // `type` is a free string (NOT an enum): `close` accepts any dialog id registered
     // by the frontend and listed in cmdr://dialogs/available, validated at runtime, not
-    // a fixed schema enum. Open/focus/confirm still validate their subset in the handler.
+    // a fixed schema enum. Open/focus still validate their subset in the handler.
     let type_prop = props.get("type").unwrap();
     assert_eq!(type_prop.get("type").unwrap(), &json!("string"));
     assert!(type_prop.get("enum").is_none());
@@ -172,6 +171,17 @@ fn test_dialog_tool_schema() {
     assert_eq!(required.len(), 2);
     assert!(required.contains(&json!("action")));
     assert!(required.contains(&json!("type")));
+}
+
+#[test]
+fn test_dialog_confirm_schema_requires_only_the_type() {
+    let tools = get_all_tools();
+    let schema = &tool(&tools, "dialog_confirm").input_schema;
+    let props = schema.get("properties").unwrap();
+
+    assert_eq!(props["background"]["type"], json!("boolean"));
+    assert_eq!(props["name"]["type"], json!("string"));
+    assert_eq!(schema["required"], json!(["type"]));
 }
 
 #[test]
@@ -397,7 +407,7 @@ fn test_resolve_conflict_schema() {
 #[test]
 fn test_transfer_tools_offer_the_same_conflict_policies() {
     let tools = get_all_tools();
-    for tool_name in ["dialog", "copy", "move"] {
+    for tool_name in ["dialog_confirm", "copy", "move"] {
         let policies = tool(&tools, tool_name).input_schema["properties"]["onConflict"]["enum"]
             .as_array()
             .unwrap();

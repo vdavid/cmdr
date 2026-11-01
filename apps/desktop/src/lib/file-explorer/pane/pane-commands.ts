@@ -21,7 +21,7 @@ import type { FilePaneAPI } from './types'
 import type { FileEntry, FriendlyError } from '../types'
 import type { createDialogState } from './dialog-state.svelte'
 import type { ConfirmOptions } from './dialog-props'
-import type { ProgrammaticConfirmVerdict } from './programmatic-confirm'
+import { verdictForNamePress, type ProgrammaticConfirmVerdict } from './programmatic-confirm'
 import type { PaneAccess } from './pane-access'
 import { announceRowsStillSettling } from './operation-start-gate'
 import { toBackendSelectionOrCursor } from '#lib/file-operations/transfer/transfer-dialog-utils.js'
@@ -53,7 +53,15 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     onConflict?: string,
     options?: ConfirmOptions,
   ): Promise<ProgrammaticConfirmVerdict> {
+    if (dialogType === 'rename') return commitOpenRename(options?.name)
     return dialogs.confirmOpenDialog(dialogType, onConflict, options)
+  }
+
+  /** The rename editor belongs to a pane, so it's looked for on both. */
+  async function commitOpenRename(name: string | undefined): Promise<ProgrammaticConfirmVerdict> {
+    const pane = (['left', 'right'] as const).map((side) => access.getPaneRef(side)).find((ref) => ref?.isRenaming())
+    if (!pane) return { pressed: false, refusal: 'notReady' }
+    return verdictForNamePress(await pane.commitRenameFromTool(name))
   }
 
   /**

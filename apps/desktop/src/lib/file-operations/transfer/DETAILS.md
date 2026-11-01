@@ -95,7 +95,7 @@ live here:
   without pointing at a pane.
 - **`conflict-policy.ts` is the ONE map from an MCP `onConflict` name to a conflict policy**, read by both programmatic
   entries: `TransferDialog.svelte` (a `copy` / `move` with `autoConfirm`, which confirms itself on mount) and
-  `pane/dialog-state.svelte.ts` (`dialog confirm` on an already-open one). They each used to carry a private copy, and
+  `pane/dialog-state.svelte.ts` (`dialog_confirm` on an already-open one). They each used to carry a private copy, and
   the copies had drifted — one spelled the conditional policies `overwrite_all_smaller`, the other
   `overwrite_smaller_all` — with neither spelling reachable through any tool, so nothing surfaced it. The drift matters
   because the fallback is silent: a name the map doesn't know becomes `skip`, so a caller asking to be asked per file
@@ -672,7 +672,7 @@ came from (`ConflictPolicySource`: `remembered`, `picked`, or `explicit`):
   persistence never pins the default (`lib/settings/DETAILS.md` § Sparse persistence), and for compress, which has no
   conflict choice. An MDM lock refuses it inside `setSetting`.
 - **MCP neither reads nor writes it.** `autoConfirm` opens on its named policy (or `stop`) without reading the setting,
-  and a `dialog confirm` marks its policy `explicit`, even over a person's ticked box: an agent's choice is not the
+  and a `dialog_confirm` marks its policy `explicit`, even over a person's ticked box: an agent's choice is not the
   person's habit.
 - **A remembered policy goes out only while its radios are on screen** (`conflictChoiceVisible`). Still checking,
   "couldn't find out", or no clash at all: the confirm sends `stop` instead. Decision/why: a saved `overwrite` the
@@ -1024,7 +1024,7 @@ Pinned by `TransferErrorDialog.typed.test.ts`, `DialogManager.svelte.test.ts`, a
   preview on teardown: the operation owns it, and a viewer detaching is not a cancel. The scan-error and scan-cancelled
   listeners also flip `started = true` as a terminal signal, so a late `scan-preview-complete` event can't dispatch an
   operation after we've errored or cancelled.
-- **A `transfer-scan-state` start can be overtaken before it's under way.** An MCP `dialog confirm` unmounts the dialog,
+- **A `transfer-scan-state` start can be overtaken before it's under way.** An MCP `dialog_confirm` unmounts the dialog,
   or the Copy/Move toggle lands on a same-volume move and `cancelPreview()` resets the scan, while the listeners are
   still registering. `startScan` reads its getters before the first await, and each start carries a generation that the
   next start and `cancelPreview()` bump. An overtaken start keeps no listener, starts nothing, and frees a preview whose
@@ -1431,7 +1431,7 @@ change, but it holds the slot until the id lands and can flash a frame.
 - **Cancel and rollback**: from the queue window's row, like any background job. **Quit gate**: backend-owned, it sees
   the registry, so nothing to do here. **Foreground claim**: none, on purpose (above).
 
-**MCP.** `dialog confirm` with `background: true` presses the same button: both confirmers take
+**MCP.** `dialog_confirm` with `background: true` presses the same button: both confirmers take
 `{ startInBackground, mcpRequestId }` (`../../file-explorer/pane/dialog-props.ts::ConfirmOptions`) and resolve a
 `ConfirmPress`. The request id rides the payload into `background.start`, so `startTransferOperation` answers the agent
 with the operation's id; the delete one answers `refusedPermanentDelete` instead of pressing, and a press a guard stops

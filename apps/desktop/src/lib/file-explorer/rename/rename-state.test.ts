@@ -1,4 +1,10 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+
+vi.mock('#lib/tauri-commands/index.js', () => ({
+  notifyDialogOpened: vi.fn(() => Promise.resolve()),
+  notifyDialogClosed: vi.fn(() => Promise.resolve()),
+}))
+
 import { createRenameState, type RenameTarget } from './rename-state.svelte'
 
 const sampleTarget: RenameTarget = {

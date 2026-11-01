@@ -1,5 +1,5 @@
 /**
- * The MCP `dialog confirm`: confirming an open dialog from outside it.
+ * The MCP `dialog_confirm`: confirming an open dialog from outside it.
  *
  * Each dialog kind is confirmed the way that dialog confirms itself, which for
  * the transfer and delete dialogs means pressing their OWN confirm. The mounted
@@ -19,7 +19,14 @@
 
 import { conflictPolicyFromMcpName } from '#lib/file-operations/transfer/conflict-policy.js'
 import { getAppLogger } from '#lib/logging/logger.js'
-import type { ConfirmOptions, ConfirmPress, DeleteConfirmer, TransferConfirmer } from './dialog-props'
+import type {
+  ConfirmOptions,
+  ConfirmPress,
+  CreateConfirmer,
+  CreatePress,
+  DeleteConfirmer,
+  TransferConfirmer,
+} from './dialog-props'
 
 const log = getAppLogger('fileExplorer')
 
@@ -31,13 +38,18 @@ const log = getAppLogger('fileExplorer')
  */
 export type ProgrammaticConfirmVerdict =
   | { pressed: true }
+  /** A rename or a create has no start to answer, so its own end does. */
+  | { pressed: true; committed: true; stillRunning: boolean }
   | {
       pressed: false
       /** `permanentDelete`: a background press on a dialog that would delete
        *  permanently. `notStarted`: the dialog took the press and a guard of its
-       *  own started nothing. `notReady`: no such dialog is open and mounted. */
-      refusal: 'permanentDelete' | 'notStarted' | 'notReady'
+       *  own started nothing. `notReady`: no such dialog is open and mounted.
+       *  `needsMoveDialog`: the rename moved on to the Move dialog. */
+      refusal: 'permanentDelete' | 'notStarted' | 'notReady' | 'needsMoveDialog'
     }
+  /** The name didn't stick, and the field stays open. `reason` is what it would show a person. */
+  | { pressed: false; refusal: 'nameRefused'; reason: string }
 
 function verdictFor(press: ConfirmPress): ProgrammaticConfirmVerdict {
   switch (press) {
@@ -50,6 +62,20 @@ function verdictFor(press: ConfirmPress): ProgrammaticConfirmVerdict {
   }
 }
 
+/** A rename's or a create's end, as the MCP reply reads it. */
+export function verdictForNamePress(press: CreatePress): ProgrammaticConfirmVerdict {
+  switch (press.kind) {
+    case 'done':
+      return { pressed: true, committed: true, stillRunning: false }
+    case 'stillRunning':
+      return { pressed: true, committed: true, stillRunning: true }
+    case 'refused':
+      return { pressed: false, refusal: 'nameRefused', reason: press.reason }
+    case 'needsMoveDialog':
+      return { pressed: false, refusal: 'needsMoveDialog' }
+  }
+}
+
 const PRESSED: ProgrammaticConfirmVerdict = { pressed: true }
 const NOT_READY: ProgrammaticConfirmVerdict = { pressed: false, refusal: 'notReady' }
 
@@ -58,6 +84,10 @@ export interface ProgrammaticConfirmDeps {
   isTransferDialogOpen: () => boolean
   /** Whether the delete confirmation is on screen. */
   isDeleteDialogOpen: () => boolean
+  /** Whether the new folder dialog is on screen. */
+  isNewFolderDialogOpen: () => boolean
+  /** Whether the new file dialog is on screen. */
+  isNewFileDialogOpen: () => boolean
   /** Whether the archive-password prompt is on screen. */
   isArchivePasswordOpen: () => boolean
   supplyStoredPassword: () => void
@@ -86,38 +116,50 @@ function confirmerSlot<Confirm>() {
 export function createProgrammaticConfirm(deps: ProgrammaticConfirmDeps) {
   const transfer = confirmerSlot<TransferConfirmer>()
   const deletion = confirmerSlot<DeleteConfirmer>()
+  const newFolder = confirmerSlot<CreateConfirmer>()
+  const newFile = confirmerSlot<CreateConfirmer>()
+
+  async function confirmTransfer(onConflict: string | undefined, options: ConfirmOptions) {
+    // A policy the backend accepted but the map doesn't know mustn't become some
+    // other policy over somebody's files, so it starts nothing. The backend
+    // validates the name, so this can only fire when the two lists have drifted.
+    const mapped = conflictPolicyFromMcpName(onConflict)
+    if (onConflict !== undefined && mapped === undefined) {
+      log.warn('Unknown conflict policy {onConflict} on a programmatic confirm; nothing confirmed', { onConflict })
+      return verdictFor('notStarted')
+    }
+    const press = transfer.current
+    if (!press) {
+      log.warn('A programmatic confirm found the transfer dialog open but not mounted yet; nothing confirmed')
+      return NOT_READY
+    }
+    // No policy named: the dialog keeps the one it shows, which may be a person's remembered choice.
+    return verdictFor(await press(mapped, options))
+  }
+
+  async function pressNamingDialog(press: CreateConfirmer | null, name: string | undefined) {
+    return press ? verdictForNamePress(await press(name)) : NOT_READY
+  }
 
   return {
     registerTransferConfirmer: transfer.register,
     registerDeleteConfirmer: deletion.register,
+    registerNewFolderConfirmer: newFolder.register,
+    registerNewFileConfirmer: newFile.register,
 
     /** Programmatically confirm an open dialog (for MCP confirm action). With
      *  `startInBackground` it presses the dialog's Background button (F2)
      *  instead, under the same rules. Resolves once the press reached the start
      *  or a guard, and the verdict says which: the MCP tool answers the agent
-     *  from it (`tools/actions/dialogs.rs`). */
+     *  from it (`tools/actions/dialog_confirm.rs`). The rename editor belongs to a
+     *  pane, so `pane-commands.ts` answers for it. */
     async confirmOpenDialog(
       dialogType: string,
       onConflict?: string,
       options: ConfirmOptions = {},
     ): Promise<ProgrammaticConfirmVerdict> {
       if (dialogType === 'transfer-confirmation' && deps.isTransferDialogOpen()) {
-        // A policy the backend accepted but the map doesn't know would quietly
-        // become `skip`, so an agent that asked to be asked per file would
-        // instead watch every clash get skipped. Say so; the backend validates
-        // the name, so this can only fire when the two lists have drifted.
-        const mapped = conflictPolicyFromMcpName(onConflict)
-        if (onConflict !== undefined && mapped === undefined) {
-          log.warn('Unknown conflict policy {onConflict} on a programmatic confirm; falling back to skip', {
-            onConflict,
-          })
-        }
-        const press = transfer.current
-        if (!press) {
-          log.warn('A programmatic confirm found the transfer dialog open but not mounted yet; nothing confirmed')
-          return NOT_READY
-        }
-        return verdictFor(await press(mapped ?? 'skip', options))
+        return confirmTransfer(onConflict, options)
       } else if (dialogType === 'delete-confirmation' && deps.isDeleteDialogOpen()) {
         // Same press as the button: the scan preview the dialog started and the
         // mode it shows now, including a trash the walk turned into a delete (then
@@ -130,6 +172,10 @@ export function createProgrammaticConfirm(deps: ProgrammaticConfirmDeps) {
         // A background press on a dialog that would delete permanently is refused by
         // the dialog itself (it's the one operation nothing undoes), typed.
         return verdictFor(await press(options))
+      } else if (dialogType === 'mkdir-confirmation' && deps.isNewFolderDialogOpen()) {
+        return pressNamingDialog(newFolder.current, options.name)
+      } else if (dialogType === 'new-file-confirmation' && deps.isNewFileDialogOpen()) {
+        return pressNamingDialog(newFile.current, options.name)
       } else if (dialogType === 'archive-password' && deps.isArchivePasswordOpen()) {
         // The `unlock` tool already stored the password on the backend;
         // this is the follow-up. ⚠️ It settles a transfer rather than

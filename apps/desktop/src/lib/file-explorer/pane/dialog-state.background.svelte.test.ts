@@ -207,7 +207,7 @@ describe('F2 in the transfer dialog', () => {
 })
 
 describe('an MCP confirm in the background', () => {
-  // The `dialog confirm` round-trip's id rides the press into the start, which
+  // The `dialog_confirm` round-trip's id rides the press into the start, which
   // answers it with the id the backend minted, as an auto-confirmed `copy` does.
   it('answers its round-trip with the started copy’s operationId', async () => {
     const { dialogs } = makeState()

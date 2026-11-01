@@ -197,7 +197,7 @@ export function createDeleteScanState(deps: DeleteScanStateDeps) {
   }
 
   /** Waits for the walk to say whether anything is online-only. An agent waiting
-   *  on this press for its operation id (a `dialog confirm`'s `mcpRequestId`, or
+   *  on this press for its operation id (a `dialog_confirm`'s `mcpRequestId`, or
    *  the auto-confirm's own) would time out on its short start budget meanwhile,
    *  so it's told to hold for as long as this may wait. */
   async function awaitOnlineOnlyAnswer(waitingAgent: string | undefined): Promise<void> {

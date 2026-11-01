@@ -128,7 +128,7 @@ export function createTransferScanState(deps: TransferScanStateDeps) {
    * Starts the scan preview to count files/dirs/bytes.
    *
    * Something can overtake it while the listeners are still registering: the dialog closing (an
-   * MCP `dialog confirm` or a quick Escape), or the toggle to a same-volume move, whose
+   * MCP `dialog_confirm` or a quick Escape), or the toggle to a same-volume move, whose
    * `cancelPreview()` resets the scan state and may be followed by a fresh start on the toggle
    * back. So it reads its inputs BEFORE the first await, because the getters read the dialog's
    * props, both parents (`DialogManager`, `DialogGallery`) null their props object on close, and

@@ -885,7 +885,7 @@ async fn a_dev_only_tool_refuses_off_direct_mode_and_the_setting_toggles_it_live
     let server = TestServer::start(&app).await;
     let unset_after = isolate_secrets();
 
-    for name in ["resolve_conflict", "connect_to_server", "ai_search"] {
+    for name in ["resolve_conflict", "connect_to_server", "ai_search", "dialog_confirm"] {
         let refused = server.tool(name, json!({})).await;
         assert_eq!(refused["error"]["code"], json!(INVALID_PARAMS), "{name}");
         assert_eq!(

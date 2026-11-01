@@ -1,14 +1,15 @@
 /**
- * MCP `dialog confirm`: press the open dialog's confirm, or with
- * `startInBackground` its Background button (F2), and answer the agent with the
- * operation that press started.
+ * MCP `dialog_confirm`: press the open dialog's confirm, or with
+ * `startInBackground` its Background button (F2), and answer the agent with what
+ * that press did.
  *
- * Every confirm is a round-trip (`tools/actions/dialogs.rs`). Its id rides the
- * press into the start, and a press that got there is answered by the START
+ * Every confirm is a round-trip (`tools/actions/dialog_confirm.rs`). Its id rides
+ * the press into the start, and a press that got there is answered by the START
  * (`transfer-dispatch.ts::startTransferOperation`) with the spawned
  * `operationId`, or by the start gate with what's in the way, exactly as an
- * auto-confirmed `copy` is. Only a press that didn't get there answers here: a
- * refusal crosses as the typed `refusal` field, ❌ never as text.
+ * auto-confirmed `copy` is. A rename or a create has no start, so its end answers
+ * here, and so does a press that didn't get anywhere: a refusal crosses as the
+ * typed `refusal` field, ❌ never as text.
  */
 
 import type { ConfirmDialogType } from '#lib/commands/index.js'
@@ -22,10 +23,12 @@ export async function confirmDialogForMcp(args: {
   type: ConfirmDialogType
   onConflict?: string
   startInBackground?: boolean
+  /** The name to commit, for the rename editor and the naming dialogs. */
+  name?: string
   /** The MCP round-trip id. */
   requestId: string | undefined
 }): Promise<void> {
-  const { explorer, type, onConflict, startInBackground, requestId } = args
+  const { explorer, type, onConflict, startInBackground, name, requestId } = args
   const reply = async (body: Record<string, unknown>): Promise<void> => {
     if (requestId === undefined) return
     const { emit } = await import('@tauri-apps/api/event')
@@ -37,10 +40,15 @@ export async function confirmDialogForMcp(args: {
     await reply({ ok: false, error: 'Explorer is not ready' })
     return
   }
-  const verdict = await explorer.confirmDialog(type, onConflict, { startInBackground, mcpRequestId: requestId })
-  if (verdict.pressed) return
+  const verdict = await explorer.confirmDialog(type, onConflict, { startInBackground, name, mcpRequestId: requestId })
+  if (verdict.pressed) {
+    if ('committed' in verdict) await reply({ ok: true, committed: true, stillRunning: verdict.stillRunning })
+    return
+  }
   if (verdict.refusal === 'notReady') {
     await reply({ ok: false, error: `No ${type} dialog is open and ready to confirm` })
+  } else if (verdict.refusal === 'nameRefused') {
+    await reply({ ok: false, refusal: verdict.refusal, reason: verdict.reason })
   } else {
     await reply({ ok: false, refusal: verdict.refusal })
   }

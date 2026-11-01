@@ -2797,6 +2797,18 @@
     "screenshot": "ask-cmdr-tools.png",
     "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
   },
+  "askCmdr.tool.dialogConfirm.doing": "Confirming a dialog",
+  "@askCmdr.tool.dialogConfirm.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while a dialog gets confirmed on the person's behalf. Ask Cmdr itself can't do this, so this line appears only in a replayed chat from a developer setup. Pairs with askCmdr.tool.dialogConfirm.done."
+  },
+  "askCmdr.tool.dialogConfirm.done": "Confirmed a dialog",
+  "@askCmdr.tool.dialogConfirm.done": {
+    "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.dialogConfirm.doing; askCmdr.tool.dialogConfirm.tried replaces it when it didn’t work."
+  },
+  "askCmdr.tool.dialogConfirm.tried": "Tried to confirm a dialog",
+  "@askCmdr.tool.dialogConfirm.tried": {
+    "description": "Label on the same tool line when confirming the dialog didn't work. Pairs with askCmdr.tool.dialogConfirm.doing."
+  },
   "askCmdr.tool.resolveConflict.doing": "Answering a name clash",
   "@askCmdr.tool.resolveConflict.doing": {
     "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant answers a running copy or move’s question about a file with the same name at the destination. Pairs with askCmdr.tool.resolveConflict.done.",

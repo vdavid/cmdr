@@ -230,7 +230,7 @@ online-only, the confirm is HANDED BACK rather than run: the button said "Move t
 delete, and nothing undoes that one. An MCP `autoConfirm` goes through, having asked for the delete outright. Everywhere
 else confirm stays exactly as instant as before.
 
-**An agent waiting on that press is told to hold.** Before the wait, a press an agent made (a `dialog confirm`'s
+**An agent waiting on that press is told to hold.** Before the wait, a press an agent made (a `dialog_confirm`'s
 `mcpRequestId`, or the auto-confirm's own) sends `holdOperationStartReply(id, ONLINE_ONLY_ANSWER_TIMEOUT_MS)`, which
 moves the MCP round-trip's deadline out by that much (the Holds bullet in `src-tauri/src/tools/actions/DETAILS.md`).
 Without it the agent's 10 s start budget ran out mid-walk while the trash still went ahead, so it got a timeout and no

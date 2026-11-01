@@ -272,7 +272,7 @@ describe('an agent pressing confirm while the walk is still counting', () => {
   }
   const holds = () => emitted.filter(({ payload }) => (payload as { holdMs?: number }).holdMs !== undefined)
 
-  it('asks the dialog confirm round-trip to hold for as long as the dialog waits', async () => {
+  it('asks the dialog_confirm round-trip to hold for as long as the dialog waits', async () => {
     emitted.length = 0
     const registration: { press: DeleteConfirmer | null } = { press: null }
     mountDialog({

@@ -246,11 +246,17 @@ export const fileHandlers = {
   },
 
   'dialog.confirm': ({ explorerRef, dispatchArgs }) => {
-    // MCP `dialog confirm` tool: programmatically confirm an already-open
-    // transfer/delete dialog.
-    const { type, onConflict, startInBackground, mcpRequestId } = dispatchArgs as CommandArgs['dialog.confirm']
+    // The MCP `dialog_confirm` tool: programmatically confirm what's open.
+    const { type, onConflict, startInBackground, name, mcpRequestId } = dispatchArgs as CommandArgs['dialog.confirm']
     detached(
-      confirmDialogForMcp({ explorer: explorerRef, type, onConflict, startInBackground, requestId: mcpRequestId }),
+      confirmDialogForMcp({
+        explorer: explorerRef,
+        type,
+        onConflict,
+        startInBackground,
+        name,
+        requestId: mcpRequestId,
+      }),
     )
   },
 

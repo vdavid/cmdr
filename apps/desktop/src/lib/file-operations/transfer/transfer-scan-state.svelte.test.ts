@@ -6,7 +6,7 @@
  * things can overtake it partway through, and neither may leave a listener or an orphan
  * preview behind:
  *
- * - **The dialog closes.** An MCP `dialog confirm` takes it down at once, and both its parents
+ * - **The dialog closes.** An MCP `dialog_confirm` takes it down at once, and both its parents
  *   null their props object on close. The factory's getters read the dialog's props, which are
  *   live getters into that object, so a read after unmount throws: the `null is not an object
  *   (evaluating 't.transferDialogProps.sourcePaths')` rejection E2E runs logged.

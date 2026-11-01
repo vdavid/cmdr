@@ -22,6 +22,7 @@ import { createChainReports } from '../rename/chain-reports'
 import { createSiblingNames, type ListingScope } from '../rename/sibling-names'
 import { createChainMoveDialog } from './rename-move-dialog'
 import { createRenameNeighbour } from './rename-neighbour'
+import { createRenameToolCommit } from './rename-tool-commit'
 
 export interface RenameFlowDeps {
   rename: ReturnType<typeof createRenameState>
@@ -504,6 +505,22 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     handleRenameResult(result, target, trimmedName, sessionId)
   }
 
+  /** What typing into the editor does: the field, and its validation. */
+  function applyName(value: string) {
+    rename.setCurrentName(value)
+    dismissTransientToastsForPane(deps.paneId)
+    const extensionPolicy = effectiveExtensionPolicy()
+    const result = validateFilename(
+      value,
+      rename.target?.originalName ?? '',
+      deps.getCurrentPath(),
+      siblingNames.names,
+      extensionPolicy,
+      rename.target?.nameKind ?? 'file',
+    )
+    rename.setValidation(result)
+  }
+
   return {
     get extensionDialogState() {
       return extensionDialogState
@@ -590,24 +607,27 @@ export function createRenameFlow(deps: RenameFlowDeps) {
       restoreFocus()
     },
 
-    handleRenameInput(value: string) {
-      rename.setCurrentName(value)
-      dismissTransientToastsForPane(deps.paneId)
-      const extensionPolicy = effectiveExtensionPolicy()
-      const result = validateFilename(
-        value,
-        rename.target?.originalName ?? '',
-        deps.getCurrentPath(),
-        siblingNames.names,
-        extensionPolicy,
-        rename.target?.nameKind ?? 'file',
-      )
-      rename.setValidation(result)
-    },
+    handleRenameInput: applyName,
 
     handleRenameSubmit() {
       submitEditor()
     },
+
+    /** The MCP `dialog_confirm`: commits the open editor, under `name` when given. */
+    commitFromTool: createRenameToolCommit({
+      rename,
+      applyName,
+      closeAndRefocus: () => {
+        closeEditor()
+        restoreFocus()
+      },
+      extensionPolicy: effectiveExtensionPolicy,
+      getVolumeId: deps.getVolumeId,
+      setPendingCommit: (pending) => {
+        pendingCommit = pending
+      },
+      land: handleRenameResult,
+    }),
 
     /**
      * The user clicked somewhere outside the editor: save, the way Finder does.

@@ -88,6 +88,7 @@
         TransferConfirmPayload,
         TransferConfirmer,
         DeleteConfirmer,
+        CreateConfirmer,
         ConfirmOrigin,
         TransferCompletePayload,
         CompletionView,
@@ -1570,6 +1571,8 @@
     }}
     registerTransferConfirmer={(confirm: TransferConfirmer) => dialogs.registerTransferConfirmer(confirm)}
     registerDeleteConfirmer={(confirm: DeleteConfirmer) => dialogs.registerDeleteConfirmer(confirm)}
+    registerNewFolderConfirmer={(confirm: CreateConfirmer) => dialogs.registerNewFolderConfirmer(confirm)}
+    registerNewFileConfirmer={(confirm: CreateConfirmer) => dialogs.registerNewFileConfirmer(confirm)}
     onTransferCancel={() => {
         dialogs.handleTransferCancel()
     }}

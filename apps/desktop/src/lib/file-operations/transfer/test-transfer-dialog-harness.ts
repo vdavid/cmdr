@@ -192,7 +192,7 @@ interface MountOpts {
   /** Rename mode (F2 on a big S3 folder): one source, renamed in place. */
   newName?: string
   sourcePaths?: string[]
-  /** Takes the dialog's own confirm, as the MCP `dialog confirm` does. */
+  /** Takes the dialog's own confirm, as the MCP `dialog_confirm` does. */
   registerConfirmer?: (confirm: TransferConfirmer) => () => void
 }
 

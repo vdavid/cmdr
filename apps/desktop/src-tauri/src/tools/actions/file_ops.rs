@@ -3,6 +3,7 @@
 use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 
+use super::dialog_confirm::RENAME_EDITOR;
 use super::{
     AckSignal, DEFAULT_ACK_TIMEOUT, PaneStateStore, ToolError, ToolResult, mcp_await_operation_start, mcp_round_trip,
     refuse_while_dialog_blocks, validate_conflict_policy, wait_for_ack,
@@ -298,7 +299,7 @@ fn delete_permanent_from_mode(params: &Value) -> Result<Option<bool>, ToolError>
 ///
 /// The target is the named item (`name`), else the item under the cursor.
 pub async fn execute_rename<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
-    refuse_while_dialog_blocks(app, "rename")?;
+    refuse_while_dialog_blocks(app, "rename").map_err(already_editing)?;
     let new_name = params
         .get("newName")
         .and_then(|v| v.as_str())
@@ -373,14 +374,31 @@ pub async fn execute_rename<R: Runtime>(app: &AppHandle<R>, params: &Value) -> T
         if let Some(name) = name_param {
             payload["name"] = json!(name);
         }
-        mcp_round_trip(
+        let opened = mcp_round_trip(
             app,
             "mcp-rename",
             payload,
             format!("OK: Rename editor opened, prefilled with {new_name}. Waiting for the user to confirm."),
         )
-        .await
+        .await?;
+        // Only once the tracker holds it does the next tool see an editor to wait for.
+        wait_for_ack(app, AckSignal::SoftDialogAppeared(RENAME_EDITOR), DEFAULT_ACK_TIMEOUT).await?;
+        Ok(opened)
     }
+}
+
+/// A second rename while the editor is up gets its own typed refusal beside the usual
+/// `blockingDialog`: the first one is still waiting, and starting another would silently end it.
+fn already_editing(mut refusal: ToolError) -> ToolError {
+    let editing = refusal
+        .data
+        .as_ref()
+        .and_then(|data| data.get("blockingDialog"))
+        .is_some_and(|blocking| blocking == RENAME_EDITOR);
+    if editing {
+        refusal.data = Some(json!({ "blockingDialog": RENAME_EDITOR, "refusal": "alreadyEditing" }));
+    }
+    refusal
 }
 
 /// Refuses an `autoConfirm` rename a person's F2 refuses: one whose source or

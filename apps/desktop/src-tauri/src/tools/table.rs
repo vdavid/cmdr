@@ -10,8 +10,8 @@ use serde_json::Value;
 
 use super::actions::{ToolError, ToolResult};
 use super::actions::{
-    app, async_tools, conflicts, cpu, dialogs, downloads, eject, favorites, file_ops, image_facts, indexing, memory,
-    multi_rename, nav, operation_log, photos, queue, quit, search, tags, unlock, view,
+    app, async_tools, conflicts, cpu, dialog_confirm, dialogs, downloads, eject, favorites, file_ops, image_facts,
+    indexing, memory, multi_rename, nav, operation_log, photos, queue, quit, search, tags, unlock, view,
 };
 use super::registry::{Access, Consumer, SubjectSpec, Tool, tool_available_to, validate_params};
 use super::schemas;
@@ -274,12 +274,22 @@ mcp_tools! {
     "dialog" => {
         id: Dialog,
         brief: "Open, focus, or close a dialog.",
-        desc: "Open, focus, close, or confirm a dialog. Open/focus: settings, file-viewer, about, onboarding. Close: any id from cmdr://dialogs/available. confirm accepts an open confirmation. cmdr://state lists what's open.",
+        desc: "Open, focus, or close a dialog. Open/focus: settings, file-viewer, about, onboarding. Close: any id from cmdr://dialogs/available. cmdr://state lists what's open.",
         schema: schemas::dialog_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
         access: Access::AppState,
         run: app_params dialogs::execute_dialog_command
+    },
+    "dialog_confirm" => {
+        id: DialogConfirm,
+        brief: "Confirm an open dialog or the inline rename editor.",
+        desc: "Press Confirm on an open dialog, or commit the inline rename editor, in a person's place. cmdr://state lists what's open.",
+        schema: schemas::dialog_confirm_schema(),
+        subject: SubjectSpec::None,
+        consumers: &[Consumer::AiClient],
+        access: Access::DevOnly("the one way past a person; it IS the human step"),
+        run: app_params dialog_confirm::execute_dialog_confirm
     },
     "open_search_dialog" => {
         id: OpenSearchDialog,
@@ -296,7 +306,7 @@ mcp_tools! {
     "quit" => {
         id: Quit,
         brief: "Quit Cmdr, through the gate Cmd-Q uses.",
-        desc: "Quit Cmdr, via the gate Cmd-Q uses. Nothing running: outcome 'quitting'. A copy, move, or delete still going: it does NOT quit; 'held' names them and the ms left. Answer with dialog confirm/close on quit-confirmation, or the countdown quits anyway.",
+        desc: "Quit Cmdr, via the gate Cmd-Q uses. Nothing running: outcome 'quitting'. A copy, move, or delete still going: it does NOT quit; 'held' names them and the ms left. Answer with dialog_confirm or dialog close on quit-confirmation, or the countdown quits anyway.",
         schema: schemas::no_params_schema(),
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],

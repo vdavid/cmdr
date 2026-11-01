@@ -541,7 +541,7 @@ export function createDialogState(deps: DialogStateDeps) {
   }
 
   /** The birth context a confirmed delete or trash starts from, or `null` with
-   *  no delete dialog up. An MCP `dialog confirm`'s round-trip (`origin`) wins
+   *  no delete dialog up. An MCP `dialog_confirm`'s round-trip (`origin`) wins
    *  over the dialog's own, so the start answers the agent that pressed. */
   function deleteBirthProps(
     previewId: string | null,
@@ -583,6 +583,8 @@ export function createDialogState(deps: DialogStateDeps) {
   const programmaticConfirm = createProgrammaticConfirm({
     isTransferDialogOpen: () => showTransferDialog && transferDialogProps !== null,
     isDeleteDialogOpen: () => showDeleteDialog && deleteDialogProps !== null,
+    isNewFolderDialogOpen: () => showNewFolderDialog && newFolderDialogProps !== null,
+    isNewFileDialogOpen: () => showNewFileDialog && newFileDialogProps !== null,
     isArchivePasswordOpen: () => unlockFlow.showDialog,
     supplyStoredPassword: () => {
       unlockFlow.supplyStoredPassword()
@@ -712,7 +714,7 @@ export function createDialogState(deps: DialogStateDeps) {
       mcpRequestId: confirmRequestId,
     }: TransferConfirmPayload) {
       if (!transferDialogProps) return
-      // An MCP `dialog confirm` waits for the operation's id like an auto-confirm
+      // An MCP `dialog_confirm` waits for the operation's id like an auto-confirm
       // does, so its round-trip wins, and it keeps a rename in place a transfer.
       const mcpRequestId = confirmRequestId ?? transferDialogProps.mcpRequestId
       if (
@@ -1118,7 +1120,7 @@ export function createDialogState(deps: DialogStateDeps) {
       return showTransferDialog || showTransferProgressDialog || showDeleteDialog
     },
 
-    // The MCP `dialog confirm` (`programmatic-confirm.ts`).
+    // The MCP `dialog_confirm` (`programmatic-confirm.ts`).
     ...programmaticConfirm,
   }
   return state

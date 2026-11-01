@@ -6,6 +6,7 @@ import type { FavoritesMenuOpenTrigger } from '../navigation/favorites-analytics
 import type { HistoryCursor } from '../navigation/navigation-history'
 import type { PaneRowState } from './pane-row-state'
 import type { CursorReadOptions } from './pressed-rows'
+import type { CreatePress } from './dialog-props'
 import type { ResortResult, SortColumn } from '../types'
 
 /** Options for `startRename`. */
@@ -288,6 +289,8 @@ export interface FilePaneAPI {
   clearOperationSnapshot(): string[] | 'all' | null
 
   isRenaming(): boolean
+  /** The MCP `dialog_confirm`: commits the open editor, under `name` when given. */
+  commitRenameFromTool(name?: string): Promise<CreatePress>
   startRename(options?: StartRenameOptions): void
   cancelRename(): void
 
