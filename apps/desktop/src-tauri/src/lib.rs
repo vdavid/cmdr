@@ -180,6 +180,7 @@ pub mod test_mode;
 pub(crate) mod test_support;
 #[cfg(target_os = "macos")]
 mod text_size;
+mod ui_state;
 /// Why a volume id has no registered volume: not connected yet, or gone.
 mod unregistered_volumes;
 mod update_schedule;
@@ -751,15 +752,10 @@ pub fn run() {
             // `child_window_state.rs` for the why.
             app.manage(child_window_state::ChildWindowRectStore::new());
 
-            // Initialize pane state store for MCP context tools
-            app.manage(mcp::PaneStateStore::new());
-
-            // Initialize soft dialog tracker for MCP (overlays like about, license, confirmations)
-            app.manage(mcp::SoftDialogTracker::new());
-
-            // What the encrypted-archive password prompt is asking, so `cmdr://state`
-            // can name the archive and `unlock` can answer it.
-            app.manage(mcp::ArchivePasswordPromptStore::new());
+            // The UI state mirror that tools and `cmdr://` resources read.
+            app.manage(ui_state::PaneStateStore::new());
+            app.manage(ui_state::SoftDialogTracker::new());
+            app.manage(ui_state::ArchivePasswordPromptStore::new());
 
             // Start MCP server for AI agent integration
             // Use settings from user preferences, with env vars as override for dev

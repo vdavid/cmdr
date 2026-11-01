@@ -58,7 +58,7 @@ fn pane_state_with(files: Vec<(&str, bool)>, cursor_index: usize, selected: Vec<
         path: "/test".to_string(),
         files: files
             .into_iter()
-            .map(|(name, is_directory)| crate::mcp::pane_state::PaneFileEntry {
+            .map(|(name, is_directory)| crate::ui_state::pane_state::PaneFileEntry {
                 name: name.to_string(),
                 path: format!("/test/{name}"),
                 is_directory,
@@ -845,7 +845,7 @@ fn fit_to_result_budget_never_returns_an_empty_page() {
 //
 // Which dialogs block lives in the FE's `dialog-registry.ts` and rides over IPC as
 // `KnownDialog::blocks_operations`; `SoftDialogTracker::blocking_dialog` picks the
-// topmost open one (tested in `mcp/dialog_state.rs`).
+// topmost open one (tested in `ui_state/dialog_state.rs`).
 
 #[test]
 fn a_blocked_operation_names_the_dialog_in_a_typed_field() {

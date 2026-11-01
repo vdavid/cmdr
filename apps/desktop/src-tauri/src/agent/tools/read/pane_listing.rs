@@ -9,8 +9,9 @@ use serde_json::Value;
 use tauri::{AppHandle, Manager, Runtime};
 
 use crate::location::Location;
-use crate::mcp::pane_state::PaneState;
-use crate::mcp::{PaneStateStore, ToolError, ToolResult};
+use crate::mcp::{ToolError, ToolResult};
+use crate::ui_state::PaneStateStore;
+use crate::ui_state::pane_state::PaneState;
 
 /// The most rows one listing returns, before the size cut in [`build_pane_listing`]. Both
 /// cuts report through `total` / `returned` / `truncated`, never silently.
@@ -172,7 +173,7 @@ pub async fn execute_list_pane_files<R: Runtime>(app: &AppHandle<R>, _params: &V
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mcp::pane_state::PaneFileEntry;
+    use crate::ui_state::pane_state::PaneFileEntry;
 
     fn source(index: usize) -> PaneListingSource {
         PaneListingSource {

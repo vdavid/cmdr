@@ -37,7 +37,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::commands::file_system::{UnlockError, unlock_within};
 use crate::file_system::volume::UnlockOutcome;
-use crate::mcp::archive_password::{ArchivePasswordPrompt, ArchivePasswordPromptStore, ArchivePromptMode};
+use crate::ui_state::archive_password::{ArchivePasswordPrompt, ArchivePasswordPromptStore, ArchivePromptMode};
 
 use super::{AckSignal, DEFAULT_ACK_TIMEOUT, ToolError, ToolResult, expand_user_path, wait_for_ack};
 
@@ -238,7 +238,7 @@ fn report(prompt: &ArchivePasswordPrompt, unlock: UnlockOutcome) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mcp::archive_password::LockedContainer;
+    use crate::ui_state::archive_password::LockedContainer;
 
     fn prompt(mode: ArchivePromptMode) -> ArchivePasswordPrompt {
         ArchivePasswordPrompt {

@@ -9,8 +9,8 @@ use std::time::Duration;
 
 use super::analytics::{CompletionCategory, completion_category};
 use super::terminal_effects::{self, AppTerminalEffects, TerminalEffects};
-use crate::mcp::terminal_ops::{self, TerminalStatus};
 use crate::test_support::wait_until_async;
+use crate::ui_state::terminal_ops::{self, TerminalStatus};
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_operations::host::testing::{FakeVolumes, RecordingEngineEvents};
 use cmdr_operations::testing::{CancelRollback, QueuedOperationFixture};

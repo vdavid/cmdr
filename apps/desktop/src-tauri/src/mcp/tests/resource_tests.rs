@@ -1,6 +1,6 @@
-use crate::mcp::archive_password::{ArchivePasswordPrompt, ArchivePromptMode, LockedContainer};
-use crate::mcp::dialog_state::KnownDialog;
 use crate::mcp::resources::{format_archive_password_dialog, format_available_dialogs_yaml, get_all_resources};
+use crate::ui_state::archive_password::{ArchivePasswordPrompt, ArchivePromptMode, LockedContainer};
+use crate::ui_state::dialog_state::KnownDialog;
 
 #[test]
 fn dialogs_available_carries_registered_descriptions() {

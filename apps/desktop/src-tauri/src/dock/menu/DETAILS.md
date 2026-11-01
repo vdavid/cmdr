@@ -37,7 +37,7 @@ Dock holds the user's mouse-down. Everything the build touches was picked for th
   before touching disk, and `load_or_seed` takes the separate `disk_lock` with the cache
   guard already dropped. ❌ The ordinary `list()` is off limits: on a cold cache it
   reads the file, seeds it, and holds the disk lock while it does.
-- **Tabs**: `mcp::pane_state::PaneStateStore::tabs_focused_first()`. Three `try_read`s
+- **Tabs**: `ui_state::pane_state::PaneStateStore::tabs_focused_first()`. Three `try_read`s
   (focused pane, then each pane), cloning only the `Vec<TabInfo>` and never the pane's
   `files`. The writers are the frontend's own pushes, which move a value in memory and
   nothing else, so contention is already vanishingly unlikely; `try_read` makes it

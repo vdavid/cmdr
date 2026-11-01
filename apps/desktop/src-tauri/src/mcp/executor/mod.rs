@@ -42,9 +42,9 @@ use tauri::{AppHandle, Emitter, Listener, Manager, Runtime};
 
 use crate::agent::chat::budget::{MAX_TOOL_RESULT_TOKENS, estimate_serialized_tokens};
 
-use super::pane_state::{PaneState, PaneStateStore};
 use super::protocol::{INTERNAL_ERROR, INVALID_PARAMS};
 use crate::pluralize::pluralize;
+use crate::ui_state::pane_state::{PaneState, PaneStateStore};
 
 /// Result of tool execution.
 pub type ToolResult = Result<Value, ToolError>;
@@ -161,7 +161,7 @@ pub(super) fn validate_conflict_policy(policy: &str) -> Result<(), ToolError> {
 /// everything else that steers or answers a running one stays open, which is
 /// exactly what an agent needs while a progress dialog or a clash prompt is up.
 pub(super) fn refuse_while_dialog_blocks<R: Runtime>(app: &AppHandle<R>, verb: &str) -> Result<(), ToolError> {
-    let Some(tracker) = app.try_state::<crate::mcp::dialog_state::SoftDialogTracker>() else {
+    let Some(tracker) = app.try_state::<crate::ui_state::dialog_state::SoftDialogTracker>() else {
         return Ok(()); // No tracker yet; the FE is the authority and refuses on its own.
     };
     let Some(blocking) = tracker.blocking_dialog() else {

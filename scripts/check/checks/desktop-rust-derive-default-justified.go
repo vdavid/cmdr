@@ -132,7 +132,7 @@ func RunDeriveDefaultJustified(ctx *CheckContext) (CheckResult, error) {
 //
 // The twins, listed by file rather than by tree:
 //
-//   - `mcp/pane_state.rs`: `PaneFileEntry` mirrors `FileEntry` (size, modified,
+//   - `ui_state/pane_state.rs`: `PaneFileEntry` mirrors `FileEntry` (size, modified,
 //     is-a-directory) for `cmdr://state`.
 //
 // Surveyed and left out, because none mirrors a `cmdr-fs` type or none carries a

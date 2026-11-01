@@ -217,6 +217,8 @@ All under `apps/desktop/src-tauri/src/`.
   (`listing-index-sizes-changed`), through a `ListingObserver` of its own. See
   `apps/desktop/src-tauri/src/listing_index_sizes/CLAUDE.md`
 - `mcp/`: MCP server (tools, YAML resources, agent-centric API)
+- `ui_state/`: a mirror of what the UI knows (panes, soft dialogs, the archive password prompt, recent listing and write
+  outcomes). See `apps/desktop/src-tauri/src/ui_state/CLAUDE.md`
 - `ai/`: llama-server lifecycle, model download, inference client
 - `analytics/`: Anonymous beta usage analytics: a `/heartbeat` at most every 3 h (true DAU, uptime, a PII-free
   config-shape snapshot built by allowlist, and the spooled feature events), tri-state consent gate, dev/CI suppression.

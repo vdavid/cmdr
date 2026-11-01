@@ -3,29 +3,21 @@
 //! Provides a Streamable HTTP server that exposes cmdr functionality as MCP tools,
 //! enabling AI agents to control the file manager.
 
-pub mod archive_password;
 mod auth;
 pub mod config;
-pub mod dialog_state;
 mod executor;
-pub mod listing_errors;
-pub mod pane_state;
 pub mod port_file;
 mod protocol;
 pub mod resources;
 mod safe_headers;
 mod server;
-pub mod terminal_ops;
 mod tool_registry;
 
 #[cfg(test)]
 mod tests;
 
-pub use archive_password::ArchivePasswordPromptStore;
 pub use auth::current_mcp_token;
 pub use config::McpConfig;
-pub use dialog_state::SoftDialogTracker;
-pub use pane_state::PaneStateStore;
 
 // The agent runtime (`crate::agent`) is the registry's second consumer (agent decision D49):
 // it dispatches the read-only `Consumer::Agent` view in-process. These are the exact

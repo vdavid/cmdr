@@ -15,9 +15,9 @@ use serde_json::Value;
 use tauri::{AppHandle, Manager, Runtime};
 
 use super::volumes::{VolumeSnapshot, snapshot_volume_map};
-use crate::mcp::PaneStateStore;
-use crate::mcp::pane_state::PaneState;
 use crate::mcp::{ToolError, ToolResult};
+use crate::ui_state::PaneStateStore;
+use crate::ui_state::pane_state::PaneState;
 
 /// One pane, flattened for the model.
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -177,7 +177,7 @@ pub async fn execute_app_state<R: Runtime>(app: &AppHandle<R>, _params: &Value) 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mcp::pane_state::PaneFileEntry;
+    use crate::ui_state::pane_state::PaneFileEntry;
 
     fn file(name: &str) -> PaneFileEntry {
         PaneFileEntry {

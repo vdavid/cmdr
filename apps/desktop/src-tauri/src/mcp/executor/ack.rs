@@ -64,8 +64,8 @@ use std::time::Duration;
 use tauri::{AppHandle, Manager, Runtime};
 
 use super::ToolError;
-use crate::mcp::dialog_state::SoftDialogTracker;
-use crate::mcp::pane_state::PaneStateStore;
+use crate::ui_state::dialog_state::SoftDialogTracker;
+use crate::ui_state::pane_state::PaneStateStore;
 
 /// Default ack budget. Backend-side latency budget; not a client-facing knob.
 pub const DEFAULT_ACK_TIMEOUT: Duration = Duration::from_millis(1500);
@@ -206,7 +206,7 @@ fn check_signal<R: Runtime>(app: &AppHandle<R>, signal: &AckSignal) -> bool {
         AckSignal::WindowDisappeared(pattern) => !window_matches(app, pattern),
         AckSignal::WindowCountBelow { prefix, threshold } => count_windows_matching(app, prefix) < *threshold,
         AckSignal::ArchivePromptAdvanced { from } => app
-            .try_state::<crate::mcp::ArchivePasswordPromptStore>()
+            .try_state::<crate::ui_state::ArchivePasswordPromptStore>()
             .map(|store| store.generation() > *from)
             .unwrap_or(false),
     }
@@ -325,7 +325,7 @@ mod tests {
         // Snapshot before mutation
         let snapshot = before;
         // Mutate
-        store.set_left(crate::mcp::pane_state::PaneState {
+        store.set_left(crate::ui_state::pane_state::PaneState {
             path: "/tmp".to_string(),
             ..Default::default()
         });

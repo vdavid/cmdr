@@ -243,7 +243,7 @@ fn desired_tags_for_set(current: &[cmdr_fs::entry::TagRef], colors: &[u8]) -> Ve
 /// landed on disk and the dots update on the next visible-range enrich.
 #[cfg(target_os = "macos")]
 fn refresh_listing_tags(
-    state: &crate::mcp::pane_state::PaneState,
+    state: &crate::ui_state::pane_state::PaneState,
     updates: Vec<(String, Vec<cmdr_fs::entry::TagRef>)>,
 ) {
     if updates.is_empty() {

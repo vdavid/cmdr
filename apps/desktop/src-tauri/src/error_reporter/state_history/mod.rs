@@ -6,11 +6,11 @@
 
 use crate::file_system::volume::friendly_error::{ErrorCategory, ListingErrorReason};
 use crate::ignore_poison::IgnorePoison;
-use crate::mcp::PaneStateStore;
-use crate::mcp::listing_errors::RecentListingError;
-use crate::mcp::pane_state::PaneState;
 use crate::mcp::resources::volumes::VolumeSummary;
 use crate::redact::RedactionContext;
+use crate::ui_state::PaneStateStore;
+use crate::ui_state::listing_errors::RecentListingError;
+use crate::ui_state::pane_state::PaneState;
 use chrono::{DateTime, Utc};
 use cmdr_operation_log::types::OperationId;
 use cmdr_operations::{LifecycleStatus, WriteOperationPhase, WriteOperationType};
@@ -144,7 +144,7 @@ fn capture<R: tauri::Runtime>(
     let store = app.try_state::<PaneStateStore>()?;
     let left = store.get_left();
     let right = store.get_right();
-    let listing_errors = crate::mcp::listing_errors::snapshot();
+    let listing_errors = crate::ui_state::listing_errors::snapshot();
     Some(RawStateSnapshot {
         sequence,
         captured_at,
@@ -462,7 +462,7 @@ pub(super) const PRIVACY_TEST_EXTERNAL_PROSE: &str = "PRIVATE-EXTERNAL-PROSE-SEN
 /// tests prove that functional MCP state did not become diagnostic payload by accident.
 #[cfg(test)]
 pub(super) fn privacy_fixture_for_test(redaction: &RedactionContext) -> Vec<DiagnosticStateSnapshot> {
-    use crate::mcp::pane_state::{MountErrorInfo, PaneFileEntry, TabInfo, TypeToJumpInfo};
+    use crate::ui_state::pane_state::{MountErrorInfo, PaneFileEntry, TabInfo, TypeToJumpInfo};
 
     let pane = PaneState {
         path: PRIVACY_TEST_RAW_PATH.to_string(),

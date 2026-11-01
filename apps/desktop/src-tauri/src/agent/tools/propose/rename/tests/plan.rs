@@ -7,7 +7,7 @@ use super::super::plan::{
 };
 use super::{THREAD, draft_row};
 use crate::agent::tools::propose::evidence::{EvidenceProblem, EvidenceSource, ImageFactsLedger};
-use crate::mcp::pane_state::{PaneFileEntry, PaneState};
+use crate::ui_state::pane_state::{PaneFileEntry, PaneState};
 
 #[test]
 fn only_a_missing_direct_child_can_enter_review_without_a_pane_entry() {

@@ -51,7 +51,7 @@ use super::{
     operation_start_result, parse_operation_start_response, snapshot_window_count, validate_conflict_policy,
     validate_path_exists, wait_for_ack,
 };
-use crate::mcp::dialog_state::SoftDialogTracker;
+use crate::ui_state::dialog_state::SoftDialogTracker;
 
 /// Execute the unified dialog command.
 /// Handles opening, focusing, and closing dialogs.
@@ -625,7 +625,7 @@ fn soft_dialog_id(dialog_type: &str) -> &'static str {
 /// the generic `close` path). Pure over the known list — the FE registers every
 /// `SOFT_DIALOG_REGISTRY` id at startup, so an id not in it is one the generic close
 /// can't drive (an honest "unknown dialog" error over a silent ack timeout).
-fn is_registered_soft_dialog(known: &[crate::mcp::dialog_state::KnownDialog], dialog_type: &str) -> bool {
+fn is_registered_soft_dialog(known: &[crate::ui_state::dialog_state::KnownDialog], dialog_type: &str) -> bool {
     known.iter().any(|d| d.id == dialog_type)
 }
 

@@ -2,8 +2,8 @@
 //! pane state used by ordinary MCP resources.
 
 use super::StateOptions;
-use crate::mcp::pane_state::{DisplayedDate, PaneFileEntry, PaneListing, PaneState, TabInfo};
 use crate::search::format_size;
+use crate::ui_state::pane_state::{DisplayedDate, PaneFileEntry, PaneListing, PaneState, TabInfo};
 
 /// The `listing:` value for a pane whose listing isn't settled, or `None` for one that is.
 pub(crate) fn listing_marker(listing: PaneListing) -> Option<&'static str> {

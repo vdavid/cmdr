@@ -270,7 +270,7 @@ pub(crate) struct AppListingEndEffects;
 
 impl ListingEndEffects for AppListingEndEffects {
     fn record_recent_error(&self, listing_id: &str, volume_id: &str, path: &Path, message: &str, error: &ListingError) {
-        crate::mcp::listing_errors::record(listing_id, volume_id, &path.to_string_lossy(), message, Some(error));
+        crate::ui_state::listing_errors::record(listing_id, volume_id, &path.to_string_lossy(), message, Some(error));
     }
 
     fn record_denial(&self, path: &Path) {

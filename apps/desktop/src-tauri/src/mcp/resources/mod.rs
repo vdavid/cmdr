@@ -22,9 +22,9 @@ use tauri::{Emitter, Listener, Manager, Runtime, WebviewWindow};
 
 use logs::{parse_log_options, read_log_tail};
 
-use super::dialog_state::SoftDialogTracker;
-use super::pane_state::PaneStateStore;
 use crate::ignore_poison::IgnorePoison;
+use crate::ui_state::dialog_state::SoftDialogTracker;
+use crate::ui_state::pane_state::PaneStateStore;
 
 use panes::build_pane_yaml_with_options;
 
@@ -197,7 +197,9 @@ fn extract_viewer_path<R: Runtime>(window: &WebviewWindow<R>) -> Option<String> 
 /// (a listing is a read), while unlocking a `transfer` stores the password and
 /// nothing more — the copy that raised it is already settled, so extracting
 /// means starting a copy again, through the gate every copy goes through.
-pub(crate) fn format_archive_password_dialog(prompt: &crate::mcp::archive_password::ArchivePasswordPrompt) -> String {
+pub(crate) fn format_archive_password_dialog(
+    prompt: &crate::ui_state::archive_password::ArchivePasswordPrompt,
+) -> String {
     let mut yaml = String::from("  - type: archive-password\n");
     yaml.push_str(&format!("    container: {}\n", prompt.container.token()));
     yaml.push_str(&format!("    name: {:?}\n", prompt.archive_name));
@@ -230,7 +232,7 @@ fn build_available_dialogs_yaml<R: Runtime>(app: &tauri::AppHandle<R>) -> String
 /// types followed by every FE-registered soft dialog, each carrying its
 /// `dialog-registry.ts` description when present. Split out so the description
 /// round-trip is unit-testable without a live tracker.
-pub(crate) fn format_available_dialogs_yaml(known: &[super::dialog_state::KnownDialog]) -> String {
+pub(crate) fn format_available_dialogs_yaml(known: &[crate::ui_state::dialog_state::KnownDialog]) -> String {
     let mut yaml = String::new();
 
     // Window-based dialog types (managed on the Rust side)
@@ -407,7 +409,7 @@ async fn build_state_yaml<R: Runtime>(app: &tauri::AppHandle<R>, opts: &StateOpt
         }
         if let Some(tracker) = app.try_state::<SoftDialogTracker>() {
             let prompt = app
-                .try_state::<crate::mcp::ArchivePasswordPromptStore>()
+                .try_state::<crate::ui_state::ArchivePasswordPromptStore>()
                 .and_then(|store| store.get());
             for dialog_type in tracker.get_open_types() {
                 // The archive-password prompt is the one soft dialog whose id
@@ -463,7 +465,7 @@ async fn build_state_yaml<R: Runtime>(app: &tauri::AppHandle<R>, opts: &StateOpt
     }
 
     if opts.includes("recentErrors") {
-        let errors = super::listing_errors::snapshot();
+        let errors = crate::ui_state::listing_errors::snapshot();
         yaml.push_str(&build_recent_errors_yaml(&errors));
     }
 
@@ -472,7 +474,7 @@ async fn build_state_yaml<R: Runtime>(app: &tauri::AppHandle<R>, opts: &StateOpt
 
 /// Pure YAML builder for the `recentErrors:` section. The identifiers remain functional
 /// MCP values; only the path and diagnostic prose pass through the redactor.
-pub(crate) fn build_recent_errors_yaml(errors: &[super::listing_errors::RecentListingError]) -> String {
+pub(crate) fn build_recent_errors_yaml(errors: &[crate::ui_state::listing_errors::RecentListingError]) -> String {
     if errors.is_empty() {
         return "recentErrors: []\n".to_string();
     }

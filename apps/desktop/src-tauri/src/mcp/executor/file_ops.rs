@@ -53,7 +53,7 @@ fn check_operation_has_target<R: Runtime>(app: &AppHandle<R>, verb: &str) -> Res
 /// Pure decision core of `check_operation_has_target`. Returns the rejection message
 /// for an operation that can't possibly have a target, or `None` to proceed.
 pub(super) fn empty_operation_error(
-    state: &crate::mcp::pane_state::PaneState,
+    state: &crate::ui_state::pane_state::PaneState,
     pane: &str,
     verb: &str,
 ) -> Option<String> {
@@ -404,7 +404,7 @@ pub(super) fn refuse_portal_rename(from: &str, to: &str) -> Result<(), ToolError
 /// by the caller's cursor move), so a name not in the listing, or a cursor outside
 /// the loaded window / on `..`, is an honest error.
 fn resolve_rename_target(
-    state: &crate::mcp::pane_state::PaneState,
+    state: &crate::ui_state::pane_state::PaneState,
     name: Option<&str>,
 ) -> Result<(String, String), ToolError> {
     if let Some(name) = name {

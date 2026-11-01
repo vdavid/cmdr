@@ -192,7 +192,7 @@ func TestDeriveDefault_CoversTheFileEntryIpcTwin(t *testing.T) {
 	root := t.TempDir()
 	seedAppFixtureWorkspace(t, root)
 	writeFixtureFiles(t, filepath.Join(root, "apps", "desktop", "src-tauri", "src"), map[string]string{
-		"mcp/pane_state.rs": `
+		"ui_state/pane_state.rs": `
 #[derive(Debug, Clone, Default)]
 pub struct PaneFileEntry {
     pub is_directory: bool,
@@ -201,7 +201,7 @@ pub struct PaneFileEntry {
 	})
 	_, err := RunDeriveDefaultJustified(&CheckContext{RootDir: root})
 	if err == nil {
-		t.Fatal("expected a violation in mcp/pane_state.rs, got success")
+		t.Fatal("expected a violation in ui_state/pane_state.rs, got success")
 	}
 	if !strings.Contains(err.Error(), "pane_state.rs:2") {
 		t.Errorf("expected pane_state.rs:2, got: %s", err.Error())

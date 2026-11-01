@@ -23,8 +23,8 @@
 
 use std::time::{Duration, Instant};
 
-use crate::mcp::dialog_state::{KnownDialog, SoftDialogTracker};
-use crate::mcp::pane_state::{PaneFileEntry, PaneState, PaneStateStore, TabInfo};
+use crate::ui_state::dialog_state::{KnownDialog, SoftDialogTracker};
+use crate::ui_state::pane_state::{PaneFileEntry, PaneState, PaneStateStore, TabInfo};
 
 // ── Generation bump invariants ────────────────────────────────────────
 

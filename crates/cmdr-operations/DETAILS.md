@@ -1333,8 +1333,8 @@ the host's test surface, never a promise to a shipped build.
 - **`scan-preview-error`**: Preview scan failed
 - **`scan-preview-cancelled`**: Preview scan cancelled
 
-**MCP consumer note**: the MCP server records each op's terminal outcome into a bounded ring (`mcp::terminal_ops`) at
-the `TauriEventSink` emit sites for `write-complete` / `write-cancelled` / `write-error`, so its
+**MCP consumer note**: the MCP server records each op's terminal outcome into a bounded ring (`ui_state::terminal_ops`)
+at the `TauriEventSink` emit sites for `write-complete` / `write-cancelled` / `write-error`, so its
 `await operation_complete` can report a settled op's status. It has to tap these terminal events specifically:
 `operations-changed` fires AFTER removal-on-terminal, so a completed or cancelled op leaves the snapshot entirely. A
 FAILED op is the one exception — it stays on the snapshot as a retained row (see
@@ -1543,7 +1543,7 @@ at `FAILURE_CAPACITY = 20`, oldest evicted first — and `snapshot()` appends th
   `manager::tests::a_failed_op_frees_its_lane_and_admits_the_next_exactly_as_before`.
 - **Recorded at the emit site.** The app's `TauriEventSink::emit_error` calls `OperationManager::retain_failure` through
   `terminal_effects::error` (`apps/desktop/src-tauri/src/operations_host/terminal_effects.rs`), after the
-  `mcp::terminal_ops::record` line and before the emit (order pinned by `terminal_effects_tests.rs`). ❌ Not in the
+  `ui_state::terminal_ops::record` line and before the emit (order pinned by `terminal_effects_tests.rs`). ❌ Not in the
   `OperationEventSink` trait and not in `CollectorEventSink`: test sinks stay side-effect-free.
 - **⚠️ A failure whose record is still LIVE is filtered out of the snapshot.** `emit_error` runs inside the op's own
   task, before `on_settled` removes the record, so for a moment the op is both running and failed. Emitting both rows
@@ -1591,10 +1591,10 @@ are visible; ❌ keep the two in step. It's held as a `StartAgain` trait object,
 never names the routing it would re-enter (one module cycle fewer). Only copy and move carry one: delete, trash,
 compress, and a local same-volume move show Dismiss alone.
 
-**Decision: runtime-only, capped at 20. Why.** The cap and its reasoning mirror `mcp::terminal_ops::CAPACITY`: enough
-that a user returning from lunch still finds what went wrong, bounded so a long batch session can't grow memory without
-limit. A restart clears the list, which is consistent with the rest of the manager's state and correct in kind — the
-operation log is where a failure lives permanently; this list only exists to make one visible right now.
+**Decision: runtime-only, capped at 20. Why.** The cap and its reasoning mirror `ui_state::terminal_ops::CAPACITY`:
+enough that a user returning from lunch still finds what went wrong, bounded so a long batch session can't grow memory
+without limit. A restart clears the list, which is consistent with the rest of the manager's state and correct in kind —
+the operation log is where a failure lives permanently; this list only exists to make one visible right now.
 
 ### Naming a reversal on screen (`reverses`)
 

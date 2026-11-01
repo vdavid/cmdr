@@ -4,9 +4,9 @@ use serde_json::{Value, json};
 use tauri::{AppHandle, Manager, Runtime};
 
 use super::{PaneStateStore, ToolError, ToolResult, mcp_round_trip};
-use crate::mcp::pane_state::{PaneListing, PaneState};
 use crate::mcp::resources::indexing::freshness_token;
-use crate::mcp::terminal_ops::{self, TerminalStatus};
+use crate::ui_state::pane_state::{PaneListing, PaneState};
+use crate::ui_state::terminal_ops::{self, TerminalStatus};
 use cmdr_index::Freshness;
 use cmdr_operations::{LifecycleStatus, Operations, WriteOperationType};
 
@@ -574,7 +574,7 @@ fn managed_write_refusal(id: &str, value: &Value) -> Option<ToolError> {
 #[cfg(test)]
 mod pane_condition_tests {
     use super::*;
-    use crate::mcp::pane_state::{PaneFileEntry, PaneListing, PaneState};
+    use crate::ui_state::pane_state::{PaneFileEntry, PaneListing, PaneState};
 
     fn pane(listing: PaneListing, files: &[&str]) -> PaneState {
         PaneState {

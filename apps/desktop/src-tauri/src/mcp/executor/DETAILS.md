@@ -192,7 +192,7 @@ budget on timeout.
 - **`WindowCountBelow {prefix, threshold}`**: fires when the matching window count is `< threshold`. Used by
   `dialog close file-viewer` (snapshot count, ack when one closes; don't wait for all viewers to vanish).
 - **`ArchivePromptAdvanced {from}`**: fires when the archive-password prompt mirror
-  (`mcp/archive_password.rs`) moves past `from` — the frontend either took the prompt down or put a new one up. Used by
+  (`ui_state/archive_password.rs`) moves past `from` — the frontend either took the prompt down or put a new one up. Used by
   `unlock`, and ❌ never `SoftDialogDisappeared` for it: a browse unlock re-lists at once, and a wrong password
   raises the prompt again fast enough that the dialog may never unmount, so a "closed" wait would spend its whole budget
   on a flow that worked. A generation moves whichever way it went.

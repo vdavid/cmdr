@@ -23,7 +23,7 @@ folder…, Connect to server…, then the bookmarks, then the open tabs. macOS a
   a folder that's gone lands on the pane's ordinary refusal, which is far better.
 - **Both sources are read LIVE and non-blockingly**: `favorites::store::list_cached`
   (`try_lock`, ❌ never `list`, which seeds the file behind the disk lock) and
-  `mcp::pane_state::tabs_focused_first` (`try_read` ×3). An unavailable source
+  `ui_state::pane_state::tabs_focused_first` (`try_read` ×3). An unavailable source
   contributes no rows for that one right-click.
 - **We build the `NSMenu` ourselves.** Tauri exposes none (`Submenu::inner()` is
   `pub(crate)`), and ❌ muda must not become a direct dependency: it works only while

@@ -1,7 +1,7 @@
 //! Tests for `dialogs.rs`: the confirm round-trip (foreground and background), and focus.
 
 use super::*;
-use crate::mcp::dialog_state::KnownDialog;
+use crate::ui_state::dialog_state::KnownDialog;
 
 fn known(ids: &[&str]) -> Vec<KnownDialog> {
     ids.iter()
@@ -27,7 +27,7 @@ fn is_registered_soft_dialog_matches_only_known_ids() {
 /// A mock app carrying the two stores the ack signals read.
 fn app_with_stores() -> tauri::App<tauri::test::MockRuntime> {
     let app = tauri::test::mock_app();
-    app.manage(crate::mcp::pane_state::PaneStateStore::new());
+    app.manage(crate::ui_state::pane_state::PaneStateStore::new());
     app.manage(SoftDialogTracker::new());
     app
 }

@@ -13,7 +13,7 @@
 //! side-effect-free.
 
 use super::analytics::emit_completion_analytics;
-use crate::mcp::terminal_ops::{self, TerminalStatus};
+use crate::ui_state::terminal_ops::{self, TerminalStatus};
 use cmdr_operation_log::types::OperationId;
 use cmdr_operations::{
     Operations, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationType, WriteSettledEvent,

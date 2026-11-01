@@ -2,13 +2,13 @@
 //! formatting. The public-API checks (resource count, URIs, mime types) live in
 //! `resource_tests.rs`.
 
-use crate::mcp::listing_errors::RecentListingError;
-use crate::mcp::pane_state::{DisplayedDate, MountErrorInfo, PaneFileEntry, PaneListing, PaneState, TabInfo};
 use crate::mcp::resources::panes::{
     build_pane_yaml_with_options, format_file_compact, format_tab_compact, tags_marker,
 };
 use crate::mcp::resources::{StateOptions, build_recent_errors_yaml, parse_state_options, split_uri};
 use crate::search::format_size;
+use crate::ui_state::listing_errors::RecentListingError;
+use crate::ui_state::pane_state::{DisplayedDate, MountErrorInfo, PaneFileEntry, PaneListing, PaneState, TabInfo};
 
 #[test]
 fn parse_state_options_defaults() {
