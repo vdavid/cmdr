@@ -3202,6 +3202,18 @@
       "url": "https://github.com/bearcove/rc-zip"
     },
     {
+      "name": "ref-cast",
+      "version": "1.0.25",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/dtolnay/ref-cast"
+    },
+    {
+      "name": "ref-cast-impl",
+      "version": "1.0.25",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/dtolnay/ref-cast"
+    },
+    {
       "name": "regex",
       "version": "1.13.1",
       "license": "MIT OR Apache-2.0",
@@ -3242,6 +3254,12 @@
       "version": "0.17.14",
       "license": "Apache-2.0 AND ISC",
       "url": "https://github.com/briansmith/ring"
+    },
+    {
+      "name": "rmcp",
+      "version": "3.8.0",
+      "license": "Apache-2.0",
+      "url": "https://github.com/modelcontextprotocol/rust-sdk/"
     },
     {
       "name": "rsa",
@@ -3370,8 +3388,20 @@
       "url": "https://github.com/GREsau/schemars"
     },
     {
+      "name": "schemars",
+      "version": "1.2.1",
+      "license": "MIT",
+      "url": "https://github.com/GREsau/schemars"
+    },
+    {
       "name": "schemars_derive",
       "version": "0.8.22",
+      "license": "MIT",
+      "url": "https://github.com/GREsau/schemars"
+    },
+    {
+      "name": "schemars_derive",
+      "version": "1.2.1",
       "license": "MIT",
       "url": "https://github.com/GREsau/schemars"
     },
@@ -3692,6 +3722,12 @@
       "version": "0.1.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/RustCrypto/utils"
+    },
+    {
+      "name": "sse-stream",
+      "version": "0.2.6",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/4t145/sse-stream/"
     },
     {
       "name": "ssh-cipher",
