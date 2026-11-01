@@ -2161,7 +2161,7 @@
   "@fileExplorer.pane.directConnectionOtherServerNotAllowedToast": {
     "sourceHash": "c350d80"
   },
-  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "No se ha podido conectar directamente a <shareName>{share}</shareName>, porque sus archivos están en otro servidor y Cmdr no inicia sesión allí por su cuenta. Sigues conectado a través de la conexión de red SMB nativa de macOS, que es mucho más lenta.",
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "No se ha podido conectar directamente a <shareName>{share}</shareName>, porque sus archivos están en otro servidor y Cmdr no inicia sesión allí por su cuenta. Sigues teniendo acceso, pero a través de la conexión de red SMB nativa de macOS, que es mucho más lenta.",
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "9c9c5a5"
   },

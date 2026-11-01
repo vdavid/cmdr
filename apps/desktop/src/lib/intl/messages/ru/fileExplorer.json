@@ -2155,7 +2155,7 @@
   "@fileExplorer.pane.directConnectionOtherServerNotAllowedToast": {
     "sourceHash": "c350d80"
   },
-  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "Не удалось напрямую подключиться к <shareName>{share}</shareName>: файлы находятся на другом сервере, а Cmdr не входит туда сам. Вы по-прежнему подключены через встроенное сетевое подключение SMB в macOS, которое намного медленнее.",
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "Не удалось напрямую подключиться к <shareName>{share}</shareName>: файлы находятся на другом сервере, а Cmdr не входит туда сам. Подключение по-прежнему идет через системное SMB-подключение macOS, а оно намного медленнее.",
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "9c9c5a5"
   },

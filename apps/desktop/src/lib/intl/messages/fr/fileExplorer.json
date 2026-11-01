@@ -2166,7 +2166,7 @@
   "@fileExplorer.pane.directConnectionOtherServerNotAllowedToast": {
     "sourceHash": "c350d80"
   },
-  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "Impossible de se connecter directement à <shareName>{share}</shareName>, car ses fichiers se trouvent sur un autre serveur et Cmdr ne s’y identifie pas de lui-même. Vous restez connecté via la connexion réseau SMB native de macOS, qui est bien plus lente.",
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "Impossible de se connecter directement à <shareName>{share}</shareName>, car ses fichiers se trouvent sur un autre serveur et Cmdr ne s’y identifie pas de lui-même. Vous y avez toujours accès, mais via la connexion réseau SMB native de macOS, qui est bien plus lente.",
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
     "sourceHash": "9c9c5a5"
   },
