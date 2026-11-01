@@ -23,6 +23,8 @@ Per-output filtering matters because error-report bundles need debug context reg
 single shared level you either bake terminal noise into the file (annoying for dev) or skimp on file context (bad for
 error reports). Two independent chains avoid the tradeoff.
 
+The root also drops every crate in `NEVER_LOGGED`, today only `rmcp`, so no chain and no `RUST_LOG` can bring it back. Why: `../mcp/DETAILS.md` § Authentication.
+
 `mdns_sd` stays at Info in the file: its debug output was ~60% of a bundle's lines and of the log's disk use, and a
 report never ships a third-party crate's debug output anyway (next section).
 

@@ -1,21 +1,33 @@
-//! MCP auth and request validation: the per-instance bearer token lifecycle plus the
-//! header/origin/protocol validation the HTTP server runs on every request.
+//! MCP auth and request validation: the per-instance bearer token lifecycle plus [`guard`], the
+//! middleware every `/mcp` request passes before the SDK sees it.
 //!
 //! One-directional dependency: the server (`server.rs`) uses this module; this module has
 //! no server dependencies. See `mcp/DETAILS.md` § Authentication for the full model.
 
 use axum::{
     Json,
-    http::{HeaderMap, StatusCode, header},
+    extract::{Request, State},
+    http::{HeaderMap, HeaderValue, Method, StatusCode, header},
+    middleware::Next,
     response::{IntoResponse, Response},
 };
-use serde_json::Value;
+use serde::Deserialize;
+use serde_json::{Value, json};
 use std::sync::{OnceLock, RwLock};
 use tauri::{AppHandle, Runtime};
 use uuid::Uuid;
 
-use super::protocol::{INVALID_PARAMS, INVALID_REQUEST, McpResponse};
-use super::server::{DEFAULT_PROTOCOL_VERSION, TOKEN_FILE_NAME};
+use super::safe_headers::SafeHeaders;
+use super::server::TOKEN_FILE_NAME;
+use crate::tools::error_codes::{INVALID_PARAMS, INVALID_REQUEST};
+
+/// How much of an unauthenticated POST [`guard`] reads to find its `id`. Past this it can't tell, so
+/// it answers as for any other body with no usable id.
+const REJECTED_BODY_LIMIT_BYTES: usize = 1024 * 1024;
+
+/// What `rmcp` insists a POST accepts. Its replies here are plain JSON all the same
+/// (`with_json_response`).
+const ACCEPTS_BOTH_REPLY_TYPES: &str = "application/json, text/event-stream";
 
 /// The current MCP auth token (None when the server isn't running). Mirrors the
 /// `MCP_ACTUAL_PORT` lifecycle: set at start, reset to None on stop/crash. Regenerated
@@ -65,6 +77,86 @@ fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
     diff == 0
 }
 
+/// In front of every `/mcp` request: Origin first, then the token, then what `rmcp` needs from a client
+/// that doesn't send it. A request that passes keeps its body unread.
+pub(super) async fn guard<R: Runtime>(
+    State(app): State<AppHandle<R>>,
+    headers: SafeHeaders,
+    mut request: Request,
+    next: Next,
+) -> Response {
+    log::debug!("MCP: {} /mcp, headers: {headers:?}", request.method());
+
+    if let Err(response) = validate_origin(&headers) {
+        log::warn!("MCP: {} rejected due to Origin validation failure", request.method());
+        return *response;
+    }
+    if validate_token(&headers).is_err() {
+        return token_rejection(&app, request).await;
+    }
+    if request.method() == Method::POST {
+        accept_both_reply_types(request.headers_mut());
+    }
+    next.run(request).await
+}
+
+/// `rmcp` answers 406 unless a POST accepts both reply types, and `apps/desktop/test/e2e-shared/mcp-client.ts`
+/// sends no `Accept` at all (`fetch` then adds `*/*`, which `rmcp` doesn't read as either).
+fn accept_both_reply_types(headers: &mut HeaderMap) {
+    let accepts_both = headers
+        .get(header::ACCEPT)
+        .and_then(|value| value.to_str().ok())
+        .is_some_and(|accept| accept.contains("application/json") && accept.contains("text/event-stream"));
+    if !accepts_both {
+        headers.insert(header::ACCEPT, HeaderValue::from_static(ACCEPTS_BOTH_REPLY_TYPES));
+    }
+}
+
+/// The parts of a refused POST its rejection depends on. Anything else about the envelope is the
+/// SDK's to judge, and it never gets to: a body that fails even this much has no id to echo.
+#[derive(Deserialize)]
+struct RejectedEnvelope {
+    id: Option<Value>,
+    method: Option<String>,
+}
+
+impl RejectedEnvelope {
+    /// No response id to correlate, so an in-band error would have nothing to resolve.
+    fn is_notification(&self) -> bool {
+        self.id.is_none()
+            || self
+                .method
+                .as_deref()
+                .is_some_and(|method| method.starts_with("notifications/"))
+    }
+}
+
+/// The answer to a bad token. An ordinary request gets the in-band error that resolves its pending
+/// call. Everything with no id to echo gets an empty 403: a notification, an unreadable body, and
+/// any other HTTP method, GET's SSE stream included.
+async fn token_rejection<R: Runtime>(app: &AppHandle<R>, request: Request) -> Response {
+    if request.method() != Method::POST {
+        return StatusCode::FORBIDDEN.into_response();
+    }
+    let envelope = axum::body::to_bytes(request.into_body(), REJECTED_BODY_LIMIT_BYTES)
+        .await
+        .ok()
+        .and_then(|body| serde_json::from_slice::<RejectedEnvelope>(&body).ok());
+    match envelope {
+        Some(envelope) if !envelope.is_notification() => authentication_required_response(app, envelope.id),
+        _ => StatusCode::FORBIDDEN.into_response(),
+    }
+}
+
+/// A JSON-RPC error with no `id` key when there's none to echo.
+fn json_rpc_error(id: Option<Value>, code: i32, message: &str) -> Value {
+    let error = json!({"code": code, "message": message});
+    match id {
+        Some(id) => json!({"jsonrpc": "2.0", "id": id, "error": error}),
+        None => json!({"jsonrpc": "2.0", "error": error}),
+    }
+}
+
 /// Validate Origin header for security (DNS rebinding protection).
 /// Per spec: Servers MUST validate the Origin header on all incoming connections.
 pub(crate) fn validate_origin(headers: &HeaderMap) -> Result<(), Box<Response>> {
@@ -73,7 +165,7 @@ pub(crate) fn validate_origin(headers: &HeaderMap) -> Result<(), Box<Response>> 
         if !is_localhost_origin(origin_str) {
             log::warn!("MCP: Rejected request with invalid Origin: {}", origin_str);
             crate::security_log::note_mcp_rejection(crate::security_log::McpRejection::ForeignOrigin);
-            let error_response = McpResponse::error(None, INVALID_REQUEST, "Invalid Origin header");
+            let error_response = json_rpc_error(None, INVALID_REQUEST, "Invalid Origin header");
             return Err(Box::new((StatusCode::FORBIDDEN, Json(error_response)).into_response()));
         }
     }
@@ -179,8 +271,7 @@ pub(super) fn authentication_required_response<R: Runtime>(app: &AppHandle<R>, i
     let message = format!(
         "Cmdr requires its MCP auth token on every request. Send it as an `Authorization: Bearer <token>` header. Get the token from the `CMDR_MCP_TOKEN` environment variable of the running Cmdr, or read `{token_path}` (owner-only)."
     );
-    let error_response = McpResponse::error(id, INVALID_PARAMS, message);
-    (StatusCode::OK, Json(error_response)).into_response()
+    (StatusCode::OK, Json(json_rpc_error(id, INVALID_PARAMS, &message))).into_response()
 }
 
 /// Check if an origin is a localhost origin (prevents DNS rebinding attacks).
@@ -199,49 +290,60 @@ pub(super) fn is_localhost_origin(origin: &str) -> bool {
             .is_some_and(|authority| matches!(authority.host(), "localhost" | "127.0.0.1" | "[::1]" | "::1"))
 }
 
-/// Validate Accept header for MCP compliance.
-/// Per spec: The client MUST include an Accept header listing both application/json and
-/// text/event-stream. We log a warning but allow requests for backwards compatibility.
-pub(crate) fn validate_accept_header(headers: &HeaderMap) {
-    if let Some(accept) = headers.get(header::ACCEPT) {
-        let accept_str = accept.to_str().unwrap_or("");
-        let has_json = accept_str.contains("application/json") || accept_str.contains("*/*");
-        let has_sse = accept_str.contains("text/event-stream") || accept_str.contains("*/*");
-
-        if !has_json || !has_sse {
-            log::debug!(
-                "MCP: Accept header missing required types (got: {}), but allowing for compatibility",
-                accept_str
-            );
-        }
-    }
-}
-
-/// Check if client prefers SSE over JSON based on Accept header.
-pub(crate) fn prefers_sse(headers: &HeaderMap) -> bool {
-    if let Some(accept) = headers.get(header::ACCEPT) {
-        let accept_str = accept.to_str().unwrap_or("");
-        // If explicitly requesting SSE or using wildcard, prefer SSE
-        accept_str.contains("text/event-stream")
-    } else {
-        false
-    }
-}
-
-/// Validate and extract MCP-Protocol-Version header.
-/// Per spec: Client MUST include MCP-Protocol-Version on all subsequent requests.
-pub(crate) fn get_protocol_version(headers: &HeaderMap) -> String {
-    headers
-        .get("mcp-protocol-version")
-        .and_then(|v| v.to_str().ok())
-        .map(|s| s.to_string())
-        .unwrap_or_else(|| DEFAULT_PROTOCOL_VERSION.to_string())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::http::HeaderValue;
+
+    /// Never called: it exists so the guard's header parameter has to be `SafeHeaders`. Going back to
+    /// a bare `HeaderMap` stops compiling right here. The redaction itself is `SafeHeaders`'s `Debug`
+    /// (tested in `safe_headers.rs`), so it covers every log site the guard will have.
+    #[expect(dead_code, reason = "a compile-time pin on the guard's signature, never run")]
+    async fn the_guard_takes_redacting_headers(
+        state: State<AppHandle<tauri::Wry>>,
+        headers: SafeHeaders,
+        request: Request,
+        next: Next,
+    ) {
+        guard(state, headers, request, next).await;
+    }
+
+    #[test]
+    fn a_refused_envelope_with_no_id_or_a_notification_method_is_a_notification() {
+        let envelope = |json: Value| serde_json::from_value::<RejectedEnvelope>(json).expect("an envelope");
+
+        assert!(envelope(json!({"method": "tools/list"})).is_notification());
+        assert!(envelope(json!({"id": null, "method": "ping"})).is_notification());
+        assert!(envelope(json!({"id": 1, "method": "notifications/initialized"})).is_notification());
+        assert!(!envelope(json!({"id": 1, "method": "ping"})).is_notification());
+        assert!(!envelope(json!({"id": 1})).is_notification());
+    }
+
+    #[test]
+    fn a_client_accepting_less_than_both_reply_types_gets_both_filled_in() {
+        for sent in [None, Some("*/*"), Some("application/json"), Some("text/event-stream")] {
+            let mut headers = HeaderMap::new();
+            if let Some(accept) = sent {
+                headers.insert(header::ACCEPT, HeaderValue::from_static(accept));
+            }
+            accept_both_reply_types(&mut headers);
+            assert_eq!(
+                headers.get(header::ACCEPT).map(|v| v.as_bytes()),
+                Some(ACCEPTS_BOTH_REPLY_TYPES.as_bytes()),
+                "{sent:?}"
+            );
+        }
+
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            header::ACCEPT,
+            HeaderValue::from_static("text/event-stream, application/json"),
+        );
+        accept_both_reply_types(&mut headers);
+        assert_eq!(
+            headers.get(header::ACCEPT).map(|v| v.as_bytes()),
+            Some("text/event-stream, application/json".as_bytes())
+        );
+    }
 
     #[test]
     fn test_validate_origin_localhost() {
@@ -391,48 +493,5 @@ mod tests {
                 reason: McpRejection::ForeignOrigin
             }]
         );
-    }
-
-    #[test]
-    fn test_get_protocol_version_with_header() {
-        let mut headers = HeaderMap::new();
-        headers.insert("mcp-protocol-version", HeaderValue::from_static("2025-11-25"));
-        assert_eq!(get_protocol_version(&headers), "2025-11-25");
-    }
-
-    #[test]
-    fn test_get_protocol_version_without_header() {
-        let headers = HeaderMap::new();
-        assert_eq!(get_protocol_version(&headers), DEFAULT_PROTOCOL_VERSION);
-    }
-
-    #[test]
-    fn test_prefers_sse_with_sse_header() {
-        let mut headers = HeaderMap::new();
-        headers.insert(header::ACCEPT, HeaderValue::from_static("text/event-stream"));
-        assert!(prefers_sse(&headers));
-    }
-
-    #[test]
-    fn test_prefers_sse_with_both_types() {
-        let mut headers = HeaderMap::new();
-        headers.insert(
-            header::ACCEPT,
-            HeaderValue::from_static("application/json, text/event-stream"),
-        );
-        assert!(prefers_sse(&headers));
-    }
-
-    #[test]
-    fn test_prefers_sse_with_json_only() {
-        let mut headers = HeaderMap::new();
-        headers.insert(header::ACCEPT, HeaderValue::from_static("application/json"));
-        assert!(!prefers_sse(&headers));
-    }
-
-    #[test]
-    fn test_prefers_sse_no_header() {
-        let headers = HeaderMap::new();
-        assert!(!prefers_sse(&headers));
     }
 }

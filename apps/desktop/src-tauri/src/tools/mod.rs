@@ -52,9 +52,9 @@ pub(crate) use actions::{ToolError, ToolResult, fit_to_result_budget, is_virtual
 // the whole build there.
 #[cfg(target_os = "macos")]
 pub(crate) use actions::nav::{GoToTarget, PaneChoice, go_to_in_pane};
-pub(crate) use registry::{Access, Consumer, validate_params};
 #[cfg(test)]
-use registry::{Tool, tool_available_to};
+use registry::tool_available_to;
+pub(crate) use registry::{Access, Consumer, Tool, validate_params};
 pub(crate) use table::{agent_tool_view, execute_tool, get_all_tools, tool_access};
 use table::{tool_consumers, tool_schema};
 

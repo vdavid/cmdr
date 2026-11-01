@@ -1,4 +1,3 @@
-use crate::mcp::protocol::McpRequest;
 use crate::tools::get_all_tools;
 use crate::ui_state::pane_state::PaneFileEntry;
 
@@ -119,20 +118,6 @@ fn test_malicious_tool_name_injection() {
             "Dangerous tool name should not exist: {}",
             name
         );
-    }
-}
-
-#[test]
-fn test_request_with_very_long_method() {
-    // A request with an extremely long method name should still parse
-    let long_method = "a".repeat(10000);
-    let json = format!(r#"{{"jsonrpc": "2.0", "id": 1, "method": "{}"}}"#, long_method);
-
-    let result: Result<McpRequest, _> = serde_json::from_str(&json);
-    if let Ok(req) = result {
-        // It parsed, but the method should not match any tool
-        let tools = get_all_tools();
-        assert!(!tools.iter().any(|t| t.name == req.method));
     }
 }
 

@@ -9,10 +9,6 @@
     "scripts/check/checks/registry.go": "append-only check registry (one CheckDefinition entry per check); line count tracks the number of checks, not splittable logic"
   },
   "files": {
-    "apps/desktop/src/lib/dialog-gallery/gallery-registry.ts": {
-      "lines": 808,
-      "reason": "a flat registry: one row per soft dialog and its states, so its length tracks the dialog count rather than logic worth splitting"
-    },
     "apps/desktop/src-tauri/src/crash_reporter/mod.rs": {
       "lines": 812,
       "reason": "TODO: the panic path is its own concern and already has `panic_courier.rs` and `panic_courier_tests.rs` as neighbors. Move `install_panic_hook`, `contained_panic_warning`, `PanicDisposition`, `handle_panic`, `write_first_crash_report`, `build_panic_report`, and the message/backtrace helpers (`extract_panic_message`, `sanitize_panic_message`, `sanitize_thread_name`, `cap_chars`, `cap_panic_message`, `parse_backtrace_frames`, `current_image_base_hex`) into `panic_hook.rs`, about 260 lines. `mod.rs` keeps the `CrashReport` shape, `init`, the pending-report read/write, and the active-settings snapshot."
@@ -32,10 +28,6 @@
     "apps/desktop/src-tauri/src/lib.rs": {
       "lines": 805,
       "reason": "TODO: `setup()` wires every OS observer as a `#[cfg]` pair (accent color, reduce transparency, Liquid Glass tint, text size); moving those pairs into one `os_appearance::observe(app)` helper beside `system_events.rs` would bring the file back under 800 and give them one home."
-    },
-    "apps/desktop/src-tauri/src/mcp/server.rs": {
-      "lines": 1008,
-      "reason": "TODO: split it, because it is two halves plus an inline test block. Lines 1-475 are binding and lifecycle (`BindStrategy`, `BindMode`, `BindError`, `resolve_bind_strategy`, `decide_rebind_action`, `bind_listener`, `bind_with_probe`, `bind_ephemeral`, `start_mcp_server`, `rebind_interactive`, `serve_on`, the `stop_mcp_server*` pair, and the port-file statics); lines 476-820 are the Streamable HTTP transport (`health_check`, `handle_mcp_get`, `format_sse_event`, `build_sse_response`, `build_json_response`, `handle_mcp_post`, `process_request`, `format_tool_result`), which should move to `mcp/transport.rs` at ~345 lines. The inline `#[cfg(test)] mod tests` at lines 821-1043 is ~222 lines while every other test in this module already lives under `mcp/tests/`; it holds the compile-time `both_routes_take_redacting_headers` pin that reaches private handlers, so it needs a `#[path = \"server_test.rs\"]` sibling rather than a move into `mcp/tests/`. Both halves land near 300-350 lines."
     },
     "apps/desktop/src-tauri/src/menu/command_map.rs": {
       "lines": 805,
@@ -64,6 +56,10 @@
     "apps/desktop/src/lib/ask-cmdr/ask-cmdr-stream.svelte.ts": {
       "lines": 818,
       "reason": "TODO: split out the stop ledger into `ask-cmdr-stops.svelte.ts`: `PendingStop`, `pendingStops`, `stopsAwaitingId`, `settledRuns`, `matchStopsToTerminals`, `findStopFor`, `withdrawStop`, `settlePendingStop`, and `applyToStoppedTurn` (~200 lines), which decide which turn a terminal or a late event belongs to after a Stop. It needs the reducer's `resolveRound` / `applyToolFinished` / `applyUserPersisted` / `stampAnswer`, so move those round helpers into an `ask-cmdr-rounds-live.ts` both import, leaving this file the send path and the reducer."
+    },
+    "apps/desktop/src/lib/dialog-gallery/gallery-registry.ts": {
+      "lines": 808,
+      "reason": "a flat registry: one row per soft dialog and its states, so its length tracks the dialog count rather than logic worth splitting"
     },
     "apps/desktop/src/lib/file-explorer/navigation/VolumeBreadcrumb.svelte.test.ts": {
       "lines": 1212,
@@ -283,7 +279,7 @@
     },
     "crates/cmdr-operations/src/transfer/volume/merge.rs": {
       "lines": 1153,
-      "reason": "One merge level's create-list-decide-dispatch loop, kept together because every child decision reads the level's creation fact (fresh vs merged), the destination index built beside it, and the names the level already handed out (a source listing one name twice); the remaining helpers (`backend_create_directory_detects_collisions`, the resolver call) are already out in `landing.rs` and `merge_ctx.rs`. The `copy_leaf` arm that counts a `NoContent` child (a link or special file in a backup) as one skipped item belongs in that same dispatch, beside the other per-child outcomes. The refused-name walker half (a leaf's `LeafEnd::Refused`, `LeafPool::settle_refused`, `skip_if_folder_refused`) grew it past 1,000. TODO: <split plan> move `LeafPool` into its own `merge_leaf_pool.rs` (it already owns the window, the in-flight set, and the refused queue), which then hosts the refused-name half too."
+      "reason": "One merge level's create-list-decide-dispatch loop, kept together because every child decision reads the level's creation fact (fresh vs merged), the destination index built beside it, and the names the level already handed out (a source listing one name twice); the remaining helpers (`backend_create_directory_detects_collisions`, the resolver call) are already out in `landing.rs` and `merge_ctx.rs`. The `copy_leaf` arm that counts a `NoContent` child (a link or special file in a backup) as one skipped item belongs in that same dispatch, beside the other per-child outcomes. The refused-name walker half (a leaf's `LeafEnd::Refused`, `LeafPool::settle_refused`, `skip_if_folder_refused`) grew it past 1,000. TODO: \u003csplit plan\u003e move `LeafPool` into its own `merge_leaf_pool.rs` (it already owns the window, the in-flight set, and the refused queue), which then hosts the refused-name half too."
     },
     "crates/cmdr-operations/src/transfer/volume/move_cross.rs": {
       "lines": 816,
@@ -309,13 +305,13 @@
       "lines": 800,
       "reason": "One cohesive job: the server-side copy (one `CopyObject`, or an `UploadPartCopy` multipart with its retry window and abort). It reached the limit when its log lines started marking every key by kind (one value per line); splitting the retry window from the part sender would cut the one loop that owns both."
     },
-    "crates/cmdr-smb/src/volume/volume_impl.rs": {
-      "lines": 832,
-      "reason": "The one `impl Volume for SmbVolume`, which Rust needs in one block: one-line delegators plus the capability answers, whose doc comments are their whole content. Every body already lives in its concern module (`DETAILS.md` § Layout), so a split could only move delegators."
-    },
     "crates/cmdr-sftp/src/transport.rs": {
       "lines": 945,
       "reason": "The crate's headline invariant is that `russh` is named in exactly one module so a breaking minor stays one file's problem (eight breaking minors in eight months), stated in the module doc and again in `crates/cmdr-sftp/CLAUDE.md`; everything russh-free has already been pushed out to `auth.rs`, `trust.rs`, `known_hosts.rs`, `extensions.rs`, and `errors.rs`, so what remains is one dial conversation (`open_session` to `authenticate` to `hello`) plus the `PendingEngine` teardown guard and the two `Handler` impls, under a 57-line module doc for the three abort hazards the shape defends against."
+    },
+    "crates/cmdr-smb/src/volume/volume_impl.rs": {
+      "lines": 832,
+      "reason": "The one `impl Volume for SmbVolume`, which Rust needs in one block: one-line delegators plus the capability answers, whose doc comments are their whole content. Every body already lives in its concern module (`DETAILS.md` § Layout), so a split could only move delegators."
     },
     "scripts/check/checks/desktop-rust-cfg-gate_test.go": {
       "lines": 1228,

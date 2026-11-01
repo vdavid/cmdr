@@ -62,7 +62,7 @@ fn build_dispatch_for_test(rust_log: Option<&str>, file_chain_enabled: bool, col
         stdout_chain = stdout_chain.level_for(module, level);
     }
 
-    let mut root = fern::Dispatch::new().level(log::LevelFilter::Trace).chain(stdout_chain);
+    let mut root = root_dispatch().chain(stdout_chain);
 
     if file_chain_enabled {
         root = root.chain(file_chain(Box::new(SharedBufferWriter(file_buf.clone()))));
@@ -170,6 +170,33 @@ fn mdns_sd_debug_stays_out_of_the_file() {
     let f = buf_to_string(&d.file);
     assert!(!f.contains("mdns-debug-dump"), "{f}");
     assert!(f.contains("mdns-warning"), "{f}");
+}
+
+/// `rmcp` logs a request's arguments at Debug, so an `unlock` password would land in the file and in
+/// error reports. Nothing it logs reaches either chain, at any level, whatever `RUST_LOG` asks for.
+#[test]
+fn no_rmcp_line_reaches_either_chain_even_when_rust_log_asks() {
+    let _g = test_lock();
+    for rust_log in [None, Some("trace"), Some("rmcp=trace"), Some("rmcp::service=trace")] {
+        let d = build_dispatch_for_test(rust_log, true, false);
+        for target in [
+            "rmcp",
+            "rmcp::service",
+            "rmcp::transport::streamable_http_server::tower",
+        ] {
+            dispatch(&*d.logger, log::Level::Debug, target, "a-password-in-a-request");
+            dispatch(&*d.logger, log::Level::Error, target, "a-password-in-a-request");
+        }
+        // A crate that only starts with the name isn't this one.
+        dispatch(&*d.logger, log::Level::Error, "rmcpish", "somebody-else");
+        for (chain, text) in [("terminal", buf_to_string(&d.stdout)), ("file", buf_to_string(&d.file))] {
+            assert!(
+                !text.contains("a-password-in-a-request"),
+                "{chain} under {rust_log:?}: {text:?}"
+            );
+            assert!(text.contains("somebody-else"), "{chain} under {rust_log:?}: {text:?}");
+        }
+    }
 }
 
 fn buf_to_string(buf: &Mutex<Vec<u8>>) -> String {

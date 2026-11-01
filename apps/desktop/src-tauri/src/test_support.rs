@@ -95,7 +95,8 @@ impl CapturedLog {
 }
 
 /// Runs `f` and returns what it returned plus every log record THIS thread wrote meanwhile, at
-/// every level, so a test can pin a real log site's line.
+/// every level, so a test can pin a real log site's line. It leaves out what the real tree drops for
+/// every sink (`logging::dispatch::never_logged`), so "nothing here leaks" reads what ships.
 ///
 /// It installs a process-wide logger on first use. That's safe because nextest runs each test in
 /// its own process, the app's fern tree is never installed in a unit test, and records from other
@@ -112,6 +113,9 @@ pub(crate) fn capture_logs<R>(f: impl FnOnce() -> R) -> (R, Vec<CapturedLog>) {
             CAPTURED.with(|captured| captured.borrow().is_some())
         }
         fn log(&self, record: &log::Record<'_>) {
+            if crate::logging::dispatch::never_logged(record.target()) {
+                return;
+            }
             CAPTURED.with(|captured| {
                 if let Some(records) = captured.borrow_mut().as_mut() {
                     records.push(CapturedLog {

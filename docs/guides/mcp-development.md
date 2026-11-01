@@ -13,9 +13,9 @@ The transport lives under `apps/desktop/src-tauri/src/mcp/`, and the tools under
 mcp/
 ├── mod.rs            # Module wiring and exports
 ├── config.rs         # Port / bind configuration
-├── server.rs         # HTTP server (axum), bind/rebind lifecycle, request dispatch
-├── auth.rs           # Bearer-token lifecycle + per-request validation
-├── protocol.rs       # JSON-RPC message handling
+├── server.rs         # HTTP server (axum), bind/rebind lifecycle, the route table
+├── auth.rs           # Bearer-token lifecycle + the guard in front of the SDK
+├── handler.rs        # What the official SDK (rmcp) calls: tools, resources, server info
 └── tests/            # Transport test suite, split by category
 
 tools/
@@ -45,9 +45,9 @@ Two AI consumers share this one registry (agent decision D49: extend it, don't f
 
 ### Data flow
 
-1. **HTTP request** → `server.rs` receives the JSON-RPC request and validates Origin.
-2. **Auth** → every `/mcp` GET or POST requires the bearer token before session handling or dispatch.
-3. **Parsing** → `protocol.rs` parses and validates the authenticated request.
+1. **HTTP request** → `auth::guard` validates Origin.
+2. **Auth** → every `/mcp` request needs the bearer token before the SDK sees it.
+3. **Parsing** → `rmcp` parses and validates the authenticated request and calls `handler.rs`.
 4. **Routing** → `tools/call` dispatches through the generated `execute_tool()` (the macro in `tools/registry.rs`
    expands it over `table.rs`).
 5. **Execution** → the handler in the matching `tools/actions/` category file emits a Tauri event (or queries state) and

@@ -8,7 +8,7 @@
 //! Tree shape:
 //!
 //! ```text
-//! root Dispatch (level Trace: pure ceiling, per-chain filters do real gating)
+//! root Dispatch (level Trace: pure ceiling, per-chain filters do real gating; drops `NEVER_LOGGED`)
 //! ├── stdout chain
 //! │     .level(Info)                       // default; AtomicU8 below can bump to Debug
 //! │     .level_for(<from RUST_LOG>, ..)
@@ -164,7 +164,7 @@ pub fn init(opts: InitOptions) -> Result<(), fern::InitError> {
     }
 
     // Build the root.
-    let mut root = fern::Dispatch::new().level(log::LevelFilter::Trace).chain(stdout_chain);
+    let mut root = root_dispatch().chain(stdout_chain);
 
     // File chain: always Debug, plain text (no ANSI), rotated by `RotatingFile`.
     if let Some(dir) = opts.log_dir.as_ref()
@@ -198,6 +198,30 @@ pub fn init(opts: InitOptions) -> Result<(), fern::InitError> {
         version = env!("CARGO_PKG_VERSION"),
     );
     Ok(())
+}
+
+/// Crates no line of which reaches any sink, whatever the level or `RUST_LOG` says.
+///
+/// `rmcp` logs every request it receives at Debug, arguments included, through `tracing`'s `log`
+/// fallback. That would put an `unlock` password in `cmdr.log` and in error reports, and the file
+/// chain keeps Debug always. `crate::mcp` logs what we want to keep of a request itself.
+const NEVER_LOGGED: &[&str] = &["rmcp"];
+
+/// Whether a record's target belongs to a crate in [`NEVER_LOGGED`].
+pub(crate) fn never_logged(target: &str) -> bool {
+    NEVER_LOGGED.iter().any(|name| {
+        target
+            .strip_prefix(name)
+            .is_some_and(|rest| rest.is_empty() || rest.starts_with("::"))
+    })
+}
+
+/// The root of the tree: a pure ceiling plus [`NEVER_LOGGED`], applied above both chains so neither
+/// `RUST_LOG` nor a chain's own level can bring those records back. The test dispatch builds it too.
+fn root_dispatch() -> fern::Dispatch {
+    fern::Dispatch::new()
+        .level(log::LevelFilter::Trace)
+        .filter(|metadata| !never_logged(metadata.target()))
 }
 
 /// The file chain: Debug and up, plain text, into `writer`. The test dispatch builds it too, so

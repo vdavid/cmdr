@@ -1,17 +1,16 @@
 //! Request headers that can't leak the bearer token into a log.
 //!
-//! ❗ **Both `/mcp` handlers extract [`SafeHeaders`], never a bare `HeaderMap`,
-//! and that is the whole point.** `HeaderMap`'s own `Debug` prints every value,
+//! ❗ **`auth::guard` extracts [`SafeHeaders`], never a bare `HeaderMap`, and that
+//! is the whole point.** `HeaderMap`'s own `Debug` prints every value,
 //! so a `{:?}` on one writes `Authorization: Bearer <token>` into `cmdr.log`.
 //! A leaked token can escape through copied logs, reports, or an authenticated
 //! `cmdr://logs` read; the log redactor covers home paths, SMB URIs, and emails,
 //! not arbitrary bearer secrets.
 //!
-//! Both routes had that shape, and the SSE one — where a client typically sends
-//! the header to open the stream — kept it for a while after the POST one was
-//! patched. That is what a rule saying "don't log the map" costs. With the raw
-//! map never entering either handler there is nothing to reach for: the next
-//! person who writes `{:?}` on the headers is safe by construction. Everything a
+//! That shape has leaked before, on a route a patch to its sibling missed. That
+//! is what a rule saying "don't log the map" costs. With the raw map out of the
+//! guard's signature there is nothing to reach for: the next person who writes
+//! `{:?}` on the headers is safe by construction. Everything a
 //! validator needs still reaches the map through [`Deref`](std::ops::Deref).
 
 use axum::extract::FromRequestParts;
@@ -22,8 +21,7 @@ use std::convert::Infallible;
 pub(crate) struct SafeHeaders(HeaderMap);
 
 impl SafeHeaders {
-    /// Wraps a map directly. For tests and for a handler that already holds one;
-    /// the routes get theirs from the extractor below.
+    /// Wraps a map directly, for tests; the guard gets its own from the extractor below.
     #[cfg(test)]
     pub(crate) fn new(headers: HeaderMap) -> Self {
         Self(headers)

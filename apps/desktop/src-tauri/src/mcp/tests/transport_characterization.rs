@@ -1,12 +1,10 @@
 //! What an outside client can see of the MCP transport, pinned black-box over a real listener.
 //!
-//! This file proves the move to the official SDK: the same cells run before and after it. So every
-//! assertion reads the wire (status, headers, bytes) or a file on disk, never a handler's internals,
-//! and [`TestServer::start`] is the one place that names how a router gets built.
-//!
-//! A cell the SDK is meant to change carries `// changes with the SDK:` and the reason, which makes
-//! that edit auditable. Everything without the mark must survive unchanged:
-//! `docs/specs/unified-ai-tools-plan.md` § The official SDK.
+//! This file proved the move to the official SDK, with the same cells before and after it, and it
+//! pins the next SDK upgrade the same way. So every assertion reads the wire (status, headers, bytes)
+//! or a file on disk, never a handler's internals, and [`TestServer::start`] is the one place that
+//! names how a router gets built. Everything here is ours to keep whatever the SDK does;
+//! `transport_sdk_answers.rs` holds the answers that are the SDK's own.
 //!
 //! The toast for a refused Origin can't be seen from here: `security_notices` raises it only for a
 //! real `AppHandle`, which a mock app isn't. The cell pins the exact security event instead, and
@@ -16,14 +14,13 @@
 use std::net::SocketAddr;
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::Path;
-use std::sync::Arc;
 
 use serde_json::{Value, json};
 use tauri::Manager;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use super::{
-    BindMode, BindStrategy, McpServerOutcome, McpState, PORT_FILE_NAME, TOKEN_FILE_NAME, bind_listener, build_router,
+    BindMode, BindStrategy, McpServerOutcome, PORT_FILE_NAME, TOKEN_FILE_NAME, bind_listener, build_router,
     rebind_interactive, start_mcp_server, stop_mcp_server_and_wait,
 };
 use crate::managed_policy::testing::{DISABLE_USAGE_STATS, forcing, override_for_test};
@@ -40,6 +37,9 @@ const METHOD_NOT_FOUND: i64 = -32601;
 const INVALID_PARAMS: i64 = -32602;
 
 type MockApp = tauri::App<tauri::test::MockRuntime>;
+
+#[path = "transport_sdk_answers.rs"]
+mod sdk_answers;
 
 /// A mock app holding the two stores the tool gates read.
 fn app_with_stores() -> MockApp {
@@ -62,7 +62,7 @@ impl TestServer {
             .await
             .expect("test server should bind");
         let addr = listener.local_addr().expect("bound listener should have an address");
-        let router = build_router(Arc::new(McpState::new(app.handle().clone())));
+        let router = build_router(app.handle().clone());
         let task = tokio::spawn(async move {
             axum::serve(listener, router).await.expect("test server should serve");
         });
@@ -910,14 +910,12 @@ async fn no_reply_shows_a_twins_nul_pick() {
     // allowed-error-string-match: reads a path out of a result, not error state
     assert!(text.contains("/DCIM/IMG_1.JPG"), "{text}");
 
-    // changes with the SDK: a bug, pinned as it stands. A tool's JSON result is rendered to text
-    // first, which writes the NUL as the six characters `\u0000`, so the strip that runs afterward
-    // finds nothing to take out. `show_strings` over the value BEFORE it's rendered fixes it, and
-    // this cell then expects the plain path like the two above.
+    // In a tool's JSON result, where rendering it to text first would write the NUL as the six
+    // characters `\u0000`, which nothing could strip afterward.
     let listed = server.tool("list_dir", json!({"path":twin})).await;
     let text = listed["result"]["content"][0]["text"].as_str().expect("a text result");
     let location: Value = serde_json::from_str(text).expect("a JSON result is JSON text");
-    assert_eq!(location["location"]["path"], json!(twin));
+    assert_eq!(location["location"]["path"], json!("/DCIM/IMG_1.JPG"));
 
     // In an error's message and its data. The refusal repeats the open dialog's id verbatim, which
     // makes it the one route to both from out here.
@@ -1047,243 +1045,4 @@ async fn an_authenticated_notification_gets_an_empty_202() {
         .expect("the request should complete");
     assert_eq!(response.status(), 202);
     assert!(response.bytes().await.expect("the body reads").is_empty());
-}
-
-// ── What the swap is meant to change ────────────────────────────────────────
-
-#[tokio::test(flavor = "current_thread")]
-async fn initialize_reports_who_it_is_with_a_session_and_the_old_version() {
-    let _token_guard = TOKEN_TEST_LOCK.lock().await;
-    let app = app_with_stores();
-    let server = TestServer::start(&app).await;
-
-    let response = server
-        .client
-        .post(server.url())
-        .bearer_auth(TOKEN)
-        .json(&json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25"}}))
-        .send()
-        .await
-        .expect("the request should complete");
-    assert_eq!(response.status(), 200);
-    // changes with the SDK: stateless, so no session and no `Mcp-Session-Id`.
-    assert!(response.headers().contains_key("mcp-session-id"));
-    let envelope: Value = response.json().await.expect("initialize is JSON");
-    assert_eq!(envelope["id"], json!(1));
-    // Stays `cmdr`, and only because the handler says so: rmcp's default is `rmcp`.
-    assert_eq!(envelope["result"]["serverInfo"]["name"], json!("cmdr"));
-    assert_eq!(envelope["result"]["capabilities"]["tools"]["listChanged"], json!(false));
-    assert!(envelope["result"]["instructions"].is_string());
-    // changes with the SDK: `initialize` reports the version it really speaks.
-    assert_eq!(envelope["result"]["protocolVersion"], json!("2024-11-05"));
-}
-
-#[tokio::test(flavor = "current_thread")]
-async fn an_authenticated_get_opens_a_one_event_sse_stream() {
-    let _token_guard = TOKEN_TEST_LOCK.lock().await;
-    let app = app_with_stores();
-    let server = TestServer::start(&app).await;
-
-    let response = server
-        .client
-        .get(server.url())
-        .bearer_auth(TOKEN)
-        .send()
-        .await
-        .expect("the request should complete");
-    // changes with the SDK: an authenticated GET becomes 405, there being no stream to offer.
-    assert_eq!(response.status(), 200);
-    assert_eq!(
-        response.headers().get("content-type").map(|v| v.as_bytes()),
-        Some("text/event-stream".as_bytes())
-    );
-    assert_eq!(
-        response.text().await.expect("the stream reads to its end"),
-        "event: endpoint\ndata: /mcp\n\n"
-    );
-}
-
-#[tokio::test(flavor = "current_thread")]
-async fn accepting_sse_frames_the_reply_as_one_event() {
-    let _token_guard = TOKEN_TEST_LOCK.lock().await;
-    let app = app_with_stores();
-    let server = TestServer::start(&app).await;
-
-    let response = server
-        .client
-        .post(server.url())
-        .bearer_auth(TOKEN)
-        .header("accept", "application/json, text/event-stream")
-        .json(&json!({"jsonrpc":"2.0","id":1,"method":"ping"}))
-        .send()
-        .await
-        .expect("the request should complete");
-    assert_eq!(response.status(), 200);
-    // changes with the SDK: `with_json_response(true)` answers plain JSON here.
-    assert_eq!(
-        response.headers().get("content-type").map(|v| v.as_bytes()),
-        Some("text/event-stream".as_bytes())
-    );
-    let text = response.text().await.expect("the stream reads to its end");
-    let data = text
-        .lines()
-        .find_map(|line| line.strip_prefix("data: "))
-        .expect("one data line");
-    assert_eq!(
-        serde_json::from_str::<Value>(data).expect("the event carries JSON"),
-        json!({"jsonrpc":"2.0","id":1,"result":{}})
-    );
-}
-
-#[tokio::test(flavor = "current_thread")]
-async fn a_foreign_host_and_an_unknown_protocol_version_are_let_through() {
-    let _token_guard = TOKEN_TEST_LOCK.lock().await;
-    let app = app_with_stores();
-    let server = TestServer::start(&app).await;
-    let authorization = format!("Bearer {TOKEN}");
-    let body = json!({"jsonrpc":"2.0","id":1,"method":"ping"}).to_string();
-    let common = [
-        ("Content-Type", "application/json"),
-        ("Authorization", authorization.as_str()),
-    ];
-
-    // changes with the SDK: the new `Host` allowlist refuses this.
-    let foreign_host = server
-        .raw_post(&[&common[..], &[("Host", "evil.example")]].concat(), &body)
-        .await;
-    assert_eq!(foreign_host.status, 200);
-
-    // changes with the SDK: an unknown `MCP-Protocol-Version` gets 400.
-    let unknown_version = server
-        .raw_post(
-            &[
-                &common[..],
-                &[("Host", "127.0.0.1"), ("MCP-Protocol-Version", "1999-01-01")],
-            ]
-            .concat(),
-            &body,
-        )
-        .await;
-    assert_eq!(unknown_version.status, 200);
-}
-
-#[tokio::test(flavor = "current_thread")]
-async fn a_call_missing_what_it_needs_gets_invalid_params() {
-    let _token_guard = TOKEN_TEST_LOCK.lock().await;
-    let app = app_with_stores();
-    let server = TestServer::start(&app).await;
-
-    // changes with the SDK: `-32601` with the method as the message, and HTTP 404 on the 2026 path.
-    let no_name = server
-        .call(json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"arguments":{}}}))
-        .await;
-    assert_eq!(no_name["error"]["code"], json!(INVALID_PARAMS));
-
-    // changes with the SDK: as above.
-    let no_uri = server
-        .call(json!({"jsonrpc":"2.0","id":2,"method":"resources/read","params":{}}))
-        .await;
-    assert_eq!(no_uri["error"]["code"], json!(INVALID_PARAMS));
-
-    // changes with the SDK: `-32601` as above; today the schema check refuses it.
-    let bad_arguments = server
-        .call(json!({"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"image_facts","arguments":3}}))
-        .await;
-    assert_eq!(bad_arguments["error"]["code"], json!(INVALID_PARAMS));
-}
-
-#[tokio::test(flavor = "current_thread")]
-async fn a_malformed_envelope_is_refused_before_any_auth() {
-    let _token_guard = TOKEN_TEST_LOCK.lock().await;
-    let app = app_with_stores();
-    let server = TestServer::start(&app).await;
-    let json_type = [("Host", "127.0.0.1"), ("Content-Type", "application/json")];
-
-    // changes with the SDK: malformed JSON returns 415 as plain text.
-    let malformed = server.raw_post(&json_type, "{not json").await;
-    assert_eq!(malformed.status, 400);
-    assert!(serde_json::from_str::<Value>(&malformed.body).is_err(), "plain text");
-
-    // changes with the SDK: 415, and from behind the guard, which refuses a bad token first.
-    let no_method = server.raw_post(&json_type, r#"{"jsonrpc":"2.0","id":1}"#).await;
-    assert_eq!(no_method.status, 422);
-}
-
-#[tokio::test(flavor = "current_thread")]
-async fn a_wrong_jsonrpc_version_is_a_400_with_the_token_and_in_band_without() {
-    let _token_guard = TOKEN_TEST_LOCK.lock().await;
-    let app = app_with_stores();
-    let server = TestServer::start(&app).await;
-    let body = json!({"jsonrpc":"1.0","id":1,"method":"ping"});
-
-    let with_token = server
-        .client
-        .post(server.url())
-        .bearer_auth(TOKEN)
-        .json(&body)
-        .send()
-        .await
-        .expect("the request should complete");
-    // changes with the SDK: 415 as plain text.
-    assert_eq!(with_token.status(), 400);
-    let envelope: Value = with_token.json().await.expect("the refusal is JSON");
-    assert_eq!(envelope["error"]["code"], json!(INVALID_REQUEST));
-    assert_eq!(envelope["id"], json!(1));
-
-    // Auth still comes first, and the rejection still echoes the id: the guard reads `id` and
-    // `method` off the raw body.
-    let without_token = server
-        .client
-        .post(server.url())
-        .json(&body)
-        .send()
-        .await
-        .expect("the request should complete");
-    assert_eq!(without_token.status(), 200);
-    let envelope: Value = without_token.json().await.expect("the rejection is JSON");
-    assert_eq!(envelope["error"]["code"], json!(INVALID_PARAMS));
-    assert_eq!(envelope["id"], json!(1));
-}
-
-#[tokio::test(flavor = "current_thread")]
-async fn a_null_id_is_a_notification_and_a_float_id_is_echoed() {
-    let _token_guard = TOKEN_TEST_LOCK.lock().await;
-    let app = app_with_stores();
-    let server = TestServer::start(&app).await;
-
-    let null_id = server
-        .client
-        .post(server.url())
-        .bearer_auth(TOKEN)
-        .json(&json!({"jsonrpc":"2.0","id":null,"method":"ping"}))
-        .send()
-        .await
-        .expect("the request should complete");
-    // changes with the SDK: `id: null` returns 415 as plain text.
-    assert_eq!(null_id.status(), 202);
-    assert!(null_id.bytes().await.expect("the body reads").is_empty());
-
-    // changes with the SDK: a float `id` returns 415 as plain text.
-    let float_id = server.call(json!({"jsonrpc":"2.0","id":1.5,"method":"ping"})).await;
-    assert_eq!(float_id["id"], json!(1.5));
-    assert!(float_id.get("result").is_some());
-}
-
-#[tokio::test(flavor = "current_thread")]
-async fn a_put_or_delete_gets_405_before_any_auth() {
-    let _token_guard = TOKEN_TEST_LOCK.lock().await;
-    let app = app_with_stores();
-    let server = TestServer::start(&app).await;
-
-    for method in [reqwest::Method::PUT, reqwest::Method::DELETE] {
-        for authorization in [None, Some("Bearer wrong-token")] {
-            let mut request = server.client.request(method.clone(), server.url());
-            if let Some(value) = authorization {
-                request = request.header("authorization", value);
-            }
-            let response = request.send().await.expect("the request should complete");
-            // changes with the SDK: the guard runs first, and needs a default for a bad token here.
-            assert_eq!(response.status(), 405, "{method} with {authorization:?}");
-        }
-    }
 }

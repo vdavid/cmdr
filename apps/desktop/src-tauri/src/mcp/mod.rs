@@ -1,12 +1,12 @@
 //! MCP (Model Context Protocol) server module.
 //!
 //! Provides a Streamable HTTP server that carries `crate::tools` to outside AI clients: binding,
-//! auth, and the wire protocol. The tools themselves live in `crate::tools`.
+//! auth, and what the official SDK (`rmcp`) calls. The tools themselves live in `crate::tools`.
 
 mod auth;
 pub mod config;
+mod handler;
 pub mod port_file;
-mod protocol;
 mod safe_headers;
 mod server;
 

@@ -210,7 +210,8 @@ fern = "0.7.1"
 reqwest = { version = "0.13", features = ["cookies", "json", "rustls", "stream", "multipart"], default-features = false }
 # The one door every HTTP client is built through: proxy routing the way macOS decides it.
 cmdr-http = { path = "../../../crates/cmdr-http" }
-# MCP server
+# MCP server. `rmcp` is the official Rust SDK; ❌ never its `local` feature (its handlers would stop being `Send`).
+rmcp = { version = "=3.8.0", default-features = false, features = ["server", "transport-streamable-http-server"] }
 axum = "0.8"
 tokio = { version = "1", features = ["rt-multi-thread", "net", "time", "sync", "macros", "process"] }
 futures-util = "0.3"
