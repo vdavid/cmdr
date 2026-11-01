@@ -231,6 +231,19 @@ Where a lead's review refined one of David's decisions, the refined form is writ
 - ❗ The backend's write commands still do `initiator.unwrap_or(Initiator::User)`, so a missing initiator records
   `user`. Make it required on every write command, not just rollback, so provenance can't fail open.
 
+## Carried from M5 and M6
+
+- M8: switch `copy`, `move`, `compress`, and `delete` from `SubjectSpec::None` to `Pane` when they gain `pane`, and
+  check their briefs, which already describe the post-M8 behavior. `SubjectSpec::Paths` was left out (only `Custom`
+  tools take `paths`), and `Custom` is 22 tools (`multi_rename` needs hand arms).
+- M12: `outcome_of` reads a top-level `refusal` or `data.refusal`, so the agent result must carry one. The
+  `toolUnavailable` copy and description still say Ask Cmdr is read-only, and the group header still says "Looked
+  around". `tools_list_on_the_wire_is_the_snapshot_to_the_key` compares the wire to the snapshot, so annotations update
+  both.
+- Until M12 the gate checks `consumers` too, because `await` and `ai_search` are `Read`.
+- Translator: the `[every-tool]` capture round doesn't exercise the new labels, so their screenshot couplings are
+  representative only.
+
 ## Must be true when done
 
 - **No hidden splits.** Every tool is reachable by both callers or carries a one-line reason in the table, pinned by a
