@@ -17,12 +17,14 @@
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { mount, tick, unmount } from 'svelte'
+import { mount, unmount } from 'svelte'
 import { SvelteSet } from 'svelte/reactivity'
 import { virtual } from '@guidepup/virtual-screen-reader'
 import { dirEntry, fileEntry } from './test-full-list'
 import { mountBriefList } from './test-brief-list'
 import LiveAnnouncer from '#lib/ui/LiveAnnouncer.svelte'
+import { eventually, untilFocusNamesARow } from '#lib/test-frames.js'
+import { pressAndHear, untilSpoken } from '#lib/test-vsr.js'
 
 vi.mock('#lib/tauri-commands/index.js', async () =>
   (await import('./test-file-list-mocks')).tauriCommandsMock({
@@ -63,12 +65,6 @@ afterEach(async () => {
   document.body.innerHTML = ''
 })
 
-/** Lets the one-frame-late active descendant and the announcer's frame land. */
-async function settle(): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, 150))
-  await tick()
-}
-
 async function mountPane() {
   const live = $state({ cursorIndex: 0 })
   const marked = new SvelteSet<number>()
@@ -103,14 +99,8 @@ async function mountPane() {
 
   await virtual.start({ container: document.body })
   list.component.focusList()
-  await settle()
+  await untilFocusNamesARow()
   return list
-}
-
-async function press(key: string): Promise<string> {
-  await virtual.press(key)
-  await settle()
-  return virtual.lastSpokenPhrase()
 }
 
 /**
@@ -136,19 +126,24 @@ describe('the file list, spoken', () => {
       'listbox, Left pane, vo-test, orientated vertically, multi-selectable',
     )
 
-    expect(await press('ArrowDown')).toBe(
+    await pressAndHear(
+      'ArrowDown',
       'listbox, Left pane, vo-test, orientated vertically, active descendant subfolder (folder), multi-selectable',
     )
-    expect(await press('ArrowDown')).toBe(
+    await pressAndHear(
+      'ArrowDown',
       'listbox, Left pane, vo-test, orientated vertically, active descendant a.txt, multi-selectable',
     )
   })
 
   it('places every row in the whole list, `..` included, and says which rows are marked', async () => {
-    await mountPane()
-    await press('ArrowDown')
-    await press('ArrowDown')
-    await press(' ')
+    const list = await mountPane()
+    await virtual.press('ArrowDown')
+    await virtual.press('ArrowDown')
+    await virtual.press(' ')
+    await eventually(() => {
+      expect(list.rows().filter((row) => row.getAttribute('aria-selected') === 'true')).toHaveLength(1)
+    })
 
     expect(await walkOptions(5)).toEqual([
       'option, Parent folder, not selected, position 1, set size 8',
@@ -168,7 +163,6 @@ describe('the file list, spoken', () => {
     })
     await virtual.start({ container: document.body })
     ;(announcer as unknown as { announce: (message: string) => void }).announce('Left pane, vo-test')
-    await settle()
-    expect(await virtual.spokenPhraseLog()).toContain('polite: Left pane, vo-test')
+    await untilSpoken('polite: Left pane, vo-test')
   })
 })

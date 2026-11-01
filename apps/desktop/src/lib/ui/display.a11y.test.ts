@@ -19,6 +19,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mount, tick, createRawSnippet, type ComponentProps } from 'svelte'
 import { expectNoA11yViolations, type A11yAuditOptions } from '#lib/test-a11y.js'
+import { untilFocusNamesARow } from '#lib/test-frames.js'
 
 vi.mock('#lib/settings/reactive-settings.svelte.js', () => ({
   getFileSizeFormat: () => 'binary',
@@ -151,9 +152,8 @@ describe('ColumnList a11y', () => {
     await tick()
     const grid = target.querySelector<HTMLElement>('[role="grid"]')
     grid?.focus()
-    await new Promise((resolve) => setTimeout(resolve, 150))
-    await tick()
-    expect(grid?.getAttribute('aria-activedescendant')).toBeTruthy()
+    expect(document.activeElement).toBe(grid)
+    await untilFocusNamesARow()
     await expectNoA11yViolations(target)
   })
 })

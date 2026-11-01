@@ -132,6 +132,8 @@ vitest's 5 s timeout under load (`shortcuts-store.test.ts`).
 - **A component that sizes itself from its container** (either file-list view, `PlacesBrowser`, `ServersHub`):
   `installLayoutMock()` from `#lib/test-layout`, and for `FullList` the ready-made `mountFullList()`. **Never** assert
   on rows without one — see § "A component that measures itself, rendering nothing"
+- **Wait for what lands a frame late in a frontend test** (active descendant, live announcer): `eventually()` or
+  `pastPendingFrames()` from `#lib/test-frames`, see `tooling/testing.md`. **Never** a sleep past the 100 ms fallback
 - **Component-level a11y (ARIA, labels, focus order)**: tier-3 a11y test in `*.a11y.test.ts`
 - **Keyboard shortcut opens a dialog**: E2E spec, use `dispatchMenuCommand(tauriPage, 'file.copy')`. **Never** synthetic
   F-key press unless the test exists to verify the keyboard pathway

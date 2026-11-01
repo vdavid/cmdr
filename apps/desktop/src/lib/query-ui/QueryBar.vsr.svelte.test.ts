@@ -11,11 +11,13 @@
  */
 
 import { describe, it, expect, afterEach, beforeAll } from 'vitest'
-import { createRawSnippet, flushSync, mount, tick, unmount } from 'svelte'
+import { createRawSnippet, flushSync, mount, unmount } from 'svelte'
 import { virtual } from '@guidepup/virtual-screen-reader'
 import QueryBar from './QueryBar.svelte'
 import ColumnList from '#lib/ui/ColumnList.svelte'
 import type { ColumnListApi, ColumnListColumn } from '#lib/ui/column-list-types.js'
+import { untilFocusNamesARow } from '#lib/test-frames.js'
+import { pressAndHear } from '#lib/test-vsr.js'
 
 interface Row {
   name: string
@@ -38,12 +40,6 @@ afterEach(async () => {
   await virtual.stop()
   document.body.innerHTML = ''
 })
-
-/** Past the deferred active descendant's frame. */
-async function settle(): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, 150))
-  await tick()
-}
 
 async function setup(): Promise<HTMLInputElement> {
   const state = $state({ cursor: 0, list: undefined as ColumnListApi | undefined })
@@ -102,10 +98,9 @@ describe('QueryBar speech', () => {
   it('speaks the cursor result as ↓ moves it, focus staying in the field', async () => {
     const input = await setup()
     input.focus()
-    await settle()
-    await virtual.press('ArrowDown')
-    await settle()
-    expect(await virtual.lastSpokenPhrase()).toBe(
+    await untilFocusNamesARow()
+    await pressAndHear(
+      'ArrowDown',
       'combobox, Filename search pattern, *.jpg, has popup listbox, expanded, active descendant b.jpg, autocomplete in list, 1 control',
     )
     expect(document.activeElement).toBe(input)

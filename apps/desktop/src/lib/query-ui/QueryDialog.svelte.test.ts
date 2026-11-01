@@ -17,6 +17,7 @@ import { createQueryFilterState, type QueryFilterState } from './query-filter-st
 import { createRecentItemsState } from './recent-items/recent-items-state.svelte'
 import type { QueryDialogConfig, AiTranslateResult } from './query-dialog-config'
 import { getToasts, clearAllToasts } from '#lib/ui/toast/toast-store.svelte.js'
+import { pastPendingFrames, untilFocusNamesARow } from '#lib/test-frames.js'
 import type { SearchResultEntry } from '#lib/tauri-commands/index.js'
 import type { HistoryEntry } from '#lib/tauri-commands/index.js'
 
@@ -825,12 +826,6 @@ describe('QueryDialog focus restore', () => {
 // cursor was on. The id lands a frame after the field takes focus (deferred helper), so
 // each check waits past that frame.
 describe('QueryDialog query field as a combobox', () => {
-  /** Past the deferred active descendant's frame (or its 100 ms fallback). */
-  async function frame(): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, 150))
-    await tick()
-  }
-
   function activeOption(input: HTMLInputElement): Element | null {
     const id = input.getAttribute('aria-activedescendant')
     if (!id) return null
@@ -851,7 +846,9 @@ describe('QueryDialog query field as a combobox', () => {
     const input = overlay.querySelector('.query-bar input') as HTMLInputElement
     input.blur()
     input.focus()
-    await frame()
+    // Flushed first: the id from before the blur is still in the DOM until the refocus holds it back.
+    await tick()
+    await untilFocusNamesARow()
     const listbox = overlay.querySelector('[role="listbox"]')
     expect(input.getAttribute('role')).toBe('combobox')
     expect(input.getAttribute('aria-expanded')).toBe('true')
@@ -870,8 +867,9 @@ describe('QueryDialog query field as a combobox', () => {
   it('is collapsed and names nothing while there are no results', async () => {
     const { overlay, cleanup } = mountQueryDialog()
     await settle()
-    await frame()
     const input = overlay.querySelector('.query-bar input') as HTMLInputElement
+    expect(document.activeElement).toBe(input)
+    await pastPendingFrames()
     expect(input.getAttribute('role')).toBe('combobox')
     expect(input.getAttribute('aria-expanded')).toBe('false')
     expect(input.hasAttribute('aria-activedescendant')).toBe(false)

@@ -12,10 +12,12 @@
  * one-frame-late id shows up at the first key.
  */
 
-import { describe, it, expect, afterEach } from 'vitest'
-import { flushSync, mount, tick, unmount } from 'svelte'
+import { describe, it, afterEach } from 'vitest'
+import { flushSync, mount, unmount } from 'svelte'
 import { virtual } from '@guidepup/virtual-screen-reader'
 import SettingsSidebar from './SettingsSidebar.svelte'
+import { untilFocusNamesARow } from '#lib/test-frames.js'
+import { pressAndHear, untilSpoken } from '#lib/test-vsr.js'
 
 let component: ReturnType<typeof mount> | null = null
 
@@ -25,12 +27,6 @@ afterEach(async () => {
   await virtual.stop()
   document.body.innerHTML = ''
 })
-
-/** Past the deferred active descendant's frame and the announcer's. */
-async function settle(): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, 150))
-  await tick()
-}
 
 async function setup() {
   const props = $state({
@@ -67,10 +63,9 @@ describe('SettingsSidebar speech', () => {
   it('speaks the next section as ↓ moves through the list', async () => {
     const { target } = await setup()
     target.querySelector<HTMLElement>('[role="listbox"]')?.focus()
-    await settle()
-    await virtual.press('ArrowDown')
-    await settle()
-    expect(await virtual.lastSpokenPhrase()).toBe(
+    await untilFocusNamesARow()
+    await pressAndHear(
+      'ArrowDown',
       'listbox, Settings sections, orientated vertically, active descendant Zoom and density',
     )
   })
@@ -78,10 +73,9 @@ describe('SettingsSidebar speech', () => {
   it('speaks the section from the search field too, which moves the same cursor', async () => {
     const { target } = await setup()
     target.querySelector<HTMLElement>('input')?.focus()
-    await settle()
-    await virtual.press('ArrowDown')
-    await settle()
-    expect(await virtual.lastSpokenPhrase()).toBe(
+    await untilFocusNamesARow()
+    await pressAndHear(
+      'ArrowDown',
       'combobox, Search settings…, has popup listbox, expanded, active descendant Zoom and density, autocomplete in list, 1 control',
     )
   })
@@ -91,7 +85,6 @@ describe('SettingsSidebar speech', () => {
     props.searchQuery = 'theme'
     props.matchingSections = new Set(['Appearance', 'Appearance/Colors and formats'])
     flushSync()
-    await settle()
-    expect(await virtual.spokenPhraseLog()).toContain('polite: 2 sections match')
+    await untilSpoken('polite: 2 sections match')
   })
 })
