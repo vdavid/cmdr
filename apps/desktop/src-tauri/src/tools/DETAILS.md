@@ -128,7 +128,8 @@ The switch that lets an outside client use the tools that go past a person (`pol
   So launch seeds the atomic only when the JSON says on AND `secrets`'s `mcp.directMode` item reads through
   `store().vouching()`. It reads the item only when the JSON says on, so nobody else gets a Keychain touch at launch. A
   fallback file store vouches for nothing, so there the toggle lasts the session and the row says so.
-  The check itself: `../secrets/DETAILS.md` § Vouching.
+- **Gaps in this check are tracked privately** and reviewed before every release. The check itself:
+  `../secrets/DETAILS.md` § Vouching. The user-facing account: `docs/security.md` § MCP direct mode.
 - **The Settings row is the only writer** (`McpServerSection.svelte`, `set_mcp_direct_mode`). The setting is
   `mcpSettable: false`, and the row shows what `get_mcp_direct_mode` answers, so a JSON value alone doesn't read as on.
   Each real change, and a launch that comes up on, lands in the security log.

@@ -381,6 +381,17 @@ Ask Cmdr is the widest of these, so the rest of this section is its detail. Ask 
 - **Chats and optional call logs stay local.** Conversations live in a local `main.db`; the optional LLM call log writes
   to a local folder and is never transmitted.
 
+## MCP direct mode
+
+Direct mode lets an outside MCP client use the tools that go past a person. It's off by default, the Settings row is the
+only way to turn it on (`mcpSettable: false`), and every change lands in the security log. The agent never gets it. The
+mechanism: `apps/desktop/src-tauri/src/tools/DETAILS.md` § Direct mode.
+
+- **`settings.json` alone doesn't turn it on**, since a same-user process with no Full Disk Access can write that file,
+  and the prize is everything Cmdr's Full Disk Access can read. Launch also needs a Keychain item Cmdr wrote, read
+  without a prompt.
+- **Gaps in this check are tracked privately** and reviewed before every release.
+
 ## AI API keys
 
 The user's BYOK cloud key lives in the OS secret store (`crate::secrets`: macOS Keychain, Linux Secret Service, or an
