@@ -5,7 +5,7 @@
 # behaviour (conditional writes, multipart, `UploadPartCopy`), and a bump is a
 # fixture change to review, not to inherit. The README records what this
 # version answered.
-FROM versity/versitygw:v1.9.0@sha256:eb7f786fcd91e72194e48fcf1ac16302d686bf8e3a71434bdbc067a6efd3fdc7
+FROM versity/versitygw:v1.10.0@sha256:89cad13cc981986ee284cbafea4613f9533ce6fd5f37a2c96c4c4fb8adb3a316
 
 # The base image is Alpine with `wget` only. The bootstrap needs a SigV4-signing
 # client to create the buckets through the API (a bucket made by `mkdir` lacks
