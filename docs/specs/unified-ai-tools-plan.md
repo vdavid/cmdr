@@ -284,12 +284,12 @@ Where a lead's review refined one of David's decisions, the refined form is writ
 
 ## Landing
 
-- **Land twice.** Land M1 and M2 together as soon as they're green, because they close live holes.
-- **Everything after that pushes with `pnpm land -no-wait` only, and M3 through the end land as one batch**: nothing may
-  reach a user with the new powers before the consent bump, or with M12's "all tools in full" prompt cost.
-- **A translator step runs before each land.** `desktop-i18n-coverage` blocks every land in CI on a coverage gap and
-  only warns locally. Executors still write English only; the lead runs a translator agent per
-  `docs/guides/i18n-translation.md` before M1–M2 land and before the final batch.
+- **Everything ships as one PR (David's call).** Only the lead lands, once, at the end. Milestones push with
+  `pnpm land -no-wait` at most: nothing may reach a user with the new powers before the consent bump, or with M12's "all
+  tools in full" prompt cost.
+- **A translator step runs before the land.** `desktop-i18n-coverage` blocks every land in CI on a coverage gap and only
+  warns locally. Executors still write English only; the lead runs a translator agent per
+  `docs/guides/i18n-translation.md` before the land.
 
 ## Design answers
 
