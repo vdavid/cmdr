@@ -222,6 +222,15 @@ Where a lead's review refined one of David's decisions, the refined form is writ
   `dialog_state`, and so on) get an honest home.
 - Enforce the boundary with a check or a test, so the layout can't quietly drift.
 
+## Carried from M2 into M10
+
+- `file.rename` has no `initiator` yet (it only opens the editor, and rename mode never skips). `rename-as-move.ts`
+  hardcodes `user`, so an agent-started rename reaching the Move dialog records `user` until `RenameAsMoveRequest`
+  carries the initiator.
+- `createFolderDirect` and `createFileDirect` keep `initiator` optional; tighten it with the direct path.
+- ❗ The backend's write commands still do `initiator.unwrap_or(Initiator::User)`, so a missing initiator records
+  `user`. Make it required on every write command, not just rollback, so provenance can't fail open.
+
 ## Must be true when done
 
 - **No hidden splits.** Every tool is reachable by both callers or carries a one-line reason in the table, pinned by a
