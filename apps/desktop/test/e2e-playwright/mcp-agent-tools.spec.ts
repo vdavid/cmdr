@@ -24,7 +24,13 @@ import path from 'path'
 import { test, expect } from './fixtures.js'
 import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { dispatchMenuCommand, ensureAppReady, expectAndDismissToast, getFixtureRoot } from './helpers.js'
+import {
+  dismissAllToasts,
+  dispatchMenuCommand,
+  ensureAppReady,
+  expectAndDismissToast,
+  getFixtureRoot,
+} from './helpers.js'
 import {
   ensureMcpClient,
   mcpCall,
@@ -240,6 +246,8 @@ test.describe('MCP agent tools', () => {
     const taken = await mcpCallRaw('dialog_confirm', { type: 'new-file-confirmation', name: 'via-dialog-confirm.txt' })
     expect(JSON.stringify(taken)).toContain('nameRefused')
     await mcpCall('dialog', { action: 'close', type: 'new-file-confirmation' })
+    // A new file opens in the editor, and the first time that raises a hint.
+    await dismissAllToasts(tauriPage)
   })
 
   test('the rename editor is a state: seen, blocking a start, confirmed, and closable', async ({ tauriPage }) => {
