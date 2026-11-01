@@ -141,6 +141,29 @@ async fn names_on(volume: &dyn Volume, dir: &Path) -> Vec<String> {
     names
 }
 
+/// Waits for `dir` to list exactly `expected`, for a listing right after an undo.
+///
+/// A delete that returned can stay listed for a moment on a server: another
+/// client's open handle on the folder leaves it delete-pending until that handle
+/// closes, and the fixture's share is every suite's (`crates/cmdr-smb/DETAILS.md`
+/// § "Delete safety"). A folder the undo really left behind outlasts the budget.
+async fn names_settle_to(volume: &dyn Volume, dir: &Path, expected: &[&str], label: &str) {
+    let deadline = tokio::time::Instant::now() + budget(SETTLE_BUDGET);
+    loop {
+        let names = names_on(volume, dir).await;
+        if names == expected {
+            return;
+        }
+        assert!(
+            tokio::time::Instant::now() < deadline,
+            "{label}: {} still lists {names:?}, expected {expected:?}",
+            dir.display()
+        );
+        // allowed-test-sleep: `wait_until_async` takes no async condition, and this one is a listing
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+    }
+}
+
 /// `dir` as the transfer dialog addresses it: under the volume's root. The SMB
 /// fixture hands out a share-relative scratch folder, and a same-share move
 /// journaled from relative paths doesn't undo (a fixture shape the app never
@@ -240,11 +263,7 @@ pub(super) async fn local_items_land_named_on_the_server_and_undo_restores_them(
 
     rig.undo(&op_id).await;
 
-    assert_eq!(
-        names_on(remote.as_ref(), &dest).await,
-        vec!["Invoice-X.pdf"],
-        "{label}: only the bystander stays"
-    );
+    names_settle_to(remote.as_ref(), &dest, &["Invoice-X.pdf"], &label).await;
     assert_eq!(
         read_all(remote.as_ref(), &dest.join("Invoice-X.pdf")).await,
         b"bystander"
@@ -305,7 +324,7 @@ pub(super) async fn items_move_named_within_the_server_and_undo_restores_them(re
 
     rig.undo(&op_id).await;
 
-    assert_eq!(names_on(remote.as_ref(), &dest).await, vec!["Invoice-X.pdf"], "{label}");
+    names_settle_to(remote.as_ref(), &dest, &["Invoice-X.pdf"], &label).await;
     assert_eq!(
         read_all(remote.as_ref(), &dest.join("Invoice-X.pdf")).await,
         b"bystander"

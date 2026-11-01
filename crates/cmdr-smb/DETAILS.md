@@ -1482,7 +1482,11 @@ delete that overtakes it leaves the file delete-pending: still listed, its folde
 lands (`closing_reads.rs`, pinned by `smb_integration_a_file_deleted_right_after_its_read_is_gone_from_the_listing`). An
 undo read such a folder as not empty and left it behind (#638, about 2 in 1,000 under 16 concurrent loops). So the read
 registers its path before handing out the last byte, and `delete_impl` waits for that path alone, which keeps both this
-round trip's saving and "a delete that returned means the file is gone".
+round trip's saving and "a delete that returned means the file is gone" as far as our own reads go. Another client's
+handle can still hold a deleted entry listed for a moment: with a second session listing a folder in a loop, 21 of 2,000
+deletes of it were still listed right after and none 100 ms later (Samba 4.20.6, Docker guest share, 2026-11-01). It
+clears by itself and no client can prevent it, so a suite on the shared fixture waits for a listing after a delete to
+settle (`network_named_leaves_test_support.rs::names_settle_to`).
 
 **Decision**: streaming-write progress reports the SERVER-CONFIRMED byte count (`FileWriter::bytes_written()`), never
 the count handed to the pipeline **Why**: `write_chunk` returns as soon as a chunk's WRITEs are on the wire, inside
