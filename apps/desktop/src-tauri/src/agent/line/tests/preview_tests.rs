@@ -4,10 +4,10 @@ use serde_json::{Value, json};
 
 use super::fixtures;
 use super::result;
-use crate::agent::llm::types::{AgentToolResult, ToolId};
-use crate::agent::tools::line::{
+use crate::agent::line::{
     MAX_TEXT_CHARS, PREVIEW_ROWS, ToolPreview, ToolPreviewRow, ToolPreviewRowKind, ToolPreviewRowStatus, preview_of,
 };
+use crate::agent::llm::types::{AgentToolResult, ToolId};
 use crate::tools::read::pane_listing::PaneListingScope;
 
 fn preview(tool: ToolId, content: Value) -> ToolPreview {

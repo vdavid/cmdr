@@ -274,7 +274,7 @@ All under `apps/desktop/src-tauri/src/`.
   plus the thread that owns the inbox, the timer, and the wakes it hands off. Its `agent/memory/` is the one place the
   agent writes: a jailed, capped Markdown folder under the app data dir, fed back into every turn's prefix. Its
   `agent/outcomes.rs` closes the loop, recording what the user did with each proposal on the two channels that reach
-  them and the agent. Its `agent/tools/` is the in-process toolset the chat dispatches, gated by access tier (`Read`,
+  them and the agent. Its `agent/tool_gate.rs` dispatches the top-level `tools/` toolset, gated by access tier (`Read`,
   `Propose`, `Memory`, and `Session`, whose one tool, `connect_volume`, connects a saved place only on a turn the user
   started, in one flight with the pane's own dial (`saved_servers/`), and `propose_server` stages a server for the user
   to save, contacting nothing, which the user's click saves through the hub's own cores (`agent/suggested_ops/server/`);

@@ -199,7 +199,7 @@ Summarize-on-overflow is still deferred (spec §3).
 
 `propose_rename_plan` items carry typed evidence, and a content claim (`imageText` /
 `imageTags`) is verified against what `image_facts` actually delivered (the `ImageFactsLedger`
-under `tools/propose/`). Delivery is recorded at DISPATCH, but only assembly knows what
+under `../../tools/propose/`). Delivery is recorded at DISPATCH, but only assembly knows what
 the model ends up reading, so `run_turn` calls
 `ToolDispatcher::revoke_evidence(&elision.elided_call_ids)` right after each assembly, before
 the `respond` goes out.
@@ -594,7 +594,7 @@ follow-up turn a rejection opens), and `resume`, RESERVED: no production caller 
 retry in the rail is a fresh send, so it runs and counts as `text`. It is `TurnParams::origin`
 (`agent::types::TurnOrigin`), stated by each caller rather than read off the opener, because the
 dispatch gate reads the same value per call: `Access::Session` tools run only on a user-started
-origin (`tools/DETAILS.md` § The dispatch gate). `resume` is kept for a replay the USER asks
+origin (`../../tools/DETAILS.md` § The dispatch gate). `resume` is kept for a replay the USER asks
 for from a stored transcript (no opener, so it would otherwise inflate whichever origin it was
 folded into), which is why it counts as user-started. ⚠️ A replay the APP starts on its own (say,
 after a crash, or of a wake thread) is not that, and needs an origin of its own. A refusal is always `text`; a wake never
@@ -826,7 +826,7 @@ every dispatcher, test doubles included. A call that hasn't started when Stop la
 dispatched; one in flight is raced against the token and abandoned (its future dropped), answering
 `{ miss: "cancelled", detail }`. Either way the call keeps its result row, so the next turn loads
 a whole call/result pair (crash case c). The race polls the call FIRST, so a handler holding the
-token (`list_dir`'s live read, `tools/DETAILS.md` § The live source) answers with its own,
+token (`list_dir`'s live read, `../../tools/DETAILS.md` § The live source) answers with its own,
 more specific `cancelled` in the same poll.
 
 ⚠️ **A `Propose` or `Memory` call is never abandoned mid-flight** (`stop_may_abandon`, exhaustive
@@ -854,7 +854,7 @@ is a thin adapter:
 
 ### What the stream says about each tool line
 
-A line's facts are typed (`agent/tools/line/`: `ToolSubject`, `ToolOutcome`, repeat marks) and
+A line's facts are typed (`agent/line/`: `ToolSubject`, `ToolOutcome`, repeat marks) and
 computed by the same pure functions the reload projection runs, so a live line and a reloaded
 one agree. Per round, in order:
 
@@ -900,7 +900,7 @@ spawn failures) carries `turn: None`. `Done.usage` stays the LAST call's usage.
 ### What a reloaded page says (`message_view/thread.rs`)
 
 `ask_cmdr_get_conversation` projects a page through `project_page`, so a reloaded tool line says
-what the live one did: the same `tools::line` functions over the stored arguments and results.
+what the live one did: the same `agent::line` functions over the stored arguments and results.
 
 - **Turn-scoped window.** A line's result sits on a later row, a repeat points at an earlier
   round, and a turn's stats ride its last assistant row, while the history pages by rows. So the

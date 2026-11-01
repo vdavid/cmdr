@@ -356,7 +356,7 @@ impl ProposalOutcomes {
 /// Who started a turn: the user, or the app on its own.
 ///
 /// Set by each caller of `run_turn`, ❌ never read off the opener's shape: a follow-up rides as
-/// `UserTurn::Outcomes` today, and the dispatch gate (`agent::tools::view`) must stay right if
+/// `UserTurn::Outcomes` today, and the dispatch gate (`agent::tool_gate`) must stay right if
 /// one day it doesn't. The turn hands it to every tool call, and analytics reports it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TurnOrigin {

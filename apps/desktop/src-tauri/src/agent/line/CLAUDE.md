@@ -1,4 +1,4 @@
-# Tool lines (`agent/tools/line/`)
+# Tool lines (`agent/line/`)
 
 What the rail's tool line says about one call, as typed facts: what it looked at (`ToolSubject`), what came back
 (`ToolOutcome`), what the model was shown (`ToolPreview`), and whether it repeats an earlier call (`repeat_marks`).

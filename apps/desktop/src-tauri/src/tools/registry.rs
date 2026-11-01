@@ -63,14 +63,14 @@ pub enum Consumer {
     /// External MCP clients over the HTTP transport (dev tooling, Claude Code, E2E).
     AiClient,
     /// The in-process Ask Cmdr agent runtime, which dispatches the agent view via
-    /// [`execute_tool`] with this identity (`crate::agent::tools`).
+    /// [`execute_tool`] with this identity (`crate::agent::tool_gate`).
     Agent,
 }
 
 /// Whether a tool reads, asks, remembers, connects, or mutates. The agent view admits `Read`,
 /// `Propose`, `Memory`, and `Session`, and must contain zero `Write` tools (see the module docs).
 ///
-/// The agent dispatch (`crate::agent::tools`) reads [`tool_access`] as a runtime backstop: it
+/// The agent dispatch (`crate::agent::tool_gate`) reads [`tool_access`] as a runtime backstop: it
 /// refuses to execute any tool classified `Write`, so "the agent can't act" holds even against a
 /// mis-tagged entry. It's registry metadata, not a field on the emitted `Tool`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -102,7 +102,7 @@ pub enum Access {
     /// ⚠️ **A deliberate widening, like [`Access::Memory`]**, authored by hand into
     /// `EXPECTED_SESSION_TOOL_NAMES` for the same reason: no structural check can prove a handler
     /// dials only a saved place. The agent's gate also admits it only on a turn the user started
-    /// (`crate::agent::tools::view`), since a background connect can wake a sleeping NAS for a
+    /// (`crate::agent::tool_gate`), since a background connect can wake a sleeping NAS for a
     /// digest nobody asked for. Agent invariant 7 (`agent/DETAILS.md`) is the promise.
     Session,
     /// Mutates the filesystem OR app state (nav, cursor, selection, tabs, dialogs, settings,
@@ -175,7 +175,7 @@ macro_rules! mcp_tools {
         }
 
         /// The in-process agent's tool set: every `[agent]` tool in table order. The agent
-        /// runtime (`crate::agent::tools`) turns these into `ToolDeclaration`s and dispatches
+        /// runtime (`crate::agent::tool_gate`) turns these into `ToolDeclaration`s and dispatches
         /// them; the structural set-equality + all-`Read` tests pin the set.
         pub fn agent_tool_view() -> Vec<Tool> {
             let mut tools = Vec::new();
@@ -196,7 +196,7 @@ macro_rules! mcp_tools {
         }
 
         /// The access class for a tool, or `None` for an unknown name. Read by the structural
-        /// tests and by the agent dispatch's runtime read-only backstop (`crate::agent::tools`).
+        /// tests and by the agent dispatch's runtime read-only backstop (`crate::agent::tool_gate`).
         pub fn tool_access(name: &str) -> Option<Access> {
             match name {
                 $( $name => Some($access), )*

@@ -50,7 +50,7 @@ Two AI consumers share this one registry (agent decision D49: extend it, don't f
 3. **Parsing** → `protocol.rs` parses and validates the authenticated request.
 4. **Routing** → `tools/call` dispatches through the generated `execute_tool()` (the macro in `tools/registry.rs`
    expands it over `table.rs`).
-5. **Execution** → the handler in the matching `executor/` category file emits a Tauri event (or queries state) and
+5. **Execution** → the handler in the matching `tools/actions/` category file emits a Tauri event (or queries state) and
    waits for the frontend ack before returning `OK`.
 6. **Frontend** → `mcp-listeners.ts` validate-parses the event payload and dispatches on the typed command bus, then
    syncs state back to `pane_state.rs`.
@@ -59,21 +59,21 @@ Two AI consumers share this one registry (agent decision D49: extend it, don't f
 
 Two edits: one registry entry, and one handler function.
 
-### Step 1: add the handler to the right `executor/` category file
+### Step 1: add the handler to the right `tools/actions/` category file
 
 Handlers take `&Value` and do their own extraction/validation. Pick the category file that fits (`nav.rs`,
 `file_ops.rs`, `view.rs`, `app.rs`, `dialogs.rs`, `search.rs`, `async_tools.rs`, `downloads.rs`) — or add a new one and
 declare it `pub(crate) mod …` in `tools/actions/mod.rs` so the generated dispatch can reach it.
 
 ```rust
-// in executor/view.rs
+// in tools/actions/view.rs
 pub async fn execute_my_action<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
     let target = params
         .get("target")
         .and_then(|v| v.as_str())
         .ok_or_else(|| ToolError::invalid_params("Missing 'target'"))?;
 
-    // Emit an event and wait for the frontend ack (see executor/CLAUDE.md for the ack contract).
+    // Emit an event and wait for the frontend ack (see tools/actions/CLAUDE.md for the ack contract).
     mcp_round_trip(app, "mcp-my-action", json!({ "target": target }), format!("OK: did {target}")).await
 }
 ```

@@ -307,7 +307,7 @@ Ask Cmdr is the widest of these, so the rest of this section is its detail. Ask 
 - **The agent can propose; only the user can approve.** The agent has no tool that touches the user's files. Its
   dispatch view admits `Access::Read`, `Access::Propose`, `Access::Memory`, and `Access::Session` entries and never
   `Access::Write` (pinned structurally in `mcp/tests/tool_registry_tests/access.rs`, and again at runtime in
-  `agent/tools/view.rs`). A `Propose` tool mutates nothing: it stages a proposal and opens a review surface. Approval
+  `agent/tool_gate.rs`). A `Propose` tool mutates nothing: it stages a proposal and opens a review surface. Approval
   originates in the frontend as a user action, and there is no tool — and never will be one — that approves a proposal.
   No agent-visible tool can reach the `autoConfirm` confirmation bypass. `Propose` adds no egress: proposals flow agent
   → user, never to the provider, so consent is unchanged by it. What reaches the provider by default is file/folder

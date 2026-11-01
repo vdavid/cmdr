@@ -13,9 +13,9 @@ pub mod thread;
 
 use serde::Serialize;
 
+use crate::agent::line::{LineRef, ToolOutcome, ToolSubject, subject_of};
 use crate::agent::llm::types::{AgentPart, AgentRole};
 use crate::agent::store::{self, StoredMessage, TurnStats};
-use crate::agent::tools::line::{LineRef, ToolOutcome, ToolSubject, subject_of};
 use crate::agent::types::ProposalDecision;
 
 /// A message's role, on the wire.
@@ -51,7 +51,7 @@ pub enum MessageBlock {
     Text { text: String },
     /// A tool the model invoked, as its line says it: what it looked at, what came back (`None`
     /// while no result row exists: still running, or a turn that never finished), and the
-    /// turn's earlier identical call it repeats. Typed facts from `tools::line`, never the raw
+    /// turn's earlier identical call it repeats. Typed facts from `agent::line`, never the raw
     /// arguments or result; the line is `(this row's id, call_id)`. Its result rides this block,
     /// so a tool-role row projects to no blocks.
     ToolCall {

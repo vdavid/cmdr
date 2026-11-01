@@ -41,7 +41,7 @@ splits changed no wire bytes — the snapshot passes unmodified.
 ## The schema gate (`params.rs`)
 
 `validate_params(name, params)` checks a call against the tool's OWN declared schema before a handler reads a field off
-it, at both dispatch entries: `execute_tool` for everything routed through the registry, and `agent/tools/view.rs`
+it, at both dispatch entries: `execute_tool` for everything routed through the registry, and `agent/tool_gate.rs`
 ahead of its branch, because `propose_rename_plan`, `propose_suggestions`, and `propose_server` need the thread's scope and never reach
 `execute_tool`. Both run for an agent call; one small object checked twice costs nothing against a provider round trip,
 and neither path has to know what the other does.
@@ -116,7 +116,7 @@ the agent view must equal exactly its authored `[agent]` entries **and** every o
 `Access::Propose`, `Access::Memory`, or `Access::Session`, never `Access::Write`. The two structural tests
 (`test_agent_tool_view_is_exactly_expected_set` + `test_agent_tool_view_never_writes`) pin both halves against
 `EXPECTED_AGENT_TOOL_NAMES`. This is the line the plan calls the effort's most safety-critical invariant; the runtime
-side (`agent::tools::view::admit`) adds
+side (`agent::tool_gate::admit`) adds
 a matching check before dispatch so a mis-tagged entry is refused at runtime too.
 
 ## The `Propose` tier
@@ -955,7 +955,7 @@ and the system prompt requires the model to disclose "returned of total" wheneve
 
 ## The dispatch gate
 
-`view.rs::refuse_unavailable(call_id, tool, origin)` is the runtime enforcement point:
+`../agent/tool_gate.rs::refuse_unavailable(call_id, tool, origin)` is the runtime enforcement point:
 
 - `ToolId::Unrecognized(_)` (any non-view name — a hallucinated `delete`, a typo) ⇒ a typed `{ available: false, … }`
   result, returned BEFORE `execute_tool`. The parse (`ToolId::from_wire_name`) is the choke point.
@@ -980,7 +980,7 @@ tool per variant, so a variant no tool carries is never covered vacuously.
 turn's Stop. ❌ Never derive it from the opener: a follow-up rides as `UserTurn::Outcomes` today, and the gate must hold
 if that wrapping ever changes.
 
-The negative test (`view.rs`) drives the fake `AgentLlm`'s `CallRawTool("delete", …)` and asserts the refusal end to
+The negative test (`../agent/tool_gate.rs`) drives the fake `AgentLlm`'s `CallRawTool("delete", …)` and asserts the refusal end to
 end; it was proven red (gate disabled ⇒ "delete" not refused) before green.
 
 The refusal copy says Ask Cmdr can prepare a rename plan, suggest file operations for the user to review, save notes in
@@ -992,7 +992,7 @@ pointed the other way.
 
 ### A propose result always answers `readyForReview`
 
-`true` when it staged, `false` when it didn't. `view.rs::ensure_review_verdict` holds it at `dispatch`'s single exit:
+`true` when it staged, `false` when it didn't. `../agent/tool_gate.rs::ensure_review_verdict` holds it at `dispatch`'s single exit:
 `dispatch` is a two-line wrapper over `route_call`, so every branch funnels through one stamp.
 
 **It is a choke point rather than a stamp at each refusal site** because four sites already have to agree — the schema
@@ -1043,5 +1043,5 @@ a rename plan's content claim checkable; the guardrail, its refusal shape, and t
 A full fake-driven dispatch of a REAL agent tool (success path through `execute_tool`) needs a Tauri app with managed
 state (`PaneStateStore`, the index registry, a data dir). That app harness is the chat runtime's concern, so this layer
 covers the success path with per-tool pure-shaper tests (fixtures for the coverage flags) and the refusal path in full
-(no app needed). The dispatch entry point the runtime calls is `agent::tools::view::dispatch`; the declaration API is
+(no app needed). The dispatch entry point the runtime calls is `agent::tool_gate::dispatch`; the declaration API is
 `tools::agent_tool_declarations`.

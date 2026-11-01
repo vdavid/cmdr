@@ -52,7 +52,7 @@ independent bounds, each answering a different question:
 
 ### The ledger's seams
 
-- **Write**: `view.rs`'s dispatch calls `note_image_facts_delivered` for every `image_facts` result whose
+- **Write**: `../../agent/tool_gate.rs`'s dispatch calls `note_image_facts_delivered` for every `image_facts` result whose
   `AgentToolResult.elided` is false. That's the only write point.
 - **Revoke**: `ImageFactsLedger::revoke_call(call_id)` exists because "the tool returned it" is not "the model read it".
   The incident this guardrail comes from was context assembly collapsing a fresh `image_facts` result to a stub: the
@@ -150,7 +150,7 @@ refuse it. Worth revisiting as a schema change rather than defending forever wit
 
 `list_pane_files` stops at a page in a big folder, and the system prompt requires the reply to say "N of M"
 (`prompt_requires_exact_truncation_disclosure`). Nothing checks the model obeyed. `cut_listing.rs` keeps each thread's
-latest `list_pane_files` numbers in process memory (`PaneListingCuts`, fed by `view.rs`; a problem result leaves the
+latest `list_pane_files` numbers in process memory (`PaneListingCuts`, fed by `../../agent/tool_gate.rs`; a problem result leaves the
 previous one standing, an elided one never lands), and a plan that stages with rows in a folder last seen cut fires
 `rename_plan_from_cut_listing` (`analytics/DETAILS.md`). The `coverage` token compares the plan's row count in that
 folder against `returned` and `total`.

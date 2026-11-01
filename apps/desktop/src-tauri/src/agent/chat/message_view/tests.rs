@@ -4,9 +4,9 @@
 use serde_json::{Value, json};
 
 use super::*;
+use crate::agent::line::LinePath;
 use crate::agent::llm::types::{AgentToolCall, AgentToolResult, ProviderTag, ReasoningState, ToolId};
 use crate::agent::store::ConversationEvent;
-use crate::agent::tools::line::LinePath;
 
 fn stored(content: store::StoredContent) -> StoredMessage {
     StoredMessage {

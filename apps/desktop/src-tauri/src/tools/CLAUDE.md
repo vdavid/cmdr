@@ -1,7 +1,7 @@
 # AI tools (`tools/`)
 
 Every AI-callable tool, for both callers: one authored table, the handlers, and the `cmdr://` resources. `../mcp/` is the
-transport for outside clients; `../agent/` is the in-process runtime.
+transport for outside clients; `../agent/` is the in-process runtime, with the gated dispatch in `../agent/tool_gate.rs`.
 
 ## Module map
 
@@ -36,6 +36,6 @@ transport for outside clients; `../agent/` is the in-process runtime.
   abandoned past a deadline. A new content KIND is a copy change plus a `CLOUD_AI_CONSENT_VERSION` bump.
 - **Anything yielding file contents passes `sensitive.rs`.**
 - **New agent tool** = table entry + handler/schema/result + a `ToolId` variant + `EXPECTED_AGENT_TOOL_NAMES` +
-  `ToolId::KNOWN` + `../agent/tools/line/` arms + a rail label in `ask-cmdr-labels.ts`.
+  `ToolId::KNOWN` + `../agent/line/` arms + a rail label in `ask-cmdr-labels.ts`.
 
 Depth: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

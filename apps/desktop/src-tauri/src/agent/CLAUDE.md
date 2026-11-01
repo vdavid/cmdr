@@ -9,7 +9,8 @@ the surface, so every later slice grows here too.
 - `store/`: `main.db` (migrations, conversations, FTS5, cost meter, the proposal spine); `start(app)` opens it.
   `store/CLAUDE.md`.
 - `suggested_ops/`: selector resolution over the spine plus the acceptance-rate metric. `suggested_ops/CLAUDE.md`.
-- `tools/`: the rail's tool line and the gated dispatch. The toolset itself: `../tools/CLAUDE.md`.
+- `tool_gate.rs`: the gated dispatch into `../tools/`, the no-write choke point. `agent_tool_declarations()` is `tools/mod.rs`'s.
+- `line/`: what the rail's tool line says about a call (subject, outcome, preview, repeat mark). `line/CLAUDE.md`.
 - `memory/`: the jailed, capped folder the agent writes about the user. `memory/CLAUDE.md`.
 - `wake/`: the proactive pipeline and the thread driving it. `wake/CLAUDE.md`.
 - `chat/`: `run_turn` + `ChatRuntime` plus pure context assembly. `chat/CLAUDE.md`.

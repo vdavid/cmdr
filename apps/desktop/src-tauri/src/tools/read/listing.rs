@@ -536,7 +536,7 @@ pub async fn execute_list_dir<R: Runtime>(app: &AppHandle<R>, params: &Value) ->
 }
 
 /// `list_dir` with the turn's cancel, so Stop ends a live read that's waiting
-/// on a slow volume (`agent::tools::view::dispatch` routes the agent's calls
+/// on a slow volume (`agent::tool_gate::dispatch` routes the agent's calls
 /// here).
 pub(crate) async fn execute_list_dir_cancellable<R: Runtime>(
     _app: &AppHandle<R>,

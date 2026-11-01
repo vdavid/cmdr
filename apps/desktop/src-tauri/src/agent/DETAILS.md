@@ -29,10 +29,12 @@ The backend modules:
   modeled on `operation_log_host::start`. Depth: `store/DETAILS.md`, `store/proposals/DETAILS.md`.
 - `suggested_ops/`: the service over the spine — resolving a selector to a frozen op list against the drive index,
   wrapping the store's claim, and the acceptance-rate metric. Depth: `suggested_ops/DETAILS.md`.
-- `../tools/`: the in-process toolset — the read families authored as `consumers: [Agent]` entries in the consolidated
-  registry (agent decision D49, extend-don't-fork), their handlers/result shapes that reuse the shipped cores (drive index,
-  importance, operation log, volumes, app state, the file viewer), the propose and memory tiers, and the gated dispatch
-  that refuses any non-view name before `execute_tool`. Depth: `../tools/DETAILS.md`.
+- `tool_gate.rs`: the gated dispatch that refuses any non-view name before `execute_tool`, plus `line/`, what the rail says
+  about a call. Depth: `line/DETAILS.md`, `../tools/DETAILS.md` § The dispatch gate.
+- `../tools/`: the toolset, a sibling of this module: the read families authored as `consumers: [Agent]` entries in the
+  consolidated registry (agent decision D49, extend-don't-fork), their handlers/result shapes that reuse the shipped cores
+  (drive index, importance, operation log, volumes, app state, the file viewer), and the propose and memory tiers. Depth:
+  `../tools/DETAILS.md`.
 - `chat/`: the chat runtime (single-flight per thread, per-message budgets, cancellation, typed errors,
   crash-safe persistence, the `AgentChatEvent` seam) and the pure, TDD-heavy context-assembly core (stable prefix,
   elide-only compaction, the fresh context envelope on the latest user turn only). `chat/session.rs` is what a turn
@@ -96,7 +98,7 @@ sleeping NAS spins up its disks, and a server logs a login. So it is held by thr
 only on a turn the user started (`text`, a retry included, which is a fresh send; `resume` is reserved and no
 production caller sets it; an action the user approved counts as theirs, per `docs/design-principles.md`); a wake or a
 follow-up gets a typed `refusedInBackground`
-(`tools/view.rs`), reading the turn's own origin, never the opener's shape. Second, a hand-authored allowlist
+(`tool_gate.rs`), reading the turn's own origin, never the opener's shape. Second, a hand-authored allowlist
 (`EXPECTED_SESSION_TOOL_NAMES`), for the reason the other two have one. Third, what a `Session` tool may dial: a SAVED
 place, by volume id, with STORED credentials only. It can't add a host, type a password, or approve a key, which is
 exactly what an injected file name would want. `connect_volume` is the one tool on the allowlist

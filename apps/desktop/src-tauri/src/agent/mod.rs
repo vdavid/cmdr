@@ -11,12 +11,14 @@
 //! - `suggested_ops`: the service over the proposal spine (selector resolution against the
 //!   drive index, and the acceptance-rate metric).
 //! - `memory`: the Markdown folder the agent writes about the user, jailed and capped.
-//! - `tools`: the in-process toolset (the agent's registry view).
+//! - `line`: what the rail's tool line says about a call.
+//! - `tool_gate`: the gated dispatch into `crate::tools`, the one choke point for an agent call.
 //! - `chat`: the chat runtime and the pure context-assembly core.
 //!
 //! See `CLAUDE.md` for must-knows and `DETAILS.md` for the map.
 
 pub mod chat;
+pub mod line;
 pub mod llm;
 pub mod memory;
 pub mod outcomes;
@@ -24,7 +26,7 @@ pub mod pricing;
 pub mod prompts;
 pub mod store;
 pub mod suggested_ops;
-pub mod tools;
+pub mod tool_gate;
 pub mod types;
 pub mod wake;
 

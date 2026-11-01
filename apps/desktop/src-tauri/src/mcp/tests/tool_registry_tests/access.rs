@@ -12,7 +12,7 @@ use crate::tools::{Access, Consumer, agent_tool_view, get_all_tools, tool_access
 // The agent can propose; only the user can approve. `Propose` widens what the agent may ASK for,
 // never what it may DO — so these tests also pin the hand-authored Propose allowlist and the
 // absence of any confirmation bypass in the agent's view. The access axis of the runtime gate is
-// exercised per-variant in `agent/tools/view.rs`, since with no Propose tool authored yet the
+// exercised per-variant in `agent/tool_gate.rs`, since with no Propose tool authored yet the
 // registry-level assertions would cover `Propose` vacuously.
 
 /// The exact set of tool names in the agent's read-only view. Pins the set so a stray

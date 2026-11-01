@@ -3,8 +3,8 @@
 use serde_json::json;
 
 use super::call_with_id;
+use crate::agent::line::{LineRef, repeat_marks};
 use crate::agent::llm::types::ToolId;
-use crate::agent::tools::line::{LineRef, repeat_marks};
 
 fn line(message_id: i64, call_id: &str) -> LineRef {
     LineRef {

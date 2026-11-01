@@ -29,9 +29,9 @@ use tauri_specta::Event;
 
 use super::message_view::MessageView;
 use super::runtime::{AgentChatEvent, AgentErrorKind, ResolvedCall};
+use crate::agent::line::{ToolOutcome, ToolSubject};
 use crate::agent::llm::types::{AgentStopReason, AgentUsage};
 use crate::agent::store::TurnStats;
-use crate::agent::tools::line::{ToolOutcome, ToolSubject};
 
 const LOG_TARGET: &str = "agent::chat";
 

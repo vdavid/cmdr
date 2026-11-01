@@ -139,7 +139,7 @@ through the servers hub's own cores (`saved_servers/`). It reuses `propose_sugge
 `groupId`, `pending` only), and report shape, one group long. Order: origin, shape, values, saved-server checks, then
 the write; any refusal writes nothing.
 
-- **Only on a turn the user started.** The handler reads the turn's origin (`CallContext`, routed by `view.rs`) and
+- **Only on a turn the user started.** The handler reads the turn's origin (`CallContext`, routed by `../../agent/tool_gate.rs`) and
   answers `refusedInBackground` on a wake or a follow-up, before it reads a store. ❌ Not a tool-name check in `admit`:
   the gate stays tier-only and this rule lives with the one tool it belongs to. A badge saying "AI suggestion: add
   server naspi-backup" arriving unprompted is the social-engineering shape an injection wants. The registry path
@@ -198,7 +198,7 @@ the write; any refusal writes nothing.
   - An NFS add that names no `uid` / `gid` takes this Mac's (`saved_servers::nfs_places::this_mac_identity`), the add
     form's own no-contact fallback, so the card shows the identity the click saves.
 - **The report** is `propose_suggestions`' `ProposeReport` with one `opCount: 0` group; the rail line counts the card,
-  not its ops (`../../agent/tools/line/DETAILS.md`).
+  not its ops (`../../agent/line/DETAILS.md`).
 
 ## The selector schema, and the one predicate that isn't there
 
@@ -241,7 +241,7 @@ user already dealt with, which is an answer, not a fault.
 
 ## The conversation link
 
-`view.rs` routes `propose_suggestions` through `propose_in_thread` with `EvidenceScope::conversation_id()`, so a sweep
+`../../agent/tool_gate.rs` routes `propose_suggestions` through `propose_in_thread` with `EvidenceScope::conversation_id()`, so a sweep
 records the thread it came out of. The registry path (an external MCP client) has no thread and stores `NULL`, which is
 what a background wake will store in M5 too. The column is `ON DELETE SET NULL`, so tidying a chat thread away later
 leaves the decision record whole.

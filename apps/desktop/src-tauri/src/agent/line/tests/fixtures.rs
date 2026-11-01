@@ -329,7 +329,7 @@ pub(super) fn memory_refused(token: &str) -> Value {
     json!({ "saved": false, "refused": token, "detail": "Memory is full: prune it." })
 }
 
-/// The view gate's refusal (`tools/view.rs::refuse_unavailable`).
+/// The view gate's refusal (`tool_gate.rs::refuse_unavailable`).
 pub(super) fn unavailable() -> Value {
     json!({ "available": false, "requested": "delete", "reason": "Ask Cmdr can't touch your files." })
 }

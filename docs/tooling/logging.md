@@ -297,8 +297,8 @@ Copy-paste commands for common debugging scenarios. All include `info` as the ba
 - **Volume discovery + broadcast**: `RUST_LOG=cmdr_lib::volume_broadcast=debug,cmdr_lib::volumes=debug,info pnpm dev`
 - **AI/LLM**: `RUST_LOG=cmdr_lib::ai=debug,info pnpm dev`
 - **Licensing**: `RUST_LOG=cmdr_lib::licensing=debug,info pnpm dev`
-- **MCP server**: `RUST_LOG=cmdr_lib::mcp=debug,info pnpm dev`. Explicit `target:` strings like `mcp::server` keep their
-  names. A log call with no `target:` takes its module path.
+- **MCP server**: `RUST_LOG=cmdr_lib::mcp=debug,info pnpm dev`. Explicit `target:` strings like `mcp::server` and
+  `agent::tools` keep their names. A log call with no `target:` takes its module path.
 - **AI tools** (handlers and resources, for both callers): `RUST_LOG=cmdr_lib::tools=debug,info pnpm dev`
 - **All frontend logs**: `RUST_LOG=FE:=debug,info pnpm dev`
 - **Specific FE feature**: `RUST_LOG=FE:fileExplorer=debug,info pnpm dev`

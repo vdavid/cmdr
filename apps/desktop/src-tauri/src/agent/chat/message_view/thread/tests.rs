@@ -6,9 +6,9 @@ use serde_json::{Value, json};
 
 use super::*;
 use crate::agent::chat::message_view::MessageBlock;
+use crate::agent::line::{LinePath, LineRef, RefusalReason, ToolOutcome, ToolSubject};
 use crate::agent::llm::types::{AgentPart, AgentRole, AgentToolCall, AgentToolResult, ToolId};
 use crate::agent::store::{ConversationEvent, StoredContent, StoredMessage, TurnContext, TurnStats};
-use crate::agent::tools::line::{LinePath, LineRef, RefusalReason, ToolOutcome, ToolSubject};
 
 /// Builds a thread row by row, minting ids and seqs in order (ids start at 100 so they never
 /// read like seqs).

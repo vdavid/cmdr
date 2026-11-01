@@ -11,7 +11,7 @@
 //! rather than implied.
 //!
 //! ⚠️ **A refusal comes back as an `Ok` result carrying a typed token**, never as a `ToolError`.
-//! `view::dispatch` flattens a `ToolError` to `{ "problem": <sentence> }`, and a model that has
+//! `tool_gate::dispatch` flattens a `ToolError` to `{ "problem": <sentence> }`, and a model that has
 //! to read prose to learn its memory is full will keep writing into a folder that is not saving
 //! anything. `error-string-match` is the same rule pointed at the model.
 
