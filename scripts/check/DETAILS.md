@@ -343,7 +343,7 @@ lock".
 check (positionally or via `--check`) implicitly includes slow checks (`includeSlow = len(checkNames) > 0`); group/app
 selectors don't.
 
-**Fast lane (`--fast`):** `IsFast: true` marks the curated pre-commit check set: 72 checks, about 6 s wall even with
+**Fast lane (`--fast`):** `IsFast: true` marks the curated pre-commit check set: 74 checks, about 6 s wall even with
 `--fresh` (verified on the M1 Max agent box, `pnpm check --fast --ci --fresh`, 2026-10-13), intended to run before every
 commit. Its budget is 5–10 s, so formatters, test suites, typecheckers, `knip`, and the i18n generator-freshness lanes
 stay in the default lane. It's an editorial pick, not a timing-derived list (see Key decisions below). Named check

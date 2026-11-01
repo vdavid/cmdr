@@ -433,6 +433,9 @@ jobs:
       - name: Check lock-poison
         run: ./scripts/check/check --check desktop-rust-lock-poison --ci
 
+      - name: Check tools-module-boundary
+        run: ./scripts/check/check --check tools-module-boundary --ci
+
       - name: Check log-private-values
         run: ./scripts/check/check --check desktop-rust-log-private-values --ci
 
