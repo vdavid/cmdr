@@ -38,7 +38,7 @@ vi.mock('#lib/settings/reactive-settings.svelte.js', () => ({
 import OperationConflictDialog from './OperationConflictDialog.svelte'
 import { buttonLabel } from './test-button-label'
 import { DECISION_KEYS_ARM_MS } from './decision-keys'
-import { ARM_QUIET_MS } from '#lib/ui/started-elsewhere-guard'
+import { ARM_QUIET_MS } from '#lib/ui/started-elsewhere-guard.js'
 
 function snapshot(over: Partial<OperationSnapshot> = {}): OperationSnapshot {
   return {

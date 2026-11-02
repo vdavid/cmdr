@@ -9,7 +9,7 @@ import { flushSync, mount, unmount } from 'svelte'
 import TransferErrorDialog from './TransferErrorDialog.svelte'
 import type { WriteOperationError } from '#lib/file-explorer/types.js'
 import { DECISION_KEYS_ARM_MS, ERROR_KEYS } from '../decision-keys'
-import { ARM_QUIET_MS } from '#lib/ui/started-elsewhere-guard'
+import { ARM_QUIET_MS } from '#lib/ui/started-elsewhere-guard.js'
 import { buttonLabel } from '../test-button-label'
 
 vi.mock('#lib/tauri-commands/index.js', () => ({

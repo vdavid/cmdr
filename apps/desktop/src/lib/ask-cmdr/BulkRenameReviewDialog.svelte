@@ -1,6 +1,6 @@
 <script lang="ts">
     import ModalDialog from '#lib/ui/ModalDialog.svelte'
-    import { mayBeToolRaised } from '#lib/ui/tool-raised'
+    import { mayBeToolRaised } from '#lib/ui/tool-raised.js'
     import Button from '#lib/ui/Button.svelte'
     import TextInput from '#lib/ui/TextInput.svelte'
     import Icon from '#lib/ui/Icon.svelte'

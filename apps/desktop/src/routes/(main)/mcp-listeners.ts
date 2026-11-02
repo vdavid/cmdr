@@ -145,7 +145,9 @@ export function parseInitiator(value: unknown): ToolInitiator {
  * Who asked, and whether what opens must arm before a keystroke can touch it. Only a plain `false`
  * turns the guard off, so a payload that says nothing is guarded.
  */
-export function parseStartedBy(raw: Record<string, unknown>): { initiator: ToolInitiator; guard: boolean } {
+type StartedBy = { initiator: ToolInitiator; guard: boolean }
+
+export function parseStartedBy(raw: Record<string, unknown>): StartedBy {
   return { initiator: parseInitiator(raw.initiator), guard: raw.guard !== false }
 }
 
@@ -688,33 +690,44 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     })()
   })
 
-  await listenTauri('mcp-mkdir', (event) => {
-    // With a `name` it creates directly on the target pane's LIVE path (so it can't
-    // land in a stale dir) and replies OK or the backend conflict error. With none it
-    // opens the naming dialog, whose opener answers the round trip.
-    const raw = asRecord(event.payload)
+  // With a `name` it creates directly on the target pane's LIVE path (so it can't land in a stale
+  // dir) and replies OK or the backend conflict error. With none it opens the naming dialog, whose
+  // opener answers the round trip.
+  const createOrOpenDialog = (
+    payload: unknown,
+    createDirect: (
+      name: string,
+      pane: 'left' | 'right' | undefined,
+      initiator: ToolInitiator,
+    ) => Promise<void> | undefined,
+    openDialog: (args: { pane: 'left' | 'right' | undefined; mcpRequestId: string | undefined } & StartedBy) => void,
+  ): void => {
+    const raw = asRecord(payload)
     const name = typeof raw.name === 'string' ? raw.name : undefined
     const pane = parsePane(raw.pane)
     const requestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
     if (name !== undefined) {
       const { initiator } = parseStartedBy(raw)
-      void createDirectlyThenReply(() => getExplorer()?.createFolderDirect(name, pane, initiator), requestId)
+      void createDirectlyThenReply(() => createDirect(name, pane, initiator), requestId)
     } else {
-      void dispatch(fileNewFolderCommand, { pane, mcpRequestId: requestId, ...parseStartedBy(raw) })
+      openDialog({ pane, mcpRequestId: requestId, ...parseStartedBy(raw) })
     }
+  }
+
+  await listenTauri('mcp-mkdir', (event) => {
+    createOrOpenDialog(
+      event.payload,
+      (name, pane, initiator) => getExplorer()?.createFolderDirect(name, pane, initiator),
+      (args) => void dispatch(fileNewFolderCommand, args),
+    )
   })
 
   await listenTauri('mcp-mkfile', (event) => {
-    const raw = asRecord(event.payload)
-    const name = typeof raw.name === 'string' ? raw.name : undefined
-    const pane = parsePane(raw.pane)
-    const requestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
-    if (name !== undefined) {
-      const { initiator } = parseStartedBy(raw)
-      void createDirectlyThenReply(() => getExplorer()?.createFileDirect(name, pane, initiator), requestId)
-    } else {
-      void dispatch(fileNewFileCommand, { pane, mcpRequestId: requestId, ...parseStartedBy(raw) })
-    }
+    createOrOpenDialog(
+      event.payload,
+      (name, pane, initiator) => getExplorer()?.createFileDirect(name, pane, initiator),
+      (args) => void dispatch(fileNewFileCommand, args),
+    )
   })
 
   await listenTauri('mcp-delete', (event) => {

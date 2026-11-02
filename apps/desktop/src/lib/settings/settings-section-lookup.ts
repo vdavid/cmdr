@@ -4,8 +4,7 @@
  * path that isn't a section, so an unknown name has to stop here.
  */
 
-import { buildSectionTree } from './settings-registry'
-import type { SettingsSection } from './types'
+import { buildSectionTree, type SettingsSection } from './settings-registry'
 
 /** The sidebar pages with dedicated UI, which the registry's tree doesn't hold. */
 export const SPECIAL_SETTINGS_SECTIONS = {

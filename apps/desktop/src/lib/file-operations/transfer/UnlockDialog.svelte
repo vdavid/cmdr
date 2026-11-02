@@ -1,7 +1,7 @@
 <script lang="ts">
     import { tick, untrack } from 'svelte'
     import ModalDialog from '#lib/ui/ModalDialog.svelte'
-    import { mayBeToolRaised } from '#lib/ui/tool-raised'
+    import { mayBeToolRaised } from '#lib/ui/tool-raised.js'
     import TextInput from '#lib/ui/TextInput.svelte'
     import Button from '#lib/ui/Button.svelte'
     import Checkbox from '#lib/ui/Checkbox.svelte'

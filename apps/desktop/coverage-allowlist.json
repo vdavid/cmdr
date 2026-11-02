@@ -109,9 +109,6 @@
     "settings/settings-window.ts": {
       "reason": "Depends on Tauri window APIs"
     },
-    "shortcuts/mcp-shortcuts-listener.ts": {
-      "reason": "MCP listener, depends on Tauri events"
-    },
     "shortcuts/shortcuts-window.ts": {
       "reason": "Depends on Tauri WebviewWindow API (same as settings-window.ts / open-viewer.ts)"
     },

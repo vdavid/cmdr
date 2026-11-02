@@ -22,7 +22,7 @@
     import { onMount, tick } from 'svelte'
     import ModalDialog from '#lib/ui/ModalDialog.svelte'
     import { focusFirstField } from '#lib/ui/focus-trap.js'
-    import { mayBeToolRaised } from '#lib/ui/tool-raised'
+    import { mayBeToolRaised } from '#lib/ui/tool-raised.js'
     import Button from '#lib/ui/Button.svelte'
     import Spinner from '#lib/ui/Spinner.svelte'
     import HostKeyStep from './HostKeyStep.svelte'

@@ -12585,7 +12585,7 @@ export type MessageBlock =
   // Assistant or user prose (rendered markdown-lite, entity-escaped first).
   | { type: 'text'; text: string }
   /**
-   *  A tool the model invoked, as its line says it: what it looked at, what came back (`None`
+   *  A tool the model invoked (the one that ran, through `use_tool` or not), as its line says it: what it looked at, what came back (`None`
    *  while no result row exists: still running, or a turn that never finished), and the
    *  turn's earlier identical call it repeats. Typed facts from `agent::line`, never the raw
    *  arguments or result; the line is `(this row's id, call_id)`. Its result rides this block,

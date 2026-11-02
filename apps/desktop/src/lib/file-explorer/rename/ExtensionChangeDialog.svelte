@@ -4,6 +4,7 @@
     import Checkbox from '#lib/ui/Checkbox.svelte'
     import { setSetting } from '#lib/settings/index.js'
     import { tString } from '#lib/intl/messages.svelte.js'
+    import type { ToolInitiator } from '#lib/ui/started-elsewhere-guard.js'
 
     interface Props {
         /** The extension before the rename, no dot; `''` when the name had none. */
