@@ -3,15 +3,31 @@
 Every AI-callable tool: the one authored table, the agent's read families, the `Propose` tier over them, and the two
 `Memory` tools. Handlers shared with outside clients: `actions/DETAILS.md`. Must-knows: `CLAUDE.md`.
 
-## The two-view registry model
+## The rule
 
-There is ONE authored tool table (`table.rs`, expanded by `mcp_tools!` from `registry.rs`). Each entry declares
-`consumers` (`AiClient` / `Agent`) and `access` (`Read` / `Propose` / `Memory` / `Session` / `Write`). The agent's tools
-are `consumers: [Agent]` entries, never `access: Write`; `operations_list` / `operations_get` / `search` /
-`search_photos` / `image_facts` are shared `[AiClient, Agent]`. `agent_tool_view()` is the agent's slice;
-`get_all_tools()` is the ai-client slice (agent-only entries filtered out, so the ai-client wire snapshot is unchanged).
-`execute_tool(app, ctx, name, params)` dispatches only the view of `ctx.caller`. § Consumer and access views has the
-mechanism.
+**The agent can start anything. A person finishes anything sensitive.** There is ONE authored tool table (`table.rs`,
+expanded by `mcp_tools!` from `registry.rs`), and each entry declares only what the tool does (`access`). `admit(caller,
+access)` in `policy.rs` is pure, is the only thing deciding, and answers Allow, Ask, or Refuse:
+
+- Agent, on a turn the user started: `Sensitive` asks, `DevOnly` refuses, everything else allows.
+- Agent, on a turn Cmdr started (a wake, a follow-up): `Read`, `ReadContents`, `Propose`, and `Memory` allow; `DevOnly`
+  refuses; the rest refuse `refusedInBackground`.
+- Outside client, direct: everything allows.
+- Outside client, not direct: `Sensitive` asks; `ReadContents`, `Memory`, and `DevOnly` refuse `directModeOff` naming
+  `developer.mcpDirectMode`; the rest allow.
+
+**There are no per-caller lists.** Every tool is reachable by both callers, or its entry carries a reason (`DevOnly`,
+`Load::Meta`), pinned by `every_tool_is_reachable_by_both_callers_or_carries_a_reason`. `execute_tool` asks `admit` before
+the schema check, a question, or a handler; `../agent/tool_gate.rs` asks it too, to shape a refusal as a tool result and
+because `propose_rename_plan` goes around `execute_tool`. It's pure, so the two can't disagree.
+
+The agent's declarations are every tool `admit` doesn't refuse on a user-started turn, whatever turn the call serves: a user
+turn and a follow-up can share a thread, and those bytes are the provider's cache key. So a wake sees `copy` and hears
+`refusedInBackground` if it calls it.
+
+`tools/list` shows an outside client the whole table but `Meta` entries, each with annotations generated from `access`
+(`Access::hints`): `Read` and `ReadContents` `readOnlyHint: true`; `Propose`, `Memory`, `Session`, `AppState`, and
+`LightWrite` `destructiveHint: false`; `Initiate`, `Sensitive`, and `DevOnly` `destructiveHint: true`.
 
 **Decision: a module, not a crate.** Crates here carry no `tauri`, and handlers need `AppHandle`, events, and pane stores,
 so a crate would need a host abstraction over nearly every handler for little gain.
@@ -24,18 +40,20 @@ exactly that list.
 ## The table
 
 Every AI-callable tool is authored once in the `mcp_tools!` table in `table.rs` — name, `id`, `brief`, description, JSON
-schema, `subject`, `consumers`, `access`, and handler per entry. That one table generates `get_all_tools()`
-(the ai_client `tools/list`), `agent_tool_view()` (the in-process agent's set), `execute_tool()` (caller-gated
-dispatch), `tool_consumers()` / `tool_access()`, and `ToolId` (the enum, `KNOWN`, the wire-name conversions, and serde),
-so the facets can't drift and adding a tool is a single entry. `registry.rs` also defines `Tool`, the `tools/list`
-element every view returns. Read the entries
+schema, `subject`, `access`, `load`, and handler per entry. That one table generates `get_all_tools()` (the whole table but
+`Meta` entries: `tools/list`), `execute_tool()` (the dispatch), `tool_access()`, and `ToolId` (the enum, `KNOWN`, the
+wire-name conversions, and serde), so the facets can't drift and adding a tool is a single entry. `registry.rs` also
+defines `Tool`, the `tools/list` element. Read the entries
 for the exact schemas (don't transcribe them here); the sections below summarize behavior. Wire output is byte-identical
 and pinned by `tests/tool_snapshot_tests.rs`.
 
 **The per-entry columns that aren't dispatch.**
 
-- `id`: the entry's `ToolId` variant. `KNOWN` is every entry, whichever caller it's listed for, so a name parsing as
-  known says nothing about who may run it: that's the gate's call (§ The dispatch gate).
+- `id`: the entry's `ToolId` variant. `KNOWN` is every entry, so a name parsing as known says nothing about who may run
+  it: that's `admit`'s call.
+- `load`: how the agent gets the schema. `Core` is declared in full on every call: the tools the everyday flows and the
+  system prompt name, capped by a test. `Deferred` will be one line in the prompt and the schema on request. `Meta` is a
+  tool about tools, for the in-process agent only. Every tool is declared in full for now, whatever its `load`.
 - `brief`: one line, at most 100 characters (test-capped), for a tool a model hasn't loaded in full. It describes what
   the tool does for anyone holding it, so it never names a parameter.
 - `subject`: what the tool line names (`../agent/line/DETAILS.md` § The table's subject column). `Custom` is the only
@@ -44,7 +62,7 @@ and pinned by `tests/tool_snapshot_tests.rs`.
 **Directory split (`tools/`).** The table's `json!` schema blocks dominate the line count and serialize
 identically wherever they live, so they're hoisted into `schemas/*.rs` (one `fn <tool>_schema() -> Value` per tool,
 grouped by category) and the entries call them (`schema: schemas::copy_schema()`). `registry.rs` holds the mechanism (the
-macro, the `Consumer` / `Access` dimensions, `SubjectSpec`, the params gate), `mod.rs` re-exports what the macro generates, and `table.rs`
+macro, `Access`, `Load`, `SubjectSpec`, the params gate), `mod.rs` re-exports what the macro generates, and `table.rs`
 holds nothing but the authored entries, so the file that grows per tool is pure data. The
 splits changed no wire bytes — the snapshot passes unmodified.
 
@@ -79,42 +97,32 @@ before the ask, so a stray argument on a `Sensitive` tool refuses before it reac
 can't reach checks itself: `inspect_file`'s `parse_find` runs `gate` on `find`, since a guessed `regexp: true` would
 otherwise search literally and report a zero.
 
-## Consumer and access views
+## The access classes
 
-One authored registry serves two consumers (agent decision D49: **extend the consolidated registry, don't fork a parallel
-agent-only table**). Two per-entry dimensions express the split:
+`access` says what the tool does, whoever calls it (decision D49: **one registry, no parallel table**):
 
-- **`consumers`** (`&[Consumer]`, `AiClient` / `Agent`): the exposure axis. `get_all_tools()` returns entries whose
-  `consumers` include `AiClient` (the MCP wire); `agent_tool_view()` returns those including `Agent` (the in-process
-  agent runtime). The macro emits a `Tool` per entry *conditionally*, so an agent-only entry never reaches the MCP wire
-  and vice versa. The agent view is the read families authored under `crate::tools::read` (`app_state`,
-  `list_pane_files`, `important_folders`, `folder_importance`, `list_volumes`) plus `list_dir`, `operations_list` /
-  `operations_get`, `search_photos`, and `image_facts`, shared into `[AiClient, Agent]` because their read schemas fit
-  both readers unchanged. Agent handlers/schemas live under `CLAUDE.md`, named by path from the entry.
-- **`access`** says what the tool does, whoever calls it:
   - `Read`: reads state.
   - `ReadContents`: reads inside files, or image-derived text (`inspect_file`, `image_facts`, `search_photos`).
     Exactly `Read` for the agent.
   - `Propose`: stages a proposal, described below.
   - `Memory`: writes only the agent's memory folder.
-  - `Session`: opens a session to a place the user saved, with stored credentials. The agent's gate admits it only on a
-    turn the user started (agent invariant 7, `DETAILS.md` § The dispatch gate; § The `Session` tier below).
+  - `Session`: opens a session to a place the user saved, with stored credentials (agent invariant 7, § The `Session`
+    tier below).
   - `AppState`: changes what's on screen, never data.
   - `Initiate`: opens a dialog or editor a person confirms.
   - `LightWrite`: writes with no confirmation, the ONE written exception (`tag`, and `mkdir` and `mkfile` with a name).
   - `Sensitive`: runs after a person confirms an Ask.
   - `DevOnly(reason)`: never the agent, and an outside client only in direct mode (§ Direct mode).
 
-  The agent's gate refuses `AppState`, `Initiate`, `LightWrite`, `Sensitive`, and `DevOnly` today. Every class except
-  `Read` and `AppState` is hand-allowlisted (`EXPECTED_*_TOOL_NAMES`), and `DevOnly` is pinned by name.
+  Every class except `Read` and `AppState` is hand-allowlisted (`EXPECTED_*_TOOL_NAMES`), and `DevOnly` is pinned by name.
 
 ⚠️ **`Access::Memory` was a deliberate widening of the app's central agent-safety invariant.** "The agent never changes
 anything" became "the agent writes only into `<data-dir>/ai/memory/`". Three things hold the narrowed promise: the jail
 in `../agent/memory/` (relative `.md` paths only, no `..`, no symlink along the chain, containment re-checked against a
 canonicalized parent); the hand-authored `EXPECTED_MEMORY_TOOL_NAMES` allowlist, which exists for the same reason the
 `Propose` one does (no structural check can prove a handler stays in a jail, so a human puts each name there having
-read it); and `consumers: [Agent]` on both entries, pinned by a test — a `Memory` tool must never reach the HTTP
-transport, whose security story is "no filesystem access". Depth: `../agent/memory/DETAILS.md`.
+read it); and `admit`, which keeps an outside client out off direct mode, since nobody's agreed to a filesystem write over
+HTTP. Depth: `../agent/memory/DETAILS.md`.
 
 ## Who's calling (`Caller`, `ToolCtx`)
 
@@ -140,7 +148,8 @@ client's disconnect as its cancel. A handler that needs it takes the table's `ct
 ## The human gate (`ask.rs`, `ask_plans.rs`)
 
 A `Sensitive` tool's table entry names an `ask:` plan, and `execute_tool` runs it through `ask::gate` after the schema
-gate and before the handler. Direct mode skips the gate. A test pins plan and `Sensitive` to each other, both ways.
+gate and before the handler, only when `admit` answers Ask, so direct mode never reaches it. A test pins plan and
+`Sensitive` to each other, both ways.
 
 - **A plan only reads, and runs twice**: once to word the question, and again after a yes. Different facts, or a plan
   that no longer asks, refuse with `data.refusal: "changedWhileAsking"`. So every `Sensitive` tool gets the re-check for
@@ -176,9 +185,11 @@ The switch that lets an outside client use the tools that go past a person (`pol
 - **On** when an E2E or capture run happens in a build that honors it (`E2E_HONORED`: debug or `playwright-e2e`), or when
   `developer.mcpDirectMode` is on. A release build ignores the environment, since `CMDR_E2E_MODE` is readable in every
   build.
-- **Off**, a `DevOnly` tool refuses with `data: { reason: "directModeOff", setting: "developer.mcpDirectMode" }`, checked
-  in `execute_tool` for `Consumer::AiClient`. `tools/list` still lists it. The handler reads an atomic per request, so a
-  toggle applies to the next call.
+- **Off**, a `DevOnly`, `ReadContents`, or `Memory` tool, and `multi_rename`'s media fields, refuse an outside client with
+  `data: { reason: "directModeOff", setting: "developer.mcpDirectMode" }` (`admit`). `tools/list` still lists them.
+  `mcp/handler.rs` reads an atomic per request, so a toggle applies to the next call.
+- **On**, an outside client's successful content read lands in the security log, by tool and never by path
+  (`McpContentRead`).
 - **Decision: the JSON value never turns it on by itself.** A same-user process with no Full Disk Access can write
   `settings.json` or launch Cmdr with a crafted `CMDR_DATA_DIR`, then read `~/Documents` through Cmdr's Full Disk Access.
   So launch seeds the atomic only when the JSON says on AND `secrets`'s `mcp.directMode` item reads through
@@ -197,27 +208,9 @@ The switch that lets an outside client use the tools that go past a person (`pol
 ## The `Session` tier
 
 `upgrade_smb_to_direct` moves a share that's already mounted to a direct session, and it's an outside client's tool.
-`connect_volume` is the agent's, `consumers: [Agent]`. **Decision: AI clients don't get it, because they
-already have the power.** `select_volume` on a saved place (a pinned server or share in `cmdr://state`) switches a pane
-to it, and the pane brings it to life itself (`place-connect.svelte.ts`, through `servers/connect-flow.ts`), with the
-sign-in sheet for anything missing. Parity holds. The agent needs
-its own tool because it has no pane to steer and must not take one over to connect. Handler and rules:
-`DETAILS.md` § Connecting a saved place.
-
-**Consumer-gated dispatch.** `execute_tool` takes a `Consumer` and refuses a name outside that consumer's view before
-dispatch (via `tool_available_to`, a typed `Consumer`-set check — not a string). So the HTTP server (constructed as
-`Consumer::AiClient`) can't dispatch an agent-only name, and the agent runtime can't dispatch an ai_client-only one.
-"Callable but not listed" is exactly the drift the structural tests forbid: the dispatch view each consumer reaches
-equals its list view (`test_dispatch_view_equals_list_view_per_consumer`).
-
-**Why `access` is independent of HTTP authentication.** Authenticating an external client says who may reach the MCP
-surface, not what the in-process Ask Cmdr agent may do. The explicit `access` dimension is the capability guarantee:
-the agent view must equal exactly its authored `[agent]` entries **and** every one must be `Access::Read`,
-`Access::ReadContents`, `Access::Propose`, `Access::Memory`, or `Access::Session`. The two structural tests
-(`test_agent_tool_view_is_exactly_expected_set` + `test_agent_tool_view_never_writes`) pin both halves against
-`EXPECTED_AGENT_TOOL_NAMES`. This is the line the plan calls the effort's most safety-critical invariant; the runtime
-side (`agent::tool_gate::admit`) adds
-a matching check before dispatch so a mis-tagged entry is refused at runtime too.
+`connect_volume` connects a saved place without taking a pane over; `select_volume` on one (a pinned server or share in
+`cmdr://state`) switches a pane to it, and the pane brings it to life itself (`place-connect.svelte.ts`, through
+`servers/connect-flow.ts`), with the sign-in sheet for anything missing. Handler and rules: § Connecting a saved place.
 
 ## The `Propose` tier
 
@@ -291,16 +284,16 @@ Security via parity: agents can only do what users can do. Giving agents `fs.rea
 
 ### Why no file-content read tool (`read_file`)
 
-**Decision.** This surface deliberately exposes NO tool or resource that returns file *contents*, even though "understand this folder" tempts one. Listings, sizes, tags, and importance scores are fair game (the user can see them in the UI); reading a file's bytes is not.
+**Decision.** No tool or resource returns a file's raw bytes. `inspect_file`, `image_facts`, `search_photos`, and `multi_rename`'s media fields are the bounded ways in, and an outside client gets them only in direct mode (§ The rule).
 
-**Why.** File-content access is the privacy + prompt-injection surface that needs real guardrails — size caps, per-read budgets, a sensitive-path denylist, per-read logging, and explicit consent. Those belong with the future in-app agent (its own registry and storage), not bolted onto the parity MCP server, where a content read would ship the attack surface without the defenses. So it arrives with the agent effort, gated per-consumer, not here. The denylist is `DETAILS.md` § The sensitive-content gate. Don't add a `read_file` tool or a `cmdr://file?path=` resource to this server.
+**Why.** File-content access is the privacy + prompt-injection surface that needs real guardrails: size caps, per-read budgets, a sensitive-path denylist, per-read logging, and explicit consent. The denylist is § The sensitive-content gate. Don't add a `read_file` tool or a `cmdr://file?path=` resource.
 
 ## Tests (`tests/`)
 
 Directory module split by test category:
 
 - `tool_registry_tests/`: the `mcp_tools!` table's structural tests, one file per property pinned: `schemas.rs` (the tool
-  set and each declared schema), `access.rs` (the consumer views and the no-write gate), `schema_gate.rs`
+  set and each declared schema), `access.rs` (the access classes and what `admit` makes of them across the table), `schema_gate.rs`
   (`validate_params`). Kept out of `table.rs` so the authored table stays lean
 - `tool_snapshot_tests.rs`: the exact `tools/list` bytes against `fixtures/tools_list_snapshot.json`
 - `tool_category_tests.rs`: tool existence by category, schema checks
@@ -329,7 +322,7 @@ tool-result JSON the model reads.
   listing cache. It uses the current selection when present, otherwise the whole folder, and returns the folder as a
   `location` (the exact volume ID plus the one shared parent path `propose_rename_plan` needs). It never queries the
   index or starts a filesystem listing.
-- **`list_dir`** (`read/listing.rs`, shared `[AiClient, Agent]`) — takes `path` + optional `volumeId`, resolved
+- **`list_dir`** (`read/listing.rs`) — takes `path` + optional `volumeId`, resolved
   once (§ The location contract), then reads THAT volume's index: its immediate children (`Index::list_children`) plus
   its own recursive size stats (`Index::dir_stats`) and a `Coverage` block naming `source: index`. The result echoes
   `location`. A folder no index lists (an unindexed share, or ground the index hasn't reached) is read live once
@@ -340,7 +333,7 @@ tool-result JSON the model reads.
   `search` with the same sort ranks a whole drive — see § One tool, both questions.
   Every number also arrives spoken (`sizeHuman`, `modifiedHuman`, `recursiveSizeHuman`, `totalHuman` /
   `availableHuman`) and a paged answer carries a `remainder` — see § Numbers arrive already spoken.
-- **`search`** (`tools/actions/search.rs`, shared `[AiClient, Agent]`) — find files across ONE whole drive by name
+- **`search`** (`tools/actions/search.rs`) — find files across ONE whole drive by name
   pattern (glob or regex), size range, modified range, or type, over the same live path a person's search takes
   (`search::run_live_collected`: the index where it covers the scope, a walk for the rest, so an unindexed drive still
   answers). `sortBy` is relevance / size / modified, `limit` defaults to 30 and clamps to 200, and `countOnly` answers
@@ -447,7 +440,7 @@ tool-result JSON the model reads.
     tool can't reach the YAML by accident. `app_state` embeds the same map's `volumes`.
 - **`operations_list` / `operations_get`** — the shipped executors (`tools/actions/operation_log.rs`), shared into the
   agent view unchanged (their schemas + coverage flags already fit an agent reader).
-- **`search_photos`** (`tools/actions/photos.rs`, shared `[AiClient, Agent]`) — photo search by description (CLIP),
+- **`search_photos`** (`tools/actions/photos.rs`) — photo search by description (CLIP),
   in-image text (OCR), or Vision tag. Shapes the `media_index` read API into a TEXT-ONLY DTO (path + volume + typed
   `matchKind` + optional score + optional OCR snippet / no image bytes), reuses `media_index`'s own `volume_state` for
   per-volume coverage honesty, and returns a typed status when indexing is off, still building, or the CLIP model isn't
@@ -457,7 +450,7 @@ tool-result JSON the model reads.
   on. The transcript that prompted `search` had it answer "off" eight times and then invent name-search arguments. If
   transcripts show it still doesn't offer, the fix is `search_photos`'s and `search`'s descriptions plus one prompt
   line, ❌ not a third tool.
-- **`image_facts`** (`tools/actions/image_facts.rs`, shared `[AiClient, Agent]`) — the lookup direction of the same
+- **`image_facts`** (`tools/actions/image_facts.rs`) — the lookup direction of the same
   index: given paths the agent already has, the FULL stored OCR text (capped at 2,000 characters per file, a cut
   flagged) plus the Vision tags for each. It accepts up to 200 paths but answers as many as fit one result (see § The
   size contract), reporting `total` / `returned` / `truncated` so the caller batches the rest. Backs naming/describing files the user is looking at. Same text-only DTO, same coverage
@@ -469,13 +462,13 @@ tool-result JSON the model reads.
   over the proposal spine: what the agent has already put in front of the user (summaries and counts, never op rows),
   one group's ops paged, and the one tool that stages a sweep or amends a pending group. Access classes, the
   resolve-check-write order, the selector schema, and the last-opened gap: `suggestions/DETAILS.md`.
-- **`propose_server`** (`suggestions/server.rs`, agent-only, `Access::Propose`) — stages a server to save, or a change
+- **`propose_server`** (`suggestions/server.rs`, `Access::Propose`) — stages a server to save, or a change
   to a saved one, as a zero-op group on the same spine. No secret, no contact with any server, only on a turn the user
   started, and an edit can't move a server or change its account. `suggestions/DETAILS.md` § Proposing a server.
 - **`nothing_to_suggest`** (`quiet.rs`) — one argument, a short `reason`, and no effect at all. See § A tool that is
   only a signal.
 - **`memory_write` / `memory_edit`** (`memory.rs`) — the two `Access::Memory` tools. See § The two tools that write.
-- **`connect_volume`** (`connect.rs`, agent-only) — the one `Access::Session` tool: brings a place the user saved to
+- **`connect_volume`** (`connect.rs`, `Access::Session`) — brings a place the user saved to
   life by `volumeId`. See § Connecting a saved place.
 
 ## Connecting a saved place (`connect_volume`)
@@ -529,8 +522,8 @@ model's wording would classify control flow by text — what `error-string-match
 copy edit or non-English reply. The call resolves to `ToolId::NothingToSuggest`, and that is what the wake path matches
 on.
 
-**Why the handler is inert.** There is ONE `agent_tool_view()`, so the rail sees this tool too. A handler that deleted
-the conversation would be `Access::Write` under the registry's tiebreaker (failing `test_agent_tool_view_never_writes`),
+**Why the handler is inert.** A wake and the rail declare the same tools, so the rail sees this tool too. A handler that
+deleted the conversation wouldn't be `Read`,
 and it would delete a USER's thread the moment a rail turn called it. So the handler acknowledges and returns; the
 delete lives on the wake path, after the turn (`agent/wake/`), and a rail turn calling this changes nothing —
 `wake/tests/job.rs` pins that.
@@ -1073,42 +1066,34 @@ and the system prompt requires the model to disclose "returned of total" wheneve
 
 ## The dispatch gate
 
-`../agent/tool_gate.rs::refuse_unavailable(call_id, tool, origin)` is the runtime enforcement point:
+`../agent/tool_gate.rs::refuse_unavailable(call_id, tool, origin)` turns `admit`'s answer into a tool result the model can
+read, BEFORE `execute_tool`:
 
-- Any name outside the agent's view (a table entry it isn't given, like `delete`, or a hallucinated name) ⇒ a typed
-  `{ available: false, … }` result, returned BEFORE `execute_tool`. It reads `consumers`, since `ToolId` knows the whole
-  table, and `await` and `ai_search` are `Read`, so the access check alone would let them through.
-- A name in the view the registry classifies `Access::Write`, or doesn't classify at all ⇒ also refused (a runtime backstop
-  against a mis-tagged entry; belt to the structural `test_agent_tool_view_never_writes` suspenders).
-- An `Access::Session` tool on a turn the user didn't start (`wake`, `outcomes`) ⇒
-  `{ available: false, refusal: "refusedInBackground", … }`: a background connect can spin up a sleeping NAS's disks for
+- A name outside the table ⇒ `{ available: false, requested, reason }`.
+- A call `admit` refuses ⇒ the same, plus the `refusal` token: `refusedInBackground` for a class that waits for a turn the
+  user started, `devOnly` for a tool that's never the agent's. A background connect can spin up a sleeping NAS's disks for
   a digest nobody asked for (agent invariant 7). "User-started" follows `docs/design-principles.md` ("An approved action
   is the user's own"): an action the user approved counts as theirs, while a turn the app opens on its own (a wake, the
   follow-up a rejection earns) doesn't. Today no approval opens a turn, so `TurnOrigin` has no approved-action origin; a
   feature that runs an approved card's follow-up through the agent adds one that `user_started()` answers `true`.
-- Otherwise `None` ⇒ `dispatch` calls `execute_tool` with a `Caller::Agent` context, which itself refuses any name outside
-  the agent view (a second, structural backstop). `propose_rename_plan` alone goes around it, for the proposal snapshot
-  its result carries.
+- Otherwise `None` ⇒ `dispatch` calls `execute_tool` with a `Caller::Agent` context, which asks `admit` again.
+  `propose_rename_plan` alone goes around it, for the proposal snapshot its result carries.
 
-The access half lives in the pure `admit(Option<Access>, TurnOrigin) -> Admission`: `Read`, `Propose`, and `Memory`
-dispatch on every turn, `Session` only when `TurnOrigin::user_started` (`text`, `resume`), `Write` and an unclassified
-name never. It's separate so the rule is unit-testable against EVERY `Access` variant and origin without authoring a
-tool per variant, so a variant no tool carries is never covered vacuously.
+A `ToolError` reaches the model with its `data` (`error_content`), since that's the contract and the message only the human
+half. Two read differently on purpose: `outcome_unknown` is `{ outcomeUnknown: true, detail }` with no `problem` key, since
+the action may still be running and a problem would trip the repeat breaker; and a question Stop took down is
+`{ miss: "cancelled", detail }`, the words of any call Stop ended.
 
 **The origin is the turn's, stated by its caller.** `TurnParams::origin` (`agent::types::TurnOrigin`) is set by
 `send_message` (`text`) and by the wake runner (`wake` / `outcomes`), and reaches every call in `CallContext` beside the
 turn's Stop. ❌ Never derive it from the opener: a follow-up rides as `UserTurn::Outcomes` today, and the gate must hold
 if that wrapping ever changes.
 
-The negative test (`../agent/tool_gate.rs`) drives the fake `AgentLlm`'s `CallRawTool("delete", …)` and asserts the refusal end to
-end; it was proven red (gate disabled ⇒ "delete" not refused) before green.
+Every tool × every origin is tested against `admit` (`../agent/tool_gate.rs`), and one scripted turn per class runs through the
+real gate (`../agent/chat/runtime/class_smoke_tests.rs`).
 
-The refusal copy says Ask Cmdr can prepare a rename plan, suggest file operations for the user to review, save notes in
-its own memory folder, and connect a server or share the user saved, but can't touch the user's files or approve a
-proposal, and reads a file's contents only through `inspect_file`. ⚠️ Keep it accurate as the tiers grow: it promised
-"couldn't change anything at all" until `Access::Memory`, and "can't read file contents" until `inspect_file`; a model
-told a false limit either refuses the question or invents the answer, and a claim the view can't back is the same lie
-pointed the other way.
+A refusal's `reason` says what's possible instead. ⚠️ Keep it accurate as the tiers grow: a model told a false limit either
+refuses the question or invents the answer.
 
 ### A propose result always answers `readyForReview`
 
@@ -1139,11 +1124,8 @@ The refusal SENTENCE matters as much as the shape, and its rules live with the g
 at the top level is a `Misplaced` violation naming the row that takes it, because "propose_rename_plan has no volumeId
 parameter. It takes renames." is a true sentence a model cannot act on — it reads as "your rows were fine".
 
-`dispatch` routes five tools specially rather than through the generic `execute_tool` call: `propose_rename_plan`,
-which needs the evidence scope, `propose_suggestions`, which needs the conversation id so a sweep records the thread it
-came out of (`suggestions/DETAILS.md` § The conversation link), `propose_server`, which needs that and the turn's origin
-(it refuses a turn the user didn't start itself, so the gate stays tier-only), and `list_dir` and `connect_volume`,
-which take the turn's Stop to answer it in their own words. All are gated first, like every other call.
+`dispatch` routes one tool around `execute_tool`: `propose_rename_plan`, which needs the evidence scope and returns the
+proposal snapshot. Every handler that needs the caller, the thread, or the turn's Stop reads them off `ToolCtx`.
 
 `dispatch` also feeds `propose::evidence::ImageFactsLedger` from every non-elided `image_facts` result. That's what makes
 a rename plan's content claim checkable; the guardrail, its refusal shape, and the revocation seam are in
@@ -1155,8 +1137,8 @@ a rename plan's content claim checkable; the guardrail, its refusal shape, and t
   placed, so a path can't pick a second index (`crates/cmdr-index/src/indexing/read/DETAILS.md`).
 - `crate::location` — the resolver every location-taking tool shares (§ The location contract).
 - `tools::resources::volumes::VolumeKind::token` — `pub(crate)` so the volume mapper reuses the one kind→token mapping.
-- `mcp` re-exports `Access`, `Consumer`, `agent_tool_view`, `execute_tool`, `tool_access`, `ToolError`, `ToolResult` as
-  `pub(crate)` for the agent runtime. `snapshot_volumes` and the `importance::snapshot_*` functions are `pub(crate)` too.
+- `tools` re-exports `Access`, `execute_tool`, `tool_access`, `ToolError`, `ToolResult` as `pub(crate)` for the agent
+  runtime and the transport. `snapshot_volumes` and the `importance::snapshot_*` functions are `pub(crate)` too.
 
 ## Not covered here (the runtime harness)
 

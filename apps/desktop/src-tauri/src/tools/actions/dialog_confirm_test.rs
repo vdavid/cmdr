@@ -621,7 +621,7 @@ async fn the_agent_never_reaches_it() {
     )
     .await
     .expect_err("it IS the human step");
-    assert!(error.message.contains("Unknown tool"), "{}", error.message);
+    assert_eq!(error.data, Some(json!({ "refusal": "devOnly" })));
 }
 
 /// Answers a confirm without taking anything down: a refusal, or a volume still working.

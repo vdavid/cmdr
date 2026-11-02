@@ -10,6 +10,7 @@ use tokio_util::sync::CancellationToken;
 
 use super::*;
 use crate::test_support::wait_until_async;
+use crate::tools::Caller;
 use crate::tools::table::execute_tool;
 
 fn app_without_window() -> App<MockRuntime> {
@@ -218,17 +219,6 @@ fn plans(answers: Vec<AskPlan>) -> impl Fn() -> std::future::Ready<AskPlan> {
                 .expect("the gate ran the plan too often"),
         )
     }
-}
-
-#[tokio::test]
-async fn direct_mode_skips_the_plan_and_the_question() {
-    let app = app_with_window();
-    let seen = person_answering(&app, ToolAskResponse::Declined);
-    let asked = gate(app.handle(), &external(true), plans(vec![]))
-        .await
-        .expect("no ask");
-    assert_eq!(asked, None);
-    assert!(seen.lock().expect("no poison in a test").is_empty());
 }
 
 #[tokio::test]

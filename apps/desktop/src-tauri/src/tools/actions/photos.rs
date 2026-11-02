@@ -1,6 +1,6 @@
 //! The `search_photos` tool: photo search by description, in-image text, or tag.
 //!
-//! Shared by both consumers (agent decision D49): the in-app Ask Cmdr agent AND external
+//! For both callers (agent decision D49): the in-app Ask Cmdr agent AND external
 //! MCP clients dispatch this one registry entry. It only SHAPES the result of the
 //! shipped `media_index` read API (`MediaIndex::search_semantic` / `search_ocr` /
 //! `images_with_tag`) — the reuse-the-core rule — and reuses `media_index`'s own

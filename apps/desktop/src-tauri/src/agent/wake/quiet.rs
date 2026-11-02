@@ -3,7 +3,7 @@
 //! The model says so by calling `nothing_to_suggest` (`tools/quiet.rs`), a pure signal
 //! whose handler changes nothing. Acting on it lives HERE, on the wake path, for two reasons:
 //! the tool is `Access::Read` and must stay that way, and the rail shares the one
-//! `agent_tool_view()`, so a tool that deleted its own conversation would delete a user's
+//! `agent_tool_declarations()`, so a tool that deleted its own conversation would delete a user's
 //! thread the moment a confused model reached for it in the rail.
 //!
 //! Noticing the call is `watch.rs`'s job; this is what follows from it.

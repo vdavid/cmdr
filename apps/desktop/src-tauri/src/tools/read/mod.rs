@@ -1,4 +1,4 @@
-//! The Ask Cmdr agent's concrete read-only tool handlers, one file per family:
+//! The read-only tool handlers, one file per family:
 //!
 //! - [`state`]: `app_state` — the live pane + volume snapshot.
 //! - [`listing`]: `list_dir` — drive-index listing, sortable by size (the disk-usage question).
@@ -8,8 +8,8 @@
 //! - [`inspect`]: `inspect_file` — up to 200 files' metadata, the kind their bytes really are, and a bounded
 //!   content window per kind, read through the viewer's own core.
 //!
-//! The `operations_list` / `operations_get` family reuses the ai-client executors
-//! unchanged (shared registry entries), so it has no file here.
+//! The `operations_list` / `operations_get` family lives in `actions/operation_log.rs`, so it has no
+//! file here.
 //!
 //! Each handler REUSES a shipped, deterministic core (the indexing queries, the
 //! importance read API, `snapshot_volumes`) rather than re-deriving listing or

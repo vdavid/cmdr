@@ -30,7 +30,7 @@ decision rationale): `DETAILS.md`.
   `DETAILS.md` § Reasoning effort.
 - **`ToolId` comes from the tool table; `types.rs` only re-exports it.** A raw provider tool name resolves through
   `ToolId::from_wire_name`, and a name outside the table becomes `Unrecognized(raw)`, which is a refusal, not an error.
-  ❌ Known doesn't mean allowed: `../tool_gate.rs` decides that with a typed view check, never a string match on the name.
+  ❌ Known doesn't mean allowed: `../tool_gate.rs` decides that with `admit`, never a string match on the name.
 - **A nameless tool call is dropped BOTH ways, and arguments always leave as a JSON object.** Qwen sometimes stops with
   a tool call that has an id and no `fn_name`; replaying it 400s that thread forever. Inbound keeps it out of the store,
   outbound drops what old threads already stored (the call plus its result). Keep both halves.

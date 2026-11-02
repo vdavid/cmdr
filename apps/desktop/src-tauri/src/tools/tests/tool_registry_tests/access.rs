@@ -1,78 +1,33 @@
-//! The two view dimensions: the agent's consumer view, and the no-write access gate.
+//! One table, one axis: every tool's class, and what `admit` makes of it across the table. The matrix
+//! itself, cell by cell, is in `tools/policy.rs`; the fence per origin is in `agent/tool_gate.rs`.
+//!
+//! **The agent can start anything. A person finishes anything sensitive.** No structural check can
+//! prove what a handler does, so each class that changes something is authored by hand below: adding
+//! a name is a deliberate act by someone who read the handler.
 
-use crate::tools::{Access, Consumer, agent_tool_view, get_all_tools, tool_access, tool_available_to};
+use std::collections::BTreeSet;
 
-// ── Consumer + access dimensions (the no-write gate) ──────
-//
-// One authored registry, two consumer views (agent decisions D49/D59). `consumers` is the exposure
-// axis; `access` is the capability axis. These tests pin the agent view to exactly its authored
-// `[agent]` entries AND require every one to be `Access::Read`, `Access::ReadContents`,
-// `Access::Propose`, `Access::Memory`, or `Access::Session`.
-//
-// The agent can propose; only the user can approve. `Propose` widens what the agent may ASK for,
-// never what it may DO — so these tests also pin the hand-authored Propose allowlist and the
-// absence of any confirmation bypass in the agent's view. The access axis of the runtime gate is
-// exercised per-variant in `agent/tool_gate.rs`, since with no Propose tool authored yet the
-// registry-level assertions would cover `Propose` vacuously.
+use crate::agent::types::TurnOrigin;
+use crate::tools::policy::{Caller, Refusal, Verdict, admit};
+use crate::tools::{Access, Load, ToolId, get_all_tools, tool_access, tool_load};
 
-/// The exact set of tool names in the agent's read-only view. Pins the set so a stray
-/// agent-visible tool (or a dropped one) is a hard failure, mirroring `EXPECTED_TOOL_NAMES`
-/// for the ai_client view. `operations_list` / `operations_get` / `search` / `search_photos` /
-/// `image_facts` are shared with the ai_client view (`consumers: [AiClient, Agent]`); the rest are
-/// agent-only read entries. `ai_search` is deliberately absent: Ask Cmdr is already an LLM holding
-/// the user's prose, so it writes the structured query itself instead of paying a second model
-/// call to translate it.
-const EXPECTED_AGENT_TOOL_NAMES: &[&str] = &[
-    "app_state",
-    "list_dir",
-    "list_pane_files",
-    "important_folders",
-    "folder_importance",
-    "inspect_file",
-    "list_volumes",
-    "operations_list",
-    "operations_get",
-    "search",
-    "search_photos",
-    "image_facts",
-    "propose_rename_plan",
-    "list_suggestions",
-    "get_suggestion_group",
-    "propose_suggestions",
-    "propose_server",
-    "nothing_to_suggest",
-    "memory_write",
-    "memory_edit",
-    "connect_volume",
-];
+const USER_TURN: Caller = Caller::Agent {
+    origin: TurnOrigin::Text,
+};
+const DIRECT: Caller = Caller::External { direct: true };
+const OFF_DIRECT: Caller = Caller::External { direct: false };
 
-/// Set-equality: the agent view equals exactly its authored `consumers:[agent]` entries. This is
-/// D59's mechanism — a new destructive tool can't ship agent-visible by accident, because adding
-/// it to the view without adding it here fails.
-#[test]
-fn test_agent_tool_view_is_exactly_expected_set() {
-    use std::collections::BTreeSet;
-    let actual: BTreeSet<String> = agent_tool_view().into_iter().map(|t| t.name).collect();
-    let expected: BTreeSet<String> = EXPECTED_AGENT_TOOL_NAMES.iter().map(|s| (*s).to_owned()).collect();
-    assert_eq!(actual, expected, "agent tool view drifted from the expected set");
-}
-
-/// The agent's `Propose` tools, authored by hand. A `Propose` tool stages a proposal and opens a
-/// review surface; it mutates nothing. No structural check can PROVE a handler doesn't mutate, so
-/// this allowlist is the deliberate act: adding a `Propose` tool means a human puts its name here
-/// on purpose, having read the handler.
+/// A `Propose` tool stages a proposal and opens a review surface; it mutates nothing. A `Propose` tool
+/// must also cap its payload the way `image_facts` caps at 200 paths: a proposal the user can't review
+/// is a proposal they can only rubber-stamp. That contract can't be enforced generically; see
+/// `apps/desktop/src-tauri/src/tools/DETAILS.md` § The rule.
 ///
-/// A `Propose` tool must also cap its payload the way `image_facts` caps at 200 paths — a proposal
-/// the user can't review is a proposal they can only rubber-stamp. That contract can't be enforced
-/// generically; see `apps/desktop/src-tauri/src/tools/DETAILS.md` § Consumer and access views.
+/// `multi_rename` stages its ready rows as a rename group on the same spine, and its handler
+/// (`actions/multi_rename.rs`) only reads the pane's cached listing and writes the proposal rows.
 ///
-/// `multi_rename` is the one external-client entry: it stages its ready rows as a rename group
-/// on the same spine, and its handler (`executor/multi_rename.rs`) only reads the pane's cached
-/// listing and writes the proposal rows.
-///
-/// `propose_server` (`tools/suggestions/server.rs`) stages one zero-op server group: it
-/// reads the saved-server stores in memory, writes the proposal rows, takes no secret, contacts no
-/// server, and refuses on a turn the user didn't start. The user's click is what saves.
+/// `propose_server` (`tools/suggestions/server.rs`) stages one zero-op server group: it reads the
+/// saved-server stores in memory, writes the proposal rows, takes no secret, contacts no server, and
+/// refuses on a turn the user didn't start. The user's click is what saves.
 const EXPECTED_PROPOSE_TOOL_NAMES: &[&str] = &[
     "multi_rename",
     "propose_rename_plan",
@@ -80,22 +35,11 @@ const EXPECTED_PROPOSE_TOOL_NAMES: &[&str] = &[
     "propose_server",
 ];
 
-/// The agent's `Memory` tools, authored by hand for the same reason the `Propose` list is.
-///
-/// ⚠️ **This list is where the app's central agent-safety invariant was deliberately widened.**
-/// "Ask Cmdr never changes anything" became "Ask Cmdr writes only into its own memory folder",
-/// and the containment is `agent::memory`'s jail rather than this tag. No structural check can
-/// prove a handler stays inside that jail, so a human puts each name here on purpose, having
-/// read the handler. Tagging an entry `access: Memory` without listing it here fails.
+/// Writes the agent's own memory folder. The containment is `agent::memory`'s jail rather than this
+/// tag, so a human puts each name here on purpose, having read the handler.
 const EXPECTED_MEMORY_TOOL_NAMES: &[&str] = &["memory_write", "memory_edit"];
 
-/// The `Session` tools, authored by hand: each opens a session to a place the user saved, with
-/// credentials the user stored, and only on a turn the user started (agent invariant 7).
-///
-/// ⚠️ **The third widening.** "Ask Cmdr changes nothing outside its memory folder" gains "and may
-/// connect a place you saved". No structural check can prove a handler dials only a saved place
-/// and edits no server, credential, pin, or setting, so a human puts each name here on purpose,
-/// having read the handler.
+/// Each opens a session to a place the user saved, with credentials the user stored.
 ///
 /// `connect_volume` (`tools/connect.rs`): dials only a saved, unregistered place through
 /// `saved_servers::connect_saved_place` with no secret and no account, hands a dropped one to the
@@ -106,8 +50,8 @@ const EXPECTED_MEMORY_TOOL_NAMES: &[&str] = &["memory_write", "memory_edit"];
 const EXPECTED_SESSION_TOOL_NAMES: &[&str] = &["connect_volume", "upgrade_smb_to_direct"];
 
 /// Tools that read inside files, or image-derived text. Hand-authored, because this class is what
-/// keeps an outside client from reading through Cmdr's Full Disk Access (direct mode only, from
-/// M12), and a content tool classified `Read` would slip past that with no other signal.
+/// keeps an outside client from reading through Cmdr's Full Disk Access (direct mode only), and a
+/// content tool classified `Read` would slip past that with no other signal.
 const EXPECTED_READ_CONTENTS_TOOL_NAMES: &[&str] = &["inspect_file", "image_facts", "search_photos"];
 
 /// Tools that open a dialog or editor a person confirms. Hand-authored, because a handler that
@@ -128,238 +72,236 @@ const EXPECTED_SENSITIVE_TOOL_NAMES: &[&str] = &[
     "indexing",
 ];
 
-/// Each hand-authored class equals the registry's, in both views.
+/// Tools that go past a person, or would. Each entry's reason is the one line in the table.
+const EXPECTED_DEV_ONLY_TOOL_NAMES: &[&str] = &[
+    "ai_search",
+    "connect_to_server",
+    "dialog_confirm",
+    "queue_move_locked",
+    "resolve_conflict",
+];
+
+/// The name of every table entry with this class.
+fn names_of(matches_class: impl Fn(Access) -> bool) -> BTreeSet<String> {
+    ToolId::KNOWN
+        .iter()
+        .map(|tool| tool.as_wire_name())
+        .filter(|name| tool_access(name).is_some_and(&matches_class))
+        .map(str::to_owned)
+        .collect()
+}
+
+fn set(names: &[&str]) -> BTreeSet<String> {
+    names.iter().map(|name| (*name).to_owned()).collect()
+}
+
+/// Each hand-authored class equals the table's. Tagging an entry without listing it here fails, so a
+/// power can't be acquired as a side effect of editing a table line.
 #[test]
-fn test_each_hand_authored_class_is_exactly_its_allowlist() {
-    for (access, allowlist) in [
+fn each_hand_authored_class_is_exactly_its_allowlist() {
+    for (class, allowlist) in [
         (Access::ReadContents, EXPECTED_READ_CONTENTS_TOOL_NAMES),
+        (Access::Propose, EXPECTED_PROPOSE_TOOL_NAMES),
+        (Access::Memory, EXPECTED_MEMORY_TOOL_NAMES),
+        (Access::Session, EXPECTED_SESSION_TOOL_NAMES),
         (Access::Initiate, EXPECTED_INITIATE_TOOL_NAMES),
         (Access::LightWrite, EXPECTED_LIGHT_WRITE_TOOL_NAMES),
         (Access::Sensitive, EXPECTED_SENSITIVE_TOOL_NAMES),
     ] {
-        assert!(
-            matches_allowlist(&shipped_tools(), access, allowlist),
-            "the registry's {access:?} tools differ from the hand-authored allowlist"
+        assert_eq!(
+            names_of(|access| access == class),
+            set(allowlist),
+            "{class:?} drifted from its allowlist"
         );
     }
+    assert_eq!(
+        names_of(|access| matches!(access, Access::DevOnly(_))),
+        set(EXPECTED_DEV_ONLY_TOOL_NAMES),
+        "DevOnly drifted from its allowlist"
+    );
 }
 
-/// A `DevOnly` tool carries its one-line reason, and is never in the agent's view.
+/// No hidden splits: a tool is reachable by both callers, or its table entry says why not.
 #[test]
-fn test_every_dev_only_tool_says_why_and_stays_away_from_the_agent() {
-    let mut names = Vec::new();
-    for tool in get_all_tools() {
-        if let Some(Access::DevOnly(reason)) = tool_access(&tool.name) {
-            assert!(!reason.trim().is_empty(), "'{}' gives no reason", tool.name);
-            assert!(!reason.contains('\n'), "'{}' takes more than one line", tool.name);
-            assert!(!tool_available_to(&tool.name, Consumer::Agent), "'{}'", tool.name);
-            names.push(tool.name);
+fn every_tool_is_reachable_by_both_callers_or_carries_a_reason() {
+    for tool in ToolId::KNOWN {
+        let name = tool.as_wire_name();
+        let access = tool_access(name).expect("a table entry has a class");
+        let load = tool_load(name).expect("a table entry has a load");
+        let agent_reaches = !matches!(admit(USER_TURN, access), Verdict::Refuse(_));
+        let client_reaches = !matches!(admit(DIRECT, access), Verdict::Refuse(_));
+        match (access, load) {
+            (Access::DevOnly(reason), _) => {
+                assert!(!reason.trim().is_empty(), "'{name}' gives no reason");
+                assert!(!reason.contains('\n'), "'{name}' takes more than one line");
+                assert!(!agent_reaches, "'{name}' is DevOnly, so never the agent's");
+                assert!(client_reaches, "'{name}' is for direct mode");
+            }
+            (_, Load::Meta(reason)) => {
+                assert!(!reason.trim().is_empty(), "'{name}' gives no reason");
+                assert!(agent_reaches, "'{name}' is the agent's");
+            }
+            _ => assert!(agent_reaches && client_reaches, "'{name}' has a hidden split"),
         }
     }
-    names.sort();
-    assert_eq!(
-        names,
-        [
-            "ai_search",
-            "connect_to_server",
-            "dialog_confirm",
-            "queue_move_locked",
-            "resolve_conflict"
-        ]
-    );
 }
 
-/// The contents class reads as `Read` for the agent: the view holds it, on every origin.
+/// Every listed tool dispatches, and every non-`Meta` entry is listed: "callable but not listed" is the
+/// drift one table exists to prevent.
 #[test]
-fn test_the_agent_keeps_every_contents_tool() {
-    for name in EXPECTED_READ_CONTENTS_TOOL_NAMES {
-        assert!(tool_available_to(name, Consumer::Agent), "'{name}'");
-    }
-}
-
-/// Every registry entry in either view, with its access class.
-fn shipped_tools() -> Vec<(String, Option<Access>)> {
-    agent_tool_view()
-        .into_iter()
-        .chain(get_all_tools())
-        .map(|tool| {
-            let access = tool_access(&tool.name);
-            (tool.name, access)
-        })
-        .collect()
-}
-
-/// Whether the entries classified `access` are exactly `allowlist`. Over a plain list, so the
-/// check is testable against an entry the shipped registry doesn't carry.
-fn matches_allowlist(tools: &[(String, Option<Access>)], access: Access, allowlist: &[&str]) -> bool {
-    use std::collections::BTreeSet;
-    let actual: BTreeSet<&str> = tools
+fn an_outside_client_lists_the_whole_table_but_meta() {
+    let listed: BTreeSet<String> = get_all_tools().into_iter().map(|tool| tool.name).collect();
+    let table: BTreeSet<String> = ToolId::KNOWN
         .iter()
-        .filter(|(_, class)| *class == Some(access))
-        .map(|(name, _)| name.as_str())
+        .map(|tool| tool.as_wire_name())
+        .filter(|name| !matches!(tool_load(name), Some(Load::Meta(_))))
+        .map(str::to_owned)
         .collect();
-    actual == allowlist.iter().copied().collect()
+    assert_eq!(listed, table);
 }
 
-/// The agent can propose; only the user can approve; it writes only its own notes; and it
-/// connects only places the user saved. Structurally: every tool in the agent's view is
-/// `Access::Read`, `Access::ReadContents`, `Access::Propose`, `Access::Memory`, or
-/// `Access::Session`, and nothing else. The regression anchor for "the agent still can't touch the
-/// user's files".
+/// The contents class reads as `Read` for the agent, on every origin, and off direct mode an outside
+/// client refuses naming the setting.
 #[test]
-fn test_agent_tool_view_never_writes() {
-    for tool in agent_tool_view() {
-        let access = tool_access(&tool.name);
-        assert!(
-            matches!(
-                access,
-                Some(Access::Read)
-                    | Some(Access::ReadContents)
-                    | Some(Access::Propose)
-                    | Some(Access::Memory)
-                    | Some(Access::Session)
-            ),
-            "agent-visible tool '{}' is {access:?} — the agent view admits Read, ReadContents, Propose, Memory, and Session only",
-            tool.name
+fn contents_are_the_agents_on_every_turn_and_a_clients_only_in_direct_mode() {
+    for name in EXPECTED_READ_CONTENTS_TOOL_NAMES {
+        let access = tool_access(name).expect("listed");
+        for origin in [
+            TurnOrigin::Text,
+            TurnOrigin::Resume,
+            TurnOrigin::Wake,
+            TurnOrigin::Outcomes,
+        ] {
+            assert_eq!(
+                admit(Caller::Agent { origin }, access),
+                Verdict::Allow,
+                "{name} on {origin:?}"
+            );
+        }
+        assert_eq!(admit(DIRECT, access), Verdict::Allow, "{name}");
+        assert_eq!(
+            admit(OFF_DIRECT, access),
+            Verdict::Refuse(Refusal::DirectModeOff),
+            "{name}"
         );
     }
 }
 
-/// A `Session` tool only exists if a human authored it into `EXPECTED_SESSION_TOOL_NAMES`, in
-/// either view.
+/// A client reaching memory off direct mode would be a filesystem write nobody turned on.
 #[test]
-fn test_session_tools_are_an_explicit_allowlist() {
-    assert!(
-        matches_allowlist(&shipped_tools(), Access::Session, EXPECTED_SESSION_TOOL_NAMES),
-        "the registry's Session tools differ from the hand-authored allowlist"
-    );
-}
-
-/// The allowlist check has teeth: a `Session` entry nobody listed fails it. A test-only entry,
-/// never in the shipped registry.
-#[test]
-fn test_an_unlisted_session_tool_fails_the_allowlist() {
-    let mut tools = shipped_tools();
-    tools.push(("connect_anything".to_owned(), Some(Access::Session)));
-    assert!(
-        !matches_allowlist(&tools, Access::Session, EXPECTED_SESSION_TOOL_NAMES),
-        "an unlisted Session entry must fail the allowlist"
-    );
-}
-
-/// A `Memory` tool only exists if a human authored it into `EXPECTED_MEMORY_TOOL_NAMES`. The
-/// twin of `test_propose_tools_are_an_explicit_allowlist`, and the more load-bearing of the
-/// two: `Propose` widens what the agent may ASK for, `Memory` widens what it may DO.
-#[test]
-fn test_memory_tools_are_an_explicit_allowlist() {
-    use std::collections::BTreeSet;
-    let allowed: BTreeSet<&str> = EXPECTED_MEMORY_TOOL_NAMES.iter().copied().collect();
-    let actual: BTreeSet<String> = agent_tool_view()
-        .into_iter()
-        .filter(|t| tool_access(&t.name) == Some(Access::Memory))
-        .map(|t| t.name)
-        .collect();
-    let actual_refs: BTreeSet<&str> = actual.iter().map(String::as_str).collect();
-    assert_eq!(
-        actual_refs, allowed,
-        "the registry's Memory tools differ from the hand-authored allowlist"
-    );
-}
-
-/// ⚠️ `Access::Memory` is the agent's ONLY write, and it belongs to the in-process agent alone.
-/// An external MCP client reaching one would be a filesystem write through a transport whose
-/// whole security story is "agents do only what users can do, no filesystem access".
-#[test]
-fn test_memory_tools_are_not_exposed_to_external_mcp_clients() {
+fn memory_needs_direct_mode_for_an_outside_client() {
     for name in EXPECTED_MEMORY_TOOL_NAMES {
-        assert!(
-            !tool_available_to(name, Consumer::AiClient),
-            "'{name}' writes to disk and must not be reachable over the HTTP transport"
+        let access = tool_access(name).expect("listed");
+        assert_eq!(
+            admit(OFF_DIRECT, access),
+            Verdict::Refuse(Refusal::DirectModeOff),
+            "{name}"
         );
+        assert_eq!(admit(DIRECT, access), Verdict::Allow, "{name}");
     }
 }
 
-/// A `Propose` tool only exists if a human authored it into `EXPECTED_PROPOSE_TOOL_NAMES`. Tagging
-/// an entry `access: Propose` without listing it here fails: `Propose` is a widened power, so it
-/// can't be acquired as a side effect of editing a registry line.
+/// `dialog_confirm` is the one way past a person, so nothing else may declare a way: no schema carries a
+/// bypass parameter. And the agent can't call the one that exists, or see it.
 #[test]
-fn test_propose_tools_are_an_explicit_allowlist() {
-    use std::collections::BTreeSet;
-    let allowed: BTreeSet<&str> = EXPECTED_PROPOSE_TOOL_NAMES.iter().copied().collect();
-    // Both views: an external client's `Propose` tool is the same widening as the agent's.
-    let actual: BTreeSet<String> = agent_tool_view()
-        .into_iter()
-        .chain(get_all_tools())
-        .filter(|t| tool_access(&t.name) == Some(Access::Propose))
-        .map(|t| t.name)
-        .collect();
-    let actual_refs: BTreeSet<&str> = actual.iter().map(String::as_str).collect();
-    assert_eq!(
-        actual_refs, allowed,
-        "the registry's Propose tools differ from the hand-authored allowlist"
-    );
-}
-
-/// No proposal path inherits the confirmation bypass. `autoConfirm` (and the `queue` tool's
-/// `rollback`) lets an external MCP client skip the user's confirmation dialog — exactly the
-/// approval a proposal must never grant itself. Every agent tool therefore declares no bypass
-/// parameter in its schema, which is what makes "only the user can approve" true rather than
-/// merely intended.
-#[test]
-fn test_no_agent_tool_reaches_the_confirmation_bypass() {
-    let view = agent_tool_view();
-    assert!(!view.is_empty(), "an empty agent view would make this vacuous");
-    for tool in &view {
+fn no_schema_has_a_way_past_a_person_and_the_agent_never_gets_the_one_there_is() {
+    for tool in get_all_tools() {
         let properties = tool.input_schema.get("properties");
         for bypass in ["autoConfirm", "rollback"] {
             assert!(
                 properties.and_then(|p| p.get(bypass)).is_none(),
-                "agent-visible tool '{}' declares a '{bypass}' parameter — a proposal must never carry the confirmation bypass",
+                "'{}' declares a '{bypass}' parameter",
                 tool.name
             );
         }
     }
-}
-
-/// Consumer-identity dispatch: the dispatch view each consumer can reach through `execute_tool`
-/// equals exactly its list view — no transport dispatches a name outside its consumer view
-/// ("callable but not listed" is the drift D59 exists to prevent). With an empty agent view this
-/// proves every ai_client tool is refused to the agent runtime; with entries shared into both
-/// views it enforces that no transport dispatches a name outside its consumer view.
-#[test]
-fn test_dispatch_view_equals_list_view_per_consumer() {
-    use std::collections::BTreeSet;
-    let ai_names: BTreeSet<String> = get_all_tools().into_iter().map(|t| t.name).collect();
-    let agent_names: BTreeSet<String> = agent_tool_view().into_iter().map(|t| t.name).collect();
-
-    for name in ai_names.iter().chain(agent_names.iter()) {
-        assert_eq!(
-            tool_available_to(name, Consumer::AiClient),
-            ai_names.contains(name),
-            "ai_client dispatchability of '{name}' disagrees with the ai_client list view"
-        );
-        assert_eq!(
-            tool_available_to(name, Consumer::Agent),
-            agent_names.contains(name),
-            "agent dispatchability of '{name}' disagrees with the agent list view"
-        );
+    let declared: BTreeSet<String> = crate::tools::agent_tool_declarations()
+        .into_iter()
+        .map(|d| d.name.as_wire_name().to_owned())
+        .collect();
+    for name in EXPECTED_DEV_ONLY_TOOL_NAMES {
+        assert!(!declared.contains(*name), "'{name}' is declared to the agent");
     }
-
-    // An unknown name is refused by both transports (typed refusal, not a string branch).
-    assert!(!tool_available_to("bogus", Consumer::AiClient));
-    assert!(!tool_available_to("bogus", Consumer::Agent));
 }
 
-/// Every ai_client tool declares an access class, and the current registry is entirely ai_client.
-/// A future entry shared into `[ai_client, agent]` still needs a correct `access` (the all-Read
-/// test above enforces `Read` for its agent side).
+/// The agent's declarations are what a user-started turn can reach, ALL of them, whatever origin the
+/// call serves: the prefix is byte-identical across a thread, so nothing per-origin can move it.
 #[test]
-fn test_every_tool_has_an_access_class() {
+fn the_agent_is_declared_every_tool_it_can_reach_on_a_turn_it_was_asked() {
+    let declared: BTreeSet<String> = crate::tools::agent_tool_declarations()
+        .into_iter()
+        .map(|d| d.name.as_wire_name().to_owned())
+        .collect();
+    let reachable: BTreeSet<String> = ToolId::KNOWN
+        .iter()
+        .map(|tool| tool.as_wire_name())
+        .filter(|name| !matches!(admit(USER_TURN, tool_access(name).expect("listed")), Verdict::Refuse(_)))
+        .map(str::to_owned)
+        .collect();
+    assert_eq!(declared, reachable);
+}
+
+/// An outside client counts as a turn a person started, so `propose_server` runs for it: a store this
+/// app doesn't have is what answers. A wake's refusal would have been an `Ok` with no store touched.
+#[tokio::test]
+async fn propose_server_treats_an_outside_client_as_a_turn_a_person_started() {
+    let app = tauri::test::mock_app();
+    let ctx = crate::tools::ToolCtx {
+        caller: OFF_DIRECT,
+        cancel: tokio_util::sync::CancellationToken::new(),
+        conversation_id: None,
+        asked: None,
+    };
+    let answer = crate::tools::execute_tool(
+        app.handle(),
+        &ctx,
+        "propose_server",
+        &serde_json::json!({ "protocol": "smb" }),
+    )
+    .await;
+    assert!(answer.is_err(), "{answer:?}");
+}
+
+/// What `tools/list` tells a client about a tool is its class, in MCP's words.
+#[test]
+fn every_listed_tool_carries_its_class_as_annotations() {
     for tool in get_all_tools() {
-        assert!(
-            tool_access(&tool.name).is_some(),
-            "tool '{}' has no access class",
-            tool.name
-        );
+        let access = tool_access(&tool.name).expect("listed");
+        assert_eq!(tool.annotations, access.hints(), "{}", tool.name);
     }
+}
+
+/// The core is what every call pays for in full, and what an everyday flow can't fumble through
+/// indirection. Lower the cap if you can.
+#[test]
+fn the_core_stays_small_and_holds_what_the_everyday_flows_name() {
+    let core = names_of_load(Load::Core);
+    assert_eq!(core.len(), 19, "{core:?}");
+    for name in [
+        "list_pane_files",
+        "image_facts",
+        "propose_rename_plan",
+        "memory_write",
+        "nothing_to_suggest",
+        "propose_suggestions",
+        "nav_to_path",
+        "select",
+        "copy",
+        "move",
+        "delete",
+        "rename",
+        "mkdir",
+        "dialog",
+    ] {
+        assert!(core.contains(name), "'{name}' is named by a flow, so it's core");
+    }
+}
+
+fn names_of_load(load: Load) -> BTreeSet<String> {
+    ToolId::KNOWN
+        .iter()
+        .map(|tool| tool.as_wire_name())
+        .filter(|name| tool_load(name) == Some(load))
+        .map(str::to_owned)
+        .collect()
 }

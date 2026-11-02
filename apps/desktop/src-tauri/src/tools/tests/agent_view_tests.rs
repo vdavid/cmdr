@@ -1,17 +1,13 @@
 use std::collections::BTreeSet;
 
 use crate::agent::llm::types::ToolId;
-use crate::tools::{agent_tool_declarations, agent_tool_view, get_all_tools};
+use crate::tools::{agent_tool_declarations, get_all_tools};
 
-/// `ToolId` is generated from the table, so `KNOWN` is every entry, whichever caller it's listed
-/// for. `Unrecognized` is excluded by design (it's the refusal case).
+/// `ToolId` is generated from the table, so `KNOWN` is every entry. `Unrecognized` is excluded by
+/// design (it's the refusal case).
 #[test]
 fn tool_id_known_is_every_table_entry() {
-    let table: BTreeSet<String> = get_all_tools()
-        .into_iter()
-        .chain(agent_tool_view())
-        .map(|t| t.name)
-        .collect();
+    let table: BTreeSet<String> = get_all_tools().into_iter().map(|t| t.name).collect();
     let known: BTreeSet<String> = ToolId::KNOWN.iter().map(|t| t.as_wire_name().to_string()).collect();
     assert_eq!(known, table);
     assert_eq!(known.len(), ToolId::KNOWN.len(), "two entries share a wire name");
@@ -93,14 +89,11 @@ fn every_known_tool_has_an_ask_cmdr_rail_label() {
     );
 }
 
-/// Every view entry becomes a declaration, and every declaration is a known
-/// tool (no `Unrecognized` leaked into the view). `ToolDeclaration` has no
-/// strict flag, so declarations are never `strict: true` by construction.
+/// Every declaration is a known tool. `ToolDeclaration` has no strict flag, so declarations are never
+/// `strict: true` by construction. Which tools they are: `tool_registry_tests/access.rs`.
 #[test]
-fn declarations_cover_the_view_and_resolve_to_known_tools() {
+fn declarations_resolve_to_known_tools() {
     let decls = agent_tool_declarations();
-    let decl_names: BTreeSet<String> = decls.iter().map(|d| d.name.as_wire_name().to_string()).collect();
-    let view: BTreeSet<String> = agent_tool_view().into_iter().map(|t| t.name).collect();
-    assert_eq!(decl_names, view);
-    assert!(decls.iter().all(|d| d.name.is_known()), "no Unrecognized in the view");
+    assert!(!decls.is_empty());
+    assert!(decls.iter().all(|d| d.name.is_known()), "no Unrecognized declared");
 }

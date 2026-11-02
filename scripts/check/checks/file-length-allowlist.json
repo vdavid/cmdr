@@ -25,14 +25,6 @@
       "lines": 1494,
       "reason": "TODO: split it, because 62 tests in five barely-overlapping groups sit 760 lines over the test budget (1,933 lines on `main` before #264 against a stale 1,777 entry; #264 added 30 when every `session::get_lines` call gained an explicit cancel flag). Move the search tests (`search_start_and_poll` through `test_regex_search_returns_matches`, including the watchdog and invalid-query ones) to `session_search_test.rs` (~400 lines), the tail-mode and watcher tests (`tail_mode_toggle_persists_on_session` through `test_session_close_stops_watcher`) to `session_tail_test.rs` (~440 lines), and the encoding tests (`get_encoding_options_returns_detected_and_all`, both `set_encoding_*`, `test_append_during_encoding_rebuild_not_dropped`, `test_set_encoding_during_rebuild_serialization`, `test_set_encoding_ascii_compatible_is_instant`) to `session_encoding_test.rs` (~290 lines). The ~70 lines of shared helpers (`create_test_dir`, `write_test_file`, `append_test_file`, `wait_for_watcher_subscribed`, `upgraded_to_line_index`, `literal_mode`) go to a `session_test_support.rs`, the convention the sibling `search_cancel_test_support.rs` already sets, so no fixture scatters."
     },
-    "apps/desktop/src-tauri/src/network/manual_servers.rs": {
-      "lines": 804,
-      "reason": "TODO: address parsing (`parse_server_address`, `parse_smb_url`, `extract_protocol`, `validate_host`, `parse_port`, `is_ip_address`) is its own concern. Moved into `manual_server_address.rs`, this file keeps the store and the discovery wiring and falls well under 800."
-    },
-    "apps/desktop/src-tauri/src/tools/table.rs": {
-      "lines": 800,
-      "reason": "The one authored tool table: one entry per tool, and a split would scatter the surface a reader needs to see whole. Its line count tracks the number of tools, not logic."
-    },
     "apps/desktop/src-tauri/src/lib.rs": {
       "lines": 886,
       "reason": "TODO: `setup()` wires every OS observer as a `#[cfg]` pair (accent color, reduce transparency, Liquid Glass tint, text size); moving those pairs into one `os_appearance::observe(app)` helper beside `system_events.rs` would bring the file back under 800 and give them one home."
@@ -44,6 +36,10 @@
     "apps/desktop/src-tauri/src/menu/menu_handlers.rs": {
       "lines": 969,
       "reason": "TODO: three things share this file and only one of them is the dispatcher the module map names. Move the six macOS post-construction wrappers (`cleanup_macos_menus`, `set_macos_menu_icons`, `set_display_accelerators`, and their three `*_from_command` main-thread hops, lines 34-110) to `macos_passes.rs`: they hold no routing logic at all, just the `run_on_main_thread` hop onto `macos_appkit.rs` and `display_accelerators.rs`, and they only live here because that is where the AppKit seam used to be. Move the native-edit lane (`NativeEditSelector`, `native_edit_selector_for`, `send_native_edit_action`, lines 111-186, plus the `native_edit_selector_tests` module) to `native_edit.rs`, which gives both bars' id-to-selector table one named home next to the `objc2` call that consumes it. That leaves roughly 650 lines: `handle_menu_event` with its per-family branches and the small routing helpers each one reads (`focused_viewer_label`, `viewer_edit_action_for`, `volume_row_action`) plus their tests, which do belong together because the branch order between them is the contract."
+    },
+    "apps/desktop/src-tauri/src/network/manual_servers.rs": {
+      "lines": 804,
+      "reason": "TODO: address parsing (`parse_server_address`, `parse_smb_url`, `extract_protocol`, `validate_host`, `parse_port`, `is_ip_address`) is its own concern. Moved into `manual_server_address.rs`, this file keeps the store and the discovery wiring and falls well under 800."
     },
     "apps/desktop/src-tauri/src/operations_host/backend_suites/copy_concurrency_bench.rs": {
       "lines": 823,
@@ -89,13 +85,13 @@
       "lines": 1096,
       "reason": "TODO: split it, because `createDialogState` returns one object literal of 34 members spanning lines 228-802, and the transfer cluster is a third of it on its own. `showTransfer`, `startTransferProgress`, `foregroundOperation`, `handleTransferConfirm`, `handleTransferCancel`, `handleTransferComplete` (~91 lines by itself), the four `handleAdopted*` members, `handleTransferQueue`, `handleTransferCancelled`, `handleTransferError`, and `handleTransferErrorClose` total ~330 lines and own their own `showTransferDialog`, `transferDialogProps`, `showTransferProgressDialog`, and `transferProgressProps` state, so they belong in a `dialog-state.transfer.svelte.ts` sub-factory spread into the returned object, which is the pattern this file already follows three times with `createTransferPaneEffects`, `createUnlockFlow`, and `createAdoptedOperation`. The mkdir and mkfile pair (`showNewFolder`, `showNewFile`, `handleNewFolderCreated`, `handleNewFolderCancel`, `handleNewFileCreated`, `handleNewFileCancel`, ~75 lines) is a smaller second one. That leaves the alert and delete members plus the cross-cutting `anyDialogOpen`, `closeConfirmationDialog`, `handleDialogRenderFailure`, `dismissAllAfterRenderFailure`, `isConfirmationDialogOpen`, and `confirmOpenDialog` at ~350 lines, and the test siblings are already split by exactly these topics. The background-start wiring (#381: `promptBackgroundPassword`, the `createBackgroundOperations` deps, `deleteBirthProps`) grew it past 885; it belongs in that same transfer sub-factory, since it reads and writes the birth slot."
     },
-    "apps/desktop/src/lib/file-explorer/pane/rename-flow.svelte.ts": {
-      "lines": 816,
-      "reason": "TODO: move the extension and conflict dialog answers to a sibling, as `rename-tool-commit.ts` did for the tool's commit; they read the session state this file owns, so it's a real cut and past this milestone's scope"
-    },
     "apps/desktop/src/lib/file-explorer/pane/listing-loader.ts": {
       "lines": 889,
       "reason": "TODO: the `onListingError` handler inside `loadDirectory` (the MTP fallback, the archive-password prompt, the not-connected refusal, and the deleted-path existence probe plus walk-up, about 110 lines) is one decision, what a failed listing turns into, and reads only the load's captured `volumeId` / `loadPath` plus a handful of deps. Move it to `listing-error-outcome.ts` as a function taking those, beside `listing-loader.outcomes.test.ts`, which already tests exactly that branch."
+    },
+    "apps/desktop/src/lib/file-explorer/pane/rename-flow.svelte.ts": {
+      "lines": 816,
+      "reason": "TODO: move the extension and conflict dialog answers to a sibling, as `rename-tool-commit.ts` did for the tool's commit; they read the session state this file owns, so it's a real cut and past this milestone's scope"
     },
     "apps/desktop/src/lib/file-explorer/views/BriefList.svelte": {
       "lines": 1384,

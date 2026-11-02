@@ -33,6 +33,8 @@ use crate::ignore_poison::IgnorePoison;
 use crate::multi_rename::media::{FileJob, Loader, SessionMedia};
 use crate::multi_rename::plan::{Compiled, MultiRenameSpec, NameEdits, NoMedia, PreviewRow, RowStatus, preview_names};
 use crate::security_log::ContentTool;
+use crate::tools::policy::{Caller, ToolCtx, Verdict, admit, note_content_read};
+use crate::tools::registry::Access;
 use crate::tools::sensitive::{GateStop, Protected, classify, note_refusal, path_gate_within};
 use cmdr_fs::entry::FileEntry;
 use cmdr_media_meta::ReadError;
@@ -359,6 +361,15 @@ impl RefusedReads {
     }
 }
 
+/// A media field reads file contents into the preview, so it answers what `Access::ReadContents`
+/// does: without this, a non-direct outside client would have a side door past `admit`.
+fn media_fields_admitted(caller: Caller) -> Result<(), ToolError> {
+    match admit(caller, Access::ReadContents) {
+        Verdict::Refuse(refusal) => Err(refusal.into_error("multi_rename")),
+        Verdict::Allow | Verdict::Ask => Ok(()),
+    }
+}
+
 /// `loader` with the sensitive-content gate in front of every read, since a media field is
 /// file-derived text (`tag.comment`, `tag.title`, EXIF) and `Propose` runs on wakes too.
 /// It runs here, on the read's own blocking thread, never on the dispatch task. A refusal is
@@ -464,7 +475,7 @@ fn preview(
     }
 }
 
-pub async fn execute_multi_rename<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+pub async fn execute_multi_rename<R: Runtime>(app: &AppHandle<R>, ctx: &ToolCtx, params: &Value) -> ToolResult {
     let request = parse_request(params)?;
     let (_pane, state) = target_pane_state(app, params)?;
     let volume_id = state
@@ -488,10 +499,13 @@ pub async fn execute_multi_rename<R: Runtime>(app: &AppHandle<R>, params: &Value
     let compiled = compile(&request.spec)?;
     let refused = RefusedReads::default();
     let media = if compiled.uses_media() {
+        media_fields_admitted(ctx.caller)?;
         let open = crate::multi_rename::session::media_over(&volume_id, &folder);
         // No one watches this read's progress: the call's answer is its end.
         let loader = gated(Loader::for_volume(volume_id.clone(), Arc::new(|_| {})), &refused);
-        Some(read_media(&folder, &names, &siblings, &open, loader, MAX_MEDIA_READS).await?)
+        let media = read_media(&folder, &names, &siblings, &open, loader, MAX_MEDIA_READS).await?;
+        note_content_read(ctx.caller, "multi_rename", Access::ReadContents);
+        Some(media)
     } else {
         None
     };

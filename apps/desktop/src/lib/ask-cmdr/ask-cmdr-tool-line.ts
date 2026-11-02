@@ -17,6 +17,7 @@ const OUTCOME_OK: Record<Exclude<ToolOutcome['kind'], 'connection'>, boolean> = 
   staged: true,
   notStaged: false,
   awaitingPerson: true,
+  outcomeUnknown: false,
   saved: true,
   refused: false,
   locationMiss: false,

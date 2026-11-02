@@ -29,10 +29,10 @@ The backend modules:
   modeled on `operation_log_host::start`. Depth: `store/DETAILS.md`, `store/proposals/DETAILS.md`.
 - `suggested_ops/`: the service over the spine — resolving a selector to a frozen op list against the drive index,
   wrapping the store's claim, and the acceptance-rate metric. Depth: `suggested_ops/DETAILS.md`.
-- `tool_gate.rs`: the gated dispatch that refuses any non-view name before `execute_tool`, plus `line/`, what the rail says
+- `tool_gate.rs`: the dispatch that shapes what `admit` decides, before `execute_tool`, plus `line/`, what the rail says
   about a call. Depth: `line/DETAILS.md`, `../tools/DETAILS.md` § The dispatch gate.
-- `../tools/`: the toolset, a sibling of this module: the read families authored as `consumers: [Agent]` entries in the
-  consolidated registry (agent decision D49, extend-don't-fork), their handlers/result shapes that reuse the shipped cores
+- `../tools/`: the toolset, a sibling of this module: one table for both callers (agent decision D49, extend-don't-fork),
+  the handlers/result shapes that reuse the shipped cores
   (drive index, importance, operation log, volumes, app state, the file viewer), and the propose and memory tiers. Depth:
   `../tools/DETAILS.md`.
 - `chat/`: the chat runtime (single-flight per thread, per-message budgets, cancellation, typed errors,
@@ -71,10 +71,8 @@ so `window_from_chunk` owes it NO separator: joining those two rows with a `\n` 
 file does not contain, and the model would reason about a file shape that isn't there. That is why the loop carries a
 `separator_owed` flag rather than testing `returned > 0`. The same rule, and the reason behind it, is in
 `file_viewer/DETAILS.md` § "Rows, not lines"; this note exists because the agent path is the one that looks like it
-could ignore it. This is the privacy line and it is structural, not a runtime guard. The registry's `consumers` + `access`
-dimensions pin the agent's view to exactly its authored `[agent]` entries, every one `Access::Read`,
-`Access::ReadContents`, `Access::Propose`, `Access::Memory`, or `Access::Session`; `tool_gate.rs` is the runtime choke
-point (any name outside the agent view, known to the table or not, is refused before dispatch). A new KIND of content egress (a new tool, or a new field on an existing one) is a disclosure-copy change plus a
+could ignore it. This is the privacy line, and it's structural: the one content read is `Access::ReadContents`, hand-allowlisted, and
+`tools::policy::admit` is the only thing deciding who may run what. A new KIND of content egress (a new tool, or a new field on an existing one) is a disclosure-copy change plus a
 `CLOUD_AI_CONSENT_VERSION` bump (`ai::cloud_consent`), never a silent widening; `docs/security.md` § Cloud AI egress,
 the user-facing account, has to move with it.
 
@@ -338,9 +336,9 @@ Vocabulary: "the agent" is this feature; external MCP consumers are "AI clients"
   protects attention, which is only spent on screen. The first half is built; the cap waits on D39.
 - **D58**: Every agent tunable is exposed in Settings. Why: better too many dials than hidden behavior. Flagged for
   revisit: the main UI may keep ~3 dials with the tail in an advanced section.
-- **D59**: Consumer gating is structural: each registry entry declares its consumers and access, and the agent's
-  dispatch view is pinned by set-equality tests. Why: "holds the token but doesn't use it" is policy, not construction.
-  Built (`../tools/`).
+- **D59**: Gating is structural: each registry entry declares its access, and `tools::policy::admit` alone decides, pinned
+  by a matrix over every class and caller. Why: "holds the token but doesn't use it" is policy, not construction. Built
+  (`../tools/DETAILS.md` § The rule).
 - **D60**: User-granted autonomy is an auto-apply policy on the proposal pipeline's apply step (a Settings toggle,
   default off), never raw tool exposure; the toggle is changeable only in the Settings UI, never via `set_setting` or
   the agent. A CLI flag was rejected: it's invisible to whoever reviews what the app may do. Why: drop only the review

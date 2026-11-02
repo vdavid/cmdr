@@ -1,6 +1,6 @@
 <!--
   A run of tool lines with no narration between them, under one quiet header that says what they
-  looked at ("Looked around: 6 folders, 2 searches"). Collapsed, the group is that one line.
+  looked at ("Worked through: 6 folders, 2 searches"). Collapsed, the group is that one line.
 
   Open state lives in `ask-cmdr-tool-groups.svelte.ts`, keyed by the group's first line, never
   here: the rail keys messages by index, so local state would jump on a prepend. The header is NOT

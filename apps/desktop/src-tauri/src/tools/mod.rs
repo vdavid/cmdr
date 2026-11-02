@@ -6,12 +6,11 @@
 //!   every view and the dispatch.
 //! - `actions/`: the handlers behind most tools. `read/`, `propose/`, `suggestions/`, `memory.rs`,
 //!   `connect.rs`, and `quiet.rs`: the handlers written for the agent.
-//! - [`policy`]: who's calling ([`ToolCtx`]), and direct mode, the switch that lets an outside client
-//!   past a person.
+//! - [`policy`]: [`policy::admit`], the one decision over who may run what; who's calling
+//!   ([`ToolCtx`]); and direct mode, the switch that lets an outside client past a person.
 //! - [`sensitive`]: the one gate every path yielding file contents passes.
 //! - [`resources`]: the read-only `cmdr://` views.
-//! - [`agent_tool_declarations`]: the `ToolDeclaration`s handed to the provider, built from the
-//!   table's `agent_tool_view()`.
+//! - [`agent_tool_declarations`]: the `ToolDeclaration`s handed to the provider.
 //!
 //! See `CLAUDE.md` for the must-knows and `DETAILS.md` for the tool catalog.
 
@@ -58,20 +57,31 @@ pub(crate) use actions::{ToolError, ToolResult, fit_to_result_budget, is_virtual
 #[cfg(target_os = "macos")]
 pub(crate) use actions::nav::{GoToTarget, PaneChoice, go_to_in_pane};
 pub(crate) use policy::{Caller, ToolCtx};
-pub(crate) use registry::{Access, Consumer, SubjectSpec, Tool, tool_available_to, validate_params};
+#[cfg(test)]
+pub(crate) use registry::Load;
+pub(crate) use registry::{Access, SubjectSpec, Tool, validate_params};
 pub use table::ToolId;
-pub(crate) use table::{agent_tool_view, execute_tool, get_all_tools, tool_access};
-use table::{tool_consumers, tool_schema};
+#[cfg(test)]
+pub(crate) use table::tool_load;
+use table::tool_schema;
+pub(crate) use table::{execute_tool, get_all_tools, tool_access};
 
 use crate::agent::llm::types::ToolDeclaration;
+use crate::agent::types::TurnOrigin;
+use policy::{Verdict, admit};
 
-/// The tool declarations the agent hands the provider, one per `agent_tool_view()`
-/// entry. Each name resolves to a typed [`ToolId`] (the 1:1 test pins that every
-/// view entry maps to a known variant). Schemas are never `strict: true`
-/// ([`ToolDeclaration`] carries no strict flag — spike Gap D).
+/// The tool declarations the agent hands the provider: every tool [`admit`] doesn't refuse on a turn
+/// the user started, whatever turn this call serves. A user turn and a follow-up can share a thread,
+/// and these bytes are the provider's cache key, so a background turn hears `refusedInBackground`
+/// from the gate instead of seeing a shorter list. Schemas are never `strict: true`
+/// ([`ToolDeclaration`] carries no strict flag: spike Gap D).
 pub fn agent_tool_declarations() -> Vec<ToolDeclaration> {
-    agent_tool_view()
+    let agent = Caller::Agent {
+        origin: TurnOrigin::Text,
+    };
+    get_all_tools()
         .into_iter()
+        .filter(|t| !tool_access(&t.name).is_some_and(|access| matches!(admit(agent, access), Verdict::Refuse(_))))
         .map(|t| ToolDeclaration {
             name: ToolId::from_wire_name(&t.name),
             description: t.description,

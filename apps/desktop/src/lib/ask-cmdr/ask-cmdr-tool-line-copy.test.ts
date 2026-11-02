@@ -357,6 +357,8 @@ describe('toolOutcomeText', () => {
 
   it('says a dialog is waiting, that a person said no, and that contents stayed private', () => {
     expect(settled({ kind: 'awaitingPerson', dialog: null })).toBe('waiting for you')
+    expect(settled({ kind: 'outcomeUnknown' })).toBe('may still be going')
+    expect(settled({ kind: 'refused', reason: { kind: 'inBackground' } })).toBe('waits for you to ask')
     expect(settled({ kind: 'refused', reason: { kind: 'declined' } })).toBe('you said no')
     expect(settled({ kind: 'refused', reason: { kind: 'protected' } })).toBe('kept private')
   })
@@ -380,6 +382,7 @@ describe('toolOutcomeText', () => {
       staged: [{ kind: 'staged', count: 4 }],
       notStaged: [{ kind: 'notStaged' }],
       awaitingPerson: [{ kind: 'awaitingPerson', dialog: null }],
+      outcomeUnknown: [{ kind: 'outcomeUnknown' }],
       saved: [],
       refused: [],
       locationMiss: [],
@@ -412,6 +415,7 @@ describe('toolOutcomeText', () => {
       declined: { kind: 'declined' },
       protected: { kind: 'protected' },
       toolUnavailable: { kind: 'toolUnavailable' },
+      inBackground: { kind: 'inBackground' },
       repeatedCall: { kind: 'repeatedCall' },
       problem: { kind: 'problem' },
     }

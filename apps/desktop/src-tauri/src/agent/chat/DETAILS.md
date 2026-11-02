@@ -231,14 +231,19 @@ turn runs on an approval today; the `Outcomes` follow-up a rejection opens runs 
   `MAX_TOOL_RESULT_TOKENS`), so 25 rounds of a turn like 689's (~11k prompt, ~3k growth per round) re-send roughly
   1.2M prompt tokens, mostly prompt-cache reads. A wake's daily ceiling (`../wake/DETAILS.md`) bounds the rest.
 - `LOOP_GUARD_REPEATS = 3` — a call (`AgentToolCall::identity_key`, the rail's "Same as above" key) sent in a third
-  round of the turn wraps up, success or not. Sendings count per ROUND: the same call twice in one round is one,
+  round since the turn last moved on wraps up, success or not. A successful non-read moves the turn on
+  (`line::moves_the_turn_on`), since `nav_to_parent` never changes identity and "go up three levels" isn't a circle. Sendings count per ROUND: the same call twice in one round is one,
   since a model can't have ignored a result it hasn't seen yet (regression anchor: the E2E fake's `[tools]` script
   sends `list_volumes` once, then twice in its next round, and per-call counting cut it off before its answer). Why
   3: one repeat is normal (a model re-reads after losing track), and the repeat breaker already refuses the second
   sending of a FAILED call, so the third is a model that ignored that. It replaces the breaker's old "end the turn
   failed" step: the user gets an answer from what was found.
+- `LOOP_GUARD_CALL_CAP = 25` — one call sent in this many rounds of a turn wraps up however much it moved on in between.
+  Moving on starts the repeat half over, and a turn the user started has no round cap, so this is what ends a model toggling
+  a view forever. Why 25: the background round cap's figure, high enough for "go back up through these folders, looking in
+  each", which costs a round per step and a `list_pane_files` per folder.
 - `LOOP_GUARD_STALE_ROUNDS = 3` — three rounds in a row that found nothing new wrap up. "New" is structural: some call
-  went out for the first time this turn AND came back without a problem (`dispatch_ok`). Never judged by content: a
+  went out for the first time since the turn moved on AND came back without a problem (`dispatch_ok`). Never judged by content: a
   run of empty folders is a run of different calls, so it is progress (`many_different_successful_calls_never_trip_the_guard`).
   Why 3: one failed round is a model fixing its arguments; three is flailing.
 - `STREAM_STALL_TIMEOUT = 120s` — no stream item at all for this long ends the call as stalled (`TurnLimitKind::Stalled`,
@@ -273,12 +278,12 @@ In `budget.rs` (how many tokens a prompt and a tool result may spend):
   provider rejection mid-turn; still double the 8k that overflowed on a 12-file batch.
 - `ESTIMATE_SAFETY_PERCENT = 15` — what Automatic leaves unclaimed of a window after the reply's room
   (`AGENT_MAX_OUTPUT_TOKENS`): the margin for `chars/4`'s error on JSON- and path-heavy prompts, which real tokenizers
-  split finer. Cloud and local alike, so 1,000,000 resolves to 839,800, 200,000 to 159,800, and 32,768 to 17,652.
+  split finer. Cloud and local alike, so 1,000,000 resolves to 839,800, 200,000 to 159,800, and 65,536 to 45,505.
 - `WAKE_DIGEST_MAX_TOKENS = 10_000` — the cap on a wake's digest, whatever the window. See § Sizing a wake's digest.
-- `MIN_LOCAL_CONTEXT_TOKENS = 32_768` — the smallest local window one turn can run in, mirrored by
-  `ai.localContextSize`'s default and its smallest option. It tracks the prefix, so it moves when the tool view grows.
+- `MIN_LOCAL_CONTEXT_TOKENS = 65_536` — the smallest local window one turn can run in. It tracks the prefix, so it moves
+  when the tool view grows.
   See § A local window too small to use.
-- `FIXED_PROMPT_OVERHEAD_TOKENS = 7_107` / `RENAME_TOKENS_PER_FILE = 349` / `BATCH_HINT_HEADROOM_PERCENT = 10` — what
+- `FIXED_PROMPT_OVERHEAD_TOKENS = 15_263` / `RENAME_TOKENS_PER_FILE = 349` / `BATCH_HINT_HEADROOM_PERCENT = 10` — what
   `files_per_batch` divides. See § Sizing a batch from the budget.
 - `MAX_TOOL_RESULT_TOKENS = DEFAULT_PROMPT_TOKEN_BUDGET / 2` — the most ONE tool result may spend. Derived from the
   conservative default, not the resolved budget, because a tool handler doesn't know the model (and may be answering an
@@ -374,13 +379,12 @@ which rides `TurnParams.call` into every `respond` of the turn.
 
 ### A local window too small to use
 
-A window that gives the reply its 12,000 tokens has to hold `FIXED_PROMPT_OVERHEAD_TOKENS` (7,107) plus a paged tool
-result before it holds a single word of the conversation, so the floor is `MIN_LOCAL_CONTEXT_TOKENS = 32_768`, which
-resolves to 17,652. `ai.localContextSize` offers nothing smaller, and a smaller stored size no longer validates (it
-resolves to the 32,768 default on load, migrating an early tester instead of leaving them broken).
+A window that gives the reply its 12,000 tokens has to hold `FIXED_PROMPT_OVERHEAD_TOKENS` (15,263) plus a paged tool
+result before it holds a single word of the conversation, so the floor is `MIN_LOCAL_CONTEXT_TOKENS = 65_536`, which
+resolves to 45,505. A smaller stored size no longer validates (it resolves to the 32,768 default on load).
 
 **The floor is derived, not chosen**, and `budget.rs`'s `the_floor_leaves_room_for_a_prefix_and_a_paged_result` is what
-holds it: one window down, 16,384 resolves to 3,726 and cannot even fit the prefix. Every tool that
+holds it: one window down, 32,768 resolves to 17,652, which holds the prefix with too little left for a paged result. Every tool that
 joins the agent view grows the prefix, so that assertion is answered by raising the floor or shrinking the prefix, never
 by shrinking the reply's room or the estimator's margin.
 
@@ -422,7 +426,7 @@ all. A persist problem is logged and dropped — a gauge is worth no turn.
 `files_per_batch(prompt_tokens)` answers how many files one content-based rename batch fits, as the **smaller of two
 limits**:
 
-- what the PROMPT holds: `(budget − 10% headroom − 7,107 of prefix) / 349 per file`. The headroom exists because the
+- what the PROMPT holds: `(budget − 10% headroom − 15,263 of prefix) / 349 per file`. The headroom exists because the
   measured 100-file turn came in ~4% above what the per-file costs account for (the paths the calls name, the envelope,
   the user's sentence, JSON scaffolding).
 - what one REPLY can emit: `AGENT_MAX_OUTPUT_TOKENS` (12,000), less a half-slot reasoning reserve, divided by the plan
@@ -459,7 +463,7 @@ Estimated tokens from the shipped assets and `estimate_prompt_tokens`. Every fig
 `context/cost_tests.rs`, whose constants block is the single copy; a failure there names both numbers and says to update
 the test and this section together.
 
-- **Fixed overhead: 7,107 tokens** on every single call — 2,378 for the system prompt and 4,729 for the 21 tool
+- **Fixed overhead: 15,263 tokens** on every single call — 2,925 for the system prompt and 12,338 for the 62 tool
   declarations. The old flat 8k budget, against a prefix half this size, still left only ~4.9k for the actual work, so
   an 11-file `image_facts` batch fit and a 12-file one did not. **It grows with the tool view**: the four suggested-ops
   tools are ~1,300 tokens of schema (`propose_suggestions` alone 759, the most expensive declaration), which every call pays whether or not it suggests anything, and which costs a 16k budget
@@ -472,10 +476,10 @@ the test and this section together.
 - **Per file: 269 for an `image_facts` row** (at 900 chars of OCR, the corpus average, against the 2,000-char cap — a
   text-dense corpus costs up to ~2.2× more), **59 for a plan row**, **21 for a pane-listing entry**. The facts dominate
   by more than 3×, so a window has to be sized for them, not for the plan.
-- **A 100-file content-based rename: 43,689 tokens** for the whole turn. The parts above account for over 90% of it; the
+- **A 100-file content-based rename: 51,845 tokens** for the whole turn. The parts above account for over 90% of it; the
   rest is the paths the calls name, the envelope, the user's sentence, and JSON scaffolding. The facts arrive over
   several `MAX_TOOL_RESULT_TOKENS` pages that all stay in the turn.
-- So **60k does 100 files, 16k does roughly 20** (`files_per_batch` says 101 and 20). A model's window must exceed the
+- So **60k does 100 files, 32k does 38, and 16k can't hold a batch** (`files_per_batch` says 101, 38, and 0). A model's window must exceed the
   whole turn, not one page of it: every page of facts is evidence the plan cites, so none of it may elide.
 - **Memory is priced as a SHARE, not a block**: `memory_slice_bytes` takes a tenth of what the budget has left after the
   overhead, so a 16k budget carries ~4 KB of notes and a 60k one ~21 KB. From a budget of about 170,000 up, the share

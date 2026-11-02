@@ -184,7 +184,9 @@ async fn a_successful_tool_reply_also_says_it_is_not_an_error() {
     let app = app_with_stores();
     let server = TestServer::start(&app).await;
 
-    let reply = server.tool("image_facts", json!({"paths":["/synthetic/a.png"]})).await;
+    let reply = server
+        .tool("nothing_to_suggest", json!({"reason":"a placeholder"}))
+        .await;
     assert_eq!(reply["result"]["isError"], json!(false));
 }
 
@@ -325,7 +327,7 @@ async fn an_older_client_sees_no_result_type() {
 
     for version in [None, Some("2025-03-26"), Some("2025-11-25")] {
         for body in [
-            json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"image_facts","arguments":{"paths":["/synthetic/a.png"]}}}),
+            json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"nothing_to_suggest","arguments":{"reason":"a placeholder"}}}),
             json!({"jsonrpc":"2.0","id":1,"method":"resources/read","params":{"uri":"cmdr://dialogs/available"}}),
         ] {
             let mut request = server.client.post(server.url()).bearer_auth(TOKEN).json(&body);
@@ -399,8 +401,8 @@ async fn a_latest_revision_client_can_list_call_and_read() {
     let called = latest_revision_request(
         &server,
         "tools/call",
-        Some("image_facts"),
-        json!({"name":"image_facts","arguments":{"paths":["/synthetic/a.png"]}}),
+        Some("nothing_to_suggest"),
+        json!({"name":"nothing_to_suggest","arguments":{"reason":"a placeholder"}}),
     )
     .send()
     .await

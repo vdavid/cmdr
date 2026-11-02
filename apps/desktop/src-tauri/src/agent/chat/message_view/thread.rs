@@ -16,7 +16,9 @@ use std::path::Path;
 use serde::Serialize;
 
 use super::{CallFacts, MessageView, RowFacts, project_row};
-use crate::agent::line::{LineRef, ToolPreview, outcome_of, preview_of, repeat_marks, subject_of};
+use crate::agent::line::{
+    LineRef, ToolPreview, TurnCall, moves_the_turn_on, outcome_of, preview_of, repeat_marks, subject_of,
+};
 use crate::agent::llm::types::{AgentPart, AgentRole, AgentToolCall, AgentToolResult};
 use crate::agent::store::{ConversationEvent, StoredContent, StoredMessage, TurnContext, TurnStats};
 
@@ -69,9 +71,15 @@ fn thread_facts(rows: &[StoredMessage], ctx: &PageContext<'_>) -> Vec<RowFacts> 
                 Round { offset, calls, results }
             })
             .collect();
-        let ordered: Vec<(i64, &AgentToolCall)> = rounds
+        let ordered: Vec<TurnCall<'_>> = rounds
             .iter()
-            .flat_map(|round| round.calls.iter().map(|call| (turn_rows[round.offset].id, *call)))
+            .flat_map(|round| {
+                round.calls.iter().zip(&round.results).map(|(call, result)| TurnCall {
+                    message_id: turn_rows[round.offset].id,
+                    call,
+                    moved_on: result.is_some_and(|result| moves_the_turn_on(&call.tool, result)),
+                })
+            })
             .collect();
         let marks = repeat_marks(&ordered);
 

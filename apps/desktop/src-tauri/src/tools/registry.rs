@@ -1,89 +1,93 @@
 //! Single source of truth for MCP tools.
 //!
 //! Each tool is authored exactly once in the `mcp_tools!` table in `table.rs`, bundling its name,
-//! description, JSON input schema, consumer exposure, access class, and handler. The macro
-//! expands that one table into every consumer, so the facets can't drift:
+//! description, JSON input schema, access class, load, and handler. The macro expands that one table,
+//! so the facets can't drift:
 //!
-//! - [`get_all_tools`](super::get_all_tools) — the AI-client `tools/list` payload (entries whose `consumers` include
-//!   [`Consumer::AiClient`]; non-generic; server + tests read it).
-//! - [`agent_tool_view`](super::agent_tool_view) — the in-process agent's tool set (entries whose `consumers` include
-//!   [`Consumer::Agent`]): the read (and, once authored, propose) families the chat agent dispatches.
-//! - [`execute_tool`](super::execute_tool) — the `tools/call` dispatch (generic over `Runtime`), gated to the caller's
-//!   consumer view: a name outside the caller's view is refused before dispatch.
-//! - [`tool_consumers`] / [`tool_access`](super::tool_access) — the two new dimensions, read by the structural tests.
-//! - [`ToolId`](super::ToolId) — the typed name of every entry, with `KNOWN`, the wire-name
+//! - [`get_all_tools`](super::get_all_tools): the whole table but `Meta` entries: an outside client's
+//!   `tools/list`, and what [`agent_tool_declarations`](super::agent_tool_declarations) builds on.
+//! - [`execute_tool`](super::execute_tool): the dispatch (generic over `Runtime`), asking
+//!   [`admit`](super::policy::admit) first, for every caller.
+//! - [`tool_access`](super::tool_access): what `admit` reads, and the structural tests too.
+//! - [`ToolId`](super::ToolId): the typed name of every entry, with `KNOWN`, the wire-name
 //!   conversions, and serde. `agent::llm::types` re-exports it.
-//! - [`SubjectSpec`] — what a call's tool line names (`agent/line/`).
+//! - [`SubjectSpec`]: what a call's tool line names (`agent/line/`).
 //!
 //! Adding a tool means adding one entry: you can't add it without supplying an id, a brief, a schema,
-//! a subject, consumers, an access class, and a handler, and you can't add a handler the dispatch
-//! doesn't know about. No enum, no `KNOWN`, and no `agent/line/` arm unless it says
+//! a subject, an access class, a load, and a handler, and you can't add a handler the dispatch doesn't
+//! know about. No enum, no `KNOWN`, and no `agent/line/` arm unless it says
 //! [`SubjectSpec::Custom`]. The count and coverage tests are then cheap guards over a property that's
 //! true by construction.
 //!
-//! **Two view dimensions, why both (agent decisions D49/D59):** one authored registry feeds two
-//! consumers. `consumers` is the exposure axis — the agent's dispatch view physically excludes
-//! every tool not tagged `[agent]`, so its write path is absent by construction, not policy.
-//! `access` classifies what a tool can do independently of transport authentication. The
-//! structural tests pin the agent view to exactly its authored `[agent]` entries AND require
-//! every one to be [`Access::Read`], [`Access::ReadContents`], [`Access::Propose`],
-//! [`Access::Memory`], or [`Access::Session`]. **The agent can propose; only the user can
-//! approve** — no tool approves a proposal, the only thing it writes is its own memory folder,
-//! and the only session it opens is to a place the user saved.
+//! **One table, one axis.** A tool declares what it does (`access`), and
+//! [`admit`](super::policy::admit) alone turns that and the caller into Allow, Ask, or Refuse. There
+//! are no per-caller lists, so every tool is reachable by both callers unless its entry says why not
+//! ([`Access::DevOnly`], [`Load::Meta`]). **The agent can start anything. A person finishes anything
+//! sensitive.**
 //!
 //! Wire output must stay byte-identical: each schema is the exact `json!` block (hoisted into
-//! [`schemas`](super::schemas) verbatim), and the tool order is the historical category concatenation. The
-//! `tool_snapshot_tests` fixture pins it. Schema keys serialize in authored order: genai turns on
-//! serde_json's `preserve_order` for the whole build, so reordering a `json!` block's keys changes the
-//! bytes (and the snapshot). Anything a model reads as a key LIST sorts explicitly (`params.rs`).
+//! [`schemas`](super::schemas) verbatim), and the tool order is the table's. The `tool_snapshot_tests`
+//! fixture pins it. Schema keys serialize in authored order: genai turns on serde_json's
+//! `preserve_order` for the whole build, so reordering a `json!` block's keys changes the bytes (and
+//! the snapshot). Anything a model reads as a key LIST sorts explicitly (`params.rs`).
 //!
-//! Split: this file is the mechanism (the two view dimensions, the params gate, and the
-//! `mcp_tools!` macro); `table.rs` is the data the macro expands. Layering: the table depends on the
-//! `actions` handlers and on `schemas`; `auth` depends on this module. Neither may depend on
-//! `server` or `auth` (that would cycle).
+//! Split: this file is the mechanism (the access classes, the params gate, and the `mcp_tools!` macro);
+//! `table.rs` is the data the macro expands. Layering: the table depends on the `actions` handlers and
+//! on `schemas`; `auth` depends on this module. Neither may depend on `server` or `auth` (that would
+//! cycle).
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::params;
-use super::{ToolError, tool_consumers, tool_schema};
+use super::{ToolError, tool_schema};
 
-/// A tool definition for MCP: the registry's output type, one `tools/list` element (serde
-/// `camelCase`, so `input_schema` serializes as `inputSchema`). Every generated view returns
-/// `Vec<Tool>`.
+/// A tool definition: the registry's output type, one `tools/list` element (serde `camelCase`, so
+/// `input_schema` serializes as `inputSchema`).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Tool {
     pub name: String,
     pub description: String,
     pub input_schema: Value,
+    pub annotations: ToolHints,
 }
 
-/// Which AI consumer a tool is exposed to. One authored registry, per-consumer views (D49):
-/// the MCP HTTP server dispatches the [`AiClient`](Consumer::AiClient) view, the in-process agent
-/// runtime dispatches the [`Agent`](Consumer::Agent) view, and neither can reach the other's
-/// tools ([`execute_tool`](super::execute_tool) refuses a name outside the caller's view).
+/// What MCP's tool annotations say about a tool, generated from its [`Access`] so they can't disagree
+/// with what `admit` does. `tools/list` carries them; a provider's declaration doesn't.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ToolHints {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub read_only_hint: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub destructive_hint: Option<bool>,
+}
+
+/// How the agent gets a tool's schema: declared up front, on request, or as one of the two tools
+/// that do the requesting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Consumer {
-    /// External MCP clients over the HTTP transport (dev tooling, Claude Code, E2E).
-    AiClient,
-    /// The in-process Ask Cmdr agent runtime, which dispatches the agent view via
-    /// [`execute_tool`](super::execute_tool) with this identity (`crate::agent::tool_gate`).
-    Agent,
+pub enum Load {
+    /// Declared in full on every call: the tools the everyday flows and the system prompt name.
+    Core,
+    /// One line in the prompt, the schema on request.
+    Deferred,
+    /// A tool that's about tools, for the in-process agent only, so `tools/list` leaves it out. The
+    /// string is the one-line reason, so the table carries it.
+    #[expect(dead_code, reason = "the tool-search pair is the first entry to carry it")]
+    Meta(&'static str),
 }
 
-/// What a tool does, whoever calls it. The agent's gate (`crate::agent::tool_gate`) reads it through
-/// [`tool_access`](super::tool_access) as a runtime backstop, and admits only [`Access::Read`],
-/// [`Access::ReadContents`], [`Access::Propose`], [`Access::Memory`], and [`Access::Session`], so
-/// "the agent can't act" holds even against a mis-tagged entry. It's registry metadata, not a field
-/// on the emitted `Tool`.
+/// What a tool does, whoever calls it. [`admit`](super::policy::admit) reads this and nothing else to
+/// decide who may run it. It's registry metadata: `tools/list` shows it only as [`ToolHints`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Access {
     /// Reads state and mutates nothing.
     Read,
-    /// Reads inside file contents, or image-derived text. Exactly [`Access::Read`] for the agent.
-    /// Authored by hand into `EXPECTED_READ_CONTENTS_TOOL_NAMES`, because it's the class that decides
-    /// what an outside client can read through Cmdr's Full Disk Access.
+    /// Reads inside file contents, or image-derived text. Exactly [`Access::Read`] for the agent, and
+    /// direct mode only for an outside client. Authored by hand into
+    /// `EXPECTED_READ_CONTENTS_TOOL_NAMES`, because it's the class that decides what an outside client
+    /// can read through Cmdr's Full Disk Access.
     ReadContents,
     /// Stages a proposal and opens a review surface for the user. Mutates nothing: no filesystem
     /// write, no silent config change. **The agent can propose; only the user can approve** —
@@ -92,14 +96,12 @@ pub enum Access {
     /// (`EXPECTED_PROPOSE_TOOL_NAMES`), because no structural check can prove a handler doesn't
     /// mutate.
     Propose,
-    /// Writes inside the agent's OWN memory folder (`<data-dir>/ai/memory/`), and nowhere else.
+    /// Writes inside the agent's OWN memory folder (`<data-dir>/ai/memory/`), and nowhere else. An
+    /// outside client gets it only in direct mode.
     ///
-    /// ⚠️ **A deliberate widening of the app's central agent-safety invariant.** "The agent
-    /// never changes anything" becomes "the agent writes only into its memory folder" — still
-    /// structural, but it is a different promise, so it is authored by hand into
-    /// `EXPECTED_MEMORY_TOOL_NAMES` for the same reason [`Access::Propose`] is: no structural
-    /// check can prove a handler stays in the jail, so a human has to put the name there having
-    /// read it. ❌ It must never be acquired as a side effect of editing a registry line.
+    /// Authored by hand into `EXPECTED_MEMORY_TOOL_NAMES` for the same reason [`Access::Propose`] is:
+    /// no structural check can prove a handler stays in the jail, so a human has to put the name there
+    /// having read it. ❌ It must never be acquired as a side effect of editing a registry line.
     ///
     /// The containment itself is `agent::memory`'s jail, not this tag.
     Memory,
@@ -107,29 +109,45 @@ pub enum Access {
     /// edits no file, server, account, credential, pin, or setting; the saved place's own
     /// connection bookkeeping updates the way a user's connect updates it.
     ///
-    /// ⚠️ **A deliberate widening, like [`Access::Memory`]**, authored by hand into
-    /// `EXPECTED_SESSION_TOOL_NAMES` for the same reason: no structural check can prove a handler
-    /// dials only a saved place. The agent's gate also admits it only on a turn the user started
-    /// (`crate::agent::tool_gate`), since a background connect can wake a sleeping NAS for a
-    /// digest nobody asked for. Agent invariant 7 (`agent/DETAILS.md`) is the promise.
+    /// Authored by hand into `EXPECTED_SESSION_TOOL_NAMES` for the same reason [`Access::Memory`] is:
+    /// no structural check can prove a handler dials only a saved place. Only on a turn the user
+    /// started, since a background connect can wake a sleeping NAS for a digest nobody asked for.
     Session,
     /// Changes what's on screen, never data: navigation, cursor, selection, tabs, view, and queue
-    /// steering. Refused by the agent's gate for now.
+    /// steering. Only on a turn the user started.
     AppState,
-    /// Opens a dialog or editor a person must confirm. Refused by the agent's gate for now.
-    /// Hand-allowlisted (`EXPECTED_INITIATE_TOOL_NAMES`).
+    /// Opens a dialog or editor a person must confirm; the handler can't start the operation. Only on
+    /// a turn the user started. Hand-allowlisted (`EXPECTED_INITIATE_TOOL_NAMES`).
     Initiate,
     /// Writes with no confirmation, the ONE written exception to "nothing writes without a person":
-    /// `mkdir` and `mkfile` with a name, and `tag`, which has no undo. Refused by the agent's gate for
-    /// now. Hand-allowlisted (`EXPECTED_LIGHT_WRITE_TOOL_NAMES`).
+    /// `mkdir` and `mkfile` with a name, and `tag`, which has no undo. Only on a turn the user started.
+    /// Hand-allowlisted (`EXPECTED_LIGHT_WRITE_TOOL_NAMES`).
     LightWrite,
-    /// Runs only after a person confirms an Ask. Refused by the agent's gate for now.
-    /// Hand-allowlisted (`EXPECTED_SENSITIVE_TOOL_NAMES`).
+    /// Runs only after a person confirms an Ask, and on a turn the user started. Hand-allowlisted
+    /// (`EXPECTED_SENSITIVE_TOOL_NAMES`).
     Sensitive,
     /// Never the agent, and an outside client only in direct mode
     /// ([`policy::direct_mode`](super::policy::direct_mode)). The string is the one-line reason, so
     /// the table carries it.
     DevOnly(&'static str),
+}
+
+impl Access {
+    /// The MCP annotations this class earns. A client that trusts `destructiveHint: false` skips its
+    /// own prompt, so a class is destructive whenever what it starts could lose something.
+    pub fn hints(self) -> ToolHints {
+        let (read_only_hint, destructive_hint) = match self {
+            Access::Read | Access::ReadContents => (Some(true), None),
+            Access::Propose | Access::Memory | Access::Session | Access::AppState | Access::LightWrite => {
+                (None, Some(false))
+            }
+            Access::Initiate | Access::Sensitive | Access::DevOnly(_) => (None, Some(true)),
+        };
+        ToolHints {
+            read_only_hint,
+            destructive_hint,
+        }
+    }
 }
 
 /// What a call's tool line names, read off its arguments by `agent/line/`. The strings are argument
@@ -153,14 +171,6 @@ pub enum SubjectSpec {
     Custom,
 }
 
-/// Whether `name` is listable/dispatchable by `consumer` — its authored `consumers` set includes
-/// it. The choke point [`execute_tool`](super::execute_tool) consults before dispatch, and the invariant the
-/// structural tests pin ("no transport dispatches a name outside its consumer view"). The
-/// decision is on the typed [`Consumer`] set, never a string.
-pub fn tool_available_to(name: &str, consumer: Consumer) -> bool {
-    tool_consumers(name).is_some_and(|cs| cs.contains(&consumer))
-}
-
 /// Refuse a params object its tool's own declared schema doesn't allow, before a handler
 /// reads a single field off it.
 ///
@@ -175,11 +185,10 @@ pub fn validate_params(name: &str, params: &Value) -> Result<(), ToolError> {
     }
 }
 
-/// Declarative tool table → the consumers (`get_all_tools`, `agent_tool_view`, `execute_tool`,
-/// `tool_consumers`, `tool_access`).
+/// Declarative tool table → `get_all_tools`, `execute_tool`, `ToolId`, `tool_access`, and `tool_schema`.
 ///
 /// Entry form:
-/// `"name" => { id: <Variant>, brief, desc, schema, subject: .., consumers: &[..], access: .., run: <shape> <handler-path> }`.
+/// `"name" => { id: <Variant>, brief, desc, schema, subject: .., access: .., load: .., run: <shape> <handler-path> }`.
 ///
 /// `ask` names a [`Sensitive`](Access::Sensitive) tool's plan: an `async fn(app, ctx, params) -> AskPlan` the
 /// dispatch runs ahead of the handler, and again after a yes (`ask.rs`).
@@ -211,8 +220,8 @@ macro_rules! mcp_tools {
         desc: $desc:expr,
         schema: $schema:expr,
         subject: $subject:expr,
-        consumers: $consumers:expr,
         access: $access:expr,
+        load: $load:expr,
         $( ask: $ask:path, )?
         run: $shape:tt $path:path
     } ),* $(,)? ) => {
@@ -299,42 +308,33 @@ macro_rules! mcp_tools {
             }
         }
 
-        /// The AI-client `tools/list` payload: every `[ai_client]` tool in wire order. Agent-only
-        /// entries are filtered out, so this stays byte-identical to the pre-dimension output for
-        /// the tools it already contained.
+        /// Every tool in table order, but `Meta` entries: what an outside client lists.
         pub fn get_all_tools() -> Vec<Tool> {
             let mut tools = Vec::new();
             $(
-                if $consumers.contains(&Consumer::AiClient) {
-                    tools.push(Tool { name: $name.into(), description: $desc.into(), input_schema: $schema });
+                if !matches!($load, Load::Meta(_)) {
+                    tools.push(Tool {
+                        name: $name.into(),
+                        description: $desc.into(),
+                        input_schema: $schema,
+                        annotations: ($access).hints(),
+                    });
                 }
             )*
             tools
         }
 
-        /// The in-process agent's tool set: every `[agent]` tool in table order. The agent
-        /// runtime (`crate::agent::tool_gate`) turns these into `ToolDeclaration`s and dispatches
-        /// them; the structural set-equality + all-`Read` tests pin the set.
-        pub fn agent_tool_view() -> Vec<Tool> {
-            let mut tools = Vec::new();
-            $(
-                if $consumers.contains(&Consumer::Agent) {
-                    tools.push(Tool { name: $name.into(), description: $desc.into(), input_schema: $schema });
-                }
-            )*
-            tools
-        }
-
-        /// The consumer exposure for a tool, or `None` for an unknown name.
-        pub fn tool_consumers(name: &str) -> Option<&'static [Consumer]> {
+        /// How the agent gets this tool's schema, or `None` for an unknown name.
+        #[cfg_attr(not(test), expect(dead_code, reason = "only the tests that pin the table read it, until the agent loads lazily"))]
+        pub fn tool_load(name: &str) -> Option<Load> {
             match name {
-                $( $name => Some($consumers), )*
+                $( $name => Some($load), )*
                 _ => None,
             }
         }
 
-        /// The access class for a tool, or `None` for an unknown name. Read by the structural
-        /// tests and by the agent dispatch's runtime read-only backstop (`crate::agent::tool_gate`).
+        /// The access class for a tool, or `None` for an unknown name: all [`admit`](super::policy::admit)
+        /// ever reads about a tool.
         pub fn tool_access(name: &str) -> Option<Access> {
             match name {
                 $( $name => Some($access), )*
@@ -351,9 +351,8 @@ macro_rules! mcp_tools {
             }
         }
 
-        /// The input schema a tool declares, or `None` for an unknown name. The same value
-        /// both views publish, so [`validate_params`] gates a call against exactly what the
-        /// caller was told the tool takes.
+        /// The input schema a tool declares, or `None` for an unknown name, so [`validate_params`]
+        /// gates a call against exactly what the caller was told the tool takes.
         pub fn tool_schema(name: &str) -> Option<Value> {
             match name {
                 $( $name => Some($schema), )*
@@ -361,28 +360,31 @@ macro_rules! mcp_tools {
             }
         }
 
-        /// The `tools/call` dispatch, gated to the caller's view. A name outside that view (an
-        /// agent-only name over MCP, an `ai_client`-only name through the agent runtime, or an
-        /// unknown name) is refused before dispatch with the same `INVALID_PARAMS` "Unknown tool"
-        /// error — the refusal is on the typed [`Consumer`] set, not a string. Generic over
-        /// `Runtime`.
+        /// The dispatch, for both callers. [`admit`](super::policy::admit) decides first, so a refused
+        /// call never reaches a schema check, a person, or a handler. A name outside the table refuses
+        /// as `INVALID_PARAMS` "Unknown tool". Generic over `Runtime`.
         pub async fn execute_tool<R: tauri::Runtime>(
             app: &tauri::AppHandle<R>,
             ctx: &ToolCtx,
             name: &str,
             params: &Value,
         ) -> ToolResult {
-            if !tool_available_to(name, ctx.caller.consumer()) {
+            let Some(access) = tool_access(name) else {
                 return Err(ToolError::invalid_params(format!("Unknown tool: {name}")));
-            }
-            if let Some(refusal) = super::policy::dev_only_refusal(ctx.caller, name, tool_access(name)) {
-                return Err(refusal);
+            };
+            let verdict = super::policy::admit(ctx.caller, access);
+            if let super::policy::Verdict::Refuse(refusal) = verdict {
+                return Err(refusal.into_error(name));
             }
             validate_params(name, params)?;
             // Ahead of the handler and after the schema, so a malformed call never reaches a person.
-            let asked = match name {
-                $( $name => mcp_tools!(@ask [$( $ask )?] app, ctx, params), )*
-                _ => None,
+            let asked = if verdict == super::policy::Verdict::Ask {
+                match name {
+                    $( $name => mcp_tools!(@ask [$( $ask )?] app, ctx, params), )*
+                    _ => None,
+                }
+            } else {
+                None
             };
             let confirmed;
             let ctx = if asked.is_some() {
@@ -391,10 +393,14 @@ macro_rules! mcp_tools {
             } else {
                 ctx
             };
-            match name {
+            let answer = match name {
                 $( $name => mcp_tools!(@call $shape $path, $name, app, ctx, params), )*
                 _ => Err(ToolError::invalid_params(format!("Unknown tool: {name}"))),
+            };
+            if answer.is_ok() {
+                super::policy::note_content_read(ctx.caller, name, access);
             }
+            answer
         }
     };
 

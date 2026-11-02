@@ -115,7 +115,7 @@ fn the_schema_declares_every_spec_knob() {
     let tool = crate::tools::get_all_tools()
         .into_iter()
         .find(|t| t.name == "multi_rename")
-        .expect("multi_rename is in the ai-client view");
+        .expect("multi_rename is in the table");
     let props = tool.input_schema["properties"].as_object().expect("properties").clone();
     for knob in spec_knob_names() {
         assert!(props.contains_key(&knob), "schema is missing '{knob}'");
@@ -123,6 +123,24 @@ fn the_schema_declares_every_spec_knob() {
 }
 
 // ── Dry run ───────────────────────────────────────────────────────────────────
+
+/// A media field reads file contents, so an outside client off direct mode gets what `inspect_file`
+/// answers it. Closes the side door past `admit`.
+#[test]
+fn media_fields_answer_what_a_contents_tool_answers() {
+    use crate::agent::types::TurnOrigin;
+    use crate::tools::policy::Caller;
+
+    let refused = media_fields_admitted(Caller::External { direct: false }).expect_err("off direct mode");
+    assert_eq!(
+        refused.data,
+        Some(json!({ "reason": "directModeOff", "setting": "developer.mcpDirectMode" }))
+    );
+    assert!(media_fields_admitted(Caller::External { direct: true }).is_ok());
+    for origin in [TurnOrigin::Text, TurnOrigin::Wake] {
+        assert!(media_fields_admitted(Caller::Agent { origin }).is_ok(), "{origin:?}");
+    }
+}
 
 /// `start` / `limit` page the preview while the counts cover every row.
 #[test]

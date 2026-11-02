@@ -2,7 +2,7 @@
 //! group pins:
 //!
 //! - `schemas.rs` — the tool set and every tool's declared JSON schema.
-//! - `access.rs` — the consumer and access dimensions: the agent's view, and the no-write gate.
+//! - `access.rs` — the access classes, the allowlists, and what `admit` makes of them across the table.
 //! - `schema_gate.rs` — `validate_params`, which refuses a call its tool's schema never allowed.
 //!
 //! They live beside the table rather than inline in `table.rs`, so that authored source
@@ -75,4 +75,19 @@ const EXPECTED_TOOL_NAMES: &[&str] = &[
     "list_dir",
     "memory_diagnostics",
     "cpu_diagnostics",
+    "app_state",
+    "inspect_file",
+    "propose_rename_plan",
+    "list_pane_files",
+    "important_folders",
+    "folder_importance",
+    "list_suggestions",
+    "get_suggestion_group",
+    "propose_suggestions",
+    "propose_server",
+    "nothing_to_suggest",
+    "memory_write",
+    "memory_edit",
+    "list_volumes",
+    "connect_volume",
 ];

@@ -19,8 +19,9 @@ mcp/
 └── tests/            # Transport test suite, split by category
 
 tools/
-├── table.rs          # THE single source: one authored table → per-consumer lists and dispatch
-├── registry.rs       #   the `mcp_tools!` macro, the `Tool` struct, the `Consumer`/`Access` dimensions
+├── table.rs          # THE single source: one authored table → `tools/list` and the dispatch
+├── registry.rs       #   the `mcp_tools!` macro, the `Tool` struct, `Access` and `Load`
+├── policy.rs         #   `admit`, the one decision over who may run what
 ├── params.rs         #   the schema gate
 ├── schemas/          #   per-tool `fn <tool>_schema()` blocks, grouped by category
 ├── actions/          # Tool handlers, grouped by category (app.rs, nav.rs, file_ops.rs, …)
@@ -30,18 +31,16 @@ tools/
 ui_state/             # Frontend → backend state sync stores (pane_state.rs and friends)
 ```
 
-Every tool is authored **exactly once** in the `mcp_tools!` table in `tools/table.rs`. That one table generates every
-view, so they can't drift:
+Every tool is authored **exactly once** in the `mcp_tools!` table in `tools/table.rs`. That one table generates
+everything else, so nothing can drift:
 
-- `get_all_tools()` — the ai_client `tools/list` payload (entries whose `consumers` include `AiClient`).
-- `agent_tool_view()` — the in-process agent's tool set (entries whose `consumers` include `Agent`): the read-only
-  families the chat agent dispatches.
-- `execute_tool()` — the `tools/call` dispatch (generic over `Runtime`), gated to the caller's consumer view: a name
-  outside that view is refused before dispatch.
-- `tool_consumers()` / `tool_access()` — the `consumers` (exposure) and `access` (read/write) dimensions.
+- `get_all_tools()`: the whole table but `Meta` entries, the `tools/list` payload.
+- `execute_tool()`: the dispatch (generic over `Runtime`), which asks `policy::admit` first, for both callers.
+- `tool_access()`: what `admit` reads about a tool, and all it reads.
 
-Two AI consumers share this one registry (agent decision D49: extend it, don't fork a parallel agent table). See
-`apps/desktop/src-tauri/src/tools/DETAILS.md` § Consumer and access views for the model.
+An outside client and the in-process agent share this one table (agent decision D49: extend it, don't fork a parallel
+agent table), and each entry declares only what the tool does. See `apps/desktop/src-tauri/src/tools/DETAILS.md` § The
+rule.
 
 ### Data flow
 
@@ -94,7 +93,8 @@ pub fn my_action_schema() -> Value {
         "properties": {
             "target": { "type": "string", "description": "What to act on" }
         },
-        "required": ["target"]
+        "required": ["target"],
+        "additionalProperties": false
     })
 }
 ```
@@ -105,30 +105,28 @@ Then the table entry:
 "my_action" => {
     desc: "Do the thing to a target",
     schema: schemas::my_action_schema(),
-    consumers: &[Consumer::AiClient],
-    access: Access::Write,
+    access: Access::AppState,
+    load: Load::Deferred,
     run: app_params view::execute_my_action
 },
 ```
 
-Each entry bundles every facet: name, description, JSON schema, the `consumers` exposure, the `access` class, and the
-handler (as a shape tag plus a path). You can't add an entry without all of them, and you can't add a handler the
-dispatch doesn't know about, so schema, dispatch, and exposure can't fall out of sync. HTTP authentication sits above
-the registry and automatically covers every entry.
+Each entry bundles every facet: name, description, JSON schema, the `access` class, the `load`, and the handler (as a
+shape tag plus a path). You can't add an entry without all of them, and you can't add a handler the dispatch doesn't
+know about, so schema and dispatch can't fall out of sync. HTTP authentication sits above the registry and automatically
+covers every entry.
 
-- **`desc`** is PREFIX for the agent view: every declaration rides every turn of every conversation, whether or not the
-  turn calls that tool, so a sentence here is paid thousands of times. Say what the tool answers and, when a neighboring
-  tool would be the wrong pick, where the line falls (`search` vs `list_dir`); leave everything else to the schema, the
+- **`desc`** is PREFIX for the agent: every declaration rides every turn of every conversation, whether or not the turn
+  calls that tool, so a sentence here is paid thousands of times. Say what the tool answers and, when a neighboring tool
+  would be the wrong pick, where the line falls (`search` vs `list_dir`); leave everything else to the schema, the
   result, or the system prompt. `test_tools_have_bounded_descriptions` caps a description at 512 chars, and most sit far
   under; `agent/chat/context/cost_tests.rs` is what actually holds the prefix to `FIXED_PROMPT_OVERHEAD_TOKENS`.
-- **`consumers`** is the exposure set (`&[Consumer::AiClient]`, `&[Consumer::Agent]`, or both). A tool driving the UI is
-  `[AiClient]`; a read-only tool for the in-process agent is `[Agent]` (or shared as `[AiClient, Agent]` when a read
-  surface fits both). The agent's view is dispatched only by the agent runtime; the HTTP server dispatches only the
-  ai_client view.
-- **`access`** is `Read` or `Write`. `Write` covers any mutation of the filesystem OR app state (nav, cursor, selection,
-  tabs, dialogs, settings, connect/eject, file ops); when in doubt, `Write`. The agent view must be **read-only by
-  construction** — a structural test fails if any `[Agent]` tool is `Write` — so a tool shared into the agent view must
-  be a genuine read surface tagged `Read`.
+- **`access`** says what the tool does, and `admit` decides from it alone who may run it, so pick the class honestly:
+  `Read`, `ReadContents`, `Propose`, `Memory`, `Session`, `AppState`, `Initiate`, `LightWrite`, `Sensitive` (it needs an
+  `ask:` plan), or `DevOnly("one-line reason")`. Every class but `Read` and `AppState` means adding the name to its
+  hand-written allowlist in `tool_registry_tests/access.rs`, having read the handler. Split a tool whose power depends
+  on a parameter.
+- **`load`** is `Core` when an everyday flow or the system prompt names the tool, else `Deferred`.
 - **`run`** is a shape tag then the handler path. The tag tells the generated dispatch how to call the handler:
   `app_params` (`handler(app, params).await`, most tools), `app_only` (`handler(app).await`, no params), `params_only`
   (`handler(params).await`, no `app` — `search`, `ai_search`), `sync_app` / `sync_app_params` (sync handlers, no

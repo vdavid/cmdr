@@ -272,15 +272,15 @@ it asked for, in `tried` words.
 
 ## Groups and the expanded line
 
-A `tools` display segment of two or more lines renders as `AskCmdrToolGroup.svelte`: one quiet header ("Looked around: 6
-folders, 2 searches", `groupSummaryText` in `ask-cmdr-tool-group-summary.ts`) over its lines. A single line renders
+A `tools` display segment of two or more lines renders as `AskCmdrToolGroup.svelte`: one quiet header ("Worked through:
+6 folders, 2 searches", `groupSummaryText` in `ask-cmdr-tool-group-summary.ts`) over its lines. A single line renders
 alone, with no group chrome.
 
 - **The header counts per category** (`SUBJECT_CATEGORY`, a `Record` over every subject kind): folders, files (every
   path an `inspect_file` call asked about counts, so "3 files" stays true for one call), searches, checks (panes,
   drives, the operation log, suggestions), plans, notes, and "other" (an unknown tool, and a line with no subject yet,
-  so an unresolved call never breaks the header). Categories join with `formatUnitList`. "Looking around" while any line
-  runs.
+  so an unresolved call never breaks the header). Categories join with `formatUnitList`. "Working through" while any
+  line runs.
 - **Open state lives outside the message list** (`ask-cmdr-tool-groups.svelte.ts`): `AskCmdrRail.svelte` keys messages
   by index, so component state would jump on a prepend. A group is keyed by its first line's key once that round has a
   row (`groupKey`; calls only append, so it holds for the turn), a line by its display key. A group with no key yet

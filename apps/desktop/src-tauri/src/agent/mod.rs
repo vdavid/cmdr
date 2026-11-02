@@ -1,5 +1,5 @@
 //! The agent subsystem: the in-app AI agent whose first user-facing slice is
-//! "Ask Cmdr", a read-only chat rail.
+//! "Ask Cmdr", a chat rail.
 //!
 //! The subsystem is named after the persistent entity ("the agent"), not the
 //! surface, so later proactive slices (proposals, notifications) grow here too.

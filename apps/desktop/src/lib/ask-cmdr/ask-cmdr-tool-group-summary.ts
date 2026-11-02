@@ -1,6 +1,6 @@
 /**
  * A tool group's header: one line saying what its calls looked at, counted per kind of thing
- * ("Looked around: 6 folders, 2 searches"), so a collapsed group of 12 calls still says what
+ * ("Worked through: 6 folders, 2 searches"), so a collapsed group of 12 calls still says what
  * happened. Every word is ours; the counts come from each line's typed subject.
  */
 
@@ -63,7 +63,7 @@ function weight(subject: ToolSubject | null): { category: GroupCategory; count: 
   return { category: SUBJECT_CATEGORY[subject.kind], count }
 }
 
-/** The header of a group of `calls`: still looking while any runs, looked around once all settled. */
+/** The header of a group of `calls`, in the present tense while any runs. */
 export function groupSummaryText(calls: RailToolCall[]): string {
   const counts = new Map<GroupCategory, number>()
   for (const call of calls) {

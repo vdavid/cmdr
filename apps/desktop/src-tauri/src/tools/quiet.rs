@@ -11,10 +11,8 @@
 //! ## Why the handler does nothing
 //!
 //! ⚠️ **It is a pure signal**, `Access::Read`, mutating nothing. A handler that deleted the
-//! thread would be `Access::Write` under the registry's tiebreaker and would fail
-//! `test_agent_tool_view_never_writes` — and it would delete a USER's thread when the rail
-//! called it, since there is one `agent_tool_view()` for both. The deletion belongs to the
-//! wake path, after the turn (`agent/wake/`).
+//! thread would delete a USER's thread when the rail called it, since a wake and the rail declare
+//! the same tools. The deletion belongs to the wake path, after the turn (`agent/wake/`).
 
 use serde_json::Value;
 use tauri::{AppHandle, Runtime};

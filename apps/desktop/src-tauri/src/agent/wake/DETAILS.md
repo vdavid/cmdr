@@ -694,7 +694,7 @@ or non-English reply. `WakeToolWatch` (`watch.rs`) matches `ToolId::NothingToSug
 
 **The watch is a dispatcher decorator, and only a wake builds one.** It forwards every call
 unchanged and records that this one happened. That placement is the whole design: the tool itself
-is `Access::Read` with an inert handler, because there is ONE `agent_tool_view()` and a tool that
+is `Access::Read` with an inert handler, because a wake and the rail declare the same tools, and a tool that
 deleted its own conversation would delete a USER's thread the moment a confused model reached for
 it in the rail. `wake/tests/job.rs` pins both halves — a noop wake leaves no thread, and a rail
 turn calling the same tool deletes nothing.

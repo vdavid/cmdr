@@ -14,11 +14,11 @@ use crate::tools::{Access, tool_access};
 ///
 /// 1. `elided`: a set-aside stub carries none of the result's keys, so it reads as a bare
 ///    answer. (Nothing persists one today; this is defensive.)
-/// 2. `available: false`: the view gate.
+/// 2. `available: false`: `admit`'s refusal, or a name outside the table.
 /// 3. `repeatedCall`: the repeat breaker KEEPS the original `problem` beside it, so it has to
 ///    win over `problem`.
 /// 4. A typed `refusal` token we word ourselves (`declined`, `protected`), since one also carries
-///    `problem`, then `awaitingPerson`.
+///    `problem`, then `awaitingPerson`, then `outcomeUnknown`.
 /// 5. `readyForReview` on a propose tool: `ensure_review_verdict` stamps `false` onto every
 ///    propose problem, so a propose problem is `NotStaged`, or `LocationMiss` when it's a
 ///    place that can't run now (it carries the read tools' `miss`).
@@ -32,7 +32,10 @@ pub fn outcome_of(tool: &ToolId, result: &AgentToolResult) -> ToolOutcome {
     }
     let content = &result.content;
     if content.get("available") == Some(&Value::Bool(false)) {
-        return refused(RefusalReason::ToolUnavailable);
+        return refused(match content.get("refusal").and_then(Value::as_str) {
+            Some("refusedInBackground") => RefusalReason::InBackground,
+            _ => RefusalReason::ToolUnavailable,
+        });
     }
     if content.get("repeatedCall") == Some(&Value::Bool(true)) {
         return refused(RefusalReason::RepeatedCall);
@@ -44,6 +47,9 @@ pub fn outcome_of(tool: &ToolId, result: &AgentToolResult) -> ToolOutcome {
         return ToolOutcome::AwaitingPerson {
             dialog: content.get("dialog").and_then(Value::as_str).map(bounded),
         };
+    }
+    if content.get("outcomeUnknown") == Some(&Value::Bool(true)) {
+        return ToolOutcome::OutcomeUnknown;
     }
     if is_propose(tool)
         && let Some(ready) = content.get("readyForReview").and_then(Value::as_bool)
@@ -82,7 +88,7 @@ fn refused(reason: RefusalReason) -> ToolOutcome {
 
 /// A refusal the line has its own words for, read off the `refusal` token where a result carries
 /// it, at the top level or in a `ToolError`'s `data`. Any other token isn't this function's:
-/// `refusedInBackground` already read as a gate refusal, by its `available: false`.
+/// `refusedInBackground` already read as `admit`'s, by its `available: false`.
 fn typed_refusal(content: &Value) -> Option<RefusalReason> {
     let token = content
         .get("refusal")

@@ -75,8 +75,7 @@ fn test_no_exec_tools_exist() {
 /// stay under. The one that legitimately runs longer is `search`, a ROUTING description:
 /// it draws the line against `list_dir` (a whole drive versus one folder's children) and
 /// says what a name search cannot answer. Getting that wrong costs a whole wrong tool
-/// call, which is worth more than the bytes. `inspect_file` runs longer still, for the
-/// same reason, in the agent view this test doesn't reach.
+/// call, which is worth more than the bytes.
 const MAX_TOOL_DESCRIPTION_CHARS: usize = 512;
 
 #[test]

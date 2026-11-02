@@ -891,6 +891,11 @@ async fn a_dev_only_tool_refuses_off_direct_mode_and_the_setting_toggles_it_live
         "ai_search",
         "dialog_confirm",
         "queue_move_locked",
+        "inspect_file",
+        "image_facts",
+        "search_photos",
+        "memory_write",
+        "memory_edit",
     ] {
         let refused = server.tool(name, json!({})).await;
         assert_eq!(refused["error"]["code"], json!(INVALID_PARAMS), "{name}");
@@ -994,7 +999,7 @@ async fn a_call_with_no_initialize_and_no_accept_header_works() {
     let app = app_with_stores();
     let server = TestServer::start(&app).await;
     let authorization = format!("Bearer {TOKEN}");
-    let body = json!({"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"image_facts","arguments":{"paths":["/synthetic/a.png"]}}})
+    let body = json!({"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"nothing_to_suggest","arguments":{"reason":"a placeholder"}}})
         .to_string();
 
     // What `apps/desktop/test/e2e-shared/mcp-client.ts` writes, and the `*/*` that `fetch` adds to it.
@@ -1019,7 +1024,9 @@ async fn a_tool_result_is_a_text_content_block() {
     let app = app_with_stores();
     let server = TestServer::start(&app).await;
 
-    let reply = server.tool("image_facts", json!({"paths":["/synthetic/a.png"]})).await;
+    let reply = server
+        .tool("nothing_to_suggest", json!({"reason":"a placeholder"}))
+        .await;
     assert_eq!(reply["id"], json!(1));
     assert!(reply.get("error").is_none());
     assert_eq!(reply["result"]["content"][0]["type"], json!("text"));

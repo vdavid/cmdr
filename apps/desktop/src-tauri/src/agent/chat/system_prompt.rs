@@ -6,20 +6,22 @@
 //! This string is part of the byte-identical prefix (context assembly builds the full
 //! `system` from this, then `CMDR.md` if present; memory rides the user turn), so it must
 //! not vary per call. It is our OWN authored asset, not provider output, so the tests that
-//! assert it contains the read-only self-description and the coverage-honesty rule
+//! assert it contains the self-description and the coverage-honesty rule
 //! are guarding our prompt text, NOT classifying an error or provider state.
 //!
-//! Labelled sections, in the order the model reads them: identity, what you can do,
+//! Labelled sections, in the order the model reads them: identity, what you can do, panes,
 //! coverage, reading files, memory, renaming, suggesting operations, filing and cleanup, evidence, style. The labels are there so a
 //! rule can be found and edited without re-reading the whole block.
 //!
 //! What it must always carry (the tests pin each one):
-//! - what it may and may not touch (it can look, speak, propose, and write its own memory;
-//!   it never touches the USER's files, and the one tool that reads inside a file,
-//!   `inspect_file`, is bounded and on request) — the privacy line, stated to the model.
-//!   ⚠️ It used to say "you never act", which `Access::Memory` made false, and "no tool
-//!   that reads the contents of a file", which `inspect_file` made false; a test fails if
-//!   either phrase comes back,
+//! - **what it can start, and what waits for a person**: the four ways a change goes, `awaitingPerson`
+//!   as "the dialog is open, nothing has happened yet" (the mirror of `readyForReview`), a decline
+//!   that sticks, `tag` having no undo, an unknown outcome that may still be running, what a turn Cmdr
+//!   started can't do, and dialogs for now vs. plans for later. A model told it can't touch anything
+//!   refuses what it can do, and one told only that it can says "copied" over an open dialog,
+//! - **naming the pane**, since focus moves silently and an unnamed pane can aim at the wrong one,
+//! - the privacy line: the one tool that reads inside a file, `inspect_file`, is bounded and on
+//!   request. ⚠️ A test fails if "no tool that reads the contents of a file" comes back,
 //! - **the memory write instruction**: notes record facts about the user and their
 //!   preferences, ❌ never instructions to itself. Memory is fed back into every later
 //!   conversation, so a self-directed note would steer every one after the one that saved it.
@@ -81,30 +83,128 @@ mod tests {
     // These assert our OWN prompt asset carries its load-bearing rules. This is a
     // guard on authored text, not error/state classification.
 
-    /// ⚠️ The promise this pins CHANGED with `Access::Memory`: "you never act" became false the
-    /// moment the agent got a tool that writes. What survives, and what this guards, is the
-    /// part that is still true and still load-bearing — it never touches the USER's files, and
-    /// no file's contents ever reach it.
+    /// The rule, in the model's own terms. A prompt that says it can't touch anything is a lie now,
+    /// and a lie about its own power teaches a model to disbelieve the rest.
     #[test]
-    fn prompt_states_what_it_may_and_may_not_touch() {
+    fn prompt_states_the_rule_and_none_of_the_old_promises() {
         assert!(
-            SYSTEM_PROMPT.contains("prepare a rename plan"),
-            "must describe its proposal-only power"
+            SYSTEM_PROMPT.contains("You can start anything, and a person finishes anything sensitive"),
+            "must carry the rule"
+        );
+        for gone in [
+            "never touch the user's files",
+            "no tool that changes",
+            "never act",
+            "The one thing you write",
+            "no tool that reads the contents of a file",
+            "Only names, paths, and metadata reach you",
+        ] {
+            assert!(!SYSTEM_PROMPT.contains(gone), "'{gone}' isn't true any more");
+        }
+    }
+
+    /// An open dialog is not a done copy: a model reading "OK" said "copied", and the person's later
+    /// cancel never reached it. The same gap `readyForReview` closed for proposals.
+    #[test]
+    fn prompt_says_an_open_dialog_means_nothing_has_happened_yet() {
+        assert!(
+            SYSTEM_PROMPT.contains("awaitingPerson: true, which means the dialog is open and nothing has happened yet"),
+            "awaitingPerson must read the way readyForReview does"
         );
         assert!(
-            SYSTEM_PROMPT.contains("never touch the user's files"),
-            "must state the one thing that is still absolute: the user's files are not its to change"
+            SYSTEM_PROMPT.contains("never say a file was copied"),
+            "and the wrong sentence must be ruled out by name"
+        );
+    }
+
+    #[test]
+    fn prompt_says_a_no_sticks_and_a_tag_has_no_undo() {
+        assert!(
+            SYSTEM_PROMPT.contains("data.refusal: declined"),
+            "a decline must read typed"
+        );
+        assert!(SYSTEM_PROMPT.contains("don't ask again this turn"), "and it sticks");
+        assert!(
+            SYSTEM_PROMPT.contains("tag has no undo"),
+            "the one write nobody can take back"
+        );
+    }
+
+    /// The transfer's own wording says the action may still go ahead. A model that reads it as refused
+    /// retries a copy that's already running.
+    #[test]
+    fn prompt_says_an_unknown_outcome_may_still_be_running() {
+        assert!(SYSTEM_PROMPT.contains("outcomeUnknown: true"));
+        assert!(SYSTEM_PROMPT.contains("may still be running"));
+    }
+
+    #[test]
+    fn prompt_says_what_a_turn_cmdr_started_can_do_and_when_to_use_a_dialog() {
+        assert!(
+            SYSTEM_PROMPT.contains("refusedInBackground"),
+            "a wake's refusal must read typed"
         );
         assert!(
-            !SYSTEM_PROMPT.contains("never act"),
-            "the old blanket promise is false now that memory writes, and a prompt that keeps \
-             saying it teaches the model to disbelieve the rest"
+            SYSTEM_PROMPT.contains("For one thing right now, on a turn the user started, open the dialog"),
+            "dialogs are for now"
         );
         assert!(
-            !SYSTEM_PROMPT.contains("no tool that reads the contents of a file")
-                && !SYSTEM_PROMPT.contains("Only names, paths, and metadata reach you"),
-            "the no-contents promise is false now that inspect_file reads inside a file; keeping it \
-             would teach the model to disbelieve the rest"
+            SYSTEM_PROMPT.contains("For a batch, something to look over later, or a turn Cmdr started, prepare a plan"),
+            "plans are for later"
+        );
+    }
+
+    /// Select left, navigate right, `copy` copies the right pane's cursor item if the pane goes unnamed.
+    #[test]
+    fn prompt_says_to_name_the_pane_because_focus_moves() {
+        assert!(SYSTEM_PROMPT.contains("# Panes"));
+        assert!(SYSTEM_PROMPT.contains("focus moves without saying so"));
+        assert!(SYSTEM_PROMPT.contains("name the pane on every"));
+        assert!(
+            SYSTEM_PROMPT.contains("a selection hides the folder's other rows"),
+            "a selection reads as the folder otherwise"
+        );
+    }
+
+    /// Everything the prompt calls by name has to exist, or a model reaches for a tool that isn't there.
+    #[test]
+    fn every_tool_the_rule_names_exists_and_none_is_past_a_person() {
+        use crate::tools::Access;
+        for name in [
+            "copy",
+            "move",
+            "compress",
+            "delete",
+            "rename",
+            "operations_rollback",
+            "open_under_cursor",
+            "set_setting",
+            "quit",
+            "eject",
+            "remove_manual_server",
+            "indexing",
+            "mkdir",
+            "mkfile",
+            "tag",
+            "propose_rename_plan",
+            "propose_suggestions",
+            "propose_server",
+            "multi_rename",
+            "inspect_file",
+            "nav_to_path",
+            "select",
+            "move_cursor",
+            "list_pane_files",
+            "app_state",
+            "operations_list",
+        ] {
+            assert!(SYSTEM_PROMPT.contains(name), "'{name}' isn't named");
+            let access = crate::tools::tool_access(name).unwrap_or_else(|| panic!("'{name}' isn't a tool"));
+            assert!(!matches!(access, Access::DevOnly(_)), "'{name}' is never the agent's");
+        }
+        assert!(
+            !SYSTEM_PROMPT.contains("dialog_confirm"),
+            "the prompt can't name what it can't run"
         );
     }
 

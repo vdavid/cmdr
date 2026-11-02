@@ -18,7 +18,7 @@ use tokio::sync::oneshot;
 use tokio_util::sync::CancellationToken;
 
 use super::actions::ToolError;
-use super::policy::{Caller, ToolCtx};
+use super::policy::ToolCtx;
 use crate::ui_state::dialog_state::SoftDialogTracker;
 
 /// The soft dialog id in `SoftDialogTracker` and the frontend's `dialog-registry.ts`.
@@ -283,8 +283,8 @@ async fn ask_within<R: Runtime>(
 }
 
 /// Runs a tool's plan and, when it says so, the question, before the handler sees the call. Answers
-/// with the facts a person agreed to, or `None` when nobody was asked. Direct mode skips all of it: a
-/// person said this client may go past them.
+/// with the facts a person agreed to, or `None` when nobody was asked. Runs only on `admit`'s `Ask`, so
+/// direct mode never reaches it.
 pub(super) async fn gate<R, Plan, Planned>(
     app: &AppHandle<R>,
     ctx: &ToolCtx,
@@ -295,9 +295,6 @@ where
     Plan: Fn() -> Planned,
     Planned: Future<Output = AskPlan>,
 {
-    if matches!(ctx.caller, Caller::External { direct: true }) {
-        return Ok(None);
-    }
     let facts = match plan().await {
         AskPlan::NoAsk => return Ok(None),
         AskPlan::Refuse(refusal) => return Err(refusal),

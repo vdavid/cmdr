@@ -697,7 +697,7 @@ async fn a_noop_wake_leaves_no_thread_but_keeps_what_it_spent() {
     assert_eq!(kept, 1, "what the quiet wake spent moved onto the reserved thread");
 }
 
-/// ⚠️ **There is one `agent_tool_view()`, so the RAIL sees this tool too**, and there it must
+/// ⚠️ **There is one `agent_tool_declarations()`, so the RAIL sees this tool too**, and there it must
 /// be completely inert. A user's own thread that somehow calls `nothing_to_suggest` keeps its
 /// thread, its messages, and its place in the session list: only a wake wraps its dispatcher
 /// in the watch that acts on the call.

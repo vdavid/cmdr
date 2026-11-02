@@ -15283,8 +15283,10 @@ export type RecoveredOriginal = {
 
 // Why the call was turned down.
 export type RefusalReason =
-  // `available: false`: not a tool the agent has.
+  // `available: false`: a name outside the table, or a tool that's never the agent's.
   | { kind: 'toolUnavailable' }
+  // A tool that waits for a turn the user started, on a turn Cmdr started.
+  | { kind: 'inBackground' }
   // The repeat breaker: an identical call already failed this turn.
   | { kind: 'repeatedCall' }
   // The schema gate or the handler said no (the JSON can't tell those two apart).
@@ -19179,6 +19181,8 @@ export type ToolOutcome =
    *  id, a token of ours.
    */
   | { kind: 'awaitingPerson'; dialog: string | null }
+  // The action went out and nothing said what became of it, so it may still go ahead.
+  | { kind: 'outcomeUnknown' }
   // A memory note landed.
   | { kind: 'saved' }
   | { kind: 'refused'; reason: RefusalReason }

@@ -408,6 +408,8 @@ pub(crate) fn now_secs() -> i64 {
 mod test_support;
 
 #[cfg(test)]
+mod class_smoke_tests;
+#[cfg(test)]
 mod context_budget_tests;
 #[cfg(test)]
 mod limit_tests;

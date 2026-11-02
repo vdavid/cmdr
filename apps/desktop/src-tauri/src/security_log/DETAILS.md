@@ -24,6 +24,8 @@ Issue #456. Must-knows in `CLAUDE.md`; this is the why and the catalog.
   the server runs.
 - `mcp_direct_mode_changed` (`on`, `by`: `user` | `launch`): `commands/mcp.rs` `direct_mode_event` (only a real change)
   and `../tools/policy.rs` `seed_direct_mode_at_launch` (only a launch that came up on).
+- `mcp_content_read` (`tool`: `inspect_file` | `image_facts` | `search_photos` | `multi_rename`): `../tools/policy.rs`
+  `note_content_read`, an outside client's successful read of file contents under direct mode. Never the path.
 - `mcp_rejections_started` / `mcp_rejections_ended` (`reason`: `missing_token` | `wrong_token` |
   `no_token_configured` | `foreign_origin`): `mcp/auth.rs` `validate_token` and `validate_origin`. Never the token,
   the origin, or the request.

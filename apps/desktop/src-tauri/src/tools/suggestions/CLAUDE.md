@@ -37,8 +37,8 @@ does. Depth: `DETAILS.md`.
 - **The planned shapes are the validation.** `SourceShape` carries each verb's target and `PlannedSources` carries the
   naming a hand-listed group needs (a selector supplies its own), so a trash group with a destination, or a rename built
   from a pattern, can't reach the store. Add a verb by adding a variant.
-- **Amend lives inside `propose_suggestions`** and only touches `pending`. A separate mutating tool would be
-  `Access::Write` under the registry's tiebreaker and would fail `test_agent_tool_view_never_writes`.
+- **Amend lives inside `propose_suggestions`** and only touches `pending`, so the whole surface stages and nothing here
+  acts.
 - **`propose_server` refuses on a turn the user didn't start, in its own handler** (❌ not in `admit`), and an edit
   can't change where a server is or which account it signs in as: the app's edit would MOVE the stored password there.
   `DETAILS.md` § Proposing a server.

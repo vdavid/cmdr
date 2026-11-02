@@ -324,6 +324,22 @@ Where a lead's review refined one of David's decisions, the refined form is writ
   flags any `type: object` that isn't closed. Declare it with no `type` (as `set_setting`'s `value` does) rather than
   exempting the name. The effective inner call gets its own tool's gate.
 
+## Carried from M12
+
+- M14: `Load::Meta`'s `expect(dead_code)` goes with the first `Meta` entry, and `tool_load`'s with the first non-test
+  reader. `agent_tool_declarations()` is the seam for Core + Meta. The temporary state to undo when the overhead falls:
+  `MIN_LOCAL_CONTEXT_TOKENS` back to 32,768 with its pins (`budget/tests.rs`: `automatic_spends_the_whole_window`,
+  `a_local_budget_tracks_the_configured_context_window`, the wake digest's 6,048; `chat/DETAILS.md`, which also said the
+  floor mirrors `ai.localContextSize`'s default); `a_batch_the_hint_promises_actually_fits_its_budget` back to
+  `DEFAULT_PROMPT_TOKEN_BUDGET` from 32,000; `files_per_batch(16_000)` back above 0; and `effort/tests.rs`'s two small
+  windows back to 32,768 and 24,000.
+- M14: `moves_the_turn_on` and `failed_calls.record_failure` must read the effective call's tool, not `use_tool`.
+- M15: a person's decline reaches `FailedCalls` through `data.refusal`; `class_smoke_tests.rs` is the template for the
+  capability tests with fake frontend acks.
+- M13: `read_resource` replaces the `cmdr://` mentions in tool descriptions that the agent can't follow yet.
+- M18: `agent/DETAILS.md`'s principle 3, invariant 7, D26, D49, and D60 still describe the old promise.
+  `tools/DETAILS.md` § The rule is the matrix's canonical home.
+
 ## Running unattended
 
 David may be away, and nobody can click a macOS dialog. Executors run nothing that can raise a macOS prompt (Keychain,

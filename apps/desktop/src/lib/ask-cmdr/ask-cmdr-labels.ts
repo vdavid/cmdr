@@ -220,6 +220,7 @@ export function lineLabelText(label: LineLabel): string {
 
 const REFUSAL_KEYS: Record<Exclude<RefusalReason['kind'], 'memory'>, MessageKey> = {
   toolUnavailable: 'askCmdr.tool.outcome.toolUnavailable',
+  inBackground: 'askCmdr.tool.outcome.inBackground',
   repeatedCall: 'askCmdr.tool.outcome.repeatedCall',
   problem: 'askCmdr.tool.outcome.problem',
   declined: 'askCmdr.tool.outcome.declined',
@@ -322,6 +323,7 @@ const OUTCOME_TEXT: { [K in ToolOutcome['kind']]: (outcome: OutcomeOf<K>) => str
   staged: (outcome) => tString('askCmdr.tool.outcome.staged', counts(outcome.count)),
   notStaged: () => tString('askCmdr.tool.outcome.notStaged'),
   awaitingPerson: () => tString('askCmdr.tool.outcome.awaitingPerson'),
+  outcomeUnknown: () => tString('askCmdr.tool.outcome.outcomeUnknown'),
   refused: ({ reason }) =>
     tString(reason.kind === 'memory' ? MEMORY_REFUSAL_KEYS[reason.refusal] : REFUSAL_KEYS[reason.kind]),
   locationMiss: ({ miss }) => tString(MISS_KEYS[miss]),

@@ -9,7 +9,7 @@ use std::borrow::Cow;
 use rmcp::model::{
     CallToolRequestParams, CallToolResponse, CallToolResult, ContentBlock, ErrorCode, Implementation,
     ListResourcesResult, ListToolsResult, PaginatedRequestParams, ReadResourceRequestParams, ReadResourceResponse,
-    ReadResourceResult, Resource, ResourceContents, ServerCapabilities, ServerConfig, Tool,
+    ReadResourceResult, Resource, ResourceContents, ServerCapabilities, ServerConfig, Tool, ToolAnnotations,
 };
 use rmcp::service::RequestContext;
 use rmcp::{ErrorData, RoleServer, ServerHandler};
@@ -169,7 +169,11 @@ fn wire_tool(tool: crate::tools::Tool) -> Tool {
         // `test_tool_input_schemas_are_valid` pins every table entry to an object.
         _ => serde_json::Map::new(),
     };
-    Tool::new(tool.name, tool.description, schema)
+    let hints = tool.annotations;
+    let mut annotations = ToolAnnotations::new();
+    annotations.read_only_hint = hints.read_only_hint;
+    annotations.destructive_hint = hints.destructive_hint;
+    Tool::new(tool.name, tool.description, schema).with_annotations(annotations)
 }
 
 /// A tool's error as the client gets it: still a JSON-RPC error, with the typed `data` a caller

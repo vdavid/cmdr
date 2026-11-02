@@ -452,7 +452,7 @@ test.describe('Ask Cmdr rail', () => {
     if (firstTools.kind !== 'tools' || secondTools.kind !== 'tools') throw new Error('expected tool runs')
 
     // Round one: each line names what it looked at; the hallucinated `format_drive` is refused.
-    expect(firstTools.summary).toMatch(/^Looked around: /)
+    expect(firstTools.summary).toMatch(/^Worked through: /)
     expect(firstTools.lines.map((line) => line.label)).toEqual([
       'Looked at what you’re looking at',
       'Checked your drives',

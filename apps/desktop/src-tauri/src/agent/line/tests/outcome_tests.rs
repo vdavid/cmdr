@@ -505,3 +505,35 @@ fn ok_agrees_with_dispatch_ok_except_typed_refusals_without_a_problem_key() {
         assert!(!outcome_of(&tool, &stored).ok(), "the line shows {content} as not ok");
     }
 }
+
+/// The action went out and may still run, so it's neither done nor refused, and a model that read it
+/// as refused would tell someone a running copy never started.
+#[test]
+fn an_unknown_outcome_reads_as_its_own_thing() {
+    assert_eq!(
+        outcome(
+            ToolId::Copy,
+            json!({ "outcomeUnknown": true, "detail": "Check the queue." })
+        ),
+        ToolOutcome::OutcomeUnknown
+    );
+    assert!(!ToolOutcome::OutcomeUnknown.ok());
+}
+
+/// A tool that waits for a turn you start isn't "not a tool it has", since it's on the list.
+#[test]
+fn a_tool_refused_in_the_background_says_so_and_a_never_tool_stays_unavailable() {
+    let refused = |refusal: &str| json!({ "available": false, "requested": "copy", "refusal": refusal, "reason": "…" });
+    assert_eq!(
+        outcome(ToolId::Copy, refused("refusedInBackground")),
+        ToolOutcome::Refused {
+            reason: RefusalReason::InBackground
+        }
+    );
+    assert_eq!(
+        outcome(ToolId::DialogConfirm, refused("devOnly")),
+        ToolOutcome::Refused {
+            reason: RefusalReason::ToolUnavailable
+        }
+    );
+}

@@ -12,7 +12,7 @@ Pull-tier docs for `tools/suggestions/`. Must-knows: `CLAUDE.md`. The rows and t
 `Propose` means "stages a proposal and opens a review surface, mutates nothing"; `Write` means "mutates the filesystem
 OR app state" and is never reachable from the agent view. Staging rows in `main.db` IS the proposal, which is why it
 stays `Propose` — but a standalone `amend` tool would be a stored-state mutation with no review surface of its own, so
-the enum's own tiebreaker makes it `Write` and `test_agent_tool_view_never_writes` would refuse it. Folding the amend
+it would be a second way to change what the user reviews. Folding the amend
 into `propose_suggestions` is what keeps the surface honest.
 
 Only `propose_suggestions` joins `EXPECTED_PROPOSE_TOOL_NAMES` (`../tests/tool_registry_tests/access.rs`), a hand-authored
@@ -142,8 +142,8 @@ the write; any refusal writes nothing.
 - **Only on a turn the user started.** The handler reads the turn's origin (`CallContext`, routed by `../../agent/tool_gate.rs`) and
   answers `refusedInBackground` on a wake or a follow-up, before it reads a store. ❌ Not a tool-name check in `admit`:
   the gate stays tier-only and this rule lives with the one tool it belongs to. A badge saying "AI suggestion: add
-  server naspi-backup" arriving unprompted is the social-engineering shape an injection wants. The registry path
-  (`execute_propose_server`) knows no turn, so it refuses the same way.
+  server naspi-backup" arriving unprompted is the social-engineering shape an injection wants. An outside client
+  counts as a turn a person started, since nothing else makes one call.
 - **No secret, ever.** The schema has no field for one and is closed like every agent schema, so the dispatch gate
   refuses a `password` key by name first; the handler refuses `password`, `secret`, `secretAccessKey`, `keyFile`, and
   their kin again as `secretRefused` (any path that skips the gate), and a URL carrying a password too. `useAgent`,

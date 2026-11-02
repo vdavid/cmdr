@@ -57,6 +57,12 @@ pub const BACKGROUND_MAX_TOOL_TURNS: usize = 25;
 /// up (copies within one round count once). Why 3: `DETAILS.md` § Constants table.
 pub const LOOP_GUARD_REPEATS: usize = 3;
 
+/// The loop guard's ceiling: one call sent in this many rounds of a turn wraps it up however much the
+/// turn moved on in between. Moving on starts [`LOOP_GUARD_REPEATS`] over, so it can't stop a model
+/// toggling a view forever, and a turn the user started has no round cap. High enough for "go back up
+/// through these folders, looking in each". Why 25: `DETAILS.md` § Constants table.
+pub const LOOP_GUARD_CALL_CAP: usize = 25;
+
 /// The loop guard's progress half: this many rounds in a row that found nothing new (every
 /// call a repeat of one the turn already made, or one that came back with a problem) wrap the
 /// turn up. Why 3: `DETAILS.md` § Constants table.
@@ -76,6 +82,9 @@ pub enum WrapUp {
     RoundCap,
     /// The loop guard: the model sent one call [`LOOP_GUARD_REPEATS`] times.
     RepeatedCall,
+    /// The loop guard: the model sent one call [`LOOP_GUARD_CALL_CAP`] times, however much the turn
+    /// moved on in between.
+    CallCap,
     /// The loop guard: [`LOOP_GUARD_STALE_ROUNDS`] rounds in a row found nothing new.
     NoProgress,
 }
@@ -93,6 +102,11 @@ pub fn wrap_up_note(reason: WrapUp) -> String {
             let times = LOOP_GUARD_REPEATS;
             // allowed-pluralize-noun: the guard is a constant far above one
             format!("you've now sent the same tool call {times} times, and it can't tell you anything new")
+        }
+        WrapUp::CallCap => {
+            let times = LOOP_GUARD_CALL_CAP;
+            // allowed-pluralize-noun: the guard is a constant far above one
+            format!("you've now sent the same tool call {times} times in this answer")
         }
         WrapUp::NoProgress => {
             let rounds = LOOP_GUARD_STALE_ROUNDS;
@@ -188,7 +202,7 @@ pub struct EnvelopeVolume {
 
 /// Whether an attached reference points at a file or a folder. The only "metadata"
 /// an attachment carries into the envelope beyond its path — never file contents
-/// (the read-only privacy line, spec §2.1).
+/// (the privacy line, spec §2.1).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AttachmentKind {
     File,

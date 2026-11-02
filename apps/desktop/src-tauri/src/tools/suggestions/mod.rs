@@ -10,9 +10,7 @@
 //!
 //! ## Why amend lives inside propose
 //!
-//! A standalone `amend` tool would mutate stored rows, which the registry's own tiebreaker
-//! calls `Access::Write`, and a `Write` tool is unreachable from the agent's view by
-//! construction (`test_agent_tool_view_never_writes`). Folding it in keeps the whole surface
+//! A standalone `amend` tool would mutate stored rows. Folding it in keeps the whole surface
 //! honest: everything here stages a proposal for the user, and nothing here approves one.
 //!
 //! ## Scale is the design constraint

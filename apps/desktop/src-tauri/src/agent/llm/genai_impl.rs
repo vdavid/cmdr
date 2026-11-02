@@ -428,7 +428,7 @@ fn genai_content_to_agent_parts(content: &MessageContent, origin: &ReasoningOrig
             // Anthropic `redacted_thinking`, OpenRouter `reasoning_details`. They go back as is.
             ContentPart::Custom(custom) => out.push(origin.reasoning_part(custom_blob(custom.data.clone()))),
             ContentPart::Binary(_) => {
-                // The agent's read-only toolset never produces these; drop them.
+                // The agent's toolset never produces these; drop them.
             }
         }
     }

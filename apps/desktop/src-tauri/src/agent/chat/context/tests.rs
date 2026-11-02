@@ -683,7 +683,7 @@ fn envelope_omits_the_attached_segment_when_empty() {
 fn attachments_ride_only_the_latest_user_turn_and_carry_nothing_but_path_and_kind() {
     // Two user turns; only the latest gets the envelope (with its attachments). The turn
     // text is unchanged and NOTHING beyond path + kind reaches the prompt (no size, no
-    // contents) — the read-only privacy line asserted at the assembly boundary.
+    // contents) — the privacy line asserted at the assembly boundary.
     let transcript = vec![
         user("first question", 100),
         assistant_text("an answer", 110),

@@ -61,13 +61,12 @@ pub fn propose_server_schema() -> Value {
     })
 }
 
-/// The registry path. It knows no turn, so it can't know the user started one: it refuses, as a
-/// background turn does. The agent's calls come through [`propose_server_in_thread`].
+/// The registry path: the agent's turn answers for itself, and an outside client counts as a turn a
+/// person started, since nothing else makes one call.
 pub async fn execute_propose_server<R: Runtime>(app: &AppHandle<R>, ctx: &ToolCtx, params: &Value) -> ToolResult {
     let origin = match ctx.caller {
         Caller::Agent { origin } => origin,
-        // Nobody's at the rail, so it answers what a turn the user didn't start gets.
-        Caller::External { .. } => TurnOrigin::Wake,
+        Caller::External { .. } => TurnOrigin::Text,
     };
     propose_server_in_thread(app, ctx.conversation_id, params, origin).await
 }

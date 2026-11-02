@@ -69,7 +69,7 @@ describe('AskCmdrToolGroup', () => {
     mount(AskCmdrToolGroup, { target: element, props: { lines: [line('a'), line('b')], live: false, revealPath } })
     flushSync()
     const toggle = element.querySelector<HTMLButtonElement>('.group-toggle')
-    expect(toggle?.textContent.trim()).toBe('Looked around: 2 folders')
+    expect(toggle?.textContent.trim()).toBe('Worked through: 2 folders')
     expect(toggle?.getAttribute('aria-expanded')).toBe('false')
     expect(element.querySelectorAll('.tool-line')).toHaveLength(0)
 
@@ -256,7 +256,7 @@ describe('the bubble’s group announcement', () => {
 
     for (const settled of message.rounds[0].calls) settled.running = false
     await tick()
-    expect(statusOf(element)).toBe('Looked around: 2 folders')
+    expect(statusOf(element)).toBe('Worked through: 2 folders')
 
     const reloaded = target()
     mount(AskCmdrMessage, { target: reloaded, props: { message: bubble(false, false), revealPath } })

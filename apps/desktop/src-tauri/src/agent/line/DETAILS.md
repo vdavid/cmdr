@@ -71,7 +71,8 @@ Taking it as a value keeps the function pure; a caller with no root passes `None
    `elided: true` (verified 2026-10-26 with `git log -S 'elided: true'` plus the store writers: only
    `chat/context.rs`'s assembled copy and a views test set it), so there's no `SetAside` outcome; the preview's
    `setAside` flag covers the case.
-2. `available: false` → `Refused(ToolUnavailable)`, the view gate (a hallucinated tool).
+2. `available: false` → `Refused(InBackground)` for a `refusedInBackground` token, else `Refused(ToolUnavailable)` (a tool
+   that's never the agent's, or a hallucinated name).
 3. `repeatedCall: true` → `Refused(RepeatedCall)`. The breaker KEEPS the original `problem`, so this must win.
 4. A `refusal` token we word ourselves, at the top level or in a `ToolError`'s `data`: `declined` → `Refused(Declined)`,
    `protected` → `Refused(Protected)`. One rides beside `problem`, so this comes first. Any other token falls through.
@@ -136,5 +137,7 @@ the model saw rows it didn't.
 ## `repeat_marks(calls)`
 
 For one turn's calls in order, each identical call (`AgentToolCall::identity_key`, the repeat breaker's key) maps to
-the FIRST identical call of the turn. Keyed by `LineRef`, so two rounds both minting `fake-call-0` stay apart. A row
+the FIRST identical call since the turn last moved on (`moves_the_turn_on`: a successful non-read, taking effect at the next
+row, so the live stream and a reloaded thread draw the same line). Keyed by `LineRef`, so two rounds both minting
+`fake-call-0` stay apart. A row
 naming one call id twice can't tell its two lines apart, so it never marks a line as its own repeat.

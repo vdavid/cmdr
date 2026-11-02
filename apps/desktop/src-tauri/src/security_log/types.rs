@@ -32,6 +32,11 @@ pub enum SecurityEvent {
         on: bool,
         by: Initiator,
     },
+    /// An outside client read file contents through Cmdr, under direct mode, with `tool`. Never the
+    /// path.
+    McpContentRead {
+        tool: ContentTool,
+    },
     /// The first MCP request turned away for `reason` since the last quiet spell.
     McpRejectionsStarted {
         reason: McpRejection,
@@ -273,6 +278,7 @@ mod tests {
             SecurityEvent::CloudAiConsentGiven | SecurityEvent::CloudAiConsentWithdrawn => &[],
             SecurityEvent::McpServerTurnedOn { .. } | SecurityEvent::McpServerTurnedOff { .. } => &["by"],
             SecurityEvent::McpDirectModeChanged { .. } => &["on", "by"],
+            SecurityEvent::McpContentRead { .. } => &["tool"],
             SecurityEvent::McpRejectionsStarted { .. } => &["reason"],
             SecurityEvent::McpRejectionsEnded { .. } => &["reason", "count"],
             SecurityEvent::ManagedPolicyApplied { .. } => &["trigger", "keys_before", "keys_after"],
@@ -369,6 +375,12 @@ mod tests {
                     count: 3,
                 },
                 r#"{"kind":"smb_signature_rejections_ended","volume_id":"smb-nas","count":3}"#,
+            ),
+            (
+                SecurityEvent::McpContentRead {
+                    tool: ContentTool::ImageFacts,
+                },
+                r#"{"kind":"mcp_content_read","tool":"image_facts"}"#,
             ),
             (
                 SecurityEvent::ContentRefusalsStarted {

@@ -1,26 +1,14 @@
-//! The agent's gated tool-dispatch view: the no-write choke point at runtime.
+//! The agent's way into the tools: what a model's call turns into, and the shape its answer takes.
 //!
-//! A provider returns each tool call's name as a raw string. The runtime parses it
-//! into a typed [`ToolId`] (`from_wire_name`) BEFORE dispatch, and [`refuse_unavailable`] turns
-//! any tool outside the agent's view (a table entry it isn't given, or a name outside the table)
-//! into a typed "not available" tool-result WITHOUT ever calling `execute_tool`. So the boundary
-//! holds at runtime, not just structurally: the `consumers` check is the gate, backed by a
-//! `tool_access` check that refuses anything the registry doesn't classify [`Access::Read`],
-//! [`Access::ReadContents`], [`Access::Propose`], [`Access::Memory`], or [`Access::Session`] even if
-//! it entered the view.
+//! A provider returns each tool call's name as a raw string. The runtime parses it into a typed
+//! [`ToolId`] (`from_wire_name`) BEFORE dispatch, and [`refuse_unavailable`] turns anything
+//! [`admit`] refuses, or a name outside the table, into a typed tool-result without ever calling
+//! `execute_tool`. **`admit` decides; this file only shapes.** `execute_tool` asks it again for its
+//! own callers, and it's pure, so the two can't disagree.
 //!
-//! **The agent can propose; only the user can approve.** A [`Access::Propose`] tool
-//! stages a proposal and opens a review surface; it mutates nothing. Approval originates
-//! in the frontend as a user action, and there is no tool that approves a proposal.
-//!
-//! **And it writes only its own notes.** [`Access::Memory`] widens the gate by exactly one
-//! folder (`agent::memory`'s jail); the promise the app makes is "the agent writes only into
-//! its memory folder", which is still structural.
-//!
-//! **And it reaches past the app only when the user is there.** [`Access::Session`] dispatches
-//! only on a turn the user started ([`TurnOrigin::user_started`]); a wake or a follow-up gets a
-//! typed `refusedInBackground`. The origin is the turn's own, handed to every call in
-//! [`CallContext`], never inferred from what the turn opened with.
+//! **The agent can start anything. A person finishes anything sensitive.** What it can reach and on
+//! which turns: `admit`'s matrix (`tools/DETAILS.md` § The rule). The origin is the turn's own, handed
+//! to every call in [`CallContext`], never inferred from what the turn opened with.
 
 use serde_json::{Value, json};
 use tauri::{AppHandle, Runtime};
@@ -28,9 +16,10 @@ use tokio_util::sync::CancellationToken;
 
 use crate::agent::llm::types::{AgentToolCall, AgentToolResult, ToolId};
 use crate::agent::types::TurnOrigin;
+use crate::tools::policy::{Refusal, Verdict, admit};
 use crate::tools::propose::evidence::EvidenceScope;
 use crate::tools::propose::rename::{RenameDispatchOutcome, RenameProposalSnapshot};
-use crate::tools::{Access, Caller, Consumer, ToolCtx, execute_tool, tool_access, tool_available_to, validate_params};
+use crate::tools::{Access, Caller, ToolCtx, ToolError, execute_tool, tool_access, validate_params};
 
 /// What a tool call knows about the turn it runs in: who started it, for the gate, and the
 /// turn's Stop. One value, so a dispatch path can't take one and forget the other.
@@ -43,75 +32,64 @@ pub struct CallContext<'a> {
     pub cancel: &'a CancellationToken,
 }
 
-/// What the gate does with one call.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Admission {
-    Dispatch,
-    /// Not a tool the agent may ever run.
-    Unavailable,
-    /// A tool the agent may run only on a turn the user started.
-    RefusedInBackground,
-}
-
-/// The gate's access axis, per turn origin. [`Access::Read`], [`Access::ReadContents`],
-/// [`Access::Propose`], and [`Access::Memory`] dispatch on every turn; [`Access::Session`] only on
-/// one the user started; everything that changes something else and an unclassified name (`None`)
-/// never. Pure, so the rule is unit-testable against every variant and origin without an authored
-/// tool per variant.
-fn admit(access: Option<Access>, origin: TurnOrigin) -> Admission {
-    match access {
-        Some(Access::Read | Access::ReadContents | Access::Propose | Access::Memory) => Admission::Dispatch,
-        Some(Access::Session) if origin.user_started() => Admission::Dispatch,
-        Some(Access::Session) => Admission::RefusedInBackground,
-        Some(Access::AppState | Access::Initiate | Access::LightWrite | Access::Sensitive | Access::DevOnly(_))
-        | None => Admission::Unavailable,
-    }
-}
-
-/// The refusal tool-result for a call the gate stops, or `None` when dispatch should run it.
-/// Refused as unavailable: any name outside the agent's view (hallucinated, a typo, or a table entry
-/// it isn't given, like `delete`/`copy`), AND — as a runtime backstop — any name in the view the
-/// registry classifies as changing something other than a proposal, a note, or a saved session, or
-/// doesn't classify at all. Refused as
-/// `refusedInBackground`: an [`Access::Session`] tool on a turn the user didn't start.
-/// Returning `Some` here means `execute_tool` is never reached.
+/// The refusal tool-result for a call [`admit`] refuses, or a name outside the table; `None` when
+/// dispatch should run it. Returning `Some` here means `execute_tool` is never reached.
 pub fn refuse_unavailable(call_id: &str, tool: &ToolId, origin: TurnOrigin) -> Option<AgentToolResult> {
-    let admission = if tool_available_to(tool.as_wire_name(), Consumer::Agent) {
-        admit(tool_access(tool.as_wire_name()), origin)
-    } else {
-        Admission::Unavailable
+    let Some(access) = tool_access(tool.as_wire_name()) else {
+        return Some(unknown_tool(call_id, tool));
     };
-    match admission {
-        Admission::Dispatch => None,
-        Admission::RefusedInBackground => Some(refused_in_background(call_id, tool)),
-        Admission::Unavailable => Some(unavailable(call_id, tool)),
+    match admit(Caller::Agent { origin }, access) {
+        Verdict::Allow | Verdict::Ask => None,
+        Verdict::Refuse(refusal) => Some(refused(call_id, tool, refusal)),
     }
 }
 
-/// A `Session` tool asked for on a wake or a follow-up. `available: false` like every gate
-/// refusal, so it reads as a problem; `refusal` is the token a model can branch on.
-fn refused_in_background(call_id: &str, tool: &ToolId) -> AgentToolResult {
+/// `available: false` like every gate refusal, so it reads as a problem; `refusal` is the token a
+/// model can branch on, and `reason` says what's possible instead.
+fn refused(call_id: &str, tool: &ToolId, refusal: Refusal) -> AgentToolResult {
+    let name = tool.as_wire_name();
     AgentToolResult {
         call_id: call_id.to_string(),
         content: json!({
             "available": false,
-            "requested": tool.as_wire_name(),
-            "refusal": "refusedInBackground",
-            "reason": "This tool runs only when the user asks for something, and Cmdr started this turn on its own. Say what you'd do; the user can ask for it.",
+            "requested": name,
+            "refusal": refusal.token(),
+            "reason": refusal.message(name),
         }),
         elided: false,
     }
 }
 
-fn unavailable(call_id: &str, tool: &ToolId) -> AgentToolResult {
+fn unknown_tool(call_id: &str, tool: &ToolId) -> AgentToolResult {
     AgentToolResult {
         call_id: call_id.to_string(),
         content: json!({
             "available": false,
             "requested": tool.as_wire_name(),
-            "reason": "That tool isn't available. Ask Cmdr can prepare a rename plan, suggest file operations for you to review, save notes in its own memory folder, and connect a server or share you saved. It can't touch your files or approve a proposal, and it reads a file's contents only through inspect_file.",
+            "reason": "Cmdr has no tool by that name. Use a tool from your list.",
         }),
         elided: false,
+    }
+}
+
+/// A `ToolError` as the model reads it. `data` rides along, since it's the contract and the message
+/// only the human half: `blockingDialog` names what's in the way, and `refusal` says a person said no.
+///
+/// Two errors don't read as problems. [`ToolError::outcome_unknown`] means the action went out and may
+/// still run, so it can't say `problem`: the repeat breaker would stop the retry a model needs to
+/// check, and the model would tell the user a copy that's running didn't happen. And a question Stop
+/// took down answers in the words of any call Stop ended (`dispatch.rs`).
+fn error_content(error: &ToolError) -> Value {
+    if error.outcome_is_unknown() {
+        return json!({ "outcomeUnknown": true, "detail": error.message });
+    }
+    let refusal = error.data.as_ref().and_then(|data| data.get("refusal"));
+    if refusal.and_then(Value::as_str) == Some("cancelled") {
+        return json!({ "miss": "cancelled", "detail": error.message });
+    }
+    match &error.data {
+        Some(data) => json!({ "problem": error.message, "data": data }),
+        None => json!({ "problem": error.message }),
     }
 }
 
@@ -145,10 +123,7 @@ fn ensure_review_verdict(tool: &ToolId, result: &mut AgentToolResult) {
     }
 }
 
-/// Dispatch one tool call through the agent's gated view. The parse gate is
-/// consulted FIRST; only a tool the gate admits on this turn's origin reaches `execute_tool`
-/// with the [`Consumer::Agent`] identity (which itself refuses any name outside the agent
-/// view — a second, structural backstop). A handler error comes back as a typed,
+/// One call's answer, and the rename proposal it staged if any. A handler error comes back as a typed,
 /// non-fatal tool-result the model can relay.
 pub struct DispatchOutcome {
     pub result: AgentToolResult,
@@ -201,7 +176,7 @@ async fn route_call<R: Runtime>(
         return DispatchOutcome {
             result: AgentToolResult {
                 call_id: call.call_id.clone(),
-                content: json!({ "problem": problem.message }),
+                content: error_content(&problem),
                 elided: false,
             },
             proposal: None,
@@ -230,7 +205,7 @@ async fn route_call<R: Runtime>(
         },
         Err(err) => AgentToolResult {
             call_id: call.call_id.clone(),
-            content: json!({ "problem": err.message }),
+            content: error_content(&err),
             elided: false,
         },
     };
@@ -264,77 +239,113 @@ mod tests {
         TurnOrigin::Resume,
     ];
 
+    /// Every tool × every origin, against `admit`, the one thing deciding: this file adds no opinion.
     #[test]
-    fn the_access_gate_admits_read_contents_propose_and_memory_on_every_turn_and_never_a_change() {
-        // The gate's access axis, exercised directly against every `Access` variant. The
-        // name-based tests below can only reach the variants some tool is actually authored
-        // with, so a variant nothing carries yet would be covered vacuously. This one pins
-        // the rule itself — the agent may read, may ask, and may write its own notes, and may
-        // never write anything else, whoever started the turn.
-        for origin in ALL_ORIGINS {
-            assert_eq!(
-                admit(Some(Access::Read), origin),
-                Admission::Dispatch,
-                "read on {origin:?}"
-            );
-            assert_eq!(
-                admit(Some(Access::Propose), origin),
-                Admission::Dispatch,
-                "a propose tool stages a proposal for the user and doesn't act ({origin:?})"
-            );
-            assert_eq!(
-                admit(Some(Access::Memory), origin),
-                Admission::Dispatch,
-                "the agent writes its own notes on any turn ({origin:?})"
-            );
-            assert_eq!(
-                admit(Some(Access::ReadContents), origin),
-                Admission::Dispatch,
-                "contents read as Read for the agent, or inspect_file stops working ({origin:?})"
-            );
-            for write in [
-                Access::AppState,
-                Access::Initiate,
-                Access::LightWrite,
-                Access::Sensitive,
-                Access::DevOnly("a reason"),
-            ] {
-                assert_eq!(
-                    admit(Some(write), origin),
-                    Admission::Unavailable,
-                    "{write:?} never dispatches through the agent view ({origin:?})"
-                );
+    fn every_tool_on_every_origin_answers_what_admit_says() {
+        for tool in ToolId::KNOWN {
+            let name = tool.as_wire_name();
+            let access = tool_access(name).expect("a table entry has a class");
+            for origin in ALL_ORIGINS {
+                let refusal = refuse_unavailable("call-1", &tool, origin);
+                match admit(Caller::Agent { origin }, access) {
+                    Verdict::Allow | Verdict::Ask => assert!(refusal.is_none(), "{name} on {origin:?}"),
+                    Verdict::Refuse(why) => {
+                        let refusal = refusal.unwrap_or_else(|| panic!("{name} on {origin:?} reached dispatch"));
+                        assert!(
+                            refusal.reports_a_problem(),
+                            "{name}: a refusal must not read as an answer"
+                        );
+                        assert_eq!(refusal.content["available"], false);
+                        assert_eq!(refusal.content["requested"], name);
+                        assert_eq!(refusal.content["refusal"], why.token());
+                    }
+                }
             }
-            assert_eq!(
-                admit(None, origin),
-                Admission::Unavailable,
-                "an unclassified name never dispatches ({origin:?})"
-            );
         }
     }
 
+    /// The fence, named: nothing that goes past a person reaches dispatch, on any origin.
     #[test]
-    fn a_session_tool_dispatches_only_on_a_turn_the_user_started() {
-        // A session reaches past the app (a sleeping NAS spins up its disks), so it waits for
-        // the user: the rail and a resumed thread, never a wake or a follow-up.
-        assert_eq!(admit(Some(Access::Session), TurnOrigin::Text), Admission::Dispatch);
-        assert_eq!(admit(Some(Access::Session), TurnOrigin::Resume), Admission::Dispatch);
+    fn nothing_past_a_person_reaches_dispatch_on_any_origin() {
+        for tool in [
+            ToolId::DialogConfirm,
+            ToolId::ResolveConflict,
+            ToolId::QueueMoveLocked,
+            ToolId::ConnectToServer,
+            ToolId::AiSearch,
+        ] {
+            for origin in ALL_ORIGINS {
+                let refusal = refuse_unavailable("call-1", &tool, origin).expect("refused");
+                assert_eq!(refusal.content["refusal"], "devOnly", "{tool:?} on {origin:?}");
+            }
+        }
+    }
+
+    /// A wake gets Read, ReadContents, Propose, and Memory, and the rest wait for the user.
+    #[test]
+    fn a_background_turn_gets_only_reads_proposals_and_memory() {
+        for tool in ToolId::KNOWN {
+            let name = tool.as_wire_name();
+            let access = tool_access(name).expect("a table entry has a class");
+            for origin in [TurnOrigin::Wake, TurnOrigin::Outcomes] {
+                let refusal = refuse_unavailable("call-1", &tool, origin);
+                match access {
+                    Access::Read | Access::ReadContents | Access::Propose | Access::Memory => {
+                        assert!(refusal.is_none(), "{name} on {origin:?}");
+                    }
+                    Access::DevOnly(_) => {
+                        assert_eq!(refusal.expect("refused").content["refusal"], "devOnly", "{name}");
+                    }
+                    _ => assert_eq!(
+                        refusal.expect("refused").content["refusal"],
+                        "refusedInBackground",
+                        "{name} on {origin:?}"
+                    ),
+                }
+            }
+        }
+    }
+
+    /// `outcome_unknown` says the copy may be running: reading it as a problem would trip the repeat
+    /// breaker and have a model tell someone it never started.
+    #[test]
+    fn an_unknown_outcome_carries_no_problem_key() {
+        let content = error_content(&ToolError::outcome_unknown("Check the queue."));
+        assert_eq!(content, json!({ "outcomeUnknown": true, "detail": "Check the queue." }));
+        assert!(!result(content).reports_a_problem());
+    }
+
+    /// `data` is the contract: `blockingDialog` was lost when this flattened to a sentence.
+    #[test]
+    fn an_error_keeps_its_typed_data_for_the_model() {
+        let error = ToolError::invalid_params("A dialog is open.").with_data(json!({ "blockingDialog": "about" }));
         assert_eq!(
-            admit(Some(Access::Session), TurnOrigin::Wake),
-            Admission::RefusedInBackground
+            error_content(&error),
+            json!({ "problem": "A dialog is open.", "data": { "blockingDialog": "about" } })
         );
         assert_eq!(
-            admit(Some(Access::Session), TurnOrigin::Outcomes),
-            Admission::RefusedInBackground
+            error_content(&ToolError::internal("Nope.")),
+            json!({ "problem": "Nope." })
         );
     }
 
+    /// A question Stop took down ends in the words of any call Stop ended.
     #[test]
-    fn a_background_refusal_is_a_typed_problem_the_model_can_branch_on() {
-        let refusal = refused_in_background("call-1", &ToolId::ListVolumes);
-        assert!(refusal.reports_a_problem(), "a refusal must not read as an answer");
-        assert_eq!(refusal.content["refusal"], "refusedInBackground");
-        assert_eq!(refusal.content["requested"], "list_volumes");
+    fn a_cancelled_question_reads_as_a_stopped_call() {
+        let error = ToolError::invalid_params("Stopped.").with_data(json!({ "refusal": "cancelled" }));
+        assert_eq!(
+            error_content(&error),
+            json!({ "miss": "cancelled", "detail": "Stopped." })
+        );
+    }
+
+    /// `outcome_of` and the breaker read a decline at `data.refusal`.
+    #[test]
+    fn a_decline_stays_a_typed_problem() {
+        let error = ToolError::invalid_params("No.").with_data(json!({ "refusal": "declined" }));
+        let content = error_content(&error);
+        assert_eq!(content["data"]["refusal"], "declined");
+        assert!(result(content).reports_a_problem());
     }
 
     /// A tool result as it stands just before `dispatch` returns it.
@@ -413,69 +424,15 @@ mod tests {
     }
 
     #[test]
-    fn refuses_a_write_tool_name_without_dispatching() {
-        // `delete` and `copy` are table entries the agent isn't given, so they parse as known; a
-        // made-up name stays Unrecognized. Each is refused the same way: the refusal carries the
-        // reason and the requested name, and it returns BEFORE execute_tool could run.
-        for (raw, known) in [("delete", true), ("copy", true), ("definitely_not_a_tool", false)] {
-            let tool = ToolId::from_wire_name(raw);
-            assert_eq!(tool.is_known(), known, "{raw}");
-            for origin in ALL_ORIGINS {
-                let refusal = refuse_unavailable("call-1", &tool, origin).expect("refused");
-                assert_eq!(refusal.content["available"], false);
-                assert_eq!(refusal.content["requested"], raw);
-            }
+    fn a_name_outside_the_table_is_refused_on_every_origin() {
+        let tool = ToolId::from_wire_name("definitely_not_a_tool");
+        assert!(!tool.is_known());
+        for origin in ALL_ORIGINS {
+            let refusal = refuse_unavailable("call-1", &tool, origin).expect("refused");
+            assert_eq!(refusal.content["available"], false);
+            assert_eq!(refusal.content["requested"], "definitely_not_a_tool");
+            assert!(refusal.content.get("refusal").is_none(), "no class to refuse by");
         }
-    }
-
-    #[test]
-    fn passes_every_tool_in_the_agents_view_through_to_dispatch_on_the_turns_it_may_run() {
-        // No tool in the view is refused on a turn the user started, and only `Session` tools are
-        // refused on one Cmdr started.
-        for tool in ToolId::KNOWN {
-            let name = tool.as_wire_name();
-            if !tool_available_to(name, Consumer::Agent) {
-                continue;
-            }
-            let session = tool_access(name) == Some(Access::Session);
-            for origin in ALL_ORIGINS {
-                let refused = refuse_unavailable("call-1", &tool, origin);
-                assert_eq!(
-                    refused.is_some(),
-                    session && !origin.user_started(),
-                    "{name} on {origin:?}"
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn every_known_tool_outside_the_agents_view_is_refused_whatever_its_access_class() {
-        // `await` is `Read`, so the access axis alone would dispatch it: being known must not mean
-        // being available. The model sees exactly what it saw when these names
-        // parsed as Unrecognized.
-        let mut outside = 0;
-        for tool in ToolId::KNOWN {
-            let name = tool.as_wire_name();
-            if tool_available_to(name, Consumer::Agent) {
-                continue;
-            }
-            outside += 1;
-            for origin in ALL_ORIGINS {
-                let refusal = refuse_unavailable("call-1", &tool, origin).expect("refused");
-                assert_eq!(
-                    refusal.content,
-                    unavailable("call-1", &ToolId::Unrecognized(name.to_string())).content,
-                    "{name} on {origin:?}"
-                );
-            }
-        }
-        assert!(
-            outside > 0,
-            "the view is narrower than the table until the two surfaces merge"
-        );
-        assert_eq!(tool_access("await"), Some(Access::Read));
-        assert!(refuse_unavailable("call-1", &ToolId::Await, TurnOrigin::Text).is_some());
     }
 
     #[test]
@@ -501,12 +458,14 @@ mod tests {
         }
     }
 
+    /// A provider's raw name parses to its table entry, and the gate reads the turn it's on: `delete`
+    /// opens a dialog on a turn the user started and refuses on a wake, with no dispatch.
     #[tokio::test]
-    async fn raw_provider_name_delete_is_parsed_and_refused_end_to_end() {
-        // A provider emitting the raw name "delete" (via the fake's CallRawTool) yields a
-        // ToolCall naming that table entry, which the dispatch gate refuses, since the agent's
-        // view doesn't hold it — execute_tool is never involved.
-        let fake = FakeAgentLlm::script(vec![ScriptedTurn::CallRawTool("delete".into(), json!({ "path": "/" }))]);
+    async fn raw_provider_name_delete_is_parsed_and_judged_by_its_turn() {
+        let fake = FakeAgentLlm::script(vec![ScriptedTurn::CallRawTool(
+            "delete".into(),
+            json!({ "pane": "left" }),
+        )]);
         let stream = fake
             .respond(
                 "sys",
@@ -527,9 +486,9 @@ mod tests {
         };
         assert_eq!(call.tool, ToolId::Delete);
 
-        let refusal =
-            refuse_unavailable(&call.call_id, &call.tool, TurnOrigin::Text).expect("dispatch refuses the write name");
-        assert_eq!(refusal.content["available"], false);
+        assert!(refuse_unavailable(&call.call_id, &call.tool, TurnOrigin::Text).is_none());
+        let refusal = refuse_unavailable(&call.call_id, &call.tool, TurnOrigin::Wake).expect("refused on a wake");
+        assert_eq!(refusal.content["refusal"], "refusedInBackground");
         assert_eq!(refusal.content["requested"], "delete");
     }
 }

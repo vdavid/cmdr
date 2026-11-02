@@ -27,6 +27,9 @@
           "pane"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -53,6 +56,9 @@
           "path"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -63,6 +69,9 @@
         "properties": {},
         "required": [],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -73,6 +82,9 @@
         "properties": {},
         "required": [],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -83,6 +95,9 @@
         "properties": {},
         "required": [],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -109,6 +124,9 @@
           "index"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -138,16 +156,22 @@
           "pane"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
       "name": "open_under_cursor",
-      "description": "Open the item under the cursor, like pressing Enter: enter a folder, open a file, or connect a network host / share.",
+      "description": "Open the item under the cursor, like pressing Enter: enter a folder, open a file, or connect a network host / share. A person confirms a file or app first; a folder just opens.",
       "inputSchema": {
         "type": "object",
         "properties": {},
         "required": [],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true
       }
     },
     {
@@ -197,6 +221,9 @@
           "pane"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -230,6 +257,9 @@
           "pane"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true
       }
     },
     {
@@ -263,6 +293,9 @@
           "pane"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true
       }
     },
     {
@@ -284,6 +317,9 @@
           "pane"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true
       }
     },
     {
@@ -313,6 +349,9 @@
           "pane"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true
       }
     },
     {
@@ -343,6 +382,9 @@
           "newName"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true
       }
     },
     {
@@ -455,6 +497,9 @@
         },
         "required": [],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -480,6 +525,9 @@
           "pane"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -505,6 +553,9 @@
           "pane"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -515,6 +566,9 @@
         "properties": {},
         "required": [],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -569,6 +623,9 @@
           "action"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -579,6 +636,9 @@
         "properties": {},
         "required": [],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -609,6 +669,9 @@
           "mode"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -652,6 +715,9 @@
           "order"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -708,6 +774,9 @@
           "pane"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -743,6 +812,9 @@
           "type"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -780,6 +852,9 @@
           "type"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true
       }
     },
     {
@@ -840,16 +915,22 @@
         },
         "required": [],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
       "name": "quit",
-      "description": "Quit Cmdr, via the gate Cmd-Q uses. Nothing running: outcome 'quitting'. A copy, move, or delete still going: it does NOT quit; 'held' names them and the ms left. Answer with dialog_confirm or dialog close on quit-confirmation, or the countdown quits anyway.",
+      "description": "Quit Cmdr, via the gate Cmd-Q uses. Nothing running: outcome 'quitting'. A copy, move, or delete still going: it does NOT quit; 'held' names them and the ms left, and a person answers quit-confirmation or the countdown quits anyway. A person confirms first.",
       "inputSchema": {
         "type": "object",
         "properties": {},
         "required": [],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true
       }
     },
     {
@@ -860,6 +941,9 @@
         "properties": {},
         "required": [],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -870,6 +954,9 @@
         "properties": {},
         "required": [],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -954,6 +1041,9 @@
         },
         "required": [],
         "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
       }
     },
     {
@@ -983,11 +1073,14 @@
           "query"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true
       }
     },
     {
       "name": "set_setting",
-      "description": "Set a setting value. Use the cmdr://settings resource to discover available settings and their constraints. A setting marked mcpSettable: false there is refused; one marked mcpSettable: offOnly accepts only false.",
+      "description": "Set a setting value. Use the cmdr://settings resource to discover available settings and their constraints. A setting marked mcpSettable: false there is refused; one marked mcpSettable: offOnly accepts only false. A person confirms the change first, seeing the old and new value, unless the setting is marked safe.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1004,11 +1097,14 @@
           "value"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true
       }
     },
     {
       "name": "indexing",
-      "description": "Control one volume's drive indexing. Actions: enable (on, starts first scan), disable (off, keeps DB), rescan (fresh full scan), forget (delete DB). enable/rescan return once scanning starts; poll await index_status fresh for done. See cmdr://indexing.",
+      "description": "Control one volume's drive indexing. Actions: enable (on, starts first scan), disable (off, keeps DB), rescan (fresh full scan), forget (delete DB). enable/rescan return once scanning starts; poll await index_status fresh for done. See cmdr://indexing. A person confirms first.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1032,6 +1128,9 @@
           "volumeId"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true
       }
     },
     {
@@ -1069,6 +1168,9 @@
           "action"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -1086,6 +1188,9 @@
           "operationId"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true
       }
     },
     {
@@ -1124,6 +1229,9 @@
           "resolution"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true
       }
     },
     {
@@ -1146,6 +1254,9 @@
           "password"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -1188,6 +1299,9 @@
           "action"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -1205,11 +1319,14 @@
           "address"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true
       }
     },
     {
       "name": "remove_manual_server",
-      "description": "Remove a manually-added server from the host list.",
+      "description": "Remove a manually-added server from the host list. A person confirms first.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1222,6 +1339,9 @@
           "hostId"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true
       }
     },
     {
@@ -1239,11 +1359,14 @@
           "volumeId"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
       "name": "eject",
-      "description": "Detach a volume by id: eject a disk or disk image, unmount an SMB share, disconnect a phone, or close a connection to an SFTP or WebDAV server. The server stays saved. A volume of a disk that keeps others mounted goes alone, so that disk stays attached unless scope is disk. Answers which teardown ran, and refuses honestly (with a typed outcome in the error data) while an operation is reading from or writing to the volume, and for a volume that can't be detached at all. See cmdr://state volumes for ids.",
+      "description": "Detach a volume by id: eject a disk or disk image, unmount an SMB share, disconnect a phone, or close a connection to an SFTP or WebDAV server. The server stays saved. A volume of a disk that keeps others mounted goes alone, so that disk stays attached unless scope is disk. Answers which teardown ran; refuses (typed outcome in the error data) while an operation is using the volume, and for a volume that can't be detached at all. See cmdr://state volumes for ids. A person confirms first.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1264,6 +1387,9 @@
           "volumeId"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true
       }
     },
     {
@@ -1316,6 +1442,9 @@
           "condition"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
       }
     },
     {
@@ -1326,6 +1455,9 @@
         "properties": {},
         "required": [],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -1406,6 +1538,9 @@
         },
         "required": [],
         "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
       }
     },
     {
@@ -1431,6 +1566,9 @@
           "operationId"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
       }
     },
     {
@@ -1448,6 +1586,9 @@
           "operationId"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true
       }
     },
     {
@@ -1482,6 +1623,9 @@
           "query"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
       }
     },
     {
@@ -1506,6 +1650,9 @@
           "paths"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
       }
     },
     {
@@ -1523,6 +1670,9 @@
         },
         "required": [],
         "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
       }
     },
     {
@@ -1555,6 +1705,152 @@
         },
         "required": [],
         "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "app_state",
+      "description": "Snapshot the live app state: both panes (folder, cursor item, selection, view mode, sort) and the mounted volumes with index freshness and connectivity: what the user is looking at right now.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "inspect_file",
+      "description": "Look inside files: metadata, the format the bytes really are, and per kind the content: a line window of text (any encoding), PDF text by page, an archive's entries (a zip, tar, or 7z, or a path inside one), or an image's dimensions and camera data (then image_facts for what's in it). find searches text files and PDFs. Up to 200 paths; every cut is reported.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Absolute file paths (~ ok), at most 200; check returned, total, truncated, and unanswered."
+          },
+          "startLine": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Text: first window line (1-based, default 1)."
+          },
+          "maxLines": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2000,
+            "description": "Text: window lines (default 200)."
+          },
+          "find": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string"
+              },
+              "regex": {
+                "type": "boolean"
+              },
+              "caseSensitive": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "additionalProperties": false,
+            "description": "Search text files and PDFs; matching lines replace the window."
+          },
+          "pageStart": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "PDF: first page to read (default 1)."
+          },
+          "maxPages": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "description": "PDF: pages to read (default 3)."
+          }
+        },
+        "required": [
+          "paths"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "propose_rename_plan",
+      "description": "Stage a same-folder image-file rename plan for the user to review; it changes nothing and approves nothing. At most 200 rows.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "renames": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "sourcePath": {
+                  "type": "string"
+                },
+                "volumeId": {
+                  "type": "string"
+                },
+                "destinationName": {
+                  "type": "string"
+                },
+                "evidence": {
+                  "type": "object",
+                  "description": "What the name is based on; the user sees it, and a content claim is checked against what image_facts returned to you.",
+                  "properties": {
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "imageText",
+                        "imageTags",
+                        "filename",
+                        "metadata",
+                        "userInstruction"
+                      ],
+                      "description": "imageText or imageTags only when image_facts returned that content for this exact path in this conversation; else filename (the old name), metadata (dates, size), or userInstruction (a rule the user gave)."
+                    },
+                    "detail": {
+                      "type": "string",
+                      "description": "Up to 160 characters. imageText: a VERBATIM quote of at least 12 characters (a phrase, not one word) from what image_facts returned for this path; imageTags: a tag it returned; else the concrete detail used, like 'Taken 2026-07-20'."
+                    }
+                  },
+                  "required": [
+                    "source",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "sourcePath",
+                "volumeId",
+                "destinationName",
+                "evidence"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 200
+          }
+        },
+        "required": [
+          "renames"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     },
     {
@@ -1609,6 +1905,480 @@
           "path"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "list_pane_files",
+      "description": "List up to 200 entries of the focused pane from its listing cache, never the index or disk. A selection hides the folder's other rows: scope says which you got. Its location is the volume ID and parent path a rename proposal needs.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "important_folders",
+      "description": "List the most important folders across scored volumes, highest first, each a location with its score and why. A row's folded counts near-duplicate subfolders merged into it; pass its location as under + volumeId to list them. Works offline, so an unmounted-but-scored drive still answers.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "top": {
+            "type": "integer",
+            "description": "Default 20; ignored when threshold is set."
+          },
+          "threshold": {
+            "type": "number",
+            "description": "Every folder scoring at or above this (0-1) instead of a top-N."
+          },
+          "volumeId": {
+            "type": "string",
+            "description": "From list_volumes or a row's location; omit for every scored volume."
+          },
+          "under": {
+            "type": "string",
+            "description": "Only folders at or below this one (on volumeId when given); ~ ok."
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "folder_importance",
+      "description": "Explain one folder's importance: scored (0-1 score, signal breakdown, and whether it is stale since the latest scan), floored to zero by design (with the reason), or unscored. Works offline.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Absolute or ~-relative folder to explain."
+          },
+          "volumeId": {
+            "type": "string",
+            "description": "From list_volumes or a result's location; omit for a path on a connected volume."
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "list_suggestions",
+      "description": "List the operations Ask Cmdr already proposed, as sweeps and groups with op COUNTS, never the ops. Default status pending: what still waits on the user.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "interrupted",
+              "completed",
+              "rejected",
+              "all"
+            ],
+            "description": "Default pending: still waiting on the user. interrupted: the app restarted mid-execution, so the user decides again."
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "get_suggestion_group",
+      "description": "Read one proposed group: verb, target, reversibility, and a page of the files it would act on (total / returned / truncated; page with offset). Sizes and dates are what the index held when the group was proposed, not the files now.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "groupId": {
+            "type": "integer",
+            "description": "The group id from list_suggestions."
+          },
+          "offset": {
+            "type": "integer",
+            "description": "Ops to skip; resume with offset + returned."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Default 100, max 500; a page may come back shorter when paths are long."
+          }
+        },
+        "required": [
+          "groupId"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "propose_suggestions",
+      "description": "Propose file operations for the user to review. It stages a proposal and changes nothing: only the user approves. Name up to 200 paths per group, or describe thousands with a selector, resolved against the drive index once, now. A whole folder is ONE op: give its path. A place on a volume that isn't connected refuses. sweepId plus groupId replaces a pending group you proposed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sweepId": {
+            "type": "integer",
+            "description": "Add to or amend this sweep. Required with any groupId."
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Your reason for the sweep, shown as your words."
+          },
+          "groups": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 16,
+            "description": "Each group is approved or rejected on its own.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "groupId": {
+                  "type": "integer",
+                  "description": "A pending group of this sweep to rewrite whole."
+                },
+                "verb": {
+                  "type": "string",
+                  "enum": [
+                    "move",
+                    "copy",
+                    "trash",
+                    "delete",
+                    "rename",
+                    "compress",
+                    "extract"
+                  ],
+                  "description": "delete is permanent; trash isn't."
+                },
+                "destination": {
+                  "type": "object",
+                  "description": "Destination folder (move, copy, extract) or archive path (compress).",
+                  "properties": {
+                    "volumeId": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ],
+                  "additionalProperties": false
+                },
+                "overwritesExisting": {
+                  "type": "boolean",
+                  "description": "compress only: that archive exists, so the group can't be undone."
+                },
+                "parent": {
+                  "type": "string",
+                  "description": "rename only: the folder every source shares."
+                },
+                "sourceVolumeId": {
+                  "type": "string",
+                  "description": "The sources' volume. With paths or renames; a selector supplies its own."
+                },
+                "displayName": {
+                  "type": "string",
+                  "description": "The group's title. With paths or renames; a selector is named by its pattern."
+                },
+                "rationale": {
+                  "type": "string",
+                  "description": "Why this group, shown as your words."
+                },
+                "paths": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 200,
+                  "description": "Sources by absolute path. A folder's path is ONE op."
+                },
+                "renames": {
+                  "type": "array",
+                  "maxItems": 200,
+                  "description": "rename, move, copy: each source and its new bare name. Move or copy: list every file; its current name keeps it.",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "path": {
+                        "type": "string"
+                      },
+                      "newName": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "path",
+                      "newName"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "selector": {
+                  "type": "object",
+                  "description": "Propose over a pattern instead of a list. Not for rename.",
+                  "properties": {
+                    "root": {
+                      "type": "object",
+                      "description": "The subtree to search.",
+                      "properties": {
+                        "volumeId": {
+                          "type": "string"
+                        },
+                        "path": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "path"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "nameGlob": {
+                      "type": "string",
+                      "description": "Glob over the file name, such as *.dmg."
+                    },
+                    "minSizeBytes": {
+                      "type": "integer"
+                    },
+                    "maxSizeBytes": {
+                      "type": "integer"
+                    },
+                    "olderThanDays": {
+                      "type": "integer",
+                      "description": "Modified more than this many days ago."
+                    },
+                    "newerThanDays": {
+                      "type": "integer",
+                      "description": "Modified within this many days."
+                    }
+                  },
+                  "required": [
+                    "root"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "verb"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "groups"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
+      }
+    },
+    {
+      "name": "propose_server",
+      "description": "Suggest saving a server, or renaming or refoldering a saved one, for the user to approve. It saves and contacts nothing. Never send a password: the user types it when connecting. Only when the user asked.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sweepId": {
+            "type": "integer"
+          },
+          "groupId": {
+            "type": "integer",
+            "description": "A pending suggestion of sweepId to rewrite."
+          },
+          "editing": {
+            "type": "string",
+            "description": "A saved server's volumeId, to change it instead of adding one."
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Why, shown as your words."
+          },
+          "protocol": {
+            "type": "string",
+            "enum": [
+              "smb",
+              "sftp",
+              "webdav",
+              "nfs",
+              "s3"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer"
+          },
+          "username": {
+            "type": "string"
+          },
+          "share": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string",
+            "description": "The remote root."
+          },
+          "url": {
+            "type": "string"
+          },
+          "export": {
+            "type": "string"
+          },
+          "bucket": {
+            "type": "string"
+          },
+          "account": {
+            "type": "string",
+            "description": "A saved S3 account's id."
+          },
+          "startFolder": {
+            "type": "string"
+          },
+          "uid": {
+            "type": "integer"
+          },
+          "gid": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "protocol"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
+      }
+    },
+    {
+      "name": "nothing_to_suggest",
+      "description": "Say the activity you were shown is not worth telling the user about, and stop: call it instead of proposing when nothing deserves a person's attention. Changes nothing, shows nothing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "One short sentence on why none of it was worth raising."
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "memory_write",
+      "description": "Save a note about the user in your memory folder, creating the file or replacing it whole: facts about them and how they like things, never instructions to yourself. Use AGENTS.md unless you have a reason not to.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Relative .md path inside memory, usually AGENTS.md."
+          },
+          "content": {
+            "type": "string",
+            "description": "The file's full new text."
+          }
+        },
+        "required": [
+          "path",
+          "content"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
+      }
+    },
+    {
+      "name": "memory_edit",
+      "description": "Change or drop one part of a memory file (oldString must appear exactly once; an empty newString deletes it): prune what went stale instead of rewriting the file.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Relative .md path inside memory."
+          },
+          "oldString": {
+            "type": "string",
+            "description": "Text to replace. Must appear exactly once."
+          },
+          "newString": {
+            "type": "string",
+            "description": "What replaces it. Empty deletes it."
+          }
+        },
+        "required": [
+          "path",
+          "oldString",
+          "newString"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
+      }
+    },
+    {
+      "name": "list_volumes",
+      "description": "List every volume (disks, shares, servers, phones) with kind, root (the path its locations start with), index freshness (fresh / scanning / stale / off; a not-connected one is stale, with asOf), and connection state; plus favorites, located when on a connected volume.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "connect_volume",
+      "description": "Connect a saved server or share with its stored credentials, or wait out the reconnect of one that dropped. A missing password answers needsCredentials.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "volumeId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "volumeId"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false
       }
     }
   ]

@@ -86,6 +86,7 @@ fn notice_for(event: &SecurityEvent) -> Option<AccessNotice> {
         | SecurityEvent::McpServerTurnedOn { .. }
         | SecurityEvent::McpServerTurnedOff { .. }
         | SecurityEvent::McpDirectModeChanged { .. }
+        | SecurityEvent::McpContentRead { .. }
         | SecurityEvent::ManagedPolicyApplied { .. }
         | SecurityEvent::UpdateInstalled { .. }
         | SecurityEvent::UpdateRefusedByPolicy { .. }

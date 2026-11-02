@@ -31,22 +31,22 @@ describe('groupSummaryText', () => {
       call(folder('/b')),
       call({ kind: 'photoSearch', query: 'cats' }),
     ]
-    expect(groupSummaryText(calls)).toBe('Looked around: 2 folders, 2 searches')
+    expect(groupSummaryText(calls)).toBe('Worked through: 2 folders, 2 searches')
   })
 
   it('counts every file a call asked about, not the call', () => {
     const calls = [call({ kind: 'files', firstPath: { text: '/a.txt', linkable: true }, count: 3 }), call(folder('/a'))]
-    expect(groupSummaryText(calls)).toBe('Looked around: 1 folder, 3 files')
+    expect(groupSummaryText(calls)).toBe('Worked through: 1 folder, 3 files')
   })
 
   it('says it is still looking while a line runs', () => {
     const calls = [call(folder('/a')), call(folder('/b'), { running: true })]
-    expect(groupSummaryText(calls)).toBe('Looking around: 2 folders')
+    expect(groupSummaryText(calls)).toBe('Working through: 2 folders')
   })
 
   it('counts a line whose call is still unresolved under a neutral kind, keeping the header whole', () => {
     const calls = [call(folder('/a')), call(null, { running: true })]
-    expect(groupSummaryText(calls)).toBe('Looking around: 1 folder, 1 other step')
+    expect(groupSummaryText(calls)).toBe('Working through: 1 folder, 1 other step')
   })
 
   it('has words for every category', () => {

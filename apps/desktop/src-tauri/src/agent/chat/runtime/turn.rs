@@ -25,7 +25,7 @@ use crate::agent::chat::context::{
 use crate::agent::chat::message_view::{MessageView, to_message_view};
 use crate::agent::chat::spend_pause::{PauseOutcome, next_pause_at};
 use crate::agent::chat::system_prompt::system_prompt;
-use crate::agent::line::{LineRef, outcome_of, repeat_marks, subject_of};
+use crate::agent::line::{LineRef, TurnCall, moves_the_turn_on, outcome_of, repeat_marks, subject_of};
 use crate::agent::llm::AgentLlm;
 use crate::agent::llm::types::{
     AgentMessage, AgentPart, AgentRole, AgentStopReason, AgentToolCall, AgentToolResult, AgentUsage, ToolDeclaration,
@@ -174,7 +174,7 @@ async fn drive(
     let mut failed_calls = FailedCalls::default();
     // Every call of this turn so far, with the row that made it, for the repeat marks: the same
     // function the reload projection runs over the stored rows, so the two can't disagree.
-    let mut turn_calls: Vec<(i64, AgentToolCall)> = Vec::new();
+    let mut turn_calls: Vec<(i64, AgentToolCall, bool)> = Vec::new();
     // A background turn has a round cap; one the user started has none (they watch it, Stop
     // ends it, and the loop guard and the spend pause bound it).
     let round_cap = (!params.origin.user_started()).then_some(BACKGROUND_MAX_TOOL_TURNS);
@@ -416,7 +416,8 @@ async fn drive(
 
         // Dispatch each tool call, persisting its result on its own row, then loop.
         tally.tool_turns += 1;
-        turn_calls.extend(calls.iter().map(|call| (assistant_id, (*call).clone())));
+        let round_start = turn_calls.len();
+        turn_calls.extend(calls.iter().map(|call| (assistant_id, (*call).clone(), false)));
         emit(
             sink,
             AgentChatEvent::ToolCallsResolved {
@@ -427,7 +428,7 @@ async fn drive(
         // The loop guard judges the round once all its calls are answered, so no tool call is
         // left without a result row for the next turn to load.
         let mut round = RoundJudgement::default();
-        for call in calls {
+        for (index, call) in calls.into_iter().enumerate() {
             let sent = guard.sent(call);
             let (result, proposal) = match failed_calls.judge(call) {
                 Repeat::Fresh => {
@@ -441,6 +442,11 @@ async fn drive(
                         failed_calls.record_failure(call, &dispatch.result.content);
                     }
                     round.note(sent, ok);
+                    if moves_the_turn_on(&call.tool, &dispatch.result) {
+                        guard.moved_on();
+                        failed_calls.moved_on();
+                        turn_calls[round_start + index].2 = true;
+                    }
                     (dispatch.result, dispatch.proposal)
                 }
                 Repeat::Refuse(content) | Repeat::Stuck(content) => {
@@ -507,10 +513,17 @@ fn stalled(tally: &mut TurnTally) -> TurnEnd {
 fn resolve_calls(
     message_id: i64,
     calls: &[&AgentToolCall],
-    turn_calls: &[(i64, AgentToolCall)],
+    turn_calls: &[(i64, AgentToolCall, bool)],
     memory_root: Option<&Path>,
 ) -> Vec<ResolvedCall> {
-    let ordered: Vec<(i64, &AgentToolCall)> = turn_calls.iter().map(|(id, call)| (*id, call)).collect();
+    let ordered: Vec<TurnCall<'_>> = turn_calls
+        .iter()
+        .map(|(message_id, call, moved_on)| TurnCall {
+            message_id: *message_id,
+            call,
+            moved_on: *moved_on,
+        })
+        .collect();
     let marks = repeat_marks(&ordered);
     calls
         .iter()

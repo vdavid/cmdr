@@ -33,8 +33,8 @@ Depth for the handlers shared with outside clients. `CLAUDE.md` holds the must-k
   SAME live run the dialog starts, walking whatever the index doesn't cover, folded into one reply because a tool call
   can't carry a stream (`search/DETAILS.md` § "Decision 10"). ❌ No walk-versus-don't parameter. `maxWaitSeconds` is a
   transport budget only: when it runs out the reply carries what had arrived plus a typed note, and the walk keeps
-  going. `limit` clamps to the house `MAX_LIMIT` of 200. `search` is shared `[AiClient, Agent]`; ❌ `ai_search` stays
-  ai-client-only, because Ask Cmdr is already an LLM holding the user's prose and nesting a second model call to write
+  going. `limit` clamps to the house `MAX_LIMIT` of 200. ❌ `ai_search` stays
+  `DevOnly`, because Ask Cmdr is already an LLM holding the user's prose and nesting a second model call to write
   a query it can write itself buys two providers and a translation it can't see (`../DETAILS.md` § The
   tool catalog). The result shape and every rule about it live in `search/result.rs` (§ The search result, below).
   Where `search` covers (`volumeId`, a scope under a dead mount) is `search/placement.rs`'s, through the one location
@@ -69,12 +69,12 @@ Depth for the handlers shared with outside clients. `CLAUDE.md` holds the must-k
   The pure filter/param parsers and the typed-refusal shape are unit-tested in `operation_log/tests.rs`. Both read
   responses go through `fit_to_result_budget` and carry `returned` / `total` / `truncated` (`operations_list` keeps its
   original `count`, equal to `returned`), so a page cut for size is visible and resumable with `offset`.
-- **`photos.rs`**: `search_photos` (shared `[AiClient, Agent]` read). Shapes the `media_index` read API
+- **`photos.rs`**: `search_photos` (`ReadContents`). Shapes the `media_index` read API
   (`search_semantic` / `search_ocr` / `images_with_tag`) into a TEXT-ONLY DTO (no image bytes), resolves the mode like
   the search UI (Auto composes semantic + OCR, degrades to OCR with no CLIP model), reuses `media_index::commands::volume_state`
   for coverage honesty, and returns a typed status (`imageIndexingOff` / `semanticModelNotInstalled` / `ok`). Pure mode
   resolution, hit merging, coverage derivation, and the no-bytes property are unit-tested in-file.
-- **`image_facts.rs`**: `image_facts` (shared `[AiClient, Agent]` read), the LOOKUP direction of the same index that
+- **`image_facts.rs`**: `image_facts` (`ReadContents`), the LOOKUP direction of the same index that
   `search_photos` queries: the caller already has the paths and needs to know what's IN each image (a natural-language
   bulk rename). Shapes `MediaIndex::facts_for_paths` into the same kind of TEXT-ONLY DTO, and imports `photos.rs`'s
   `resolve_search_volumes` / `derive_coverage` / `build_note` rather than re-deriving them, so the two tools can't drift

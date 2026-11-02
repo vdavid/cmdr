@@ -21,7 +21,7 @@ use serde::Serialize;
 
 pub use outcome::outcome_of;
 pub use preview::{PREVIEW_ROWS, preview_of};
-pub use repeat::repeat_marks;
+pub use repeat::{TurnCall, moves_the_turn_on, repeat_marks};
 pub use subject::subject_of;
 
 use crate::agent::memory::MemoryRefusalKind;
@@ -207,6 +207,8 @@ pub enum ToolOutcome {
     AwaitingPerson {
         dialog: Option<String>,
     },
+    /// The action went out and nothing said what became of it, so it may still go ahead.
+    OutcomeUnknown,
     /// A memory note landed.
     Saved,
     Refused {
@@ -231,7 +233,10 @@ impl ToolOutcome {
     /// that didn't connect.
     pub fn ok(&self) -> bool {
         match self {
-            ToolOutcome::Refused { .. } | ToolOutcome::NotStaged | ToolOutcome::LocationMiss { .. } => false,
+            ToolOutcome::Refused { .. }
+            | ToolOutcome::NotStaged
+            | ToolOutcome::LocationMiss { .. }
+            | ToolOutcome::OutcomeUnknown => false,
             ToolOutcome::Connection { outcome } => {
                 matches!(outcome, ConnectOutcome::Connected | ConnectOutcome::AlreadyConnected)
             }
@@ -251,8 +256,10 @@ impl ToolOutcome {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum RefusalReason {
-    /// `available: false`: not a tool the agent has.
+    /// `available: false`: a name outside the table, or a tool that's never the agent's.
     ToolUnavailable,
+    /// A tool that waits for a turn the user started, on a turn Cmdr started.
+    InBackground,
     /// The repeat breaker: an identical call already failed this turn.
     RepeatedCall,
     /// The schema gate or the handler said no (the JSON can't tell those two apart).

@@ -1,7 +1,7 @@
 //! The tool-dispatch seam: how a turn executes one tool call, and how it withdraws
 //! evidence for results the prompt dropped.
 //!
-//! The real impl routes through the agent's read-only dispatch view; tests inject a
+//! The real impl routes through `agent::tool_gate`; tests inject a
 //! scripted double, so [`run_turn`](super::run_turn) needs no Tauri app.
 
 use std::path::PathBuf;
@@ -17,8 +17,8 @@ use crate::tools::propose::evidence::EvidenceScope;
 use crate::tools::propose::rename::RenameProposalSnapshot;
 use crate::tools::{Access, tool_access};
 
-/// How the runtime executes one tool call. The real impl routes through the agent's
-/// read-only dispatch view ([`AppHandleDispatcher`]); tests inject a scripted double,
+/// How the runtime executes one tool call. The real impl routes through `agent::tool_gate`
+/// ([`AppHandleDispatcher`]); tests inject a scripted double,
 /// so [`run_turn`](super::run_turn) needs no Tauri app.
 pub trait ToolDispatcher: Send + Sync {
     /// Run `call` in `turn`: the turn's origin (the gate reads it) and its Stop. The turn
@@ -113,8 +113,8 @@ fn cancelled(call: &AgentToolCall) -> ToolDispatchOutcome {
     }
 }
 
-/// The production dispatcher: every call goes through `agent::tool_gate::dispatch`,
-/// the read-only choke point (an unknown or write name is refused before `execute_tool`).
+/// The production dispatcher: every call goes through `agent::tool_gate::dispatch`, where `admit`
+/// decides before `execute_tool`.
 pub struct AppHandleDispatcher<R: Runtime> {
     app: AppHandle<R>,
     /// The chat thread this dispatcher serves. Evidence is scoped to it, so facts delivered

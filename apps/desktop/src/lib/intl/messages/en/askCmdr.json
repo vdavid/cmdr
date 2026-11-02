@@ -635,8 +635,20 @@
   },
   "askCmdr.tool.outcome.toolUnavailable": "not a tool it has",
   "@askCmdr.tool.outcome.toolUnavailable": {
-    "description": "What came back, after a tool line’s label: the assistant asked for something Ask Cmdr can’t do (it’s read-only, or the name was made up), so nothing ran. “It” is the assistant. Lowercase where your language allows. A translation may name the assistant outright where a bare “it” would be unclear.",
+    "description": "What came back, after a tool line’s label: the assistant asked for a tool it doesn’t have (one only a person can answer, or a name it made up), so nothing ran. “It” is the assistant. Lowercase where your language allows. A translation may name the assistant outright where a bare “it” would be unclear.",
     "screenshot": "ask-cmdr-tools.png"
+  },
+  "askCmdr.tool.outcome.inBackground": "waits for you to ask",
+  "@askCmdr.tool.outcome.inBackground": {
+    "description": "What came back, after a tool line’s label: the assistant tried something it may only do when the person asks, on a turn Cmdr started on its own (a background check), so nothing ran. Lowercase where your language allows.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.outcome.outcomeUnknown": "may still be going",
+  "@askCmdr.tool.outcome.outcomeUnknown": {
+    "description": "What came back, after a tool line’s label: Cmdr sent the action and heard nothing back in time, so it may have happened or may still be happening. Neither a success nor a failure. Lowercase where your language allows.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
   },
   "askCmdr.tool.outcome.repeatedCall": "skipped: it tried this already",
   "@askCmdr.tool.outcome.repeatedCall": {
@@ -962,13 +974,13 @@
     "screenshot": "ask-cmdr-tools.png",
     "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
   },
-  "askCmdr.toolGroup.summary": "Looked around: {parts}",
+  "askCmdr.toolGroup.summary": "Worked through: {parts}",
   "@askCmdr.toolGroup.summary": {
-    "description": "The one-line header of a group of Ask Cmdr tool lines, once every request in it came back: what the assistant looked at, as counts. Clicking it opens or closes the group. Sentence case.",
+    "description": "The one-line header of a group of Ask Cmdr tool lines, once every request in it came back: what the assistant looked at or did, as counts. Clicking it opens or closes the group. Sentence case.",
     "placeholders": { "parts": "Counts already joined into a list, for example “6 folders, 2 searches”." },
     "screenshot": "ask-cmdr-tools.png"
   },
-  "askCmdr.toolGroup.summaryRunning": "Looking around: {parts}",
+  "askCmdr.toolGroup.summaryRunning": "Working through: {parts}",
   "@askCmdr.toolGroup.summaryRunning": {
     "description": "Like askCmdr.toolGroup.summary, while some requests in the group are still running. Sentence case.",
     "placeholders": { "parts": "Counts already joined into a list, for example “6 folders, 2 searches”." },

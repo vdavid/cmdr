@@ -2,7 +2,7 @@
 
 use serde_json::json;
 
-use crate::tools::{ToolId, agent_tool_view, get_all_tools, tool_schema, validate_params};
+use crate::tools::{ToolId, tool_schema, validate_params};
 
 #[test]
 fn a_call_carrying_a_property_the_schema_never_declared_is_refused() {
@@ -196,18 +196,17 @@ fn switch_pane_refuses_a_pane_rather_than_ignoring_it() {
 fn every_declared_schema_accepts_a_call_that_only_uses_what_it_declares() {
     // The gate reads the same schemas the registry publishes, so a shape it mishandles (a
     // nested object, an absent `properties` map) would start refusing working calls. This
-    // walks every tool in both views with the properties its own schema declares, and
-    // requires a pass.
-    for tool in get_all_tools().into_iter().chain(agent_tool_view()) {
-        let schema = tool_schema(&tool.name).expect("a registered tool has a schema");
+    // walks every tool with the properties its own schema declares, and requires a pass.
+    for tool in ToolId::KNOWN {
+        let name = tool.as_wire_name();
+        let schema = tool_schema(name).expect("a registered tool has a schema");
         let mut params = serde_json::Map::new();
         for (name, property) in schema["properties"].as_object().into_iter().flatten() {
             params.insert(name.clone(), sample_for(property));
         }
         assert!(
-            validate_params(&tool.name, &serde_json::Value::Object(params.clone())).is_ok(),
-            "{} refused a call built from its own declared properties: {params:?}",
-            tool.name
+            validate_params(name, &serde_json::Value::Object(params.clone())).is_ok(),
+            "{name} refused a call built from its own declared properties: {params:?}"
         );
     }
 }

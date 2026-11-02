@@ -1,7 +1,8 @@
-//! Who's calling a tool ([`Caller`], [`ToolCtx`]), and direct mode: the switch that lets an outside
-//! MCP client use the tools that go past a person.
+//! Who may run what: [`admit`], the one decision, over who's calling ([`Caller`], [`ToolCtx`]) and
+//! what a tool does ([`Access`]). And direct mode: the switch that lets an outside MCP client use the
+//! tools that go past a person.
 //!
-//! On in an E2E run of a build that honors it, or when the person turned on
+//! Direct mode is on in an E2E run of a build that honors it, or when the person turned on
 //! `developer.mcpDirectMode` in Settings. The agent never gets it. The decision record, and what the
 //! Keychain item does and doesn't prove: `DETAILS.md` § Direct mode.
 
@@ -13,13 +14,14 @@ use tokio_util::sync::CancellationToken;
 
 use super::actions::ToolError;
 use super::ask::AskFacts;
-use super::registry::{Access, Consumer};
+use super::registry::Access;
 use crate::agent::types::TurnOrigin;
 use crate::secrets::{SecretStore, SecretStoreError};
+use crate::security_log::{ContentTool, SecurityEvent};
 use crate::test_mode::{self, AutomatedRun};
 
-/// Who's calling a tool. Decides what a dialog says about who started it, what the operation log
-/// records, and whether a stray keystroke can touch what opened.
+/// Who's calling a tool. Decides what [`admit`] answers, what a dialog says about who started it, what
+/// the operation log records, and whether a stray keystroke can touch what opened.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Caller {
     /// Ask Cmdr, on a turn with this origin. It never gets direct mode.
@@ -28,15 +30,117 @@ pub enum Caller {
     External { direct: bool },
 }
 
-impl Caller {
-    /// The view this caller dispatches, until one table holds every tool for both.
-    pub fn consumer(self) -> Consumer {
+/// What [`admit`] answers: the same three answers as Claude Code's permission modes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Verdict {
+    Allow,
+    /// Run the tool's `ask` plan first, and act only on a person's yes.
+    Ask,
+    Refuse(Refusal),
+}
+
+/// Why [`admit`] refused.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Refusal {
+    /// The tool needs a turn the user started, and Cmdr started this one.
+    InBackground,
+    /// Never the agent, for this one-line reason from the table.
+    DevOnly(&'static str),
+    /// An outside client needs direct mode for this.
+    DirectModeOff,
+}
+
+/// Who may run what. **The agent can start anything. A person finishes anything sensitive.** Pure, and
+/// the only thing deciding: dispatch reads the answer and owns the asking. The agent's arms never read
+/// direct mode, since it never gets it. Why each cell is what it is: `DETAILS.md` § The rule.
+pub fn admit(caller: Caller, access: Access) -> Verdict {
+    match (caller, access) {
+        (Caller::Agent { .. }, Access::DevOnly(reason)) => Verdict::Refuse(Refusal::DevOnly(reason)),
+        (Caller::Agent { origin }, Access::Sensitive) if origin.user_started() => Verdict::Ask,
+        (Caller::Agent { origin }, Access::Session | Access::AppState | Access::Initiate | Access::LightWrite)
+            if origin.user_started() =>
+        {
+            Verdict::Allow
+        }
+        (Caller::Agent { .. }, Access::Read | Access::ReadContents | Access::Propose | Access::Memory) => {
+            Verdict::Allow
+        }
+        (
+            Caller::Agent { .. },
+            Access::Session | Access::AppState | Access::Initiate | Access::LightWrite | Access::Sensitive,
+        ) => Verdict::Refuse(Refusal::InBackground),
+        (Caller::External { direct: true }, _) => Verdict::Allow,
+        (Caller::External { direct: false }, Access::Sensitive) => Verdict::Ask,
+        (Caller::External { direct: false }, Access::ReadContents | Access::Memory | Access::DevOnly(_)) => {
+            Verdict::Refuse(Refusal::DirectModeOff)
+        }
+        (
+            Caller::External { direct: false },
+            Access::Read | Access::Propose | Access::Session | Access::AppState | Access::Initiate | Access::LightWrite,
+        ) => Verdict::Allow,
+    }
+}
+
+impl Refusal {
+    /// The token a caller branches on.
+    pub fn token(self) -> &'static str {
         match self {
-            Caller::Agent { .. } => Consumer::Agent,
-            Caller::External { .. } => Consumer::AiClient,
+            Refusal::InBackground => "refusedInBackground",
+            Refusal::DevOnly(_) => "devOnly",
+            Refusal::DirectModeOff => DIRECT_MODE_OFF,
         }
     }
 
+    /// The sentence the caller reads, naming what's possible instead.
+    pub fn message(self, name: &str) -> String {
+        match self {
+            Refusal::InBackground => {
+                "This tool runs only when the user asks for something, and Cmdr started this turn \
+                                      on its own. Say what you'd do; the user can ask for it."
+                    .to_string()
+            }
+            Refusal::DevOnly(reason) => format!(
+                "Ask Cmdr can't run {name}: {reason}. Say what you'd like the user to do; they answer it in Cmdr."
+            ),
+            Refusal::DirectModeOff => format!(
+                "The {name} tool needs direct mode. A person can turn it on in Cmdr, in Settings > AI > MCP server."
+            ),
+        }
+    }
+
+    /// The refusal as a tool answer. `data` is the contract; the message is the human half.
+    pub fn into_error(self, name: &str) -> ToolError {
+        let data = match self {
+            Refusal::DirectModeOff => json!({ "reason": DIRECT_MODE_OFF, "setting": DIRECT_MODE_SETTING_ID }),
+            Refusal::InBackground | Refusal::DevOnly(_) => json!({ "refusal": self.token() }),
+        };
+        ToolError::invalid_params(self.message(name)).with_data(data)
+    }
+}
+
+/// Records that an outside client read file contents through Cmdr, by tool and never by path. The agent
+/// has the cloud AI disclosure and the operation of its own rail; an outside client has only this.
+pub(super) fn note_content_read(caller: Caller, name: &str, access: Access) {
+    if !matches!((caller, access), (Caller::External { .. }, Access::ReadContents)) {
+        return;
+    }
+    if let Some(tool) = content_tool(name) {
+        crate::security_log::record(SecurityEvent::McpContentRead { tool });
+    }
+}
+
+/// The log's word for a tool that reads contents.
+fn content_tool(name: &str) -> Option<ContentTool> {
+    match name {
+        "inspect_file" => Some(ContentTool::InspectFile),
+        "image_facts" => Some(ContentTool::ImageFacts),
+        "search_photos" => Some(ContentTool::SearchPhotos),
+        "multi_rename" => Some(ContentTool::MultiRename),
+        _ => None,
+    }
+}
+
+impl Caller {
     /// Who the operation log credits with what this caller starts, whoever confirms it.
     pub fn initiator(self) -> Initiator {
         match self {
@@ -128,18 +232,6 @@ fn direct_mode_from(e2e_honored: bool, run: AutomatedRun, setting: bool) -> bool
     (e2e_honored && run != AutomatedRun::None) || setting
 }
 
-/// The refusal for a `DevOnly` tool an outside client asks for off direct mode. The agent's own
-/// fence is its `consumers` list and gate, so it never reaches this.
-pub(super) fn dev_only_refusal(caller: Caller, name: &str, access: Option<Access>) -> Option<ToolError> {
-    let gated = caller == Caller::External { direct: false } && matches!(access, Some(Access::DevOnly(_)));
-    gated.then(|| {
-        ToolError::invalid_params(format!(
-            "The {name} tool needs direct mode. A person can turn it on in Cmdr, in Settings > AI > MCP server."
-        ))
-        .with_data(json!({ "reason": DIRECT_MODE_OFF, "setting": DIRECT_MODE_SETTING_ID }))
-    })
-}
-
 /// What launch makes of the saved setting: on only when `settings.json` says on AND the store's item
 /// backs it. Both closures run only when the JSON says on, so nobody else pays at launch: asking
 /// whether the store is file-backed opens it, which on Linux is a keyring probe. A file-backed store
@@ -191,8 +283,8 @@ pub fn seed_direct_mode_at_launch(saved: Option<bool>) {
     }
 }
 
-fn launch_event(on: bool) -> Option<crate::security_log::SecurityEvent> {
-    on.then_some(crate::security_log::SecurityEvent::McpDirectModeChanged {
+fn launch_event(on: bool) -> Option<SecurityEvent> {
+    on.then_some(SecurityEvent::McpDirectModeChanged {
         on: true,
         by: crate::security_log::Initiator::Launch,
     })
@@ -355,30 +447,149 @@ mod tests {
         assert!(!on);
     }
 
+    /// Every class, by hand, so a new one can't reach the matrix unseen (`every_class` is exhaustive).
+    const EVERY_CLASS: [Access; 10] = [
+        Access::Read,
+        Access::ReadContents,
+        Access::Propose,
+        Access::Memory,
+        Access::Session,
+        Access::AppState,
+        Access::Initiate,
+        Access::LightWrite,
+        Access::Sensitive,
+        Access::DevOnly("a reason"),
+    ];
+
+    /// Fails to compile when a class joins [`Access`], which sends you to [`EVERY_CLASS`].
+    fn _every_class(access: Access) {
+        match access {
+            Access::Read
+            | Access::ReadContents
+            | Access::Propose
+            | Access::Memory
+            | Access::Session
+            | Access::AppState
+            | Access::Initiate
+            | Access::LightWrite
+            | Access::Sensitive
+            | Access::DevOnly(_) => {}
+        }
+    }
+
+    const ALL_ORIGINS: [TurnOrigin; 4] = [
+        TurnOrigin::Text,
+        TurnOrigin::Resume,
+        TurnOrigin::Wake,
+        TurnOrigin::Outcomes,
+    ];
+
+    /// The whole matrix, cell by cell, from the rule rather than from the code: every class × every
+    /// caller.
     #[test]
-    fn a_dev_only_tool_refuses_an_outside_client_off_direct_mode_with_the_typed_reason() {
-        let access = Some(Access::DevOnly("a reason"));
-        let refusal = dev_only_refusal(OFF_DIRECT, "resolve_conflict", access).expect("refused");
-        assert_eq!(
-            refusal.data,
-            Some(json!({ "reason": "directModeOff", "setting": "developer.mcpDirectMode" }))
-        );
-        assert!(dev_only_refusal(DIRECT, "resolve_conflict", access).is_none());
+    fn admit_answers_the_whole_matrix() {
+        for access in EVERY_CLASS {
+            for origin in ALL_ORIGINS {
+                let want = match access {
+                    Access::DevOnly(reason) => Verdict::Refuse(Refusal::DevOnly(reason)),
+                    Access::Read | Access::ReadContents | Access::Propose | Access::Memory => Verdict::Allow,
+                    Access::Sensitive if origin.user_started() => Verdict::Ask,
+                    _ if origin.user_started() => Verdict::Allow,
+                    _ => Verdict::Refuse(Refusal::InBackground),
+                };
+                assert_eq!(
+                    admit(Caller::Agent { origin }, access),
+                    want,
+                    "{access:?} on {origin:?}"
+                );
+            }
+
+            assert_eq!(admit(DIRECT, access), Verdict::Allow, "direct: {access:?}");
+
+            let want = match access {
+                Access::Sensitive => Verdict::Ask,
+                Access::ReadContents | Access::Memory | Access::DevOnly(_) => Verdict::Refuse(Refusal::DirectModeOff),
+                _ => Verdict::Allow,
+            };
+            assert_eq!(admit(OFF_DIRECT, access), want, "off direct: {access:?}");
+        }
     }
 
     #[test]
-    fn only_a_dev_only_tool_is_gated_this_way() {
-        for access in [
-            Some(Access::Read),
-            Some(Access::ReadContents),
-            Some(Access::Sensitive),
-            Some(Access::Initiate),
-            None,
-        ] {
-            assert!(dev_only_refusal(OFF_DIRECT, "x", access).is_none(), "{access:?}");
+    fn only_a_user_started_turn_counts_for_the_agent_and_resume_is_one() {
+        assert!(TurnOrigin::Text.user_started());
+        assert!(TurnOrigin::Resume.user_started());
+        assert!(!TurnOrigin::Wake.user_started());
+        assert!(!TurnOrigin::Outcomes.user_started());
+    }
+
+    #[test]
+    fn a_direct_mode_refusal_names_the_setting_in_its_typed_data() {
+        for access in [Access::DevOnly("a reason"), Access::ReadContents, Access::Memory] {
+            let Verdict::Refuse(refusal) = admit(OFF_DIRECT, access) else {
+                panic!("{access:?} refuses off direct mode");
+            };
+            assert_eq!(
+                refusal.into_error("resolve_conflict").data,
+                Some(json!({ "reason": "directModeOff", "setting": "developer.mcpDirectMode" }))
+            );
         }
-        // The agent's fence is its own: direct mode is never its answer, on or off.
-        assert!(dev_only_refusal(AGENT, "x", Some(Access::DevOnly("r"))).is_none());
+    }
+
+    #[test]
+    fn the_agents_refusals_carry_a_token_and_say_what_it_can_do_instead() {
+        let error = Refusal::InBackground.into_error("copy");
+        assert_eq!(error.data, Some(json!({ "refusal": "refusedInBackground" })));
+
+        let error = Refusal::DevOnly("the question is already in front of the person").into_error("resolve_conflict");
+        assert_eq!(error.data, Some(json!({ "refusal": "devOnly" })));
+        assert_eq!(
+            error.message,
+            "Ask Cmdr can't run resolve_conflict: the question is already in front of the person. Say what you'd like \
+             the user to do; they answer it in Cmdr."
+        );
+    }
+
+    #[test]
+    fn every_contents_tool_has_a_word_in_the_log() {
+        for tool in crate::tools::ToolId::KNOWN {
+            let name = tool.as_wire_name();
+            if crate::tools::tool_access(name) == Some(Access::ReadContents) {
+                assert!(content_tool(name).is_some(), "{name}");
+            }
+        }
+    }
+
+    #[test]
+    fn only_an_outside_clients_content_read_is_logged_and_only_by_tool() {
+        let capture = crate::security_log::testing::capture_events();
+        note_content_read(AGENT, "inspect_file", Access::ReadContents);
+        note_content_read(DIRECT, "list_dir", Access::Read);
+        note_content_read(DIRECT, "inspect_file", Access::ReadContents);
+        assert_eq!(
+            capture.events(),
+            vec![SecurityEvent::McpContentRead {
+                tool: ContentTool::InspectFile
+            }]
+        );
+    }
+
+    /// The annotations are the rule in MCP's words, so a client that trusts them skips no prompt it
+    /// shouldn't.
+    #[test]
+    fn annotations_follow_the_class() {
+        for access in EVERY_CLASS {
+            let hints = access.hints();
+            match access {
+                Access::Read | Access::ReadContents => {
+                    assert_eq!(hints.read_only_hint, Some(true), "{access:?}");
+                }
+                Access::Initiate | Access::Sensitive | Access::DevOnly(_) => {
+                    assert_eq!(hints.destructive_hint, Some(true), "{access:?}");
+                }
+                _ => assert_eq!(hints.destructive_hint, Some(false), "{access:?}"),
+            }
+        }
     }
 
     #[test]
@@ -428,7 +639,7 @@ mod tests {
 
     #[test]
     fn only_a_launch_that_came_up_direct_is_recorded() {
-        use crate::security_log::{Initiator, SecurityEvent};
+        use crate::security_log::Initiator;
         assert_eq!(
             launch_event(true),
             Some(SecurityEvent::McpDirectModeChanged {
