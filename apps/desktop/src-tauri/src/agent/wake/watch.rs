@@ -20,10 +20,12 @@
 use std::sync::Mutex;
 
 use futures_util::future::BoxFuture;
+use serde_json::Value;
 
 use crate::agent::chat::runtime::{CallContext, ToolDispatchOutcome, ToolDispatcher, dispatch_ok};
 use crate::agent::llm::types::{AgentToolCall, ToolId};
 use crate::ignore_poison::IgnorePoison;
+use crate::tools::Access;
 use crate::tools::quiet::reason_of;
 
 /// A dispatcher wrapper that notices what a wake's turn decided.
@@ -73,10 +75,13 @@ impl<'a> WakeToolWatch<'a> {
     }
 }
 
-/// The tools that stage something for the user to approve. Typed, so a new proposal tool is a
-/// compile-visible addition here rather than a silently uncounted one.
-fn is_proposal(tool: &ToolId) -> bool {
-    matches!(tool, ToolId::ProposeSuggestions | ToolId::ProposeRenamePlan)
+/// The calls that stage something for the user to approve: any `Propose` tool, so a new one is
+/// counted without an edit here. `multi_rename` previews unless it's told `dryRun: false`, and a
+/// preview stages nothing. `propose_server` needs no exception: it refuses in the background, and
+/// only a call that landed counts.
+fn stages_a_proposal(call: &AgentToolCall) -> bool {
+    let is_propose = crate::tools::tool_access(call.tool.as_wire_name()) == Some(Access::Propose);
+    is_propose && (call.tool != ToolId::MultiRename || call.arguments.get("dryRun") == Some(&Value::Bool(false)))
 }
 
 impl ToolDispatcher for WakeToolWatch<'_> {
@@ -84,7 +89,7 @@ impl ToolDispatcher for WakeToolWatch<'_> {
         if call.tool == ToolId::NothingToSuggest {
             self.seen.lock_ignore_poison().quiet = Some(reason_of(&call.arguments));
         }
-        let proposal = is_proposal(&call.tool);
+        let proposal = stages_a_proposal(call);
         Box::pin(async move {
             let outcome = self.inner.dispatch(call, turn).await;
             // ⚠️ Only a call that LANDED counts. A refused or failed proposal leaves nothing

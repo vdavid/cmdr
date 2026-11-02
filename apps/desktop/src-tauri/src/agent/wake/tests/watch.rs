@@ -92,6 +92,34 @@ async fn only_the_tools_that_stage_something_count() {
     assert_eq!(watch.proposals(), 2);
 }
 
+/// `multi_rename` is `Propose` and allowed on a wake, and `dryRun: false` stages a plan for review.
+/// A preview stages nothing, and previewing is its default.
+#[tokio::test]
+async fn multi_rename_counts_only_when_it_stages() {
+    let inner = Answers(serde_json::json!({ "dryRun": false }));
+    let renames = |arguments: serde_json::Value| AgentToolCall {
+        arguments,
+        ..call(ToolId::from_wire_name("multi_rename"))
+    };
+
+    let watch = WakeToolWatch::new(&inner);
+    watch
+        .dispatch(
+            &renames(serde_json::json!({ "dryRun": false })),
+            wake_call(&CancellationToken::new()),
+        )
+        .await;
+    assert_eq!(watch.proposals(), 1);
+
+    let watch = WakeToolWatch::new(&inner);
+    for preview in [serde_json::json!({ "dryRun": true }), serde_json::json!({})] {
+        watch
+            .dispatch(&renames(preview), wake_call(&CancellationToken::new()))
+            .await;
+    }
+    assert_eq!(watch.proposals(), 0);
+}
+
 /// A refused proposal leaves nothing for the user to review, so a toast about it would send
 /// them to an empty list. The refusal is read from OUR OWN typed result keys, never from the
 /// model's or the handler's wording.
