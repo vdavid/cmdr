@@ -12,7 +12,9 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   `introduktionsguiden`, title `Kom igång med Cmdr`): no macOS source for either.
 - **Character Viewer → `Teckenvisare`**, **Force Quit → `Avsluta tvingat`**, **input source switching →
   `byte av inmatningskälla`**: Apple-style Swedish that isn't in the pile; check against a live Swedish Mac.
-- **modifier key → `modifierare`**: MS's `låstangent` is the lock-key sense, so the word is composed.
+- **modifier key → `modifierare`**: MS's `låstangent` is the lock-key sense, so the word is composed. macOS sv says
+  `Specialtangenter` (Keyboard > Modifier Keys, macOS 27.0.1, 2026-11-02). Switch to `specialtangent` in
+  `shortcuts.conflict.shiftLetter` and `downloads.shortcutRow.addModifier`?
 - **Apple silicon** kept English: Apple's Swedish marketing says `Apple-kisel`; confirm which a Swedish Mac user
   expects.
 - **token plural `tokens`** (`askCmdr.cost.tokens`): identical to English, from Swedish tech press, no pile source.

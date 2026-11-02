@@ -83,6 +83,10 @@
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "42c3c0e"
   },
+  "shortcuts.conflict.shiftLetter": "Promiňte, kombinace {combo} píše velké písmeno, takže nemůže být zkratkou. Zkuste přidat další modifikační klávesu.",
+  "@shortcuts.conflict.shiftLetter": {
+    "sourceHash": "15f52bd"
+  },
   "shortcuts.conflict.systemShortcut": "Kombinaci {combo} obvykle používá macOS ({label}), takže se do Cmdru možná vůbec nedostane. Uvolnit ji můžete v Nastavení systému > Klávesnice.",
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "9ef197f"

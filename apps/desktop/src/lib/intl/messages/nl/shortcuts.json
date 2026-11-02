@@ -86,6 +86,10 @@
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "42c3c0e"
   },
+  "shortcuts.conflict.shiftLetter": "Sorry, met {combo} typ je een hoofdletter, dus dit kan geen sneltoets zijn. Probeer er nog een wijzigingstoets aan toe te voegen.",
+  "@shortcuts.conflict.shiftLetter": {
+    "sourceHash": "15f52bd"
+  },
   "shortcuts.conflict.systemShortcut": "{combo} wordt meestal door macOS gebruikt ({label}), dus bereikt het Cmdr mogelijk nooit. Je kunt het vrijmaken in Systeeminstellingen > Toetsenbord.",
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "9ef197f"

@@ -84,6 +84,10 @@
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "42c3c0e"
   },
+  "shortcuts.conflict.shiftLetter": "Desculpe, {combo} é o jeito de digitar uma letra maiúscula, então não pode ser um atalho. Tente adicionar outra tecla modificadora.",
+  "@shortcuts.conflict.shiftLetter": {
+    "sourceHash": "15f52bd"
+  },
   "shortcuts.conflict.systemShortcut": "{combo} costuma ser usado pelo macOS ({label}), então pode nunca chegar ao Cmdr. Você pode liberá-lo em Ajustes do Sistema > Teclado.",
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "9ef197f"

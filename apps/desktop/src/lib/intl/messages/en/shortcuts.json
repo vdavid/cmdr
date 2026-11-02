@@ -140,10 +140,12 @@
 
   "shortcuts.conflict.shiftLetter": "Sorry, {combo} is how you type a capital letter, so it can’t be a shortcut. Try adding another modifier key.",
   "@shortcuts.conflict.shiftLetter": {
-    "description": "Polite banner when the user tries to assign Shift plus a letter as a keyboard shortcut. Cmdr refuses it because that key types a capital letter in the file list. \"modifier key\" means a key like Command, Control, or Option; reuse the localized OS term.",
+    "description": "Polite banner when the user tries to assign Shift plus a letter as a keyboard shortcut. Cmdr refuses it because that key types a capital letter in the file list. \"another modifier key\" means one more held together with Shift (not one replacing it), like Command, Control, or Option; reuse the localized OS term.",
     "placeholders": {
       "combo": "the key combination the user pressed, shown as glyphs (e.g. ⇧A)"
-    }
+    },
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.conflict.systemShortcut": "{combo} is usually taken by macOS ({label}), so it may never reach Cmdr. You can free it up in System Settings > Keyboard.",
