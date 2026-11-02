@@ -370,14 +370,24 @@ fn total_lines_is_known_for_a_small_file_and_absent_on_the_byte_seek_fallback() 
     assert!(!text.line_numbers_approximate);
 
     // Past 1 MB the line index is built under the cancel flag; pre-setting it drives the
-    // ByteSeek fallback, which must still answer and must say its numbers are estimates.
+    // ByteSeek fallback, which says its numbers are estimates. The same flag stops the private-key
+    // pre-scan before any of the file, so this window shows nothing.
     let large = write_numbered(&dir, "large.txt", 50_000);
     let text = text_of(&inspect_with(&large, opts(1, 3), &AtomicBool::new(true))).clone();
     assert_eq!(text.total_lines, None);
     assert!(text.line_numbers_approximate);
-    assert!(window_of(&text).content.starts_with("line 000001"));
-    assert_eq!(window_of(&text).returned_lines, 3);
-    assert!(window_of(&text).truncated);
+    assert_eq!(window_of(&text).returned_lines, 0);
+    assert!(window_of(&text).scan_incomplete);
+
+    // The deadline landing after a finished pre-scan, on the index: ByteSeek still answers.
+    let backend =
+        crate::file_viewer::headless::open_scan_backend(&large, crate::file_viewer::encoding::FileEncoding::Utf8)
+            .unwrap();
+    let window = text::window_within(backend.as_ref(), opts(1, 3), None).unwrap();
+    assert!(window.content.starts_with("line 000001"));
+    assert_eq!(window.returned_lines, 3);
+    assert!(window.truncated);
+    assert!(!window.scan_incomplete);
 }
 
 #[test]
@@ -570,6 +580,9 @@ async fn a_read_that_honours_the_cancel_flag_hands_back_its_partial_row() {
                     content: String::new(),
                     truncated: false,
                     lines_cut: false,
+                    scan_incomplete: false,
+                    bytes_scanned: None,
+                    bytes_scanned_human: None,
                 }),
                 find: None,
             }),
@@ -612,6 +625,9 @@ fn dense_row(index: usize) -> FileRow {
                 content: "y".repeat(MAX_WINDOW_CHARS),
                 truncated: true,
                 lines_cut: false,
+                scan_incomplete: false,
+                bytes_scanned: None,
+                bytes_scanned_human: None,
             }),
             find: None,
         }),

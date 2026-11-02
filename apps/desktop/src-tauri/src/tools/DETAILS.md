@@ -447,15 +447,16 @@ tool-result JSON the model reads.
   extension shows), and a typed `content` per kind. Text is a line window (`startLine` + `maxLines`, default 200, max
   2,000, capped at 16,000 chars and 2,000 chars a line) read through the viewer's own backends, with `encoding`,
   `totalLines` when known, `lineNumbersApproximate` on the ByteSeek fallback, and `truncated` / `linesCut` on the
-  window. With `find: { query, regex?, caseSensitive? }` the window is replaced by `find`: the matching lines (up to
+  window, plus `scanIncomplete` + `bytesScanned` when the private-key check's deadline cut it. With `find: { query, regex?, caseSensitive? }` the window is replaced by `find`: the matching lines (up to
   50, each `{ line, matches, text }` with `text` a 300-char snippet around the first match), `totalMatches`,
   `matchesCapped` (the viewer's 10,000-match cap), `returnedLines` / `truncated`, and `scanIncomplete` with
   `bytesScanned` / `totalBytes` when the deadline stopped the scan. One `find` applies to every text and PDF path in
   the call. A PDF gives `version`, the exact `pageCount`, the Info dictionary's `title` and `author`, and `pages`: a
   page window (`pageStart` + `maxPages`, default 3, max 20; `{ page, text, truncated, unparseable? }` per page, each
-  page trimmed and cut at 8,000 chars, whole pages only up to the row's 16,000, with `returnedPages` / `truncated`),
+  page trimmed and cut at 8,000 chars, whole pages only up to the row's 16,000, with `returnedPages` / `truncated`, and
+  `scanIncomplete` + `pagesScanned` when the private-key check's deadline cut it),
   or with `find` the matching lines each carrying `page` (`line` counts within the page; `scanIncomplete` +
-  `pagesScanned` when the deadline or the 50-line cap left pages undecoded). `hasTextLayer` is `false` when every
+  `pagesScanned` when the deadline left pages unchecked). `hasTextLayer` is `false` when every
   decoded page was whitespace (a scan), absent when none decoded; `textUnavailable` says `encrypted` (no strings read
   either), `tooLarge` (over 64 MiB, never parsed), or `unparseable` (the parser refused or panicked, contained), with
   the header `version` still answered. Images give `format` + dimensions, the camera's `exif` when the container carries a block (`dateTaken`,
@@ -678,19 +679,20 @@ The tool re-derives nothing the viewer already ships. Per behavior, the symbol i
   `is_encrypted()`
   (→ `encrypted`, page count kept, Info strings not read: they're ciphertext), then `Title` / `Author` through
   `doc.dereference` + `decode_text_string` (PDFDocEncoding or UTF-16, trimmed, blank is absent). Page text is
-  `output_doc_page(&doc, &mut PlainTextOutput::new(&mut buf), n)`, one page at a time so a range never decodes the
-  rest; a refusal or a contained panic marks that page `unparseable` and the loop continues. ❗ So does a page whose
+  `output_doc_page(&doc, &mut PlainTextOutput::new(&mut buf), n)`, one page at a time, under the deadline, every page up
+  front for the private-key check and kept in memory so the answer decodes nothing twice; a refusal or a contained panic
+  marks that page `unparseable` and the loop continues. ❗ So does a page whose
   `Parent` chain loops (`parent_chain_ends`, checked before the parser sees the page): `pdf-extract` resolves inherited
   `Resources` / `MediaBox` by recursing up `Parent` unguarded, a stack overflow `catch_unwind` can't contain (found by
   the `pdf` fuzz target, `fuzz/DETAILS.md`). `window_from_pages` and
   `find_in_pages` are pure over an `extract(page)` closure (tests inject page texts): the window trims each page, cuts
   at `MAX_PAGE_CHARS` (8,000: two dense pages per row; a whole page the model can re-ask for by number beats a slice
   it can't, since there is no offset inside a page), carries whole pages until the next would break
-  `MAX_WINDOW_CHARS` (the first always fits), and stops on the cancel flag; `find` runs the call's `Matcher` per
+  `MAX_WINDOW_CHARS` (the first always fits); `find` runs the call's `Matcher` per
   trimmed line of each page in order, groups by line with the first match's byte offset feeding `snippet_around_byte`,
-  finishes the page that fills `MAX_FIND_LINES` and then stops (decoding a 300-page manual only to count is not worth
-  the deadline), which `scanIncomplete` + `pagesScanned` report; `matchesCapped` at the viewer's `MAX_SEARCH_MATCHES`
-  is its own reason to stop, as on text. `hasTextLayer` is a verdict over decoded pages only. The whole file is read
+  and carries the first `MAX_FIND_LINES`; `matchesCapped` at the viewer's `MAX_SEARCH_MATCHES`
+  is its own reason to stop, as on text. Both read only the pages `prescan_pages` checked, and `answer_from_pages` says
+  so through `scanIncomplete` + `pagesScanned` when the deadline left some unchecked. `hasTextLayer` is a verdict over decoded pages only. The whole file is read
   into memory (bounded by the gate); nothing is cached between calls.
 - **Connected remote files**: `VolumeManager::mount_id_for_path` identifies the registered owner before a
   scheme-prefixed path can be refused. A virtual path with no owner → `unsupportedVolume`; a connected owner whose
@@ -796,15 +798,21 @@ so a dev build can't read the prod `mcp.token`.
     tool only takes answers when the folder passes the gate and the file is neither protected nor a symlink.
 
 **The private-key check** (`refuse_private_key_text`, both armor lines; `cmdr://logs` reads it too) catches a copy in `~/Desktop/backup` that no path
-rule can see. A hit refuses the whole file, and neither `startLine` nor a `find` needle can skip it:
+rule can see. A hit refuses the whole file, and neither `startLine` nor a `find` needle can skip it. The deadline bounds
+the check, so "whole file" holds up to where it stopped, and nothing past that comes back:
 
-- **Windows** (`text.rs`): the window plus a look of about 200 lines behind it, through the backend's decoder. A head scan
-  isn't enough: it misses a key past 64 KB, a UTF-16 key slips through raw bytes, and `startLine` inside a key's body shows
-  neither armor line. The look walks by byte offset, because a row number is only an estimate on the ByteSeek fallback.
-- **`find`** (`find.rs`): `backend.search` returns matches only, so there's no seam to watch the user's scan. A pre-scan
-  with its own matcher runs first. If the deadline stops it, hits past its offset are dropped, because a key's body always
-  follows its `BEGIN`. Cost: a `find` on a large file reads it twice.
-- **PDF** (`pdf.rs`): every decoded page, whole, before its cut, plus two pages behind a window, and the title and author.
+- **Text, window and `find`** (`text.rs`, `find.rs`): `prescan_for_private_key` reads the whole file first, through the
+  backend's decoder, with its own matcher: `backend.search` returns matches only, so there's no seam to watch the user's
+  scan. A head scan isn't enough (it misses a key past 64 KB, and a UTF-16 key slips through raw bytes), and neither is a
+  look behind a window (an armored block's body can run past any fixed number of lines). If the deadline stops the scan
+  (`StoppedAt`), hits and window rows past its offset are dropped, because a key's body always follows its `BEGIN`, and
+  the row says `scanIncomplete`. So on a slow volume or a huge file, a window past what the deadline covered comes back
+  empty. Cost: a large file is read twice, and a window that spends the deadline on the scan falls back to approximate
+  line numbers.
+  - **Gotcha/Why:** the scan reads rows, so armor straddling a segment break (a line past `SEGMENT_BYTES`) is invisible to
+    it, as to ⌘F. The window's own check joins rows and covers that inside the window.
+- **PDF** (`pdf.rs`): `prescan_pages` decodes every page, whole, under the deadline, and the answer reads only those
+  pages. The title and author pass too. A page the parser can't read has no text to check.
 - **OCR**: `image_facts` reads the full stored text before its cap. `search_photos` reads it behind every text hit, because
   a query matching a key's body gets a snippet with no armor in it.
 

@@ -362,3 +362,81 @@ fn a_protected_row_counts_toward_the_answer() {
     assert_eq!((total, returned), (2, 1));
     assert_eq!(unanswered, vec!["/a/b.txt".to_string()]);
 }
+
+/// Past any look behind: a long armored block (a PGP export with subkeys, a key wrapped short)
+/// pages out its middle if a window only checks near itself.
+#[test]
+fn a_window_deep_in_a_long_key_body_is_refused() {
+    let dir = TestDir::new("inspect-key-long-body");
+    let copy = write(&dir, "backup.txt", key(600));
+    assert_refused(&inspect(&copy, &window(300, 50)), Protected::PrivateKey);
+    assert_refused(&inspect(&copy, &window(560, 5)), Protected::PrivateKey);
+}
+
+/// "Refuses the whole file" means a window above the key too, not only one near it.
+#[test]
+fn a_window_far_above_a_key_refuses_the_whole_file() {
+    let dir = TestDir::new("inspect-key-below");
+    let filler = "just some words on a line\n".repeat(4_000);
+    let copy = write(&dir, "notes.txt", format!("{filler}{}", key(10)));
+    assert_refused(&inspect(&copy, &window(1, 5)), Protected::PrivateKey);
+
+    let big_filler = "just some words on a line\n".repeat(STREAMING_FILE_BYTES / 26);
+    let big = write(&dir, "big.txt", format!("{big_filler}{}", key(10)));
+    assert_refused(&inspect(&big, &window(1, 5)), Protected::PrivateKey);
+}
+
+/// Out of time before the pre-scan saw anything: a window shows no line of the file, and says why.
+#[test]
+fn a_window_whose_prescan_was_stopped_shows_nothing_unchecked() {
+    let dir = TestDir::new("inspect-key-window-stopped");
+    let copy = write(&dir, "backup.txt", format!("some words\n{}", key(50)));
+    let out_of_time = AtomicBool::new(true);
+
+    let row = inspect_path(copy.to_str().unwrap(), &window(3, 5), &out_of_time);
+
+    let FileRow::Ok(file) = row else {
+        panic!("a stopped scan isn't a refusal: it found nothing yet, got {row:?}")
+    };
+    let Content::Text(text) = file.content else {
+        panic!("expected a text row")
+    };
+    let shown = text.window.expect("a window row");
+    assert_eq!(shown.content, "");
+    assert_eq!(shown.returned_lines, 0);
+    assert!(shown.scan_incomplete, "the model must know the lines weren't checked");
+    assert!(shown.truncated);
+    assert_eq!(shown.bytes_scanned, Some(0));
+}
+
+/// The cut is at the clean offset exactly: lines before it read, the one past it doesn't.
+#[test]
+fn a_window_past_the_clean_offset_is_cut_there() {
+    let dir = TestDir::new("inspect-key-window-cut");
+    let clean = "one\ntwo\n";
+    let copy = write(&dir, "a.txt", format!("{clean}three\nfour\n"));
+    let backend = open_scan_backend(&copy, FileEncoding::Utf8).unwrap();
+    let opts = |start_line: usize, max_lines: usize| WindowOpts {
+        start_line,
+        max_lines,
+        ..WindowOpts::default()
+    };
+    let clean_until = Some(clean.len() as u64);
+
+    let cut = text::window_within(backend.as_ref(), opts(1, 3), clean_until).unwrap();
+    assert_eq!(cut.content, "one\ntwo");
+    assert_eq!(cut.returned_lines, 2);
+    assert!(cut.truncated);
+    assert!(cut.scan_incomplete);
+    assert_eq!(cut.bytes_scanned, Some(clean.len() as u64));
+
+    // The clean part alone asked for: all of it was checked, so nothing is incomplete.
+    let inside = text::window_within(backend.as_ref(), opts(1, 1), clean_until).unwrap();
+    assert_eq!(inside.content, "one");
+    assert!(!inside.scan_incomplete);
+
+    // Wholly past it.
+    let past = text::window_within(backend.as_ref(), opts(3, 2), clean_until).unwrap();
+    assert_eq!(past.returned_lines, 0);
+    assert!(past.scan_incomplete && past.truncated);
+}

@@ -626,9 +626,10 @@ only; names may flow.
   - **`find`**: `find.rs:118` calls `backend.search(matcher, …)`, which returns matches only, so there's no seam to
     watch the scan stream. Run a pre-scan with a private-key matcher and refuse on a hit. If the deadline stops it, drop
     user hits past its `scanned` offset (a key's body always follows its `BEGIN`).
-  - **Windows**: scan the window plus a lookback of about 200 lines before it, through the backend's decoder. A head
-    scan isn't enough: it misses a key past 64 KB, and `startLine` inside a key's body shows neither `BEGIN` nor, with a
-    small `maxLines`, `END`. The head at `inspect/mod.rs:683` is raw bytes, so a UTF-16 key would slip through it.
+  - **Windows and PDFs**: the same whole-file pre-scan, through the backend's decoder, and a window past the clean
+    offset is cut there. A head scan isn't enough: it misses a key past 64 KB, and `startLine` inside a key's body shows
+    neither `BEGIN` nor, with a small `maxLines`, `END`. The head at `inspect/mod.rs:683` is raw bytes, so a UTF-16 key
+    would slip through it. A lookback isn't either: an armored block's body can run past any fixed number of lines.
 - **Photo tools**: realpath can't apply. `run_paths` (`inspect/runner.rs:46`) is private and typed to `FileRow`, and
   `image_facts` and `search_photos` run DB-only and promise a dead NAS can't hang them. So they use `classify` only, on
   stored paths. That's enough because `facts_for_paths` matches paths exactly

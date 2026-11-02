@@ -1,10 +1,10 @@
 //! Tests for the PDF kind: the authored two-page PDF end to end (structure, page window,
 //! `find` with pages), the three `textUnavailable` reasons, the pure page-loop shapers
-//! under their caps and the cancel flag, a PDF inside a zip, params, and the text-only walk.
+//! under their caps, the private-key pre-scan, a PDF inside a zip, params, and the text-only walk.
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use pdf_extract::content::{Content as PdfOps, Operation};
 use pdf_extract::{Document, EncryptionState, EncryptionVersion, Object, Permissions, Stream, dictionary};
@@ -12,7 +12,8 @@ use serde_json::json;
 
 use super::find::MAX_FIND_LINES;
 use super::pdf::{
-    DEFAULT_MAX_PAGES, MAX_MAX_PAGES, PageText, find_in_pages, header_version, read_pdf_with_cap, window_from_pages,
+    DEFAULT_MAX_PAGES, MAX_MAX_PAGES, PageScan, PageText, answer_from_pages, find_in_pages, header_version,
+    prescan_pages, read_pdf_with_cap, window_from_pages,
 };
 use super::tests::assert_text_only;
 use super::*;
@@ -423,16 +424,15 @@ fn text(s: &str) -> PageText {
 #[test]
 fn the_window_carries_whole_pages_and_stops_before_one_that_would_break_the_row_cap() {
     let texts = [text("aaaaaaaaaa"), text("bbbbbbbbbb"), text("cccccccccc")];
-    let cancel = AtomicBool::new(false);
 
     // Two pages of ten fill a cap of 20 exactly; the third would break it.
-    let (window, has_text) = window_from_pages(3, opts(1, 3), &cancel, 20, 100, pages(&texts));
+    let (window, has_text) = window_from_pages(3, opts(1, 3), 20, 100, pages(&texts));
     assert_eq!((window.returned_pages, window.truncated), (2, true));
     assert_eq!(window.pages[1].text, "bbbbbbbbbb");
     assert_eq!(has_text, Some(true));
 
     // The first page always fits, even when it alone is over the row cap.
-    let (window, _) = window_from_pages(3, opts(1, 3), &cancel, 4, 100, pages(&texts));
+    let (window, _) = window_from_pages(3, opts(1, 3), 4, 100, pages(&texts));
     assert_eq!((window.returned_pages, window.truncated), (1, true));
     assert_eq!(window.pages[0].text, "aaaaaaaaaa");
 }
@@ -440,8 +440,7 @@ fn the_window_carries_whole_pages_and_stops_before_one_that_would_break_the_row_
 #[test]
 fn a_page_over_the_page_cap_is_cut_and_says_so() {
     let texts = [text("abcdefgh"), text("ij")];
-    let cancel = AtomicBool::new(false);
-    let (window, _) = window_from_pages(2, opts(1, 3), &cancel, 1_000, 5, pages(&texts));
+    let (window, _) = window_from_pages(2, opts(1, 3), 1_000, 5, pages(&texts));
     assert_eq!(window.pages[0].text, "abcde");
     assert!(window.pages[0].truncated);
     assert_eq!(window.pages[1].text, "ij");
@@ -450,28 +449,16 @@ fn a_page_over_the_page_cap_is_cut_and_says_so() {
 }
 
 #[test]
-fn a_pre_set_cancel_flag_stops_the_loop_before_the_first_page() {
-    let texts = [text("a"), text("b")];
-    let (window, has_text) = window_from_pages(2, opts(1, 3), &AtomicBool::new(true), 1_000, 100, pages(&texts));
-    assert_eq!((window.returned_pages, window.truncated), (0, true));
-    assert_eq!(
-        has_text, None,
-        "no page was decoded, so nothing is claimed about a text layer"
-    );
-}
-
-#[test]
 fn an_unparseable_page_is_flagged_and_does_not_decide_the_text_layer() {
-    let cancel = AtomicBool::new(false);
     let texts = [PageText::Unparseable, text("   \n  ")];
-    let (window, has_text) = window_from_pages(2, opts(1, 3), &cancel, 1_000, 100, pages(&texts));
+    let (window, has_text) = window_from_pages(2, opts(1, 3), 1_000, 100, pages(&texts));
     assert!(window.pages[0].unparseable);
     assert_eq!(window.pages[0].text, "");
     assert_eq!(window.pages[1].text, "", "whitespace is trimmed to nothing");
     assert_eq!(has_text, Some(false), "the one page that decoded held no text");
 
     let texts = [PageText::Unparseable];
-    let (_, has_text) = window_from_pages(1, opts(1, 3), &cancel, 1_000, 100, pages(&texts));
+    let (_, has_text) = window_from_pages(1, opts(1, 3), 1_000, 100, pages(&texts));
     assert_eq!(has_text, None);
 }
 
@@ -492,7 +479,7 @@ fn find_groups_hits_by_page_and_line_with_a_snippet_around_the_first_match() {
         text("no hit here\nthe needle, then another needle\nlast"),
         text("needle on page two"),
     ];
-    let (hits, has_text) = find_in_pages(2, &matcher("needle"), &AtomicBool::new(false), pages(&texts));
+    let (hits, has_text) = find_in_pages(2, &matcher("needle"), pages(&texts));
     assert_eq!(has_text, Some(true));
     assert_eq!(hits.total_matches, 3);
     assert_eq!(hits.returned_lines, 2);
@@ -510,33 +497,19 @@ fn find_groups_hits_by_page_and_line_with_a_snippet_around_the_first_match() {
 }
 
 #[test]
-fn find_stops_decoding_pages_once_the_line_cap_is_full_and_says_the_scan_is_incomplete() {
+fn find_carries_the_first_lines_up_to_the_cap_and_counts_every_page() {
     let texts: Vec<PageText> = (0..100).map(|n| text(&format!("hit {n}"))).collect();
-    let (hits, _) = find_in_pages(100, &matcher("hit"), &AtomicBool::new(false), pages(&texts));
+    let (hits, _) = find_in_pages(100, &matcher("hit"), pages(&texts));
     assert_eq!(hits.returned_lines, MAX_FIND_LINES);
     assert_eq!(
-        hits.total_matches, MAX_FIND_LINES,
-        "counted up to where the scan stopped"
+        hits.total_matches, 100,
+        "the pre-scan decoded them all, so the count is honest"
     );
-    assert!(hits.scan_incomplete, "pages past the cap were not decoded");
-    assert_eq!(hits.pages_scanned, Some(MAX_FIND_LINES));
-    assert!(!hits.truncated, "every matching line the scan saw is carried");
-
-    // The page that fills the cap is finished (its extra lines are counted and reported as
-    // truncated); the page after it is not decoded.
-    let mut texts: Vec<PageText> = (0..MAX_FIND_LINES - 1).map(|_| text("hit")).collect();
-    texts.push(text("hit\nhit\nhit"));
-    texts.push(text("hit"));
-    let (hits, _) = find_in_pages(texts.len(), &matcher("hit"), &AtomicBool::new(false), pages(&texts));
-    assert_eq!(hits.total_matches, MAX_FIND_LINES + 2);
-    assert_eq!(hits.returned_lines, MAX_FIND_LINES);
     assert!(hits.truncated);
-    assert!(hits.scan_incomplete);
-    assert_eq!(hits.pages_scanned, Some(MAX_FIND_LINES));
+    assert!(!hits.scan_incomplete);
 
-    // Every page decoded: nothing incomplete.
     let texts = [text("hit\nhit\nhit"), text("hit")];
-    let (hits, _) = find_in_pages(2, &matcher("hit"), &AtomicBool::new(false), pages(&texts));
+    let (hits, _) = find_in_pages(2, &matcher("hit"), pages(&texts));
     assert_eq!((hits.total_matches, hits.returned_lines), (4, 4));
     assert!(!hits.scan_incomplete && !hits.truncated);
 }
@@ -545,7 +518,7 @@ fn find_stops_decoding_pages_once_the_line_cap_is_full_and_says_the_scan_is_inco
 fn find_caps_the_match_count_at_the_viewers_cap_and_says_so() {
     let page = text(&"hit\n".repeat(MAX_SEARCH_MATCHES + 5));
     let texts = [page, text("hit")];
-    let (hits, _) = find_in_pages(2, &matcher("hit"), &AtomicBool::new(false), pages(&texts));
+    let (hits, _) = find_in_pages(2, &matcher("hit"), pages(&texts));
     assert_eq!(hits.total_matches, MAX_SEARCH_MATCHES);
     assert!(hits.matches_capped);
     assert_eq!(hits.returned_lines, MAX_FIND_LINES);
@@ -553,19 +526,9 @@ fn find_caps_the_match_count_at_the_viewers_cap_and_says_so() {
 }
 
 #[test]
-fn find_under_a_pre_set_cancel_flag_scans_nothing_and_says_so() {
-    let texts = [text("hit")];
-    let (hits, has_text) = find_in_pages(1, &matcher("hit"), &AtomicBool::new(true), pages(&texts));
-    assert_eq!(hits.total_matches, 0);
-    assert!(hits.scan_incomplete);
-    assert_eq!(hits.pages_scanned, Some(0));
-    assert_eq!(has_text, None);
-}
-
-#[test]
 fn find_skips_an_unparseable_page_and_keeps_going() {
     let texts = [PageText::Unparseable, text("hit")];
-    let (hits, has_text) = find_in_pages(2, &matcher("hit"), &AtomicBool::new(false), pages(&texts));
+    let (hits, has_text) = find_in_pages(2, &matcher("hit"), pages(&texts));
     assert_eq!(hits.total_matches, 1);
     assert_eq!(hits.lines[0].page, Some(2));
     assert_eq!(has_text, Some(true));
@@ -705,4 +668,133 @@ fn a_pdf_row_is_text_only() {
         assert_eq!(json["content"]["kind"], "pdf");
         assert_text_only(&json, "pdf row");
     }
+}
+
+// ── The private-key pre-scan ─────────────────────────────────────────────────
+
+/// A key's first page, then `body` pages of body, with `before` plain pages ahead of it.
+fn pdf_with_key_at(before: usize, body: usize) -> Vec<u8> {
+    let mut ops: Vec<PdfOps> = (0..before).map(|n| text_page(&format!("Plain page {n}"))).collect();
+    ops.push(text_page("-----BEGIN OPENSSH PRIVATE KEY-----"));
+    ops.extend((0..body).map(|n| text_page(&format!("b3BlbnNzaC1rZXktdjE{n:05}"))));
+    pdf_bytes(author_pdf(&ops, None))
+}
+
+/// Past any look behind, and with a window far above the key: the file refuses whole.
+#[test]
+fn a_pdf_window_anywhere_in_a_file_with_a_key_is_refused() {
+    let dir = TestDir::new("inspect_pdf_key_whole");
+    let path = write(&dir, "backup.pdf", &pdf_with_key_at(6, 8));
+    let at_page = |page_start: usize| {
+        TextAsk::Window(WindowOpts {
+            page_start,
+            max_pages: 1,
+            ..WindowOpts::default()
+        })
+    };
+
+    for (ask, why) in [
+        (at_page(1), "six pages above the armor"),
+        (at_page(13), "six pages of body behind the window"),
+    ] {
+        assert!(matches!(inspect(&path, &ask), FileRow::Protected { .. }), "{why}");
+    }
+}
+
+/// More hits than `find` carries, ahead of the key: the line cap must not hide the key.
+#[test]
+fn a_pdf_find_that_fills_its_line_cap_before_the_key_is_still_refused() {
+    let dir = TestDir::new("inspect_pdf_key_after_cap");
+    let path = write(&dir, "backup.pdf", &pdf_with_key_at(MAX_FIND_LINES + 2, 1));
+    assert!(matches!(inspect(&path, &literal("Plain")), FileRow::Protected { .. }));
+}
+
+#[test]
+fn the_page_prescan_stops_on_the_flag_and_keeps_what_it_checked() {
+    let texts = [text("one"), text("two"), text("three")];
+    let cancel = AtomicBool::new(false);
+    let mut asked = 0;
+    let scan = prescan_pages(3, &cancel, |page| {
+        asked += 1;
+        if page == 2 {
+            cancel.store(true, Ordering::Relaxed);
+        }
+        texts[page - 1].clone()
+    });
+    assert_eq!(asked, 2);
+    assert_eq!(scan, PageScan::Read(vec![text("one"), text("two")]));
+}
+
+#[test]
+fn the_page_prescan_finds_a_key_on_any_page() {
+    let texts = [text("one"), text("-----END RSA PRIVATE KEY-----"), text("three")];
+    assert_eq!(
+        prescan_pages(3, &AtomicBool::new(false), pages(&texts)),
+        PageScan::Found
+    );
+}
+
+/// The pre-scan stopped after page two: a window reaching past it is cut there, and says so.
+#[test]
+fn a_pdf_window_past_the_checked_pages_is_cut_there() {
+    let checked = [text("one"), text("two")];
+    let ask = |page_start: usize, max_pages: usize| {
+        TextAsk::Window(WindowOpts {
+            page_start,
+            max_pages,
+            ..WindowOpts::default()
+        })
+    };
+
+    let (window, _, _) = answer_from_pages(5, &checked, &ask(2, 3));
+    let window = window.unwrap();
+    assert_eq!(window.pages.iter().map(|p| p.page).collect::<Vec<_>>(), vec![2]);
+    assert!(window.truncated && window.scan_incomplete);
+    assert_eq!(window.pages_scanned, Some(2));
+
+    let (window, _, _) = answer_from_pages(5, &checked, &ask(4, 1));
+    let window = window.unwrap();
+    assert_eq!(window.returned_pages, 0);
+    assert!(window.truncated && window.scan_incomplete);
+
+    // Inside what was checked, nothing is incomplete. Past the document's end isn't either.
+    let (window, _, _) = answer_from_pages(5, &checked, &ask(1, 2));
+    let window = window.unwrap();
+    assert_eq!(window.returned_pages, 2);
+    assert!(window.truncated, "pages exist past the window");
+    assert!(!window.scan_incomplete);
+    let (window, _, _) = answer_from_pages(5, &checked, &ask(9, 1));
+    assert!(!window.unwrap().scan_incomplete);
+}
+
+/// Same for `find`: only checked pages are searched, and the row says how far that got.
+#[test]
+fn a_pdf_find_past_the_checked_pages_says_where_it_stopped() {
+    let checked = [text("hit"), text("hit")];
+    let (_, hits, _) = answer_from_pages(5, &checked, &literal("hit"));
+    let hits = hits.unwrap();
+    assert_eq!(hits.total_matches, 2);
+    assert!(hits.scan_incomplete);
+    assert_eq!(hits.pages_scanned, Some(2));
+}
+
+/// Out of time before the first page: no text comes back, and the row says so.
+#[test]
+fn a_pdf_read_out_of_time_shows_no_unchecked_page() {
+    let dir = TestDir::new("inspect_pdf_key_stopped");
+    let path = write(&dir, "report.pdf", &two_page_pdf());
+    let row = inspect_path(
+        path.to_str().unwrap(),
+        &TextAsk::Window(WindowOpts::default()),
+        &AtomicBool::new(true),
+    );
+    let window = pages_of(pdf_of(&row)).clone();
+    assert_eq!(window.returned_pages, 0);
+    assert!(window.scan_incomplete && window.truncated);
+    assert_eq!(window.pages_scanned, Some(0));
+    assert_eq!(
+        pdf_of(&row).has_text_layer,
+        None,
+        "no page was decoded, so nothing is claimed about a text layer"
+    );
 }

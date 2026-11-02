@@ -8,7 +8,6 @@
 //! `warn` line and an `unparseable` mark, never a crash report. The closures wrap the
 //! foreign calls only; the shapers around them are ours and keep reporting.
 
-use std::cell::Cell;
 use std::collections::{BTreeMap, HashSet};
 use std::ops::ControlFlow;
 use std::path::Path;
@@ -40,9 +39,6 @@ pub(crate) const MAX_PDF_BYTES: u64 = 64 * 1024 * 1024;
 /// can't (there is no offset inside a page).
 pub(crate) const MAX_PAGE_CHARS: usize = 8_000;
 const _: () = assert!(MAX_PAGE_CHARS * 2 <= MAX_WINDOW_CHARS, "two dense pages fit one row");
-/// Pages behind a window the private-key check decodes. A key that spills past a page still
-/// sits within this of its `BEGIN`.
-const KEY_LOOKBACK_PAGES: usize = 2;
 
 // ── Result DTOs ─────────────────────────────────────────────────────────────
 
@@ -88,6 +84,13 @@ pub struct PdfWindow {
     /// `true` when pages exist past the window: past `maxPages`, or the row's char cap or
     /// the deadline stopped the loop early (then `returnedPages` is short of the ask).
     pub truncated: bool,
+    /// `true` when the deadline stopped the private-key pre-scan before this window's end, so
+    /// the pages past `pagesScanned` were left out: they weren't checked.
+    #[serde(skip_serializing_if = "is_false")]
+    pub scan_incomplete: bool,
+    /// How many pages the pre-scan checked, when that cut this window.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pages_scanned: Option<usize>,
 }
 
 /// What a PDF says about itself, and the text asked for.
@@ -193,41 +196,20 @@ pub(super) fn read_pdf_with_cap(
         });
     }
 
-    // Every page decoded for this answer passes the private-key check, whole, before its cut.
-    // `find` walks from page 1 and only carries hits from pages already checked; a window also
-    // looks behind itself, since a `pageStart` inside a key shows neither armor line.
-    let saw_key = Cell::new(false);
-    let extract = |page: usize| {
-        let text = extract_page(&doc, &page_ids, page);
-        if let PageText::Text(raw) = &text
-            && refuse_private_key_text(raw).is_err()
-        {
-            saw_key.set(true);
-        }
-        text
-    };
-    let (pages, find, has_text_layer) = match ask {
-        TextAsk::Window(opts) => {
-            for page in opts.page_start.saturating_sub(KEY_LOOKBACK_PAGES).max(1)..opts.page_start.min(page_count + 1) {
-                extract(page);
-            }
-            let (window, has_text) =
-                window_from_pages(page_count, *opts, cancel, MAX_WINDOW_CHARS, MAX_PAGE_CHARS, extract);
-            (Some(window), None, has_text)
-        }
-        TextAsk::Find(matcher) => {
-            let (hits, has_text) = find_in_pages(page_count, matcher, cancel, extract);
-            (None, Some(hits), has_text)
-        }
+    // A key refuses the whole file, whichever pages the answer shows, so every page passes the
+    // check first. The answer then reads the decoded pages, so nothing decodes twice.
+    let PageScan::Read(checked) = prescan_pages(page_count, cancel, |page| extract_page(&doc, &page_ids, page)) else {
+        return Err(Protected::PrivateKey.into());
     };
     let (title, author) = (info_string(&doc, b"Title"), info_string(&doc, b"Author"));
     let key_in_info = [&title, &author]
         .into_iter()
         .flatten()
         .any(|text| refuse_private_key_text(text).is_err());
-    if saw_key.get() || key_in_info {
+    if key_in_info {
         return Err(Protected::PrivateKey.into());
     }
+    let (pages, find, has_text_layer) = answer_from_pages(page_count, &checked, ask);
     Ok(PdfContent {
         version,
         page_count: Some(page_count),
@@ -325,17 +307,84 @@ fn parent_chain_ends(doc: &Document, id: ObjectId) -> bool {
 
 // ── The page loops (pure over `extract`) ─────────────────────────────────────
 
+/// What the private-key pre-scan saw.
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum PageScan {
+    Found,
+    /// The pages it checked, from page 1. Short of the page count when the deadline stopped it.
+    Read(Vec<PageText>),
+}
+
+/// Decode every page in order, under the deadline, stopping at a private key.
+pub(crate) fn prescan_pages(
+    page_count: usize,
+    cancel: &AtomicBool,
+    mut extract: impl FnMut(usize) -> PageText,
+) -> PageScan {
+    let mut checked = Vec::new();
+    for page in 1..=page_count {
+        if cancel.load(Ordering::Relaxed) {
+            break;
+        }
+        let text = extract(page);
+        if let PageText::Text(raw) = &text
+            && refuse_private_key_text(raw).is_err()
+        {
+            return PageScan::Found;
+        }
+        checked.push(text);
+    }
+    PageScan::Read(checked)
+}
+
+/// The window, or the hits, and the text-layer verdict, as a row carries them.
+type PageAnswer = (Option<PdfWindow>, Option<FindHits>, Option<bool>);
+
+/// Answer `ask` from the pages the pre-scan checked, and no others: an unchecked page might be
+/// a key's body. Reaching past them cuts the answer there, and the row says so.
+pub(crate) fn answer_from_pages(page_count: usize, checked: &[PageText], ask: &TextAsk) -> PageAnswer {
+    let read = |page: usize| {
+        checked
+            .get(page.saturating_sub(1))
+            .cloned()
+            .unwrap_or(PageText::Unparseable)
+    };
+    match ask {
+        TextAsk::Window(opts) => {
+            let (mut window, has_text) =
+                window_from_pages(checked.len(), *opts, MAX_WINDOW_CHARS, MAX_PAGE_CHARS, read);
+            if checked.len() < page_count {
+                let in_document = opts.page_start <= page_count;
+                let last_asked = opts.page_start.saturating_add(opts.max_pages).saturating_sub(1);
+                window.truncated = in_document && opts.page_start + window.returned_pages <= page_count;
+                if in_document && checked.len() < last_asked.min(page_count) {
+                    window.scan_incomplete = true;
+                    window.pages_scanned = Some(checked.len());
+                }
+            }
+            (Some(window), None, has_text)
+        }
+        TextAsk::Find(matcher) => {
+            let (mut hits, has_text) = find_in_pages(checked.len(), matcher, read);
+            if checked.len() < page_count && !hits.matches_capped {
+                hits.scan_incomplete = true;
+                hits.pages_scanned = Some(checked.len());
+            }
+            (None, Some(hits), has_text)
+        }
+    }
+}
+
 /// The page window: `opts.page_start` onward, at most `opts.max_pages`, each page trimmed
 /// and cut at `max_page_chars`, the loop stopping before a page that would take the row
 /// past `max_chars` (whole pages only, so the model can ask for the next one by number;
-/// the first page always fits) and when `cancel` flips. Pure over `extract`.
+/// the first page always fits). Pure over `extract`.
 ///
 /// Returns the window and the text-layer verdict: `Some(true)` when any decoded page held
 /// text, `Some(false)` when every decoded page was whitespace, `None` when none decoded.
 pub(crate) fn window_from_pages(
     page_count: usize,
     opts: WindowOpts,
-    cancel: &AtomicBool,
     max_chars: usize,
     max_page_chars: usize,
     mut extract: impl FnMut(usize) -> PageText,
@@ -346,9 +395,6 @@ pub(crate) fn window_from_pages(
     let mut chars_used = 0usize;
     let mut verdict = TextLayerVerdict::default();
     for page in first..=last {
-        if cancel.load(Ordering::Relaxed) {
-            break;
-        }
         let (text, truncated, unparseable) = match extract(page) {
             PageText::Text(raw) => {
                 let (cut, was_cut) = cut_chars(raw.trim(), max_page_chars);
@@ -371,8 +417,8 @@ pub(crate) fn window_from_pages(
             unparseable,
         });
     }
-    // Pages exist past the returned ones: past the ask, or the cap or the flag stopped
-    // the loop. A start past the end has nothing past it.
+    // Pages exist past the returned ones: past the ask, or the cap stopped the loop. A start
+    // past the end has nothing past it.
     let truncated = first <= page_count && first + pages.len() <= page_count;
     (
         PdfWindow {
@@ -380,37 +426,29 @@ pub(crate) fn window_from_pages(
             returned_pages: pages.len(),
             pages,
             truncated,
+            scan_incomplete: false,
+            pages_scanned: None,
         },
         verdict.into_option(),
     )
 }
 
 /// `find` over a PDF: every page in order, each page's text split into lines and searched
-/// with the call's `Matcher`, until [`MAX_FIND_LINES`] lines are carried (the page that
-/// fills the cap is finished, then the scan stops: decoding pages only to count is not
-/// worth the deadline), the viewer's match cap, or `cancel`. Pure over `extract`.
+/// with the call's `Matcher`, carrying the first [`MAX_FIND_LINES`] lines, until the viewer's
+/// match cap. Pure over `extract`.
 pub(crate) fn find_in_pages(
     page_count: usize,
     matcher: &Matcher,
-    cancel: &AtomicBool,
     mut extract: impl FnMut(usize) -> PageText,
 ) -> (FindHits, Option<bool>) {
     let mut lines: Vec<FindLine> = Vec::new();
     let mut total_matches = 0usize;
     let mut matches_capped = false;
     let mut matching_lines = 0usize;
-    let mut pages_scanned = 0usize;
     let mut verdict = TextLayerVerdict::default();
     'pages: for page in 1..=page_count {
-        if cancel.load(Ordering::Relaxed) {
-            break;
-        }
-        let raw = match extract(page) {
-            PageText::Text(raw) => raw,
-            PageText::Unparseable => {
-                pages_scanned = page;
-                continue;
-            }
+        let PageText::Text(raw) = extract(page) else {
+            continue;
         };
         // Trimmed as the window trims, so a hit's `line` is the line the window shows.
         let text = raw.trim();
@@ -443,14 +481,7 @@ pub(crate) fn find_in_pages(
                 break 'pages;
             }
         }
-        pages_scanned = page;
-        if lines.len() >= MAX_FIND_LINES {
-            break;
-        }
     }
-    // The cap is its own reason to stop and says so through `matchesCapped`; the flag and
-    // the line cap leave pages undecoded, which is what `scanIncomplete` reports.
-    let scan_incomplete = !matches_capped && pages_scanned < page_count;
     let returned_lines = lines.len();
     (
         FindHits {
@@ -459,8 +490,8 @@ pub(crate) fn find_in_pages(
             truncated: returned_lines < matching_lines,
             lines,
             returned_lines,
-            scan_incomplete,
-            pages_scanned: scan_incomplete.then_some(pages_scanned),
+            scan_incomplete: false,
+            pages_scanned: None,
             bytes_scanned: None,
             bytes_scanned_human: None,
             total_bytes: None,
