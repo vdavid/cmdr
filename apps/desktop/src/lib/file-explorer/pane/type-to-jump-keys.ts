@@ -8,8 +8,11 @@
  * These predicates deliberately stay hand-rolled rather than resolving through the
  * command registry: type-to-jump matches a CLASS of keys (any printable character),
  * not a combo. They're already exact in the way that matters — every one bails on
- * ⌘/⌃/⌥, so no modifier combo can be swallowed as typing.
+ * ⌘/⌃/⌥. Shift stays allowed because it types capitals and symbols, so the one
+ * Shift combo that types nothing new, ⇧Space, gets its own check below.
  */
+
+import { isBoundByAnyCommand, resolveKeyCombo } from '#lib/shortcuts/index.js'
 
 /**
  * True if a letter or digit in ANY script (Cyrillic, Greek, CJK, …) with no
@@ -29,9 +32,16 @@ export function isTypeToJumpChar(e: KeyboardEvent): boolean {
  * typing a name, every printable key extends the buffer instead of triggering a
  * single-char command like `-` (deselect) or Space (toggle selection). After the
  * buffer-reset timeout the buffer empties, so a lone `-` becomes a command again.
+ *
+ * ⇧Space is the exception: it types the same space plain Space does, so giving it to
+ * its command costs no character. Without this, Quick Look's ⇧Space did nothing while
+ * a filter or jump was on. Read live, so a rebind counts at once; unbound (Quick Look
+ * has no key off macOS), it stays a space for anyone typing with Shift held.
  */
 export function isPrintableJumpContinuation(e: KeyboardEvent): boolean {
   if (e.metaKey || e.ctrlKey || e.altKey) return false
+  // eslint-disable-next-line cmdr/no-raw-key-match -- not a superset: ⌘⌃⌥ bailed above, so this is exactly ⇧Space, and the combo it asks about is any command's.
+  if (e.shiftKey && e.key === ' ' && isBoundByAnyCommand(resolveKeyCombo(e))) return false
   return e.key.length === 1
 }
 
