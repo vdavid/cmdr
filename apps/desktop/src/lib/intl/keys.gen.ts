@@ -5043,6 +5043,7 @@ export type MessageKey =
   | 'settings.whatsNew.showOnUpdate.label'
   | 'settings.window.loading'
   | 'settings.window.title'
+  | 'shortcuts.conflict.bareKey'
   | 'shortcuts.conflict.fixedKey'
   | 'shortcuts.conflict.reservedByMacOs'
   | 'shortcuts.conflict.shiftLetter'

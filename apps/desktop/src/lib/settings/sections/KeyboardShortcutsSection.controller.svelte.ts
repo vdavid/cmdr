@@ -33,7 +33,7 @@ import {
   capturedKeyCombo,
   isModifierKey,
   isMacOS,
-  isShiftLetterCombo,
+  typingRefusal,
   findConflictsForShortcut,
   getConflictingCommandIds,
   getConflictCount,
@@ -182,16 +182,17 @@ export function createKeyboardShortcutsController(getSearchQuery: () => string) 
     // This key replaces the last one, so the last one's banner no longer applies.
     conflictWarning = null
 
-    // Refused for every command, so no in-app or system clash matters.
-    if (isShiftLetterCombo(combo)) {
-      conflictWarning = { shortcut: combo, conflict: { kind: 'shiftLetter' } }
-      return
-    }
-
     // Check for conflicts (editingShortcut is guaranteed non-null here due to early return)
     const currentEditCommandId = editingShortcut.commandId
     const command = commands.find((c) => c.id === currentEditCommandId)
     if (command) {
+      // Typing takes this key first, so no in-app or system clash matters.
+      const refusal = typingRefusal(combo, command.scope)
+      if (refusal) {
+        conflictWarning = { shortcut: combo, conflict: { kind: refusal } }
+        return
+      }
+
       const conflicts = findConflictsForShortcut(combo, command.scope, command.id)
       // In-app conflicts take priority; with none, still warn when macOS
       // itself usually owns the combo (Spotlight, Mission Control, …).

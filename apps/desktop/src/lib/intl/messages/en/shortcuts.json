@@ -138,6 +138,14 @@
     "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
+  "shortcuts.conflict.bareKey": "Sorry, typing {combo} in the file list filters or jumps to a file, so it can’t be a shortcut here. Try adding a modifier key.",
+  "@shortcuts.conflict.bareKey": {
+    "description": "Polite banner when the user tries to assign a single letter or digit, with no modifier, as a keyboard shortcut. Cmdr refuses it because typing that key in the file list starts narrowing the list (filter) or moving to a matching file (jump). \"modifier key\" means a key like Command, Control, or Option; reuse the localized OS term.",
+    "placeholders": {
+      "combo": "the key the user pressed (e.g. A or 7)"
+    }
+  },
+
   "shortcuts.conflict.shiftLetter": "Sorry, {combo} is how you type a capital letter, so it can’t be a shortcut. Try adding another modifier key.",
   "@shortcuts.conflict.shiftLetter": {
     "description": "Polite banner when the user tries to assign Shift plus a letter as a keyboard shortcut. Cmdr refuses it because that key types a capital letter in the file list. \"another modifier key\" means one more held together with Shift (not one replacing it), like Command, Control, or Option; reuse the localized OS term.",

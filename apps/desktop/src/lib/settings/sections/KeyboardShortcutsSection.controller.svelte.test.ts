@@ -58,9 +58,9 @@ vi.mock('#lib/shortcuts/index.js', async () => ({
   capturedKeyCombo: (
     await vi.importActual<typeof import('#lib/shortcuts/key-capture.js')>('#lib/shortcuts/key-capture.js')
   ).capturedKeyCombo,
-  isShiftLetterCombo: (
+  typingRefusal: (
     await vi.importActual<typeof import('#lib/shortcuts/key-capture.js')>('#lib/shortcuts/key-capture.js')
-  ).isShiftLetterCombo,
+  ).typingRefusal,
   findConflictsForShortcut: (shortcut: string, scope: string, excludeCommandId: string) =>
     findConflictsForShortcut({ shortcut, scope, excludeCommandId }),
   getConflictingCommandIds: () => new Set<string>(),
@@ -298,6 +298,22 @@ describe('capture + conflict engine', () => {
     expect(c.conflictWarning).toBe(null)
     vi.advanceTimersByTime(500)
     expect(setShortcut).toHaveBeenCalledWith({ commandId: 'file.copy', index: 0, shortcut: '⌘X' })
+    vi.useRealTimers()
+  })
+
+  it.each([
+    ['a letter', 'a', 'KeyA', 'A'],
+    ['a digit', '7', 'Digit7', '7'],
+  ])('refuses %s on its own on a main-window command', (_what, key, code, combo) => {
+    vi.useFakeTimers()
+    effectiveShortcuts.set('file.copy', ['F5'])
+    const c = create()
+    c.startEditingShortcut('file.copy', 0)
+
+    c.handleKeyDown(keyEvent({ key, code }))
+    expect(c.conflictWarning).toEqual({ shortcut: combo, conflict: { kind: 'bareKey' } })
+    vi.advanceTimersByTime(500)
+    expect(setShortcut).not.toHaveBeenCalled()
     vi.useRealTimers()
   })
 

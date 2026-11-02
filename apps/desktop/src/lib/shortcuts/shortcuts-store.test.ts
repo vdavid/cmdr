@@ -506,13 +506,13 @@ describe('shortcuts-store refuses to customize macOS-native commands', () => {
   })
 })
 
-describe('shortcuts-store refuses a Shift+letter combo', () => {
-  it('setShortcut and addShortcut are no-ops for one (no write, no emit)', async () => {
+describe('shortcuts-store refuses a combo typing takes first', () => {
+  it.each(['⇧A', 'A', '7'])('setShortcut and addShortcut are no-ops for %s (no write, no emit)', async (combo) => {
     const store = await loadStore()
     await store.initializeShortcuts()
 
-    store.setShortcut('file.copy', 0, '⇧A')
-    store.addShortcut('file.copy', '⇧A')
+    store.setShortcut('file.copy', 0, combo)
+    store.addShortcut('file.copy', combo)
     await flushSave()
 
     expect(store.isShortcutModified('file.copy')).toBe(false)

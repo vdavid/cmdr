@@ -16,6 +16,8 @@
  * conflict detection, and turns into a broken native accelerator.
  */
 
+import type { CommandScope } from '#lib/commands/types.js'
+
 /** Check if running on macOS */
 export function isMacOS(): boolean {
   if (typeof navigator === 'undefined') return false
@@ -467,13 +469,26 @@ export function comboHasShift(shortcut: string): boolean {
   return shiftModifierTokens.some((token) => shortcut.includes(token))
 }
 
+/** The windows with no typing intercept: a bare `W` or `1` there reaches its command. */
+const SCOPES_WITHOUT_TYPING: ReadonlySet<CommandScope> = new Set<CommandScope>([
+  'About window',
+  'Operation queue window',
+  'Viewer window',
+])
+
 /**
- * True for Shift plus a letter and nothing else (`⇧A`, `⇧Ő`, `Shift+A`). That's a
- * capital letter: the file list takes it as a filter or jump keystroke before any
- * command sees it, so a binding on it would never fire. The store refuses these.
+ * Why a combo can't be a shortcut, or `null` when it can. The file list takes these
+ * as a filter or jump keystroke (`routeTypingKey`) before any command sees them, so
+ * a binding on one would look saved and never fire. The store refuses both.
+ *
+ * - `shiftLetter`: `⇧A` is a capital letter. Refused in every scope.
+ * - `bareKey`: a lone letter or digit in any script, the class `isTypeToJumpChar`
+ *   starts on. Refused unless the scope's window has no typing intercept.
  */
-export function isShiftLetterCombo(shortcut: string): boolean {
-  return /^(?:⇧|Shift\+)\p{L}$/u.test(shortcut)
+export function typingRefusal(shortcut: string, scope: CommandScope): 'shiftLetter' | 'bareKey' | null {
+  if (/^(?:⇧|Shift\+)\p{L}$/u.test(shortcut)) return 'shiftLetter'
+  if (/^[\p{L}\p{N}]$/u.test(shortcut) && !SCOPES_WITHOUT_TYPING.has(scope)) return 'bareKey'
+  return null
 }
 
 /**

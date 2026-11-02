@@ -39,12 +39,12 @@ export interface NormalConflict {
   command: Command
 }
 
-/** A refusal, not a clash: Shift+letter types a capital, so it can't be a shortcut for anything. */
-export interface ShiftLetterConflict {
-  kind: 'shiftLetter'
+/** A refusal, not a clash: typing takes the key first (`typingRefusal`), so a binding would never fire. */
+export interface TypingConflict {
+  kind: 'shiftLetter' | 'bareKey'
 }
 
-export type ConflictKind = NativeConflict | FixedConflict | SystemConflict | NormalConflict | ShiftLetterConflict
+export type ConflictKind = NativeConflict | FixedConflict | SystemConflict | NormalConflict | TypingConflict
 
 /**
  * Classify a non-empty conflict set. A native command anywhere in the set makes
@@ -80,9 +80,9 @@ export function fixedKeyMessage(combo: string, fixedCommand: Command): string {
   return tString('shortcuts.conflict.fixedKey', { combo, command: fixedCommand.name })
 }
 
-/** The banner copy for a refused Shift+letter combo, like `⇧A is for typing, …`. */
-export function shiftLetterMessage(combo: string): string {
-  return tString('shortcuts.conflict.shiftLetter', { combo })
+/** The banner copy for a combo typing takes first, like `Sorry, ⇧A is how you type a capital letter, …`. */
+export function typingConflictMessage(combo: string, kind: TypingConflict['kind']): string {
+  return tString(kind === 'shiftLetter' ? 'shortcuts.conflict.shiftLetter' : 'shortcuts.conflict.bareKey', { combo })
 }
 
 /** A system conflict: macOS itself usually owns the combo (Spotlight, Mission Control, …). */

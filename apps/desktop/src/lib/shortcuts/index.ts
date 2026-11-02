@@ -9,8 +9,8 @@ export {
   capturedKeyCombo,
   isModifierKey,
   isMacOS,
-  isShiftLetterCombo,
   toDisplayShortcut,
+  typingRefusal,
 } from './key-capture'
 
 // Shortcuts store

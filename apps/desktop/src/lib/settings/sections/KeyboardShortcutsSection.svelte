@@ -19,8 +19,8 @@
     import {
         fixedKeyMessage,
         reservedByMacOsMessage,
-        shiftLetterMessage,
         systemShortcutMessage,
+        typingConflictMessage,
     } from './keyboard-shortcuts-banner'
     import { shortcutAnchorId } from '#lib/settings/settings-window.js'
     import {
@@ -213,10 +213,10 @@
                         >{tString('shortcuts.section.cancel')}</Button
                     >
                 </div>
-            {:else if conflict.kind === 'shiftLetter'}
-                <!-- The key types a capital in every scope, so Cancel or another key are the only ways on. -->
+            {:else if conflict.kind === 'shiftLetter' || conflict.kind === 'bareKey'}
+                <!-- Typing takes this key first, so Cancel or another key are the only ways on. -->
                 <span class="warning-text">
-                    {shiftLetterMessage(toDisplayShortcut(conflictWarning.shortcut))}
+                    {typingConflictMessage(toDisplayShortcut(conflictWarning.shortcut), conflict.kind)}
                 </span>
                 <div class="warning-actions">
                     <Button variant="secondary" size="mini" onclick={controller.cancelEdit}

@@ -308,10 +308,9 @@ sections compose).
   `CommandScope`, fixed order). Tested by the set-equality regression guard
 - **`keyboard-shortcuts-banner.ts`**: Pure conflict-banner classification for `KeyboardShortcutsSection`
   (`classifyConflict` → native vs fixed vs normal, `classifySystemShortcut` → soft macOS-system warning with "Use
-  anyway"; `reservedByMacOsMessage` / `fixedKeyMessage` / `systemShortcutMessage` / `shiftLetterMessage`). Native >
-  fixed
-  > normal in mixed sets; system checked only when no in-app conflict; a Shift+letter combo is refused before any of
-  > them (`lib/shortcuts/DETAILS.md` § Shift+letter combos). Unit-tested
+  anyway"; `reservedByMacOsMessage` / `fixedKeyMessage` / `systemShortcutMessage` / `typingConflictMessage`). Native
+  beats fixed beats normal in mixed sets; system checked only when no in-app conflict; a combo typing takes first is
+  refused before any of them (`lib/shortcuts/DETAILS.md` § Combos typing takes first). Unit-tested
 
 Every section is axe-audited (tier-3) from one of the four directory-level `*.a11y.test.ts` files here, because
 `svelte-tests` charges per test FILE (`docs/testing.md` § "What a test actually costs"). `McpServerSection`,

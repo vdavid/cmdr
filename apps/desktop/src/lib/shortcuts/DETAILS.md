@@ -531,13 +531,19 @@ view. Give a combo to two sibling scopes only when the losing side handles the k
 Pressing just `⌘` or `Shift` doesn't capture anything. The `isModifierKey()` check prevents this. Users must combine a
 modifier with a non-modifier key.
 
-### Shift+letter combos are refused
+### Combos typing takes first are refused
 
-`⇧A` types a capital: `routeTypingKey` takes it as a filter or jump keystroke before the dispatcher sees it, so a
-binding on it would never fire in the file list. Settings shows a Cancel-only banner (`shortcuts.conflict.shiftLetter`),
-and `setShortcut` / `addShortcut` refuse it through `isShiftLetterCombo`, so MCP can't bind one either. It holds in
-every scope, the windows without type-to-jump too, so the rule stays one sentence. An entry already in `shortcuts.json`
-stays until the user changes it.
+`routeTypingKey` takes letters and digits as a filter or jump keystroke before the dispatcher sees them, so a binding on
+one would never fire in the file list. `typingRefusal` names two kinds, each with a Cancel-only banner in Settings, and
+`setShortcut` / `addShortcut` refuse both, so MCP can't bind one either:
+
+- **`shiftLetter`** (`⇧A`, a capital): refused in every scope, so that rule stays one sentence.
+- **`bareKey`** (`A`, `7`, in any script): refused unless the scope's window has no typing intercept (viewer, queue,
+  About). The viewer's bare `W` and digits are real keys, and a sibling scope like `Main window/Servers` jumps on typing
+  too, so the test is the window, not `scopesOverlap`.
+
+Defaults aren't checked: the bare digits the favorites menu declares are fixed-key, so the store refuses to rebind them
+before this rule applies. An entry already in `shortcuts.json` stays until the user changes it.
 
 ### Key capture is client-side only
 

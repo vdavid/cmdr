@@ -4,7 +4,7 @@ import {
   physicalKeyCombo,
   toPlatformShortcut,
   isTypingKeyCombo,
-  isShiftLetterCombo,
+  typingRefusal,
   toDisplayShortcut,
   toCanonicalShortcut,
   comboHasShift,
@@ -377,11 +377,31 @@ describe('isTypingKeyCombo', () => {
     expect(isTypingKeyCombo('Enter')).toBe(true)
   })
 
-  it('names only Shift plus a letter as a Shift+letter combo', () => {
-    for (const combo of ['⇧A', '⇧Ő', '⇧Д', 'Shift+A']) expect(isShiftLetterCombo(combo)).toBe(true)
-    for (const combo of ['⇧Space', '⇧Tab', '⇧F5', '⇧↓', '*', 'A', '⌘⇧A', '⌥⇧A', 'Ctrl+Shift+A', 'Shift+F5', '']) {
-      expect(isShiftLetterCombo(combo)).toBe(false)
+  it('refuses Shift plus a letter in every scope', () => {
+    for (const combo of ['⇧A', '⇧Ő', '⇧Д', 'Shift+A']) {
+      expect(typingRefusal(combo, 'Main window/File list')).toBe('shiftLetter')
+      expect(typingRefusal(combo, 'Viewer window')).toBe('shiftLetter')
     }
+  })
+
+  it('refuses a bare letter or digit in the main window, where typing takes it first', () => {
+    for (const combo of ['A', 'Ő', 'Д', '7']) {
+      for (const scope of ['App', 'Main window', 'Main window/File list', 'Main window/Servers'] as const) {
+        expect(typingRefusal(combo, scope)).toBe('bareKey')
+      }
+    }
+  })
+
+  it('allows a bare letter or digit in a window with no typing intercept', () => {
+    for (const scope of ['Viewer window', 'Operation queue window', 'About window'] as const) {
+      expect(typingRefusal('W', scope)).toBe(null)
+      expect(typingRefusal('1', scope)).toBe(null)
+    }
+  })
+
+  it('allows everything that reaches a command', () => {
+    const combos = ['⇧Space', '⇧Tab', '⇧F5', '⇧↓', '*', '-', 'Space', 'F5', 'Enter', '⌘⇧A', '⌥⇧A', '⌘A', 'Ctrl+Shift+A']
+    for (const combo of [...combos, 'Shift+F5', '']) expect(typingRefusal(combo, 'Main window/File list')).toBe(null)
   })
 
   it('treats shift-only combos as typing (⇧Tab reverse-tab, ⇧A capital letter)', () => {
