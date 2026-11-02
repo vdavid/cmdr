@@ -349,6 +349,16 @@ mod tests {
         );
     }
 
+    /// `gpt-4.1-mini`, asked to check the logs in a live run, called three unrelated tools and
+    /// answered "I checked Cmdr's logs and found no warnings".
+    #[test]
+    fn prompt_forbids_claiming_work_no_tool_result_shows() {
+        assert!(
+            SYSTEM_PROMPT.contains("Never say you read, checked, or did something unless a tool result"),
+            "must forbid claiming work the transcript doesn't show"
+        );
+    }
+
     #[test]
     fn prompt_carries_the_coverage_honesty_rule() {
         assert!(
