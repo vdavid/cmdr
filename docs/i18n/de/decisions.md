@@ -348,8 +348,7 @@ Deliberate splits (don't unify):
   read (`askCmdr.empty.hint`). Prose says `hineinschauen`.
 - `Miniatur` (Preview, Photos), never `Vorschaubild`. `Kameraangaben` (no `EXIF`, like the English). `Aufnahmeort`: bare
   `Ort` reads as storage. `Autor`, not Apple's `Autor:in` (open in `review-queue.md`).
-- `contentsRule` says `nie ganze Dateien, Fotos oder Miniaturen` and `einen begrenzten Teil davon`; its last two
-  sentences keep the retired `askCmdr.consent.noContents` wording.
+- `contentsRule` says `nie ganze Dateien, Fotos oder Miniaturen` and `einen begrenzten Teil davon`.
 - „looks inside a file only when you ask“ → `schaut nur dann in eine Datei hinein, wenn du nach ihr fragst`.
 
 ## Die zwei Tooltips der Rollback-Taste (`fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)

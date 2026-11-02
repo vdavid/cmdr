@@ -285,8 +285,7 @@ Dateien".
 - **`moves` als Nomen hat kein brauchbares deutsches Nomen.** `Bewegungen` liest sich als Fortbewegung, und
   `Verschiebungen` widerspricht dem Termbase-Verb `bewegen` (macOS Finder). Wo das Englische Operationen aufzählt
   („renames, moves, and cleanups“), bau die Aufzählung aus Verben: „Cmdr kann vorschlagen, Dateien umzubenennen, zu
-  bewegen und aufzuräumen“ (`ai.cloudConsent.askCmdr.contentsRule`). Das deckt sich mit der Stilregel „lieber ein Verb
-  als ein Verbalsubstantiv“.
+  bewegen und aufzuräumen“. Das deckt sich mit der Stilregel „lieber ein Verb als ein Verbalsubstantiv“.
 - **„Click to X“ hat zwei Formen, und die Länge entscheidet.** Eine kurze Nominalisierung nimmt „Zum X klicken“
   (`suggestedOps.indicatorTooltip` „Zum Ansehen klicken.“, `fileExplorer.navigation.spaceFetchFailed` „Zum erneuten
   Versuch klicken“); eine längere Verbalphrase nimmt „Klicken, um … zu …“ (`fileExplorer.breadcrumb.navigateTooltip`,
@@ -323,6 +322,16 @@ Dateien".
 - **Im Fließtext darf das Alltagswort stehen, im Namen nie.** „X is off“ heißt `X ist ausgeschaltet`, „turn it on“
   `schalte … ein`; Tasten und Einstellungsnamen behalten `aktivieren` / `deaktivieren`. Solche Synonyme stehen in
   `accept` oder `proseAccept` der Termbase-Regel.
+
+- **Werkzeugzeilen: „tried“ → `X nicht Y`, ohne den Artikel von `doing`/`done`** (`Ein Ordner wird erstellt` →
+  `Ein Ordner erstellt` → `Ordner nicht erstellt`): Das liest sich als Ergebnis und behauptet nie, es sei passiert.
+  „Going to“ → `Wird zu … gewechselt`; „Stepping back“ → `Schritt zurück wird ausgeführt`, weil `zurückgehen` kein
+  natürliches Passiv hat.
+- **„This opens {name}“ → `Damit wird {name} … geöffnet`** (`ui.toolAsk.*`): Das Passiv hält `{name}` aus einer
+  Kasus-Stelle heraus. `mit {app}` statt `in {app}`, wie „Öffnen mit“.
+- **direct mode → `Direktmodus` / `MCP-Direktmodus`** (`settings.developer.mcpDirectMode.label`). „stay home“ →
+  `bleiben zu Hause` (`ai.cloudConsent.askCmdr.protectedContents`): bewusst wörtlich, weil eine weichere Form das
+  Versprechen abschwächt. „Their names“ → `Die Dateinamen`, weil `Ihre` auf das letzte Nomen der Liste zurückgriffe.
 
 ## Open questions
 

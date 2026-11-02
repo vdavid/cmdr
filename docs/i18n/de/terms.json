@@ -70,6 +70,12 @@
     "forms": "the Settings section and the sheet's group → Erweitert; in prose → in den erweiterten Einstellungen",
     "sources": "AppKit AccessibilityImageDescriptions (NSAdvanced); catalog (settings.section.advanced)"
   },
+  "ai-client": {
+    "chosen": "KI-Client",
+    "confidence": "high",
+    "forms": "An AI client started this → Ein KI-Client hat das gestartet.",
+    "sources": "catalog (operationLog.initiator.aiClient); MS terminology (client → Client)"
+  },
   "ai-context": {
     "chosen": "Kontext",
     "confidence": "high",
@@ -118,6 +124,9 @@
     ],
     "chosen": "Werkzeug",
     "confidence": "tentative",
+    "exceptions": {
+      "ai.cloudConsent.askCmdr.protectedContents": "cloud and tool credentials means developer tooling (the concept’s own carve-out), so the generic Tools."
+    },
     "decision": "Ask Cmdr (`askCmdr.*`, `settings.askCmdr.*`, `settings.advanced.logLlmCalls.*`, `commands.askCmdrToggle.*`)",
     "forms": "tool-call status lines: doing → passive present ({Objekt} wird/werden {Partizip}), done → the same minus wird/werden; the subject stays nominative so the pair stays parallel (Ein Ordner wird aufgelistet / Ein Ordner aufgelistet)",
     "sources": "no direct source; picked for approachability"
@@ -324,6 +333,11 @@
     "confidence": "high",
     "sources": "macOS AppKit NSStillCameraTemplate „Kamera“; catalog (settings.fileOperations.mtpEnabled.label)"
   },
+  "client": {
+    "chosen": "Client",
+    "confidence": "high",
+    "sources": "MS terminology (client → Client); catalog (operationLog.initiator.aiClient)"
+  },
   "column": {
     "chosen": "Spalte",
     "confidence": "high",
@@ -351,6 +365,12 @@
       }
     ],
     "sources": "macOS Finder (LA33 / LA34 möglicherweise beschädigt); catalog"
+  },
+  "data": {
+    "chosen": "Daten",
+    "confidence": "high",
+    "forms": "compounds Browserdaten, Anmeldedaten; Cmdr’s own data → die eigenen Daten von Cmdr",
+    "sources": "catalog (Anmeldedaten, Daten throughout); macOS de"
   },
   "debugging": {
     "chosen": "Debug",
@@ -785,6 +805,19 @@
     "forms": "button Verbinden; Connect to server → Mit Server verbinden( …); Connecting … → Verbindung wird hergestellt …; Connecting to {name} … → Verbindung zu {name} wird hergestellt …; Connected → Verbunden; Connect as guest → Als Gast verbinden; reflexive with du: wenn du dich … verbindest",
     "sources": "macOS Finder (Mit Server verbinden, Verbinden, Serveradresse); NetAuthAgent (CONNECT)"
   },
+  "details": {
+    "accept": ["Detail", "Angaben"],
+    "chosen": "Details",
+    "confidence": "high",
+    "forms": "file or app metadata → -angaben, like Dateiangaben (Angaben von Cmdr, Angaben zu Fotos und Songs)",
+    "sources": "catalog (Details stehen in der Protokolldatei; Dateiangaben)"
+  },
+  "direct-connection": {
+    "accept": ["direkte Verbindung", "Direkte Verbindung", "Direktverbindung", "direkt"],
+    "chosen": "direkte Verbindung",
+    "confidence": "high",
+    "sources": "catalog (fileExplorer.pane.directConnectionUnavailableToast, fileExplorer.navigation.connectingDirectly, fileExplorer.navigation.useDirectConnection)"
+  },
   "learn-more": {
     "chosen": "Mehr über",
     "confidence": "high",
@@ -814,6 +847,17 @@
     "forms": "compounds close up (Kontextmenü, Favoritenmenü); a named menu in prose → das Menü „Hilfe“; Open the presets menu → Menü „Voreinstellungen“ öffnen",
     "confidence": "high",
     "sources": "macOS 27.0.1 live (AXAction Open Menu → Menü öffnen); catalog Kontextmenü, Favoritenmenü"
+  },
+  "message": {
+    "accept": ["Nachrichten"],
+    "chosen": "Nachricht",
+    "confidence": "high",
+    "exceptions": {
+      "licensing.dialog.retryExhausted": "drop us a message → the email ruling's Schreib uns.",
+      "settings.askCmdr.wakeToast.description": "The message is a toast here, so Meldung."
+    },
+    "forms": "Apple’s app Messages → Nachrichten",
+    "sources": "MS terminology (message → Nachricht); catalog (ai.cloudConsent.askCmdr.item.memory); Messages.app InfoPlist.loctable CFBundleDisplayName (live macOS, 2026-11-02)"
   },
   "pane-divider": {
     "accept": ["Trennlinie"],
@@ -1560,6 +1604,13 @@
     "forms": "Step 1 of 2: X → Schritt 1 von 2: X (the X keeps its standalone form)",
     "sources": "MS terminology (step → Schritt); shipped catalog (onboarding.wizard.stepProgress, ai.local.installStepExtracting)"
   },
+  "swap-panes": {
+    "accept": ["getauscht", "tausch"],
+    "chosen": "Bereiche tauschen",
+    "confidence": "high",
+    "forms": "tool line → Bereiche werden getauscht / Bereiche getauscht",
+    "sources": "catalog (menu.view.swapPanes, commands.paneSwap.label); Total Commander (Fenster tauschen, with Bereich as Cmdr’s pane word)"
+  },
   "thinking": {
     "chosen": "Denkt nach …",
     "confidence": "tentative",
@@ -2147,7 +2198,7 @@
     "sources": "catalog (fileExplorer.pane.directConnectionTooSlowToast, fileOperations.transferDialog.smbNativeNote)"
   },
   "navigate": {
-    "accept": ["springen", "wechseln", "gehen", "Navigation", "führt", "navigier", "spring"],
+    "accept": ["springen", "wechseln", "gehen", "Navigation", "führt", "navigier", "spring", "gewechselt"],
     "proseAccept": ["bringt dich"],
     "chosen": "navigieren",
     "confidence": "high",
@@ -2199,6 +2250,9 @@
     "accept": ["Ordner erstellen", "Ordner wird erstellt", "neue Ordner", "neuen Ordner", "erstellen"],
     "chosen": "Neuer Ordner",
     "confidence": "high",
+    "exceptions": {
+      "askCmdr.tool.mkdir.tried": "The tool line’s tried arm, Ordner nicht erstellt, says it did not happen."
+    },
     "sources": "macOS Finder (Neuer Ordner)"
   },
   "none": {
@@ -3101,7 +3155,7 @@
     "sources": "macOS (Kurzbefehl)"
   },
   "show": {
-    "accept": ["angezeigt", "zeigt", "zeigen", "einblenden", "eingeblendet", "sichtbar", "erschein"],
+    "accept": ["angezeigt", "zeigt", "zeigen", "einblenden", "eingeblendet", "sichtbar", "erschein", "Anzeige"],
     "chosen": "anzeigen",
     "confidence": "high",
     "forms": "show a column or a list → anzeigen (Favoriten anzeigen, Server anzeigen); a toggle → einblenden/ausblenden (Verborgene Dateien einblenden, Alle einblenden)",
@@ -3533,6 +3587,11 @@
     "accept": ["entsperr"],
     "chosen": "Entsperren",
     "confidence": "high",
+    "exceptions": {
+      "askCmdr.tool.queueMoveLocked.doing": "The macOS Locked flag takes the locked ruling’s Schutz aufheben.",
+      "askCmdr.tool.queueMoveLocked.done": "The macOS Locked flag takes the locked ruling’s Schutz aufheben.",
+      "askCmdr.tool.queueMoveLocked.tried": "The macOS Locked flag takes the locked ruling’s Schutz aufheben."
+    },
     "sources": "macOS AppKit (locked-item button Entsperren)"
   },
   "unplug": {
@@ -3801,6 +3860,9 @@
   "git-detached": {
     "chosen": "losgelöst",
     "confidence": "high",
+    "exceptions": {
+      "askCmdr.tool.eject.done": "Detached a drive is unmounting, not git’s detached HEAD."
+    },
     "accept": ["Losgelöst"],
     "forms": "pill → (losgelöst) {id}; sentence → Losgelöst bei {id}.",
     "sources": "git po/de.po („HEAD losgelöst bei “); catalog `fileExplorer.git.tooltip.worktreeDetached` „Losgelöst bei {id}“; reference pile has no git sense"

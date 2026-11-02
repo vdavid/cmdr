@@ -156,3 +156,7 @@ German runs 20–35% longer than English. Look at these against the pseudolocale
   stumbles.
 - `fileExplorer.typeToJump.clear`: `Eingabe zum Springen löschen` is a screen-reader name only, coined because
   `Springen löschen` doesn't parse.
+- **`bleiben zu Hause`** (`ai.cloudConsent.askCmdr.protectedContents`): literal for „stay home“ so the promise stays as
+  strong as the English; confirm it doesn't read as too cute in a consent text.
+- **`Schritt zurück wird ausgeführt`** (`askCmdr.tool.navBack.doing`): coined to dodge the passive of `zurückgehen`;
+  confirm it reads naturally in the chat rail.

@@ -79,9 +79,9 @@
   "@ai.cloudConsent.folderSuggestions": {
     "sourceHash": "e2c592a"
   },
-  "ai.cloudConsent.search": "<b>Suche in eigenen Worten</b>: der Text, den du eingibst",
+  "ai.cloudConsent.search": "<b>Suche in eigenen Worten</b>: der Text, den du eingibst, oder das, wonach ein verbundenes KI-Werkzeug fragt, sobald du den MCP-Direktmodus eingeschaltet hast",
   "@ai.cloudConsent.search": {
-    "sourceHash": "e6d4ef9"
+    "sourceHash": "b5c8d93"
   },
   "ai.cloudConsent.selection": "<b>Auswahl per Beschreibung</b>: was du eingibst, plus bis zu 240 Namen aus dem aktuellen Ordner",
   "@ai.cloudConsent.selection": {
@@ -91,21 +91,21 @@
   "@ai.cloudConsent.askCmdr.title": {
     "sourceHash": "26e139c"
   },
-  "ai.cloudConsent.askCmdr.item.messages": "Deine Nachrichten",
+  "ai.cloudConsent.askCmdr.item.messages": "Deine Nachrichten, auch jedes Passwort, das du dort eingibst, um ein Archiv oder ein Backup zu entsperren",
   "@ai.cloudConsent.askCmdr.item.messages": {
-    "sourceHash": "befc6e9"
+    "sourceHash": "66e656b"
   },
-  "ai.cloudConsent.askCmdr.item.names": "Die Namen und Pfade der Dateien und Ordner, die Cmdr sich ansieht, um dir zu antworten",
+  "ai.cloudConsent.askCmdr.item.names": "Die Namen und Pfade der Dateien und Ordner, die Cmdr sich ansieht",
   "@ai.cloudConsent.askCmdr.item.names": {
-    "sourceHash": "ce3259d"
+    "sourceHash": "4d5ea2c"
   },
   "ai.cloudConsent.askCmdr.item.sizes": "Ihre Größen und Daten",
   "@ai.cloudConsent.askCmdr.item.sizes": {
     "sourceHash": "2484530"
   },
-  "ai.cloudConsent.askCmdr.item.contents": "Teile der Dateien, die Cmdr öffnet, um dir zu antworten: etwas Text, PDF-Seiten, was in einem Archiv steckt, sowie die Kameraangaben und der Aufnahmeort eines Fotos",
+  "ai.cloudConsent.askCmdr.item.contents": "Teile der Dateien, die Cmdr öffnet: etwas Text, PDF-Seiten, was in einem Archiv steckt, die Kameraangaben und der Aufnahmeort eines Fotos sowie Text, den Cmdr in Fotos erkannt hat",
   "@ai.cloudConsent.askCmdr.item.contents": {
-    "sourceHash": "fcd0b73"
+    "sourceHash": "5e8355f"
   },
   "ai.cloudConsent.askCmdr.item.envelope": "Was du dir gerade ansiehst: dein aktueller Ordner, der Cursor, die Auswahl und verbundene Laufwerke",
   "@ai.cloudConsent.askCmdr.item.envelope": {
@@ -115,19 +115,19 @@
   "@ai.cloudConsent.askCmdr.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "ai.cloudConsent.askCmdr.item.mediaFields": "Details of photos and songs when a rename uses them: date taken, camera, title, artist, album, and the like",
+  "ai.cloudConsent.askCmdr.item.mediaFields": "Angaben zu Fotos und Songs, wenn eine Umbenennung sie verwendet: Aufnahmedatum, Kamera, Titel, Interpret, Album und Ähnliches",
   "@ai.cloudConsent.askCmdr.item.mediaFields": {
     "sourceHash": "e96157a"
   },
-  "ai.cloudConsent.askCmdr.item.appState": "What Cmdr is up to: running and past operations, open dialogs, favorites, saved places, drive indexing, and which folders matter most",
+  "ai.cloudConsent.askCmdr.item.appState": "Was Cmdr gerade macht: laufende und frühere Vorgänge, offene Dialoge, Favoriten, gespeicherte Orte, Laufwerksindizierung und welche Ordner am wichtigsten sind",
   "@ai.cloudConsent.askCmdr.item.appState": {
     "sourceHash": "4159dde"
   },
-  "ai.cloudConsent.askCmdr.item.settings": "Your Cmdr settings and keyboard shortcuts, including folders you picked for image indexing and your AI service’s address. Anything that looks like a password, key, or token is masked, and so is your email address",
+  "ai.cloudConsent.askCmdr.item.settings": "Deine Cmdr-Einstellungen und Tastaturkurzbefehle, auch die für die Bildindizierung gewählten Ordner und die Adresse deines KI-Dienstes. Alles, was nach einem Passwort, Schlüssel oder Token aussieht, wird unkenntlich gemacht, ebenso deine E-Mail-Adresse",
   "@ai.cloudConsent.askCmdr.item.settings": {
     "sourceHash": "c7c0657"
   },
-  "ai.cloudConsent.askCmdr.item.logs": "Cmdr’s recent log lines, with names, paths, addresses, and anything that looks like a key swapped for placeholders first. A few plain details stay, like file extensions and common folder names such as Documents",
+  "ai.cloudConsent.askCmdr.item.logs": "Die letzten Protokollzeilen von Cmdr, in denen Namen, Pfade, Adressen und alles, was nach einem Schlüssel aussieht, vorher durch Platzhalter ersetzt werden. Ein paar einfache Angaben bleiben, etwa Dateiendungen und gängige Ordnernamen wie Dokumente",
   "@ai.cloudConsent.askCmdr.item.logs": {
     "sourceHash": "7aabf35"
   },
@@ -135,15 +135,15 @@
   "@ai.cloudConsent.askCmdr.item.memory": {
     "sourceHash": "7779513"
   },
-  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr sendet nie ganze Dateien, Fotos oder Miniaturen. Wenn du nach einer Datei fragst, kann es einen begrenzten Teil davon lesen: ein paar Zeilen Text, einige Seiten eines PDFs samt Titel und Autor, die Liste der Dateien in einem Archiv oder die Kameraangaben eines Fotos, einschließlich des Aufnahmeorts. Die Fotosuche funktioniert genauso: Der Text, den Cmdr in den passenden Fotos erkannt hat, und deren Tags gehen an deinen Anbieter, damit er sie finden kann. Cmdr kann vorschlagen, Dateien umzubenennen, zu bewegen und aufzuräumen, und an keiner Datei passiert etwas, bevor du zustimmst.",
+  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr sendet nie ganze Dateien, Fotos oder Miniaturen. Wenn es mehr über eine Datei wissen muss, kann es einen begrenzten Teil davon lesen: ein paar Zeilen Text, einige Seiten eines PDFs samt Titel und Autor, die Liste der Dateien in einem Archiv oder die Kameraangaben eines Fotos, einschließlich des Aufnahmeorts. Die Fotosuche funktioniert genauso: Der Text, den Cmdr in den passenden Fotos erkannt hat, und deren Tags gehen an deinen Anbieter, damit er sie finden kann.",
   "@ai.cloudConsent.askCmdr.contentsRule": {
-    "sourceHash": "5a378c1"
+    "sourceHash": "38dedbb"
   },
-  "ai.cloudConsent.askCmdr.protectedContents": "Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keychains, browser data, Mail, Messages, Notes, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.",
+  "ai.cloudConsent.askCmdr.protectedContents": "Manche Inhalte bleiben zu Hause, egal wer danach fragt: SSH-Schlüssel, Anmeldedaten von Cloud-Diensten und Tools, deine Schlüsselbunde, Browserdaten, Mail, Nachrichten, Notizen, die eigenen Daten von Cmdr und jede Datei mit einem privaten Schlüssel. Die Dateinamen können trotzdem an deinen Anbieter gehen.",
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "sourceHash": "048633f"
   },
-  "ai.cloudConsent.askCmdr.actions": "In a chat you started, Ask Cmdr can also work the app for you: navigate, select, sort, open tabs and dialogs, and connect a place you saved. Copying, moving, compressing, deleting, renaming, and undoing an operation each open a dialog or editor for you to confirm, and nothing happens until you do. Opening a file, changing a setting (other than how Cmdr looks), quitting, ejecting a drive, removing a server, and changing indexing ask you first. Creating a named folder or file and tagging files happen right away with no question, and tags have no undo. Renames and cleanups it prepares as a plan wait for your approval.",
+  "ai.cloudConsent.askCmdr.actions": "In einem Chat, den du begonnen hast, kann Ask Cmdr auch die App für dich bedienen: navigieren, auswählen, sortieren, Tabs und Dialoge öffnen und sich mit einem gespeicherten Ort verbinden. Zum Kopieren, Bewegen, Komprimieren, Löschen, Umbenennen und zum Rückgängigmachen eines Vorgangs öffnet es jeweils einen Dialog oder Editor, den du bestätigst, und es passiert nichts, bevor du das tust. Bevor Ask Cmdr eine Datei öffnet, eine Einstellung ändert (außer dem Aussehen von Cmdr), sich beendet, ein Laufwerk auswirft, einen Server entfernt oder die Indizierung ändert, fragt es dich. Das Erstellen eines benannten Ordners oder einer benannten Datei und das Vergeben von Tags passieren sofort und ohne Nachfrage, und Tags lassen sich nicht widerrufen. Umbenennungen und Aufräumaktionen, die es als Plan vorbereitet, warten auf deine Zustimmung.",
   "@ai.cloudConsent.askCmdr.actions": {
     "sourceHash": "bf002cc"
   },
@@ -151,17 +151,17 @@
   "@ai.cloudConsent.askCmdr.memory": {
     "sourceHash": "496c78d"
   },
-  "ai.cloudConsent.askCmdr.proactive": "Cmdr behält außerdem die Ordner im Blick, die du nutzt, und beginnt einen Chat, wenn es etwas vorzuschlagen hat. Nachrichten können also zu deinem Anbieter gehen, ohne dass du gefragt hast. Du kannst das in den Ask-Cmdr-Einstellungen unter „Von selbst“ abschalten.",
+  "ai.cloudConsent.askCmdr.proactive": "Cmdr behält außerdem die Ordner im Blick, die du nutzt, und beginnt einen Chat, wenn es etwas vorzuschlagen hat. Nachrichten können also zu deinem Anbieter gehen, ohne dass du gefragt hast. In diesen Chats kann es lesen, was oben aufgeführt ist, Pläne vorbereiten und seine Notizen schreiben, mehr nicht. Du kannst das in den Ask-Cmdr-Einstellungen unter „Von selbst“ abschalten.",
   "@ai.cloudConsent.askCmdr.proactive": {
-    "sourceHash": "abfa80b"
+    "sourceHash": "95b18ac"
   },
   "ai.cloudConsent.askCmdr.chatsStayLocal": "Deine Ask-Cmdr-Chats bleiben auf deinem Mac, in einer lokalen Datenbank, die du öffnen und lesen kannst.",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "Wenn du in den erweiterten Einstellungen die Protokollierung von KI-Modellaufrufen aktivierst, speichert Cmdr außerdem jede Anfrage und Antwort in einem Ordner auf deinem Mac. Auch diese Protokolle bleiben lokal und werden nie irgendwohin gesendet.",
+  "ai.cloudConsent.logsNote": "Wenn du in den erweiterten Einstellungen die Protokollierung von KI-Modellaufrufen aktivierst, speichert Cmdr außerdem jede Anfrage und Antwort in einem Ordner auf deinem Mac. Diese Aufrufprotokolle bleiben lokal und werden nie irgendwohin gesendet.",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "7e211fc"
+    "sourceHash": "d89adfb"
   },
   "ai.cloudConsent.turnOffAnyTime": "Du kannst das jederzeit ausschalten, dann hört Cmdr sofort auf zu senden. Dein Dienst, dein Schlüssel und deine Chats bleiben, wie sie sind.",
   "@ai.cloudConsent.turnOffAnyTime": {
