@@ -18,6 +18,8 @@ import {
   mcpOpenMtpStorageRoot,
   mcpNavToPath,
   mcpAwaitItem,
+  mcpConfirmedCopy,
+  mcpConfirmedMove,
 } from '../e2e-shared/mcp-client.js'
 import { ensureAppReady, expectAndDismissToast, getFixtureRoot } from './helpers.js'
 import { INTERNAL_STORAGE, installMtpSpecSetup, safeFileSize } from './mtp-helpers.js'
@@ -38,8 +40,8 @@ test.describe('MTP cross-storage move', () => {
 
     // Right pane is on local right/ (from ensureAppReady)
     // Move cursor to report.txt and move (F6)
-    await mcpCall('move_cursor', { pane: 'left', filename: 'report.txt' })
-    await mcpCall('move', { autoConfirm: true })
+    await mcpCall('select', { pane: 'left', names: ['report.txt'] })
+    await mcpConfirmedMove('left')
 
     // Wait for the move to land on the local destination, then refresh the
     // pane so mcpAwaitItem sees the file.
@@ -75,8 +77,8 @@ test.describe('MTP cross-storage move', () => {
     await mcpAwaitItem('right', 'Documents')
 
     // Move cursor to file-a.txt in left pane and move
-    await mcpCall('move_cursor', { pane: 'left', filename: 'file-a.txt' })
-    await mcpCall('move', { autoConfirm: true })
+    await mcpCall('select', { pane: 'left', names: ['file-a.txt'] })
+    await mcpConfirmedMove('left')
 
     // Wait for the move to land on the MTP backing dir, then refresh so the
     // pane re-lists.
@@ -123,8 +125,8 @@ test.describe('MTP large file transfer', () => {
     await mcpAwaitItem('left', 'large-test.dat', 30)
 
     // Copy
-    await mcpCall('move_cursor', { pane: 'left', filename: 'large-test.dat' })
-    await mcpCall('copy', { autoConfirm: true })
+    await mcpCall('select', { pane: 'left', names: ['large-test.dat'] })
+    await mcpConfirmedCopy('left')
 
     // Poll until the destination file reaches the expected size (50 MB).
     const expectedSize = 50 * 1024 * 1024
@@ -162,8 +164,8 @@ test.describe('MTP large file transfer', () => {
     await mcpAwaitItem('left', 'large-mtp.dat', 30)
 
     // Copy to local right/
-    await mcpCall('move_cursor', { pane: 'left', filename: 'large-mtp.dat' })
-    await mcpCall('copy', { autoConfirm: true })
+    await mcpCall('select', { pane: 'left', names: ['large-mtp.dat'] })
+    await mcpConfirmedCopy('left')
 
     // Poll until the destination file reaches the expected size (50 MB).
     const expectedSize = 50 * 1024 * 1024

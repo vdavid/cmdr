@@ -687,6 +687,13 @@
     "description": "Radio option: decide per clashing file during the transfer instead of choosing now. Shown when folders will merge but nobody knows yet how many files inside them clash, maybe none, maybe many. Short control label.",
     "screenshot": "conflict-dialog.png"
   },
+  "fileOperations.transferDialog.presetOverwriteNote": "{reach, select, smaller {This dialog opened set to overwrite files already there that are smaller.} older {This dialog opened set to overwrite files already there that are older.} other {This dialog opened set to overwrite the files already there.}}",
+  "@fileOperations.transferDialog.presetOverwriteNote": {
+    "description": "Warning note under the 'files already exist' options in the copy/move dialog. Shown when an AI tool opened this dialog already set to an overwriting option, so nobody overwrites files without noticing. The person hasn't chosen this: the tool did, and nothing runs until the person confirms. Disappears once the user picks any option.",
+    "placeholders": {
+      "reach": "which files the option overwrites: 'smaller' (only files at the destination that are smaller), 'older' (only older ones), or anything else for every clashing file"
+    }
+  },
   "fileOperations.transferDialog.rememberedOverwriteNote": "{reach, select, smaller {Your saved choice overwrites files already there that are smaller.} older {Your saved choice overwrites files already there that are older.} other {Your saved choice overwrites the files already there.}}",
   "@fileOperations.transferDialog.rememberedOverwriteNote": {
     "description": "Warning note under the 'files already exist' options in the copy/move dialog. Shown when the dialog opened on an overwriting option the user saved earlier (with 'Remember this choice', or in the 'When files already exist' setting), so nobody overwrites files without noticing. 'saved choice' = the remembered default option. Disappears once the user picks any option.",

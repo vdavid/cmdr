@@ -270,6 +270,14 @@ Where a lead's review refined one of David's decisions, the refined form is writ
 - M18: `docs/security.md` should mention the launch notice and the recovery clearing the item.
   `tools/actions/DETAILS.md`'s `autoConfirm` paragraphs are still M18's.
 
+## Carried from M8
+
+- M9: `operations_rollback`'s `autoConfirm` is the last one, and `tool_registry_tests/schemas.rs` allows it by name.
+  `mcp_open_dialog` (`tools/actions/mod.rs`) is the round trip to reuse for `mcp-rollback-dialog`.
+- M10: `moveCursor` still focuses the pane, so `rename` with a `name` moves focus. `rename`'s `mcp-rename` no longer
+  moves the cursor itself: the backend does, then pins `expectedName`.
+- M18: `tools/actions/DETAILS.md`, `mcp/DETAILS.md`, and `docs/guides/mcp-development.md` still describe `autoConfirm`.
+
 ## Running unattended
 
 David may be away, and nobody can click a macOS dialog. Executors run nothing that can raise a macOS prompt (Keychain,

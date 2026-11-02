@@ -86,7 +86,7 @@ test.describe('MCP per-file conflicts', () => {
     await mcpCall('select', { pane: 'left', names: [SOURCE] })
 
     // 1. Start the copy and leave the policy on stop: nothing is decided upfront.
-    await mcpCall('copy', {})
+    await mcpCall('copy', { pane: 'left' })
     await mcpCall('dialog_confirm', { type: 'transfer-confirmation', onConflict: 'stop' })
 
     // 2. The parked clash is READABLE. Without this an agent sees a `running`

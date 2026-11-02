@@ -81,7 +81,7 @@ fn pane_state_with(files: Vec<(&str, bool)>, cursor_index: usize, selected: Vec<
 fn test_empty_operation_error_selection_wins() {
     let mut state = pane_state_with(vec![("..", true), ("a.txt", false)], 0, vec![1]);
     state.total_files = 2;
-    assert!(file_ops::empty_operation_error(&state, "left", "copy").is_none());
+    assert!(file_ops::empty_operation_error(&state, "left", "delete").is_none());
 }
 
 #[test]
@@ -98,14 +98,14 @@ fn test_empty_operation_error_cursor_on_parent() {
 fn test_empty_operation_error_cursor_fallback_proceeds() {
     let mut state = pane_state_with(vec![("..", true), ("a.txt", false)], 1, vec![]);
     state.total_files = 2;
-    assert!(file_ops::empty_operation_error(&state, "left", "copy").is_none());
+    assert!(file_ops::empty_operation_error(&state, "left", "delete").is_none());
 }
 
 #[test]
 fn test_empty_operation_error_empty_pane() {
     // Synced empty volume root: zero files, zero total
     let state = pane_state_with(vec![], 0, vec![]);
-    let msg = file_ops::empty_operation_error(&state, "right", "move").expect("should reject");
+    let msg = file_ops::empty_operation_error(&state, "right", "compress").expect("should reject");
     assert!(msg.contains("the right pane shows no files"));
 }
 
@@ -116,7 +116,7 @@ fn test_empty_operation_error_empty_dir_with_unrendered_parent() {
     let mut state = pane_state_with(vec![], 0, vec![]);
     state.total_files = 1;
     state.has_parent_row = true;
-    let msg = file_ops::empty_operation_error(&state, "left", "copy").expect("should reject");
+    let msg = file_ops::empty_operation_error(&state, "left", "delete").expect("should reject");
     assert!(msg.contains("shows no files"));
 }
 
@@ -161,7 +161,7 @@ fn test_empty_operation_error_unsynced_state_passes_through() {
     // Default state (no push yet, path empty): the FE is the authority, don't reject.
     let mut state = pane_state_with(vec![], 0, vec![]);
     state.path = String::new();
-    assert!(file_ops::empty_operation_error(&state, "left", "copy").is_none());
+    assert!(file_ops::empty_operation_error(&state, "left", "delete").is_none());
 }
 
 #[test]
@@ -172,18 +172,17 @@ fn test_empty_operation_error_cursor_outside_loaded_window() {
     state.loaded_start = 100;
     state.loaded_end = 101;
     state.total_files = 200;
-    assert!(file_ops::empty_operation_error(&state, "left", "copy").is_none());
+    assert!(file_ops::empty_operation_error(&state, "left", "delete").is_none());
 }
 
 #[test]
-fn test_optional_pane_param() {
-    // Absent → None (the FE defaults to its focused pane).
-    assert_eq!(optional_pane_param(&json!({})).unwrap(), None);
+fn test_required_pane_param() {
     // Valid values pass through.
-    assert_eq!(optional_pane_param(&json!({"pane": "left"})).unwrap(), Some("left"));
-    assert_eq!(optional_pane_param(&json!({"pane": "right"})).unwrap(), Some("right"));
-    // An unknown value is an honest error, not a silent default.
-    let err = optional_pane_param(&json!({"pane": "middle"})).unwrap_err();
+    assert_eq!(required_pane_param(&json!({"pane": "left"})).unwrap(), "left");
+    assert_eq!(required_pane_param(&json!({"pane": "right"})).unwrap(), "right");
+    // Absent or unknown is an honest error: focus moves silently, so it's never a default.
+    assert_eq!(required_pane_param(&json!({})).unwrap_err().code, INVALID_PARAMS);
+    let err = required_pane_param(&json!({"pane": "middle"})).unwrap_err();
     assert_eq!(err.code, INVALID_PARAMS);
 }
 
@@ -242,11 +241,11 @@ async fn validate_path_exists_lets_a_routed_path_through() {
     git::wiring::set_virtual_portal_enabled(true);
 }
 
-/// An `autoConfirm` rename does only what a person's F2 could (#529): no rename
+/// The `rename` tool opens only what a person's F2 could (#529): no rename
 /// inside the read-only `.git/worktrees/` portal pane, none of a `.git/` listing's
 /// category rows (they stand in for git's real folders), and none onto one.
 #[test]
-fn an_auto_confirmed_rename_refuses_what_the_git_portal_serves() {
+fn a_rename_refuses_what_the_git_portal_serves() {
     use crate::file_system::git;
 
     git::wiring::set_virtual_portal_enabled(true);
@@ -681,9 +680,9 @@ fn nav_result_falls_back_to_the_requested_path_when_the_reply_names_none() {
     assert_eq!(ok, json!("OK: Navigated left pane to /Users"));
 }
 
-// === parse_operation_start_response: the autoConfirm-op correlation ===
+// === parse_operation_start_response: the `dialog_confirm` correlation ===
 //
-// The auto-confirmed copy/move/delete/compress paths wait for the FE to reply
+// A confirmed copy/move/delete/compress waits for the FE to reply
 // with the spawned `operationId`, so the tool's OK carries the exact id (and a
 // follow-up `queue` / `await operation_complete` is directly sequenced). This is
 // the parser under that round-trip.
@@ -701,7 +700,7 @@ fn parse_operation_start_response_extracts_the_spawned_operation_id() {
 
 #[test]
 fn parse_operation_start_response_ok_without_id_is_a_spawnless_ack() {
-    // Compress auto-confirm on an existing target keeps its dialog open and mints
+    // A move that renamed in place mints
     // no op: an OK with no operationId, not a failure.
     let payload = r#"{"requestId":"r-1","ok":true}"#;
     assert_eq!(
@@ -748,17 +747,84 @@ fn parse_operation_start_response_ignores_other_requests_and_junk() {
     assert_eq!(parse_operation_start_response("not json", "r-1"), None);
 }
 
+// ── Opening a dialog ──────────────────────────────────────────────────────────
+
+#[test]
+fn a_dialog_open_answer_keeps_its_refusal_typed() {
+    assert_eq!(
+        parse_dialog_open_response(r#"{"requestId":"r-1","ok":true}"#, "r-1"),
+        Some(Ok(DialogOpenAck::Opened))
+    );
+    assert_eq!(
+        parse_dialog_open_response(
+            r#"{"requestId":"r-1","ok":false,"blockedBy":"search","error":"x"}"#,
+            "r-1"
+        ),
+        Some(Ok(DialogOpenAck::Blocked {
+            blocking_dialog: "search".to_string()
+        }))
+    );
+    assert_eq!(
+        parse_dialog_open_response(
+            r#"{"requestId":"r-1","ok":false,"refusal":"readOnly","error":"It's read-only"}"#,
+            "r-1"
+        ),
+        Some(Ok(DialogOpenAck::Refused {
+            refusal: "readOnly".to_string(),
+            message: "It's read-only".to_string()
+        }))
+    );
+    assert_eq!(
+        parse_dialog_open_response(r#"{"requestId":"r-1","ok":false,"error":"boom"}"#, "r-1"),
+        Some(Err("boom".to_string()))
+    );
+    // A malformed reply never becomes a false OK, and someone else's isn't ours.
+    assert_eq!(
+        parse_dialog_open_response(r#"{"requestId":"r-1"}"#, "r-1"),
+        Some(Err("Unknown error".to_string()))
+    );
+    assert_eq!(
+        parse_dialog_open_response(r#"{"requestId":"r-2","ok":true}"#, "r-1"),
+        None
+    );
+}
+
+#[test]
+fn opening_a_dialog_answers_that_a_person_is_deciding() {
+    let result = file_ops::awaiting_person("transfer-confirmation");
+
+    assert_eq!(result["awaitingPerson"], json!(true));
+    assert_eq!(result["dialog"], json!("transfer-confirmation"));
+    let next = result["next"].as_str().expect("how to check the outcome");
+    assert!(next.contains("cmdr://state"), "{next}");
+}
+
+/// `copy`, `move`, and `tag` aim only at what's selected, in the pane they name.
+#[test]
+fn acting_on_a_selection_refuses_a_pane_with_none() {
+    let mut state = pane_state_with(vec![("a.txt", false), ("b.txt", false)], 0, vec![]);
+    for verb in ["copy", "move", "tag"] {
+        let err = refuse_without_selection(&state, "right", verb).expect_err(verb);
+        assert_eq!(err.data, Some(json!({ "refusal": "noSelection" })), "{verb}");
+        assert!(err.message.contains("Nothing to"), "{}", err.message);
+        assert!(err.message.contains("right pane"), "{}", err.message);
+    }
+
+    state.selected_indices = vec![1];
+    assert!(refuse_without_selection(&state, "right", "copy").is_ok());
+}
+
 // ── A silent frontend is an unknown outcome ───────────────────────────────────
 
-/// ❗ A start the frontend didn't answer in time may still go ahead: the log that
-/// found this had the copy starting 2 s after the tool said it failed. So the reply
+/// ❗ An open the frontend didn't answer in time may still go ahead: the log that
+/// found this had a copy starting 2 s after the tool said it failed. So the reply
 /// says the outcome is unknown, in the typed `data` an agent reads, and sends the
-/// agent to `cmdr://state` before a retry starts the operation twice.
+/// agent to `cmdr://state` before a retry stacks a second attempt on the first.
 #[tokio::test]
-async fn an_operation_start_the_frontend_didnt_answer_has_an_unknown_outcome() {
+async fn a_dialog_open_the_frontend_didnt_answer_has_an_unknown_outcome() {
     let app = tauri::test::mock_app();
 
-    let err = mcp_await_operation_start(app.handle(), "copy", "mcp-copy", json!({}), 0)
+    let err = mcp_open_dialog(app.handle(), "copy", "mcp-copy", json!({}), 0)
         .await
         .expect_err("nothing answers on a mock app");
 
@@ -839,8 +905,8 @@ fn fit_to_result_budget_never_returns_an_empty_page() {
 // ── The operation-start gate ──────────────────────────────────────────────────
 //
 // An agent asked to copy while a dialog is up used to get one of two useless
-// answers: silence for ten seconds (the auto-confirm round-trip waiting for an
-// operation the FE would never start), or a generic ack timeout. Now it gets the
+// answers: silence for ten seconds (a round-trip waiting for an operation the
+// FE would never start), or a generic ack timeout. Now it gets the
 // reason immediately, and the dialog's identity in a field it can act on.
 //
 // Which dialogs block lives in the FE's `dialog-registry.ts` and rides over IPC as

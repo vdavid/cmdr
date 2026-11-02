@@ -39,6 +39,8 @@
         onRememberChange: (remember: boolean) => void
         /** Set while the radios sit on a remembered policy that overwrites. */
         rememberedOverwriteReach: OverwriteNoteReach | null
+        /** The note's policy is the one an MCP caller opened the dialog on, not the person's saved one. */
+        overwriteNoteIsPreset: boolean
     }
 
     const {
@@ -53,6 +55,7 @@
         remember,
         onRememberChange,
         rememberedOverwriteReach,
+        overwriteNoteIsPreset,
     }: Props = $props()
 
     // File-conflict policy options for `RadioGroup`, from the list the progress
@@ -147,7 +150,7 @@
                     />
                 </div>
             {/if}
-            <!-- The dialog opened on a saved policy that overwrites: say so in words
+            <!-- The dialog opened on a saved or preset policy that overwrites: say so in words
              beside the warning tint, so nobody overwrites without noticing. Gone
              once the person picks anything. -->
             {#if rememberedOverwriteReach}
@@ -156,9 +159,12 @@
                         <Icon name="triangle-alert" size={16} />
                     </span>
                     <span>
-                        {tString('fileOperations.transferDialog.rememberedOverwriteNote', {
-                            reach: rememberedOverwriteReach,
-                        })}
+                        {tString(
+                            overwriteNoteIsPreset
+                                ? 'fileOperations.transferDialog.presetOverwriteNote'
+                                : 'fileOperations.transferDialog.rememberedOverwriteNote',
+                            { reach: rememberedOverwriteReach },
+                        )}
                     </span>
                 </p>
             {/if}

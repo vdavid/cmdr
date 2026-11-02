@@ -93,7 +93,6 @@ function mountDialog(onConfirm: (payload: TransferConfirmPayload) => void = () =
       sourceFolderPath: '/Volumes/nas',
       sourceVolumeId: 'nas',
       destVolumeId: 'root',
-      autoConfirm: false,
       onConfirm,
       onCancel: () => {},
     },

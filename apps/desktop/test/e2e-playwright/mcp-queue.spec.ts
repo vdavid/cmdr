@@ -3,7 +3,7 @@
  * `operations:` section of `cmdr://state`, and `await operation_complete`.
  *
  * Drives the whole agent loop end to end: start a throttled copy via the MCP
- * `copy` tool with `autoConfirm` (capturing the returned `operationId`), pause it
+ * `copy` tool and `dialog_confirm` (capturing the returned `operationId`), pause it
  * with `queue`, assert it shows `status: paused` in `cmdr://state operations`,
  * resume it, then `await operation_complete` for the same id.
  *
@@ -23,7 +23,7 @@ import { test, expect } from './fixtures.js'
 import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import { ensureAppReady, expectAndDismissToast, getFixtureRoot } from './helpers.js'
-import { ensureMcpClient, mcpCall, mcpReadResource, mcpNavToPath } from '../e2e-shared/mcp-client.js'
+import { ensureMcpClient, mcpCall, mcpReadResource, mcpNavToPath, mcpConfirmedCopy } from '../e2e-shared/mcp-client.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 
 /** Per-file copy throttle; with `FILES_PER_SOURCE` files this keeps the copy in
@@ -93,7 +93,7 @@ test.afterEach(async ({ tauriPage }) => {
 })
 
 test.describe('MCP operation queue', () => {
-  test('copy (autoConfirm) returns an operationId; queue pauses/resumes it; await operation_complete settles', async ({
+  test('a confirmed copy returns an operationId; queue pauses/resumes it; await operation_complete settles', async ({
     tauriPage,
   }) => {
     const main = tauriPage as TauriPage
@@ -103,11 +103,10 @@ test.describe('MCP operation queue', () => {
     await mcpNavToPath('right', path.join(fixtureRoot, 'right'))
 
     // Select the multi-file source dir in the left pane and copy it to the right.
-    // `select` focuses the target pane, so the subsequent `copy` acts on it.
     await mcpCall('select', { pane: 'left', names: [SOURCE] })
 
-    // Auto-confirmed copy returns the spawned operationId in its OK text.
-    const copyResult = await mcpCall('copy', { autoConfirm: true })
+    // The confirm returns the spawned operationId in its OK text.
+    const copyResult = await mcpConfirmedCopy('left')
     const operationId = parseOperationId(copyResult)
 
     // The op is discoverable in `cmdr://state operations` while it runs.

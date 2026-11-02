@@ -45,7 +45,6 @@ function setup(sourcePanePath = FOLDER) {
     getLeftPaneRef: () => left as unknown as FilePaneAPI,
     getRightPaneRef: () => right as unknown as FilePaneAPI,
     getFocusedPaneRef: () => left as unknown as FilePaneAPI,
-    getFocusedPaneSide: () => 'left',
     getShowHiddenFiles: () => false,
     getExplorer: () => undefined,
     onRefocus: vi.fn(),
@@ -115,16 +114,6 @@ describe('a Move inside its own folder', () => {
   it('falls back to the transfer when the source pane has moved to another folder', () => {
     const { dialogs, left } = setup('/Users/me/somewhere-else')
     dialogs.showTransfer(moveProps())
-
-    dialogs.handleTransferConfirm(CONFIRM)
-
-    expect(left.startRename).not.toHaveBeenCalled()
-    expect(dialogs.showTransferProgressDialog).toBe(true)
-  })
-
-  it('keeps the transfer for an agent, whose MCP call waits for an operation id', () => {
-    const { dialogs, left } = setup()
-    dialogs.showTransfer(moveProps({ mcpRequestId: 'req-1', initiator: 'aiClient' }))
 
     dialogs.handleTransferConfirm(CONFIRM)
 

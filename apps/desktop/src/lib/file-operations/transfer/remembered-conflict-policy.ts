@@ -14,9 +14,14 @@
  *   conflict check answers, when it couldn't run, or when nothing clashes, the
  *   person never saw it, so the confirm asks per file (`stop`) instead, and the
  *   box, off screen too, saves nothing.
- * - Only a person's confirm writes. A policy an MCP caller named (`autoConfirm`,
- *   `dialog_confirm`) is the agent's, not the person's habit.
- * - A remembered policy that overwrites wears a note until the person picks.
+ * - Only a person's pick writes. A policy an MCP caller named (`onConflict` on
+ *   `copy` / `move`, or on `dialog_confirm`) is the agent's, not the person's habit.
+ * - A remembered or preset policy that overwrites wears a note until the person picks.
+ *
+ * A preset is the policy an MCP caller's `copy` / `move` opens the dialog on. It
+ * takes the remembered policy's place for that one dialog, under the same rule: it
+ * only goes out while its radios are on screen, so an Enter while the check is
+ * pending can't send a model-chosen overwrite with nothing showing.
  *
  * Why each rule: `DETAILS.md` § "The remembered conflict policy".
  */
@@ -28,9 +33,15 @@ export const REMEMBERED_CONFLICT_POLICY_SETTING = 'fileOperations.defaultConflic
 
 /**
  * Where the dialog's current policy came from: the saved setting, the person's
- * own pick in the radios, or a caller that named one (MCP).
+ * own pick in the radios, what an MCP `copy` / `move` opened it on, or a
+ * `dialog_confirm` that named one.
  */
-export type ConflictPolicySource = 'remembered' | 'picked' | 'explicit'
+export type ConflictPolicySource = 'remembered' | 'picked' | 'preset' | 'explicit'
+
+/** Nobody chose these on this dialog, so they wait for their radios and wear the note. */
+function isUnpicked(source: ConflictPolicySource): boolean {
+  return source === 'remembered' || source === 'preset'
+}
 
 const REMEMBERABLE: readonly DefaultConflictPolicy[] = [
   'stop',
@@ -50,13 +61,13 @@ export function readRememberedConflictPolicy(): DefaultConflictPolicy {
   return isRememberable(stored) ? stored : 'stop'
 }
 
-/** What a confirm sends: a remembered policy the person can't see falls back to asking. */
+/** What a confirm sends: a remembered or preset policy the person can't see falls back to asking. */
 export function dispatchedConflictPolicy(state: {
   policy: ConflictResolution
   source: ConflictPolicySource
   choiceVisible: boolean
 }): ConflictResolution {
-  return state.source === 'remembered' && !state.choiceVisible ? 'stop' : state.policy
+  return isUnpicked(state.source) && !state.choiceVisible ? 'stop' : state.policy
 }
 
 /** Whether "Remember this choice" starts ticked: a saved choice other than asking later. */
@@ -67,7 +78,7 @@ export function rememberStartsTicked(saved: DefaultConflictPolicy): boolean {
 /**
  * Saves what a person's confirm leaves as the default: the selected policy under
  * a ticked "Remember this choice", else `stop`. Writes nothing for an MCP-named
- * policy, for compress (it has no conflict choice), while the radios and the box
+ * policy (preset or explicit), for compress (it has no conflict choice), while the radios and the box
  * are off screen, or when the outcome already matches, so sparse persistence
  * never pins the default. A managed-policy lock refuses the write inside
  * `setSetting`.
@@ -80,21 +91,22 @@ export function rememberConflictPolicy(choice: {
   choiceVisible: boolean
   operationType: TransferOperationType
 }): void {
-  if (choice.source === 'explicit' || choice.operationType === 'compress' || !choice.choiceVisible) return
+  if (choice.source === 'explicit' || choice.source === 'preset') return
+  if (choice.operationType === 'compress' || !choice.choiceVisible) return
   const saved = choice.remember ? choice.policy : 'stop'
   if (!isRememberable(saved) || saved === readRememberedConflictPolicy()) return
   setSetting(REMEMBERED_CONFLICT_POLICY_SETTING, saved)
 }
 
-/** Which files a remembered overwriting policy replaces, the note's `reach`. */
+/** Which files a remembered or preset overwriting policy replaces, the note's `reach`. */
 export type OverwriteNoteReach = 'all' | 'smaller' | 'older'
 
-/** The note's reach while a remembered policy overwrites, `null` once there's nothing to flag. */
+/** The note's reach while a remembered or preset policy overwrites, `null` once there's nothing to flag. */
 export function overwriteNoteReach(state: {
   policy: ConflictResolution
   source: ConflictPolicySource
 }): OverwriteNoteReach | null {
-  if (state.source !== 'remembered') return null
+  if (!isUnpicked(state.source)) return null
   switch (state.policy) {
     case 'overwrite':
       return 'all'

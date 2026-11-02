@@ -137,7 +137,6 @@ function mountDialog(operationType: 'copy' | 'compress'): HTMLDivElement {
       sourceFolderPath: '/Users/test',
       sourceVolumeId: 'root',
       destVolumeId: 'root',
-      autoConfirm: false,
       onConfirm: () => {},
       onCancel: () => {},
     },

@@ -387,11 +387,11 @@ describe('CommandId is a closed union (compile-time)', () => {
     // payload from the MCP `copy` tool, so its tuple is `[args?]`.
     const noArgs: CommandDispatchArgs<'file.copy'> = []
     const withArgs: CommandDispatchArgs<'file.copy'> = [
-      { autoConfirm: true, onConflict: 'overwrite_all', initiator: 'aiClient' },
+      { pane: 'right', onConflict: 'overwrite_all', initiator: 'aiClient' },
     ]
 
     expect(noArgs).toEqual([])
-    expect(withArgs[0]?.autoConfirm).toBe(true)
+    expect(withArgs[0]?.pane).toBe('right')
   })
 })
 

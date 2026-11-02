@@ -116,20 +116,20 @@ mcp_tools! {
     // ── File operations ─────────────────────────────────────────────────────
     "copy" => {
         id: Copy,
-        brief: "Open the copy dialog for the selection or cursor item, for a person to confirm.",
-        desc: "Copy the selection (else the cursor item) into the folder the other pane shows; already there duplicates each as name (1). Without autoConfirm, opens the confirm dialog. With autoConfirm, starts and returns the operationId. onConflict resolves clashes.",
+        brief: "Open the copy dialog for a pane's selection, for a person to confirm.",
+        desc: "Open the dialog that copies a pane's selection into the folder the other pane shows; already there duplicates each as name (1). A person confirms it, so nothing has happened yet when this returns. Refuses with nothing selected. onConflict presets the dialog's choice for clashes.",
         schema: schemas::copy_schema(),
-        subject: SubjectSpec::None,
+        subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
         access: Access::Initiate,
         run: app_params file_ops::execute_copy
     },
     "move" => {
         id: Move,
-        brief: "Open the move dialog for the selection or cursor item, for a person to confirm.",
-        desc: "Move the selection (else the cursor item) to the other pane. Without autoConfirm, opens the confirm dialog. With autoConfirm, starts at once and returns the operationId (await operation_complete, or steer with queue). onConflict resolves file clashes.",
+        brief: "Open the move dialog for a pane's selection, for a person to confirm.",
+        desc: "Open the dialog that moves a pane's selection to the other pane. A person confirms it, so nothing has happened yet when this returns. Refuses with nothing selected. onConflict presets the dialog's choice for clashes.",
         schema: schemas::move_schema(),
-        subject: SubjectSpec::None,
+        subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
         access: Access::Initiate,
         run: app_params file_ops::execute_move
@@ -137,19 +137,19 @@ mcp_tools! {
     "compress" => {
         id: Compress,
         brief: "Open the dialog that zips the selection, for a person to confirm.",
-        desc: "Zip the selection into a new archive in the other pane. Without autoConfirm, opens the confirm dialog. With autoConfirm, starts and returns the operationId — unless the target archive exists, where the dialog stays open to confirm the overwrite.",
+        desc: "Open the dialog that zips a pane's selection (else its cursor item) into a new archive in the other pane. A person confirms it, so nothing has happened yet when this returns.",
         schema: schemas::compress_schema(),
-        subject: SubjectSpec::None,
+        subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
         access: Access::Initiate,
         run: app_params file_ops::execute_compress
     },
     "delete" => {
         id: Delete,
-        brief: "Open the delete dialog for the selection or cursor item, for a person to confirm.",
-        desc: "Delete the selection (else the cursor item). Without autoConfirm, opens the confirm dialog. With autoConfirm, starts at once and returns the operationId (await operation_complete on it). mode presets trash vs permanent; omit for the pane's default.",
+        brief: "Open the delete dialog for a pane's selection or cursor item, for a person to confirm.",
+        desc: "Open the dialog that deletes a pane's selection (else its cursor item). A person confirms it, so nothing has happened yet when this returns. mode presets trash vs permanent; omit for the pane's default.",
         schema: schemas::delete_schema(),
-        subject: SubjectSpec::None,
+        subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
         access: Access::Initiate,
         run: app_params file_ops::execute_delete
@@ -157,9 +157,8 @@ mcp_tools! {
     "rename" => {
         id: Rename,
         brief: "Open the inline rename editor on an item, for a person to confirm.",
-        desc: "Rename an item (the named item, else the cursor item) in a pane. Without autoConfirm, \
-               opens the inline rename editor prefilled with newName for the user to confirm. With \
-               autoConfirm, renames directly (errors if the name already exists).",
+        desc: "Open the inline rename editor on an item (the named item, else the cursor item) in a pane, \
+               prefilled with newName. A person confirms it, so nothing has happened yet when this returns.",
         schema: schemas::rename_schema(),
         subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
@@ -182,9 +181,8 @@ mcp_tools! {
     "mkdir" => {
         id: Mkdir,
         brief: "Create a folder by name, or open the naming dialog when you give no name.",
-        desc: "Create a folder in the focused pane, or pass pane to target the other. No name opens the naming \
-               dialog (user confirms, not MCP); a name prefills it; name + autoConfirm creates directly (errors on \
-               a name conflict).",
+        desc: "Create a folder in a pane. A name creates it directly (errors on a name conflict); no name opens the \
+               naming dialog for a person.",
         schema: schemas::mkdir_schema(),
         subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
@@ -194,9 +192,8 @@ mcp_tools! {
     "mkfile" => {
         id: Mkfile,
         brief: "Create an empty file by name, or open the naming dialog when you give no name.",
-        desc: "Create an empty file in the focused pane, or pass pane to target the other. No name opens the naming \
-               dialog (user confirms, not MCP); a name prefills it; name + autoConfirm creates directly (errors on \
-               a name conflict).",
+        desc: "Create an empty file in a pane. A name creates it directly (errors on a name conflict); no name opens \
+               the naming dialog for a person.",
         schema: schemas::mkfile_schema(),
         subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],

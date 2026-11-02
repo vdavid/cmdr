@@ -94,7 +94,7 @@ live here:
   the whole indicator on `direction`: a dialog that named neither end of the transfer is worse than one that names both
   without pointing at a pane.
 - **`conflict-policy.ts` is the ONE map from an MCP `onConflict` name to a conflict policy**, read by both programmatic
-  entries: `TransferDialog.svelte` (a `copy` / `move` with `autoConfirm`, which confirms itself on mount) and
+  entries: `TransferDialog.svelte` (a `copy` / `move`'s `onConflict`, the preset it opens on) and
   `pane/dialog-state.svelte.ts` (`dialog_confirm` on an already-open one). They each used to carry a private copy, and
   the copies had drifted — one spelled the conditional policies `overwrite_all_smaller`, the other
   `overwrite_smaller_all` — with neither spelling reachable through any tool, so nothing surfaced it. The drift matters
@@ -174,7 +174,7 @@ the named target is an existing folder under a different name than the source's,
 ordinary merge, so it stays quiet.
 
 A complete target equal to its source shows the existing "already in this location" warning and disables confirm for
-both Copy and Move, including Enter and MCP auto-confirm. The comparison uses the full canonical destination, so
+both Copy and Move, including Enter and MCP `dialog_confirm`. The comparison uses the full canonical destination, so
 matching volume-relative names on different volumes remain valid. A different name in the source folder is valid.
 Copy/Move toggles preserve the complete edited target; switching to/from Compress derives a target from the same parent.
 
@@ -229,8 +229,7 @@ destinations".
      contract.
    - **Folders always merge; the upfront check classifies collisions.** The conflict check (`conflicts.check()`, from
      `transfer-conflict-check.svelte.ts`) runs on mount **in parallel with the scan preview** (it's one cheap dest
-     listing, not the recursive byte scan — `conflictCheckPromise` is assigned synchronously in `onMount` BEFORE the
-     auto-confirm branch so the MCP `Skip all` fast path dispatches with `conflictNames` populated). "Cheap" is
+     listing, not the recursive byte scan — `conflictCheckPromise` is assigned synchronously in `onMount`). "Cheap" is
      relative: on a big remote directory that one listing still runs for minutes, which is why the confirm doesn't wait
      for it (§ "The confirm dispatches without waiting for the conflict check"). Each collision is classified by the
      backend-resolved `sourceIsDirectory` / `destIsDirectory` flags (the BE resolves real per-item types + sizes from
@@ -500,8 +499,8 @@ Who answers what, and why:
 - **Paste** (`clipboard-operations.ts`) and **batch F5** (`file-operation-commands.ts::openUnifiedTransferDialog`) say
   `openRenameEditor`. They're the gestures where a person has just DIRECTED a copy somewhere, and they're what issue #50
   actually asked for ("all file managers I used so far would ask for a new name **when pasting**").
-- **An auto-confirmed F5 is MCP**, and says `nothing`: an agent's copy has no business pulling focus into a text field
-  in front of whoever is watching.
+- **An F5 anyone but a person started** says `nothing` (`initiator === 'user'` picks): an agent's copy has no business
+  pulling focus into a text field in front of whoever is watching, and the next keystroke there would edit a name.
 - **Drag and drop** (`drag-drop-controller.svelte.ts::DROP_DUPLICATE_FOLLOW_UP`) says `nothing`. A drag ends with the
   mouse, and stealing focus into a text field on mouse-release is the wrong shape.
 - **The Duplicate command** (`pane/duplicate-command.ts`) says `nothing`. ⌘D _is_ Finder's Duplicate, and the
@@ -555,12 +554,6 @@ copy/move:
   yellow "a file with this name is already here — Cmdr will replace it" warning (`targetWillBeOverwritten`); the
   conflict-policy radios never render. The inner-conflict policy passed to the backend is a fixed `overwrite` constant
   (a fresh empty zip has no entries, and two sources in one folder can't share a name).
-- **Auto-confirm never silently overwrites (data-safety gate).** For the MCP `compress {autoConfirm}` path,
-  `handleConfirm(isAuto=true)` proceeds unattended ONLY when the target doesn't already exist; if it does, it clears
-  `confirmed` and leaves the dialog open for the user to decide. The MCP tool's start round trip
-  (`mcp_await_operation_start`: the FE replies with the spawned `operationId`, or without one when the dialog stayed
-  open) honestly reflects both outcomes; see `execute_compress` in
-  `apps/desktop/src-tauri/src/tools/actions/file_ops.rs`. Don't refactor this gate away.
 - **Confirm routes to `compressFiles`**, not `copyBetweenVolumes` (`transfer-dispatch.ts::dispatchCompress`). One
   command handles local and (later) remote sources; the scan preview still runs for the Size bar.
 - **A compression-level slider shows in compress mode only** (`CompressLevelControl.svelte`, below the scan tallies). It
@@ -657,7 +650,7 @@ The "files already exist" radios open on `fileOperations.defaultConflictPolicy` 
 ops, default "Ask later" = `stop`), the Total Commander habit of setting "overwrite older" once. A person opts in
 explicitly: a "Remember this choice" checkbox (with an `InfoTip`) sits right under the radios in
 `TransferConflictsSection.svelte`. The rules live in `remembered-conflict-policy.ts`, keyed on where the dialog's policy
-came from (`ConflictPolicySource`: `remembered`, `picked`, or `explicit`):
+came from (`ConflictPolicySource`: `remembered`, `picked`, `preset`, or `explicit`):
 
 - **One setting, and the box is derived from it.** It starts ticked exactly when the saved policy isn't `stop`
   (`rememberStartsTicked`). A confirm saves the selected policy when it's ticked and `stop` when it isn't, so unticking
@@ -671,26 +664,27 @@ came from (`ConflictPolicySource`: `remembered`, `picked`, or `explicit`):
   confirm while the radios (so the box) are off screen. It's skipped when the outcome equals the saved value, so sparse
   persistence never pins the default (`lib/settings/DETAILS.md` § Sparse persistence), and for compress, which has no
   conflict choice. An MDM lock refuses it inside `setSetting`.
-- **MCP neither reads nor writes it.** `autoConfirm` opens on its named policy (or `stop`) without reading the setting,
-  and a `dialog_confirm` marks its policy `explicit`, even over a person's ticked box: an agent's choice is not the
-  person's habit.
-- **A remembered policy goes out only while its radios are on screen** (`conflictChoiceVisible`). Still checking,
-  "couldn't find out", or no clash at all: the confirm sends `stop` instead. Decision/why: a saved `overwrite` the
-  person never saw would otherwise apply to a clash the upfront check missed (a listing that couldn't run, a file that
-  appeared meanwhile), and confirming before the check answered would send a remembered `skip` without the names it
-  needs (below). A `picked` or `explicit` policy is sent as is.
-- **A remembered overwriting policy says so in words.** Under the radios, `.remembered-overwrite-note` (warning text,
-  icon, and a warning-colored rule on the dialog background, so it stands apart from the card's own warning tint) names
-  which files it replaces, and the radio group's `aria-describedby` points at it. It's gone once the person picks
-  anything, including another overwriting option, since that's no longer an unnoticed carry-over.
+- **MCP never writes it.** A `copy` / `move`'s `onConflict` is a `preset`, taking the remembered policy's place for that
+  one dialog, and a `dialog_confirm` marks its policy `explicit`, even over a person's ticked box: an agent's choice is
+  not the person's habit. A person picking a radio over a preset makes it `picked`, and the box saves it as usual.
+- **A remembered or preset policy goes out only while its radios are on screen** (`conflictChoiceVisible`). Still
+  checking, "couldn't find out", or no clash at all: the confirm sends `stop` instead. Decision/why: a saved `overwrite`
+  the person never saw would otherwise apply to a clash the upfront check missed (a listing that couldn't run, a file
+  that appeared meanwhile), and confirming before the check answered would send a remembered `skip` without the names it
+  needs (below). For a preset the stakes are a model's choice: an Enter while the check is pending must not send
+  `overwrite` with nothing on screen. A `picked` or `explicit` policy is sent as is.
+- **A remembered or preset overwriting policy says so in words.** Under the radios, `.remembered-overwrite-note`
+  (warning text, icon, and a warning-colored rule on the dialog background, so it stands apart from the card's own
+  warning tint) names which files it replaces, and the radio group's `aria-describedby` points at it. It's gone once the
+  person picks anything, including another overwriting option, since that's no longer an unnoticed carry-over. A preset
+  has its own wording: nobody saved it.
 
 E2E specs share one app per shard, so a saved policy would leak into the next spec; the conflict-family specs reset it
 through `resetRememberedConflictPolicy` (`test/e2e-playwright/conflict-helpers.ts`).
 
 ### The confirm dispatches without waiting for the conflict check
 
-`handleConfirm` awaits `conflictCheckPromise` **only when the policy it sends is `skip`**. Every other policy dispatches
-as soon as the preview id is in hand, even with the check still running.
+A confirm dispatches as soon as the preview id is in hand, even with the check still running.
 
 **Why it's safe.** The upfront conflict list is not a correctness input, it's a bulk-skip perf optimization:
 `build_pre_skip_set` (`crates/cmdr-operations/src/transfer/transfer_driver/mod.rs`) returns an empty set unless
@@ -701,11 +695,12 @@ apply-to-all latching (`crates/cmdr-operations/src/conflict.rs`), and a backgrou
 the user through `../operation-conflict.svelte.ts`. So dispatching with `conflicts: []` costs pre-flight _information_,
 never safety.
 
-**Why `skip` is the exception, and why no human waits for it.** Under `Skip all` the names let the backend drop the
-clashing sources upfront instead of discovering each one serially through per-file `get_metadata` stats, so the progress
-bar reflects them immediately. A human can't select `skip` while the check is running — the policy radios live in the
-`{:else if totalConflictCount > 0 || mergeFolderCount > 0}` branch, unreachable while `isCheckingConflicts` — so that
-await belongs to the MCP auto-confirm path (`autoConfirmOnConflict: 'skip_all'`), where nobody is watching a button.
+**What `skip` gives up.** Under `Skip all` the names let the backend drop the clashing sources upfront instead of
+discovering each one serially through per-file `get_metadata` stats, so the progress bar reflects them immediately. A
+human can't select `skip` while the check is running — the policy radios live in the
+`{:else if totalConflictCount > 0 || mergeFolderCount > 0}` branch, unreachable while `isCheckingConflicts` — and a
+preset waits for those radios too. Only a `dialog_confirm` naming `skip_all` can get there first, and it costs that
+operation the head start.
 
 **What still gets awaited on every path:** `scan.scanStarted`. Dropping it is a three-part failure, not a missing id.
 The operation would dispatch with nothing to claim, fall into the backend's miss case, and re-walk the tree CONCURRENTLY
@@ -806,10 +801,10 @@ Two niceties on top:
   structural red error still wins. While it shows, Confirm is disabled and Enter does nothing (`confirmFromUser`), the
   way a path error disables them, with the notice as the reason. Decision/Why: the transfer asks the same question
   before it writes and refuses with the typed `destination_not_writable` error anyway, so an enabled button led only to
-  that refusal in an extra dialog. ❗ The gate sits in `confirmFromUser`, ❌ never `handleConfirm`: an MCP confirm and
-  the auto-confirm go through `handleConfirm` and meet the backend's typed refusal, where a refused confirm would leave
-  their round trip waiting. `unknown` shows nothing and blocks nothing. The phone case this exists for: copying onto a
-  Pixel's `/` surfaced only after confirm, as "Not enough space".
+  that refusal in an extra dialog. ❗ The gate sits in `confirmFromUser`, ❌ never `handleConfirm`: an MCP confirm goes
+  through `handleConfirm` and meets the backend's typed refusal, where a refused confirm would leave its round trip
+  waiting. `unknown` shows nothing and blocks nothing. The phone case this exists for: copying onto a Pixel's `/`
+  surfaced only after confirm, as "Not enough space".
 - **Yellow "this path repeats the place's folder" warning (#164).** The same debounced probe asks `destinationRootEcho`
   (the `destination_root_echo` command over `cmdr_fs::volume::root_echo`, whose rule and why live in
   `crates/cmdr-fs/DETAILS.md` § "`root_anchored`"). On a place rooted at a server folder, `/srv/data/photos` reads two
@@ -884,9 +879,9 @@ pane leaves a non-local volume id nothing registers. `start_scan_preview` refuse
 (`SourceNotConnected`) instead of walking `adb://…` on the Mac, and the wrapper hands it back as `{ refusal }`, which
 the scan state keeps as `sourceRefusal`. The dialog reads `unavailable`, says the phone or server isn't connected any
 more, and disables Confirm (Enter too): retrying or proceeding can only fail until it's back. A confirm that beats the
-refusal (MCP auto-confirm) reaches the backend, which answers `source_no_longer_connected` and its own error dialog. The
-delete dialog treats the refusal like a walk that stopped. Pinned by `TransferDialog.unavailable.test.ts` § "a source no
-volume answers for".
+refusal (MCP `dialog_confirm`) reaches the backend, which answers `source_no_longer_connected` and its own error dialog.
+The delete dialog treats the refusal like a walk that stopped. Pinned by `TransferDialog.unavailable.test.ts` § "a
+source no volume answers for".
 
 **The conflict check.** `transfer-conflict-check.svelte.ts` carries a `status` of `idle` / `checking` / `answered` /
 `unknown` (a bounded `withTimeout` at 35 s over the IPC, just above the backend's own 30 s budget, catches a call that

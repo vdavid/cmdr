@@ -214,7 +214,6 @@
         getLeftPaneRef: () => paneRefs.left,
         getRightPaneRef: () => paneRefs.right,
         getFocusedPaneRef: () => getPaneRef(focusedPane),
-        getFocusedPaneSide: () => focusedPane,
         getShowHiddenFiles: () => showHiddenFiles,
         // The five pane-picking methods `PaneRevealAPI` asks for, handed over
         // directly rather than routed back in as a prop: they're this component's
@@ -749,22 +748,22 @@
         return fileOps.isRenaming()
     }
 
-    /** Opens the new folder dialog, prefilled with `name` or the cursor entry. `pane` defaults to focused. */
+    /** Opens the new folder dialog, prefilled with the cursor entry. `pane` defaults to focused. */
     export async function openNewFolderDialog(args: OpenNamingDialogArgs) {
         await fileOps.openNewFolderDialog(args)
     }
 
-    /** Opens the new file dialog, prefilled with `name` or the cursor entry. `pane` defaults to focused. */
+    /** Opens the new file dialog, prefilled with the cursor entry. `pane` defaults to focused. */
     export async function openNewFileDialog(args: OpenNamingDialogArgs) {
         await fileOps.openNewFileDialog(args)
     }
 
-    /** Creates a folder directly on the target pane's live path (MCP autoConfirm). `pane` defaults to focused. */
+    /** Creates a folder directly on the target pane's live path (the MCP `mkdir` tool). `pane` defaults to focused. */
     export async function createFolderDirect(name: string, pane?: 'left' | 'right', initiator?: Initiator) {
         await fileOps.createFolderDirect(name, pane, initiator)
     }
 
-    /** Creates an empty file directly on the target pane's live path (MCP autoConfirm). `pane` defaults to focused. */
+    /** Creates an empty file directly on the target pane's live path (the MCP `mkfile` tool). `pane` defaults to focused. */
     export async function createFileDirect(name: string, pane?: 'left' | 'right', initiator?: Initiator) {
         await fileOps.createFileDirect(name, pane, initiator)
     }

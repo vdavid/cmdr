@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { emit } from '@tauri-apps/api/event'
 import type { TransferOperationType } from '../types'
 import type { FilePaneAPI } from './types'
 
@@ -318,6 +319,7 @@ describe('openNewFolderDialog', () => {
     // archive-edit flow, so the dialog opens like any writable destination.
     expect(dialogs.showAlert).not.toHaveBeenCalled()
     expect(dialogs.showNewFolder).toHaveBeenCalledWith({
+      pane: 'left',
       currentPath: '/left/foo.zip',
       listingId: 'lst-1',
       showHiddenFiles: true,
@@ -349,6 +351,7 @@ describe('openNewFolderDialog', () => {
     await create(access, dialogs).openNewFolderDialog({ initiator: 'user' })
 
     expect(dialogs.showNewFolder).toHaveBeenCalledWith({
+      pane: 'left',
       currentPath: '/left/dir',
       listingId: 'lst-1',
       showHiddenFiles: false,
@@ -387,6 +390,7 @@ describe('openNewFileDialog', () => {
     // No refusal: creating a file inside a zip runs the managed archive-edit flow.
     expect(dialogs.showAlert).not.toHaveBeenCalled()
     expect(dialogs.showNewFile).toHaveBeenCalledWith({
+      pane: 'left',
       currentPath: '/left/foo.zip',
       listingId: 'lst-1',
       showHiddenFiles: true,
@@ -417,6 +421,7 @@ describe('openNewFileDialog', () => {
     await create(access, dialogs).openNewFileDialog({ initiator: 'user' })
 
     expect(dialogs.showNewFile).toHaveBeenCalledWith({
+      pane: 'left',
       currentPath: '/left/dir',
       listingId: 'lst-1',
       showHiddenFiles: true,
@@ -558,8 +563,8 @@ describe('openTransferDialog', () => {
 
   it('F5 asks for the rename editor on a single-item duplicate; an MCP copy does not', async () => {
     // The whole trigger split rests on this field. F5 is a person at the keyboard
-    // who may want to name the copy; an auto-confirmed copy is an agent's, and an
-    // agent must not pull focus into a text field in front of whoever is watching.
+    // who may want to name the copy; anyone else's must not pull focus into a text
+    // field in front of whoever is watching, where the next keystroke edits a name.
     // The Duplicate command and drag answer for themselves at their own call sites.
     buildFromCursorSpy.mockResolvedValue({ operationType: 'copy' })
     const paneRef = buildPaneRef({ listingId: 'lst-1', selectedIndices: [], cursorIndex: 1 })
@@ -572,13 +577,105 @@ describe('openTransferDialog', () => {
       expect.objectContaining({ duplicateFollowUp: 'openRenameEditor' }),
     )
 
-    await commands.openTransferDialog('copy', {
-      autoConfirm: true,
-      onConflict: 'overwrite_all',
-      mcpRequestId: 'mcp-1',
+    for (const initiator of ['agent', 'agentEdited', 'aiClient'] as const) {
+      await commands.openTransferDialog('copy', { onConflict: 'overwrite_all', initiator })
+      expect(dialogs.showTransfer).toHaveBeenLastCalledWith(
+        expect.objectContaining({ duplicateFollowUp: 'nothing', presetOnConflict: 'overwrite_all' }),
+      )
+    }
+  })
+
+  it('takes its source from the pane an MCP caller named, whichever one has focus', async () => {
+    buildFromCursorSpy.mockResolvedValue({ operationType: 'copy' })
+    const left = buildPaneRef({ listingId: 'lst-left', selectedIndices: [], cursorIndex: 1 })
+    const right = buildPaneRef({ listingId: 'lst-right', selectedIndices: [], cursorIndex: 1 })
+    const access = buildAccess({ focusedPane: 'left', paneRefs: { left, right }, volumes: [volume()] })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openTransferDialog('copy', { pane: 'right', initiator: 'aiClient' })
+
+    expect(buildFromCursorSpy.mock.calls[0]?.[1]).toBe(right)
+    expect(dialogs.showTransfer).toHaveBeenCalledTimes(1)
+  })
+
+  it('tells an MCP caller the dialog opened, and why when it did not', async () => {
+    buildFromCursorSpy.mockResolvedValue({ operationType: 'copy' })
+    const paneRef = buildPaneRef({ listingId: 'lst-1', selectedIndices: [], cursorIndex: 1 })
+    const access = buildAccess({ focusedPane: 'left', paneRefs: { left: paneRef }, volumes: [volume()] })
+    const commands = create(access, buildDialogs())
+
+    await commands.openTransferDialog('copy', { mcpRequestId: 'opened', initiator: 'aiClient' })
+    expect(emit).toHaveBeenLastCalledWith('mcp-response', { requestId: 'opened', ok: true })
+
+    buildFromCursorSpy.mockResolvedValue(null)
+    await commands.openTransferDialog('copy', { mcpRequestId: 'nothing', initiator: 'aiClient' })
+    expect(emit).toHaveBeenLastCalledWith(
+      'mcp-response',
+      expect.objectContaining({ requestId: 'nothing', ok: false, refusal: 'nothingOpened' }),
+    )
+  })
+
+  it('answers no round trip for a person, and asks them nothing new', async () => {
+    buildFromCursorSpy.mockResolvedValue({ operationType: 'copy' })
+    const paneRef = buildPaneRef({ listingId: 'lst-1', selectedIndices: [], cursorIndex: 1 })
+    const access = buildAccess({ focusedPane: 'left', paneRefs: { left: paneRef }, volumes: [volume()] })
+
+    await create(access, buildDialogs()).openTransferDialog('copy', { initiator: 'user' })
+
+    expect(emit).not.toHaveBeenCalledWith('mcp-response', expect.anything())
+  })
+
+  it('an MCP delete acts on the pane it named, and remembers it past the dialog', async () => {
+    const left = buildPaneRef({ listingId: 'lst-left', selectedIndices: [], cursorIndex: 1 })
+    const right = buildPaneRef({ listingId: 'lst-right', selectedIndices: [], cursorIndex: 1 })
+    spies.getSelectionEntries.mockResolvedValue([
+      {
+        name: 'a.txt',
+        path: '/right/a.txt',
+        isDirectory: false,
+        isSymlink: false,
+        permissions: 0o644,
+        owner: 'me',
+        group: 'staff',
+        iconId: 'file',
+      },
+    ])
+    const access = buildAccess({ focusedPane: 'left', paneRefs: { left, right }, volumes: [volume()] })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openDeleteDialog({
+      pane: 'right',
+      permanent: false,
+      mcpRequestId: 'req-delete',
       initiator: 'aiClient',
     })
-    expect(dialogs.showTransfer).toHaveBeenLastCalledWith(expect.objectContaining({ duplicateFollowUp: 'nothing' }))
+
+    expect(dialogs.showDeleteConfirmation).toHaveBeenCalledWith(expect.objectContaining({ sourcePaneSide: 'right' }))
+    expect(emit).toHaveBeenLastCalledWith('mcp-response', { requestId: 'req-delete', ok: true })
+  })
+
+  it('refuses an MCP caller typed on a read-only pane, with no alert over what the person is doing', async () => {
+    const paneRef = buildPaneRef({
+      listingId: 'lst-1',
+      selectedIndices: [],
+      cursorIndex: 1,
+      currentPath: '/r/.git/worktrees',
+    })
+    const access = buildAccess({
+      focusedPane: 'left',
+      paneRefs: { left: paneRef },
+      paths: { left: '/r/.git/worktrees' },
+      volumes: [volume()],
+    })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openDeleteDialog({ permanent: false, mcpRequestId: 'req-ro', initiator: 'aiClient' })
+
+    expect(dialogs.showAlert).not.toHaveBeenCalled()
+    expect(emit).toHaveBeenCalledWith(
+      'mcp-response',
+      expect.objectContaining({ requestId: 'req-ro', ok: false, refusal: 'readOnly' }),
+    )
   })
 
   it.each(['user', 'agent', 'agentEdited', 'aiClient'] as const)(

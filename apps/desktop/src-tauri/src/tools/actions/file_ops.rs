@@ -1,54 +1,101 @@
 //! File operation and selection tool handlers.
 
 use serde_json::{Value, json};
-use tauri::{AppHandle, Emitter, Manager, Runtime};
+use tauri::{AppHandle, Manager, Runtime};
 
 use super::dialog_confirm::RENAME_EDITOR;
 use super::{
-    AckSignal, DEFAULT_ACK_TIMEOUT, PaneStateStore, ToolError, ToolResult, mcp_await_operation_start, mcp_round_trip,
-    refuse_while_dialog_blocks, validate_conflict_policy, wait_for_ack,
+    AckSignal, DEFAULT_ACK_TIMEOUT, PaneStateStore, ToolError, ToolResult, mcp_open_dialog, mcp_round_trip,
+    refuse_while_dialog_blocks, required_pane_param, target_pane_state, validate_conflict_policy, wait_for_ack,
 };
 use crate::pluralize::pluralize;
 
-/// Budget for an auto-confirmed file op to report its spawned `operationId`. More
-/// generous than the 1500 ms ack budget because the round-trip spans the whole
-/// FE flow (open the dialog → auto-confirm → the write-op IPC that mints the id),
-/// which starts a scan preview on the way.
-const OPERATION_START_TIMEOUT: u64 = 10;
+const TRANSFER_DIALOG: &str = "transfer-confirmation";
+const DELETE_DIALOG: &str = "delete-confirmation";
 
-/// Format the OK line for an auto-confirmed op, appending the spawned
-/// `operationId` so a follow-up `queue` / `await operation_complete` can target
-/// it. `None` (the compress-on-existing-target case that keeps its dialog open)
-/// falls back to the bare confirmation.
-fn operation_started_ok(verb: &str, operation_id: Option<String>) -> Value {
-    match operation_id {
-        Some(id) => json!(format!("OK: {verb} started with auto-confirm (operationId: {id}).")),
-        None => json!(format!("OK: {verb} started with auto-confirm.")),
-    }
+/// Budget for the frontend to answer that a dialog opened. It has to outlast the source rows
+/// settling (`ROW_SETTLE_BUDGET_MS`, 3 s), and the selection read on top of that.
+const DIALOG_OPEN_TIMEOUT: u64 = 10;
+
+/// What a tool that opened a dialog or editor answers: nothing has happened yet, a person decides,
+/// and how to find out what they did. The rail reads `awaitingPerson`.
+pub(super) fn awaiting_person(dialog: &str) -> Value {
+    json!({
+        "awaitingPerson": true,
+        "dialog": dialog,
+        "next": format!(
+            "Nothing has happened yet: it's waiting for a person, who may cancel it. While `{dialog}` is listed \
+             under dialogs in cmdr://state, they haven't answered. Once it's gone, check cmdr://state operations \
+             and the pane's listing for what came of it."
+        ),
+    })
 }
 
-/// Pre-checks that a copy/move/delete has something to act on, so an empty operation
-/// fails fast with the real cause instead of the generic 1500 ms "frontend may be
-/// stalled" ack timeout.
+/// Asks the frontend to open a dialog on `pane`, waits for it to say so, and for the tracker to
+/// show it, so the next tool sees a dialog to wait for.
+async fn open_dialog<R: Runtime>(
+    app: &AppHandle<R>,
+    verb: &str,
+    event: &str,
+    payload: Value,
+    dialog: &'static str,
+) -> ToolResult {
+    mcp_open_dialog(app, verb, event, payload, DIALOG_OPEN_TIMEOUT).await?;
+    wait_for_ack(app, AckSignal::SoftDialogAppeared(dialog), DEFAULT_ACK_TIMEOUT).await?;
+    Ok(awaiting_person(dialog))
+}
+
+/// The named pane and its state, freshly pushed: the selection a person made a moment ago, or the
+/// listing a `nav_to_path` just landed on, may still be on its way here.
+async fn fresh_pane_state<R: Runtime>(
+    app: &AppHandle<R>,
+    params: &Value,
+) -> Result<(String, crate::ui_state::pane_state::PaneState), ToolError> {
+    let pane = required_pane_param(params)?;
+    super::flush_pane_state(app, pane).await?;
+    target_pane_state(app, params)
+}
+
+/// Pre-checks that a delete or compress has something to act on, so an empty operation fails fast
+/// with the real cause.
 ///
-/// Mirrors the FE fallback semantics (`file-operation-commands.ts`): a selection wins;
-/// with no selection the operation falls back to the cursor file — except when the
-/// cursor is on the parent entry (`..`), which the FE silently skips (the dialog never
-/// opens, so the ack would time out). When the cursor is outside the loaded window we
-/// can't inspect the entry, so we let the FE decide (it has the full listing).
-fn check_operation_has_target<R: Runtime>(app: &AppHandle<R>, verb: &str) -> Result<(), ToolError> {
-    let Some(store) = app.try_state::<PaneStateStore>() else {
-        return Ok(()); // No state synced yet; the FE is the authority.
-    };
-    let pane = store.get_focused_pane();
-    let state = match pane.as_str() {
-        "right" => store.get_right(),
-        _ => store.get_left(),
-    };
+/// Mirrors the FE fallback semantics (`file-operation-commands.ts`): a selection wins; with no
+/// selection the operation falls back to the cursor file — except when the cursor is on the parent
+/// entry (`..`), which the FE silently skips. When the cursor is outside the loaded window we can't
+/// inspect the entry, so we let the FE decide (it has the full listing).
+async fn check_operation_has_target<R: Runtime>(
+    app: &AppHandle<R>,
+    params: &Value,
+    verb: &str,
+) -> Result<(), ToolError> {
+    let (pane, state) = fresh_pane_state(app, params).await?;
     match empty_operation_error(&state, &pane, verb) {
         Some(message) => Err(ToolError::invalid_params(message)),
         None => Ok(()),
     }
+}
+
+/// Reads and validates `copy` and `move`'s `onConflict`. ❌ No default: with none named, the dialog
+/// opens on the person's saved choice.
+fn preset_on_conflict(params: &Value) -> Result<Option<&str>, ToolError> {
+    let on_conflict = params.get("onConflict").and_then(|v| v.as_str());
+    if let Some(policy) = on_conflict {
+        validate_conflict_policy(policy)?;
+    }
+    Ok(on_conflict)
+}
+
+/// The shared body of `copy` and `move`: open the transfer dialog on the named pane's selection.
+async fn open_transfer_dialog<R: Runtime>(app: &AppHandle<R>, params: &Value, verb: &str, event: &str) -> ToolResult {
+    refuse_while_dialog_blocks(app, verb)?;
+    let on_conflict = preset_on_conflict(params)?;
+    let (pane, state) = fresh_pane_state(app, params).await?;
+    super::refuse_without_selection(&state, &pane, verb)?;
+    let mut payload = json!({ "pane": pane });
+    if let Some(policy) = on_conflict {
+        payload["onConflict"] = policy.into();
+    }
+    open_dialog(app, verb, event, payload, TRANSFER_DIALOG).await
 }
 
 /// Pure decision core of `check_operation_has_target`. Returns the rejection message
@@ -88,146 +135,41 @@ pub(super) fn empty_operation_error(
     None
 }
 
-/// Execute copy command.
+/// Execute copy command: opens the transfer dialog for a person to confirm.
 ///
-/// Ack contract:
-/// - `autoConfirm: true` → round-trip: wait for the FE to reply with the spawned
-///   `operationId` (or an error), returned in the OK text so a follow-up `queue`
-///   / `await operation_complete` can target it.
-/// - `autoConfirm: false` → `transfer-confirmation` soft dialog must appear.
-///
-/// `check_operation_has_target` fast-fails the cases the FE would silently drop
-/// (cursor on `..` with nothing selected); everything else is the FE's call.
+/// Ack contract: a round trip the frontend answers once the dialog is up, or with why it isn't, then
+/// the `transfer-confirmation` soft dialog must appear.
 pub async fn execute_copy<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
-    refuse_while_dialog_blocks(app, "copy")?;
-    check_operation_has_target(app, "copy")?;
-    // `autoConfirm: true` skips the user's confirmation dialog. The explicit flag records that
-    // intent; the transport has already authenticated every external MCP request.
-    let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
-    let on_conflict = params.get("onConflict").and_then(|v| v.as_str()).unwrap_or("skip_all");
-
-    if auto_confirm {
-        validate_conflict_policy(on_conflict)?;
-    }
-
-    if auto_confirm {
-        // Round-trip: the FE replies with the spawned operationId (or acks without
-        // one). Replaces the generation ack so the tool returns the exact id.
-        let operation_id = mcp_await_operation_start(
-            app,
-            "copy",
-            "mcp-copy",
-            json!({"autoConfirm": true, "onConflict": on_conflict}),
-            OPERATION_START_TIMEOUT,
-        )
-        .await?;
-        Ok(operation_started_ok("Copy", operation_id))
-    } else {
-        app.emit("mcp-copy", json!({"autoConfirm": false, "onConflict": on_conflict}))?;
-        wait_for_ack(
-            app,
-            AckSignal::SoftDialogAppeared("transfer-confirmation"),
-            DEFAULT_ACK_TIMEOUT,
-        )
-        .await?;
-        Ok(json!("OK: Copy dialog opened. Waiting for user confirmation."))
-    }
+    open_transfer_dialog(app, params, "copy", "mcp-copy").await
 }
 
-/// Execute move command.
-///
-/// Ack contract: same as `copy` (transfer-confirmation dialog shape), including the
-/// `check_operation_has_target` fast-fail.
+/// Execute move command. Same shape as `copy`.
 pub async fn execute_move<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
-    refuse_while_dialog_blocks(app, "move")?;
-    check_operation_has_target(app, "move")?;
-    // `autoConfirm: true` skips the user's confirmation dialog. The explicit flag records that
-    // intent; the transport has already authenticated every external MCP request.
-    let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
-    let on_conflict = params.get("onConflict").and_then(|v| v.as_str()).unwrap_or("skip_all");
-
-    if auto_confirm {
-        validate_conflict_policy(on_conflict)?;
-    }
-
-    if auto_confirm {
-        let operation_id = mcp_await_operation_start(
-            app,
-            "move",
-            "mcp-move",
-            json!({"autoConfirm": true, "onConflict": on_conflict}),
-            OPERATION_START_TIMEOUT,
-        )
-        .await?;
-        Ok(operation_started_ok("Move", operation_id))
-    } else {
-        app.emit("mcp-move", json!({"autoConfirm": false, "onConflict": on_conflict}))?;
-        wait_for_ack(
-            app,
-            AckSignal::SoftDialogAppeared("transfer-confirmation"),
-            DEFAULT_ACK_TIMEOUT,
-        )
-        .await?;
-        Ok(json!("OK: Move dialog opened. Waiting for user confirmation."))
-    }
+    open_transfer_dialog(app, params, "move", "mcp-move").await
 }
 
-/// Execute compress command.
-///
-/// Opens the SAME transfer dialog as copy/move (in compress mode), packing the
-/// cursor item or selection into a new zip at the other pane's path.
-///
-/// Ack contract:
-/// - `autoConfirm: false` → the `transfer-confirmation` soft dialog must appear.
-/// - `autoConfirm: true` → EITHER the pane generation advances (the compress
-///   started) OR the `transfer-confirmation` dialog appears. The dialog branch is
-///   load-bearing: when the target archive already exists, compress mode
-///   deliberately aborts the auto-dispatch and keeps the dialog open rather than
-///   silently overwriting (never advancing the generation). Waiting on
-///   `GenerationAdvanced` alone would hang until timeout in exactly that case.
+/// Execute compress command: opens the SAME transfer dialog as copy/move (in compress mode), packing
+/// the named pane's cursor item or selection into a new zip at the other pane's path. Same ack contract
+/// as `copy`.
 pub async fn execute_compress<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
     refuse_while_dialog_blocks(app, "compress")?;
-    check_operation_has_target(app, "compress")?;
-    // `autoConfirm: true` skips the user's confirmation dialog. The explicit flag records that
-    // intent; the transport has already authenticated every external MCP request.
-    let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
+    check_operation_has_target(app, params, "compress").await?;
+    let pane = required_pane_param(params)?;
     // No `onConflict` param, unlike copy/move: compress creates ONE new archive, so
     // there are no inner-file conflicts to resolve, and an existing TARGET archive is
     // the dialog's overwrite affordance, not a policy. A param here would imply
     // behavior the backend doesn't have.
-    if auto_confirm {
-        // The FE replies with the spawned operationId, OR acks without one when the
-        // target archive already exists (compress mode keeps its dialog open rather
-        // than silently overwriting). `operation_started_ok(None)` covers that arm.
-        let operation_id = mcp_await_operation_start(
-            app,
-            "compress",
-            "mcp-compress",
-            json!({"autoConfirm": true}),
-            OPERATION_START_TIMEOUT,
-        )
-        .await?;
-        match operation_id {
-            Some(id) => Ok(json!(format!(
-                "OK: Compress started with auto-confirm (operationId: {id})."
-            ))),
-            None => Ok(json!(
-                "OK: The confirmation dialog opened because the target archive already exists; confirm it to overwrite."
-            )),
-        }
-    } else {
-        app.emit("mcp-compress", json!({"autoConfirm": false}))?;
-        wait_for_ack(
-            app,
-            AckSignal::SoftDialogAppeared("transfer-confirmation"),
-            DEFAULT_ACK_TIMEOUT,
-        )
-        .await?;
-        Ok(json!("OK: Compress dialog opened. Waiting for user confirmation."))
-    }
+    open_dialog(
+        app,
+        "compress",
+        "mcp-compress",
+        json!({ "pane": pane }),
+        TRANSFER_DIALOG,
+    )
+    .await
 }
 
-/// Execute delete command.
+/// Execute delete command: opens the delete dialog for a person to confirm.
 ///
 /// The optional `mode` (`trash` | `delete`) presets the trash/permanent choice.
 /// Omitted, the FE applies its per-volume default (trash where supported, forced
@@ -235,43 +177,16 @@ pub async fn execute_compress<R: Runtime>(app: &AppHandle<R>, params: &Value) ->
 /// rides the event when `mode` is given, so the FE default stays the single
 /// source of the volume clamp (a typed bool crosses IPC).
 ///
-/// Ack contract:
-/// - `autoConfirm: true` → round-trip returning the spawned `operationId`; the FE
-///   routes to `trash_files` vs `delete_files` by the effective permanent flag.
-/// - `autoConfirm: false` → `delete-confirmation` soft dialog appears, its toggle
-///   preset to `mode`.
-///
-/// `check_operation_has_target` fast-fails the cases the FE would silently drop.
+/// Ack contract: as `copy`, on the `delete-confirmation` soft dialog.
 pub async fn execute_delete<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
     refuse_while_dialog_blocks(app, "delete")?;
-    check_operation_has_target(app, "delete")?;
-    // `autoConfirm: true` skips the user's confirmation dialog. The explicit flag records that
-    // intent; the transport has already authenticated every external MCP request.
-    let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
     let permanent = delete_permanent_from_mode(params)?;
-
-    if auto_confirm {
-        let mut payload = json!({"autoConfirm": true});
-        if let Some(p) = permanent {
-            payload["permanent"] = json!(p);
-        }
-        let operation_id =
-            mcp_await_operation_start(app, "delete", "mcp-delete", payload, OPERATION_START_TIMEOUT).await?;
-        Ok(operation_started_ok("Delete", operation_id))
-    } else {
-        let mut payload = json!({"autoConfirm": false});
-        if let Some(p) = permanent {
-            payload["permanent"] = json!(p);
-        }
-        app.emit("mcp-delete", payload)?;
-        wait_for_ack(
-            app,
-            AckSignal::SoftDialogAppeared("delete-confirmation"),
-            DEFAULT_ACK_TIMEOUT,
-        )
-        .await?;
-        Ok(json!("OK: Delete dialog opened. Waiting for user confirmation."))
+    check_operation_has_target(app, params, "delete").await?;
+    let mut payload = json!({ "pane": required_pane_param(params)? });
+    if let Some(p) = permanent {
+        payload["permanent"] = json!(p);
     }
+    open_dialog(app, "delete", "mcp-delete", payload, DELETE_DIALOG).await
 }
 
 /// Map the `delete` tool's `mode` param to the FE's `permanent` flag: `trash` →
@@ -287,17 +202,12 @@ fn delete_permanent_from_mode(params: &Value) -> Result<Option<bool>, ToolError>
     }
 }
 
-/// Execute rename command.
+/// Execute rename command: opens the inline editor prefilled with `newName`, for a person to confirm.
 ///
-/// - `autoConfirm: false` → a round-trip: the FE moves the cursor to the target
-///   row and starts the inline rename editor prefilled with `newName` for the
-///   user to review (the human-review affordance). Acks once the editor is up.
-/// - `autoConfirm: true` → calls the `rename_file` backend directly
-///   with `force: false`; the managed op notifies the listing cache, so the pane
-///   refreshes on success. Honest errors: name not in the listing, or the target
-///   already exists.
-///
-/// The target is the named item (`name`), else the item under the cursor.
+/// The target is the named item (`name`), else the item under the cursor. Moving the cursor to a
+/// named item first flushes the pane state, so the resolution below reads it fresh, and the frontend
+/// pins activation to the name resolved here. What a person's F2 refuses gets the same answer, typed:
+/// a row the `.git` portal serves here, a read-only pane from the frontend.
 pub async fn execute_rename<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
     refuse_while_dialog_blocks(app, "rename").map_err(already_editing)?;
     let new_name = params
@@ -314,17 +224,10 @@ pub async fn execute_rename<R: Runtime>(app: &AppHandle<R>, params: &Value) -> T
         ));
     }
 
-    let (pane, _state) = super::target_pane_state(app, params)?;
+    let pane = required_pane_param(params)?;
     let name_param = params.get("name").and_then(|v| v.as_str());
-    let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
-
-    if auto_confirm {
-        // Move the cursor to the target first: `move_cursor`'s FE round-trip flushes
-        // the MCP state push (`syncStateToMcpNow`), so the resolution below reads a
-        // fresh pane state even right after a nav (the `select` / `move_cursor`
-        // precedent). Without a `name` we rename the current cursor item and trust
-        // the agent positioned it (that move already flushed).
-        if let Some(name) = name_param {
+    match name_param {
+        Some(name) => {
             mcp_round_trip(
                 app,
                 "mcp-move-cursor",
@@ -333,58 +236,18 @@ pub async fn execute_rename<R: Runtime>(app: &AppHandle<R>, params: &Value) -> T
             )
             .await?;
         }
-        let (_pane, state) = super::target_pane_state(app, params)?;
-        let (current_name, from_path) = resolve_rename_target(&state, name_param)?;
-        if current_name == new_name {
-            return Err(ToolError::invalid_params(format!(
-                "'{new_name}' is already the item's name"
-            )));
-        }
-        let parent = std::path::Path::new(&from_path)
-            .parent()
-            .ok_or_else(|| ToolError::internal(format!("Couldn't derive the parent of {from_path}")))?;
-        let to_path = parent.join(&new_name).to_string_lossy().into_owned();
-        refuse_portal_rename(&from_path, &to_path)?;
-        let volume_id = state.volume_id.clone();
-        let reply = crate::commands::rename::rename_file_replying(
-            from_path,
-            to_path,
-            false,
-            volume_id,
-            Some(cmdr_operation_log::types::Initiator::AiClient),
-            // Nobody waits on the settle here: the reply below says it's pending,
-            // and the pane's listing shows the end when it lands.
-            |_| {},
-        )
-        .await
-        // `Display` on a `MutationError` is the log/diagnostic form, which is what
-        // an MCP tool error is: a machine-facing report, not user-facing prose.
-        .map_err(|e| ToolError::internal(e.to_string()))?;
-        match reply {
-            cmdr_operations::MutationReply::Done => Ok(json!(format!("OK: Renamed to {new_name}."))),
-            cmdr_operations::MutationReply::StillRunning { .. } => Ok(json!(format!(
-                "OK: The rename to {new_name} is still running on a slow volume. It may still land, so check the pane's listing before retrying."
-            ))),
-        }
-    } else {
-        // Resolution lives in the FE (it holds the live listing): the mcp-rename
-        // handler moves the cursor to `name` (erroring honestly if it's not in the
-        // listing) and starts the editor prefilled with `newName`.
-        let mut payload = json!({"pane": pane, "newName": new_name});
-        if let Some(name) = name_param {
-            payload["name"] = json!(name);
-        }
-        let opened = mcp_round_trip(
-            app,
-            "mcp-rename",
-            payload,
-            format!("OK: Rename editor opened, prefilled with {new_name}. Waiting for the user to confirm."),
-        )
-        .await?;
-        // Only once the tracker holds it does the next tool see an editor to wait for.
-        wait_for_ack(app, AckSignal::SoftDialogAppeared(RENAME_EDITOR), DEFAULT_ACK_TIMEOUT).await?;
-        Ok(opened)
+        None => super::flush_pane_state(app, pane).await?,
     }
+    let (_pane, state) = target_pane_state(app, params)?;
+    let (current_name, from_path) = resolve_rename_target(&state, name_param)?;
+    let parent = std::path::Path::new(&from_path)
+        .parent()
+        .ok_or_else(|| ToolError::internal(format!("Couldn't derive the parent of {from_path}")))?;
+    let to_path = parent.join(&new_name).to_string_lossy().into_owned();
+    refuse_portal_rename(&from_path, &to_path)?;
+
+    let payload = json!({ "pane": pane, "name": current_name, "newName": new_name });
+    open_dialog(app, "rename", "mcp-rename", payload, RENAME_EDITOR).await
 }
 
 /// A second rename while the editor is up gets its own typed refusal beside the usual
@@ -401,7 +264,7 @@ fn already_editing(mut refusal: ToolError) -> ToolError {
     refusal
 }
 
-/// Refuses an `autoConfirm` rename a person's F2 refuses: one whose source or
+/// Refuses a rename a person's F2 refuses: one whose source or
 /// target the `.git` portal serves. That's every row of a read-only portal pane
 /// (`.git/worktrees/`), and a `.git/` listing's category rows, which stand in for
 /// git's real `worktrees/` and `branches/` folders at the same path. The engine
@@ -448,18 +311,15 @@ fn resolve_rename_target(
 
 /// Execute mkdir command.
 ///
-/// - No `name` → opens the naming dialog (unchanged).
-/// - `name` only → opens the dialog prefilled with the name.
-/// - `name` + `autoConfirm` → creates the folder directly on the focused pane
-///   (`create_directory`), erroring honestly on a name conflict.
-///
-/// Ack for the dialog paths: `mkdir-confirmation` soft dialog appears.
+/// - `name` → creates the folder directly on the named pane (`create_directory`),
+///   erroring honestly on a name conflict.
+/// - No `name` → opens the naming dialog for a person, acked as `copy` is.
 pub async fn execute_mkdir<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
     execute_create(app, params, "mcp-mkdir", "mkdir-confirmation", CreateKind::Directory).await
 }
 
-/// Execute mkfile command. Same `name` / `autoConfirm` shape as [`execute_mkdir`];
-/// ack for the dialog paths: `new-file-confirmation` soft dialog appears.
+/// Execute mkfile command. Same `name` shape as [`execute_mkdir`], on the
+/// `new-file-confirmation` soft dialog.
 pub async fn execute_mkfile<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
     execute_create(app, params, "mcp-mkfile", "new-file-confirmation", CreateKind::File).await
 }
@@ -472,69 +332,37 @@ enum CreateKind {
 
 /// Shared body for `mkdir` / `mkfile`.
 ///
-/// The direct-create path (`autoConfirm`) is a round-trip: the FE creates using
-/// the target pane's LIVE path + volumeId (never a backend `PaneStateStore` read,
-/// which lags a nav by the debounced sync — reading it could create in the pane's
-/// previous directory), then replies OK or an honest conflict error. The dialog
-/// path emits the create event (prefilled when `name` is given) and waits for the
-/// naming dialog to mount.
-///
-/// The optional `pane` param picks the target pane; absent, the FE uses its
-/// focused pane. Carrying it explicitly means creation never depends on FE focus
-/// timing (a `nav_to_path` immediately before a create can't land in the wrong
-/// pane if focus hasn't settled yet).
+/// The direct create is a round-trip: the FE creates using the target pane's LIVE path +
+/// volumeId (never a backend `PaneStateStore` read, which lags a nav by the debounced
+/// sync — reading it could create in the pane's previous directory), then replies OK or
+/// an honest conflict error.
 async fn execute_create<R: Runtime>(
     app: &AppHandle<R>,
     params: &Value,
     event: &str,
-    ack_dialog: &'static str,
+    naming_dialog: &'static str,
     kind: CreateKind,
 ) -> ToolResult {
-    let verb = match kind {
-        CreateKind::Directory => "create a folder",
-        CreateKind::File => "create a file",
+    let (verb, noun) = match kind {
+        CreateKind::Directory => ("create a folder", "folder"),
+        CreateKind::File => ("create a file", "file"),
     };
     refuse_while_dialog_blocks(app, verb)?;
-    let name = params.get("name").and_then(|v| v.as_str()).map(str::to_string);
-    let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
-    let pane = super::optional_pane_param(params)?;
+    let pane = required_pane_param(params)?;
 
-    if auto_confirm {
-        let name = name.ok_or_else(|| ToolError::invalid_params("autoConfirm requires a 'name'"))?;
-        if name.trim().is_empty() {
-            return Err(ToolError::invalid_params("'name' must not be empty"));
-        }
-        if name.contains('/') {
-            return Err(ToolError::invalid_params(
-                "'name' is a name, not a path — it must not contain '/'",
-            ));
-        }
-        let noun = match kind {
-            CreateKind::Directory => "folder",
-            CreateKind::File => "file",
-        };
-        let mut payload = json!({ "name": name, "autoConfirm": true });
-        if let Some(pane) = pane {
-            payload["pane"] = json!(pane);
-        }
-        return mcp_round_trip(app, event, payload, format!("OK: Created {noun} {name}.")).await;
-    }
-
-    // Dialog path: prefill the name when given, else open with the FE's default.
-    let mut payload = match name {
-        Some(name) => json!({ "name": name }),
-        None => json!({}),
+    let Some(name) = params.get("name").and_then(|v| v.as_str()) else {
+        return open_dialog(app, verb, event, json!({ "pane": pane }), naming_dialog).await;
     };
-    if let Some(pane) = pane {
-        payload["pane"] = json!(pane);
+    if name.trim().is_empty() {
+        return Err(ToolError::invalid_params("'name' must not be empty"));
     }
-    app.emit(event, payload)?;
-    wait_for_ack(app, AckSignal::SoftDialogAppeared(ack_dialog), DEFAULT_ACK_TIMEOUT).await?;
-    let what = match kind {
-        CreateKind::Directory => "Create folder",
-        CreateKind::File => "Create file",
-    };
-    Ok(json!(format!("OK: {what} dialog opened.")))
+    if name.contains('/') {
+        return Err(ToolError::invalid_params(
+            "'name' is a name, not a path — it must not contain '/'",
+        ));
+    }
+    let payload = json!({ "name": name, "pane": pane });
+    mcp_round_trip(app, event, payload, format!("OK: Created {noun} {name}.")).await
 }
 
 /// Execute refresh command.

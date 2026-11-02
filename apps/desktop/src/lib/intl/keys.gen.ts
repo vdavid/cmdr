@@ -2487,6 +2487,7 @@ export type MessageKey =
   | 'fileOperations.transferDialog.policyOverwriteSmaller'
   | 'fileOperations.transferDialog.policySkip'
   | 'fileOperations.transferDialog.policyStop'
+  | 'fileOperations.transferDialog.presetOverwriteNote'
   | 'fileOperations.transferDialog.rememberChoice'
   | 'fileOperations.transferDialog.rememberChoiceHelp'
   | 'fileOperations.transferDialog.rememberChoiceInfoLabel'

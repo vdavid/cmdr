@@ -98,17 +98,17 @@ export function createTransferDialogOpener(access: PaneAccess, dialogs: Pick<Dia
 
   /** Stamps who asked, and how, onto the dialog props, whichever source built them. */
   function showWithTrigger(props: TransferDialogPropsDraft, trigger: OpenTransferDialogArgs): void {
-    if (trigger.autoConfirm) {
-      props.autoConfirm = true
-      props.autoConfirmOnConflict = trigger.onConflict
-      props.mcpRequestId = trigger.mcpRequestId
-    }
     // F5/F6 is a person at the keyboard directing this transfer, so a single-item
-    // duplicate ends in the rename editor. An auto-confirmed one is MCP: an agent's
-    // copy has no business pulling focus into a text field in front of whoever is
-    // watching, so it takes the same route every other trigger does.
-    const duplicateFollowUp: DuplicateFollowUp = trigger.autoConfirm ? 'nothing' : 'openRenameEditor'
-    dialogs.showTransfer({ ...props, initiator: trigger.initiator, duplicateFollowUp })
+    // duplicate ends in the rename editor. ❗ Anyone else's takes the same route every
+    // other trigger does: an agent's copy has no business pulling focus into a text
+    // field in front of whoever is watching, where the next keystroke edits a name.
+    const duplicateFollowUp: DuplicateFollowUp = trigger.initiator === 'user' ? 'openRenameEditor' : 'nothing'
+    dialogs.showTransfer({
+      ...props,
+      presetOnConflict: trigger.onConflict,
+      initiator: trigger.initiator,
+      duplicateFollowUp,
+    })
   }
 
   /**
@@ -151,13 +151,16 @@ export function createTransferDialogOpener(access: PaneAccess, dialogs: Pick<Dia
     return props ? { props, listingId, generation } : null
   }
 
-  /** Opens the unified transfer dialog for all volume types (local, MTP, search-results, etc.). */
+  /**
+   * Opens the unified transfer dialog for all volume types (local, MTP, search-results, etc.).
+   * Answers whether it did: a `false` may already have told the user, and any MCP caller, why.
+   */
   async function openUnifiedTransferDialog(
     operationType: TransferOperationType,
     sourcePaneRef: FilePaneAPI | undefined,
     pane: 'left' | 'right',
     trigger: OpenTransferDialogArgs,
-  ) {
+  ): Promise<boolean> {
     const { mcpRequestId } = trigger
 
     // Snapshot source pane: no backend listing exists, so the listing-id-driven
@@ -168,10 +171,11 @@ export function createTransferDialogOpener(access: PaneAccess, dialogs: Pick<Dia
     // (a network pane can't be a transfer source — `canBeSource: false`).
     if (!capabilitiesFor(access.getPaneVolumeId(pane)).hasBackendListing) {
       const snapshotProps = buildSnapshotTransferProps(operationType, sourcePaneRef, pane)
-      if (snapshotProps) showWithTrigger(snapshotProps, trigger)
-      return
+      if (!snapshotProps) return false
+      showWithTrigger(snapshotProps, trigger)
+      return true
     }
-    if (!sourcePaneRef) return
+    if (!sourcePaneRef) return false
 
     // Selected row numbers only mean something against settled rows, and the rows can move
     // under the build (a listing reload, a resort, a watcher diff). Either way the press
@@ -185,20 +189,20 @@ export function createTransferDialogOpener(access: PaneAccess, dialogs: Pick<Dia
       mcpRequestId,
     }
     for (;;) {
-      if (!(await rowsSettled(sourcePaneRef, press))) return
+      if (!(await rowsSettled(sourcePaneRef, press))) return false
       const built = await buildListingProps(operationType, sourcePaneRef, pane, press)
-      if (!built) return
+      if (!built) return false
       const { props, listingId, generation } = built
       if (transferSourceIsCurrent({ ref: sourcePaneRef, pane, listingId, generation })) {
         showWithTrigger(props, trigger)
-        return
+        return true
       }
       // The pane itself was swapped out (a tab switch), so the press belonged to rows that
       // are gone: dropping it is right. Otherwise the same rows moved; build again.
-      if (access.getPaneRef(pane) !== sourcePaneRef) return
+      if (access.getPaneRef(pane) !== sourcePaneRef) return false
       if (Date.now() >= press.deadline) {
         announceRowsStillSettling(mcpRequestId)
-        return
+        return false
       }
     }
   }

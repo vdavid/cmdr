@@ -456,6 +456,7 @@ describe('TransferConflictsSection a11y', () => {
     remember: true,
     onRememberChange: () => {},
     rememberedOverwriteReach: 'all' as const,
+    overwriteNoteIsPreset: false,
   }
 
   it('the full card has no a11y violations', async () => {

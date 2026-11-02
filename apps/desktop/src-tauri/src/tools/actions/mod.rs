@@ -186,9 +186,8 @@ pub(super) fn dialog_block_error(verb: &str, blocking: &str) -> ToolError {
 /// Resolve the target pane from an optional `pane` param, defaulting to the
 /// focused pane, and return its name plus the last-synced state snapshot.
 ///
-/// Shared by the pane-scoped mutating tools (`tag`, `rename`) that resolve
-/// names/selection/cursor to paths off the pane state the FE pushes (the same
-/// source `copy`/`move`'s `check_operation_has_target` reads).
+/// Shared by the pane-scoped tools that resolve names/selection/cursor off the pane
+/// state the FE pushes.
 pub(super) fn target_pane_state<R: Runtime>(
     app: &AppHandle<R>,
     params: &Value,
@@ -214,19 +213,29 @@ pub(super) fn target_pane_state<R: Runtime>(
     Ok((pane, state))
 }
 
-/// Validate an optional `pane` param (`left` / `right`), returning `None` when
-/// absent. Unlike [`target_pane_state`], this reads no store snapshot: it's for
-/// tools whose FE side resolves the pane's LIVE path itself (mkdir/mkfile
-/// direct-create), so the backend only validates and forwards the choice, and
-/// the FE defaults to its focused pane when `None`.
-pub(super) fn optional_pane_param(params: &Value) -> Result<Option<&str>, ToolError> {
+/// The `pane` param of a tool whose schema requires it (`left` / `right`). Focus moves
+/// silently, so these tools never fall back to it.
+pub(super) fn required_pane_param(params: &Value) -> Result<&str, ToolError> {
     match params.get("pane").and_then(|v| v.as_str()) {
-        None => Ok(None),
-        Some(pane @ ("left" | "right")) => Ok(Some(pane)),
+        Some(pane @ ("left" | "right")) => Ok(pane),
         Some(other) => Err(ToolError::invalid_params(format!(
             "pane must be 'left' or 'right' (got '{other}')"
         ))),
+        None => Err(ToolError::invalid_params("Missing 'pane' parameter")),
     }
+}
+
+/// Refuses a tool that acts on a pane's selection when that pane has none. Falling back to the
+/// cursor would aim at whatever the row happens to be: `select` left, `nav_to_path` right, and
+/// `tag clear` wipes the right pane's cursor item, with no undo.
+pub(super) fn refuse_without_selection(state: &PaneState, pane: &str, verb: &str) -> Result<(), ToolError> {
+    if state.selected_indices.is_empty() {
+        return Err(ToolError::invalid_params(format!(
+            "Nothing to {verb}: nothing is selected in the {pane} pane. Use select first."
+        ))
+        .with_data(json!({ "refusal": "noSelection" })));
+    }
+    Ok(())
 }
 
 /// Flush the frontend's pending pane-state push for `pane` before a handler reads
@@ -234,20 +243,11 @@ pub(super) fn optional_pane_param(params: &Value) -> Result<Option<&str>, ToolEr
 ///
 /// `move_cursor` and `select` get this freshness as a side effect (their actions
 /// call `syncStateToMcpNow` before replying); a handler that only READS state to
-/// resolve targets (`tag`) has no such action, so a bare `nav` leaves the store a
+/// resolve targets (`tag`, `copy`, and the rest) has no such action, so a bare `nav` leaves the store a
 /// debounced-sync behind and a same-named file from the pane's previous directory
 /// could resolve as the target. This round-trip closes that window without moving
 /// the cursor or changing the selection. The FE `mcp-sync-state` listener replies
 /// once the push lands.
-// The only current caller (`tag`) is macOS-gated, so off macOS this is dead code
-// under `#![deny(unused)]`; the helper itself is platform-neutral.
-#[cfg_attr(
-    not(target_os = "macos"),
-    allow(
-        dead_code,
-        reason = "only caller `tag` is macOS-gated; the helper itself is platform-neutral"
-    )
-)]
 pub(super) async fn flush_pane_state<R: Runtime>(app: &AppHandle<R>, pane: &str) -> Result<(), ToolError> {
     mcp_round_trip(app, "mcp-sync-state", json!({ "pane": pane }), "ok".to_string())
         .await
@@ -484,11 +484,11 @@ fn parse_mcp_response(payload: &str, expected_id: &str) -> Option<Result<(), Str
     })
 }
 
-/// What the frontend says an autoConfirm file operation's start did.
+/// What the frontend says an operation's start did, answering a `dialog_confirm`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum OperationStartAck {
-    /// The operation started. `None` when the FE acked without spawning one (the
-    /// compress auto-confirm that keeps its dialog open on an existing target).
+    /// The operation started. `None` when the press spawned none (a move that
+    /// renamed in place).
     Started { operation_id: Option<String> },
     /// The FE refused the start because a dialog is in the way, and named it
     /// (`blockedBy`). Its gate runs after `refuse_while_dialog_blocks` reads the
@@ -496,7 +496,7 @@ pub(crate) enum OperationStartAck {
     Blocked { blocking_dialog: String },
 }
 
-/// Parse an `mcp-response` for an autoConfirm file operation.
+/// Parse an `mcp-response` for an operation start.
 ///
 /// Same `requestId` correlation as [`parse_mcp_response`]. `ok: true` is
 /// [`OperationStartAck::Started`], carrying the spawned `operationId` when present. A
@@ -677,40 +677,79 @@ fn round_trip_timeout(waited: std::time::Duration, held: Option<std::time::Durat
     })
 }
 
-/// How to resolve an operation start's unknown outcome, added to the timeout's own
-/// wording, since blindly retrying a copy that did start runs it twice.
-const OPERATION_START_CHECK: &str =
-    ". Read `cmdr://state?include=operations` to see whether it started before trying again";
+/// How to resolve an unknown outcome from opening a dialog, added to the timeout's own wording.
+const DIALOG_OPEN_CHECK: &str = ". Read `cmdr://state` dialogs to see whether it opened before trying again";
 
-/// Emit an autoConfirm file-op event and wait for the FE to reply with the
-/// spawned `operationId`.
+/// What the frontend says came of asking it to open a dialog or editor.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum DialogOpenAck {
+    /// It's showing, or on its way into the tracker.
+    Opened,
+    /// A dialog is in the way, and the reply names it (`blockedBy`). Its gate runs after
+    /// `refuse_while_dialog_blocks` reads the tracker, so this is one that opened in between.
+    Blocked { blocking_dialog: String },
+    /// The frontend won't open it, for a reason it names: `refusal` is what a caller branches on.
+    Refused { refusal: String, message: String },
+}
+
+/// Parse an `mcp-response` for opening a dialog. Same `requestId` correlation as
+/// [`parse_mcp_response`], and the first answer for a request is the one that counts. A refusal
+/// keeps its typed identity, ❌ never in the message text.
+pub(super) fn parse_dialog_open_response(payload: &str, expected_id: &str) -> Option<Result<DialogOpenAck, String>> {
+    let resp = serde_json::from_str::<Value>(payload).ok()?;
+    if resp.get("requestId").and_then(|v| v.as_str()) != Some(expected_id) {
+        return None;
+    }
+    if resp.get("ok").and_then(|v| v.as_bool()).unwrap_or(false) {
+        return Some(Ok(DialogOpenAck::Opened));
+    }
+    if let Some(blocking_dialog) = resp.get("blockedBy").and_then(|v| v.as_str()) {
+        return Some(Ok(DialogOpenAck::Blocked {
+            blocking_dialog: blocking_dialog.to_string(),
+        }));
+    }
+    let message = resp
+        .get("error")
+        .and_then(|v| v.as_str())
+        .unwrap_or("Unknown error")
+        .to_string();
+    Some(match resp.get("refusal").and_then(|v| v.as_str()) {
+        Some(refusal) => Ok(DialogOpenAck::Refused {
+            refusal: refusal.to_string(),
+            message,
+        }),
+        None => Err(message),
+    })
+}
+
+/// Emit an event that opens a dialog or editor, and wait for the frontend to say what came of it.
 ///
-/// Replaces the `GenerationAdvanced` ack for the auto-confirm path: correlating
-/// on a per-request id lets the tool return the exact `operationId` the FE minted
-/// (so a follow-up `queue` / `await operation_complete` is directly sequenced),
-/// where the generation ack could only prove "some pane push happened". Returns
-/// the id, or `None` when the FE acked without spawning (compress on an existing
-/// target keeps its dialog open). The budget is generous because the flow spans
-/// dialog-open → confirm → the write-op IPC that mints the id.
-///
-/// `verb` is the one the caller gave `refuse_while_dialog_blocks`, so a refusal
-/// from either side reads the same.
-async fn mcp_await_operation_start<R: Runtime>(
+/// The budget has to outlast the frontend's own wait for the source rows to settle
+/// (`ROW_SETTLE_BUDGET_MS`), or a busy pane answers `outcome_unknown` about a dialog that opened.
+/// `verb` is the one the caller gave `refuse_while_dialog_blocks`, so a refusal from either side
+/// reads the same.
+pub(super) async fn mcp_open_dialog<R: Runtime>(
     app: &AppHandle<R>,
     verb: &str,
     event: &str,
     payload: Value,
     timeout_secs: u64,
-) -> Result<Option<String>, ToolError> {
-    let ack = mcp_round_trip_parsed(app, event, payload, timeout_secs, parse_operation_start_response)
+) -> Result<(), ToolError> {
+    let ack = mcp_round_trip_parsed(app, event, payload, timeout_secs, parse_dialog_open_response)
         .await
         .map_err(|mut err| {
             if err.outcome_is_unknown() {
-                err.message.push_str(OPERATION_START_CHECK);
+                err.message.push_str(DIALOG_OPEN_CHECK);
             }
             err
         })?;
-    operation_start_result(verb, ack)
+    match ack {
+        DialogOpenAck::Opened => Ok(()),
+        DialogOpenAck::Blocked { blocking_dialog } => Err(dialog_block_error(verb, &blocking_dialog)),
+        DialogOpenAck::Refused { refusal, message } => {
+            Err(ToolError::invalid_params(message).with_data(json!({ "refusal": refusal })))
+        }
+    }
 }
 
 /// Word an operation start's [`OperationStartAck`] for the agent.

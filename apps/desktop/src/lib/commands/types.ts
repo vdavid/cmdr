@@ -117,19 +117,19 @@ export interface CommandArgsOverrides {
  * Override slot for commands whose dispatch payload is OPTIONAL. These are
  * dispatched arg-less from the F-key bar / palette / keyboard (open the dialog
  * with no preset) AND with a payload from the MCP `copy`/`move`/`delete` tools
- * (the AI can pre-answer the conflict policy / auto-confirm). `CommandDispatchArgs`
+ * (which pane, and a conflict policy to preset). `CommandDispatchArgs`
  * resolves these to a `[args?]` tuple so both call shapes type-check. A payload
  * must name its `initiator`: the handlers read only an ABSENT payload as a person
  * (`file-handlers.ts`), and "Skip confirmation" trusts nobody else.
  */
 export interface CommandArgsOptionalOverrides {
-  'file.copy': { autoConfirm?: boolean; onConflict?: string; mcpRequestId?: string; initiator: Initiator }
-  'file.move': { autoConfirm?: boolean; onConflict?: string; mcpRequestId?: string; initiator: Initiator }
-  'file.compress': { autoConfirm?: boolean; onConflict?: string; mcpRequestId?: string; initiator: Initiator }
-  'file.delete': { autoConfirm?: boolean; permanent?: boolean; mcpRequestId?: string; initiator: Initiator }
-  'file.rename': { initialName?: string; expectedName?: string }
-  'file.newFolder': { name?: string; pane?: 'left' | 'right'; initiator: Initiator }
-  'file.newFile': { name?: string; pane?: 'left' | 'right'; initiator: Initiator }
+  'file.copy': { pane?: PaneId; onConflict?: string; mcpRequestId?: string; initiator: Initiator }
+  'file.move': { pane?: PaneId; onConflict?: string; mcpRequestId?: string; initiator: Initiator }
+  'file.compress': { pane?: PaneId; mcpRequestId?: string; initiator: Initiator }
+  'file.delete': { pane?: PaneId; permanent?: boolean; mcpRequestId?: string; initiator: Initiator }
+  'file.rename': { pane?: PaneId; initialName?: string; expectedName?: string; mcpRequestId?: string }
+  'file.newFolder': { pane?: PaneId; mcpRequestId?: string; initiator: Initiator }
+  'file.newFile': { pane?: PaneId; mcpRequestId?: string; initiator: Initiator }
 }
 
 /**

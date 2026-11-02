@@ -138,25 +138,6 @@ export function createTransferDestExistsCheck(deps: TransferDestExistsCheckDeps)
     get rootEcho() {
       return rootEcho
     },
-    /**
-     * One-shot, non-debounced existence probe for the compress auto-confirm gate:
-     * MCP auto-confirm must not silently overwrite an existing archive, so it needs
-     * a deterministic answer at confirm time rather than the debounced reactive
-     * state. Returns `true` when the target exists OR the answer is indeterminate
-     * (timeout / error) — the conservative choice, since "proceed only when it
-     * definitely doesn't exist" must NOT proceed on uncertainty.
-     */
-    async probeExists(): Promise<boolean> {
-      const path = deps.getEditedPath()
-      if (validateDirectoryPath(path).severity === 'error') return false
-      try {
-        const result = await destinationExists(path, deps.getSelectedVolumeId())
-        return result.timedOut || result.data
-      } catch (err) {
-        deps.log.debug('Destination existence probe failed: {error}', { error: err })
-        return true
-      }
-    },
     /** Cancels a pending debounced probe (call on dialog destroy). */
     cancel() {
       debounced.cancel()

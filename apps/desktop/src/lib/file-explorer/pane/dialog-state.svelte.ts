@@ -541,8 +541,8 @@ export function createDialogState(deps: DialogStateDeps) {
   }
 
   /** The birth context a confirmed delete or trash starts from, or `null` with
-   *  no delete dialog up. An MCP `dialog_confirm`'s round-trip (`origin`) wins
-   *  over the dialog's own, so the start answers the agent that pressed. */
+   *  no delete dialog up. An MCP `dialog_confirm`'s round-trip rides `origin`, so
+   *  the start answers the agent that pressed. */
   function deleteBirthProps(
     previewId: string | null,
     operationType: 'delete' | 'trash',
@@ -569,11 +569,11 @@ export function createDialogState(deps: DialogStateDeps) {
       operationType,
       sourcePaths: deleteDialogProps.sourcePaths,
       sourceFolderPath: deleteDialogProps.sourceFolderPath,
-      sourcePaneSide: deps.getFocusedPaneSide(),
+      sourcePaneSide: deleteDialogProps.sourcePaneSide,
       previewId,
       sourceVolumeId: deleteDialogProps.sourceVolumeId,
       itemSizes,
-      mcpRequestId: origin?.mcpRequestId ?? deleteDialogProps.mcpRequestId,
+      mcpRequestId: origin?.mcpRequestId,
       initiator: deleteDialogProps.initiator,
       // A delete creates nothing, so there is never a copy to name.
       duplicateFollowUp: 'nothing',
@@ -711,12 +711,11 @@ export function createDialogState(deps: DialogStateDeps) {
       newName,
       renameInPlace,
       startInBackground,
-      mcpRequestId: confirmRequestId,
+      mcpRequestId,
     }: TransferConfirmPayload) {
       if (!transferDialogProps) return
-      // An MCP `dialog_confirm` waits for the operation's id like an auto-confirm
-      // does, so its round-trip wins, and it keeps a rename in place a transfer.
-      const mcpRequestId = confirmRequestId ?? transferDialogProps.mcpRequestId
+      // An MCP `dialog_confirm` waits for the operation's id, so its round-trip keeps
+      // a rename in place a transfer.
       if (
         renameInPlace &&
         destinationName &&
@@ -984,7 +983,7 @@ export function createDialogState(deps: DialogStateDeps) {
     },
 
     handleNewFolderCreated(folderName: string) {
-      const paneRef = deps.getFocusedPaneRef()
+      const paneRef = newFolderDialogProps?.pane === 'right' ? deps.getRightPaneRef() : deps.getLeftPaneRef()
       const paneListingId = paneRef?.getListingId()
       const hasParent = paneRef?.hasParentEntry()
 
@@ -1011,7 +1010,7 @@ export function createDialogState(deps: DialogStateDeps) {
     },
 
     handleNewFileCreated(fileName: string) {
-      const paneRef = deps.getFocusedPaneRef()
+      const paneRef = newFileDialogProps?.pane === 'right' ? deps.getRightPaneRef() : deps.getLeftPaneRef()
       const paneListingId = paneRef?.getListingId()
       const hasParent = paneRef?.hasParentEntry()
       const currentPath = newFileDialogProps?.currentPath ?? ''

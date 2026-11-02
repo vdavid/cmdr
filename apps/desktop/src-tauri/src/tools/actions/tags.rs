@@ -2,7 +2,7 @@
 //!
 //! Thin adapter over `file_system::tags_io` (`toggle_color` / `apply_merge`) — the same
 //! primitives the context-menu tag toggle uses. It resolves target paths off the
-//! pane state (names / selection / cursor, via `resolve_pane_target_paths`), then
+//! pane state (names, else the pane's selection, via `resolve_pane_target_paths`), then
 //! patches the cached listing so the panes re-render the colored dots (reusing
 //! `Listings::apply_row_facts` (`RowFacts::Tags`), the enrich path). Gate `Always`: silent metadata
 //! mutation on user files, with no confirmation dialog to piggyback on.
@@ -58,9 +58,12 @@ async fn execute_tag_macos<R: Runtime>(app: &AppHandle<R>, params: &Value) -> To
     // `move_cursor` / `select` freshness, without moving the cursor): otherwise a
     // tag right after a bare `nav` could resolve a same-named file from the pane's
     // previous directory.
-    let (pane, _stale) = super::target_pane_state(app, params)?;
+    let pane = super::required_pane_param(params)?.to_string();
     super::flush_pane_state(app, &pane).await?;
     let (_pane, state) = super::target_pane_state(app, params)?;
+    if names.is_none() {
+        super::refuse_without_selection(&state, &pane, "tag")?;
+    }
     let paths = super::resolve_pane_target_paths(&state, names.as_deref())?;
 
     let volume_id = state.volume_id.as_deref();

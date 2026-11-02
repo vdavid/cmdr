@@ -1027,11 +1027,11 @@ pinned by `programmatic-confirm.test.ts` and
 with; the dialog holds what it will actually send (the edited path, the picked volume, the scan preview). For a compress
 the two differ from the first frame: the box names `<folder>/<name>.zip` and the props only the folder, which the
 backend's `ensure_zip_writable` refuses as a read-only destination. A confirm that lands mid-startup waits for the scan
-start like a person's fast Enter does; it does not wait for the conflict-name listing (only the auto-confirm does), so
-it stays inside the MCP ack budget. Pinned by `dialog-state.transfer-confirm.svelte.test.ts`. The press carries the MCP
-round-trip id (`ConfirmOptions.mcpRequestId`) into `onConfirm` / `onConfirmInBackground`, and `dialog-state` puts it on
-the birth props ahead of the dialog's own, so the START answers the agent with the operation's id; the press itself
-resolves `pressed` / `notStarted` (`ConfirmPress`), and only a press that started nothing answers from here.
+start like a person's fast Enter does; it does not wait for the conflict-name listing, so it stays inside the MCP ack
+budget. Pinned by `dialog-state.transfer-confirm.svelte.test.ts`. The press carries the MCP round-trip id
+(`ConfirmOptions.mcpRequestId`) into `onConfirm` / `onConfirmInBackground`, and `dialog-state` puts it on the birth
+props, so the START answers the agent with the operation's id; the press itself resolves `pressed` / `notStarted`
+(`ConfirmPress`), and only a press that started nothing answers from here.
 
 `handleTransferConfirm` takes no scan flag: the progress dialog doesn't wait for a `TransferDialog` preview, because the
 backend registers the operation at confirm and its own task waits for the preview it claimed
@@ -1643,6 +1643,13 @@ rollback, queue, and answering a name clash all keep working while the progress 
 because that is exactly when a user needs them. Search's own "Show all in main window" is navigation, so it keeps
 working too. Getting this boundary wrong would disable the queue controls, which is worse than the defect the gate
 closes; don't let a later tidy-up widen it.
+
+**A tool that opens a dialog hears what came of it.** `answeringDialogOpen` wraps the opener and answers the MCP round
+trip: `ok` once the dialog is showing, else a typed failure, so a press that went nowhere doesn't sit out the tool's
+budget. Whoever refused first has already answered, and the tool takes the first answer for a request. `refuseOpening`
+sends a read-only or destination refusal to an MCP caller typed, with no alert over what the person is doing; a person
+still gets the alert or toast. The opener's own wait for the rows (`ROW_SETTLE_BUDGET_MS`) is why the tool's budget sits
+above it (`tools/actions/file_ops.rs`).
 
 **Four layers, because four different actors can ask.** They are not redundant: three of them are reachable without
 passing through any of the others.

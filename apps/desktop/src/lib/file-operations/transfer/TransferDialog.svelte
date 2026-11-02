@@ -78,15 +78,8 @@
         sourceVolumeId: string
         /** Destination volume ID */
         destVolumeId: string
-        /** When true, dialog auto-confirms without user interaction (MCP). */
-        autoConfirm?: boolean
-        /** Conflict resolution policy for auto-confirm (MCP). */
-        autoConfirmOnConflict?: string
-        /** MCP round-trip id, present only for an auto-confirmed MCP op. Only used
-         *  by the compress auto-confirm abort (target archive exists → dialog stays
-         *  open): the FE then acks the round-trip WITHOUT an operationId, since no
-         *  op spawned. The normal spawn reply happens in the progress state. */
-        mcpRequestId?: string
+        /** An MCP caller's `onConflict`: the policy this dialog opens on, as a preset. */
+        presetOnConflict?: string
         /**
          * Rename mode: the ONE source moves to this name in place (F2 on a big S3
          * folder, `pane/rename-as-move.ts`). The path box holds folder + name, the
@@ -114,9 +107,7 @@
         sourceVolumeId,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Part of Props interface, used by parent
         destVolumeId,
-        autoConfirm = false,
-        autoConfirmOnConflict,
-        mcpRequestId,
+        presetOnConflict,
         newName,
         onConfirm,
         registerConfirmer,
@@ -191,17 +182,16 @@
     // handler silently awaits is how a click reads as "nothing happened".
     let confirmPending = $state(false)
 
-    // An auto-confirming caller's named policy ("Ask for each" when it named none),
-    // else the person's saved one (`remembered-conflict-policy.ts`). The MCP map is
-    // shared with the `dialog_confirm` path (`conflict-policy.ts`); the two used
-    // to keep private copies that had drifted on the conditional names.
-    const savedConflictPolicy = autoConfirm ? null : readRememberedConflictPolicy()
-    let conflictPolicy = $state<ConflictResolution>(
-        savedConflictPolicy ?? conflictPolicyFromMcpName(autoConfirmOnConflict) ?? 'stop',
-    )
-    let conflictPolicySource = $state<ConflictPolicySource>(autoConfirm ? 'explicit' : 'remembered')
+    // An MCP caller's preset takes the place of the person's saved policy for this one
+    // dialog (`remembered-conflict-policy.ts`). The MCP map is shared with the
+    // `dialog_confirm` path (`conflict-policy.ts`); the two used to keep private copies
+    // that had drifted on the conditional names.
+    const presetConflictPolicy = conflictPolicyFromMcpName(presetOnConflict)
+    const savedConflictPolicy = readRememberedConflictPolicy()
+    let conflictPolicy = $state<ConflictResolution>(presetConflictPolicy ?? savedConflictPolicy)
+    let conflictPolicySource = $state<ConflictPolicySource>(presetConflictPolicy ? 'preset' : 'remembered')
     // "Remember this choice": ticked when a choice is saved; a confirm saves by it.
-    let rememberConflictChoice = $state(savedConflictPolicy !== null && rememberStartsTicked(savedConflictPolicy))
+    let rememberConflictChoice = $state(rememberStartsTicked(savedConflictPolicy))
 
     // Filter to only actual volumes (not favorites)
     const actualVolumes = $derived(
@@ -320,7 +310,7 @@
             choiceVisible: conflictChoiceVisible,
         }),
     )
-    /** Set while the radios sit on a remembered policy that overwrites: the note under them says so. */
+    /** Set while the radios sit on a remembered or preset policy that overwrites: the note under them says so. */
     const rememberedOverwriteReach = $derived(
         overwriteNoteReach({ policy: conflictPolicy, source: conflictPolicySource }),
     )
@@ -452,7 +442,7 @@
     // asks the same question before it writes and refuses anyway, so an enabled button
     // only led to that refusal in an extra dialog. A notice gone stale (the folder
     // became writable while the dialog was open) clears on the next edit of the path.
-    // MCP auto-confirm skips the button and meets the backend's typed refusal instead.
+    // MCP `dialog_confirm` skips the button and meets the backend's typed refusal instead.
     const REFUSAL_KEY = {
         readOnlyFilesystem: 'fileOperations.transferDialog.destinationReadOnly',
         noPermission: 'fileOperations.transferDialog.destinationNoPermission',
@@ -508,14 +498,11 @@
     })
 
     /**
-     * Pending conflict check, captured so `handleConfirm` can await it under the
-     * one policy that needs its result (see `needsConflictNames`).
+     * Pending conflict check, captured so the mount and the path effect share one.
      *
      * The check runs on mount, in parallel with the (potentially slow) scan
      * preview — it's just one cheap dest listing and doesn't need the recursive
-     * byte scan. It's assigned synchronously in `onMount` BEFORE the auto-confirm
-     * branch, so the MCP fast path's `handleConfirm` await sees a real promise
-     * (not `undefined`) and dispatches with `conflictNames` populated.
+     * byte scan. It's assigned synchronously in `onMount`.
      */
     let conflictCheckPromise: Promise<void> | null = $state(null)
 
@@ -574,18 +561,10 @@
         scan.start()
 
         // Run the cheap top-level conflict check in parallel with the scan preview
-        // (one dest listing, not the recursive byte scan). Assigned BEFORE the
-        // auto-confirm branch so the fast path's `handleConfirm` await guard sees a
-        // real promise. Compress makes ONE new file, so multi-file dest conflicts
+        // (one dest listing, not the recursive byte scan). Compress makes ONE new file, so multi-file dest conflicts
         // are meaningless — it skips the check and uses the dest-exists affordance.
         if (activeOperationType !== 'compress' && !isRenameMode && !pathError) {
             conflictCheckPromise ??= conflicts.check()
-        }
-
-        // Auto-confirm if MCP requested it (after a tick so the dialog is fully initialized)
-        if (autoConfirm) {
-            await tick()
-            await handleConfirm(true)
         }
     })
 
@@ -608,26 +587,6 @@
         }
     })
 
-    /**
-     * Whether this confirm needs the upfront conflict NAMES before it dispatches.
-     *
-     * Only `skip` does: `pre_known_conflicts` is a bulk-skip perf optimization the
-     * backend reads under that one resolution and ignores under every other
-     * (`build_pre_skip_set` in `transfer_driver/mod.rs` returns an empty set unless
-     * `config_resolution == Skip`). Under `stop` the backend prompts per clash at
-     * runtime, so dispatching with `conflicts: []` costs information, never safety.
-     *
-     * Only the auto-confirm waits for them: it fires on mount, before the check
-     * can have answered, and nobody is watching the button. A person can't reach
-     * `skip` while the check is running (the policy radios only render once it's
-     * done), and an MCP `dialog_confirm` answers within its ack budget, so both
-     * dispatch with whatever names the check has by then. A dest listing can take
-     * minutes on a big remote folder.
-     */
-    function needsConflictNames(isAuto: boolean): boolean {
-        return isAuto && dispatchPolicy === 'skip'
-    }
-
     /** The policy this confirm sends, saving the default "Remember this choice" asks for on the way. */
     function commitConflictPolicy(): ConflictResolution {
         rememberConflictPolicy({
@@ -642,36 +601,22 @@
 
     /** Resolves `true` once the press reached `onConfirm`, `false` when a guard
      *  stopped it (an MCP `dialog_confirm` answers the agent from that). */
-    async function handleConfirm(
-        isAuto = false,
-        { startInBackground = false, mcpRequestId: confirmRequestId }: ConfirmOptions = {},
-    ): Promise<boolean> {
+    async function handleConfirm({
+        startInBackground = false,
+        mcpRequestId: confirmRequestId,
+    }: ConfirmOptions = {}): Promise<boolean> {
         // A refused source can't be read, so there's nothing to confirm. A confirm that
-        // beats the refusal (MCP auto-confirm) reaches the backend, which refuses it typed.
+        // beats the refusal (MCP `dialog_confirm`) reaches the backend, which refuses it typed.
         if (pathError || scan.sourceRefusal || confirmed) return false
         confirmed = true
         confirmPending = true
-        // Compress auto-confirm must not silently overwrite an existing archive:
-        // proceed unattended only when the target doesn't exist; else stay open.
-        if (activeOperationType === 'compress' && isAuto && (await destExists.probeExists())) {
-            confirmed = false
-            confirmPending = false
-            // Ack the MCP round-trip WITHOUT an operationId: no op spawned, the
-            // dialog stays open for the user to confirm the overwrite.
-            if (mcpRequestId) {
-                const { emit } = await import('@tauri-apps/api/event')
-                void emit('mcp-response', { requestId: mcpRequestId, ok: true })
-            }
-            return false
-        }
         // Same-volume move: dispatch IMMEDIATELY. No deep scan ever ran (the
         // backend renames server-side, zero bytes), so there's nothing to wait
         // for and no cached preview to consume — pass `previewId = null`, which
-        // the backend reads as "no preview" rather than a miss. The conflict
-        // check only gates `skip`.
+        // the backend reads as "no preview" rather than a miss.
         if (isSameVolumeMove) {
             scan.cancelPreview()
-            await confirmTransfer({ previewId: null, isAuto, startInBackground, confirmRequestId })
+            confirmTransfer({ previewId: null, startInBackground, confirmRequestId })
             return true
         }
         // Wait for `startScanPreview` so `previewId` is non-null on a fast
@@ -684,26 +629,26 @@
         // the `confirmed` guard keeps `handleCancel` away from `freeAndCleanup`,
         // so its result would sit until a TTL sweep. The IPC only mints an id
         // and spawns the walk, so it returns promptly even on a wedged share.
-        // The conflict check does NOT gate this path: it's a dest listing that
-        // can take minutes on a big remote dir, and only `skip` consumes its
-        // names.
+        // The conflict check does NOT gate a confirm: it's a dest listing that can
+        // take minutes on a big remote dir. Nobody reaches `skip` while it's running
+        // (the radios only render once it's done, and a remembered or preset one
+        // waits for them), and `pre_known_conflicts` is only a bulk-skip optimization
+        // the backend reads under that one policy, so an MCP `dialog_confirm` naming
+        // `skip_all` early costs a little time, never safety.
         await scan.scanStarted
-        await confirmTransfer({ previewId: scan.previewId, isAuto, startInBackground, confirmRequestId })
+        confirmTransfer({ previewId: scan.previewId, startInBackground, confirmRequestId })
         return true
     }
 
-    async function confirmTransfer({
+    function confirmTransfer({
         previewId,
-        isAuto,
         startInBackground,
         confirmRequestId,
     }: {
         previewId: string | null
-        isAuto: boolean
         startInBackground: boolean
         confirmRequestId: string | undefined
     }) {
-        if (needsConflictNames(isAuto) && !isRenameMode) await (conflictCheckPromise ??= conflicts.check())
         onConfirm({
             destination: targetPath,
             destinationName: namedTarget?.name,
@@ -734,7 +679,7 @@
             conflictPolicy = policy
             conflictPolicySource = 'explicit'
         }
-        return (await handleConfirm(false, options)) ? 'pressed' : 'notStarted'
+        return (await handleConfirm(options)) ? 'pressed' : 'notStarted'
     })
 
     function handleCancel() {
@@ -757,7 +702,7 @@
      */
     function confirmFromUser(options: ConfirmOptions = {}) {
         if (targetRefusal) return
-        void handleConfirm(false, options)
+        void handleConfirm(options)
     }
 
     function handleKeydown(event: KeyboardEvent) {
@@ -993,6 +938,7 @@
                 rememberConflictChoice = remember
             }}
             {rememberedOverwriteReach}
+            overwriteNoteIsPreset={conflictPolicySource === 'preset'}
         />
     </div>
 

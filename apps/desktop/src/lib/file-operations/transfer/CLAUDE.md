@@ -43,10 +43,8 @@ Copy (F5), move (F6), compress (⌥F5): setup, conflict scan, progress, errors. 
   preview on teardown; confirm ALWAYS awaits `scan.scanStarted`. DETAILS § Scan.
 - **"Skip confirmation" confirms copy/move unmounted**, into the FOLDER with no leaf. A new must-see notice needs a case
   in `../../file-explorer/pane/confirmation-skip.ts`.
-- **Compress swaps the conflict-policy UI for a dest-exists overwrite check**; its MCP auto-confirm ❌ never silently
-  overwrites.
-- **Only a confirm saves the remembered policy, per "Remember this choice"**; ❌ never MCP. DETAILS § "The remembered
-  conflict policy".
+- **Only a confirm saves the remembered policy, per "Remember this choice"**; ❌ never MCP, whose `onConflict` is a
+  `preset`. DETAILS § "The remembered conflict policy".
 - **ONE map from an MCP `onConflict` name to a policy** (`conflict-policy.ts`), and ONE confirm path: `dialog_confirm`
   presses `handleConfirm` via `registerConfirmer`. ❌ Never a second map (an unmapped name silently becomes `skip`) or a
   payload built from the opening props.

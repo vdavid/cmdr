@@ -626,8 +626,8 @@ export const DELEGATE_ROWS: DelegateRow[] = [
     args: { permanent: true },
     expect: (e) => {
       expect(e.openDeleteDialog).toHaveBeenCalledExactlyOnceWith({
+        pane: undefined,
         permanent: true,
-        autoConfirm: undefined,
         mcpRequestId: undefined,
         initiator: undefined,
       })
@@ -641,11 +641,11 @@ export const DELEGATE_ROWS: DelegateRow[] = [
   },
   {
     id: 'file.copy',
-    args: { autoConfirm: true, onConflict: 'overwrite_all', initiator: 'aiClient' },
+    args: { pane: 'right', onConflict: 'overwrite_all', initiator: 'aiClient' },
     expect: (e) => {
-      // The MCP `initiator` rides the same handler path as autoConfirm/onConflict.
+      // The MCP `initiator` rides the same handler path as pane/onConflict.
       expect(e.openCopyDialog).toHaveBeenCalledExactlyOnceWith({
-        autoConfirm: true,
+        pane: 'right',
         onConflict: 'overwrite_all',
         initiator: 'aiClient',
       })
@@ -666,10 +666,10 @@ export const DELEGATE_ROWS: DelegateRow[] = [
   },
   {
     id: 'file.move',
-    args: { autoConfirm: false, onConflict: 'skip_all', initiator: 'aiClient' },
+    args: { pane: 'left', onConflict: 'skip_all', initiator: 'aiClient' },
     expect: (e) => {
       expect(e.openMoveDialog).toHaveBeenCalledExactlyOnceWith({
-        autoConfirm: false,
+        pane: 'left',
         onConflict: 'skip_all',
         initiator: 'aiClient',
       })
@@ -705,8 +705,8 @@ export const DELEGATE_ROWS: DelegateRow[] = [
     id: 'file.delete',
     expect: (e) => {
       expect(e.openDeleteDialog).toHaveBeenCalledExactlyOnceWith({
+        pane: undefined,
         permanent: false,
-        autoConfirm: undefined,
         mcpRequestId: undefined,
         initiator: 'user',
       })
@@ -714,11 +714,11 @@ export const DELEGATE_ROWS: DelegateRow[] = [
   },
   {
     id: 'file.delete',
-    args: { autoConfirm: true, initiator: 'aiClient' },
+    args: { pane: 'right', initiator: 'aiClient' },
     expect: (e) => {
       expect(e.openDeleteDialog).toHaveBeenCalledExactlyOnceWith({
+        pane: 'right',
         permanent: false,
-        autoConfirm: true,
         mcpRequestId: undefined,
         initiator: 'aiClient',
       })

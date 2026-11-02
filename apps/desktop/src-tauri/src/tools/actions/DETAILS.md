@@ -172,14 +172,18 @@ budget on timeout.
 `AckSignal` variants, when they fire, and who uses them:
 
 - **`GenerationAdvanced`**: fires when `PaneStateStore.generation` is strictly greater than the captured value. Used by
-  pane mutators: `set_view_mode`, `sort`, `toggle_hidden`, `tab`, `nav_*`, and auto-confirmed `copy`/`move`/`delete`.
+  pane mutators: `set_view_mode`, `sort`, `toggle_hidden`, `tab`, and `nav_*`.
   NOT `select`/`refresh` (both round-trips), and NOT `dialog_confirm` (below).
-- **`SoftDialogAppeared(id)`**: fires when a soft dialog with that id is in `SoftDialogTracker`. Used by confirmation
-  dialogs from `copy`/`move`/`delete` (`autoConfirm: false`), `mkdir`, `mkfile`, and `dialog open about`.
+- **`SoftDialogAppeared(id)`**: fires when a soft dialog with that id is in `SoftDialogTracker`. Used by `dialog open
+  about`, and by `open_dialog` (`file_ops.rs`) for `copy`, `move`, `compress`, `delete`, `rename`, and a `mkdir` or
+  `mkfile` with no name, AFTER a round trip the frontend answers once the dialog is up or with why it isn't. The round
+  trip's budget has to outlast the frontend's wait for its rows (`ROW_SETTLE_BUDGET_MS`). They answer
+  `{ awaitingPerson, dialog, next }`. Each names its required `pane`, because focus moves silently, and `copy`, `move`,
+  and `tag` refuse a pane with no selection (`refuse_without_selection`), with no fallback to the cursor.
 - **`SoftDialogDisappeared(id)`**: fires when a soft dialog with that id is no longer tracked. Used by
   `dialog close <confirmation>` (the FE `ModalDialog` fires `notifyDialogClosed` on unmount), and by
   `dialog_confirm <transfer|delete>`, AFTER its round-trip: the press carries the request id into the start, which
-  answers with the spawned `operationId` (as an auto-confirmed `copy` does), and the FE takes the dialog down in the
+  answers with the spawned `operationId`, and the FE takes the dialog down in the
   same tick it starts the operation. ❌ Don't ack a confirm on `GenerationAdvanced`: a compress, or a copy onto a slow
   volume, changes nothing in either pane until its first file lands, so the tool answered "not acknowledged" about an
   operation that had started (a 300 MB compress onto a phone, 2026-09-30). ❗ This signal is also true of a dialog that
@@ -273,11 +277,10 @@ when path-shaped). Both in `mod.rs`. Virtual paths (`mtp://…`) don't start wit
 
 ## Empty-operation fast-fail (`file_ops.rs`)
 
-`empty_operation_error` (pure, unit-tested) mirrors the FE fallback semantics: a selection wins; no selection falls back
-to the cursor file; cursor on `..` (or an empty pane) means the FE would silently drop the dialog, so the tool rejects
-fast. Unsynced state (`path` empty) passes through. Without the `select` / `move_cursor` pre-reply flush, select → copy
-reads a stale empty selection and move_cursor → copy reads a stale cursor (still on `..`), and either wrongly rejects
-here.
+`empty_operation_error` (pure, unit-tested), for `delete` and `compress`, mirrors the FE fallback semantics: a selection
+wins; no selection falls back to the cursor file; cursor on `..` (or an empty pane) means nothing could open, so the tool
+rejects fast. Unsynced state (`path` empty) passes through. `fresh_pane_state` flushes the pane first, so these and
+`copy` / `move`'s selection check read what the pane holds now.
 
 "Empty pane" is `files` empty AND no actionable rows, where actionable is `total_files` minus the `..` row the pane's
 `has_parent_row` declares. ❌ Don't go back to reading `total_files <= 1` as "only the parent": a search-results snapshot

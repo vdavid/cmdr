@@ -168,9 +168,7 @@
                 sourceFolderPath={transferDialogProps.sourceFolderPath}
                 sourceVolumeId={transferDialogProps.sourceVolumeId}
                 destVolumeId={transferDialogProps.destVolumeId}
-                autoConfirm={transferDialogProps.autoConfirm}
-                autoConfirmOnConflict={transferDialogProps.autoConfirmOnConflict}
-                mcpRequestId={transferDialogProps.mcpRequestId}
+                presetOnConflict={transferDialogProps.presetOnConflict}
                 newName={transferDialogProps.newName}
                 onConfirm={onTransferConfirm}
                 registerConfirmer={registerTransferConfirmer}
@@ -245,8 +243,6 @@
                 cloudFolderMayHoldOnlineOnly={deleteDialogProps.cloudFolderMayHoldOnlineOnly}
                 isFromCursor={deleteDialogProps.isFromCursor}
                 sourceVolumeId={deleteDialogProps.sourceVolumeId}
-                autoConfirm={deleteDialogProps.autoConfirm}
-                mcpRequestId={deleteDialogProps.mcpRequestId}
                 onConfirm={onDeleteConfirm}
                 onConfirmInBackground={onTrashInBackground}
                 registerConfirmer={registerDeleteConfirmer}

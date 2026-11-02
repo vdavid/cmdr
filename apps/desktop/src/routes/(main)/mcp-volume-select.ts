@@ -14,7 +14,7 @@
  * the correction.
  *
  * It rides the command bus (`volume.selectByName`), with the request id in the command args
- * the way the auto-confirmed file ops carry theirs. The bus doesn't hold MCP back behind an
+ * the way `dialog_confirm` carries its own. The bus doesn't hold MCP back behind an
  * open dialog (`DETAILS.md` § The dialog gate); what it buys is the typed command id and the
  * log line and breadcrumb every command gets.
  */

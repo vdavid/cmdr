@@ -76,8 +76,7 @@ const FILE_CLASH: VolumeConflictInfo = {
 }
 
 interface MountOpts {
-  autoConfirm?: boolean
-  autoConfirmOnConflict?: string
+  presetOnConflict?: string
   onConfirm?: (payload: TransferConfirmPayload) => void
   onCancel?: () => void
   registerConfirmer?: (confirm: TransferConfirmer) => () => void
@@ -98,8 +97,7 @@ function mountDialog(opts: MountOpts = {}): HTMLDivElement {
       sourceFolderPath: '/Users/test',
       sourceVolumeId: 'root',
       destVolumeId: 'root',
-      autoConfirm: opts.autoConfirm ?? false,
-      autoConfirmOnConflict: opts.autoConfirmOnConflict,
+      presetOnConflict: opts.presetOnConflict,
       registerConfirmer: opts.registerConfirmer,
       onConfirm: opts.onConfirm ?? (() => {}),
       onCancel: opts.onCancel ?? (() => {}),
@@ -316,18 +314,76 @@ describe('TransferDialog’s “Remember this choice” box', () => {
 })
 
 describe('TransferDialog MCP paths keep their own policy', () => {
-  it('auto-confirm sends the named policy, ignoring and never writing the saved one', async () => {
+  it("a preset takes the saved policy's place, and a confirm sends it without saving it", async () => {
     settingsState.policy = 'overwrite'
-    const { sent } = await mountWithClash({ autoConfirm: true, autoConfirmOnConflict: 'skip_all' })
+    const { target, sent } = await mountWithClash({ presetOnConflict: 'skip_all' })
+    expect(radio(target, 'skip').checked).toBe(true)
+
+    confirmButton(target).click()
+    await flushMicrotasks()
+
     expect(sent()).toBe('skip')
-    expect(getSettingMock).not.toHaveBeenCalledWith(POLICY_SETTING)
     expect(setSettingMock).not.toHaveBeenCalled()
   })
 
-  it('auto-confirm with no named policy asks per file, whatever is saved', async () => {
-    settingsState.policy = 'overwrite'
-    const { sent } = await mountWithClash({ autoConfirm: true })
-    expect(sent()).toBe('stop')
+  it('a preset never saves, even with "Remember this choice" ticked', async () => {
+    settingsState.policy = 'overwrite_older'
+    const { target } = await mountWithClash({ presetOnConflict: 'overwrite_all' })
+    expect(rememberBox(target)?.checked).toBe(true)
+
+    confirmButton(target).click()
+    await flushMicrotasks()
+
+    expect(setSettingMock).not.toHaveBeenCalled()
+  })
+
+  it('a person picking over a preset makes it theirs, saved by the box as usual', async () => {
+    settingsState.policy = 'overwrite_older'
+    const { target, sent } = await mountWithClash({ presetOnConflict: 'overwrite_all' })
+
+    radio(target, 'skip').click()
+    await tick()
+    confirmButton(target).click()
+    await flushMicrotasks()
+
+    expect(sent()).toBe('skip')
+    expect(setSettingMock).toHaveBeenCalledWith(POLICY_SETTING, 'skip')
+  })
+
+  it('a preset falls back to asking per file while the conflict check is pending', async () => {
+    settingsState.policy = 'stop'
+    scanVolumeForConflictsMock.mockReturnValue(new Promise(() => {}))
+    let sent: ConflictResolution | null = null
+    const target = mountDialog({
+      presetOnConflict: 'overwrite_all',
+      onConfirm: (payload) => {
+        sent = payload.conflictResolution
+      },
+    })
+    await flushMicrotasks()
+
+    // An Enter here must not send a model-chosen overwrite with nothing on screen.
+    confirmButton(target).click()
+    await flushMicrotasks()
+
+    expect(sent).toBe('stop')
+    expect(setSettingMock).not.toHaveBeenCalled()
+  })
+
+  it('a `dialog_confirm` naming a policy overrides the preset', async () => {
+    const confirmer: { press: TransferConfirmer | null } = { press: null }
+    const { sent } = await mountWithClash({
+      presetOnConflict: 'overwrite_all',
+      registerConfirmer: (confirm) => {
+        confirmer.press = confirm
+        return () => {}
+      },
+    })
+
+    await confirmer.press?.('skip')
+    await flushMicrotasks()
+
+    expect(sent()).toBe('skip')
     expect(setSettingMock).not.toHaveBeenCalled()
   })
 
@@ -397,8 +453,19 @@ describe('TransferDialog flags a remembered overwrite', () => {
     expect(note(target)).toBeNull()
   })
 
-  it('shows no note for an overwrite an MCP caller named', async () => {
-    const { target } = await mountWithClash({ autoConfirm: true, autoConfirmOnConflict: 'overwrite_all' })
+  it('shows a preset overwrite its own note, gone once the person picks', async () => {
+    const { target } = await mountWithClash({ presetOnConflict: 'overwrite_older_all' })
+    expect(note(target)?.textContent).toContain(
+      'This dialog opened set to overwrite files already there that are older',
+    )
+
+    radio(target, 'skip').click()
+    await tick()
+    expect(note(target)).toBeNull()
+  })
+
+  it('shows no note for a preset that overwrites nothing', async () => {
+    const { target } = await mountWithClash({ presetOnConflict: 'skip_all' })
     expect(note(target)).toBeNull()
   })
 })

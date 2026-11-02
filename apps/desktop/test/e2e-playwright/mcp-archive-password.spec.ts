@@ -144,7 +144,7 @@ test.describe('MCP archive password', () => {
     await mcpNavToPath('left', path.join(fixtureRoot, 'left', ENCRYPTED_ZIP))
     await mcpNavToPath('right', path.join(fixtureRoot, 'right'))
     await mcpCall('select', { pane: 'left', names: [INNER_FILE] })
-    await mcpCall('copy', {})
+    await mcpCall('copy', { pane: 'left' })
     await mcpCall('dialog_confirm', { type: 'transfer-confirmation' })
 
     const prompt = await waitForPasswordPrompt()
@@ -153,7 +153,7 @@ test.describe('MCP archive password', () => {
 
     // 2. While the prompt is up, starting a file operation is refused, naming
     //    the blocker in typed data. Same gate every other dialog gets.
-    const blocked = await mcpCallRaw('copy', {})
+    const blocked = await mcpCallRaw('copy', { pane: 'left' })
     expect(blocked.error?.data?.blockingDialog).toBe('archive-password')
 
     // 3. Answering with the WRONG archive is refused, not applied to whatever
@@ -185,7 +185,7 @@ test.describe('MCP archive password', () => {
     //    the copy again, through the same confirmation every copy goes through,
     //    and the stored password lets it read the entry this time.
     await mcpCall('select', { pane: 'left', names: [INNER_FILE] })
-    await mcpCall('copy', {})
+    await mcpCall('copy', { pane: 'left' })
     await mcpCall('dialog_confirm', { type: 'transfer-confirmation' })
     await expect.poll(() => fs.existsSync(destination), { timeout: waitBudget(20_000) }).toBeTruthy()
     expect(fs.readFileSync(destination, 'utf8')).toBe(INNER_CONTENT)

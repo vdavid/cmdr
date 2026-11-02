@@ -30,9 +30,7 @@
  * - S3 on either side: the dialog's cost line is the only place the price
  *   shows.
  * - Anything a person didn't start: only a `user` initiator skips, so a new
- *   initiator, or a payload that names none, gets the dialog. An MCP round-trip's
- *   contract is the dialog too (an auto-confirm confirms it, a plain call waits
- *   for `dialog_confirm`).
+ *   initiator, or a payload that names none, gets the dialog.
  */
 
 import { getPathValidationError } from '#lib/file-operations/transfer/transfer-dialog-logic.js'
@@ -50,8 +48,8 @@ export interface DeleteConfirmAnswer {
   isPermanent: false
 }
 
-function isFromAgent(props: { initiator: Initiator; autoConfirm?: boolean; mcpRequestId?: string }): boolean {
-  return props.initiator !== 'user' || props.autoConfirm === true || props.mcpRequestId !== undefined
+function isFromAgent(props: { initiator: Initiator }): boolean {
+  return props.initiator !== 'user'
 }
 
 function isS3(volumeId: string, volumes: readonly VolumeInfo[]): boolean {

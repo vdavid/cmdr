@@ -177,22 +177,17 @@ const searchOpenCommand: CommandId = 'search.open'
 const tabMcpActionCommand: CommandId = 'tab.mcpAction'
 
 /**
- * Runs an MCP direct-create (mkdir/mkfile autoConfirm) and replies on the
+ * Runs an MCP direct-create (mkdir/mkfile given a name) and replies on the
  * `requestId` round-trip: ok on success, or the backend conflict / read-only
  * refusal error. `create` returns `undefined` when the explorer isn't ready
  * (HMR / teardown), which we surface as a clean failure rather than a false ok.
  */
 async function createDirectlyThenReply(
   create: () => Promise<void> | undefined,
-  name: string | undefined,
   requestId: string | undefined,
 ): Promise<void> {
   if (requestId === undefined) return
   const { emit } = await import('@tauri-apps/api/event')
-  if (name === undefined) {
-    await emit('mcp-response', { requestId, ok: false, error: 'autoConfirm requires a name' })
-    return
-  }
   const pending = create()
   if (pending === undefined) {
     await emit('mcp-response', { requestId, ok: false, error: 'Explorer is not ready' })
@@ -209,7 +204,7 @@ async function createDirectlyThenReply(
 
 // Every write an MCP tool triggers is tagged with this provenance so the
 // backend's operation log records `initiator = ai_client` (not `user`). It rides
-// the same bus args as `autoConfirm`/`onConflict` down to the write-start command.
+// the same bus args as `pane`/`onConflict` down to the write-start command.
 const aiClientInitiator: Initiator = 'aiClient'
 
 /** Register all MCP event listeners. Call from onMount after listenTauri is ready. */
@@ -274,7 +269,7 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
   })
 
   await listenTauri('mcp-volume-select', (event) => {
-    // Round-trip through the bus, like the auto-confirmed file ops: the request id rides
+    // Round-trip through the bus, like the tools that open a dialog: the request id rides
     // the command args, and the handler replies once the pane has come to rest
     // (`mcp-volume-select.ts`). MCP is exempt from the dialog gate, so this runs behind an
     // open dialog (`DETAILS.md` § The dialog gate).
@@ -607,37 +602,34 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
 
   await listenTauri('mcp-copy', (event) => {
     const raw = asRecord(event.payload)
-    const autoConfirm = typeof raw.autoConfirm === 'boolean' ? raw.autoConfirm : undefined
+    const pane = parsePane(raw.pane)
     const onConflict = typeof raw.onConflict === 'string' ? raw.onConflict : undefined
-    // Auto-confirm carries a round-trip id: the FE replies `mcp-response` with the
-    // spawned operationId once the op starts (see transfer-progress-state).
+    // The opener answers this round trip once the dialog is up, or says why it isn't.
     const mcpRequestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
-    void dispatch(fileCopyCommand, { autoConfirm, onConflict, mcpRequestId, initiator: aiClientInitiator })
+    void dispatch(fileCopyCommand, { pane, onConflict, mcpRequestId, initiator: aiClientInitiator })
   })
 
   await listenTauri('mcp-move', (event) => {
     const raw = asRecord(event.payload)
-    const autoConfirm = typeof raw.autoConfirm === 'boolean' ? raw.autoConfirm : undefined
+    const pane = parsePane(raw.pane)
     const onConflict = typeof raw.onConflict === 'string' ? raw.onConflict : undefined
     const mcpRequestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
-    void dispatch(fileMoveCommand, { autoConfirm, onConflict, mcpRequestId, initiator: aiClientInitiator })
+    void dispatch(fileMoveCommand, { pane, onConflict, mcpRequestId, initiator: aiClientInitiator })
   })
 
   await listenTauri('mcp-compress', (event) => {
     const raw = asRecord(event.payload)
-    const autoConfirm = typeof raw.autoConfirm === 'boolean' ? raw.autoConfirm : undefined
+    const pane = parsePane(raw.pane)
     // No onConflict, unlike copy/move: compress has no inner-file conflicts, and an
     // existing target archive is the dialog's overwrite affordance, not a policy.
     const mcpRequestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
-    void dispatch(fileCompressCommand, { autoConfirm, mcpRequestId, initiator: aiClientInitiator })
+    void dispatch(fileCompressCommand, { pane, mcpRequestId, initiator: aiClientInitiator })
   })
 
   await listenTauri('mcp-rename', (event) => {
-    // Round-trip: the non-autoConfirm `rename` tool starts the inline editor
-    // prefilled with `newName` for the user to review. Resolution lives here (the
-    // FE holds the live listing): when `name` is given we move the cursor to that
-    // row first (which errors honestly if it isn't in the listing and pins
-    // activation via `expectedName`); without a name we rename the cursor item.
+    // Round-trip: the `rename` tool starts the inline editor prefilled with `newName`
+    // for a person to review. The backend put the cursor on the row and names it here,
+    // which pins activation via `expectedName`.
     const raw = asRecord(event.payload)
     const pane = parsePane(raw.pane)
     const name = typeof raw.name === 'string' ? raw.name : undefined
@@ -651,11 +643,7 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
         return
       }
       try {
-        if (name !== undefined) {
-          await dispatch(cursorMoveToCommand, { pane, to: name })
-        }
-        await dispatch(fileRenameCommand, { initialName: newName, expectedName: name })
-        await emit('mcp-response', { requestId, ok: true })
+        await dispatch(fileRenameCommand, { pane, initialName: newName, expectedName: name, mcpRequestId: requestId })
       } catch (e) {
         const error = e instanceof Error ? e.message : String(e)
         await emit('mcp-response', { requestId, ok: false, error })
@@ -664,21 +652,17 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
   })
 
   await listenTauri('mcp-mkdir', (event) => {
-    // `name` prefills the naming dialog; with `autoConfirm` it's a round-trip that
-    // creates directly on the target pane's LIVE path (so it can't land in a stale
-    // dir) and replies OK or the backend conflict error. `pane` defaults to focused.
+    // With a `name` it creates directly on the target pane's LIVE path (so it can't
+    // land in a stale dir) and replies OK or the backend conflict error. With none it
+    // opens the naming dialog, whose opener answers the round trip.
     const raw = asRecord(event.payload)
     const name = typeof raw.name === 'string' ? raw.name : undefined
     const pane = parsePane(raw.pane)
     const requestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
-    if (raw.autoConfirm === true) {
-      void createDirectlyThenReply(
-        () => getExplorer()?.createFolderDirect(name ?? '', pane, aiClientInitiator),
-        name,
-        requestId,
-      )
+    if (name !== undefined) {
+      void createDirectlyThenReply(() => getExplorer()?.createFolderDirect(name, pane, aiClientInitiator), requestId)
     } else {
-      void dispatch(fileNewFolderCommand, { name, pane, initiator: aiClientInitiator })
+      void dispatch(fileNewFolderCommand, { pane, mcpRequestId: requestId, initiator: aiClientInitiator })
     }
   })
 
@@ -687,25 +671,21 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const name = typeof raw.name === 'string' ? raw.name : undefined
     const pane = parsePane(raw.pane)
     const requestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
-    if (raw.autoConfirm === true) {
-      void createDirectlyThenReply(
-        () => getExplorer()?.createFileDirect(name ?? '', pane, aiClientInitiator),
-        name,
-        requestId,
-      )
+    if (name !== undefined) {
+      void createDirectlyThenReply(() => getExplorer()?.createFileDirect(name, pane, aiClientInitiator), requestId)
     } else {
-      void dispatch(fileNewFileCommand, { name, pane, initiator: aiClientInitiator })
+      void dispatch(fileNewFileCommand, { pane, mcpRequestId: requestId, initiator: aiClientInitiator })
     }
   })
 
   await listenTauri('mcp-delete', (event) => {
     const raw = asRecord(event.payload)
-    const autoConfirm = typeof raw.autoConfirm === 'boolean' ? raw.autoConfirm : undefined
+    const pane = parsePane(raw.pane)
     // `permanent` rides the event only when the tool's `mode` was given; otherwise
     // the FE applies its per-volume default (trash where supported).
     const permanent = typeof raw.permanent === 'boolean' ? raw.permanent : undefined
     const mcpRequestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
-    void dispatch(fileDeleteCommand, { autoConfirm, permanent, mcpRequestId, initiator: aiClientInitiator })
+    void dispatch(fileDeleteCommand, { pane, permanent, mcpRequestId, initiator: aiClientInitiator })
   })
 
   await listenTauri('mcp-confirm-dialog', (event) => {

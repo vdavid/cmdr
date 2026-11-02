@@ -2,10 +2,10 @@
  * The one map from an MCP `onConflict` name to the transfer dialog's own
  * conflict policy.
  *
- * Two surfaces start a transfer programmatically — `copy` / `move` with
- * `autoConfirm` (the dialog confirms itself on mount, `TransferDialog.svelte`)
- * and `dialog_confirm` on an already-open one (`dialog-state.svelte.ts`) — and
- * they each used to carry their own copy of this map. The copies had drifted:
+ * Two surfaces name a policy programmatically — `copy` / `move`'s `onConflict`,
+ * a preset the dialog opens on (`TransferDialog.svelte`), and `dialog_confirm` on
+ * an already-open one (`dialog-state.svelte.ts`) — and they each used to carry
+ * their own copy of this map. The copies had drifted:
  * one spelled the conditional policies `overwrite_all_smaller`, the other
  * `overwrite_smaller_all`, and neither spelling was reachable, so nobody found
  * out. A name the backend accepts and the map doesn't know silently becomes

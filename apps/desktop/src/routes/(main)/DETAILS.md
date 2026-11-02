@@ -303,11 +303,11 @@ path; its `fromMenu` flag picks `setViewModeFromMenu` (skip `pushViewMenuState`)
 ### `mcp-volume-select` replies from its handler
 
 The listener dispatches `volume.selectByName` with `volumeId` (preferred), the legacy `name`, and `mcpRequestId` in its
-args, the way the auto-confirmed file ops carry theirs. `selectVolumeForMcp` chooses the id whenever both selectors are
-present, preserving the exact MTP / ADB / server connection when display names collide. The bus doesn't gate it (MCP is
-exempt, § The dialog gate); what it buys is the typed `CommandId`, so a registry rename breaks compilation, and the
-`log.info` line and breadcrumb every command gets. The handler voids `selectVolumeForMcp` (`mcp-volume-select.ts`),
-which switches the pane and replies with where it came to rest, on the same wire shape as `mcp-nav-to-path`:
+args, the way `dialog_confirm` carries its own. `selectVolumeForMcp` chooses the id whenever both selectors are present,
+preserving the exact MTP / ADB / server connection when display names collide. The bus doesn't gate it (MCP is exempt, §
+The dialog gate); what it buys is the typed `CommandId`, so a registry rename breaks compilation, and the `log.info`
+line and breadcrumb every command gets. The handler voids `selectVolumeForMcp` (`mcp-volume-select.ts`), which switches
+the pane and replies with where it came to rest, on the same wire shape as `mcp-nav-to-path`:
 
 1. Await the switch's `corrected`, so the folder the switch reopens (the one last used on the volume) is decided.
 2. Wait for the pane to go quiet (`mcp-nav-landing.ts`). It requires a NEW listing only when the landing differs from

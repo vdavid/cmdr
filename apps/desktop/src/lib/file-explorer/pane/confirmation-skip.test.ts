@@ -38,6 +38,7 @@ function transferProps(overrides: Partial<TransferDialogPropsData> = {}): Transf
 
 function deleteProps(overrides: Partial<DeleteDialogPropsData> = {}): DeleteDialogPropsData {
   return {
+    sourcePaneSide: 'left',
     sourceItems: [{ name: 'first.jpg', size: 10, isDirectory: false, isSymlink: false }],
     sourcePaths: ['/Users/me/photos/first.jpg'],
     sourceFolderPath: '/Users/me/photos',
@@ -100,11 +101,6 @@ describe('skippedTransferConfirmation', () => {
 
   it('shows the dialog when nothing says who started it', () => {
     expect(skippedTransferConfirmation(withoutInitiator(transferProps()), VOLUMES)).toBeNull()
-  })
-
-  it('shows the dialog for an MCP round-trip, whoever it names', () => {
-    expect(skippedTransferConfirmation(transferProps({ autoConfirm: true }), VOLUMES)).toBeNull()
-    expect(skippedTransferConfirmation(transferProps({ mcpRequestId: 'req-1' }), VOLUMES)).toBeNull()
   })
 
   it('shows the dialog when the destination is inside a source, so its error gets seen', () => {
@@ -191,10 +187,5 @@ describe('skippedDeleteConfirmation', () => {
 
   it('never skips when nothing says who started it', () => {
     expect(skippedDeleteConfirmation(withoutInitiator(deleteProps()))).toBeNull()
-  })
-
-  it('never skips an MCP round-trip, whoever it names', () => {
-    expect(skippedDeleteConfirmation(deleteProps({ autoConfirm: true }))).toBeNull()
-    expect(skippedDeleteConfirmation(deleteProps({ mcpRequestId: 'req-1' }))).toBeNull()
   })
 })

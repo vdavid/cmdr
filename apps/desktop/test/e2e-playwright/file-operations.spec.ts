@@ -17,7 +17,7 @@ import path from 'path'
 import { test, expect } from './fixtures.js'
 import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { ensureMcpClient, mcpCall, mcpNavToPath } from '../e2e-shared/mcp-client.js'
+import { ensureMcpClient, mcpCall, mcpNavToPath, expectAwaitingPerson } from '../e2e-shared/mcp-client.js'
 import {
   dismissOverlay,
   dispatchMenuCommand,
@@ -301,7 +301,7 @@ test.describe('Rename round-trip', () => {
 })
 
 test.describe('MCP rename', () => {
-  test('non-autoConfirm opens the inline editor prefilled with newName, then Enter commits', async ({ tauriPage }) => {
+  test('opens the inline editor prefilled with newName, then Enter commits', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)
     const fixtureRoot = getFixtureRoot()
@@ -310,7 +310,7 @@ test.describe('MCP rename', () => {
     // The tool round-trip resolves only AFTER the FE started the editor, so the
     // input is guaranteed present when the call returns — no arbitrary sleep.
     const result = await mcpCall('rename', { pane: 'left', name: 'file-a.txt', newName: 'renamed-by-mcp.txt' })
-    expect(result).toContain('OK')
+    expect(expectAwaitingPerson(result)).toBe('rename')
 
     // Honest observation point: the editor is open, prefilled with the proposal.
     await expect
@@ -334,21 +334,18 @@ test.describe('MCP rename', () => {
     expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-a.txt'))).toBe(false)
   })
 
-  test('autoConfirm renames directly, no editor', async ({ tauriPage }) => {
+  test('dialog_confirm commits the editor the tool opened', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)
     const fixtureRoot = getFixtureRoot()
     await mcpNavToPath('left', path.join(fixtureRoot, 'left'))
 
-    const result = await mcpCall('rename', {
-      pane: 'left',
-      name: 'file-b.txt',
-      newName: 'auto-renamed.txt',
-      autoConfirm: true,
-    })
-    expect(result).toContain('OK')
+    const result = await mcpCall('rename', { pane: 'left', name: 'file-b.txt', newName: 'auto-renamed.txt' })
+    expect(expectAwaitingPerson(result)).toBe('rename')
+    // Opening it changes nothing on disk.
+    expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-b.txt'))).toBe(true)
 
-    // No editor should open on the autoConfirm path.
+    await mcpCall('dialog_confirm', { type: 'rename' })
     expect(await tauriPage.isVisible('.rename-input')).toBe(false)
 
     await expect
@@ -367,10 +364,10 @@ test.describe('MCP delete mode', () => {
     await mcpNavToPath('left', path.join(fixtureRoot, 'left'))
 
     await mcpCall('select', { pane: 'left', names: ['file-a.txt'] })
-    // Non-autoConfirm: the dialog opens with its toggle preset to `mode`. The
-    // call acks once the dialog mounts, so no arbitrary sleep is needed.
-    const result = await mcpCall('delete', { mode: 'delete' })
-    expect(result).toContain('OK')
+    // The dialog opens with its toggle preset to `mode`. The call acks once the
+    // dialog mounts, so no arbitrary sleep is needed.
+    const result = await mcpCall('delete', { pane: 'left', mode: 'delete' })
+    expect(expectAwaitingPerson(result)).toBe('delete-confirmation')
 
     await tauriPage.waitForSelector('[data-dialog-id="delete-confirmation"]', 5000)
     // Permanent mode → alertdialog role (cross-platform: holds whether or not the
@@ -392,7 +389,7 @@ test.describe('MCP delete mode', () => {
 })
 
 test.describe('MCP named create', () => {
-  test('mkdir autoConfirm creates in the freshly-navigated dir, not a stale one', async ({ tauriPage }) => {
+  test('mkdir with a name creates in the freshly-navigated dir, not a stale one', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)
     const fixtureRoot = getFixtureRoot()
@@ -401,7 +398,7 @@ test.describe('MCP named create', () => {
     // immediately — the create must land in `left/`, not the stale `left/sub-dir/`.
     await mcpNavToPath('left', path.join(fixtureRoot, 'left', 'sub-dir'))
     await mcpNavToPath('left', path.join(fixtureRoot, 'left'))
-    const result = await mcpCall('mkdir', { name: 'mcp-made', autoConfirm: true })
+    const result = await mcpCall('mkdir', { name: 'mcp-made', pane: 'left' })
     expect(result).toContain('OK')
 
     await expect
@@ -411,20 +408,20 @@ test.describe('MCP named create', () => {
     expect(fs.existsSync(path.join(fixtureRoot, 'left', 'sub-dir', 'mcp-made'))).toBe(false)
   })
 
-  test('mkfile autoConfirm creates an empty file, honest conflict on a duplicate', async ({ tauriPage }) => {
+  test('mkfile with a name creates an empty file, honest conflict on a duplicate', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)
     const fixtureRoot = getFixtureRoot()
     await mcpNavToPath('left', path.join(fixtureRoot, 'left'))
 
-    const ok = await mcpCall('mkfile', { name: 'mcp-note.txt', autoConfirm: true })
+    const ok = await mcpCall('mkfile', { name: 'mcp-note.txt', pane: 'left' })
     expect(ok).toContain('OK')
     await expect
       .poll(() => fs.existsSync(path.join(fixtureRoot, 'left', 'mcp-note.txt')), { timeout: waitBudget(5000) })
       .toBeTruthy()
 
     // A duplicate is an honest conflict error (create refuses an existing path).
-    await expect(mcpCall('mkfile', { name: 'mcp-note.txt', autoConfirm: true })).rejects.toThrow()
+    await expect(mcpCall('mkfile', { name: 'mcp-note.txt', pane: 'left' })).rejects.toThrow()
   })
 })
 

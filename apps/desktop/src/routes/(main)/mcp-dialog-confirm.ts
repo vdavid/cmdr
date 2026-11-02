@@ -6,8 +6,7 @@
  * Every confirm is a round-trip (`tools/actions/dialog_confirm.rs`). Its id rides
  * the press into the start, and a press that got there is answered by the START
  * (`transfer-dispatch.ts::startTransferOperation`) with the spawned
- * `operationId`, or by the start gate with what's in the way, exactly as an
- * auto-confirmed `copy` is. A rename or a create has no start, so its end answers
+ * `operationId`, or by the start gate with what's in the way. A rename or a create has no start, so its end answers
  * here, and so does a press that didn't get anywhere: a refusal crosses as the
  * typed `refusal` field, ❌ never as text.
  */

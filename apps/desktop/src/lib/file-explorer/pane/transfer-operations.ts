@@ -26,13 +26,8 @@ export interface TransferDialogPropsData {
   sourceFolderPath: string
   sourceVolumeId: string
   destVolumeId: string
-  /** When true, dialog auto-confirms without user interaction (MCP auto-confirm). */
-  autoConfirm?: boolean
-  /** Conflict resolution policy for auto-confirm (MCP). Maps to ConflictResolution. */
-  autoConfirmOnConflict?: string
-  /** MCP round-trip id, present only for an auto-confirmed MCP op. Threaded to the
-   *  progress state, which replies `mcp-response` with the spawned operationId. */
-  mcpRequestId?: string
+  /** An MCP caller's `onConflict`: the policy the dialog opens on, as a preset. */
+  presetOnConflict?: string
   /** Who started this operation. Carried into the progress dialog's write config so
    *  the backend records provenance, and only `user` may skip the confirmation.
    *  Required, like `duplicateFollowUp`: each trigger states it. */

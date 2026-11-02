@@ -29,6 +29,9 @@ import {
   mcpAwaitItem,
   mcpNavToParent,
   mcpSwitchPane,
+  mcpConfirmedCopy,
+  mcpConfirmedMove,
+  mcpConfirmedDelete,
 } from '../e2e-shared/mcp-client.js'
 import {
   dismissOverlay,
@@ -214,8 +217,8 @@ test.describe('MTP file operations', () => {
 
     // Right pane is on local right/ (from ensureAppReady)
     // Move cursor to report.txt and copy
-    await mcpCall('move_cursor', { pane: 'left', filename: 'report.txt' })
-    await mcpCall('copy', { autoConfirm: true })
+    await mcpCall('select', { pane: 'left', names: ['report.txt'] })
+    await mcpConfirmedCopy('left')
 
     // Poll the destination on disk first: that's the authoritative truth.
     // Under heavy concurrent load (full slow-suite run with rust-tests-linux +
@@ -251,8 +254,8 @@ test.describe('MTP file operations', () => {
     await mcpAwaitItem('right', 'Documents')
 
     // Cursor file-a.txt in left pane and copy
-    await mcpCall('move_cursor', { pane: 'left', filename: 'file-a.txt' })
-    await mcpCall('copy', { autoConfirm: true })
+    await mcpCall('select', { pane: 'left', names: ['file-a.txt'] })
+    await mcpConfirmedCopy('left')
 
     // MTP transfer is fire-and-forget. Poll the backing dir until the file
     // lands, then force a refresh so the pane re-lists.
@@ -293,8 +296,8 @@ test.describe('MTP file operations', () => {
     await mcpAwaitItem('left', 'notes.txt')
 
     // Move cursor to notes.txt and move it
-    await mcpCall('move_cursor', { pane: 'left', filename: 'notes.txt' })
-    await mcpCall('move', { autoConfirm: true })
+    await mcpCall('select', { pane: 'left', names: ['notes.txt'] })
+    await mcpConfirmedMove('left')
 
     // MTP move is fire-and-forget. Poll for the backing-dir state (source gone,
     // dest present) before triggering the refresh that drives the pane re-listing.
@@ -338,7 +341,7 @@ test.describe('MTP file operations', () => {
     // Move cursor to report.txt via keyboard (to test full keyboard flow)
     await moveCursorToFile(tauriPage, 'report.txt')
 
-    // Press F8 to open delete dialog (not autoConfirm, because we want to inspect the dialog)
+    // Press F8 to open delete dialog (we want to inspect the dialog)
     await pressKey(tauriPage, 'F8')
     await tauriPage.waitForSelector('[data-dialog-id="delete-confirmation"]', 10000)
 
@@ -438,8 +441,8 @@ test.describe('MTP file operations', () => {
     // Delete-complete toast we expect below.
     await expectAndDismissToast(tauriPage, 'Space')
 
-    // Delete via MCP with autoConfirm
-    await mcpCall('delete', { autoConfirm: true })
+    // Delete via MCP, standing in for the person who confirms
+    await mcpConfirmedDelete('left')
 
     // MTP multi-delete is fire-and-forget. Poll the backing dir.
     await expect
@@ -482,7 +485,7 @@ test.describe('MTP file operations', () => {
 
     // Move cursor to DCIM and delete
     await mcpCall('move_cursor', { pane: 'left', filename: 'DCIM' })
-    await mcpCall('delete', { autoConfirm: true })
+    await mcpConfirmedDelete('left')
 
     // MTP recursive delete is fire-and-forget. Poll the backing dir.
     await expect
@@ -511,7 +514,7 @@ test.describe('MTP file operations', () => {
     await mcpAwaitItem('left', 'Documents')
 
     // Create folder via MCP: mkdir opens the dialog, then we type the name and confirm
-    await mcpCall('mkdir', {})
+    await mcpCall('mkdir', { pane: 'left' })
     await tauriPage.waitForSelector(MKDIR_DIALOG, 5000)
     await tauriPage.waitForSelector(`${MKDIR_DIALOG} input.text-field-control`, 3000)
     await tauriPage.fill(`${MKDIR_DIALOG} input.text-field-control`, 'NewFolder')

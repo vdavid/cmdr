@@ -86,7 +86,6 @@ function makeState() {
     getLeftPaneRef: () => left,
     getRightPaneRef: () => right,
     getFocusedPaneRef: () => left,
-    getFocusedPaneSide: () => 'left',
     getShowHiddenFiles: () => false,
     getExplorer: () => undefined,
     onRefocus,
@@ -127,6 +126,7 @@ function confirmPayload(over: Partial<TransferConfirmPayload> = {}): TransferCon
 
 function deleteDialogProps(): DeleteDialogPropsData {
   return {
+    sourcePaneSide: 'left',
     initiator: 'user',
     sourceItems: [{ name: 'a.jpg', isDirectory: false, isSymlink: false, size: 10 }],
     sourcePaths: [`${SOURCE_FOLDER}/a.jpg`],
@@ -208,7 +208,7 @@ describe('F2 in the transfer dialog', () => {
 
 describe('an MCP confirm in the background', () => {
   // The `dialog_confirm` round-trip's id rides the press into the start, which
-  // answers it with the id the backend minted, as an auto-confirmed `copy` does.
+  // answers it with the id the backend minted.
   it('answers its round-trip with the started copy’s operationId', async () => {
     const { dialogs } = makeState()
     dialogs.showTransfer(transferDialogProps())

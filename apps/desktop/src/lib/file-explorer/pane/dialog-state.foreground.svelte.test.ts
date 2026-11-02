@@ -61,7 +61,6 @@ function makeState(sourcePaneAt = SOURCE_FOLDER) {
     getLeftPaneRef: () => leftPane.ref,
     getRightPaneRef: () => rightPane.ref,
     getFocusedPaneRef: () => rightPane.ref,
-    getFocusedPaneSide: () => 'right',
     getShowHiddenFiles: () => false,
     // No pane navigation in these suites; the trash toast is the only consumer.
     getExplorer: () => undefined,
@@ -210,6 +209,7 @@ describe('adopting an operation into the progress dialog', () => {
   it('refuses while a confirmation dialog is up', () => {
     const { dialogs } = makeState()
     dialogs.showDeleteConfirmation({
+      sourcePaneSide: 'left',
       initiator: 'user',
       sourceItems: [],
       sourcePaths: [`${SOURCE_FOLDER}/a.jpg`],
@@ -245,6 +245,7 @@ describe('an operation born while an adopted one is showing', () => {
     const { dialogs } = makeState()
     dialogs.foregroundOperation(adopted())
     dialogs.showDeleteConfirmation({
+      sourcePaneSide: 'left',
       initiator: 'user',
       sourceItems: [],
       sourcePaths: [`${SOURCE_FOLDER}/a.jpg`],
@@ -265,6 +266,7 @@ describe('an operation born while an adopted one is showing', () => {
   it('hands an MCP confirm’s round-trip id to the delete it starts', () => {
     const { dialogs } = makeState()
     dialogs.showDeleteConfirmation({
+      sourcePaneSide: 'left',
       initiator: 'user',
       sourceItems: [],
       sourcePaths: [`${SOURCE_FOLDER}/a.jpg`],

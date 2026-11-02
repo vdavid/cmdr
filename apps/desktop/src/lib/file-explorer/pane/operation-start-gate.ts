@@ -100,3 +100,54 @@ export function operationStartIsBlocked(mcpRequestId?: string): boolean {
   announceOperationBlocked(blockedBy, mcpRequestId)
   return true
 }
+
+/**
+ * Runs what opens a dialog for an MCP tool and answers its round trip: `ok` once
+ * the dialog is showing, else a failure, so a press that went nowhere never leaves
+ * the tool waiting out its budget. Whoever refused first (the start gate, the row
+ * wait, `refuseOpening`) has already answered, and the tool takes the first answer
+ * for a request. With no round trip, it only runs `open`.
+ */
+export async function answeringDialogOpen(
+  mcpRequestId: string | undefined,
+  open: () => Promise<boolean> | boolean,
+): Promise<void> {
+  if (mcpRequestId === undefined) {
+    await open()
+    return
+  }
+  try {
+    const opened = await open()
+    await emit(
+      'mcp-response',
+      opened
+        ? { requestId: mcpRequestId, ok: true }
+        : {
+            requestId: mcpRequestId,
+            ok: false,
+            refusal: 'nothingOpened',
+            error: 'Nothing opened: the pane has nothing to act on right now.',
+          },
+    )
+  } catch (e) {
+    const error = e instanceof Error ? e.message : String(e)
+    await emit('mcp-response', { requestId: mcpRequestId, ok: false, error })
+  }
+}
+
+/**
+ * Says why a dialog won't open: an MCP caller hears it typed on its round trip, and
+ * no alert goes up over what the person is doing; a person gets `tellPerson`.
+ */
+export function refuseOpening(
+  mcpRequestId: string | undefined,
+  refusal: { kind: 'readOnly' | 'destination'; message: string },
+  tellPerson: () => void,
+): void {
+  if (mcpRequestId === undefined) {
+    tellPerson()
+    return
+  }
+  log.info('Not opening a dialog for an MCP tool: {kind}', { kind: refusal.kind })
+  void emit('mcp-response', { requestId: mcpRequestId, ok: false, refusal: refusal.kind, error: refusal.message })
+}

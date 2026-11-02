@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount, onDestroy, tick } from 'svelte'
+    import { onMount, onDestroy } from 'svelte'
     import ModalDialog from '#lib/ui/ModalDialog.svelte'
     import Button from '#lib/ui/Button.svelte'
     import Switch from '#lib/ui/Switch.svelte'
@@ -54,11 +54,6 @@
          *  confirmation dialog gets a live climbing tally instead of a silently
          *  failed local-FS walk. */
         sourceVolumeId: string
-        /** When true, dialog auto-confirms without user interaction (MCP). */
-        autoConfirm?: boolean
-        /** The auto-confirming agent's round-trip id, which the start answers with
-         *  the operation's id. A `dialog_confirm` brings its own in `ConfirmOptions`. */
-        mcpRequestId?: string
         /** `origin` names the MCP `dialog_confirm` that pressed it, whose round-trip
          *  the start answers with the operation's id. */
         onConfirm: (previewId: string | null, isPermanent: boolean, origin?: ConfirmOrigin) => void
@@ -85,8 +80,6 @@
         cloudFolderMayHoldOnlineOnly = false,
         isFromCursor,
         sourceVolumeId,
-        autoConfirm = false,
-        mcpRequestId: autoConfirmRequestId,
         onConfirm,
         onConfirmInBackground,
         registerConfirmer,
@@ -204,15 +197,9 @@
         unwatchShift()
     }
 
-    onMount(async () => {
+    onMount(() => {
         if (shiftUpgradesToPermanent) watchShift()
         scan.start()
-
-        // Auto-confirm if MCP requested it (after a tick so the dialog is fully initialized)
-        if (autoConfirm) {
-            await tick()
-            void handleConfirm()
-        }
     })
 
     onDestroy(() => {
@@ -227,12 +214,6 @@
         if (!confirmed) scan.freePreview()
         cleanup()
     })
-
-    /** The agent waiting on this press for its operation id: a `dialog_confirm`'s
-     *  own `mcpRequestId`, or the auto-confirm's. */
-    function agentWaitingOnPress(mcpRequestId: string | undefined): string | undefined {
-        return mcpRequestId ?? autoConfirmRequestId
-    }
 
     /** Resolves `true` once the press reached `onConfirm` / `onConfirmInBackground`,
      *  `false` when a guard stopped it (an MCP `dialog_confirm` answers the agent
@@ -256,15 +237,14 @@
             // A selected folder in a cloud drive: the walk decides whether this is
             // a trash or a delete, and pressing before it answers must not settle
             // it by luck. Everywhere else this block never runs.
-            await scan.awaitOnlineOnlyAnswer(agentWaitingOnPress(mcpRequestId))
+            await scan.awaitOnlineOnlyAnswer(mcpRequestId)
             if (destroyed) return false
-            if (scan.onlineOnlyFoundByWalk !== null && !autoConfirm) {
+            if (scan.onlineOnlyFoundByWalk !== null) {
                 // The answer just turned this button from "Move to trash" into a
                 // permanent delete, and the banner beside it changed too. Hand the
                 // dialog back rather than run the one operation nothing can undo
                 // off a press that meant something else, and say so: the dialog
-                // stays open either way, so silence reads as a dead button. An MCP
-                // auto-confirm asked for the delete outright, so it goes through.
+                // stays open either way, so silence reads as a dead button.
                 confirming = false
                 handedBackForOnlineOnly = true
                 return false

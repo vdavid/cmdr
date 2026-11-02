@@ -2,7 +2,7 @@
  * Confirming a delete before its scan preview has an id.
  *
  * `handleConfirm` used to be fully synchronous while `previewId` was assigned
- * only after `await startScanPreview(...)`, so a fast confirm (MCP auto-confirm,
+ * only after `await startScanPreview(...)`, so a fast confirm (MCP `dialog_confirm`,
  * Playwright, a quick Enter) dispatched with `previewId = null`. The transfer
  * side has always guarded this with `await scan.scanStarted`; the delete side
  * had no equivalent, and the progress dialog's own scan-wait quietly absorbed

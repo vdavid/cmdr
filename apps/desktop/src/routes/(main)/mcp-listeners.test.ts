@@ -161,10 +161,13 @@ describe('parseCursorTarget', () => {
 
 type TauriEventHandler = (event: { payload: unknown }) => void
 
-async function setupWithHandlers(dispatch: CommandDispatch): Promise<Map<string, TauriEventHandler>> {
+async function setupWithHandlers(
+  dispatch: CommandDispatch,
+  explorer?: Partial<ExplorerAPI>,
+): Promise<Map<string, TauriEventHandler>> {
   const handlers = new Map<string, TauriEventHandler>()
   await setupMcpListeners({
-    getExplorer: () => undefined,
+    getExplorer: () => explorer as ExplorerAPI | undefined,
     dispatch,
     listenTauri: (event, handler) => {
       handlers.set(event, handler)
@@ -341,31 +344,32 @@ describe('mcp-volume-select listener', () => {
 // Every write an MCP tool triggers must carry `initiator: 'aiClient'` through the
 // bus so the backend's operation log records the AI as the initiator, not the
 // user. These pin the tag on each of the six write dispatches (copy, move,
-// compress, mkdir, mkfile, delete) alongside the existing autoConfirm/onConflict
+// compress, mkdir, mkfile, delete) alongside the pane and onConflict
 // pass-through.
 
 describe('MCP write dispatches tag initiator: aiClient', () => {
-  it('mcp-copy forwards initiator alongside autoConfirm/onConflict', async () => {
+  it('mcp-copy forwards initiator alongside pane/onConflict', async () => {
     const dispatch = vi.fn(() => Promise.resolve()) as unknown as CommandDispatch
     const handlers = await setupWithHandlers(dispatch)
 
-    getHandler(handlers, 'mcp-copy')({ payload: { autoConfirm: true, onConflict: 'overwrite_all' } })
+    getHandler(handlers, 'mcp-copy')({ payload: { pane: 'right', onConflict: 'overwrite_all', requestId: 'r-1' } })
 
     expect(dispatch).toHaveBeenCalledExactlyOnceWith('file.copy', {
-      autoConfirm: true,
+      pane: 'right',
       onConflict: 'overwrite_all',
+      mcpRequestId: 'r-1',
       initiator: 'aiClient',
     })
   })
 
-  it('mcp-move forwards initiator alongside autoConfirm/onConflict', async () => {
+  it('mcp-move forwards initiator alongside pane/onConflict', async () => {
     const dispatch = vi.fn(() => Promise.resolve()) as unknown as CommandDispatch
     const handlers = await setupWithHandlers(dispatch)
 
-    getHandler(handlers, 'mcp-move')({ payload: { autoConfirm: false, onConflict: 'skip_all' } })
+    getHandler(handlers, 'mcp-move')({ payload: { pane: 'left', onConflict: 'skip_all' } })
 
     expect(dispatch).toHaveBeenCalledExactlyOnceWith('file.move', {
-      autoConfirm: false,
+      pane: 'left',
       onConflict: 'skip_all',
       initiator: 'aiClient',
     })
@@ -375,10 +379,10 @@ describe('MCP write dispatches tag initiator: aiClient', () => {
     const dispatch = vi.fn(() => Promise.resolve()) as unknown as CommandDispatch
     const handlers = await setupWithHandlers(dispatch)
 
-    getHandler(handlers, 'mcp-compress')({ payload: { autoConfirm: true } })
+    getHandler(handlers, 'mcp-compress')({ payload: { pane: 'left' } })
 
     expect(dispatch).toHaveBeenCalledExactlyOnceWith('file.compress', {
-      autoConfirm: true,
+      pane: 'left',
       initiator: 'aiClient',
     })
   })
@@ -392,6 +396,53 @@ describe('MCP write dispatches tag initiator: aiClient', () => {
     expect(dispatch).toHaveBeenCalledExactlyOnceWith('file.newFolder', { initiator: 'aiClient' })
   })
 
+  it('mcp-mkdir with a name creates directly and never opens the dialog', async () => {
+    const dispatch = vi.fn(() => Promise.resolve()) as unknown as CommandDispatch
+    const createFolderDirect = vi.fn(() => Promise.resolve())
+    const handlers = await setupWithHandlers(dispatch, { createFolderDirect })
+
+    getHandler(handlers, 'mcp-mkdir')({ payload: { name: 'made', pane: 'right', requestId: 'r-1' } })
+    await vi.waitFor(() => {
+      expect(createFolderDirect).toHaveBeenCalledExactlyOnceWith('made', 'right', 'aiClient')
+    })
+
+    expect(dispatch).not.toHaveBeenCalled()
+  })
+
+  it('mcp-mkfile with a name creates directly and never opens the dialog', async () => {
+    const dispatch = vi.fn(() => Promise.resolve()) as unknown as CommandDispatch
+    const createFileDirect = vi.fn(() => Promise.resolve())
+    const handlers = await setupWithHandlers(dispatch, { createFileDirect })
+
+    getHandler(handlers, 'mcp-mkfile')({ payload: { name: 'made.txt', pane: 'left', requestId: 'r-1' } })
+    await vi.waitFor(() => {
+      expect(createFileDirect).toHaveBeenCalledExactlyOnceWith('made.txt', 'left', 'aiClient')
+    })
+
+    expect(dispatch).not.toHaveBeenCalled()
+  })
+
+  it('mcp-rename aims the editor at the named pane and row, and leaves the answer to the opener', async () => {
+    const dispatch = vi.fn(() => Promise.resolve()) as unknown as CommandDispatch
+    const handlers = await setupWithHandlers(dispatch)
+
+    getHandler(
+      handlers,
+      'mcp-rename',
+    )({
+      payload: { pane: 'right', name: 'a.txt', newName: 'b.txt', requestId: 'r-1' },
+    })
+
+    await vi.waitFor(() => {
+      expect(dispatch).toHaveBeenCalledExactlyOnceWith('file.rename', {
+        pane: 'right',
+        initialName: 'b.txt',
+        expectedName: 'a.txt',
+        mcpRequestId: 'r-1',
+      })
+    })
+  })
+
   it('mcp-mkfile dispatches with initiator even though it carries no other args', async () => {
     const dispatch = vi.fn(() => Promise.resolve()) as unknown as CommandDispatch
     const handlers = await setupWithHandlers(dispatch)
@@ -401,14 +452,14 @@ describe('MCP write dispatches tag initiator: aiClient', () => {
     expect(dispatch).toHaveBeenCalledExactlyOnceWith('file.newFile', { initiator: 'aiClient' })
   })
 
-  it('mcp-delete forwards initiator alongside autoConfirm', async () => {
+  it('mcp-delete forwards initiator alongside pane', async () => {
     const dispatch = vi.fn(() => Promise.resolve()) as unknown as CommandDispatch
     const handlers = await setupWithHandlers(dispatch)
 
-    getHandler(handlers, 'mcp-delete')({ payload: { autoConfirm: true } })
+    getHandler(handlers, 'mcp-delete')({ payload: { pane: 'left' } })
 
     expect(dispatch).toHaveBeenCalledExactlyOnceWith('file.delete', {
-      autoConfirm: true,
+      pane: 'left',
       initiator: 'aiClient',
     })
   })

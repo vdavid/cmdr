@@ -70,6 +70,55 @@ export async function mcpCall(tool: string, args: Record<string, unknown>): Prom
   return text
 }
 
+/**
+ * What the tools that wait for a person answer, on the dialog they opened. Throws unless
+ * it says so: `dialog` is what the next step confirms, and a tool that started something
+ * here would be a bypass.
+ */
+export function expectAwaitingPerson(result: string): string {
+  let parsed: { awaitingPerson?: unknown; dialog?: unknown } = {}
+  try {
+    parsed = JSON.parse(result) as typeof parsed
+  } catch {
+    // Not JSON at all: the check below names what came back.
+  }
+  if (parsed.awaitingPerson !== true || typeof parsed.dialog !== 'string') {
+    throw new Error(`Expected the tool to wait for a person, got: ${result}`)
+  }
+  return parsed.dialog
+}
+
+/**
+ * The two steps a file operation takes for a test standing in for the person: the tool
+ * opens the dialog, and it must say it's waiting, then `dialog_confirm` presses it, and
+ * must say it pressed. Returns the confirm's answer, which carries the `operationId`.
+ */
+async function mcpConfirmed(
+  tool: 'copy' | 'move' | 'compress' | 'delete',
+  args: Record<string, unknown>,
+  confirm: Record<string, unknown> = {},
+): Promise<string> {
+  const dialog = expectAwaitingPerson(await mcpCall(tool, args))
+  const confirmed = await mcpCall('dialog_confirm', { type: dialog, ...confirm })
+  if (!confirmed.includes('confirmed')) throw new Error(`Expected ${dialog} to be confirmed, got: ${confirmed}`)
+  return confirmed
+}
+
+/** `copy` a pane's selection, then press its dialog. See {@link mcpConfirmed}. */
+export function mcpConfirmedCopy(pane: 'left' | 'right', confirm?: Record<string, unknown>): Promise<string> {
+  return mcpConfirmed('copy', { pane }, confirm)
+}
+
+/** `move` a pane's selection, then press its dialog. See {@link mcpConfirmed}. */
+export function mcpConfirmedMove(pane: 'left' | 'right', confirm?: Record<string, unknown>): Promise<string> {
+  return mcpConfirmed('move', { pane }, confirm)
+}
+
+/** `delete` a pane's selection or cursor item, then press its dialog. See {@link mcpConfirmed}. */
+export function mcpConfirmedDelete(pane: 'left' | 'right', mode?: 'trash' | 'delete'): Promise<string> {
+  return mcpConfirmed('delete', mode === undefined ? { pane } : { pane, mode })
+}
+
 /** JSON-RPC error shape, with the typed `data` a tool attaches for the caller
  *  to branch on. */
 export interface McpRpcError {

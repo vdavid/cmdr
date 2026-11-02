@@ -2,7 +2,7 @@
  * E2E for the MCP agent-facing tool contracts: the flows an agent driving Cmdr
  * actually chains, end to end through the real server.
  *
- *   1. select-by-names → copy (autoConfirm) → await has_item on the destination
+ *   1. select-by-names → copy → dialog_confirm → await has_item on the destination
  *      → delete → await not_has_item. The canonical "act on specific files"
  *      loop, including the select round-trip's fresh-state guarantee (copy
  *      immediately after select must not read stale selection).
@@ -38,6 +38,8 @@ import {
   mcpReadResource,
   mcpNavToPath,
   mcpAwaitItem,
+  mcpConfirmedCopy,
+  mcpConfirmedDelete,
 } from '../e2e-shared/mcp-client.js'
 
 // Putting the shared `left/` + `right/` tree back is this spec's job: the
@@ -90,11 +92,10 @@ test.describe('MCP agent tools', () => {
     const selectResult = await mcpCall('select', { pane: 'left', names: ['file-a.txt', 'file-b.txt'] })
     expect(selectResult).toContain('OK')
 
-    // Focus must follow the select (copy acts on the focused pane).
     // Copy IMMEDIATELY after select: the round-trip contract guarantees the
     // backend already holds the new selection, so this must not be rejected
     // as an empty operation.
-    const copyResult = await mcpCall('copy', { autoConfirm: true })
+    const copyResult = await mcpConfirmedCopy('left')
     expect(copyResult).toContain('OK')
 
     await mcpAwaitItem('right', 'file-a.txt')
@@ -108,7 +109,7 @@ test.describe('MCP agent tools', () => {
     const trashedIno = fs.statSync(path.join(fixtureRoot, 'right', 'file-a.txt')).ino
     try {
       await mcpCall('select', { pane: 'right', names: ['file-a.txt'] })
-      const deleteResult = await mcpCall('delete', { autoConfirm: true })
+      const deleteResult = await mcpConfirmedDelete('right')
       expect(deleteResult).toContain('OK')
       const gone = await mcpCall('await', {
         pane: 'right',
@@ -141,18 +142,21 @@ test.describe('MCP agent tools', () => {
     // move_cursor: out-of-range index reports the range
     await expect(mcpCall('move_cursor', { pane: 'left', index: 99999 })).rejects.toThrow('out of range')
 
-    // copy with nothing selected and the cursor on `..`: fast invalid_params
-    // naming the real cause, not a "frontend may be stalled" ack timeout
+    // copy with nothing selected: fast invalid_params naming the real cause, not a
+    // "frontend may be stalled" ack timeout. A cursor on a real file doesn't change
+    // that: the tool never falls back to whatever the row happens to be.
     await mcpCall('select', { pane: 'left', count: 0 })
     await mcpCall('move_cursor', { pane: 'left', index: 0 })
-    await expect(mcpCall('copy', { autoConfirm: true })).rejects.toThrow('Nothing to copy')
+    await expect(mcpCall('copy', { pane: 'left' })).rejects.toThrow('Nothing to copy')
+    await mcpCall('move_cursor', { pane: 'left', filename: 'file-a.txt' })
+    await expect(mcpCall('move', { pane: 'left' })).rejects.toThrow('Nothing to move')
   })
 
   test('nav_to_path shifts focus so a follow-up create lands in the navigated pane', async ({ tauriPage }) => {
     // The focus-divergence regression: `select right` focuses the right pane in
     // the backend store; a same-volume `nav_to_path left` must shift FE focus to
-    // the left pane too, so a `mkdir` with no explicit pane (which targets the
-    // focused pane) creates in LEFT, not the previously-focused RIGHT. Before the
+    // the left pane too, so an F7 (which targets the focused pane) creates in LEFT,
+    // not the previously-focused RIGHT. Before the
     // fix, FE focus stayed on right while `cmdr://state` reported left, and the
     // folder landed in the wrong pane.
     test.setTimeout(waitBudget(30_000))
@@ -171,10 +175,12 @@ test.describe('MCP agent tools', () => {
     await mcpCall('select', { pane: 'right', names: ['nested-file.txt'] })
     await mcpNavToPath('left', path.join(fixtureRoot, 'left'))
 
-    // No explicit pane → the focused pane, which must now be LEFT.
+    // `mkdir` names its pane now, so what the focus shift still decides is what an
+    // F7 does: the folder must land in LEFT, not the previously-focused RIGHT.
     const dirName = `mcp-focus-${String(Date.now())}`
-    const mkdirResult = await mcpCall('mkdir', { name: dirName, autoConfirm: true })
-    expect(mkdirResult).toContain('OK')
+    await dispatchMenuCommand(tauriPage, 'file.newFolder')
+    await tauriPage.waitForSelector('[data-dialog-id="mkdir-confirmation"]', waitBudget(5000))
+    await mcpCall('dialog_confirm', { type: 'mkdir-confirmation', name: dirName })
 
     expect(fs.existsSync(path.join(fixtureRoot, 'left', dirName))).toBe(true)
     // Before the focus fix, focus stayed on the right pane (sub-dir) and the folder
@@ -196,7 +202,7 @@ test.describe('MCP agent tools', () => {
     await mcpNavToPath('left', path.join(fixtureRoot, 'left'))
 
     const dirName = `mcp-pane-${String(Date.now())}`
-    const mkdirResult = await mcpCall('mkdir', { name: dirName, autoConfirm: true, pane: 'right' })
+    const mkdirResult = await mcpCall('mkdir', { name: dirName, pane: 'right' })
     expect(mkdirResult).toContain('OK')
 
     expect(fs.existsSync(path.join(fixtureRoot, 'right', dirName))).toBe(true)
@@ -212,7 +218,7 @@ test.describe('MCP agent tools', () => {
     await mcpNavToPath('right', path.join(fixtureRoot, 'right'))
     await mcpCall('select', { pane: 'left', names: ['file-a.txt'] })
 
-    await mcpCall('copy', {})
+    await mcpCall('copy', { pane: 'left' })
     // A bad policy refuses before anything happens, and the dialog stays up.
     await expect(mcpCall('dialog_confirm', { type: 'transfer-confirmation', onConflict: 'keep_both' })).rejects.toThrow(
       'onConflict',
@@ -266,12 +272,12 @@ test.describe('MCP agent tools', () => {
       .toContain('rename')
 
     // Starting an operation refuses, typed, and leaves the edit intact.
-    const refused = await mcpCallRaw('copy', {})
+    const refused = await mcpCallRaw('copy', { pane: 'left' })
     expect(JSON.stringify(refused)).toContain('blockingDialog')
     expect(await tauriPage.isVisible('.rename-input')).toBe(true)
 
     // A second rename says it's already editing.
-    const second = await mcpCallRaw('rename', { newName: 'other.txt' })
+    const second = await mcpCallRaw('rename', { pane: 'left', newName: 'other.txt' })
     expect(JSON.stringify(second)).toContain('alreadyEditing')
     expect(await tauriPage.isVisible('.rename-input')).toBe(true)
 

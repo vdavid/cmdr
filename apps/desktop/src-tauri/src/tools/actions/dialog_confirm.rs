@@ -83,9 +83,8 @@ fn parse_confirm_response(payload: &str, expected_id: &str) -> Option<Result<Con
     parse_operation_start_response(payload, expected_id).map(|ack| ack.map(ConfirmAck::Started))
 }
 
-/// Budget for a confirm to answer. Same as an auto-confirmed `copy`'s (`file_ops.rs`), and for the
-/// same reason: it spans the dialog's wait for its scan preview to start and the write-op IPC that
-/// mints the id. A cloud folder's trash that must wait on its walk first asks the round-trip to hold
+/// Budget for a confirm to answer: it spans the dialog's wait for its scan preview to start and the
+/// write-op IPC that mints the id. A cloud folder's trash that must wait on its walk first asks the round-trip to hold
 /// (`holdMs`, see `mcp_round_trip_parsed`), so it still answers with its id. A rename or create
 /// answers inside it too: past `MUTATION_REPLY_DEADLINE` the volume's call says it's still running.
 const CONFIRM_TIMEOUT_SECS: u64 = 10;

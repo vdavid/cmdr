@@ -77,7 +77,6 @@ function makeState() {
     getLeftPaneRef: () => pane,
     getRightPaneRef: () => pane,
     getFocusedPaneRef: () => pane,
-    getFocusedPaneSide: () => 'left',
     getShowHiddenFiles: () => false,
     getExplorer: () => explorer,
     onRefocus: vi.fn(),

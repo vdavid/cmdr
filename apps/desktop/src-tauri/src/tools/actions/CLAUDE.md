@@ -19,14 +19,13 @@ which calls these by path. Up: `../CLAUDE.md`.
 - **A result that carries a list gets `fit_to_result_budget`** (`mod.rs`) and reports `total`/`returned`/`truncated`. A
   row cap doesn't bound a payload (`image_facts` at 200 paths was ~100k tokens), and an oversized result pushes the rest
   of the caller's turn out of context. ❌ Never cut silently. Depth: `../DETAILS.md` § The size contract.
-- **`GenerationAdvanced` isn't a per-action proof**: it shows the FE pushed pane state after dispatch, not that it
-  handled our event, so an unrelated push is a rare false positive. Switch such a tool to `mcp_round_trip`.
+- **`GenerationAdvanced` isn't a per-action proof** (an unrelated push is a rare false positive): switch such a tool to
+  `mcp_round_trip`.
 - **Use `mcp_round_trip` when the backend can't fully validate preconditions or must wait on the OS.** It waits for the
   FE `mcp-response` (`{ requestId, ok, error? }`) so FE knowledge isn't replicated in Rust. Its users, and
   `resource_round_trip`: DETAILS.md.
-- **`move_cursor`, `select`, `nav_to_path`, `select_volume` flush the MCP state push before replying**; the read-only
-  `tag` calls `flush_pane_state` for the same freshness. ❌ Don't drop it: a follow-up `copy`/`move`/`delete` would read
-  stale state and `check_operation_has_target` would wrongly reject "Nothing to copy".
+- **`move_cursor`, `select`, `nav_to_path`, `select_volume` flush the MCP state push before replying**; `tag` and the
+  dialog openers call `flush_pane_state`. ❌ Don't drop it: a `copy` would read stale state and reject "Nothing to copy".
 - **Read filesystem path params through `user_path_param` / `expand_user_path`, ❌ never raw `params.get(...)`.** Agents
   routinely send `~/Downloads`, and a literal `~` fails validation or silently never matches, burning the full timeout.
   Validate existence via `validate_path_exists`, ❌ never bare `Path::exists()` (blocks forever on a hung mount). The
@@ -39,8 +38,9 @@ which calls these by path. Up: `../CLAUDE.md`.
   blocker in the TYPED `data.blockingDialog`. ❌ Never widen it to `queue`, `operations_rollback`, or `dialog`:
   steering a RUNNING operation is what an agent needs while a dialog is up.
   `src/lib/file-explorer/pane/DETAILS.md` § "The operation-start gate".
-- **`copy`/`move`/`delete` fast-fail on empty operations** via `check_operation_has_target`, so the tool rejects with
-  the real cause rather than a timeout. Unsynced state (`path` empty) passes through: the FE is the authority.
+- **Tools that start something require `pane`, and `copy`, `move`, and `tag` refuse without a selection**: focus moves
+  silently. ❌ Never fall back to focus or the cursor. DETAILS.md § Ack contract.
+- **Opening a dialog answers `{ awaitingPerson, dialog }`** (`open_dialog`), ❌ never an "OK" a model reads as done.
 - **A window-based dialog can only be closed with FE opt-in**: `dialog close settings` needs that window listening for
   `mcp-settings-close`, else the backend polls for `WindowDisappeared` and times out. Same for any new one.
 - **Tab mutations must go through `update_pane_tabs`** (the single place tab mutation + generation bump live); a bypass

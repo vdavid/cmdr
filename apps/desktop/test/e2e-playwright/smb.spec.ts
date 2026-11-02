@@ -47,6 +47,7 @@ import {
   mcpNavToPath,
   mcpAwaitItem,
   mcpAwaitPath,
+  mcpConfirmedCopy,
 } from '../e2e-shared/mcp-client.js'
 import {
   ensureAppReady,
@@ -447,8 +448,8 @@ describeSmb('SMB cross-storage copy', () => {
     await mcpNavToPath('right', suite)
 
     // Copy file-a.txt from left to right
-    await mcpCall('move_cursor', { pane: 'left', filename: 'file-a.txt' })
-    await mcpCall('copy', { autoConfirm: true })
+    await mcpCall('select', { pane: 'left', names: ['file-a.txt'] })
+    await mcpConfirmedCopy('left')
 
     // Wait for the file to appear on the SMB share
     await mcpAwaitItem('right', 'file-a.txt', 30)
@@ -489,8 +490,8 @@ describeSmb('SMB cross-storage copy', () => {
     await mcpAwaitItem('left', 'smb-test-file.txt', 15)
 
     // Copy from SMB to local
-    await mcpCall('move_cursor', { pane: 'left', filename: 'smb-test-file.txt' })
-    await mcpCall('copy', { autoConfirm: true })
+    await mcpCall('select', { pane: 'left', names: ['smb-test-file.txt'] })
+    await mcpConfirmedCopy('left')
 
     // Wait for file to appear in right pane
     await mcpAwaitItem('right', 'smb-test-file.txt', 30)

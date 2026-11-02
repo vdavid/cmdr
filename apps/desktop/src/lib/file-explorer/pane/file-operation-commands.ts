@@ -22,13 +22,19 @@ import { capabilitiesFor, capabilitiesForPane, rowIsServedByGitPortal } from './
 import { pathCrossesArchiveBoundary } from './archive-paths'
 import { paneOffersTrash } from './trash-availability'
 import { checkTransferDestinationGuard } from './transfer-entry'
-import { operationStartIsBlocked } from './operation-start-gate'
+import { answeringDialogOpen, operationStartIsBlocked, refuseOpening } from './operation-start-gate'
 import { readPressedRows } from './pressed-rows'
 import { duplicateInPlace } from './duplicate-command'
 import { openRenameAsMove } from './rename-as-move'
 import type { RenameAsMoveRequest } from './rename-flow.svelte'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
-import type { OpenDeleteDialogArgs, OpenNamingDialogArgs, OpenTransferDialogArgs, StartRenameOptions } from './types'
+import type {
+  FilePaneAPI,
+  OpenDeleteDialogArgs,
+  OpenNamingDialogArgs,
+  OpenTransferDialogArgs,
+  StartRenameOptions,
+} from './types'
 import type { TransferOperationType } from '../types'
 import type { createDialogState } from './dialog-state.svelte'
 import type { PaneAccess } from './pane-access'
@@ -162,10 +168,12 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    * path. The rename flow refuses it again for every other activation.
    */
   function startRename(options?: StartRenameOptions) {
-    const paneRef = access.getPaneRef(access.getFocusedPane())
+    const pane = options?.pane ?? access.getFocusedPane()
+    const mcpRequestId = options?.mcpRequestId
+    const paneRef = access.getPaneRef(pane)
     const rowPath = paneRef?.getPathUnderCursor()
     const refusal =
-      readOnlyRefusal('rename') ??
+      readOnlyRefusal('rename', pane) ??
       (rowPath !== undefined && rowIsServedByGitPortal(rowPath)
         ? {
             title: tString('fileExplorer.readOnly.gitPortalTitle'),
@@ -173,11 +181,17 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
           }
         : null)
     if (refusal) {
-      dialogs.showAlert(refusal.title, refusal.message)
+      refuseOpening(mcpRequestId, { kind: 'readOnly', message: refusal.message }, () => {
+        dialogs.showAlert(refusal.title, refusal.message)
+      })
       return
     }
 
-    paneRef?.startRename(options)
+    void answeringDialogOpen(mcpRequestId, () => {
+      if (!paneRef) return false
+      paneRef.startRename(options)
+      return true
+    })
   }
 
   /**
@@ -214,18 +228,21 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
   }
 
   /**
-   * Opens the new folder dialog. Pre-fills with the entry name under the cursor,
-   * or with `nameOverride` (the MCP `mkdir` tool's `name`) when given. `pane`
-   * defaults to the focused pane; the MCP `mkdir` tool passes it explicitly so
-   * the dialog targets the right pane regardless of focus timing. `initiator`
+   * Opens the new folder dialog, pre-filled with the entry name under the cursor.
+   * `pane` defaults to the focused pane; the MCP `mkdir` tool passes it explicitly
+   * so the dialog targets the right pane regardless of focus timing. `initiator`
    * carries provenance.
    */
-  async function openNewFolderDialog({
-    name: nameOverride,
+  async function openNewFolderDialog(args: OpenNamingDialogArgs) {
+    await answeringDialogOpen(args.mcpRequestId, () => showNewFolderDialog(args))
+  }
+
+  async function showNewFolderDialog({
     pane = access.getFocusedPane(),
+    mcpRequestId,
     initiator,
-  }: OpenNamingDialogArgs) {
-    if (operationStartIsBlocked()) return
+  }: OpenNamingDialogArgs): Promise<boolean> {
+    if (operationStartIsBlocked(mcpRequestId)) return false
 
     const paneRef = access.getPaneRef(pane)
     const path = access.getPanePath(pane)
@@ -236,19 +253,22 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     // user type a name and then hit a backend rejection. Mirrors `startRename`.
     const refusal = readOnlyRefusal('mkdir', pane)
     if (refusal) {
-      dialogs.showAlert(refusal.title, refusal.message)
-      return
+      refuseOpening(mcpRequestId, { kind: 'readOnly', message: refusal.message }, () => {
+        dialogs.showAlert(refusal.title, refusal.message)
+      })
+      return false
     }
 
     const paneListingId = paneRef?.getListingId()
     if (!paneListingId) {
       log.warn('openNewFolderDialog: no listingId, bailing')
-      return
+      return false
     }
 
-    const initialName = nameOverride ?? (await getInitialFolderName(paneRef))
+    const initialName = await getInitialFolderName(paneRef)
 
     dialogs.showNewFolder({
+      pane,
       currentPath: path,
       listingId: paneListingId,
       showHiddenFiles: access.getShowHiddenFiles(),
@@ -256,20 +276,24 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       volumeId: volumeIdForPane,
       initiator,
     })
+    return true
   }
 
   /**
-   * Opens the new file dialog. Pre-fills with the filename under the cursor, or
-   * with `nameOverride` (the MCP `mkfile` tool's `name`) when given. `pane`
+   * Opens the new file dialog, pre-filled with the filename under the cursor. `pane`
    * defaults to the focused pane; the MCP `mkfile` tool passes it explicitly.
    * `initiator` carries provenance.
    */
-  async function openNewFileDialog({
-    name: nameOverride,
+  async function openNewFileDialog(args: OpenNamingDialogArgs) {
+    await answeringDialogOpen(args.mcpRequestId, () => showNewFileDialog(args))
+  }
+
+  async function showNewFileDialog({
     pane = access.getFocusedPane(),
+    mcpRequestId,
     initiator,
-  }: OpenNamingDialogArgs) {
-    if (operationStartIsBlocked()) return
+  }: OpenNamingDialogArgs): Promise<boolean> {
+    if (operationStartIsBlocked(mcpRequestId)) return false
 
     const paneRef = access.getPaneRef(pane)
     const path = access.getPanePath(pane)
@@ -277,19 +301,22 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
 
     const refusal = readOnlyRefusal('mkfile', pane)
     if (refusal) {
-      dialogs.showAlert(refusal.title, refusal.message)
-      return
+      refuseOpening(mcpRequestId, { kind: 'readOnly', message: refusal.message }, () => {
+        dialogs.showAlert(refusal.title, refusal.message)
+      })
+      return false
     }
 
     const paneListingId = paneRef?.getListingId()
     if (!paneListingId) {
       log.warn('openNewFileDialog: no listingId, bailing')
-      return
+      return false
     }
 
-    const initialName = nameOverride ?? (await getInitialFileName(paneRef))
+    const initialName = await getInitialFileName(paneRef)
 
     dialogs.showNewFile({
+      pane,
       currentPath: path,
       listingId: paneListingId,
       showHiddenFiles: access.getShowHiddenFiles(),
@@ -297,11 +324,12 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       volumeId: volumeIdForPane,
       initiator,
     })
+    return true
   }
 
   /**
-   * Creates a folder directly on the target pane (the MCP `mkdir` autoConfirm
-   * path), using the pane's LIVE path + volumeId so it can't land in a stale
+   * Creates a folder directly on the target pane (the MCP `mkdir` tool given a
+   * name), using the pane's LIVE path + volumeId so it can't land in a stale
    * directory. `pane` defaults to the focused pane; the tool passes it explicitly
    * so a `nav_to_path` right before the create can't land in the wrong pane on a
    * focus-timing race. Throws the read-only refusal or the backend conflict error,
@@ -319,7 +347,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     await createDirectory(path, name, volumeId, initiator)
   }
 
-  /** Creates an empty file directly on the target pane (MCP `mkfile` autoConfirm). */
+  /** Creates an empty file directly on the target pane (the MCP `mkfile` tool given a name). */
   async function createFileDirect(
     name: string,
     pane: 'left' | 'right' = access.getFocusedPane(),
@@ -360,13 +388,21 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
 
   /** Opens the transfer dialog with the current selection info. */
   async function openTransferDialog(operationType: TransferOperationType, args: OpenTransferDialogArgs) {
+    await answeringDialogOpen(args.mcpRequestId, () => showTransferDialog(operationType, args))
+  }
+
+  async function showTransferDialog(
+    operationType: TransferOperationType,
+    args: OpenTransferDialogArgs,
+  ): Promise<boolean> {
     // Nothing new starts behind a dialog: the confirmation would stack over what
     // the user is reading, and this command reaches us from the native menu, whose
     // items stay clickable whatever is on screen. `operation-start-gate.ts`.
-    if (operationStartIsBlocked(args.mcpRequestId)) return
+    if (operationStartIsBlocked(args.mcpRequestId)) return false
 
-    const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
-    const destPane = access.otherPane(access.getFocusedPane())
+    const sourcePane = args.pane ?? access.getFocusedPane()
+    const sourcePaneRef = access.getPaneRef(sourcePane)
+    const destPane = access.otherPane(sourcePane)
     const destVolId = access.getPaneVolumeId(destPane)
     const destPath = access.getPanePath(destPane)
 
@@ -379,12 +415,15 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     // guard for the shortcut path.
     const guard = checkTransferDestinationGuard(destVolId, access.getVolumes(), destPath)
     if (!guard.ok) {
-      if (guard.toast) addToast(guard.toast.message, { level: guard.toast.level })
-      else dialogs.showAlert(guard.alert.title, guard.alert.message)
-      return
+      const message = guard.toast ? guard.toast.message : guard.alert.message
+      refuseOpening(args.mcpRequestId, { kind: 'destination', message }, () => {
+        if (guard.toast) addToast(guard.toast.message, { level: guard.toast.level })
+        else dialogs.showAlert(guard.alert.title, guard.alert.message)
+      })
+      return false
     }
 
-    await openUnifiedTransferDialog(operationType, sourcePaneRef, access.getFocusedPane(), args)
+    return openUnifiedTransferDialog(operationType, sourcePaneRef, sourcePane, args)
   }
 
   /** Opens the copy dialog (convenience wrapper for MCP/key binding). */
@@ -419,22 +458,20 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    * reads its trash affordance off the live volume list: a search covers one volume
    * and it need not be the boot drive, so neither can be assumed.
    */
-  async function openDeleteFromSearchResults({
-    permanent,
-    autoConfirm,
-    mcpRequestId,
-    initiator,
-  }: OpenDeleteDialogArgs) {
-    const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
+  async function openDeleteFromSearchResults(
+    sourcePane: 'left' | 'right',
+    { permanent, initiator }: OpenDeleteDialogArgs,
+  ): Promise<boolean> {
+    const sourcePaneRef = access.getPaneRef(sourcePane)
     const snapshotId = snapshotIdFromPanePath(sourcePaneRef?.getCurrentPath() ?? '')
     if (snapshotId === null) {
-      log.warn('openDeleteFromSearchResults: focused pane volume is search-results but path is not. Bailing.')
-      return
+      log.warn('openDeleteFromSearchResults: source pane volume is search-results but path is not. Bailing.')
+      return false
     }
     const snapshot = getSnapshot(snapshotId)
     if (!snapshot) {
       log.warn('openDeleteFromSearchResults: snapshot {id} not found, bailing', { id: snapshotId })
-      return
+      return false
     }
     const selectedIndices = sourcePaneRef?.getSelectedIndices() ?? []
     const hasSelection = selectedIndices.length > 0
@@ -449,7 +486,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
         'openDeleteFromSearchResults: nothing to delete (hasSelection={hasSelection}, cursorIndex={idx}), bailing',
         { hasSelection, idx: cursorIndex },
       )
-      return
+      return false
     }
 
     const sourceItems: DeleteSourceItem[] = entries.map((entry) => ({
@@ -468,6 +505,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     const cloud = await cloudOnlineOnlyRouting(sourcePaths)
 
     dialogs.showDeleteConfirmation({
+      sourcePaneSide: sourcePane,
       sourceItems,
       sourcePaths,
       sourceFolderPath: getCommonParentPath(sourcePaths),
@@ -477,52 +515,23 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       cloudFolderMayHoldOnlineOnly: cloud.folderMayHoldOnlineOnly,
       isFromCursor: !hasSelection,
       sourceVolumeId: sourceVolume.volumeId,
-      autoConfirm,
-      mcpRequestId,
       initiator,
     })
+    return true
   }
 
   /** Opens the delete confirmation dialog for the current selection or cursor item. */
-  async function openDeleteDialog({ permanent, autoConfirm, mcpRequestId, initiator }: OpenDeleteDialogArgs) {
-    if (operationStartIsBlocked(mcpRequestId)) return
+  async function openDeleteDialog(args: OpenDeleteDialogArgs) {
+    await answeringDialogOpen(args.mcpRequestId, () => showDeleteDialog(args))
+  }
 
-    const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
-    const focusedVolId = access.getPaneVolumeId(access.getFocusedPane())
-
-    // Snapshot pane: no backend listing exists, so the listingId-driven path
-    // can't fetch entries. Build the dialog directly from the snapshot's cursor
-    // entry. Source-side delete is allowed (`canBeSource: true`): the underlying
-    // file IS real, the confirmation dialog shows the real path, and on success
-    // the entry is also removed from every other snapshot that contained it (see
-    // `dialog-state::handleTransferComplete`). Routed off `hasBackendListing`,
-    // not a `volumeId === 'search-results'` string compare; search-results
-    // is the only source-capable `!hasBackendListing` kind to reach here.
-    if (!capabilitiesFor(focusedVolId).hasBackendListing) {
-      await openDeleteFromSearchResults({ permanent, autoConfirm, mcpRequestId, initiator })
-      return
-    }
-
-    const listingId = sourcePaneRef?.getListingId()
-    if (!listingId) {
-      log.warn('openDeleteDialog: no listingId, bailing')
-      return
-    }
-
-    // Read-only sources (a write-protected volume, or inside an archive) can't
-    // accept deletes. Surface as an alert before any dialog opens. Mirrors
-    // `startRename` and `openNewFolderDialog`.
-    const refusal = readOnlyRefusal('delete')
-    if (refusal) {
-      dialogs.showAlert(refusal.title, refusal.message)
-      return
-    }
-
-    if (!sourcePaneRef) return
-    // Full entries in one batch IPC, only while the rows are still the ones the
-    // pane applied: a watcher insert above the selection renumbers them, and the
-    // old row numbers would offer to delete the neighbor. `readPressedRows` waits
-    // out a busy folder and re-reads the press from the pane each attempt.
+  /**
+   * The rows a delete acts on, or `null` when there are none. Full entries in one batch IPC,
+   * only while the rows are still the ones the pane applied: a watcher insert above the
+   * selection renumbers them, and the old row numbers would offer to delete the neighbor.
+   * `readPressedRows` waits out a busy folder and re-reads the press from the pane each attempt.
+   */
+  async function readDeleteRows(sourcePaneRef: FilePaneAPI, listingId: string, mcpRequestId: string | undefined) {
     let pressed
     try {
       pressed = await readPressedRows(
@@ -535,14 +544,13 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       log.warn('openDeleteDialog: getSelectionEntries threw, bailing. error={error}', {
         error,
       })
-      return
+      return null
     }
     if (pressed.kind !== 'read') {
       if (pressed.kind === 'none') log.debug('openDeleteDialog: nothing selected or under the cursor, bailing')
-      return
+      return null
     }
     const entries = pressed.value
-    const hasSelection = pressed.onSelection
     const validEntries = entries.filter((e) => e.name !== '..')
     if (validEntries.length === 0) {
       log.warn(
@@ -552,12 +560,56 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
           entriesNoun: pluralize(entries.length, 'entry', 'entries'),
         },
       )
-      return
+      return null
     }
+    return { validEntries, hasSelection: pressed.onSelection }
+  }
+
+  async function showDeleteDialog(args: OpenDeleteDialogArgs): Promise<boolean> {
+    const { permanent, mcpRequestId, initiator } = args
+    if (operationStartIsBlocked(mcpRequestId)) return false
+
+    const sourcePane = args.pane ?? access.getFocusedPane()
+    const sourcePaneRef = access.getPaneRef(sourcePane)
+    const sourceVolId = access.getPaneVolumeId(sourcePane)
+
+    // Snapshot pane: no backend listing exists, so the listingId-driven path
+    // can't fetch entries. Build the dialog directly from the snapshot's cursor
+    // entry. Source-side delete is allowed (`canBeSource: true`): the underlying
+    // file IS real, the confirmation dialog shows the real path, and on success
+    // the entry is also removed from every other snapshot that contained it (see
+    // `dialog-state::handleTransferComplete`). Routed off `hasBackendListing`,
+    // not a `volumeId === 'search-results'` string compare; search-results
+    // is the only source-capable `!hasBackendListing` kind to reach here.
+    if (!capabilitiesFor(sourceVolId).hasBackendListing) {
+      return openDeleteFromSearchResults(sourcePane, args)
+    }
+
+    const listingId = sourcePaneRef?.getListingId()
+    if (!listingId) {
+      log.warn('openDeleteDialog: no listingId, bailing')
+      return false
+    }
+
+    // Read-only sources (a write-protected volume, or inside an archive) can't
+    // accept deletes. Surface as an alert before any dialog opens. Mirrors
+    // `startRename` and `openNewFolderDialog`.
+    const refusal = readOnlyRefusal('delete', sourcePane)
+    if (refusal) {
+      refuseOpening(mcpRequestId, { kind: 'readOnly', message: refusal.message }, () => {
+        dialogs.showAlert(refusal.title, refusal.message)
+      })
+      return false
+    }
+
+    if (!sourcePaneRef) return false
+    const rows = await readDeleteRows(sourcePaneRef, listingId, mcpRequestId)
+    if (!rows) return false
+    const { validEntries, hasSelection } = rows
     log.debug('openDeleteDialog: opening delete confirmation. {count} {entriesNoun}, sourceVolId={volId}', {
       count: validEntries.length,
       entriesNoun: pluralize(validEntries.length, 'valid entry', 'valid entries'),
-      volId: access.getPaneVolumeId(access.getFocusedPane()),
+      volId: sourceVolId,
     })
 
     const sourceItems: DeleteSourceItem[] = validEntries.map((e) => ({
@@ -571,8 +623,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     }))
     const sourcePaths = validEntries.map((e) => e.path)
 
-    const sourceVolId = access.getPaneVolumeId(access.getFocusedPane())
-    const sourceFolderPath = access.getPanePath(access.getFocusedPane())
+    const sourceFolderPath = access.getPanePath(sourcePane)
     // Deleting an entry INSIDE a zip is permanent: there's no Trash inside an
     // archive (the backend rejects trashing an archive-inner path), so force
     // permanent + the archive warning regardless of the parent drive's trash
@@ -588,6 +639,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       cloud.onlineOnly === null && paneOffersTrash(sourceVolId, sourceFolderPath, access.getVolumes())
 
     dialogs.showDeleteConfirmation({
+      sourcePaneSide: sourcePane,
       sourceItems,
       sourcePaths,
       sourceFolderPath,
@@ -598,10 +650,9 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       cloudFolderMayHoldOnlineOnly: cloud.folderMayHoldOnlineOnly,
       isFromCursor: !hasSelection,
       sourceVolumeId: sourceVolId,
-      autoConfirm,
-      mcpRequestId,
       initiator,
     })
+    return true
   }
 
   return {

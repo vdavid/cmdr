@@ -2,21 +2,29 @@
 
 use serde_json::{Value, json};
 
+/// The pane an Initiate or LightWrite tool acts on, which every one of them requires: focus moves
+/// silently (`nav_to_path` and `select` move it), so an unnamed pane can aim at the wrong one.
+fn pane_prop(description: &str) -> Value {
+    json!({ "type": "string", "enum": ["left", "right"], "description": description })
+}
+
+/// `copy` and `move`'s `onConflict`: a preset the dialog opens on, ❌ never a decision.
+fn on_conflict_prop() -> Value {
+    json!({
+        "type": "string",
+        "enum": ["stop", "skip_all", "overwrite_all", "rename_all", "overwrite_smaller_all", "overwrite_older_all"],
+        "description": "What the dialog's 'files already exist' choice opens on, for clashing FILES. A person still confirms, and can change it. Omit for their saved choice. Folders always merge. 'stop' asks per file. overwrite_smaller_all / overwrite_older_all overwrite only when the destination is strictly smaller / older, and skip otherwise."
+    })
+}
+
 pub fn copy_schema() -> Value {
     json!({
         "type": "object",
         "properties": {
-            "autoConfirm": {
-                "type": "boolean",
-                "description": "When true, dialog opens and immediately confirms without waiting for user interaction. Returns once the operation starts."
-            },
-            "onConflict": {
-                "type": "string",
-                "enum": ["stop", "skip_all", "overwrite_all", "rename_all", "overwrite_smaller_all", "overwrite_older_all"],
-                "description": "Conflict resolution policy for clashing FILES (only when autoConfirm is true). Folders always merge: a source folder landing on a same-named dest folder merges into it, and this policy governs the files inside. 'stop' decides nothing upfront: the operation asks per file and parks until you answer each clash with resolve_conflict (watch cmdr://state operations for the pendingConflict block). overwrite_smaller_all / overwrite_older_all overwrite only when the destination is strictly smaller / strictly older, and skip otherwise. Default: skip_all"
-            }
+            "pane": pane_prop("The pane to copy from; the other pane's folder is the destination."),
+            "onConflict": on_conflict_prop()
         },
-        "required": []
+        "required": ["pane"]
     })
 }
 
@@ -24,17 +32,10 @@ pub fn move_schema() -> Value {
     json!({
         "type": "object",
         "properties": {
-            "autoConfirm": {
-                "type": "boolean",
-                "description": "When true, dialog opens and immediately confirms without waiting for user interaction. Returns once the operation starts."
-            },
-            "onConflict": {
-                "type": "string",
-                "enum": ["stop", "skip_all", "overwrite_all", "rename_all", "overwrite_smaller_all", "overwrite_older_all"],
-                "description": "Conflict resolution policy for clashing FILES (only when autoConfirm is true). Folders always merge: a source folder landing on a same-named dest folder merges into it, and this policy governs the files inside. 'stop' decides nothing upfront: the operation asks per file and parks until you answer each clash with resolve_conflict (watch cmdr://state operations for the pendingConflict block). overwrite_smaller_all / overwrite_older_all overwrite only when the destination is strictly smaller / strictly older, and skip otherwise. Default: skip_all"
-            }
+            "pane": pane_prop("The pane to move from; the other pane's folder is the destination."),
+            "onConflict": on_conflict_prop()
         },
-        "required": []
+        "required": ["pane"]
     })
 }
 
@@ -42,12 +43,9 @@ pub fn compress_schema() -> Value {
     json!({
         "type": "object",
         "properties": {
-            "autoConfirm": {
-                "type": "boolean",
-                "description": "When true, the dialog opens and immediately confirms without waiting for user interaction, returning once the compress starts. Exception: if the target archive already exists, the dialog stays open for the user to confirm the overwrite rather than replacing it silently."
-            }
+            "pane": pane_prop("The pane to compress from; the archive lands in the other pane's folder.")
         },
-        "required": []
+        "required": ["pane"]
     })
 }
 
@@ -55,17 +53,14 @@ pub fn delete_schema() -> Value {
     json!({
         "type": "object",
         "properties": {
-            "autoConfirm": {
-                "type": "boolean",
-                "description": "When true, dialog opens and immediately confirms without waiting for user interaction. Returns once the operation starts."
-            },
+            "pane": pane_prop("The pane to delete from."),
             "mode": {
                 "type": "string",
                 "enum": ["trash", "delete"],
-                "description": "trash = move to Trash; delete = permanent. Omit for the pane's default (a volume without a trash forces permanent)."
+                "description": "What the dialog opens on: trash = move to Trash; delete = permanent. Omit for the pane's default (a volume without a trash forces permanent)."
             }
         },
-        "required": []
+        "required": ["pane"]
     })
 }
 
@@ -73,11 +68,7 @@ pub fn rename_schema() -> Value {
     json!({
         "type": "object",
         "properties": {
-            "pane": {
-                "type": "string",
-                "enum": ["left", "right"],
-                "description": "Which pane to rename in. Defaults to the focused pane."
-            },
+            "pane": pane_prop("Which pane to rename in."),
             "name": {
                 "type": "string",
                 "description": "Current filename to rename. Defaults to the cursor item. Errors if it isn't in the listing."
@@ -85,13 +76,9 @@ pub fn rename_schema() -> Value {
             "newName": {
                 "type": "string",
                 "description": "The proposed new name (a name, not a path)."
-            },
-            "autoConfirm": {
-                "type": "boolean",
-                "description": "When true, renames directly without the review editor. Returns once the rename lands."
             }
         },
-        "required": ["newName"]
+        "required": ["pane", "newName"]
     })
 }
 
@@ -101,19 +88,11 @@ pub fn mkdir_schema() -> Value {
         "properties": {
             "name": {
                 "type": "string",
-                "description": "Folder name. Omit to open the dialog with the default prefill."
+                "description": "Folder name: creates it directly. Omit to open the naming dialog for a person."
             },
-            "autoConfirm": {
-                "type": "boolean",
-                "description": "With a name, create directly without the dialog. Returns once created."
-            },
-            "pane": {
-                "type": "string",
-                "enum": ["left", "right"],
-                "description": "Target pane. Defaults to the focused pane."
-            }
+            "pane": pane_prop("Which pane to create in.")
         },
-        "required": []
+        "required": ["pane"]
     })
 }
 
@@ -123,19 +102,11 @@ pub fn mkfile_schema() -> Value {
         "properties": {
             "name": {
                 "type": "string",
-                "description": "File name. Omit to open the dialog with the default prefill."
+                "description": "File name: creates it directly. Omit to open the naming dialog for a person."
             },
-            "autoConfirm": {
-                "type": "boolean",
-                "description": "With a name, create directly without the dialog. Returns once created."
-            },
-            "pane": {
-                "type": "string",
-                "enum": ["left", "right"],
-                "description": "Target pane. Defaults to the focused pane."
-            }
+            "pane": pane_prop("Which pane to create in.")
         },
-        "required": []
+        "required": ["pane"]
     })
 }
 
@@ -143,11 +114,7 @@ pub fn tag_schema() -> Value {
     json!({
         "type": "object",
         "properties": {
-            "pane": {
-                "type": "string",
-                "enum": ["left", "right"],
-                "description": "Which pane to act in. Defaults to the focused pane."
-            },
+            "pane": pane_prop("Which pane to act in."),
             "action": {
                 "type": "string",
                 "enum": ["set", "toggle", "clear"],
@@ -156,7 +123,7 @@ pub fn tag_schema() -> Value {
             "names": {
                 "type": "array",
                 "items": { "type": "string" },
-                "description": "Filenames to tag. Defaults to the selection, else the cursor item. Errors if a name isn't in the listing."
+                "description": "Filenames to tag. Defaults to the pane's selection, and refuses with neither. Errors if a name isn't in the listing."
             },
             "colors": {
                 "type": "array",
@@ -167,6 +134,6 @@ pub fn tag_schema() -> Value {
                 "description": "Finder color names. Required for set and toggle; ignored for clear."
             }
         },
-        "required": ["action"]
+        "required": ["pane", "action"]
     })
 }

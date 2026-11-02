@@ -227,15 +227,13 @@ The answer has two fields:
 spinner rides inside the confirm button meanwhile) so a press landing mid-walk can't settle the question by luck. One
 hit is the whole answer, so a progress tick releases it and a 50 GB folder needn't finish counting. If the answer says
 online-only, the confirm is HANDED BACK rather than run: the button said "Move to trash" and now means a permanent
-delete, and nothing undoes that one. An MCP `autoConfirm` goes through, having asked for the delete outright. Everywhere
-else confirm stays exactly as instant as before.
+delete, and nothing undoes that one. Everywhere else confirm stays exactly as instant as before.
 
 **An agent waiting on that press is told to hold.** Before the wait, a press an agent made (a `dialog_confirm`'s
-`mcpRequestId`, or the auto-confirm's own) sends `holdOperationStartReply(id, ONLINE_ONLY_ANSWER_TIMEOUT_MS)`, which
-moves the MCP round-trip's deadline out by that much (the Holds bullet in `src-tauri/src/tools/actions/DETAILS.md`).
-Without it the agent's 10 s start budget ran out mid-walk while the trash still went ahead, so it got a timeout and no
-`operationId`. The id can't be minted earlier: until the walk answers, the press may yet start a trash, a delete, or
-nothing at all.
+`mcpRequestId`) sends `holdOperationStartReply(id, ONLINE_ONLY_ANSWER_TIMEOUT_MS)`, which moves the MCP round-trip's
+deadline out by that much (the Holds bullet in `src-tauri/src/tools/actions/DETAILS.md`). Without it the agent's 10 s
+start budget ran out mid-walk while the trash still went ahead, so it got a timeout and no `operationId`. The id can't
+be minted earlier: until the walk answers, the press may yet start a trash, a delete, or nothing at all.
 
 **A handed-back press says so** (`handedBackForOnlineOnly` → `fileOperations.delete.cloudOnlineOnlyHandedBack`). The
 dialog stays open and changes shape under the person's finger, so without a line saying what happened the press reads as

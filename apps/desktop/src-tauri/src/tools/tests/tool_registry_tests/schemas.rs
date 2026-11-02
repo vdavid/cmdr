@@ -433,10 +433,41 @@ fn test_rename_tool_schema() {
     let tools = get_all_tools();
     let schema = &tool(&tools, "rename").input_schema;
     let props = schema.get("properties").unwrap();
-    for key in ["pane", "name", "newName", "autoConfirm"] {
+    for key in ["pane", "name", "newName"] {
         assert!(props.get(key).is_some(), "rename schema missing '{key}'");
     }
-    assert_eq!(schema.get("required").unwrap().as_array().unwrap(), &[json!("newName")]);
+    assert_eq!(
+        schema.get("required").unwrap().as_array().unwrap(),
+        &[json!("pane"), json!("newName")]
+    );
+}
+
+/// `copy` means "open the dialog" for everyone. Rollback's own bypass goes next.
+#[test]
+fn no_schema_but_rollback_has_a_bypass_parameter() {
+    for tool in get_all_tools() {
+        if tool.name == "operations_rollback" {
+            continue;
+        }
+        let props = tool.input_schema.get("properties");
+        assert!(
+            props.and_then(|p| p.get("autoConfirm")).is_none(),
+            "'{}' declares autoConfirm",
+            tool.name
+        );
+    }
+}
+
+/// Focus moves silently (`nav_to_path` and `select` move it), so a tool that starts something on a
+/// pane says which one: select left, nav right, and an unnamed `copy` copies the right pane's item.
+#[test]
+fn a_tool_that_starts_something_on_a_pane_requires_the_pane() {
+    let tools = get_all_tools();
+    for name in ["copy", "move", "compress", "delete", "rename", "mkdir", "mkfile", "tag"] {
+        let schema = &tool(&tools, name).input_schema;
+        let required = schema.get("required").unwrap().as_array().unwrap();
+        assert!(required.contains(&json!("pane")), "'{name}' doesn't require pane");
+    }
 }
 
 #[test]
@@ -455,7 +486,10 @@ fn test_tag_tool_schema() {
     for color in ["red", "orange", "yellow", "green", "blue", "purple", "gray"] {
         assert!(colors.contains(&json!(color)), "missing color '{color}'");
     }
-    assert_eq!(schema.get("required").unwrap().as_array().unwrap(), &[json!("action")]);
+    assert_eq!(
+        schema.get("required").unwrap().as_array().unwrap(),
+        &[json!("pane"), json!("action")]
+    );
 }
 
 #[test]

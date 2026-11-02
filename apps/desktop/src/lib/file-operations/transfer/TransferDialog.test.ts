@@ -4,7 +4,7 @@
  * Covers the decoupled conflict UX: the top-level conflict check runs in parallel with
  * the (potentially slow) scan preview, dir-vs-dir collisions classify as merge
  * info rather than conflicts, the file-policy radios show for merges too, the
- * cross-type "Overwrite all" guardrail, and the auto-confirm (MCP) payload
+ * cross-type "Overwrite all" guardrail, and the MCP preset's payload
  * wiring. The volume store, Tauri IPC, and settings are stubbed.
  */
 
@@ -204,7 +204,9 @@ describe('TransferDialog bulk-skip name forwarding', () => {
       captured.preKnown = preKnownConflicts
     }
 
-    mountDialog({ autoConfirm: true, autoConfirmOnConflict: 'skip_all', onConfirm })
+    const target = mountDialog({ presetOnConflict: 'skip_all', onConfirm })
+    await flushMicrotasks()
+    confirmButton(target).click()
     await flushMicrotasks()
 
     expect(captured.preKnown).toEqual(['notes.txt'])
@@ -255,10 +257,10 @@ describe('TransferDialog cross-type overwrite guardrail', () => {
 })
 
 /* ------------------------------------------------------------------------- */
-/* Auto-confirm (MCP) payload wiring                                         */
+/* MCP preset payload wiring                                                 */
 /* ------------------------------------------------------------------------- */
 
-describe('TransferDialog auto-confirm payload', () => {
+describe('TransferDialog MCP preset payload', () => {
   it('maps the MCP onConflict string onto the dispatched resolution', async () => {
     scanVolumeForConflictsMock.mockResolvedValue([
       makeConflict({ sourcePath: 'notes.txt', sourceIsDirectory: false, destIsDirectory: false }),
@@ -273,15 +275,14 @@ describe('TransferDialog auto-confirm payload', () => {
       captured.resolution = conflictResolution
     }
 
-    mountDialog({ autoConfirm: true, autoConfirmOnConflict: 'overwrite_all', onConfirm })
+    const target = mountDialog({ presetOnConflict: 'overwrite_all', onConfirm })
+    await flushMicrotasks()
+    confirmButton(target).click()
     await flushMicrotasks()
 
-    // `overwrite` does NOT wait for the conflict check (only `skip` does — see
-    // "confirm without waiting for the conflict check" below). The names ride along
-    // here because the check has already resolved by dispatch time, and this pins
-    // that we don't blank them just because the policy isn't `skip`. What is NOT
-    // asserted, because it isn't guaranteed: that a still-pending check delays this
-    // dispatch. Under a slow dest listing it dispatches with `[]`, by design.
+    // The names ride along here because the check has already resolved by dispatch
+    // time, and this pins that we don't blank them just because the policy isn't
+    // `skip`.
     expect(captured.preKnown).toEqual(['notes.txt'])
     expect(captured.resolution).toBe('overwrite')
   })
@@ -830,20 +831,12 @@ describe('TransferDialog compress mode', () => {
     expect(target.querySelector('.path-warning')).toBeNull()
   })
 
-  it('auto-confirm does NOT overwrite an existing archive (surfaces the dialog instead)', async () => {
-    // Auto-confirm (MCP) with the target zip already present: the dialog must NOT
-    // dispatch — it stays open so the user decides.
-    destinationExistsMock.mockResolvedValue({ data: true, timedOut: false })
-    const onConfirm = vi.fn<ConfirmFn>()
-    mountDialog({ operationType: 'compress', autoConfirm: true, onConfirm })
-    await flushMicrotasks()
-    expect(onConfirm).not.toHaveBeenCalled()
-  })
-
-  it('auto-confirm proceeds when the target archive does not exist', async () => {
+  it('a confirm dispatches a compress with no conflict list', async () => {
     destinationExistsMock.mockResolvedValue({ data: false, timedOut: false })
     const onConfirm = vi.fn<ConfirmFn>()
-    mountDialog({ operationType: 'compress', autoConfirm: true, onConfirm })
+    const target = mountDialog({ operationType: 'compress', onConfirm })
+    await flushMicrotasks()
+    confirmButton(target).click()
     await flushMicrotasks()
     expect(onConfirm).toHaveBeenCalledTimes(1)
     // Compress dispatches with an empty conflict list (no multi-file conflicts).
@@ -896,24 +889,19 @@ describe('TransferDialog confirm without waiting for the conflict check', () => 
     expect(onConfirm.mock.calls[0][0].preKnownConflicts).toEqual([])
   })
 
-  it('still waits for the conflict names under the Skip policy (the bulk-skip perf win)', async () => {
-    // `Skip` is the ONE resolution the backend reads `pre_known_conflicts` for, and
-    // only the MCP path can select it before the check lands (the radios don't
-    // render while it runs), so no human is waiting on this await.
-    const pendingCheck = deferred<VolumeConflictInfo[]>()
-    scanVolumeForConflictsMock.mockReturnValue(pendingCheck.promise)
+  it('a preset of Skip waits for its radios rather than holding the confirm back', async () => {
+    // The dest listing never comes back. The press still goes out, and it asks per file:
+    // the preset only counts once the person can see it.
+    scanVolumeForConflictsMock.mockReturnValue(new Promise(() => {}))
 
     const onConfirm = vi.fn<ConfirmFn>()
-    mountDialog({ autoConfirm: true, autoConfirmOnConflict: 'skip_all', onConfirm })
+    const target = mountDialog({ presetOnConflict: 'skip_all', onConfirm })
     await flushMicrotasks()
-
-    expect(onConfirm, 'Skip needs the names upfront, so it waits').not.toHaveBeenCalled()
-
-    pendingCheck.resolve([makeConflict({ sourcePath: 'notes.txt' })])
+    confirmButton(target).click()
     await flushMicrotasks()
 
     expect(onConfirm).toHaveBeenCalledTimes(1)
-    expect(onConfirm.mock.calls[0][0].preKnownConflicts).toEqual(['notes.txt'])
+    expect(onConfirm.mock.calls[0][0].conflictResolution).toBe('stop')
   })
 
   it('disables the confirm button and shows a spinner while a confirm is genuinely pending', async () => {
@@ -941,19 +929,16 @@ describe('TransferDialog confirm without waiting for the conflict check', () => 
   })
 
   it('Cancel during a pending confirm leaves the scan preview alone', async () => {
-    // Skip is the policy that still waits, so it gives us a real in-flight confirm
-    // to fire Cancel against.
-    const pendingCheck = deferred<VolumeConflictInfo[]>()
-    scanVolumeForConflictsMock.mockReturnValue(pendingCheck.promise)
+    // A confirm waits on the preview id, which gives us a real in-flight confirm to
+    // fire Cancel against.
+    const pendingScan = deferred<{ previewId: string }>()
+    startScanPreviewMock.mockReturnValue(pendingScan.promise)
 
     const onConfirm = vi.fn<ConfirmFn>()
     const onCancel = vi.fn()
-    const target = mountDialog({
-      autoConfirm: true,
-      autoConfirmOnConflict: 'skip_all',
-      onConfirm,
-      onCancel,
-    })
+    const target = mountDialog({ onConfirm, onCancel })
+    await flushMicrotasks()
+    confirmButton(target).click()
     await flushMicrotasks()
     expect(onConfirm).not.toHaveBeenCalled()
 
@@ -972,7 +957,7 @@ describe('TransferDialog confirm without waiting for the conflict check', () => 
     expect(cancelScanPreviewMock, 'a confirmed dialog must not free its preview').not.toHaveBeenCalled()
     expect(onCancel, 'the confirm already committed; Cancel is a no-op').not.toHaveBeenCalled()
 
-    pendingCheck.resolve([makeConflict({ sourcePath: 'notes.txt' })])
+    pendingScan.resolve({ previewId: 'preview-1' })
     await flushMicrotasks()
 
     expect(onConfirm).toHaveBeenCalledTimes(1)

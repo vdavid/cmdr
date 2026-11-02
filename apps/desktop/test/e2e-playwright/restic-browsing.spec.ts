@@ -33,7 +33,7 @@ import {
   getFixtureRoot,
   pollUntil,
 } from './helpers.js'
-import { ensureMcpClient, mcpCall, mcpCallRaw, mcpNavToPath } from '../e2e-shared/mcp-client.js'
+import { ensureMcpClient, mcpCall, mcpCallRaw, mcpNavToPath, mcpConfirmedCopy } from '../e2e-shared/mcp-client.js'
 
 type PageLike = TauriPage | BrowserPageAdapter
 
@@ -118,7 +118,7 @@ test.describe('Restic browsing', () => {
     // 6. Copy out into a real folder: the restore.
     await mcpNavToPath('right', outDir)
     await mcpCall('select', { pane: 'left', names: ['notes.txt'] })
-    expect(await mcpCall('copy', { autoConfirm: true })).toContain('OK')
+    expect(await mcpConfirmedCopy('left')).toContain('OK')
     const landed = await mcpCall('await', {
       pane: 'right',
       condition: 'has_item',

@@ -55,7 +55,6 @@ function makeState() {
     getLeftPaneRef: () => paneRef,
     getRightPaneRef: () => paneRef,
     getFocusedPaneRef: () => paneRef,
-    getFocusedPaneSide: () => 'right',
     getShowHiddenFiles: () => false,
     // No pane navigation in these suites; the trash toast is the only consumer.
     getExplorer: () => undefined,
@@ -75,6 +74,7 @@ describe('dialog render-failure recovery', () => {
   it('un-suppresses the pane keyboard after a confirmation dialog throws', () => {
     const dialogs = makeState()
     dialogs.showNewFolder({
+      pane: 'left',
       initiator: 'user',
       currentPath: '/tmp',
       listingId: 'listing-1',

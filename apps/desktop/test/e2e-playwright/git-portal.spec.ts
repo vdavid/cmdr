@@ -56,7 +56,13 @@ import {
   pollUntil,
   MKDIR_DIALOG,
 } from './helpers.js'
-import { ensureMcpClient, mcpCall, mcpNavToPath } from '../e2e-shared/mcp-client.js'
+import {
+  ensureMcpClient,
+  mcpCall,
+  mcpNavToPath,
+  mcpConfirmedCopy,
+  mcpConfirmedDelete,
+} from '../e2e-shared/mcp-client.js'
 
 /** Matches the `PageLike` alias used inside `helpers.ts`. */
 type PageLike = TauriPage | BrowserPageAdapter
@@ -202,6 +208,18 @@ test.describe('Git portal', () => {
     await setPortalEnabled(tauriPage, true)
   })
 
+  test('the rename tool refuses a row the portal serves, and opens no editor', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    await mcpNavToPath('left', path.join(repoPath(), '.git'))
+
+    await expect(mcpCall('rename', { pane: 'left', name: 'branches', newName: 'renamed' })).rejects.toThrow(
+      'read-only git portal',
+    )
+
+    expect(await tauriPage.isVisible('.rename-input')).toBe(false)
+  })
+
   test('deletes the whole repo folder with the portal on, leaving no .git behind', async ({ tauriPage }) => {
     // The bug this pins: the six virtual folders used to reach the volume-aware
     // delete walker, which refused each one (and every real file under `.git`)
@@ -212,7 +230,7 @@ test.describe('Git portal', () => {
     expect(await paneHasFile(tauriPage, 0, REPO_REL)).toBe(true)
 
     await mcpCall('select', { pane: 'left', names: [REPO_REL] })
-    expect(await mcpCall('delete', { mode: 'delete', autoConfirm: true })).toContain('OK')
+    expect(await mcpConfirmedDelete('left', 'delete')).toContain('OK')
 
     const gone = await mcpCall('await', {
       pane: 'left',
@@ -275,10 +293,9 @@ test.describe('Git portal', () => {
     await mcpNavToPath('left', path.join(repoPath(), '.git/branches/main'))
     expect(await paneHasFile(tauriPage, 0, 'readme.txt')).toBe(true)
 
-    // `select` focuses the pane, so the copy runs from the snapshot into the
-    // right pane's real folder.
+    // The copy runs from the snapshot into the right pane's real folder.
     await mcpCall('select', { pane: 'left', names: ['readme.txt', 'scripts'] })
-    expect(await mcpCall('copy', { autoConfirm: true })).toContain('OK')
+    expect(await mcpConfirmedCopy('left')).toContain('OK')
 
     const landed = await mcpCall('await', {
       pane: 'right',

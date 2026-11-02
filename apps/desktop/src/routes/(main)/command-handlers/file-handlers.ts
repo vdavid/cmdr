@@ -169,8 +169,7 @@ export const fileHandlers = {
     // Arg-less from F2 / the palette (seed the current name); the MCP `rename`
     // tool passes `{ initialName, expectedName }` to seed a proposed name and pin
     // activation to the target row.
-    const renameArgs = dispatchArgs as CommandArgs['file.rename'] | undefined
-    explorerRef?.startRename(renameArgs)
+    explorerRef?.startRename(dispatchArgs)
   },
 
   'file.edit': (hctx) => {
@@ -192,8 +191,8 @@ export const fileHandlers = {
 
   'file.copy': ({ explorerRef, dispatchArgs }) => {
     // Arg-less from the F-bar / palette / keyboard (open the dialog with no
-    // preset); the MCP `copy` tool passes `{ autoConfirm, onConflict, initiator }`
-    // to pre-answer the conflict policy and tag provenance.
+    // preset); the MCP `copy` tool passes `{ pane, onConflict, mcpRequestId, initiator }`
+    // to aim it, preset the conflict policy, hear the dialog opened, and tag provenance.
     const copyArgs = (dispatchArgs ?? PRESSED_BY_A_PERSON) as CommandArgs['file.copy']
     detached(explorerRef?.openCopyDialog(copyArgs))
   },
@@ -215,9 +214,9 @@ export const fileHandlers = {
   },
 
   'file.newFolder': ({ explorerRef, dispatchArgs }) => {
-    // Arg-less from F7 / the palette; the MCP `mkdir` tool may pass `{ name }` to
-    // prefill the dialog and `{ pane }` to target a specific pane, plus `{ initiator }`
-    // to tag provenance. (autoConfirm creates directly in Rust, never reaching here.)
+    // Arg-less from F7 / the palette; the MCP `mkdir` tool with no name passes `{ pane }`
+    // to target a specific pane, plus `{ initiator }` to tag provenance. (With a name it
+    // creates directly, never reaching here.)
     const args = (dispatchArgs ?? PRESSED_BY_A_PERSON) as CommandArgs['file.newFolder']
     detached(explorerRef?.openNewFolderDialog(args))
   },
@@ -233,8 +232,8 @@ export const fileHandlers = {
     const deleteArgs = (dispatchArgs ?? PRESSED_BY_A_PERSON) as CommandArgs['file.delete']
     detached(
       explorerRef?.openDeleteDialog({
+        pane: deleteArgs.pane,
         permanent: deleteArgs.permanent ?? false,
-        autoConfirm: deleteArgs.autoConfirm,
         mcpRequestId: deleteArgs.mcpRequestId,
         initiator: deleteArgs.initiator,
       }),

@@ -11,6 +11,10 @@ import type { ResortResult, SortColumn } from '../types'
 
 /** Options for `startRename`. */
 export interface StartRenameOptions {
+  /** The pane whose cursor item to rename, defaulting to the focused one. */
+  pane?: 'left' | 'right'
+  /** The MCP round trip that asked: answered when the editor is on its way, or with why it isn't. */
+  mcpRequestId?: string
   /**
    * Suppresses the extension-change confirmation for THIS auto-started rename
    * only (used by paste-clipboard-as-file, where renaming a fresh `pasted.txt`
@@ -117,35 +121,35 @@ export interface CopyPathBetweenPanesArgs {
 }
 
 /**
- * Shared args for the copy / move / compress dialog openers: an optional
- * pre-answered conflict policy and MCP round-trip id, both `string`. Used by
- * `ExplorerAPI.openCopyDialog` / `.openMoveDialog` / `.openCompressDialog`, each
- * of which took `(autoConfirm?, onConflict?, mcpRequestId?, initiator?)` as four
- * positional params with `onConflict` and `mcpRequestId` sharing `string`.
+ * Shared args for the copy / move / compress dialog openers. Used by
+ * `ExplorerAPI.openCopyDialog` / `.openMoveDialog` / `.openCompressDialog`.
+ * `pane` is the source, defaulting to the focused one. `onConflict` is an MCP
+ * policy name the dialog opens on as a preset (`remembered-conflict-policy.ts`).
+ * `mcpRequestId` is the round trip that asked: the opener answers it when the
+ * dialog is up, or says why nothing opened.
  */
 export interface OpenTransferDialogArgs {
-  autoConfirm?: boolean
+  pane?: 'left' | 'right'
   onConflict?: string
   mcpRequestId?: string
   initiator: Initiator
 }
 
 /**
- * Args for `ExplorerAPI.openDeleteDialog`, which took
- * `(permanent, autoConfirm?, mcpRequestId?, initiator?)` with `permanent` and
- * `autoConfirm` sharing `boolean`.
+ * Args for `ExplorerAPI.openDeleteDialog`. `pane` and `mcpRequestId` as in
+ * `OpenTransferDialogArgs`.
  */
 export interface OpenDeleteDialogArgs {
+  pane?: 'left' | 'right'
   permanent: boolean
-  autoConfirm?: boolean
   mcpRequestId?: string
   initiator: Initiator
 }
 
 /** Args for `ExplorerAPI.openNewFolderDialog` and `.openNewFileDialog`. */
 export interface OpenNamingDialogArgs {
-  name?: string
   pane?: 'left' | 'right'
+  mcpRequestId?: string
   initiator: Initiator
 }
 

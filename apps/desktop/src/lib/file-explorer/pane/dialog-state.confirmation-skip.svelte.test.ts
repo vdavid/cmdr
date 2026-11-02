@@ -46,7 +46,6 @@ function makeState(skip: boolean) {
     getLeftPaneRef: () => pane,
     getRightPaneRef: () => pane,
     getFocusedPaneRef: () => pane,
-    getFocusedPaneSide: () => 'right',
     getShowHiddenFiles: () => false,
     getExplorer: () => undefined,
     skipsConfirmations: () => skip,
@@ -75,6 +74,7 @@ function transferProps(overrides: Partial<TransferDialogPropsData> = {}): Transf
 
 function deleteProps(overrides: Partial<DeleteDialogPropsData> = {}): DeleteDialogPropsData {
   return {
+    sourcePaneSide: 'left',
     initiator: 'user',
     sourceItems: [{ name: 'first.jpg', size: 10, isDirectory: false, isSymlink: false }],
     sourcePaths: [`${SOURCE_FOLDER}/first.jpg`],

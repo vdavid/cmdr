@@ -60,7 +60,6 @@ function makeState() {
     getLeftPaneRef: () => pane,
     getRightPaneRef: () => pane,
     getFocusedPaneRef: () => pane,
-    getFocusedPaneSide: () => 'right',
     getShowHiddenFiles: () => false,
     // No pane navigation in these suites; the trash toast is the only consumer.
     getExplorer: () => undefined,
@@ -89,7 +88,7 @@ function copyProps(overrides: Partial<TransferProgressPropsData> = {}): Transfer
 }
 
 /** The confirmation dialog's payload, the shape `handleTransferConfirm` reads. */
-function transferConfirmationProps(mcpRequestId?: string): TransferDialogPropsData {
+function transferConfirmationProps(): TransferDialogPropsData {
   return {
     initiator: 'user',
     operationType: 'copy',
@@ -102,7 +101,6 @@ function transferConfirmationProps(mcpRequestId?: string): TransferDialogPropsDa
     sourceFolderPath: SOURCE_FOLDER,
     sourceVolumeId: 'root',
     destVolumeId: 'root',
-    mcpRequestId,
     duplicateFollowUp: 'nothing',
   }
 }
@@ -167,7 +165,7 @@ describe('the refusal an MCP agent receives', () => {
   it('fails the round-trip instead of letting it time out, and types the blocking dialog', () => {
     const { dialogs } = makeState()
     dialogs.startTransferProgress(copyProps())
-    dialogs.showTransfer(transferConfirmationProps('req-7'))
+    dialogs.showTransfer(transferConfirmationProps())
 
     dialogs.handleTransferConfirm({
       destination: '/Users/me/elsewhere',
@@ -176,6 +174,7 @@ describe('the refusal an MCP agent receives', () => {
       conflictResolution: 'skip',
       operationType: 'copy',
       preKnownConflicts: [],
+      mcpRequestId: 'req-7',
     })
 
     expect(emit).toHaveBeenCalledWith(
@@ -187,7 +186,7 @@ describe('the refusal an MCP agent receives', () => {
   it('carries a sentence the agent can act on', () => {
     const { dialogs } = makeState()
     dialogs.startTransferProgress(copyProps())
-    dialogs.showTransfer(transferConfirmationProps('req-7'))
+    dialogs.showTransfer(transferConfirmationProps())
 
     dialogs.handleTransferConfirm({
       destination: '/Users/me/elsewhere',
@@ -196,6 +195,7 @@ describe('the refusal an MCP agent receives', () => {
       conflictResolution: 'skip',
       operationType: 'copy',
       preKnownConflicts: [],
+      mcpRequestId: 'req-7',
     })
 
     const payload = vi.mocked(emit).mock.calls.find(([name]) => name === 'mcp-response')?.[1] as {

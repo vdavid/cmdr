@@ -171,7 +171,6 @@ describe('an MCP confirm on the transfer dialog', () => {
       getLeftPaneRef: () => pane,
       getRightPaneRef: () => pane,
       getFocusedPaneRef: () => pane,
-      getFocusedPaneSide: () => 'right',
       getShowHiddenFiles: () => false,
       getExplorer: () => undefined,
       onRefocus: vi.fn(),

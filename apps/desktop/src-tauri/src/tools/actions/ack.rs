@@ -10,12 +10,11 @@
 //!
 //! - `GenerationAdvanced`: the `PaneStateStore` generation counter strictly advanced past a
 //!   captured value. Use this for actions that mutate pane state (parent/back/forward
-//!   navigation, view mode, sort, tabs, auto-confirmed copy/move/delete). Tools that need a
+//!   navigation, view mode, sort, tabs). Tools that need a
 //!   per-request answer (`refresh`, `select`, `move_cursor`, `nav_to_path`) use
 //!   `mcp_round_trip` instead — see the caveat below.
 //! - `SoftDialogAppeared`: a soft (overlay) dialog with the given ID appeared in the
-//!   `SoftDialogTracker`. Use this for confirmation dialogs (transfer, delete, mkdir, mkfile) when
-//!   `autoConfirm: false`.
+//!   `SoftDialogTracker`. Use this for confirmation dialogs (transfer, delete, mkdir, mkfile).
 //! - `WindowAppeared` / `WindowDisappeared`: a Tauri webview window with the given label prefix
 //!   appeared (or vanished). Use this for child windows (settings, file-viewer, about) and for
 //!   `dialog close` actions.

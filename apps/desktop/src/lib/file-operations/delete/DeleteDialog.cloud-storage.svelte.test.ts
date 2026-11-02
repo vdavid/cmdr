@@ -290,14 +290,6 @@ describe('an agent pressing confirm while the walk is still counting', () => {
     expect(holds()).toEqual([{ event: 'mcp-response', payload: { requestId: 'req-1', holdMs: 90_000 } }])
   })
 
-  it('asks an auto-confirmed delete round-trip to hold too', async () => {
-    emitted.length = 0
-    mountDialog({ ...cloudFolder, autoConfirm: true, mcpRequestId: 'req-auto' })
-    await settle()
-
-    expect(holds()).toEqual([{ event: 'mcp-response', payload: { requestId: 'req-auto', holdMs: 90_000 } }])
-  })
-
   it('asks nothing of a press no agent waits on', async () => {
     emitted.length = 0
     const { target } = mountDialog(cloudFolder)

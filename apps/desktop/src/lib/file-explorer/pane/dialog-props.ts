@@ -29,7 +29,7 @@ import type { PaneRevealAPI } from '../navigation/navigate-and-select'
 
 /**
  * `TransferDialog`'s confirm payload: everything the user (or an MCP
- * auto-confirm) decided about one transfer. Shared by `TransferDialog`'s
+ * `dialog_confirm`) decided about one transfer. Shared by `TransferDialog`'s
  * `onConfirm`, `DialogManager`'s `onTransferConfirm`, and
  * `dialog-state.svelte.ts`'s `handleTransferConfirm`.
  */
@@ -54,7 +54,7 @@ export interface TransferConfirmPayload {
    *  (`background-operations.svelte.ts`). Everything else is what Enter sends. */
   startInBackground?: boolean
   /** Pressed by an MCP `dialog_confirm`: its round-trip id, which the start
-   *  answers with the operation's id. Wins over the dialog's own. */
+   *  answers with the operation's id. */
   mcpRequestId?: string
 }
 
@@ -194,9 +194,8 @@ export interface TransferProgressPropsData {
   fileCount?: number
   /** Top-level folders the operation will transfer (for the completion toast's per-type split). */
   folderCount?: number
-  /** MCP round-trip id, present only for an op an agent started (an auto-confirm,
-   *  or a `dialog_confirm`). Forwarded to the start, which replies `mcp-response`
-   *  with the spawned operationId. */
+  /** MCP round-trip id, present only for an op a `dialog_confirm` pressed. Forwarded
+   *  to the start, which replies `mcp-response` with the spawned operationId. */
   mcpRequestId?: string
   /** Who started this operation, for the backend's provenance record. */
   initiator: Initiator
@@ -262,6 +261,8 @@ export type ForegroundOperationVerdict = 'adopted' | 'alreadyShowing' | 'busy'
 export type OperationStartVerdict = 'started' | { blockedBy: SoftDialogId }
 
 export interface NewFolderDialogPropsData {
+  /** The pane it creates in, which an MCP caller names and focus doesn't follow. */
+  pane: 'left' | 'right'
   currentPath: string
   listingId: string
   showHiddenFiles: boolean
@@ -272,6 +273,8 @@ export interface NewFolderDialogPropsData {
 }
 
 export interface NewFileDialogPropsData {
+  /** The pane it creates in, which an MCP caller names and focus doesn't follow. */
+  pane: 'left' | 'right'
   currentPath: string
   listingId: string
   showHiddenFiles: boolean
@@ -340,6 +343,8 @@ export interface UnlockPromptPropsData {
 }
 
 export interface DeleteDialogPropsData {
+  /** The pane these items are in, which an MCP caller names and focus doesn't follow. */
+  sourcePaneSide: 'left' | 'right'
   sourceItems: DeleteSourceItem[]
   sourcePaths: string[]
   sourceFolderPath: string
@@ -368,11 +373,6 @@ export interface DeleteDialogPropsData {
    * confirm until it knows.
    */
   cloudFolderMayHoldOnlineOnly?: boolean
-  /** When true, dialog auto-confirms without user interaction (MCP auto-confirm). */
-  autoConfirm?: boolean
-  /** MCP round-trip id, present only for an auto-confirmed MCP delete/trash.
-   *  Forwarded to the progress state so it replies with the spawned operationId. */
-  mcpRequestId?: string
   /** Who started this delete. Only `user` may skip the confirmation. */
   initiator: Initiator
 }
@@ -381,7 +381,6 @@ export interface DialogStateDeps {
   getLeftPaneRef: () => FilePaneAPI | undefined
   getRightPaneRef: () => FilePaneAPI | undefined
   getFocusedPaneRef: () => FilePaneAPI | undefined
-  getFocusedPaneSide: () => 'left' | 'right'
   getShowHiddenFiles: () => boolean
   /**
    * The pane-picking slice of the explorer, for a dialog outcome whose follow-up

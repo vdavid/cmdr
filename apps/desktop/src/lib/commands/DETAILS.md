@@ -45,9 +45,9 @@ interface CommandArgsOverrides {
   'dialog.confirm': { type: ConfirmDialogType; onConflict?: string }
 }
 interface CommandArgsOptionalOverrides {
-  'file.copy': { autoConfirm?: boolean; onConflict?: string }
-  'file.move': { autoConfirm?: boolean; onConflict?: string }
-  'file.delete': { autoConfirm?: boolean }
+  'file.copy': { pane?: PaneId; onConflict?: string; mcpRequestId?: string; initiator: Initiator }
+  'file.move': { pane?: PaneId; onConflict?: string; mcpRequestId?: string; initiator: Initiator }
+  'file.delete': { pane?: PaneId; permanent?: boolean; mcpRequestId?: string; initiator: Initiator }
 }
 type CommandArgs = {
   [K in CommandId]: K extends keyof CommandArgsOverrides

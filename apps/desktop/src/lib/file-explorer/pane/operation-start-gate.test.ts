@@ -10,7 +10,12 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { emit } from '@tauri-apps/api/event'
-import { operationStartIsBlocked, mcpOperationBlockedMessage } from './operation-start-gate'
+import {
+  answeringDialogOpen,
+  mcpOperationBlockedMessage,
+  operationStartIsBlocked,
+  refuseOpening,
+} from './operation-start-gate'
 import { markDialogOpen, _resetOpenDialogsForTesting } from '#lib/ui/open-dialogs.svelte.js'
 import { addToast } from '#lib/ui/toast/index.js'
 
@@ -86,5 +91,68 @@ describe('what the agent is told', () => {
 
     expect(message).not.toContain('error')
     expect(message).not.toContain('failed')
+  })
+})
+
+describe('answering an MCP tool that opened a dialog', () => {
+  it('says ok once the dialog is showing', async () => {
+    await answeringDialogOpen('req-1', () => true)
+
+    expect(emit).toHaveBeenCalledExactlyOnceWith('mcp-response', { requestId: 'req-1', ok: true })
+  })
+
+  it('fails typed when nothing opened, so the tool never waits out its budget', async () => {
+    await answeringDialogOpen('req-2', () => Promise.resolve(false))
+
+    expect(emit).toHaveBeenCalledExactlyOnceWith(
+      'mcp-response',
+      expect.objectContaining({ requestId: 'req-2', ok: false, refusal: 'nothingOpened' }),
+    )
+  })
+
+  it('fails with the message when opening threw', async () => {
+    await answeringDialogOpen('req-3', () => {
+      throw new Error('listing gone')
+    })
+
+    expect(emit).toHaveBeenCalledExactlyOnceWith('mcp-response', {
+      requestId: 'req-3',
+      ok: false,
+      error: 'listing gone',
+    })
+  })
+
+  it('answers nothing when a person asked', async () => {
+    const open = vi.fn(() => true)
+
+    await answeringDialogOpen(undefined, open)
+
+    expect(open).toHaveBeenCalledTimes(1)
+    expect(emit).not.toHaveBeenCalled()
+  })
+})
+
+describe('refusing to open a dialog', () => {
+  it('tells a person, and only a person, through the dialog', () => {
+    const tellPerson = vi.fn()
+
+    refuseOpening(undefined, { kind: 'readOnly', message: 'Read-only' }, tellPerson)
+
+    expect(tellPerson).toHaveBeenCalledTimes(1)
+    expect(emit).not.toHaveBeenCalled()
+  })
+
+  it('tells an MCP caller typed, and puts nothing up over the person', () => {
+    const tellPerson = vi.fn()
+
+    refuseOpening('req-4', { kind: 'destination', message: 'Not there' }, tellPerson)
+
+    expect(tellPerson).not.toHaveBeenCalled()
+    expect(emit).toHaveBeenCalledExactlyOnceWith('mcp-response', {
+      requestId: 'req-4',
+      ok: false,
+      refusal: 'destination',
+      error: 'Not there',
+    })
   })
 })

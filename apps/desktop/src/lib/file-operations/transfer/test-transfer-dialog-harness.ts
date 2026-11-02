@@ -179,8 +179,7 @@ export async function flushMicrotasks(rounds = 8): Promise<void> {
 }
 
 interface MountOpts {
-  autoConfirm?: boolean
-  autoConfirmOnConflict?: string
+  presetOnConflict?: string
   onConfirm?: ConfirmFn
   onCancel?: () => void
   operationType?: 'copy' | 'move' | 'compress'
@@ -215,8 +214,7 @@ export function mountDialog(opts: MountOpts = {}): HTMLDivElement {
       sourceFolderPath: opts.sourceFolderPath ?? '/Users/test',
       sourceVolumeId: opts.sourceVolumeId ?? 'root',
       destVolumeId: opts.currentVolumeId ?? 'root',
-      autoConfirm: opts.autoConfirm ?? false,
-      autoConfirmOnConflict: opts.autoConfirmOnConflict,
+      presetOnConflict: opts.presetOnConflict,
       newName: opts.newName,
       onConfirm: opts.onConfirm ?? (() => {}),
       registerConfirmer: opts.registerConfirmer,
