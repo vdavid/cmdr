@@ -96,6 +96,13 @@
     "confidence": "high",
     "sources": "Microsoft terminology (agent → agent); catalog (queryUi.ai.lead); macOS has no AI-agent sense"
   },
+  "ai-client": {
+    "accept": ["AI-clients"],
+    "chosen": "AI-client",
+    "confidence": "high",
+    "forms": "started by an outside AI app → Een AI-client heeft dit gestart",
+    "sources": "catalog (operationLog.initiator.aiClient); MS (client → client)"
+  },
   "ai-feature": {
     "accept": ["de AI", "AI-"],
     "chosen": "AI-functies",
@@ -578,6 +585,12 @@
     "forms": "Index wissen, Zoekopdracht wissen, Druk op ESC om te wissen",
     "sources": "macOS Finder + AppKit (Clear Menu → Wis menu)"
   },
+  "client": {
+    "accept": ["clients"],
+    "chosen": "client",
+    "confidence": "high",
+    "sources": "MS (client → client); catalog (operationLog.initiator.aiClient)"
+  },
   "clipboard": {
     "chosen": "klembord",
     "confidence": "high",
@@ -881,6 +894,13 @@
     "forms": "system default → Systeemstandaard; default app → standaardapp; default text editor → standaardeditor; Reset to default → Herstel naar standaard",
     "sources": "macOS (Default → Standaard), Finder (no default app specified → Er is geen standaardapp opgegeven)"
   },
+  "data": {
+    "accept": ["gegeven"],
+    "chosen": "gegevens",
+    "confidence": "high",
+    "forms": "mass noun, plural: de eigen gegevens van Cmdr, browsergegevens",
+    "sources": "macOS Finder (De gegevens op deze schijf); TC (Ontvangen gegevens); catalog (ai.cloudConsent.whereItGoes)"
+  },
   "delete": {
     "accept": ["verwijderen", "verwijderd", "verwijdering", "Delete"],
     "chosen": "Verwijder",
@@ -946,6 +966,13 @@
     "note": "MS's doel is the Windows word for the destination side; macOS wins.",
     "sources": "macOS Finder (destination folder → doelmap, at Destination → op bestemming)"
   },
+  "details": {
+    "accept": ["detail", "gegevens"],
+    "chosen": "details",
+    "confidence": "high",
+    "forms": "behind a disclosure → Toon details; facts a file or the app holds → gegevens (Gegevens van foto''s en nummers, de gegevens van Cmdr); camera details → cameragegevens",
+    "sources": "catalog (errors.write.originalsKeptAside.message.many, multiRename.mediaField.* file metadata → gegevens)"
+  },
   "device": {
     "accept": ["apparaten"],
     "avoid": [
@@ -976,6 +1003,13 @@
     "confidence": "high",
     "forms": "a feature switched off, referenced from elsewhere → … staat uit",
     "sources": "MS (disable → uitschakelen)"
+  },
+  "direct-connection": {
+    "accept": ["direct", "directe", "rechtstreeks", "rechtstreekse"],
+    "chosen": "directe verbinding",
+    "confidence": "high",
+    "forms": "Connect directly → Verbind direct; asking for one → Vraagt om een directe verbinding",
+    "sources": "catalog (fileExplorer.navigation.connectDirectly, fileExplorer.pane.connectedDirectlyToast)"
   },
   "disconnect": {
     "accept": ["verbreken", "verbroken", "Verbreek verbinding", "losgekoppeld", "koppel"],
@@ -2038,6 +2072,13 @@
     "confidence": "high",
     "sources": "Nautilus (Merge → Samenvoegen)"
   },
+  "message": {
+    "accept": ["berichten"],
+    "chosen": "bericht",
+    "confidence": "high",
+    "forms": "the Apple app → Berichten",
+    "sources": "macOS (Berichten); catalog (ai.cloudConsent.askCmdr.item.memory)"
+  },
   "model": {
     "accept": ["modellen"],
     "chosen": "model",
@@ -2161,7 +2202,7 @@
     "sources": "nieuw + macOS bestand"
   },
   "new-folder": {
-    "accept": ["map aanmaken", "maak", "aangemaakt"],
+    "accept": ["map aanmaken", "maak", "aangemaakt", "aan te maken"],
     "chosen": "Nieuwe map",
     "confidence": "high",
     "sources": "macOS Finder (New Folder → Nieuwe map)"
@@ -2941,7 +2982,7 @@
     "sources": "macOS Dutch (schermafbeelding)"
   },
   "scroll": {
-    "accept": ["schuif", "scroll"],
+    "accept": ["schuif", "scroll", "scrolt", "gescrold"],
     "chosen": "schuiven",
     "confidence": "tentative",
     "forms": "the catalog's prose and tooltips say scrollen / Scroll (viewer, settings, fileOperations.transferTree.followTooltip); Schuif only in commands.cursorScrollTo.label",
@@ -3286,6 +3327,19 @@
     "confidence": "high",
     "forms": "not supported → niet ondersteund; X and up → X en nieuwer",
     "sources": "macOS (worden niet ondersteund op het doelvolume; … omdat deze niet wordt ondersteund)"
+  },
+  "swap-panes": {
+    "accept": ["verwissel"],
+    "avoid": [
+      {
+        "form": "Wissel panelen om",
+        "why": "Double Commander's form; the catalog already says Verwissel, and wisselen is the switch-pane verb"
+      }
+    ],
+    "chosen": "Verwissel panelen",
+    "confidence": "high",
+    "forms": "tool lines Verwisselt de panelen / Panelen verwisseld; switching focus to the other pane is a different act → Wisselt van paneel",
+    "sources": "catalog (commands.paneSwap.label, menu.view.swapPanes); DC (Wissel panelen om); TC (Vensters omwisselen)"
   },
   "symlink": {
     "accept": ["symbolische koppelingen"],

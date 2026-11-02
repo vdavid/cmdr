@@ -79,9 +79,9 @@
   "@ai.cloudConsent.folderSuggestions": {
     "sourceHash": "e2c592a"
   },
-  "ai.cloudConsent.search": "<b>Zoeken in gewone taal</b>: de tekst die je typt",
+  "ai.cloudConsent.search": "<b>Zoeken in gewone taal</b>: de tekst die je typt, of waar een verbonden AI-tool om vraagt zodra je de directe modus van MCP hebt aangezet",
   "@ai.cloudConsent.search": {
-    "sourceHash": "e6d4ef9"
+    "sourceHash": "b5c8d93"
   },
   "ai.cloudConsent.selection": "<b>Selecteren op beschrijving</b>: wat je typt, plus tot 240 namen uit de huidige map",
   "@ai.cloudConsent.selection": {
@@ -91,21 +91,21 @@
   "@ai.cloudConsent.askCmdr.title": {
     "sourceHash": "26e139c"
   },
-  "ai.cloudConsent.askCmdr.item.messages": "Je berichten",
+  "ai.cloudConsent.askCmdr.item.messages": "Je berichten, inclusief elk wachtwoord dat je daar typt om een archief of back-up te ontgrendelen",
   "@ai.cloudConsent.askCmdr.item.messages": {
-    "sourceHash": "befc6e9"
+    "sourceHash": "66e656b"
   },
-  "ai.cloudConsent.askCmdr.item.names": "De namen en paden van bestanden en mappen die Cmdr bekijkt om je te antwoorden",
+  "ai.cloudConsent.askCmdr.item.names": "De namen en paden van bestanden en mappen die Cmdr bekijkt",
   "@ai.cloudConsent.askCmdr.item.names": {
-    "sourceHash": "ce3259d"
+    "sourceHash": "4d5ea2c"
   },
   "ai.cloudConsent.askCmdr.item.sizes": "Hun groottes en datums",
   "@ai.cloudConsent.askCmdr.item.sizes": {
     "sourceHash": "2484530"
   },
-  "ai.cloudConsent.askCmdr.item.contents": "Delen van bestanden die Cmdr opent om je te antwoorden: wat tekst, PDF-pagina''s, wat er in een archief zit, en de cameragegevens en locatie van een foto",
+  "ai.cloudConsent.askCmdr.item.contents": "Delen van bestanden die Cmdr opent: wat tekst, PDF-pagina''s, wat er in een archief zit, de cameragegevens en locatie van een foto, en tekst die Cmdr in foto''s heeft herkend",
   "@ai.cloudConsent.askCmdr.item.contents": {
-    "sourceHash": "fcd0b73"
+    "sourceHash": "5e8355f"
   },
   "ai.cloudConsent.askCmdr.item.envelope": "Wat je nu bekijkt: je huidige map, cursor, selectie en verbonden schijven",
   "@ai.cloudConsent.askCmdr.item.envelope": {
@@ -115,19 +115,19 @@
   "@ai.cloudConsent.askCmdr.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "ai.cloudConsent.askCmdr.item.mediaFields": "Details of photos and songs when a rename uses them: date taken, camera, title, artist, album, and the like",
+  "ai.cloudConsent.askCmdr.item.mediaFields": "Gegevens van foto''s en nummers als een naamwijziging ze gebruikt: opnamedatum, camera, titel, artiest, album en dergelijke",
   "@ai.cloudConsent.askCmdr.item.mediaFields": {
     "sourceHash": "e96157a"
   },
-  "ai.cloudConsent.askCmdr.item.appState": "What Cmdr is up to: running and past operations, open dialogs, favorites, saved places, drive indexing, and which folders matter most",
+  "ai.cloudConsent.askCmdr.item.appState": "Waar Cmdr mee bezig is: lopende en eerdere bewerkingen, open dialoogvensters, favorieten, opgeslagen locaties, het indexeren van schijven, en welke mappen het belangrijkst zijn",
   "@ai.cloudConsent.askCmdr.item.appState": {
     "sourceHash": "4159dde"
   },
-  "ai.cloudConsent.askCmdr.item.settings": "Your Cmdr settings and keyboard shortcuts, including folders you picked for image indexing and your AI service’s address. Anything that looks like a password, key, or token is masked, and so is your email address",
+  "ai.cloudConsent.askCmdr.item.settings": "Je Cmdr-instellingen en sneltoetsen, inclusief mappen die je hebt gekozen voor het indexeren van afbeeldingen en het adres van je AI-service. Alles wat op een wachtwoord, sleutel of token lijkt, wordt afgeschermd, en je e-mailadres ook",
   "@ai.cloudConsent.askCmdr.item.settings": {
     "sourceHash": "c7c0657"
   },
-  "ai.cloudConsent.askCmdr.item.logs": "Cmdr’s recent log lines, with names, paths, addresses, and anything that looks like a key swapped for placeholders first. A few plain details stay, like file extensions and common folder names such as Documents",
+  "ai.cloudConsent.askCmdr.item.logs": "De recente logregels van Cmdr, waarbij namen, paden, adressen en alles wat op een sleutel lijkt eerst door plaatshouders zijn vervangen. Een paar gewone details blijven staan, zoals bestandsextensies en veelvoorkomende mapnamen als ‘Documenten’",
   "@ai.cloudConsent.askCmdr.item.logs": {
     "sourceHash": "7aabf35"
   },
@@ -135,15 +135,15 @@
   "@ai.cloudConsent.askCmdr.item.memory": {
     "sourceHash": "7779513"
   },
-  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr verstuurt nooit hele bestanden, foto''s of miniaturen. Als je iets over een bestand vraagt, kan het een beperkt deel ervan lezen: wat regels tekst, een paar pagina''s van een PDF met de titel en auteur erbij, de lijst met bestanden in een archief, of de cameragegevens van een foto, inclusief waar die gemaakt is. De fotozoekfunctie werkt net zo: de tekst die Cmdr in de gevonden foto''s heeft herkend en hun tags gaan naar je aanbieder zodat die ze kan vinden. Cmdr kan voorstellen om namen te wijzigen, bestanden te verplaatsen en op te ruimen, en er gebeurt niets met een bestand tot jij het goedkeurt.",
+  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr verstuurt nooit hele bestanden, foto''s of miniaturen. Als het meer over een bestand moet weten, kan het een beperkt deel ervan lezen: wat regels tekst, een paar pagina''s van een PDF met de titel en auteur erbij, de lijst met bestanden in een archief, of de cameragegevens van een foto, inclusief waar die gemaakt is. De fotozoekfunctie werkt net zo: de tekst die Cmdr in de gevonden foto''s heeft herkend en hun tags gaan naar je aanbieder zodat die ze kan vinden.",
   "@ai.cloudConsent.askCmdr.contentsRule": {
-    "sourceHash": "5a378c1"
+    "sourceHash": "38dedbb"
   },
-  "ai.cloudConsent.askCmdr.protectedContents": "Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keychains, browser data, Mail, Messages, Notes, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.",
+  "ai.cloudConsent.askCmdr.protectedContents": "Van sommige bestanden blijft de inhoud thuis, wat iemand ook vraagt: SSH-sleutels, inloggegevens voor cloudservices en tools, je sleutelhangers, browsergegevens, Mail, Berichten, Notities, de eigen gegevens van Cmdr, en elk bestand met een persoonlijke sleutel. Hun namen kunnen nog steeds bij je aanbieder terechtkomen.",
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "sourceHash": "048633f"
   },
-  "ai.cloudConsent.askCmdr.actions": "In a chat you started, Ask Cmdr can also work the app for you: navigate, select, sort, open tabs and dialogs, and connect a place you saved. Copying, moving, compressing, deleting, renaming, and undoing an operation each open a dialog or editor for you to confirm, and nothing happens until you do. Opening a file, changing a setting (other than how Cmdr looks), quitting, ejecting a drive, removing a server, and changing indexing ask you first. Creating a named folder or file and tagging files happen right away with no question, and tags have no undo. Renames and cleanups it prepares as a plan wait for your approval.",
+  "ai.cloudConsent.askCmdr.actions": "In een chat die jij begon, kan Ask Cmdr de app ook voor je bedienen: navigeren, selecteren, sorteren, tabbladen en dialoogvensters openen, en verbinding maken met een opgeslagen locatie. Kopiëren, verplaatsen, comprimeren, verwijderen, de naam wijzigen en een bewerking ongedaan maken openen elk een dialoogvenster of editor die jij bevestigt, en er gebeurt niets tot je dat doet. Een bestand openen, een instelling wijzigen (behalve hoe Cmdr eruitziet), stoppen, een schijf uitwerpen, een server verwijderen en het indexeren wijzigen: daarvoor vraagt het je eerst. Een map of bestand met een naam aanmaken en bestanden taggen gebeurt meteen, zonder vraag, en tags kun je niet ongedaan maken. Naamwijzigingen en opruimacties die het als plan voorbereidt, wachten op je goedkeuring.",
   "@ai.cloudConsent.askCmdr.actions": {
     "sourceHash": "bf002cc"
   },
@@ -151,17 +151,17 @@
   "@ai.cloudConsent.askCmdr.memory": {
     "sourceHash": "496c78d"
   },
-  "ai.cloudConsent.askCmdr.proactive": "Cmdr houdt ook de mappen in de gaten die je gebruikt en begint een chat zodra het iets voor te stellen heeft, dus er kunnen berichten naar je aanbieder gaan zonder dat je er zelf om vraagt. Je zet dat uit in de Ask Cmdr-instellingen, onder ‘Uit zichzelf’.",
+  "ai.cloudConsent.askCmdr.proactive": "Cmdr houdt ook de mappen in de gaten die je gebruikt en begint een chat zodra het iets voor te stellen heeft, dus er kunnen berichten naar je aanbieder gaan zonder dat je er zelf om vraagt. In die chats kan het lezen wat hierboven staat, plannen voorbereiden en zijn notities schrijven, en meer niet. Je zet dat uit in de Ask Cmdr-instellingen, onder ‘Uit zichzelf’.",
   "@ai.cloudConsent.askCmdr.proactive": {
-    "sourceHash": "abfa80b"
+    "sourceHash": "95b18ac"
   },
   "ai.cloudConsent.askCmdr.chatsStayLocal": "Je Ask Cmdr-chats blijven op je Mac, in een lokale database die je kunt openen en lezen.",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "Als je logboekregistratie voor LLM-aanroepen aanzet in Geavanceerde instellingen, bewaart Cmdr ook elk verzoek en antwoord in een map op je Mac. Die logs blijven ook lokaal en worden nooit verstuurd.",
+  "ai.cloudConsent.logsNote": "Als je logboekregistratie voor LLM-aanroepen aanzet in Geavanceerde instellingen, bewaart Cmdr ook elk verzoek en antwoord in een map op je Mac. Die aanroeplogs blijven lokaal en worden nooit verstuurd.",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "7e211fc"
+    "sourceHash": "d89adfb"
   },
   "ai.cloudConsent.turnOffAnyTime": "Zet dit op elk moment uit en Cmdr stopt meteen met versturen. Je service, sleutel en chats blijven zoals ze zijn.",
   "@ai.cloudConsent.turnOffAnyTime": {

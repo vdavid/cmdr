@@ -231,3 +231,16 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   `geen van zijn hulpmiddelen` for "not a tool it has". Confirm they read naturally.
 - `ligt achter een link` for a DFS link (`*.linkTargetUnreachable*`), and `filtermarkering` for the typing badge
   (`commands.paneQuickFilter.description`) have no pile precedent. Confirm they read naturally.
+
+## Cloud-AI-toestemming en AI-hulpmiddelen (`ai.cloudConsent.askCmdr.*`, `askCmdr.toolGroup.*`, `ui.toolAsk.*`)
+
+- `persoonlijke sleutel` for "private key" in `ai.cloudConsent.askCmdr.protectedContents` is Microsoft's word; macOS in
+  the pile has neither it nor `privésleutel`. Confirm.
+- `Notities` for Apple's Notes in the same key isn't in the pile's macOS bundles (`Berichten` is). Confirm it matches
+  the Dutch app name.
+- `Van sommige bestanden blijft de inhoud thuis` keeps the English image "stay home". Confirm it reads as a firm promise
+  and not as a joke.
+- `Afgehandeld: {parts}` / `Handelt af: {parts}` for "Worked through" / "Working through" (`askCmdr.toolGroup.summary`,
+  `askCmdr.toolGroup.summaryRunning`) have no pile precedent. Confirm.
+- `Stop Cmdr?` (`ui.toolAsk.quit.title`) keeps the term-consistency frame with `menu.app.quit`, where the question
+  register would otherwise say `Cmdr stoppen?`. Confirm.
