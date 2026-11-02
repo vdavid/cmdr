@@ -468,6 +468,15 @@ export function comboHasShift(shortcut: string): boolean {
 }
 
 /**
+ * True for Shift plus a letter and nothing else (`⇧A`, `⇧Ő`, `Shift+A`). That's a
+ * capital letter: the file list takes it as a filter or jump keystroke before any
+ * command sees it, so a binding on it would never fire. The store refuses these.
+ */
+export function isShiftLetterCombo(shortcut: string): boolean {
+  return /^(?:⇧|Shift\+)\p{L}$/u.test(shortcut)
+}
+
+/**
  * True when the combo is something a user types in a text field rather than a
  * command: no command modifier (⌘/⌃/⌥ or Ctrl/Alt/Super — Shift alone still
  * counts as typing), and not an F-key or Escape (which never produce text).

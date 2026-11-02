@@ -16,7 +16,12 @@
     import GlobalShortcutRow from '#lib/downloads/GlobalShortcutRow.svelte'
     import SectionCard from '#lib/ui/SectionCard.svelte'
     import ShortcutPill from './ShortcutPill.svelte'
-    import { fixedKeyMessage, reservedByMacOsMessage, systemShortcutMessage } from './keyboard-shortcuts-banner'
+    import {
+        fixedKeyMessage,
+        reservedByMacOsMessage,
+        shiftLetterMessage,
+        systemShortcutMessage,
+    } from './keyboard-shortcuts-banner'
     import { shortcutAnchorId } from '#lib/settings/settings-window.js'
     import {
         getPendingShortcutHighlight,
@@ -204,6 +209,16 @@
                     <Button variant="secondary" size="mini" onclick={controller.handleKeepBoth}
                         >{tString('shortcuts.section.useAnyway')}</Button
                     >
+                    <Button variant="secondary" size="mini" onclick={controller.cancelEdit}
+                        >{tString('shortcuts.section.cancel')}</Button
+                    >
+                </div>
+            {:else if conflict.kind === 'shiftLetter'}
+                <!-- The key types a capital in every scope, so Cancel or another key are the only ways on. -->
+                <span class="warning-text">
+                    {shiftLetterMessage(toDisplayShortcut(conflictWarning.shortcut))}
+                </span>
+                <div class="warning-actions">
                     <Button variant="secondary" size="mini" onclick={controller.cancelEdit}
                         >{tString('shortcuts.section.cancel')}</Button
                     >
