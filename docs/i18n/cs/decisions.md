@@ -171,12 +171,13 @@ perpetual → časově neomezená; Rust crates verbatim; ETA zbývá {n} min, lo
 Potřebuje odpověď (Čeká is queued); Existující / Příchozí (nový is the create command); Zamítnout for deny, Ukončit a
 znovu spustit (macOS QUIT_APP). Shortcut chips Aktivní / Neaktivní; a bare count is Vybráno: #.
 
-## Address is the neutral vy-plural (`onboarding.stepBeta.greeting`, `licensing.dialog.mailtoBody`, `askCmdr.limit.continueMessage`, `onboarding.stepAi.table.renameWith`, `onboarding.stepAi.table.selectWith`, `common.attachEmailPlaceholder`, `operationLog.initiator.user`, `fileOperations.transferProgress.background`, `errors.listing.*.suggestion`)
+## Address is the neutral vy-plural (`onboarding.stepBeta.greeting`, `licensing.dialog.mailtoBody`, `askCmdr.limit.continueMessage`, `onboarding.stepAi.table.renameWith`, `onboarding.stepAi.table.selectWith`, `common.attachEmailPlaceholder`, `operationLog.initiator.user`, `fileOperations.transferProgress.background`, `fileOperations.backgroundStart.background`, `errors.listing.*.suggestion`)
 
 vy-plural, lowercase, per `../formal-informal-decisions.md`: Stiskněte, Zkuste to znovu, můžete; David's welcome Hi →
 Zdravím, the user's mail Hi → Dobrý den; you@ → jmeno@example.com; You as initiator → Vy. Buttons stay infinitive
-(Přesunout na pozadí, Zařadit do fronty). Only words the USER types to the AI stay ty (Pokračuj prosím…), as Czechs
-write to a chatbot (reviewed).
+(Zařadit do fronty; Přesunout na pozadí for a running operation, Spustit na pozadí in a confirm dialog, where přesunout
+would read as moving files). Only words the USER types to the AI stay ty (Pokračuj prosím…), as Czechs write to a
+chatbot (reviewed).
 
 ## Search coverage fallback is toto umístění (`search.coverage.*`)
 

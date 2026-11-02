@@ -957,7 +957,7 @@
   "@fileOperations.transferProgress.backgroundedToast": {
     "sourceHash": "b898845"
   },
-  "fileOperations.backgroundStart.background": "Přesunout na pozadí",
+  "fileOperations.backgroundStart.background": "Spustit na pozadí",
   "@fileOperations.backgroundStart.background": {
     "sourceHash": "ea2b8a8"
   },
