@@ -52,19 +52,35 @@ pub async fn execute_operations_list<R: Runtime>(app: &AppHandle<R>, params: &Va
         }
     })
     .await?;
+    let rows = rows
+        .iter()
+        .map(operation_as_a_tool_says_it)
+        .collect::<Result<Vec<_>, _>>()?;
     // Cut the page to what one tool result may carry (a 1000-row journal page dwarfs an
     // agent's prompt budget) and report both numbers, so the caller can page with `offset`
     // instead of losing rows silently.
     let fitted = super::fit_to_result_budget(rows);
     let (total, returned, truncated) = (fitted.total, fitted.items.len(), fitted.truncated);
-    let operations = serde_json::to_value(&fitted.items).map_err(|e| ToolError::internal(e.to_string()))?;
     Ok(json!({
-        "operations": operations,
+        "operations": fitted.items,
         "count": returned,
         "total": total,
         "returned": returned,
         "truncated": truncated,
     }))
+}
+
+/// An operation as a tool answers it: `operationId`, the name `operations_get` and
+/// `operations_rollback` take, since models handed `opId` guessed wrong. The journal's own row keeps
+/// `opId`, which the operation log dialog reads over IPC.
+fn operation_as_a_tool_says_it(row: &OperationRow) -> Result<Value, ToolError> {
+    let mut value = serde_json::to_value(row).map_err(|e| ToolError::internal(e.to_string()))?;
+    if let Some(fields) = value.as_object_mut()
+        && let Some(id) = fields.remove("opId")
+    {
+        fields.insert("operationId".to_string(), id);
+    }
+    Ok(value)
 }
 
 /// One operation's header plus a page of its item rows (full paths, per-item
@@ -88,6 +104,7 @@ pub async fn execute_operations_get<R: Runtime>(app: &AppHandle<R>, params: &Val
             let returned = fitted.items.len();
             detail.items = fitted.items;
             let mut value = serde_json::to_value(&detail).map_err(|e| ToolError::internal(e.to_string()))?;
+            value["operation"] = operation_as_a_tool_says_it(&detail.operation)?;
             value["total"] = total.into();
             value["returned"] = returned.into();
             value["truncated"] = (returned < total).into();

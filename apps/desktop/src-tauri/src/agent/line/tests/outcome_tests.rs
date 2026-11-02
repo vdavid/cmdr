@@ -73,7 +73,7 @@ fn hand_success_table() -> Vec<(ToolId, Value, ToolOutcome)> {
         (ToolId::OperationsList, fixtures::operations_list(), items(1, Some(3))),
         (
             ToolId::OperationsGet,
-            json!({ "opId": "op-1", "items": [] }),
+            json!({ "operation": { "operationId": "op-1" }, "items": [] }),
             ToolOutcome::Answered,
         ),
         (

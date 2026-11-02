@@ -99,7 +99,7 @@ async function closeDialog(page: TauriPage, dialog: string): Promise<void> {
 }
 
 interface OperationRow {
-  opId: string
+  operationId: string
   initiator: string
   rollbackState: string
   inverseOpId: string | null
@@ -326,22 +326,22 @@ test.describe('Ask Cmdr from the rail', () => {
     const copy = await latestOperation()
     expect(copy.initiator).toBe('agent')
     await expect
-      .poll(async () => (await operation(copy.opId)).rollbackState, { timeout: waitBudget(15000) })
+      .poll(async () => (await operation(copy.operationId)).rollbackState, { timeout: waitBudget(15000) })
       .toBe('rollbackable')
 
-    await agentCalls(page, 'operations_rollback', { operationId: copy.opId })
+    await agentCalls(page, 'operations_rollback', { operationId: copy.operationId })
     await untilOpenAndArmed(page, ROLLBACK)
     await confirmRollback(page)
     await expect
-      .poll(async () => (await operation(copy.opId)).rollbackState, { timeout: waitBudget(15000) })
+      .poll(async () => (await operation(copy.operationId)).rollbackState, { timeout: waitBudget(15000) })
       .toBe('rolledBack')
     expect(fs.existsSync(copied)).toBe(false)
 
-    const inverseId = (await operation(copy.opId)).inverseOpId
+    const inverseId = (await operation(copy.operationId)).inverseOpId
     if (inverseId === null) throw new Error('A rolled-back operation names its inverse')
     const inverse = await operation(inverseId)
     expect(inverse.initiator).toBe('agent')
-    expect(inverse.rollsBackOpId).toBe(copy.opId)
+    expect(inverse.rollsBackOpId).toBe(copy.operationId)
     await dismissAllToasts(page)
   })
 })

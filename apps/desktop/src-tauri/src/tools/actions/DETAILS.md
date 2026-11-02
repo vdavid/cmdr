@@ -68,7 +68,8 @@ Depth for the handlers shared with outside clients. `CLAUDE.md` holds the must-k
   the `commands/operation_log.rs` pattern), `operations_rollback` (opens the rollback question for a person; § `operations_rollback`).
   The pure filter/param parsers and the typed-refusal shape are unit-tested in `operation_log/tests.rs`. Both read
   responses go through `fit_to_result_budget` and carry `returned` / `total` / `truncated` (`operations_list` keeps its
-  original `count`, equal to `returned`), so a page cut for size is visible and resumable with `offset`.
+  original `count`, equal to `returned`), so a page cut for size is visible and resumable with `offset`. Both name an operation `operationId`, what `operations_get`
+  and `operations_rollback` take, though the journal row they come from says `opId`.
 - **`photos.rs`**: `search_photos` (`ReadContents`). Shapes the `media_index` read API
   (`search_semantic` / `search_ocr` / `images_with_tag`) into a TEXT-ONLY DTO (no image bytes), resolves the mode like
   the search UI (Auto composes semantic + OCR, degrades to OCR with no CLIP model), reuses `media_index::commands::volume_state`

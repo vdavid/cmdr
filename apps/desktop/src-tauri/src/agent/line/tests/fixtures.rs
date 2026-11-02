@@ -261,7 +261,7 @@ pub(super) fn image_facts() -> Value {
 
 /// `operations_list` (`tools/actions/operation_log.rs`).
 pub(super) fn operations_list() -> Value {
-    json!({ "operations": [{ "opId": "op-1" }], "count": 1, "total": 3, "returned": 1, "truncated": true })
+    json!({ "operations": [{ "operationId": "op-1" }], "count": 1, "total": 3, "returned": 1, "truncated": true })
 }
 
 /// `list_volumes` (`read/volumes.rs`): `{ volumes: [VolumeSnapshot] }`.

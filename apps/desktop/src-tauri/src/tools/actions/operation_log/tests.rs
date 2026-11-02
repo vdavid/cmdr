@@ -176,6 +176,16 @@ fn logged_row(rollback_state: RollbackState) -> OperationRow {
     }
 }
 
+#[test]
+fn an_operation_names_its_id_the_way_the_other_tools_take_it() {
+    let row = operation_as_a_tool_says_it(&logged_row(RollbackState::Rollbackable)).expect("a row serializes");
+    assert_eq!(row["operationId"], "op-1");
+    assert!(
+        row.get("opId").is_none(),
+        "the old name would send a model the wrong way: {row}"
+    );
+}
+
 fn live_op(rollback_support: RollbackSupport) -> OperationSnapshot {
     OperationSnapshot {
         operation_id: "op-1".to_string(),
