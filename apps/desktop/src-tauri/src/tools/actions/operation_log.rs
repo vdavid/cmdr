@@ -21,6 +21,7 @@ use super::dialog_confirm::ROLLBACK_CONFIRMATION;
 use super::file_ops::open_dialog;
 use super::{ToolError, ToolResult};
 use crate::operations_host::AppOperationVolumes;
+use crate::tools::policy::ToolCtx;
 use cmdr_operation_log::query::{self, NameFilter, NameMatch, OperationSearchFilters};
 use cmdr_operation_log::rollback::{RollbackRefusal, VolumeLookup, check_rollbackable};
 use cmdr_operation_log::store::{OperationLogStoreError, OperationRow, open_read_connection, operation_log_db_path};
@@ -106,7 +107,7 @@ pub async fn execute_operations_get<R: Runtime>(app: &AppHandle<R>, params: &Val
 ///
 /// Confirming runs the path a person's press runs, and `dialog_confirm` is the only way past
 /// them (`dialog_confirm.rs`).
-pub async fn execute_operations_rollback<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+pub async fn execute_operations_rollback<R: Runtime>(app: &AppHandle<R>, ctx: &ToolCtx, params: &Value) -> ToolResult {
     let op_id = required_operation_id(params)?;
     let engine = crate::operations_host::operations()
         .map_err(|_| ToolError::internal("the app isn't wired up to report operation progress yet"))?;
@@ -124,14 +125,26 @@ pub async fn execute_operations_rollback<R: Runtime>(app: &AppHandle<R>, params:
             .map(|detail| detail.operation);
         logged_question(row, &AppOperationVolumes)?
     };
-    open_rollback_question(app, &op_id, question).await
+    open_rollback_question(app, ctx, &op_id, question).await
 }
 
 /// Asks the frontend to raise the question, and waits until it's on screen.
-async fn open_rollback_question<R: Runtime>(app: &AppHandle<R>, op_id: &str, question: RollbackQuestion) -> ToolResult {
+async fn open_rollback_question<R: Runtime>(
+    app: &AppHandle<R>,
+    ctx: &ToolCtx,
+    op_id: &str,
+    question: RollbackQuestion,
+) -> ToolResult {
     let mut payload = serde_json::to_value(&question).map_err(|e| ToolError::internal(e.to_string()))?;
     payload["operationId"] = op_id.into();
-    open_dialog(app, "roll back", "mcp-rollback-dialog", payload, ROLLBACK_CONFIRMATION).await
+    open_dialog(
+        app,
+        "roll back",
+        "mcp-rollback-dialog",
+        ctx.stamp(payload),
+        ROLLBACK_CONFIRMATION,
+    )
+    .await
 }
 
 // ── Pure decision cores (unit-tested) ─────────────────────────────────────────

@@ -379,6 +379,21 @@ async fn a_stop_during_the_directory_sweep_ends_the_run() {
     assert!(!exists(&dst, "/outer/inner").await, "deepest-first: that one went");
 }
 
+/// A person pressed Roll back, but the record says who started the question: what a tool's reversal
+/// did stays findable as that tool's.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn the_inverse_row_records_the_initiator_it_was_given() {
+    for initiator in [Initiator::User, Initiator::AiClient, Initiator::Agent] {
+        let (rig, _dst) = copied_onto(1).await;
+        let reversal = rig.reversal("rollback");
+        let original = rig.read_op("op");
+
+        execute_rollback(&rig.vm, &rig.writer, &original, "inv-1", initiator, reversal.runner()).await;
+
+        assert_eq!(rig.read_op("inv-1").initiator, initiator);
+    }
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn the_dispatch_names_where_the_reversal_will_act() {
     // The queue row would otherwise be nameless while it works. The name is read

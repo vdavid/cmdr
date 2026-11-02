@@ -30,7 +30,7 @@ use crate::agent::llm::types::{AgentToolCall, AgentToolResult, ToolId};
 use crate::agent::types::TurnOrigin;
 use crate::tools::propose::evidence::EvidenceScope;
 use crate::tools::propose::rename::{RenameDispatchOutcome, RenameProposalSnapshot};
-use crate::tools::{Access, Consumer, execute_tool, tool_access, tool_available_to, validate_params};
+use crate::tools::{Access, Caller, Consumer, ToolCtx, execute_tool, tool_access, tool_available_to, validate_params};
 
 /// What a tool call knows about the turn it runs in: who started it, for the gate, and the
 /// turn's Stop. One value, so a dispatch path can't take one and forget the other.
@@ -181,10 +181,10 @@ async fn route_call<R: Runtime>(
         };
     }
     // The schema gate, ahead of the branch so it covers every agent call. `execute_tool`
-    // runs it too, for its own callers; the two thread-scoped propose tools below never
-    // reach `execute_tool`, and a model guesses an argument at them as readily as at a
-    // read tool. Checking one small object twice costs nothing next to a provider round
-    // trip, and neither dispatch path has to know what the other does.
+    // runs it too, for its own callers; `propose_rename_plan` below never reaches `execute_tool`,
+    // and a model guesses an argument at it as readily as at a read tool. Checking one small object
+    // twice costs nothing next to a provider round trip, and neither dispatch path has to know what
+    // the other does.
     if let Err(problem) = validate_params(call.tool.as_wire_name(), &call.arguments) {
         // The one trace a refused call leaves. Without it, a plan that never reached the
         // proposal store is invisible: the log showed the provider round trips and the repeat
@@ -212,25 +212,15 @@ async fn route_call<R: Runtime>(
             crate::tools::propose::rename::dispatch(app, scope, &call.call_id, &call.arguments).await;
         return DispatchOutcome { result, proposal };
     }
-    // `propose_suggestions` is the one registry tool that needs to know WHICH thread asked:
-    // a sweep records the conversation it came out of, and the registry path (an external
-    // MCP client) has none. `list_dir` and `connect_volume` hold the turn's token themselves:
-    // the turn abandons any call on Stop, but each answers a stop in its own vocabulary (the
-    // folder a live read was reading, `outcome: cancelled`). Everything else goes through the
-    // plain dispatch.
-    let outcome = if call.tool == ToolId::ProposeSuggestions {
-        crate::tools::suggestions::propose_in_thread(app, scope.conversation_id(), &call.arguments).await
-    } else if call.tool == ToolId::ProposeServer {
-        // It holds the turn's origin itself: a server card only on a turn the user started.
-        crate::tools::suggestions::propose_server_in_thread(app, scope.conversation_id(), &call.arguments, turn.origin)
-            .await
-    } else if call.tool == ToolId::ListDir {
-        crate::tools::read::listing::execute_list_dir_cancellable(app, &call.arguments, turn.cancel).await
-    } else if call.tool == ToolId::ConnectVolume {
-        crate::tools::connect::execute_connect_volume_cancellable(app, &call.arguments, turn.cancel).await
-    } else {
-        execute_tool(app, Consumer::Agent, call.tool.as_wire_name(), &call.arguments).await
+    // What a handler may want to know about this turn: which thread a proposal records, the origin
+    // a server card checks, and the Stop that `list_dir` and `connect_volume` answer in their own
+    // vocabulary.
+    let ctx = ToolCtx {
+        caller: Caller::Agent { origin: turn.origin },
+        cancel: turn.cancel.clone(),
+        conversation_id: scope.conversation_id(),
     };
+    let outcome = execute_tool(app, &ctx, call.tool.as_wire_name(), &call.arguments).await;
     let result = match outcome {
         Ok(content) => AgentToolResult {
             call_id: call.call_id.clone(),

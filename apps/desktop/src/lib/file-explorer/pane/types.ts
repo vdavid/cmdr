@@ -13,6 +13,10 @@ import type { ResortResult, SortColumn } from '../types'
 export interface StartRenameOptions {
   /** The pane whose cursor item to rename, defaulting to the focused one. */
   pane?: 'left' | 'right'
+  /** Who asked, for the operation log. Absent, it's a person's F2. */
+  initiator?: Initiator
+  /** It opened by itself, so the editor must arm before a keystroke can touch it. */
+  guard?: boolean
   /** The MCP round trip that asked: answered when the editor is on its way, or with why it isn't. */
   mcpRequestId?: string
   /**
@@ -133,6 +137,8 @@ export interface OpenTransferDialogArgs {
   onConflict?: string
   mcpRequestId?: string
   initiator: Initiator
+  /** It opened by itself, so it must arm before a keystroke can touch it (`ModalDialog`). */
+  guard?: boolean
 }
 
 /**
@@ -144,6 +150,8 @@ export interface OpenDeleteDialogArgs {
   permanent: boolean
   mcpRequestId?: string
   initiator: Initiator
+  /** As in `OpenTransferDialogArgs`. */
+  guard?: boolean
 }
 
 /** Args for `ExplorerAPI.openNewFolderDialog` and `.openNewFileDialog`. */
@@ -151,6 +159,8 @@ export interface OpenNamingDialogArgs {
   pane?: 'left' | 'right'
   mcpRequestId?: string
   initiator: Initiator
+  /** As in `OpenTransferDialogArgs`. */
+  guard?: boolean
 }
 
 /** State snapshot for swapping panes without backend calls. */

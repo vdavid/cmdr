@@ -111,7 +111,7 @@
     import { createPaneMirror } from './pane-mirror'
     import type { SmbHandOff } from '#lib/servers/open-sign-in.js'
     import { createKeyDispatch } from './key-dispatch'
-    import { focusActivePane as focusActivePaneOf } from './active-pane-focus'
+    import { focusActivePane as focusActivePaneOf, followFocusedPane as followFocusedPaneOf } from './active-pane-focus'
     import { registerFocusHome } from '#lib/ui/focus-restore.js'
     import { isPaneChromeTarget } from './pane-chrome'
     import { createMcpTabAction } from './mcp-tab-action'
@@ -180,11 +180,16 @@
 
     /** DOM focus goes home: the focused pane's list, else this container (`active-pane-focus.ts`). */
     function focusActivePane(): void {
-        focusActivePaneOf({
-            getPaneRef: (pane) => paneRefs[pane],
-            getFocusedPane: () => focusedPane,
-            getContainerElement: () => containerElement,
-        })
+        focusActivePaneOf(activePaneFocusDeps)
+    }
+    /** The panes moved, and nobody at the keyboard said to take focus there. */
+    function followFocusedPane(): void {
+        followFocusedPaneOf(activePaneFocusDeps)
+    }
+    const activePaneFocusDeps = {
+        getPaneRef: (pane: 'left' | 'right') => paneRefs[pane],
+        getFocusedPane: () => focusedPane,
+        getContainerElement: () => containerElement,
     }
     // The window's focus home: overlays closing, and lists remounting, put focus back through it.
     $effect(() =>
@@ -289,7 +294,7 @@
         getLeftTabMgr: () => leftTabMgr,
         getRightTabMgr: () => rightTabMgr,
         isAnyTransferDialogOpen: () => dialogs.isAnyTransferDialogOpen(),
-        focusActivePane,
+        followFocusedPane,
     })
     const volumeSelection = createVolumeSelection({
         getVolumes: () => volumes,
@@ -303,7 +308,7 @@
         getPaneVolumeId,
         getTabMgr,
         getVolumes: () => volumes,
-        focusActivePane,
+        followFocusedPane,
     })
     // MCP `tab` tool per-pane action dispatch (new/close/close_others/reopen/
     // activate/set_pinned). Menu-sync + persistence driven the same way as before.
@@ -759,12 +764,12 @@
     }
 
     /** Creates a folder directly on the target pane's live path (the MCP `mkdir` tool). `pane` defaults to focused. */
-    export async function createFolderDirect(name: string, pane?: 'left' | 'right', initiator?: Initiator) {
+    export async function createFolderDirect(name: string, pane: 'left' | 'right' | undefined, initiator: Initiator) {
         await fileOps.createFolderDirect(name, pane, initiator)
     }
 
     /** Creates an empty file directly on the target pane's live path (the MCP `mkfile` tool). `pane` defaults to focused. */
-    export async function createFileDirect(name: string, pane?: 'left' | 'right', initiator?: Initiator) {
+    export async function createFileDirect(name: string, pane: 'left' | 'right' | undefined, initiator: Initiator) {
         await fileOps.createFileDirect(name, pane, initiator)
     }
 
@@ -878,7 +883,7 @@
         explorerState.setFocusedPane(newFocus)
         void updateFocusedPane(newFocus)
         pushViewMenuState()
-        focusActivePane()
+        followFocusedPane()
     }
 
     /** Focus the focused pane's location bar, the keyboard way into its chrome (`pane.focusControls`). */
@@ -1138,7 +1143,7 @@
                 explorerState.setFocusedPane(p)
             },
             moveCursorByName: (paneRef, name) => paneCommands.moveCursorByName(paneRef, name),
-            focusActivePane,
+            followFocusedPane,
         })
     }
 

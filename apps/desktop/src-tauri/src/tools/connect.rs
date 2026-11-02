@@ -44,6 +44,7 @@ use crate::location::Location;
 use crate::location::resolve::{RootSources, VolumeFacts, volume_root};
 use crate::location::same_share::Via;
 use crate::saved_servers::{SavedPlaceDial, SavedPlaceRefusal, ServerConnectOutcome};
+use crate::tools::policy::ToolCtx;
 use crate::tools::{ToolError, ToolResult};
 
 /// How long a call waits for a dropped volume's reconnect to settle. The backoff
@@ -150,8 +151,8 @@ pub fn connect_volume_schema() -> Value {
 
 /// The registry handler. The agent's own calls come through
 /// [`execute_connect_volume_cancellable`] with the turn's Stop.
-pub async fn execute_connect_volume<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
-    execute_connect_volume_cancellable(app, params, &CancellationToken::new()).await
+pub async fn execute_connect_volume<R: Runtime>(app: &AppHandle<R>, ctx: &ToolCtx, params: &Value) -> ToolResult {
+    execute_connect_volume_cancellable(app, params, &ctx.cancel).await
 }
 
 /// `connect_volume` under the turn's Stop.

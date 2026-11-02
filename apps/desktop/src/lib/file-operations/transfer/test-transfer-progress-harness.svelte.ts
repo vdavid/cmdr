@@ -186,6 +186,7 @@ export function makeConfig(over: Partial<TransferProgressStateConfig> = {}): Tra
     conflictResolution: 'stop',
     preKnownConflicts: [],
     itemSizes: [],
+    initiator: 'user',
     onComplete: vi.fn(),
     onCancelled: vi.fn(),
     onError: vi.fn(),

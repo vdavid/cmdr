@@ -53,6 +53,7 @@ use crate::location::Location;
 use crate::location::miss::LocationMissResult;
 use crate::location::resolve::{LocationInput, VolumeFacts, resolve};
 use crate::search::format_size;
+use crate::tools::policy::ToolCtx;
 use crate::tools::{ToolError, ToolResult};
 use cmdr_index::store::DirStats;
 use cmdr_index::{Freshness, IndexStatusResponse};
@@ -531,13 +532,11 @@ pub fn list_dir_schema() -> Value {
 
 /// The registry's handler. An AI client's call has no turn to stop it, but
 /// dropping the request still stops a live read (`live::run_bounded`).
-pub async fn execute_list_dir<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
-    execute_list_dir_cancellable(app, params, &CancellationToken::new()).await
+pub async fn execute_list_dir<R: Runtime>(app: &AppHandle<R>, ctx: &ToolCtx, params: &Value) -> ToolResult {
+    execute_list_dir_cancellable(app, params, &ctx.cancel).await
 }
 
-/// `list_dir` with the turn's cancel, so Stop ends a live read that's waiting
-/// on a slow volume (`agent::tool_gate::dispatch` routes the agent's calls
-/// here).
+/// `list_dir` with the caller's cancel, so a Stop ends a live read that's waiting on a slow volume.
 pub(crate) async fn execute_list_dir_cancellable<R: Runtime>(
     _app: &AppHandle<R>,
     params: &Value,

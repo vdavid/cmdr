@@ -281,8 +281,8 @@ export interface ExplorerAPI {
   pasteFromClipboard: (forceMove: boolean) => Promise<void>
   openNewFolderDialog: (args: OpenNamingDialogArgs) => Promise<void>
   openNewFileDialog: (args: OpenNamingDialogArgs) => Promise<void>
-  createFolderDirect: (name: string, pane?: 'left' | 'right', initiator?: Initiator) => Promise<void>
-  createFileDirect: (name: string, pane?: 'left' | 'right', initiator?: Initiator) => Promise<void>
+  createFolderDirect: (name: string, pane: 'left' | 'right' | undefined, initiator: Initiator) => Promise<void>
+  createFileDirect: (name: string, pane: 'left' | 'right' | undefined, initiator: Initiator) => Promise<void>
   openDeleteDialog: (args: OpenDeleteDialogArgs) => Promise<void>
   /**
    * Shows an operation that is already running in the main window's progress

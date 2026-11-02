@@ -22,6 +22,12 @@
     import { tString } from '#lib/intl/messages.svelte.js'
     import { dependOn } from '#lib/utils/reactivity.js'
     import { providePortalTarget } from './portal-target'
+    import {
+        attachStartedElsewhereGuard,
+        startedElsewhereLine,
+        type StartedElsewhereGuard,
+        type ToolInitiator,
+    } from './started-elsewhere-guard'
 
     interface Props {
         titleId: string
@@ -124,6 +130,13 @@
          * against each other by DOM position. DETAILS § ModalDialog.
          */
         topmost?: boolean
+        /**
+         * Who started this, when a stray keystroke mustn't be able to touch it: it opened by itself,
+         * maybe under someone's typing. It waits for the keyboard to go quiet, keeps focus on the
+         * overlay until a click or Tab, and says who started it (`started-elsewhere-guard.ts`). Read
+         * once, as the dialog opens.
+         */
+        startedBy?: ToolInitiator
         /** Renders × button and handles Escape key */
         onclose?: () => void
         /**
@@ -158,9 +171,13 @@
         overlayClass = '',
         closeOnOverlayClick = false,
         topmost = false,
+        startedBy,
         onclose,
         onescape,
     }: Props = $props()
+
+    /** Read once: a host's prop getter may read state that's already gone as the dialog comes down. */
+    const guardedFor = untrack(() => startedBy)
 
     /** What Escape does: `onescape` where the dialog gives one, else closing. */
     const escapeAction = $derived(onclose ? (onescape ?? onclose) : undefined)
@@ -521,6 +538,22 @@
         return () => { unregisterDialogClose(dialogId, close) }
     })
 
+    let guard: StartedElsewhereGuard | null = null
+    let armed = $state(false)
+
+    // Its own hook, ahead of the one below, so no key slips in ahead of it.
+    onMount(() => {
+        if (!guardedFor) return
+        guard = attachStartedElsewhereGuard({
+            scope: () => overlayElement,
+            parkFocus: () => overlayElement,
+            tabMovesFocus: true,
+            onArmedChange: (next) => {
+                armed = next
+            },
+        })
+    })
+
     onMount(async () => {
         focusOrigin = captureFocusOrigin()
         if (dialogId) {
@@ -535,7 +568,12 @@
         // field before typing (#84). Otherwise the first field a person can type in,
         // so a dialog opened from a context menu or a shortcut takes keys at once, and
         // the scrim only when there is no such field (Escape and Enter still land).
-        if (overlayElement && !overlayElement.contains(document.activeElement)) {
+        //
+        // A guarded dialog parks on the scrim whatever a child claimed: text that lands in a field
+        // has to follow a click or Tab.
+        if (guardedFor) {
+            overlayElement?.focus()
+        } else if (overlayElement && !overlayElement.contains(document.activeElement)) {
             if (!dialogElement || !focusFirstField(dialogElement)) overlayElement.focus()
         }
 
@@ -558,6 +596,7 @@
     })
 
     onDestroy(() => {
+        guard?.detach()
         // A dialog can close mid-drag (Escape, or an operation finishing under it);
         // without this its pointer listeners would outlive it on `document`.
         stopActiveDrag?.()
@@ -587,6 +626,7 @@
     aria-labelledby={titleId}
     aria-describedby={ariaDescribedby}
     data-dialog-id={dialogId}
+    data-armed={guardedFor ? armed : undefined}
     tabindex="-1"
     onkeydown={handleOverlayKeydown}
     onclick={handleOverlayClick}
@@ -626,6 +666,9 @@
             <div class="modal-body" class:no-footer={!footer}>
                 {@render children()}
             </div>
+            {#if guardedFor}
+                <p class="started-elsewhere" role="status">{startedElsewhereLine(guardedFor, armed)}</p>
+            {/if}
             {#if footer}
                 <div class="modal-footer">
                     {#if footerLeading}<div class="modal-footer-leading">{@render footerLeading()}</div>{/if}
@@ -955,6 +998,23 @@
     /* Footerless dialogs: the body owns the bottom padding the footer would give. */
     .modal-body.no-footer {
         padding-bottom: var(--spacing-dialog);
+    }
+
+    .started-elsewhere {
+        margin: var(--spacing-md) var(--spacing-dialog) 0;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+    }
+
+    /* The action a person is about to take reads as not ready yet while the keyboard can't reach it.
+       Opacity would drop the label below AA, so it trades the fill for tokens that hold it. A click
+       still works: only `dialog_confirm` and the mouse get here, and neither is a stray key. */
+    /* allowed-btn-restyle: the one unarmed look, for every dialog this primitive hosts */
+    .modal-overlay[data-armed='false'] .modal-footer-actions :global(.btn-primary),
+    .modal-overlay[data-armed='false'] .modal-footer-actions :global(.btn-danger) {
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-primary);
+        border-color: var(--color-border-strong);
     }
 
     /* Right-aligned action footer (macOS convention: primary action rightmost).

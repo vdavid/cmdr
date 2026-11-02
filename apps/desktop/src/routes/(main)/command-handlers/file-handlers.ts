@@ -236,6 +236,7 @@ export const fileHandlers = {
         permanent: deleteArgs.permanent ?? false,
         mcpRequestId: deleteArgs.mcpRequestId,
         initiator: deleteArgs.initiator,
+        guard: deleteArgs.guard,
       }),
     )
   },

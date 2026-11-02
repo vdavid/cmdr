@@ -196,6 +196,8 @@ pub fn validate_params(name: &str, params: &Value) -> Result<(), ToolError> {
 /// - `sync_app_params` — `handler(app, params)` (sync; `remove_manual_server`).
 /// - `nav` / `nav_params` — `handler(app, name)` / `handler(app, name, params)` for the nav
 ///   family, which routes several tools through one handler by passing the tool name as a literal.
+/// - `ctx_params` — `handler(app, ctx, params).await`, for a tool that needs to know who's calling:
+///   the [`ToolCtx`](super::policy::ToolCtx) with its caller, cancel token, and thread.
 ///
 /// Sync arms deliberately don't `.await` (the handlers are sync), matching the hand-written
 /// dispatch this replaced.
@@ -346,44 +348,40 @@ macro_rules! mcp_tools {
             }
         }
 
-        /// The `tools/call` dispatch, gated to `consumer`'s view. A name outside that view (an
+        /// The `tools/call` dispatch, gated to the caller's view. A name outside that view (an
         /// agent-only name over MCP, an `ai_client`-only name through the agent runtime, or an
         /// unknown name) is refused before dispatch with the same `INVALID_PARAMS` "Unknown tool"
         /// error — the refusal is on the typed [`Consumer`] set, not a string. Generic over
         /// `Runtime`.
         pub async fn execute_tool<R: tauri::Runtime>(
             app: &tauri::AppHandle<R>,
-            consumer: Consumer,
+            ctx: &ToolCtx,
             name: &str,
             params: &Value,
         ) -> ToolResult {
-            if !tool_available_to(name, consumer) {
+            if !tool_available_to(name, ctx.caller.consumer()) {
                 return Err(ToolError::invalid_params(format!("Unknown tool: {name}")));
             }
-            if let Some(refusal) = super::policy::dev_only_refusal(
-                consumer,
-                name,
-                tool_access(name),
-                super::policy::direct_mode(),
-            ) {
+            if let Some(refusal) = super::policy::dev_only_refusal(ctx.caller, name, tool_access(name)) {
                 return Err(refusal);
             }
             validate_params(name, params)?;
             match name {
-                $( $name => mcp_tools!(@call $shape $path, $name, app, params), )*
+                $( $name => mcp_tools!(@call $shape $path, $name, app, ctx, params), )*
                 _ => Err(ToolError::invalid_params(format!("Unknown tool: {name}"))),
             }
         }
     };
 
     // Handler-shape arms: each evaluates to a `ToolResult`. Sync handlers deliberately
-    // don't `.await`. `app`/`params`/`name` are passed positionally from the generated
+    // don't `.await`. `app`/`ctx`/`params`/`name` are passed positionally from the generated
     // dispatch (the macro's own body context) so `macro_rules!` hygiene never bites.
-    (@call app_params      $p:path, $name:literal, $app:ident, $params:ident) => { $p($app, $params).await };
-    (@call app_only        $p:path, $name:literal, $app:ident, $params:ident) => { $p($app).await };
-    (@call params_only     $p:path, $name:literal, $app:ident, $params:ident) => { $p($params).await };
-    (@call sync_app        $p:path, $name:literal, $app:ident, $params:ident) => { $p($app) };
-    (@call sync_app_params $p:path, $name:literal, $app:ident, $params:ident) => { $p($app, $params) };
-    (@call nav             $p:path, $name:literal, $app:ident, $params:ident) => { $p($app, $name).await };
-    (@call nav_params      $p:path, $name:literal, $app:ident, $params:ident) => { $p($app, $name, $params).await };
+    (@call app_params      $p:path, $name:literal, $app:ident, $ctx:ident, $params:ident) => { $p($app, $params).await };
+    (@call app_only        $p:path, $name:literal, $app:ident, $ctx:ident, $params:ident) => { $p($app).await };
+    (@call params_only     $p:path, $name:literal, $app:ident, $ctx:ident, $params:ident) => { $p($params).await };
+    (@call sync_app        $p:path, $name:literal, $app:ident, $ctx:ident, $params:ident) => { $p($app) };
+    (@call sync_app_params $p:path, $name:literal, $app:ident, $ctx:ident, $params:ident) => { $p($app, $params) };
+    (@call nav             $p:path, $name:literal, $app:ident, $ctx:ident, $params:ident) => { $p($app, $name).await };
+    (@call nav_params      $p:path, $name:literal, $app:ident, $ctx:ident, $params:ident) => { $p($app, $name, $params).await };
+    (@call ctx_params      $p:path, $name:literal, $app:ident, $ctx:ident, $params:ident) => { $p($app, $ctx, $params).await };
 }

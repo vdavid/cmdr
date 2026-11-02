@@ -56,6 +56,7 @@ function makeConfig(over: Partial<TransferDispatchConfig> = {}): TransferDispatc
     conflictResolution: 'stop',
     preKnownConflicts: [],
     itemSizes: [],
+    initiator: 'user',
     ...over,
   }
 }
@@ -91,7 +92,7 @@ describe('dispatchTransferOperation: routing', () => {
         preKnownConflicts: [],
         compressionLevel: 6,
       },
-      undefined,
+      'user',
     )
     expect(moveBetweenVolumes).not.toHaveBeenCalled()
   })
@@ -283,7 +284,7 @@ describe('dispatchTransferOperation: compression-level threading', () => {
       'root',
       '/dst',
       expect.objectContaining({ compressionLevel: 6 }),
-      undefined,
+      'user',
     )
   })
 
@@ -295,7 +296,7 @@ describe('dispatchTransferOperation: compression-level threading', () => {
       'root',
       '/dst',
       expect.objectContaining({ compressionLevel: 6 }),
-      undefined,
+      'user',
     )
   })
 
@@ -309,7 +310,7 @@ describe('dispatchTransferOperation: compression-level threading', () => {
       'root',
       '/dst',
       expect.objectContaining({ compressionLevel: 6 }),
-      undefined,
+      'user',
     )
   })
 })
@@ -322,7 +323,7 @@ it('forwards the explicit filename to the local copy engine', async () => {
     'root',
     '/src',
     expect.objectContaining({ destinationName: 'copy.txt' }),
-    undefined,
+    'user',
   )
 })
 
@@ -334,7 +335,7 @@ it('forwards a Move target name to the local engine', async () => {
     ['/src/file.txt'],
     '/src',
     expect.objectContaining({ destinationName: 'renamed.txt' }),
-    undefined,
+    'user',
   )
 })
 
@@ -353,7 +354,7 @@ it('forwards a Move target name to the volume engine', async () => {
     'root',
     '/dst',
     expect.objectContaining({ destinationName: 'renamed.txt' }),
-    undefined,
+    'user',
   )
 })
 

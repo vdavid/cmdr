@@ -6,7 +6,8 @@
 //!   every view and the dispatch.
 //! - `actions/`: the handlers behind most tools. `read/`, `propose/`, `suggestions/`, `memory.rs`,
 //!   `connect.rs`, and `quiet.rs`: the handlers written for the agent.
-//! - [`policy`]: direct mode, the switch that lets an outside client past a person.
+//! - [`policy`]: who's calling ([`ToolCtx`]), and direct mode, the switch that lets an outside client
+//!   past a person.
 //! - [`sensitive`]: the one gate every path yielding file contents passes.
 //! - [`resources`]: the read-only `cmdr://` views.
 //! - [`agent_tool_declarations`]: the `ToolDeclaration`s handed to the provider, built from the
@@ -54,6 +55,7 @@ pub(crate) use actions::{ToolError, ToolResult, fit_to_result_budget, is_virtual
 // the whole build there.
 #[cfg(target_os = "macos")]
 pub(crate) use actions::nav::{GoToTarget, PaneChoice, go_to_in_pane};
+pub(crate) use policy::{Caller, ToolCtx};
 pub(crate) use registry::{Access, Consumer, SubjectSpec, Tool, tool_available_to, validate_params};
 pub use table::ToolId;
 pub(crate) use table::{agent_tool_view, execute_tool, get_all_tools, tool_access};

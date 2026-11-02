@@ -42,6 +42,7 @@ use crate::agent::types::{ProposalStatus, ProposalVerb};
 use crate::location::miss::LocationMissResult;
 use crate::location::resolve::VolumeFacts;
 use crate::location::same_share::Via;
+use crate::tools::policy::ToolCtx;
 use crate::tools::{ToolError, ToolResult};
 
 // ── The tool boundary ─────────────────────────────────────────────────────────
@@ -136,8 +137,8 @@ pub fn propose_suggestions_schema() -> Value {
 
 /// The registry path (an external MCP client), which has no chat thread to attribute the
 /// sweep to.
-pub async fn execute_propose_suggestions<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
-    propose_in_thread(app, None, params).await
+pub async fn execute_propose_suggestions<R: Runtime>(app: &AppHandle<R>, ctx: &ToolCtx, params: &Value) -> ToolResult {
+    propose_in_thread(app, ctx.conversation_id, params).await
 }
 
 /// Stage a sweep, attributing it to the chat thread that asked for it. The link is nullable

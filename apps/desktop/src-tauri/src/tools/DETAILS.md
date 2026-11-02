@@ -10,7 +10,7 @@ There is ONE authored tool table (`table.rs`, expanded by `mcp_tools!` from `reg
 are `consumers: [Agent]` entries, never `access: Write`; `operations_list` / `operations_get` / `search` /
 `search_photos` / `image_facts` are shared `[AiClient, Agent]`. `agent_tool_view()` is the agent's slice;
 `get_all_tools()` is the ai-client slice (agent-only entries filtered out, so the ai-client wire snapshot is unchanged).
-`execute_tool(app, Consumer::Agent, name, params)` dispatches only the agent view. § Consumer and access views has the
+`execute_tool(app, ctx, name, params)` dispatches only the view of `ctx.caller`. § Consumer and access views has the
 mechanism.
 
 **Decision: a module, not a crate.** Crates here carry no `tauri`, and handlers need `AppHandle`, events, and pane stores,
@@ -25,7 +25,7 @@ exactly that list.
 
 Every AI-callable tool is authored once in the `mcp_tools!` table in `table.rs` — name, `id`, `brief`, description, JSON
 schema, `subject`, `consumers`, `access`, and handler per entry. That one table generates `get_all_tools()`
-(the ai_client `tools/list`), `agent_tool_view()` (the in-process agent's set), `execute_tool()` (consumer-gated
+(the ai_client `tools/list`), `agent_tool_view()` (the in-process agent's set), `execute_tool()` (caller-gated
 dispatch), `tool_consumers()` / `tool_access()`, and `ToolId` (the enum, `KNOWN`, the wire-name conversions, and serde),
 so the facets can't drift and adding a tool is a single entry. `registry.rs` also defines `Tool`, the `tools/list`
 element every view returns. Read the entries
@@ -112,6 +112,27 @@ canonicalized parent); the hand-authored `EXPECTED_MEMORY_TOOL_NAMES` allowlist,
 `Propose` one does (no structural check can prove a handler stays in a jail, so a human puts each name there having
 read it); and `consumers: [Agent]` on both entries, pinned by a test — a `Memory` tool must never reach the HTTP
 transport, whose security story is "no filesystem access". Depth: `../agent/memory/DETAILS.md`.
+
+## Who's calling (`Caller`, `ToolCtx`)
+
+`policy.rs`'s `Caller` is `Agent { origin }` or `External { direct }`. Dispatch builds a `ToolCtx { caller, cancel,
+conversation_id }` for each call: `agent/tool_gate.rs` from the turn, `mcp/handler.rs` from `ToolCtx::external` with the
+client's disconnect as its cancel. A handler that needs it takes the table's `ctx_params` shape.
+
+- `Caller::initiator` is who the operation log credits: `Agent` → `agent`, `External` → `aiClient`, whoever confirms it.
+- `Caller::guarded` is everything but `External { direct: true }`. What a guarded caller opens must arm before a keystroke
+  can touch it (`apps/desktop/src/lib/ui/DETAILS.md` § The started-elsewhere guard), since someone may be typing elsewhere
+  as it appears. Direct mode is the way out: a person said this client may go past them.
+- `ToolCtx::stamp` puts both on an event's payload as `initiator` and `guard`. Every opener of a dialog or editor uses it,
+  and so does a direct create. `mcp-listeners.ts` reads them failing closed: anything but `agent` is `aiClient`, ❌ never
+  `user`, and only a plain `false` turns the guard off.
+- A guarded `dialog open onboarding` refuses (`onboardingNeedsPerson`): the wizard isn't a `ModalDialog`, so nothing arms
+  it, and it holds the AI setup. A guarded `open_search_dialog` always opens in `filename` mode and says so: its default
+  is `ai` with `autoRun`, the nested LLM call `ai_search` is `DevOnly` for.
+- **The write commands take a required `initiator`**: `create_directory`, `create_file`, `rename_file`, `move_to_trash`,
+  `move_files`, `delete_files`, `trash_files`, `copy_between_volumes`, `move_between_volumes`, `rename_by_move`,
+  `compress_files`, and `rollback_operation`. A missing one was recorded as `user`, so provenance failed open.
+  `cancel_write_operation` has none on purpose: `apps/desktop/src/lib/file-operations/DETAILS.md` § Rollback asks first.
 
 ## Direct mode
 
@@ -1030,8 +1051,9 @@ and the system prompt requires the model to disclose "returned of total" wheneve
   is the user's own"): an action the user approved counts as theirs, while a turn the app opens on its own (a wake, the
   follow-up a rejection earns) doesn't. Today no approval opens a turn, so `TurnOrigin` has no approved-action origin; a
   feature that runs an approved card's follow-up through the agent adds one that `user_started()` answers `true`.
-- Otherwise `None` ⇒ `dispatch` calls `execute_tool(app, Consumer::Agent, …)`, which itself refuses any name outside the
-  agent view (a second, structural backstop).
+- Otherwise `None` ⇒ `dispatch` calls `execute_tool` with a `Caller::Agent` context, which itself refuses any name outside
+  the agent view (a second, structural backstop). `propose_rename_plan` alone goes around it, for the proposal snapshot
+  its result carries.
 
 The access half lives in the pure `admit(Option<Access>, TurnOrigin) -> Admission`: `Read`, `Propose`, and `Memory`
 dispatch on every turn, `Session` only when `TurnOrigin::user_started` (`text`, `resume`), `Write` and an unclassified

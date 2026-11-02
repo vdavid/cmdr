@@ -13,6 +13,7 @@ use super::actions::{
     app, async_tools, conflicts, cpu, dialog_confirm, dialogs, downloads, eject, favorites, file_ops, image_facts,
     indexing, memory, multi_rename, nav, operation_log, photos, queue, quit, search, tags, unlock, view,
 };
+use super::policy::ToolCtx;
 use super::registry::{Access, Consumer, SubjectSpec, Tool, tool_available_to, validate_params};
 use super::schemas;
 
@@ -122,7 +123,7 @@ mcp_tools! {
         subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
         access: Access::Initiate,
-        run: app_params file_ops::execute_copy
+        run: ctx_params file_ops::execute_copy
     },
     "move" => {
         id: Move,
@@ -132,7 +133,7 @@ mcp_tools! {
         subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
         access: Access::Initiate,
-        run: app_params file_ops::execute_move
+        run: ctx_params file_ops::execute_move
     },
     "compress" => {
         id: Compress,
@@ -142,7 +143,7 @@ mcp_tools! {
         subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
         access: Access::Initiate,
-        run: app_params file_ops::execute_compress
+        run: ctx_params file_ops::execute_compress
     },
     "delete" => {
         id: Delete,
@@ -152,7 +153,7 @@ mcp_tools! {
         subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
         access: Access::Initiate,
-        run: app_params file_ops::execute_delete
+        run: ctx_params file_ops::execute_delete
     },
     "rename" => {
         id: Rename,
@@ -163,7 +164,7 @@ mcp_tools! {
         subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
         access: Access::Initiate,
-        run: app_params file_ops::execute_rename
+        run: ctx_params file_ops::execute_rename
     },
     // The Multi-Rename Tool (⌃M) for an agent: `Propose`, never a write. A dry run previews; a
     // real run stages the ready rows as one rename group on the suggested-ops spine, which the
@@ -187,7 +188,7 @@ mcp_tools! {
         subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
         access: Access::LightWrite,
-        run: app_params file_ops::execute_mkdir
+        run: ctx_params file_ops::execute_mkdir
     },
     "mkfile" => {
         id: Mkfile,
@@ -198,7 +199,7 @@ mcp_tools! {
         subject: SubjectSpec::Pane,
         consumers: &[Consumer::AiClient],
         access: Access::LightWrite,
-        run: app_params file_ops::execute_mkfile
+        run: ctx_params file_ops::execute_mkfile
     },
     "refresh" => {
         id: Refresh,
@@ -276,7 +277,7 @@ mcp_tools! {
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
         access: Access::AppState,
-        run: app_params dialogs::execute_dialog_command
+        run: ctx_params dialogs::execute_dialog_command
     },
     "dialog_confirm" => {
         id: DialogConfirm,
@@ -296,7 +297,7 @@ mcp_tools! {
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
         access: Access::AppState,
-        run: app_params dialogs::execute_open_search_dialog
+        run: ctx_params dialogs::execute_open_search_dialog
     },
 
     // ── App ─────────────────────────────────────────────────────────────────
@@ -554,7 +555,7 @@ mcp_tools! {
         subject: SubjectSpec::Operation("operationId"),
         consumers: &[Consumer::AiClient],
         access: Access::Initiate,
-        run: app_params operation_log::execute_operations_rollback
+        run: ctx_params operation_log::execute_operations_rollback
     },
 
     // ── Photo search ──────────────────────────────────────────────────────────
@@ -667,7 +668,7 @@ mcp_tools! {
         subject: SubjectSpec::Custom,
         consumers: &[Consumer::AiClient, Consumer::Agent],
         access: Access::Read,
-        run: app_params crate::tools::read::listing::execute_list_dir
+        run: ctx_params crate::tools::read::listing::execute_list_dir
     },
     "list_pane_files" => {
         id: ListPaneFiles,
@@ -727,7 +728,7 @@ mcp_tools! {
         subject: SubjectSpec::Custom,
         consumers: &[Consumer::Agent],
         access: Access::Propose,
-        run: app_params crate::tools::suggestions::execute_propose_suggestions
+        run: ctx_params crate::tools::suggestions::execute_propose_suggestions
     },
     "propose_server" => {
         id: ProposeServer,
@@ -737,7 +738,7 @@ mcp_tools! {
         subject: SubjectSpec::Custom,
         consumers: &[Consumer::Agent],
         access: Access::Propose,
-        run: app_params crate::tools::suggestions::execute_propose_server
+        run: ctx_params crate::tools::suggestions::execute_propose_server
     },
     "nothing_to_suggest" => {
         id: NothingToSuggest,
@@ -787,6 +788,6 @@ mcp_tools! {
         subject: SubjectSpec::Custom,
         consumers: &[Consumer::Agent],
         access: Access::Session,
-        run: app_params crate::tools::connect::execute_connect_volume
+        run: ctx_params crate::tools::connect::execute_connect_volume
     },
 }

@@ -132,6 +132,11 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
         label: 'A name that never fits',
         note: 'The row shortens; hovering it gives the full path, and dragging a side edge widens the panel.',
       },
+      {
+        id: 'started-by-agent',
+        label: 'Started by Ask Cmdr',
+        note: 'Opens unarmed, and a held Shift never upgrades it to a permanent delete.',
+      },
     ],
   },
   {
@@ -172,6 +177,12 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
       { id: 'undoByDeleting', label: 'Undo a finished copy' },
       { id: 'undoByMovingBack', label: 'Undo a finished move' },
       { id: 'undoByRenamingBack', label: 'Undo a finished rename' },
+      {
+        id: 'startedByAskCmdr',
+        label: 'Asked by Ask Cmdr',
+        note: 'Opens unarmed: the confirming button stays muted and keys do nothing but Escape until the keyboard has been quiet for 800 ms. Type while it opens to see it wait. A click works after the first 300 ms.',
+      },
+      { id: 'startedByAiClient', label: 'Asked by an AI client' },
     ],
   },
   {

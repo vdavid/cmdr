@@ -227,8 +227,8 @@ export async function copyBetweenVolumes(
   sourcePaths: string[],
   destVolumeId: string,
   destPath: string,
-  config?: VolumeCopyConfig,
-  initiator?: Initiator,
+  config: VolumeCopyConfig | undefined,
+  initiator: Initiator,
 ): Promise<WriteOperationStartResult> {
   const res = await commands.copyBetweenVolumes(
     sourceVolumeId,
@@ -236,7 +236,7 @@ export async function copyBetweenVolumes(
     destVolumeId,
     destPath,
     config ?? null,
-    initiator ?? null,
+    initiator,
   )
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
@@ -254,8 +254,8 @@ export async function moveBetweenVolumes(
   sourcePaths: string[],
   destVolumeId: string,
   destPath: string,
-  config?: VolumeCopyConfig,
-  initiator?: Initiator,
+  config: VolumeCopyConfig | undefined,
+  initiator: Initiator,
 ): Promise<WriteOperationStartResult> {
   const res = await commands.moveBetweenVolumes(
     sourceVolumeId,
@@ -263,7 +263,7 @@ export async function moveBetweenVolumes(
     destVolumeId,
     destPath,
     config ?? null,
-    initiator ?? null,
+    initiator,
   )
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
@@ -280,10 +280,10 @@ export async function renameByMove(
   sourcePath: string,
   destPath: string,
   newName: string,
-  config?: VolumeCopyConfig,
-  initiator?: Initiator,
+  config: VolumeCopyConfig | undefined,
+  initiator: Initiator,
 ): Promise<WriteOperationStartResult> {
-  const res = await commands.renameByMove(volumeId, sourcePath, destPath, newName, config ?? null, initiator ?? null)
+  const res = await commands.renameByMove(volumeId, sourcePath, destPath, newName, config ?? null, initiator)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }
@@ -306,8 +306,8 @@ export async function compressFiles(
   sourcePaths: string[],
   destVolumeId: string,
   destZipPath: string,
-  config?: VolumeCopyConfig,
-  initiator?: Initiator,
+  config: VolumeCopyConfig | undefined,
+  initiator: Initiator,
 ): Promise<WriteOperationStartResult> {
   const res = await commands.compressFiles(
     sourceVolumeId,
@@ -315,7 +315,7 @@ export async function compressFiles(
     destVolumeId,
     destZipPath,
     config ?? null,
-    initiator ?? null,
+    initiator,
   )
   if (res.status === 'error') throwIpcError(res.error)
   return res.data

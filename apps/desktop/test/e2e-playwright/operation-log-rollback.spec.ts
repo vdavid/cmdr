@@ -133,12 +133,13 @@ async function stageTransfer(
     kind === 'copy'
       ? `window.__TAURI_INTERNALS__.invoke('copy_between_volumes', {
           sourceVolumeId: 'root', sourcePaths: [${src}], destVolumeId: 'root', destPath: ${destDir},
-          config: { conflictResolution: 'rename', progressIntervalMs: 100, maxConflictsToShow: 10, previewId: null, preKnownConflicts: [] }
+          config: { conflictResolution: 'rename', progressIntervalMs: 100, maxConflictsToShow: 10, previewId: null, preKnownConflicts: [] },
+    initiator: 'user'
         })`
       : `window.__TAURI_INTERNALS__.invoke('move_files', {
           sources: [${src}], destination: ${destDir},
           config: { conflictResolution: 'rename', progressIntervalMs: 100, maxConflictsToShow: 10, previewId: null, preKnownConflicts: [] },
-          initiator: null
+          initiator: 'user'
         })`
   // Which operations existed BEFORE, so the new one can be identified by
   // difference. ❌ Not "the newest row": `started_at` has second granularity, and a
@@ -713,7 +714,7 @@ test.describe('Rolling an operation back from the history dialog', () => {
     const beforeDelete = new Set((await recentEntries(page, 30)).map((r) => r.opId))
     await page.evaluate(`(async function() {
       await window.__TAURI_INTERNALS__.invoke('delete_files', {
-        sources: [${JSON.stringify(doomed)}], volumeId: 'root', config: null, initiator: null
+        sources: [${JSON.stringify(doomed)}], volumeId: 'root', config: null, initiator: 'user'
       });
     })()`)
     let deleteId = ''

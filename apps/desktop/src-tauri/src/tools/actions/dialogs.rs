@@ -41,10 +41,11 @@ use super::{
     AckSignal, DEFAULT_ACK_TIMEOUT, ToolError, ToolResult, expand_user_path, snapshot_window_count,
     validate_path_exists, wait_for_ack,
 };
+use crate::tools::policy::{Caller, ToolCtx};
 use crate::ui_state::dialog_state::SoftDialogTracker;
 
 /// Execute the `dialog` tool: open, focus, or close a dialog. Confirming one is `dialog_confirm`.
-pub async fn execute_dialog_command<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+pub async fn execute_dialog_command<R: Runtime>(app: &AppHandle<R>, ctx: &ToolCtx, params: &Value) -> ToolResult {
     let action = params
         .get("action")
         .and_then(|v| v.as_str())
@@ -67,11 +68,27 @@ pub async fn execute_dialog_command<R: Runtime>(app: &AppHandle<R>, params: &Val
     let path = path.as_deref();
 
     match action {
+        "open" if dialog_type == "onboarding" => {
+            refuse_onboarding_for_guarded_caller(ctx.caller)?;
+            execute_dialog_open(app, dialog_type, section, path).await
+        }
         "open" => execute_dialog_open(app, dialog_type, section, path).await,
         "focus" => execute_dialog_focus(app, dialog_type, path).await,
         "close" => execute_dialog_close(app, dialog_type, path).await,
         _ => Err(ToolError::invalid_params(format!("Invalid action: {action}"))),
     }
+}
+
+/// The onboarding wizard isn't a `ModalDialog`, so nothing arms it, and it holds the AI setup steps
+/// (provider, key, cloud consent). Only a person, or a client a person let past them, opens it.
+fn refuse_onboarding_for_guarded_caller(caller: Caller) -> Result<(), ToolError> {
+    if !caller.guarded() {
+        return Ok(());
+    }
+    Err(
+        ToolError::invalid_params("Onboarding holds the AI setup, so a person opens it themselves.")
+            .with_data(json!({ "refusal": "onboardingNeedsPerson" })),
+    )
 }
 
 /// Execute dialog open action.
@@ -359,7 +376,7 @@ async fn execute_generic_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_typ
 /// Per plan §3.11: the result confirms the dialog mounted (not that the search ran).
 /// If the dialog is mid-close when the event arrives, the new mount may race; we surface
 /// a clean failure from `wait_for_ack` within the 1500 ms budget.
-pub async fn execute_open_search_dialog<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+pub async fn execute_open_search_dialog<R: Runtime>(app: &AppHandle<R>, ctx: &ToolCtx, params: &Value) -> ToolResult {
     // Strip nulls so the FE sees `undefined` (omitted properties), not `null`.
     // Most JSON-RPC clients serialize missing optional params as `null`, but our
     // FE state setters expect either a real value or "field not present".
@@ -393,9 +410,23 @@ pub async fn execute_open_search_dialog<R: Runtime>(app: &AppHandle<R>, params: 
         )));
     }
 
+    let filename_only = pin_search_mode_for_guarded_caller(ctx.caller, &mut payload);
     app.emit("mcp-open-search-dialog", Value::Object(payload))?;
     wait_for_ack(app, AckSignal::SoftDialogAppeared("search"), DEFAULT_ACK_TIMEOUT).await?;
-    Ok(json!("OK: Opened search dialog"))
+    Ok(json!(if filename_only {
+        "OK: Opened search dialog in filename mode"
+    } else {
+        "OK: Opened search dialog"
+    }))
+}
+
+/// The dialog defaults to `ai` with `autoRun`, the nested LLM call `ai_search` is `DevOnly` for, so a
+/// guarded caller gets `filename` whatever it asked for. Answers whether it pinned the mode.
+fn pin_search_mode_for_guarded_caller(caller: Caller, payload: &mut serde_json::Map<String, Value>) -> bool {
+    if caller.guarded() {
+        payload.insert("mode".to_string(), json!("filename"));
+    }
+    caller.guarded()
 }
 
 /// Map an MCP confirmation `dialog_type` to its `SoftDialogTracker` ID. The IDs are

@@ -1990,7 +1990,7 @@
         scheduleColumnWidthRefetch,
         fetchEntryUnderCursor: () => void selectionInfo.fetchEntry(),
         fetchListingStats: () => void selectionInfo.fetchStats(),
-        onRequestFocus,
+        onRequestFocus: () => { renameFlow.restoreFocusAfterEditor(); },
         navigateToFallback: loader.navigateToFallback,
         adoptStoredPath,
         bumpCacheGeneration: () => {

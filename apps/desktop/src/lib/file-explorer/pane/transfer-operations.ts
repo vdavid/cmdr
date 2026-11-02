@@ -32,6 +32,8 @@ export interface TransferDialogPropsData {
    *  the backend records provenance, and only `user` may skip the confirmation.
    *  Required, like `duplicateFollowUp`: each trigger states it. */
   initiator: Initiator
+  /** It opened by itself, so it must arm before a keystroke can touch it (`ModalDialog`). */
+  guard?: boolean
   /**
    * What happens when this transfer duplicates ONE item in the folder it already
    * lived in. Forwarded to the progress dialog's config on confirm; see
@@ -54,7 +56,7 @@ export interface TransferDialogPropsData {
  * duplicate should end in the rename editor. Leaving those fields out here is what
  * makes each call site state them, rather than inheriting a default nobody chose.
  */
-export type TransferDialogPropsDraft = Omit<TransferDialogPropsData, 'duplicateFollowUp' | 'initiator'>
+export type TransferDialogPropsDraft = Omit<TransferDialogPropsData, 'duplicateFollowUp' | 'initiator' | 'guard'>
 
 /**
  * The transfer of what the press names: the pane's selection, or with

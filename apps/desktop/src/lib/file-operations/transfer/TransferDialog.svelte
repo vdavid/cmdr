@@ -30,6 +30,7 @@
     import S3CostLine from '../S3CostLine.svelte'
     import { costRequestFor } from '../s3-cost-line'
     import ModalDialog from '#lib/ui/ModalDialog.svelte'
+    import type { ToolInitiator } from '#lib/ui/started-elsewhere-guard.js'
     import TextInput from '#lib/ui/TextInput.svelte'
     import Button from '#lib/ui/Button.svelte'
     import Select, { type SelectItem } from '#lib/ui/Select.svelte'
@@ -80,6 +81,8 @@
         destVolumeId: string
         /** An MCP caller's `onConflict`: the policy this dialog opens on, as a preset. */
         presetOnConflict?: string
+        /** Who to name when this opened by itself under the arming guard (`ModalDialog`). */
+        startedBy?: ToolInitiator
         /**
          * Rename mode: the ONE source moves to this name in place (F2 on a big S3
          * folder, `pane/rename-as-move.ts`). The path box holds folder + name, the
@@ -108,6 +111,7 @@
         // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Part of Props interface, used by parent
         destVolumeId,
         presetOnConflict,
+        startedBy,
         newName,
         onConfirm,
         registerConfirmer,
@@ -734,6 +738,7 @@
     titleId="dialog-title"
     onkeydown={handleKeydown}
     dialogId="transfer-confirmation"
+    {startedBy}
     onclose={handleCancel}
     containerStyle="width: 500px"
     growDownward

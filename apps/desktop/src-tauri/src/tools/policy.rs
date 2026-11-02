@@ -1,4 +1,5 @@
-//! Direct mode: the switch that lets an outside MCP client use the tools that go past a person.
+//! Who's calling a tool ([`Caller`], [`ToolCtx`]), and direct mode: the switch that lets an outside
+//! MCP client use the tools that go past a person.
 //!
 //! On in an E2E run of a build that honors it, or when the person turned on
 //! `developer.mcpDirectMode` in Settings. The agent never gets it. The decision record, and what the
@@ -6,12 +7,80 @@
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use serde_json::json;
+use cmdr_operation_log::types::Initiator;
+use serde_json::{Value, json};
+use tokio_util::sync::CancellationToken;
 
 use super::actions::ToolError;
 use super::registry::{Access, Consumer};
+use crate::agent::types::TurnOrigin;
 use crate::secrets::{SecretStore, SecretStoreError};
 use crate::test_mode::{self, AutomatedRun};
+
+/// Who's calling a tool. Decides what a dialog says about who started it, what the operation log
+/// records, and whether a stray keystroke can touch what opened.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Caller {
+    /// Ask Cmdr, on a turn with this origin. It never gets direct mode.
+    Agent { origin: TurnOrigin },
+    /// An outside MCP client. `direct` is [`direct_mode`] as this request read it.
+    External { direct: bool },
+}
+
+impl Caller {
+    /// The view this caller dispatches, until one table holds every tool for both.
+    pub fn consumer(self) -> Consumer {
+        match self {
+            Caller::Agent { .. } => Consumer::Agent,
+            Caller::External { .. } => Consumer::AiClient,
+        }
+    }
+
+    /// Who the operation log credits with what this caller starts, whoever confirms it.
+    pub fn initiator(self) -> Initiator {
+        match self {
+            Caller::Agent { .. } => Initiator::Agent,
+            Caller::External { .. } => Initiator::AiClient,
+        }
+    }
+
+    /// Whether what this caller opens must arm before a keystroke can touch it, since someone may be
+    /// typing elsewhere as it appears. Direct mode is the one way out: it means a person said this
+    /// client may go past them.
+    pub fn guarded(self) -> bool {
+        !matches!(self, Caller::External { direct: true })
+    }
+}
+
+/// What a tool call knows about who asked and how to stop. A handler that needs it takes the
+/// `ctx_params` shape in the table.
+#[derive(Debug, Clone)]
+pub struct ToolCtx {
+    pub caller: Caller,
+    /// The turn's Stop for the agent, the client going away for an outside client.
+    pub cancel: CancellationToken,
+    /// The chat thread that asked. An outside client has none.
+    pub conversation_id: Option<i64>,
+}
+
+impl ToolCtx {
+    /// An outside client's call, under direct mode as it stands right now.
+    pub fn external(cancel: CancellationToken) -> Self {
+        Self {
+            caller: Caller::External { direct: direct_mode() },
+            cancel,
+            conversation_id: None,
+        }
+    }
+
+    /// `payload`, an object, plus what the frontend needs to know about who's asking: `initiator`
+    /// rides through to the operation log, and `guard` decides whether what opens must arm first.
+    pub fn stamp(&self, mut payload: Value) -> Value {
+        payload["initiator"] = serde_json::to_value(self.caller.initiator()).unwrap_or(Value::Null);
+        payload["guard"] = self.caller.guarded().into();
+        payload
+    }
+}
 
 /// The setting a refusal names, so a client's author knows what to turn on.
 const DIRECT_MODE_SETTING_ID: &str = "developer.mcpDirectMode";
@@ -56,14 +125,9 @@ fn direct_mode_from(e2e_honored: bool, run: AutomatedRun, setting: bool) -> bool
 
 /// The refusal for a `DevOnly` tool an outside client asks for off direct mode. The agent's own
 /// fence is its `consumers` list and gate, so it never reaches this.
-pub(super) fn dev_only_refusal(
-    consumer: Consumer,
-    name: &str,
-    access: Option<Access>,
-    direct: bool,
-) -> Option<ToolError> {
-    let gated = consumer == Consumer::AiClient && matches!(access, Some(Access::DevOnly(_)));
-    (gated && !direct).then(|| {
+pub(super) fn dev_only_refusal(caller: Caller, name: &str, access: Option<Access>) -> Option<ToolError> {
+    let gated = caller == Caller::External { direct: false } && matches!(access, Some(Access::DevOnly(_)));
+    gated.then(|| {
         ToolError::invalid_params(format!(
             "The {name} tool needs direct mode. A person can turn it on in Cmdr, in Settings > AI > MCP server."
         ))
@@ -177,6 +241,60 @@ mod tests {
     use super::*;
 
     const RUNS: [AutomatedRun; 3] = [AutomatedRun::None, AutomatedRun::E2e, AutomatedRun::Capture];
+    const AGENT: Caller = Caller::Agent {
+        origin: TurnOrigin::Text,
+    };
+    const OFF_DIRECT: Caller = Caller::External { direct: false };
+    const DIRECT: Caller = Caller::External { direct: true };
+
+    #[test]
+    fn the_log_credits_whoever_started_it() {
+        for origin in [
+            TurnOrigin::Text,
+            TurnOrigin::Wake,
+            TurnOrigin::Outcomes,
+            TurnOrigin::Resume,
+        ] {
+            assert_eq!(Caller::Agent { origin }.initiator(), Initiator::Agent);
+        }
+        assert_eq!(OFF_DIRECT.initiator(), Initiator::AiClient);
+        assert_eq!(DIRECT.initiator(), Initiator::AiClient);
+    }
+
+    #[test]
+    fn only_direct_mode_opens_without_the_guard() {
+        for origin in [
+            TurnOrigin::Text,
+            TurnOrigin::Wake,
+            TurnOrigin::Outcomes,
+            TurnOrigin::Resume,
+        ] {
+            assert!(Caller::Agent { origin }.guarded(), "{origin:?}");
+        }
+        assert!(OFF_DIRECT.guarded());
+        assert!(!DIRECT.guarded());
+    }
+
+    #[test]
+    fn a_stamped_payload_says_who_asked_in_the_frontends_words() {
+        let ctx = |caller| ToolCtx {
+            caller,
+            cancel: CancellationToken::new(),
+            conversation_id: None,
+        };
+        assert_eq!(
+            ctx(AGENT).stamp(json!({ "pane": "left" })),
+            json!({ "pane": "left", "initiator": "agent", "guard": true })
+        );
+        assert_eq!(
+            ctx(OFF_DIRECT).stamp(json!({})),
+            json!({ "initiator": "aiClient", "guard": true })
+        );
+        assert_eq!(
+            ctx(DIRECT).stamp(json!({})),
+            json!({ "initiator": "aiClient", "guard": false })
+        );
+    }
 
     #[test]
     fn a_release_build_ignores_an_automated_run() {
@@ -234,12 +352,12 @@ mod tests {
     #[test]
     fn a_dev_only_tool_refuses_an_outside_client_off_direct_mode_with_the_typed_reason() {
         let access = Some(Access::DevOnly("a reason"));
-        let refusal = dev_only_refusal(Consumer::AiClient, "resolve_conflict", access, false).expect("refused");
+        let refusal = dev_only_refusal(OFF_DIRECT, "resolve_conflict", access).expect("refused");
         assert_eq!(
             refusal.data,
             Some(json!({ "reason": "directModeOff", "setting": "developer.mcpDirectMode" }))
         );
-        assert!(dev_only_refusal(Consumer::AiClient, "resolve_conflict", access, true).is_none());
+        assert!(dev_only_refusal(DIRECT, "resolve_conflict", access).is_none());
     }
 
     #[test]
@@ -251,13 +369,10 @@ mod tests {
             Some(Access::Initiate),
             None,
         ] {
-            assert!(
-                dev_only_refusal(Consumer::AiClient, "x", access, false).is_none(),
-                "{access:?}"
-            );
+            assert!(dev_only_refusal(OFF_DIRECT, "x", access).is_none(), "{access:?}");
         }
         // The agent's fence is its own: direct mode is never its answer, on or off.
-        assert!(dev_only_refusal(Consumer::Agent, "x", Some(Access::DevOnly("r")), false).is_none());
+        assert!(dev_only_refusal(AGENT, "x", Some(Access::DevOnly("r"))).is_none());
     }
 
     #[test]

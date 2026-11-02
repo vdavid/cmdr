@@ -7,9 +7,10 @@
  * virtual window, which unmounts the input) still means "discard".
  */
 
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { mount, unmount, tick, type ComponentProps } from 'svelte'
 import InlineRenameEditor from './InlineRenameEditor.svelte'
+import { ARM_QUIET_MS } from '#lib/ui/started-elsewhere-guard.js'
 
 const noop = () => {}
 
@@ -296,5 +297,120 @@ describe('InlineRenameEditor selection keys', () => {
     input.setSelectionRange(9, 9)
     expect(press(input, { key: 'ArrowLeft', altKey: true }).defaultPrevented).toBe(false)
     expect(press(input, { key: 'ArrowLeft', altKey: true, metaKey: true }).defaultPrevented).toBe(false)
+  })
+})
+
+describe('a guarded editor, one a tool opened', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  async function open(overrides: Record<string, unknown> = {}) {
+    const editor = setup({ startedBy: 'agent', ...overrides })
+    await tick()
+    await tick()
+    return editor
+  }
+
+  async function arm() {
+    vi.advanceTimersByTime(ARM_QUIET_MS)
+    await tick()
+  }
+
+  function type(input: Element, key: string): KeyboardEvent {
+    const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
+    input.dispatchEvent(event)
+    input.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true, cancelable: true }))
+    return event
+  }
+
+  it('exposes unarmed, then armed, on `data-armed`', async () => {
+    const { input } = await open()
+    expect(input.getAttribute('data-armed')).toBe('false')
+    await arm()
+    expect(input.getAttribute('data-armed')).toBe('true')
+  })
+
+  it('leaves an editor a person opened alone', async () => {
+    const { input, target } = await open({ startedBy: undefined })
+    expect(input.hasAttribute('data-armed')).toBe(false)
+    expect(target.querySelector('[role="status"]')).toBeNull()
+  })
+
+  it('swallows an Enter before it arms, and takes one after', async () => {
+    const { input, onSubmit } = await open()
+    type(input, 'Enter')
+    expect(onSubmit).not.toHaveBeenCalled()
+    await arm()
+    type(input, 'Enter')
+    expect(onSubmit).toHaveBeenCalledOnce()
+  })
+
+  it('Escape cancels while unarmed', async () => {
+    const { input, onCancel } = await open()
+    type(input, 'Escape')
+    expect(onCancel).toHaveBeenCalledOnce()
+  })
+
+  it('ignores text after a pause, until a click', async () => {
+    const { input, onInput } = await open()
+    await arm()
+
+    expect(type(input, 'x').defaultPrevented).toBe(true)
+    const paste = new InputEvent('beforeinput', { bubbles: true, cancelable: true })
+    input.dispatchEvent(paste)
+    expect(paste.defaultPrevented).toBe(true)
+    // What can't be refused ahead of time, an IME's composition, gets undone.
+    input.value = 'report.mdx'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(onInput).not.toHaveBeenCalled()
+    expect(input.value).toBe('report.md')
+
+    input.dispatchEvent(new MouseEvent('pointerdown', { button: 0, bubbles: true, cancelable: true }))
+    expect(type(input, 'x').defaultPrevented).toBe(false)
+    input.value = 'report.mdx'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(onInput).toHaveBeenCalledExactlyOnceWith('report.mdx')
+  })
+
+  it('the first Tab only lets text in, and the next one cancels as ever', async () => {
+    const { input, onCancel } = await open()
+    await arm()
+    expect(type(input, 'Tab').defaultPrevented).toBe(true)
+    expect(onCancel).not.toHaveBeenCalled()
+    expect(type(input, 'x').defaultPrevented).toBe(false)
+    type(input, 'Tab')
+    expect(onCancel).toHaveBeenCalledOnce()
+  })
+
+  it('a click away cancels instead of saving a name nobody chose', async () => {
+    const { onClickAway, onCancel } = await open()
+    pressOn(document.body)
+    expect(onClickAway).not.toHaveBeenCalled()
+    expect(onCancel).toHaveBeenCalledExactlyOnceWith(1)
+  })
+
+  it('a click away still saves an editor a person opened', async () => {
+    const { onClickAway, onCancel } = await open({ startedBy: undefined })
+    pressOn(document.body)
+    expect(onClickAway).toHaveBeenCalledOnce()
+    expect(onCancel).not.toHaveBeenCalled()
+  })
+
+  it("doesn't chain: an arrow would save the model's name with nothing asked", async () => {
+    const { input, onStep } = await open()
+    await arm()
+    input.dispatchEvent(new MouseEvent('pointerdown', { button: 0, bubbles: true, cancelable: true }))
+    type(input, 'ArrowDown')
+    expect(onStep).not.toHaveBeenCalled()
+  })
+
+  it('says who started it', async () => {
+    const { target } = await open()
+    expect(target.querySelector('[role="status"]')?.textContent).toContain('Ask Cmdr started this.')
   })
 })

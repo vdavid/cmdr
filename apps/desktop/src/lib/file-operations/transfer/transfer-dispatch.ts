@@ -56,9 +56,9 @@ export interface TransferDispatchConfig {
   spaceShortfall?: SpaceShortfall
   /** Per-item sizes for trash progress (from scan or drive index). */
   itemSizes?: number[]
-  /** Who triggered this operation. `undefined`/`user` for direct UI actions;
-   *  `aiClient` when an MCP tool initiated it (drives the operation-log provenance). */
-  initiator?: Initiator
+  /** Who triggered this operation: `user` for a person's own action, `aiClient` or `agent` for a
+   *  tool's, whoever confirmed it. Drives the operation-log provenance, so it has no default. */
+  initiator: Initiator
   /** Rename mode: a move of the ONE source into `destinationPath` under this name
    *  (F2 on a big S3 folder, confirmed in the Move dialog). */
   newName?: string

@@ -40,9 +40,10 @@ export function renameAsMoveDialogProps(
     // A rename lands under a new name by construction, so it's never a duplicate.
     duplicateFollowUp: 'nothing',
     newName: request.newName,
-    // A person pressed Enter in the editor, and rename mode never skips the dialog
-    // (`confirmation-skip.ts`).
-    initiator: 'user',
+    // Whoever asked for the rename, though a person may have pressed Enter in the editor. Rename mode
+    // never skips the dialog (`confirmation-skip.ts`).
+    initiator: request.initiator,
+    guard: request.guard,
   }
 }
 

@@ -201,7 +201,7 @@ pub async fn e2e_propose_suggestions(
     app: tauri::AppHandle,
     params: serde_json::Value,
 ) -> Result<serde_json::Value, String> {
-    crate::tools::suggestions::execute_propose_suggestions(&app, &params)
+    crate::tools::suggestions::propose_in_thread(&app, None, &params)
         .await
         .map_err(|e| format!("{e:?}"))
 }

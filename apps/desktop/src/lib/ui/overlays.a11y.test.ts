@@ -163,6 +163,25 @@ describe('ModalDialog a11y', () => {
     await expectNoA11yViolations(target)
   })
 
+  it('renders without violations under the arming guard, its line announced', async () => {
+    const target = container()
+    const footer = createRawSnippet(() => ({ render: () => `<button class="btn btn-primary">Copy</button>` }))
+    mount(ModalDialog, {
+      target,
+      props: {
+        titleId: 'test-dialog-title',
+        title: titleSnippet,
+        children: bodySnippet,
+        footer,
+        startedBy: 'agent',
+      },
+    })
+    await tick()
+    expect(target.querySelector('.modal-overlay')?.getAttribute('data-armed')).toBe('false')
+    expect(target.querySelector('[role="status"]')?.textContent).toContain('Ask Cmdr started this.')
+    await expectNoA11yViolations(target)
+  })
+
   it('renders without violations when onclose adds the close button', async () => {
     const target = container()
     mount(ModalDialog, {

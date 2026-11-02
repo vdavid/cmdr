@@ -136,7 +136,7 @@ pub async fn create_directory(
     volume_id: Option<String>,
     parent_path: String,
     name: String,
-    initiator: Option<Initiator>,
+    initiator: Initiator,
 ) -> Result<MutationReply, MutationError> {
     create_directory_replying(
         volume_id,
@@ -153,14 +153,14 @@ async fn create_directory_replying(
     volume_id: Option<String>,
     parent_path: String,
     name: String,
-    initiator: Option<Initiator>,
+    initiator: Initiator,
     on_settled: impl FnOnce(MutationSettled) + Send + 'static,
 ) -> Result<MutationReply, MutationError> {
     let engine = operations().map_err(refuse_instant_not_installed)?;
     let expanded_parent = expand_parent(volume_id.as_deref(), &parent_path);
     reply_within(
         MUTATION_REPLY_DEADLINE,
-        engine.create_directory_managed(volume_id, expanded_parent, name, initiator.unwrap_or(Initiator::User)),
+        engine.create_directory_managed(volume_id, expanded_parent, name, initiator),
         on_settled,
     )
     .await
@@ -174,7 +174,7 @@ pub async fn create_file(
     volume_id: Option<String>,
     parent_path: String,
     name: String,
-    initiator: Option<Initiator>,
+    initiator: Initiator,
 ) -> Result<MutationReply, MutationError> {
     create_file_replying(
         volume_id,
@@ -191,14 +191,14 @@ async fn create_file_replying(
     volume_id: Option<String>,
     parent_path: String,
     name: String,
-    initiator: Option<Initiator>,
+    initiator: Initiator,
     on_settled: impl FnOnce(MutationSettled) + Send + 'static,
 ) -> Result<MutationReply, MutationError> {
     let engine = operations().map_err(refuse_instant_not_installed)?;
     let expanded_parent = expand_parent(volume_id.as_deref(), &parent_path);
     reply_within(
         MUTATION_REPLY_DEADLINE,
-        engine.create_file_managed(volume_id, expanded_parent, name, initiator.unwrap_or(Initiator::User)),
+        engine.create_file_managed(volume_id, expanded_parent, name, initiator),
         on_settled,
     )
     .await
@@ -246,7 +246,7 @@ pub async fn move_files(
     sources: Vec<String>,
     destination: String,
     config: Option<WriteOperationConfig>,
-    initiator: Option<Initiator>,
+    initiator: Initiator,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // Before `install` there is no engine to start on: refuse, never write.
     let engine = operations().map_err(refuse_not_installed)?;
@@ -263,7 +263,7 @@ pub async fn move_files(
             config,
             vec![],
             None,
-            initiator.unwrap_or(Initiator::User),
+            initiator,
             // No source binding: the user picked these in the pane they are looking at.
             None,
             // No typed sides: this is the same-`root` path, where both ends are the
@@ -282,7 +282,7 @@ pub async fn delete_files(
     sources: Vec<String>,
     volume_id: Option<String>,
     config: Option<WriteOperationConfig>,
-    initiator: Option<Initiator>,
+    initiator: Initiator,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // Before `install` there is no engine to start on: refuse, never write.
     let engine = operations().map_err(refuse_not_installed)?;
@@ -299,14 +299,7 @@ pub async fn delete_files(
     // rejection here. The `.zip` file itself deletes on the normal path.
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
     engine
-        .delete_files_start(
-            events,
-            sources,
-            config,
-            volume_id,
-            initiator.unwrap_or(Initiator::User),
-            None,
-        )
+        .delete_files_start(events, sources, config, volume_id, initiator, None)
         .await
 }
 
@@ -318,7 +311,7 @@ pub async fn trash_files(
     sources: Vec<String>,
     item_sizes: Option<Vec<u64>>,
     config: Option<WriteOperationConfig>,
-    initiator: Option<Initiator>,
+    initiator: Initiator,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // Before `install` there is no engine to start on: refuse, never write.
     let engine = operations().map_err(refuse_not_installed)?;
@@ -332,11 +325,7 @@ pub async fn trash_files(
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
     engine
         .trash_files_start(
-            events,
-            sources,
-            item_sizes,
-            config,
-            initiator.unwrap_or(Initiator::User),
+            events, sources, item_sizes, config, initiator,
             // No source binding: the user picked these in the pane they are looking at.
             None,
         )
@@ -631,7 +620,7 @@ mod tests {
             Some(volume_id.to_string()),
             "/docs".to_string(),
             "photos".to_string(),
-            None,
+            Initiator::User,
             on_settled,
         )
         .await;
@@ -660,7 +649,7 @@ mod tests {
             Some(volume_id.to_string()),
             "/docs".to_string(),
             "taken".to_string(),
-            None,
+            Initiator::User,
             on_settled,
         )
         .await;
@@ -689,7 +678,7 @@ mod tests {
             Some(volume_id.to_string()),
             "/docs".to_string(),
             "quick".to_string(),
-            None,
+            Initiator::User,
             on_settled,
         )
         .await;

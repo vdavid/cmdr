@@ -32,7 +32,7 @@ import type {
   SortColumn,
 } from '#lib/commands/index.js'
 import { applySearchPrefill, type SearchPrefill, type SearchMode } from '#lib/search/search-state.svelte.js'
-import type { Initiator } from '#lib/tauri-commands/index.js'
+import type { ToolInitiator } from '#lib/ui/started-elsewhere-guard.js'
 import type { OpKind } from '#lib/ipc/bindings.js'
 import { raiseToolRollback, type ToolRollbackFacts } from '#lib/file-operations/tool-rollback.svelte.js'
 import { resolveLocation } from '#lib/file-explorer/navigation/resolve-location.js'
@@ -129,6 +129,24 @@ export function parseViewMode(value: unknown): ViewMode | undefined {
   return value === 'full' || value === 'brief' ? value : undefined
 }
 
+/**
+ * Who a tool event says asked, which rides the same bus args as `pane`/`onConflict` down to the
+ * write-start command and the operation log. A person's `user` is no answer here: every `mcp-*`
+ * event comes from a tool, so anything but `agent` reads as `aiClient`, and "Skip confirmation" only
+ * trusts `user`.
+ */
+export function parseInitiator(value: unknown): ToolInitiator {
+  return value === 'agent' ? 'agent' : 'aiClient'
+}
+
+/**
+ * Who asked, and whether what opens must arm before a keystroke can touch it. Only a plain `false`
+ * turns the guard off, so a payload that says nothing is guarded.
+ */
+export function parseStartedBy(raw: Record<string, unknown>): { initiator: ToolInitiator; guard: boolean } {
+  return { initiator: parseInitiator(raw.initiator), guard: raw.guard !== false }
+}
+
 /** Confirm-dialog type. */
 export function parseConfirmDialogType(value: unknown): ConfirmDialogType | undefined {
   return value === 'transfer-confirmation' ||
@@ -157,10 +175,11 @@ const OP_KINDS: readonly OpKind[] = [
 export function parseToolRollbackFacts(raw: Record<string, unknown>): ToolRollbackFacts | undefined {
   const operationId = raw.operationId
   if (typeof operationId !== 'string' || operationId === '') return undefined
-  if (raw.target === 'live') return { target: 'live', operationId, initiator: aiClientInitiator }
+  const startedBy = parseStartedBy(raw)
+  if (raw.target === 'live') return { target: 'live', operationId, ...startedBy }
   const kind = OP_KINDS.find((known) => known === raw.kind)
   if (raw.target !== 'logged' || kind === undefined || typeof raw.finishing !== 'boolean') return undefined
-  return { target: 'logged', operationId, kind, finishing: raw.finishing, initiator: aiClientInitiator }
+  return { target: 'logged', operationId, kind, finishing: raw.finishing, ...startedBy }
 }
 
 /** Selection count: a number, or the `'all'` sentinel. */
@@ -225,11 +244,6 @@ async function createDirectlyThenReply(
     await emit('mcp-response', { requestId, ok: false, error })
   }
 }
-
-// Every write an MCP tool triggers is tagged with this provenance so the
-// backend's operation log records `initiator = ai_client` (not `user`). It rides
-// the same bus args as `pane`/`onConflict` down to the write-start command.
-const aiClientInitiator: Initiator = 'aiClient'
 
 /** Register all MCP event listeners. Call from onMount after listenTauri is ready. */
 export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> {
@@ -630,7 +644,7 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const onConflict = typeof raw.onConflict === 'string' ? raw.onConflict : undefined
     // The opener answers this round trip once the dialog is up, or says why it isn't.
     const mcpRequestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
-    void dispatch(fileCopyCommand, { pane, onConflict, mcpRequestId, initiator: aiClientInitiator })
+    void dispatch(fileCopyCommand, { pane, onConflict, mcpRequestId, ...parseStartedBy(raw) })
   })
 
   await listenTauri('mcp-move', (event) => {
@@ -638,7 +652,7 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const pane = parsePane(raw.pane)
     const onConflict = typeof raw.onConflict === 'string' ? raw.onConflict : undefined
     const mcpRequestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
-    void dispatch(fileMoveCommand, { pane, onConflict, mcpRequestId, initiator: aiClientInitiator })
+    void dispatch(fileMoveCommand, { pane, onConflict, mcpRequestId, ...parseStartedBy(raw) })
   })
 
   await listenTauri('mcp-compress', (event) => {
@@ -647,7 +661,7 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     // No onConflict, unlike copy/move: compress has no inner-file conflicts, and an
     // existing target archive is the dialog's overwrite affordance, not a policy.
     const mcpRequestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
-    void dispatch(fileCompressCommand, { pane, mcpRequestId, initiator: aiClientInitiator })
+    void dispatch(fileCompressCommand, { pane, mcpRequestId, ...parseStartedBy(raw) })
   })
 
   await listenTauri('mcp-rename', (event) => {
@@ -667,7 +681,13 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
         return
       }
       try {
-        await dispatch(fileRenameCommand, { pane, initialName: newName, expectedName: name, mcpRequestId: requestId })
+        await dispatch(fileRenameCommand, {
+          pane,
+          initialName: newName,
+          expectedName: name,
+          mcpRequestId: requestId,
+          ...parseStartedBy(raw),
+        })
       } catch (e) {
         const error = e instanceof Error ? e.message : String(e)
         await emit('mcp-response', { requestId, ok: false, error })
@@ -684,9 +704,10 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const pane = parsePane(raw.pane)
     const requestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
     if (name !== undefined) {
-      void createDirectlyThenReply(() => getExplorer()?.createFolderDirect(name, pane, aiClientInitiator), requestId)
+      const { initiator } = parseStartedBy(raw)
+      void createDirectlyThenReply(() => getExplorer()?.createFolderDirect(name, pane, initiator), requestId)
     } else {
-      void dispatch(fileNewFolderCommand, { pane, mcpRequestId: requestId, initiator: aiClientInitiator })
+      void dispatch(fileNewFolderCommand, { pane, mcpRequestId: requestId, ...parseStartedBy(raw) })
     }
   })
 
@@ -696,9 +717,10 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const pane = parsePane(raw.pane)
     const requestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
     if (name !== undefined) {
-      void createDirectlyThenReply(() => getExplorer()?.createFileDirect(name, pane, aiClientInitiator), requestId)
+      const { initiator } = parseStartedBy(raw)
+      void createDirectlyThenReply(() => getExplorer()?.createFileDirect(name, pane, initiator), requestId)
     } else {
-      void dispatch(fileNewFileCommand, { pane, mcpRequestId: requestId, initiator: aiClientInitiator })
+      void dispatch(fileNewFileCommand, { pane, mcpRequestId: requestId, ...parseStartedBy(raw) })
     }
   })
 
@@ -709,7 +731,7 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     // the FE applies its per-volume default (trash where supported).
     const permanent = typeof raw.permanent === 'boolean' ? raw.permanent : undefined
     const mcpRequestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
-    void dispatch(fileDeleteCommand, { pane, permanent, mcpRequestId, initiator: aiClientInitiator })
+    void dispatch(fileDeleteCommand, { pane, permanent, mcpRequestId, ...parseStartedBy(raw) })
   })
 
   await listenTauri('mcp-rollback-dialog', (event) => {

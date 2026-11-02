@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte'
     import ModalDialog from '#lib/ui/ModalDialog.svelte'
+    import type { ToolInitiator } from '#lib/ui/started-elsewhere-guard.js'
     import Button from '#lib/ui/Button.svelte'
     import Switch from '#lib/ui/Switch.svelte'
     import {
@@ -66,6 +67,10 @@
          *  `dialog_confirm` presses the same button a person does. Returns the
          *  unregister. */
         registerConfirmer?: (confirm: DeleteConfirmer) => () => void
+        /** Who to name when this opened by itself under the arming guard (`ModalDialog`). A held Shift
+         *  never upgrades such a delete: it can go down before the guard exists, and the trash is the
+         *  undo a person gave nobody leave to skip. */
+        startedBy?: ToolInitiator
         onCancel: () => void
     }
 
@@ -83,6 +88,7 @@
         onConfirm,
         onConfirmInBackground,
         registerConfirmer,
+        startedBy,
         onCancel,
     }: Props = $props()
 
@@ -112,7 +118,7 @@
     /** Shift-hold only upgrades a dialog that opened as a trash: on a Shift+F8 dialog the user is
      *  still holding the key that opened it, so honouring the release would demote a delete they
      *  deliberately asked for. Snapshot at open; neither input changes for the dialog's lifetime. */
-    const shiftUpgradesToPermanent = !initialIsPermanent && supportsTrash
+    const shiftUpgradesToPermanent = !initialIsPermanent && supportsTrash && !startedBy
     // Shift only ever upgrades: a hold can't demote a permanent delete back to a trash.
     const isPermanent = $derived(switchIsPermanent || routedForOnlineOnly || (shiftUpgradesToPermanent && shiftHeld))
     /** A permanent delete never starts out of sight: it's the one operation nothing
@@ -332,6 +338,7 @@
     titleId="delete-dialog-title"
     onkeydown={handleKeydown}
     dialogId="delete-confirmation"
+    {startedBy}
     role={dialogRole}
     onclose={handleCancel}
     ariaDescribedby={hasWarningBanner ? 'delete-warning-text' : undefined}

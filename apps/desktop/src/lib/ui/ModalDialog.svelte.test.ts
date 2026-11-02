@@ -4,9 +4,10 @@
  * Enter-on-focused-button suppression, resizing, and the MCP close registry.
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 import { mount, unmount, tick, createRawSnippet } from 'svelte'
 import ModalDialog from './ModalDialog.svelte'
+import { ARM_QUIET_MS, PRESS_IGNORE_MS } from './started-elsewhere-guard'
 import modalDialogSource from './ModalDialog.svelte?raw'
 import { closeDialogById } from './dialog-close-registry'
 import { installLayoutMock } from '#lib/test-layout.js'
@@ -164,6 +165,132 @@ describe('ModalDialog mount focus', () => {
 
     expect(document.activeElement).toBe(target.querySelector('input'))
     target.remove()
+  })
+})
+
+describe('a ModalDialog started elsewhere', () => {
+  const fieldSnippet = createRawSnippet(() => ({ render: () => `<input class="field" />` }))
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    document.body.innerHTML = ''
+  })
+
+  async function open(props: Record<string, unknown> = {}) {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const component = mount(ModalDialog, {
+      target,
+      props: { titleId: 't', title: titleSnippet, children: fieldSnippet, footer: footerSnippet, ...props },
+    })
+    await tick()
+    await tick()
+    const overlay = target.querySelector('.modal-overlay') as HTMLElement
+    const field = target.querySelector('.field') as HTMLInputElement
+    return { target, component, overlay, field }
+  }
+
+  function typeOn(element: Element, key: string): KeyboardEvent {
+    const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
+    element.dispatchEvent(event)
+    element.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true, cancelable: true }))
+    return event
+  }
+
+  it('parks focus on the overlay, never the first field', async () => {
+    const { overlay } = await open({ startedBy: 'agent' })
+    expect(document.activeElement).toBe(overlay)
+  })
+
+  it('takes focus back from a child that autofocuses', async () => {
+    const { overlay } = await open({ startedBy: 'agent', children: autoFocusInputSnippet })
+    expect(document.activeElement).toBe(overlay)
+  })
+
+  it('exposes unarmed, then armed, on `data-armed`', async () => {
+    const { overlay } = await open({ startedBy: 'agent' })
+    expect(overlay.getAttribute('data-armed')).toBe('false')
+    vi.advanceTimersByTime(ARM_QUIET_MS - 1)
+    await tick()
+    expect(overlay.getAttribute('data-armed')).toBe('false')
+    vi.advanceTimersByTime(1)
+    await tick()
+    expect(overlay.getAttribute('data-armed')).toBe('true')
+  })
+
+  it('keeps Enter from the dialog until the keyboard goes quiet', async () => {
+    const onkeydown = vi.fn()
+    const { overlay } = await open({ startedBy: 'agent', onkeydown })
+    typeOn(overlay, 'Enter')
+    expect(onkeydown).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(ARM_QUIET_MS)
+    await tick()
+    typeOn(overlay, 'Enter')
+    expect(onkeydown).toHaveBeenCalledOnce()
+  })
+
+  it('lets text after a pause reach no field, until a Tab', async () => {
+    const { overlay, field } = await open({ startedBy: 'agent' })
+    vi.advanceTimersByTime(ARM_QUIET_MS)
+    await tick()
+
+    field.focus()
+    expect(document.activeElement).toBe(overlay)
+    expect(typeOn(overlay, 'a').defaultPrevented).toBe(true)
+
+    expect(typeOn(overlay, 'Tab').defaultPrevented).toBe(true) // the focus trap took it
+    expect(document.activeElement).not.toBe(overlay)
+  })
+
+  it('lets a click into a field stay there', async () => {
+    const { field } = await open({ startedBy: 'agent' })
+    vi.advanceTimersByTime(PRESS_IGNORE_MS)
+    field.dispatchEvent(new MouseEvent('pointerdown', { button: 0, bubbles: true, cancelable: true }))
+    field.focus()
+    expect(document.activeElement).toBe(field)
+  })
+
+  it('Escape still closes it while unarmed', async () => {
+    const onclose = vi.fn()
+    const { overlay } = await open({ startedBy: 'agent', onclose })
+    typeOn(overlay, 'Escape')
+    expect(onclose).toHaveBeenCalledOnce()
+  })
+
+  it('stops listening once it closes', async () => {
+    const { component } = await open({ startedBy: 'agent' })
+    void unmount(component)
+    await tick()
+    const stray = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+    document.body.dispatchEvent(stray)
+    expect(stray.defaultPrevented).toBe(false)
+  })
+
+  it('says who started it, and goes quiet about the keyboard once armed', async () => {
+    const { target } = await open({ startedBy: 'agent' })
+    const line = target.querySelector('[role="status"]') as HTMLElement
+    expect(line.textContent).toContain('Ask Cmdr started this.')
+    expect(line.textContent).toContain('waits')
+    vi.advanceTimersByTime(ARM_QUIET_MS)
+    await tick()
+    expect(line.textContent.trim()).toBe('Ask Cmdr started this.')
+  })
+
+  it('names an outside client as one', async () => {
+    const { target } = await open({ startedBy: 'aiClient' })
+    expect(target.querySelector('[role="status"]')?.textContent).toContain('An AI client started this.')
+  })
+
+  it('leaves a dialog a person opened alone', async () => {
+    const { overlay, field, target } = await open()
+    expect(overlay.hasAttribute('data-armed')).toBe(false)
+    expect(target.querySelector('[role="status"]')).toBeNull()
+    expect(document.activeElement).toBe(field)
   })
 })
 

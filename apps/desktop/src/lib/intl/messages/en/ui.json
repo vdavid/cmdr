@@ -157,6 +157,19 @@
     "description": "The cancelling button of a native confirmation alert that carries a checkbox (Forget server's \"Also forget the saved password\"). Use the word your language's macOS uses on a Cancel button."
   },
 
+  "ui.startedElsewhere.agent": "Ask Cmdr started this.",
+  "@ui.startedElsewhere.agent": {
+    "description": "A line inside a confirmation dialog, or under the inline rename field, that Ask Cmdr (the app's built-in AI assistant) opened by itself. It tells the person the action wasn't theirs and that nothing happens until they confirm it. Keep the name Ask Cmdr untranslated."
+  },
+  "ui.startedElsewhere.aiClient": "An AI client started this.",
+  "@ui.startedElsewhere.aiClient": {
+    "description": "A line inside a confirmation dialog, or under the inline rename field, that an outside AI tool connected over MCP opened by itself. It tells the person the action wasn't theirs. Same term as the operation log's \"AI client\" initiator label."
+  },
+  "ui.startedElsewhere.keysWait": "The keyboard waits until you stop typing.",
+  "@ui.startedElsewhere.keysWait": {
+    "description": "Follows the \"started this\" line while a dialog that opened by itself ignores the keyboard, so that someone typing elsewhere can't confirm it by accident. It goes away about a second after the last key. Escape and clicks still work during this time, so don't word it as the dialog being locked."
+  },
+
   "ui.dialogBoundary.closedToast": "That dialog ran into a problem, so we closed it. Please try again.",
   "@ui.dialogBoundary.closedToast": {
     "description": "Toast shown when any dialog in the app broke unexpectedly, while opening, in use, or while closing. The app has already closed the dialog and put keyboard focus back on the file list, so the person can simply open it again. \"That dialog\" is deliberately generic: the toast doesn't know the dialog's name."

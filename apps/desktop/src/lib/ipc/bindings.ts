@@ -705,22 +705,12 @@ export const commands = {
    *  `StillRunning` and reports its end on `mutation-settled`
    *  (`crates/cmdr-operations/src/mutation_reply.rs`).
    */
-  createDirectory: (
-    volumeId: string | null,
-    parentPath: string,
-    name: string,
-    initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
-  ) =>
+  createDirectory: (volumeId: string | null, parentPath: string, name: string, initiator: Initiator) =>
     typedError<MutationReply, MutationError>(
       __TAURI_INVOKE('create_directory', { volumeId, parentPath, name, initiator }),
     ),
   // Creates an empty file. Same shape as [`create_directory`].
-  createFile: (
-    volumeId: string | null,
-    parentPath: string,
-    name: string,
-    initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
-  ) =>
+  createFile: (volumeId: string | null, parentPath: string, name: string, initiator: Initiator) =>
     typedError<MutationReply, MutationError>(__TAURI_INVOKE('create_file', { volumeId, parentPath, name, initiator })),
   /**
    *  Tries `password` on the container at `path` on `parent_volume_id`, keeping
@@ -802,7 +792,7 @@ export const commands = {
        */
       sourceKinds?: ItemKinds | null
     } | null,
-    initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
+    initiator: Initiator,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
       __TAURI_INVOKE('move_files', { sources, destination, config, initiator }),
@@ -842,7 +832,7 @@ export const commands = {
        */
       sourceKinds?: ItemKinds | null
     } | null,
-    initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
+    initiator: Initiator,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
       __TAURI_INVOKE('delete_files', { sources, volumeId, config, initiator }),
@@ -879,7 +869,7 @@ export const commands = {
        */
       sourceKinds?: ItemKinds | null
     } | null,
-    initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
+    initiator: Initiator,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
       __TAURI_INVOKE('trash_files', { sources, itemSizes, config, initiator }),
@@ -1138,7 +1128,7 @@ export const commands = {
        */
       sourceKinds?: ItemKinds | null
     } | null,
-    initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
+    initiator: Initiator,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
       __TAURI_INVOKE('copy_between_volumes', {
@@ -1197,7 +1187,7 @@ export const commands = {
        */
       sourceKinds?: ItemKinds | null
     } | null,
-    initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
+    initiator: Initiator,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
       __TAURI_INVOKE('move_between_volumes', {
@@ -1257,7 +1247,7 @@ export const commands = {
        */
       sourceKinds?: ItemKinds | null
     } | null,
-    initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
+    initiator: Initiator,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
       __TAURI_INVOKE('rename_by_move', { volumeId, sourcePath, destPath, newName, config, initiator }),
@@ -1309,7 +1299,7 @@ export const commands = {
        */
       sourceKinds?: ItemKinds | null
     } | null,
-    initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
+    initiator: Initiator,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
       __TAURI_INVOKE('compress_files', { sourceVolumeId, sourcePaths, destVolumeId, destZipPath, config, initiator }),
@@ -1485,13 +1475,7 @@ export const commands = {
    *  answers `StillRunning` and reports its end on `mutation-settled`
    *  (`crates/cmdr-operations/src/mutation_reply.rs`).
    */
-  renameFile: (
-    from: string,
-    to: string,
-    force: boolean,
-    volumeId: string | null,
-    initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
-  ) =>
+  renameFile: (from: string, to: string, force: boolean, volumeId: string | null, initiator: Initiator) =>
     typedError<MutationReply, MutationError>(__TAURI_INVOKE('rename_file', { from, to, force, volumeId, initiator })),
   /**
    *  Opens a session over the pane's selection: `selected_indices` are backend row
@@ -1647,7 +1631,8 @@ export const commands = {
   saveMultiRenameLastSettings: (spec: MultiRenameSpec, presetId: string | null) =>
     __TAURI_INVOKE<void>('save_multi_rename_last_settings', { spec, presetId }),
   // Moves a file or directory to the macOS Trash via NSFileManager.
-  moveToTrash: (path: string) => typedError<null, MutationError>(__TAURI_INVOKE('move_to_trash', { path })),
+  moveToTrash: (path: string, initiator: Initiator) =>
+    typedError<null, MutationError>(__TAURI_INVOKE('move_to_trash', { path, initiator })),
   /**
    *  Where items trashed from `path`'s volume end up, for the "Go to trash" navigation.
    *

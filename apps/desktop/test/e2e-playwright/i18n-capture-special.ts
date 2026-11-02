@@ -155,7 +155,8 @@ async function startQueueCopy(main: TauriPage, fixtureRoot: string, sourceName: 
     sourcePaths: [${src}],
     destVolumeId: 'root',
     destPath: ${destDir},
-    config: { conflictResolution: 'rename', progressIntervalMs: 100, maxConflictsToShow: 10, previewId: null, preKnownConflicts: [] }
+    config: { conflictResolution: 'rename', progressIntervalMs: 100, maxConflictsToShow: 10, previewId: null, preKnownConflicts: [] },
+    initiator: 'user'
   })`)
 }
 

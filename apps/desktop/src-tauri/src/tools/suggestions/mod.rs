@@ -40,8 +40,10 @@ mod tests;
 
 pub use group::{execute_get_suggestion_group, get_suggestion_group_schema};
 pub use list::{execute_list_suggestions, list_suggestions_schema};
+#[cfg(feature = "playwright-e2e")]
 pub(crate) use propose::propose_in_thread;
 pub use propose::{execute_propose_suggestions, propose_suggestions_schema};
+#[cfg(feature = "playwright-e2e")]
 pub(crate) use server::propose_server_in_thread;
 pub use server::{execute_propose_server, propose_server_schema};
 

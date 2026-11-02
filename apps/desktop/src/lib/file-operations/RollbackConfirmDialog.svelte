@@ -17,6 +17,7 @@
      */
     import { onMount } from 'svelte'
     import ModalDialog from '#lib/ui/ModalDialog.svelte'
+    import type { ToolInitiator } from '#lib/ui/started-elsewhere-guard.js'
     import Button from '#lib/ui/Button.svelte'
     import type { MessageKey } from '#lib/intl/keys.gen.js'
     import { tString } from '#lib/intl/messages.svelte.js'
@@ -37,9 +38,11 @@
         onConfirm: () => RollbackConfirmResult
         /** Leave the operation exactly as it is. Also what Escape and × do. */
         onCancel: () => void
+        /** Who to name when a tool asked this, under the arming guard (`ModalDialog`). */
+        startedBy?: ToolInitiator
     }
 
-    const { variant, finishing = false, onConfirm, onCancel }: Props = $props()
+    const { variant, finishing = false, onConfirm, onCancel, startedBy }: Props = $props()
 
     onMount(() => registerRollbackConfirmer(() => onConfirm()))
 
@@ -92,6 +95,7 @@
     dialogId="rollback-confirmation"
     titleId="rollback-confirmation-title"
     ariaDescribedby="rollback-confirmation-body"
+    {startedBy}
     onclose={onCancel}
     containerStyle="max-width: 440px"
 >

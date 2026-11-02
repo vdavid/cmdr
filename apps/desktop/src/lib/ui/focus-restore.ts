@@ -70,6 +70,20 @@ export function isFocusAdrift(): boolean {
   return active === null || active === document.body || active === home.root()
 }
 
+/**
+ * Whether focus may follow the panes when something other than the person moved them: a tool switched
+ * or swapped them, or a cursor landed. True only while focus is the explorer's to move, on its lists or
+ * adrift. ❌ Never away from the rail, a dialog, or a text field: someone mid-sentence would type into a
+ * pane, where Enter opens a file and F8 trashes one, both as themselves.
+ */
+export function focusMayFollowThePanes(): boolean {
+  if (!home) return false
+  if (isFocusAdrift()) return true
+  const active = document.activeElement
+  if (!(active instanceof HTMLElement) || !home.root()?.contains(active)) return false
+  return !active.matches('input, textarea, select, [contenteditable]') && !home.keepsFocus?.(active)
+}
+
 /** Remembers where `active` (default: the focused element) sits, for `restoreFocus`. */
 export function captureFocusOrigin(active: Element | null = document.activeElement): FocusOrigin | null {
   if (!(active instanceof HTMLElement) || active === document.body) return null

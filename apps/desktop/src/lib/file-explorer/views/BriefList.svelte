@@ -1175,6 +1175,7 @@
                         validationMessage={renameState.validation.message}
                         focusTrigger={renameState.focusTrigger}
                         sessionId={renameState.sessionId}
+                        startedBy={renameState.target?.startedBy}
                         onInput={(v: string) => onRenameInput?.(v)}
                         onSubmit={() => onRenameSubmit?.()}
                         onCancel={(sessionId: RenameSessionId) => onRenameCancel?.(sessionId)}

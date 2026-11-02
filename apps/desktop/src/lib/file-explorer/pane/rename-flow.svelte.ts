@@ -23,6 +23,9 @@ import { createSiblingNames, type ListingScope } from '../rename/sibling-names'
 import { createChainMoveDialog } from './rename-move-dialog'
 import { createRenameNeighbour } from './rename-neighbour'
 import { createRenameToolCommit } from './rename-tool-commit'
+import type { Initiator } from '#lib/tauri-commands/index.js'
+import { captureFocusOrigin, restoreFocus as restoreFocusTo, type FocusOrigin } from '#lib/ui/focus-restore.js'
+import { startedByWhenGuarded, type ToolInitiator } from '#lib/ui/started-elsewhere-guard.js'
 
 export interface RenameFlowDeps {
   rename: ReturnType<typeof createRenameState>
@@ -62,6 +65,22 @@ export interface RenameAsMoveRequest {
   parentPath: string
   newName: string
   isDirectory: boolean
+  initiator: Initiator
+  /** The editor that handed this over opened by itself, so the Move dialog must arm too. */
+  guard: boolean
+}
+
+/** Who a rename session answers to. Absent from `startRename`, it's a person's F2. */
+interface RenameOrigin {
+  initiator: Initiator
+  startedBy?: ToolInitiator
+}
+
+const PERSON_RENAMING: RenameOrigin = { initiator: 'user' }
+
+function renameOriginOf(options: StartRenameOptions | undefined): RenameOrigin {
+  if (options?.initiator === undefined) return PERSON_RENAMING
+  return { initiator: options.initiator, startedBy: startedByWhenGuarded(options.initiator, options.guard) }
 }
 
 export function createRenameFlow(deps: RenameFlowDeps) {
@@ -144,10 +163,17 @@ export function createRenameFlow(deps: RenameFlowDeps) {
   // the flow must not yank focus back to this pane when it finishes.
   let commitFromClickAway = false
 
-  /** Hands focus back to the pane, unless a click already claimed it. */
+  // Where focus was when a tool opened the editor. Someone mid-sentence in the rail goes back to their
+  // sentence: the pane would take their next keys, where Enter opens a file and F8 trashes one.
+  let toolOpenedFrom: FocusOrigin | null = null
+
+  /** Hands focus back to where it came from, unless a click already claimed it. */
   function restoreFocus() {
     if (commitFromClickAway) return
-    onRequestFocus()
+    const origin = toolOpenedFrom
+    toolOpenedFrom = null
+    if (origin) restoreFocusTo(origin)
+    else onRequestFocus()
   }
 
   // When true, treat the extension-change policy as 'yes' for the current rename
@@ -183,7 +209,11 @@ export function createRenameFlow(deps: RenameFlowDeps) {
    * the Move dialog's in-place rename), so this is where a row the `.git` portal
    * serves is refused. Returns whether the editor opened.
    */
-  function activateRename(entry: Pick<FileEntry, 'path' | 'name' | 'isDirectory' | 'isPackage'>, initialName?: string) {
+  function activateRename(
+    entry: Pick<FileEntry, 'path' | 'name' | 'isDirectory' | 'isPackage'>,
+    initialName?: string,
+    origin: RenameOrigin = PERSON_RENAMING,
+  ) {
     if (rowIsServedByGitPortal(entry.path)) {
       if (rename.active) closeEditor()
       addToast(tString('fileExplorer.readOnly.gitPortalMessage'), { level: 'info' })
@@ -196,6 +226,8 @@ export function createRenameFlow(deps: RenameFlowDeps) {
       parentPath: deps.getCurrentPath(),
       isDirectory: entry.isDirectory,
       nameKind: nameKindOf(entry),
+      initiator: origin.initiator,
+      startedBy: origin.startedBy,
     }
 
     rename.activate(target)
@@ -453,7 +485,14 @@ export function createRenameFlow(deps: RenameFlowDeps) {
   }
 
   function renameAsMoveRequest(target: RenameTarget, newName: string): RenameAsMoveRequest {
-    return { sourcePath: target.path, parentPath: target.parentPath, newName, isDirectory: target.isDirectory }
+    return {
+      sourcePath: target.path,
+      parentPath: target.parentPath,
+      newName,
+      isDirectory: target.isDirectory,
+      initiator: target.initiator,
+      guard: target.startedBy !== undefined,
+    }
   }
 
   /** Closes the editor and its dialogs, and hands focus back to the pane. */
@@ -546,6 +585,8 @@ export function createRenameFlow(deps: RenameFlowDeps) {
       suppressExtensionWarningOnce = options?.suppressExtensionWarning ?? false
       const expectedName = options?.expectedName
       const initialName = options?.initialName
+      const origin = renameOriginOf(options)
+      toolOpenedFrom = origin.startedBy ? captureFocusOrigin() : null
 
       const commitTarget = options?.commitTarget
       if (commitTarget && initialName !== undefined) {
@@ -570,7 +611,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
         const entry = deps.getEntryUnderCursor()
         if (!entry || entry.name === '..') return false
         if (expectedName !== undefined && entry.name !== expectedName) return false
-        activateRename(entry, initialName)
+        activateRename(entry, initialName, origin)
         return true
       }
 
@@ -590,6 +631,9 @@ export function createRenameFlow(deps: RenameFlowDeps) {
         }
       }, RENAME_ACTIVATION_POLL_MS)
     },
+
+    /** The editor came down from outside the flow (its file went): focus goes where the flow's would. */
+    restoreFocusAfterEditor: restoreFocus,
 
     /** Drops what a chain reported about the listing the pane is leaving. */
     forgetChainReports(): void {
@@ -697,7 +741,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
       switch (resolution) {
         case 'overwrite-trash': {
           const conflictPath = target.parentPath + '/' + trimmedName
-          void moveToTrash(conflictPath)
+          void moveToTrash(conflictPath, target.initiator)
             .then(() => performRename(target, trimmedName, true, currentVolumeId))
             .then((result) => {
               handleRenameResult(result, target, trimmedName, sessionId)

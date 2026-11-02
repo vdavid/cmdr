@@ -13,6 +13,7 @@
     import StillCreatingNotice from '#lib/file-operations/StillCreatingNotice.svelte'
     import type { CreateConfirmer } from '#lib/file-explorer/pane/dialog-props.js'
     import ModalDialog from '#lib/ui/ModalDialog.svelte'
+    import type { ToolInitiator } from '#lib/ui/started-elsewhere-guard.js'
     import Button from '#lib/ui/Button.svelte'
     import { tooltip } from '#lib/tooltip/tooltip.js'
     import { tString } from '#lib/intl/messages.svelte.js'
@@ -32,6 +33,8 @@
         volumeId?: string
         /** Who triggered this create (`aiClient` for the MCP `mkdir` tool). */
         initiator: Initiator
+        /** Who to name when this opened by itself under the arming guard (`ModalDialog`). */
+        startedBy?: ToolInitiator
         /** Hands this dialog's OK to the dialog state, for the MCP `dialog_confirm`. */
         registerConfirmer?: (confirm: CreateConfirmer) => () => void
         onCreated: (folderName: string) => void
@@ -45,6 +48,7 @@
         initialName,
         volumeId,
         initiator,
+        startedBy,
         registerConfirmer,
         onCreated,
         onCancel,
@@ -165,6 +169,7 @@
     titleId="new-folder-title"
     onkeydown={handleKeydown}
     dialogId="mkdir-confirmation"
+    {startedBy}
     onclose={onCancel}
     containerStyle="width: 400px"
     resizable="horizontal"

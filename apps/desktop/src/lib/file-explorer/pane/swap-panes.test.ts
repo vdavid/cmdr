@@ -26,7 +26,7 @@ function setup(opts: {
   leftMgr?: TabManager
   rightMgr?: TabManager
 }) {
-  const focusActivePane = vi.fn()
+  const followFocusedPane = vi.fn()
   const leftMgr = opts.leftMgr ?? makeTabMgr('L', { path: '/l', volumeId: 'vl' })
   const rightMgr = opts.rightMgr ?? makeTabMgr('R', { path: '/r', volumeId: 'vr' })
   const deps: SwapPanesDeps = {
@@ -34,9 +34,9 @@ function setup(opts: {
     getLeftTabMgr: () => leftMgr,
     getRightTabMgr: () => rightMgr,
     isAnyTransferDialogOpen: () => opts.isAnyTransferDialogOpen ?? false,
-    focusActivePane,
+    followFocusedPane,
   }
-  return { deps, focusActivePane, leftMgr, rightMgr }
+  return { deps, followFocusedPane, leftMgr, rightMgr }
 }
 
 describe('createSwapPanes', () => {
@@ -59,7 +59,7 @@ describe('createSwapPanes', () => {
       sortBy: 'size',
       sortOrder: 'descending',
     })
-    const { deps, focusActivePane } = setup({ leftRef, rightRef, leftMgr, rightMgr })
+    const { deps, followFocusedPane } = setup({ leftRef, rightRef, leftMgr, rightMgr })
 
     createSwapPanes(deps).swapPanes()
 
@@ -74,7 +74,7 @@ describe('createSwapPanes', () => {
     // Each pane adopts the OTHER pane's snapshot.
     expect(leftRef.adoptListing).toHaveBeenCalledWith({ id: 'right-listing' })
     expect(rightRef.adoptListing).toHaveBeenCalledWith({ id: 'left-listing' })
-    expect(focusActivePane).toHaveBeenCalled()
+    expect(followFocusedPane).toHaveBeenCalled()
   })
 
   it('moves a requested date sort with its tab, and the column its rows follow with the listing', () => {
@@ -93,12 +93,12 @@ describe('createSwapPanes', () => {
 
   it('is a no-op when a pane ref is missing', () => {
     const rightRef = makePaneRef()
-    const { deps, focusActivePane } = setup({ leftRef: undefined, rightRef })
+    const { deps, followFocusedPane } = setup({ leftRef: undefined, rightRef })
 
     createSwapPanes(deps).swapPanes()
 
     expect(rightRef.adoptListing).not.toHaveBeenCalled()
-    expect(focusActivePane).not.toHaveBeenCalled()
+    expect(followFocusedPane).not.toHaveBeenCalled()
   })
 
   it('is a no-op while a pane is loading', () => {

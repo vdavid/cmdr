@@ -292,6 +292,17 @@ Where a lead's review refined one of David's decisions, the refined form is writ
   `DevOnly` callers read it.
 - M18: `docs/guides/mcp-development.md` and `mcp/DETAILS.md` still describe the old rollback, if they mention it.
 
+## Carried from M10
+
+- M11: `ToolAskDialog` passes `startedBy` to `ModalDialog` for the guard. `ToolCtx` is on `execute_tool`, so the plan
+  and `ask` can read `ctx.caller` and `ctx.cancel`.
+- M12: `Caller::consumer` is the temporary mapping to remove. `tool_gate.rs` keeps `propose_rename_plan` around
+  `execute_tool` for its proposal snapshot. `dev_only_refusal` folds into `admit`.
+- M15: the arming probe is `data-armed` on `.modal-overlay` and `.rename-input`, `true` or `false`, absent when
+  unguarded. `ToolRollbackFacts`, the `file.*` args, and `StartRenameOptions` carry `guard`.
+- M18: `switch_pane`'s rule costs a person's View > Switch pane its focus move while the rail has focus; it's in
+  `pane/DETAILS.md`. Re-check that once the real rail drives it.
+
 ## Running unattended
 
 David may be away, and nobody can click a macOS dialog. Executors run nothing that can raise a macOS prompt (Keychain,
@@ -924,6 +935,10 @@ on typing, to see no text land in a field. List the exact steps in the report. M
 
 **DONE**: tests green, QA steps listed, the rollback cell records `aiClient`, and the live cancel path's decision is
 written here.
+
+**Decision, the live cancel path**: `cancel_write_operation` takes no initiator. It flips the running operation's
+intent, so the reversal runs inside that operation, on its own row, which already names who started it. No inverse row
+exists to record anything on.
 
 ### M11: The `Ask` primitive and `set_setting`
 

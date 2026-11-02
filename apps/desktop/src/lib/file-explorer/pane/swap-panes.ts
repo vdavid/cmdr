@@ -19,7 +19,7 @@ export interface SwapPanesDeps {
   /** True while any transfer dialog is open — a swap mid-transfer is unsafe. */
   isAnyTransferDialogOpen: () => boolean
   /** Re-anchor DOM focus on the explorer container after the swap. */
-  focusActivePane: () => void
+  followFocusedPane: () => void
 }
 
 export interface SwapPanes {
@@ -70,7 +70,7 @@ export function createSwapPanes(deps: SwapPanesDeps): SwapPanes {
     // 4. Persistence (both panes' app-status fields + tab sets) fires from the
     // single subscriber: the swap mutates each pane's active-tab nav-state, so
     // both per-pane effects re-run.
-    deps.focusActivePane()
+    deps.followFocusedPane()
   }
 
   return { swapPanes }

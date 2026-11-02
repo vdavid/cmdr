@@ -12,7 +12,8 @@ transport for outside clients; `../agent/` is the in-process runtime, with the g
 - `read/`: the agent's reads (`state`, `pane_listing`, `listing`, `importance`, `volumes`, `inspect/`).
 - `propose/`, `suggestions/`: staged plans. `propose/CLAUDE.md`, `suggestions/CLAUDE.md`.
 - `memory.rs`: the only tools that write; every rule lives in `../agent/memory/`. `quiet.rs`: `nothing_to_suggest`, a
-  pure signal. `connect.rs`: `connect_volume`. `sensitive.rs`: the content gate. `policy.rs`: direct mode. `mod.rs`:
+  pure signal. `connect.rs`: `connect_volume`. `sensitive.rs`: the content gate. `policy.rs`: `Caller`, `ToolCtx`, and
+  direct mode. `mod.rs`:
   `agent_tool_declarations()`.
 
 ## Must-knows
@@ -22,6 +23,9 @@ transport for outside clients; `../agent/` is the in-process runtime, with the g
 - **Every class but `Read` and `AppState` is hand-allowlisted** (`EXPECTED_*_TOOL_NAMES`): nothing proves a handler doesn't
   mutate, stays jailed, or dials only a saved place. ❌ Never give AI clients `Memory`.
 - **`dialog_confirm` is the only way past a person** (`DevOnly`), and `dialog` has no `confirm`.
+- **A handler needing the caller takes `ctx_params`**: `ToolCtx { caller, cancel, conversation_id }`. A dialog opener's
+  payload goes through `ctx.stamp`, so what a person confirms records who started it and a guarded caller's dialog must
+  arm (`DETAILS.md` § Who's calling).
 - **`DevOnly` tools refuse an outside client off direct mode** (`policy.rs`), and ❌ the JSON setting alone never turns it
   on. `DETAILS.md` § Direct mode.
 - **A call is checked against its declared schema before a handler sees it** (`params.rs`). An agent tool closes itself

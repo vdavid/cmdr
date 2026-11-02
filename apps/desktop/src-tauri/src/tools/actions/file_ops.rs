@@ -9,6 +9,7 @@ use super::{
     refuse_while_dialog_blocks, required_pane_param, target_pane_state, validate_conflict_policy, wait_for_ack,
 };
 use crate::pluralize::pluralize;
+use crate::tools::policy::ToolCtx;
 
 const TRANSFER_DIALOG: &str = "transfer-confirmation";
 const DELETE_DIALOG: &str = "delete-confirmation";
@@ -86,7 +87,13 @@ fn preset_on_conflict(params: &Value) -> Result<Option<&str>, ToolError> {
 }
 
 /// The shared body of `copy` and `move`: open the transfer dialog on the named pane's selection.
-async fn open_transfer_dialog<R: Runtime>(app: &AppHandle<R>, params: &Value, verb: &str, event: &str) -> ToolResult {
+async fn open_transfer_dialog<R: Runtime>(
+    app: &AppHandle<R>,
+    ctx: &ToolCtx,
+    params: &Value,
+    verb: &str,
+    event: &str,
+) -> ToolResult {
     refuse_while_dialog_blocks(app, verb)?;
     let on_conflict = preset_on_conflict(params)?;
     let (pane, state) = fresh_pane_state(app, params).await?;
@@ -95,7 +102,7 @@ async fn open_transfer_dialog<R: Runtime>(app: &AppHandle<R>, params: &Value, ve
     if let Some(policy) = on_conflict {
         payload["onConflict"] = policy.into();
     }
-    open_dialog(app, verb, event, payload, TRANSFER_DIALOG).await
+    open_dialog(app, verb, event, ctx.stamp(payload), TRANSFER_DIALOG).await
 }
 
 /// Pure decision core of `check_operation_has_target`. Returns the rejection message
@@ -139,19 +146,19 @@ pub(super) fn empty_operation_error(
 ///
 /// Ack contract: a round trip the frontend answers once the dialog is up, or with why it isn't, then
 /// the `transfer-confirmation` soft dialog must appear.
-pub async fn execute_copy<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
-    open_transfer_dialog(app, params, "copy", "mcp-copy").await
+pub async fn execute_copy<R: Runtime>(app: &AppHandle<R>, ctx: &ToolCtx, params: &Value) -> ToolResult {
+    open_transfer_dialog(app, ctx, params, "copy", "mcp-copy").await
 }
 
 /// Execute move command. Same shape as `copy`.
-pub async fn execute_move<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
-    open_transfer_dialog(app, params, "move", "mcp-move").await
+pub async fn execute_move<R: Runtime>(app: &AppHandle<R>, ctx: &ToolCtx, params: &Value) -> ToolResult {
+    open_transfer_dialog(app, ctx, params, "move", "mcp-move").await
 }
 
 /// Execute compress command: opens the SAME transfer dialog as copy/move (in compress mode), packing
 /// the named pane's cursor item or selection into a new zip at the other pane's path. Same ack contract
 /// as `copy`.
-pub async fn execute_compress<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+pub async fn execute_compress<R: Runtime>(app: &AppHandle<R>, ctx: &ToolCtx, params: &Value) -> ToolResult {
     refuse_while_dialog_blocks(app, "compress")?;
     check_operation_has_target(app, params, "compress").await?;
     let pane = required_pane_param(params)?;
@@ -163,7 +170,7 @@ pub async fn execute_compress<R: Runtime>(app: &AppHandle<R>, params: &Value) ->
         app,
         "compress",
         "mcp-compress",
-        json!({ "pane": pane }),
+        ctx.stamp(json!({ "pane": pane })),
         TRANSFER_DIALOG,
     )
     .await
@@ -178,7 +185,7 @@ pub async fn execute_compress<R: Runtime>(app: &AppHandle<R>, params: &Value) ->
 /// source of the volume clamp (a typed bool crosses IPC).
 ///
 /// Ack contract: as `copy`, on the `delete-confirmation` soft dialog.
-pub async fn execute_delete<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+pub async fn execute_delete<R: Runtime>(app: &AppHandle<R>, ctx: &ToolCtx, params: &Value) -> ToolResult {
     refuse_while_dialog_blocks(app, "delete")?;
     let permanent = delete_permanent_from_mode(params)?;
     check_operation_has_target(app, params, "delete").await?;
@@ -186,7 +193,7 @@ pub async fn execute_delete<R: Runtime>(app: &AppHandle<R>, params: &Value) -> T
     if let Some(p) = permanent {
         payload["permanent"] = json!(p);
     }
-    open_dialog(app, "delete", "mcp-delete", payload, DELETE_DIALOG).await
+    open_dialog(app, "delete", "mcp-delete", ctx.stamp(payload), DELETE_DIALOG).await
 }
 
 /// Map the `delete` tool's `mode` param to the FE's `permanent` flag: `trash` →
@@ -208,7 +215,7 @@ fn delete_permanent_from_mode(params: &Value) -> Result<Option<bool>, ToolError>
 /// named item first flushes the pane state, so the resolution below reads it fresh, and the frontend
 /// pins activation to the name resolved here. What a person's F2 refuses gets the same answer, typed:
 /// a row the `.git` portal serves here, a read-only pane from the frontend.
-pub async fn execute_rename<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+pub async fn execute_rename<R: Runtime>(app: &AppHandle<R>, ctx: &ToolCtx, params: &Value) -> ToolResult {
     refuse_while_dialog_blocks(app, "rename").map_err(already_editing)?;
     let new_name = params
         .get("newName")
@@ -247,7 +254,7 @@ pub async fn execute_rename<R: Runtime>(app: &AppHandle<R>, params: &Value) -> T
     refuse_portal_rename(&from_path, &to_path)?;
 
     let payload = json!({ "pane": pane, "name": current_name, "newName": new_name });
-    open_dialog(app, "rename", "mcp-rename", payload, RENAME_EDITOR).await
+    open_dialog(app, "rename", "mcp-rename", ctx.stamp(payload), RENAME_EDITOR).await
 }
 
 /// A second rename while the editor is up gets its own typed refusal beside the usual
@@ -314,14 +321,30 @@ fn resolve_rename_target(
 /// - `name` → creates the folder directly on the named pane (`create_directory`),
 ///   erroring honestly on a name conflict.
 /// - No `name` → opens the naming dialog for a person, acked as `copy` is.
-pub async fn execute_mkdir<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
-    execute_create(app, params, "mcp-mkdir", "mkdir-confirmation", CreateKind::Directory).await
+pub async fn execute_mkdir<R: Runtime>(app: &AppHandle<R>, ctx: &ToolCtx, params: &Value) -> ToolResult {
+    execute_create(
+        app,
+        ctx,
+        params,
+        "mcp-mkdir",
+        "mkdir-confirmation",
+        CreateKind::Directory,
+    )
+    .await
 }
 
 /// Execute mkfile command. Same `name` shape as [`execute_mkdir`], on the
 /// `new-file-confirmation` soft dialog.
-pub async fn execute_mkfile<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
-    execute_create(app, params, "mcp-mkfile", "new-file-confirmation", CreateKind::File).await
+pub async fn execute_mkfile<R: Runtime>(app: &AppHandle<R>, ctx: &ToolCtx, params: &Value) -> ToolResult {
+    execute_create(
+        app,
+        ctx,
+        params,
+        "mcp-mkfile",
+        "new-file-confirmation",
+        CreateKind::File,
+    )
+    .await
 }
 
 #[derive(Clone, Copy)]
@@ -338,6 +361,7 @@ enum CreateKind {
 /// an honest conflict error.
 async fn execute_create<R: Runtime>(
     app: &AppHandle<R>,
+    ctx: &ToolCtx,
     params: &Value,
     event: &str,
     naming_dialog: &'static str,
@@ -351,7 +375,7 @@ async fn execute_create<R: Runtime>(
     let pane = required_pane_param(params)?;
 
     let Some(name) = params.get("name").and_then(|v| v.as_str()) else {
-        return open_dialog(app, verb, event, json!({ "pane": pane }), naming_dialog).await;
+        return open_dialog(app, verb, event, ctx.stamp(json!({ "pane": pane })), naming_dialog).await;
     };
     if name.trim().is_empty() {
         return Err(ToolError::invalid_params("'name' must not be empty"));
@@ -361,7 +385,7 @@ async fn execute_create<R: Runtime>(
             "'name' is a name, not a path — it must not contain '/'",
         ));
     }
-    let payload = json!({ "name": name, "pane": pane });
+    let payload = ctx.stamp(json!({ "name": name, "pane": pane }));
     mcp_round_trip(app, event, payload, format!("OK: Created {noun} {name}.")).await
 }
 

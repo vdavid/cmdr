@@ -80,6 +80,8 @@ import SourcesGoneDialog from './SourcesGoneDialog.svelte'
 import SourcesGonePrompt from './SourcesGonePrompt.svelte'
 import LockedSourcesDialog from './LockedSourcesDialog.svelte'
 import LockedSourcesPrompt from './LockedSourcesPrompt.svelte'
+import ToolRollbackDialog from './ToolRollbackDialog.svelte'
+import { dismissToolRollback, raiseToolRollback } from './tool-rollback.svelte'
 import TransferProgressReadout from './TransferProgressReadout.svelte'
 import NewEntryNameField from './NewEntryNameField.svelte'
 import S3CostLine from './S3CostLine.svelte'
@@ -181,6 +183,37 @@ describe('OperationConflictDialog a11y', () => {
  * before the operation started, so its title, body, and two answers have to
  * reach a screen reader as one described dialog.
  */
+describe('ToolRollbackDialog a11y', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    dismissToolRollback()
+    flushSync()
+  })
+
+  it('has no a11y violations under the arming guard, and announces it', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ToolRollbackDialog, { target })
+    raiseToolRollback({
+      target: 'logged',
+      operationId: 'op-1',
+      initiator: 'agent',
+      guard: true,
+      kind: 'copy',
+      finishing: false,
+    })
+    flushSync()
+    await tick()
+
+    expect(target.querySelector('[data-armed="false"]')).not.toBeNull()
+    expect(target.querySelector('[role="status"]')?.textContent).toContain('Ask Cmdr started this.')
+    await expectNoA11yViolations(target)
+  })
+})
+
 describe('RollbackConfirmDialog a11y', () => {
   async function mountDialog(): Promise<HTMLElement> {
     const target = document.createElement('div')

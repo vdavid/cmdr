@@ -124,13 +124,20 @@ export interface CommandArgsOverrides {
  * (`file-handlers.ts`), and "Skip confirmation" trusts nobody else.
  */
 export interface CommandArgsOptionalOverrides {
-  'file.copy': { pane?: PaneId; onConflict?: string; mcpRequestId?: string; initiator: Initiator }
-  'file.move': { pane?: PaneId; onConflict?: string; mcpRequestId?: string; initiator: Initiator }
-  'file.compress': { pane?: PaneId; mcpRequestId?: string; initiator: Initiator }
-  'file.delete': { pane?: PaneId; permanent?: boolean; mcpRequestId?: string; initiator: Initiator }
-  'file.rename': { pane?: PaneId; initialName?: string; expectedName?: string; mcpRequestId?: string }
-  'file.newFolder': { pane?: PaneId; mcpRequestId?: string; initiator: Initiator }
-  'file.newFile': { pane?: PaneId; mcpRequestId?: string; initiator: Initiator }
+  'file.copy': { pane?: PaneId; onConflict?: string; mcpRequestId?: string; initiator: Initiator; guard?: boolean }
+  'file.move': { pane?: PaneId; onConflict?: string; mcpRequestId?: string; initiator: Initiator; guard?: boolean }
+  'file.compress': { pane?: PaneId; mcpRequestId?: string; initiator: Initiator; guard?: boolean }
+  'file.delete': { pane?: PaneId; permanent?: boolean; mcpRequestId?: string; initiator: Initiator; guard?: boolean }
+  'file.rename': {
+    pane?: PaneId
+    initialName?: string
+    expectedName?: string
+    mcpRequestId?: string
+    initiator: Initiator
+    guard?: boolean
+  }
+  'file.newFolder': { pane?: PaneId; mcpRequestId?: string; initiator: Initiator; guard?: boolean }
+  'file.newFile': { pane?: PaneId; mcpRequestId?: string; initiator: Initiator; guard?: boolean }
 }
 
 /**

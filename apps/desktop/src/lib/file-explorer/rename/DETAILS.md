@@ -414,6 +414,16 @@ Four ways in, each with a different meaning:
 - **Losing focus with no click behind it** (`onblur` → `handleRenameCancel`): discard. This is the structural case: the
   row scrolls out of the virtual window and the input unmounts.
 
+**An editor a tool opened** (`mcp-rename`, `RenameTarget.startedBy`) sits under the arming guard (`#lib/ui/DETAILS.md` §
+The started-elsewhere guard), and three things differ. A press outside it cancels: the name in it is the model's, and
+pressing the rail or Stop is no decision to keep it. A bare arrow doesn't chain, since a step saves the name it leaves
+with no question asked. And it hands focus back where it came from (`toolOpenedFrom`), ❌ never the pane: someone
+mid-sentence in the rail would type into a list, where Enter opens a file and F8 trashes one.
+
+`RenameTarget.initiator` rides every write of the session, the `renameFile` itself, the `moveToTrash` of a conflict
+answer, and the Move dialog a rename too big to start unasked hands over to. A person pressing Enter doesn't change who
+asked.
+
 The click-away path keys off a document-level `mousedown` (capture phase, registered by `InlineRenameEditor` for its own
 lifetime), NOT off blur. Blur can't tell "the user clicked elsewhere" from "the list scrolled", and committing on the
 second would silently rename a file because the user scrolled. Capture phase so it lands before the row and pane

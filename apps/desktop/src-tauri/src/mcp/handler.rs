@@ -17,7 +17,7 @@ use serde_json::Value;
 use tauri::{AppHandle, Runtime};
 
 use crate::tools::resources::{get_all_resources, read_resource};
-use crate::tools::{Consumer, ToolError, execute_tool, get_all_tools};
+use crate::tools::{ToolCtx, ToolError, execute_tool, get_all_tools};
 
 /// What a client reads at `initialize` to decide when to reach for this server.
 const INSTRUCTIONS: &str = concat!(
@@ -95,10 +95,12 @@ impl<R: Runtime> ServerHandler for CmdrMcpHandler<R> {
         #[cfg(test)]
         let _running = tests::ToolCallRunning::enter();
         let client_left = context.ct;
+        // A client's disconnect is its cancel: it also takes down whatever the tool holds open.
+        let ctx = ToolCtx::external(client_left.clone());
         // `rmcp` runs this in a task of its own, so nothing else stops an `await` or a `search`
         // once the client that asked has gone.
         let outcome = tokio::select! {
-            outcome = execute_tool(&self.app, Consumer::AiClient, &name, &arguments) => outcome,
+            outcome = execute_tool(&self.app, &ctx, &name, &arguments) => outcome,
             () = client_left.cancelled() => {
                 // allowed-log-private: an MCP tool name of our own
                 log::debug!("MCP: tool {name} stopped, the client went away");

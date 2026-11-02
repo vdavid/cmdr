@@ -6,6 +6,8 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
 ## Key files
 
 - **`ModalDialog.svelte`**: Central modal container: overlay, dragging, Escape, focus, MCP tracking
+- **`started-elsewhere-guard.ts`**: the arming guard behind `ModalDialog`'s `startedBy` and the inline rename editor's.
+  § The started-elsewhere guard
 - **`modal-resize.ts`**: `ModalDialog`'s edge-and-corner resize geometry as pure functions (`resizeStep`, the limits,
   which bands show)
 - **`modal-drag.ts`**: where `ModalDialog` may be dragged: the clamp that keeps the title bar grabbable
@@ -326,6 +328,42 @@ So on a machine whose OS accent is Green while `appearance.appColor` is `cmdr-go
 (`--color-apple-green`, the exact `NSColor.controlAccentColor()` green) in an otherwise gold UI, and the color is no
 help in tracing it back to a focus ring. Any element we focus programmatically and don't style owes itself the same
 `outline: none` (verified on macOS 15 / WKWebView, from a user screenshot of 0.38.1, 2026-08-12).
+
+## The started-elsewhere guard
+
+A tool can open a dialog or the inline rename editor while a person types in the rail. `ModalDialog` takes focus as it
+appears, so the Enter that ends their sentence would confirm a copy they never read. `started-elsewhere-guard.ts` is the
+one answer, active when a host passes `startedBy` (`ModalDialog`, `InlineRenameEditor`). That comes from the opening
+event's `guard: true`, which the backend sets for the agent and for an outside client off direct mode
+(`tools/policy.rs`), and which `mcp-listeners.ts` reads failing closed. A direct-mode client's dialog opens as before.
+
+- **It starts unarmed.** It arms once `ARM_QUIET_MS` (800) have passed with no key activity anywhere and no key down.
+  Every keydown and keyup restarts the clock, repeats and IME composition included, since a modifier sends no repeats
+  and a held Shift would otherwise arm.
+- **Unarmed, every key but Escape is swallowed**, in the capture phase on `window`, ahead of the dialog's handlers, the
+  focus trap, and the field. Primary-button presses in scope are ignored for the first `PRESS_IGNORE_MS` (300).
+- **Arming doesn't let text in.** Someone who pauses and carries on typing would edit the destination, and Enter would
+  commit it. Until a click or Tab, only Enter, Escape, Tab, and bare modifiers get through, focus stays parked on the
+  overlay (an autofocusing child comes back to it through `focusin`), and `beforeinput` is refused for paste and
+  dictation.
+- **A click works from 300 ms on, armed or not.** The muted button says the keyboard can't reach it yet. It isn't
+  `disabled`, and `dialog_confirm` isn't input, so neither is filtered.
+- **A key held from before the guard exists** only shows in later events: an unseen modifier in an event's state, or a
+  repeat of a key it never saw go down. Either disarms it and is swallowed.
+- **Keys that lie.** A blur clears what's down (its keyup won't arrive), macOS sends no keyup for a key released under
+  Command (a Meta keyup clears those), and Caps Lock is "down" for as long as it's on, so it isn't tracked.
+- **A dialog** also passes `shiftUpgradesToPermanent = false` when it's `DeleteDialog`. **An editor**: the first Tab
+  only unlocks text (a later one cancels as ever), a click away cancels instead of saving a name nobody chose, an arrow
+  doesn't chain (a step saves the name it leaves, unasked), and focus goes back where it came from, ❌ never the pane
+  (`rename-flow.svelte.ts`). `../file-explorer/rename/DETAILS.md` § Ending a rename session.
+- **Look**: `data-armed` on the overlay or the field is the state to read. The primary or danger button trades its fill
+  for tokens that hold AA, since opacity wouldn't. A `role="status"` line says who started it, and while unarmed, that
+  the keyboard waits. No motion, so `prefers-reduced-motion` has nothing to change.
+
+Gotcha/Why: `ModalDialog` reads `startedBy` once at init. A host's prop getter can read state that's gone by the time
+`onMount`'s `await` comes back (`ToolRollbackDialog`'s `question`).
+
+Timing is David's to QA by hand, ❌ never from captured frames. The state machine is pure and fake-timer tested.
 
 ## AlertDialog
 

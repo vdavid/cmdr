@@ -11,12 +11,29 @@ vi.mock('./operation-start-gate', () => ({ operationStartIsBlocked: blockedSpy }
 import { openRenameAsMove, renameAsMoveDialogProps } from './rename-as-move'
 import type { PaneAccess } from './pane-access'
 
+describe('a rename a tool asked for, handed to the Move dialog', () => {
+  it('keeps who asked and the guard, so the person confirming it is credited correctly', () => {
+    const props = renameAsMoveDialogProps('left', 's3-acct', {
+      sourcePath: '/bucket/photos',
+      parentPath: '/bucket',
+      newName: 'pictures',
+      isDirectory: true,
+      initiator: 'agent',
+      guard: true,
+    })
+    expect(props.initiator).toBe('agent')
+    expect(props.guard).toBe(true)
+  })
+})
+
 describe('renameAsMoveDialogProps', () => {
   const props = renameAsMoveDialogProps('left', 's3-acct', {
     sourcePath: '/bucket/photos',
     parentPath: '/bucket',
     newName: 'pictures',
     isDirectory: true,
+    initiator: 'user',
+    guard: false,
   })
 
   it('moves the one source into the folder it already lives in, under the new name', () => {
@@ -46,7 +63,14 @@ describe('renameAsMoveDialogProps', () => {
 })
 
 describe('openRenameAsMove', () => {
-  const request = { sourcePath: '/bucket/big.iso', parentPath: '/bucket', newName: 'big-2.iso', isDirectory: false }
+  const request = {
+    sourcePath: '/bucket/big.iso',
+    parentPath: '/bucket',
+    newName: 'big-2.iso',
+    isDirectory: false,
+    initiator: 'user',
+    guard: false,
+  } as const
   const access = {
     getPaneVolumeId: () => 's3-acct',
   } as unknown as PaneAccess

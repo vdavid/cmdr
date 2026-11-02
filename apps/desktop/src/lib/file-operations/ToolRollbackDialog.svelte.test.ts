@@ -54,8 +54,15 @@ function row(overrides: {
   } as unknown as OperationRow
 }
 
-const LIVE = { target: 'live', operationId: 'op-1', initiator: 'aiClient' } as const
-const LOGGED = { target: 'logged', operationId: 'op-1', initiator: 'aiClient', kind: 'move', finishing: false } as const
+const LIVE = { target: 'live', operationId: 'op-1', initiator: 'aiClient', guard: false } as const
+const LOGGED = {
+  target: 'logged',
+  operationId: 'op-1',
+  initiator: 'aiClient',
+  guard: false,
+  kind: 'move',
+  finishing: false,
+} as const
 
 /** The real store's rows are reactive, and so are these. */
 const live = $state({ rows: [] as OperationRow[] })
@@ -265,5 +272,34 @@ describe('answering it', () => {
   it('has nothing to press with no question up', async () => {
     mountHost()
     await expect(pressRollbackConfirm()).resolves.toBeNull()
+  })
+})
+
+describe("the guard on a tool's question", () => {
+  it('stays off for a client a person let past them', async () => {
+    mountHost()
+    raiseToolRollback(LOGGED)
+    await tick()
+    expect(dialog()?.hasAttribute('data-armed')).toBe(false)
+  })
+
+  it('arms for a guarded caller, and names who asked', async () => {
+    mountHost()
+    raiseToolRollback({ ...LOGGED, initiator: 'agent', guard: true })
+    await tick()
+    expect(dialog()?.getAttribute('data-armed')).toBe('false')
+    expect(dialog()?.querySelector('[role="status"]')?.textContent).toContain('Ask Cmdr started this.')
+  })
+
+  it("still lets `dialog_confirm` through while unarmed, since it isn't a key", async () => {
+    rollbackOperation.mockResolvedValue({ inverseOpId: 'op-inverse' })
+    mountHost()
+    raiseToolRollback({ ...LOGGED, initiator: 'agent', guard: true })
+    await tick()
+    expect(dialog()?.getAttribute('data-armed')).toBe('false')
+
+    await expect(pressRollbackConfirm()).resolves.toEqual({ status: 'dispatched', inverseOpId: 'op-inverse' })
+
+    expect(rollbackOperation).toHaveBeenCalledExactlyOnceWith('op-1', 'agent')
   })
 })

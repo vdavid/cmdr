@@ -20,6 +20,7 @@ const target: RenameTarget = {
   parentPath: '/x',
   isDirectory: false,
   nameKind: 'file',
+  initiator: 'user',
 }
 
 beforeEach(() => {

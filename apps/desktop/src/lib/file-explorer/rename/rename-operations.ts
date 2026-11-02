@@ -159,7 +159,9 @@ export async function performRename(
       resolve('still-running')
     }
   })
-  const settled = renameFile(fromPath, toPath, force, volumeId, undefined, { onStillRunning: reportStillRunning }).then(
+  const settled = renameFile(fromPath, toPath, force, volumeId, target.initiator, {
+    onStillRunning: reportStillRunning,
+  }).then(
     (): RenameSettled => ({ type: 'success', newName }),
     (e: unknown): RenameSettled => ({ type: 'error', message: renameFailureMessage(e, target.isDirectory, newName) }),
   )

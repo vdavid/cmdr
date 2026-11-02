@@ -544,11 +544,11 @@ export async function storedSpellings(volumeId: string, paths: string[]): Promis
 export async function createDirectory(
   parentPath: string,
   name: string,
-  volumeId?: string,
-  initiator?: Initiator,
+  volumeId: string | undefined,
+  initiator: Initiator,
   wait?: MutationWaitOptions,
 ): Promise<void> {
-  await awaitMutation(() => commands.createDirectory(volumeId ?? null, parentPath, name, initiator ?? null), wait)
+  await awaitMutation(() => commands.createDirectory(volumeId ?? null, parentPath, name, initiator), wait)
 }
 
 /**
@@ -560,11 +560,11 @@ export async function createDirectory(
 export async function createFile(
   parentPath: string,
   name: string,
-  volumeId?: string,
-  initiator?: Initiator,
+  volumeId: string | undefined,
+  initiator: Initiator,
   wait?: MutationWaitOptions,
 ): Promise<void> {
-  await awaitMutation(() => commands.createFile(volumeId ?? null, parentPath, name, initiator ?? null), wait)
+  await awaitMutation(() => commands.createFile(volumeId ?? null, parentPath, name, initiator), wait)
 }
 
 // ============================================================================

@@ -58,6 +58,7 @@ export async function openOperationConflictPreview(
       sourceVolumeId: DEFAULT_VOLUME_ID,
       destVolumeId: DEFAULT_VOLUME_ID,
       conflictResolution: 'stop',
+      initiator: 'user',
     })
     return { kind: 'started', operationId }
   } catch (error) {

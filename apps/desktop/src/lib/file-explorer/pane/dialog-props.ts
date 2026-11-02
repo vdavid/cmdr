@@ -270,6 +270,8 @@ export interface NewFolderDialogPropsData {
   volumeId: string
   /** Who started this create. */
   initiator: Initiator
+  /** It opened by itself, so it must arm before a keystroke can touch it (`ModalDialog`). */
+  guard?: boolean
 }
 
 export interface NewFileDialogPropsData {
@@ -282,6 +284,8 @@ export interface NewFileDialogPropsData {
   volumeId: string
   /** Who started this create. */
   initiator: Initiator
+  /** It opened by itself, so it must arm before a keystroke can touch it (`ModalDialog`). */
+  guard?: boolean
 }
 
 export interface AlertDialogPropsData {
@@ -375,6 +379,8 @@ export interface DeleteDialogPropsData {
   cloudFolderMayHoldOnlineOnly?: boolean
   /** Who started this delete. Only `user` may skip the confirmation. */
   initiator: Initiator
+  /** It opened by itself, so it must arm before a keystroke can touch it (`ModalDialog`). */
+  guard?: boolean
 }
 
 export interface DialogStateDeps {

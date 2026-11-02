@@ -7,6 +7,7 @@
     import StillCreatingNotice from '#lib/file-operations/StillCreatingNotice.svelte'
     import type { CreateConfirmer } from '#lib/file-explorer/pane/dialog-props.js'
     import ModalDialog from '#lib/ui/ModalDialog.svelte'
+    import type { ToolInitiator } from '#lib/ui/started-elsewhere-guard.js'
     import Button from '#lib/ui/Button.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
 
@@ -23,6 +24,8 @@
         volumeId: string
         /** Who triggered this create (`aiClient` for the MCP `mkfile` tool). */
         initiator: Initiator
+        /** Who to name when this opened by itself under the arming guard (`ModalDialog`). */
+        startedBy?: ToolInitiator
         /** Hands this dialog's OK to the dialog state, for the MCP `dialog_confirm`. */
         registerConfirmer?: (confirm: CreateConfirmer) => () => void
         onCreated: (fileName: string) => void
@@ -36,6 +39,7 @@
         initialName,
         volumeId,
         initiator,
+        startedBy,
         registerConfirmer,
         onCreated,
         onCancel,
@@ -87,6 +91,7 @@
     titleId="new-file-title"
     onkeydown={handleKeydown}
     dialogId="new-file-confirmation"
+    {startedBy}
     onclose={onCancel}
     containerStyle="width: 400px"
     resizable="horizontal"

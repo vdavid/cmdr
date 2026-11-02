@@ -40,6 +40,7 @@
     import { archivePhaseLabel, isIndeterminateProgressPhase, progressCountKind } from '../progress-readout'
     import { rollbackConfirmVariant, reversalTitleKey, type LiveRollbackBlock } from '../reversal-wording'
     import { registerProgressRollbackAsker } from '../tool-rollback.svelte'
+    import type { ToolInitiator } from '#lib/ui/started-elsewhere-guard.js'
     import TransferRollbackControls from './TransferRollbackControls.svelte'
     import { createTransferRollback } from './transfer-rollback.svelte'
     import { conflictPolicyCaption } from './conflict-policy-labels'
@@ -235,7 +236,8 @@
         itemSizes,
         fileCount,
         folderCount,
-        initiator,
+        // An adopted view starts nothing, so this reaches no log. ❌ Never `user`: it isn't one's.
+        initiator: initiator ?? 'aiClient',
         newName,
         // Asked at the moment of completion, so flipping it mid-transfer counts.
         keepOpenWhenDone: () => getSetting('fileOperations.keepProgressOpenWhenDone'),
@@ -281,12 +283,17 @@
         rollBack: () => void progress.handleCancel(true),
     })
 
+    /** Who asked the question on show, when a tool did. The dialog's own Rollback button clears it:
+     *  that's a person's press, with nothing to guard. */
+    let rollbackAskedBy = $state<ToolInitiator | undefined>(undefined)
+
     /** A tool's question about the operation on show goes through this dialog's own, so nothing
      *  stacks a second one over it (`../tool-rollback.svelte.ts`). The verdict is the button's. */
-    function askRollbackFromTool(): LiveRollbackBlock | null {
+    function askRollbackFromTool(startedBy: ToolInitiator | undefined): LiveRollbackBlock | null {
         if (operationSettled) return 'notRunning'
         if (isRollingBack || isCancelling) return 'alreadyRollingBack'
         if (isScanning) return 'nothingWrittenYet'
+        rollbackAskedBy = startedBy
         rollback.request()
         return rollback.confirming ? null : 'cantReverse'
     }
@@ -667,6 +674,7 @@
             }}
             onCancel={(wantsRollback: boolean) => {
                 if (wantsRollback) {
+                    rollbackAskedBy = undefined
                     rollback.request()
                     return
                 }
@@ -817,7 +825,12 @@
      Rollback is blocked, since a move that reaches its source-deletion phase with
      the question up would otherwise still be promising a journey home. -->
 {#if rollback.confirming}
-    <RollbackConfirmDialog variant={rollback.variant} onConfirm={rollback.confirm} onCancel={rollback.dismiss} />
+    <RollbackConfirmDialog
+        variant={rollback.variant}
+        startedBy={rollbackAskedBy}
+        onConfirm={rollback.confirm}
+        onCancel={rollback.dismiss}
+    />
 {/if}
 
 <!-- The done state's Undo asks the history dialog's own question, worded by what

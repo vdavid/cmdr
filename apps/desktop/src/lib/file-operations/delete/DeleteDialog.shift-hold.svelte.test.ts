@@ -14,6 +14,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import DeleteDialog from './DeleteDialog.svelte'
+import { ARM_QUIET_MS } from '#lib/ui/started-elsewhere-guard.js'
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
   estimateOperationCost: vi.fn(() => Promise.resolve([])),
@@ -179,5 +180,46 @@ describe('DeleteDialog Shift-hold upgrade', () => {
     await pressShift(target)
     await releaseShift(target)
     expect(isPermanentMode(target)).toBe(true)
+  })
+})
+
+describe('a delete a tool started', () => {
+  it('stays a trash under a held Shift, and Enter confirms a trash', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+    try {
+      const target = document.createElement('div')
+      document.body.appendChild(target)
+      const confirms: boolean[] = []
+      mount(DeleteDialog, {
+        target,
+        props: {
+          sourceItems: ITEMS,
+          sourcePaths: ['/Users/test/notes.txt'],
+          sourceFolderPath: '/Users/test',
+          isPermanent: false,
+          supportsTrash: true,
+          isFromCursor: true,
+          sourceVolumeId: 'root',
+          startedBy: 'agent',
+          onConfirm: (_previewId: string | null, isPermanent: boolean) => confirms.push(isPermanent),
+          onCancel: () => {},
+        },
+      })
+      await tick()
+      await tick()
+      vi.advanceTimersByTime(ARM_QUIET_MS)
+      await tick()
+
+      const overlay = overlayOf(target)
+      overlay.dispatchEvent(new KeyboardEvent('keydown', { key: 'Shift', shiftKey: true, bubbles: true }))
+      await tick()
+      expect(isPermanentMode(target)).toBe(false)
+      overlay.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true }))
+      await vi.waitFor(() => {
+        expect(confirms).toEqual([false])
+      })
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

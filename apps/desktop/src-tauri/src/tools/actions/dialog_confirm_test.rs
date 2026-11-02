@@ -589,7 +589,7 @@ async fn it_refuses_an_outside_client_off_direct_mode_with_the_typed_reason() {
     let handle = app.handle().clone();
     let error = crate::tools::execute_tool(
         &handle,
-        crate::tools::Consumer::AiClient,
+        &crate::tools::ToolCtx::external(tokio_util::sync::CancellationToken::new()),
         "dialog_confirm",
         &json!({ "type": TRANSFER }),
     )
@@ -608,7 +608,13 @@ async fn the_agent_never_reaches_it() {
     handle.state::<SoftDialogTracker>().open(TRANSFER.to_string());
     let error = crate::tools::execute_tool(
         &handle,
-        crate::tools::Consumer::Agent,
+        &crate::tools::ToolCtx {
+            caller: crate::tools::Caller::Agent {
+                origin: crate::agent::types::TurnOrigin::Text,
+            },
+            cancel: tokio_util::sync::CancellationToken::new(),
+            conversation_id: None,
+        },
         "dialog_confirm",
         &json!({ "type": TRANSFER }),
     )

@@ -9,6 +9,7 @@
      */
     import RollbackConfirmDialog from './RollbackConfirmDialog.svelte'
     import { bindOperationSession } from './operation-session/bind-operation-session.svelte'
+    import { startedByWhenGuarded } from '#lib/ui/started-elsewhere-guard.js'
     import type { RollbackConfirmResult } from './rollback-confirmers'
     import {
         confirmLoggedToolRollback,
@@ -48,6 +49,7 @@
     <RollbackConfirmDialog
         variant={question.variant}
         finishing={question.finishing}
+        startedBy={startedByWhenGuarded(question.initiator, question.guard)}
         onConfirm={confirm}
         onCancel={dismissToolRollback}
     />

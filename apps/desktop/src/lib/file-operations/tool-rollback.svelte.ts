@@ -13,6 +13,7 @@ import { asRollbackRefusal } from '#lib/operation-log/rollback-refusal.js'
 import { rollbackRefusalNotice } from '#lib/operation-log/operation-log-labels.js'
 import { rollbackOperation } from '#lib/tauri-commands/index.js'
 import { blockingSoftDialogBesides } from '#lib/ui/open-dialogs.svelte.js'
+import { startedByWhenGuarded, type ToolInitiator } from '#lib/ui/started-elsewhere-guard.js'
 import type { SoftDialogId } from '#lib/ui/dialog-registry.js'
 import { addToast } from '#lib/ui/toast/index.js'
 import { opKindForWireType } from './op-kind'
@@ -30,7 +31,7 @@ import type { RollbackAnswer } from './rollback-confirmers'
 const log = getAppLogger('fileOperations')
 
 /** What the tool knows to ask about, off `mcp-rollback-dialog`. */
-export type ToolRollbackFacts = { operationId: string; initiator: Initiator } & (
+export type ToolRollbackFacts = { operationId: string; initiator: Initiator; guard: boolean } & (
   | { target: 'live' }
   | { target: 'logged'; kind: OpKind; finishing: boolean }
 )
@@ -46,15 +47,18 @@ export type ToolRollbackRaise =
 
 let question = $state<ToolRollbackQuestion | null>(null)
 
+/** Who a tool's question names and arms for, `undefined` for a client a person let past them. */
+type ProgressRollbackAsker = (startedBy: ToolInitiator | undefined) => LiveRollbackBlock | null
+
 /** A mounted progress dialog's way to raise its own question, by the operation it shows. */
 // eslint-disable-next-line svelte/prefer-svelte-reactivity -- read once per request, and nothing renders from it
-const progressAskers = new Map<string, () => LiveRollbackBlock | null>()
+const progressAskers = new Map<string, ProgressRollbackAsker>()
 
 /**
  * Lets the progress dialog showing `operationId` take this operation's question. The asker
  * raises it and answers `null`, or says why it can't now. Returns the unregister.
  */
-export function registerProgressRollbackAsker(operationId: string, ask: () => LiveRollbackBlock | null): () => void {
+export function registerProgressRollbackAsker(operationId: string, ask: ProgressRollbackAsker): () => void {
   progressAskers.set(operationId, ask)
   return () => {
     if (progressAskers.get(operationId) === ask) progressAskers.delete(operationId)
@@ -104,7 +108,7 @@ export function raiseToolRollback(facts: ToolRollbackFacts): ToolRollbackRaise {
       // Its own dialog and the question over it are no obstacle: this IS that question.
       const inTheWay = blockingSoftDialogBesides(['transfer-progress', 'rollback-confirmation'])
       if (inTheWay !== null) return blocked(inTheWay)
-      const refusal = askProgress()
+      const refusal = askProgress(startedByWhenGuarded(facts.initiator, facts.guard))
       return refusal === null ? { ok: true } : refused(refusal)
     }
   }

@@ -16,6 +16,7 @@
 
 import type { DeleteSourceItem } from '#lib/file-operations/delete/delete-dialog-utils.js'
 import type { TransferOperationType } from '#lib/file-explorer/types.js'
+import type { ToolInitiator } from '#lib/ui/started-elsewhere-guard.js'
 import type { GalleryDiskFixture } from '../gallery-state.svelte'
 
 /** Props of `DeleteDialog.svelte`, minus its callbacks. */
@@ -27,6 +28,7 @@ export interface DeleteFixture {
   supportsTrash: boolean
   isFromCursor: boolean
   sourceVolumeId: string
+  startedBy?: ToolInitiator
 }
 
 /** Props of `TransferDialog.svelte`, minus its callbacks. */
@@ -149,6 +151,7 @@ export const deleteFixtures: Record<string, DiskFixtureBuilder<DeleteFixture> | 
   // permanent is the only option, which is a different dialog to review.
   'no-trash-support': (disk) => deleteFixture(disk, 3, { isPermanent: true, supportsTrash: false }),
   'long-name': (disk) => deleteFixture(disk, 1, { isPermanent: false, entries: [longestNamed(disk)] }),
+  'started-by-agent': (disk) => ({ ...deleteFixture(disk, 1, { isPermanent: false }), startedBy: 'agent' }),
 }
 
 /** Keyed by the `transfer-confirmation` entry's state ids in `gallery-registry.ts`. */

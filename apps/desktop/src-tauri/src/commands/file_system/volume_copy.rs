@@ -31,7 +31,7 @@ pub async fn copy_between_volumes(
     dest_volume_id: String,
     dest_path: String,
     config: Option<VolumeCopyConfig>,
-    initiator: Option<Initiator>,
+    initiator: Initiator,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
     copy_between_volumes_on(
@@ -60,7 +60,7 @@ async fn copy_between_volumes_on(
     dest_volume_id: String,
     dest_path: String,
     config: Option<VolumeCopyConfig>,
-    initiator: Option<Initiator>,
+    initiator: Initiator,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // Before `install` there is no engine to start on: refuse, never write.
     let engine = engine.map_err(refuse_not_installed)?;
@@ -72,7 +72,7 @@ async fn copy_between_volumes_on(
             dest_volume_id,
             dest_path,
             config.unwrap_or_default(),
-            initiator.unwrap_or(Initiator::User),
+            initiator,
             // No source binding: the user picked these in the pane they are looking at.
             None,
         )
@@ -91,7 +91,7 @@ pub async fn move_between_volumes(
     dest_volume_id: String,
     dest_path: String,
     config: Option<VolumeCopyConfig>,
-    initiator: Option<Initiator>,
+    initiator: Initiator,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // Before `install` there is no engine to start on: refuse, never write.
     let engine = operations().map_err(refuse_not_installed)?;
@@ -104,7 +104,7 @@ pub async fn move_between_volumes(
             dest_volume_id,
             dest_path,
             config.unwrap_or_default(),
-            initiator.unwrap_or(Initiator::User),
+            initiator,
             // No source binding: the user picked these in the pane they are looking at.
             None,
         )
@@ -124,7 +124,7 @@ pub async fn rename_by_move(
     dest_path: String,
     new_name: String,
     config: Option<VolumeCopyConfig>,
-    initiator: Option<Initiator>,
+    initiator: Initiator,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // Before `install` there is no engine to start on: refuse, never write.
     let engine = operations().map_err(refuse_not_installed)?;
@@ -136,7 +136,7 @@ pub async fn rename_by_move(
             vec![(PathBuf::from(source_path), new_name)],
             dest_path,
             config.unwrap_or_default(),
-            initiator.unwrap_or(Initiator::User),
+            initiator,
             // No source binding: the user picked it in the pane they are looking at.
             None,
         )
@@ -155,7 +155,7 @@ pub async fn compress_files(
     dest_volume_id: String,
     dest_zip_path: String,
     config: Option<VolumeCopyConfig>,
-    initiator: Option<Initiator>,
+    initiator: Initiator,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // Before `install` there is no engine to start on: refuse, never write.
     let engine = operations().map_err(refuse_not_installed)?;
@@ -168,7 +168,7 @@ pub async fn compress_files(
             dest_volume_id,
             dest_zip_path,
             config.unwrap_or_default(),
-            initiator.unwrap_or(Initiator::User),
+            initiator,
         )
         .await
 }
@@ -307,7 +307,7 @@ mod tests {
             "root".to_string(),
             destination.display().to_string(),
             None,
-            None,
+            cmdr_operation_log::types::Initiator::User,
         )
         .await;
 

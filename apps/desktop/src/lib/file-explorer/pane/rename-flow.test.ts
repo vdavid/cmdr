@@ -430,6 +430,8 @@ describe('Enter (submit) ends the session the way the user asked', () => {
         parentPath: '/dir',
         newName: 'notes.md',
         isDirectory: false,
+        initiator: 'user',
+        guard: false,
       })
     })
     expect(rename.active).toBe(false)
@@ -798,5 +800,64 @@ describe('a row the .git portal serves never opens the editor (#529)', () => {
     flow.startRename()
 
     expect(rename.active).toBe(true)
+  })
+})
+
+describe('a rename a tool opened', () => {
+  it('saves under whoever asked, though a person pressed Enter', async () => {
+    const { rename, flow } = buildFlow()
+    flow.startRename({ initialName: 'chosen.txt', initiator: 'agent', guard: true })
+
+    expect(rename.target?.initiator).toBe('agent')
+    expect(rename.target?.startedBy).toBe('agent')
+    flow.handleRenameSubmit()
+    await vi.waitFor(() => {
+      expect(executeRenameSaveSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ initiator: 'agent' }),
+        'chosen.txt',
+        expect.anything(),
+        undefined,
+        'root',
+      )
+    })
+  })
+
+  it("a person's F2 answers to the person, and isn't guarded", () => {
+    const { rename, flow } = buildFlow()
+    flow.startRename()
+    expect(rename.target?.initiator).toBe('user')
+    expect(rename.target?.startedBy).toBeUndefined()
+  })
+
+  it("a direct-mode client's editor records it, unguarded", () => {
+    const { rename, flow } = buildFlow()
+    flow.startRename({ initialName: 'chosen.txt', initiator: 'aiClient', guard: false })
+    expect(rename.target?.initiator).toBe('aiClient')
+    expect(rename.target?.startedBy).toBeUndefined()
+  })
+
+  it('hands focus back to where it came from, never the pane', () => {
+    const rail = document.createElement('textarea')
+    document.body.append(rail)
+    rail.focus()
+    const { flow, onRequestFocus } = buildFlow()
+
+    flow.startRename({ initialName: 'chosen.txt', initiator: 'agent', guard: true })
+    const editor = document.createElement('input')
+    document.body.append(editor)
+    editor.focus()
+    flow.cancelRename()
+
+    expect(document.activeElement).toBe(rail)
+    expect(onRequestFocus).not.toHaveBeenCalled()
+    rail.remove()
+    editor.remove()
+  })
+
+  it("a person's F2 still ends in the pane", () => {
+    const { flow, onRequestFocus } = buildFlow()
+    flow.startRename()
+    flow.cancelRename()
+    expect(onRequestFocus).toHaveBeenCalledOnce()
   })
 })

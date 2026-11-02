@@ -35,10 +35,9 @@ Full details (save flow, validation tiers, cursor tracking, decisions): `DETAILS
   BEFORE the next activation; the editor opens on the entry captured at keypress time, which is the row BESIDE it, ❌
   never one at an index; a conflict is dropped on the BACKEND's answer, ❌ never on cached sibling names; and kept vs
   still-renaming names pool into two running toasts. Each one's why: `DETAILS.md` § Chaining.
-- **Clicking outside the editor SAVES; losing focus any other way discards.** The commit hangs off a document
-  `mousedown` (capture), never off blur: blur can't tell a click from the row scrolling out of the virtual window, and
-  committing on a scroll would rename a file nobody chose. Enter saves too. Guards and the invalid-name toast:
-  `DETAILS.md` § Ending a rename session.
+- **Clicking outside the editor SAVES (a tool's editor: CANCELS); losing focus any other way discards.** The commit
+  hangs off a document `mousedown`, never off blur, which can't tell a click from the row scrolling away. Enter saves
+  too. `DETAILS.md` § Ending a rename session.
 - **The field sits beside the listbox, ❌ never in the row** (`nested-interactive`), over the row's empty slot.
   `FilePane.handlePaneClick` and `isFileListBackgroundClick` skip `.rename-input`, or a click kills the rename.
 - **The editor mounts BY PATH** (`shouldMountRenameEditor`), so it follows its file through a watcher diff; only a diff

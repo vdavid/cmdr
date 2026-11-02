@@ -107,6 +107,7 @@ export function createTransferDialogOpener(access: PaneAccess, dialogs: Pick<Dia
       ...props,
       presetOnConflict: trigger.onConflict,
       initiator: trigger.initiator,
+      guard: trigger.guard,
       duplicateFollowUp,
     })
   }

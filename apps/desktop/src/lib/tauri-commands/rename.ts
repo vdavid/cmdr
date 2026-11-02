@@ -55,15 +55,15 @@ export async function renameFile(
   from: string,
   to: string,
   force: boolean,
-  volumeId?: string,
-  initiator?: Initiator,
+  volumeId: string | undefined,
+  initiator: Initiator,
   wait?: MutationWaitOptions,
 ): Promise<void> {
-  await awaitMutation(() => commands.renameFile(from, to, force, volumeId ?? null, initiator ?? null), wait)
+  await awaitMutation(() => commands.renameFile(from, to, force, volumeId ?? null, initiator), wait)
 }
 
-export async function moveToTrash(path: string): Promise<void> {
-  const res = await commands.moveToTrash(path)
+export async function moveToTrash(path: string, initiator: Initiator): Promise<void> {
+  const res = await commands.moveToTrash(path, initiator)
   if (res.status === 'error') throwMutationError(res.error)
 }
 

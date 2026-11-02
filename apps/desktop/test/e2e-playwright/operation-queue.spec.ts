@@ -92,7 +92,8 @@ async function startCopy(tauriPage: TauriPage, fixtureRoot: string, sourceName: 
       sourcePaths: [${src}],
       destVolumeId: 'root',
       destPath: ${destDir},
-      config: { conflictResolution: 'rename', progressIntervalMs: 100, maxConflictsToShow: 10, previewId: null, preKnownConflicts: [] }
+      config: { conflictResolution: 'rename', progressIntervalMs: 100, maxConflictsToShow: 10, previewId: null, preKnownConflicts: [] },
+    initiator: 'user'
     });
   })()`)
 }
@@ -109,7 +110,8 @@ async function startDoomedCopy(tauriPage: TauriPage, fixtureRoot: string): Promi
       sourcePaths: [${src}],
       destVolumeId: 'root',
       destPath: ${destDir},
-      config: { conflictResolution: 'rename', progressIntervalMs: 100, maxConflictsToShow: 10, previewId: null, preKnownConflicts: [] }
+      config: { conflictResolution: 'rename', progressIntervalMs: 100, maxConflictsToShow: 10, previewId: null, preKnownConflicts: [] },
+    initiator: 'user'
     });
   })()`)
 }

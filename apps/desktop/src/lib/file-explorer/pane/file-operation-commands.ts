@@ -241,6 +241,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     pane = access.getFocusedPane(),
     mcpRequestId,
     initiator,
+    guard,
   }: OpenNamingDialogArgs): Promise<boolean> {
     if (operationStartIsBlocked(mcpRequestId)) return false
 
@@ -275,6 +276,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       initialName,
       volumeId: volumeIdForPane,
       initiator,
+      guard,
     })
     return true
   }
@@ -292,6 +294,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     pane = access.getFocusedPane(),
     mcpRequestId,
     initiator,
+    guard,
   }: OpenNamingDialogArgs): Promise<boolean> {
     if (operationStartIsBlocked(mcpRequestId)) return false
 
@@ -323,6 +326,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       initialName,
       volumeId: volumeIdForPane,
       initiator,
+      guard,
     })
     return true
   }
@@ -338,7 +342,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
   async function createFolderDirect(
     name: string,
     pane: 'left' | 'right' = access.getFocusedPane(),
-    initiator?: Initiator,
+    initiator: Initiator,
   ): Promise<void> {
     const refusal = readOnlyRefusal('mkdir', pane)
     if (refusal) throw new Error(refusal.message)
@@ -351,7 +355,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
   async function createFileDirect(
     name: string,
     pane: 'left' | 'right' = access.getFocusedPane(),
-    initiator?: Initiator,
+    initiator: Initiator,
   ): Promise<void> {
     const refusal = readOnlyRefusal('mkfile', pane)
     if (refusal) throw new Error(refusal.message)
@@ -460,7 +464,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    */
   async function openDeleteFromSearchResults(
     sourcePane: 'left' | 'right',
-    { permanent, initiator }: OpenDeleteDialogArgs,
+    { permanent, initiator, guard }: OpenDeleteDialogArgs,
   ): Promise<boolean> {
     const sourcePaneRef = access.getPaneRef(sourcePane)
     const snapshotId = snapshotIdFromPanePath(sourcePaneRef?.getCurrentPath() ?? '')
@@ -516,6 +520,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       isFromCursor: !hasSelection,
       sourceVolumeId: sourceVolume.volumeId,
       initiator,
+      guard,
     })
     return true
   }
@@ -566,7 +571,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
   }
 
   async function showDeleteDialog(args: OpenDeleteDialogArgs): Promise<boolean> {
-    const { permanent, mcpRequestId, initiator } = args
+    const { permanent, mcpRequestId, initiator, guard } = args
     if (operationStartIsBlocked(mcpRequestId)) return false
 
     const sourcePane = args.pane ?? access.getFocusedPane()
@@ -651,6 +656,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       isFromCursor: !hasSelection,
       sourceVolumeId: sourceVolId,
       initiator,
+      guard,
     })
     return true
   }

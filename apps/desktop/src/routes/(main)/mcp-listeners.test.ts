@@ -20,6 +20,8 @@ import {
   parseTabAction,
   parseViewMode,
   parseConfirmDialogType,
+  parseInitiator,
+  parseStartedBy,
   parseToolRollbackFacts,
   parseSelectCount,
   parseCursorTarget,
@@ -116,12 +118,31 @@ describe('parseViewMode', () => {
   })
 })
 
+describe('who a tool event says asked', () => {
+  it('passes the agent through, and reads anything else as an AI client', () => {
+    expect(parseInitiator('agent')).toBe('agent')
+    expect(parseInitiator('aiClient')).toBe('aiClient')
+    // `user` is the one answer that may skip a confirmation, and every `mcp-*` event is a tool's.
+    for (const malformed of ['user', 'agentEdited', '', 7, null, undefined]) {
+      expect(parseInitiator(malformed)).toBe('aiClient')
+    }
+  })
+
+  it('stays guarded unless the event plainly says otherwise', () => {
+    expect(parseStartedBy({ guard: false }).guard).toBe(false)
+    for (const guard of [true, undefined, null, 'false', 0]) {
+      expect(parseStartedBy({ guard }).guard).toBe(true)
+    }
+  })
+})
+
 describe('parseToolRollbackFacts', () => {
   it('reads both questions, and names the outside client as who asked', () => {
     expect(parseToolRollbackFacts({ operationId: 'op-1', target: 'live' })).toEqual({
       target: 'live',
       operationId: 'op-1',
       initiator: 'aiClient',
+      guard: true,
     })
     expect(parseToolRollbackFacts({ operationId: 'op-1', target: 'logged', kind: 'trash', finishing: true })).toEqual({
       target: 'logged',
@@ -129,7 +150,13 @@ describe('parseToolRollbackFacts', () => {
       kind: 'trash',
       finishing: true,
       initiator: 'aiClient',
+      guard: true,
     })
+  })
+  it('carries who asked, so what a person confirms records them', () => {
+    expect(
+      parseToolRollbackFacts({ operationId: 'op-1', target: 'live', initiator: 'agent', guard: false }),
+    ).toMatchObject({ initiator: 'agent', guard: false })
   })
   it('rejects anything it would have to guess the wording of', () => {
     for (const bad of [
@@ -390,6 +417,7 @@ describe('MCP write dispatches tag initiator: aiClient', () => {
       onConflict: 'overwrite_all',
       mcpRequestId: 'r-1',
       initiator: 'aiClient',
+      guard: true,
     })
   })
 
@@ -403,6 +431,7 @@ describe('MCP write dispatches tag initiator: aiClient', () => {
       pane: 'left',
       onConflict: 'skip_all',
       initiator: 'aiClient',
+      guard: true,
     })
   })
 
@@ -415,6 +444,7 @@ describe('MCP write dispatches tag initiator: aiClient', () => {
     expect(dispatch).toHaveBeenCalledExactlyOnceWith('file.compress', {
       pane: 'left',
       initiator: 'aiClient',
+      guard: true,
     })
   })
 
@@ -424,7 +454,7 @@ describe('MCP write dispatches tag initiator: aiClient', () => {
 
     getHandler(handlers, 'mcp-mkdir')({ payload: {} })
 
-    expect(dispatch).toHaveBeenCalledExactlyOnceWith('file.newFolder', { initiator: 'aiClient' })
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith('file.newFolder', { initiator: 'aiClient', guard: true })
   })
 
   it('mcp-mkdir with a name creates directly and never opens the dialog', async () => {
@@ -470,6 +500,8 @@ describe('MCP write dispatches tag initiator: aiClient', () => {
         initialName: 'b.txt',
         expectedName: 'a.txt',
         mcpRequestId: 'r-1',
+        initiator: 'aiClient',
+        guard: true,
       })
     })
   })
@@ -480,7 +512,37 @@ describe('MCP write dispatches tag initiator: aiClient', () => {
 
     getHandler(handlers, 'mcp-mkfile')({ payload: {} })
 
-    expect(dispatch).toHaveBeenCalledExactlyOnceWith('file.newFile', { initiator: 'aiClient' })
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith('file.newFile', { initiator: 'aiClient', guard: true })
+  })
+
+  it("an agent's call says so, all the way to the dialog's props", async () => {
+    const dispatch = vi.fn(() => Promise.resolve()) as unknown as CommandDispatch
+    const handlers = await setupWithHandlers(dispatch)
+
+    for (const [event, command] of [
+      ['mcp-copy', 'file.copy'],
+      ['mcp-move', 'file.move'],
+      ['mcp-compress', 'file.compress'],
+      ['mcp-delete', 'file.delete'],
+      ['mcp-mkdir', 'file.newFolder'],
+      ['mcp-mkfile', 'file.newFile'],
+    ] as const) {
+      getHandler(handlers, event)({ payload: { pane: 'left', initiator: 'agent', guard: true } })
+      expect(dispatch).toHaveBeenLastCalledWith(command, expect.objectContaining({ initiator: 'agent', guard: true }))
+    }
+  })
+
+  it("a direct-mode client's call opens without the guard", async () => {
+    const dispatch = vi.fn(() => Promise.resolve()) as unknown as CommandDispatch
+    const handlers = await setupWithHandlers(dispatch)
+
+    getHandler(handlers, 'mcp-copy')({ payload: { pane: 'left', initiator: 'aiClient', guard: false } })
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith('file.copy', {
+      pane: 'left',
+      initiator: 'aiClient',
+      guard: false,
+    })
   })
 
   it('mcp-delete forwards initiator alongside pane', async () => {
@@ -492,6 +554,7 @@ describe('MCP write dispatches tag initiator: aiClient', () => {
     expect(dispatch).toHaveBeenCalledExactlyOnceWith('file.delete', {
       pane: 'left',
       initiator: 'aiClient',
+      guard: true,
     })
   })
 })

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { startedByWhenGuarded } from '#lib/ui/started-elsewhere-guard.js'
     import TransferDialog from '../../file-operations/transfer/TransferDialog.svelte'
     import TransferProgressDialog from '../../file-operations/transfer/TransferProgressDialog.svelte'
     import TransferErrorDialog from '../../file-operations/transfer/TransferErrorDialog.svelte'
@@ -169,6 +170,7 @@
                 sourceVolumeId={transferDialogProps.sourceVolumeId}
                 destVolumeId={transferDialogProps.destVolumeId}
                 presetOnConflict={transferDialogProps.presetOnConflict}
+                startedBy={startedByWhenGuarded(transferDialogProps.initiator, transferDialogProps.guard)}
                 newName={transferDialogProps.newName}
                 onConfirm={onTransferConfirm}
                 registerConfirmer={registerTransferConfirmer}
@@ -243,6 +245,7 @@
                 cloudFolderMayHoldOnlineOnly={deleteDialogProps.cloudFolderMayHoldOnlineOnly}
                 isFromCursor={deleteDialogProps.isFromCursor}
                 sourceVolumeId={deleteDialogProps.sourceVolumeId}
+                startedBy={startedByWhenGuarded(deleteDialogProps.initiator, deleteDialogProps.guard)}
                 onConfirm={onDeleteConfirm}
                 onConfirmInBackground={onTrashInBackground}
                 registerConfirmer={registerDeleteConfirmer}
@@ -259,6 +262,7 @@
             initialName={newFolderDialogProps.initialName}
             volumeId={newFolderDialogProps.volumeId}
             initiator={newFolderDialogProps.initiator}
+            startedBy={startedByWhenGuarded(newFolderDialogProps.initiator, newFolderDialogProps.guard)}
             registerConfirmer={registerNewFolderConfirmer}
             onCreated={onNewFolderCreated}
             onCancel={onNewFolderCancel}
@@ -273,6 +277,7 @@
             initialName={newFileDialogProps.initialName}
             volumeId={newFileDialogProps.volumeId}
             initiator={newFileDialogProps.initiator}
+            startedBy={startedByWhenGuarded(newFileDialogProps.initiator, newFileDialogProps.guard)}
             registerConfirmer={registerNewFileConfirmer}
             onCreated={onNewFileCreated}
             onCancel={onNewFileCancel}

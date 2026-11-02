@@ -36,6 +36,7 @@ const FILE: RenameTarget = {
   parentPath: '/dir',
   isDirectory: false,
   nameKind: 'file',
+  initiator: 'user',
 }
 const FOLDER: RenameTarget = {
   ...FILE,
@@ -43,6 +44,7 @@ const FOLDER: RenameTarget = {
   originalName: 'notes',
   isDirectory: true,
   nameKind: 'folder',
+  initiator: 'user',
 }
 
 /** Runs a save the backend refuses with `error`, and hands back what it said. */
@@ -157,7 +159,7 @@ describe('a rename that copies', () => {
       '/dir/renamed',
       false,
       's3-1',
-      undefined,
+      'user',
       expect.objectContaining({ onStillRunning: expect.any(Function) as unknown }),
     )
   })
@@ -198,6 +200,7 @@ describe('the extension question on save', () => {
       path: '/dir/Logo.sketchbundle',
       originalName: 'Logo.sketchbundle',
       nameKind: 'package',
+      initiator: 'user',
     }
 
     const result = await executeRenameSave(sketch, 'Logo', 'ask')

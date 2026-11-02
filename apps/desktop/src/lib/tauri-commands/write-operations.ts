@@ -145,10 +145,10 @@ export async function onScanPreviewCancelled(
 export async function moveFiles(
   sources: string[],
   destination: string,
-  config?: WriteOperationConfig,
-  initiator?: Initiator,
+  config: WriteOperationConfig | undefined,
+  initiator: Initiator,
 ): Promise<WriteOperationStartResult> {
-  const res = await commands.moveFiles(sources, destination, config ?? null, initiator ?? null)
+  const res = await commands.moveFiles(sources, destination, config ?? null, initiator)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }
@@ -156,11 +156,11 @@ export async function moveFiles(
 /** Recursively deletes files and directories. Same events as copyBetweenVolumes. */
 export async function deleteFiles(
   sources: string[],
-  config?: WriteOperationConfig,
-  volumeId?: string,
-  initiator?: Initiator,
+  config: WriteOperationConfig | undefined,
+  volumeId: string | undefined,
+  initiator: Initiator,
 ): Promise<WriteOperationStartResult> {
-  const res = await commands.deleteFiles(sources, volumeId ?? null, config ?? null, initiator ?? null)
+  const res = await commands.deleteFiles(sources, volumeId ?? null, config ?? null, initiator)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }
@@ -168,11 +168,11 @@ export async function deleteFiles(
 /** Moves files to macOS Trash. Same events as copyBetweenVolumes but with operationType: trash. */
 export async function trashFiles(
   sources: string[],
-  itemSizes?: number[],
-  config?: WriteOperationConfig,
-  initiator?: Initiator,
+  itemSizes: number[] | undefined,
+  config: WriteOperationConfig | undefined,
+  initiator: Initiator,
 ): Promise<WriteOperationStartResult> {
-  const res = await commands.trashFiles(sources, itemSizes ?? null, config ?? null, initiator ?? null)
+  const res = await commands.trashFiles(sources, itemSizes ?? null, config ?? null, initiator)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }

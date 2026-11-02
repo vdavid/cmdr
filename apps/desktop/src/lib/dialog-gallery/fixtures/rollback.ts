@@ -10,9 +10,11 @@
  */
 
 import type { RollbackConfirmVariant } from '#lib/file-operations/reversal-wording.js'
+import type { ToolInitiator } from '#lib/ui/started-elsewhere-guard.js'
 
 export interface RollbackConfirmFixture {
   variant: RollbackConfirmVariant
+  startedBy?: ToolInitiator
 }
 
 export const rollbackConfirmFixtures: Record<string, RollbackConfirmFixture | undefined> = {
@@ -21,4 +23,6 @@ export const rollbackConfirmFixtures: Record<string, RollbackConfirmFixture | un
   undoByDeleting: { variant: 'undoByDeleting' },
   undoByMovingBack: { variant: 'undoByMovingBack' },
   undoByRenamingBack: { variant: 'undoByRenamingBack' },
+  startedByAskCmdr: { variant: 'undoByDeleting', startedBy: 'agent' },
+  startedByAiClient: { variant: 'undoByMovingBack', startedBy: 'aiClient' },
 }

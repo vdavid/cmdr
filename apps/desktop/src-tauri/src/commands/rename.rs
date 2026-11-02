@@ -33,7 +33,7 @@ use cmdr_operations::{
 /// Moves a file or directory to the macOS Trash via NSFileManager.
 #[tauri::command]
 #[specta::specta]
-pub async fn move_to_trash(path: String) -> Result<(), MutationError> {
+pub async fn move_to_trash(path: String, initiator: cmdr_operation_log::types::Initiator) -> Result<(), MutationError> {
     let engine = operations().map_err(refuse_instant_not_installed)?;
     let expanded = expand_tilde(&path);
     let path_buf = PathBuf::from(&expanded);
@@ -43,13 +43,10 @@ pub async fn move_to_trash(path: String) -> Result<(), MutationError> {
     crate::downloads::note_pending_write_for_cmdr(&path_buf);
 
     // Journal as a one-item trash op (captures the in-trash location + the
-    // subtree's search leaves), mirroring the batch trash path. Initiator
-    // threading through this command lands with the provenance-completion pass.
+    // subtree's search leaves), mirroring the batch trash path.
     match tokio::time::timeout(
         Duration::from_secs(15),
-        tokio::task::spawn_blocking(move || {
-            engine.trash_single_journaled(&path_buf, cmdr_operation_log::types::Initiator::User)
-        }),
+        tokio::task::spawn_blocking(move || engine.trash_single_journaled(&path_buf, initiator)),
     )
     .await
     {
@@ -193,7 +190,7 @@ pub async fn rename_file(
     to: String,
     force: bool,
     volume_id: Option<String>,
-    initiator: Option<cmdr_operation_log::types::Initiator>,
+    initiator: cmdr_operation_log::types::Initiator,
 ) -> Result<MutationReply, MutationError> {
     rename_file_replying(
         from,
@@ -212,7 +209,7 @@ pub(crate) async fn rename_file_replying(
     to: String,
     force: bool,
     volume_id: Option<String>,
-    initiator: Option<cmdr_operation_log::types::Initiator>,
+    initiator: cmdr_operation_log::types::Initiator,
     on_settled: impl FnOnce(MutationSettled) + Send + 'static,
 ) -> Result<MutationReply, MutationError> {
     let engine = operations().map_err(refuse_instant_not_installed)?;
@@ -230,13 +227,7 @@ pub(crate) async fn rename_file_replying(
     // wedges the phone.
     reply_within(
         MUTATION_REPLY_DEADLINE,
-        engine.rename_managed(
-            from_path,
-            to_path,
-            force,
-            volume_id_str,
-            initiator.unwrap_or(cmdr_operation_log::types::Initiator::User),
-        ),
+        engine.rename_managed(from_path, to_path, force, volume_id_str, initiator),
         on_settled,
     )
     .await
@@ -469,7 +460,7 @@ mod tests {
             "/docs/new.txt".to_string(),
             false,
             Some(volume_id.to_string()),
-            None,
+            cmdr_operation_log::types::Initiator::User,
             move |settled| {
                 let _ = tx.send(settled);
             },
@@ -541,7 +532,7 @@ mod tests {
             new.to_string_lossy().to_string(),
             false,
             None,
-            None,
+            cmdr_operation_log::types::Initiator::User,
             |_| {},
         )
         .await;
@@ -564,7 +555,7 @@ mod tests {
             new.to_string_lossy().to_string(),
             false,
             None,
-            None,
+            cmdr_operation_log::types::Initiator::User,
             |_| {},
         )
         .await;
@@ -588,7 +579,7 @@ mod tests {
             new.to_string_lossy().to_string(),
             true,
             None,
-            None,
+            cmdr_operation_log::types::Initiator::User,
             |_| {},
         )
         .await;
@@ -608,7 +599,11 @@ mod tests {
         let file = tmp.join("trash_me.txt");
         fs::write(&file, "goodbye").unwrap();
         let _trash = cmdr_operations::testing::TrashCleanup::of(&[&file]);
-        let result = move_to_trash(file.to_string_lossy().to_string()).await;
+        let result = move_to_trash(
+            file.to_string_lossy().to_string(),
+            cmdr_operation_log::types::Initiator::User,
+        )
+        .await;
         assert!(result.is_ok());
         assert!(!file.exists());
     }
@@ -616,7 +611,11 @@ mod tests {
     #[tokio::test]
     #[cfg(target_os = "macos")]
     async fn test_move_to_trash_nonexistent() {
-        let result = move_to_trash("/nonexistent_12345/trash_me.txt".to_string()).await;
+        let result = move_to_trash(
+            "/nonexistent_12345/trash_me.txt".to_string(),
+            cmdr_operation_log::types::Initiator::User,
+        )
+        .await;
         assert!(result.is_err());
         assert!(matches!(result.unwrap_err(), MutationError::NotFound { .. }));
     }

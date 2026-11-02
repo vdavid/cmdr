@@ -561,6 +561,15 @@ stands alone in `ToolRollbackDialog`, mounted by the main page. There a running 
 `liveRollbackBlock` (`reversal-wording.ts`), the verdict `QueueRow`'s button reads too. A finished operation's stays up:
 its yes runs the journal's gate and toasts a refusal, the same words the history dialog gives it.
 
+**Who asked rides through to the log.** The question's `initiator` goes to `rollback_operation`, so what a person
+confirms from a tool's question records that tool on the inverse row. Its `guard` arms the dialog (`#lib/ui/DETAILS.md`
+§ The started-elsewhere guard), and through a progress dialog too (`askRollbackFromTool` hands it `startedBy`). That
+dialog's own Rollback button is a person's press: it clears it.
+
+**A running operation's cancel-with-rollback records nothing new, and has nowhere to.** `cancel_write_operation` flips
+the operation's intent, so the reversal runs inside the operation it stops, on that operation's row, which already names
+who started it. There's no inverse row, unlike `rollback_operation`.
+
 **`dialog_confirm` presses whichever question is up**, through `rollback-confirmers.ts`, where `RollbackConfirmDialog`
 registers itself, so a new host can't be missed. That's why `onConfirm` returns what came of it: a finished operation's
 host answers the dispatch or the refusal, and a host stopping a running operation returns nothing. The queue window's

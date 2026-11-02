@@ -1,5 +1,7 @@
 /** Reactive state for inline rename. Must be .svelte.ts for $state(). */
 
+import type { Initiator } from '#lib/ipc/bindings.js'
+import type { ToolInitiator } from '#lib/ui/started-elsewhere-guard.js'
 import type { NameKind } from '#lib/utils/file-extension.js'
 import type { ValidationResult, ValidationSeverity } from '#lib/utils/filename-validation.js'
 import { createRenameEditorPresence } from './rename-editor-presence'
@@ -28,6 +30,10 @@ export interface RenameTarget {
    * name's extension for the selection stages and the extension-change check.
    */
   nameKind: NameKind
+  /** Who asked, for the operation log. A person pressing Enter on it doesn't change that. */
+  initiator: Initiator
+  /** Set when a tool opened this and it must arm first (`InlineRenameEditor`): who to name. */
+  startedBy?: ToolInitiator
 }
 
 export interface RenameState {

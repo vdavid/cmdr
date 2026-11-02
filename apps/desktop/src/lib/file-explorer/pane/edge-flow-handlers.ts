@@ -38,7 +38,7 @@ export interface EdgeFlowHandlersDeps {
   getPaneVolumeId: (pane: 'left' | 'right') => string
   getTabMgr: (pane: 'left' | 'right') => TabManager
   getVolumes: () => VolumeInfo[]
-  focusActivePane: () => void
+  followFocusedPane: () => void
 }
 
 export interface EdgeFlowHandlers {
@@ -82,7 +82,7 @@ export function createEdgeFlowHandlers(deps: EdgeFlowHandlersDeps): EdgeFlowHand
     }
     // Otherwise the load was one the pane had already left (for the Servers hub,
     // say), and stopping it was the whole job.
-    deps.focusActivePane()
+    deps.followFocusedPane()
   }
 
   function returnFromCancel(pane: 'left' | 'right', to: NavigateTo, selectName: string | undefined): void {
@@ -113,7 +113,7 @@ export function createEdgeFlowHandlers(deps: EdgeFlowHandlersDeps): EdgeFlowHand
         source: 'cancel',
         pushHistory: false,
       })
-      deps.focusActivePane()
+      deps.followFocusedPane()
     })
   }
 

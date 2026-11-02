@@ -9,6 +9,16 @@ use cmdr_operation_log::types::{
 use cmdr_operations::testing::RollbackSupport;
 use serde_json::json;
 
+fn agent_ctx() -> ToolCtx {
+    ToolCtx {
+        caller: crate::tools::Caller::Agent {
+            origin: crate::agent::types::TurnOrigin::Text,
+        },
+        cancel: tokio_util::sync::CancellationToken::new(),
+        conversation_id: None,
+    }
+}
+
 #[test]
 fn empty_params_parse_to_no_filters() {
     let (filters, limit, offset) = parse_list_filters(&json!({})).expect("parse");
@@ -290,7 +300,7 @@ async fn opening_the_question_answers_that_a_person_decides() {
             .unwrap();
     });
 
-    let answer = open_rollback_question(&handle, "op-9", RollbackQuestion::Live)
+    let answer = open_rollback_question(&handle, &agent_ctx(), "op-9", RollbackQuestion::Live)
         .await
         .unwrap();
     assert_eq!(answer["awaitingPerson"], json!(true));
@@ -300,6 +310,8 @@ async fn opening_the_question_answers_that_a_person_decides() {
     let payload = seen.lock().unwrap().take().expect("the event went out");
     assert_eq!(payload["operationId"], json!("op-9"));
     assert_eq!(payload["target"], json!("live"));
+    assert_eq!(payload["initiator"], json!("agent"), "the log credits who asked");
+    assert_eq!(payload["guard"], json!(true));
 }
 
 /// Another modal up is the frontend's refusal to give, typed, and the question never rises.
@@ -322,7 +334,7 @@ async fn a_modal_in_the_way_refuses_with_its_id() {
             .unwrap();
     });
 
-    let error = open_rollback_question(&handle, "op-9", RollbackQuestion::Live)
+    let error = open_rollback_question(&handle, &agent_ctx(), "op-9", RollbackQuestion::Live)
         .await
         .expect_err("a dialog is in the way");
     assert_eq!(error.data, Some(json!({ "blockingDialog": "operation-log" })));
