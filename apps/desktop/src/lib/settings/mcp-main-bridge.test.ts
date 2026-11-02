@@ -334,6 +334,13 @@ describe("`mcp-describe-setting`, what `set_setting`'s question reads", () => {
     const value = JSON.stringify({ custom: { model: 'm', baseUrl: `https://llm.example.com/${MASKED}` } })
     expect((await describeSetting('ai.cloudProviderConfigs', value))?.invalid).toEqual(expect.any(String))
   })
+
+  it('refuses a masked value at the write too, since direct mode skips the question', async () => {
+    const value = JSON.stringify({ custom: { model: 'm', baseUrl: `https://llm.example.com/${MASKED}` } })
+    const answer = await setOverMcp('ai.cloudProviderConfigs', value)
+    expect(answer).toMatchObject({ ok: false, refusal: 'invalidValue' })
+    expect(setSettingMock).not.toHaveBeenCalled()
+  })
 })
 
 describe('settings that change with no question', () => {

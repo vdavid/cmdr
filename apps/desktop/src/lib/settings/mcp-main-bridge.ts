@@ -140,7 +140,10 @@ interface SetSettingPayload {
 }
 
 /** Why `set_setting` refused a write, carried in the response beside the sentence. */
-type SetSettingRefusal = 'notSettableOverMcp' | 'onlyOffOverMcp' | 'managedByOrganization'
+type SetSettingRefusal = 'notSettableOverMcp' | 'onlyOffOverMcp' | 'managedByOrganization' | 'invalidValue'
+
+/** What a client hears when the value it sent holds `cmdr://settings`'s mask. */
+const HOLDS_THE_MASK = `it holds the placeholder ${MASKED}, which stands for a part of the value only the person can see. Ask them to change it in Cmdr itself.`
 
 async function handleSetSetting(event: { payload: SetSettingPayload }): Promise<void> {
   const { requestId, settingId, value } = event.payload
@@ -172,6 +175,15 @@ async function handleSetSetting(event: { payload: SetSettingPayload }): Promise<
       refusal,
       error: `'${settingId}' records a person's data-sharing choice, so over MCP it can only be turned off (false). Only the person can turn it on, in Cmdr itself.`,
     })
+    return
+  }
+
+  // `cmdr://settings` shows a masked form, so a client copying a value it read would write the mask.
+  // Here as well as in the question, since direct mode skips the question.
+  if (holdsMaskedPlaceholder(value)) {
+    const refusal: SetSettingRefusal = 'invalidValue'
+    log.warn('Refused an MCP write to {settingId}: it holds the mask', { settingId })
+    await emit('mcp-response', { requestId, ok: false, refusal, error: `'${settingId}': ${HOLDS_THE_MASK}` })
     return
   }
 
@@ -222,9 +234,8 @@ function describeSetting(settingId: string, value: unknown): Record<string, unkn
     invalid = error instanceof Error ? error.message : String(error)
   }
   // `cmdr://settings` shows a masked form, so a client copying a value it read would write the mask.
-  if (invalid === null && holdsMaskedPlaceholder(value)) {
-    invalid = `it holds the placeholder ${MASKED}, which stands for a part of the value only the person can see. Ask them to change it in Cmdr itself.`
-  }
+  if (invalid === null && holdsMaskedPlaceholder(value)) invalid = HOLDS_THE_MASK
+
   return {
     label: def.label,
     // ❌ Never a secret's real form: this crosses to the backend and goes up in a dialog.

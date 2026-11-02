@@ -464,14 +464,14 @@ impl SessionMedia {
     /// Takes what `other` (a session over the same folder) read: each file waiting here
     /// that `other` read for the same listing facts, and `allowed` lets through, gets its
     /// answer. The rest stay queued for this session's own loader.
-    pub(crate) fn adopt_where(&self, other: &SessionMedia, allowed: impl Fn(&str) -> bool) {
+    pub(crate) fn adopt_where(&self, other: &SessionMedia, allowed: impl Fn(&str, &MediaRead) -> bool) {
         // One lock at a time: `other`'s answers are copied out before ours is taken.
         let answers: Vec<(Arc<str>, Stamp, MediaRead)> = other
             .lock()
             .files
             .iter()
-            .filter(|(name, _)| allowed(name))
             .filter(|(_, cached)| matches!(cached.state, MediaRead::Read(_) | MediaRead::Unreadable))
+            .filter(|(name, cached)| allowed(name, &cached.state))
             .map(|(name, cached)| (Arc::clone(name), cached.stamp, cached.state.clone()))
             .collect();
         let mut inner = self.lock();

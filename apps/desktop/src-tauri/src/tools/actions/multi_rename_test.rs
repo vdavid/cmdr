@@ -469,6 +469,68 @@ mod media {
 
     // ── The sensitive-content gate ──────────────────────────────────────────────
 
+    fn keyed_title(_: &FileJob) -> Result<MediaFacts, ReadError> {
+        Ok(MediaFacts {
+            title: Some("-----BEGIN OPENSSH PRIVATE KEY-----".to_string()),
+            ..MediaFacts::default()
+        })
+    }
+
+    /// `tag.title` and `tag.comment` are file-derived text that reaches the model in a preview, and
+    /// the content check runs wherever text forms.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_media_field_holding_a_private_key_reads_as_refused() {
+        let (dir, entries, _listing) = folder("mcp-rename-key", &["song.mp3"]);
+        let refused = RefusedReads::default();
+
+        let media = read_media(
+            &dir,
+            &names(&entries),
+            &entries,
+            &[],
+            gated(loader(&Calls::default(), keyed_title), &refused),
+            MAX_MEDIA_READS,
+        )
+        .await
+        .expect("the tool reads");
+
+        assert_eq!(refused.take(), vec![Protected::PrivateKey]);
+        let rows = preview(&title_mask(), &dir, &names(&entries), &entries, Some(&media));
+        assert_eq!(
+            rows[0].status,
+            RowStatus::Unreadable {
+                field: MediaField::TagTitle
+            }
+        );
+        assert!(!rows[0].new_name.contains("PRIVATE KEY"));
+    }
+
+    /// An open sheet's answer runs no reader, so it needs the same look before it's taken.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn an_open_sheets_answer_holding_a_private_key_is_not_taken() {
+        let (dir, entries, listing) = folder("mcp-rename-key-sheet", &["song.mp3"]);
+        let sheet = read_sheet(&listing, loader(&Calls::default(), keyed_title)).await;
+        let open = session::media_over("root", &dir);
+        assert_eq!(open.len(), 1, "the sheet's session is over this folder");
+        let refused = RefusedReads::default();
+
+        let media = read_media(
+            &dir,
+            &names(&entries),
+            &entries,
+            &open,
+            gated(loader(&Calls::default(), keyed_title), &refused),
+            MAX_MEDIA_READS,
+        )
+        .await
+        .expect("the tool reads");
+
+        assert_eq!(refused.take(), vec![Protected::PrivateKey]);
+        let rows = preview(&title_mask(), &dir, &names(&entries), &entries, Some(&media));
+        assert!(!rows[0].new_name.contains("PRIVATE KEY"));
+        session::close(&sheet);
+    }
+
     /// A cached listing over `dir/.ssh`, holding `files`.
     fn protected_folder(dir: &TestDir, tag: &str, files: &[&str]) -> (PathBuf, Vec<FileEntry>, TestListingGuard) {
         let folder = dir.join(".ssh");

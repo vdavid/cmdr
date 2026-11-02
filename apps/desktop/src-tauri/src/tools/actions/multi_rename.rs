@@ -30,14 +30,14 @@ use super::{ToolError, ToolResult, fit_to_result_budget, resolve_pane_target_pat
 use crate::agent::AgentDb;
 use crate::agent::store::proposals::{GroupIntent, NewGroup, NewRename, NewSweep, OpSnapshot};
 use crate::ignore_poison::IgnorePoison;
-use crate::multi_rename::media::{FileJob, Loader, SessionMedia};
+use crate::multi_rename::media::{FileJob, Loader, MediaRead, SessionMedia};
 use crate::multi_rename::plan::{Compiled, MultiRenameSpec, NameEdits, NoMedia, PreviewRow, RowStatus, preview_names};
 use crate::security_log::ContentTool;
 use crate::tools::policy::{Caller, ToolCtx, Verdict, admit, note_content_read};
 use crate::tools::registry::Access;
-use crate::tools::sensitive::{GateStop, Protected, classify, note_refusal, path_gate_within};
+use crate::tools::sensitive::{GateStop, Protected, classify, note_refusal, path_gate_within, refuse_private_key_text};
 use cmdr_fs::entry::FileEntry;
-use cmdr_media_meta::ReadError;
+use cmdr_media_meta::{MediaFacts, ReadError};
 
 /// Rows a dry run returns when the caller doesn't say.
 const DEFAULT_LIMIT: usize = 50;
@@ -380,7 +380,13 @@ fn gated(loader: Loader, refused: &RefusedReads) -> Loader {
     Loader {
         reader: Arc::new(
             move |job: &FileJob| match path_gate_within(&job.path.to_string_lossy(), GATE_BUDGET) {
-                Ok(()) => inner(job),
+                Ok(()) => match inner(job) {
+                    Ok(facts) if holds_a_private_key(&facts) => {
+                        refused.0.lock_ignore_poison().push(Protected::PrivateKey);
+                        Err(ReadError::NotSupported)
+                    }
+                    read => read,
+                },
                 Err(GateStop::Protected(reason)) => {
                     refused.0.lock_ignore_poison().push(reason);
                     Err(ReadError::NotSupported)
@@ -390,6 +396,25 @@ fn gated(loader: Loader, refused: &RefusedReads) -> Loader {
         ),
         ..loader
     }
+}
+
+/// Whether any text a file's media facts carry holds a private key's armor. Every text field: a
+/// mask can name any of them, and the text reaches the model in a preview.
+fn holds_a_private_key(facts: &MediaFacts) -> bool {
+    [
+        &facts.make,
+        &facts.model,
+        &facts.lens,
+        &facts.title,
+        &facts.artist,
+        &facts.album_artist,
+        &facts.album,
+        &facts.genre,
+        &facts.comment,
+    ]
+    .into_iter()
+    .flatten()
+    .any(|text| refuse_private_key_text(text).is_err())
 }
 
 /// Whether the folder itself passes the gate, off the dispatch task. Anything but a clear yes
@@ -429,7 +454,11 @@ async fn read_media(
             .filter(|entry| entry.is_symlink)
             .map(|entry| entry.name.as_str())
             .collect();
-        let may_take = |name: &str| !links.contains(name) && classify(&folder.join(name).to_string_lossy()).is_none();
+        let may_take = |name: &str, answer: &MediaRead| {
+            !links.contains(name)
+                && classify(&folder.join(name).to_string_lossy()).is_none()
+                && !matches!(answer, MediaRead::Read(facts) if holds_a_private_key(facts))
+        };
         for sheet in open {
             media.adopt_where(sheet, may_take);
         }
