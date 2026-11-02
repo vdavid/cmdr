@@ -79,9 +79,9 @@
   "@ai.cloudConsent.folderSuggestions": {
     "sourceHash": "e2c592a"
   },
-  "ai.cloudConsent.search": "<b>用自然語言搜尋</b>：你輸入的文字",
+  "ai.cloudConsent.search": "<b>用自然語言搜尋</b>：你輸入的文字，或是你開啟 MCP 直接模式後，已連接的 AI 工具要求的內容",
   "@ai.cloudConsent.search": {
-    "sourceHash": "e6d4ef9"
+    "sourceHash": "b5c8d93"
   },
   "ai.cloudConsent.selection": "<b>依描述選取</b>：你輸入的內容，加上目前資料夾裡最多 240 個名稱",
   "@ai.cloudConsent.selection": {
@@ -91,21 +91,21 @@
   "@ai.cloudConsent.askCmdr.title": {
     "sourceHash": "26e139c"
   },
-  "ai.cloudConsent.askCmdr.item.messages": "你的訊息",
+  "ai.cloudConsent.askCmdr.item.messages": "你的訊息，包括你在對話裡輸入、用來解鎖封存檔或備份的任何密碼",
   "@ai.cloudConsent.askCmdr.item.messages": {
-    "sourceHash": "befc6e9"
+    "sourceHash": "66e656b"
   },
-  "ai.cloudConsent.askCmdr.item.names": "Cmdr 為了回答你而查看的檔案和資料夾名稱與路徑",
+  "ai.cloudConsent.askCmdr.item.names": "Cmdr 查看的檔案和資料夾名稱與路徑",
   "@ai.cloudConsent.askCmdr.item.names": {
-    "sourceHash": "ce3259d"
+    "sourceHash": "4d5ea2c"
   },
   "ai.cloudConsent.askCmdr.item.sizes": "它們的大小和日期",
   "@ai.cloudConsent.askCmdr.item.sizes": {
     "sourceHash": "2484530"
   },
-  "ai.cloudConsent.askCmdr.item.contents": "Cmdr 為了回答你而開啟的檔案裡的部分內容：一些文字、PDF 的幾頁、封存檔裡有哪些東西，以及照片的相機資訊和拍攝地點",
+  "ai.cloudConsent.askCmdr.item.contents": "Cmdr 開啟的檔案裡的部分內容：一些文字、PDF 的幾頁、封存檔裡有哪些東西、照片的相機資訊和拍攝地點，以及 Cmdr 在照片裡辨識出的文字",
   "@ai.cloudConsent.askCmdr.item.contents": {
-    "sourceHash": "fcd0b73"
+    "sourceHash": "5e8355f"
   },
   "ai.cloudConsent.askCmdr.item.envelope": "你此刻正在看的東西：目前的資料夾、游標、選取的項目，以及已連接的磁碟機",
   "@ai.cloudConsent.askCmdr.item.envelope": {
@@ -115,19 +115,19 @@
   "@ai.cloudConsent.askCmdr.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "ai.cloudConsent.askCmdr.item.mediaFields": "Details of photos and songs when a rename uses them: date taken, camera, title, artist, album, and the like",
+  "ai.cloudConsent.askCmdr.item.mediaFields": "重新命名用到照片和歌曲的資訊時，這些資訊本身：拍攝日期、相機、標題、演出者、專輯等等",
   "@ai.cloudConsent.askCmdr.item.mediaFields": {
     "sourceHash": "e96157a"
   },
-  "ai.cloudConsent.askCmdr.item.appState": "What Cmdr is up to: running and past operations, open dialogs, favorites, saved places, drive indexing, and which folders matter most",
+  "ai.cloudConsent.askCmdr.item.appState": "Cmdr 正在做的事：進行中和過去的操作、開著的對話方塊、喜好項目、儲存的位置、磁碟機索引，以及哪些資料夾最重要",
   "@ai.cloudConsent.askCmdr.item.appState": {
     "sourceHash": "4159dde"
   },
-  "ai.cloudConsent.askCmdr.item.settings": "Your Cmdr settings and keyboard shortcuts, including folders you picked for image indexing and your AI service’s address. Anything that looks like a password, key, or token is masked, and so is your email address",
+  "ai.cloudConsent.askCmdr.item.settings": "你的 Cmdr 設定和鍵盤快速鍵，包括你選來建立影像索引的資料夾，以及你的 AI 服務位址。任何看起來像密碼、金鑰或 token 的內容都會被遮蔽，你的電子郵件地址也一樣",
   "@ai.cloudConsent.askCmdr.item.settings": {
     "sourceHash": "c7c0657"
   },
-  "ai.cloudConsent.askCmdr.item.logs": "Cmdr’s recent log lines, with names, paths, addresses, and anything that looks like a key swapped for placeholders first. A few plain details stay, like file extensions and common folder names such as Documents",
+  "ai.cloudConsent.askCmdr.item.logs": "Cmdr 最近的記錄行，其中的名稱、路徑、位址和任何看起來像金鑰的內容，都會先換成預留位置。少數一般資訊會留著，例如副檔名和「文件」這類常見資料夾的名稱",
   "@ai.cloudConsent.askCmdr.item.logs": {
     "sourceHash": "7aabf35"
   },
@@ -135,15 +135,15 @@
   "@ai.cloudConsent.askCmdr.item.memory": {
     "sourceHash": "7779513"
   },
-  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr 絕不會送出整個檔案、照片或縮圖。當你問到某個檔案時，它可以讀取其中有限的一部分：幾行文字、PDF 的幾頁連同它的標題和作者、封存檔裡的檔案列表，或是照片的相機資訊，包括拍攝地點。照片搜尋也是同樣的做法：Cmdr 在符合的照片裡辨識出的文字和標籤會送給你的提供者，好讓它找得到。Cmdr 可以建議重新命名、移動和整理，但在你同意之前，任何檔案都不會有變化。",
+  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr 絕不會送出整個檔案、照片或縮圖。當它需要進一步了解某個檔案時，可以讀取其中有限的一部分：幾行文字、PDF 的幾頁連同它的標題和作者、封存檔裡的檔案列表，或是照片的相機資訊，包括拍攝地點。照片搜尋也是同樣的做法：Cmdr 在符合的照片裡辨識出的文字和標籤會送給你的提供者，好讓它找得到。",
   "@ai.cloudConsent.askCmdr.contentsRule": {
-    "sourceHash": "5a378c1"
+    "sourceHash": "38dedbb"
   },
-  "ai.cloudConsent.askCmdr.protectedContents": "Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keychains, browser data, Mail, Messages, Notes, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.",
+  "ai.cloudConsent.askCmdr.protectedContents": "有些內容不管誰怎麼要求，都只會留在你的 Mac 上：SSH 金鑰、雲端和工具的登入資訊、你的鑰匙圈、瀏覽器資料、「郵件」、「訊息」、「備忘錄」、Cmdr 自己的資料，以及任何存有私密金鑰的檔案。它們的名稱仍然可能送到你的提供者那裡。",
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "sourceHash": "048633f"
   },
-  "ai.cloudConsent.askCmdr.actions": "In a chat you started, Ask Cmdr can also work the app for you: navigate, select, sort, open tabs and dialogs, and connect a place you saved. Copying, moving, compressing, deleting, renaming, and undoing an operation each open a dialog or editor for you to confirm, and nothing happens until you do. Opening a file, changing a setting (other than how Cmdr looks), quitting, ejecting a drive, removing a server, and changing indexing ask you first. Creating a named folder or file and tagging files happen right away with no question, and tags have no undo. Renames and cleanups it prepares as a plan wait for your approval.",
+  "ai.cloudConsent.askCmdr.actions": "在你自己開始的對話裡，Ask Cmdr 還能替你操作這個 App：導覽、選取、排序、開啟分頁和對話方塊，以及連線到你儲存的位置。複製、移動、壓縮、刪除、重新命名和復原一項操作，都會先開啟對話方塊或編輯器讓你確認，在你確認之前什麼都不會發生。開啟檔案、更改設定（Cmdr 外觀的設定除外）、結束 Cmdr、退出磁碟機、移除伺服器和更改索引，都會先問你。建立指定名稱的資料夾或檔案、替檔案加上標籤，會立刻執行，不會問你，而且標籤無法還原。它準備成計畫的重新命名和整理，會等你同意。",
   "@ai.cloudConsent.askCmdr.actions": {
     "sourceHash": "bf002cc"
   },
@@ -151,17 +151,17 @@
   "@ai.cloudConsent.askCmdr.memory": {
     "sourceHash": "496c78d"
   },
-  "ai.cloudConsent.askCmdr.proactive": "Cmdr 還會留意你正在使用的資料夾，有東西可以建議時就主動開啟對話，所以訊息可能在你沒開口的情況下就送到提供者那裡。你可以在 Ask Cmdr 設定的「主動提醒」裡把它關掉。",
+  "ai.cloudConsent.askCmdr.proactive": "Cmdr 還會留意你正在使用的資料夾，有東西可以建議時就主動開啟對話，所以訊息可能在你沒開口的情況下就送到提供者那裡。在這些對話裡，它可以讀取上面列出的內容、準備計畫，以及寫下它的筆記，就只有這些。你可以在 Ask Cmdr 設定的「主動提醒」裡把它關掉。",
   "@ai.cloudConsent.askCmdr.proactive": {
-    "sourceHash": "abfa80b"
+    "sourceHash": "95b18ac"
   },
   "ai.cloudConsent.askCmdr.chatsStayLocal": "你的 Ask Cmdr 對話會留在你的 Mac 上，存在一個你可以開啟來讀的本機資料庫裡。",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "如果你在「進階」設定裡開啟 AI 模型呼叫的記錄，Cmdr 還會把每次的請求和回覆存到你 Mac 上的一個資料夾裡。這些記錄一樣只留在本機，絕不會送到任何地方。",
+  "ai.cloudConsent.logsNote": "如果你在「進階」設定裡開啟 AI 模型呼叫的記錄，Cmdr 還會把每次的請求和回覆存到你 Mac 上的一個資料夾裡。這些呼叫記錄只留在本機，絕不會送到任何地方。",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "7e211fc"
+    "sourceHash": "d89adfb"
   },
   "ai.cloudConsent.turnOffAnyTime": "隨時都可以關掉這一項，Cmdr 會立刻停止傳送。你的服務、金鑰和對話都會維持原樣。",
   "@ai.cloudConsent.turnOffAnyTime": {

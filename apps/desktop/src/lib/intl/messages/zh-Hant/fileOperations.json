@@ -395,7 +395,7 @@
   "@fileOperations.transferDialog.policyAskEach": {
     "sourceHash": "4302843"
   },
-  "fileOperations.transferDialog.presetOverwriteNote": "{reach, select, smaller {This dialog opened set to overwrite files already there that are smaller.} older {This dialog opened set to overwrite files already there that are older.} other {This dialog opened set to overwrite the files already there.}}",
+  "fileOperations.transferDialog.presetOverwriteNote": "{reach, select, smaller {這個對話方塊開啟時，已設為覆寫目標位置裡比較小的現有檔案。} older {這個對話方塊開啟時，已設為覆寫目標位置裡比較舊的現有檔案。} other {這個對話方塊開啟時，已設為覆寫目標位置裡的現有檔案。}}",
   "@fileOperations.transferDialog.presetOverwriteNote": {
     "sourceHash": "241c70e"
   },

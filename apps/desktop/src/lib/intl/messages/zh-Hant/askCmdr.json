@@ -408,11 +408,11 @@
   "@askCmdr.tool.outcome.toolUnavailable": {
     "sourceHash": "9d46d4e"
   },
-  "askCmdr.tool.outcome.inBackground": "waits for you to ask",
+  "askCmdr.tool.outcome.inBackground": "等你問了才會做",
   "@askCmdr.tool.outcome.inBackground": {
     "sourceHash": "9fbcafe"
   },
-  "askCmdr.tool.outcome.outcomeUnknown": "may still be going",
+  "askCmdr.tool.outcome.outcomeUnknown": "可能還在進行中",
   "@askCmdr.tool.outcome.outcomeUnknown": {
     "sourceHash": "9cfa28d"
   },
@@ -628,13 +628,13 @@
   "@askCmdr.tool.preview.copyRefused": {
     "sourceHash": "5b856ff"
   },
-  "askCmdr.toolGroup.summary": "已查看：{parts}",
+  "askCmdr.toolGroup.summary": "已處理：{parts}",
   "@askCmdr.toolGroup.summary": {
-    "sourceHash": "2808d11"
+    "sourceHash": "36aa191"
   },
-  "askCmdr.toolGroup.summaryRunning": "正在查看：{parts}",
+  "askCmdr.toolGroup.summaryRunning": "正在處理：{parts}",
   "@askCmdr.toolGroup.summaryRunning": {
-    "sourceHash": "db287ea"
+    "sourceHash": "07bb931"
   },
   "askCmdr.toolGroup.folders": "{count, plural, other {{countText} 個資料夾}}",
   "@askCmdr.toolGroup.folders": {
@@ -1428,651 +1428,651 @@
   "@askCmdr.railBoundary.closedToast": {
     "sourceHash": "18caa70"
   },
-  "askCmdr.tool.selectVolume.doing": "Switching a pane’s drive",
+  "askCmdr.tool.selectVolume.doing": "正在切換窗格的磁碟機",
   "@askCmdr.tool.selectVolume.doing": {
     "sourceHash": "b02b8f9"
   },
-  "askCmdr.tool.selectVolume.done": "Switched a pane’s drive",
+  "askCmdr.tool.selectVolume.done": "已切換窗格的磁碟機",
   "@askCmdr.tool.selectVolume.done": {
     "sourceHash": "d18ed0e"
   },
-  "askCmdr.tool.selectVolume.tried": "Tried to switch a pane’s drive",
+  "askCmdr.tool.selectVolume.tried": "沒能切換窗格的磁碟機",
   "@askCmdr.tool.selectVolume.tried": {
     "sourceHash": "de9108a"
   },
-  "askCmdr.tool.navToPath.doing": "Going to a folder",
+  "askCmdr.tool.navToPath.doing": "正在前往一個資料夾",
   "@askCmdr.tool.navToPath.doing": {
     "sourceHash": "dbf8820"
   },
-  "askCmdr.tool.navToPath.done": "Went to a folder",
+  "askCmdr.tool.navToPath.done": "已前往一個資料夾",
   "@askCmdr.tool.navToPath.done": {
     "sourceHash": "b59db66"
   },
-  "askCmdr.tool.navToPath.tried": "Tried to go to a folder",
+  "askCmdr.tool.navToPath.tried": "沒能前往一個資料夾",
   "@askCmdr.tool.navToPath.tried": {
     "sourceHash": "3ddcff2"
   },
-  "askCmdr.tool.navToParent.doing": "Going up a folder",
+  "askCmdr.tool.navToParent.doing": "正在前往上層資料夾",
   "@askCmdr.tool.navToParent.doing": {
     "sourceHash": "3280f0c"
   },
-  "askCmdr.tool.navToParent.done": "Went up a folder",
+  "askCmdr.tool.navToParent.done": "已前往上層資料夾",
   "@askCmdr.tool.navToParent.done": {
     "sourceHash": "8779297"
   },
-  "askCmdr.tool.navToParent.tried": "Tried to go up a folder",
+  "askCmdr.tool.navToParent.tried": "沒能前往上層資料夾",
   "@askCmdr.tool.navToParent.tried": {
     "sourceHash": "8088d5e"
   },
-  "askCmdr.tool.navBack.doing": "Stepping back",
+  "askCmdr.tool.navBack.doing": "正在返回",
   "@askCmdr.tool.navBack.doing": {
     "sourceHash": "b8e89aa"
   },
-  "askCmdr.tool.navBack.done": "Stepped back",
+  "askCmdr.tool.navBack.done": "已返回",
   "@askCmdr.tool.navBack.done": {
     "sourceHash": "76896a6"
   },
-  "askCmdr.tool.navBack.tried": "Tried to step back",
+  "askCmdr.tool.navBack.tried": "沒能返回",
   "@askCmdr.tool.navBack.tried": {
     "sourceHash": "02594af"
   },
-  "askCmdr.tool.navForward.doing": "Stepping forward",
+  "askCmdr.tool.navForward.doing": "正在往前",
   "@askCmdr.tool.navForward.doing": {
     "sourceHash": "0c416a2"
   },
-  "askCmdr.tool.navForward.done": "Stepped forward",
+  "askCmdr.tool.navForward.done": "已往前",
   "@askCmdr.tool.navForward.done": {
     "sourceHash": "2b8fbb7"
   },
-  "askCmdr.tool.navForward.tried": "Tried to step forward",
+  "askCmdr.tool.navForward.tried": "沒能往前",
   "@askCmdr.tool.navForward.tried": {
     "sourceHash": "20d2a3c"
   },
-  "askCmdr.tool.scrollTo.doing": "Scrolling a pane",
+  "askCmdr.tool.scrollTo.doing": "正在捲動窗格",
   "@askCmdr.tool.scrollTo.doing": {
     "sourceHash": "b09900f"
   },
-  "askCmdr.tool.scrollTo.done": "Scrolled a pane",
+  "askCmdr.tool.scrollTo.done": "已捲動窗格",
   "@askCmdr.tool.scrollTo.done": {
     "sourceHash": "5067ed3"
   },
-  "askCmdr.tool.scrollTo.tried": "Tried to scroll a pane",
+  "askCmdr.tool.scrollTo.tried": "沒能捲動窗格",
   "@askCmdr.tool.scrollTo.tried": {
     "sourceHash": "c96b5f8"
   },
-  "askCmdr.tool.moveCursor.doing": "Moving the cursor",
+  "askCmdr.tool.moveCursor.doing": "正在移動游標",
   "@askCmdr.tool.moveCursor.doing": {
     "sourceHash": "90a9627"
   },
-  "askCmdr.tool.moveCursor.done": "Moved the cursor",
+  "askCmdr.tool.moveCursor.done": "已移動游標",
   "@askCmdr.tool.moveCursor.done": {
     "sourceHash": "f0f8cc9"
   },
-  "askCmdr.tool.moveCursor.tried": "Tried to move the cursor",
+  "askCmdr.tool.moveCursor.tried": "沒能移動游標",
   "@askCmdr.tool.moveCursor.tried": {
     "sourceHash": "70b7cb0"
   },
-  "askCmdr.tool.openUnderCursor.doing": "Opening the highlighted item",
+  "askCmdr.tool.openUnderCursor.doing": "正在開啟游標所在的項目",
   "@askCmdr.tool.openUnderCursor.doing": {
     "sourceHash": "cdfffda"
   },
-  "askCmdr.tool.openUnderCursor.done": "Opened the highlighted item",
+  "askCmdr.tool.openUnderCursor.done": "已開啟游標所在的項目",
   "@askCmdr.tool.openUnderCursor.done": {
     "sourceHash": "09c7e77"
   },
-  "askCmdr.tool.openUnderCursor.tried": "Tried to open the highlighted item",
+  "askCmdr.tool.openUnderCursor.tried": "沒能開啟游標所在的項目",
   "@askCmdr.tool.openUnderCursor.tried": {
     "sourceHash": "3dc0896"
   },
-  "askCmdr.tool.select.doing": "Selecting files",
+  "askCmdr.tool.select.doing": "正在選取檔案",
   "@askCmdr.tool.select.doing": {
     "sourceHash": "21aed4d"
   },
-  "askCmdr.tool.select.done": "Selected files",
+  "askCmdr.tool.select.done": "已選取檔案",
   "@askCmdr.tool.select.done": {
     "sourceHash": "d9ac098"
   },
-  "askCmdr.tool.select.tried": "Tried to select files",
+  "askCmdr.tool.select.tried": "沒能選取檔案",
   "@askCmdr.tool.select.tried": {
     "sourceHash": "e87c070"
   },
-  "askCmdr.tool.copy.doing": "Opening the copy dialog",
+  "askCmdr.tool.copy.doing": "正在開啟複製對話方塊",
   "@askCmdr.tool.copy.doing": {
     "sourceHash": "f12697b"
   },
-  "askCmdr.tool.copy.done": "Opened the copy dialog",
+  "askCmdr.tool.copy.done": "已開啟複製對話方塊",
   "@askCmdr.tool.copy.done": {
     "sourceHash": "08643aa"
   },
-  "askCmdr.tool.copy.tried": "Tried to open the copy dialog",
+  "askCmdr.tool.copy.tried": "沒能開啟複製對話方塊",
   "@askCmdr.tool.copy.tried": {
     "sourceHash": "ca20124"
   },
-  "askCmdr.tool.move.doing": "Opening the move dialog",
+  "askCmdr.tool.move.doing": "正在開啟移動對話方塊",
   "@askCmdr.tool.move.doing": {
     "sourceHash": "4320e9e"
   },
-  "askCmdr.tool.move.done": "Opened the move dialog",
+  "askCmdr.tool.move.done": "已開啟移動對話方塊",
   "@askCmdr.tool.move.done": {
     "sourceHash": "dc9afd0"
   },
-  "askCmdr.tool.move.tried": "Tried to open the move dialog",
+  "askCmdr.tool.move.tried": "沒能開啟移動對話方塊",
   "@askCmdr.tool.move.tried": {
     "sourceHash": "6d259bf"
   },
-  "askCmdr.tool.compress.doing": "Opening the compress dialog",
+  "askCmdr.tool.compress.doing": "正在開啟壓縮對話方塊",
   "@askCmdr.tool.compress.doing": {
     "sourceHash": "3a5f25d"
   },
-  "askCmdr.tool.compress.done": "Opened the compress dialog",
+  "askCmdr.tool.compress.done": "已開啟壓縮對話方塊",
   "@askCmdr.tool.compress.done": {
     "sourceHash": "486c68f"
   },
-  "askCmdr.tool.compress.tried": "Tried to open the compress dialog",
+  "askCmdr.tool.compress.tried": "沒能開啟壓縮對話方塊",
   "@askCmdr.tool.compress.tried": {
     "sourceHash": "05ee679"
   },
-  "askCmdr.tool.delete.doing": "Opening the delete dialog",
+  "askCmdr.tool.delete.doing": "正在開啟刪除對話方塊",
   "@askCmdr.tool.delete.doing": {
     "sourceHash": "d32692c"
   },
-  "askCmdr.tool.delete.done": "Opened the delete dialog",
+  "askCmdr.tool.delete.done": "已開啟刪除對話方塊",
   "@askCmdr.tool.delete.done": {
     "sourceHash": "bb1551b"
   },
-  "askCmdr.tool.delete.tried": "Tried to open the delete dialog",
+  "askCmdr.tool.delete.tried": "沒能開啟刪除對話方塊",
   "@askCmdr.tool.delete.tried": {
     "sourceHash": "f713143"
   },
-  "askCmdr.tool.rename.doing": "Opening the rename editor",
+  "askCmdr.tool.rename.doing": "正在開啟重新命名編輯器",
   "@askCmdr.tool.rename.doing": {
     "sourceHash": "c808a09"
   },
-  "askCmdr.tool.rename.done": "Opened the rename editor",
+  "askCmdr.tool.rename.done": "已開啟重新命名編輯器",
   "@askCmdr.tool.rename.done": {
     "sourceHash": "4e17e71"
   },
-  "askCmdr.tool.rename.tried": "Tried to open the rename editor",
+  "askCmdr.tool.rename.tried": "沒能開啟重新命名編輯器",
   "@askCmdr.tool.rename.tried": {
     "sourceHash": "576a72e"
   },
-  "askCmdr.tool.multiRename.doing": "Working out new names",
+  "askCmdr.tool.multiRename.doing": "正在想新名稱",
   "@askCmdr.tool.multiRename.doing": {
     "sourceHash": "67ddd5b"
   },
-  "askCmdr.tool.multiRename.done": "Worked out new names",
+  "askCmdr.tool.multiRename.done": "已想好新名稱",
   "@askCmdr.tool.multiRename.done": {
     "sourceHash": "27945de"
   },
-  "askCmdr.tool.multiRename.tried": "Tried to work out new names",
+  "askCmdr.tool.multiRename.tried": "沒能想好新名稱",
   "@askCmdr.tool.multiRename.tried": {
     "sourceHash": "3595757"
   },
-  "askCmdr.tool.mkdir.doing": "Creating a folder",
+  "askCmdr.tool.mkdir.doing": "正在建立資料夾",
   "@askCmdr.tool.mkdir.doing": {
     "sourceHash": "e1827e9"
   },
-  "askCmdr.tool.mkdir.done": "Created a folder",
+  "askCmdr.tool.mkdir.done": "已建立資料夾",
   "@askCmdr.tool.mkdir.done": {
     "sourceHash": "af38948"
   },
-  "askCmdr.tool.mkdir.tried": "Tried to create a folder",
+  "askCmdr.tool.mkdir.tried": "沒能建立資料夾",
   "@askCmdr.tool.mkdir.tried": {
     "sourceHash": "ce4aae3"
   },
-  "askCmdr.tool.mkfile.doing": "Creating a file",
+  "askCmdr.tool.mkfile.doing": "正在建立檔案",
   "@askCmdr.tool.mkfile.doing": {
     "sourceHash": "689cfca"
   },
-  "askCmdr.tool.mkfile.done": "Created a file",
+  "askCmdr.tool.mkfile.done": "已建立檔案",
   "@askCmdr.tool.mkfile.done": {
     "sourceHash": "ca289f0"
   },
-  "askCmdr.tool.mkfile.tried": "Tried to create a file",
+  "askCmdr.tool.mkfile.tried": "沒能建立檔案",
   "@askCmdr.tool.mkfile.tried": {
     "sourceHash": "7d64656"
   },
-  "askCmdr.tool.refresh.doing": "Refreshing a pane",
+  "askCmdr.tool.refresh.doing": "正在重新整理窗格",
   "@askCmdr.tool.refresh.doing": {
     "sourceHash": "1ff91da"
   },
-  "askCmdr.tool.refresh.done": "Refreshed a pane",
+  "askCmdr.tool.refresh.done": "已重新整理窗格",
   "@askCmdr.tool.refresh.done": {
     "sourceHash": "04496fa"
   },
-  "askCmdr.tool.refresh.tried": "Tried to refresh a pane",
+  "askCmdr.tool.refresh.tried": "沒能重新整理窗格",
   "@askCmdr.tool.refresh.tried": {
     "sourceHash": "0485890"
   },
-  "askCmdr.tool.tag.doing": "Changing Finder tags",
+  "askCmdr.tool.tag.doing": "正在更改 Finder 標籤",
   "@askCmdr.tool.tag.doing": {
     "sourceHash": "f5d1dc8"
   },
-  "askCmdr.tool.tag.done": "Changed Finder tags",
+  "askCmdr.tool.tag.done": "已更改 Finder 標籤",
   "@askCmdr.tool.tag.done": {
     "sourceHash": "49b80d2"
   },
-  "askCmdr.tool.tag.tried": "Tried to change Finder tags",
+  "askCmdr.tool.tag.tried": "沒能更改 Finder 標籤",
   "@askCmdr.tool.tag.tried": {
     "sourceHash": "ec93cb8"
   },
-  "askCmdr.tool.toggleHidden.doing": "Changing whether hidden files show",
+  "askCmdr.tool.toggleHidden.doing": "正在更改是否顯示隱藏檔案",
   "@askCmdr.tool.toggleHidden.doing": {
     "sourceHash": "24cc396"
   },
-  "askCmdr.tool.toggleHidden.done": "Changed whether hidden files show",
+  "askCmdr.tool.toggleHidden.done": "已更改是否顯示隱藏檔案",
   "@askCmdr.tool.toggleHidden.done": {
     "sourceHash": "cbb61cc"
   },
-  "askCmdr.tool.toggleHidden.tried": "Tried to change whether hidden files show",
+  "askCmdr.tool.toggleHidden.tried": "沒能更改是否顯示隱藏檔案",
   "@askCmdr.tool.toggleHidden.tried": {
     "sourceHash": "e5d138f"
   },
-  "askCmdr.tool.setViewMode.doing": "Changing a pane’s view",
+  "askCmdr.tool.setViewMode.doing": "正在更改窗格的顯示方式",
   "@askCmdr.tool.setViewMode.doing": {
     "sourceHash": "3453107"
   },
-  "askCmdr.tool.setViewMode.done": "Changed a pane’s view",
+  "askCmdr.tool.setViewMode.done": "已更改窗格的顯示方式",
   "@askCmdr.tool.setViewMode.done": {
     "sourceHash": "bd7a8d6"
   },
-  "askCmdr.tool.setViewMode.tried": "Tried to change a pane’s view",
+  "askCmdr.tool.setViewMode.tried": "沒能更改窗格的顯示方式",
   "@askCmdr.tool.setViewMode.tried": {
     "sourceHash": "f48bda1"
   },
-  "askCmdr.tool.sort.doing": "Sorting a pane",
+  "askCmdr.tool.sort.doing": "正在排序窗格",
   "@askCmdr.tool.sort.doing": {
     "sourceHash": "d5f69d2"
   },
-  "askCmdr.tool.sort.done": "Sorted a pane",
+  "askCmdr.tool.sort.done": "已排序窗格",
   "@askCmdr.tool.sort.done": {
     "sourceHash": "0127d82"
   },
-  "askCmdr.tool.sort.tried": "Tried to sort a pane",
+  "askCmdr.tool.sort.tried": "沒能排序窗格",
   "@askCmdr.tool.sort.tried": {
     "sourceHash": "f8465cb"
   },
-  "askCmdr.tool.tab.doing": "Changing a pane’s tabs",
+  "askCmdr.tool.tab.doing": "正在更改窗格的分頁",
   "@askCmdr.tool.tab.doing": {
     "sourceHash": "60de709"
   },
-  "askCmdr.tool.tab.done": "Changed a pane’s tabs",
+  "askCmdr.tool.tab.done": "已更改窗格的分頁",
   "@askCmdr.tool.tab.done": {
     "sourceHash": "6d0e53d"
   },
-  "askCmdr.tool.tab.tried": "Tried to change a pane’s tabs",
+  "askCmdr.tool.tab.tried": "沒能更改窗格的分頁",
   "@askCmdr.tool.tab.tried": {
     "sourceHash": "0dc72d7"
   },
-  "askCmdr.tool.dialog.doing": "Using a dialog",
+  "askCmdr.tool.dialog.doing": "正在使用對話方塊",
   "@askCmdr.tool.dialog.doing": {
     "sourceHash": "db95cc2"
   },
-  "askCmdr.tool.dialog.done": "Used a dialog",
+  "askCmdr.tool.dialog.done": "已使用對話方塊",
   "@askCmdr.tool.dialog.done": {
     "sourceHash": "ae69f4d"
   },
-  "askCmdr.tool.dialog.tried": "Tried to use a dialog",
+  "askCmdr.tool.dialog.tried": "沒能使用對話方塊",
   "@askCmdr.tool.dialog.tried": {
     "sourceHash": "0e8b968"
   },
-  "askCmdr.tool.openSearchDialog.doing": "Opening search",
+  "askCmdr.tool.openSearchDialog.doing": "正在開啟搜尋",
   "@askCmdr.tool.openSearchDialog.doing": {
     "sourceHash": "12dbca8"
   },
-  "askCmdr.tool.openSearchDialog.done": "Opened search",
+  "askCmdr.tool.openSearchDialog.done": "已開啟搜尋",
   "@askCmdr.tool.openSearchDialog.done": {
     "sourceHash": "408d2d6"
   },
-  "askCmdr.tool.openSearchDialog.tried": "Tried to open search",
+  "askCmdr.tool.openSearchDialog.tried": "沒能開啟搜尋",
   "@askCmdr.tool.openSearchDialog.tried": {
     "sourceHash": "729d49f"
   },
-  "askCmdr.tool.quit.doing": "Quitting Cmdr",
+  "askCmdr.tool.quit.doing": "正在結束 Cmdr",
   "@askCmdr.tool.quit.doing": {
     "sourceHash": "b26d1c8"
   },
-  "askCmdr.tool.quit.done": "Asked Cmdr to quit",
+  "askCmdr.tool.quit.done": "已要求 Cmdr 結束",
   "@askCmdr.tool.quit.done": {
     "sourceHash": "b9083af"
   },
-  "askCmdr.tool.quit.tried": "Tried to quit Cmdr",
+  "askCmdr.tool.quit.tried": "沒能結束 Cmdr",
   "@askCmdr.tool.quit.tried": {
     "sourceHash": "ab34547"
   },
-  "askCmdr.tool.switchPane.doing": "Switching panes",
+  "askCmdr.tool.switchPane.doing": "正在切換窗格",
   "@askCmdr.tool.switchPane.doing": {
     "sourceHash": "ef8cd35"
   },
-  "askCmdr.tool.switchPane.done": "Switched panes",
+  "askCmdr.tool.switchPane.done": "已切換窗格",
   "@askCmdr.tool.switchPane.done": {
     "sourceHash": "c5d4f4e"
   },
-  "askCmdr.tool.switchPane.tried": "Tried to switch panes",
+  "askCmdr.tool.switchPane.tried": "沒能切換窗格",
   "@askCmdr.tool.switchPane.tried": {
     "sourceHash": "59e64b4"
   },
-  "askCmdr.tool.swapPanes.doing": "Swapping the panes",
+  "askCmdr.tool.swapPanes.doing": "正在交換窗格",
   "@askCmdr.tool.swapPanes.doing": {
     "sourceHash": "dc3eb2d"
   },
-  "askCmdr.tool.swapPanes.done": "Swapped the panes",
+  "askCmdr.tool.swapPanes.done": "已交換窗格",
   "@askCmdr.tool.swapPanes.done": {
     "sourceHash": "75e181c"
   },
-  "askCmdr.tool.swapPanes.tried": "Tried to swap the panes",
+  "askCmdr.tool.swapPanes.tried": "沒能交換窗格",
   "@askCmdr.tool.swapPanes.tried": {
     "sourceHash": "acf2e50"
   },
-  "askCmdr.tool.aiSearch.doing": "Searching with AI",
+  "askCmdr.tool.aiSearch.doing": "正在用 AI 搜尋",
   "@askCmdr.tool.aiSearch.doing": {
     "sourceHash": "8a62bc1"
   },
-  "askCmdr.tool.aiSearch.done": "Searched with AI",
+  "askCmdr.tool.aiSearch.done": "已用 AI 搜尋",
   "@askCmdr.tool.aiSearch.done": {
     "sourceHash": "3140020"
   },
-  "askCmdr.tool.setSetting.doing": "Changing a setting",
+  "askCmdr.tool.setSetting.doing": "正在更改設定",
   "@askCmdr.tool.setSetting.doing": {
     "sourceHash": "63af0fd"
   },
-  "askCmdr.tool.setSetting.done": "Changed a setting",
+  "askCmdr.tool.setSetting.done": "已更改設定",
   "@askCmdr.tool.setSetting.done": {
     "sourceHash": "e584650"
   },
-  "askCmdr.tool.setSetting.tried": "Tried to change a setting",
+  "askCmdr.tool.setSetting.tried": "沒能更改設定",
   "@askCmdr.tool.setSetting.tried": {
     "sourceHash": "14df8c7"
   },
-  "askCmdr.tool.toolDetails.doing": "Reading how a tool works",
+  "askCmdr.tool.toolDetails.doing": "正在讀取工具的用法",
   "@askCmdr.tool.toolDetails.doing": {
     "sourceHash": "2674ec0"
   },
-  "askCmdr.tool.toolDetails.done": "Read how a tool works",
+  "askCmdr.tool.toolDetails.done": "已讀取工具的用法",
   "@askCmdr.tool.toolDetails.done": {
     "sourceHash": "df55774"
   },
-  "askCmdr.tool.readResource.doing": "Reading Cmdr’s details",
+  "askCmdr.tool.readResource.doing": "正在讀取 Cmdr 的詳細資訊",
   "@askCmdr.tool.readResource.doing": {
     "sourceHash": "fc4138a"
   },
-  "askCmdr.tool.readResource.done": "Read Cmdr’s details",
+  "askCmdr.tool.readResource.done": "已讀取 Cmdr 的詳細資訊",
   "@askCmdr.tool.readResource.done": {
     "sourceHash": "d3fa3e1"
   },
-  "askCmdr.tool.readResource.state.doing": "Looking at what’s open in Cmdr",
+  "askCmdr.tool.readResource.state.doing": "正在查看 Cmdr 裡開著什麼",
   "@askCmdr.tool.readResource.state.doing": {
     "sourceHash": "2e59e7e"
   },
-  "askCmdr.tool.readResource.state.done": "Looked at what’s open in Cmdr",
+  "askCmdr.tool.readResource.state.done": "已查看 Cmdr 裡開著什麼",
   "@askCmdr.tool.readResource.state.done": {
     "sourceHash": "df11436"
   },
-  "askCmdr.tool.readResource.dialogs.doing": "Checking which dialogs Cmdr has",
+  "askCmdr.tool.readResource.dialogs.doing": "正在查看 Cmdr 有哪些對話方塊",
   "@askCmdr.tool.readResource.dialogs.doing": {
     "sourceHash": "4a2eeb2"
   },
-  "askCmdr.tool.readResource.dialogs.done": "Checked which dialogs Cmdr has",
+  "askCmdr.tool.readResource.dialogs.done": "已查看 Cmdr 有哪些對話方塊",
   "@askCmdr.tool.readResource.dialogs.done": {
     "sourceHash": "fb0068a"
   },
-  "askCmdr.tool.readResource.indexing.doing": "Checking drive indexing",
+  "askCmdr.tool.readResource.indexing.doing": "正在查看磁碟機索引",
   "@askCmdr.tool.readResource.indexing.doing": {
     "sourceHash": "f60df29"
   },
-  "askCmdr.tool.readResource.indexing.done": "Checked drive indexing",
+  "askCmdr.tool.readResource.indexing.done": "已查看磁碟機索引",
   "@askCmdr.tool.readResource.indexing.done": {
     "sourceHash": "218ab6e"
   },
-  "askCmdr.tool.readResource.importance.doing": "Checking which folders matter",
+  "askCmdr.tool.readResource.importance.doing": "正在查看哪些資料夾重要",
   "@askCmdr.tool.readResource.importance.doing": {
     "sourceHash": "f82cdf6"
   },
-  "askCmdr.tool.readResource.importance.done": "Checked which folders matter",
+  "askCmdr.tool.readResource.importance.done": "已查看哪些資料夾重要",
   "@askCmdr.tool.readResource.importance.done": {
     "sourceHash": "88f26b9"
   },
-  "askCmdr.tool.readResource.settings.doing": "Reading Cmdr’s settings",
+  "askCmdr.tool.readResource.settings.doing": "正在讀取 Cmdr 的設定",
   "@askCmdr.tool.readResource.settings.doing": {
     "sourceHash": "612fd8e"
   },
-  "askCmdr.tool.readResource.settings.done": "Read Cmdr’s settings",
+  "askCmdr.tool.readResource.settings.done": "已讀取 Cmdr 的設定",
   "@askCmdr.tool.readResource.settings.done": {
     "sourceHash": "064e6e7"
   },
-  "askCmdr.tool.readResource.logs.doing": "Reading Cmdr’s logs",
+  "askCmdr.tool.readResource.logs.doing": "正在讀取 Cmdr 的記錄",
   "@askCmdr.tool.readResource.logs.doing": {
     "sourceHash": "1ae660b"
   },
-  "askCmdr.tool.readResource.logs.done": "Read Cmdr’s logs",
+  "askCmdr.tool.readResource.logs.done": "已讀取 Cmdr 的記錄",
   "@askCmdr.tool.readResource.logs.done": {
     "sourceHash": "feb72f1"
   },
-  "askCmdr.tool.readResource.tried": "Tried to read Cmdr’s details",
+  "askCmdr.tool.readResource.tried": "沒能讀取 Cmdr 的詳細資訊",
   "@askCmdr.tool.readResource.tried": {
     "sourceHash": "345e6ff"
   },
-  "askCmdr.tool.indexing.doing": "Changing a drive’s indexing",
+  "askCmdr.tool.indexing.doing": "正在更改磁碟機的索引",
   "@askCmdr.tool.indexing.doing": {
     "sourceHash": "0cb6fe3"
   },
-  "askCmdr.tool.indexing.done": "Changed a drive’s indexing",
+  "askCmdr.tool.indexing.done": "已更改磁碟機的索引",
   "@askCmdr.tool.indexing.done": {
     "sourceHash": "a7d4c42"
   },
-  "askCmdr.tool.indexing.tried": "Tried to change a drive’s indexing",
+  "askCmdr.tool.indexing.tried": "沒能更改磁碟機的索引",
   "@askCmdr.tool.indexing.tried": {
     "sourceHash": "47c6703"
   },
-  "askCmdr.tool.queue.doing": "Adjusting running operations",
+  "askCmdr.tool.queue.doing": "正在調整進行中的操作",
   "@askCmdr.tool.queue.doing": {
     "sourceHash": "7f264bc"
   },
-  "askCmdr.tool.queue.done": "Adjusted running operations",
+  "askCmdr.tool.queue.done": "已調整進行中的操作",
   "@askCmdr.tool.queue.done": {
     "sourceHash": "9d514ca"
   },
-  "askCmdr.tool.queue.tried": "Tried to adjust running operations",
+  "askCmdr.tool.queue.tried": "沒能調整進行中的操作",
   "@askCmdr.tool.queue.tried": {
     "sourceHash": "a3fd260"
   },
-  "askCmdr.tool.queueMoveLocked.doing": "Unlocking Locked items for a move",
+  "askCmdr.tool.queueMoveLocked.doing": "正在為了移動而解鎖已鎖定的項目",
   "@askCmdr.tool.queueMoveLocked.doing": {
     "sourceHash": "d21d66f"
   },
-  "askCmdr.tool.queueMoveLocked.done": "Unlocked Locked items for a move",
+  "askCmdr.tool.queueMoveLocked.done": "已為了移動而解鎖已鎖定的項目",
   "@askCmdr.tool.queueMoveLocked.done": {
     "sourceHash": "c526a08"
   },
-  "askCmdr.tool.queueMoveLocked.tried": "Tried to unlock Locked items for a move",
+  "askCmdr.tool.queueMoveLocked.tried": "沒能為了移動而解鎖已鎖定的項目",
   "@askCmdr.tool.queueMoveLocked.tried": {
     "sourceHash": "a4eafda"
   },
-  "askCmdr.tool.dialogConfirm.doing": "Confirming a dialog",
+  "askCmdr.tool.dialogConfirm.doing": "正在確認對話方塊",
   "@askCmdr.tool.dialogConfirm.doing": {
     "sourceHash": "8dd9fec"
   },
-  "askCmdr.tool.dialogConfirm.done": "Confirmed a dialog",
+  "askCmdr.tool.dialogConfirm.done": "已確認對話方塊",
   "@askCmdr.tool.dialogConfirm.done": {
     "sourceHash": "e8b7aa1"
   },
-  "askCmdr.tool.dialogConfirm.tried": "Tried to confirm a dialog",
+  "askCmdr.tool.dialogConfirm.tried": "沒能確認對話方塊",
   "@askCmdr.tool.dialogConfirm.tried": {
     "sourceHash": "04b9203"
   },
-  "askCmdr.tool.resolveConflict.doing": "Answering a name clash",
+  "askCmdr.tool.resolveConflict.doing": "正在回答名稱衝突的問題",
   "@askCmdr.tool.resolveConflict.doing": {
     "sourceHash": "32d516f"
   },
-  "askCmdr.tool.resolveConflict.done": "Answered a name clash",
+  "askCmdr.tool.resolveConflict.done": "已回答名稱衝突的問題",
   "@askCmdr.tool.resolveConflict.done": {
     "sourceHash": "a88de7b"
   },
-  "askCmdr.tool.resolveConflict.tried": "Tried to answer a name clash",
+  "askCmdr.tool.resolveConflict.tried": "沒能回答名稱衝突的問題",
   "@askCmdr.tool.resolveConflict.tried": {
     "sourceHash": "4d098ef"
   },
-  "askCmdr.tool.unlock.doing": "Sending a password",
+  "askCmdr.tool.unlock.doing": "正在傳送密碼",
   "@askCmdr.tool.unlock.doing": {
     "sourceHash": "c7d516f"
   },
-  "askCmdr.tool.unlock.done": "Sent a password",
+  "askCmdr.tool.unlock.done": "已傳送密碼",
   "@askCmdr.tool.unlock.done": {
     "sourceHash": "0c13633"
   },
-  "askCmdr.tool.unlock.tried": "Tried to send a password",
+  "askCmdr.tool.unlock.tried": "沒能傳送密碼",
   "@askCmdr.tool.unlock.tried": {
     "sourceHash": "e82e99a"
   },
-  "askCmdr.tool.favorites.doing": "Changing your favorites",
+  "askCmdr.tool.favorites.doing": "正在更改你的喜好項目",
   "@askCmdr.tool.favorites.doing": {
     "sourceHash": "e7a267b"
   },
-  "askCmdr.tool.favorites.done": "Changed your favorites",
+  "askCmdr.tool.favorites.done": "已更改你的喜好項目",
   "@askCmdr.tool.favorites.done": {
     "sourceHash": "e5b7117"
   },
-  "askCmdr.tool.favorites.tried": "Tried to change your favorites",
+  "askCmdr.tool.favorites.tried": "沒能更改你的喜好項目",
   "@askCmdr.tool.favorites.tried": {
     "sourceHash": "cd7fc23"
   },
-  "askCmdr.tool.connectToServer.doing": "Adding a server",
+  "askCmdr.tool.connectToServer.doing": "正在加入伺服器",
   "@askCmdr.tool.connectToServer.doing": {
     "sourceHash": "108385d"
   },
-  "askCmdr.tool.connectToServer.done": "Added a server",
+  "askCmdr.tool.connectToServer.done": "已加入伺服器",
   "@askCmdr.tool.connectToServer.done": {
     "sourceHash": "9e4c43b"
   },
-  "askCmdr.tool.connectToServer.tried": "Tried to add a server",
+  "askCmdr.tool.connectToServer.tried": "沒能加入伺服器",
   "@askCmdr.tool.connectToServer.tried": {
     "sourceHash": "4d270a5"
   },
-  "askCmdr.tool.removeManualServer.doing": "Removing a server",
+  "askCmdr.tool.removeManualServer.doing": "正在移除伺服器",
   "@askCmdr.tool.removeManualServer.doing": {
     "sourceHash": "871c0c3"
   },
-  "askCmdr.tool.removeManualServer.done": "Removed a server",
+  "askCmdr.tool.removeManualServer.done": "已移除伺服器",
   "@askCmdr.tool.removeManualServer.done": {
     "sourceHash": "2b85c19"
   },
-  "askCmdr.tool.removeManualServer.tried": "Tried to remove a server",
+  "askCmdr.tool.removeManualServer.tried": "沒能移除伺服器",
   "@askCmdr.tool.removeManualServer.tried": {
     "sourceHash": "d7749ce"
   },
-  "askCmdr.tool.upgradeSmbToDirect.doing": "Asking for a direct connection to a share",
+  "askCmdr.tool.upgradeSmbToDirect.doing": "正在要求直接連線到共享資料夾",
   "@askCmdr.tool.upgradeSmbToDirect.doing": {
     "sourceHash": "a927be1"
   },
-  "askCmdr.tool.upgradeSmbToDirect.done": "Asked for a direct connection to a share",
+  "askCmdr.tool.upgradeSmbToDirect.done": "已要求直接連線到共享資料夾",
   "@askCmdr.tool.upgradeSmbToDirect.done": {
     "sourceHash": "0b8f767"
   },
-  "askCmdr.tool.upgradeSmbToDirect.tried": "Tried to ask for a direct connection to a share",
+  "askCmdr.tool.upgradeSmbToDirect.tried": "沒能要求直接連線到共享資料夾",
   "@askCmdr.tool.upgradeSmbToDirect.tried": {
     "sourceHash": "fdaca5e"
   },
-  "askCmdr.tool.eject.doing": "Detaching a drive",
+  "askCmdr.tool.eject.doing": "正在卸下磁碟機",
   "@askCmdr.tool.eject.doing": {
     "sourceHash": "bb735ba"
   },
-  "askCmdr.tool.eject.done": "Detached a drive",
+  "askCmdr.tool.eject.done": "已卸下磁碟機",
   "@askCmdr.tool.eject.done": {
     "sourceHash": "44306fb"
   },
-  "askCmdr.tool.eject.tried": "Tried to detach a drive",
+  "askCmdr.tool.eject.tried": "沒能卸下磁碟機",
   "@askCmdr.tool.eject.tried": {
     "sourceHash": "4cbe93f"
   },
-  "askCmdr.tool.await.doing": "Waiting for Cmdr",
+  "askCmdr.tool.await.doing": "正在等待 Cmdr",
   "@askCmdr.tool.await.doing": {
     "sourceHash": "3f28b35"
   },
-  "askCmdr.tool.await.done": "Waited for Cmdr",
+  "askCmdr.tool.await.done": "已等待 Cmdr",
   "@askCmdr.tool.await.done": {
     "sourceHash": "049e100"
   },
-  "askCmdr.tool.goToLatestDownload.doing": "Going to your latest download",
+  "askCmdr.tool.goToLatestDownload.doing": "正在前往你最新的下載項目",
   "@askCmdr.tool.goToLatestDownload.doing": {
     "sourceHash": "7a88382"
   },
-  "askCmdr.tool.goToLatestDownload.done": "Went to your latest download",
+  "askCmdr.tool.goToLatestDownload.done": "已前往你最新的下載項目",
   "@askCmdr.tool.goToLatestDownload.done": {
     "sourceHash": "18c886c"
   },
-  "askCmdr.tool.goToLatestDownload.tried": "Tried to go to your latest download",
+  "askCmdr.tool.goToLatestDownload.tried": "沒能前往你最新的下載項目",
   "@askCmdr.tool.goToLatestDownload.tried": {
     "sourceHash": "6c30209"
   },
-  "askCmdr.tool.operationsRollback.doing": "Opening the rollback dialog",
+  "askCmdr.tool.operationsRollback.doing": "正在開啟復原對話方塊",
   "@askCmdr.tool.operationsRollback.doing": {
     "sourceHash": "c974842"
   },
-  "askCmdr.tool.operationsRollback.done": "Opened the rollback dialog",
+  "askCmdr.tool.operationsRollback.done": "已開啟復原對話方塊",
   "@askCmdr.tool.operationsRollback.done": {
     "sourceHash": "d70feb4"
   },
-  "askCmdr.tool.operationsRollback.tried": "Tried to open the rollback dialog",
+  "askCmdr.tool.operationsRollback.tried": "沒能開啟復原對話方塊",
   "@askCmdr.tool.operationsRollback.tried": {
     "sourceHash": "419c9d2"
   },
-  "askCmdr.tool.memoryDiagnostics.doing": "Checking Cmdr’s memory use",
+  "askCmdr.tool.memoryDiagnostics.doing": "正在查看 Cmdr 的記憶體用量",
   "@askCmdr.tool.memoryDiagnostics.doing": {
     "sourceHash": "52f1541"
   },
-  "askCmdr.tool.memoryDiagnostics.done": "Checked Cmdr’s memory use",
+  "askCmdr.tool.memoryDiagnostics.done": "已查看 Cmdr 的記憶體用量",
   "@askCmdr.tool.memoryDiagnostics.done": {
     "sourceHash": "f0485d9"
   },
-  "askCmdr.tool.cpuDiagnostics.doing": "Checking Cmdr’s CPU use",
+  "askCmdr.tool.cpuDiagnostics.doing": "正在查看 Cmdr 的 CPU 用量",
   "@askCmdr.tool.cpuDiagnostics.doing": {
     "sourceHash": "d1330e2"
   },
-  "askCmdr.tool.cpuDiagnostics.done": "Checked Cmdr’s CPU use",
+  "askCmdr.tool.cpuDiagnostics.done": "已查看 Cmdr 的 CPU 用量",
   "@askCmdr.tool.cpuDiagnostics.done": {
     "sourceHash": "0393d6f"
   },
-  "askCmdr.tool.navToPath.place.doing": "Going to <place>{name}</place>",
+  "askCmdr.tool.navToPath.place.doing": "正在前往 <place>{name}</place>",
   "@askCmdr.tool.navToPath.place.doing": {
     "sourceHash": "0719a4d"
   },
-  "askCmdr.tool.navToPath.place.done": "Went to <place>{name}</place>",
+  "askCmdr.tool.navToPath.place.done": "已前往 <place>{name}</place>",
   "@askCmdr.tool.navToPath.place.done": {
     "sourceHash": "29b2a5d"
   },
-  "askCmdr.tool.navToPath.place.tried": "Tried to go to <place>{name}</place>",
+  "askCmdr.tool.navToPath.place.tried": "沒能前往 <place>{name}</place>",
   "@askCmdr.tool.navToPath.place.tried": {
     "sourceHash": "9974955"
   },
-  "askCmdr.tool.unlock.place.doing": "Sending the password for <place>{name}</place>",
+  "askCmdr.tool.unlock.place.doing": "正在傳送 <place>{name}</place> 的密碼",
   "@askCmdr.tool.unlock.place.doing": {
     "sourceHash": "1322d1d"
   },
-  "askCmdr.tool.unlock.place.done": "Sent the password for <place>{name}</place>",
+  "askCmdr.tool.unlock.place.done": "已傳送 <place>{name}</place> 的密碼",
   "@askCmdr.tool.unlock.place.done": {
     "sourceHash": "8e0f9a5"
   },
-  "askCmdr.tool.unlock.place.tried": "Tried to send the password for <place>{name}</place>",
+  "askCmdr.tool.unlock.place.tried": "沒能傳送 <place>{name}</place> 的密碼",
   "@askCmdr.tool.unlock.place.tried": {
     "sourceHash": "3c519dd"
   },
-  "askCmdr.tool.mkdir.waiting": "Opened the new folder dialog",
+  "askCmdr.tool.mkdir.waiting": "已開啟新增資料夾對話方塊",
   "@askCmdr.tool.mkdir.waiting": {
     "sourceHash": "fa83e05"
   },
-  "askCmdr.tool.mkfile.waiting": "Opened the new file dialog",
+  "askCmdr.tool.mkfile.waiting": "已開啟新增檔案對話方塊",
   "@askCmdr.tool.mkfile.waiting": {
     "sourceHash": "651559c"
   },
-  "askCmdr.tool.outcome.awaitingPerson": "waiting for you",
+  "askCmdr.tool.outcome.awaitingPerson": "正在等你",
   "@askCmdr.tool.outcome.awaitingPerson": {
     "sourceHash": "7d49e28"
   },
-  "askCmdr.tool.outcome.declined": "you said no",
+  "askCmdr.tool.outcome.declined": "你說不要",
   "@askCmdr.tool.outcome.declined": {
     "sourceHash": "b8fd119"
   },
-  "askCmdr.tool.outcome.protected": "kept private",
+  "askCmdr.tool.outcome.protected": "不公開",
   "@askCmdr.tool.outcome.protected": {
     "sourceHash": "6a22c60"
   }

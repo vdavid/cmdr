@@ -122,6 +122,11 @@
     "confidence": "high",
     "sources": "MS"
   },
+  "ai-client": {
+    "chosen": "AI 用戶端",
+    "confidence": "high",
+    "sources": "MS (client → 用戶端, HKG, TWN); catalog operationLog.initiator.aiClient"
+  },
   "ai-context": {
     "chosen": "上下文",
     "confidence": "tentative",
@@ -340,7 +345,10 @@
     "chosen": "詢問",
     "confidence": "high",
     "forms": "the option label → 詢問; Don’t ask again → 別再詢問",
-    "sources": "AP-TW (詢問, 2) + MS zh-Hant (詢問, 7) + TC; catalog settings.archives.opt.ask, search.coverage.dontAskAgain"
+    "sources": "AP-TW (詢問, 2) + MS zh-Hant (詢問, 7) + TC; catalog settings.archives.opt.ask, search.coverage.dontAskAgain",
+    "exceptions": {
+      "askCmdr.tool.upgradeSmbToDirect.tried": "“Ask for” a connection is a request: 要求, the request ruling’s form."
+    }
   },
   "ask-cmdr": {
     "chosen": "Ask Cmdr",
@@ -850,6 +858,32 @@
     "confidence": "high",
     "sources": "MS terminology (對話); shipped settings.askCmdr.chatMemorySize.description",
     "accept": ["聊"]
+  },
+  "credentials": {
+    "avoid": [
+      {
+        "form": "憑證",
+        "why": "the catalog and TC spend it on a certificate (servers.certificate.fingerprintLabel, TC 用戶端憑證)"
+      }
+    ],
+    "chosen": "登入資訊",
+    "confidence": "high",
+    "forms": "cloud and tool credentials → 雲端和工具的登入資訊",
+    "sources": "catalog, 11 uses (fileExplorer.network.browser.tooltip.credsStored, errors.listing.authRequiredEneedauth.explanation); MS has no entry for it"
+  },
+  "data": {
+    "chosen": "資料",
+    "confidence": "high",
+    "forms": "browser data → 瀏覽器資料; Cmdr's own data → Cmdr 自己的資料",
+    "sources": "style.md (数据 → 資料); catalog ai.cloudConsent.whereItGoes"
+  },
+  "direct-connection": {
+    "accept": ["直接連接"],
+    "chosen": "直接連線",
+    "confidence": "high",
+    "forms": "the setting label says 直接連接 (settings.network.directSmbConnection.label)",
+    "note": "The SMB connection only. MCP direct mode is a separate thing, 直接模式 (style.md § Notes and decisions).",
+    "sources": "catalog fileExplorer.navigation.useDirectConnection, fileExplorer.pane.connectedDirectlyToast"
   },
   "link": {
     "chosen": "連結",
@@ -1654,7 +1688,10 @@
     "chosen": "分離狀態",
     "confidence": "high",
     "forms": "detached at {id} → 分離狀態，位於 {id}; the narrow pill → （分離狀態）{id}",
-    "sources": "git CLI zh_TW.po (HEAD detached at → 開頭指標分離於, detached HEAD → 分離 HEAD 指標); catalog fileExplorer.git.tooltip.worktreeDetached (分離狀態，位於 {id})"
+    "sources": "git CLI zh_TW.po (HEAD detached at → 開頭指標分離於, detached HEAD → 分離 HEAD 指標); catalog fileExplorer.git.tooltip.worktreeDetached (分離狀態，位於 {id})",
+    "exceptions": {
+      "askCmdr.tool.eject.done": "English sense: a drive coming off, not a git state, so 卸下."
+    }
   },
   "git-dirty": {
     "avoid": [
@@ -1881,7 +1918,10 @@
     "confidence": "tentative",
     "decision": "Server sheet and host key",
     "note": "English often says just key; Chinese adds 主機 so it can't read as an API key. The user's own login key is bare 金鑰, never 主機金鑰.",
-    "sources": "composed: 主機 + the catalog's 金鑰; no Apple host-key string"
+    "sources": "composed: 主機 + the catalog's 金鑰; no Apple host-key string",
+    "exceptions": {
+      "ai.cloudConsent.askCmdr.protectedContents": "“SSH keys” are the user's own login keys, bare 金鑰 per the ruling's note."
+    }
   },
   "hostname": {
     "chosen": "主機名稱",
@@ -2558,7 +2598,10 @@
     "accept": ["新資料夾", "新增一個資料夾"],
     "chosen": "新增資料夾",
     "confidence": "high",
-    "sources": "AP-HK, TC"
+    "sources": "AP-HK, TC",
+    "exceptions": {
+      "askCmdr.tool.mkdir.tried": "A tool line keeping 建立 from its doing and done siblings, not the New folder command."
+    }
   },
   "nfs-export": {
     "avoid": [
@@ -2605,7 +2648,8 @@
     "exceptions": {
       "feedback.sentToast": "We read every note → 我們每一則都會讀: the classifier 則 carries the note, and 留言 is named in feedback.dialog.description.",
       "feedback.sentWithoutLogsToast": "Opens with feedback.sentToast verbatim (我們每一則都會讀), as its English does.",
-      "settings.fileOperations.showAlreadyGoneToast.description": "This “note” is the short toast Cmdr shows, not text the user writes: 提示."
+      "settings.fileOperations.showAlreadyGoneToast.description": "This “note” is the short toast Cmdr shows, not text the user writes: 提示.",
+      "ai.cloudConsent.askCmdr.protectedContents": "Notes is the Apple app: its own name 備忘錄 (macOS Notes.app, zh_TW CFBundleName)."
     },
     "forms": "a note on an error report → 備註; Ask Cmdr’s saved notes → 筆記; the feedback message → 留言",
     "sources": "MS (note → 備註, user-entered text); catalog errorReporter.dialog.noteLabel"
@@ -3776,7 +3820,11 @@
     "accept": ["步驟"],
     "confidence": "high",
     "forms": "Step 1 of 2: X → 第 1 步（共 2 步）：X (the AI install steps); the onboarding counter reads 第 1 步，共 2 步; the standalone noun is 步驟 (MS terminology)",
-    "sources": "shipped catalog (onboarding.wizard.stepProgress, ai.local.installStepExtracting); MS terminology (step → 步驟)"
+    "sources": "shipped catalog (onboarding.wizard.stepProgress, ai.local.installStepExtracting); MS terminology (step → 步驟)",
+    "exceptions": {
+      "askCmdr.tool.navBack.tried": "Going back in the pane history: the catalog’s Back label 返回 (commands.navBack.label).",
+      "askCmdr.tool.navForward.tried": "Going forward in the pane history: the catalog’s Forward label 往前 (commands.navForward.label)."
+    }
   },
   "stop": {
     "accept": ["停"],
