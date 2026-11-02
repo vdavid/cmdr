@@ -74,6 +74,12 @@
     "forms": "Cmdr Settings section → Avancé; quote settings.section.advanced exactly in navigation paths; the shipped section name stays distinct from Apple’s generic Advanced label",
     "sources": "Network.appex Localizable (ADVANCED); catalog settings.section.advanced (macOS 26.6.2 build 25G83, live loctable key cross-reference, 2026-10-02)"
   },
+  "ai-client": {
+    "chosen": "client IA",
+    "confidence": "high",
+    "forms": "label Client IA; An AI client started this → Un client IA a lancé ceci.",
+    "sources": "catalog (operationLog.initiator.aiClient); MS terminology (client → client)"
+  },
   "ai-context": {
     "chosen": "contexte",
     "confidence": "high",
@@ -116,7 +122,7 @@
     "chosen": "outil",
     "confidence": "high",
     "decision": "Ask Cmdr",
-    "forms": "tool status lines: present = deverbal noun phrase (Vérification de vos disques), past = `A <participe> …` (A vérifié vos disques), same shape on every pair; unknown tool → Travail en cours / A utilisé un outil; Android platform tools → Android Platform Tools (kept English, product name)",
+    "forms": "tool status lines: present = deverbal noun phrase (Vérification de vos disques), past = `A <participe> …` (A vérifié vos disques), same shape on every pair; unknown tool → Travail en cours / A utilisé un outil; être verbs → Est <participe> (Est remonté, masculine like Cmdr); Back / Forward → Est revenu au dossier précédent / Est passé au dossier suivant (retour en arrière is the rollback); changing → Modification, switching → Changement; detaching covers disks, shares, and phones → Déconnexion d’un disque; Android platform tools → Android Platform Tools (kept English, product name)",
     "sources": "MS terminology FRA (tool → outil); Google's French Android docs for Platform Tools"
   },
   "allow": {
@@ -266,7 +272,7 @@
     "sources": "MS terminology FRA (archive verb → archiver)"
   },
   "ask": {
-    "accept": ["demande"],
+    "accept": ["demande", "demandiez"],
     "chosen": "Demander",
     "confidence": "high",
     "forms": "segmented cell Demander; Toujours demander; Tout demander",
@@ -646,6 +652,11 @@
     "forms": "click X → cliquez sur X; pressing a key is appuyer sur, never cliquer",
     "sources": "macOS AppKit (Cliquez sur Enregistrer quand même, cliquez sur Rétablir); catalog"
   },
+  "client": {
+    "chosen": "client",
+    "confidence": "high",
+    "sources": "catalog (operationLog.initiator.aiClient); MS terminology (client → client)"
+  },
   "clipboard": {
     "chosen": "presse-papiers",
     "confidence": "high",
@@ -803,6 +814,27 @@
     "sources": "MS terminology (conversation, f.); same word as the chat ruling",
     "accept": ["conversations", "discut"]
   },
+  "data": {
+    "chosen": "données",
+    "accept": ["donnée"],
+    "confidence": "high",
+    "forms": "browser data → données de navigateur; Cmdr’s own data → les données de Cmdr lui-même",
+    "sources": "catalog (ai.cloudConsent.whereItGoes: vos données); macOS fr"
+  },
+  "details": {
+    "chosen": "détails",
+    "accept": ["détail"],
+    "confidence": "high",
+    "forms": "plain details that stay in a redacted log → détails ordinaires",
+    "sources": "catalog (détails de l’appareil photo); macOS fr"
+  },
+  "direct-connection": {
+    "chosen": "connexion directe",
+    "accept": ["se connecter directement", "connectez-vous directement"],
+    "confidence": "high",
+    "forms": "Asking for a direct connection to a share → Demande de connexion directe à un partage",
+    "sources": "catalog (fileExplorer.pane.connectedDirectlyToast, settings.network.directSmbConnection.description)"
+  },
   "learn-more": {
     "chosen": "En savoir plus sur",
     "confidence": "high",
@@ -832,6 +864,12 @@
     "forms": "Open the X menu → Ouvrir le menu des X (Ouvrir le menu contextuel, Menu des favoris)",
     "confidence": "high",
     "sources": "macOS 27.0.1 live (AXAction Open Menu → Ouvrir le menu); catalog Menu des favoris, menu contextuel"
+  },
+  "message": {
+    "chosen": "message",
+    "accept": ["écrivez-nous"],
+    "confidence": "high",
+    "sources": "catalog (ai.cloudConsent.askCmdr.item.memory, feedback.dialog.description); Apple’s Messages app keeps its name"
   },
   "pane-divider": {
     "accept": ["séparateur"],
@@ -1053,7 +1091,7 @@
     "sources": "macOS; catalog"
   },
   "dialog": {
-    "accept": ["fenêtre"],
+    "accept": ["fenêtre", "boîtes de dialogue"],
     "chosen": "boîte de dialogue",
     "confidence": "high",
     "forms": "a named Cmdr dialog → la boîte de dialogue Déplacer (the dialog’s own title, unquoted)",
@@ -1518,6 +1556,9 @@
     "sources": "catalog (fileExplorer.git.tooltip.filesChanged, fileExplorer.git.tooltip.pinnedCommit); Double Commander doublecmd.po"
   },
   "git-detached": {
+    "exceptions": {
+      "askCmdr.tool.eject.done": "Detached a drive means ejecting or disconnecting it, unrelated to git: A déconnecté un disque"
+    },
     "accept": ["détachée"],
     "chosen": "détaché",
     "confidence": "high",
@@ -2106,6 +2147,7 @@
   },
   "navigate": {
     "accept": ["accédez", "revenez", "navigation", "aller", "allez", "remonte"],
+    "proseAccept": ["naviguer"],
     "chosen": "accéder à",
     "confidence": "high",
     "exceptions": {
@@ -2577,7 +2619,10 @@
     "sources": "macOS Finder (TL14)"
   },
   "quit": {
-    "accept": ["quitte", "quitté"],
+    "exceptions": {
+      "askCmdr.tool.quit.doing": "Quitter has no verbal noun in French, so the progress line says Fermeture de Cmdr, as ui.toolAsk.quit.body says Ceci ferme Cmdr"
+    },
+    "accept": ["quitte", "quitté", "quittiez"],
     "chosen": "Quitter",
     "confidence": "high",
     "decision": "La barrière de sortie",
@@ -3254,6 +3299,10 @@
     "sources": "Feedback Assistant CommonStrings.loctable (STATUS_SECTION_TITLE → État); Bluetooth settings (État : %@)"
   },
   "step": {
+    "exceptions": {
+      "askCmdr.tool.navBack.tried": "Tried to step back is the pane’s Back, no numbered stage: revenir au dossier précédent",
+      "askCmdr.tool.navForward.tried": "Tried to step forward is the pane’s Forward, no numbered stage: passer au dossier suivant"
+    },
     "chosen": "étape",
     "accept": ["Étape"],
     "confidence": "high",
@@ -3333,6 +3382,13 @@
     "confidence": "high",
     "forms": "not supported → n’est pas pris en charge, agreeing with the subject; doesn’t support yet → ne prend pas encore en charge",
     "sources": "macOS Finder; NetAuthAgent (… ne sont pas prises en charge.)"
+  },
+  "swap-panes": {
+    "chosen": "permuter les panneaux",
+    "accept": ["permutation", "permuté"],
+    "confidence": "high",
+    "forms": "tool line Permutation des panneaux / A permuté les panneaux",
+    "sources": "catalog (menu.view.swapPanes, commands.paneSwap.label); Total Commander; Double Commander"
   },
   "symlink": {
     "accept": ["liens symboliques"],
@@ -3615,7 +3671,7 @@
     "sources": "macOS (Moniteur inconnu, erreur inconnue); Nautilus/Thunar (Inconnu); catalog (ai.local.modelUnknown, fileOperations.transferProgress.sizeUnknown)"
   },
   "unlock": {
-    "accept": ["déverrouillez", "déverrouillé"],
+    "accept": ["déverrouillez", "déverrouillé", "déverrouillage"],
     "chosen": "Déverrouiller",
     "confidence": "high",
     "forms": "unlock an archive → la déverrouiller (the feminine archive, never {name})",

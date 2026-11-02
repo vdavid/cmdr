@@ -19,15 +19,15 @@
   "@securityNotices.mcpForeignOrigin.openSettings": {
     "sourceHash": "c63c58c"
   },
-  "securityNotices.mcpDirectModeOn.title": "MCP direct mode is on",
+  "securityNotices.mcpDirectModeOn.title": "Le mode direct MCP est activé",
   "@securityNotices.mcpDirectModeOn.title": {
     "sourceHash": "5d0520c"
   },
-  "securityNotices.mcpDirectModeOn.body": "AI tools outside Cmdr can read your files and confirm actions without asking you. If you didn’t turn this on, turn it off in MCP settings.",
+  "securityNotices.mcpDirectModeOn.body": "Des outils d’IA extérieurs à Cmdr peuvent lire vos fichiers et confirmer des actions sans vous demander. Si vous n’avez pas activé cette option, désactivez-la dans les réglages MCP.",
   "@securityNotices.mcpDirectModeOn.body": {
     "sourceHash": "fd2972f"
   },
-  "securityNotices.mcpDirectModeOn.openSettings": "MCP settings",
+  "securityNotices.mcpDirectModeOn.openSettings": "Réglages MCP",
   "@securityNotices.mcpDirectModeOn.openSettings": {
     "sourceHash": "c63c58c"
   },

@@ -109,115 +109,115 @@
   "@ui.confirmDialog.cancel": {
     "sourceHash": "19766ed"
   },
-  "ui.startedElsewhere.agent": "Ask Cmdr started this.",
+  "ui.startedElsewhere.agent": "Ask Cmdr a lancé ceci.",
   "@ui.startedElsewhere.agent": {
     "sourceHash": "ca967be"
   },
-  "ui.startedElsewhere.aiClient": "An AI client started this.",
+  "ui.startedElsewhere.aiClient": "Un client IA a lancé ceci.",
   "@ui.startedElsewhere.aiClient": {
     "sourceHash": "3c290c7"
   },
-  "ui.startedElsewhere.keysWait": "The keyboard waits until you stop typing.",
+  "ui.startedElsewhere.keysWait": "Le clavier attend que vous arrêtiez de taper.",
   "@ui.startedElsewhere.keysWait": {
     "sourceHash": "ddc13ba"
   },
-  "ui.toolAsk.allow": "Allow",
+  "ui.toolAsk.allow": "Autoriser",
   "@ui.toolAsk.allow": {
     "sourceHash": "e213c16"
   },
-  "ui.toolAsk.decline": "Don’t allow",
+  "ui.toolAsk.decline": "Ne pas autoriser",
   "@ui.toolAsk.decline": {
     "sourceHash": "aeba8b1"
   },
-  "ui.toolAsk.openFile.title": "Open this file?",
+  "ui.toolAsk.openFile.title": "Ouvrir ce fichier ?",
   "@ui.toolAsk.openFile.title": {
     "sourceHash": "41da881"
   },
-  "ui.toolAsk.openFile.body": "This opens {name} in {app}.",
+  "ui.toolAsk.openFile.body": "Ceci ouvre {name} dans {app}.",
   "@ui.toolAsk.openFile.body": {
     "sourceHash": "b0d7609"
   },
-  "ui.toolAsk.openFile.bodyUnknownApp": "This opens {name}, and Cmdr can’t tell which app that uses.",
+  "ui.toolAsk.openFile.bodyUnknownApp": "Ceci ouvre {name}, et Cmdr ne sait pas quelle application sera utilisée.",
   "@ui.toolAsk.openFile.bodyUnknownApp": {
     "sourceHash": "82c1e2e"
   },
-  "ui.toolAsk.openBundle.title": "Run this bundle?",
+  "ui.toolAsk.openBundle.title": "Exécuter ce paquet ?",
   "@ui.toolAsk.openBundle.title": {
     "sourceHash": "ad2c442"
   },
-  "ui.toolAsk.openBundle.body": "{name} is a bundle, so opening it runs it as a program.",
+  "ui.toolAsk.openBundle.body": "{name} est un paquet : l’ouvrir l’exécute comme un programme.",
   "@ui.toolAsk.openBundle.body": {
     "sourceHash": "5643ed3"
   },
-  "ui.toolAsk.setSetting.title": "Change this setting?",
+  "ui.toolAsk.setSetting.title": "Modifier ce réglage ?",
   "@ui.toolAsk.setSetting.title": {
     "sourceHash": "ca3ee82"
   },
-  "ui.toolAsk.setSetting.body": "This changes {label} from {oldValue} to {newValue}.",
+  "ui.toolAsk.setSetting.body": "Ceci modifie le réglage {label}. Valeur actuelle : {oldValue}. Nouvelle valeur : {newValue}.",
   "@ui.toolAsk.setSetting.body": {
     "sourceHash": "8831e19"
   },
-  "ui.toolAsk.setSetting.emptyValue": "nothing",
+  "ui.toolAsk.setSetting.emptyValue": "rien",
   "@ui.toolAsk.setSetting.emptyValue": {
     "sourceHash": "1785cfc"
   },
-  "ui.toolAsk.quit.title": "Quit Cmdr?",
+  "ui.toolAsk.quit.title": "Quitter Cmdr ?",
   "@ui.toolAsk.quit.title": {
     "sourceHash": "b1f6e98"
   },
-  "ui.toolAsk.quit.body": "This closes Cmdr. If anything’s still running, you get to decide about that first.",
+  "ui.toolAsk.quit.body": "Ceci ferme Cmdr. Si quelque chose est encore en cours, vous pourrez d’abord décider quoi en faire.",
   "@ui.toolAsk.quit.body": {
     "sourceHash": "c1ca732"
   },
-  "ui.toolAsk.eject.title": "Eject this volume?",
+  "ui.toolAsk.eject.title": "Éjecter ce volume ?",
   "@ui.toolAsk.eject.title": {
     "sourceHash": "d0d7554"
   },
-  "ui.toolAsk.eject.body": "This ejects {name}.",
+  "ui.toolAsk.eject.body": "Ceci éjecte {name}.",
   "@ui.toolAsk.eject.body": {
     "sourceHash": "56a93f1"
   },
-  "ui.toolAsk.eject.bodyWholeDisk": "This ejects the whole disk {name} is on, with every volume on it.",
+  "ui.toolAsk.eject.bodyWholeDisk": "Ceci éjecte tout le disque où se trouve {name}, avec tous les volumes qu’il contient.",
   "@ui.toolAsk.eject.bodyWholeDisk": {
     "sourceHash": "0948b81"
   },
-  "ui.toolAsk.removeServer.title": "Remove this server?",
+  "ui.toolAsk.removeServer.title": "Retirer ce serveur ?",
   "@ui.toolAsk.removeServer.title": {
     "sourceHash": "6ec8216"
   },
-  "ui.toolAsk.removeServer.body": "This removes {name} from your saved servers.",
+  "ui.toolAsk.removeServer.body": "Ceci retire {name} de vos serveurs enregistrés.",
   "@ui.toolAsk.removeServer.body": {
     "sourceHash": "fd047ab"
   },
-  "ui.toolAsk.indexing.enable.title": "Turn indexing on?",
+  "ui.toolAsk.indexing.enable.title": "Activer l’indexation ?",
   "@ui.toolAsk.indexing.enable.title": {
     "sourceHash": "ef30ae9"
   },
-  "ui.toolAsk.indexing.enable.body": "This turns indexing on for {name} and starts scanning it.",
+  "ui.toolAsk.indexing.enable.body": "Ceci active l’indexation pour {name} et lance l’analyse de ce volume.",
   "@ui.toolAsk.indexing.enable.body": {
     "sourceHash": "028739c"
   },
-  "ui.toolAsk.indexing.disable.title": "Turn indexing off?",
+  "ui.toolAsk.indexing.disable.title": "Désactiver l’indexation ?",
   "@ui.toolAsk.indexing.disable.title": {
     "sourceHash": "edfb775"
   },
-  "ui.toolAsk.indexing.disable.body": "This turns indexing off for {name}, and keeps what it has indexed so far.",
+  "ui.toolAsk.indexing.disable.body": "Ceci désactive l’indexation pour {name} et conserve ce qui a déjà été indexé.",
   "@ui.toolAsk.indexing.disable.body": {
     "sourceHash": "d9c8371"
   },
-  "ui.toolAsk.indexing.rescan.title": "Scan this volume again?",
+  "ui.toolAsk.indexing.rescan.title": "Analyser à nouveau ce volume ?",
   "@ui.toolAsk.indexing.rescan.title": {
     "sourceHash": "f6e08c5"
   },
-  "ui.toolAsk.indexing.rescan.body": "This scans all of {name} again, which can take a while.",
+  "ui.toolAsk.indexing.rescan.body": "Ceci analyse à nouveau tout le volume {name}, ce qui peut prendre un moment.",
   "@ui.toolAsk.indexing.rescan.body": {
     "sourceHash": "c3484a9"
   },
-  "ui.toolAsk.indexing.forget.title": "Forget this index?",
+  "ui.toolAsk.indexing.forget.title": "Oublier cet index ?",
   "@ui.toolAsk.indexing.forget.title": {
     "sourceHash": "2a861bd"
   },
-  "ui.toolAsk.indexing.forget.body": "This deletes the index of {name}. The files on it stay where they are.",
+  "ui.toolAsk.indexing.forget.body": "Ceci supprime l’index du volume {name}. Les fichiers qu’il contient restent où ils sont.",
   "@ui.toolAsk.indexing.forget.body": {
     "sourceHash": "f9c5160"
   },

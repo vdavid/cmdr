@@ -104,10 +104,11 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
 - **Restic backups** (`errors.write.sourcesSpanVolumes.*`, `fileOperations.resticPassword.*`): `vue` for the English
   "view" (a read-only virtual folder); does it read as a display mode? `à l’instant` for "couldn’t check the password
   just now" (meaning "right now").
-- **Ask Cmdr tool lines** (`askCmdr.tool.*`, `askCmdr.toolGroup.*`, `askCmdr.turnStats.stopped`): `A exploré : …` /
-  `Exploration en cours : …` for "Looked around"; `a montré 5 sur 6` (the tool as subject); `Réponse arrêtée · …` names
-  the answer so the participle can agree; `Demande de l’outil « x »` adds `l’outil` English leaves implicit;
-  `et de 3 autres` (and `de 1 suggestion`) before a numeral; `Ne rien changer` for "Leave them as I had them".
+- **Ask Cmdr tool lines** (`askCmdr.tool.*`, `askCmdr.toolGroup.*`, `askCmdr.turnStats.stopped`): `A traité : …` /
+  `Traitement en cours : …` for "Worked through"; `vous attend` for "waiting for you"; `Fermeture de Cmdr` for "Quitting
+  Cmdr" (`quitter` has no verbal noun); `a montré 5 sur 6` (the tool as subject); `Réponse arrêtée · …` names the answer
+  so the participle can agree; `Demande de l’outil « x »` adds `l’outil` English leaves implicit; `et de 3 autres` (and
+  `de 1 suggestion`) before a numeral; `Ne rien changer` for "Leave them as I had them".
 - **Refused-name dialog title** (`fileOperations.transferProgress.titleRefusedNameNotAllowed`):
   `Nom non autorisé à destination` follows the destination ruling's `à destination`; does it read as "on arrival" rather
   than "at the destination"? Fallback: `Nom refusé par la destination` (loses the `autoriser` term).
