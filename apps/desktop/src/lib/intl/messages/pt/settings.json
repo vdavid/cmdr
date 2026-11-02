@@ -1498,19 +1498,19 @@
   "@settings.developer.mcpEnabled.keywords": {
     "sourceHash": "410be68"
   },
-  "settings.developer.mcpDirectMode.label": "Direct mode",
+  "settings.developer.mcpDirectMode.label": "Modo direto",
   "@settings.developer.mcpDirectMode.label": {
     "sourceHash": "8273bcf"
   },
-  "settings.developer.mcpDirectMode.description": "Let connected AI tools read your files and confirm dialogs without asking you. Only turn this on while you’re testing or developing with them.",
+  "settings.developer.mcpDirectMode.description": "Permite que ferramentas de IA conectadas leiam seus arquivos e confirmem caixas de diálogo sem perguntar a você. Ative isso só enquanto estiver testando ou desenvolvendo com elas.",
   "@settings.developer.mcpDirectMode.description": {
     "sourceHash": "d85f109"
   },
-  "settings.developer.mcpDirectMode.keywords": "testing, automation, confirm, bypass, developer",
+  "settings.developer.mcpDirectMode.keywords": "testes, automação, confirmação, pular confirmação, sem supervisão, desenvolvedor, desenvolvimento",
   "@settings.developer.mcpDirectMode.keywords": {
     "sourceHash": "285cb60"
   },
-  "settings.mcp.directModeThisSessionOnly": "Direct mode stays on until you quit Cmdr, since this computer can’t keep it safely across a restart.",
+  "settings.mcp.directModeThisSessionOnly": "O modo direto fica ativado até você encerrar o Cmdr, porque este computador não consegue mantê-lo com segurança depois de reiniciar.",
   "@settings.mcp.directModeThisSessionOnly": {
     "sourceHash": "f5d30da"
   },

@@ -1373,6 +1373,9 @@
   },
   "git-detached": {
     "chosen": "desanexado",
+    "exceptions": {
+      "askCmdr.tool.eject.done": "Detached a drive covers ejecting, unmounting, and disconnecting, so Desconectou um disco, not git’s detached HEAD."
+    },
     "accept": ["desanexad"],
     "forms": "masculine, agreeing with the implied HEAD: Desanexado em {id}; the pill → (desanexado) {id}",
     "confidence": "high",
@@ -2705,7 +2708,7 @@
   },
   "scroll": {
     "chosen": "rolar",
-    "accept": ["rolag"],
+    "accept": ["rolag", "rolando", "rolou"],
     "confidence": "high",
     "sources": "MS terminology pt-BR"
   },
@@ -2979,6 +2982,10 @@
   },
   "step": {
     "chosen": "etapa",
+    "exceptions": {
+      "askCmdr.tool.navBack.tried": "Step back is browser-style navigation, Tentou voltar, never a numbered stage.",
+      "askCmdr.tool.navForward.tried": "Step forward is browser-style navigation, Tentou avançar, never a numbered stage."
+    },
     "avoid": [
       {
         "form": "passo",
@@ -3488,6 +3495,7 @@
     "forms": "written so far → gravados até agora; half-written → gravado pela metade",
     "confidence": "confirmed",
     "exceptions": {
+      "ai.cloudConsent.askCmdr.proactive": "writing its notes is authoring text, not data landing on a disk, so the everyday escrever as próprias notas",
       "multiRename.rangeEditor.writeAs": "how a placeholder is spelled in the mask ([N2-5] vs [N2,4]), not data landing on a disk, so the everyday Escrever como"
     },
     "sources": "shipped pt catalog"
@@ -3721,5 +3729,49 @@
     "confidence": "high",
     "forms": "the greyed menu marker: the base label word for word, then (ocupado), invariable",
     "sources": "catalog (menu.volume.ejectBusy, disconnectBusy, forgetServerBusy, forgetSavedPasswordBusy)"
+  },
+  "ai-client": {
+    "chosen": "cliente de IA",
+    "forms": "An AI client started this → Um cliente de IA iniciou isso.",
+    "confidence": "high",
+    "sources": "catalog (operationLog.initiator.aiClient Cliente de IA); MS terminology pt-BR (client → cliente)"
+  },
+  "client": {
+    "chosen": "cliente",
+    "confidence": "high",
+    "sources": "MS terminology pt-BR (client → cliente); catalog (operationLog.initiator.aiClient)"
+  },
+  "data": {
+    "chosen": "dados",
+    "accept": ["dado"],
+    "forms": "masculine plural: dados do navegador, os dados do próprio Cmdr",
+    "confidence": "high",
+    "sources": "macOS Finder pt-BR (iCloud Drive com Dados Separados); catalog (settings.dataWipe.card)"
+  },
+  "details": {
+    "chosen": "detalhes",
+    "accept": ["detalhe"],
+    "confidence": "high",
+    "sources": "Total Commander pt-BR (Todos os detalhes dos arquivos); catalog (menu.app.licenseDetails, crashReporter.dialog.showDetails)"
+  },
+  "direct-connection": {
+    "chosen": "conexão direta",
+    "accept": ["conexões diretas", "diretamente"],
+    "confidence": "high",
+    "sources": "catalog (fileExplorer.pane.directConnectionUnavailableToast, fileExplorer.navigation.useDirectConnection)"
+  },
+  "message": {
+    "chosen": "mensagem",
+    "accept": ["mensagens"],
+    "forms": "Apple’s app Messages → Mensagens",
+    "confidence": "high",
+    "sources": "macOS Messages.app InfoPlist.loctable CFBundleDisplayName (Mensagens; live macOS, 2026-11-02); macOS Finder pt-BR (Mensagens do Mail)"
+  },
+  "swap-panes": {
+    "chosen": "Trocar painéis",
+    "accept": ["troc"],
+    "forms": "tool line → Trocando os painéis / Trocou os painéis; moving focus to the other pane is Trocando de painel",
+    "confidence": "high",
+    "sources": "catalog (menu.view.swapPanes, commands.paneSwap.label)"
   }
 }
