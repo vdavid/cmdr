@@ -81,6 +81,8 @@
         ariaDescribedby={context === null ? undefined : 'operation-conflict-context'}
         dialogId="operation-conflict"
         containerStyle={DIALOG_WIDTH_STYLE}
+        opensOnItsOwn
+        letterKeysAnswer
         onkeydown={(event: KeyboardEvent) => {
             conflictBody?.handleKeydown(event)
         }}

@@ -64,6 +64,7 @@
     ariaDescribedby="locked-sources-message"
     containerStyle="width: 480px; min-width: 380px"
     resizable="horizontal"
+    opensOnItsOwn
 >
     {#snippet title()}{tString('fileOperations.lockedSources.title')}{/snippet}
 
@@ -97,7 +98,8 @@
         <!-- Moving what the person asked to move is the answer meant nearly every
              time, and each item ends up Locked again where it lands, so it's the
              one Enter presses. -->
-        <Button variant="primary" autoFocus disabled={answering} onclick={onMoveAnyway}
+        <!-- Never autofocused: this clears a Locked flag, so Enter mustn't press it. -->
+        <Button variant="primary" disabled={answering} onclick={onMoveAnyway}
             >{tString('fileOperations.lockedSources.moveAnyway')}</Button
         >
     {/snippet}

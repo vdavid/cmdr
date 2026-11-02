@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { mount, unmount, flushSync } from 'svelte'
+import { mount, unmount, flushSync, tick } from 'svelte'
 import type { OperationSnapshot, WriteLockedSourcesEvent } from '#lib/tauri-commands/index.js'
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
@@ -115,6 +115,18 @@ describe('LockedSourcesDialog', () => {
   it('disables every answer while one is in flight', () => {
     render({ answering: true })
     expect(buttons().every((b) => b.disabled)).toBe(true)
+  })
+
+  it('never lets Enter answer: it opens on its own, whoever started the move', async () => {
+    const { onMoveAnyway } = render()
+    await tick()
+    expect(document.body.querySelector('[data-armed]')).not.toBeNull()
+    expect(button('Move anyway')).not.toBe(document.activeElement)
+
+    const key = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+    ;(document.activeElement ?? document.body).dispatchEvent(key)
+    flushSync()
+    expect(onMoveAnyway).not.toHaveBeenCalled()
   })
 
   it('has no close button: every way out is a decision', () => {

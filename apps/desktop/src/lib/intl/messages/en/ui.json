@@ -167,7 +167,7 @@
   },
   "ui.startedElsewhere.keysWait": "The keyboard waits until you stop typing.",
   "@ui.startedElsewhere.keysWait": {
-    "description": "Follows the \"started this\" line while a dialog that opened by itself ignores the keyboard, so that someone typing elsewhere can't confirm it by accident. It goes away about a second after the last key. Escape and clicks still work during this time, so don't word it as the dialog being locked."
+    "description": "Shown alone, or after the \"started this\" line, while a dialog that opened by itself ignores the keyboard, so that someone typing elsewhere can't confirm it by accident. It goes away about a second after the last key. Escape and clicks still work during this time, so don't word it as the dialog being locked."
   },
 
   "ui.toolAsk.allow": "Allow",

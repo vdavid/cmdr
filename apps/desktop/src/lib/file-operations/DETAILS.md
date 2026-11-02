@@ -404,9 +404,9 @@ half (what counts, when it asks, what each answer does): `crates/cmdr-operations
 
 - **The question**: `LockedSourcesDialog` (mounted by `LockedSourcesPrompt.svelte` beside the sources-gone prompt) says
   how many items are Locked and that moving them unlocks them only for the move, names up to five plus "and N more", and
-  offers Move anyway (`answerLockedSources(id, 'move_anyway')`, the focused one: each item ends up Locked again where it
-  lands), Skip locked items (`'skip'`), and Cancel (the ordinary `cancelOperation`). Any outcome takes the question
-  down; only a call that never landed leaves it up. No `onclose`: every way out decides something about the files.
+  offers Move anyway (`answerLockedSources(id, 'move_anyway')`: each item ends up Locked again where it lands), Skip
+  locked items (`'skip'`), and Cancel (the ordinary `cancelOperation`). Any outcome takes the question down; only a call
+  that never landed leaves it up. No `onclose`: every way out decides something about the files.
 - **It waits for the window to be free, except for the move's OWN progress dialog.** Like the sources-gone host it
   follows the late-dialog rule (`createWhenDialogsClear`), but a foreground move asks right after its scan with its
   `transfer-progress` dialog up, and waiting behind that dialog would wait forever. So when the asking move is the
@@ -463,6 +463,13 @@ itself for a background clash, and an error dialog opens the moment an operation
 2. **Armed after `DECISION_KEYS_ARM_MS` (400 ms) on screen**, per clash: each new `conflictId` re-arms. No one reads a
    new question and answers it faster, so a deliberate answer never meets the delay, and a letter already on its way (or
    a double-tap of S across two prompts) lands on nothing. The repeat guard covers a held key.
+3. **The keyboard goes quiet first, for a prompt that opens on its own.** The main window's clash prompt, the Locked
+   question, and the error dialog pass `ModalDialog`'s `opensOnItsOwn`, whoever started the operation: someone typing
+   into the rail types straight through a 400 ms delay, and "a" there is Overwrite all. The clash prompt and the error
+   dialog also pass `letterKeysAnswer`, so a letter answers once it's quiet. The Locked question has no letters, and no
+   `autoFocus` either, so Enter can't clear a Locked flag. The progress dialog's embedded clash stays on 1 and 2: it's
+   already up and holding focus. `SourcesGoneDialog` and `StaleDriveDialog` keep their autofocus: Enter there is the
+   safe answer.
 
 Focus alone wasn't enough, and arming alone wasn't either: a dialog takes focus when it opens, which is exactly when the
 stray keystroke arrives.

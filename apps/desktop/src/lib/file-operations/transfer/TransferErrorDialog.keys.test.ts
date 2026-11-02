@@ -9,6 +9,7 @@ import { flushSync, mount, unmount } from 'svelte'
 import TransferErrorDialog from './TransferErrorDialog.svelte'
 import type { WriteOperationError } from '#lib/file-explorer/types.js'
 import { DECISION_KEYS_ARM_MS, ERROR_KEYS } from '../decision-keys'
+import { ARM_QUIET_MS } from '#lib/ui/started-elsewhere-guard'
 import { buttonLabel } from '../test-button-label'
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
@@ -50,6 +51,7 @@ function render(error: WriteOperationError, handlers: { retry?: boolean; copyAny
 }
 
 function arm(): void {
+  vi.advanceTimersByTime(ARM_QUIET_MS)
   vi.advanceTimersByTime(DECISION_KEYS_ARM_MS)
   flushSync()
 }

@@ -47,6 +47,15 @@ export function startedElsewhereLine(startedBy: ToolInitiator, armed: boolean): 
   return armed ? who : `${who} ${tString('ui.startedElsewhere.keysWait')}`
 }
 
+/** How a dialog takes keys once it's armed. */
+export interface GuardKeysOptions {
+  /**
+   * A bare letter answers this dialog, so it needs no click or Tab first. Only for a dialog with no
+   * field a letter could land in.
+   */
+  letterKeysAnswer?: boolean
+}
+
 /** What a key event carries that the machine reads. */
 export interface GuardKey {
   /** Which physical key, so a held key can be told from a new one. */
@@ -79,7 +88,7 @@ function answersWithoutAGesture(key: string): boolean {
   return key === 'Enter' || key === 'Escape' || isModifier(key)
 }
 
-export function createGuardMachine(openedAt: number) {
+export function createGuardMachine(openedAt: number, keys: GuardKeysOptions = {}) {
   const down = new Set<string>()
   let lastKeyAt = openedAt
   let armed = false
@@ -131,7 +140,7 @@ export function createGuardMachine(openedAt: number) {
         gestured = true
         return 'unlocked'
       }
-      if (!gestured && !answersWithoutAGesture(event.key)) return 'swallow'
+      if (!gestured && !keys.letterKeysAnswer && !answersWithoutAGesture(event.key)) return 'swallow'
       return 'pass'
     },
 
@@ -185,6 +194,8 @@ export interface StartedElsewhereGuardOptions {
   parkFocus?: () => HTMLElement | null | undefined
   /** Whether the Tab that lets text in also moves focus, as a dialog's does. An editor's stays put. */
   tabMovesFocus: boolean
+  /** See [`GuardKeysOptions.letterKeysAnswer`]. */
+  letterKeysAnswer?: boolean
   onArmedChange: (armed: boolean) => void
 }
 
@@ -206,7 +217,7 @@ function swallow(event: Event): void {
 
 /** Starts guarding now. Every listener and timer is gone after `detach`. */
 export function attachStartedElsewhereGuard(options: StartedElsewhereGuardOptions): StartedElsewhereGuard {
-  const machine = createGuardMachine(Date.now())
+  const machine = createGuardMachine(Date.now(), { letterKeysAnswer: options.letterKeysAnswer ?? false })
   let timer: ReturnType<typeof setTimeout> | null = null
   // The click that ends a swallowed press would otherwise still land.
   let swallowClick = false

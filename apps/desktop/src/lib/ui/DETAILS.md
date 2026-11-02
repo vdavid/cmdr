@@ -337,6 +337,11 @@ one answer, active when a host passes `startedBy` (`ModalDialog`, `InlineRenameE
 event's `guard: true`, which the backend sets for the agent and for an outside client off direct mode
 (`tools/policy.rs`), and which `mcp-listeners.ts` reads failing closed. A direct-mode client's dialog opens as before.
 
+`opensOnItsOwn` is the same guard for a dialog that appears by itself whoever started the work behind it, like a running
+operation's question. It names nobody, so its line only says the keyboard waits. `letterKeysAnswer` lets a bare letter
+through once armed, with no click or Tab first, for a dialog with no field whose letters are its answers. It only drops
+the gesture rule: the quiet window still applies.
+
 - **It starts unarmed.** It arms once `ARM_QUIET_MS` (800) have passed with no key activity anywhere and no key down.
   Every keydown and keyup restarts the clock, repeats and IME composition included, since a modifier sends no repeats
   and a held Shift would otherwise arm.

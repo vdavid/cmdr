@@ -24,6 +24,18 @@ function armedMachine() {
   return machine
 }
 
+describe('a dialog whose letters answer it', () => {
+  it('swallows a letter while unarmed and passes it once armed, with no click or Tab', () => {
+    const machine = createGuardMachine(0, { letterKeysAnswer: true })
+    expect(machine.keyDown(key('a'), 0)).toBe('swallow')
+    machine.keyUp(key('a'), 1)
+    machine.tick(1 + ARM_QUIET_MS)
+    expect(machine.armed).toBe(true)
+    expect(machine.keyDown(key('a'), 2 + ARM_QUIET_MS)).toBe('pass')
+    expect(machine.textAllowed).toBe(false)
+  })
+})
+
 describe('the state machine', () => {
   it('starts unarmed and arms after the quiet window', () => {
     const machine = createGuardMachine(0)

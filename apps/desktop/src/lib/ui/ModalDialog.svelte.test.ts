@@ -286,6 +286,40 @@ describe('a ModalDialog started elsewhere', () => {
     expect(target.querySelector('[role="status"]')?.textContent).toContain('An AI client started this.')
   })
 
+  it('guards a dialog that opens on its own, without naming anyone', async () => {
+    const onkeydown = vi.fn()
+    const { overlay, target } = await open({ opensOnItsOwn: true, onkeydown })
+    expect(document.activeElement).toBe(overlay)
+    typeOn(overlay, 'Enter')
+    expect(onkeydown).not.toHaveBeenCalled()
+    const line = target.querySelector('[role="status"]') as HTMLElement
+    expect(line.textContent.trim()).toBe('The keyboard waits until you stop typing.')
+
+    vi.advanceTimersByTime(ARM_QUIET_MS)
+    await tick()
+    typeOn(overlay, 'Enter')
+    expect(onkeydown).toHaveBeenCalledOnce()
+    expect(target.querySelector('[role="status"]')).toBeNull()
+  })
+
+  it('swallows a letter on a guarded dialog once armed, unless letters answer it', async () => {
+    const plain = await open({ opensOnItsOwn: true })
+    vi.advanceTimersByTime(ARM_QUIET_MS)
+    await tick()
+    expect(typeOn(plain.overlay, 'a').defaultPrevented).toBe(true)
+    void unmount(plain.component)
+    await tick()
+
+    const onkeydown = vi.fn()
+    const lettered = await open({ opensOnItsOwn: true, letterKeysAnswer: true, onkeydown })
+    typeOn(lettered.overlay, 'a')
+    expect(onkeydown).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(ARM_QUIET_MS)
+    await tick()
+    typeOn(lettered.overlay, 'a')
+    expect(onkeydown).toHaveBeenCalledOnce()
+  })
+
   it('leaves a dialog a person opened alone', async () => {
     const { overlay, field, target } = await open()
     expect(overlay.hasAttribute('data-armed')).toBe(false)

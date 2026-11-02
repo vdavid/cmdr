@@ -137,6 +137,14 @@
          * once, as the dialog opens.
          */
         startedBy?: ToolInitiator
+        /**
+         * The same guard for a dialog that opens by itself whoever started the work behind it, as a
+         * running operation's question does: it can land under someone typing anywhere. It names
+         * nobody, and only says the keyboard waits. Read once, as the dialog opens.
+         */
+        opensOnItsOwn?: boolean
+        /** A guarded dialog with no field whose bare letters answer it: they need no click or Tab first. */
+        letterKeysAnswer?: boolean
         /** Renders × button and handles Escape key */
         onclose?: () => void
         /**
@@ -172,12 +180,16 @@
         closeOnOverlayClick = false,
         topmost = false,
         startedBy,
+        opensOnItsOwn = false,
+        letterKeysAnswer = false,
         onclose,
         onescape,
     }: Props = $props()
 
     /** Read once: a host's prop getter may read state that's already gone as the dialog comes down. */
     const guardedFor = untrack(() => startedBy)
+    const guarded = untrack(() => startedBy !== undefined || opensOnItsOwn)
+    const lettersAnswer = untrack(() => letterKeysAnswer)
 
     /** What Escape does: `onescape` where the dialog gives one, else closing. */
     const escapeAction = $derived(onclose ? (onescape ?? onclose) : undefined)
@@ -543,11 +555,12 @@
 
     // Its own hook, ahead of the one below, so no key slips in ahead of it.
     onMount(() => {
-        if (!guardedFor) return
+        if (!guarded) return
         guard = attachStartedElsewhereGuard({
             scope: () => overlayElement,
             parkFocus: () => overlayElement,
             tabMovesFocus: true,
+            letterKeysAnswer: lettersAnswer,
             onArmedChange: (next) => {
                 armed = next
             },
@@ -571,7 +584,7 @@
         //
         // A guarded dialog parks on the scrim whatever a child claimed: text that lands in a field
         // has to follow a click or Tab.
-        if (guardedFor) {
+        if (guarded) {
             overlayElement?.focus()
         } else if (overlayElement && !overlayElement.contains(document.activeElement)) {
             if (!dialogElement || !focusFirstField(dialogElement)) overlayElement.focus()
@@ -626,7 +639,7 @@
     aria-labelledby={titleId}
     aria-describedby={ariaDescribedby}
     data-dialog-id={dialogId}
-    data-armed={guardedFor ? armed : undefined}
+    data-armed={guarded ? armed : undefined}
     tabindex="-1"
     onkeydown={handleOverlayKeydown}
     onclick={handleOverlayClick}
@@ -668,6 +681,8 @@
             </div>
             {#if guardedFor}
                 <p class="started-elsewhere" role="status">{startedElsewhereLine(guardedFor, armed)}</p>
+            {:else if guarded && !armed}
+                <p class="started-elsewhere" role="status">{tString('ui.startedElsewhere.keysWait')}</p>
             {/if}
             {#if footer}
                 <div class="modal-footer">

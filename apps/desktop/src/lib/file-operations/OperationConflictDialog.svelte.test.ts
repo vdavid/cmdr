@@ -38,6 +38,7 @@ vi.mock('#lib/settings/reactive-settings.svelte.js', () => ({
 import OperationConflictDialog from './OperationConflictDialog.svelte'
 import { buttonLabel } from './test-button-label'
 import { DECISION_KEYS_ARM_MS } from './decision-keys'
+import { ARM_QUIET_MS } from '#lib/ui/started-elsewhere-guard'
 
 function snapshot(over: Partial<OperationSnapshot> = {}): OperationSnapshot {
   return {
@@ -242,10 +243,24 @@ describe('OperationConflictDialog answered from the keyboard', () => {
 
   function renderArmed(): HTMLElement {
     const host = render()
-    vi.advanceTimersByTime(DECISION_KEYS_ARM_MS)
+    vi.advanceTimersByTime(Math.max(DECISION_KEYS_ARM_MS, ARM_QUIET_MS))
     flushSync()
     return host
   }
+
+  it('keeps a letter out while someone is still typing, past the arming delay', () => {
+    prompt = makePrompt()
+    const host = render()
+    // Typing at a steady pace, as into the rail when a background clash pops up: "a" is Overwrite all.
+    for (let at = 0; at < 3 * DECISION_KEYS_ARM_MS; at += 150) {
+      press(host, { key: 'a', code: 'KeyA' })
+      host.ownerDocument.activeElement?.dispatchEvent(
+        new KeyboardEvent('keyup', { bubbles: true, key: 'a', code: 'KeyA' }),
+      )
+      vi.advanceTimersByTime(150)
+    }
+    expect(resolveConflictPrompt).not.toHaveBeenCalled()
+  })
 
   it('answers with a letter pressed inside the dialog', () => {
     prompt = makePrompt()

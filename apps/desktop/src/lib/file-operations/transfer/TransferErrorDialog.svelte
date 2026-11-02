@@ -106,6 +106,8 @@
     ariaDescribedby="error-dialog-message"
     {containerStyle}
     resizable="horizontal"
+    opensOnItsOwn
+    letterKeysAnswer
 >
     {#snippet title()}
         <span class="error-title-content">
