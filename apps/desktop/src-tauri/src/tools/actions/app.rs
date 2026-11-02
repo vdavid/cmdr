@@ -36,6 +36,15 @@ pub fn execute_swap_panes<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
     Ok(json!("OK: Swapped left and right panes"))
 }
 
+/// The schema gate leaves enums to the handler, so naming what's accepted is this refusal's job: a
+/// model that guessed `open` for a new tab, told only that `open` is unknown, gave up and asked the
+/// user what they meant.
+fn unknown_tab_action(action: &str) -> ToolError {
+    ToolError::invalid_params(format!(
+        "Unknown tab action: {action}. It takes new, close, close_others, activate, set_pinned, reopen, and move."
+    ))
+}
+
 /// Execute unified tab command.
 ///
 /// Ack: pane generation advances after the FE pushes the new tab list via
@@ -158,7 +167,7 @@ pub async fn execute_tab<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Tool
             )?;
             format!("OK: {} tab {} in {} pane", verb, resolved_tab_id, pane)
         }
-        _ => return Err(ToolError::invalid_params(format!("Unknown tab action: {}", action))),
+        _ => return Err(unknown_tab_action(action)),
     };
 
     wait_for_ack(
@@ -315,4 +324,27 @@ async fn execute_tab_move<R: Runtime>(app: &AppHandle<R>, pane: &str, tab_id: &s
     )
     .await?;
     tab_move_result(tab_id, pane, to_pane, ack)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn an_unknown_tab_action_names_every_action_the_schema_declares() {
+        let schema = crate::tools::schemas::tab_schema();
+        let actions: Vec<String> = schema["properties"]["action"]["enum"]
+            .as_array()
+            .expect("tab declares its actions")
+            .iter()
+            .map(|action| action.as_str().expect("an action is a string").to_string())
+            .collect();
+        assert_eq!(
+            unknown_tab_action("open").message,
+            format!(
+                "Unknown tab action: open. It takes {}.",
+                crate::tools::params::list_names(&actions)
+            )
+        );
+    }
 }
