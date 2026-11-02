@@ -1,5 +1,6 @@
 <script lang="ts">
     import ModalDialog from '#lib/ui/ModalDialog.svelte'
+    import { mayBeToolRaised } from '#lib/ui/tool-raised'
     import Button from '#lib/ui/Button.svelte'
     import TextInput from '#lib/ui/TextInput.svelte'
     import Icon from '#lib/ui/Icon.svelte'
@@ -54,6 +55,9 @@
     // one list.
 
     const review = $derived(askCmdrState.renameReview)
+    /** It opens by itself at a turn's end. Read as it mounts, before it takes focus, since someone
+     *  typing the next message in the rail mustn't have that land in a name field. */
+    const toolRaised = $derived(review !== null && mayBeToolRaised())
     const proposals = $derived(review?.proposals ?? [])
     /** The batches still answerable: an expired one has nothing left to decide, and one the agent
      *  changed since it was shown can't run until it's read again. */
@@ -618,6 +622,7 @@
         resizable
         containerStyle="width: min(1040px, 90vw)"
         onclose={cancelRenameReview}
+        opensOnItsOwn={toolRaised}
     >
         {#snippet title()}{tString('askCmdr.renameReview.title')}{/snippet}
 

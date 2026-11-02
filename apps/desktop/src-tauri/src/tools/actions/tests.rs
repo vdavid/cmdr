@@ -1054,7 +1054,7 @@ fn tab_move_result_refuses_with_a_typed_reason() {
 /// through to the whole selection, with no undo, and `[1, "a"]` used to drop the `1`.
 #[test]
 fn a_present_string_list_that_isnt_all_strings_refuses() {
-    let list = |params: Value| string_list_param(&params, "names");
+    let list = |params: Value| crate::tools::params::string_list_param(&params, "names");
 
     assert_eq!(list(json!({})).unwrap(), None);
     assert_eq!(list(json!({"names": null})).unwrap(), None);

@@ -185,22 +185,6 @@ pub(super) fn dialog_block_error(verb: &str, blocking: &str) -> ToolError {
     .with_data(json!({ "blockingDialog": blocking }))
 }
 
-/// An optional list of strings, absent when `key` is missing or null. A present value that isn't
-/// all strings refuses: the schema gate reads no types, and a handler that took "not an array" for
-/// "not given" acts on something nobody named (`tag clear` on the whole selection).
-pub(super) fn string_list_param(params: &Value, key: &str) -> Result<Option<Vec<String>>, ToolError> {
-    let wrong_shape = || ToolError::invalid_params(format!("'{key}' must be an array of strings"));
-    match params.get(key) {
-        None | Some(Value::Null) => Ok(None),
-        Some(Value::Array(items)) => items
-            .iter()
-            .map(|item| item.as_str().map(str::to_string).ok_or_else(wrong_shape))
-            .collect::<Result<Vec<_>, _>>()
-            .map(Some),
-        Some(_) => Err(wrong_shape()),
-    }
-}
-
 /// Resolve the target pane from an optional `pane` param, defaulting to the
 /// focused pane, and return its name plus the last-synced state snapshot.
 ///

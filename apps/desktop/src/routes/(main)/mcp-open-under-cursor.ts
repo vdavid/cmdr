@@ -5,6 +5,7 @@
  */
 
 import type { ToolOpenGate } from '#lib/file-explorer/pane/entry-activation.js'
+import { noteToolNavigation } from '#lib/ui/tool-raised.js'
 import type { McpListenerContext } from './mcp-listeners'
 
 const navOpenUnderCursorCommand = 'nav.openUnderCursor'
@@ -45,6 +46,7 @@ export async function listenForOpenUnderCursor(ctx: McpListenerContext): Promise
     const raw = asRecord(event.payload)
     const requestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
     if (requestId === undefined) return
+    noteToolNavigation()
     void (async () => {
       const { emit } = await import('@tauri-apps/api/event')
       const explorer = getExplorer()

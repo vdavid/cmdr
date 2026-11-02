@@ -33,6 +33,7 @@ import type {
 } from '#lib/commands/index.js'
 import { applySearchPrefill, type SearchPrefill, type SearchMode } from '#lib/search/search-state.svelte.js'
 import type { ToolInitiator } from '#lib/ui/started-elsewhere-guard.js'
+import { noteToolNavigation } from '#lib/ui/tool-raised.js'
 import type { OpKind } from '#lib/ipc/bindings.js'
 import { raiseToolRollback, type ToolRollbackFacts } from '#lib/file-operations/tool-rollback.svelte.js'
 import { resolveLocation } from '#lib/file-explorer/navigation/resolve-location.js'
@@ -297,6 +298,7 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const raw = asRecord(event.payload)
     const key = typeof raw.key === 'string' ? raw.key : undefined
     if (key === undefined) return
+    noteToolNavigation()
     if (key === 'GoBack') {
       // Routes through the bus; the `nav.back` handler drives the `navigate()`
       // transaction (a keystroke is transport, the resolved command is not).
@@ -329,6 +331,7 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const volumeId = typeof raw.volumeId === 'string' ? raw.volumeId : undefined
     const mcpRequestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
     if (!pane || (name === undefined && volumeId === undefined)) return
+    noteToolNavigation()
     void dispatch(volumeSelectByNameCommand, { pane, name, volumeId, mcpRequestId })
   })
 
@@ -396,6 +399,7 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
   const navDeclines = new LogOnceGate()
 
   await listenTauri('mcp-nav-to-path', (event) => {
+    noteToolNavigation()
     // STAYS OFF THE BUS (master § Bus interplay). `navigate()` returns a typed
     // `NavigateResult` value the fire-and-forget `dispatch` can't surface, so the
     // adapter calls `navigate()` directly and forwards the refusal `message`

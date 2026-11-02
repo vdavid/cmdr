@@ -64,7 +64,7 @@ pub async fn execute_favorites(params: &Value) -> ToolResult {
             Ok(json!(format!("OK: Removed favorite {id}.")))
         }
         "reorder" => {
-            let ordered_ids = super::string_list_param(params, "orderedIds")?
+            let ordered_ids = crate::tools::params::string_list_param(params, "orderedIds")?
                 .filter(|ids: &Vec<String>| !ids.is_empty())
                 .ok_or_else(|| {
                     ToolError::invalid_params(

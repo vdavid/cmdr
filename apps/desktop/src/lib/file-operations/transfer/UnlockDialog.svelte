@@ -1,6 +1,7 @@
 <script lang="ts">
     import { tick, untrack } from 'svelte'
     import ModalDialog from '#lib/ui/ModalDialog.svelte'
+    import { mayBeToolRaised } from '#lib/ui/tool-raised'
     import TextInput from '#lib/ui/TextInput.svelte'
     import Button from '#lib/ui/Button.svelte'
     import Checkbox from '#lib/ui/Checkbox.svelte'
@@ -95,6 +96,9 @@
         })
     })
 
+    /** Read once, before this takes focus: chat text mustn't land here as a password. */
+    const toolRaised = mayBeToolRaised()
+
     function handleSubmit() {
         if (!canSubmit) return
         onSubmit({ password, remember: isRepo && remember })
@@ -115,6 +119,7 @@
     dialogId="archive-password"
     onclose={onCancel}
     containerStyle="width: 400px"
+    opensOnItsOwn={toolRaised}
 >
     {#snippet title()}{tString(titleKey)}{/snippet}
 

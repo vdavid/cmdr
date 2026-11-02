@@ -47,7 +47,7 @@ async fn execute_tag_macos<R: Runtime>(app: &AppHandle<R>, params: &Value) -> To
         )));
     }
 
-    let names = super::string_list_param(params, "names")?;
+    let names = crate::tools::params::string_list_param(params, "names")?;
 
     // Resolution reads PaneStateStore, so flush the FE's pending push first (the
     // `move_cursor` / `select` freshness, without moving the cursor): otherwise a

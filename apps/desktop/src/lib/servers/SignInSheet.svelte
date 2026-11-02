@@ -22,6 +22,7 @@
     import { onMount, tick } from 'svelte'
     import ModalDialog from '#lib/ui/ModalDialog.svelte'
     import { focusFirstField } from '#lib/ui/focus-trap.js'
+    import { mayBeToolRaised } from '#lib/ui/tool-raised'
     import Button from '#lib/ui/Button.svelte'
     import Spinner from '#lib/ui/Spinner.svelte'
     import HostKeyStep from './HostKeyStep.svelte'
@@ -939,6 +940,9 @@
         rememberWhenOpened = true
     }
 
+    /** Read once, before this takes focus: chat text mustn't land here as a password. */
+    const toolRaised = mayBeToolRaised()
+
     function handleKeydown(event: KeyboardEvent) {
         if (event.key === 'Enter' && canSubmit && step === 'form') {
             event.preventDefault()
@@ -954,6 +958,7 @@
     onkeydown={handleKeydown}
     containerStyle="width: 460px"
     growDownward
+    opensOnItsOwn={toolRaised}
 >
     {#snippet title()}{sheetTitle}{/snippet}
 

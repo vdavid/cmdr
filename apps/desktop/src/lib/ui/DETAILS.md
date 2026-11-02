@@ -7,7 +7,7 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
 
 - **`ModalDialog.svelte`**: Central modal container: overlay, dragging, Escape, focus, MCP tracking
 - **`started-elsewhere-guard.ts`**: the arming guard behind `ModalDialog`'s `startedBy` and the inline rename editor's.
-  § The started-elsewhere guard
+  `tool-raised.ts` says when a sheet a tool raises indirectly should use it. § The started-elsewhere guard
 - **`modal-resize.ts`**: `ModalDialog`'s edge-and-corner resize geometry as pure functions (`resizeStep`, the limits,
   which bands show)
 - **`modal-drag.ts`**: where `ModalDialog` may be dragged: the clamp that keeps the title bar grabbable
@@ -341,6 +341,11 @@ event's `guard: true`, which the backend sets for the agent and for an outside c
 operation's question. It names nobody, so its line only says the keyboard waits. `letterKeysAnswer` lets a bare letter
 through once armed, with no click or Tab first, for a dialog with no field whose letters are its answers. It only drops
 the gesture rule: the quiet window still applies.
+
+`tool-raised.ts` decides `opensOnItsOwn` for a sheet a tool only raises indirectly, several async steps away, like
+`SignInSheet`, `UnlockDialog`, and `BulkRenameReviewDialog`: the rail holds focus, or a tool navigated in the last 30 s.
+Decision/Why: this reads two facts over threading an initiator through navigation and connecting, since both are wrong
+only in the safe direction (a person's own sheet takes one click or Tab before it takes text).
 
 - **It starts unarmed.** It arms once `ARM_QUIET_MS` (800) have passed with no key activity anywhere and no key down.
   Every keydown and keyup restarts the clock, repeats and IME composition included, since a modifier sends no repeats

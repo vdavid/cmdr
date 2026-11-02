@@ -33,6 +33,28 @@ async function settle(): Promise<void> {
   await tick()
 }
 
+describe('raised while someone types in the rail', () => {
+  it('keeps their text out of the password field, and their Enter from submitting', async () => {
+    const page = document.createElement('div')
+    page.innerHTML = '<aside class="ask-cmdr-rail"><textarea></textarea></aside><div class="host"></div>'
+    document.body.appendChild(page)
+    page.querySelector('textarea')?.focus()
+    const onSubmit = vi.fn()
+    const host = page.querySelector('.host') as HTMLElement
+
+    mount(UnlockDialog, { target: host, props: { ...archiveProps(), onSubmit } })
+    await settle()
+
+    const input = passwordInput(host)
+    expect(document.activeElement).not.toBe(input)
+    expect(host.querySelector('[data-armed]')).not.toBeNull()
+    const stray = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+    ;(document.activeElement ?? document.body).dispatchEvent(stray)
+    expect(onSubmit).not.toHaveBeenCalled()
+    page.remove()
+  })
+})
+
 function passwordInput(target: HTMLElement): HTMLInputElement {
   const input = target.querySelector<HTMLInputElement>('input[type="password"]')
   if (!input) throw new Error('No password field')

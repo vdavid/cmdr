@@ -225,6 +225,22 @@ pub fn gate(tool: &str, schema: &Value, params: &Value) -> Result<(), ToolError>
     Err(ToolError::invalid_params(problems.message(tool)).with_data(problems.detail()))
 }
 
+/// An optional list of strings, absent when `key` is missing or null. A present value that isn't
+/// all strings refuses: the gate reads no types, and a handler that took "not an array" for "not
+/// given" acts on something nobody named (`tag clear` on the whole selection).
+pub fn string_list_param(params: &Value, key: &str) -> Result<Option<Vec<String>>, ToolError> {
+    let wrong_shape = || ToolError::invalid_params(format!("'{key}' must be an array of strings"));
+    match params.get(key) {
+        None | Some(Value::Null) => Ok(None),
+        Some(Value::Array(items)) => items
+            .iter()
+            .map(|item| item.as_str().map(str::to_string).ok_or_else(wrong_shape))
+            .collect::<Result<Vec<_>, _>>()
+            .map(Some),
+        Some(_) => Err(wrong_shape()),
+    }
+}
+
 fn join(names: &[&String]) -> String {
     list_names(&names.iter().map(|n| (*n).clone()).collect::<Vec<_>>())
 }

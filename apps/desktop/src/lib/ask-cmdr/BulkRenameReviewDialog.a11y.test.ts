@@ -395,6 +395,21 @@ describe('BulkRenameReviewDialog', () => {
    * get approved, because the reviewer could not see the file. Every row shows its own image,
    * and the focused row's file opens in the full viewer.
    */
+  it('keeps text out of its fields when it opens under someone typing in the rail', async () => {
+    const rail = document.createElement('aside')
+    rail.className = 'ask-cmdr-rail'
+    rail.innerHTML = '<textarea></textarea>'
+    document.body.appendChild(rail)
+    rail.querySelector('textarea')?.focus()
+
+    const target = mountDialog()
+    await vi.waitFor(() => {
+      expect(target.querySelector('[data-armed]')).not.toBeNull()
+    })
+    expect(document.activeElement?.tagName).not.toBe('INPUT')
+    rail.remove()
+  })
+
   it('shows a thumbnail per row and opens the focused row in the viewer', async () => {
     media.tokenFor.set('/shots/before-one.png', 'token-one')
     media.tokenFor.set('/shots/before-two.png', 'token-two')
