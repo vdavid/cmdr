@@ -681,6 +681,12 @@
     "confidence": "high",
     "sources": "macOS Finder (O aplikaci Finder, Skrýt Finder, Zobrazit ve Finderu, Nové okno Finderu): kept English and inflected"
   },
+  "finder-extension": {
+    "chosen": "rozšíření pro Finder",
+    "accept": ["rozšíření"],
+    "confidence": "high",
+    "sources": "macOS System Settings pane Aktivace položek a rozšíření při přihlášení, already quoted in the catalog (errors.provider.pCloudFuse.needsAction)"
+  },
   "folder": {
     "chosen": "složka",
     "accept": ["složk", "složek", "složc"],

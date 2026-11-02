@@ -648,6 +648,12 @@
     "accept": ["trò chuyện"],
     "sources": "MS terminology (cuộc trò chuyện); shipped settings.askCmdr.chatMemorySize.description"
   },
+  "finder-extension": {
+    "chosen": "phần mở rộng Finder",
+    "accept": ["phần mở rộng"],
+    "confidence": "high",
+    "sources": "macOS pane Mục đăng nhập & Phần mở rộng (errors.provider.pCloudFuse.needsAction); kept apart from the file name ending đuôi tệp"
+  },
   "learn-more": {
     "chosen": "Tìm hiểu thêm về",
     "confidence": "high",

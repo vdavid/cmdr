@@ -851,6 +851,12 @@
     "sources": "MS terminology (對話); shipped settings.askCmdr.chatMemorySize.description",
     "accept": ["聊"]
   },
+  "finder-extension": {
+    "chosen": "Finder 延伸功能",
+    "accept": ["延伸功能"],
+    "confidence": "high",
+    "sources": "macOS pane 登入項目與延伸功能 (errors.provider.pCloudFuse.needsAction); 系統延伸功能; kept apart from the file name ending 副檔名"
+  },
   "link": {
     "chosen": "連結",
     "confidence": "high",

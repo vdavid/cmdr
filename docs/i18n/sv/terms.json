@@ -736,6 +736,12 @@
     "accept": ["konversation", "chatt"],
     "sources": "shipped settings.askCmdr.chatMemorySize.description and the chat ruling's note (conversation → samtal); MS terminology says konversation"
   },
+  "finder-extension": {
+    "chosen": "Finder-tillägg",
+    "accept": ["tillägg"],
+    "confidence": "high",
+    "sources": "macOS pane Startobjekt och tillägg (errors.provider.pCloudFuse.needsAction); systemtillägg"
+  },
   "learn-more": {
     "chosen": "Mer om",
     "confidence": "high",

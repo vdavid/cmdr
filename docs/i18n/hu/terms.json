@@ -862,6 +862,12 @@
     "note": "The two stems are a deliberate split: the pane title keeps Apple's kapcsolód-, the sheet's button and its siblings keep csatlakoz- because Connect is shared with fileExplorer.network.connect.",
     "decision": "A szerverlap"
   },
+  "finder-extension": {
+    "chosen": "Finder-bővítmény",
+    "accept": ["bővítmény"],
+    "confidence": "high",
+    "sources": "macOS pane Indítóelemek és bővítmények (errors.provider.pCloudFuse.needsAction); rendszerbővítmény"
+  },
   "learn-more": {
     "chosen": "Bővebben",
     "confidence": "high",

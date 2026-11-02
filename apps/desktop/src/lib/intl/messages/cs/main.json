@@ -83,6 +83,10 @@
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "0f572c0"
   },
+  "main.revealTabsDropped": "Otevřeno: {opened, plural, one {# složka} few {# složky} many {# složky} other {# složek}}. Nevešlo se: {dropped}, protože jeden panel pojme nejvýš {limit} záložek.",
+  "@main.revealTabsDropped": {
+    "sourceHash": "ef684aa"
+  },
   "main.revealActivation.title": "„Zobrazit ve Finderu“ teď vede sem",
   "@main.revealActivation.title": {
     "sourceHash": "6bb18bb"

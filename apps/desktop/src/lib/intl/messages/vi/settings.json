@@ -2075,9 +2075,33 @@
   "@settings.navigationAndFileOps.card.showInFinder": {
     "sourceHash": "c2a9c77"
   },
+  "settings.finderExtension.card": "Mở trong Cmdr",
+  "@settings.finderExtension.card": {
+    "sourceHash": "49b51d0"
+  },
+  "settings.finderExtension.label": "Hiển thị ở đầu menu chuột phải của Finder",
+  "@settings.finderExtension.label": {
+    "sourceHash": "02e8895"
+  },
+  "settings.finderExtension.description": "“Mở trong Cmdr” luôn nằm trong phần Dịch vụ của menu. Tùy chọn này đưa mục đó lên cấp cao nhất, trên đĩa khởi động của bạn. Tùy chọn này cũng thêm một tiến trình nhỏ chạy song song với Finder.",
+  "@settings.finderExtension.description": {
+    "sourceHash": "66672fe"
+  },
+  "settings.finderExtension.notInApplications": "Chuyển Cmdr vào thư mục Ứng dụng để bật được mục này.",
+  "@settings.finderExtension.notInApplications": {
+    "sourceHash": "de8d7fd"
+  },
+  "settings.finderExtension.notProductionBuild": "Chỉ bản phát hành chính thức của Cmdr mới bật được mục này. Các bản dựng để phát triển và thử nghiệm không có phần mở rộng Finder.",
+  "@settings.finderExtension.notProductionBuild": {
+    "sourceHash": "d991773"
+  },
   "settings.revealHandler.label": "Cho phép ứng dụng khác hiển thị tệp trong Cmdr",
   "@settings.revealHandler.label": {
     "sourceHash": "8c39a2f"
+  },
+  "settings.behavior.finderExtension.keywords": "menu chuột phải, bấm chuột phải, chuột phải, menu ngữ cảnh, phần mở rộng Finder",
+  "@settings.behavior.finderExtension.keywords": {
+    "sourceHash": "29d5b1a"
   },
   "settings.behavior.revealHandler.keywords": "hiển thị trong Finder, tìm trong Finder, làm nổi bật, trình quản lý tệp mặc định, trình quản lý tệp, mặc định, trình duyệt, tải về",
   "@settings.behavior.revealHandler.keywords": {

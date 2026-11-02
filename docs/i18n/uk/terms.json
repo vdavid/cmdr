@@ -1641,6 +1641,12 @@
     "sources": "macOS Finder InfoPlist (Finder → Finder), MenuBar 300680 (Про Finder)",
     "note": "Takes no case ending: у Finder, Показати у Finder."
   },
+  "finder-extension": {
+    "chosen": "розширення для Finder",
+    "accept": ["розширен"],
+    "confidence": "high",
+    "sources": "macOS pane Автозапуск і розширення (errors.provider.pCloudFuse.needsAction); системне розширення"
+  },
   "fingerprint": {
     "chosen": "відбиток ключа",
     "accept": ["відбит"],
@@ -3889,7 +3895,10 @@
         "form": "служба",
         "why": "a system background service, not an online one"
       }
-    ]
+    ],
+    "exceptions": {
+      "settings.finderExtension.description": "Quotes macOS's Services submenu, which is «Служби» on macOS (live AppKit Services.loctable, macOS 27.0, 2026-11-02), and the sense this ruling keeps out."
+    }
   },
   "settings": {
     "chosen": "Параметри",

@@ -2085,9 +2085,33 @@
   "@settings.navigationAndFileOps.card.showInFinder": {
     "sourceHash": "c2a9c77"
   },
+  "settings.finderExtension.card": "In Cmdr öffnen",
+  "@settings.finderExtension.card": {
+    "sourceHash": "49b51d0"
+  },
+  "settings.finderExtension.label": "Oben im Kontextmenü des Finders anzeigen",
+  "@settings.finderExtension.label": {
+    "sourceHash": "02e8895"
+  },
+  "settings.finderExtension.description": "„In Cmdr öffnen“ steht immer im Abschnitt „Dienste“ des Menüs. Dieser Schalter holt den Eintrag auf deinem Startvolume auf die oberste Ebene. Dafür kommt ein kleiner Prozess hinzu, der neben dem Finder läuft.",
+  "@settings.finderExtension.description": {
+    "sourceHash": "66672fe"
+  },
+  "settings.finderExtension.notInApplications": "Bewege Cmdr in deinen Ordner „Programme“, um das einzuschalten.",
+  "@settings.finderExtension.notInApplications": {
+    "sourceHash": "de8d7fd"
+  },
+  "settings.finderExtension.notProductionBuild": "Einschalten lässt sich das nur in einer veröffentlichten Version von Cmdr. Dev- und Test-Builds enthalten die Finder-Erweiterung nicht.",
+  "@settings.finderExtension.notProductionBuild": {
+    "sourceHash": "d991773"
+  },
   "settings.revealHandler.label": "Andere Apps Dateien in Cmdr anzeigen lassen",
   "@settings.revealHandler.label": {
     "sourceHash": "8c39a2f"
+  },
+  "settings.behavior.finderExtension.keywords": "Kontextmenü, Rechtsklick, rechte Maustaste, Sekundärklick, Finder-Erweiterung",
+  "@settings.behavior.finderExtension.keywords": {
+    "sourceHash": "29d5b1a"
   },
   "settings.behavior.revealHandler.keywords": "im Finder anzeigen, im Finder zeigen, zeigen, anzeigen, Standard-Dateimanager, Dateiverwaltung, Browser, Downloads",
   "@settings.behavior.revealHandler.keywords": {

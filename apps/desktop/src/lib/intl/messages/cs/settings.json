@@ -2075,9 +2075,33 @@
   "@settings.navigationAndFileOps.card.showInFinder": {
     "sourceHash": "c2a9c77"
   },
+  "settings.finderExtension.card": "Otevřít v Cmdru",
+  "@settings.finderExtension.card": {
+    "sourceHash": "49b51d0"
+  },
+  "settings.finderExtension.label": "Zobrazit nahoře v místní nabídce Finderu",
+  "@settings.finderExtension.label": {
+    "sourceHash": "02e8895"
+  },
+  "settings.finderExtension.description": "Položka „Otevřít v Cmdru“ je vždy v části Služby této nabídky. Zapnutím ji přesunete na nejvyšší úroveň, a to na startovacím disku. Přidá se malý proces, který běží vedle Finderu.",
+  "@settings.finderExtension.description": {
+    "sourceHash": "66672fe"
+  },
+  "settings.finderExtension.notInApplications": "Pokud to chcete zapnout, přesuňte Cmdr do složky Aplikace.",
+  "@settings.finderExtension.notInApplications": {
+    "sourceHash": "de8d7fd"
+  },
+  "settings.finderExtension.notProductionBuild": "Zapnout to může jen vydaná verze Cmdru. Vývojová a testovací sestavení rozšíření pro Finder neobsahují.",
+  "@settings.finderExtension.notProductionBuild": {
+    "sourceHash": "d991773"
+  },
   "settings.revealHandler.label": "Povolit jiným aplikacím zobrazovat soubory v Cmdru",
   "@settings.revealHandler.label": {
     "sourceHash": "8c39a2f"
+  },
+  "settings.behavior.finderExtension.keywords": "pravé tlačítko, pravý klik, kliknutí pravým tlačítkem, kontextová nabídka, kontextové menu, rozšíření Finderu",
+  "@settings.behavior.finderExtension.keywords": {
+    "sourceHash": "29d5b1a"
   },
   "settings.behavior.revealHandler.keywords": "zobrazit ve Finderu, najít ve Finderu, odhalit, výchozí správce souborů, prohlížeč, stahování, stažené soubory",
   "@settings.behavior.revealHandler.keywords": {

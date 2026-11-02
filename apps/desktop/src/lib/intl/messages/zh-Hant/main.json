@@ -83,6 +83,10 @@
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "0f572c0"
   },
+  "main.revealTabsDropped": "已開啟 {opened, plural, other {# 個資料夾}}。還有 {dropped} 個放不下，因為一個窗格最多只能有 {limit} 個分頁。",
+  "@main.revealTabsDropped": {
+    "sourceHash": "ef684aa"
+  },
   "main.revealActivation.title": "「在 Finder 中顯示」在這裡開啟了",
   "@main.revealActivation.title": {
     "sourceHash": "6bb18bb"

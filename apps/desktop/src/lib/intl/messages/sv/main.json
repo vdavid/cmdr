@@ -83,6 +83,10 @@
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "0f572c0"
   },
+  "main.revealTabsDropped": "{opened, plural, one {Öppnade # mapp} other {Öppnade # mappar}}. {dropped} till fick inte plats, eftersom en panel rymmer högst {limit} flikar.",
+  "@main.revealTabsDropped": {
+    "sourceHash": "ef684aa"
+  },
   "main.revealActivation.title": "”Visa i Finder” öppnades här",
   "@main.revealActivation.title": {
     "sourceHash": "6bb18bb"

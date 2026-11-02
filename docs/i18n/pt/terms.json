@@ -674,6 +674,12 @@
     "sources": "MS terminology pt-BR (conversa); shipped settings.askCmdr.chatMemorySize.description",
     "accept": ["conversas", "chat"]
   },
+  "finder-extension": {
+    "chosen": "extensão do Finder",
+    "accept": ["extensão"],
+    "confidence": "high",
+    "sources": "macOS pane Itens de Início de Sessão e Extensões (errors.provider.pCloudFuse.needsAction)"
+  },
   "learn-more": {
     "chosen": "Mais sobre",
     "confidence": "high",

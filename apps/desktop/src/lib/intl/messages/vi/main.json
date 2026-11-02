@@ -83,6 +83,10 @@
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "0f572c0"
   },
+  "main.revealTabsDropped": "Đã mở {opened, plural, other {# thư mục}}. Còn {dropped} thư mục nữa không vừa, vì mỗi khung chỉ chứa được tối đa {limit} tab.",
+  "@main.revealTabsDropped": {
+    "sourceHash": "ef684aa"
+  },
   "main.revealActivation.title": "“Hiển thị trong Finder” vừa mở ở đây",
   "@main.revealActivation.title": {
     "sourceHash": "6bb18bb"

@@ -83,6 +83,10 @@
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "0f572c0"
   },
+  "main.revealTabsDropped": "{opened, plural, one {# mappa megnyitva} other {# mappa megnyitva}}. Még {dropped} nem fért el, mert egy panelen legfeljebb {limit} lap lehet.",
+  "@main.revealTabsDropped": {
+    "sourceHash": "ef684aa"
+  },
   "main.revealActivation.title": "Itt nyílt meg a „Megjelenítés a Finderben”",
   "@main.revealActivation.title": {
     "sourceHash": "6bb18bb"

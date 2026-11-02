@@ -1235,7 +1235,7 @@
     "en": "extension",
     "match": ["extension", "extensions", "file extension", "file extensions"],
     "note": "Not a browser or system extension (\"Login Items & Extensions\" is a pane name).",
-    "notMatch": ["login items & extensions", "system extension", "edit extensions"],
+    "notMatch": ["login items & extensions", "system extension", "edit extensions", "finder extension"],
     "sense": "The part of a filename after the last dot."
   },
   "extract": {
@@ -1329,6 +1329,12 @@
     "en": "Finder",
     "match": ["finder"],
     "sense": "Apple's Finder, kept as a proper name."
+  },
+  "finder-extension": {
+    "distinct": ["extension"],
+    "en": "Finder extension",
+    "match": ["finder extension", "finder extensions"],
+    "sense": "Cmdr's opt-in add-on that puts its item at the top level of Finder's right-click menu: a macOS app extension, not a file name's ending."
   },
   "fingerprint": {
     "distinct": ["host-key"],
@@ -2195,7 +2201,8 @@
       "move the file down",
       "=moved to of",
       "move focus",
-      "keys move between"
+      "keys move between",
+      "moves it up"
     ],
     "sense": "Relocating files to another folder (F6)."
   },

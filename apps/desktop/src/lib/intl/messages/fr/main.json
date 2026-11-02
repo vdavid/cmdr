@@ -83,6 +83,10 @@
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "0f572c0"
   },
+  "main.revealTabsDropped": "{opened, plural, one {# dossier ouvert} many {# dossiers ouverts} other {# dossiers ouverts}}. Pas assez de place pour {dropped} de plus, car un panneau peut contenir jusqu’à {limit} onglets.",
+  "@main.revealTabsDropped": {
+    "sourceHash": "ef684aa"
+  },
   "main.revealActivation.title": "« Afficher dans le Finder » s’est ouvert ici",
   "@main.revealActivation.title": {
     "sourceHash": "6bb18bb"
