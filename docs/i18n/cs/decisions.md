@@ -23,15 +23,20 @@ svazek over oddíl/jednotka (macOS CoreTypes, Time Machine); disk over jednotka,
 F5 file copy is TC's imperfective Kopírovat; clipboard buttons are Apple's perfective Zkopírovat (Edit menu). Progress
 Kopírování…, result Zkopírováno either way.
 
-## Delete is smazat, remove is odstranit (`menu.file.delete`, `menu.file.deletePermanently`, `menu.context.removeDownload`)
+## Delete is smazat, remove is odstranit (`menu.file.delete`, `menu.file.deletePermanently`, `menu.context.removeDownload`, `menu.context.makeAvailableOffline`, `commands.cloudMakeOffline.label`)
 
 smazat for files (macOS Smazat, Ihned smazat); odstranit for taking off a list (macOS Odstranit z Docku). Delete
-permanently → Smazat trvale.
+permanently → Smazat trvale. iCloud pair as Finder: Stáhnout nyní (a one-time download) / Odstranit stažené.
 
-## Undo, put back, roll back (`menu.edit.undo`, `fileOperations.trash.undone`, `fileOperations.rollbackConfirm.*`, `operationLog.*`)
+## Undo, put back, roll back (`menu.edit.undo`, `fileOperations.trash.*`, `fileOperations.transferProgress.undo`, `askCmdr.renameUndo.undo`, `fileOperations.rollbackConfirm.*`, `operationLog.*`)
 
-undo → Odvolat (macOS), put back → Vrátit zpět (Finder), roll back → Vrátit změny (MS; Změny vráceny, Vracení změn).
-Never Zpět for undo: that is Back.
+undo → Odvolat: the Edit menu keeps macOS Odvolat akci, toast and dialog buttons say just Odvolat. put back → Vrátit
+zpět (Finder; progress Vracení zpět…), roll back → Vrátit změny (reviewed; Vracení změn, Nechat beze změny). Never Zpět
+for undo: that is Back.
+
+## Operation log is Historie operací (`menu.view.operationLog`, `operationLog.dialog.title`, `commands.logOperationLog.label`, `settings.operationLog.*`)
+
+Historie operací over Protokol operací (reviewed): protokol is the technical log; this is the user's undoable history.
 
 ## Selection words (`menu.select.*`, `commands.selection*`, `commands.navUp.label`, `commands.navDown.label`, `onboarding.stepAi.table.rowSelect`)
 
@@ -69,8 +74,8 @@ feedback → názor (AppKit), crash report → zpráva o havárii, error report 
 
 ## Toggle commands follow Total Commander (`commands.viewShowHidden.label`, `commands.tabTogglePin.label`, `commands.sortToggleOrder.label`, `commands.selectionToggle*`, `commands.tagsToggle*`)
 
-Named two states → TC's „X nebo Y“ (3013 Zobrazit nebo skrýt skryté soubory); a plain switch → Přepnout; sort direction
-→ Obrátit pořadí řazení (Nautilus, TC Obrácené pořadí).
+Named two states → TC's „X nebo Y“ (3013 Zobrazit nebo skrýt skryté soubory; tags Přidat nebo odstranit červenou značku,
+as their descriptions); a plain switch → Přepnout; sort direction → Obrátit pořadí řazení (Nautilus).
 
 ## Settings paths and sections (`settings.section.*`, `crashReporter.sentToast.changeSettings`, `commands.handler.openTerminalHere.hint`, `settings.askCmdr.provider.*`)
 
@@ -96,9 +101,10 @@ výchozímu nastavení.
 od/do over po/před because the filter includes the boundary date; recent-search chips repeat it. between → v rozmezí
 (TC).
 
-## Month presets avoid declining {month} (`queryUi.date.preset.thisMonth`, `queryUi.date.preset.lastMonth`)
+## Month presets avoid declining {month} (`queryUi.date.preset.thisMonth`, `queryUi.date.preset.lastMonth`, `onboarding.stepAi.table.searchWithout`)
 
-{month} arrives as standalone nominative (květen), so 1. {month} is ungrammatical; use colon framing instead.
+{month} arrives as standalone nominative (květen), so 1. {month} is ungrammatical: 1. den tohoto měsíce ({month})
+{time}, like the week presets; parity keeps the placeholder. Prose says od 1. tohoto měsíce.
 
 ## Prompt: dotaz from Cmdr, výzva from the system (`settings.indexing.*`, `queue.row.awaitingAnswerTooltip`, `fileExplorer.navigation.useSavedPasswordMessage`, `errors.*.notConnected.suggestion`)
 
@@ -113,11 +119,12 @@ Odpojit zařízení {name} vs Odpojit server {name}: the head noun carries gende
 z + genitive (3 z 10 souborů) because English of is z; fileNoun/dirNoun carry genitive branches, unlike the nominative
 `fileOperations.*.scanFile`.
 
-## Errors and retries (`errors.listing.*.title`, `errors.listing.*.suggestion`, `errors.write.*`)
+## Errors and retries (`errors.listing.*.title`, `errors.listing.*.suggestion`, `errors.write.*`, `errors.eject.*`, `servers.hub.status.notConnectedYet`)
 
-Errno titles reuse macOS ErrnoErrors (Prostředek je zaneprázdněný); Host is down → Hostitel nereaguje. Retry bullet:
-Zkuste sem přejít znovu; Here’s what to try → Co můžete zkusit:. Raw counts use colon frames; titles verbal noun + se
-nepodařilo.
+Errno titles reuse macOS ErrnoErrors (Prostředek je zaneprázdněný); Host is down → Hostitel nereaguje; Connection reset
+→ Připojení bylo přerušeno. Retry bullet: Zkuste sem přejít znovu; Here’s what to try → Co můžete zkusit:. Raw counts
+sit behind a noun or in brackets (Soubory, které…: {count}; (počet: {count})); not removable → nejde vysunout; Zatím
+není připojeno / Už není připojeno.
 
 ## macOS app and pane names (`errors.listing.diskReadProblem.suggestion`, `errors.write.permissionDenied.suggestion.*`, `errors.write.fileLocked.suggestion.mac`, `settings.behavior.fileSystemWatching.lowDiskSpace*`, `settings.appearance.appColor.*`)
 
@@ -128,11 +135,11 @@ disk, Barva zvýraznění. balík for bundles, balíček for packages; Apple sil
 
 Podle systému over Výchozí systémový: no gender agreement needed and one English, one Czech.
 
-## No singular gendered past about the user or the assistant (`askCmdr.tool.*`, `askCmdr.decision.*`, `onboarding.stepBeta.terms.consent`, `fileOperations.cancelRollback.reason.*`, `commands.handler.openTerminalHere.*`)
+## No singular gendered past about the user or the assistant (`askCmdr.tool.*`, `askCmdr.decision.*`, `askCmdr.renameReview.evidence.userEdited`, `errorReporter.dialog.notePlaceholder`, `onboarding.stepBeta.terms.consent`, `fileOperations.cancelRollback.reason.*`, `commands.handler.openTerminalHere.*`)
 
-Reflexive passive / participle first (Kontrolují se…, Zkontrolovány…), Odmítnuto:/Schváleno: + verbal noun, Mám přečtené
-…, Cmdr as subject, ručně over sám/sama. The plural -li is neutral: a user action stays jste + -li (Toto hledání jste
-zastavili).
+Tool lines: reflexive passive while running (Kontrolují se…), noun then participle when done (Složka vypsána, Návrh
+prohlédnut; reviewed). Mám přečtené …, Cmdr as subject, ručně over sám/sama. The plural -li is neutral, so the user's
+own act takes jste + -li: Odmítli jste: / Schválili jste:, Tento název jste zadali vy, Co jste se pokoušeli udělat?
 
 ## Two-pane and dialog wording from Total Commander (`fileOperations.transferDialog.*`, `fileOperations.delete.foldersPart`, `multiRename.*`, `viewer.toolbar.*`, `queryUi.ai.patternLabel.*`)
 
@@ -143,26 +150,43 @@ Lister modes Binární / Hexadecimální / Kódování; glob → Maska, pattern 
 
 Nouns over verbs because the indicator prefixes (Skok: , Filtr: ) reuse the Settings option word.
 
-## Network and servers (`fileExplorer.pane.directConnection*`, `servers.sheet.signInTitle`, `servers.sheet.editTitle`, `servers.hostKey.*`, `menu.volume.*`)
+## Network and servers (`fileExplorer.pane.directConnection*`, `fileExplorer.pane.openLocalNetworkSettings`, `settings.network.localNetworkAccessLabel`, `servers.sheet.signInTitle`, `servers.sheet.editTitle`, `servers.hostKey.*`, `menu.volume.*`, `onboarding.cloudSetup.title`)
 
-systémové připojení vs přímé připojení; sheet titles Přihlášení: {name}; host key → klíč serveru {host}, fingerprint
-otisk, revoked kompromitovaný; busy suffix (probíhá operace), gender-free.
+systémové připojení vs přímé připojení; sheet titles Přihlášení: {name}, Nastavení: {provider}; host key → klíč serveru
+{host}, fingerprint otisk, revoked kompromitovaný; busy suffix (probíhá operace), gender-free. The OS-named
+{localNetwork} goes in quotes behind a noun: Oprávnění „{localNetwork}“, Otevřít nastavení „{localNetwork}“.
 
 ## Git (`errors.git.*`, `fileExplorer.git.*`)
 
-repozitář (úložiště is storage), větev, značka, commit, pracovní strom; worktree, stash, HEAD verbatim.
+repozitář (úložiště is storage), větev, značka, commit, pracovní strom; worktree, stash, HEAD verbatim. Dirty chip →
+necommitováno (neuloženo claims unsaved files); checkout names the command in brackets (git checkout).
 
-## Settings values (`settings.tint.*`, `settings.managed.summary.*`, `settings.updates.emailPlaceholder`, `common.attachEmailPlaceholder`, `onboarding.stepBeta.emailPlaceholder`, `licensing.*`, `indexing.eta.*`)
+## Settings values (`settings.tint.*`, `settings.appearance.appColor.opt.cmdrGold`, `settings.managed.summary.*`, `settings.updates.emailPlaceholder`, `common.attachEmailPlaceholder`, `onboarding.stepBeta.emailPlaceholder`, `licensing.*`, `indexing.eta.*`)
 
-Tints agree with barva (Azurová, Limetková, Modrozelená); Off → Vypnuto; email jmeno@example.com; perpetual → časově
-neomezená; Rust crates verbatim; ETA zbývá {n} min, lowercase.
+Tints agree with barva (Azurová, Limetková, Modrozelená, Zlatá (Cmdr)); Off → Vypnuto; email jmeno@example.com;
+perpetual → časově neomezená; Rust crates verbatim; ETA zbývá {n} min, lowercase; price 59 $, years © 2024–2026.
 
-## Status words that must not collide (`queue.row.statusAwaitingAnswer`, `fileOperations.transferProgress.existing*`, `onboarding.stepFda.*`)
+## Status words that must not collide (`queue.row.statusAwaitingAnswer`, `queue.toolbar.selectedCount`, `downloads.shortcutRow.*`, `fileOperations.transferProgress.existing*`, `onboarding.stepFda.*`)
 
 Potřebuje odpověď (Čeká is queued); Existující / Příchozí (nový is the create command); Zamítnout for deny, Ukončit a
-znovu spustit (macOS QUIT_APP).
+znovu spustit (macOS QUIT_APP). Shortcut chips Aktivní / Neaktivní; a bare count is Vybráno: #.
 
-## Address is the neutral vy-plural (`onboarding.stepBeta.greeting`, `common.attachEmailPlaceholder`, `operationLog.initiator.user`, `errors.listing.*.suggestion`)
+## Address is the neutral vy-plural (`onboarding.stepBeta.greeting`, `licensing.dialog.mailtoBody`, `askCmdr.limit.continueMessage`, `onboarding.stepAi.table.renameWith`, `onboarding.stepAi.table.selectWith`, `common.attachEmailPlaceholder`, `operationLog.initiator.user`, `fileOperations.transferProgress.background`, `fileOperations.backgroundStart.background`, `errors.listing.*.suggestion`)
 
-vy-plural, lowercase, per `../formal-informal-decisions.md`: Stiskněte, Zkuste to znovu, můžete; Hi → Dobrý den; you@ →
-jmeno@example.com; You as initiator → Vy. Buttons stay infinitive (Vybrat textový editor, Zeptat se na cokoli).
+vy-plural, lowercase, per `../formal-informal-decisions.md`: Stiskněte, Zkuste to znovu, můžete; David's welcome Hi →
+Zdravím, the user's mail Hi → Dobrý den; you@ → jmeno@example.com; You as initiator → Vy. Buttons stay infinitive
+(Zařadit do fronty; Přesunout na pozadí for a running operation, Spustit na pozadí in a confirm dialog, where přesunout
+would read as moving files). Only words the USER types to the AI stay ty (Pokračuj prosím…), as Czechs write to a
+chatbot (reviewed).
+
+## Search coverage fallback is toto umístění (`search.coverage.*`)
+
+The unnamed {drive} may be a drive or a server, so toto umístění; every {drive} frame keeps it bare with no head noun
+(Teď se indexuje {drive}).
+
+## Kept after native review (`menu.tab.*`, `menu.app.acknowledgements`, `menu.app.changelog`, `menu.app.onboarding`, `menu.help.whatsNew`, `fileExplorer.quickFilter.intro.gotIt`, `fileExplorer.network.browser.status.error`, `settings.mediaIndex.importanceThreshold.*`, `onboarding.wizard.step*`, `askCmdr.thinking`, `servers.refusal.hostKeyRevoked`, `viewer.statusBar.badge.streaming*`, `viewer.toolbar.tail.*`, `commands.paneLeftVolumeChooser.label`, `settings.appearance.dateColors.opt.wilting`, `ai.local.installStep*`, `commands.aboutOpenUpgrade.label`)
+
+Confirmed as shipped: záložka, Poděkování, Seznam změn, Co je nového, Úvodní průvodce, Rozumím, Problém, Smetí, v/ve per
+plural branch, Krok {step} z {total} (z before a variable, ze before a literal 4), Přemýšlí…, kompromitovaný,
+streamování, Sledovat, přepínač svazků, Vadnutí. Rejected: modul runtime → běhové prostředí, upgradu → s nákupem
+licence.

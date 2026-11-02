@@ -27,7 +27,16 @@
     import { claimKey } from '#lib/shortcuts/claim-key.js'
     import { MASK_TOKEN_KINDS, anyKind } from './mask-token-kinds'
     import { findTokens, replaceToken, type MaskToken } from './mask-tokens'
-    import { downTarget, nextEditor, tokenInside, type EditorEvent, type EditorOpen } from './token-editor-rules'
+    import {
+        CARET_OPEN_MS,
+        HOVER_CLOSE_MS,
+        HOVER_OPEN_MS,
+        downTarget,
+        nextEditor,
+        tokenInside,
+        type EditorEvent,
+        type EditorOpen,
+    } from './token-editor-rules'
 
     type Token = MaskToken<(typeof MASK_TOKEN_KINDS)[number]>
 
@@ -50,12 +59,6 @@
     const MARKER_WIDTH = 12
     /** The marker rides this far up from the text box's bottom, so it sits in the field's bottom padding. */
     const MARKER_RISE = 2
-    /** How long the caret rests inside a token before its editor opens. */
-    const CARET_OPEN_MS = 250
-    /** How long the pointer rests on a token before its editor opens. */
-    const HOVER_OPEN_MS = 300
-    /** How long after the pointer left the token and the editor the editor closes. */
-    const HOVER_CLOSE_MS = 300
 
     let wrapperEl: HTMLDivElement | undefined = $state()
     let anchorEl: HTMLSpanElement | undefined = $state()

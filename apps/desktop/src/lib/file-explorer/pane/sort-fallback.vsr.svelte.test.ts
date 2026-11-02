@@ -13,6 +13,8 @@ import { mount, tick, unmount } from 'svelte'
 import { virtual } from '@guidepup/virtual-screen-reader'
 import ToastContainer from '#lib/ui/toast/ToastContainer.svelte'
 import { clearAllToasts } from '#lib/ui/toast/index.js'
+import { pastPendingFrames } from '#lib/test-frames.js'
+import { untilSpoken } from '#lib/test-vsr.js'
 import type { ResortResult, SortColumn, SortOrder } from '../types'
 import type { FilePaneAPI } from './types'
 import { createPaneRowState } from './pane-row-state'
@@ -52,13 +54,6 @@ afterEach(async () => {
   document.body.innerHTML = ''
 })
 
-/** Past the announcer's one frame (and its fallback timer, which jsdom may need). */
-async function settle(): Promise<void> {
-  await tick()
-  await new Promise((resolve) => setTimeout(resolve, 150))
-  await tick()
-}
-
 /** A folder pane, holding only what the sort path touches. */
 function folderPane(): FilePaneAPI {
   const rows = createPaneRowState({
@@ -88,7 +83,7 @@ describe('a date sort that falls back, spoken', () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     component = mount(ToastContainer, { target })
-    await settle()
+    await tick()
     await virtual.start({ container: document.body })
 
     const pane = folderPane()
@@ -105,13 +100,12 @@ describe('a date sort that falls back, spoken', () => {
     })
 
     await ops.handleSortChange('left', 'added')
-    await settle()
+    await untilSpoken(`polite: ${ADDED_FALLBACK}`)
     await ops.handleSortChange('left', 'added')
-    await settle()
+    await pastPendingFrames()
 
     expect(resortListingSpy).toHaveBeenCalledTimes(2)
     const log = await virtual.spokenPhraseLog()
-    expect(log).toContain(`polite: ${ADDED_FALLBACK}`)
     expect(log.filter((phrase) => phrase.includes(ADDED_FALLBACK))).toHaveLength(1)
   })
 })

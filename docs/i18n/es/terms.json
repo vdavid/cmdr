@@ -746,6 +746,12 @@
     "confidence": "high",
     "sources": "TC (Todos los detalles); catalog (Mostrar detalles, El registro tiene los detalles)"
   },
+  "finder-extension": {
+    "chosen": "extensión del Finder",
+    "accept": ["extensión"],
+    "confidence": "high",
+    "sources": "macOS pane Ítems de inicio y extensiones (errors.provider.pCloudFuse.needsAction); el Finder takes its article"
+  },
   "key-combination": {
     "chosen": "combinación",
     "accept": ["combinación de teclas", "combinaciones"],

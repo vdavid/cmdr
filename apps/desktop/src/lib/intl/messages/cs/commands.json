@@ -111,7 +111,7 @@
   "@commands.helpWhatsNew.description": {
     "sourceHash": "f8ad411"
   },
-  "commands.logOperationLog.label": "Protokol operací",
+  "commands.logOperationLog.label": "Historie operací",
   "@commands.logOperationLog.label": {
     "sourceHash": "2c97965"
   },
@@ -124,7 +124,7 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name, kept verbatim in every language (ask-cmdr ruling, cs terms.json)."
   },
-  "commands.askCmdrToggle.description": "Chat s AI o vašich souborech, discích a historii",
+  "commands.askCmdrToggle.description": "Zobrazí nebo skryje chat s AI o vašich souborech, discích a historii",
   "@commands.askCmdrToggle.description": {
     "sourceHash": "c520468"
   },
@@ -776,7 +776,7 @@
   "@commands.fileGoToTrash.description": {
     "sourceHash": "73eae92"
   },
-  "commands.dialogConfirm.label": "Potvrdit dialogové okno na obrazovce",
+  "commands.dialogConfirm.label": "Potvrdit zobrazené dialogové okno",
   "@commands.dialogConfirm.label": {
     "sourceHash": "fef0684"
   },
@@ -832,7 +832,7 @@
   "@commands.fileContextMenu.description": {
     "sourceHash": "8fb1721"
   },
-  "commands.cloudMakeOffline.label": "Zpřístupnit offline",
+  "commands.cloudMakeOffline.label": "Stáhnout nyní",
   "@commands.cloudMakeOffline.label": {
     "sourceHash": "b75c09f"
   },
@@ -868,7 +868,7 @@
   "@commands.cloudAskGemini.label": {
     "sourceHash": "7eec77f"
   },
-  "commands.cloudAskGemini.description": "Otevře asistenta Gemini v Google Drive s vybraným souborem jako tématem",
+  "commands.cloudAskGemini.description": "Otevře asistenta Gemini v Google Drive pro vybraný soubor",
   "@commands.cloudAskGemini.description": {
     "sourceHash": "37d4e7c"
   },
@@ -904,7 +904,7 @@
   "@commands.fileCopyShareLinkOneHour.description": {
     "sourceHash": "c334535"
   },
-  "commands.tagsToggleGrey.label": "Přepnout šedou značku",
+  "commands.tagsToggleGrey.label": "Přidat nebo odstranit šedou značku",
   "@commands.tagsToggleGrey.label": {
     "sourceHash": "1309c09"
   },
@@ -912,7 +912,7 @@
   "@commands.tagsToggleGrey.description": {
     "sourceHash": "ca38860"
   },
-  "commands.tagsToggleGreen.label": "Přepnout zelenou značku",
+  "commands.tagsToggleGreen.label": "Přidat nebo odstranit zelenou značku",
   "@commands.tagsToggleGreen.label": {
     "sourceHash": "397b880"
   },
@@ -920,7 +920,7 @@
   "@commands.tagsToggleGreen.description": {
     "sourceHash": "fa8396b"
   },
-  "commands.tagsTogglePurple.label": "Přepnout fialovou značku",
+  "commands.tagsTogglePurple.label": "Přidat nebo odstranit fialovou značku",
   "@commands.tagsTogglePurple.label": {
     "sourceHash": "ee137d2"
   },
@@ -928,7 +928,7 @@
   "@commands.tagsTogglePurple.description": {
     "sourceHash": "c6872a8"
   },
-  "commands.tagsToggleBlue.label": "Přepnout modrou značku",
+  "commands.tagsToggleBlue.label": "Přidat nebo odstranit modrou značku",
   "@commands.tagsToggleBlue.label": {
     "sourceHash": "11ba925"
   },
@@ -936,7 +936,7 @@
   "@commands.tagsToggleBlue.description": {
     "sourceHash": "7a21c5f"
   },
-  "commands.tagsToggleYellow.label": "Přepnout žlutou značku",
+  "commands.tagsToggleYellow.label": "Přidat nebo odstranit žlutou značku",
   "@commands.tagsToggleYellow.label": {
     "sourceHash": "2afc261"
   },
@@ -944,7 +944,7 @@
   "@commands.tagsToggleYellow.description": {
     "sourceHash": "16a2608"
   },
-  "commands.tagsToggleRed.label": "Přepnout červenou značku",
+  "commands.tagsToggleRed.label": "Přidat nebo odstranit červenou značku",
   "@commands.tagsToggleRed.label": {
     "sourceHash": "f2d314d"
   },
@@ -952,7 +952,7 @@
   "@commands.tagsToggleRed.description": {
     "sourceHash": "c6e0bee"
   },
-  "commands.tagsToggleOrange.label": "Přepnout oranžovou značku",
+  "commands.tagsToggleOrange.label": "Přidat nebo odstranit oranžovou značku",
   "@commands.tagsToggleOrange.label": {
     "sourceHash": "d0c0702"
   },
@@ -1112,7 +1112,7 @@
   "@commands.aboutOpenWebsite.label": {
     "sourceHash": "3451735"
   },
-  "commands.aboutOpenUpgrade.label": "Otevřít stránku upgradu",
+  "commands.aboutOpenUpgrade.label": "Otevřít stránku s nákupem licence",
   "@commands.aboutOpenUpgrade.label": {
     "sourceHash": "9df3bf0"
   },

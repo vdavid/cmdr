@@ -342,7 +342,8 @@ All under `apps/desktop/src-tauri/src/`.
   shared stop-background-services path all three shutdown routes take
 - `reveal/`: "Reveal in Cmdr": another app's "Show in Finder" lands in a pane instead, via the undocumented
   `NSFileViewer` global default. Owns the registration state machine (macOS-only), the arriving-reveal dispatch, the
-  cold-start buffer, and the `RevealDelivered` announcement. The `cmdr` terminal command arrives through the same door.
+  cold-start buffer, and the `RevealDelivered` announcement. The `cmdr` terminal command and "Open in Cmdr" (a macOS
+  service, plus an optional Finder extension in `apps/desktop/finder-extension/CLAUDE.md`) arrive through the same door.
   See `apps/desktop/src-tauri/src/reveal/CLAUDE.md`
 - `cli/`: macOS-only. The `cmdr <path>` terminal command: the bundled script's `cmdr-cli://open` URL (parsed here,
   delivered by `reveal/`), and the app menu's install link at `/usr/local/bin/cmdr`. The script is

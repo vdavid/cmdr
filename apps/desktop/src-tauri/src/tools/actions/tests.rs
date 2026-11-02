@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use super::app::{TabMoveAck, TabMoveRefusal, parse_tab_move_response, tab_move_result};
+use super::app::{TabMoveAck, TabMoveRefusal, parse_tab_move_response, parse_tab_opened_response, tab_move_result};
 use super::nav::{PaneChoice, SelectableVolume, nav_result, resolve_volume_selector, select_volume_result};
 use super::search::parse_human_size;
 use super::*;
@@ -964,6 +964,24 @@ fn a_started_operation_passes_its_id_through() {
     )
     .expect("a start is an OK");
     assert_eq!(started, Some("op-42".to_string()));
+}
+
+// === parse_tab_opened_response: a new tab says whether the pane took it ===
+
+#[test]
+fn parse_tab_opened_response_reads_the_outcome_and_never_guesses() {
+    let reply = |body: &str| parse_tab_opened_response(&format!(r#"{{"requestId":"r-1",{body}}}"#), "r-1");
+    assert_eq!(reply(r#""ok":true,"outcome":"opened""#), Some(Ok(true)));
+    assert_eq!(reply(r#""ok":true,"outcome":"atLimit""#), Some(Ok(false)));
+    assert!(matches!(reply(r#""ok":true"#), Some(Err(_))), "no outcome is no answer");
+    assert!(matches!(
+        reply(r#""ok":false,"error":"Explorer is not ready""#),
+        Some(Err(_))
+    ));
+    assert_eq!(
+        parse_tab_opened_response(r#"{"requestId":"other","ok":true}"#, "r-1"),
+        None
+    );
 }
 
 // === parse_tab_move_response + tab_move_result: a tab move names what it did ===

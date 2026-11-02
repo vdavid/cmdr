@@ -70,7 +70,8 @@ Neither is needed. `RunEvent::Opened` is the whole delivery mechanism.
 All of this is `delivery.rs`, which is macOS-only like the rest of the mechanism; `mod.rs` carries only
 `RevealDelivered`, which `ipc.rs`'s `collect_events!` needs to resolve on every platform.
 
-`app_lifecycle.rs`'s `RunEvent::Opened` arm hands the URLs to `on_urls_opened`. From there:
+`app_lifecycle.rs`'s `RunEvent::Opened` arm hands the URLs to `on_urls_opened`, and a service call arrives at
+`service.rs` (§ "Open in Cmdr"). Both end in `take_requests`. From there:
 
 1. `requests_from_urls` sorts them into `RevealRequest`s: every `file://` URL into one Finder request (focused pane,
    current tab), every `cmdr-cli://open` URL into a terminal request of its own, parsed and validated by
@@ -81,9 +82,11 @@ All of this is `delivery.rs`, which is macOS-only like the rest of the mechanism
    launch there is no window yet and this does nothing, which is correct: the window is on its way up anyway.
 3. Park the requests in `PendingReveals`, and deliver them right away if the frontend has drained at least once.
    Delivery is one task per batch, moving the pane request by request, so two can't race for the same pane.
-4. `plan_reveal` decides the pane move, then `crate::tools::go_to_in_pane` makes it with the request's `GoToTarget`.
-5. On success, and only for a Finder request, `RevealDelivered` goes out. **Decision: after the move, ❌ never before
-   it, and ❌ never for a terminal open.** The frontend spends a once-ever "Show in Finder now lands here" notice on the
+4. `plan_moves` decides the pane moves, then each gets its tab through `crate::tools::open_tab_in_pane` if it wants one,
+   and `crate::tools::go_to_in_pane` makes it.
+5. After a move landed, for a Finder request, while the key is ours, `RevealDelivered` goes out. **Decision: after the
+   move, ❌ never before it, ❌ never for a terminal open, and ❌ never for a folder that came through some other
+   door.** The frontend spends a once-ever "Show in Finder now lands here" notice on the
    first one it sees (`apps/desktop/src/lib/reveal/DETAILS.md`); a reveal onto a dead mount, an unreadable path, or a
    `cmdr` typed in a terminal (which says nothing about Finder) must not be what spends it. It carries no payload: the
    paths are already crossing over `mcp-nav-to-path`, and a second copy would be a second thing that can disagree.
@@ -98,10 +101,24 @@ that command.
 A file navigates the focused pane to its parent and puts the cursor on it. A folder is navigated INTO. So a reveal of a
 folder becomes an open of it; Finder parity isn't the goal, landing where the user asked about is.
 
-Multiple URLs accumulate rather than overwrite. `plan_reveal` takes the first path's directory and honours every other
-path that sits in it — cursor on the first, all of them selected via `mcp-select-names`. Paths in other directories are
-dropped with a log line saying how many: one pane shows one directory, and picking a different one for the rest would
-be a guess.
+Which tab, per origin (decided by David, 2026-11-02, in [#853](https://github.com/vdavid/cmdr/issues/853)):
+
+- **A revealed file keeps the current tab.** A reveal points at something. Other files in its directory are selected too;
+  files elsewhere are dropped with a log line saying how many, since one pane shows one directory.
+- **A revealed folder gets a new tab**, so the user's current location survives. `file://` can't say which door a folder
+  came through, so this rule covers any `file://` folder.
+- **"Open in Cmdr" always gets new tabs**: one per folder, and one per directory for files, with those files selected.
+  The person picked several things on purpose, and each one can have its own tab.
+- **A terminal request is one move in the tab it asked for**, by `plan_reveal`.
+
+**The tab limit.** Tabs open one at a time, and the frontend answers each one (`mcp-tab-open.ts`), so the limit lives only
+in `MAX_TABS_PER_PANE`. A refusal for the FIRST move takes the current tab and drops the rest; a later refusal drops that
+move and the rest. Either way `RevealTabsDropped` says how many. **Decision: someone aiming several folders at a full
+pane still lands on the first**, since landing somewhere beats nothing, and only one tab pays for it. ❌ Never let more
+than one move use the current tab: each one would overwrite the last.
+
+**Decision: deliveries run one at a time across batches** (`DELIVERY_TURN`), since two events in a row must not interleave
+their tabs.
 
 The folder probe runs under a 2 s deadline (`blocking_with_timeout`). A revealed path can sit on a dead network mount
 where `is_dir` blocks for minutes, and a reveal that quietly does nothing beats a task wedged on a syscall.
@@ -126,27 +143,59 @@ this call is it.
 The command returns as soon as it has taken the parked paths and spawns the pane move on the async runtime. It must
 not await the move: the frontend that has to answer `mcp-nav-to-path` is the same frontend waiting on the call.
 
+## Open in Cmdr
+
+A macOS service, always on, with no Settings row: one item for files and folders in Finder's right-click menu.
+
+- **`NSServices` in `Info.plist`** declares it for `public.item`. `NSRequiredContext` is an empty dict, which is what lets
+  macOS show it without the person enabling it first (Nimble Commander's entry has the same).
+- **`service.rs`'s provider** is `NSApp.servicesProvider`, installed in `setup`. It reads NSURLs off the pasteboard and
+  hands a `RevealOrigin::OpenInCmdr` request to `take_requests`.
+- **A cold launch works** (macOS 27.0.1, bundled build, `NSPerformService`, 2026-11-02): LaunchServices launches the app,
+  the call arrives after `setup`, and the request is parked until the frontend drains it. Twelve folders at a pane with
+  four tabs opened six and reported six dropped.
+- **Translation**: English only so far. Service titles localize through `ServicesMenu.strings` in each `.lproj`, outside
+  the message catalogs.
+
+`NSPerformService` is what the Finder extension calls too. ❗ The pasteboard's data belongs to its owner, so a caller that
+exits straight after the call hands over zero paths. Finder and the extension both stay alive; a throwaway test client
+didn't (2026-11-02).
+
+## Cmdr's own "Show in Finder"
+
+`NSFileViewer` redirects every reveal on the machine, including Cmdr's own, so with the key on, "Show in Finder" came
+straight back to a Cmdr pane. Measured on macOS 27.0.1, 2026-11-02, with the key naming the installed Cmdr:
+
+- `open -a Finder -R <file>`: still redirected. Cmdr's log showed the reveal arrive.
+- An in-process `NSFileViewer = com.apple.finder` in the argument domain: Finder gets a plain open, which opens the FILE
+  in its default app.
+- **An EMPTY `NSFileViewer` in the argument domain, then `activateFileViewerSelectingURLs:`**: a real Finder reveal, with
+  the file selected, and nothing reaches Cmdr. AppKit logs `Finder replacement  not found`, which is harmless noise.
+
+So `finder_handoff.rs` sets that value once, in memory, for this process only, and only when the key names a Cmdr. Someone
+who chose Path Finder keeps getting Path Finder. AppleScript's `tell application "Finder"` would also work, but it needs
+the Automation permission.
+
 ## Where the pane primitive lives
 
-`go_to_in_pane` sits in `tools/actions/nav.rs` and is re-exported from `mcp` (with `GoToTarget` and `PaneChoice`) as a
-named seam. Two callers: the `go_to_latest_download` MCP tool (`GoToTarget::FOCUSED`), which reaches `executor::nav`
+`go_to_in_pane` sits in `tools/actions/nav.rs` and is re-exported from `tools` (with `GoToTarget`, `PaneChoice`, and
+`open_tab_in_pane`) as a named seam. Two callers: the `go_to_latest_download` tool (`PaneChoice::Focused`), which reaches `actions::nav`
 directly from inside the module, and this one, which is the seam's only user. That's why the re-export itself carries a
 `#[cfg(target_os = "macos")]`: without it the export is dead on Linux and `-D unused` fails the build. For the same
 reason `PaneChoice` allows `dead_code` off macOS: only the terminal command builds `Left` / `Right`.
 
 A `GoToTarget` names the pane (`Focused`, `Left`, `Right`; an explicit one also takes focus, like `nav_to_path`) and
-whether to open a new tab there first, through the `tab` tool's own `new`. A new tab is the frontend's clone trick: the
-clone keeps the old location to the LEFT and the active tab moves on, so the navigation lands in the active tab. A pane
-at its tab limit refuses, and the move then happens in the current tab, logged.
+whether a terminal request wants a new tab. A new tab is the frontend's clone trick: the clone keeps the old location to
+the LEFT and the active tab moves on, so the navigation lands in the active tab.
 
-**Decision: it lives with the MCP executor rather than here or in a neutral module.** "Take a pane there and point at
+**Decision: it lives with the tool handlers rather than here or in a neutral module.** "Take a pane there and point at
 that" is spoken entirely in the `mcp-*` frontend protocol (`mcp-tab`, `mcp-nav-to-path`, `mcp-move-cursor`,
 `mcp-select-names`) and needs the round-trip machinery that only exists inside `tools::actions` — the request-id
-correlation, the typed `NavAck` landing check, the ack budgets. Moving it out would mean either widening `executor`'s
+correlation, the typed `NavAck` landing check, the ack budgets. Moving it out would mean either widening `actions`'s
 surface or duplicating that machinery. The name `mcp` is about the protocol these events are named for, not about who
 is allowed to speak it; an OS reveal makes the same move a user or an agent does.
 
-Ordering inside it is load-bearing: new tab, navigate, move the cursor, THEN multi-select. The frontend's cursor move resets the
+Ordering around it is load-bearing: new tab, navigate, move the cursor, THEN multi-select. The frontend's cursor move resets the
 selection, so selecting first would lose it.
 
 ## Registration
@@ -245,3 +294,8 @@ the once-ever notice the first time a reveal actually lands.
 
 The `public.folder` LaunchServices handler (so `open .` and Spotlight folder hits land in Cmdr) and an onboarding
 offer: GitHub [#271](https://github.com/vdavid/cmdr/issues/271) and [#272](https://github.com/vdavid/cmdr/issues/272).
+
+**The folder handler has no official route on macOS 27.** `NSWorkspace.setDefaultApplication(at:toOpen:)` and
+`LSSetDefaultRoleHandlerForContentType` both answer `-50` for `public.folder`, even when re-setting Finder to itself, while
+re-setting `public.plain-text` to its own handler answers `0` (macOS 27.0.1, signed app and CLI, 2026-11-02). Declaring
+the claim (`LSHandlerRank = Alternate`) leaves Finder as the holder.

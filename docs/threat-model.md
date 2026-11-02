@@ -109,8 +109,12 @@ risk.
     also shown to the person, and every refusal lands in the security event log. Mechanism:
     `apps/desktop/src-tauri/src/mcp/DETAILS.md` § Authentication, `docs/security.md` § Telling the person about a
     refused access attempt.
-  - **Apple Events** only navigate: an incoming file URL raises the window and moves the cursor, nothing more
-    (`apps/desktop/src-tauri/src/reveal/CLAUDE.md`). Cmdr registers no URL scheme and no Service of its own.
+  - **Apple Events and the "Open in Cmdr" service** only navigate: an incoming path raises the window, opens at most one
+    pane's worth of tabs, and moves the cursor, nothing more (`apps/desktop/src-tauri/src/reveal/CLAUDE.md`). Any app
+    can call the service. Cmdr registers no URL scheme.
+  - **The optional Finder extension** (`apps/desktop/finder-extension/CLAUDE.md`) is sandboxed, with no entitlement
+    beyond that, holds no logic, and is off until the person switches it on. Admins can block it by id or extension
+    point.
   - **Drag and drop in** opens the normal transfer confirmation.
   - **Process launches pass paths as argv**, never through a shell string. AppleScript takes paths through `on run argv`
     or `quoted form of`.

@@ -8,6 +8,7 @@ import { tString } from '#lib/intl/messages.svelte.js'
 import type { CommandArgs } from '#lib/commands/index.js'
 import type { CommandHandlerRecord } from './types'
 import { moveTabForMcp } from '../mcp-tab-move'
+import { openTabForMcp } from '../mcp-tab-open'
 
 export const tabHandlers = {
   'tab.new': ({ explorerRef }) => {
@@ -70,6 +71,7 @@ export const tabHandlers = {
     // A move can be refused, so it replies on its request id with what it did; the
     // rest are fire-and-forget behind the backend's generation ack.
     if (args.action === 'move') return moveTabForMcp({ explorer: explorerRef, args })
+    if (args.mcpRequestId !== undefined) return openTabForMcp({ explorer: explorerRef, args })
     explorerRef?.handleMcpTabAction(args.pane, args.action, args.tabId, args.pinned)
   },
 } satisfies Partial<CommandHandlerRecord>

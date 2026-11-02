@@ -891,6 +891,12 @@
     "sources": "catalog (fileExplorer.pane.connectedDirectlyToast, fileExplorer.network.osMountFallback.message)",
     "note": "The MCP setting Direct mode shares the root: Közvetlen mód (settings.developer.mcpDirectMode.label)."
   },
+  "finder-extension": {
+    "chosen": "Finder-bővítmény",
+    "accept": ["bővítmény"],
+    "confidence": "high",
+    "sources": "macOS pane Indítóelemek és bővítmények (errors.provider.pCloudFuse.needsAction); rendszerbővítmény"
+  },
   "learn-more": {
     "chosen": "Bővebben",
     "confidence": "high",

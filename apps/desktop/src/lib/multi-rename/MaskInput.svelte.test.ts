@@ -5,16 +5,11 @@
  * editor stay in it, so the sheet around it neither starts nor closes.
  */
 
-import { describe, it, expect, afterEach } from 'vitest'
-import { mount, tick, unmount } from 'svelte'
+import { describe, it, expect, afterEach, vi } from 'vitest'
+import { mount, unmount } from 'svelte'
 import MaskInputFixture from './mask-input-fixture.svelte'
-
-async function settle(): Promise<void> {
-  for (let i = 0; i < 4; i++) {
-    await tick()
-    await new Promise((resolve) => setTimeout(resolve, 0))
-  }
-}
+import { pastEditorDelays, settle, useFakeClock } from './mask-input-test-clock'
+import { HOVER_OPEN_MS } from './token-editor-rules'
 
 let cleanup: (() => void) | undefined
 afterEach(() => {
@@ -211,15 +206,13 @@ describe('MaskInput', () => {
   })
 
   describe('opening on its own', () => {
-    /** Past the caret's and the pointer's open and close delays. */
-    const pause = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 450))
+    useFakeClock()
 
     async function caretAt(m: Mounted, caret: number): Promise<void> {
       m.input.focus()
       m.input.setSelectionRange(caret, caret)
       m.input.dispatchEvent(new Event('keyup', { bubbles: true }))
-      await pause()
-      await settle()
+      await pastEditorDelays()
     }
 
     it('opens when the caret rests inside a counter, and leaves focus in the field', async () => {
@@ -280,13 +273,13 @@ describe('MaskInput', () => {
       await mountField('[C] x [C+5]')
       const marker = document.querySelectorAll<HTMLButtonElement>('button[aria-label="Edit counter"]')[1]
       marker.dispatchEvent(new MouseEvent('mouseenter'))
-      await pause()
-      await settle()
+      await vi.advanceTimersByTimeAsync(HOVER_OPEN_MS - 1)
+      expect(document.querySelector('.ui-popover')).toBeNull()
+      await pastEditorDelays()
       expect(editorFields().map((f) => f.value)).toEqual(['1', '5', '1'])
       marker.dispatchEvent(new MouseEvent('mouseleave'))
       marker.parentElement?.dispatchEvent(new MouseEvent('mouseleave'))
-      await pause()
-      await settle()
+      await pastEditorDelays()
       expect(document.querySelector('.ui-popover')).toBeNull()
     })
 
@@ -294,12 +287,10 @@ describe('MaskInput', () => {
       await mountField('[C] x')
       const marker = document.querySelector<HTMLButtonElement>('button[aria-label="Edit counter"]')
       marker?.dispatchEvent(new MouseEvent('mouseenter'))
-      await pause()
-      await settle()
+      await pastEditorDelays()
       marker?.parentElement?.dispatchEvent(new MouseEvent('mouseleave'))
       document.querySelector('.ui-popover')?.dispatchEvent(new MouseEvent('mouseenter'))
-      await pause()
-      await settle()
+      await pastEditorDelays()
       expect(document.querySelector('.ui-popover')).not.toBeNull()
     })
   })

@@ -2,8 +2,18 @@
  * Tests for `routeTypingKey`, the ONE typing intercept both key paths share.
  * They pin which keys each mode consumes and which fall through.
  */
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
+import { isBoundByAnyCommand } from '#lib/shortcuts/index.js'
 import { routeTypingKey, typingFilters, type TypingKeyTarget } from './type-to-jump-keys'
+
+vi.mock('#lib/shortcuts/index.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('#lib/shortcuts/index.js')>()),
+  isBoundByAnyCommand: vi.fn(() => false),
+}))
+
+beforeEach(() => {
+  vi.mocked(isBoundByAnyCommand).mockReset().mockReturnValue(false)
+})
 
 /** The target with its spies as plain `vi.fn()` properties (not `TypingKeyTarget` methods), so asserting on one isn't an unbound method. */
 function pane(mode: 'jump' | 'filter', active = false, renaming = false) {
@@ -85,6 +95,40 @@ describe('routeTypingKey in filter mode', () => {
 
   it('stands aside while renaming', () => {
     expect(routeTypingKey(pane('filter', false, true), key('a'))).toBe(false)
+  })
+})
+
+// Regression: ⇧Space (Quick Look) did nothing while a filter was on, because the filter took it as a typed space.
+describe('routeTypingKey with ⇧Space', () => {
+  const shiftSpace = () => key(' ', { shiftKey: true })
+
+  it('leaves a bound ⇧Space to its command while a filter is on', () => {
+    vi.mocked(isBoundByAnyCommand).mockReturnValue(true)
+    const p = pane('filter', true)
+    expect(routeTypingKey(p, shiftSpace())).toBe(false)
+    expect(p.appendQuickFilter).not.toHaveBeenCalled()
+  })
+
+  it('leaves a bound ⇧Space to its command while a jump is on', () => {
+    vi.mocked(isBoundByAnyCommand).mockReturnValue(true)
+    const p = pane('jump', true)
+    expect(routeTypingKey(p, shiftSpace())).toBe(false)
+    expect(p.handleJumpKeystroke).not.toHaveBeenCalled()
+  })
+
+  it('keeps an unbound ⇧Space as a typed space, where no command would miss it', () => {
+    const p = pane('filter', true)
+    expect(routeTypingKey(p, shiftSpace())).toBe(true)
+    expect(p.appendQuickFilter).toHaveBeenCalledWith(' ')
+  })
+
+  it('still types plain Space and shifted punctuation even when they are bound', () => {
+    vi.mocked(isBoundByAnyCommand).mockReturnValue(true)
+    const p = pane('filter', true)
+    expect(routeTypingKey(p, key(' '))).toBe(true)
+    expect(p.appendQuickFilter).toHaveBeenCalledWith(' ')
+    expect(routeTypingKey(p, key('_', { shiftKey: true }))).toBe(true)
+    expect(p.appendQuickFilter).toHaveBeenCalledWith('_')
   })
 })
 

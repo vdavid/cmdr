@@ -267,6 +267,8 @@ export interface ExplorerAPI {
    * optionally a specific tab), unlike the focused-pane `newTab`/`cycleTab`/etc.
    */
   handleMcpTabAction: (pane: 'left' | 'right', action: McpTabAction, tabId?: string, pinned?: boolean) => void
+  /** Opens a new tab in a SPECIFIC pane. `false` means the pane is at its tab limit. */
+  openTabInPane: (pane: 'left' | 'right') => boolean
   /**
    * Moves a tab to another slot or to the other pane, under the same rules as a tab
    * drag, and says what happened. The MCP `tab move` action; the mouse goes through the

@@ -1,10 +1,10 @@
 //! What arrives through `RunEvent::Opened`: the cold-launch buffer, the plan a set of
 //! revealed paths becomes, and the pane move that carries it out.
 //!
-//! Two senders share this door. Another app's "Show in Finder" (once the `NSFileViewer` key
-//! is ours) arrives as `file://` URLs; the `cmdr` terminal command arrives as a
-//! `cmdr-cli://open?…` URL (`crate::cli`). Both become a [`RevealRequest`] here, and only
-//! their origin tells them apart from then on.
+//! Several senders share this door. Another app's "Show in Finder" (once the `NSFileViewer`
+//! key is ours) arrives as `file://` URLs; the `cmdr` terminal command arrives as a
+//! `cmdr-cli://open?…` URL (`crate::cli`). Each becomes a [`RevealRequest`] here, and only
+//! its origin tells it apart from then on.
 //!
 //! macOS-only, like the mechanism itself. Its parent `mod.rs` is NOT gated, because
 //! [`super::RevealDelivered`] has to resolve on every platform for `ipc.rs`'s
@@ -20,9 +20,9 @@ use tauri_specta::Event;
 
 use crate::cli::open_url::{SCHEME as CLI_SCHEME, parse_cli_url};
 use crate::ignore_poison::IgnorePoison;
-use crate::tools::GoToTarget;
+use crate::tools::{GoToTarget, PaneChoice};
 
-use super::RevealDelivered;
+use super::{RevealDelivered, RevealTabsDropped};
 
 /// The one buffer, and process-global on purpose.
 ///
@@ -37,6 +37,11 @@ pub(super) static PENDING: LazyLock<PendingReveals> = LazyLock::new(PendingRevea
 /// request rather than guess at the answer.
 const CLASSIFY_TIMEOUT: Duration = Duration::from_secs(2);
 
+/// One delivery at a time, across batches, in arrival order (Tokio's mutex is fair): two
+/// moves racing for the same pane would land in whichever order they finish, and each one's
+/// tabs would interleave with the other's.
+static DELIVERY_TURN: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
 /// Who asked for a reveal.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum RevealOrigin {
@@ -46,6 +51,9 @@ pub(crate) enum RevealOrigin {
     /// frontend spends a once-ever "Show in Finder now lands here" notice on the first
     /// one, and a terminal open says nothing about Finder.
     Terminal,
+    /// "Open in Cmdr" in Finder's right-click menu. Never announced, for the same reason
+    /// as [`Self::Terminal`]: the person just asked for Cmdr by name.
+    OpenInCmdr,
 }
 
 /// One request to show paths in a pane.
@@ -56,7 +64,7 @@ pub(crate) struct RevealRequest {
     pub origin: RevealOrigin,
 }
 
-/// Where one reveal request puts the pane.
+/// One pane move a request becomes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct RevealPlan {
     /// The directory the pane navigates to.
@@ -64,6 +72,8 @@ pub(crate) struct RevealPlan {
     /// Entries to select there, cursor on the first. Empty when the request named a
     /// folder, which is opened rather than pointed at.
     pub entries: Vec<String>,
+    /// Whether this move wants a tab of its own.
+    pub new_tab: bool,
 }
 
 /// Reveal requests that arrived before the frontend could act on them.
@@ -153,6 +163,7 @@ pub(crate) fn plan_reveal(paths: &[PathBuf], is_dir: &dyn Fn(&Path) -> bool) -> 
         return Some(RevealPlan {
             dir: first.clone(),
             entries: Vec::new(),
+            new_tab: false,
         });
     }
     let dir = first.parent()?.to_path_buf();
@@ -164,7 +175,78 @@ pub(crate) fn plan_reveal(paths: &[PathBuf], is_dir: &dyn Fn(&Path) -> bool) -> 
     if entries.is_empty() {
         return None;
     }
-    Some(RevealPlan { dir, entries })
+    Some(RevealPlan {
+        dir,
+        entries,
+        new_tab: false,
+    })
+}
+
+/// Turn one request into its pane moves, in the order they should land.
+///
+/// - A terminal request is one move, in the tab it asked for.
+/// - Everything else gives each folder a new tab of its own.
+/// - Files from Finder's right-click menu get one new tab per directory, each with its files
+///   selected there.
+/// - Revealed files stay in the current tab, as one move: a reveal points at something, and
+///   a pane shows one directory, so files elsewhere are dropped (`deliver` logs how many).
+pub(crate) fn plan_moves(request: &RevealRequest, is_dir: &dyn Fn(&Path) -> bool) -> Vec<RevealPlan> {
+    if request.origin == RevealOrigin::Terminal {
+        return plan_reveal(&request.paths, is_dir)
+            .map(|plan| RevealPlan {
+                new_tab: request.target.new_tab,
+                ..plan
+            })
+            .into_iter()
+            .collect();
+    }
+    let files_get_a_tab = request.origin == RevealOrigin::OpenInCmdr;
+    let mut plans: Vec<RevealPlan> = Vec::new();
+    for path in &request.paths {
+        if is_dir(path) {
+            plans.push(RevealPlan {
+                dir: path.clone(),
+                entries: Vec::new(),
+                new_tab: true,
+            });
+            continue;
+        }
+        let (Some(dir), Some(name)) = (path.parent(), path.file_name()) else {
+            continue;
+        };
+        let name = name.to_string_lossy().to_string();
+        // Only a file move holds entries, so a folder opened at the same path stays its own.
+        let is_file_move = |plan: &RevealPlan| !plan.entries.is_empty();
+        if let Some(plan) = plans.iter_mut().find(|plan| is_file_move(plan) && plan.dir == dir) {
+            plan.entries.push(name);
+        } else if files_get_a_tab || !plans.iter().any(is_file_move) {
+            plans.push(RevealPlan {
+                dir: dir.to_path_buf(),
+                entries: vec![name],
+                new_tab: files_get_a_tab,
+            });
+        }
+    }
+    plans
+}
+
+/// What a move does when the pane refused its new tab.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum AtTabLimit {
+    /// Nothing has landed yet, so this move takes the current tab and the rest are dropped.
+    /// Somebody who asked for a folder should land somewhere, and one overwritten tab is the
+    /// price of that. ❌ Never more than one, or the extras would keep overwriting it.
+    UseCurrentTabThenStop,
+    /// Earlier moves got their tabs. This one and the rest are dropped.
+    Stop,
+}
+
+fn at_tab_limit(index: usize) -> AtTabLimit {
+    if index == 0 {
+        AtTabLimit::UseCurrentTabThenStop
+    } else {
+        AtTabLimit::Stop
+    }
 }
 
 /// Handle a `RunEvent::Opened`: the one door every arriving reveal comes through.
@@ -183,6 +265,11 @@ pub fn on_urls_opened(app: &AppHandle<Wry>, urls: Vec<tauri::Url>) {
         log::debug!(target: "reveal", "An open event carried nothing to show; ignoring");
         return;
     }
+    take_requests(app, requests);
+}
+
+/// Raise the window and park or deliver `requests`. Every sender ends up here.
+pub(super) fn take_requests(app: &AppHandle<Wry>, requests: Vec<RevealRequest>) {
     raise_main_window(app);
     let ready: Vec<RevealRequest> = requests
         .into_iter()
@@ -208,10 +295,11 @@ fn raise_main_window<R: Runtime>(app: &AppHandle<R>) {
 }
 
 /// Run deliveries on the async runtime, off whatever thread asked for them, one after the
-/// other: two moves racing for the same pane would land in whichever order they finish.
+/// other ([`DELIVERY_TURN`]).
 pub(super) fn spawn_delivery<R: Runtime>(app: &AppHandle<R>, requests: Vec<RevealRequest>) {
     let app = app.clone();
     tauri::async_runtime::spawn(async move {
+        let _turn = DELIVERY_TURN.lock().await;
         for request in requests {
             deliver(&app, request).await;
         }
@@ -220,53 +308,99 @@ pub(super) fn spawn_delivery<R: Runtime>(app: &AppHandle<R>, requests: Vec<Revea
 
 /// Move a pane onto one request's paths.
 async fn deliver<R: Runtime>(app: &AppHandle<R>, request: RevealRequest) {
-    let RevealRequest { paths, target, origin } = request;
-    let requested = paths.len();
+    let requested = request.paths.len();
+    let (pane, origin) = (request.target.pane, request.origin);
     log::info!(target: "reveal", "{origin:?} reveal: {requested} path(s) to show");
-    let probe = paths.clone();
-    let plan = cmdr_fs::deadline::blocking_with_timeout(CLASSIFY_TIMEOUT, None, move || {
-        plan_reveal(&probe, &|path| path.is_dir())
+    let plans = cmdr_fs::deadline::blocking_with_timeout(CLASSIFY_TIMEOUT, Vec::new(), move || {
+        plan_moves(&request, &|path| path.is_dir())
     })
     .await;
-    let Some(plan) = plan else {
+    if plans.is_empty() {
         log::warn!(
             target: "reveal",
             "Couldn't work out what to show for {requested} path(s) (unreadable, parentless, or a stalled mount)",
         );
         return;
-    };
-    // A folder plan shows one path (the folder) with no entries to select.
-    let shown = plan.entries.len().max(1);
+    }
+    // A folder move shows one path (the folder) with no entries to select.
+    let shown: usize = plans.iter().map(|plan| plan.entries.len().max(1)).sum();
     if shown < requested {
         log::info!(
             target: "reveal",
             "Showing {shown} of {requested} revealed path(s); the rest sit in other directories",
         );
     }
-    let dir = plan.dir.to_string_lossy().to_string();
-    if let Err(err) = crate::tools::go_to_in_pane(app, target, &dir, &plan.entries).await {
-        log::warn!(
+    let outcome = run_moves(app, pane, &plans).await;
+    if outcome.dropped > 0 {
+        log::info!(
             target: "reveal",
-            "Couldn't show {dir}: {}",
-            err.message,
-            dir = cmdr_fs::log_private::LogPrivate::dir_path(&dir)
+            "The pane is at its tab limit, so {} of {} move(s) won't open",
+            outcome.dropped,
+            plans.len()
         );
-        return;
+        let dropped = RevealTabsDropped {
+            opened: outcome.landed,
+            dropped: outcome.dropped,
+        };
+        if let Err(err) = dropped.emit(app) {
+            log::warn!(target: "reveal", "Couldn't announce the dropped tabs: {err}");
+        }
     }
-    // Announced only once the pane has actually moved, and only for Finder reveals: the
-    // frontend turns the first of these into a once-ever notice about "Show in Finder",
-    // which neither a reveal that went nowhere nor a terminal open may spend.
+    // Announced only once a pane has actually moved, and only for a reveal the `NSFileViewer`
+    // key sent here: the frontend turns the first of these into a once-ever notice about
+    // "Show in Finder", which neither a reveal that went nowhere, a terminal open, nor a
+    // folder opened through the folder default may spend.
     if origin == RevealOrigin::Finder
+        && outcome.landed > 0
+        && super::registration::key_is_ours()
         && let Err(err) = (RevealDelivered {}).emit(app)
     {
         log::warn!(target: "reveal", "Couldn't announce the delivered reveal: {err}");
     }
 }
 
+/// What a run of pane moves came to.
+struct MovesOutcome {
+    landed: u32,
+    /// Moves the pane's tab limit turned away.
+    dropped: u32,
+}
+
+/// Make `plans`' pane moves in order, stopping at the pane's tab limit.
+async fn run_moves<R: Runtime>(app: &AppHandle<R>, pane: PaneChoice, plans: &[RevealPlan]) -> MovesOutcome {
+    let mut outcome = MovesOutcome { landed: 0, dropped: 0 };
+    for (index, plan) in plans.iter().enumerate() {
+        let tab_opened = !plan.new_tab
+            || crate::tools::open_tab_in_pane(app, pane).await.unwrap_or_else(|err| {
+                log::warn!(target: "reveal", "Couldn't open a new tab: {}", err.message);
+                false
+            });
+        let limit = (!tab_opened).then(|| at_tab_limit(index));
+        if limit == Some(AtTabLimit::Stop) {
+            outcome.dropped = u32::try_from(plans.len() - index).unwrap_or(u32::MAX);
+            return outcome;
+        }
+        let dir = plan.dir.to_string_lossy().to_string();
+        match crate::tools::go_to_in_pane(app, pane, &dir, &plan.entries).await {
+            Ok(()) => outcome.landed += 1,
+            Err(err) => log::warn!(
+                target: "reveal",
+                "Couldn't show {dir}: {}",
+                err.message,
+                dir = cmdr_fs::log_private::LogPrivate::dir_path(&dir)
+            ),
+        }
+        if limit == Some(AtTabLimit::UseCurrentTabThenStop) {
+            outcome.dropped = u32::try_from(plans.len() - index - 1).unwrap_or(u32::MAX);
+            return outcome;
+        }
+    }
+    outcome
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tools::PaneChoice;
 
     fn dirs(paths: &[&str]) -> impl Fn(&Path) -> bool + use<> {
         let dirs: Vec<PathBuf> = paths.iter().map(PathBuf::from).collect();
@@ -334,6 +468,103 @@ mod tests {
         let plan = plan_reveal(&[p("/tmp/folder"), p("/tmp/one.txt")], &dirs(&["/tmp/folder"])).expect("a plan");
         assert_eq!(plan.dir, p("/tmp/folder"));
         assert!(plan.entries.is_empty());
+    }
+
+    fn request(paths: &[&str], origin: RevealOrigin) -> RevealRequest {
+        RevealRequest {
+            paths: paths.iter().map(PathBuf::from).collect(),
+            target: GoToTarget::FOCUSED,
+            origin,
+        }
+    }
+
+    fn moves(plans: &[RevealPlan]) -> Vec<(&str, Vec<&str>, bool)> {
+        plans
+            .iter()
+            .map(|plan| {
+                (
+                    plan.dir.to_str().expect("a UTF-8 test path"),
+                    plan.entries.iter().map(String::as_str).collect(),
+                    plan.new_tab,
+                )
+            })
+            .collect()
+    }
+
+    #[test]
+    fn a_revealed_file_stays_in_the_current_tab() {
+        let plans = plan_moves(&request(&["/tmp/a.txt"], RevealOrigin::Finder), &dirs(&[]));
+        assert_eq!(moves(&plans), vec![("/tmp", vec!["a.txt"], false)]);
+    }
+
+    #[test]
+    fn a_revealed_folder_gets_a_new_tab() {
+        // A folder opened through the folder default and a reveal of a folder arrive as the
+        // same event, so they can't be told apart, and both get the same answer.
+        let plans = plan_moves(&request(&["/tmp/a"], RevealOrigin::Finder), &dirs(&["/tmp/a"]));
+        assert_eq!(moves(&plans), vec![("/tmp/a", vec![], true)]);
+    }
+
+    #[test]
+    fn revealed_files_elsewhere_are_still_left_out() {
+        let plans = plan_moves(
+            &request(&["/tmp/a.txt", "/tmp/b.txt", "/var/c.txt"], RevealOrigin::Finder),
+            &dirs(&[]),
+        );
+        assert_eq!(moves(&plans), vec![("/tmp", vec!["a.txt", "b.txt"], false)]);
+    }
+
+    #[test]
+    fn open_in_cmdr_gives_each_folder_its_own_tab() {
+        let plans = plan_moves(
+            &request(&["/tmp/a", "/tmp/b"], RevealOrigin::OpenInCmdr),
+            &dirs(&["/tmp/a", "/tmp/b"]),
+        );
+        assert_eq!(moves(&plans), vec![("/tmp/a", vec![], true), ("/tmp/b", vec![], true)]);
+    }
+
+    #[test]
+    fn open_in_cmdr_opens_a_files_folder_in_a_new_tab_with_the_file_selected() {
+        let plans = plan_moves(&request(&["/tmp/a.txt"], RevealOrigin::OpenInCmdr), &dirs(&[]));
+        assert_eq!(moves(&plans), vec![("/tmp", vec!["a.txt"], true)]);
+    }
+
+    #[test]
+    fn open_in_cmdr_groups_files_by_folder_around_folders_in_the_selection() {
+        // A Finder search window can select across directories.
+        let plans = plan_moves(
+            &request(
+                &["/tmp/a.txt", "/tmp/folder", "/var/c.txt", "/tmp/b.txt"],
+                RevealOrigin::OpenInCmdr,
+            ),
+            &dirs(&["/tmp/folder"]),
+        );
+        assert_eq!(
+            moves(&plans),
+            vec![
+                ("/tmp", vec!["a.txt", "b.txt"], true),
+                ("/tmp/folder", vec![], true),
+                ("/var", vec!["c.txt"], true),
+            ]
+        );
+    }
+
+    #[test]
+    fn a_terminal_request_is_one_move_in_the_tab_it_asked_for() {
+        let mut opened = request(&["/tmp/a", "/tmp/b"], RevealOrigin::Terminal);
+        opened.target.new_tab = true;
+        let plans = plan_moves(&opened, &dirs(&["/tmp/a", "/tmp/b"]));
+        assert_eq!(moves(&plans), vec![("/tmp/a", vec![], true)]);
+
+        let plans = plan_moves(&request(&["/tmp/a"], RevealOrigin::Terminal), &dirs(&["/tmp/a"]));
+        assert_eq!(moves(&plans), vec![("/tmp/a", vec![], false)]);
+    }
+
+    #[test]
+    fn only_the_first_move_may_overwrite_the_current_tab_at_the_limit() {
+        assert_eq!(at_tab_limit(0), AtTabLimit::UseCurrentTabThenStop);
+        assert_eq!(at_tab_limit(1), AtTabLimit::Stop);
+        assert_eq!(at_tab_limit(8), AtTabLimit::Stop);
     }
 
     #[test]

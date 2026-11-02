@@ -21,7 +21,7 @@ const NS_FILE_VIEWER_KEY: &str = "NSFileViewer";
 /// The bundle identifier a shipped Cmdr carries (`tauri.conf.json` § `identifier`). Dev,
 /// per-worktree, and E2E instances carry a `-<instance>` suffix instead, which is what
 /// keeps them out of the key. See [`own_bundle_id`].
-const PRODUCTION_BUNDLE_ID: &str = "com.veszelovszki.cmdr";
+pub(super) const PRODUCTION_BUNDLE_ID: &str = "com.veszelovszki.cmdr";
 
 /// What the Settings row shows, read through to the OS every time it asks.
 ///
@@ -194,6 +194,12 @@ pub fn own_bundle_id() -> Option<String> {
     }
     let running = running_bundle_id()?;
     (running == PRODUCTION_BUNDLE_ID).then_some(running)
+}
+
+/// Whether the `NSFileViewer` key names this build right now, so a reveal arriving here came
+/// through it.
+pub(super) fn key_is_ours() -> bool {
+    own_bundle_id().is_some_and(|own| GlobalDomain.read().as_deref() == Some(own.as_str()))
 }
 
 /// This process's own bundle identifier, straight from `NSBundle`. ❌ Never a hardcoded

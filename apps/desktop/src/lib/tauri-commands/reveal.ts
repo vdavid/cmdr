@@ -5,7 +5,7 @@
 
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { commands, events } from '#lib/ipc/bindings.js'
-import type { RevealHandlerStatus } from '#lib/ipc/bindings.js'
+import type { FinderExtensionStatus, RevealHandlerStatus, RevealTabsDropped } from '#lib/ipc/bindings.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 
 const log = getAppLogger('reveal')
@@ -65,6 +65,29 @@ export async function setRevealHandlerEnabled(enabled: boolean): Promise<RevealH
 }
 
 /**
+ * Whether the Finder extension is on, and whether this copy may switch it. Reads through to
+ * macOS every time. `null` off macOS, and for a backend that didn't answer.
+ */
+export async function getFinderExtensionStatus(): Promise<FinderExtensionStatus | null> {
+  try {
+    return await commands.getFinderExtensionStatus()
+  } catch (error) {
+    log.debug('Finder extension status is unavailable: {error}', { error })
+    return null
+  }
+}
+
+/** Switch the Finder extension. Returns the state macOS was left in, like `getFinderExtensionStatus`. */
+export async function setFinderExtensionEnabled(enabled: boolean): Promise<FinderExtensionStatus | null> {
+  try {
+    return await commands.setFinderExtensionEnabled(enabled)
+  } catch (error) {
+    log.debug('Could not switch the Finder extension: {error}', { error })
+    return null
+  }
+}
+
+/**
  * Fires each time a reveal from another app actually moves a pane.
  *
  * ❗ "It landed", ❌ never "one arrived": the backend emits only after the pane move
@@ -74,5 +97,12 @@ export async function setRevealHandlerEnabled(enabled: boolean): Promise<RevealH
 export function onRevealDelivered(handler: () => void): Promise<UnlistenFn> {
   return events.revealDelivered.listen(() => {
     handler()
+  })
+}
+
+/** Fires when a pane's tab limit turned away some of what the person asked to open. */
+export function onRevealTabsDropped(handler: (counts: RevealTabsDropped) => void): Promise<UnlistenFn> {
+  return events.revealTabsDropped.listen((event) => {
+    handler(event.payload)
   })
 }

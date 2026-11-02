@@ -2090,9 +2090,33 @@
   "@settings.navigationAndFileOps.card.showInFinder": {
     "sourceHash": "c2a9c77"
   },
+  "settings.finderExtension.card": "Открыть в Cmdr",
+  "@settings.finderExtension.card": {
+    "sourceHash": "49b51d0"
+  },
+  "settings.finderExtension.label": "Показывать вверху контекстного меню Finder",
+  "@settings.finderExtension.label": {
+    "sourceHash": "02e8895"
+  },
+  "settings.finderExtension.description": "«Открыть в Cmdr» всегда есть в разделе «Службы» этого меню. Этот параметр выносит пункт на верхний уровень, на загрузочном диске. Добавляется небольшой процесс, который работает рядом с Finder.",
+  "@settings.finderExtension.description": {
+    "sourceHash": "66672fe"
+  },
+  "settings.finderExtension.notInApplications": "Переместите Cmdr в папку «Программы», чтобы включить этот параметр.",
+  "@settings.finderExtension.notInApplications": {
+    "sourceHash": "de8d7fd"
+  },
+  "settings.finderExtension.notProductionBuild": "Включить это может только выпущенная версия Cmdr. В сборках для разработки и тестирования нет расширения для Finder.",
+  "@settings.finderExtension.notProductionBuild": {
+    "sourceHash": "d991773"
+  },
   "settings.revealHandler.label": "Разрешить другим приложениям показывать файлы в Cmdr",
   "@settings.revealHandler.label": {
     "sourceHash": "8c39a2f"
+  },
+  "settings.behavior.finderExtension.keywords": "контекстное меню, правый клик, правая кнопка, правой кнопкой, расширение Finder",
+  "@settings.behavior.finderExtension.keywords": {
+    "sourceHash": "29d5b1a"
   },
   "settings.behavior.revealHandler.keywords": "Показать в Finder, показать файл, найти в Finder, файловый менеджер по умолчанию, по умолчанию, браузер, загрузки",
   "@settings.behavior.revealHandler.keywords": {

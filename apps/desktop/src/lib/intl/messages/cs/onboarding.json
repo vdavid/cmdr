@@ -227,7 +227,7 @@
   "@onboarding.stepAi.table.rowSearch": {
     "sourceHash": "49c266b"
   },
-  "onboarding.stepAi.table.searchWithout": "Napíšete třeba <code>*fish*.ppt</code> a vyberete filtr „po 1. tohoto měsíce“.",
+  "onboarding.stepAi.table.searchWithout": "Napíšete třeba <code>*fish*.ppt</code> a vyberete filtr „od 1. tohoto měsíce“.",
   "@onboarding.stepAi.table.searchWithout": {
     "sourceHash": "ebd8f45"
   },
@@ -343,7 +343,7 @@
   "@onboarding.stepBeta.title": {
     "sourceHash": "6e8be73"
   },
-  "onboarding.stepBeta.greeting": "Dobrý den, jsem <david>David</david>! Vyvíjím Cmdr a vy patříte mezi úplně první lidi, kteří ho používají. Díky za důvěru! ❤️",
+  "onboarding.stepBeta.greeting": "Zdravím, jsem <david>David</david>! Vyvíjím Cmdr a vy patříte mezi úplně první lidi, kteří ho používají. Díky za důvěru! ❤️",
   "@onboarding.stepBeta.greeting": {
     "sourceHash": "2736b42"
   },
@@ -535,7 +535,7 @@
   "@onboarding.cloudPicker.listAria": {
     "sourceHash": "9494a49"
   },
-  "onboarding.cloudSetup.title": "Nastavení poskytovatele {provider}",
+  "onboarding.cloudSetup.title": "Nastavení: {provider}",
   "@onboarding.cloudSetup.title": {
     "sourceHash": "c10333a"
   },

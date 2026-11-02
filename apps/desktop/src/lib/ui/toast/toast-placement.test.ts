@@ -5,6 +5,7 @@
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
+import { eventually } from '#lib/test-frames.js'
 import {
   bottomChromeInset,
   pickToastEdge,
@@ -129,8 +130,11 @@ describe('watchToastPlacement', () => {
     return { list, rows }
   }
 
-  async function nextFrame(): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, 120))
+  /** Waits for the watcher's frame to read the stack's rect, which it does before reporting in that same turn. */
+  async function untilMeasured(measure: () => void): Promise<void> {
+    await eventually(() => {
+      expect(measure).toHaveBeenCalled()
+    })
   }
 
   it('moves the stack off the focused cursor row, and back once the row moves away from the bottom', async () => {
@@ -144,8 +148,9 @@ describe('watchToastPlacement', () => {
       edges.push(edge)
     }).stop
 
-    await nextFrame()
-    expect(edges.at(-1)).toBe('bottom')
+    await eventually(() => {
+      expect(edges.at(-1)).toBe('bottom')
+    })
 
     rectOf(stack, { top: 664, bottom: 784, left: 824, right: 1184 })
     const bottomRow = document.createElement('div')
@@ -153,8 +158,9 @@ describe('watchToastPlacement', () => {
     rectOf(bottomRow, row(700))
     list.appendChild(bottomRow)
     list.setAttribute('aria-activedescendant', 'row-bottom')
-    await nextFrame()
-    expect(edges.at(-1)).toBe('top')
+    await eventually(() => {
+      expect(edges.at(-1)).toBe('top')
+    })
   })
 
   it('reports nothing while the cursor row is clear', async () => {
@@ -163,10 +169,11 @@ describe('watchToastPlacement', () => {
     rectOf(stack, STACK_AT_TOP)
     document.body.appendChild(stack)
     mountList(400)
+    const measure = vi.spyOn(stack, 'getBoundingClientRect')
     const onEdge = vi.fn()
     stop = watchToastPlacement(stack, onEdge).stop
 
-    await nextFrame()
+    await untilMeasured(measure)
     expect(onEdge).not.toHaveBeenCalled()
   })
 
@@ -176,20 +183,22 @@ describe('watchToastPlacement', () => {
     rectOf(stack, STACK_AT_TOP)
     document.body.appendChild(stack)
     mountList(400)
+    const measure = vi.spyOn(stack, 'getBoundingClientRect')
     const insets: number[] = []
     const watch = watchToastPlacement(stack, ({ bottomInset }) => {
       insets.push(bottomInset)
     })
     stop = watch.stop
-    await nextFrame()
+    await untilMeasured(measure)
 
     const bar = document.createElement('div')
     bar.setAttribute('data-toast-bottom-inset', '')
     rectOf(bar, { top: 771, bottom: 800, left: 0, right: 1200 })
     document.body.appendChild(bar)
     watch.remeasure()
-    await nextFrame()
 
-    expect(insets.at(-1)).toBe(29)
+    await eventually(() => {
+      expect(insets.at(-1)).toBe(29)
+    })
   })
 })

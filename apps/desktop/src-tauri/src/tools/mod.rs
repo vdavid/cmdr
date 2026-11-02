@@ -58,7 +58,7 @@ pub(crate) use actions::{ToolError, ToolResult, fit_to_result_budget, is_virtual
 // on Linux and we lint on macOS, so a missing gate here compiles clean locally and breaks
 // the whole build there.
 #[cfg(target_os = "macos")]
-pub(crate) use actions::nav::{GoToTarget, PaneChoice, go_to_in_pane};
+pub(crate) use actions::nav::{GoToTarget, PaneChoice, go_to_in_pane, open_tab_in_pane};
 pub(crate) use policy::{Caller, ToolCtx};
 pub(crate) use registry::{Access, Load, Tool};
 pub(crate) use subject::SubjectSpec;

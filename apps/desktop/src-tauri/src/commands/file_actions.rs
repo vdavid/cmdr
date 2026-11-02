@@ -67,12 +67,7 @@ pub fn show_in_finder(path: String) -> Result<(), String> {
 #[specta::specta]
 #[cfg(all(target_os = "macos", not(feature = "playwright-e2e")))]
 pub fn show_in_finder(path: String) -> Result<(), String> {
-    Command::new("open")
-        .arg("-R")
-        .arg(&path)
-        .spawn()
-        .map_err(|e| e.to_string())?;
-    Ok(())
+    crate::reveal::finder_handoff::reveal_in_finder(&path)
 }
 
 /// Show a file in the default file manager (open parent folder via xdg-open)

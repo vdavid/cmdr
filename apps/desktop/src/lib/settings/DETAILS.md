@@ -652,9 +652,10 @@ element and widen that signature — deliberately not done for an unused capabil
 ## OS-backed rows (a control whose value lives outside Cmdr)
 
 A third kind of row, beside a registry setting and a `SearchableRow`: a control the user operates, whose value is a
-piece of machine state Cmdr doesn't own. `RevealHandlerCard` (`sections/RevealHandlerCard.svelte`) is the first and,
-today, only one. Its switch reads and writes the macOS `NSFileViewer` preference, which decides whether another app's
-"Show in Finder" lands in a Cmdr pane; the mechanism and its own decisions are `src-tauri/src/reveal/DETAILS.md`.
+piece of machine state Cmdr doesn't own. `RevealHandlerCard` (`sections/RevealHandlerCard.svelte`) is the first, and
+`FinderExtensionCard` (over `pluginkit`) the second. The first one's switch reads and writes the macOS `NSFileViewer`
+preference, which decides whether another app's "Show in Finder" lands in a Cmdr pane; the mechanism and its own
+decisions are `src-tauri/src/reveal/DETAILS.md`.
 
 **When to reach for it.** All three must hold, or it's a normal setting: (a) something outside Cmdr can change the
 value, (b) nothing tells us when it does, and (c) rendering a stale answer would mislead rather than merely lag. Miss

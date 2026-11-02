@@ -1874,6 +1874,12 @@
     "confidence": "high",
     "sources": "macOS Finder MenuBar (О приложении Finder); Finder keeps its English name in Russian"
   },
+  "finder-extension": {
+    "chosen": "расширение для Finder",
+    "accept": ["расширени"],
+    "confidence": "high",
+    "sources": "macOS pane Объекты входа и расширения (errors.provider.pCloudFuse.needsAction); системное расширение"
+  },
   "fingerprint": {
     "chosen": "отпечаток ключа",
     "accept": ["отпечат"],

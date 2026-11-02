@@ -2100,9 +2100,33 @@
   "@settings.navigationAndFileOps.card.showInFinder": {
     "sourceHash": "c2a9c77"
   },
+  "settings.finderExtension.card": "Öppna i Cmdr",
+  "@settings.finderExtension.card": {
+    "sourceHash": "49b51d0"
+  },
+  "settings.finderExtension.label": "Visa högst upp i Finders snabbmeny",
+  "@settings.finderExtension.label": {
+    "sourceHash": "02e8895"
+  },
+  "settings.finderExtension.description": "”Öppna i Cmdr” finns alltid under Tjänster i menyn. Det här flyttar upp kommandot till översta nivån, på din startskiva. Det lägger till en liten process som körs bredvid Finder.",
+  "@settings.finderExtension.description": {
+    "sourceHash": "66672fe"
+  },
+  "settings.finderExtension.notInApplications": "Flytta Cmdr till mappen Appar för att kunna slå på det här.",
+  "@settings.finderExtension.notInApplications": {
+    "sourceHash": "de8d7fd"
+  },
+  "settings.finderExtension.notProductionBuild": "Det här går bara att slå på i en släppt version av Cmdr. Utvecklings- och testversioner innehåller inte Finder-tillägget.",
+  "@settings.finderExtension.notProductionBuild": {
+    "sourceHash": "d991773"
+  },
   "settings.revealHandler.label": "Låt andra appar visa filer i Cmdr",
   "@settings.revealHandler.label": {
     "sourceHash": "8c39a2f"
+  },
+  "settings.behavior.finderExtension.keywords": "snabbmeny, högerklick, högerklicksmeny, kontextmeny, sekundärklick, Finder-tillägg",
+  "@settings.behavior.finderExtension.keywords": {
+    "sourceHash": "29d5b1a"
   },
   "settings.behavior.revealHandler.keywords": "visa i finder, visa, standardfilhanterare, filhanterare, webbläsare, hämtade filer, nedladdningar",
   "@settings.behavior.revealHandler.keywords": {

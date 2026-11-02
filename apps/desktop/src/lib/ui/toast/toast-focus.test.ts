@@ -10,6 +10,7 @@ import ToastContainer from './ToastContainer.svelte'
 import ToastIdFixture from './toast-id-fixture.svelte'
 import { addToast, clearAllToasts, getToasts } from './toast-store.svelte'
 import { focusNewestToast, toastStackOwnsKey } from './toast-focus'
+import { eventually } from '#lib/test-frames.js'
 
 let component: ReturnType<typeof mount> | null = null
 
@@ -119,11 +120,11 @@ describe('Move focus to the notifications', () => {
     const { target, origin } = await setup()
 
     expect(focusNewestToast()).toBe(false)
-    await settle()
-    await new Promise((resolve) => setTimeout(resolve, 150))
 
+    await eventually(() => {
+      expect(target.querySelector('[data-toast-announcer="polite"]')?.textContent).toBe('No notifications')
+    })
     expect(document.activeElement).toBe(origin)
-    expect(target.querySelector('[data-toast-announcer="polite"]')?.textContent).toBe('No notifications')
   })
 
   it('holds a transient toast while focus is on it', async () => {

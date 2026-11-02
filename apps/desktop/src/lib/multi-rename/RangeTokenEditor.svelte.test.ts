@@ -9,17 +9,11 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { mount, tick, unmount } from 'svelte'
+import { mount, unmount } from 'svelte'
 import MaskInputFixture from './mask-input-fixture.svelte'
+import { pastEditorDelays, settle, useFakeClock } from './mask-input-test-clock'
 import type { RangeSampleSource } from './range-sample-source'
 import type { RangeSample } from '#lib/tauri-commands/index.js'
-
-async function settle(): Promise<void> {
-  for (let i = 0; i < 4; i++) {
-    await tick()
-    await new Promise((resolve) => setTimeout(resolve, 0))
-  }
-}
 
 /** What the fake engine takes from "Beach day" (or "jpg" for `[E…]`) for each token the tests write. */
 const TAKEN: Record<string, [number, number] | null> = {
@@ -139,15 +133,13 @@ describe('the range editor', () => {
   })
 
   describe('opens only with the caret inside the token, never on its outer edges', () => {
-    /** Past the caret's and the pointer's open delays. */
-    const pause = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 450))
+    useFakeClock()
 
     async function caretRestsAt(m: Mounted, caret: number): Promise<void> {
       m.input.focus()
       m.input.setSelectionRange(caret, caret)
       m.input.dispatchEvent(new Event('keyup', { bubbles: true }))
-      await pause()
-      await settle()
+      await pastEditorDelays()
     }
 
     // `x [N2-5] y`: `[` at 2, `]` at 7, so 2 is `|[`, 3 is `[|`, 7 is `|]`, and 8 is `]|`.
@@ -185,8 +177,7 @@ describe('the range editor', () => {
       m.input.focus()
       m.input.setSelectionRange(caret, caret)
       document.querySelector('button[aria-label="Choose characters"]')?.dispatchEvent(new MouseEvent('mouseenter'))
-      await pause()
-      await settle()
+      await pastEditorDelays()
       expect(document.querySelector('.ui-popover')).not.toBeNull()
       key(m.input, 'ArrowDown')
       await settle()
@@ -367,6 +358,8 @@ describe('the range editor', () => {
   })
 
   describe('draws the box’s selection itself while the box is unfocused', () => {
+    useFakeClock()
+
     /** The marked part of the drawn selection, or `null` when none is drawn. */
     const drawn = (): string | null => document.querySelector('.ui-popover .box-mirror mark')?.textContent ?? null
 
@@ -374,8 +367,7 @@ describe('the range editor', () => {
       m.input.focus()
       m.input.setSelectionRange(caret, caret)
       m.input.dispatchEvent(new Event('keyup', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 450))
-      await settle()
+      await pastEditorDelays()
     }
 
     it('marks the token’s characters in a caret-opened editor, hidden from assistive tech', async () => {

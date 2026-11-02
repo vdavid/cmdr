@@ -1,5 +1,5 @@
 {
-  "operationLog.dialog.title": "Protokol operací",
+  "operationLog.dialog.title": "Historie operací",
   "@operationLog.dialog.title": {
     "sourceHash": "2c97965"
   },
@@ -15,7 +15,7 @@
   "@operationLog.dialog.empty": {
     "sourceHash": "2dea414"
   },
-  "operationLog.dialog.recordingOff": "Protokol operací teď nic nezaznamenává, takže se tu nové kopírování, přesuny, přejmenování a mazání neobjeví a nedají se odvolat. Aby se znovu zaznamenávaly, zapněte ho v Nastavení.",
+  "operationLog.dialog.recordingOff": "Historie operací teď nic nezaznamenává, takže se tu nové kopírování, přesuny, přejmenování a mazání neobjeví a nedají se odvolat. Aby se znovu zaznamenávaly, zapněte ji v Nastavení.",
   "@operationLog.dialog.recordingOff": {
     "sourceHash": "0519736"
   },

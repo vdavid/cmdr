@@ -47,7 +47,7 @@
   "@servers.hub.status.saved": {
     "sourceHash": "b5c120b"
   },
-  "servers.hub.status.notConnectedYet": "Zatím nepřipojeno",
+  "servers.hub.status.notConnectedYet": "Zatím není připojeno",
   "@servers.hub.status.notConnectedYet": {
     "sourceHash": "8985693"
   },
@@ -665,7 +665,7 @@
     "sourceHash": "c3f48e3",
     "sameAsSourceJustification": "Product name, kept verbatim per the @key description."
   },
-  "servers.sheet.s3GcsKeyHelp": "Přihlaste se klíčem HMAC ze záložky Interoperability v nastavení Cloud Storage.",
+  "servers.sheet.s3GcsKeyHelp": "Přihlaste se klíčem HMAC z karty Interoperabilita v nastavení Cloud Storage.",
   "@servers.sheet.s3GcsKeyHelp": {
     "sourceHash": "acb72a4"
   },
@@ -697,7 +697,7 @@
   "@servers.sheet.s3Endpoint": {
     "sourceHash": "3df9726"
   },
-  "servers.sheet.s3PathStyle": "Používat adresování ve stylu cesty (path-style)",
+  "servers.sheet.s3PathStyle": "Použít adresování typu path-style",
   "@servers.sheet.s3PathStyle": {
     "sourceHash": "627c522"
   },
@@ -890,7 +890,7 @@
   "@servers.paneState.guestSessionRefused": {
     "sourceHash": "36ad371"
   },
-  "servers.paneState.guestSessionRefusedHint": "Chtěli jste se přihlásit svým účtem, ale server místo toho nabídl relaci hosta. Obvykle to znamená, že heslo bylo špatně. Výjimečně to znamená, že někdo zasahuje do připojení.",
+  "servers.paneState.guestSessionRefusedHint": "Chtěli jste se přihlásit svým účtem, ale server místo toho nabídl relaci hosta. Obvykle to znamená, že heslo nebylo správné. Výjimečně to znamená, že někdo zasahuje do připojení.",
   "@servers.paneState.guestSessionRefusedHint": {
     "sourceHash": "172375c"
   },

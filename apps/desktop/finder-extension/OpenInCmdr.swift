@@ -1,0 +1,54 @@
+// A top-level "Open in Cmdr" in Finder's right-click menu. See CLAUDE.md here.
+//
+// All this does is call the macOS service the app already declares (`src-tauri/Info.plist`),
+// so the service's delivery is the only delivery: launching Cmdr, parking the request until
+// the frontend is up, and moving the pane all happen on the far side.
+
+import AppKit
+import FinderSync
+import os
+
+private let log = Logger(subsystem: "com.veszelovszki.cmdr.finder-extension", category: "menu")
+
+/// The service's `NSMenuItem` title in `src-tauri/Info.plist`. `NSPerformService` finds a service
+/// by this exact text.
+private let serviceName = "Open in Cmdr"
+
+/// The startup disk's root. ❌ Don't list other volumes: each one then shows this app's icon in
+/// Finder's sidebar (`DETAILS.md`). The service covers them instead.
+private let watchedRoot = URL(fileURLWithPath: "/")
+
+final class OpenInCmdr: FIFinderSync {
+    override init() {
+        super.init()
+        FIFinderSyncController.default().directoryURLs = [watchedRoot]
+    }
+
+    override func menu(for menuKind: FIMenuKind) -> NSMenu? {
+        guard menuKind == .contextualMenuForItems || menuKind == .contextualMenuForContainer else {
+            return nil
+        }
+        let menu = NSMenu(title: "")
+        menu.addItem(withTitle: serviceName, action: #selector(openInCmdr(_:)), keyEquivalent: "")
+        return menu
+    }
+
+    /// The selection, or the folder the click landed in when it landed on the window's background.
+    @objc func openInCmdr(_ sender: AnyObject?) {
+        let controller = FIFinderSyncController.default()
+        var items = controller.selectedItemURLs() ?? []
+        if items.isEmpty, let folder = controller.targetedURL() {
+            items = [folder]
+        }
+        guard !items.isEmpty else { return }
+
+        let pasteboard = NSPasteboard.withUniqueName()
+        pasteboard.clearContents()
+        pasteboard.writeObjects(items.map { $0 as NSURL })
+        // This process outlives the call, and the pasteboard's data is ours until the service has
+        // read it, which is why it isn't released here. One unique pasteboard per click is small.
+        if !NSPerformService(serviceName, pasteboard) {
+            log.error("macOS didn't run the Open in Cmdr service. Has it been switched off in System Settings?")
+        }
+    }
+}

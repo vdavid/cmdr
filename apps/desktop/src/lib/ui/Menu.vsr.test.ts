@@ -24,6 +24,8 @@ import { virtual } from '@guidepup/virtual-screen-reader'
 import Menu from './Menu.svelte'
 import { createMenu, type MenuController } from './menu-controller.svelte'
 import type { MenuSection } from './menu-types'
+import { eventually, untilFocusNamesARow } from '#lib/test-frames.js'
+import { pressAndHear } from '#lib/test-vsr.js'
 
 function sections(): MenuSection[] {
   return [
@@ -60,9 +62,12 @@ afterEach(async () => {
   document.body.innerHTML = ''
 })
 
-/** Lets focus effects, the portal's tick, and the one-frame-late active descendant settle. */
-async function settle(): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, 150))
+/** Past focus effects, the portal's tick, and the one-frame-late active descendant, on the surface named `label`. */
+async function untilMenuHoldsFocus(label: string): Promise<void> {
+  await eventually(() => {
+    expect(document.activeElement?.getAttribute('aria-label')).toBe(label)
+  })
+  await untilFocusNamesARow()
 }
 
 /** A trigger the way the volume chip is one, which focus returns to on close. */
@@ -90,14 +95,15 @@ async function openMenu(): Promise<{ menu: MenuController }> {
     menu.destroy()
     void unmount(component)
   }
-  await settle()
+  await untilMenuHoldsFocus('Volume switcher')
   return { menu }
 }
 
-async function step(key: string): Promise<string> {
-  await virtual.press(key)
-  await settle()
-  return virtual.lastSpokenPhrase()
+/** Walks onto `Team share` and into its submenu. */
+async function enterSubmenu(): Promise<void> {
+  await pressAndHear('ArrowDown', 'menu, Volume switcher, orientated vertically, active descendant Team share')
+  await virtual.press('ArrowRight')
+  await untilMenuHoldsFocus('Team share')
 }
 
 describe('the house menu, spoken', () => {
@@ -105,47 +111,50 @@ describe('the house menu, spoken', () => {
     await openMenu()
     expect(await virtual.lastSpokenPhrase()).toBe('menu, Volume switcher, orientated vertically')
 
-    expect(await step('ArrowDown')).toBe('menu, Volume switcher, orientated vertically, active descendant Team share')
-    expect(await step('ArrowUp')).toBe('menu, Volume switcher, orientated vertically, active descendant Macintosh HD')
+    await pressAndHear('ArrowDown', 'menu, Volume switcher, orientated vertically, active descendant Team share')
+    await pressAndHear('ArrowUp', 'menu, Volume switcher, orientated vertically, active descendant Macintosh HD')
   })
 
   it('→ speaks the submenu as its own menu named after its row, and ↓ walks its rows', async () => {
     await openMenu()
-    await step('ArrowDown')
+    await pressAndHear('ArrowDown', 'menu, Volume switcher, orientated vertically, active descendant Team share')
 
     // Entering: focus moves to the submenu, whose own row lands a frame later. Asserted on the
     // phrase spoken AT focus: the reader re-reads after the key too, and whether the frame has
     // landed by then is a race a loaded CI runner loses.
     const spokenBefore = (await virtual.spokenPhraseLog()).length
-    await step('ArrowRight')
+    await virtual.press('ArrowRight')
+    await untilMenuHoldsFocus('Team share')
     expect((await virtual.spokenPhraseLog())[spokenBefore]).toBe('menu, Team share, orientated vertically')
-    expect(await step('ArrowDown')).toBe(
+    await pressAndHear(
+      'ArrowDown',
       'menu, Team share, orientated vertically, active descendant Use the fast connection',
     )
-    expect(await step('ArrowDown')).toBe(
+    await pressAndHear(
+      'ArrowDown',
       'menu, Team share, orientated vertically, active descendant Reconnect automatically',
     )
 
     // Leaving: back on the parent surface, on the row the submenu hangs off.
-    expect(await step('ArrowLeft')).toBe('menu, Volume switcher, orientated vertically, active descendant Team share')
+    await pressAndHear('ArrowLeft', 'menu, Volume switcher, orientated vertically, active descendant Team share')
   })
 
   it('Escape backs out of the submenu, then closes the menu with focus back on its trigger', async () => {
     await openMenu()
-    await step('ArrowDown')
-    await step('ArrowRight')
+    await enterSubmenu()
 
-    expect(await step('Escape')).toBe('menu, Volume switcher, orientated vertically, active descendant Team share')
-    expect(await step('Escape')).toBe('button, Macintosh HD, has popup menu')
-    expect(document.querySelector('[data-menu]')).toBeNull()
+    await pressAndHear('Escape', 'menu, Volume switcher, orientated vertically, active descendant Team share')
+    await pressAndHear('Escape', 'button, Macintosh HD, has popup menu')
+    await eventually(() => {
+      expect(document.querySelector('[data-menu]')).toBeNull()
+    })
   })
 
   // The active descendant phrase carries only a name, so the rows' roles and states are heard
   // the way a VoiceOver user browses an open menu: moving the reader's own cursor over them.
   it('says each row’s role and state: current, toggles on and off, and the submenu parent', async () => {
     await openMenu()
-    await step('ArrowDown')
-    await step('ArrowRight')
+    await enterSubmenu()
 
     const heard: string[] = []
     for (let i = 0; i < 16; i++) {

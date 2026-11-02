@@ -2093,9 +2093,33 @@
   "@settings.navigationAndFileOps.card.showInFinder": {
     "sourceHash": "c2a9c77"
   },
+  "settings.finderExtension.card": "Megnyitás a Cmdrben",
+  "@settings.finderExtension.card": {
+    "sourceHash": "49b51d0"
+  },
+  "settings.finderExtension.label": "Megjelenítés a Finder helyi menüjének tetején",
+  "@settings.finderExtension.label": {
+    "sourceHash": "02e8895"
+  },
+  "settings.finderExtension.description": "A „Megnyitás a Cmdrben” mindig ott van a menü Szolgáltatások részében. Ez a kapcsoló a legfelső szintre helyezi, az indítólemezeden. Emellett hozzáad egy kis folyamatot, ami a Finder mellett fut.",
+  "@settings.finderExtension.description": {
+    "sourceHash": "66672fe"
+  },
+  "settings.finderExtension.notInApplications": "Helyezd át a Cmdr appot az Alkalmazások mappádba, hogy bekapcsolhasd.",
+  "@settings.finderExtension.notInApplications": {
+    "sourceHash": "de8d7fd"
+  },
+  "settings.finderExtension.notProductionBuild": "Csak a Cmdr kiadott verziójában kapcsolhatod be. A fejlesztői és a tesztbuildek nem tartalmazzák a Finder-bővítményt.",
+  "@settings.finderExtension.notProductionBuild": {
+    "sourceHash": "d991773"
+  },
   "settings.revealHandler.label": "Más appok a Cmdrben jelenítsék meg a fájlokat",
   "@settings.revealHandler.label": {
     "sourceHash": "8c39a2f"
+  },
+  "settings.behavior.finderExtension.keywords": "helyi menü, jobb klikk, jobb gomb, jobb egérgomb, Finder-bővítmény",
+  "@settings.behavior.finderExtension.keywords": {
+    "sourceHash": "29d5b1a"
   },
   "settings.behavior.revealHandler.keywords": "megjelenítés, megmutatás, alapértelmezett fájlkezelő, fájlkezelő, böngésző, letöltések",
   "@settings.behavior.revealHandler.keywords": {

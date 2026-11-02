@@ -66,6 +66,16 @@ export interface McpTabMoveArgs {
 }
 
 /**
+ * A new tab that says whether the pane took it, for a backend caller that does something
+ * different at the tab limit. The reply is `routes/(main)/mcp-tab-open.ts`'s.
+ */
+export interface McpTabOpenArgs {
+  pane: PaneId
+  action: 'new'
+  mcpRequestId: string
+}
+
+/**
  * Dialog kind an MCP tool can confirm. All but one come from `dialog_confirm`;
  * `archive-password` comes from `unlock`, which stores the password on
  * the backend first and then confirms the prompt to trigger the follow-up.
@@ -102,7 +112,10 @@ export interface CommandArgsOverrides {
   'cursor.moveTo': { pane: PaneId; to: number | string }
   'cursor.scrollTo': { pane: PaneId; index: number }
   'volume.selectByName': { pane: PaneId; name?: string; volumeId?: string; mcpRequestId?: string }
-  'tab.mcpAction': { pane: PaneId; action: McpTabAction; tabId?: string; pinned?: boolean } | McpTabMoveArgs
+  'tab.mcpAction':
+    | { pane: PaneId; action: McpTabAction; tabId?: string; pinned?: boolean; mcpRequestId?: undefined }
+    | McpTabMoveArgs
+    | McpTabOpenArgs
   /** `startInBackground` presses the dialog's Background button (F2); `mcpRequestId`
    *  rides along so the handler can answer what the press did. */
   'dialog.confirm': {

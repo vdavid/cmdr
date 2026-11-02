@@ -748,6 +748,12 @@
     "forms": "noun and verb 直接连接 (建立直接连接, 直接连接到 {server}); asking for one 请求直接连接到一个共享",
     "sources": "catalog fileExplorer.pane.directConnectionUnavailableToast, fileExplorer.network.osMountFallback.message"
   },
+  "finder-extension": {
+    "chosen": "Finder 扩展",
+    "accept": ["扩展"],
+    "confidence": "high",
+    "sources": "macOS pane 登录项与扩展 (errors.provider.pCloudFuse.needsAction); 系统扩展; kept apart from the file name ending 扩展名"
+  },
   "learn-more": {
     "chosen": "进一步了解",
     "confidence": "high",

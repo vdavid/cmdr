@@ -1393,6 +1393,11 @@
         mcpTab.handleMcpTabAction(pane, action, tabId, pinned)
     }
 
+    /** A new tab in a specific pane, for a caller that needs to know whether it took. */
+    export function openTabInPane(pane: 'left' | 'right'): boolean {
+        return tabOpsNewTab(pane, getTabMgr, (h) => $state.snapshot(h))
+    }
+
     /** The keyboard's tab move (`tab.moveLeft` / `tab.moveRight` / `tab.moveToOtherPane`). */
     export function moveActiveTab(move: ActiveTabMove): void {
         tabOpsMoveActiveTab(move, tabMoveDeps)

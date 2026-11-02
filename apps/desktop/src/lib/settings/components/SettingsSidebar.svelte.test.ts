@@ -11,6 +11,7 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { flushSync, mount, tick, unmount } from 'svelte'
 import { computeAccessibleName } from 'dom-accessibility-api'
 import { assertFocusModel } from '#lib/test-focus-model.js'
+import { eventually, untilFocusNamesARow } from '#lib/test-frames.js'
 import SettingsSidebar from './SettingsSidebar.svelte'
 
 let component: ReturnType<typeof mount> | null = null
@@ -20,12 +21,6 @@ afterEach(() => {
   component = null
   document.body.innerHTML = ''
 })
-
-/** Past the deferred active descendant's frame (or its 100 ms fallback), and the announcer's. */
-async function settle(): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, 150))
-  await tick()
-}
 
 function setup(initial: { searchQuery?: string; matchingSections?: string[]; selectedSection?: string[] } = {}) {
   const props = $state({
@@ -75,7 +70,7 @@ describe('SettingsSidebar: the section cursor', () => {
   it('names the selected section through the focused list, and follows ↓', async () => {
     const { listbox } = setup()
     listbox.focus()
-    await settle()
+    await untilFocusNamesARow()
     assertFocusModel(listbox)
     expect(activeName(listbox)).toBe('Colors and formats')
 
@@ -90,8 +85,8 @@ describe('SettingsSidebar: the section cursor', () => {
     listbox.focus()
     flushSync()
     expect(listbox.hasAttribute('aria-activedescendant')).toBe(false)
-    await settle()
-    expect(listbox.getAttribute('aria-activedescendant')).not.toBeNull()
+    await untilFocusNamesARow()
+    expect(document.activeElement).toBe(listbox)
   })
 
   it('makes the search field a combobox over the same list, since ↑/↓ there move the section', async () => {
@@ -99,7 +94,7 @@ describe('SettingsSidebar: the section cursor', () => {
     expect(search.getAttribute('role')).toBe('combobox')
     expect(search.getAttribute('aria-controls')).toBe(listbox.id)
     search.focus()
-    await settle()
+    await untilFocusNamesARow()
     // The option lives in the controlled list, not inside the field, so `assertFocusModel`
     // (which wants it inside or owned) doesn't apply; the name check covers the same ground.
     expect(activeName(search)).toBe('Colors and formats')
@@ -150,13 +145,15 @@ describe('SettingsSidebar: search results', () => {
     props.searchQuery = 'theme'
     props.matchingSections = new Set(['Appearance', 'Appearance/Colors and formats'])
     flushSync()
-    await settle()
-    expect(region?.textContent).toBe('2 sections match')
+    await eventually(() => {
+      expect(region?.textContent).toBe('2 sections match')
+    })
 
     props.searchQuery = 'zzznonexistent'
     props.matchingSections = new Set()
     flushSync()
-    await settle()
-    expect(region?.textContent).toBe('No settings match')
+    await eventually(() => {
+      expect(region?.textContent).toBe('No settings match')
+    })
   })
 })

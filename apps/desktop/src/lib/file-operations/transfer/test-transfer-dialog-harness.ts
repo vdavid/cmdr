@@ -1,5 +1,5 @@
 /** Shared IPC doubles and mount helpers for TransferDialog component tests. */
-import { vi, beforeEach, afterEach } from 'vitest'
+import { vi, expect, beforeEach, afterEach } from 'vitest'
 import { mount, unmount, tick } from 'svelte'
 import TransferDialog from './TransferDialog.svelte'
 import * as commands from '#lib/tauri-commands/index.js'
@@ -176,6 +176,24 @@ export async function flushMicrotasks(rounds = 8): Promise<void> {
     })
     await tick()
   }
+}
+
+/**
+ * Waits for the dialog's next debounced destination check to run and land.
+ *
+ * ❌ Not a fixed sleep past the debounce: this helper's timer starts before the mount's effect
+ * flush starts the debounce's, so a stall in that flush ate the margin and the test read the
+ * dialog before the answer arrived. A test asserting something is ABSENT would pass that way.
+ */
+export async function settleExistsCheck(): Promise<void> {
+  const asked = destinationExistsMock.mock.calls.length
+  await vi.waitFor(
+    () => {
+      expect(destinationExistsMock.mock.calls.length).toBeGreaterThan(asked)
+    },
+    { timeout: 4000 },
+  )
+  await flushMicrotasks()
 }
 
 interface MountOpts {

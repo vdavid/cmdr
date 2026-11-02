@@ -83,6 +83,10 @@
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "0f572c0"
   },
+  "main.revealTabsDropped": "{opened, plural, one {# map geopend} other {# mappen geopend}}. Voor nog {dropped} was geen plek, omdat een paneel maximaal {limit} tabbladen kan bevatten.",
+  "@main.revealTabsDropped": {
+    "sourceHash": "ef684aa"
+  },
   "main.revealActivation.title": "‘Toon in Finder’ is hier geopend",
   "@main.revealActivation.title": {
     "sourceHash": "6bb18bb"

@@ -85,7 +85,7 @@ export interface ProviderSetupOptions {
  * instantaneous after a pause and sits well under the connection-check debounce, so the
  * order is always: type → save → check.
  */
-const API_KEY_SAVE_DEBOUNCE_MS = 300
+export const API_KEY_SAVE_DEBOUNCE_MS = 300
 const CONNECTION_CHECK_DEBOUNCE_MS = 1000
 
 export class ProviderSetupController {

@@ -67,7 +67,7 @@
   "@queue.row.statusAwaitingAnswer": {
     "sourceHash": "84ec74a"
   },
-  "queue.row.awaitingAnswerTooltip": "Odpověz na dotaz v hlavním okně a operace bude pokračovat.",
+  "queue.row.awaitingAnswerTooltip": "Odpovězte na dotaz v hlavním okně a operace bude pokračovat.",
   "@queue.row.awaitingAnswerTooltip": {
     "sourceHash": "bf51776"
   },
@@ -151,7 +151,7 @@
   "@queue.toolbar.dismissAll": {
     "sourceHash": "97fac9e"
   },
-  "queue.toolbar.selectedCount": "{count, plural, one {# vybraná} few {# vybrané} many {# vybrané} other {# vybraných}}",
+  "queue.toolbar.selectedCount": "{count, plural, one {Vybráno: #} few {Vybráno: #} many {Vybráno: #} other {Vybráno: #}}",
   "@queue.toolbar.selectedCount": {
     "sourceHash": "5f13640"
   },

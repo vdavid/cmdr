@@ -18,7 +18,7 @@ Up: `CLAUDE.md`. Issue: [#95](https://github.com/vdavid/cmdr/issues/95).
 ## The transport
 
 `script → open -a <bundle> 'cmdr-cli://open?path=%2F…&pane=left&tab=new' → application:openURLs: → RunEvent::Opened →
-reveal::on_urls_opened → requests_from_urls → PendingReveals → deliver → mcp::go_to_in_pane`.
+reveal::on_urls_opened → requests_from_urls → PendingReveals → deliver → tools::go_to_in_pane`.
 
 **Decision: a custom URL through the reveal door, not a second channel.** `RunEvent::Opened` already solves the hard
 part, a cold launch (the event arrives before `setup`, `reveal/DETAILS.md` § "How a cold-launch reveal arrives"), and

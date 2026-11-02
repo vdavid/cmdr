@@ -63,7 +63,7 @@
   "@viewer.error.stoppedResponding": {
     "sourceHash": "f88b690"
   },
-  "viewer.pull.title": "Získává se soubor {fileName} pro náhled",
+  "viewer.pull.title": "Stahuje se soubor {fileName} pro náhled",
   "@viewer.pull.title": {
     "sourceHash": "3a02768"
   },
@@ -325,7 +325,7 @@
   "@viewer.statusBar.badge.wrapTooltip": {
     "sourceHash": "af2ca76"
   },
-  "viewer.statusBar.hint.image": "Kliknutí: 100 % / přizpůsobit · Posouvání: zvětšení · Tažení: posun",
+  "viewer.statusBar.hint.image": "Kliknutí: 100 % / přizpůsobit · Rolování: zvětšení · Tažení: posun",
   "@viewer.statusBar.hint.image": {
     "sourceHash": "bca0205"
   },

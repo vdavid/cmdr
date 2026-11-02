@@ -2100,9 +2100,34 @@
   "@settings.navigationAndFileOps.card.showInFinder": {
     "sourceHash": "c2a9c77"
   },
+  "settings.finderExtension.card": "Open in Cmdr",
+  "@settings.finderExtension.card": {
+    "sourceHash": "49b51d0",
+    "sameAsSourceJustification": "Dutch macOS's menu verb is the bare stem Open (terms.json open), \"in\" is the same word, and Cmdr stays verbatim."
+  },
+  "settings.finderExtension.label": "Bovenaan in het contextmenu van Finder tonen",
+  "@settings.finderExtension.label": {
+    "sourceHash": "02e8895"
+  },
+  "settings.finderExtension.description": "‘Open in Cmdr’ staat altijd in het gedeelte ‘Voorzieningen’ van het menu. Hiermee komt dit onderdeel op het hoogste niveau te staan, op je opstartschijf. Dit voegt een klein proces toe dat naast Finder draait.",
+  "@settings.finderExtension.description": {
+    "sourceHash": "66672fe"
+  },
+  "settings.finderExtension.notInApplications": "Verplaats Cmdr naar de map ‘Apps’ om dit aan te kunnen zetten.",
+  "@settings.finderExtension.notInApplications": {
+    "sourceHash": "de8d7fd"
+  },
+  "settings.finderExtension.notProductionBuild": "Je kunt dit alleen aanzetten in een uitgebrachte versie van Cmdr. Dev- en testbuilds hebben de Finder-extensie niet.",
+  "@settings.finderExtension.notProductionBuild": {
+    "sourceHash": "d991773"
+  },
   "settings.revealHandler.label": "Laat andere apps bestanden in Cmdr tonen",
   "@settings.revealHandler.label": {
     "sourceHash": "8c39a2f"
+  },
+  "settings.behavior.finderExtension.keywords": "contextmenu, rechtsklik, rechtermuisknop, secundaire klik, Finder-extensie",
+  "@settings.behavior.finderExtension.keywords": {
+    "sourceHash": "29d5b1a"
   },
   "settings.behavior.revealHandler.keywords": "toon in finder, zoek in finder, tonen, onthullen, standaard bestandsbeheer, bestandsbeheerder, browser, downloads",
   "@settings.behavior.revealHandler.keywords": {

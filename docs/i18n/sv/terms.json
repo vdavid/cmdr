@@ -773,6 +773,12 @@
     "forms": "Cmdrs direktanslutning; a failure in prose → Det gick inte att ansluta direkt",
     "sources": "catalog fileExplorer.navigation.useDirectConnection, fileExplorer.network.osMountFallback.message, askCmdr.tool.upgradeSmbToDirect.doing"
   },
+  "finder-extension": {
+    "chosen": "Finder-tillägg",
+    "accept": ["tillägg"],
+    "confidence": "high",
+    "sources": "macOS pane Startobjekt och tillägg (errors.provider.pCloudFuse.needsAction); systemtillägg"
+  },
   "learn-more": {
     "chosen": "Mer om",
     "confidence": "high",

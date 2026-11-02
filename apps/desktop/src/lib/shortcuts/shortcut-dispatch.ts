@@ -108,7 +108,7 @@ export function resolveKeyCombo(event: KeyboardEvent): string {
 }
 
 /** True when some command's effective shortcuts hold `combo`. Read live, so a rebind counts at once. */
-function isBoundByAnyCommand(combo: string): boolean {
+export function isBoundByAnyCommand(combo: string): boolean {
   return commands.some((command) => getEffectiveShortcuts(command.id).includes(combo))
 }
 

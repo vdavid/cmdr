@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- `build.sh assemble` stamps the bundle id and the version. -->
+    <key>CFBundleIdentifier</key>
+    <string>com.veszelovszki.cmdr.finder-extension</string>
+    <key>CFBundleName</key>
+    <string>CmdrFinderExtension</string>
+    <!-- What System Settings lists it as. -->
+    <key>CFBundleDisplayName</key>
+    <string>Cmdr</string>
+    <key>CFBundleExecutable</key>
+    <string>CmdrFinderExtension</string>
+    <key>CFBundlePackageType</key>
+    <string>XPC!</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleVersion</key>
+    <string>0</string>
+    <key>CFBundleShortVersionString</key>
+    <string>0</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>10.15</string>
+    <key>NSExtension</key>
+    <dict>
+        <key>NSExtensionPointIdentifier</key>
+        <string>com.apple.FinderSync</string>
+        <key>NSExtensionPrincipalClass</key>
+        <string>CmdrFinderExtension.OpenInCmdr</string>
+    </dict>
+</dict>
+</plist>

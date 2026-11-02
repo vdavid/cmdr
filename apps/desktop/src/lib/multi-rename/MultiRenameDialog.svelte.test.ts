@@ -76,6 +76,18 @@ async function mountSheet(onApplied = vi.fn(), onClose = vi.fn(), onUndoStarted 
   return target
 }
 
+/** The tooltip `trigger` shows once its show delay has run. */
+async function shownTooltip(trigger: HTMLElement | null | undefined): Promise<HTMLElement | null> {
+  return vi.waitFor(
+    () => {
+      const id = trigger?.getAttribute('aria-describedby')
+      expect(id).toBeTruthy()
+      return document.getElementById(id ?? '')
+    },
+    { timeout: 4000 },
+  )
+}
+
 function inputs(root: HTMLElement): HTMLInputElement[] {
   return [...root.querySelectorAll<HTMLInputElement>('input:not([type="checkbox"])')]
 }
@@ -185,17 +197,23 @@ describe('MultiRenameDialog', () => {
     const mask = inputs(root)[0]
     mask.value = '[N'
     mask.dispatchEvent(new Event('input', { bubbles: true }))
-    await new Promise((resolve) => setTimeout(resolve, 150))
-    await settle()
-    expect(root.querySelector('.preview.is-unavailable')).not.toBeNull()
-    expect(root.querySelector('.counts.is-unavailable')).not.toBeNull()
+    await vi.waitFor(
+      () => {
+        expect(root.querySelector('.preview.is-unavailable')).not.toBeNull()
+        expect(root.querySelector('.counts.is-unavailable')).not.toBeNull()
+      },
+      { timeout: 4000 },
+    )
 
     mask.value = '[N]'
     mask.dispatchEvent(new Event('input', { bubbles: true }))
-    await new Promise((resolve) => setTimeout(resolve, 150))
-    await settle()
-    expect(root.querySelector('.preview.is-unavailable')).toBeNull()
-    expect(root.querySelector('.counts.is-unavailable')).toBeNull()
+    await vi.waitFor(
+      () => {
+        expect(root.querySelector('.preview.is-unavailable')).toBeNull()
+        expect(root.querySelector('.counts.is-unavailable')).toBeNull()
+      },
+      { timeout: 4000 },
+    )
   })
 
   it('an error takes the label’s place in the same slot, through the live region that was already there', async () => {
@@ -231,10 +249,8 @@ describe('MultiRenameDialog', () => {
       (b) => b.textContent.trim() === '[N]',
     )
     button?.focus()
-    await new Promise((resolve) => setTimeout(resolve, 450))
-    const id = button?.getAttribute('aria-describedby')
-    expect(id).toBeTruthy()
-    expect(document.getElementById(id ?? '')?.textContent).toContain('The file’s name, without its extension')
+    const tip = await shownTooltip(button)
+    expect(tip?.textContent).toContain('The file’s name, without its extension')
   })
 
   it('says a preview that ran out of time took too long, not that renaming couldn’t start', async () => {
@@ -484,9 +500,13 @@ describe('MultiRenameDialog', () => {
       expect(ipc.moveMultiRenameRow).toHaveBeenCalledWith('S', 0, 'down')
       expect(ipc.previewMultiRename).toHaveBeenCalledTimes(2)
       expect(cursorNames(root)).toEqual(['c.pdf'])
-      await new Promise((resolve) => setTimeout(resolve, 150))
-      const spoken = [...root.querySelectorAll('[data-live-announcer]')].map((region) => region.textContent.trim())
-      expect(spoken).toContain('Moved to 2 of 3')
+      await vi.waitFor(
+        () => {
+          const spoken = [...root.querySelectorAll('[data-live-announcer]')].map((region) => region.textContent.trim())
+          expect(spoken).toContain('Moved to 2 of 3')
+        },
+        { timeout: 4000 },
+      )
     })
 
     it('⌥↑ / ⌥↓ in the list move the cursor row too, the house reorder key', async () => {
@@ -735,8 +755,7 @@ describe('MultiRenameDialog', () => {
       const root = await mountSheet()
       const chip = root.querySelector<HTMLButtonElement>('.search-options button[aria-label="Match case"]')
       chip?.focus()
-      await new Promise((resolve) => setTimeout(resolve, 450))
-      const tip = document.getElementById(chip?.getAttribute('aria-describedby') ?? '')
+      const tip = await shownTooltip(chip)
       expect(tip?.querySelector('.head')?.textContent).toContain('Match case')
       expect(tip?.querySelector('.head .shortcut-chip')?.textContent).toContain('⌘⌥I')
       expect(tip?.querySelector('.setup')?.textContent.trim()).toBe('Replacing photo with pic in Photo photo.jpg:')

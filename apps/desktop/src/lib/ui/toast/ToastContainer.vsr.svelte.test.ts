@@ -16,6 +16,8 @@ import { virtual } from '@guidepup/virtual-screen-reader'
 import ToastContainer from './ToastContainer.svelte'
 import ToastIdFixture from './toast-id-fixture.svelte'
 import { addToast, clearAllToasts } from './toast-store.svelte'
+import { eventually, pastPendingFrames } from '#lib/test-frames.js'
+import { untilSpoken } from '#lib/test-vsr.js'
 
 let component: ReturnType<typeof mount> | null = null
 
@@ -31,18 +33,11 @@ afterEach(async () => {
   document.body.innerHTML = ''
 })
 
-/** Past the announcer's one frame (and its fallback timer, which jsdom may need). */
-async function settle(): Promise<void> {
-  await tick()
-  await new Promise((resolve) => setTimeout(resolve, 150))
-  await tick()
-}
-
 async function setup(): Promise<HTMLElement> {
   const target = document.createElement('div')
   document.body.appendChild(target)
   component = mount(ToastContainer, { target })
-  await settle()
+  await tick()
   await virtual.start({ container: document.body })
   return target
 }
@@ -68,19 +63,18 @@ describe('the toast stack, spoken', () => {
     await setup()
 
     addToast('Copied 3 files.', { level: 'info' })
-    await settle()
 
-    expect(await spoken()).toContain('polite: Copied 3 files.')
+    await untilSpoken('polite: Copied 3 files.')
   })
 
   it('says a failure assertively, and only once', async () => {
     await setup()
 
     addToast('Couldn’t open “a.txt”.', { level: 'error' })
-    await settle()
+    await untilSpoken('assertive: Couldn’t open “a.txt”.')
+    await pastPendingFrames()
 
     const log = await spoken()
-    expect(log).toContain('assertive: Couldn’t open “a.txt”.')
     expect(log.filter((phrase) => phrase.includes('a.txt'))).toHaveLength(1)
   })
 
@@ -89,9 +83,11 @@ describe('the toast stack, spoken', () => {
 
     addToast('Saved.', { level: 'success' })
     addToast('Slow mount.', { level: 'warn' })
-    await settle()
 
     const stack = target.querySelector('[data-toast-stack]')
+    await eventually(() => {
+      expect(stack?.querySelectorAll('[data-toast-frame]')).toHaveLength(2)
+    })
     expect(stack?.querySelector('[aria-live], [role="alert"], [role="status"]')).toBeNull()
   })
 
@@ -100,30 +96,32 @@ describe('the toast stack, spoken', () => {
 
     addToast('Copied 3 files.', { level: 'info' })
     addToast('Skipped 1 file.', { level: 'info' })
-    await settle()
 
-    expect((await spoken()).join(' | ')).toMatch(/Copied 3 files\..*Skipped 1 file\./)
+    await eventually(async () => {
+      expect((await spoken()).join(' | ')).toMatch(/Copied 3 files\..*Skipped 1 file\./)
+    })
   })
 
   it('says a re-raised toast again, with its new words', async () => {
     await setup()
 
     addToast('Indexing…', { id: 'index', level: 'info' })
-    await settle()
+    await untilSpoken('polite: Indexing…')
     addToast('Indexing done.', { id: 'index', level: 'info' })
-    await settle()
 
-    expect(await spoken()).toContain('polite: Indexing done.')
+    await untilSpoken('polite: Indexing done.')
   })
 
   it('says a component toast’s text without its buttons', async () => {
     await setup()
 
     addToast(ToastIdFixture, { id: 'fixture', props: { label: 'Moved 3 files to the trash.' } })
-    await settle()
 
+    await eventually(async () => {
+      expect((await spoken()).join(' | ')).toContain('Moved 3 files to the trash.')
+    })
+    await pastPendingFrames()
     const log = (await spoken()).join(' | ')
-    expect(log).toContain('Moved 3 files to the trash.')
     expect(log).not.toContain('Dismiss notification')
   })
 })

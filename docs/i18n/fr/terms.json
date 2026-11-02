@@ -835,6 +835,12 @@
     "forms": "Asking for a direct connection to a share → Demande de connexion directe à un partage",
     "sources": "catalog (fileExplorer.pane.connectedDirectlyToast, settings.network.directSmbConnection.description)"
   },
+  "finder-extension": {
+    "chosen": "extension du Finder",
+    "accept": ["extension"],
+    "confidence": "high",
+    "sources": "macOS pane Ouverture et extensions (errors.provider.pCloudFuse.needsAction); le Finder takes its article"
+  },
   "learn-more": {
     "chosen": "En savoir plus sur",
     "confidence": "high",

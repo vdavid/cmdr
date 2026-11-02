@@ -186,6 +186,15 @@ explorer's fallback, the container holding focus when the focused pane shows no 
 `expectFocusModel(page, selector, options)` in `apps/desktop/test/e2e-playwright/helpers/focus-model.ts`, bundles the
 same module with Vite and runs it in the real webview, so happy-dom and WKWebView are held to one contract.
 
+### `eventually()` and `pastPendingFrames()`: waiting for what lands a frame late
+
+In `apps/desktop/src/lib/test-frames.ts`, with the reader's flavors (`untilSpoken`, `pressAndHear`) in `test-vsr.ts`.
+The deferred active descendant and `LiveAnnouncer` land through `afterNextFrame`: a frame, or a 100 ms fallback.
+`eventually` retries an assertion on the real thing, for anything that should appear. `pastPendingFrames` is for
+checking something did NOT land: it asks `afterNextFrame` itself, so its turn comes after every landing already
+scheduled, however late. ❌ Don't sleep past the fallback instead: a stall eats the margin, and an absence assertion
+then passes without checking.
+
 ### `stryker-mutator` (mutation testing for TS)
 
 Not in package.json: install ad-hoc: `pnpm add -D -w @stryker-mutator/core @stryker-mutator/typescript-checker`. Fast on

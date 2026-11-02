@@ -39,6 +39,10 @@
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "85a9dae"
   },
+  "main.revealTabsDropped": "{opened, plural, one {Se abrió # carpeta} many {Se abrieron # carpetas} other {Se abrieron # carpetas}}. No hubo lugar para {dropped} más, porque un panel admite hasta {limit} pestañas.",
+  "@main.revealTabsDropped": {
+    "sourceHash": "0dd81d1"
+  },
   "main.revealActivation.title": "“Mostrar en el Finder” se abrió aquí",
   "@main.revealActivation.title": {
     "sourceHash": "7e03659"

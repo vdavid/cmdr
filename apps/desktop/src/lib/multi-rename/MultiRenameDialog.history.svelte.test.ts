@@ -121,11 +121,15 @@ describe('MultiRenameDialog field history', () => {
     expect(document.querySelector('[data-menu]')?.parentElement).not.toBe(document.body)
 
     document.querySelector<HTMLElement>('[data-menu] [role="menuitem"]')?.click()
-    await new Promise((resolve) => setTimeout(resolve, 150))
+    await vi.waitFor(
+      () => {
+        expect(ipc.previewMultiRename).toHaveBeenLastCalledWith('S', expect.objectContaining({ search: 'IMG' }))
+      },
+      { timeout: 4000 },
+    )
     await settle()
     expect(document.querySelector('[data-menu]')).toBeNull()
     expect(fields(root)[2].value).toBe('IMG')
-    expect(ipc.previewMultiRename).toHaveBeenLastCalledWith('S', expect.objectContaining({ search: 'IMG' }))
   })
 
   it('↓ in a mask opens its history with the caret away from a counter', async () => {

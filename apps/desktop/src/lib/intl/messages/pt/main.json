@@ -83,6 +83,10 @@
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "0f572c0"
   },
+  "main.revealTabsDropped": "{opened, plural, one {# pasta aberta} many {# pastas abertas} other {# pastas abertas}}. Não houve espaço para mais {dropped}, porque um painel comporta até {limit} abas.",
+  "@main.revealTabsDropped": {
+    "sourceHash": "ef684aa"
+  },
   "main.revealActivation.title": "“Mostrar no Finder” abriu aqui",
   "@main.revealActivation.title": {
     "sourceHash": "6bb18bb"

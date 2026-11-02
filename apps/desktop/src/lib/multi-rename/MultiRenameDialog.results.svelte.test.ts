@@ -60,9 +60,19 @@ async function settle(): Promise<void> {
   }
 }
 
-/** Past the preview's debounce, so the re-preview a read-back asks for has landed. */
+/**
+ * Waits for the re-preview the event just dispatched asks for, and for its answer to land. Call it
+ * in the same turn as the event: the debounce can't have run yet, so the count taken here is the
+ * one before that preview.
+ */
 async function settlePreview(): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, 150))
+  const asked = ipc.previewMultiRename.mock.calls.length
+  await vi.waitFor(
+    () => {
+      expect(ipc.previewMultiRename.mock.calls.length).toBeGreaterThan(asked)
+    },
+    { timeout: 4000 },
+  )
   await settle()
 }
 

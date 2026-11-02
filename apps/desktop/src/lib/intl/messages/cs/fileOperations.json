@@ -24,11 +24,11 @@
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Část výběru je dostupná jen online. Přesunutí těchto položek do koše by je <strong>nejdřív stáhlo</strong>. V takovém případě Cmdr nabízí jen <strong>smazání</strong> celého výběru. V koši nezůstanou žádné kopie, ale cloudové služby obvykle mají vlastní koš, kde smazané soubory drží asi 30 dní. Pokud vám smazání nevadí, klikněte na „Smazat“. Jinak toto dialogové okno zrušte a buď nejdřív všechny soubory zpřístupněte offline, nebo zrušte výběr všech souborů dostupných jen online.",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Část výběru je dostupná jen online. Přesunutí těchto položek do koše by je <strong>nejdřív stáhlo</strong>. V takovém případě Cmdr nabízí jen <strong>smazání</strong> celého výběru. V koši nezůstanou žádné kopie, ale cloudové služby obvykle mají vlastní koš, kde smazané soubory drží asi 30 dní. Pokud vám smazání nevadí, klikněte na „Smazat“. Jinak toto dialogové okno zrušte a buď nejdřív všechny soubory stáhněte, nebo zrušte výběr všech souborů dostupných jen online.",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
     "sourceHash": "2468db5"
   },
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Všechno, co máte vybrané, je dostupné jen online. Přesunutí do koše by to <strong>nejdřív stáhlo</strong>. V takovém případě Cmdr nabízí jen <strong>smazání</strong> celého výběru. V koši nezůstanou žádné kopie, ale cloudové služby obvykle mají vlastní koš, kde smazané soubory drží asi 30 dní. Pokud vám smazání nevadí, klikněte na „Smazat“. Jinak toto dialogové okno zrušte a tyto soubory nejdřív zpřístupněte offline.",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Všechno, co máte vybrané, je dostupné jen online. Přesunutí do koše by to <strong>nejdřív stáhlo</strong>. V takovém případě Cmdr nabízí jen <strong>smazání</strong> celého výběru. V koši nezůstanou žádné kopie, ale cloudové služby obvykle mají vlastní koš, kde smazané soubory drží asi 30 dní. Pokud vám smazání nevadí, klikněte na „Smazat“. Jinak toto dialogové okno zrušte a tyto soubory nejdřív stáhněte.",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
     "sourceHash": "dd04d39"
   },
@@ -44,7 +44,7 @@
   "@fileOperations.delete.archiveWarningRest": {
     "sourceHash": "5fa93f5"
   },
-  "fileOperations.trash.undoAction": "Odvolat akci",
+  "fileOperations.trash.undoAction": "Odvolat",
   "@fileOperations.trash.undoAction": {
     "sourceHash": "a8283ad"
   },
@@ -52,7 +52,7 @@
   "@fileOperations.trash.goToTrashAction": {
     "sourceHash": "5332858"
   },
-  "fileOperations.trash.undoing": "Vrací se zpět…",
+  "fileOperations.trash.undoing": "Vracení zpět…",
   "@fileOperations.trash.undoing": {
     "sourceHash": "3272a7a"
   },
@@ -389,7 +389,7 @@
   "@fileOperations.transferDialog.policyOverwriteOlder": {
     "sourceHash": "97128f3"
   },
-  "fileOperations.transferDialog.policyStop": "{count, plural, one {Zeptat se později} few {Ptát se u každého} many {Ptát se u každého} other {Ptát se u každého}}",
+  "fileOperations.transferDialog.policyStop": "{count, plural, one {Zeptat se později} few {Ptát se pokaždé} many {Ptát se pokaždé} other {Ptát se pokaždé}}",
   "@fileOperations.transferDialog.policyStop": {
     "sourceHash": "61a6295"
   },
@@ -561,7 +561,7 @@
   "@fileOperations.transferProgress.waitingForVolume": {
     "sourceHash": "41d20d0"
   },
-  "fileOperations.transferProgress.stallNotice": "Průběh stojí už {duration}",
+  "fileOperations.transferProgress.stallNotice": "Stojí už {duration}",
   "@fileOperations.transferProgress.stallNotice": {
     "sourceHash": "4b3c8e6"
   },
@@ -629,7 +629,7 @@
   "@fileOperations.transferProgress.doneSkipped": {
     "sourceHash": "a6d800b"
   },
-  "fileOperations.transferProgress.undo": "Odvolat akci",
+  "fileOperations.transferProgress.undo": "Odvolat",
   "@fileOperations.transferProgress.undo": {
     "sourceHash": "a8283ad"
   },
@@ -937,11 +937,11 @@
   "@fileOperations.transferProgress.resumeAria": {
     "sourceHash": "bbf3253"
   },
-  "fileOperations.transferProgress.background": "Na pozadí",
+  "fileOperations.transferProgress.background": "Přesunout na pozadí",
   "@fileOperations.transferProgress.background": {
     "sourceHash": "ea2b8a8"
   },
-  "fileOperations.transferProgress.queue": "Do fronty",
+  "fileOperations.transferProgress.queue": "Zařadit do fronty",
   "@fileOperations.transferProgress.queue": {
     "sourceHash": "3b2fe03"
   },
@@ -949,7 +949,7 @@
   "@fileOperations.transferProgress.queueTooltip": {
     "sourceHash": "89ce770"
   },
-  "fileOperations.transferProgress.queuedToast": "Před touto operací je ve frontě ještě: {countText}. Čeká, až na ni přijde řada.",
+  "fileOperations.transferProgress.queuedToast": "Ve frontě před touto operací: {countText}. Čeká, až na ni přijde řada.",
   "@fileOperations.transferProgress.queuedToast": {
     "sourceHash": "e35148a"
   },
@@ -961,11 +961,11 @@
   "@fileOperations.transferProgress.backgroundedToast": {
     "sourceHash": "b898845"
   },
-  "fileOperations.backgroundStart.background": "Na pozadí",
+  "fileOperations.backgroundStart.background": "Spustit na pozadí",
   "@fileOperations.backgroundStart.background": {
     "sourceHash": "ea2b8a8"
   },
-  "fileOperations.backgroundStart.queue": "Do fronty",
+  "fileOperations.backgroundStart.queue": "Zařadit do fronty",
   "@fileOperations.backgroundStart.queue": {
     "sourceHash": "3b2fe03"
   },
@@ -1021,7 +1021,7 @@
   "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
     "sourceHash": "37932e7"
   },
-  "fileOperations.rollbackConfirm.leaveAsIs": "Nechat, jak to je",
+  "fileOperations.rollbackConfirm.leaveAsIs": "Nechat beze změny",
   "@fileOperations.rollbackConfirm.leaveAsIs": {
     "sourceHash": "2352119"
   },
@@ -1069,7 +1069,7 @@
   "@fileOperations.cancelRollback.leftBehind": {
     "sourceHash": "bab6eb4"
   },
-  "fileOperations.cancelRollback.recoveredOriginal": "Cmdr uchoval původní položku z cesty {path} jako {keptAt}.",
+  "fileOperations.cancelRollback.recoveredOriginal": "Původní položku z cesty {path} Cmdr uchoval v umístění {keptAt}.",
   "@fileOperations.cancelRollback.recoveredOriginal": {
     "sourceHash": "f0df327"
   },
@@ -1189,7 +1189,7 @@
   "@fileOperations.archivePassword.title": {
     "sourceHash": "54fd670"
   },
-  "fileOperations.archivePassword.retryTitle": "Tohle nevyšlo",
+  "fileOperations.archivePassword.retryTitle": "To nevyšlo",
   "@fileOperations.archivePassword.retryTitle": {
     "sourceHash": "a12d349"
   },
@@ -1217,7 +1217,7 @@
   "@fileOperations.resticPassword.title": {
     "sourceHash": "53b2b18"
   },
-  "fileOperations.resticPassword.retryTitle": "Tohle nevyšlo",
+  "fileOperations.resticPassword.retryTitle": "To nevyšlo",
   "@fileOperations.resticPassword.retryTitle": {
     "sourceHash": "a12d349"
   },

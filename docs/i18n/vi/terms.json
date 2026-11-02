@@ -681,6 +681,12 @@
     "forms": "Asking for a direct connection to a share → Đang yêu cầu kết nối trực tiếp tới một mục chia sẻ",
     "sources": "catalog (fileExplorer.navigation.useDirectConnection, settings.network.directSmbConnection.description)"
   },
+  "finder-extension": {
+    "chosen": "phần mở rộng Finder",
+    "accept": ["phần mở rộng"],
+    "confidence": "high",
+    "sources": "macOS pane Mục đăng nhập & Phần mở rộng (errors.provider.pCloudFuse.needsAction); kept apart from the file name ending đuôi tệp"
+  },
   "learn-more": {
     "exceptions": {
       "ai.cloudConsent.askCmdr.contentsRule": "\"needs to know more about a file\" is prose about Cmdr, not an info link"

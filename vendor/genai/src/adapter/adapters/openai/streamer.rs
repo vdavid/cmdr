@@ -6,7 +6,8 @@ use crate::chat::{ChatOptionsSet, CustomPart, StopReason, ToolCall, Usage};
 use crate::webc::{Event, EventSourceStream};
 use crate::{Error, ModelIden, Result};
 use serde_json::Value;
-use std::collections::VecDeque;
+use std::collections::btree_map::Entry;
+use std::collections::{BTreeMap, VecDeque};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use value_ext::JsonValueExt;
@@ -83,6 +84,9 @@ pub struct OpenAIStreamer {
 	pending_events: VecDeque<InterStreamEvent>,
 	/// OpenRouter's streamed `reasoning_details`, merged back into whole blocks.
 	reasoning_details: Vec<Value>,
+	/// Tool calls by the stream's `index`. The stream sets it, so a map keeps a large or sparse one
+	/// from allocating or inventing slots for calls that never came.
+	tool_calls: BTreeMap<u32, ToolCall>,
 }
 
 impl OpenAIStreamer {
@@ -96,6 +100,7 @@ impl OpenAIStreamer {
 			captured_data: Default::default(),
 			pending_events: VecDeque::new(),
 			reasoning_details: Vec::new(),
+			tool_calls: BTreeMap::new(),
 		}
 	}
 
@@ -104,9 +109,9 @@ impl OpenAIStreamer {
 		self.inner.frame_tap()
 	}
 
-	/// Captures a single tool call into `captured_data.tool_calls`, merging with existing if needed.
+	/// Captures a single tool call into `tool_calls`, merging with existing if needed.
 	/// Returns the (possibly merged) tool call for use in events.
-	fn capture_tool_call(&mut self, index: usize, call_id: String, fn_name: String, arguments: String) -> ToolCall {
+	fn capture_tool_call(&mut self, index: u32, call_id: String, fn_name: String, arguments: String) -> ToolCall {
 		let tool_call = ToolCall {
 			call_id: call_id.clone(),
 			fn_name: fn_name.clone(),
@@ -118,24 +123,22 @@ impl OpenAIStreamer {
 			return tool_call;
 		}
 
-		let calls = self.captured_data.tool_calls.get_or_insert_with(Vec::new);
-
-		if let Some(existing_call) = calls.get_mut(index) {
-			// Merge with existing: accumulate arguments as strings
-			if let Some(existing_args) = existing_call.fn_arguments.as_str() {
-				let accumulated = format!("{existing_args}{arguments}");
-				existing_call.fn_arguments = Value::String(accumulated);
+		match self.tool_calls.entry(index) {
+			Entry::Occupied(mut existing) => {
+				let existing_call = existing.get_mut();
+				// Merge with existing: accumulate arguments as strings
+				if let Some(existing_args) = existing_call.fn_arguments.as_str() {
+					let accumulated = format!("{existing_args}{arguments}");
+					existing_call.fn_arguments = Value::String(accumulated);
+				}
+				// Update call_id and fn_name on first chunk that has them
+				if !fn_name.is_empty() {
+					existing_call.call_id = call_id;
+					existing_call.fn_name = fn_name;
+				}
+				existing_call.clone()
 			}
-			// Update call_id and fn_name on first chunk that has them
-			if !fn_name.is_empty() {
-				existing_call.call_id = call_id;
-				existing_call.fn_name = fn_name;
-			}
-			existing_call.clone()
-		} else {
-			// New tool call - resize to handle potential gaps (though unlikely in streaming)
-			calls.resize(index + 1, tool_call.clone());
-			tool_call
+			Entry::Vacant(slot) => slot.insert(tool_call).clone(),
 		}
 	}
 
@@ -189,7 +192,7 @@ impl OpenAIStreamer {
 				let fn_name = function.x_take::<String>("name").unwrap_or_default();
 				let arguments = function.x_take::<String>("arguments").unwrap_or_default();
 
-				let tool_call = self.capture_tool_call(index as usize, call_id, fn_name, arguments);
+				let tool_call = self.capture_tool_call(index, call_id, fn_name, arguments);
 				self.pending_events.push_back(InterStreamEvent::ToolCallChunk(tool_call));
 			}
 		}
@@ -227,9 +230,10 @@ impl futures::Stream for OpenAIStreamer {
 
 						// -- Process the captured_tool_calls
 						// NOTE: here we attempt to parse the `fn_arguments` if it is string, because it means that it was accumulated
-						let captured_tool_calls = if let Some(tools_calls) = self.captured_data.tool_calls.take() {
-							let tools_calls: Vec<ToolCall> = tools_calls
-								.into_iter()
+						let tool_calls = std::mem::take(&mut self.tool_calls);
+						let captured_tool_calls = if !tool_calls.is_empty() {
+							let tools_calls: Vec<ToolCall> = tool_calls
+								.into_values()
 								.map(|tool_call| {
 									// extrat
 									let ToolCall {
@@ -394,9 +398,10 @@ fn take_delta_content(choice: &mut Value) -> (Option<String>, Option<String>) {
 ///
 /// OpenRouter streams a `reasoning.text` or `reasoning.summary` block in fragments, with a text
 /// block's `signature` on a last, text-less piece. A fragment extends the last block when it has
-/// the same type, unless that block is signed: the signature closes the block it signs, so two
-/// signed thinking blocks stay apart. `index` can't tell blocks apart, since some providers send
-/// `index: 0` on every piece. Any other piece (`reasoning.encrypted`) is a whole block.
+/// the same type, unless that block is signed (the signature closes the block it signs, so two
+/// signed thinking blocks stay apart) or the fragment's content has a different `index`. The same
+/// `index` says nothing, since some providers send `index: 0` on every piece. Any other piece
+/// (`reasoning.encrypted`) is a whole block.
 fn merge_reasoning_details(blocks: &mut Vec<Value>, delta: Value) {
 	let Value::Array(pieces) = delta else {
 		return;
@@ -413,10 +418,16 @@ fn merge_reasoning_details(blocks: &mut Vec<Value>, delta: Value) {
 				continue;
 			}
 		};
-		let Some(Value::Object(block)) = blocks
-			.last_mut()
-			.filter(|block| block.get("type") == piece.get("type") && !is_set(block.get("signature")))
-		else {
+		// A piece with no content (a signature) always belongs to the block before it.
+		let new_index = |block: &Value| {
+			is_set(piece.get(appended_key))
+				&& is_set(block.get("index"))
+				&& is_set(piece.get("index"))
+				&& block.get("index") != piece.get("index")
+		};
+		let Some(Value::Object(block)) = blocks.last_mut().filter(|block| {
+			block.get("type") == piece.get("type") && !is_set(block.get("signature")) && !new_index(block)
+		}) else {
 			blocks.push(Value::Object(piece));
 			continue;
 		};
@@ -531,6 +542,41 @@ mod tests {
 				serde_json::json!({"type": "reasoning.summary", "summary": "Check Paris.", "format": "openai-responses-v1", "index": 0}),
 				serde_json::json!({"type": "reasoning.encrypted", "data": "opaque", "format": "openai-responses-v1", "index": 0}),
 			]
+		);
+	}
+
+	/// A different `index` opens a new block even without a signature, so a multi-part summary
+	/// stays in parts, as in a non-streamed answer.
+	#[test]
+	fn test_merge_reasoning_details_splits_unsigned_blocks_on_a_new_index() {
+		let blocks = merged(vec![
+			serde_json::json!([{"type": "reasoning.summary", "summary": "First ", "index": 0}]),
+			serde_json::json!([{"type": "reasoning.summary", "summary": "part.", "index": 0}]),
+			serde_json::json!([{"type": "reasoning.summary", "summary": "Second part.", "index": 1}]),
+			serde_json::json!([{"type": "reasoning.text", "text": "No index, "}]),
+			serde_json::json!([{"type": "reasoning.text", "text": "so one block."}]),
+		]);
+		assert_eq!(
+			blocks,
+			[
+				serde_json::json!({"type": "reasoning.summary", "summary": "First part.", "index": 0}),
+				serde_json::json!({"type": "reasoning.summary", "summary": "Second part.", "index": 1}),
+				serde_json::json!({"type": "reasoning.text", "text": "No index, so one block."}),
+			]
+		);
+	}
+
+	/// A signature-only piece belongs to the block before it whatever its `index` says: split off,
+	/// it would leave the signed text without its signature.
+	#[test]
+	fn test_merge_reasoning_details_keeps_a_signature_on_its_block_across_indexes() {
+		let blocks = merged(vec![
+			serde_json::json!([{"type": "reasoning.text", "text": "Read the file.", "index": 0}]),
+			serde_json::json!([{"type": "reasoning.text", "text": "", "signature": "sig-1", "index": 1}]),
+		]);
+		assert_eq!(
+			blocks,
+			[serde_json::json!({"type": "reasoning.text", "text": "Read the file.", "signature": "sig-1", "index": 0})]
 		);
 	}
 

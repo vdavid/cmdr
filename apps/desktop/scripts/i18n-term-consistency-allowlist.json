@@ -838,6 +838,14 @@
       {
         "source": "{countText} {count, plural, one {item} other {items}}",
         "reason": "`queue.row.itemCount` follows the row's verbal noun (Mazání 3 položek), so genitive; `fileExplorer.contextMenu.itemCount` stands alone, nominative."
+      },
+      {
+        "source": "Undo",
+        "reason": "The native Edit menu keeps Czech macOS's `Odvolat akci` (Finder ME13, AppKit FunctionKeyNames) for `menu.edit.undo`; the toast and dialog buttons (`fileOperations.trash.undoAction`, `fileOperations.transferProgress.undo`, `askCmdr.renameUndo.undo`) say just `Odvolat`, the one word `commands.appFocusNotifications.description` names. Native reviewer, `docs/i18n/cs/decisions.md` § Undo, put back, roll back."
+      },
+      {
+        "source": "Background",
+        "reason": "`fileOperations.transferProgress.background` sends a running operation away (`Přesunout na pozadí`). `fileOperations.backgroundStart.background` confirms and STARTS one, in the copy, move, compress, and trash dialogs, where `Přesunout` beside `Kopírovat` would read as moving the files, so it says `Spustit na pozadí`."
       }
     ]
   },

@@ -33,6 +33,8 @@ use tauri::{AppHandle, Manager, Wry};
 ///
 /// Idempotent, so a later call after a webview swap is safe.
 pub fn install(app: &AppHandle<Wry>) {
+    // The other direction of the same system: other apps' "Open in Cmdr" calling us.
+    crate::reveal::service::install(app);
     let Some(mtm) = objc2::MainThreadMarker::new() else {
         log::warn!(target: "services_menu", "Not on the main thread; the Services menu keeps its short list");
         return;

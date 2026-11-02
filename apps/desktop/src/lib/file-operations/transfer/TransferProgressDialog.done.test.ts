@@ -264,12 +264,15 @@ describe('TransferProgressDialog, done state', () => {
   it('without the setting, closes as before', async () => {
     hooks.keepOpen = false
     const { component, onComplete, onDoneClosed } = await mountFinished()
-    // The anti-flicker floor before an ordinary close.
-    await new Promise<void>((resolve) => {
-      setTimeout(resolve, 450)
-    })
+    // The report comes once the anti-flicker floor before an ordinary close has passed.
+    await vi.waitFor(
+      () => {
+        expect(onComplete).toHaveBeenCalledWith(expect.objectContaining({ filesProcessed: 5 }), { keptOpen: false })
+      },
+      { timeout: 4000 },
+    )
+    await flushPromises()
 
-    expect(onComplete).toHaveBeenCalledWith(expect.objectContaining({ filesProcessed: 5 }), { keptOpen: false })
     expect(onDoneClosed).not.toHaveBeenCalled()
 
     void unmount(component)

@@ -179,6 +179,39 @@ pub async fn execute_tab<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Tool
     Ok(json!(ok_msg))
 }
 
+/// What the frontend says a `new` tab with a request id did: `true` for a new tab, `false`
+/// for a pane at its limit. Anything else is a failure, so a malformed reply can never read
+/// as a tab that opened. ❌ Never inferred from message text (`error-string-match`).
+#[cfg(any(target_os = "macos", test))]
+pub(super) fn parse_tab_opened_response(payload: &str, expected_id: &str) -> Option<Result<bool, String>> {
+    let resp = serde_json::from_str::<Value>(payload).ok()?;
+    if resp.get("requestId").and_then(|v| v.as_str()) != Some(expected_id) {
+        return None;
+    }
+    Some(match resp.get("outcome").and_then(|v| v.as_str()) {
+        Some("opened") => Ok(true),
+        Some("atLimit") => Ok(false),
+        _ => match parse_mcp_response(payload, expected_id)? {
+            Ok(()) => Err("The frontend's reply didn't say whether the tab opened".to_string()),
+            Err(err) => Err(err),
+        },
+    })
+}
+
+/// Open a new tab and report whether the pane took it, for a caller that does something
+/// different at the limit. The `tab` tool's own `new` stays fire-and-forget behind its ack.
+#[cfg(target_os = "macos")]
+pub(super) async fn open_tab_round_trip<R: Runtime>(app: &AppHandle<R>, pane: &str) -> Result<bool, ToolError> {
+    mcp_round_trip_parsed(
+        app,
+        "mcp-tab",
+        json!({ "action": "new", "pane": pane }),
+        ROUND_TRIP_TIMEOUT_SECS,
+        parse_tab_opened_response,
+    )
+    .await
+}
+
 /// What the frontend says a `tab move` did.
 ///
 /// The frontend owns the rules (one `moveTab`, shared with the mouse drag), so it names

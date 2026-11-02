@@ -818,6 +818,12 @@
     "confidence": "high",
     "sources": "catalog (fileExplorer.pane.directConnectionUnavailableToast, fileExplorer.navigation.connectingDirectly, fileExplorer.navigation.useDirectConnection)"
   },
+  "finder-extension": {
+    "chosen": "Finder-Erweiterung",
+    "accept": ["Erweiterung"],
+    "confidence": "high",
+    "sources": "macOS pane Anmeldeobjekte & Erweiterungen (errors.provider.pCloudFuse.needsAction); compounds like Systemerweiterung"
+  },
   "learn-more": {
     "chosen": "Mehr über",
     "confidence": "high",
