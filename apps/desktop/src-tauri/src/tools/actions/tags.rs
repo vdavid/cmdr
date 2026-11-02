@@ -80,11 +80,23 @@ async fn execute_tag_macos<R: Runtime>(app: &AppHandle<R>, params: &Value) -> To
     let _ = super::flush_pane_state(app, &pane).await;
 
     let changed = paths.len() - outcome.skipped.len();
+    tag_answer(action, &pane, changed, &skipped_note(&outcome.skipped))
+}
+
+/// What the call reports. ❌ Never an `OK` on nothing done: a model reads that word as done, and a
+/// tag has no undo to find out by. Every path skipped (a pane on a volume that stores no tags) is a
+/// refusal, which the rail shows as not having gone through.
+#[cfg(target_os = "macos")]
+fn tag_answer(action: &str, pane: &str, changed: usize, skipped_note: &str) -> ToolResult {
+    if changed == 0 && !skipped_note.is_empty() {
+        return Err(ToolError::internal(format!(
+            "Nothing changed in the {pane} pane.{skipped_note}"
+        )));
+    }
     Ok(json!(format!(
-        "OK: {} tags on {} in the {pane} pane.{}",
+        "OK: {} tags on {} in the {pane} pane.{skipped_note}",
         action_verb(action),
         crate::pluralize::pluralize(changed as u64, "item"),
-        skipped_note(&outcome.skipped)
     )))
 }
 
@@ -351,6 +363,22 @@ mod tests {
             assert!(note.contains(&paths[0]), "the result names the skipped file: {note}");
         }
         assert_eq!(skipped_note(&[]), "");
+    }
+
+    /// Found in a live run: a pane inside a zip answered `OK: Set tags on 0 items`.
+    #[test]
+    fn nothing_tagged_is_never_an_ok() {
+        let error = tag_answer("set", "left", 0, " Skipped 1 item.").expect_err("nothing was tagged");
+        assert_eq!(error.message, "Nothing changed in the left pane. Skipped 1 item.");
+
+        assert_eq!(
+            tag_answer("set", "left", 1, " Skipped 1 item.").expect("one was tagged"),
+            json!("OK: Set tags on 1 item in the left pane. Skipped 1 item.")
+        );
+        assert_eq!(
+            tag_answer("clear", "right", 2, "").expect("both were cleared"),
+            json!("OK: Cleared tags on 2 items in the right pane.")
+        );
     }
 
     #[test]
