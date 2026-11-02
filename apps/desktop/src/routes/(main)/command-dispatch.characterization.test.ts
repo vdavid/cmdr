@@ -868,7 +868,7 @@ describe('characterization — await semantics (deferred-promise pins)', () => {
     d.resolve(undefined)
     await dispatchDone
     expect(order).toEqual(['dispatch'])
-    expect(explorer.moveCursor).toHaveBeenCalledExactlyOnceWith('left', 3)
+    expect(explorer.moveCursor).toHaveBeenCalledExactlyOnceWith('left', 3, 'tool')
   })
 
   // Weaker "resolves" pins for the OTHER await arms: they don't gate an MCP ack,

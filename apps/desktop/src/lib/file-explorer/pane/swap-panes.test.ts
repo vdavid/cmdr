@@ -26,7 +26,7 @@ function setup(opts: {
   leftMgr?: TabManager
   rightMgr?: TabManager
 }) {
-  const followFocusedPane = vi.fn()
+  const settleFocus = vi.fn()
   const leftMgr = opts.leftMgr ?? makeTabMgr('L', { path: '/l', volumeId: 'vl' })
   const rightMgr = opts.rightMgr ?? makeTabMgr('R', { path: '/r', volumeId: 'vr' })
   const deps: SwapPanesDeps = {
@@ -34,9 +34,9 @@ function setup(opts: {
     getLeftTabMgr: () => leftMgr,
     getRightTabMgr: () => rightMgr,
     isAnyTransferDialogOpen: () => opts.isAnyTransferDialogOpen ?? false,
-    followFocusedPane,
+    settleFocus,
   }
-  return { deps, followFocusedPane, leftMgr, rightMgr }
+  return { deps, settleFocus, leftMgr, rightMgr }
 }
 
 describe('createSwapPanes', () => {
@@ -59,9 +59,9 @@ describe('createSwapPanes', () => {
       sortBy: 'size',
       sortOrder: 'descending',
     })
-    const { deps, followFocusedPane } = setup({ leftRef, rightRef, leftMgr, rightMgr })
+    const { deps, settleFocus } = setup({ leftRef, rightRef, leftMgr, rightMgr })
 
-    createSwapPanes(deps).swapPanes()
+    createSwapPanes(deps).swapPanes('tool')
 
     const leftTab = leftMgr.tabs[0] as unknown as Record<string, unknown>
     const rightTab = rightMgr.tabs[0] as unknown as Record<string, unknown>
@@ -74,7 +74,7 @@ describe('createSwapPanes', () => {
     // Each pane adopts the OTHER pane's snapshot.
     expect(leftRef.adoptListing).toHaveBeenCalledWith({ id: 'right-listing' })
     expect(rightRef.adoptListing).toHaveBeenCalledWith({ id: 'left-listing' })
-    expect(followFocusedPane).toHaveBeenCalled()
+    expect(settleFocus).toHaveBeenCalled()
   })
 
   it('moves a requested date sort with its tab, and the column its rows follow with the listing', () => {
@@ -84,7 +84,7 @@ describe('createSwapPanes', () => {
     const leftMgr = makeTabMgr('L', { path: '/Volumes/USB', volumeId: 'usb', sortBy: 'added', sortOrder: 'descending' })
     const { deps, rightMgr } = setup({ leftRef, rightRef, leftMgr })
 
-    createSwapPanes(deps).swapPanes()
+    createSwapPanes(deps).swapPanes('tool')
 
     // The fallback never rewrote the request: the tab carries Added across.
     expect((rightMgr.tabs[0] as unknown as Record<string, unknown>).sortBy).toBe('added')
@@ -93,12 +93,12 @@ describe('createSwapPanes', () => {
 
   it('is a no-op when a pane ref is missing', () => {
     const rightRef = makePaneRef()
-    const { deps, followFocusedPane } = setup({ leftRef: undefined, rightRef })
+    const { deps, settleFocus } = setup({ leftRef: undefined, rightRef })
 
-    createSwapPanes(deps).swapPanes()
+    createSwapPanes(deps).swapPanes('tool')
 
     expect(rightRef.adoptListing).not.toHaveBeenCalled()
-    expect(followFocusedPane).not.toHaveBeenCalled()
+    expect(settleFocus).not.toHaveBeenCalled()
   })
 
   it('is a no-op while a pane is loading', () => {
@@ -106,7 +106,7 @@ describe('createSwapPanes', () => {
     const rightRef = makePaneRef()
     const { deps } = setup({ leftRef, rightRef })
 
-    createSwapPanes(deps).swapPanes()
+    createSwapPanes(deps).swapPanes('tool')
 
     expect(leftRef.adoptListing).not.toHaveBeenCalled()
     expect(rightRef.adoptListing).not.toHaveBeenCalled()
@@ -117,7 +117,7 @@ describe('createSwapPanes', () => {
     const rightRef = makePaneRef()
     const { deps } = setup({ leftRef, rightRef, isAnyTransferDialogOpen: true })
 
-    createSwapPanes(deps).swapPanes()
+    createSwapPanes(deps).swapPanes('tool')
 
     expect(leftRef.adoptListing).not.toHaveBeenCalled()
   })

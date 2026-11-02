@@ -5,25 +5,31 @@
  * `$derived`.
  */
 import { pluralize } from '#lib/utils/pluralize.js'
+import type { PaneMoveBy } from './active-pane-focus'
 import type { FilePaneAPI } from './types'
 
 export interface MoveCursorDeps {
   getPaneRef: (pane: 'left' | 'right') => FilePaneAPI | undefined
   setFocusedPane: (pane: 'left' | 'right') => void
   moveCursorByName: (paneRef: FilePaneAPI, name: string) => Promise<boolean>
-  followFocusedPane: () => void
+  settleFocus: (by: PaneMoveBy) => void
 }
 
 /**
- * Move cursor to a specific index or filename.
- * Used by MCP move_cursor tool.
+ * Move cursor to a specific index or filename: the `move_cursor` tool, and a person's reveals
+ * (Go to path, the downloads jump, Go to trash).
  *
  * Throws when the target doesn't exist (filename not in the listing, index out
  * of range, pane unavailable). The `cursor.moveTo` dispatch awaits this, so the
  * exception reaches the MCP adapter's try/catch and the tool reports the real
  * failure instead of a false-positive "OK: Moved cursor".
  */
-export async function moveCursorToTarget(pane: 'left' | 'right', to: number | string, deps: MoveCursorDeps) {
+export async function moveCursorToTarget(
+  pane: 'left' | 'right',
+  to: number | string,
+  by: PaneMoveBy,
+  deps: MoveCursorDeps,
+) {
   deps.setFocusedPane(pane)
   const paneRef = deps.getPaneRef(pane)
   if (!paneRef) throw new Error(`The ${pane} pane is unavailable`)
@@ -54,12 +60,11 @@ export async function moveCursorToTarget(pane: 'left' | 'right', to: number | st
       throw new Error(`"${to}" not found in the ${pane} pane listing`)
     }
   }
-  // MCP-driven cursor placement: re-anchor DOM focus on the explorer container
-  // so the next keystroke (the agent often follows move_cursor with a shortcut)
-  // lands in the right dispatcher chain, unless the person has focus elsewhere.
-  // Also makes the awaited completion genuine; `void` swallowed the cursor-set
+  // Re-anchor DOM focus on the explorer so the next keystroke lands in the right
+  // dispatcher chain (always for a person; for a tool, unless the person has focus
+  // elsewhere). Also makes the awaited completion genuine; `void` swallowed the cursor-set
   // promise and let MCP report `OK` before the cursor was observably positioned.
-  deps.followFocusedPane()
+  deps.settleFocus(by)
 
   // Flush the new cursor position to the backend's PaneStateStore BEFORE the
   // round-trip replies ok, so a follow-up tool call (move_cursor → copy/move/

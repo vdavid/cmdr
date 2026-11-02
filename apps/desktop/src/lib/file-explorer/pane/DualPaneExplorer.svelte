@@ -111,7 +111,12 @@
     import { createPaneMirror } from './pane-mirror'
     import type { SmbHandOff } from '#lib/servers/open-sign-in.js'
     import { createKeyDispatch } from './key-dispatch'
-    import { focusActivePane as focusActivePaneOf, followFocusedPane as followFocusedPaneOf } from './active-pane-focus'
+    import {
+        focusActivePane as focusActivePaneOf,
+        followFocusedPane as followFocusedPaneOf,
+        settleFocusAfterPaneMove,
+        type PaneMoveBy,
+    } from './active-pane-focus'
     import { registerFocusHome } from '#lib/ui/focus-restore.js'
     import { isPaneChromeTarget } from './pane-chrome'
     import { createMcpTabAction } from './mcp-tab-action'
@@ -185,6 +190,10 @@
     /** The panes moved, and nobody at the keyboard said to take focus there. */
     function followFocusedPane(): void {
         followFocusedPaneOf(activePaneFocusDeps)
+    }
+    /** The panes moved: a person's command takes focus there, a tool's leaves it be. */
+    function settleFocus(by: PaneMoveBy): void {
+        settleFocusAfterPaneMove(by, activePaneFocusDeps)
     }
     const activePaneFocusDeps = {
         getPaneRef: (pane: 'left' | 'right') => paneRefs[pane],
@@ -294,7 +303,7 @@
         getLeftTabMgr: () => leftTabMgr,
         getRightTabMgr: () => rightTabMgr,
         isAnyTransferDialogOpen: () => dialogs.isAnyTransferDialogOpen(),
-        followFocusedPane,
+        settleFocus,
     })
     const volumeSelection = createVolumeSelection({
         getVolumes: () => volumes,
@@ -876,14 +885,14 @@
     /**
      * Switch focus to the other pane.
      */
-    export function switchPane() {
+    export function switchPane(by: PaneMoveBy) {
         getPaneRef('left')?.closeHeaderMenu()
         getPaneRef('right')?.closeHeaderMenu()
         const newFocus = otherPane(focusedPane)
         explorerState.setFocusedPane(newFocus)
         void updateFocusedPane(newFocus)
         pushViewMenuState()
-        followFocusedPane()
+        settleFocus(by)
     }
 
     /** Focus the focused pane's location bar, the keyboard way into its chrome (`pane.focusControls`). */
@@ -906,8 +915,8 @@
      * Swap left and right panes entirely (paths, volumes, history, sort, view mode, listing state).
      * Zero backend calls: we just swap listing ownership on the frontend.
      */
-    export function swapPanes(): void {
-        swapper.swapPanes()
+    export function swapPanes(by: PaneMoveBy): void {
+        swapper.swapPanes(by)
     }
 
     /** Compare directories (⇧F2), `compare-directories.ts`. */
@@ -1136,14 +1145,14 @@
      *  `cursor.moveTo` dispatch awaits this, so the exception reaches the MCP
      *  adapter's try/catch and the tool reports the real failure instead of a
      *  false-positive "OK: Moved cursor". */
-    export async function moveCursor(pane: 'left' | 'right', to: number | string) {
-        await moveCursorToTarget(pane, to, {
+    export async function moveCursor(pane: 'left' | 'right', to: number | string, by: PaneMoveBy) {
+        await moveCursorToTarget(pane, to, by, {
             getPaneRef,
             setFocusedPane: (p) => {
                 explorerState.setFocusedPane(p)
             },
             moveCursorByName: (paneRef, name) => paneCommands.moveCursorByName(paneRef, name),
-            followFocusedPane,
+            settleFocus,
         })
     }
 

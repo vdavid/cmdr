@@ -279,14 +279,15 @@ switched (VoiceOver run, 2026-10-15). The id lands a frame after focus and again
 pane's list mounts, unmounts, or lands a new folder's cursor row (same file; a Brief/Full toggle, a tab close, Backspace
 on a focused path segment). ❌ Never focus a row: rows unmount under virtualization and focus drops to `<body>`.
 
-**Focus nobody at the keyboard asked for** goes through `followFocusedPane` (`active-pane-focus.ts`): `switchPane`,
-`swapPanes`, `moveCursor`, and the cancel flow's landing. It moves focus only while it's the explorer's to move, on its
-lists or adrift (`focus-restore.ts::focusMayFollowThePanes`), and leaves the rail, a dialog, or a text field alone. The
-store's focused pane still moves. Why: `switch_pane` used to call `focusActivePane`, so someone mid-sentence in the rail
-typed into a pane, where Enter opens a file with no Ask and F8 trashes one, both as `user`. The other App state tools
-never touch DOM focus (`setFocusedPane` is store-only), and a list's remount only comes home from adrift. Cost: a person
-choosing View > Switch pane while the rail has focus stays in the rail, since that command and the tool's are one road.
-A click, or `returnFocusToPane`, still moves focus through `focusActivePane`.
+**Focus nobody at the keyboard asked for** goes through `followFocusedPane` (`active-pane-focus.ts`): a tool's
+`switchPane`, `swapPanes`, and `moveCursor`, and the cancel flow's landing. It moves focus only while it's the
+explorer's to move, on its lists or adrift (`focus-restore.ts::focusMayFollowThePanes`), and leaves the rail, a dialog,
+or a text field alone. The store's focused pane still moves. Why: `switch_pane` used to call `focusActivePane`, so
+someone mid-sentence in the rail typed into a pane, where Enter opens a file with no Ask and F8 trashes one, both as
+`user`. The other App state tools never touch DOM focus (`setFocusedPane` is store-only), and a list's remount only
+comes home from adrift. A person's own command runs the same handler and takes focus through `focusActivePane`:
+`PaneMoveBy` says which, and the tool's road names itself (`mcp-switch-pane`, `mcp-swap-panes`, `cursor.moveTo`), so an
+absent payload is a person. A click, or `returnFocusToPane`, moves focus the same way.
 
 Decision/Why, the focus model: the active descendant sits on the element that really has focus, and that element is the
 composite itself, the same shape as the house menu, the command palette, and the onboarding pickers, which VoiceOver

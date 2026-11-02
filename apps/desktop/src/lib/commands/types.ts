@@ -124,6 +124,9 @@ export interface CommandArgsOverrides {
  * (`file-handlers.ts`), and "Skip confirmation" trusts nobody else.
  */
 export interface CommandArgsOptionalOverrides {
+  /** A tool's move leaves DOM focus where the person has it; a person's own command takes it. */
+  'pane.switch': { by: 'tool' }
+  'pane.swap': { by: 'tool' }
   'file.copy': { pane?: PaneId; onConflict?: string; mcpRequestId?: string; initiator: Initiator; guard?: boolean }
   'file.move': { pane?: PaneId; onConflict?: string; mcpRequestId?: string; initiator: Initiator; guard?: boolean }
   'file.compress': { pane?: PaneId; mcpRequestId?: string; initiator: Initiator; guard?: boolean }

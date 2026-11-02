@@ -72,7 +72,7 @@ describe('navigateToFileInPane', () => {
     const { explorer, navigate, moveCursor } = makeExplorer(started())
     await navigateToFileInPane(explorer, 'left', loc('/tmp'), 'a.txt')
     expect(navigate).toHaveBeenCalledWith({ pane: 'left', to: { goTo: loc('/tmp') }, source: 'user' })
-    expect(moveCursor).toHaveBeenCalledWith('left', 'a.txt')
+    expect(moveCursor).toHaveBeenCalledWith('left', 'a.txt', 'person')
   })
 
   it('awaits the navigation settle before moving the cursor', async () => {
@@ -122,7 +122,7 @@ describe('revealSearchResultInPane (the search "Go to file" edge)', () => {
       to: { goTo: loc('/Volumes/Nas/docs', 'nas') },
       source: 'user',
     })
-    expect(moveCursor).toHaveBeenCalledWith('left', 'report.pdf')
+    expect(moveCursor).toHaveBeenCalledWith('left', 'report.pdf', 'person')
     expect(addToastMock).not.toHaveBeenCalled()
   })
 
@@ -177,7 +177,7 @@ describe('revealPathInBestPane (the Ask Cmdr tool line’s path links)', () => {
     await revealPathInBestPane(explorer, { path: '/Users/me/notes.txt', kind: 'file' })
 
     expect(resolveLocationMock).toHaveBeenCalledWith('/Users/me')
-    expect(moveCursor).toHaveBeenCalledWith('left', 'notes.txt')
+    expect(moveCursor).toHaveBeenCalledWith('left', 'notes.txt', 'person')
   })
 
   it('stays in the folder when the file isn’t in the listing (a hidden dotfile), never throwing', async () => {

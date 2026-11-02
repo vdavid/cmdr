@@ -34,9 +34,9 @@ function makePaneRefStub(overrides: Partial<Record<string, ReturnType<typeof vi.
 function makeDeps(paneRef: FilePaneAPI | undefined) {
   const setFocusedPane = vi.fn()
   const moveCursorByName = vi.fn().mockResolvedValue(true)
-  const followFocusedPane = vi.fn()
-  const deps: MoveCursorDeps = { getPaneRef: () => paneRef, setFocusedPane, moveCursorByName, followFocusedPane }
-  return { deps, setFocusedPane, moveCursorByName, followFocusedPane }
+  const settleFocus = vi.fn()
+  const deps: MoveCursorDeps = { getPaneRef: () => paneRef, setFocusedPane, moveCursorByName, settleFocus }
+  return { deps, setFocusedPane, moveCursorByName, settleFocus }
 }
 
 beforeEach(() => {
@@ -47,19 +47,19 @@ describe('moveCursorToTarget', () => {
   it('focuses the pane before anything else', async () => {
     const pane = makePaneRefStub()
     const { deps, setFocusedPane } = makeDeps(pane.ref)
-    await moveCursorToTarget('left', 0, deps)
+    await moveCursorToTarget('left', 0, 'tool', deps)
     expect(setFocusedPane).toHaveBeenCalledWith('left')
   })
 
   it('throws when the pane is unavailable', async () => {
     const { deps } = makeDeps(undefined)
-    await expect(moveCursorToTarget('left', 0, deps)).rejects.toThrow('The left pane is unavailable')
+    await expect(moveCursorToTarget('left', 0, 'tool', deps)).rejects.toThrow('The left pane is unavailable')
   })
 
   it('waits for the current load to settle before touching the listing', async () => {
     const pane = makePaneRefStub()
     const { deps } = makeDeps(pane.ref)
-    await moveCursorToTarget('left', 0, deps)
+    await moveCursorToTarget('left', 0, 'tool', deps)
     expect(pane.whenLoadSettles).toHaveBeenCalled()
   })
 
@@ -67,21 +67,21 @@ describe('moveCursorToTarget', () => {
     it('sets the cursor when the index is in range', async () => {
       const pane = makePaneRefStub({ getEffectiveTotalCount: vi.fn().mockReturnValue(5) })
       const { deps } = makeDeps(pane.ref)
-      await moveCursorToTarget('left', 3, deps)
+      await moveCursorToTarget('left', 3, 'tool', deps)
       expect(pane.setCursorIndex).toHaveBeenCalledWith(3)
     })
 
     it('throws when the index is out of range against the file-listing count', async () => {
       const pane = makePaneRefStub({ getEffectiveTotalCount: vi.fn().mockReturnValue(5) })
       const { deps } = makeDeps(pane.ref)
-      await expect(moveCursorToTarget('left', 5, deps)).rejects.toThrow('Index 5 is out of range')
+      await expect(moveCursorToTarget('left', 5, 'tool', deps)).rejects.toThrow('Index 5 is out of range')
       expect(pane.setCursorIndex).not.toHaveBeenCalled()
     })
 
     it('throws on a negative index', async () => {
       const pane = makePaneRefStub({ getEffectiveTotalCount: vi.fn().mockReturnValue(5) })
       const { deps } = makeDeps(pane.ref)
-      await expect(moveCursorToTarget('left', -1, deps)).rejects.toThrow('Index -1 is out of range')
+      await expect(moveCursorToTarget('left', -1, 'tool', deps)).rejects.toThrow('Index -1 is out of range')
     })
 
     it('range-checks against the network row count, not the file-listing count, in a network view', async () => {
@@ -93,7 +93,7 @@ describe('moveCursorToTarget', () => {
       const { deps } = makeDeps(pane.ref)
       // Pre-fix this read getEffectiveTotalCount and let an out-of-range host
       // index through, which the host browser then silently clamped.
-      await expect(moveCursorToTarget('left', 2, deps)).rejects.toThrow('Index 2 is out of range')
+      await expect(moveCursorToTarget('left', 2, 'tool', deps)).rejects.toThrow('Index 2 is out of range')
     })
   })
 
@@ -101,7 +101,7 @@ describe('moveCursorToTarget', () => {
     it('moves to the named entry when found', async () => {
       const pane = makePaneRefStub()
       const { deps, moveCursorByName } = makeDeps(pane.ref)
-      await moveCursorToTarget('left', 'report.pdf', deps)
+      await moveCursorToTarget('left', 'report.pdf', 'tool', deps)
       expect(moveCursorByName).toHaveBeenCalledWith(pane.ref, 'report.pdf')
     })
 
@@ -109,7 +109,7 @@ describe('moveCursorToTarget', () => {
       const pane = makePaneRefStub()
       const { deps, moveCursorByName } = makeDeps(pane.ref)
       moveCursorByName.mockResolvedValueOnce(false)
-      await expect(moveCursorToTarget('left', 'missing.pdf', deps)).rejects.toThrow(
+      await expect(moveCursorToTarget('left', 'missing.pdf', 'tool', deps)).rejects.toThrow(
         '"missing.pdf" not found in the left pane listing',
       )
     })
@@ -117,9 +117,9 @@ describe('moveCursorToTarget', () => {
 
   it('re-anchors DOM focus and flushes state to MCP after a successful move', async () => {
     const pane = makePaneRefStub()
-    const { deps, followFocusedPane } = makeDeps(pane.ref)
-    await moveCursorToTarget('left', 0, deps)
-    expect(followFocusedPane).toHaveBeenCalled()
+    const { deps, settleFocus } = makeDeps(pane.ref)
+    await moveCursorToTarget('left', 0, 'tool', deps)
+    expect(settleFocus).toHaveBeenCalled()
     expect(pane.syncStateToMcpNow).toHaveBeenCalled()
   })
 })

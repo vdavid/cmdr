@@ -300,8 +300,6 @@ Where a lead's review refined one of David's decisions, the refined form is writ
   `execute_tool` for its proposal snapshot. `dev_only_refusal` folds into `admit`.
 - M15: the arming probe is `data-armed` on `.modal-overlay` and `.rename-input`, `true` or `false`, absent when
   unguarded. `ToolRollbackFacts`, the `file.*` args, and `StartRenameOptions` carry `guard`.
-- M18: `switch_pane`'s rule costs a person's View > Switch pane its focus move while the rail has focus; it's in
-  `pane/DETAILS.md`. Re-check that once the real rail drives it.
 
 ## Running unattended
 

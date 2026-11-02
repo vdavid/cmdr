@@ -1,15 +1,21 @@
 /**
  * Focus nobody at the keyboard asked for. Someone mid-sentence in the rail would otherwise type into a
  * pane, where Enter opens a file and F8 trashes one, both as themselves. So `switch_pane`, `swap_panes`,
- * and `move_cursor` move the panes and leave DOM focus where the person has it.
+ * and `move_cursor` move the panes and leave DOM focus where the person has it. A person's own command
+ * runs the same handlers and always takes focus.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { registerFocusHome } from '#lib/ui/focus-restore.js'
-import explorerSource from './DualPaneExplorer.svelte?raw'
-import { followFocusedPane, type ActivePaneFocusDeps } from './active-pane-focus'
+import {
+  followFocusedPane,
+  settleFocusAfterPaneMove,
+  type ActivePaneFocusDeps,
+  type PaneMoveBy,
+} from './active-pane-focus'
 import { moveCursorToTarget } from './move-cursor'
 import { createSwapPanes } from './swap-panes'
+import { paneHandlers } from '../../../routes/(main)/command-handlers/pane-handlers'
 import type { FilePaneAPI } from './types'
 
 let explorer: HTMLDivElement
@@ -92,14 +98,12 @@ describe('followFocusedPane', () => {
   })
 })
 
-describe('the tools that move the panes', () => {
-  const follow = () => {
-    followFocusedPane(focusDeps)
+describe('who moved the panes', () => {
+  const settle = (by: PaneMoveBy) => {
+    settleFocusAfterPaneMove(by, focusDeps)
   }
 
-  it('`move_cursor` leaves the rail alone, and still moves the store and the cursor', async () => {
-    rail.focus()
-    const setFocusedPane = vi.fn()
+  function moveCursorDeps() {
     const setCursorIndex = vi.fn(() => Promise.resolve())
     const pane = {
       whenLoadSettles: () => Promise.resolve(),
@@ -108,45 +112,85 @@ describe('the tools that move the panes', () => {
       setCursorIndex,
       syncStateToMcpNow: () => Promise.resolve(),
     } as unknown as FilePaneAPI
-
-    await moveCursorToTarget('right', 1, {
+    const deps = {
       getPaneRef: () => pane,
-      setFocusedPane,
+      setFocusedPane: vi.fn(),
       moveCursorByName: () => Promise.resolve(true),
-      followFocusedPane: follow,
-    })
+      settleFocus: settle,
+    }
+    return { deps, setCursorIndex }
+  }
 
-    expect(setFocusedPane).toHaveBeenCalledExactlyOnceWith('right')
-    expect(setCursorIndex).toHaveBeenCalledExactlyOnceWith(1)
-    expect(document.activeElement).toBe(rail)
-  })
-
-  it('`swap_panes` leaves the rail alone', () => {
-    rail.focus()
+  function swapper() {
     const pane = {
       isLoading: () => false,
       getSwapState: () => ({}),
       adoptListing: () => {},
     } as unknown as FilePaneAPI
     const tabs = { tabs: [{ id: 't', pinned: false }], activeTabId: 't' }
-    const swap = createSwapPanes({
+    return createSwapPanes({
       getPaneRef: () => pane,
       getLeftTabMgr: () => tabs as never,
       getRightTabMgr: () => tabs as never,
       isAnyTransferDialogOpen: () => false,
-      followFocusedPane: follow,
+      settleFocus: settle,
     })
+  }
 
-    swap.swapPanes()
-
+  it("a tool's `move_cursor` leaves the rail alone, and still moves the store and the cursor", async () => {
+    rail.focus()
+    const { deps, setCursorIndex } = moveCursorDeps()
+    await moveCursorToTarget('right', 1, 'tool', deps)
+    expect(deps.setFocusedPane).toHaveBeenCalledExactlyOnceWith('right')
+    expect(setCursorIndex).toHaveBeenCalledExactlyOnceWith(1)
     expect(document.activeElement).toBe(rail)
   })
 
-  it('`switch_pane` goes through the same rule', () => {
-    // The explorer is too much to mount here, and `pane.switch` has no other seam: pinned on source.
-    const body = explorerSource.slice(explorerSource.indexOf('export function switchPane()'))
-    const end = body.indexOf('\n    }\n')
-    expect(body.slice(0, end)).toContain('followFocusedPane()')
-    expect(body.slice(0, end)).not.toContain('focusActivePane()')
+  it("a person's reveal takes focus from the rail", async () => {
+    rail.focus()
+    await moveCursorToTarget('right', 1, 'person', moveCursorDeps().deps)
+    expect(document.activeElement).toBe(list)
+  })
+
+  it("a tool's `swap_panes` leaves the rail alone", () => {
+    rail.focus()
+    swapper().swapPanes('tool')
+    expect(document.activeElement).toBe(rail)
+  })
+
+  it("a person's Swap panes takes focus from the rail", () => {
+    rail.focus()
+    swapper().swapPanes('person')
+    expect(document.activeElement).toBe(list)
+  })
+
+  it("a tool's `switch_pane` leaves the rail alone", () => {
+    rail.focus()
+    settle('tool')
+    expect(document.activeElement).toBe(rail)
+  })
+
+  it("a person's Switch pane takes focus from the rail", () => {
+    rail.focus()
+    settle('person')
+    expect(document.activeElement).toBe(list)
+  })
+})
+
+describe('what a command handler reads as who moved the panes', () => {
+  function run(id: 'pane.switch' | 'pane.swap', dispatchArgs: unknown) {
+    const explorerRef = { switchPane: vi.fn(), swapPanes: vi.fn() }
+    paneHandlers[id]({ explorerRef, dispatchArgs } as never)
+    return explorerRef
+  }
+
+  it('an absent payload is a person: the menu, the palette, and the keyboard send none', () => {
+    expect(run('pane.switch', undefined).switchPane).toHaveBeenCalledExactlyOnceWith('person')
+    expect(run('pane.swap', undefined).swapPanes).toHaveBeenCalledExactlyOnceWith('person')
+  })
+
+  it('a tool names itself', () => {
+    expect(run('pane.switch', { by: 'tool' }).switchPane).toHaveBeenCalledExactlyOnceWith('tool')
+    expect(run('pane.swap', { by: 'tool' }).swapPanes).toHaveBeenCalledExactlyOnceWith('tool')
   })
 })

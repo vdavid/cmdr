@@ -33,3 +33,15 @@ export function focusActivePane(deps: ActivePaneFocusDeps): void {
 export function followFocusedPane(deps: ActivePaneFocusDeps): void {
   if (focusMayFollowThePanes()) focusActivePane(deps)
 }
+
+/**
+ * Who moved the panes. The same command can come from either: a person's View > Switch pane and a
+ * tool's `switch_pane` run one handler, and only this tells them apart.
+ */
+export type PaneMoveBy = 'person' | 'tool'
+
+/** Where focus goes once the panes moved: a person's own command takes it, a tool's leaves it be. */
+export function settleFocusAfterPaneMove(by: PaneMoveBy, deps: ActivePaneFocusDeps): void {
+  if (by === 'person') focusActivePane(deps)
+  else followFocusedPane(deps)
+}

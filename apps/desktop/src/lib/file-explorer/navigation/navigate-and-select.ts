@@ -143,7 +143,7 @@ export async function navigateToFileInPane(
     return false
   }
   await result.settled
-  await explorer.moveCursor(pane, fileName)
+  await explorer.moveCursor(pane, fileName, 'person')
   return true
 }
 
@@ -185,7 +185,7 @@ export async function revealFileInBestPane(
 ): Promise<void> {
   const reused = focusPaneShowing(explorer, location.path)
   if (reused) {
-    await explorer.moveCursor(reused, fileName)
+    await explorer.moveCursor(reused, fileName, 'person')
     return
   }
   await navigateToFileInPane(explorer, explorer.getFocusedPane(), location, fileName)

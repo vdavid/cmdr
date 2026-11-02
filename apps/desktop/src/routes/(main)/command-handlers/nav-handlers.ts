@@ -65,7 +65,7 @@ export const navHandlers = {
     // MCP `move_cursor` round-trip: AWAIT for the same ack-timing reason. L1/L2
     // (focus re-anchor + `whenLoadSettles`) live inside `moveCursor` — untouched.
     const { pane, to } = dispatchArgs as CommandArgs['cursor.moveTo']
-    await explorerRef?.moveCursor(pane, to)
+    await explorerRef?.moveCursor(pane, to, 'tool')
   },
 
   'cursor.scrollTo': ({ explorerRef, dispatchArgs }) => {

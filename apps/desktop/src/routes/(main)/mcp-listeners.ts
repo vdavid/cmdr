@@ -205,6 +205,8 @@ const cursorMoveToCommand: CommandId = 'cursor.moveTo'
 const cursorScrollToCommand: CommandId = 'cursor.scrollTo'
 const viewSetModeCommand: CommandId = 'view.setMode'
 const paneRefreshCommand: CommandId = 'pane.refresh'
+const paneSwitchCommand: CommandId = 'pane.switch'
+const paneSwapCommand: CommandId = 'pane.swap'
 const fileCopyCommand: CommandId = 'file.copy'
 const fileMoveCommand: CommandId = 'file.move'
 const fileCompressCommand: CommandId = 'file.compress'
@@ -279,6 +281,16 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     // (before any `await`), so the order holds.
     applySearchPrefill(prefill)
     void dispatch(searchOpenCommand)
+  })
+
+  // `switch_pane` and `swap_panes`. Their own events, since `execute-command` can't say who asked,
+  // and a person's own command must take focus where a tool's must not.
+  await listenTauri('mcp-switch-pane', () => {
+    void dispatch(paneSwitchCommand, { by: 'tool' })
+  })
+
+  await listenTauri('mcp-swap-panes', () => {
+    void dispatch(paneSwapCommand, { by: 'tool' })
   })
 
   await listenTauri('mcp-key', (event) => {

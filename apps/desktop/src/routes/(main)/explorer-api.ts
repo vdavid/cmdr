@@ -23,6 +23,7 @@ import type { MultiRenameSelection } from '#lib/file-explorer/pane/pane-commands
 import type { SelectedPathsRead } from '#lib/file-explorer/pane/selected-paths-read.js'
 import type { SelectionAttachmentsRead } from '#lib/file-explorer/pane/selection-attachments-read.js'
 import type { SplitDirection } from '#lib/file-explorer/pane/pane-split.js'
+import type { PaneMoveBy } from '#lib/file-explorer/pane/active-pane-focus.js'
 import type {
   CopyPathBetweenPanesArgs,
   OpenDeleteDialogArgs,
@@ -57,10 +58,10 @@ export interface SelectionActionArgs {
 
 export interface ExplorerAPI {
   refocus: () => void
-  switchPane: () => void
+  switchPane: (by: PaneMoveBy) => void
   /** Focus the focused pane's location bar, the keyboard way into its chrome (`pane.focusControls`). */
   focusPaneControls: () => void
-  swapPanes: () => void
+  swapPanes: (by: PaneMoveBy) => void
   /** Nudge the pane divider one keyboard step (`pane-split.ts`). */
   moveDivider: (direction: SplitDirection) => void
   /** Put the pane divider back in the middle, like its double-click. */
@@ -316,7 +317,7 @@ export interface ExplorerAPI {
    * all apply.
    */
   openSearchSnapshotInPane: (snapshotId: string, pane?: 'left' | 'right') => void
-  moveCursor: (pane: 'left' | 'right', to: number | string) => Promise<void>
+  moveCursor: (pane: 'left' | 'right', to: number | string, by: PaneMoveBy) => Promise<void>
   scrollTo: (pane: 'left' | 'right', index: number) => void
   refreshPane: () => Promise<void>
   refreshNetworkHosts: () => void

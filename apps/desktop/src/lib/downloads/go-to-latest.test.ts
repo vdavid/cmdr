@@ -149,7 +149,7 @@ describe('goToLatestDownload', () => {
       to: { goTo: { volumeId: 'root', path: '/Users/me/Downloads' } },
       source: 'user',
     })
-    expect(moveCursorMock).toHaveBeenCalledWith('right', 'report.pdf')
+    expect(moveCursorMock).toHaveBeenCalledWith('right', 'report.pdf', 'person')
     expect(addToastMock).not.toHaveBeenCalled()
   })
 
@@ -165,7 +165,7 @@ describe('goToLatestDownload', () => {
 
     expect(navigateMock).not.toHaveBeenCalled()
     expect(setFocusedPaneMock).not.toHaveBeenCalled()
-    expect(moveCursorMock).toHaveBeenCalledWith('left', 'report.pdf')
+    expect(moveCursorMock).toHaveBeenCalledWith('left', 'report.pdf', 'person')
   })
 
   it('shifts focus and moves the cursor (no navigate) when the OTHER pane already shows the dir', async () => {
@@ -180,7 +180,7 @@ describe('goToLatestDownload', () => {
 
     expect(navigateMock).not.toHaveBeenCalled()
     expect(setFocusedPaneMock).toHaveBeenCalledWith('right')
-    expect(moveCursorMock).toHaveBeenCalledWith('right', 'report.pdf')
+    expect(moveCursorMock).toHaveBeenCalledWith('right', 'report.pdf', 'person')
   })
 
   it('navigates the focused pane when neither pane shows the dir', async () => {
@@ -199,7 +199,7 @@ describe('goToLatestDownload', () => {
       source: 'user',
     })
     expect(setFocusedPaneMock).not.toHaveBeenCalled()
-    expect(moveCursorMock).toHaveBeenCalledWith('left', 'report.pdf')
+    expect(moveCursorMock).toHaveBeenCalledWith('left', 'report.pdf', 'person')
   })
 
   it('does NOT count a pane at an equal-looking path on a virtual or device volume as showing the dir', async () => {
@@ -225,7 +225,7 @@ describe('goToLatestDownload', () => {
       source: 'user',
     })
     expect(setFocusedPaneMock).not.toHaveBeenCalled()
-    expect(moveCursorMock).toHaveBeenCalledWith('left', 'report.pdf')
+    expect(moveCursorMock).toHaveBeenCalledWith('left', 'report.pdf', 'person')
   })
 
   it('does NOT count an MTP pane whose path string matches the local dir', async () => {
@@ -400,7 +400,7 @@ describe('goToDownload', () => {
       to: { goTo: { volumeId: 'root', path: '/Users/me/Downloads' } },
       source: 'user',
     })
-    expect(moveCursorMock).toHaveBeenCalledWith('left', 'report.pdf')
+    expect(moveCursorMock).toHaveBeenCalledWith('left', 'report.pdf', 'person')
   })
 
   it('reuses the focused pane (cursor only) when it already shows the dir', async () => {
@@ -411,7 +411,7 @@ describe('goToDownload', () => {
 
     expect(navigateMock).not.toHaveBeenCalled()
     expect(setFocusedPaneMock).not.toHaveBeenCalled()
-    expect(moveCursorMock).toHaveBeenCalledWith('left', 'report.pdf')
+    expect(moveCursorMock).toHaveBeenCalledWith('left', 'report.pdf', 'person')
   })
 
   it('does nothing when the explorer handle is missing (HMR / pre-mount)', async () => {

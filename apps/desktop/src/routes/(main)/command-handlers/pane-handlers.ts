@@ -3,11 +3,18 @@
  * other, toggle each pane's volume chooser, copy a path between panes, refresh the focused pane (⌘R and the
  * MCP `refresh` tool), and move or center the divider between the panes.
  */
+import type { CommandArgs } from '#lib/commands/index.js'
 import type { CommandHandlerRecord } from './types'
 
+/** Only an ABSENT payload reads as a person: every other road names who started it. */
+function paneMoveBy(args: unknown) {
+  const typed = args as CommandArgs['pane.switch'] | undefined
+  return typed?.by ?? 'person'
+}
+
 export const paneHandlers = {
-  'pane.switch': ({ explorerRef }) => {
-    explorerRef?.switchPane()
+  'pane.switch': ({ explorerRef, dispatchArgs }) => {
+    explorerRef?.switchPane(paneMoveBy(dispatchArgs))
   },
 
   'pane.quickFilter': ({ explorerRef }) => {
@@ -18,8 +25,8 @@ export const paneHandlers = {
     explorerRef?.focusPaneControls()
   },
 
-  'pane.swap': ({ explorerRef }) => {
-    explorerRef?.swapPanes()
+  'pane.swap': ({ explorerRef, dispatchArgs }) => {
+    explorerRef?.swapPanes(paneMoveBy(dispatchArgs))
   },
 
   'pane.clone': ({ explorerRef }) => {

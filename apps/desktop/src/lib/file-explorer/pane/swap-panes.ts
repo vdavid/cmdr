@@ -10,6 +10,7 @@
  */
 
 import { getActiveTab, type TabManager } from '../tabs/tab-state-manager.svelte'
+import type { PaneMoveBy } from './active-pane-focus'
 import type { FilePaneAPI } from './types'
 
 export interface SwapPanesDeps {
@@ -18,12 +19,12 @@ export interface SwapPanesDeps {
   getRightTabMgr: () => TabManager
   /** True while any transfer dialog is open — a swap mid-transfer is unsafe. */
   isAnyTransferDialogOpen: () => boolean
-  /** Re-anchor DOM focus on the explorer container after the swap. */
-  followFocusedPane: () => void
+  /** Where DOM focus goes after the swap. */
+  settleFocus: (by: PaneMoveBy) => void
 }
 
 export interface SwapPanes {
-  swapPanes: () => void
+  swapPanes: (by: PaneMoveBy) => void
 }
 
 export function createSwapPanes(deps: SwapPanesDeps): SwapPanes {
@@ -49,7 +50,7 @@ export function createSwapPanes(deps: SwapPanesDeps): SwapPanes {
     ;[leftTab.sortOrder, rightTab.sortOrder] = [rightTab.sortOrder, leftTab.sortOrder]
   }
 
-  function swapPanes(): void {
+  function swapPanes(by: PaneMoveBy): void {
     if (!canSwapPanes()) return
 
     const leftRef = deps.getPaneRef('left')
@@ -70,7 +71,7 @@ export function createSwapPanes(deps: SwapPanesDeps): SwapPanes {
     // 4. Persistence (both panes' app-status fields + tab sets) fires from the
     // single subscriber: the swap mutates each pane's active-tab nav-state, so
     // both per-pane effects re-run.
-    deps.followFocusedPane()
+    deps.settleFocus(by)
   }
 
   return { swapPanes }
