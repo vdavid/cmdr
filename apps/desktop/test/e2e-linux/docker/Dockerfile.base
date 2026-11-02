@@ -8,7 +8,7 @@
 # (`e2e-linux.sh`'s E2E_BASE_REGISTRY). The fast-changing part (entrypoint.sh)
 # lives in `Dockerfile`, which builds FROM this image in ~1 s.
 
-FROM ubuntu:26.04@sha256:c098726dd9b9733f3e885f8de0ef375206a311b0a317eadc40d347b1115fb944
+FROM ubuntu:26.04@sha256:6a06111c3b0a8600feadb270aec771dc239bf407b25625f93f44ab00e11f4d3c
 
 # Avoid prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -110,8 +110,8 @@ RUN apt-get update && apt-get install -y \
 # Node.js 22 LTS and Rust come from the official images, pinned by digest, so the toolchain is
 # exactly what Renovate last reviewed rather than whatever a `curl | sh` installer served today.
 # Node's binaries are built against an old glibc and run unchanged on Ubuntu.
-COPY --from=node:22-trixie-slim@sha256:154ba2f4d6fec323d28e4f4bb86bba4677f1223391a1979cf521304e03a98dfa /usr/local/bin/node /usr/local/bin/node
-COPY --from=node:22-trixie-slim@sha256:154ba2f4d6fec323d28e4f4bb86bba4677f1223391a1979cf521304e03a98dfa /usr/local/lib/node_modules /usr/local/lib/node_modules
+COPY --from=node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
     && ln -s ../lib/node_modules/corepack/dist/corepack.js /usr/local/bin/corepack
