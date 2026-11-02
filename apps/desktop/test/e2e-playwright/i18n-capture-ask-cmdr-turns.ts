@@ -58,10 +58,21 @@ async function openChat(main: TauriPage): Promise<void> {
   await unlockChat(main)
 }
 
-/** Opens the threads panel from the rail header. */
+/**
+ * Opens the threads panel from the rail header, on the whole list. The panel keeps its search
+ * query after it closes, and in a lane `ask-cmdr.spec.ts` has already left one there, so a row
+ * this run just made wouldn't be listed. It clears the query itself rather than trusting the
+ * shard's order.
+ */
 async function openThreads(main: TauriPage): Promise<void> {
   await main.evaluate(`document.querySelector('${RAIL} [aria-label="Chats"]')?.click()`)
   await main.waitForSelector(`${RAIL} .sessions`, 5000)
+  await main.evaluate(`(function(){
+    var field = document.querySelector('${RAIL} .sessions .search-row input');
+    if (!field || field.value === '') return;
+    field.value = '';
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+  })()`)
 }
 
 /** Waits for a plain message's reply, which has no stats line (that's a tool-running turn's). */
