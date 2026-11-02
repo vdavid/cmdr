@@ -265,11 +265,8 @@ fn locked_reply(
 /// Cancel one or several operations, keeping what they wrote. Rolling back asks a person first:
 /// `operations_rollback`.
 fn execute_cancel(params: &Value) -> ToolResult {
-    if let Some(ids_value) = params.get("operationIds") {
-        let ids: Vec<OperationId> = ids_value
-            .as_array()
-            .map(|arr| arr.iter().filter_map(|v| v.as_str().map(OperationId::from)).collect())
-            .unwrap_or_default();
+    if let Some(names) = super::string_list_param(params, "operationIds")? {
+        let ids: Vec<OperationId> = names.iter().map(|id| OperationId::from(id.as_str())).collect();
         if ids.is_empty() {
             return Err(ToolError::invalid_params(
                 "'operationIds' must be a non-empty array of operation id strings",

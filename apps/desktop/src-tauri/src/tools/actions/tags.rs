@@ -4,8 +4,7 @@
 //! primitives the context-menu tag toggle uses. It resolves target paths off the
 //! pane state (names, else the pane's selection, via `resolve_pane_target_paths`), then
 //! patches the cached listing so the panes re-render the colored dots (reusing
-//! `Listings::apply_row_facts` (`RowFacts::Tags`), the enrich path). Gate `Always`: silent metadata
-//! mutation on user files, with no confirmation dialog to piggyback on.
+//! `Listings::apply_row_facts` (`RowFacts::Tags`), the enrich path).
 //!
 //! macOS-only: Finder tags don't exist elsewhere, so off macOS it returns a clean
 //! not-supported error.
@@ -48,11 +47,7 @@ async fn execute_tag_macos<R: Runtime>(app: &AppHandle<R>, params: &Value) -> To
         )));
     }
 
-    let names = params.get("names").and_then(|v| v.as_array()).map(|arr| {
-        arr.iter()
-            .filter_map(|v| v.as_str().map(str::to_string))
-            .collect::<Vec<_>>()
-    });
+    let names = super::string_list_param(params, "names")?;
 
     // Resolution reads PaneStateStore, so flush the FE's pending push first (the
     // `move_cursor` / `select` freshness, without moving the cursor): otherwise a

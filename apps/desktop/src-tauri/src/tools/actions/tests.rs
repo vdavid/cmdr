@@ -1049,3 +1049,23 @@ fn tab_move_result_refuses_with_a_typed_reason() {
         assert_eq!(err.data, Some(json!({ "reason": reason })));
     }
 }
+
+/// A present list that isn't all strings refuses: `tag clear` with `names: "a.txt"` used to fall
+/// through to the whole selection, with no undo, and `[1, "a"]` used to drop the `1`.
+#[test]
+fn a_present_string_list_that_isnt_all_strings_refuses() {
+    let list = |params: Value| string_list_param(&params, "names");
+
+    assert_eq!(list(json!({})).unwrap(), None);
+    assert_eq!(list(json!({"names": null})).unwrap(), None);
+    assert_eq!(
+        list(json!({"names": ["a", "b"]})).unwrap(),
+        Some(vec!["a".to_string(), "b".to_string()])
+    );
+    assert_eq!(list(json!({"names": []})).unwrap(), Some(Vec::new()));
+
+    for wrong in [json!("a.txt"), json!([1, "a"]), json!({"a": 1}), json!(5), json!(true)] {
+        let error = list(json!({ "names": wrong })).expect_err("the wrong shape refuses");
+        assert_eq!(error.code, INVALID_PARAMS);
+    }
+}

@@ -5,8 +5,7 @@
 //! / thin frontend). Each mutation persists `favorites.json` and re-emits
 //! `volumes-changed` itself, so every surface listing favorites refreshes live. The handler
 //! invents no ack and returns the backend result directly (the `indexing` /
-//! `queue` precedent, so there is no FE action to ack). Gate `Always`: persistent app-config mutation
-//! with no confirmation dialog to piggyback on.
+//! `queue` precedent, so there is no FE action to ack).
 //!
 //! Ids are discoverable via `cmdr://state` under `favorites:`.
 
@@ -65,14 +64,7 @@ pub async fn execute_favorites(params: &Value) -> ToolResult {
             Ok(json!(format!("OK: Removed favorite {id}.")))
         }
         "reorder" => {
-            let ordered_ids = params
-                .get("orderedIds")
-                .and_then(|v| v.as_array())
-                .map(|arr| {
-                    arr.iter()
-                        .filter_map(|v| v.as_str().map(str::to_string))
-                        .collect::<Vec<_>>()
-                })
+            let ordered_ids = super::string_list_param(params, "orderedIds")?
                 .filter(|ids: &Vec<String>| !ids.is_empty())
                 .ok_or_else(|| {
                     ToolError::invalid_params(
