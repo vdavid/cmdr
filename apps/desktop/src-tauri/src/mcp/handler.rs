@@ -181,15 +181,23 @@ fn logged_tool_name(name: &str) -> String {
 /// The failure's line: its code and typed token. ❌ Never the message: refusals echo arguments, the
 /// log ships in error reports, and its redactor only knows paths.
 fn log_failed_call(name: &str, error: &ToolError) {
-    let verdict = if error.outcome_is_unknown() {
-        "outcome unknown"
-    } else {
-        "failed"
-    };
+    let (level, verdict) = call_verdict(error);
     let name = logged_tool_name(name);
     let token = error_token(error.data.as_ref());
     // allowed-log-private: a name from the tool table, a code, and a typed token
-    log::warn!("MCP: tool {name} {verdict}, code={}, token={token}", error.code);
+    log::log!(level, "MCP: tool {name} {verdict}, code={}, token={token}", error.code);
+}
+
+/// How loud a call that didn't succeed is. A person's no is the gate working, so it's no failure.
+fn call_verdict(error: &ToolError) -> (log::Level, &'static str) {
+    let refusal = error.data.as_ref().and_then(|data| data.get("refusal")?.as_str());
+    if refusal == Some("declined") {
+        (log::Level::Debug, "declined")
+    } else if error.outcome_is_unknown() {
+        (log::Level::Warn, "outcome unknown")
+    } else {
+        (log::Level::Warn, "failed")
+    }
 }
 
 /// `data`'s typed token, the part a caller branches on, or `none`. Only an identifier gets through,
@@ -321,6 +329,20 @@ pub(super) mod tests {
         assert!(lines[0].contains("code=-32602") && lines[0].contains("token=invalidValue"));
         assert!(lines[1].contains("search") && lines[1].contains("token=unknown"));
         assert!(lines[2].contains("token=none"));
+    }
+
+    #[test]
+    fn a_persons_no_is_quiet_and_anything_else_stays_a_warning() {
+        let declined = ToolError::invalid_params("No.").with_data(json!({ "refusal": "declined" }));
+        assert_eq!(call_verdict(&declined), (log::Level::Debug, "declined"));
+        let refused = ToolError::invalid_params("No.").with_data(json!({ "refusal": "directModeOff" }));
+        assert_eq!(call_verdict(&refused), (log::Level::Warn, "failed"));
+        let reason_only = ToolError::invalid_params("No.").with_data(json!({ "reason": "declined" }));
+        assert_eq!(call_verdict(&reason_only), (log::Level::Warn, "failed"));
+        assert_eq!(
+            call_verdict(&ToolError::invalid_params("No.")),
+            (log::Level::Warn, "failed")
+        );
     }
 
     /// A token comes from our own code today, but `data` carries free values too, so only a
