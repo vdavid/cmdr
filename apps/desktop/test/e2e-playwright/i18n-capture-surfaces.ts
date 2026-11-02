@@ -40,6 +40,7 @@ import {
   captureSurface,
   captureToastSurface,
   focusWindow,
+  hideSettingsFlash,
   keysFor,
   recordStagedSurface,
   settlePaint,
@@ -212,7 +213,7 @@ const SETTINGS_SECTIONS: { path: string[]; readySelector: string; label: string;
     readySelector: '[data-section-id="keyboard-shortcuts"]',
     label: 'settings-keyboard-shortcuts',
   },
-  { path: ['Updates & privacy'], readySelector: '[data-section-id="updates"]', label: 'settings-updates' },
+  { path: ['Updates & privacy'], readySelector: '[data-section-id="updates-and-privacy"]', label: 'settings-updates' },
   { path: ['License'], readySelector: '[data-section-id="license"]', label: 'settings-license' },
   { path: ['Advanced'], readySelector: '[data-section-id="advanced"]', label: 'settings-advanced' },
   ...['Appearance', 'Behavior', 'Indexing', 'AI', 'File systems'].map((parent) => ({
@@ -256,6 +257,7 @@ export async function captureSettingsWindow(
     // non-deterministic, so the loop below deep-links to each section explicitly.
     await focusWindow(settingsPage, 'settings')
     await settingsPage.waitForSelector('.settings-window .section-item', 10000)
+    await hideSettingsFlash(settingsPage)
     await captureCall(settingsPage, 'reset')
     await captureCall<boolean>(settingsPage, 'enable')
 

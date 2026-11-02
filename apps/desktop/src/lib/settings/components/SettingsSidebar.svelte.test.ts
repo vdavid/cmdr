@@ -7,7 +7,7 @@
  * so each check waits past that frame before asserting.
  */
 
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { flushSync, mount, tick, unmount } from 'svelte'
 import { computeAccessibleName } from 'dom-accessibility-api'
 import { assertFocusModel } from '#lib/test-focus-model.js'
@@ -22,7 +22,14 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-function setup(initial: { searchQuery?: string; matchingSections?: string[]; selectedSection?: string[] } = {}) {
+function setup(
+  initial: {
+    searchQuery?: string
+    matchingSections?: string[]
+    selectedSection?: string[]
+    onSearch?: (query: string) => void
+  } = {},
+) {
   const props = $state({
     searchQuery: initial.searchQuery ?? '',
     matchingSections: new Set(initial.matchingSections ?? []),
@@ -42,7 +49,7 @@ function setup(initial: { searchQuery?: string; matchingSections?: string[]; sel
       get selectedSection() {
         return props.selectedSection
       },
-      onSearch: () => {},
+      onSearch: initial.onSearch ?? (() => {}),
       onSectionSelect: (path: string[]) => {
         props.selectedSection = path
       },
@@ -133,6 +140,38 @@ describe('SettingsSidebar: the section cursor', () => {
     props.matchingSections = new Set(['Appearance', 'Appearance/Colors and formats'])
     flushSync()
     expect(positions()).toEqual(['1/2', '2/2'])
+  })
+})
+
+describe('SettingsSidebar: typing still in its delay', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  function type(search: HTMLInputElement, text: string): void {
+    search.value = text
+    search.dispatchEvent(new Event('input', { bubbles: true }))
+  }
+
+  it('turns into a search once the delay is over', () => {
+    vi.useFakeTimers()
+    const onSearch = vi.fn()
+    const { search } = setup({ onSearch })
+    type(search, 'mcp')
+    expect(onSearch).not.toHaveBeenCalled()
+    vi.runAllTimers()
+    expect(onSearch).toHaveBeenCalledExactlyOnceWith('mcp')
+  })
+
+  // Regression: the clear button left the timer running, so the query came straight back.
+  it('stays cleared when the clear button beats the delay', () => {
+    vi.useFakeTimers()
+    const onSearch = vi.fn()
+    const { target, search } = setup({ searchQuery: 'mc', onSearch })
+    type(search, 'mcp')
+    target.querySelector<HTMLButtonElement>('.search-clear')?.click()
+    vi.runAllTimers()
+    expect(onSearch.mock.calls).toEqual([['']])
   })
 })
 

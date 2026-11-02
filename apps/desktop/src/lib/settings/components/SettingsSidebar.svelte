@@ -157,9 +157,24 @@
         }, 200)
     }
 
+    function cancelPendingSearch() {
+        if (debounceTimer) {
+            clearTimeout(debounceTimer)
+            debounceTimer = null
+        }
+    }
+
     function clearSearch() {
+        // Without this, typing that's still in its delay would bring the query straight back.
+        cancelPendingSearch()
         onSearch('')
         searchInput?.focus()
+    }
+
+    /** For a parent ending the search itself: also empties text that never became a query. */
+    export function resetSearch() {
+        cancelPendingSearch()
+        if (searchInput) searchInput.value = ''
     }
 
     function isSelected(sectionPath: string[]): boolean {

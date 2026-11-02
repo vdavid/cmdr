@@ -126,6 +126,19 @@ export async function focusWindow(page: TauriPage, label: string): Promise<void>
 }
 
 /**
+ * Keeps the arrival flash out of the shots: every section these runs visit arrives through the
+ * deep link that plays it, and a translator's reference should show the plain page. Lasts as long
+ * as the Settings window does.
+ */
+export async function hideSettingsFlash(page: TauriPage): Promise<void> {
+  await page.evaluate(`(function() {
+    var style = document.createElement('style');
+    style.textContent = '.settings-flash::after { display: none; }';
+    document.head.appendChild(style);
+  })()`)
+}
+
+/**
  * Attempts a surface's shot gets before the surface is failed outright.
  * `SHOT_ATTEMPTS_WORD` is the same number spelled out for the failure copy (house
  * style spells one through nine); keep the two in sync.

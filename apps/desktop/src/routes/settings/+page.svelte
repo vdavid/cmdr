@@ -25,6 +25,12 @@
         setPendingShortcutHighlight,
     } from '#lib/settings/pending-shortcut-highlight.svelte.js'
     import { getMatchingSections } from '#lib/settings/settings-search.js'
+    import {
+        CONTENT_FADE_BAND_PX,
+        contentScrollTopFor,
+        findSectionElements,
+        flashElements,
+    } from '#lib/settings/settings-navigation.js'
     import { loadLastSettingsSection, saveLastSettingsSection } from '#lib/app-status-store.js'
     import { getAppLogger } from '#lib/logging/logger.js'
     import { trackOwnRect } from '#lib/window-positioning.js'
@@ -39,6 +45,7 @@
     let selectedSection = $state<string[]>(['Appearance', 'Colors and formats'])
     let initialized = $state(false)
     let contentElement: HTMLElement | null = $state(null)
+    let sidebar: { resetSearch: () => void } | undefined = $state()
     let contentScrollTop = $state(0)
     /** Mask string for the scroll wrapper. Top-fade band height tracks
         `scrollTop` 0..70 px and caps at 70. Within the band the top 20 %
@@ -50,7 +57,7 @@
         and apply it via `style:mask-image` (inline runtime style, not
         scoped CSS that gets linted). */
     const contentMaskImage = $derived.by(() => {
-        const band = Math.min(Math.max(contentScrollTop, 0), 70)
+        const band = Math.min(Math.max(contentScrollTop, 0), CONTENT_FADE_BAND_PX)
         const opaque = band / 5
         return `linear-gradient(to bottom, transparent 0px, transparent ${String(opaque)}px, black ${String(band)}px)`
     })
@@ -126,79 +133,77 @@
         return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
     }
 
-    /**
-     * Scroll a deep-link anchor into view. Called after `selectedSection` has
-     * committed and the section's `onMount` has run.
-     *
-     * Two paths:
-     *
-     * - **Shortcut-row anchors** (`shortcut-<commandId>`) live inside the
-     *   Keyboard-shortcuts section's nested `.commands-list` scroller, which the
-     *   outer `contentElement.scrollTo` can't reach. They also may be hidden by a
-     *   leftover filter. So: clear the section's filters, wait for the target row
-     *   to mount, then scroll the inner list and flash the row.
-     * - **Everything else** (the `settings-downloads-notifications` sub-group, …)
-     *   keeps the deliberate `contentElement.scrollTo` path — `handleSectionSelect`
-     *   carries the same comment about avoiding `scrollIntoView` so the outer
-     *   settings layout / drag region doesn't shift.
-     *
-     * `setTimeout(0)` (not `requestAnimationFrame`) defers past the current handler
-     * because the settings window can open without focus in E2E, where macOS
-     * WKWebView throttles rAF — see `docs/testing.md` § "rAF in unfocused windows".
-     * If the anchor never appears the scroll silently no-ops; the deep-link still
-     * lands on the right section.
-     */
-    function scrollAnchorIntoView(anchorId: string) {
-        const shortcutCommandId = commandIdFromShortcutAnchor(anchorId)
-        if (shortcutCommandId !== null) {
-            void scrollShortcutRowIntoView(anchorId, shortcutCommandId)
-            return
-        }
-        setTimeout(() => {
-            const target = document.getElementById(anchorId)
-            if (target && contentElement) {
-                contentElement.scrollTo({
-                    top: target.offsetTop - 16,
-                    behavior: scrollBehavior(),
-                })
-            }
-        }, 0)
+    /** Bumped by each jump, so one still waiting on a render gives way to a newer one. */
+    let latestJump = 0
+
+    /** Scroll the content wrapper directly: `scrollIntoView` would drag the window's layout along. */
+    function jumpTo(scroller: HTMLElement, targets: HTMLElement[]) {
+        scroller.scrollTo({ top: contentScrollTopFor(scroller, targets[0]), behavior: scrollBehavior() })
+        flashElements(targets)
     }
 
     /**
-     * Deep-link arrival into a Keyboard-shortcuts row. The sequence is
-     * load-bearing (see the plan's § Deep link timing):
-     *
-     *   1. Clear the section's filters synchronously — a leftover `Modified`
-     *      filter or search query may keep the target row out of the DOM.
-     *   2. `await tick()` — clearing filters mutates `$derived` state
-     *      (`filteredCommands` → `groupedCommands`); the row does NOT exist until
-     *      Svelte flushes.
-     *   3. `setTimeout(0)` — defer past the current handler (and stay off rAF for
-     *      the unfocused-window throttle).
-     *   4. Scroll the nested `.commands-list` to the row and set the flash state.
+     * A section picked in the sidebar or a summary card. During a search every result is already
+     * on the page, so this jumps to the pick and flashes it, which also covers results too short
+     * to scroll. Otherwise the pick replaces the page, which starts at the top with no flash.
      */
-    async function scrollShortcutRowIntoView(anchorId: string, commandId: string) {
-        resetShortcutFilters()
+    async function showSelectedSection(sectionPath: string[]) {
+        const jump = ++latestJump
         await tick()
-        setTimeout(() => {
-            const target = document.getElementById(anchorId)
-            const list = target?.closest('.commands-list')
-            if (target instanceof HTMLElement && list instanceof HTMLElement) {
-                // Scroll the INNER scroller only, so the outer settings layout /
-                // drag region stays put (the outer `contentElement.scrollTo` can't
-                // reach a row inside this overflow container anyway). Compute the
-                // target via the live rect delta rather than `offsetTop`, which is
-                // relative to each element's own `offsetParent` and can differ
-                // between the row and the list. 16 px of breathing room above.
-                const targetTop = list.scrollTop + (target.getBoundingClientRect().top - list.getBoundingClientRect().top)
-                list.scrollTo({
-                    top: Math.max(targetTop - 16, 0),
-                    behavior: scrollBehavior(),
-                })
-            }
-            setPendingShortcutHighlight(commandId)
-        }, 0)
+        if (jump !== latestJump || !contentElement) return
+        if (!searchQuery.trim()) {
+            contentElement.scrollTo({ top: 0 })
+            return
+        }
+        const targets = findSectionElements(contentElement, sectionPath)
+        if (targets.length > 0) jumpTo(contentElement, targets)
+    }
+
+    /**
+     * Land an in-app link, after `selectedSection` has committed: scroll to the most specific
+     * target (the anchor, else the section) and flash it. An anchor that never appears still lands
+     * on the right section.
+     *
+     * A shortcut-row anchor (`shortcut-<commandId>`) takes its own path: the row sits inside the
+     * section's nested `.commands-list` scroller, and a leftover filter may hide it, so the filters
+     * clear before the wait. The row re-keys on every shortcut change, so its flash is state-driven
+     * (`pending-shortcut-highlight`) where the others set a class.
+     *
+     * `tick()` lets the section render, and `setTimeout(0)` (not `requestAnimationFrame`) lets its
+     * `onMount` finish: the window can open without focus in E2E, where macOS WKWebView throttles
+     * rAF. `docs/testing.md` § "rAF in unfocused windows".
+     */
+    async function landDeepLink(section: string[], anchorId: string | null) {
+        const jump = ++latestJump
+        const shortcutCommandId = anchorId === null ? null : commandIdFromShortcutAnchor(anchorId)
+        if (shortcutCommandId !== null) resetShortcutFilters()
+        await tick()
+        await new Promise((resolve) => setTimeout(resolve, 0))
+        if (jump !== latestJump || !contentElement) return
+
+        const anchor = anchorId === null ? null : document.getElementById(anchorId)
+        if (shortcutCommandId !== null) {
+            scrollShortcutRowIntoView(anchor)
+            setPendingShortcutHighlight(shortcutCommandId)
+            return
+        }
+        const targets = anchor ? [anchor] : findSectionElements(contentElement, section)
+        if (targets.length > 0) {
+            jumpTo(contentElement, targets)
+        } else {
+            contentElement.scrollTo({ top: 0 })
+        }
+    }
+
+    /**
+     * Scroll the INNER `.commands-list` only: the outer `contentElement.scrollTo` can't reach a row
+     * in this overflow container. 16 px of breathing room above; no fade up here.
+     */
+    function scrollShortcutRowIntoView(target: HTMLElement | null) {
+        const list = target?.closest('.commands-list')
+        if (!target || !(list instanceof HTMLElement)) return
+        const targetTop = list.scrollTop + (target.getBoundingClientRect().top - list.getBoundingClientRect().top)
+        list.scrollTo({ top: Math.max(targetTop - 16, 0), behavior: scrollBehavior() })
     }
 
     // Handle section selection from sidebar
@@ -207,22 +212,7 @@
         selectedSection = sectionPath
         // Save last section to app status store
         void saveLastSettingsSection(sectionPath)
-        // Scroll to the section in content area
-        if (contentElement) {
-            const sectionId = sectionPath
-                .join('-')
-                .toLowerCase()
-                .replace(/[^a-z0-9-]/g, '-')
-            const element = contentElement.querySelector(`[data-section-id="${sectionId}"]`)
-            if (element instanceof HTMLElement) {
-                // Scroll the content wrapper directly instead of using scrollIntoView
-                // to avoid scrolling the entire window
-                contentElement.scrollTo({
-                    top: element.offsetTop - 16, // 16px padding from top
-                    behavior: scrollBehavior(),
-                })
-            }
-        }
+        void showSelectedSection(sectionPath)
     }
 
     // Handle keyboard events
@@ -312,10 +302,8 @@
 
             await tick()
 
-            // Scroll the deep-link anchor into view, if any. Runs after `selectedSection`
-            // commits and the section's `onMount` runs so the target element exists.
-            if (urlAnchor) {
-                scrollAnchorIntoView(urlAnchor)
+            if (parsed) {
+                void landDeepLink(parsed, urlAnchor)
             }
 
             // Focus the search input on open so users can start typing immediately.
@@ -333,14 +321,16 @@
 
             // Cross-window deep-link: when the volume picker's "Network (disabled)" entry
             // (or anything else) opens an already-running settings window with a target
-            // section, navigate there.
+            // section, navigate there. A search left running could filter the target away, so
+            // it ends here, along with any typing still waiting to become one.
             unlistenNavigate = await listen<{ section: string[]; anchor?: string }>(
                 'navigate-to-section',
                 (event) => {
-                    handleSectionSelect(event.payload.section)
-                    if (event.payload.anchor) {
-                        scrollAnchorIntoView(event.payload.anchor)
-                    }
+                    sidebar?.resetSearch()
+                    searchQuery = ''
+                    selectedSection = event.payload.section
+                    void saveLastSettingsSection(event.payload.section)
+                    void landDeepLink(event.payload.section, event.payload.anchor ?? null)
                 },
             )
 
@@ -438,6 +428,7 @@
     {#if initialized}
         <div class="settings-layout">
             <SettingsSidebar
+                bind:this={sidebar}
                 {searchQuery}
                 {matchingSections}
                 {selectedSection}

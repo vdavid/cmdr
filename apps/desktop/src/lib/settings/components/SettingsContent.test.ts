@@ -11,6 +11,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, unmount, tick } from 'svelte'
 import SettingsContent from './SettingsContent.svelte'
+import source from './SettingsContent.svelte?raw'
+import { buildSectionTree, type SettingsSection } from '#lib/settings/settings-registry.js'
 
 vi.mock('#lib/settings/settings-store.js', () => ({
   getSetting: vi.fn(() => undefined),
@@ -88,6 +90,26 @@ function driveIndexingSection(): HTMLElement | null {
 function keyboardShortcutsSection(): HTMLElement | null {
   return target.querySelector('[data-section-id="keyboard-shortcuts"]')
 }
+
+describe('SettingsContent section ids', () => {
+  function leafPaths(sections: SettingsSection[]): string[][] {
+    return sections.flatMap((s) => (s.subsections.length > 0 ? leafPaths(s.subsections) : [s.path]))
+  }
+
+  // Regression: the page's literal ids and the sidebar's computed ones drifted apart, so a click
+  // on five sections found nothing to scroll to. A path typed differently in the page would do the
+  // same. Read from the source: mounting every real section would need every section's IPC stubbed.
+  it('stamps every section in the tree with the id its path computes to', () => {
+    const stamped = Array.from(source.matchAll(/data-section-id=\{sectionDomId\((\[[^\]]*\])\)\}/g), (match) =>
+      JSON.stringify(Array.from(match[1].matchAll(/'([^']*)'/g), (part) => part[1])),
+    )
+    expect(stamped).toEqual(expect.arrayContaining(leafPaths(buildSectionTree()).map((path) => JSON.stringify(path))))
+  })
+
+  it('leaves no section with a hand-written id', () => {
+    expect(source).not.toMatch(/data-section-id="/)
+  })
+})
 
 describe('SettingsContent search gating for Keyboard shortcuts', () => {
   it('shows the section for a query matching a non-palette command ("palette")', async () => {

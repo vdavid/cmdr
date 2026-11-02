@@ -24,6 +24,7 @@
     import AdvancedSection from '#lib/settings/sections/AdvancedSection.svelte'
     import SectionSummary from './SectionSummary.svelte'
     import { getMatchingSettingIdsInSection } from '#lib/settings/settings-search.js'
+    import { sectionDomId } from '#lib/settings/settings-navigation.js'
     import { searchAllCommands } from '#lib/commands/fuzzy-search.js'
 
     interface Props {
@@ -85,135 +86,135 @@
     {:else}
         <!-- Appearance -->
         {#if shouldShowSection(['Appearance', 'Colors and formats'])}
-            <section data-section-id="appearance-colors-and-formats">
+            <section data-section-id={sectionDomId(['Appearance', 'Colors and formats'])}>
                 <AppearanceSection {searchQuery} />
             </section>
         {/if}
         {#if shouldShowSection(['Appearance', 'Zoom and density'])}
-            <section data-section-id="appearance-zoom-and-density">
+            <section data-section-id={sectionDomId(['Appearance', 'Zoom and density'])}>
                 <AppearanceZoomSection {searchQuery} />
             </section>
         {/if}
         {#if shouldShowSection(['Appearance', 'File and folder sizes'])}
-            <section data-section-id="appearance-file-and-folder-sizes">
+            <section data-section-id={sectionDomId(['Appearance', 'File and folder sizes'])}>
                 <AppearanceSizesSection {searchQuery} />
             </section>
         {/if}
         {#if shouldShowSection(['Appearance', 'Listing'])}
-            <section data-section-id="appearance-listing">
+            <section data-section-id={sectionDomId(['Appearance', 'Listing'])}>
                 <ListingSection {searchQuery} />
             </section>
         {/if}
 
         <!-- Behavior -->
         {#if shouldShowSection(['Behavior', 'Navigation & file ops'])}
-            <section data-section-id="behavior-navigation-and-file-ops">
+            <section data-section-id={sectionDomId(['Behavior', 'Navigation & file ops'])}>
                 <NavigationAndFileOpsSection {searchQuery} />
             </section>
         {/if}
         {#if shouldShowSection(['Behavior', 'Archives'])}
-            <section data-section-id="behavior-archives">
+            <section data-section-id={sectionDomId(['Behavior', 'Archives'])}>
                 <ArchivesSection {searchQuery} />
             </section>
         {/if}
         {#if shouldShowSection(['Behavior', 'Notifications'])}
-            <section data-section-id="behavior-notifications">
+            <section data-section-id={sectionDomId(['Behavior', 'Notifications'])}>
                 <NotificationsSection {searchQuery} />
             </section>
         {/if}
         {#if shouldShowSection(['Behavior', 'Search'])}
-            <section data-section-id="behavior-search">
+            <section data-section-id={sectionDomId(['Behavior', 'Search'])}>
                 <SearchSection {searchQuery} />
             </section>
         {/if}
 
         <!-- Indexing -->
         {#if shouldShowSection(['Indexing', 'Drive indexing'])}
-            <section data-section-id="indexing-drive-indexing">
+            <section data-section-id={sectionDomId(['Indexing', 'Drive indexing'])}>
                 <DriveIndexingSection {searchQuery} />
             </section>
         {/if}
         {#if shouldShowSection(['Indexing', 'Image indexing'])}
-            <section data-section-id="indexing-image-indexing">
+            <section data-section-id={sectionDomId(['Indexing', 'Image indexing'])}>
                 <ImageIndexingSection {searchQuery} />
             </section>
         {/if}
 
         <!-- AI -->
         {#if shouldShowSection(['AI', 'Provider'])}
-            <section data-section-id="ai-provider">
+            <section data-section-id={sectionDomId(['AI', 'Provider'])}>
                 <AiSection {searchQuery} />
             </section>
         {/if}
         {#if shouldShowSection(['AI', 'Ask Cmdr'])}
-            <section data-section-id="ai-ask-cmdr">
+            <section data-section-id={sectionDomId(['AI', 'Ask Cmdr'])}>
                 <AskCmdrSection {searchQuery} />
             </section>
         {/if}
         {#if shouldShowSection(['AI', 'MCP server'])}
-            <section data-section-id="ai-mcp-server">
+            <section data-section-id={sectionDomId(['AI', 'MCP server'])}>
                 <McpServerSection {searchQuery} />
             </section>
         {/if}
 
         <!-- File systems -->
         {#if shouldShowSection(['File systems', 'SMB/Network shares'])}
-            <section data-section-id="file-systems-smb-network-shares">
+            <section data-section-id={sectionDomId(['File systems', 'SMB/Network shares'])}>
                 <NetworkSection {searchQuery} />
             </section>
         {/if}
         {#if shouldShowSection(['File systems', 'Servers (SFTP, WebDAV)'])}
-            <section data-section-id="file-systems-servers">
+            <section data-section-id={sectionDomId(['File systems', 'Servers (SFTP, WebDAV)'])}>
                 <ServersSection {searchQuery} />
             </section>
         {/if}
         {#if shouldShowSection(['File systems', 'MTP (Android/Kindle/cameras)'])}
-            <section data-section-id="file-systems-mtp-android-kindle-cameras">
+            <section data-section-id={sectionDomId(['File systems', 'MTP (Android/Kindle/cameras)'])}>
                 <MtpSection {searchQuery} />
             </section>
         {/if}
         {#if shouldShowSection(['File systems', 'Android (ADB)'])}
-            <section data-section-id="file-systems-android-adb">
+            <section data-section-id={sectionDomId(['File systems', 'Android (ADB)'])}>
                 <AdbSection {searchQuery} />
             </section>
         {/if}
         {#if shouldShowSection(['File systems', 'Git'])}
-            <section data-section-id="file-systems-git">
+            <section data-section-id={sectionDomId(['File systems', 'Git'])}>
                 <GitSection {searchQuery} />
             </section>
         {/if}
 
         <!-- Viewer (top-level, no subsections) -->
         {#if shouldShowTopLevel(['Viewer'])}
-            <section data-section-id="viewer">
+            <section data-section-id={sectionDomId(['Viewer'])}>
                 <ViewerSection {searchQuery} />
             </section>
         {/if}
 
         <!-- Keyboard shortcuts (special) -->
         {#if shouldShowTopLevel(['Keyboard shortcuts'])}
-            <section data-section-id="keyboard-shortcuts">
+            <section data-section-id={sectionDomId(['Keyboard shortcuts'])}>
                 <KeyboardShortcutsSection {searchQuery} />
             </section>
         {/if}
 
         <!-- Updates & privacy (top-level, no subsections) -->
         {#if shouldShowTopLevel(['Updates & privacy'])}
-            <section data-section-id="updates">
+            <section data-section-id={sectionDomId(['Updates & privacy'])}>
                 <UpdatesSection {searchQuery} />
             </section>
         {/if}
 
         <!-- License (special) -->
         {#if shouldShowTopLevel(['License'])}
-            <section data-section-id="license">
+            <section data-section-id={sectionDomId(['License'])}>
                 <LicenseSection />
             </section>
         {/if}
 
         <!-- Advanced (top-level registry section, no subsections; auto-renders) -->
         {#if shouldShowTopLevel(['Advanced'])}
-            <section data-section-id="advanced">
+            <section data-section-id={sectionDomId(['Advanced'])}>
                 <AdvancedSection {searchQuery} />
             </section>
         {/if}

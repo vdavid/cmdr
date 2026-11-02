@@ -42,7 +42,7 @@ interface UpdatesProbe {
 
 function probeUpdatesSectionJs(ids: string[]): string {
   return `(function() {
-    var section = document.querySelector('[data-section-id="updates"]');
+    var section = document.querySelector('[data-section-id="updates-and-privacy"]');
     if (!section) return null;
     var rows = ${JSON.stringify(ids)}.map(function(id) {
       var row = document.getElementById('setting-' + id);
@@ -96,7 +96,7 @@ test.describe('Managed policy (MDM)', () => {
     settings = await openSettingsWindowViaProd(main)
     await settings.waitForSelector('.settings-sidebar', waitBudget(3000))
     expect(await settings.evaluate<boolean>(clickSettingsSectionJs('Updates & privacy'))).toBe(true)
-    await settings.waitForSelector('[data-section-id="updates"] .managed-section-note', waitBudget(3000))
+    await settings.waitForSelector('[data-section-id="updates-and-privacy"] .managed-section-note', waitBudget(3000))
 
     const probe = await settings.evaluate<UpdatesProbe | null>(probeUpdatesSectionJs(LOCKED_IDS))
     expect(probe).not.toBeNull()

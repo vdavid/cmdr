@@ -547,16 +547,16 @@ three files; the pieces are load-bearing in this order:
    target row out of the DOM. The section registers a resetter via `registerShortcutFilterReset`
    (`../pending-shortcut-highlight.svelte.ts`); the settings page calls `resetShortcutFilters()` BEFORE it scrolls.
 3. **Scroll the nested list, not the outer content**: the rows live inside `.commands-list`, an `overflow-y: auto`
-   scroller, so `routes/settings/+page.svelte`'s default `contentElement.scrollTo` can't reach them.
-   `scrollAnchorIntoView` branches on `commandIdFromShortcutAnchor`: shortcut anchors scroll the inner `.commands-list`
-   (via the live rect delta, not `offsetTop`), leaving the outer settings layout / drag region put; everything else
-   keeps the old `contentElement.scrollTo` path. The sequence is clear filters → `await tick()` (the row mounts only
-   after Svelte flushes the `$derived` filter state) → `setTimeout(0)` (defer past the handler, and stay off `rAF` for
-   the unfocused-window throttle, see `docs/testing.md`) → scroll + flash.
+   scroller, so `routes/settings/+page.svelte`'s `contentElement.scrollTo` can't reach them. `landDeepLink` branches on
+   `commandIdFromShortcutAnchor`: shortcut anchors scroll the inner `.commands-list` (via the live rect delta, not
+   `offsetTop`), leaving the outer settings layout / drag region put. The sequence is clear filters → `await tick()`
+   (the row mounts only after Svelte flushes the `$derived` filter state) → `setTimeout(0)` (defer past the handler, and
+   stay off `rAF` for the unfocused-window throttle, see `docs/testing.md`) → scroll + flash.
 4. **Flash**: the page calls `setPendingShortcutHighlight(commandId)`; the section reads it via a `$derived` and applies
-   `class:flash` on the matching row, clearing the state after the ~1.5 s animation. Two gentle `--color-accent-subtle`
-   pulses (a static fade under `prefers-reduced-motion`). State-driven, NOT a direct DOM class: the rows re-key on
-   `shortcutChangeCounter`, so an imperative class would vanish on the next re-render. Both ends import
+   `class:settings-flash` (the shared arrival flash, `../DETAILS.md` § "Jumping to a section") on the matching row,
+   clearing the state after the animation. State-driven, NOT a direct DOM class like the other targets: the rows re-key
+   on `shortcutChangeCounter`, so an imperative class would vanish on the next re-render. The row overrides the flash's
+   overhang to `inset: 0`, since overhang inside a scroller flicks on a scrollbar. Both ends import
    `pending-shortcut-highlight.svelte.ts` (the page writes, the section reads + registers the resetter) so knip doesn't
    flag either export.
 
@@ -576,7 +576,7 @@ The Downloads card carries `id={DOWNLOADS_NOTIFICATIONS_ANCHOR_ID}` (on `Section
 the section top; the Low disk space card carries `LOW_DISK_SPACE_ANCHOR_ID` the same way for its warn-toast link.
 `openSettingsWindow(surface, section, anchor)` accepts an optional `anchor` arg that the settings page
 (`routes/settings/+page.svelte`) reads from the URL on cold-open and from the `navigate-to-section` event on
-already-open windows, then `scrollIntoView`s the matching element.
+already-open windows, then scrolls to and flashes the matching element (`../DETAILS.md` § "Jumping to a section").
 
 ### Rows that pick an app (`AppChoiceSelect.svelte`)
 

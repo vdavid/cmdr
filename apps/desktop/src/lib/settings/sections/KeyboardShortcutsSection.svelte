@@ -72,7 +72,7 @@
 
     // Deep-link arrival flash: the settings page sets the target command id in the
     // shared module (`pending-shortcut-highlight`) after scrolling its row into
-    // view; we read it here to apply the `flash` class, then clear it once the
+    // view; we read it here to apply the `settings-flash` class, then clear it once the
     // animation has played out. State-driven (not a direct DOM class) because the
     // rows re-key on `shortcutChangeCounter` — an imperative class would vanish on
     // the next re-render. ~1.6 s matches the CSS animation duration.
@@ -277,7 +277,7 @@
                         id={shortcutAnchorId(command.id)}
                         class="command-row"
                         class:has-conflicts={hasConflicts}
-                        class:flash={command.id === highlightedCommandId}
+                        class:settings-flash={command.id === highlightedCommandId}
                     >
                         <div class="command-info">
                             {#if isModified}
@@ -554,48 +554,10 @@
         background: var(--color-warning-bg);
     }
 
-    /* Deep-link arrival flash: two gentle accent-subtle background pulses so the
-       eye lands on the row the user clicked a shortcut chip to customize. The
-       `border-radius` rounds the highlight so it reads as a deliberate pulse, not
-       a full-bleed row-state change. State-driven via `class:flash` (the row
-       re-keys on `shortcutChangeCounter`, so a direct DOM class wouldn't survive).
-       The settings page clears the state after the animation; the class drops then. */
-    .command-row.flash {
-        border-radius: var(--radius-sm);
-        animation: shortcut-flash 1.5s ease-in-out;
-    }
-
-    @keyframes shortcut-flash {
-        0%,
-        100% {
-            background: transparent;
-        }
-
-        20%,
-        65% {
-            background: var(--color-accent-subtle);
-        }
-
-        42% {
-            background: transparent;
-        }
-    }
-
-    /* Reduced motion: skip the pulses, show a static highlight that fades out once. */
-    @media (prefers-reduced-motion: reduce) {
-        .command-row.flash {
-            animation: shortcut-flash-static 1.5s ease-out;
-        }
-
-        @keyframes shortcut-flash-static {
-            0% {
-                background: var(--color-accent-subtle);
-            }
-
-            100% {
-                background: transparent;
-            }
-        }
+    /* The shared arrival flash (`app-utilities.css`), held inside the row: `.commands-list` is a
+       scroller, so the usual overhang would flick a scrollbar on for the length of the flash. */
+    .command-row:global(.settings-flash)::after {
+        inset: 0;
     }
 
     .command-info {

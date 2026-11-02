@@ -403,11 +403,12 @@ split-layout rule, and the `SettingPasswordInput` store-driven vs controlled mod
   a row). See § "Deep-link arrival into a shortcut row" below and `sections/CLAUDE.md`.
 - **pending-shortcut-highlight.svelte.ts**: shared module-level `$state` seam for the deep-link arrival flash. The
   settings page writes the target command id (`setPendingShortcutHighlight`) after scrolling its row into view; the
-  `KeyboardShortcutsSection` reads it (`getPendingShortcutHighlight`) to apply a `class:flash`, then clears it
+  `KeyboardShortcutsSection` reads it (`getPendingShortcutHighlight`) to apply a `class:settings-flash`, then clears it
   (`clearPendingShortcutHighlight`) once the animation ends. The section also registers a filter resetter
   (`registerShortcutFilterReset`) the page calls before scrolling, so a leftover filter can't hide the target row. State
   (not a direct DOM class) because the rows re-key on `shortcutChangeCounter` — an imperative class would vanish on
   re-render. Both ends must import the module or knip flags the exports as unused.
+- **settings-navigation.ts**: Section DOM ids, the scroll target, and the arrival flash. § "Jumping to a section".
 - **format-utils.ts**: Shared formatters used in settings UI (e.g., duration, file-size display strings). Date/time is
   covered in detail under § "Date display" above. `formatDateForDisplay` is the canonical entry point. Every token
   format emits a fixed character count (`YYYY`=4, the rest zero-padded to 2), so the file-list date column lines up
@@ -458,6 +459,30 @@ The E2E `openSettingsWindowViaProd` helper emits the same `open-settings` event 
 - Delta-only persistence: only customized shortcuts are saved
 - Platform-specific display strings (macOS: `⌘⇧P`, Windows: `Ctrl+Shift+P`)
 - Scope hierarchy determines conflict detection
+
+### Jumping to a section
+
+`routes/settings/+page.svelte` drives this, with the pure parts in `settings-navigation.ts`.
+
+- **Sidebar or summary-card pick, no search**: the pick replaces the page, which starts at the top with no flash.
+- **Sidebar pick during a search**: every result is already on the page, so it scrolls to the pick and flashes it. A
+  parent like `AI` has no element of its own, so it means its rendered subsections: scroll to the first, flash them all.
+  The flash is what answers the click when results are too short to scroll.
+- **In-app link** (`openSettingsWindow` with a `section`): ends any running search, since it could filter the target
+  away, then scrolls to and flashes the most specific target: the anchor, else the section. `resetSearch()` on the
+  sidebar also drops typing still in its 200 ms delay, which would otherwise bring the search straight back.
+- **Section ids**: `sectionDomId(path)` is the one definition. `SettingsContent` stamps every section with it, pinned by
+  `SettingsContent.test.ts`. When these were hand-written next to a sidebar-side regex, five sections drifted and
+  silently ignored clicks.
+- **Landing spot**: `contentScrollTopFor` parks the target `CONTENT_FADE_BAND_PX` below the scroller's top, the same
+  constant that sizes the top fade. A higher target sits under the fade, nearly invisible. It reads live rects because
+  `offsetTop` counts from the nearest positioned ancestor (`.settings-window` here, past the wrapper's padding).
+- **The flash**: `flashElements` sets `.settings-flash` (`app-utilities.css`), a `::after` overlay, since a background
+  on the target would sit hidden behind a card's own fill. Two `--color-accent-subtle` pulses, or one fade under
+  `prefers-reduced-motion`. Shortcut rows apply the same class through state: `sections/DETAILS.md` § "Deep-link arrival
+  into a shortcut row".
+- **Screenshots**: the i18n capture run visits every section through this deep link, so it hides the flash
+  (`hideSettingsFlash`) to keep translators' reference shots plain.
 
 ## Search (`settings-search.ts`)
 

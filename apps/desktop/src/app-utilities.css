@@ -84,6 +84,59 @@ html.show-borders .borderless-control {
 }
 
 /* =============================================================================
+   Settings arrival flash: "this is what you came for"
+
+   An overlay, so it reads over a card's own fill, where a background on the target
+   would sit hidden behind it. The small overhang gives the tint room around text
+   that runs to the target's edge. `lib/settings/settings-navigation.ts` sets the class.
+   ============================================================================= */
+
+@keyframes settings-flash {
+  0%,
+  42%,
+  100% {
+    opacity: 0;
+  }
+
+  20%,
+  65% {
+    opacity: 1;
+  }
+}
+
+@keyframes settings-flash-static {
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+.settings-flash {
+  position: relative;
+}
+
+.settings-flash::after {
+  content: '';
+  position: absolute;
+  inset: calc(var(--spacing-xs) * -1);
+  border-radius: var(--radius-md);
+  background: var(--color-accent-subtle);
+  opacity: 0;
+  pointer-events: none;
+  animation: settings-flash 1.5s ease-in-out;
+}
+
+/* Reduced motion: no pulsing, one highlight that fades out. */
+@media (prefers-reduced-motion: reduce) {
+  .settings-flash::after {
+    animation: settings-flash-static 1.5s ease-out;
+  }
+}
+
+/* =============================================================================
    Spinner utility classes
    ============================================================================= */
 

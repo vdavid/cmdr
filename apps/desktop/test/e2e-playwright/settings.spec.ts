@@ -31,6 +31,10 @@ function clickSectionByTextJs(name: string): string {
   })()`
 }
 
+function sectionIsFlashingJs(sectionId: string): string {
+  return `!!document.querySelector('[data-section-id="${sectionId}"]')?.classList.contains('settings-flash')`
+}
+
 test.describe('Settings page', () => {
   let settings: TauriPage
 
@@ -275,6 +279,64 @@ test.describe('Settings page', () => {
     await expect
       .poll(async () => (await settings.count('.section-item')) > 0, { timeout: waitBudget(3000) })
       .toBeTruthy()
+  })
+
+  // Regression: during a search these clicks did nothing. A parent like AI has no element of its
+  // own, "Updates & privacy" built the wrong id, and a first result has nowhere to scroll.
+  test('clicking a sidebar entry during a search flashes the sections it means', async () => {
+    await settings.fill('.search-container input.text-field-control', 'MCP')
+    await expect
+      .poll(() => settings.allTextContents('.section-item'), { timeout: waitBudget(3000) })
+      .toEqual(['AI', 'MCP server', 'Updates & privacy'])
+
+    for (const [entry, sectionId] of [
+      ['Updates & privacy', 'updates-and-privacy'],
+      ['AI', 'ai-mcp-server'],
+      ['MCP server', 'ai-mcp-server'],
+    ]) {
+      expect(await settings.evaluate<boolean>(clickSectionByTextJs(entry))).toBe(true)
+      await expect
+        .poll(() => settings.evaluate<boolean>(sectionIsFlashingJs(sectionId)), { timeout: waitBudget(1000) })
+        .toBe(true)
+    }
+  })
+
+  test('a section picked without a search starts at the top, with no flash', async () => {
+    expect(await settings.evaluate<boolean>(clickSectionByTextJs('Listing'))).toBe(true)
+    await settings.waitForSelector('[data-section-id="appearance-listing"]', 3000)
+    await settings.evaluate(`document.querySelector('.settings-content-wrapper').scrollTop = 200`)
+
+    expect(await settings.evaluate<boolean>(clickSectionByTextJs('Colors and formats'))).toBe(true)
+    await settings.waitForSelector('[data-section-id="appearance-colors-and-formats"]', 3000)
+    await expect
+      .poll(() => settings.evaluate<number>(`document.querySelector('.settings-content-wrapper').scrollTop`), {
+        timeout: waitBudget(1000),
+      })
+      .toBe(0)
+    expect(await settings.evaluate<boolean>(sectionIsFlashingJs('appearance-colors-and-formats'))).toBe(false)
+  })
+
+  test('an in-app link ends a running search and flashes its row', async () => {
+    await settings.fill('.search-container input.text-field-control', 'MCP')
+    await settings.waitForSelector('[data-section-id="ai-mcp-server"]', 3000)
+
+    const payload = JSON.stringify({ section: ['Updates & privacy'], anchor: 'setting-analytics.email' })
+    await settings.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:event|emit_to', {
+      target: { kind: 'AnyLabel', label: 'settings' },
+      event: 'navigate-to-section',
+      payload: ${payload}
+    })`)
+
+    await expect
+      .poll(
+        () =>
+          settings.evaluate<boolean>(
+            `!!document.getElementById('setting-analytics.email')?.classList.contains('settings-flash')`,
+          ),
+        { timeout: waitBudget(3000) },
+      )
+      .toBe(true)
+    expect(await settings.inputValue('.search-container input.text-field-control')).toBe('')
   })
 
   test('Arrow Down in the search box moves section selection forward', async () => {

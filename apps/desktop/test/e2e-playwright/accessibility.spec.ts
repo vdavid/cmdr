@@ -374,7 +374,7 @@ for (const mode of ['light', 'dark'] as const) {
           { name: 'File systems > Git', path: ['File systems', 'Git'], sectionId: 'file-systems-git' },
           { name: 'Viewer', path: ['Viewer'], sectionId: 'viewer' },
           { name: 'Keyboard shortcuts', path: ['Keyboard shortcuts'], sectionId: 'keyboard-shortcuts' },
-          { name: 'Updates & privacy', path: ['Updates & privacy'], sectionId: 'updates' },
+          { name: 'Updates & privacy', path: ['Updates & privacy'], sectionId: 'updates-and-privacy' },
           { name: 'License', path: ['License'], sectionId: 'license' },
           { name: 'Advanced', path: ['Advanced'], sectionId: 'advanced' },
         ]

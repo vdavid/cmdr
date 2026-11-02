@@ -37,6 +37,7 @@ import {
   captureSurface,
   captureToastSurface,
   focusWindow,
+  hideSettingsFlash,
 } from './i18n-capture-helpers.js'
 import { stubIpcAnswer } from './i18n-capture-ipc-stub.js'
 import { openGalleryState } from './dialog-gallery-helpers.js'
@@ -559,11 +560,12 @@ export async function captureManagedSurfaces(main: TauriPage, report: Report, fa
     await window.waitForSelector('.settings-window', 5000)
     await focusWindow(window, 'settings')
     await window.waitForSelector('.settings-window .section-item', 10000)
+    await hideSettingsFlash(window)
     const sections = [
       {
         label: 'settings-updates-managed',
         path: ['Updates & privacy'],
-        ready: '[data-section-id="updates"] [id$="-disabled-note"]',
+        ready: '[data-section-id="updates-and-privacy"] [id$="-disabled-note"]',
       },
       {
         label: 'settings-ai-provider-managed',
