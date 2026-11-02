@@ -554,10 +554,13 @@ build, so it sorts explicitly and key order can't split one call into two record
 remembered, judged by `dispatch_ok`'s typed result keys and never by wording. A re-fetch of an
 elided result (which the system prompt explicitly asks for, and which every idempotent local
 read supports) repeats a call that SUCCEEDED, so it was never recorded. Paging varies `offset`,
-which is part of the key. **What it does cost**: a call that failed for a passing reason gets no
-second execution inside the same turn. That is the trade, taken deliberately: the model is
-handed the original problem rather than a silence, varying the arguments at all dispatches
-normally, and a turn a user is waiting on stops burning its whole budget on one payload.
+which is part of the key. The retry our own refusals ask for runs too (`copy`, `select`, `copy`):
+a successful non-read moves the turn on (`FailedCalls::moved_on`), and the ledger starts over.
+**What it does cost**: a call that failed for a passing reason gets no second execution until
+something changes. That is the trade, taken deliberately: the model is handed the original problem
+rather than a silence, varying the arguments at all dispatches normally, and a turn a user is
+waiting on stops burning its whole budget on one payload. **A person's "no" sticks for the whole
+turn**: a decline sits in its own ledger, which moving on doesn't touch.
 
 The other half of the same fix is that a refusal has to be worth reading. The rename boundary
 now names WHICH rows and WHICH field (`../../tools/propose/rename/plan.rs`, `rows_problem`), so a
