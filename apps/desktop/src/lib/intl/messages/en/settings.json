@@ -2452,7 +2452,7 @@
   },
   "settings.finderExtension.card": "Open in Cmdr",
   "@settings.finderExtension.card": {
-    "description": "Heading of a settings card about the “Open in Cmdr” item in Finder's right-click menu. “Open in Cmdr” is the name of that menu item, and \"Cmdr\" is the product name."
+    "description": "The name of a menu item in Finder's right-click menu, which opens the chosen files or folders in Cmdr. It appears there exactly as written here, and also as the heading of a settings card about that item. A short verb phrase, the way your locale's macOS names an \"Open in…\" menu item. \"Cmdr\" is the product name and stays verbatim."
   },
   "settings.finderExtension.label": "Show at the top of Finder’s right-click menu",
   "@settings.finderExtension.label": {
@@ -2652,6 +2652,14 @@
   "settings.behavior.dockPinNudgeOfferedAt.description": "When the one-time offer to add Cmdr to the Dock was made.",
   "@settings.behavior.dockPinNudgeOfferedAt.description": {
     "description": "Internal, never shown in the UI. Pairs with the Dock offer label."
+  },
+  "settings.behavior.finderExtensionNudgeOfferedAt.label": "Finder menu item offer made at",
+  "@settings.behavior.finderExtensionNudgeOfferedAt.label": {
+    "description": "Internal, never shown in the UI: records when the one-time offer to add “Open in Cmdr” to Finder's right-click menu was made."
+  },
+  "settings.behavior.finderExtensionNudgeOfferedAt.description": "When the one-time offer to add “Open in Cmdr” to Finder’s right-click menu was made.",
+  "@settings.behavior.finderExtensionNudgeOfferedAt.description": {
+    "description": "Internal, never shown in the UI. Pairs with the Finder menu item offer label."
   },
   "settings.behavior.revealNudgeOfferedAt.label": "Show in Finder offer made at",
   "@settings.behavior.revealNudgeOfferedAt.label": {

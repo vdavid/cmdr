@@ -18,7 +18,7 @@
 export type NudgeOfferedAt = string
 
 /** Every offer that participates in the shared floor. */
-export type NudgeKind = 'dockPin' | 'reveal'
+export type NudgeKind = 'dockPin' | 'reveal' | 'finderExtension'
 
 /** When each offer was last made. One entry per {@link NudgeKind}, always present. */
 export type NudgeLedger = Record<NudgeKind, NudgeOfferedAt>
@@ -36,7 +36,7 @@ const DAY_MS = 24 * 60 * 60 * 1000
 
 /** A ledger where nothing has been offered yet. */
 export function emptyNudgeLedger(): NudgeLedger {
-  return { dockPin: '', reveal: '' }
+  return { dockPin: '', reveal: '', finderExtension: '' }
 }
 
 /**

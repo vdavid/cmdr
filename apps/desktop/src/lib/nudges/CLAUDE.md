@@ -1,8 +1,8 @@
 # Nudges
 
 The shared rule behind every unsolicited once-ever offer: what Cmdr has already asked for, and how long one offer keeps
-the next one quiet. Two offers use it today, `#lib/dock/` and `#lib/reveal/`; each keeps its own thresholds and its own
-paid-for conditions.
+the next one quiet. Three offers use it, one in `#lib/dock/` and two in `#lib/reveal/`; each keeps its own thresholds
+and its own paid-for conditions.
 
 ## Module map
 
@@ -10,7 +10,7 @@ paid-for conditions.
   `nudgeCooldownActive`, and `nudgeCouldFire` (the free prefix of every offer's rule).
 - **`nudge-store.ts`**: the one table mapping a `NudgeKind` to its `behavior.*NudgeOfferedAt` setting, plus
   `readNudgeLedger` / `markNudgeOffered`.
-- **`NudgeToastContent.svelte`**: the title + body + note + decline/accept body both offers wear. Presentational; it
+- **`NudgeToastContent.svelte`**: the title + body + note + decline/accept body every offer wears. Presentational; it
   takes resolved copy, so each offer keeps its own `tString` calls and the strings still follow a live language switch.
 
 ## Must-knows

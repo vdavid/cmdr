@@ -30,6 +30,8 @@ const mocks = vi.hoisted(() => ({
   getLaunchDayCount: vi.fn(),
   getDockPinState: vi.fn(),
   getRevealHandlerState: vi.fn(),
+  getFinderExtensionStatus: vi.fn(),
+  offerFinderExtension: vi.fn(),
   offerDockPin: vi.fn(),
   offerRevealHandler: vi.fn(),
   startIndexingAfterFdaDecision: vi.fn(),
@@ -42,10 +44,12 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
   getLaunchDayCount: mocks.getLaunchDayCount,
   getDockPinState: mocks.getDockPinState,
   getRevealHandlerState: mocks.getRevealHandlerState,
+  getFinderExtensionStatus: mocks.getFinderExtensionStatus,
   startIndexingAfterFdaDecision: mocks.startIndexingAfterFdaDecision,
 }))
 vi.mock('#lib/dock/dock-nudge.js', () => ({ offerDockPin: mocks.offerDockPin }))
 vi.mock('#lib/reveal/reveal-nudge.js', () => ({ offerRevealHandler: mocks.offerRevealHandler }))
+vi.mock('#lib/reveal/finder-extension-nudge.js', () => ({ offerFinderExtension: mocks.offerFinderExtension }))
 vi.mock('#lib/onboarding/onboarding-state.svelte.js', () => ({ openWizard: mocks.openWizard }))
 vi.mock('#lib/whats-new/whats-new-trigger.svelte.js', () => ({
   runWhatsNewStartupTrigger: mocks.runWhatsNewStartupTrigger,
@@ -71,6 +75,7 @@ vi.mock('#lib/logging/logger.js', () => ({
 import {
   maybeFireUpgradeNudge,
   maybeOfferDockPin,
+  maybeOfferFinderExtension,
   maybeOfferNudges,
   maybeOfferRevealHandler,
   maybeRunWhatsNew,
@@ -152,6 +157,7 @@ beforeEach(() => {
     if (id === 'advanced.oldMacosNoticeShown') return stored.oldMacosNoticeShown
     if (id === 'behavior.dockPinNudgeOfferedAt') return stored.dockPinNudgeOfferedAt
     if (id === 'behavior.revealNudgeOfferedAt') return stored.revealNudgeOfferedAt
+    if (id === 'behavior.finderExtensionNudgeOfferedAt') return ''
     throw new Error(`Unexpected getSetting(${id})`)
   })
   mocks.isMacOS.mockReturnValue(true)
@@ -587,6 +593,23 @@ describe('maybeOfferRevealHandler', () => {
     expect(mocks.getLaunchDayCount).not.toHaveBeenCalled()
     expect(mocks.getRevealHandlerState).not.toHaveBeenCalled()
     expect(mocks.offerRevealHandler).not.toHaveBeenCalled()
+  })
+})
+
+describe('the Finder extension offer', () => {
+  it('stays off in `maybeOfferNudges` until a release has proven the right-click', async () => {
+    settings('allow', true)
+    await maybeOfferNudges(ctx)
+    expect(mocks.getFinderExtensionStatus).not.toHaveBeenCalled()
+    expect(mocks.offerFinderExtension).not.toHaveBeenCalled()
+  })
+
+  it('raises when due, once its gate calls it directly', async () => {
+    settings('allow', true)
+    mocks.getLaunchDayCount.mockResolvedValue(7)
+    mocks.getFinderExtensionStatus.mockResolvedValue({ enabled: false, blockedBy: null })
+    await maybeOfferFinderExtension(ctx)
+    expect(mocks.offerFinderExtension).toHaveBeenCalledOnce()
   })
 })
 

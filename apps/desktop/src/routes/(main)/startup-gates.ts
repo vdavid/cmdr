@@ -17,6 +17,7 @@ import {
   getMacosMajorVersion,
   getLaunchDayCount,
   getDockPinState,
+  getFinderExtensionStatus,
   getRevealHandlerState,
   startIndexingAfterFdaDecision,
 } from '#lib/tauri-commands/index.js'
@@ -36,6 +37,11 @@ import { nudgeCouldFire, type NudgeContext } from '#lib/nudges/nudge-ledger.js'
 import { readNudgeLedger } from '#lib/nudges/nudge-store.js'
 import { shouldShowRevealNudge } from '#lib/reveal/should-show-reveal-nudge.js'
 import { offerRevealHandler } from '#lib/reveal/reveal-nudge.js'
+import {
+  FINDER_EXTENSION_OFFER_LIVE,
+  shouldShowFinderExtensionNudge,
+} from '#lib/reveal/should-show-finder-extension-nudge.js'
+import { offerFinderExtension } from '#lib/reveal/finder-extension-nudge.js'
 
 // Same category as the rest of the app shell's logging: these gates read as
 // `+page.svelte`'s startup in a log file, wherever the code sits.
@@ -250,6 +256,23 @@ function nudgeContext(ctx: StartupGatesContext): NudgeContext {
 export async function maybeOfferNudges(ctx: StartupGatesContext): Promise<void> {
   await maybeOfferRevealHandler(ctx)
   await maybeOfferDockPin(ctx)
+  if (FINDER_EXTENSION_OFFER_LIVE) await maybeOfferFinderExtension(ctx)
+}
+
+/**
+ * Offers the Finder extension, once, a week of launch days in. The last of the offers,
+ * since it's the only one with an ongoing cost. Re-attempted when the wizard closes, for
+ * the reason `maybeOfferDockPin` is.
+ */
+export async function maybeOfferFinderExtension(ctx: StartupGatesContext): Promise<void> {
+  const context = nudgeContext(ctx)
+  if (!nudgeCouldFire(context, 'finderExtension')) return
+
+  const [launchDayCount, extensionStatus] = await Promise.all([getLaunchDayCount(), getFinderExtensionStatus()])
+  if (!shouldShowFinderExtensionNudge({ ...context, launchDayCount, extensionStatus })) return
+
+  log.info('Offering the Finder extension after {launchDayCount} launch days', { launchDayCount })
+  offerFinderExtension()
 }
 
 /**

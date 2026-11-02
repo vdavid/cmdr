@@ -1,8 +1,9 @@
 # Reveal in Cmdr (frontend)
 
-The two moments a user meets this feature: the once-ever offer to catch "Show in Finder", and the once-ever notice the
-first time a reveal actually lands. Everything that touches the `NSFileViewer` key lives in Rust
-(`src-tauri/src/reveal/CLAUDE.md`); the Settings switch is `#lib/settings/sections/RevealHandlerCard.svelte`.
+The moments a user meets this feature: the once-ever offer to catch "Show in Finder", the once-ever notice the first
+time a reveal actually lands, and the once-ever offer of the Finder extension. Everything that touches the
+`NSFileViewer` key lives in Rust (`src-tauri/src/reveal/CLAUDE.md`); the Settings switch is
+`#lib/settings/sections/RevealHandlerCard.svelte`.
 
 ## Module map
 
@@ -11,6 +12,9 @@ first time a reveal actually lands. Everything that touches the `NSFileViewer` k
 - **`reveal-nudge.ts`** raises the offer toast and stamps the nudge ledger; **`reveal-nudge-answer.ts`** holds the three
   exits and the refusal copy, separate so the toast body can reach it without an import cycle.
 - **`reveal-activation-notice.ts`** + **`RevealActivationToastContent.svelte`**: the first-landing notice.
+- **`should-show-finder-extension-nudge.ts`**, **`finder-extension-nudge.ts`**, **`finder-extension-nudge-answer.ts`**:
+  the extension's offer, shaped like the reveal one. ❗ Off behind `FINDER_EXTENSION_OFFER_LIVE` until a release has
+  proven the real right-click in Finder.
 - **`reveal-tabs-dropped-notice.ts`**: says so when a pane's tab limit turned away some of what was asked for.
 - **`reveal-settings-link.ts`**: the card's anchor id and the one deep link to it.
 

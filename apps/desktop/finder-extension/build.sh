@@ -39,6 +39,8 @@ assemble)
   mkdir -p "$appex/Contents/MacOS"
   lipo -create -output "$appex/Contents/MacOS/CmdrFinderExtension" "$@"
   chmod 755 "$appex/Contents/MacOS/CmdrFinderExtension"
+  mkdir -p "$appex/Contents/Resources"
+  cp -R "$here"/lproj/*.lproj "$appex/Contents/Resources/"
   plist="$appex/Contents/Info.plist"
   cp "$here/Info.plist" "$plist"
   /usr/libexec/PlistBuddy \

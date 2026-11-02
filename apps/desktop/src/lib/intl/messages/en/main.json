@@ -86,6 +86,34 @@
   "@main.revealNudge.notTurnedOn": {
     "description": "Notification shown when the user accepted the offer but the macOS setting did not change, for a reason the user can do nothing about here. It points at the switch in Cmdr's Settings as the way to try again. Must not use the words \"error\" or \"failed\". “Show in Finder” is the macOS command name; use your locale's macOS wording."
   },
+  "main.finderExtensionNudge.title": "Add “Open in Cmdr” to Finder’s right-click menu?",
+  "@main.finderExtensionNudge.title": {
+    "description": "Title of a one-time notification, shown after about a week of using Cmdr on macOS, asking whether to put the “Open in Cmdr” item directly in Finder's right-click menu. “Open in Cmdr” is that menu item's name. \"Finder\" is Apple's file manager; use Apple's name for it in your language. A genuine question, warm and low-pressure."
+  },
+  "main.finderExtensionNudge.body": "It puts Cmdr one click away from any file or folder on your startup disk. It adds a small process that runs alongside Finder.",
+  "@main.finderExtensionNudge.body": {
+    "description": "Body of that notification: what the person gets, then its one cost. \"startup disk\" is Apple's term for the Mac's main drive. \"a small process\" is a little program that keeps running in the background."
+  },
+  "main.finderExtensionNudge.switchBackNote": "You can switch this back any time in Settings.",
+  "@main.finderExtensionNudge.switchBackNote": {
+    "description": "Third line of that notification, reassuring the person the choice isn't permanent. \"Settings\" is Cmdr's own settings window; use the word your locale's macOS apps use for an app's preferences."
+  },
+  "main.finderExtensionNudge.decline": "No, thanks",
+  "@main.finderExtensionNudge.decline": {
+    "description": "Secondary button on that notification, declining the offer. Cmdr never asks again after this. An everyday polite refusal; keep it short."
+  },
+  "main.finderExtensionNudge.accept": "Yes, add it",
+  "@main.finderExtensionNudge.accept": {
+    "description": "Primary button on that notification, accepting the offer. \"it\" is the menu item. Keep it under about five words so it fits."
+  },
+  "main.finderExtensionNudge.turnedOn": "“Open in Cmdr” is now in Finder’s right-click menu.",
+  "@main.finderExtensionNudge.turnedOn": {
+    "description": "Brief success notification after the person accepts the offer and macOS switches it on. It disappears on its own. States the finished fact. “Open in Cmdr” is the menu item's name."
+  },
+  "main.finderExtensionNudge.notTurnedOn": "Cmdr couldn’t add it this time. The switch is in Settings whenever you want to try again.",
+  "@main.finderExtensionNudge.notTurnedOn": {
+    "description": "Notification shown when the person accepted the offer but macOS didn't switch the menu item on. \"it\" is the menu item. It points at the switch in Cmdr's Settings. Must not use the words \"error\" or \"failed\"."
+  },
   "main.revealTabsDropped": "Opened {opened, plural, one {# folder} other {# folders}}. {dropped} more didn’t fit, since a pane holds up to {limit} tabs.",
   "@main.revealTabsDropped": {
     "description": "Brief notification after the user chose “Open in Cmdr” on more folders than the pane has room for, so Cmdr opened some of them and left out the rest. A \"pane\" is one of Cmdr's two side-by-side file lists; use the word the rest of this locale's Cmdr uses for it. It disappears on its own. Must not use the words \"error\" or \"failed\".",

@@ -10,8 +10,8 @@ import os
 
 private let log = Logger(subsystem: "com.veszelovszki.cmdr.finder-extension", category: "menu")
 
-/// The service's `NSMenuItem` title in `src-tauri/Info.plist`. `NSPerformService` finds a service
-/// by this exact text.
+/// The service's default `NSMenuItem` title in `src-tauri/Info.plist`. `NSPerformService` finds a
+/// service by this text whatever the language, and it's the key of the translations in `lproj/`.
 private let serviceName = "Open in Cmdr"
 
 /// The startup disk's root. ❌ Don't list other volumes: each one then shows this app's icon in
@@ -29,7 +29,9 @@ final class OpenInCmdr: FIFinderSync {
             return nil
         }
         let menu = NSMenu(title: "")
-        menu.addItem(withTitle: serviceName, action: #selector(openInCmdr(_:)), keyEquivalent: "")
+        // In the system's language: macOS picks from this bundle's `lproj` folders.
+        let title = Bundle.main.localizedString(forKey: serviceName, value: serviceName, table: nil)
+        menu.addItem(withTitle: title, action: #selector(openInCmdr(_:)), keyEquivalent: "")
         return menu
     }
 
