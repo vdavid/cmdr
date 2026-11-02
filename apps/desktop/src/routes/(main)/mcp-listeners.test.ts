@@ -31,6 +31,7 @@ import {
 import type { ExplorerAPI } from './explorer-api'
 import { NAV_QUIET_WAIT } from './mcp-nav-landing'
 import { parseToolOpenGate } from './mcp-open-under-cursor'
+import { TOOL_NAVIGATION_WINDOW_MS, mayBeToolRaised } from '#lib/ui/tool-raised.js'
 import type { NavigateResult } from '#lib/file-explorer/pane/navigate.js'
 
 const { resolveLocationMock } = vi.hoisted(() => ({ resolveLocationMock: vi.fn() }))
@@ -382,6 +383,21 @@ describe('mcp-volume-select listener', () => {
       volumeId: 'adb-pixel',
       mcpRequestId: 'req-v',
     })
+  })
+
+  it('counts as a tool navigating only when a tool is waiting on it, never for the harness', async () => {
+    const dispatch = vi.fn(() => Promise.resolve()) as unknown as CommandDispatch
+    const handlers = await setupWithHandlers(dispatch)
+    // Past any note an earlier test here left.
+    vi.useFakeTimers()
+    vi.setSystemTime(Date.now() + 2 * TOOL_NAVIGATION_WINDOW_MS)
+
+    getHandler(handlers, 'mcp-volume-select')({ payload: { pane: 'right', name: 'Macintosh HD' } })
+    expect(mayBeToolRaised()).toBe(false)
+
+    getHandler(handlers, 'mcp-volume-select')({ payload: { pane: 'right', name: 'Macintosh HD', requestId: 'req-v' } })
+    expect(mayBeToolRaised()).toBe(true)
+    vi.useRealTimers()
   })
 
   it('still dispatches for a fire-and-forget caller that sends no request id', async () => {

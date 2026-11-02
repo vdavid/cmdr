@@ -333,7 +333,8 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const volumeId = typeof raw.volumeId === 'string' ? raw.volumeId : undefined
     const mcpRequestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
     if (!pane || (name === undefined && volumeId === undefined)) return
-    noteToolNavigation()
+    // A real tool always waits on a reply; the E2E harness's resets don't, and must not read as one.
+    if (mcpRequestId !== undefined) noteToolNavigation()
     void dispatch(volumeSelectByNameCommand, { pane, name, volumeId, mcpRequestId })
   })
 
@@ -401,7 +402,8 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
   const navDeclines = new LogOnceGate()
 
   await listenTauri('mcp-nav-to-path', (event) => {
-    noteToolNavigation()
+    // A real tool always waits on a reply; the E2E harness's resets don't, and must not read as one.
+    if (asRecord(event.payload).requestId !== undefined) noteToolNavigation()
     // STAYS OFF THE BUS (master § Bus interplay). `navigate()` returns a typed
     // `NavigateResult` value the fire-and-forget `dispatch` can't surface, so the
     // adapter calls `navigate()` directly and forwards the refusal `message`
