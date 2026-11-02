@@ -1496,6 +1496,22 @@
   "@settings.developer.mcpEnabled.keywords": {
     "sourceHash": "410be68"
   },
+  "settings.developer.mcpDirectMode.label": "Direct mode",
+  "@settings.developer.mcpDirectMode.label": {
+    "sourceHash": "8273bcf"
+  },
+  "settings.developer.mcpDirectMode.description": "Let connected AI tools read your files and confirm dialogs without asking you. Only turn this on while you’re testing or developing with them.",
+  "@settings.developer.mcpDirectMode.description": {
+    "sourceHash": "d85f109"
+  },
+  "settings.developer.mcpDirectMode.keywords": "testing, automation, confirm, bypass, developer",
+  "@settings.developer.mcpDirectMode.keywords": {
+    "sourceHash": "285cb60"
+  },
+  "settings.mcp.directModeThisSessionOnly": "Direct mode stays on until you quit Cmdr, since this computer can’t keep it safely across a restart.",
+  "@settings.mcp.directModeThisSessionOnly": {
+    "sourceHash": "f5d30da"
+  },
   "settings.developer.mcpPort.label": "連接埠",
   "@settings.developer.mcpPort.label": {
     "sourceHash": "72e9a59"

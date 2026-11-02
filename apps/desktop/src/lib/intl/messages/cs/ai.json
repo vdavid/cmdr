@@ -115,6 +115,22 @@
   "@ai.cloudConsent.askCmdr.item.attachments": {
     "sourceHash": "b9ad2af"
   },
+  "ai.cloudConsent.askCmdr.item.mediaFields": "Details of photos and songs when a rename uses them: date taken, camera, title, artist, album, and the like",
+  "@ai.cloudConsent.askCmdr.item.mediaFields": {
+    "sourceHash": "e96157a"
+  },
+  "ai.cloudConsent.askCmdr.item.appState": "What Cmdr is up to: running and past operations, open dialogs, favorites, saved places, drive indexing, and which folders matter most",
+  "@ai.cloudConsent.askCmdr.item.appState": {
+    "sourceHash": "4159dde"
+  },
+  "ai.cloudConsent.askCmdr.item.settings": "Your Cmdr settings and keyboard shortcuts, including folders you picked for image indexing and your AI service’s address. Anything that looks like a password, key, or token is masked, and so is your email address",
+  "@ai.cloudConsent.askCmdr.item.settings": {
+    "sourceHash": "c7c0657"
+  },
+  "ai.cloudConsent.askCmdr.item.logs": "Cmdr’s recent log lines, with names, paths, addresses, and anything that looks like a key swapped for placeholders first. A few plain details stay, like file extensions and common folder names such as Documents",
+  "@ai.cloudConsent.askCmdr.item.logs": {
+    "sourceHash": "7aabf35"
+  },
   "ai.cloudConsent.askCmdr.item.memory": "Poznámky, které si o vás Cmdr vede, odesílané znovu s každou zprávou",
   "@ai.cloudConsent.askCmdr.item.memory": {
     "sourceHash": "7779513"
@@ -122,6 +138,14 @@
   "ai.cloudConsent.askCmdr.contentsRule": "Cmdr nikdy neodesílá celé soubory, fotky ani miniatury. Když se zeptáte na nějaký soubor, může z něj přečíst omezenou část: několik řádků textu, jen některé stránky PDF spolu s jeho názvem a autorem, seznam souborů v archivu nebo u fotky údaje z fotoaparátu včetně místa, kde byla pořízena. Hledání ve fotkách funguje stejně: text, který Cmdr rozpoznal v odpovídajících fotkách, a jejich značky putují k vašemu poskytovateli, aby je mohl najít. Cmdr může navrhovat přejmenování, přesunutí a úklid, ale se souborem se nic nestane, dokud to neschválíte.",
   "@ai.cloudConsent.askCmdr.contentsRule": {
     "sourceHash": "5a378c1"
+  },
+  "ai.cloudConsent.askCmdr.protectedContents": "Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keychains, browser data, Mail, Messages, Notes, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.",
+  "@ai.cloudConsent.askCmdr.protectedContents": {
+    "sourceHash": "048633f"
+  },
+  "ai.cloudConsent.askCmdr.actions": "In a chat you started, Ask Cmdr can also work the app for you: navigate, select, sort, open tabs and dialogs, and connect a place you saved. Copying, moving, compressing, deleting, renaming, and undoing an operation each open a dialog or editor for you to confirm, and nothing happens until you do. Opening a file, changing a setting (other than how Cmdr looks), quitting, ejecting a drive, removing a server, and changing indexing ask you first. Creating a named folder or file and tagging files happen right away with no question, and tags have no undo. Renames and cleanups it prepares as a plan wait for your approval.",
+  "@ai.cloudConsent.askCmdr.actions": {
+    "sourceHash": "bf002cc"
   },
   "ai.cloudConsent.askCmdr.memory": "Cmdr si o vás zapisuje poznámky: jak chcete mít věci uspořádané, co jste už dřív odmítli, a cokoli, co si má na vaši žádost zapamatovat. Tyto poznámky se odesílají s každou zprávou, kterou pošlete, dokud existují, a můžou obsahovat text, který Cmdr rozpoznal ve vašich fotkách. Kdykoli si je můžete přečíst nebo vymazat v nastavení Ask Cmdr.",
   "@ai.cloudConsent.askCmdr.memory": {
