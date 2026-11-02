@@ -76,13 +76,18 @@ export function appleLanguageName(tag: string): string {
  * matches English is left out: macOS falls back to English on its own, and an overlay catalog that
  * inherits the key would only add a duplicate. A locale with no such key yet is left out too.
  */
-export function finderMenuTitles(catalogs: Record<string, Record<string, string>>): { lproj: string; title: string }[] {
+export function finderMenuTitles(
+  catalogs: Partial<Record<string, Partial<Record<string, string>>>>,
+): { lproj: string; title: string }[] {
   const english = catalogs.en?.[FINDER_MENU_KEY]
   if (english === undefined) throw new Error(`The English catalog has no ${FINDER_MENU_KEY}`)
   const others = Object.entries(catalogs)
-    .filter(([tag, messages]) => tag !== PSEUDO_LOCALE && messages[FINDER_MENU_KEY] !== undefined)
-    .filter(([, messages]) => messages[FINDER_MENU_KEY] !== english)
-    .map(([tag, messages]) => ({ lproj: appleLanguageName(tag), title: messages[FINDER_MENU_KEY] }))
+    .flatMap(([tag, messages]) => {
+      const title = messages?.[FINDER_MENU_KEY]
+      return tag === PSEUDO_LOCALE || title === undefined || title === english
+        ? []
+        : [{ lproj: appleLanguageName(tag), title }]
+    })
     .sort((a, b) => (a.lproj < b.lproj ? -1 : a.lproj > b.lproj ? 1 : 0))
   return [{ lproj: 'en', title: english }, ...others]
 }
