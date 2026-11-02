@@ -12,11 +12,13 @@
         newExtension: string
         /** A folder (a macOS package, since only those have extensions) words its consequence differently. */
         isDirectory?: boolean
+        /** Who started the rename, when it was a guarded caller: they chose the new extension. */
+        startedBy?: ToolInitiator
         onKeepOld: () => void
         onUseNew: () => void
     }
 
-    const { oldExtension, newExtension, isDirectory = false, onKeepOld, onUseNew }: Props = $props()
+    const { oldExtension, newExtension, isDirectory = false, startedBy, onKeepOld, onUseNew }: Props = $props()
 
     // Three different changes, each worded on its own so nothing ever reads "Use ." or "to “.”".
     const kind = $derived(isDirectory ? 'folder' : 'file')
@@ -58,6 +60,7 @@
 <ModalDialog
     titleId="extension-change-title"
     dialogId="extension-change"
+    {startedBy}
     role="alertdialog"
     ariaDescribedby="extension-change-description"
     onkeydown={handleKeydown}

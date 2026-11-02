@@ -35,6 +35,7 @@ import type { TauriPage } from '@srsholmes/tauri-playwright'
 const TRANSFER = 'transfer-confirmation'
 const DELETE = 'delete-confirmation'
 const ROLLBACK = 'rollback-confirmation'
+const RENAME_CONFLICT = 'rename-conflict'
 const SKIP_CONFIRMATION = 'fileOperations.skipConfirmation'
 
 function dialogSelector(dialog: string): string {
@@ -217,6 +218,34 @@ test.describe('Ask Cmdr from the rail', () => {
       .toBe(true)
     expect(fs.existsSync(source)).toBe(true)
     expect(fs.existsSync(path.join(fixtureRoot, 'left', 'renamed.txt'))).toBe(false)
+  })
+
+  // The agent picks the name, so what that name runs into is guarded too: the Enter that commits the
+  // editor mustn't answer the question it raises.
+  test('a rename onto a name already taken asks through a dialog that has to arm', async ({ tauriPage }) => {
+    const page = tauriPage as TauriPage
+    const fixtureRoot = getFixtureRoot()
+    await selectFileA(fixtureRoot)
+
+    await agentCalls(page, 'rename', { pane: 'left', name: 'file-a.txt', newName: 'file-b.txt' })
+    await expect
+      .poll(
+        () =>
+          page.evaluate<string | null>(`document.querySelector('.rename-input')?.getAttribute('data-armed') ?? null`),
+        { timeout: waitBudget(5000) },
+      )
+      .toBe('true')
+    await page.press('.rename-input', 'Enter')
+    await untilOpenAndArmed(page, RENAME_CONFLICT)
+    expect(fs.readdirSync(path.join(fixtureRoot, 'left'))).toContain('file-a.txt')
+
+    await mcpCall('dialog', { action: 'close', type: RENAME_CONFLICT })
+    await mcpCall('dialog', { action: 'close', type: 'rename' })
+    await expect
+      .poll(() => page.evaluate<boolean>(`document.querySelector('.rename-input') === null`), {
+        timeout: waitBudget(3000),
+      })
+      .toBe(true)
   })
 
   // The fence, with a real dialog waiting to be pressed. `dialog_confirm` works in this very run for

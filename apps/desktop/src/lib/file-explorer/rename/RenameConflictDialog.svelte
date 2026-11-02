@@ -5,6 +5,7 @@
     import { tooltip } from '#lib/tooltip/tooltip.js'
     import DateLabel from '#lib/ui/DateLabel.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
+    import type { ToolInitiator } from '#lib/ui/started-elsewhere-guard.js'
     import type { ConflictFileInfo, RenameConflictResolution } from './rename-operations'
 
     interface Props {
@@ -22,10 +23,12 @@
          * dialog closes having done nothing at all.
          */
         supportsTrash: boolean
+        /** Who started the rename, when it was a guarded caller: they chose the name this ran into. */
+        startedBy?: ToolInitiator
         onResolve: (resolution: RenameConflictResolution) => void
     }
 
-    const { renamedFile, existingFile, supportsTrash, onResolve }: Props = $props()
+    const { renamedFile, existingFile, supportsTrash, startedBy, onResolve }: Props = $props()
 
     /**
      * A folder holds the name. ❗ No permanent overwrite then: replacing it would take
@@ -67,6 +70,7 @@
 <ModalDialog
     titleId="rename-conflict-title"
     dialogId="rename-conflict"
+    {startedBy}
     role="alertdialog"
     ariaDescribedby="rename-conflict-description"
     onkeydown={handleKeydown}

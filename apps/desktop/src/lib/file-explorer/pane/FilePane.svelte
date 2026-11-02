@@ -2471,6 +2471,7 @@
         oldExtension={renameFlow.extensionDialogState.oldExtension}
         newExtension={renameFlow.extensionDialogState.newExtension}
         isDirectory={renameFlow.extensionDialogState.isDirectory}
+        startedBy={rename.target?.startedBy}
         onKeepOld={handleExtensionKeepOld}
         onUseNew={handleExtensionUseNew}
     />
@@ -2491,6 +2492,7 @@
             isDirectory: renameFlow.conflictDialogState.validity.conflict.isDirectory,
         }}
         supportsTrash={renameFlow.conflictDialogState.supportsTrash}
+        startedBy={rename.target?.startedBy}
         onResolve={handleConflictResolve}
     />
 {/if}

@@ -170,6 +170,76 @@ describe('RenameConflictDialog trash gate', () => {
 })
 
 /**
+ * A rename the agent started picks the name, so what that name runs into is its doing too. The Enter
+ * that commits the editor mustn't also answer the question the commit raises.
+ */
+describe('a rename someone else started', () => {
+  const mounted: HTMLElement[] = []
+
+  afterEach(() => {
+    for (const target of mounted.splice(0)) target.remove()
+  })
+
+  function targetInBody(): HTMLElement {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mounted.push(target)
+    return target
+  }
+
+  function pressEnter(target: HTMLElement) {
+    target
+      .querySelector('[role="alertdialog"]')
+      ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+  }
+
+  it('keeps a stray Enter off the conflict question until it has armed', async () => {
+    const target = targetInBody()
+    const resolutions: RenameConflictResolution[] = []
+    mount(RenameConflictDialog, {
+      target,
+      props: {
+        renamedFile: { name: 'report.md', size: 2048, modifiedAt: undefined, isDirectory: false },
+        existingFile: { name: 'report.md', size: 1024, modifiedAt: undefined, isDirectory: false },
+        supportsTrash: true,
+        startedBy: 'agent',
+        onResolve: (resolution: RenameConflictResolution) => resolutions.push(resolution),
+      },
+    })
+    await tick()
+
+    expect(target.querySelector('[data-armed]')?.getAttribute('data-armed')).toBe('false')
+    pressEnter(target)
+    expect(resolutions).toEqual([])
+  })
+
+  it('keeps a stray Enter off the extension question until it has armed', async () => {
+    const target = targetInBody()
+    const onUseNew = vi.fn()
+    mount(ExtensionChangeDialog, {
+      target,
+      props: { oldExtension: 'txt', newExtension: 'command', startedBy: 'agent', onKeepOld: vi.fn(), onUseNew },
+    })
+    await tick()
+
+    expect(target.querySelector('[data-armed]')?.getAttribute('data-armed')).toBe('false')
+    pressEnter(target)
+    expect(onUseNew).not.toHaveBeenCalled()
+  })
+
+  it('leaves a person’s own rename unguarded', async () => {
+    const target = targetInBody()
+    mount(ExtensionChangeDialog, {
+      target,
+      props: { oldExtension: 'txt', newExtension: 'md', onKeepOld: vi.fn(), onUseNew: vi.fn() },
+    })
+    await tick()
+
+    expect(target.querySelector('[data-armed]')).toBeNull()
+  })
+})
+
+/**
  * A name a FOLDER holds is a different question: replacing it takes everything inside.
  * Every backend refuses a confirmed replace of a folder that holds something
  * (`Volume::rename`), so the permanent overwrite is never offered for one, and Enter

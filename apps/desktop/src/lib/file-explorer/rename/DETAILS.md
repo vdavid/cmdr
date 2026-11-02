@@ -472,3 +472,9 @@ what Finder does with a modal alert; Cmdr doesn't trap, and says why instead of 
   logic; separate dialogs keep each concern isolated.
 - **Trim silently instead of erroring**: leading/trailing whitespace is almost always unintentional. The input preserves
   what the user typed (transparency) while save logic uses the trimmed value.
+
+## A rename a tool started
+
+The conflict and extension dialogs a guarded editor's commit raises take `startedBy` too, so they arm like the editor
+did. The caller chose the name, and Enter on the conflict dialog overwrites, so the Enter that committed must not answer
+it.
