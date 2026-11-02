@@ -237,6 +237,8 @@ export function attachStartedElsewhereGuard(options: StartedElsewhereGuardOption
     const verdict = machine.keyDown(keyOf(event), Date.now())
     report(wasArmed)
     schedule()
+    // Armed, it only guards its own field or overlay: an editor's extension question, up over it, keeps its keys.
+    if (machine.armed && !inScope(event.target)) return
     if (verdict === 'swallow' || (verdict === 'unlocked' && !options.tabMovesFocus)) swallow(event)
   }
 

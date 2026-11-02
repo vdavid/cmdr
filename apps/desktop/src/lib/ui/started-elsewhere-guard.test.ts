@@ -307,6 +307,25 @@ describe('the listener', () => {
     expect(reached).toEqual(['Tab'])
   })
 
+  it('once armed, leaves keys alone outside its own field or overlay', () => {
+    const elsewhere = document.createElement('input')
+    document.body.append(elsewhere)
+    attach()
+    vi.advanceTimersByTime(ARM_QUIET_MS)
+    elsewhere.focus()
+    expect(press('a').defaultPrevented).toBe(false)
+    elsewhere.remove()
+  })
+
+  it('while unarmed, swallows keys wherever they land', () => {
+    const elsewhere = document.createElement('input')
+    document.body.append(elsewhere)
+    attach()
+    elsewhere.focus()
+    expect(press('a').defaultPrevented).toBe(true)
+    elsewhere.remove()
+  })
+
   it('leaves nothing behind once detached', () => {
     attach()
     guard.detach()

@@ -324,7 +324,7 @@ import { commands } from './bindings'
 
 const ipc = installIpcMock()
 ipc.mock('move_files', () => null)
-await commands.moveFiles(sources, destination, config, null)
+await commands.moveFiles(sources, destination, config, 'user')
 const call = ipc.lastCall('move_files')
 expect(call?.payload).toMatchObject({ sources, destination /* ... */ })
 ```
