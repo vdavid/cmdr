@@ -403,3 +403,9 @@ record the outcome in `terms.json` or `decisions.md`).
   is acceptable under "never tykání", or switch them to „Pokračujte prosím…“ / „přidejte…“ / „vyberte…“.
 - `onboarding.stepBeta.greeting`, `licensing.dialog.mailtoBody`: Hi → Dobrý den (formal register); check it doesn't read
   too stiff for David's personal welcome, where dropping the greeting („Jsem David!“) is the alternative.
+- `ai.cloudConsent.askCmdr.protectedContents`: „Některý obsah zůstává doma, ať si o něj říká kdokoli“ keeps the English
+  image in a consent text; confirm it reads as "never leaves your Mac" to a native reader.
+- `askCmdr.tool.navToPath.done`, `askCmdr.tool.navBack.done`, `askCmdr.tool.await.done`: Přešlo se… and Čekalo se… avoid
+  a gendered subject; check they read as finished status lines, not as narration.
+- `ui.toolAsk.setSetting.body`: the colon frame (…: teď {oldValue}, nově {newValue}) dodges declining unknown values
+  after z/na; check it reads naturally with `ui.toolAsk.setSetting.emptyValue` (nic).

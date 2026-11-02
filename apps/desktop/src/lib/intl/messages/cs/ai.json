@@ -79,9 +79,9 @@
   "@ai.cloudConsent.folderSuggestions": {
     "sourceHash": "e2c592a"
   },
-  "ai.cloudConsent.search": "<b>Hledání běžnými slovy</b>: text, který napíšete",
+  "ai.cloudConsent.search": "<b>Hledání běžnými slovy</b>: text, který napíšete, nebo to, o co požádá připojený nástroj AI poté, co zapnete přímý režim MCP",
   "@ai.cloudConsent.search": {
-    "sourceHash": "e6d4ef9"
+    "sourceHash": "b5c8d93"
   },
   "ai.cloudConsent.selection": "<b>Výběr podle popisu</b>: co napíšete, plus až 240 názvů z aktuální složky",
   "@ai.cloudConsent.selection": {
@@ -91,21 +91,21 @@
   "@ai.cloudConsent.askCmdr.title": {
     "sourceHash": "26e139c"
   },
-  "ai.cloudConsent.askCmdr.item.messages": "Vaše zprávy",
+  "ai.cloudConsent.askCmdr.item.messages": "Vaše zprávy, včetně každého hesla, které tam napíšete k odemknutí archivu nebo zálohy",
   "@ai.cloudConsent.askCmdr.item.messages": {
-    "sourceHash": "befc6e9"
+    "sourceHash": "66e656b"
   },
-  "ai.cloudConsent.askCmdr.item.names": "Názvy a cesty souborů a složek, na které se Cmdr podívá, aby vám odpověděl",
+  "ai.cloudConsent.askCmdr.item.names": "Názvy a cesty souborů a složek, na které se Cmdr podívá",
   "@ai.cloudConsent.askCmdr.item.names": {
-    "sourceHash": "ce3259d"
+    "sourceHash": "4d5ea2c"
   },
   "ai.cloudConsent.askCmdr.item.sizes": "Jejich velikosti a datumy",
   "@ai.cloudConsent.askCmdr.item.sizes": {
     "sourceHash": "2484530"
   },
-  "ai.cloudConsent.askCmdr.item.contents": "Části souborů, které Cmdr otevře, aby vám odpověděl: kousek textu, stránky PDF, co je uvnitř archivu, a u fotky údaje z fotoaparátu a místo pořízení",
+  "ai.cloudConsent.askCmdr.item.contents": "Části souborů, které Cmdr otevře: kousek textu, stránky PDF, co je uvnitř archivu, u fotky údaje z fotoaparátu a místo pořízení, a text, který Cmdr rozpoznal ve fotkách",
   "@ai.cloudConsent.askCmdr.item.contents": {
-    "sourceHash": "fcd0b73"
+    "sourceHash": "5e8355f"
   },
   "ai.cloudConsent.askCmdr.item.envelope": "Na co se právě díváte: vaše aktuální složka, kurzor, výběr a připojené disky",
   "@ai.cloudConsent.askCmdr.item.envelope": {
@@ -115,19 +115,19 @@
   "@ai.cloudConsent.askCmdr.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "ai.cloudConsent.askCmdr.item.mediaFields": "Details of photos and songs when a rename uses them: date taken, camera, title, artist, album, and the like",
+  "ai.cloudConsent.askCmdr.item.mediaFields": "Podrobnosti o fotkách a skladbách, když je přejmenování použije: datum pořízení, fotoaparát, název, interpret, album a podobně",
   "@ai.cloudConsent.askCmdr.item.mediaFields": {
     "sourceHash": "e96157a"
   },
-  "ai.cloudConsent.askCmdr.item.appState": "What Cmdr is up to: running and past operations, open dialogs, favorites, saved places, drive indexing, and which folders matter most",
+  "ai.cloudConsent.askCmdr.item.appState": "Co Cmdr právě dělá: probíhající a minulé operace, otevřená dialogová okna, oblíbené, uložená místa, indexování disků a na kterých složkách nejvíc záleží",
   "@ai.cloudConsent.askCmdr.item.appState": {
     "sourceHash": "4159dde"
   },
-  "ai.cloudConsent.askCmdr.item.settings": "Your Cmdr settings and keyboard shortcuts, including folders you picked for image indexing and your AI service’s address. Anything that looks like a password, key, or token is masked, and so is your email address",
+  "ai.cloudConsent.askCmdr.item.settings": "Vaše nastavení Cmdru a klávesové zkratky, včetně složek, které jste vybrali pro indexování obrázků, a adresy vaší služby AI. Všechno, co vypadá jako heslo, klíč nebo token, je zamaskované, stejně jako vaše e‑mailová adresa",
   "@ai.cloudConsent.askCmdr.item.settings": {
     "sourceHash": "c7c0657"
   },
-  "ai.cloudConsent.askCmdr.item.logs": "Cmdr’s recent log lines, with names, paths, addresses, and anything that looks like a key swapped for placeholders first. A few plain details stay, like file extensions and common folder names such as Documents",
+  "ai.cloudConsent.askCmdr.item.logs": "Nedávné řádky protokolu Cmdru, ve kterých se názvy, cesty, adresy a všechno, co vypadá jako klíč, nejdřív nahradí zástupnými symboly. Pár běžných podrobností zůstane, třeba přípony souborů a obvyklé názvy složek jako Dokumenty",
   "@ai.cloudConsent.askCmdr.item.logs": {
     "sourceHash": "7aabf35"
   },
@@ -135,15 +135,15 @@
   "@ai.cloudConsent.askCmdr.item.memory": {
     "sourceHash": "7779513"
   },
-  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr nikdy neodesílá celé soubory, fotky ani miniatury. Když se zeptáte na nějaký soubor, může z něj přečíst omezenou část: několik řádků textu, jen některé stránky PDF spolu s jeho názvem a autorem, seznam souborů v archivu nebo u fotky údaje z fotoaparátu včetně místa, kde byla pořízena. Hledání ve fotkách funguje stejně: text, který Cmdr rozpoznal v odpovídajících fotkách, a jejich značky putují k vašemu poskytovateli, aby je mohl najít. Cmdr může navrhovat přejmenování, přesunutí a úklid, ale se souborem se nic nestane, dokud to neschválíte.",
+  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr nikdy neodesílá celé soubory, fotky ani miniatury. Když potřebuje o nějakém souboru zjistit víc, může z něj přečíst omezenou část: několik řádků textu, několik stránek PDF spolu s jeho názvem a autorem, seznam souborů v archivu nebo u fotky údaje z fotoaparátu včetně místa, kde byla pořízena. Hledání ve fotkách funguje stejně: text, který Cmdr rozpoznal v odpovídajících fotkách, a jejich značky putují k vašemu poskytovateli, aby je mohl najít.",
   "@ai.cloudConsent.askCmdr.contentsRule": {
-    "sourceHash": "5a378c1"
+    "sourceHash": "38dedbb"
   },
-  "ai.cloudConsent.askCmdr.protectedContents": "Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keychains, browser data, Mail, Messages, Notes, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.",
+  "ai.cloudConsent.askCmdr.protectedContents": "Některý obsah zůstává doma, ať si o něj říká kdokoli: klíče SSH, přihlašovací údaje ke cloudu a k nástrojům, vaše svazky klíčů, data prohlížečů, Mail, Zprávy, Poznámky, vlastní data Cmdru a každý soubor s privátním klíčem. Jejich názvy se ale k vašemu poskytovateli dostat můžou.",
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "sourceHash": "048633f"
   },
-  "ai.cloudConsent.askCmdr.actions": "In a chat you started, Ask Cmdr can also work the app for you: navigate, select, sort, open tabs and dialogs, and connect a place you saved. Copying, moving, compressing, deleting, renaming, and undoing an operation each open a dialog or editor for you to confirm, and nothing happens until you do. Opening a file, changing a setting (other than how Cmdr looks), quitting, ejecting a drive, removing a server, and changing indexing ask you first. Creating a named folder or file and tagging files happen right away with no question, and tags have no undo. Renames and cleanups it prepares as a plan wait for your approval.",
+  "ai.cloudConsent.askCmdr.actions": "V chatu, který jste zahájili, může Ask Cmdr aplikaci také ovládat za vás: přejít do složky, vybírat, řadit, otevírat záložky a dialogová okna a připojit místo, které jste si uložili. Při kopírování, přesunu, komprimování, mazání, přejmenování a odvolání operace se pokaždé otevře dialogové okno nebo editor, kde to potvrdíte, a dokud to neuděláte, nic se nestane. Před otevřením souboru, změnou nastavení (kromě vzhledu Cmdru), ukončením, vysunutím disku, odstraněním serveru a změnou indexování se vás nejdřív zeptá. Vytvoření pojmenované složky nebo souboru a označení souborů značkami proběhnou hned a bez ptaní a značky nelze odvolat. Přejmenování a úklid, které připraví jako plán, čekají na vaše schválení.",
   "@ai.cloudConsent.askCmdr.actions": {
     "sourceHash": "bf002cc"
   },
@@ -151,17 +151,17 @@
   "@ai.cloudConsent.askCmdr.memory": {
     "sourceHash": "496c78d"
   },
-  "ai.cloudConsent.askCmdr.proactive": "Cmdr navíc sleduje složky, které používáte, a když má co navrhnout, sám zahájí konverzaci, takže zprávy se můžou dostat k vašemu poskytovateli i bez vašeho dotazu. Můžete to vypnout v nastavení Ask Cmdr v části „Z vlastní iniciativy“.",
+  "ai.cloudConsent.askCmdr.proactive": "Cmdr navíc sleduje složky, které používáte, a když má co navrhnout, sám zahájí konverzaci, takže zprávy se můžou dostat k vašemu poskytovateli i bez vašeho dotazu. V těchto konverzacích může číst to, co je uvedeno výše, připravovat plány a zapisovat si poznámky, a nic víc. Můžete to vypnout v nastavení Ask Cmdr v části „Z vlastní iniciativy“.",
   "@ai.cloudConsent.askCmdr.proactive": {
-    "sourceHash": "abfa80b"
+    "sourceHash": "95b18ac"
   },
   "ai.cloudConsent.askCmdr.chatsStayLocal": "Vaše chaty v panelu Ask Cmdr zůstávají na vašem Macu, v místní databázi, kterou můžete otevřít a přečíst.",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "Pokud v nastavení Pokročilé zapnete protokolování volání LLM, Cmdr navíc ukládá každý požadavek a odpověď do složky na vašem Macu. Tyto protokoly taky zůstávají místně a nikdy se nikam neodesílají.",
+  "ai.cloudConsent.logsNote": "Pokud v nastavení Pokročilé zapnete protokolování volání LLM, Cmdr navíc ukládá každý požadavek a odpověď do složky na vašem Macu. Tyto protokoly volání zůstávají místně a nikdy se nikam neodesílají.",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "7e211fc"
+    "sourceHash": "d89adfb"
   },
   "ai.cloudConsent.turnOffAnyTime": "Vypnout to můžete kdykoli a Cmdr okamžitě zastaví odesílání. Vaše služba, klíč i chaty zůstanou tak, jak jsou.",
   "@ai.cloudConsent.turnOffAnyTime": {

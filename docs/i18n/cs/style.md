@@ -134,7 +134,9 @@ Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Finder, Spotl
 `{system_settings}`-style tokens. The curated list (BRAND_WORDS + SYSTEM_TOKENS) is enforced by
 `desktop-i18n-dont-translate`; see `apps/desktop/scripts/i18n-catalog-lib.ts`. Quick Look is NOT kept English: Czech
 macOS calls it "Rychlý náhled", and Cmdr follows what the user sees. macOS UI names Cmdr opens into must match Czech
-macOS ("Koš", "Nastavení systému", "Soukromí a zabezpečení").
+macOS ("Koš", "Nastavení systému", "Soukromí a zabezpečení"). Apple app names: `Mail`, `Zprávy`, `Poznámky` (Messages,
+Notes; live macOS 27.0.1 InfoPlist.loctable, 2026-11-02). Private key is `privátní klíč` (live Keychain Access, macOS
+27.0.1), and your keychains are `vaše svazky klíčů`.
 
 ## Plurals
 
@@ -160,6 +162,9 @@ CLDR categories for `cs`: `one`, `few`, `many`, `other` (verified with `new Intl
 - **Length.** Czech runs longer than English; overflow-check against the pseudolocale (`en-XA`).
 - **ICU mechanics**: double every apostrophe in an ICU value (`'` → `''`) and keep every `{placeholder}` and `<tag>`
   verbatim. Full rules: `docs/i18n/translator-instructions.md` and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+- **Ask Cmdr tool lines**: doing is a reflexive passive (`Mění se nastavení`), done a participle first
+  (`Změněno nastavení`), or the neuter reflexive past when there's no noun subject (`Přešlo se do složky`,
+  `Čekalo se na Cmdr`), and tried is `Pokus o` + verbal noun.
 - Case-by-case rulings go in `decisions.md` under a heading citing their keys.
 
 ## Termbase files

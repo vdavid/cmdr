@@ -322,7 +322,7 @@
   },
   "create": {
     "chosen": "vytvořit",
-    "accept": ["vytvoř", "vytváře"],
+    "accept": ["vytvoř", "vytváře", "vytváří"],
     "forms": "button → Vytvořit; created → vytvořeno; the Created column → Vytvořeno / Datum vytvoření",
     "confidence": "high",
     "sources": "macOS SystemSettings (Vytvořit), Finder (Vytvořit zástupce); MS (vytvořit); TC (Vytvořit a otevřít nový textový soubor)"
@@ -1126,7 +1126,10 @@
     "accept": ["nová složk", "novou složk", "nové složk", "novou složc", "novém složc"],
     "forms": "command (menu.file.newFolder) → Nová složka…; default name → nová složka",
     "confidence": "high",
-    "sources": "macOS Finder/AppKit (Nová složka); Nautilus; Thunar; TC (Nová složka (adresář))"
+    "sources": "macOS Finder/AppKit (Nová složka); Nautilus; Thunar; TC (Nová složka (adresář))",
+    "exceptions": {
+      "askCmdr.tool.mkdir.tried": "\"create a folder\" is the generic act (Pokus o vytvoření složky, the frame of its doing and done lines), not the New folder command"
+    }
   },
   "not-finished": {
     "chosen": "nedokončeno",
@@ -1679,7 +1682,10 @@
     "accept": ["zastav"],
     "forms": "button → Zastavit; stopped → zastaveno",
     "confidence": "high",
-    "sources": "macOS Finder (Stop → Zastavit, Zastavit komprimování); Nautilus; MS; TC (Zastavit načítání)"
+    "sources": "macOS Finder (Stop → Zastavit, Zastavit komprimování); Nautilus; MS; TC (Zastavit načítání)",
+    "exceptions": {
+      "ui.startedElsewhere.keysWait": "\"stop typing\" is the person pausing (přestat psát), not the Stop command"
+    }
   },
   "storage": {
     "chosen": "úložiště",
@@ -1972,7 +1978,11 @@
     "forms": "option label → Vždy se zeptat (or Zeptat se); prose → Cmdr se zeptá",
     "confidence": "high",
     "sources": "DC (Vždy se zeptat, který z podporovaných formátů…); macOS (zeptat se)",
-    "note": "The negative imperfective neptat (Už se neptat, the Don't ask again button) has no long á, so ptá/ptát miss it."
+    "note": "The negative imperfective neptat (Už se neptat, the Don't ask again button) has no long á, so ptá/ptát miss it.",
+    "exceptions": {
+      "askCmdr.tool.outcome.inBackground": "the person asks the assistant to do something (požádat), not a question (zeptat se)",
+      "askCmdr.tool.upgradeSmbToDirect.tried": "asking Cmdr for a connection is a request (vyžádat), not a question (zeptat se)"
+    }
   },
   "byte": {
     "chosen": "bajt",
@@ -2777,7 +2787,8 @@
     ],
     "forms": "n.: connect directly → připojit se přímo; Try connecting directly → Zkusit se připojit přímo; Connected directly → Připojeno přímo; its opposite, the system connection → systémové připojení",
     "confidence": "high",
-    "sources": "MS (direct connection → přímé připojení); derived from the connect ruling (připojit)"
+    "sources": "MS (direct connection → přímé připojení); derived from the connect ruling (připojit)",
+    "note": "MCP direct mode is Přímý režim on the same root (settings.developer.mcpDirectMode.label); in prose přímý režim MCP."
   },
   "native": {
     "chosen": "nativní",
@@ -3533,7 +3544,10 @@
     "accept": ["další informac"],
     "forms": "link → Další informace…; aria More about „X“ → Další informace o volbě „X“",
     "confidence": "high",
-    "sources": "macOS LEARN_MORE and SiriRestrictionsLearnMoreFooterLink → Další informace…"
+    "sources": "macOS LEARN_MORE and SiriRestrictionsLearnMoreFooterLink → Další informace…",
+    "exceptions": {
+      "ai.cloudConsent.askCmdr.contentsRule": "\"needs to know more about a file\" is plain prose (zjistit víc), not the Learn more link"
+    }
   },
   "protocol": {
     "chosen": "protokol",
@@ -4402,5 +4416,19 @@
     "confidence": "high",
     "sources": "Mp3tag cs and the Czech foobar2000/Mp3tag community (tag, tagy, ID3 tag)",
     "note": "Finder color tags stay značka (tag concept); the audio or EXIF metadata inside a file is tag, as Czech music software says it."
+  },
+  "backup": {
+    "chosen": "záloha",
+    "accept": ["záloh"],
+    "forms": "f.: gen. zálohy, pl. zálohy, gen. pl. záloh; unlock a backup → odemknout zálohu; restic backup → záloha restic",
+    "confidence": "high",
+    "sources": "macOS Finder BackupVolumeBrowserWindow and LocalizableMerged (záloha); MS terminology backup → záloha; catalog (Odemknout tuto zálohu, fileOperations.resticPassword.title)"
+  },
+  "data": {
+    "chosen": "data",
+    "accept": ["data", "dat", "údaj"],
+    "forms": "n. pl.: gen. dat, loc. datech; your data → vaše data; browser data → data prohlížečů; Cmdr's own data → vlastní data Cmdru",
+    "confidence": "high",
+    "sources": "macOS Finder (Smazat data a nastavení…); MS terminology data → data; catalog (Kam vaše data putují, ai.cloudConsent.whereItGoes)"
   }
 }
