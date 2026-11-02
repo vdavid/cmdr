@@ -83,6 +83,34 @@
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "0f572c0"
   },
+  "main.finderExtensionNudge.title": "Adicionar “Abrir no Cmdr” ao menu de contexto do Finder?",
+  "@main.finderExtensionNudge.title": {
+    "sourceHash": "b47335f"
+  },
+  "main.finderExtensionNudge.body": "Com isso, o Cmdr fica a um clique de qualquer arquivo ou pasta no seu disco de inicialização. Isso adiciona um pequeno processo que roda junto com o Finder.",
+  "@main.finderExtensionNudge.body": {
+    "sourceHash": "ef5022c"
+  },
+  "main.finderExtensionNudge.switchBackNote": "Você pode desfazer isso quando quiser nos Ajustes.",
+  "@main.finderExtensionNudge.switchBackNote": {
+    "sourceHash": "48c2bca"
+  },
+  "main.finderExtensionNudge.decline": "Não precisa",
+  "@main.finderExtensionNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.finderExtensionNudge.accept": "Sim, adicionar",
+  "@main.finderExtensionNudge.accept": {
+    "sourceHash": "606fdf7"
+  },
+  "main.finderExtensionNudge.turnedOn": "“Abrir no Cmdr” agora está no menu de contexto do Finder.",
+  "@main.finderExtensionNudge.turnedOn": {
+    "sourceHash": "1c90e85"
+  },
+  "main.finderExtensionNudge.notTurnedOn": "O Cmdr não conseguiu adicionar o item de menu desta vez. O botão está nos Ajustes quando você quiser tentar de novo.",
+  "@main.finderExtensionNudge.notTurnedOn": {
+    "sourceHash": "fe4bc3f"
+  },
   "main.revealTabsDropped": "{opened, plural, one {# pasta aberta} many {# pastas abertas} other {# pastas abertas}}. Não houve espaço para mais {dropped}, porque um painel comporta até {limit} abas.",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

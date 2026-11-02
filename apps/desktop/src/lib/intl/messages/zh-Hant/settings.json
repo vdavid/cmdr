@@ -2256,6 +2256,14 @@
   "@settings.behavior.dockPinNudgeOfferedAt.description": {
     "sourceHash": "fa3d324"
   },
+  "settings.behavior.finderExtensionNudgeOfferedAt.label": "Finder 選單項目詢問提出時間",
+  "@settings.behavior.finderExtensionNudgeOfferedAt.label": {
+    "sourceHash": "204988e"
+  },
+  "settings.behavior.finderExtensionNudgeOfferedAt.description": "把「在 Cmdr 中開啟」加入 Finder 右鍵選單的一次性詢問是什麼時候提出的。",
+  "@settings.behavior.finderExtensionNudgeOfferedAt.description": {
+    "sourceHash": "18bb28e"
+  },
   "settings.behavior.revealNudgeOfferedAt.label": "「在 Finder 中顯示」詢問提出時間",
   "@settings.behavior.revealNudgeOfferedAt.label": {
     "sourceHash": "aaae0a8"

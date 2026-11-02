@@ -235,6 +235,10 @@
   "@settings.behavior.dockPinNudgeOfferedAt.description": {
     "sourceHash": "ff66693"
   },
+  "settings.behavior.finderExtensionNudgeOfferedAt.description": "Cuándo se hizo la oferta única de agregar “Abrir en Cmdr” al menú contextual del Finder.",
+  "@settings.behavior.finderExtensionNudgeOfferedAt.description": {
+    "sourceHash": "36b94a8"
+  },
   "settings.behavior.revealActivationNoticeSeen.description": "Si ya se mostró el aviso sobre el primer “Mostrar en el Finder” que se abrió en Cmdr.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
     "sourceHash": "38c4ea2"

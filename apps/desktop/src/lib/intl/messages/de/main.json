@@ -83,6 +83,34 @@
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "0f572c0"
   },
+  "main.finderExtensionNudge.title": "„In Cmdr öffnen“ zum Kontextmenü des Finders hinzufügen?",
+  "@main.finderExtensionNudge.title": {
+    "sourceHash": "b47335f"
+  },
+  "main.finderExtensionNudge.body": "Damit ist Cmdr von jeder Datei und jedem Ordner auf deinem Startvolume nur einen Klick entfernt. Dafür kommt ein kleiner Prozess hinzu, der neben dem Finder läuft.",
+  "@main.finderExtensionNudge.body": {
+    "sourceHash": "ef5022c"
+  },
+  "main.finderExtensionNudge.switchBackNote": "Du kannst das jederzeit in den Einstellungen wieder umstellen.",
+  "@main.finderExtensionNudge.switchBackNote": {
+    "sourceHash": "48c2bca"
+  },
+  "main.finderExtensionNudge.decline": "Nein, danke",
+  "@main.finderExtensionNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.finderExtensionNudge.accept": "Ja, hinzufügen",
+  "@main.finderExtensionNudge.accept": {
+    "sourceHash": "606fdf7"
+  },
+  "main.finderExtensionNudge.turnedOn": "„In Cmdr öffnen“ ist jetzt im Kontextmenü des Finders.",
+  "@main.finderExtensionNudge.turnedOn": {
+    "sourceHash": "1c90e85"
+  },
+  "main.finderExtensionNudge.notTurnedOn": "Cmdr konnte den Menüpunkt diesmal nicht hinzufügen. Der Schalter dafür ist in den Einstellungen, wenn du es noch einmal versuchen willst.",
+  "@main.finderExtensionNudge.notTurnedOn": {
+    "sourceHash": "fe4bc3f"
+  },
   "main.revealTabsDropped": "{opened, plural, one {# Ordner} other {# Ordner}} geöffnet. Für {dropped} Ordner mehr war kein Platz, weil ein Bereich höchstens {limit} Tabs fasst.",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

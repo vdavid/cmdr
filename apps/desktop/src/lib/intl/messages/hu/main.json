@@ -83,6 +83,34 @@
   "@main.revealNudge.notTurnedOn": {
     "sourceHash": "0f572c0"
   },
+  "main.finderExtensionNudge.title": "Bekerüljön a „Megnyitás a Cmdrben” a Finder helyi menüjébe?",
+  "@main.finderExtensionNudge.title": {
+    "sourceHash": "b47335f"
+  },
+  "main.finderExtensionNudge.body": "Így a Cmdr egy kattintásnyira lesz az indítólemezeden lévő bármelyik fájltól vagy mappától. Emellett hozzáad egy kis folyamatot, ami a Finder mellett fut.",
+  "@main.finderExtensionNudge.body": {
+    "sourceHash": "ef5022c"
+  },
+  "main.finderExtensionNudge.switchBackNote": "Bármikor visszaállíthatod a Beállításokban.",
+  "@main.finderExtensionNudge.switchBackNote": {
+    "sourceHash": "48c2bca"
+  },
+  "main.finderExtensionNudge.decline": "Nem, köszönöm",
+  "@main.finderExtensionNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.finderExtensionNudge.accept": "Igen, kerüljön be",
+  "@main.finderExtensionNudge.accept": {
+    "sourceHash": "606fdf7"
+  },
+  "main.finderExtensionNudge.turnedOn": "A „Megnyitás a Cmdrben” mostantól ott van a Finder helyi menüjében.",
+  "@main.finderExtensionNudge.turnedOn": {
+    "sourceHash": "1c90e85"
+  },
+  "main.finderExtensionNudge.notTurnedOn": "A Cmdr most nem tudta hozzáadni a menüpontot. A kapcsoló a Beállításokban van, ha újra megpróbálnád.",
+  "@main.finderExtensionNudge.notTurnedOn": {
+    "sourceHash": "fe4bc3f"
+  },
   "main.revealTabsDropped": "{opened, plural, one {# mappa megnyitva} other {# mappa megnyitva}}. Még {dropped} nem fért el, mert egy panelen legfeljebb {limit} lap lehet.",
   "@main.revealTabsDropped": {
     "sourceHash": "ef684aa"

@@ -2254,6 +2254,14 @@
   "@settings.behavior.dockPinNudgeOfferedAt.description": {
     "sourceHash": "fa3d324"
   },
+  "settings.behavior.finderExtensionNudgeOfferedAt.label": "Время предложения добавить пункт в меню Finder",
+  "@settings.behavior.finderExtensionNudgeOfferedAt.label": {
+    "sourceHash": "204988e"
+  },
+  "settings.behavior.finderExtensionNudgeOfferedAt.description": "Когда было сделано однократное предложение добавить «Открыть в Cmdr» в контекстное меню Finder.",
+  "@settings.behavior.finderExtensionNudgeOfferedAt.description": {
+    "sourceHash": "18bb28e"
+  },
   "settings.behavior.revealNudgeOfferedAt.label": "Время предложения «Показать в Finder»",
   "@settings.behavior.revealNudgeOfferedAt.label": {
     "sourceHash": "aaae0a8"
