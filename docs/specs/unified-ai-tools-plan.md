@@ -373,6 +373,14 @@ Where a lead's review refined one of David's decisions, the refined form is writ
 - M17: `capability_tests.rs` § "The fence" lists what was tried; `FRONTEND_EVENTS` is what "no event" means there, and
   `every_event_a_tool_can_emit_is_watched` keeps it whole for `mcp-*` names.
 
+## Carried from M16
+
+- M17: `tag` refuses when every path was skipped, and a partial tag stays `OK`. `dialog open settings` can't promise a
+  section: the frontend owns the names (`resolveSettingsSection`), so its answer says so.
+- M18: `tools/DETAILS.md` § Lazy loading has what each model did live. David's call, still open: `gpt-4.1-mini` is the
+  OpenAI preset's default and doesn't reach `tab` or `read_resource` from a plain request. The system prompt names both
+  flows ("open tabs", "logs"), so `tab`, `sort`, and `read_resource` are core candidates, at a prefix cost.
+
 ## Running unattended
 
 David may be away, and nobody can click a macOS dialog. Executors run nothing that can raise a macOS prompt (Keychain,

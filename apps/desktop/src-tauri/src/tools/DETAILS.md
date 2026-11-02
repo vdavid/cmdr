@@ -98,7 +98,11 @@ generated line per other tool it can reach (`deferred_tool_lines`). An outside c
   smokes, 2026-11-02). An `enum` of every name on `name` and the list at the end of the prompt didn't help.
 - **Weak models skip `tool_details` and guess.** Both call `use_tool` straight away, get `sortBy` wrong, and recover on the
   next round because the schema gate names what the tool takes. That refusal is doing real work: keep it specific.
-  The `smoke_*_deferred_tool` logs show each model's road.
+  The `smoke_*_deferred_tool` logs show each model's road. In the running app, `claude-haiku-5-5` called `tool_details`,
+  while `gpt-4.1-mini` (the OpenAI preset's default) never did across eight threads and fumbled what a guess can't reach:
+  an action name in an `enum` (`tab`'s `new`, which it kept calling `open`), and `read_resource` unless the user named
+  `cmdr://logs`. Ministral 3B reached `sort` through `use_tool` but still claimed a log check it never ran (verified on
+  those models, rail turns on a dev build, 2026-11-02).
 
 ## The schema gate (`params.rs`)
 

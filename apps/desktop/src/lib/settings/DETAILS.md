@@ -770,6 +770,13 @@ wouldn't update the main window until restart.
 
 ## Gotchas
 
+### A section path that isn't a section opens a blank page
+
+`SettingsContent` renders what matches `selectedSection`, so a path no section has shows the sidebar beside nothing. The
+`open-settings` event carries one word, and an AI tool's `section` reaches it as the model chose it, so
+`resolveSettingsSection` (`settings-section-lookup.ts`) turns that word into a real path or `undefined`, which opens
+where the window was last. A deep link passes a path it knows, and doesn't go through it.
+
 ### `$state` requires `.svelte.ts` extension
 
 Reactive settings must live in `reactive-settings.svelte.ts` (not `.ts`). Svelte 5 `$state()` only works in `.svelte` or
