@@ -8,6 +8,7 @@ import {
 import { addToast } from '#lib/ui/toast/index.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import type { McpSelectMode, ConfirmDialogType } from '#lib/commands/index.js'
+import type { CursorItemDescription, ToolOpenAnswer, ToolOpenGate } from './entry-activation'
 import { routeTypingKey } from './type-to-jump-keys'
 import { readPressedRows } from './pressed-rows'
 import { capabilitiesFor } from './volume-capabilities'
@@ -228,6 +229,18 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     const paneRef = access.getPaneRef(access.getFocusedPane())
     if (!paneRef) throw new Error('Focused pane is not available')
     await paneRef.openCursorItem()
+  }
+
+  /** What opening the focused pane's cursor entry would do, for `open_under_cursor`'s question. */
+  function describeItemUnderCursor(): CursorItemDescription | null {
+    return access.getPaneRef(access.getFocusedPane())?.describeCursorItem() ?? null
+  }
+
+  /** `openItemUnderCursor` for a tool, checked against what a person agreed to. */
+  async function openItemUnderCursorForTool(gate: ToolOpenGate): Promise<ToolOpenAnswer> {
+    const paneRef = access.getPaneRef(access.getFocusedPane())
+    if (!paneRef) throw new Error('Focused pane is not available')
+    return paneRef.openCursorItemForTool(gate)
   }
 
   /**
@@ -636,6 +649,8 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     toggleTagOnFocusedSelection,
     sendKeyToFocusedPane,
     openItemUnderCursor,
+    describeItemUnderCursor,
+    openItemUnderCursorForTool,
     openContextMenuAtCursor,
     getFocusedPane,
     routePanelKey,

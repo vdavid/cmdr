@@ -2148,6 +2148,9 @@ export const commands = {
   notifyDialogClosed: (dialogType: string) => __TAURI_INVOKE<void>('notify_dialog_closed', { dialogType }),
   // Tauri command: frontend registers all known soft dialog types at startup.
   registerKnownDialogs: (dialogs: KnownDialog[]) => __TAURI_INVOKE<void>('register_known_dialogs', { dialogs }),
+  // The dialog's answer.
+  answerToolAsk: (requestId: string, response: ToolAskResponse) =>
+    __TAURI_INVOKE<void>('answer_tool_ask', { requestId, response }),
   // Tauri command: the frontend raised (or re-raised) the prompt.
   notifyArchivePasswordPrompt: (prompt: ArchivePasswordPrompt) =>
     __TAURI_INVOKE<void>('notify_archive_password_prompt', { prompt }),
@@ -5721,6 +5724,8 @@ export const events = {
   systemTextSizeChanged: makeEvent<SystemTextSizeChanged>('system-text-size-changed'),
   tabContextAction: makeEvent<TabContextAction>('tab-context-action'),
   tagsSkipped: makeEvent<TagsSkipped>('tags-skipped'),
+  toolAskDismissed: makeEvent<ToolAskDismissed>('tool-ask-dismissed'),
+  toolAskRequested: makeEvent<ToolAskRequested>('tool-ask-requested'),
   viewModeChanged: makeEvent<ViewModeChanged>('view-mode-changed'),
   viewerContextMenuAction: makeEvent<ViewerContextMenuAction>('viewer-context-menu-action'),
   viewerEditAction: makeEvent<ViewerEditAction>('viewer-edit-action'),
@@ -6652,6 +6657,36 @@ export type AskCmdrTurn = {
   run: number | null
   event: AskCmdrStreamEvent
 }
+
+/**
+ *  What a question is about. Each arm is one sentence in `tool-ask-sentence.ts`, and every string in
+ *  here passes through [`fact_text`], since a file name or a setting value can be anything.
+ */
+export type AskFacts =
+  // Open what's under the cursor in another app, or launch it.
+  | {
+      kind: 'openFile'
+      // The exact path, so a handler can tell whether it's still what's under the cursor.
+      path: string
+      // The path as a person reads it.
+      shownPath: string
+      name: string
+      // A bundle is a directory that launches, so no app opens it: it runs.
+      isBundle: boolean
+      // The app that opens it, or `None` when nothing can tell.
+      opener: string | null
+    }
+  | { kind: 'setSetting'; id: string; label: string; oldValue: string; newValue: string }
+  | { kind: 'quit' }
+  | {
+      kind: 'eject'
+      volumeId: string
+      name: string
+      // The whole disk, with every volume on it, over the one volume.
+      wholeDisk: boolean
+    }
+  | { kind: 'removeServer'; hostId: string; name: string }
+  | { kind: 'indexing'; action: IndexingAction; volumeId: string; name: string }
 
 // Whether an attachment references a file or a folder, on the wire.
 export type AttachmentKindView = 'file' | 'folder'
@@ -10602,6 +10637,9 @@ export type IndexStatusResponse = {
 
 // Why a photo tool's index couldn't answer.
 export type IndexUnavailableReason = 'imageIndexingOff' | 'semanticModelNotInstalled'
+
+// What the `indexing` tool can do to a volume's index, as a question names it.
+export type IndexingAction = 'enable' | 'disable' | 'rescan' | 'forget'
 
 /**
  *  Who initiated the operation. `AgentEdited` is mixed provenance: the
@@ -19092,6 +19130,27 @@ export type TimedOut<T> = {
   data: T
   timedOut: boolean
 }
+
+// `tool-ask-dismissed`: nobody's waiting on this question any more, so it comes down.
+export type ToolAskDismissed = {
+  requestId: string
+}
+
+// `tool-ask-requested`: a question for the main window to show.
+export type ToolAskRequested = {
+  requestId: string
+  facts: AskFacts
+  startedBy: Initiator
+}
+
+// What the dialog answers through `answer_tool_ask`.
+export type ToolAskResponse =
+  | { kind: 'allowed' }
+  | { kind: 'declined' }
+  // Another modal got there first, so the question never went up.
+  | { kind: 'blocked'; dialog: string }
+  // The dialog went away without an answer: a reload, an error boundary, a hot swap.
+  | { kind: 'gone' }
 
 // What came back. Read off OUR OWN result keys, never wording.
 export type ToolOutcome =

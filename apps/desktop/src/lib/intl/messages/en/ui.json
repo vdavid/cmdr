@@ -170,6 +170,139 @@
     "description": "Follows the \"started this\" line while a dialog that opened by itself ignores the keyboard, so that someone typing elsewhere can't confirm it by accident. It goes away about a second after the last key. Escape and clicks still work during this time, so don't word it as the dialog being locked."
   },
 
+  "ui.toolAsk.allow": "Allow",
+  "@ui.toolAsk.allow": {
+    "description": "The confirming button of a dialog that asks a person to allow something an AI assistant wants to do, like opening a file or changing a setting."
+  },
+  "ui.toolAsk.decline": "Don’t allow",
+  "@ui.toolAsk.decline": {
+    "description": "The safe button of the same dialog. It leaves everything as it is, and the assistant hears that the person said no."
+  },
+  "ui.toolAsk.openFile.title": "Open this file?",
+  "@ui.toolAsk.openFile.title": {
+    "description": "Title of a dialog asking whether an AI assistant may open a file in another app. That can run code, so it's a real question."
+  },
+  "ui.toolAsk.openFile.body": "This opens {name} in {app}.",
+  "@ui.toolAsk.openFile.body": {
+    "description": "Body of that dialog.",
+    "placeholders": {
+      "name": "the file's name",
+      "app": "the app macOS would open it with, like Terminal"
+    }
+  },
+  "ui.toolAsk.openFile.bodyUnknownApp": "This opens {name}, and Cmdr can’t tell which app that uses.",
+  "@ui.toolAsk.openFile.bodyUnknownApp": {
+    "description": "The same body when macOS names no default app for the file.",
+    "placeholders": {
+      "name": "the file's name"
+    }
+  },
+  "ui.toolAsk.openBundle.title": "Run this bundle?",
+  "@ui.toolAsk.openBundle.title": {
+    "description": "Title of a dialog asking whether an AI assistant may launch a macOS bundle: a folder that macOS treats as one program, like an .app."
+  },
+  "ui.toolAsk.openBundle.body": "{name} is a bundle, so opening it runs it as a program.",
+  "@ui.toolAsk.openBundle.body": {
+    "description": "Body of that dialog.",
+    "placeholders": {
+      "name": "the bundle's name, like Thing.app"
+    }
+  },
+  "ui.toolAsk.setSetting.title": "Change this setting?",
+  "@ui.toolAsk.setSetting.title": {
+    "description": "Title of a dialog asking whether an AI assistant may change one of the app's settings."
+  },
+  "ui.toolAsk.setSetting.body": "This changes {label} from {oldValue} to {newValue}.",
+  "@ui.toolAsk.setSetting.body": {
+    "description": "Body of that dialog. The two values are shown as they're stored, which can be technical words like true or stop.",
+    "placeholders": {
+      "label": "the setting's name",
+      "oldValue": "what it's set to now",
+      "newValue": "what the assistant wants to set it to"
+    }
+  },
+  "ui.toolAsk.quit.title": "Quit Cmdr?",
+  "@ui.toolAsk.quit.title": {
+    "description": "Title of a dialog asking whether an AI assistant may quit the app."
+  },
+  "ui.toolAsk.quit.body": "This closes Cmdr. If anything’s still running, you get to decide about that first.",
+  "@ui.toolAsk.quit.body": {
+    "description": "Body of that dialog. Running means file operations like a copy in progress: the app asks about those separately."
+  },
+  "ui.toolAsk.eject.title": "Eject this volume?",
+  "@ui.toolAsk.eject.title": {
+    "description": "Title of a dialog asking whether an AI assistant may eject a disk, unmount a network share, or disconnect a phone. All of those are called a volume here."
+  },
+  "ui.toolAsk.eject.body": "This ejects {name}.",
+  "@ui.toolAsk.eject.body": {
+    "description": "Body of that dialog, for one volume.",
+    "placeholders": {
+      "name": "the volume's name, like Backup"
+    }
+  },
+  "ui.toolAsk.eject.bodyWholeDisk": "This ejects the whole disk {name} is on, with every volume on it.",
+  "@ui.toolAsk.eject.bodyWholeDisk": {
+    "description": "The same body when the whole physical disk goes, along with any other volumes it holds.",
+    "placeholders": {
+      "name": "the volume's name, like Backup"
+    }
+  },
+  "ui.toolAsk.removeServer.title": "Remove this server?",
+  "@ui.toolAsk.removeServer.title": {
+    "description": "Title of a dialog asking whether an AI assistant may remove a server the person added by hand."
+  },
+  "ui.toolAsk.removeServer.body": "This removes {name} from your saved servers.",
+  "@ui.toolAsk.removeServer.body": {
+    "description": "Body of that dialog.",
+    "placeholders": {
+      "name": "the server's name or address"
+    }
+  },
+  "ui.toolAsk.indexing.enable.title": "Turn indexing on?",
+  "@ui.toolAsk.indexing.enable.title": {
+    "description": "Title of a dialog asking whether an AI assistant may turn on drive indexing for one volume. Indexing is what makes whole-drive search fast."
+  },
+  "ui.toolAsk.indexing.enable.body": "This turns indexing on for {name} and starts scanning it.",
+  "@ui.toolAsk.indexing.enable.body": {
+    "description": "Body of that dialog.",
+    "placeholders": {
+      "name": "the volume's name"
+    }
+  },
+  "ui.toolAsk.indexing.disable.title": "Turn indexing off?",
+  "@ui.toolAsk.indexing.disable.title": {
+    "description": "Title of a dialog asking whether an AI assistant may turn off drive indexing for one volume."
+  },
+  "ui.toolAsk.indexing.disable.body": "This turns indexing off for {name}, and keeps what it has indexed so far.",
+  "@ui.toolAsk.indexing.disable.body": {
+    "description": "Body of that dialog.",
+    "placeholders": {
+      "name": "the volume's name"
+    }
+  },
+  "ui.toolAsk.indexing.rescan.title": "Scan this volume again?",
+  "@ui.toolAsk.indexing.rescan.title": {
+    "description": "Title of a dialog asking whether an AI assistant may rescan one volume from scratch for drive indexing."
+  },
+  "ui.toolAsk.indexing.rescan.body": "This scans all of {name} again, which can take a while.",
+  "@ui.toolAsk.indexing.rescan.body": {
+    "description": "Body of that dialog.",
+    "placeholders": {
+      "name": "the volume's name"
+    }
+  },
+  "ui.toolAsk.indexing.forget.title": "Forget this index?",
+  "@ui.toolAsk.indexing.forget.title": {
+    "description": "Title of a dialog asking whether an AI assistant may delete what drive indexing knows about one volume."
+  },
+  "ui.toolAsk.indexing.forget.body": "This deletes the index of {name}. The files on it stay where they are.",
+  "@ui.toolAsk.indexing.forget.body": {
+    "description": "Body of that dialog. Only Cmdr's own search data goes, never any of the person's files.",
+    "placeholders": {
+      "name": "the volume's name"
+    }
+  },
+
   "ui.dialogBoundary.closedToast": "That dialog ran into a problem, so we closed it. Please try again.",
   "@ui.dialogBoundary.closedToast": {
     "description": "Toast shown when any dialog in the app broke unexpectedly, while opening, in use, or while closing. The app has already closed the dialog and put keyboard focus back on the file list, so the person can simply open it again. \"That dialog\" is deliberately generic: the toast doesn't know the dialog's name."

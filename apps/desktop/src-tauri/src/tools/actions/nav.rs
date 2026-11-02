@@ -4,10 +4,12 @@ use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 
 use super::{
-    AckSignal, NAV_ACK_TIMEOUT, NavAck, PaneStateStore, ToolError, ToolResult, mcp_nav_round_trip, mcp_round_trip,
-    mcp_round_trip_ack, mcp_round_trip_with_timeout, snapshot_generation, user_path_param, validate_path_exists,
-    wait_for_ack,
+    AckSignal, NAV_ACK_TIMEOUT, NavAck, PaneStateStore, ROUND_TRIP_TIMEOUT_SECS, ToolError, ToolResult,
+    mcp_nav_round_trip, mcp_round_trip, mcp_round_trip_ack, mcp_round_trip_parsed, snapshot_generation,
+    user_path_param, validate_path_exists, wait_for_ack,
 };
+use crate::tools::ToolCtx;
+use crate::tools::ask::{AskFacts, changed_while_asking};
 
 /// Round-trip budget for `nav_to_path`. Generous because the FE waits for the listing to
 /// complete, and a remote share's can take a while; it also has to outlast the FE's own
@@ -302,12 +304,6 @@ pub(crate) async fn go_to_in_pane<R: Runtime>(
 /// Ack contract:
 /// - `nav_to_parent`, `nav_back`, `nav_forward` → pane generation must advance (path changes get
 ///   pushed via `update_*_pane_state`).
-/// - `open_under_cursor` → round-trip via `mcp-open-under-cursor`. The FE awaits the resolved
-///   action (directory navigation, viewer window, or OS open-with-default) and emits
-///   `mcp-response`. We can't rely on `GenerationAdvanced` or `WindowAppeared` here because the
-///   OS-open branch produces neither — `openFile()` hands the path to the OS default and returns,
-///   no state push, no viewer window. The round-trip is the only honest ack for this multi-mode
-///   command.
 ///
 /// The `nav_to_parent` / `nav_back` / `nav_forward` family uses `NAV_ACK_TIMEOUT` (5 s)
 /// instead of the default 1500 ms because navigation can touch a remote backend
@@ -315,20 +311,6 @@ pub(crate) async fn go_to_in_pane<R: Runtime>(
 /// default budget, every remote-share `Enter` would surface a false-negative timeout
 /// while the navigation actually succeeded in the background.
 pub async fn execute_nav_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> ToolResult {
-    if name == "open_under_cursor" {
-        // Round-trip: FE awaits `handleNavigate(entry)` and emits `mcp-response`.
-        // 5 s timeout covers the slow case (large directory listing) without being
-        // open-ended.
-        return mcp_round_trip_with_timeout(
-            app,
-            "mcp-open-under-cursor",
-            json!({}),
-            "OK: Opened item under cursor".to_string(),
-            5,
-        )
-        .await;
-    }
-
     let key = match name {
         "nav_to_parent" => "Backspace",
         "nav_back" => "GoBack",       // Custom event, handled by frontend
@@ -351,6 +333,66 @@ pub async fn execute_nav_command<R: Runtime>(app: &AppHandle<R>, name: &str) -> 
 }
 
 /// Execute a navigation command with parameters.
+/// What came of `mcp-open-under-cursor`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum OpenAck {
+    Opened,
+    /// What's under the cursor isn't what the person agreed to, or it would launch something nobody
+    /// agreed to at all.
+    ChangedWhileAsking,
+}
+
+fn parse_open_response(payload: &str, expected_id: &str) -> Option<Result<OpenAck, String>> {
+    let resp = serde_json::from_str::<Value>(payload).ok()?;
+    if resp.get("requestId").and_then(|v| v.as_str()) != Some(expected_id) {
+        return None;
+    }
+    if resp.get("refusal").and_then(|v| v.as_str()) == Some("changedWhileAsking") {
+        return Some(Ok(OpenAck::ChangedWhileAsking));
+    }
+    Some(if resp.get("ok").and_then(|v| v.as_bool()).unwrap_or(false) {
+        Ok(OpenAck::Opened)
+    } else {
+        Err(resp
+            .get("error")
+            .and_then(|v| v.as_str())
+            .unwrap_or("Unknown error")
+            .to_string())
+    })
+}
+
+/// What the frontend checks at the moment it opens, so nothing can slip between the plan's read and
+/// the open. A yes names the path it was about. With no yes, a guarded caller may browse but never
+/// launch: the plan saw nothing to ask about, and a cursor that moved since must not change that.
+fn open_gate_payload(ctx: &ToolCtx) -> Value {
+    match &ctx.asked {
+        Some(AskFacts::OpenFile { path, .. }) => json!({ "gate": { "expectedPath": path } }),
+        _ if ctx.caller.guarded() => json!({ "gate": { "mayLaunch": false } }),
+        _ => json!({}),
+    }
+}
+
+/// Execute `open_under_cursor`: a round trip via `mcp-open-under-cursor`. The FE awaits the resolved
+/// action (directory navigation, viewer window, or OS open-with-default) and emits `mcp-response`. We
+/// can't rely on `GenerationAdvanced` or `WindowAppeared` here because the OS-open branch produces
+/// neither: `openFile()` hands the path to the OS default and returns, no state push, no viewer
+/// window. The round trip is the only honest ack for this multi-mode command. Five seconds covers
+/// the slow case (a large listing) without being open-ended.
+pub async fn execute_open_under_cursor<R: Runtime>(app: &AppHandle<R>, ctx: &ToolCtx, _params: &Value) -> ToolResult {
+    let ack = mcp_round_trip_parsed(
+        app,
+        "mcp-open-under-cursor",
+        open_gate_payload(ctx),
+        ROUND_TRIP_TIMEOUT_SECS,
+        parse_open_response,
+    )
+    .await?;
+    match ack {
+        OpenAck::Opened => Ok(json!("OK: Opened item under cursor")),
+        OpenAck::ChangedWhileAsking => Err(changed_while_asking()),
+    }
+}
+
 pub async fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) -> ToolResult {
     match name {
         "select_volume" => {
@@ -514,5 +556,69 @@ pub async fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, nam
             Ok(json!(format!("OK: Scrolled {pane} pane to index {index}")))
         }
         _ => Err(ToolError::invalid_params(format!("Unknown nav command: {name}"))),
+    }
+}
+
+#[cfg(test)]
+mod open_gate_tests {
+    use serde_json::json;
+    use tokio_util::sync::CancellationToken;
+
+    use super::*;
+    use crate::tools::Caller;
+
+    fn ctx(caller: Caller, asked: Option<AskFacts>) -> ToolCtx {
+        ToolCtx {
+            caller,
+            cancel: CancellationToken::new(),
+            conversation_id: None,
+            asked,
+        }
+    }
+
+    const GUARDED: Caller = Caller::External { direct: false };
+
+    #[test]
+    fn a_yes_names_the_exact_path_it_was_about() {
+        let long = format!("/a/{}", "b".repeat(2_000));
+        let asked = AskFacts::OpenFile {
+            path: long.clone(),
+            shown_path: "/a/b…b".to_string(),
+            name: "b".to_string(),
+            is_bundle: false,
+            opener: None,
+        };
+        assert_eq!(
+            open_gate_payload(&ctx(GUARDED, Some(asked))),
+            json!({ "gate": { "expectedPath": long } })
+        );
+    }
+
+    #[test]
+    fn a_guarded_caller_nobody_asked_about_may_only_browse() {
+        assert_eq!(
+            open_gate_payload(&ctx(GUARDED, None)),
+            json!({ "gate": { "mayLaunch": false } })
+        );
+    }
+
+    #[test]
+    fn direct_mode_carries_no_gate() {
+        assert_eq!(
+            open_gate_payload(&ctx(Caller::External { direct: true }, None)),
+            json!({})
+        );
+    }
+
+    #[test]
+    fn a_change_is_typed_and_the_rest_keeps_its_meaning() {
+        let parse = |body: &str| parse_open_response(body, "r");
+        assert_eq!(
+            parse(r#"{"requestId":"r","ok":false,"refusal":"changedWhileAsking"}"#),
+            Some(Ok(OpenAck::ChangedWhileAsking))
+        );
+        assert_eq!(parse(r#"{"requestId":"r","ok":true}"#), Some(Ok(OpenAck::Opened)));
+        assert!(matches!(parse(r#"{"requestId":"r"}"#), Some(Err(_))));
+        assert_eq!(parse(r#"{"requestId":"other","ok":true}"#), None);
     }
 }

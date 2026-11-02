@@ -726,6 +726,15 @@ fn remove_server_entry_from_path(path: &Path, server_id: &str) -> bool {
     true
 }
 
+/// What the UI calls a saved server, or `None` for an id nothing's saved under.
+pub fn manual_server_label<R: Runtime>(server_id: &str, app_handle: &AppHandle<R>) -> Option<String> {
+    read_store(app_handle)
+        .servers
+        .iter()
+        .find(|entry| entry.id == server_id)
+        .map(ManualServerEntry::label)
+}
+
 /// Removes a manual server by ID from storage and discovery state.
 pub fn remove_manual_server<R: Runtime>(server_id: &str, app_handle: &AppHandle<R>) -> Result<(), String> {
     let Some(path) = get_store_path(app_handle) else {

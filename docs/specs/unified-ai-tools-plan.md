@@ -301,6 +301,20 @@ Where a lead's review refined one of David's decisions, the refined form is writ
 - M15: the arming probe is `data-armed` on `.modal-overlay` and `.rename-input`, `true` or `false`, absent when
   unguarded. `ToolRollbackFacts`, the `file.*` args, and `StartRenameOptions` carry `guard`.
 
+## Carried from M11
+
+- M11b: `quit`, `eject`, and the other `Sensitive` schemas now reach a person, so a stray extra argument should refuse
+  before it does. The gate already runs after the schema check.
+- M12: `set_setting` and the other `Sensitive` descriptions don't say a person confirms; add it where the prompt needs
+  it. The agent's result still flattens to `{problem}` until M12 carries `data`, so `declined`, `changedWhileAsking`,
+  and `cancelled` only read typed after that. A `cancelled` ask ends in `{problem}`, not the `miss: cancelled` row:
+  decide in M12 whether `tool_gate` maps it. `outcome_of` learns `declined`. `Caller::Agent` reaches `gate` only then.
+- M13: `cmdr://settings` lists no `mcpAskFree`; add it if a client benefits. The audit of secret-bearing values should
+  cover `ai.cloudProviderConfigs` in `oldValue` too: it reaches the dialog, never the model.
+- M15: a person-confirm test for `tool-ask` arms like the others (`data-armed`). `dialog_confirm tool-ask` is the direct
+  way to answer one. No E2E covers a real question yet: E2E is direct, so only Rust and Vitest do.
+- M18: `docs/guides/mcp-development.md` should say a new `Sensitive` tool needs an `ask:` plan.
+
 ## Running unattended
 
 David may be away, and nobody can click a macOS dialog. Executors run nothing that can raise a macOS prompt (Keychain,

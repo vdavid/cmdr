@@ -115,7 +115,12 @@
     import { createSelectionInfoFeed } from './selection-info-feed.svelte'
     import type { CursorReadOptions } from './pressed-rows'
     import { createPaneKeyRouter } from './pane-key-router'
-    import { createEntryActivation } from './entry-activation'
+    import {
+        createEntryActivation,
+        type CursorItemDescription,
+        type ToolOpenAnswer,
+        type ToolOpenGate,
+    } from './entry-activation'
     import { createPanePointer } from './pane-pointer'
     import { contextMenuSelectionSizeBytes } from '../selection/context-menu-target'
     import { breadcrumbDisplayPath, createBreadcrumbHandlers } from './breadcrumb-bar'
@@ -1723,6 +1728,28 @@
             throw new Error('No entry under cursor')
         }
         await handleNavigate(entry)
+    }
+
+    function entryForTool(): FileEntry | undefined {
+        return isSearchResultsView ? searchResultsViewRef?.getCursorEntry() : getEntryUnderCursor()
+    }
+
+    /** What opening the cursor's entry would do. A network view only ever navigates, so it has nothing to say. */
+    export function describeCursorItem(): CursorItemDescription | null {
+        const entry = isNetworkView ? undefined : entryForTool()
+        return entry ? activation.describe(entry) : null
+    }
+
+    /** `openCursorItem` for a tool, checked against what a person agreed to. */
+    export async function openCursorItemForTool(gate: ToolOpenGate): Promise<ToolOpenAnswer> {
+        if (isNetworkView) {
+            if ('expectedPath' in gate) return 'changedWhileAsking'
+            networkMountViewRef?.openCursorItem()
+            return 'opened'
+        }
+        const entry = entryForTool()
+        if (!entry) throw new Error('No entry under cursor')
+        return activation.openForTool(entry, gate)
     }
 
     // Search-results pane keyboard: the pure `computeSearchPaneKeyAction` dispatch

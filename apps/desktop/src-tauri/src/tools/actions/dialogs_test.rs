@@ -24,6 +24,7 @@ fn ctx() -> ToolCtx {
         caller: DIRECT,
         cancel: tokio_util::sync::CancellationToken::new(),
         conversation_id: None,
+        asked: None,
     }
 }
 

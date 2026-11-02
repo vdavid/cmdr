@@ -562,7 +562,7 @@ pub async fn execute_set_setting<R: Runtime>(app: &AppHandle<R>, params: &Value)
 
 /// The organization's policy refuses this write: checked here, before the round trip, so the
 /// frontend's own refusal is the backstop rather than the gate. `data.reason` is the contract.
-fn managed_write_refusal(id: &str, value: &Value) -> Option<ToolError> {
+pub(in crate::tools) fn managed_write_refusal(id: &str, value: &Value) -> Option<ToolError> {
     crate::managed_policy::refuses_write(&crate::managed_policy::current(), id, value).then(|| {
         ToolError::invalid_params(format!(
             "'{id}' is managed by the organization's policy on this Mac, so it can't be changed here, not even in Cmdr itself."

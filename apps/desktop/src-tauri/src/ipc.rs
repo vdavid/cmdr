@@ -311,6 +311,7 @@ macro_rules! ipc_command_manifest {
                     crate::ui_state::dialog_state::notify_dialog_opened,
                     crate::ui_state::dialog_state::notify_dialog_closed,
                     crate::ui_state::dialog_state::register_known_dialogs,
+                    crate::tools::ask::answer_tool_ask,
                     crate::ui_state::archive_password::notify_archive_password_prompt,
                     crate::ui_state::archive_password::notify_archive_password_dismissed,
                     crate::commands::sync_status::get_sync_status,
@@ -1131,6 +1132,9 @@ pub fn builder() -> Builder<tauri::Wry> {
             OpenWithCopyRefused,
             // The same launch that did go ahead, on read-only copies the app got.
             OpenWithCopyLaunched,
+            // A question for a person, and its withdrawal (tools/ask.rs).
+            crate::tools::ask::ToolAskRequested,
+            crate::tools::ask::ToolAskDismissed,
             // Operation manager registry snapshot (crates/cmdr-operations/src/manager.rs).
             wire::OperationsChanged,
             SuggestionsChanged,

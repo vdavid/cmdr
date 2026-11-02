@@ -440,7 +440,7 @@ async fn mcp_round_trip<R: Runtime>(
 }
 
 /// Default budget for an `mcp-response` round-trip that isn't a navigation.
-const ROUND_TRIP_TIMEOUT_SECS: u64 = 5;
+pub(in crate::tools) const ROUND_TRIP_TIMEOUT_SECS: u64 = 5;
 
 /// The longest a single `holdMs` can stretch a round-trip, so a confused or
 /// hostile hold can't park a tool call for good. Well above the 90 s the delete
@@ -591,7 +591,7 @@ fn parse_nav_response(payload: &str, expected_id: &str) -> Option<Result<NavAck,
 /// before it knows whether it may trash at all), so the deadline moves to that long from
 /// now plus the usual budget, capped at [`MAX_ROUND_TRIP_HOLD`]. A silent frontend still
 /// times out on the short budget, and a held one still answers the moment it can.
-async fn mcp_round_trip_parsed<R: Runtime, T, F>(
+pub(in crate::tools) async fn mcp_round_trip_parsed<R: Runtime, T, F>(
     app: &AppHandle<R>,
     event: &str,
     mut payload: Value,

@@ -24,6 +24,7 @@ import type { SelectedPathsRead } from '#lib/file-explorer/pane/selected-paths-r
 import type { SelectionAttachmentsRead } from '#lib/file-explorer/pane/selection-attachments-read.js'
 import type { SplitDirection } from '#lib/file-explorer/pane/pane-split.js'
 import type { PaneMoveBy } from '#lib/file-explorer/pane/active-pane-focus.js'
+import type { CursorItemDescription, ToolOpenAnswer, ToolOpenGate } from '#lib/file-explorer/pane/entry-activation.js'
 import type {
   CopyPathBetweenPanesArgs,
   OpenDeleteDialogArgs,
@@ -167,6 +168,10 @@ export interface ExplorerAPI {
    */
   routePanelKey: (payload: QuickLookKeyEventPayload) => void
   openItemUnderCursor: () => Promise<void>
+  /** What opening the cursor's entry would do, for `open_under_cursor`'s question. */
+  describeItemUnderCursor: () => CursorItemDescription | null
+  /** `openItemUnderCursor` for a tool, checked against what a person agreed to. */
+  openItemUnderCursorForTool: (gate: ToolOpenGate) => Promise<ToolOpenAnswer>
   /**
    * Opens the focused pane's context menu on its CURSOR row (`⌃⏎`), anchored there
    * instead of at the pointer. Same menu and the same

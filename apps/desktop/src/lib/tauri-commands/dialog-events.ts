@@ -10,6 +10,7 @@
 
 import { type UnlistenFn } from '@tauri-apps/api/event'
 import {
+  commands,
   events,
   type CloseFileViewer,
   type ExecuteCommand,
@@ -21,6 +22,9 @@ import {
   type OpenSettings,
   type PersistRestrictedSetting,
   type RevealPath,
+  type ToolAskDismissed,
+  type ToolAskRequested,
+  type ToolAskResponse,
   type ViewerContextMenuAction,
   type ViewerEditAction,
   type ViewerHistoryAction,
@@ -260,4 +264,23 @@ export function onMouseNav(handler: (direction: MouseNavDirection) => void): Pro
   return events.mouseNav.listen((event) => {
     handler(event.payload.direction)
   })
+}
+
+/** A question a tool wants put to a person (`tools/ask.rs`). */
+export function onToolAskRequested(handler: (payload: ToolAskRequested) => void): Promise<UnlistenFn> {
+  return events.toolAskRequested.listen((event) => {
+    handler(event.payload)
+  })
+}
+
+/** Nobody's waiting on that question any more, so it comes down. */
+export function onToolAskDismissed(handler: (payload: ToolAskDismissed) => void): Promise<UnlistenFn> {
+  return events.toolAskDismissed.listen((event) => {
+    handler(event.payload)
+  })
+}
+
+/** The person's answer to a question. A stale request id lands nowhere. */
+export function answerToolAsk(requestId: string, response: ToolAskResponse): Promise<void> {
+  return commands.answerToolAsk(requestId, response)
 }

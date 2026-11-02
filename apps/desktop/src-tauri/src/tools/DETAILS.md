@@ -134,6 +134,38 @@ client's disconnect as its cancel. A handler that needs it takes the table's `ct
   `compress_files`, and `rollback_operation`. A missing one was recorded as `user`, so provenance failed open.
   `cancel_write_operation` has none on purpose: `apps/desktop/src/lib/file-operations/DETAILS.md` § Rollback asks first.
 
+## The human gate (`ask.rs`, `ask_plans.rs`)
+
+A `Sensitive` tool's table entry names an `ask:` plan, and `execute_tool` runs it through `ask::gate` after the schema
+gate and before the handler. Direct mode skips the gate. A test pins plan and `Sensitive` to each other, both ways.
+
+- **A plan only reads, and runs twice**: once to word the question, and again after a yes. Different facts, or a plan
+  that no longer asks, refuse with `data.refusal: "changedWhileAsking"`. So every `Sensitive` tool gets the re-check for
+  free: `eject`'s volume, `set_setting`'s old value, `open_under_cursor`'s path.
+- **`AskFacts` is typed, and every string in it is `fact_text`**: no control or bidirectional-override characters, since
+  `cod\u{202E}fdp.command` would read as a PDF, and bounded by dropping the middle, since a name's end says what it does.
+  `OpenFile.path` is the one exact string, kept for comparing; `shownPath` is what a person reads.
+- **Answers**: `declined`, `expired` (five minutes), `cancelled` (the turn's Stop, or the client going away), and
+  `noWindow`, each in `data.refusal`; another dialog in the way is `data.blockingDialog`. One question at a time, in
+  `ToolAskRegistry`: a second is `blockingDialog: "tool-ask"`. A reload wakes the wait (`register_known_dialogs`), and
+  the drop guard takes the question down however the wait ends, a dropped future included.
+- **Decision: raw `emit_to` for the two events**, with the specta structs naming the wire and the types. The specta
+  helper panics when events aren't mounted, and one of these sends runs in a destructor.
+- **Decision: `open_under_cursor`'s last check is in the frontend**, in `entry-activation.ts::openForTool`, at the moment
+  it opens. The plan's re-read leaves a gap a concurrent `move_cursor` could use, so the yes crosses as `expectedPath` off
+  `ToolCtx::asked`. With no question asked, a guarded caller sends `mayLaunch: false`: a folder under the cursor at plan
+  time must not become a `.command` at open time, launched with nobody asked. `resolveActivation` is the one decision
+  chain, shared with Enter, so "what would this do" can't drift from what it does. A document package set to Browse is
+  still a file and launches, which is why the plan reads the activation and never the policy.
+- **Decision: `set_setting` asks unless the registry says otherwise.** `mcp-describe-setting` reports the facts and
+  `setting_plan` decides, so a setting outside the registry refuses, a `mcpAskFree` one needs nobody, and a write that
+  changes nothing needs nobody. `mcpSettable` and managed locks refuse first, ask-free or not, and they stay in
+  `mcp-main-bridge.ts` too, because direct mode skips the plan.
+- **Stop**: `stop_may_abandon` keeps `Sensitive`, `Initiate`, and `LightWrite` to their own bounded end. Stop while the
+  question is up answers through the token; Stop after a yes lets the handler finish.
+- `dialog_confirm tool-ask` is a direct client's yes, and `dialog close tool-ask` is a no. The dialog's half:
+  `apps/desktop/src/lib/tool-ask/DETAILS.md`.
+
 ## Direct mode
 
 The switch that lets an outside client use the tools that go past a person (`policy.rs`). The agent never gets it.

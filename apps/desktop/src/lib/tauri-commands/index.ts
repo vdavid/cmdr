@@ -702,6 +702,9 @@ export {
   requestForegroundOperation,
   onForegroundOperationRequested,
   onMouseNav,
+  onToolAskRequested,
+  onToolAskDismissed,
+  answerToolAsk,
 } from './dialog-events'
 
 // Licensing

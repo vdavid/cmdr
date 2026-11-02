@@ -10,7 +10,7 @@
  */
 
 import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { getSettingDefinition, settingsRegistry } from './settings-registry'
+import { getSettingDefinition, settingsRegistry, validateSettingValue } from './settings-registry'
 import { getSetting, setSetting, isModified } from './settings-store'
 import type { SettingDefinition, SettingId, SettingsValues } from './types'
 import { getEffectiveShortcuts, getDefaultShortcuts, isShortcutModified } from '#lib/shortcuts/index.js'
@@ -143,7 +143,8 @@ type SetSettingRefusal = 'notSettableOverMcp' | 'onlyOffOverMcp' | 'managedByOrg
 
 async function handleSetSetting(event: { payload: SetSettingPayload }): Promise<void> {
   const { requestId, settingId, value } = event.payload
-  log.debug('Handling mcp-set-setting: {settingId} = {value}', { settingId, value })
+  // ❌ Never the value: a tool's argument stays out of the logs.
+  log.debug('Handling mcp-set-setting: {settingId}', { settingId })
 
   // A setting that records a person's consent answer is theirs alone to change: an AI client
   // must never undo it. Decided by the registry's typed `mcpSettable`, ❌ never an id match.
@@ -198,6 +199,45 @@ async function handleSetSetting(event: { payload: SetSettingPayload }): Promise<
 }
 
 // ============================================================================
+// mcp-describe-setting handler (what set_setting's question reads)
+// ============================================================================
+
+interface DescribeSettingPayload {
+  requestId: string
+  settingId: string
+  value: unknown
+}
+
+/** What the registry says about a setting and this value, for `tools/ask_plans.rs` to decide on. */
+function describeSetting(settingId: string, value: unknown): Record<string, unknown> | null {
+  const def = getSettingDefinition(settingId)
+  if (!def) return null
+  const sensitive = isSensitive(def)
+  const current: unknown = getSetting(settingId as SettingId)
+  let invalid: string | null = null
+  try {
+    validateSettingValue(settingId, value)
+  } catch (error) {
+    invalid = error instanceof Error ? error.message : String(error)
+  }
+  return {
+    label: def.label,
+    // ❌ Never a secret's real form: this crosses to the backend and goes up in a dialog.
+    oldValue: sensitive ? maskValue(def, current) : (current ?? null),
+    askFree: def.mcpAskFree === true,
+    mcpSettable: def.mcpSettable ?? true,
+    sensitive,
+    locked: !lockAllowsWrite(getSettingLock(settingId), value),
+    invalid,
+  }
+}
+
+async function handleDescribeSetting(event: { payload: DescribeSettingPayload }): Promise<void> {
+  const { requestId, settingId, value } = event.payload
+  await emit('mcp-response', { requestId, ok: true, setting: describeSetting(settingId, value) })
+}
+
+// ============================================================================
 // Setup / Cleanup
 // ============================================================================
 
@@ -205,6 +245,7 @@ async function handleSetSetting(event: { payload: SetSettingPayload }): Promise<
 export async function setupMcpMainBridge(): Promise<void> {
   unlistenFns.push(await listen<GetAllSettingsPayload>('mcp-get-all-settings', (e) => void handleGetAllSettings(e)))
   unlistenFns.push(await listen<SetSettingPayload>('mcp-set-setting', (e) => void handleSetSetting(e)))
+  unlistenFns.push(await listen<DescribeSettingPayload>('mcp-describe-setting', (e) => void handleDescribeSetting(e)))
 
   log.debug('MCP main bridge listeners set up')
 }

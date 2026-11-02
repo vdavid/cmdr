@@ -130,6 +130,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   },
   {
     id: 'theme.mode',
+    mcpAskFree: true,
     section: ['Appearance', 'Colors and formats'],
     labelKey: 'settings.theme.mode.label',
     descriptionKey: 'settings.theme.mode.description',
@@ -148,6 +149,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   },
   {
     id: 'appearance.appColor',
+    mcpAskFree: true,
     section: ['Appearance', 'Colors and formats'],
     labelKey: 'settings.appearance.appColor.label',
     // The rendered description is a `<LinkButton>` snippet in `AppearanceSection`
@@ -167,6 +169,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   },
   {
     id: 'appearance.sizeColors',
+    mcpAskFree: true,
     section: ['Appearance', 'Colors and formats'],
     labelKey: 'settings.appearance.sizeColors.label',
     descriptionKey: 'settings.appearance.sizeColors.description',
@@ -186,6 +189,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   },
   {
     id: 'appearance.dateColors',
+    mcpAskFree: true,
     section: ['Appearance', 'Colors and formats'],
     labelKey: 'settings.appearance.dateColors.label',
     descriptionKey: 'settings.appearance.dateColors.description',
@@ -204,6 +208,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   },
   {
     id: 'appearance.dateTimeFormat',
+    mcpAskFree: true,
     section: ['Appearance', 'Colors and formats'],
     labelKey: 'settings.appearance.dateTimeFormat.label',
     descriptionKey: 'settings.appearance.dateTimeFormat.description',
@@ -233,6 +238,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   },
   {
     id: 'appearance.customDateTimeFormat',
+    mcpAskFree: true,
     section: ['Appearance', 'Colors and formats'],
     labelKey: 'settings.appearance.customDateTimeFormat.label',
     descriptionKey: 'settings.appearance.customDateTimeFormat.description',
@@ -244,6 +250,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   },
   {
     id: 'listing.stripedRows',
+    mcpAskFree: true,
     section: ['Appearance', 'Colors and formats'],
     labelKey: 'settings.listing.stripedRows.label',
     descriptionKey: 'settings.listing.stripedRows.description',
@@ -260,6 +267,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   // live-apply happens reactively in `FilePane.svelte` via `volume-tint.svelte.ts`.
   {
     id: 'appearance.tintLocal',
+    mcpAskFree: true,
     section: ['Appearance', 'Colors and formats'],
     labelKey: 'settings.appearance.tintLocal.label',
     descriptionKey: 'settings.appearance.tintLocal.description',
@@ -271,6 +279,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   },
   {
     id: 'appearance.tintSmb',
+    mcpAskFree: true,
     section: ['Appearance', 'Colors and formats'],
     labelKey: 'settings.appearance.tintSmb.label',
     descriptionKey: 'settings.appearance.tintSmb.description',
@@ -283,6 +292,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   },
   {
     id: 'appearance.tintMtp',
+    mcpAskFree: true,
     section: ['Appearance', 'Colors and formats'],
     labelKey: 'settings.appearance.tintMtp.label',
     descriptionKey: 'settings.appearance.tintMtp.description',
@@ -299,6 +309,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   // ========================================================================
   {
     id: 'appearance.textSize',
+    mcpAskFree: true,
     section: ['Appearance', 'Zoom and density'],
     labelKey: 'settings.appearance.textSize.label',
     descriptionKey: 'settings.appearance.textSize.description',
@@ -316,6 +327,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   },
   {
     id: 'appearance.uiDensity',
+    mcpAskFree: true,
     section: ['Appearance', 'Zoom and density'],
     labelKey: 'settings.appearance.uiDensity.label',
     descriptionKey: 'settings.appearance.uiDensity.description',
@@ -337,6 +349,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   // ========================================================================
   {
     id: 'listing.sizeDisplay',
+    mcpAskFree: true,
     section: ['Appearance', 'File and folder sizes'],
     labelKey: 'settings.listing.sizeDisplay.label',
     descriptionKey: 'settings.listing.sizeDisplay.description',
@@ -354,6 +367,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   },
   {
     id: 'listing.sizeUnit',
+    mcpAskFree: true,
     section: ['Appearance', 'File and folder sizes'],
     labelKey: 'settings.listing.sizeUnit.label',
     descriptionKey: 'settings.listing.sizeUnit.description',
@@ -376,6 +390,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   },
   {
     id: 'appearance.fileSizeFormat',
+    mcpAskFree: true,
     section: ['Appearance', 'File and folder sizes'],
     labelKey: 'settings.appearance.fileSizeFormat.label',
     descriptionKey: 'settings.appearance.fileSizeFormat.description',
@@ -393,6 +408,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   },
   {
     id: 'listing.sizeMismatchWarning',
+    mcpAskFree: true,
     section: ['Appearance', 'File and folder sizes'],
     labelKey: 'settings.listing.sizeMismatchWarning.label',
     descriptionKey: 'settings.listing.sizeMismatchWarning.description',
@@ -407,6 +423,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   // ========================================================================
   {
     id: 'appearance.useAppIconsForDocuments',
+    mcpAskFree: true,
     section: ['Appearance', 'Listing'],
     labelKey: 'settings.appearance.useAppIconsForDocuments.label',
     descriptionKey: 'settings.appearance.useAppIconsForDocuments.description',
@@ -419,6 +436,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   },
   {
     id: 'appearance.showFunctionKeyBar',
+    mcpAskFree: true,
     section: ['Appearance', 'Listing'],
     labelKey: 'settings.appearance.showFunctionKeyBar.label',
     descriptionKey: 'settings.appearance.showFunctionKeyBar.description',
@@ -431,6 +449,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   },
   {
     id: 'listing.showExtensionInName',
+    mcpAskFree: true,
     section: ['Appearance', 'Listing'],
     labelKey: 'settings.listing.showExtensionInName.label',
     descriptionKey: 'settings.listing.showExtensionInName.description',
@@ -442,6 +461,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   },
   {
     id: 'listing.showTags',
+    mcpAskFree: true,
     section: ['Appearance', 'Listing'],
     labelKey: 'settings.listing.showTags.label',
     descriptionKey: 'settings.listing.showTags.description',
@@ -457,6 +477,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
     // View menu's CheckMenuItem mirrors it (`settings-applier.ts`), and Rust reads
     // the persisted key at startup to build that menu item checked.
     id: 'listing.showHiddenFiles',
+    mcpAskFree: true,
     section: ['Appearance', 'Listing'],
     labelKey: 'settings.listing.showHiddenFiles.label',
     descriptionKey: 'settings.listing.showHiddenFiles.description',
@@ -469,6 +490,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   },
   {
     id: 'listing.foldersFirst',
+    mcpAskFree: true,
     section: ['Appearance', 'Listing'],
     labelKey: 'settings.listing.foldersFirst.label',
     descriptionKey: 'settings.listing.foldersFirst.description',
@@ -494,6 +516,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   },
   {
     id: 'listing.directorySortMode',
+    mcpAskFree: true,
     section: ['Appearance', 'Listing'],
     labelKey: 'settings.listing.directorySortMode.label',
     descriptionKey: 'settings.listing.directorySortMode.description',
@@ -546,6 +569,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   },
   {
     id: 'listing.briefColumnWidthMode',
+    mcpAskFree: true,
     section: ['Appearance', 'Listing'],
     labelKey: 'settings.listing.briefColumnWidthMode.label',
     descriptionKey: 'settings.listing.briefColumnWidthMode.description',
@@ -563,6 +587,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
   },
   {
     id: 'listing.briefColumnWidthMaxPx',
+    mcpAskFree: true,
     section: ['Appearance', 'Listing'],
     labelKey: 'settings.listing.briefColumnWidthMaxPx.label',
     cardKey: 'settings.appearance.card.briefMode',

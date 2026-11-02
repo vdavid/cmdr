@@ -1932,6 +1932,8 @@ open in the default app, or ask. The decision is a pure function; the UI is a sm
   Office file is a zip — must precede it. Once the backend flags `.docx` as an archive, a zip-first order would swallow
   every Office document into the zip row and the Office documents setting would silently stop working. A test pins the
   order with a `.docx` carrying `isArchive: true`.
+- **`resolveActivation` (`entry-activation.ts`) is the decision chain, with no side effects**: `handleNavigate` acts on
+  it, and `open_under_cursor`'s question reads it, so what a tool asks about can't drift from what Enter does.
 - **`handleNavigate` consults it before the browse arm**, but only when NOT `pathInsideArchive(entry.path)` (a file
   inside an archive keeps the viewer interim). `ask` → `enterMenu.openFor`; `open` → `openEntryExternally` (`openFile`,
   i.e. LaunchServices — a `.zip` opens in the OS archive tool, a `.app` launches); `browse` → falls through to

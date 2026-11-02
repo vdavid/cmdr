@@ -60,7 +60,7 @@ vi.mock('./archive-paths', () => ({
 vi.mock('#lib/file-viewer/open-viewer.js', () => ({ openFileViewer: viewer.openFileViewer }))
 vi.mock('../navigation/navigate-and-select', () => ({ resolveLocationOrToast: navigate.resolveLocationOrToast }))
 
-import { createEntryActivation, type EntryActivationDeps } from './entry-activation'
+import { createEntryActivation, resolveActivation, type EntryActivationDeps } from './entry-activation'
 
 function entryOf(over: Partial<FileEntry> = {}): FileEntry {
   return {
@@ -257,6 +257,119 @@ describe('createEntryActivation', () => {
     it('open hands the entry to LaunchServices', async () => {
       await createEntryActivation(deps).openEntryExternally(entryOf({ name: 'a.zip', path: '/dir/a.zip' }))
       expect(ipc.openFile).toHaveBeenCalledWith('/dir/a.zip')
+    })
+  })
+})
+
+describe('what a tool has to ask about', () => {
+  const file = entryOf({ name: 'run.command', path: '/dir/run.command' })
+  const folder = entryOf({ name: 'Photos', path: '/dir/Photos', isDirectory: true })
+  const bundle = entryOf({ name: 'Thing.app', path: '/dir/Thing.app', isDirectory: true })
+
+  function context(isSearchResultsView = false) {
+    return { panePath: '/dir', isSearchResultsView, behavior: {} }
+  }
+
+  function activate() {
+    const deps = {
+      getCurrentPath: () => '/dir',
+      setCurrentPath: vi.fn(),
+      getCanonicalPath: () => null,
+      getVolumeId: () => 'root',
+      getIsSearchResultsView: () => false,
+      loadDirectory: vi.fn().mockResolvedValue(undefined),
+      openEnterMenu: vi.fn(),
+      onGoToLocation: vi.fn(),
+    }
+    return { deps, activation: createEntryActivation(deps) }
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    ipc.openFile.mockResolvedValue(undefined)
+    policy.pathInsideArchive.mockReturnValue(false)
+    policy.pathCrossesArchiveBoundary.mockReturnValue(false)
+    policy.resolveEnterPolicy.mockReturnValue(null)
+    policy.enterBehaviorFromSettings.mockReturnValue({})
+  })
+
+  describe('resolveActivation', () => {
+    it('a plain file launches, and a folder browses', () => {
+      expect(resolveActivation(file, context())).toBe('launch')
+      expect(resolveActivation(folder, context())).toBe('browse')
+    })
+
+    it.each([
+      ['browse', 'browse'],
+      ['open', 'launch'],
+      ['ask', 'choose'],
+    ])('a bundle under the `%s` policy resolves to `%s`', (action, expected) => {
+      policy.resolveEnterPolicy.mockReturnValue(action)
+      expect(resolveActivation(bundle, context())).toBe(expected)
+    })
+
+    it('a document package set to Browse is still a file, so it launches: the policy alone never means safe', () => {
+      policy.resolveEnterPolicy.mockReturnValue('browse')
+      expect(resolveActivation(entryOf({ name: 'a.docx' }), context())).toBe('launch')
+    })
+
+    it('a file inside an archive goes to the viewer', () => {
+      policy.pathInsideArchive.mockReturnValue(true)
+      expect(resolveActivation(file, context())).toBe('viewer')
+    })
+
+    it('a redirect browses', () => {
+      expect(resolveActivation(entryOf({ redirectToPath: '/elsewhere' }), context())).toBe('browse')
+    })
+
+    it('a search result under a policy leaves for its real volume, with no popup', () => {
+      policy.resolveEnterPolicy.mockReturnValue('ask')
+      expect(resolveActivation(bundle, context(true))).toBe('browse')
+    })
+
+    it('a plain file in search results still launches', () => {
+      expect(resolveActivation(file, context(true))).toBe('launch')
+    })
+  })
+
+  describe('openForTool', () => {
+    it('a yes on what is still there opens it', async () => {
+      const { activation } = activate()
+      expect(await activation.openForTool(file, { expectedPath: file.path })).toBe('opened')
+      expect(ipc.openFile).toHaveBeenCalledExactlyOnceWith(file.path)
+    })
+
+    it('a yes on something else opens nothing', async () => {
+      const { activation } = activate()
+      expect(await activation.openForTool(file, { expectedPath: '/dir/other' })).toBe('changedWhileAsking')
+      expect(ipc.openFile).not.toHaveBeenCalled()
+    })
+
+    it('a yes on an entry set to Ask opens it, with no popup a stray Enter could answer', async () => {
+      policy.resolveEnterPolicy.mockReturnValue('ask')
+      const { deps, activation } = activate()
+      expect(await activation.openForTool(bundle, { expectedPath: bundle.path })).toBe('opened')
+      expect(deps.openEnterMenu).not.toHaveBeenCalled()
+      expect(ipc.openFile).toHaveBeenCalledExactlyOnceWith(bundle.path)
+    })
+
+    it('with nobody asked, a folder browses', async () => {
+      const { deps, activation } = activate()
+      expect(await activation.openForTool(folder, { mayLaunch: false })).toBe('opened')
+      expect(deps.loadDirectory).toHaveBeenCalled()
+    })
+
+    it('with nobody asked, a cursor that moved onto a file launches nothing', async () => {
+      const { activation } = activate()
+      expect(await activation.openForTool(file, { mayLaunch: false })).toBe('changedWhileAsking')
+      expect(ipc.openFile).not.toHaveBeenCalled()
+    })
+
+    it('with nobody asked, an entry set to Ask raises no popup', async () => {
+      policy.resolveEnterPolicy.mockReturnValue('ask')
+      const { deps, activation } = activate()
+      expect(await activation.openForTool(bundle, { mayLaunch: false })).toBe('changedWhileAsking')
+      expect(deps.openEnterMenu).not.toHaveBeenCalled()
     })
   })
 })

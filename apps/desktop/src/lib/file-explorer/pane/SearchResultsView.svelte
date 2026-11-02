@@ -211,6 +211,11 @@
         if (entry) onNavigate(entry)
     }
 
+    /** The row under the cursor, for what has to know what opening it would do. */
+    export function getCursorEntry(): FileEntry | undefined {
+        return entries[cursorIndex]
+    }
+
     /**
      * Returns `true` when this view rendered with a missing snapshot. Used by FilePane
      * to suppress the per-row IPC traffic (selection sync, listing stats) that would

@@ -37,6 +37,7 @@ import { expirationFixtures } from './licensing'
 import { onboardingFixtures } from './onboarding'
 import { operationConflictFixtures } from './operation-conflict'
 import { quitFixtures } from './quit'
+import { toolAskFixtures } from './tool-ask'
 import { extensionChangeFixtures, renameConflictFixtures } from './rename'
 import { rollbackConfirmFixtures } from './rollback'
 import { selectionAddFixtures, selectionRemoveFixtures } from './selection'
@@ -82,6 +83,7 @@ export const fixtureRecords = {
   'quit-confirmation': quitFixtures,
   'rename-conflict': renameConflictFixtures,
   'rollback-confirmation': rollbackConfirmFixtures,
+  'tool-ask': toolAskFixtures,
   'selection-add': selectionAddFixtures,
   'selection-remove': selectionRemoveFixtures,
   'server-sign-in': serverSignInFixtures,

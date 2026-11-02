@@ -226,6 +226,11 @@ export const SOFT_DIALOG_REGISTRY = [
     whileOpen: BLOCKS_OPERATIONS,
   },
   {
+    id: 'tool-ask',
+    description: 'Asks a person to allow something sensitive a tool wants to do, naming what would happen',
+    whileOpen: BLOCKS_OPERATIONS,
+  },
+  {
     id: 'quit-confirmation',
     description: 'Asks whether to quit while copies or other operations are still running, on a countdown',
     whileOpen: BLOCKS_OPERATIONS,

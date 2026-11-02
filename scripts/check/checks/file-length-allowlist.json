@@ -25,8 +25,16 @@
       "lines": 1494,
       "reason": "TODO: split it, because 62 tests in five barely-overlapping groups sit 760 lines over the test budget (1,933 lines on `main` before #264 against a stale 1,777 entry; #264 added 30 when every `session::get_lines` call gained an explicit cancel flag). Move the search tests (`search_start_and_poll` through `test_regex_search_returns_matches`, including the watchdog and invalid-query ones) to `session_search_test.rs` (~400 lines), the tail-mode and watcher tests (`tail_mode_toggle_persists_on_session` through `test_session_close_stops_watcher`) to `session_tail_test.rs` (~440 lines), and the encoding tests (`get_encoding_options_returns_detected_and_all`, both `set_encoding_*`, `test_append_during_encoding_rebuild_not_dropped`, `test_set_encoding_during_rebuild_serialization`, `test_set_encoding_ascii_compatible_is_instant`) to `session_encoding_test.rs` (~290 lines). The ~70 lines of shared helpers (`create_test_dir`, `write_test_file`, `append_test_file`, `wait_for_watcher_subscribed`, `upgraded_to_line_index`, `literal_mode`) go to a `session_test_support.rs`, the convention the sibling `search_cancel_test_support.rs` already sets, so no fixture scatters."
     },
+    "apps/desktop/src-tauri/src/network/manual_servers.rs": {
+      "lines": 804,
+      "reason": "TODO: address parsing (`parse_server_address`, `parse_smb_url`, `extract_protocol`, `validate_host`, `parse_port`, `is_ip_address`) is its own concern. Moved into `manual_server_address.rs`, this file keeps the store and the discovery wiring and falls well under 800."
+    },
+    "apps/desktop/src-tauri/src/tools/table.rs": {
+      "lines": 800,
+      "reason": "The one authored tool table: one entry per tool, and a split would scatter the surface a reader needs to see whole. Its line count tracks the number of tools, not logic."
+    },
     "apps/desktop/src-tauri/src/lib.rs": {
-      "lines": 805,
+      "lines": 886,
       "reason": "TODO: `setup()` wires every OS observer as a `#[cfg]` pair (accent color, reduce transparency, Liquid Glass tint, text size); moving those pairs into one `os_appearance::observe(app)` helper beside `system_events.rs` would bring the file back under 800 and give them one home."
     },
     "apps/desktop/src-tauri/src/menu/command_map.rs": {

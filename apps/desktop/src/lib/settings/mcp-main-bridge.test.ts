@@ -48,7 +48,8 @@ vi.mock('#lib/logging/logger.js', () => ({
 }))
 
 import { cleanupMcpMainBridge, setupMcpMainBridge } from './mcp-main-bridge'
-import { getSettingDefinition } from './settings-registry'
+import { getSettingDefinition, settingsRegistry } from './settings-registry'
+import { getSetting } from './settings-store'
 
 /** Every setting that records a person's consent answer. */
 const CONSENT_BEARING = [
@@ -189,5 +190,96 @@ describe('MCP settings resource', () => {
     expect(block(yaml, 'analytics.enabled')).toContain('    mcpSettable: offOnly\n')
     expect(block(yaml, 'onboarding.termsAcceptedAt')).toContain('    mcpSettable: false\n')
     expect(block(yaml, 'updates.autoCheck')).not.toContain('mcpSettable')
+  })
+})
+
+describe("`mcp-describe-setting`, what `set_setting`'s question reads", () => {
+  async function describeSetting(settingId: string, value: unknown): Promise<Record<string, unknown> | null> {
+    emitMock.mockClear()
+    await handlers.get('mcp-describe-setting')?.({ payload: { requestId: 'r', settingId, value } })
+    const reply = emitMock.mock.calls.at(-1)?.[1] as { ok: boolean; setting: Record<string, unknown> | null }
+    expect(reply.ok).toBe(true)
+    return reply.setting
+  }
+
+  beforeEach(async () => {
+    await setupMcpMainBridge()
+  })
+
+  afterEach(() => {
+    cleanupMcpMainBridge()
+  })
+
+  it('a setting the registry has never heard of describes as nothing, which refuses', async () => {
+    expect(await describeSetting('made.up', true)).toBeNull()
+  })
+
+  it('names a consent answer as not settable', async () => {
+    expect((await describeSetting('onboarding.termsAcceptedVersion', 1))?.mcpSettable).toBe(false)
+  })
+
+  it('names a data-sharing switch as off only', async () => {
+    expect((await describeSetting('analytics.enabled', false))?.mcpSettable).toBe('offOnly')
+  })
+
+  it('says a value the registry refuses is invalid', async () => {
+    expect((await describeSetting('theme.mode', 'plaid'))?.invalid).toEqual(expect.any(String))
+    expect((await describeSetting('theme.mode', 'dark'))?.invalid).toBeNull()
+  })
+
+  it('never sends the real form of a secret', async () => {
+    const definition = getSettingDefinition('analytics.email')
+    expect(definition).toBeDefined()
+    const original = definition?.component
+    Object.assign(definition ?? {}, { component: 'password-input' })
+    vi.mocked(getSetting).mockReturnValueOnce('hunter2')
+    const described = await describeSetting('analytics.email', 'new')
+    Object.assign(definition ?? {}, { component: original })
+    expect(described?.sensitive).toBe(true)
+    expect(described?.oldValue).toBe('********')
+  })
+})
+
+describe('settings that change with no question', () => {
+  // ❌ Growing this is a decision David reads: only looks, trivially reversed, no reach past the window.
+  const ASK_FREE = [
+    'theme.mode',
+    'appearance.appColor',
+    'appearance.sizeColors',
+    'appearance.dateColors',
+    'appearance.dateTimeFormat',
+    'appearance.customDateTimeFormat',
+    'listing.stripedRows',
+    'appearance.tintLocal',
+    'appearance.tintSmb',
+    'appearance.tintMtp',
+    'appearance.textSize',
+    'appearance.uiDensity',
+    'listing.sizeDisplay',
+    'listing.sizeUnit',
+    'appearance.fileSizeFormat',
+    'listing.sizeMismatchWarning',
+    'appearance.useAppIconsForDocuments',
+    'appearance.showFunctionKeyBar',
+    'listing.showExtensionInName',
+    'listing.showTags',
+    'listing.showHiddenFiles',
+    'listing.foldersFirst',
+    'listing.directorySortMode',
+    'listing.briefColumnWidthMode',
+    'listing.briefColumnWidthMaxPx',
+    'viewer.wordWrap',
+    'viewer.showTextCursor',
+  ]
+
+  it('are exactly these, so a new setting asks', () => {
+    const marked = settingsRegistry.filter((def) => def.mcpAskFree === true).map((def) => def.id)
+    expect([...marked].sort()).toEqual([...ASK_FREE].sort())
+  })
+
+  it('never includes one a client may not freely write', () => {
+    for (const def of settingsRegistry) {
+      if (def.mcpAskFree === true) expect(def.mcpSettable, def.id).toBeUndefined()
+    }
   })
 })

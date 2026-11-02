@@ -25,11 +25,65 @@ import type { Location } from '#lib/tauri-commands/index.js'
 import { getSetting } from '#lib/settings/index.js'
 import { basenameOf, type CanonicalPath } from '#lib/path/canonical.js'
 import { pathCrossesArchiveBoundary, pathInsideArchive } from './archive-paths'
-import { resolveEnterPolicy, enterBehaviorFromSettings } from './archive-enter-policy'
+import { resolveEnterPolicy, enterBehaviorFromSettings, type EnterBehaviorByFormat } from './archive-enter-policy'
 import { openFileViewer } from '#lib/file-viewer/open-viewer.js'
 import { resolveLocationOrToast } from '../navigation/navigate-and-select'
 import type { LoadDirectoryArgs } from './types'
 import { announceOpening } from './opening-toast'
+
+/**
+ * What opening an entry does: the decision chain above, with no side effects. `launch` and `choose`
+ * can run something outside Cmdr, so they're what `open_under_cursor` asks a person about.
+ */
+export type ActivationKind = 'browse' | 'viewer' | 'launch' | 'choose'
+
+export function resolveActivation(
+  entry: FileEntry,
+  context: { panePath: string; isSearchResultsView: boolean; behavior: EnterBehaviorByFormat },
+): ActivationKind {
+  if (entry.redirectToPath) return 'browse'
+  // Gate on the PANE's path, not the entry's, and with the WIDE check: a pane sitting AT
+  // `/a/foo.zip` is already showing the archive's contents, so the policy has had its say and the
+  // entries below are inner items. Gating on the entry instead would skip the very archive we want
+  // the popup for.
+  if (!pathCrossesArchiveBoundary(context.panePath)) {
+    const action = resolveEnterPolicy(entry, context.behavior)
+    if (action) {
+      // From search results, opening any real entry must switch to its real volume first (no popup
+      // on the snapshot pane).
+      if (context.isSearchResultsView) return 'browse'
+      if (action === 'ask') return 'choose'
+      if (action === 'open') return 'launch'
+      // `browse` falls through: a document package set to Browse is still a plain file here.
+    }
+  }
+  // An archive file (`.zip`) browses like a folder, same-volume in place. `isDirectory` stays false
+  // on an archive, so it's an explicit second arm.
+  if (entry.isDirectory || entry.isArchive) return 'browse'
+  // The NARROW check: only a path with a real inner part is unopenable. The inner path doesn't exist
+  // on disk, so the OS open would be a silent no-op: the viewer (bounded temp-extract, same as F3) is
+  // the honest interim until extract-then-launch lands (`crates/cmdr-archive/DETAILS.md` § "Left for
+  // later").
+  if (pathInsideArchive(entry.path)) return 'viewer'
+  return 'launch'
+}
+
+/** What `open_under_cursor`'s plan reads (`tools/ask_plans.rs`). */
+export interface CursorItemDescription {
+  activation: ActivationKind
+  path: string
+  name: string
+  isDirectory: boolean
+}
+
+/**
+ * What a tool's open must still be true of when it happens: the path a person agreed to, or, when
+ * nobody was asked, that it launches nothing. Checked here because this is the last moment the
+ * cursor can't move.
+ */
+export type ToolOpenGate = { expectedPath: string } | { mayLaunch: false }
+
+export type ToolOpenAnswer = 'opened' | 'changedWhileAsking'
 
 export interface EntryActivationDeps {
   getCurrentPath: () => string
@@ -53,6 +107,10 @@ export interface EntryActivation {
   browseIntoEntry: (entry: FileEntry) => Promise<void>
   /** Hand an entry to its default app. Also the popup's Open choice. */
   openEntryExternally: (entry: FileEntry) => Promise<void>
+  /** What opening an entry would do, for a tool's question. */
+  describe: (entry: FileEntry) => CursorItemDescription
+  /** Open an entry for a tool, unless the gate says it isn't what was agreed to. */
+  openForTool: (entry: FileEntry, gate: ToolOpenGate) => Promise<ToolOpenAnswer>
 }
 
 export function createEntryActivation(deps: EntryActivationDeps): EntryActivation {
@@ -104,75 +162,61 @@ export function createEntryActivation(deps: EntryActivationDeps): EntryActivatio
     deps.onGoToLocation(location)
   }
 
+  function activationOf(entry: FileEntry): ActivationKind {
+    return resolveActivation(entry, {
+      panePath: deps.getCurrentPath(),
+      isSearchResultsView: deps.getIsSearchResultsView(),
+      behavior: enterBehaviorFromSettings(getSetting),
+    })
+  }
+
   async function handleNavigate(entry: FileEntry): Promise<void> {
-    // `redirectToPath` is set by the backend on virtual entries that
-    // should open elsewhere (worktree and submodule working dirs).
-    if (entry.redirectToPath) {
-      if (deps.getIsSearchResultsView()) {
-        await goToRealEntry(entry.redirectToPath)
+    switch (activationOf(entry)) {
+      case 'choose':
+        deps.openEnterMenu(entry)
         return
-      }
-      deps.setCurrentPath(entry.redirectToPath)
-      await deps.loadDirectory({ path: entry.redirectToPath })
-      return
-    }
-    // Enter-behavior policy for archives (`.zip`), OOXML documents (`.docx`), and
-    // macOS bundles (`.app` etc.). Gate on the PANE's path, not the entry's, and
-    // with the WIDE check: a pane sitting AT `/a/foo.zip` is already showing the
-    // archive's contents, so the policy has had its say and the entries below are
-    // inner items, which keep the viewer interim below. Gating on the entry
-    // instead would skip the very archive we want the popup for. `browse` falls
-    // through to the folder-browse arm; `open` launches; `ask` shows the
-    // Browse | Open | Configure popup.
-    if (!pathCrossesArchiveBoundary(deps.getCurrentPath())) {
-      const action = resolveEnterPolicy(entry, enterBehaviorFromSettings(getSetting))
-      if (action) {
-        // From search results, opening any real entry must switch to its real
-        // volume first (no popup on the snapshot pane — mirrors the arms below).
+      case 'launch':
+        await openEntryExternally(entry)
+        return
+      case 'viewer':
+        // Pass the pane's DRIVE volume id (an archive pane keeps its parent
+        // drive's id) so a remote-hosted zip previews through that volume.
+        void openFileViewer(entry.path, deps.getVolumeId())
+        return
+      case 'browse':
         if (deps.getIsSearchResultsView()) {
-          await goToRealEntry(entry.path)
-          return
+          await goToRealEntry(entry.redirectToPath ?? entry.path)
+        } else if (entry.redirectToPath) {
+          deps.setCurrentPath(entry.redirectToPath)
+          await deps.loadDirectory({ path: entry.redirectToPath })
+        } else {
+          await browseIntoEntry(entry)
         }
-        if (action === 'ask') {
-          deps.openEnterMenu(entry)
-          return
-        }
-        if (action === 'open') {
-          await openEntryExternally(entry)
-          return
-        }
-        // action === 'browse': fall through to the folder-browse arm.
-      }
-    }
-    // An archive file (`.zip`) browses like a folder: Enter navigates INTO it,
-    // same-volume in-place (the tab keeps the parent-drive id; the backend
-    // `resolve` routes the `…/foo.zip/…` path to the read-only ArchiveVolume).
-    // `isDirectory` stays false on an archive, so it's an explicit second arm.
-    if (entry.isDirectory || entry.isArchive) {
-      // Same as the redirect branch: a real directory opened from the
-      // search-results rows switches to its real volume first.
-      if (deps.getIsSearchResultsView()) {
-        await goToRealEntry(entry.path)
-        return
-      }
-      await browseIntoEntry(entry)
-    } else if (pathInsideArchive(entry.path)) {
-      // The NARROW check: only a path with a real inner part is unopenable. An
-      // archive FILE reaching here would be openable, though it never does — the
-      // `isArchive` arm above catches it first.
-      // A file INSIDE an archive can't be opened by the OS default app: the
-      // inner path doesn't exist on disk, so `openFile` is a silent no-op.
-      // Route to the viewer (bounded temp-extract, same as F3) — the honest
-      // interim until extract-then-launch lands, which needs its own
-      // extract-and-persist lifecycle (`crates/cmdr-archive/DETAILS.md` §
-      // "Left for later").
-      // Pass the pane's DRIVE volume id (an archive pane keeps its parent
-      // drive's id) so a remote-hosted zip previews through that volume.
-      void openFileViewer(entry.path, deps.getVolumeId())
-    } else {
-      await openEntryExternally(entry)
     }
   }
 
-  return { handleNavigate, browseIntoEntry, openEntryExternally }
+  function describe(entry: FileEntry): CursorItemDescription {
+    return { activation: activationOf(entry), path: entry.path, name: entry.name, isDirectory: entry.isDirectory }
+  }
+
+  /** `handleNavigate` for a tool, checked against the gate at the moment it opens. */
+  async function openForTool(entry: FileEntry, gate: ToolOpenGate): Promise<ToolOpenAnswer> {
+    const activation = activationOf(entry)
+    const launches = activation === 'launch' || activation === 'choose'
+    if ('expectedPath' in gate) {
+      if (entry.path !== gate.expectedPath) return 'changedWhileAsking'
+      if (launches) {
+        // The person already said to open it. The Browse | Open popup would ask again, a stray
+        // Enter away from its first row.
+        await openEntryExternally(entry)
+        return 'opened'
+      }
+    } else if (launches) {
+      return 'changedWhileAsking'
+    }
+    await handleNavigate(entry)
+    return 'opened'
+  }
+
+  return { handleNavigate, browseIntoEntry, openEntryExternally, describe, openForTool }
 }

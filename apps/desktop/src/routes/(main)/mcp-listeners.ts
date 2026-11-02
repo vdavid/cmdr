@@ -49,6 +49,7 @@ import {
   type PaneQuietProbe,
   type PaneRest,
 } from './mcp-nav-landing'
+import { listenForOpenUnderCursor } from './mcp-open-under-cursor'
 
 const log = getAppLogger('mcpListeners')
 
@@ -217,7 +218,6 @@ const fileRenameCommand: CommandId = 'file.rename'
 const dialogConfirmCommand: CommandId = 'dialog.confirm'
 const navBackCommand: CommandId = 'nav.back'
 const navForwardCommand: CommandId = 'nav.forward'
-const navOpenUnderCursorCommand: CommandId = 'nav.openUnderCursor'
 const searchOpenCommand: CommandId = 'search.open'
 const tabMcpActionCommand: CommandId = 'tab.mcpAction'
 
@@ -537,30 +537,7 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     })()
   })
 
-  // Round-trip for open-under-cursor: backend can't infer outcome from state pushes
-  // alone (Enter on a non-directory file delegates to the OS default app and produces
-  // no MCP-observable signal). The bus dispatches the intent; the adapter awaits the
-  // dispatch's promise (which awaits `openItemUnderCursor`) and replies via mcp-response.
-  await listenTauri('mcp-open-under-cursor', (event) => {
-    const raw = asRecord(event.payload)
-    const requestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
-    if (requestId === undefined) return
-    void (async () => {
-      const { emit } = await import('@tauri-apps/api/event')
-      // HMR can land this with no explorer; reply ok:false rather than crashing.
-      if (!getExplorer()) {
-        await emit('mcp-response', { requestId, ok: false, error: 'Explorer is not ready' })
-        return
-      }
-      try {
-        await dispatch(navOpenUnderCursorCommand)
-        await emit('mcp-response', { requestId, ok: true })
-      } catch (e) {
-        const error = e instanceof Error ? e.message : String(e)
-        await emit('mcp-response', { requestId, ok: false, error })
-      }
-    })()
-  })
+  await listenForOpenUnderCursor(ctx)
 
   await listenTauri('mcp-move-cursor', (event) => {
     const raw = asRecord(event.payload)

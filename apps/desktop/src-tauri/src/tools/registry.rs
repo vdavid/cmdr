@@ -181,6 +181,9 @@ pub fn validate_params(name: &str, params: &Value) -> Result<(), ToolError> {
 /// Entry form:
 /// `"name" => { id: <Variant>, brief, desc, schema, subject: .., consumers: &[..], access: .., run: <shape> <handler-path> }`.
 ///
+/// `ask` names a [`Sensitive`](Access::Sensitive) tool's plan: an `async fn(app, ctx, params) -> AskPlan` the
+/// dispatch runs ahead of the handler, and again after a yes (`ask.rs`).
+///
 /// `id` becomes the entry's [`ToolId`](super::ToolId) variant. `brief` is the one line (at most 100
 /// characters, test-capped) a model reads for a tool it hasn't loaded in full. `desc` is what it reads
 /// once it has.
@@ -210,6 +213,7 @@ macro_rules! mcp_tools {
         subject: $subject:expr,
         consumers: $consumers:expr,
         access: $access:expr,
+        $( ask: $ask:path, )?
         run: $shape:tt $path:path
     } ),* $(,)? ) => {
         /// A tool's typed name, one variant per table entry.
@@ -338,6 +342,15 @@ macro_rules! mcp_tools {
             }
         }
 
+        /// Whether this tool names an `ask` plan. A test pins it to `Sensitive`, both ways.
+        #[cfg_attr(not(test), expect(dead_code, reason = "only the test that pins the table reads it"))]
+        pub fn tool_has_ask_plan(name: &str) -> bool {
+            match name {
+                $( $name => mcp_tools!(@has_plan $( $ask )?), )*
+                _ => false,
+            }
+        }
+
         /// The input schema a tool declares, or `None` for an unknown name. The same value
         /// both views publish, so [`validate_params`] gates a call against exactly what the
         /// caller was told the tool takes.
@@ -366,11 +379,30 @@ macro_rules! mcp_tools {
                 return Err(refusal);
             }
             validate_params(name, params)?;
+            // Ahead of the handler and after the schema, so a malformed call never reaches a person.
+            let asked = match name {
+                $( $name => mcp_tools!(@ask [$( $ask )?] app, ctx, params), )*
+                _ => None,
+            };
+            let confirmed;
+            let ctx = if asked.is_some() {
+                confirmed = ToolCtx { asked, ..ctx.clone() };
+                &confirmed
+            } else {
+                ctx
+            };
             match name {
                 $( $name => mcp_tools!(@call $shape $path, $name, app, ctx, params), )*
                 _ => Err(ToolError::invalid_params(format!("Unknown tool: {name}"))),
             }
         }
+    };
+
+    (@has_plan) => { false };
+    (@has_plan $p:path) => { true };
+    (@ask [] $app:ident, $ctx:ident, $params:ident) => { None };
+    (@ask [$p:path] $app:ident, $ctx:ident, $params:ident) => {
+        super::ask::gate($app, $ctx, || $p($app, $ctx, $params)).await?
     };
 
     // Handler-shape arms: each evaluates to a `ToolResult`. Sync handlers deliberately

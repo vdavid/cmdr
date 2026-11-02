@@ -16,6 +16,7 @@ fn agent_ctx() -> ToolCtx {
         },
         cancel: tokio_util::sync::CancellationToken::new(),
         conversation_id: None,
+        asked: None,
     }
 }
 

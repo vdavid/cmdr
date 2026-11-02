@@ -103,6 +103,8 @@
     import type { PtpcameradFixture } from './fixtures/devices'
     import type { MoveToApplicationsFixture } from './fixtures/updates'
     import type { QuitFixture } from './fixtures/quit'
+    import type { ToolAskFixture } from './fixtures/tool-ask'
+    import ToolAskDialog from '#lib/tool-ask/ToolAskDialog.svelte'
     import type { SelectionFixture } from './fixtures/selection'
     import type { SignInSheetFixture } from './fixtures/servers'
 
@@ -113,6 +115,7 @@
         | { kind: 'alert'; props: AlertFixture }
         | { kind: 'about' }
         | { kind: 'rollback-confirmation'; props: RollbackConfirmFixture }
+        | { kind: 'tool-ask'; props: ToolAskFixture }
         | { kind: 'sources-gone'; props: SourcesGoneFixture }
         | { kind: 'locked-sources'; props: LockedSourcesFixture }
         | { kind: 'acknowledgements' }
@@ -276,6 +279,11 @@
                 kind: 'locked-sources',
                 props: f,
             })),
+        'tool-ask': (id) =>
+            withFixture(fixtureRecords['tool-ask'][id], (f) => ({
+                kind: 'tool-ask',
+                props: f,
+            })),
         'rollback-confirmation': (id) =>
             withFixture(fixtureRecords['rollback-confirmation'][id], (f) => ({
                 kind: 'rollback-confirmation',
@@ -436,6 +444,8 @@
             onCancel={closeGalleryDialog}
             onQuit={closeGalleryDialog}
         />
+    {:else if plan?.kind === 'tool-ask'}
+        <ToolAskDialog {...plan.props} onAllow={closeGalleryDialog} onDecline={closeGalleryDialog} />
     {:else if plan?.kind === 'rollback-confirmation'}
         <RollbackConfirmDialog {...plan.props} onConfirm={closeGalleryDialog} onCancel={closeGalleryDialog} />
     {:else if plan?.kind === 'sources-gone'}

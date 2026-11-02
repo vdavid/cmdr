@@ -833,7 +833,8 @@ more specific `cancelled` in the same poll.
 over `Access`). Both commit on a blocking thread that dropping the future doesn't stop, so
 abandoning would record `cancelled` beside a proposal the user can see, or a note the agent reads
 next turn. They run to their own bounded end with their real answer; the loop-top check then ends
-the turn.
+the turn. `Sensitive`, `Initiate`, and `LightWrite` do the same: a person may have just said yes, and
+a question comes down on the turn's token by itself (`tools/DETAILS.md` § The human gate).
 
 ## The event seam (`AgentChatEvent`)
 

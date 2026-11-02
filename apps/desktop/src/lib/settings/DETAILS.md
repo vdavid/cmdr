@@ -414,17 +414,19 @@ split-layout rule, and the `SettingPasswordInput` store-driven vs controlled mod
   across rows under tabular figures with no split-cell trick; custom format default is `YYYY-MM-DD HH:mm`. The
   `'system'` formatter requests fixed-width components (2-digit month/day/hour/minute) so locale formats align too, and
   is memoized at module scope (constructing `Intl.DateTimeFormat` per call shows up in virtualized scroll profiles).
-- **mcp-main-bridge.ts**: MCP bridge for settings. ❌ `set_setting` refuses a definition marked `mcpSettable: false` (a
-  setting that records a consent answer: the two `onboarding.termsAccepted*`, `ai.cloudConsentRevokePending`,
-  `askCmdr.consentRevokePending`, `askCmdr.enabled`) with a typed `notSettableOverMcp` refusal, keyed on the registry
-  mark, never the id; a new consent-bearing setting sets the mark. The data-sharing switches (`analytics.enabled`,
-  `updates.crashReports`, `updates.errorReports`) are `mcpSettable: 'offOnly'`: a client may write `false` (helping
-  someone opt out), and anything else is refused as `onlyOffOverMcp`. The YAML lists both marks, and the `set_setting`
-  tool description explains them. A setting the organization's policy manages is marked `managed: true` (its `value` is
-  already the effective one), and a write the lock rules out is refused with `refusal: 'managedByOrganization'`, the
-  backstop to the backend's own refusal before the round trip. It handles `mcp-get-all-settings` and `mcp-set-setting`
-  round-trip events in the main window (always alive), enabling AI agents to query and modify settings without the
-  settings window open
+- **mcp-main-bridge.ts**: MCP bridge for settings. `mcp-describe-setting` tells `set_setting`'s question what the
+  registry knows (`src-tauri/src/tools/DETAILS.md` § The human gate). `mcpAskFree: true` skips the question, for what
+  only changes looks and is trivially reversed; `mcp-main-bridge.test.ts` pins the set, so a new setting asks. ❌
+  `set_setting` refuses a definition marked `mcpSettable: false` (a setting that records a consent answer: the two
+  `onboarding.termsAccepted*`, `ai.cloudConsentRevokePending`, `askCmdr.consentRevokePending`, `askCmdr.enabled`) with a
+  typed `notSettableOverMcp` refusal, keyed on the registry mark, never the id; a new consent-bearing setting sets the
+  mark. The data-sharing switches (`analytics.enabled`, `updates.crashReports`, `updates.errorReports`) are
+  `mcpSettable: 'offOnly'`: a client may write `false` (helping someone opt out), and anything else is refused as
+  `onlyOffOverMcp`. The YAML lists both marks, and the `set_setting` tool description explains them. A setting the
+  organization's policy manages is marked `managed: true` (its `value` is already the effective one), and a write the
+  lock rules out is refused with `refusal: 'managedByOrganization'`, the backstop to the backend's own refusal before
+  the round trip. It handles `mcp-get-all-settings` and `mcp-set-setting` round-trip events in the main window (always
+  alive), enabling AI agents to query and modify settings without the settings window open
 
 ### Every open funnels through `openSettingsWindow`
 

@@ -117,6 +117,7 @@
         settleFocusAfterPaneMove,
         type PaneMoveBy,
     } from './active-pane-focus'
+    import type { CursorItemDescription, ToolOpenAnswer, ToolOpenGate } from './entry-activation'
     import { registerFocusHome } from '#lib/ui/focus-restore.js'
     import { isPaneChromeTarget } from './pane-chrome'
     import { createMcpTabAction } from './mcp-tab-action'
@@ -1033,6 +1034,14 @@
     // noinspection JSUnusedGlobalSymbols -- Used dynamically by MCP listeners
     export async function openItemUnderCursor(): Promise<void> {
         await paneCommands.openItemUnderCursor()
+    }
+
+    export function describeItemUnderCursor(): CursorItemDescription | null {
+        return paneCommands.describeItemUnderCursor()
+    }
+
+    export function openItemUnderCursorForTool(gate: ToolOpenGate): Promise<ToolOpenAnswer> {
+        return paneCommands.openItemUnderCursorForTool(gate)
     }
 
     // noinspection JSUnusedGlobalSymbols -- Used dynamically by the `file.contextMenu` handler

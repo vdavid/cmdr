@@ -11,6 +11,7 @@ export const viewerSettings: SettingDefinitionSource[] = [
   // ========================================================================
   {
     id: 'viewer.wordWrap',
+    mcpAskFree: true,
     section: ['Viewer'],
     labelKey: 'settings.viewer.wordWrap.label',
     descriptionKey: 'settings.viewer.wordWrap.description',
@@ -21,6 +22,7 @@ export const viewerSettings: SettingDefinitionSource[] = [
   },
   {
     id: 'viewer.showTextCursor',
+    mcpAskFree: true,
     section: ['Viewer'],
     labelKey: 'settings.viewer.showTextCursor.label',
     descriptionKey: 'settings.viewer.showTextCursor.description',

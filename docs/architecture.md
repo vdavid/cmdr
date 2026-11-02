@@ -38,6 +38,8 @@ All under `apps/desktop/src/lib/`.
 - `file-explorer/tabs/`: Tab bar and per-pane tab state
 - `file-explorer/operations/`: Pane-scoped operation hooks (delete, refresh, swap) wired into the command registry
 - `file-explorer/quick-look/`: Frontend Quick Look (Shift+Space) trigger and keyboard plumbing
+- `tool-ask/`: The question a `Sensitive` AI tool puts to a person before its handler runs. See
+  `apps/desktop/src/lib/tool-ask/CLAUDE.md`
 - `file-operations/`: Umbrella over `transfer/`, `delete/`, `mkdir/`, `mkfile/` dialogs (shared progress dialog) plus
   `scan-throughput.ts`, the foreground-ownership slots, and the main window's conflict prompt for an operation no
   progress dialog is showing

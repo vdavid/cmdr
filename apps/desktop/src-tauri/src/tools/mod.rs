@@ -16,6 +16,8 @@
 //! See `CLAUDE.md` for the must-knows and `DETAILS.md` for the tool catalog.
 
 mod actions;
+pub mod ask;
+mod ask_plans;
 pub mod connect;
 pub mod error_codes;
 pub mod memory;

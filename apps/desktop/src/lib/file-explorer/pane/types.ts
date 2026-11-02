@@ -7,6 +7,7 @@ import type { HistoryCursor } from '../navigation/navigation-history'
 import type { PaneRowState } from './pane-row-state'
 import type { CursorReadOptions } from './pressed-rows'
 import type { CreatePress } from './dialog-props'
+import type { CursorItemDescription, ToolOpenAnswer, ToolOpenGate } from './entry-activation'
 import type { ResortResult, SortColumn } from '../types'
 
 /** Options for `startRename`. */
@@ -341,6 +342,10 @@ export interface FilePaneAPI {
 
   /** Opens the entry under the cursor; awaits directory load or OS handoff. */
   openCursorItem(): Promise<void>
+  /** What opening the entry under the cursor would do, `null` with nothing to say about. */
+  describeCursorItem(): CursorItemDescription | null
+  /** `openCursorItem` for a tool, checked against what a person agreed to. */
+  openCursorItemForTool(gate: ToolOpenGate): Promise<ToolOpenAnswer>
 
   /** Type-to-jump: route one printable keystroke into the pane's buffer. */
   handleJumpKeystroke(char: string): void
@@ -488,6 +493,7 @@ export interface SearchResultsViewAPI {
   setCursorIndex(index: number): void
   findItemIndex(name: string): number
   openCursorItem(): void
+  getCursorEntry(): FileEntry | undefined
   isMissing(): boolean
 }
 

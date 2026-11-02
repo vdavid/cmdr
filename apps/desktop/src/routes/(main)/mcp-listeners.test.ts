@@ -30,6 +30,7 @@ import {
 } from './mcp-listeners'
 import type { ExplorerAPI } from './explorer-api'
 import { NAV_QUIET_WAIT } from './mcp-nav-landing'
+import { parseToolOpenGate } from './mcp-open-under-cursor'
 import type { NavigateResult } from '#lib/file-explorer/pane/navigate.js'
 
 const { resolveLocationMock } = vi.hoisted(() => ({ resolveLocationMock: vi.fn() }))
@@ -991,5 +992,22 @@ describe('mcp-nav-to-path landing outcomes (the volume-switch arm)', () => {
       volumeId: 'smb-1',
       path: 'smb://nas/share',
     })
+  })
+})
+
+describe('parseToolOpenGate', () => {
+  it('no gate is a client in direct mode', () => {
+    expect(parseToolOpenGate({})).toBeUndefined()
+  })
+
+  it('a yes names its path', () => {
+    expect(parseToolOpenGate({ gate: { expectedPath: '/a' } })).toEqual({ expectedPath: '/a' })
+  })
+
+  it('anything else launches nothing, since it is no yes', () => {
+    expect(parseToolOpenGate({ gate: { mayLaunch: false } })).toEqual({ mayLaunch: false })
+    expect(parseToolOpenGate({ gate: {} })).toEqual({ mayLaunch: false })
+    expect(parseToolOpenGate({ gate: 'yes' })).toEqual({ mayLaunch: false })
+    expect(parseToolOpenGate({ gate: { expectedPath: 1 } })).toEqual({ mayLaunch: false })
   })
 })

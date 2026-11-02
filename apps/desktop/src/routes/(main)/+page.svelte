@@ -51,6 +51,8 @@
     import StatusCorner from '#lib/status-corner/StatusCorner.svelte'
     import OperationConflictDialog from '#lib/file-operations/OperationConflictDialog.svelte'
     import ToolRollbackDialog from '#lib/file-operations/ToolRollbackDialog.svelte'
+    import ToolAskHost from '#lib/tool-ask/ToolAskHost.svelte'
+    import { abandonToolAsk } from '#lib/tool-ask/tool-ask.svelte.js'
     import { dismissToolRollback } from '#lib/file-operations/tool-rollback.svelte.js'
     import SourcesGonePrompt from '#lib/file-operations/SourcesGonePrompt.svelte'
     import LockedSourcesPrompt from '#lib/file-operations/LockedSourcesPrompt.svelte'
@@ -975,6 +977,9 @@
             </DialogBoundary>
             <DialogBoundary name="toolRollback" onClose={dismissToolRollback}>
                 <ToolRollbackDialog />
+            </DialogBoundary>
+            <DialogBoundary name="toolAsk" onClose={abandonToolAsk}>
+                <ToolAskHost />
             </DialogBoundary>
             <DialogBoundary name="sourcesGone" onClose={() => void cancelSourcesGonePrompt()}>
                 <SourcesGonePrompt />

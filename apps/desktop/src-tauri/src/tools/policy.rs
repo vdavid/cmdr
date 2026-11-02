@@ -12,6 +12,7 @@ use serde_json::{Value, json};
 use tokio_util::sync::CancellationToken;
 
 use super::actions::ToolError;
+use super::ask::AskFacts;
 use super::registry::{Access, Consumer};
 use crate::agent::types::TurnOrigin;
 use crate::secrets::{SecretStore, SecretStoreError};
@@ -61,6 +62,9 @@ pub struct ToolCtx {
     pub cancel: CancellationToken,
     /// The chat thread that asked. An outside client has none.
     pub conversation_id: Option<i64>,
+    /// What a person just agreed to, when the table's `ask` plan put a question to them. A handler
+    /// that acts on a fact it can't re-check in one step (`open_under_cursor`'s path) reads it here.
+    pub asked: Option<AskFacts>,
 }
 
 impl ToolCtx {
@@ -70,6 +74,7 @@ impl ToolCtx {
             caller: Caller::External { direct: direct_mode() },
             cancel,
             conversation_id: None,
+            asked: None,
         }
     }
 
@@ -281,6 +286,7 @@ mod tests {
             caller,
             cancel: CancellationToken::new(),
             conversation_id: None,
+            asked: None,
         };
         assert_eq!(
             ctx(AGENT).stamp(json!({ "pane": "left" })),

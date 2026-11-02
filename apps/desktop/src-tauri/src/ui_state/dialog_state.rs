@@ -129,6 +129,9 @@ pub fn register_known_dialogs(app: AppHandle, dialogs: Vec<KnownDialog>) {
     if let Some(store) = app.try_state::<crate::ui_state::ArchivePasswordPromptStore>() {
         store.clear();
     }
+    // The question that window showed can't be answered now, and its wait would otherwise run out
+    // the whole expiry.
+    crate::tools::ask::window_reloaded(&app);
 }
 
 #[cfg(test)]

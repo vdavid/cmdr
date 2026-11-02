@@ -614,6 +614,7 @@ async fn the_agent_never_reaches_it() {
             },
             cancel: tokio_util::sync::CancellationToken::new(),
             conversation_id: None,
+            asked: None,
         },
         "dialog_confirm",
         &json!({ "type": TRANSFER }),
@@ -633,4 +634,43 @@ fn answer_confirm_keeping_it_open(app: &AppHandle<tauri::test::MockRuntime>, rep
         response["requestId"] = payload["requestId"].clone();
         handle.emit("mcp-response", response).expect("emit the reply");
     });
+}
+
+#[tokio::test]
+async fn a_direct_client_answers_a_tools_question_and_the_ack_waits_for_it_to_come_down() {
+    use crate::tools::ask::{AskAnswer, AskFacts, ToolAskRegistry, ask};
+    use tauri::{WebviewUrl, WebviewWindowBuilder};
+
+    let app = app_with_stores();
+    app.manage(ToolAskRegistry::default());
+    WebviewWindowBuilder::new(&app, "main", WebviewUrl::default())
+        .build()
+        .expect("a mock window");
+    let handle = app.handle().clone();
+    let cancel = tokio_util::sync::CancellationToken::new();
+    let waiting = ask(
+        &handle,
+        AskFacts::Quit,
+        cmdr_operation_log::types::Initiator::AiClient,
+        &cancel,
+    );
+    // Polled after `waiting`, so the question is up by the time this looks for it.
+    let confirm = async {
+        handle.state::<SoftDialogTracker>().open(TOOL_ASK_DIALOG.to_string());
+        let close = async { handle.state::<SoftDialogTracker>().close(TOOL_ASK_DIALOG) };
+        let params = json!({ "type": TOOL_ASK_DIALOG });
+        let (reply, ()) = tokio::join!(execute_dialog_confirm(&handle, &params), close);
+        reply
+    };
+    let (answer, reply) = tokio::join!(waiting, confirm);
+    assert_eq!(answer, AskAnswer::Allowed);
+    assert!(reply.is_ok(), "{reply:?}");
+}
+
+#[tokio::test]
+async fn a_tool_ask_confirm_with_nothing_open_refuses() {
+    let app = app_with_stores();
+    let handle = app.handle().clone();
+    let outcome = execute_dialog_confirm(&handle, &json!({ "type": TOOL_ASK_DIALOG })).await;
+    assert!(outcome.is_err());
 }

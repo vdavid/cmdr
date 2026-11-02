@@ -13,6 +13,7 @@
 //! - `rollback-confirmation` → a round-trip the rollback answers: `{ status: "dispatched",
 //!   inverseOpId }` (null for a running operation, which stops in place), or the typed
 //!   `{ status: "refused", refusal }`. Then the tracker loses the id.
+//! - `tool-ask` → the answer goes to the question's wait (`tools/ask.rs`), then the tracker loses the id.
 //! - `quit-confirmation` → no ack: the answer goes to the quit gate, which starts a teardown that
 //!   ends the process. See `quit.rs`.
 //!
@@ -26,6 +27,7 @@ use super::{
     AckSignal, DEFAULT_ACK_TIMEOUT, OperationStartAck, ToolError, ToolResult, mcp_round_trip_parsed,
     operation_start_result, parse_operation_start_response, validate_conflict_policy, wait_for_ack,
 };
+use crate::tools::ask::{TOOL_ASK_DIALOG, ToolAskRegistry, ToolAskResponse};
 use crate::ui_state::dialog_state::SoftDialogTracker;
 
 /// The inline rename editor's id in `SoftDialogTracker`, and in the frontend's `dialog-registry.ts`.
@@ -145,6 +147,7 @@ pub async fn execute_dialog_confirm<R: Runtime>(app: &AppHandle<R>, params: &Val
         }
         RENAME_EDITOR | NEW_FOLDER | NEW_FILE => commit_name(app, dialog_type, name).await,
         ROLLBACK_CONFIRMATION => confirm_rollback(app).await,
+        TOOL_ASK_DIALOG => confirm_tool_ask(app).await,
         // Confirming the quit means quitting NOW, skipping the rest of the countdown.
         // Answered on the gate rather than the dialog, and with no ack: the process is on
         // its way out, so there is nothing left to observe. See `quit.rs`.
@@ -157,7 +160,7 @@ pub async fn execute_dialog_confirm<R: Runtime>(app: &AppHandle<R>, params: &Val
         )),
         _ => Err(ToolError::invalid_params(format!(
             "Cannot confirm dialog type '{dialog_type}'. Only '{TRANSFER}', '{DELETE}', '{RENAME_EDITOR}', \
-             '{NEW_FOLDER}', '{NEW_FILE}', '{ROLLBACK_CONFIRMATION}', and 'quit-confirmation' can be confirmed."
+             '{NEW_FOLDER}', '{NEW_FILE}', '{ROLLBACK_CONFIRMATION}', '{TOOL_ASK_DIALOG}', and 'quit-confirmation' can be confirmed."
         ))),
     }
 }
@@ -293,6 +296,23 @@ async fn commit_name<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, name: Op
         }
         other => Err(refusal_error(dialog_type, &other)),
     }
+}
+
+/// Says yes to the open question. The tool that asked goes on from there, and answers its own caller.
+async fn confirm_tool_ask<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
+    let answered = app
+        .try_state::<ToolAskRegistry>()
+        .is_some_and(|registry| registry.answer_open(ToolAskResponse::Allowed));
+    if !answered {
+        return Err(ToolError::invalid_params("No question is open."));
+    }
+    wait_for_ack(
+        app,
+        AckSignal::SoftDialogDisappeared(TOOL_ASK_DIALOG.to_string()),
+        DEFAULT_ACK_TIMEOUT,
+    )
+    .await?;
+    Ok(json!("OK: Question answered yes."))
 }
 
 /// Says yes to the open rollback question, whichever surface raised it, and answers what the yes

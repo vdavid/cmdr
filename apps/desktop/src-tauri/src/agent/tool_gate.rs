@@ -219,6 +219,7 @@ async fn route_call<R: Runtime>(
         caller: Caller::Agent { origin: turn.origin },
         cancel: turn.cancel.clone(),
         conversation_id: scope.conversation_id(),
+        asked: None,
     };
     let outcome = execute_tool(app, &ctx, call.tool.as_wire_name(), &call.arguments).await;
     let result = match outcome {

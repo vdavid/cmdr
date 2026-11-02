@@ -250,6 +250,12 @@ export interface SettingDefinition {
    * property, never an id list. Absent means settable, hidden settings included.
    */
   mcpSettable?: false | 'offOnly'
+  /**
+   * `set_setting` may change this with no question to a person: only looks, trivially reversed, with
+   * no reach past the window. ❌ Absent means a person sees the old and new value, so a new setting is
+   * safe by default. `mcp-main-bridge.test.ts` pins the set.
+   */
+  mcpAskFree?: true
 
   // UI hints
   component?:

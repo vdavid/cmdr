@@ -13,6 +13,7 @@ use super::actions::{
     app, async_tools, conflicts, cpu, dialog_confirm, dialogs, downloads, eject, favorites, file_ops, image_facts,
     indexing, memory, multi_rename, nav, operation_log, photos, queue, quit, search, tags, unlock, view,
 };
+use super::ask_plans;
 use super::policy::ToolCtx;
 use super::registry::{Access, Consumer, SubjectSpec, Tool, tool_available_to, validate_params};
 use super::schemas;
@@ -99,7 +100,8 @@ mcp_tools! {
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
         access: Access::Sensitive,
-        run: nav nav::execute_nav_command
+        ask: ask_plans::plan_open_under_cursor,
+        run: ctx_params nav::execute_open_under_cursor
     },
 
     // ── Selection ───────────────────────────────────────────────────────────
@@ -309,6 +311,7 @@ mcp_tools! {
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
         access: Access::Sensitive,
+        ask: ask_plans::plan_quit,
         run: sync_app quit::execute_quit
     },
     "switch_pane" => {
@@ -368,6 +371,7 @@ mcp_tools! {
         subject: SubjectSpec::Setting,
         consumers: &[Consumer::AiClient],
         access: Access::Sensitive,
+        ask: ask_plans::plan_set_setting,
         run: app_params async_tools::execute_set_setting
     },
 
@@ -382,6 +386,7 @@ mcp_tools! {
         subject: SubjectSpec::Volume("volumeId"),
         consumers: &[Consumer::AiClient],
         access: Access::Sensitive,
+        ask: ask_plans::plan_indexing,
         run: params_only indexing::execute_indexing
     },
 
@@ -469,6 +474,7 @@ mcp_tools! {
         subject: SubjectSpec::None,
         consumers: &[Consumer::AiClient],
         access: Access::Sensitive,
+        ask: ask_plans::plan_remove_manual_server,
         run: sync_app_params async_tools::execute_remove_manual_server
     },
     "upgrade_smb_to_direct" => {
@@ -497,6 +503,7 @@ mcp_tools! {
         subject: SubjectSpec::Volume("volumeId"),
         consumers: &[Consumer::AiClient],
         access: Access::Sensitive,
+        ask: ask_plans::plan_eject,
         run: params_only eject::execute_eject
     },
 

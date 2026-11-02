@@ -756,6 +756,7 @@ pub fn run() {
             // The UI state mirror that tools and `cmdr://` resources read.
             app.manage(ui_state::PaneStateStore::new());
             app.manage(ui_state::SoftDialogTracker::new());
+            app.manage(tools::ask::ToolAskRegistry::default());
             app.manage(ui_state::ArchivePasswordPromptStore::new());
 
             // Before the server starts, so no request can see direct mode unsettled.

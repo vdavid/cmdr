@@ -86,20 +86,14 @@ pub(super) async fn dispatch_until_stopped(
 
 /// Whether Stop may drop a call of this access class mid-flight. Exhaustive, so a new class
 /// is a decision here.
+/// A call that opens something a person answers, or changes something, runs to its own bounded end: a
+/// question comes down on the turn's token (`tools/ask.rs`), and a yes lets the handler finish.
 fn stop_may_abandon(access: Option<Access>) -> bool {
     match access {
-        Some(
-            Access::Read
-            | Access::ReadContents
-            | Access::Session
-            | Access::AppState
-            | Access::Initiate
-            | Access::LightWrite
-            | Access::Sensitive
-            | Access::DevOnly(_),
-        )
-        | None => true,
-        Some(Access::Propose | Access::Memory) => false,
+        Some(Access::Read | Access::ReadContents | Access::Session | Access::AppState | Access::DevOnly(_)) | None => {
+            true
+        }
+        Some(Access::Propose | Access::Memory | Access::Initiate | Access::LightWrite | Access::Sensitive) => false,
     }
 }
 
@@ -173,4 +167,30 @@ impl<R: Runtime> ToolDispatcher for AppHandleDispatcher<R> {
 /// back at `agent::chat`.
 pub fn dispatch_ok(result: &AgentToolResult) -> bool {
     !result.reports_a_problem()
+}
+
+#[cfg(test)]
+mod stop_tests {
+    use super::*;
+
+    #[test]
+    fn stop_never_drops_a_call_that_a_person_may_have_said_yes_to() {
+        for access in [
+            Access::Sensitive,
+            Access::Initiate,
+            Access::LightWrite,
+            Access::Propose,
+            Access::Memory,
+        ] {
+            assert!(!stop_may_abandon(Some(access)), "{access:?}");
+        }
+    }
+
+    #[test]
+    fn stop_drops_a_call_that_only_reads_or_moves_the_view() {
+        for access in [Access::Read, Access::ReadContents, Access::Session, Access::AppState] {
+            assert!(stop_may_abandon(Some(access)), "{access:?}");
+        }
+        assert!(stop_may_abandon(None));
+    }
 }

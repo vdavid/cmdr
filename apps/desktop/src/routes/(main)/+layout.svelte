@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { cleanupToolAsk, setupToolAsk } from '#lib/tool-ask/tool-ask.svelte.js'
     /**
      * Main window layout - includes updater, notifications, window state, and settings.
      * Only used for the main file manager window.
@@ -266,6 +267,8 @@
             { name: 'mcpShortcutsListener', run: setupMcpShortcutsListener },
             // Set up MCP settings bridge (allows MCP tools to query/modify settings)
             { name: 'mcpMainBridge', run: setupMcpMainBridge },
+            // Questions a tool puts to a person (`tools/ask.rs`).
+            { name: 'toolAsk', run: setupToolAsk },
             // Set up the restricted-settings bridge (persists viewer-originated
             // setting changes; the viewer window has no store capability)
             { name: 'restrictedSettingsBridge', run: setupRestrictedSettingsBridge },
@@ -346,6 +349,7 @@
         cleanupVolumeTints()
         cleanupMcpShortcutsListener()
         cleanupMcpMainBridge()
+        cleanupToolAsk()
         cleanupRestrictedSettingsBridge()
         cleanupAutoSendToastListener()
         unhostErrorReportDialog?.()
