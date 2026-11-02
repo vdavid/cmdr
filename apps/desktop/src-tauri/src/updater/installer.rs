@@ -250,7 +250,7 @@ fn find_app_bundle_above(start: &Path) -> Option<PathBuf> {
 
 /// Syncs files from `src` (new Contents/) into `dest` (existing Contents/).
 ///
-/// Order: Resources first, then Info.plist, then _CodeSignature, then binary last.
+/// Order: Resources first, then Info.plist, then _CodeSignature, then PlugIns, then binary last.
 /// After syncing, deletes files in `dest` that don't exist in `src`.
 fn sync_bundle(src: &Path, dest: &Path) -> Result<(), SyncError> {
     // Collect all relative paths from the source for deletion pass
@@ -261,6 +261,8 @@ fn sync_bundle(src: &Path, dest: &Path) -> Result<(), SyncError> {
     sync_file_if_exists(src, dest, Path::new("Info.plist"))?;
     sync_subtree(src, dest, Path::new("_CodeSignature"))?;
     sync_file_if_exists(src, dest, Path::new("CodeResources"))?;
+    // `sync_subtree` must take a missing folder quietly, since a bundle may have no extension.
+    sync_subtree(src, dest, Path::new("PlugIns"))?;
     sync_subtree(src, dest, Path::new("MacOS"))?;
 
     // Sync any remaining files not covered by the ordered phases above

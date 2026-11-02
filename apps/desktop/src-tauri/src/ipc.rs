@@ -950,6 +950,8 @@ macro_rules! ipc_command_manifest {
                     crate::reveal::commands::get_reveal_handler_state,
                     crate::reveal::commands::set_reveal_handler_enabled,
                     crate::reveal::commands::drain_pending_reveals,
+                    crate::reveal::commands::get_finder_extension_status,
+                    crate::reveal::commands::set_finder_extension_enabled,
                 ]
                 dispatch_only: []
             }

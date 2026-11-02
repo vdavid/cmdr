@@ -294,3 +294,8 @@ the once-ever notice the first time a reveal actually lands.
 
 The `public.folder` LaunchServices handler (so `open .` and Spotlight folder hits land in Cmdr) and an onboarding
 offer: GitHub [#271](https://github.com/vdavid/cmdr/issues/271) and [#272](https://github.com/vdavid/cmdr/issues/272).
+
+**The folder handler has no official route on macOS 27.** `NSWorkspace.setDefaultApplication(at:toOpen:)` and
+`LSSetDefaultRoleHandlerForContentType` both answer `-50` for `public.folder`, even when re-setting Finder to itself, while
+re-setting `public.plain-text` to its own handler answers `0` (macOS 27.0.1, signed app and CLI, 2026-11-02). Declaring
+the claim (`LSHandlerRank = Alternate`) leaves Finder as the holder.

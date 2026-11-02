@@ -38,6 +38,7 @@
     import SettingSelect from '../components/SettingSelect.svelte'
     import TextEditorSelect from './TextEditorSelect.svelte'
     import TerminalAppSelect from './TerminalAppSelect.svelte'
+    import FinderExtensionCard from './FinderExtensionCard.svelte'
     import RevealHandlerCard from './RevealHandlerCard.svelte'
     import SectionCard from '#lib/ui/SectionCard.svelte'
     import { getSettingDefinition } from '#lib/settings/index.js'
@@ -184,6 +185,7 @@
     <!-- Owns its own card frame: its state comes from macOS, not the registry, so
          only it can tell whether there's anything to render. -->
     <RevealHandlerCard {searchQuery} />
+    <FinderExtensionCard {searchQuery} />
 
     {#if anyVisible(shouldShow, 'operationLog.enabled', 'operationLog.maxAge', 'operationLog.maxSize')}
         <SectionCard label={tString('settings.navigationAndFileOps.card.operationLog')}>

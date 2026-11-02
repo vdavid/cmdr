@@ -669,9 +669,11 @@ export { getNotificationPermission, showNotification } from './notifications'
 // "Reveal in Cmdr" (macOS)
 export {
   drainPendingReveals,
+  getFinderExtensionStatus,
   getRevealHandlerState,
   onRevealDelivered,
   onRevealTabsDropped,
+  setFinderExtensionEnabled,
   setRevealHandlerEnabled,
 } from './reveal'
 

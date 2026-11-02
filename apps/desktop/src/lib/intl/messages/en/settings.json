@@ -2450,10 +2450,34 @@
     "description": "Heading of the card in Settings > Behavior > Navigation & file ops that holds one switch: whether another app's \"Show in Finder\" command lands in a Cmdr pane. \"Show in Finder\" is the macOS command name that apps like Chrome and Slack put on their downloads; use the wording your locale's macOS and its apps use for it. macOS only, so the card is absent on other platforms.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
+  "settings.finderExtension.card": "Open in Cmdr",
+  "@settings.finderExtension.card": {
+    "description": "Heading of a settings card about the “Open in Cmdr” item in Finder's right-click menu. “Open in Cmdr” is the name of that menu item, and \"Cmdr\" is the product name."
+  },
+  "settings.finderExtension.label": "Show at the top of Finder’s right-click menu",
+  "@settings.finderExtension.label": {
+    "description": "Label of an on/off switch in that card. Turning it on puts “Open in Cmdr” directly in Finder's right-click menu, where without it the item sits in a submenu. \"Finder\" is Apple's file manager; use Apple's name for it in your language."
+  },
+  "settings.finderExtension.description": "“Open in Cmdr” is always in the menu’s Services section. This moves it up to the top level, on your startup disk. It adds a small process that runs alongside Finder.",
+  "@settings.finderExtension.description": {
+    "description": "Explains that switch and its one cost. \"Services\" is the macOS submenu of that name; use the word your locale's macOS uses. \"startup disk\" is Apple's term for the Mac's main drive: on other drives the item stays in Services. \"a small process\" is a little program that keeps running in the background."
+  },
+  "settings.finderExtension.notInApplications": "Move Cmdr to your Applications folder to switch this on.",
+  "@settings.finderExtension.notInApplications": {
+    "description": "Why that switch is disabled: this copy of Cmdr runs from outside the Applications folder. \"Applications\" is the macOS folder holding installed apps; use Apple's name for it in your language."
+  },
+  "settings.finderExtension.notProductionBuild": "Only a released copy of Cmdr can switch this on. Dev and test builds don’t carry the Finder extension.",
+  "@settings.finderExtension.notProductionBuild": {
+    "description": "Why that switch is disabled: this is a development or test build of Cmdr, and those don't include the piece that adds the menu item. Mostly seen by people working on Cmdr itself."
+  },
   "settings.revealHandler.label": "Let other apps show files in Cmdr",
   "@settings.revealHandler.label": {
     "description": "Label of the switch that hands the macOS \"Show in Finder\" command to Cmdr, in Settings > Behavior > Navigation & file ops. \"Cmdr\" is the product name; keep it. Addressed to the user, describing what turning the switch on allows.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
+  },
+  "settings.behavior.finderExtension.keywords": "context menu, right-click, open in cmdr, finder extension",
+  "@settings.behavior.finderExtension.keywords": {
+    "description": "Comma-separated search terms for finding that switch in Settings. Add the words people in your locale would type for a right-click menu."
   },
   "settings.behavior.revealHandler.keywords": "show in finder, find in finder, reveal, reveal in finder, default file manager, browser, downloads",
   "@settings.behavior.revealHandler.keywords": {

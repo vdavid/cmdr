@@ -5477,6 +5477,26 @@ export const commands = {
    *  that has to answer it is the same frontend that would be waiting on this call.
    */
   drainPendingReveals: () => __TAURI_INVOKE<void>('drain_pending_reveals'),
+  // Whether the Finder extension is on, read through to macOS, and whether this copy may switch it.
+  getFinderExtensionStatus: () =>
+    __TAURI_INVOKE<{
+      enabled: boolean
+      /**
+       *  Why the switch won't take a yes, or `None` when the user may operate it. Same reasons
+       *  as the reveal handler, and the same rule: it never blocks switching OFF.
+       */
+      blockedBy: RevealHandlerBlocker | null
+    } | null>('get_finder_extension_status'),
+  // Switch the Finder extension. Returns the state macOS is left in, so the row renders the truth.
+  setFinderExtensionEnabled: (enabled: boolean) =>
+    __TAURI_INVOKE<{
+      enabled: boolean
+      /**
+       *  Why the switch won't take a yes, or `None` when the user may operate it. Same reasons
+       *  as the reveal handler, and the same rule: it never blocks switching OFF.
+       */
+      blockedBy: RevealHandlerBlocker | null
+    } | null>('set_finder_extension_enabled', { enabled }),
   // Where the `cmdr` command stands. `None` only if the filesystem didn't answer in time.
   getCliCommandStatus: () =>
     __TAURI_INVOKE<{
@@ -9518,6 +9538,16 @@ export type FilesystemKind =
    *  display and diagnostics.
    */
   | 'other'
+
+// What the row shows, and whether this copy may switch it on.
+export type FinderExtensionStatus = {
+  enabled: boolean
+  /**
+   *  Why the switch won't take a yes, or `None` when the user may operate it. Same reasons
+   *  as the reveal handler, and the same rule: it never blocks switching OFF.
+   */
+  blockedBy: RevealHandlerBlocker | null
+}
 
 // `focus-about`: ensure the (soft, main-window-overlay) about dialog is visible.
 export type FocusAbout = null

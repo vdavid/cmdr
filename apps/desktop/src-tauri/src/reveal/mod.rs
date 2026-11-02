@@ -19,6 +19,8 @@ pub mod commands;
 #[cfg(target_os = "macos")]
 pub mod delivery;
 #[cfg(target_os = "macos")]
+pub mod finder_extension;
+#[cfg(target_os = "macos")]
 pub mod finder_handoff;
 #[cfg(target_os = "macos")]
 pub mod registration;

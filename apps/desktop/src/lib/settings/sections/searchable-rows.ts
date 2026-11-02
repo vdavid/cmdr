@@ -22,6 +22,7 @@ import { askCmdrRows } from './AskCmdrSection.rows'
 import { driveIndexingRows } from './DriveIndexingSection.rows'
 import { keyboardShortcutsRows } from './KeyboardShortcutsSection.rows'
 import { licenseRows } from './LicenseSection.rows'
+import { finderExtensionRows } from './FinderExtensionCard.rows'
 import { revealHandlerRows } from './RevealHandlerCard.rows'
 import { serversRows } from './ServersSection.rows'
 import { updatesRows } from './UpdatesSection.rows'
@@ -29,6 +30,7 @@ import { updatesRows } from './UpdatesSection.rows'
 /** Every declared row, in section order (search doesn't rank by it; readers do). */
 export const searchableRows: SearchableRow[] = [
   ...revealHandlerRows,
+  ...finderExtensionRows,
   ...driveIndexingRows,
   ...aiRows,
   ...askCmdrRows,

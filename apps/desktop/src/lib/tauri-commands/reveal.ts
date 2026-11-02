@@ -5,7 +5,7 @@
 
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { commands, events } from '#lib/ipc/bindings.js'
-import type { RevealHandlerStatus, RevealTabsDropped } from '#lib/ipc/bindings.js'
+import type { FinderExtensionStatus, RevealHandlerStatus, RevealTabsDropped } from '#lib/ipc/bindings.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 
 const log = getAppLogger('reveal')
@@ -60,6 +60,29 @@ export async function setRevealHandlerEnabled(enabled: boolean): Promise<RevealH
     return await commands.setRevealHandlerEnabled(enabled)
   } catch (error) {
     log.debug('Could not set the reveal handler: {error}', { error })
+    return null
+  }
+}
+
+/**
+ * Whether the Finder extension is on, and whether this copy may switch it. Reads through to
+ * macOS every time. `null` off macOS, and for a backend that didn't answer.
+ */
+export async function getFinderExtensionStatus(): Promise<FinderExtensionStatus | null> {
+  try {
+    return await commands.getFinderExtensionStatus()
+  } catch (error) {
+    log.debug('Finder extension status is unavailable: {error}', { error })
+    return null
+  }
+}
+
+/** Switch the Finder extension. Returns the state macOS was left in, like `getFinderExtensionStatus`. */
+export async function setFinderExtensionEnabled(enabled: boolean): Promise<FinderExtensionStatus | null> {
+  try {
+    return await commands.setFinderExtensionEnabled(enabled)
+  } catch (error) {
+    log.debug('Could not switch the Finder extension: {error}', { error })
     return null
   }
 }
