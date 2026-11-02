@@ -19,7 +19,7 @@
      * closed between rounds would lose what was typed; one that armed Cancel
      * afterwards would leave a person watching a spinner they can't stop.
      */
-    import { onMount, tick } from 'svelte'
+    import { onMount, tick, untrack } from 'svelte'
     import ModalDialog from '#lib/ui/ModalDialog.svelte'
     import { focusFirstField } from '#lib/ui/focus-trap.js'
     import { mayBeToolRaised } from '#lib/ui/tool-raised.js'
@@ -940,8 +940,9 @@
         rememberWhenOpened = true
     }
 
-    /** Read once, before this takes focus: chat text mustn't land here as a password. */
-    const toolRaised = mayBeToolRaised()
+    /** Read once, before this takes focus: chat text mustn't land here as a password. A tool only
+     *  ever raises `sign-in`: the other modes follow a person's own click on Add or Edit. */
+    const toolRaised = untrack(() => request.mode === 'sign-in') && mayBeToolRaised()
 
     function handleKeydown(event: KeyboardEvent) {
         if (event.key === 'Enter' && canSubmit && step === 'form') {

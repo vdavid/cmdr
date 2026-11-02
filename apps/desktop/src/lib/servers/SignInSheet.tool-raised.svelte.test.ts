@@ -50,4 +50,25 @@ describe('raised while someone types in the rail', () => {
     await unmount(sheet)
     page.remove()
   })
+
+  it('leaves the add form alone: only a person opens it, by clicking Add', async () => {
+    const page = document.createElement('div')
+    page.innerHTML = '<aside class="ask-cmdr-rail"><textarea></textarea></aside><div class="host"></div>'
+    document.body.appendChild(page)
+    page.querySelector('textarea')?.focus()
+    const host = page.querySelector('.host') as HTMLElement
+
+    const sheet = mount(SignInSheet, {
+      target: host,
+      props: {
+        request: { mode: 'add', attempt: () => Promise.resolve({ kind: 'connected', volumeId: 'v' }) },
+        onDone: () => {},
+      },
+    })
+    for (let turn = 0; turn < 8; turn++) await tick()
+
+    expect(host.querySelector('[data-armed]')).toBeNull()
+    await unmount(sheet)
+    page.remove()
+  })
 })
