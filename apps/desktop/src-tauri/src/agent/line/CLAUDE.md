@@ -20,6 +20,8 @@ Named after the UI's "tool line".
 - **`outcome_of`'s check order is load-bearing**: the breaker keeps `problem` beside `repeatedCall`, and every propose
   problem carries `readyForReview: false`. `DETAILS.md` § The check order.
 - **A line is `(messageId, callId)`, never the call id alone**: ids collide across rounds.
+- **Callers pass the call that ran** (`AgentToolCall::effective`), so `use_tool` needs no arm: its line is the tool it
+  reached. Only a malformed one keeps its own name.
 - **Every derivation is total and bounded**: any argument or result shape gives a fallback (`Unparsed`, `Answered`),
   never a panic; untrusted strings are cut at `MAX_TEXT_CHARS`.
 - **A new tool needs no arm here.** The table's `subject` column drives one generic arm. Only `SubjectSpec::Custom` gets

@@ -215,6 +215,9 @@ export const TOOL_LABEL_KEYS: Partial<Record<string, PhaseKeys>> = {
     doing: 'askCmdr.tool.aiSearch.doing',
     done: 'askCmdr.tool.aiSearch.done',
   },
+  tool_details: { doing: 'askCmdr.tool.toolDetails.doing', done: 'askCmdr.tool.toolDetails.done' },
+  // Only a `use_tool` that didn't unwrap keeps this name: a well-formed one reads as the tool it ran.
+  use_tool: { doing: 'askCmdr.tool.unknown.doing', done: 'askCmdr.tool.unknown.done' },
   read_resource: {
     doing: 'askCmdr.tool.readResource.doing',
     done: 'askCmdr.tool.readResource.done',

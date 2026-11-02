@@ -232,11 +232,11 @@ fn the_choice_is_keyed_by_provider_and_model() {
 /// of it, and prompt plus `max_tokens` would overrun the window. The reply takes at most a
 /// quarter of the window, never less than the base slot while the window can spare it.
 #[test]
-fn a_high_effort_on_a_small_window_leaves_the_prompt_a_working_budget() {
+fn a_high_effort_on_a_32k_window_leaves_the_prompt_a_working_budget() {
     let high = resolve_effort(&claude(), EffortChoice::Level(EffortLevel::High), None);
-    let reply = fit_reply_to_window(high.max_output_tokens, Some(40_960));
+    let reply = fit_reply_to_window(high.max_output_tokens, Some(32_768));
     assert_eq!(reply, AGENT_MAX_OUTPUT_TOKENS);
-    let prompt = (40_960 - reply as usize) * 85 / 100;
+    let prompt = (32_768 - reply as usize) * 85 / 100;
     assert!(
         prompt >= MIN_CLOUD_PROMPT_TOKENS,
         "the prompt keeps room for the prefix and a paged result: {prompt}"
@@ -260,9 +260,9 @@ fn a_large_window_keeps_the_full_reply_room() {
 /// under a usable minimum: a tiny window then overruns honestly rather than replying in nothing.
 #[test]
 fn a_tiny_window_shrinks_the_reply_to_keep_the_prompt_floor() {
-    let reply = fit_reply_to_window(AGENT_MAX_OUTPUT_TOKENS, Some(32_000));
+    let reply = fit_reply_to_window(AGENT_MAX_OUTPUT_TOKENS, Some(24_000));
     assert!(reply < AGENT_MAX_OUTPUT_TOKENS);
-    assert!((32_000 - reply as usize) * 85 / 100 >= MIN_CLOUD_PROMPT_TOKENS);
+    assert!((24_000 - reply as usize) * 85 / 100 >= MIN_CLOUD_PROMPT_TOKENS);
     assert_eq!(
         fit_reply_to_window(AGENT_MAX_OUTPUT_TOKENS, Some(8_192)),
         MIN_REPLY_TOKENS

@@ -10,7 +10,8 @@
 //!   ([`ToolCtx`]); and direct mode, the switch that lets an outside client past a person.
 //! - [`sensitive`]: the one gate every path yielding file contents passes.
 //! - [`resources`]: the read-only `cmdr://` views.
-//! - [`agent_tool_declarations`]: the `ToolDeclaration`s handed to the provider.
+//! - [`agent_tool_declarations`]: the `ToolDeclaration`s handed to the provider, [`deferred_tool_lines`]:
+//!   the one line each for the rest, and [`meta`]: the pair that reaches them.
 //!
 //! See `CLAUDE.md` for the must-knows and `DETAILS.md` for the tool catalog.
 
@@ -20,6 +21,7 @@ mod ask_plans;
 pub mod connect;
 pub mod error_codes;
 pub mod memory;
+pub mod meta;
 pub mod params;
 pub mod policy;
 pub mod propose;
@@ -57,35 +59,47 @@ pub(crate) use actions::{ToolError, ToolResult, fit_to_result_budget, is_virtual
 #[cfg(target_os = "macos")]
 pub(crate) use actions::nav::{GoToTarget, PaneChoice, go_to_in_pane};
 pub(crate) use policy::{Caller, ToolCtx};
-#[cfg(test)]
-pub(crate) use registry::Load;
-pub(crate) use registry::{Access, SubjectSpec, Tool, validate_params};
+pub(crate) use registry::{Access, Load, SubjectSpec, Tool, validate_params};
 pub use table::ToolId;
-#[cfg(test)]
-pub(crate) use table::tool_load;
-use table::tool_schema;
-pub(crate) use table::{execute_tool, get_all_tools, tool_access};
+pub(crate) use table::{execute_tool, get_all_tools, tool_access, tool_load};
+use table::{table_tools, tool_schema};
 
 use crate::agent::llm::types::ToolDeclaration;
-use crate::agent::types::TurnOrigin;
 use policy::{Verdict, admit};
 
-/// The tool declarations the agent hands the provider: every tool [`admit`] doesn't refuse on a turn
-/// the user started, whatever turn this call serves. A user turn and a follow-up can share a thread,
-/// and these bytes are the provider's cache key, so a background turn hears `refusedInBackground`
-/// from the gate instead of seeing a shorter list. Schemas are never `strict: true`
-/// ([`ToolDeclaration`] carries no strict flag: spike Gap D).
+/// Whether the agent can run this tool on a turn someone asked for. Background turns hear
+/// `refusedInBackground` from the gate rather than seeing a shorter list.
+fn agent_reaches(name: &str) -> bool {
+    !tool_access(name).is_some_and(|access| matches!(admit(meta::user_started_agent(), access), Verdict::Refuse(_)))
+}
+
+/// The tool declarations the agent hands the provider: the core plus the tool-search pair, whatever
+/// turn this call serves. A user turn and a follow-up can share a thread, and these bytes are the
+/// provider's cache key. Schemas are never `strict: true` ([`ToolDeclaration`] carries no strict flag:
+/// spike Gap D).
 pub fn agent_tool_declarations() -> Vec<ToolDeclaration> {
-    let agent = Caller::Agent {
-        origin: TurnOrigin::Text,
-    };
-    get_all_tools()
+    table_tools()
         .into_iter()
-        .filter(|t| !tool_access(&t.name).is_some_and(|access| matches!(admit(agent, access), Verdict::Refuse(_))))
-        .map(|t| ToolDeclaration {
-            name: ToolId::from_wire_name(&t.name),
-            description: t.description,
-            schema: t.input_schema,
+        .filter(|tool| agent_reaches(&tool.name) && tool_load(&tool.name) != Some(Load::Deferred))
+        .map(|tool| ToolDeclaration {
+            name: ToolId::from_wire_name(&tool.name),
+            description: tool.description,
+            schema: tool.input_schema,
         })
         .collect()
+}
+
+/// One line per tool the agent can reach but isn't declared, in table order: what `{{more_tools}}` in
+/// the system prompt says. Part of the cached prefix, so it reads nothing per-call: no origin, no
+/// direct mode, no settings.
+pub fn deferred_tool_lines() -> String {
+    ToolId::KNOWN
+        .iter()
+        .filter(|tool| {
+            let name = tool.as_wire_name();
+            agent_reaches(name) && tool_load(name) == Some(Load::Deferred)
+        })
+        .map(|tool| format!("- {}: {}", tool.as_wire_name(), tool.brief().unwrap_or_default()))
+        .collect::<Vec<_>>()
+        .join("\n")
 }

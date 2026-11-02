@@ -43,7 +43,8 @@ const FOLLOWUP: PromptFile = prompt!("followup");
 /// Ask Cmdr's system prompt. Call it once per turn and hold the result: in a dev build each
 /// call reads the file again.
 pub fn system_prompt() -> Cow<'static, str> {
-    render(&SYSTEM, &[])
+    let more_tools = crate::tools::deferred_tool_lines();
+    render(&SYSTEM, &[("more_tools", &more_tools)])
 }
 
 /// The follow-up turn's opener, around `decisions` (one rendered decision per line, each

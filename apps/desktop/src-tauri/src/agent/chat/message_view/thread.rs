@@ -10,7 +10,11 @@
 //! an assistant row pairs with the k-th result carrying that id after it, before the next
 //! assistant or user row. Call ids collide across rounds, so pairing never reaches past the
 //! next round.
+//!
+//! **A line names what ran.** The row keeps what the provider sent, so a reloaded `use_tool` projects
+//! through [`AgentToolCall::effective`], as the live stream did.
 
+use std::borrow::Cow;
 use std::path::Path;
 
 use serde::Serialize;
@@ -76,7 +80,7 @@ fn thread_facts(rows: &[StoredMessage], ctx: &PageContext<'_>) -> Vec<RowFacts> 
             .flat_map(|round| {
                 round.calls.iter().zip(&round.results).map(|(call, result)| TurnCall {
                     message_id: turn_rows[round.offset].id,
-                    call,
+                    call: call.as_ref(),
                     moved_on: result.is_some_and(|result| moves_the_turn_on(&call.tool, result)),
                 })
             })
@@ -147,7 +151,7 @@ pub fn tool_result_detail(rows: Vec<StoredMessage>, call_id: &str, occurrence: u
 /// One assistant row of a turn (at `offset` in it): its calls, and each one's result.
 struct Round<'a> {
     offset: usize,
-    calls: Vec<&'a AgentToolCall>,
+    calls: Vec<Cow<'a, AgentToolCall>>,
     results: Vec<Option<&'a AgentToolResult>>,
 }
 
@@ -219,7 +223,7 @@ fn turn_stats(turn_rows: &[StoredMessage], in_flight_since_seq: Option<i64>) -> 
 fn pair_results<'a>(
     rows: &'a [StoredMessage],
     at: usize,
-    calls: &[&AgentToolCall],
+    calls: &[Cow<'_, AgentToolCall>],
 ) -> Vec<Option<&'a AgentToolResult>> {
     let mut results: Vec<Option<&AgentToolResult>> = vec![None; calls.len()];
     let following = rows.iter().skip(at + 1);
@@ -248,13 +252,13 @@ fn pair_results<'a>(
     results
 }
 
-/// A row's tool calls, in its part order.
-fn calls_of(row: &StoredMessage) -> Vec<&AgentToolCall> {
+/// The calls a row ran, in its part order.
+fn calls_of(row: &StoredMessage) -> Vec<Cow<'_, AgentToolCall>> {
     match &row.content {
         StoredContent::Message { parts, .. } => parts
             .iter()
             .filter_map(|part| match part {
-                AgentPart::ToolCall(call) => Some(call),
+                AgentPart::ToolCall(call) => Some(call.effective()),
                 _ => None,
             })
             .collect(),

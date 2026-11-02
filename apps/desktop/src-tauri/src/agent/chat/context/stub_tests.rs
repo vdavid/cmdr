@@ -100,6 +100,48 @@ fn an_elided_result_names_the_tool_the_call_what_it_held_and_the_way_back() {
     );
 }
 
+/// A result `use_tool` fetched is a result of the tool it ran: the stub names that tool and its
+/// arguments, so the way back is a real call rather than "call use_tool again".
+#[test]
+fn a_stub_for_a_use_tool_result_names_the_tool_that_ran() {
+    let (arguments, content) = twelve_file_batch("Klarna payment confirmation");
+    let direct = stub_of_an_aged_out_call(ToolId::ImageFacts, arguments.clone(), content.clone());
+    let wrapped = stub_of_an_aged_out_call(
+        ToolId::UseTool,
+        json!({ "name": "image_facts", "params": arguments }),
+        content,
+    );
+    assert_eq!(wrapped, direct);
+}
+
+/// An elided `tool_details` is the case that costs a model the schema it was following: the stub says
+/// which names to ask for again, stays shape-agnostic, and fits its budget like any other.
+#[test]
+fn a_stub_for_tool_details_says_how_to_fetch_them_again() {
+    let rows = (0..8)
+        .map(|index| {
+            json!({
+                "name": format!("tool_{index}"),
+                "description": "x".repeat(400),
+                "inputSchema": { "type": "object", "properties": { "pane": { "type": "string" } } },
+            })
+        })
+        .collect::<Vec<_>>();
+    let content = json!({ "tools": rows, "returned": 8, "total": 8, "truncated": false });
+    let stub = stub_of_an_aged_out_call(
+        ToolId::ToolDetails,
+        json!({ "names": ["tag", "sort", "tab", "mkfile"] }),
+        content,
+    );
+    assert_eq!(stub["tool"], "tool_details");
+    assert_eq!(stub["refetch"], "call tool_details again for the names you still need");
+    assert!(estimate_tokens_of_value(&stub) <= 80, "{stub}");
+    assert!(
+        !stub.to_string().contains("xxxx"),
+        "a stub never carries the text it dropped: {stub}"
+    );
+}
+
 /// A stub that costs what the result cost defeats the purpose. The budget holds even for a
 /// result built to blow it: many keys, long names, huge arrays.
 #[test]

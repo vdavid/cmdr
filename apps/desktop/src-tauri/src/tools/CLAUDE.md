@@ -12,7 +12,7 @@ transport for outside clients; `../agent/` is the in-process runtime, with the g
 - `read/`: the agent's reads (`state`, `pane_listing`, `listing`, `importance`, `volumes`, `inspect/`).
 - `propose/`, `suggestions/`: staged plans. `propose/CLAUDE.md`, `suggestions/CLAUDE.md`.
 - `memory.rs`: the only tools that write; every rule lives in `../agent/memory/`. `quiet.rs`: `nothing_to_suggest`, a
-  pure signal. `connect.rs`: `connect_volume`. `sensitive.rs`: the content gate. `policy.rs`: `admit`, `Caller`, `ToolCtx`, and
+  pure signal. `connect.rs`: `connect_volume`. `meta.rs`: the tool-search pair. `sensitive.rs`: the content gate. `policy.rs`: `admit`, `Caller`, `ToolCtx`, and
   direct mode. `ask.rs` + `ask_plans.rs`: the one way a tool waits for a person. `mod.rs`:
   `agent_tool_declarations()`.
 
@@ -32,20 +32,21 @@ transport for outside clients; `../agent/` is the in-process runtime, with the g
 - **`DevOnly`, `ReadContents`, and `Memory` refuse an outside client off direct mode** (`admit`), and ❌ the JSON setting
   alone never turns it on. `DETAILS.md` § Direct mode.
 - **A call is checked against its declared schema before a handler sees it** (`params.rs`). Every schema closes itself
-  with `additionalProperties: false`, nested objects too, and a nested one checks itself. Params are camelCase, tool
+  with `additionalProperties: false`, nested objects too. Params are camelCase, tool
   names snake_case.
 - **Whatever a user can reach, an agent must reach, answer, and OBSERVE.** ❌ No modal state with no way to see or answer
-  it: a conflict wedge lived in one for months.
-- **Reuse the shipped core.** A handler calls a deterministic core and only SHAPES the result.
+  it.
+- **A handler calls a deterministic core** and only SHAPES the result.
 - **A place is `path` + optional `volumeId` in, `location` out, via `crate::location`'s one resolver.** A miss is a typed
   `Ok`, ❌ never an empty listing.
 - **A list must fit ONE tool result**: `fit_to_result_budget`, reporting `total` / `returned` / `truncated`. ⚠️ `search`'s
   `matchCount` counts PAST the cap, so it's never a `total`.
-- **A schema is PREFIX**: keep descriptions terse. A new agent tool moves `FIXED_PROMPT_OVERHEAD_TOKENS`.
-- **Every result voices its coverage honestly**: a typed field, never a wrong zero.
+- **A core schema and a deferred `brief` are PREFIX**, so a new tool is `Load::Deferred` unless a flow needs it. ⚠️ Every
+  declared property needs a `type`, or llama-server refuses the request. `DETAILS.md` § Lazy loading.
+- **Every result voices its coverage**: a typed field, never a wrong zero.
 - **A proposal claiming file CONTENTS must prove it** through `ImageFactsLedger`. `propose/DETAILS.md`.
-- **Handlers never touch a live filesystem, except `inspect_file` and `list_dir`'s live read**: bounded, the thread
-  abandoned past a deadline. A new content KIND is a copy change plus a `CLOUD_AI_CONSENT_VERSION` bump.
+- **Handlers never touch a live filesystem, except `inspect_file` and `list_dir`'s live read**, bounded. A new content
+  KIND is a copy change plus a `CLOUD_AI_CONSENT_VERSION` bump.
 - **Anything yielding file contents passes `sensitive.rs`.**
 - **New tool** = table entry (`ToolId` generates from it) + handler/schema/result + its class's `EXPECTED_*_TOOL_NAMES` +
   a rail label in `ask-cmdr-tool-label-keys.ts`. `../agent/line/` arms only with `subject: SubjectSpec::Custom`.

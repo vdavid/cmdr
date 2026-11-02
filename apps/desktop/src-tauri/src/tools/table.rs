@@ -796,4 +796,26 @@ mcp_tools! {
         load: Load::Deferred,
         run: ctx_params crate::tools::connect::execute_connect_volume
     },
+
+    // ── The tool-search pair ────────────────────────────────────────────────
+    "tool_details" => {
+        id: ToolDetails,
+        brief: "Read the full schema of tools from your More tools list.",
+        desc: "Read the full description and schema of tools from your More tools list, so you can run them with use_tool.",
+        schema: crate::tools::meta::tool_details_schema(),
+        subject: SubjectSpec::None,
+        access: Access::Read,
+        load: Load::Meta("It's about tools, and an outside client's tools/list already holds every schema."),
+        run: params_only crate::tools::meta::execute_tool_details
+    },
+    "use_tool" => {
+        id: UseTool,
+        brief: "Run a tool from your More tools list.",
+        desc: "Run a tool that isn't declared here, such as sort, tab, tag, nav_to_parent, set_view_mode, or set_setting: your instructions' More tools list has them all. name is the tool, and params its arguments, following the schema tool_details gave you.",
+        schema: crate::tools::meta::use_tool_schema(),
+        subject: SubjectSpec::None,
+        access: Access::Read,
+        load: Load::Meta("It runs a tool the agent wasn't declared, and an outside client is declared them all."),
+        run: params_only crate::tools::meta::execute_use_tool
+    },
 }

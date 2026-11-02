@@ -647,6 +647,8 @@ export type MessageKey =
   | 'askCmdr.tool.toggleHidden.doing'
   | 'askCmdr.tool.toggleHidden.done'
   | 'askCmdr.tool.toggleHidden.tried'
+  | 'askCmdr.tool.toolDetails.doing'
+  | 'askCmdr.tool.toolDetails.done'
   | 'askCmdr.tool.unknown.doing'
   | 'askCmdr.tool.unknown.done'
   | 'askCmdr.tool.unknown.named.doing'

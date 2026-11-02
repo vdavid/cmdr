@@ -5,7 +5,8 @@
 //! so the facets can't drift:
 //!
 //! - [`get_all_tools`](super::get_all_tools): the whole table but `Meta` entries: an outside client's
-//!   `tools/list`, and what [`agent_tool_declarations`](super::agent_tool_declarations) builds on.
+//!   `tools/list`. [`agent_tool_declarations`](super::agent_tool_declarations) takes the `Core` and
+//!   `Meta` entries, and [`deferred_tool_lines`](super::deferred_tool_lines) one line for each of the rest.
 //! - [`execute_tool`](super::execute_tool): the dispatch (generic over `Runtime`), asking
 //!   [`admit`](super::policy::admit) first, for every caller.
 //! - [`tool_access`](super::tool_access): what `admit` reads, and the structural tests too.
@@ -74,7 +75,6 @@ pub enum Load {
     Deferred,
     /// A tool that's about tools, for the in-process agent only, so `tools/list` leaves it out. The
     /// string is the one-line reason, so the table carries it.
-    #[expect(dead_code, reason = "the tool-search pair is the first entry to carry it")]
     Meta(&'static str),
 }
 
@@ -310,24 +310,27 @@ macro_rules! mcp_tools {
             }
         }
 
+        /// Every entry in table order: what the views below filter.
+        pub fn table_tools() -> Vec<Tool> {
+            vec![$(
+                Tool {
+                    name: $name.into(),
+                    description: $desc.into(),
+                    input_schema: $schema,
+                    annotations: ($access).hints(),
+                },
+            )*]
+        }
+
         /// Every tool in table order, but `Meta` entries: what an outside client lists.
         pub fn get_all_tools() -> Vec<Tool> {
-            let mut tools = Vec::new();
-            $(
-                if !matches!($load, Load::Meta(_)) {
-                    tools.push(Tool {
-                        name: $name.into(),
-                        description: $desc.into(),
-                        input_schema: $schema,
-                        annotations: ($access).hints(),
-                    });
-                }
-            )*
-            tools
+            table_tools()
+                .into_iter()
+                .filter(|tool| !matches!(tool_load(&tool.name), Some(Load::Meta(_))))
+                .collect()
         }
 
         /// How the agent gets this tool's schema, or `None` for an unknown name.
-        #[cfg_attr(not(test), expect(dead_code, reason = "only the tests that pin the table read it, until the agent loads lazily"))]
         pub fn tool_load(name: &str) -> Option<Load> {
             match name {
                 $( $name => Some($load), )*
@@ -374,6 +377,10 @@ macro_rules! mcp_tools {
             let Some(access) = tool_access(name) else {
                 return Err(ToolError::invalid_params(format!("Unknown tool: {name}")));
             };
+            // Not on an outside client's list, so to that client it isn't a tool at all.
+            if matches!(ctx.caller, super::policy::Caller::External { .. }) && matches!(tool_load(name), Some(Load::Meta(_))) {
+                return Err(ToolError::invalid_params(format!("Unknown tool: {name}")));
+            }
             let verdict = super::policy::admit(ctx.caller, access);
             if let super::policy::Verdict::Refuse(refusal) = verdict {
                 return Err(refusal.into_error(name));

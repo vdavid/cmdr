@@ -29,11 +29,14 @@
 
 use chrono::{DateTime, FixedOffset, Utc};
 use serde_json::{Value, json};
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::time::Duration;
 
 use super::budget::{CHARS_PER_TOKEN_ESTIMATE, estimate_tokens_of_value, estimate_tokens_str};
-use crate::agent::llm::types::{AgentMessage, AgentPart, AgentRole, AgentToolResult, MemoryNote, ToolDeclaration};
+use crate::agent::llm::types::{
+    AgentMessage, AgentPart, AgentRole, AgentToolCall, AgentToolResult, MemoryNote, ToolDeclaration,
+};
 
 /// How an elided result describes itself. Structural and shape-agnostic, so this core keeps
 /// no per-tool knowledge.
@@ -576,7 +579,7 @@ fn prepend_text(message: &AgentMessage, text: String) -> AgentMessage {
 
 /// Collapse every tool-result part in `message` to a typed stub describing the call it came
 /// from (from `calls`) and the result it stands in for.
-fn elide_tool_results(message: &AgentMessage, calls: &HashMap<&str, ElidedCall<'_>>) -> AgentMessage {
+fn elide_tool_results(message: &AgentMessage, calls: &HashMap<&str, Cow<'_, AgentToolCall>>) -> AgentMessage {
     let parts = message
         .parts
         .iter()
@@ -614,9 +617,9 @@ const STUB_TOKEN_BUDGET: usize = 80;
 /// which call to repeat. Everything here is derived structurally from the call and the result
 /// (see [`digest`]) — no string the result carried ever survives into it, so a stub can't be
 /// mistaken for the delivery it replaced (invariant 6).
-fn stub_for(result: &AgentToolResult, call: Option<&ElidedCall<'_>>) -> AgentToolResult {
-    let tool = call.map(|call| call.tool);
-    let arguments = call.map(|call| call.arguments);
+fn stub_for(result: &AgentToolResult, call: Option<&Cow<'_, AgentToolCall>>) -> AgentToolResult {
+    let tool = call.map(|call| call.tool.as_wire_name());
+    let arguments = call.map(|call| &call.arguments);
     let mut content = json!({
         ELIDED_MARKER_KEY: true,
         "tool": tool,
@@ -638,27 +641,14 @@ fn stub_for(result: &AgentToolResult, call: Option<&ElidedCall<'_>>) -> AgentToo
     }
 }
 
-/// The call an elided result came from: its wire tool name and the arguments the model wrote.
-/// Borrowed from the transcript, so describing a dropped result copies nothing.
-struct ElidedCall<'a> {
-    tool: &'a str,
-    arguments: &'a Value,
-}
-
-/// Map each tool call's `call_id` to the call itself, so an elided result can say which tool
-/// ran and how it was called.
-fn calls_by_call_id(transcript: &[AgentMessage]) -> HashMap<&str, ElidedCall<'_>> {
+/// Map each tool call's `call_id` to the call that ran, so an elided result can say which tool ran and
+/// how it was called, and a `use_tool` result's stub names the tool it reached.
+fn calls_by_call_id(transcript: &[AgentMessage]) -> HashMap<&str, Cow<'_, AgentToolCall>> {
     let mut map = HashMap::new();
     for message in transcript {
         for part in &message.parts {
             if let AgentPart::ToolCall(call) = part {
-                map.insert(
-                    call.call_id.as_str(),
-                    ElidedCall {
-                        tool: call.tool.as_wire_name(),
-                        arguments: &call.arguments,
-                    },
-                );
+                map.insert(call.call_id.as_str(), call.effective());
             }
         }
     }

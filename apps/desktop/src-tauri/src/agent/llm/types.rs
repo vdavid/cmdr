@@ -15,6 +15,8 @@
 //! **backend-only** value: it is persisted and replayed, but never crosses to the
 //! frontend (the wire `MessageView` carries display parts only).
 
+use std::borrow::Cow;
+
 use serde::{Deserialize, Serialize};
 
 /// The role of a message in the conversation. DB token form is snake_case (the
@@ -193,6 +195,31 @@ pub struct AgentToolCall {
 }
 
 impl AgentToolCall {
+    /// The call that actually runs: for a well-formed `use_tool`, the tool it names with that tool's
+    /// arguments; for anything else, this call. Every reader of "what ran" goes through this (the gate,
+    /// the repeat breaker, Stop, the ledgers, the rail), so none of them knows `use_tool` exists. What
+    /// the provider sees is the stored call, which never changes: this is derived, and ❌ never
+    /// persisted.
+    ///
+    /// A malformed `use_tool` stays itself, so it reaches its own handler and hears why
+    /// ([`use_tool_target`](crate::tools::meta::use_tool_target)).
+    pub fn effective(&self) -> Cow<'_, AgentToolCall> {
+        if self.tool != ToolId::UseTool {
+            return Cow::Borrowed(self);
+        }
+        match crate::tools::meta::use_tool_target(&self.arguments) {
+            Ok((tool, arguments)) => Cow::Owned(AgentToolCall {
+                call_id: self.call_id.clone(),
+                tool,
+                arguments,
+                // Reasoning replays with the stored call, and nothing that reads the effective one
+                // ever sends it anywhere.
+                reasoning: None,
+            }),
+            Err(_) => Cow::Borrowed(self),
+        }
+    }
+
     /// What makes two calls "the same call": the tool's wire name plus its whole arguments
     /// object, keys sorted at every depth ([`canonical_json`]), so two calls that mean the same
     /// thing render the same bytes whatever order the provider emitted their keys in. The call id
@@ -542,6 +569,88 @@ mod tests {
         assert_eq!(E::Unavailable.detail(), None);
         assert_eq!(E::Timeout.detail(), None);
         assert_eq!(E::BudgetExhausted.detail(), None);
+    }
+
+    fn use_tool(arguments: serde_json::Value) -> AgentToolCall {
+        AgentToolCall {
+            call_id: "call-1".to_string(),
+            tool: ToolId::UseTool,
+            arguments,
+            reasoning: Some(ReasoningState {
+                provider: ProviderTag::Anthropic,
+                blob: json!("opaque"),
+            }),
+        }
+    }
+
+    #[test]
+    fn a_well_formed_use_tool_is_the_tool_it_names_under_the_same_call_id() {
+        let call = use_tool(json!({ "name": "tag", "params": { "pane": "left" } }));
+        let effective = call.effective();
+        assert_eq!(effective.call_id, "call-1");
+        assert_eq!(effective.tool, ToolId::Tag);
+        assert_eq!(effective.arguments, json!({ "pane": "left" }));
+        assert_eq!(effective.identity_key(), {
+            let direct = AgentToolCall {
+                call_id: "other".to_string(),
+                tool: ToolId::Tag,
+                arguments: json!({ "pane": "left" }),
+                reasoning: None,
+            };
+            direct.identity_key()
+        });
+    }
+
+    #[test]
+    fn no_params_or_null_params_mean_no_arguments() {
+        for arguments in [
+            json!({ "name": "nav_back" }),
+            json!({ "name": "nav_back", "params": null }),
+        ] {
+            let call = use_tool(arguments);
+            assert_eq!(call.effective().tool, ToolId::NavBack);
+            assert_eq!(call.effective().arguments, json!({}));
+        }
+    }
+
+    #[test]
+    fn a_name_outside_the_table_is_unrecognized_the_way_any_provider_name_is() {
+        let call = use_tool(json!({ "name": "format_drive" }));
+        assert_eq!(call.effective().tool, ToolId::Unrecognized("format_drive".into()));
+    }
+
+    /// Stays `use_tool`, so its own handler says why: nesting would hide the call from everything
+    /// reading the effective one, and a stray key would be dropped and acted on without.
+    #[test]
+    fn anything_malformed_stays_itself() {
+        for arguments in [
+            json!({}),
+            json!("use_tool"),
+            json!({ "name": "" }),
+            json!({ "name": "   " }),
+            json!({ "name": 3 }),
+            json!({ "name": "use_tool", "params": { "name": "delete" } }),
+            json!({ "name": "tool_details", "params": { "names": ["delete"] } }),
+            json!({ "name": "list_dir", "params": "{\"path\":\"/tmp\"}" }),
+            json!({ "name": "list_dir", "params": ["/tmp"] }),
+            json!({ "name": "tag", "pane": "left" }),
+        ] {
+            let call = use_tool(arguments.clone());
+            let effective = call.effective();
+            assert_eq!(effective.tool, ToolId::UseTool, "{arguments}");
+            assert!(matches!(effective, Cow::Borrowed(_)), "{arguments}");
+        }
+    }
+
+    #[test]
+    fn every_other_call_is_itself() {
+        let call = AgentToolCall {
+            call_id: "c".to_string(),
+            tool: ToolId::ListDir,
+            arguments: json!({ "name": "delete" }),
+            reasoning: None,
+        };
+        assert!(matches!(call.effective(), Cow::Borrowed(_)));
     }
 
     #[test]

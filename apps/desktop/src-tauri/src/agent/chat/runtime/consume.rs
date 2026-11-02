@@ -6,7 +6,7 @@ use tokio_util::sync::CancellationToken;
 
 use super::events::{AgentChatEvent, ChatEventSink, emit};
 use crate::agent::chat::context::STREAM_STALL_TIMEOUT;
-use crate::agent::llm::types::{AgentDelta, AgentLlmError, AgentMessage, AgentStopReason, AgentUsage};
+use crate::agent::llm::types::{AgentDelta, AgentLlmError, AgentMessage, AgentStopReason, AgentUsage, ToolId};
 
 pub(super) struct StreamOutcome {
     pub(super) final_message: Option<AgentMessage>,
@@ -53,6 +53,11 @@ pub(super) async fn consume_stream(
             Ok(AgentDelta::Text(text)) => emit(sink, AgentChatEvent::TextDelta { text }),
             Ok(AgentDelta::ReasoningTick) => emit(sink, AgentChatEvent::ReasoningTick),
             Ok(AgentDelta::KeepAlive) => {}
+            // `use_tool`'s arguments, which say what it runs, are still streaming. Its line arrives
+            // with the round's `ToolCallsResolved`, naming the tool: the rail never shows the wrapper.
+            Ok(AgentDelta::ToolCallStarted {
+                tool: ToolId::UseTool, ..
+            }) => {}
             Ok(AgentDelta::ToolCallStarted { call_id, tool }) => {
                 emit(sink, AgentChatEvent::ToolCallStarted { call_id, tool })
             }

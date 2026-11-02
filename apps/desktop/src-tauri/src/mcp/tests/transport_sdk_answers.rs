@@ -164,6 +164,39 @@ async fn resources_read_and_the_read_resource_tool_say_the_same_string() {
     assert_eq!(answer["truncated"], json!(false));
 }
 
+/// The tool-search pair is the in-process agent's: an outside client's list holds every schema
+/// already, so it neither lists the pair nor reaches it, and the refusal reads like any unknown name.
+#[tokio::test(flavor = "current_thread")]
+async fn tools_list_omits_the_tool_search_pair_and_a_call_refuses() {
+    let _token_guard = TOKEN_TEST_LOCK.lock().await;
+    let app = app_with_stores();
+    let server = TestServer::start(&app).await;
+
+    let listed = server
+        .call(json!({"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}))
+        .await;
+    let tools = listed["result"]["tools"].as_array().expect("a list");
+    assert!(!tools.is_empty());
+    for name in ["tool_details", "use_tool"] {
+        assert!(!tools.iter().any(|tool| tool["name"] == name), "{name} is listed");
+    }
+
+    for (name, arguments) in [
+        ("tool_details", json!({ "names": ["copy"] })),
+        ("use_tool", json!({ "name": "app_state", "params": {} })),
+    ] {
+        let reply = server
+            .call(json!({"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":name,"arguments":arguments}}))
+            .await;
+        assert!(reply["result"].get("content").is_none(), "{name}: {reply}");
+        assert_eq!(
+            reply["error"]["message"],
+            format!("Unknown tool: {name}"),
+            "{name}: {reply}"
+        );
+    }
+}
+
 /// The SDK reads a `tools/call` it can't parse as a method it doesn't know.
 #[tokio::test(flavor = "current_thread")]
 async fn a_call_missing_what_it_needs_is_method_not_found() {

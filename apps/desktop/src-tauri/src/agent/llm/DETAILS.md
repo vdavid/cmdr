@@ -285,6 +285,13 @@ observable typed rather than read out of the model's wording.
 
 ## Tests
 
+**Lazy tool loading, live** (verified on these models, `smoke_*_deferred_tool`, 2026-11-02; each is one turn on the real
+prefix): `claude-haiku-5-5`, `gpt-5.5`, and `gemini-3.6-flash` read `tool_details`, then `use_tool`, with no problem on the
+way, and each provider takes the stored `use_tool` back on replay. `gpt-4.1-mini` and Ministral 3B on Cmdr's llama-server
+skip `tool_details` and guess. What they do: `../../tools/DETAILS.md` § Lazy loading. `gemini-3.8-flash` answered 503
+throughout, Mistral's key 429s, and Groq's free tier refuses a 9,745-token request against its 8,000 a minute, so those
+three are unproven.
+
 - `types.rs`: `ToolId` serializes as a bare wire name; the `from_wire_name` gate shape; an `AgentMessage` with a
   tool-call-with-reasoning survives a serde round-trip with the blob intact (DB persistence fidelity).
 - `genai_impl/tests.rs`: the make-or-break genai round-trip (a tool-call-with-reasoning survives agent → genai → agent

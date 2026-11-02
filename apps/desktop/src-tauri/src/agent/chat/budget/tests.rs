@@ -18,8 +18,7 @@ fn automatic(provider: ProviderTag, model: &str) -> ResolvedBudget {
 fn automatic_spends_the_whole_window() {
     assert_eq!(budget_for_window(1_000_000), 839_800);
     assert_eq!(budget_for_window(200_000), 159_800);
-    assert_eq!(budget_for_window(32_768), 17_652);
-    assert_eq!(budget_for_window(MIN_LOCAL_CONTEXT_TOKENS as usize), 45_505);
+    assert_eq!(budget_for_window(MIN_LOCAL_CONTEXT_TOKENS as usize), 17_652);
     // A window smaller than the reply's room leaves nothing, rather than wrapping around.
     assert_eq!(budget_for_window(4_096), 0);
 }
@@ -121,7 +120,7 @@ fn a_wake_digest_is_capped_on_a_large_window() {
     assert_eq!(wake_digest_budget(budget_for_window(1_000_000)), WAKE_DIGEST_MAX_TOKENS);
     assert_eq!(
         wake_digest_budget(budget_for_window(MIN_LOCAL_CONTEXT_TOKENS as usize)),
-        6_048,
+        1_827,
         "a small window still gets its fifth, below the cap"
     );
 }
@@ -247,17 +246,17 @@ fn a_local_budget_tracks_the_configured_context_window() {
         provider: ProviderTag::Local,
         model: "ministral-3b",
         user_choice: None,
-        local_context_tokens: 65_536,
+        local_context_tokens: 32_768,
         reported_window_tokens: None,
         reply_tokens: AGENT_MAX_OUTPUT_TOKENS as usize,
     })
     .expect("a window at or above the floor resolves");
     assert_eq!(
         (resolved.prompt_tokens, resolved.source),
-        (45_505, BudgetSource::LocalServerWindow),
+        (17_652, BudgetSource::LocalServerWindow),
         "the whole window less the reply's room and the estimator's margin"
     );
-    assert_eq!(resolved.known_window_tokens, Some(65_536));
+    assert_eq!(resolved.known_window_tokens, Some(32_768));
     // The local provider never reads the cloud tables, whatever the model is called.
     assert_eq!(
         automatic(ProviderTag::Local, "claude-sonnet-4-5").prompt_tokens,
@@ -354,11 +353,11 @@ fn memory_claims_a_share_of_the_budget_rather_than_a_fixed_block() {
 
 #[test]
 fn a_batch_hint_derives_from_the_budget() {
-    // (budget − 10% headroom − 15,263 of prefix) / 349 per file, while the prompt is what
+    // (budget − 10% headroom − 8,516 of prefix) / 349 per file, while the prompt is what
     // binds.
-    assert_eq!(files_per_batch(24_000), 18);
-    assert_eq!(files_per_batch(32_000), 38);
-    // Past roughly 56,000 the reply's own ceiling binds instead, and the hint stops
+    assert_eq!(files_per_batch(16_000), 16);
+    assert_eq!(files_per_batch(32_000), 58);
+    // Past roughly 49,000 the reply's own ceiling binds instead, and the hint stops
     // growing with the budget: 6,000 emittable tokens / 59 per row.
     assert_eq!(files_per_batch(60_000), 101);
     assert_eq!(
@@ -368,7 +367,6 @@ fn a_batch_hint_derives_from_the_budget() {
     );
     // A budget that can't even hold the prefix says so, rather than proposing one file.
     assert_eq!(files_per_batch(2_000), 0);
-    assert_eq!(files_per_batch(16_000), 0);
 }
 
 /// The hint is advertised to the model as "propose this many files", and the model answers

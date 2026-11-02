@@ -1,13 +1,13 @@
 use std::collections::BTreeSet;
 
 use crate::agent::llm::types::ToolId;
-use crate::tools::{agent_tool_declarations, get_all_tools};
+use crate::tools::agent_tool_declarations;
 
 /// `ToolId` is generated from the table, so `KNOWN` is every entry. `Unrecognized` is excluded by
 /// design (it's the refusal case).
 #[test]
 fn tool_id_known_is_every_table_entry() {
-    let table: BTreeSet<String> = get_all_tools().into_iter().map(|t| t.name).collect();
+    let table: BTreeSet<String> = crate::tools::table_tools().into_iter().map(|t| t.name).collect();
     let known: BTreeSet<String> = ToolId::KNOWN.iter().map(|t| t.as_wire_name().to_string()).collect();
     assert_eq!(known, table);
     assert_eq!(known.len(), ToolId::KNOWN.len(), "two entries share a wire name");

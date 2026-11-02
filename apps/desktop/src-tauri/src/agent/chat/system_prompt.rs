@@ -9,7 +9,7 @@
 //! assert it contains the self-description and the coverage-honesty rule
 //! are guarding our prompt text, NOT classifying an error or provider state.
 //!
-//! Labelled sections, in the order the model reads them: identity, what you can do, panes,
+//! Labelled sections, in the order the model reads them: identity, what you can do, more tools, panes,
 //! coverage, reading files, memory, renaming, suggesting operations, filing and cleanup, evidence, style. The labels are there so a
 //! rule can be found and edited without re-reading the whole block.
 //!
@@ -19,6 +19,8 @@
 //!   that sticks, `tag` having no undo, an unknown outcome that may still be running, what a turn Cmdr
 //!   started can't do, and dialogs for now vs. plans for later. A model told it can't touch anything
 //!   refuses what it can do, and one told only that it can says "copied" over an open dialog,
+//! - **the tools past the core**, one generated line each (`{{more_tools}}`, from the table), and the
+//!   two steps that reach them. It reads nothing per-call, so it stays in the cached prefix,
 //! - **naming the pane**, since focus moves silently and an unnamed pane can aim at the wrong one,
 //! - the privacy line: the one tool that reads inside a file, `inspect_file`, is bounded and on
 //!   request. ⚠️ A test fails if "no tool that reads the contents of a file" comes back,
@@ -164,6 +166,26 @@ mod tests {
             SYSTEM_PROMPT.contains("a selection hides the folder's other rows"),
             "a selection reads as the folder otherwise"
         );
+    }
+
+    /// The tools past the core reach the model as one generated line each, with the two steps that run
+    /// them. A prefix naming a tool it can't run, or one it doesn't say how to reach, is a fumble waiting.
+    #[test]
+    fn prompt_lists_the_tools_past_the_core_and_says_how_to_reach_them() {
+        assert!(SYSTEM_PROMPT.contains("tool_details(names)") && SYSTEM_PROMPT.contains("use_tool(name, params)"));
+        assert!(SYSTEM_PROMPT.contains(&crate::tools::deferred_tool_lines()));
+        assert!(!SYSTEM_PROMPT.contains("{{"), "every slot is filled");
+        for gone in [
+            "- dialog_confirm:",
+            "- resolve_conflict:",
+            "- queue_move_locked:",
+            "- ai_search:",
+        ] {
+            assert!(!SYSTEM_PROMPT.contains(gone), "'{gone}' is never the agent's");
+        }
+        for core in ["- copy:", "- image_facts:", "- list_pane_files:"] {
+            assert!(!SYSTEM_PROMPT.contains(core), "'{core}' is declared in full already");
+        }
     }
 
     /// Everything the prompt calls by name has to exist, or a model reaches for a tool that isn't there.

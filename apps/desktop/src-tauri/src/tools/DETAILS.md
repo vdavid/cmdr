@@ -52,8 +52,8 @@ and pinned by `tests/tool_snapshot_tests.rs`.
 - `id`: the entry's `ToolId` variant. `KNOWN` is every entry, so a name parsing as known says nothing about who may run
   it: that's `admit`'s call.
 - `load`: how the agent gets the schema. `Core` is declared in full on every call: the tools the everyday flows and the
-  system prompt name, capped by a test. `Deferred` will be one line in the prompt and the schema on request. `Meta` is a
-  tool about tools, for the in-process agent only. Every tool is declared in full for now, whatever its `load`.
+  system prompt name, capped by a test. `Deferred` is one line in the prompt and the schema on request. `Meta` is a
+  tool about tools, for the in-process agent only. § Lazy loading.
 - `brief`: one line, at most 100 characters (test-capped), for a tool a model hasn't loaded in full. It describes what
   the tool does for anyone holding it, so it never names a parameter.
 - `subject`: what the tool line names (`../agent/line/DETAILS.md` § The table's subject column). `Custom` is the only
@@ -65,6 +65,40 @@ grouped by category) and the entries call them (`schema: schemas::copy_schema()`
 macro, `Access`, `Load`, `SubjectSpec`, the params gate), `mod.rs` re-exports what the macro generates, and `table.rs`
 holds nothing but the authored entries, so the file that grows per tool is pure data. The
 splits changed no wire bytes — the snapshot passes unmodified.
+
+## Lazy loading (`meta.rs`)
+
+Every provider call pays for every schema it declares, and no cross-provider standard defers one (MCP's `tools/list`
+returns them whole, and `defer_loading` is Anthropic's and OpenAI's alone, absent from `genai` and local models). So the
+agent declares the `Core` entries plus `tool_details` and `use_tool`, and the system prompt's `{{more_tools}}` gets one
+generated line per other tool it can reach (`deferred_tool_lines`). An outside client keeps the full `tools/list`, and
+`execute_tool` refuses the pair for it as an unknown name.
+
+- **`tool_details(names)`** answers `{ tools: [{ name, description, inputSchema }], returned, total, truncated }`, under
+  `MAX_TOOL_RESULT_TOKENS`, in the order asked, plus `unknown` for a name outside the table and `unavailable` for a tool
+  `admit` never lets the agent run. It's an ordinary result, so a thread pays only for what it uses.
+- **`use_tool(name, params)`** never runs. `AgentToolCall::effective` turns a well-formed one into the tool it names under
+  the same `call_id`, and `run_turn` uses that before anything reads the call, so `admit`, the schema gate, Stop's class,
+  the repeat breaker, `moves_the_turn_on`, the wake's `WakeToolWatch`, the evidence ledgers, and the rail see only the
+  tool. `thread.rs` and `context.rs` read stored calls through it too.
+- **The stored call stays what the provider sent.** The row and every replay keep `use_tool`, or a provider that signed it
+  rejects the thread. `effective()` is derived and never persisted.
+- **A malformed `use_tool` stays itself**, reaches `execute_use_tool`, and hears a typed problem: no `name`, a `name` that's
+  one of the pair (nesting would hide the call from everything above), `params` that isn't an object. A key beside the two
+  stays too, so the closed schema refuses it by name rather than the call acting on less than was asked. A name outside
+  the table unwraps and refuses like any unknown tool.
+- **A deferred tool called directly works**: it parses like any provider name, so "call image_facts again" in a stub holds.
+- **Decision: `params` is `type: ["object", "null"]`.** Why: a property with no `type` makes llama-server refuse the whole
+  request, so Cmdr's own local model answered nothing (`meta.rs` has the evidence). `set_setting`'s `value` still has none,
+  and that's safe only while it's deferred: `every_declared_property_has_a_type_a_local_server_can_read`.
+- **Decision: `use_tool`'s description names a few deferred tools.** Why: weak models read declarations and skim the
+  system prompt. Without the names, `gpt-4.1-mini` reached `sort` on one try of two and Ministral 3B on none of three,
+  making do with `list_dir`'s `sortBy` or wandering through `search` and `dialog`, then saying they'd sorted. With them,
+  `gpt-4.1-mini` reached one eight times of eight, and Ministral 3B three times of four (verified on those models, live
+  smokes, 2026-11-02). An `enum` of every name on `name` and the list at the end of the prompt didn't help.
+- **Weak models skip `tool_details` and guess.** Both call `use_tool` straight away, get `sortBy` wrong, and recover on the
+  next round because the schema gate names what the tool takes. That refusal is doing real work: keep it specific.
+  The `smoke_*_deferred_tool` logs show each model's road.
 
 ## The schema gate (`params.rs`)
 

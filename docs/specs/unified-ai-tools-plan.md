@@ -321,8 +321,7 @@ Where a lead's review refined one of David's decisions, the refined form is writ
   `agent_tool_view`; once those go, walk `ToolId::KNOWN` like its neighbors. The gate's open branch in `params.rs` now
   only answers schemas outside the table.
 - M14: `use_tool`'s `params` is free-form by design, and `every_tool_in_the_table_closes_its_schema_all_the_way_down`
-  flags any `type: object` that isn't closed. Declare it with no `type` (as `set_setting`'s `value` does) rather than
-  exempting the name. The effective inner call gets its own tool's gate.
+  flags any `type: object` that isn't closed. The effective inner call gets its own tool's gate.
 
 ## Carried from M12
 
@@ -352,6 +351,19 @@ Where a lead's review refined one of David's decisions, the refined form is writ
 - M16: a `cmdr://settings` read against the real webview, since only Vitest has seen the masked YAML end to end.
 - M18: the tool descriptions' `cmdr://` mentions now resolve through `read_resource`.
   `apps/website/src/pages/llms*.txt.ts` and the features page weren't checked for Ask Cmdr's old promise.
+
+## Carried from M14
+
+- M15: `run_turn` unwraps `use_tool` (`use_tool_tests.rs` is the template), so a fence test through it goes through
+  `run_turn` or calls `effective()` first: `tool_gate::dispatch` handed a raw `use_tool` only refuses.
+- M16: a weak model skips `tool_details` and guesses: `tools/DETAILS.md` § Lazy loading. Ministral 3B and `gpt-4.1-mini`
+  recover through the schema gate's refusal, and Ministral 3B can still wander and claim it did what it asked of a tool
+  it never reached. Watch for that in the rail, and for a `use_tool` line showing as `Used a tool` when it's malformed.
+- M16: Groq's free tier (8,000 tokens a minute) refuses every call at this prefix, Mistral's key 429s, and
+  `gemini-3.8-flash` was at capacity on 2026-11-02, so the Gemini preset's own default isn't proven (`gemini-3.6-flash`
+  is).
+- M18: `tools/DETAILS.md` § Lazy loading is canonical. `set_setting`'s untyped `value` breaks llama-server if it's ever
+  declared.
 
 ## Running unattended
 

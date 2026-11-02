@@ -20,6 +20,8 @@ never in Rust.
 - **Every frontmatter key is required** (`name` = file stem, `purpose`, `model`, `version`, `variables`).
   `variables:` is a comma-separated list, and the `render` call in `mod.rs` must pass exactly those names, in the
   literal `render(&CONST, &[("name", value), …])` shape. `pnpm check prompt-lint` enforces all of it.
+- **`{{more_tools}}` is generated from the tool table**: it reads nothing per-call, or the prefix stops being byte-identical
+  across a thread.
 - **Plain substitution only, one pass**: a value is never read as a template. A prompt that needs a conditional or a
   loop is the moment to evaluate `minijinja`.
 

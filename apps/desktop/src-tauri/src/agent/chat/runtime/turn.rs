@@ -5,6 +5,7 @@
 //! The crash / mid-stream persistence contract it implements is in the module docs
 //! (`runtime/mod.rs`, cases (a)–(d)).
 
+use std::borrow::Cow;
 use std::path::Path;
 
 use tokio::time::Instant;
@@ -390,12 +391,13 @@ async fn drive(
         emit(sink, AgentChatEvent::CostMetered);
         report_context_usage(conn, params.conversation_id, &assembled.elision, sink);
 
-        // Terminal vs. another tool turn.
-        let calls: Vec<&AgentToolCall> = message
+        // Terminal vs. another tool turn. The calls that run, from here on: the row above keeps what
+        // the provider sent, and nothing below knows `use_tool` was involved.
+        let calls: Vec<Cow<'_, AgentToolCall>> = message
             .parts
             .iter()
             .filter_map(|part| match part {
-                AgentPart::ToolCall(call) => Some(call),
+                AgentPart::ToolCall(call) => Some(call.effective()),
                 _ => None,
             })
             .collect();
@@ -417,7 +419,11 @@ async fn drive(
         // Dispatch each tool call, persisting its result on its own row, then loop.
         tally.tool_turns += 1;
         let round_start = turn_calls.len();
-        turn_calls.extend(calls.iter().map(|call| (assistant_id, (*call).clone(), false)));
+        turn_calls.extend(
+            calls
+                .iter()
+                .map(|call| (assistant_id, call.clone().into_owned(), false)),
+        );
         emit(
             sink,
             AgentChatEvent::ToolCallsResolved {
@@ -428,7 +434,8 @@ async fn drive(
         // The loop guard judges the round once all its calls are answered, so no tool call is
         // left without a result row for the next turn to load.
         let mut round = RoundJudgement::default();
-        for (index, call) in calls.into_iter().enumerate() {
+        for (index, call) in calls.iter().enumerate() {
+            let call: &AgentToolCall = call;
             let sent = guard.sent(call);
             let (result, proposal) = match failed_calls.judge(call) {
                 Repeat::Fresh => {
@@ -512,7 +519,7 @@ fn stalled(tally: &mut TurnTally) -> TurnEnd {
 /// and the earlier identical call of the turn it repeats. `turn_calls` already holds this round.
 fn resolve_calls(
     message_id: i64,
-    calls: &[&AgentToolCall],
+    calls: &[Cow<'_, AgentToolCall>],
     turn_calls: &[(i64, AgentToolCall, bool)],
     memory_root: Option<&Path>,
 ) -> Vec<ResolvedCall> {

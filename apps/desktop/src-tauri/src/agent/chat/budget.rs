@@ -63,15 +63,16 @@ pub const ESTIMATE_SAFETY_PERCENT: usize = 15;
 /// (`ai.localContextSize`). Below it the numbers don't work: every call pays
 /// [`FIXED_PROMPT_OVERHEAD_TOKENS`] before the user has said a word, the reply claims
 /// [`AGENT_MAX_OUTPUT_TOKENS`] of the same window, and one paged tool result can spend
-/// [`MAX_TOOL_RESULT_TOKENS`] more. At 65,536 the resolved budget is 45,505, which clears
-/// that with room for the conversation itself; one window down, 32,768 resolves to 17,652,
-/// which holds the prefix with too little left for a paged result. A window that comes in under
-/// this is refused honestly ([`BudgetRefusal`]) rather than assembled against.
+/// [`MAX_TOOL_RESULT_TOKENS`] more. At 32,768 the resolved budget is 17,652, which clears
+/// that with room for the conversation itself; one window down, 16,384 resolves to 3,726,
+/// which can't even hold the prefix. The setting offers nothing smaller, and a window that
+/// still comes in under this is refused honestly ([`BudgetRefusal`]) rather than assembled
+/// against.
 ///
 /// ⚠️ **This floor is derived from the prefix, so a tool joining the view can outgrow it.**
 /// `the_floor_leaves_room_for_a_prefix_and_a_paged_result` is what catches that; answer it
 /// by raising this number or shrinking the prefix, never by loosening the assertion.
-pub const MIN_LOCAL_CONTEXT_TOKENS: u32 = 65_536;
+pub const MIN_LOCAL_CONTEXT_TOKENS: u32 = 32_768;
 
 /// The most estimated tokens ONE tool result may spend on its items: half of
 /// [`DEFAULT_PROMPT_TOKEN_BUDGET`], expressed as a fraction so the two numbers can't drift
@@ -90,13 +91,15 @@ const _: () = assert!(MAX_TOOL_RESULT_TOKENS < DEFAULT_PROMPT_TOKEN_BUDGET);
 
 /// What every call pays before the user has said a word: the system prompt plus the tool
 /// declarations. Measured against the shipped assets, and pinned there —
-/// `context/cost_tests.rs` fails if the real prefix drifts away from this figure. /// prompt is 2,925 of it, the 63 tool declarations the rest.
+/// `context/cost_tests.rs` fails if the real prefix drifts away from this figure. The system
+/// prompt is 3,880 of it, with one line for each deferred tool, and the 21 declarations (the core
+/// and the tool-search pair) the rest.
 ///
-/// It grows whenever a tool joins the view, and every call pays it whether or not it uses
-/// that tool: the four suggested-ops tools cost about 1,300 tokens of schema between them,
-/// which is roughly four files off a 16,000-token rename batch, and `propose_suggestions`,
-/// the most expensive single declaration, costs 759 even trimmed. Keep a new schema terse.
-pub const FIXED_PROMPT_OVERHEAD_TOKENS: usize = 15_263;
+/// A deferred tool costs its one line here, and a core tool its whole schema on every call,
+/// whether or not it's used: `propose_suggestions`, the most expensive single declaration, costs
+/// 759 even trimmed, and that's about two files off a 16,000-token rename batch. Keep a new schema
+/// terse, and a new tool deferred.
+pub const FIXED_PROMPT_OVERHEAD_TOKENS: usize = 8_516;
 
 /// What one `image_facts` row costs at the corpus' average OCR length.
 pub const IMAGE_FACTS_TOKENS_PER_FILE: usize = 269;
@@ -196,7 +199,7 @@ pub fn wake_digest_budget(prompt_tokens: usize) -> usize {
 /// byte of memory is a permanent tax on every thread, paid again in each turn whose memory
 /// changed (`context::memory_notes_for_turn`). Run the numbers a
 /// flat 8 KB would give at the smallest window the app supports: [`MIN_LOCAL_CONTEXT_TOKENS`]
-/// resolves to a 17,652-token budget, the fixed overhead takes 7,107 of it, and 8 KB of memory
+/// resolves to a 17,652-token budget, the fixed overhead takes 8,516 of it, and 8 KB of memory
 /// at [`CHARS_PER_TOKEN_ESTIMATE`] takes 2,048 more, so memory alone would claim about a fifth
 /// of what is left for the digest, the envelope, the history, and every tool result, and it would
 /// claim the same 2,048 on a window a tenth the size. **And the agent writes this file itself**,

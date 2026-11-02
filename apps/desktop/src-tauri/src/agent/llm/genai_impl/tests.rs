@@ -294,6 +294,28 @@ fn the_automatic_plan_marks_no_message() {
     assert_eq!(marked(&breakpoints), 1);
 }
 
+/// Unwrapping `use_tool` is the runtime's business, and it never reaches the provider: the model reads
+/// back the call it sent, or a provider that signed it rejects the thread.
+#[test]
+fn a_use_tool_call_replays_as_the_call_the_provider_sent() {
+    let arguments = json!({ "params": { "pane": "left" }, "name": "tag" });
+    let call = AgentPart::ToolCall(AgentToolCall {
+        call_id: "call-1".into(),
+        tool: ToolId::UseTool,
+        arguments: arguments.clone(),
+        reasoning: None,
+    });
+    let parts = agent_part_to_genai(&call, &replay(&[], &gemini()));
+    let [ContentPart::ToolCall(genai_call)] = parts.as_slice() else {
+        panic!("expected one tool call part");
+    };
+    assert_eq!(genai_call.fn_name, "use_tool");
+    assert_eq!(
+        serde_json::to_string(&genai_call.fn_arguments).expect("json"),
+        serde_json::to_string(&arguments).expect("json"),
+    );
+}
+
 #[test]
 fn tool_arguments_always_replay_as_a_json_object() {
     // A truncated tool call leaves a bare string behind. OpenAI-compatible endpoints

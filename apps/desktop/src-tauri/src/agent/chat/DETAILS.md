@@ -15,8 +15,8 @@ Pull-tier docs for `agent/chat/`. Must-knows live in `CLAUDE.md`.
    **Each rule that forbids something also names the action to take instead** — a prohibition
    alone leaves the next token to chance, which is how a batch of screenshots got 12
    fabricated names.
-2. **Tool declarations** (`tools` arg): `tools::agent_tool_declarations()`. Stable,
-   cached.
+2. **Tool declarations** (`tools` arg): `tools::agent_tool_declarations()`, the core plus the tool-search pair;
+   every other tool is one line of the system prompt (`../../tools/DETAILS.md` § Lazy loading). Stable, cached.
 3. **History**: every persisted turn, each user turn opening with the envelope it was sent with
    (an `AgentPart::Envelope`, replayed verbatim; a row from before envelopes were stored gets a
    local timestamp marker, `[Fri 2026-07-11 09:15]`, instead). Sent exactly as last call while the budget has
@@ -83,6 +83,10 @@ costs nothing and can't hallucinate. The stub above is 71 estimated tokens in pl
 first (marker, tool, size, re-fetch sentence), then splits what's left of `80 *
 CHARS_PER_TOKEN_ESTIMATE` bytes evenly between the two digests, so no tool name or key name can
 push a stub past its budget.
+
+**A stub names the call that ran.** `calls_by_call_id` reads `AgentToolCall::effective`, so a `use_tool` result's stub
+says `image_facts` and its paths, and "call image_facts again" works: a deferred tool called directly runs too. An elided
+`tool_details` says to ask for the same names again.
 
 **Decision: shape-agnostic rules in the core, not a per-tool `digest()` passed in.** Both were
 open (the core must stay pure, invariant 2, so per-tool knowledge may not live here). The
@@ -278,12 +282,12 @@ In `budget.rs` (how many tokens a prompt and a tool result may spend):
   provider rejection mid-turn; still double the 8k that overflowed on a 12-file batch.
 - `ESTIMATE_SAFETY_PERCENT = 15` — what Automatic leaves unclaimed of a window after the reply's room
   (`AGENT_MAX_OUTPUT_TOKENS`): the margin for `chars/4`'s error on JSON- and path-heavy prompts, which real tokenizers
-  split finer. Cloud and local alike, so 1,000,000 resolves to 839,800, 200,000 to 159,800, and 65,536 to 45,505.
+  split finer. Cloud and local alike, so 1,000,000 resolves to 839,800, 200,000 to 159,800, and 32,768 to 17,652.
 - `WAKE_DIGEST_MAX_TOKENS = 10_000` — the cap on a wake's digest, whatever the window. See § Sizing a wake's digest.
-- `MIN_LOCAL_CONTEXT_TOKENS = 65_536` — the smallest local window one turn can run in. It tracks the prefix, so it moves
-  when the tool view grows.
+- `MIN_LOCAL_CONTEXT_TOKENS = 32_768` — the smallest local window one turn can run in, mirrored by
+  `ai.localContextSize`'s default and its smallest option. It tracks the prefix, so it moves when the tool view grows.
   See § A local window too small to use.
-- `FIXED_PROMPT_OVERHEAD_TOKENS = 15_263` / `RENAME_TOKENS_PER_FILE = 349` / `BATCH_HINT_HEADROOM_PERCENT = 10` — what
+- `FIXED_PROMPT_OVERHEAD_TOKENS = 8_516` / `RENAME_TOKENS_PER_FILE = 349` / `BATCH_HINT_HEADROOM_PERCENT = 10` — what
   `files_per_batch` divides. See § Sizing a batch from the budget.
 - `MAX_TOOL_RESULT_TOKENS = DEFAULT_PROMPT_TOKEN_BUDGET / 2` — the most ONE tool result may spend. Derived from the
   conservative default, not the resolved budget, because a tool handler doesn't know the model (and may be answering an
@@ -379,13 +383,14 @@ which rides `TurnParams.call` into every `respond` of the turn.
 
 ### A local window too small to use
 
-A window that gives the reply its 12,000 tokens has to hold `FIXED_PROMPT_OVERHEAD_TOKENS` (15,263) plus a paged tool
-result before it holds a single word of the conversation, so the floor is `MIN_LOCAL_CONTEXT_TOKENS = 65_536`, which
-resolves to 45,505. A smaller stored size no longer validates (it resolves to the 32,768 default on load).
+A window that gives the reply its 12,000 tokens has to hold `FIXED_PROMPT_OVERHEAD_TOKENS` (8,516) plus a paged tool
+result before it holds a single word of the conversation, so the floor is `MIN_LOCAL_CONTEXT_TOKENS = 32_768`, which
+resolves to 17,652. `ai.localContextSize` offers nothing smaller, and a smaller stored size no longer validates (it
+resolves to the 32,768 default on load, migrating an early tester instead of leaving them broken).
 
 **The floor is derived, not chosen**, and `budget.rs`'s `the_floor_leaves_room_for_a_prefix_and_a_paged_result` is what
-holds it: one window down, 32,768 resolves to 17,652, which holds the prefix with too little left for a paged result. Every tool that
-joins the agent view grows the prefix, so that assertion is answered by raising the floor or shrinking the prefix, never
+holds it: one window down, 16,384 resolves to 3,726 and cannot even fit the prefix. Every core tool, and every deferred
+tool's line, grows the prefix, so that assertion is answered by raising the floor or shrinking the prefix, never
 by shrinking the reply's room or the estimator's margin.
 
 A window UNDER the floor is still reachable — a local server Cmdr didn't launch at the current setting — and it is
@@ -426,13 +431,13 @@ all. A persist problem is logged and dropped — a gauge is worth no turn.
 `files_per_batch(prompt_tokens)` answers how many files one content-based rename batch fits, as the **smaller of two
 limits**:
 
-- what the PROMPT holds: `(budget − 10% headroom − 15,263 of prefix) / 349 per file`. The headroom exists because the
+- what the PROMPT holds: `(budget − 10% headroom − 8,516 of prefix) / 349 per file`. The headroom exists because the
   measured 100-file turn came in ~4% above what the per-file costs account for (the paths the calls name, the envelope,
   the user's sentence, JSON scaffolding).
 - what one REPLY can emit: `AGENT_MAX_OUTPUT_TOKENS` (12,000), less a half-slot reasoning reserve, divided by the plan
   row's 59 tokens, so **101**.
 
-20 files at 16,000, 62 at 32,000, then **101 from roughly 50,000 upward** — including at 200,000, because past that
+16 files at 16,000, 58 at 32,000, then **101 from roughly 50,000 upward** — including at 200,000, because past that
 crossover the reply's ceiling binds and a bigger window buys no bigger batch.
 
 **Both limits are load-bearing.** The number is advertised to the model as "propose this many files" and the model
@@ -463,11 +468,12 @@ Estimated tokens from the shipped assets and `estimate_prompt_tokens`. Every fig
 `context/cost_tests.rs`, whose constants block is the single copy; a failure there names both numbers and says to update
 the test and this section together.
 
-- **Fixed overhead: 15,263 tokens** on every single call — 2,925 for the system prompt and 12,338 for the 63 tool
-  declarations. The old flat 8k budget, against a prefix half this size, still left only ~4.9k for the actual work, so
-  an 11-file `image_facts` batch fit and a 12-file one did not. **It grows with the tool view**: the four suggested-ops
-  tools are ~1,300 tokens of schema (`propose_suggestions` alone 759, the most expensive declaration), which every call pays whether or not it suggests anything, and which costs a 16k budget
-  about four files of rename batch. Even
+- **Fixed overhead: 8,516 tokens** on every single call — 3,880 for the system prompt, about 950 of which is one line
+  per deferred tool, and 4,636 for the 21 declarations: the core and the tool-search pair. Declaring every tool in full
+  cost 15,463. The old flat 8k budget still left only ~4.9k for the actual work, so
+  an 11-file `image_facts` batch fit and a 12-file one did not. **It grows with the core**: `propose_suggestions` alone is
+  759, the most expensive declaration, which every call pays whether or not it suggests anything, and which costs a 16k
+  budget about two files of rename batch. A deferred tool costs its one line. Even
   `nothing_to_suggest`, one string argument and a two-sentence description, is 97 of them, paid by every rail turn that
   will never call it. `memory_write` + `memory_edit` cost 252 between them, and the prompt's memory section another 265.
   A new tool's schema is prefix, so keep its descriptions terse and say the rest once, in the registry line or the
@@ -476,10 +482,10 @@ the test and this section together.
 - **Per file: 269 for an `image_facts` row** (at 900 chars of OCR, the corpus average, against the 2,000-char cap — a
   text-dense corpus costs up to ~2.2× more), **59 for a plan row**, **21 for a pane-listing entry**. The facts dominate
   by more than 3×, so a window has to be sized for them, not for the plan.
-- **A 100-file content-based rename: 51,845 tokens** for the whole turn. The parts above account for over 90% of it; the
+- **A 100-file content-based rename: 45,098 tokens** for the whole turn. The parts above account for over 90% of it; the
   rest is the paths the calls name, the envelope, the user's sentence, and JSON scaffolding. The facts arrive over
   several `MAX_TOOL_RESULT_TOKENS` pages that all stay in the turn.
-- So **60k does 100 files, 32k does 38, and 16k can't hold a batch** (`files_per_batch` says 101, 38, and 0). A model's window must exceed the
+- So **60k does 100 files, 32k does 58, and 16k does 16** (`files_per_batch` says 101, 58, and 16). A model's window must exceed the
   whole turn, not one page of it: every page of facts is evidence the plan cites, so none of it may elide.
 - **Memory is priced as a SHARE, not a block**: `memory_slice_bytes` takes a tenth of what the budget has left after the
   overhead, so a 16k budget carries ~4 KB of notes and a 60k one ~21 KB. From a budget of about 170,000 up, the share
@@ -864,7 +870,8 @@ computed by the same pure functions the reload projection runs, so a live line a
 one agree. Per round, in order:
 
 1. `ToolCallStarted { call_id, tool }` per call WHILE its arguments stream (so no subject yet).
-   A nameless call gets one and is then dropped from the final message (`llm/DETAILS.md`).
+   A nameless call gets one and is then dropped from the final message (`llm/DETAILS.md`). `use_tool` gets none: its
+   arguments are what say what it runs, so its line arrives with step 2, naming that tool.
 2. The assistant row persists, then ONE `ToolCallsResolved { message_id, calls }`: every call
    of the final message, in order, each with its tool's wire name, its argument-only subject,
    and `repeat_of` (the turn's first identical call, by `AgentToolCall::identity_key`, the

@@ -7,6 +7,10 @@
 //! the provider accepts the reasoning the agent replays (`DETAILS.md` § Reasoning
 //! round-trip records which ran green, and when).
 //!
+//! `smoke_*_deferred_tool` and `smoke_*_list_only_tool` run a whole turn on Ask Cmdr's real prefix, so a
+//! provider that rejects the tool-search pair's schemas or a stored `use_tool` fails there, and what
+//! each model did lands in the log (`RUST_LOG=info`, `--no-capture`).
+//!
 //! `#[ignore]`-gated on the matching env var, never in CI's critical path. Verify
 //! current model ids from each provider's models endpoint at run time — never from
 //! training data. Run manually, for example:
@@ -543,4 +547,245 @@ async fn smoke_local() {
     let backend = AiBackend::local_for_tests(port);
     let answer = run_one(backend, "Say hello.").await;
     assert!(!answer.trim().is_empty(), "expected a visible answer, got {answer:?}");
+}
+
+// ── Lazy tool loading: a deferred tool, on the real prefix ───────────────────────
+
+/// What a model did when asked for something only a deferred tool can do.
+struct DeferredRun {
+    /// Each call as the provider sent it, and the tool that ran.
+    calls: Vec<(ToolId, ToolId, serde_json::Value)>,
+    /// Calls that came back with a problem, so a fumble shows even when the model recovers.
+    problems: Vec<serde_json::Value>,
+    answer: String,
+}
+
+/// The answer a tool-search call gets for real, through the pair's own handlers and the schema gate, and
+/// a canned yes for the tool it reaches. Nothing touches an app, so nothing here moves a pane.
+async fn answer_deferred_call(effective: &super::types::AgentToolCall) -> serde_json::Value {
+    let refused = |error: crate::tools::ToolError| serde_json::json!({ "problem": error.message, "data": error.data });
+    let name = effective.tool.as_wire_name();
+    if crate::tools::tool_access(name).is_none() {
+        return serde_json::json!({ "available": false, "requested": name });
+    }
+    if let Err(problem) = crate::tools::validate_params(name, &effective.arguments) {
+        return refused(problem);
+    }
+    match &effective.tool {
+        ToolId::ToolDetails => crate::tools::meta::execute_tool_details(&effective.arguments)
+            .await
+            .unwrap_or_else(refused),
+        ToolId::UseTool => crate::tools::meta::execute_use_tool(&effective.arguments)
+            .await
+            .unwrap_or_else(refused),
+        // A model that looks before it acts gets something to look at, or it asks again until the
+        // round cap.
+        ToolId::ListPaneFiles => serde_json::json!({
+            "pane": "left",
+            "path": "/Users/test/work",
+            "scope": "folder",
+            "returned": 2,
+            "total": 2,
+            "truncated": false,
+            "entries": [
+                { "name": "big.iso", "size": 4_000_000_000_u64, "modified": 1_785_247_668 },
+                { "name": "notes.txt", "size": 2_000, "modified": 1_785_247_668 },
+            ],
+        }),
+        ToolId::AppState => serde_json::json!({
+            "focusedPane": "left",
+            "left": { "path": "/Users/test/work", "sort": { "by": "name", "order": "asc" } },
+            "right": { "path": "/Users/test", "sort": { "by": "name", "order": "asc" } },
+        }),
+        _ => serde_json::json!({ "ok": true }),
+    }
+}
+
+/// One turn on Ask Cmdr's real prefix (the shipped system prompt, the core plus the pair), replaying
+/// each message verbatim the way `run_turn` does, so a provider that rejects a stored `use_tool` or the
+/// pair's schemas fails here.
+async fn run_deferred_tool_turn(backend: AiBackend, request: &str) -> DeferredRun {
+    let llm = GenaiAgentLlm::new(backend);
+    let system = crate::agent::chat::system_prompt::system_prompt();
+    let tools = crate::tools::agent_tool_declarations();
+    let mut messages = user_turn(request);
+    let mut run = DeferredRun {
+        calls: Vec::new(),
+        problems: Vec::new(),
+        answer: String::new(),
+    };
+    for round in 0..6 {
+        let stream = llm
+            .respond(
+                &system,
+                &tools,
+                &messages,
+                crate::agent::llm::CallSettings::default(),
+                CancellationToken::new(),
+            )
+            .await
+            .unwrap_or_else(|error| panic!("respond failed on round {round}: {error:?}"));
+        let deltas: Vec<AgentDelta> = stream
+            .map(|item| item.unwrap_or_else(|error| panic!("stream error on round {round}: {error:?}")))
+            .collect()
+            .await;
+        let Some(AgentDelta::End { message, .. }) = deltas.last() else {
+            panic!("stream did not end with an End delta");
+        };
+        let mut results = Vec::new();
+        for part in &message.parts {
+            let AgentPart::ToolCall(call) = part else { continue };
+            let effective = call.effective();
+            let content = answer_deferred_call(&effective).await;
+            if content.get("problem").is_some() || content.get("available").is_some() {
+                run.problems.push(content.clone());
+            }
+            run.calls
+                .push((call.tool.clone(), effective.tool.clone(), effective.arguments.clone()));
+            results.push(AgentPart::ToolResult(AgentToolResult {
+                call_id: call.call_id.clone(),
+                content,
+                elided: false,
+            }));
+        }
+        messages.push(message.clone());
+        if results.is_empty() {
+            run.answer = message
+                .parts
+                .iter()
+                .filter_map(|part| match part {
+                    AgentPart::Text(text) => Some(text.as_str()),
+                    _ => None,
+                })
+                .collect();
+            return run;
+        }
+        messages.push(AgentMessage {
+            role: AgentRole::Tool,
+            parts: results,
+            at: 0,
+        });
+    }
+    run
+}
+
+/// What each model did goes in the log, fumbles included (`RUST_LOG=info`, `--no-capture`): a weak model
+/// may fumble the indirection, and a green assert can't say how. It has to reach the tool with arguments
+/// its schema takes, by whichever road. `sort` is named in `use_tool`'s description, and `toggle_hidden`
+/// only in the system prompt's list.
+async fn assert_reaches_a_deferred_tool(label: &str, backend: AiBackend) {
+    assert_reaches(
+        label,
+        backend,
+        "Sort the left pane by size, largest first. I've given you everything you need.",
+        ToolId::Sort,
+    )
+    .await;
+}
+
+async fn assert_reaches_a_tool_only_the_list_names(label: &str, backend: AiBackend) {
+    assert_reaches(label, backend, "Turn on showing hidden files.", ToolId::ToggleHidden).await;
+}
+
+async fn assert_reaches(label: &str, backend: AiBackend, request: &str, wanted: ToolId) {
+    let _ = env_logger::builder().is_test(true).try_init();
+    let run = run_deferred_tool_turn(backend, request).await;
+    for (sent, ran, arguments) in &run.calls {
+        log::info!(
+            target: "agent::llm",
+            "{label}: sent {}, ran {}, arguments {arguments}",
+            sent.as_wire_name(),
+            ran.as_wire_name()
+        );
+    }
+    log::info!(target: "agent::llm", "{label}: {} problem(s) on the way: {:?}", run.problems.len(), run.problems);
+    log::info!(target: "agent::llm", "{label} answered: {}", run.answer);
+
+    // The gate refuses a guess at the arguments, so one that fits may take a second try.
+    let name = wanted.as_wire_name();
+    let reached = run
+        .calls
+        .iter()
+        .find(|(_, ran, arguments)| *ran == wanted && crate::tools::validate_params(name, arguments).is_ok());
+    let Some((sent, _, _)) = reached else {
+        panic!(
+            "{label}: never reached {name} with arguments its schema takes: {:?}",
+            run.calls
+        );
+    };
+    log::info!(
+        target: "agent::llm",
+        "{label}: reached {name} {}",
+        if *sent == ToolId::UseTool { "through use_tool" } else { "directly" }
+    );
+}
+
+#[tokio::test]
+#[ignore = "real API call: set ANTHROPIC_API_KEY to run"]
+async fn smoke_anthropic_deferred_tool() {
+    assert_reaches_a_deferred_tool("haiku", anthropic_backend("claude-haiku-5-5")).await;
+}
+
+#[tokio::test]
+#[ignore = "real API call: set OPENAI_API_KEY to run"]
+async fn smoke_openai_deferred_tool() {
+    let backend = remote("OPENAI_API_KEY", "https://api.openai.com/v1/", "gpt-4.1-mini");
+    assert_reaches_a_deferred_tool("gpt-4.1-mini", backend).await;
+}
+
+#[tokio::test]
+#[ignore = "real API call: set OPENAI_API_KEY to run"]
+async fn smoke_openai_list_only_tool() {
+    let backend = remote("OPENAI_API_KEY", "https://api.openai.com/v1/", "gpt-4.1-mini");
+    assert_reaches_a_tool_only_the_list_names("gpt-4.1-mini", backend).await;
+}
+
+#[tokio::test]
+#[ignore = "real API call: set OPENAI_API_KEY to run"]
+async fn smoke_openai_responses_deferred_tool() {
+    let backend = remote("OPENAI_API_KEY", "https://api.openai.com/v1/", "gpt-5.5");
+    assert_reaches_a_deferred_tool("gpt-5.5", backend).await;
+}
+
+#[tokio::test]
+#[ignore = "real API call: set GEMINI_API_KEY to run"]
+async fn smoke_gemini_deferred_tool() {
+    let backend = remote(
+        "GEMINI_API_KEY",
+        "https://generativelanguage.googleapis.com/v1/",
+        "gemini-3.6-flash",
+    );
+    assert_reaches_a_deferred_tool("gemini-3.6-flash", backend).await;
+}
+
+#[tokio::test]
+#[ignore = "real API call: set GROQ_API_KEY to run"]
+async fn smoke_groq_deferred_tool() {
+    let backend = remote("GROQ_API_KEY", "https://api.groq.com/openai/v1", "openai/gpt-oss-120b");
+    assert_reaches_a_deferred_tool("groq gpt-oss-120b", backend).await;
+}
+
+#[tokio::test]
+#[ignore = "real API call: set MISTRAL_API_KEY to run"]
+async fn smoke_mistral_deferred_tool() {
+    let backend = remote("MISTRAL_API_KEY", "https://api.mistral.ai/v1", "mistral-small-latest");
+    assert_reaches_a_deferred_tool("mistral-small", backend).await;
+}
+
+#[tokio::test]
+#[ignore = "local server: set LLAMA_PORT to a running OpenAI-compatible local server to run"]
+async fn smoke_local_deferred_tool() {
+    let port: u16 = env_or_skip("LLAMA_PORT")
+        .parse()
+        .expect("LLAMA_PORT must be a port number");
+    assert_reaches_a_deferred_tool("local", AiBackend::local_for_tests(port)).await;
+}
+
+#[tokio::test]
+#[ignore = "local server: set LLAMA_PORT to a running OpenAI-compatible local server to run"]
+async fn smoke_local_list_only_tool() {
+    let port: u16 = env_or_skip("LLAMA_PORT")
+        .parse()
+        .expect("LLAMA_PORT must be a port number");
+    assert_reaches_a_tool_only_the_list_names("local", AiBackend::local_for_tests(port)).await;
 }

@@ -31,10 +31,11 @@ const FILES: usize = 100;
 // them, and divides the reply's own ceiling by the plan row), so they're imported rather than
 // restated: this file is what keeps them honest against the real shapes.
 
-/// Every call: the system prompt plus the 63 tool declarations, before the user has said a word.
+/// Every call: the system prompt with its one line per deferred tool, plus the 21 declarations (the core
+/// and the tool-search pair), before the user has said a word.
 const FIXED_OVERHEAD: usize = FIXED_PROMPT_OVERHEAD_TOKENS;
-const SYSTEM_PROMPT_TOKENS: usize = 2_925;
-const TOOL_DECLARATION_TOKENS: usize = 12_338;
+const SYSTEM_PROMPT_TOKENS: usize = 3_880;
+const TOOL_DECLARATION_TOKENS: usize = 4_636;
 
 /// One `image_facts` row at [`OCR_CHARS`] of recognized text: the dominant per-file cost, and
 /// the reason a window has to be sized for the facts rather than for the plan.
@@ -51,7 +52,7 @@ const LISTING_PER_FILE: usize = LISTING_TOKENS_PER_FILE;
 const MEMORY_BLOCK_WRAPPER: usize = 187;
 
 /// The whole 100-file rename turn, prefix included.
-const HUNDRED_FILE_TURN: usize = 51_845;
+const HUNDRED_FILE_TURN: usize = 45_098;
 
 /// A mid-sized budget, what a 128K window resolved to before Automatic spent the whole window.
 /// Not a production number any more; it pins that a 100-file turn fits a modest window, so a
@@ -107,13 +108,13 @@ fn assert_near(measured: usize, documented: usize, what: &str) {
 #[test]
 fn every_call_pays_the_pinned_fixed_overhead() {
     let tools = crate::tools::agent_tool_declarations();
-    assert_eq!(tools.len(), 63, "the overhead below is the cost of THESE declarations");
+    assert_eq!(tools.len(), 21, "the overhead below is the cost of THESE declarations");
 
     let system = estimate_prompt_tokens(&crate::agent::chat::system_prompt::system_prompt(), &[], &[]);
     let declarations = estimate_prompt_tokens("", &tools, &[]);
 
     assert_near(system, SYSTEM_PROMPT_TOKENS, "the system prompt");
-    assert_near(declarations, TOOL_DECLARATION_TOKENS, "the 63 tool declarations");
+    assert_near(declarations, TOOL_DECLARATION_TOKENS, "the 21 tool declarations");
     assert_near(system + declarations, FIXED_OVERHEAD, "the fixed per-call overhead");
 }
 
@@ -200,7 +201,7 @@ fn a_hundred_file_rename_turn_needs_more_than_the_default_budget() {
 /// take on a batch that overruns the window it was sized for.
 #[test]
 fn a_batch_the_hint_promises_actually_fits_its_budget() {
-    for budget in [32_000, MID_BUDGET] {
+    for budget in [DEFAULT_PROMPT_TOKEN_BUDGET, MID_BUDGET] {
         let files = files_per_batch(budget);
         assert!(files > 0, "a {budget}-token budget has to be able to rename something");
         let (tokens, elided, _) = assemble_rename_turn(files, budget);

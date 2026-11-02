@@ -23,8 +23,8 @@ One message in, an answer out, crash-safe and within budget.
 - **⚠️ Memory rides the user turn (`AgentPart::MemoryNotes`, changed files only), ❌ never the
   system string**: there, one note re-billed the whole thread. It's attacker-reachable, so it stays
   fenced and announced as data. `DETAILS.md` § The memory block.
-- **Keep the pure core pure.** Offset, envelope, `CMDR.md`, memory, and budget arrive as values, so
-  every context test runs with no tokio runtime and no filesystem; `context.rs` never learns the model.
+- **Keep the pure core pure.** Offset, envelope, `CMDR.md`, memory, and budget arrive as values;
+  `context.rs` never learns the model.
 - **Automatic spends the whole window** (less the reply and a 15% margin), from the provider's report, else the
   family table. ❌ Don't re-add a cap for cost: that's compaction's job (planned).
   `DETAILS.md` § Resolving one budget.
@@ -42,6 +42,8 @@ One message in, an answer out, crash-safe and within budget.
   red-guarded). Don't pre-persist either row.
 - **Limits sit at the loop's TOP**: ❌ no round cap on a user's turn, 25 on a background one; cap and
   loop guard buy ONE tool-less wrap-up; silence, ❌ never length, ends calls. `DETAILS.md` § Constants.
+- **What ran is `AgentToolCall::effective`; what's stored and replayed is what the provider sent.**
+  `../../tools/DETAILS.md` § Lazy loading.
 - **The event seam is `AgentChatEvent` over an `UnboundedSender`**, forwarded onto one
   conversation-keyed event: ❌ never key a turn to the invoke that started it, or a reload loses it.
 - **Terminal events come only from `run_turn`, once per turn** (a panicking rail turn's guard is the

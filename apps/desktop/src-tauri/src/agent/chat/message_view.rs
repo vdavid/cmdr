@@ -49,7 +49,7 @@ impl From<AgentRole> for MessageRoleView {
 pub enum MessageBlock {
     /// Assistant or user prose (rendered markdown-lite, entity-escaped first).
     Text { text: String },
-    /// A tool the model invoked, as its line says it: what it looked at, what came back (`None`
+    /// A tool the model invoked (the one that ran, through `use_tool` or not), as its line says it: what it looked at, what came back (`None`
     /// while no result row exists: still running, or a turn that never finished), and the
     /// turn's earlier identical call it repeats. Typed facts from `agent::line`, never the raw
     /// arguments or result; the line is `(this row's id, call_id)`. Its result rides this block,
@@ -175,7 +175,7 @@ pub fn to_message_view(message: StoredMessage) -> MessageView {
             .iter()
             .filter_map(|part| match part {
                 AgentPart::ToolCall(call) => Some(CallFacts {
-                    subject: subject_of(call, None, None),
+                    subject: subject_of(&call.effective(), None, None),
                     outcome: None,
                     repeat_of: None,
                 }),
@@ -198,13 +198,14 @@ fn project_row(message: StoredMessage, facts: RowFacts) -> MessageView {
                 .filter_map(|part| match part {
                     AgentPart::Text(text) => Some(MessageBlock::Text { text }),
                     AgentPart::ToolCall(call) => {
+                        let call = call.effective();
                         let facts = calls.next().unwrap_or_else(|| CallFacts {
                             subject: subject_of(&call, None, None),
                             outcome: None,
                             repeat_of: None,
                         });
                         Some(MessageBlock::ToolCall {
-                            call_id: call.call_id,
+                            call_id: call.call_id.clone(),
                             tool: call.tool.as_wire_name().to_string(),
                             subject: facts.subject,
                             outcome: facts.outcome,

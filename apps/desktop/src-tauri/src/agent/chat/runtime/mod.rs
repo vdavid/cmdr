@@ -424,4 +424,6 @@ mod slot_change_tests;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
+mod use_tool_tests;
+#[cfg(test)]
 mod wake_tests;
