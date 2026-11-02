@@ -14,20 +14,25 @@
 import { waitBudget } from './wait-budget.js'
 import { test, expect } from './fixtures.js'
 import {
+  closeRailIfOpen,
+  composerPresent,
+  ensureChatReady,
+  LAST_BUBBLE_JS,
+  lastTurnSettled,
+  offGateShown,
+  openRailViaMenu,
+  railOpen,
+  typeAndSend,
+} from './ask-cmdr-helpers.js'
+import {
   closeScopedWindow,
   dispatchMenuCommand,
   ensureAppReady,
   expectArrowDownMovesCursorIn,
   openSettingsWindowViaProd,
   CTRL_OR_META,
-  waitForAskCmdrOnInBackend,
 } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
-
-/** The rail is open once its root element is in the DOM. */
-function railOpen(page: TauriPage): Promise<boolean> {
-  return page.evaluate<boolean>(`document.querySelector('.ask-cmdr-rail') !== null`)
-}
 
 /** The ALPHA stability badge is present in the open rail's header. */
 function alphaBadgeShown(page: TauriPage): Promise<boolean> {
@@ -56,63 +61,6 @@ function pressToggleShortcut(page: TauriPage): Promise<void> {
         metaKey: ${String(CTRL_OR_META === 'Meta')},
         altKey: true, bubbles: true
     }))`)
-}
-
-/** Opens the rail via the View-menu toggle, re-dispatching inside the poll: the
- * cross-source double-fire guard (dispatch-dedup.ts, 300ms) can drop a menu fire that
- * lands right after a prior test's toggle. Idempotent once open. */
-async function openRailViaMenu(page: TauriPage): Promise<void> {
-  await expect
-    .poll(
-      async () => {
-        if (await railOpen(page)) return true
-        await dispatchMenuCommand(page, 'askCmdr.toggle')
-        return railOpen(page)
-      },
-      { timeout: waitBudget(5000) },
-    )
-    .toBe(true)
-}
-
-/** Closes the rail via its header close button, if open, so state doesn't leak between tests. */
-async function closeRailIfOpen(page: TauriPage): Promise<void> {
-  if (!(await railOpen(page))) return
-  await page.evaluate(`document.querySelector('.ask-cmdr-rail .header-actions button:last-child')?.click()`)
-  await expect.poll(() => railOpen(page), { timeout: waitBudget(3000) }).toBe(false)
-}
-
-/** The rail's "Ask Cmdr is off" gate is showing (the rail is open, the chat isn't). */
-function offGateShown(page: TauriPage): Promise<boolean> {
-  return page.evaluate<boolean>(`document.querySelector('.ask-cmdr-rail .ask-cmdr-gate[data-gate="off"]') !== null`)
-}
-
-/** The composer is present (the rail is past its gates). */
-function composerPresent(page: TauriPage): Promise<boolean> {
-  return page.evaluate<boolean>(`document.querySelector('.ask-cmdr-rail textarea') !== null`)
-}
-
-/** Get the rail ready for a chat test: turn Ask Cmdr on from the rail's gate if it's showing
- * (the switch persists in `settings.json` for the run, so it's a no-op once on), then wait for
- * the composer to render. The gate resolves asynchronously on open, so the composer isn't
- * present on the first tick even when already on — always wait. The E2E fake keeps
- * `ai.provider` off, so the cloud gate never shows here. */
-async function ensureChatReady(page: TauriPage): Promise<void> {
-  await expect
-    .poll(
-      async () => {
-        if (await composerPresent(page)) return true
-        if (await offGateShown(page)) {
-          await page.evaluate(
-            `document.querySelector('.ask-cmdr-rail .ask-cmdr-gate[data-gate="off"] button')?.click()`,
-          )
-        }
-        return composerPresent(page)
-      },
-      { timeout: waitBudget(5000) },
-    )
-    .toBe(true)
-  // The rail flips at once; the backend learns the switch a save and a push later.
-  await waitForAskCmdrOnInBackend(page)
 }
 
 /** The Ask Cmdr switch in Settings > AI > Ask Cmdr: its hidden input carries the label. */
@@ -165,13 +113,7 @@ function assistantReplyCount(page: TauriPage): Promise<number> {
  * already shown from a bootstrapped thread. */
 async function sendComposerMessage(page: TauriPage, text: string): Promise<void> {
   const before = await assistantReplyCount(page)
-  await page.evaluate(`(() => {
-    const ta = document.querySelector('.ask-cmdr-rail textarea');
-    ta.focus();
-    ta.value = ${JSON.stringify(text)};
-    ta.dispatchEvent(new Event('input', { bubbles: true }));
-    ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-  })()`)
+  await typeAndSend(page, text)
   await expect.poll(() => assistantReplyCount(page), { timeout: waitBudget(8000) }).toBeGreaterThan(before)
 }
 
@@ -206,17 +148,6 @@ async function openThreadBySearch(page: TauriPage, query: string): Promise<void>
       timeout: waitBudget(3000),
     })
     .toBe(true)
-}
-
-/** The rail's last assistant bubble, as an expression. */
-const LAST_BUBBLE_JS = `[...document.querySelectorAll('.ask-cmdr-rail .msg')].filter(m => m.querySelector('.tools, .prose')).at(-1)`
-
-/** The last bubble's turn has ended: its stats line shows and nothing streams. */
-function lastTurnSettled(page: TauriPage): Promise<boolean> {
-  return page.evaluate<boolean>(`(() => {
-    const bubble = ${LAST_BUBBLE_JS};
-    return !!bubble && !!bubble.querySelector('.turn-stats') && !bubble.querySelector('.cursor');
-  })()`)
 }
 
 /** Opens every closed tool group of the last bubble, and says how many are still closed. */
@@ -424,7 +355,7 @@ test.describe('Ask Cmdr rail', () => {
   })
 
   // A tool-running turn reads the same live and reopened (the live stream and the history
-  // projection are two halves that must agree). The fake's `[tools]` script (`chat/session.rs`,
+  // projection are two halves that must agree). The fake's `[tools]` script (`chat/e2e_fake.rs`,
   // `rail_fake_turn`) plays three rounds: narration + `app_state`, `list_volumes`, and a refused
   // `format_drive`; narration + `list_volumes` twice, reusing round one's call ids; then the answer.
   // `app_state` and `list_volumes` read this machine, so only their shape is asserted.

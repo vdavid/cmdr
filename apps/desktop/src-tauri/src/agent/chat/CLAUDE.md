@@ -8,7 +8,7 @@ One message in, an answer out, crash-safe and within budget.
   resolution, reasoning effort and the reply's room, the ONE token estimator.
 - `runtime/`: the I/O-and-time half — `turn.rs` (`run_turn`), `mod.rs` (`ChatRuntime::send_message`
   and `wake`, both single-flight), `events.rs` + `dispatch.rs` (the two seams).
-- Leaves: `system_prompt.rs`, `session.rs`, `slot_status.rs` (what the rail knows before a send:
+- Leaves: `system_prompt.rs`, `session.rs`, `e2e_fake.rs`, `slot_status.rs` (what the rail knows before a send:
   provider readiness and the gauge's baseline), `stream.rs` (`AskCmdrTurn`, a turn's one progress
   transport), `message_view.rs` (one stored row's display projection, shared by history and the
   stream; `message_view/thread.rs` projects a history page with its turns in view), and

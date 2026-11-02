@@ -244,7 +244,20 @@ fn automated_run_from(e2e_mode: Option<&str>, i18n_capture: Option<&str>) -> Aut
 ///
 /// **Strictly additive**: code must keep working with the var unset.
 pub fn ask_cmdr_fake_active() -> bool {
-    std::env::var("CMDR_E2E_ASK_CMDR_FAKE").is_ok()
+    ask_cmdr_fake_from(
+        ASK_CMDR_FAKE_HONORED,
+        std::env::var_os("CMDR_E2E_ASK_CMDR_FAKE").is_some(),
+    )
+}
+
+/// Whether this build plays the fake at all. The variable is readable in every build, and the rail
+/// fake runs tools by what a message says, so a release build answers from the real provider or not
+/// at all.
+const ASK_CMDR_FAKE_HONORED: bool = cfg!(any(debug_assertions, feature = "playwright-e2e"));
+
+/// Pure core of [`ask_cmdr_fake_active`], so a test can read the release arm.
+fn ask_cmdr_fake_from(honored: bool, var_set: bool) -> bool {
+    honored && var_set
 }
 
 /// Which script the WAKE slot's fake assistant plays, set by the `playwright-e2e`
@@ -506,6 +519,13 @@ pub fn wait_for_listing_arm_release() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_release_build_ignores_the_ask_cmdr_fake() {
+        assert!(!ask_cmdr_fake_from(false, true));
+        assert!(!ask_cmdr_fake_from(true, false));
+        assert!(ask_cmdr_fake_from(true, true));
+    }
 
     /// Test mode reads exactly `"1"`. Anything else is off. This guards the
     /// `as_deref() == Ok("1")` shape (replacing it with `is_ok()` would let

@@ -32,6 +32,7 @@
 pub mod budget;
 pub mod cancel;
 pub mod context;
+mod e2e_fake;
 pub mod effort;
 pub mod message_view;
 pub mod runtime;

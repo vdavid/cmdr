@@ -2,7 +2,7 @@
  * Ask Cmdr surfaces beyond the first exchange, for the i18n screenshot-capture driver
  * (`i18n-capture.spec.ts`): the rail's less common states, each on a thread of its own.
  *
- * The fake LLM's scripts carry most of them (`rail_fake_turn` in `chat/session.rs`):
+ * The fake LLM's scripts carry most of them (`rail_fake_turn` in `chat/e2e_fake.rs`):
  *
  *  - `ask-cmdr-every-tool`: `[every-tool]`, one turn calling every other read tool.
  *  - `ask-cmdr-rename-undo` and `-undo-partial`: `[rename]` stages a plan on the fixture tree, the

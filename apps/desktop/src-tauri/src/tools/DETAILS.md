@@ -1124,7 +1124,9 @@ turn's Stop. ❌ Never derive it from the opener: a follow-up rides as `UserTurn
 if that wrapping ever changes.
 
 Every tool × every origin is tested against `admit` (`../agent/tool_gate.rs`), and one scripted turn per class runs through the
-real gate (`../agent/chat/runtime/class_smoke_tests.rs`).
+real gate (`../agent/chat/runtime/class_smoke_tests.rs`). What the agent can do and what it can't finish alone are proven through
+whole turns with a fake frontend (`../agent/chat/runtime/capability_tests.rs`), called directly and through `use_tool`, and against the
+real webview (`apps/desktop/test/e2e-playwright/ask-cmdr-capability.spec.ts`).
 
 A refusal's `reason` says what's possible instead. ⚠️ Keep it accurate as the tiers grow: a model told a false limit either
 refuses the question or invents the answer.

@@ -163,7 +163,7 @@ So `ForcedWake::only_folder` carries the staged folder, and `WakeLoop::isolate_i
 `BackendResolution::Off` and report `WakeReadiness::Off` for a slot that resolves fine, and no wake could run under the
 harness at all.
 
-⚠️ **A wake's scripted fake says something different from the rail's** (`chat/session.rs`, selected by `AgentSlot`).
+⚠️ **A wake's scripted fake says something different from the rail's** (`../chat/e2e_fake.rs`, selected by `AgentSlot`).
 The rail's E2E specs count replies by matching their exact sentence, so one shared script would both break them on any
 change here and make a wake's thread indistinguishable from a chat the user started.
 

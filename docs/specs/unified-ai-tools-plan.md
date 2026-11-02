@@ -365,6 +365,14 @@ Where a lead's review refined one of David's decisions, the refined form is writ
 - M18: `tools/DETAILS.md` § Lazy loading is canonical. `set_setting`'s untyped `value` breaks llama-server if it's ever
   declared.
 
+## Carried from M15
+
+- M16: the `[tool:copy]` trigger answers only under `CMDR_E2E_ASK_CMDR_FAKE`, in a debug or `playwright-e2e` build, so a
+  live run with a real model never sees it. `tag` set on a pane whose volume stores no tags answers `OK` on 0 items,
+  with the skip named after it: watch whether a model relays that as done.
+- M17: `capability_tests.rs` § "The fence" lists what was tried; `FRONTEND_EVENTS` is what "no event" means there, and
+  `every_event_a_tool_can_emit_is_watched` keeps it whole for `mcp-*` names.
+
 ## Running unattended
 
 David may be away, and nobody can click a macOS dialog. Executors run nothing that can raise a macOS prompt (Keychain,

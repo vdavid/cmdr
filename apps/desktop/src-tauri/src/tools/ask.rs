@@ -164,7 +164,7 @@ impl ToolAskRegistry {
 
     /// Answers this request, if it's still the open one. A late click on a question that already
     /// came down names an old id, and lands nowhere.
-    fn answer(&self, request_id: &str, response: ToolAskResponse) {
+    pub(crate) fn answer(&self, request_id: &str, response: ToolAskResponse) {
         let mut pending = self.lock();
         if pending.as_ref().is_some_and(|open| open.request_id == request_id)
             && let Some(open) = pending.take()

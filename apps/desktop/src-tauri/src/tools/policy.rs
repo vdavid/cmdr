@@ -221,6 +221,13 @@ pub fn direct_mode() -> bool {
     )
 }
 
+/// Flips the setting in this process only, so a test can say what direct mode changes with no
+/// Keychain anywhere near it.
+#[cfg(test)]
+pub(crate) fn set_direct_mode_setting_for_test(on: bool) {
+    DIRECT_MODE_SETTING.store(on, Ordering::Relaxed);
+}
+
 /// The person's setting alone, without an automated run: what the Settings row shows.
 pub fn direct_mode_setting() -> bool {
     DIRECT_MODE_SETTING.load(Ordering::Relaxed)

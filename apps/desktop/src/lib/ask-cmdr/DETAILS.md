@@ -909,18 +909,24 @@ The app has no real AI provider under E2E, so `commands/agent/chat.rs::resolve_a
 scripted `FakeAgentLlm` when `CMDR_E2E_ASK_CMDR_FAKE=1` (set for the whole E2E run by the
 `desktop-svelte-e2e-playwright` check). It streams a fixed "Hi! I'm the test assistant." so `ask-cmdr.spec.ts` can
 assert send-and-render deterministically, zero network. A message starting with `[tools]` plays a three-round
-tool-running turn instead (`chat/session.rs`, `rail_fake_turn`: narration plus `app_state`, `list_volumes`, and a
-refused `delete`; narration plus `list_volumes` twice, reusing the first round's call ids; then the answer), which the
-spec reads live and again after reopening the thread, and asserts equal: the end-to-end half of live-equals-reload. The
-fake picks each round from the prompt it's handed (`FakeAgentLlm::by_prompt`), so a retry or a second thread can't
-desync it. `app_state` and `list_volumes` read the E2E machine's real state, so the spec asserts their shape, never
-their values, and never token counts (the fake reports none). `i18n-capture-ask-cmdr.ts` photographs the same turn
-(`ask-cmdr-tools`) with its groups open and one line expanded. `ask-cmdr-trigger.test.ts` covers the full event model
-(tool lines, soft cap, message paging, attachments) with mocked events, `ask-cmdr-stop-and-reload.test.ts` a Stop and a
-reload mid-turn, and `ask-cmdr-turn-parity.test.ts` the round reducer and live-equals-reload;
-`ask-cmdr-sessions.test.ts` covers list paging/search/rename/archive. The E2E spec also drives the sessions path
-end-to-end (create two threads, search finds the right one via real FTS over the persisted messages, switch works) — it
-seeds a per-run nonce into the message text so search never matches a thread left by an earlier run.
+tool-running turn instead (`apps/desktop/src-tauri/src/agent/chat/e2e_fake.rs`, `rail_fake_turn`: narration plus
+`app_state`, `list_volumes`, and a refused `format_drive`; narration plus `list_volumes` twice, reusing the first
+round's call ids; then the answer), which the spec reads live and again after reopening the thread, and asserts equal:
+the end-to-end half of live-equals-reload. The fake picks each round from the prompt it's handed
+(`FakeAgentLlm::by_prompt`), so a retry or a second thread can't desync it. `app_state` and `list_volumes` read the E2E
+machine's real state, so the spec asserts their shape, never their values, and never token counts (the fake reports
+none). `i18n-capture-ask-cmdr.ts` photographs the same turn (`ask-cmdr-tools`) with its groups open and one line
+expanded. `ask-cmdr-trigger.test.ts` covers the full event model (tool lines, soft cap, message paging, attachments)
+with mocked events, `ask-cmdr-stop-and-reload.test.ts` a Stop and a reload mid-turn, and `ask-cmdr-turn-parity.test.ts`
+the round reducer and live-equals-reload; `ask-cmdr-sessions.test.ts` covers list paging/search/rename/archive. The E2E
+spec also drives the sessions path end-to-end (create two threads, search finds the right one via real FTS over the
+persisted messages, switch works) — it seeds a per-run nonce into the message text so search never matches a thread left
+by an earlier run.
+
+A message `[tool:copy] {"pane":"left"}` calls that one tool through the real gate, then signs off
+(`rail_fake_tool_trigger`), which is how `ask-cmdr-capability.spec.ts` acts as the agent against the real webview. The
+variable is readable in every build, so `ask_cmdr_fake_active` honors it only in a debug or `playwright-e2e` build, and
+the trigger isn't compiled into anything else.
 
 **The fake gets its own prompt budget.** It answers as a LOCAL provider with no local server behind it, so the real
 resolution would size its budget from `ai.localContextSize` — a setting the harness has no reason to touch, and whose

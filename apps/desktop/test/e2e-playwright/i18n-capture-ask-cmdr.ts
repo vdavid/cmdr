@@ -201,7 +201,7 @@ export async function captureAskCmdrSurfaces(
   await captureCall(main, 'disable').catch(() => {})
 
   // ── A turn that ran tools ──────────────────────────────────────────────────
-  // The fake's `[tools]` script (`chat/session.rs`, `rail_fake_turn`) narrates three rounds of
+  // The fake's `[tools]` script (`chat/e2e_fake.rs`, `rail_fake_turn`) narrates three rounds of
   // tool calls, including a refused one and two repeats, so its bubble shows tool lines with
   // their outcomes and repeat tags, group headers, and the turn's stats line. Both groups are
   // opened (the turn's end closed them) and one line is expanded, so its preview, truncation
