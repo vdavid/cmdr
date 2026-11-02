@@ -84,6 +84,10 @@
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "42c3c0e"
   },
+  "shortcuts.conflict.bareKey": "Bocs, {combo}: ezzel a fájllistában szűrsz vagy egy fájlra ugrasz, ezért itt nem lehet billentyűparancs. Próbálj hozzáadni egy módosítóbillentyűt.",
+  "@shortcuts.conflict.bareKey": {
+    "sourceHash": "6c50fbe"
+  },
   "shortcuts.conflict.shiftLetter": "Bocs, {combo}: ezzel nagybetűt írsz, ezért nem lehet billentyűparancs. Próbálj hozzáadni még egy módosítóbillentyűt.",
   "@shortcuts.conflict.shiftLetter": {
     "sourceHash": "15f52bd"

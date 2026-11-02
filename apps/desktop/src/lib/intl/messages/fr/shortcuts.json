@@ -83,6 +83,10 @@
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "42c3c0e"
   },
+  "shortcuts.conflict.bareKey": "Désolé, taper {combo} dans la liste des fichiers sert à filtrer ou à aller à un fichier, donc ce ne peut pas être un raccourci ici. Essayez d’ajouter une touche de modification.",
+  "@shortcuts.conflict.bareKey": {
+    "sourceHash": "6c50fbe"
+  },
   "shortcuts.conflict.shiftLetter": "Désolé, {combo} sert à taper une majuscule, donc ce ne peut pas être un raccourci. Essayez d’ajouter une autre touche de modification.",
   "@shortcuts.conflict.shiftLetter": {
     "sourceHash": "15f52bd"

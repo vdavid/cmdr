@@ -83,6 +83,10 @@
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "42c3c0e"
   },
+  "shortcuts.conflict.bareKey": "Извините, в списке файлов клавиша {combo} запускает фильтр или переход к файлу, поэтому здесь ее нельзя назначить сочетанием клавиш. Попробуйте добавить клавишу модификации.",
+  "@shortcuts.conflict.bareKey": {
+    "sourceHash": "6c50fbe"
+  },
   "shortcuts.conflict.shiftLetter": "Извините, сочетание {combo} вводит заглавную букву, поэтому назначить его не получится. Попробуйте добавить еще одну клавишу модификации.",
   "@shortcuts.conflict.shiftLetter": {
     "sourceHash": "15f52bd"

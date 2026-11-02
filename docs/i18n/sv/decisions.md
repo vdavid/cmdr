@@ -59,7 +59,7 @@ bundle), Microsoft, file managers, the catalog.
 ## Shortcut conflicts and the macOS features they name (`shortcuts.system.*`, `shortcuts.conflict.*`, `downloads.shortcutRow.*`)
 
 - Spotlight, Mission Control, Spaces stay English; `Teckenvisare`, `Avsluta tvingat`, `byte av inmatningskälla` are
-  unverified (review queue). `modifierare`, since MS's `låstangent` is the lock key.
+  unverified (review queue). `specialtangent` is macOS sv's own word.
 
 ## Ask Cmdr chat (`askCmdr.*`, `settings.askCmdr.*`, `settings.advanced.logLlmCalls.*`, `commands.askCmdrToggle.*`)
 

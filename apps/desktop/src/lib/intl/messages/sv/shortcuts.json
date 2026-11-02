@@ -84,7 +84,11 @@
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "42c3c0e"
   },
-  "shortcuts.conflict.shiftLetter": "Tyvärr, med {combo} skriver du en stor bokstav, så det kan inte vara en genväg. Testa att lägga till ytterligare en modifierare.",
+  "shortcuts.conflict.bareKey": "Tyvärr, med {combo} i fillistan filtrerar du eller hoppar till en fil, så det kan inte vara en genväg här. Testa att lägga till en specialtangent.",
+  "@shortcuts.conflict.bareKey": {
+    "sourceHash": "6c50fbe"
+  },
+  "shortcuts.conflict.shiftLetter": "Tyvärr, med {combo} skriver du en stor bokstav, så det kan inte vara en genväg. Testa att lägga till ytterligare en specialtangent.",
   "@shortcuts.conflict.shiftLetter": {
     "sourceHash": "15f52bd"
   },

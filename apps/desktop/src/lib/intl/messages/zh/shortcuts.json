@@ -83,6 +83,10 @@
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "42c3c0e"
   },
+  "shortcuts.conflict.bareKey": "抱歉，在文件列表中输入 {combo} 会进行筛选或跳到某个文件，所以在这里不能作为快捷键。试试添加一个修饰键。",
+  "@shortcuts.conflict.bareKey": {
+    "sourceHash": "6c50fbe"
+  },
   "shortcuts.conflict.shiftLetter": "抱歉，{combo} 是用来输入大写字母的，所以不能作为快捷键。试试再添加一个修饰键。",
   "@shortcuts.conflict.shiftLetter": {
     "sourceHash": "15f52bd"

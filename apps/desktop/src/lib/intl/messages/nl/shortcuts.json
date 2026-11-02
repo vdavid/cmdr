@@ -86,7 +86,11 @@
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "42c3c0e"
   },
-  "shortcuts.conflict.shiftLetter": "Sorry, met {combo} typ je een hoofdletter, dus dit kan geen sneltoets zijn. Probeer er nog een wijzigingstoets aan toe te voegen.",
+  "shortcuts.conflict.bareKey": "Sorry, met {combo} in de bestandenlijst filter je of spring je naar een bestand, dus dit kan hier geen sneltoets zijn. Probeer er een speciale toets aan toe te voegen.",
+  "@shortcuts.conflict.bareKey": {
+    "sourceHash": "6c50fbe"
+  },
+  "shortcuts.conflict.shiftLetter": "Sorry, met {combo} typ je een hoofdletter, dus dit kan geen sneltoets zijn. Probeer er nog een speciale toets aan toe te voegen.",
   "@shortcuts.conflict.shiftLetter": {
     "sourceHash": "15f52bd"
   },

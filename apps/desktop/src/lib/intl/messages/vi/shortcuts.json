@@ -83,6 +83,10 @@
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "42c3c0e"
   },
+  "shortcuts.conflict.bareKey": "Xin lỗi, gõ {combo} trong danh sách tệp sẽ lọc hoặc nhảy đến một tệp, nên không thể dùng làm phím tắt ở đây. Hãy thử thêm một phím bổ trợ.",
+  "@shortcuts.conflict.bareKey": {
+    "sourceHash": "6c50fbe"
+  },
   "shortcuts.conflict.shiftLetter": "Xin lỗi, {combo} là cách gõ chữ hoa, nên không thể dùng làm phím tắt. Hãy thử thêm một phím bổ trợ nữa.",
   "@shortcuts.conflict.shiftLetter": {
     "sourceHash": "15f52bd"

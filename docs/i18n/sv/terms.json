@@ -2048,11 +2048,22 @@
     "sources": "macOS Finder"
   },
   "modifier-key": {
-    "chosen": "modifierare",
-    "confidence": "tentative",
+    "accept": ["specialtangenter"],
+    "avoid": [
+      {
+        "form": "modifierare",
+        "why": "a composed word with no macOS source; macOS sv says Specialtangenter"
+      },
+      {
+        "form": "låstangent",
+        "why": "MS's form, but it's the lock-key sense"
+      }
+    ],
+    "chosen": "specialtangent",
+    "confidence": "confirmed",
     "decision": "Shortcut conflicts",
-    "forms": "Lägg till en modifierare (⌘, ⌃, ⌥ eller ⇧)",
-    "sources": "composed; MS låstangent is the lock-key sense; macOS sv says Specialtangenter (KeyboardSettings Modifier Keys sheet, macOS 27.0.1 26A434, 2026-11-02), open in review-queue.md"
+    "forms": "pl. specialtangenter; Lägg till en specialtangent (⌘, ⌃, ⌥ eller ⇧)",
+    "sources": "macOS sv Specialtangenter (KeyboardSettings Modifier Keys sheet, macOS 27.0.1 26A434, 2026-11-02); David's decision"
   },
   "mount": {
     "accept": ["montering"],

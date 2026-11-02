@@ -231,9 +231,6 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   `geen van zijn hulpmiddelen` for "not a tool it has". Confirm they read naturally.
 - `ligt achter een link` for a DFS link (`*.linkTargetUnreachable*`), and `filtermarkering` for the typing badge
   (`commands.paneQuickFilter.description`) have no pile precedent. Confirm they read naturally.
-- **modifier key → `wijzigingstoets`** (`shortcuts.conflict.shiftLetter`, `downloads.shortcutRow.addModifier`): matches
-  MS and the catalog, but macOS nl says `Speciale toetsen` (Keyboard > Modifier Keys, macOS 27.0.1, 2026-11-02). Switch
-  to `speciale toets`?
 
 ## Cloud-AI-toestemming en AI-hulpmiddelen (`ai.cloudConsent.askCmdr.*`, `askCmdr.toolGroup.*`, `ui.toolAsk.*`)
 

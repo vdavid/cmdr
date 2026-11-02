@@ -2101,10 +2101,17 @@
     "sources": "macOS Finder (Date Modified → Bewerkingsdatum)"
   },
   "modifier-key": {
-    "accept": ["wijzigingstoetsen"],
-    "chosen": "wijzigingstoets",
-    "confidence": "high",
-    "sources": "MS wijzigingstoets; shipped catalog; macOS nl says Speciale toetsen (KeyboardSettings Modifier Keys sheet, macOS 27.0.1 26A434, 2026-11-02), open in review-queue.md"
+    "accept": ["speciale toetsen"],
+    "avoid": [
+      {
+        "form": "wijzigingstoets",
+        "why": "Microsoft's form; macOS nl says Speciale toetsen"
+      }
+    ],
+    "chosen": "speciale toets",
+    "confidence": "confirmed",
+    "forms": "pl. speciale toetsen; Voeg een speciale toets toe (⌘, ⌃, ⌥ of ⇧)",
+    "sources": "macOS nl Speciale toetsen (KeyboardSettings Modifier Keys sheet, macOS 27.0.1 26A434, 2026-11-02); David's decision"
   },
   "mount": {
     "accept": ["koppel", "gekoppeld"],

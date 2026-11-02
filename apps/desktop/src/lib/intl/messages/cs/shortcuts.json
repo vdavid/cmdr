@@ -83,6 +83,10 @@
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "42c3c0e"
   },
+  "shortcuts.conflict.bareKey": "Promiňte, klávesa {combo} v seznamu souborů spustí filtrování nebo skok na soubor, takže tady nemůže být zkratkou. Zkuste přidat modifikační klávesu.",
+  "@shortcuts.conflict.bareKey": {
+    "sourceHash": "6c50fbe"
+  },
   "shortcuts.conflict.shiftLetter": "Promiňte, kombinace {combo} píše velké písmeno, takže nemůže být zkratkou. Zkuste přidat další modifikační klávesu.",
   "@shortcuts.conflict.shiftLetter": {
     "sourceHash": "15f52bd"

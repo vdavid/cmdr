@@ -84,6 +84,10 @@
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "42c3c0e"
   },
+  "shortcuts.conflict.bareKey": "Tut mir leid, wenn du {combo} in der Dateiliste tippst, filterst du oder springst zu einer Datei, daher kann das hier kein Kurzbefehl sein. Füge am besten eine Sondertaste hinzu.",
+  "@shortcuts.conflict.bareKey": {
+    "sourceHash": "6c50fbe"
+  },
   "shortcuts.conflict.shiftLetter": "Tut mir leid, mit {combo} tippst du einen Großbuchstaben, daher kann das kein Kurzbefehl sein. Füge am besten noch eine Sondertaste hinzu.",
   "@shortcuts.conflict.shiftLetter": {
     "sourceHash": "15f52bd"

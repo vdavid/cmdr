@@ -83,6 +83,10 @@
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "42c3c0e"
   },
+  "shortcuts.conflict.bareKey": "Вибачте, у списку файлів клавіша {combo} запускає фільтр або перехід до файлу, тож тут скороченням бути не може. Спробуйте додати клавішу-модифікатор.",
+  "@shortcuts.conflict.bareKey": {
+    "sourceHash": "6c50fbe"
+  },
   "shortcuts.conflict.shiftLetter": "Вибачте, комбінація {combo} вводить велику літеру, тож скороченням бути не може. Спробуйте додати ще одну клавішу-модифікатор.",
   "@shortcuts.conflict.shiftLetter": {
     "sourceHash": "15f52bd"

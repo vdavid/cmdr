@@ -83,6 +83,10 @@
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "42c3c0e"
   },
+  "shortcuts.conflict.bareKey": "抱歉，在檔案列表中輸入 {combo} 會進行篩選或跳至某個檔案，所以在這裡不能當作快速鍵。試試加上一個變更鍵。",
+  "@shortcuts.conflict.bareKey": {
+    "sourceHash": "6c50fbe"
+  },
   "shortcuts.conflict.shiftLetter": "抱歉，{combo} 是用來輸入大寫字母的，所以不能當作快速鍵。試試再加上一個變更鍵。",
   "@shortcuts.conflict.shiftLetter": {
     "sourceHash": "15f52bd"
