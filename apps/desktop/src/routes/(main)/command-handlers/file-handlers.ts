@@ -169,7 +169,7 @@ export const fileHandlers = {
     // Arg-less from F2 / the palette (seed the current name); the MCP `rename`
     // tool passes `{ initialName, expectedName }` to seed a proposed name and pin
     // activation to the target row.
-    explorerRef?.startRename(dispatchArgs)
+    explorerRef?.startRename(dispatchArgs as CommandArgs['file.rename'] | undefined)
   },
 
   'file.edit': (hctx) => {
