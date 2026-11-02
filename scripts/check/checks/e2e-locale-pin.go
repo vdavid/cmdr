@@ -23,6 +23,18 @@ func enUsLocaleArgs() []string {
 	return []string{"-AppleLocale", "en_US", "-AppleLanguages", "(en-US)"}
 }
 
+// overlayScrollbarArgs are process arguments that give a macOS launch overlay
+// scrollbars, whatever pointing device the machine has. Without them, a Bluetooth
+// mouse waking up turns classic scrollbars on and takes `dialog-inset.spec.ts` and
+// `dialog-wrapping.spec.ts` red by 17 px.
+//
+// The TypeScript twin is OVERLAY_SCROLLBAR_ARGS in
+// apps/desktop/test/e2e-shared/pin-locale.ts; keep the two in sync. Why:
+// apps/desktop/test/e2e-playwright/DETAILS.md § "The scrollbar pin".
+func overlayScrollbarArgs() []string {
+	return []string{"-AppleShowScrollBars", "WhenScrolling"}
+}
+
 // pinUiLanguage writes `appearance.language: "en"` into the shard's settings.json
 // before the app reads it at startup, so the suite asserts English however the
 // machine's own language preferences are set.

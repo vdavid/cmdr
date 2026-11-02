@@ -165,7 +165,7 @@ func startTauriApp(binaryPath string, s shardSpec) (*appHandle, error) {
 	// video recorders on a machine somebody is working on is the lane's whole cost; `nice`
 	// only yields when the CPU is contended, so an idle machine loses nothing. The
 	// tradeoff and why it's safe: `e2eNiceIncrement` in `e2e-contention.go`.
-	cmd := niceCommand(binaryPath, enUsLocaleArgs()...)
+	cmd := niceCommand(binaryPath, append(enUsLocaleArgs(), overlayScrollbarArgs()...)...)
 	cmd.Env = append(os.Environ(),
 		// CMDR_INSTANCE_ID drives the macOS Keychain SERVICE_NAME suffix
 		// ("Cmdr-<instance>") and the Dock label ("Cmdr (E2E <kind>)") so parallel shards

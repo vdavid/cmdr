@@ -44,7 +44,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { startCaptureStopwatch } from './capture-countdown.ts'
 import { ensureE2eBinary, frontmostApp, reserveFreePort, waitForSocket, warnIfForeignCmdr } from './capture-runtime.ts'
-import { EN_US_LOCALE_ARGS, pinUiLanguage } from '../test/e2e-shared/pin-locale.ts'
+import { EN_US_LOCALE_ARGS, OVERLAY_SCROLLBAR_ARGS, pinUiLanguage } from '../test/e2e-shared/pin-locale.ts'
 
 const LOG = '[marketing-shots]'
 
@@ -348,7 +348,7 @@ async function main(): Promise<void> {
   console.log(`${LOG} launching the app; data dir ${dataDir}, MCP port ${String(mcpPort)}…`)
   // en-US for this process alone, so a master never shows the developer's own
   // region's dates and number grouping. See `test/e2e-shared/pin-locale.ts`.
-  appProc = spawn(binary, [...EN_US_LOCALE_ARGS], {
+  appProc = spawn(binary, [...EN_US_LOCALE_ARGS, ...OVERLAY_SCROLLBAR_ARGS], {
     cwd: desktopDir,
     stdio: 'inherit',
     env: {

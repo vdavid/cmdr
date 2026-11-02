@@ -47,6 +47,18 @@ const ENGLISH = 'en'
 export const EN_US_LOCALE_ARGS: readonly string[] = ['-AppleLocale', 'en_US', '-AppleLanguages', '(en-US)']
 
 /**
+ * Process arguments that give a macOS launch overlay scrollbars, whatever pointing
+ * device the machine has. It's not a locale answer, but it's the same kind of pin:
+ * the argument domain outranks System Settings for this process alone.
+ *
+ * On "Automatic", a connected mouse switches macOS to classic scrollbars, which take
+ * 17 px of layout. A dialog that scrolls then fails `dialog-inset.spec.ts` and
+ * `dialog-wrapping.spec.ts`, and a capture photographs a scrollbar nobody asked for.
+ * `../e2e-playwright/DETAILS.md` § "The scrollbar pin".
+ */
+export const OVERLAY_SCROLLBAR_ARGS: readonly string[] = ['-AppleShowScrollBars', 'WhenScrolling']
+
+/**
  * Merges the English pin into `<dataDir>/settings.json`, creating the file (and
  * the directory) when they aren't there yet.
  *

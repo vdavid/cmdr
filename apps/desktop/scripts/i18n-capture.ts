@@ -61,7 +61,7 @@ import {
 } from './capture-runtime.ts'
 import { startCaptureStopwatch } from './capture-countdown.ts'
 import type { CaptureKind } from './capture-countdown.ts'
-import { EN_US_LOCALE_ARGS, pinUiLanguage } from '../test/e2e-shared/pin-locale.ts'
+import { EN_US_LOCALE_ARGS, OVERLAY_SCROLLBAR_ARGS, pinUiLanguage } from '../test/e2e-shared/pin-locale.ts'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const desktopDir = join(here, '..')
@@ -474,7 +474,7 @@ async function launchAndCapture(
   // See `test/e2e-shared/pin-locale.ts`.
   // Before the spread below: this is also what puts `CMDR_MANAGED_PREFS_FILE` on `process.env`.
   const dataDir = ensureCaptureDataDir()
-  appProc = spawn(binary, [...EN_US_LOCALE_ARGS], {
+  appProc = spawn(binary, [...EN_US_LOCALE_ARGS, ...OVERLAY_SCROLLBAR_ARGS], {
     cwd: desktopDir,
     stdio: 'inherit',
     env: {

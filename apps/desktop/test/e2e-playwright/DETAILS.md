@@ -117,7 +117,7 @@ pnpm test:e2e:playwright:build
 # this app and nothing else. `wait` keeps the terminal attached to the app's
 # output exactly as a foreground launch would.
 CMDR_E2E_MODE=1 CMDR_DATA_DIR=/tmp/cmdr-e2e-data CMDR_E2E_START_PATH=/tmp/cmdr-e2e-fixtures \
-    CMDR_MCP_ENABLED=true CMDR_MCP_PORT=27614 /path/to/target/<triple>/e2e/Cmdr &
+    CMDR_MCP_ENABLED=true CMDR_MCP_PORT=27614 /path/to/target/<triple>/e2e/Cmdr -AppleShowScrollBars WhenScrolling &
 echo $! > /tmp/cmdr-e2e-app.pid && wait
 
 # Run the tests (app must be running with socket at /tmp/tauri-playwright.sock).
@@ -647,6 +647,25 @@ Both failure modes read as product regressions, which is what makes them worth p
 
 The pseudolocale pass is a separate path: `pnpm i18n:shots:overflow` drives `setLocale('en-XA')` against the RUNNING app
 and touches neither pin, so they don't meet.
+
+## The scrollbar pin
+
+macOS's default "Show scroll bars: Automatic" gives classic scrollbars as soon as a mouse is connected, and overlay ones
+otherwise. A classic one takes 17 px of layout (`offsetWidth - clientWidth` on a probe, macOS 27 WKWebView), so the same
+binary on the same commit goes red when a Bluetooth mouse wakes up. Both `dialog-inset.spec.ts` (`body 21.0/38.0px`) and
+`dialog-wrapping.spec.ts` (`scrolls sideways by 17px`) fail, on whichever dialogs scroll, and it reads as a layout
+regression from the branch.
+
+So every launcher passes `OVERLAY_SCROLLBAR_ARGS` (`-AppleShowScrollBars WhenScrolling`) beside the locale args, for the
+same reason and through the same argument domain: `../e2e-shared/pin-locale.ts`, with the Go twin in
+`scripts/check/checks/e2e-locale-pin.go`. A hand launch that leaves them off fails those two specs whenever a mouse is
+connected. (Verified 2026-11-02 on macOS 27 with a connected Bluetooth mouse: a probe reads 17 px without the argument
+and 0 px with it, on one binary.)
+
+The pin covers the suite, not the product: classic scrollbars have their own layout bug in dialogs, which is a real one
+for people with a mouse. It's in WebKit's relayout, reproduces in plain DOM, and survives every centering and `display`
+variant we tried; only `scrollbar-gutter: stable` avoids it. The measurements and fix options are on issue #889, and a
+fix should run these two specs once without the pin.
 
 ## The Full Disk Access pin
 

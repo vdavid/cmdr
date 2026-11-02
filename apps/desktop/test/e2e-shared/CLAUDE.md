@@ -20,9 +20,9 @@ binary launches (fixture creation, port-file reads, MCP client setup) lives here
   `guestMountPoint()`. `DETAILS.md` § "Finding the SMB fixture's mount".
 - **`server-fixtures.ts`**: where the app dials the SFTP / WebDAV fixtures, plus an `ssh` / `curl` side door to their
   exports. `../e2e-playwright/DETAILS.md` § "Real SFTP and WebDAV servers".
-- **`pin-locale.ts`**: both halves of "pretend this machine is en-US". `pinUiLanguage(dataDir)` merges
-  `appearance.language: "en"` into `settings.json`; `EN_US_LOCALE_ARGS` are the macOS launch args pinning the FORMATTING
-  locale, which no setting can. `../e2e-playwright/DETAILS.md` § "The locale pin".
+- **`pin-locale.ts`**: `pinUiLanguage(dataDir)` pins the language in `settings.json`; `EN_US_LOCALE_ARGS` and
+  `OVERLAY_SCROLLBAR_ARGS` are macOS launch args. `../e2e-playwright/DETAILS.md` § "The locale pin", § "The scrollbar
+  pin".
 
 ## Must-knows
 

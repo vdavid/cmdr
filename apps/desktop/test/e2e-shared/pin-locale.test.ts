@@ -12,7 +12,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
-import { EN_US_LOCALE_ARGS, pinUiLanguage } from './pin-locale.js'
+import { EN_US_LOCALE_ARGS, OVERLAY_SCROLLBAR_ARGS, pinUiLanguage } from './pin-locale.js'
 
 let dataDir: string
 
@@ -82,5 +82,11 @@ describe('EN_US_LOCALE_ARGS', () => {
     // `AppleLocale` carries the region override the formatters follow;
     // `AppleLanguages` takes a parenthesized list, not a bare tag.
     expect([...EN_US_LOCALE_ARGS]).toEqual(['-AppleLocale', 'en_US', '-AppleLanguages', '(en-US)'])
+  })
+})
+
+describe('OVERLAY_SCROLLBAR_ARGS', () => {
+  it('asks for overlay scrollbars, in NSUserDefaults argument form', () => {
+    expect([...OVERLAY_SCROLLBAR_ARGS]).toEqual(['-AppleShowScrollBars', 'WhenScrolling'])
   })
 })
