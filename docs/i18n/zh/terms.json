@@ -91,6 +91,12 @@
     "forms": "operation-log initiator 代理; `ssh-agent` stays verbatim",
     "sources": "catalog"
   },
+  "ai-client": {
+    "chosen": "AI 客户端",
+    "confidence": "high",
+    "forms": "started by an AI client 这是 AI 客户端发起的",
+    "sources": "catalog operationLog.initiator.aiClient, ui.startedElsewhere.aiClient; MS terminology client → 客户端"
+  },
   "ai-context": {
     "chosen": "上下文",
     "confidence": "high",
@@ -286,6 +292,10 @@
   "ask": {
     "chosen": "询问",
     "confidence": "tentative",
+    "exceptions": {
+      "askCmdr.tool.outcome.inBackground": "Short status after a tool line: 要等你开口才会做 carries “waits for you to ask”; a bare 问你 would read as Cmdr asking the person.",
+      "askCmdr.tool.upgradeSmbToDirect.tried": "Asking Cmdr for a connection is a request (请求), matching the doing and done lines; 询问 is asking the person."
+    },
     "proseAccept": ["问你"],
     "forms": "setting option 询问 / 每次询问; don't-ask-again 不再询问; prose asking the user (问你要不要信任它, 问你要密码) → 问你",
     "sources": "catalog"
@@ -561,6 +571,11 @@
     "note": "Compounds follow the Tier-3 consensus: double-click 双击, right-click 右键点击.",
     "sources": "macOS zh-CN"
   },
+  "client": {
+    "chosen": "客户端",
+    "confidence": "high",
+    "sources": "MS terminology (client → 客户端); Total Commander zh-CN (FTP 客户端); catalog operationLog.initiator.aiClient"
+  },
   "clipboard": {
     "chosen": "剪贴板",
     "confidence": "confirmed",
@@ -710,6 +725,29 @@
     "accept": ["聊天内容", "聊天"],
     "sources": "MS terminology (对话); the chat ruling accepts 对话 mid-sentence"
   },
+  "data": {
+    "chosen": "数据",
+    "confidence": "high",
+    "forms": "browser data 浏览器数据; Cmdr's own data Cmdr 自己的数据",
+    "sources": "macOS zh-CN (数据, 24 hits); catalog ai.cloudConsent.whereItGoes"
+  },
+  "details": {
+    "accept": ["详情", "信息", "细节"],
+    "chosen": "详细信息",
+    "confidence": "high",
+    "exceptions": {
+      "main.oldMacos.body": "“little layout details” reads 细小的布局; the sense is small things, not information."
+    },
+    "forms": "behind a disclosure 详情 (查看许可证详情); facts about a thing 信息 (Cmdr 的信息, 照片和歌曲的信息, a photo's 相机信息); \"the log has the details\" 日志里有详细信息",
+    "sources": "macOS zh-CN (显示详细信息, 图像详细信息); MS terminology; Nautilus, Double Commander, Dolphin; catalog"
+  },
+  "direct-connection": {
+    "accept": ["直接连"],
+    "chosen": "直接连接",
+    "confidence": "high",
+    "forms": "noun and verb 直接连接 (建立直接连接, 直接连接到 {server}); asking for one 请求直接连接到一个共享",
+    "sources": "catalog fileExplorer.pane.directConnectionUnavailableToast, fileExplorer.network.osMountFallback.message"
+  },
   "learn-more": {
     "chosen": "进一步了解",
     "confidence": "high",
@@ -728,6 +766,13 @@
     "forms": "web link → 网页链接; “sits behind a DFS link” → 访问 X 要通过一个指向另一台服务器的链接 (`*.linkTargetUnreachable*`, one frame; a literal 链接后面 isn't natural Chinese)",
     "sources": "catalog (share-link and Google Drive link commands, viewer.markdown.link.*); MS terminology"
   },
+  "mcp-direct-mode": {
+    "chosen": "直接模式",
+    "confidence": "tentative",
+    "forms": "the toggle 直接模式; in prose MCP 直接模式",
+    "note": "Keep 直接 in step with 直接连接; no reference source names this Cmdr-only setting.",
+    "sources": "none in the pile; catalog 直接连接 (direct-connection) and 模式 (搜索模式, 跟随模式)"
+  },
   "mcp-server": {
     "chosen": "MCP 服务器",
     "confidence": "high",
@@ -738,6 +783,17 @@
     "forms": "X menu → X菜单, tight (个人收藏菜单, 预置菜单); context menu → 右键菜单; a named menu in prose → “帮助”菜单",
     "confidence": "high",
     "sources": "macOS 27.0.1 live (AXAction Open Menu → 打开菜单); catalog 个人收藏菜单, 右键菜单"
+  },
+  "message": {
+    "chosen": "消息",
+    "confidence": "high",
+    "exceptions": {
+      "ai.cloudConsent.askCmdr.protectedContents": "Names Apple's Messages app, “信息” (Messages.app zh_CN CFBundleName), not a chat message.",
+      "settings.askCmdr.wakeToast.description": "“a small message” is a toast, 提示 (notification sense), not a chat message.",
+      "settings.updates.emailPrivacyNote": "“messages” here are emails, 邮件 (the email ruling), not chat messages."
+    },
+    "forms": "a chat message 消息, counted 条 (每条消息); Apple's Messages app “信息”",
+    "sources": "MS terminology (消息, 190 entries); catalog ai.cloudConsent.askCmdr.item.memory, askCmdr.composer.send"
   },
   "nfs-export": {
     "avoid": [
@@ -763,6 +819,11 @@
     "chosen": "窗格分隔条",
     "confidence": "high",
     "sources": "Microsoft (divider → 分隔条), Total Commander (文件面板分隔条), with the pane ruling 窗格"
+  },
+  "private-key": {
+    "chosen": "私钥",
+    "confidence": "high",
+    "sources": "MS terminology private key → 私钥 (id 94997)"
   },
   "provider-console": {
     "chosen": "控制台",
@@ -1447,6 +1508,9 @@
   "git-detached": {
     "chosen": "分离",
     "confidence": "high",
+    "exceptions": {
+      "askCmdr.tool.eject.done": "English “Detached a drive” means ejecting, so 推出 (eject); the concept match is a false friend."
+    },
     "forms": "tooltip 分离状态，位于 {id}; the narrow pill （分离）{id}",
     "avoid": [
       {
@@ -2193,6 +2257,7 @@
     "chosen": "备注",
     "confidence": "high",
     "exceptions": {
+      "ai.cloudConsent.askCmdr.protectedContents": "Names Apple's Notes app, “备忘录” (Notes.app zh_CN CFBundleName, macOS 26), not a note the user writes.",
       "settings.fileOperations.showAlreadyGoneToast.description": "This “note” is the short toast Cmdr shows, not text the user writes: 提示."
     },
     "forms": "a note on an error report 备注 (添加备注（可选）); the feedback message 留言; Ask Cmdr's saved notes 笔记; saving one 记下",
@@ -2604,7 +2669,7 @@
     "chosen": "退出",
     "confidence": "confirmed",
     "decision": "Quit-while-running gate",
-    "forms": "Quit Cmdr 退出 Cmdr; Quit now 立即退出; the OS's logout 退出登录, with 系统 in front when the sentence also says 退出",
+    "forms": "the ask dialog title 退出 Cmdr？ (byte-matched with menu.app.quit, unlike its 要…吗？ siblings); Quit Cmdr 退出 Cmdr; Quit now 立即退出; the OS's logout 退出登录, with 系统 in front when the sentence also says 退出",
     "sources": "macOS AppKit"
   },
   "quota": {
@@ -3239,6 +3304,10 @@
     "chosen": "步",
     "accept": ["步骤"],
     "confidence": "high",
+    "exceptions": {
+      "askCmdr.tool.navBack.tried": "English “step back” is pane navigation, 返回上一个文件夹, not a numbered stage.",
+      "askCmdr.tool.navForward.tried": "English “step forward” is pane navigation, 前进到下一个文件夹, not a numbered stage."
+    },
     "forms": "Step 1 of 2: X → 第 1 步，共 2 步：X; the standalone noun is 步骤 (MS terminology)",
     "sources": "shipped catalog (onboarding.wizard.stepProgress, ai.local.installStepExtracting); MS terminology (step → 步骤)"
   },
@@ -3298,6 +3367,12 @@
     "confidence": "high",
     "forms": "X and up → X 及更高版本",
     "sources": "macOS Finder"
+  },
+  "swap-panes": {
+    "chosen": "交换窗格",
+    "confidence": "high",
+    "forms": "tool lines 正在交换窗格 / 已交换窗格 / 尝试交换窗格",
+    "sources": "catalog menu.view.swapPanes, commands.paneSwap.label"
   },
   "symlink": {
     "chosen": "符号链接",
