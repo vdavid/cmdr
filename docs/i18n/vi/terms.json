@@ -71,6 +71,12 @@
     "forms": "Cmdr Settings section → Nâng cao; quote settings.section.advanced exactly in navigation paths",
     "sources": "Network.appex Localizable (ADVANCED); catalog settings.section.advanced (macOS 26.6.2 build 25G83, live loctable key cross-reference, 2026-10-02)"
   },
+  "ai-client": {
+    "chosen": "máy khách AI",
+    "confidence": "high",
+    "forms": "label Máy khách AI; An AI client started this → Một máy khách AI đã bắt đầu việc này.",
+    "sources": "catalog (operationLog.initiator.aiClient); MS terminology (client → máy khách, a program that connects to another entity)"
+  },
   "ai-context": {
     "chosen": "ngữ cảnh",
     "confidence": "high",
@@ -105,7 +111,7 @@
   "ai-tool": {
     "chosen": "công cụ",
     "confidence": "high",
-    "forms": "tool status lines Đang … / Đã … (Đang liệt kê một thư mục, Đã xem bên trong tệp); tool calls → lần gọi công cụ; shown to the AI → cho xem / cho mô hình xem (hiển thị is on screen), N of M → N trên M; outcome notes stay pronoun-free (không có công cụ này), never nó",
+    "forms": "tool status lines Đang … / Đã … / Đã thử … on one object phrase (Đang liệt kê một thư mục, Đã xem bên trong tệp, Đã thử gửi mật khẩu); tool that opens a dialog → mở hộp thoại <Tên> with the dialog’s own title; the inline rename editor → ô đổi tên; Forward → đi tới thư mục tiếp theo, Back → trở lại thư mục trước; moving the file-list cursor → đổi vị trí con trỏ (di chuyển is the Move operation); group header Worked through → Đã xử lý; tool calls → lần gọi công cụ; shown to the AI → cho xem / cho mô hình xem (hiển thị is on screen), N of M → N trên M; outcome notes stay pronoun-free (không có công cụ này), never nó",
     "sources": "MS terminology (tool → công cụ); catalog"
   },
   "allow": {
@@ -248,6 +254,9 @@
     "sources": "macOS Finder AR40 (Archive → Lưu trữ); Bỏ lưu trữ mirrors Gmail/Zalo (tentative)"
   },
   "ask": {
+    "exceptions": {
+      "askCmdr.tool.upgradeSmbToDirect.tried": "Asking Cmdr for a connection is a request, yêu cầu, not a question to the user"
+    },
     "accept": ["Ask Cmdr"],
     "chosen": "hỏi",
     "confidence": "high",
@@ -499,6 +508,11 @@
     "forms": "clearing a field, search, or list removes no files",
     "sources": "macOS AppKit (Xóa)"
   },
+  "client": {
+    "chosen": "máy khách",
+    "confidence": "high",
+    "sources": "MS terminology (client → máy khách); catalog (operationLog.initiator.aiClient)"
+  },
   "clipboard": {
     "chosen": "bảng nhớ tạm",
     "confidence": "high",
@@ -648,7 +662,29 @@
     "accept": ["trò chuyện"],
     "sources": "MS terminology (cuộc trò chuyện); shipped settings.askCmdr.chatMemorySize.description"
   },
+  "data": {
+    "chosen": "dữ liệu",
+    "confidence": "high",
+    "forms": "browser data → dữ liệu trình duyệt; Cmdr’s own data → dữ liệu của chính Cmdr",
+    "sources": "MS terminology (data → dữ liệu); catalog (settings.dataWipe.card)"
+  },
+  "details": {
+    "chosen": "chi tiết",
+    "accept": ["thông tin"],
+    "confidence": "high",
+    "forms": "plain details left in a redacted log → chi tiết đơn giản; a photo’s EXIF stays thông tin máy ảnh (camera-details); a file’s metadata → thông tin tệp",
+    "sources": "MS terminology (Details → Chi tiết); catalog (errors.write.fallback.suggestion, crashReporter.dialog.body.ended)"
+  },
+  "direct-connection": {
+    "chosen": "kết nối trực tiếp",
+    "confidence": "high",
+    "forms": "Asking for a direct connection to a share → Đang yêu cầu kết nối trực tiếp tới một mục chia sẻ",
+    "sources": "catalog (fileExplorer.navigation.useDirectConnection, settings.network.directSmbConnection.description)"
+  },
   "learn-more": {
+    "exceptions": {
+      "ai.cloudConsent.askCmdr.contentsRule": "\"needs to know more about a file\" is prose about Cmdr, not an info link"
+    },
     "chosen": "Tìm hiểu thêm về",
     "confidence": "high",
     "forms": "More about “X” → Tìm hiểu thêm về “X”",
@@ -676,6 +712,13 @@
     "forms": "Open the X menu → Mở menu X (Mở menu chuột phải, Menu mục ưa thích)",
     "confidence": "high",
     "sources": "macOS 27.0.1 live (AXAction Open Menu → Mở menu); catalog Menu mục ưa thích"
+  },
+  "message": {
+    "chosen": "tin nhắn",
+    "accept": ["thông báo", "lời nhắn", "nhắn", "thư"],
+    "confidence": "high",
+    "forms": "a chat message → tin nhắn; a small notice in the corner → thông báo; a feedback message → lời nhắn; an email we send → thư; Apple’s Messages app → Tin nhắn (bundle name, InfoPlist.loctable)",
+    "sources": "MS terminology (message → tin nhắn); catalog (settings.askCmdr.memory.description, ai.cloudConsent.askCmdr.item.memory); macOS Messages.app (macOS on this Mac, plutil on InfoPlist.loctable, 2026-11-02)"
   },
   "nfs-export": {
     "avoid": [
@@ -1332,6 +1375,9 @@
     "sources": "dev loanword; no clean native UI source"
   },
   "git-detached": {
+    "exceptions": {
+      "askCmdr.tool.eject.done": "Detached a drive means ejecting or disconnecting it, unrelated to git: Đã tháo một ổ đĩa"
+    },
     "chosen": "tách rời",
     "confidence": "high",
     "forms": "Detached at X → Tách rời tại X; the chip’s (detached) → (tách rời)",
@@ -1867,6 +1913,10 @@
     "sources": "catalog common.sizeUnit.tebibyte; IEC 80000-13 (binary) / SI (decimal)"
   },
   "step": {
+    "exceptions": {
+      "askCmdr.tool.navBack.tried": "\"Step back\" is going back in the folder history, not a numbered stage: trở lại thư mục trước",
+      "askCmdr.tool.navForward.tried": "\"Step forward\" is going forward in the folder history, not a numbered stage: đi tới thư mục tiếp theo"
+    },
     "chosen": "bước",
     "accept": ["Bước"],
     "confidence": "high",
@@ -1885,6 +1935,12 @@
     "confidence": "high",
     "forms": "Remove diacritics → Bỏ dấu (as in tiếng Việt không dấu); the technical noun → dấu phụ",
     "sources": "MS terminology (diacritic → dấu phụ); shipped catalog (multiRename.removeDiacritics Bỏ dấu)"
+  },
+  "swap-panes": {
+    "chosen": "hoán đổi khung",
+    "confidence": "high",
+    "forms": "command and menu Hoán đổi khung; tool line Đang hoán đổi khung",
+    "sources": "MS terminology (swap → hoán đổi); catalog (commands.paneSwap.label, menu.view.swapPanes)"
   },
   "this-mac": {
     "chosen": "máy Mac",
@@ -1958,6 +2014,9 @@
     "sources": "Xfce Thunar (Gắn kết, Bỏ gắn kết)"
   },
   "move": {
+    "exceptions": {
+      "askCmdr.tool.moveCursor.done": "Moving the file-list cursor is not the Move operation, so di chuyển stays reserved: đổi vị trí con trỏ"
+    },
     "accept": ["chuyển"],
     "chosen": "di chuyển",
     "confidence": "high",
@@ -3099,6 +3158,12 @@
     "sources": "macOS Finder N67 (Mở trong Terminal)"
   },
   "text-editor": {
+    "exceptions": {
+      "ai.cloudConsent.askCmdr.actions": "The editor here is the inline field on a file name, not an editor app: ô đổi tên, same as askCmdr.tool.rename.*",
+      "askCmdr.tool.rename.doing": "The rename editor is the inline field on a file name, not an editor app: ô đổi tên",
+      "askCmdr.tool.rename.done": "The rename editor is the inline field on a file name, not an editor app: ô đổi tên",
+      "askCmdr.tool.rename.tried": "The rename editor is the inline field on a file name, not an editor app: ô đổi tên"
+    },
     "chosen": "trình soạn thảo",
     "confidence": "high",
     "forms": "text editor → trình soạn thảo văn bản; default → trình soạn thảo văn bản mặc định",

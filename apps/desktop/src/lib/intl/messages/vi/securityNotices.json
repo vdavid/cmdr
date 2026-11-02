@@ -19,15 +19,15 @@
   "@securityNotices.mcpForeignOrigin.openSettings": {
     "sourceHash": "c63c58c"
   },
-  "securityNotices.mcpDirectModeOn.title": "MCP direct mode is on",
+  "securityNotices.mcpDirectModeOn.title": "Chế độ trực tiếp MCP đang bật",
   "@securityNotices.mcpDirectModeOn.title": {
     "sourceHash": "5d0520c"
   },
-  "securityNotices.mcpDirectModeOn.body": "AI tools outside Cmdr can read your files and confirm actions without asking you. If you didn’t turn this on, turn it off in MCP settings.",
+  "securityNotices.mcpDirectModeOn.body": "Các công cụ AI bên ngoài Cmdr có thể đọc tệp của bạn và xác nhận các thao tác mà không hỏi bạn. Nếu bạn không bật chế độ này, hãy tắt nó trong cài đặt MCP.",
   "@securityNotices.mcpDirectModeOn.body": {
     "sourceHash": "fd2972f"
   },
-  "securityNotices.mcpDirectModeOn.openSettings": "MCP settings",
+  "securityNotices.mcpDirectModeOn.openSettings": "Cài đặt MCP",
   "@securityNotices.mcpDirectModeOn.openSettings": {
     "sourceHash": "c63c58c"
   },

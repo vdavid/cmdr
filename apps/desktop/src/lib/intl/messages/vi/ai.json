@@ -79,9 +79,9 @@
   "@ai.cloudConsent.folderSuggestions": {
     "sourceHash": "e2c592a"
   },
-  "ai.cloudConsent.search": "<b>Tìm kiếm bằng ngôn ngữ tự nhiên</b>: nội dung bạn nhập",
+  "ai.cloudConsent.search": "<b>Tìm kiếm bằng ngôn ngữ tự nhiên</b>: nội dung bạn nhập, hoặc những gì một công cụ AI đã kết nối yêu cầu, sau khi bạn bật chế độ trực tiếp MCP",
   "@ai.cloudConsent.search": {
-    "sourceHash": "e6d4ef9"
+    "sourceHash": "b5c8d93"
   },
   "ai.cloudConsent.selection": "<b>Chọn theo mô tả</b>: nội dung bạn nhập, cùng tối đa 240 tên từ thư mục hiện tại",
   "@ai.cloudConsent.selection": {
@@ -91,21 +91,21 @@
   "@ai.cloudConsent.askCmdr.title": {
     "sourceHash": "26e139c"
   },
-  "ai.cloudConsent.askCmdr.item.messages": "Tin nhắn của bạn",
+  "ai.cloudConsent.askCmdr.item.messages": "Tin nhắn của bạn, kể cả mọi mật khẩu bạn nhập ở đó để mở khóa một tệp nén hoặc một bản sao lưu",
   "@ai.cloudConsent.askCmdr.item.messages": {
-    "sourceHash": "befc6e9"
+    "sourceHash": "66e656b"
   },
-  "ai.cloudConsent.askCmdr.item.names": "Tên và đường dẫn của các tệp và thư mục mà Cmdr xem để trả lời bạn",
+  "ai.cloudConsent.askCmdr.item.names": "Tên và đường dẫn của các tệp và thư mục mà Cmdr xem",
   "@ai.cloudConsent.askCmdr.item.names": {
-    "sourceHash": "ce3259d"
+    "sourceHash": "4d5ea2c"
   },
   "ai.cloudConsent.askCmdr.item.sizes": "Kích cỡ và ngày tháng của chúng",
   "@ai.cloudConsent.askCmdr.item.sizes": {
     "sourceHash": "2484530"
   },
-  "ai.cloudConsent.askCmdr.item.contents": "Một phần nội dung của các tệp mà Cmdr mở để trả lời bạn: một ít văn bản, vài trang PDF, những gì bên trong một tệp nén và thông tin máy ảnh cùng vị trí chụp của một bức ảnh",
+  "ai.cloudConsent.askCmdr.item.contents": "Một phần nội dung của các tệp mà Cmdr mở: một ít văn bản, vài trang PDF, những gì bên trong một tệp nén, thông tin máy ảnh cùng vị trí chụp của một bức ảnh và văn bản mà Cmdr nhận dạng được bên trong ảnh",
   "@ai.cloudConsent.askCmdr.item.contents": {
-    "sourceHash": "fcd0b73"
+    "sourceHash": "5e8355f"
   },
   "ai.cloudConsent.askCmdr.item.envelope": "Những gì bạn đang xem ngay bây giờ: thư mục hiện tại, con trỏ, mục đã chọn và các ổ đĩa đang kết nối",
   "@ai.cloudConsent.askCmdr.item.envelope": {
@@ -115,19 +115,19 @@
   "@ai.cloudConsent.askCmdr.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "ai.cloudConsent.askCmdr.item.mediaFields": "Details of photos and songs when a rename uses them: date taken, camera, title, artist, album, and the like",
+  "ai.cloudConsent.askCmdr.item.mediaFields": "Chi tiết của ảnh và bài hát khi một lần đổi tên dùng đến chúng: ngày chụp, máy ảnh, tiêu đề, nghệ sĩ, album và những thứ tương tự",
   "@ai.cloudConsent.askCmdr.item.mediaFields": {
     "sourceHash": "e96157a"
   },
-  "ai.cloudConsent.askCmdr.item.appState": "What Cmdr is up to: running and past operations, open dialogs, favorites, saved places, drive indexing, and which folders matter most",
+  "ai.cloudConsent.askCmdr.item.appState": "Những gì Cmdr đang làm: các thao tác đang chạy và đã qua, các hộp thoại đang mở, mục ưa thích, các vị trí đã lưu, việc lập chỉ mục ổ đĩa và những thư mục quan trọng nhất",
   "@ai.cloudConsent.askCmdr.item.appState": {
     "sourceHash": "4159dde"
   },
-  "ai.cloudConsent.askCmdr.item.settings": "Your Cmdr settings and keyboard shortcuts, including folders you picked for image indexing and your AI service’s address. Anything that looks like a password, key, or token is masked, and so is your email address",
+  "ai.cloudConsent.askCmdr.item.settings": "Cài đặt và phím tắt Cmdr của bạn, kể cả các thư mục bạn đã chọn để lập chỉ mục hình ảnh và địa chỉ dịch vụ AI. Mọi thứ trông giống mật khẩu, khóa hoặc token đều được che đi, và địa chỉ email của bạn cũng vậy",
   "@ai.cloudConsent.askCmdr.item.settings": {
     "sourceHash": "c7c0657"
   },
-  "ai.cloudConsent.askCmdr.item.logs": "Cmdr’s recent log lines, with names, paths, addresses, and anything that looks like a key swapped for placeholders first. A few plain details stay, like file extensions and common folder names such as Documents",
+  "ai.cloudConsent.askCmdr.item.logs": "Các dòng nhật ký gần đây của Cmdr, trong đó tên, đường dẫn, địa chỉ và mọi thứ trông giống khóa đều được thay bằng phần giữ chỗ trước. Một vài chi tiết đơn giản vẫn giữ nguyên, như đuôi tệp và các tên thư mục phổ biến như Tài liệu",
   "@ai.cloudConsent.askCmdr.item.logs": {
     "sourceHash": "7aabf35"
   },
@@ -135,15 +135,15 @@
   "@ai.cloudConsent.askCmdr.item.memory": {
     "sourceHash": "7779513"
   },
-  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr không bao giờ gửi toàn bộ tệp, ảnh hay hình thu nhỏ. Khi bạn hỏi về một tệp, nó có thể đọc một phần có giới hạn của tệp đó: vài dòng văn bản, vài trang của một tệp PDF cùng với tiêu đề và tác giả của nó, danh sách các tệp bên trong một tệp nén, hoặc thông tin máy ảnh của một bức ảnh, kể cả vị trí chụp. Tìm kiếm ảnh cũng hoạt động theo cách đó: văn bản mà Cmdr nhận dạng được bên trong các ảnh khớp cùng thẻ của chúng sẽ được gửi đến nhà cung cấp của bạn để có thể tìm thấy chúng. Cmdr có thể đề xuất đổi tên, di chuyển và dọn dẹp, và không có gì xảy ra với tệp nào cho đến khi bạn phê duyệt.",
+  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr không bao giờ gửi toàn bộ tệp, ảnh hay hình thu nhỏ. Khi cần biết thêm về một tệp, Cmdr có thể đọc một phần có giới hạn của tệp đó: vài dòng văn bản, vài trang của một tệp PDF cùng với tiêu đề và tác giả của nó, danh sách các tệp bên trong một tệp nén, hoặc thông tin máy ảnh của một bức ảnh, kể cả vị trí chụp. Tìm kiếm ảnh cũng hoạt động theo cách đó: văn bản mà Cmdr nhận dạng được bên trong các ảnh khớp cùng thẻ của chúng sẽ được gửi đến nhà cung cấp của bạn để có thể tìm thấy chúng.",
   "@ai.cloudConsent.askCmdr.contentsRule": {
-    "sourceHash": "5a378c1"
+    "sourceHash": "38dedbb"
   },
-  "ai.cloudConsent.askCmdr.protectedContents": "Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keychains, browser data, Mail, Messages, Notes, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.",
+  "ai.cloudConsent.askCmdr.protectedContents": "Một số nội dung luôn ở lại trên máy Mac này, dù ai yêu cầu gì đi nữa: khóa SSH, thông tin đăng nhập của dịch vụ đám mây và công cụ, các chuỗi khóa của bạn, dữ liệu trình duyệt, Mail, Tin nhắn, Ghi chú, dữ liệu của chính Cmdr và mọi tệp chứa khóa riêng tư. Tên của chúng vẫn có thể đến nhà cung cấp của bạn.",
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "sourceHash": "048633f"
   },
-  "ai.cloudConsent.askCmdr.actions": "In a chat you started, Ask Cmdr can also work the app for you: navigate, select, sort, open tabs and dialogs, and connect a place you saved. Copying, moving, compressing, deleting, renaming, and undoing an operation each open a dialog or editor for you to confirm, and nothing happens until you do. Opening a file, changing a setting (other than how Cmdr looks), quitting, ejecting a drive, removing a server, and changing indexing ask you first. Creating a named folder or file and tagging files happen right away with no question, and tags have no undo. Renames and cleanups it prepares as a plan wait for your approval.",
+  "ai.cloudConsent.askCmdr.actions": "Trong cuộc trò chuyện do bạn bắt đầu, Ask Cmdr còn có thể thao tác ứng dụng thay bạn: đi tới các thư mục, chọn, sắp xếp, mở tab hay hộp thoại và kết nối tới một vị trí bạn đã lưu. Sao chép, di chuyển, nén, xóa, đổi tên và hoàn tác một thao tác đều mở một hộp thoại hoặc ô đổi tên để bạn xác nhận, và không có gì xảy ra cho đến khi bạn xác nhận. Mở tệp, thay đổi cài đặt (trừ giao diện của Cmdr), thoát, tháo ổ đĩa, gỡ bỏ máy chủ và thay đổi việc lập chỉ mục đều hỏi bạn trước. Tạo một thư mục hoặc tệp có tên và gắn thẻ cho tệp diễn ra ngay lập tức mà không hỏi gì, và thẻ thì không thể hoàn tác. Các lần đổi tên và dọn dẹp mà Ask Cmdr chuẩn bị thành một kế hoạch sẽ chờ bạn phê duyệt.",
   "@ai.cloudConsent.askCmdr.actions": {
     "sourceHash": "bf002cc"
   },
@@ -151,17 +151,17 @@
   "@ai.cloudConsent.askCmdr.memory": {
     "sourceHash": "496c78d"
   },
-  "ai.cloudConsent.askCmdr.proactive": "Cmdr cũng theo dõi các thư mục bạn dùng và bắt đầu một cuộc trò chuyện khi có điều gì đó để đề xuất, nên tin nhắn có thể đến nhà cung cấp của bạn mà bạn không hỏi gì trước. Bạn có thể tắt điều đó trong cài đặt Ask Cmdr, ở mục “Tự chủ động”.",
+  "ai.cloudConsent.askCmdr.proactive": "Cmdr cũng theo dõi các thư mục bạn dùng và bắt đầu một cuộc trò chuyện khi có điều gì đó để đề xuất, nên tin nhắn có thể đến nhà cung cấp của bạn mà bạn không hỏi gì trước. Trong những cuộc trò chuyện đó, Cmdr có thể đọc những gì liệt kê ở trên, chuẩn bị kế hoạch và viết ghi chú của mình, chỉ vậy thôi. Bạn có thể tắt điều đó trong cài đặt Ask Cmdr, ở mục “Tự chủ động”.",
   "@ai.cloudConsent.askCmdr.proactive": {
-    "sourceHash": "abfa80b"
+    "sourceHash": "95b18ac"
   },
   "ai.cloudConsent.askCmdr.chatsStayLocal": "Các cuộc trò chuyện Ask Cmdr của bạn ở lại trên máy Mac này, trong một cơ sở dữ liệu cục bộ mà bạn có thể mở ra đọc.",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "Nếu bạn bật tính năng ghi nhật ký lệnh gọi LLM trong phần cài đặt Nâng cao, Cmdr cũng sẽ lưu mỗi yêu cầu và câu trả lời vào một thư mục trên máy Mac của bạn. Các nhật ký đó cũng chỉ ở cục bộ, không bao giờ được gửi đi bất cứ đâu.",
+  "ai.cloudConsent.logsNote": "Nếu bạn bật tính năng ghi nhật ký lệnh gọi LLM trong phần cài đặt Nâng cao, Cmdr cũng sẽ lưu mỗi yêu cầu và câu trả lời vào một thư mục trên máy Mac của bạn. Các nhật ký lệnh gọi đó chỉ ở cục bộ, không bao giờ được gửi đi bất cứ đâu.",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "7e211fc"
+    "sourceHash": "d89adfb"
   },
   "ai.cloudConsent.turnOffAnyTime": "Tắt mục này bất cứ lúc nào và Cmdr sẽ ngừng gửi ngay lập tức. Dịch vụ, khóa và các cuộc trò chuyện của bạn vẫn giữ nguyên.",
   "@ai.cloudConsent.turnOffAnyTime": {

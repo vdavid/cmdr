@@ -1494,19 +1494,19 @@
   "@settings.developer.mcpEnabled.keywords": {
     "sourceHash": "410be68"
   },
-  "settings.developer.mcpDirectMode.label": "Direct mode",
+  "settings.developer.mcpDirectMode.label": "Chế độ trực tiếp",
   "@settings.developer.mcpDirectMode.label": {
     "sourceHash": "8273bcf"
   },
-  "settings.developer.mcpDirectMode.description": "Let connected AI tools read your files and confirm dialogs without asking you. Only turn this on while you’re testing or developing with them.",
+  "settings.developer.mcpDirectMode.description": "Cho phép các công cụ AI đã kết nối đọc tệp của bạn và xác nhận hộp thoại mà không hỏi bạn. Chỉ bật mục này khi bạn đang kiểm thử hoặc phát triển với chúng.",
   "@settings.developer.mcpDirectMode.description": {
     "sourceHash": "d85f109"
   },
-  "settings.developer.mcpDirectMode.keywords": "testing, automation, confirm, bypass, developer",
+  "settings.developer.mcpDirectMode.keywords": "kiểm thử, thử nghiệm, tự động hóa, xác nhận, bỏ qua, nhà phát triển, lập trình",
   "@settings.developer.mcpDirectMode.keywords": {
     "sourceHash": "285cb60"
   },
-  "settings.mcp.directModeThisSessionOnly": "Direct mode stays on until you quit Cmdr, since this computer can’t keep it safely across a restart.",
+  "settings.mcp.directModeThisSessionOnly": "Chế độ trực tiếp vẫn bật cho đến khi bạn thoát Cmdr, vì máy tính này không thể giữ nó một cách an toàn qua lần khởi động lại.",
   "@settings.mcp.directModeThisSessionOnly": {
     "sourceHash": "f5d30da"
   },
